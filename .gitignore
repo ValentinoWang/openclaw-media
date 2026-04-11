@@ -1,0 +1,22 @@
+.DS_Store
+__pycache__/
+*.py[co]
+*.log
+.env
+.venv/
+venv/
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+
+# Runtime outputs
+downloads/
+downloads_test/
+
+# Project-local runtime outputs
+Part1/MP4-extract/downloads/
+Part1/content-flow/downloads/
+Part1/content-flow/downloads_test/
+
