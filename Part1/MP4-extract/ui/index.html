@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Qishui Music Downloader</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap");
+
+      :root {
+        color-scheme: light;
+        --bg-1: #f6efe5;
+        --bg-2: #e8f1ea;
+        --ink: #10201b;
+        --muted: #5d6e68;
+        --accent: #1a7f6e;
+        --accent-2: #ef9a5f;
+        --panel: rgba(255, 255, 255, 0.88);
+        --stroke: rgba(16, 32, 27, 0.12);
+        --shadow: 0 24px 60px rgba(17, 34, 29, 0.18);
+        --radius-lg: 22px;
+        --radius-md: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Space Grotesk", "Helvetica Neue", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 18%, rgba(239, 154, 95, 0.18), transparent 45%),
+          radial-gradient(circle at 88% 22%, rgba(26, 127, 110, 0.2), transparent 48%),
+          linear-gradient(140deg, var(--bg-1), var(--bg-2));
+        padding: 36px 20px 48px;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          linear-gradient(90deg, rgba(16, 32, 27, 0.05) 1px, transparent 1px),
+          linear-gradient(0deg, rgba(16, 32, 27, 0.05) 1px, transparent 1px);
+        background-size: 26px 26px;
+        opacity: 0.45;
+        pointer-events: none;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+        width: min(980px, 100%);
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+
+      header {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        animation: fadeIn 0.7s ease forwards;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: clamp(28px, 4vw, 42px);
+        letter-spacing: -0.02em;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 620px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--stroke);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        padding: 20px 22px;
+        backdrop-filter: blur(10px);
+        animation: riseIn 0.6s ease forwards;
+      }
+
+      .input-block {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      label {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 110px;
+        border: 1px solid rgba(16, 32, 27, 0.18);
+        border-radius: var(--radius-md);
+        padding: 12px 14px;
+        font-size: 14px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--ink);
+        resize: vertical;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      input[type="text"],
+      select {
+        border: 1px solid rgba(16, 32, 27, 0.18);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 14px;
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      details {
+        border: 1px dashed rgba(16, 32, 27, 0.18);
+        border-radius: var(--radius-md);
+        padding: 10px 12px;
+      }
+
+      summary {
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 12px 18px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 12px 24px rgba(26, 127, 110, 0.25);
+      }
+
+      button.secondary {
+        background: #fff;
+        color: var(--ink);
+        border: 1px solid rgba(16, 32, 27, 0.2);
+        box-shadow: none;
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .status[data-tone="success"] {
+        color: #1a7f6e;
+      }
+
+      .status[data-tone="error"] {
+        color: #c0362c;
+      }
+
+      .output {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .output-row {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .output code {
+        display: block;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.75);
+        border-radius: 12px;
+        border: 1px solid rgba(16, 32, 27, 0.12);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 12.5px;
+        word-break: break-all;
+      }
+
+      .download-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        color: var(--ink);
+        font-weight: 600;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(16, 32, 27, 0.2);
+        background: #fff;
+      }
+
+      .log {
+        margin: 0;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: rgba(16, 32, 27, 0.06);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 12px;
+        max-height: 220px;
+        overflow: auto;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes riseIn {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .card:nth-of-type(1) {
+        animation-delay: 0.05s;
+      }
+
+      .card:nth-of-type(2) {
+        animation-delay: 0.12s;
+      }
+
+      @media (max-width: 720px) {
+        .output-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <h1>Qishui Music Downloader</h1>
+        <p>
+          Paste the share text or URL, then run the downloader. The server will fetch the
+          media and save it into the local downloads folder.
+        </p>
+      </header>
+
+      <section class="card">
+        <div class="input-block">
+          <label for="shareInput">Share text</label>
+          <textarea id="shareInput" placeholder="Paste Qishui Music share text or URL..."></textarea>
+        </div>
+
+        <div class="controls">
+          <div class="field">
+            <label for="filename">Custom filename (optional)</label>
+            <input id="filename" type="text" placeholder="qishui_song" />
+          </div>
+        </div>
+
+        <details>
+          <summary>Advanced options</summary>
+          <div class="controls" style="margin-top: 12px;">
+            <div class="field">
+              <label for="autoCapture">Auto capture (Playwright)</label>
+              <select id="autoCapture">
+                <option value="on" selected>On</option>
+                <option value="off">Off</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="timeoutInput">Timeout (seconds)</label>
+              <input id="timeoutInput" type="number" min="10" step="10" value="120" />
+            </div>
+            <div class="field">
+              <label for="cookieInput">Cookie header (optional)</label>
+              <input id="cookieInput" type="text" placeholder="SESSION=..." />
+            </div>
+            <div class="field">
+              <label for="curlInput">DevTools cURL (optional)</label>
+              <textarea id="curlInput" placeholder="Paste 'Copy as cURL' command here..."></textarea>
+            </div>
+            <div class="field">
+              <label for="cookieSource">Auto cookie source</label>
+              <select id="cookieSource">
+                <option value="none">Off</option>
+                <option value="chrome">Chrome</option>
+                <option value="edge">Edge</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="cookieProfile">Browser profile</label>
+              <input id="cookieProfile" type="text" placeholder="Default" value="Default" />
+            </div>
+            <div class="field">
+              <label for="ffmpegToggle">Use ffmpeg for m3u8</label>
+              <select id="ffmpegToggle">
+                <option value="off">Off</option>
+                <option value="on">On</option>
+              </select>
+            </div>
+          </div>
+        </details>
+
+        <div class="actions" style="margin-top: 16px;">
+          <button id="downloadBtn" type="button">Download</button>
+          <button id="clearBtn" class="secondary" type="button">Clear</button>
+          <span class="status" id="statusLine" data-tone="idle">Idle</span>
+        </div>
+      </section>
+
+      <section class="card output hidden" id="outputCard">
+        <div class="output-row">
+          <span>Saved file</span>
+          <code id="outputPath">-</code>
+        </div>
+        <div class="output-row">
+          <span>Download</span>
+          <a class="download-link hidden" id="downloadLink" href="#" download>Open file</a>
+        </div>
+        <pre class="log" id="logOutput"></pre>
+      </section>
+    </div>
+
+    <script>
+      const shareInput = document.getElementById("shareInput");
+      const filenameInput = document.getElementById("filename");
+      const cookieInput = document.getElementById("cookieInput");
+      const curlInput = document.getElementById("curlInput");
+      const autoCapture = document.getElementById("autoCapture");
+      const timeoutInput = document.getElementById("timeoutInput");
+      const cookieSource = document.getElementById("cookieSource");
+      const cookieProfile = document.getElementById("cookieProfile");
+      const ffmpegToggle = document.getElementById("ffmpegToggle");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const statusLine = document.getElementById("statusLine");
+      const outputCard = document.getElementById("outputCard");
+      const outputPath = document.getElementById("outputPath");
+      const downloadLink = document.getElementById("downloadLink");
+      const logOutput = document.getElementById("logOutput");
+
+      const setStatus = (text, tone = "idle") => {
+        statusLine.textContent = text;
+        statusLine.dataset.tone = tone;
+      };
+
+      const setBusy = (busy) => {
+        downloadBtn.disabled = busy;
+        clearBtn.disabled = busy;
+        shareInput.disabled = busy;
+        filenameInput.disabled = busy;
+        cookieInput.disabled = busy;
+        curlInput.disabled = busy;
+        autoCapture.disabled = busy;
+        timeoutInput.disabled = busy;
+        cookieSource.disabled = busy;
+        cookieProfile.disabled = busy;
+        ffmpegToggle.disabled = busy;
+      };
+
+      const resetOutput = () => {
+        outputCard.classList.add("hidden");
+        downloadLink.classList.add("hidden");
+        downloadLink.removeAttribute("href");
+        outputPath.textContent = "-";
+        logOutput.textContent = "";
+      };
+
+      const clearAll = () => {
+        shareInput.value = "";
+        filenameInput.value = "";
+        cookieInput.value = "";
+        curlInput.value = "";
+        autoCapture.value = "on";
+        timeoutInput.value = "120";
+        cookieSource.value = "none";
+        cookieProfile.value = "Default";
+        ffmpegToggle.value = "off";
+        resetOutput();
+        setStatus("Idle", "idle");
+      };
+
+      const handleDownload = async () => {
+        const shareText = shareInput.value.trim();
+        if (!shareText) {
+          setStatus("Paste a share link first.", "error");
+          return;
+        }
+        resetOutput();
+        setBusy(true);
+        setStatus("Downloading...", "info");
+
+        const payload = {
+          share_text: shareText,
+          filename: filenameInput.value.trim(),
+          cookie: cookieInput.value.trim(),
+          curl_text: curlInput.value.trim(),
+          auto_capture: autoCapture.value === "on",
+          timeout: Number.parseInt(timeoutInput.value, 10) || 120,
+          cookie_source: cookieSource.value,
+          cookie_profile: cookieProfile.value.trim(),
+          ffmpeg: ffmpegToggle.value === "on",
+        };
+
+        try {
+          const resp = await fetch("/api/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await resp.json();
+          if (!resp.ok || !data.ok) {
+            setStatus("Download failed. Check log output.", "error");
+            logOutput.textContent =
+              data.message || data.stderr || data.stdout || "No details available.";
+            outputCard.classList.remove("hidden");
+            return;
+          }
+
+          outputPath.textContent = data.output_path || "-";
+          if (data.download_url) {
+            downloadLink.href = data.download_url;
+            downloadLink.classList.remove("hidden");
+          }
+          logOutput.textContent = data.stdout || "Done.";
+          outputCard.classList.remove("hidden");
+          setStatus("Done.", "success");
+        } catch (err) {
+          setStatus("Request failed. Is the server running?", "error");
+          logOutput.textContent = String(err);
+          outputCard.classList.remove("hidden");
+        } finally {
+          setBusy(false);
+        }
+      };
+
+      downloadBtn.addEventListener("click", handleDownload);
+      clearBtn.addEventListener("click", clearAll);
+    </script>
+  </body>
+</html>
