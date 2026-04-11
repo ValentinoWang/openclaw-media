@@ -1,0 +1,15 @@
+[project]
+name = "content-flow"
+version = "0.1.0"
+description = "A local content processing pipeline for social media links, analysis, and Notion export."
+
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "dashscope>=1.25.16",
+    "langgraph>=1.0.5",
+    "notion-client>=2.7.0",
+    "playwright>=1.57.0",
+    "python-dotenv>=1.2.1",
+    "yt-dlp>=2025.12.8",
+]
