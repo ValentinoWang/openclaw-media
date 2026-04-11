@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Content Flow Workbench</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg-1: #f3efe7;
+        --bg-2: #e1ece5;
+        --ink-1: #0f1f1b;
+        --ink-2: #2b3f39;
+        --muted: #5b6d68;
+        --accent: #0a7a6f;
+        --accent-2: #f4a261;
+        --panel: rgba(255, 255, 255, 0.85);
+        --panel-stroke: rgba(15, 31, 27, 0.12);
+        --shadow: 0 24px 60px rgba(18, 35, 30, 0.16);
+        --radius-lg: 24px;
+        --radius-md: 16px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Sora", "Space Grotesk", "Helvetica Neue", sans-serif;
+        color: var(--ink-1);
+        background:
+          radial-gradient(circle at 10% 20%, rgba(244, 162, 97, 0.18), transparent 45%),
+          radial-gradient(circle at 85% 15%, rgba(10, 122, 111, 0.2), transparent 50%),
+          linear-gradient(135deg, var(--bg-1), var(--bg-2));
+        padding: 32px 20px 48px;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          linear-gradient(90deg, rgba(15, 31, 27, 0.05) 1px, transparent 1px),
+          linear-gradient(0deg, rgba(15, 31, 27, 0.05) 1px, transparent 1px);
+        background-size: 22px 22px;
+        pointer-events: none;
+        opacity: 0.55;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+        width: min(1200px, 100%);
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      header {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: clamp(28px, 4vw, 44px);
+        letter-spacing: -0.02em;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--ink-2);
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .input-card {
+        background: var(--panel);
+        border: 1px solid var(--panel-stroke);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        padding: 18px 20px;
+      }
+
+      .input-card textarea {
+        width: 100%;
+        min-height: 80px;
+        border: 1px solid rgba(15, 31, 27, 0.18);
+        border-radius: var(--radius-md);
+        padding: 12px 14px;
+        font-size: 15px;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        background: rgba(255, 255, 255, 0.8);
+        color: var(--ink-1);
+        resize: vertical;
+      }
+
+      .primary-btn {
+        border: none;
+        padding: 12px 18px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 12px 24px rgba(10, 122, 111, 0.25);
+      }
+
+      .secondary-btn {
+        border: 1px solid rgba(15, 31, 27, 0.2);
+        padding: 10px 14px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        background: #fff;
+        color: var(--ink-1);
+      }
+
+      .status-line {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .workbench {
+        display: grid;
+        grid-template-columns: minmax(220px, 280px) 1fr;
+        gap: 20px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--panel-stroke);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+      }
+
+      .meta-card {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .cover {
+        height: 160px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(135deg, rgba(10, 122, 111, 0.25), rgba(244, 162, 97, 0.3));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--ink-2);
+        font-weight: 600;
+      }
+
+      .meta-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px 12px;
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(15, 31, 27, 0.1);
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .meta-item span {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+      }
+
+      .meta-item strong {
+        font-size: 15px;
+        color: var(--ink-1);
+        word-break: break-word;
+      }
+
+      .editor-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .editor-header h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .editor-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .progress {
+        margin-bottom: 16px;
+      }
+
+      .progress-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .progress-track {
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(15, 31, 27, 0.1);
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        transition: width 0.3s ease;
+      }
+
+      .download-panel {
+        margin-bottom: 16px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .download-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .download-item span {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .download-item .status-line {
+        flex: 1;
+        min-width: 220px;
+        word-break: break-word;
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .form-grid label {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .form-grid textarea,
+      .form-grid input {
+        width: 100%;
+        border: 1px solid rgba(15, 31, 27, 0.16);
+        border-radius: var(--radius-md);
+        padding: 12px 14px;
+        font-size: 14px;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        background: rgba(255, 255, 255, 0.75);
+        color: var(--ink-1);
+      }
+
+      .form-grid textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      .save-row {
+        margin-top: 18px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .save-row .status-line {
+        flex: 1;
+      }
+
+      @media (max-width: 900px) {
+        .topbar {
+          grid-template-columns: 1fr;
+        }
+
+        .workbench {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <h1>内容拆解工作台</h1>
+        <p>粘贴分享链接，AI 自动分析或手动编辑后保存到 Notion。</p>
+      </header>
+
+      <div class="topbar">
+        <div class="input-card">
+          <textarea id="shareInput" placeholder="粘贴分享口令或链接..."></textarea>
+        </div>
+        <button class="primary-btn" id="parseBtn" type="button">提取并解析</button>
+      </div>
+      <div class="status-line" id="parseStatus">等待粘贴链接。</div>
+
+      <section class="workbench hidden" id="workbench">
+        <div class="card meta-card">
+          <div class="cover">封面预览</div>
+          <div class="meta-item">
+            <span>平台</span>
+            <strong id="metaPlatform">-</strong>
+          </div>
+          <div class="meta-item">
+            <span>视频 ID</span>
+            <strong id="metaVideoId">-</strong>
+          </div>
+          <div class="meta-item">
+            <span>URL</span>
+            <strong id="metaUrl">-</strong>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="editor-header">
+            <h2>分析与二创编辑器</h2>
+            <div class="editor-actions">
+              <button class="secondary-btn" id="videoBtn" type="button">下载视频</button>
+              <button class="secondary-btn" id="audioBtn" type="button">下载音频</button>
+              <button class="primary-btn" id="aiBtn" type="button">AI 自动生成</button>
+              <button class="secondary-btn" id="clearBtn" type="button">清空</button>
+            </div>
+          </div>
+
+          <div class="progress">
+            <div class="progress-meta">
+              <span id="jobStage">Idle</span>
+              <span id="jobPercent">0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="status-line" id="jobStatus">等待开始。</div>
+          </div>
+
+          <div class="download-panel">
+            <div class="download-item">
+              <span>视频文件</span>
+              <a class="secondary-btn hidden" id="videoLink" href="#" download>下载视频</a>
+              <span class="status-line" id="videoPath">-</span>
+            </div>
+            <div class="download-item">
+              <span>音频文件</span>
+              <a class="secondary-btn hidden" id="audioLink" href="#" download>下载音频</a>
+              <span class="status-line" id="audioPath">-</span>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <label for="fieldSummary">1. 黄金总结 (Summary)</label>
+            <textarea id="fieldSummary" placeholder="1.\n2.\n3."></textarea>
+
+            <label for="fieldHooks">2. 钩子 (Hooks)</label>
+            <textarea id="fieldHooks" placeholder="1.\n2."></textarea>
+
+            <label for="fieldEmotion">3. 情绪价值 (Emotion)</label>
+            <input id="fieldEmotion" placeholder="焦虑 / 爽感 / 好奇 / 共鸣 / 愤怒 / 治愈" />
+
+            <label for="fieldScore">4. 翻拍推荐指数 (Score)</label>
+            <input id="fieldScore" type="number" min="0" max="100" placeholder="0-100" />
+
+            <label for="fieldTags">5. 标签 (Tags)</label>
+            <input id="fieldTags" placeholder="标签1, 标签2, 标签3" />
+
+            <label for="fieldAction">6. 二创实操 SOP (Action Plan)</label>
+            <textarea id="fieldAction" placeholder="1.\n2.\n3."></textarea>
+          </div>
+
+          <div class="save-row">
+            <button class="primary-btn" id="saveBtn" type="button">保存到 Notion 数据库</button>
+            <div class="status-line" id="saveStatus"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const shareInput = document.getElementById("shareInput");
+      const parseBtn = document.getElementById("parseBtn");
+      const parseStatus = document.getElementById("parseStatus");
+      const workbench = document.getElementById("workbench");
+      const metaPlatform = document.getElementById("metaPlatform");
+      const metaVideoId = document.getElementById("metaVideoId");
+      const metaUrl = document.getElementById("metaUrl");
+
+      const videoBtn = document.getElementById("videoBtn");
+      const audioBtn = document.getElementById("audioBtn");
+      const aiBtn = document.getElementById("aiBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const saveBtn = document.getElementById("saveBtn");
+      const jobStage = document.getElementById("jobStage");
+      const jobPercent = document.getElementById("jobPercent");
+      const progressFill = document.getElementById("progressFill");
+      const jobStatus = document.getElementById("jobStatus");
+      const saveStatus = document.getElementById("saveStatus");
+      const videoLink = document.getElementById("videoLink");
+      const audioLink = document.getElementById("audioLink");
+      const videoPath = document.getElementById("videoPath");
+      const audioPath = document.getElementById("audioPath");
+
+      const fieldSummary = document.getElementById("fieldSummary");
+      const fieldHooks = document.getElementById("fieldHooks");
+      const fieldEmotion = document.getElementById("fieldEmotion");
+      const fieldScore = document.getElementById("fieldScore");
+      const fieldTags = document.getElementById("fieldTags");
+      const fieldAction = document.getElementById("fieldAction");
+
+      const urlRegex = /(https?:\/\/[^\s]+)/gi;
+      const apiBase = window.location.protocol === "file:" ? "http://127.0.0.1:8000" : "";
+
+      let currentUrl = "";
+      let currentPlatform = "";
+      let currentVideoId = "";
+      let jobId = null;
+      let jobMode = null;
+      let pollTimer = null;
+      let isBusy = false;
+
+      const stageLabels = {
+        prepare: "准备",
+        downloader: "下载",
+        transcriber: "转写",
+        analyst: "分析",
+        notion_writer: "写入",
+        save: "写入",
+        done: "完成",
+        error: "失败",
+      };
+
+      const normalizeUrl = (url) => {
+        if (!url) return "";
+        return url.replace(/[)\],.!?]+$/g, "");
+      };
+
+      const detectPlatform = (url = "") => {
+        const lower = url.toLowerCase();
+        if (lower.includes("douyin.com")) return "抖音";
+        if (lower.includes("xiaohongshu.com") || lower.includes("xhslink.com") || lower.includes("xhs.com")) {
+          return "小红书";
+        }
+        return "未知";
+      };
+
+	      const extractVideoId = (text, url) => {
+	        const directDouyinMatch = text.match(/douyin-(\d+)/i);
+	        if (directDouyinMatch) return directDouyinMatch[1];
+	        const directXhsMatch = text.match(/xhs-([0-9a-f]{10,})/i);
+	        if (directXhsMatch) return directXhsMatch[1];
+	        const urlMatch =
+	          (url && url.match(/video\/(\d+)/i)) ||
+	          (url && url.match(/modal_id=(\d+)/i)) ||
+	          (url && url.match(/item_id=(\d+)/i)) ||
+	          (url && url.match(/aweme_id=(\d+)/i)) ||
+	          (url && url.match(/discovery\/item\/([0-9a-f]{10,})/i)) ||
+	          (url && url.match(/explore\/([0-9a-f]{10,})/i)) ||
+	          (url && url.match(/\/(\d{10,})/));
+	        if (urlMatch) return urlMatch[1];
+	        const textDigits = text.match(/(\d{10,})/);
+	        return textDigits ? textDigits[1] : "";
+	      };
+
+      const pickUrl = (urls) => {
+        if (!urls.length) return "";
+        const preferred = urls.find((url) => /douyin\.com|xiaohongshu\.com|xhslink\.com|xhs\.com/i.test(url));
+        return preferred || urls[0];
+      };
+
+      const parseInput = () => {
+        const text = shareInput.value || "";
+        const urls = Array.from(text.matchAll(urlRegex)).map((match) => normalizeUrl(match[0]));
+        const chosenUrl = pickUrl(urls);
+        if (!chosenUrl) {
+          parseStatus.textContent = "未识别到链接，请粘贴完整分享文案。";
+          workbench.classList.add("hidden");
+          return;
+        }
+        currentUrl = chosenUrl;
+        currentPlatform = detectPlatform(chosenUrl);
+        currentVideoId = extractVideoId(text, chosenUrl);
+
+        metaUrl.textContent = currentUrl;
+        metaPlatform.textContent = currentPlatform || "-";
+        metaVideoId.textContent = currentVideoId || "-";
+        parseStatus.textContent = "解析完成，开始编辑或点 AI 自动生成。";
+        workbench.classList.remove("hidden");
+        resetDownloads();
+      };
+
+      const setProgress = (percent, stage, message) => {
+        const normalized = Math.max(0, Math.min(100, Number(percent) || 0));
+        progressFill.style.width = `${normalized}%`;
+        jobPercent.textContent = `${normalized}%`;
+        jobStage.textContent = stage || "Idle";
+        if (message) {
+          jobStatus.textContent = message;
+        }
+      };
+
+      const stopPolling = () => {
+        if (pollTimer) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+        }
+      };
+
+      const resetDownloads = () => {
+        videoPath.textContent = "-";
+        audioPath.textContent = "-";
+        videoLink.classList.add("hidden");
+        audioLink.classList.add("hidden");
+        videoLink.removeAttribute("href");
+        audioLink.removeAttribute("href");
+      };
+
+      const normalizeText = (value) => {
+        if (value === null || value === undefined) return "";
+        if (Array.isArray(value)) {
+          return value.filter(Boolean).join("\n");
+        }
+        if (typeof value === "object") {
+          return JSON.stringify(value, null, 2);
+        }
+        return String(value);
+      };
+
+      const pollStatus = async () => {
+        if (!jobId) return;
+        try {
+          const resp = await fetch(`${apiBase}/api/status?job_id=${jobId}`);
+          if (!resp.ok) {
+            throw new Error(`status ${resp.status}`);
+          }
+          const data = await resp.json();
+          const stageLabel = stageLabels[data.stage] || data.stage || "Running";
+          setProgress(data.percent, stageLabel, data.message || data.status);
+          if (data.status === "done") {
+            stopPolling();
+            isBusy = false;
+            if (jobMode === "analyze") {
+              const analysis = (data.result && data.result.analysis) || {};
+              fieldSummary.value = normalizeText(analysis.summary);
+              fieldHooks.value = normalizeText(analysis.hooks);
+              fieldEmotion.value = normalizeText(analysis.emotion);
+              fieldScore.value = analysis.score !== undefined && analysis.score !== null ? String(analysis.score) : "";
+              if (Array.isArray(analysis.tags)) {
+                fieldTags.value = analysis.tags.join(", ");
+              } else {
+                fieldTags.value = normalizeText(analysis.tags);
+              }
+              fieldAction.value = normalizeText(analysis.action_plan);
+              saveStatus.textContent = "AI 分析完成，可手动调整后保存。";
+            } else if (jobMode === "save") {
+              const pageId = data.result && data.result.notion_page_id;
+              saveStatus.textContent = pageId ? `已保存到 Notion：${pageId}` : "已保存到 Notion。";
+            } else if (jobMode === "video") {
+              const videoFile = (data.result && data.result.video_path) || "";
+              videoPath.textContent = videoFile || "-";
+              if (videoFile) {
+                videoLink.href = `${apiBase}/api/video/file?job_id=${jobId}`;
+                videoLink.classList.remove("hidden");
+              }
+              jobStatus.textContent = videoFile ? "视频下载完成，可点击下载。" : "视频下载完成。";
+            } else if (jobMode === "audio") {
+              const audioFile = (data.result && data.result.audio_path) || "";
+              audioPath.textContent = audioFile || "-";
+              if (audioFile) {
+                audioLink.href = `${apiBase}/api/audio/file?job_id=${jobId}`;
+                audioLink.classList.remove("hidden");
+              }
+              jobStatus.textContent = audioFile ? "音频下载完成，可点击下载。" : "音频下载完成。";
+            }
+          }
+          if (data.status === "error") {
+            stopPolling();
+            isBusy = false;
+            jobStatus.textContent = data.message || "执行失败。";
+          }
+        } catch (err) {
+          stopPolling();
+          isBusy = false;
+          jobStatus.textContent = "无法连接服务，请确认已启动服务。";
+        }
+      };
+
+      const startJob = async (mode, endpoint, payload) => {
+        if (!currentUrl) {
+          parseStatus.textContent = "请先解析链接。";
+          return;
+        }
+        if (isBusy) return;
+        isBusy = true;
+        jobMode = mode;
+        setProgress(0, "Queued", "启动中...");
+        jobStatus.textContent = "启动中...";
+        try {
+          const resp = await fetch(`${apiBase}${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!resp.ok) {
+            throw new Error(`status ${resp.status}`);
+          }
+          const data = await resp.json();
+          jobId = data.job_id;
+          pollStatus();
+          pollTimer = setInterval(pollStatus, 1500);
+        } catch (err) {
+          isBusy = false;
+          jobStatus.textContent = "服务未启动，请先运行 python -m src.server。";
+        }
+      };
+
+      const runAnalyze = () => {
+        saveStatus.textContent = "";
+        startJob("analyze", "/api/analyze", { url: currentUrl });
+      };
+
+      const runSave = () => {
+        const scoreValue = fieldScore.value.trim();
+        const parsedScore = scoreValue ? Number(scoreValue) : null;
+        const tags = fieldTags.value
+          .split(/[,\n，]/)
+          .map((tag) => tag.trim())
+          .filter(Boolean);
+        const analysis = {
+          summary: fieldSummary.value.trim(),
+          hooks: fieldHooks.value.trim(),
+          emotion: fieldEmotion.value.trim(),
+          action_plan: fieldAction.value.trim(),
+          tags,
+        };
+        if (Number.isFinite(parsedScore)) {
+          analysis.score = parsedScore;
+        }
+        saveStatus.textContent = "";
+        startJob("save", "/api/save", { url: currentUrl, analysis });
+      };
+
+      const runVideoDownload = () => {
+        saveStatus.textContent = "";
+        resetDownloads();
+        startJob("video", "/api/video", { url: currentUrl });
+      };
+
+      const runAudioDownload = () => {
+        saveStatus.textContent = "";
+        resetDownloads();
+        startJob("audio", "/api/audio", { url: currentUrl });
+      };
+
+      const clearForm = () => {
+        fieldSummary.value = "";
+        fieldHooks.value = "";
+        fieldEmotion.value = "";
+        fieldScore.value = "";
+        fieldTags.value = "";
+        fieldAction.value = "";
+        saveStatus.textContent = "已清空内容。";
+      };
+
+      parseBtn.addEventListener("click", parseInput);
+      videoBtn.addEventListener("click", runVideoDownload);
+      audioBtn.addEventListener("click", runAudioDownload);
+      aiBtn.addEventListener("click", runAnalyze);
+      saveBtn.addEventListener("click", runSave);
+      clearBtn.addEventListener("click", clearForm);
+    </script>
+  </body>
+</html>
