@@ -28,6 +28,7 @@ from .utils import extract_douyin_id, is_direct_video_url, normalize_video_url, 
 
 
 ProgressFn = Callable[[str, int, str], None]
+os.environ.setdefault("PW_TEST_SCREENSHOT_NO_FONTS_READY", "1")
 
 MOBILE_SAFARI_USER_AGENT = (
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
@@ -35,9 +36,33 @@ MOBILE_SAFARI_USER_AGENT = (
     "Mobile/15E148 Safari/604.1"
 )
 
+INTERACTION_COUNT_KEYS = ("like_count", "collect_count", "comment_count", "share_count")
+DOUYIN_TRUSTED_STAT_SOURCES = {
+    "like_count": "aweme_detail.statistics.digg_count",
+    "collect_count": "aweme_detail.statistics.collect_count",
+    "comment_count": "aweme_detail.statistics.comment_count",
+    "share_count": "aweme_detail.statistics.share_count",
+}
+DOUYIN_VISIBLE_TEXT_STAT_SOURCES = {
+    "like_count": "douyin_webpage_visible_text.like_count",
+    "comment_count": "douyin_webpage_visible_text.comment_count",
+    "collect_count": "douyin_webpage_visible_text.collect_count",
+    "share_count": "douyin_webpage_visible_text.share_count",
+}
+DOUYIN_STATS_NOTICE = (
+    "作品级互动数据未完整取到；仅写入 aweme_detail.statistics 中明确命中的字段，"
+    "缺失字段请使用作品截图 OCR 复核，或更新 cookie/抖音接口。"
+)
+
 
 class _SkipPlaywright(Exception):
     pass
+
+
+PLATFORM_COOKIE_DOMAINS = {
+    "douyin": ("douyin.com", "iesdouyin.com"),
+    "xiaohongshu": ("xiaohongshu.com", "xhscdn.com"),
+}
 
 
 def _report_progress(progress: Optional[ProgressFn], percent: int, message: str) -> None:
@@ -52,6 +77,120 @@ def _report_progress(progress: Optional[ProgressFn], percent: int, message: str)
 def _scale_percent(local_ratio: float, start: int, end: int) -> int:
     bounded = max(0.0, min(1.0, local_ratio))
     return start + int((end - start) * bounded)
+
+
+def _platform_cookie_path(platform_key: str, settings: Settings) -> str:
+    if platform_key == "douyin":
+        return settings.douyin_cookies_json_path
+    if platform_key == "xiaohongshu":
+        return settings.xiaohongshu_cookies_json_path
+    return ""
+
+
+def _domain_matches(cookie_domain: str, expected_domains: tuple[str, ...]) -> bool:
+    normalized = cookie_domain.lstrip(".").lower()
+    return any(normalized == domain or normalized.endswith(f".{domain}") for domain in expected_domains)
+
+
+def _resolve_cookie_json_path(cookie_path: str) -> str:
+    """Resolve cookie json path from env.
+
+    Absolute paths are used as-is. Relative paths are resolved against the
+    current working directory first, then against the content-flow project root
+    so service runs from another cwd still read content-flow/private/*.json.
+    """
+    expanded_path = os.path.expanduser(cookie_path)
+    if os.path.isabs(expanded_path):
+        return expanded_path
+
+    cwd_path = os.path.abspath(expanded_path)
+    if os.path.isfile(cwd_path):
+        return cwd_path
+
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    return os.path.join(project_root, expanded_path)
+
+
+def load_platform_cookie_items(platform_key: str, settings: Settings) -> list[dict]:
+    cookie_path = _platform_cookie_path(platform_key, settings)
+    if not cookie_path:
+        return []
+    resolved_path = _resolve_cookie_json_path(cookie_path)
+    if not os.path.isfile(resolved_path):
+        return []
+    try:
+        with open(resolved_path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return []
+
+    if isinstance(data, dict):
+        raw_items = data.get("cookies") or []
+    elif isinstance(data, list):
+        raw_items = data
+    else:
+        raw_items = []
+
+    expected_domains = PLATFORM_COOKIE_DOMAINS.get(platform_key, ())
+    items: list[dict] = []
+    for item in raw_items:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name") or "").strip()
+        value = str(item.get("value") or "")
+        domain = str(item.get("domain") or item.get("host") or "").strip()
+        if not name or not domain or not _domain_matches(domain, expected_domains):
+            continue
+        normalized = dict(item)
+        normalized["name"] = name
+        normalized["value"] = value
+        normalized["domain"] = domain
+        items.append(normalized)
+    return items
+
+
+def load_platform_cookie_dict(platform_key: str, settings: Settings) -> dict:
+    return {
+        str(item["name"]): str(item.get("value") or "")
+        for item in load_platform_cookie_items(platform_key, settings)
+        if item.get("name")
+    }
+
+
+def add_platform_cookies_to_context(context, platform_key: str, settings: Settings) -> None:
+    cookies = []
+    for item in load_platform_cookie_items(platform_key, settings):
+        cookie = {
+            "name": str(item["name"]),
+            "value": str(item.get("value") or ""),
+            "domain": str(item["domain"]),
+            "path": str(item.get("path") or "/"),
+            "httpOnly": bool(item.get("httpOnly", False)),
+            "secure": bool(item.get("secure", True)),
+        }
+        expires = item.get("expirationDate", item.get("expires"))
+        if isinstance(expires, (int, float)) and expires > 0:
+            cookie["expires"] = float(expires)
+        same_site = str(item.get("sameSite") or "").lower()
+        if same_site in ("strict",):
+            cookie["sameSite"] = "Strict"
+        elif same_site in ("lax",):
+            cookie["sameSite"] = "Lax"
+        elif same_site in ("none", "no_restriction", "no-restriction"):
+            cookie["sameSite"] = "None"
+        cookies.append(cookie)
+    if cookies:
+        try:
+            context.add_cookies(cookies)
+        except Exception:
+            return
+
+
+def playwright_proxy(settings: Settings) -> Optional[dict]:
+    server = (settings.playwright_proxy_server or "").strip()
+    if not server:
+        return None
+    return {"server": server}
 
 
 @dataclass(frozen=True)
@@ -335,6 +474,11 @@ def _extract_xhs_note_from_html(html: str) -> Optional[dict]:
         "image_urls": _extract_xhs_image_urls(note),
         "video_url": _extract_xhs_video_url(note),
         "like_count": _parse_xhs_count(interact.get("likedCount") or interact.get("likeCount")),
+        "collect_count": _parse_xhs_count(
+            interact.get("collectedCount")
+            or interact.get("collectCount")
+            or interact.get("collect_count")
+        ),
         "comment_count": _parse_xhs_count(interact.get("commentCount")),
         "share_count": _parse_xhs_count(interact.get("shareCount")),
     }
@@ -418,23 +562,6 @@ def find_video_url_in_render_data(payload: object) -> Optional[str]:
     elif isinstance(payload, list):
         for item in payload:
             found = find_video_url_in_render_data(item)
-            if found:
-                return found
-    return None
-
-
-def find_stats_in_render_data(payload: object) -> Optional[dict]:
-    if isinstance(payload, dict):
-        stats = payload.get("statistics") or payload.get("statistic")
-        if isinstance(stats, dict):
-            return stats
-        for value in payload.values():
-            found = find_stats_in_render_data(value)
-            if found:
-                return found
-    elif isinstance(payload, list):
-        for item in payload:
-            found = find_stats_in_render_data(item)
             if found:
                 return found
     return None
@@ -629,30 +756,224 @@ def select_play_url_prefer_low(video: dict, prefer_low_quality: bool) -> Optiona
     return select_play_url(video)
 
 
-def extract_stats_from_aweme(aweme: dict) -> dict:
-    stats = aweme.get("statistics") or aweme.get("statistic") or {}
-    def first_present(keys: list[str]) -> Optional[object]:
-        for key in keys:
-            if key in stats:
-                return stats[key]
-        return None
+def extract_stats_from_aweme_detail(aweme_detail: dict) -> dict:
+    if not isinstance(aweme_detail, dict):
+        return {}
+    stats = aweme_detail.get("statistics")
+    if not isinstance(stats, dict):
+        return {}
 
-    return {
-        "like_count": first_present(["digg_count", "likeCount", "like_count"]),
-        "comment_count": first_present(["comment_count", "commentCount"]),
-        "share_count": first_present(["share_count", "shareCount"]),
+    field_map = {
+        "like_count": "digg_count",
+        "collect_count": "collect_count",
+        "comment_count": "comment_count",
+        "share_count": "share_count",
     }
+    extracted: dict = {}
+    sources: dict[str, str] = {}
+    for output_key, stat_key in field_map.items():
+        if stat_key not in stats:
+            continue
+        extracted[output_key] = stats[stat_key]
+        sources[output_key] = f"aweme_detail.statistics.{stat_key}"
+    if sources:
+        extracted["stats_sources"] = sources
+    return extracted
 
 
 def merge_stats(target: dict, incoming: dict) -> dict:
+    incoming_sources = incoming.get("stats_sources")
+    if isinstance(incoming_sources, dict):
+        target_sources = target.get("stats_sources")
+        if not isinstance(target_sources, dict):
+            target_sources = {}
+            target["stats_sources"] = target_sources
+    else:
+        target_sources = {}
+
     for key, value in incoming.items():
+        if key == "stats_sources":
+            continue
+        if key in ("stats_notice", "interaction_status"):
+            if value and not target.get(key):
+                target[key] = value
+            continue
         if value is None or target.get(key) is not None:
             continue
         try:
             target[key] = int(value)
         except (TypeError, ValueError):
             target[key] = value
+        if isinstance(incoming_sources, dict) and key in incoming_sources:
+            target_sources[key] = str(incoming_sources[key])
     return target
+
+
+def sanitize_douyin_interaction_stats(stats: dict) -> dict:
+    sources = stats.get("stats_sources")
+    if not isinstance(sources, dict):
+        sources = {}
+        stats["stats_sources"] = sources
+
+    for key, trusted_source in DOUYIN_TRUSTED_STAT_SOURCES.items():
+        visible_text_source = DOUYIN_VISIBLE_TEXT_STAT_SOURCES.get(key)
+        if stats.get(key) is None:
+            continue
+        if sources.get(key) in (trusted_source, visible_text_source):
+            continue
+        else:
+            stats[key] = None
+
+    missing_keys = [key for key in DOUYIN_TRUSTED_STAT_SOURCES if stats.get(key) is None]
+    visible_text_keys = [
+        key
+        for key, source in DOUYIN_VISIBLE_TEXT_STAT_SOURCES.items()
+        if stats.get(key) is not None and sources.get(key) == source
+    ]
+    if visible_text_keys:
+        stats["interaction_status"] = "fallback_douyin_webpage_visible_text_pending_review"
+        stats["stats_notice"] = (
+            "作品级互动接口未完整取到；已从作品页截图/可见文本读取互动数，"
+            "请用截图 OCR 或人工复核。"
+        )
+        if missing_keys:
+            stats["missing_interaction_fields"] = missing_keys
+        else:
+            stats.pop("missing_interaction_fields", None)
+    elif missing_keys:
+        stats["interaction_status"] = "partial_missing_douyin_aweme_detail_statistics"
+        stats["stats_notice"] = DOUYIN_STATS_NOTICE
+        stats["missing_interaction_fields"] = missing_keys
+    else:
+        stats["interaction_status"] = "verified_douyin_aweme_detail_statistics"
+        stats.pop("stats_notice", None)
+        stats.pop("missing_interaction_fields", None)
+    return stats
+
+
+def finalize_interaction_stats(stats: dict, is_xhs: bool) -> dict:
+    for key in INTERACTION_COUNT_KEYS:
+        stats.setdefault(key, None)
+    if is_xhs:
+        missing_keys = [key for key in INTERACTION_COUNT_KEYS if stats.get(key) is None]
+        if missing_keys:
+            stats["interaction_status"] = "partial_missing_xhs_interact_info"
+            stats["missing_interaction_fields"] = missing_keys
+        else:
+            stats["interaction_status"] = "verified_xhs_interact_info"
+            stats.pop("missing_interaction_fields", None)
+        return stats
+    return sanitize_douyin_interaction_stats(stats)
+
+
+def _parse_visible_count(value: str) -> Optional[int]:
+    text = str(value or "").strip().lower()
+    if not text:
+        return None
+    multiplier = 1
+    if text.endswith("万"):
+        multiplier = 10000
+        text = text[:-1]
+    elif text.endswith("w"):
+        multiplier = 10000
+        text = text[:-1]
+    try:
+        return int(float(text) * multiplier)
+    except ValueError:
+        return None
+
+
+def _extract_visible_interaction_stats(text: str) -> dict:
+    if not text:
+        return {}
+    normalized = re.sub(r"\s+", " ", text.replace("\n", " | ")).strip()
+    pattern = re.compile(
+        r"(?P<like>\d+(?:\.\d+)?(?:万|w)?)\s*\|\s*"
+        r"(?P<comment>\d+(?:\.\d+)?(?:万|w)?)\s*\|\s*"
+        r"(?P<collect>\d+(?:\.\d+)?(?:万|w)?)\s*\|\s*"
+        r"(?P<share>\d+(?:\.\d+)?(?:万|w)?)\s*\|\s*举报"
+    )
+    match = pattern.search(normalized)
+    if not match:
+        return {}
+    parsed = {
+        "like_count": _parse_visible_count(match.group("like")),
+        "comment_count": _parse_visible_count(match.group("comment")),
+        "collect_count": _parse_visible_count(match.group("collect")),
+        "share_count": _parse_visible_count(match.group("share")),
+    }
+    extracted = {key: value for key, value in parsed.items() if value is not None}
+    if extracted:
+        extracted["stats_sources"] = {
+            key: DOUYIN_VISIBLE_TEXT_STAT_SOURCES[key]
+            for key in extracted
+            if key in DOUYIN_VISIBLE_TEXT_STAT_SOURCES
+        }
+        extracted["visible_interaction_text"] = match.group(0)
+    return extracted
+
+
+def capture_interaction_screenshot(page, url: str, stats: dict, video_id: str | None = None) -> Optional[str]:
+    if not url:
+        return None
+    try:
+        screenshot_url = url
+        if video_id:
+            screenshot_url = f"https://www.douyin.com/video/{video_id}"
+        paths = ensure_media_paths(screenshot_url)
+        screenshot_path = paths.interaction_screenshot_path
+        screenshot_page = page
+        close_context = None
+        try:
+            browser = page.context.browser
+            if browser is not None:
+                desktop_context = browser.new_context(
+                    viewport={"width": 1280, "height": 900},
+                    user_agent=(
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+                    ),
+                )
+                cookies = page.context.cookies()
+                if cookies:
+                    desktop_context.add_cookies(cookies)
+                close_context = desktop_context
+                screenshot_page = desktop_context.new_page()
+            if screenshot_url and screenshot_url != screenshot_page.url:
+                screenshot_page.goto(screenshot_url, wait_until="domcontentloaded", timeout=30000)
+                screenshot_page.wait_for_timeout(7000)
+            try:
+                body_text = screenshot_page.locator("body").inner_text(timeout=3000)
+                visible_stats = _extract_visible_interaction_stats(body_text)
+                if visible_stats:
+                    merge_stats(stats, visible_stats)
+            except Exception:
+                pass
+            screenshot_page.add_style_tag(
+                content=(
+                    "*{font-family:Arial,Helvetica,sans-serif!important;"
+                    "transition:none!important;animation:none!important}"
+                )
+            )
+            screenshot_page.wait_for_timeout(800)
+            screenshot_page.evaluate("() => window.scrollTo(0, 0)")
+            screenshot_page.wait_for_timeout(300)
+        except Exception:
+            pass
+        screenshot_page.screenshot(path=screenshot_path, full_page=False, timeout=15000, animations="disabled")
+        if close_context is not None:
+            close_context.close()
+    except Exception as exc:
+        stats.setdefault("interaction_screenshot_status", "capture_failed")
+        stats.setdefault("interaction_screenshot_error", str(exc))
+        return None
+    if not os.path.isfile(screenshot_path) or os.path.getsize(screenshot_path) <= 0:
+        stats.setdefault("interaction_screenshot_status", "capture_failed")
+        stats.setdefault("interaction_screenshot_error", "empty_screenshot_file")
+        return None
+    stats["interaction_screenshot_path"] = screenshot_path
+    stats["interaction_screenshot_status"] = "captured_for_ocr"
+    return screenshot_path
 
 
 def extract_top_comments(payload: dict, limit: int) -> list[dict]:
@@ -740,17 +1061,27 @@ def fetch_iesdouyin_item(
     return select_play_url_prefer_low(items[0].get("video", {}), prefer_low_quality)
 
 
-def fetch_iesdouyin_stats(video_id: str, headers: dict, ms_token: str | None) -> dict:
+def fetch_douyin_aweme_detail_stats(
+    video_id: str,
+    headers: dict,
+    cookies: dict,
+    ms_token: str | None,
+) -> dict:
     if not video_id:
         return {}
-    params = {"item_ids": video_id}
+    params = {
+        "aweme_id": video_id,
+        "aid": "6383",
+        "device_platform": "webapp",
+    }
     if ms_token:
         params["msToken"] = ms_token
     try:
         response = requests.get(
-            "https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/",
+            "https://www.douyin.com/aweme/v1/web/aweme/detail/",
             params=params,
             headers=headers,
+            cookies=cookies,
             timeout=10,
         )
         response.raise_for_status()
@@ -758,10 +1089,10 @@ def fetch_iesdouyin_stats(video_id: str, headers: dict, ms_token: str | None) ->
     except (requests.RequestException, ValueError):
         return {}
 
-    items = payload.get("item_list", [])
-    if not items:
+    aweme_detail = payload.get("aweme_detail")
+    if not isinstance(aweme_detail, dict):
         return {}
-    return extract_stats_from_aweme(items[0])
+    return extract_stats_from_aweme_detail(aweme_detail)
 
 
 def fetch_aweme_post(url: str, headers: dict, cookies: dict, prefer_low_quality: bool) -> Optional[str]:
@@ -833,7 +1164,8 @@ def refresh_stats_only(
     ms_token = ""
     page_url = ""
     headers: dict = {}
-    cookies: dict = {}
+    platform_key = "xiaohongshu" if is_xhs else "douyin"
+    cookies: dict = load_platform_cookie_dict(platform_key, settings)
     debug_playwright = settings.playwright_debug
 
     _report_progress(progress, 18, "刷新互动数据")
@@ -842,10 +1174,10 @@ def refresh_stats_only(
             "User-Agent": MOBILE_SAFARI_USER_AGENT,
             "Referer": "https://www.xiaohongshu.com/",
         }
-        html = _fetch_html(url, headers, {})
+        html = _fetch_html(url, headers, cookies)
         note = _extract_xhs_note_from_html(html) if html else None
         if note:
-            for key in ("like_count", "comment_count", "share_count"):
+            for key in INTERACTION_COUNT_KEYS:
                 if note.get(key) is not None:
                     stats[key] = note[key]
             note_id = note.get("note_id")
@@ -856,7 +1188,7 @@ def refresh_stats_only(
                 candidate = image_urls[0]
                 if isinstance(candidate, str) and candidate.strip():
                     stats["cover_url"] = candidate.strip()
-        return stats
+        return finalize_interaction_stats(stats, is_xhs=True)
 
     try:
         with sync_playwright() as p:
@@ -877,6 +1209,7 @@ def refresh_stats_only(
                         profile_dir,
                         headless=settings.playwright_headless,
                         channel="chrome",
+                        proxy=playwright_proxy(settings),
                         **device_settings,
                     )
                 except Exception:
@@ -885,8 +1218,12 @@ def refresh_stats_only(
                 context = None
 
             if context is None:
-                browser = p.webkit.launch(headless=settings.playwright_headless)
+                browser = p.webkit.launch(
+                    headless=settings.playwright_headless,
+                    proxy=playwright_proxy(settings),
+                )
                 context = browser.new_context(**device_settings)
+            add_platform_cookies_to_context(context, platform_key, settings)
             page = context.new_page()
 
             def handle_response(response):
@@ -896,7 +1233,7 @@ def refresh_stats_only(
                     try:
                         payload = response.json()
                         aweme_detail = payload.get("aweme_detail", {})
-                        merge_stats(stats, extract_stats_from_aweme(aweme_detail))
+                        merge_stats(stats, extract_stats_from_aweme_detail(aweme_detail))
                         if not cover_url:
                             cover_candidate = extract_cover_url_from_aweme(aweme_detail)
                             if cover_candidate:
@@ -908,7 +1245,6 @@ def refresh_stats_only(
                         payload = response.json()
                         aweme_list = payload.get("aweme_list", [])
                         if aweme_list:
-                            merge_stats(stats, extract_stats_from_aweme(aweme_list[0]))
                             if not cover_url:
                                 cover_candidate = extract_cover_url_from_aweme(aweme_list[0])
                                 if cover_candidate:
@@ -946,19 +1282,8 @@ def refresh_stats_only(
 
             missing_counts = any(
                 stats.get(key) is None
-                for key in ("like_count", "comment_count", "share_count")
+                for key in INTERACTION_COUNT_KEYS
             )
-            if missing_counts:
-                try:
-                    html = page.content()
-                except Exception:
-                    html = ""
-                if html:
-                    render_data = extract_render_data(html)
-                    if render_data:
-                        render_stats = find_stats_in_render_data(render_data)
-                        if render_stats:
-                            merge_stats(stats, extract_stats_from_aweme({"statistics": render_stats}))
 
             try:
                 ms_token = page.evaluate(
@@ -982,17 +1307,23 @@ def refresh_stats_only(
 
             headers = {
                 "User-Agent": user_agent,
-                "Referer": page_url or "https://www.iesdouyin.com/",
+                "Referer": page_url or "https://www.douyin.com/",
             }
-            cookies = {cookie["name"]: cookie["value"] for cookie in context.cookies()}
+            cookies = {
+                **cookies,
+                **{cookie["name"]: cookie["value"] for cookie in context.cookies()},
+            }
             missing_counts = any(
                 stats.get(key) is None
-                for key in ("like_count", "comment_count", "share_count")
+                for key in INTERACTION_COUNT_KEYS
             )
             if missing_counts:
                 _kind, item_id = extract_douyin_id(page_url or url)
                 if item_id:
-                    merge_stats(stats, fetch_iesdouyin_stats(item_id, headers, ms_token))
+                    merge_stats(
+                        stats,
+                        fetch_douyin_aweme_detail_stats(item_id, headers, cookies, ms_token),
+                    )
 
             if settings.top_comments_limit > 0 and not top_comments:
                 _kind, item_id = extract_douyin_id(page_url or url)
@@ -1011,6 +1342,10 @@ def refresh_stats_only(
                             settings.top_comments_limit,
                         )
 
+            if not is_xhs and any(stats.get(key) is None for key in INTERACTION_COUNT_KEYS):
+                _kind, screenshot_item_id = extract_douyin_id(page_url or url)
+                capture_interaction_screenshot(page, page_url or url, stats, screenshot_item_id)
+
             context.close()
             if browser:
                 browser.close()
@@ -1022,7 +1357,7 @@ def refresh_stats_only(
         stats["cover_url"] = cover_url
     if top_comments:
         stats["top_comments"] = top_comments
-    return stats
+    return finalize_interaction_stats(stats, is_xhs=False)
 
 
 def chrome_profile_dir(settings: Settings) -> Optional[str]:
@@ -1331,16 +1666,25 @@ def resolve_media(
     progress: Optional[ProgressFn] = None,
 ) -> MediaResult:
     paths = ensure_media_paths(url)
+    is_xhs = _is_xhs_url(url)
     stats: dict = {}
     cached_analysis = load_json(paths.analysis_path)
     if isinstance(cached_analysis, dict):
         stats = {
             "like_count": cached_analysis.get("like_count"),
+            "collect_count": cached_analysis.get("collect_count"),
             "comment_count": cached_analysis.get("comment_count"),
             "share_count": cached_analysis.get("share_count"),
             "top_comments": cached_analysis.get("top_comments"),
             "video_id": cached_analysis.get("video_id"),
             "cover_url": cached_analysis.get("cover_url"),
+            "stats_sources": cached_analysis.get("stats_sources"),
+            "interaction_status": cached_analysis.get("interaction_status"),
+            "stats_notice": cached_analysis.get("stats_notice"),
+            "missing_interaction_fields": cached_analysis.get("missing_interaction_fields"),
+            "interaction_screenshot_path": cached_analysis.get("interaction_screenshot_path"),
+            "interaction_screenshot_status": cached_analysis.get("interaction_screenshot_status"),
+            "interaction_screenshot_error": cached_analysis.get("interaction_screenshot_error"),
         }
     if "video_id" not in stats or not stats.get("video_id"):
         stats["video_id"] = paths.video_id
@@ -1359,7 +1703,7 @@ def resolve_media(
             _report_progress(progress, 45, "已存在音频")
             missing_counts = any(
                 stats.get(key) is None
-                for key in ("like_count", "comment_count", "share_count")
+                for key in INTERACTION_COUNT_KEYS
             )
             missing_comments = settings.top_comments_limit > 0 and not stats.get("top_comments")
             if missing_counts or missing_comments:
@@ -1367,6 +1711,7 @@ def resolve_media(
                 merge_stats(stats, refreshed)
                 if refreshed.get("top_comments"):
                     stats["top_comments"] = refreshed.get("top_comments")
+            finalize_interaction_stats(stats, is_xhs=is_xhs)
             return MediaResult(
                 media_type="video",
                 video_path=paths.video_path,
@@ -1383,7 +1728,7 @@ def resolve_media(
             _report_progress(progress, 45, "音频提取完成")
             missing_counts = any(
                 stats.get(key) is None
-                for key in ("like_count", "comment_count", "share_count")
+                for key in INTERACTION_COUNT_KEYS
             )
             missing_comments = settings.top_comments_limit > 0 and not stats.get("top_comments")
             if missing_counts or missing_comments:
@@ -1391,6 +1736,7 @@ def resolve_media(
                 merge_stats(stats, refreshed)
                 if refreshed.get("top_comments"):
                     stats["top_comments"] = refreshed.get("top_comments")
+            finalize_interaction_stats(stats, is_xhs=is_xhs)
             return MediaResult(
                 media_type="video",
                 video_path=paths.video_path,
@@ -1401,6 +1747,7 @@ def resolve_media(
             )
         print("音频提取失败，尝试直接用视频文件转写。", flush=True)
         _report_progress(progress, 45, "音频提取失败")
+        finalize_interaction_stats(stats, is_xhs=is_xhs)
         return MediaResult(
             media_type="video",
             video_path=paths.video_path,
@@ -1413,6 +1760,14 @@ def resolve_media(
     existing_images = list_image_files(paths)
     if existing_images:
         _report_progress(progress, 40, "已存在图片，跳过下载")
+        missing_counts = any(stats.get(key) is None for key in INTERACTION_COUNT_KEYS)
+        missing_comments = settings.top_comments_limit > 0 and not stats.get("top_comments")
+        if missing_counts or missing_comments:
+            refreshed = refresh_stats_only(url, settings, progress=progress)
+            merge_stats(stats, refreshed)
+            if refreshed.get("top_comments"):
+                stats["top_comments"] = refreshed.get("top_comments")
+        finalize_interaction_stats(stats, is_xhs=is_xhs)
         is_frames = any(os.path.basename(os.path.dirname(path)) == "frames" for path in existing_images)
         return MediaResult(
             media_type="animated" if is_frames else "image",
@@ -1441,14 +1796,15 @@ def download_video(
     video_url = None
     video_kind = ""
     playwm_url = None
-    stats: dict = {"like_count": None, "comment_count": None, "share_count": None}
+    stats: dict = {key: None for key in INTERACTION_COUNT_KEYS}
     stats["video_id"] = paths.video_id
     top_comments: list[dict] = []
     image_urls: list[str] = []
     cover_url: str = ""
     caption = ""
     headers: dict = {}
-    cookies: dict = {}
+    platform_key = "xiaohongshu" if is_xhs else "douyin"
+    cookies: dict = load_platform_cookie_dict(platform_key, settings)
     page_title = ""
     page_url = ""
     ms_token = ""
@@ -1460,7 +1816,7 @@ def download_video(
             "User-Agent": MOBILE_SAFARI_USER_AGENT,
             "Referer": "https://www.xiaohongshu.com/",
         }
-        direct_html = _fetch_html(url, xhs_headers, {})
+        direct_html = _fetch_html(url, xhs_headers, cookies)
         xhs_note = _extract_xhs_note_from_html(direct_html) if direct_html else None
         if xhs_note:
             if xhs_note.get("caption"):
@@ -1478,7 +1834,7 @@ def download_video(
                         video_kind = "m3u8"
                     else:
                         video_kind = "mp4"
-            for key in ("like_count", "comment_count", "share_count"):
+            for key in INTERACTION_COUNT_KEYS:
                 if xhs_note.get(key) is not None:
                     stats[key] = xhs_note[key]
             note_id = xhs_note.get("note_id")
@@ -1505,6 +1861,7 @@ def download_video(
                         profile_dir,
                         headless=headless,
                         channel="chrome",
+                        proxy=playwright_proxy(settings),
                         **device_settings,
                     )
                 except Exception:
@@ -1513,8 +1870,12 @@ def download_video(
                 context = None
 
             if context is None:
-                browser = p.webkit.launch(headless=headless)
+                browser = p.webkit.launch(
+                    headless=headless,
+                    proxy=playwright_proxy(settings),
+                )
                 context = browser.new_context(**device_settings)
+            add_platform_cookies_to_context(context, platform_key, settings)
             page = context.new_page()
             if debug_playwright:
                 def log_request(request):
@@ -1548,7 +1909,7 @@ def download_video(
                         if play_list:
                             video_url = play_list[0]
                         aweme_detail = payload.get("aweme_detail", {})
-                        merge_stats(stats, extract_stats_from_aweme(aweme_detail))
+                        merge_stats(stats, extract_stats_from_aweme_detail(aweme_detail))
                         if not cover_url:
                             cover_candidate = extract_cover_url_from_aweme(aweme_detail)
                             if cover_candidate:
@@ -1569,7 +1930,6 @@ def download_video(
                             video_url = play_url
                         aweme_list = payload.get("aweme_list", [])
                         if aweme_list:
-                            merge_stats(stats, extract_stats_from_aweme(aweme_list[0]))
                             if not cover_url:
                                 cover_candidate = extract_cover_url_from_aweme(aweme_list[0])
                                 if cover_candidate:
@@ -1659,7 +2019,10 @@ def download_video(
             is_current_xhs = _is_xhs_url(xhs_base_url)
             if is_current_xhs and not cookies:
                 try:
-                    cookies = {cookie["name"]: cookie["value"] for cookie in context.cookies()}
+                    cookies = {
+                        **cookies,
+                        **{cookie["name"]: cookie["value"] for cookie in context.cookies()},
+                    }
                 except Exception:
                     cookies = {}
 
@@ -1683,7 +2046,7 @@ def download_video(
                                 xhs_note[key] = fallback_note[key]
                         if (not xhs_note.get("image_urls")) and fallback_note.get("image_urls"):
                             xhs_note["image_urls"] = fallback_note["image_urls"]
-                        for key in ("like_count", "comment_count", "share_count"):
+                        for key in INTERACTION_COUNT_KEYS:
                             if xhs_note.get(key) is None and fallback_note.get(key) is not None:
                                 xhs_note[key] = fallback_note[key]
             if xhs_note:
@@ -1701,7 +2064,7 @@ def download_video(
                         video_kind = "m3u8"
                     else:
                         video_kind = "mp4"
-                for key in ("like_count", "comment_count", "share_count"):
+                for key in INTERACTION_COUNT_KEYS:
                     if xhs_note.get(key) is not None:
                         stats[key] = xhs_note[key]
                 note_id = xhs_note.get("note_id")
@@ -1850,12 +2213,22 @@ def download_video(
                 elif ".mp4" in video_lower:
                     video_kind = "mp4"
 
-            default_referer = "https://www.xiaohongshu.com/" if _is_xhs_url(page_url or url) else "https://www.iesdouyin.com/"
+            default_referer = "https://www.xiaohongshu.com/" if _is_xhs_url(page_url or url) else "https://www.douyin.com/"
             headers = {
                 "User-Agent": user_agent,
                 "Referer": page_url or default_referer,
             }
-            cookies = {cookie["name"]: cookie["value"] for cookie in context.cookies()}
+            cookies = {
+                **cookies,
+                **{cookie["name"]: cookie["value"] for cookie in context.cookies()},
+            }
+            if not is_xhs and any(stats.get(key) is None for key in INTERACTION_COUNT_KEYS):
+                _kind, item_id = extract_douyin_id(page_url or url)
+                if item_id:
+                    merge_stats(
+                        stats,
+                        fetch_douyin_aweme_detail_stats(item_id, headers, cookies, ms_token),
+                    )
             if not is_xhs and settings.top_comments_limit > 0 and not top_comments:
                 _kind, item_id = extract_douyin_id(page_url or url)
                 if item_id:
@@ -1892,6 +2265,9 @@ def download_video(
                 print(f"视频地址: {summarize_url(video_url)}", flush=True)
             if debug_playwright:
                 print(f"[playwright] final video_url: {video_url}")
+            if not is_xhs and any(stats.get(key) is None for key in INTERACTION_COUNT_KEYS):
+                _kind, screenshot_item_id = extract_douyin_id(page_url or url)
+                capture_interaction_screenshot(page, page_url or url, stats, screenshot_item_id)
             context.close()
             if browser:
                 browser.close()
@@ -1901,6 +2277,7 @@ def download_video(
         print(f"下载失败: {exc}")
         print("可尝试设置 PLAYWRIGHT_HEADLESS=0 观察页面状态")
         stats["top_comments"] = top_comments
+        finalize_interaction_stats(stats, is_xhs=is_xhs)
         return MediaResult(
             media_type="unknown",
             video_path=None,
@@ -1920,6 +2297,7 @@ def download_video(
     stats["top_comments"] = top_comments
     if not stats.get("video_id"):
         stats["video_id"] = paths.video_id
+    finalize_interaction_stats(stats, is_xhs=is_xhs)
 
     if not video_url or not video_url.startswith("http"):
         if image_urls:
@@ -2078,6 +2456,7 @@ def download_video(
     stats["top_comments"] = top_comments
     if not stats.get("video_id"):
         stats["video_id"] = paths.video_id
+    finalize_interaction_stats(stats, is_xhs=is_xhs)
     cover_paths = list_image_files(paths)
     if not cover_paths and image_urls:
         cover_paths = download_images(

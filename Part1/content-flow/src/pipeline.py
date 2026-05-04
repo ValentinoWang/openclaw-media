@@ -70,11 +70,19 @@ def make_downloader_node(settings: Settings, progress: ProgressFn):
             "caption": caption,
             "platform": platform,
             "like_count": stats.get("like_count"),
+            "collect_count": stats.get("collect_count"),
             "comment_count": stats.get("comment_count"),
             "share_count": stats.get("share_count"),
             "top_comments": stats.get("top_comments") or [],
             "video_id": stats.get("video_id"),
             "cover_url": cover_url,
+            "stats_sources": stats.get("stats_sources"),
+            "interaction_status": stats.get("interaction_status"),
+            "stats_notice": stats.get("stats_notice"),
+            "missing_interaction_fields": stats.get("missing_interaction_fields"),
+            "interaction_screenshot_path": stats.get("interaction_screenshot_path"),
+            "interaction_screenshot_status": stats.get("interaction_screenshot_status"),
+            "interaction_screenshot_error": stats.get("interaction_screenshot_error"),
             "is_success": bool(video_path or image_paths or caption),
         }
 
@@ -166,12 +174,21 @@ def make_analyst_node(settings: Settings, progress: ProgressFn):
             stats_payload = {
                 "platform": state.get("platform"),
                 "like_count": state.get("like_count"),
+                "collect_count": state.get("collect_count"),
                 "comment_count": state.get("comment_count"),
                 "share_count": state.get("share_count"),
                 "top_comments": state.get("top_comments"),
                 "video_id": state.get("video_id"),
                 "caption": state.get("caption"),
                 "media_type": state.get("media_type"),
+                "cover_url": state.get("cover_url"),
+                "stats_sources": state.get("stats_sources"),
+                "interaction_status": state.get("interaction_status"),
+                "stats_notice": state.get("stats_notice"),
+                "missing_interaction_fields": state.get("missing_interaction_fields"),
+                "interaction_screenshot_path": state.get("interaction_screenshot_path"),
+                "interaction_screenshot_status": state.get("interaction_screenshot_status"),
+                "interaction_screenshot_error": state.get("interaction_screenshot_error"),
             }
             for key, value in stats_payload.items():
                 if value is None:
@@ -210,6 +227,7 @@ def make_analyst_node(settings: Settings, progress: ProgressFn):
         stats_payload = {
             "platform": state.get("platform"),
             "like_count": state.get("like_count"),
+            "collect_count": state.get("collect_count"),
             "comment_count": state.get("comment_count"),
             "share_count": state.get("share_count"),
             "top_comments": state.get("top_comments"),
@@ -217,6 +235,13 @@ def make_analyst_node(settings: Settings, progress: ProgressFn):
             "caption": state.get("caption"),
             "media_type": state.get("media_type"),
             "cover_url": state.get("cover_url"),
+            "stats_sources": state.get("stats_sources"),
+            "interaction_status": state.get("interaction_status"),
+            "stats_notice": state.get("stats_notice"),
+            "missing_interaction_fields": state.get("missing_interaction_fields"),
+            "interaction_screenshot_path": state.get("interaction_screenshot_path"),
+            "interaction_screenshot_status": state.get("interaction_screenshot_status"),
+            "interaction_screenshot_error": state.get("interaction_screenshot_error"),
         }
         for key, value in stats_payload.items():
             if value is not None:

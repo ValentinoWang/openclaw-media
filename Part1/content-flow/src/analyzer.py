@@ -139,8 +139,25 @@ def _analyze_transcript_impl(
     settings: Settings,
 ) -> Optional[dict]:
     if not settings.gemini_api_key:
-        print("GEMINI_API_KEY 未配置，无法进行分析。", flush=True)
-        return None
+        print("GEMINI_API_KEY 未配置，使用本地规则生成基础分析。", flush=True)
+        source_text = (caption or transcript or url or "").strip()
+        compact = " ".join(source_text.split())
+        summary = compact[:220] or "未提取到可分析文本，已保留原链接与媒体文件。"
+        tags = []
+        for token in ["AIGC", "AI生图", "PS", "AE", "视差动画", "AI动画", "设计干货", "小红书"]:
+            if token.lower() in compact.lower() or token in url:
+                tags.append(token)
+        if not tags:
+            tags = ["待人工复核"]
+        return {
+            "summary": [summary],
+            "hooks": "本地基础分析：标题/文案提供明确收益点，需要人工复核前 5 秒画面。",
+            "emotion": "好奇 / 爽感",
+            "score": 60,
+            "tags": tags[:5],
+            "action_plan": "1. 保留原链接和已下载媒体。\n2. 待配置 GEMINI_API_KEY/DASHSCOPE_API_KEY 后可重新生成完整拆解。\n3. 当前先作为知识素材入库，避免链路阻塞。",
+            "fallback_reason": "missing_GEMINI_API_KEY",
+        }
 
     kind = "视频"
     if media_type == "animated":

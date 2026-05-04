@@ -25,6 +25,9 @@ class Settings:
     playwright_headless: bool
     playwright_debug: bool
     cookies_profile: str
+    playwright_proxy_server: str
+    douyin_cookies_json_path: str
+    xiaohongshu_cookies_json_path: str
 
 
 def load_settings() -> Settings:
@@ -51,4 +54,10 @@ def load_settings() -> Settings:
         not in ("0", "false", "no"),
         playwright_debug=os.getenv("PLAYWRIGHT_DEBUG", "0").lower() in ("1", "true", "yes"),
         cookies_profile=os.getenv("COOKIES_PROFILE", "Default"),
+        playwright_proxy_server=os.getenv(
+            "PLAYWRIGHT_PROXY_SERVER",
+            os.getenv("ALL_PROXY") or os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY") or "",
+        ),
+        douyin_cookies_json_path=os.getenv("DOUYIN_COOKIES_JSON_PATH", ""),
+        xiaohongshu_cookies_json_path=os.getenv("XIAOHONGSHU_COOKIES_JSON_PATH", ""),
     )

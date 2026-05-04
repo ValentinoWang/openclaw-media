@@ -239,20 +239,27 @@ def _build_properties(
             notion_props[platform_key] = {"rich_text": _build_rich_text(platform)}
 
     like_key = _find_property(properties, ["点赞", "like", "digg"], {"number", "rich_text"})
+    collect_key = _find_property(properties, ["收藏", "collect", "favorite"], {"number", "rich_text"})
     comment_key = _find_property(properties, ["评论", "comment"], {"number", "rich_text"})
     share_key = _find_property(properties, ["转发", "分享", "share"], {"number", "rich_text"})
     like_count = analysis.get("like_count") if analysis else None
+    collect_count = analysis.get("collect_count") if analysis else None
     comment_count = analysis.get("comment_count") if analysis else None
     share_count = analysis.get("share_count") if analysis else None
 
     for key_name, value in (
         (like_key, like_count),
+        (collect_key, collect_count),
         (comment_key, comment_count),
         (share_key, share_count),
     ):
-        if not key_name or value is None:
+        if not key_name:
             continue
         prop_type = properties[key_name]["type"]
+        if value is None:
+            if prop_type == "rich_text":
+                notion_props[key_name] = {"rich_text": _build_rich_text("未取到/待复核")}
+            continue
         if prop_type == "number":
             try:
                 notion_props[key_name] = {"number": float(value)}
@@ -260,6 +267,33 @@ def _build_properties(
                 pass
         else:
             notion_props[key_name] = {"rich_text": _build_rich_text(str(value))}
+
+    stats_notice_key = _find_property(
+        properties,
+        ["互动状态", "互动数据状态", "stats notice", "interaction status", "数据状态"],
+        {"rich_text"},
+    )
+    stats_notice_parts = []
+    interaction_status = analysis.get("interaction_status") if analysis else None
+    stats_notice = analysis.get("stats_notice") if analysis else None
+    missing_fields = analysis.get("missing_interaction_fields") if analysis else None
+    screenshot_path = analysis.get("interaction_screenshot_path") if analysis else None
+    screenshot_status = analysis.get("interaction_screenshot_status") if analysis else None
+    screenshot_error = analysis.get("interaction_screenshot_error") if analysis else None
+    if interaction_status:
+        stats_notice_parts.append(str(interaction_status))
+    if stats_notice:
+        stats_notice_parts.append(str(stats_notice))
+    if missing_fields:
+        stats_notice_parts.append("缺失字段：" + ", ".join(str(item) for item in missing_fields))
+    if screenshot_path:
+        stats_notice_parts.append(f"作品截图：{screenshot_path}")
+    elif screenshot_status:
+        stats_notice_parts.append(f"作品截图状态：{screenshot_status}")
+    if screenshot_error:
+        stats_notice_parts.append(f"作品截图错误：{screenshot_error}")
+    if stats_notice_key and stats_notice_parts:
+        notion_props[stats_notice_key] = {"rich_text": _build_rich_text("\n".join(stats_notice_parts))}
 
     top_comment_key = _find_property(
         properties,

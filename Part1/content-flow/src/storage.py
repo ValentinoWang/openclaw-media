@@ -21,6 +21,7 @@ class MediaPaths:
     caption_path: str
     transcript_path: str
     analysis_path: str
+    interaction_screenshot_path: str
 
 
 def _ensure_base_dir(base_dir: str) -> str:
@@ -55,6 +56,7 @@ def build_media_paths(url: str, base_dir: str = "downloads") -> MediaPaths:
         caption_path=os.path.join(item_dir, "caption.txt"),
         transcript_path=os.path.join(item_dir, "transcript.txt"),
         analysis_path=os.path.join(item_dir, "analysis.json"),
+        interaction_screenshot_path=os.path.join(item_dir, "interaction-screenshot.png"),
     )
 
 

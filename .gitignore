@@ -3,8 +3,13 @@ __pycache__/
 *.py[co]
 *.log
 .env
+.env.local
 .venv/
 venv/
+private/
+secrets/
+*cookies*.json
+*cookie*.txt
 
 # Python build artifacts
 build/
@@ -19,4 +24,3 @@ downloads_test/
 Part1/MP4-extract/downloads/
 Part1/content-flow/downloads/
 Part1/content-flow/downloads_test/
-

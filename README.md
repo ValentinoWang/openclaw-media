@@ -1,9 +1,10 @@
 # SelfMedia
 
-一个用于整理和处理自媒体内容素材的工具集合，当前包含两个独立的 Python 小项目：
+一个用于整理和处理自媒体内容素材的工具集合，当前包含几个独立的小工具：
 
 - `Part1/content-flow`：输入分享链接，下载素材，可选转写、分析并写入 Notion。
 - `Part1/MP4-extract`：从汽水音乐分享内容中提取可下载的音视频资源，并提供本地 Web UI。
+- `part3`：保存手动导出的抖音/小红书 Cookie 到本地未提交文件。
 
 ## 目录结构
 
@@ -12,6 +13,7 @@ SelfMedia/
 ├── Part1/
 │   ├── content-flow/
 │   └── MP4-extract/
+├── part3/
 ├── .gitignore
 └── README.md
 ```
@@ -73,4 +75,3 @@ cd Part1/MP4-extract
 - 不要提交本地 `.env`
 - 不要提交下载目录里的媒体文件
 - 如果后续准备公开发布，建议再补一个开源许可证文件
-

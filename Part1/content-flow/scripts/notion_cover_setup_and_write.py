@@ -128,7 +128,20 @@ def main(argv: list[str]) -> int:
     if media.media_type and not analysis.get("media_type"):
         analysis["media_type"] = media.media_type
 
-    for key in ("like_count", "comment_count", "share_count", "cover_url"):
+    for key in (
+        "like_count",
+        "collect_count",
+        "comment_count",
+        "share_count",
+        "cover_url",
+        "stats_sources",
+        "interaction_status",
+        "stats_notice",
+        "missing_interaction_fields",
+        "interaction_screenshot_path",
+        "interaction_screenshot_status",
+        "interaction_screenshot_error",
+    ):
         if analysis.get(key) is None and stats.get(key) is not None:
             analysis[key] = stats[key]
 

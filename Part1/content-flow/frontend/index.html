@@ -386,6 +386,11 @@
               <a class="secondary-btn hidden" id="audioLink" href="#" download>下载音频</a>
               <span class="status-line" id="audioPath">-</span>
             </div>
+            <div class="download-item">
+              <span>作品截图</span>
+              <a class="secondary-btn hidden" id="screenshotLink" href="#" download>下载截图</a>
+              <span class="status-line" id="screenshotPath">-</span>
+            </div>
           </div>
 
           <div class="form-grid">
@@ -437,8 +442,10 @@
       const saveStatus = document.getElementById("saveStatus");
       const videoLink = document.getElementById("videoLink");
       const audioLink = document.getElementById("audioLink");
+      const screenshotLink = document.getElementById("screenshotLink");
       const videoPath = document.getElementById("videoPath");
       const audioPath = document.getElementById("audioPath");
+      const screenshotPath = document.getElementById("screenshotPath");
 
       const fieldSummary = document.getElementById("fieldSummary");
       const fieldHooks = document.getElementById("fieldHooks");
@@ -548,10 +555,13 @@
       const resetDownloads = () => {
         videoPath.textContent = "-";
         audioPath.textContent = "-";
+        screenshotPath.textContent = "-";
         videoLink.classList.add("hidden");
         audioLink.classList.add("hidden");
+        screenshotLink.classList.add("hidden");
         videoLink.removeAttribute("href");
         audioLink.removeAttribute("href");
+        screenshotLink.removeAttribute("href");
       };
 
       const normalizeText = (value) => {
@@ -580,6 +590,10 @@
             isBusy = false;
             if (jobMode === "analyze") {
               const analysis = (data.result && data.result.analysis) || {};
+              const screenshotFile =
+                (data.result && data.result.interaction_screenshot_path) ||
+                analysis.interaction_screenshot_path ||
+                "";
               fieldSummary.value = normalizeText(analysis.summary);
               fieldHooks.value = normalizeText(analysis.hooks);
               fieldEmotion.value = normalizeText(analysis.emotion);
@@ -590,6 +604,11 @@
                 fieldTags.value = normalizeText(analysis.tags);
               }
               fieldAction.value = normalizeText(analysis.action_plan);
+              if (screenshotFile) {
+                screenshotPath.textContent = screenshotFile;
+                screenshotLink.href = `${apiBase}/api/screenshot/file?job_id=${jobId}`;
+                screenshotLink.classList.remove("hidden");
+              }
               saveStatus.textContent = "AI 分析完成，可手动调整后保存。";
             } else if (jobMode === "save") {
               const pageId = data.result && data.result.notion_page_id;

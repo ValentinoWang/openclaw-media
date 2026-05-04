@@ -1,0 +1,18 @@
+[project]
+name = "viral-deconstruct"
+version = "0.1.0"
+description = "Explicit-trigger viral content deconstruction workflow"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.7.0",
+  "requests>=2.31.0",
+  "python-dotenv>=1.0.0",
+  "playwright>=1.56.0",
+  "yt-dlp>=2024.1.0",
+  "notion-client>=2.2.1",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.2.0",
+]

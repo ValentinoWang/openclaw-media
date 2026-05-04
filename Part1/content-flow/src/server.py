@@ -100,10 +100,18 @@ def _run_job(job_id: str, url: str) -> None:
                 "notion_page_id": None,
                 "platform": None,
                 "like_count": None,
+                "collect_count": None,
                 "comment_count": None,
                 "share_count": None,
                 "top_comments": None,
                 "video_id": None,
+                "stats_sources": None,
+                "interaction_status": None,
+                "stats_notice": None,
+                "missing_interaction_fields": None,
+                "interaction_screenshot_path": None,
+                "interaction_screenshot_status": None,
+                "interaction_screenshot_error": None,
             }
         )
         cleaned_url = str(result.get("url") or url)
@@ -120,6 +128,7 @@ def _run_job(job_id: str, url: str) -> None:
                     "media_dir": paths.item_dir,
                     "analysis_path": paths.analysis_path,
                     "transcript_path": paths.transcript_path,
+                    "interaction_screenshot_path": result.get("interaction_screenshot_path"),
                 },
                 finished_at=time.time(),
             )
@@ -274,10 +283,18 @@ def _run_analysis_job(job_id: str, url: str) -> None:
                 "notion_page_id": None,
                 "platform": None,
                 "like_count": None,
+                "collect_count": None,
                 "comment_count": None,
                 "share_count": None,
                 "top_comments": None,
                 "video_id": None,
+                "stats_sources": None,
+                "interaction_status": None,
+                "stats_notice": None,
+                "missing_interaction_fields": None,
+                "interaction_screenshot_path": None,
+                "interaction_screenshot_status": None,
+                "interaction_screenshot_error": None,
             }
         )
         cleaned_url = str(result.get("url") or url)
@@ -294,6 +311,8 @@ def _run_analysis_job(job_id: str, url: str) -> None:
                     "media_dir": paths.item_dir,
                     "analysis_path": paths.analysis_path,
                     "transcript_path": paths.transcript_path,
+                    "interaction_screenshot_path": result.get("interaction_screenshot_path")
+                    or (result.get("analysis_result", {}) or {}).get("interaction_screenshot_path"),
                 },
                 finished_at=time.time(),
             )
@@ -348,6 +367,24 @@ def _run_save_job(job_id: str, url: str, analysis: dict[str, Any]) -> None:
                 video_id = extract_xhs_id(url)
         if video_id:
             analysis_payload["video_id"] = video_id
+
+        for key in (
+            "like_count",
+            "collect_count",
+            "comment_count",
+            "share_count",
+            "top_comments",
+            "cover_url",
+            "stats_sources",
+            "interaction_status",
+            "stats_notice",
+            "missing_interaction_fields",
+            "interaction_screenshot_path",
+            "interaction_screenshot_status",
+            "interaction_screenshot_error",
+        ):
+            if analysis_payload.get(key) is None and cached_analysis.get(key) is not None:
+                analysis_payload[key] = cached_analysis[key]
 
         if cached_analysis:
             updated = False
@@ -459,6 +496,9 @@ class RequestHandler(SimpleHTTPRequestHandler):
             return
         if parsed.path == "/api/video/file":
             self._handle_video_file(parsed)
+            return
+        if parsed.path == "/api/screenshot/file":
+            self._handle_screenshot_file(parsed)
             return
         if parsed.path == "/":
             self.path = "/index.html"
@@ -624,6 +664,15 @@ class RequestHandler(SimpleHTTPRequestHandler):
             "video/mp4",
             "video_not_found",
             "video_read_failed",
+        )
+
+    def _handle_screenshot_file(self, parsed) -> None:
+        self._handle_media_file(
+            parsed,
+            "interaction_screenshot_path",
+            "image/png",
+            "screenshot_not_found",
+            "screenshot_read_failed",
         )
 
     def _set_cors_headers(self) -> None:
