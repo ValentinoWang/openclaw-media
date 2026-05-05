@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import mimetypes
 from pathlib import Path
@@ -10,9 +11,11 @@ import requests
 
 IMAGE2_SCRIPT = "/home/ubuntu/openclaw-agents/media/scripts/gpt_image2.py"
 FEISHU_BASE = "https://open.feishu.cn/open-apis"
+DEFAULT_STORYBOARD_IMAGE_MAX_IMAGES = int(os.getenv("STORYBOARD_IMAGE_MAX_IMAGES", "12"))
+STORYBOARD_IMAGE_TIMEOUT_SEC = int(os.getenv("STORYBOARD_IMAGE_TIMEOUT_SEC", "60"))
 
 
-def generate_storyboard_images(storyboard: list[dict[str, Any]], out_dir: str, max_images: int = 6) -> list[str]:
+def generate_storyboard_images(storyboard: list[dict[str, Any]], out_dir: str, max_images: int = DEFAULT_STORYBOARD_IMAGE_MAX_IMAGES) -> list[str]:
     """Generate visual reference images for storyboard shots via gpt-image-2 script."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -30,7 +33,7 @@ def generate_storyboard_images(storyboard: list[dict[str, Any]], out_dir: str, m
         before = set(Path('/home/ubuntu/openclaw-agents/media/generated/gpt-image-2').glob('*'))
         cmd = [IMAGE2_SCRIPT, "--prompt", prompt, "--size", "1024x1536", "--format", "png", "--send", "none"]
         try:
-            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=STORYBOARD_IMAGE_TIMEOUT_SEC)
         except Exception:
             continue
         after = set(Path('/home/ubuntu/openclaw-agents/media/generated/gpt-image-2').glob('*'))
@@ -45,7 +48,13 @@ def generate_storyboard_images(storyboard: list[dict[str, Any]], out_dir: str, m
     return generated
 
 
-def upload_feishu_doc_image(document_id: str, file_path: str, token: str, feishu_base: str | None = None) -> str:
+def upload_feishu_doc_image(
+    document_id: str,
+    file_path: str,
+    token: str,
+    feishu_base: str | None = None,
+    parent_node: str | None = None,
+) -> str:
     path = Path(file_path)
     if not path.exists() or not path.is_file() or path.stat().st_size <= 0:
         raise RuntimeError(f"分镜图不存在，不能插入飞书文档：{file_path}")
@@ -58,7 +67,7 @@ def upload_feishu_doc_image(document_id: str, file_path: str, token: str, feishu
             data={
                 "file_name": path.name,
                 "parent_type": "docx_image",
-                "parent_node": document_id,
+                "parent_node": parent_node or document_id,
                 "size": str(path.stat().st_size),
                 "mime_type": mime,
             },
@@ -82,7 +91,7 @@ def generate_and_upload_storyboard_images(
     out_dir: str,
     document_id: str,
     token: str,
-    max_images: int = 6,
+    max_images: int = DEFAULT_STORYBOARD_IMAGE_MAX_IMAGES,
     feishu_base: str | None = None,
 ) -> list[dict[str, Any]]:
     """Generate recreate storyboard images and upload them for Docx insertion."""

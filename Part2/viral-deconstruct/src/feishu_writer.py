@@ -4,6 +4,7 @@ import json
 import os
 import re
 import time
+import ast
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -17,11 +18,13 @@ ALLOWED_BITABLE_FIELDS = {
     "原标题",
     "参考链接",
     "平台",
+    "赛道",
     "赛道/标签",
     "封面图/前五秒",
     "原文件",
     "原音频",
     "作品截图",
+    "总结",
     "热榜字段",
     "核心数据",
     "爆点拆解",
@@ -32,6 +35,7 @@ ALLOWED_BITABLE_FIELDS = {
     "发布时间",
     "高赞评论",
     "目标受众",
+    "分镜脚本",
     "拆解文档链接",
     "拆解文档",
     "再创作文档链接",
@@ -47,7 +51,6 @@ FIELD_ALIASES = {
 
 FORBIDDEN_BITABLE_FIELDS = {
     "可复制发布稿",
-    "分镜脚本",
     "图文脚本",
     "final_script",
     "video_storyboard",
@@ -116,7 +119,17 @@ def parse_feishu_bitable_url(url: str) -> tuple[str, str]:
 def _normalize_text(value: Any) -> str:
     if value is None:
         return ""
+    if isinstance(value, list):
+        return "\n".join(str(item).strip() for item in value if str(item).strip())
     if isinstance(value, str):
+        text = value.strip()
+        if text.startswith("[") and text.endswith("]"):
+            try:
+                parsed = ast.literal_eval(text)
+            except (SyntaxError, ValueError):
+                return value
+            if isinstance(parsed, list) and all(not isinstance(item, (dict, list, tuple, set)) for item in parsed):
+                return "\n".join(str(item).strip() for item in parsed if str(item).strip())
         return value
     return json.dumps(value, ensure_ascii=False, indent=2)
 
@@ -171,6 +184,115 @@ def _top_comments_summary(stats: Any) -> str:
     return _summary_text("\n".join(lines))
 
 
+def _extract_hash_tags(text: Any) -> list[str]:
+    if not isinstance(text, str) or not text:
+        return []
+    tags: list[str] = []
+    seen: set[str] = set()
+    for match in re.findall(r"#([^#\s，,。；;：:、]+)", text):
+        tag = match.strip()
+        if not tag or tag in seen:
+            continue
+        seen.add(tag)
+        tags.append(tag)
+    return tags
+
+
+def _track_tags_summary(result: dict[str, Any]) -> str:
+    tags: list[str] = []
+    seen: set[str] = set()
+
+    def add(value: Any) -> None:
+        candidates: list[str] = []
+        if isinstance(value, str):
+            candidates = _extract_hash_tags(value) or [value]
+        elif isinstance(value, list):
+            candidates = [str(item) for item in value if item]
+        for item in candidates:
+            tag = str(item).strip()
+            if tag and not tag.startswith("#"):
+                tag = f"#{tag}"
+            if not tag or tag in seen:
+                continue
+            seen.add(tag)
+            tags.append(tag)
+
+    add(result.get("source_caption"))
+    add(result.get("track_tags"))
+    add(result.get("tags"))
+    republish = result.get("republish_copy")
+    if isinstance(republish, dict):
+        add(republish.get("hashtags"))
+    return _summary_text("、".join(tags[:12]))
+
+
+def _track_name(result: dict[str, Any]) -> str:
+    def usable_tag(tag: str) -> bool:
+        cleaned = tag.lstrip("#").strip()
+        if not cleaned:
+            return False
+        return not re.fullmatch(r"\d{1,4}", cleaned)
+
+    tags = [tag for tag in _list_values(result.get("track_tags")) if usable_tag(tag)]
+    if tags:
+        return tags[0].lstrip("#")
+    caption_tags = [tag for tag in _extract_hash_tags(result.get("source_caption")) if usable_tag(tag)]
+    if caption_tags:
+        return caption_tags[0].lstrip("#")
+    summary = str(result.get("content_summary") or result.get("source_summary") or "").strip()
+    if "暧昧" in summary or "恋爱" in summary or "情绪" in summary:
+        return "情绪短片"
+    return ""
+
+
+def _list_values(value: Any) -> list[str]:
+    if value in (None, "", []):
+        return []
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    text = _normalize_text(value).strip()
+    if not text:
+        return []
+    return [item.strip() for item in re.split(r"[\n,，、;；]+", text) if item.strip()]
+
+
+def _multi_select_values(value: Any, limit: int = 8) -> list[str]:
+    values: list[str] = []
+    seen: set[str] = set()
+    for item in _list_values(value):
+        if item in seen:
+            continue
+        seen.add(item)
+        values.append(item)
+        if len(values) >= limit:
+            break
+    return values
+
+
+def _hot_fields_summary(result: dict[str, Any]) -> str:
+    stats = result.get("stats") if isinstance(result.get("stats"), dict) else {}
+    sources = [result, stats]
+    key_labels = {
+        "hot_rank": "热榜排名",
+        "rank": "排名",
+        "rank_text": "排名",
+        "hot_score": "热度值",
+        "heat_score": "热度值",
+        "trend": "趋势",
+        "trend_name": "榜单",
+        "hot_list_name": "榜单",
+        "hot_topic": "热榜话题",
+        "challenge_name": "挑战",
+    }
+    lines: list[str] = []
+    for source in sources:
+        for key, label in key_labels.items():
+            value = source.get(key) if isinstance(source, dict) else None
+            if value not in (None, "", []):
+                lines.append(f"{label}: {value}")
+    return _summary_text("\n".join(dict.fromkeys(lines)) or "未抓取热榜字段")
+
+
 def validate_bitable_record(fields: dict[str, Any]) -> None:
     forbidden = set(fields) & FORBIDDEN_BITABLE_FIELDS
     if forbidden:
@@ -178,7 +300,7 @@ def validate_bitable_record(fields: dict[str, Any]) -> None:
     unexpected = set(fields) - ALLOWED_BITABLE_FIELDS
     if unexpected:
         raise ValueError(f"多维表格字段不在白名单内: {sorted(unexpected)}")
-    for name in ("爆点拆解", "爆点迁移", "吸睛元素", "核心价值", "痛点/爽点", "目标受众", "高赞评论"):
+    for name in ("总结", "爆点拆解", "爆点迁移", "吸睛元素", "核心价值", "痛点/爽点", "目标受众", "高赞评论"):
         value = fields.get(name)
         if isinstance(value, str) and len(value) > MAX_BITABLE_SUMMARY_CHARS:
             raise ValueError(f"多维表格摘要字段过长: {name}")
@@ -197,6 +319,30 @@ def remap_alias_fields(fields: dict[str, Any], existing: set[str]) -> dict[str, 
         target = resolve_field_name(name, existing)
         remapped[target] = value
     return remapped
+
+
+def _coerce_field_value_for_type(value: Any, field_type: Any) -> Any:
+    # Existing user-created tables may have text fields where the workflow would
+    # otherwise prefer multi-select or URL fields. Coerce to the actual field
+    # type before writing so one mismatched field does not fail the whole record.
+    if field_type == 1:
+        if isinstance(value, list):
+            return " ".join(str(item).strip() for item in value if str(item).strip())
+        if isinstance(value, dict):
+            text = str(value.get("text") or "").strip()
+            link = str(value.get("link") or "").strip()
+            return f"{text} {link}".strip()
+    if field_type == 4:
+        if isinstance(value, str):
+            return _multi_select_values(value)
+    if field_type == 15:
+        if isinstance(value, str):
+            return {"text": value, "link": value} if value.startswith(("http://", "https://")) else value
+    return value
+
+
+def coerce_fields_for_existing_types(fields: dict[str, Any], field_types: dict[str, Any]) -> dict[str, Any]:
+    return {name: _coerce_field_value_for_type(value, field_types.get(name)) for name, value in fields.items()}
 
 
 def validate_attachment_item(item: AttachmentItem) -> None:
@@ -269,26 +415,31 @@ def upload_attachment(app_token: str, table_id: str, field_name: str, file_path:
         return ""
     if resp.status_code >= 400 or payload.get("code") != 0:
         return ""
-    return payload.get("data", {}).get("file_token") or payload.get("data", {}).get("file_token") or ""
+    return payload.get("data", {}).get("file_token") or ""
 
 
 def _record_fields(result: dict[str, Any], source_text: str) -> dict[str, Any]:
     url = result.get("source_url") or ""
-    title = result.get("source_title") or "未抓取"
+    title = result.get("source_title") or result.get("source_caption") or result.get("content_summary") or "未抓取"
     return {
         "原标题": str(title)[:500],
         "参考链接": {"text": "原作品", "link": url} if url else "",
         "平台": str(result.get("platform") or ("抖音" if "douyin" in url else ("小红书" if "xiaohongshu" in url or "xhs" in url else ""))),
+        "赛道": _track_name(result),
+        "总结": _summary_text(result.get("content_summary") or result.get("source_summary")),
+        "赛道/标签": _track_tags_summary(result),
+        "热榜字段": _hot_fields_summary(result),
         "爆点拆解": _summary_text(result.get("viral_mechanism")),
         "爆点迁移": _summary_text(result.get("production_checklist")),
         "核心价值": _summary_text(result.get("source_summary")),
         "吸睛元素": _summary_text(result.get("hook_elements") or result.get("viral_mechanism")),
         "痛点/爽点": _summary_text(result.get("pain_or_pleasure_points") or ""),
-        "目标受众": _summary_text(result.get("target_audience") or ""),
+        "目标受众": _multi_select_values(result.get("target_audience")),
         "发布时间": str(result.get("published_at") or ""),
         # 长脚本只进入飞书云文档，不写多维表格。
         "核心数据": _core_stats_summary(result.get("stats")),
         "高赞评论": _top_comments_summary(result.get("stats")),
+        "分镜脚本": {"text": "分镜脚本", "link": result.get("deconstruct_doc_url", "")} if result.get("deconstruct_doc_url") else "",
         "拆解文档链接": {"text": "拆解文档", "link": result.get("deconstruct_doc_url", "")} if result.get("deconstruct_doc_url") else "",
         "再创作文档链接": {"text": "再创作文档", "link": result.get("recreate_doc_url", "")} if result.get("recreate_doc_url") else "",
         "关联ID": str(result.get("source_url") or source_text)[:1000],
@@ -355,6 +506,12 @@ def write_deconstruction(result: dict[str, Any], source_text: str, bitable_url: 
             "原文件": 17,
             "原音频": 17,
             "作品截图": 17,
+            "总结": 1,
+            "赛道/标签": 1,
+            "热榜字段": 1,
+            "痛点/爽点": 1,
+            "目标受众": 4,
+            "分镜脚本": 15,
             "拆解文档链接": 15,
             "再创作文档链接": 15,
         },
@@ -364,14 +521,18 @@ def write_deconstruction(result: dict[str, Any], source_text: str, bitable_url: 
     validate_bitable_record({k: v for k, v in fields.items() if v not in (None, "", [])})
     field_items = list_fields(app_token, table_id, token)
     existing = {item.get("field_name") for item in field_items}
+    field_types = {str(item.get("field_name")): item.get("type") for item in field_items if item.get("field_name")}
     fields = remap_alias_fields(fields, existing)
+    fields = coerce_fields_for_existing_types(fields, field_types)
     attachment_values: dict[str, list[dict[str, str]]] = {}
     for item in build_attachment_plan(result):
         if item.field_name not in existing:
             continue
+        if field_types.get(item.field_name) not in (None, 17):
+            continue
         token_val = upload_attachment(app_token, table_id, item.field_name, item.path, token)
         if not token_val:
-            raise RuntimeError(f"附件上传失败，停止写入多维表格: {item.field_name} {item.path}")
+            continue
         attachment_values.setdefault(item.field_name, []).append({"file_token": token_val})
     fields.update(attachment_values)
     fields = {k: v for k, v in fields.items() if k in existing and v not in (None, "", [])}

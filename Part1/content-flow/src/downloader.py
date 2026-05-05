@@ -49,6 +49,38 @@ DOUYIN_VISIBLE_TEXT_STAT_SOURCES = {
     "collect_count": "douyin_webpage_visible_text.collect_count",
     "share_count": "douyin_webpage_visible_text.share_count",
 }
+DOUYIN_TRUSTED_STAT_SOURCE_PREFIXES = (
+    "aweme_detail.statistics.",
+    "aweme_post.statistics.",
+    "iesdouyin_iteminfo.statistics.",
+    "douyin_share_html.statistics.",
+)
+DOUYIN_STAT_KEY_ALIASES = {
+    "like_count": ("digg_count", "diggCount", "like_count", "likeCount", "liked_count", "likedCount"),
+    "collect_count": (
+        "collect_count",
+        "collectCount",
+        "collected_count",
+        "collectedCount",
+        "favorite_count",
+        "favoriteCount",
+    ),
+    "comment_count": ("comment_count", "commentCount", "comments_count", "commentsCount"),
+    "share_count": ("share_count", "shareCount", "forward_count", "forwardCount"),
+}
+XHS_STAT_KEY_ALIASES = {
+    "like_count": ("likedCount", "likeCount", "liked_count", "like_count", "likes"),
+    "collect_count": (
+        "collectedCount",
+        "collectCount",
+        "collected_count",
+        "collect_count",
+        "favoriteCount",
+        "favorite_count",
+    ),
+    "comment_count": ("commentCount", "comment_count", "commentsCount", "comments_count"),
+    "share_count": ("shareCount", "share_count", "sharedCount", "shared_count"),
+}
 DOUYIN_STATS_NOTICE = (
     "作品级互动数据未完整取到；仅写入 aweme_detail.statistics 中明确命中的字段，"
     "缺失字段请使用作品截图 OCR 复核，或更新 cookie/抖音接口。"
@@ -316,7 +348,7 @@ def _parse_xhs_count(value: object) -> Optional[int]:
     if not isinstance(value, str):
         return None
 
-    cleaned = value.strip().replace("+", "")
+    cleaned = value.strip().replace("+", "").replace(",", "")
     if not cleaned:
         return None
 
@@ -324,9 +356,15 @@ def _parse_xhs_count(value: object) -> Optional[int]:
     if "千" in cleaned:
         multiplier = 1000
         cleaned = cleaned.replace("千", "")
+    elif cleaned.lower().endswith("k"):
+        multiplier = 1000
+        cleaned = cleaned[:-1]
     elif "万" in cleaned:
         multiplier = 10000
         cleaned = cleaned.replace("万", "")
+    elif cleaned.lower().endswith("w"):
+        multiplier = 10000
+        cleaned = cleaned[:-1]
     elif "亿" in cleaned:
         multiplier = 100000000
         cleaned = cleaned.replace("亿", "")
@@ -343,6 +381,79 @@ def _parse_xhs_count(value: object) -> Optional[int]:
         except ValueError:
             return None
     return int(number * multiplier)
+
+
+def _extract_count_fields_from_mapping(
+    mapping: dict,
+    aliases: dict[str, tuple[str, ...]],
+    source_prefix: str,
+) -> dict:
+    extracted: dict = {}
+    sources: dict[str, str] = {}
+    if not isinstance(mapping, dict):
+        return extracted
+    for output_key, candidate_keys in aliases.items():
+        for candidate_key in candidate_keys:
+            if candidate_key not in mapping:
+                continue
+            parsed = _parse_xhs_count(mapping.get(candidate_key))
+            if parsed is None:
+                continue
+            extracted[output_key] = parsed
+            sources[output_key] = f"{source_prefix}.{candidate_key}"
+            break
+    if sources:
+        extracted["stats_sources"] = sources
+    return extracted
+
+
+def _iter_dict_nodes(node: object):
+    if isinstance(node, dict):
+        yield node
+        for value in node.values():
+            yield from _iter_dict_nodes(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _iter_dict_nodes(value)
+
+
+def _has_any_alias(mapping: dict, aliases: dict[str, tuple[str, ...]]) -> bool:
+    if not isinstance(mapping, dict):
+        return False
+    keys = set(mapping)
+    return any(keys & set(candidate_keys) for candidate_keys in aliases.values())
+
+
+def _extract_xhs_interaction_stats(note: dict) -> dict:
+    if not isinstance(note, dict):
+        return {}
+
+    stats: dict = {}
+    direct_candidates = (
+        ("xhs.interactInfo", note.get("interactInfo")),
+        ("xhs.interact_info", note.get("interact_info")),
+        ("xhs.interact", note.get("interact")),
+    )
+    for source_prefix, candidate in direct_candidates:
+        if isinstance(candidate, dict):
+            merge_stats(
+                stats,
+                _extract_count_fields_from_mapping(candidate, XHS_STAT_KEY_ALIASES, source_prefix),
+            )
+
+    if all(stats.get(key) is not None for key in INTERACTION_COUNT_KEYS):
+        return stats
+
+    for node in _iter_dict_nodes(note):
+        if node is note or not _has_any_alias(node, XHS_STAT_KEY_ALIASES):
+            continue
+        merge_stats(
+            stats,
+            _extract_count_fields_from_mapping(node, XHS_STAT_KEY_ALIASES, "xhs.recursive"),
+        )
+        if all(stats.get(key) is not None for key in INTERACTION_COUNT_KEYS):
+            break
+    return stats
 
 
 def _extract_xhs_image_urls(note: dict) -> list[str]:
@@ -463,9 +574,7 @@ def _extract_xhs_note_from_html(html: str) -> Optional[dict]:
     caption_parts = [part.strip() for part in (title, desc) if part and part.strip()]
     caption = "\n".join(caption_parts).strip()
 
-    interact = note.get("interactInfo") or {}
-    if not isinstance(interact, dict):
-        interact = {}
+    interaction_stats = _extract_xhs_interaction_stats(note)
 
     return {
         "note_id": note_id,
@@ -473,14 +582,11 @@ def _extract_xhs_note_from_html(html: str) -> Optional[dict]:
         "caption": caption,
         "image_urls": _extract_xhs_image_urls(note),
         "video_url": _extract_xhs_video_url(note),
-        "like_count": _parse_xhs_count(interact.get("likedCount") or interact.get("likeCount")),
-        "collect_count": _parse_xhs_count(
-            interact.get("collectedCount")
-            or interact.get("collectCount")
-            or interact.get("collect_count")
-        ),
-        "comment_count": _parse_xhs_count(interact.get("commentCount")),
-        "share_count": _parse_xhs_count(interact.get("shareCount")),
+        "like_count": interaction_stats.get("like_count"),
+        "collect_count": interaction_stats.get("collect_count"),
+        "comment_count": interaction_stats.get("comment_count"),
+        "share_count": interaction_stats.get("share_count"),
+        "stats_sources": interaction_stats.get("stats_sources"),
     }
 
 
@@ -535,6 +641,32 @@ def extract_video_url_from_html(html: str) -> Optional[str]:
         url = url.replace("\\u0026", "&").replace("\\/", "/")
         return url
     return None
+
+
+def extract_douyin_stats_from_html(html: str) -> dict:
+    if not html:
+        return {}
+    decoder = json.JSONDecoder()
+    for match in re.finditer(r'"statistics"\s*:\s*', html):
+        start = match.end()
+        try:
+            parsed, _end = decoder.raw_decode(html[start:])
+        except (ValueError, json.JSONDecodeError):
+            continue
+        if not isinstance(parsed, dict):
+            continue
+        extracted = _extract_count_fields_from_mapping(
+            parsed,
+            DOUYIN_STAT_KEY_ALIASES,
+            "douyin_share_html.statistics",
+        )
+        if not extracted:
+            continue
+        aweme_id = parsed.get("aweme_id")
+        if aweme_id:
+            extracted["video_id"] = str(aweme_id)
+        return extracted
+    return {}
 
 
 def extract_render_data(html: str) -> Optional[dict]:
@@ -756,29 +888,38 @@ def select_play_url_prefer_low(video: dict, prefer_low_quality: bool) -> Optiona
     return select_play_url(video)
 
 
-def extract_stats_from_aweme_detail(aweme_detail: dict) -> dict:
-    if not isinstance(aweme_detail, dict):
-        return {}
-    stats = aweme_detail.get("statistics")
-    if not isinstance(stats, dict):
-        return {}
+def extract_aweme_id(aweme: dict) -> Optional[str]:
+    if not isinstance(aweme, dict):
+        return None
+    for key in ("aweme_id", "item_id", "group_id", "id"):
+        value = aweme.get(key)
+        if value:
+            return str(value)
+    return None
 
-    field_map = {
-        "like_count": "digg_count",
-        "collect_count": "collect_count",
-        "comment_count": "comment_count",
-        "share_count": "share_count",
-    }
-    extracted: dict = {}
-    sources: dict[str, str] = {}
-    for output_key, stat_key in field_map.items():
-        if stat_key not in stats:
-            continue
-        extracted[output_key] = stats[stat_key]
-        sources[output_key] = f"aweme_detail.statistics.{stat_key}"
-    if sources:
-        extracted["stats_sources"] = sources
-    return extracted
+
+def remember_item_id(stats: dict, item_id: str | None) -> None:
+    if not item_id:
+        return
+    current = str(stats.get("video_id") or "")
+    item_id = str(item_id)
+    if not current or (item_id.isdigit() and not current.isdigit()):
+        stats["video_id"] = item_id
+
+
+def extract_stats_from_aweme(aweme: dict, source_prefix: str) -> dict:
+    if not isinstance(aweme, dict):
+        return {}
+    stats = aweme.get("statistics")
+    return _extract_count_fields_from_mapping(
+        stats if isinstance(stats, dict) else {},
+        DOUYIN_STAT_KEY_ALIASES,
+        f"{source_prefix}.statistics",
+    )
+
+
+def extract_stats_from_aweme_detail(aweme_detail: dict) -> dict:
+    return extract_stats_from_aweme(aweme_detail, "aweme_detail")
 
 
 def merge_stats(target: dict, incoming: dict) -> dict:
@@ -800,6 +941,11 @@ def merge_stats(target: dict, incoming: dict) -> dict:
             continue
         if value is None or target.get(key) is not None:
             continue
+        if key in ("video_id", "aweme_id"):
+            target[key] = str(value)
+            if isinstance(incoming_sources, dict) and key in incoming_sources:
+                target_sources[key] = str(incoming_sources[key])
+            continue
         try:
             target[key] = int(value)
         except (TypeError, ValueError):
@@ -809,17 +955,40 @@ def merge_stats(target: dict, incoming: dict) -> dict:
     return target
 
 
+def merge_interaction_fields(target: dict, incoming: dict) -> dict:
+    if not isinstance(incoming, dict):
+        return target
+    payload = {
+        key: incoming.get(key)
+        for key in INTERACTION_COUNT_KEYS
+        if incoming.get(key) is not None
+    }
+    incoming_sources = incoming.get("stats_sources")
+    if isinstance(incoming_sources, dict):
+        payload["stats_sources"] = incoming_sources
+    return merge_stats(target, payload)
+
+
+def _is_trusted_douyin_stat_source(key: str, source: str | None) -> bool:
+    if not source:
+        return False
+    if source == DOUYIN_TRUSTED_STAT_SOURCES.get(key):
+        return True
+    if source == DOUYIN_VISIBLE_TEXT_STAT_SOURCES.get(key):
+        return True
+    return any(source.startswith(prefix) for prefix in DOUYIN_TRUSTED_STAT_SOURCE_PREFIXES)
+
+
 def sanitize_douyin_interaction_stats(stats: dict) -> dict:
     sources = stats.get("stats_sources")
     if not isinstance(sources, dict):
         sources = {}
         stats["stats_sources"] = sources
 
-    for key, trusted_source in DOUYIN_TRUSTED_STAT_SOURCES.items():
-        visible_text_source = DOUYIN_VISIBLE_TEXT_STAT_SOURCES.get(key)
+    for key in DOUYIN_TRUSTED_STAT_SOURCES:
         if stats.get(key) is None:
             continue
-        if sources.get(key) in (trusted_source, visible_text_source):
+        if _is_trusted_douyin_stat_source(key, sources.get(key)):
             continue
         else:
             stats[key] = None
@@ -867,7 +1036,7 @@ def finalize_interaction_stats(stats: dict, is_xhs: bool) -> dict:
 
 
 def _parse_visible_count(value: str) -> Optional[int]:
-    text = str(value or "").strip().lower()
+    text = str(value or "").strip().lower().replace(",", "")
     if not text:
         return None
     multiplier = 1
@@ -876,6 +1045,12 @@ def _parse_visible_count(value: str) -> Optional[int]:
         text = text[:-1]
     elif text.endswith("w"):
         multiplier = 10000
+        text = text[:-1]
+    elif text.endswith("千") or text.endswith("k"):
+        multiplier = 1000
+        text = text[:-1]
+    elif text.endswith("亿"):
+        multiplier = 100000000
         text = text[:-1]
     try:
         return int(float(text) * multiplier)
@@ -894,14 +1069,29 @@ def _extract_visible_interaction_stats(text: str) -> dict:
         r"(?P<share>\d+(?:\.\d+)?(?:万|w)?)\s*\|\s*举报"
     )
     match = pattern.search(normalized)
-    if not match:
-        return {}
-    parsed = {
-        "like_count": _parse_visible_count(match.group("like")),
-        "comment_count": _parse_visible_count(match.group("comment")),
-        "collect_count": _parse_visible_count(match.group("collect")),
-        "share_count": _parse_visible_count(match.group("share")),
-    }
+    if match:
+        parsed = {
+            "like_count": _parse_visible_count(match.group("like")),
+            "comment_count": _parse_visible_count(match.group("comment")),
+            "collect_count": _parse_visible_count(match.group("collect")),
+            "share_count": _parse_visible_count(match.group("share")),
+        }
+    else:
+        count_pattern = r"(\d[\d,]*(?:\.\d+)?(?:万|w|千|k|亿)?)"
+        label_patterns = {
+            "like_count": (rf"{count_pattern}\s*(?:赞|获赞|点赞)", rf"(?:赞|获赞|点赞)\D{{0,6}}{count_pattern}"),
+            "comment_count": (rf"{count_pattern}\s*(?:评论|条评论)", rf"(?:评论|条评论)\D{{0,6}}{count_pattern}"),
+            "collect_count": (rf"{count_pattern}\s*(?:收藏)", rf"(?:收藏)\D{{0,6}}{count_pattern}"),
+            "share_count": (rf"{count_pattern}\s*(?:分享|转发)", rf"(?:分享|转发)\D{{0,6}}{count_pattern}"),
+        }
+        parsed = {}
+        for key, patterns in label_patterns.items():
+            for label_pattern in patterns:
+                label_match = re.search(label_pattern, normalized)
+                if not label_match:
+                    continue
+                parsed[key] = _parse_visible_count(label_match.group(1))
+                break
     extracted = {key: value for key, value in parsed.items() if value is not None}
     if extracted:
         extracted["stats_sources"] = {
@@ -909,7 +1099,7 @@ def _extract_visible_interaction_stats(text: str) -> dict:
             for key in extracted
             if key in DOUYIN_VISIBLE_TEXT_STAT_SOURCES
         }
-        extracted["visible_interaction_text"] = match.group(0)
+        extracted["visible_interaction_text"] = match.group(0) if match else normalized[:240]
     return extracted
 
 
@@ -1028,12 +1218,12 @@ def adjust_playwm_ratio(url: str, ratio: str) -> str:
     return urlunparse(parsed._replace(query=new_query))
 
 
-def fetch_iesdouyin_item(
+def fetch_iesdouyin_item_meta(
     video_id: str,
     headers: dict,
     ms_token: str | None,
     prefer_low_quality: bool,
-) -> Optional[str]:
+) -> dict:
     params = {"item_ids": video_id}
     if ms_token:
         params["msToken"] = ms_token
@@ -1047,18 +1237,38 @@ def fetch_iesdouyin_item(
         )
         response.raise_for_status()
     except requests.RequestException:
-        return None
+        return {}
 
     try:
         payload = response.json()
     except ValueError:
-        return None
+        return {}
 
     items = payload.get("item_list", [])
     if not items:
-        return None
+        return {}
 
-    return select_play_url_prefer_low(items[0].get("video", {}), prefer_low_quality)
+    aweme = items[0] if isinstance(items[0], dict) else {}
+    meta = {
+        "video_url": select_play_url_prefer_low(aweme.get("video", {}), prefer_low_quality),
+        "stats": extract_stats_from_aweme(aweme, "iesdouyin_iteminfo"),
+        "cover_url": extract_cover_url_from_aweme(aweme),
+        "caption": extract_caption_from_aweme(aweme),
+        "image_urls": extract_image_urls_from_aweme(aweme),
+        "aweme_id": extract_aweme_id(aweme),
+    }
+    return {key: value for key, value in meta.items() if value not in (None, "", [], {})}
+
+
+def fetch_iesdouyin_item(
+    video_id: str,
+    headers: dict,
+    ms_token: str | None,
+    prefer_low_quality: bool,
+) -> Optional[str]:
+    meta = fetch_iesdouyin_item_meta(video_id, headers, ms_token, prefer_low_quality)
+    video_url = meta.get("video_url")
+    return str(video_url) if video_url else None
 
 
 def fetch_douyin_aweme_detail_stats(
@@ -1177,9 +1387,7 @@ def refresh_stats_only(
         html = _fetch_html(url, headers, cookies)
         note = _extract_xhs_note_from_html(html) if html else None
         if note:
-            for key in INTERACTION_COUNT_KEYS:
-                if note.get(key) is not None:
-                    stats[key] = note[key]
+            merge_interaction_fields(stats, note)
             note_id = note.get("note_id")
             if isinstance(note_id, str) and note_id:
                 stats["video_id"] = note_id
@@ -1189,6 +1397,16 @@ def refresh_stats_only(
                 if isinstance(candidate, str) and candidate.strip():
                     stats["cover_url"] = candidate.strip()
         return finalize_interaction_stats(stats, is_xhs=True)
+
+    direct_headers = {
+        "User-Agent": MOBILE_SAFARI_USER_AGENT,
+        "Referer": "https://www.iesdouyin.com/",
+    }
+    direct_html = _fetch_html(url, direct_headers, cookies)
+    direct_stats = extract_douyin_stats_from_html(direct_html) if direct_html else {}
+    if direct_stats:
+        merge_stats(stats, direct_stats)
+        remember_item_id(stats, direct_stats.get("video_id"))
 
     try:
         with sync_playwright() as p:
@@ -1234,6 +1452,7 @@ def refresh_stats_only(
                         payload = response.json()
                         aweme_detail = payload.get("aweme_detail", {})
                         merge_stats(stats, extract_stats_from_aweme_detail(aweme_detail))
+                        remember_item_id(stats, extract_aweme_id(aweme_detail))
                         if not cover_url:
                             cover_candidate = extract_cover_url_from_aweme(aweme_detail)
                             if cover_candidate:
@@ -1245,8 +1464,11 @@ def refresh_stats_only(
                         payload = response.json()
                         aweme_list = payload.get("aweme_list", [])
                         if aweme_list:
+                            aweme = aweme_list[0] if isinstance(aweme_list[0], dict) else {}
+                            merge_stats(stats, extract_stats_from_aweme(aweme, "aweme_post"))
+                            remember_item_id(stats, extract_aweme_id(aweme))
                             if not cover_url:
-                                cover_candidate = extract_cover_url_from_aweme(aweme_list[0])
+                                cover_candidate = extract_cover_url_from_aweme(aweme)
                                 if cover_candidate:
                                     cover_url = cover_candidate
                     except Exception:
@@ -1320,10 +1542,23 @@ def refresh_stats_only(
             if missing_counts:
                 _kind, item_id = extract_douyin_id(page_url or url)
                 if item_id:
+                    remember_item_id(stats, item_id)
                     merge_stats(
                         stats,
                         fetch_douyin_aweme_detail_stats(item_id, headers, cookies, ms_token),
                     )
+                    if any(stats.get(key) is None for key in INTERACTION_COUNT_KEYS):
+                        item_meta = fetch_iesdouyin_item_meta(
+                            item_id,
+                            {
+                                "User-Agent": user_agent,
+                                "Referer": "https://www.iesdouyin.com/",
+                            },
+                            ms_token,
+                            settings.prefer_low_quality,
+                        )
+                        merge_stats(stats, item_meta.get("stats", {}))
+                        remember_item_id(stats, item_meta.get("aweme_id") or item_id)
 
             if settings.top_comments_limit > 0 and not top_comments:
                 _kind, item_id = extract_douyin_id(page_url or url)
@@ -1834,13 +2069,23 @@ def download_video(
                         video_kind = "m3u8"
                     else:
                         video_kind = "mp4"
-            for key in INTERACTION_COUNT_KEYS:
-                if xhs_note.get(key) is not None:
-                    stats[key] = xhs_note[key]
+            merge_interaction_fields(stats, xhs_note)
             note_id = xhs_note.get("note_id")
             if isinstance(note_id, str) and note_id:
                 stats["video_id"] = note_id
             headers = xhs_headers
+
+    if not is_xhs:
+        douyin_headers = {
+            "User-Agent": MOBILE_SAFARI_USER_AGENT,
+            "Referer": "https://www.iesdouyin.com/",
+        }
+        direct_html = _fetch_html(url, douyin_headers, cookies)
+        direct_stats = extract_douyin_stats_from_html(direct_html) if direct_html else {}
+        if direct_stats:
+            merge_stats(stats, direct_stats)
+            remember_item_id(stats, direct_stats.get("video_id"))
+        headers = douyin_headers
 
     try:
         with sync_playwright() as p:
@@ -1910,6 +2155,7 @@ def download_video(
                             video_url = play_list[0]
                         aweme_detail = payload.get("aweme_detail", {})
                         merge_stats(stats, extract_stats_from_aweme_detail(aweme_detail))
+                        remember_item_id(stats, extract_aweme_id(aweme_detail))
                         if not cover_url:
                             cover_candidate = extract_cover_url_from_aweme(aweme_detail)
                             if cover_candidate:
@@ -1930,15 +2176,18 @@ def download_video(
                             video_url = play_url
                         aweme_list = payload.get("aweme_list", [])
                         if aweme_list:
+                            aweme = aweme_list[0] if isinstance(aweme_list[0], dict) else {}
+                            merge_stats(stats, extract_stats_from_aweme(aweme, "aweme_post"))
+                            remember_item_id(stats, extract_aweme_id(aweme))
                             if not cover_url:
-                                cover_candidate = extract_cover_url_from_aweme(aweme_list[0])
+                                cover_candidate = extract_cover_url_from_aweme(aweme)
                                 if cover_candidate:
                                     cover_url = cover_candidate
-                            list_caption = extract_caption_from_aweme(aweme_list[0])
+                            list_caption = extract_caption_from_aweme(aweme)
                             if list_caption and not caption:
                                 caption = list_caption
                             if not image_urls:
-                                image_urls = extract_image_urls_from_aweme(aweme_list[0])
+                                image_urls = extract_image_urls_from_aweme(aweme)
                     except Exception:
                         pass
                 if "comment/list" in candidate_lower:
@@ -2049,6 +2298,13 @@ def download_video(
                         for key in INTERACTION_COUNT_KEYS:
                             if xhs_note.get(key) is None and fallback_note.get(key) is not None:
                                 xhs_note[key] = fallback_note[key]
+                        if fallback_note.get("stats_sources"):
+                            stats_sources = xhs_note.get("stats_sources")
+                            if not isinstance(stats_sources, dict):
+                                stats_sources = {}
+                                xhs_note["stats_sources"] = stats_sources
+                            for key, source in fallback_note["stats_sources"].items():
+                                stats_sources.setdefault(key, source)
             if xhs_note:
                 if xhs_note.get("caption") and not caption:
                     caption = xhs_note["caption"]
@@ -2064,9 +2320,7 @@ def download_video(
                         video_kind = "m3u8"
                     else:
                         video_kind = "mp4"
-                for key in INTERACTION_COUNT_KEYS:
-                    if xhs_note.get(key) is not None:
-                        stats[key] = xhs_note[key]
+                merge_interaction_fields(stats, xhs_note)
                 note_id = xhs_note.get("note_id")
                 if isinstance(note_id, str) and note_id:
                     stats["video_id"] = note_id
@@ -2194,7 +2448,7 @@ def download_video(
             if not video_url:
                 _kind, item_id = extract_douyin_id(page_url or url)
                 if item_id:
-                    item_url = fetch_iesdouyin_item(
+                    item_meta = fetch_iesdouyin_item_meta(
                         item_id,
                         {
                             "User-Agent": user_agent,
@@ -2203,8 +2457,17 @@ def download_video(
                         ms_token,
                         settings.prefer_low_quality,
                     )
+                    merge_stats(stats, item_meta.get("stats", {}))
+                    remember_item_id(stats, item_meta.get("aweme_id") or item_id)
+                    item_url = item_meta.get("video_url")
                     if item_url:
-                        video_url = item_url
+                        video_url = str(item_url)
+                    if not cover_url and item_meta.get("cover_url"):
+                        cover_url = str(item_meta["cover_url"])
+                    if not caption and item_meta.get("caption"):
+                        caption = str(item_meta["caption"])
+                    if not image_urls and isinstance(item_meta.get("image_urls"), list):
+                        image_urls = item_meta["image_urls"]
 
             if is_xhs and video_url:
                 video_lower = video_url.lower()
@@ -2225,10 +2488,23 @@ def download_video(
             if not is_xhs and any(stats.get(key) is None for key in INTERACTION_COUNT_KEYS):
                 _kind, item_id = extract_douyin_id(page_url or url)
                 if item_id:
+                    remember_item_id(stats, item_id)
                     merge_stats(
                         stats,
                         fetch_douyin_aweme_detail_stats(item_id, headers, cookies, ms_token),
                     )
+                    if any(stats.get(key) is None for key in INTERACTION_COUNT_KEYS):
+                        item_meta = fetch_iesdouyin_item_meta(
+                            item_id,
+                            {
+                                "User-Agent": user_agent,
+                                "Referer": "https://www.iesdouyin.com/",
+                            },
+                            ms_token,
+                            settings.prefer_low_quality,
+                        )
+                        merge_stats(stats, item_meta.get("stats", {}))
+                        remember_item_id(stats, item_meta.get("aweme_id") or item_id)
             if not is_xhs and settings.top_comments_limit > 0 and not top_comments:
                 _kind, item_id = extract_douyin_id(page_url or url)
                 if item_id:

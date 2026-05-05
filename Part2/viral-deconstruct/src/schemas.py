@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import ast
+import re
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
@@ -14,6 +16,26 @@ def _non_empty_string(value: str, field_name: str) -> str:
     if not value:
         raise ValueError(f"{field_name} 不能为空")
     return value
+
+
+def _clean_text_value(value: Any) -> str:
+    if isinstance(value, list):
+        return "\n".join(str(item).strip() for item in value if str(item).strip())
+    if isinstance(value, str):
+        text = value.strip()
+        if text.startswith("[") and text.endswith("]"):
+            try:
+                parsed = ast.literal_eval(text)
+            except (SyntaxError, ValueError):
+                return text
+            if isinstance(parsed, list) and all(not isinstance(item, (dict, list, tuple, set)) for item in parsed):
+                return "\n".join(str(item).strip() for item in parsed if str(item).strip())
+        return text
+    return str(value or "")
+
+
+def re_split_commas(text: str) -> list[str]:
+    return re.split(r"[\n,，、;；]+", text)
 
 
 class StoryboardItem(BaseModel):
@@ -41,6 +63,10 @@ class StoryboardItem(BaseModel):
     def allow_empty_required_text(cls, value: Any) -> str:
         if value is None:
             return ""
+        text = str(value).strip()
+        fabricated_markers = ("假设复刻字幕", "假设字幕", "假设口播", "推测字幕", "推测口播")
+        if any(marker in text for marker in fabricated_markers):
+            return ""
         return str(value)
 
 
@@ -62,6 +88,7 @@ class ImagePostItem(BaseModel):
 class DeconstructResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
+    content_summary: str
     source_summary: str
     viral_mechanism: str
     video_storyboard: list[StoryboardItem] = Field(min_length=1)
@@ -69,11 +96,14 @@ class DeconstructResult(BaseModel):
     republish_copy: dict[str, Any] | str
     avoid_plagiarism_notes: str
     production_checklist: list[str] = Field(min_length=1)
+    target_audience: list[str] = Field(default_factory=list)
+    pain_or_pleasure_points: list[str] = Field(default_factory=list)
+    track_tags: list[str] = Field(default_factory=list)
 
-    @field_validator("source_summary", "viral_mechanism", "avoid_plagiarism_notes", mode="before")
+    @field_validator("content_summary", "source_summary", "viral_mechanism", "avoid_plagiarism_notes", mode="before")
     @classmethod
     def non_empty_text(cls, value: Any) -> str:
-        return _non_empty_string(str(value or ""), "deconstruct_result")
+        return _non_empty_string(_clean_text_value(value), "deconstruct_result")
 
     @field_validator("production_checklist", mode="before")
     @classmethod
@@ -81,6 +111,25 @@ class DeconstructResult(BaseModel):
         if not value:
             raise ValueError("production_checklist 不能为空")
         return value
+
+    @field_validator("target_audience", "pain_or_pleasure_points", "track_tags", mode="before")
+    @classmethod
+    def optional_string_list(cls, value: Any) -> list[str]:
+        if value in (None, "", []):
+            return []
+        if isinstance(value, str):
+            text = value.strip()
+            if text.startswith("[") and text.endswith("]"):
+                try:
+                    parsed = ast.literal_eval(text)
+                except (SyntaxError, ValueError):
+                    return [text]
+                if isinstance(parsed, list):
+                    return [str(item).strip() for item in parsed if str(item).strip()]
+            return [item.strip() for item in re_split_commas(text) if item.strip()]
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        return [str(value).strip()]
 
     @model_validator(mode="after")
     def validate_script_payloads(self) -> "DeconstructResult":
@@ -94,25 +143,26 @@ class DeconstructResult(BaseModel):
 class RecreateResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    doc_title: str
+    doc_title: str = ""
+    media_type: str = ""
     creative_positioning: str
     final_script: str
-    video_storyboard: list[StoryboardItem] = Field(min_length=1)
-    image_post_script: list[ImagePostItem] = Field(min_length=1)
+    video_storyboard: list[StoryboardItem] = Field(default_factory=list)
+    image_post_script: list[ImagePostItem] = Field(default_factory=list)
     titles: list[str] = Field(min_length=1)
     hashtags: list[str] = Field(min_length=1)
     production_notes: list[str] | str
     anti_copy_notes: str
 
-    @field_validator("doc_title", "creative_positioning", "final_script", "anti_copy_notes", mode="before")
+    @field_validator("creative_positioning", "final_script", "anti_copy_notes", mode="before")
     @classmethod
     def non_empty_text(cls, value: Any) -> str:
-        return _non_empty_string(str(value or ""), "recreate_result")
+        return _non_empty_string(_clean_text_value(value), "recreate_result")
 
     @model_validator(mode="after")
     def validate_recreate_payloads(self) -> "RecreateResult":
-        if self.image_post_script in ("", [], None):
-            raise ValueError("image_post_script 不能为空")
+        if self.video_storyboard in ("", [], None) and self.image_post_script in ("", [], None):
+            raise ValueError("video_storyboard 和 image_post_script 至少一个不能为空")
         if self.production_notes in ("", [], None):
             raise ValueError("production_notes 不能为空")
         return self

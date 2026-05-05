@@ -8,8 +8,28 @@ from src import media_parts, runner
 from src.feishu_doc_writer import DocRef
 
 
+def _docx_table_response(body: dict[str, object], rows: int = 2, cols: int = 5) -> dict[str, object]:
+    children = body.get("children")
+    if isinstance(children, list) and any(isinstance(item, dict) and item.get("block_type") == 31 for item in children):
+        return {
+            "code": 0,
+            "data": {
+                "children": [
+                    {"block_id": "heading_block", "block_type": 4},
+                    {
+                        "block_id": "table_block",
+                        "block_type": 31,
+                        "table": {"cells": [f"cell_{idx}" for idx in range(rows * cols)]},
+                    },
+                ]
+            },
+        }
+    return {"code": 0, "data": {}}
+
+
 def _deconstruct_payload(asset_id: str = "frame_001") -> dict[str, object]:
     return {
+        "content_summary": "内容总结",
         "source_summary": "summary",
         "viral_mechanism": "mechanism",
         "video_storyboard": [
@@ -104,21 +124,29 @@ def test_acceptance_deconstruct_video_full_order(tmp_path, monkeypatch: pytest.M
     class Response:
         status_code = 200
         text = ""
+        payload: dict[str, object]
+
+        def __init__(self, payload: dict[str, object]) -> None:
+            self.payload = payload
 
         def json(self) -> dict[str, object]:
-            return {"code": 0, "data": {}}
+            return self.payload
 
     def fake_post(url: str, headers: dict[str, str], json: dict[str, object], timeout: int) -> Response:
         captured_doc_bodies.append(json)
-        return Response()
+        if isinstance(json.get("children"), list) and json["children"] == [{"block_type": 27, "image": {}}]:
+            return Response({"code": 0, "data": {"children": [{"block_id": "image_block", "block_type": 27}]}})
+        return Response(_docx_table_response(json))
 
     monkeypatch.setattr(doc_writer.requests, "post", fake_post)
+    monkeypatch.setattr(doc_writer.requests, "patch", lambda *args, **kwargs: Response({"code": 0, "data": {}}))
+    monkeypatch.setattr(doc_writer, "upload_feishu_doc_image", lambda document_id, file_path, token, feishu_base=None, parent_node=None: "frame_token")
 
     def fake_doc(title, content, folder_token=None, doc_kind="deconstruct"):
         events.append(f"doc_{doc_kind}")
         assert doc_kind == "deconstruct"
         assert content["evidence_assets"][0]["asset_id"] == "frame_001"
-        content["storyboard_image_assets"] = [{"asset_id": "frame_001", "file_token": "frame_token"}]
+        content["storyboard_image_assets"] = [{"asset_id": "frame_001", "path": content["evidence_assets"][0]["path"]}]
         doc_writer.append_storyboard_table("doc_deconstruct", content["video_storyboard"], "token", content["storyboard_image_assets"], strict_images=True)
         return DocRef("doc_deconstruct", "https://feishu/doc_deconstruct")
 
@@ -135,7 +163,11 @@ def test_acceptance_deconstruct_video_full_order(tmp_path, monkeypatch: pytest.M
     result = runner.run_workflow("【拆解】 https://example.com/video", write_feishu=True)
     assert result["feishu_record_id"] == "rec1"
     assert not frame.exists()
-    assert any(item.get("block_type") == 27 and item.get("image", {}).get("token") == "frame_token" for body in captured_doc_bodies for item in body["descendants"])
+    assert any(
+        item.get("block_type") == 27 and item.get("image") == {}
+        for body in captured_doc_bodies
+        for item in body.get("children", [])
+    )
     assert events.index("part1") < events.index("extract_frames") < events.index("extract_audio") < events.index("llm_deconstruct") < events.index("doc_deconstruct") < events.index("bitable")
 
 
@@ -157,7 +189,12 @@ def test_acceptance_deconstruct_recreate_order_and_image_blocks(tmp_path, monkey
     )
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: events.append("llm_precheck"))
     monkeypatch.setattr(runner, "deconstruct", lambda text: events.append("deconstruct") or dict(deconstruct_result))
-    monkeypatch.setattr(runner, "recreate", lambda text, source: events.append("recreate") or _recreate_payload())
+    monkeypatch.setattr(
+        runner,
+        "recreate",
+        lambda text, source: events.append("recreate")
+        or {**_recreate_payload(), "media_type": "image_post", "video_storyboard": []},
+    )
 
     import src.feishu_doc_writer as doc_writer
     import src.feishu_writer as bitable_writer
@@ -165,15 +202,30 @@ def test_acceptance_deconstruct_recreate_order_and_image_blocks(tmp_path, monkey
     def fake_doc(title, content, folder_token=None, doc_kind="deconstruct"):
         events.append(f"doc_{doc_kind}")
         if doc_kind == "recreate":
-            content["storyboard_image_assets"] = [{"shot_no": "1", "file_token": "image2_token"}]
-            doc_writer.append_storyboard_table("doc_recreate", content["video_storyboard"], "token", content["storyboard_image_assets"], strict_images=True)
+            assert content["media_type"] == "image_post"
+            assert content["video_storyboard"] == []
+            assert content["image_post_script"]
             return DocRef("doc_recreate", "https://feishu/doc_recreate")
-        content["storyboard_image_assets"] = [{"asset_id": "image_001", "file_token": "source_image_token"}]
+        content["storyboard_image_assets"] = [{"asset_id": "image_001", "path": str(image)}]
         doc_writer.append_storyboard_table("doc_deconstruct", content["video_storyboard"], "token", content["storyboard_image_assets"], strict_images=True)
         return DocRef("doc_deconstruct", "https://feishu/doc_deconstruct")
 
     monkeypatch.setattr(doc_writer, "create_checked_doc", fake_doc)
-    monkeypatch.setattr(doc_writer.requests, "post", lambda *args, **kwargs: SimpleNamespace(status_code=200, text="", json=lambda: {"code": 0}))
+    monkeypatch.setattr(
+        doc_writer.requests,
+        "post",
+        lambda *args, **kwargs: SimpleNamespace(
+            status_code=200,
+            text="",
+            json=lambda: (
+                {"code": 0, "data": {"children": [{"block_id": "image_block", "block_type": 27}]}}
+                if kwargs.get("json", {}).get("children") == [{"block_type": 27, "image": {}}]
+                else _docx_table_response(kwargs.get("json", {}))
+            ),
+        ),
+    )
+    monkeypatch.setattr(doc_writer.requests, "patch", lambda *args, **kwargs: SimpleNamespace(status_code=200, text="", json=lambda: {"code": 0}))
+    monkeypatch.setattr(doc_writer, "upload_feishu_doc_image", lambda document_id, file_path, token, feishu_base=None, parent_node=None: "image_token")
     monkeypatch.setattr(bitable_writer, "build_attachment_plan", lambda result: events.append("attachments") or [])
     monkeypatch.setattr(bitable_writer, "write_deconstruction", lambda result, source_text, bitable_url=None: events.append("bitable") or "rec2")
 

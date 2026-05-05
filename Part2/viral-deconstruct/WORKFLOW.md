@@ -35,8 +35,12 @@ https://tcnwueberajc.feishu.cn/wiki/GgOewSQVziIEaIkYoZYcs1c7nTh?table=tblk0Oepol
 ## 文档格式强约束
 
 - 飞书文档不使用 Markdown 表格冒充表格；分镜必须使用飞书 Docx Table Block。
-- 分镜表字段：`画面图`、`描述`、`字幕`、`口播`、`运镜`。
+- 分镜表字段：`画面图`、`画面描述`、`字幕`、`口播`、`运镜`。
 - `画面图` 单元格不能写本地路径、URL 或“见附件”冒充图片；有图片 token 时必须插入 Image Block。
+- 字段语义固定：
+  - `visual`/`画面描述`：只写画面、动作、场景、构图、道具等视觉描述。
+  - `subtitle`/`字幕`：拆解时只写真正在原视频里识别/抓取到的字幕；再创作时只有确实需要上屏文字才写。不能用来放画面描述，不能默认每个镜头都加。
+  - `voiceover`/`口播`：拆解时只写真识别到的口播；再创作时写计划口播。没有就留空。
 
 
 ## 文档排版最终约定
@@ -58,9 +62,9 @@ https://tcnwueberajc.feishu.cn/wiki/GgOewSQVziIEaIkYoZYcs1c7nTh?table=tblk0Oepol
 - `VIDEO_UNDERSTANDING_PROVIDER` 支持 `gpt_frames` / `qwen_omni` / `hybrid`。
 - Qwen-Omni 只生成 `native_video_observation`，最终拆解 JSON 仍由主模型基于证据包输出。
 - `hybrid` 模式下 Qwen-Omni 失败可回退到本地抽帧；主模型失败不得写文档/写表。
-- 保留最终需要的原视频、原音频、原图和分镜示意图。
+- 保留最终需要的原视频、原音频、原图；分镜示意图只在用户明确要求生成时保留。
 - 【再创作】必须基于【拆解】结构化结果，尤其是 `video_storyboard`，不得跳过拆解直接创作。
-- 再创作文档的分镜脚本需要调用 gpt-image-2 生成镜头示意图，上传飞书后插入文档表格。
+- 再创作文档默认不调用 gpt-image-2 生成镜头示意图，避免消耗 Codex 图片额度；只有用户明确说“生成示意图 / 生成分镜图 / 带画面图 / image2 / gpt-image-2”时才生成并插入文档表格。
 
 ## 最新用户规则整理
 
@@ -76,10 +80,13 @@ https://tcnwueberajc.feishu.cn/wiki/GgOewSQVziIEaIkYoZYcs1c7nTh?table=tblk0Oepol
   - “封面图/前五秒”只放封面图或前五秒预览。
   - 新增“原文件”附件字段，保留完整原作品（视频或原图）。
   - 新增/使用“原音频”附件字段，单独保留音频。
-- 分镜文档：使用飞书真正表格承接，字段：画面图、描述、字幕、口播、运镜。字段允许空白。
+- 分镜文档：使用飞书真正表格承接，字段：画面图、画面描述、字幕、口播、运镜。字段允许空白。
+  - `画面描述` 承接 `visual`，不是 `subtitle`。
+  - 拆解文档中 `字幕` / `口播` 必须来自真实识别/抓取；没有就空，不补“假设复刻字幕”。
+  - 再创作文档中 `字幕` 是可选计划上屏文字，`口播` 是可选计划说出口的声音；两者都不是必填内容，图文脚本和视频脚本二选一。
   - 拆解文档的画面图来自上传后的关键帧/原图 `file_token`，插入 `block_type=27` 图片块。
-  - image2 生成的示意图放在文档分镜表格的“画面图”。
-  - image2 图片不应只塞进多维表格附件。
+  - 未明确要求 image2 时，再创作文档的“画面图”允许留空，只写画面描述、运镜、剪辑要点等文本执行稿。
+  - 明确要求 image2 时，生成的示意图放在文档分镜表格的“画面图”，不应只塞进多维表格附件。
 - 每次写入飞书多维表格或飞书云文档，只需要反馈对应链接；不需要反馈本地备份路径。
 
 ## 入口媒体类型识别
@@ -109,7 +116,7 @@ https://tcnwueberajc.feishu.cn/wiki/GgOewSQVziIEaIkYoZYcs1c7nTh?table=tblk0Oepol
    - 原音频附件
    - 拆解文档链接
    - 再创作文档链接
-   - 爆点拆解 / 爆点迁移 / 核心价值等摘要字段
+   - 总结 / 爆点拆解 / 爆点迁移 / 核心价值等摘要字段
 8. 写表前必须检查目标 record 是否存在；如果不存在，新建 record；不能假装更新成功。
 9. 若用户要求“重新来”，默认新建干净文档和干净记录，不沿用旧脏数据。
 
@@ -129,6 +136,7 @@ https://tcnwueberajc.feishu.cn/wiki/GgOewSQVziIEaIkYoZYcs1c7nTh?table=tblk0Oepol
 - 原标题
 - 参考链接
 - 平台
+- 总结
 - 赛道/标签
 - 封面图/前五秒
 - 原文件
@@ -148,5 +156,7 @@ https://tcnwueberajc.feishu.cn/wiki/GgOewSQVziIEaIkYoZYcs1c7nTh?table=tblk0Oepol
 
 ## 文档分镜表图片规则
 
-- 再创作文档视频分镜表的「画面图」必须使用 gpt-image-2 生成的示意图。
-- 画面图不应用路径/URL 纯文字替代；若图片写入失败，必须明确失败，不假装完成。
+- 再创作文档默认不生成 gpt-image-2 示意图；视频分镜表的「画面图」可以留空。
+- 只有用户明确要求 image2 / 示意图 / 分镜图 / 带画面图时，才调用 gpt-image-2 并把示意图插入「画面图」。
+- 明确要求生成图片时，画面图不应用路径/URL 纯文字替代；若图片写入失败，必须明确失败，不假装完成。
+- 飞书 Docx 表格有行数/单元格限制；长分镜必须自动拆成多个真表格继续写，不能退回 Markdown 表格。

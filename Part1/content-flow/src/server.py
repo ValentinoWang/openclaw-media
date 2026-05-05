@@ -7,6 +7,7 @@ import shutil
 import threading
 import time
 import uuid
+from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -26,18 +27,75 @@ _JOBS: dict[str, dict[str, Any]] = {}
 _LOCK = threading.Lock()
 
 
+def _iso_timestamp(value: float | None) -> str | None:
+    if value is None:
+        return None
+    return datetime.fromtimestamp(value, timezone.utc).astimezone().isoformat(timespec="seconds")
+
+
+def _round_seconds(value: float | None) -> float | None:
+    if value is None:
+        return None
+    return round(max(value, 0.0), 1)
+
+
+def _close_current_stage(job: dict[str, Any], now: float) -> None:
+    stage = job.get("stage")
+    if not stage or stage in {"queued", "done", "error"}:
+        return
+    started_at = job.get("stage_started_at")
+    if not isinstance(started_at, (int, float)):
+        return
+    durations = dict(job.get("stage_durations") or {})
+    durations[stage] = round(float(durations.get(stage, 0.0)) + max(now - started_at, 0.0), 3)
+    job["stage_durations"] = durations
+
+
+def _snapshot_job(job: dict[str, Any]) -> dict[str, Any]:
+    snapshot = dict(job)
+    now = time.time()
+    started_at = snapshot.get("started_at")
+    finished_at = snapshot.get("finished_at")
+    end_at = finished_at if isinstance(finished_at, (int, float)) else now
+    if isinstance(started_at, (int, float)):
+        snapshot["elapsed_seconds"] = _round_seconds(end_at - started_at)
+    stage_started_at = snapshot.get("stage_started_at")
+    if isinstance(stage_started_at, (int, float)):
+        snapshot["stage_elapsed_seconds"] = _round_seconds(end_at - stage_started_at)
+    snapshot["started_at_iso"] = _iso_timestamp(started_at)
+    snapshot["updated_at_iso"] = _iso_timestamp(snapshot.get("updated_at"))
+    snapshot["finished_at_iso"] = _iso_timestamp(finished_at)
+    snapshot["stage_durations"] = {
+        key: _round_seconds(value)
+        for key, value in dict(snapshot.get("stage_durations") or {}).items()
+    }
+    return snapshot
+
+
 def _set_job(job_id: str, **updates: Any) -> None:
     with _LOCK:
         job = _JOBS.get(job_id)
         if not job:
             return
+        now = time.time()
+        finished_at = updates.get("finished_at")
+        transition_at = finished_at if isinstance(finished_at, (int, float)) else now
+        new_stage = updates.get("stage")
+        if new_stage and new_stage != job.get("stage"):
+            _close_current_stage(job, transition_at)
+            updates.setdefault("stage_started_at", transition_at)
+        if "finished_at" in updates and updates["finished_at"] is None:
+            updates.pop("finished_at")
+        elif isinstance(finished_at, (int, float)) and not new_stage:
+            _close_current_stage(job, finished_at)
+        updates.setdefault("updated_at", now)
         job.update(updates)
 
 
 def _get_job(job_id: str) -> dict[str, Any] | None:
     with _LOCK:
         job = _JOBS.get(job_id)
-        return dict(job) if job else None
+        return _snapshot_job(job) if job else None
 
 
 def _create_job(url: str) -> str:
@@ -54,7 +112,9 @@ def _create_job(url: str) -> str:
             "result": None,
             "error": None,
             "started_at": now,
+            "updated_at": now,
             "stage_started_at": now,
+            "stage_durations": {},
             "finished_at": None,
         }
     return job_id
@@ -62,18 +122,12 @@ def _create_job(url: str) -> str:
 
 def _make_progress(job_id: str):
     def progress(stage: str, percent: int, message: str) -> None:
-        now = time.time()
-        job = _get_job(job_id)
-        stage_started_at = job.get("stage_started_at") if job else now
-        if job and job.get("stage") != stage:
-            stage_started_at = now
         _set_job(
             job_id,
             status="running",
             stage=stage,
             percent=percent,
             message=message,
-            stage_started_at=stage_started_at,
         )
 
     return progress
