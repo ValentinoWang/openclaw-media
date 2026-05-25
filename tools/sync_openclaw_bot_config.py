@@ -18,6 +18,7 @@ OBSIDIAN_CONFIG = OBSIDIAN_DIR / "openclaw_bots.json"
 OBSIDIAN_NOTE = OBSIDIAN_DIR / "OpenClaw Bot LLM 配置.md"
 SYNC_STATE = OBSIDIAN_DIR / ".openclaw_bots_sync_state.json"
 MAC_OBSIDIAN_DIR = "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/openclaw配置"
+SYNC_AGENT_MODELS = Path("/home/ubuntu/selfmedia-tools/tools/sync_openclaw_agent_models.py")
 
 
 def canonical_payload(path: Path) -> dict[str, Any]:
@@ -162,6 +163,8 @@ def render_note(payload: dict[str, Any], repo_hash: str, obsidian_hash: str) -> 
             "python3 /home/ubuntu/selfmedia-tools/tools/sync_openclaw_bot_config.py",
             "python3 /home/ubuntu/selfmedia-tools/tools/sync_openclaw_bot_config.py --direction obsidian-to-repo",
             "python3 /home/ubuntu/selfmedia-tools/tools/sync_openclaw_bot_config.py --direction repo-to-obsidian",
+            "python3 /home/ubuntu/selfmedia-tools/tools/sync_openclaw_agent_models.py",
+            "python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_runtime.py",
             "```",
             "",
         ]
@@ -241,6 +244,7 @@ def main() -> None:
         atomic_write(OBSIDIAN_NOTE, note)
     write_state(repo_hash, obsidian_hash, direction, dry_run=args.dry_run)
     if args.restart_services and direction != "none" and not args.dry_run:
+        subprocess.run(["python3", str(SYNC_AGENT_MODELS)], check=True)
         subprocess.run(
             ["systemctl", "--user", "restart", "content-flow.service", "openclaw-feishu-gateway.service"],
             check=True,

@@ -28,7 +28,7 @@ def test_all_feishu_bots_have_openclaw_runtime() -> None:
 
 
 def test_profiles_are_the_single_source_for_openclaw_use_cases() -> None:
-    assert display_openclaw_model(profile_runtime("system_guide").model) == "gpt-5.3-codex-spark"
+    assert display_openclaw_model(profile_runtime("system_guide").model) == "gpt-5.5"
     assert profile_runtime("knowledge_research").thinking == "xhigh"
     assert profile_runtime("media_analysis").agent == "feishu-media"
     assert profile_runtime("media_creation").agent == "feishu-media"

@@ -32,7 +32,7 @@
     "system_guide": {
       "provider": "openclaw_codex",
       "bot": "main",
-      "model": "openai-codex/gpt-5.3-codex-spark",
+      "model": "openai-codex/gpt-5.5",
       "thinking": "medium"
     },
     "knowledge_delegate": {

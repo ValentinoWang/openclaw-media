@@ -39,16 +39,22 @@ python3 /home/ubuntu/selfmedia-tools/common/content_cleaner_cli.py \
 
 LLM 配置统一读取 `config/openclaw_bots.json`。所有模型供应方都在 `providers`：OpenClaw/Codex 是 `providers.openclaw_codex`，DeepSeek 是 `providers.main_llm`，Qwen 是 `providers.qwen`；`bots` 和各类任务 `profiles` 都显式写自己的 `provider`，不会再从 `defaults.provider` 隐式继承；内容清洗就是 `profiles.content_cleaner`。
 
-`openclaw-tag-router` 运行扩展的源码也统一收口到仓库内的 `openclaw-tag-router/`。运行目录 `/home/ubuntu/.openclaw/extensions/openclaw-tag-router` 只是部署目标，不再当作事实来源。部署命令：
+`openclaw-tag-router` 运行扩展的源码也统一收口到仓库内的 `openclaw-tag-router/`。运行目录 `/home/ubuntu/.openclaw/extensions/openclaw-tag-router` 只是部署目标，不再当作事实来源。OpenClaw agent 运行时使用的 `~/.openclaw/agents/*/agent/models.json`，以及 Gateway 的 `~/.openclaw/openclaw.json` 中 `agents.defaults.model` / `agents.defaults.models` / `models.providers`，也都由同一个 `config/openclaw_bots.json` 自动生成，不再手工维护。部署命令：
 
 ```bash
-python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_tag_router.py
+python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_runtime.py
 ```
 
-如果只想同步文件、不重启网关：
+如果只想重建 OpenClaw agent 的 `models.json`：
 
 ```bash
-python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_tag_router.py --no-restart
+python3 /home/ubuntu/selfmedia-tools/tools/sync_openclaw_agent_models.py
+```
+
+如果只想同步 runtime 文件、不重启网关：
+
+```bash
+python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_runtime.py --no-restart
 ```
 
 ## 各模块是做什么的
