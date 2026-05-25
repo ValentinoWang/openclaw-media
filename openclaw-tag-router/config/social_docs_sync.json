@@ -1,0 +1,21 @@
+{
+  "doc_title": "OpenClaw Social bot 使用说明",
+  "restricted_visibility": true,
+  "restricted_viewer_open_id_env": "FEISHU_REMINDER_TARGET_OPEN_ID",
+  "restricted_viewer_perm": "view",
+  "permission_type": "docx",
+  "permission_note": "仅小王可见，不挂当前知识库",
+  "document_id": "BnXrdwvHKoEi0qxeDcvcblcon4b",
+  "doc_url": "https://tcnwueberajc.feishu.cn/docx/BnXrdwvHKoEi0qxeDcvcblcon4b",
+  "wiki_url": "",
+  "wiki_node_token": "",
+  "last_public_permission": {
+    "external_access": false,
+    "invite_external": false,
+    "link_share_entity": "closed"
+  },
+  "restricted_viewer_granted": true,
+  "restricted_viewer_member_type": "openid",
+  "last_synced_at": "2026-05-18T02:49:43+08:00",
+  "last_source_sha256": "cb848a802aef461afd83ad08608f3962de354fcd46d1a340dfb0e7cb03522e71"
+}

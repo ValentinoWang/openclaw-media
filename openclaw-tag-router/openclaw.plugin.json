@@ -1,0 +1,39 @@
+{
+  "id": "openclaw-tag-router",
+  "name": "OpenClaw Tag Router",
+  "description": "Tag-driven ingress bridge for Feishu messages",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true
+      },
+      "routeBase": {
+        "type": "string",
+        "default": "/api/channels/openclaw-tag-router"
+      },
+      "pythonBin": {
+        "type": "string",
+        "default": "python3"
+      },
+      "dataRoot": {
+        "type": "string",
+        "default": "/home/ubuntu/.openclaw/workspace/openclaw-tag-router"
+      },
+      "settingsPath": {
+        "type": "string",
+        "default": "/home/ubuntu/.openclaw/extensions/openclaw-tag-router/config/settings.yaml"
+      },
+      "qqWebhookPath": {
+        "type": "string",
+        "default": "/plugins/openclaw-tag-router/qqbot/callback"
+      },
+      "qqWebhookSecret": {
+        "type": "string",
+        "default": ""
+      }
+    }
+  }
+}

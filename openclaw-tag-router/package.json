@@ -1,0 +1,20 @@
+{
+  "name": "openclaw-tag-router",
+  "version": "0.1.0",
+  "description": "Tag-driven Feishu ingest bridge for the existing OpenClaw gateway",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "check:docs": "python3 scripts/check_tag_router_docs_sync.py && python3 scripts/sync_tag_router_docs_to_feishu.py --check && python3 scripts/sync_tag_router_docs_to_feishu.py --check --doc-path '/home/ubuntu/docs/说明书/OpenClaw Social bot 使用说明.md' --config-path config/social_docs_sync.json",
+    "sync:docs": "python3 scripts/check_tag_router_docs_sync.py && python3 scripts/sync_tag_router_docs_to_feishu.py && python3 scripts/sync_tag_router_docs_to_feishu.py --doc-path '/home/ubuntu/docs/说明书/OpenClaw Social bot 使用说明.md' --config-path config/social_docs_sync.json",
+    "tags": "python3 scripts/check_tag_router_docs_sync.py --json"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.4.8"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ]
+  }
+}

@@ -39,6 +39,18 @@ python3 /home/ubuntu/selfmedia-tools/common/content_cleaner_cli.py \
 
 LLM 配置统一读取 `config/openclaw_bots.json`。所有模型供应方都在 `providers`：OpenClaw/Codex 是 `providers.openclaw_codex`，DeepSeek 是 `providers.main_llm`，Qwen 是 `providers.qwen`；`bots` 和各类任务 `profiles` 都显式写自己的 `provider`，不会再从 `defaults.provider` 隐式继承；内容清洗就是 `profiles.content_cleaner`。
 
+`openclaw-tag-router` 运行扩展的源码也统一收口到仓库内的 `openclaw-tag-router/`。运行目录 `/home/ubuntu/.openclaw/extensions/openclaw-tag-router` 只是部署目标，不再当作事实来源。部署命令：
+
+```bash
+python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_tag_router.py
+```
+
+如果只想同步文件、不重启网关：
+
+```bash
+python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_tag_router.py --no-restart
+```
+
 ## 各模块是做什么的
 
 | 模块 | 目录 | 主要职责 | 输入 | 主要输出 | 飞书定位 |

@@ -1,0 +1,78 @@
+workspace_root: /home/ubuntu/.openclaw/workspace/openclaw-tag-router
+source: feishu
+chat_type: private
+timezone: Asia/Shanghai
+entry_tag_rules:
+  社交:
+    default_tags: [社交, 人物档案]
+    feishu_doc: 社交档案记录
+  内容素材:
+    detect_links: true
+    category_rules:
+      - name: 运动-记录
+        keywords: [运动, 健身, 跑步, 训练, 骑行, 篮球, 足球, 瑜伽]
+      - name: AI工具-创作者提效
+        keywords: [AI, OpenClaw, Codex, Skill, 工具, 提示词, 自动化, 效率]
+      - name: 内容运营-爆款拆解
+        keywords: [小红书运营, 爆款, 创作者, 涨粉, 选题, 文案, 拆解]
+      - name: 教育-学习成长
+        keywords: [高考, 学习, 校园, 考研, 备考, 课程, 学生]
+      - name: 本地生活-探店美食
+        keywords: [探店, 美食, 餐厅, 咖啡, 打卡, 门店]
+      - name: 旅行-记录
+        keywords: [旅行, 旅拍, 城市, 景点, 攻略, 出行]
+      - name: 职场生活-身份反差
+        keywords: [毕业, 应届, 打工, 工厂, 车床, 职场, 上班, 厂仔, 身份反差]
+      - name: 情绪共鸣-青春回忆
+        keywords: [青春, 回忆, 高三, 毕业季, 遗憾, 成长]
+content_flow:
+  base_url: http://127.0.0.1:8000
+  poll_interval_seconds: 1
+  poll_attempts: 240
+feishu_reminder:
+  enabled: true
+  command: /usr/bin/python3
+  script: /home/ubuntu/openclaw-feishu-reminder/reminder.py
+  timeout_seconds: 720
+  bitable_url: https://tcnwueberajc.feishu.cn/base/Q7n4bucuGa3I2psTOyLcuepknkh
+  config_paths:
+    内容素材: /home/ubuntu/openclaw-feishu-reminder/wiki-content-config.json
+    活动: /home/ubuntu/openclaw-feishu-reminder/wiki-activity-config.json
+    自媒体知识: /home/ubuntu/openclaw-feishu-reminder/knowledge-config.json
+    知识: /home/ubuntu/openclaw-feishu-reminder/knowledge-config.json
+  env_files:
+    - /home/ubuntu/.openclaw/openclaw-feishu-env.conf
+    - /home/ubuntu/openclaw-feishu-reminder/reminder.env
+feishu:
+  # 需要入飞书知识库请改为 knowledge_base；webhook 模式只走应用消息/网关
+  mode: knowledge_base
+  local_docs_dir: /home/ubuntu/.openclaw/workspace/openclaw-tag-router/outbox/feishu_docs
+  webhook_url: ''
+  app_id: ${FEISHU_APP_ID}
+  app_secret: ${FEISHU_APP_SECRET}
+  api_base_url: https://open.feishu.cn/open-apis
+  web_base_url: https://tcnwueberajc.feishu.cn
+  folder_token: ''
+  knowledge_base_space_id: ${FEISHU_KB_SPACE_ID}
+  knowledge_base_parent_node_token: ${FEISHU_KB_PARENT_NODE_TOKEN}
+  knowledge_base_obj_type: docx
+  # 支持按文档名匹配多个知识库空间（按顺序匹配，最后一个兜底）
+  knowledge_base_spaces:
+    - name: "知识库-技术"
+      pattern: "*技术*"
+      space_id: ${FEISHU_KB_SPACE_ID_TECH}
+      parent_node_token: ${FEISHU_KB_PARENT_NODE_TOKEN_TECH}
+    - name: "知识库-会议"
+      pattern: "会议*"
+      space_id: ${FEISHU_KB_SPACE_ID_MEETING}
+      parent_node_token: ${FEISHU_KB_PARENT_NODE_TOKEN_MEETING}
+    - pattern: "*"
+      space_id: ${FEISHU_KB_SPACE_ID}
+      parent_node_token: ${FEISHU_KB_PARENT_NODE_TOKEN}
+mac_agent:
+  mode: local
+  queue_dir: /home/ubuntu/.openclaw/workspace/openclaw-tag-router/outbox/mac_agent_queue
+  obsidian_root: /home/ubuntu/obsidian-diary/日程
+  local_obsidian_root: /home/ubuntu/obsidian-diary/日程
+reply:
+  include_paths: true
