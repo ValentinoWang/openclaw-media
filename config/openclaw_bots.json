@@ -1,0 +1,87 @@
+{
+  "defaults": {
+    "bin": "/home/ubuntu/.nvm/versions/node/v22.22.2/bin/openclaw",
+    "codex_home": "/home/ubuntu/.openclaw/codex-home",
+    "model": "openai-codex/gpt-5.5",
+    "thinking": "xhigh",
+    "timeout": 1800
+  },
+  "bots": {
+    "main": {
+      "agent": "feishu-main",
+      "cwd": "/home/ubuntu/openclaw-agents/main",
+      "model": "openai-codex/gpt-5.5",
+      "thinking": "xhigh",
+      "timeout": 1800
+    },
+    "daily": {
+      "agent": "feishu-daily",
+      "cwd": "/home/ubuntu/openclaw-agents/daily",
+      "model": "openai-codex/gpt-5.5",
+      "thinking": "xhigh",
+      "timeout": 1800
+    },
+    "knowledge": {
+      "agent": "feishu-knowledge",
+      "cwd": "/home/ubuntu/openclaw-agents/knowledge",
+      "model": "openai-codex/gpt-5.5",
+      "thinking": "high",
+      "timeout": 1800
+    },
+    "media": {
+      "agent": "feishu-media",
+      "cwd": "/home/ubuntu/openclaw-agents/media",
+      "model": "openai-codex/gpt-5.5",
+      "thinking": "xhigh",
+      "timeout": 1800
+    },
+    "social": {
+      "agent": "feishu-social",
+      "cwd": "/home/ubuntu/openclaw-agents/social",
+      "model": "openai-codex/gpt-5.5",
+      "thinking": "xhigh",
+      "timeout": 1800
+    }
+  },
+  "profiles": {
+    "system_guide": {
+      "bot": "main",
+      "model": "openai-codex/gpt-5.3-codex-spark",
+      "thinking": "medium",
+      "timeout": 1800
+    },
+    "knowledge_delegate": {
+      "bot": "knowledge",
+      "thinking": "high"
+    },
+    "knowledge_research": {
+      "bot": "knowledge",
+      "thinking": "xhigh"
+    },
+    "transcription_postprocess": {
+      "bot": "knowledge",
+      "thinking": "high",
+      "timeout": 1800
+    },
+    "media_analysis": {
+      "bot": "media",
+      "thinking": "xhigh",
+      "timeout": 1800
+    },
+    "media_creation": {
+      "bot": "media",
+      "thinking": "xhigh",
+      "timeout": 1800
+    },
+    "activity_cleaning": {
+      "bot": "media",
+      "thinking": "medium",
+      "timeout": 300
+    },
+    "social_vision": {
+      "bot": "social",
+      "thinking": "xhigh",
+      "timeout": 900
+    }
+  }
+}

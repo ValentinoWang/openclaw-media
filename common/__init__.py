@@ -10,6 +10,13 @@ from .content_cleaner import (
     source_from_context,
     strip_false_clean_marker,
 )
+from .bot_llm_config import (
+    BotLLMRuntime,
+    bot_runtime,
+    display_openclaw_model,
+    load_bot_llm_config,
+    profile_runtime,
+)
 from .llm_settings import (
     API_TYPE_CHAT_COMPLETIONS,
     API_TYPE_CODEX_RESPONSES,
@@ -28,22 +35,27 @@ from .llm_settings import (
 __all__ = [
     "API_TYPE_CHAT_COMPLETIONS",
     "API_TYPE_CODEX_RESPONSES",
+    "BotLLMRuntime",
     "ContentCleanerConfig",
     "ContentCleanerLLMSettings",
     "LLMProviderSettings",
     "OpenClawAgentSettings",
     "QwenProviderSettings",
+    "bot_runtime",
     "clean_collected_text",
     "clean_ocr_text",
     "clean_text_by_source",
     "clean_transcript_text",
     "config_from_env",
+    "display_openclaw_model",
     "load_analysis_agent_settings",
+    "load_bot_llm_config",
     "load_content_cleaner_llm_settings",
     "load_creation_agent_settings",
     "load_main_llm_settings",
     "load_qwen_settings",
     "normalize_thinking",
+    "profile_runtime",
     "source_from_context",
     "strip_false_clean_marker",
 ]

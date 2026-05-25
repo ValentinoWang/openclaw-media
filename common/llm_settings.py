@@ -3,14 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 
+from .bot_llm_config import (
+    normalize_openclaw_model,
+    profile_runtime,
+)
+
 
 API_TYPE_CHAT_COMPLETIONS = "openai_chat_completions"
 API_TYPE_CODEX_RESPONSES = "openai_codex_responses"
-
-DEFAULT_OPENCLAW_BIN = "/home/ubuntu/.nvm/versions/node/v22.22.2/bin/openclaw"
-DEFAULT_OPENCLAW_CWD = "/home/ubuntu/openclaw-agents/media"
-DEFAULT_CODEX_HOME = "/home/ubuntu/.openclaw/codex-home"
-
 
 @dataclass(frozen=True)
 class LLMProviderSettings:
@@ -48,13 +48,6 @@ class ContentCleanerLLMSettings:
     provider: LLMProviderSettings
     max_chars: int
     max_tokens: int
-
-
-def normalize_openclaw_model(model: str) -> str:
-    value = (model or "").strip()
-    if value and "/" not in value:
-        return f"openai-codex/{value}"
-    return value
 
 
 def normalize_thinking(value: str, *, default: str = "high") -> str:
@@ -97,28 +90,30 @@ def load_qwen_settings() -> QwenProviderSettings:
 
 
 def load_analysis_agent_settings() -> OpenClawAgentSettings:
+    runtime = profile_runtime("media_analysis")
     return OpenClawAgentSettings(
-        bin=os.getenv("SELFMEDIA_ANALYSIS_OPENCLAW_BIN", DEFAULT_OPENCLAW_BIN),
-        agent=os.getenv("SELFMEDIA_ANALYSIS_OPENCLAW_AGENT", ""),
-        model=normalize_openclaw_model(os.getenv("SELFMEDIA_ANALYSIS_OPENCLAW_MODEL", "")),
-        allow_model_override=env_bool("SELFMEDIA_ANALYSIS_OPENCLAW_ALLOW_MODEL_OVERRIDE", "0"),
-        timeout=env_float("SELFMEDIA_ANALYSIS_OPENCLAW_TIMEOUT", "1800"),
-        thinking=normalize_thinking(os.getenv("SELFMEDIA_ANALYSIS_OPENCLAW_THINKING", "xhigh")),
-        cwd=os.getenv("SELFMEDIA_ANALYSIS_OPENCLAW_CWD", DEFAULT_OPENCLAW_CWD),
-        codex_home=os.getenv("SELFMEDIA_ANALYSIS_CODEX_HOME", DEFAULT_CODEX_HOME),
+        bin=runtime.bin,
+        agent=runtime.agent,
+        model=runtime.model,
+        allow_model_override=True,
+        timeout=runtime.timeout,
+        thinking=normalize_thinking(runtime.thinking),
+        cwd=runtime.cwd,
+        codex_home=runtime.codex_home,
     )
 
 
 def load_creation_agent_settings() -> OpenClawAgentSettings:
+    runtime = profile_runtime("media_creation")
     return OpenClawAgentSettings(
-        bin=os.getenv("SELFMEDIA_CREATION_OPENCLAW_BIN", DEFAULT_OPENCLAW_BIN),
-        agent=os.getenv("SELFMEDIA_CREATION_OPENCLAW_AGENT", ""),
-        model=normalize_openclaw_model(os.getenv("SELFMEDIA_CREATION_OPENCLAW_MODEL", "")),
+        bin=runtime.bin,
+        agent=runtime.agent,
+        model=runtime.model,
         allow_model_override=True,
-        timeout=env_float("SELFMEDIA_CREATION_OPENCLAW_TIMEOUT", "1800"),
-        thinking=normalize_thinking(os.getenv("SELFMEDIA_CREATION_OPENCLAW_THINKING", "xhigh")),
-        cwd=os.getenv("SELFMEDIA_CREATION_OPENCLAW_CWD", DEFAULT_OPENCLAW_CWD),
-        codex_home=os.getenv("SELFMEDIA_CREATION_CODEX_HOME", DEFAULT_CODEX_HOME),
+        timeout=runtime.timeout,
+        thinking=normalize_thinking(runtime.thinking),
+        cwd=runtime.cwd,
+        codex_home=runtime.codex_home,
     )
 
 

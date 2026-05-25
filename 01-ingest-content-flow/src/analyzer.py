@@ -281,10 +281,10 @@ def analyze_with_openclaw(user_content: str, settings: Settings) -> Optional[dic
     timeout = max(int(settings.analysis_openclaw_timeout or 0), 1)
     model = _normalize_openclaw_model(settings.analysis_openclaw_model)
     if not model:
-        print("OpenClaw/Codex 分析模型未配置：SELFMEDIA_ANALYSIS_OPENCLAW_MODEL 为空。", flush=True)
+        print("OpenClaw/Codex 分析模型未配置：config/openclaw_bots.json media_analysis.model 为空。", flush=True)
         return None
     if not settings.analysis_openclaw_agent.strip():
-        print("OpenClaw/Codex 分析 agent 未配置：SELFMEDIA_ANALYSIS_OPENCLAW_AGENT 为空。", flush=True)
+        print("OpenClaw/Codex 分析 agent 未配置：config/openclaw_bots.json media_analysis.agent 为空。", flush=True)
         return None
     display_model = model
     source_key = hashlib.sha1(user_content[:5000].encode("utf-8")).hexdigest()[:12]

@@ -179,9 +179,9 @@ def _call_openclaw_json(message: str) -> dict[str, Any]:
     openclaw_bin = settings.bin.strip() or "openclaw"
     timeout = max(int(settings.timeout), 1)
     if not settings.agent:
-        raise RuntimeError("OpenClaw 创作 agent 未配置：SELFMEDIA_CREATION_OPENCLAW_AGENT 为空")
+        raise RuntimeError("OpenClaw 创作 agent 未配置：config/openclaw_bots.json media_creation.agent 为空")
     if not settings.model:
-        raise RuntimeError("OpenClaw 创作模型未配置：SELFMEDIA_CREATION_OPENCLAW_MODEL 为空")
+        raise RuntimeError("OpenClaw 创作模型未配置：config/openclaw_bots.json media_creation.model 为空")
     session_id = f"media-creation-{time.time_ns()}"
     cmd = [
         openclaw_bin,

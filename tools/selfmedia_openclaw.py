@@ -39,6 +39,7 @@ from common.social_runtime import (  # noqa: E402
     write_json,
     write_markdown,
 )
+from common.bot_llm_config import bot_runtime
 
 SOCIAL_THEORY_TAGS = ("/女性爱", "/性兴趣", "/风控", "/性资源", "/行动")
 DEPRECATED_SOCIAL_THEORY_TAGS = ("/风控量表",)
@@ -673,14 +674,15 @@ def install_cron(args: argparse.Namespace) -> dict[str, Any]:
         command += f" --monitor-url {args.monitor_url!r}"
     if args.report_url:
         command += f" --report-url {args.report_url!r}"
+    runtime = bot_runtime("media")
     cron_command = [
-        "openclaw",
+        runtime.bin,
         "cron",
         "add",
         "--name",
         args.name,
         "--agent",
-        "feishu-media",
+        runtime.agent,
         "--cron",
         args.cron,
         "--tz",

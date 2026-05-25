@@ -36,6 +36,7 @@ from common.social_runtime import (  # noqa: E402
     load_default_env_files,
     load_env_file,
 )
+from common.bot_llm_config import bot_runtime
 from common.standard_fields import normalize_standard_fields, standard_field_specs
 from common.standard_fields import select_fields_for_write
 
@@ -1114,18 +1115,26 @@ def notify_social(message: str, *, dry_run: bool = False) -> dict[str, Any]:
             "--json",
         ]
     else:
+        runtime = bot_runtime("social")
         cmd = [
-            "openclaw",
+            runtime.bin,
             "agent",
             "--agent",
-            os.getenv("ID_BUSINESS_NOTIFY_AGENT", "feishu-social"),
+            runtime.agent,
             "--message",
             message,
+            "--model",
+            runtime.model,
+            "--thinking",
+            runtime.thinking,
             "--json",
             "--timeout",
-            "1800",
+            str(int(runtime.timeout)),
         ]
-    completed = subprocess.run(cmd, text=True, capture_output=True, check=False, timeout=1860)
+    run_env = os.environ.copy()
+    if not target:
+        run_env["CODEX_HOME"] = runtime.codex_home
+    completed = subprocess.run(cmd, text=True, capture_output=True, check=False, timeout=1860, env=run_env)
     stdout_summary = summarize_openclaw_cli_output(completed.stdout)
     return {
         "ok": completed.returncode == 0,
@@ -1297,14 +1306,15 @@ def install_cron(args: argparse.Namespace) -> dict[str, Any]:
     command = ["/home/ubuntu/selfmedia-tools/tools/openclaw_media/id_business.py", "poll", "--notify", "--require-feishu"]
     if args.feishu_url:
         command.extend(["--feishu-url", args.feishu_url])
+    runtime = bot_runtime("media")
     cron_command = [
-        "openclaw",
+        runtime.bin,
         "cron",
         "add",
         "--name",
         args.name,
         "--agent",
-        "feishu-media",
+        runtime.agent,
         "--cron",
         args.cron,
         "--tz",

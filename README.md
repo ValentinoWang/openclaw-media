@@ -237,7 +237,7 @@ OPENCLAW_CONVERSATION_CONTEXT_JSON='{"loaded_count":1,"prompt":"最近飞书对�
 
 ## 飞书怎么接
 
-当前方案默认复用 OpenClaw 的 `feishu-media` 媒体 Bot 信息。
+当前方案默认复用 OpenClaw 的 `feishu-media` 媒体 Bot 信息。所有 Bot 的 OpenClaw agent/model/thinking/timeout/cwd 配置统一在 `config/openclaw_bots.json`，不要再用分散环境变量覆盖。
 
 也就是说，一般不需要再在 README 里让你手动填：
 

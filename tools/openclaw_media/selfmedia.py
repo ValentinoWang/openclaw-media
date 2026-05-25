@@ -9,12 +9,6 @@ from pathlib import Path
 
 
 BRIDGE = Path("/home/ubuntu/selfmedia-tools/tools/selfmedia_openclaw.py")
-CONTENT_OS_SCRIPT_MODEL = "gpt-5.5"
-CONTENT_OS_SCRIPT_THINKING = "xhigh"
-CONTENT_OS_SCRIPT_AGENT = "feishu-media"
-CONTENT_OS_SCRIPT_CWD = "/home/ubuntu/openclaw-agents/media"
-CONTENT_OS_SCRIPT_TIMEOUT = "1800"
-CREATIVE_GENERATION_COMMANDS = ("creation-inspiration", "material-creation")
 SOCIAL_THEORY_TAGS = ("/女性爱", "/性兴趣", "/风控", "/性资源", "/行动")
 DEPRECATED_SOCIAL_THEORY_TAGS = ("/风控量表",)
 SLASH_THEORY_RE = re.compile(r"/([\w\u4e00-\u9fff-]+)")
@@ -51,24 +45,10 @@ def reject_social_theory_tags(argv: list[str]) -> None:
         )
 
 
-def argv_uses_creative_generation_model(argv: list[str]) -> bool:
-    if any(command in argv for command in CREATIVE_GENERATION_COMMANDS):
-        return True
-    if "creation" in argv and ("run" in argv or "creation" in argv):
-        return True
-    return False
-
-
 def main() -> None:
     reject_social_theory_tags(sys.argv[1:])
     command = [sys.executable, str(BRIDGE), *sys.argv[1:]]
     env = os.environ.copy()
-    if argv_uses_creative_generation_model(sys.argv[1:]):
-        env.setdefault("SELFMEDIA_CREATION_OPENCLAW_AGENT", CONTENT_OS_SCRIPT_AGENT)
-        env.setdefault("SELFMEDIA_CREATION_OPENCLAW_MODEL", CONTENT_OS_SCRIPT_MODEL)
-        env.setdefault("SELFMEDIA_CREATION_OPENCLAW_THINKING", CONTENT_OS_SCRIPT_THINKING)
-        env.setdefault("SELFMEDIA_CREATION_OPENCLAW_TIMEOUT", CONTENT_OS_SCRIPT_TIMEOUT)
-        env.setdefault("SELFMEDIA_CREATION_OPENCLAW_CWD", CONTENT_OS_SCRIPT_CWD)
     completed = subprocess.run(command, text=True, check=False, env=env)
     raise SystemExit(completed.returncode)
 
