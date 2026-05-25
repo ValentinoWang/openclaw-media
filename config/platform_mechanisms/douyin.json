@@ -1,0 +1,68 @@
+{
+  "platform": "抖音",
+  "mechanism_version": "douyin_2026_05_v1",
+  "status": "active",
+  "baseline_summary": "抖音内容更重视推荐流首帧、前段停留、完播/观看深度、互动反馈和转粉理由。",
+  "default_traffic_entries": ["推荐流", "搜索", "话题/挑战", "同城或关注关系"],
+  "default_labels": ["短视频", "强开头", "情绪推进", "互动触发"],
+  "user_actions_to_design": ["停留", "完播", "评论", "分享", "关注"],
+  "key_feedback": "停留、完播、互动和关注",
+  "content_reasoning": {
+    "click_reason": "首帧和标题在 1 秒内交代冲突、结果或反常识收益。",
+    "stay_reason": "前 3 秒给出明确承诺，随后用案例/动作连续兑现。",
+    "save_or_interaction_reason": "给出可马上模仿的动作，结尾抛出低门槛评论问题或连续更新理由。"
+  },
+  "core_signals": [
+    {
+      "name": "前 3 秒停留",
+      "description": "用户是否在最短时间内看懂冲突、对象和收益。",
+      "creation_action": "首帧给结果或冲突，前 3 秒说清看完理由。",
+      "validation_metrics": ["前 3 秒留存", "播放启动率"]
+    },
+    {
+      "name": "观看深度",
+      "description": "内容是否能持续兑现开头承诺。",
+      "creation_action": "用连续案例、动作或反转推进，减少空泛解释。",
+      "validation_metrics": ["平均观看时长", "完播率"]
+    },
+    {
+      "name": "互动触发",
+      "description": "用户是否愿意评论自己的相似问题、立场或结果。",
+      "creation_action": "结尾提出低门槛问题，避免泛泛求赞。",
+      "validation_metrics": ["评论率", "分享率"]
+    },
+    {
+      "name": "转粉理由",
+      "description": "用户是否能理解关注后还能持续获得什么。",
+      "creation_action": "结尾给系列承诺或下一条相关问题。",
+      "validation_metrics": ["主页访问", "转粉率"]
+    }
+  ],
+  "content_type_actions": {
+    "图文": {
+      "cover_or_first_screen": ["首图必须像视频首帧一样给出冲突或结果。"],
+      "opening": ["第 1 页直接进入问题，不做长铺垫。"],
+      "structure": ["冲突/误区 -> 示例 -> 方法 -> 行动问题。"],
+      "save_comment_follow_trigger": ["用评论问题和系列更新理由承接互动。"]
+    },
+    "视频": {
+      "cover_or_first_screen": ["首帧出现具体场景、人物动作或结果，不只放抽象标题。"],
+      "opening": ["前 3 秒说清这条视频解决什么问题，或先给反常识结论。"],
+      "structure": ["钩子 -> 冲突/错误示范 -> 关键动作 -> 对比结果 -> 评论/关注触发。"],
+      "save_comment_follow_trigger": ["结尾给一个可回复的问题，或预告下一条解决相邻问题。"]
+    }
+  },
+  "validation_targets": {
+    "two_hour": ["首屏点击/播放启动", "前 3 秒留存", "评论启动", "推荐来源占比"],
+    "twenty_four_hour": ["平均观看时长", "完播率", "互动率", "转粉率"],
+    "seven_day": ["搜索/推荐长尾", "系列内容回访", "账号垂直标签是否更清晰"]
+  },
+  "evidence_policy": {
+    "S": "平台官方公示、官方创作者文档、明确活动规则",
+    "A": "自己账号多次发布复盘验证",
+    "B": "爆款拆解 + 自己少量数据支持",
+    "C": "全网创作者实测或经验帖",
+    "D": "LLM 推测或人工假设"
+  },
+  "forbidden_claim_patterns": ["破解算法", "平台真实权重", "黑箱权重", "精确权重", "保证爆款", "必爆"]
+}

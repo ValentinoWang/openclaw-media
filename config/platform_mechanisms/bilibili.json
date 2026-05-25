@@ -1,0 +1,68 @@
+{
+  "platform": "B站",
+  "mechanism_version": "bilibili_2026_05_v1",
+  "status": "active",
+  "baseline_summary": "B站内容更重视分区、用户偏好、观看深度、社区互动和系列化价值，当前先做中低精度拟合。",
+  "default_traffic_entries": ["首页推荐", "分区", "搜索", "动态/关注", "相关推荐"],
+  "default_labels": ["分区", "系列化", "观看深度", "社区讨论"],
+  "user_actions_to_design": ["长时间观看", "收藏", "投币", "评论", "弹幕", "关注"],
+  "key_feedback": "观看深度、收藏投币和社区互动",
+  "content_reasoning": {
+    "click_reason": "标题和封面明确分区语境、收益和差异化观点。",
+    "stay_reason": "开头快速给出问题框架和看完收益，中段持续提供信息密度。",
+    "save_or_interaction_reason": "提供体系化内容、资料价值或值得讨论的观点。"
+  },
+  "core_signals": [
+    {
+      "name": "分区匹配",
+      "description": "内容是否能被用户和平台理解为明确分区下的作品。",
+      "creation_action": "标题、封面和开头明确分区语境与看完收益。",
+      "validation_metrics": ["点击率", "分区来源"]
+    },
+    {
+      "name": "观看深度",
+      "description": "内容是否能支撑较长观看和持续信息密度。",
+      "creation_action": "开头给框架，中段用案例、证据和方法推进。",
+      "validation_metrics": ["平均观看时长", "完播率"]
+    },
+    {
+      "name": "社区互动",
+      "description": "用户是否愿意评论、弹幕或参与观点讨论。",
+      "creation_action": "留下可讨论观点、分歧点或系列问题。",
+      "validation_metrics": ["评论质量", "弹幕量"]
+    },
+    {
+      "name": "系列化价值",
+      "description": "用户是否愿意收藏或关注后续内容。",
+      "creation_action": "内容组织成系列目录或可复用知识结构。",
+      "validation_metrics": ["收藏/投币", "粉丝增长", "系列回访"]
+    }
+  ],
+  "content_type_actions": {
+    "图文": {
+      "cover_or_first_screen": ["首图突出分区和体系化收益。"],
+      "opening": ["先给问题背景和结论。"],
+      "structure": ["问题 -> 原因 -> 案例 -> 方法 -> 讨论点。"],
+      "save_comment_follow_trigger": ["留下可讨论观点或系列目录。"]
+    },
+    "视频": {
+      "cover_or_first_screen": ["封面强调主题、分区和看完收益。"],
+      "opening": ["前 15 秒交代问题框架和观看理由。"],
+      "structure": ["问题定义 -> 证据/案例 -> 方法框架 -> 复盘 -> 讨论。"],
+      "save_comment_follow_trigger": ["引导收藏、投币或讨论相邻议题。"]
+    }
+  },
+  "validation_targets": {
+    "two_hour": ["点击率", "前 30 秒留存", "弹幕/评论启动"],
+    "twenty_four_hour": ["平均观看时长", "收藏/投币", "评论质量"],
+    "seven_day": ["搜索长尾", "系列回访", "粉丝增长"]
+  },
+  "evidence_policy": {
+    "S": "平台官方公示、官方创作者文档、明确活动规则",
+    "A": "自己账号多次发布复盘验证",
+    "B": "爆款拆解 + 自己少量数据支持",
+    "C": "全网创作者实测或经验帖",
+    "D": "LLM 推测或人工假设"
+  },
+  "forbidden_claim_patterns": ["破解算法", "平台真实权重", "黑箱权重", "精确权重", "保证爆款", "必爆"]
+}

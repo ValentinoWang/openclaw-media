@@ -1,0 +1,68 @@
+{
+  "platform": "小红书",
+  "mechanism_version": "xiaohongshu_2026_05_v1",
+  "status": "active",
+  "baseline_summary": "小红书内容更重视封面点击、搜索长尾、收藏价值、评论互动和活动话题适配。",
+  "default_traffic_entries": ["首页推荐", "搜索长尾", "活动话题", "关注关系"],
+  "default_labels": ["图文笔记", "搜索词", "收藏价值", "评论触发"],
+  "user_actions_to_design": ["点击", "阅读/停留", "收藏", "评论", "关注"],
+  "key_feedback": "点击、停留、收藏和评论",
+  "content_reasoning": {
+    "click_reason": "封面和标题明确人群、问题和可获得结果，让用户一眼判断和自己有关。",
+    "stay_reason": "前 1-2 页快速给出场景和判断标准，后面用步骤或案例兑现。",
+    "save_or_interaction_reason": "提供可收藏的清单、步骤、模板、自查标准，结尾抛出具体评论问题。"
+  },
+  "core_signals": [
+    {
+      "name": "封面点击",
+      "description": "用户是否因为封面和标题产生第一眼点击。",
+      "creation_action": "封面第一眼打痛点、结果或方法论收益。",
+      "validation_metrics": ["封面点击率", "曝光点击比"]
+    },
+    {
+      "name": "收藏价值",
+      "description": "用户是否认为内容值得保存以后再看。",
+      "creation_action": "正文提供步骤、清单、SOP、模板、避坑点。",
+      "validation_metrics": ["收藏率", "收藏/点赞比"]
+    },
+    {
+      "name": "搜索长尾",
+      "description": "内容是否能被平台和用户用明确关键词理解。",
+      "creation_action": "标题、正文、标签中埋入个人IP、内容创作、素材库、写作SOP、选题等词。",
+      "validation_metrics": ["搜索来源占比", "7天长尾阅读"]
+    },
+    {
+      "name": "评论触发",
+      "description": "用户是否愿意表达自己的相似问题或经历。",
+      "creation_action": "结尾引导用户留言自己的卡点，而不是泛泛求互动。",
+      "validation_metrics": ["评论率", "评论关键词"]
+    }
+  ],
+  "content_type_actions": {
+    "图文": {
+      "cover_or_first_screen": ["封面用具体场景 + 明确问题，不只写概念。", "首图/前两页要给搜索词和收藏理由。"],
+      "opening": ["第 1 页先说人群和痛点，第 2 页给一个可验证判断。"],
+      "structure": ["场景痛点 -> 误区/错位 -> 3-5 个步骤 -> 自查标准 -> 评论问题。"],
+      "save_comment_follow_trigger": ["用清单、模板、自查标准制造收藏理由，用低门槛问题制造评论。"]
+    },
+    "视频": {
+      "cover_or_first_screen": ["首帧给出具体场景或问题结果。"],
+      "opening": ["前 3 秒交代真实痛点和看完收益。"],
+      "structure": ["钩子 -> 场景 -> 方法 -> 对照 -> 行动。"],
+      "save_comment_follow_trigger": ["结尾给一个用户能直接回答的问题。"]
+    }
+  },
+  "validation_targets": {
+    "two_hour": ["封面点击率", "前 2 页/前 3 秒停留", "收藏启动", "评论问题是否启动"],
+    "twenty_four_hour": ["收藏率", "评论率", "主页访问/转粉", "推荐/搜索来源"],
+    "seven_day": ["搜索长尾", "收藏回流", "同主题后续内容表现"]
+  },
+  "evidence_policy": {
+    "S": "平台官方公示、官方创作者文档、明确活动规则",
+    "A": "自己账号多次发布复盘验证",
+    "B": "爆款拆解 + 自己少量数据支持",
+    "C": "全网创作者实测或经验帖",
+    "D": "LLM 推测或人工假设"
+  },
+  "forbidden_claim_patterns": ["破解算法", "平台真实权重", "黑箱权重", "精确权重", "保证爆款", "必爆"]
+}

@@ -1,0 +1,1246 @@
+from __future__ import annotations
+
+import base64
+import ast
+import json
+import mimetypes
+import os
+import re
+import sys
+import time
+from dataclasses import dataclass, asdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
+
+import requests
+
+from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
+from common.llm_settings import LLMProviderSettings, load_main_llm_settings
+from common.social_runtime import (
+    FEISHU_BASE,
+    feishu_bitable_refs,
+    feishu_coerce_value,
+    feishu_ensure_fields,
+    feishu_field_types,
+    feishu_headers,
+    feishu_tenant_access_token,
+    load_default_env_files,
+)
+from tools.media_context import record_review_memory
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT_DIR = ROOT / "tools" / "data_review" / "outputs"
+DATA_REVIEW_PATTERN = re.compile(r"^\s*【数据复盘】")
+REQUEST_KEYS = (
+    "平台|账号|作者ID|博主|赛道|类型|内容类型|主体|主题|标题|作品|作品标题|发布时间|发布链接|作品链接|"
+    "创作记录ID|作品档案|数据节点|复盘节点|分析要求|要求|补充说明|用户想法|想法"
+)
+KEY_VALUE_RE = re.compile(rf"(?P<key>{REQUEST_KEYS})\s*[=:：]\s*(?P<value>.*?)(?=\s+(?:{REQUEST_KEYS})\s*[=:：]|$)")
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".heic"}
+
+DEFAULT_GUIDE_URL = "https://tcnwueberajc.feishu.cn/wiki/UyFJwM6SEipIXokm5RFcz0XsnXg"
+DEFAULT_TABLE_URL = os.getenv(
+    "MEDIA_OS_DATA_REVIEW_URL",
+    "https://tcnwueberajc.feishu.cn/wiki/CNKdwXKFzi3Wb5k5ePpcbzcmnTg?table=tblRuSBcwWtukY3r&view=vewcwxtsxt",
+)
+DEFAULT_OUTPUT_PARENT_NODE_TOKEN = os.getenv("MEDIA_OS_DATA_REVIEW_PARENT_NODE_TOKEN", "CNKdwXKFzi3Wb5k5ePpcbzcmnTg")
+
+DATA_REVIEW_FIELD_SPECS = {
+    "标题": 1,
+    "记录类型": 1,
+    "主题": 1,
+    "平台": 4,
+    "账号名称": 1,
+    "内容类型": 4,
+    "赛道": 4,
+    "发布时间": 1,
+    "发布链接": 15,
+    "复盘节点": 1,
+    "复盘状态": 3,
+    "主状态": 3,
+    "入库时间": 5,
+    "创建时间": 5,
+    "更新时间": 5,
+    "摘要": 1,
+    "表现评级": 3,
+    "文档链接JSON": 1,
+    "截图路径JSON": 1,
+    "指标证据JSON": 1,
+    "曲线观察JSON": 1,
+    "单一事实JSON": 1,
+    "关键指标JSON": 1,
+    "问题诊断JSON": 1,
+    "行动建议JSON": 1,
+    "数据质量JSON": 1,
+    "详情JSON": 1,
+}
+
+DATA_REVIEW_SELECT_OPTIONS = {
+    "平台": ["抖音", "小红书", "视频号", "B站", "未知"],
+    "内容类型": ["视频", "图文", "笔记", "直播", "unknown"],
+    "赛道": ["校园生活", "运动康复", "跑步训练", "AI科技", "学习方法", "职场成长", "生活方式", "商业合作", "所有赛道", "未提供", "其他"],
+    "主状态": ["待处理", "处理中", "已完成", "待人工补充", "失败", "已归档", "已发布", "已复盘", "已建档"],
+    "复盘状态": ["待复盘", "已复盘", "2小时已复盘", "24小时已复盘", "7天已复盘", "复盘完成", "写入失败"],
+    "表现评级": ["高价值延续", "值得重剪", "观察", "不建议延续", "未评级"],
+}
+
+DATA_REVIEW_SELECT_FIELD_TYPES = {
+    "平台": 4,
+    "内容类型": 4,
+    "赛道": 4,
+    "主状态": 3,
+    "复盘状态": 3,
+    "表现评级": 3,
+}
+DATA_REVIEW_OPTIONAL_FIELDS = {"发布链接"}
+
+METRIC_GROUPS = ("overview", "retention", "traffic", "interaction", "audience", "diagnosis")
+AUDIENCE_KEYWORDS = ("观众", "受众", "粉丝画像", "性别", "女性", "男性", "年龄", "城市", "省", "地域", "兴趣", "职业", "设备", "新老用户", "城市等级")
+TRAFFIC_KEYWORDS = ("来源", "推荐", "首页", "搜索", "朋友页", "关注页", "个人主页", "消息页", "同城", "曝光到观看转化", "占总曝光", "占总观看")
+RETENTION_KEYWORDS = ("跳出", "完播", "留存", "播放时长", "观看时长", "播放占比", "观看深度", "停留", "平均观看")
+INTERACTION_KEYWORDS = ("点赞", "评论", "收藏", "分享", "互动", "弹幕", "赞藏", "不感兴趣")
+DIAGNOSIS_KEYWORDS = ("诊断", "状态", "内容丰富度得分", "分数", "评级")
+MISSING_TEXT = "未提供"
+NOT_SHOWN_TEXT = "截图未显示"
+NO_EXTRA_TEXT = "无"
+
+
+@dataclass(frozen=True)
+class DataReviewRequest:
+    platform: str = ""
+    account: str = ""
+    track: str = ""
+    content_type: str = ""
+    topic: str = ""
+    title: str = ""
+    publish_time: str = ""
+    publish_url: str = ""
+    creation_record_id: str = ""
+    data_window: str = ""
+    analysis_requirements: str = ""
+    notes: str = ""
+    raw_text: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def handle_data_review_command(
+    raw_text: str,
+    *,
+    attachment_paths: list[str] | None = None,
+    no_write: bool = False,
+    table_url: str = "",
+    output_parent_node_token: str = "",
+    guide_url: str = "",
+    conversation_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    load_default_env_files()
+    attachments = _existing_images(attachment_paths or [])
+    request = parse_data_review_request(raw_text)
+    reviewed_at = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds")
+
+    if not attachments:
+        return {
+            "ok": False,
+            "status": "missing_screenshots",
+            "reply": "【数据复盘】未开始：请先上传抖音/小红书后台数据截图，再发送 `【数据复盘】`。",
+        }
+
+    guide_text = read_feishu_document_text(guide_url or DEFAULT_GUIDE_URL)
+    analysis = analyze_data_screenshots(
+        request=request,
+        screenshots=attachments,
+        reviewed_at=reviewed_at,
+        guide_text=guide_text,
+        conversation_context=conversation_context or {},
+    )
+    normalized = normalize_analysis(analysis, request)
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y%m%d-%H%M%S")
+    local_json = OUTPUT_DIR / f"{stamp}-data-review.json"
+    local_md = OUTPUT_DIR / f"{stamp}-data-review.md"
+
+    doc_link = ""
+    record_id = ""
+    memory_result: dict[str, Any] = {}
+    if not no_write:
+        doc_link = create_data_review_doc(
+            request=request,
+            analysis=normalized,
+            screenshots=attachments,
+            reviewed_at=reviewed_at,
+            parent_node_token=output_parent_node_token or DEFAULT_OUTPUT_PARENT_NODE_TOKEN,
+            guide_url=guide_url or DEFAULT_GUIDE_URL,
+        )
+        record_id = write_data_review_record(
+            request=request,
+            analysis=normalized,
+            screenshots=attachments,
+            reviewed_at=reviewed_at,
+            doc_link=doc_link,
+            table_url=table_url or DEFAULT_TABLE_URL,
+        )
+        memory_result = record_review_memory(_review_memory_text(request, normalized), source="data-review")
+
+    payload = {
+        "ok": True,
+        "status": "dry_run" if no_write else "written",
+        "reviewed_at": reviewed_at,
+        "request": request.to_dict(),
+        "screenshots": attachments,
+        "analysis": normalized,
+        "doc_link": doc_link,
+        "record_id": record_id,
+        "memory": memory_result,
+        "write_errors": [],
+        "local_json": str(local_json),
+        "local_report": str(local_md),
+    }
+    payload["reply"] = format_data_review_reply(payload)
+    local_json.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    local_md.write_text(render_data_review_report(payload), encoding="utf-8")
+    return payload
+
+
+def parse_data_review_request(raw_text: str) -> DataReviewRequest:
+    text = raw_text.strip()
+    match = DATA_REVIEW_PATTERN.match(text)
+    body = text[match.end():].strip() if match else text
+    values = _parse_key_values(body)
+    return DataReviewRequest(
+        platform=(values.get("平台") or _infer_platform(body)).strip(),
+        account=(values.get("账号") or values.get("作者ID") or values.get("博主") or "").strip(),
+        track=(values.get("赛道") or "").strip(),
+        content_type=(values.get("内容类型") or values.get("类型") or "").strip(),
+        topic=(values.get("主体") or values.get("主题") or "").strip(),
+        title=(values.get("标题") or values.get("作品") or values.get("作品标题") or "").strip(),
+        publish_time=(values.get("发布时间") or "").strip(),
+        publish_url=(values.get("发布链接") or values.get("作品链接") or "").strip(),
+        creation_record_id=(values.get("创作记录ID") or values.get("作品档案") or "").strip(),
+        data_window=(values.get("数据节点") or values.get("复盘节点") or "").strip(),
+        analysis_requirements=(values.get("分析要求") or values.get("要求") or "").strip(),
+        notes=(values.get("补充说明") or values.get("用户想法") or values.get("想法") or "").strip(),
+        raw_text=raw_text,
+    )
+
+def _parse_key_values(body: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for match in KEY_VALUE_RE.finditer(body):
+        key = match.group("key").strip()
+        value = match.group("value").strip()
+        if value:
+            values[key] = value
+    return values
+
+
+def _infer_platform(text: str) -> str:
+    if "小红书" in text or "xhslink" in text:
+        return "小红书"
+    if "抖音" in text or "douyin" in text:
+        return "抖音"
+    return ""
+
+
+def _existing_images(paths: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for raw in paths:
+        path = Path(str(raw).strip()).expanduser()
+        if not path.exists() or not path.is_file() or path.stat().st_size <= 0:
+            continue
+        mime = mimetypes.guess_type(path.name)[0] or ""
+        if path.suffix.lower() not in IMAGE_EXTS and not mime.startswith("image/"):
+            continue
+        normalized = str(path)
+        if normalized not in seen:
+            seen.add(normalized)
+            result.append(normalized)
+    return result
+
+
+def analyze_data_screenshots(
+    *,
+    request: DataReviewRequest,
+    screenshots: list[str],
+    reviewed_at: str,
+    guide_text: str,
+    conversation_context: dict[str, Any],
+) -> dict[str, Any]:
+    prompt = (
+        "你是 Media bot 的自媒体作品数据复盘分析器。只输出合法 JSON object，不要 Markdown，不要解释。\n"
+        "任务：根据用户上传的抖音/小红书后台数据截图，完成作品数据分析、结论判断和下一步动作。\n"
+        "要求：\n"
+        "1. 只从截图和用户文字中抽取数据；看不清的字段必须写入 data_quality_notes，不要编造。\n"
+        "2. metrics 用键值对记录截图中可见数据，例如 播放/阅读/曝光/点赞/收藏/评论/分享/完播率/互动率/新增关注/主页访问/发布时间。\n"
+        "3. 如果截图包含曲线/趋势图，trend_curves 必须单独描述每条曲线：指标名、时间范围、峰值、拐点、衰减、二次推荐迹象、当前趋势；看不清则写不确定。\n"
+        "4. 必须先判定作品形式 media_format：video=视频，image_text=图文/笔记，unknown=截图无法判断；必须给 media_format_evidence 说明截图依据。\n"
+        "5. format_specific_metrics 必须按作品形式输出关键指标：video 至少关注 2s跳出率、完播率、5s完播率、平均播放时长、留存/跳出曲线、推荐页/流量来源；image_text 至少关注 封面点击率、曝光到观看转化、平均观看时长、互动率、收藏、评论、搜索/推荐来源。\n"
+        "6. atomic_facts 必须构造“单一事实”列表，每条只表达一个可验证事实，不要把两个指标或建议混在一条里；格式为对象数组：fact, metric, value, scope, evidence, source, confidence, implication, recommended_use。\n"
+        "7. priority_metrics 写 4-8 个最能指导后续发布的指标，不要简单罗列全部数据；格式为对象数组：metric, value, signal, why_it_matters, content_action。\n"
+        "8. content_guidance 聚焦内容生产调整：选题、前2秒钩子、结构节奏、视频时长、封面标题、评论引导、目标人群。\n"
+        "9. publishing_guidance 聚焦发布策略：发布时间、观察窗口、复投/重剪/停止标准、平台差异；没有截图依据则写不确定。\n"
+        "10. conclusion 必须是一句话结论，说明这条作品是否值得延续、问题在哪里、下一步怎么做。\n"
+        "11. key_insights 写 3-6 条数据洞察；next_actions 写可执行动作，不要泛泛建议。\n"
+        "12. problems、content_guidance、publishing_guidance、next_actions、data_quality_notes 尽量输出对象数组，不要把多个维度挤进一条字符串。\n"
+        "13. 不要为了填表重复输出同一批指标；原始可见数据放 metrics，作品形式专项指标放 format_specific_metrics，曲线只放 trend_curves，后续由脚本合并成表格字段。\n"
+        "14. 输出字段固定为：platform, account, media_format, media_format_evidence, format_specific_metrics, track, title, publish_time, data_window, metrics, atomic_facts, priority_metrics, trend_curves, metric_interpretation, conclusion, performance_level, key_insights, problems, content_guidance, publishing_guidance, next_actions, data_quality_notes。\n"
+    )
+    user_payload = {
+        "reviewed_at": reviewed_at,
+        "user_request": request.to_dict(),
+        "guide_or_template_from_feishu": guide_text[:20000],
+        "recent_conversation_context": conversation_context.get("prompt", ""),
+        "screenshot_count": len(screenshots),
+    }
+    parts: list[dict[str, Any]] = [
+        {"text": prompt + "\n\n输入上下文：" + json.dumps(user_payload, ensure_ascii=False)},
+    ]
+    for index, path in enumerate(screenshots, 1):
+        parts.append({"text": f"数据截图 {index}：{path}。请先 OCR 可见字段，再做复盘判断。"})
+        parts.append(_image_part(path))
+    config = load_llm_config()
+    return validate_data_review_analysis(generate_json_from_parts(parts, config))
+
+
+def validate_data_review_analysis(payload: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise ValueError("数据复盘模型输出必须是 JSON object")
+    analysis = dict(payload)
+    conclusion = str(analysis.get("conclusion") or "").strip()
+    if not conclusion:
+        raise ValueError("数据复盘结论不能为空")
+    analysis["conclusion"] = conclusion
+    analysis["media_format"] = str(analysis.get("media_format") or "").strip()
+    if analysis["media_format"] not in {"video", "image_text", "unknown"}:
+        raise ValueError("数据复盘必须输出 media_format，且只能是 video/image_text/unknown")
+    analysis["media_format_evidence"] = str(analysis.get("media_format_evidence") or "").strip()
+    if not analysis["media_format_evidence"]:
+        raise ValueError("数据复盘必须输出 media_format_evidence")
+    if not isinstance(analysis.get("metrics"), dict):
+        analysis["metrics"] = {}
+    if not isinstance(analysis.get("format_specific_metrics"), dict):
+        raise ValueError("数据复盘必须输出 format_specific_metrics")
+    if not isinstance(analysis.get("trend_curves"), (dict, list)):
+        analysis["trend_curves"] = {}
+    analysis["atomic_facts"] = normalize_structured_list(analysis.get("atomic_facts"))
+    if not analysis["atomic_facts"]:
+        raise ValueError("数据复盘必须输出 atomic_facts 单一事实列表")
+    analysis["priority_metrics"] = normalize_structured_list(analysis.get("priority_metrics"))
+    if not analysis["priority_metrics"]:
+        raise ValueError("数据复盘必须输出 priority_metrics 关键指标列表")
+    for key in ("metric_interpretation", "key_insights", "problems", "content_guidance", "publishing_guidance", "next_actions", "data_quality_notes"):
+        analysis[key] = normalize_text_list(analysis.get(key))
+    if not analysis["content_guidance"]:
+        raise ValueError("数据复盘必须输出 content_guidance 内容指导")
+    if not analysis["publishing_guidance"]:
+        raise ValueError("数据复盘必须输出 publishing_guidance 发布建议")
+    return analysis
+
+
+def normalize_text_list(value: Any) -> list[str]:
+    if value in (None, "", []):
+        return []
+    if isinstance(value, str):
+        return [item.strip(" -•\t") for item in re.split(r"[\n;；]+", value) if item.strip(" -•\t")]
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, dict):
+        result: list[str] = []
+        for key, item in value.items():
+            if isinstance(item, (dict, list)):
+                rendered = json.dumps(item, ensure_ascii=False, separators=(",", ":"))
+            else:
+                rendered = str(item).strip()
+            if rendered:
+                result.append(f"{key}：{rendered}")
+        return result
+    return [str(value).strip()]
+
+
+def normalize_table_items(value: Any) -> list[Any]:
+    if value in (None, "", []):
+        return []
+    items = value if isinstance(value, list) else [value]
+    result: list[Any] = []
+    for item in items:
+        parsed = parse_structured_text(item)
+        if isinstance(parsed, list):
+            result.extend(parsed)
+            continue
+        if parsed not in (None, "", []):
+            result.append(parsed)
+    return result
+
+
+def normalize_labeled_items(value: Any, label: str) -> list[dict[str, Any]]:
+    normalized = normalize_table_items(value)
+    result: list[dict[str, Any]] = []
+    for item in normalized:
+        if isinstance(item, dict):
+            result.append(item)
+            continue
+        text = str(item or "").strip()
+        if not text:
+            continue
+        match = re.match(r"^([^：:]{1,24})[：:]\s*(.+)$", text)
+        if match:
+            result.append({"维度": match.group(1).strip(), label: match.group(2).strip()})
+        else:
+            result.append({label: text})
+    return result
+
+
+def parse_structured_text(value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if not text:
+        return ""
+    if text[:1] not in {"{", "["}:
+        return text
+    for parser in (json.loads, ast.literal_eval):
+        try:
+            return parser(text)
+        except (ValueError, SyntaxError, TypeError, json.JSONDecodeError):
+            continue
+    return text
+
+
+def normalize_structured_list(value: Any) -> list[dict[str, Any]]:
+    if value in (None, "", []):
+        return []
+    items = value if isinstance(value, list) else [value]
+    result: list[dict[str, Any]] = []
+    for item in items:
+        if isinstance(item, dict):
+            clean = {str(key).strip(): item_value for key, item_value in item.items() if str(key).strip() and item_value not in (None, "", [])}
+            if clean:
+                result.append(clean)
+            continue
+    return result
+
+
+def normalize_analysis(raw: dict[str, Any], request: DataReviewRequest) -> dict[str, Any]:
+    analysis = dict(raw)
+    for key, request_value in {
+        "platform": request.platform,
+        "account": request.account,
+        "content_type": request.content_type,
+        "media_format": "",
+        "media_format_evidence": "",
+        "track": request.track,
+        "topic": request.topic,
+        "title": request.title or request.topic,
+        "publish_time": request.publish_time,
+        "data_window": request.data_window,
+    }.items():
+        analysis[key] = str(analysis.get(key) or request_value or "").strip()
+    analysis["metrics"] = analysis.get("metrics") if isinstance(analysis.get("metrics"), dict) else {}
+    return analysis
+
+
+def split_data_review_metrics(analysis: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    metrics: dict[str, Any] = {}
+    _merge_metric_map(metrics, analysis.get("metrics"))
+    _merge_metric_map(metrics, analysis.get("format_specific_metrics"))
+    grouped: dict[str, dict[str, Any]] = {name: {} for name in METRIC_GROUPS}
+    for key, value in metrics.items():
+        if _is_not_applicable_metric(value):
+            continue
+        group = metric_group_for_key(str(key))
+        add_flat_metric(grouped[group], str(key), value)
+    return grouped
+
+
+def add_flat_metric(target: dict[str, Any], key: str, value: Any) -> None:
+    if isinstance(value, dict):
+        for child_key, child_value in value.items():
+            child_name = f"{key}_{child_key}"
+            add_flat_metric(target, child_name, child_value)
+        return
+    if isinstance(value, list):
+        for index, child_value in enumerate(value, 1):
+            child_name = f"{key}_{index}"
+            add_flat_metric(target, child_name, child_value)
+        return
+    target[key] = value
+
+
+def _merge_metric_map(target: dict[str, Any], value: Any) -> None:
+    if not isinstance(value, dict):
+        return
+    for raw_key, item in value.items():
+        key = str(raw_key).strip()
+        if not key or _is_not_applicable_metric(item):
+            continue
+        if key in {"video", "image_text", "unknown"} and isinstance(item, dict):
+            _merge_metric_map(target, item)
+            continue
+        target[key] = item
+
+
+def normalize_platform_tags(value: Any) -> list[str]:
+    mapping = {
+        "douyin": "抖音",
+        "dy": "抖音",
+        "抖音": "抖音",
+        "巨量": "抖音",
+        "xhs": "小红书",
+        "xiaohongshu": "小红书",
+        "rednote": "小红书",
+        "小红书": "小红书",
+        "视频号": "视频号",
+        "wechat_channels": "视频号",
+        "wechat channel": "视频号",
+        "b站": "B站",
+        "bilibili": "B站",
+    }
+    return normalize_select_tags(value, default="未知", mapping=mapping, allowed=DATA_REVIEW_SELECT_OPTIONS["平台"])
+
+
+def normalize_media_format_tags(value: Any) -> list[str]:
+    mapping = {
+        "video": "视频",
+        "视频": "视频",
+        "short_video": "视频",
+        "image_text": "图文",
+        "image-text": "图文",
+        "图文": "图文",
+        "笔记": "笔记",
+        "note": "笔记",
+        "live": "直播",
+        "直播": "直播",
+        "unknown": "unknown",
+        "未知": "unknown",
+    }
+    return normalize_select_tags(value, default="unknown", mapping=mapping, allowed=DATA_REVIEW_SELECT_OPTIONS["内容类型"])
+
+
+def normalize_track_tags(value: Any) -> list[str]:
+    mapping = {
+        "校园": "校园生活",
+        "校园生活": "校园生活",
+        "清华": "校园生活",
+        "运动": "运动康复",
+        "运动康复": "运动康复",
+        "膝盖": "运动康复",
+        "跑步": "跑步训练",
+        "跑步训练": "跑步训练",
+        "ai": "AI科技",
+        "ai科技": "AI科技",
+        "科技": "AI科技",
+        "学习": "学习方法",
+        "学习方法": "学习方法",
+        "职场": "职场成长",
+        "职场成长": "职场成长",
+        "生活": "生活方式",
+        "生活方式": "生活方式",
+        "商务": "商业合作",
+        "商业合作": "商业合作",
+        "所有赛道": "所有赛道",
+        "未提供": "未提供",
+        "其他": "其他",
+    }
+    return normalize_select_tags(value, default="未提供", mapping=mapping, allowed=DATA_REVIEW_SELECT_OPTIONS["赛道"])
+
+
+def normalize_review_status(value: Any) -> str:
+    mapping = {
+        "待复盘": "待复盘",
+        "未复盘": "待复盘",
+        "已复盘": "已复盘",
+        "复盘完成": "复盘完成",
+        "完成": "复盘完成",
+        "写入失败": "写入失败",
+        "失败": "写入失败",
+    }
+    text = _select_source_text(value)
+    if "2" in text and "小时" in text:
+        return "2小时已复盘"
+    if "24" in text and "小时" in text:
+        return "24小时已复盘"
+    if "7" in text and "天" in text:
+        return "7天已复盘"
+    return normalize_single_select(value, default="已复盘", mapping=mapping, allowed=DATA_REVIEW_SELECT_OPTIONS["复盘状态"])
+
+
+def normalize_performance_rating(value: Any) -> str:
+    text = _select_source_text(value)
+    if any(word in text for word in ("重剪", "中低", "留存", "跳出", "推荐不足")):
+        return "值得重剪"
+    if any(word in text for word in ("高价值", "较好", "优秀", "值得延续", "强正向")):
+        return "高价值延续"
+    if any(word in text for word in ("不建议", "停止", "低价值")):
+        return "不建议延续"
+    if "观察" in text:
+        return "观察"
+    return normalize_single_select(value, default="未评级", mapping={"未评级": "未评级"}, allowed=DATA_REVIEW_SELECT_OPTIONS["表现评级"])
+
+
+def normalize_select_tags(value: Any, *, default: str, mapping: dict[str, str], allowed: list[str]) -> list[str]:
+    if value in (None, "", []):
+        return [default]
+    raw_items = value if isinstance(value, list) else re.split(r"[,，/、;；|]\s*", str(value))
+    result: list[str] = []
+    seen: set[str] = set()
+    for raw in raw_items:
+        text = str(raw or "").strip()
+        if not text:
+            continue
+        key = re.sub(r"\s+", " ", text).lower()
+        mapped = mapping.get(key) or mapping.get(text) or text
+        if mapped not in allowed:
+            mapped = default
+        if mapped and mapped not in seen:
+            seen.add(mapped)
+            result.append(mapped)
+    return result or [default]
+
+
+def normalize_single_select(value: Any, *, default: str, mapping: dict[str, str], allowed: list[str]) -> str:
+    text = _select_source_text(value)
+    if not text:
+        return default
+    key = re.sub(r"\s+", " ", text).lower()
+    mapped = mapping.get(key) or mapping.get(text) or text
+    return mapped if mapped in allowed else default
+
+
+def _select_source_text(value: Any) -> str:
+    if value in (None, "", []):
+        return ""
+    if isinstance(value, list):
+        return str(next((item for item in value if str(item).strip()), "")).strip()
+    return str(value).strip()
+
+
+def ensure_data_review_fields(app_token: str, table_id: str, token: str) -> None:
+    feishu_ensure_fields(app_token, table_id, token, DATA_REVIEW_FIELD_SPECS)
+    fields = _data_review_field_items(app_token, table_id, token)
+    for name, options in DATA_REVIEW_SELECT_OPTIONS.items():
+        item = fields.get(name)
+        if not item:
+            continue
+        target_type = DATA_REVIEW_SELECT_FIELD_TYPES.get(name, 4)
+        option_names = [
+            str(option.get("name") or "").strip()
+            for option in ((item.get("property") or {}).get("options") or [])
+            if str(option.get("name") or "").strip()
+        ]
+        merged_options = [option for option in options if option]
+        for option in option_names:
+            if option not in merged_options:
+                merged_options.append(option)
+        if item.get("type") == target_type and all(option in option_names for option in options):
+            continue
+        resp = requests.put(
+            f"{FEISHU_BASE}/bitable/v1/apps/{app_token}/tables/{table_id}/fields/{item.get('field_id')}",
+            headers=feishu_headers(token),
+            json={"field_name": name, "type": target_type, "property": {"options": [{"name": option} for option in merged_options]}},
+            timeout=20,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        if payload.get("code") != 0:
+            raise RuntimeError(f"更新数据复盘多选字段失败：{payload}")
+
+
+def _data_review_field_items(app_token: str, table_id: str, token: str) -> dict[str, dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    page_token = ""
+    while True:
+        params: dict[str, Any] = {"page_size": 100}
+        if page_token:
+            params["page_token"] = page_token
+        resp = requests.get(
+            f"{FEISHU_BASE}/bitable/v1/apps/{app_token}/tables/{table_id}/fields",
+            headers=feishu_headers(token),
+            params=params,
+            timeout=20,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        if payload.get("code") != 0:
+            raise RuntimeError(f"读取数据复盘字段失败：{payload}")
+        data = payload.get("data") or {}
+        items.extend(item for item in data.get("items") or [] if isinstance(item, dict))
+        if not data.get("has_more"):
+            break
+        page_token = str(data.get("page_token") or "")
+        if not page_token:
+            break
+    return {str(item.get("field_name")): item for item in items if item.get("field_name")}
+
+
+def build_metric_evidence_json(analysis: dict[str, Any]) -> dict[str, Any]:
+    metric_groups = split_data_review_metrics(analysis)
+    evidence: dict[str, Any] = {}
+    labels = {
+        "overview": "总览",
+        "retention": "留存",
+        "traffic": "流量来源",
+        "interaction": "互动",
+        "audience": "受众画像",
+        "diagnosis": "平台诊断",
+    }
+    for key, label in labels.items():
+        if metric_groups.get(key):
+            evidence[label] = metric_groups[key]
+    format_specific = analysis.get("format_specific_metrics")
+    if isinstance(format_specific, dict) and format_specific:
+        evidence["作品形式专项指标"] = format_specific
+    interpretation = normalize_table_items(analysis.get("metric_interpretation") or analysis.get("key_insights") or [])
+    if interpretation:
+        evidence["数据解释"] = interpretation
+    return evidence or {"说明": NOT_SHOWN_TEXT}
+
+
+def build_action_guidance_json(analysis: dict[str, Any]) -> dict[str, Any]:
+    actions = {
+        "内容调整": normalize_labeled_items(analysis.get("content_guidance") or [], "建议"),
+        "发布策略": normalize_labeled_items(analysis.get("publishing_guidance") or [], "策略"),
+        "下一步动作": normalize_labeled_items(analysis.get("next_actions") or [], "动作"),
+    }
+    return {key: value for key, value in actions.items() if value} or {"说明": NOT_SHOWN_TEXT}
+
+
+def build_data_quality_json(analysis: dict[str, Any]) -> dict[str, Any]:
+    quality = {
+        "作品形式依据": _required_text(analysis.get("media_format_evidence"), NOT_SHOWN_TEXT),
+        "截图识别说明": normalize_labeled_items(analysis.get("data_quality_notes") or [], "说明"),
+    }
+    return quality
+
+
+def _is_not_applicable_metric(value: Any) -> bool:
+    if value in (None, "", []):
+        return True
+    if isinstance(value, str):
+        clean = value.strip()
+        return not clean or clean.startswith("不适用")
+    if isinstance(value, dict):
+        return not value or all(_is_not_applicable_metric(item) for item in value.values())
+    if isinstance(value, list):
+        return not value or all(_is_not_applicable_metric(item) for item in value)
+    return False
+
+
+def metric_group_for_key(key: str) -> str:
+    if any(word in key for word in DIAGNOSIS_KEYWORDS):
+        return "diagnosis"
+    if "不感兴趣" in key:
+        return "interaction"
+    if any(word in key for word in AUDIENCE_KEYWORDS):
+        return "audience"
+    if any(word in key for word in TRAFFIC_KEYWORDS):
+        return "traffic"
+    if any(word in key for word in RETENTION_KEYWORDS):
+        return "retention"
+    if any(word in key for word in INTERACTION_KEYWORDS):
+        return "interaction"
+    return "overview"
+
+
+def complete_data_review_fields(fields: dict[str, Any], *, reviewed_at: str) -> dict[str, Any]:
+    completed = dict(fields)
+    title = str(completed.get("标题") or "数据复盘").strip()
+    completed["标题"] = title
+    completed["平台"] = normalize_platform_tags(completed.get("平台"))
+    completed["赛道"] = normalize_track_tags(completed.get("赛道"))
+    completed["账号名称"] = _required_text(completed.get("账号名称"), MISSING_TEXT)
+    completed["发布时间"] = _required_text(completed.get("发布时间"), NOT_SHOWN_TEXT)
+    completed["发布链接"] = str(completed.get("发布链接") or "").strip()
+    completed["内容类型"] = normalize_media_format_tags(completed.get("内容类型"))
+    completed["复盘节点"] = _required_text(completed.get("复盘节点"), NOT_SHOWN_TEXT)
+    completed["复盘状态"] = normalize_review_status(completed.get("复盘状态"))
+    completed["主状态"] = _required_text(completed.get("主状态"), "已复盘")
+    completed["入库时间"] = completed.get("入库时间") or reviewed_at
+    completed["创建时间"] = completed.get("创建时间") or reviewed_at
+    completed["更新时间"] = completed.get("更新时间") or reviewed_at
+    completed["摘要"] = _required_text(completed.get("摘要"), "模型未输出结论，应视为写入失败")
+    completed["表现评级"] = normalize_performance_rating(completed.get("表现评级"))
+    completed["文档链接JSON"] = _required_json(completed.get("文档链接JSON"), {})
+    completed["截图路径JSON"] = _required_json(completed.get("截图路径JSON"), [])
+    completed["指标证据JSON"] = _required_json(completed.get("指标证据JSON"), {"说明": NOT_SHOWN_TEXT})
+    completed["曲线观察JSON"] = _required_json(completed.get("曲线观察JSON"), [{"说明": NOT_SHOWN_TEXT}])
+    completed["单一事实JSON"] = _required_json(completed.get("单一事实JSON"), [{"说明": NOT_SHOWN_TEXT}])
+    completed["关键指标JSON"] = _required_json(completed.get("关键指标JSON"), [{"说明": NOT_SHOWN_TEXT}])
+    completed["问题诊断JSON"] = _required_json(completed.get("问题诊断JSON"), [{"说明": NOT_SHOWN_TEXT}])
+    completed["行动建议JSON"] = _required_json(completed.get("行动建议JSON"), {"说明": NOT_SHOWN_TEXT})
+    completed["数据质量JSON"] = _required_json(completed.get("数据质量JSON"), {"说明": NOT_SHOWN_TEXT})
+    completed["详情JSON"] = _required_json(completed.get("详情JSON"), {})
+    if not completed.get("文档链接JSON"):
+        raise RuntimeError("文档链接JSON不能为空")
+    return completed
+
+
+def _required_text(value: Any, default: str) -> str:
+    text = str(value or "").strip()
+    return text or default
+
+
+def _required_json(value: Any, default: Any) -> Any:
+    if value in (None, "", []):
+        return default
+    return value
+
+
+def write_data_review_record(
+    *,
+    request: DataReviewRequest,
+    analysis: dict[str, Any],
+    screenshots: list[str],
+    reviewed_at: str,
+    doc_link: str,
+    table_url: str,
+) -> str:
+    token = feishu_tenant_access_token()
+    app_token, table_id, token = data_review_bitable_refs(table_url, token)
+    ensure_data_review_fields(app_token, table_id, token)
+    field_types = feishu_field_types(app_token, table_id, token)
+    fields = {
+        "标题": analysis.get("title") or analysis.get("topic") or request.title or request.topic or "数据复盘",
+        "记录类型": "数据复盘",
+        "主题": analysis.get("topic") or request.topic or request.title or "",
+        "平台": analysis.get("platform") or request.platform,
+        "账号名称": analysis.get("account") or request.account,
+        "内容类型": analysis.get("media_format") or "",
+        "赛道": analysis.get("track") or request.track,
+        "发布时间": analysis.get("publish_time") or request.publish_time,
+        "发布链接": request.publish_url,
+        "复盘节点": analysis.get("data_window") or request.data_window,
+        "复盘状态": "已复盘",
+        "主状态": "已复盘",
+        "入库时间": reviewed_at,
+        "创建时间": reviewed_at,
+        "更新时间": reviewed_at,
+        "摘要": analysis.get("conclusion") or "",
+        "表现评级": analysis.get("performance_level") or "",
+        "文档链接JSON": {"review_doc": doc_link},
+        "截图路径JSON": screenshots,
+        "指标证据JSON": build_metric_evidence_json(analysis),
+        "曲线观察JSON": analysis.get("trend_curves") or {},
+        "单一事实JSON": analysis.get("atomic_facts") or [],
+        "关键指标JSON": analysis.get("priority_metrics") or [],
+        "问题诊断JSON": normalize_labeled_items(analysis.get("problems") or [], "问题"),
+        "行动建议JSON": build_action_guidance_json(analysis),
+        "数据质量JSON": build_data_quality_json(analysis),
+        "详情JSON": {
+            "user_notes": request.notes or NO_EXTRA_TEXT,
+            "analysis_requirements": request.analysis_requirements or NO_EXTRA_TEXT,
+            "creation_record_id": request.creation_record_id,
+        },
+    }
+    fields = complete_data_review_fields(fields, reviewed_at=reviewed_at)
+    missing_fields = [name for name in DATA_REVIEW_FIELD_SPECS if name not in field_types]
+    if missing_fields:
+        raise RuntimeError(f"数据复盘表缺少字段：{missing_fields}")
+    payload_fields: dict[str, Any] = {}
+    for key in DATA_REVIEW_FIELD_SPECS:
+        value = fields.get(key)
+        coerced = feishu_coerce_value(value, field_types.get(key))
+        if coerced in (None, "", []):
+            if key in DATA_REVIEW_OPTIONAL_FIELDS:
+                continue
+            raise RuntimeError(f"数据复盘字段为空：{key}")
+        payload_fields[key] = coerced
+    resp = requests.post(
+        f"{FEISHU_BASE}/bitable/v1/apps/{app_token}/tables/{table_id}/records",
+        headers=feishu_headers(token),
+        json={"fields": payload_fields},
+        timeout=20,
+    )
+    resp.raise_for_status()
+    payload = resp.json()
+    if payload.get("code") != 0:
+        raise RuntimeError(f"写入数据复盘表失败：{payload}")
+    return str(payload.get("data", {}).get("record", {}).get("record_id") or "")
+
+
+def data_review_bitable_refs(url: str, token: str) -> tuple[str, str, str]:
+    return feishu_bitable_refs(url, token)
+
+
+def create_data_review_doc(
+    *,
+    request: DataReviewRequest,
+    analysis: dict[str, Any],
+    screenshots: list[str],
+    reviewed_at: str,
+    parent_node_token: str,
+    guide_url: str,
+) -> str:
+    from tools.creation import writer
+
+    token = feishu_tenant_access_token()
+    title = doc_title(analysis, reviewed_at)
+    old_parent = os.environ.get("FEISHU_CREATION_DOC_PARENT_NODE_TOKEN")
+    os.environ["FEISHU_CREATION_DOC_PARENT_NODE_TOKEN"] = parent_node_token
+    try:
+        document_id, node_token = writer._create_doc(title, token)
+    finally:
+        if old_parent is None:
+            os.environ.pop("FEISHU_CREATION_DOC_PARENT_NODE_TOKEN", None)
+        else:
+            os.environ["FEISHU_CREATION_DOC_PARENT_NODE_TOKEN"] = old_parent
+    writer._append_blocks(document_id, data_review_doc_blocks(title, request, analysis, screenshots, reviewed_at, guide_url), token)
+    append_screenshot_images(document_id, screenshots, token)
+    return f"https://tcnwueberajc.feishu.cn/wiki/{node_token}" if node_token else f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
+
+
+def doc_title(analysis: dict[str, Any], reviewed_at: str) -> str:
+    dt = reviewed_at.replace("-", "").replace(":", "").replace("T", "-")[:15]
+    platform = str(analysis.get("platform") or "平台未识别").strip()
+    account = str(analysis.get("account") or "账号未填").strip()
+    topic = str(analysis.get("topic") or analysis.get("title") or "作品").strip()
+    topic = re.sub(r"[^\w\u4e00-\u9fff]+", "", topic)[:18] or "作品"
+    return f"数据复盘｜{platform}｜{account}｜{topic}｜{dt}"
+
+
+def data_review_doc_blocks(
+    title: str,
+    request: DataReviewRequest,
+    analysis: dict[str, Any],
+    screenshots: list[str],
+    reviewed_at: str,
+    guide_url: str,
+) -> list[dict[str, Any]]:
+    return [
+        _heading(1, title),
+        _paragraph(f"复盘时间：{reviewed_at}"),
+        _paragraph(f"平台：{analysis.get('platform') or request.platform or '未识别'}"),
+        _paragraph(f"账号：{analysis.get('account') or request.account or '未填写'}"),
+        _paragraph(f"作品：{analysis.get('title') or analysis.get('topic') or request.title or request.topic or '未填写'}"),
+        _paragraph(f"作品形式：{analysis.get('media_format') or 'unknown'}；依据：{analysis.get('media_format_evidence') or '未填写'}"),
+        _paragraph(f"数据截图：{len(screenshots)} 张"),
+        _paragraph(f"参考模板：{guide_url}"),
+        _heading(2, "一、核心结论"),
+        _paragraph(str(analysis.get("conclusion") or "")),
+        _heading(2, "二、核心数据"),
+        _paragraph(json.dumps(analysis.get("metrics") or {}, ensure_ascii=False, indent=2)),
+        _heading(2, "三、作品形式专项指标"),
+        _paragraph(json.dumps(analysis.get("format_specific_metrics") or {}, ensure_ascii=False, indent=2)),
+        _heading(2, "四、单一事实"),
+        _paragraph(json.dumps(analysis.get("atomic_facts") or [], ensure_ascii=False, indent=2)),
+        _heading(2, "五、最有意义的指标"),
+        _paragraph(json.dumps(analysis.get("priority_metrics") or [], ensure_ascii=False, indent=2)),
+        _heading(2, "六、曲线/趋势判断"),
+        _paragraph(json.dumps(analysis.get("trend_curves") or {}, ensure_ascii=False, indent=2)),
+        _heading(2, "七、数据解释"),
+        *_list_blocks(analysis.get("metric_interpretation") or analysis.get("key_insights") or []),
+        _heading(2, "八、问题判断"),
+        *_list_blocks(analysis.get("problems") or []),
+        _heading(2, "九、内容指导"),
+        *_list_blocks(analysis.get("content_guidance") or []),
+        _heading(2, "十、发布建议"),
+        *_list_blocks(analysis.get("publishing_guidance") or []),
+        _heading(2, "十一、下一步动作"),
+        *_list_blocks(analysis.get("next_actions") or []),
+        _heading(2, "十二、截图与可信度"),
+        _paragraph("\n".join(screenshots)),
+        *_list_blocks(analysis.get("data_quality_notes") or ["截图字段可读"]),
+    ]
+
+
+def _heading(level: int, text: str) -> dict[str, Any]:
+    normalized = min(max(level, 1), 9)
+    return {
+        "block_type": normalized + 2,
+        f"heading{normalized}": {"elements": [{"text_run": {"content": str(text or "")[:500]}}]},
+    }
+
+
+def _paragraph(text: str) -> dict[str, Any]:
+    return {"block_type": 2, "text": {"elements": [{"text_run": {"content": str(text or "")[:1800]}}]}}
+
+
+def _list_blocks(value: Any) -> list[dict[str, Any]]:
+    items = value if isinstance(value, list) else [value]
+    clean = [str(item).strip() for item in items if str(item).strip()]
+    if not clean:
+        clean = ["暂无"]
+    return [_paragraph(f"{index}. {item}") for index, item in enumerate(clean, 1)]
+
+
+def append_screenshot_images(document_id: str, screenshots: list[str], token: str) -> None:
+    if not screenshots:
+        return
+    _post_docx_children(document_id, document_id, [_heading(2, "十三、后台截图原图")], token)
+    for path in screenshots[:12]:
+        payload = _post_docx_children(document_id, document_id, [{"block_type": 27, "image": {}}], token)
+        image_block_id = _find_created_block_id(payload, 27)
+        if not image_block_id:
+            continue
+        file_token = upload_doc_image(document_id, image_block_id, path, token)
+        requests.patch(
+            f"{FEISHU_BASE}/docx/v1/documents/{document_id}/blocks/{image_block_id}",
+            headers=feishu_headers(token),
+            json={"replace_image": {"token": file_token}},
+            params={"document_revision_id": -1},
+            timeout=20,
+        ).raise_for_status()
+
+
+def _post_docx_children(document_id: str, parent_block_id: str, children: list[dict[str, Any]], token: str) -> dict[str, Any]:
+    resp = requests.post(
+        f"{FEISHU_BASE}/docx/v1/documents/{document_id}/blocks/{parent_block_id}/children",
+        headers=feishu_headers(token),
+        json={"children": children},
+        params={"document_revision_id": -1},
+        timeout=20,
+    )
+    resp.raise_for_status()
+    payload = resp.json()
+    if payload.get("code") != 0:
+        raise RuntimeError(f"写入飞书截图块失败：{payload}")
+    return payload
+
+
+def _find_created_block_id(payload: dict[str, Any], block_type: int) -> str:
+    def visit(value: Any) -> str:
+        if isinstance(value, dict):
+            if value.get("block_type") == block_type and value.get("block_id"):
+                return str(value["block_id"])
+            for child in value.values():
+                found = visit(child)
+                if found:
+                    return found
+        elif isinstance(value, list):
+            for child in value:
+                found = visit(child)
+                if found:
+                    return found
+        return ""
+
+    return visit(payload)
+
+
+def upload_doc_image(document_id: str, image_block_id: str, file_path: str, token: str) -> str:
+    path = Path(file_path)
+    mime = mimetypes.guess_type(path.name)[0] or "image/png"
+    with path.open("rb") as handle:
+        resp = requests.post(
+            f"{FEISHU_BASE}/drive/v1/medias/upload_all",
+            headers={"Authorization": f"Bearer {token}"},
+            data={
+                "file_name": path.name,
+                "parent_type": "docx_image",
+                "parent_node": image_block_id or document_id,
+                "size": str(path.stat().st_size),
+                "mime_type": mime,
+            },
+            files={"file": (path.name, handle, mime)},
+            timeout=60,
+        )
+    resp.raise_for_status()
+    payload = resp.json()
+    if payload.get("code") != 0:
+        raise RuntimeError(f"上传飞书截图失败：{payload}")
+    file_token = str(payload.get("data", {}).get("file_token") or "")
+    if not file_token:
+        raise RuntimeError(f"上传飞书截图未返回 file_token：{payload}")
+    return file_token
+
+
+def read_feishu_document_text(url: str) -> str:
+    if not url:
+        raise RuntimeError("数据复盘模板链接不能为空")
+    token = feishu_tenant_access_token()
+    document_id = resolve_document_id(url, token)
+    if not document_id:
+        raise RuntimeError(f"无法解析数据复盘模板文档：{url}")
+    resp = requests.get(f"{FEISHU_BASE}/docx/v1/documents/{document_id}/raw_content", headers=feishu_headers(token), timeout=15)
+    resp.raise_for_status()
+    payload = resp.json()
+    if payload.get("code") != 0:
+        raise RuntimeError(f"读取数据复盘模板失败：{payload}")
+    return extract_readable_text(payload)
+
+
+def resolve_document_id(url: str, token: str) -> str:
+    parsed = urlparse(url)
+    segments = [item for item in parsed.path.split("/") if item]
+    for index, segment in enumerate(segments):
+        if segment in {"docx", "doc", "docs"} and index + 1 < len(segments):
+            return re.sub(r"[^A-Za-z0-9_-]", "", segments[index + 1])
+        if segment == "wiki" and index + 1 < len(segments):
+            node_token = re.sub(r"[^A-Za-z0-9_-]", "", segments[index + 1])
+            resp = requests.get(f"{FEISHU_BASE}/wiki/v2/spaces/get_node", params={"token": node_token}, headers=feishu_headers(token), timeout=15)
+            resp.raise_for_status()
+            payload = resp.json()
+            node = payload.get("data", {}).get("node") or {}
+            return str(node.get("obj_token") or "")
+    return ""
+
+
+def extract_readable_text(payload: Any, *, limit: int = 30000) -> str:
+    values: list[str] = []
+
+    def visit(value: Any, key: str = "") -> None:
+        if len("\n".join(values)) >= limit:
+            return
+        if isinstance(value, dict):
+            for child_key, child_value in value.items():
+                visit(child_value, str(child_key))
+            return
+        if isinstance(value, list):
+            for item in value:
+                visit(item, key)
+            return
+        if not isinstance(value, str):
+            return
+        clean = value.strip()
+        if not clean:
+            return
+        if key in {"content", "text", "plain_text", "raw_content", "title", "summary"} or len(clean) >= 12:
+            values.append(clean)
+
+    visit(payload)
+    seen: set[str] = set()
+    lines: list[str] = []
+    for value in values:
+        for line in value.splitlines():
+            clean = line.strip()
+            if clean and clean not in seen:
+                seen.add(clean)
+                lines.append(clean)
+            if len("\n".join(lines)) >= limit:
+                return "\n".join(lines)[:limit]
+    return "\n".join(lines)[:limit]
+
+
+def _review_memory_text(request: DataReviewRequest, analysis: dict[str, Any]) -> str:
+    metrics = analysis.get("metrics") or {}
+    metric_bits = []
+    for key in ("播放", "播放量", "阅读", "阅读量", "曝光", "点赞", "赞", "收藏", "评论", "分享", "转发", "完播率", "互动率", "新增关注", "涨粉"):
+        if key in metrics:
+            metric_bits.append(f"{key}={metrics[key]}")
+    priority_bits = []
+    for item in analysis.get("priority_metrics") or []:
+        if isinstance(item, dict) and item.get("metric"):
+            priority_bits.append(f"{item.get('metric')}={item.get('value') or item.get('signal') or ''}".strip("="))
+    return " ".join(
+        item
+        for item in [
+            "【数据复盘】",
+            f"平台={analysis.get('platform') or request.platform}" if analysis.get("platform") or request.platform else "",
+            f"账号={analysis.get('account') or request.account}" if analysis.get("account") or request.account else "",
+            f"主题={analysis.get('topic') or analysis.get('title') or request.topic or request.title}" if analysis.get("topic") or analysis.get("title") or request.topic or request.title else "",
+            " ".join(metric_bits),
+            f"关键指标={'；'.join(priority_bits)}" if priority_bits else "",
+            f"结论={analysis.get('conclusion') or ''}",
+            f"下一步={'；'.join(analysis.get('next_actions') or [])}",
+        ]
+        if item
+    )
+
+
+def format_data_review_reply(payload: dict[str, Any]) -> str:
+    analysis = payload.get("analysis") or {}
+    lines = [
+        "【数据复盘】已完成" if payload.get("ok") else "【数据复盘】已部分完成",
+        f"时间戳：{payload.get('reviewed_at') or ''}",
+        f"平台：{analysis.get('platform') or '未识别'}",
+        f"账号：{analysis.get('account') or '未填写'}",
+        f"结论：{analysis.get('conclusion') or ''}",
+    ]
+    if payload.get("record_id"):
+        lines.append(f"数据复盘表记录：{payload['record_id']}")
+    if payload.get("doc_link"):
+        lines.append(f"复盘文档：{payload['doc_link']}")
+    for error in payload.get("write_errors") or []:
+        lines.append(f"写入提示：{error}")
+    return "\n".join(lines)
+
+
+def render_data_review_report(payload: dict[str, Any]) -> str:
+    analysis = payload.get("analysis") or {}
+    return "\n".join(
+        [
+            "# 数据复盘",
+            "",
+            f"时间戳：{payload.get('reviewed_at') or ''}",
+            "",
+            "## 结论",
+            "",
+            str(analysis.get("conclusion") or ""),
+            "",
+            "## 作品形式",
+            "",
+            f"{analysis.get('media_format') or 'unknown'}：{analysis.get('media_format_evidence') or ''}",
+            "",
+            "## 核心数据",
+            "",
+            json.dumps(analysis.get("metrics") or {}, ensure_ascii=False, indent=2),
+            "",
+            "## 作品形式专项指标",
+            "",
+            json.dumps(analysis.get("format_specific_metrics") or {}, ensure_ascii=False, indent=2),
+            "",
+            "## 单一事实",
+            "",
+            json.dumps(analysis.get("atomic_facts") or [], ensure_ascii=False, indent=2),
+            "",
+            "## 最有意义的指标",
+            "",
+            json.dumps(analysis.get("priority_metrics") or [], ensure_ascii=False, indent=2),
+            "",
+            "## 内容指导",
+            "",
+            "\n".join(f"- {item}" for item in analysis.get("content_guidance") or []) or "- 暂无",
+            "",
+            "## 发布建议",
+            "",
+            "\n".join(f"- {item}" for item in analysis.get("publishing_guidance") or []) or "- 暂无",
+            "",
+            "## 下一步",
+            "",
+            "\n".join(f"- {item}" for item in analysis.get("next_actions") or []) or "- 暂无",
+            "",
+        ]
+    )
+
+
+def _image_part(path: str) -> dict[str, Any]:
+    p = Path(path)
+    mime = mimetypes.guess_type(p.name)[0] or "image/jpeg"
+    data = base64.b64encode(p.read_bytes()).decode("ascii")
+    return {"image_data": {"mime_type": mime, "data": data, "path": str(p)}}
+
+
+def load_llm_config() -> dict[str, Any]:
+    settings = load_main_llm_settings()
+    return {
+        "model": settings.model,
+        "base_url": settings.base_url,
+        "api_key": settings.api_key,
+        "api_type": settings.api_type,
+        "timeout": settings.timeout,
+        "thinking": settings.thinking,
+    }
+
+
+def generate_json_from_parts(parts: list[dict[str, Any]], config: dict[str, Any], max_retries: int = 2) -> dict[str, Any]:
+    return common_generate_json_from_parts(
+        parts,
+        _llm_provider_from_dict(config),
+        max_retries=max_retries,
+        error_prefix="数据复盘 LLM 输出 JSON 校验失败",
+    )
+
+
+def _llm_provider_from_dict(config: dict[str, Any]) -> LLMProviderSettings:
+    return LLMProviderSettings(
+        model=str(config.get("model") or ""),
+        base_url=str(config.get("base_url") or "").rstrip("/"),
+        api_key=str(config.get("api_key") or ""),
+        api_type=str(config.get("api_type") or "openai_chat_completions"),
+        timeout=float(config.get("timeout") or 1200),
+        thinking=str(config.get("thinking") or ""),
+    )

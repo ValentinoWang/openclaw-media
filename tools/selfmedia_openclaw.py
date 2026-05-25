@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -39,23 +40,38 @@ from common.social_runtime import (  # noqa: E402
     write_markdown,
 )
 
+SOCIAL_THEORY_TAGS = ("/女性爱", "/性兴趣", "/风控", "/性资源", "/行动")
+DEPRECATED_SOCIAL_THEORY_TAGS = ("/风控量表",)
+SLASH_THEORY_RE = re.compile(r"/([\w\u4e00-\u9fff-]+)")
+THEORY_TAG_SUFFIXES = ("进行分析", "来分析", "分析一下", "分析")
+
+
+def clean_slash_theory_tag(value: str) -> str:
+    tag = value.strip().strip("/")
+    for suffix in THEORY_TAG_SUFFIXES:
+        if tag.endswith(suffix) and len(tag) > len(suffix):
+            tag = tag[: -len(suffix)]
+            break
+    return f"/{tag.strip()}" if tag.strip() else ""
+
 
 PART_DIRS = {
-    "part4": ROOT / "Part4" / "viral-radar",
-    "part5": ROOT / "Part5" / "comment-topic-pool",
-    "part6": ROOT / "Part6" / "viral-structure-db",
-    "part7": ROOT / "Part7" / "account-competitor-weekly",
-    "part8": ROOT / "Part8" / "material-quality-score",
-    "part9": ROOT / "Part9" / "field-health-diagnostics",
+    "viral-radar": ROOT / "05-detect-viral-radar",
+    "comment-topics": ROOT / "06-mine-comment-topics",
+    "viral-structures": ROOT / "07-index-viral-structures",
+    "account-competitors": ROOT / "08-report-account-competitors",
+    "material-quality": ROOT / "09-score-material-quality",
+    "field-health": ROOT / "10-diagnose-field-health",
 }
 
 PART_MODULE_NAMES = {
-    "part4": "Part4 爆款雷达",
-    "part5": "Part5 高赞评论选题池",
-    "part6": "Part6 爆款结构数据库",
-    "part7": "Part7 账号竞品周报",
-    "part8": "Part8 素材入库质量评分",
-    "part9": "Part9 字段健康诊断",
+    "viral-radar": "05 爆款雷达",
+    "comment-topics": "06 高赞评论选题池",
+    "viral-structures": "07 爆款结构数据库",
+    "account-competitors": "08 账号竞品周报",
+    "material-quality": "09 素材入库质量评分",
+    "field-health": "10 字段健康诊断",
+    "creation": "11 创作 Agent",
 }
 
 ACCOUNT_MONITOR_FIELD_SPECS = {
@@ -74,6 +90,42 @@ ACCOUNT_MONITOR_FIELD_SPECS = {
 
 def print_json(payload: Any) -> None:
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+
+
+def parse_json_arg(value: str, *, env_name: str = "") -> dict[str, Any] | None:
+    text = (value or "").strip()
+    if not text and env_name:
+        text = os.environ.get(env_name, "").strip()
+    if not text:
+        return None
+    parsed = json.loads(text)
+    if not isinstance(parsed, dict):
+        raise SystemExit("conversation context must be a JSON object")
+    return parsed
+
+
+def conversation_context_json_arg(value: str) -> str:
+    return (value or "").strip() or os.environ.get("OPENCLAW_CONVERSATION_CONTEXT_JSON", "").strip()
+
+
+def social_theory_matches(text: str) -> list[str]:
+    normalized = re.sub(r"https?://\S+", " ", text or "")
+    slash_tags = {clean_slash_theory_tag(match) for match in SLASH_THEORY_RE.findall(normalized)}
+    return [tag for tag in (*DEPRECATED_SOCIAL_THEORY_TAGS, *SOCIAL_THEORY_TAGS) if tag in slash_tags]
+
+
+def reject_social_theory_tags(text: str) -> None:
+    matched = social_theory_matches(text)
+    if matched:
+        if any(tag in DEPRECATED_SOCIAL_THEORY_TAGS for tag in matched):
+            raise SystemExit(
+                "社交理论旧入口已废弃，selfmedia/爆款入口拒绝执行，不做入口映射："
+                + "、".join(tag for tag in matched if tag in DEPRECATED_SOCIAL_THEORY_TAGS)
+            )
+        raise SystemExit(
+            "社交理论标签只能由 social bot 调用，selfmedia/爆款入口拒绝执行："
+            + "、".join(matched)
+        )
 
 
 def run_command(command: list[str], cwd: Path, timeout: int = 1800) -> dict[str, Any]:
@@ -101,16 +153,16 @@ def collect_urls(args: argparse.Namespace) -> list[str]:
     return urls
 
 
-def part3_status() -> dict[str, Any]:
+def cookie_status() -> dict[str, Any]:
     candidates = {
         "douyin": [
-            ROOT / "part3" / "private" / "douyin-cookies.json",
-            ROOT / "Part1" / "content-flow" / "private" / "douyin-cookies.json",
+            ROOT / "04-manage-platform-cookies" / "private" / "douyin-cookies.json",
+            ROOT / "01-ingest-content-flow" / "private" / "douyin-cookies.json",
             Path(os.getenv("DOUYIN_COOKIES_JSON_PATH", "")),
         ],
         "xiaohongshu": [
-            ROOT / "part3" / "private" / "xiaohongshu-cookies.json",
-            ROOT / "Part1" / "content-flow" / "private" / "xiaohongshu-cookies.json",
+            ROOT / "04-manage-platform-cookies" / "private" / "xiaohongshu-cookies.json",
+            ROOT / "01-ingest-content-flow" / "private" / "xiaohongshu-cookies.json",
             Path(os.getenv("XIAOHONGSHU_COOKIES_JSON_PATH", "")),
         ],
     }
@@ -134,21 +186,22 @@ def part3_status() -> dict[str, Any]:
     return result
 
 
-def run_part1(args: argparse.Namespace) -> dict[str, Any]:
+def run_content_ingest(args: argparse.Namespace) -> dict[str, Any]:
     urls = collect_urls(args)
     rows = refresh_posts(urls)
-    return {"ok": all(row.get("health_status") == "ok" for row in rows), "part": "part1", "mode": "stats", "rows": rows}
+    return {"ok": all(row.get("health_status") == "ok" for row in rows), "module": "01-ingest-content-flow", "mode": "stats", "rows": rows}
 
 
-def run_part2(args: argparse.Namespace) -> dict[str, Any]:
+def run_viral_deconstruct(args: argparse.Namespace) -> dict[str, Any]:
     text = args.text or " ".join(args.urls or [])
     if args.stdin:
         stdin_text = sys.stdin.read().strip()
         if stdin_text:
             text = stdin_text
+    reject_social_theory_tags(text)
     if not text:
-        raise SystemExit("part2 requires --text or --urls text")
-    python = ROOT / "Part2" / "viral-deconstruct" / ".venv" / "bin" / "python"
+        raise SystemExit("deconstruct requires --text or --urls text")
+    python = ROOT / "03-deconstruct-viral-content" / ".venv" / "bin" / "python"
     if not python.exists():
         python = Path(sys.executable)
     command = [str(python), "-m", "src.cli", text]
@@ -156,14 +209,199 @@ def run_part2(args: argparse.Namespace) -> dict[str, Any]:
         command.extend(["--feishu-url", args.feishu_url])
     if args.no_write:
         command.append("--no-write")
-    return run_command(command, ROOT / "Part2" / "viral-deconstruct", timeout=args.timeout)
+    return run_command(command, ROOT / "03-deconstruct-viral-content", timeout=args.timeout)
 
 
-def run_cli_part(part: str, args: argparse.Namespace) -> dict[str, Any]:
+def run_creation(args: argparse.Namespace) -> dict[str, Any]:
+    from tools.creation.workflow import handle_creation_command
+
+    text = args.text or " ".join(args.urls or [])
+    if args.stdin:
+        stdin_text = sys.stdin.read().strip()
+        if stdin_text:
+            text = stdin_text
+    reject_social_theory_tags(text)
+    if not text:
+        raise SystemExit("creation requires --text")
+    return handle_creation_command(
+        text,
+        dry_run=args.dry_run,
+        no_write=args.no_write,
+        viral_url=args.feishu_url,
+        activity_url=args.activity_url,
+        business_url=args.business_url,
+        inspiration_url=args.inspiration_url,
+        creation_record_url=args.creation_record_url,
+        limit=args.limit,
+        ensure_schema=args.ensure_schema,
+        conversation_context=parse_json_arg(args.conversation_context_json, env_name="OPENCLAW_CONVERSATION_CONTEXT_JSON"),
+    )
+
+
+def run_creation_consultation(args: argparse.Namespace) -> dict[str, Any]:
+    from tools.creation.consultation import handle_creation_consultation_command
+
+    text = args.text or ""
+    if args.stdin:
+        stdin_text = sys.stdin.read().strip()
+        if stdin_text:
+            text = stdin_text
+    reject_social_theory_tags(text)
+    if not text:
+        raise SystemExit("consultation requires --text")
+    return handle_creation_consultation_command(
+        text,
+        viral_url=args.feishu_url,
+        activity_url=args.activity_url,
+        business_url=args.business_url,
+        inspiration_url=args.inspiration_url,
+        limit=args.limit,
+        conversation_context=parse_json_arg(args.conversation_context_json, env_name="OPENCLAW_CONVERSATION_CONTEXT_JSON"),
+    )
+
+
+def run_creation_inspiration(args: argparse.Namespace) -> dict[str, Any]:
+    text = args.text or ""
+    if args.stdin:
+        stdin_text = sys.stdin.read().strip()
+        if stdin_text:
+            text = stdin_text
+    reject_social_theory_tags(text)
+    if not text and not args.attachments:
+        raise SystemExit("creation-inspiration requires --text or --attachment")
+    python = ROOT / "03-deconstruct-viral-content" / ".venv" / "bin" / "python"
+    if not python.exists():
+        python = Path(sys.executable)
+    command = [
+        str(python),
+        "-m",
+        "tools.creation_inspiration",
+        "--text",
+        text,
+    ]
+    for path in args.attachments or []:
+        command.extend(["--attachment", path])
+    if args.feishu_url:
+        command.extend(["--feishu-url", args.feishu_url])
+    if args.no_write:
+        command.append("--no-write")
+    if conversation_context_json := conversation_context_json_arg(args.conversation_context_json):
+        command.extend(["--conversation-context-json", conversation_context_json])
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{ROOT}:{env.get('PYTHONPATH', '')}".rstrip(":")
+    completed = subprocess.run(command, cwd=str(ROOT), text=True, capture_output=True, timeout=1860, check=False, env=env)
+    if completed.returncode != 0:
+        return {
+            "ok": False,
+            "returncode": completed.returncode,
+            "command": command,
+            "stdout": completed.stdout.strip(),
+            "stderr": completed.stderr.strip(),
+            "reply": (completed.stderr.strip() or completed.stdout.strip() or "【创作-灵感】执行失败")[-3000:],
+        }
+    try:
+        return json.loads(completed.stdout.strip() or "{}")
+    except json.JSONDecodeError:
+        return {"ok": False, "stdout": completed.stdout.strip(), "stderr": completed.stderr.strip(), "reply": "【创作-灵感】返回了非 JSON 输出"}
+
+
+def run_material_creation(args: argparse.Namespace) -> dict[str, Any]:
+    python = ROOT / "03-deconstruct-viral-content" / ".venv" / "bin" / "python"
+    if not python.exists():
+        python = Path(sys.executable)
+    command = [
+        str(python),
+        "-m",
+        "tools.material_creation.cli",
+        "--text",
+        args.text,
+    ]
+    for path in args.attachments or []:
+        command.extend(["--attachment", path])
+    if args.dry_run:
+        command.append("--dry-run")
+    if args.no_write:
+        command.append("--no-write")
+    if args.creation_record_url:
+        command.extend(["--creation-record-url", args.creation_record_url])
+    if conversation_context_json := conversation_context_json_arg(args.conversation_context_json):
+        command.extend(["--conversation-context-json", conversation_context_json])
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{ROOT}:{env.get('PYTHONPATH', '')}".rstrip(":")
+    completed = subprocess.run(command, cwd=str(ROOT), text=True, capture_output=True, timeout=1860, check=False, env=env)
+    if completed.returncode != 0:
+        return {
+            "ok": False,
+            "returncode": completed.returncode,
+            "command": command,
+            "stdout": completed.stdout.strip(),
+            "stderr": completed.stderr.strip(),
+            "reply": (completed.stderr.strip() or completed.stdout.strip() or "【素材创作】执行失败")[-3000:],
+        }
+    try:
+        return json.loads(completed.stdout.strip() or "{}")
+    except json.JSONDecodeError:
+        return {"ok": False, "stdout": completed.stdout.strip(), "stderr": completed.stderr.strip(), "reply": "【素材创作】返回了非 JSON 输出"}
+
+
+def run_media_review(args: argparse.Namespace) -> dict[str, Any]:
+    from tools.media_context import record_review_memory
+
+    text = args.text or ""
+    if args.stdin:
+        stdin_text = sys.stdin.read().strip()
+        if stdin_text:
+            text = stdin_text
+    reject_social_theory_tags(text)
+    if not text:
+        raise SystemExit("review requires --text or --stdin")
+    result = record_review_memory(text, source=args.source or "selfmedia-cli")
+    result["ok"] = True
+    return result
+
+
+def run_data_review(args: argparse.Namespace) -> dict[str, Any]:
+    from tools.data_review import handle_data_review_command
+
+    text = args.text or ""
+    if args.stdin:
+        stdin_text = sys.stdin.read().strip()
+        if stdin_text:
+            text = stdin_text
+    reject_social_theory_tags(text)
+    if not text:
+        raise SystemExit("data-review requires --text or --stdin")
+    return handle_data_review_command(
+        text,
+        attachment_paths=args.attachments or [],
+        no_write=args.no_write,
+        table_url=args.feishu_url,
+        output_parent_node_token=args.parent_node_token,
+        guide_url=args.guide_url,
+        conversation_context=parse_json_arg(args.conversation_context_json, env_name="OPENCLAW_CONVERSATION_CONTEXT_JSON"),
+    )
+
+
+def run_media_context(args: argparse.Namespace) -> dict[str, Any]:
+    from tools.creation.field_contract import split_tags
+    from tools.media_context import build_media_context, format_media_context_reply
+
+    context = build_media_context(
+        platform=args.platform,
+        account=args.account,
+        track=args.track,
+        topic=args.topic,
+        keywords=split_tags(args.keywords or ""),
+        limit=args.limit,
+    )
+    return {"ok": True, "context": context, "reply": format_media_context_reply(context)}
+
+
+def run_cli_module(module: str, args: argparse.Namespace) -> dict[str, Any]:
     urls = collect_urls(args)
-    part_dir = PART_DIRS[part]
+    part_dir = PART_DIRS[module]
     command = [sys.executable, "cli.py", "--urls", *urls]
-    if part == "part7":
+    if module == "account-competitors":
         command.extend(["--account", args.account or "openclaw"])
     if args.feishu_url:
         command.extend(["--feishu-url", args.feishu_url])
@@ -174,26 +412,45 @@ def run_cli_part(part: str, args: argparse.Namespace) -> dict[str, Any]:
 
 def run_part(args: argparse.Namespace) -> dict[str, Any]:
     load_default_env_files()
-    part = args.part.lower().replace("-", "")
-    if part in {"part1", "p1"}:
-        return run_part1(args)
-    if part in {"part2", "p2"}:
-        return run_part2(args)
-    if part in {"part3", "p3"}:
-        return part3_status()
-    if part in {"part4", "p4"}:
-        return run_cli_part("part4", args)
-    if part in {"part5", "p5"}:
-        return run_cli_part("part5", args)
-    if part in {"part6", "p6"}:
-        return run_cli_part("part6", args)
-    if part in {"part7", "p7"}:
-        return run_cli_part("part7", args)
-    if part in {"part8", "p8"}:
-        return run_cli_part("part8", args)
-    if part in {"part9", "p9"}:
-        return run_cli_part("part9", args)
-    raise SystemExit(f"unknown part: {args.part}")
+    module = args.part.lower().strip().replace("_", "-")
+    module_aliases = {
+        "01-ingest-content-flow": "ingest",
+        "content-ingest": "ingest",
+        "ingest-content": "ingest",
+        "02-extract-music-media": "music-media",
+        "03-deconstruct-viral-content": "deconstruct",
+        "viral-deconstruct": "deconstruct",
+        "04-manage-platform-cookies": "cookies",
+        "cookie": "cookies",
+        "05-detect-viral-radar": "viral-radar",
+        "radar": "viral-radar",
+        "06-mine-comment-topics": "comment-topics",
+        "comments": "comment-topics",
+        "07-index-viral-structures": "viral-structures",
+        "structures": "viral-structures",
+        "08-report-account-competitors": "account-competitors",
+        "competitors": "account-competitors",
+        "09-score-material-quality": "material-quality",
+        "quality": "material-quality",
+        "10-diagnose-field-health": "field-health",
+        "health": "field-health",
+        "11-create-content": "creation",
+        "创作": "creation",
+    }
+    module = module_aliases.get(module, module)
+    if module == "ingest":
+        return run_content_ingest(args)
+    if module == "deconstruct":
+        return run_viral_deconstruct(args)
+    if module == "cookies":
+        return cookie_status()
+    if module in PART_DIRS:
+        return run_cli_module(module, args)
+    if module == "music-media":
+        raise SystemExit("music-media has its own UI/CLI and is not exposed through this OpenClaw run bridge")
+    if module == "creation":
+        return run_creation(args)
+    raise SystemExit(f"unknown selfmedia module: {args.part}")
 
 
 def account_enabled(fields: dict[str, Any]) -> bool:
@@ -286,23 +543,25 @@ def build_daily_report(accounts: list[dict[str, Any]], account_rows: dict[str, l
 def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
     load_default_env_files()
     monitor_url = args.monitor_url or feishu_table_url_from_env(
+        "MEDIA_OS_CREATOR_PROFILES_URL",
         "FEISHU_ACCOUNT_MONITOR_URL",
         "FEISHU_SELFMEDIA_ACCOUNT_MONITOR_URL",
     )
     report_url = args.report_url or feishu_table_url_from_env(
+        "MEDIA_OS_VIRAL_URL",
         "FEISHU_ACCOUNT_REPORT_URL",
         "FEISHU_SELFMEDIA_ACCOUNT_REPORT_URL",
         "FEISHU_BITABLE_URL",
     )
     if not monitor_url:
-        raise SystemExit("missing FEISHU_ACCOUNT_MONITOR_URL or --monitor-url")
+        raise SystemExit("missing MEDIA_OS_CREATOR_PROFILES_URL or --monitor-url")
 
     records = feishu_list_records(monitor_url, view_id=args.view_id)
     accounts = [account_from_record(record) for record in records]
     if args.limit:
         accounts = accounts[: args.limit]
 
-    paths = ensure_paths(ROOT / "Part7" / "account-competitor-weekly", "account_weekly.sqlite")
+    paths = ensure_paths(ROOT / "08-report-account-competitors", "account_weekly.sqlite")
     account_rows: dict[str, list[dict[str, Any]]] = {}
     summaries: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
@@ -377,7 +636,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
         for row in rows:
             score = quality_score(row)
             fields = row_to_feishu_fields(
-                "Part7 账号每日轮询",
+                "08 账号每日轮询",
                 row,
                 summary=f"{account['account_name']} daily; total={total_interactions(row)}; score={score['overall_score']}",
                 report_path=str(md_path),
@@ -391,7 +650,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
         record_ids = write_feishu_records(
             report_url,
             feishu_records,
-            module="Part7 账号每日轮询",
+            module="08 账号每日轮询",
             report_path=str(md_path),
             require=args.require_feishu,
         )
@@ -444,20 +703,28 @@ def install_cron(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="OpenClaw bridge for /home/ubuntu/selfmedia-tools Part1-Part9.")
+    parser = argparse.ArgumentParser(description="OpenClaw bridge for /home/ubuntu/selfmedia-tools readable modules.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("list", help="List routable selfmedia parts.")
 
-    run = sub.add_parser("run", help="Run one Part1-Part9 module.")
-    run.add_argument("part", help="part1 ... part9")
+    run = sub.add_parser("run", help="Run one selfmedia module.")
+    run.add_argument("part", help="ingest | deconstruct | cookies | viral-radar | comment-topics | viral-structures | account-competitors | material-quality | field-health | creation")
     run.add_argument("--urls", nargs="*", default=[])
     run.add_argument("--text", default="")
     run.add_argument("--stdin", action="store_true")
     run.add_argument("--feishu-url", default="")
     run.add_argument("--require-feishu", action="store_true")
-    run.add_argument("--no-write", action="store_true", help="Part2 only: do not write Feishu.")
-    run.add_argument("--account", default="", help="Part7 account label.")
+    run.add_argument("--no-write", action="store_true", help="deconstruct/creation only: do not write Feishu.")
+    run.add_argument("--dry-run", action="store_true", help="creation only: read and match without creating Feishu docs/records.")
+    run.add_argument("--activity-url", default="", help="creation only: activity bitable URL override.")
+    run.add_argument("--business-url", default="", help="creation only: ID+Business bitable URL override.")
+    run.add_argument("--inspiration-url", default="", help="creation only: creation inspiration bitable URL override.")
+    run.add_argument("--creation-record-url", default="", help="creation only: creation record bitable URL override.")
+    run.add_argument("--limit", type=int, default=300, help="creation only: max rows per source table.")
+    run.add_argument("--ensure-schema", action="store_true", help="creation only: create missing v1 source-table fields before reading.")
+    run.add_argument("--conversation-context-json", default="", help="creation only: recent Feishu/OpenClaw conversation context JSON.")
+    run.add_argument("--account", default="", help="account-competitors account label.")
     run.add_argument("--timeout", type=int, default=1800)
 
     poll = sub.add_parser("daily-poll", help="Read Feishu account monitor table, refresh recent post stats, write daily report.")
@@ -467,6 +734,55 @@ def build_parser() -> argparse.ArgumentParser:
     poll.add_argument("--limit", type=int, default=0)
     poll.add_argument("--require-feishu", action="store_true")
     poll.add_argument("--dry-run", action="store_true")
+
+    material = sub.add_parser("material-creation", help="Create positioning analysis and draft from uploaded video/image attachments.")
+    material.add_argument("--text", required=True)
+    material.add_argument("--attachment", dest="attachments", action="append", default=[])
+    material.add_argument("--dry-run", action="store_true")
+    material.add_argument("--no-write", action="store_true")
+    material.add_argument("--creation-record-url", default="")
+    material.add_argument("--conversation-context-json", default="")
+
+    consultation = sub.add_parser("consultation", help="Answer creation strategy questions from Feishu tables and media memory.")
+    consultation.add_argument("--text", default="")
+    consultation.add_argument("--stdin", action="store_true")
+    consultation.add_argument("--feishu-url", default="", help="viral/content bitable URL override.")
+    consultation.add_argument("--activity-url", default="")
+    consultation.add_argument("--business-url", default="")
+    consultation.add_argument("--inspiration-url", default="")
+    consultation.add_argument("--limit", type=int, default=300)
+    consultation.add_argument("--conversation-context-json", default="")
+
+    creation_inspiration = sub.add_parser("creation-inspiration", help="Analyze creative inspiration from text/images and write the inspiration table.")
+    creation_inspiration.add_argument("--text", default="")
+    creation_inspiration.add_argument("--stdin", action="store_true")
+    creation_inspiration.add_argument("--attachment", dest="attachments", action="append", default=[])
+    creation_inspiration.add_argument("--feishu-url", default="")
+    creation_inspiration.add_argument("--conversation-context-json", default="")
+    creation_inspiration.add_argument("--no-write", action="store_true")
+
+    review = sub.add_parser("review", help="Record a media post review into local account memory.")
+    review.add_argument("--text", default="")
+    review.add_argument("--stdin", action="store_true")
+    review.add_argument("--source", default="")
+
+    data_review = sub.add_parser("data-review", help="Analyze uploaded platform data screenshots and write Feishu data review outputs.")
+    data_review.add_argument("--text", default="")
+    data_review.add_argument("--stdin", action="store_true")
+    data_review.add_argument("--attachment", dest="attachments", action="append", default=[])
+    data_review.add_argument("--feishu-url", default="", help="Data review bitable URL override.")
+    data_review.add_argument("--parent-node-token", default="", help="Review output wiki parent node token override.")
+    data_review.add_argument("--guide-url", default="", help="Review guide/template document URL override.")
+    data_review.add_argument("--conversation-context-json", default="")
+    data_review.add_argument("--no-write", action="store_true")
+
+    context = sub.add_parser("context", help="Load media account context that creation workflows will inject.")
+    context.add_argument("--platform", default="")
+    context.add_argument("--account", default="")
+    context.add_argument("--track", default="")
+    context.add_argument("--topic", default="")
+    context.add_argument("--keywords", default="")
+    context.add_argument("--limit", type=int, default=5)
 
     cron = sub.add_parser("install-cron", help="Register the daily Feishu account poll through OpenClaw cron.")
     cron.add_argument("--name", default="selfmedia-account-daily-poll")
@@ -481,16 +797,23 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = build_parser().parse_args()
+    reject_social_theory_tags(" ".join(sys.argv[1:]))
     if args.command == "list":
         print_json(
             {
                 "parts": {
-                    "part1": "字段刷新/素材入口",
-                    "part2": "拆解/再创作，写飞书文档和多维表格",
-                    "part3": "Cookie 状态检查",
+                    "ingest": "01 字段刷新/素材入口",
+                    "deconstruct": "03 拆解/创作-再创，写飞书文档和多维表格",
+                    "cookies": "04 Cookie 状态检查",
                     **PART_MODULE_NAMES,
                 },
-                "daily_poll": "Feishu 账号监控表 -> 每日作品互动刷新 -> Part7 日报",
+                "daily_poll": "Feishu 账号监控表 -> 每日作品互动刷新 -> 08 账号日报",
+                "material_creation": "上传视频/图文附件 -> 定位分析 -> 创作初稿 -> 创作文档/作品档案/账号监控",
+                "consultation": "基于爆款/活动/商务表和账号记忆回答创作咨询",
+                "creation_inspiration": "【创作-灵感】文本/照片/视频 -> 灵感落盘 -> 创作-再创方向 -> 评分 -> 写指定灵感表",
+                "review": "发布后复盘 -> 本地账号画像/复盘记忆 -> 下次创作自动加载",
+                "data_review": "【数据复盘】上传后台截图 -> 视觉识别数据 -> 写数据复盘表/复盘文档/账号记忆",
+                "context": "查看某个平台/账号/主题会被注入的长期上下文",
             }
         )
         return
@@ -499,6 +822,24 @@ def main() -> None:
         return
     if args.command == "daily-poll":
         print_json(daily_poll(args))
+        return
+    if args.command == "material-creation":
+        print_json(run_material_creation(args))
+        return
+    if args.command == "consultation":
+        print_json(run_creation_consultation(args))
+        return
+    if args.command == "creation-inspiration":
+        print_json(run_creation_inspiration(args))
+        return
+    if args.command == "review":
+        print_json(run_media_review(args))
+        return
+    if args.command == "data-review":
+        print_json(run_data_review(args))
+        return
+    if args.command == "context":
+        print_json(run_media_context(args))
         return
     if args.command == "install-cron":
         print_json(install_cron(args))

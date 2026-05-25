@@ -15,9 +15,20 @@ from urllib.parse import parse_qs, urlparse
 
 import requests
 
+from .standard_fields import (
+    STANDARD_ALIAS_MAP,
+    STANDARD_FIELD_SPECS,
+    STANDARD_JSON_FIELDS,
+    choose_primary_value,
+    merge_json_group,
+    normalize_standard_field_name,
+    normalize_standard_fields,
+    standard_field_specs,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
-PART1_PATH = ROOT / "Part1" / "content-flow"
+CONTENT_INGEST_PATH = ROOT / "01-ingest-content-flow"
 URL_RE = re.compile(r"https?://[^\s，。；;、)）>]+")
 INTERACTION_KEYS = ("like_count", "collect_count", "comment_count", "share_count")
 FEISHU_BASE = os.getenv("FEISHU_API_BASE_URL", "https://open.feishu.cn/open-apis").rstrip("/")
@@ -98,8 +109,11 @@ def load_default_env_files() -> None:
     for path in (
         ROOT / ".env",
         ROOT / ".env.local",
-        ROOT / "Part1" / "content-flow" / ".env",
-        ROOT / "part3" / ".env.local",
+        Path("/home/ubuntu/openclaw-agents/media/.env.local"),
+        Path("/home/ubuntu/.openclaw/openclaw-media.env"),
+        Path("/home/ubuntu/openclaw-feishu-reminder/reminder.env"),
+        ROOT / "01-ingest-content-flow" / ".env",
+        ROOT / "04-manage-platform-cookies" / ".env.local",
     ):
         load_env_file(path)
     load_openclaw_feishu_account_env()
@@ -119,9 +133,9 @@ def ensure_paths(part_dir: Path, db_name: str) -> RuntimePaths:
 
 
 def load_part1():
-    part1 = str(PART1_PATH)
-    if part1 not in sys.path:
-        sys.path.insert(0, part1)
+    content_ingest = str(CONTENT_INGEST_PATH)
+    if content_ingest not in sys.path:
+        sys.path.insert(0, content_ingest)
     from src.config import load_settings  # type: ignore
     from src.downloader import clean_douyin_url, refresh_stats_only  # type: ignore
 
@@ -549,6 +563,23 @@ def feishu_coerce_value(value: Any, field_type: Any) -> Any:
         if isinstance(value, (dict, list)):
             return json_dumps(value)
         return str(value)
+    if field_type == 3:
+        if isinstance(value, list):
+            value = next((item for item in value if str(item).strip()), "")
+        return str(value).strip()
+    if field_type == 4:
+        if value in (None, "", []):
+            return []
+        raw_items = value if isinstance(value, list) else re.split(r"[,，/、;；|]\s*", str(value))
+        items: list[str] = []
+        seen: set[str] = set()
+        for item in raw_items:
+            text = str(item).strip()
+            if not text or text in seen:
+                continue
+            seen.add(text)
+            items.append(text)
+        return items
     if field_type == 2:
         try:
             return float(value)
@@ -642,10 +673,10 @@ def write_feishu_records(
     report_path: str = "",
     require: bool = False,
 ) -> list[str]:
-    bitable_url = bitable_url or os.getenv("FEISHU_BITABLE_URL", "")
+    bitable_url = bitable_url or os.getenv("MEDIA_OS_VIRAL_URL") or os.getenv("FEISHU_BITABLE_URL", "")
     if not bitable_url:
         if require:
-            raise RuntimeError("缺少 FEISHU_BITABLE_URL 或 --feishu-url，已开启飞书必写模式")
+            raise RuntimeError("缺少 MEDIA_OS_VIRAL_URL 或 --feishu-url，已开启飞书必写模式")
         return []
     token = feishu_tenant_access_token()
     app_token, table_id = parse_feishu_bitable_url(bitable_url, token)
@@ -689,16 +720,16 @@ def feishu_required_default() -> bool:
 
 
 def add_feishu_argument(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--feishu-url", default=os.getenv("FEISHU_BITABLE_URL", ""), help="Feishu bitable URL. Defaults to FEISHU_BITABLE_URL.")
+    parser.add_argument("--feishu-url", default=os.getenv("MEDIA_OS_VIRAL_URL") or os.getenv("FEISHU_BITABLE_URL", ""), help="Feishu bitable URL. Defaults to MEDIA_OS_VIRAL_URL.")
     parser.add_argument("--require-feishu", action="store_true", default=feishu_required_default(), help="Fail when Feishu write is not completed. Also enabled by FEISHU_REQUIRED=1.")
 
 
 def feishu_status_message(record_ids: list[str], bitable_url: str | None, record_count: int) -> str:
-    bitable_url = bitable_url or os.getenv("FEISHU_BITABLE_URL", "")
+    bitable_url = bitable_url or os.getenv("MEDIA_OS_VIRAL_URL") or os.getenv("FEISHU_BITABLE_URL", "")
     if record_ids:
         return f"wrote {len(record_ids)} feishu records"
     if not record_count:
         return "feishu skipped: no records to write"
     if not bitable_url:
-        return "feishu skipped: set FEISHU_APP_ID, FEISHU_APP_SECRET and FEISHU_BITABLE_URL to write cross-platform records"
+        return "feishu skipped: set FEISHU_APP_ID, FEISHU_APP_SECRET and MEDIA_OS_VIRAL_URL to write cross-platform records"
     return "feishu configured but no records were written"
