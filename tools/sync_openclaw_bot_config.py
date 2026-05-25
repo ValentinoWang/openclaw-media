@@ -5,7 +5,6 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import tempfile
 from datetime import datetime
@@ -73,19 +72,9 @@ def atomic_write(path: Path, text: str) -> None:
             pass
 
 
-def backup_existing(path: Path) -> Path | None:
-    if not path.exists():
-        return None
-    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    backup = path.with_name(f"{path.name}.before-sync-{stamp}")
-    shutil.copy2(path, backup)
-    return backup
-
-
 def write_json_config(path: Path, payload: dict[str, Any], *, dry_run: bool) -> None:
     if dry_run:
         return
-    backup_existing(path)
     atomic_write(path, canonical_text(payload))
 
 
