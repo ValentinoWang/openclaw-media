@@ -239,6 +239,14 @@ OPENCLAW_CONVERSATION_CONTEXT_JSON='{"loaded_count":1,"prompt":"最近飞书对�
 
 当前方案默认复用 OpenClaw 的 `feishu-media` 媒体 Bot 信息。所有 Bot 的 OpenClaw agent/model/thinking/timeout/cwd 配置统一在 `config/openclaw_bots.json`，不要再用分散环境变量覆盖。
 
+这份配置会双向同步到 Obsidian：
+
+```bash
+python3 /home/ubuntu/selfmedia-tools/tools/sync_openclaw_bot_config.py
+```
+
+服务器端 Obsidian 路径是 `/home/ubuntu/obsidian-diary/openclaw配置/openclaw_bots.json`，对应 Mac 端路径是 `/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/openclaw配置/openclaw_bots.json`。定时器 `openclaw-bot-config-sync.timer` 每分钟检查一次；配置发生变化时会重启 `content-flow.service` 和 `openclaw-feishu-gateway.service`。
+
 也就是说，一般不需要再在 README 里让你手动填：
 
 ```bash
