@@ -94,17 +94,20 @@ def render_note(payload: dict[str, Any], repo_hash: str, obsidian_hash: str) -> 
         "",
         "## Bots",
         "",
-        "| bot | agent | model | thinking | timeout | cwd |",
-        "|---|---|---|---|---:|---|",
+        "| bot | provider | agent | model | thinking | timeout | cwd |",
+        "|---|---|---|---|---|---:|---|",
     ]
     defaults = payload.get("defaults") or {}
+    default_provider = (payload.get("providers") or {}).get(defaults.get("provider") or "") or {}
     for name, bot in sorted((payload.get("bots") or {}).items()):
-        merged = {**defaults, **(bot or {})}
+        provider = (payload.get("providers") or {}).get((bot or {}).get("provider") or defaults.get("provider") or "") or default_provider
+        merged = {**provider, **defaults, **(bot or {})}
         lines.append(
             "| "
             + " | ".join(
                 [
                     str(name),
+                    str(merged.get("provider") or ""),
                     str(merged.get("agent") or ""),
                     str(merged.get("model") or ""),
                     str(merged.get("thinking") or ""),
@@ -114,16 +117,18 @@ def render_note(payload: dict[str, Any], repo_hash: str, obsidian_hash: str) -> 
             )
             + " |"
         )
-    lines.extend(["", "## Profiles", "", "| profile | bot | model | thinking | timeout |", "|---|---|---|---|---:|"])
+    lines.extend(["", "## Profiles", "", "| profile | provider | bot | model | thinking | timeout |", "|---|---|---|---|---|---:|"])
     for name, profile in sorted((payload.get("profiles") or {}).items()):
         bot_name = str((profile or {}).get("bot") or "")
         bot = (payload.get("bots") or {}).get(bot_name) or {}
-        merged = {**defaults, **bot, **(profile or {})}
+        provider = (payload.get("providers") or {}).get((profile or {}).get("provider") or bot.get("provider") or defaults.get("provider") or "") or default_provider
+        merged = {**provider, **defaults, **bot, **(profile or {})}
         lines.append(
             "| "
             + " | ".join(
                 [
                     str(name),
+                    str(merged.get("provider") or ""),
                     bot_name,
                     str(merged.get("model") or ""),
                     str(merged.get("thinking") or ""),

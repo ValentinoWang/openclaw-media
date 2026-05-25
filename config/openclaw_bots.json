@@ -1,54 +1,35 @@
 {
   "defaults": {
-    "bin": "/home/ubuntu/.nvm/versions/node/v22.22.2/bin/openclaw",
-    "codex_home": "/home/ubuntu/.openclaw/codex-home",
-    "model": "openai-codex/gpt-5.5",
-    "thinking": "xhigh",
-    "timeout": 1800
+    "provider": "openclaw_codex"
   },
   "bots": {
     "main": {
       "agent": "feishu-main",
-      "cwd": "/home/ubuntu/openclaw-agents/main",
-      "model": "openai-codex/gpt-5.5",
-      "thinking": "xhigh",
-      "timeout": 1800
+      "cwd": "/home/ubuntu/openclaw-agents/main"
     },
     "daily": {
       "agent": "feishu-daily",
-      "cwd": "/home/ubuntu/openclaw-agents/daily",
-      "model": "openai-codex/gpt-5.5",
-      "thinking": "xhigh",
-      "timeout": 1800
+      "cwd": "/home/ubuntu/openclaw-agents/daily"
     },
     "knowledge": {
       "agent": "feishu-knowledge",
       "cwd": "/home/ubuntu/openclaw-agents/knowledge",
-      "model": "openai-codex/gpt-5.5",
-      "thinking": "high",
-      "timeout": 1800
+      "thinking": "high"
     },
     "media": {
       "agent": "feishu-media",
-      "cwd": "/home/ubuntu/openclaw-agents/media",
-      "model": "openai-codex/gpt-5.5",
-      "thinking": "xhigh",
-      "timeout": 1800
+      "cwd": "/home/ubuntu/openclaw-agents/media"
     },
     "social": {
       "agent": "feishu-social",
-      "cwd": "/home/ubuntu/openclaw-agents/social",
-      "model": "openai-codex/gpt-5.5",
-      "thinking": "xhigh",
-      "timeout": 1800
+      "cwd": "/home/ubuntu/openclaw-agents/social"
     }
   },
   "profiles": {
     "system_guide": {
       "bot": "main",
       "model": "openai-codex/gpt-5.3-codex-spark",
-      "thinking": "medium",
-      "timeout": 1800
+      "thinking": "medium"
     },
     "knowledge_delegate": {
       "bot": "knowledge",
@@ -60,18 +41,13 @@
     },
     "transcription_postprocess": {
       "bot": "knowledge",
-      "thinking": "high",
-      "timeout": 1800
+      "thinking": "high"
     },
     "media_analysis": {
-      "bot": "media",
-      "thinking": "xhigh",
-      "timeout": 1800
+      "bot": "media"
     },
     "media_creation": {
-      "bot": "media",
-      "thinking": "xhigh",
-      "timeout": 1800
+      "bot": "media"
     },
     "activity_cleaning": {
       "bot": "media",
@@ -80,7 +56,6 @@
     },
     "social_vision": {
       "bot": "social",
-      "thinking": "xhigh",
       "timeout": 900
     }
   },
@@ -101,6 +76,16 @@
       "timeout": 120.0,
       "fps": 2.0,
       "thinking": ""
+    },
+    "openclaw_codex": {
+      "model": "openai-codex/gpt-5.5",
+      "base_url": "openclaw://agent",
+      "api_key": "codex_oauth",
+      "api_type": "openclaw_agent",
+      "timeout": 1800,
+      "thinking": "xhigh",
+      "bin": "/home/ubuntu/.nvm/versions/node/v22.22.2/bin/openclaw",
+      "codex_home": "/home/ubuntu/.openclaw/codex-home"
     }
   },
   "content_cleaner": {

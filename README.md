@@ -37,7 +37,7 @@ python3 /home/ubuntu/selfmedia-tools/common/content_cleaner_cli.py \
   --output cleaned.txt
 ```
 
-LLM 配置统一读取 `config/openclaw_bots.json`。OpenClaw Bot 配置在 `defaults`、`bots`、`profiles`；DeepSeek/Qwen 这类外部 API 配置在 `providers`；内容清洗使用 `content_cleaner.provider` 指向具体 provider。
+LLM 配置统一读取 `config/openclaw_bots.json`。所有模型供应方都在 `providers`：OpenClaw/Codex 是 `providers.openclaw_codex`，DeepSeek 是 `providers.main_llm`，Qwen 是 `providers.qwen`；`defaults`、`bots`、`profiles` 只引用 provider 并覆盖 agent、cwd、thinking 或 timeout。
 
 ## 各模块是做什么的
 

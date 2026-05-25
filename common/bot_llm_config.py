@@ -12,6 +12,7 @@ CONFIG_PATH = Path("/home/ubuntu/selfmedia-tools/config/openclaw_bots.json")
 
 @dataclass(frozen=True)
 class BotLLMRuntime:
+    provider: str
     bin: str
     agent: str
     model: str
@@ -63,11 +64,14 @@ def _merged_runtime(profile_or_bot: dict[str, Any]) -> BotLLMRuntime:
     defaults = dict(config["defaults"])
     bot_name = str(profile_or_bot.get("bot") or "").strip()
     bot = dict(config["bots"].get(bot_name, {})) if bot_name else {}
-    merged = {**defaults, **bot, **profile_or_bot}
+    provider_name = str(profile_or_bot.get("provider") or bot.get("provider") or defaults.get("provider") or "").strip()
+    provider = dict(config["providers"].get(provider_name, {})) if provider_name else {}
+    merged = {**provider, **defaults, **bot, **profile_or_bot}
     missing = [key for key in ("bin", "agent", "model", "thinking", "timeout", "cwd", "codex_home") if not merged.get(key)]
     if missing:
         raise RuntimeError(f"OpenClaw Bot LLM 配置不完整：{', '.join(missing)}")
     return BotLLMRuntime(
+        provider=provider_name,
         bin=str(merged["bin"]).strip(),
         agent=str(merged["agent"]).strip(),
         model=normalize_openclaw_model(str(merged["model"])),
