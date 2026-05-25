@@ -25,7 +25,7 @@ def canonical_payload(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise SystemExit(f"config is not a JSON object: {path}")
-    for key in ("defaults", "bots", "profiles"):
+    for key in ("defaults", "bots", "profiles", "providers", "content_cleaner"):
         if not isinstance(payload.get(key), dict):
             raise SystemExit(f"config missing object field {key}: {path}")
     return payload
@@ -43,7 +43,10 @@ def canonical_hash(payload: dict[str, Any]) -> str:
 def file_hash(path: Path) -> str:
     if not path.exists():
         return ""
-    return canonical_hash(canonical_payload(path))
+    try:
+        return canonical_hash(canonical_payload(path))
+    except SystemExit:
+        return ""
 
 
 def load_state() -> dict[str, Any]:
@@ -140,6 +143,35 @@ def render_note(payload: dict[str, Any], repo_hash: str, obsidian_hash: str) -> 
             )
             + " |"
         )
+    lines.extend(["", "## Providers", "", "| provider | model | base_url | api_type | timeout | api_key |", "|---|---|---|---|---:|---|"])
+    for name, provider in sorted((payload.get("providers") or {}).items()):
+        api_key = str((provider or {}).get("api_key") or "")
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    str(name),
+                    str((provider or {}).get("model") or ""),
+                    str((provider or {}).get("base_url") or ""),
+                    str((provider or {}).get("api_type") or ""),
+                    str((provider or {}).get("timeout") or ""),
+                    "已配置" if api_key else "未配置",
+                ]
+            )
+            + " |"
+        )
+    cleaner = payload.get("content_cleaner") or {}
+    lines.extend(
+        [
+            "",
+            "## Content Cleaner",
+            "",
+            f"- provider: `{cleaner.get('provider') or ''}`",
+            f"- enabled: `{cleaner.get('enabled')}`",
+            f"- max_chars: `{cleaner.get('max_chars')}`",
+            f"- max_tokens: `{cleaner.get('max_tokens')}`",
+        ]
+    )
     lines.extend(
         [
             "",

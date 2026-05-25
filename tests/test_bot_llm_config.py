@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from common.bot_llm_config import bot_runtime, display_openclaw_model, load_bot_llm_config, profile_runtime
+from common.bot_llm_config import bot_runtime, display_openclaw_model, load_bot_llm_config, profile_runtime, provider_runtime
 
 
 def test_all_feishu_bots_have_openclaw_runtime() -> None:
@@ -25,3 +25,17 @@ def test_profiles_are_the_single_source_for_openclaw_use_cases() -> None:
     assert profile_runtime("media_analysis").agent == "feishu-media"
     assert profile_runtime("media_creation").agent == "feishu-media"
     assert profile_runtime("social_vision").agent == "feishu-social"
+
+
+def test_external_llm_providers_live_in_the_same_config() -> None:
+    config = load_bot_llm_config()
+    assert config["content_cleaner"]["provider"] == "main_llm"
+    main = provider_runtime("main_llm")
+    qwen = provider_runtime("qwen")
+    assert main.model == "deepseek-v4-pro"
+    assert main.base_url == "https://api.deepseek.com"
+    assert main.api_type == "openai_chat_completions"
+    assert main.api_key
+    assert qwen.model
+    assert qwen.base_url
+    assert qwen.api_key

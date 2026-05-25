@@ -5,7 +5,9 @@ import os
 
 from .bot_llm_config import (
     normalize_openclaw_model,
+    load_bot_llm_config,
     profile_runtime,
+    provider_runtime,
 )
 
 
@@ -27,6 +29,7 @@ class QwenProviderSettings:
     model: str
     base_url: str
     api_key: str
+    timeout: float = 120.0
     fps: float = 2.0
 
 
@@ -70,22 +73,25 @@ def env_int(name: str, default: str) -> int:
 
 
 def load_main_llm_settings() -> LLMProviderSettings:
+    provider = provider_runtime("main_llm")
     return LLMProviderSettings(
-        model=os.getenv("SELFMEDIA_CLEAN_LLM_MODEL", "").strip(),
-        base_url=os.getenv("SELFMEDIA_CLEAN_LLM_BASE_URL", "").strip().rstrip("/"),
-        api_key=os.getenv("SELFMEDIA_CLEAN_LLM_API_KEY", "").strip(),
-        api_type=os.getenv("SELFMEDIA_CLEAN_LLM_API_TYPE", "").strip(),
-        timeout=env_float("SELFMEDIA_CLEAN_LLM_TIMEOUT", "300"),
-        thinking="",
+        model=provider.model,
+        base_url=provider.base_url,
+        api_key=provider.api_key,
+        api_type=provider.api_type,
+        timeout=provider.timeout,
+        thinking=provider.thinking,
     )
 
 
 def load_qwen_settings() -> QwenProviderSettings:
+    provider = provider_runtime("qwen")
     return QwenProviderSettings(
-        model=os.getenv("SELFMEDIA_QWEN_MODEL", "").strip(),
-        base_url=os.getenv("SELFMEDIA_QWEN_BASE_URL", "").strip().rstrip("/"),
-        api_key=os.getenv("SELFMEDIA_QWEN_API_KEY", "").strip(),
-        fps=env_float("SELFMEDIA_QWEN_FPS", "2.0"),
+        model=provider.model,
+        base_url=provider.base_url,
+        api_key=provider.api_key,
+        timeout=provider.timeout,
+        fps=provider.fps or 2.0,
     )
 
 
@@ -118,17 +124,20 @@ def load_creation_agent_settings() -> OpenClawAgentSettings:
 
 
 def load_content_cleaner_llm_settings() -> ContentCleanerLLMSettings:
-    provider = LLMProviderSettings(
-        model=os.getenv("SELFMEDIA_CLEAN_LLM_MODEL", "").strip(),
-        base_url=os.getenv("SELFMEDIA_CLEAN_LLM_BASE_URL", "").strip().rstrip("/"),
-        api_key=os.getenv("SELFMEDIA_CLEAN_LLM_API_KEY", "").strip(),
-        api_type=os.getenv("SELFMEDIA_CLEAN_LLM_API_TYPE", "").strip(),
-        timeout=env_float("SELFMEDIA_CLEAN_LLM_TIMEOUT", "300"),
-        thinking="",
+    config = load_bot_llm_config()
+    cleaner = config["content_cleaner"]
+    provider = provider_runtime(str(cleaner.get("provider") or "main_llm"))
+    provider_settings = LLMProviderSettings(
+        model=provider.model,
+        base_url=provider.base_url,
+        api_key=provider.api_key,
+        api_type=provider.api_type,
+        timeout=provider.timeout,
+        thinking=provider.thinking,
     )
     return ContentCleanerLLMSettings(
-        enabled=os.getenv("SELFMEDIA_CLEAN_LLM_ENABLED", "1").strip().lower() not in {"0", "false", "no", "off"},
-        provider=provider,
-        max_chars=max(1000, env_int("SELFMEDIA_CLEAN_LLM_MAX_CHARS", "20000")),
-        max_tokens=max(1000, env_int("SELFMEDIA_CLEAN_LLM_MAX_TOKENS", "8192")),
+        enabled=bool(cleaner.get("enabled", True)),
+        provider=provider_settings,
+        max_chars=max(1000, int(float(cleaner.get("max_chars") or 20000))),
+        max_tokens=max(1000, int(float(cleaner.get("max_tokens") or 8192))),
     )

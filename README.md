@@ -37,10 +37,7 @@ python3 /home/ubuntu/selfmedia-tools/common/content_cleaner_cli.py \
   --output cleaned.txt
 ```
 
-LLM 配置只走 `common/llm_settings.py` 中定义的统一命名空间。主模型和内容清洗共用：
-`SELFMEDIA_CLEAN_LLM_API_KEY`、`SELFMEDIA_CLEAN_LLM_BASE_URL`、`SELFMEDIA_CLEAN_LLM_MODEL`、
-`SELFMEDIA_CLEAN_LLM_API_TYPE`、`SELFMEDIA_CLEAN_LLM_TIMEOUT`；内容清洗额外使用
-`SELFMEDIA_CLEAN_LLM_MAX_CHARS`。
+LLM 配置统一读取 `config/openclaw_bots.json`。OpenClaw Bot 配置在 `defaults`、`bots`、`profiles`；DeepSeek/Qwen 这类外部 API 配置在 `providers`；内容清洗使用 `content_cleaner.provider` 指向具体 provider。
 
 ## 各模块是做什么的
 
@@ -237,7 +234,7 @@ OPENCLAW_CONVERSATION_CONTEXT_JSON='{"loaded_count":1,"prompt":"最近飞书对�
 
 ## 飞书怎么接
 
-当前方案默认复用 OpenClaw 的 `feishu-media` 媒体 Bot 信息。所有 Bot 的 OpenClaw agent/model/thinking/timeout/cwd 配置统一在 `config/openclaw_bots.json`，不要再用分散环境变量覆盖。
+当前方案默认复用 OpenClaw 的 `feishu-media` 媒体 Bot 信息。所有 Bot 的 OpenClaw agent/model/thinking/timeout/cwd 和外部 LLM provider 配置统一在 `config/openclaw_bots.json`，不要再用分散环境变量覆盖。
 
 这份配置会双向同步到 Obsidian：
 

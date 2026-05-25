@@ -12,9 +12,9 @@ from .llm_settings import API_TYPE_CHAT_COMPLETIONS, API_TYPE_CODEX_RESPONSES, L
 
 def ensure_llm_provider_available(config: LLMProviderSettings) -> None:
     if not config.api_key:
-        raise RuntimeError("缺少可用 LLM Provider：SELFMEDIA_CLEAN_LLM_API_KEY 未配置")
+        raise RuntimeError("缺少可用 LLM Provider：config/openclaw_bots.json providers.main_llm.api_key 未配置")
     if not config.base_url or not config.model or not config.api_type:
-        raise RuntimeError("缺少可用 LLM Provider：SELFMEDIA_CLEAN_LLM_MODEL / SELFMEDIA_CLEAN_LLM_BASE_URL / SELFMEDIA_CLEAN_LLM_API_TYPE 未完整配置")
+        raise RuntimeError("缺少可用 LLM Provider：config/openclaw_bots.json providers.main_llm 未完整配置")
 
 
 def generate_json_from_parts(

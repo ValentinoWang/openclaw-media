@@ -19,16 +19,16 @@ from .schemas import NativeVideoObservation, validate_schema
 
 def ensure_llm_provider_available(config: ViralDeconstructConfig) -> None:
     if not config.api_key:
-        raise ConfigError("缺少可用 LLM Provider：SELFMEDIA_CLEAN_LLM_API_KEY 未配置")
+        raise ConfigError("缺少可用 LLM Provider：config/openclaw_bots.json providers.main_llm.api_key 未配置")
     if not config.base_url or not config.model or not config.llm_api_type:
-        raise ConfigError("缺少可用 LLM Provider：SELFMEDIA_CLEAN_LLM_MODEL / SELFMEDIA_CLEAN_LLM_BASE_URL / SELFMEDIA_CLEAN_LLM_API_TYPE 未完整配置")
+        raise ConfigError("缺少可用 LLM Provider：config/openclaw_bots.json providers.main_llm 未完整配置")
 
 
 def ensure_qwen_provider_available(config: ViralDeconstructConfig) -> None:
     if not config.qwen_api_key:
-        raise ConfigError("缺少 Qwen-Omni Provider：SELFMEDIA_QWEN_API_KEY 未配置")
+        raise ConfigError("缺少 Qwen-Omni Provider：config/openclaw_bots.json providers.qwen.api_key 未配置")
     if not config.qwen_base_url or not config.qwen_model:
-        raise ConfigError("缺少 Qwen-Omni Provider：SELFMEDIA_QWEN_MODEL / SELFMEDIA_QWEN_BASE_URL 未完整配置")
+        raise ConfigError("缺少 Qwen-Omni Provider：config/openclaw_bots.json providers.qwen 未完整配置")
 
 
 def generate_json(

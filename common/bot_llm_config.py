@@ -21,6 +21,17 @@ class BotLLMRuntime:
     codex_home: str
 
 
+@dataclass(frozen=True)
+class LLMProviderRuntime:
+    model: str
+    base_url: str
+    api_key: str
+    api_type: str
+    timeout: float
+    thinking: str = ""
+    fps: float = 0.0
+
+
 def normalize_openclaw_model(model: str) -> str:
     value = (model or "").strip()
     if value and "/" not in value:
@@ -41,7 +52,7 @@ def load_bot_llm_config() -> dict[str, Any]:
     parsed = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     if not isinstance(parsed, dict):
         raise RuntimeError(f"OpenClaw Bot LLM 配置格式错误：{CONFIG_PATH}")
-    for key in ("defaults", "bots", "profiles"):
+    for key in ("defaults", "bots", "profiles", "providers", "content_cleaner"):
         if not isinstance(parsed.get(key), dict):
             raise RuntimeError(f"OpenClaw Bot LLM 配置缺少对象字段：{key}")
     return parsed
@@ -81,3 +92,22 @@ def profile_runtime(profile_name: str) -> BotLLMRuntime:
     if not isinstance(profile, dict):
         raise RuntimeError(f"OpenClaw Bot LLM 配置缺少 profile：{profile_name}")
     return _merged_runtime(profile)
+
+
+def provider_runtime(provider_name: str) -> LLMProviderRuntime:
+    config = load_bot_llm_config()
+    provider = config["providers"].get(provider_name)
+    if not isinstance(provider, dict):
+        raise RuntimeError(f"OpenClaw Bot LLM 配置缺少 provider：{provider_name}")
+    missing = [key for key in ("model", "base_url", "api_key", "api_type", "timeout") if not provider.get(key)]
+    if missing:
+        raise RuntimeError(f"OpenClaw Bot LLM provider 配置不完整：{provider_name}.{', '.join(missing)}")
+    return LLMProviderRuntime(
+        model=str(provider["model"]).strip(),
+        base_url=str(provider["base_url"]).strip().rstrip("/"),
+        api_key=str(provider["api_key"]).strip(),
+        api_type=str(provider["api_type"]).strip(),
+        timeout=float(provider["timeout"]),
+        thinking=str(provider.get("thinking") or "").strip().lower(),
+        fps=float(provider.get("fps") or 0),
+    )

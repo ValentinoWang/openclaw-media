@@ -83,5 +83,30 @@
       "thinking": "xhigh",
       "timeout": 900
     }
+  },
+  "providers": {
+    "main_llm": {
+      "model": "deepseek-v4-pro",
+      "base_url": "https://api.deepseek.com",
+      "api_key": "sk-02dddbeaa7dc45f1ba91b3c295a60cb3",
+      "api_type": "openai_chat_completions",
+      "timeout": 300.0,
+      "thinking": ""
+    },
+    "qwen": {
+      "model": "qwen3.5-plus",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "api_key": "sk-784056fa5c324f5886737868ccf0cfd0",
+      "api_type": "openai_chat_completions",
+      "timeout": 120.0,
+      "fps": 2.0,
+      "thinking": ""
+    }
+  },
+  "content_cleaner": {
+    "provider": "main_llm",
+    "enabled": true,
+    "max_chars": 20000,
+    "max_tokens": 8192
   }
 }

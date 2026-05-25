@@ -63,16 +63,12 @@ LLM 输出的 `video_storyboard` / `image_post_script` 必须用 `evidence_asset
 
 默认路线仍是 `gpt_frames`：本地抽帧/提音频形成证据包，最终由主模型输出拆解 JSON。
 
-主模型只读取 `common/llm_settings.py` 定义的 `SELFMEDIA_CLEAN_LLM_*` 统一配置；不会读取旧的 `SELFMEDIA_LLM_*`、`OPENAI_*` 变量，也不会自动读取 Codex 登录文件。
+主模型和 Qwen 配置只读取 `/home/ubuntu/selfmedia-tools/config/openclaw_bots.json` 的 `providers`；不会读取旧的 `SELFMEDIA_LLM_*`、`SELFMEDIA_CLEAN_LLM_*`、`SELFMEDIA_QWEN_*` 或 `OPENAI_*` 变量，也不会自动读取 Codex 登录文件。
 
 可选配置：
 
 ```bash
 export VIDEO_UNDERSTANDING_PROVIDER='gpt_frames' # gpt_frames | qwen_omni | hybrid
-export SELFMEDIA_QWEN_MODEL='qwen3.5-omni-plus'
-export SELFMEDIA_QWEN_BASE_URL='https://dashscope.aliyuncs.com/compatible-mode/v1'
-export SELFMEDIA_QWEN_FPS='2.0'
-export SELFMEDIA_QWEN_API_KEY='...'
 ```
 
 - `qwen_omni` / `hybrid` 会把原视频传给 Qwen-Omni 生成 `native_video_observation`。

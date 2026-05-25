@@ -138,11 +138,11 @@ def _clean_prompt(source_name: str, title: str, text: str) -> list[dict[str, str
 
 def _call_clean_llm(source_name: str, title: str, text: str, config: ContentCleanerConfig) -> str:
     if not config.api_key:
-        raise RuntimeError("SELFMEDIA_CLEAN_LLM_API_KEY not configured")
+        raise RuntimeError("config/openclaw_bots.json providers.main_llm.api_key not configured")
     if not config.model:
-        raise RuntimeError("SELFMEDIA_CLEAN_LLM_MODEL not configured")
+        raise RuntimeError("config/openclaw_bots.json providers.main_llm.model not configured")
     if not config.base_url:
-        raise RuntimeError("SELFMEDIA_CLEAN_LLM_BASE_URL not configured")
+        raise RuntimeError("config/openclaw_bots.json providers.main_llm.base_url not configured")
     response = requests.post(
         _clean_endpoint(config.base_url),
         headers={"Authorization": f"Bearer {config.api_key}", "Content-Type": "application/json"},

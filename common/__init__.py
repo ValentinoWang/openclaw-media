@@ -12,10 +12,12 @@ from .content_cleaner import (
 )
 from .bot_llm_config import (
     BotLLMRuntime,
+    LLMProviderRuntime,
     bot_runtime,
     display_openclaw_model,
     load_bot_llm_config,
     profile_runtime,
+    provider_runtime,
 )
 from .llm_settings import (
     API_TYPE_CHAT_COMPLETIONS,
@@ -38,6 +40,7 @@ __all__ = [
     "BotLLMRuntime",
     "ContentCleanerConfig",
     "ContentCleanerLLMSettings",
+    "LLMProviderRuntime",
     "LLMProviderSettings",
     "OpenClawAgentSettings",
     "QwenProviderSettings",
@@ -56,6 +59,7 @@ __all__ = [
     "load_qwen_settings",
     "normalize_thinking",
     "profile_runtime",
+    "provider_runtime",
     "source_from_context",
     "strip_false_clean_marker",
 ]

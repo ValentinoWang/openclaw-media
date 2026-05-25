@@ -78,7 +78,7 @@ def load_settings() -> Settings:
         qwen_base_url=qwen.base_url,
         qwen_api_key=qwen.api_key,
         qwen_model=qwen.model,
-        qwen_timeout=float(os.getenv("SELFMEDIA_QWEN_TIMEOUT", "120")),
+        qwen_timeout=qwen.timeout,
         analysis_openclaw_bin=analysis_agent.bin,
         analysis_openclaw_model=analysis_agent.model,
         analysis_openclaw_allow_model_override=analysis_agent.allow_model_override,
