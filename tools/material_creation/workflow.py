@@ -354,8 +354,8 @@ def generate_material_analysis(request: MaterialRequest, evidence: dict[str, Any
         parts.extend(evidence["parts"])
     else:
         parts.append({"text": "当前没有可用附件视觉证据，请只基于用户文本做定位分析，并在 account_fit 中提示素材证据不足。"})
-    config = load_part2_config()
-    raw = generate_part2_json(parts, config, schema=MaterialCreationResult)
+    config = load_viral_deconstruct_config()
+    raw = generate_viral_deconstruct_json(parts, config, schema=MaterialCreationResult)
     return normalize_analysis(raw, request)
 
 
@@ -594,7 +594,7 @@ def render_material_report(payload: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def load_part2_config() -> Any:
+def load_viral_deconstruct_config() -> Any:
     module_root = str(VIRAL_DECONSTRUCT_ROOT)
     if module_root not in sys.path:
         sys.path.insert(0, module_root)
@@ -603,7 +603,7 @@ def load_part2_config() -> Any:
     return load_config()
 
 
-def generate_part2_json(parts: list[dict[str, Any]], config: Any, schema: type[BaseModel]) -> dict[str, Any]:
+def generate_viral_deconstruct_json(parts: list[dict[str, Any]], config: Any, schema: type[BaseModel]) -> dict[str, Any]:
     module_root = str(VIRAL_DECONSTRUCT_ROOT)
     if module_root not in sys.path:
         sys.path.insert(0, module_root)

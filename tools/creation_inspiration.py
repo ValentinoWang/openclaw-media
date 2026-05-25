@@ -23,7 +23,11 @@ from common.social_runtime import (
     feishu_tenant_access_token,
     load_default_env_files,
 )
-from tools.material_creation.workflow import build_material_evidence, generate_part2_json, load_part2_config
+from tools.material_creation.workflow import (
+    build_material_evidence,
+    generate_viral_deconstruct_json,
+    load_viral_deconstruct_config,
+)
 
 
 DEFAULT_INSPIRATION_TABLE_URL = (
@@ -187,7 +191,7 @@ def analyze_creation_inspiration(text: str, attachment_paths: list[str], *, conv
         parts.extend(evidence["parts"])
     else:
         parts.append({"text": "当前没有可用视觉证据；如果用户上传了附件但无法读取，请在 risks 里说明素材证据不足。"})
-    raw = generate_part2_json(parts, load_part2_config(), schema=CreationInspirationResult)
+    raw = generate_viral_deconstruct_json(parts, load_viral_deconstruct_config(), schema=CreationInspirationResult)
     result = CreationInspirationResult.model_validate(raw).model_dump()
     result["created_at"] = _now_iso()
     result["attachment_paths"] = [item["path"] for item in _attachment_summary(attachment_paths)]

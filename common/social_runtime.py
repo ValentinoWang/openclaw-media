@@ -132,7 +132,7 @@ def ensure_paths(part_dir: Path, db_name: str) -> RuntimePaths:
     )
 
 
-def load_part1():
+def load_content_ingest():
     content_ingest = str(CONTENT_INGEST_PATH)
     if content_ingest not in sys.path:
         sys.path.insert(0, content_ingest)
@@ -203,7 +203,7 @@ def failure_reason(stats: dict[str, Any]) -> str:
 
 
 def refresh_posts(urls: list[str]) -> list[dict[str, Any]]:
-    load_settings, clean_douyin_url, refresh_stats_only = load_part1()
+    load_settings, clean_douyin_url, refresh_stats_only = load_content_ingest()
     settings = load_settings()
     rows: list[dict[str, Any]] = []
     captured_at = now_iso()
