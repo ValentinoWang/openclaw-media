@@ -67,6 +67,17 @@ def profile_config(profile_name: str) -> dict[str, Any]:
     return dict(profile)
 
 
+def profile_provider_runtime(profile_name: str) -> LLMProviderRuntime:
+    config = load_bot_llm_config()
+    profile = profile_config(profile_name)
+    bot_name = str(profile.get("bot") or "").strip()
+    bot = dict(config["bots"].get(bot_name, {})) if bot_name else {}
+    provider_name = str(profile.get("provider") or bot.get("provider") or "").strip()
+    if not provider_name:
+        raise RuntimeError(f"OpenClaw Bot LLM 配置缺少 profile provider：{profile_name}")
+    return provider_runtime(provider_name)
+
+
 def _merged_runtime(profile_or_bot: dict[str, Any]) -> BotLLMRuntime:
     config = load_bot_llm_config()
     defaults = dict(config["defaults"])

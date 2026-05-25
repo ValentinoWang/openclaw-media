@@ -1,6 +1,14 @@
 from __future__ import annotations
 
-from common.bot_llm_config import bot_runtime, display_openclaw_model, load_bot_llm_config, profile_config, profile_runtime, provider_runtime
+from common.bot_llm_config import (
+    bot_runtime,
+    display_openclaw_model,
+    load_bot_llm_config,
+    profile_config,
+    profile_provider_runtime,
+    profile_runtime,
+    provider_runtime,
+)
 
 
 def test_all_feishu_bots_have_openclaw_runtime() -> None:
@@ -21,12 +29,14 @@ def test_all_feishu_bots_have_openclaw_runtime() -> None:
 
 def test_profiles_are_the_single_source_for_openclaw_use_cases() -> None:
     assert display_openclaw_model(profile_runtime("system_guide").model) == "gpt-5.3-codex-spark"
-    assert profile_runtime("knowledge_delegate").agent == "feishu-knowledge"
-    assert profile_runtime("knowledge_delegate").thinking == "high"
     assert profile_runtime("knowledge_research").thinking == "xhigh"
     assert profile_runtime("media_analysis").agent == "feishu-media"
     assert profile_runtime("media_creation").agent == "feishu-media"
     assert profile_runtime("social_vision").agent == "feishu-social"
+    assert profile_config("knowledge_delegate")["provider"] == "main_llm"
+    assert profile_config("transcription_postprocess")["provider"] == "main_llm"
+    assert profile_config("activity_cleaning")["provider"] == "main_llm"
+    assert profile_provider_runtime("knowledge_delegate").model == "deepseek-v4-pro"
 
 
 def test_external_llm_providers_live_in_the_same_config() -> None:

@@ -36,7 +36,7 @@
       "thinking": "medium"
     },
     "knowledge_delegate": {
-      "provider": "openclaw_codex",
+      "provider": "main_llm",
       "bot": "knowledge",
       "thinking": "high"
     },
@@ -46,7 +46,7 @@
       "thinking": "xhigh"
     },
     "transcription_postprocess": {
-      "provider": "openclaw_codex",
+      "provider": "main_llm",
       "bot": "knowledge",
       "thinking": "high"
     },
@@ -59,7 +59,7 @@
       "bot": "media"
     },
     "activity_cleaning": {
-      "provider": "openclaw_codex",
+      "provider": "main_llm",
       "bot": "media",
       "thinking": "medium",
       "timeout": 300
