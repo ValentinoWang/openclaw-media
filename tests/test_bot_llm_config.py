@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from common.bot_llm_config import bot_runtime, display_openclaw_model, load_bot_llm_config, profile_runtime, provider_runtime
+from common.bot_llm_config import bot_runtime, display_openclaw_model, load_bot_llm_config, profile_config, profile_runtime, provider_runtime
 
 
 def test_all_feishu_bots_have_openclaw_runtime() -> None:
     config = load_bot_llm_config()
+    assert config["defaults"] == {}
     assert set(config["bots"]) == {"main", "daily", "knowledge", "media", "social"}
     for bot_name in config["bots"]:
         runtime = bot_runtime(bot_name)
@@ -30,7 +31,9 @@ def test_profiles_are_the_single_source_for_openclaw_use_cases() -> None:
 
 def test_external_llm_providers_live_in_the_same_config() -> None:
     config = load_bot_llm_config()
-    assert config["content_cleaner"]["provider"] == "main_llm"
+    cleaner = profile_config("content_cleaner")
+    assert cleaner["provider"] == "main_llm"
+    assert cleaner["enabled"] is True
     openclaw = provider_runtime("openclaw_codex")
     main = provider_runtime("main_llm")
     qwen = provider_runtime("qwen")

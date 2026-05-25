@@ -5,7 +5,7 @@ import os
 
 from .bot_llm_config import (
     normalize_openclaw_model,
-    load_bot_llm_config,
+    profile_config,
     profile_runtime,
     provider_runtime,
 )
@@ -124,8 +124,7 @@ def load_creation_agent_settings() -> OpenClawAgentSettings:
 
 
 def load_content_cleaner_llm_settings() -> ContentCleanerLLMSettings:
-    config = load_bot_llm_config()
-    cleaner = config["content_cleaner"]
+    cleaner = profile_config("content_cleaner")
     provider = provider_runtime(str(cleaner.get("provider") or "main_llm"))
     provider_settings = LLMProviderSettings(
         model=provider.model,

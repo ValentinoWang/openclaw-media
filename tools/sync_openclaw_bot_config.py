@@ -24,7 +24,7 @@ def canonical_payload(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise SystemExit(f"config is not a JSON object: {path}")
-    for key in ("defaults", "bots", "profiles", "providers", "content_cleaner"):
+    for key in ("defaults", "bots", "profiles", "providers"):
         if not isinstance(payload.get(key), dict):
             raise SystemExit(f"config missing object field {key}: {path}")
     return payload
@@ -98,9 +98,8 @@ def render_note(payload: dict[str, Any], repo_hash: str, obsidian_hash: str) -> 
         "|---|---|---|---|---|---:|---|",
     ]
     defaults = payload.get("defaults") or {}
-    default_provider = (payload.get("providers") or {}).get(defaults.get("provider") or "") or {}
     for name, bot in sorted((payload.get("bots") or {}).items()):
-        provider = (payload.get("providers") or {}).get((bot or {}).get("provider") or defaults.get("provider") or "") or default_provider
+        provider = (payload.get("providers") or {}).get((bot or {}).get("provider") or "") or {}
         merged = {**provider, **defaults, **(bot or {})}
         lines.append(
             "| "
@@ -121,7 +120,7 @@ def render_note(payload: dict[str, Any], repo_hash: str, obsidian_hash: str) -> 
     for name, profile in sorted((payload.get("profiles") or {}).items()):
         bot_name = str((profile or {}).get("bot") or "")
         bot = (payload.get("bots") or {}).get(bot_name) or {}
-        provider = (payload.get("providers") or {}).get((profile or {}).get("provider") or bot.get("provider") or defaults.get("provider") or "") or default_provider
+        provider = (payload.get("providers") or {}).get((profile or {}).get("provider") or bot.get("provider") or "") or {}
         merged = {**provider, **defaults, **bot, **(profile or {})}
         lines.append(
             "| "
@@ -154,18 +153,6 @@ def render_note(payload: dict[str, Any], repo_hash: str, obsidian_hash: str) -> 
             )
             + " |"
         )
-    cleaner = payload.get("content_cleaner") or {}
-    lines.extend(
-        [
-            "",
-            "## Content Cleaner",
-            "",
-            f"- provider: `{cleaner.get('provider') or ''}`",
-            f"- enabled: `{cleaner.get('enabled')}`",
-            f"- max_chars: `{cleaner.get('max_chars')}`",
-            f"- max_tokens: `{cleaner.get('max_tokens')}`",
-        ]
-    )
     lines.extend(
         [
             "",

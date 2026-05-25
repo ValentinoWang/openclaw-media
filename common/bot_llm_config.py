@@ -53,10 +53,18 @@ def load_bot_llm_config() -> dict[str, Any]:
     parsed = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     if not isinstance(parsed, dict):
         raise RuntimeError(f"OpenClaw Bot LLM 配置格式错误：{CONFIG_PATH}")
-    for key in ("defaults", "bots", "profiles", "providers", "content_cleaner"):
+    for key in ("defaults", "bots", "profiles", "providers"):
         if not isinstance(parsed.get(key), dict):
             raise RuntimeError(f"OpenClaw Bot LLM 配置缺少对象字段：{key}")
     return parsed
+
+
+def profile_config(profile_name: str) -> dict[str, Any]:
+    config = load_bot_llm_config()
+    profile = config["profiles"].get(profile_name)
+    if not isinstance(profile, dict):
+        raise RuntimeError(f"OpenClaw Bot LLM 配置缺少 profile：{profile_name}")
+    return dict(profile)
 
 
 def _merged_runtime(profile_or_bot: dict[str, Any]) -> BotLLMRuntime:
@@ -64,7 +72,7 @@ def _merged_runtime(profile_or_bot: dict[str, Any]) -> BotLLMRuntime:
     defaults = dict(config["defaults"])
     bot_name = str(profile_or_bot.get("bot") or "").strip()
     bot = dict(config["bots"].get(bot_name, {})) if bot_name else {}
-    provider_name = str(profile_or_bot.get("provider") or bot.get("provider") or defaults.get("provider") or "").strip()
+    provider_name = str(profile_or_bot.get("provider") or bot.get("provider") or "").strip()
     provider = dict(config["providers"].get(provider_name, {})) if provider_name else {}
     merged = {**provider, **defaults, **bot, **profile_or_bot}
     missing = [key for key in ("bin", "agent", "model", "thinking", "timeout", "cwd", "codex_home") if not merged.get(key)]
@@ -91,11 +99,7 @@ def bot_runtime(bot_name: str) -> BotLLMRuntime:
 
 
 def profile_runtime(profile_name: str) -> BotLLMRuntime:
-    config = load_bot_llm_config()
-    profile = config["profiles"].get(profile_name)
-    if not isinstance(profile, dict):
-        raise RuntimeError(f"OpenClaw Bot LLM 配置缺少 profile：{profile_name}")
-    return _merged_runtime(profile)
+    return _merged_runtime(profile_config(profile_name))
 
 
 def provider_runtime(provider_name: str) -> LLMProviderRuntime:

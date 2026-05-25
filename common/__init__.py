@@ -16,6 +16,7 @@ from .bot_llm_config import (
     bot_runtime,
     display_openclaw_model,
     load_bot_llm_config,
+    profile_config,
     profile_runtime,
     provider_runtime,
 )
@@ -58,6 +59,7 @@ __all__ = [
     "load_main_llm_settings",
     "load_qwen_settings",
     "normalize_thinking",
+    "profile_config",
     "profile_runtime",
     "provider_runtime",
     "source_from_context",

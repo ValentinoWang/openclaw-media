@@ -1,62 +1,79 @@
 {
-  "defaults": {
-    "provider": "openclaw_codex"
-  },
+  "defaults": {},
   "bots": {
     "main": {
+      "provider": "openclaw_codex",
       "agent": "feishu-main",
       "cwd": "/home/ubuntu/openclaw-agents/main"
     },
     "daily": {
+      "provider": "openclaw_codex",
       "agent": "feishu-daily",
       "cwd": "/home/ubuntu/openclaw-agents/daily"
     },
     "knowledge": {
+      "provider": "openclaw_codex",
       "agent": "feishu-knowledge",
       "cwd": "/home/ubuntu/openclaw-agents/knowledge",
       "thinking": "high"
     },
     "media": {
+      "provider": "openclaw_codex",
       "agent": "feishu-media",
       "cwd": "/home/ubuntu/openclaw-agents/media"
     },
     "social": {
+      "provider": "openclaw_codex",
       "agent": "feishu-social",
       "cwd": "/home/ubuntu/openclaw-agents/social"
     }
   },
   "profiles": {
     "system_guide": {
+      "provider": "openclaw_codex",
       "bot": "main",
       "model": "openai-codex/gpt-5.3-codex-spark",
       "thinking": "medium"
     },
     "knowledge_delegate": {
+      "provider": "openclaw_codex",
       "bot": "knowledge",
       "thinking": "high"
     },
     "knowledge_research": {
+      "provider": "openclaw_codex",
       "bot": "knowledge",
       "thinking": "xhigh"
     },
     "transcription_postprocess": {
+      "provider": "openclaw_codex",
       "bot": "knowledge",
       "thinking": "high"
     },
     "media_analysis": {
+      "provider": "openclaw_codex",
       "bot": "media"
     },
     "media_creation": {
+      "provider": "openclaw_codex",
       "bot": "media"
     },
     "activity_cleaning": {
+      "provider": "openclaw_codex",
       "bot": "media",
       "thinking": "medium",
       "timeout": 300
     },
     "social_vision": {
+      "provider": "openclaw_codex",
       "bot": "social",
       "timeout": 900
+    },
+    "content_cleaner": {
+      "provider": "main_llm",
+      "enabled": true,
+      "max_chars": 20000,
+      "max_tokens": 8192
     }
   },
   "providers": {
@@ -87,11 +104,5 @@
       "bin": "/home/ubuntu/.nvm/versions/node/v22.22.2/bin/openclaw",
       "codex_home": "/home/ubuntu/.openclaw/codex-home"
     }
-  },
-  "content_cleaner": {
-    "provider": "main_llm",
-    "enabled": true,
-    "max_chars": 20000,
-    "max_tokens": 8192
   }
 }
