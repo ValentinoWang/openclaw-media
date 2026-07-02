@@ -3,6 +3,12 @@ from __future__ import annotations
 from .tag_router_common import *
 from ..services.media_text_cleaner import MEDIA_TEXT_CLEANER, MediaCopyParts
 
+SELFMEDIA_ROOT = Path("/home/ubuntu/selfmedia-tools")
+if str(SELFMEDIA_ROOT) not in sys.path:
+    sys.path.insert(0, str(SELFMEDIA_ROOT))
+
+from common.knowledge_categories import normalize_knowledge_secondary_categories  # noqa: E402
+
 
 class MediaKnowledgeFieldsMixin:
     def _knowledge_title(self, body: str, analysis: dict[str, Any]) -> str:
@@ -112,7 +118,7 @@ class MediaKnowledgeFieldsMixin:
         if any(marker in text for marker in markers):
             return True
         compact_upper = re.sub(r"[\s/_-]+", "", text).upper()
-        return "待配置" in text and ("GEMINI" in compact_upper or "GEMINL" in compact_upper or "DASHSCOPE" in compact_upper)
+        return "待配置" in text and ("CODEX" in compact_upper or "RESPONSES" in compact_upper)
 
     def _knowledge_clean_analysis_value(self, value: Any) -> str:
         text = self._knowledge_text_value(value)
@@ -207,7 +213,7 @@ class MediaKnowledgeFieldsMixin:
         text = self._knowledge_text_value(tags)
         return MEDIA_TEXT_CLEANER.clean_tags(text)
 
-    def _knowledge_unified_text(self, body: str, result: dict[str, Any], *, allow_body_fallback: bool = True) -> str:
+    def _knowledge_unified_text(self, body: str, result: dict[str, Any]) -> str:
         analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
         caption = self._knowledge_caption_text(result, analysis)
         transcript = self._knowledge_read_text_file(str(result.get("transcript_path") or ""))
@@ -217,22 +223,14 @@ class MediaKnowledgeFieldsMixin:
         )
         if copy:
             return copy
-        if not allow_body_fallback:
-            return ""
-        return body.strip()
+        return ""
 
     def _knowledge_has_structured_analysis(self, analysis: dict[str, Any]) -> bool:
         if not analysis:
             return False
         if analysis.get("analysis_status") == "needs_model_rerun":
             return False
-        if analysis.get("analysis_status") == "fallback_from_downloaded_assets":
-            return False
-        if analysis.get("analysis_provider") == "tag-router-fallback":
-            return False
-        if analysis.get("fallback_reason") == "missing_GEMINI_API_KEY":
-            return False
-        if analysis.get("fallback_reason") in {"missing_QWEN_API_KEY", "analysis_models_unavailable"}:
+        if analysis.get("incomplete_reason"):
             return False
         for key in (
             "summary",
@@ -270,23 +268,21 @@ class MediaKnowledgeFieldsMixin:
         if require_video and not script_text:
             return "content-flow 未产出逐字稿或完整内容"
         if not self._knowledge_has_structured_analysis(analysis):
-            if analysis.get("fallback_reason") == "missing_GEMINI_API_KEY":
+            if analysis.get("incomplete_reason") == "missing_GEMINI_API_KEY":
                 return "GEMINI_API_KEY 未配置，无法生成完整结构化分析"
-            if analysis.get("fallback_reason") == "missing_QWEN_API_KEY":
-                return "config/openclaw_bots.json providers.qwen.api_key 未配置，无法生成完整结构化分析"
-            if analysis.get("fallback_reason") == "analysis_models_unavailable":
+            if analysis.get("incomplete_reason") == "missing_CODEX_RESPONSES_API_KEY":
+                return "config/openclaw_bots.json providers.codex_responses.api_key 未配置，无法生成完整结构化分析"
+            if analysis.get("incomplete_reason") == "analysis_models_unavailable":
                 return "结构化分析模型当前不可用"
             if analysis.get("analysis_status") == "needs_model_rerun":
                 return "结构化分析需要重新运行模型"
-            if analysis.get("analysis_status") == "fallback_from_downloaded_assets":
-                return "当前仅生成兜底分析，需等待正式结构化分析完成"
-            if analysis.get("analysis_provider") == "tag-router-fallback":
-                return "当前仅生成兜底分析，需等待正式结构化分析完成"
             return "content-flow 未产出可用结构化分析"
         return ""
 
     def _knowledge_platform_from_text(self, text: str) -> str:
         lower = (text or "").lower()
+        if "mp.weixin.qq.com" in lower or "公众号" in lower:
+            return "公众号"
         if "douyin.com" in lower or "iesdouyin.com" in lower:
             return "抖音"
         if "xiaohongshu.com" in lower or "xhslink.com" in lower:
@@ -301,12 +297,20 @@ class MediaKnowledgeFieldsMixin:
             return "YouTube"
         return ""
 
+    def _knowledge_body_indicates_image_post(self, body: str) -> bool:
+        text = str(body or "")
+        return any(marker in text for marker in ("图文作品", "图文笔记", "图片作品", "动图作品"))
+
     def _knowledge_content_type(self, body: str, result: dict[str, Any], platform: str) -> str:
         analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
         media_type = str(result.get("media_type") or analysis.get("media_type") or "").lower()
         if self._knowledge_result_video_path(result):
             return "短视频"
-        if self._knowledge_result_image_paths(result) or media_type in {"image", "images", "photo", "photos", "animated", "图文", "图片"}:
+        if self._knowledge_result_image_paths(result) or media_type in {"image", "images", "photo", "photos", "animated", "article", "wechat_article", "图文", "图片", "文章"}:
+            return "图文"
+        if self._knowledge_body_indicates_image_post(body):
+            return "图文"
+        if platform == "公众号":
             return "图文"
         if platform in {"抖音", "TikTok", "快手", "B站", "YouTube"}:
             return "短视频"
@@ -346,23 +350,18 @@ class MediaKnowledgeFieldsMixin:
                 return category
         return text
 
-    def _knowledge_default_secondary_category(self, primary: str) -> str:
-        defaults = {
-            "AI/工具": "AI工具应用",
-            "商业/产品": "产品增长",
-            "运营/管理": "流程管理",
-            "学习/认知": "学习方法",
-            "健康/运动": "健康管理",
-            "财经/投资": "投资认知",
-            "法律/政策": "合规风险",
-            "生活/效率": "生活效率",
-            "科技/科学": "科技趋势",
-            "人物/案例": "案例拆解",
-            "其他": "未细分",
-        }
-        return defaults.get(primary or "其他", "未细分")
+    def _knowledge_secondary_values(self, value: Any) -> list[str]:
+        if isinstance(value, list):
+            values: list[str] = []
+            for item in value:
+                text = self._knowledge_clean_analysis_value(item)
+                if text and text not in values:
+                    values.append(text)
+            return values
+        text = self._knowledge_clean_analysis_value(value)
+        return [text] if text else []
 
-    def _knowledge_category_fields(self, analysis: dict[str, Any], text: str) -> dict[str, str]:
+    def _knowledge_category_fields(self, analysis: dict[str, Any], text: str) -> dict[str, Any]:
         configured_category = (
             analysis.get("一级分类")
             or analysis.get("primary_category")
@@ -379,44 +378,20 @@ class MediaKnowledgeFieldsMixin:
             or analysis.get("content_subcategory")
         )
         category, secondary = self._knowledge_split_category(configured_category)
-        explicit_secondary = self._knowledge_clean_analysis_value(configured_secondary)
+        explicit_secondary = self._knowledge_secondary_values(configured_secondary)
         if explicit_secondary:
-            secondary = explicit_secondary
+            secondary = explicit_secondary if len(explicit_secondary) > 1 else explicit_secondary[0]
         category = self._knowledge_normalize_primary_category(category)
-        lower_text = text.lower()
-        category_rules = [
-            ("AI/工具", "AI视频/自动化", ["剪视频", "自动剪", "视频制作", "remotion", "ffmpeg", "字幕", "剪辑", "口播"]),
-            ("AI/工具", "模型/智能体", ["openai", "codex", "智能体", "agent", "大模型", "模型", "transformer", "rag", "token", "提示词"]),
-            ("AI/工具", "AI工具应用", ["ai", "aigc", "人工智能", "自动化", "工具", "插件", "软件"]),
-            ("商业/产品", "产品增长", ["商业", "产品", "用户", "增长", "转化", "销售", "品牌", "定价"]),
-            ("运营/管理", "流程管理", ["运营", "管理", "组织", "流程", "项目", "团队", "效率"]),
-            ("学习/认知", "学习方法", ["学习", "认知", "思维", "方法", "复盘", "记忆", "教育"]),
-            ("健康/运动", "健康管理", ["健康", "运动", "健身", "训练", "睡眠", "饮食", "医学"]),
-            ("财经/投资", "投资认知", ["财经", "投资", "股票", "基金", "资产", "现金流", "经济"]),
-            ("法律/政策", "合规风险", ["法律", "政策", "合同", "合规", "监管", "版权"]),
-            ("生活/效率", "生活效率", ["生活", "效率", "习惯", "收纳", "时间管理", "沟通"]),
-            ("科技/科学", "科技趋势", ["科技", "科学", "研究", "论文", "实验", "工程"]),
-            ("人物/案例", "案例拆解", ["案例", "人物", "故事", "访谈", "经历"]),
-        ]
         if not category or not secondary:
-            for candidate, candidate_secondary, keywords in category_rules:
-                if any(keyword in lower_text for keyword in keywords):
-                    if not category:
-                        category = candidate
-                    if not secondary and category == candidate:
-                        secondary = candidate_secondary
-                    break
-        if not category:
-            category = "其他"
-        if not secondary:
-            secondary = self._knowledge_default_secondary_category(category)
+            raise ValueError("LLM_SEMANTIC_PERSISTENCE_REQUIRED:knowledge_category_fields_required")
+        secondary = normalize_knowledge_secondary_categories(secondary, primary=category, text="")
 
         return {"一级分类": category, "二级分类": secondary}
 
-    def _knowledge_full_text(self, body: str, result: dict[str, Any], *, allow_body_fallback: bool = True) -> str:
-        return self._knowledge_unified_text(body, result, allow_body_fallback=allow_body_fallback)
+    def _knowledge_full_text(self, body: str, result: dict[str, Any]) -> str:
+        return self._knowledge_unified_text(body, result)
 
-    def _knowledge_work_copy_text(self, body: str, result: dict[str, Any], *, allow_body_fallback: bool = True) -> str:
+    def _knowledge_work_copy_text(self, body: str, result: dict[str, Any]) -> str:
         analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
         caption = self._knowledge_caption_text(result, analysis)
         if caption:
@@ -436,9 +411,7 @@ class MediaKnowledgeFieldsMixin:
         )
         if explicit and not has_extracted_media:
             return MEDIA_TEXT_CLEANER.build_work_copy(explicit)
-        if not allow_body_fallback:
-            return ""
-        return MEDIA_TEXT_CLEANER.build_work_copy(body)
+        return ""
 
     def _knowledge_full_content_text(self, result: dict[str, Any]) -> str:
         analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
@@ -450,6 +423,9 @@ class MediaKnowledgeFieldsMixin:
             or analysis.get("script")
         )
         if explicit:
+            media_type = str(result.get("media_type") or analysis.get("media_type") or "").lower()
+            if media_type in {"article", "wechat_article", "文章"} or analysis.get("analysis_provider") == "wechat-article-extractor":
+                return explicit.strip()
             return MEDIA_TEXT_CLEANER.clean_generated_copy(explicit)
         transcript = self._knowledge_read_text_file(str(result.get("transcript_path") or ""))
         image_ocr = self._knowledge_image_ocr_text(result, analysis)
@@ -462,31 +438,6 @@ class MediaKnowledgeFieldsMixin:
         pain_point = self._knowledge_clean_analysis_value(
             analysis.get("核心痛点") or analysis.get("pain_point") or analysis.get("user_pain") or analysis.get("pain")
         )
-        lower_text = (source_text or "").lower()
-        if not audience:
-            audience_rules = [
-                ("AI 小白", ["ai 小白", "ai小白", "小白", "入门"]),
-                ("职场新人", ["职场新人", "新人"]),
-                ("企业老板", ["企业老板", "老板"]),
-                ("学生", ["学生", "校园"]),
-                ("创作者", ["自媒体", "创作者", "博主"]),
-            ]
-            for candidate, keywords in audience_rules:
-                if any(keyword in lower_text for keyword in keywords):
-                    audience = candidate
-                    break
-        if not pain_point:
-            pain_rules = [
-                ("不会开始", ["不会开始", "不知道怎么开始"]),
-                ("不会提问", ["不会提问", "提示词", "怎么问"]),
-                ("标题同质化", ["同质化", "只要10个标题", "直接要标题"]),
-                ("工具太多不知道怎么选", ["工具太多", "不知道选"]),
-                ("担心学了没用", ["学了没用", "怕学了没用"]),
-            ]
-            for candidate, keywords in pain_rules:
-                if any(keyword in lower_text for keyword in keywords):
-                    pain_point = candidate
-                    break
         return {
             key: value
             for key, value in {
@@ -506,33 +457,14 @@ class MediaKnowledgeFieldsMixin:
         explicit_text = self._knowledge_text_value(explicit)
         if explicit_text:
             return explicit_text
+        return ""
 
-        candidates: list[str] = []
-        for line in re.split(r"[\n。；;！!]", text):
-            cleaned = line.strip(" -\t\r\n")
-            if not cleaned:
-                continue
-            if "?" in cleaned or "？" in cleaned:
-                candidates.append(cleaned.rstrip("?？") + "？")
-                continue
-            if any(keyword in cleaned for keyword in ["为什么", "怎么", "如何", "是什么", "能不能", "有没有", "哪些", "多少", "该不该"]):
-                if len(cleaned) <= 80:
-                    candidates.append(cleaned.rstrip("?？") + "？")
-        deduped: list[str] = []
-        seen: set[str] = set()
-        for item in candidates:
-            if item in seen:
-                continue
-            seen.add(item)
-            deduped.append(item)
-            if len(deduped) >= 5:
-                break
-        return "\n".join(f"{idx}. {item}" for idx, item in enumerate(deduped, start=1))
-
-    def _knowledge_extra_fields(self, body: str, result: dict[str, Any], *, allow_body_fallback: bool = True) -> dict[str, Any]:
+    def _knowledge_extra_fields(self, body: str, result: dict[str, Any]) -> dict[str, Any]:
         analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
-        full_text = self._knowledge_full_text(body, result, allow_body_fallback=allow_body_fallback)
-        work_copy = self._knowledge_work_copy_text(body, result, allow_body_fallback=allow_body_fallback)
+        if not self._knowledge_has_structured_analysis(analysis):
+            raise ValueError("LLM_SEMANTIC_PERSISTENCE_REQUIRED:knowledge_structured_analysis_required")
+        full_text = self._knowledge_full_text(body, result)
+        work_copy = self._knowledge_work_copy_text(body, result)
         full_content = self._knowledge_full_content_text(result)
         summary = self._knowledge_text_value(analysis.get("summary"))
         breakdown = self._knowledge_text_value(analysis.get("breakdown"))
@@ -576,8 +508,7 @@ class MediaKnowledgeFieldsMixin:
         }
         if platform:
             fields["来源平台"] = platform
-        if video_path:
-            fields["_attachment_fields"] = {"原文件": [video_path]}
-        elif image_paths:
-            fields["_attachment_fields"] = {"原文件": image_paths}
+        original_file_paths = [path for path in [video_path, *image_paths] if path]
+        if original_file_paths:
+            fields["_attachment_fields"] = {"原文件": original_file_paths}
         return {key: value for key, value in fields.items() if value not in (None, "", [], {})}

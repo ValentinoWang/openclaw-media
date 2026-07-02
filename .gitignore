@@ -6,6 +6,9 @@ __pycache__/
 .env.local
 .venv/
 venv/
+**/.venv/
+**/.pytest_cache/
+**/__pycache__/
 private/
 secrets/
 *cookies*.json
@@ -19,6 +22,24 @@ dist/
 # Runtime outputs
 downloads/
 downloads_test/
+**/downloads/
+**/downloads_test/
+**/outputs/
+**/doc_assets/
+**/frames/
+**/preview/
+*.mp4
+*.mov
+*.m4a
+*.mp3
+*.wav
+*.webm
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.sqlite
+*.db
 
 # Project-local runtime outputs
 01-ingest-content-flow/downloads/
@@ -41,3 +62,8 @@ data/media_memory/
 outputs/
 tools/data_review/outputs/
 tools/material_creation/outputs/
+
+# Runtime data roots. Keep structure/docs only; never publish real account memory,
+# evidence bundles, production artifacts, Feishu readbacks, or media vault outputs.
+data/*
+!data/README.md

@@ -1,0 +1,5 @@
+default_strategy: "只做事实保真的表达整理；账号画像不足时不模拟人格。"
+version_names:
+  - 稳妥版
+  - 网感版
+  - 强冲突版

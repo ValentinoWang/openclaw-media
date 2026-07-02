@@ -88,6 +88,10 @@ class ContentOSRenderersMixin:
         title: str,
         theme: str,
         local_project_path: str,
+        batch_note_path: str,
+        inbox_batch_path: str,
+        local_material_binding: str,
+        mac_task_status: str,
         platform: str,
         content_type: str,
         created_date: str,
@@ -95,6 +99,12 @@ class ContentOSRenderersMixin:
         inspiration_doc: str,
         inspiration_record_id: str,
     ) -> str:
+        next_owner = "mac_openclaw" if local_material_binding == "bound" and mac_task_status == "ready" else "human"
+        task_status_line = (
+            "- [x] 云端派发 Mac 本地素材分析任务"
+            if mac_task_status == "ready"
+            else "- [ ] 等人在 Mac 上把素材批次和项目包绑定，再派发 Mac 本地素材分析任务"
+        )
         return f"""---
 spec_version: content_os_v0.1
 doc_type: project_index
@@ -102,10 +112,13 @@ project_id: {project_id}
 idea_id: {idea_id}
 status: brief_ready
 owner_agent: cloud_openclaw
-next_owner: mac_openclaw
+next_owner: {next_owner}
 created_at: {created_date}
 updated_at: {created_date}
 local_project_path: {self._yaml_scalar(local_project_path)}
+batch_note_path: {self._yaml_scalar(batch_note_path)}
+inbox_batch_path: {self._yaml_scalar(inbox_batch_path)}
+local_material_binding: {local_material_binding}
 target_platforms: {self._yaml_scalar(platform or "未指定")}
 content_type: {self._yaml_scalar(content_type or "短视频")}
 ---
@@ -114,10 +127,13 @@ content_type: {self._yaml_scalar(content_type or "短视频")}
 
 {theme or title}
 
-# 本地项目路径
+# 本地素材绑定
 
 ```text
-{local_project_path}
+local_material_binding: {local_material_binding}
+local_project_path: {local_project_path or "未绑定"}
+batch_note_path: {batch_note_path or "未绑定"}
+inbox_batch_path: {inbox_batch_path or "未绑定"}
 ```
 
 # 当前状态
@@ -126,7 +142,7 @@ content_type: {self._yaml_scalar(content_type or "短视频")}
 - [x] 云端生成 `01_idea_card.md`
 - [x] 云端生成 `02_project_brief.md`
 - [x] 云端生成 `04_script.md` 初稿
-- [x] 云端派发 Mac 本地素材分析任务
+{task_status_line}
 - [ ] Mac 完成本地素材分析
 - [ ] Mac 输出 Storyboard / EDL
 - [ ] 腾讯云根据 Mac result 二次修订脚本
@@ -146,7 +162,7 @@ content_type: {self._yaml_scalar(content_type or "短视频")}
 
 # 飞书来源
 
-- 创作任务总表记录：`{inspiration_record_id or "未记录"}`
+- 创作运行记录：`{inspiration_record_id or "未记录"}`
 - 任务池文档：{inspiration_doc or "未记录"}
 - 账号：{account or "未指定"}
 
@@ -211,7 +227,7 @@ created_at: {created_date}
 
 ## 飞书来源
 
-- 创作任务总表记录：`{inspiration_record_id or "未记录"}`
+- 创作运行记录：`{inspiration_record_id or "未记录"}`
 - 任务池文档：{inspiration_doc or "未记录"}
 
 ## 原始输入摘要
@@ -228,6 +244,10 @@ created_at: {created_date}
         title: str,
         theme: str,
         local_project_path: str,
+        batch_note_path: str,
+        inbox_batch_path: str,
+        local_material_binding: str,
+        mac_task_status: str,
         result: dict[str, Any],
         platform: str,
         account: str,
@@ -239,15 +259,28 @@ created_at: {created_date}
         next_actions = self._markdown_list(result.get("next_actions") or [])
         formats = self._markdown_list(result.get("publishable_formats") or [])
         outline = self._markdown_list(result.get("script_outline") or [])
+        material_requirements = self._markdown_list(
+            result.get("material_requirements")
+            or result.get("needed_materials")
+            or result.get("required_materials")
+            or result.get("material_checklist")
+            or []
+        )
+        default_next = (
+            "- Mac 读取 task 后先完成素材分析，再回传 result。"
+            if mac_task_status == "ready"
+            else "- 人先在 Mac 上用批次说明把真实素材绑定到本项目；腾讯云不判断本地素材是否存在。"
+        )
         return f"""---
 spec_version: content_os_v0.1
 doc_type: project_brief
 project_id: {project_id}
 idea_id: {idea_id}
-status: ready_for_material_match
+status: brief_ready
 owner_agent: cloud_openclaw
-next_owner: mac_openclaw
+next_owner: {"mac_openclaw" if mac_task_status == "ready" else "human"}
 created_at: {created_date}
+local_material_binding: {local_material_binding}
 ---
 
 # Project Brief：{title}
@@ -256,11 +289,16 @@ created_at: {created_date}
 
 {theme or result.get("cleaned_inspiration") or title}
 
-## 本地素材项目路径
+## 本地素材绑定状态
 
 ```text
-{local_project_path}
+local_material_binding: {local_material_binding}
+local_project_path: {local_project_path or "未绑定"}
+batch_note_path: {batch_note_path or "未绑定"}
+inbox_batch_path: {inbox_batch_path or "未绑定"}
 ```
+
+腾讯云只记录协议层绑定线索，不声称 Mac 本地已有这些素材；真实素材、画质、可用性和缺口只能由 Mac 扫描后回写。
 
 ## 内容定位
 
@@ -276,13 +314,17 @@ created_at: {created_date}
 
 {outline or "- 待 Mac 根据素材补强"}
 
+## 素材需求
+
+{material_requirements or "- 待云端初稿或人工补充素材需求；这不是本地素材事实。"}
+
 ## 建议产物
 
 {formats or "- 主短视频"}
 
 ## Mac 素材匹配任务
 
-Mac OpenClaw 需要检查本地项目目录，并输出：
+Mac OpenClaw 在本地素材绑定后，读取真实素材并输出：
 
 - `03_material_match_report.md`：素材是否足够、关键片段分类、缺口。
 - `05_storyboard.md`：按镜头顺序组织故事板。
@@ -291,7 +333,7 @@ Mac OpenClaw 需要检查本地项目目录，并输出：
 
 ## 下一步
 
-{next_actions or "- Mac 读取 task 后先完成素材分析，再回传 result。"}
+{next_actions or default_next}
 """
     def _render_content_os_initial_script(
         self,
@@ -469,19 +511,32 @@ Mac OpenClaw 读取素材后，需要优先确认：
 {record_text[:5000]}
 ```
 """
-    def _render_content_os_material_match_task(self, *, task_id: str, project_id: str, idea_id: str, local_project_path: str) -> str:
+    def _render_content_os_material_match_task(
+        self,
+        *,
+        task_id: str,
+        project_id: str,
+        idea_id: str,
+        local_project_path: str,
+        batch_note_path: str = "",
+        inbox_batch_path: str = "",
+        status: str = "ready",
+    ) -> str:
         return f"""spec_version: content_os_v0.1
 task_id: {task_id}
 task_type: local_material_match
 created_by: cloud_openclaw
 owner: mac_openclaw
-status: ready
+status: {status}
 
 project_id: {project_id}
 idea_id: {idea_id}
 
 inputs:
   project_brief_path: 08_内容项目/{project_id}/02_project_brief.md
+  script_path: 08_内容项目/{project_id}/04_script.md
+  batch_note_path: {self._yaml_scalar(batch_note_path)}
+  inbox_batch_path: {self._yaml_scalar(inbox_batch_path)}
   local_project_hint: {self._yaml_scalar(self._content_os_path_name(local_project_path))}
   local_project_path: {self._yaml_scalar(local_project_path)}
 

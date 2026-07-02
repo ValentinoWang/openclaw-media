@@ -83,6 +83,9 @@ class DocumentToolsMixin:
         content = self._normalize_depatch_content(result.get("content") or result.get("markdown") or "")
         if len(content) < 40 or (len(original_text) > 500 and len(content) < 120):
             return TaskResult(ok=False, status="supplement_empty", reply="补充合并失败：LLM 返回内容过短，已停止覆盖原文档。", task_id="", feishu_doc=doc_url)
+        patch_reason = self._patch_like_supplement_reason(content)
+        if patch_reason:
+            return TaskResult(ok=False, status="supplement_patch_like_output", reply=f"补充合并失败：{patch_reason}，已停止覆盖原文档。", task_id="", feishu_doc=doc_url)
 
         fs = self.feishu_service.replace_document_url(doc_url, content)
         entry = self.archive_service.save_archive(
@@ -127,7 +130,10 @@ class DocumentToolsMixin:
             "2. 将用户补充归入最合适的原有章节；必要时新增小节，但不要保留“用户补充”“追加记录”“v2/v3”等过程痕迹。\n"
             "3. 如果补充与原文冲突，优先采用更具体、更新、证据更明确的信息；无法判断时保留为待确认，不要静默丢弃。\n"
             "4. 去重合并重复表达，删除过程量和临时讨论痕迹，除非它们本身就是目标文档的稳定内容。\n"
-            "5. 输出字段固定为：{\"status\":\"done\",\"content\":\"合并后的完整 Markdown 正文\"}。"
+            "5. 如果目标文档是创作者执行稿、视频脚本、分镜脚本或发布方案，必须把补充重写进对应章节，例如创作方案总览、这条内容怎么拍、分镜脚本、发布建议、风险控制；不得在文末新增“补充：...”“追加内容”“融合版”等独立补丁块。\n"
+            "6. 如果补充要求是二次编辑视频脚本、改分镜或改发布包，输出必须保留或重建完整可执行脚本结构，不得只追加新想法总结。\n"
+            "7. 需要输出分镜脚本时，用四列 Markdown pipe table 作为中间态，表头固定为：时间、画面、字幕/口播、声音/拍摄注意；飞书服务会把它渲染成原生表格。\n"
+            "8. 输出字段固定为：{\"status\":\"done\",\"content\":\"合并后的完整 Markdown 正文\"}。"
         )
         user_content = json.dumps(
             {
@@ -250,3 +256,16 @@ class DocumentToolsMixin:
         text = re.sub(r"\s*```$", "", text)
         text = re.sub(r"\n{3,}", "\n\n", text)
         return text.strip()
+
+    def _patch_like_supplement_reason(self, content: str) -> str:
+        text = str(content or "")
+        patch_heading = re.search(
+            r"(?m)^\s{0,3}(?:#{1,6}\s*)?(?:补充|用户补充|追加内容|追加记录|补丁|新版|v[2-9])\s*[:：]",
+            text,
+            flags=re.I,
+        )
+        if patch_heading:
+            return "LLM 输出仍像文末补丁，没有把补充合并进原文结构"
+        if re.search(r"(?m)^\s{0,3}(?:#{1,6}\s*)?.{0,30}融合版\s*$", text):
+            return "LLM 输出保留了独立“融合版”补丁标题"
+        return ""

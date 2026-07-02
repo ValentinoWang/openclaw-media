@@ -95,16 +95,16 @@ def _redact(text: str) -> str:
 def _reply_for_status(status: str, method: str = "") -> str:
     if status == "awaiting_2fa":
         if method == "sms":
-            return "iCloud 中国区认证正在等待短信验证码。请发送：`【灵感-vlog】验证码 123456`。"
+            return "iCloud 中国区认证正在等待短信验证码。请发送：`【灵感>vlog】验证码 123456`。"
         if method == "trusted_device":
-            return "iCloud 中国区认证已向受信任 Apple 设备请求验证码。请发送：`【灵感-vlog】验证码 123456`；如需短信可发送：`【灵感-vlog】验证码 sms`。"
-        return "iCloud 中国区认证正在等待验证码。请发送：`【灵感-vlog】验证码 123456`。"
+            return "iCloud 中国区认证已向受信任 Apple 设备请求验证码。请发送：`【灵感>vlog】验证码 123456`；如需短信可发送：`【灵感>vlog】验证码 sms`。"
+        return "iCloud 中国区认证正在等待验证码。请发送：`【灵感>vlog】验证码 123456`。"
     if status == "ready":
         return "iCloud 中国区会话已可用，可以上传 vlog 素材。"
     if status == "starting":
         return "iCloud 中国区认证正在启动，等待 Apple 返回下一步。"
     if status == "invalid_code":
-        return "验证码未通过，请重新发送新的 `【灵感-vlog】验证码 123456`。"
+        return "验证码未通过，请重新发送新的 `【灵感>vlog】验证码 123456`。"
     if status == "no_session":
         return "还没有 pyicloud 中国区会话。请先发送 iCloud 账号和密码初始化。"
     if status == "auth_required":
@@ -380,7 +380,7 @@ def daemon(remote: str, apple_id: str, fifo: str, transcript: str, session_dir: 
             return
 
         if getattr(api, "requires_2sa", False):
-            _write_state(remote, {"status": "unsupported_2sa", "reply": "该账号触发旧版两步验证，媒体 bot 暂未实现设备选择流程。"})
+            _write_state(remote, {"status": "unsupported_2sa", "reply": "该账号触发设备选择式两步验证，媒体 bot 暂未实现设备选择流程。"})
             return
 
         _write_transcript(transcript_path, "[pyicloud-bridge] authentication completed without 2FA")

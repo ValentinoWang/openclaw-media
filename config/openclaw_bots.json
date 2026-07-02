@@ -1,5 +1,14 @@
 {
   "defaults": {},
+  "policy": {
+    "default_provider": "codex_responses",
+    "openclaw_runtime_provider": "openclaw_codex",
+    "allowed_non_codex_profiles": [
+      "system_guide",
+      "knowledge_delegate",
+      "knowledge_research"
+    ]
+  },
   "bots": {
     "main": {
       "provider": "openclaw_codex",
@@ -32,77 +41,80 @@
     "system_guide": {
       "provider": "openclaw_codex",
       "bot": "main",
-      "model": "openai-codex/gpt-5.5",
       "thinking": "medium"
     },
     "knowledge_delegate": {
-      "provider": "main_llm",
+      "provider": "openclaw_codex",
       "bot": "knowledge",
       "thinking": "high"
     },
     "knowledge_research": {
       "provider": "openclaw_codex",
       "bot": "knowledge",
-      "thinking": "xhigh"
+      "thinking": "high"
     },
     "transcription_postprocess": {
-      "provider": "main_llm",
+      "provider": "codex_responses",
       "bot": "knowledge",
       "thinking": "high"
     },
     "media_analysis": {
-      "provider": "openclaw_codex",
+      "provider": "codex_responses",
       "bot": "media"
     },
     "media_creation": {
-      "provider": "openclaw_codex",
+      "provider": "codex_responses",
       "bot": "media"
     },
     "activity_cleaning": {
-      "provider": "main_llm",
+      "provider": "codex_responses",
       "bot": "media",
       "thinking": "medium",
       "timeout": 300
     },
+    "daily_task_extraction": {
+      "provider": "codex_responses",
+      "bot": "daily",
+      "thinking": "medium",
+      "timeout": 120
+    },
+    "daily_hierarchy_records_extraction": {
+      "provider": "codex_responses",
+      "bot": "daily",
+      "thinking": "medium",
+      "timeout": 300
+    },
     "social_vision": {
-      "provider": "openclaw_codex",
+      "provider": "codex_responses",
       "bot": "social",
       "timeout": 900
     },
     "content_cleaner": {
-      "provider": "main_llm",
+      "provider": "codex_responses",
+      "bot": "main",
       "enabled": true,
       "max_chars": 20000,
       "max_tokens": 8192
     }
   },
   "providers": {
-    "main_llm": {
-      "model": "deepseek-v4-pro",
-      "base_url": "https://api.deepseek.com",
-      "api_key": "sk-02dddbeaa7dc45f1ba91b3c295a60cb3",
-      "api_type": "openai_chat_completions",
-      "timeout": 300.0,
-      "thinking": ""
-    },
-    "qwen": {
-      "model": "qwen3.5-plus",
-      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-      "api_key": "sk-784056fa5c324f5886737868ccf0cfd0",
-      "api_type": "openai_chat_completions",
-      "timeout": 120.0,
-      "fps": 2.0,
-      "thinking": ""
+    "codex_responses": {
+      "model": "gpt-5.5",
+      "base_url": "https://chatgpt.com/backend-api/codex",
+      "api_key": "codex_auth_file",
+      "api_type": "openai_codex_responses",
+      "timeout": 1800,
+      "thinking": "high"
     },
     "openclaw_codex": {
       "model": "openai-codex/gpt-5.5",
       "base_url": "openclaw://agent",
-      "api_key": "codex_oauth",
+      "api_key": "codex_auth_file",
       "api_type": "openclaw_agent",
       "timeout": 1800,
-      "thinking": "xhigh",
+      "thinking": "high",
       "bin": "/home/ubuntu/.nvm/versions/node/v22.22.2/bin/openclaw",
-      "codex_home": "/home/ubuntu/.openclaw/codex-home"
+      "codex_home": "/home/ubuntu/.codex"
     }
   }
 }

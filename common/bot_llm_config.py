@@ -3,11 +3,23 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 import json
+import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 
 CONFIG_PATH = Path("/home/ubuntu/selfmedia-tools/config/openclaw_bots.json")
+DEFAULT_OPENCLAW_MODEL_PROVIDER = "openai-codex"
+OPENCLAW_THINKING_LEVELS = {"off", "minimal", "low", "medium", "high"}
+OPENCLAW_THINKING_ALIASES = {"xhigh": "high", "max": "high", "adaptive": "high"}
+OPENCLAW_NODE_BIN_DIR = "/home/ubuntu/.nvm/versions/node/v22.22.2/bin"
+OPENCLAW_BASE_PATH_DIRS = (
+    "/home/ubuntu/bin",
+    "/home/ubuntu/.local/bin",
+    "/usr/local/bin",
+    "/usr/bin",
+    "/bin",
+)
 
 
 @dataclass(frozen=True)
@@ -36,14 +48,52 @@ class LLMProviderRuntime:
 def normalize_openclaw_model(model: str) -> str:
     value = (model or "").strip()
     if value and "/" not in value:
-        return f"openai-codex/{value}"
+        return f"{DEFAULT_OPENCLAW_MODEL_PROVIDER}/{value}"
     return value
 
 
 def display_openclaw_model(model: str) -> str:
     value = normalize_openclaw_model(model)
-    prefix = "openai-codex/"
-    return value[len(prefix) :] if value.startswith(prefix) else value
+    return value.split("/", 1)[1] if "/" in value else value
+
+
+def normalize_openclaw_thinking(value: str) -> str:
+    normalized = str(value or "").strip().lower()
+    normalized = OPENCLAW_THINKING_ALIASES.get(normalized, normalized)
+    return normalized if normalized in OPENCLAW_THINKING_LEVELS else ""
+
+
+def openclaw_subprocess_env(codex_home: str = "", *, base_env: Mapping[str, str] | None = None) -> dict[str, str]:
+    env = dict(os.environ if base_env is None else base_env)
+    env.setdefault("HOME", "/home/ubuntu")
+    if codex_home:
+        env["CODEX_HOME"] = codex_home
+    env["PATH"] = os.pathsep.join(_dedupe_path_parts([*_openclaw_path_prefixes(), env.get("PATH", "")]))
+    return env
+
+
+def _openclaw_path_prefixes() -> list[str]:
+    prefixes = [OPENCLAW_NODE_BIN_DIR]
+    nvm_root = Path("/home/ubuntu/.nvm/versions/node")
+    if nvm_root.is_dir():
+        for path in sorted(nvm_root.glob("*/bin"), reverse=True):
+            if (path / "node").is_file():
+                prefixes.append(str(path))
+    prefixes.extend(OPENCLAW_BASE_PATH_DIRS)
+    return _dedupe_path_parts(prefixes)
+
+
+def _dedupe_path_parts(values: list[str]) -> list[str]:
+    parts: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        for part in str(value or "").split(os.pathsep):
+            item = part.strip()
+            if not item or item in seen:
+                continue
+            seen.add(item)
+            parts.append(item)
+    return parts
 
 
 @lru_cache(maxsize=1)
@@ -94,7 +144,7 @@ def _merged_runtime(profile_or_bot: dict[str, Any]) -> BotLLMRuntime:
         bin=str(merged["bin"]).strip(),
         agent=str(merged["agent"]).strip(),
         model=normalize_openclaw_model(str(merged["model"])),
-        thinking=str(merged["thinking"]).strip().lower(),
+        thinking=normalize_openclaw_thinking(str(merged["thinking"])),
         timeout=float(merged["timeout"]),
         cwd=str(merged["cwd"]).strip(),
         codex_home=str(merged["codex_home"]).strip(),

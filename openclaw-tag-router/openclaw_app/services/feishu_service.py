@@ -11,12 +11,15 @@ from typing import Any
 
 import requests
 
+from .feishu_docx_renderer import FeishuDocxBlockRenderer, NATIVE_TABLE_KIND
 from .utils import ensure_dir
 
 
 DEFAULT_FEISHU_API_BASE = "https://open.feishu.cn/open-apis"
 DEFAULT_FEISHU_DOC_BASE = "https://open.feishu.cn"
 FEISHU_MAPPING_FILE = "doc_mapping.json"
+FEISHU_DOC_WRITE_SLEEP_SEC = 0.36
+FEISHU_TABLE_MAX_CELLS_PER_CREATE = 18
 
 
 def _env_or_value(value: str) -> str:
@@ -117,8 +120,8 @@ class FeishuService:
     @staticmethod
     def _normalize_knowledge_base_spaces(
         raw_spaces: list[dict[str, str]] | None,
-        fallback_space_id: str,
-        fallback_parent_node_token: str,
+        default_space_id: str,
+        default_parent_node_token: str,
     ) -> list[dict[str, str]]:
         spaces: list[dict[str, str]] = []
         if isinstance(raw_spaces, list):
@@ -128,7 +131,7 @@ class FeishuService:
                 space_id = _env_or_value(str(item.get("space_id", ""))).strip()
                 if not space_id:
                     continue
-                parent_node_token = _env_or_value(str(item.get("parent_node_token", ""))).strip() or fallback_parent_node_token
+                parent_node_token = _env_or_value(str(item.get("parent_node_token", ""))).strip() or default_parent_node_token
                 pattern = str(item.get("pattern", "")).strip()
                 name = str(item.get("name", "")).strip()
                 space = {
@@ -141,8 +144,8 @@ class FeishuService:
                     space["name"] = name
                 spaces.append(space)
 
-        if fallback_space_id:
-            spaces.append({"space_id": fallback_space_id, "parent_node_token": fallback_parent_node_token, "pattern": "*"})
+        if default_space_id:
+            spaces.append({"space_id": default_space_id, "parent_node_token": default_parent_node_token, "pattern": "*"})
         return spaces
 
     def _resolve_knowledge_base_target(self, doc_name: str) -> tuple[str, str]:
@@ -226,6 +229,50 @@ class FeishuService:
         if isinstance(data, dict) and data.get("code") not in {None, 0}:
             raise RuntimeError(f"Feishu API returned code={data.get('code')}, msg={data.get('msg')}, path={path}")
         return data
+
+    def read_bitable_record(self, app_token: str, table_id: str, record_id: str) -> dict[str, Any]:
+        payload = self._request("GET", f"/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}")
+        record = payload.get("data", {}).get("record") if isinstance(payload, dict) else {}
+        return record if isinstance(record, dict) else {}
+
+    def delete_bitable_record(self, app_token: str, table_id: str, record_id: str) -> dict[str, Any]:
+        return self._request("DELETE", f"/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}")
+
+    def read_calendar_event(self, calendar_id: str, event_id: str) -> dict[str, Any]:
+        payload = self._request("GET", f"/calendar/v4/calendars/{urllib.parse.quote(calendar_id, safe='')}/events/{urllib.parse.quote(event_id, safe='')}")
+        event = payload.get("data", {}).get("event") if isinstance(payload, dict) else {}
+        return event if isinstance(event, dict) else {}
+
+    def delete_calendar_event(self, calendar_id: str, event_id: str) -> dict[str, Any]:
+        return self._request("DELETE", f"/calendar/v4/calendars/{urllib.parse.quote(calendar_id, safe='')}/events/{urllib.parse.quote(event_id, safe='')}")
+
+    def parse_document_url(self, url: str) -> dict[str, str] | None:
+        return self._parse_document_url(url)
+
+    def resolve_document_reference(self, url: str) -> dict[str, str]:
+        info = self._parse_document_url(url)
+        if not info:
+            raise RuntimeError("未识别飞书文档 token")
+        result = {"url": url, "kind": info["kind"], "token": info["token"], "document_id": "", "obj_type": ""}
+        if info["kind"] == "wiki":
+            document_id, obj_type = self._resolve_wiki_document(info["token"])
+            result.update({"document_id": document_id, "obj_type": obj_type or "docx"})
+        else:
+            result.update({"document_id": info["token"], "obj_type": "docx"})
+        return result
+
+    def read_document_reference(self, ref: dict[str, str]) -> dict[str, Any]:
+        url = str(ref.get("url") or "")
+        return self.read_document_text(url) if url else {"ok": False, "error": "missing document url"}
+
+    def delete_document_reference(self, ref: dict[str, str]) -> dict[str, Any]:
+        file_token = str(ref.get("document_id") or ref.get("token") or "").strip()
+        if not file_token:
+            raise RuntimeError("缺少可删除的飞书 file_token/document_id")
+        file_type = str(ref.get("obj_type") or "docx").strip().lower()
+        if file_type == "doc":
+            file_type = "docx"
+        return self._request("DELETE", f"/drive/v1/files/{file_token}", params={"type": file_type})
 
     def read_document_text(self, url: str) -> dict[str, Any]:
         info = self._parse_document_url(url)
@@ -637,6 +684,54 @@ class FeishuService:
             "parent_node_token": parent_node_token,
         }
 
+    def replace_child_entry_under_node_blocks(self, parent_node_token: str, child_doc_name: str, children: list[dict[str, Any]]) -> dict[str, str]:
+        self._require_credentials()
+        space_id = self._knowledge_space_id_for_parent_node(parent_node_token)
+        existing = self._find_knowledge_child_node(space_id, parent_node_token, child_doc_name)
+        if existing:
+            document_id, doc_url, node_token = existing
+        else:
+            document_id, doc_url = self._create_docx_document(child_doc_name)
+            try:
+                node_token, obj_token, node_url = self._create_knowledge_node(
+                    child_doc_name,
+                    document_id,
+                    space_id,
+                    parent_node_token,
+                )
+            except RuntimeError as exc:
+                raise RuntimeError(
+                    "知识库写入失败：无法在目标认知池下创建子文档，请确认应用具备 wiki:wiki 或 "
+                    "wiki:space:write_only 权限，并且应用已加入该知识库。"
+                ) from exc
+            if obj_token:
+                document_id = obj_token
+            if node_url:
+                doc_url = node_url
+        self._replace_document_blocks(document_id, children)
+        if node_token:
+            doc_url = self._wiki_url(node_token)
+        map_key = self._kb_child_map_key(parent_node_token, child_doc_name, space_id)
+        self._doc_mapping[map_key] = {
+            "document_id": document_id,
+            "title": self._safe_text_content(child_doc_name),
+            "doc_url": doc_url or self._docx_url(document_id),
+            "knowledge_base_space_id": space_id,
+            "knowledge_base_parent_node_token": parent_node_token,
+            "node_token": node_token,
+        }
+        self._save_doc_mapping()
+        return {
+            "status": "synced",
+            "doc": self._doc_mapping[map_key]["doc_url"],
+            "document_id": document_id,
+            "node_token": node_token,
+            "mode": "knowledge_base",
+            "space_id": space_id,
+            "parent_node_token": parent_node_token,
+            "render_mode": "docx_blocks",
+        }
+
     def _get_or_create_knowledge_base_entry(self, doc_name: str) -> tuple[str, str, str]:
         space_id, parent_node_token = self._require_knowledge_base(doc_name)
         map_key = self._kb_map_key(doc_name, space_id)
@@ -799,18 +894,7 @@ class FeishuService:
         self._append_blocks_to_document(document_id, children)
 
     def _content_to_docx_blocks(self, content: str) -> list[dict[str, Any]]:
-        lines = [line.rstrip() for line in self._safe_text_content(content).split("\n") if line.strip()]
-        if not lines:
-            lines = [" "]
-        children: list[dict[str, Any]] = []
-        for line in lines:
-            heading = re.match(r"^(#{1,9})\s+(.+)$", line.strip())
-            if heading:
-                level = len(heading.group(1))
-                children.append(self._heading_block(level, heading.group(2).strip()))
-                continue
-            children.append(self._text_block(line.strip()))
-        return children
+        return FeishuDocxBlockRenderer(self._heading_block, self._text_block).render(self._safe_text_content(content))
 
     @staticmethod
     def _heading_block(level: int, text: str) -> dict[str, Any]:
@@ -844,18 +928,134 @@ class FeishuService:
         last_error: RuntimeError | None = None
         for parent_block_id in (document_id, "root"):
             try:
-                for index in range(0, len(children), 20):
-                    self._request(
-                        "POST",
-                        f"/docx/v1/documents/{document_id}/blocks/{parent_block_id}/children",
-                        json_body={"children": children[index:index + 20]},
-                        params={"document_revision_id": -1},
-                    )
+                pending: list[dict[str, Any]] = []
+
+                def flush_pending() -> None:
+                    if not pending:
+                        return
+                    for index in range(0, len(pending), 20):
+                        self._request(
+                            "POST",
+                            f"/docx/v1/documents/{document_id}/blocks/{parent_block_id}/children",
+                            json_body={"children": pending[index:index + 20]},
+                            params={"document_revision_id": -1},
+                        )
+                    pending.clear()
+
+                for child in children:
+                    if child.get("_openclaw_kind") == NATIVE_TABLE_KIND:
+                        flush_pending()
+                        self._append_native_table_to_document(document_id, child.get("rows") or [])
+                    else:
+                        pending.append(child)
+                flush_pending()
                 return
             except RuntimeError as exc:
                 last_error = exc
 
         raise RuntimeError(f"追加飞书文档内容失败: {last_error}") from None
+
+    def _append_native_table_to_document(self, document_id: str, rows: list[list[str]]) -> None:
+        for chunk_index, chunk in enumerate(self._table_chunks(rows), 1):
+            if chunk_index > 1:
+                self._append_blocks_to_document(document_id, [self._text_block(f"续表 {chunk_index}")])
+            self._append_native_table_chunk(document_id, chunk)
+
+    @staticmethod
+    def _table_chunks(rows: list[list[str]]) -> list[list[list[str]]]:
+        if not rows:
+            return []
+        column_count = max(len(row) for row in rows)
+        max_rows = max(2, FEISHU_TABLE_MAX_CELLS_PER_CREATE // max(column_count, 1))
+        if len(rows) <= max_rows:
+            return [rows]
+        header = rows[0]
+        data_rows = rows[1:]
+        data_rows_per_chunk = max_rows - 1
+        return [[header, *data_rows[index:index + data_rows_per_chunk]] for index in range(0, len(data_rows), data_rows_per_chunk)]
+
+    def _append_native_table_chunk(self, document_id: str, rows: list[list[str]]) -> None:
+        if not rows:
+            return
+        row_count = len(rows)
+        column_count = max(len(row) for row in rows)
+        payload = self._request(
+            "POST",
+            f"/docx/v1/documents/{document_id}/blocks/{document_id}/children",
+            json_body={"children": [{"block_type": 31, "table": {"property": {"row_size": row_count, "column_size": column_count}}}], "index": -1},
+            params={"document_revision_id": -1},
+        )
+        table_block = self._find_created_table(payload)
+        time.sleep(1.2)
+        table_id = str(table_block.get("block_id") or "")
+        expected = row_count * column_count
+        cell_ids = self._extract_table_cell_ids(table_block, expected)
+        if len(cell_ids) < expected and table_id:
+            hydrated = self._get_docx_block(document_id, table_id)
+            cell_ids = self._extract_table_cell_ids(hydrated, expected)
+        if len(cell_ids) < expected and table_id:
+            children = self._get_docx_children(document_id, table_id)
+            cell_ids = [self._extract_block_id(item) for item in children]
+            cell_ids = [item for item in cell_ids if item]
+        if len(cell_ids) < expected:
+            raise RuntimeError(f"飞书表格 cell id 不足：expected={expected} got={len(cell_ids)} table_id={table_id}")
+        for row_index, row in enumerate(rows):
+            for column_index in range(column_count):
+                text = row[column_index] if column_index < len(row) else ""
+                self._append_table_cell_text(document_id, cell_ids[row_index * column_count + column_index], text)
+
+    @staticmethod
+    def _find_created_table(payload: dict[str, Any]) -> dict[str, Any]:
+        children = payload.get("data", {}).get("children") or payload.get("data", {}).get("items") or []
+        for child in children:
+            if isinstance(child, dict) and child.get("block_type") == 31:
+                return child
+        return {}
+
+    @staticmethod
+    def _extract_block_id(item: Any) -> str:
+        if isinstance(item, str):
+            return item
+        if isinstance(item, dict):
+            return str(item.get("block_id") or item.get("id") or "")
+        return ""
+
+    def _extract_table_cell_ids(self, table_block: dict[str, Any], expected: int) -> list[str]:
+        table = table_block.get("table") if isinstance(table_block, dict) else {}
+        candidates: list[Any] = []
+        if isinstance(table, dict):
+            candidates.extend(table.get("cells") or [])
+        candidates.extend(table_block.get("children") or [])
+        ids = [self._extract_block_id(item) for item in candidates]
+        ids = [item for item in ids if item]
+        return ids[:expected] if len(ids) >= expected else ids
+
+    def _get_docx_block(self, document_id: str, block_id: str) -> dict[str, Any]:
+        payload = self._request("GET", f"/docx/v1/documents/{document_id}/blocks/{block_id}")
+        return payload.get("data", {}).get("block") or payload.get("data", {})
+
+    def _get_docx_children(self, document_id: str, block_id: str) -> list[dict[str, Any]]:
+        payload = self._request(
+            "GET",
+            f"/docx/v1/documents/{document_id}/blocks/{block_id}/children",
+            params={"document_revision_id": -1},
+        )
+        return payload.get("data", {}).get("items") or payload.get("data", {}).get("children") or []
+
+    def _append_table_cell_text(self, document_id: str, cell_id: str, text: str) -> None:
+        cleaned = str(text or "").strip()
+        if not cleaned:
+            return
+        blocks = [self._text_block(line[:900]) for line in cleaned.splitlines() if line.strip()]
+        if not blocks:
+            return
+        self._request(
+            "POST",
+            f"/docx/v1/documents/{document_id}/blocks/{cell_id}/children",
+            json_body={"children": blocks, "index": -1},
+            params={"document_revision_id": -1},
+        )
+        time.sleep(FEISHU_DOC_WRITE_SLEEP_SEC)
 
     def _list_document_child_blocks(self, document_id: str) -> list[dict]:
         items: list[dict] = []
@@ -899,7 +1099,7 @@ class FeishuService:
         self._clear_document(document_id)
         self._append_blocks_to_document(document_id, children)
 
-    def append_entry_blocks(self, doc_name: str, children: list[dict[str, Any]], fallback_content: str = "") -> dict[str, str]:
+    def append_entry_blocks(self, doc_name: str, children: list[dict[str, Any]]) -> dict[str, str]:
         if self.mode == "knowledge_base":
             document_id, doc_url, space_id = self._get_or_create_knowledge_base_entry(doc_name)
             try:
@@ -918,11 +1118,11 @@ class FeishuService:
                 "space_id": space_id,
             }
 
-        return self.append_entry(doc_name, fallback_content)
+        raise RuntimeError("append_entry_blocks requires knowledge_base mode")
 
-    def append_child_entry_blocks(self, parent_doc_name: str, child_doc_name: str, children: list[dict[str, Any]], fallback_content: str = "") -> dict[str, str]:
+    def append_child_entry_blocks(self, parent_doc_name: str, child_doc_name: str, children: list[dict[str, Any]]) -> dict[str, str]:
         if self.mode != "knowledge_base":
-            return self.append_entry_blocks(child_doc_name, children, fallback_content)
+            raise RuntimeError("append_child_entry_blocks requires knowledge_base mode")
 
         document_id, doc_url, space_id = self._get_or_create_knowledge_base_child_entry(parent_doc_name, child_doc_name)
         try:

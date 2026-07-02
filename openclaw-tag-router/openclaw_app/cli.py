@@ -17,7 +17,7 @@ def main() -> int:
     app = OpenClawApp(args.settings)
     result = app.process_text(args.message)
     if args.json:
-        print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
+        print(json.dumps(result.__dict__, ensure_ascii=False, indent=2, default=str))
     else:
         print(result.reply)
     return 0

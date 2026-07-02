@@ -17,6 +17,9 @@ import requests
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PLUGIN_ROOT))
+from openclaw_app.services.feishu_docx_renderer import expand_inline_code_literal_newlines  # noqa: E402
+
 CONFIG_PATH = PLUGIN_ROOT / "config" / "docs_sync.json"
 DOC_PATH = Path("/home/ubuntu/docs/说明书/OpenClaw 标签功能说明.md")
 FEISHU_BASE = os.getenv("FEISHU_API_BASE_URL", "https://open.feishu.cn/open-apis").rstrip("/")
@@ -241,6 +244,7 @@ def heading_block(text: str, level: int) -> dict[str, Any]:
 
 
 def paragraph_block(text: str) -> dict[str, Any]:
+    text = expand_inline_code_literal_newlines(text)
     return {"block_type": 2, "text": {"elements": [text_run(text)]}}
 
 
@@ -294,7 +298,7 @@ def split_table_row(line: str) -> list[str]:
 
 
 def cell_text(value: str) -> str:
-    text = value.strip()
+    text = expand_inline_code_literal_newlines(value).strip()
     text = re.sub(r"`([^`]+)`", r"\1", text)
     text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1：\2", text)

@@ -6,21 +6,66 @@
 
 ```text
 链接/账号样本
-  -> 字段抽取
-  -> 素材下载
-  -> 拆解/评论/结构/评分
-  -> 飞书多维表格查看
+  -> selfmedia 公共 workflow
+  -> media_model 契约校验
+  -> media_vault 证据落盘
+  -> integrations/feishu 写入
   -> OpenClaw media Bot 调用和每日轮询
 ```
 
-当前主入口有两个：
+当前主入口：
 
-- 本地命令：各 Part 目录下的 `cli.py`
 - OpenClaw：`/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py`
+- 本地公共 CLI：`/home/ubuntu/selfmedia-tools/runtime/cli/selfmedia.py`
+
+## 当前文件夹结构
+
+目录职责的唯一事实源是：
+
+```text
+/home/ubuntu/selfmedia-tools/docs/architecture.md
+```
+
+README 只保留入口和常用命令。新增能力、移动目录、判断某个路径是不是事实源时，以 architecture 文档为准。
+
+```text
+selfmedia-tools/
+|-- README.md
+|-- docs/
+|   `-- architecture.md             # 目录职责 SSOT
+|-- common/                         # 跨业务公共组件
+|-- config/
+|   |-- openclaw_bots.json          # Bot/model/profile 配置 SSOT
+|   `-- platform_mechanisms/        # 平台机制配置
+|-- selfmedia/                      # 公共自媒体业务能力层
+|-- media_model/                    # Media Model 契约和 writer ports
+|-- media_vault/                    # artifact / evidence 存储 API
+|-- integrations/                   # Feishu、平台认证等外部实现
+|-- runtime/                        # CLI、维护脚本、部署脚本
+|-- openclaw-tag-router/            # OpenClaw tag-router 源码 SSOT
+|-- data/
+|   |-- media_memory/               # 账号画像和复盘记忆
+|   `-- media_vault/                # artifact 存储根
+|-- tests/
+|-- downloads/
+`-- outputs/
+```
+
+依赖方向、运行副本边界和禁止反向依赖的完整规则见 `docs/architecture.md`。
+
+常见同名路径的职责不要混淆：
+
+```text
+selfmedia-tools/media_vault/       # 代码包
+selfmedia-tools/data/media_vault/  # 产物根目录
+selfmedia-tools/openclaw-tag-router/          # 源码 SSOT
+/home/ubuntu/.openclaw/extensions/openclaw-tag-router/  # 部署副本
+/home/ubuntu/.openclaw/workspace/openclaw-tag-router/   # 运行工作区
+```
 
 ## 全局公共组件
 
-跨 Part 复用的能力放在 `common/`。当前稳定公共入口包括：
+跨工作流复用的能力放在 `common/`。当前稳定公共入口包括：
 
 - `common.content_cleaner.clean_ocr_text()`：图片 OCR 原始文本清洗
 - `common.content_cleaner.clean_transcript_text()`：视频/音频转写文本清洗
@@ -37,42 +82,39 @@ python3 /home/ubuntu/selfmedia-tools/common/content_cleaner_cli.py \
   --output cleaned.txt
 ```
 
-LLM 配置统一读取 `config/openclaw_bots.json`。所有模型供应方都在 `providers`：OpenClaw/Codex 是 `providers.openclaw_codex`，DeepSeek 是 `providers.main_llm`，Qwen 是 `providers.qwen`；`bots` 和各类任务 `profiles` 都显式写自己的 `provider`，不会再从 `defaults.provider` 隐式继承；内容清洗就是 `profiles.content_cleaner`。
+LLM 配置统一读取 `config/openclaw_bots.json`。这是 Bot/模型/profile 的唯一可编辑事实源。当前默认文本模型供应方由 `policy.default_provider` 指向 `providers.openclaw_codex`；所有 Bot 和业务 `profiles` 必须引用这个默认 provider，不在业务代码里硬编码模型或直接读取 provider。`providers.qwen` 仅作为明确的多模态辅助 provider 保留。后续切换主模型时，先改 `policy.default_provider`、目标 provider 和对应同步脚本契约，再运行 single-source guard。
 
-`openclaw-tag-router` 运行扩展的源码也统一收口到仓库内的 `openclaw-tag-router/`。运行目录 `/home/ubuntu/.openclaw/extensions/openclaw-tag-router` 只是部署目标，不再当作事实来源。OpenClaw agent 运行时使用的 `~/.openclaw/agents/*/agent/models.json`，以及 Gateway 的 `~/.openclaw/openclaw.json` 中 `agents.defaults.model` / `agents.defaults.models` / `models.providers`，也都由同一个 `config/openclaw_bots.json` 自动生成，不再手工维护。部署命令：
+`openclaw-tag-router` 运行扩展的源码也统一收口到仓库内的 `openclaw-tag-router/`。运行目录 `/home/ubuntu/.openclaw/extensions/openclaw-tag-router` 只是部署目标，不再当作事实来源。Feishu OpenClaw agent 运行时使用的 `~/.openclaw/agents/feishu-*/agent/models.json`，以及 Gateway 的 `~/.openclaw/openclaw.json` 中 `agents.defaults.model` / `agents.defaults.models`，也都由同一个 `config/openclaw_bots.json` 自动生成，不再手工维护；Codex 运行时使用内置 `openai-codex` provider，不再生成自定义 `models.providers`。`~/.openclaw/agents/main/agent/models.json` 是 OpenClaw runtime 自管缓存，不作为本仓库编辑事实源。部署命令：
 
 ```bash
-python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_runtime.py
+python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_runtime.py
 ```
 
 如果只想重建 OpenClaw agent 的 `models.json`：
 
 ```bash
-python3 /home/ubuntu/selfmedia-tools/tools/sync_openclaw_agent_models.py
+python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_agent_models.py
 ```
 
 如果只想同步 runtime 文件、不重启网关：
 
 ```bash
-python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_runtime.py --no-restart
+python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_runtime.py --no-restart
 ```
 
 ## 各模块是做什么的
 
 | 模块 | 目录 | 主要职责 | 输入 | 主要输出 | 飞书定位 |
 | --- | --- | --- | --- | --- | --- |
-| 01 内容采集 | `01-ingest-content-flow` | 抖音/小红书素材下载和基础字段抽取 | 单条或多条作品链接 | 视频/图片/封面/文案/四个互动数/评论 | 给后续模块提供原始素材和字段 |
-| 02 音乐资源提取 | `02-extract-music-media` | 汽水音乐分享资源提取 | 汽水音乐链接或 curl 文本 | 音视频资源、本地 Web UI | 独立小工具 |
-| 03 爆款拆解 | `03-deconstruct-viral-content` | 爆款拆解和创作-再创 | 带 `【拆解】` 的作品链接 | 飞书拆解文档、创作-再创文档、多维表格摘要 | 形成可复用创作样本 |
-| 04 平台 Cookie 管理 | `04-manage-platform-cookies` | 抖音/小红书 Cookie 导出和保存 | 已登录浏览器或手动导出的 Cookie | 本地未提交 Cookie 文件 | 提高字段和素材抓取稳定性 |
-| 05 爆款雷达 | `05-detect-viral-radar` | 爆款雷达 | 一批作品链接 | 起量信号、互动增速、候选爆款 | 爆款雷达表 |
-| 06 评论选题池 | `06-mine-comment-topics` | 高赞评论选题池 | 作品链接 | 高赞评论、痛点/争议/需求选题卡 | 评论选题池 |
-| 07 爆款结构库 | `07-index-viral-structures` | 爆款结构数据库 | 作品链接或 03 爆款拆解 JSON | 标题、开头、封面、话题、互动率、结构标签 | 爆款结构库 |
-| 08 账号竞品报告 | `08-report-account-competitors` | 账号竞品日报/周报 | 账号名和近期作品链接 | 账号表现、爆款、互动变化 | 账号日报/周报 |
-| 09 素材质量评分 | `09-score-material-quality` | 素材入库质量评分 | 作品链接 | 字段完整度、互动质量、复刻价值、决策 | 素材筛选表 |
-| 10 字段健康诊断 | `10-diagnose-field-health` | 字段健康诊断 | 作品链接 | 每个字段来源、失败原因、缺失字段 | 字段健康表 |
-| 素材创作 | `tools/material_creation` | 上传素材定位分析和初稿 | 飞书上传视频/图片 + `【素材创作】` | 创作文档、作品档案、账号监控记录 | 创作记录表 / 账号监控表 |
-| 媒体上下文 | `tools/media_context` | 账号画像、历史创作、复盘记忆 | `账号=`、创作结果、复盘文本 | 本地账号画像、JSONL 创作/复盘流水 | 下一次创作自动注入 |
+| 内容采集 | `selfmedia/ingest/content_flow` | 抖音/小红书素材下载和基础字段抽取 | 单条或多条作品链接 | 视频/图片/封面/文案/互动数/评论 | 给后续模块提供原始素材和字段 |
+| 音乐资源提取 | `selfmedia/ingest/music_resource` | 汽水音乐分享资源提取 | 汽水音乐链接或 curl 文本 | 音视频资源、本地 Web UI | 素材资源采集 |
+| 字段健康诊断 | `selfmedia/ingest/diagnostics/field_health.py` | 字段来源和失败原因诊断 | 作品链接 | 字段来源、缺失字段、失败原因 | 抓取故障排查 |
+| 爆款拆解 | `selfmedia/deconstruct/viral_content` | 爆款拆解和拆解-再创 | 带 `【拆解】` 的作品链接 | 飞书拆解文档、拆解-再创文档、多维表格摘要 | 形成可复用创作样本 |
+| 创作工作流 | `selfmedia/creation` | 创作、素材创作、灵感、拍摄执行 | 文本、链接、附件、账号上下文 | CreationRun、创作文档、作品档案 | 创作记录表 / 账号监控表 |
+| 数据复盘 | `selfmedia/review/data_review.py` | 后台截图/发布数据复盘 | `【数据复盘】` + 截图 | 复盘报告、账号记忆、Media Model 记录 | 作品复盘 |
+| 达人档案补全 | `selfmedia/creator_profiles` | 平台 + 平台ID 定位公开主页，生成 candidate，经确认写入 | 平台、平台ID、可选主页/短链 | evidence bundle、CreatorProfile candidate、H02 指标快照 | `【博主-入库】` 自动补全/确认写入 |
+| 语言风格润色 | `selfmedia/style` | 读取账号画像/平台机制/历史模式做润色 | `【润色】`、`【网感】` 等 alias | style_polish_run artifact、诊断、版本、评分 | 显式润色默认只落 media_vault |
+| 媒体上下文 | `selfmedia/context` | 账号画像、历史创作、复盘记忆 | `账号=`、创作结果、复盘文本 | 本地账号画像、JSONL 创作/复盘流水 | 下一次创作自动注入 |
 
 ## 推荐业务流
 
@@ -81,17 +123,14 @@ python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_runtime.py --no-resta
 先看字段是不是能拿全，再决定是否下载或拆解：
 
 ```bash
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run field-health \
-  --urls 'https://v.douyin.com/xxxx/'
-
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run material-quality \
+/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run ingest \
   --urls 'https://v.douyin.com/xxxx/'
 ```
 
 用途：
 
-- 10 字段健康诊断 判断点赞、收藏、评论、分享从哪里来。
-- 09 素材质量评分 判断素材值不值得拆解。
+- 抽取平台、作品 ID、互动字段和基础健康状态。
+- 如果需要进一步排查字段来源，使用 `selfmedia/ingest/diagnostics/field_health.py`。
 
 ### 2. 爆款拆解
 
@@ -102,7 +141,7 @@ python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_runtime.py --no-resta
   --text '【拆解】 https://v.douyin.com/xxxx/'
 ```
 
-03 爆款拆解 会先调用 01 内容采集 下载真实原素材，再基于视频帧或图文证据分析。不能只看链接和标题猜。
+selfmedia 爆款拆解会调用内容采集能力下载真实原素材，再基于视频帧或图文证据分析。不能只看链接和标题猜。
 
 ### 3. 上传素材生成定位分析和初稿
 
@@ -110,13 +149,13 @@ python3 /home/ubuntu/selfmedia-tools/tools/deploy_openclaw_runtime.py --no-resta
 
 ```text
 第1条：上传视频或多张图片
-第2条：【素材创作-小红书】类型=图文 账号=主账号 发布时间=今晚8点 用户想法=更真实一点
+第2条：【素材创作>小红书】类型=图文 账号=主账号 发布时间=今晚8点 用户想法=更真实一点
 ```
 
 也可以在同一条消息里同时发送附件和指令：
 
 ```text
-【素材创作-小红书】类型=图文 账号=主账号 发布时间=今晚8点 用户想法=更真实一点
+【素材创作>小红书】类型=图文 账号=主账号 发布时间=今晚8点 用户想法=更真实一点
 ```
 
 用途：
@@ -168,33 +207,7 @@ OPENCLAW_CONVERSATION_CONTEXT_JSON='{"loaded_count":1,"prompt":"最近飞书对�
 
 推荐以后所有创作请求都带 `账号=`。如果不带账号，系统仍会按平台和主题查近期记录，但不会形成稳定的账号画像。
 
-### 5. 一批链接做爆款雷达
-
-```bash
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run viral-radar \
-  --urls 'https://v.douyin.com/xxxx/' 'http://xhslink.com/o/xxxx'
-```
-
-用途：
-
-- 记录作品互动快照。
-- 计算起量信号。
-- 输出值得进入 03 爆款拆解 的候选内容。
-
-### 6. 高赞评论做选题池
-
-```bash
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run comment-topics \
-  --urls 'https://v.douyin.com/xxxx/'
-```
-
-用途：
-
-- 抓高赞评论。
-- 聚类问题、痛点、需求、争议。
-- 给创作-再创提供选题角度。
-
-### 7. 每日账号轮询
+### 5. 每日账号轮询
 
 在飞书维护“账号监控表”，每天刷新近期作品互动数据：
 
@@ -232,12 +245,6 @@ OPENCLAW_CONVERSATION_CONTEXT_JSON='{"loaded_count":1,"prompt":"最近飞书对�
 # 字段刷新
 /home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run ingest --urls 'https://v.douyin.com/xxxx/'
 
-# 字段健康诊断
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run field-health --urls 'https://v.douyin.com/xxxx/'
-
-# 素材质量评分
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run material-quality --urls 'https://v.douyin.com/xxxx/'
-
 # 账号每日轮询
 /home/ubuntu/openclaw-agents/media/scripts/selfmedia.py daily-poll
 
@@ -257,10 +264,10 @@ OPENCLAW_CONVERSATION_CONTEXT_JSON='{"loaded_count":1,"prompt":"最近飞书对�
 这份配置会双向同步到 Obsidian：
 
 ```bash
-python3 /home/ubuntu/selfmedia-tools/tools/sync_openclaw_bot_config.py
+python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_bot_config.py
 ```
 
-服务器端 Obsidian 路径是 `/home/ubuntu/obsidian-diary/openclaw配置/openclaw_bots.json`，对应 Mac 端路径是 `/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/openclaw配置/openclaw_bots.json`。定时器 `openclaw-bot-config-sync.timer` 每分钟检查一次；配置发生变化时会重启 `content-flow.service` 和 `openclaw-feishu-gateway.service`。
+服务器端 Obsidian 路径是 `/home/ubuntu/obsidian-日记/openclaw配置/openclaw_bots.json`，对应 Mac 端路径是 `/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/openclaw配置/openclaw_bots.json`。Obsidian 是 repo 配置的只读镜像；定时器 `openclaw-bot-config-sync.timer` 每分钟只按 `repo-to-obsidian` 单向同步，不能重启运行时服务。配置发生变化且需要加载到运行态时，使用 `runtime/maintenance/deploy/deploy_openclaw_runtime.py` 显式重建 OpenClaw agent/runtime 模型配置并重启 `content-flow.service`、`openclaw-gateway.service` 和 `openclaw-feishu-gateway.service`。
 
 也就是说，一般不需要再在 README 里让你手动填：
 
@@ -288,7 +295,7 @@ channels.feishu.accounts.media.appSecret
 最小配置：
 
 ```bash
-# 05 爆款雷达-10 字段健康诊断 通用输出表
+# Media Model / 复盘 / 创作写入使用的默认输出表
 FEISHU_BITABLE_URL="https://xxx.feishu.cn/base/bascn_common?table=tbl_common"
 
 # 账号每日轮询输入表
@@ -311,177 +318,45 @@ FEISHU_APP_SECRET="xxx"
 不含密钥的示例文件：
 
 ```bash
-tools/selfmedia_openclaw.env.example
+runtime/cli/selfmedia.env.example
 ```
 
-## 飞书表怎么建
+## 飞书写入边界
 
-### 素材/爆款总表
+- 业务 payload 先过 `media_model` 契约、payload 校验和写入权限。
+- Feishu 具体写入只在 `integrations/feishu/media_writer.py`。
+- 长 JSON、证据包和运行产物写入 `data/media_vault/`。
+- Feishu 可见字段只写摘要、推荐版本、链接和必要状态。
 
-给 05 爆款雷达-10 字段健康诊断 使用，对应：
+## 当前能力目录说明
 
-```bash
-FEISHU_BITABLE_URL
-```
+### selfmedia/ingest/content_flow
 
-脚本会自动补齐常用字段：
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| 模块 | 文本 | 05 爆款雷达/06 评论选题池/... |
-| 运行时间 | 日期 | 抓取或运行时间 |
-| 平台 | 文本 | douyin / xiaohongshu |
-| 作品ID | 文本 | 抖音 aweme id 或小红书 note id |
-| 参考链接 | 链接 | 原作品链接 |
-| 点赞 | 数字 | like_count |
-| 收藏 | 数字 | collect_count |
-| 评论 | 数字 | comment_count |
-| 分享 | 数字 | share_count |
-| 总互动 | 数字 | 点赞 + 收藏 + 评论 + 分享 |
-| 收藏率 | 数字 | 收藏 / 点赞 |
-| 评论率 | 数字 | 评论 / 点赞 |
-| 分享率 | 数字 | 分享 / 点赞 |
-| 状态 | 文本 | ok / partial / missing |
-| 失败原因 | 文本 | Cookie、验证码、签名、字段结构等 |
-| 分数 | 数字 | 模块内评分 |
-| 决策 | 文本 | deconstruct / review / skip / ok |
-| 摘要 | 文本 | 人可读摘要 |
-| 详情JSON | 文本 | 完整诊断和业务明细 |
-| 报告路径 | 文本 | 本地备份报告路径 |
-
-### 账号监控表
-
-给每日账号轮询使用，对应：
-
-```bash
-FEISHU_ACCOUNT_MONITOR_URL
-```
-
-必填字段：
-
-| 字段 | 类型 | 示例 | 说明 |
-| --- | --- | --- | --- |
-| 账号名称 | 文本 | 跑步精英 | 人看的账号名 |
-| 平台 | 文本 | douyin | `douyin` 或 `xiaohongshu` |
-| 近期作品链接 | 多行文本 | https://v.douyin.com/xxxx/ | 可一格多条链接，换行即可 |
-| 启用 | 复选框/文本 | true | false 时跳过 |
-
-脚本会尝试更新或创建这些字段：
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| 最近运行时间 | 日期 | 最近一次轮询时间 |
-| 最近状态 | 文本 | ok / partial / missing_urls / error |
-| 最近作品数 | 数字 | 本次轮询作品数量 |
-| 最近总互动 | 数字 | 本次轮询总互动 |
-| 最近错误 | 文本 | 出错原因 |
-| 最近日报摘要 | 文本 | 本账号当天摘要 |
-
-### 账号日报表
-
-给每日账号轮询写结果，对应：
-
-```bash
-FEISHU_ACCOUNT_REPORT_URL
-```
-
-日报表每天追加每条作品的字段：
-
-- 平台
-- 作品ID
-- 参考链接
-- 点赞
-- 收藏
-- 评论
-- 分享
-- 总互动
-- 收藏率
-- 评论率
-- 分享率
-- 状态
-- 摘要
-- 详情JSON
-
-## Part 详细说明
-
-### 01-ingest-content-flow
-
-做什么：
-
-- 解析抖音、小红书分享链接。
-- 下载视频、图文图片、封面、文案。
-- 提取点赞、收藏、评论、分享。
-- 可选转写音频。
-- 可选做基础内容分析。
-
-输入：
-
-- 抖音链接
-- 小红书链接
-
-输出：
-
-- 下载文件
-- 文案
-- 四个互动数
-- 评论
-- 分析 JSON
-
-本地启动 Web UI：
-
-```bash
-cd /home/ubuntu/selfmedia-tools/01-ingest-content-flow
-./run.sh
-```
-
-命令行只刷新字段：
+负责抖音/小红书素材采集、字段刷新、下载、转写和基础分析。OpenClaw 入口：
 
 ```bash
 /home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run ingest --urls 'https://v.douyin.com/xxxx/'
 ```
 
-### 03-deconstruct-viral-content
+本地 Web UI 仍在能力包内：
 
-做什么：
-
-- 只有输入带 `【拆解】` 才做拆解。
-- 先下载真实原素材。
-- 视频基于抽帧证据分析。
-- 图文基于原图证据分析。
-- 创建飞书拆解文档。
-- 可选创建创作-再创文档。
-- 写入飞书多维表格摘要。
-
-输入：
-
-```text
-【拆解】 https://v.douyin.com/xxxx/
-【拆解】【创作-再创】 https://v.douyin.com/xxxx/ 用户想法...
+```bash
+cd /home/ubuntu/selfmedia-tools/selfmedia/ingest/content_flow
+./run.sh
 ```
 
-输出：
+### selfmedia/deconstruct/viral_content
 
-- 飞书拆解文档
-- 飞书创作-再创文档
-- 多维表格摘要
-- 本地 JSON
-
-运行：
+负责 `【拆解】` 和拆解-再创证据链。OpenClaw 入口：
 
 ```bash
 /home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run deconstruct \
   --text '【拆解】 https://v.douyin.com/xxxx/'
 ```
 
-### 04 平台 Cookie 管理
+### integrations/platform_auth/cookies
 
-做什么：
-
-- 从已登录浏览器导出抖音/小红书 Cookie。
-- 保存到本地未提交目录。
-- 给 01 内容采集 字段抽取和素材下载使用。
-
-查看状态：
+负责平台 Cookie 导出和本地保存。状态检查仍通过公共 CLI：
 
 ```bash
 /home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run cookies
@@ -490,175 +365,8 @@ cd /home/ubuntu/selfmedia-tools/01-ingest-content-flow
 导出 Cookie：
 
 ```bash
-cd /home/ubuntu/selfmedia-tools/04-manage-platform-cookies
+cd /home/ubuntu/selfmedia-tools/integrations/platform_auth/cookies
 ./run_export.sh --save-secrets
-```
-
-### 05-detect-viral-radar
-
-做什么：
-
-- 维护一批作品链接。
-- 多次运行后记录互动快照。
-- 计算起量信号和增速。
-- 找正在变热的内容。
-
-输入：
-
-- 作品链接列表
-
-输出：
-
-- 起量候选
-- 互动快照
-- 飞书爆款雷达记录
-
-运行：
-
-```bash
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run viral-radar \
-  --urls 'https://v.douyin.com/xxxx/' 'http://xhslink.com/o/xxxx'
-```
-
-### 06-mine-comment-topics
-
-做什么：
-
-- 抓作品高赞评论。
-- 识别评论里的问题、痛点、争议、需求。
-- 生成选题卡。
-
-输入：
-
-- 作品链接
-
-输出：
-
-- 评论池
-- 选题卡
-- 飞书评论选题记录
-
-运行：
-
-```bash
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run comment-topics \
-  --urls 'https://v.douyin.com/xxxx/'
-```
-
-### 07-index-viral-structures
-
-做什么：
-
-- 把爆款作品沉淀成结构库。
-- 保存标题、开头、封面、话题、互动率、评论和拆解标签。
-- 可以导入 03 爆款拆解 的拆解 JSON。
-
-输入：
-
-- 作品链接
-- 03 爆款拆解 拆解 JSON
-
-输出：
-
-- 爆款结构样本
-- 可检索案例
-- 飞书结构库记录
-
-运行：
-
-```bash
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run viral-structures \
-  --urls 'https://v.douyin.com/xxxx/'
-```
-
-导入 03 爆款拆解 JSON：
-
-```bash
-cd /home/ubuntu/selfmedia-tools/07-index-viral-structures
-python3 cli.py --json-input /path/to/deconstruct.json
-```
-
-### 08-report-account-competitors
-
-做什么：
-
-- 针对账号或竞品账号维护近期作品样本。
-- 统计账号表现、爆款、互动变化。
-- 输出日报/周报。
-
-输入：
-
-- 账号名称
-- 近期作品链接
-
-输出：
-
-- 账号日报/周报
-- 飞书账号表现记录
-
-单次运行：
-
-```bash
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run account-competitors \
-  --account '竞品账号' \
-  --urls 'https://v.douyin.com/xxxx/'
-```
-
-每日轮询：
-
-```bash
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py daily-poll
-```
-
-### 09-score-material-quality
-
-做什么：
-
-- 在下载和拆解前先评估素材。
-- 根据字段完整度、互动质量、复刻价值打分。
-- 给出 `deconstruct`、`review`、`skip` 决策。
-
-输入：
-
-- 作品链接
-
-输出：
-
-- 素材评分
-- 决策
-- 飞书素材质量记录
-
-运行：
-
-```bash
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run material-quality \
-  --urls 'https://v.douyin.com/xxxx/'
-```
-
-### 10-diagnose-field-health
-
-做什么：
-
-- 诊断点赞、收藏、评论、分享每个字段的来源。
-- 判断字段缺失是 HTML、XHR、Cookie、验证码、签名还是页面结构问题。
-- 给 05 爆款雷达 和 09 素材质量评分 提供健康状态。
-
-输入：
-
-- 作品链接
-
-输出：
-
-- 字段来源
-- 缺失字段
-- 失败原因
-- 飞书字段健康记录
-
-运行：
-
-```bash
-/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run field-health \
-  --urls 'https://v.douyin.com/xxxx/'
 ```
 
 ## 每日轮询说明
@@ -704,21 +412,21 @@ Python 编译检查：
 
 ```bash
 cd /home/ubuntu/selfmedia-tools
-python3 -m py_compile common/social_runtime.py tools/selfmedia_openclaw.py
+python3 -m py_compile common/social_runtime.py runtime/cli/selfmedia.py
 ```
 
-01 内容采集 测试：
+内容采集测试：
 
 ```bash
-cd /home/ubuntu/selfmedia-tools/01-ingest-content-flow
-python3 -m unittest discover -s tests
+cd /home/ubuntu/selfmedia-tools
+PYTHONPATH=. python3 -m pytest -q selfmedia/ingest/content_flow/tests
 ```
 
-03 爆款拆解 测试：
+爆款拆解测试：
 
 ```bash
-cd /home/ubuntu/selfmedia-tools/03-deconstruct-viral-content
-.venv/bin/python -m pytest -q
+cd /home/ubuntu/selfmedia-tools
+PYTHONPATH=. python3 -m pytest -q selfmedia/deconstruct/viral_content/tests
 ```
 
 OpenClaw wrapper smoke test：
@@ -736,8 +444,7 @@ OpenClaw wrapper smoke test：
 - `.env.local`
 - Cookie 文件
 - 下载媒体文件
-- 05 爆款雷达-10 字段健康诊断 的 `data/` 和 `outputs/`
-- 03 爆款拆解 的 `outputs/`
+- 本地运行产物和备份输出
 
 提交前可以检查：
 

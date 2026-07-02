@@ -1,0 +1,267 @@
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass
+from typing import Any
+
+from selfmedia.context import build_media_context, merge_conversation_context
+
+from .adapters import ActivityAdapter, BusinessAdapter, CreationInspirationAdapter, ViralContentAdapter
+from .field_contract import normalize_platform, split_tags
+from .llm_generator import call_creation_json
+from .platform_fit import default_platform_mechanism
+from .retrieval import load_business_rows_for_creation, load_inspiration_rows_for_creation, load_rows_for_creation, read_reference_docs
+from .workflow import _record_candidate_payload, _reference_doc_urls_from_records
+
+
+CONSULTATION_PATTERN = re.compile(r"^\s*【创作咨询】")
+KEY_VALUE_RE = re.compile(r"(?P<key>平台|账号|作者ID|博主|赛道|主题|主体|问题|关键词|标签)\s*[=:：]\s*(?P<value>.*?)(?=\s+(?:平台|账号|作者ID|博主|赛道|主题|主体|问题|关键词|标签)\s*[=:：]|$)")
+ACTIVITY_INTENT_RE = re.compile(r"(活动|平台活动|话题活动|投稿|返稿|冲榜|挑战赛|活动适配|适合参加|挂什么话题|参与哪个话题)")
+
+
+@dataclass(frozen=True)
+class ConsultationRequest:
+    question: str
+    platform: str = ""
+    account: str = ""
+    track: str = ""
+    topic: str = ""
+    keywords: tuple[str, ...] = ()
+    raw_text: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "question": self.question,
+            "platform": self.platform,
+            "account": self.account,
+            "track": self.track,
+            "topic": self.topic,
+            "keywords": list(self.keywords),
+            "raw_text": self.raw_text,
+        }
+
+
+def handle_creation_consultation_command(
+    raw_text: str,
+    *,
+    viral_url: str = "",
+    activity_url: str = "",
+    business_url: str = "",
+    inspiration_url: str = "",
+    limit: int = 300,
+    conversation_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    request = parse_consultation_request(raw_text)
+    include_activity = request_needs_activity_candidates(request)
+    viral_rows, activity_rows = load_rows_for_creation(viral_url=viral_url, activity_url=activity_url, limit=limit, include_activity=include_activity)
+    business_rows = load_business_rows_for_creation(business_url=business_url, limit=limit)
+    inspiration_rows = load_inspiration_rows_for_creation(inspiration_url=inspiration_url, limit=limit)
+
+    virals = [ViralContentAdapter().to_record(row) for row in viral_rows]
+    activities = [ActivityAdapter().to_record(row) for row in activity_rows]
+    businesses = [BusinessAdapter().to_record(row) for row in business_rows]
+    inspirations = [CreationInspirationAdapter().to_record(row) for row in inspiration_rows]
+
+    viral_candidates = _top_relevant_records(virals, request, max_items=30)
+    activity_candidates = _top_relevant_records(activities, request, max_items=20)
+    inspiration_candidates = _top_relevant_records(inspirations, request, max_items=30)
+    business_candidates = _top_relevant_records(businesses, request, max_items=12)
+    reference_docs = read_reference_docs(_reference_doc_urls_from_records([*viral_candidates, *inspiration_candidates], max_items=6), max_chars_per_doc=1400)
+    media_context = merge_conversation_context(
+        build_media_context(
+            platform=request.platform,
+            account=request.account,
+            track=request.track,
+            topic=request.topic,
+            keywords=list(request.keywords),
+            limit=8,
+        ),
+        conversation_context,
+    )
+
+    answer = generate_consultation_answer(
+        request,
+        activity_candidates=[_record_candidate_payload(item) for item in activity_candidates],
+        viral_candidates=[_record_candidate_payload(item) for item in viral_candidates],
+        inspiration_candidates=[_record_candidate_payload(item) for item in inspiration_candidates],
+        business_candidates=[_record_candidate_payload(item) for item in business_candidates],
+        reference_docs=reference_docs,
+        media_context=media_context,
+        source_counts={"virals": len(virals), "activities": len(activities), "inspirations": len(inspirations), "businesses": len(businesses)},
+    )
+    reply = str(answer.get("reply") or "").strip()
+    if not reply:
+        reply = format_consultation_reply(answer)
+    return {
+        "ok": True,
+        "mode": "consultation",
+        "request": request.to_dict(),
+        "source_counts": {"virals": len(virals), "activities": len(activities), "inspirations": len(inspirations), "businesses": len(businesses)},
+        "candidate_counts": {
+            "virals": len(viral_candidates),
+            "activities": len(activity_candidates),
+            "inspirations": len(inspiration_candidates),
+            "businesses": len(business_candidates),
+            "reference_docs": len(reference_docs),
+        },
+        "media_context": media_context,
+        "answer": answer,
+        "reply": reply,
+    }
+
+
+def request_needs_activity_candidates(request: ConsultationRequest) -> bool:
+    text = " ".join(
+        str(item or "")
+        for item in (
+            request.question,
+            request.raw_text,
+            request.topic,
+            request.track,
+            *request.keywords,
+        )
+    )
+    return bool(ACTIVITY_INTENT_RE.search(text))
+
+
+def parse_consultation_request(raw_text: str) -> ConsultationRequest:
+    text = (raw_text or "").strip()
+    body = CONSULTATION_PATTERN.sub("", text, count=1).strip()
+    values = {match.group("key"): match.group("value").strip() for match in KEY_VALUE_RE.finditer(body)}
+    tails: list[str] = []
+    for key in ("平台", "账号", "作者ID", "博主", "赛道", "主题", "主体"):
+        value = values.get(key, "")
+        if not value or not re.search(r"\s", value):
+            continue
+        head, tail = value.split(None, 1)
+        values[key] = head.strip()
+        if tail.strip():
+            tails.append(tail.strip())
+    question = values.get("问题") or " ".join(tails).strip() or body
+    platform = normalize_platform(values.get("平台") or _infer_platform(body))
+    account = (values.get("账号") or values.get("作者ID") or values.get("博主") or "").strip()
+    track = (values.get("赛道") or "").strip()
+    topic = (values.get("主题") or values.get("主体") or "").strip()
+    keywords = split_tags(values.get("关键词") or values.get("标签") or " ".join([track, topic, account, body]))
+    return ConsultationRequest(
+        question=question.strip() or body or text,
+        platform=platform,
+        account=account,
+        track=track,
+        topic=topic,
+        keywords=tuple(keywords[:20]),
+        raw_text=text,
+    )
+
+
+def generate_consultation_answer(
+    request: ConsultationRequest,
+    *,
+    activity_candidates: list[dict[str, Any]],
+    viral_candidates: list[dict[str, Any]],
+    inspiration_candidates: list[dict[str, Any]],
+    business_candidates: list[dict[str, Any]],
+    reference_docs: list[dict[str, str]],
+    media_context: dict[str, Any],
+    source_counts: dict[str, int],
+) -> dict[str, Any]:
+    payload = {
+        "request": request.to_dict(),
+        "source_counts": source_counts,
+        "media_memory_prompt": (media_context or {}).get("prompt") or "",
+        "media_context_loaded": (media_context or {}).get("loaded") or {},
+        "account_profile": (media_context or {}).get("account_profile") or {},
+        "recent_creations": (media_context or {}).get("recent_creations") or [],
+        "recent_reviews": (media_context or {}).get("recent_reviews") or [],
+        "activity_candidates": activity_candidates,
+        "viral_candidates": viral_candidates,
+        "inspiration_candidates": inspiration_candidates,
+        "business_candidates": business_candidates,
+        "reference_docs": reference_docs,
+        "platform_mechanism_reference": default_platform_mechanism(request.platform) if request.platform else {},
+    }
+    prompt = (
+        "你是 OpenClaw media bot 的创作顾问。你必须基于输入中的飞书数据表、创作灵感素材、拆解/拆解-再创文档摘要、账号记忆和历史复盘回答用户的创作问题。\n"
+        "不要凭空声称看过不存在的数据；如果数据不足，要明确说缺什么。\n"
+        "做个人 IP 选题时，优先检查 inspiration_candidates 里的真实场景、情绪信号、触发原话、错位点、核心观点和一鱼多吃方向，再参考爆款结构。\n"
+        "涉及平台推荐、活动适配或创作反推时，要参考 platform_mechanism_reference；这只是机制拟合假设，不得声称破解平台真实算法。\n"
+        "回答选题、标题或脚本问题时，先做 topic_diagnosis：目标人群、核心痛点、内容角度、只解决的一个小问题、自查标准；不要直接给一组热闹但同质化的标题。\n"
+        "回答要给：结论、依据、推荐动作、可直接执行的下一步；必要时给 3-7 个选题/脚本方向。\n"
+        "只输出合法 JSON object，不要 Markdown 代码块。字段：reply, conclusion, topic_diagnosis, evidence, recommendations, next_actions, data_gaps。\n\n"
+        f"输入 JSON：\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
+    )
+    result = call_creation_json(prompt)
+    return result if isinstance(result, dict) else {}
+
+
+def format_consultation_reply(answer: dict[str, Any]) -> str:
+    lines: list[str] = []
+    if answer.get("conclusion"):
+        lines.append(str(answer["conclusion"]).strip())
+    diagnosis = answer.get("topic_diagnosis")
+    if isinstance(diagnosis, dict) and diagnosis:
+        lines.append("\n选题拆解：")
+        for key, label in (
+            ("target_audience", "目标人群"),
+            ("pain_point", "核心痛点"),
+            ("content_angle", "内容角度"),
+            ("single_problem", "单一问题"),
+            ("self_check", "自查标准"),
+        ):
+            value = diagnosis.get(key) or diagnosis.get(label)
+            if value:
+                lines.append(f"- {label}：{value}")
+    for label, key in (("依据", "evidence"), ("建议", "recommendations"), ("下一步", "next_actions"), ("缺口", "data_gaps")):
+        items = answer.get(key)
+        if isinstance(items, list) and items:
+            lines.append(f"\n{label}：")
+            lines.extend(f"- {item}" for item in items[:8])
+        elif isinstance(items, str) and items.strip():
+            lines.append(f"\n{label}：{items.strip()}")
+    return "\n".join(lines).strip() or "创作咨询已完成，但未生成可读回答。"
+
+
+def _top_relevant_records(records: list[Any], request: ConsultationRequest, *, max_items: int) -> list[Any]:
+    scored = [(_relevance_score(record, request), index, record) for index, record in enumerate(records)]
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    positives = [record for score, _index, record in scored if score > 0]
+    return (positives or [record for _score, _index, record in scored])[:max_items]
+
+
+def _relevance_score(record: Any, request: ConsultationRequest) -> int:
+    haystack = " ".join(
+        str(item or "")
+        for item in (
+            getattr(record, "title", ""),
+            getattr(record, "content", ""),
+            getattr(record, "platform", ""),
+            getattr(record, "track", ""),
+            getattr(record, "topic", ""),
+            " ".join(getattr(record, "tags", []) or []),
+            json.dumps(getattr(record, "detail_json", {}) or {}, ensure_ascii=False),
+        )
+    ).lower()
+    score = 0
+    if request.platform and request.platform.lower() in haystack:
+        score += 5
+    if request.track and request.track.lower() in haystack:
+        score += 4
+    if request.topic and request.topic.lower() in haystack:
+        score += 4
+    for keyword in request.keywords:
+        clean = str(keyword or "").strip().lower()
+        if len(clean) >= 2 and clean in haystack:
+            score += 2
+    for token in re.findall(r"[\w\u4e00-\u9fff]{2,}", request.question.lower()):
+        if token in haystack:
+            score += 1
+    return score
+
+
+def _infer_platform(text: str) -> str:
+    if "小红书" in text:
+        return "小红书"
+    if "抖音" in text:
+        return "抖音"
+    return ""
