@@ -4,6 +4,18 @@ from .tag_router_common import *
 
 
 class RouterSharedHelpersMixin:
+    def _configured_bitable_url(self, kind: str) -> str:
+        config_path = getattr(self.reminder_service, "config_paths", {}).get(kind, "")
+        if config_path:
+            try:
+                data = json.loads(Path(config_path).read_text(encoding="utf-8"))
+                url = str(data.get("url") or "").strip()
+                if url:
+                    return url
+            except Exception:
+                pass
+        return str(getattr(self.reminder_service, "bitable_url", "") or "").strip()
+
     def _first_url_from_value(self, value: Any) -> str:
         if value in (None, "", []):
             return ""

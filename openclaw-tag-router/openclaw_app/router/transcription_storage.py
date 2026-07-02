@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ..services.knowledge_archive_bridge import archive_meeting_content_section
 from .tag_router_common import *
 
 
@@ -23,14 +24,21 @@ class TranscriptionStorageMixin:
         note_path = self._unique_markdown_path(note_dir / f"{date_prefix}-{safe_slug(topic, max_len=60)}.md")
         transcript_dir = ensure_dir(MEETING_TRANSCRIPTS_DIR)
         transcript_path = self._unique_markdown_path(transcript_dir / f"{note_path.stem}-原字稿.md")
+        note_tags = ["会议纪要", "转写", "语音转文字"]
+        transcript_tags = ["原字稿", "转写", "语音转文字"]
+        if message.entry_tag == "转写-文字":
+            note_tags.append("文字稿整理")
+            transcript_tags.append("文字稿整理")
         frontmatter = {
             "source": message.source,
             "entry_tag": message.entry_tag,
             "created_at": format_display_time(message.created_at),
             "status": "archived" if not failures else "partial",
-            "tags": ["会议纪要", "转写", "语音转文字"],
+            "tags": note_tags,
             "raw_transcript_path": str(transcript_path),
             "raw_audio_deleted": delete_statuses or [],
+            "archive_macro_summary": formatted.get("archive_macro_summary", ""),
+            "archive_summary_bullets": formatted.get("archive_summary_bullets", []),
             "postprocess_pipeline": formatted.get("postprocess_pipeline", ""),
             "postprocess_artifacts": formatted.get("postprocess_artifacts", {}),
         }
@@ -39,7 +47,7 @@ class TranscriptionStorageMixin:
             "entry_tag": message.entry_tag,
             "created_at": format_display_time(message.created_at),
             "status": "archived" if not failures else "partial",
-            "tags": ["原字稿", "转写", "语音转文字"],
+            "tags": transcript_tags,
             "meeting_note_path": str(note_path),
             "audio_names": audio_names or [],
             "raw_audio_deleted": delete_statuses or [],
@@ -69,12 +77,16 @@ class TranscriptionStorageMixin:
             ],
         )
         transcript_path.write_text(transcript_content, encoding="utf-8")
+        cleanup_generated_file_duplicates(transcript_path)
         self._assert_transcription_raw_transcript_path(transcript_path)
         formatted["obsidian_transcript_path"] = str(transcript_path)
 
         sections = [
             ("待解决的问题", formatted.get("pending_questions") or self._format_pending_questions("")),
             ("内容整理", formatted["summary"]),
+            ("主题细节", formatted.get("theme_sections") or "暂无额外主题细节。"),
+            ("决定与判断", formatted.get("decisions") or "暂无明确决定或判断。"),
+            ("行动项", formatted.get("action_items") or "暂无明确行动项。"),
             ("对话人说明", formatted["speaker_notes"]),
             ("说话人标注逐字稿", formatted["labeled_transcript"]),
             ("来源与产物", "\n".join(source_lines)),
@@ -87,7 +99,10 @@ class TranscriptionStorageMixin:
         content = ArchiveService.render_markdown(frontmatter, f"{date_prefix} {topic}", sections)
         content = content.replace("\n## 待解决的问题\n", "\n# 待解决的问题\n", 1)
         note_path.write_text(content, encoding="utf-8")
+        cleanup_generated_file_duplicates(note_path)
         self._assert_transcription_meeting_note_path(note_path)
+        knowledge_archive = archive_meeting_content_section(note_path)
+        formatted["knowledge_archive"] = knowledge_archive.to_dict()
         return str(note_path)
 
     def _assert_transcription_meeting_note_path(self, note_path: Path) -> None:

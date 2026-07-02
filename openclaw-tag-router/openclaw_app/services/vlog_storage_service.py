@@ -364,7 +364,7 @@ class VlogStorageService:
         done = sum(1 for item in assets if isinstance(item, dict) and item.get("status") in {"uploaded", "duplicate"})
         return {
             "status": "archived" if done == len(assets) else "pending_storage",
-            "tags": ["灵感-vlog", "vlog素材", "时序素材"],
+            "tags": ["灵感>vlog", "vlog素材", "时序素材"],
             "vlog_id": manifest.get("vlog_id", ""),
             "manifest_path": manifest.get("manifest_path", ""),
             "data_option_key": manifest.get("data_option_key", ""),
@@ -394,7 +394,7 @@ class VlogStorageService:
             first_reason = str(pending[0].get("reason") or pending[0].get("error") or pending[0].get("status") or "")
             lines.append(f"待处理：{len(pending)} 个素材未上传。原因：{first_reason[:300]}")
             if any(item.get("status") in {"remote_not_configured", "auth_required"} for item in pending):
-                lines.append("可发送：`【灵感-vlog】iCloud状态` 或 `【灵感-vlog】iCloud认证`。续期后发送 `【灵感-vlog】重试上传 " + str(manifest.get("vlog_id") or "") + "`。")
+                lines.append("可发送：`【灵感>vlog】iCloud状态` 或 `【灵感>vlog】iCloud认证`。续期后发送 `【灵感>vlog】重试上传 " + str(manifest.get("vlog_id") or "") + "`。")
         return lines
 
     def start_auth_session(self) -> dict[str, Any]:
@@ -410,7 +410,7 @@ class VlogStorageService:
                 "ok": False,
                 "status": "password_required",
                 "backend": "pyicloud",
-                "reply": "这个 Apple ID 需要走 iCloud 中国区接口。请发送：`【灵感-vlog】iCloud密码 你的AppleID密码` 重新启动认证。",
+                "reply": "这个 Apple ID 需要走 iCloud 中国区接口。请发送：`【灵感>vlog】iCloud密码 你的AppleID密码` 重新启动认证。",
             }
         if not self.auth_script.exists():
             return {"ok": False, "status": "auth_script_missing", "error": str(self.auth_script)}
@@ -420,7 +420,7 @@ class VlogStorageService:
     def save_setup_account(self, apple_id: str) -> dict[str, Any]:
         apple_id = apple_id.strip()
         if not apple_id or "@" not in apple_id:
-            return {"ok": False, "status": "invalid_apple_id", "reply": "Apple ID 格式不对，请发送：`【灵感-vlog】iCloud账号 name@example.com`。"}
+            return {"ok": False, "status": "invalid_apple_id", "reply": "Apple ID 格式不对，请发送：`【灵感>vlog】iCloud账号 name@example.com`。"}
         state = {
             "remote": self.remote,
             "apple_id": apple_id,
@@ -432,7 +432,7 @@ class VlogStorageService:
             "status": "account_saved",
             "remote": self.remote,
             "apple_id": apple_id,
-            "reply": "账号已记录。下一步发送：`【灵感-vlog】iCloud密码 你的AppleID密码`。",
+            "reply": "账号已记录。下一步发送：`【灵感>vlog】iCloud密码 你的AppleID密码`。",
         }
 
     def create_remote_with_password(self, password: str) -> dict[str, Any]:
@@ -444,10 +444,10 @@ class VlogStorageService:
                 "ok": False,
                 "status": "missing_account",
                 "remote": self.remote,
-                "reply": "还没有 Apple ID。请先发送：`【灵感-vlog】iCloud账号 name@example.com`。",
+                "reply": "还没有 Apple ID。请先发送：`【灵感>vlog】iCloud账号 name@example.com`。",
             }
         if not password:
-            return {"ok": False, "status": "missing_password", "remote": self.remote, "apple_id": apple_id, "reply": "密码为空，请重新发送 `【灵感-vlog】iCloud密码 ...`。"}
+            return {"ok": False, "status": "missing_password", "remote": self.remote, "apple_id": apple_id, "reply": "密码为空，请重新发送 `【灵感>vlog】iCloud密码 ...`。"}
 
         obscure = self._obscure_password(password)
         if not obscure.get("ok"):
@@ -490,7 +490,7 @@ class VlogStorageService:
         if configured:
             auth_status = str(auth.get("status") or "")
             auth_ok = bool(auth.get("ok")) and auth_status not in {"failed", "password_required", "missing_credentials"}
-            reply = "密码已写入 rclone 配置并已启动 iCloud 认证。下一步按提示发送验证码，例如：`【灵感-vlog】验证码 123456`。"
+            reply = "密码已写入 rclone 配置并已启动 iCloud 认证。下一步按提示发送验证码，例如：`【灵感>vlog】验证码 123456`。"
             if not auth_ok:
                 reply = str(auth.get("reply") or "iCloud 认证启动失败，请确认 Apple ID 密码后重试。")
             return {
@@ -765,11 +765,11 @@ class VlogStorageService:
             return parsed.replace(tzinfo=tz)
         return None
 
-    def _datetime_from_context(self, context: dict[str, Any], fallback_mtime: float) -> datetime:
+    def _datetime_from_context(self, context: dict[str, Any], default_mtime: float) -> datetime:
         parsed = self._parse_upload_time(str(context.get("uploaded_at") or context.get("created_at_raw") or ""), datetime.now(ZoneInfo(self.timezone)))
         if parsed is not None:
             return parsed
-        return datetime.fromtimestamp(fallback_mtime, ZoneInfo(self.timezone))
+        return datetime.fromtimestamp(default_mtime, ZoneInfo(self.timezone))
 
     @staticmethod
     def _upload_time_key(dt: datetime, index: int | None = None) -> str:
@@ -1072,9 +1072,9 @@ class VlogStorageService:
         return manifests[0] if manifests else None
 
     @staticmethod
-    def _title_from_body(body: str, fallback: str) -> str:
+    def _title_from_body(body: str, default_title: str) -> str:
         for line in (body or "").splitlines():
             cleaned = re.sub(r"\s+", " ", line).strip()
             if cleaned:
                 return f"Vlog灵感：{cleaned[:36]}"
-        return f"Vlog灵感：{fallback}"
+        return f"Vlog灵感：{default_title}"

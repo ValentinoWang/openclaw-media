@@ -59,7 +59,7 @@ class VlogInspirationMixin:
                 ("处理结果", reply),
                 ("结构化结果", json.dumps(result, ensure_ascii=False, indent=2)),
             ],
-            {"status": str(result.get("status") or kind or "vlog_control"), "tags": ["灵感-vlog", "控制命令"]},
+            {"status": str(result.get("status") or kind or "vlog_control"), "tags": ["灵感>vlog", "控制命令"]},
         )
         return TaskResult(
             ok=bool(result.get("ok", True)),
@@ -192,7 +192,7 @@ class VlogInspirationMixin:
                     f"## {format_display_time(message.created_at)}",
                     "",
                     f"- 来源：{message.source.upper()}",
-                    "- 标签：灵感-vlog",
+                    "- 标签：灵感>vlog",
                     f"- 素材包：{manifest.get('vlog_id') or ''}",
                     f"- 本地归档：{entry.local_path}",
                     f"- Manifest：{manifest.get('manifest_path') or ''}",

@@ -8,7 +8,7 @@ class SelfmediaCognitionMixin:
         body = message.body.strip()
         if not body:
             return TaskResult(ok=False, status="empty_selfmedia_cognition", reply="请在 `【自媒体-认知】` 后写入要沉淀或纠正的自媒体认知。", task_id="")
-        if not hasattr(self.feishu_service, "list_knowledge_child_nodes") or not hasattr(self.feishu_service, "replace_child_entry_under_node"):
+        if not hasattr(self.feishu_service, "list_knowledge_child_nodes") or not hasattr(self.feishu_service, "replace_child_entry_under_node_blocks"):
             return TaskResult(ok=False, status="unsupported_feishu_service", reply="当前飞书服务不支持按知识库父节点分流/覆盖子文档。", task_id="")
 
         parent_node_token = SELFMEDIA_COGNITION_PARENT_NODE_TOKEN
@@ -40,7 +40,11 @@ class SelfmediaCognitionMixin:
             return TaskResult(ok=False, status="selfmedia_cognition_empty", reply="自媒体认知整合失败：OpenClaw 返回正文过短，已停止写入。", task_id="")
 
         try:
-            fs = self.feishu_service.replace_child_entry_under_node(parent_node_token, doc_title, content)
+            blocks = [
+                self._docx_heading_block(1, doc_title),
+                *self.feishu_service._content_to_docx_blocks(content),
+            ]
+            fs = self.feishu_service.replace_child_entry_under_node_blocks(parent_node_token, doc_title, blocks)
         except Exception as exc:
             return TaskResult(ok=False, status="selfmedia_cognition_write_failed", reply=f"写入自媒体认知子文档失败：{exc}", task_id="")
 
@@ -121,10 +125,11 @@ class SelfmediaCognitionMixin:
             "任务：把新输入整合成一个可持续维护的认知文档。如果已有文档，必须将新内容合并进对应章节并覆盖成完整正文，不要保留“补充记录/v1/v2/追加”痕迹。\n"
             "要求：\n"
             "1. 不要编造用户没有提供的事实、数据或案例。\n"
-            "2. 文档标题第一行必须是 Markdown H1：# {doc_title}。\n"
+            "2. 文档标题由系统写成飞书原生 H1，你只输出正文结构，不要输出 Markdown 标题符号。\n"
             "3. 固定章节：当前结论、适用场景、原有认知/常见误区、新判断、操作原则、例子、待验证。\n"
-            "4. 如果信息不足，对应章节写“待补充”，不要硬编。\n"
-            "5. 语言要像内部方法论，不要像公众号文章。\n"
+            "4. 每个章节用章节名单独成行，正文用短段落；不要输出 Markdown 表格、代码块或本地调试痕迹。\n"
+            "5. 如果信息不足，对应章节写“待补充”，不要硬编。\n"
+            "6. 语言要像内部方法论，不要像公众号文章。\n"
             "输出字段固定为：status, content。"
         ).format(doc_title=doc_title)
         user_content = json.dumps(

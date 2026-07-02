@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import os
 import re
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-import requests
-
-from .llm_settings import load_content_cleaner_llm_settings
+from .llm_client import generate_json_from_parts
+from .llm_settings import LLMProviderSettings, load_content_cleaner_llm_settings
 
 
 SOURCE_OCR = "image_ocr"
@@ -21,9 +19,15 @@ class ContentCleanerConfig:
     base_url: str
     api_key: str
     model: str
+    api_type: str
     timeout_seconds: int
     max_chars: int
     max_tokens: int
+    thinking: str = ""
+    bin: str = ""
+    agent: str = ""
+    cwd: str = ""
+    codex_home: str = ""
 
 
 def config_from_env() -> ContentCleanerConfig:
@@ -33,9 +37,15 @@ def config_from_env() -> ContentCleanerConfig:
         base_url=settings.provider.base_url,
         api_key=settings.provider.api_key,
         model=settings.provider.model,
+        api_type=settings.provider.api_type,
         timeout_seconds=max(10, int(settings.provider.timeout)),
         max_chars=settings.max_chars,
         max_tokens=settings.max_tokens,
+        thinking=settings.provider.thinking,
+        bin=settings.provider.bin,
+        agent=settings.provider.agent,
+        cwd=settings.provider.cwd,
+        codex_home=settings.provider.codex_home,
     )
 
 
@@ -138,30 +148,30 @@ def _clean_prompt(source_name: str, title: str, text: str) -> list[dict[str, str
 
 def _call_clean_llm(source_name: str, title: str, text: str, config: ContentCleanerConfig) -> str:
     if not config.api_key:
-        raise RuntimeError("config/openclaw_bots.json providers.main_llm.api_key not configured")
+        raise RuntimeError("content cleaner LLM api_key not configured")
     if not config.model:
-        raise RuntimeError("config/openclaw_bots.json providers.main_llm.model not configured")
+        raise RuntimeError("content cleaner LLM model not configured")
     if not config.base_url:
-        raise RuntimeError("config/openclaw_bots.json providers.main_llm.base_url not configured")
-    response = requests.post(
-        _clean_endpoint(config.base_url),
-        headers={"Authorization": f"Bearer {config.api_key}", "Content-Type": "application/json"},
-        json={
-            "model": config.model,
-            "messages": _clean_prompt(source_name, title, text),
-            "temperature": 0.1,
-            "max_tokens": config.max_tokens,
-        },
-        timeout=config.timeout_seconds,
+        raise RuntimeError("content cleaner LLM base_url not configured")
+    prompt = _clean_prompt(source_name, title, text)
+    payload = generate_json_from_parts(
+        [{"text": "\n\n".join(f"{item['role']}:\n{item['content']}" for item in prompt)}],
+        LLMProviderSettings(
+            model=config.model,
+            base_url=config.base_url,
+            api_key=config.api_key,
+            api_type=config.api_type,
+            timeout=config.timeout_seconds,
+            thinking=config.thinking,
+        ),
+        max_retries=1,
+        instructions=(
+            "你是中文内容清洗器。只输出合法 JSON object，不要 Markdown，不要解释。"
+            "JSON 字段固定为 cleaned_text，值为清洗后的正文字符串。"
+        ),
+        error_prefix="content cleaner LLM 输出 JSON 校验失败",
     )
-    if response.status_code >= 400:
-        raise RuntimeError(f"LLM clean failed HTTP {response.status_code}: {response.text[:500]}")
-    payload = response.json()
-    choices = payload.get("choices") or []
-    if not choices:
-        raise RuntimeError(f"LLM clean returned no choices: {payload}")
-    message = choices[0].get("message") or {}
-    cleaned = str(message.get("content") or "").strip()
+    cleaned = str(payload.get("cleaned_text") or "").strip()
     cleaned = re.sub(r"^```(?:text|markdown)?\s*|\s*```$", "", cleaned, flags=re.I).strip()
     return strip_false_clean_marker(cleaned)
 

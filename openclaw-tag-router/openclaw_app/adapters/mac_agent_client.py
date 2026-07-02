@@ -9,7 +9,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from ..services.utils import ensure_dir
+from ..services.utils import cleanup_generated_file_duplicates, ensure_dir
 
 
 @dataclass
@@ -46,6 +46,7 @@ class MacAgentClient:
                 }
             )
             calendar_path.write_text(json.dumps(events, ensure_ascii=False, indent=2), encoding="utf-8")
+            cleanup_generated_file_duplicates(calendar_path)
             self._trigger_syncthing_scan(self.local_obsidian_root)
             return {"status": "synced", "note_path": str(note_path), "calendar": "已创建提醒"}
 
@@ -72,11 +73,12 @@ class MacAgentClient:
         if not inserted:
             output.extend(["# 待办", todo_line])
         path.write_text("\n".join(output).rstrip() + "\n", encoding="utf-8")
+        cleanup_generated_file_duplicates(path)
 
     @staticmethod
     def _trigger_syncthing_scan(path: Path) -> None:
         config_path = Path(os.environ.get("OPENCLAW_SYNCTHING_CONFIG", "/home/ubuntu/.local/state/syncthing/config.xml"))
-        vault_root = Path(os.environ.get("OPENCLAW_OBSIDIAN_VAULT_ROOT", "/home/ubuntu/obsidian-diary")).resolve()
+        vault_root = Path(os.environ.get("OPENCLAW_OBSIDIAN_VAULT_ROOT", "/home/ubuntu/obsidian-日记")).resolve()
         folder_id = os.environ.get("OPENCLAW_SYNCTHING_FOLDER_ID", "obsidian-diary")
         api_url = os.environ.get("OPENCLAW_SYNCTHING_API_URL", "http://127.0.0.1:8384").rstrip("/")
         try:

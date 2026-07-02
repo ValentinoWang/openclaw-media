@@ -96,7 +96,7 @@ class ScheduleService:
         return False
 
     @staticmethod
-    def _concise_title(text: str, fallback: str) -> str:
+    def _concise_title(text: str, default_title: str) -> str:
         """Build a short calendar/reminder title from the body after date/time removal."""
         title = re.sub(r"\s+", " ", text).strip(" ，,。；;：:")
         title = re.sub(r"^(请|帮我|请帮我|记得|提醒我|要|需要)\s*", "", title)
@@ -118,7 +118,7 @@ class ScheduleService:
 
         title = re.sub(r"\s+", " ", title).strip(" ，,。；;：:")
         if not title:
-            title = re.sub(r"\s+", " ", fallback).strip(" ，,。；;：:")
+            title = re.sub(r"\s+", " ", default_title).strip(" ，,。；;：:")
         return title[:30]
 
     def execute(self, parsed: ParsedSchedule) -> dict[str, str]:

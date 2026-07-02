@@ -9,24 +9,74 @@ from typing import Any
 
 import yaml
 
-from ..services.utils import now_in_tz
+from ..services.utils import cleanup_generated_file_duplicates, now_in_tz
 
 
 class ContentOSUtilsMixin:
     @staticmethod
     def _inspiration_requests_content_os_project(raw: str) -> bool:
         text = str(raw or "")
-        project_signals = ("初步脚本", "初稿脚本", "先出脚本", "项目包", "Content OS", "本地素材", "Mac", "二次改脚本", "二次改变")
-        target_signals = ("目标", "后续", "本地素材路径", "素材：", "素材:")
+        project_signals = ("立项", "项目包", "Content OS", "初步脚本", "初稿脚本", "先出脚本", "brief", "Brief", "script", "Script")
+        target_signals = ("目标", "后续", "生成", "创建", "写", "做成内容", "初稿", "脚本", "项目")
         return any(item in text for item in project_signals) and any(item in text for item in target_signals)
+    @staticmethod
+    def _creation_requests_content_os_project(raw: str) -> bool:
+        text = str(raw or "")
+        if not text.strip():
+            return False
+        direct_signals = (
+            "已有素材",
+            "已经拍好",
+            "拍好素材",
+            "本地素材",
+            "素材匹配",
+            "Mac",
+            "Storyboard",
+            "EDL",
+            "分镜",
+            "剪辑说明",
+            "剪辑顺序",
+            "同款翻拍",
+            "反推",
+        )
+        if any(item in text for item in direct_signals):
+            return True
+        return "希望产出" in text and any(item in text for item in ("剪辑", "脚本", "分镜", "素材"))
     @staticmethod
     def _extract_content_os_local_project_path(raw: str) -> str:
         text = str(raw or "").replace("\\_", "_")
         for label in ("本地素材路径", "本地素材", "素材路径", "素材", "local_project_path"):
             match = re.search(rf"{label}\s*[：:=]\s*(?P<path>/Users/[^\n\r]+)", text)
             if match:
+                path = match.group("path").strip().strip("`")
+                if not path.endswith("00_批次说明.md"):
+                    return path
+        for match in re.finditer(r"(?P<path>/Users/[^\n\r]+)", text):
+            path = match.group("path").strip().strip("`")
+            if not path.endswith("00_批次说明.md"):
+                return path
+        return ""
+    @staticmethod
+    def _extract_content_os_batch_note_path(raw: str) -> str:
+        text = str(raw or "").replace("\\_", "_")
+        labels = ("批次说明路径", "批次说明", "batch_note_path")
+        for label in labels:
+            match = re.search(rf"{label}\s*[：:=]\s*(?P<path>[^\n\r]+00_批次说明\.md)", text)
+            if match:
                 return match.group("path").strip().strip("`")
-        match = re.search(r"(?P<path>/Users/[^\n\r]+)", text)
+        match = re.search(r"(?P<path>(?:/Users/[^\n\r]+|00_Inbox_Mac_Intake/[^\n\r]+)00_批次说明\.md)", text)
+        return match.group("path").strip().strip("`") if match else ""
+    @staticmethod
+    def _extract_content_os_inbox_batch_path(raw: str) -> str:
+        text = str(raw or "").replace("\\_", "_")
+        for label in ("Inbox批次路径", "本地批次路径", "批次路径", "inbox_batch_path"):
+            match = re.search(rf"{label}\s*[：:=]\s*(?P<path>[^\n\r]+)", text)
+            if match:
+                return match.group("path").strip().strip("`")
+        batch_note = ContentOSUtilsMixin._extract_content_os_batch_note_path(text)
+        if batch_note.endswith("/00_批次说明.md"):
+            return batch_note[: -len("/00_批次说明.md")]
+        match = re.search(r"(?P<path>00_Inbox_Mac_Intake/[^\n\r]+)", text)
         return match.group("path").strip().strip("`") if match else ""
     @staticmethod
     def _extract_labeled_value(raw: str, label: str) -> str:
@@ -101,21 +151,29 @@ class ContentOSUtilsMixin:
     @staticmethod
     def _write_text_if_absent(path: Path, content: str) -> None:
         if path.exists():
+            cleanup_generated_file_duplicates(path)
             return
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content.rstrip() + "\n", encoding="utf-8")
+        cleanup_generated_file_duplicates(path)
     def _append_registry_row(self, path: Path, *, header: str, key: str, row: str) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         text = path.read_text(encoding="utf-8", errors="replace") if path.exists() else header
         if key in text:
+            cleanup_generated_file_duplicates(path)
             return
         if not text.endswith("\n"):
             text += "\n"
         path.write_text(text + row.rstrip() + "\n", encoding="utf-8")
+        cleanup_generated_file_duplicates(path)
 
     @staticmethod
     def _content_os_vault_root() -> Path:
-        return Path(os.environ.get("CONTENT_OS_VAULT_ROOT", "/home/ubuntu/obsidian-media"))
+        return Path(os.environ.get("CONTENT_OS_VAULT_ROOT", "/home/ubuntu/obsidian-自媒体"))
+    @staticmethod
+    def _content_os_cloud_markdown_enabled() -> bool:
+        value = os.environ.get("CONTENT_OS_CLOUD_MARKDOWN", "").strip().lower()
+        return value in {"1", "true", "yes", "on"}
     def _extract_content_os_project_id(self, raw: str, vault_root: Path | None = None) -> str:
         text = str(raw or "")
         for label in ("project_id", "项目ID", "项目"):
@@ -149,8 +207,10 @@ class ContentOSUtilsMixin:
         return (data if isinstance(data, dict) else {}), match.group("rest")
     @staticmethod
     def _write_markdown_frontmatter(path: Path, frontmatter: dict[str, Any], body: str) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
         frontmatter_text = yaml.safe_dump(frontmatter, allow_unicode=True, sort_keys=False).strip()
         path.write_text(f"---\n{frontmatter_text}\n---\n\n{body.lstrip()}".rstrip() + "\n", encoding="utf-8")
+        cleanup_generated_file_duplicates(path)
     def _content_os_project_index_path(self, project_id: str, vault_root: Path | None = None) -> Path:
         return self._content_os_project_dir(project_id, vault_root) / "00_项目总览.md"
     def _content_os_project_status(self, project_id: str, vault_root: Path | None = None) -> str:
@@ -159,6 +219,12 @@ class ContentOSUtilsMixin:
     def _content_os_project_local_path(self, project_id: str, vault_root: Path | None = None) -> str:
         frontmatter, _ = self._read_markdown_frontmatter(self._content_os_project_index_path(project_id, vault_root))
         return str(frontmatter.get("local_project_path") or "").strip()
+    def _content_os_project_batch_note_path(self, project_id: str, vault_root: Path | None = None) -> str:
+        frontmatter, _ = self._read_markdown_frontmatter(self._content_os_project_index_path(project_id, vault_root))
+        return str(frontmatter.get("batch_note_path") or "").strip()
+    def _content_os_project_inbox_batch_path(self, project_id: str, vault_root: Path | None = None) -> str:
+        frontmatter, _ = self._read_markdown_frontmatter(self._content_os_project_index_path(project_id, vault_root))
+        return str(frontmatter.get("inbox_batch_path") or "").strip()
     def _upsert_content_os_auto_section(
         self,
         path: Path,
@@ -208,4 +274,3 @@ class ContentOSUtilsMixin:
         if not text:
             return ""
         return "\n".join(f"- {line.strip()}" for line in text.splitlines() if line.strip())
-

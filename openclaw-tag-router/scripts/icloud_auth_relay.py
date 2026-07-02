@@ -118,16 +118,16 @@ def _status(remote: str) -> dict[str, Any]:
 
 def _reply_for_status(status: str, state: dict[str, Any], tail: str) -> str:
     if status == "awaiting_2fa":
-        return "iCloud 认证正在等待验证码。请在飞书发送：`【灵感-vlog】验证码 123456`。"
+        return "iCloud 认证正在等待验证码。请在飞书发送：`【灵感>vlog】验证码 123456`。"
     if status == "awaiting_choice":
-        return "iCloud 认证正在等待选择。请按提示发送：`【灵感-vlog】验证码 y`、`【灵感-vlog】验证码 n` 或 `【灵感-vlog】验证码 sms`。"
+        return "iCloud 认证正在等待选择。请按提示发送：`【灵感>vlog】验证码 y`、`【灵感>vlog】验证码 n` 或 `【灵感>vlog】验证码 sms`。"
     if status == "password_required":
         return (
             "rclone 正在要求 Apple ID 密码。为避免密码在飞书聊天里明文流动，我没有继续接收密码。"
             "请先用一次安全方式完成 rclone iCloud remote 初始化；之后 30 天左右的 2FA 续期可以在媒体 bot 里完成。"
         )
     if status == "completed":
-        return "iCloud 认证/续期流程已结束。可以发送 `【灵感-vlog】iCloud状态` 检查是否可上传。"
+        return "iCloud 认证/续期流程已结束。可以发送 `【灵感>vlog】iCloud状态` 检查是否可上传。"
     if status == "no_active_session":
         return "当前没有正在进行的 iCloud 认证会话。"
     if status == "running":

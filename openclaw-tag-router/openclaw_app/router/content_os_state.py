@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-from ..services.utils import now_in_tz
+from ..services.utils import cleanup_generated_file_duplicates, now_in_tz
 
 
 class ContentOSStateMixin:
@@ -34,6 +34,7 @@ class ContentOSStateMixin:
                     line = "| " + " | ".join(cells) + " |"
             out.append(line)
         path.write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
+        cleanup_generated_file_duplicates(path)
     def _append_content_os_state_log(self, project_id: str, old_status: str, new_status: str, *, actor: str, reason: str, vault_root: Path) -> None:
         path = self._content_os_project_dir(project_id, vault_root) / "00_state_log.md"
         if not path.exists():
@@ -42,6 +43,7 @@ class ContentOSStateMixin:
         now = now_in_tz("Asia/Shanghai").isoformat(timespec="seconds")
         row = f"| {now} | {self._md_cell(actor)} | {self._md_cell(old_status)} | {self._md_cell(new_status)} | {self._md_cell(reason)} |"
         path.write_text(text.rstrip() + "\n" + row + "\n", encoding="utf-8")
+        cleanup_generated_file_duplicates(path)
     def _content_os_transition_allowed(
         self,
         *,
@@ -101,4 +103,3 @@ class ContentOSStateMixin:
             return f"Content OS 状态未推进：{from_status} -> {to_status} 缺少 {', '.join(missing)}"
         self._set_content_os_project_status(project_id, to_status, actor=actor, reason=reason, vault_root=vault_root)
         return f"Content OS 状态已推进：{from_status} -> {to_status}"
-

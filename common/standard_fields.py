@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Iterable, Mapping
 from typing import Any
 
@@ -32,6 +31,7 @@ STANDARD_FIELD_SPECS: dict[str, int] = {
     "入库时间": 5,
     "更新时间": 5,
     "发布时间": 1,
+    "地点": 1,
     "截止时间": 5,
     "提醒时间": 5,
     "活动时间JSON": 1,
@@ -123,8 +123,6 @@ STANDARD_JSON_FIELDS = {
     "详情JSON",
 }
 
-WRITE_MODE_LEGACY = "legacy"
-WRITE_MODE_DUAL = "dual"
 WRITE_MODE_STANDARD = "standard"
 DEFAULT_STANDARD_FIELD_WRITE_MODE = WRITE_MODE_STANDARD
 
@@ -173,12 +171,12 @@ STANDARD_ALIAS_MAP: dict[str, str] = {
     "关联活动链接": "关联对象链接",
     "关联商务链接": "关联对象链接",
     "参考拆解文档链接": "文档链接JSON",
-    "参考创作-再创文档链接": "文档链接JSON",
+    "参考拆解-再创文档链接": "文档链接JSON",
     "分镜脚本": "文档链接JSON",
     "拆解文档": "文档链接JSON",
     "拆解文档链接": "文档链接JSON",
-    "创作-再创文档": "文档链接JSON",
-    "创作-再创文档链接": "文档链接JSON",
+    "拆解-再创文档": "文档链接JSON",
+    "拆解-再创文档链接": "文档链接JSON",
     "创作文档链接": "文档链接JSON",
     "文档链接": "文档链接JSON",
     "图文脚本": "文档链接JSON",
@@ -224,7 +222,7 @@ STANDARD_ALIAS_MAP: dict[str, str] = {
     "吸睛元素": "爆点分析JSON",
     "核心价值": "爆点分析JSON",
     "再创作方向": "爆点分析JSON",
-    "创作-再创方向": "爆点分析JSON",
+    "拆解-再创方向": "爆点分析JSON",
     "避重/改写建议": "爆点分析JSON",
     "隐形信息": "知识抽取JSON",
     "镜头/画面线索": "知识抽取JSON",
@@ -309,13 +307,6 @@ def standard_field_specs(extra_specs: Mapping[str, int] | None = None) -> dict[s
     return specs
 
 
-def standard_field_write_mode(value: str | None = None) -> str:
-    mode = str(value or os.getenv("STANDARD_FIELD_WRITE_MODE", DEFAULT_STANDARD_FIELD_WRITE_MODE)).strip().lower()
-    if mode not in {WRITE_MODE_LEGACY, WRITE_MODE_DUAL, WRITE_MODE_STANDARD}:
-        return DEFAULT_STANDARD_FIELD_WRITE_MODE
-    return mode
-
-
 def normalize_standard_field_name(name: str, alias_map: Mapping[str, str] | None = None) -> str:
     clean = str(name or "").strip()
     if not clean:
@@ -390,25 +381,8 @@ def normalize_standard_fields(
 
 
 def select_fields_for_write(
-    legacy_fields: Mapping[str, Any],
+    fields: Mapping[str, Any],
     *,
     normalized_fields: Mapping[str, Any] | None = None,
-    mode: str | None = None,
-    preserve_legacy_fields: Iterable[str] | None = None,
 ) -> dict[str, Any]:
-    legacy = dict(legacy_fields)
-    normalized = dict(normalized_fields or normalize_standard_fields(legacy))
-    write_mode = standard_field_write_mode(mode)
-
-    if write_mode == WRITE_MODE_LEGACY:
-        return legacy
-    if write_mode == WRITE_MODE_DUAL:
-        return {**legacy, **normalized}
-
-    selected = dict(normalized)
-    for field_name in preserve_legacy_fields or ():
-        key = str(field_name or "").strip()
-        if not key or key not in legacy:
-            continue
-        selected.setdefault(key, legacy[key])
-    return selected
+    return dict(normalized_fields or normalize_standard_fields(fields))

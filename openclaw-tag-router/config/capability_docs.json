@@ -1,0 +1,41 @@
+{
+  "updated_at": "2026-07-01T03:16:09+08:00",
+  "total": {
+    "key": "total",
+    "title": "OpenClaw 全部 Bot 能力说明",
+    "url": "https://tcnwueberajc.feishu.cn/wiki/W9XfwiufwiY8Z9kZr5bc6rxWnyc",
+    "local_path": "/home/ubuntu/docs/说明书/OpenClaw 全部 Bot 能力说明.md"
+  },
+  "bots": {
+    "OpenClaw bot": {
+      "key": "main",
+      "title": "OpenClaw Main bot 能力说明",
+      "url": "https://tcnwueberajc.feishu.cn/wiki/Enx4wpI9Viwe9akuuCccXhe7n2d",
+      "local_path": "/home/ubuntu/docs/说明书/OpenClaw Main bot 能力说明.md"
+    },
+    "Daily bot": {
+      "key": "daily",
+      "title": "OpenClaw Daily bot 能力说明",
+      "url": "https://tcnwueberajc.feishu.cn/wiki/BuppwVGiPiXHZpkWT53cZAq7nog",
+      "local_path": "/home/ubuntu/docs/说明书/OpenClaw Daily bot 能力说明.md"
+    },
+    "Media bot": {
+      "key": "media",
+      "title": "OpenClaw Media bot 能力说明",
+      "url": "https://tcnwueberajc.feishu.cn/wiki/M1v4wLVBbijqaEkJ7sdczgwZnlb",
+      "local_path": "/home/ubuntu/docs/说明书/OpenClaw Media bot 能力说明.md"
+    },
+    "Knowledge bot": {
+      "key": "knowledge",
+      "title": "OpenClaw Knowledge bot 能力说明",
+      "url": "https://tcnwueberajc.feishu.cn/wiki/YWlXwJPoui59PXkektpc9utAnGg",
+      "local_path": "/home/ubuntu/docs/说明书/OpenClaw Knowledge bot 能力说明.md"
+    },
+    "Social bot": {
+      "key": "social",
+      "title": "OpenClaw Social bot 能力说明",
+      "url": "https://tcnwueberajc.feishu.cn/wiki/DsJywMXGDi2IWOkvJGucy9TDnlb",
+      "local_path": "/home/ubuntu/docs/说明书/OpenClaw Social bot 能力说明.md"
+    }
+  }
+}

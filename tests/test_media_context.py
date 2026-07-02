@@ -4,13 +4,15 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.media_context import (
+from selfmedia.context import (
     build_media_context,
     looks_like_media_review,
     record_creation_memory,
     record_review_memory,
+    render_context_for_prompt,
 )
-from tools.creation.request_parser import parse_creation_request
+from selfmedia.context.media_context import merge_creator_profile_identity
+from selfmedia.creation.request_parser import parse_creation_request
 
 
 class MediaContextTests(unittest.TestCase):
@@ -30,7 +32,7 @@ class MediaContextTests(unittest.TestCase):
 
     def test_creation_memory_is_loaded_by_account_and_topic(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            req = parse_creation_request("【创作-小红书】赛道=职场成长 类型=图文 主体=表达力 账号=主账号 发布时间=今晚8点")
+            req = parse_creation_request("【创作>小红书】赛道=职场成长 类型=图文 主体=表达力 账号=主账号 发布时间=今晚8点")
             result = record_creation_memory(
                 req,
                 draft={"title": "表达力这样练", "tags": ["职场成长", "表达力"], "positioning_analysis": {"positioning": "职场成长账号的表达训练栏目"}},
@@ -45,6 +47,29 @@ class MediaContextTests(unittest.TestCase):
     def test_media_review_detection_is_conservative(self) -> None:
         self.assertTrue(looks_like_media_review("平台=抖音 账号=主账号 播放=3000 点赞=120 结论=前5秒留存低"))
         self.assertFalse(looks_like_media_review("今天会议复盘：沟通顺序需要调整"))
+
+    def test_creator_profile_identity_fields_render_into_context_prompt(self) -> None:
+        profile = merge_creator_profile_identity(
+            {"platform": "小红书", "account": "小王"},
+            {
+                "identity_summary": "清华AI硕短跑博主",
+                "profile_url": "https://example.com/xiaowang",
+                "identity_tags": ["清华", "AI", "体育生"],
+                "education_background": "清华大学AI硕士",
+                "expertise_domains": ["AI科研", "短跑训练"],
+                "creator_role": "校园AI运动博主",
+                "public_persona_boundaries": "可说清华和短跑，不提私人联系方式",
+                "story_usable_identity_points": "AI硕士冲短跑一级的反差",
+            },
+        )
+
+        prompt = render_context_for_prompt({"account_profile": profile})
+
+        self.assertIn("身份定位：清华AI硕短跑博主", prompt)
+        self.assertIn("主页链接：https://example.com/xiaowang", prompt)
+        self.assertIn("身份标签：清华、AI、体育生", prompt)
+        self.assertIn("公开表达边界：可说清华和短跑，不提私人联系方式", prompt)
+        self.assertIn("可创作身份卖点：AI硕士冲短跑一级的反差", prompt)
 
 
 if __name__ == "__main__":

@@ -20,11 +20,11 @@ class MediaReviewMixin:
                 command.extend(["--attachment", str(path).strip()])
         self._append_conversation_context_arg(command, message)
         try:
-            proc = subprocess.run(command, text=True, capture_output=True, timeout=1860, env=self._subprocess_env_with_context(message))
-        except subprocess.TimeoutExpired as exc:
-            return TaskResult(ok=False, status="data_review_timeout", reply=f"【数据复盘】处理超时：{exc}", task_id="")
+            proc = run_media_subprocess_with_watchdog(command, timeout=10800, env=self._subprocess_env_with_context(message))
         except OSError as exc:
             return TaskResult(ok=False, status="data_review_failed", reply=f"【数据复盘】无法调用 media 工作流：{exc}", task_id="")
+        if proc.returncode == -9:
+            return TaskResult(ok=False, status="data_review_timeout", reply=(proc.stderr.strip() or "【数据复盘】处理超时")[-3000:], task_id="")
         parsed = self._parse_openclaw_json(proc.stdout)
         reply = str(parsed.get("reply") or "").strip()
         if proc.returncode != 0:
@@ -60,11 +60,11 @@ class MediaReviewMixin:
             message.source,
         ]
         try:
-            proc = subprocess.run(command, text=True, capture_output=True, timeout=120, env=self._subprocess_env_with_context(message))
-        except subprocess.TimeoutExpired as exc:
-            return {"ok": False, "reply": f"媒体复盘记忆写入超时：{exc}"}
+            proc = run_media_subprocess_with_watchdog(command, timeout=120, env=self._subprocess_env_with_context(message))
         except OSError as exc:
             return {"ok": False, "reply": f"媒体复盘记忆脚本无法调用：{exc}"}
+        if proc.returncode == -9:
+            return {"ok": False, "reply": (proc.stderr.strip() or "媒体复盘记忆写入超时")[-2000:]}
         parsed = self._parse_openclaw_json(proc.stdout)
         reply = str(parsed.get("reply") or "").strip()
         if proc.returncode != 0:

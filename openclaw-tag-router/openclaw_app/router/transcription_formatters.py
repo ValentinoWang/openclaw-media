@@ -53,19 +53,36 @@ class TranscriptionFormattersMixin:
         if result.get("status") == "done":
             title = self._clean_meeting_topic_candidate(result.get("title", ""))
             summary = self._format_summary_items(result.get("summary"))
+            theme_sections = self._format_theme_sections(self._postprocess_items(result, "theme_sections"))
+            decisions = self._format_transcription_records(self._postprocess_items(result, "decisions"), empty_label="暂无明确决定或判断。")
+            action_items = self._format_transcription_records(self._postprocess_items(result, "action_items"), empty_label="暂无明确行动项。")
             pending_questions = self._format_pending_questions(result.get("pending_questions") or result.get("open_questions") or result.get("questions"))
             speaker_notes = self._format_speaker_notes(result.get("speaker_notes"))
             labeled_transcript = self._format_labeled_transcript(result.get("labeled_transcript"))
-            validation_issue = self._transcription_postprocess_validation_issue(result, summary, speaker_notes, labeled_transcript)
+            archive_macro_summary = self._format_archive_macro_summary(result.get("archive_macro_summary"))
+            archive_summary_bullets = self._format_archive_summary_bullets(result.get("archive_summary_bullets"))
+            validation_issue = self._transcription_postprocess_validation_issue(
+                result,
+                summary,
+                speaker_notes,
+                labeled_transcript,
+                archive_macro_summary,
+                archive_summary_bullets,
+            )
             if not validation_issue:
                 return {
                     "status": "done",
                     "reason": "",
                     "title": title,
                     "summary": summary,
+                    "theme_sections": theme_sections,
+                    "decisions": decisions,
+                    "action_items": action_items,
                     "pending_questions": pending_questions,
                     "speaker_notes": speaker_notes,
                     "labeled_transcript": labeled_transcript,
+                    "archive_macro_summary": archive_macro_summary,
+                    "archive_summary_bullets": archive_summary_bullets,
                     "postprocess_provider": result.get("postprocess_provider", ""),
                     "postprocess_model": result.get("postprocess_model", ""),
                     "postprocess_pipeline": result.get("postprocess_pipeline", ""),
@@ -76,15 +93,19 @@ class TranscriptionFormattersMixin:
                 }
             result = {**result, "reason": validation_issue}
 
-        fallback = self._fallback_dialogue_transcription(transcript)
         return {
             "status": "pending_manual",
             "reason": str(result.get("reason") or "摘要/说话人整理结果不完整"),
-            "title": fallback.get("title", ""),
-            "summary": fallback.get("summary", ""),
-            "pending_questions": fallback.get("pending_questions", ""),
-            "speaker_notes": fallback.get("speaker_notes", ""),
-            "labeled_transcript": fallback.get("labeled_transcript", ""),
+            "title": "",
+            "summary": "",
+            "theme_sections": "",
+            "decisions": "",
+            "action_items": "",
+            "pending_questions": "",
+            "speaker_notes": "",
+            "labeled_transcript": "",
+            "archive_macro_summary": "",
+            "archive_summary_bullets": [],
             "postprocess_provider": result.get("postprocess_provider", ""),
             "postprocess_model": result.get("postprocess_model", ""),
             "postprocess_pipeline": result.get("postprocess_pipeline", ""),
@@ -97,13 +118,27 @@ class TranscriptionFormattersMixin:
     def _transcription_postprocess_succeeded(self, formatted: dict[str, Any]) -> bool:
         return formatted.get("status") == "done"
 
-    def _transcription_postprocess_validation_issue(self, result: dict[str, Any], summary: str, speaker_notes: str, labeled_transcript: str) -> str:
+    def _transcription_postprocess_validation_issue(
+        self,
+        result: dict[str, Any],
+        summary: str,
+        speaker_notes: str,
+        labeled_transcript: str,
+        archive_macro_summary: str,
+        archive_summary_bullets: list[str],
+    ) -> str:
         if not summary:
             return "后处理结果缺少内容整理"
         if not speaker_notes:
             return "后处理结果缺少对话人说明"
         if not labeled_transcript:
             return "后处理结果缺少说话人标注逐字稿"
+        if not archive_macro_summary:
+            return "后处理结果缺少周记宏观总结"
+        if not archive_summary_bullets:
+            return "后处理结果缺少周记分点摘要"
+        if len(archive_summary_bullets) > 5:
+            return "后处理结果周记分点摘要超过 5 条"
         if result.get("postprocess_pipeline") == "chunked-map-reduce-final":
             max_chars = 12000
             if len(labeled_transcript) > max_chars:
@@ -118,6 +153,28 @@ class TranscriptionFormattersMixin:
                 return "一致性检查未通过或缺失"
         return ""
 
+    def _format_archive_macro_summary(self, value: Any) -> str:
+        text = str(value or "").strip()
+        text = re.sub(r"\s+", " ", text).strip()
+        return text[:500]
+
+    def _format_archive_summary_bullets(self, value: Any) -> list[str]:
+        if isinstance(value, str):
+            candidates = value.splitlines()
+        elif isinstance(value, list):
+            candidates = [str(item) for item in value]
+        else:
+            candidates = []
+        bullets: list[str] = []
+        for item in candidates:
+            text = re.sub(r"^\s*[-*•\d.、]+\s*", "", str(item or "")).strip()
+            text = re.sub(r"\s+", " ", text).strip()
+            if text:
+                bullets.append(text[:500])
+            if len(bullets) >= 5:
+                break
+        return bullets
+
     def _format_summary_items(self, value: Any) -> str:
         if isinstance(value, list):
             lines = [str(item).strip() for item in value if str(item).strip()]
@@ -128,6 +185,109 @@ class TranscriptionFormattersMixin:
         if "\n" in text:
             return text
         return f"- {text}"
+
+    def _postprocess_items(self, result: dict[str, Any], key: str) -> list[Any]:
+        value = result.get(key)
+        if isinstance(value, list) and value:
+            return value
+        items: list[Any] = []
+        attachments = result.get("attachment_summaries_compact")
+        if isinstance(attachments, list):
+            for attachment in attachments:
+                if not isinstance(attachment, dict):
+                    continue
+                nested = attachment.get(key)
+                if isinstance(nested, list):
+                    items.extend(nested)
+        return items
+
+    def _format_theme_sections(self, value: list[Any]) -> str:
+        lines: list[str] = []
+        for index, item in enumerate(value, start=1):
+            if isinstance(item, dict):
+                topic = str(item.get("topic") or item.get("title") or item.get("name") or f"主题 {index}").strip()
+                lines.append(f"### {index}. {topic}")
+                summary = str(item.get("summary") or item.get("main_value") or "").strip()
+                if summary:
+                    lines.append(summary)
+                for label, key in (
+                    ("细节", "detail_points"),
+                    ("依据", "evidence"),
+                    ("风险", "risks"),
+                    ("后续", "followups"),
+                ):
+                    details = item.get(key)
+                    if isinstance(details, list) and details:
+                        lines.append(f"- {label}：")
+                        lines.extend(f"  - {self._stringify_transcription_record(detail)}" for detail in details if self._stringify_transcription_record(detail))
+                source = item.get("source_chunks") or item.get("source_ranges")
+                if isinstance(source, list) and source:
+                    lines.append("- 来源：" + "；".join(self._stringify_transcription_record(part) for part in source if self._stringify_transcription_record(part)))
+            else:
+                text = str(item).strip()
+                if text:
+                    lines.append(f"### {index}. 主题 {index}\n{text}")
+            if lines and lines[-1]:
+                lines.append("")
+        return "\n".join(lines).strip()
+
+    def _format_transcription_records(self, value: list[Any], *, empty_label: str) -> str:
+        if not value:
+            return empty_label
+        lines: list[str] = []
+        for item in value:
+            text = self._stringify_transcription_record(item)
+            if text:
+                lines.append(f"- {text}")
+        return "\n".join(lines) if lines else empty_label
+
+    def _stringify_transcription_record(self, value: Any) -> str:
+        if isinstance(value, dict):
+            primary = str(
+                value.get("item")
+                or value.get("task")
+                or value.get("point")
+                or value.get("summary")
+                or value.get("text")
+                or value.get("content")
+                or value.get("question")
+                or ""
+            ).strip()
+            extras: list[str] = []
+            for label, key in (
+                ("状态", "status"),
+                ("负责人", "assignee"),
+                ("节点", "deadline_or_node"),
+                ("上下文", "context"),
+                ("依据", "rationale"),
+            ):
+                text = str(value.get(key) or "").strip()
+                if text:
+                    extras.append(f"{label}：{text}")
+            source = value.get("source_range") or value.get("source_ranges")
+            source_text = self._format_source_range(source)
+            if source_text:
+                extras.append(f"来源：{source_text}")
+            if not primary:
+                primary = "；".join(extras)
+                extras = []
+            return primary + (f"（{'；'.join(extras)}）" if extras else "")
+        return str(value or "").strip()
+
+    def _format_source_range(self, value: Any) -> str:
+        if isinstance(value, dict):
+            parts = [
+                str(value.get("source_audio") or "").strip(),
+                str(value.get("chunk_id") or "").strip(),
+            ]
+            start = value.get("char_start")
+            end = value.get("char_end")
+            if start is not None and end is not None:
+                parts.append(f"{start}-{end}")
+            return "/".join(part for part in parts if part)
+        if isinstance(value, list):
+            return "；".join(self._format_source_range(item) or str(item).strip() for item in value if item)
+        return str(value or "").strip()
 
     def _format_pending_questions(self, value: Any) -> str:
         items: list[str] = []
@@ -173,7 +333,29 @@ class TranscriptionFormattersMixin:
             for item in value:
                 if isinstance(item, dict):
                     speaker = str(item.get("speaker") or item.get("role") or "说话人 A").strip()
-                    text = self._clean_labeled_transcript_text(item.get("text") or item.get("content") or "")
+                    text = self._clean_labeled_transcript_text(
+                        item.get("text") or item.get("content") or item.get("key_thread") or ""
+                    )
+                    if not text:
+                        source = str(item.get("source") or item.get("source_audio") or "").strip()
+                        key_flow = item.get("key_flow")
+                        flow_lines = []
+                        if isinstance(key_flow, list):
+                            flow_lines = [self._clean_labeled_transcript_text(flow) for flow in key_flow]
+                            flow_lines = [flow for flow in flow_lines if flow]
+                        full_transcript = self._clean_labeled_transcript_text(item.get("full_transcript") or "")
+                        if source and flow_lines:
+                            lines.append(f"{source}：")
+                            lines.extend(f"- {flow}" for flow in flow_lines)
+                            if full_transcript:
+                                lines.append(f"- {full_transcript}")
+                            continue
+                        if flow_lines:
+                            lines.extend(f"- {flow}" for flow in flow_lines)
+                            if full_transcript:
+                                lines.append(f"- {full_transcript}")
+                            continue
+                        text = full_transcript
                     if text:
                         lines.append(f"{speaker}：{text}")
                 else:
@@ -188,73 +370,3 @@ class TranscriptionFormattersMixin:
 
     def _clean_transcript_for_postprocess(self, transcript: str) -> str:
         return MEDIA_TEXT_CLEANER.clean_transcript_for_copy(transcript)
-
-    def _fallback_dialogue_transcription(self, transcript: str) -> dict[str, str]:
-        text = transcript.strip()
-        sentences = [item.strip() for item in re.split(r"(?<=[。！？!?])\s*|\n+", text) if item.strip()]
-        summary_lines = self._fallback_summary_lines(text, sentences)
-        summary = "\n".join(f"- {line}" for line in summary_lines if line)
-        if not summary:
-            summary = "- 自动整理未完成，且逐字稿为空。"
-        lines = [line.strip() for line in text.splitlines() if line.strip()]
-        if not lines and text:
-            lines = [text]
-        labeled = "\n".join(
-            f"说话人 A（未区分）：{cleaned}"
-            for line in lines
-            if (cleaned := self._clean_labeled_transcript_text(line))
-        )
-        return {
-            "status": "fallback",
-            "reason": "",
-            "title": self._fallback_meeting_title(text),
-            "summary": summary,
-            "pending_questions": self._fallback_pending_questions(text),
-            "speaker_notes": "- 说话人 A（未区分）：当前逐字稿没有声纹分离结果；兜底整理仅按单一未区分说话人保留内容，不推断真实身份。",
-            "labeled_transcript": labeled or "说话人 A（未区分）：（无可用逐字稿）",
-        }
-
-    def _fallback_pending_questions(self, text: str) -> str:
-        compact = re.sub(r"\s+", "", text or "")
-        if (
-            ("行业AI" in compact or "行业科技" in compact or "行业通用人工智能" in compact)
-            and ("路演" in compact or "答辩" in compact)
-        ):
-            return "\n".join(
-                [
-                    "- [ ] 确定公司定位措辞，避免“服务商”太低、“基础设施/骨架”太大。",
-                    "- [ ] 把教育、就业、体育、自媒体等方向整理成递进结构，避免材料看起来像散点堆砌。",
-                    "- [ ] 准备可展示证据：内测截图、合作证明、代码量或阶段成果、效率数据、对比报告、核心成员背书。",
-                    "- [ ] 明确哪些内容可以对外讲，哪些涉及专利和论文需要保密。",
-                ]
-            )
-        return "- [ ] 暂无明确待解决问题。"
-
-    def _fallback_meeting_title(self, text: str) -> str:
-        compact = re.sub(r"\s+", "", text or "")
-        if (
-            ("行业AI" in compact or "行业科技" in compact or "行业通用人工智能" in compact)
-            and ("路演" in compact or "答辩" in compact)
-        ):
-            return "行业AI公司定位与路演答辩逻辑"
-        if ("产品展示" in compact or "展示视频" in compact or "presentation" in compact.lower()) and "视觉" in compact:
-            return "产品展示视频与视觉人才配置"
-        if ("5月20" in compact or "20号" in compact) and ("比赛" in compact or "BP" in text) and ("内测" in compact or "交付" in compact):
-            return "产品第一版交付与比赛汇报准备"
-        return ""
-
-    def _fallback_summary_lines(self, text: str, sentences: list[str]) -> list[str]:
-        compact = re.sub(r"\s+", "", text or "")
-        if (
-            ("行业AI" in compact or "行业科技" in compact or "行业通用人工智能" in compact)
-            and ("路演" in compact or "答辩" in compact)
-        ):
-            return [
-                "讨论公司对外路演/答辩时的定位表达：不要只包装成单一教育科技公司，而要强调行业 AI 或行业科技解决方案能力。",
-                "教育方向可以作为第一个落地业务面，用已完成内测的产品证明团队有自研技术和产品化能力。",
-                "就业算法、体育方向、自媒体创作工作流等项目可以作为能力延展，但需要用递进逻辑组织，避免显得业务分散。",
-                "成果证明可包括内测进展、合作高校、代码量或阶段进度、效率提升数据、首席科学官背书等。",
-                "未申请专利或论文未发布前，核心技术细节需要保密，只展示方向、成果和可信背书。",
-            ]
-        preview_sentences = sentences[:5] if sentences else [text[:240].strip()]
-        return [line for line in preview_sentences if line]

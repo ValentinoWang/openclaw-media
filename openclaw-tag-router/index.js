@@ -34,9 +34,9 @@ function normalizeRouteBase(value) {
   return trimmed.startsWith("/") ? trimmed.replace(/\/+$/, "") : `/${trimmed.replace(/\/+$/, "")}`;
 }
 
-function normalizeExactPath(value, fallback) {
+function normalizeExactPath(value, defaultPath) {
   const trimmed = String(value || "").trim();
-  if (!trimmed) return fallback;
+  if (!trimmed) return defaultPath;
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
@@ -96,6 +96,28 @@ function resolvePluginConfig(api) {
       : "",
     qqWebhookSecret: String(pluginConfig.qqWebhookSecret || ""),
   };
+}
+
+function resolveAgentModel(api) {
+  const config = api.runtime?.config?.loadConfig?.() ?? {};
+  const model = config?.agents?.defaults?.model;
+  if (model && typeof model === "object") {
+    return String(model.primary || "").trim();
+  }
+  return String(model || "").trim();
+}
+
+function withModelLabel(api, result) {
+  if (!result || typeof result !== "object" || typeof result.reply !== "string") {
+    return result;
+  }
+  const reply = result.reply.trimStart();
+  if (!reply || reply.startsWith("模型：") || reply.startsWith("Model:")) {
+    return result;
+  }
+  const model = resolveAgentModel(api);
+  if (!model) return result;
+  return { ...result, reply: `模型：${model}\n\n${result.reply}` };
 }
 
 function runBridge(config, mode, payload) {
@@ -161,8 +183,8 @@ function buildHandler(api) {
         dataRoot: config.dataRoot,
         settingsPath: config.settingsPath,
         settingsExists,
-        legacyWebhookPath: config.qqWebhookPath,
-        legacyWebhookEnabled: Boolean(config.qqWebhookPath),
+        qqWebhookPath: config.qqWebhookPath,
+        qqWebhookEnabled: Boolean(config.qqWebhookPath),
       });
       return true;
     }
@@ -177,12 +199,12 @@ function buildHandler(api) {
       const payload = parseJsonBuffer(rawBody);
       if (suffix === "/ingest") {
         const result = await runBridge(config, "ingest", payload);
-        json(res, 200, result);
+        json(res, 200, withModelLabel(api, result));
         return true;
       }
       if (suffix === "/qqbot/event") {
         const result = await runBridge(config, "qqbot", payload);
-        json(res, 200, result);
+        json(res, 200, withModelLabel(api, result));
         return true;
       }
       json(res, 404, { ok: false, error: "not_found" });
@@ -226,7 +248,7 @@ function buildQQWebhookHandler(api) {
       }
       const payload = parseJsonBuffer(rawBody);
       const result = await runBridge(config, "qqbot", payload);
-      json(res, 200, result);
+      json(res, 200, withModelLabel(api, result));
       return true;
     } catch (error) {
       json(res, 500, { ok: false, error: error instanceof Error ? error.message : String(error) });
@@ -269,7 +291,7 @@ export default {
         match: "exact",
         handler: buildQQWebhookHandler(api),
       });
-      api.logger.info?.(`[openclaw-tag-router] legacy webhook registered at ${config.qqWebhookPath}`);
+      api.logger.info?.(`[openclaw-tag-router] qq webhook registered at ${config.qqWebhookPath}`);
     }
   },
 };

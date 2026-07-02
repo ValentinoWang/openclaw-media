@@ -6,6 +6,7 @@ import os
 from .bot_llm_config import (
     normalize_openclaw_model,
     profile_config,
+    profile_provider_runtime,
     profile_runtime,
     provider_runtime,
 )
@@ -13,6 +14,7 @@ from .bot_llm_config import (
 
 API_TYPE_CHAT_COMPLETIONS = "openai_chat_completions"
 API_TYPE_CODEX_RESPONSES = "openai_codex_responses"
+API_TYPE_OPENCLAW_AGENT = "openclaw_agent"
 
 @dataclass(frozen=True)
 class LLMProviderSettings:
@@ -22,15 +24,10 @@ class LLMProviderSettings:
     api_type: str
     timeout: float
     thinking: str = ""
-
-
-@dataclass(frozen=True)
-class QwenProviderSettings:
-    model: str
-    base_url: str
-    api_key: str
-    timeout: float = 120.0
-    fps: float = 2.0
+    bin: str = ""
+    agent: str = ""
+    cwd: str = ""
+    codex_home: str = ""
 
 
 @dataclass(frozen=True)
@@ -72,26 +69,20 @@ def env_int(name: str, default: str) -> int:
     return int(float(os.getenv(name, default)))
 
 
-def load_main_llm_settings() -> LLMProviderSettings:
-    provider = provider_runtime("main_llm")
+def load_profile_llm_settings(profile_name: str) -> LLMProviderSettings:
+    provider = profile_provider_runtime(profile_name)
+    runtime = profile_runtime(profile_name) if provider.api_type == API_TYPE_OPENCLAW_AGENT else None
     return LLMProviderSettings(
-        model=provider.model,
+        model=runtime.model if runtime else provider.model,
         base_url=provider.base_url,
         api_key=provider.api_key,
         api_type=provider.api_type,
-        timeout=provider.timeout,
-        thinking=provider.thinking,
-    )
-
-
-def load_qwen_settings() -> QwenProviderSettings:
-    provider = provider_runtime("qwen")
-    return QwenProviderSettings(
-        model=provider.model,
-        base_url=provider.base_url,
-        api_key=provider.api_key,
-        timeout=provider.timeout,
-        fps=provider.fps or 2.0,
+        timeout=runtime.timeout if runtime else provider.timeout,
+        thinking=runtime.thinking if runtime else provider.thinking,
+        bin=runtime.bin if runtime else "",
+        agent=runtime.agent if runtime else "",
+        cwd=runtime.cwd if runtime else "",
+        codex_home=runtime.codex_home if runtime else "",
     )
 
 
@@ -101,7 +92,7 @@ def load_analysis_agent_settings() -> OpenClawAgentSettings:
         bin=runtime.bin,
         agent=runtime.agent,
         model=runtime.model,
-        allow_model_override=True,
+        allow_model_override=False,
         timeout=runtime.timeout,
         thinking=normalize_thinking(runtime.thinking),
         cwd=runtime.cwd,
@@ -115,7 +106,7 @@ def load_creation_agent_settings() -> OpenClawAgentSettings:
         bin=runtime.bin,
         agent=runtime.agent,
         model=runtime.model,
-        allow_model_override=True,
+        allow_model_override=False,
         timeout=runtime.timeout,
         thinking=normalize_thinking(runtime.thinking),
         cwd=runtime.cwd,
@@ -125,14 +116,19 @@ def load_creation_agent_settings() -> OpenClawAgentSettings:
 
 def load_content_cleaner_llm_settings() -> ContentCleanerLLMSettings:
     cleaner = profile_config("content_cleaner")
-    provider = provider_runtime(str(cleaner.get("provider") or "main_llm"))
+    provider = profile_provider_runtime("content_cleaner")
+    runtime = profile_runtime("content_cleaner") if provider.api_type == API_TYPE_OPENCLAW_AGENT else None
     provider_settings = LLMProviderSettings(
-        model=provider.model,
+        model=runtime.model if runtime else provider.model,
         base_url=provider.base_url,
         api_key=provider.api_key,
         api_type=provider.api_type,
-        timeout=provider.timeout,
-        thinking=provider.thinking,
+        timeout=runtime.timeout if runtime else provider.timeout,
+        thinking=runtime.thinking if runtime else provider.thinking,
+        bin=runtime.bin if runtime else "",
+        agent=runtime.agent if runtime else "",
+        cwd=runtime.cwd if runtime else "",
+        codex_home=runtime.codex_home if runtime else "",
     )
     return ContentCleanerLLMSettings(
         enabled=bool(cleaner.get("enabled", True)),

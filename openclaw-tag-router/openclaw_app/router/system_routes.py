@@ -1,17 +1,27 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from .tag_router_common import *
+
+
+CAPABILITY_DOCS_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "capability_docs.json"
 
 
 class SystemRoutesMixin:
     def _media_intake_prompt(self, message: Message) -> str:
         tag = message.entry_tag
         capability = TAG_CAPABILITY_MAP.get(tag)
+        if tag == "博主":
+            return ""
         if not is_media_intake_tag(tag, capability):
             return ""
         if str(message.body or "").strip():
             return ""
         if tag == "转写" and self._transcription_attachment_paths(message):
+            return ""
+        if tag == "转写-文字" and self._transcription_text_attachment_paths(message):
             return ""
         if MATERIAL_CREATION_TAG_RE.match(tag):
             downloaded_paths = (message.metadata or {}).get("downloaded_paths") or []
@@ -21,7 +31,7 @@ class SystemRoutesMixin:
             downloaded_paths = (message.metadata or {}).get("downloaded_paths") or []
             if isinstance(downloaded_paths, list) and any(str(path).strip() for path in downloaded_paths):
                 return ""
-        if tag == "灵感-vlog":
+        if tag == "灵感>vlog":
             downloaded_paths = (message.metadata or {}).get("downloaded_paths") or []
             if isinstance(downloaded_paths, list) and any(str(path).strip() for path in downloaded_paths):
                 return ""
@@ -80,16 +90,6 @@ class SystemRoutesMixin:
             extra={"workflow": "selfmedia_checklist_lookup", "matched_count": len(docs)},
         )
 
-    def handle_规则(self, message: Message) -> TaskResult:
-        rule = self.rule_service.update_rule_from_text(message.body)
-        entry = self.archive_service.save_archive(message, "规则更新", [("原始内容", message.body), ("更新结果", yaml.safe_dump(rule, allow_unicode=True, sort_keys=False).strip())])
-        tag_rule = self.rule_service.get_tag_rule("规则")
-        fs = self._sync_entry_to_feishu(entry, message, tag_rule.get("feishu_doc", "规则记录"), message.body)
-        reply = f"规则已更新\n结果：{rule.get('applied', '已记录')}\n本地路径：{entry.local_path}"
-        if warning := fs.get("warning"):
-            reply = ReplyService.append_warning(reply, warning)
-        return TaskResult(ok=True, status="archived", reply=reply, task_id=entry.frontmatter["id"], local_path=entry.local_path)
-
     def handle_说明(self, message: Message) -> TaskResult:
         bot_label = self._current_capability_bot(message)
         if not bot_label:
@@ -101,6 +101,22 @@ class SystemRoutesMixin:
             )
         capabilities = self._bot_capabilities(bot_label)
         content = self._format_bot_capability_description(bot_label, capabilities)
+        doc_links = self._capability_doc_links(bot_label)
+        missing_links = [name for name, entry in doc_links.items() if not str(entry.get("url") or "").strip()]
+        if missing_links:
+            return TaskResult(
+                ok=False,
+                status="capability_doc_link_missing",
+                reply="能力说明文档链接未配置："
+                + "、".join(missing_links)
+                + "。请先运行能力文档生成与飞书同步流程，写入 config/capability_docs.json。",
+                task_id="",
+                extra={
+                    "bot": bot_label,
+                    "missing_doc_links": missing_links,
+                    "capability_docs_config": str(CAPABILITY_DOCS_CONFIG_PATH),
+                },
+            )
         return TaskResult(
             ok=True,
             status="bot_capability_description",
@@ -111,6 +127,7 @@ class SystemRoutesMixin:
                 "model": GUIDE_MODEL,
                 "thinking": GUIDE_THINKING,
                 "capability_count": len(capabilities),
+                "capability_docs": doc_links,
             },
         )
 
@@ -167,29 +184,101 @@ class SystemRoutesMixin:
             return f"`【{label}】` 后按填写模板补充内容"
         return f"`【{label}】正文内容`"
 
+    def _format_capability_index_entry(self, capability: Any) -> str:
+        label = str(capability.label)
+        return (
+            f"`【{label}】`：{capability.purpose}"
+            f"，输入：{self._format_capability_usage(label)}"
+            f"，输出：{capability.result}"
+        )
+
+    def _capability_group_key(self, label: str, labels: set[str]) -> str:
+        if ">" in label:
+            prefix = label.split(">", 1)[0]
+            return prefix if prefix in labels else label
+        if "-" in label:
+            prefix = label.split("-", 1)[0]
+            return prefix if prefix in labels else label
+        return label
+
+    def _group_capabilities(self, capabilities: list[Any]) -> list[tuple[str, list[Any]]]:
+        labels = {str(capability.label) for capability in capabilities}
+        groups: dict[str, list[Any]] = {}
+        order: list[str] = []
+        for capability in capabilities:
+            key = self._capability_group_key(str(capability.label), labels)
+            if key not in groups:
+                groups[key] = []
+                order.append(key)
+            groups[key].append(capability)
+        return [(key, groups[key]) for key in order]
+
+    def _format_capability_label_list(self, capabilities: list[Any]) -> list[str]:
+        lines: list[str] = []
+        for _, group in self._group_capabilities(capabilities):
+            entries = "；".join(self._format_capability_index_entry(capability) for capability in group)
+            lines.append(f"- {entries}")
+        return lines
+
+    def _capability_docs_config(self) -> dict[str, Any]:
+        if not CAPABILITY_DOCS_CONFIG_PATH.exists():
+            return {}
+        try:
+            payload = json.loads(CAPABILITY_DOCS_CONFIG_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        return payload if isinstance(payload, dict) else {}
+
+    def _capability_doc_links(self, bot_label: str) -> dict[str, dict[str, Any]]:
+        config = self._capability_docs_config()
+        total = config.get("total") if isinstance(config.get("total"), dict) else {}
+        bots = config.get("bots") if isinstance(config.get("bots"), dict) else {}
+        bot_doc = bots.get(bot_label) if isinstance(bots.get(bot_label), dict) else {}
+        return {"当前 Bot 文档": dict(bot_doc), "总文档": dict(total)}
+
     def _format_bot_capability_description(self, bot_label: str, capabilities: list[Any]) -> str:
+        doc_links = self._capability_doc_links(bot_label)
+        bot_doc = doc_links["当前 Bot 文档"]
+        total_doc = doc_links["总文档"]
         lines = [
-            f"这是 {bot_label} 的【说明】",
+            "入口事实：",
+            "- `【说明】` 是所有 Bot 的唯一能力说明入口。",
+            "- `【说明】` 只返回能力说明文档链接和短入口，不执行归档、创作、入库或同步。",
+            "- 发送格式固定为 `【标签】正文内容`。",
+            "- 当前 Bot 只决定可用标签范围；`【说明】` 不是某个 Bot 的私有入口。",
             "",
             "当前 Bot：",
             f"- {bot_label}",
             f"- OpenClaw 模式：{GUIDE_MODEL} / {GUIDE_THINKING}",
             "",
-            "基础规则：",
-            "- `【说明】` 是所有 Bot 的唯一能力说明入口。",
-            "- `【说明】` 只返回当前 Bot 的标签能力说明。",
-            "- 发送格式固定为 `【标签】正文内容`。",
+            "完整说明文档：",
+            f"- 当前 Bot 文档：{bot_doc.get('title') or bot_label}：{bot_doc.get('url') or '未配置'}",
+            f"- 总文档：{total_doc.get('title') or 'OpenClaw 全部 Bot 能力说明'}：{total_doc.get('url') or '未配置'}",
+            "",
+            "输入写法：",
+            "- 最小格式：`【标签】正文内容`。",
+            "- 多字段格式：`【标签】\\n字段：内容\\n字段：内容`。",
+            "- 带附件格式：先上传附件，再发送 `【标签】`。",
+            "- 查说明：`【说明】` 或 `【说明】knowledge`",
         ]
         route_facts = (*COMMON_ROUTING_FACTS, *BOT_ROUTING_FACTS.get(bot_label, ()))
+        if route_facts:
+            lines.append("")
+            lines.append("查看其他 Bot：")
         lines.extend(f"- {fact}" for fact in route_facts)
-        lines.extend(self._bot_capability_overview(bot_label))
+        overview = self._bot_capability_overview(bot_label)
+        if overview:
+            lines.append("")
+            lines.append("当前 Bot 概览：")
+            lines.extend(overview)
+        common_entries = self._bot_common_entries(bot_label)
+        if common_entries:
+            lines.append("")
+            lines.append("重点入口：")
+            lines.extend(common_entries)
         lines.append("")
-        lines.append("能力标签：")
-        for capability in capabilities:
-            lines.append(f"- `【{capability.label}】`")
-            lines.append(f"  - 能实现什么：{capability.purpose}；{'；'.join(self._single_fact_parts(capability.result))}")
-            lines.append(f"  - 输入格式：{self._format_capability_usage(capability.label)}")
-            lines.extend(self._bot_capability_details(bot_label, capability.label))
+        lines.append(f"标签索引（{len(capabilities)} 个）：")
+        lines.extend(self._format_capability_label_list(capabilities))
         return "\n".join(lines)
 
     def _bot_capability_overview(self, bot_label: str) -> list[str]:
@@ -197,32 +286,30 @@ class SystemRoutesMixin:
             "Media bot": [
                 "- Media bot 的核心目标是把自媒体素材、活动、拆解、创作、复盘串成 Content OS 工作流。",
                 "- 主要处理：`【内容素材】`、`【拆解】`、`【创作】`、`【创作-灵感】`、`【素材创作】`、`【数据复盘】`、`【自媒体-认知】`。",
-                "- 长期沉淀优先写入 `/home/ubuntu/obsidian-media/`，结构化记录写入对应飞书多维表格或飞书文档。",
-                "- 带上传素材的 `【素材创作】`、`【灵感-vlog】` 会直接处理附件；空正文业务标签先返回填写模板。",
-                "- `【归档】`、`【补全】`、`【学习】`、`【学习-整理】` 可以发给 Media bot，但执行者是 Knowledge bot。",
+                "- 长期沉淀优先写入 `/home/ubuntu/obsidian-自媒体/`，结构化记录写入对应飞书多维表格或飞书文档。",
+                "- 带上传素材的 `【素材创作】`、`【灵感>vlog】` 会直接处理附件；空正文业务标签先返回填写模板。",
+                "- `【归档】`、`【补全】`、`【认知】`、`【学习】`、`【学习-整理】` 可以发给 Media bot，但执行者是 Knowledge bot。",
             ],
             "Daily bot": [
-                "- Daily bot 的核心目标是管理待办、日程、开发任务和今日执行清单。",
-                "- 主要处理：`【待办】`、`【日程】`、`【开发】`、`【今日】`、`【完成】`、`【延期】`、`【取消】`、`【开发-完成】`、`【开发-验证】`。",
-                "- 到点提醒写入提醒链路；明确时间事件写入飞书日历；开发事项写入本地开发需求卡。",
-                "- `【今日】` 只查询和汇总，不改写任务；状态更新类标签按 ID 或关键词更新本地归档。",
-                "- `【自媒体知识】`、`【转写】`、知识类标签可以发给 Daily bot，但不会进入日程或待办链路。",
+                "- Daily bot 管理待办、日程、正式开发任务和今日执行清单，并生成周记草稿。",
+                "- 主要处理：`【待办】`、`【日程】`、`【待办-开发】`、`【今日】`、`【周记】`、`【开发-完成】`、`【开发-验证】`。",
+                "- 待办按语义分流：普通清单写 Obsidian 当日 checklist；有明确时间、提醒或截止时写飞书提醒表，并在 Obsidian 留带飞书记录ID的镜像 checkbox。",
             ],
             "Knowledge bot": [
                 "- Knowledge bot 的核心目标是把知识沉淀成可复用资产，不是只做一次性聊天摘要。",
-                "- 原生处理：`【归档】`、`【补全】`、`【学习】`、`【学习-整理】`。",
-                "- 通过标签分流处理：`【自媒体知识】`、`【转写】`、`【补充】`、`【灵感】`、`【复盘】`、`【整理】`、`【规则】`、`【最近】`、`【状态】`、`【同步】`。",
-                "- `【转写】` 处理上传录音并生成会议纪要；`【补全】` 只整理用户已经提供的转写文字。",
+                "- 原生处理：`【归档】`、`【补全】`、`【认知】`、`【学习】`、`【学习-整理】`。",
+                "- 通过标签分流处理：`【自媒体知识】`、`【转写】`、`【转写-文字】`、`【补充】`、`【灵感】`、`【复盘】`、`【整理】`、`【最近】`、`【状态】`、`【同步】`。",
+                "- `【转写】` / `【转写-文字】` 均生成会议纪要和原字稿；周记只留宏观总结、5句摘要和链接。",
                 "- `【学习】` 会自动判断解释类或整理类；`【学习-整理】` 固定按整理类沉淀。",
-                "- Obsidian 周记固定写入 `/home/ubuntu/obsidian-diary/Archieve/YYYYMMDD-YYYYMMDD.md`。",
-                "- 学习文件固定写入 `/home/ubuntu/obsidian-diary/学习/每日学习/YYMMDD-主题.md`。",
+                "- Obsidian 周记固定写入 `/home/ubuntu/obsidian-日记/Archieve/YYYYMMDD-YYYYMMDD.md`。",
+                "- 学习文件固定写入 `/home/ubuntu/obsidian-日记/学习/每日学习/YYMMDD-主题.md`。",
             ],
             "Social bot": [
                 "- Social bot 的核心目标是沉淀人物交互、关系状态、人脉合作和社交复盘。",
                 "- 主要处理：`【社交】` 和 `【人脉】`；社交理论标签必须写在 `【社交】` 正文里。",
                 "- `【社交】` 面向有持续交互和关系判断的对象；`【人脉】` 面向合作、资源、职业连接等非亲密关系。",
                 "- 社交档案优先保留事实、交互证据、判断依据、风险点、下一步动作。",
-                "- `【自媒体知识】`、`【转写】`、知识类标签可以发给 Social bot，但不会写入社交档案。",
+                "- `【自媒体知识】`、`【转写】`、`【转写-文字】`、知识类标签可以发给 Social bot，但不会写入社交档案。",
             ],
             "OpenClaw bot": [
                 "- OpenClaw bot 是统一入口说明，不是某个业务域的私有 Bot。",
@@ -232,6 +319,73 @@ class SystemRoutesMixin:
             ],
         }
         return overviews.get(bot_label, [])
+
+    def _bot_common_entries(self, bot_label: str) -> list[str]:
+        entries: dict[str, list[str]] = {
+            "Media bot": [
+                "- `【内容素材】`：保存值得后续拆解、模仿、选题或复盘的作品链接。用法：`【内容素材】https://...`；多字段：`【内容素材】\\n链接：https://...\\n备注：这个开头值得拆`。",
+                "- `【拆解】`：逐镜头拆作品结构、开头、转场、文案和可复刻点。用法：`【拆解】https://...`；可补：`【拆解】\\n链接：https://...\\n重点：开头和转场`。",
+                "- `【创作】`：根据平台、账号、类型、主体和发布时间生成可执行初稿。用法：`【创作】\n平台：抖音\n账号：主账号\n类型：图文/视频\n主体：...\n发布时间：今晚8点`。",
+                "- `【创作>小红书】`：小红书图文或视频标题、封面方向、正文/脚本结构生成。用法：`【创作>小红书】\n赛道：...\n类型：图文/视频\n主体：...\n发布时间：...`。",
+                "- `【创作>抖音】`：抖音图文或视频脚本、分镜、口播、发布文案生成。用法：`【创作>抖音】类型=图文/视频 赛道=体育 主体=毕业季田径比赛 发布时间=今晚8点`。",
+                "- `【创作-拍摄执行】`：把主题、人物、场地、参考和素材约束落成拍摄当天执行单。用法：`【创作-拍摄执行】平台=抖音 类型=视频 主体=毕业季田径比赛 场地=操场 人物=我和同学`。",
+                "- `【创作咨询】`：不新建文档，只基于账号记忆、爆款表、活动表和复盘回答创作决策。用法：`【创作咨询】平台=小红书 账号=主账号 我最近适合做什么选题？`。",
+                "- `【创作-灵感】`：把照片、视频、截图或文字想法整理成灵感卡。用法：先上传素材，再发 `【创作-灵感】这段素材想做成个人成长内容`。",
+                "- `【素材创作】`：基于已上传素材做定位分析和初稿。用法：先上传图片或视频，再发 `【素材创作】平台=抖音 类型=图文/视频 账号=主账号 发布时间=今晚8点`。",
+                "- `【数据复盘】`：识别平台后台截图并生成作品复盘。用法：先上传数据截图，再发 `【数据复盘】平台=小红书 账号=主账号 项目=... 复盘节点=24小时`。",
+                "- `【创作检查】`：查询发布前、选题前或验收前 checklist。用法：`【创作检查】作品发布前看哪个清单？`。",
+            ],
+            "Daily bot": [
+                "- `【待办】`：创建 Obsidian 待办清单或飞书提醒。用法：清单 `【待办】购买\\n1. 杠铃杆\\n2. 起泡器`；提醒 `【待办】2026-06-28 18:00 前购买杠铃杆，提前30分钟提醒`。",
+                "- `【日程】`：记录明确开始时间或时间段的日历事件。用法：`【日程】明晚8点到9点和张三开会`；多字段：`【日程】\\n标题：...\\n开始：...\\n结束：...\\n地点：...`。",
+                "- `【待办-开发】`：创建正式开发任务，写入 Obsidian checklist 与飞书多维表格结构化台账，并等待 checklist 勾选后由 Mac 侧 Codex high 追溯与回档梳理。用法：`【待办-开发】\\n机器：VM-0-14-ubuntu\\n地址：ubuntu@106.52.146.37\\n任务：修复 Knowledge bot 归档后 Mac 不同步的问题\\n验收：Mac 能看到新周记条目`。",
+                "- `【今日】`：查询今日待办、日程或开发任务，不改写任务。用法：`【今日】`、`【今日】开发`、`【今日】提醒`。",
+                "- `【周记】`：整理本周周记和 Daily 能力使用记录，生成自我模型候选草稿。用法：`【周记】` 或 `【周记】20260525-20260531`。",
+                "- `【开发-完成】`：把开发任务标记完成。用法：`【开发-完成】任务ID`；或 `【开发-完成】关键词：修复同步`。",
+                "- `【开发-验证】`：记录开发任务验证结果。用法：`【开发-验证】任务ID 验证通过`；或 `【开发-验证】关键词：修复同步 结果：通过`。",
+                "- `【状态】`：查询最近任务或指定任务 ID。用法：`【状态】` 或 `【状态】任务ID`。",
+            ],
+            "Knowledge bot": [
+                "- `【归档】`：整理知识、资料片段、网页摘录或零散观点，写入 Obsidian 周记 `# 知识`。用法：`【归档】需要归档的一段知识`；多字段：`【归档】\\n标题：...\\n来源：...\\n内容：...`。",
+                "- `【补全】`：整理已有转写文字或口语化记录，去重复、补结构、保留关键细节，写入周记 `# 认知`。用法：`【补全】\\n主题：...\\n原文：已经转出来的文字稿`。",
+                "- `【认知】`：整理经历、反思或判断；详文写 `认知/`，周记留宏观总结、5句摘要和链接。用法：`【认知】今天意识到：...`；多字段：`【认知】\\n标题：...\\n内容：...\\n待确认：...`。",
+                "- `【学习】`：自动判断解释类或整理类；短概念会解释拆解，长资料会生成每日学习文件并挂到周记。用法：`【学习】概念名`；多字段：`【学习】\\n主题：...\\n材料：...\\n目标：...`。",
+                "- `【学习-整理】`：强制按整理类沉淀长资料、课程笔记、文章、AI 回答；适合不想让系统自动判断时使用。用法：`【学习-整理】\\n主题：课程笔记\\n材料：...`。",
+                "- `【自媒体知识】`：处理图文、视频或网页链接，提取自媒体方法论、案例、选题、结构和运营认知，写入自媒体知识表。用法：`【自媒体知识】\\n链接：https://...\\n平台：小红书\\n备注：重点提取选题方法`。",
+                "- `【转写】`：处理上传录音，生成逐字稿、总结、Obsidian 会议纪要和原字稿；周记 `# 知识` 只留宏观总结、5句以内摘要、会议纪要链接和原字稿链接；已有文字稿改用 `【转写-文字】`。用法：先上传录音附件，再发 `【转写】`；可补：`【转写】\\n主题：...\\n参与人：...\\n要求：...`。",
+                "- `【转写-文字】`：整理和合并已经由语音转文字得到的文字稿，生成总结、待解决问题、说话人标注、Obsidian 会议纪要和原字稿；周记 `# 知识` 只留宏观总结、5句以内摘要、会议纪要链接和原字稿链接。用法：`【转写-文字】\\n主题：...\\n文字稿：...`；也可先上传 `.txt` 或 `.md` 文字稿附件。",
+                "- `【最近】`：查询最近归档、转写、学习、灵感、复盘等记录。用法：`【最近】10`、`【最近】学习 5条`、`【最近】今天`。",
+                "- `【状态】`：查询最近任务或指定任务 ID 的处理状态。用法：`【状态】` 或 `【状态】20260509-082057-feishu-自媒体知识-b4ef`。",
+                "- `【同步】`：对已经落到本地但飞书未成功写入的记录做补同步。用法：`【同步】飞书` 或 `【同步】重新处理任务 ID：...`。",
+                "- `【说明】`：查看当前 Bot 能力说明文档。用法：`【说明】`；查看指定 Bot：`【说明】knowledge`、`【说明】media`、`【说明】daily`、`【说明】social`。",
+            ],
+            "Social bot": [
+                "- `【社交】`：整理某个人的聊天记录、互动状态、关系判断、风险点和下一步行动。用法：`【社交】\\n对象：姓名\\n材料：聊天记录或截图说明\\n目标：更新交互档案`。",
+                "- `【人脉】`：沉淀合作、资源、职业连接等非亲密关系。用法：`【人脉】\\n对象：张三\\n身份：AI教育创业者\\n城市：北京\\n需求：...\\n下次跟进：...`。",
+                "- `【转写】`：处理上传录音，生成逐字稿、总结、会议纪要和原字稿；周记只留宏观总结、5句以内摘要和链接；不会写入社交档案。用法：先上传录音附件，再发 `【转写】`。",
+                "- `【转写-文字】`：整理已有语音转文字稿并生成会议纪要和原字稿；周记只留宏观总结、5句以内摘要和链接；不会写入社交档案。用法：`【转写-文字】\\n主题：...\\n文字稿：...`。",
+                "- `【归档】`：整理普通知识或资料片段，执行者是 Knowledge bot。用法：`【归档】需要归档的一段知识`。",
+                "- `【补全】`：整理已有转写文字，执行者是 Knowledge bot。用法：`【补全】\\n主题：...\\n原文：...`。",
+                "- `【认知】`：整理观察、经历或反思，执行者是 Knowledge bot；详文写 `认知/`，周记留宏观总结、5句摘要和链接。用法：`【认知】今天意识到：...`。",
+                "- `【自媒体知识】`：处理自媒体链接，写入自媒体知识表；不会写入社交档案。用法：`【自媒体知识】\\n链接：https://...\\n平台：...`。",
+                "- `【博主】`：商务邀约前查询已归档博主的主页链接、平台ID和账号名称。用法：`【博主】小王` 或 `【博主】平台：抖音 关键词：小王`。",
+                "- `【博主-入库】`：把博主主页链接、平台ID、账号名称和人设信息写入达人账号档案。用法：`【博主-入库】\\n博主IP：小王\\n平台：小红书\\n平台ID：...\\n主页链接：https://...`。",
+                "- `【最近】`：查询最近记录。用法：`【最近】10` 或 `【最近】社交 5条`。",
+                "- `【状态】`：查询任务状态。用法：`【状态】` 或 `【状态】任务ID`。",
+                "- `【说明】`：查看当前 Bot 能力说明文档。用法：`【说明】`；查看指定 Bot：`【说明】social`、`【说明】knowledge`。",
+            ],
+            "OpenClaw bot": [
+                "- `【说明】`：查看当前统一入口说明。用法：`【说明】`；查看指定 Bot：`【说明】media`、`【说明】daily`、`【说明】knowledge`、`【说明】social`。",
+                "- `【最近】`：查询最近归档或任务记录。用法：`【最近】10` 或 `【最近】灵感 5条`。",
+                "- `【状态】`：查询最近任务或指定任务 ID。用法：`【状态】` 或 `【状态】任务ID`。",
+                "- `【同步】`：补同步未同步记录。用法：`【同步】飞书` 或 `【同步】重新处理任务 ID：...`。",
+                "- `【整理】`：按标签或时间整理最近记录。用法：`【整理】最近10条` 或 `【整理】今天 灵感`。",
+                "- `【调研】`：做主题资料搜集或初步研究。用法：`【调研】主题：... 目标：...`。",
+                "- `【复杂调研】`：需要多角度拆解和证据链的研究。用法：`【复杂调研】\\n主题：...\\n问题：...\\n输出要求：...`。",
+                "- `【深度调研】`：需要完整研究框架、来源核验和结构化报告的问题。用法：`【深度调研】\\n主题：...\\n范围：...\\n交付：...`。",
+            ],
+        }
+        return entries.get(bot_label, [])
 
     def _bot_capability_details(self, bot_label: str, label: str) -> list[str]:
         details = dict(self._shared_capability_details())
@@ -247,8 +401,13 @@ class SystemRoutesMixin:
             ],
             "转写": [
                 "  - 适合场景：已经上传录音文件，需要逐字稿、内容总结和说话人标注。",
-                "  - 产出位置：生成 Obsidian 会议纪要 `/home/ubuntu/obsidian-diary/会议纪要/yyyy-mm-dd-总结主题.md`。",
-                "  - 注意：这是从音频生成文本；已有文字稿整理请用 `【补全】`。",
+                "  - 产出位置：必须生成 Obsidian 会议纪要和原字稿，路径位于 `/home/ubuntu/obsidian-日记/会议纪要/整理版/` 与 `/home/ubuntu/obsidian-日记/会议纪要/原字稿/`；周记 `# 知识` 只保留宏观总结、5句以内摘要、会议纪要链接和原字稿链接。",
+                "  - 注意：这是从音频生成文本；已有文字稿整理请用 `【转写-文字】`。",
+            ],
+            "转写-文字": [
+                "  - 适合场景：已经拿到语音转文字稿，需要把多段文字稿整理、合并成会议纪要。",
+                "  - 产出位置：必须生成 Obsidian 会议纪要和原字稿，路径位于 `/home/ubuntu/obsidian-日记/会议纪要/整理版/` 与 `/home/ubuntu/obsidian-日记/会议纪要/原字稿/`；周记 `# 知识` 只保留宏观总结、5句以内摘要、会议纪要链接和原字稿链接。",
+                "  - 注意：不调用原始音频 ASR；录音文件请用 `【转写】`。",
             ],
             "归档": [
                 "  - 适合场景：把知识、观点、资料片段、网页摘录整理进周记。",
@@ -259,6 +418,11 @@ class SystemRoutesMixin:
                 "  - 适合场景：你已经有一段转写文字或口语化记录，需要去重复、补结构、保留细节。",
                 "  - 产出位置：写入对应周记 `# 认知` 小节。",
                 "  - 注意：不直接处理录音文件；录音文件请用 `【转写】`。",
+            ],
+            "认知": [
+                "  - 适合场景：把经历、观察、复盘后的判断或方法论沉淀成个人认知条目。",
+                "  - 产出位置：详文写入 Obsidian `认知/`，周记 `# 认知` 留宏观总结、5句摘要和链接。",
+                "  - 注意：默认不写飞书知识表；原始录音请先用 `【转写】`，已有文字再用 `【认知】`。",
             ],
             "学习": [
                 "  - 适合场景：概念解释、知识拆解、课程笔记、文章重点理解。",
@@ -272,8 +436,8 @@ class SystemRoutesMixin:
             ],
             "灵感": [
                 "  - 适合场景：碎片想法、选题火花、临时观点、未来可展开的内容线。",
-                "  - 产出位置：本地归档并同步飞书灵感记录。",
-                "  - 注意：如果是 vlog 素材类灵感，优先用 Media bot 的 `【灵感-vlog】`。",
+                "  - 产出位置：详文写入 Obsidian `灵感/归档/`，周记 `# 灵感` 留宏观总结、5句内摘要和详情链接。",
+                "  - 注意：如果是 vlog 素材类灵感，优先用 Media bot 的 `【灵感>vlog】`。",
             ],
             "补充": [
                 "  - 适合场景：给已有飞书文档追加新材料、修正观点或合并补充说明。",
@@ -287,10 +451,6 @@ class SystemRoutesMixin:
             "整理": [
                 "  - 适合场景：汇总最近若干条记录，按标签或时间做复盘式整理。",
                 "  - 输入补充：可写 `最近10条`、`今天`、`灵感` 等筛选条件。",
-            ],
-            "规则": [
-                "  - 适合场景：更新标签使用规则、默认标签或处理偏好。",
-                "  - 注意：只记录明确规则，不把临时闲聊当长期规则。",
             ],
             "最近": [
                 "  - 适合场景：查询最近保存的归档、转写、灵感、复盘等记录。",
@@ -324,26 +484,35 @@ class SystemRoutesMixin:
             "Media bot": {
                 "内容素材": [
                     "  - 适合场景：保存值得后续拆解、模仿、选题或复盘的作品链接和素材判断。",
-                    "  - 产出位置：写入内容素材链路，长期素材沉淀到 `/home/ubuntu/obsidian-media/05_素材与爆款库/`。",
+                    "  - 产出位置：写入内容素材链路，长期素材沉淀到 `/home/ubuntu/obsidian-自媒体/05_素材与爆款库/`。",
                     "  - 注意：只想刷新字段或下载素材时用 selfmedia `ingest`，不是这个标签。",
                 ],
                 "拆解": [
                     "  - 适合场景：需要逐镜头看开头、转场、节奏、结构、文案和可复刻点。",
-                    "  - 产出位置：生成飞书拆解文档、记录表摘要，长期同款拆解写入 `/home/ubuntu/obsidian-media/05_素材与爆款库/同款拆解/`。",
-                    "  - 注意：必须给真实素材链接；如果只是记一个改编方向，用 `【创作-再创】`。",
+                    "  - 产出位置：生成飞书拆解文档、记录表摘要，长期同款拆解写入 `/home/ubuntu/obsidian-自媒体/05_素材与爆款库/同款拆解/`。",
+                    "  - 注意：必须给真实素材链接；如果只是记一个改编方向，用 `【拆解-再创】`。",
                 ],
                 "创作": [
                     "  - 适合场景：已有主题、平台、账号或发布时间，需要生成可执行初稿。",
-                    "  - 产出位置：创建创作文档，长期稿件进入 `/home/ubuntu/obsidian-media/03_脚本生产/` 或内容项目目录。",
+                    "  - 必填字段：`平台`、`类型`、`赛道`、`主体`；使用 `【创作>小红书】` 或 `【创作>抖音】` 时，平台可由标签本身提供。",
+                    "  - 建议字段：`发布时间`、`账号`、`用户想法`、`关键词`；如果要写入 Content OS 项目，再加 `项目=`。",
+                    "  - 示例：`【创作>抖音】类型=图文/视频 赛道=体育 主体=毕业季田径比赛 发布时间=今晚8点 用户想法=把田径比赛和高考结束、毕业告别结合，开头0.5秒让人看懂是在比赛`。",
+                    "  - 产出位置：创建创作文档，长期稿件进入 `/home/ubuntu/obsidian-自媒体/03_脚本生产/` 或内容项目目录。",
                     "  - 注意：正文越明确账号、类型、主体和发布时间，生成越稳定。",
                 ],
-                "创作-小红书": [
+                "创作>小红书": [
                     "  - 适合场景：小红书图文或视频选题、标题、封面方向、正文结构生成。",
-                    "  - 注意：不写类型时默认偏图文；需要视频请明确 `类型：视频`。",
+                    "  - 注意：平台不决定内容形态；请显式写 `类型：图文` 或 `类型：视频`。",
                 ],
-                "创作-抖音": [
-                    "  - 适合场景：抖音短视频脚本、分镜、口播、转场和拍摄清单生成。",
-                    "  - 注意：不写类型时默认偏视频。",
+                "创作>抖音": [
+                    "  - 适合场景：抖音图文或视频脚本、分镜、口播、转场和发布文案生成。",
+                    "  - 示例：`【创作>抖音】类型=图文/视频 赛道=体育 主体=毕业季田径比赛 发布时间=今晚8点`。",
+                    "  - 注意：平台不决定内容形态；请显式写 `类型：图文` 或 `类型：视频`。",
+                ],
+                "创作-拍摄执行": [
+                    "  - 适合场景：主题、人物、场地和参考已基本明确，需要现场拍摄路线、镜头、人员分工、B 方案和 checklist。",
+                    "  - 产出位置：创建拍摄执行文档，并写入 `03_CreationRuns_创作运行`。",
+                    "  - 注意：参考链接先作为素材证据读取；无法确认的链接内容不硬猜。",
                 ],
                 "创作咨询": [
                     "  - 适合场景：还没决定做什么，需要基于账号记忆、爆款表、活动表和复盘给建议。",
@@ -351,7 +520,7 @@ class SystemRoutesMixin:
                 ],
                 "创作-灵感": [
                     "  - 适合场景：把照片、视频、截图、文字想法整理成创作灵感卡和再创作方向。",
-                    "  - 产出位置：写入创作灵感表；正文带项目时创建 Content OS 项目包。",
+                    "  - 产出位置：写入 03_CreationRuns_创作运行；明确立项/初稿目标时创建 Content OS 项目包；只有存在本地素材绑定线索或 Mac 回写结果时，才创建或推进 Mac 素材匹配任务。",
                 ],
                 "素材创作": [
                     "  - 适合场景：已经上传图片或视频，希望基于素材做定位分析和初稿。",
@@ -377,35 +546,28 @@ class SystemRoutesMixin:
             },
             "Daily bot": {
                 "待办": [
-                    "  - 适合场景：需要未来某个时间提醒你处理，但不一定占用日历。",
-                    "  - 产出位置：写入提醒与日程多维表格，到点私聊提醒。",
-                    "  - 注意：必须有可解析事项；最好写清时间或提醒规则。",
+                    "  - 适合场景：购物、整理、当天执行清单，或需要未来某个时间提醒的事项。",
+                    "  - 产出位置：普通清单写入 Obsidian 周记当天 checklist；带明确时间、提醒或截止的事项写入提醒与日程多维表格，并在 Obsidian 留镜像 checkbox。",
+                    "  - 注意：Obsidian 勾选是执行入口；只有带飞书记录ID的 checkbox 会由 Mac 单向同步为飞书已完成。",
                 ],
                 "日程": [
                     "  - 适合场景：会议、约定、课程、出行等明确占用时间的事件。",
                     "  - 产出位置：创建飞书日历事件，同时写入提醒与日程多维表格。",
                     "  - 注意：最好提供标题、开始时间、地点或参与人。",
                 ],
-                "开发": [
-                    "  - 适合场景：bug、feature、脚本任务、自动化、运维、重构和验收项。",
-                    "  - 产出位置：生成本地开发需求卡，可后续用 `【开发-验证】` 和 `【开发-完成】` 推进。",
-                    "  - 注意：写清背景、模块、验收标准，比只写一句需求更可执行。",
+                "待办-开发": [
+                    "  - 适合场景：需要正式追踪、复盘和回档的 bug、feature、脚本任务、自动化、运维、重构和验收项。",
+                    "  - 产出位置：写入 Obsidian checklist 与飞书多维表格结构化台账；checklist 勾选后由 Mac 侧 Codex high 生成详细任务文档。",
+                    "  - 注意：至少写清机器、地址、任务；验收和补充能省则省，但任务边界要足够让 Codex ssh 或本机探索。",
                 ],
                 "今日": [
                     "  - 适合场景：查看今天该做什么、有什么提醒、日程和开发任务。",
                     "  - 产出位置：返回轻量执行清单，不打开或改写多维表格。",
                 ],
-                "完成": [
-                    "  - 适合场景：普通待办或本地任务已经完成。",
-                    "  - 注意：优先提供任务 ID；没有 ID 时用关键词匹配。",
-                ],
-                "延期": [
-                    "  - 适合场景：任务要推迟到新的时间。",
-                    "  - 注意：最好写清新时间和延期原因。",
-                ],
-                "取消": [
-                    "  - 适合场景：任务不再需要执行。",
-                    "  - 注意：优先提供任务 ID；没有 ID 时用关键词匹配。",
+                "周记": [
+                    "  - 适合场景：每周整理 Obsidian 周记和 Daily 能力使用记录，抽取自我模型候选。",
+                    "  - 产出位置：写入 `/home/ubuntu/obsidian-日记/社交/自我模型/周记整理/` 草稿，并保存 draft 状态归档。",
+                    "  - 注意：只生成候选草稿；不直接覆盖核心自我模型，不读取 Daily 原始 session。",
                 ],
                 "开发-完成": [
                     "  - 适合场景：开发需求已经实现并可关闭。",
@@ -419,12 +581,12 @@ class SystemRoutesMixin:
             "Social bot": {
                 "社交": [
                     "  - 适合场景：整理某个人的聊天记录、互动状态、关系判断、风险点和下一步行动。",
-                    "  - 产出位置：生成或更新社交对象档案，可按需要写入对应飞书表。",
+                    "  - 产出位置：生成或更新本地人物档案并同步 Obsidian；异性关系可同步一人一份飞书云文档；不写飞书多维表格。",
                     "  - 注意：必须给对象名或可识别身份；理论标签要放在正文里，不单独裸发。",
                 ],
                 "人脉": [
                     "  - 适合场景：合作对象、资源方、商务联系人、同学同事等非亲密关系档案。",
-                    "  - 产出位置：生成或更新人脉档案，默认本地与 Obsidian 沉淀。",
+                    "  - 产出位置：生成或更新人脉档案，只写本地与 Obsidian；不写飞书云文档，不写飞书多维表格。",
                     "  - 注意：适合记录合作价值、需求、承诺、下一次触达时间。",
                 ],
             },
@@ -455,7 +617,11 @@ class SystemRoutesMixin:
         synced = 0
         failed = 0
         if "飞书" in body:
-            unsynced_entries = [entry for entry in self.archive_service.list_archives(limit=50) if not entry.frontmatter.get("feishu_synced")]
+            unsynced_entries = [
+                entry
+                for entry in self.archive_service.list_archives(limit=50)
+                if not entry.frontmatter.get("feishu_synced") and not entry.frontmatter.get("feishu_skip")
+            ]
             for archive_entry in unsynced_entries:
                 sync_result = self._sync_archive_entry(archive_entry)
                 if sync_result.get("warning"):
@@ -550,7 +716,7 @@ class SystemRoutesMixin:
             limit = int(text)
 
         tag = default_tag
-        for candidate in ["灵感", "待办", "日程", "活动", "内容素材", "自媒体知识", "转写", "知识", "社交", "复盘", "整理", "规则"]:
+        for candidate in ["灵感", "待办", "日程", "周记", "活动", "内容素材", "自媒体知识", "转写-文字", "转写", "知识", "社交", "复盘", "整理"]:
             if candidate in text:
                 tag = candidate
                 break

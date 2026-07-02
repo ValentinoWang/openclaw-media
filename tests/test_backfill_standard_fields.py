@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.backfill_standard_fields import build_backfill_payload
+from runtime.maintenance.backfills.backfill_standard_fields import build_backfill_payload
 
 
 class BackfillStandardFieldsTests(unittest.TestCase):

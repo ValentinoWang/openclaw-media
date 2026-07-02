@@ -24,7 +24,7 @@ START_MARKER = "<!-- TAG_ROUTER_DOC_SYNC_START"
 END_MARKER = "TAG_ROUTER_DOC_SYNC_END -->"
 
 EXCLUDED_HANDLER_SUFFIXES = {"generic"}
-SPECIAL_HANDLER_LABELS = {"id_business": "商务-ID"}
+SPECIAL_HANDLER_LABELS = {"id_business": "商务>ID"}
 
 
 def _find_tag_router_class(tree: ast.Module) -> ast.ClassDef:

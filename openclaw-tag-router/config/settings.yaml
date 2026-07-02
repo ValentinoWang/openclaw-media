@@ -28,7 +28,7 @@ entry_tag_rules:
 content_flow:
   base_url: http://127.0.0.1:8000
   poll_interval_seconds: 1
-  poll_attempts: 240
+  poll_attempts: 900
 feishu_reminder:
   enabled: true
   command: /usr/bin/python3
@@ -56,7 +56,7 @@ feishu:
   knowledge_base_space_id: ${FEISHU_KB_SPACE_ID}
   knowledge_base_parent_node_token: ${FEISHU_KB_PARENT_NODE_TOKEN}
   knowledge_base_obj_type: docx
-  # 支持按文档名匹配多个知识库空间（按顺序匹配，最后一个兜底）
+  # 支持按文档名匹配多个知识库空间（按顺序匹配，最后一个为默认项）
   knowledge_base_spaces:
     - name: "知识库-技术"
       pattern: "*技术*"
@@ -72,7 +72,9 @@ feishu:
 mac_agent:
   mode: local
   queue_dir: /home/ubuntu/.openclaw/workspace/openclaw-tag-router/outbox/mac_agent_queue
-  obsidian_root: /home/ubuntu/obsidian-diary/日程
-  local_obsidian_root: /home/ubuntu/obsidian-diary/日程
+  obsidian_root: /home/ubuntu/obsidian-日记/日程
+  local_obsidian_root: /home/ubuntu/obsidian-日记/日程
+daily_checklist:
+  archive_root: /home/ubuntu/obsidian-日记/Archieve
 reply:
   include_paths: true

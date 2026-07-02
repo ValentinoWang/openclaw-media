@@ -9,11 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-MEDIA_SCRIPTS = ROOT / "tools" / "openclaw_media"
-if str(MEDIA_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(MEDIA_SCRIPTS))
-
-from sync_creator_registry import build_update_payload
+from selfmedia.creator_profiles.registry_sync import build_update_payload
 
 
 class SyncCreatorRegistryTests(unittest.TestCase):

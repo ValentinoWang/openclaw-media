@@ -8,17 +8,21 @@ import urllib.parse
 from datetime import datetime
 from typing import Any
 
+from .creation_feishu_writer import RouterCreationFeishuDocumentWriter
 from ..services.utils import now_in_tz
 
 
-UNIFIED_CREATION_PARENT_NODE_TOKEN = "UkSMwA36fiZuBdkk63ncnm84n0e"
-UNIFIED_CREATION_TABLE_URL = os.environ.get(
-    "MEDIA_OS_CREATION_TASKS_URL",
-    (
-        "https://tcnwueberajc.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"
-        "?fromScene=spaceOverview&table=tbl3tNirtYn3eOUr&view=vewAaVJP2U"
-    ),
+CREATION_TASK_POOL_PARENT_NODE_TOKEN = "Tm69wEqFpi76d9k53KEcqK4Rnkh"
+UNIFIED_CREATION_PARENT_NODE_TOKEN = (
+    os.environ.get("FEISHU_CREATION_DOC_PARENT_NODE_TOKEN")
+    or CREATION_TASK_POOL_PARENT_NODE_TOKEN
 )
+UNIFIED_CREATION_TABLE_URL = os.environ.get(
+    "MEDIA_OS_CREATION_RUNS_URL",
+    "",
+)
+MEDIA_ENV_PATH = "/home/ubuntu/openclaw-agents/media/.env.local"
+MEDIA_REGISTRY_PATH = "/home/ubuntu/openclaw-feishu-reminder/media-bitable-registry.json"
 UNIFIED_CREATION_FIELD_SPECS: dict[str, int] = {
     "记录类型": 1,
     "标题": 1,
@@ -30,18 +34,62 @@ UNIFIED_CREATION_FIELD_SPECS: dict[str, int] = {
     "赛道": 4,
     "关键词标签": 1,
     "来源链接": 15,
-    "文档链接JSON": 1,
+    "灵感文档链接": 15,
+    "素材文档链接": 15,
+    "再创作文档链接": 15,
+    "创作文档链接": 15,
     "主状态": 3,
     "入库时间": 5,
     "创建时间": 5,
     "更新时间": 5,
-    "核心数据JSON": 1,
-    "爆点分析JSON": 1,
-    "校验结果JSON": 1,
+    "灵感评分": 2,
+    "评分原因": 1,
+    "拆解-再创方向": 1,
+    "可迁移点": 1,
+    "风险点": 1,
+    "建议产物": 1,
+    "校验结果": 1,
     "复盘状态": 3,
     "发布链接": 15,
-    "详情JSON": 1,
+    "素材来源类型": 1,
+    "素材信号类型": 1,
+    "情绪触发": 1,
+    "触发原话": 1,
+    "事件场景": 1,
+    "错位点": 1,
+    "核心观点": 1,
+    "读者问题": 1,
+    "可复用角度": 1,
+    "素材状态": 1,
+    "一鱼多吃方向": 1,
+    "下一步": 1,
+    "定位分析": 1,
+    "平台策略": 1,
+    "创作记录ID": 1,
+    "本地报告路径": 1,
 }
+CREATION_RUN_FEISHU_FIELD_NAME_MAP: dict[str, str] = {
+    "run_id": "创作运行ID",
+    "entrypoint": "入口标签",
+    "input_summary": "输入需求摘要",
+    "status": "状态",
+    "generation_source": "生成来源",
+    "run_artifact_uri": "运行产物URI",
+    "render_id": "渲染ID",
+    "render_spec_uri": "渲染规格URI",
+    "feishu_doc_link": "飞书文档链接",
+}
+CREATION_RUN_ENTRYPOINT_LABELS = (
+    "【创作>小红书】",
+    "【创作>抖音】",
+    "【创作-拍摄执行】",
+    "【创作-灵感】",
+    "【拆解-再创】",
+    "【创作】",
+    "【素材创作】",
+    "【素材创作>小红书】",
+    "【素材创作>抖音】",
+)
 UNIFIED_CREATION_SELECT_OPTIONS: dict[str, list[str]] = {
     "平台": ["小红书", "抖音", "B站", "视频号", "公众号", "微博", "Instagram", "TikTok", "其他", "未知"],
     "内容类型": ["短视频", "图文", "直播", "文章", "音频", "图片", "混合", "未知"],
@@ -53,24 +101,25 @@ BITABLE_OPTION_ID_RE = re.compile(r"^opt[A-Za-z0-9]{6,}$")
 
 
 class UnifiedCreationMixin:
-    def _sync_unified_creation_record(self, fields: dict[str, Any], *, table_url: str = UNIFIED_CREATION_TABLE_URL) -> dict[str, str]:
-        doc_link_text = self._first_url_from_value(fields.get("文档链接JSON"))
+    def _sync_unified_creation_record(self, fields: dict[str, Any], *, table_url: str = "") -> dict[str, str]:
+        table_url = self._unified_creation_table_url(table_url)
+        doc_link_text = self._first_doc_link_from_unified_fields(fields)
         if not doc_link_text.startswith(("http://", "https://")):
-            raise RuntimeError("写入创作任务总表前必须先创建归档文档并提供文档链接")
+            raise RuntimeError("写入 CreationRun 前必须先创建归档文档并提供文档链接")
+        if not table_url:
+            raise RuntimeError("缺少 MEDIA_OS_CREATION_RUNS_URL，CreationRun 写入必须使用 Media Model v2")
         app_token, table_id = self._unified_creation_bitable_refs(table_url)
-        self._ensure_unified_creation_fields(app_token, table_id)
-        self._ensure_unified_creation_select_options(app_token, table_id, fields)
         field_types = self._unified_creation_field_types(app_token, table_id)
-        payload_fields: dict[str, Any] = {}
-        for name, value in fields.items():
-            if name not in field_types or value in (None, "", []):
-                continue
-            coerced = self._coerce_unified_creation_value(value, field_types.get(name))
-            if coerced in (None, "", []):
-                continue
-            payload_fields[name] = coerced
+        payload_fields = self._creation_run_v2_fields(fields, doc_link_text)
+        payload_fields = {
+            feishu_name: self._coerce_unified_creation_value(value, field_types.get(feishu_name))
+            for name, value in payload_fields.items()
+            for feishu_name in [CREATION_RUN_FEISHU_FIELD_NAME_MAP.get(name, name)]
+            if feishu_name in field_types and value not in (None, "", [])
+        }
+        payload_fields = {name: value for name, value in payload_fields.items() if value not in (None, "", [])}
         if not payload_fields:
-            raise RuntimeError("创作任务总表没有可写字段")
+            raise RuntimeError("CreationRun 没有可写字段")
         payload = self.feishu_service._request(
             "POST",
             f"/bitable/v1/apps/{app_token}/tables/{table_id}/records",
@@ -83,21 +132,23 @@ class UnifiedCreationMixin:
             "written_fields": ",".join(sorted(payload_fields)),
         }
 
-    def _update_unified_creation_record(self, record_id: str, fields: dict[str, Any], *, table_url: str = UNIFIED_CREATION_TABLE_URL) -> dict[str, str]:
+    def _update_unified_creation_record(self, record_id: str, fields: dict[str, Any], *, table_url: str = "") -> dict[str, str]:
         if not record_id:
             return {}
+        table_url = self._unified_creation_table_url(table_url)
+        if not table_url:
+            raise RuntimeError("缺少 MEDIA_OS_CREATION_RUNS_URL，CreationRun 更新必须使用 Media Model v2")
         app_token, table_id = self._unified_creation_bitable_refs(table_url)
-        self._ensure_unified_creation_fields(app_token, table_id)
-        self._ensure_unified_creation_select_options(app_token, table_id, fields)
         field_types = self._unified_creation_field_types(app_token, table_id)
-        payload_fields: dict[str, Any] = {}
-        for name, value in fields.items():
-            if name not in field_types or value in (None, "", []):
-                continue
-            coerced = self._coerce_unified_creation_value(value, field_types.get(name))
-            if coerced in (None, "", []):
-                continue
-            payload_fields[name] = coerced
+        doc_link_text = self._first_doc_link_from_unified_fields(fields)
+        payload_fields = self._creation_run_v2_fields(fields, doc_link_text)
+        payload_fields = {
+            feishu_name: self._coerce_unified_creation_value(value, field_types.get(feishu_name))
+            for name, value in payload_fields.items()
+            for feishu_name in [CREATION_RUN_FEISHU_FIELD_NAME_MAP.get(name, name)]
+            if feishu_name in field_types and value not in (None, "", [])
+        }
+        payload_fields = {name: value for name, value in payload_fields.items() if value not in (None, "", [])}
         if not payload_fields:
             return {}
         self.feishu_service._request(
@@ -107,23 +158,174 @@ class UnifiedCreationMixin:
         )
         return {"record_id": record_id, "table_url": table_url, "written_fields": ",".join(sorted(payload_fields))}
 
+    def _unified_creation_table_url(self, table_url: str = "") -> str:
+        explicit = str(table_url or "").strip()
+        if explicit:
+            return explicit
+        env_value = os.environ.get("MEDIA_OS_CREATION_RUNS_URL", "").strip()
+        if env_value:
+            return env_value
+        env_value = self._load_creation_runs_url_from_env_file()
+        if env_value:
+            os.environ["MEDIA_OS_CREATION_RUNS_URL"] = env_value
+            return env_value
+        registry_value = self._load_creation_runs_url_from_registry()
+        if registry_value:
+            os.environ["MEDIA_OS_CREATION_RUNS_URL"] = registry_value
+            return registry_value
+        return UNIFIED_CREATION_TABLE_URL
+
+    def _load_creation_runs_url_from_env_file(self) -> str:
+        try:
+            with open(MEDIA_ENV_PATH, "r", encoding="utf-8") as fh:
+                for raw_line in fh:
+                    line = raw_line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    if key.strip() != "MEDIA_OS_CREATION_RUNS_URL":
+                        continue
+                    return value.strip().strip("'").strip('"')
+        except OSError:
+            return ""
+        return ""
+
+    def _load_creation_runs_url_from_registry(self) -> str:
+        try:
+            with open(MEDIA_REGISTRY_PATH, "r", encoding="utf-8") as fh:
+                registry = json.load(fh)
+        except (OSError, ValueError, TypeError):
+            return ""
+        creation_runs = ((registry.get("tables") or {}).get("creation_runs") or {})
+        env = creation_runs.get("env") if isinstance(creation_runs, dict) else {}
+        if isinstance(env, dict):
+            value = str(env.get("MEDIA_OS_CREATION_RUNS_URL") or "").strip()
+            if value:
+                return value
+        table = creation_runs.get("table") if isinstance(creation_runs, dict) else {}
+        if isinstance(table, dict):
+            return str(table.get("url") or "").strip()
+        return ""
+
+    def _creation_run_v2_fields(self, fields: dict[str, Any], doc_link: str) -> dict[str, Any]:
+        title = str(fields.get("标题") or fields.get("主题") or fields.get("记录类型") or "创作运行").strip()
+        record_type = str(fields.get("记录类型") or "creation").strip()
+        entrypoint = self._creation_run_entrypoint(fields, record_type, title)
+        raw_seed = "|".join(
+            str(fields.get(name) or "").strip()
+            for name in (
+                "来源消息ID",
+                "source_message_id",
+                "message_id",
+                "记录类型",
+                "标题",
+                "主题",
+                "内容",
+                "灵感文档链接",
+                "素材文档链接",
+                "再创作文档链接",
+                "创作文档链接",
+            )
+        )
+        run_id = "run_router_" + hashlib.sha1(raw_seed.encode("utf-8")).hexdigest()[:16]
+        status = str(fields.get("主状态") or fields.get("状态") or "success").strip()
+        if status in {"已完成", "已归档", "已建档"}:
+            status = "success"
+        elif status in {"失败", "写入失败"}:
+            status = "failed"
+        else:
+            status = "pending"
+        return {
+            "run_id": run_id,
+            "entrypoint": entrypoint,
+            "input_summary": title,
+            "platform": self._unified_join_lines(fields.get("平台")),
+            "content_type": self._unified_join_lines(fields.get("内容类型")),
+            "topic": str(fields.get("主题") or title),
+            "status": status,
+            "generation_source": "llm",
+            "run_artifact_uri": doc_link,
+            "render_id": "",
+            "render_spec_uri": "",
+            "feishu_doc_link": doc_link,
+            "created_at": now_in_tz("Asia/Shanghai").isoformat(timespec="seconds"),
+        }
+
+    def _creation_run_entrypoint(self, fields: dict[str, Any], record_type: str, title: str) -> str:
+        explicit = str(fields.get("入口标签") or fields.get("entrypoint") or "").strip()
+        normalized = self._normalize_creation_run_entrypoint(explicit)
+        if normalized:
+            return normalized
+        source_text = "\n".join(
+            str(fields.get(name) or "")
+            for name in ("标题", "记录类型", "关键词标签", "主题", "灵感文档链接", "素材文档链接", "再创作文档链接", "创作文档链接")
+        )
+        source_text = f"{title}\n{record_type}\n{source_text}"
+        for label in CREATION_RUN_ENTRYPOINT_LABELS:
+            bare = label.strip("【】")
+            if label in source_text or bare in source_text:
+                return label
+        return "【创作】"
+
+    @staticmethod
+    def _normalize_creation_run_entrypoint(value: str) -> str:
+        text = str(value or "").strip()
+        if not text:
+            return ""
+        for label in CREATION_RUN_ENTRYPOINT_LABELS:
+            bare = label.strip("【】")
+            if text == label or text == bare:
+                return label
+        return text
+
+    def _first_doc_link_from_unified_fields(self, fields: dict[str, Any]) -> str:
+        for name in ("灵感文档链接", "素材文档链接", "再创作文档链接", "创作文档链接", "文档链接"):
+            link = self._first_url_from_value(fields.get(name))
+            if link:
+                return link
+        return ""
+
+    def _unified_join_lines(self, value: Any) -> str:
+        if value in (None, "", []):
+            return ""
+        if isinstance(value, dict):
+            return "\n".join(
+                f"{key}：{self._unified_join_lines(item)}"
+                for key, item in value.items()
+                if item not in (None, "", [])
+            )
+        if isinstance(value, list):
+            return "\n".join(f"- {self._unified_join_lines(item)}" for item in value if item not in (None, "", []))
+        return str(value).strip()
+
+    def _unified_validation_summary(self, validation: Any) -> str:
+        if not isinstance(validation, dict):
+            return self._unified_join_lines(validation)
+        status = "通过" if validation.get("ok") else "未通过"
+        issues = [
+            str(item.get("message") or "").strip()
+            for item in validation.get("issues", [])
+            if isinstance(item, dict) and str(item.get("message") or "").strip()
+        ]
+        return status + (f"：{'；'.join(issues)}" if issues else "")
+
     def _unified_creation_bitable_refs(self, table_url: str) -> tuple[str, str]:
         parsed = urllib.parse.urlparse(table_url)
         query = urllib.parse.parse_qs(parsed.query)
         table_id = (query.get("table") or [""])[0]
         if not table_id:
-            raise RuntimeError("创作任务总表链接缺少 table 参数")
+            raise RuntimeError("CreationRun 表链接缺少 table 参数")
         wiki_match = re.search(r"/wiki/([A-Za-z0-9]+)", parsed.path)
         if wiki_match:
             payload = self.feishu_service._request("GET", "/wiki/v2/spaces/get_node", params={"token": wiki_match.group(1)})
             node = payload.get("data", {}).get("node") or {}
             if node.get("obj_type") != "bitable":
-                raise RuntimeError(f"创作任务总表 wiki 节点不是多维表格：{node.get('obj_type')}")
+                raise RuntimeError(f"CreationRun wiki 节点不是多维表格：{node.get('obj_type')}")
             return str(node.get("obj_token") or ""), table_id
         base_match = re.search(r"/base/([A-Za-z0-9]+)", parsed.path)
         if base_match:
             return base_match.group(1), table_id
-        raise RuntimeError("创作任务总表链接必须包含 /wiki/<token> 或 /base/<app_token>")
+        raise RuntimeError("CreationRun 表链接必须包含 /wiki/<token> 或 /base/<app_token>")
 
     def _unified_creation_field_types(self, app_token: str, table_id: str) -> dict[str, Any]:
         payload = self.feishu_service._request("GET", f"/bitable/v1/apps/{app_token}/tables/{table_id}/fields")
@@ -251,31 +453,22 @@ class UnifiedCreationMixin:
                 return None
             return {"text": text[:120], "link": text}
         if isinstance(value, (dict, list)):
-            return json.dumps(value, ensure_ascii=False)
+            return self._unified_join_lines(value)
         return str(value)
 
     def _sync_unified_creation_child_doc(self, doc_title: str, record_type: str, content: str) -> dict[str, str]:
-        doc_content = f"# {doc_title}\n\n标签：{record_type}\n\n{content}".strip()
-        if hasattr(self.feishu_service, "replace_child_entry_under_node"):
-            return self.feishu_service.replace_child_entry_under_node(UNIFIED_CREATION_PARENT_NODE_TOKEN, doc_title, doc_content)
-        raise RuntimeError("FeishuService 缺少按 wiki 节点创建子文档的能力，拒绝写入未统一任务池")
+        return self._creation_feishu_writer().sync_text_child_doc(doc_title, record_type, content)
 
-    def _markdownish_docx_blocks(self, doc_title: str, record_type: str, content: str) -> list[dict[str, Any]]:
-        blocks: list[dict[str, Any]] = [
-            self._docx_heading_block(1, doc_title),
-            self._docx_text_block(f"标签：{record_type}"),
-        ]
-        for raw_line in str(content or "").splitlines():
-            line = raw_line.strip()
-            if not line:
-                continue
-            if line.startswith("## "):
-                blocks.append(self._docx_heading_block(2, line[3:].strip() or "未命名段落"))
-            elif line.startswith("# "):
-                blocks.append(self._docx_heading_block(2, line[2:].strip() or "未命名段落"))
-            else:
-                blocks.append(self._docx_text_block(line))
-        return blocks
+    def _sync_unified_creation_child_blocks(self, doc_title: str, blocks: list[dict[str, Any]]) -> dict[str, str]:
+        return self._creation_feishu_writer().replace_child_doc_blocks(doc_title, blocks)
+
+    def _creation_feishu_writer(self) -> RouterCreationFeishuDocumentWriter:
+        return RouterCreationFeishuDocumentWriter(
+            feishu_service=self.feishu_service,
+            parent_node_token=UNIFIED_CREATION_PARENT_NODE_TOKEN,
+            heading_factory=self._docx_heading_block,
+            text_factory=self._docx_text_block,
+        )
 
     def _unified_creation_doc_name(self, prefix: str, theme_source: str, seed: str = "") -> str:
         theme = self._normalize_recreation_title(theme_source, limit=20) or self._recreation_compact_theme(theme_source, limit=20) or "未命名主题"
