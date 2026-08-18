@@ -2,9 +2,9 @@
 
 更新时间：2026-08-19（Asia/Shanghai）
 
-这份说明对应远端候选交接分支 `codex/stage2-handoff-20260819`，以及远端工作树：
+这份说明对应远端候选交接分支 `codex/stage2-handoff-final-20260819`，以及远端工作树：
 
-`/tmp/openclaw-stage2-handoff-20260819/openclaw-tag-router`
+`/tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router`
 
 该工作树是下一位开发者的唯一接力位置。原候选分支
 `codex/stage2-release-20260818` 保持不变，生产 `main` 没有被修改。
@@ -53,7 +53,7 @@ HTTP 入口已接入：
 交接分支验证命令及结果：
 
 ```bash
-cd /tmp/openclaw-stage2-handoff-20260819/openclaw-tag-router
+cd /tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
   /home/ubuntu/selfmedia-tools/openclaw-media/.venv/bin/pytest -q tests/test_stage2_*.py
 # 117 passed
