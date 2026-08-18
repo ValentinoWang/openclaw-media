@@ -1,0 +1,35 @@
+version: human_insight_taxonomy_v1
+promotion_evidence_threshold: 3
+privacy_boundary: public_content_only
+mechanism_tags:
+  - 损失厌恶
+  - 社会证明
+  - 身份认同
+  - 好奇缺口
+  - 稀缺
+  - 替代性满足
+  - 优越感/俯视
+  - 被理解感
+  - 归属焦虑
+  - 成就证明
+  - 反差释放
+risk_boundary_tags:
+  - 平台AI标注风险
+  - 焦虑营销反感
+  - 群体刻板印象
+  - 私密个体画像
+  - 原文案近似风险
+audience_group_tag_rules:
+  - 群体标签必须是叙事型标签，不是人口学标签
+  - 怕被同龄人甩下的小镇做题家
+  - 努力证明自己不是混日子的职场新人
+  - 想被看见但害怕显得用力过猛的普通创作者
+candidate_tag_policy:
+  - 词表外发现只进入 candidate_tags，不得直接写入 mechanism_tag
+  - candidate_tags 需要人工审核后才能晋升到 mechanism_tags
+forbidden_sources:
+  - social 私密人物档案
+  - 私密关系素材
+  - 私密风控笔记
+  - openclaw-agents/social/person-profile-skill/theory/风控.md
+  - 可识别个体心理画像

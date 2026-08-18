@@ -1,0 +1,112 @@
+{
+  "id": "media-platform-registry-contract-v3",
+  "protected_invariant": "All OpenClaw Media platform identity facts and brand icon sources are resolved through src/media/ui/platformRegistry.ts and rendered through the shared platform components.",
+  "failure_class": "platform_identity_second_source_or_brand_icon_approximation",
+  "contract": {
+    "owner": "OpenClaw Media UI platform registry",
+    "canonical": "MEDIA_PLATFORM_REGISTRY_CONTRACT_V3",
+    "source": "agents-results/2026-08-09/media-platform-brand-icon-registry-ssot/ssot-development-paths.md"
+  },
+  "scan_scope": {
+    "include": [
+      "src/media/**/*.ts",
+      "src/media/**/*.tsx",
+      "src/media/**/*.css",
+      "vite.media.config.ts",
+      "public/platform-icons/**/*.png"
+    ],
+    "exclude": [
+      "dist/**",
+      "dist-media/**",
+      "generated/**",
+      "tmp/**",
+      "agents-results/**",
+      "**/*.orig",
+      "**/*.before-*"
+    ]
+  },
+  "fixtures": {
+    "positive": [
+      "import { PlatformIdentity } from './ui/PlatformIdentity'; export const Row = ({ platform }: { platform: string }) => <PlatformIdentity platform={platform} />;"
+    ],
+    "negative": [
+      "const PLATFORM_LABELS = { douyin: '抖音', xiaohongshu: '小红书' };",
+      "export const label = platform === 'douyin' ? '抖音' : '小红书';",
+      "const PLATFORM_ICON_ASSETS = { douyin: '/openclaw/media/platform-icons/douyin.png', xiaohongshu: '/openclaw/media/platform-icons/xiaohongshu.png' };",
+      "/* language=css */ .platform_douyin { color: #000000; }",
+      "const platformIconUrl = 'https://cdn.example.com/douyin.svg';",
+      "import { Tv } from 'lucide-react'; function PlatformIcon({ platform }: { platform: string }) { if (platform === 'bilibili') return <Tv />; return null; }",
+      "import { siTiktok } from 'simple-icons'; export const icon = siTiktok;"
+    ],
+    "near_miss": [
+      "import { Settings } from 'lucide-react'; const sourceUrl = 'https://example.com/post/1'; export const Tools = () => <Settings aria-hidden='true' />;"
+    ],
+    "exception": [
+      "// media-platform-registry-guard-allow code=MPR004 reason=migration-audit owner=media-ui expires=2099-12-31 scope=fixture.tsx\nconst PLATFORM_LABELS = { douyin: '抖音', xiaohongshu: '小红书' };"
+    ]
+  },
+  "exception_policy": {
+    "required_fields": [
+      "reason",
+      "owner",
+      "expires",
+      "scope"
+    ],
+    "live_exceptions": "forbidden",
+    "fixture_scope": "scripts/quality/fixtures/media-platform-registry/**"
+  },
+  "diagnostics": {
+    "MPR001": "canonical registry is missing",
+    "MPR002": "canonical registry violates the frozen source contract",
+    "MPR003": "normalized aliases conflict",
+    "MPR004": "platform identity facts or upstream imports exist outside the registry",
+    "MPR005": "platform-specific colors or selectors exist outside the shared registry component",
+    "MPR006": "fixed platform-icon paths or legacy PNG assets remain",
+    "MPR007": "runtime remote icon sources are present",
+    "MPR008": "known brands are approximated with lucide-react"
+  },
+  "fixture_files": {
+    "positive": [
+      "scripts/quality/fixtures/media-platform-registry/valid.tsx",
+      "scripts/quality/fixtures/media-platform-registry/valid.registry.ts"
+    ],
+    "negative": [
+      "scripts/quality/fixtures/media-platform-registry/alias-conflict.registry.ts",
+      "scripts/quality/fixtures/media-platform-registry/private-map.tsx",
+      "scripts/quality/fixtures/media-platform-registry/inline-map.tsx",
+      "scripts/quality/fixtures/media-platform-registry/private-color.css",
+      "scripts/quality/fixtures/media-platform-registry/fixed-path.tsx",
+      "scripts/quality/fixtures/media-platform-registry/legacy-png.fixture",
+      "scripts/quality/fixtures/media-platform-registry/remote-url.tsx",
+      "scripts/quality/fixtures/media-platform-registry/lucide-brand.tsx",
+      "scripts/quality/fixtures/media-platform-registry/direct-simple-icons.tsx",
+      "scripts/quality/fixtures/media-platform-registry/expired-exception.tsx"
+    ],
+    "near_miss": [
+      "scripts/quality/fixtures/media-platform-registry/near-miss.tsx",
+      "scripts/quality/fixtures/media-platform-registry/generic-lucide.tsx"
+    ],
+    "exception": [
+      "scripts/quality/fixtures/media-platform-registry/exception.tsx"
+    ]
+  },
+  "fixture_execution_contract": {
+    "trusted_runner": "control-promotion review-guard --execute",
+    "required_fields": [
+      "proof_origin",
+      "generated_by",
+      "generated_at",
+      "guard_spec_fingerprint",
+      "command",
+      "interface",
+      "results",
+      "execution_verified"
+    ],
+    "interface": "stdin-text-exit-code"
+  },
+  "retirement": {
+    "stronger_control": "generated typed platform registry schema with consumer import enforcement",
+    "condition": "The generated contract makes private platform facts, invalid aliases, and direct brand icon imports structurally impossible for every media consumer.",
+    "action": "Replace heuristic source checks with generated-schema enforcement while retaining one smoke fixture for the canonical import boundary."
+  }
+}

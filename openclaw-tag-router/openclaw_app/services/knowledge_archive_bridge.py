@@ -16,16 +16,27 @@ import yaml
 DEFAULT_KNOWLEDGE_ARCHIVE_SCRIPT = Path("/home/ubuntu/openclaw-agents/knowledge/scripts/archive_to_obsidian.py")
 DEFAULT_OBSIDIAN_ROOT = Path(os.environ.get("OBSIDIAN_ROOT", "/home/ubuntu/obsidian-日记"))
 ARCHIVE_SECTION = "知识"
-TRANSCRIPTION_CONTENT_STOP_HEADINGS = {
-    "主题细节",
-    "决定与判断",
-    "行动项",
-    "对话人说明",
-    "说话人标注逐字稿",
-    "来源与产物",
-    "一致性检查",
-    "未完成文件",
-}
+DEFAULT_KNOWLEDGE_ARCHIVE_SCRIPT_TIMEOUT_SECONDS = 180
+def _env_int(name: str, default: int) -> int:
+    try:
+        value = int(os.environ.get(name, "").strip() or default)
+    except (TypeError, ValueError):
+        return default
+    return value if value > 0 else default
+
+
+KNOWLEDGE_ARCHIVE_SCRIPT_TIMEOUT_SECONDS = _env_int(
+    "OPENCLAW_KNOWLEDGE_ARCHIVE_SCRIPT_TIMEOUT_SECONDS",
+    DEFAULT_KNOWLEDGE_ARCHIVE_SCRIPT_TIMEOUT_SECONDS,
+)
+
+
+def _subprocess_timeout_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace").strip()
+    return str(value).strip()
 
 
 @dataclass(frozen=True)
@@ -59,17 +70,9 @@ def extract_markdown_heading_section(markdown: str, heading: str) -> str:
         return ""
     body_start = match.end()
     body_end = len(markdown)
-    for next_h2 in re.finditer(r"(?m)^##[ \t]+(.+?)\s*$", markdown[body_start:]):
-        heading_text = next_h2.group(1).strip()
-        if heading_text in TRANSCRIPTION_CONTENT_STOP_HEADINGS:
-            body_end = body_start + next_h2.start()
-            break
-        if heading_text == heading:
-            body_end = body_start + next_h2.start()
-            break
-        if not re.match(r"^\d+[.、 \t]", heading_text):
-            body_end = body_start + next_h2.start()
-            break
+    next_h2 = re.search(r"(?m)^##[ \t]+.+?\s*$", markdown[body_start:])
+    if next_h2:
+        body_end = body_start + next_h2.start()
     return markdown[body_start:body_end].strip()
 
 
@@ -89,7 +92,7 @@ def _meeting_note_title(path: Path, markdown: str) -> str:
     title = match.group(1).strip() if match else path.stem
     title = re.sub(r"^20\d{2}-\d{2}-\d{2}[ \t]+", "", title).strip()
     title = re.sub(r"\s+", " ", title).strip()
-    return title[:80] or "会议内容整理"
+    return title[:80] or "会议纪要"
 
 
 def _week_note_path(obsidian_root: Path, target_date: date) -> Path:
@@ -224,9 +227,9 @@ def archive_meeting_content_section(
     except OSError as exc:
         return KnowledgeArchiveBridgeResult(ok=False, status="read_failed", error=str(exc))
 
-    content_section = extract_markdown_heading_section(markdown, "内容整理")
+    content_section = extract_markdown_heading_section(markdown, "1. 结论摘要")
     if not content_section:
-        return KnowledgeArchiveBridgeResult(ok=False, status="missing_content_section")
+        return KnowledgeArchiveBridgeResult(ok=False, status="missing_conclusion_summary")
 
     frontmatter = _meeting_note_frontmatter(markdown)
     macro_summary = str(frontmatter.get("archive_macro_summary") or "").strip()
@@ -235,7 +238,7 @@ def archive_meeting_content_section(
         return KnowledgeArchiveBridgeResult(ok=False, status="missing_weekly_archive_summary")
 
     target_date = _meeting_note_date(note_path, markdown)
-    title = f"{_meeting_note_title(note_path, markdown)} 内容整理"
+    title = f"{_meeting_note_title(note_path, markdown)} 会议纪要"
     root = Path(obsidian_root)
     raw_transcript_path = _raw_transcript_path_from_note(note_path, frontmatter, root)
     if not raw_transcript_path.is_file():
@@ -285,14 +288,25 @@ def archive_meeting_content_section(
 
     env = os.environ.copy()
     env["OBSIDIAN_ROOT"] = str(root)
-    proc = subprocess.run(
-        [sys.executable, str(script_path), "--json"],
-        input=json.dumps(payload, ensure_ascii=False),
-        text=True,
-        capture_output=True,
-        env=env,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(script_path), "--json"],
+            input=json.dumps(payload, ensure_ascii=False),
+            text=True,
+            capture_output=True,
+            env=env,
+            check=False,
+            timeout=KNOWLEDGE_ARCHIVE_SCRIPT_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return KnowledgeArchiveBridgeResult(
+            ok=False,
+            status="archive_timeout",
+            title=title,
+            stdout=_subprocess_timeout_text(exc.stdout),
+            stderr=_subprocess_timeout_text(exc.stderr),
+            error=f"archive_to_obsidian timed out after {KNOWLEDGE_ARCHIVE_SCRIPT_TIMEOUT_SECONDS}s",
+        )
     if proc.returncode != 0:
         return KnowledgeArchiveBridgeResult(
             ok=False,

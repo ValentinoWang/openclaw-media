@@ -20,7 +20,7 @@ class RouterSharedHelpersMixin:
         if value in (None, "", []):
             return ""
         if isinstance(value, dict):
-            for key in ("link", "url", "doc", "document_url", "recreation_doc", "inspiration_doc", "material_doc", "creation_doc"):
+            for key in ("link", "url", "doc", "document_url", "inspiration_doc", "material_doc", "creation_doc"):
                 found = self._first_url_from_value(value.get(key))
                 if found:
                     return found

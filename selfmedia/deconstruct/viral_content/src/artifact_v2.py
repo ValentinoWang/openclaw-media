@@ -4,7 +4,10 @@ import hashlib
 import re
 from typing import Any
 
+from selfmedia.request_constraints import validate_request_constraints_payload
+
 from .evidence.schemas import validate_evidence_store
+from .human_insight_cards import HumanInsightCardError, validate_human_insight_candidate
 from .multi_signal_schema import validate_multi_signal_contract_payload
 
 
@@ -124,6 +127,14 @@ def build_deconstruction_artifact(
         "modality_facts": result.get("modality_facts") or {},
         "evidence_store": result.get("evidence_store") or {},
         "multi_signal_contract": result.get("multi_signal_contract") or {},
+        "request_constraints": result.get("request_constraints") or {},
+        "ai_blend_analysis": result.get("ai_blend_analysis") or [],
+        "ai_storyboard_prompt_shots": result.get("ai_storyboard_prompt_shots") or [],
+        "human_insight_candidates": result.get("human_insight_candidates") or [],
+        "mechanism_card_candidates": result.get("mechanism_card_candidates") or [],
+        "audience_group_card_candidates": result.get("audience_group_card_candidates") or [],
+        "candidate_tags": result.get("candidate_tags") or [],
+        "no_human_insight_detected": bool(result.get("no_human_insight_detected") or False),
         "content_summary": {
             "summary": result.get("content_summary") or "",
             "source_summary": result.get("source_summary") or "",
@@ -187,6 +198,9 @@ def validate_deconstruction_artifact(artifact: dict[str, Any]) -> None:
             validate_evidence_store(artifact.get("evidence_store") or {})
         except ValueError as exc:
             raise DeconstructionArtifactError(f"evidence_store 校验失败：{exc}") from exc
+    _validate_request_constraints(artifact)
+    _validate_ai_blend_contract(artifact)
+    _validate_human_insight_candidates(artifact)
 
 
 def distilled_usable_material_brief(artifact: dict[str, Any]) -> dict[str, Any]:
@@ -225,7 +239,7 @@ def _walk_refs(value: Any, path: str = "$"):
     if isinstance(value, dict):
         for key, item in value.items():
             child = f"{path}.{key}"
-            if key in {"evidence_ids", "evidence_asset_ids"}:
+            if key in {"evidence_ids", "evidence_asset_ids", "evidence_refs"}:
                 yield child, item
             elif key in {"evidence_id", "evidence_asset_id", "source_ref", "segment_id", "text_segment_id", "asset_id", "scene_id", "observation_id"}:
                 text = str(item or "").strip()
@@ -238,6 +252,103 @@ def _walk_refs(value: Any, path: str = "$"):
     elif isinstance(value, list):
         for index, item in enumerate(value):
             yield from _walk_refs(item, f"{path}[{index}]")
+
+
+def _validate_human_insight_candidates(artifact: dict[str, Any]) -> None:
+    candidates = artifact.get("human_insight_candidates") or []
+    if not isinstance(candidates, list):
+        raise DeconstructionArtifactError("human_insight_candidates 必须是数组")
+    for index, item in enumerate(candidates, 1):
+        if not isinstance(item, dict):
+            raise DeconstructionArtifactError(f"human_insight_candidates[{index}] 必须是对象")
+        if not str(item.get("evidence_quote") or "").strip() and not item.get("evidence_asset_ids") and not item.get("evidence_refs"):
+            raise DeconstructionArtifactError(f"human_insight_candidates[{index}] 缺少 evidence_quote/evidence_asset_ids/evidence_refs")
+        for field in ("mechanism_tag", "desire_or_fear", "emotion_path", "audience_group_hypothesis", "trigger_pattern", "risk_boundary", "reasoning_summary"):
+            if not str(item.get(field) or "").strip():
+                raise DeconstructionArtifactError(f"human_insight_candidates[{index}] 缺少 {field}")
+        confidence = item.get("confidence")
+        try:
+            number = float(confidence)
+        except (TypeError, ValueError) as exc:
+            raise DeconstructionArtifactError(f"human_insight_candidates[{index}].confidence 非法") from exc
+        if not 0 <= number <= 1:
+            raise DeconstructionArtifactError(f"human_insight_candidates[{index}].confidence 必须在 0..1")
+        try:
+            validate_human_insight_candidate(item)
+        except (HumanInsightCardError, TypeError, ValueError) as exc:
+            raise DeconstructionArtifactError(f"human_insight_candidates[{index}] 非法: {exc}") from exc
+
+
+def _validate_request_constraints(artifact: dict[str, Any]) -> None:
+    constraints = artifact.get("request_constraints")
+    if not isinstance(constraints, dict) or not constraints:
+        raise DeconstructionArtifactError("request_constraints 不能为空")
+    try:
+        artifact["request_constraints"] = validate_request_constraints_payload(constraints)
+    except (TypeError, ValueError) as exc:
+        raise DeconstructionArtifactError(f"request_constraints 非法: {exc}") from exc
+
+
+def _validate_ai_blend_contract(artifact: dict[str, Any]) -> None:
+    valid_ids = set((artifact.get("evidence_manifest") or {}).keys())
+    segments = artifact.get("ai_blend_analysis") or []
+    prompt_shots = artifact.get("ai_storyboard_prompt_shots") or []
+    if not isinstance(segments, list):
+        raise DeconstructionArtifactError("ai_blend_analysis 必须是数组")
+    if not isinstance(prompt_shots, list):
+        raise DeconstructionArtifactError("ai_storyboard_prompt_shots 必须是数组")
+    segment_ids: set[str] = set()
+    for index, item in enumerate(segments, 1):
+        if not isinstance(item, dict):
+            raise DeconstructionArtifactError(f"ai_blend_analysis[{index}] 必须是对象")
+        segment_id = str(item.get("segment_id") or "").strip()
+        segment_ids.add(segment_id)
+        if str(item.get("segment_type") or "").strip() not in {"real", "ai", "hybrid", "uncertain"}:
+            raise DeconstructionArtifactError(f"ai_blend_analysis[{index}].segment_type 非法")
+        _validate_float_range(item.get("confidence"), f"ai_blend_analysis[{index}].confidence")
+        if not str(item.get("time_range") or "").strip() or not str(item.get("reasoning_summary") or "").strip():
+            raise DeconstructionArtifactError(f"ai_blend_analysis[{index}] 缺少 time_range/reasoning_summary")
+        _validate_artifact_evidence_list(item.get("evidence_asset_ids"), valid_ids, f"ai_blend_analysis[{index}].evidence_asset_ids")
+    for index, item in enumerate(prompt_shots, 1):
+        if not isinstance(item, dict):
+            raise DeconstructionArtifactError(f"ai_storyboard_prompt_shots[{index}] 必须是对象")
+        for field in (
+            "shot_id",
+            "segment_id",
+            "duration_seconds",
+            "start_frame_ref",
+            "end_frame_ref",
+            "continuity_to_real_footage",
+            "aspect_ratio",
+            "target_tool",
+            "prompt_language",
+            "prompt",
+            "negative_prompt",
+        ):
+            if not str(item.get(field) or "").strip():
+                raise DeconstructionArtifactError(f"ai_storyboard_prompt_shots[{index}] 缺少 {field}")
+        segment_id = str(item.get("segment_id") or "").strip()
+        if segment_ids and segment_id not in segment_ids:
+            raise DeconstructionArtifactError(f"ai_storyboard_prompt_shots[{index}].segment_id 未匹配 ai_blend_analysis")
+        _validate_artifact_evidence_list(item.get("evidence_asset_ids"), valid_ids, f"ai_storyboard_prompt_shots[{index}].evidence_asset_ids")
+
+
+def _validate_artifact_evidence_list(value: Any, valid_ids: set[str], path: str) -> None:
+    refs = value if isinstance(value, list) else []
+    if not refs:
+        raise DeconstructionArtifactError(f"{path} 不能为空")
+    invalid = [str(item or "").strip() for item in refs if str(item or "").strip() not in valid_ids]
+    if invalid:
+        raise DeconstructionArtifactError(f"{path} 非法 evidence 引用: {', '.join(invalid)}")
+
+
+def _validate_float_range(value: Any, path: str) -> None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise DeconstructionArtifactError(f"{path} 非法") from exc
+    if not 0 <= number <= 1:
+        raise DeconstructionArtifactError(f"{path} 必须在 0..1")
 
 
 def _items_text(value: Any) -> list[str]:

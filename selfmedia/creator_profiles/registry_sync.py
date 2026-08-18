@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import argparse
-import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -11,22 +9,7 @@ SELFMEDIA_ROOT = Path(__file__).resolve().parents[2]
 if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
-from common.social_runtime import (  # noqa: E402
-    feishu_list_records,
-    feishu_plain_text,
-    feishu_tenant_access_token,
-    feishu_update_record,
-)
-from common.standard_fields import standard_field_specs  # noqa: E402
-
-
-DEFAULT_CREATOR_REGISTRY_URL = (
-    "https://tcnwueberajc.feishu.cn/wiki/WYaCwyPxpiYM02kzclJcJPC9n9b"
-    "?table=tbli9yjd7DtTjqcV&view=vewxOPQ7ei"
-)
-DEFAULT_BUSINESS_URL = (
-    "https://tcnwueberajc.feishu.cn/base/BazubRWJ7a9SLRsLr4Bc8IvAnCg?table=tbld333H01u34g9F"
-)
+from common.social_runtime import feishu_plain_text  # noqa: E402
 
 
 def normalize_text(value: Any) -> str:
@@ -127,88 +110,3 @@ def build_update_payload(business_fields: dict[str, Any], creator_fields: dict[s
         payload["粉丝数"] = fans
 
     return payload
-
-
-def sync_creator_registry(
-    creator_url: str,
-    business_url: str,
-    *,
-    limit: int = 0,
-    record_ids: set[str] | None = None,
-    dry_run: bool = False,
-) -> dict[str, Any]:
-    token = feishu_tenant_access_token()
-    creator_records = feishu_list_records(creator_url, token=token, page_size=500)
-    business_records = feishu_list_records(business_url, token=token, page_size=500)
-    if record_ids:
-        business_records = [item for item in business_records if str(item.get("record_id") or "") in record_ids]
-    if limit > 0:
-        business_records = business_records[:limit]
-
-    by_platform_id, by_name = build_creator_index(creator_records)
-    touched: list[dict[str, Any]] = []
-    unmatched: list[str] = []
-    for record in business_records:
-        record_id = str(record.get("record_id") or "")
-        fields = record.get("fields") or {}
-        if not isinstance(fields, dict):
-            continue
-        creator_record, reason = find_creator_record(fields, by_platform_id, by_name)
-        if not creator_record:
-            unmatched.append(record_id)
-            continue
-        payload = build_update_payload(fields, creator_record.get("fields") or {})
-        if not payload:
-            continue
-        touched.append(
-            {
-                "record_id": record_id,
-                "match_reason": reason,
-                "field_count": len(payload),
-                "fields": sorted(payload),
-            }
-        )
-        if not dry_run:
-            feishu_update_record(
-                business_url,
-                record_id,
-                payload,
-                specs=standard_field_specs(),
-                token=token,
-            )
-    return {
-        "ok": True,
-        "dry_run": dry_run,
-        "scanned": len(business_records),
-        "matched": len(touched),
-        "unmatched": len(unmatched),
-        "items": touched,
-        "unmatched_record_ids": unmatched[:50],
-    }
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Sync creator registry fields into 商务-ID records.")
-    parser.add_argument("--creator-url", default=DEFAULT_CREATOR_REGISTRY_URL, help="Creator registry table URL.")
-    parser.add_argument("--business-url", default=DEFAULT_BUSINESS_URL, help="商务-ID table URL.")
-    parser.add_argument("--limit", type=int, default=0, help="Optional max record count.")
-    parser.add_argument("--record-id", action="append", default=[], help="Optional record ids to sync.")
-    parser.add_argument("--write", action="store_true", help="Actually write to Feishu. Default is dry-run.")
-    return parser.parse_args()
-
-
-def main() -> int:
-    args = parse_args()
-    result = sync_creator_registry(
-        args.creator_url,
-        args.business_url,
-        limit=max(0, int(args.limit or 0)),
-        record_ids={item for item in args.record_id if item},
-        dry_run=not args.write,
-    )
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

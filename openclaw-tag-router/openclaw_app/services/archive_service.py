@@ -20,7 +20,6 @@ ARCHIVE_DIR_MAP = {
     "开发-完成": "task_commands",
     "开发-验证": "task_commands",
     "活动": "campaigns",
-    "内容素材": "selfmedia",
     "灵感>vlog": "vlog_inspirations",
     "转写": "transcripts",
     "转写-文字": "transcripts",

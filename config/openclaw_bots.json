@@ -1,118 +1,171 @@
 {
   "defaults": {},
   "policy": {
-    "default_provider": "codex_responses",
-    "openclaw_runtime_provider": "openclaw_codex",
-    "allowed_non_codex_profiles": [
-      "system_guide",
-      "knowledge_delegate",
-      "knowledge_research"
-    ]
+    "default_provider": "openclaw_codex",
+    "openclaw_runtime_provider": "openclaw_codex"
+  },
+  "openclaw_runtime": {
+    "heartbeat_every": "0m",
+    "session_maintenance": {
+      "mode": "enforce",
+      "prune_after": "14d",
+      "reset_archive_retention": "14d"
+    },
+    "codex_app_server": {
+      "command": "/home/ubuntu/.nvm/versions/node/v22.22.2/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex",
+      "args": [
+        "app-server",
+        "--listen",
+        "stdio://"
+      ],
+      "service_tier": "priority",
+      "turn_completion_idle_timeout_ms": 180000,
+      "version": "0.147.0"
+    }
+  },
+  "model_tiers": {
+    "L": {
+      "model": "gpt-5.6-luna",
+      "reasoning": "low"
+    },
+    "A": {
+      "model": "gpt-5.6-terra",
+      "reasoning": "medium"
+    },
+    "B": {
+      "model": "gpt-5.6-terra",
+      "reasoning": "high"
+    },
+    "C": {
+      "model": "gpt-5.6-sol",
+      "reasoning": "medium"
+    }
+  },
+  "agent_overrides": {
+    "openclaw-maintenance": {
+      "model_tier": "C"
+    }
   },
   "bots": {
     "main": {
       "provider": "openclaw_codex",
       "agent": "feishu-main",
-      "cwd": "/home/ubuntu/openclaw-agents/main"
+      "cwd": "/home/ubuntu/openclaw-agents/main",
+      "model_tier": "B"
     },
     "daily": {
       "provider": "openclaw_codex",
       "agent": "feishu-daily",
-      "cwd": "/home/ubuntu/openclaw-agents/daily"
+      "cwd": "/home/ubuntu/openclaw-agents/daily",
+      "model_tier": "A"
+    },
+    "deepmath": {
+      "provider": "openclaw_codex",
+      "agent": "deepmath-office",
+      "cwd": "/home/ubuntu/openclaw-agents/deepmath",
+      "runtime_config": ".openclaw-deepmath/openclaw.json",
+      "model_tier": "A"
     },
     "knowledge": {
       "provider": "openclaw_codex",
       "agent": "feishu-knowledge",
       "cwd": "/home/ubuntu/openclaw-agents/knowledge",
-      "thinking": "high"
+      "model_tier": "B"
     },
     "media": {
       "provider": "openclaw_codex",
       "agent": "feishu-media",
-      "cwd": "/home/ubuntu/openclaw-agents/media"
+      "cwd": "/home/ubuntu/openclaw-agents/media",
+      "model_tier": "C"
     },
     "social": {
       "provider": "openclaw_codex",
       "agent": "feishu-social",
-      "cwd": "/home/ubuntu/openclaw-agents/social"
+      "cwd": "/home/ubuntu/openclaw-agents/social",
+      "model_tier": "B"
     }
   },
   "profiles": {
     "system_guide": {
       "provider": "openclaw_codex",
       "bot": "main",
-      "thinking": "medium"
+      "model_tier": "B"
     },
     "knowledge_delegate": {
       "provider": "openclaw_codex",
       "bot": "knowledge",
-      "thinking": "high"
-    },
-    "knowledge_research": {
-      "provider": "openclaw_codex",
-      "bot": "knowledge",
-      "thinking": "high"
+      "model_tier": "B"
     },
     "transcription_postprocess": {
-      "provider": "codex_responses",
+      "provider": "openclaw_codex",
       "bot": "knowledge",
-      "thinking": "high"
+      "model_tier": "B"
     },
     "media_analysis": {
-      "provider": "codex_responses",
-      "bot": "media"
+      "provider": "openclaw_codex",
+      "bot": "media",
+      "model_tier": "C"
     },
     "media_creation": {
-      "provider": "codex_responses",
-      "bot": "media"
+      "provider": "openclaw_codex",
+      "bot": "media",
+      "model_tier": "C"
     },
     "activity_cleaning": {
-      "provider": "codex_responses",
+      "provider": "openclaw_codex",
       "bot": "media",
-      "thinking": "medium",
+      "model_tier": "C",
       "timeout": 300
     },
     "daily_task_extraction": {
-      "provider": "codex_responses",
+      "provider": "openclaw_codex",
       "bot": "daily",
-      "thinking": "medium",
+      "model_tier": "A",
+      "capacity_max_retries": 2,
+      "timeout": 120
+    },
+    "deepmath_ceo_thinking_structure": {
+      "provider": "openclaw_codex",
+      "bot": "deepmath",
+      "model_tier": "A",
+      "capacity_max_retries": 0,
+      "timeout": 120
+    },
+    "deepmath_people_recommendation": {
+      "provider": "openclaw_codex",
+      "bot": "deepmath",
+      "model_tier": "A",
+      "capacity_max_retries": 0,
       "timeout": 120
     },
     "daily_hierarchy_records_extraction": {
-      "provider": "codex_responses",
+      "provider": "openclaw_codex",
       "bot": "daily",
-      "thinking": "medium",
+      "model_tier": "A",
       "timeout": 300
     },
     "social_vision": {
-      "provider": "codex_responses",
+      "provider": "openclaw_codex",
       "bot": "social",
+      "model_tier": "B",
       "timeout": 900
     },
     "content_cleaner": {
-      "provider": "codex_responses",
+      "provider": "openclaw_codex",
       "bot": "main",
+      "model_tier": "B",
       "enabled": true,
       "max_chars": 20000,
       "max_tokens": 8192
     }
   },
   "providers": {
-    "codex_responses": {
-      "model": "gpt-5.5",
-      "base_url": "https://chatgpt.com/backend-api/codex",
-      "api_key": "codex_auth_file",
-      "api_type": "openai_codex_responses",
-      "timeout": 1800,
-      "thinking": "high"
-    },
     "openclaw_codex": {
-      "model": "openai-codex/gpt-5.5",
+      "default_model_tier": "B",
       "base_url": "openclaw://agent",
       "api_key": "codex_auth_file",
       "api_type": "openclaw_agent",
       "timeout": 1800,
-      "thinking": "high",
       "bin": "/home/ubuntu/.nvm/versions/node/v22.22.2/bin/openclaw",
       "codex_home": "/home/ubuntu/.codex"
     }

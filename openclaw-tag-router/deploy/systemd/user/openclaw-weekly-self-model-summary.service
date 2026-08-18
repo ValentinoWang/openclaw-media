@@ -1,0 +1,6 @@
+[Unit]
+Description=OpenClaw Weekly Self Model Summary
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/ubuntu/.openclaw/extensions/openclaw-tag-router/scripts/daily_journal_scheduler.py weekly-summary --settings /home/ubuntu/.openclaw/extensions/openclaw-tag-router/config/settings.yaml

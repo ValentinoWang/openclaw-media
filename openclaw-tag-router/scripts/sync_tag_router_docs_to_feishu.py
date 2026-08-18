@@ -19,39 +19,106 @@ import requests
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PLUGIN_ROOT))
 from openclaw_app.services.feishu_docx_renderer import expand_inline_code_literal_newlines  # noqa: E402
+from openclaw_app.services.feishu_docx_table_limits import (  # noqa: E402
+    chunk_docx_table_rows,
+    ensure_docx_tables_write_budget,
+    ensure_docx_table_write_budget,
+    sleep_seconds_for_docx_write,
+    validate_docx_table_create_shape,
+)
 
 CONFIG_PATH = PLUGIN_ROOT / "config" / "docs_sync.json"
 DOC_PATH = Path("/home/ubuntu/docs/说明书/OpenClaw 标签功能说明.md")
-FEISHU_BASE = os.getenv("FEISHU_API_BASE_URL", "https://open.feishu.cn/open-apis").rstrip("/")
-TENANT_HOST = "https://tcnwueberajc.feishu.cn"
+GENERIC_FEISHU_BASE = os.getenv("FEISHU_API_BASE_URL", "https://open.feishu.cn/open-apis").rstrip("/")
+GENERIC_TENANT_HOST = "https://tcnwueberajc.feishu.cn"
+DEEPMATH_PUBLIC_HOST = "https://feishu.cn"
+FEISHU_BASE = GENERIC_FEISHU_BASE
+TENANT_HOST = GENERIC_TENANT_HOST
 ENV_FILES = [
     Path("/home/ubuntu/.openclaw/openclaw.env"),
     Path("/home/ubuntu/.openclaw/openclaw-media.env"),
     Path("/home/ubuntu/openclaw-feishu-reminder/reminder.env"),
 ]
-WRITE_SLEEP_SEC = 0.36
-MAX_TABLE_CELLS_PER_CREATE = 18
+DEEPMATH_ENV_FILE = Path("/home/ubuntu/.openclaw-deepmath/openclaw.env")
+WRITE_SLEEP_SEC = sleep_seconds_for_docx_write()
 REQUEST_TIMEOUT_SEC = int(os.getenv("FEISHU_DOC_SYNC_REQUEST_TIMEOUT_SEC", "90"))
 WRITE_TIMEOUT_SEC = int(os.getenv("FEISHU_DOC_SYNC_WRITE_TIMEOUT_SEC", "120"))
 RAW_CONTENT_TIMEOUT_SEC = int(os.getenv("FEISHU_DOC_SYNC_RAW_TIMEOUT_SEC", "180"))
 REQUEST_RETRIES = int(os.getenv("FEISHU_DOC_SYNC_RETRIES", "8"))
 
 
-def load_env_files() -> None:
-    for env_path in ENV_FILES:
+def parse_env_file(env_path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    if not env_path.exists():
+        return values
+    for raw_line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key.lower() in {"http_proxy", "https_proxy", "all_proxy", "no_proxy"}:
+            continue
+        if key and value:
+            values[key] = value
+    return values
+
+
+def load_env_files(env_files: list[Path] | tuple[Path, ...] = tuple(ENV_FILES)) -> None:
+    for env_path in env_files:
         if not env_path.exists():
             continue
-        for raw_line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
-            line = raw_line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip().strip('"').strip("'")
-            if key.lower() in {"http_proxy", "https_proxy", "all_proxy", "no_proxy"}:
-                continue
-            if key and value and key not in os.environ:
+        for key, value in parse_env_file(env_path).items():
+            if key not in os.environ:
                 os.environ[key] = value
+
+
+def is_deepmath_config(config: dict[str, Any] | None) -> bool:
+    if not isinstance(config, dict):
+        return False
+    profile = str(config.get("credential_profile") or config.get("bot") or config.get("key") or "").strip().lower()
+    title = str(config.get("doc_title") or "").strip().lower()
+    return profile == "deepmath" or "deepmath" in title
+
+
+def deepmath_env_values(config: dict[str, Any]) -> dict[str, str]:
+    configured_path = Path(str(config.get("env_file") or DEEPMATH_ENV_FILE)).expanduser()
+    if configured_path != DEEPMATH_ENV_FILE:
+        raise RuntimeError(f"DeepMath doc sync must use the dedicated env file: {DEEPMATH_ENV_FILE}")
+    return parse_env_file(DEEPMATH_ENV_FILE)
+
+
+def configure_sync_target(config: dict[str, Any]) -> None:
+    global FEISHU_BASE, TENANT_HOST
+    if not is_deepmath_config(config):
+        FEISHU_BASE = GENERIC_FEISHU_BASE
+        TENANT_HOST = GENERIC_TENANT_HOST
+        return
+
+    values = deepmath_env_values(config)
+    api_base_env = str(config.get("api_base_env") or "OPENCLAW_DEEPMATH_FEISHU_API_BASE_URL")
+    host_env = str(config.get("tenant_host_env") or "OPENCLAW_DEEPMATH_TENANT_HOST")
+    FEISHU_BASE = str(
+        os.getenv(api_base_env)
+        or values.get(api_base_env)
+        or os.getenv("FEISHU_API_BASE_URL")
+        or values.get("FEISHU_API_BASE_URL")
+        or "https://open.feishu.cn/open-apis"
+    ).rstrip("/")
+    configured_host = (
+        os.getenv(host_env)
+        or values.get(host_env)
+        or os.getenv("OPENCLAW_DEEPMATH_FEISHU_HOST")
+        or values.get("OPENCLAW_DEEPMATH_FEISHU_HOST")
+        or config.get("tenant_host")
+    )
+    if not configured_host:
+        configured_url = str(config.get("wiki_url") or config.get("doc_url") or "").strip()
+        parsed = urllib.parse.urlparse(configured_url)
+        if parsed.scheme and parsed.netloc:
+            configured_host = f"{parsed.scheme}://{parsed.netloc}"
+    TENANT_HOST = str(configured_host or DEEPMATH_PUBLIC_HOST).strip().rstrip("/")
 
 
 def request_json(method: str, path: str, token: str | None = None, **kwargs: Any) -> dict[str, Any]:
@@ -91,12 +158,22 @@ def request_json(method: str, path: str, token: str | None = None, **kwargs: Any
     raise RuntimeError(f"{method} {path} failed after retries: {last_error}")
 
 
-def tenant_access_token() -> str:
-    load_env_files()
-    app_id = os.getenv("FEISHU_APP_ID", "").strip()
-    app_secret = os.getenv("FEISHU_APP_SECRET", "").strip()
-    if not app_id or not app_secret:
-        raise RuntimeError("FEISHU_APP_ID / FEISHU_APP_SECRET not configured")
+def tenant_access_token(config: dict[str, Any] | None = None) -> str:
+    if is_deepmath_config(config):
+        selected_config = config or {}
+        values = deepmath_env_values(selected_config)
+        app_id_env = "OPENCLAW_DEEPMATH_APP_ID"
+        app_secret_env = "OPENCLAW_DEEPMATH_APP_SECRET"
+        app_id = str(os.getenv(app_id_env) or values.get(app_id_env) or "").strip()
+        app_secret = str(os.getenv(app_secret_env) or values.get(app_secret_env) or "").strip()
+        if not app_id or not app_secret:
+            raise RuntimeError(f"{app_id_env} / {app_secret_env} not configured in the dedicated DeepMath env")
+    else:
+        load_env_files()
+        app_id = os.getenv("FEISHU_APP_ID", "").strip()
+        app_secret = os.getenv("FEISHU_APP_SECRET", "").strip()
+        if not app_id or not app_secret:
+            raise RuntimeError("FEISHU_APP_ID / FEISHU_APP_SECRET not configured")
     payload = request_json(
         "POST",
         "/auth/v3/tenant_access_token/internal",
@@ -190,11 +267,21 @@ def configure_source_paths(doc_path: str = "", config_path: str = "") -> None:
         CONFIG_PATH = candidate if candidate.is_absolute() else PLUGIN_ROOT / candidate
 
 
-def list_root_children(document_id: str, token: str) -> list[dict[str, Any]]:
+def list_root_children(
+    document_id: str,
+    token: str,
+    *,
+    page_size: int = 100,
+    max_items: int | None = None,
+) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     page_token = ""
     while True:
-        params: dict[str, Any] = {"page_size": 500, "document_revision_id": -1}
+        remaining = max_items - len(items) if max_items is not None else page_size
+        params: dict[str, Any] = {
+            "page_size": max(1, min(page_size, remaining)),
+            "document_revision_id": -1,
+        }
         if page_token:
             params["page_token"] = page_token
         payload = request_json(
@@ -206,6 +293,8 @@ def list_root_children(document_id: str, token: str) -> list[dict[str, Any]]:
         data = payload.get("data", {})
         batch = data.get("items") or data.get("children") or []
         items.extend(item for item in batch if isinstance(item, dict))
+        if max_items is not None and len(items) >= max_items:
+            break
         if not data.get("has_more"):
             break
         page_token = str(data.get("page_token") or "")
@@ -217,7 +306,7 @@ def list_root_children(document_id: str, token: str) -> list[dict[str, Any]]:
 def clear_doc(document_id: str, token: str) -> None:
     print(f"[feishu-doc-sync] clearing document {document_id}", file=sys.stderr)
     while True:
-        children = list_root_children(document_id, token)
+        children = list_root_children(document_id, token, page_size=20, max_items=20)
         if not children:
             return
         # Feishu rejects larger root delete ranges in some partially-synced docs.
@@ -231,6 +320,21 @@ def clear_doc(document_id: str, token: str) -> None:
             timeout=WRITE_TIMEOUT_SEC,
         )
         time.sleep(WRITE_SLEEP_SEC)
+
+
+def delete_root_children_from(document_id: str, token: str, start_index: int) -> None:
+    children = list_root_children(document_id, token)
+    if len(children) <= start_index:
+        return
+    request_json(
+        "DELETE",
+        f"/docx/v1/documents/{document_id}/blocks/{document_id}/children/batch_delete",
+        token=token,
+        params={"document_revision_id": -1},
+        json={"start_index": start_index, "end_index": len(children)},
+        timeout=WRITE_TIMEOUT_SEC,
+    )
+    time.sleep(WRITE_SLEEP_SEC)
 
 
 def text_run(content: str) -> dict[str, Any]:
@@ -517,16 +621,7 @@ def append_cell_text(document_id: str, cell_id: str, text: str, token: str) -> N
 
 
 def table_chunks(rows: list[list[str]]) -> list[list[list[str]]]:
-    if not rows:
-        return []
-    column_count = max(len(row) for row in rows)
-    max_rows = max(2, MAX_TABLE_CELLS_PER_CREATE // max(column_count, 1))
-    if len(rows) <= max_rows:
-        return [rows]
-    header = rows[0]
-    data_rows = rows[1:]
-    data_rows_per_chunk = max_rows - 1
-    return [[header, *data_rows[i : i + data_rows_per_chunk]] for i in range(0, len(data_rows), data_rows_per_chunk)]
+    return chunk_docx_table_rows(rows)
 
 
 def append_table_chunk(document_id: str, token: str, rows: list[list[str]]) -> None:
@@ -534,44 +629,50 @@ def append_table_chunk(document_id: str, token: str, rows: list[list[str]]) -> N
         return
     row_count = len(rows)
     column_count = max(len(row) for row in rows)
-    payload = request_json(
-        "POST",
-        f"/docx/v1/documents/{document_id}/blocks/{document_id}/children",
-        token=token,
-        json={
-            "children": [
-                {"block_type": 31, "table": {"property": {"row_size": row_count, "column_size": column_count}}},
-            ],
-            "index": -1,
-        },
-        timeout=30,
-    )
-    table_block = find_created_table(payload)
-    time.sleep(2.0)
-    table_id = str(table_block.get("block_id") or "")
-    expected = row_count * column_count
-    cell_ids = extract_table_cell_ids(table_block, expected)
-    if len(cell_ids) < expected and table_id:
-        hydrated = get_docx_block(document_id, table_id, token)
-        cell_ids = extract_table_cell_ids(hydrated, expected)
-    if len(cell_ids) < expected and table_id:
-        children = get_docx_children(document_id, table_id, token)
-        cell_ids = [extract_block_id(item) for item in children]
-        cell_ids = [item for item in cell_ids if item]
-    if len(cell_ids) < expected:
-        raise RuntimeError(f"Feishu table creation did not return enough cell ids: expected={expected} got={len(cell_ids)} table_id={table_id}")
+    validate_docx_table_create_shape(row_count, column_count)
+    ensure_docx_table_write_budget(rows)
+    start_index = len(list_root_children(document_id, token))
+    try:
+        payload = request_json(
+            "POST",
+            f"/docx/v1/documents/{document_id}/blocks/{document_id}/children",
+            token=token,
+            json={
+                "children": [
+                    {"block_type": 31, "table": {"property": {"row_size": row_count, "column_size": column_count}}},
+                ],
+                "index": -1,
+            },
+            timeout=30,
+        )
+        table_block = find_created_table(payload)
+        time.sleep(2.0)
+        table_id = str(table_block.get("block_id") or "")
+        expected = row_count * column_count
+        cell_ids = extract_table_cell_ids(table_block, expected)
+        if len(cell_ids) < expected and table_id:
+            hydrated = get_docx_block(document_id, table_id, token)
+            cell_ids = extract_table_cell_ids(hydrated, expected)
+        if len(cell_ids) < expected and table_id:
+            children = get_docx_children(document_id, table_id, token)
+            cell_ids = [extract_block_id(item) for item in children]
+            cell_ids = [item for item in cell_ids if item]
+        if len(cell_ids) < expected:
+            raise RuntimeError(f"Feishu table creation did not return enough cell ids: expected={expected} got={len(cell_ids)} table_id={table_id}")
 
-    for row_index, row in enumerate(rows):
-        for column_index in range(column_count):
-            text = row[column_index] if column_index < len(row) else ""
-            append_cell_text(document_id, cell_ids[row_index * column_count + column_index], text, token)
+        for row_index, row in enumerate(rows):
+            for column_index in range(column_count):
+                text = row[column_index] if column_index < len(row) else ""
+                append_cell_text(document_id, cell_ids[row_index * column_count + column_index], text, token)
+    except Exception:
+        delete_root_children_from(document_id, token, start_index)
+        raise
 
 
 def append_table(document_id: str, token: str, rows: list[list[str]]) -> None:
     chunks = table_chunks(rows)
-    for chunk_index, chunk in enumerate(chunks, 1):
-        if len(chunks) > 1:
-            append_blocks(document_id, token, [paragraph_block(f"续表 {chunk_index}/{len(chunks)}")])
+    ensure_docx_tables_write_budget(chunks)
+    for chunk in chunks:
         append_table_chunk(document_id, token, chunk)
 
 
@@ -724,9 +825,10 @@ def verify_restricted_visibility(config: dict[str, Any], document_id: str, token
 
 def sync_to_feishu() -> dict[str, Any]:
     config = load_config()
+    configure_sync_target(config)
     source, source_hash = source_text_and_hash()
     print(f"[feishu-doc-sync] source={DOC_PATH} sha256={source_hash}", file=sys.stderr)
-    token = tenant_access_token()
+    token = tenant_access_token(config)
     document_id, config = get_cloud_doc(config, token)
     clear_doc(document_id, token)
     print(f"[feishu-doc-sync] converting markdown to Feishu blocks", file=sys.stderr)
@@ -745,13 +847,14 @@ def sync_to_feishu() -> dict[str, Any]:
 
 def check_feishu_sync() -> dict[str, Any]:
     config = load_config()
+    configure_sync_target(config)
     source, source_hash = source_text_and_hash()
     document_id = str(config.get("document_id") or "").strip()
     if not document_id:
         raise RuntimeError("cloud doc is not configured; run npm run sync:docs")
     if config.get("last_source_sha256") != source_hash:
         raise RuntimeError("local doc changed after last cloud sync; run npm run sync:docs")
-    token = tenant_access_token()
+    token = tenant_access_token(config)
     remote_text = raw_content(document_id, token)
     print(f"[feishu-doc-sync] verifying cloud content", file=sys.stderr)
     assert_cloud_contains_visible_content(source, source_hash, remote_text)

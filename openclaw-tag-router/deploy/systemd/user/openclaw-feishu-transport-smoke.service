@@ -1,0 +1,10 @@
+[Unit]
+Description=OpenClaw Feishu transport isolation runtime smoke
+After=openclaw-gateway.service network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ubuntu
+Environment=PATH=/home/ubuntu/.nvm/versions/node/v22.22.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/bin/python3 /home/ubuntu/scripts/qa/openclaw_feishu_transport_runtime_smoke.py
+ExecStart=/usr/bin/python3 /home/ubuntu/scripts/qa/openclaw_runtime_status_freshness_smoke.py

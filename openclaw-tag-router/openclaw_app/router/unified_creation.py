@@ -36,7 +36,6 @@ UNIFIED_CREATION_FIELD_SPECS: dict[str, int] = {
     "来源链接": 15,
     "灵感文档链接": 15,
     "素材文档链接": 15,
-    "再创作文档链接": 15,
     "创作文档链接": 15,
     "主状态": 3,
     "入库时间": 5,
@@ -44,7 +43,6 @@ UNIFIED_CREATION_FIELD_SPECS: dict[str, int] = {
     "更新时间": 5,
     "灵感评分": 2,
     "评分原因": 1,
-    "拆解-再创方向": 1,
     "可迁移点": 1,
     "风险点": 1,
     "建议产物": 1,
@@ -72,6 +70,9 @@ CREATION_RUN_FEISHU_FIELD_NAME_MAP: dict[str, str] = {
     "run_id": "创作运行ID",
     "entrypoint": "入口标签",
     "input_summary": "输入需求摘要",
+    "platform": "平台",
+    "content_type": "内容类型",
+    "track_name": "赛道",
     "status": "状态",
     "generation_source": "生成来源",
     "run_artifact_uri": "运行产物URI",
@@ -83,12 +84,7 @@ CREATION_RUN_ENTRYPOINT_LABELS = (
     "【创作>小红书】",
     "【创作>抖音】",
     "【创作-拍摄执行】",
-    "【创作-灵感】",
-    "【拆解-再创】",
     "【创作】",
-    "【素材创作】",
-    "【素材创作>小红书】",
-    "【素材创作>抖音】",
 )
 UNIFIED_CREATION_SELECT_OPTIONS: dict[str, list[str]] = {
     "平台": ["小红书", "抖音", "B站", "视频号", "公众号", "微博", "Instagram", "TikTok", "其他", "未知"],
@@ -101,7 +97,13 @@ BITABLE_OPTION_ID_RE = re.compile(r"^opt[A-Za-z0-9]{6,}$")
 
 
 class UnifiedCreationMixin:
-    def _sync_unified_creation_record(self, fields: dict[str, Any], *, table_url: str = "") -> dict[str, str]:
+    def _sync_unified_creation_record(
+        self,
+        fields: dict[str, Any],
+        *,
+        session_tenant_id: str,
+        table_url: str = "",
+    ) -> dict[str, str]:
         table_url = self._unified_creation_table_url(table_url)
         doc_link_text = self._first_doc_link_from_unified_fields(fields)
         if not doc_link_text.startswith(("http://", "https://")):
@@ -111,6 +113,19 @@ class UnifiedCreationMixin:
         app_token, table_id = self._unified_creation_bitable_refs(table_url)
         field_types = self._unified_creation_field_types(app_token, table_id)
         payload_fields = self._creation_run_v2_fields(fields, doc_link_text)
+        run_id = str(payload_fields.get("run_id") or "").strip()
+        if not run_id:
+            raise RuntimeError("CreationRun 缺少 canonical run_id")
+        owner_service = getattr(self, "tenant_owned_resources", None)
+        if owner_service is None:
+            raise RuntimeError("canonical resource owner service is unavailable")
+        payload_fields = owner_service.create_projection(
+            "media.creation_run",
+            run_id,
+            session_tenant_id=session_tenant_id,
+            fields=payload_fields,
+            writer=lambda projected: projected,
+        )
         payload_fields = {
             feishu_name: self._coerce_unified_creation_value(value, field_types.get(feishu_name))
             for name, value in payload_fields.items()
@@ -126,13 +141,38 @@ class UnifiedCreationMixin:
             json_body={"fields": payload_fields},
         )
         record = payload.get("data", {}).get("record") or {}
+        record_id = str(record.get("record_id") or "")
+        if not record_id:
+            raise RuntimeError("CreationRun 写入后缺少 record_id")
+        readback = self.feishu_service.read_bitable_record(app_token, table_id, record_id)
+        owner_service.assert_projection_read(
+            "media.creation_run",
+            run_id,
+            session_tenant_id=session_tenant_id,
+            fields=readback.get("fields") or {},
+            projection_source=f"feishu:{table_id}/{record_id}",
+        )
+        owner_service.register_docx_link(
+            "media.creation_run",
+            run_id,
+            session_tenant_id=session_tenant_id,
+            document_url=doc_link_text,
+            policy="org_link_edit",
+        )
         return {
-            "record_id": str(record.get("record_id") or ""),
+            "record_id": record_id,
             "table_url": table_url,
             "written_fields": ",".join(sorted(payload_fields)),
         }
 
-    def _update_unified_creation_record(self, record_id: str, fields: dict[str, Any], *, table_url: str = "") -> dict[str, str]:
+    def _update_unified_creation_record(
+        self,
+        record_id: str,
+        fields: dict[str, Any],
+        *,
+        session_tenant_id: str,
+        table_url: str = "",
+    ) -> dict[str, str]:
         if not record_id:
             return {}
         table_url = self._unified_creation_table_url(table_url)
@@ -142,6 +182,19 @@ class UnifiedCreationMixin:
         field_types = self._unified_creation_field_types(app_token, table_id)
         doc_link_text = self._first_doc_link_from_unified_fields(fields)
         payload_fields = self._creation_run_v2_fields(fields, doc_link_text)
+        run_id = str(payload_fields.get("run_id") or "").strip()
+        if not run_id:
+            raise RuntimeError("CreationRun 更新缺少 canonical run_id")
+        owner_service = getattr(self, "tenant_owned_resources", None)
+        if owner_service is None:
+            raise RuntimeError("canonical resource owner service is unavailable")
+        payload_fields = owner_service.update_projection(
+            "media.creation_run",
+            run_id,
+            session_tenant_id=session_tenant_id,
+            fields=payload_fields,
+            writer=lambda projected: projected,
+        )
         payload_fields = {
             feishu_name: self._coerce_unified_creation_value(value, field_types.get(feishu_name))
             for name, value in payload_fields.items()
@@ -156,6 +209,22 @@ class UnifiedCreationMixin:
             f"/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}",
             json_body={"fields": payload_fields},
         )
+        readback = self.feishu_service.read_bitable_record(app_token, table_id, record_id)
+        owner_service.assert_projection_read(
+            "media.creation_run",
+            run_id,
+            session_tenant_id=session_tenant_id,
+            fields=readback.get("fields") or {},
+            projection_source=f"feishu:{table_id}/{record_id}",
+        )
+        if doc_link_text:
+            owner_service.register_docx_link(
+                "media.creation_run",
+                run_id,
+                session_tenant_id=session_tenant_id,
+                document_url=doc_link_text,
+                policy="org_link_edit",
+            )
         return {"record_id": record_id, "table_url": table_url, "written_fields": ",".join(sorted(payload_fields))}
 
     def _unified_creation_table_url(self, table_url: str = "") -> str:
@@ -209,6 +278,7 @@ class UnifiedCreationMixin:
 
     def _creation_run_v2_fields(self, fields: dict[str, Any], doc_link: str) -> dict[str, Any]:
         title = str(fields.get("标题") or fields.get("主题") or fields.get("记录类型") or "创作运行").strip()
+        topic = str(fields.get("主题") or title).strip()
         record_type = str(fields.get("记录类型") or "creation").strip()
         entrypoint = self._creation_run_entrypoint(fields, record_type, title)
         raw_seed = "|".join(
@@ -223,7 +293,6 @@ class UnifiedCreationMixin:
                 "内容",
                 "灵感文档链接",
                 "素材文档链接",
-                "再创作文档链接",
                 "创作文档链接",
             )
         )
@@ -238,10 +307,10 @@ class UnifiedCreationMixin:
         return {
             "run_id": run_id,
             "entrypoint": entrypoint,
-            "input_summary": title,
+            "input_summary": topic,
             "platform": self._unified_join_lines(fields.get("平台")),
             "content_type": self._unified_join_lines(fields.get("内容类型")),
-            "topic": str(fields.get("主题") or title),
+            "track_name": self._unified_join_lines(fields.get("赛道")),
             "status": status,
             "generation_source": "llm",
             "run_artifact_uri": doc_link,
@@ -258,7 +327,7 @@ class UnifiedCreationMixin:
             return normalized
         source_text = "\n".join(
             str(fields.get(name) or "")
-            for name in ("标题", "记录类型", "关键词标签", "主题", "灵感文档链接", "素材文档链接", "再创作文档链接", "创作文档链接")
+            for name in ("标题", "记录类型", "关键词标签", "主题", "灵感文档链接", "素材文档链接", "创作文档链接")
         )
         source_text = f"{title}\n{record_type}\n{source_text}"
         for label in CREATION_RUN_ENTRYPOINT_LABELS:
@@ -279,7 +348,7 @@ class UnifiedCreationMixin:
         return text
 
     def _first_doc_link_from_unified_fields(self, fields: dict[str, Any]) -> str:
-        for name in ("灵感文档链接", "素材文档链接", "再创作文档链接", "创作文档链接", "文档链接"):
+        for name in ("灵感文档链接", "素材文档链接", "创作文档链接", "文档链接"):
             link = self._first_url_from_value(fields.get(name))
             if link:
                 return link
@@ -471,10 +540,16 @@ class UnifiedCreationMixin:
         )
 
     def _unified_creation_doc_name(self, prefix: str, theme_source: str, seed: str = "") -> str:
-        theme = self._normalize_recreation_title(theme_source, limit=20) or self._recreation_compact_theme(theme_source, limit=20) or "未命名主题"
+        theme = self._unified_compact_theme(theme_source, limit=20) or "未命名主题"
         suffix_seed = str(seed or theme_source or "").strip()
         suffix = hashlib.sha1(suffix_seed.encode("utf-8")).hexdigest()[:4] if suffix_seed else ""
         return f"{prefix}｜{theme}｜{suffix}" if suffix else f"{prefix}｜{theme}"
+
+    @staticmethod
+    def _unified_compact_theme(value: str, *, limit: int = 20) -> str:
+        text = re.sub(r"https?://\S+", "", str(value or ""))
+        text = re.sub(r"[【】#*_`>|\[\]()（）{}:：,，。！？!?\s]+", "", text)
+        return text[:limit]
 
     @staticmethod
     def _unified_now_iso() -> str:

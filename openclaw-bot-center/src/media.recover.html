@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>找回密码 - MediaClaw</title>
+    <link rel="stylesheet" href="/media.auth.css" />
+  </head>
+  <body class="auth-page" data-auth-page="recover">
+    <main class="auth-shell compact-shell" aria-labelledby="page-title">
+      <header class="auth-header">
+        <a class="brand" href="/openclaw/media/" aria-label="MediaClaw 内容运营工作台">
+          <span class="brand-mark" aria-hidden="true">MC</span>
+          <span><strong class="brand-name">MediaClaw</strong><span class="brand-detail">内容运营工作台</span></span>
+        </a>
+        <p class="eyebrow">账号恢复</p>
+        <h1 id="page-title">忘记密码</h1>
+        <p class="lede">输入用户名或邮箱，我们会用统一提示处理请求。</p>
+      </header>
+      <section class="auth-panel standalone-panel" aria-labelledby="recover-heading">
+        <div class="panel-heading">
+          <span class="panel-label">个人账号</span>
+          <h2 id="recover-heading">请求找回邮件</h2>
+          <p>无论账号是否符合条件，页面都不会透露账号是否存在。</p>
+        </div>
+        <form id="recover-form" class="auth-form" novalidate>
+          <label class="field" for="recover-identifier">
+            <span>用户名或邮箱</span>
+            <input id="recover-identifier" name="identifier" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+          </label>
+          <div class="form-actions">
+            <button class="auth-button primary" id="recover-submit" type="submit">发送找回邮件</button>
+          </div>
+        </form>
+        <p class="auth-message" id="recover-message" role="status" aria-live="polite"></p>
+        <div class="success-panel" id="recover-success" role="status" aria-live="polite" hidden>
+          <span class="success-mark" aria-hidden="true">✉</span>
+          <div>
+            <strong>请求已处理</strong>
+            <p>如果账号符合条件，我们会发送邮件。找回链接 30 分钟内有效，且只有最新链接有效。</p>
+          </div>
+          <a class="auth-button primary" id="recover-login-link" href="/openclaw/media/login">返回登录</a>
+        </div>
+        <p class="auth-foot"><a class="text-link" id="recover-login-secondary" href="/openclaw/media/login">返回个人登录</a></p>
+      </section>
+    </main>
+    <script type="module" src="/media.login.js"></script>
+  </body>
+</html>

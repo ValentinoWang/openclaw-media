@@ -1,0 +1,270 @@
+import assert from "node:assert/strict";
+import { mkdir, readFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium, type Page, type Route } from "playwright";
+import react from "@vitejs/plugin-react";
+import { createServer } from "vite";
+
+const mediaBase = "/openclaw/media";
+const apiRoot = `${mediaBase}/api`;
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const outputRoot = resolve(
+  process.env.STAGE1_WORKSPACE_RUNTIME_QA_OUTPUT ??
+    join(projectRoot, "..", "..", "..", "agents-results", "2026-08-15", "media-c-b-stage-1-identity-and-organization-onboarding", "evidence-stage1-runtime"),
+);
+
+const personalProjectId = "stage1_runtime_personal_project";
+const personalArtifactId = "stage1_runtime_personal_artifact";
+
+type OrganizationConnection = "connected" | "disabled";
+type WorkspaceScenario = "personal" | "organization-active" | "organization-disabled";
+
+const baseSession = {
+  publicUserId: "11111111-1111-4111-8111-111111111111",
+  tenantId: "22222222-2222-4222-8222-222222222222",
+  role: "admin" as const,
+  maintainer: false,
+  csrfToken: "stage1-runtime-csrf",
+  expiresAt: "2099-01-01T00:00:00+00:00",
+  schemaVersion: "media_web_business_pages_v2" as const,
+};
+
+function sessionFor(scenario: WorkspaceScenario) {
+  if (scenario === "personal") {
+    return {
+      ...baseSession,
+      organizationName: null,
+      memberRole: "owner" as const,
+      organizationConnection: "not_applicable" as const,
+      installationConnection: "not_applicable" as const,
+      workspaceMode: "personal_web" as const,
+      editorMode: "web_edit" as const,
+      bodyAuthority: "internal" as const,
+    };
+  }
+  const organizationConnection: OrganizationConnection = scenario === "organization-active" ? "connected" : "disabled";
+  return {
+    ...baseSession,
+    organizationName: "测试飞书组织",
+    memberRole: "member" as const,
+    organizationConnection,
+    installationConnection: organizationConnection,
+    workspaceMode: "organization_lark" as const,
+    editorMode: "lark_edit" as const,
+    bodyAuthority: "lark" as const,
+  };
+}
+
+async function fulfill(route: Route, body: unknown, status = 200) {
+  await route.fulfill({
+    status,
+    contentType: "application/json",
+    body: JSON.stringify(body),
+  });
+}
+
+function apiPath(url: string): string {
+  return new URL(url).pathname.replace(apiRoot, "") || "/";
+}
+
+function assertNoComponentOverflow(page: Page, label: string): Promise<void> {
+  return page.evaluate((scenarioLabel) => {
+    const documentWidth = document.documentElement.scrollWidth;
+    const viewportWidth = document.documentElement.clientWidth;
+    if (documentWidth > viewportWidth + 1) {
+      throw new Error(`${scenarioLabel}: document overflow ${documentWidth} > ${viewportWidth}`);
+    }
+    const selectors = [
+      ".media-shell",
+      ".media-topbar",
+      ".media-content",
+      ".personal-workspace-page",
+      ".organization-workspace-page",
+      ".personal-workspace-grid",
+      ".organization-shell-grid",
+    ];
+    for (const selector of selectors) {
+      for (const element of document.querySelectorAll<HTMLElement>(selector)) {
+        const rect = element.getBoundingClientRect();
+        if (rect.left < -1 || rect.right > viewportWidth + 1) {
+          throw new Error(`${scenarioLabel}: ${selector} outside viewport (${rect.left}, ${rect.right}, ${viewportWidth})`);
+        }
+      }
+    }
+  }, label);
+}
+
+async function installApi(page: Page, scenario: WorkspaceScenario, methods: string[]): Promise<void> {
+  await page.route(`**${apiRoot}/**`, async (route) => {
+    const request = route.request();
+    const path = apiPath(request.url());
+    methods.push(`${request.method()} ${path}`);
+    if (request.method() !== "GET") {
+      await fulfill(route, { error: { code: "unexpected_write", message: `${request.method()} ${path}` } }, 500);
+      return;
+    }
+    if (path === "/session") {
+      await fulfill(route, { schemaVersion: "media_web_business_pages_v2", revision: 1, session: sessionFor(scenario) });
+      return;
+    }
+    if (path === "/content-projects") {
+      await fulfill(route, {
+        schemaVersion: "media_web_business_pages_v2",
+        revision: 1,
+        items: scenario === "personal" ? [{
+          publicProjectId: personalProjectId,
+          title: "第一阶段云端交付验证项目",
+          workspaceMode: "personal_web",
+          stage: "review",
+          status: "active",
+          artifactCounts: { creation_document: 1 },
+          updatedAt: "2099-01-01T00:00:00+00:00",
+        }] : [],
+        nextCursor: null,
+      });
+      return;
+    }
+    if (path === `/content-projects/${personalProjectId}/artifacts`) {
+      await fulfill(route, {
+        schemaVersion: "media_web_business_pages_v2",
+        revision: 1,
+        items: [{
+          publicArtifactId: personalArtifactId,
+          publicProjectId: personalProjectId,
+          artifactType: "creation_document",
+          displayName: "第一阶段个人云端成果",
+          bodyAuthority: "internal",
+          currentRevision: 1,
+          syncStatus: "not_applicable",
+          updatedAt: "2099-01-01T00:00:00+00:00",
+          allowedActions: ["view"],
+        }],
+        nextCursor: null,
+      });
+      return;
+    }
+    if (path === `/documents/${personalArtifactId}/body`) {
+      await fulfill(route, {
+        schemaVersion: "media_web_business_pages_v2",
+        revision: 1,
+        data: {
+          artifact: { workspaceMode: "personal_web", bodyAuthority: "internal", artifactKind: "creation_document" },
+          revision: {
+            body: {
+              blocks: [{
+                id: "stage1-runtime-heading",
+                type: "heading_1",
+                attrs: {},
+                content: [{ type: "text", text: "第一阶段云端成果正文", marks: [] }],
+              }],
+            },
+          },
+        },
+      });
+      return;
+    }
+    await fulfill(route, { error: { code: "unexpected_qa_request", message: `${request.method()} ${path}` } }, 500);
+  });
+}
+
+async function runScenario(origin: string, scenario: WorkspaceScenario, viewport: { width: number; height: number }, label: string) {
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport });
+  const page = await context.newPage();
+  const methods: string[] = [];
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  try {
+    await installApi(page, scenario, methods);
+    const path = scenario === "personal" ? `${mediaBase}/workspace` : `${mediaBase}/organization-workspace`;
+    await page.goto(`${origin}${path}`, { waitUntil: "domcontentloaded" });
+    if (scenario === "personal") {
+      await page.getByRole("heading", { name: "云端成果", exact: true }).waitFor({ timeout: 10_000 });
+      await page.getByText("第一阶段云端交付验证项目", { exact: true }).waitFor({ timeout: 10_000 });
+      await page.getByRole("heading", { name: "云端交付与预览", exact: true }).waitFor({ timeout: 10_000 });
+      await page.getByRole("link", { name: "查看云端预览" }).click();
+      await page.getByRole("heading", { name: "云端成果预览", exact: true }).waitFor({ timeout: 10_000 });
+      await page.getByText("第一阶段云端成果正文", { exact: true }).waitFor({ timeout: 10_000 });
+      assert.equal(await page.locator(".personal-workspace-page").getAttribute("data-workspace-mode"), "personal_web");
+      assert.equal(await page.getByRole("link", { name: /查看云端预览/ }).count(), 0);
+      assert.equal(await page.getByRole("button", { name: /写入|发布|外部/ }).count(), 0);
+    } else {
+      await page.getByRole("heading", { name: "组织资源工作台", exact: true }).waitFor({ timeout: 10_000 });
+      const expectedConnection = scenario === "organization-active" ? "connected" : "disabled";
+      const expectedLabel = scenario === "organization-active" ? "已连接" : "已停用";
+      const pageRoot = page.locator(".organization-workspace-page");
+      await pageRoot.waitFor({ state: "visible", timeout: 10_000 });
+      assert.equal(await pageRoot.getAttribute("data-organization-connection"), expectedConnection);
+      await page.getByText("测试飞书组织", { exact: true }).first().waitFor({ timeout: 10_000 });
+      await page.getByLabel("组织工作区状态和资源入口").getByText("组织成员", { exact: true }).waitFor({ timeout: 10_000 });
+      await page.getByText(expectedLabel, { exact: true }).first().waitFor({ timeout: 10_000 });
+      const visibleText = await page.locator("body").innerText();
+      for (const internalValue of ["Binding 状态", "ACTIVE", "DISABLED", "NEEDS_ATTENTION"]) {
+        assert.equal(visibleText.includes(internalValue), false, `${label}: leaked internal value ${internalValue}`);
+      }
+      assert.equal(await page.getByRole("button", { name: /写入|发布|外部/ }).count(), 0);
+      if (scenario === "organization-disabled") {
+        assert.equal(await page.getByText(/资源入口保持关闭并等待安装恢复。/).count(), 1);
+        assert.equal(await page.getByText("已连接", { exact: true }).count(), 0);
+      }
+    }
+    await assertNoComponentOverflow(page, label);
+    await page.screenshot({ path: join(outputRoot, `${label}.png`), fullPage: true });
+    assert.deepEqual(consoleErrors, [], `${label}: console errors\n${consoleErrors.join("\n")}`);
+    assert.deepEqual(pageErrors, [], `${label}: page errors\n${pageErrors.join("\n")}`);
+    assert.equal(methods.some((entry) => !entry.startsWith("GET ")), false, `${label}: external write request observed: ${methods.join(", ")}`);
+    return { label, viewport, requests: methods };
+  } finally {
+    await browser.close();
+  }
+}
+
+await mkdir(outputRoot, { recursive: true });
+const server = await createServer({
+  root: projectRoot,
+  configFile: false,
+  base: `${mediaBase}/`,
+  publicDir: false,
+  appType: "spa",
+  plugins: [
+    react(),
+    {
+      name: "stage1-runtime-media-index",
+      configureServer(viteServer) {
+        viteServer.middlewares.use(async (request, response, next) => {
+          if (!request.headers.accept?.includes("text/html")) return next();
+          try {
+            const html = await readFile(join(projectRoot, "index.media.html"), "utf8");
+            response.statusCode = 200;
+            response.setHeader("Content-Type", "text/html");
+            response.end(await viteServer.transformIndexHtml(request.url ?? mediaBase, html));
+          } catch (error) {
+            next(error as Error);
+          }
+        });
+      },
+    },
+  ],
+  server: { host: "127.0.0.1", port: 0, strictPort: false },
+});
+await server.listen();
+try {
+  const address = server.httpServer?.address();
+  assert.ok(address && typeof address !== "string", "Vite QA server did not expose a TCP port");
+  const origin = `http://127.0.0.1:${address.port}`;
+  const results = [];
+  for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+    const suffix = viewport.width < 600 ? "mobile" : "desktop";
+    results.push(await runScenario(origin, "personal", viewport, `personal-${suffix}`));
+    results.push(await runScenario(origin, "organization-active", viewport, `organization-active-${suffix}`));
+    results.push(await runScenario(origin, "organization-disabled", viewport, `organization-disabled-${suffix}`));
+  }
+  console.log(JSON.stringify({ ok: true, outputRoot, results }, null, 2));
+} finally {
+  await server.close();
+}

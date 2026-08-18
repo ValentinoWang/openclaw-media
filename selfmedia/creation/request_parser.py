@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
+from urllib.parse import unquote, urlparse
 from zoneinfo import ZoneInfo
 
 from .field_contract import normalize_content_type, normalize_platform, split_tags
@@ -12,10 +13,12 @@ CREATION_PATTERN = re.compile(r"^\s*【创作(?:>(?P<platform>小红书|抖音))
 REQUEST_KEYS = (
     "平台|赛道|类型|内容类型|主体|主题|发布时间|用户想法|想法|"
     "素材/参考|素材参考|参考素材|参考|素材|希望产出|输出要求|目标人群|"
-    "关键词|标签|tags|品牌|产品|项目|账号|作者ID|博主|Brief|brief|商务"
+    "关键词|标签|tags|品牌|产品|项目|账号|作者ID|博主|Brief|brief|商务|"
+    "source_asset_id|source|来源|素材源ID|SourceAsset来源ID|路径续接ID"
 )
 KEY_VALUE_RE = re.compile(rf"(?P<key>{REQUEST_KEYS})\s*[=:：]\s*(?P<value>.*?)(?=\s+(?:{REQUEST_KEYS})\s*[=:：]|$)")
 KNOWN_PLATFORMS = {"小红书", "抖音"}
+SOURCE_ASSET_ID_RE = re.compile(r"\bsource_asset[_-][A-Za-z0-9_.:-]+\b")
 
 
 @dataclass(frozen=True)
@@ -33,12 +36,14 @@ class CreationRequest:
     account: str = ""
     brief: str = ""
     business_note: str = ""
+    source_asset_id: str = ""
     raw_text: str = ""
 
     def to_dict(self) -> dict[str, object]:
         payload = asdict(self)
         payload["keywords"] = list(self.keywords or [])
         return payload
+
 
 
 def parse_creation_request(
@@ -101,6 +106,15 @@ def parse_creation_request(
     ).strip()
     business_note = (values.get("商务") or inferred.get("商务", "")).strip()
     keywords = split_tags(values.get("关键词") or values.get("标签") or values.get("tags") or inferred.get("关键词", "") or " ".join([track, topic, brand, product, project, account]))
+    source_asset_id = extract_source_asset_id(
+        raw_text,
+        values.get("source_asset_id")
+        or values.get("SourceAsset来源ID")
+        or values.get("素材源ID")
+        or values.get("source")
+        or values.get("来源")
+        or inferred.get("source_asset_id", "")
+    )
     return CreationRequest(
         platform=platform,
         content_type=content_type,
@@ -115,6 +129,7 @@ def parse_creation_request(
         account=account,
         brief=brief,
         business_note=business_note,
+        source_asset_id=source_asset_id,
         raw_text=raw_text,
     )
 
@@ -127,6 +142,8 @@ def _parse_key_values(body: str) -> dict[str, str]:
         if value:
             values[key] = value
     return values
+
+
 
 
 def _join_labeled_notes(items: tuple[tuple[str, object], ...]) -> str:
@@ -158,6 +175,7 @@ def _normalize_inferred_values(values: dict[str, object]) -> dict[str, str]:
         "account": "账号",
         "brief": "Brief",
         "business_note": "商务",
+        "source_asset_id": "source_asset_id",
     }
     for raw_key, raw_value in values.items():
         key = alias_map.get(str(raw_key), str(raw_key))
@@ -178,6 +196,28 @@ def _normalize_inferred_values(values: dict[str, object]) -> dict[str, str]:
         if value:
             normalized[key] = value
     return normalized
+
+
+def extract_source_asset_id(raw_text: str, explicit_value: object = "") -> str:
+    for candidate in (explicit_value, raw_text):
+        normalized = _normalize_source_asset_ref(str(candidate or ""))
+        if normalized:
+            return normalized
+    return ""
+
+
+def _normalize_source_asset_ref(value: str) -> str:
+    text = str(value or "").strip().strip("`")
+    if not text:
+        return ""
+    parsed = urlparse(text)
+    if parsed.scheme == "media":
+        parts = [unquote(part) for part in (parsed.netloc, *parsed.path.split("/")) if part]
+        if parts and parts[0] == "source_assets" and len(parts) >= 2:
+            return parts[1]
+        return ""
+    match = SOURCE_ASSET_ID_RE.search(text)
+    return match.group(0) if match else ""
 
 
 def normalize_publish_time(raw: str, now: datetime, tz: ZoneInfo) -> str:

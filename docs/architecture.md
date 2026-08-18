@@ -46,6 +46,30 @@ selfmedia-tools/openclaw-tag-router/
   owns: inbox, outbox, archive, logs, tmp, content_flow runtime files
   must not contain: source authority for tag-router behavior
 
+openclaw-bot-center/public/data/openclaw-bot-center.generated.json
+  role: generated frontend projection
+  owns: capability detail data generated from the active tag-router registry
+  must match: active tag-router capability registry after generate:data
+
+openclaw-bot-center/dist/
+  role: built frontend artifact
+  owns: static files produced by npm run build
+  must match: public generated data
+
+/var/www/openclaw/bots/
+  role: published frontend artifact
+  owns: served static Bot Center files
+  must match: openclaw-bot-center/dist/
+
+日记 / 周记 timer
+  role: systemd scheduling authority
+  owns: daily 22:00 journal prompt and Sunday 23:59 weekly self-model trigger
+  must match: openclaw-tag-router/deploy/systemd/user/*
+
+OpenClaw cron
+  role: unrelated OpenClaw scheduled jobs
+  must not contain: competing Daily journal or weekly self-model jobs
+
 openclaw-agents/media/
   role: media Bot local workspace
   owns: Bot instructions, thin selfmedia entrypoint, generated files, attachment manifests, tmp analysis
@@ -95,8 +119,8 @@ selfmedia-tools/
 |
 |-- openclaw-tag-router/              # tag-router source SSOT
 |-- data/
-|   |-- media_memory/                 # account profile and review memory
-|   `-- media_vault/                  # canonical artifact storage root
+|   |-- media_memory/tenants/<tenant_id>/ # tenant account profile and review memory
+|   `-- media_vault/tenants/<tenant_id>/  # canonical tenant artifact storage root
 |-- tests/
 |-- downloads/                        # local download cache
 `-- outputs/                          # local temporary output and backups
@@ -106,15 +130,15 @@ selfmedia-tools/
 
 | Capability | Code owner | Runtime entrypoint | Artifact owner |
 |---|---|---|---|
-| Content ingest and media analysis | `selfmedia/ingest/content_flow/` | `runtime/cli/selfmedia.py run ingest` | `data/media_vault/source_assets/` or local download cache |
-| Music resource extraction | `selfmedia/ingest/music_resource/` | module or package script under that directory | caller-selected output or `data/media_vault/source_assets/` |
-| Field health diagnostics | `selfmedia/ingest/diagnostics/field_health.py` | direct module call | `data/media_vault/field_health_runs/` |
-| Viral deconstruction | `selfmedia/deconstruct/viral_content/` | `runtime/cli/selfmedia.py run deconstruct` | `data/media_vault/deconstructions/` |
-| Creation workflows | `selfmedia/creation/` | `runtime/cli/selfmedia.py` creation commands | `data/media_vault/creation_runs/` |
-| Data review | `selfmedia/review/` | `runtime/cli/selfmedia.py data-review` | `data/media_vault/data_review_runs/` |
-| Creator profiles | `selfmedia/creator_profiles/` | tag-router adapter or public service call | `data/media_vault/creator_profiles/` |
-| Business ID and quotes | `selfmedia/business/` | `python3 -m selfmedia.business.id_business` | `data/media_vault/business/` |
-| Style polish | `selfmedia/style/` | `openclaw_app/router/style_polish.py` or public service call | `data/media_vault/style_polish_runs/` |
+| Content ingest and media analysis | `selfmedia/ingest/content_flow/` | `runtime/cli/selfmedia.py run ingest` | `data/media_vault/tenants/<tenant_id>/source_assets/` or tenant-scoped local download cache |
+| Music resource extraction | `selfmedia/ingest/music_resource/` | module or package script under that directory | caller-selected tenant output or `data/media_vault/tenants/<tenant_id>/source_assets/` |
+| Field health diagnostics | `selfmedia/ingest/diagnostics/field_health.py` | direct module call | `data/media_vault/tenants/<tenant_id>/field_health_runs/` |
+| Viral deconstruction | `selfmedia/deconstruct/viral_content/` | `runtime/cli/selfmedia.py run deconstruct` | `data/media_vault/tenants/<tenant_id>/deconstructions/` |
+| Creation workflows | `selfmedia/creation/` | `runtime/cli/selfmedia.py` creation commands | `data/media_vault/tenants/<tenant_id>/creation_runs/` |
+| Data review | `selfmedia/review/` | `runtime/cli/selfmedia.py data-review` | `data/media_vault/tenants/<tenant_id>/data_review_runs/` |
+| Creator profiles | `selfmedia/creator_profiles/` | tag-router adapter or public service call | `data/media_vault/tenants/<tenant_id>/creator_profiles/` |
+| Business ID and quotes | `selfmedia/business/` | `python3 -m selfmedia.business.id_business` | `data/media_vault/tenants/<tenant_id>/business/` |
+| Style polish | `selfmedia/style/` | `openclaw_app/router/style_polish.py` or public service call | `data/media_vault/tenants/<tenant_id>/style_polish_runs/` |
 | Image generation | `selfmedia/creation/image_generation.py` | `python3 -m selfmedia.creation.image_generation` | `openclaw-agents/media/generated/gpt-image-2/` |
 
 ## Dependency Direction
@@ -166,6 +190,52 @@ This path is runtime workspace data:
 
 The single-source guard must compare source and deployed copy. Runtime workspace data is not compared to source because it stores messages, archives, logs, and temporary runtime state.
 
+The canonical deployment command is:
+
+```bash
+python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_runtime.py
+```
+
+It performs the full source-to-runtime projection:
+
+```text
+selfmedia-tools/openclaw-tag-router/
+  -> rsync --delete
+  -> .openclaw/extensions/openclaw-tag-router/
+  -> install deploy/systemd/user units
+  -> generate:data / validate:data / npm run build
+  -> /var/www/openclaw/bots/
+  -> guard source/active drift, Bot Center parity, and cron/systemd scheduler authority
+```
+
+Do not use `.openclaw/extensions/openclaw-tag-router/` as a long-lived edit location. If an emergency hotfix is applied there, immediately backport it to `selfmedia-tools/openclaw-tag-router/` and run the deployment command so the guard can prove the copies converged again.
+
+## OpenClaw Frontend Projection
+
+Bot Center is a frontend projection of the active tag-router capability registry, not a second capability registry.
+
+```text
+active tag-router capability registry
+  -> /home/ubuntu/openclaw-bot-center/scripts/generateDashboardData.py
+  -> /home/ubuntu/openclaw-bot-center/public/data/openclaw-bot-center.generated.json
+  -> npm run build
+  -> /home/ubuntu/openclaw-bot-center/dist/
+  -> /var/www/openclaw/bots/
+```
+
+The published JSON must match both local `public/` and `dist/`; otherwise users may see a stale ability page even when the runtime route has changed.
+
+## OpenClaw Scheduler Authority
+
+Daily journal and weekly self-model scheduling are owned by systemd user timers:
+
+```text
+openclaw-daily-journal-template.timer     -> daily 22:00
+openclaw-weekly-self-model-summary.timer  -> Sunday 23:59
+```
+
+OpenClaw cron may continue to own unrelated scheduled jobs, but it must not retain competing Daily journal or weekly self-model jobs. The runtime smoke must read both systemd and `openclaw cron list --json`.
+
 ## OpenClaw Media Agent Boundary
 
 `/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py` is the only selfmedia script entrypoint inside `openclaw-agents/media/scripts/`.
@@ -204,7 +274,10 @@ Any new `media_vault` path outside those roles needs a documented owner and a gu
 - `openclaw-agents/media/scripts/` contains only the thin `selfmedia.py` entrypoint;
 - `openclaw-agents/media/scripts/selfmedia.py` points to `selfmedia-tools/runtime/cli/selfmedia.py`;
 - tag-router source and deployed copy are byte-identical except ignored cache files;
+- tag-router source, active copy, and installed journal systemd units are identical for the Daily journal timers;
+- Bot Center `public/`, `dist/`, and `/var/www/openclaw/bots/` generated JSON are identical;
+- the deployment script performs source-to-active sync, systemd unit install, Bot Center generation/build/publish, published-data parity check, and OpenClaw cron double-scheduling check;
 - media Bot AGENTS does not document removed selfmedia script paths or numbered workflow framing;
 - `media_vault/` and `data/media_vault/` are treated as code package and data root respectively.
 
-`scripts/qa/openclaw_single_source_runtime_smoke.py` must call the static guard before runtime checks.
+`scripts/qa/openclaw_single_source_runtime_smoke.py` must call the static guard before runtime checks, then verify user services, journal timers, OpenClaw cron scheduler authority, gateway status, runtime config, and the media selfmedia thin entrypoint.

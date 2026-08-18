@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "1",
+  "contractId": "media-material-parsing-coverage-v1",
+  "decisionVersion": 1,
+  "statuses": [
+    "pending",
+    "processing",
+    "completed_auto",
+    "pending_manual",
+    "completed_manual",
+    "failed"
+  ],
+  "completionStatuses": ["completed_auto", "completed_manual"],
+  "platforms": [
+    {"id": "douyin", "label": "抖音"},
+    {"id": "xiaohongshu", "label": "小红书"},
+    {"id": "kuaishou", "label": "快手"},
+    {"id": "bilibili", "label": "哔哩哔哩"},
+    {"id": "wechat", "label": "微信"},
+    {"id": "weibo", "label": "微博"},
+    {"id": "zhihu", "label": "知乎"},
+    {"id": "web", "label": "普通网页"},
+    {"id": "unknown", "label": "其他或未知平台"}
+  ],
+  "materialTypes": [
+    {"id": "text", "label": "文本"},
+    {"id": "url", "label": "链接"},
+    {"id": "image", "label": "图片"},
+    {"id": "audio", "label": "音频"},
+    {"id": "video", "label": "视频"},
+    {"id": "pdf", "label": "PDF"}
+  ],
+  "manualSupplementField": "remark",
+  "sourceFields": {
+    "text": "field_c675ffae69a2",
+    "url": "field_c675ffae69a2",
+    "image": "uploadIds",
+    "audio": "uploadIds",
+    "video": "uploadIds",
+    "pdf": "uploadIds"
+  },
+  "coverage": [
+    {"platform":"douyin","materialType":"text","mode":"automatic","parserId":"utf8-text","parserVersion":"1","requiredOutputs":["normalizedText"],"failureCode":"text_parse_failed","failurePrompt":"文本未能解析为有效内容。","manualFields":["remark"],"nextAction":"请补充素材摘要后重新校验。"},
+    {"platform":"douyin","materialType":"url","mode":"automatic","parserId":"content-flow-douyin","parserVersion":"1","requiredOutputs":["sourceUrl","title","content"],"failureCode":"douyin_url_parse_failed","failurePrompt":"抖音链接自动解析失败或返回内容不完整。","manualFields":["remark"],"nextAction":"请确认链接可访问，或补充标题、正文摘要和用途后重新校验。"},
+    {"platform":"douyin","materialType":"image","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"douyin_image_unsupported","failurePrompt":"当前不支持自动解析抖音图片素材。","manualFields":["remark"],"nextAction":"请补充图片主体、关键信息和用途后重新校验。"},
+    {"platform":"douyin","materialType":"audio","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"douyin_audio_unsupported","failurePrompt":"当前不支持自动解析抖音音频素材。","manualFields":["remark"],"nextAction":"请补充音频主题、关键内容和用途后重新校验。"},
+    {"platform":"douyin","materialType":"video","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"douyin_video_unsupported","failurePrompt":"当前不支持自动解析抖音视频文件。","manualFields":["remark"],"nextAction":"请补充视频主题、关键画面或口播摘要和用途后重新校验。"},
+    {"platform":"douyin","materialType":"pdf","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"douyin_pdf_unsupported","failurePrompt":"当前不支持自动解析抖音 PDF 素材。","manualFields":["remark"],"nextAction":"请补充文档主题、关键结论和用途后重新校验。"},
+
+    {"platform":"xiaohongshu","materialType":"text","mode":"automatic","parserId":"utf8-text","parserVersion":"1","requiredOutputs":["normalizedText"],"failureCode":"text_parse_failed","failurePrompt":"文本未能解析为有效内容。","manualFields":["remark"],"nextAction":"请补充素材摘要后重新校验。"},
+    {"platform":"xiaohongshu","materialType":"url","mode":"automatic","parserId":"content-flow-xiaohongshu","parserVersion":"1","requiredOutputs":["sourceUrl","title","content"],"failureCode":"xiaohongshu_url_parse_failed","failurePrompt":"小红书链接自动解析失败或返回内容不完整。","manualFields":["remark"],"nextAction":"请确认链接可访问，或补充标题、正文摘要和用途后重新校验。"},
+    {"platform":"xiaohongshu","materialType":"image","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"xiaohongshu_image_unsupported","failurePrompt":"当前不支持自动解析小红书图片素材。","manualFields":["remark"],"nextAction":"请补充图片主体、关键信息和用途后重新校验。"},
+    {"platform":"xiaohongshu","materialType":"audio","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"xiaohongshu_audio_unsupported","failurePrompt":"当前不支持自动解析小红书音频素材。","manualFields":["remark"],"nextAction":"请补充音频主题、关键内容和用途后重新校验。"},
+    {"platform":"xiaohongshu","materialType":"video","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"xiaohongshu_video_unsupported","failurePrompt":"当前不支持自动解析小红书视频文件。","manualFields":["remark"],"nextAction":"请补充视频主题、关键画面或口播摘要和用途后重新校验。"},
+    {"platform":"xiaohongshu","materialType":"pdf","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"xiaohongshu_pdf_unsupported","failurePrompt":"当前不支持自动解析小红书 PDF 素材。","manualFields":["remark"],"nextAction":"请补充文档主题、关键结论和用途后重新校验。"},
+
+    {"platform":"kuaishou","materialType":"text","mode":"automatic","parserId":"utf8-text","parserVersion":"1","requiredOutputs":["normalizedText"],"failureCode":"text_parse_failed","failurePrompt":"文本未能解析为有效内容。","manualFields":["remark"],"nextAction":"请补充素材摘要后重新校验。"},
+    {"platform":"kuaishou","materialType":"url","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"kuaishou_url_unsupported","failurePrompt":"当前未接入快手链接自动解析。","manualFields":["remark"],"nextAction":"请补充链接标题、正文摘要和用途后重新校验。"},
+    {"platform":"kuaishou","materialType":"image","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"kuaishou_image_unsupported","failurePrompt":"当前不支持自动解析快手图片素材。","manualFields":["remark"],"nextAction":"请补充图片主体、关键信息和用途后重新校验。"},
+    {"platform":"kuaishou","materialType":"audio","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"kuaishou_audio_unsupported","failurePrompt":"当前不支持自动解析快手音频素材。","manualFields":["remark"],"nextAction":"请补充音频主题、关键内容和用途后重新校验。"},
+    {"platform":"kuaishou","materialType":"video","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"kuaishou_video_unsupported","failurePrompt":"当前不支持自动解析快手视频文件。","manualFields":["remark"],"nextAction":"请补充视频主题、关键画面或口播摘要和用途后重新校验。"},
+    {"platform":"kuaishou","materialType":"pdf","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"kuaishou_pdf_unsupported","failurePrompt":"当前不支持自动解析快手 PDF 素材。","manualFields":["remark"],"nextAction":"请补充文档主题、关键结论和用途后重新校验。"},
+
+    {"platform":"bilibili","materialType":"text","mode":"automatic","parserId":"utf8-text","parserVersion":"1","requiredOutputs":["normalizedText"],"failureCode":"text_parse_failed","failurePrompt":"文本未能解析为有效内容。","manualFields":["remark"],"nextAction":"请补充素材摘要后重新校验。"},
+    {"platform":"bilibili","materialType":"url","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"bilibili_url_unsupported","failurePrompt":"当前未接入哔哩哔哩链接自动解析。","manualFields":["remark"],"nextAction":"请补充链接标题、正文摘要和用途后重新校验。"},
+    {"platform":"bilibili","materialType":"image","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"bilibili_image_unsupported","failurePrompt":"当前不支持自动解析哔哩哔哩图片素材。","manualFields":["remark"],"nextAction":"请补充图片主体、关键信息和用途后重新校验。"},
+    {"platform":"bilibili","materialType":"audio","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"bilibili_audio_unsupported","failurePrompt":"当前不支持自动解析哔哩哔哩音频素材。","manualFields":["remark"],"nextAction":"请补充音频主题、关键内容和用途后重新校验。"},
+    {"platform":"bilibili","materialType":"video","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"bilibili_video_unsupported","failurePrompt":"当前不支持自动解析哔哩哔哩视频文件。","manualFields":["remark"],"nextAction":"请补充视频主题、关键画面或口播摘要和用途后重新校验。"},
+    {"platform":"bilibili","materialType":"pdf","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"bilibili_pdf_unsupported","failurePrompt":"当前不支持自动解析哔哩哔哩 PDF 素材。","manualFields":["remark"],"nextAction":"请补充文档主题、关键结论和用途后重新校验。"},
+
+    {"platform":"wechat","materialType":"text","mode":"automatic","parserId":"utf8-text","parserVersion":"1","requiredOutputs":["normalizedText"],"failureCode":"text_parse_failed","failurePrompt":"文本未能解析为有效内容。","manualFields":["remark"],"nextAction":"请补充素材摘要后重新校验。"},
+    {"platform":"wechat","materialType":"url","mode":"automatic","parserId":"content-flow-wechat-article","parserVersion":"1","requiredOutputs":["sourceUrl","title","content"],"failureCode":"wechat_url_parse_failed","failurePrompt":"微信文章链接自动解析失败或返回内容不完整。","manualFields":["remark"],"nextAction":"请确认文章可访问，或补充标题、正文摘要和用途后重新校验。"},
+    {"platform":"wechat","materialType":"image","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"wechat_image_unsupported","failurePrompt":"当前不支持自动解析微信图片素材。","manualFields":["remark"],"nextAction":"请补充图片主体、关键信息和用途后重新校验。"},
+    {"platform":"wechat","materialType":"audio","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"wechat_audio_unsupported","failurePrompt":"当前不支持自动解析微信音频素材。","manualFields":["remark"],"nextAction":"请补充音频主题、关键内容和用途后重新校验。"},
+    {"platform":"wechat","materialType":"video","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"wechat_video_unsupported","failurePrompt":"当前不支持自动解析微信视频文件。","manualFields":["remark"],"nextAction":"请补充视频主题、关键画面或口播摘要和用途后重新校验。"},
+    {"platform":"wechat","materialType":"pdf","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"wechat_pdf_unsupported","failurePrompt":"当前不支持自动解析微信 PDF 素材。","manualFields":["remark"],"nextAction":"请补充文档主题、关键结论和用途后重新校验。"},
+
+    {"platform":"weibo","materialType":"text","mode":"automatic","parserId":"utf8-text","parserVersion":"1","requiredOutputs":["normalizedText"],"failureCode":"text_parse_failed","failurePrompt":"文本未能解析为有效内容。","manualFields":["remark"],"nextAction":"请补充素材摘要后重新校验。"},
+    {"platform":"weibo","materialType":"url","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"weibo_url_unsupported","failurePrompt":"当前未接入微博链接自动解析。","manualFields":["remark"],"nextAction":"请补充链接标题、正文摘要和用途后重新校验。"},
+    {"platform":"weibo","materialType":"image","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"weibo_image_unsupported","failurePrompt":"当前不支持自动解析微博图片素材。","manualFields":["remark"],"nextAction":"请补充图片主体、关键信息和用途后重新校验。"},
+    {"platform":"weibo","materialType":"audio","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"weibo_audio_unsupported","failurePrompt":"当前不支持自动解析微博音频素材。","manualFields":["remark"],"nextAction":"请补充音频主题、关键内容和用途后重新校验。"},
+    {"platform":"weibo","materialType":"video","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"weibo_video_unsupported","failurePrompt":"当前不支持自动解析微博视频文件。","manualFields":["remark"],"nextAction":"请补充视频主题、关键画面或口播摘要和用途后重新校验。"},
+    {"platform":"weibo","materialType":"pdf","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"weibo_pdf_unsupported","failurePrompt":"当前不支持自动解析微博 PDF 素材。","manualFields":["remark"],"nextAction":"请补充文档主题、关键结论和用途后重新校验。"},
+
+    {"platform":"zhihu","materialType":"text","mode":"automatic","parserId":"utf8-text","parserVersion":"1","requiredOutputs":["normalizedText"],"failureCode":"text_parse_failed","failurePrompt":"文本未能解析为有效内容。","manualFields":["remark"],"nextAction":"请补充素材摘要后重新校验。"},
+    {"platform":"zhihu","materialType":"url","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"zhihu_url_unsupported","failurePrompt":"当前未接入知乎链接自动解析。","manualFields":["remark"],"nextAction":"请补充链接标题、正文摘要和用途后重新校验。"},
+    {"platform":"zhihu","materialType":"image","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"zhihu_image_unsupported","failurePrompt":"当前不支持自动解析知乎图片素材。","manualFields":["remark"],"nextAction":"请补充图片主体、关键信息和用途后重新校验。"},
+    {"platform":"zhihu","materialType":"audio","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"zhihu_audio_unsupported","failurePrompt":"当前不支持自动解析知乎音频素材。","manualFields":["remark"],"nextAction":"请补充音频主题、关键内容和用途后重新校验。"},
+    {"platform":"zhihu","materialType":"video","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"zhihu_video_unsupported","failurePrompt":"当前不支持自动解析知乎视频文件。","manualFields":["remark"],"nextAction":"请补充视频主题、关键画面或口播摘要和用途后重新校验。"},
+    {"platform":"zhihu","materialType":"pdf","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"zhihu_pdf_unsupported","failurePrompt":"当前不支持自动解析知乎 PDF 素材。","manualFields":["remark"],"nextAction":"请补充文档主题、关键结论和用途后重新校验。"},
+
+    {"platform":"web","materialType":"text","mode":"automatic","parserId":"utf8-text","parserVersion":"1","requiredOutputs":["normalizedText"],"failureCode":"text_parse_failed","failurePrompt":"文本未能解析为有效内容。","manualFields":["remark"],"nextAction":"请补充素材摘要后重新校验。"},
+    {"platform":"web","materialType":"url","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"web_url_unsupported","failurePrompt":"当前未接入普通网页链接自动解析。","manualFields":["remark"],"nextAction":"请补充链接标题、正文摘要和用途后重新校验。"},
+    {"platform":"web","materialType":"image","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"web_image_unsupported","failurePrompt":"当前不支持自动解析普通网页图片素材。","manualFields":["remark"],"nextAction":"请补充图片主体、关键信息和用途后重新校验。"},
+    {"platform":"web","materialType":"audio","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"web_audio_unsupported","failurePrompt":"当前不支持自动解析普通网页音频素材。","manualFields":["remark"],"nextAction":"请补充音频主题、关键内容和用途后重新校验。"},
+    {"platform":"web","materialType":"video","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"web_video_unsupported","failurePrompt":"当前不支持自动解析普通网页视频文件。","manualFields":["remark"],"nextAction":"请补充视频主题、关键画面或口播摘要和用途后重新校验。"},
+    {"platform":"web","materialType":"pdf","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"web_pdf_unsupported","failurePrompt":"当前不支持自动解析普通网页 PDF 素材。","manualFields":["remark"],"nextAction":"请补充文档主题、关键结论和用途后重新校验。"},
+
+    {"platform":"unknown","materialType":"text","mode":"automatic","parserId":"utf8-text","parserVersion":"1","requiredOutputs":["normalizedText"],"failureCode":"text_parse_failed","failurePrompt":"文本未能解析为有效内容。","manualFields":["remark"],"nextAction":"请补充素材摘要后重新校验。"},
+    {"platform":"unknown","materialType":"url","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"unknown_url_unsupported","failurePrompt":"当前无法确认该平台并自动解析链接。","manualFields":["remark"],"nextAction":"请选择准确平台，或补充链接标题、正文摘要和用途后重新校验。"},
+    {"platform":"unknown","materialType":"image","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"unknown_image_unsupported","failurePrompt":"当前无法确认该平台并自动解析图片素材。","manualFields":["remark"],"nextAction":"请选择准确平台，并补充图片主体、关键信息和用途后重新校验。"},
+    {"platform":"unknown","materialType":"audio","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"unknown_audio_unsupported","failurePrompt":"当前无法确认该平台并自动解析音频素材。","manualFields":["remark"],"nextAction":"请选择准确平台，并补充音频主题、关键内容和用途后重新校验。"},
+    {"platform":"unknown","materialType":"video","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"unknown_video_unsupported","failurePrompt":"当前无法确认该平台并自动解析视频素材。","manualFields":["remark"],"nextAction":"请选择准确平台，并补充视频主题、关键画面或口播摘要和用途后重新校验。"},
+    {"platform":"unknown","materialType":"pdf","mode":"manual_required","parserId":"manual-only","parserVersion":"1","requiredOutputs":[],"failureCode":"unknown_pdf_unsupported","failurePrompt":"当前无法确认该平台并自动解析 PDF 素材。","manualFields":["remark"],"nextAction":"请选择准确平台，并补充文档主题、关键结论和用途后重新校验。"}
+  ]
+}

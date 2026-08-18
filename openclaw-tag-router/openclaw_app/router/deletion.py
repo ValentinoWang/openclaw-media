@@ -3,11 +3,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from media_vault import MediaVault
+
 from .deletion_adapters import adapters_for
 from .deletion_adapters.base import DeletionContext
 from .deletion_discovery import APPLY_KEYWORDS, discover_target, extract_target_ids
 from .deletion_plan import DeletionEntity, DeletionPlan, execute_local_plan, render_deletion_reply
 from .tag_router_common import *
+from ..services.tenant_execution_context import current_session_tenant_id
 
 
 AGENT_RESULTS_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_result_vault_contract.json")
@@ -33,13 +36,15 @@ class DeletionMixin:
     def _deletion_workspace_root(self) -> Path:
         return Path(getattr(self, "workspace_root", Path("/home/ubuntu/.openclaw/workspace/openclaw-tag-router")))
 
-    def _deletion_allowed_roots(self) -> list[Path]:
+    def _deletion_allowed_roots(self, tenant_id: str | None = None) -> list[Path]:
         workspace_root = self._deletion_workspace_root()
         agent_results_base = _agent_results_base()
         agent_results_roots = [agent_results_base / folder for folder in _agent_results_required_folders()]
+        verified_tenant_id = str(tenant_id or current_session_tenant_id())
+        tenant_vault_root = MediaVault(tenant_id=verified_tenant_id).root
         return [
             workspace_root,
-            Path("/home/ubuntu/selfmedia-tools/data/media_vault"),
+            tenant_vault_root,
             *agent_results_roots,
             Path("/home/ubuntu/obsidian-日记"),
             Path("/home/ubuntu/obsidian-自媒体"),
@@ -50,12 +55,18 @@ class DeletionMixin:
         return any(keyword in (body or "") for keyword in APPLY_KEYWORDS)
 
     def _deletion_context(self) -> DeletionContext:
+        tenant_id = str(current_session_tenant_id())
         return DeletionContext(
             workspace_root=self._deletion_workspace_root(),
-            allowed_roots=self._deletion_allowed_roots(),
+            allowed_roots=self._deletion_allowed_roots(tenant_id),
             creation_cleanup_script_path=self._creation_cleanup_script_path(),
             feishu_service=getattr(self, "feishu_service", None),
+            media_feishu_service=getattr(self, "media_source_feishu_service", None),
             reminder_service=getattr(self, "reminder_service", None),
+            tenant_id=tenant_id,
+            tenant_owned_resources=getattr(self, "tenant_owned_resources", None),
+            source_asset_projection=getattr(self, "source_asset_projection", None),
+            account_database=getattr(self, "account_database", None),
         )
 
     def handle_删除(self, message: Message) -> TaskResult:

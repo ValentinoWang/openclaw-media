@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openclaw.local/contracts/capability_match.schema.json",
+  "title": "OpenClaw capability match v3",
+  "type": "object",
+  "$defs": {
+    "request": {
+      "type": "object", "additionalProperties": false, "required": ["query"],
+      "properties": {
+        "query": {"type": "string", "minLength": 1, "maxLength": 4000},
+        "currentBot": {"enum": ["media", "daily", "knowledge", "social"]},
+        "catalogVersion": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+      }
+    },
+    "value": {"oneOf": [{"type": "string"}, {"type": "number"}, {"type": "boolean"}, {"type": "array", "items": {"oneOf": [{"type": "string"}, {"type": "number"}]}}, {"type": "null"}]},
+    "issue": {
+      "type": "object", "additionalProperties": false, "required": ["code", "ruleType", "message"],
+      "properties": {"code": {"type": "string"}, "fieldKey": {"type": "string"}, "ruleType": {"type": "string"}, "message": {"type": "string"}}
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false, "required": ["quote", "source"],
+      "properties": {"fieldKey": {"type": "string"}, "quote": {"type": "string", "minLength": 1, "maxLength": 500}, "source": {"enum": ["query", "bound_result"]}}
+    },
+    "dependency": {
+      "type": "object", "additionalProperties": false, "required": ["stepOrder", "requiredOutputs"],
+      "properties": {"stepOrder": {"type": "integer", "minimum": 1, "maximum": 5}, "requiredOutputs": {"type": "array", "minItems": 1, "items": {"type": "string"}}}
+    },
+    "step": {
+      "type": "object", "additionalProperties": false,
+      "required": ["order", "capabilityId", "variantId", "extractedParams", "confidence", "evidence", "issues"],
+      "properties": {
+        "order": {"type": "integer", "minimum": 1, "maximum": 5},
+        "capabilityId": {"type": "string"}, "variantId": {"type": "string"},
+        "extractedParams": {"type": "object", "additionalProperties": {"$ref": "#/$defs/value"}},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+        "issues": {"type": "array", "items": {"$ref": "#/$defs/issue"}},
+        "dependsOn": {"$ref": "#/$defs/dependency"}
+      }
+    },
+    "candidate": {
+      "type": "object", "additionalProperties": false, "required": ["capabilityId", "variantId", "confidence", "reason"],
+      "properties": {"capabilityId": {"type": "string"}, "variantId": {"type": "string"}, "confidence": {"type": "number", "minimum": 0, "maximum": 1}, "reason": {"type": "string"}}
+    },
+    "matched": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "pathStatus", "needSummary", "routeExplanation", "guidancePlanId", "steps", "copyProjection"],
+      "properties": {
+        "schemaVersion": {"const": "3"}, "pathStatus": {"const": "matched"},
+        "needSummary": {"type": "string"}, "routeExplanation": {"type": "string"},
+        "guidancePlanId": {"type": "string", "pattern": "^capplan_[A-Za-z0-9_-]{16,128}$"},
+        "steps": {"type": "array", "minItems": 1, "maxItems": 5, "items": {"$ref": "#/$defs/step"}},
+        "copyProjection": {"type": "string"}
+      }
+    },
+    "ambiguous": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "pathStatus", "needSummary", "candidates"],
+      "properties": {"schemaVersion": {"const": "3"}, "pathStatus": {"const": "ambiguous"}, "needSummary": {"type": "string"}, "candidates": {"type": "array", "minItems": 2, "maxItems": 5, "items": {"$ref": "#/$defs/candidate"}}}
+    },
+    "clarification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "pathStatus", "needSummary", "clarificationQuestion", "candidates", "knownParams"],
+      "properties": {
+        "schemaVersion": {"const": "3"}, "pathStatus": {"const": "needs_clarification"}, "needSummary": {"type": "string"},
+        "clarificationQuestion": {"type": "string"}, "candidates": {"type": "array", "maxItems": 5, "items": {"$ref": "#/$defs/candidate"}},
+        "knownParams": {"type": "object", "additionalProperties": {"$ref": "#/$defs/value"}}
+      }
+    },
+    "response": {"oneOf": [{"$ref": "#/$defs/matched"}, {"$ref": "#/$defs/ambiguous"}, {"$ref": "#/$defs/clarification"}]},
+    "error": {
+      "type": "object", "additionalProperties": false, "required": ["ok", "error"],
+      "properties": {"ok": {"const": false}, "error": {"type": "object", "additionalProperties": false, "required": ["code", "message", "action"], "properties": {"code": {"enum": ["invalid_request", "provider_unavailable", "invalid_model_response", "authentication_required", "auth_failed", "auth_unavailable", "matcher_unavailable", "internal_error"]}, "message": {"type": "string"}, "action": {"type": "string"}, "detail": {"type": "string"}}}}
+      }
+  },
+  "oneOf": [{"$ref": "#/$defs/request"}, {"$ref": "#/$defs/response"}, {"$ref": "#/$defs/error"}]
+}

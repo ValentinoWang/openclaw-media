@@ -55,7 +55,7 @@ class DevelopmentMixin:
         checklist_result: Any = None
         checklist_error = ""
         try:
-            checklist_result = self.obsidian_daily_checklist_service.append_checklist(
+            checklist_result = self.obsidian_development_checklist_service.append_checklist(
                 text=message.body,
                 now=message.created_at,
                 checklist_tree=[

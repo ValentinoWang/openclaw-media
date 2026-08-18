@@ -2,21 +2,61 @@ from __future__ import annotations
 
 import json
 import base64
-import signal
 import mimetypes
 import os
 import queue
 import re
+import subprocess
+import tempfile
 import time
 import threading
-from contextlib import contextmanager
+import uuid
+from dataclasses import replace
 from pathlib import Path
-from types import FrameType
 from typing import Any
 
 import requests
 
-from .llm_settings import API_TYPE_CHAT_COMPLETIONS, API_TYPE_CODEX_RESPONSES, LLMProviderSettings
+from .bot_llm_config import openclaw_subprocess_env
+from .llm_settings import (
+    API_TYPE_CHAT_COMPLETIONS,
+    API_TYPE_CODEX_RESPONSES,
+    API_TYPE_OPENCLAW_AGENT,
+    LLMProviderSettings,
+)
+from .llm_validation import validate_llm_payload
+from .model_transport_context import ModelCall, ModelTransport, ModelTransportError, current_model_transport
+
+
+CODEX_AUTH_FILE_SENTINEL = "codex_auth_file"
+DEFAULT_CODEX_AUTH_PATH = Path("/home/ubuntu/.codex/auth.json")
+DEFAULT_CODEX_RESPONSES_CONNECT_TIMEOUT_SECONDS = 30.0
+DEFAULT_CODEX_RESPONSES_READ_TIMEOUT_SECONDS = 120.0
+CODEX_RESPONSES_CONNECT_TIMEOUT_ENV = "OPENCLAW_CODEX_RESPONSES_CONNECT_TIMEOUT_SECONDS"
+CODEX_RESPONSES_READ_TIMEOUT_ENV = "OPENCLAW_CODEX_RESPONSES_READ_TIMEOUT_SECONDS"
+CODEX_RESPONSES_TOTAL_TIMEOUT_ENV = "OPENCLAW_CODEX_RESPONSES_TOTAL_TIMEOUT_SECONDS"
+MODEL_CAPACITY_RETRY_DELAYS_SECONDS = (15.0, 45.0)
+MODEL_CAPACITY_ERROR_MARKER = "selected model is at capacity"
+MODEL_CAPACITY_DEFAULT_DETAIL = "Selected model is at capacity. Please try a different model."
+
+
+def is_model_capacity_failure(error: object) -> bool:
+    return MODEL_CAPACITY_ERROR_MARKER in str(error or "").lower()
+
+
+def model_capacity_failure_detail(error: object) -> str:
+    detail = str(error or "").strip()
+    marker_index = detail.lower().find(MODEL_CAPACITY_ERROR_MARKER)
+    if marker_index < 0:
+        return MODEL_CAPACITY_DEFAULT_DETAIL
+    capacity_detail = detail[marker_index:].splitlines()[0].strip()
+    return capacity_detail or MODEL_CAPACITY_DEFAULT_DETAIL
+
+
+def _json_retry_delay_seconds(error: object, attempt: int) -> float:
+    if not is_model_capacity_failure(error):
+        return 0.5
+    return MODEL_CAPACITY_RETRY_DELAYS_SECONDS[min(max(0, attempt), len(MODEL_CAPACITY_RETRY_DELAYS_SECONDS) - 1)]
 
 
 CODEX_AUTH_FILE_SENTINEL = "codex_auth_file"
@@ -30,8 +70,22 @@ CODEX_RESPONSES_STREAM_ENV = "OPENCLAW_CODEX_RESPONSES_STREAM"
 
 
 def ensure_llm_provider_available(config: LLMProviderSettings) -> None:
+    tenant_transport = current_model_transport()
+    if tenant_transport is not None:
+        if not config.model:
+            raise RuntimeError("tenant model transport requires an explicit model")
+        return
+    if config.api_type == API_TYPE_OPENCLAW_AGENT:
+        missing = [
+            name
+            for name, value in (("bin", config.bin), ("agent", config.agent), ("cwd", config.cwd), ("codex_home", config.codex_home))
+            if not str(value or "").strip()
+        ]
+        if missing:
+            raise RuntimeError(f"OpenClaw agent provider 配置不完整：{', '.join(missing)}")
+        return
     if config.api_type not in {API_TYPE_CODEX_RESPONSES, API_TYPE_CHAT_COMPLETIONS}:
-        raise RuntimeError(f"direct LLM client 不支持 api_type={config.api_type}")
+        raise RuntimeError(f"LLM client 不支持 api_type={config.api_type}")
     if not config.api_key:
         raise RuntimeError("缺少可用 LLM Provider：config/openclaw_bots.json 当前 profile provider api_key 未配置")
     if not config.base_url or not config.model or not config.api_type:
@@ -40,6 +94,12 @@ def ensure_llm_provider_available(config: LLMProviderSettings) -> None:
 
 def resolve_provider_api_key(api_key: str) -> str:
     value = str(api_key or "").strip()
+    if value.startswith("env:"):
+        env_name = value.removeprefix("env:").strip()
+        token = str(os.getenv(env_name) or "").strip()
+        if not env_name or not token:
+            raise RuntimeError(f"LLM provider API key environment variable is unavailable: {env_name}")
+        return token
     if value != CODEX_AUTH_FILE_SENTINEL:
         return value
     auth_path = Path(os.getenv("CODEX_AUTH_FILE", "") or os.getenv("CODEX_AUTH_PATH", "") or DEFAULT_CODEX_AUTH_PATH)
@@ -66,22 +126,34 @@ def generate_json_from_parts(
     config: LLMProviderSettings,
     *,
     max_retries: int = 2,
+    capacity_max_retries: int | None = None,
     error_prefix: str = "LLM 输出 JSON 校验失败",
     retry_text: str = "上一次输出没有通过 JSON 校验：{error}\n请只返回合法 JSON object，不要 Markdown。",
     instructions: str = "你是 JSON 输出引擎。必须只输出合法 JSON object，不要 Markdown，不要解释。",
+    validation_contract: str,
+    validation_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     ensure_llm_provider_available(config)
     last_error = ""
     request_parts = list(parts)
-    for attempt in range(max_retries + 1):
+    normal_retry_limit = max(0, int(max_retries))
+    capacity_retry_limit = max(
+        normal_retry_limit,
+        int(capacity_max_retries) if capacity_max_retries is not None else normal_retry_limit,
+    )
+    for attempt in range(capacity_retry_limit + 1):
         try:
-            return generate_json_once(request_parts, config, instructions=instructions)
+            parsed = generate_json_once(request_parts, config, instructions=instructions)
+            return validate_llm_payload(parsed, validation_contract, context=validation_context).payload
+        except ModelTransportError:
+            raise
         except Exception as exc:
             last_error = str(exc)
-            if attempt >= max_retries:
+            retry_limit = capacity_retry_limit if is_model_capacity_failure(exc) else normal_retry_limit
+            if attempt >= retry_limit:
                 break
             request_parts = list(parts) + [{"text": retry_text.format(error=last_error)}]
-            time.sleep(0.5)
+            time.sleep(_json_retry_delay_seconds(exc, attempt))
     raise RuntimeError(f"{error_prefix}：{last_error}")
 
 
@@ -91,11 +163,114 @@ def generate_json_once(
     *,
     instructions: str = "你是 JSON 输出引擎。必须只输出合法 JSON object，不要 Markdown，不要解释。",
 ) -> dict[str, Any]:
+    ensure_llm_provider_available(config)
+    if current_model_transport() is not None:
+        # Authenticated Media execution owns the transport decision. Provider
+        # base URLs, auth files, direct HTTP credentials and agent subprocesses
+        # from a shared profile are intentionally unreachable in this scope.
+        tenant_model = str(config.model).strip()
+        if "/" in tenant_model:
+            tenant_model = tenant_model.split("/", 1)[1]
+        return _generate_json_codex_responses(
+            parts,
+            replace(config, model=tenant_model, api_type=API_TYPE_CODEX_RESPONSES),
+            instructions=instructions,
+        )
+    if config.api_type == API_TYPE_OPENCLAW_AGENT:
+        return _generate_json_openclaw_agent(parts, config, instructions=instructions)
     if config.api_type == API_TYPE_CODEX_RESPONSES:
         return _generate_json_codex_responses(parts, config, instructions=instructions)
     if config.api_type != API_TYPE_CHAT_COMPLETIONS:
         raise RuntimeError(f"direct LLM client 不支持 api_type={config.api_type}")
     return _generate_json_chat_completions(parts, config)
+
+
+def _generate_json_openclaw_agent(
+    parts: list[dict[str, Any]],
+    config: LLMProviderSettings,
+    *,
+    instructions: str,
+) -> dict[str, Any]:
+    message_parts = [instructions.strip()]
+    attachments: list[tuple[str, str, str]] = []
+    for index, part in enumerate(parts, start=1):
+        if "text" in part:
+            message_parts.append(str(part["text"]))
+            continue
+        data = part.get("image_data") or part.get("inline_data") or part.get("audio_data")
+        if not isinstance(data, dict) or not str(data.get("data") or "").strip():
+            raise RuntimeError(f"OpenClaw agent 不支持的 LLM part：{sorted(part)}")
+        mime_type = str(data.get("mime_type") or ("audio/mpeg" if "audio_data" in part else "image/jpeg"))
+        attachments.append(
+            (
+                str(data.get("file_name") or f"input-{index}{mimetypes.guess_extension(mime_type) or ''}"),
+                mime_type,
+                str(data["data"]),
+            )
+        )
+
+    message = "\n\n".join(item for item in message_parts if item).strip()
+    if not message:
+        raise RuntimeError("OpenClaw agent JSON 调用缺少文本指令")
+    timeout_seconds = max(1, int(float(config.timeout or 600)))
+    run_token = uuid.uuid4().hex
+    try:
+        with tempfile.TemporaryDirectory(prefix="openclaw-structured-json-") as temp_dir:
+            temp_root = Path(temp_dir)
+            attachment_lines: list[str] = []
+            for index, (file_name, mime_type, content) in enumerate(attachments, start=1):
+                safe_name = Path(file_name).name or f"input-{index}"
+                attachment_path = temp_root / safe_name
+                try:
+                    attachment_path.write_bytes(base64.b64decode(content, validate=True))
+                except (ValueError, base64.binascii.Error) as exc:
+                    raise RuntimeError(f"OpenClaw agent attachment {safe_name} 不是合法 base64") from exc
+                attachment_lines.append(f"- {mime_type}: {attachment_path}")
+            if attachment_lines:
+                message = f"{message}\n\n本次输入附件（必须读取后再输出 JSON）：\n" + "\n".join(attachment_lines)
+            message_path = temp_root / "prompt.txt"
+            message_path.write_text(message, encoding="utf-8")
+            command = [
+                config.bin,
+                "agent",
+                "--agent",
+                config.agent,
+                "--session-key",
+                f"agent:{config.agent}:structured-json:{run_token}",
+                "--message-file",
+                str(message_path),
+                "--timeout",
+                str(timeout_seconds),
+                "--json",
+            ]
+            proc = subprocess.run(
+                command,
+                cwd=config.cwd or None,
+                env=openclaw_subprocess_env(config.codex_home),
+                text=True,
+                capture_output=True,
+                timeout=timeout_seconds + 45,
+                check=False,
+            )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(f"OpenClaw Codex harness JSON 调用失败：{exc}") from exc
+    if proc.returncode != 0:
+        detail = "\n".join(
+            item for item in (proc.stderr.strip(), proc.stdout.strip(), f"exit={proc.returncode}") if item
+        )[-4000:]
+        raise RuntimeError(f"OpenClaw Codex harness JSON 调用失败：{detail}")
+    try:
+        payload = json.loads(proc.stdout)
+        result = payload.get("result") if isinstance(payload.get("result"), dict) else payload
+        payloads = result.get("payloads") if isinstance(result, dict) else None
+        text = next(
+            str(item.get("text") or "")
+            for item in (payloads or [])
+            if isinstance(item, dict) and str(item.get("text") or "").strip()
+        )
+    except (json.JSONDecodeError, AttributeError, StopIteration, TypeError) as exc:
+        raise RuntimeError("OpenClaw Codex harness 没有返回可解析的 JSON 文本") from exc
+    return parse_json_object_text(text)
 
 
 def _generate_json_chat_completions(parts: list[dict[str, Any]], config: LLMProviderSettings) -> dict[str, Any]:
@@ -124,19 +299,27 @@ def _generate_json_chat_completions(parts: list[dict[str, Any]], config: LLMProv
                     "format": _audio_format(data),
                 },
             })
-    response = requests.post(
-        f"{config.base_url}/chat/completions",
-        headers={"Authorization": f"Bearer {resolve_provider_api_key(config.api_key)}", "Content-Type": "application/json"},
-        json={
+    body = {
             "model": config.model,
             "messages": [{"role": "user", "content": content}],
             "response_format": {"type": "json_object"},
-        },
+        }
+    response, model_call = _post_model_request(
+        config,
+        "/chat/completions",
+        body,
         timeout=config.timeout,
     )
-    response.raise_for_status()
-    payload = response.json()
-    return parse_json_object_text(payload["choices"][0]["message"]["content"])
+    try:
+        payload = response.json()
+        if model_call is not None:
+            model_call.complete(response, payload)
+        parsed = parse_json_object_text(payload["choices"][0]["message"]["content"])
+        return parsed
+    except Exception:
+        if model_call is not None:
+            model_call.uncertain(response)
+        raise
 
 
 def _generate_json_codex_responses(
@@ -146,9 +329,7 @@ def _generate_json_codex_responses(
     instructions: str,
 ) -> dict[str, Any]:
     body = build_codex_responses_body(parts, config, instructions=instructions)
-    if codex_responses_stream_enabled() or codex_responses_requires_stream(config.base_url):
-        return _generate_json_codex_responses_stream(body, config)
-    return _generate_json_codex_responses_non_stream(body, config)
+    return _generate_json_codex_responses_stream(body, config)
 
 
 def build_codex_responses_body(parts: list[dict[str, Any]], config: LLMProviderSettings, *, instructions: str) -> dict[str, Any]:
@@ -191,61 +372,39 @@ def build_codex_responses_body(parts: list[dict[str, Any]], config: LLMProviderS
     return body
 
 
-def _generate_json_codex_responses_non_stream(body: dict[str, Any], config: LLMProviderSettings) -> dict[str, Any]:
-    body = dict(body)
-    body["stream"] = False
-    total_timeout = codex_responses_total_timeout(config.timeout)
-    try:
-        with _hard_timeout(total_timeout, "Codex Responses non-stream request exceeded hard total timeout before completion"):
-            response = requests.post(
-                codex_responses_url(config.base_url),
-                headers={"Authorization": f"Bearer {resolve_provider_api_key(config.api_key)}", "Content-Type": "application/json"},
-                json=body,
-                timeout=codex_responses_non_stream_timeout(config.timeout),
-                stream=False,
-            )
-            response.raise_for_status()
-            payload = response.json()
-            output_text = extract_responses_output_text(payload)
-            if not output_text:
-                raise RuntimeError(f"Codex Responses non-stream completed without output text: {_responses_event_error_text(payload)}")
-    except TimeoutError as exc:
-        raise RuntimeError(
-            f"Codex Responses non-stream watchdog timeout: {exc}. "
-            f"total_timeout={total_timeout:g}s. "
-            "Increase OPENCLAW_CODEX_RESPONSES_TOTAL_TIMEOUT_SECONDS only for known long JSON-generation runs."
-        ) from exc
-    except requests.exceptions.RequestException as exc:
-        if not _is_timeout_like_request_error(exc):
-            raise
-        raise RuntimeError(
-            f"Codex Responses non-stream watchdog timeout: {exc}. "
-            f"total_timeout={total_timeout:g}s. "
-            "Increase OPENCLAW_CODEX_RESPONSES_TOTAL_TIMEOUT_SECONDS only for known long JSON-generation runs."
-        ) from exc
-    return parse_json_object_text(output_text)
-
-
 def _generate_json_codex_responses_stream(body: dict[str, Any], config: LLMProviderSettings) -> dict[str, Any]:
     body = dict(body)
     body["stream"] = True
     total_timeout = codex_responses_total_timeout(config.timeout)
+    tenant_transport = current_model_transport()
+    completed_response: requests.Response | None = None
+    completed_call: ModelCall | None = None
     try:
         def _request_and_collect() -> str:
-            response = requests.post(
-                codex_responses_url(config.base_url),
-                headers={"Authorization": f"Bearer {resolve_provider_api_key(config.api_key)}", "Content-Type": "application/json"},
-                json=body,
+            nonlocal completed_response, completed_call
+            response, model_call = _post_model_request(
+                config,
+                "/responses",
+                body,
                 timeout=codex_responses_stream_timeout(config.timeout),
                 stream=True,
+                transport=tenant_transport,
             )
+            completed_response = response
+            completed_call = model_call
             try:
-                response.raise_for_status()
-                return collect_responses_sse_text(
+                output = collect_responses_sse_text(
                     response,
                     progress_timeout_seconds=codex_responses_read_timeout(config.timeout),
                     total_timeout_seconds=total_timeout,
                 )
+                if model_call is not None:
+                    model_call.complete(response)
+                return output
+            except Exception:
+                if model_call is not None:
+                    model_call.uncertain(response)
+                raise
             finally:
                 close = getattr(response, "close", None)
                 if callable(close):
@@ -257,6 +416,8 @@ def _generate_json_codex_responses_stream(body: dict[str, Any], config: LLMProvi
             "Codex Responses SSE exceeded hard total timeout before completion",
         )
     except TimeoutError as exc:
+        if completed_call is not None:
+            completed_call.uncertain(completed_response)
         raise RuntimeError(
             f"Codex Responses SSE watchdog timeout: {exc}. "
             f"progress_timeout={codex_responses_read_timeout(config.timeout):g}s, "
@@ -265,6 +426,8 @@ def _generate_json_codex_responses_stream(body: dict[str, Any], config: LLMProvi
             "or OPENCLAW_CODEX_RESPONSES_TOTAL_TIMEOUT_SECONDS for known long runs."
         ) from exc
     except requests.exceptions.RequestException as exc:
+        if completed_call is not None:
+            completed_call.uncertain(completed_response)
         if not _is_timeout_like_request_error(exc):
             raise
         raise RuntimeError(
@@ -275,6 +438,36 @@ def _generate_json_codex_responses_stream(body: dict[str, Any], config: LLMProvi
             "or OPENCLAW_CODEX_RESPONSES_TOTAL_TIMEOUT_SECONDS for known long runs."
         ) from exc
     return parse_json_object_text(output_text)
+
+
+def _post_model_request(
+    config: LLMProviderSettings,
+    endpoint: str,
+    body: dict[str, Any],
+    *,
+    timeout: Any,
+    stream: bool = False,
+    transport: ModelTransport | None = None,
+) -> tuple[requests.Response, ModelCall | None]:
+    tenant_transport = transport if transport is not None else current_model_transport()
+    if tenant_transport is not None:
+        model_call = tenant_transport.begin_call(endpoint)
+        return (
+            model_call.post(endpoint, json_body=body, timeout=timeout, stream=stream),
+            model_call,
+        )
+    response = requests.post(
+        (codex_responses_url(config.base_url) if endpoint == "/responses" else f"{config.base_url}{endpoint}"),
+        headers={
+            "Authorization": f"Bearer {resolve_provider_api_key(config.api_key)}",
+            "Content-Type": "application/json",
+        },
+        json=body,
+        timeout=timeout,
+        stream=stream,
+    )
+    response.raise_for_status()
+    return response, None
 
 
 def parse_json_object_text(text: str) -> dict[str, Any]:
@@ -342,7 +535,8 @@ def collect_responses_sse_text(
     buffer = ""
     done = False
 
-    for raw_chunk in resp.iter_content(chunk_size=4096, decode_unicode=True):
+    # Responses proxies may advertise a legacy response charset; SSE payloads are UTF-8 JSON bytes.
+    for raw_chunk in resp.iter_content(chunk_size=4096, decode_unicode=False):
         _check_responses_watchdog(started_at, last_event_at, progress_timeout, total_timeout)
         if not raw_chunk:
             continue
@@ -414,25 +608,6 @@ def codex_responses_stream_timeout(config_timeout: float) -> tuple[float, float]
     )
 
 
-def codex_responses_non_stream_timeout(config_timeout: float) -> tuple[float, float]:
-    return (
-        codex_responses_connect_timeout(config_timeout),
-        codex_responses_total_timeout(config_timeout),
-    )
-
-
-def codex_responses_stream_enabled(base_url: str = "") -> bool:
-    if codex_responses_requires_stream(base_url):
-        return True
-    if str(os.getenv(CODEX_RESPONSES_STREAM_ENV) or "").strip().lower() in {"1", "true", "yes", "on"}:
-        return True
-    return False
-
-
-def codex_responses_requires_stream(base_url: str) -> bool:
-    return codex_responses_url(base_url).startswith("https://chatgpt.com/backend-api/codex/responses")
-
-
 def codex_responses_connect_timeout(config_timeout: float) -> float:
     return _bounded_positive_timeout(
         CODEX_RESPONSES_CONNECT_TIMEOUT_ENV,
@@ -479,29 +654,6 @@ def _is_timeout_like_request_error(exc: requests.exceptions.RequestException) ->
     return "timed out" in str(exc).lower()
 
 
-@contextmanager
-def _hard_timeout(seconds: float, message: str):
-    timeout = _positive_float(str(seconds), 0.0) if seconds else 0.0
-    if timeout <= 0 or not hasattr(signal, "SIGALRM") or threading.current_thread() is not threading.main_thread():
-        yield
-        return
-    previous_handler = signal.getsignal(signal.SIGALRM)
-    previous_timer = signal.setitimer(signal.ITIMER_REAL, 0)
-
-    def _raise_timeout(signum: int, frame: FrameType | None) -> None:
-        raise TimeoutError(message)
-
-    signal.signal(signal.SIGALRM, _raise_timeout)
-    signal.setitimer(signal.ITIMER_REAL, timeout)
-    try:
-        yield
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, previous_handler)
-        if previous_timer[0] > 0:
-            signal.setitimer(signal.ITIMER_REAL, previous_timer[0], previous_timer[1])
-
-
 def _run_with_thread_deadline(func, seconds: float, message: str):
     timeout = _positive_float(str(seconds), 0.0) if seconds else 0.0
     if timeout <= 0:
@@ -541,6 +693,6 @@ def extract_responses_output_text(response: dict[str, Any]) -> str:
 
 def codex_responses_url(base_url: str) -> str:
     base = base_url.rstrip("/")
-    if base.endswith("/codex"):
-        return f"{base}/responses"
-    return f"{base}/codex/responses"
+    if not base.endswith("/v1"):
+        raise RuntimeError("OpenAI-compatible Responses endpoint must end with /v1")
+    return f"{base}/responses"

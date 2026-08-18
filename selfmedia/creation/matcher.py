@@ -187,7 +187,7 @@ def score_viral(record: CanonicalMediaRecord, request: CreationRequest) -> tuple
         reasons["有证据artifact"] = 7
     if record.doc_links.get("recreation"):
         score += 5
-        reasons["有拆解-再创文档"] = 5
+        reasons["有拆解 artifact 或创作交接参考"] = 5
     return min(score, 100), reasons
 
 

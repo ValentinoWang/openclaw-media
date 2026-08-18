@@ -1,0 +1,69 @@
+{
+  "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967",
+  "pipeline_count": 9,
+  "pipelines": [
+    {
+      "pipeline_id": "media.project.prepare.v1",
+      "version": "1.0.0",
+      "name": "Project preparation",
+      "description": "Scan local media and produce bounded analysis evidence.",
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.material.organize.v1",
+      "version": "1.0.0",
+      "name": "Material organization",
+      "description": "Plan and confirm local grouping, rename, and deduplication work.",
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.material.match.v1",
+      "version": "1.0.0",
+      "name": "Material matching",
+      "description": "Match local material to a brief and produce storyboard and EDL evidence.",
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.edit.handoff.v1",
+      "version": "1.0.0",
+      "name": "Edit handoff",
+      "description": "Produce a validated package for manual fine editing.",
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.edit.timeline.v1",
+      "version": "1.0.0",
+      "name": "Editable timeline",
+      "description": "Build reopenable OTIO and Kdenlive timeline artifacts.",
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.edit.revise.v1",
+      "version": "1.0.0",
+      "name": "Confirmed revision",
+      "description": "Create a new revision and AI edit log only after confirmation.",
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.output.review.v1",
+      "version": "1.0.0",
+      "name": "Output review",
+      "description": "Run local technical, platform, and version-comparison review.",
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.rhythm.review.v1",
+      "version": "1.0.0",
+      "name": "Rhythm review",
+      "description": "Assess audiovisual rhythm, version ranking, and fixable timestamps.",
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.semantic.review.v1",
+      "version": "1.0.0",
+      "name": "Semantic review",
+      "description": "Use the configured vision model for bounded semantic output review.",
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    }
+  ]
+}

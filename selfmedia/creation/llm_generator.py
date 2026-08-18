@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from common.llm_client import generate_json_from_parts
+from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import load_profile_llm_settings
 
 from .platform_validator import validate_platform_draft
@@ -23,6 +24,17 @@ CREATOR_BRIEF_REPORT_MODE = {
     "max_inspiration_refs": 3,
     "appendix_enabled": True,
 }
+
+
+def creation_generation_metadata(mode: str) -> dict[str, str]:
+    settings = load_profile_llm_settings("media_creation")
+    return {
+        "provider": "codex_responses",
+        "profile": "media_creation",
+        "model": settings.model,
+        "thinking": settings.thinking,
+        "mode": mode,
+    }
 
 
 def generate_creation_draft(
@@ -62,9 +74,14 @@ def generate_creation_draft(
                 f"错误：{last_error}\n"
                 "请重新输出完整 JSON object，只修正格式和约束，不要解释。"
             )
-        payload = call_creation_json(message)
         try:
-            return validate_llm_draft_payload(payload, request, platform_fit=platform_fit, candidate_ids=candidate_ids)
+            draft = call_creation_json(
+                message,
+                validation_contract=CREATION_DRAFT_VALIDATION_CONTRACT,
+                validation_context={"request": request, "platform_fit": platform_fit, "candidate_ids": candidate_ids},
+            )
+            draft["_generation"] = creation_generation_metadata("creation_draft")
+            return draft
         except ValueError as exc:
             last_error = str(exc)
             if attempt >= _env_int("SELFMEDIA_CREATION_LLM_RETRIES", 2):
@@ -113,7 +130,7 @@ def build_creation_prompt(
         "3. selected_activity_ids、selected_viral_ids、selected_inspiration_ids、selected_business_ids 只能使用候选里的 id；没有适合参考就输出空数组。\n"
         "4. 活动、商务、爆款、创作灵感数据只来自输入记忆；禁止编造活动奖励、投稿规则、商务承诺、互动数据、个人经历或账号事实。\n"
         "5. 允许创造表达、标题、脚本、分镜和叙事结构；但必须显式说明用了哪些活动/爆款/创作灵感/账号记忆，没用则说明原因。\n"
-        "6. 参考爆款只能迁移结构、冲突、情绪推进、行动门槛和画面组织，不得复刻原文；参考创作灵感优先迁移真实场景、信号、观点和可复用角度。\n"
+        "6. 参考爆款只能迁移结构、冲突、情绪推进、行动门槛和画面组织，不得复刻原文；参考创作灵感优先迁移真实场景、信号、观点和可复用角度。inspiration_memory_candidates 里 source_table=Obsidian:人性洞察库 的记录只能作为 insight-card reference，帮助选择目标群体、情绪路径和开头钩子句式；它不是源视频事实，不得写成观众真实画像或私人心理判断。\n"
         "7. 如果账号 Markdown 档案信息不足，要在 risks_or_missing_info 中说明要补什么，但仍基于现有输入完成初稿。\n"
         "8. 不要直接从主题跳到标题或脚本。必须先输出 content_core，再输出 topic_strategy；content_core 要回答这条内容真正要让观众记住什么、看见什么具体场景、解决哪个非泛泛的问题、用哪句内容承诺钉住主线。\n"
         "9. topic_strategy 中拆清楚目标人群、真实痛点、单一内容角度、只解决的一个小问题和自查标准，再生成 title/final_copy。\n"
@@ -121,7 +138,7 @@ def build_creation_prompt(
         "11. 必须参考 platform_mechanism_fit 里的 platform_strategy、activity_strategy、creation_reverse_plan 和 validation_targets；平台机制只能约束标题、封面/首屏、发布策略和验证指标，不能决定内容核心；不得声称破解平台真实算法或掌握黑箱权重。\n"
         "12. 先生成 usable_material_brief，再写 script_options。usable_material_brief 必须按“来源 -> 可迁移层 -> 脚本落点”抽取可用素材：账号记忆的人设/禁区/复盘教训；创作灵感的真实场景/触发原话/核心观点；爆款候选只能使用 deconstruction.v2 artifact 蒸馏出的 usable_material_brief、reference_shots 五维镜头合同、reference_production_summary、reuse_guardrails、viral_reuse_assessment 和 pacing_notes；活动候选的投稿约束/话题/截止或返稿要求；商务候选的品牌边界。script_options 只能吃这个 brief 写稿，不要在脚本正文里展开完整来源映射。\n"
         "13. 完整来源映射必须进入 usable_material_brief.source_mapping、creator_report.evidence_appendix 或 script_options 的机器字段；创作者执行区只出现拍摄、文案、发布和风险动作，不输出检索报告口吻。\n"
-        "14. 每个 script_options 项都必须保留 activity_fit_reason、viral_reference_reason、inspiration_reference_reason 作为机器字段：写清用了哪个候选 id、迁移了哪一层、落到哪个镜头/页面/台词/封面/评论引导；没采用的来源要在 risks_or_missing_info 或 rejected_option_summaries 说明原因。活动只能约束发布/投稿/话题，不得硬改内容核心；爆款只能给结构和节奏，不得给事实；灵感和账号记忆优先决定内容事实与表达边界。\n"
+        "14. 每个 script_options 项都必须保留 activity_fit_reason、viral_reference_reason、inspiration_reference_reason 作为机器字段：写清用了哪个候选 id、迁移了哪一层、落到哪个镜头/页面/台词/封面/评论引导；没采用的来源要在 risks_or_missing_info 或 rejected_option_summaries 说明原因。活动只能约束发布/投稿/话题，不得硬改内容核心；爆款只能给结构和节奏，不得给事实；灵感和账号记忆优先决定内容事实与表达边界；洞察卡必须标为 insight-card reference，并在证据附录保留卡片路径/状态和风险边界。\n"
         "15. 必须先评估多个创作方向，再把 2-5 个完整脚本放入 script_options；score > 90 是高分方案，score <= 90 也必须保留为可选方案，不得因为未达 90 分而不给完整脚本。\n"
         "16. script_options 最少 2 个、最多 5 个；如果没有方案超过 90 分，也必须输出至少 2 个评分最高且可执行的完整方案，并在风险中说明未达 90 分的原因。\n"
         "17. 每个 script_options 项必须包含 option_id、score、score_breakdown、title、angle、score_reason、selected_*_ids、activity_fit_reason、viral_reference_reason、inspiration_reference_reason、risk_level、risks_or_missing_info、tags、final_copy、image_script、carousel、hook_3s、storyboard、voiceover、subtitles、production_checklist、review_plan。score_reason 对所有方案都写评分理由；未达 90 的方案要写“未达 90 的原因 + 为什么仍可作为备选执行”。\n"
@@ -255,6 +272,7 @@ def validate_llm_draft_payload(
     draft["editor_pass"] = _validate_editor_pass(draft.get("editor_pass"), draft["recommended_option_id"])
     draft["report_mode"] = _validate_report_mode(draft.get("report_mode"))
     draft["creator_report"] = _validate_creator_report(draft.get("creator_report"), request)
+    _validate_insight_card_reference_boundary(draft)
     return draft
 
 
@@ -655,6 +673,37 @@ def _normalize_match_breakdown(value: Any, score: int, limits: dict[str, int], p
     return normalized
 
 
+def _validate_insight_card_reference_boundary(draft: dict[str, Any]) -> None:
+    selected = [item for item in _as_string_list(draft.get("selected_inspiration_ids")) if item.startswith("insight_card:")]
+    if not selected:
+        return
+    payload_text = json.dumps(
+        {
+            "usable_material_brief": draft.get("usable_material_brief"),
+            "inspiration_reference": draft.get("inspiration_reference"),
+            "creator_report": draft.get("creator_report"),
+            "script_options": [
+                {
+                    "option_id": item.get("option_id"),
+                    "selected_inspiration_ids": item.get("selected_inspiration_ids"),
+                    "inspiration_reference_reason": item.get("inspiration_reference_reason"),
+                }
+                for item in draft.get("script_options", [])
+                if isinstance(item, dict)
+            ],
+            "candidate_match_assessments": (draft.get("candidate_match_assessments") or {}).get("inspiration"),
+        },
+        ensure_ascii=False,
+    )
+    if "insight-card reference" not in payload_text:
+        raise ValueError("selected insight_card inspiration 必须标注为 insight-card reference")
+    if "public_content_only" not in payload_text:
+        raise ValueError("selected insight_card inspiration 必须保留 public_content_only evidence_boundary")
+    forbidden = ("私密人物档案", "social 私密", "私人心理判断", "源视频事实")
+    if any(marker in payload_text for marker in forbidden):
+        raise ValueError("selected insight_card inspiration 只能作为公开证据 reference，不能当作私密画像或源视频事实")
+
+
 def _recommended_script_option(options: list[dict[str, Any]], recommended_option_id: str) -> dict[str, Any]:
     if not recommended_option_id:
         return {}
@@ -779,7 +828,33 @@ def _candidate_id_set(candidates: list[dict[str, Any]]) -> set[str]:
     return ids
 
 
-def call_creation_json(message: str) -> dict[str, Any]:
+def _validate_creation_draft_contract(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    request = context.get("request")
+    if not isinstance(request, CreationRequest):
+        raise ValueError("creation draft validation requires CreationRequest context")
+    return validate_llm_draft_payload(
+        payload,
+        request,
+        platform_fit=context.get("platform_fit"),
+        candidate_ids=context.get("candidate_ids"),
+    )
+
+
+CREATION_DRAFT_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.creation.draft.v1",
+        profile="strict_structured",
+        validator=_validate_creation_draft_contract,
+    )
+)
+
+
+def call_creation_json(
+    message: str,
+    *,
+    validation_contract: str,
+    validation_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     settings = load_profile_llm_settings("media_creation")
     return generate_json_from_parts(
         [{"text": message}],
@@ -787,6 +862,8 @@ def call_creation_json(message: str) -> dict[str, Any]:
         max_retries=1,
         error_prefix="Codex Responses 创作输出 JSON 校验失败",
         instructions="你是 Media 创作 JSON 引擎。只输出合法 JSON object，不要 Markdown，不要解释。",
+        validation_contract=validation_contract,
+        validation_context=validation_context,
     )
 
 

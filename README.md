@@ -61,6 +61,11 @@ selfmedia-tools/data/media_vault/  # 产物根目录
 selfmedia-tools/openclaw-tag-router/          # 源码 SSOT
 /home/ubuntu/.openclaw/extensions/openclaw-tag-router/  # 部署副本
 /home/ubuntu/.openclaw/workspace/openclaw-tag-router/   # 运行工作区
+openclaw-bot-center/public/data/openclaw-bot-center.generated.json  # 前端投影源文件
+/home/ubuntu/openclaw-bot-center/dist/                              # 前端构建产物
+/var/www/openclaw/bots/                                             # 公网发布产物
+日记/周记调度事实源：systemd user timer
+OpenClaw cron 不允许保留同类日记/周记任务
 ```
 
 ## 全局公共组件
@@ -84,10 +89,24 @@ python3 /home/ubuntu/selfmedia-tools/common/content_cleaner_cli.py \
 
 LLM 配置统一读取 `config/openclaw_bots.json`。这是 Bot/模型/profile 的唯一可编辑事实源。当前默认文本模型供应方由 `policy.default_provider` 指向 `providers.openclaw_codex`；所有 Bot 和业务 `profiles` 必须引用这个默认 provider，不在业务代码里硬编码模型或直接读取 provider。`providers.qwen` 仅作为明确的多模态辅助 provider 保留。后续切换主模型时，先改 `policy.default_provider`、目标 provider 和对应同步脚本契约，再运行 single-source guard。
 
-`openclaw-tag-router` 运行扩展的源码也统一收口到仓库内的 `openclaw-tag-router/`。运行目录 `/home/ubuntu/.openclaw/extensions/openclaw-tag-router` 只是部署目标，不再当作事实来源。Feishu OpenClaw agent 运行时使用的 `~/.openclaw/agents/feishu-*/agent/models.json`，以及 Gateway 的 `~/.openclaw/openclaw.json` 中 `agents.defaults.model` / `agents.defaults.models`，也都由同一个 `config/openclaw_bots.json` 自动生成，不再手工维护；Codex 运行时使用内置 `openai-codex` provider，不再生成自定义 `models.providers`。`~/.openclaw/agents/main/agent/models.json` 是 OpenClaw runtime 自管缓存，不作为本仓库编辑事实源。部署命令：
+`openclaw-tag-router` 运行扩展的源码也统一收口到仓库内的 `openclaw-tag-router/`。运行目录 `/home/ubuntu/.openclaw/extensions/openclaw-tag-router` 只是部署目标，不再当作事实来源。Feishu OpenClaw agent 运行时使用的 `~/.openclaw/agents/feishu-*/agent/models.json`，以及 Gateway 的 `~/.openclaw/openclaw.json` 中 `agents.defaults.model` / `agents.defaults.models`，也都由同一个 `config/openclaw_bots.json` 自动生成，不再手工维护；Codex 运行时使用内置 `openai-codex` provider，不再生成自定义 `models.providers`。`~/.openclaw/agents/main/agent/models.json` 是 OpenClaw runtime 自管缓存，不作为本仓库编辑事实源。
+
+完整部署只使用一条命令：
 
 ```bash
 python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_runtime.py
+```
+
+它会按同一条链路完成：
+
+```text
+1. repo-to-obsidian 同步 OpenClaw Bot 配置镜像
+2. rsync --delete 同步 openclaw-tag-router 源码 SSOT 到 active plugin
+3. 重建 OpenClaw agent models
+4. 安装并启用日记/周记 systemd user timers
+5. 生成、校验、构建并发布 Bot Center 到 /var/www/openclaw/bots/
+6. 检查 OpenClaw cron 没有同类日记/周记任务
+7. 运行 single-source、tag-router、model、Bot Center 和 runtime smoke 门禁
 ```
 
 如果只想重建 OpenClaw agent 的 `models.json`：
@@ -96,7 +115,7 @@ python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_
 python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_agent_models.py
 ```
 
-如果只想同步 runtime 文件、不重启网关：
+如果要跑完整同步、定时器安装和 Bot Center 发布，但暂时不重启网关：
 
 ```bash
 python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_runtime.py --no-restart
@@ -109,8 +128,8 @@ python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_
 | 内容采集 | `selfmedia/ingest/content_flow` | 抖音/小红书素材下载和基础字段抽取 | 单条或多条作品链接 | 视频/图片/封面/文案/互动数/评论 | 给后续模块提供原始素材和字段 |
 | 音乐资源提取 | `selfmedia/ingest/music_resource` | 汽水音乐分享资源提取 | 汽水音乐链接或 curl 文本 | 音视频资源、本地 Web UI | 素材资源采集 |
 | 字段健康诊断 | `selfmedia/ingest/diagnostics/field_health.py` | 字段来源和失败原因诊断 | 作品链接 | 字段来源、缺失字段、失败原因 | 抓取故障排查 |
-| 爆款拆解 | `selfmedia/deconstruct/viral_content` | 爆款拆解和拆解-再创 | 带 `【拆解】` 的作品链接 | 飞书拆解文档、拆解-再创文档、多维表格摘要 | 形成可复用创作样本 |
-| 创作工作流 | `selfmedia/creation` | 创作、素材创作、灵感、拍摄执行 | 文本、链接、附件、账号上下文 | CreationRun、创作文档、作品档案 | 创作记录表 / 账号监控表 |
+| 爆款拆解 | `selfmedia/deconstruct/viral_content` | 爆款拆解、开头/AI/人性洞察等拆解 artifact | 带 `【拆解】` 的作品链接或 SourceAsset 续跑 | 飞书拆解文档、多维表格轻量摘要、media_vault artifact | 形成可复用创作样本 |
+| 创作工作流 | `selfmedia/creation` | 创作、拍摄执行、素材拆解后的创作交接 | 文本、SourceAsset 引用、账号上下文 | CreationRun、创作文档、作品档案 | 创作记录表 / 账号监控表 |
 | 数据复盘 | `selfmedia/review/data_review.py` | 后台截图/发布数据复盘 | `【数据复盘】` + 截图 | 复盘报告、账号记忆、Media Model 记录 | 作品复盘 |
 | 达人档案补全 | `selfmedia/creator_profiles` | 平台 + 平台ID 定位公开主页，生成 candidate，经确认写入 | 平台、平台ID、可选主页/短链 | evidence bundle、CreatorProfile candidate、H02 指标快照 | `【博主-入库】` 自动补全/确认写入 |
 | 语言风格润色 | `selfmedia/style` | 读取账号画像/平台机制/历史模式做润色 | `【润色】`、`【网感】` 等 alias | style_polish_run artifact、诊断、版本、评分 | 显式润色默认只落 media_vault |
@@ -143,50 +162,48 @@ python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_
 
 selfmedia 爆款拆解会调用内容采集能力下载真实原素材，再基于视频帧或图文证据分析。不能只看链接和标题猜。
 
-### 3. 上传素材生成定位分析和初稿
+### 3. 上传素材先生成 SourceAsset，再交接创作
 
-飞书 Media bot 里可以先上传视频或图片附件，再发送 `【素材创作】` 指令：
+飞书 Media bot 里素材类输入统一发送 `【素材】`。它只生成 SourceAsset 和续跑命令，不直接写创作记录：
 
 ```text
 第1条：上传视频或多张图片
-第2条：【素材创作>小红书】类型=图文 账号=主账号 发布时间=今晚8点 用户想法=更真实一点
+第2条：【素材】素材类型=视频 用途=创作 平台=小红书 账号=主账号 备注=今晚8点发，更真实一点
 ```
 
 也可以在同一条消息里同时发送附件和指令：
 
 ```text
-【素材创作>小红书】类型=图文 账号=主账号 发布时间=今晚8点 用户想法=更真实一点
+【素材】素材类型=图文 用途=创作 平台=小红书 账号=主账号 备注=今晚8点发，更真实一点
 ```
 
 用途：
 
-- 从上传视频抽关键帧，或从上传图片/图文素材读取视觉证据。
-- 视频前 5 秒按 10fps 高密度采样；5 秒之后按 fps=2 连续采样。
-- 图文首图会作为封面/首图重点分析，后续图片按原顺序分析。
-- 先输出定位分析，再生成平台化初稿。
-- 创建飞书创作文档，并在创作记录表形成作品级档案。
-- 如果填写 `账号=`，会在账号监控表建立或更新账号记录，后续补发布链接后可进入数据复盘。
+- `【素材】` 写入当前租户的 `media_vault/tenants/<tenant_id>/source_assets`，返回 `media://tenants/<tenant_id>/source_assets/...`。
+- 用途为创作/拍摄时，回复里给出继续发送的 `【创作】`、`【创作>小红书】`、`【创作>抖音】` 或 `【创作-拍摄执行】source=media://...` 命令。
+- 旧 `【内容素材】`、`【素材创作】`、`【素材创作>小红书】`、`【素材创作>抖音】`、`【创作-灵感】` 不作为 alias，不写 Feishu，不进入旧 CLI。
 
 ### 4. 建立账号记忆和复盘闭环
 
-`【创作】`、`【素材创作】` 现在会在生成前自动读取本地媒体上下文，生成后写回创作流水和账号画像。只要消息里带 `账号=`，后续同账号创作会自动继承历史定位、创作记录和复盘结论。
+`【创作】` 现在会在生成前自动读取本地媒体上下文，生成后写回创作流水和账号画像。只要消息里带 `账号=`，后续同账号创作会自动继承历史定位、创作记录和复盘结论。
 
-从飞书标签入口进入时，tag-router 还会把同一会话/同一用户的最近对话注入到创作链路，避免 `【创作】`、`【素材创作】` 只基于当前这一条消息回答。本地 CLI 调试时可以用两种方式传入同样结构：
+从飞书标签入口进入时，tag-router 还会把同一会话/同一用户的最近对话注入到创作链路，避免 `【创作】` 只基于当前这一条消息回答。本地 CLI 调试时可以用两种方式传入同样结构：
 
 ```bash
 --conversation-context-json '{"loaded_count":1,"prompt":"最近飞书对话上下文：..."}'
 OPENCLAW_CONVERSATION_CONTEXT_JSON='{"loaded_count":1,"prompt":"最近飞书对话上下文：..."}'
 ```
 
-`【创作】` 和 `【素材创作】` 的回复会显示 `对话 N 条`，用于确认它没有只基于当前一条消息生成。
+`【创作】` 的回复会显示 `对话 N 条`，用于确认它没有只基于当前一条消息生成。
 
 本地存储位置：
 
 ```text
 /home/ubuntu/selfmedia-tools/data/media_memory/
-  accounts/*.json
-  creations.jsonl
-  reviews.jsonl
+  tenants/<Sub2API user_id>/
+    accounts/*.json
+    creations.jsonl
+    reviews.jsonl
 ```
 
 发布后发 `【复盘】`，如果内容包含平台、账号、发布链接、作品数据或点赞/收藏/评论/播放等指标，tag-router 会先保留通用复盘归档，再额外写入媒体账号记忆：
@@ -199,9 +216,11 @@ OPENCLAW_CONVERSATION_CONTEXT_JSON='{"loaded_count":1,"prompt":"最近飞书对�
 
 ```bash
 /home/ubuntu/openclaw-agents/media/scripts/selfmedia.py review \
+  --tenant-id '<Sub2API user_id>' \
   --text '【复盘】平台=小红书 账号=主账号 主题=表达力 点赞=1200 收藏=500 结论=封面直接写痛点有效'
 
 /home/ubuntu/openclaw-agents/media/scripts/selfmedia.py context \
+  --tenant-id '<Sub2API user_id>' \
   --platform 小红书 --account 主账号 --topic 表达力
 ```
 
@@ -347,7 +366,7 @@ cd /home/ubuntu/selfmedia-tools/selfmedia/ingest/content_flow
 
 ### selfmedia/deconstruct/viral_content
 
-负责 `【拆解】` 和拆解-再创证据链。OpenClaw 入口：
+负责 `【拆解】` 和素材拆解证据链；发布脚本、分镜和任务卡交接 `selfmedia/creation`。OpenClaw 入口：
 
 ```bash
 /home/ubuntu/openclaw-agents/media/scripts/selfmedia.py run deconstruct \

@@ -8,6 +8,8 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id
 from zoneinfo import ZoneInfo
 
 from common.social_runtime import feishu_list_records, feishu_plain_text, load_default_env_files
@@ -66,13 +68,14 @@ MEDIA_REVIEW_KEYWORDS = (
 )
 
 
-def build_media_context_for_request(request: Any, *, root: str | Path | None = None, limit: int = 5) -> dict[str, Any]:
+def build_media_context_for_request(request: Any, *, tenant_id: str, root: str | Path | None = None, limit: int = 5) -> dict[str, Any]:
     return build_media_context(
         platform=str(getattr(request, "platform", "") or ""),
         account=str(getattr(request, "account", "") or ""),
         track=str(getattr(request, "track", "") or ""),
         topic=str(getattr(request, "topic", "") or ""),
         keywords=list(getattr(request, "keywords", None) or []),
+        tenant_id=tenant_id,
         root=root,
         limit=limit,
     )
@@ -85,18 +88,20 @@ def build_media_context(
     track: str = "",
     topic: str = "",
     keywords: list[str] | None = None,
+    tenant_id: str,
     root: str | Path | None = None,
     limit: int = 5,
 ) -> dict[str, Any]:
-    memory_root = _memory_root(root)
+    tenant_id = require_tenant_id(tenant_id)
+    memory_root = _memory_root(tenant_id=tenant_id, root=root)
     platform = _clean_text(platform)
     account = _clean_text(account)
-    profile = load_account_profile(platform, account, root=memory_root, ensure_markdown=True) if account else {}
+    profile = load_account_profile(platform, account, tenant_id=tenant_id, root=root) if account else {}
     creator_profile: dict[str, Any] = {}
     creator_profile_error = ""
     if account and _should_load_live_creator_profile(root):
         try:
-            creator_profile = load_creator_profile_identity(platform, account)
+            creator_profile = load_creator_profile_identity(platform, account, tenant_id=tenant_id)
             if creator_profile:
                 profile = merge_creator_profile_identity(profile, creator_profile)
         except Exception as exc:
@@ -211,6 +216,7 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int = 2600)
 def record_creation_memory(
     request: Any,
     *,
+    tenant_id: str,
     draft: dict[str, Any] | None = None,
     analysis: dict[str, Any] | None = None,
     context: dict[str, Any] | None = None,
@@ -220,13 +226,15 @@ def record_creation_memory(
     validation: dict[str, Any] | None = None,
     root: str | Path | None = None,
 ) -> dict[str, Any]:
-    memory_root = _memory_root(root)
+    tenant_id = require_tenant_id(tenant_id)
+    memory_root = _memory_root(tenant_id=tenant_id, root=root)
     memory_root.mkdir(parents=True, exist_ok=True)
     draft = draft or {}
     analysis = analysis or {}
     platform = _clean_text(getattr(request, "platform", "") or "")
     account = _clean_text(getattr(request, "account", "") or "")
     record = {
+        "tenant_id": tenant_id,
         "creation_id": creation_record_id or _stable_id("creation", [platform, account, getattr(request, "topic", ""), doc_link, _now_iso()]),
         "created_at": _now_iso(),
         "platform": platform,
@@ -254,7 +262,8 @@ def record_creation_memory(
             creation=record,
             analysis=analysis,
             draft=draft,
-            root=memory_root,
+            tenant_id=tenant_id,
+            root=root,
         )
     return {
         "status": "recorded",
@@ -267,13 +276,16 @@ def record_creation_memory(
 def record_review_memory(
     raw_text: str,
     *,
+    tenant_id: str,
     source: str = "",
     root: str | Path | None = None,
 ) -> dict[str, Any]:
-    memory_root = _memory_root(root)
+    tenant_id = require_tenant_id(tenant_id)
+    memory_root = _memory_root(tenant_id=tenant_id, root=root)
     memory_root.mkdir(parents=True, exist_ok=True)
     parsed = parse_media_review(raw_text)
     review = {
+        "tenant_id": tenant_id,
         "review_id": _stable_id("review", [parsed.get("platform", ""), parsed.get("account", ""), parsed.get("publish_url", ""), raw_text, _now_iso()]),
         "created_at": _now_iso(),
         "source": source,
@@ -286,7 +298,8 @@ def record_review_memory(
             platform=review.get("platform", ""),
             account=review.get("account", ""),
             review=review,
-            root=memory_root,
+            tenant_id=tenant_id,
+            root=root,
         )
     return {
         "status": "recorded",
@@ -341,6 +354,7 @@ def parse_media_review(raw_text: str) -> dict[str, Any]:
 
 def upsert_account_profile(
     *,
+    tenant_id: str,
     platform: str,
     account: str,
     creation: dict[str, Any] | None = None,
@@ -349,7 +363,7 @@ def upsert_account_profile(
     draft: dict[str, Any] | None = None,
     root: str | Path | None = None,
 ) -> dict[str, Any]:
-    memory_root = _memory_root(root)
+    memory_root = _memory_root(tenant_id=require_tenant_id(tenant_id), root=root)
     platform = _clean_text(platform)
     account = _clean_text(account)
     if not account:
@@ -359,6 +373,7 @@ def upsert_account_profile(
     now = _now_iso()
     if not profile:
         profile = {
+            "tenant_id": require_tenant_id(tenant_id),
             "account": account,
             "platform": platform,
             "created_at": now,
@@ -380,6 +395,7 @@ def upsert_account_profile(
         }
     profile["platform"] = platform or profile.get("platform", "")
     profile["account"] = account
+    profile["tenant_id"] = require_tenant_id(tenant_id)
     profile["updated_at"] = now
     analysis = analysis or {}
     draft = draft or {}
@@ -419,8 +435,15 @@ def upsert_account_profile(
     }
 
 
-def load_account_profile(platform: str, account: str, *, root: str | Path | None = None, ensure_markdown: bool = False) -> dict[str, Any]:
-    memory_root = _memory_root(root)
+def load_account_profile(
+    platform: str,
+    account: str,
+    *,
+    tenant_id: str,
+    root: str | Path | None = None,
+    ensure_markdown: bool = False,
+) -> dict[str, Any]:
+    memory_root = _memory_root(tenant_id=require_tenant_id(tenant_id), root=root)
     path = _account_profile_path(memory_root, platform, account)
     profile = _read_json(path, default={}) or {}
     markdown_path = _account_profile_markdown_path(memory_root, platform, account)
@@ -439,7 +462,7 @@ def load_account_profile(platform: str, account: str, *, root: str | Path | None
     return profile
 
 
-def load_creator_profile_identity(platform: str, account: str) -> dict[str, Any]:
+def load_creator_profile_identity(platform: str, account: str, *, tenant_id: str) -> dict[str, Any]:
     platform = _clean_text(platform)
     account = _clean_text(account)
     if not account:
@@ -449,7 +472,42 @@ def load_creator_profile_identity(platform: str, account: str) -> dict[str, Any]
     if not table_url:
         return {}
     field_name_map = _creator_profile_field_name_map()
-    for record in feishu_list_records(table_url, page_size=500):
+    owner_service = canonical_tenant_owned_resources()
+    records: list[dict[str, Any]] = []
+    for owner in owner_service.registry.list_all_by_tenant(
+        tenant_id,
+        resource_type="media.creator_profile",
+    ):
+        matches = feishu_list_records(
+            table_url,
+            page_size=2,
+            filter_formula=(
+                f'CurrentValue.[达人档案ID] = '
+                f'{json.dumps(owner.canonical_resource_id, ensure_ascii=False)}'
+            ),
+        )
+        exact = [
+            record
+            for record in matches
+            if _clean_text(
+                _normalize_creator_profile_record_fields(
+                    dict(record.get("fields") or {}),
+                    field_name_map,
+                ).get("creator_profile_id")
+            ) == owner.canonical_resource_id
+        ]
+        if len(exact) != 1:
+            raise RuntimeError("CreatorProfile canonical projection is missing or duplicated")
+        record = exact[0]
+        owner_service.assert_projection_read(
+            "media.creator_profile",
+            owner.canonical_resource_id,
+            session_tenant_id=tenant_id,
+            fields=record.get("fields") or {},
+            projection_source=f"feishu:CreatorProfile/{record.get('record_id') or 'missing'}",
+        )
+        records.append(record)
+    for record in records:
         normalized = _normalize_creator_profile_record_fields(dict(record.get("fields") or {}), field_name_map)
         if not _creator_profile_matches(normalized, platform=platform, account=account):
             continue
@@ -512,12 +570,14 @@ def format_media_context_reply(context: dict[str, Any]) -> str:
     return "\n".join(lines).strip()
 
 
-def _memory_root(root: str | Path | None = None) -> Path:
+def _memory_root(*, tenant_id: str, root: str | Path | None = None) -> Path:
     if root:
-        return Path(root).expanduser()
-    if os.getenv("SELFMEDIA_MEMORY_ROOT"):
-        return Path(os.environ["SELFMEDIA_MEMORY_ROOT"]).expanduser()
-    return DEFAULT_MEMORY_ROOT
+        base = Path(root).expanduser()
+    elif os.getenv("SELFMEDIA_MEMORY_ROOT"):
+        base = Path(os.environ["SELFMEDIA_MEMORY_ROOT"]).expanduser()
+    else:
+        base = DEFAULT_MEMORY_ROOT
+    return base / "tenants" / require_tenant_id(tenant_id)
 
 
 def _load_media_rule_snippets() -> list[str]:

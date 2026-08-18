@@ -38,13 +38,13 @@ class ViralDeconstructConfig:
     codex_home: str = ""
 
 
-def load_config() -> ViralDeconstructConfig:
-    creation_llm = load_profile_llm_settings("media_creation")
+def load_config(profile_name: str = "media_analysis") -> ViralDeconstructConfig:
+    llm_settings = load_profile_llm_settings(profile_name)
     return ViralDeconstructConfig(
-        model=creation_llm.model,
-        base_url=creation_llm.base_url,
-        api_key=creation_llm.api_key,
-        timeout=creation_llm.timeout,
+        model=llm_settings.model,
+        base_url=llm_settings.base_url,
+        api_key=llm_settings.api_key,
+        timeout=llm_settings.timeout,
         source_assets_url=os.getenv("MEDIA_OS_SOURCE_ASSETS_URL", ""),
         material_deconstructions_url=os.getenv("MEDIA_OS_MATERIAL_DECONSTRUCTIONS_URL", ""),
         feishu_doc_folder_token=os.getenv("FEISHU_DOC_FOLDER_TOKEN", ""),
@@ -52,10 +52,10 @@ def load_config() -> ViralDeconstructConfig:
         feishu_deconstruct_parent_node_token=os.getenv("SELFMEDIA_DECONSTRUCT_PARENT_NODE_TOKEN", "BqzWw9xZeiBu7Kk99YqcxEJ4nuf"),
         feishu_recreate_parent_node_token=os.getenv("SELFMEDIA_RECREATE_PARENT_NODE_TOKEN", "Tm69wEqFpi76d9k53KEcqK4Rnkh"),
         part1_path=Path(os.getenv("SELFMEDIA_CONTENT_INGEST_PATH", "/home/ubuntu/selfmedia-tools/selfmedia/ingest/content_flow")),
-        llm_api_type=creation_llm.api_type,
-        thinking=creation_llm.thinking,
-        bin=creation_llm.bin,
-        agent=creation_llm.agent,
-        cwd=creation_llm.cwd,
-        codex_home=creation_llm.codex_home,
+        llm_api_type=llm_settings.api_type,
+        thinking=llm_settings.thinking,
+        bin=llm_settings.bin,
+        agent=llm_settings.agent,
+        cwd=llm_settings.cwd,
+        codex_home=llm_settings.codex_home,
     )

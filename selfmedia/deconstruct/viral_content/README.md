@@ -2,9 +2,9 @@
 
 显性触发的爆款拆解工作流：流程分流由代码保证，不交给 LLM 判断。
 
-- 无标签：只返回普通素材整理跳过状态，不拆解、不做拆解-再创
+- 无标签：只返回普通素材整理跳过状态，不拆解
 - 只有 `【拆解】`：执行拆解
-- `【拆解-再创】`：先拆解，再基于拆解结果做拆解-再创
+- 需要发布脚本、分镜或任务卡时，由 `【素材】` SourceAsset 续跑后显式交接 `【创作】` 或 `【创作-拍摄执行】`
 
 目标：输入爆款视频/图文链接，下载原视频或原图文素材，生成可复刻但不照搬的：
 
@@ -47,7 +47,7 @@ export FEISHU_BITABLE_URL='https://...feishu.cn/wiki/...?table=tblxxx&view=vewxx
 - `原文件`：完整原视频或全部原图
 - `原音频`：单独音频文件
 
-写入顺序由代码保证：真实素材校验 -> LLM JSON schema 校验 -> 拆解文档创建并校验可访问 -> 拆解-再创文档创建并校验可访问（如有）-> 附件归类校验 -> 最后写入多维表格。
+写入顺序由代码保证：真实素材校验 -> LLM JSON schema 校验 -> 拆解文档创建并校验可访问 -> 附件归类校验 -> 最后写入多维表格。创作任务文档不由本拆解入口直接创建。
 
 拆解视觉证据会分配稳定 ID：
 
@@ -60,6 +60,6 @@ LLM 输出的 `video_storyboard` / `image_post_script` 必须用 `evidence_asset
 
 ## 视频理解模型路线
 
-当前路线固定为本地抽帧/提音频形成证据包，全部关键帧/图文图片 parts 直接交给 `media_creation` profile 的 Codex Responses API，由同一个主模型输出拆解 JSON。
+当前路线固定为本地抽帧/提音频形成证据包，全部关键帧/图文图片 parts 直接交给 `media_analysis` profile 的 Codex Responses API，由同一个主模型输出拆解 JSON。
 
-主模型配置读取 `/home/ubuntu/selfmedia-tools/config/openclaw_bots.json` 的 `media_creation` profile；`api_key` 可使用 `codex_auth_file` 从本机 Codex auth 文件解析。最终拆解继续校验 `evidence_asset_id`，主模型不可用则中止，不写文档、不写表。
+主模型配置读取 `/home/ubuntu/selfmedia-tools/config/openclaw_bots.json` 的 `media_analysis` profile；`api_key` 可使用 `codex_auth_file` 从本机 Codex auth 文件解析。最终拆解继续校验 `evidence_asset_id`，主模型不可用则中止，不写文档、不写表。

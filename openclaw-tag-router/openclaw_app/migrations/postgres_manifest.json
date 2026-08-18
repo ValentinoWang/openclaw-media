@@ -1,0 +1,579 @@
+{
+  "schemaVersion": "openclaw.cm1.postgresql-migration-manifest.v2",
+  "contract": {
+    "runtimeDatabase": "PostgreSQL",
+    "legacyRuntimeReadFallback": false,
+    "dualWriteAllowed": false,
+    "sourceInventoryIsClosed": true,
+    "ledgerTable": "openclaw_account.schema_migrations",
+    "ledgerColumns": [
+      "migration_id",
+      "checksum",
+      "depends_on",
+      "applied_at"
+    ]
+  },
+  "source": {
+    "backendRoot": "/home/ubuntu/selfmedia-tools/openclaw-tag-router",
+    "migrationDirectory": "openclaw_app/migrations/canonical",
+    "rejectSuffixes": [
+      ".orig",
+      ".rej"
+    ],
+    "legacyLedgerTables": [
+      "openclaw_account.schema_migrations",
+      "media_product.migration_ledger"
+    ],
+    "normalization": {
+      "rejectTransactionControl": true,
+      "rejectLegacyLedgerStatements": true,
+      "rejectPragmaStatements": true
+    }
+  },
+  "requiredSchemas": [
+    "openclaw_account",
+    "media_product",
+    "media_document"
+  ],
+  "requiredTables": [
+    "openclaw_account.users",
+    "openclaw_account.tenants",
+    "openclaw_account.sessions",
+    "openclaw_account.wallet_accounts",
+    "openclaw_account.ledger_entries",
+    "openclaw_account.fund_holds",
+    "openclaw_account.model_price_versions",
+    "openclaw_account.model_operations",
+    "openclaw_account.upstream_request_refs",
+    "openclaw_account.plans",
+    "openclaw_account.affiliate_edges",
+    "openclaw_account.password_reset_tokens",
+    "openclaw_account.admin_audit",
+    "openclaw_account.registration_policy",
+    "openclaw_account.admission_batches",
+    "openclaw_account.admission_codes",
+    "openclaw_account.affiliate_profiles",
+    "openclaw_account.usage_charges",
+    "openclaw_account.product_mappings",
+    "openclaw_account.redemption_batches",
+    "openclaw_account.redemption_codes",
+    "openclaw_account.fulfillments",
+    "openclaw_account.affiliate_ledger",
+    "openclaw_account.refund_adjustments",
+    "openclaw_account.tenant_billing_plans",
+    "openclaw_account.usage_events",
+    "openclaw_account.schema_migrations",
+    "media_product.activities",
+    "media_product.assets",
+    "media_product.material_deconstructions",
+    "media_product.creative_patterns",
+    "media_product.creation_runs",
+    "media_product.published_posts",
+    "media_product.business_accounts",
+    "media_product.business_opportunities",
+    "media_product.creator_profiles",
+    "media_product.tracks",
+    "media_product.material_usages",
+    "media_product.decision_traces",
+    "media_product.track_creator_memberships",
+    "media_product.metric_snapshots",
+    "media_product.account_metric_snapshots",
+    "media_product.growth_summaries",
+    "media_product.content_projects",
+    "media_product.document_artifacts",
+    "media_product.document_revisions",
+    "media_product.owned_media_accounts",
+    "media_product.account_track_strategies",
+    "media_product.signal_snapshots",
+    "media_product.publishing_packages",
+    "media_product.publishing_checks",
+    "media_product.review_records",
+    "media_product.lark_tenant_installations",
+    "media_product.lark_document_bindings",
+    "media_product.lark_document_block_mappings",
+    "media_product.sync_batches",
+    "media_product.project_summary_idempotency",
+    "media_product.b04_decision_confirmations",
+    "media_product.b04_idempotency_keys",
+    "media_product.creation_run_sources",
+    "media_product.creation_run_decisions",
+    "media_product.creation_run_outputs",
+    "media_product.b05_idempotency_keys",
+    "media_product.b06_idempotency_keys",
+    "media_product.b07_idempotency_keys",
+    "media_product.b08_redemption_idempotency",
+    "media_document.revision_bodies",
+    "media_document.exports",
+    "openclaw_account.if2_idempotency_receipts",
+    "openclaw_account.tenant_members",
+    "openclaw_account.tenant_member_identities",
+    "media_product.lark_tenant_bindings",
+    "media_product.lark_member_sync_runs",
+    "media_product.tenant_data_migration_audit",
+    "media_document.lark_read_mirrors",
+    "media_document.resources"
+  ],
+  "migrations": [
+    {
+      "id": "cm1-003-openclaw-account-billing",
+      "order": 10,
+      "source": "openclaw_app/migrations/canonical/003_openclaw_account_billing.sql",
+      "dependsOn": [],
+      "legacyAccountRevisions": [
+        "003_openclaw_account_billing"
+      ],
+      "sourceSha256": "f3a46972fc0a0ec277af85646ba1a6c8bc74b958f3bb3cadfee690d1c415d952",
+      "ledgerChecksum": "f3a46972fc0a0ec277af85646ba1a6c8bc74b958f3bb3cadfee690d1c415d952"
+    },
+    {
+      "id": "cm1-004-authentication",
+      "order": 20,
+      "source": "openclaw_app/migrations/canonical/004_openclaw_authentication.sql",
+      "dependsOn": [
+        "cm1-003-openclaw-account-billing"
+      ],
+      "legacyAccountRevisions": [
+        "004_openclaw_authentication"
+      ],
+      "sourceSha256": "4a0a0e720b4a1c4cde9e2c7568bef4c2605532b676bb9bb99e310585354a6500",
+      "ledgerChecksum": "4a0a0e720b4a1c4cde9e2c7568bef4c2605532b676bb9bb99e310585354a6500"
+    },
+    {
+      "id": "cm1-005-registration-affiliate",
+      "order": 30,
+      "source": "openclaw_app/migrations/canonical/005_openclaw_registration_affiliate.sql",
+      "dependsOn": [
+        "cm1-004-authentication"
+      ],
+      "legacyAccountRevisions": [
+        "005_openclaw_registration_affiliate"
+      ],
+      "sourceSha256": "baa95199639afa6e436d1d795e9e2aa41db44842a36d44bcd3c08f45de54bad4",
+      "ledgerChecksum": "baa95199639afa6e436d1d795e9e2aa41db44842a36d44bcd3c08f45de54bad4"
+    },
+    {
+      "id": "cm1-006-retail-billing",
+      "order": 40,
+      "source": "openclaw_app/migrations/canonical/006_openclaw_retail_billing.sql",
+      "dependsOn": [
+        "cm1-005-registration-affiliate"
+      ],
+      "legacyAccountRevisions": [
+        "006_openclaw_retail_billing"
+      ],
+      "sourceSha256": "71f18316f10ab8d26999c0a492786c47c55412bda236c579ed94ec782010a35b",
+      "ledgerChecksum": "71f18316f10ab8d26999c0a492786c47c55412bda236c579ed94ec782010a35b"
+    },
+    {
+      "id": "cm1-007-retail-fulfillment",
+      "order": 50,
+      "source": "openclaw_app/migrations/canonical/007_openclaw_retail_fulfillment.sql",
+      "dependsOn": [
+        "cm1-006-retail-billing"
+      ],
+      "legacyAccountRevisions": [
+        "007_openclaw_retail_fulfillment"
+      ],
+      "sourceSha256": "58b6caec7821dc0cd1846376c58d8f3825726fb59b5e524b1d9c2ac3f7efa6c9",
+      "ledgerChecksum": "58b6caec7821dc0cd1846376c58d8f3825726fb59b5e524b1d9c2ac3f7efa6c9"
+    },
+    {
+      "id": "cm1-008-retail-plan-catalog",
+      "order": 60,
+      "source": "openclaw_app/migrations/canonical/008_openclaw_retail_plan_catalog.sql",
+      "dependsOn": [
+        "cm1-007-retail-fulfillment"
+      ],
+      "legacyAccountRevisions": [
+        "008_openclaw_retail_plan_catalog"
+      ],
+      "sourceSha256": "74e64a7249f7fd7d62d7ba259831b3659725d22b554f2169369b6439bcc43911",
+      "ledgerChecksum": "c9ec3010ab4f0bd537e9a4df791cb5db06d3fa9832c945b5a8bc957c27b8c94e"
+    },
+    {
+      "id": "cm1-009-retail-admin",
+      "order": 70,
+      "source": "openclaw_app/migrations/canonical/009_openclaw_retail_admin.sql",
+      "dependsOn": [
+        "cm1-008-retail-plan-catalog"
+      ],
+      "legacyAccountRevisions": [
+        "009_openclaw_retail_admin"
+      ],
+      "sourceSha256": "1013453537efe360140045008c79d9f308650fa662c76dbd8b5c47b86019213a",
+      "ledgerChecksum": "1013453537efe360140045008c79d9f308650fa662c76dbd8b5c47b86019213a"
+    },
+    {
+      "id": "cm1-010-persistent-admission-codes",
+      "order": 80,
+      "source": "openclaw_app/migrations/canonical/010_persistent_admission_codes.sql",
+      "dependsOn": [
+        "cm1-009-retail-admin"
+      ],
+      "legacyAccountRevisions": [
+        "010_persistent_admission_codes"
+      ],
+      "sourceSha256": "da1d5f34faf7f41f2fbf302e311946171f7872073584acc25694ea2977f99bd3",
+      "ledgerChecksum": "da1d5f34faf7f41f2fbf302e311946171f7872073584acc25694ea2977f99bd3"
+    },
+    {
+      "id": "cm1-013-media-product",
+      "order": 90,
+      "source": "openclaw_app/migrations/canonical/013_media_product.sql",
+      "dependsOn": [
+        "cm1-010-persistent-admission-codes"
+      ],
+      "legacyMediaLedger": [
+        {
+          "version": 13,
+          "name": "media_product"
+        }
+      ],
+      "sourceSha256": "bd8083a2fad06ccc20c019a823e9e4f87de95ddab4acf9327bfd8478f5047a9d",
+      "ledgerChecksum": "bd8083a2fad06ccc20c019a823e9e4f87de95ddab4acf9327bfd8478f5047a9d"
+    },
+    {
+      "id": "cm1-015-b01-overview",
+      "order": 100,
+      "source": "openclaw_app/migrations/canonical/015_b01_overview.sql",
+      "dependsOn": [
+        "cm1-013-media-product"
+      ],
+      "legacyMediaLedger": [
+        {
+          "version": 14,
+          "name": "b01_overview"
+        }
+      ],
+      "sourceSha256": "97585f0831a15feff82df54e3774b413af18cdea3220dc7ea847c0f61759714d",
+      "ledgerChecksum": "97585f0831a15feff82df54e3774b413af18cdea3220dc7ea847c0f61759714d"
+    },
+    {
+      "id": "cm1-016-b02-tracks",
+      "order": 110,
+      "source": "openclaw_app/migrations/canonical/016_b02_tracks.sql",
+      "dependsOn": [
+        "cm1-013-media-product"
+      ],
+      "legacyMediaLedger": [
+        {
+          "version": 14,
+          "name": "b02_tracks"
+        }
+      ],
+      "sourceSha256": "117e7a99cf097b1fff4a9934417a413acc0ab726b6cf53ca6099a9ec28b65c9f",
+      "ledgerChecksum": "7de41961a9ef9e1b8d91358ccaa6e711ec40be140ad1a7bf732bbca4b8c9d7a7"
+    },
+    {
+      "id": "cm1-017-b03-assets",
+      "order": 120,
+      "source": "openclaw_app/migrations/canonical/017_b03_assets.sql",
+      "dependsOn": [
+        "cm1-013-media-product"
+      ],
+      "legacyMediaLedger": [
+        {
+          "version": 14,
+          "name": "b03_assets_read_model"
+        }
+      ],
+      "sourceSha256": "f9e24efb7449a88442cc98cdd7aab25f846cc29d2a6cacb660797f316f9f4157",
+      "ledgerChecksum": "f9e24efb7449a88442cc98cdd7aab25f846cc29d2a6cacb660797f316f9f4157"
+    },
+    {
+      "id": "cm1-018-b04-decisions",
+      "order": 130,
+      "source": "openclaw_app/migrations/canonical/018_b04_decisions.sql",
+      "dependsOn": [
+        "cm1-013-media-product"
+      ],
+      "legacyMediaLedger": [
+        {
+          "version": 14,
+          "name": "b04_decisions"
+        }
+      ],
+      "sourceSha256": "a7d3219e8a47ebb4bbf10a96563e36e0175eff789a914294ccc31a716052f91f",
+      "ledgerChecksum": "a7d3219e8a47ebb4bbf10a96563e36e0175eff789a914294ccc31a716052f91f"
+    },
+    {
+      "id": "cm1-019-b05-runs",
+      "order": 140,
+      "source": "openclaw_app/migrations/canonical/019_b05_runs.sql",
+      "dependsOn": [
+        "cm1-013-media-product"
+      ],
+      "legacyMediaLedger": [
+        {
+          "version": 14,
+          "name": "b05_runs"
+        }
+      ],
+      "sourceSha256": "e5719dc73314e443b9e49c4661ac88fef2f38efde81c137b53ef97eb10252316",
+      "ledgerChecksum": "e5719dc73314e443b9e49c4661ac88fef2f38efde81c137b53ef97eb10252316"
+    },
+    {
+      "id": "cm1-020-b06-publishing",
+      "order": 150,
+      "source": "openclaw_app/migrations/canonical/020_b06_publishing.sql",
+      "dependsOn": [
+        "cm1-013-media-product"
+      ],
+      "legacyMediaLedger": [
+        {
+          "version": 14,
+          "name": "b06_publishing"
+        }
+      ],
+      "sourceSha256": "afcdf334cb2fd7050cc6af42be799a4278df4594fe8fbb53a895b85a495d8b4d",
+      "ledgerChecksum": "afcdf334cb2fd7050cc6af42be799a4278df4594fe8fbb53a895b85a495d8b4d"
+    },
+    {
+      "id": "cm1-021-b07-reviews",
+      "order": 160,
+      "source": "openclaw_app/migrations/canonical/021_b07_reviews.sql",
+      "dependsOn": [
+        "cm1-013-media-product"
+      ],
+      "legacyMediaLedger": [
+        {
+          "version": 14,
+          "name": "b07_reviews"
+        }
+      ],
+      "sourceSha256": "369e57725027162bf069b360b15b8521fe6df0d5cff6c68e7e6408ea62a334af",
+      "ledgerChecksum": "369e57725027162bf069b360b15b8521fe6df0d5cff6c68e7e6408ea62a334af"
+    },
+    {
+      "id": "cm1-022-b08-usage-billing",
+      "order": 170,
+      "source": "openclaw_app/migrations/canonical/022_b08_usage_billing.sql",
+      "dependsOn": [
+        "cm1-007-retail-fulfillment",
+        "cm1-008-retail-plan-catalog",
+        "cm1-013-media-product"
+      ],
+      "legacyAccountRevisions": [
+        "014_b08_usage_billing"
+      ],
+      "sourceSha256": "1e81ddba637494ace708ac30aa67b302d648d19896655be8786a0ee24cca9e13",
+      "ledgerChecksum": "e27ba04ca1b1bcaa998eddf5cb848b42fa1f6231721e2b61c8ad10aad6bf4253"
+    },
+    {
+      "id": "cm1-023-b10-admin-overview",
+      "order": 180,
+      "source": "openclaw_app/migrations/canonical/023_b10_admin_overview.sql",
+      "dependsOn": [
+        "cm1-004-authentication",
+        "cm1-013-media-product"
+      ],
+      "legacyAccountRevisions": [
+        "014_b10_admin_overview"
+      ],
+      "sourceSha256": "4276e8f88d62762a96a39affe97c746db0d983461ecde868e2e3dbb81921060d",
+      "ledgerChecksum": "09566b96aa6bb6230ee2d097fde43e0c8727e47c935be8230a2b8b902439e4f8"
+    },
+    {
+      "id": "cm1-024-b12-admin-tenants",
+      "order": 190,
+      "source": "openclaw_app/migrations/canonical/024_b12_admin_tenants.sql",
+      "dependsOn": [
+        "cm1-004-authentication",
+        "cm1-013-media-product"
+      ],
+      "legacyAccountRevisions": [
+        "014_b12_admin_tenants"
+      ],
+      "sourceSha256": "f161139e74bcbce98a37f3655e937454ec0c99d95c9d5ab3a800c06ffe750e29",
+      "ledgerChecksum": "f161139e74bcbce98a37f3655e937454ec0c99d95c9d5ab3a800c06ffe750e29"
+    },
+    {
+      "id": "cm1-025-b13-admin-billing",
+      "order": 200,
+      "source": "openclaw_app/migrations/canonical/025_b13_admin_billing.sql",
+      "dependsOn": [
+        "cm1-004-authentication",
+        "cm1-007-retail-fulfillment",
+        "cm1-008-retail-plan-catalog"
+      ],
+      "legacyAccountRevisions": [
+        "014_b13_admin_billing"
+      ],
+      "sourceSha256": "46ddceb87bc2c946a8b5368da75e8949142917493d7e7458b2b9d83d11286880",
+      "ledgerChecksum": "5d50df083d3d2f06368ff610004353174d050734e241a66d4b22b71d8efce5c1"
+    },
+    {
+      "id": "cm1-026-b14-admin-upstreams",
+      "order": 210,
+      "source": "openclaw_app/migrations/canonical/026_b14_admin_upstreams.sql",
+      "dependsOn": [
+        "cm1-004-authentication"
+      ],
+      "legacyAccountRevisions": [
+        "014_b14_admin_upstreams"
+      ],
+      "sourceSha256": "231a472dd7af59e9d503ae2ade125bb6eff2922dbaa425c76fd6466534f3e523",
+      "ledgerChecksum": "231a472dd7af59e9d503ae2ade125bb6eff2922dbaa425c76fd6466534f3e523"
+    },
+    {
+      "id": "cm1-027-media-document-runtime",
+      "order": 220,
+      "source": "openclaw_app/migrations/canonical/027_media_document_runtime.sql",
+      "dependsOn": [
+        "cm1-013-media-product"
+      ],
+      "sourceSha256": "58aed10ba8cfe6230b47ac2235cd7a79331b8b9741ac2be222f3f4f463b3ca23",
+      "ledgerChecksum": "58aed10ba8cfe6230b47ac2235cd7a79331b8b9741ac2be222f3f4f463b3ca23"
+    },
+    {
+      "id": "cm1-028-tenant-foundation",
+      "order": 230,
+      "source": "openclaw_app/migrations/canonical/028_tenant_foundation.sql",
+      "dependsOn": [
+        "cm1-027-media-document-runtime"
+      ],
+      "sourceSha256": "7271f79113cdb4be8c05ba3e0681da3cd81242da8dfb548713cf567f017e39c1",
+      "ledgerChecksum": "7271f79113cdb4be8c05ba3e0681da3cd81242da8dfb548713cf567f017e39c1"
+    },
+    {
+      "id": "cm1-029-lark-tenant-binding",
+      "source": "openclaw_app/migrations/canonical/029_lark_tenant_binding.sql",
+      "sourceSha256": "ed08f399336772437b1fa918e1243669d6df92cddca29a61b0d4fb93707a83a8",
+      "ledgerChecksum": "8741722855b3e82a34c49e2a7de4278013e830f9f886be08faee2e36f0c6803e",
+      "order": 240,
+      "dependsOn": [
+        "cm1-028-tenant-foundation"
+      ]
+    },
+    {
+      "id": "cm1-030-member-sessions",
+      "source": "openclaw_app/migrations/canonical/030_member_sessions.sql",
+      "sourceSha256": "95ab8e8c4e8a38b7e775ea72ffcfdf4550438cea9678670abd9242659fa75875",
+      "ledgerChecksum": "f4b26c2f2bd1b4be7df2d8fdb86c6a3ef9c3f44f0a14aaf4d00e4e4eb2e06c99",
+      "order": 250,
+      "dependsOn": [
+        "cm1-029-lark-tenant-binding"
+      ]
+    },
+    {
+      "id": "cm1-031-migration-audit-idempotency",
+      "source": "openclaw_app/migrations/canonical/031_migration_audit_idempotency.sql",
+      "sourceSha256": "4a6347a8846a790afa3e0c54259c7ce2c41be0060c76f526d3bf17938559c2dd",
+      "ledgerChecksum": "bdbbb40bfa2906583358516a665875f033402681ef66d72073e7e1e0c3684774",
+      "order": 260,
+      "dependsOn": [
+        "cm1-030-member-sessions"
+      ]
+    },
+    {
+      "id": "cm1-032-lark-read-mirrors",
+      "source": "openclaw_app/migrations/canonical/032_lark_read_mirrors.sql",
+      "sourceSha256": "62c628ecffae9a01408fc852bc0b51e06257e429d9b57552998ade64ad98d897",
+      "ledgerChecksum": "817ebaab8170816918b4d4037dcdff60513d9cb09a5f76a7cf0e89b2be9ff009",
+      "order": 270,
+      "dependsOn": [
+        "cm1-031-migration-audit-idempotency"
+      ]
+    },
+    {
+      "id": "cm1-033-document-resources",
+      "source": "openclaw_app/migrations/canonical/033_document_resources.sql",
+      "sourceSha256": "3abb3f90f35ccb321258cfb32742c0c7ca83c0893c404f41872ca8d39971e51b",
+      "ledgerChecksum": "ef9999ea144a4e2c0fc8380ffb18db21184391087dd1990a0447393266ff3a76",
+      "order": 280,
+      "dependsOn": [
+        "cm1-032-lark-read-mirrors"
+      ]
+    },
+    {
+      "id": "cm1-034-document-resource-ownership",
+      "source": "openclaw_app/migrations/canonical/034_document_resource_ownership.sql",
+      "sourceSha256": "8b994ee0f0e9e533c8e403689b62e084c87be0bc3ffae66f5d6809bfc01c9004",
+      "ledgerChecksum": "97df7df347bb8fa28017d1775de5f6976df023c840aebab5ed1e18c4db5e3c01",
+      "order": 290,
+      "dependsOn": [
+        "cm1-033-document-resources"
+      ]
+    },
+    {
+      "id": "cm1-035-document-resource-filename-check",
+      "source": "openclaw_app/migrations/canonical/035_document_resource_filename_check.sql",
+      "sourceSha256": "be26a67a8c111e4f9e09f58f4c160182ffb1c608a6050bb13a1967e05e76dd5e",
+      "ledgerChecksum": "3c78dfd7ed3c3d77e9c5d4e0dd2d84e1d88267655583c9e308a3b2e80ad4d54a",
+      "order": 300,
+      "dependsOn": [
+        "cm1-034-document-resource-ownership"
+      ]
+    },
+    {
+      "id": "cm1-036-tenant-shared-balance",
+      "source": "openclaw_app/migrations/canonical/036_tenant_shared_balance.sql",
+      "sourceSha256": "69177ac17cdd32a180e9082a49d7199f3cdda2b950e3eff0b517edf9e9cdf84e",
+      "ledgerChecksum": "69177ac17cdd32a180e9082a49d7199f3cdda2b950e3eff0b517edf9e9cdf84e",
+      "order": 310,
+      "dependsOn": [
+        "cm1-035-document-resource-filename-check"
+      ]
+    },
+    {
+      "id": "cm1-037-affiliate-profile-coverage",
+      "source": "openclaw_app/migrations/canonical/037_affiliate_profile_coverage.sql",
+      "sourceSha256": "b976047d3fc2ec72984a060f8127772f4477e53f1ffb82a317efcff5ad2a9e15",
+      "ledgerChecksum": "b976047d3fc2ec72984a060f8127772f4477e53f1ffb82a317efcff5ad2a9e15",
+      "order": 320,
+      "dependsOn": [
+        "cm1-036-tenant-shared-balance"
+      ]
+    }
+  ],
+  "excludedMigrations": [
+    {
+      "source": "openclaw_app/migrations/canonical/001_resource_owner_registry.sql",
+      "sha256": "84a94a4903711f13afc005034aea0701087add44c9e2b0927c7da8dbaf4a18e6",
+      "status": "excluded",
+      "reason": "legacy SQLite resource-owner store; not part of the PostgreSQL C-M1 business topology"
+    },
+    {
+      "source": "openclaw_app/migrations/canonical/002_resource_access.sql",
+      "sha256": "e547dfd1e33fdb294f061c706d123c100217a47d0b92f200707a6ba955e2ecd5",
+      "status": "excluded",
+      "reason": "legacy SQLite resource-access store; not part of the PostgreSQL C-M1 business topology"
+    },
+    {
+      "source": "openclaw_app/migrations/canonical/005_openclaw_registration.sql",
+      "sha256": "8fa52c4531b26401549fc1727567f3ac4973d4e090467792c5e46a910a72cf6d",
+      "status": "excluded",
+      "reason": "superseded duplicate revision prefix; applying it with 005_openclaw_registration_affiliate.sql creates the same tables twice",
+      "supersededBy": "cm1-005-registration-affiliate",
+      "legacyAccountRevisions": [
+        "005_openclaw_registration"
+      ]
+    },
+    {
+      "source": "openclaw_app/migrations/canonical/011_openclaw_media_device_jobs.sql",
+      "sha256": "7251df3cbc69bdd48979be2c160e959052bea7839647c94d40b8870e9f966bfb",
+      "status": "excluded",
+      "reason": "legacy SQLite W1 device-job store; outside the unified PostgreSQL C-M1 business topology"
+    },
+    {
+      "source": "openclaw_app/migrations/canonical/012_openclaw_media_archives.sql",
+      "sha256": "f07c91e789b243578ecdb01e1b6916133a6b7a9624d964a523eda0a1260cbc22",
+      "status": "excluded",
+      "reason": "legacy SQLite R1/archive store; outside the unified PostgreSQL C-M1 business topology"
+    },
+    {
+      "source": "openclaw_app/migrations/canonical/014_b02_tracks.sql",
+      "sha256": "cf8944bd26507b08ac436bdc71a5de8a813d7180213e2320e74ef644f93a7b51",
+      "status": "excluded",
+      "reason": "misnumbered pre-canonical B02 source",
+      "supersededBy": "cm1-016-b02-tracks"
+    },
+    {
+      "source": "openclaw_app/migrations/canonical/019_lark_read_mirrors.sql",
+      "sha256": "817ebaab8170816918b4d4037dcdff60513d9cb09a5f76a7cf0e89b2be9ff009",
+      "status": "excluded",
+      "reason": "transaction-wrapped pre-canonical Lark mirror source",
+      "supersededBy": "cm1-032-lark-read-mirrors"
+    }
+  ]
+}

@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
+from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import LLMProviderSettings, load_profile_llm_settings
 from common.social_runtime import (
     FEISHU_BASE,
@@ -36,7 +37,6 @@ from media_vault.vault import MediaVault, make_timestamp_id
 
 
 ROOT = Path(__file__).resolve().parents[2]
-OUTPUT_DIR = ROOT / "data" / "media_vault" / "data_review_runs"
 DATA_REVIEW_PATTERN = re.compile(r"^\s*【数据复盘】")
 REQUEST_KEYS = (
     "平台|账号|作者ID|博主|赛道|类型|内容类型|主体|主题|标题|作品|作品标题|发布时间|发布链接|作品链接|"
@@ -125,6 +125,7 @@ class DataReviewRequest:
 def handle_data_review_command(
     raw_text: str,
     *,
+    tenant_id: str,
     attachment_paths: list[str] | None = None,
     no_write: bool = False,
     table_url: str = "",
@@ -133,6 +134,7 @@ def handle_data_review_command(
     conversation_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     load_default_env_files()
+    vault = MediaVault(tenant_id=tenant_id)
     attachments = _existing_images(attachment_paths or [])
     request = parse_data_review_request(raw_text)
     reviewed_at = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds")
@@ -154,10 +156,11 @@ def handle_data_review_command(
     )
     normalized = normalize_analysis(analysis, request)
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_dir = vault.root / "data_review_runs"
+    output_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y%m%d-%H%M%S")
-    local_json = OUTPUT_DIR / f"{stamp}-data-review.json"
-    local_md = OUTPUT_DIR / f"{stamp}-data-review.md"
+    local_json = output_dir / f"{stamp}-data-review.json"
+    local_md = output_dir / f"{stamp}-data-review.md"
 
     doc_link = ""
     record_id = ""
@@ -172,8 +175,13 @@ def handle_data_review_command(
             parent_node_token=output_parent_node_token or DEFAULT_OUTPUT_PARENT_NODE_TOKEN,
             guide_url=guide_url or DEFAULT_GUIDE_URL,
         )
-        memory_result = record_review_memory(_review_memory_text(request, normalized), source="data-review")
+        memory_result = record_review_memory(
+            _review_memory_text(request, normalized),
+            tenant_id=tenant_id,
+            source="data-review",
+        )
         media_model_v2_result = write_data_review_model_v2(
+            tenant_id=tenant_id,
             request=request,
             analysis=normalized,
             screenshots=attachments,
@@ -301,7 +309,7 @@ def analyze_data_screenshots(
         parts.append({"text": f"数据截图 {index}：{path}。请先 OCR 可见字段，再做复盘判断。"})
         parts.append(_image_part(path))
     config = load_llm_config()
-    return validate_data_review_analysis(generate_json_from_parts(parts, config))
+    return generate_validated_review_json(parts, config)
 
 
 def validate_data_review_analysis(payload: dict[str, Any]) -> dict[str, Any]:
@@ -337,6 +345,16 @@ def validate_data_review_analysis(payload: dict[str, Any]) -> dict[str, Any]:
     if not analysis["publishing_guidance"]:
         raise ValueError("数据复盘必须输出 publishing_guidance 发布建议")
     return analysis
+
+
+DATA_REVIEW_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.review.data_review.v1",
+        profile="bounded_open",
+        evidence_fields=("atomic_facts", "media_format_evidence"),
+        validator=lambda payload, _context: validate_data_review_analysis(payload),
+    )
+)
 
 
 def normalize_text_list(value: Any) -> list[str]:
@@ -777,6 +795,7 @@ def _required_json(value: Any, default: Any) -> Any:
 
 def write_data_review_model_v2(
     *,
+    tenant_id: str,
     request: DataReviewRequest,
     analysis: dict[str, Any],
     screenshots: list[str],
@@ -790,7 +809,7 @@ def write_data_review_model_v2(
         raise RuntimeError("missing MEDIA_OS_POST_REVIEWS_URL or MEDIA_OS_METRIC_SNAPSHOT_URL")
     post_id = f"post_{source_record_id}" if source_record_id else make_timestamp_id("post_review", token_bytes=2)
     review_node = str(analysis.get("data_window") or request.data_window or "unknown").strip() or "unknown"
-    vault = MediaVault()
+    vault = MediaVault(tenant_id=tenant_id)
     review_artifacts = vault.write_post_review(
         post_id,
         review_node,
@@ -826,10 +845,24 @@ def write_data_review_model_v2(
         "review_doc_link": doc_link,
         "review_artifact_uri": review_artifact_uri,
     }
-    post_write = upsert_entity_record("PublishedPost", post_reviews_url, post_payload, key_field="post_id")
+    post_write = upsert_entity_record(
+        "PublishedPost",
+        post_reviews_url,
+        post_payload,
+        key_field="post_id",
+        session_tenant_id=tenant_id,
+    )
     metric_writes: list[dict[str, Any]] = []
     for metric in _metric_snapshot_payloads(post_id, review_node, analysis, review_artifact_uri):
-        metric_writes.append(upsert_entity_record("MetricSnapshot", metric_snapshot_url, metric, key_field="snapshot_id"))
+        metric_writes.append(
+            upsert_entity_record(
+                "MetricSnapshot",
+                metric_snapshot_url,
+                metric,
+                key_field="snapshot_id",
+                session_tenant_id=tenant_id,
+            )
+        )
     return {
         "post_id": post_id,
         "review_artifact_uri": review_artifact_uri,
@@ -921,15 +954,19 @@ def create_data_review_doc(
     old_parent = os.environ.get("FEISHU_CREATION_DOC_PARENT_NODE_TOKEN")
     os.environ["FEISHU_CREATION_DOC_PARENT_NODE_TOKEN"] = parent_node_token
     try:
-        document_id, node_token = writer._create_doc(title, token)
+        document_id, node_token, created = writer._create_doc(title, token)
     finally:
         if old_parent is None:
             os.environ.pop("FEISHU_CREATION_DOC_PARENT_NODE_TOKEN", None)
         else:
             os.environ["FEISHU_CREATION_DOC_PARENT_NODE_TOKEN"] = old_parent
-    writer._append_blocks(document_id, data_review_doc_blocks(title, request, analysis, screenshots, reviewed_at, guide_url), token)
+    blocks = data_review_doc_blocks(title, request, analysis, screenshots, reviewed_at, guide_url)
+    if created:
+        writer._append_blocks(document_id, blocks, token)
+    else:
+        writer._replace_blocks(document_id, blocks, token)
     append_screenshot_images(document_id, screenshots, token)
-    return f"https://tcnwueberajc.feishu.cn/wiki/{node_token}" if node_token else f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
+    return f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
 
 
 def doc_title(analysis: dict[str, Any], reviewed_at: str) -> str:
@@ -1268,12 +1305,13 @@ def load_llm_config() -> dict[str, Any]:
     }
 
 
-def generate_json_from_parts(parts: list[dict[str, Any]], config: dict[str, Any], max_retries: int = 2) -> dict[str, Any]:
+def generate_validated_review_json(parts: list[dict[str, Any]], config: dict[str, Any], max_retries: int = 2) -> dict[str, Any]:
     return common_generate_json_from_parts(
         parts,
         _llm_provider_from_dict(config),
         max_retries=max_retries,
         error_prefix="数据复盘 LLM 输出 JSON 校验失败",
+        validation_contract=DATA_REVIEW_VALIDATION_CONTRACT,
     )
 
 

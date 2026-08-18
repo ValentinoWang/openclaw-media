@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 import pytest
 
 from selfmedia.deconstruct.viral_content.src.config import ViralDeconstructConfig
@@ -11,7 +9,7 @@ from selfmedia.deconstruct.viral_content.src import llm_client
 def _config(**overrides):
     values = {
         "model": "gpt-5.5",
-        "base_url": "https://chatgpt.com/backend-api/codex",
+        "base_url": "https://example.com/v1",
         "api_key": "codex_auth_file",
         "timeout": 60.0,
         "source_assets_url": "",
@@ -32,49 +30,55 @@ def _config(**overrides):
     return ViralDeconstructConfig(**values)
 
 
-def test_text_llm_can_route_to_openclaw_agent(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_deconstruction_uses_common_openclaw_json_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, object] = {}
-    runtime = SimpleNamespace(
-        bin="/bin/openclaw",
-        agent="feishu-media",
-        cwd="/tmp",
-        codex_home="/tmp/codex-home",
-        thinking="low",
-        timeout=60,
+
+    def fake_generate(parts, settings):
+        captured["parts"] = parts
+        captured["settings"] = settings
+        return {"ok": True}
+
+    monkeypatch.setattr(llm_client, "common_generate_json_once", fake_generate)
+
+    result = llm_client._generate_json_once(
+        [{"text": "return json"}],
+        _config(
+            llm_api_type="openclaw_agent",
+            base_url="openclaw://agent",
+            bin="/bin/openclaw",
+            agent="feishu-media",
+            cwd="/tmp",
+            codex_home="/tmp/codex-home",
+        ),
     )
 
-    def fake_run(command, cwd=None, env=None, text=None, capture_output=None, timeout=None, check=None):
-        captured["command"] = command
-        captured["cwd"] = cwd
-        captured["timeout"] = timeout
-        return SimpleNamespace(
-            returncode=0,
-            stdout='{"result":{"payloads":[{"text":"{\\"ok\\":true}"}]}}',
-            stderr="",
-        )
-
-    monkeypatch.setenv("OPENCLAW_DECONSTRUCT_TEXT_LLM_VIA_AGENT", "1")
-    monkeypatch.setattr(llm_client, "bot_runtime", lambda name: runtime)
-    monkeypatch.setattr(llm_client, "openclaw_subprocess_env", lambda codex_home: {"CODEX_HOME": codex_home})
-    monkeypatch.setattr(llm_client.subprocess, "run", fake_run)
-
-    result = llm_client._generate_json_once([{"text": "return json"}], _config())
-
     assert result == {"ok": True}
-    assert captured["command"][:4] == ["/bin/openclaw", "agent", "--agent", "feishu-media"]
-    assert "--model" not in captured["command"]
-    assert captured["cwd"] == "/tmp"
+    assert captured["parts"] == [{"text": "return json"}]
+    settings = captured["settings"]
+    assert settings.api_type == "openclaw_agent"
+    assert settings.agent == "feishu-media"
 
 
-def test_text_agent_env_does_not_capture_image_parts(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls: list[str] = []
-    monkeypatch.setenv("OPENCLAW_DECONSTRUCT_TEXT_LLM_VIA_AGENT", "1")
-    monkeypatch.setattr(llm_client, "common_generate_json_once", lambda parts, settings: calls.append("direct") or {"ok": True})
+def test_openclaw_agent_images_use_the_same_common_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[list[dict], str]] = []
+    monkeypatch.setattr(
+        llm_client,
+        "common_generate_json_once",
+        lambda parts, settings: calls.append((parts, settings.api_type)) or {"ok": True},
+    )
 
     result = llm_client._generate_json_once(
         [{"text": "return json"}, {"image_data": {"data": "xxx", "mime_type": "image/jpeg"}}],
-        _config(),
+        _config(
+            llm_api_type="openclaw_agent",
+            base_url="openclaw://agent",
+            bin="/bin/openclaw",
+            agent="feishu-media",
+            cwd="/tmp",
+            codex_home="/tmp/codex-home",
+        ),
     )
 
     assert result == {"ok": True}
-    assert calls == ["direct"]
+    assert calls[0][1] == "openclaw_agent"
+    assert "image_data" in calls[0][0][1]

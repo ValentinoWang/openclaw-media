@@ -22,6 +22,7 @@ class ViralContentAdapter:
 
     def to_record(self, row: dict[str, Any]) -> CanonicalMediaRecord:
         asset_id = get_first_value(row, "asset_id")
+        source_asset_id = get_first_value(row, "source_asset_id")
         deconstruction_id = get_first_value(row, "deconstruction_id")
         relation_id = deconstruction_id or asset_id
         record_id = str(row.get("record_id") or relation_id or "")
@@ -30,6 +31,10 @@ class ViralContentAdapter:
         hook = get_first_value(row, "hook")
         transferable_points = get_first_value(row, "transferable_points")
         non_transferable_points = get_first_value(row, "non_transferable_points")
+        analysis_scope = get_first_value(row, "analysis_scope")
+        analysis_time_range = get_first_value(row, "analysis_time_range")
+        deconstruction_focus = get_first_value(row, "deconstruction_focus")
+        output_types = get_first_value(row, "output_types")
         reference_shots_status = get_first_value(row, "reference_shots_status")
         reference_shot_count = get_first_value(row, "reference_shot_count")
         recommended_production_route = get_first_value(row, "recommended_production_route")
@@ -62,6 +67,7 @@ class ViralContentAdapter:
         )
         detail_json = {
             "asset_id": asset_id,
+            "source_asset_id": source_asset_id,
             "author_id": get_first_value(row, "author_id"),
             "account_name_snapshot": get_first_value(row, "account_name_snapshot"),
             "enabled": get_first_value(row, "enabled"),
@@ -70,6 +76,10 @@ class ViralContentAdapter:
             "hook": hook,
             "transferable_points": transferable_points,
             "non_transferable_points": non_transferable_points,
+            "analysis_scope": analysis_scope,
+            "analysis_time_range": analysis_time_range,
+            "deconstruction_focus": deconstruction_focus,
+            "output_types": output_types,
             "reference_shots_status": reference_shots_status,
             "reference_shot_count": reference_shot_count,
             "recommended_production_route": recommended_production_route,
@@ -113,10 +123,15 @@ class ViralContentAdapter:
                 "deconstruction": deconstruction_doc_link,
             },
             metrics={
+                "source_asset_id": source_asset_id,
                 "confidence": get_first_value(row, "confidence"),
                 "content_fingerprint": get_first_value(row, "content_fingerprint"),
                 "core_data_summary": core_data_summary,
                 "top_comment_insight": top_comment_insight,
+                "analysis_scope": analysis_scope,
+                "analysis_time_range": analysis_time_range,
+                "deconstruction_focus": deconstruction_focus,
+                "output_types": output_types,
             },
             created_at="",
             updated_at="",

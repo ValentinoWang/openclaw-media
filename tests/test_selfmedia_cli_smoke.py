@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CLI = ROOT / "runtime" / "cli" / "selfmedia.py"
+TEST_TENANT_ID = "00000000-0000-4000-8000-000000000101"
 
 
 def _run_cli(*args: str) -> dict[str, object]:
@@ -40,20 +41,45 @@ def test_creation_cli_smoke_validates_canonical_entrypoint_without_llm() -> None
         "--smoke",
         "--limit",
         "5",
+        "--tenant-id",
+        TEST_TENANT_ID,
     )
     assert payload["module"] == "selfmedia.creation.workflow"
     assert payload["request"]["platform"] == "抖音"  # type: ignore[index]
 
 
-def test_material_creation_cli_smoke_validates_no_write_boundary_without_llm() -> None:
-    payload = _run_cli(
-        "material-creation",
-        "--text",
-        "【素材创作】平台=小红书 类型=图文 账号=主账号 发布时间=今晚8点 字段口径烟测",
-        "--smoke",
+def test_retired_material_creation_cli_is_not_exposed() -> None:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT)
+    completed = subprocess.run(
+        [sys.executable, str(CLI), "material-creation", "--text", "旧素材创作"],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
     )
-    assert payload["module"] == "selfmedia.creation.material"
-    assert payload["request"]["platform"] == "小红书"  # type: ignore[index]
+
+    assert completed.returncode != 0
+    assert "invalid choice" in completed.stderr
+
+
+def test_retired_creation_inspiration_cli_is_not_exposed() -> None:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT)
+    completed = subprocess.run(
+        [sys.executable, str(CLI), "creation-inspiration", "--text", "旧创作灵感"],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "invalid choice" in completed.stderr
 
 
 def test_deconstruct_cli_smoke_validates_url_and_route_without_llm() -> None:
@@ -81,6 +107,8 @@ def test_id_business_cli_smoke_validates_trigger_without_llm() -> None:
             "【商务>ID】小王 项目：HF绿氨糖",
             "--smoke",
             "--no-screenshot",
+            "--tenant-id",
+            TEST_TENANT_ID,
         ],
         cwd=ROOT,
         env=env,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import json
 import re
 import urllib.parse
 from typing import Any
@@ -33,9 +34,19 @@ def first_int_match(text: str, keys: tuple[str, ...]) -> int | None:
 
 def first_string_match(text: str, keys: tuple[str, ...]) -> str:
     for key in keys:
-        match = re.search(rf'(?:\\?")?{re.escape(key)}(?:\\?")?\s*:\s*(?:\\?")([^"\\]+)', text)
-        if match:
-            value = match.group(1).replace(r"\n", "\n").replace(r"\/", "/").strip()
+        patterns = (
+            rf'\\"{re.escape(key)}\\"\s*:\s*\\"(?P<value>.*?)\\"',
+            rf'"{re.escape(key)}"\s*:\s*"(?P<value>(?:\\.|[^"\\])*)"',
+        )
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if not match:
+                continue
+            raw_value = match.group("value")
+            try:
+                value = json.loads(f'"{raw_value}"').strip()
+            except (json.JSONDecodeError, AttributeError):
+                value = raw_value.replace(r"\n", "\n").replace(r"\/", "/").strip()
             if value and value != "$undefined":
                 return value
     return ""
@@ -49,6 +60,17 @@ def text_variants(text: str) -> list[str]:
         if item not in result:
             result.append(item)
     return result
+
+
+def normalize_public_http_url(value: Any) -> str:
+    """Keep only absolute public HTTP(S) URLs extracted from profile data."""
+    text = str(value or "").strip().replace(r"\/", "/")
+    if not text or any(ord(char) < 32 for char in text):
+        return ""
+    parsed = urllib.parse.urlsplit(text)
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc or parsed.username or parsed.password:
+        return ""
+    return text
 
 
 def parse_douyin_profile_text(text: str, url: str = "", *, title: str = "") -> dict[str, Any]:
@@ -90,6 +112,57 @@ def parse_douyin_profile_text(text: str, url: str = "", *, title: str = "") -> d
     visible_titles = visible_post_titles(lines)
     if visible_titles:
         payload["visible_post_titles"] = visible_titles
+    return payload
+
+
+def parse_xiaohongshu_profile_text(text: str, url: str = "", *, title: str = "") -> dict[str, Any]:
+    clean = str(text or "").strip()
+    lines = [line.strip() for line in clean.splitlines() if line.strip()]
+    payload: dict[str, Any] = {"homepage_link": url.strip(), "visible_text": clean}
+
+    title_match = re.search(r"^(?P<name>.+?)\s*[-|]\s*小红书(?:网页版)?$", str(title or "").strip())
+    if title_match:
+        payload["account_name"] = title_match.group("name").strip()
+
+    id_match = re.search(r"小红书号[:：]\s*([0-9A-Za-z_-]+)", clean)
+    if id_match:
+        payload["author_id"] = id_match.group(1)
+        id_index = next((idx for idx, line in enumerate(lines) if "小红书号" in line), -1)
+        if not payload.get("account_name") and id_index > 0:
+            ignored = {"关注", "粉丝", "获赞与收藏", "笔记", "收藏", "赞过"}
+            for candidate in reversed(lines[:id_index]):
+                if candidate not in ignored and not re.fullmatch(r"\d+(?:\.\d+)?[万wWkK千]?", candidate):
+                    payload["account_name"] = candidate
+                    break
+
+    metric_labels = {
+        "关注": "following_count",
+        "粉丝": "fans_count",
+        "获赞与收藏": "total_favorited",
+        "笔记": "note_count",
+        "作品": "post_count",
+    }
+    for index, line in enumerate(lines):
+        field = metric_labels.get(line)
+        if not field:
+            continue
+        candidates = []
+        if index > 0:
+            candidates.append(lines[index - 1])
+        if index + 1 < len(lines):
+            candidates.append(lines[index + 1])
+        value = next((parsed for item in candidates if (parsed := parse_chinese_count(item)) is not None), None)
+        if value is not None:
+            payload.setdefault(field, value)
+
+    inline_metrics = (
+        ("fans_count", r"粉丝[・:：]?\s*([0-9.]+[万wWkK千]?)"),
+        ("note_count", r"(?:笔记|作品)[・:：]?\s*([0-9.]+[万wWkK千]?)"),
+    )
+    for field, pattern in inline_metrics:
+        match = re.search(pattern, clean)
+        if match and field not in payload:
+            payload[field] = parse_chinese_count(match.group(1))
     return payload
 
 
@@ -162,6 +235,9 @@ def parse_douyin_embedded_profile_data(html_text: str, platform_id: str) -> dict
             total_favorited = first_int_match(window, ("totalFavorited",))
             if total_favorited is not None:
                 payload["total_favorited"] = total_favorited
+            avatar_url = normalize_public_http_url(first_string_match(window, ("avatar300Url", "avatarUrl")))
+            if avatar_url:
+                payload["avatar_url"] = avatar_url
             useful_fields = {
                 "account_name",
                 "bio",
@@ -169,9 +245,30 @@ def parse_douyin_embedded_profile_data(html_text: str, platform_id: str) -> dict
                 "post_count",
                 "following_count",
                 "total_favorited",
+                "avatar_url",
             }
             if any(key in payload for key in useful_fields):
                 return payload
+    return {}
+
+
+def parse_xiaohongshu_embedded_profile_data(html_text: str, platform_id: str = "") -> dict[str, Any]:
+    """Extract the public profile avatar from the structured XHS page state."""
+    platform_id = str(platform_id or "").strip()
+    if not html_text:
+        return {}
+    for blob in text_variants(html_text):
+        positions = [match.start() for match in re.finditer(re.escape(platform_id), blob)] if platform_id else [0]
+        for position in positions:
+            window_start = max(0, position - 5000)
+            window = blob[window_start : position + 5000] if platform_id else blob
+            if platform_id:
+                user_id = first_string_match(window, ("user_id", "userId", "userid"))
+                if user_id and user_id != platform_id:
+                    continue
+            avatar_url = normalize_public_http_url(first_string_match(window, ("imageb",)))
+            if avatar_url:
+                return {"avatar_url": avatar_url, "metric_source": "embedded_profile_data"}
     return {}
 
 

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-01T03:16:09+08:00",
+  "updated_at": "2026-08-11T12:51:09+08:00",
   "total": {
     "key": "total",
     "title": "OpenClaw 全部 Bot 能力说明",
@@ -36,6 +36,12 @@
       "title": "OpenClaw Social bot 能力说明",
       "url": "https://tcnwueberajc.feishu.cn/wiki/DsJywMXGDi2IWOkvJGucy9TDnlb",
       "local_path": "/home/ubuntu/docs/说明书/OpenClaw Social bot 能力说明.md"
+    },
+    "DeepMath bot": {
+      "key": "deepmath",
+      "title": "OpenClaw DeepMath bot 能力说明",
+      "url": "https://feishu.cn/docx/UHjvdnuxAoBT8Fx14hwcMPlvnfg",
+      "local_path": "/home/ubuntu/docs/说明书/OpenClaw DeepMath bot 能力说明.md"
     }
   }
 }

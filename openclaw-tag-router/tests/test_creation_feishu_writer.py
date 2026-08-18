@@ -35,8 +35,8 @@ class CreationFeishuWriterTest(unittest.TestCase):
         harness = CreationDocHarness()
 
         result = harness._sync_unified_creation_child_doc(
-            "素材创作｜毕业百米",
-            "素材创作",
+            "创作｜毕业百米",
+            "创作",
             "\n".join(
                 [
                     "## 分镜脚本",

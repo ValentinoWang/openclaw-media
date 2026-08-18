@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
-import sys
-import time
 from typing import Any
 
 from .adapters import ActivityAdapter, BusinessAdapter, CreationInspirationAdapter, ViralContentAdapter
 from .deconstruction_artifact import DeconstructionArtifactUnavailable, attach_deconstruction_artifact_brief
 from .field_contract import CanonicalMediaRecord, normalize_key
+from .insight_cards import load_insight_card_records
 from .llm_generator import generate_creation_draft
 from .matcher import RankedRecord, content_type_allowed, rank_activities, rank_businesses, rank_inspirations, rank_virals, request_has_business_context
 from .media_model_v2_writeback import write_creation_model_v2
@@ -21,15 +19,17 @@ from .retrieval import load_business_rows_for_creation, load_inspiration_rows_fo
 from .schema import ensure_creation_source_schema
 from .writer import create_creation_doc
 from selfmedia.context import build_media_context_for_request, merge_conversation_context, record_creation_memory
+from media_vault import require_tenant_id
 
 
 def smoke_creation_command(
     raw_text: str,
     *,
+    tenant_id: str,
     conversation_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     request = parse_creation_request(raw_text)
-    media_context = merge_conversation_context(build_media_context_for_request(request), conversation_context)
+    media_context = merge_conversation_context(build_media_context_for_request(request, tenant_id=tenant_id), conversation_context)
     loaded = media_context.get("loaded") if isinstance(media_context.get("loaded"), dict) else {}
     return {
         "ok": True,
@@ -49,6 +49,7 @@ def smoke_creation_command(
 def handle_creation_command(
     raw_text: str,
     *,
+    tenant_id: str,
     dry_run: bool = False,
     no_write: bool = False,
     viral_url: str = "",
@@ -60,24 +61,26 @@ def handle_creation_command(
     ensure_schema: bool = False,
     conversation_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    tenant_id = require_tenant_id(tenant_id)
     request = parse_creation_request_with_llm(raw_text)
-    media_context = merge_conversation_context(build_media_context_for_request(request), conversation_context)
+    media_context = merge_conversation_context(build_media_context_for_request(request, tenant_id=tenant_id), conversation_context)
     schema_result = ensure_creation_source_schema(viral_url=viral_url, activity_url=activity_url, business_url=business_url) if ensure_schema else {}
 
-    viral_rows, activity_rows = load_rows_for_creation(viral_url=viral_url, activity_url=activity_url, limit=limit)
-    business_rows = load_business_rows_for_creation(business_url=business_url, limit=limit) if request_has_business_context(request) else []
-    inspiration_rows = load_inspiration_rows_for_creation(inspiration_url=inspiration_url, limit=limit)
+    viral_rows, activity_rows = load_rows_for_creation(tenant_id=tenant_id, viral_url=viral_url, activity_url=activity_url, limit=limit)
+    business_rows = load_business_rows_for_creation(tenant_id=tenant_id, business_url=business_url, limit=limit) if request_has_business_context(request) else []
+    inspiration_rows = load_inspiration_rows_for_creation(tenant_id=tenant_id, inspiration_url=inspiration_url, limit=limit)
     activities = [ActivityAdapter().to_record(row) for row in activity_rows]
     virals = [ViralContentAdapter().to_record(row) for row in viral_rows]
     businesses = [BusinessAdapter().to_record(row) for row in business_rows]
     inspirations = [CreationInspirationAdapter().to_record(row) for row in inspiration_rows]
+    inspirations.extend(load_insight_card_records(limit=_env_int("SELFMEDIA_CREATION_INSIGHT_CARD_CONTEXT_LIMIT", 30)))
 
     ranked_activity_candidates = rank_activities(activities, request)[: _env_int("SELFMEDIA_CREATION_ACTIVITY_CONTEXT_LIMIT", 30)]
     activity_candidates = [item.record for item in ranked_activity_candidates]
     activity_example_virals, activity_example_deconstructs = _deconstruct_activity_example_links(
         ranked_activity_candidates,
+        tenant_id=tenant_id,
         existing_virals=virals,
-        viral_url=viral_url,
         enabled=not dry_run and not no_write,
         max_items=_env_int("SELFMEDIA_CREATION_ACTIVITY_EXAMPLE_DECONSTRUCT_LIMIT", 2),
     )
@@ -85,7 +88,10 @@ def handle_creation_command(
     if activity_example_virals:
         ranked_example_virals = rank_virals(activity_example_virals, request)
         ranked_viral_candidates = _merge_ranked_records(ranked_example_virals, ranked_viral_candidates)[: _env_int("SELFMEDIA_CREATION_VIRAL_CONTEXT_LIMIT", 40)]
-    ranked_viral_candidates, viral_artifact_rejections = _require_deconstruction_artifacts(ranked_viral_candidates)
+    ranked_viral_candidates, viral_artifact_rejections = _require_deconstruction_artifacts(
+        ranked_viral_candidates,
+        tenant_id=tenant_id,
+    )
     viral_candidates = [item.record for item in ranked_viral_candidates]
     ranked_inspiration_candidates = rank_inspirations(inspirations, request)[: _env_int("SELFMEDIA_CREATION_INSPIRATION_CONTEXT_LIMIT", 40)]
     inspiration_candidates = [item.record for item in ranked_inspiration_candidates]
@@ -158,6 +164,7 @@ def handle_creation_command(
             platform_fit=platform_fit,
         )
         media_model_v2_result = write_creation_model_v2(
+            tenant_id=tenant_id,
             request=request,
             entrypoint=f"【创作>{request.platform}】" if request.platform in {"小红书", "抖音"} else "【创作】",
             all_activity_candidates=ranked_activity_candidates,
@@ -178,6 +185,7 @@ def handle_creation_command(
         creation_record_id = str(media_model_v2_result.get("run_id") or "")
         memory_result = record_creation_memory(
             request,
+            tenant_id=tenant_id,
             draft=draft,
             analysis=draft.get("positioning_analysis") or {},
             context=media_context,
@@ -227,6 +235,7 @@ def handle_creation_command(
             dry_run=dry_run or no_write,
             candidate_counts={"activities": len(activity_candidates), "virals": len(viral_candidates), "inspirations": len(inspiration_candidates), "businesses": len(business_candidates)},
             platform_fit=platform_fit,
+            generation=draft.get("_generation") if isinstance(draft.get("_generation"), dict) else {},
         ),
     }
 
@@ -245,6 +254,7 @@ def format_creation_reply(
     dry_run: bool = False,
     candidate_counts: dict[str, int] | None = None,
     platform_fit: dict[str, Any] | None = None,
+    generation: dict[str, Any] | None = None,
 ) -> str:
     loaded = (media_context or {}).get("loaded") or {}
     profile = (media_context or {}).get("account_profile") or {}
@@ -255,6 +265,7 @@ def format_creation_reply(
         f"内容类型：{request.content_type}",
         f"赛道：{request.track}",
         f"主体：{request.topic}",
+        f"生成模型：{(generation or {}).get('model') or '未记录'} / {(generation or {}).get('thinking') or '未记录'}",
         f"候选记忆：活动 {candidate_counts.get('activities', 0)} 条，爆款 {candidate_counts.get('virals', 0)} 条，灵感 {candidate_counts.get('inspirations', 0)} 条，商务 {candidate_counts.get('businesses', 0)} 条",
         f"LLM选择：活动 {len(activities)} 条，爆款 {len(virals)} 条，灵感 {len(inspirations)} 条，商务 {len(businesses)} 条",
         f"上下文：账号档案 {'有' if loaded.get('account_profile') else '无'}，历史创作 {loaded.get('recent_creations', 0)} 条，历史复盘 {loaded.get('recent_reviews', 0)} 条，对话 {loaded.get('conversation_context', 0)} 条",
@@ -292,12 +303,16 @@ def _constraint_business_candidates(
     return (constrained or records)[:max_items]
 
 
-def _require_deconstruction_artifacts(ranked: list[RankedRecord]) -> tuple[list[RankedRecord], list[dict[str, Any]]]:
+def _require_deconstruction_artifacts(
+    ranked: list[RankedRecord],
+    *,
+    tenant_id: str,
+) -> tuple[list[RankedRecord], list[dict[str, Any]]]:
     accepted: list[RankedRecord] = []
     rejected: list[dict[str, Any]] = []
     for item in ranked:
         try:
-            record = attach_deconstruction_artifact_brief(item.record)
+            record = attach_deconstruction_artifact_brief(item.record, tenant_id=tenant_id)
         except DeconstructionArtifactUnavailable as exc:
             rejected.append(
                 {
@@ -382,8 +397,8 @@ def _record_candidate_payload(record: CanonicalMediaRecord) -> dict[str, Any]:
 def _deconstruct_activity_example_links(
     ranked_activities: list[RankedRecord],
     *,
+    tenant_id: str,
     existing_virals: list[CanonicalMediaRecord] | None = None,
-    viral_url: str,
     enabled: bool,
     max_items: int,
 ) -> tuple[list[CanonicalMediaRecord], list[dict[str, Any]]]:
@@ -417,7 +432,7 @@ def _deconstruct_activity_example_links(
                 }
             )
             continue
-        result = _run_viral_deconstruct(link, viral_url=viral_url)
+        result = _run_viral_deconstruct(link, tenant_id=tenant_id)
         record = result.pop("record", None)
         results.append(result)
         if result.get("ok") and isinstance(record, CanonicalMediaRecord):
@@ -425,23 +440,14 @@ def _deconstruct_activity_example_links(
     return records, results
 
 
-def _run_viral_deconstruct(link: str, *, viral_url: str) -> dict[str, Any]:
-    root = "/home/ubuntu/selfmedia-tools"
-    cmd = [sys.executable, "-m", "selfmedia.deconstruct.viral_content.src.cli", f"【拆解】 {link}"]
-    try:
-        completed = _run_deconstruct_with_watchdog(
-            cmd,
-            cwd=root,
-            timeout=_env_int("SELFMEDIA_CREATION_ACTIVITY_EXAMPLE_DECONSTRUCT_TIMEOUT", 900),
-        )
-    except Exception as exc:
-        return {"ok": False, "link": link, "reason": f"deconstruct_invocation_failed:{exc}"}
-    if completed.returncode != 0:
-        return {"ok": False, "link": link, "reason": _truncate(completed.stderr or completed.stdout, 700)}
-    try:
-        payload = json.loads(completed.stdout)
-    except json.JSONDecodeError as exc:
-        return {"ok": False, "link": link, "reason": f"deconstruct_non_json_output:{exc}"}
+def _run_viral_deconstruct(link: str, *, tenant_id: str) -> dict[str, Any]:
+    from selfmedia.deconstruct.viral_content.src.runner import run_workflow
+
+    payload = run_workflow(
+        f"【拆解】 {link}",
+        tenant_id=require_tenant_id(tenant_id),
+        write_feishu=True,
+    )
     deconstruct = payload.get("deconstruct") if isinstance(payload, dict) else {}
     if not isinstance(deconstruct, dict):
         return {"ok": False, "link": link, "reason": "deconstruct_missing_payload"}
@@ -462,37 +468,6 @@ def _run_viral_deconstruct(link: str, *, viral_url: str) -> dict[str, Any]:
         detail_json={"activity_viral_example": True},
     )
     return {"ok": True, "link": link, "record_id": record.source_record_id, "deconstruct_doc_url": doc_url, "record": record}
-
-
-def _run_deconstruct_with_watchdog(command: list[str], *, cwd: str, timeout: int) -> subprocess.CompletedProcess[str]:
-    heartbeat_seconds = max(10, _env_int("SELFMEDIA_CREATION_ACTIVITY_EXAMPLE_DECONSTRUCT_HEARTBEAT_SECONDS", 60))
-    started_at = time.monotonic()
-    process = subprocess.Popen(
-        command,
-        cwd=cwd,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    watchdog_lines: list[str] = []
-    while True:
-        elapsed = time.monotonic() - started_at
-        remaining = max(0.1, float(timeout) - elapsed)
-        wait_for = min(float(heartbeat_seconds), remaining)
-        try:
-            stdout, stderr = process.communicate(timeout=wait_for)
-            if watchdog_lines:
-                stderr = "\n".join([*(line for line in watchdog_lines if line), stderr or ""]).strip()
-            return subprocess.CompletedProcess(command, process.returncode, stdout or "", stderr or "")
-        except subprocess.TimeoutExpired:
-            elapsed = time.monotonic() - started_at
-            if elapsed >= timeout:
-                process.kill()
-                stdout, stderr = process.communicate()
-                watchdog_lines.append(f"[watchdog] timeout_after={int(elapsed)}s limit={timeout}s command={command[0]}")
-                stderr = "\n".join([*(line for line in watchdog_lines if line), stderr or ""]).strip()
-                return subprocess.CompletedProcess(command, -9, stdout or "", stderr)
-            watchdog_lines.append(f"[watchdog] still_running elapsed={int(elapsed)}s command={command[0]}")
 
 
 def _ranked_candidate_payload(item: RankedRecord) -> dict[str, Any]:

@@ -1,6 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
+
 from selfmedia.creator_profiles import candidate_builder, extractor, metric_snapshot, resolver
+from selfmedia.creator_profiles.evidence import write_evidence_bundle
+from selfmedia.creator_profiles.run_store import RunStore, RunStoreError
+
+
+TENANT_ID = "00000000-0000-4000-8000-000000000101"
+OTHER_TENANT_ID = "00000000-0000-4000-8000-000000000202"
 
 
 def test_douyin_self_profile_is_blocked():
@@ -40,6 +50,54 @@ def test_parse_douyin_profile_text_keeps_metric_labels_aligned():
     assert parsed["post_count"] == 20
 
 
+def test_parse_xiaohongshu_profile_text_extracts_required_identity_and_metrics():
+    text = "\n".join(["王教练", "小红书号：wangsports", "12", "关注", "1.2万", "粉丝", "3.4万", "获赞与收藏", "68", "笔记"])
+    parsed = extractor.parse_xiaohongshu_profile_text(
+        text,
+        "https://www.xiaohongshu.com/user/profile/creator",
+        title="王教练 - 小红书",
+    )
+    assert parsed["author_id"] == "wangsports"
+    assert parsed["account_name"] == "王教练"
+    assert parsed["following_count"] == 12
+    assert parsed["fans_count"] == 12000
+    assert parsed["total_favorited"] == 34000
+    assert parsed["note_count"] == 68
+
+
+def test_profile_platform_is_inferred_only_from_allowlisted_hosts():
+    assert resolver.infer_profile_platform("https://www.xiaohongshu.com/user/profile/creator") == "小红书"
+    assert resolver.infer_profile_platform("https://v.douyin.com/abc") == "抖音"
+    assert resolver.infer_profile_platform("https://douyin.com.example.test/user/abc") == ""
+
+
+def test_complete_explicit_identity_resolves_without_url_or_network():
+    result = resolver.resolve_creator_profile(
+        platform="小红书",
+        platform_id="wangsports",
+        id_type="xhs_display_id",
+        creator_name="王教练",
+    )
+
+    assert result["ok"] is True
+    assert result["resolve_status"] == "explicit_identity_resolved"
+    assert result["source"] == "explicit_user_fields"
+    assert result["resolved_author_id"] == "wangsports"
+    assert result["account_name"] == "王教练"
+    assert result["resolved_profile_url"] == ""
+
+
+def test_incomplete_explicit_identity_does_not_bypass_url_resolver():
+    result = resolver.resolve_creator_profile(
+        platform="小红书",
+        platform_id="wangsports",
+        creator_name="",
+    )
+
+    assert result["ok"] is False
+    assert result["resolve_status"] == "invalid_profile_url"
+
+
 def test_embedded_profile_parser_skips_visible_id_without_metrics():
     html = (
         '<span>抖音号：22654404058</span>'
@@ -53,6 +111,26 @@ def test_embedded_profile_parser_skips_visible_id_without_metrics():
     assert parsed["fans_count"] == 901
     assert parsed["total_favorited"] == 5810
     assert parsed["post_count"] == 20
+
+
+def test_embedded_profile_parser_extracts_douyin_avatar_with_300_priority():
+    html = (
+        '<script>{"nickname":"Ty.Mer","uniqueId":"22654404058",'
+        '"avatarUrl":"https://p.example/avatar-original.jpg",'
+        '"avatar300Url":"https://p.example/avatar-300.jpg",'
+        '"followerCount":901}</script>'
+    )
+    parsed = extractor.parse_douyin_embedded_profile_data(html, "22654404058")
+    assert parsed["avatar_url"] == "https://p.example/avatar-300.jpg"
+
+
+def test_embedded_profile_parser_extracts_xiaohongshu_imageb():
+    html = (
+        '<script>window.__INITIAL_STATE__={"user":{"user_id":"wangsports",'
+        '"nickname":"王教练","imageb":"https://sns.example/avatar.jpg"}}</script>'
+    )
+    parsed = extractor.parse_xiaohongshu_embedded_profile_data(html, "wangsports")
+    assert parsed["avatar_url"] == "https://sns.example/avatar.jpg"
 
 
 def test_candidate_builder_keeps_candidate_only_and_all_v2_fields():
@@ -93,7 +171,7 @@ def test_candidate_builder_keeps_candidate_only_and_all_v2_fields():
 
     payload = candidate["candidate_payload"]
     assert candidate["write_status"] == "candidate_only_not_written"
-    assert len(payload) == 13
+    assert len(payload) == 14
     assert payload["current_metrics_summary"] == "粉丝数 901 人；关注 62；获赞 5810；作品 20"
     assert payload["identity_tags"] == ["清华", "中长跑"]
 
@@ -112,3 +190,29 @@ def test_account_metric_snapshots_use_existing_metric_registry():
     assert keys == {"followers", "likes_total", "works_count"}
     assert "following_count" not in keys
     assert {payload["account_name"] for payload in payloads} == {"Ty.Mer"}
+
+
+def test_creator_profile_candidate_store_is_physically_tenant_scoped(tmp_path: Path):
+    resolver_result = {
+        "platform": "抖音",
+        "input_platform_id": "22654404058",
+        "resolved_author_id": "22654404058",
+        "resolve_status": "exact_profile_resolved",
+        "extracted_profile": {},
+    }
+    bundle = write_evidence_bundle(
+        run_id="20260730T120000Z",
+        resolver_result=resolver_result,
+        tenant_id=TENANT_ID,
+        root=tmp_path,
+    )
+    (Path(bundle["dir"]) / "candidate_result.json").write_text("{}", encoding="utf-8")
+
+    assert bundle["uri"].startswith(f"media://tenants/{TENANT_ID}/creator_profiles/")
+    assert RunStore(tenant_id=TENANT_ID, root=tmp_path).read_json(
+        "20260730T120000Z", "candidate_result.json"
+    ) == {}
+    with pytest.raises(RunStoreError):
+        RunStore(tenant_id=OTHER_TENANT_ID, root=tmp_path).read_json(
+            "20260730T120000Z", "candidate_result.json"
+        )

@@ -59,6 +59,7 @@ class StyleContext:
 def load_style_context(
     request: StylePolishRequest,
     *,
+    tenant_id: str,
     memory_root: str | Path | None = None,
     platform_mechanism_root: str | Path | None = None,
     allow_live_creator_profile: bool = False,
@@ -66,6 +67,7 @@ def load_style_context(
     traces: list[StyleSourceTrace] = []
     media_context = _load_media_context(
         request,
+        tenant_id=tenant_id,
         memory_root=Path(memory_root or DEFAULT_MEMORY_ROOT),
         allow_live_creator_profile=allow_live_creator_profile,
     )
@@ -102,7 +104,7 @@ def load_style_context(
             source=str(STYLE_DEFAULTS_PATH),
             loaded=STYLE_DEFAULTS_PATH.exists(),
             owner="selfmedia.style.assets",
-            fields=("version_names", "default_strategy"),
+            fields=("default_strategy", "default_variants", "default_version_name"),
             note="Generic defaults only; not a replacement for CreatorProfile or media_memory.",
         )
     )
@@ -124,6 +126,7 @@ def load_style_context(
 def _load_media_context(
     request: StylePolishRequest,
     *,
+    tenant_id: str,
     memory_root: Path,
     allow_live_creator_profile: bool,
 ) -> dict[str, Any]:
@@ -131,6 +134,7 @@ def _load_media_context(
 
     if allow_live_creator_profile:
         return build_media_context(
+            tenant_id=tenant_id,
             platform=request.platform,
             account=request.account,
             topic=request.raw_text[:120],
@@ -140,6 +144,7 @@ def _load_media_context(
         )
     with _disabled_live_creator_profile():
         return build_media_context(
+            tenant_id=tenant_id,
             platform=request.platform,
             account=request.account,
             topic=request.raw_text[:120],

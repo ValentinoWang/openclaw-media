@@ -176,20 +176,29 @@ class ContentOSUtilsMixin:
         return value in {"1", "true", "yes", "on"}
     def _extract_content_os_project_id(self, raw: str, vault_root: Path | None = None) -> str:
         text = str(raw or "")
+        candidates: list[str] = []
         for label in ("project_id", "项目ID", "项目"):
             value = self._extract_labeled_value(text, label)
             if value:
                 candidate = re.split(r"\s+", value, maxsplit=1)[0].strip("`，,。；;")
                 if candidate:
-                    return candidate
+                    candidates.append(candidate)
         vault_root = vault_root or self._content_os_vault_root()
         projects_root = vault_root / "08_内容项目"
         if projects_root.exists():
             project_ids = sorted((path.name for path in projects_root.iterdir() if path.is_dir()), key=len, reverse=True)
+            for candidate in candidates:
+                if candidate in project_ids:
+                    return candidate
             for project_id in project_ids:
                 if project_id in text:
                     return project_id
-        return ""
+            for project_id in project_ids:
+                frontmatter, _ = self._read_markdown_frontmatter(projects_root / project_id / "00_项目总览.md")
+                title = str(frontmatter.get("title") or frontmatter.get("theme") or "").strip()
+                if title and title in text:
+                    return project_id
+        return candidates[0] if candidates else ""
     def _content_os_project_dir(self, project_id: str, vault_root: Path | None = None) -> Path:
         return (vault_root or self._content_os_vault_root()) / "08_内容项目" / project_id
     @staticmethod

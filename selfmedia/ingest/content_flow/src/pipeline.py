@@ -10,14 +10,11 @@ from .config import Settings
 from .downloader import clean_douyin_url, resolve_media
 from .state import FlowState
 from .storage import ensure_media_paths, load_json, load_text, save_json, save_text
-from .transcriber import transcribe_audio, transcribe_audio_evidence
+from .semantic_persistence import analysis_user_field_contract_issue
+from .transcriber import transcribe_audio_evidence
 from .utils import (
     detect_platform,
-    extract_tags_from_comments,
-    extract_tags_from_text,
-    merge_tag_lists,
     normalize_tags,
-    stringify_value,
 )
 
 
@@ -29,7 +26,7 @@ def _noop_progress(_: str, __: int, ___: str) -> None:
 
 
 def _cached_analysis_needs_rerun(payload: dict) -> bool:
-    return payload.get("analysis_status") == "needs_model_rerun"
+    return bool(analysis_user_field_contract_issue(payload))
 
 
 def _clean_ocr_text(text: str) -> str:
@@ -171,13 +168,6 @@ def make_transcriber_node(settings: Settings, progress: ProgressFn):
         transcript = str((evidence or {}).get("transcript") or "").strip()
         segments = (evidence or {}).get("segments") or []
         if not transcript:
-            transcript = transcribe_audio(
-                audio_path,
-                settings,
-                progress=progress,
-                progress_range=(45, 70),
-            ) or ""
-        if not transcript:
             print("转写失败。", flush=True)
             progress("transcriber", 60, "转写失败")
             return {}
@@ -214,20 +204,7 @@ def make_analyst_node(settings: Settings, progress: ProgressFn):
             return {"is_success": False}
 
         def enrich_tags(payload: dict) -> None:
-            ai_tags = normalize_tags(payload.get("tags"))
-            ai_text = " ".join(
-                [
-                    stringify_value(payload.get("summary")),
-                    stringify_value(payload.get("hooks")),
-                    stringify_value(payload.get("emotion")),
-                    stringify_value(payload.get("action_plan")),
-                ]
-            ).strip()
-            ai_text_tags = extract_tags_from_text(ai_text, limit=6) if ai_text else []
-            comment_tags = extract_tags_from_comments(state.get("top_comments") or [], limit=6)
-            merged = merge_tag_lists(ai_tags, ai_text_tags, comment_tags, limit=8)
-            if merged:
-                payload["tags"] = merged
+            payload["tags"] = normalize_tags(payload.get("tags"))
 
         paths = ensure_media_paths(state["url"])
         image_ocr = _extract_image_ocr(state.get("image_paths") or [], paths.ocr_path, progress)

@@ -25,7 +25,7 @@ class KnowledgeRouteHarness(TagRouter):
 
 
 class KnowledgeDelegateThinkingTest(unittest.TestCase):
-    def test_explicit_tag_thinking_metadata_is_normalized(self) -> None:
+    def test_explicit_tag_thinking_metadata_cannot_override_profile_tier(self) -> None:
         message = Message(
             entry_tag="补全",
             raw_text="【补全^xhigh】内容",
@@ -36,13 +36,47 @@ class KnowledgeDelegateThinkingTest(unittest.TestCase):
 
         self.assertEqual(KnowledgeDelegateMixin()._knowledge_thinking_level(message), "high")
 
-    def test_completion_route_uses_normalized_thinking_metadata(self) -> None:
+    def test_completion_route_uses_profile_thinking(self) -> None:
         router = KnowledgeRouteHarness()
 
         result = router.route("补全", "内容", metadata={"tag_thinking": "xhigh"})
 
         self.assertTrue(result.ok)
         self.assertEqual(router.captured_thinking_level, "high")
+
+    def test_delegate_always_uses_knowledge_delegate_profile(self) -> None:
+        message = Message(
+            entry_tag="补全",
+            raw_text="【补全】内容",
+            body="内容",
+            created_at=datetime(2026, 1, 1),
+            metadata={},
+        )
+        captured: list[str] = []
+        runtime = SimpleNamespace(
+            bin="/tmp/openclaw",
+            agent="knowledge",
+            timeout=1,
+            cwd="/tmp",
+            codex_home="/tmp/codex-home",
+            model="openai/gpt-5.6-sol",
+            thinking="medium",
+        )
+
+        def fake_profile_config(profile_name: str) -> dict[str, str]:
+            captured.append(profile_name)
+            return {"provider": "openclaw_codex"}
+
+        with patch("openclaw_app.router.knowledge_delegate.profile_config", side_effect=fake_profile_config), patch(
+            "openclaw_app.router.knowledge_delegate.profile_runtime", return_value=runtime
+        ), patch(
+            "openclaw_app.router.knowledge_delegate.run_media_subprocess_with_watchdog",
+            return_value=SimpleNamespace(returncode=0, stdout=json.dumps({"reply": "done"}), stderr=""),
+        ):
+            result = KnowledgeDelegateMixin()._delegate_to_knowledge_bot(message, thinking_level="high")
+
+        self.assertTrue(result.ok)
+        self.assertEqual(captured, ["knowledge_delegate"])
 
     def test_cognition_route_delegates_to_knowledge_bot(self) -> None:
         router = KnowledgeRouteHarness()
@@ -89,7 +123,8 @@ class KnowledgeDelegateThinkingTest(unittest.TestCase):
             timeout=1,
             cwd="/tmp",
             codex_home="/tmp/codex-home",
-            model="openai-codex/gpt-5.5",
+            model="openai/gpt-5.6-sol",
+            thinking="medium",
         )
         with patch("openclaw_app.router.knowledge_delegate.profile_config", return_value={"provider": "openclaw_codex"}), patch(
             "openclaw_app.router.knowledge_delegate.profile_runtime",
@@ -98,6 +133,9 @@ class KnowledgeDelegateThinkingTest(unittest.TestCase):
             result = KnowledgeDelegateMixin()._delegate_to_knowledge_bot(message, thinking_level="high")
 
         self.assertTrue(result.ok)
+        self.assertNotIn("--model", captured["cmd"])
+        self.assertNotIn("--thinking", captured["cmd"])
+        self.assertTrue(captured["cmd"][captured["cmd"].index("--session-id") + 1].startswith("knowledge-delegate-"))
         delegated = captured["cmd"][captured["cmd"].index("--message") + 1]
         self.assertFalse(delegated.startswith("【"))
         self.assertIn("不要调用 tag-router bridge", delegated)

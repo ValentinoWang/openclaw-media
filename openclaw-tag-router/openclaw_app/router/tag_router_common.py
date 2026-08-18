@@ -20,6 +20,7 @@ if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
 from common.llm_settings import load_profile_llm_settings
+from common.model_transport_context import tenant_model_transport_required
 
 from ..models.message import Message
 from ..models.task import TaskResult
@@ -43,8 +44,6 @@ from .tag_capabilities import (
 )
 from .media_intake_guides import (
     GUIDES,
-    GUIDE_MODEL,
-    GUIDE_THINKING,
     is_media_intake_tag,
     render_media_intake_prompt,
 )
@@ -54,13 +53,13 @@ from .openclaw_bot_llm import bot_runtime, display_openclaw_model, profile_confi
 SOCIAL_THEORY_TAGS = ("女性爱", "性兴趣", "风控", "性资源", "行动")
 BRACKET_THEORY_RE = re.compile(r"【(?P<tag>[^】\n]{1,32})】")
 CREATION_TAG_RE = re.compile(r"^创作(?:>(小红书|抖音))?$")
-MATERIAL_CREATION_TAG_RE = re.compile(r"^素材创作(?:>(小红书|抖音))?$")
 TAG_CAPABILITY_MAP = {capability.label: capability for capability in TAG_CAPABILITIES}
 BOT_CAPABILITY_IDENTITIES = {
     "media": "Media bot",
     "daily": "Daily bot",
     "knowledge": "Knowledge bot",
     "social": "Social bot",
+    "deepmath": "DeepMath bot",
     "main": "OpenClaw bot",
     "openclaw": "OpenClaw bot",
 }
@@ -77,6 +76,10 @@ def run_media_subprocess_with_watchdog(
     cwd: str | Path | None = None,
     input: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
+    if tenant_model_transport_required():
+        raise RuntimeError(
+            "authenticated Media execution cannot delegate model work to a process outside the tenant transport"
+        )
     heartbeat_seconds = max(10, int(float(os.getenv("OPENCLAW_TAG_ROUTER_SUBPROCESS_WATCHDOG_HEARTBEAT_SECONDS", "60"))))
     started_at = time.monotonic()
     process = subprocess.Popen(
@@ -118,18 +121,20 @@ COMMON_ROUTING_FACTS = (
     "正文写 `daily` 时，`【说明】` 会切换到 Daily bot 的能力说明。",
     "正文写 `knowledge` 时，`【说明】` 会切换到 Knowledge bot 的能力说明。",
     "正文写 `social` 时，`【说明】` 会切换到 Social bot 的能力说明。",
+    "DeepMath Bot 的 `【说明】` 只返回 DeepMath 专属能力说明，不展示总文档或其他 Bot 文档。",
     "正文写 `main` 或 `openclaw` 时，`【说明】` 会切换到 OpenClaw bot 的能力说明。",
     "飞书网关没有传入明确 bot 身份时，`【说明】` 不自动猜测 Bot。",
 )
 BOT_CAPABILITY_EXTRA_LABELS = {
-    "Media bot": {"自媒体知识", "归档", "补全", "认知", "学习", "学习-整理"},
+    "Media bot": {"自媒体知识", "归档", "补全", "认知", "学习", "学习-整理", "调研"},
     "Daily bot": {"自媒体知识", "转写", "转写-文字", "归档", "补全", "认知", "学习", "学习-整理"},
     "Knowledge bot": {"转写", "转写-文字"},
     "Social bot": {"自媒体知识", "转写", "转写-文字", "归档", "补全", "认知", "学习", "学习-整理", "博主", "博主-入库"},
+    "DeepMath bot": {"思考"},
 }
 BOT_ENTRY_FACTS = {
     "Media bot": (
-        "`【创作】`、`【创作>小红书】`、`【创作>抖音】`、`【创作-拍摄执行】`、`【素材创作】`、`【素材创作>小红书】`、`【素材创作>抖音】`、`【创作-灵感】`、`【拆解-再创】` 统一写入 `03_CreationRuns_创作运行` 或创作任务池子文档；表格字段使用可读字段，不写可见 `*JSON` 字段。",
+        "`【创作】`、`【创作>小红书】`、`【创作>抖音】`、`【创作-拍摄执行】` 统一写入 `03_CreationRuns_创作运行` 或创作任务池子文档；表格不写可见 `*JSON` 字段；素材输入先走 `【素材】` 生成 SourceAsset，再按用途交接既有拆解/创作/拍摄链。",
         "`【自媒体知识】` 可以发给 Media bot，但执行链路是知识表写入，不进入媒体素材链路。",
         "`【归档】` 可以发给 Media bot，但执行者是 Knowledge bot。",
         "`【补全】` 可以发给 Media bot，但执行者是 Knowledge bot。",
@@ -172,8 +177,7 @@ BOT_ENTRY_FACTS = {
         "`【认知】` 可以发给 Social bot，但执行者是 Knowledge bot。",
         "`【学习】` 可以发给 Social bot，但执行者是 Knowledge bot。",
         "`【学习-整理】` 可以发给 Social bot，但执行者是 Knowledge bot。",
-        "`【博主】` 可以发给 Social bot，用于商务邀约前查询已归档博主的主页链接。",
-        "`【博主-入库】` 可以发给 Social bot，用于手工写入达人账号档案，或用平台+平台ID自动补全候选；自动补全必须用 run_id 确认后才写入。",
+        "`【博主】` 可以发给 Social bot；`能力：查询` 查询已归档博主主页，`能力：入库` 委托既有达人档案入库链路。",
     ),
     "OpenClaw bot": (
         "`【说明】main` 会显示 OpenClaw bot 的统一入口能力。",
@@ -182,12 +186,16 @@ BOT_ENTRY_FACTS = {
         "`【说明】knowledge` 会显示 Knowledge bot 的能力。",
         "`【说明】social` 会显示 Social bot 的能力。",
     ),
+    "DeepMath bot": (
+        "`【思考】` 是 DeepMath 当前唯一的持久化入口：先收件，再恰好调用一次 LLM 生成事实/判断/假设拆分、不可变版本提案和私聊审批卡。",
+        "审批卡上的批准是当前提案版本的执行授权；修改、拒绝、仅保存、取消、过期或陈旧授权都不会触发执行。",
+        "当前已实现版本校验、唯一审批人校验和原子执行 claim；Tasks、Calendar、提醒与通知执行器仍属于 U7–U9，尚未接入。",
+    ),
 }
 BOT_BOUNDARY_FACTS = {
     "Media bot": (
         "Media bot 业务标签只有空正文时只返回填写模板，不写表、不建文档、不生成稿件。",
-        "带录音附件的 `【转写】` 直接进入转写流程，不停在填写模板。",
-        "带上传素材的 `【素材创作】` 直接处理素材，不停在填写模板。",
+        "已上传录音的 `【转写】` 先列出当前会话待处理的录音名称和批次号；只有用户发送带批次号的确认指令后才进入转写流程。",
         "带上传素材的 `【灵感>vlog】` 直接处理素材，不停在填写模板。",
     ),
     "Daily bot": (
@@ -213,155 +221,20 @@ BOT_BOUNDARY_FACTS = {
         "`【自媒体知识】` 不会写入社交档案。",
         "`【转写】` 默认不会写入社交档案。",
         "`【转写-文字】` 默认不会写入社交档案。",
-        "`【博主】`、`【博主-入库】` 只读写 Media OS 的 `06_CreatorProfiles_达人账号档案`，不写入社交私档案。",
+        "`【博主】` 只读写 Media OS 的 `06_CreatorProfiles_达人账号档案`，不写入社交私档案；商单交付继续使用独立 `【商单交付】`。",
         "`【人脉】` 默认只写本地与 Obsidian，不同步飞书云文档。",
     ),
     "OpenClaw bot": (
         "OpenClaw bot 只做统一分流说明，不读取其他 Bot 的私有记忆。",
         "明显属于专用 Bot 的任务优先交给对应 Bot。",
     ),
+    "DeepMath bot": (
+        "DeepMath 只接受 `【思考】` 和 `【说明】`；其他全角标签在 JS/Python 入口直接拒绝。",
+        "普通无标签咨询仍由 DeepMath 模型回答，不进入 tag-router 持久化链路。",
+        "当前会向唯一审批人私聊发送审批卡；批准只授权当前不可变版本并原子领取，真实任务、通知、提醒或日历写入要等 U7–U9 执行器接入。",
+    ),
 }
 BOT_ROUTING_FACTS = {}
-TAG_USAGE_FORMATS = {
-    "待办": (
-        "清单格式：`【待办】购买\\n1. 杠铃杆\\n2. 起泡器`，写入 Obsidian 周记当天 checklist。",
-        "提醒格式：`【待办】2026-06-28 18:00 前购买杠铃杆，提前30分钟提醒`，写入飞书提醒表并在 Obsidian 留镜像 checkbox。",
-        "推荐字段：普通清单写编号列表；提醒型可写 `事项：`、`时间：`、`提醒：`、`备注：`。",
-    ),
-    "日程": (
-        "最简格式：`【日程】明天上午10点 开项目会`。",
-        "详细格式：`【日程】\\n标题：项目会\\n时间：明天上午10点\\n地点：飞书会议\\n参与人：A、B\\n提醒：提前1小时\\n备注：讨论5月内容排期`。",
-        "推荐字段：`标题：`、`时间：`、`地点：`、`参与人：`、`提醒：`、`备注：`。",
-    ),
-    "待办-开发": (
-        "最简格式：`【待办-开发】\\n机器：VM-0-14-ubuntu\\n地址：ubuntu@106.52.146.37\\n任务：修复 Knowledge bot 归档后 Mac 不同步的问题`。",
-        "本机格式：`【待办-开发】\\n机器：MacBook Pro\\n地址：localhost\\n任务：修复本机轮询脚本无法识别 checklist 完成\\n验收：勾选后生成详细任务文档`。",
-        "推荐字段：`机器：` 可从 `VM-0-14-ubuntu（云服务器）/ 15 M3 MacBook Air（本机 Mac）` 选；`地址：` 可从 `ubuntu@106.52.146.37（云服务器）/ localhost（本机 Mac）` 选；再补 `任务：`、`验收：`、`补充：`。飞书写入时间由 bot 自动写入，不需要人工填写。",
-    ),
-    "今日": (
-        "最简格式：`【今日】`。",
-        "可选格式：`【今日】开发` 或 `【今日】提醒`，用于表达你只想看某类清单；当前实现会返回本地归档里的今日执行清单。",
-        "推荐字段：通常不需要字段。",
-    ),
-    "整理": (
-        "格式：`【整理】最近10条内容素材`。",
-        "可选格式：`【整理】今天` 或 `【整理】灵感 最近5条`。",
-        "用途：汇总最近本地归档记录，帮助快速回看。",
-    ),
-    "开发-完成": (
-        "按ID格式：`【开发-完成】ID：20260523-180747-feishu-开发-5afb`。",
-        "按关键词格式：`【开发-完成】关键词：修复 Knowledge bot 归档同步`。",
-        "推荐字段：`ID：`、`关键词：`、`结果：`。",
-    ),
-    "开发-验证": (
-        "按ID格式：`【开发-验证】ID：20260523-180747-feishu-开发-5afb`。",
-        "按关键词格式：`【开发-验证】关键词：修复 Knowledge bot 归档同步`。",
-        "推荐字段：`ID：`、`关键词：`、`验收：`、`测试结果：`。",
-    ),
-    "内容素材": (
-        "链接格式：`【内容素材】\\n链接：https://example.com/post\\n平台：小红书\\n用途：选题参考\\n备注：开头钩子好`。",
-        "文字格式：`【内容素材】\\n标题：一个可复用选题\\n内容：...\\n标签：AI工具,自媒体`。",
-        "推荐字段：`链接：`、`平台：`、`标题：`、`内容：`、`用途：`、`标签：`、`备注：`。",
-    ),
-    "活动": (
-        "链接格式：`【活动】\\n平台：小红书\\n活动链接：https://example.com\\n活动时间：5月20日-6月1日\\n主话题：#校园生活`。",
-        "Brief格式：`【活动】` 后直接粘贴活动 Brief 原文。",
-        "推荐字段：`平台：`、`活动链接：`、`活动时间：`、`主话题：`、`奖励：`、`提交要求：`。",
-    ),
-    "补充": (
-        "回复文档时：回复目标文档消息后发送 `【补充】这段需要并入原文`。",
-        "显式链接格式：`【补充】\\n文档链接：https://...\\n补充内容：...`。",
-        "推荐字段：`文档链接：`、`ID：`、`补充内容：`。",
-    ),
-    "自媒体知识": (
-        "链接格式：`【自媒体知识】\\n链接：https://xhslink.com/...\\n平台：小红书\\n备注：重点提取选题方法`。",
-        "带文案格式：`【自媒体知识】\\n链接：...\\n全部文案：作品正文和 tags\\n全部内容：转写或图文 OCR\\n问题：...`。",
-        "推荐字段：`链接：`、`平台：`、`标题：`、`目标人群：`、`核心痛点：`、`全部文案：`、`全部内容：`、`备注：`、`问题：`；图文/视频由后台自动识别。",
-    ),
-    "转写": (
-        "常规格式：先上传录音附件，再发送 `【转写】`。",
-        "补充格式：`【转写】\\n主题：会议主题\\n参与人：A、B\\n要求：标注说话人并生成纪要`。",
-        "推荐字段：`主题：`、`参与人：`、`要求：`；录音本身通过附件上传。",
-    ),
-    "转写-文字": (
-        "正文格式：`【转写-文字】\\n主题：会议主题\\n文字稿：...`。",
-        "附件格式：上传 `.txt` 或 `.md` 后发 `【转写-文字】\\n主题：会议主题`。",
-        "推荐字段：`主题：`、`参与人：`、`文字稿：`、`补充要求：`；不做原始音频 ASR。",
-    ),
-    "周记": (
-        "格式：`【周记】20260525-20260531`。",
-    ),
-    "归档": (
-        "格式：`【归档】\\n日期：2026-05-23\\n标题：一句话标题\\n内容：需要归档的正文`。",
-        "简写格式：`【归档】需要归档的一段知识或想法`。",
-        "推荐字段：`日期：`、`标题：`、`内容：`、`来源：`。",
-    ),
-    "补全": (
-        "格式：`【补全】\\n日期：2026-05-23\\n主题：录音主题\\n原文：已经转出来的文字稿`。",
-        "注意：`【补全】` 处理已有文字，不直接做原始音频 ASR。",
-        "推荐字段：`日期：`、`主题：`、`原文：`、`补充要求：`。",
-    ),
-    "认知": (
-        "格式：`【认知】观察、判断或经历`；多字段可写 `日期/标题/内容/待确认`。",
-        "注意：详文写 `认知/`，周记留宏观总结、5句摘要和链接；默认不写飞书。",
-    ),
-    "学习": (
-        "格式：`【学习】API` 或 `【学习】\\n主题：API\\n材料：...`。",
-        "推荐字段：`主题：`、`材料：`、`目标：`、`难点：`。",
-    ),
-    "学习-整理": (
-        "格式：`【学习-整理】\\n主题：课程笔记\\n材料：...`。",
-        "推荐字段：`主题：`、`材料：`、`目标：`；该入口强制按整理类学习沉淀。",
-    ),
-    "商务>ID": (
-        "格式：`【商务>ID】\\n平台：小红书\\n主页链接：https://example.com/user\\n品牌：某品牌\\n商务信息：邮箱/微信/报价`。",
-        "推荐字段：`平台：`、`主页链接：`、`账号ID：`、`品牌：`、`商务信息：`、`备注：`。",
-    ),
-    "删除": (
-        "预览格式：`【删除】20260412-030515-qq-灵感-0056` 或 `【删除】run_router_xxx`。",
-        "执行格式：`【删除】确认删除 20260412-030515-qq-灵感-0056`。",
-        "注意：未明确写确认删除时只返回预览，不删除 archive/inbox、json、markdown、中间产物、文档或文件。",
-    ),
-    "博主": (
-        "查看全部：`【博主】`。",
-        "筛选格式：`【博主】平台：抖音`、`【博主】平台ID：93130816637`、`【博主】清华` 或 `【博主】小王`。",
-        "返回必须包含：外部唯一ID（平台:平台ID）、博主IP、账号名称/作者ID、结构化身份信息、主页和档案链接。",
-    ),
-    "博主-入库": (
-        "手工格式：`【博主-入库】\\n账号名称：清华AI小王冲一级\\n平台：抖音\\n平台ID：93130816637\\n身份定位：清华AI硕短跑博主\\n身份标签：清华、AI、体育生、短跑、校园`。",
-        "自动补全：`【博主-入库】\\n平台：抖音\\n平台ID：22654404058\\nID类型：抖音号\\n链接：https://v.douyin.com/...\\n模式：自动补全`，只生成候选，不写库。",
-        "确认写入：`【博主-入库】\\n确认写入\\nrun_id：...`。",
-        "推荐字段：`账号名称：`、`作者ID：`、`主页链接：`、`当前指标摘要：`、`身份定位：`、`身份标签：`、`教育背景：`、`专业/能力领域：`、`创作者角色：`、`公开表达边界：`、`可创作身份卖点：`。",
-    ),
-    "社交": (
-        "格式：`【社交】\\n对象：姓名或昵称\\n材料：聊天截图/文字记录\\n目标：生成或更新交互档案`。",
-        "推荐字段：`对象：`、`关系：`、`材料：`、`时间：`、`目标：`、`备注：`。",
-    ),
-    "人脉": (
-        "格式：`【人脉】\\n对象：张三\\n身份：AI教育创业者\\n城市：北京\\n需求：...\\n下次跟进：...`。",
-        "推荐字段：`对象：`、`身份：`、`城市：`、`来源：`、`需求：`、`我能提供：`、`下次跟进：`。",
-    ),
-    "复盘": (
-        "格式：`【复盘】\\n平台：小红书\\n账号：主账号\\n作品链接：https://...\\n播放：1000\\n点赞：100\\n结论：...`。",
-        "推荐字段：`平台：`、`账号：`、`作品链接：`、`数据：`、`结论：`、`下一步：`。",
-    ),
-    "最近": (
-        "格式：`【最近】10` 或 `【最近】最近20条内容素材`。",
-        "推荐字段：可直接写数量、标签或日期。",
-    ),
-    "同步": (
-        "格式：`【同步】飞书` 或 `【同步】重新处理任务 ID：20260509-...`。",
-        "推荐字段：`ID：`、`目标：`、`要求：`。",
-    ),
-    "状态": (
-        "格式：`【状态】20260509-082057-feishu-自媒体知识-b4ef`。",
-        "推荐字段：`ID：`；也可以直接把任务ID放在正文里。",
-    ),
-    "说明": (
-        "格式：`【说明】` 查看当前 Bot 可用完整标签；`【说明】daily` / `【说明】media` / `【说明】knowledge` / `【说明】social` / `【说明】main` 查看指定 Bot。",
-        "推荐字段：通常不需要字段；需要指定 Bot 时只在正文写 bot 名称。",
-    ),
-}
 BOT_CAPABILITY_IDENTITY_KEYS = (
     "account_id",
     "account",
@@ -388,38 +261,22 @@ MEDIA_REVIEW_KEYWORDS = (
 THEORY_TAG_SUFFIXES = ("进行分析", "来分析", "分析一下", "分析")
 KNOWLEDGE_BOT_RUNTIME = bot_runtime("knowledge")
 KNOWLEDGE_DELEGATE_PROFILE = profile_config("knowledge_delegate")
-KNOWLEDGE_RESEARCH_RUNTIME = profile_runtime("knowledge_research")
 CONTENT_OS_SCRIPT_GENERATION_SETTINGS = load_profile_llm_settings("media_creation")
 KNOWLEDGE_AGENT_ID = KNOWLEDGE_BOT_RUNTIME.agent
 CONTENT_OS_SCRIPT_GENERATION_MODEL = CONTENT_OS_SCRIPT_GENERATION_SETTINGS.model
 CONTENT_OS_SCRIPT_GENERATION_THINKING = CONTENT_OS_SCRIPT_GENERATION_SETTINGS.thinking
-COMPLEX_RESEARCH_KEYWORDS = (
-    "复杂调研",
-    "深度调研",
-    "深入调研",
-    "系统调研",
-    "专题调研",
-    "行业调研",
-    "竞品调研",
-    "论文调研",
-    "research",
-    "deep research",
-)
-KNOWLEDGE_THINKING_DEFAULT = str(
-    KNOWLEDGE_DELEGATE_PROFILE.get("thinking") or profile_provider_runtime("knowledge_delegate").thinking or "high"
-).strip().lower()
-KNOWLEDGE_THINKING_RESEARCH = KNOWLEDGE_RESEARCH_RUNTIME.thinking
+KNOWLEDGE_THINKING_DEFAULT = profile_runtime("knowledge_delegate").thinking
 SELFMEDIA_COGNITION_PARENT_NODE_TOKEN = os.environ.get("SELFMEDIA_COGNITION_PARENT_NODE_TOKEN", "WpNcwUuCpiyDDFk3jOlcqQPZnpc")
 MEETING_MINUTES_ROOT = Path("/home/ubuntu/obsidian-日记/会议纪要")
 MEETING_MINUTES_DIR = MEETING_MINUTES_ROOT / "整理版"
 MEETING_TRANSCRIPTS_DIR = MEETING_MINUTES_ROOT / "原字稿"
+MEETING_TOPICAL_ATTACHMENTS_DIR = MEETING_MINUTES_ROOT / "专题附件"
 UPLOADED_MEDIA_ROOT = Path(os.environ.get("OPENCLAW_UPLOADED_MEDIA_ROOT", "/home/ubuntu/.openclaw/media/inbound"))
 UPLOADED_MEDIA_ROOTS = [
     Path(item.strip())
     for item in re.split(r"[:,]", os.environ.get("OPENCLAW_UPLOADED_MEDIA_ROOTS", ""))
     if item.strip()
 ] or [UPLOADED_MEDIA_ROOT, Path("/home/ubuntu/openclaw-feishu-gateway/downloads")]
-TRANSCRIPTION_BATCH_WINDOW_SECONDS = int(os.environ.get("OPENCLAW_TRANSCRIPTION_BATCH_WINDOW_SECONDS", "30"))
 TRANSCRIPTION_AUDIO_EXTS = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".opus", ".flac", ".amr", ".caf", ".webm", ".mp4", ".mov", ".m4v"}
 # Documentation sync requirement:
 # Any addition, removal, or rename of tag-router entry labels in handlers,

@@ -19,6 +19,13 @@ from urllib.parse import parse_qs, urlparse
 
 import requests
 
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+if str(PLUGIN_ROOT) not in sys.path:
+    sys.path.insert(0, str(PLUGIN_ROOT))
+
+from openclaw_app.services.resource_owner_registry import ResourceOwnerRegistry, require_tenant_id
+from openclaw_app.services.tenant_owned_resources import TenantOwnedResourceService
+
 
 DEFAULT_MEDIA_ENV_PATH = Path("/home/ubuntu/openclaw-agents/media/.env.local")
 AGENT_RESULTS_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_result_vault_contract.json")
@@ -41,10 +48,7 @@ AGENT_RESULTS_BASE = agent_results_base()
 AGENT_RESULT_ROOTS = tuple(
     AGENT_RESULTS_BASE / folder for folder in agent_results_required_folders()
 )
-DEFAULT_LOCAL_ROOTS = (
-    Path("/home/ubuntu/selfmedia-tools/data/media_vault/creation_runs"),
-    *AGENT_RESULT_ROOTS,
-)
+DEFAULT_MEDIA_VAULT_ROOT = Path("/home/ubuntu/selfmedia-tools/data/media_vault")
 RUN_ID_RE = re.compile(r"^run_[A-Za-z0-9_:-]+$")
 URL_RE = re.compile(r"https?://[^\s，。；;、)）>\"']+")
 FEISHU_BASE_DEFAULT = "https://open.feishu.cn/open-apis"
@@ -115,7 +119,12 @@ def load_default_env() -> None:
         selfmedia_root / "selfmedia" / "ingest" / "content_flow" / ".env",
     ):
         load_env_file(path)
-    load_openclaw_feishu_account_env(os.getenv("SELFMEDIA_OPENCLAW_FEISHU_ACCOUNT", "media"))
+    # The Media web service also hosts other Feishu-backed capabilities. Always
+    # pin cleanup to the Media app instead of inheriting another app's process env.
+    load_openclaw_feishu_account_env(
+        os.getenv("SELFMEDIA_OPENCLAW_FEISHU_ACCOUNT", "media"),
+        override=True,
+    )
     ensure_feishu_no_proxy()
 
 
@@ -226,26 +235,36 @@ def parse_bitable_refs(table_url: str, access_token: str) -> tuple[str, str]:
     raise RuntimeError("CreationRuns URL must contain /wiki/<token> or /base/<app_token>")
 
 
-def list_records(app_token: str, table_id: str, access_token: str) -> list[dict[str, Any]]:
+def list_records(
+    app_token: str,
+    table_id: str,
+    access_token: str,
+    *,
+    run_ids: list[str],
+) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
-    page_token = ""
-    while True:
-        params: dict[str, Any] = {"page_size": 500}
-        if page_token:
-            params["page_token"] = page_token
-        payload = request_json(
-            "GET",
-            f"/bitable/v1/apps/{app_token}/tables/{table_id}/records",
-            access_token,
-            params=params,
-        )
-        data = payload.get("data") or {}
-        records.extend(data.get("items") or [])
-        if not data.get("has_more"):
-            break
-        page_token = str(data.get("page_token") or "")
-        if not page_token:
-            break
+    for run_id in run_ids:
+        page_token = ""
+        while True:
+            params: dict[str, Any] = {
+                "page_size": 2,
+                "filter": f'CurrentValue.[创作运行ID] = {json.dumps(run_id, ensure_ascii=False)}',
+            }
+            if page_token:
+                params["page_token"] = page_token
+            payload = request_json(
+                "GET",
+                f"/bitable/v1/apps/{app_token}/tables/{table_id}/records",
+                access_token,
+                params=params,
+            )
+            data = payload.get("data") or {}
+            records.extend(data.get("items") or [])
+            if not data.get("has_more"):
+                break
+            page_token = str(data.get("page_token") or "")
+            if not page_token:
+                raise RuntimeError("CreationRuns filtered pagination did not advance")
     return records
 
 
@@ -336,13 +355,6 @@ def discover_local_paths(run_id: str, roots: list[Path]) -> list[Path]:
             if run_id in path.name:
                 paths.append(path)
                 continue
-            if path.is_file() and path.suffix.lower() in {".md", ".txt"}:
-                try:
-                    text = path.read_text(encoding="utf-8", errors="ignore")
-                except OSError:
-                    continue
-                if run_id in text:
-                    paths.append(path)
     unique: list[Path] = []
     seen: set[Path] = set()
     for path in paths:
@@ -507,6 +519,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-ids-file", help="File with one run id per line")
     parser.add_argument("--creation-runs-url", default="", help="Override MEDIA_OS_CREATION_RUNS_URL")
     parser.add_argument("--local-root", action="append", help="Allowed local cleanup root; repeatable")
+    parser.add_argument("--tenant-id", required=True, help="Authenticated Sub2API tenant id")
+    parser.add_argument(
+        "--resource-owner-db",
+        default=os.getenv("OPENCLAW_RESOURCE_OWNER_DB_PATH", "/home/ubuntu/.openclaw/state/resource_owners.sqlite3"),
+        help="Canonical resource owner registry path",
+    )
     parser.add_argument("--apply", action="store_true", help="Actually delete. Default is dry-run only.")
     parser.add_argument("--skip-docs", action="store_true", help="Do not delete Feishu wiki/docx documents")
     parser.add_argument("--skip-records", action="store_true", help="Do not delete CreationRuns records")
@@ -517,15 +535,34 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     load_default_env()
+    tenant_id = require_tenant_id(args.tenant_id)
     run_ids = normalize_run_ids(args)
-    local_roots = [Path(item).expanduser() for item in (args.local_root or [])] or list(DEFAULT_LOCAL_ROOTS)
+    owner_service = TenantOwnedResourceService(ResourceOwnerRegistry(args.resource_owner_db))
+    for run_id in run_ids:
+        owner_service.registry.assert_owner(
+            "media.creation_run",
+            run_id,
+            session_tenant_id=tenant_id,
+        )
+    tenant_vault_root = DEFAULT_MEDIA_VAULT_ROOT / "tenants" / tenant_id
+    local_roots = [Path(item).expanduser() for item in (args.local_root or [])] or [tenant_vault_root, *AGENT_RESULT_ROOTS]
     creation_runs_url = load_creation_runs_url(args.creation_runs_url)
     if not creation_runs_url:
         raise SystemExit("MEDIA_OS_CREATION_RUNS_URL is not configured")
 
     access_token = tenant_access_token()
     app_token, table_id = parse_bitable_refs(creation_runs_url, access_token)
-    records = list_records(app_token, table_id, access_token)
+    records = list_records(app_token, table_id, access_token, run_ids=run_ids)
+    for record in records:
+        fields = record.get("fields") or {}
+        run_id = str(fields.get("创作运行ID") or "").strip()
+        owner_service.assert_projection_read(
+            "media.creation_run",
+            run_id,
+            session_tenant_id=tenant_id,
+            fields=fields,
+            projection_source=f"feishu:{table_id}/{record.get('record_id') or 'missing'}",
+        )
     plans = build_plans(run_ids, records, local_roots)
     execute_plans(
         plans,

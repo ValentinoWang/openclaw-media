@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from selfmedia.context import build_media_context, merge_conversation_context
 
 from .adapters import ActivityAdapter, BusinessAdapter, CreationInspirationAdapter, ViralContentAdapter
@@ -18,6 +19,24 @@ from .workflow import _record_candidate_payload, _reference_doc_urls_from_record
 CONSULTATION_PATTERN = re.compile(r"^\s*【创作咨询】")
 KEY_VALUE_RE = re.compile(r"(?P<key>平台|账号|作者ID|博主|赛道|主题|主体|问题|关键词|标签)\s*[=:：]\s*(?P<value>.*?)(?=\s+(?:平台|账号|作者ID|博主|赛道|主题|主体|问题|关键词|标签)\s*[=:：]|$)")
 ACTIVITY_INTENT_RE = re.compile(r"(活动|平台活动|话题活动|投稿|返稿|冲榜|挑战赛|活动适配|适合参加|挂什么话题|参与哪个话题)")
+
+CONSULTATION_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.creation.consultation.v1",
+        profile="bounded_open",
+        required_fields=("conclusion", "next_actions"),
+        non_empty_fields=("conclusion", "next_actions"),
+        field_types={
+            "conclusion": str,
+            "topic_diagnosis": dict,
+            "evidence": (list, str),
+            "recommendations": (list, str),
+            "next_actions": (list, str),
+            "data_gaps": (list, str),
+        },
+        evidence_fields=("evidence", "data_gaps"),
+    )
+)
 
 
 @dataclass(frozen=True)
@@ -45,6 +64,7 @@ class ConsultationRequest:
 def handle_creation_consultation_command(
     raw_text: str,
     *,
+    tenant_id: str,
     viral_url: str = "",
     activity_url: str = "",
     business_url: str = "",
@@ -54,9 +74,9 @@ def handle_creation_consultation_command(
 ) -> dict[str, Any]:
     request = parse_consultation_request(raw_text)
     include_activity = request_needs_activity_candidates(request)
-    viral_rows, activity_rows = load_rows_for_creation(viral_url=viral_url, activity_url=activity_url, limit=limit, include_activity=include_activity)
-    business_rows = load_business_rows_for_creation(business_url=business_url, limit=limit)
-    inspiration_rows = load_inspiration_rows_for_creation(inspiration_url=inspiration_url, limit=limit)
+    viral_rows, activity_rows = load_rows_for_creation(tenant_id=tenant_id, viral_url=viral_url, activity_url=activity_url, limit=limit, include_activity=include_activity)
+    business_rows = load_business_rows_for_creation(tenant_id=tenant_id, business_url=business_url, limit=limit)
+    inspiration_rows = load_inspiration_rows_for_creation(tenant_id=tenant_id, inspiration_url=inspiration_url, limit=limit)
 
     virals = [ViralContentAdapter().to_record(row) for row in viral_rows]
     activities = [ActivityAdapter().to_record(row) for row in activity_rows]
@@ -70,6 +90,7 @@ def handle_creation_consultation_command(
     reference_docs = read_reference_docs(_reference_doc_urls_from_records([*viral_candidates, *inspiration_candidates], max_items=6), max_chars_per_doc=1400)
     media_context = merge_conversation_context(
         build_media_context(
+            tenant_id=tenant_id,
             platform=request.platform,
             account=request.account,
             track=request.track,
@@ -127,7 +148,10 @@ def request_needs_activity_candidates(request: ConsultationRequest) -> bool:
 
 def parse_consultation_request(raw_text: str) -> ConsultationRequest:
     text = (raw_text or "").strip()
-    body = CONSULTATION_PATTERN.sub("", text, count=1).strip()
+    match = CONSULTATION_PATTERN.match(text)
+    if not match:
+        raise ValueError("不是【创作咨询】入口")
+    body = text[match.end():].strip()
     values = {match.group("key"): match.group("value").strip() for match in KEY_VALUE_RE.finditer(body)}
     tails: list[str] = []
     for key in ("平台", "账号", "作者ID", "博主", "赛道", "主题", "主体"):
@@ -139,13 +163,15 @@ def parse_consultation_request(raw_text: str) -> ConsultationRequest:
         if tail.strip():
             tails.append(tail.strip())
     question = values.get("问题") or " ".join(tails).strip() or body
+    if not question.strip():
+        raise ValueError("【创作咨询】缺少问题")
     platform = normalize_platform(values.get("平台") or _infer_platform(body))
     account = (values.get("账号") or values.get("作者ID") or values.get("博主") or "").strip()
     track = (values.get("赛道") or "").strip()
     topic = (values.get("主题") or values.get("主体") or "").strip()
     keywords = split_tags(values.get("关键词") or values.get("标签") or " ".join([track, topic, account, body]))
     return ConsultationRequest(
-        question=question.strip() or body or text,
+        question=question.strip(),
         platform=platform,
         account=account,
         track=track,
@@ -182,7 +208,7 @@ def generate_consultation_answer(
         "platform_mechanism_reference": default_platform_mechanism(request.platform) if request.platform else {},
     }
     prompt = (
-        "你是 OpenClaw media bot 的创作顾问。你必须基于输入中的飞书数据表、创作灵感素材、拆解/拆解-再创文档摘要、账号记忆和历史复盘回答用户的创作问题。\n"
+        "你是 OpenClaw media bot 的创作顾问。你必须基于输入中的飞书数据表、创作灵感素材、SourceAsset/拆解 artifact 摘要、账号记忆和历史复盘回答用户的创作问题。\n"
         "不要凭空声称看过不存在的数据；如果数据不足，要明确说缺什么。\n"
         "做个人 IP 选题时，优先检查 inspiration_candidates 里的真实场景、情绪信号、触发原话、错位点、核心观点和一鱼多吃方向，再参考爆款结构。\n"
         "涉及平台推荐、活动适配或创作反推时，要参考 platform_mechanism_reference；这只是机制拟合假设，不得声称破解平台真实算法。\n"
@@ -191,7 +217,7 @@ def generate_consultation_answer(
         "只输出合法 JSON object，不要 Markdown 代码块。字段：reply, conclusion, topic_diagnosis, evidence, recommendations, next_actions, data_gaps。\n\n"
         f"输入 JSON：\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
     )
-    result = call_creation_json(prompt)
+    result = call_creation_json(prompt, validation_contract=CONSULTATION_VALIDATION_CONTRACT)
     return result if isinstance(result, dict) else {}
 
 

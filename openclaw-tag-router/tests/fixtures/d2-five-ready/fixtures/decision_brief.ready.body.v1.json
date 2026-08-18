@@ -1,0 +1,453 @@
+{
+  "schemaVersion": "media.document.body.v1",
+  "blocks": [
+    {
+      "id": "blk_db_heading_01",
+      "type": "heading_1",
+      "attrs": {},
+      "content": [
+        {
+          "type": "text",
+          "text": "选题简报：候选主题与人工决定",
+          "marks": [
+            "bold"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blk_db_heading_02",
+      "type": "heading_2",
+      "attrs": {},
+      "content": [
+        {
+          "type": "text",
+          "text": "等价渲染固定修订 / Fixed ready revision",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "blk_db_paragraph_mixed",
+      "type": "paragraph",
+      "attrs": {},
+      "content": [
+        {
+          "type": "text",
+          "text": "中文 A English 123，。！？：；（）【】",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "blk_db_paragraph_whitespace",
+      "type": "paragraph",
+      "attrs": {},
+      "content": [
+        {
+          "type": "text",
+          "text": "  前置空格｜中间  空格｜后置空格  ",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "blk_db_paragraph_newlines",
+      "type": "paragraph",
+      "attrs": {},
+      "content": [
+        {
+          "type": "text",
+          "text": "第一行\n第二行\n\n第四行\n",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "blk_db_paragraph_marks",
+      "type": "paragraph",
+      "attrs": {},
+      "content": [
+        {
+          "type": "text",
+          "text": "粗体",
+          "marks": [
+            "bold"
+          ]
+        },
+        {
+          "type": "text",
+          "text": "、",
+          "marks": []
+        },
+        {
+          "type": "text",
+          "text": "斜体",
+          "marks": [
+            "italic"
+          ]
+        },
+        {
+          "type": "text",
+          "text": "、",
+          "marks": []
+        },
+        {
+          "type": "text",
+          "text": "下划线",
+          "marks": [
+            "underline"
+          ]
+        },
+        {
+          "type": "text",
+          "text": "、",
+          "marks": []
+        },
+        {
+          "type": "text",
+          "text": "删除线",
+          "marks": [
+            "strike"
+          ]
+        },
+        {
+          "type": "text",
+          "text": "、",
+          "marks": []
+        },
+        {
+          "type": "text",
+          "text": "行内代码",
+          "marks": [
+            "inline_code"
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "blk_db_paragraph_link",
+      "type": "paragraph",
+      "attrs": {},
+      "content": [
+        {
+          "type": "text",
+          "text": "查看",
+          "marks": []
+        },
+        {
+          "type": "text",
+          "text": "证据链接",
+          "marks": [
+            {
+              "type": "link",
+              "href": "https://example.test/d2/evidence?q=%E4%B8%AD%E6%96%87&x=1",
+              "title": "D2 证据链接"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，随后保留标点。",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "blk_db_list_bullet",
+      "type": "bullet_list",
+      "attrs": {},
+      "items": [
+        {
+          "id": "blk_db_item_bullet_01",
+          "content": [
+            {
+              "type": "text",
+              "text": "第一层无序项",
+              "marks": []
+            }
+          ],
+          "children": [
+            {
+              "id": "blk_db_list_bullet_nested",
+              "type": "bullet_list",
+              "attrs": {},
+              "items": [
+                {
+                  "id": "blk_db_item_bullet_02",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "嵌套无序项",
+                      "marks": []
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blk_db_list_ordered",
+      "type": "ordered_list",
+      "attrs": {},
+      "items": [
+        {
+          "id": "blk_db_item_ordered_01",
+          "content": [
+            {
+              "type": "text",
+              "text": "第一项",
+              "marks": []
+            }
+          ],
+          "children": []
+        },
+        {
+          "id": "blk_db_item_ordered_02",
+          "content": [
+            {
+              "type": "text",
+              "text": "第二项",
+              "marks": []
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "blk_db_todo_open",
+      "type": "todo_item",
+      "attrs": {
+        "checked": false
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "待处理：保留空格",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "blk_db_todo_done",
+      "type": "todo_item",
+      "attrs": {
+        "checked": true
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "已核对：中文表格",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "blk_db_quote",
+      "type": "quote",
+      "attrs": {},
+      "content": [
+        {
+          "type": "text",
+          "text": "引用：必须逐字、逐格式读回。",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "blk_db_code",
+      "type": "code_block",
+      "attrs": {
+        "language": "typescript"
+      },
+      "text": "const 标题 = '中文';\nconsole.log(标题);\n"
+    },
+    {
+      "id": "blk_db_divider",
+      "type": "divider",
+      "attrs": {}
+    },
+    {
+      "id": "blk_db_callout",
+      "type": "callout",
+      "attrs": {
+        "semanticTone": "warning"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "提示：保护块测试必须显式失败，不能静默删除。",
+          "marks": [
+            "bold"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blk_db_image",
+      "type": "image",
+      "attrs": {
+        "publicResourceId": "res_d2_db_image_0001",
+        "altText": "选题简报：候选主题与人工决定封面图",
+        "width": 640,
+        "height": 360,
+        "contentChecksum": "415a465e811cfb65ed1e283befeaee6cab7f9b0d42967bd357b1ff1b1e05df57"
+      }
+    },
+    {
+      "id": "blk_db_attachment",
+      "type": "attachment",
+      "attrs": {
+        "publicResourceId": "res_d2_db_attachment_0001",
+        "fileName": "decision_brief-evidence.pdf",
+        "contentType": "application/pdf",
+        "contentChecksum": "954d3f1c703e7f79824d98cf960e96f49071579fb1208d711983384b74d016fd"
+      }
+    },
+    {
+      "id": "blk_db_table_primary",
+      "type": "table",
+      "attrs": {
+        "semanticPurpose": "evidence_index",
+        "headerRowCount": 1
+      },
+      "rows": [
+        {
+          "id": "blk_db_primary_row_01",
+          "cells": [
+            {
+              "id": "blk_db_primary_cell_01_01",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "候选选题",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "blk_db_primary_cell_01_02",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "信号",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "blk_db_primary_cell_01_03",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "人工决定",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "blk_db_primary_row_02",
+          "cells": [
+            {
+              "id": "blk_db_primary_cell_02_01",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "通勤收纳",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "blk_db_primary_cell_02_02",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "趋势上升",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "blk_db_primary_cell_02_03",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "confirmed",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "blk_db_primary_row_03",
+          "cells": [
+            {
+              "id": "blk_db_primary_cell_03_01",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "桌面改造",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "blk_db_primary_cell_03_02",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "活动关联",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "blk_db_primary_cell_03_03",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "pending",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blk_db_snapshot",
+      "type": "data_snapshot",
+      "attrs": {
+        "semanticPurpose": "evidence_index",
+        "publicObjectId": "snapshot_d2_db_0001",
+        "sourceRevision": 1,
+        "capturedAt": "2026-08-05T10:00:00Z",
+        "displayFields": {
+          "artifactKind": "decision_brief",
+          "verified": true,
+          "sampleCount": 2,
+          "windows": [
+            "24h",
+            "7d"
+          ],
+          "note": null
+        }
+      }
+    }
+  ]
+}

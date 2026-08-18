@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "openclaw-media-auth-route-contract-v1",
+  "canonicalRoutes": [
+    "/openclaw/media/register",
+    "/openclaw/media/verify",
+    "/openclaw/media/recover",
+    "/openclaw/media/reset"
+  ],
+  "staticAssets": [
+    "/media.login.js",
+    "/media.auth.css"
+  ],
+  "retiredRoutes": [
+    "/openclaw/media/auth/registration-policy"
+  ]
+}

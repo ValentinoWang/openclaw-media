@@ -8,6 +8,8 @@ from typing import Optional
 
 from .utils import extract_douyin_id, extract_xhs_id
 
+IMAGE_FILE_EXTENSIONS = {".bmp", ".gif", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
+
 
 @dataclass(frozen=True)
 class MediaPaths:
@@ -68,6 +70,10 @@ def media_exists(path: Optional[str]) -> bool:
     return bool(path) and os.path.exists(path) and os.path.getsize(path) > 0
 
 
+def _is_image_file(path: str) -> bool:
+    return os.path.splitext(path)[1].lower() in IMAGE_FILE_EXTENSIONS
+
+
 def ensure_media_paths(url: str, base_dir: str = "downloads") -> MediaPaths:
     paths = build_media_paths(url, base_dir)
     os.makedirs(paths.item_dir, exist_ok=True)
@@ -84,6 +90,8 @@ def list_image_files(paths: MediaPaths) -> list[str]:
         for name in os.listdir(frames_dir):
             if name.startswith("."):
                 continue
+            if not _is_image_file(name):
+                continue
             frames.append(os.path.join(frames_dir, name))
         frames.sort()
         if frames:
@@ -92,6 +100,8 @@ def list_image_files(paths: MediaPaths) -> list[str]:
     files = []
     for name in os.listdir(paths.image_dir):
         if name.startswith("."):
+            continue
+        if not _is_image_file(name):
             continue
         path = os.path.join(paths.image_dir, name)
         if os.path.isdir(path):

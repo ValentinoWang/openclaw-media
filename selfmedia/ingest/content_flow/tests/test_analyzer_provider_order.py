@@ -8,21 +8,21 @@ import selfmedia.ingest.content_flow.src.analyzer as analyzer
 
 
 class AnalyzerProviderOrderTest(unittest.TestCase):
-    def test_codex_responses_result_is_used(self) -> None:
+    def test_openclaw_oauth_result_is_used(self) -> None:
         calls: list[str] = []
-        original_codex = analyzer.analyze_with_codex_responses
+        original_openclaw = analyzer.analyze_with_openclaw_agent
 
-        def fake_codex(user_content: str, settings: object) -> dict:
-            calls.append("codex")
+        def fake_openclaw(user_content: str, settings: object) -> dict:
+            calls.append("openclaw")
             return {
-                "title": "Codex 分析结果",
+                "title": "OpenClaw 分析结果",
                 "summary": ["ok"],
-                "analysis_provider": "codex_responses",
-                "analysis_runtime": "codex_responses",
+                "analysis_provider": "openclaw_codex",
+                "analysis_runtime": "openclaw_agent",
             }
 
         try:
-            analyzer.analyze_with_codex_responses = fake_codex  # type: ignore[assignment]
+            analyzer.analyze_with_openclaw_agent = fake_openclaw  # type: ignore[assignment]
             result = analyzer._analyze_transcript_impl(
                 "逐字稿",
                 "https://example.com/video",
@@ -33,18 +33,19 @@ class AnalyzerProviderOrderTest(unittest.TestCase):
                 object(),  # type: ignore[arg-type]
             )
         finally:
-            analyzer.analyze_with_codex_responses = original_codex
+            analyzer.analyze_with_openclaw_agent = original_openclaw
 
-        self.assertEqual(calls, ["codex"])
+        self.assertEqual(calls, ["openclaw"])
         self.assertIsNotNone(result)
         assert result is not None
-        self.assertEqual(result["analysis_provider"], "codex_responses")
+        self.assertEqual(result["analysis_provider"], "openclaw_codex")
+        self.assertEqual(result["semantic_persistence_version"], "llm_cleaned_user_fields_v1")
 
-    def test_codex_responses_failure_marks_incomplete_without_local_semantics(self) -> None:
-        original_codex = analyzer.analyze_with_codex_responses
+    def test_openclaw_oauth_failure_marks_incomplete_without_local_semantics(self) -> None:
+        original_openclaw = analyzer.analyze_with_openclaw_agent
 
         try:
-            analyzer.analyze_with_codex_responses = lambda user_content, settings: None  # type: ignore[assignment]
+            analyzer.analyze_with_openclaw_agent = lambda user_content, settings: None  # type: ignore[assignment]
             with contextlib.redirect_stdout(io.StringIO()):
                 result = analyzer._analyze_transcript_impl(
                     "",
@@ -56,7 +57,7 @@ class AnalyzerProviderOrderTest(unittest.TestCase):
                     object(),  # type: ignore[arg-type]
                 )
         finally:
-            analyzer.analyze_with_codex_responses = original_codex
+            analyzer.analyze_with_openclaw_agent = original_openclaw
 
         self.assertIsNotNone(result)
         assert result is not None

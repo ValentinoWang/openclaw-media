@@ -1,0 +1,566 @@
+{
+  "contract_id": "openclaw_media_product_v1",
+  "contract_version": 1,
+  "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967",
+  "pipeline_count": 9,
+  "pipelines": [
+    {
+      "pipeline_id": "media.project.prepare.v1",
+      "version": "1.0.0",
+      "min_cli_version": "0.1.0",
+      "display_name": "Project preparation",
+      "description": "Scan local media and produce bounded analysis evidence.",
+      "capability_id": "local_project_prepare",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "workspace_ref"
+        ]
+      },
+      "nodes": [
+        {
+          "node_id": "prepare",
+          "type": "project.prepare",
+          "version": "1.0.0",
+          "outputs": [
+            "project_overview"
+          ]
+        }
+      ],
+      "model_requirements": [
+        {
+          "protocol": "openai_compatible",
+          "modalities": [
+            "text"
+          ],
+          "structured_output": true
+        }
+      ],
+      "output_allowlist": [
+        {
+          "name": "project_overview",
+          "mime_types": [
+            "text/markdown"
+          ],
+          "max_bytes": 1048576,
+          "upload": "content",
+          "default_selected": true
+        }
+      ],
+      "retention_policy": {
+        "local_intermediates_days": 14
+      },
+      "redaction_policy": {
+        "absolute_paths": "remove",
+        "credentials": "remove"
+      },
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.material.organize.v1",
+      "version": "1.0.0",
+      "min_cli_version": "0.1.0",
+      "display_name": "Material organization",
+      "description": "Plan and confirm local grouping, rename, and deduplication work.",
+      "capability_id": "local_material_organize",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "workspace_ref"
+        ]
+      },
+      "nodes": [
+        {
+          "node_id": "organize",
+          "type": "material.organize",
+          "version": "1.0.0",
+          "outputs": [
+            "organization_plan"
+          ]
+        }
+      ],
+      "model_requirements": [],
+      "output_allowlist": [
+        {
+          "name": "organization_plan",
+          "mime_types": [
+            "application/json"
+          ],
+          "max_bytes": 1048576,
+          "upload": "content",
+          "default_selected": true
+        }
+      ],
+      "retention_policy": {
+        "local_intermediates_days": 14
+      },
+      "redaction_policy": {
+        "absolute_paths": "remove",
+        "credentials": "remove"
+      },
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.material.match.v1",
+      "version": "1.0.0",
+      "min_cli_version": "0.1.0",
+      "display_name": "Material matching",
+      "description": "Match local material to a brief and produce storyboard and EDL evidence.",
+      "capability_id": "local_material_match",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "workspace_ref",
+          "brief"
+        ]
+      },
+      "nodes": [
+        {
+          "node_id": "match",
+          "type": "material.match",
+          "version": "1.0.0",
+          "outputs": [
+            "edit_decision_list"
+          ]
+        }
+      ],
+      "model_requirements": [
+        {
+          "protocol": "openai_compatible",
+          "modalities": [
+            "text"
+          ],
+          "structured_output": true
+        }
+      ],
+      "output_allowlist": [
+        {
+          "name": "edit_decision_list",
+          "mime_types": [
+            "application/json"
+          ],
+          "max_bytes": 1048576,
+          "upload": "content",
+          "default_selected": true
+        }
+      ],
+      "retention_policy": {
+        "local_intermediates_days": 14
+      },
+      "redaction_policy": {
+        "absolute_paths": "remove",
+        "credentials": "remove"
+      },
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.edit.handoff.v1",
+      "version": "1.0.0",
+      "min_cli_version": "0.1.0",
+      "display_name": "Edit handoff",
+      "description": "Produce a validated package for manual fine editing.",
+      "capability_id": "local_edit_handoff",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "run_ref"
+        ]
+      },
+      "nodes": [
+        {
+          "node_id": "handoff",
+          "type": "edit.handoff",
+          "version": "1.0.0",
+          "outputs": [
+            "handoff_manifest"
+          ]
+        }
+      ],
+      "model_requirements": [],
+      "output_allowlist": [
+        {
+          "name": "handoff_manifest",
+          "mime_types": [
+            "application/json"
+          ],
+          "max_bytes": 1048576,
+          "upload": "content",
+          "default_selected": true
+        }
+      ],
+      "retention_policy": {
+        "local_intermediates_days": 14
+      },
+      "redaction_policy": {
+        "absolute_paths": "remove",
+        "credentials": "remove"
+      },
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.edit.timeline.v1",
+      "version": "1.0.0",
+      "min_cli_version": "0.1.0",
+      "display_name": "Editable timeline",
+      "description": "Build reopenable OTIO and Kdenlive timeline artifacts.",
+      "capability_id": "local_edit_timeline",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "edl_ref"
+        ]
+      },
+      "nodes": [
+        {
+          "node_id": "timeline",
+          "type": "edit.timeline",
+          "version": "1.0.0",
+          "outputs": [
+            "timeline"
+          ]
+        }
+      ],
+      "model_requirements": [],
+      "output_allowlist": [
+        {
+          "name": "timeline",
+          "mime_types": [
+            "application/vnd.otio+json",
+            "application/xml"
+          ],
+          "max_bytes": 4194304,
+          "upload": "content",
+          "default_selected": true
+        }
+      ],
+      "retention_policy": {
+        "local_intermediates_days": 14
+      },
+      "redaction_policy": {
+        "absolute_paths": "remove",
+        "credentials": "remove"
+      },
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.edit.revise.v1",
+      "version": "1.0.0",
+      "min_cli_version": "0.1.0",
+      "display_name": "Confirmed revision",
+      "description": "Create a new revision and AI edit log only after confirmation.",
+      "capability_id": "local_edit_revise",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "run_ref",
+          "confirmation_ref"
+        ]
+      },
+      "nodes": [
+        {
+          "node_id": "revise",
+          "type": "edit.revise",
+          "version": "1.0.0",
+          "outputs": [
+            "change_receipt"
+          ]
+        }
+      ],
+      "model_requirements": [],
+      "output_allowlist": [
+        {
+          "name": "change_receipt",
+          "mime_types": [
+            "application/json"
+          ],
+          "max_bytes": 1048576,
+          "upload": "content",
+          "default_selected": true
+        }
+      ],
+      "retention_policy": {
+        "local_intermediates_days": 14
+      },
+      "redaction_policy": {
+        "absolute_paths": "remove",
+        "credentials": "remove"
+      },
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.output.review.v1",
+      "version": "1.0.0",
+      "min_cli_version": "0.1.0",
+      "display_name": "Output review",
+      "description": "Run local technical, platform, and version-comparison review.",
+      "capability_id": "local_output_review",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "media_ref"
+        ]
+      },
+      "nodes": [
+        {
+          "node_id": "review",
+          "type": "output.review",
+          "version": "1.0.0",
+          "outputs": [
+            "review_report"
+          ]
+        }
+      ],
+      "model_requirements": [],
+      "output_allowlist": [
+        {
+          "name": "review_report",
+          "mime_types": [
+            "text/markdown",
+            "application/yaml"
+          ],
+          "max_bytes": 2097152,
+          "upload": "content",
+          "default_selected": true
+        }
+      ],
+      "retention_policy": {
+        "local_intermediates_days": 14
+      },
+      "redaction_policy": {
+        "absolute_paths": "remove",
+        "credentials": "remove"
+      },
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.rhythm.review.v1",
+      "version": "1.0.0",
+      "min_cli_version": "0.1.0",
+      "display_name": "Rhythm review",
+      "description": "Assess audiovisual rhythm, version ranking, and fixable timestamps.",
+      "capability_id": "local_rhythm_review",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "media_ref"
+        ]
+      },
+      "nodes": [
+        {
+          "node_id": "rhythm",
+          "type": "rhythm.review",
+          "version": "1.0.0",
+          "outputs": [
+            "rhythm_report"
+          ]
+        }
+      ],
+      "model_requirements": [],
+      "output_allowlist": [
+        {
+          "name": "rhythm_report",
+          "mime_types": [
+            "application/json",
+            "text/markdown"
+          ],
+          "max_bytes": 2097152,
+          "upload": "content",
+          "default_selected": true
+        }
+      ],
+      "retention_policy": {
+        "local_intermediates_days": 14
+      },
+      "redaction_policy": {
+        "absolute_paths": "remove",
+        "credentials": "remove"
+      },
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    },
+    {
+      "pipeline_id": "media.semantic.review.v1",
+      "version": "1.0.0",
+      "min_cli_version": "0.1.0",
+      "display_name": "Semantic review",
+      "description": "Use the configured vision model for bounded semantic output review.",
+      "capability_id": "local_semantic_review",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "contact_sheet_ref"
+        ]
+      },
+      "nodes": [
+        {
+          "node_id": "semantic",
+          "type": "semantic.review",
+          "version": "1.0.0",
+          "outputs": [
+            "semantic_report"
+          ]
+        }
+      ],
+      "model_requirements": [
+        {
+          "protocol": "openai_compatible",
+          "modalities": [
+            "text",
+            "vision"
+          ],
+          "structured_output": true
+        }
+      ],
+      "output_allowlist": [
+        {
+          "name": "semantic_report",
+          "mime_types": [
+            "application/json",
+            "text/markdown"
+          ],
+          "max_bytes": 2097152,
+          "upload": "content",
+          "default_selected": true
+        }
+      ],
+      "retention_policy": {
+        "local_intermediates_days": 14
+      },
+      "redaction_policy": {
+        "absolute_paths": "remove",
+        "credentials": "remove",
+        "raw_provider_payloads": "remove"
+      },
+      "catalog_digest": "sha256:931dba97f9d9ed3fa1a03da4e15783f5d449ead7a56ff0919f3e0087efbf6967"
+    }
+  ],
+  "node_registry": [
+    {
+      "node_type": "project.prepare",
+      "version": "1.0.0",
+      "outputs": [
+        "project_overview"
+      ]
+    },
+    {
+      "node_type": "material.organize",
+      "version": "1.0.0",
+      "outputs": [
+        "organization_plan"
+      ]
+    },
+    {
+      "node_type": "material.match",
+      "version": "1.0.0",
+      "outputs": [
+        "edit_decision_list"
+      ]
+    },
+    {
+      "node_type": "edit.handoff",
+      "version": "1.0.0",
+      "outputs": [
+        "handoff_manifest"
+      ]
+    },
+    {
+      "node_type": "edit.timeline",
+      "version": "1.0.0",
+      "outputs": [
+        "timeline"
+      ]
+    },
+    {
+      "node_type": "edit.revise",
+      "version": "1.0.0",
+      "outputs": [
+        "change_receipt"
+      ]
+    },
+    {
+      "node_type": "output.review",
+      "version": "1.0.0",
+      "outputs": [
+        "review_report"
+      ]
+    },
+    {
+      "node_type": "rhythm.review",
+      "version": "1.0.0",
+      "outputs": [
+        "rhythm_report"
+      ]
+    },
+    {
+      "node_type": "semantic.review",
+      "version": "1.0.0",
+      "outputs": [
+        "semantic_report"
+      ]
+    }
+  ],
+  "historical_capability_coverage": [
+    {
+      "source": "00_install_deps.sh/install_selfmedia_review_node.py/LaunchAgent",
+      "capability": "dependency and node installation",
+      "destination": "U5 uv tool package and doctor",
+      "visibility": "/devices",
+      "status": "mapped"
+    },
+    {
+      "source": "llm_common.py and legacy Codex/OpenAI branches",
+      "capability": "local model invocation",
+      "destination": "U4 ProviderAdapter and OS credential store",
+      "visibility": "Pipeline requirements",
+      "status": "mapped"
+    },
+    {
+      "source": "32_process_openclaw_queue.py/33_enqueue_openclaw_queue_job.py/YAML queue/Review Node",
+      "capability": "cloud-to-Mac job execution",
+      "destination": "U10 Device and LocalAgentJob lease API",
+      "visibility": "/media-agent and /runs",
+      "status": "mapped"
+    },
+    {
+      "source": "validate_content_os_task.py/validate_state_transition.py/mac_openclaw_runner.py",
+      "capability": "task allowlist, revision, state and readback",
+      "destination": "U7/U10 PipelineDefinition and LocalAgentJob contract",
+      "visibility": "run validation receipt",
+      "status": "mapped"
+    },
+    {
+      "source": "06/30/36/38/check_runtime_contract.sh",
+      "capability": "document, registry, link and runtime gates",
+      "destination": "U17 Harness",
+      "visibility": "release and health evidence",
+      "status": "mapped"
+    },
+    {
+      "source": "22-25 Jianying automation",
+      "capability": "Jianying draft automation",
+      "destination": "retirement evidence",
+      "visibility": "historical coverage audit",
+      "status": "retired"
+    },
+    {
+      "source": "26-28 native import pack",
+      "capability": "Jianying import package",
+      "destination": "media.edit.handoff.v1",
+      "visibility": "new handoff Pipeline",
+      "status": "retired"
+    },
+    {
+      "source": "37_migrate_content_os_v2.py",
+      "capability": "legacy inventory migration",
+      "destination": "historical evidence only",
+      "visibility": "hidden",
+      "status": "retired"
+    },
+    {
+      "source": "review_capabilities.registry.json:remote_work_acceptance_review",
+      "capability": "remote acceptance and data review",
+      "destination": "Web canonical capability",
+      "visibility": "/publishing and /reviews",
+      "status": "mapped"
+    }
+  ]
+}

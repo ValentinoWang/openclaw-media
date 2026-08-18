@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from .llm_client import generate_json_from_parts
+from .llm_validation import LLMValidationContract, register_llm_validation_contract
 from .llm_settings import LLMProviderSettings, load_content_cleaner_llm_settings
 
 
@@ -106,11 +107,15 @@ def _clean_text_with_llm(
         return ""
     cfg = config or config_from_env()
     if not cfg.enabled:
-        return text
+        raise RuntimeError("content cleaner LLM is not enabled")
     chunks = _split_cleaning_chunks(text, cfg.max_chars)
     cleaned_chunks = [_call_clean_llm(source_name, title, chunk, cfg) for chunk in chunks]
+    if len(cleaned_chunks) != len(chunks) or any(not str(chunk or "").strip() for chunk in cleaned_chunks):
+        raise RuntimeError("content cleaner LLM returned an empty cleaned chunk")
     cleaned = "\n\n".join(chunk for chunk in cleaned_chunks if chunk).strip()
-    return cleaned or text
+    if not cleaned:
+        raise RuntimeError("content cleaner LLM returned empty content")
+    return cleaned
 
 
 def _clean_endpoint(base_url: str) -> str:
@@ -170,6 +175,7 @@ def _call_clean_llm(source_name: str, title: str, text: str, config: ContentClea
             "JSON 字段固定为 cleaned_text，值为清洗后的正文字符串。"
         ),
         error_prefix="content cleaner LLM 输出 JSON 校验失败",
+        validation_contract=CONTENT_CLEANER_VALIDATION_CONTRACT,
     )
     cleaned = str(payload.get("cleaned_text") or "").strip()
     cleaned = re.sub(r"^```(?:text|markdown)?\s*|\s*```$", "", cleaned, flags=re.I).strip()
@@ -200,3 +206,12 @@ def _split_cleaning_chunks(text: str, max_chars: int) -> list[str]:
     if current:
         chunks.append("".join(current).strip())
     return [chunk for chunk in chunks if chunk]
+CONTENT_CLEANER_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="common.content_cleaner.cleaned_text.v1",
+        profile="strict_structured",
+        required_fields=("cleaned_text",),
+        allowed_fields=frozenset({"cleaned_text"}),
+        field_types={"cleaned_text": str},
+    )
+)

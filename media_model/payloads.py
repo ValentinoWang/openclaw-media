@@ -8,6 +8,7 @@ from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from .contract import MediaModelContract, MediaModelContractError
+from .platform_hashtags import resolve_platform_hashtags
 
 TRACKING_QUERY_PREFIXES = ("utm_",)
 TRACKING_QUERY_KEYS = {
@@ -502,6 +503,7 @@ def build_source_asset_payload(
     source_url: str,
     evidence_uri: str,
     asset_id: str | None = None,
+    source_asset_id: str = "",
     original_title: str = "",
     author_id: str = "",
     external_post_id: str = "",
@@ -509,14 +511,22 @@ def build_source_asset_payload(
     creator_profile_id: str = "",
     source_doc_link: str = "",
     body: str = "",
-    status: str = "待解析",
+    platform_hashtags: Any = (),
+    status: str = "candidate",
     enabled: bool = True,
     contract: MediaModelContract | None = None,
 ) -> dict[str, Any]:
     normalized_url = normalize_source_url(source_url)
+    normalized_platform_hashtags = resolve_platform_hashtags(
+        platform_hashtags,
+        original_title,
+        title,
+        body,
+    )
     payload = _compact_payload(
         {
             "asset_id": asset_id or make_asset_id(platform, normalized_url),
+            "source_asset_id": source_asset_id,
             "content_fingerprint": content_fingerprint(
                 platform=platform,
                 source_url=normalized_url,
@@ -538,6 +548,7 @@ def build_source_asset_payload(
             "enabled": enabled,
         }
     )
+    payload["platform_hashtags"] = normalized_platform_hashtags
     _validate("SourceAsset", payload, contract)
     _forbid_terms("SourceAsset", payload, ("报价", "返点", "档期", "Brief", "发布链接", "复盘", "提醒"))
     return payload
@@ -552,6 +563,11 @@ def build_material_deconstruction_payload(
     prompt_bundle_version: str,
     model: str,
     confidence: float,
+    source_asset_id: str = "",
+    analysis_scope: str = "全片",
+    analysis_time_range: str = "全部",
+    deconstruction_focus: str = "常规拆解",
+    output_types: str = "拆解摘要",
     hook: str = "",
     transferable_points: str = "",
     non_transferable_points: str = "",
@@ -578,6 +594,11 @@ def build_material_deconstruction_payload(
         {
             "deconstruction_id": deconstruction_id,
             "asset_id": asset_id,
+            "source_asset_id": source_asset_id,
+            "analysis_scope": analysis_scope,
+            "analysis_time_range": analysis_time_range,
+            "deconstruction_focus": deconstruction_focus,
+            "output_types": output_types,
             "summary": summary,
             "hook": hook,
             "transferable_points": transferable_points,
@@ -618,6 +639,15 @@ def build_pattern_payload(
     pattern_status: str = "candidate_pattern",
     supporting_asset_ids: list[str] | None = None,
     supporting_run_ids: list[str] | None = None,
+    platform: str = "",
+    content_type: str = "",
+    applicable_persona: str = "",
+    applicable_scenarios: str = "",
+    opening_template: str = "",
+    structure_template: str = "",
+    visual_template: str = "",
+    emotional_levers: str = "",
+    forbidden_scenarios: str = "",
     historical_performance_summary: str = "",
     manual_confirmed: bool = False,
     positive_metric_evidence: bool = False,
@@ -636,6 +666,15 @@ def build_pattern_payload(
             "pattern_status": pattern_status,
             "supporting_asset_ids": supporting_asset_ids,
             "supporting_run_ids": supporting_run_ids,
+            "platform": platform,
+            "content_type": content_type,
+            "applicable_persona": applicable_persona,
+            "applicable_scenarios": applicable_scenarios,
+            "opening_template": opening_template,
+            "structure_template": structure_template,
+            "visual_template": visual_template,
+            "emotional_levers": emotional_levers,
+            "forbidden_scenarios": forbidden_scenarios,
             "historical_performance_summary": historical_performance_summary,
         }
     )
@@ -651,9 +690,13 @@ def build_creation_run_payload(
     status: str,
     generation_source: str,
     run_artifact_uri: str,
+    source_asset_id: str = "",
     render_id: str = "",
     render_spec_uri: str = "",
     feishu_doc_link: str = "",
+    platform: str = "",
+    content_type: str = "",
+    track_name: str = "",
     contract: MediaModelContract | None = None,
 ) -> dict[str, Any]:
     payload = _compact_payload(
@@ -661,6 +704,10 @@ def build_creation_run_payload(
             "run_id": run_id,
             "entrypoint": entrypoint,
             "input_summary": input_summary,
+            "platform": platform,
+            "content_type": content_type,
+            "track_name": track_name,
+            "source_asset_id": source_asset_id,
             "status": status,
             "generation_source": generation_source,
             "run_artifact_uri": run_artifact_uri,
@@ -831,11 +878,17 @@ def build_business_opportunity_payload(
     brand: str,
     business_account_id: str = "",
     product: str = "",
+    platform: str = "",
+    content_type: str = "",
     brief_link: str = "",
     current_quote_amount: float | None = None,
     rebate_ratio: Any = None,
     valid_from: str = "",
     valid_until: str = "",
+    schedule: str = "",
+    price_protection_policy: str = "",
+    authorization_scope: str = "",
+    authorization_duration: str = "",
     quote_snapshot_uri: str = "",
     contract: MediaModelContract | None = None,
 ) -> dict[str, Any]:
@@ -845,11 +898,17 @@ def build_business_opportunity_payload(
             "business_account_id": business_account_id,
             "brand": brand,
             "product": product,
+            "platform": platform,
+            "content_type": content_type,
             "brief_link": brief_link,
             "current_quote_amount": current_quote_amount,
             "rebate_ratio": normalize_rebate_ratio(rebate_ratio),
             "valid_from": valid_from,
             "valid_until": valid_until,
+            "schedule": schedule,
+            "price_protection_policy": price_protection_policy,
+            "authorization_scope": authorization_scope,
+            "authorization_duration": authorization_duration,
             "quote_snapshot_uri": quote_snapshot_uri,
         }
     )

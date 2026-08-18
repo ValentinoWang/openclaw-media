@@ -57,6 +57,13 @@ class TranscriptionDeletionAdapter(ArchiveDeletionAdapter):
         obsidian_transcript_path = str(frontmatter.get("obsidian_transcript_path") or "").strip()
         if obsidian_transcript_path:
             plan.add_entity(DeletionEntity("obsidian_transcript", obsidian_transcript_path, "unlink"))
+        obsidian_topical_attachments_path = str(
+            frontmatter.get("obsidian_topical_attachments_path") or ""
+        ).strip()
+        if obsidian_topical_attachments_path:
+            plan.add_entity(
+                DeletionEntity("obsidian_topical_attachments", obsidian_topical_attachments_path, "unlink")
+            )
         for value in self._flatten_paths(frontmatter.get("postprocess_artifacts")):
             plan.add_entity(DeletionEntity("content_flow_artifact", value, "unlink"))
 
@@ -64,6 +71,7 @@ class TranscriptionDeletionAdapter(ArchiveDeletionAdapter):
         for label, kind in (
             ("Obsidian 会议纪要", "obsidian_note"),
             ("Obsidian 原字稿", "obsidian_transcript"),
+            ("Obsidian 专题附件", "obsidian_topical_attachments"),
             ("文字稿任务目录", "local_dir"),
             ("素材目录", "local_dir"),
             ("逐字稿路径", "content_flow_artifact"),

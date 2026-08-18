@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from selfmedia.deconstruct.viral_content.src import cli, media_parts, runner
+from selfmedia.deconstruct.viral_content.src.evidence import modality_dag
 from selfmedia.deconstruct.viral_content.src.feishu_doc_writer import DocRef
 
 
@@ -323,6 +325,13 @@ def test_acceptance_deconstruct_video_full_order(tmp_path, monkeypatch: pytest.M
     monkeypatch.setattr(media_parts, "extract_first_frame", lambda video_path, out_dir: "")
     monkeypatch.setattr(media_parts, "extract_audio", fake_extract_audio)
     monkeypatch.setattr(
+        modality_dag,
+        "generate_json",
+        lambda *args, **kwargs: {
+            "keyframe_observations": [{"asset_id": "frame_001", "observations": ["画面证据"]}]
+        },
+    )
+    monkeypatch.setattr(
         runner,
         "build_multi_signal_contract",
         lambda result, user_intent="": events.append("multi_signal_contract") or _multi_signal_contract_payload("frame_001"),
@@ -449,85 +458,10 @@ def test_no_write_deconstruct_builds_multi_signal_contract_without_feishu_writes
     assert events == ["llm_precheck", "prepare", "evidence_parts", "llm_deconstruct", "cleanup", "multi_signal_contract"]
 
 
-def test_acceptance_deconstruct_recreate_order_and_image_blocks(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
-    image = tmp_path / "image.jpg"
-    image.write_bytes(b"image")
-    events: list[str] = []
-
-    deconstruct_result = dict(_deconstruct_payload("image_001"))
-    deconstruct_result.update(
-        {
-            "source_url": "https://example.com/note",
-            "source_video_path": "",
-            "source_audio_path": "",
-            "source_image_paths": [str(image)],
-            "source_preview_path": str(image),
-            "evidence_assets": [{"asset_id": "image_001", "path": str(image), "kind": "source_image"}],
-        }
-    )
-    monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: events.append("llm_precheck"))
-    monkeypatch.setattr(runner, "deconstruct", lambda text: events.append("deconstruct") or dict(deconstruct_result))
-    monkeypatch.setattr(
-        runner,
-        "recreate",
-        lambda text, source: events.append("recreate")
-        or {**_recreate_payload(), "media_type": "image_post", "video_storyboard": []},
-    )
-
-    import selfmedia.deconstruct.viral_content.src.feishu_doc_writer as doc_writer
-    import selfmedia.deconstruct.viral_content.src.feishu_writer as bitable_writer
-
-    def fake_doc(title, content, folder_token=None, doc_kind="deconstruct"):
-        events.append(f"doc_{doc_kind}")
-        if doc_kind == "recreate":
-            assert content["media_type"] == "image_post"
-            assert content["video_storyboard"] == []
-            assert content["image_post_script"]
-            return DocRef("doc_recreate", "https://feishu/doc_recreate")
-        doc_writer.append_blocks("doc_deconstruct", content, "token", doc_kind="deconstruct")
-        return DocRef("doc_deconstruct", "https://feishu/doc_deconstruct")
-
-    monkeypatch.setattr(doc_writer, "create_checked_doc", fake_doc)
-    monkeypatch.setattr(doc_writer, "sync_deconstruct_parent_index", lambda source_records=None: events.append("sync_index"))
-    monkeypatch.setattr(
-        doc_writer.requests,
-        "post",
-        lambda *args, **kwargs: SimpleNamespace(
-            status_code=200,
-            text="",
-            json=lambda: (
-                {"code": 0, "data": {"children": [{"block_id": "image_block", "block_type": 27}]}}
-                if kwargs.get("json", {}).get("children") == [{"block_type": 27, "image": {}}]
-                else _docx_table_response(kwargs.get("json", {}))
-            ),
-        ),
-    )
-    monkeypatch.setattr(doc_writer.requests, "patch", lambda *args, **kwargs: SimpleNamespace(status_code=200, text="", json=lambda: {"code": 0}))
-    monkeypatch.setattr(doc_writer, "upload_feishu_doc_image", lambda document_id, file_path, token, feishu_base=None, parent_node=None: "image_token")
-    monkeypatch.setattr(bitable_writer, "build_attachment_plan", lambda result: events.append("attachments") or [])
-    monkeypatch.setattr(bitable_writer, "write_deconstruction", lambda result, source_text: events.append("bitable") or "rec2")
-
-    result = runner.run_workflow("【拆解-再创】 https://example.com/note 用户想法", write_feishu=True)
-    assert result["feishu_record_id"] == "rec2"
-    assert events.index("deconstruct") < events.index("doc_deconstruct") < events.index("doc_recreate") < events.index("bitable")
-
-
-def test_acceptance_no_write_deconstruct_recreate_returns_part2_contract(monkeypatch: pytest.MonkeyPatch) -> None:
-    events: list[str] = []
-    deconstruct_result = {
-        **_deconstruct_payload("frame_001"),
-        "multi_signal_contract": _multi_signal_contract_payload("frame_001"),
-        "source_url": "https://example.com/red-light",
-        "media_type": "video",
-    }
-    recreate_result = {
-        **_recreate_payload(),
-        "media_type": "video",
-        "image_post_script": [],
-    }
-    monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: events.append("llm_precheck"))
-    monkeypatch.setattr(runner, "deconstruct", lambda text: events.append("deconstruct") or dict(deconstruct_result))
-    monkeypatch.setattr(runner, "recreate", lambda text, source: events.append("recreate") or dict(recreate_result))
+def test_retired_deconstruct_recreate_entrypoint_does_not_run_llm_doc_or_bitable(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: (_ for _ in ()).throw(AssertionError("不应检查 LLM")))
+    monkeypatch.setattr(runner, "deconstruct", lambda text: (_ for _ in ()).throw(AssertionError("不应执行拆解")))
+    monkeypatch.setattr(runner, "recreate", lambda text, source: (_ for _ in ()).throw(AssertionError("不应执行再创作")))
 
     import selfmedia.deconstruct.viral_content.src.feishu_doc_writer as doc_writer
     import selfmedia.deconstruct.viral_content.src.feishu_writer as bitable_writer
@@ -535,20 +469,16 @@ def test_acceptance_no_write_deconstruct_recreate_returns_part2_contract(monkeyp
     monkeypatch.setattr(doc_writer, "create_checked_doc", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("不应建文档")))
     monkeypatch.setattr(bitable_writer, "write_deconstruction", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("不应写表")))
 
-    result = runner.run_workflow("【拆解-再创】 https://example.com/red-light 用户想法", write_feishu=False)
+    result = runner.run_workflow("【拆解-再创】 https://example.com/red-light 用户想法", write_feishu=True)
 
-    assert result["mode"] == "deconstruct_and_recreate"
-    assert result["recreate"]["editorial_plan"]["primary_plan"]["title"] == "把红光暧昧改成观众审判局"
-    assert result["recreate"]["reusable_high_like_comment"]["comment_text"]
-    assert result["recreate"]["operation_plan"]["comment_area_design"]
-    assert result["recreate"]["production_route_plan"]["final_assembly"]["ffmpeg_usage"]
-    assert events == ["llm_precheck", "deconstruct", "recreate"]
+    assert result == {"skipped": True, "reason": "organize_only", "mode": "organize_only"}
 
 
 def test_acceptance_no_real_media_no_llm_doc_bitable(monkeypatch: pytest.MonkeyPatch) -> None:
     media = SimpleNamespace(video_path=None, audio_path=None, image_paths=[], caption="", stats={}, media_type="unknown")
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
     monkeypatch.setattr(runner, "_load_content_ingest_modules", lambda: (lambda: object(), lambda url, settings: media))
+    monkeypatch.setattr(runner.time, "sleep", lambda seconds: None)
     monkeypatch.setattr(runner, "_call_llm", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("不应让 LLM 猜内容")))
     import selfmedia.deconstruct.viral_content.src.feishu_doc_writer as doc_writer
     import selfmedia.deconstruct.viral_content.src.feishu_writer as bitable_writer
@@ -557,3 +487,30 @@ def test_acceptance_no_real_media_no_llm_doc_bitable(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(bitable_writer, "write_deconstruction", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("不应写表")))
     with pytest.raises(media_parts.NoRealMediaError):
         runner.run_workflow("【拆解】 https://example.com", write_feishu=True)
+
+
+def test_empty_media_is_retried_before_deconstruction(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    video = tmp_path / "source.mp4"
+    video.write_bytes(b"video")
+    empty = SimpleNamespace(video_path=None, audio_path=None, image_paths=[], caption="", stats={}, media_type="unknown")
+    ready = SimpleNamespace(video_path=str(video), audio_path=None, image_paths=[], caption="", stats={}, media_type="video")
+    results = iter((empty, ready))
+    calls: list[str] = []
+
+    monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
+    monkeypatch.setattr(
+        runner,
+        "_load_content_ingest_modules",
+        lambda: (
+            lambda: object(),
+            lambda value: calls.append("clean") or value,
+            lambda url, settings: calls.append("resolve") or next(results),
+        ),
+    )
+    monkeypatch.setattr(runner, "run_evidence_dag", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("evidence-ready")))
+    monkeypatch.setattr(runner.time, "sleep", lambda seconds: calls.append(f"sleep:{seconds:g}"))
+
+    with pytest.raises(RuntimeError, match="evidence-ready"):
+        runner._prepare_deconstruct_inputs("【拆解】 https://example.com/video")
+
+    assert calls == ["clean", "resolve", "sleep:1", "clean", "resolve"]

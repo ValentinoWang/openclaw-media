@@ -1,0 +1,81 @@
+{
+  "schema": "openclaw.document_edit_op_whitelist.v1",
+  "generated_at": "2026-07-06T00:00:00Z",
+  "owner": "openclaw-maintenance",
+  "proof_artifact": "/home/ubuntu/obsidian-日记/公共开发集/public/2026-07-06/document-edit-table-row-preservation/live-proof.md",
+  "source": "ssot-development-paths.md U0 + live-proof.md",
+  "limits": {
+    "qps": 3,
+    "create_child_batch_size": 20
+  },
+  "insert_policy": {
+    "anchor": "block_id",
+    "resolve_index_at_apply_time": true,
+    "static_index_in_plan_allowed": false
+  },
+  "rich_text_policy": {
+    "default": "protect_or_manual",
+    "plain_text_only_without_style_run_proof": true,
+    "style_run_merge_proof_required": true
+  },
+  "ops": [
+    {
+      "op": "replace_text",
+      "enabled": true,
+      "proof_status": "mock_request_shape_only",
+      "target_block_types": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      "method": "PATCH",
+      "endpoint": "/docx/v1/documents/{document_id}/blocks/{block_id}",
+      "requires": ["block_id", "path", "expected_old_text", "new_text", "source_hash", "revision_token"],
+      "rich_text_policy": "plain_text_only",
+      "readback_assertions": ["text_changed", "protected_block_ids_unchanged", "text_elements_preserved_or_plain"]
+    },
+    {
+      "op": "insert_text_after",
+      "enabled": true,
+      "proof_status": "mock_request_shape_only",
+      "target_block_types": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      "method": "POST",
+      "endpoint": "/docx/v1/documents/{document_id}/blocks/{parent_block_id}/children",
+      "requires": ["anchor_block_id", "parent_block_id", "new_text", "source_hash", "revision_token"],
+      "anchor_policy": "fresh_readback_block_id_to_parent_index",
+      "readback_assertions": ["inserted_text_present", "protected_block_ids_unchanged"]
+    },
+    {
+      "op": "delete_text_block",
+      "enabled": true,
+      "proof_status": "mock_request_shape_only",
+      "target_block_types": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      "method": "DELETE",
+      "endpoint": "/docx/v1/documents/{document_id}/blocks/{parent_block_id}/children/batch_delete",
+      "requires": ["block_id", "parent_block_id", "path", "expected_old_text", "source_hash", "revision_token"],
+      "rich_text_policy": "plain_text_only",
+      "readback_assertions": ["target_block_removed", "protected_block_ids_unchanged"]
+    },
+    {
+      "op": "append_text_to_cell",
+      "enabled": true,
+      "proof_status": "mock_request_shape_only",
+      "target_block_types": [32],
+      "method": "POST",
+      "endpoint": "/docx/v1/documents/{document_id}/blocks/{cell_block_id}/children",
+      "requires": ["cell_block_id", "new_text", "source_hash", "revision_token"],
+      "table_policy": "append_only_without_deleting_cell_children",
+      "readback_assertions": ["cell_text_present", "table_shape_unchanged", "protected_block_ids_unchanged"]
+    },
+    {
+      "op": "insert_table_row",
+      "enabled": true,
+      "proof_status": "live_readback_proven",
+      "target_block_types": [31],
+      "method": "PATCH",
+      "endpoint": "/docx/v1/documents/{document_id}/blocks/{table_block_id}",
+      "requires": ["table_block_id", "row_index", "cell_texts", "source_hash", "revision_token"],
+      "row_policy": "append_only_row_index_minus_1",
+      "cell_mapping_policy": "fresh_readback_after_insert_dedupe_cell_ids_row_major",
+      "asset_policy": "do_not_delete_or_rebuild_table; existing cell children and image blocks must remain untouched",
+      "readback_assertions": ["table_row_size_incremented", "table_column_size_unchanged", "inserted_cell_text_present", "existing_image_blocks_unchanged", "protected_block_ids_unchanged"]
+    }
+  ],
+  "protected_block_keys": ["admonition", "attachment", "bitable", "callout", "diagram", "embed", "file", "grid", "grid_column", "iframe", "image", "isv", "jira", "mindnote", "sheet", "synced_source"]
+}

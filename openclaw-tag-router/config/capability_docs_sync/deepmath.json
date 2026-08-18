@@ -1,0 +1,15 @@
+{
+  "doc_title": "OpenClaw DeepMath bot 能力说明",
+  "credential_profile": "deepmath",
+  "env_file": "/home/ubuntu/.openclaw-deepmath/openclaw.env",
+  "app_id_env": "OPENCLAW_DEEPMATH_APP_ID",
+  "app_secret_env": "OPENCLAW_DEEPMATH_APP_SECRET",
+  "tenant_host_env": "OPENCLAW_DEEPMATH_TENANT_HOST",
+  "api_base_env": "OPENCLAW_DEEPMATH_FEISHU_API_BASE_URL",
+  "document_id": "UHjvdnuxAoBT8Fx14hwcMPlvnfg",
+  "doc_url": "https://feishu.cn/docx/UHjvdnuxAoBT8Fx14hwcMPlvnfg",
+  "wiki_url": "",
+  "wiki_node_token": "",
+  "last_synced_at": "2026-08-04T04:22:38+08:00",
+  "last_source_sha256": "73d9465d72897df08f6673a4d06a3d8452be74b7fc96c2723a0dade64ead7241"
+}

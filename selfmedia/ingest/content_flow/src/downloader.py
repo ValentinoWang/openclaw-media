@@ -25,7 +25,7 @@ from .storage import (
     media_exists,
     save_text,
 )
-from .utils import extract_douyin_id, is_direct_video_url, normalize_video_url, summarize_url
+from .utils import extract_douyin_id, is_direct_video_url, is_xiaohongshu_url, normalize_video_url, summarize_url
 
 
 ProgressFn = Callable[[str, int, str], None]
@@ -246,7 +246,7 @@ def clean_douyin_url(url: str) -> str:
         url = match.group(0).strip(")>.，,。")
 
     lowered = url.lower()
-    if "xhslink.com" in lowered:
+    if is_xiaohongshu_url(url) and "xiaohongshu.com" not in lowered:
         try:
             response = requests.get(
                 url,
@@ -261,7 +261,7 @@ def clean_douyin_url(url: str) -> str:
         except requests.RequestException:
             return url
 
-    if "xiaohongshu.com" in lowered:
+    if is_xiaohongshu_url(url):
         return url
 
     if "douyin.com" not in lowered and "iesdouyin.com" not in lowered:
@@ -299,8 +299,7 @@ def clean_douyin_url(url: str) -> str:
 
 
 def _is_xhs_url(url: str) -> bool:
-    lowered = url.lower()
-    return "xiaohongshu.com" in lowered or "xhslink.com" in lowered
+    return is_xiaohongshu_url(url)
 
 
 def _extract_xhs_initial_state_blob(html: str) -> Optional[str]:
@@ -754,6 +753,20 @@ def extract_render_data(html: str) -> Optional[dict]:
         return None
 
 
+def extract_router_data(html: str) -> Optional[dict]:
+    match = re.search(
+        r"<script[^>]*>\s*window\._ROUTER_DATA\s*=\s*(\{.*?\})\s*;?\s*</script>",
+        html,
+        flags=re.DOTALL,
+    )
+    if not match:
+        return None
+    try:
+        return json.loads(unescape(match.group(1)))
+    except (ValueError, json.JSONDecodeError):
+        return None
+
+
 def find_video_url_in_render_data(payload: object) -> Optional[str]:
     if isinstance(payload, dict):
         play_addr = payload.get("playAddr") or payload.get("play_addr")
@@ -866,12 +879,15 @@ def find_images_in_render_data(payload: object) -> list[str]:
     urls: list[str] = []
     if isinstance(payload, dict):
         if isinstance(payload.get("images"), list):
-            urls.extend(extract_image_urls_from_aweme(payload))
+            for url in extract_image_urls_from_aweme(payload):
+                append_unique_douyin_aweme_image_url(urls, url)
         for value in payload.values():
-            urls.extend(find_images_in_render_data(value))
+            for url in find_images_in_render_data(value):
+                append_unique_douyin_aweme_image_url(urls, url)
     elif isinstance(payload, list):
         for item in payload:
-            urls.extend(find_images_in_render_data(item))
+            for url in find_images_in_render_data(item):
+                append_unique_douyin_aweme_image_url(urls, url)
     return urls
 
 
@@ -915,6 +931,20 @@ def append_unique_douyin_aweme_image_url(urls: list[str], url: str) -> None:
     if identity and any(douyin_aweme_image_identity(existing) == identity for existing in urls):
         return
     urls.append(text)
+
+
+def should_prefer_douyin_note_images(url: str, page_url: str, image_urls: list[str]) -> bool:
+    if not image_urls:
+        return False
+    for candidate in (page_url, url):
+        kind, _item_id = extract_douyin_id(candidate or "")
+        if kind == "note":
+            return True
+    return False
+
+
+def cached_media_type_prefers_images(media_type: object) -> bool:
+    return str(media_type or "").strip().lower() in {"image", "images", "photo", "photos", "animated", "图文", "图片"}
 
 
 def is_animated_image(url: str) -> bool:
@@ -2224,10 +2254,34 @@ def resolve_media(
         }
     if "video_id" not in stats or not stats.get("video_id"):
         stats["video_id"] = paths.video_id
+    existing_images = list_image_files(paths)
+    cached_media_type = cached_analysis.get("media_type") if isinstance(cached_analysis, dict) else ""
+    prefer_cached_images = existing_images and (
+        cached_media_type_prefers_images(cached_media_type)
+        or should_prefer_douyin_note_images(url, "", existing_images)
+    )
     caption = load_text(paths.caption_path) or ""
     if caption:
         stats["cached_caption"] = caption
-        stats.setdefault("caption_source", "cache")
+        stats.setdefault("caption_source", "image_cache.caption" if prefer_cached_images else "cache")
+
+    if prefer_cached_images:
+        _report_progress(progress, 40, "已存在图片，跳过下载")
+        refreshed = refresh_stats_only(url, settings, progress=progress)
+        merge_stats(stats, refreshed)
+        if refreshed.get("top_comments"):
+            stats["top_comments"] = refreshed.get("top_comments")
+        caption = reconcile_caption_with_page_metadata(caption, stats)
+        finalize_interaction_stats(stats, is_xhs=is_xhs)
+        is_frames = any(os.path.basename(os.path.dirname(path)) == "frames" for path in existing_images)
+        return MediaResult(
+            media_type="animated" if is_frames else "image",
+            video_path=None,
+            audio_path=None,
+            image_paths=existing_images,
+            caption=caption,
+            stats=stats,
+        )
 
     if media_exists(paths.video_path):
         print(f"检测到已下载视频: {paths.video_path}，跳过下载。", flush=True)
@@ -2707,19 +2761,19 @@ def download_video(
                         video_url = html_video_url
                         if ".m3u8" in video_url.lower():
                             video_kind = "m3u8"
-                    if not video_url:
-                        render_data = extract_render_data(html)
-                        if render_data:
+                    render_data = extract_render_data(html) or extract_router_data(html)
+                    if render_data:
+                        if not video_url:
                             render_url = find_video_url_in_render_data(render_data)
                             if render_url:
                                 video_url = render_url
-                            if not caption:
-                                render_caption = find_caption_in_render_data(render_data)
-                                if render_caption:
-                                    caption = render_caption
-                                    stats["caption_source"] = "render_data.desc"
-                            if not image_urls:
-                                image_urls = find_images_in_render_data(render_data)
+                        if not caption:
+                            render_caption = find_caption_in_render_data(render_data)
+                            if render_caption:
+                                caption = render_caption
+                                stats["caption_source"] = "render_data.desc"
+                        if not image_urls:
+                            image_urls = find_images_in_render_data(render_data)
 
             if not video_url:
                 _kind, item_id = extract_douyin_id(page_url or url)
@@ -2820,6 +2874,11 @@ def download_video(
                     video_url = adjust_playwm_ratio(video_url, settings.video_ratio)
                 elif playwm_url:
                     video_url = adjust_playwm_ratio(playwm_url, settings.video_ratio)
+            if should_prefer_douyin_note_images(url, page_url, image_urls):
+                if video_url:
+                    stats["video_url_notice"] = "douyin_note_images_preferred_over_play_addr"
+                video_url = None
+                video_kind = ""
             if video_url:
                 print(f"视频地址: {summarize_url(video_url)}", flush=True)
             if debug_playwright:

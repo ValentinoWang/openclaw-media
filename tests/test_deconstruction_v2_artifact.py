@@ -107,23 +107,220 @@ def _result_payload() -> dict[str, object]:
         },
         "human_readable_brief": {"recommended_script_directions": ["用自己的工具链复现"]},
         "validation": {"warnings": []},
+        "request_constraints": {
+            "analysis_scope": "全片",
+            "analysis_time_range": "全部",
+            "deconstruction_focus": ["常规拆解"],
+            "output_types": ["拆解摘要"],
+            "deconstruction_depth": "brief",
+            "write_policy": "partial_no_write",
+            "human_insight_focus": "常规洞察",
+            "insight_card_policy": "single_video_only",
+            "promotion_evidence_threshold": 3,
+            "taxonomy_version": "human_insight_taxonomy_v1",
+            "privacy_boundary": "public_content_only",
+        },
     }
 
 
 class DeconstructionV2ArtifactTests(unittest.TestCase):
     def test_builds_top_level_deconstruction_v2_artifact(self) -> None:
+        result = _result_payload()
+        result["request_constraints"] = {
+            "analysis_scope": "开头",
+            "analysis_time_range": "0-5s",
+            "deconstruction_focus": ["人性洞察"],
+            "output_types": ["拆解摘要", "心理机制卡"],
+            "write_policy": "partial_no_write",
+        }
+        result["human_insight_candidates"] = [
+            {
+                "insight_id": "insight_001",
+                "evidence_quote": "所有自媒体博主都关心拉片。",
+                "evidence_asset_ids": ["frame_001"],
+                "mechanism_tag": "被理解感",
+                "candidate_tags": [],
+                "target_emotion": "复杂工作被拆简单后的释然",
+                "desire_or_fear": "害怕爆款方法看得懂但做不出来",
+                "emotion_path": "方法焦虑 -> 被看见 -> 觉得可执行",
+                "audience_group_hypothesis": "想把爆款方法变成自己 SOP 的内容创作者",
+                "trigger_pattern": "把高门槛动作命名成可复刻 SOP",
+                "risk_boundary": "避免承诺任何人都能复制爆款结果",
+                "reuse_warning": "只能迁移结构，不能复制原话和原账号权威感",
+                "confidence": 0.78,
+                "reasoning_summary": "证据句直接点名自媒体博主的共同问题。",
+            }
+        ]
+        result["ai_blend_analysis"] = [
+            {
+                "segment_id": "seg_001",
+                "time_range": "0-5s",
+                "segment_type": "hybrid",
+                "confidence": 0.64,
+                "reasoning_summary": "实拍教程画面叠加生成式包装的可能性，只能作为剪辑方式判断。",
+                "evidence_asset_ids": ["frame_001"],
+            }
+        ]
+        result["ai_storyboard_prompt_shots"] = [
+            {
+                "shot_id": "ai_shot_001",
+                "segment_id": "seg_001",
+                "duration_seconds": 2,
+                "start_frame_ref": "frame_001",
+                "end_frame_ref": "frame_001",
+                "continuity_to_real_footage": "保持屏幕录制教程的画面逻辑，不复制原片文字。",
+                "aspect_ratio": "9:16",
+                "target_tool": "image-to-video",
+                "prompt_language": "zh",
+                "prompt": "生成一个原创工具链演示转场画面。",
+                "negative_prompt": "不要复刻原字幕和账号标识。",
+                "evidence_asset_ids": ["frame_001"],
+            }
+        ]
         artifact = build_deconstruction_artifact(
-            result=_result_payload(),
+            result=result,
             deconstruction_id="decon_test",
             source_asset_id="asset_test",
-            source_asset_evidence_uri="media://source_assets/xhs/asset_test/evidence/evidence.json",
+            source_asset_evidence_uri="media://tenants/00000000-0000-4000-8000-000000000101/source_assets/xhs/asset_test/evidence/evidence.json",
             source_text="原文",
         )
         self.assertEqual(artifact["schema_version"], "deconstruction.v2")
         self.assertEqual(artifact["deconstruction_id"], "decon_test")
         self.assertIn("reuse_guardrails", artifact)
+        self.assertEqual(artifact["request_constraints"]["analysis_time_range"], "0-5s")
+        self.assertEqual(artifact["human_insight_candidates"][0]["mechanism_tag"], "被理解感")
         self.assertEqual(artifact["analysis_fields"]["creative_upgrade_suggestion"], "千万年薪编导会把它改成真实项目闯关式拆解，增加前后对比和失败代价。")
         validate_deconstruction_artifact(artifact)
+
+    def test_rejects_invalid_request_constraints(self) -> None:
+        result = _result_payload()
+        result["request_constraints"]["analysis_time_range"] = "全部转场"  # type: ignore[index]
+        with self.assertRaisesRegex(Exception, "request_constraints"):
+            build_deconstruction_artifact(
+                result=result,
+                deconstruction_id="decon_test",
+                source_asset_id="asset_test",
+                source_asset_evidence_uri="media://tenants/00000000-0000-4000-8000-000000000101/source_assets/xhs/asset_test/evidence/evidence.json",
+                source_text="原文",
+            )
+
+    def test_rejects_ai_storyboard_prompt_without_valid_evidence_boundary(self) -> None:
+        result = _result_payload()
+        result["ai_blend_analysis"] = [
+            {
+                "segment_id": "seg_001",
+                "time_range": "0-5s",
+                "segment_type": "uncertain",
+                "confidence": 0.4,
+                "reasoning_summary": "证据不足，只能标为 uncertain。",
+                "evidence_asset_ids": ["frame_001"],
+            }
+        ]
+        result["ai_storyboard_prompt_shots"] = [
+            {
+                "shot_id": "ai_shot_bad",
+                "segment_id": "seg_missing",
+                "duration_seconds": 2,
+                "start_frame_ref": "frame_001",
+                "end_frame_ref": "frame_001",
+                "continuity_to_real_footage": "接实拍。",
+                "aspect_ratio": "9:16",
+                "target_tool": "image-to-video",
+                "prompt_language": "zh",
+                "prompt": "生成镜头。",
+                "negative_prompt": "不要复制。",
+                "evidence_asset_ids": ["frame_001"],
+            }
+        ]
+        with self.assertRaisesRegex(Exception, "segment_id"):
+            build_deconstruction_artifact(
+                result=result,
+                deconstruction_id="decon_test",
+                source_asset_id="asset_test",
+                source_asset_evidence_uri="media://tenants/00000000-0000-4000-8000-000000000101/source_assets/xhs/asset_test/evidence/evidence.json",
+                source_text="原文",
+            )
+
+    def test_rejects_human_insight_without_evidence(self) -> None:
+        result = _result_payload()
+        result["human_insight_candidates"] = [
+            {
+                "insight_id": "insight_bad",
+                "mechanism_tag": "被理解感",
+                "target_emotion": "释然",
+                "desire_or_fear": "害怕落后",
+                "emotion_path": "焦虑 -> 释然",
+                "audience_group_hypothesis": "想提效的内容创作者",
+                "trigger_pattern": "空泛共鸣",
+                "risk_boundary": "无",
+                "confidence": 0.7,
+                "reasoning_summary": "缺少证据。",
+            }
+        ]
+        with self.assertRaises(Exception):
+            build_deconstruction_artifact(
+                result=result,
+                deconstruction_id="decon_test",
+                source_asset_id="asset_test",
+                source_asset_evidence_uri="media://tenants/00000000-0000-4000-8000-000000000101/source_assets/xhs/asset_test/evidence/evidence.json",
+                source_text="原文",
+            )
+
+    def test_rejects_human_insight_with_invalid_evidence_refs(self) -> None:
+        result = _result_payload()
+        result["human_insight_candidates"] = [
+            {
+                "insight_id": "insight_bad_ref",
+                "evidence_refs": ["missing_ref_999"],
+                "mechanism_tag": "被理解感",
+                "candidate_tags": [],
+                "target_emotion": "释然",
+                "desire_or_fear": "害怕做不出来",
+                "emotion_path": "方法焦虑 -> 被看见 -> 释然",
+                "audience_group_hypothesis": "想把爆款方法变成自己 SOP 的内容创作者",
+                "trigger_pattern": "把高门槛动作命名成可复刻 SOP",
+                "risk_boundary": "避免承诺复制爆款结果",
+                "confidence": 0.7,
+                "reasoning_summary": "引用了不存在的证据。",
+            }
+        ]
+
+        with self.assertRaises(Exception):
+            build_deconstruction_artifact(
+                result=result,
+                deconstruction_id="decon_test",
+                source_asset_id="asset_test",
+                source_asset_evidence_uri="media://tenants/00000000-0000-4000-8000-000000000101/source_assets/xhs/asset_test/evidence/evidence.json",
+                source_text="原文",
+            )
+
+    def test_rejects_human_insight_mechanism_outside_taxonomy(self) -> None:
+        result = _result_payload()
+        result["human_insight_candidates"] = [
+            {
+                "insight_id": "insight_bad_tag",
+                "evidence_refs": ["sp_001"],
+                "mechanism_tag": "共鸣",
+                "candidate_tags": ["共鸣"],
+                "target_emotion": "释然",
+                "desire_or_fear": "害怕做不出来",
+                "emotion_path": "方法焦虑 -> 被看见 -> 释然",
+                "audience_group_hypothesis": "想把爆款方法变成自己 SOP 的内容创作者",
+                "trigger_pattern": "把高门槛动作命名成可复刻 SOP",
+                "risk_boundary": "避免承诺复制爆款结果",
+                "confidence": 0.7,
+                "reasoning_summary": "机制标签未受控。",
+            }
+        ]
+
+        with self.assertRaises(Exception):
+            build_deconstruction_artifact(
+                result=result,
+                deconstruction_id="decon_test",
+                source_asset_id="asset_test",
+                source_asset_evidence_uri="media://tenants/00000000-0000-4000-8000-000000000101/source_assets/xhs/asset_test/evidence/evidence.json",
+                source_text="原文",
+            )
 
     def test_rejects_old_wrapper_artifact(self) -> None:
         with self.assertRaises(Exception):
@@ -140,12 +337,12 @@ class DeconstructionV2ArtifactTests(unittest.TestCase):
             previous = os.environ.get("OPENCLAW_MEDIA_VAULT_ROOT")
             os.environ["OPENCLAW_MEDIA_VAULT_ROOT"] = str(Path(tmp) / "media_vault")
             try:
-                vault = MediaVault()
+                vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101")
                 artifact = build_deconstruction_artifact(
                     result=_result_payload(),
                     deconstruction_id="decon_test",
                     source_asset_id="asset_test",
-                    source_asset_evidence_uri="media://source_assets/xhs/asset_test/evidence/evidence.json",
+                    source_asset_evidence_uri="media://tenants/00000000-0000-4000-8000-000000000101/source_assets/xhs/asset_test/evidence/evidence.json",
                     source_text="原文",
                 )
                 written = vault.write_json_artifact(
@@ -164,7 +361,7 @@ class DeconstructionV2ArtifactTests(unittest.TestCase):
                     detail_json={"evidence_uri": written["uri"]},
                     doc_links={"evidence": written["uri"]},
                 )
-                enriched = attach_deconstruction_artifact_brief(record)
+                enriched = attach_deconstruction_artifact_brief(record, tenant_id="00000000-0000-4000-8000-000000000101")
                 brief = enriched.detail_json["usable_material_brief"]
                 self.assertEqual(brief["reuse_candidate_label"], "strong_reuse_candidate")
                 self.assertIn("结果前置结构", " ".join(brief["usable_mechanisms"]))
@@ -181,7 +378,7 @@ class DeconstructionV2ArtifactTests(unittest.TestCase):
             previous = os.environ.get("OPENCLAW_MEDIA_VAULT_ROOT")
             os.environ["OPENCLAW_MEDIA_VAULT_ROOT"] = str(Path(tmp) / "media_vault")
             try:
-                vault = MediaVault()
+                vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101")
                 written = vault.write_json_artifact(
                     vault.deconstruction_dir("decon_old"),
                     "deconstruction.json",
@@ -199,7 +396,7 @@ class DeconstructionV2ArtifactTests(unittest.TestCase):
                     doc_links={"evidence": written["uri"]},
                 )
                 with self.assertRaises(DeconstructionArtifactUnavailable):
-                    attach_deconstruction_artifact_brief(record)
+                    attach_deconstruction_artifact_brief(record, tenant_id="00000000-0000-4000-8000-000000000101")
             finally:
                 if previous is None:
                     os.environ.pop("OPENCLAW_MEDIA_VAULT_ROOT", None)

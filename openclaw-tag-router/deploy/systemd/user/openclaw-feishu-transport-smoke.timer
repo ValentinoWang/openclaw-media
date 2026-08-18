@@ -1,0 +1,11 @@
+[Unit]
+Description=Check OpenClaw Feishu transport every two minutes
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=2m
+AccuracySec=15s
+Unit=openclaw-feishu-transport-smoke.service
+
+[Install]
+WantedBy=timers.target

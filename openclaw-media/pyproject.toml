@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openclaw-media"
+version = "0.2.0"
+description = "Packaged OpenClaw Media pipeline catalog and node SDK"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "dnspython==2.7.0",
+  "httpcore==1.0.9",
+  "httpx==0.28.1",
+  "OpenTimelineIO==0.17.0",
+  "keyring==25.6.0",
+  "litellm==1.94.1",
+  "packaging==26.2",
+  "pydantic==2.11.7",
+  "rfc3986==2.0.0",
+]
+
+[project.scripts]
+openclaw-media = "openclaw_media.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["openclaw_media*"]
+
+[tool.setuptools.package-data]
+openclaw_media = ["data/*.json"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

@@ -1,0 +1,345 @@
+"""Provider-independent safety primitives for Media Web business pages."""
+
+from __future__ import annotations
+
+import copy
+import hashlib
+import json
+import re
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
+
+
+class MediaBusinessError(Exception):
+    def __init__(self, code: str, message: str):
+        self.code = code
+        self.message = message
+        super().__init__(message)
+
+
+class EmptyState(MediaBusinessError):
+    def __init__(self):
+        super().__init__("empty", "no records")
+
+
+class NotFound(MediaBusinessError):
+    def __init__(self):
+        super().__init__("resource_not_found", "resource not found")
+
+
+class Forbidden(MediaBusinessError):
+    def __init__(self, message: str = "not permitted"):
+        super().__init__("forbidden", message)
+
+
+class Conflict(MediaBusinessError):
+    def __init__(self, message: str = "revision conflict"):
+        super().__init__("revision_conflict", message)
+
+
+class Validation(MediaBusinessError):
+    def __init__(self, message: str = "invalid request", *, code: str = "validation_error"):
+        super().__init__(code, message)
+
+
+class ProtectedDocumentBlock(MediaBusinessError):
+    def __init__(self, block_ids: set[str]):
+        self.block_ids = tuple(sorted(block_ids))
+        super().__init__(
+            "unsupported_document_block",
+            "protected document blocks cannot be changed or exported",
+        )
+
+
+class ResultKind(str, Enum):
+    SUCCESS = "success"
+    EMPTY = "empty"
+    NOT_FOUND = "not_found"
+    FORBIDDEN = "forbidden"
+    CONFLICT = "conflict"
+    VALIDATION = "validation"
+
+
+@dataclass(frozen=True)
+class ServiceResult:
+    kind: ResultKind
+    value: Any = None
+    message: str | None = None
+
+    @classmethod
+    def empty(cls) -> "ServiceResult":
+        return cls(ResultKind.EMPTY)
+
+    @classmethod
+    def not_found(cls) -> "ServiceResult":
+        return cls(ResultKind.NOT_FOUND)
+
+    @classmethod
+    def forbidden(cls) -> "ServiceResult":
+        return cls(ResultKind.FORBIDDEN)
+
+    @classmethod
+    def conflict(cls) -> "ServiceResult":
+        return cls(ResultKind.CONFLICT)
+
+    @classmethod
+    def validation(cls, message: str) -> "ServiceResult":
+        return cls(ResultKind.VALIDATION, message=message)
+
+
+@dataclass(frozen=True)
+class TenantContext:
+    tenant_id: str
+    user_public_id: str
+    is_admin: bool = False
+    audit_reason: str | None = None
+
+
+def require_context(
+    context: TenantContext | None,
+    target_tenant: str | None = None,
+) -> TenantContext:
+    if context is None or not context.tenant_id.strip():
+        raise Forbidden("tenant context is required")
+    if target_tenant and target_tenant != context.tenant_id:
+        if not context.is_admin:
+            raise NotFound()
+        if not context.audit_reason or not context.audit_reason.strip():
+            raise Forbidden("admin cross-tenant access requires an audit reason")
+    return context
+
+
+_FORBIDDEN_PUBLIC_NAMES = {
+    "accesstoken",
+    "apptoken",
+    "credential",
+    "credentialvalue",
+    "feishurecordid",
+    "feishutableid",
+    "larktableurl",
+    "localpath",
+    "rawmodelresponse",
+    "rawprompt",
+    "rawresponse",
+    "recordid",
+    "refreshtoken",
+    "secret",
+    "targettenantid",
+    "tenantid",
+    "token",
+}
+
+
+def _normalized_name(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", value.lower())
+
+
+def public_projection(value: Any) -> Any:
+    """Return a detached public value or fail closed on private field names."""
+
+    def walk(item: Any) -> Any:
+        if isinstance(item, dict):
+            projected: dict[str, Any] = {}
+            for key, child in item.items():
+                if not isinstance(key, str):
+                    raise Validation("public response keys must be strings")
+                normalized = _normalized_name(key)
+                if normalized in _FORBIDDEN_PUBLIC_NAMES or any(
+                    token in normalized
+                    for token in ("credential", "localpath", "feishurecord", "rawprompt")
+                ):
+                    raise Validation(f"forbidden public field: {key}")
+                projected[key] = walk(child)
+            return projected
+        if isinstance(item, list):
+            return [walk(child) for child in item]
+        return copy.deepcopy(item)
+
+    return walk(value)
+
+
+def body_checksum(body: dict[str, Any]) -> str:
+    canonical = json.dumps(
+        body,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+_RICH_TEXT_TYPES = {"paragraph", "quote", *(f"heading_{level}" for level in range(1, 10))}
+_LIST_TYPES = {"bullet_list", "ordered_list"}
+_MARKS = {"bold", "italic", "underline", "strike", "inline_code"}
+_BLOCK_TYPES = _RICH_TEXT_TYPES | _LIST_TYPES | {
+    "todo_item",
+    "code_block",
+    "divider",
+    "callout",
+    "image",
+    "attachment",
+    "table",
+    "data_snapshot",
+}
+
+
+def _require_keys(value: dict[str, Any], required: set[str], label: str) -> None:
+    if set(value) != required:
+        raise Validation(f"{label} contains undeclared or missing fields")
+
+
+def _validate_inline_nodes(value: Any, label: str) -> None:
+    if not isinstance(value, list):
+        raise Validation(f"{label} must be a list")
+    for node in value:
+        if not isinstance(node, dict):
+            raise Validation(f"{label} contains an invalid inline node")
+        _require_keys(node, {"type", "text", "marks"}, label)
+        if node["type"] != "text" or not isinstance(node["text"], str):
+            raise Validation(f"{label} contains invalid text")
+        marks = node["marks"]
+        if not isinstance(marks, list) or len(marks) != len({json.dumps(mark, sort_keys=True) for mark in marks}):
+            raise Validation(f"{label} contains duplicate or invalid marks")
+        for mark in marks:
+            if isinstance(mark, str):
+                if mark not in _MARKS:
+                    raise Validation(f"{label} contains an unknown mark")
+            elif isinstance(mark, dict):
+                _require_keys(mark, {"type", "href", "title"}, label)
+                if mark["type"] != "link" or not isinstance(mark["href"], str):
+                    raise Validation(f"{label} contains an invalid link mark")
+            else:
+                raise Validation(f"{label} contains an invalid mark")
+
+
+def _validate_list(block: dict[str, Any]) -> None:
+    _require_keys(block, {"id", "type", "attrs", "items"}, "document list block")
+    if block["attrs"] != {} or not isinstance(block["items"], list) or not block["items"]:
+        raise Validation("invalid document list block")
+    for item in block["items"]:
+        if not isinstance(item, dict):
+            raise Validation("invalid document list item")
+        _require_keys(item, {"id", "content", "children"}, "document list item")
+        _validate_inline_nodes(item["content"], "document list item")
+        if not isinstance(item["children"], list):
+            raise Validation("document list children must be a list")
+        for child in item["children"]:
+            _validate_block(child)
+            if child["type"] not in _LIST_TYPES:
+                raise Validation("document list children must be lists")
+
+
+def _validate_table(block: dict[str, Any]) -> None:
+    _require_keys(block, {"id", "type", "attrs", "rows"}, "document table")
+    attrs = block["attrs"]
+    if not isinstance(attrs, dict):
+        raise Validation("invalid table attributes")
+    _require_keys(attrs, {"semanticPurpose", "headerRowCount"}, "document table attributes")
+    if attrs["semanticPurpose"] not in {
+        "general",
+        "storyboard",
+        "publishing_checklist",
+        "metric_snapshot",
+        "evidence_index",
+    } or attrs["headerRowCount"] != 1:
+        raise Validation("invalid table attributes")
+    rows = block["rows"]
+    if not isinstance(rows, list) or not 1 <= len(rows) <= 9:
+        raise Validation("lark table shape is unsupported", code="lark_table_shape_unsupported")
+    cell_count = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            raise Validation("invalid document table row")
+        _require_keys(row, {"id", "cells"}, "document table row")
+        cells = row["cells"]
+        if not isinstance(cells, list) or not 1 <= len(cells) <= 9:
+            raise Validation("lark table shape is unsupported", code="lark_table_shape_unsupported")
+        cell_count += len(cells)
+        for cell in cells:
+            if not isinstance(cell, dict):
+                raise Validation("invalid document table cell")
+            _require_keys(cell, {"id", "content"}, "document table cell")
+            _validate_inline_nodes(cell["content"], "document table cell")
+    if cell_count > 81:
+        raise Validation("lark table shape is unsupported", code="lark_table_shape_unsupported")
+
+
+def _validate_block(block: Any) -> None:
+    if not isinstance(block, dict) or block.get("type") not in _BLOCK_TYPES:
+        raise Validation("invalid document block")
+    if not isinstance(block.get("id"), str) or not block["id"]:
+        raise Validation("document block id is required")
+    block_type = block["type"]
+    if block_type in _RICH_TEXT_TYPES:
+        _require_keys(block, {"id", "type", "attrs", "content"}, "rich text block")
+        if block["attrs"] != {}:
+            raise Validation("rich text attrs must be empty")
+        if not block["content"]:
+            raise Validation("rich text content must not be empty")
+        _validate_inline_nodes(block["content"], "rich text block")
+    elif block_type in _LIST_TYPES:
+        _validate_list(block)
+    elif block_type == "table":
+        _validate_table(block)
+    else:
+        required = {
+            "todo_item": {"id", "type", "attrs", "content"},
+            "code_block": {"id", "type", "attrs", "text"},
+            "divider": {"id", "type", "attrs"},
+            "callout": {"id", "type", "attrs", "content"},
+            "image": {"id", "type", "attrs"},
+            "attachment": {"id", "type", "attrs"},
+            "data_snapshot": {"id", "type", "attrs"},
+        }[block_type]
+        _require_keys(block, required, f"{block_type} block")
+
+
+def validate_body(body: Any) -> dict[str, Any]:
+    if not isinstance(body, dict):
+        raise Validation("invalid media.document.body.v1")
+    _require_keys(body, {"schemaVersion", "blocks"}, "document body")
+    if body["schemaVersion"] != "media.document.body.v1":
+        raise Validation("invalid media.document.body.v1")
+    blocks = body["blocks"]
+    if not isinstance(blocks, list) or len(blocks) > 5000:
+        raise Validation("invalid document blocks")
+    seen: set[str] = set()
+    for block in blocks:
+        _validate_block(block)
+        if block["id"] in seen:
+            raise Validation("document block ids must be unique")
+        seen.add(block["id"])
+    return copy.deepcopy(body)
+
+
+def assert_autosave_state(state: str) -> None:
+    if state != "draft":
+        raise Conflict("autosave only accepts draft revisions")
+
+
+def assert_export_state(state: str) -> None:
+    if state != "ready":
+        raise Conflict("exports require a ready revision")
+
+
+def preserve_protected_blocks(
+    existing: dict[str, Any],
+    incoming: dict[str, Any],
+    protected_block_ids: set[str],
+    targeted_block_ids: set[str] | None = None,
+) -> dict[str, Any]:
+    current = validate_body(existing)
+    proposed = validate_body(incoming)
+    if targeted_block_ids and protected_block_ids & targeted_block_ids:
+        raise ProtectedDocumentBlock(protected_block_ids & targeted_block_ids)
+    current_by_id = {block["id"]: block for block in current["blocks"]}
+    proposed_by_id = {block["id"]: block for block in proposed["blocks"]}
+    changed = {
+        block_id
+        for block_id in protected_block_ids
+        if current_by_id.get(block_id) != proposed_by_id.get(block_id)
+    }
+    if changed:
+        raise ProtectedDocumentBlock(changed)
+    return proposed

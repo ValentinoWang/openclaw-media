@@ -106,13 +106,21 @@ class ContentOSRenderersMixin:
             else "- [ ] 等人在 Mac 上把素材批次和项目包绑定，再派发 Mac 本地素材分析任务"
         )
         return f"""---
-spec_version: content_os_v0.1
-doc_type: project_index
+spec_version: content_os_v0.2
+doc_type: project_overview
 project_id: {project_id}
 idea_id: {idea_id}
-status: brief_ready
+title: {self._yaml_scalar(title)}
+theme: {self._yaml_scalar(theme or title)}
+status: captured
+project_revision: 1
+editor_backend: handoff_pack
+owner: cloud_openclaw
 owner_agent: cloud_openclaw
 next_owner: {next_owner}
+next_action: {self._yaml_scalar("等待云端核对计划材料" if local_material_binding == "bound" else "补充本地素材绑定或确认下一步")}
+blocked: false
+blocked_reason: ""
 created_at: {created_date}
 updated_at: {created_date}
 local_project_path: {self._yaml_scalar(local_project_path)}
@@ -145,7 +153,7 @@ inbox_batch_path: {inbox_batch_path or "未绑定"}
 {task_status_line}
 - [ ] Mac 完成本地素材分析
 - [ ] Mac 输出 Storyboard / EDL
-- [ ] 腾讯云根据 Mac result 二次修订脚本
+- [ ] 腾讯云核对 Mac 回传的证据后再决定是否进入剪辑准备阶段
 - [ ] 人工剪辑和发布
 
 # 关联文件
@@ -168,6 +176,7 @@ inbox_batch_path: {inbox_batch_path or "未绑定"}
 
 # 写入边界
 
+- 项目整体阶段、当前版本和剪辑方式只由本文件 frontmatter 保存。
 - 腾讯云 OpenClaw 主写：`01_idea_card.md`、`02_project_brief.md`、`04_script.md`、`09_publish_pack.md`、`10_review.md`。
 - Mac OpenClaw 主写：`03_material_match_report.md`、`05_storyboard.md`、`06_edit_decision_list.json`、`08_local_assets.md`。
 - 原始素材、剪辑工程和导出文件继续留在 Mac 本地项目目录。
@@ -192,11 +201,11 @@ inbox_batch_path: {inbox_batch_path or "未绑定"}
         strengths = self._markdown_list(result.get("strengths") or [])
         risks = self._markdown_list(result.get("risks") or [])
         return f"""---
-spec_version: content_os_v0.1
+spec_version: content_os_v0.2
 doc_type: idea_card
 idea_id: {idea_id}
 project_id: {project_id}
-status: selected
+evidence_status: selected
 created_by: cloud_openclaw
 created_at: {created_date}
 ---
@@ -272,11 +281,11 @@ created_at: {created_date}
             else "- 人先在 Mac 上用批次说明把真实素材绑定到本项目；腾讯云不判断本地素材是否存在。"
         )
         return f"""---
-spec_version: content_os_v0.1
+spec_version: content_os_v0.2
 doc_type: project_brief
 project_id: {project_id}
 idea_id: {idea_id}
-status: brief_ready
+evidence_status: current
 owner_agent: cloud_openclaw
 next_owner: {"mac_openclaw" if mac_task_status == "ready" else "human"}
 created_at: {created_date}
@@ -351,13 +360,13 @@ Mac OpenClaw 在本地素材绑定后，读取真实素材并输出：
         outline = self._markdown_list(result.get("script_outline") or [])
         formats = self._markdown_list(result.get("publishable_formats") or [])
         risks = self._markdown_list(result.get("risks") or [])
-        direction = str(result.get("recreation_direction") or result.get("cleaned_inspiration") or "")
+        direction = str(result.get("creative_direction") or result.get("cleaned_inspiration") or "")
         return f"""---
-spec_version: content_os_v0.1
+spec_version: content_os_v0.2
 doc_type: script
 project_id: {project_id}
 idea_id: {idea_id}
-status: initial_draft
+evidence_status: draft
 writer_agent: cloud_openclaw
 owner_agent: cloud_openclaw
 next_owner: mac_openclaw
@@ -521,8 +530,11 @@ Mac OpenClaw 读取素材后，需要优先确认：
         batch_note_path: str = "",
         inbox_batch_path: str = "",
         status: str = "ready",
+        project_revision: int = 1,
+        editor_backend: str = "handoff_pack",
     ) -> str:
-        return f"""spec_version: content_os_v0.1
+        return f"""spec_version: content_os_v0.2
+doc_type: mac_task
 task_id: {task_id}
 task_type: local_material_match
 created_by: cloud_openclaw
@@ -530,7 +542,11 @@ owner: mac_openclaw
 status: {status}
 
 project_id: {project_id}
+project_revision: {project_revision}
 idea_id: {idea_id}
+change_request_id: ""
+editor_backend: {editor_backend}
+human_confirmed_impact: false
 
 inputs:
   project_brief_path: 08_内容项目/{project_id}/02_project_brief.md

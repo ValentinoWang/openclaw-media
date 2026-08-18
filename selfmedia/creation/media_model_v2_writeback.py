@@ -24,6 +24,7 @@ V2_TRACE_LIMIT_ENV = "SELFMEDIA_CREATION_V2_TRACE_LIMIT_PER_TYPE"
 
 def write_creation_model_v2(
     *,
+    tenant_id: str,
     request: CreationRequest,
     entrypoint: str,
     all_activity_candidates: list[RankedRecord],
@@ -44,7 +45,7 @@ def write_creation_model_v2(
     load_default_env_files()
     urls = _v2_urls()
     run_id = _run_id(creation_record_id)
-    vault = MediaVault()
+    vault = MediaVault(tenant_id=tenant_id)
     vault.ensure_manifest()
     retrieval_candidates = {
         "activities": [_ranked_record_payload(item) for item in all_activity_candidates],
@@ -110,20 +111,24 @@ def write_creation_model_v2(
     creation_payload = build_creation_run_payload(
         run_id=run_id,
         entrypoint=entrypoint,
-        input_summary=_input_summary(request),
+        input_summary=request.topic,
+        platform=request.platform,
+        content_type=request.content_type,
+        track_name=request.track,
         status="success" if validation.get("ok") else "failed",
         generation_source="llm",
         run_artifact_uri=evidence_uri,
+        source_asset_id=request.source_asset_id,
         render_id="",
         render_spec_uri="",
         feishu_doc_link=doc_link,
     )
     writes: list[dict[str, Any]] = []
-    writes.append(_write("CreationRun", urls["CreationRun"], creation_payload))
+    writes.append(_write("CreationRun", urls["CreationRun"], creation_payload, tenant_id=tenant_id))
     for payload in decision_payloads:
-        writes.append(_write("DecisionTrace", urls["DecisionTrace"], payload))
+        writes.append(_write("DecisionTrace", urls["DecisionTrace"], payload, tenant_id=tenant_id))
     for payload in usage_payloads:
-        writes.append(_write("MaterialUsage", urls["MaterialUsage"], payload))
+        writes.append(_write("MaterialUsage", urls["MaterialUsage"], payload, tenant_id=tenant_id))
     report = {
         "run_id": run_id,
         "run_artifact_uri": evidence_uri,
@@ -160,10 +165,6 @@ def _run_id(creation_record_id: str) -> str:
     if creation_record_id:
         return f"run_{creation_record_id}"
     return make_timestamp_id("run", token_bytes=2)
-
-
-def _input_summary(request: CreationRequest) -> str:
-    return " / ".join(item for item in (request.platform, request.content_type, request.track, request.topic) if item)
 
 
 def _trace_limit() -> int:
@@ -232,7 +233,13 @@ def _reason_summary(item: RankedRecord) -> str:
     return text[:1500]
 
 
-def _write(entity: str, table_url: str, payload: dict[str, Any]) -> dict[str, Any]:
+def _write(
+    entity: str,
+    table_url: str,
+    payload: dict[str, Any],
+    *,
+    tenant_id: str,
+) -> dict[str, Any]:
     key_fields = {
         "CreationRun": "run_id",
         "DecisionTrace": "trace_id",
@@ -241,7 +248,13 @@ def _write(entity: str, table_url: str, payload: dict[str, Any]) -> dict[str, An
     key_field = key_fields.get(entity)
     if not key_field:
         raise RuntimeError(f"missing Media Model v2 idempotency key for {entity}")
-    result = upsert_entity_record(entity, table_url, payload, key_field=key_field)
+    result = upsert_entity_record(
+        entity,
+        table_url,
+        payload,
+        key_field=key_field,
+        session_tenant_id=tenant_id,
+    )
     return {
         "entity": entity,
         "record_id": result.get("record_id", ""),

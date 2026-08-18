@@ -4,9 +4,34 @@ import json
 from datetime import datetime
 from typing import Any
 
+from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+
 from .field_contract import normalize_content_type, normalize_platform, split_tags
 from .llm_generator import call_creation_json
 from .request_parser import CREATION_PATTERN, KEY_VALUE_RE, CreationRequest, parse_creation_request
+
+
+REQUEST_INFERENCE_FIELDS = frozenset({
+    "platform", "content_type", "track", "topic", "publish_time", "user_idea", "keywords",
+    "brand", "product", "project", "account", "brief", "business_note",
+})
+
+
+def _validate_request_inference(payload: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
+    if not any(value not in (None, "", [], {}) for value in payload.values()):
+        raise ValueError("request inference returned no usable fields")
+    return payload
+
+
+REQUEST_INFERENCE_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.creation.request_inference.v1",
+        profile="strict_structured",
+        allowed_fields=REQUEST_INFERENCE_FIELDS,
+        field_types={"keywords": (list, str)},
+        validator=_validate_request_inference,
+    )
+)
 
 
 def parse_creation_request_with_llm(
@@ -23,7 +48,7 @@ def parse_creation_request_with_llm(
 
 def infer_creation_request_fields(raw_text: str) -> dict[str, Any]:
     prompt = build_request_inference_prompt(raw_text)
-    payload = call_creation_json(prompt)
+    payload = call_creation_json(prompt, validation_contract=REQUEST_INFERENCE_VALIDATION_CONTRACT)
     return normalize_inferred_creation_fields(payload)
 
 
