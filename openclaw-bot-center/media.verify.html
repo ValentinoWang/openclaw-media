@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>验证邮箱 - MediaClaw</title>
+    <link rel="stylesheet" href="/media.auth.css" />
+  </head>
+  <body class="auth-page" data-auth-page="verify">
+    <main class="auth-shell compact-shell" aria-labelledby="page-title">
+      <header class="auth-header">
+        <a class="brand" href="/openclaw/media/" aria-label="MediaClaw 内容运营工作台">
+          <span class="brand-mark" aria-hidden="true">MC</span>
+          <span><strong class="brand-name">MediaClaw</strong><span class="brand-detail">内容运营工作台</span></span>
+        </a>
+        <p class="eyebrow">邮箱验证</p>
+        <h1 id="page-title">完成个人邮箱验证</h1>
+        <p class="lede">验证邮箱后返回个人登录入口，不会自动登录。</p>
+      </header>
+      <section class="auth-panel standalone-panel" aria-labelledby="verify-heading">
+        <div class="panel-heading">
+          <span class="panel-label">PENDING_EMAIL_VERIFICATION</span>
+          <h2 id="verify-heading">确认邮箱所有权</h2>
+          <p id="verify-link-hint">如果你从验证邮件打开此页，可以直接确认；也可以重发最新验证邮件。</p>
+        </div>
+        <div class="verify-action" id="verify-action" hidden>
+          <button class="auth-button primary" id="verify-submit" type="button">确认验证邮箱</button>
+        </div>
+        <form id="verify-form" class="auth-form" novalidate>
+          <label class="field" for="verify-identifier">
+            <span>用户名或邮箱</span>
+            <input id="verify-identifier" name="identifier" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+          </label>
+          <div class="form-actions">
+            <button class="auth-button secondary" id="resend-submit" type="submit">重发验证邮件</button>
+          </div>
+        </form>
+        <p class="auth-message" id="verify-message" role="status" aria-live="polite"></p>
+        <div class="success-panel" id="verify-success" role="status" aria-live="polite" hidden>
+          <span class="success-mark" aria-hidden="true">✓</span>
+          <div>
+            <strong id="verify-success-title">邮箱验证成功</strong>
+            <p>账号已启用。请使用个人账号登录继续。</p>
+          </div>
+          <a class="auth-button primary" id="verify-login-link" href="/openclaw/media/login">去登录</a>
+        </div>
+        <p class="auth-foot"><a class="text-link" id="verify-login-secondary" href="/openclaw/media/login">返回个人登录</a></p>
+      </section>
+    </main>
+    <script type="module" src="/media.login.js"></script>
+  </body>
+</html>

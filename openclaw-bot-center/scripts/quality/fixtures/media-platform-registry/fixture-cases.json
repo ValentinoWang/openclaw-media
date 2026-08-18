@@ -1,0 +1,18 @@
+[
+  { "name": "valid source", "file": "valid.tsx", "expectedCodes": [] },
+  { "name": "near miss business URL and generic icon", "file": "near-miss.tsx", "expectedCodes": [] },
+  { "name": "legal generic lucide icon", "file": "generic-lucide.tsx", "expectedCodes": [] },
+  { "name": "documented exception", "file": "exception.tsx", "expectedCodes": [] },
+  { "name": "expired exception", "file": "expired-exception.tsx", "expectedCodes": ["MPR004"] },
+  { "name": "missing registry", "file": "missing-registry.fixture", "expectedCodes": ["MPR001"] },
+  { "name": "valid registry", "file": "valid.registry.ts", "expectedCodes": [] },
+  { "name": "alias conflict", "file": "alias-conflict.registry.ts", "expectedCodes": ["MPR003"] },
+  { "name": "private platform map", "file": "private-map.tsx", "expectedCodes": ["MPR004"] },
+  { "name": "inline platform map", "file": "inline-map.tsx", "expectedCodes": ["MPR004"] },
+  { "name": "private platform color", "file": "private-color.css", "expectedCodes": ["MPR005"] },
+  { "name": "fixed platform icon path", "file": "fixed-path.tsx", "expectedCodes": ["MPR006"] },
+  { "name": "legacy PNG asset", "file": "legacy-png.fixture", "expectedCodes": ["MPR006"] },
+  { "name": "remote platform icon", "file": "remote-url.tsx", "expectedCodes": ["MPR007"] },
+  { "name": "lucide brand approximation", "file": "lucide-brand.tsx", "expectedCodes": ["MPR008"] },
+  { "name": "direct simple icons import", "file": "direct-simple-icons.tsx", "expectedCodes": ["MPR004"] }
+]

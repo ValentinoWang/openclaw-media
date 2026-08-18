@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#f4f6f8" />
+    <title>选择登录方式 - MediaClaw</title>
+    <link rel="stylesheet" href="/media.auth.css" />
+  </head>
+  <body class="auth-page" data-auth-page="login">
+    <main class="auth-shell" aria-labelledby="page-title">
+      <header class="auth-header">
+        <a class="brand" href="/openclaw/media/" aria-label="MediaClaw 内容运营工作台">
+          <span class="brand-mark" aria-hidden="true">MC</span>
+          <span>
+            <strong class="brand-name">MediaClaw</strong>
+            <span class="brand-detail">内容运营工作台</span>
+          </span>
+        </a>
+        <p class="eyebrow">统一入口</p>
+        <h1 id="page-title">选择进入方式</h1>
+        <p class="lede">先选择你的工作区身份，再继续完成登录。</p>
+      </header>
+
+      <section class="identity-choice" aria-labelledby="choice-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">工作区身份</p>
+            <h2 id="choice-title">你要进入哪类工作区？</h2>
+          </div>
+          <span class="step-count" aria-hidden="true">01 / 02</span>
+        </div>
+        <div class="choice-grid" role="tablist" aria-label="工作区身份选择">
+          <button class="identity-choice-button" id="personal-choice" type="button" role="tab" aria-selected="false" aria-controls="password-panel" data-mode="personal">
+            <span class="choice-mark choice-mark-personal" aria-hidden="true">C</span>
+            <span class="choice-copy">
+              <strong>个人创作者</strong>
+              <span>使用 MediaClaw 账号进入个人工作区。</span>
+            </span>
+            <span class="choice-arrow" aria-hidden="true">→</span>
+          </button>
+          <button class="identity-choice-button" id="organization-choice" type="button" role="tab" aria-selected="false" aria-controls="organization-panel" data-mode="organization">
+            <span class="choice-mark choice-mark-organization" aria-hidden="true">B</span>
+            <span class="choice-copy">
+              <strong>组织成员</strong>
+              <span>通过组织的 Feishu 授权进入协作工作区。</span>
+            </span>
+            <span class="choice-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+        <p class="choice-status" id="choice-status" role="status" aria-live="polite">请选择一个身份继续。</p>
+      </section>
+
+      <section class="auth-panel" id="password-panel" role="tabpanel" aria-labelledby="personal-choice" data-flow="personal" hidden>
+        <div class="panel-heading">
+          <button class="back-button" id="personal-back" type="button" aria-label="返回身份选择">← <span>返回选择</span></button>
+          <span class="panel-label">C 个人创作者</span>
+          <h2>登录个人工作区</h2>
+          <p>使用用户名或已验证邮箱登录。</p>
+        </div>
+        <form id="login-form" class="auth-form" novalidate>
+          <label class="field" for="identifier">
+            <span>用户名或已验证邮箱</span>
+            <input id="identifier" name="identifier" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+          </label>
+          <label class="field" for="password">
+            <span>密码</span>
+            <input id="password" name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <div class="form-actions">
+            <button class="auth-button primary" id="submit" type="submit">登录</button>
+          </div>
+        </form>
+        <p class="auth-message" id="error" role="alert" aria-live="polite"></p>
+        <div class="pending-guidance" id="pending-guidance" hidden>
+          <strong>还需要完成邮箱验证</strong>
+          <p>凭据确认后，账号仍需完成邮箱验证才能使用邮箱登录。</p>
+          <a class="text-link" id="pending-verify-link" href="/openclaw/media/verify">重发验证邮件</a>
+        </div>
+        <nav class="auth-links" aria-label="个人账号操作">
+          <a class="text-link" id="recover-link" href="/openclaw/media/recover">忘记密码？</a>
+          <a class="text-link" id="register-link" href="/openclaw/media/register">创建个人账号</a>
+        </nav>
+      </section>
+
+      <section class="auth-panel" id="organization-panel" role="tabpanel" aria-labelledby="organization-choice" data-flow="organization" hidden>
+        <div class="panel-heading">
+          <button class="back-button" id="organization-back" type="button" aria-label="返回身份选择">← <span>返回选择</span></button>
+          <span class="panel-label organization-label">B 组织成员</span>
+          <h2>使用 Feishu 授权</h2>
+          <p>组织成员只能通过组织的 Feishu 应用授权进入。</p>
+        </div>
+        <div class="qr-shell" aria-labelledby="qr-status">
+          <span class="qr-placeholder" id="qr-placeholder">选择组织成员后生成二维码</span>
+          <canvas id="qr-canvas" width="200" height="200" aria-label="Feishu 授权二维码"></canvas>
+        </div>
+        <p class="auth-message centered" id="qr-status" role="status" aria-live="polite">等待开始 Feishu 授权。</p>
+        <div class="organization-actions">
+          <a class="auth-button primary" id="mobile-authorize" href="#" rel="noopener noreferrer" hidden>在 Feishu 中打开</a>
+          <button class="auth-button secondary" id="qr-refresh" type="button" hidden>刷新授权</button>
+        </div>
+        <p class="security-note">授权完成后，服务端会根据组织成员关系决定可进入的工作区。</p>
+      </section>
+    </main>
+    <script type="module" src="/media.login.js"></script>
+  </body>
+</html>

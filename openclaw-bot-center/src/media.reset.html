@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>重置密码 - MediaClaw</title>
+    <link rel="stylesheet" href="/media.auth.css" />
+  </head>
+  <body class="auth-page" data-auth-page="reset">
+    <main class="auth-shell compact-shell" aria-labelledby="page-title">
+      <header class="auth-header">
+        <a class="brand" href="/openclaw/media/" aria-label="MediaClaw 内容运营工作台">
+          <span class="brand-mark" aria-hidden="true">MC</span>
+          <span><strong class="brand-name">MediaClaw</strong><span class="brand-detail">内容运营工作台</span></span>
+        </a>
+        <p class="eyebrow">账号恢复</p>
+        <h1 id="page-title">设置新密码</h1>
+        <p class="lede">新密码提交成功后，所有旧会话都会失效。</p>
+      </header>
+      <section class="auth-panel standalone-panel" aria-labelledby="reset-heading">
+        <div class="panel-heading">
+          <span class="panel-label">个人账号</span>
+          <h2 id="reset-heading">重置个人账号密码</h2>
+          <p>找回链接只能使用一次，失效后请重新申请找回邮件。</p>
+        </div>
+        <form id="reset-form" class="auth-form" novalidate>
+          <label class="field" for="reset-password">
+            <span>新密码</span>
+            <input id="reset-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required />
+            <small>至少 8 个字符，可使用字母、数字、符号或短语；过于常见的密码不可用。</small>
+          </label>
+          <label class="field" for="reset-confirm-password">
+            <span>确认新密码</span>
+            <input id="reset-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required />
+          </label>
+          <div class="form-actions">
+            <button class="auth-button primary" id="reset-submit" type="submit">保存新密码</button>
+          </div>
+        </form>
+        <p class="auth-message" id="reset-message" role="alert" aria-live="polite"></p>
+        <div class="success-panel" id="reset-success" role="status" aria-live="polite" hidden>
+          <span class="success-mark" aria-hidden="true">✓</span>
+          <div>
+            <strong>密码已重置</strong>
+            <p>旧会话和未使用的找回链接已失效。请使用新密码登录。</p>
+          </div>
+          <a class="auth-button primary" id="reset-login-link" href="/openclaw/media/login">去登录</a>
+        </div>
+        <p class="auth-foot"><a class="text-link" id="reset-recover-link" href="/openclaw/media/recover">重新申请找回邮件</a></p>
+      </section>
+    </main>
+    <script type="module" src="/media.login.js"></script>
+  </body>
+</html>

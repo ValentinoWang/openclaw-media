@@ -1,0 +1,63 @@
+.icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--mg-border);
+  border-radius: 5px;
+  color: var(--mg-muted);
+  background: var(--mg-surface);
+  vertical-align: middle;
+}
+
+.icon svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.iconSm {
+  width: 20px;
+  height: 20px;
+}
+
+.iconMd {
+  width: 28px;
+  height: 28px;
+}
+
+.iconLg {
+  width: 36px;
+  height: 36px;
+}
+
+.identity {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  color: inherit;
+  font-weight: 650;
+  line-height: 1.25;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.identitySm {
+  gap: 5px;
+  font-size: 0.68rem;
+}
+
+.identityMd {
+  gap: 6px;
+  font-size: 0.76rem;
+}
+
+.identityLg {
+  gap: 8px;
+  font-size: 0.86rem;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

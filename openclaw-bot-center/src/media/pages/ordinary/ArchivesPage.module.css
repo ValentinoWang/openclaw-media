@@ -1,0 +1,839 @@
+.page {
+  display: flex;
+  height: calc(100dvh - var(--mg-shell-topbar, 86px) - 46px);
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panelState {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border: 1px solid var(--mg-border);
+  border-radius: 5px;
+  color: var(--mg-muted);
+  background: var(--mg-bg);
+  font-size: 0.63rem;
+  white-space: nowrap;
+}
+
+.filterBar {
+  display: grid;
+  grid-template-columns:
+    minmax(130px, 0.9fr) minmax(170px, 1.05fr) minmax(130px, 0.9fr)
+    minmax(280px, 1.45fr) auto;
+  gap: 9px;
+  align-items: end;
+  margin-bottom: 14px;
+  padding: 10px;
+  border: 1px solid var(--mg-border);
+  border-radius: 7px;
+  background: var(--mg-surface);
+}
+
+.filterField,
+.dateField {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.filterField > span,
+.dateField > span {
+  color: var(--mg-muted);
+  font-size: 0.64rem;
+}
+
+.filterField select,
+.dateInputs input {
+  width: 100%;
+  height: 38px;
+  min-width: 0;
+  border: 1px solid var(--mg-border-strong);
+  border-radius: 5px;
+  color: var(--mg-ink);
+  background: var(--mg-surface);
+  font-size: 0.7rem;
+}
+
+.filterField select {
+  padding: 0 29px 0 10px;
+}
+
+.filterField select:disabled,
+.dateInputs input:disabled {
+  color: var(--mg-muted);
+  background: var(--mg-bg);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.dateInputs {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+
+.dateInputs > span {
+  color: var(--mg-muted);
+  font-size: 0.64rem;
+}
+
+.dateInputs input {
+  padding: 0 7px;
+}
+
+.resetButton,
+.retryButton,
+.loginLink {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 5px;
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.resetButton {
+  padding: 0 12px;
+  border: 1px solid var(--mg-border-strong);
+  color: var(--mg-muted);
+  background: var(--mg-bg);
+  cursor: not-allowed;
+}
+
+.workspace {
+  display: grid;
+  flex: 1 1 auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1.68fr) minmax(330px, 0.74fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.selectedRow {
+  background: color-mix(in srgb, var(--mg-primary) 7%, var(--mg-surface));
+}
+.rowButton {
+  padding: 0;
+  border: 0;
+  color: var(--mg-primary-dark);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.artifactList {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+.artifactList li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px;
+  border: 1px solid var(--mg-border);
+  border-radius: 5px;
+}
+.artifactList li span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.artifactList strong,
+.artifactList small {
+  overflow-wrap: anywhere;
+}
+.artifactList strong {
+  color: var(--mg-ink);
+  font-size: 0.67rem;
+}
+.artifactList small {
+  color: var(--mg-muted);
+  font-size: 0.61rem;
+}
+
+.mainColumn {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.recordsPanel,
+.inspectorPanel,
+.receiptPanel,
+.dangerPanel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--mg-border);
+  border-radius: 8px;
+  background: var(--mg-surface);
+}
+
+.recordsPanel,
+.inspectorPanel,
+.receiptPanel,
+.dangerPanel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.recordsPanel {
+  height: 100%;
+  flex: 1 1 auto;
+}
+
+.inspectorPanel {
+  height: 100%;
+}
+
+.receiptPanel {
+  height: auto;
+}
+
+.panelHeader {
+  display: flex;
+  min-height: 48px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--mg-border);
+}
+
+.panelHeading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.panelHeading > div {
+  min-width: 0;
+}
+
+.panelIcon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--mg-primary-dark);
+  background: var(--mg-primary-soft);
+}
+
+.panelHeader h2,
+.dangerHeader h2 {
+  margin: 0;
+  color: var(--mg-ink);
+  font-size: 0.88rem;
+}
+
+.panelHeader p,
+.dangerHeader p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--mg-muted);
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+.tableViewport {
+  max-width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table th,
+.table td {
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--mg-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table thead th {
+  color: var(--mg-muted);
+  background: oklch(0.985 0.003 175);
+  font-size: 0.64rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.table thead th:nth-child(1) {
+  width: 19%;
+}
+.table thead th:nth-child(2) {
+  width: 14%;
+}
+.table thead th:nth-child(3) {
+  width: 17%;
+}
+.table thead th:nth-child(4) {
+  width: 16%;
+}
+.table thead th:nth-child(5) {
+  width: 14%;
+}
+.table thead th:nth-child(6) {
+  width: 10%;
+}
+.table thead th:nth-child(7) {
+  width: 10%;
+}
+
+.emptyCell {
+  height: 425px;
+  padding: 0 !important;
+  border-bottom: 0 !important;
+}
+
+.rail {
+  display: grid;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) max-content;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.inspectorBody,
+.dangerBody,
+.receiptBody {
+  min-width: 0;
+  min-height: 0;
+  padding: 6px 12px 7px;
+}
+
+.inspectorBody {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.archiveContent {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.localBoundary {
+  min-width: 0;
+}
+
+.dangerBody {
+  overflow-y: auto;
+}
+
+.projectionNote,
+.descriptorNote,
+.receiptNote,
+.dangerNote {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 7px;
+  overflow-wrap: anywhere;
+  color: var(--mg-muted);
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.projectionNote svg,
+.descriptorNote svg,
+.receiptNote svg {
+  flex: 0 0 auto;
+  color: var(--mg-primary-dark);
+}
+
+.artifactList,
+.localMediaList {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.artifactRow,
+.localMediaRow {
+  display: grid;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 46px;
+  grid-template-columns: 31px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--mg-border);
+  overflow: visible;
+}
+
+.boundaryHeading {
+  margin: 9px 0 0;
+  color: var(--mg-ink);
+  font-size: 0.69rem;
+}
+
+.artifactIcon,
+.localMediaIcon,
+.impactIcon {
+  display: grid;
+  place-items: center;
+  color: var(--mg-primary-dark);
+  background: var(--mg-primary-soft);
+}
+
+.artifactIcon,
+.localMediaIcon {
+  width: 29px;
+  height: 29px;
+  border-radius: 6px;
+}
+
+.artifactCopy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.artifactCopy strong,
+.artifactCopy small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.artifactCopy strong {
+  color: var(--mg-ink);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.artifactCopy small {
+  color: var(--mg-muted);
+  font-size: 0.61rem;
+  line-height: 1.35;
+}
+
+.mutedValue {
+  color: var(--mg-muted);
+  font-size: 0.68rem;
+}
+
+.localOnly {
+  padding: 3px 6px;
+  border: 1px solid oklch(0.82 0.08 166);
+  border-radius: 4px;
+  color: var(--mg-primary-dark);
+  background: var(--mg-primary-soft);
+  font-size: 0.59rem;
+  white-space: nowrap;
+}
+
+.descriptorNote {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--mg-border);
+}
+
+.dangerPanel {
+  min-height: 100px;
+  max-height: 300px;
+  border-color: oklch(0.86 0.06 25);
+  background: oklch(0.995 0.002 25);
+}
+
+.dangerHeader {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid oklch(0.9 0.05 25);
+}
+
+.dangerHeader > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.dangerHeader h2 {
+  color: var(--mg-danger);
+}
+
+.dangerIcon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--mg-danger);
+  background: var(--mg-danger-soft);
+}
+
+.dangerIntro {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--mg-muted);
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.impactPlan {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.impactItem {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  padding: 6px 5px;
+  border: 1px solid oklch(0.91 0.04 25);
+  border-radius: 5px;
+  background: var(--mg-surface);
+}
+
+.impactIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  color: var(--mg-danger);
+  background: var(--mg-danger-soft);
+}
+
+.impactItem > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.impactItem strong,
+.impactItem small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.impactItem strong {
+  color: var(--mg-ink);
+  font-size: 0.61rem;
+}
+
+.impactItem small {
+  color: var(--mg-muted);
+  font-size: 0.57rem;
+}
+
+.dangerButton {
+  display: inline-flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid oklch(0.68 0.14 25);
+  border-radius: 5px;
+  color: var(--mg-danger);
+  background: transparent;
+  font-size: 0.69rem;
+  font-weight: 650;
+  cursor: not-allowed;
+}
+
+.dangerButton:disabled {
+  opacity: 0.66;
+}
+
+.dangerNote {
+  margin: 6px 0 0;
+  color: oklch(0.48 0.08 25);
+}
+
+.dangerNote svg {
+  flex: 0 0 auto;
+  color: var(--mg-danger);
+}
+
+.receiptFacts {
+  margin: 0;
+}
+
+.receiptFacts > div {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.42fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--mg-border);
+}
+
+.receiptFacts > div:last-child {
+  border-bottom: 0;
+}
+
+.receiptFacts dt {
+  color: var(--mg-muted);
+  font-size: 0.63rem;
+}
+
+.receiptFacts dd {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--mg-ink);
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+.pendingDot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--mg-muted);
+}
+
+.receiptNote {
+  margin: 5px 0 0;
+  padding-top: 5px;
+  border-top: 1px solid var(--mg-border);
+}
+
+.linkIcon {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  place-items: center;
+  border-radius: 4px;
+  color: var(--mg-primary-dark);
+  background: var(--mg-primary-soft);
+}
+
+.stateSurface {
+  display: grid;
+  min-height: 330px;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  padding: 30px 24px;
+  color: var(--mg-muted);
+  text-align: center;
+}
+
+.stateSurface.compactState {
+  min-height: 172px;
+  padding: 23px 17px;
+}
+
+/* Empty archive states should keep the panel rhythm instead of filling the viewport. */
+.recordsPanel > .stateSurface.compactState {
+  min-height: 190px;
+}
+
+.stateIcon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--mg-muted);
+  background: var(--mg-bg);
+}
+
+.stateSurface strong {
+  max-width: 34ch;
+  overflow-wrap: anywhere;
+  color: var(--mg-ink);
+  font-size: 0.75rem;
+}
+
+.stateSurface p {
+  max-width: 48ch;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.65rem;
+  line-height: 1.55;
+}
+
+.stateSurface.compactState strong {
+  font-size: 0.7rem;
+}
+
+.stateSurface.compactState p {
+  max-width: 42ch;
+  font-size: 0.62rem;
+}
+
+.loginLink,
+.retryButton {
+  min-height: 34px;
+  margin-top: 3px;
+  padding: 0 10px;
+  border: 1px solid var(--mg-border-strong);
+  color: var(--mg-primary-dark);
+  background: var(--mg-surface);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.loginLink:hover,
+.retryButton:hover {
+  border-color: var(--mg-primary);
+  background: var(--mg-primary-soft);
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1120px) {
+  .page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .workspace {
+    flex: none;
+    height: auto;
+    overflow: visible;
+  }
+
+  .rail {
+    height: auto;
+    grid-template-rows: auto;
+    overflow: visible;
+  }
+
+  .inspectorPanel {
+    height: auto;
+  }
+
+  .dangerPanel {
+    max-height: none;
+  }
+
+  .inspectorBody,
+  .dangerBody,
+  .receiptBody {
+    overflow-y: visible;
+  }
+
+  .inspectorBody {
+    grid-template-rows: auto;
+  }
+
+  .archiveContent {
+    overflow-y: visible;
+  }
+
+  .filterBar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dateField {
+    grid-column: span 2;
+  }
+
+  .resetButton {
+    min-width: 86px;
+  }
+}
+
+@media (max-width: 900px) {
+  .page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .workspace {
+    height: auto;
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .rail {
+    height: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    overflow: visible;
+  }
+
+  .inspectorBody,
+  .dangerBody,
+  .receiptBody {
+    overflow-y: visible;
+  }
+
+  .dangerPanel,
+  .receiptPanel {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 620px) {
+  .filterBar {
+    grid-template-columns: 1fr;
+  }
+
+  .dateField {
+    grid-column: auto;
+  }
+
+  .resetButton {
+    width: 100%;
+  }
+
+  .rail {
+    grid-template-columns: 1fr;
+  }
+
+  .dangerPanel,
+  .receiptPanel {
+    grid-column: auto;
+  }
+
+  .impactPlan {
+    grid-template-columns: 1fr;
+  }
+}

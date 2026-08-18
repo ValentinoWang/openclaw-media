@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.media-u12b.tsbuildinfo"
+  },
+  "include": [
+    "src/media/**/*.ts",
+    "src/media/**/*.tsx",
+    "src/schemas/**/*.ts"
+  ]
+}
