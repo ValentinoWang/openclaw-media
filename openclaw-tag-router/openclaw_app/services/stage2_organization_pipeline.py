@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 import threading
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ from openclaw_app.services.stage2_external_document import (
 
 SCHEMA_VERSION = "stage2.organization_pipeline.v1"
 ORGANIZATION_MODE = "organization_lark/lark"
+_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
 class OrganizationPipelineError(RuntimeError):
@@ -64,6 +66,13 @@ def _digest(value: Any) -> str:
     return "sha256:" + hashlib.sha256(
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
+
+
+def _content_digest(value: Any) -> str:
+    normalized = _text(value, "content_digest", 80)
+    if _DIGEST_RE.fullmatch(normalized) is None:
+        raise OrganizationPipelineError("invalid_request", "content_digest must be a sha256 digest")
+    return normalized
 
 
 def _assert_org_context(context: Any, binding: BindingIdentity) -> str:
@@ -287,10 +296,20 @@ class OrganizationContentPipeline:
             artifact = self._artifacts.get(_text(artifact_ref, "artifact_ref"))
             if artifact is None:
                 raise OrganizationPipelineError("artifact_not_found", "organization artifact does not exist")
-            if remote_revision == artifact["remoteRevision"]:
+            if (
+                artifact["tenantId"] != tenant_id
+                or artifact["bindingId"] != binding.binding_id
+                or artifact["bindingGeneration"] != binding.binding_generation
+            ):
+                raise OrganizationPipelineError("binding_mismatch", "readback Binding does not match artifact")
+            if remote_ref != artifact["remoteRef"]:
+                raise OrganizationPipelineError("remote_ref_mismatch", "readback document does not match artifact")
+            normalized_revision = _text(remote_revision, "remote_revision", 160)
+            normalized_digest = _content_digest(content_digest)
+            if normalized_revision == artifact["remoteRevision"]:
                 raise OrganizationPipelineError("remote_revision_unchanged", "remote edit must produce a new revision")
-            artifact["remoteRevision"] = _text(remote_revision, "remote_revision", 160)
-            artifact["contentDigest"] = _text(content_digest, "content_digest", 80)
+            artifact["remoteRevision"] = normalized_revision
+            artifact["contentDigest"] = normalized_digest
         return self.readback_mirror(
             artifact_ref,
             tenant_id=tenant_id,

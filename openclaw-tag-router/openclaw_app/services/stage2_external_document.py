@@ -172,6 +172,15 @@ class InMemoryWriteReceiptStore:
             if existing is None:
                 self._records[key] = _StoredReceipt(fingerprint, copy.deepcopy(result))
 
+    def replace(self, key: str, fingerprint: str, result: ExternalDocumentWriteResult) -> None:
+        with self._lock:
+            existing = self._records.get(key)
+            if existing is None:
+                raise ExternalDocumentError("receipt_missing", "write receipt does not exist")
+            if existing.fingerprint != fingerprint:
+                raise IdempotencyConflict()
+            self._records[key] = _StoredReceipt(fingerprint, copy.deepcopy(result))
+
 
 def _fingerprint(request: OrganizationWriteRequest) -> str:
     payload = {
@@ -284,6 +293,57 @@ class ExternalDocumentWriter:
                 )
             self._store.put(request.idempotency_key, fingerprint, result)
             return result
+
+    def resume_readback(
+        self,
+        request: OrganizationWriteRequest,
+        adapter: ExternalDocumentAdapter,
+    ) -> ExternalDocumentWriteResult:
+        """Resume only the readback step after a partial external success."""
+
+        self._validate_request(request)
+        fingerprint = _fingerprint(request)
+        with self._lock:
+            stored = self._store.get(request.idempotency_key)
+            if stored is None:
+                raise ExternalDocumentError("receipt_missing", "no external write receipt exists")
+            if stored.fingerprint != fingerprint:
+                raise IdempotencyConflict()
+            previous = stored.result
+            if previous.status == "written":
+                return previous
+            if not previous.remote_ref or not previous.remote_revision:
+                return previous
+
+            binding = request.binding
+            write = ExternalWriteOutcome(
+                status="succeeded",
+                remote_ref=previous.remote_ref,
+                remote_revision=previous.remote_revision,
+                tenant_id=binding.tenant_id,
+                binding_id=binding.binding_id,
+                binding_generation=binding.binding_generation,
+                content_digest=request.content_digest,
+            )
+            try:
+                readback = _readback_outcome(adapter.readback(request, write))
+            except Exception:
+                return previous
+            if not self._readback_matches(request, write, readback):
+                return previous
+
+            resumed = ExternalDocumentWriteResult(
+                status="written",
+                publishable=False,
+                ready_for_registration=True,
+                idempotency_key=request.idempotency_key,
+                content_digest=request.content_digest,
+                remote_ref=previous.remote_ref,
+                remote_revision=previous.remote_revision,
+                error_code=None,
+            )
+            self._store.replace(request.idempotency_key, fingerprint, resumed)
+            return resumed
 
     @staticmethod
     def _validate_request(request: OrganizationWriteRequest) -> None:
