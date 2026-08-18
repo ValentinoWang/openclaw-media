@@ -26,14 +26,26 @@ class SyncCandidate:
     line_hash: str
 
 
+def weekly_archive_path(root: Path, target: date) -> Path:
+    start = target - timedelta(days=target.weekday())
+    end = start + timedelta(days=6)
+    return root / f"{start:%Y%m%d}-{end:%Y%m%d}.md"
+
+
 def recent_weekly_files(root: Path, today: date, days: int) -> list[Path]:
     files: dict[Path, None] = {}
     for offset in range(max(1, days)):
         target = today - timedelta(days=offset)
-        start = target - timedelta(days=target.weekday())
-        end = start + timedelta(days=6)
-        files[root / f"{start:%Y%m%d}-{end:%Y%m%d}.md"] = None
+        files[weekly_archive_path(root, target)] = None
     return [path for path in files if path.exists()]
+
+
+def recent_weekly_files_for_roots(roots: list[Path], today: date, days: int) -> list[Path]:
+    files: dict[Path, None] = {}
+    for root in roots:
+        for path in recent_weekly_files(root, today, days):
+            files[path] = None
+    return list(files)
 
 
 def find_checked_feishu_items(paths: list[Path]) -> list[SyncCandidate]:
@@ -118,8 +130,9 @@ def reminder_complete_runner(command: str, script: str, env: dict[str, str]) -> 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Sync checked Obsidian Daily todo checkboxes to Feishu completion status.")
-    parser.add_argument("--archive-root", default="/home/ubuntu/obsidian-日记/Archieve")
+    parser = argparse.ArgumentParser(description="Sync checked Obsidian weekly todo checkboxes to Feishu completion status.")
+    parser.add_argument("--weekly-root", default="/home/ubuntu/obsidian-日记/Archieve")
+    parser.add_argument("--development-weekly-root", default="/home/ubuntu/obsidian-日记/Archieve")
     parser.add_argument("--state", default="/home/ubuntu/selfmedia-tools/data/daily_todo_sync_state.json")
     parser.add_argument("--days", type=int, default=14)
     parser.add_argument("--today", default="")
@@ -137,7 +150,7 @@ def main() -> int:
     args = parser.parse_args()
 
     today = date.fromisoformat(args.today) if args.today else date.today()
-    files = recent_weekly_files(Path(args.archive_root), today, args.days)
+    files = recent_weekly_files_for_roots([Path(args.weekly_root), Path(args.development_weekly_root)], today, args.days)
     candidates = find_checked_feishu_items(files)
     state_path = Path(args.state)
     state = load_state(state_path)
