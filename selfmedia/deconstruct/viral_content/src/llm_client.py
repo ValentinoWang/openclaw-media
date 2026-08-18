@@ -1,19 +1,32 @@
 from __future__ import annotations
 
 import json
-import os
-import subprocess
 from typing import Any
 
 from pydantic import BaseModel
 
-from common.bot_llm_config import bot_runtime, openclaw_subprocess_env
-from common.llm_client import generate_json_once as common_generate_json_once
-from common.llm_client import parse_json_object_text
+from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
 from common.llm_settings import LLMProviderSettings
+from common.llm_validation import LLMValidationContract, register_llm_validation_contract, validate_llm_payload
 
 from .config import ConfigError, ViralDeconstructConfig
 from .schemas import validate_schema
+
+
+def _validate_deconstruction_payload(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    schema = context.get("schema")
+    post_validate = context.get("post_validate")
+    validated = validate_schema(payload, schema) if schema else payload
+    return post_validate(validated) if post_validate else validated
+
+
+DECONSTRUCTION_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.deconstruction.output.v1",
+        profile="strict_structured",
+        validator=_validate_deconstruction_payload,
+    )
+)
 
 
 def ensure_llm_provider_available(config: ViralDeconstructConfig) -> None:
@@ -32,15 +45,17 @@ def generate_json(
 ) -> dict[str, Any]:
     ensure_llm_provider_available(config)
 
+    validation_context = {"schema": schema, "post_validate": post_validate}
     last_error = ""
     request_parts = list(parts)
     for attempt in range(max_retries + 1):
         try:
             payload = _generate_json_once(request_parts, config)
-            payload = validate_schema(payload, schema) if schema else payload
-            if post_validate:
-                payload = post_validate(payload)
-            return payload
+            return validate_llm_payload(
+                payload,
+                DECONSTRUCTION_VALIDATION_CONTRACT,
+                context=validation_context,
+            ).payload
         except (json.JSONDecodeError, KeyError, ValueError, ConfigError) as exc:
             last_error = str(exc)
             if attempt >= max_retries:
@@ -57,68 +72,20 @@ def generate_json(
     raise RuntimeError(f"LLM 输出 JSON 校验失败：{last_error}")
 
 
+def common_generate_json_once(parts: list[dict[str, Any]], settings: LLMProviderSettings) -> dict[str, Any]:
+    return common_generate_json_from_parts(
+        parts,
+        settings,
+        max_retries=0,
+        validation_contract=DECONSTRUCTION_VALIDATION_CONTRACT,
+    )
+
+
 def _generate_json_once(parts: list[dict[str, Any]], config: ViralDeconstructConfig) -> dict[str, Any]:
-    if _use_openclaw_agent(parts, config):
-        return _generate_json_openclaw_agent(parts, config)
     try:
         return common_generate_json_once(parts, _provider_settings(config))
     except RuntimeError as exc:
         raise ConfigError(str(exc)) from exc
-
-
-def _use_openclaw_agent(parts: list[dict[str, Any]], config: ViralDeconstructConfig) -> bool:
-    has_non_text = any("image_data" in part or "inline_data" in part or "audio_data" in part for part in parts)
-    if config.llm_api_type == "openclaw_agent":
-        if has_non_text:
-            raise ConfigError("OpenClaw agent JSON adapter 只支持文本 parts；含图片/音频的拆解主 LLM 必须使用 direct Responses")
-        return True
-    return (
-        not has_non_text
-        and os.getenv("OPENCLAW_DECONSTRUCT_TEXT_LLM_VIA_AGENT", "").strip().lower() in {"1", "true", "yes", "on"}
-    )
-
-
-def _generate_json_openclaw_agent(parts: list[dict[str, Any]], config: ViralDeconstructConfig) -> dict[str, Any]:
-    runtime = bot_runtime("media")
-    bin_path = config.bin or runtime.bin
-    agent = config.agent or runtime.agent
-    cwd = config.cwd or runtime.cwd
-    codex_home = config.codex_home or runtime.codex_home
-    thinking = config.thinking or os.getenv("OPENCLAW_DECONSTRUCT_AGENT_THINKING", "").strip() or "low"
-    timeout = int(max(1, float(config.timeout or runtime.timeout or 600)))
-    message = "\n\n".join(str(part.get("text") or "") for part in parts if "text" in part)
-    command = [
-        bin_path,
-        "agent",
-        "--agent",
-        agent,
-        "--message",
-        message,
-        "--thinking",
-        thinking,
-        "--json",
-        "--timeout",
-        str(timeout),
-    ]
-    proc = subprocess.run(
-        command,
-        cwd=cwd or None,
-        env=openclaw_subprocess_env(codex_home),
-        text=True,
-        capture_output=True,
-        timeout=timeout + 30,
-        check=False,
-    )
-    if proc.returncode != 0:
-        raise ConfigError((proc.stderr or proc.stdout or f"openclaw agent failed: exit={proc.returncode}")[-2000:])
-    try:
-        payload = json.loads(proc.stdout)
-        text = str((((payload.get("result") or {}).get("payloads") or [{}])[0] or {}).get("text") or "")
-    except (json.JSONDecodeError, AttributeError, IndexError) as exc:
-        raise ConfigError(f"OpenClaw agent JSON 输出格式异常：{str(exc)}") from exc
-    if not text.strip():
-        raise ConfigError("OpenClaw agent 没有返回 JSON 文本")
-    return parse_json_object_text(text)
 
 
 def _provider_settings(config: ViralDeconstructConfig) -> LLMProviderSettings:

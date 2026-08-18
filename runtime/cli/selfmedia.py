@@ -21,7 +21,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 MEDIA_CREATION_RUNTIME_PYTHON = Path(os.getenv("SELFMEDIA_RUNTIME_PYTHON", sys.executable))
-CREATION_RUNTIME_COMMANDS = {"material-creation", "consultation", "creation-inspiration", "shooting-execution"}
+CREATION_RUNTIME_COMMANDS = {"consultation", "shooting-execution", "shooting-backwash"}
 CREATION_RUNTIME_RUN_PARTS = {"creation", "创作", "deconstruct", "拆解"}
 
 from common.social_runtime import (  # noqa: E402
@@ -298,6 +298,10 @@ def run_viral_deconstruct(args: argparse.Namespace) -> dict[str, Any]:
         command.append("--no-write")
     elif args.no_write:
         command.append("--no-write")
+    if not args.no_write and not args.partial:
+        if not args.tenant_id:
+            raise SystemExit("deconstruct write requires --tenant-id")
+        command.extend(["--tenant-id", args.tenant_id])
     return run_command(command, ROOT, timeout=args.timeout)
 
 
@@ -317,10 +321,12 @@ def run_creation(args: argparse.Namespace) -> dict[str, Any]:
     if args.smoke:
         return smoke_creation_command(
             text,
+            tenant_id=args.tenant_id,
             conversation_context=parse_json_arg(args.conversation_context_json, env_name="OPENCLAW_CONVERSATION_CONTEXT_JSON"),
         )
     return handle_creation_command(
         text,
+        tenant_id=args.tenant_id,
         dry_run=args.dry_run,
         no_write=args.no_write,
         viral_url="",
@@ -349,6 +355,7 @@ def run_creation_consultation(args: argparse.Namespace) -> dict[str, Any]:
         raise SystemExit("consultation requires --text")
     return handle_creation_consultation_command(
         text,
+        tenant_id=args.tenant_id,
         viral_url="",
         activity_url=args.activity_url,
         business_url=args.business_url,
@@ -356,73 +363,6 @@ def run_creation_consultation(args: argparse.Namespace) -> dict[str, Any]:
         limit=args.limit,
         conversation_context=parse_json_arg(args.conversation_context_json, env_name="OPENCLAW_CONVERSATION_CONTEXT_JSON"),
     )
-
-
-def run_creation_inspiration(args: argparse.Namespace) -> dict[str, Any]:
-    text = args.text or ""
-    if args.stdin:
-        stdin_text = sys.stdin.read().strip()
-        if stdin_text:
-            text = stdin_text
-    reject_social_theory_tags(text)
-    if not text and not args.attachments:
-        raise SystemExit("creation-inspiration requires --text or --attachment")
-    python = canonical_creation_python()
-    command = [
-        str(python),
-        "-m",
-        "selfmedia.creation.inspiration",
-        "--text",
-        text,
-    ]
-    for path in args.attachments or []:
-        command.extend(["--attachment", path])
-    if args.feishu_url:
-        command.extend(["--feishu-url", args.feishu_url])
-    if args.no_write:
-        command.append("--no-write")
-    if conversation_context_json := conversation_context_json_arg(args.conversation_context_json):
-        command.extend(["--conversation-context-json", conversation_context_json])
-    env = os.environ.copy()
-    env["PYTHONPATH"] = f"{ROOT}:{env.get('PYTHONPATH', '')}".rstrip(":")
-    completed = run_command_with_watchdog(command, ROOT, timeout=10800, env=env)
-    if completed.returncode != 0:
-        return {
-            "ok": False,
-            "returncode": completed.returncode,
-            "command": command,
-            "stdout": completed.stdout.strip(),
-            "stderr": completed.stderr.strip(),
-            "reply": (completed.stderr.strip() or completed.stdout.strip() or "【创作-灵感】执行失败")[-3000:],
-        }
-    try:
-        return json.loads(completed.stdout.strip() or "{}")
-    except json.JSONDecodeError:
-        return {"ok": False, "stdout": completed.stdout.strip(), "stderr": completed.stderr.strip(), "reply": "【创作-灵感】返回了非 JSON 输出"}
-
-
-def run_material_creation(args: argparse.Namespace) -> dict[str, Any]:
-    from selfmedia.creation.material import handle_material_creation_command, smoke_material_creation_command
-
-    conversation_context_json = conversation_context_json_arg(args.conversation_context_json)
-    conversation_context = json.loads(conversation_context_json) if conversation_context_json else None
-    try:
-        if args.smoke:
-            return smoke_material_creation_command(
-                args.text,
-                attachment_paths=args.attachments or [],
-                conversation_context=conversation_context,
-            )
-        return handle_material_creation_command(
-            args.text,
-            attachment_paths=args.attachments or [],
-            dry_run=args.dry_run,
-            no_write=args.no_write,
-            creation_record_url=args.creation_record_url,
-            conversation_context=conversation_context,
-        )
-    except Exception as exc:
-        return {"ok": False, "reply": f"【素材创作】执行失败：{exc}"}
 
 
 def run_shooting_execution(args: argparse.Namespace) -> dict[str, Any]:
@@ -438,9 +378,27 @@ def run_shooting_execution(args: argparse.Namespace) -> dict[str, Any]:
         raise SystemExit("shooting-execution requires --text")
     return handle_shooting_execution_command(
         text,
+        tenant_id=args.tenant_id,
         dry_run=args.dry_run,
         no_write=args.no_write,
         conversation_context=parse_json_arg(args.conversation_context_json, env_name="OPENCLAW_CONVERSATION_CONTEXT_JSON"),
+    )
+
+
+def run_shooting_backwash(args: argparse.Namespace) -> dict[str, Any]:
+    from selfmedia.creation.backwash import handle_shooting_execution_backwash
+
+    requirements = args.requirements or ""
+    if args.stdin:
+        stdin_text = sys.stdin.read().strip()
+        if stdin_text:
+            requirements = stdin_text
+    if not args.doc_url or not requirements.strip():
+        raise SystemExit("shooting-backwash requires --doc-url and --requirements")
+    return handle_shooting_execution_backwash(
+        args.doc_url,
+        requirements,
+        tenant_id=args.tenant_id,
     )
 
 
@@ -455,7 +413,11 @@ def run_media_review(args: argparse.Namespace) -> dict[str, Any]:
     reject_social_theory_tags(text)
     if not text:
         raise SystemExit("review requires --text or --stdin")
-    result = record_review_memory(text, source=args.source or "selfmedia-cli")
+    result = record_review_memory(
+        text,
+        tenant_id=args.tenant_id,
+        source=args.source or "selfmedia-cli",
+    )
     result["ok"] = True
     return result
 
@@ -473,6 +435,7 @@ def run_data_review(args: argparse.Namespace) -> dict[str, Any]:
         raise SystemExit("data-review requires --text or --stdin")
     return handle_data_review_command(
         text,
+        tenant_id=args.tenant_id,
         attachment_paths=args.attachments or [],
         no_write=args.no_write,
         table_url=args.feishu_url,
@@ -487,6 +450,7 @@ def run_media_context(args: argparse.Namespace) -> dict[str, Any]:
     from selfmedia.context import build_media_context, format_media_context_reply
 
     context = build_media_context(
+        tenant_id=args.tenant_id,
         platform=args.platform,
         account=args.account,
         track=args.track,
@@ -790,6 +754,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--ensure-schema", action="store_true", help="creation only: create missing v1 source-table fields before reading.")
     run.add_argument("--conversation-context-json", default="", help="creation only: recent Feishu/OpenClaw conversation context JSON.")
     run.add_argument("--timeout", type=int, default=10800)
+    run.add_argument("--tenant-id", default="", help="Required Sub2API tenant id for private Media reads/writes.")
 
     poll = sub.add_parser("daily-poll", help="Read Feishu account monitor table, refresh recent post stats, write daily report.")
     poll.add_argument("--monitor-url", default="")
@@ -799,21 +764,19 @@ def build_parser() -> argparse.ArgumentParser:
     poll.add_argument("--require-feishu", action="store_true")
     poll.add_argument("--dry-run", action="store_true")
 
-    material = sub.add_parser("material-creation", help="Create positioning analysis and draft from uploaded video/image attachments.")
-    material.add_argument("--text", required=True)
-    material.add_argument("--attachment", dest="attachments", action="append", default=[])
-    material.add_argument("--dry-run", action="store_true")
-    material.add_argument("--no-write", action="store_true")
-    material.add_argument("--smoke", action="store_true", help="validate request/evidence/context without LLM generation or Feishu writes.")
-    material.add_argument("--creation-record-url", default="")
-    material.add_argument("--conversation-context-json", default="")
-
     shooting = sub.add_parser("shooting-execution", help="Create an executable shooting plan from a concrete creation target.")
     shooting.add_argument("--text", default="")
     shooting.add_argument("--stdin", action="store_true")
     shooting.add_argument("--dry-run", action="store_true")
     shooting.add_argument("--no-write", action="store_true")
     shooting.add_argument("--conversation-context-json", default="")
+    shooting.add_argument("--tenant-id", required=True)
+
+    backwash = sub.add_parser("shooting-backwash", help="Rewrite an existing shooting plan through its CreationRun and canonical renderer.")
+    backwash.add_argument("--doc-url", required=True)
+    backwash.add_argument("--requirements", default="")
+    backwash.add_argument("--stdin", action="store_true")
+    backwash.add_argument("--tenant-id", required=True)
 
     consultation = sub.add_parser("consultation", help="Answer creation strategy questions from Feishu tables and media memory.")
     consultation.add_argument("--text", default="")
@@ -824,19 +787,13 @@ def build_parser() -> argparse.ArgumentParser:
     consultation.add_argument("--inspiration-url", default="")
     consultation.add_argument("--limit", type=int, default=300)
     consultation.add_argument("--conversation-context-json", default="")
-
-    creation_inspiration = sub.add_parser("creation-inspiration", help="Analyze creative inspiration from text/images and write the inspiration table.")
-    creation_inspiration.add_argument("--text", default="")
-    creation_inspiration.add_argument("--stdin", action="store_true")
-    creation_inspiration.add_argument("--attachment", dest="attachments", action="append", default=[])
-    creation_inspiration.add_argument("--feishu-url", default="")
-    creation_inspiration.add_argument("--conversation-context-json", default="")
-    creation_inspiration.add_argument("--no-write", action="store_true")
+    consultation.add_argument("--tenant-id", required=True)
 
     review = sub.add_parser("review", help="Record a media post review into local account memory.")
     review.add_argument("--text", default="")
     review.add_argument("--stdin", action="store_true")
     review.add_argument("--source", default="")
+    review.add_argument("--tenant-id", required=True)
 
     data_review = sub.add_parser("data-review", help="Analyze uploaded platform data screenshots and write Feishu data review outputs.")
     data_review.add_argument("--text", default="")
@@ -847,6 +804,7 @@ def build_parser() -> argparse.ArgumentParser:
     data_review.add_argument("--guide-url", default="", help="Review guide/template document URL override.")
     data_review.add_argument("--conversation-context-json", default="")
     data_review.add_argument("--no-write", action="store_true")
+    data_review.add_argument("--tenant-id", required=True)
 
     context = sub.add_parser("context", help="Load media account context that creation workflows will inject.")
     context.add_argument("--platform", default="")
@@ -855,6 +813,7 @@ def build_parser() -> argparse.ArgumentParser:
     context.add_argument("--topic", default="")
     context.add_argument("--keywords", default="")
     context.add_argument("--limit", type=int, default=5)
+    context.add_argument("--tenant-id", required=True)
 
     cron = sub.add_parser("install-cron", help="Register the daily Feishu account poll through OpenClaw cron.")
     cron.add_argument("--name", default="selfmedia-account-daily-poll")
@@ -876,15 +835,13 @@ def main() -> None:
             {
                 "parts": {
                     "ingest": "字段刷新/素材入口",
-                    "deconstruct": "拆解/拆解-再创，写飞书文档和多维表格",
+                    "deconstruct": "拆解素材，写飞书文档和多维表格；脚本/分镜交接创作或拍摄链路",
                     "cookies": "Cookie 状态检查",
                     "creation": "创作 Agent",
                 },
                 "daily_poll": "Feishu 账号监控表 -> 每日作品互动刷新 -> 账号日报",
-                "material_creation": "上传视频/图文附件 -> 定位分析 -> 创作初稿 -> 创作文档/作品档案/账号监控",
                 "shooting_execution": "【创作-拍摄执行】明确主题/场地/人物/参考 -> 现场拍摄执行单 -> 创作文档/CreationRun",
                 "consultation": "基于爆款/活动/商务表和账号记忆回答创作咨询",
-                "creation_inspiration": "【创作-灵感】文本/照片/视频 -> 灵感落盘 -> 拆解-再创方向 -> 评分 -> 写指定灵感表",
                 "review": "发布后复盘 -> 本地账号画像/复盘记忆 -> 下次创作自动加载",
                 "data_review": "【数据复盘】上传后台截图 -> 视觉识别数据 -> 写数据复盘表/复盘文档/账号记忆",
                 "context": "查看某个平台/账号/主题会被注入的长期上下文",
@@ -897,17 +854,14 @@ def main() -> None:
     if args.command == "daily-poll":
         print_json(daily_poll(args))
         return
-    if args.command == "material-creation":
-        print_json(run_material_creation(args))
-        return
     if args.command == "shooting-execution":
         print_json(run_shooting_execution(args))
         return
+    if args.command == "shooting-backwash":
+        print_json(run_shooting_backwash(args))
+        return
     if args.command == "consultation":
         print_json(run_creation_consultation(args))
-        return
-    if args.command == "creation-inspiration":
-        print_json(run_creation_inspiration(args))
         return
     if args.command == "review":
         print_json(run_media_review(args))

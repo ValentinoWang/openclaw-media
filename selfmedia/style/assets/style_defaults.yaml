@@ -1,5 +1,3 @@
-default_strategy: "只做事实保真的表达整理；账号画像不足时不模拟人格。"
-version_names:
-  - 稳妥版
-  - 网感版
-  - 强冲突版
+default_strategy: "由 Media 写作模型做事实保真的自然中文改写；账号画像不足时不模拟人格。"
+default_variants: 1
+default_version_name: "自然表达版"

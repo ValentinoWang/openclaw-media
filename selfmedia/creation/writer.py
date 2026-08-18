@@ -4,11 +4,19 @@ import json
 import os
 import re
 import time
+from urllib.parse import urlparse
 from pathlib import Path
 from typing import Any
 
 import requests
 
+from common.feishu_docx_table_limits import (
+    chunk_docx_table_rows,
+    ensure_docx_tables_write_budget,
+    ensure_docx_table_write_budget,
+    sleep_seconds_for_docx_write,
+    validate_docx_table_create_shape,
+)
 from common.social_runtime import (
     FEISHU_BASE,
     feishu_bitable_refs,
@@ -25,8 +33,7 @@ from .matcher import RankedRecord
 from .request_parser import CreationRequest
 
 
-FEISHU_DOC_WRITE_SLEEP_SEC = 0.36
-FEISHU_TABLE_MAX_CELLS_PER_CREATE = 18
+FEISHU_DOC_WRITE_SLEEP_SEC = sleep_seconds_for_docx_write()
 NATIVE_TABLE_KIND = "_openclaw_feishu_table"
 CREATION_TASK_POOL_PARENT_NODE_TOKEN = "Tm69wEqFpi76d9k53KEcqK4Rnkh"
 
@@ -60,7 +67,6 @@ LEGACY_CREATION_RECORD_FIELD_SPECS = {
     "参考灵感ID": 1,
     "参考灵感文档链接": 15,
     "参考拆解文档链接": 15,
-    "参考拆解-再创文档链接": 15,
     "创作文档链接": 15,
     "活动匹配分": 2,
     "爆款匹配分": 2,
@@ -103,8 +109,6 @@ def create_creation_doc(
         _append_blocks(document_id, blocks, token)
     else:
         _replace_blocks(document_id, blocks, token)
-    if node_token:
-        return f"https://tcnwueberajc.feishu.cn/wiki/{node_token}"
     return f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
 
 
@@ -124,9 +128,44 @@ def create_shooting_execution_doc(
         _append_blocks(document_id, blocks, token)
     else:
         _replace_blocks(document_id, blocks, token)
-    if node_token:
-        return f"https://tcnwueberajc.feishu.cn/wiki/{node_token}"
     return f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
+
+
+def rewrite_shooting_execution_doc(
+    doc_url: str,
+    request: Any,
+    draft: dict[str, Any],
+    validation: dict[str, Any],
+    *,
+    media_context: dict[str, Any] | None = None,
+) -> str:
+    """Rewrite an existing shooting document through the canonical renderer."""
+    load_default_env_files()
+    token = feishu_tenant_access_token()
+    parsed = urlparse(str(doc_url or "").strip())
+    parts = [part for part in parsed.path.split("/") if part]
+    if len(parts) < 2:
+        raise ValueError("拍摄执行回洗缺少有效飞书文档链接")
+    kind, target = parts[-2], parts[-1]
+    if kind == "wiki":
+        node = _get_wiki_node(target, token)
+        document_id = str(node.get("obj_token") or "").strip()
+        title = str(node.get("title") or "").strip()
+        if str(node.get("obj_type") or "").lower() not in {"docx", "doc"} or not document_id:
+            raise ValueError("拍摄执行回洗目标不是飞书 Docx 文档")
+        canonical_url = f"https://tcnwueberajc.feishu.cn/wiki/{target}"
+    elif kind in {"docx", "doc", "docs"}:
+        document_id = target
+        payload = _request_feishu_json("GET", f"/docx/v1/documents/{document_id}", token, timeout=20)
+        title = str((payload.get("data") or {}).get("document", {}).get("title") or "").strip()
+        canonical_url = f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
+    else:
+        raise ValueError("拍摄执行回洗只支持飞书 Wiki/Docx 链接")
+    if not title:
+        title = f"拍摄执行 - {request.topic} - {request.time_window or request.publish_time or '未定时间'}"
+    blocks = _shooting_execution_doc_blocks(title, request, draft, validation, media_context=media_context)
+    _replace_blocks(document_id, blocks, token)
+    return canonical_url
 
 
 def _creation_output_fields_for_write(record_fields: dict[str, Any]) -> dict[str, Any]:
@@ -276,6 +315,20 @@ def _replace_blocks(document_id: str, blocks: list[dict[str, Any]], token: str) 
     _append_blocks(document_id, blocks, token)
 
 
+def _delete_root_children_from(document_id: str, token: str, start_index: int) -> None:
+    children = _get_docx_children(document_id, document_id, token)
+    if len(children) <= start_index:
+        return
+    _request_feishu_json(
+        "DELETE",
+        f"/docx/v1/documents/{document_id}/blocks/{document_id}/children/batch_delete",
+        token,
+        params={"document_revision_id": -1},
+        json={"start_index": start_index, "end_index": len(children)},
+        timeout=30,
+    )
+
+
 def _creation_doc_blocks(
     title: str,
     request: CreationRequest,
@@ -320,6 +373,12 @@ def _shooting_execution_doc_blocks(
     pack = draft.get("publishing_pack") if isinstance(draft.get("publishing_pack"), dict) else {}
     return [
         _heading(title),
+        _heading("分镜脚本"),
+        _table_block(
+            ["时间", "画面", "字幕/口播", "声音/拍摄注意"],
+            draft.get("storyboard"),
+            ["time", "visual", "caption_or_voice", "sound_or_note"],
+        ),
         _heading("抽象化拆解口径"),
         _table_block(
             ["原始信号", "抽象后的任务层", "执行含义"],
@@ -356,32 +415,34 @@ def _shooting_execution_doc_blocks(
             draft.get("branch_plans"),
             ["condition", "plan", "priority"],
         ),
-        _heading("分镜脚本"),
-        _table_block(
-            ["时间", "画面", "字幕/口播", "声音/拍摄注意"],
-            draft.get("storyboard"),
-            ["time", "visual", "caption_or_voice", "sound_or_note"],
-        ),
         _heading("现场 checklist"),
         _paragraph("\n".join(f"- {_text(item)}" for item in _as_list(draft.get("onsite_checklist")) if _text(item)) or "待补充"),
         _heading("发布包"),
+        _subheading("作品标题"),
+        _paragraph(
+            "\n".join(
+                f"标题 {index}：{_text(item)}"
+                for index, item in enumerate(_as_list(pack.get("title_directions")), start=1)
+                if _text(item)
+            )
+            or "待补充"
+        ),
+        _subheading("封面图方案"),
+        _paragraph(_text(pack.get("cover_frame")) or "待补充"),
+        _subheading("发布文案"),
+        _paragraph(_text(pack.get("body_copy")) or "待补充"),
+        _subheading("话题与互动"),
         _paragraph(
             "\n".join(
                 [
-                    f"标题方向：{_inline_list(pack.get('title_directions'))}",
-                    f"封面定格建议：{_text(pack.get('cover_frame'))}",
-                    f"简短正文：{_text(pack.get('body_copy'))}",
                     f"话题标签：{_inline_list(pack.get('hashtags'))}",
-                    f"BGM 建议：{_text(pack.get('bgm_suggestion'))}",
                     f"评论区引导：{_text(pack.get('comment_prompt'))}",
                 ]
             )
         ),
-        _heading("证据附录"),
-        _table_block(
-            ["来源", "来源状态", "可用证据", "采用理由", "风险"],
-            draft.get("evidence_appendix"),
-            ["source", "source_status", "available_evidence", "usage_reason", "risk"],
+        _subheading("声音方案"),
+        _paragraph(
+            f"BGM 建议：{_text(pack.get('bgm_suggestion'))}"
         ),
         _heading("校验"),
         _paragraph(
@@ -395,6 +456,26 @@ def _shooting_execution_doc_blocks(
             )
         ),
     ]
+
+
+def _shooting_evidence_appendix_blocks(items: Any) -> list[dict[str, Any]]:
+    rows = _as_list(items)
+    if not rows:
+        return [_paragraph("无补充证据。")]
+    blocks: list[dict[str, Any]] = []
+    for index, item in enumerate(rows, 1):
+        if not isinstance(item, dict):
+            blocks.append(_paragraph(f"{index}. {_text(item)}"))
+            continue
+        lines = [
+            f"{index}. 来源：{_text(item.get('source'))}",
+            f"来源状态：{_text(item.get('source_status'))}",
+            f"可用证据：{_text(item.get('available_evidence'))}",
+            f"采用理由：{_text(item.get('usage_reason'))}",
+            f"风险：{_text(item.get('risk'))}",
+        ]
+        blocks.append(_paragraph("\n".join(line for line in lines if not line.endswith("："))))
+    return blocks
 
 
 def _creator_overview_blocks(
@@ -728,8 +809,31 @@ def _reference_appendix(items: list[RankedRecord], reason: str, *, label: str) -
     for item in items:
         record = item.record
         title = record.title or record.topic or record.source_record_id
-        lines.append(f"- {title}\n  {label}：{reason or _inline_list(item.reasons)}\n  record_id：{record.source_record_id}")
+        extra = _insight_card_reference_lines(record)
+        lines.append(
+            "\n".join(
+                [
+                    f"- {title}",
+                    f"  {label}：{reason or _inline_list(item.reasons)}",
+                    f"  record_id：{record.source_record_id}",
+                    *extra,
+                ]
+            )
+        )
     return "\n".join(lines)
+
+
+def _insight_card_reference_lines(record: Any) -> list[str]:
+    if getattr(record, "source_table", "") != "Obsidian:人性洞察库":
+        return []
+    detail = getattr(record, "detail_json", None) if isinstance(getattr(record, "detail_json", None), dict) else {}
+    return [
+        "  reference_type：insight-card reference",
+        f"  card_path：{_text(detail.get('insight_card_path'))}",
+        f"  card_status：{_text(detail.get('insight_card_status') or getattr(record, 'status', ''))}",
+        f"  evidence_boundary：{_text(detail.get('evidence_boundary') or 'public_content_only')}",
+        f"  risk_boundary：{_text(detail.get('risk_boundary') or '未标注')}",
+    ]
 
 
 def _business_appendix(items: list[RankedRecord]) -> str:
@@ -882,6 +986,10 @@ def _heading(text: str) -> dict[str, Any]:
     return {"block_type": 4, "heading2": {"elements": [{"text_run": {"content": text[:500]}}]}}
 
 
+def _subheading(text: str) -> dict[str, Any]:
+    return {"block_type": 5, "heading3": {"elements": [{"text_run": {"content": text[:500]}}]}}
+
+
 def _paragraph(text: str) -> dict[str, Any]:
     return {"block_type": 2, "text": {"elements": [{"text_run": {"content": str(text)[:1800]}}]}}
 
@@ -896,23 +1004,14 @@ def _request_feishu_json(method: str, path: str, token: str, **kwargs: Any) -> d
 
 
 def _append_native_table(document_id: str, token: str, rows: list[list[str]]) -> None:
-    for chunk_index, chunk in enumerate(_table_chunks(rows), 1):
-        if chunk_index > 1:
-            _append_blocks(document_id, [_paragraph(f"续表 {chunk_index}")], token)
+    chunks = _table_chunks(rows)
+    ensure_docx_tables_write_budget(chunks)
+    for chunk in chunks:
         _append_native_table_chunk(document_id, token, chunk)
 
 
 def _table_chunks(rows: list[list[str]]) -> list[list[list[str]]]:
-    if not rows:
-        return []
-    column_count = max(len(row) for row in rows)
-    max_rows = max(2, FEISHU_TABLE_MAX_CELLS_PER_CREATE // max(column_count, 1))
-    if len(rows) <= max_rows:
-        return [rows]
-    header = rows[0]
-    data_rows = rows[1:]
-    data_rows_per_chunk = max_rows - 1
-    return [[header, *data_rows[index:index + data_rows_per_chunk]] for index in range(0, len(data_rows), data_rows_per_chunk)]
+    return chunk_docx_table_rows(rows)
 
 
 def _append_native_table_chunk(document_id: str, token: str, rows: list[list[str]]) -> None:
@@ -920,31 +1019,38 @@ def _append_native_table_chunk(document_id: str, token: str, rows: list[list[str
         return
     row_count = len(rows)
     column_count = max(len(row) for row in rows)
-    payload = _request_feishu_json(
-        "POST",
-        f"/docx/v1/documents/{document_id}/blocks/{document_id}/children",
-        token,
-        json={"children": [{"block_type": 31, "table": {"property": {"row_size": row_count, "column_size": column_count}}}], "index": -1},
-        timeout=30,
-    )
-    table_block = _find_created_table(payload)
-    time.sleep(1.2)
-    table_id = str(table_block.get("block_id") or "")
-    expected = row_count * column_count
-    cell_ids = _extract_table_cell_ids(table_block, expected)
-    if len(cell_ids) < expected and table_id:
-        hydrated = _get_docx_block(document_id, table_id, token)
-        cell_ids = _extract_table_cell_ids(hydrated, expected)
-    if len(cell_ids) < expected and table_id:
-        children = _get_docx_children(document_id, table_id, token)
-        cell_ids = [_extract_block_id(item) for item in children]
-        cell_ids = [item for item in cell_ids if item]
-    if len(cell_ids) < expected:
-        raise RuntimeError(f"飞书表格 cell id 不足：expected={expected} got={len(cell_ids)} table_id={table_id}")
-    for row_index, row in enumerate(rows):
-        for column_index in range(column_count):
-            text = row[column_index] if column_index < len(row) else ""
-            _append_cell_text(document_id, token, cell_ids[row_index * column_count + column_index], text)
+    validate_docx_table_create_shape(row_count, column_count)
+    ensure_docx_table_write_budget(rows)
+    start_index = len(_get_docx_children(document_id, document_id, token))
+    try:
+        payload = _request_feishu_json(
+            "POST",
+            f"/docx/v1/documents/{document_id}/blocks/{document_id}/children",
+            token,
+            json={"children": [{"block_type": 31, "table": {"property": {"row_size": row_count, "column_size": column_count}}}], "index": -1},
+            timeout=30,
+        )
+        table_block = _find_created_table(payload)
+        time.sleep(1.2)
+        table_id = str(table_block.get("block_id") or "")
+        expected = row_count * column_count
+        cell_ids = _extract_table_cell_ids(table_block, expected)
+        if len(cell_ids) < expected and table_id:
+            hydrated = _get_docx_block(document_id, table_id, token)
+            cell_ids = _extract_table_cell_ids(hydrated, expected)
+        if len(cell_ids) < expected and table_id:
+            children = _get_docx_children(document_id, table_id, token)
+            cell_ids = [_extract_block_id(item) for item in children]
+            cell_ids = [item for item in cell_ids if item]
+        if len(cell_ids) < expected:
+            raise RuntimeError(f"飞书表格 cell id 不足：expected={expected} got={len(cell_ids)} table_id={table_id}")
+        for row_index, row in enumerate(rows):
+            for column_index in range(column_count):
+                text = row[column_index] if column_index < len(row) else ""
+                _append_cell_text(document_id, token, cell_ids[row_index * column_count + column_index], text)
+    except Exception:
+        _delete_root_children_from(document_id, token, start_index)
+        raise
 
 
 def _find_created_table(payload: dict[str, Any]) -> dict[str, Any]:

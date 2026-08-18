@@ -25,6 +25,7 @@ from common.social_runtime import (  # noqa: E402
     feishu_tenant_access_token,
     feishu_update_record,
 )
+from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id  # noqa: E402
 from common.standard_fields import standard_field_specs  # noqa: E402
 from selfmedia.creator_profiles.registry_sync import normalize_platform, normalize_platform_id  # noqa: E402
 
@@ -255,11 +256,44 @@ def build_creator_docs(
     creator_url: str,
     parent_node_token: str,
     *,
+    tenant_id: str,
     dry_run: bool = False,
 ) -> dict[str, Any]:
+    tenant_id = require_tenant_id(tenant_id)
     token = feishu_tenant_access_token()
     ensure_registry_fields(creator_url, token)
-    records = feishu_list_records(creator_url, token=token, page_size=500)
+    owner_service = canonical_tenant_owned_resources()
+    records: list[dict[str, Any]] = []
+    for owner in owner_service.registry.list_all_by_tenant(
+        tenant_id,
+        resource_type="media.creator_profile",
+    ):
+        matches = feishu_list_records(
+            creator_url,
+            token=token,
+            page_size=2,
+            filter_formula=(
+                f'CurrentValue.[达人档案ID] = '
+                f'{json.dumps(owner.canonical_resource_id, ensure_ascii=False)}'
+            ),
+        )
+        exact = [
+            record
+            for record in matches
+            if feishu_plain_text((record.get("fields") or {}).get("达人档案ID")).strip()
+            == owner.canonical_resource_id
+        ]
+        if len(exact) != 1:
+            raise RuntimeError("CreatorProfile canonical projection is missing or duplicated")
+        record = exact[0]
+        owner_service.assert_projection_read(
+            "media.creator_profile",
+            owner.canonical_resource_id,
+            session_tenant_id=tenant_id,
+            fields=record.get("fields") or {},
+            projection_source=f"feishu:creator_profiles/{record.get('record_id') or 'missing'}",
+        )
+        records.append(record)
     grouped = aggregate_creator_rows(records)
     created_docs: list[dict[str, Any]] = []
     updated_rows: list[dict[str, Any]] = []
@@ -304,6 +338,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create creator docs under a wiki node and sync registry fields.")
     parser.add_argument("--creator-url", default=DEFAULT_CREATOR_REGISTRY_URL, help="Creator registry table URL.")
     parser.add_argument("--parent-node-token", default=DEFAULT_PARENT_NODE_TOKEN, help="Wiki parent node token.")
+    parser.add_argument("--tenant-id", required=True, help="Management tenant whose owned creator profiles may be processed.")
     parser.add_argument("--write", action="store_true", help="Actually write docs and update table. Default is dry-run.")
     return parser.parse_args()
 
@@ -313,6 +348,7 @@ def main() -> int:
     result = build_creator_docs(
         args.creator_url,
         args.parent_node_token,
+        tenant_id=args.tenant_id,
         dry_run=not args.write,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))

@@ -26,6 +26,7 @@ from common.social_runtime import (  # noqa: E402
     feishu_plain_text,
     feishu_tenant_access_token,
 )
+from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id  # noqa: E402
 
 from selfmedia.business.id_business import FEISHU_BASE, load_playwright_cookies  # noqa: E402
 from selfmedia.creator_profiles.docs_builder import DEFAULT_CREATOR_REGISTRY_URL  # noqa: E402
@@ -586,12 +587,45 @@ def ensure_registry_fields(url: str, token: str) -> None:
 def crawl_registry(
     creator_url: str,
     *,
+    tenant_id: str,
     limit: int = 0,
     record_ids: set[str] | None = None,
 ) -> dict[str, Any]:
+    tenant_id = require_tenant_id(tenant_id)
     token = feishu_tenant_access_token()
     ensure_registry_fields(creator_url, token)
-    records = feishu_list_records(creator_url, token=token, page_size=500)
+    owner_service = canonical_tenant_owned_resources()
+    records: list[dict[str, Any]] = []
+    for owner in owner_service.registry.list_all_by_tenant(
+        tenant_id,
+        resource_type="media.creator_profile",
+    ):
+        matches = feishu_list_records(
+            creator_url,
+            token=token,
+            page_size=2,
+            filter_formula=(
+                f'CurrentValue.[达人档案ID] = '
+                f'{json.dumps(owner.canonical_resource_id, ensure_ascii=False)}'
+            ),
+        )
+        exact = [
+            record
+            for record in matches
+            if feishu_plain_text((record.get("fields") or {}).get("达人档案ID")).strip()
+            == owner.canonical_resource_id
+        ]
+        if len(exact) != 1:
+            raise RuntimeError("CreatorProfile canonical projection is missing or duplicated")
+        record = exact[0]
+        owner_service.assert_projection_read(
+            "media.creator_profile",
+            owner.canonical_resource_id,
+            session_tenant_id=tenant_id,
+            fields=record.get("fields") or {},
+            projection_source=f"feishu:creator_profiles/{record.get('record_id') or 'missing'}",
+        )
+        records.append(record)
     if record_ids:
         records = [row for row in records if str(row.get("record_id") or "") in record_ids]
     if limit > 0:
@@ -652,6 +686,7 @@ def crawl_registry(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Use Playwright to inspect creator profile anchor fields and return candidate updates.")
     parser.add_argument("--creator-url", default=DEFAULT_CREATOR_REGISTRY_URL, help="Creator registry table URL.")
+    parser.add_argument("--tenant-id", required=True, help="Management tenant whose owned creator profiles may be processed.")
     parser.add_argument("--limit", type=int, default=0, help="Optional max record count.")
     parser.add_argument("--record-id", action="append", default=[], help="Optional record ids.")
     return parser.parse_args()
@@ -661,6 +696,7 @@ def main() -> int:
     args = parse_args()
     result = crawl_registry(
         args.creator_url,
+        tenant_id=args.tenant_id,
         limit=max(0, int(args.limit or 0)),
         record_ids={item for item in args.record_id if item},
     )

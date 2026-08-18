@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .extractor import current_metrics_summary
+from .extractor import current_metrics_summary, normalize_public_http_url
 from .schemas import CREATOR_PROFILE_FIELDS, LIST_FIELDS, SEMANTIC_FIELDS, creator_profile_id, normalize_platform
 
 
@@ -12,9 +12,35 @@ PACKAGE_ROOT = Path(__file__).resolve().parent
 
 from common.llm_client import generate_json_from_parts
 from common.llm_settings import load_profile_llm_settings
+from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 
 
 PROMPT_PATH = PACKAGE_ROOT / "prompts" / "creator_profile_candidate_v2.md"
+
+
+def _validate_creator_profile_candidate(payload: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
+    candidates = payload.get("field_candidates")
+    if not isinstance(candidates, dict) or not candidates:
+        raise ValueError("field_candidates must be a non-empty object")
+    for field_name, item in candidates.items():
+        if not isinstance(item, dict):
+            raise ValueError(f"field_candidates.{field_name} must be an object")
+        if not isinstance(item.get("evidence"), list) or not str(item.get("reason") or "").strip():
+            raise ValueError(f"field_candidates.{field_name} requires evidence and reason")
+    return payload
+
+
+CREATOR_PROFILE_CANDIDATE_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.creator_profile.candidate.v1",
+        profile="bounded_open",
+        required_fields=("field_candidates",),
+        non_empty_fields=("field_candidates",),
+        field_types={"field_candidates": dict},
+        evidence_fields=("field_candidates",),
+        validator=_validate_creator_profile_candidate,
+    )
+)
 
 
 def field_candidate(value: Any, *, confidence: float, evidence: list[str], reason: str) -> dict[str, Any]:
@@ -34,14 +60,24 @@ def build_candidate(
     author_id = str(resolver_result.get("resolved_author_id") or profile.get("author_id") or resolver_result.get("input_platform_id") or "").strip()
     account_name = str(resolver_result.get("account_name") or profile.get("account_name") or "").strip()
     profile_url = str(resolver_result.get("resolved_profile_url") or profile.get("profile_url") or profile.get("homepage_link") or "").strip()
+    avatar_url = normalize_public_http_url(profile.get("avatar_url"))
     metrics = current_metrics_summary(profile)
+    explicit_identity = resolver_result.get("source") == "explicit_user_fields"
+    identity_source = (
+        "explicit user input"
+        if explicit_identity
+        else ("user input matched public profile" if resolver_result.get("input_platform_id") else "public profile URL")
+    )
+    author_evidence = list(resolver_result.get("success_evidence") or []) if author_id else []
+    account_evidence = ["explicit user input"] if explicit_identity else ["public profile title/text"]
 
     candidates: dict[str, dict[str, Any]] = {
         "creator_profile_id": field_candidate(creator_profile_id(platform, author_id), confidence=1.0, evidence=["system key from platform+author_id"], reason="Stable v2 CreatorProfile primary key."),
-        "platform": field_candidate(platform, confidence=1.0, evidence=["user input and resolver platform"], reason="Platform is supplied by user and normalized by resolver."),
-        "author_id": field_candidate(author_id, confidence=0.97 if author_id else 0.0, evidence=[f"public profile matched input id {author_id}"] if author_id else [], reason="Resolved author id equals the input display id."),
-        "account_name": field_candidate(account_name, confidence=0.95 if account_name else 0.0, evidence=["public profile title/text"], reason="Account name came from public profile text."),
+        "platform": field_candidate(platform, confidence=1.0, evidence=[identity_source], reason="Platform is normalized from explicit input or an allowlisted profile URL."),
+        "author_id": field_candidate(author_id, confidence=1.0 if explicit_identity else (0.97 if author_id else 0.0), evidence=author_evidence, reason="Author id came from explicit user input." if explicit_identity else "Resolved author id is explicitly visible on the public profile."),
+        "account_name": field_candidate(account_name, confidence=1.0 if explicit_identity else (0.95 if account_name else 0.0), evidence=account_evidence, reason="Account name came from explicit user input." if explicit_identity else "Account name came from public profile text."),
         "profile_url": field_candidate(profile_url, confidence=0.95 if profile_url else 0.0, evidence=["resolved public profile url"], reason="Profile URL came from resolver."),
+        "avatar_url": field_candidate(avatar_url, confidence=0.95 if avatar_url else 0.0, evidence=["public structured profile data"] if avatar_url else [], reason="Avatar URL came from explicit public profile data." if avatar_url else "No valid public avatar URL was available."),
         "current_metrics_summary": field_candidate(metrics, confidence=0.9 if metrics else 0.0, evidence=["public rendered text or embedded public profile data"], reason="Metrics are deterministic public extractions."),
     }
 
@@ -99,7 +135,13 @@ def call_llm_candidate(resolver_result: dict[str, Any], profile: dict[str, Any])
     }
     parts = [{"text": prompt + "\n\nPublic evidence JSON:\n" + json.dumps(evidence, ensure_ascii=False, indent=2)}]
     try:
-        return generate_json_from_parts(parts, load_profile_llm_settings("media_analysis"), max_retries=1, error_prefix="CreatorProfile candidate LLM failed")
+        return generate_json_from_parts(
+            parts,
+            load_profile_llm_settings("media_analysis"),
+            max_retries=1,
+            error_prefix="CreatorProfile candidate LLM failed",
+            validation_contract=CREATOR_PROFILE_CANDIDATE_VALIDATION_CONTRACT,
+        )
     except Exception:
         return {}
 

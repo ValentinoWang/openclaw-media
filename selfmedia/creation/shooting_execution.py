@@ -5,18 +5,42 @@ import re
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from selfmedia.context import build_media_context_for_request, merge_conversation_context
+from media_vault import require_tenant_id
 
 from .field_contract import normalize_content_type, normalize_platform, split_tags
 from .llm_generator import call_creation_json
 from .media_model_v2_writeback import write_creation_model_v2
-from .request_parser import CreationRequest
+from .request_parser import CreationRequest, extract_source_asset_id
 from .writer import create_shooting_execution_doc
 
 
 SHOOTING_PATTERN = re.compile(r"^\s*【创作-拍摄执行】")
-REQUEST_KEYS = "平台|类型|内容类型|赛道|主体|主题|拍摄目标|目标|场地|地点|人物|时间窗口|总时长|发布时间|参考链接|必拍|约束|项目|账号|关键词|标签"
+REQUEST_KEYS = "平台|类型|内容类型|赛道|主体|主题|拍摄目标|目标|场地|地点|人物|时间窗口|总时长|发布时间|参考链接|必拍|约束|项目|账号|关键词|标签|source_asset_id|source|来源|素材源ID|SourceAsset来源ID"
 KEY_VALUE_RE = re.compile(rf"(?P<key>{REQUEST_KEYS})\s*[=:：]\s*(?P<value>.*?)(?=\n(?:{REQUEST_KEYS})\s*[=:：]|\s+(?:{REQUEST_KEYS})\s*[=:：]|$)", re.S)
+
+SHOOTING_REQUEST_FIELDS = frozenset({
+    "platform", "content_type", "track", "topic", "shooting_goal", "locations", "people",
+    "time_window", "publish_time", "project", "account", "reference_links", "must_shoot",
+    "constraints", "source_asset_id",
+})
+
+
+def _validate_shooting_request(payload: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
+    if not any(value not in (None, "", [], {}) for value in payload.values()):
+        raise ValueError("shooting request returned no usable fields")
+    return payload
+
+
+SHOOTING_REQUEST_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.creation.shooting_request.v1",
+        profile="strict_structured",
+        allowed_fields=SHOOTING_REQUEST_FIELDS,
+        validator=_validate_shooting_request,
+    )
+)
 
 
 @dataclass(frozen=True)
@@ -36,6 +60,7 @@ class ShootingExecutionRequest:
     must_shoot: list[str] | None = None
     constraints: list[str] | None = None
     keywords: list[str] | None = None
+    source_asset_id: str = ""
     raw_text: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -55,6 +80,7 @@ class ShootingExecutionRequest:
             keywords=list(self.keywords or []),
             project=self.project,
             account=self.account,
+            source_asset_id=self.source_asset_id,
             raw_text=self.raw_text,
         )
 
@@ -62,13 +88,15 @@ class ShootingExecutionRequest:
 def handle_shooting_execution_command(
     raw_text: str,
     *,
+    tenant_id: str,
     dry_run: bool = False,
     no_write: bool = False,
     conversation_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    tenant_id = require_tenant_id(tenant_id)
     request = parse_shooting_execution_request(raw_text)
     creation_request = request.to_creation_request()
-    media_context = merge_conversation_context(build_media_context_for_request(creation_request), conversation_context)
+    media_context = merge_conversation_context(build_media_context_for_request(creation_request, tenant_id=tenant_id), conversation_context)
     draft = generate_shooting_execution_plan(request, media_context=media_context)
     validation = validate_shooting_execution_plan(draft)
     doc_link = ""
@@ -76,6 +104,7 @@ def handle_shooting_execution_command(
     if not dry_run and not no_write:
         doc_link = create_shooting_execution_doc(request, draft, validation, media_context=media_context)
         media_model_v2_result = write_creation_model_v2(
+            tenant_id=tenant_id,
             request=creation_request,
             entrypoint="【创作-拍摄执行】",
             all_activity_candidates=[],
@@ -107,14 +136,14 @@ def handle_shooting_execution_command(
     }
 
 
-def parse_shooting_execution_request(raw_text: str) -> ShootingExecutionRequest:
+def parse_shooting_execution_request(raw_text: str, *, infer_missing: bool = True) -> ShootingExecutionRequest:
     text = str(raw_text or "").strip()
     match = SHOOTING_PATTERN.match(text)
     if not match:
         raise ValueError("不是【创作-拍摄执行】入口")
     body = text[match.end():].strip()
     values = _parse_key_values(body)
-    inferred = infer_shooting_execution_request(text, values)
+    inferred = infer_shooting_execution_request(text, values) if infer_missing else {}
     platform = normalize_platform(values.get("平台") or inferred.get("platform") or "")
     content_type = normalize_content_type(values.get("内容类型") or values.get("类型") or inferred.get("content_type") or "")
     track = _clean(values.get("赛道") or inferred.get("track") or "", 80)
@@ -142,6 +171,15 @@ def parse_shooting_execution_request(raw_text: str) -> ShootingExecutionRequest:
     if missing:
         raise ValueError("【创作-拍摄执行】缺少：" + "、".join(missing))
     keywords = split_tags(values.get("关键词") or values.get("标签") or " ".join([track, topic, shooting_goal]))
+    source_asset_id = extract_source_asset_id(
+        raw_text,
+        values.get("source_asset_id")
+        or values.get("SourceAsset来源ID")
+        or values.get("素材源ID")
+        or values.get("source")
+        or values.get("来源")
+        or inferred.get("source_asset_id", ""),
+    )
     return ShootingExecutionRequest(
         platform=platform,
         content_type=content_type,
@@ -158,6 +196,7 @@ def parse_shooting_execution_request(raw_text: str) -> ShootingExecutionRequest:
         must_shoot=_list(values.get("必拍") or inferred.get("must_shoot") or ""),
         constraints=_list(values.get("约束") or inferred.get("constraints") or ""),
         keywords=keywords,
+        source_asset_id=source_asset_id,
         raw_text=raw_text,
     )
 
@@ -168,11 +207,11 @@ def infer_shooting_execution_request(raw_text: str, explicit: dict[str, str]) ->
         "不能根据平台链接猜视频内容；链接只能原样放入 reference_links。\n"
         "不确定的字段留空字符串或空数组。\n\n"
         "输出合法 JSON object，字段固定为：platform, content_type, track, topic, shooting_goal, "
-        "locations, people, time_window, publish_time, project, account, reference_links, must_shoot, constraints。\n\n"
+        "locations, people, time_window, publish_time, project, account, reference_links, must_shoot, constraints, source_asset_id。\n\n"
         f"显式字段：\n{json.dumps(explicit, ensure_ascii=False, indent=2)}\n\n"
         f"用户原文：\n{raw_text}"
     )
-    payload = call_creation_json(prompt)
+    payload = call_creation_json(prompt, validation_contract=SHOOTING_REQUEST_VALIDATION_CONTRACT)
     return payload if isinstance(payload, dict) else {}
 
 
@@ -201,7 +240,7 @@ def generate_shooting_execution_plan(request: ShootingExecutionRequest, *, media
         f"请求字段：\n{json.dumps(request.to_dict(), ensure_ascii=False, indent=2)}\n\n"
         f"媒体上下文：\n{json.dumps(media_context or {}, ensure_ascii=False, indent=2, default=str)[:12000]}"
     )
-    payload = call_creation_json(prompt)
+    payload = call_creation_json(prompt, validation_contract=SHOOTING_PLAN_VALIDATION_CONTRACT)
     if not isinstance(payload, dict):
         raise RuntimeError("shooting_execution_llm_output_not_object")
     return payload
@@ -216,6 +255,22 @@ def validate_shooting_execution_plan(draft: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(draft.get("shooting_goal"), dict) or not isinstance(draft.get("publishing_pack"), dict):
         return {"ok": False, "status": "pending_manual", "missing": [], "empty_lists": [], "reason": "invalid_object_sections", "fallback": "disabled"}
     return {"ok": True, "status": "passed", "missing": [], "empty_lists": [], "fallback": "disabled"}
+
+
+def _validate_shooting_plan(payload: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
+    result = validate_shooting_execution_plan(payload)
+    if not result.get("ok"):
+        raise ValueError(f"shooting execution plan failed: {result}")
+    return payload
+
+
+SHOOTING_PLAN_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.creation.shooting_plan.v1",
+        profile="strict_structured",
+        validator=_validate_shooting_plan,
+    )
+)
 
 
 def format_shooting_execution_reply(

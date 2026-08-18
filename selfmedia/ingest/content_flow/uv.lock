@@ -328,6 +328,7 @@ dependencies = [
     { name = "notion-client" },
     { name = "playwright" },
     { name = "python-dotenv" },
+    { name = "requests" },
     { name = "yt-dlp" },
 ]
 
@@ -338,11 +339,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dashscope", specifier = ">=1.25.16" },
+    { name = "dashscope", specifier = ">=1.25.3" },
     { name = "langgraph", specifier = ">=1.0.5" },
     { name = "notion-client", specifier = ">=2.7.0" },
     { name = "playwright", specifier = ">=1.57.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
+    { name = "requests", specifier = ">=2.32.5" },
     { name = "yt-dlp", specifier = ">=2025.12.8" },
 ]
 

@@ -16,6 +16,7 @@ from common.social_runtime import (
     load_default_env_files,
     load_env_file,
 )
+from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id
 
 from .field_contract import CREATION_SOURCE_TABLE_CONTRACTS
 from media_model.contract import MediaModelContract
@@ -39,22 +40,23 @@ MATERIAL_DECONSTRUCTION_URL_ENV_NAMES = (
 
 def load_rows_for_creation(
     *,
+    tenant_id: str,
     viral_url: str = "",
     activity_url: str = "",
     limit: int = 300,
     include_activity: bool = True,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     load_creation_env_files()
-    viral = load_material_candidate_rows_for_creation(limit=limit)
+    viral = load_material_candidate_rows_for_creation(tenant_id=tenant_id, limit=limit)
     activity = list_records_safe(resolve_activity_bitable_url(activity_url), limit=limit) if include_activity else []
     return viral, activity
 
 
-def load_material_candidate_rows_for_creation(*, limit: int = 300) -> list[dict[str, Any]]:
-    source_rows = [_normalize_entity_row(row, "SourceAsset") for row in list_records_safe(resolve_source_assets_bitable_url(), limit=limit)]
+def load_material_candidate_rows_for_creation(*, tenant_id: str, limit: int = 300) -> list[dict[str, Any]]:
+    source_rows = [_normalize_entity_row(row, "SourceAsset") for row in list_tenant_records_safe("SourceAsset", resolve_source_assets_bitable_url(), tenant_id=tenant_id, limit=limit)]
     deconstruction_rows = [
         _normalize_entity_row(row, "MaterialDeconstruction")
-        for row in list_records_safe(resolve_material_deconstructions_bitable_url(), limit=limit)
+        for row in list_tenant_records_safe("MaterialDeconstruction", resolve_material_deconstructions_bitable_url(), tenant_id=tenant_id, limit=limit)
     ]
     assets_by_id: dict[str, dict[str, Any]] = {}
     for row in source_rows:
@@ -100,14 +102,77 @@ def load_material_candidate_rows_for_creation(*, limit: int = 300) -> list[dict[
     return rows[:limit]
 
 
-def load_business_rows_for_creation(*, business_url: str = "", limit: int = 300) -> list[dict[str, Any]]:
+def load_business_rows_for_creation(*, tenant_id: str, business_url: str = "", limit: int = 300) -> list[dict[str, Any]]:
     load_creation_env_files()
-    return [_normalize_entity_row(row, "BusinessOpportunity") for row in list_records_safe(resolve_business_bitable_url(business_url), limit=limit)]
+    return [_normalize_entity_row(row, "BusinessOpportunity") for row in list_tenant_records_safe("BusinessOpportunity", resolve_business_bitable_url(business_url), tenant_id=tenant_id, limit=limit)]
 
 
-def load_inspiration_rows_for_creation(*, inspiration_url: str = "", limit: int = 300) -> list[dict[str, Any]]:
+def load_inspiration_rows_for_creation(*, tenant_id: str, inspiration_url: str = "", limit: int = 300) -> list[dict[str, Any]]:
     load_creation_env_files()
-    return [_normalize_entity_row(row, "CreativePattern") for row in list_records_safe(resolve_inspiration_bitable_url(inspiration_url), limit=limit)]
+    return [_normalize_entity_row(row, "CreativePattern") for row in list_tenant_records_safe("CreativePattern", resolve_inspiration_bitable_url(inspiration_url), tenant_id=tenant_id, limit=limit)]
+
+
+def list_tenant_records_safe(
+    entity_name: str,
+    bitable_url: str,
+    *,
+    tenant_id: str,
+    limit: int = 300,
+) -> list[dict[str, Any]]:
+    if not bitable_url:
+        return []
+    tenant_id = require_tenant_id(tenant_id)
+    owner_service = canonical_tenant_owned_resources()
+    resource_type, canonical_id_field = {
+        "SourceAsset": ("media.source_asset", "asset_id"),
+        "MaterialDeconstruction": ("media.material_deconstruction", "deconstruction_id"),
+        "CreativePattern": ("media.creative_pattern", "pattern_id"),
+        "BusinessOpportunity": ("media.business_opportunity", "opportunity_id"),
+    }[entity_name]
+    contract = MediaModelContract()
+    display_id_field = contract.feishu_field_name(entity_name, canonical_id_field)
+    records: list[dict[str, Any]] = []
+    offset = 0
+    while len(records) < limit:
+        page_limit = min(500, limit - len(records))
+        owners = owner_service.registry.list_by_tenant(
+            tenant_id,
+            resource_type=resource_type,
+            limit=page_limit,
+            offset=offset,
+        )
+        for owner in owners:
+            matches = feishu_list_records(
+                bitable_url,
+                page_size=2,
+                filter_formula=(
+                    f'CurrentValue.[{display_id_field}] = '
+                    f'{json.dumps(owner.canonical_resource_id, ensure_ascii=False)}'
+                ),
+            )
+            exact = [
+                record
+                for record in matches
+                if str(
+                    contract.normalize_record_fields(entity_name, record.get("fields") or {}).get(canonical_id_field)
+                    or ""
+                ).strip() == owner.canonical_resource_id
+            ]
+            if len(exact) != 1:
+                raise RuntimeError(f"{entity_name} canonical projection is missing or duplicated")
+            record = exact[0]
+            owner_service.assert_projection_read(
+                resource_type,
+                owner.canonical_resource_id,
+                session_tenant_id=tenant_id,
+                fields=record.get("fields") or {},
+                projection_source=f"feishu:{entity_name}/{record.get('record_id') or 'missing'}",
+            )
+            records.append(record)
+        if len(owners) < page_limit:
+            break
+        offset += len(owners)
+    return records[:limit]
 
 
 def list_records_safe(bitable_url: str, *, limit: int = 300) -> list[dict[str, Any]]:

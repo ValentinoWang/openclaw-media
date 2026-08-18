@@ -7,7 +7,8 @@ from notion_client import Client
 import requests
 
 from .config import Settings
-from .utils import detect_platform, extract_douyin_id, extract_xhs_id, normalize_tags, summarize_url
+from .semantic_persistence import analysis_user_field_contract_issue
+from .utils import detect_platform, extract_douyin_id, extract_xhs_id, normalize_tags
 
 
 def _find_title_property(properties: dict) -> Optional[str]:
@@ -70,7 +71,7 @@ def _make_heading(text: str) -> dict:
     }
 
 
-def _build_children(transcript: str, caption: str, analysis: dict, url: str) -> list[dict]:
+def _build_children(analysis: dict, url: str) -> list[dict]:
     children: list[dict] = []
     if analysis:
         children.append(_make_heading("分析结果"))
@@ -94,9 +95,10 @@ def _build_children(transcript: str, caption: str, analysis: dict, url: str) -> 
         children.append(_make_heading("原链接"))
         children.append(_make_paragraph(url))
 
-    if caption:
-        children.append(_make_heading("文案"))
-        for chunk in _build_rich_text(caption):
+    work_copy = _normalize_text(analysis.get("work_copy") if analysis else "")
+    if work_copy:
+        children.append(_make_heading("平台文案"))
+        for chunk in _build_rich_text(work_copy):
             children.append(
                 {
                     "object": "block",
@@ -105,9 +107,10 @@ def _build_children(transcript: str, caption: str, analysis: dict, url: str) -> 
                 }
             )
 
-    if transcript:
-        children.append(_make_heading("逐字稿"))
-        for chunk in _build_rich_text(transcript):
+    full_content = _normalize_text(analysis.get("full_content") if analysis else "")
+    if full_content:
+        children.append(_make_heading("全部内容"))
+        for chunk in _build_rich_text(full_content):
             children.append(
                 {
                     "object": "block",
@@ -123,8 +126,6 @@ def _build_properties(
     properties: dict,
     title: str,
     url: str,
-    transcript: str,
-    caption: str,
     analysis: dict,
 ) -> dict:
     notion_props: dict = {}
@@ -221,7 +222,7 @@ def _build_properties(
         ["full script", "script", "文案", "逐字稿", "transcript"],
         {"rich_text"},
     )
-    script_text = transcript or caption
+    script_text = _normalize_text(analysis.get("full_content") if analysis else "")
     if transcript_key and script_text:
         notion_props[transcript_key] = {"rich_text": _build_rich_text(script_text)}
 
@@ -361,6 +362,10 @@ def write_to_notion(
     analysis: dict,
     settings: Settings,
 ) -> Optional[str]:
+    contract_issue = analysis_user_field_contract_issue(analysis, require_work_copy=bool(str(caption or "").strip()))
+    if contract_issue:
+        print(f"LLM 清洗用户字段契约未满足，停止 Notion 写入：{contract_issue}", flush=True)
+        return None
     if not settings.notion_token or not settings.notion_database_id:
         print("Notion 配置缺失，跳过写入。", flush=True)
         return None
@@ -388,17 +393,13 @@ def write_to_notion(
         except requests.RequestException as exc:
             print(f"获取 Notion 字段失败: {exc}", flush=True)
             properties = {}
-    summary = _normalize_text(analysis.get("summary") if analysis else "")
-    summary_line = summary.splitlines()[0] if summary else ""
-    title = summary_line[:40].strip() if summary_line else summarize_url(url, 40)
-    if not title:
-        title = "视频分析"
+    title = _normalize_text(analysis.get("title") if analysis else "")
 
-    notion_props = _build_properties(properties, title, url, transcript, caption, analysis)
+    notion_props = _build_properties(properties, title, url, analysis)
     if not notion_props:
         print("Notion 数据库缺少标题字段，无法写入。", flush=True)
         return None
-    children = _build_children(transcript, caption, analysis, url)
+    children = _build_children(analysis, url)
 
     try:
         response = client.pages.create(

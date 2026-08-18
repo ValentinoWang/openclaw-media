@@ -4,14 +4,12 @@ import re
 from enum import Enum
 
 TRIGGER = "【拆解】"
-DECONSTRUCT_RECREATE_TRIGGER = "【拆解-再创】"
 URL_RE = re.compile(r"https?://[^\s]+")
 
 
 class WorkflowMode(str, Enum):
     ORGANIZE_ONLY = "organize_only"
     DECONSTRUCT_ONLY = "deconstruct_only"
-    DECONSTRUCT_AND_RECREATE = "deconstruct_and_recreate"
 
 
 def should_deconstruct(text: str) -> bool:
@@ -24,7 +22,7 @@ def extract_url(text: str) -> str:
 
 
 def should_deconstruct_recreate(text: str) -> bool:
-    return DECONSTRUCT_RECREATE_TRIGGER in (text or "")
+    return False
 
 
 class RouteError(ValueError):
@@ -36,8 +34,6 @@ def route(text: str) -> WorkflowMode:
 
 
 def route_mode(text: str) -> WorkflowMode:
-    if should_deconstruct_recreate(text):
-        return WorkflowMode.DECONSTRUCT_AND_RECREATE
     has_deconstruct = should_deconstruct(text)
     if has_deconstruct:
         return WorkflowMode.DECONSTRUCT_ONLY

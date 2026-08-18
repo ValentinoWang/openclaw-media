@@ -10,6 +10,7 @@ CREATOR_PROFILE_FIELDS = (
     "author_id",
     "account_name",
     "profile_url",
+    "avatar_url",
     "identity_summary",
     "identity_tags",
     "education_background",

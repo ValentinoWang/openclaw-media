@@ -52,7 +52,7 @@ class StylePolishRequest:
     tone: str = ""
     must_keep: tuple[str, ...] = field(default_factory=tuple)
     avoid: tuple[str, ...] = field(default_factory=tuple)
-    variants: int = 3
+    variants: int = 1
     creation_id: str = ""
     material_id: str = ""
     draft_id: str = ""
@@ -68,7 +68,7 @@ class StylePolishRequest:
         object.__setattr__(self, "must_keep", tuple(_clean_list(self.must_keep)))
         object.__setattr__(self, "avoid", tuple(_clean_list(self.avoid)))
         object.__setattr__(self, "source_ids", tuple(_clean_list(self.source_ids)))
-        object.__setattr__(self, "variants", max(1, min(int(self.variants or 3), 5)))
+        object.__setattr__(self, "variants", max(1, min(int(self.variants or 1), 5)))
         object.__setattr__(self, "creation_id", _clean_text(self.creation_id))
         object.__setattr__(self, "material_id", _clean_text(self.material_id))
         object.__setattr__(self, "draft_id", _clean_text(self.draft_id))

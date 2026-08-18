@@ -7,8 +7,10 @@ from typing import Any, Callable, Optional
 
 from common.llm_client import generate_json_from_parts
 from common.llm_settings import load_profile_llm_settings
+from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 
 from .config import Settings
+from .semantic_persistence import LLM_CLEANED_USER_FIELDS_VERSION
 
 
 ANALYST_SYSTEM_PROMPT = """
@@ -97,6 +99,21 @@ transferable_expression (可迁移表达):
 
 ProgressFn = Callable[[str, int, str], None]
 
+ANALYSIS_REQUIRED_FIELDS = (
+    "title", "summary", "primary_category", "secondary_category", "target_audience", "pain_point",
+    "work_copy", "full_content", "hooks", "emotion", "score", "tags", "action_plan", "hidden_info",
+    "visual_cues", "transferable_expression",
+)
+CONTENT_ANALYSIS_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.content_flow.analysis.v1",
+        profile="strict_structured",
+        required_fields=ANALYSIS_REQUIRED_FIELDS,
+        allowed_fields=frozenset(ANALYSIS_REQUIRED_FIELDS),
+        field_types={"secondary_category": list, "score": (int, float), "tags": list},
+    )
+)
+
 
 def _analysis_timeout_seconds(settings: Settings) -> float:
     return max(
@@ -150,7 +167,7 @@ def _build_analysis_user_content(
     )
 
 
-def analyze_with_codex_responses(user_content: str, settings: Settings) -> Optional[dict]:
+def analyze_with_openclaw_agent(user_content: str, settings: Settings) -> Optional[dict]:
     message = (
         f"{ANALYST_SYSTEM_PROMPT}\n\n"
         "输入内容：\n"
@@ -165,17 +182,18 @@ def analyze_with_codex_responses(user_content: str, settings: Settings) -> Optio
             max_retries=1,
             error_prefix="Codex Responses 结构化分析 JSON 校验失败",
             instructions="你是 Media 内容分析 JSON 引擎。必须只输出合法 JSON object，不要 Markdown，不要解释。",
+            validation_contract=CONTENT_ANALYSIS_VALIDATION_CONTRACT,
         )
     except Exception as exc:
-        print(f"Codex Responses 结构化分析失败：{str(exc)[-1800:]}。", flush=True)
+        print(f"OpenClaw OAuth 结构化分析失败：{str(exc)[-1800:]}。", flush=True)
         return None
 
     if not parsed:
-        print("Codex 结构化分析未返回可解析 JSON。", flush=True)
+        print("OpenClaw OAuth 结构化分析未返回可解析 JSON。", flush=True)
         return None
 
-    parsed.setdefault("analysis_provider", "codex_responses")
-    parsed.setdefault("analysis_runtime", "codex_responses")
+    parsed.setdefault("analysis_provider", "openclaw_codex")
+    parsed.setdefault("analysis_runtime", "openclaw_agent")
     parsed.setdefault("analysis_model", llm_settings.model)
     parsed.setdefault("analysis_status", "complete")
     return parsed
@@ -208,11 +226,12 @@ def _analyze_transcript_impl(
         media_type,
     )
 
-    codex_result = analyze_with_codex_responses(user_content, settings)
-    if codex_result:
-        return codex_result
+    openclaw_result = analyze_with_openclaw_agent(user_content, settings)
+    if openclaw_result:
+        openclaw_result["semantic_persistence_version"] = LLM_CLEANED_USER_FIELDS_VERSION
+        return openclaw_result
 
-    print("Codex Responses 分析不可用，标记为需要重新运行模型分析。", flush=True)
+    print("OpenClaw OAuth 分析不可用，标记为需要重新运行模型分析。", flush=True)
     return {
         "title": "",
         "summary": [],

@@ -10,6 +10,13 @@ from typing import Any
 
 import requests
 
+from common.feishu_docx_table_limits import (
+    ensure_docx_tables_write_budget,
+    ensure_docx_table_write_budget,
+    max_docx_table_rows_for_cell_writer,
+    sleep_seconds_for_docx_write,
+    validate_docx_table_create_shape,
+)
 from common.social_runtime import load_default_env_files
 
 from .config import load_config
@@ -17,7 +24,7 @@ from .feishu_writer import FEISHU_BASE, _headers, resolve_wiki_bitable, tenant_a
 from .storyboard_images import generate_and_upload_storyboard_images, upload_feishu_doc_image
 
 MAX_SOURCE_TEXT_CHARS_IN_DOC = 300
-DOCX_WRITE_SLEEP_SEC = float(os.getenv("FEISHU_DOCX_WRITE_SLEEP_SEC", "0.35"))
+DOCX_WRITE_SLEEP_SEC = float(os.getenv("FEISHU_DOCX_WRITE_SLEEP_SEC", str(sleep_seconds_for_docx_write())))
 SKIP_STORYBOARD_IMAGE_GENERATION = os.getenv("FEISHU_SKIP_STORYBOARD_IMAGE_GENERATION", "0").lower() in ("1", "true", "yes")
 GENERATE_STORYBOARD_IMAGES = os.getenv("FEISHU_GENERATE_STORYBOARD_IMAGES", "0").lower() in ("1", "true", "yes")
 DEFAULT_DECONSTRUCT_SOURCE_TABLE_URL = ""
@@ -109,7 +116,7 @@ def create_doc(title: str, content: dict[str, Any], folder_token: str | None = N
     reused_existing = False
     if parent_node:
         space_id = _get_parent_space(parent_node, token)
-        existing = _find_child_doc(space_id, parent_node, title or "拆解-再创执行单", token)
+        existing = _find_child_doc(space_id, parent_node, title or "创作交接执行单", token)
         if existing:
             document_id, node_token = existing
             reused_existing = True
@@ -117,7 +124,7 @@ def create_doc(title: str, content: dict[str, Any], folder_token: str | None = N
             resp = requests.post(
                 f"{FEISHU_BASE}/wiki/v2/spaces/{space_id}/nodes",
                 headers=_headers(token),
-                json={"obj_type": "docx", "parent_node_token": parent_node, "node_type": "origin", "title": title or "拆解-再创执行单"},
+                json={"obj_type": "docx", "parent_node_token": parent_node, "node_type": "origin", "title": title or "创作交接执行单"},
                 timeout=15,
             )
             resp.raise_for_status()
@@ -129,7 +136,7 @@ def create_doc(title: str, content: dict[str, Any], folder_token: str | None = N
             node_token = node["node_token"]
     else:
         folder_token = folder_token or config.feishu_doc_folder_token
-        body: dict[str, Any] = {"title": title or "拆解-再创执行单"}
+        body: dict[str, Any] = {"title": title or "创作交接执行单"}
         if folder_token:
             body["folder_token"] = folder_token
         resp = requests.post(f"{FEISHU_BASE}/docx/v1/documents", headers=_headers(token), json=body, timeout=15)
@@ -334,6 +341,24 @@ def _delete_document_child_range(document_id: str, token: str, *, start_index: i
         raise RuntimeError(f"{error_label}：{payload}")
 
 
+def _cleanup_start_index(document_id: str, token: str) -> int | None:
+    try:
+        return _document_child_count(document_id, token)
+    except Exception:
+        return None
+
+
+def _cleanup_failed_docx_table(document_id: str, token: str, start_index: int | None, error_label: str) -> None:
+    if start_index is None:
+        return
+    try:
+        end_index = _document_child_count(document_id, token)
+        if end_index > start_index:
+            _delete_document_child_range(document_id, token, start_index=start_index, end_index=end_index, error_label=error_label)
+    except Exception:
+        return
+
+
 def append_blocks_raw(document_id: str, children: list[dict[str, Any]], token: str) -> None:
     for index in range(0, len(children), 20):
         _post_docx_children(
@@ -388,7 +413,7 @@ def create_checked_doc(title: str, content: dict[str, Any], folder_token: str | 
     content["feishu_doc_url"] = wiki_url or ref.url
     if wiki_url:
         content["feishu_wiki_url"] = wiki_url
-    return DocRef(document_id=ref.document_id, url=wiki_url or ref.url, wiki_url=wiki_url)
+    return DocRef(document_id=ref.document_id, url=ref.url, wiki_url=wiki_url)
 
 
 def assert_doc_accessible(document_id: str, token: str | None = None) -> DocRef:
@@ -464,17 +489,17 @@ def _recreate_doc_blocks(content: dict[str, Any]) -> list[dict[str, Any]]:
     if media_type == "video":
         storyboard = content.get("video_storyboard")
         if not isinstance(storyboard, list) or not storyboard:
-            raise RuntimeError("拆解-再创文档缺少 video_storyboard")
+            raise RuntimeError("创作交接文档缺少 video_storyboard")
         blocks.append(_heading3("视频分镜"))
         blocks.append(_paragraph("视频分镜见下方原生表格。"))
     elif media_type == "image_post":
         image_script = content.get("image_post_script")
         if not isinstance(image_script, list) or not image_script:
-            raise RuntimeError("拆解-再创文档缺少 image_post_script")
+            raise RuntimeError("创作交接文档缺少 image_post_script")
         blocks.append(_heading3("图文脚本"))
         blocks.extend(_value_blocks(image_script))
     else:
-        raise RuntimeError(f"拆解-再创文档 media_type 非法: {media_type}")
+        raise RuntimeError(f"创作交接文档 media_type 非法: {media_type}")
     blocks.extend(_recreate_comment_blocks(_required_mapping(content, "reusable_high_like_comment")))
     blocks.extend(_recreate_operation_blocks(_required_mapping(content, "operation_plan")))
     blocks.extend(_recreate_material_blocks(_required_mapping(content, "material_checklist")))
@@ -491,7 +516,7 @@ def _recreate_doc_blocks(content: dict[str, Any]) -> list[dict[str, Any]]:
 def _required_value(content: dict[str, Any], key: str) -> Any:
     value = content.get(key)
     if value in (None, "", [], {}):
-        raise RuntimeError(f"拆解-再创文档缺少 {key}")
+        raise RuntimeError(f"创作交接文档缺少 {key}")
     return value
 
 
@@ -499,21 +524,21 @@ def _required_text(content: dict[str, Any], key: str, label: str) -> str:
     value = _required_value(content, key)
     text = str(value).strip()
     if not text:
-        raise RuntimeError(f"拆解-再创文档缺少 {label}")
+        raise RuntimeError(f"创作交接文档缺少 {label}")
     return f"{label}：{text}"
 
 
 def _required_mapping(content: dict[str, Any], key: str) -> dict[str, Any]:
     value = _required_value(content, key)
     if not isinstance(value, dict):
-        raise RuntimeError(f"拆解-再创文档 {key} 必须是 object")
+        raise RuntimeError(f"创作交接文档 {key} 必须是 object")
     return value
 
 
 def _required_list(content: dict[str, Any], key: str) -> list[Any]:
     value = _required_value(content, key)
     if not isinstance(value, list):
-        raise RuntimeError(f"拆解-再创文档 {key} 必须是 array")
+        raise RuntimeError(f"创作交接文档 {key} 必须是 array")
     return value
 
 
@@ -521,7 +546,7 @@ def _recreate_editorial_plan_blocks(plan: dict[str, Any]) -> list[dict[str, Any]
     primary = plan.get("primary_plan")
     backups = plan.get("backup_variants")
     if not isinstance(primary, dict) or not isinstance(backups, list) or len(backups) != 2:
-        raise RuntimeError("拆解-再创文档 editorial_plan 必须包含 1 个主方案 + 2 个备选改法")
+        raise RuntimeError("创作交接文档 editorial_plan 必须包含 1 个主方案 + 2 个备选改法")
     blocks = [_heading("千万年薪编导会怎么把这条改出彩？")]
     blocks.append(_heading3("主方案"))
     blocks.extend(
@@ -539,7 +564,7 @@ def _recreate_editorial_plan_blocks(plan: dict[str, Any]) -> list[dict[str, Any]
     backup_lines = []
     for idx, item in enumerate(backups, 1):
         if not isinstance(item, dict):
-            raise RuntimeError("拆解-再创文档 backup_variants 必须是 object 数组")
+            raise RuntimeError("创作交接文档 backup_variants 必须是 object 数组")
         backup_lines.append(
             f"{idx}. {_summary_value(item.get('title'))}；差异：{_summary_value(item.get('difference'))}；适合：{_summary_value(item.get('best_for'))}；风险：{_summary_value(item.get('risk'))}"
         )
@@ -551,13 +576,13 @@ def _recreate_production_route_blocks(plan: dict[str, Any]) -> list[dict[str, An
     rows = plan.get("shot_route_table")
     final_assembly = plan.get("final_assembly")
     if not isinstance(rows, list) or not rows or not isinstance(final_assembly, dict):
-        raise RuntimeError("拆解-再创文档 production_route_plan 结构不完整")
+        raise RuntimeError("创作交接文档 production_route_plan 结构不完整")
     blocks = [_heading("这条内容怎么生产出来")]
     blocks.extend(_value_blocks([f"路线原则：{_summary_value(plan.get('route_policy'))}"]))
     route_lines = []
     for item in rows:
         if not isinstance(item, dict):
-            raise RuntimeError("拆解-再创文档 shot_route_table 必须是 object 数组")
+            raise RuntimeError("创作交接文档 shot_route_table 必须是 object 数组")
         route_lines.append(
             f"{_summary_value(item.get('segment_id'))}：{_summary_value(item.get('story_purpose'))}；路线={_summary_value(item.get('route'))}；素材={_summary_value(item.get('needed_material'))}；执行={_summary_value(item.get('execution_note'))}；检查={_summary_value(item.get('risk_or_manual_check'))}"
         )
@@ -626,7 +651,7 @@ def _recreate_risk_blocks(risks: list[Any]) -> list[dict[str, Any]]:
     lines = []
     for item in risks:
         if not isinstance(item, dict):
-            raise RuntimeError("拆解-再创文档 risk_controls 必须是 object 数组")
+            raise RuntimeError("创作交接文档 risk_controls 必须是 object 数组")
         applies_to = _summary_value(item.get("applies_to"))
         suffix = f"；适用：{applies_to}" if applies_to else ""
         lines.append(f"风险：{_summary_value(item.get('risk'))}；控制：{_summary_value(item.get('control'))}{suffix}")
@@ -659,7 +684,7 @@ def _deconstruct_doc_blocks(content: dict[str, Any], *, include_evidence_appendi
         blocks.extend(guardrail_blocks)
     brief_lines = _compact_brief_lines(content.get("human_readable_brief") or {})
     if brief_lines:
-        blocks.append(_heading("拆解-再创提示"))
+        blocks.append(_heading("创作交接提示"))
         blocks.extend(_value_blocks(brief_lines))
     for title, key in [
         ("避重/改写建议", "avoid_plagiarism_notes"),
@@ -763,13 +788,15 @@ def _create_docx_table(
     cols: int,
     error_label: str,
 ) -> list[str]:
+    validate_docx_table_create_shape(rows, cols)
+    blocks = []
+    if str(heading or "").strip():
+        blocks.append(_heading(heading))
+    blocks.append({"block_type": 31, "table": {"property": {"row_size": rows, "column_size": cols}}})
     payload = _post_docx_children(
         document_id,
         document_id,
-        [
-            _heading(heading),
-            {"block_type": 31, "table": {"property": {"row_size": rows, "column_size": cols}}},
-        ],
+        blocks,
         token,
         error_label,
         timeout=30,
@@ -1131,25 +1158,61 @@ def append_storyboard_table(
     if not storyboard:
         return
     cols = ["时间", "画面", "字幕/口播", "声音/拍摄注意", "画面图"]
-    max_items_per_table = min(8, max(1, 50 // len(cols) - 1))
+    max_items_per_table = max(1, max_docx_table_rows_for_cell_writer(len(cols)) - 1)
+    storyboard_chunks = [storyboard[start:start + max_items_per_table] for start in range(0, len(storyboard), max_items_per_table)]
+    image_request_multiplier = 4 if storyboard_image_assets else 1
+    ensure_docx_tables_write_budget(
+        [_storyboard_budget_rows(cols, chunk, bool(storyboard_image_assets)) for chunk in storyboard_chunks],
+        requests_per_non_empty_cell=image_request_multiplier,
+    )
     image_paths_by_shot = {str(item.get("shot_no")): str(item.get("path") or "") for item in (storyboard_image_assets or []) if item.get("path")}
     image_paths_by_asset = {str(item.get("asset_id")): str(item.get("path") or "") for item in (storyboard_image_assets or []) if item.get("path")}
-    for chunk_index, start in enumerate(range(0, len(storyboard), max_items_per_table), 1):
-        chunk = storyboard[start:start + max_items_per_table]
-        heading = "视频分镜表" if chunk_index == 1 else f"视频分镜表（续 {chunk_index}）"
+    for chunk_index, chunk in enumerate(storyboard_chunks, 1):
+        heading = "视频分镜表" if chunk_index == 1 else ""
         rows = len(chunk) + 1
-        cell_ids = _create_docx_table(document_id, token, heading, rows, len(cols), "创建飞书视频分镜真表格失败")
-        _fill_storyboard_table_cells(
-            document_id,
-            token,
-            cell_ids,
-            cols,
-            chunk,
-            image_paths_by_shot,
-            image_paths_by_asset,
-            strict_images,
-            bool(storyboard_image_assets),
+        validate_docx_table_create_shape(rows, len(cols))
+        ensure_docx_table_write_budget(_storyboard_budget_rows(cols, chunk, bool(storyboard_image_assets)), requests_per_non_empty_cell=image_request_multiplier)
+        start_index = _cleanup_start_index(document_id, token)
+        try:
+            cell_ids = _create_docx_table(document_id, token, heading, rows, len(cols), "创建飞书视频分镜真表格失败")
+            _fill_storyboard_table_cells(
+                document_id,
+                token,
+                cell_ids,
+                cols,
+                chunk,
+                image_paths_by_shot,
+                image_paths_by_asset,
+                strict_images,
+                bool(storyboard_image_assets),
+            )
+        except Exception:
+            _cleanup_failed_docx_table(document_id, token, start_index, "清理失败视频分镜表失败")
+            raise
+
+
+def _storyboard_budget_rows(cols: list[str], storyboard: list[dict[str, Any]], has_storyboard_image_assets: bool) -> list[list[str]]:
+    rows = [cols]
+    for index, item in enumerate(storyboard, 1):
+        has_image_or_placeholder = bool(item.get("evidence_asset_id")) or has_storyboard_image_assets
+        rows.append(
+            [
+                str(item.get("duration") or item.get("time") or item.get("shot_no") or index),
+                str(item.get("visual") or item.get("description") or ""),
+                str(item.get("subtitle") or item.get("voiceover") or item.get("subtitle_or_voiceover") or ""),
+                "；".join(
+                    str(value).strip()
+                    for value in (
+                        item.get("camera_movement") or item.get("运镜") or "",
+                        item.get("props") or "",
+                        item.get("edit_notes") or "",
+                    )
+                    if str(value).strip()
+                ),
+                "image" if has_image_or_placeholder else "",
+            ]
         )
+    return rows
 
 
 def _fill_storyboard_table_cells(
@@ -1223,8 +1286,53 @@ def append_image_post_table(
         return
     image_paths_by_asset = {str(item.get("asset_id")): str(item.get("path") or "") for item in image_assets if item.get("path")}
     cols = ["时间", "画面", "字幕/口播", "声音/拍摄注意", "画面图"]
+    max_items_per_table = max(1, max_docx_table_rows_for_cell_writer(len(cols)) - 1)
+    script_chunks = [image_post_script[start:start + max_items_per_table] for start in range(0, len(image_post_script), max_items_per_table)]
+    image_request_multiplier = 4 if image_paths_by_asset else 1
+    ensure_docx_tables_write_budget(
+        [_image_post_budget_rows(cols, chunk, image_paths_by_asset) for chunk in script_chunks],
+        requests_per_non_empty_cell=image_request_multiplier,
+    )
+    for chunk_index, chunk in enumerate(script_chunks, 1):
+        rows = len(chunk) + 1
+        heading = "图文画面表" if chunk_index == 1 else ""
+        validate_docx_table_create_shape(rows, len(cols))
+        ensure_docx_table_write_budget(_image_post_budget_rows(cols, chunk, image_paths_by_asset), requests_per_non_empty_cell=image_request_multiplier)
+        start_index = _cleanup_start_index(document_id, token)
+        try:
+            cell_ids = _create_docx_table(document_id, token, heading, rows, len(cols), "创建飞书图文真表格失败")
+            _fill_image_post_table_cells(document_id, token, cell_ids, cols, chunk, image_paths_by_asset, strict_images)
+        except Exception:
+            _cleanup_failed_docx_table(document_id, token, start_index, "清理失败图文画面表失败")
+            raise
+
+
+def _image_post_budget_rows(cols: list[str], image_post_script: list[dict[str, Any]], image_paths_by_asset: dict[str, str]) -> list[list[str]]:
+    rows = [cols]
+    for index, item in enumerate(image_post_script, 1):
+        evidence_asset_id = str(item.get("evidence_asset_id") or "")
+        rows.append(
+            [
+                str(item.get("duration") or item.get("page_no") or index),
+                str(item.get("image_prompt") or ""),
+                str(item.get("overlay_text") or ""),
+                str(item.get("caption_note") or ""),
+                "image" if image_paths_by_asset.get(evidence_asset_id, "") else "",
+            ]
+        )
+    return rows
+
+
+def _fill_image_post_table_cells(
+    document_id: str,
+    token: str,
+    cell_ids: list[str],
+    cols: list[str],
+    image_post_script: list[dict[str, Any]],
+    image_paths_by_asset: dict[str, str],
+    strict_images: bool,
+) -> None:
     rows = len(image_post_script) + 1
-    cell_ids = _create_docx_table(document_id, token, "图文画面表", rows, len(cols), "创建飞书图文真表格失败")
     for r in range(rows):
         for c in range(len(cols)):
             cell_id = cell_ids[r * len(cols) + c]

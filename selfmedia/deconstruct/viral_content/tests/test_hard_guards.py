@@ -6,10 +6,15 @@ from types import SimpleNamespace
 
 import pytest
 
+from selfmedia.request_constraints import parse_request_constraints
 from selfmedia.deconstruct.viral_content.src import media_parts, prompt, runner
 from selfmedia.deconstruct.viral_content.src.config import ConfigError, ViralDeconstructConfig
+from selfmedia.deconstruct.viral_content.src.evidence import modality_dag
 from selfmedia.deconstruct.viral_content.src.feishu_writer import (
+    _external_post_id,
+    _platform_from_url,
     build_attachment_plan,
+    source_asset_attachment_inputs,
     write_deconstruction,
 )
 from selfmedia.deconstruct.viral_content.src.llm_client import generate_json
@@ -45,6 +50,7 @@ def _test_config(**overrides) -> ViralDeconstructConfig:
 
 def _required_deconstruct_v2_fields() -> dict[str, object]:
     return {
+        "request_constraints": parse_request_constraints("【拆解】 https://example.com/video").to_dict(),
         "viral_reuse_assessment": {
             "observed_virality": "unknown",
             "mechanism_strength": "medium",
@@ -286,8 +292,8 @@ def _docx_table_response(body: dict[str, object], rows: int, cols: int) -> dict[
 def test_route_modes_are_code_defined() -> None:
     assert route_mode("普通素材 https://example.com") == WorkflowMode.ORGANIZE_ONLY
     assert route_mode("【拆解】 https://example.com") == WorkflowMode.DECONSTRUCT_ONLY
-    assert route_mode("【拆解】【拆解-再创】 https://example.com") == WorkflowMode.DECONSTRUCT_AND_RECREATE
-    assert route_mode("【拆解-再创】 https://example.com") == WorkflowMode.DECONSTRUCT_AND_RECREATE
+    assert route_mode("【拆解】【旧拆解到创作交接】 https://example.com") == WorkflowMode.DECONSTRUCT_ONLY
+    assert route_mode("【旧拆解到创作交接】 https://example.com") == WorkflowMode.ORGANIZE_ONLY
 
 
 def test_partial_deconstruct_reuses_prepared_evidence_and_omits_storyboard(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -360,21 +366,21 @@ def test_doc_titles_use_content_theme_and_short_id() -> None:
     assert runner.deconstruct_doc_title(source, "20260504153001") == "爆款拆解文档｜田径金牌转场｜20260504153001"
     assert (
         runner.recreate_doc_title(
-            "【拆解-再创】从丑效果转场到跑10秒80，会怎么样？",
+            "【创作】从丑效果转场到跑10秒80，会怎么样？",
             recreate,
             source,
             "20260504153001",
         )
-        == "拆解-再创｜田径金牌转场｜o123｜20260504153001"
+        == "创作交接｜田径金牌转场｜o123｜20260504153001"
     )
     assert (
         runner.recreate_doc_title(
-            "【拆解-再创】计划 2026-05-08 19:30 发",
+            "【创作】计划 2026-05-08 19:30 发",
             recreate,
             source,
             "20260504153001",
         )
-        == "拆解-再创｜田径金牌转场｜o123｜20260504153001"
+        == "创作交接｜田径金牌转场｜o123｜20260504153001"
     )
 
 
@@ -390,6 +396,7 @@ def test_no_real_media_stops(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(runner, "_load_content_ingest_modules", lambda: (lambda: object(), lambda url, settings: media))
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
+    monkeypatch.setattr(runner.time, "sleep", lambda seconds: None)
     with pytest.raises(media_parts.NoRealMediaError):
         runner.deconstruct("【拆解】 https://example.com")
 
@@ -421,6 +428,13 @@ def test_video_frames_are_cleaned_after_analysis_failure(tmp_path, monkeypatch: 
     monkeypatch.setattr(media_parts, "extract_video_frames", fake_extract_frames)
     monkeypatch.setattr(media_parts, "extract_first_frame", lambda video_path, out_dir: "")
     monkeypatch.setattr(media_parts, "extract_audio", fake_extract_audio)
+    monkeypatch.setattr(
+        modality_dag,
+        "generate_json",
+        lambda *args, **kwargs: {
+            "keyframe_observations": [{"asset_id": "frame_001", "observations": ["画面证据"]}]
+        },
+    )
     monkeypatch.setattr(runner, "_load_content_ingest_modules", lambda: (lambda: object(), lambda url, settings: media))
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
     monkeypatch.setattr(runner, "_call_llm", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("llm failed")))
@@ -457,6 +471,40 @@ def test_attachment_classification_is_strict(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="证据文件不存在或为空"):
         build_attachment_plan({"source_video_path": str(tmp_path / "missing.mp4")})
+
+
+def test_source_asset_attachment_inputs_prefers_cover_and_defers_large_video(tmp_path) -> None:
+    cover = tmp_path / "cover.jpg"
+    preview = tmp_path / "preview.jpg"
+    video = tmp_path / "video.mp4"
+    cover.write_bytes(b"cover")
+    preview.write_bytes(b"preview")
+    with video.open("wb") as handle:
+        handle.truncate(20 * 1024 * 1024 + 1)
+
+    selected, status = source_asset_attachment_inputs(
+        build_attachment_plan(
+            {
+                "cover_path": str(cover),
+                "source_preview_path": str(preview),
+                "source_video_path": str(video),
+            }
+        )
+    )
+
+    assert selected == {"cover_attachment": str(cover)}
+    assert status == {
+        "cover_attachment": "planned",
+        "video_attachment": "deferred_oversize",
+    }
+
+
+def test_source_asset_facts_use_structured_ids_and_url_hosts() -> None:
+    assert _external_post_id({"stats": {"platform_asset_id": "698561f"}}) == "698561f"
+    assert _external_post_id({"video_id": "7634755"}) == "7634755"
+    assert _platform_from_url("https://www.iesdouyin.com/share/video/7634755") == "抖音"
+    assert _platform_from_url("https://www.xiaohongshu.com/discovery/item/698561f") == "小红书"
+    assert _platform_from_url("https://example.com/?next=douyin.com") == ""
 
 
 def test_list_like_text_is_written_without_python_brackets() -> None:
@@ -599,7 +647,7 @@ def test_deconstruct_prompt_no_longer_requests_direct_recreation_script() -> Non
     assert "把原作品拆成用户可以直接复刻生产的执行稿" not in prompt.DECONSTRUCT_PROMPT
     assert "可执行复刻版" not in prompt.DECONSTRUCT_PROMPT
     assert "直接给 AI 生图、剪辑、拍摄执行" not in prompt.DECONSTRUCT_PROMPT
-    assert "后续【拆解-再创】另行生成用户自己的脚本" in prompt.DECONSTRUCT_PROMPT
+    assert "供后续创作/拍摄链路另行生成用户自己的脚本" in prompt.DECONSTRUCT_PROMPT
     assert "0-1s、1-2s、2-3s、3-4s、4-5s" in prompt.DECONSTRUCT_PROMPT
     assert "5-8s、8-11s、11-14s" in prompt.DECONSTRUCT_PROMPT
     assert "长视频只拆解前 60 秒" in prompt.DECONSTRUCT_PROMPT
@@ -963,19 +1011,42 @@ def test_llm_transport_error_retries_then_succeeds(monkeypatch: pytest.MonkeyPat
 
 def test_v2_writer_exposes_only_v2_source_and_payload_args() -> None:
     signature = inspect.signature(write_deconstruction)
-    assert list(signature.parameters) == ["result", "source_text"]
+    assert list(signature.parameters) == ["result", "source_text", "tenant_id"]
+    assert signature.parameters["tenant_id"].kind is inspect.Parameter.KEYWORD_ONLY
 
 
 def test_v2_writer_writes_source_asset_and_deconstruction(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
     import selfmedia.deconstruct.viral_content.src.feishu_writer as writer
 
+    tenant_id = "00000000-0000-4000-8000-000000000001"
+    cover = tmp_path / "cover.jpg"
+    video = tmp_path / "video.mp4"
+    cover.write_bytes(b"cover")
+    video.write_bytes(b"video")
     monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", str(tmp_path / "media_vault"))
     monkeypatch.setenv("MEDIA_OS_SOURCE_ASSETS_URL", "https://example.feishu.cn/base/app?table=source")
     monkeypatch.setenv("MEDIA_OS_MATERIAL_DECONSTRUCTIONS_URL", "https://example.feishu.cn/base/app?table=decon")
-    writes: list[tuple[str, dict[str, object], str]] = []
+    monkeypatch.setattr(writer, "load_default_env_files", lambda: None)
+    monkeypatch.setattr(writer, "load_env_file", lambda _path: None)
+    writes: list[tuple[str, dict[str, object], dict[str, object]]] = []
 
-    def fake_upsert(entity_name: str, table_url: str, payload: dict[str, object], *, key_field: str):
-        writes.append((entity_name, payload, key_field))
+    projection_calls: list[dict[str, object]] = []
+
+    def fake_project(**kwargs):
+        projection_calls.append(kwargs)
+
+    monkeypatch.setattr(writer, "_project_canonical_source_asset", fake_project)
+
+    def fake_upsert(entity_name: str, table_url: str, payload: dict[str, object], **kwargs):
+        writes.append((entity_name, payload, kwargs))
+        if entity_name == "SourceAsset":
+            return {
+                "record_id": "SourceAsset_record",
+                "fields": {
+                    "封面附件": [{"file_token": "cover_token"}],
+                    "视频附件": [{"file_token": "video_token"}],
+                },
+            }
         return {"record_id": f"{entity_name}_record"}
 
     monkeypatch.setattr(writer, "upsert_entity_record", fake_upsert)
@@ -987,7 +1058,10 @@ def test_v2_writer_writes_source_asset_and_deconstruction(monkeypatch: pytest.Mo
             "platform": "小红书",
             "source_title": "表达力复盘",
             "source_caption": "真实会议表达力复盘",
+            "cover_path": str(cover),
+            "source_video_path": str(video),
             "content_summary": "一次真实会议表达力卡住后的复盘。",
+            "tenant_id": "attacker-tenant-must-be-ignored",
             "viral_mechanism": "用冲突开头抓住表达力痛点。",
             "production_checklist": ["封面给出卡住瞬间", "正文拆三个动作"],
             "stats": {"author_id": "author1"},
@@ -998,12 +1072,31 @@ def test_v2_writer_writes_source_asset_and_deconstruction(monkeypatch: pytest.Mo
             **_required_deconstruct_v2_fields(),
         },
         "【拆解】 https://www.xiaohongshu.com/explore/post1",
+        tenant_id=tenant_id,
     )
 
     assert record_id == "MaterialDeconstruction_record"
     assert [item[0] for item in writes] == ["SourceAsset", "MaterialDeconstruction"]
+    assert len(projection_calls) == 1
+    assert projection_calls[0]["tenant_id"] == tenant_id
+    assert projection_calls[0]["result"]["tenant_id"] == "attacker-tenant-must-be-ignored"
+    assert projection_calls[0]["source_asset_record"]["record_id"] == "SourceAsset_record"
+    assert projection_calls[0]["deconstruction_record"]["record_id"] == "MaterialDeconstruction_record"
+    assert "tenant_id" not in projection_calls[0]["asset_payload"]
     source_payload = writes[0][1]
     decon_payload = writes[1][1]
+    assert writes[0][2] == {
+        "key_field": "asset_id",
+        "session_tenant_id": tenant_id,
+        "attachment_paths": {
+            "cover_attachment": str(cover),
+            "video_attachment": str(video),
+        },
+    }
+    assert writes[1][2] == {
+        "key_field": "deconstruction_id",
+        "session_tenant_id": tenant_id,
+    }
     assert source_payload["asset_id"]
     assert source_payload["source_url"] == "https://www.xiaohongshu.com/explore/post1"
     assert source_payload["source_doc_link"] == "https://tcnwueberajc.feishu.cn/docx/doc1"
@@ -1011,13 +1104,109 @@ def test_v2_writer_writes_source_asset_and_deconstruction(monkeypatch: pytest.Mo
     assert decon_payload["asset_id"] == source_payload["asset_id"]
     assert decon_payload["deconstruction_doc_link"] == "https://tcnwueberajc.feishu.cn/docx/doc1"
     assert str(decon_payload["evidence_uri"]).startswith("media://")
+    evidence_path = tmp_path / "media_vault" / str(source_payload["evidence_uri"]).removeprefix("media://")
+    source_evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    assert source_evidence["attachment_backwash"] == {
+        "cover_attachment": {"status": "completed", "file_tokens": ["cover_token"]},
+        "video_attachment": {"status": "completed", "file_tokens": ["video_token"]},
+    }
+    assert {(item["kind"], item["path"]) for item in source_evidence["attachments"]} == {
+        ("cover", str(cover)),
+        ("original_video", str(video)),
+    }
     assert decon_payload["shot_adaptation_notes_status"] == "validated"
     assert decon_payload["shot_adaptation_note_count"] == 1
     assert decon_payload.get("recommended_production_route", "") == ""
     assert decon_payload.get("motion_type_summary", "") == ""
     assert "shot_note_001" in decon_payload["shot_adaptation_notes_summary"]
-    assert (tmp_path / "media_vault" / "source_assets").exists()
-    assert (tmp_path / "media_vault" / "deconstructions").exists()
+    assert evidence_path.exists()
+    deconstruction_path = tmp_path / "media_vault" / str(decon_payload["evidence_uri"]).removeprefix("media://")
+    assert deconstruction_path.exists()
+
+
+def test_v2_writer_projection_failure_blocks_success(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    import selfmedia.deconstruct.viral_content.src.feishu_writer as writer
+
+    tenant_id = "00000000-0000-4000-8000-000000000003"
+    monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", str(tmp_path / "media_vault"))
+    monkeypatch.setenv("MEDIA_OS_SOURCE_ASSETS_URL", "https://example.feishu.cn/base/app?table=source")
+    monkeypatch.setenv("MEDIA_OS_MATERIAL_DECONSTRUCTIONS_URL", "https://example.feishu.cn/base/app?table=decon")
+    monkeypatch.setattr(writer, "load_default_env_files", lambda: None)
+    monkeypatch.setattr(writer, "load_env_file", lambda _path: None)
+    events: list[str] = []
+
+    def fake_upsert(entity_name: str, table_url: str, payload: dict[str, object], **kwargs):
+        events.append(entity_name)
+        if entity_name == "SourceAsset":
+            return {"record_id": "source", "fields": {}}
+        return {"record_id": "deconstruction", "fields": {}}
+
+    def fail_projection(**kwargs):
+        raise RuntimeError("canonical source projection failed")
+
+    monkeypatch.setattr(writer, "upsert_entity_record", fake_upsert)
+    monkeypatch.setattr(writer, "_project_canonical_source_asset", fail_projection)
+
+    with pytest.raises(RuntimeError, match="canonical source projection failed"):
+        write_deconstruction(
+            {
+                "schema_version": "deconstruction.v2",
+                "source_url": "https://www.xiaohongshu.com/explore/post3",
+                "platform": "小红书",
+                "source_caption": "投影失败不能宣称完成",
+                "content_summary": "summary",
+                "viral_mechanism": "mechanism",
+                "evidence_manifest": {"frame_001": {"type": "visual", "asset_id": "frame_001", "kind": "keyframe"}},
+                **_minimal_evidence_dag("frame_001"),
+                **_required_deconstruct_v2_fields(),
+            },
+            "【拆解】 https://www.xiaohongshu.com/explore/post3",
+            tenant_id=tenant_id,
+        )
+
+    assert events == ["SourceAsset", "MaterialDeconstruction"]
+
+def test_v2_writer_marks_attachment_backwash_failed_when_source_asset_write_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    import selfmedia.deconstruct.viral_content.src.feishu_writer as writer
+
+    tenant_id = "00000000-0000-4000-8000-000000000002"
+    cover = tmp_path / "cover.jpg"
+    cover.write_bytes(b"cover")
+    monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", str(tmp_path / "media_vault"))
+    monkeypatch.setenv("MEDIA_OS_SOURCE_ASSETS_URL", "https://example.feishu.cn/base/app?table=source")
+    monkeypatch.setenv("MEDIA_OS_MATERIAL_DECONSTRUCTIONS_URL", "https://example.feishu.cn/base/app?table=decon")
+    monkeypatch.setattr(writer, "load_default_env_files", lambda: None)
+    monkeypatch.setattr(writer, "load_env_file", lambda _path: None)
+    source_payload: dict[str, object] = {}
+
+    def fail_upsert(entity_name: str, table_url: str, payload: dict[str, object], **kwargs):
+        source_payload.update(payload)
+        raise RuntimeError("bitable write rejected")
+
+    monkeypatch.setattr(writer, "upsert_entity_record", fail_upsert)
+
+    with pytest.raises(RuntimeError, match="bitable write rejected"):
+        write_deconstruction(
+            {
+                "source_url": "https://www.xiaohongshu.com/explore/post2",
+                "platform": "小红书",
+                "source_caption": "写入失败应保留回洗失败状态",
+                "cover_path": str(cover),
+                "evidence_store": {"schema_version": "evidence_store_v1"},
+            },
+            "【拆解】 https://www.xiaohongshu.com/explore/post2",
+            tenant_id=tenant_id,
+        )
+
+    evidence_path = tmp_path / "media_vault" / str(source_payload["evidence_uri"]).removeprefix("media://")
+    source_evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    assert source_evidence["attachment_backwash"] == {
+        "cover_attachment": {"status": "failed"},
+        "video_attachment": {"status": "source_missing"},
+    }
 
 
 def test_missing_llm_key_fails_fast_before_part1(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1189,16 +1378,18 @@ def test_recreate_video_prunes_image_post_script(monkeypatch: pytest.MonkeyPatch
         "multi_signal_contract": _multi_signal_contract_payload(),
     }
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
-    monkeypatch.setattr(runner, "load_config", lambda: _test_config())
+    loaded_profiles: list[str] = []
+    monkeypatch.setattr(runner, "load_config", lambda profile_name="media_analysis": loaded_profiles.append(profile_name) or _test_config())
 
-    def fake_call_llm(parts, schema, post_validate=None):
+    def fake_call_llm(parts, schema, post_validate=None, **kwargs):
+        assert kwargs["profile_name"] == "media_creation"
         captured_parts.extend(parts)
         return _recreate_payload_with_both_scripts()
 
     monkeypatch.setattr(runner, "_call_llm", fake_call_llm)
     result = runner.recreate("【拆解-再创】做转场短视频", source)
     serialized_parts = json.dumps(captured_parts, ensure_ascii=False)
-    assert "本次拆解-再创交付类型：video" in serialized_parts
+    assert "本次创作交接类型：video" in serialized_parts
     assert "唯一 multi_signal_contract 多维证据合同" in serialized_parts
     assert "source_signal_dimensions" in serialized_parts
     assert "storyboard_images_default" in serialized_parts
@@ -1210,6 +1401,7 @@ def test_recreate_video_prunes_image_post_script(monkeypatch: pytest.MonkeyPatch
     assert result["video_storyboard"]
     assert result["image_post_script"] == []
     assert result["generate_storyboard_images"] is False
+    assert loaded_profiles == ["media_creation"]
 
 
 def test_recreate_generates_storyboard_images_only_when_explicit(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1219,7 +1411,7 @@ def test_recreate_generates_storyboard_images_only_when_explicit(monkeypatch: py
         "multi_signal_contract": _multi_signal_contract_payload(),
     }
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
-    monkeypatch.setattr(runner, "load_config", lambda: _test_config())
+    monkeypatch.setattr(runner, "load_config", lambda _profile_name="media_analysis": _test_config())
     monkeypatch.setattr(runner, "_call_llm", lambda *args, **kwargs: _recreate_payload_with_both_scripts())
 
     result = runner.recreate("【拆解-再创】做转场短视频，生成分镜图", source)
@@ -1233,7 +1425,7 @@ def test_recreate_image_post_prunes_video_script(monkeypatch: pytest.MonkeyPatch
         "multi_signal_contract": _multi_signal_contract_payload(),
     }
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
-    monkeypatch.setattr(runner, "load_config", lambda: _test_config())
+    monkeypatch.setattr(runner, "load_config", lambda _profile_name="media_analysis": _test_config())
     monkeypatch.setattr(runner, "_call_llm", lambda *args, **kwargs: _recreate_payload_with_both_scripts())
 
     result = runner.recreate("【拆解-再创】改成小红书图文", source)
@@ -1264,9 +1456,9 @@ def test_recreate_prompt_uses_compact_source(monkeypatch: pytest.MonkeyPatch) ->
         "multi_signal_contract": _multi_signal_contract_payload(),
     }
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
-    monkeypatch.setattr(runner, "load_config", lambda: _test_config())
+    monkeypatch.setattr(runner, "load_config", lambda _profile_name="media_analysis": _test_config())
 
-    def fake_call_llm(parts, schema, post_validate=None):
+    def fake_call_llm(parts, schema, post_validate=None, **_kwargs):
         captured_parts.extend(parts)
         return _recreate_payload_with_both_scripts()
 
@@ -1495,7 +1687,7 @@ def test_deconstruct_uses_direct_codex_keyframe_observation(tmp_path, monkeypatc
     assert result["keyframe_observations"][0]["source"] == "codex_responses"
 
 
-def test_codex_responses_adapter_returns_json_without_stream_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_codex_responses_adapter_uses_canonical_sse_v1_route(monkeypatch: pytest.MonkeyPatch) -> None:
     import common.llm_client as common_llm_client
 
     captured: dict[str, object] = {}
@@ -1504,8 +1696,9 @@ def test_codex_responses_adapter_returns_json_without_stream_by_default(monkeypa
         def raise_for_status(self) -> None:
             return None
 
-        def json(self):
-            return {"output_text": "{\"ok\":true}"}
+        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
+            yield 'data: {"type":"response.output_text.delta","delta":"{\\"ok\\":true}"}\n'
+            yield "data: [DONE]\n"
 
     def fake_post(url, headers, json, timeout, stream=False):
         captured["url"] = url
@@ -1516,27 +1709,39 @@ def test_codex_responses_adapter_returns_json_without_stream_by_default(monkeypa
 
     monkeypatch.setattr(common_llm_client.requests, "post", fake_post)
     config = _test_config(
-        model="gpt-5.5",
-        base_url="https://example.com/backend-api",
+        model="gpt-5.6-terra",
+        base_url="https://example.com/v1",
         api_key="codex-token",
         llm_api_type="openai_codex_responses",
     )
     result = generate_json([{"text": "return json"}], config)
     assert result == {"ok": True}
-    assert captured["url"] == "https://example.com/backend-api/codex/responses"
-    assert captured["stream"] is False
+    assert captured["url"] == "https://example.com/v1/responses"
+    assert captured["stream"] is True
     assert isinstance(captured["timeout"], tuple)
-    assert captured["json"]["stream"] is False
+    assert captured["json"]["stream"] is True
     assert captured["json"]["store"] is False
     assert captured["json"]["instructions"]
 
 
-def test_viral_deconstruct_config_uses_media_creation_profile() -> None:
+def test_viral_deconstruct_config_uses_media_analysis_profile_by_default() -> None:
+    from selfmedia.deconstruct.viral_content.src.config import load_config
+    from common.llm_settings import load_profile_llm_settings
+
+    expected = load_profile_llm_settings("media_analysis")
+    config = load_config()
+    assert config.llm_api_type == expected.api_type
+    assert config.model == expected.model
+    assert config.agent == expected.agent
+    assert config.bin == expected.bin
+
+
+def test_viral_recreate_config_uses_media_creation_profile() -> None:
     from selfmedia.deconstruct.viral_content.src.config import load_config
     from common.llm_settings import load_profile_llm_settings
 
     expected = load_profile_llm_settings("media_creation")
-    config = load_config()
+    config = load_config("media_creation")
     assert config.llm_api_type == expected.api_type
     assert config.model == expected.model
     assert config.agent == expected.agent

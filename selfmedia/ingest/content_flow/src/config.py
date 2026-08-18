@@ -19,6 +19,14 @@ class Settings:
     gemini_model: str
     analysis_timeout: float
     max_inline_size: int
+    asr_provider: str
+    dashscope_api_key: str
+    dashscope_asr_model: str
+    dashscope_asr_mode: str
+    dashscope_diarization_enabled: bool
+    dashscope_speaker_count: int
+    dashscope_poll_interval: float
+    dashscope_timeout: float
     gemini_timeout: float
     download_read_timeout: float
     download_max_seconds: float
@@ -44,6 +52,15 @@ def load_settings() -> Settings:
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-3-pro-preview"),
         analysis_timeout=analysis_llm.timeout,
         max_inline_size=int(os.getenv("MAX_INLINE_SIZE", str(20 * 1024 * 1024))),
+        asr_provider=os.getenv("ASR_PROVIDER", "dashscope").strip().lower(),
+        dashscope_api_key=os.getenv("DASHSCOPE_API_KEY", ""),
+        dashscope_asr_model=os.getenv("DASHSCOPE_ASR_MODEL", "fun-asr"),
+        dashscope_asr_mode=os.getenv("DASHSCOPE_ASR_MODE", "batch").strip().lower(),
+        dashscope_diarization_enabled=os.getenv("DASHSCOPE_DIARIZATION_ENABLED", "1").lower()
+        in ("1", "true", "yes", "on"),
+        dashscope_speaker_count=int(os.getenv("DASHSCOPE_SPEAKER_COUNT", "0") or "0"),
+        dashscope_poll_interval=float(os.getenv("DASHSCOPE_POLL_INTERVAL", "5")),
+        dashscope_timeout=float(os.getenv("DASHSCOPE_TIMEOUT", "14400")),
         gemini_timeout=float(os.getenv("GEMINI_TIMEOUT", "60")),
         download_read_timeout=float(os.getenv("DOWNLOAD_READ_TIMEOUT", "120")),
         download_max_seconds=float(os.getenv("DOWNLOAD_MAX_SECONDS", "180")),

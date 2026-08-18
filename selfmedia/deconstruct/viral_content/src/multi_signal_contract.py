@@ -16,7 +16,7 @@ from .multi_signal_schema import (
 MULTI_SIGNAL_CONTRACT_VERSION = "multi_signal_contract.v1"
 
 MULTI_SIGNAL_CONTRACT_PROMPT = """
-你是【拆解-再创】的合同草稿生成器。基于 deconstruction 摘要、evidence_store 摘要和用户再创意图，只输出 recreate() 要消费的证据信号草稿。
+你是创作交接合同草稿生成器。基于 deconstruction 摘要、evidence_store 摘要和用户创作交接意图，只输出后续创作/拍摄链路要消费的证据信号草稿。
 
 只输出严格 JSON object，不要 Markdown，不要解释。顶层只需要这些字段：
 - source_signal_dimensions: 3-6 个维度即可，按证据自然形成 visual、speech、ocr、pacing、copy、comments、engagement、risk 等；每项包含 dimension_id、status、source_refs、observations、summary、reusable_signal、transform_rule、risk_boundary、confidence、insufficient_evidence、conflict_notes。
@@ -129,7 +129,7 @@ def _contract_prompt_parts(deconstruction: dict[str, Any], *, user_intent: str) 
     }
     return [
         {"text": MULTI_SIGNAL_CONTRACT_PROMPT},
-        {"text": "用户【拆解-再创】意图：\n" + str(user_intent or "").strip()},
+        {"text": "用户创作交接意图：\n" + str(user_intent or "").strip()},
         {"text": "deconstruction + evidence_store compact payload：\n" + json.dumps(compact_payload, ensure_ascii=False, separators=(",", ":"))},
     ]
 

@@ -139,7 +139,9 @@ def register_llm_validation_contract(contract: LLMValidationContract) -> str:
     if bound_prompt_ids and not contract.prompt_contract_ids:
         contract = replace(contract, prompt_contract_ids=bound_prompt_ids)
     existing = _CONTRACTS.get(contract.contract_id)
-    if existing is not None and existing is not contract:
+    # Modules can be loaded more than once by CLI/plugin boundaries and tests.
+    # Re-register an equivalent contract idempotently, but reject drift.
+    if existing is not None and existing != contract:
         raise ValueError(f"duplicate LLM validation contract_id: {contract.contract_id}")
     _CONTRACTS[contract.contract_id] = contract
     return contract.contract_id

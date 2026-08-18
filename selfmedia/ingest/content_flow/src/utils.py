@@ -9,6 +9,14 @@ from typing import Optional
 from urllib.parse import parse_qs, urljoin, urlparse
 
 
+XIAOHONGSHU_HOSTS = ("xiaohongshu.com", "xhslink.com", "xhslink.cn")
+
+
+def is_xiaohongshu_url(url: str) -> bool:
+    host = (urlparse((url or "").strip()).hostname or "").lower().rstrip(".")
+    return any(host == domain or host.endswith(f".{domain}") for domain in XIAOHONGSHU_HOSTS)
+
+
 def extract_douyin_id(url: str) -> tuple[str, Optional[str]]:
     if not url:
         return "", None
@@ -61,7 +69,7 @@ def detect_platform(url: str) -> str:
     lower = url.lower()
     if "douyin.com" in lower or "iesdouyin.com" in lower or "aweme" in lower:
         return "抖音"
-    if "xiaohongshu.com" in lower or "xhslink.com" in lower:
+    if is_xiaohongshu_url(url):
         return "小红书"
     return "未知"
 

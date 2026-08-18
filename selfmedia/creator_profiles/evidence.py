@@ -5,28 +5,43 @@ import json
 from pathlib import Path
 from typing import Any
 
+from media_vault.vault import MediaVault
+
 from .schemas import platform_slug
 
 
-DEFAULT_VAULT_ROOT = Path("/home/ubuntu/selfmedia-tools/data/media_vault/creator_profiles")
+def evidence_uri(platform: str, author_id: str, run_id: str, *, tenant_id: str, root: Path | None = None) -> str:
+    vault = MediaVault(tenant_id=tenant_id, root=root)
+    return vault.to_uri(evidence_dir(platform, author_id, run_id, tenant_id=tenant_id, root=root))
 
 
-def evidence_uri(platform: str, author_id: str, run_id: str) -> str:
-    return f"media://creator_profiles/{platform_slug(platform)}/{author_id}/{run_id}"
-
-
-def evidence_dir(platform: str, author_id: str, run_id: str, *, root: Path = DEFAULT_VAULT_ROOT) -> Path:
-    return root / platform_slug(platform) / str(author_id or "unknown") / run_id
+def evidence_dir(
+    platform: str,
+    author_id: str,
+    run_id: str,
+    *,
+    tenant_id: str,
+    root: Path | None = None,
+) -> Path:
+    vault = MediaVault(tenant_id=tenant_id, root=root)
+    return vault.root / "creator_profiles" / platform_slug(platform) / str(author_id or "unknown") / run_id
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def write_evidence_bundle(*, run_id: str, resolver_result: dict[str, Any], root: Path = DEFAULT_VAULT_ROOT) -> dict[str, Any]:
+def write_evidence_bundle(
+    *,
+    run_id: str,
+    resolver_result: dict[str, Any],
+    tenant_id: str,
+    root: Path | None = None,
+) -> dict[str, Any]:
     platform = str(resolver_result.get("platform") or "")
     author_id = str(resolver_result.get("resolved_author_id") or resolver_result.get("input_platform_id") or "unknown")
-    target = evidence_dir(platform, author_id, run_id, root=root)
+    vault = MediaVault(tenant_id=tenant_id, root=root)
+    target = evidence_dir(platform, author_id, run_id, tenant_id=tenant_id, root=root)
     target.mkdir(parents=True, exist_ok=True)
 
     raw_dom = str(resolver_result.get("raw_dom") or "")
@@ -49,7 +64,7 @@ def write_evidence_bundle(*, run_id: str, resolver_result: dict[str, Any], root:
         "resolve_status": resolver_result.get("resolve_status", ""),
         "extractor_version": "creator_profile_enrichment.v1",
         "write_status": "candidate_only",
-        "evidence_uri": evidence_uri(platform, author_id, run_id),
+        "evidence_uri": vault.to_uri(target),
     }
     write_json(target / "metadata.json", metadata)
     write_json(target / "resolver_result.json", clean_resolver)

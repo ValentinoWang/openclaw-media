@@ -11,9 +11,16 @@ import requests
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
-from .extractor import merge_profile_facts, parse_douyin_embedded_profile_data, parse_douyin_profile_text
+from .extractor import (
+    merge_profile_facts,
+    normalize_public_http_url,
+    parse_douyin_embedded_profile_data,
+    parse_douyin_profile_text,
+    parse_xiaohongshu_embedded_profile_data,
+    parse_xiaohongshu_profile_text,
+)
 from .schemas import normalize_platform
-from selfmedia.business.id_business import load_playwright_cookies
+from selfmedia.business.id_business import load_playwright_cookies, profile_capture_block_result
 
 
 DOUYIN_BLOCKED_PROFILE_PATHS = {"/user/self"}
@@ -25,6 +32,12 @@ CHROMIUM_EXECUTABLE_CANDIDATES = (
     os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE", ""),
     "/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
 )
+PROFILE_HOST_SUFFIXES = {
+    "douyin.com": "抖音",
+    "iesdouyin.com": "抖音",
+    "xiaohongshu.com": "小红书",
+    "xhslink.com": "小红书",
+}
 
 
 def launch_chromium(playwright, *, headless: bool = True):
@@ -35,6 +48,36 @@ def launch_chromium(playwright, *, headless: bool = True):
         if path.is_file() and os.access(path, os.X_OK):
             return playwright.chromium.launch(headless=headless, executable_path=str(path))
     return playwright.chromium.launch(headless=headless)
+
+
+def infer_profile_platform(url: str) -> str:
+    host = (urllib.parse.urlparse(str(url or "").strip()).hostname or "").lower()
+    for suffix, platform in PROFILE_HOST_SUFFIXES.items():
+        if host == suffix or host.endswith("." + suffix):
+            return platform
+    return ""
+
+
+def resolve_xiaohongshu_share_url(url: str) -> str:
+    raw = str(url or "").strip()
+    if infer_profile_platform(raw) != "小红书":
+        return ""
+    parsed = urllib.parse.urlparse(raw)
+    host = (parsed.hostname or "").lower()
+    if (host == "xiaohongshu.com" or host.endswith(".xiaohongshu.com")) and parsed.path.startswith("/user/profile/"):
+        return raw
+    if host != "xhslink.com" and not host.endswith(".xhslink.com"):
+        return ""
+    try:
+        response = requests.get(raw, allow_redirects=True, headers={"User-Agent": DOUYIN_USER_AGENT}, timeout=20)
+    except requests.RequestException:
+        return ""
+    final_url = str(response.url or "").strip()
+    final = urllib.parse.urlparse(final_url)
+    final_host = (final.hostname or "").lower()
+    if (final_host == "xiaohongshu.com" or final_host.endswith(".xiaohongshu.com")) and final.path.startswith("/user/profile/"):
+        return final_url
+    return ""
 
 
 def douyin_search_url(keyword: str) -> str:
@@ -131,7 +174,14 @@ def capture_screenshot_bytes(page) -> tuple[bytes, str]:
     return b"", second_error or first_error
 
 
-def open_douyin_profile_candidate(page, url: str, *, platform_id: str, creator_name: str, source: str) -> dict[str, Any]:
+def open_douyin_profile_candidate(
+    page,
+    url: str,
+    *,
+    platform_id: str = "",
+    creator_name: str = "",
+    source: str = "homepage_hint",
+) -> dict[str, Any]:
     if not url:
         return {"ok": False, "platform": "抖音", "resolve_status": "missing_profile_url", "source": source}
     if is_douyin_self_profile_url(url):
@@ -170,7 +220,8 @@ def open_douyin_profile_candidate(page, url: str, *, platform_id: str, creator_n
         raw_dom = ""
     screenshot_bytes, screenshot_error = capture_screenshot_bytes(page)
     parsed = parse_douyin_profile_text(body, final_url, title=title)
-    parsed = merge_profile_facts(parsed, parse_douyin_embedded_profile_data(raw_dom, platform_id))
+    if platform_id:
+        parsed = merge_profile_facts(parsed, parse_douyin_embedded_profile_data(raw_dom, platform_id))
     if not body and goto_error:
         return {
             "ok": False,
@@ -181,7 +232,9 @@ def open_douyin_profile_candidate(page, url: str, *, platform_id: str, creator_n
             "source": source,
             "input_platform_id": platform_id,
         }
-    if str(parsed.get("author_id") or "") != str(platform_id):
+    resolved_author_id = str(parsed.get("author_id") or "").strip()
+    account_name = str(parsed.get("account_name") or creator_name or "").strip()
+    if platform_id and resolved_author_id != str(platform_id):
         return {
             "ok": False,
             "platform": "抖音",
@@ -195,25 +248,37 @@ def open_douyin_profile_candidate(page, url: str, *, platform_id: str, creator_n
             "parsed_author_id": parsed.get("author_id", ""),
             "extracted_profile": parsed,
         }
-    parsed.update({"platform": "抖音", "profile_url": final_url})
+    if not resolved_author_id or not account_name:
+        return {
+            "ok": False,
+            "platform": "抖音",
+            "resolve_status": "pending_manual_missing_identity",
+            "resolved_profile_url": final_url,
+            "source": source,
+            "input_platform_id": platform_id,
+            "parsed_author_id": resolved_author_id,
+            "parsed_account_name": account_name,
+            "extracted_profile": parsed,
+        }
+    parsed.update({"platform": "抖音", "profile_url": final_url, "account_name": account_name})
     return {
         "ok": True,
         "platform": "抖音",
-        "resolve_status": "exact_profile_resolved",
+        "resolve_status": "exact_profile_resolved" if platform_id else "profile_url_resolved",
         "source": source,
         "input_platform_id": platform_id,
         "input_platform_id_type": "douyin_display_id",
-        "resolved_author_id": platform_id,
+        "resolved_author_id": resolved_author_id,
         "resolved_author_id_type": "douyin_display_id",
         "resolved_profile_url": final_url,
-        "account_name": parsed.get("account_name") or creator_name,
+        "account_name": account_name,
         "title": title,
         "rendered_text": body,
         "raw_dom": raw_dom,
         "screenshot_bytes": screenshot_bytes,
         "screenshot_error": screenshot_error,
         "extracted_profile": parsed,
-        "success_evidence": [f"public rendered text includes 抖音号：{platform_id}"],
+        "success_evidence": [f"public rendered text includes 抖音号：{resolved_author_id}"],
     }
 
 
@@ -232,8 +297,19 @@ def resolve_douyin_profile(*, platform_id: str, id_type: str = "douyin_display_i
                 direct = open_douyin_profile_candidate(page, direct_url, platform_id=platform_id, creator_name=creator_name, source="homepage_hint")
                 if direct.get("ok"):
                     return direct
+                if not platform_id:
+                    return direct
                 if direct.get("resolve_status") not in {"blocked_no_exact_id_match", "blocked_self_profile"}:
                     return direct
+            if not platform_id:
+                return {
+                    "ok": False,
+                    "platform": "抖音",
+                    "resolve_status": "invalid_profile_url",
+                    "resolved_profile_url": str(url or "").strip(),
+                    "input_platform_id": "",
+                    "input_platform_id_type": id_type,
+                }
             search_url = douyin_search_url(platform_id)
             page.goto(search_url, wait_until="domcontentloaded", timeout=30_000)
             page.wait_for_timeout(8_000)
@@ -263,14 +339,181 @@ def resolve_douyin_profile(*, platform_id: str, id_type: str = "douyin_display_i
             browser.close()
 
 
-def resolve_creator_profile(*, platform: str, platform_id: str, id_type: str = "unknown", url: str = "", creator_name: str = "") -> dict[str, Any]:
-    normalized = normalize_platform(platform)
+def open_xiaohongshu_profile_candidate(
+    page,
+    url: str,
+    *,
+    platform_id: str = "",
+    creator_name: str = "",
+    source: str = "homepage_hint",
+) -> dict[str, Any]:
+    if not url:
+        return {"ok": False, "platform": "小红书", "resolve_status": "missing_profile_url", "source": source}
+    try:
+        page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+    except PlaywrightTimeoutError as exc:
+        return {
+            "ok": False,
+            "platform": "小红书",
+            "resolve_status": "timeout",
+            "error": str(exc),
+            "resolved_profile_url": url,
+            "source": source,
+        }
+    page.wait_for_timeout(6_000)
+    final_url = str(page.url or url)
+    try:
+        body = page.locator("body").inner_text(timeout=5_000)
+    except Exception:
+        body = ""
+    if blocked := profile_capture_block_result(final_url, body, creator_name):
+        return {
+            "ok": False,
+            "platform": "小红书",
+            "resolve_status": str(blocked.get("status") or "profile_unavailable"),
+            "resolved_profile_url": final_url,
+            "source": source,
+        }
+    title = page.title()
+    try:
+        raw_dom = page.content()
+    except Exception:
+        raw_dom = ""
+    screenshot_bytes, screenshot_error = capture_screenshot_bytes(page)
+    parsed = parse_xiaohongshu_profile_text(body, final_url, title=title)
+    parsed = merge_profile_facts(
+        parsed,
+        parse_xiaohongshu_embedded_profile_data(raw_dom, parsed.get("author_id") or platform_id),
+    )
+    try:
+        header_avatar = normalize_public_http_url(
+            page.locator("img.user-image").first.get_attribute("src", timeout=3_000)
+        )
+    except Exception:
+        header_avatar = ""
+    if header_avatar:
+        parsed["avatar_url"] = header_avatar
+    resolved_author_id = str(parsed.get("author_id") or "").strip()
+    account_name = str(parsed.get("account_name") or creator_name or "").strip()
+    if platform_id and resolved_author_id != str(platform_id):
+        return {
+            "ok": False,
+            "platform": "小红书",
+            "resolve_status": "blocked_no_exact_id_match",
+            "resolved_profile_url": final_url,
+            "input_platform_id": platform_id,
+            "parsed_author_id": resolved_author_id,
+            "parsed_account_name": account_name,
+            "extracted_profile": parsed,
+            "source": source,
+        }
+    if not resolved_author_id or not account_name:
+        return {
+            "ok": False,
+            "platform": "小红书",
+            "resolve_status": "pending_manual_missing_identity",
+            "resolved_profile_url": final_url,
+            "input_platform_id": platform_id,
+            "parsed_author_id": resolved_author_id,
+            "parsed_account_name": account_name,
+            "extracted_profile": parsed,
+            "source": source,
+        }
+    parsed.update({"platform": "小红书", "profile_url": final_url, "account_name": account_name})
+    return {
+        "ok": True,
+        "platform": "小红书",
+        "resolve_status": "exact_profile_resolved" if platform_id else "profile_url_resolved",
+        "source": source,
+        "input_platform_id": platform_id,
+        "input_platform_id_type": "xhs_display_id",
+        "resolved_author_id": resolved_author_id,
+        "resolved_author_id_type": "xhs_display_id",
+        "resolved_profile_url": final_url,
+        "account_name": account_name,
+        "title": title,
+        "rendered_text": body,
+        "raw_dom": raw_dom,
+        "screenshot_bytes": screenshot_bytes,
+        "screenshot_error": screenshot_error,
+        "extracted_profile": parsed,
+        "success_evidence": [f"public rendered text includes 小红书号：{resolved_author_id}"],
+    }
+
+
+def resolve_xiaohongshu_profile(*, platform_id: str = "", url: str = "", creator_name: str = "") -> dict[str, Any]:
+    direct_url = resolve_xiaohongshu_share_url(url)
+    if not direct_url:
+        return {
+            "ok": False,
+            "platform": "小红书",
+            "resolve_status": "invalid_profile_url",
+            "resolved_profile_url": str(url or "").strip(),
+            "input_platform_id": platform_id,
+            "input_platform_id_type": "xhs_display_id",
+        }
+    cookies = load_playwright_cookies("小红书")
+    if not cookies:
+        return {
+            "ok": False,
+            "platform": "小红书",
+            "resolve_status": "missing_cookies",
+            "resolved_profile_url": direct_url,
+            "input_platform_id": platform_id,
+            "input_platform_id_type": "xhs_display_id",
+        }
+    with sync_playwright() as playwright:
+        browser = launch_chromium(playwright, headless=True)
+        context = browser.new_context(viewport={"width": 1280, "height": 1800}, locale="zh-CN", user_agent=DOUYIN_USER_AGENT)
+        context.add_cookies(cookies)
+        page = context.new_page()
+        try:
+            return open_xiaohongshu_profile_candidate(
+                page,
+                direct_url,
+                platform_id=platform_id,
+                creator_name=creator_name,
+                source="homepage_hint",
+            )
+        finally:
+            browser.close()
+
+
+def resolve_creator_profile(*, platform: str = "", platform_id: str = "", id_type: str = "unknown", url: str = "", creator_name: str = "") -> dict[str, Any]:
+    normalized = normalize_platform(platform) or infer_profile_platform(url)
+    explicit_id = str(platform_id or "").strip()
+    explicit_name = str(creator_name or "").strip()
+    if not str(url or "").strip() and normalized in {"抖音", "小红书"} and explicit_id and explicit_name:
+        resolved_id_type = id_type or ("douyin_display_id" if normalized == "抖音" else "xhs_display_id")
+        return {
+            "ok": True,
+            "platform": normalized,
+            "resolve_status": "explicit_identity_resolved",
+            "source": "explicit_user_fields",
+            "input_platform_id": explicit_id,
+            "input_platform_id_type": resolved_id_type,
+            "resolved_author_id": explicit_id,
+            "resolved_author_id_type": resolved_id_type,
+            "resolved_profile_url": "",
+            "account_name": explicit_name,
+            "extracted_profile": {
+                "platform": normalized,
+                "author_id": explicit_id,
+                "account_name": explicit_name,
+                "profile_url": "",
+            },
+            "success_evidence": [
+                "platform, author id, and account name were explicitly provided by the user"
+            ],
+        }
     if normalized == "抖音":
         return resolve_douyin_profile(platform_id=platform_id, id_type=id_type or "douyin_display_id", url=url, creator_name=creator_name)
+    if normalized == "小红书":
+        return resolve_xiaohongshu_profile(platform_id=platform_id, url=url, creator_name=creator_name)
     return {
         "ok": False,
         "platform": normalized,
-        "resolve_status": "unsupported_platform_for_new_resolver",
+        "resolve_status": "unsupported_profile_url" if url else "unsupported_platform_for_new_resolver",
         "input_platform_id": platform_id,
         "input_platform_id_type": id_type,
     }

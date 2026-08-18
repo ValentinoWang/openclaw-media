@@ -3,11 +3,13 @@ from __future__ import annotations
 import sys
 import tempfile
 import unittest
+import inspect
 import json
 import os
 import shutil
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
@@ -29,9 +31,10 @@ from selfmedia.creation.platform_validator import validate_platform_draft
 from selfmedia.creation.llm_generator import CREATOR_BRIEF_REPORT_MODE, build_creation_prompt, validate_llm_draft_payload
 from selfmedia.creation.request_inference import parse_creation_request_with_llm
 from selfmedia.creation.request_parser import CreationRequest, parse_creation_request
+from selfmedia.creation.shooting_execution import parse_shooting_execution_request
 from selfmedia.creation.consultation import handle_creation_consultation_command, parse_consultation_request, request_needs_activity_candidates
-from selfmedia.creation.workflow import _deconstruct_activity_example_links, _record_candidate_payload, handle_creation_command
-from selfmedia.creation.writer import _creation_doc_blocks, _creation_output_fields_for_write, _find_wiki_child_doc, _url_field_value
+from selfmedia.creation.workflow import _deconstruct_activity_example_links, _record_candidate_payload, _run_viral_deconstruct, handle_creation_command
+from selfmedia.creation.writer import _creation_doc_blocks, _creation_output_fields_for_write, _find_wiki_child_doc, _shooting_execution_doc_blocks, _url_field_value
 from media_vault.vault import MediaVault
 
 
@@ -47,7 +50,7 @@ class _JsonResponse:
 
 
 def _write_deconstruction_v2_artifact(root: Path, deconstruction_id: str = "vir1") -> str:
-    vault = MediaVault(root)
+    vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=root)
     artifact = {
         "schema_version": "deconstruction.v2",
         "deconstruction_id": deconstruction_id,
@@ -356,6 +359,57 @@ class CreationV1Tests(unittest.TestCase):
         self.assertEqual(req.brand, "某品牌")
         self.assertIn("20:00", req.publish_time)
 
+    def test_parse_guidance_plan_id_after_last_creation_field(self) -> None:
+        req = parse_creation_request(
+            "【创作>小红书】\n"
+            "平台：小红书\n"
+            "类型：图文\n"
+            "赛道：AI科普\n"
+            "主体：PR 合作招募帖\n"
+            "路径续接ID：capplan_0123456789abcdef"
+        )
+        self.assertEqual(req.platform, "小红书")
+        self.assertEqual(req.content_type, "图文")
+        self.assertEqual(req.topic, "PR 合作招募帖")
+
+    def test_parse_source_asset_id_from_growth_handoff(self) -> None:
+        req = parse_creation_request(
+            "【创作>抖音】类型=视频 赛道=体育 主体=400米训练 "
+            "source=media://tenants/00000000-0000-4000-8000-000000000101/source_assets/source_asset_20260705_001/result.json",
+            now=datetime(2026, 7, 5, 9, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
+        )
+        self.assertEqual(req.source_asset_id, "source_asset_20260705_001")
+
+    def test_parse_shooting_source_asset_id_from_growth_handoff(self) -> None:
+        with patch("selfmedia.creation.shooting_execution.infer_shooting_execution_request", return_value={}):
+            req = parse_shooting_execution_request(
+                "【创作-拍摄执行】平台=抖音 类型=视频 赛道=体育 主体=400米训练 "
+                "拍摄目标=记录间歇训练 场地=操场 人物=我 "
+                "source_asset_id=source_asset_20260705_002"
+            )
+        self.assertEqual(req.source_asset_id, "source_asset_20260705_002")
+        self.assertEqual(req.to_creation_request().source_asset_id, "source_asset_20260705_002")
+
+    def test_parse_shooting_can_validate_explicit_fields_without_inference(self) -> None:
+        with patch(
+            "selfmedia.creation.shooting_execution.infer_shooting_execution_request",
+            side_effect=AssertionError("explicit roundtrip must not call inference"),
+        ):
+            req = parse_shooting_execution_request(
+                "【创作-拍摄执行】平台=抖音 主体=400米训练 "
+                "拍摄目标=记录间歇训练 场地=操场 人物=我",
+                infer_missing=False,
+            )
+        self.assertEqual(req.platform, "抖音")
+        self.assertEqual(req.content_type, "视频")
+
+        with self.assertRaisesRegex(ValueError, "人物"):
+            parse_shooting_execution_request(
+                "【创作-拍摄执行】平台=抖音 主体=400米训练 "
+                "拍摄目标=记录间歇训练 场地=操场",
+                infer_missing=False,
+            )
+
     def test_parse_reference_output_and_audience_into_creation_context(self) -> None:
         req = parse_creation_request(
             "【创作>抖音】\n"
@@ -591,8 +645,8 @@ class CreationV1Tests(unittest.TestCase):
                     }
                 )
 
-        self.assertEqual(viral.doc_links["evidence"], "media://deconstructions/decon1/deconstruction.json")
-        self.assertEqual(viral.detail_json["evidence_uri"], "media://deconstructions/decon1/deconstruction.json")
+        self.assertEqual(viral.doc_links["evidence"], evidence_uri)
+        self.assertEqual(viral.detail_json["evidence_uri"], evidence_uri)
         self.assertNotIn("usable_material_brief", viral.detail_json)
 
     def test_activity_and_viral_ranking_are_separate(self) -> None:
@@ -779,36 +833,32 @@ class CreationV1Tests(unittest.TestCase):
             viral_example_link="https://www.douyin.com/note/example",
             doc_links={"viral_example": "https://www.douyin.com/note/example"},
         )
-        completed = type(
-            "Completed",
-            (),
-            {
-                "returncode": 0,
-                "stdout": json.dumps(
-                    {
-                        "feishu_record_id": "vir_from_activity",
-                        "deconstruct": {
-                            "deconstruct_doc_title": "爆款拆解文档｜表达力",
-                            "deconstruct_doc_url": "https://tcnwueberajc.feishu.cn/docx/deconstruct",
-                            "summary": "真实会议场景开头。",
-                            "platform": "抖音",
-                            "media_type": "视频",
-                        },
-                    },
-                    ensure_ascii=False,
-                ),
-                "stderr": "",
+        canonical_result = {
+            "feishu_record_id": "vir_from_activity",
+            "deconstruct": {
+                "deconstruct_doc_title": "爆款拆解文档｜表达力",
+                "deconstruct_doc_url": "https://tcnwueberajc.feishu.cn/docx/deconstruct",
+                "summary": "真实会议场景开头。",
+                "platform": "抖音",
+                "media_type": "视频",
             },
-        )()
-        with patch("selfmedia.creation.workflow._run_deconstruct_with_watchdog", return_value=completed) as run:
+        }
+        with patch(
+            "selfmedia.deconstruct.viral_content.src.runner.run_workflow",
+            return_value=canonical_result,
+        ) as run:
             records, results = _deconstruct_activity_example_links(
                 [RankedRecord(activity, 90, {"主状态进行中": 20})],
+                tenant_id="00000000-0000-4000-8000-000000000101",
                 existing_virals=[],
-                viral_url="https://tcnwueberajc.feishu.cn/wiki/viral",
                 enabled=True,
                 max_items=1,
             )
-        self.assertTrue(run.called)
+        run.assert_called_once_with(
+            "【拆解】 https://www.douyin.com/note/example",
+            tenant_id="00000000-0000-4000-8000-000000000101",
+            write_feishu=True,
+        )
         self.assertEqual(records[0].source_record_id, "vir_from_activity")
         self.assertEqual(records[0].doc_links["decomposition"], "https://tcnwueberajc.feishu.cn/docx/deconstruct")
         self.assertEqual(results[0]["record_id"], "vir_from_activity")
@@ -821,17 +871,29 @@ class CreationV1Tests(unittest.TestCase):
             source_link="https://www.douyin.com/note/example",
             doc_links={"decomposition": "https://tcnwueberajc.feishu.cn/docx/existing"},
         )
-        with patch("selfmedia.creation.workflow._run_deconstruct_with_watchdog") as run_again:
+        with patch("selfmedia.deconstruct.viral_content.src.runner.run_workflow") as run_again:
             existing_records, existing_results = _deconstruct_activity_example_links(
                 [RankedRecord(activity, 90, {"主状态进行中": 20})],
+                tenant_id="00000000-0000-4000-8000-000000000101",
                 existing_virals=[existing],
-                viral_url="",
                 enabled=True,
                 max_items=1,
             )
         run_again.assert_not_called()
         self.assertEqual(existing_records[0].source_record_id, "vir_existing")
         self.assertEqual(existing_results[0]["status"], "already_indexed")
+
+    def test_activity_example_deconstruct_is_in_process_and_fails_closed(self) -> None:
+        self.assertNotIn("subprocess", inspect.getsource(_run_viral_deconstruct))
+        with patch(
+            "selfmedia.deconstruct.viral_content.src.runner.run_workflow",
+            side_effect=RuntimeError("tenant model transport unavailable"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "tenant model transport unavailable"):
+                _run_viral_deconstruct(
+                    "https://www.douyin.com/note/example",
+                    tenant_id="00000000-0000-4000-8000-000000000101",
+                )
 
     def test_business_adapter_and_ranking_require_business_context(self) -> None:
         business = BusinessAdapter().to_record(
@@ -927,6 +989,49 @@ class CreationV1Tests(unittest.TestCase):
             )
             self.assertEqual(_find_wiki_child_doc("space", "parent", "同名创作文档", "token"), ("doc_latest", "node_latest"))
 
+    def test_shooting_execution_doc_puts_storyboard_first(self) -> None:
+        request = SimpleNamespace(
+            topic="WAIC 探展",
+            time_window="130-150 秒",
+            publish_time="",
+            platform="抖音",
+            content_type="视频",
+            shooting_goal="完成第一视角探展",
+        )
+        draft = {
+            "shooting_goal": {},
+            "storyboard": [{"time": "0-2s", "visual": "结果钩子", "caption_or_voice": "开场", "sound_or_note": "现场声"}],
+            "abstraction_map": [{"source_signal": "Brief", "task_layer": "脚本", "execution_meaning": "先拍钩子"}],
+            "route_map": [{"time_slot": "上午", "location": "展位", "shooting_task": "拍摄", "people": "博主", "backup": "补拍"}],
+            "must_shot_list": [{"priority": "P0", "location": "展位", "people": "博主", "action": "体验", "shot_size": "中景", "reference": "Brief", "usage": "正片", "reshoot_check": "清晰"}],
+            "branch_plans": [{"condition": "拥挤", "plan": "先拍特写", "priority": "P1"}],
+            "onsite_checklist": ["回看"],
+            "publishing_pack": {
+                "title_directions": ["主标题", "备选标题"],
+                "cover_frame": "人物、设备和机器狗同框；封面字：脑电怎样走到执行",
+                "body_copy": "完整发布文案。",
+                "hashtags": ["脑机接口", "科技探展"],
+                "bgm_suggestion": "克制电子乐",
+                "comment_prompt": "你最想控制什么？",
+            },
+            "evidence_appendix": [{"source": "Brief", "source_status": "confirmed", "available_evidence": "已提供", "usage_reason": "执行依据", "risk": "无"}],
+        }
+        blocks = _shooting_execution_doc_blocks("拍摄执行", request, draft, {"ok": True})
+        self.assertEqual(_blocks_text(blocks).splitlines()[:2], ["拍摄执行", "分镜脚本"])
+        self.assertEqual(blocks[2]["rows"][0], ["时间", "画面", "字幕/口播", "声音/拍摄注意"])
+        self.assertNotIn("证据附录", _blocks_text(blocks))
+        self.assertTrue(draft["evidence_appendix"])
+        publishing_index = next(index for index, block in enumerate(blocks) if "发布包" in _blocks_text([block]))
+        publishing_blocks = blocks[publishing_index:]
+        subheadings = [
+            block["heading3"]["elements"][0]["text_run"]["content"]
+            for block in publishing_blocks
+            if block.get("block_type") == 5
+        ]
+        self.assertEqual(subheadings, ["作品标题", "封面图方案", "发布文案", "话题与互动", "声音方案"])
+        self.assertIn("标题 1：主标题", _blocks_text(publishing_blocks))
+        self.assertIn("完整发布文案。", _blocks_text(publishing_blocks))
+
     def test_creation_doc_renders_creator_brief_before_evidence(self) -> None:
         req = parse_creation_request(
             "【创作>抖音】类型=视频 赛道=体育 主体=西安田径分区邀请赛",
@@ -957,7 +1062,23 @@ class CreationV1Tests(unittest.TestCase):
             {"LLM选择活动": 100},
         )
         viral = RankedRecord(CanonicalMediaRecord(source_table="02_爆款内容积累", source_record_id="vir1", record_type="爆款样本", title="起跑爆款"), 84, {"平台一致": 10, "LLM选择原因": "迁移起跑冲突。"})
-        inspiration = RankedRecord(CanonicalMediaRecord(source_table="03_创作任务总表", source_record_id="ins1", record_type="创作灵感", title="毕业身份转变"), 82, {"主题相似": 8, "LLM选择原因": "落到毕业身份切换台词。"})
+        inspiration = RankedRecord(
+            CanonicalMediaRecord(
+                source_table="Obsidian:人性洞察库",
+                source_record_id="ins1",
+                record_type="机制卡",
+                title="机制卡｜被理解感",
+                status="已验证",
+                detail_json={
+                    "insight_card_path": "/home/ubuntu/obsidian-自媒体/05_素材与爆款库/人性洞察库/机制卡/被理解感.md",
+                    "insight_card_status": "已验证",
+                    "evidence_boundary": "public_content_only",
+                    "risk_boundary": "避免焦虑营销。",
+                },
+            ),
+            82,
+            {"主题相似": 8, "LLM选择原因": "落到毕业身份切换台词。"},
+        )
         blocks = _creation_doc_blocks(
             "测试文档",
             req,
@@ -997,6 +1118,10 @@ class CreationV1Tests(unittest.TestCase):
         self.assertNotIn("option_id", main_text)
         self.assertNotIn("record_id", main_text)
         self.assertIn("record_id", appendix_text)
+        self.assertIn("insight-card reference", appendix_text)
+        self.assertIn("public_content_only", appendix_text)
+        self.assertIn("避免焦虑营销", appendix_text)
+        self.assertIn("被理解感.md", appendix_text)
         self.assertIn("候选方案分数", appendix_text)
         self.assertNotIn('"activity"', appendix_text)
         self.assertNotIn('"record_id"', appendix_text)
@@ -1067,6 +1192,58 @@ class CreationV1Tests(unittest.TestCase):
         missing_editor_pass.pop("editor_pass")
         with self.assertRaisesRegex(ValueError, "editor_pass"):
             validate_llm_draft_payload(missing_editor_pass, req, candidate_ids=candidate_ids)
+
+    def test_llm_draft_selected_insight_card_requires_reference_boundary(self) -> None:
+        req = parse_creation_request(
+            "【创作>抖音】类型=视频 赛道=体育 主体=西安田径分区邀请赛 发布时间=2026-06-18 20:00",
+            now=datetime(2026, 6, 18, 9, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
+        )
+        insight_id = "insight_card:被理解感"
+        candidate_ids = {
+            "selected_activity_ids": {"act1"},
+            "selected_viral_ids": {"vir1"},
+            "selected_inspiration_ids": {insight_id},
+            "selected_business_ids": set(),
+        }
+        payload = _multi_option_payload(
+            [
+                _script_option(score=91, inspiration_id=insight_id),
+                _script_option("opt_2", score=88, inspiration_id=insight_id),
+            ]
+        )
+        payload["inspiration_reference"] = {
+            "matched": True,
+            "reference_type": "insight-card reference",
+            "evidence_boundary": "public_content_only",
+        }
+        payload["usable_material_brief"]["source_mapping"][0] = {  # type: ignore[index]
+            "source": insight_id,
+            "transfer": "insight-card reference: 被理解感开头句式",
+            "placement": "opening_3s/storyboard",
+            "evidence_boundary": "public_content_only",
+        }
+        payload["creator_report"]["evidence_appendix"]["inspiration_refs"] = [  # type: ignore[index]
+            {
+                "source_type": "insight-card reference",
+                "record_id": insight_id,
+                "adoption_reason": "只作为公开内容洞察参考。",
+                "risk_boundary": "public_content_only",
+            }
+        ]
+        payload["candidate_match_assessments"]["inspiration"][0]["selection_reason"] = "insight-card reference，public_content_only，只用于情绪路径参考。"  # type: ignore[index]
+        for option in payload["script_options"]:  # type: ignore[union-attr]
+            option["inspiration_reference_reason"] = "insight-card reference；public_content_only；只参考情绪路径和开头句式。"
+        draft = validate_llm_draft_payload(payload, req, candidate_ids=candidate_ids)
+        self.assertEqual(draft["selected_inspiration_ids"], [insight_id])
+
+        bad = _multi_option_payload(
+            [
+                _script_option(score=91, inspiration_id=insight_id),
+                _script_option("opt_2", score=88, inspiration_id=insight_id),
+            ]
+        )
+        with self.assertRaisesRegex(ValueError, "insight-card reference"):
+            validate_llm_draft_payload(bad, req, candidate_ids=candidate_ids)
 
     def test_creation_prompt_compacts_evidence_without_detail_json(self) -> None:
         req = parse_creation_request(
@@ -1150,6 +1327,9 @@ class CreationV1Tests(unittest.TestCase):
             )
         self.assertEqual(fit["platform_mechanism_version"], "xiaohongshu_2026_05_v1")
         self.assertEqual(fit["generation"]["provider"], "codex_responses")
+        self.assertEqual(fit["generation"]["profile"], "media_creation")
+        self.assertEqual(fit["generation"]["model"], "codex/gpt-5.6-sol")
+        self.assertEqual(fit["generation"]["thinking"], "medium")
         self.assertEqual(fit["platform_fit_meta"]["mechanism_source"], "llm")
 
     def test_platform_mechanism_fit_errors_when_llm_fails(self) -> None:
@@ -1327,7 +1507,7 @@ class CreationV1Tests(unittest.TestCase):
                             "活动Brief": "围绕表达力的真实经历创作。",
                             "填写要点": "讲具体场景、踩坑和复盘。",
                             "活动开始时间": "2026-06-01 00:00",
-                            "活动结束时间": "2026-07-30 23:59",
+                            "活动结束时间": "2026-12-30 23:59",
                             "返稿链接": {"text": "返稿", "link": "https://example.com/submit"},
                         },
                     }
@@ -1351,6 +1531,7 @@ class CreationV1Tests(unittest.TestCase):
             ]
             result = handle_creation_command(
                 "【创作>小红书】赛道=职场 类型=图文 主体=表达力 账号=主账号 发布时间=今晚8点",
+                tenant_id="00000000-0000-4000-8000-000000000101",
                 no_write=True,
             )
         self.assertTrue(generate.called)
@@ -1418,6 +1599,7 @@ class CreationV1Tests(unittest.TestCase):
         ):
             result = handle_creation_command(
                 "【创作>小红书】赛道=职场 类型=图文 主体=表达力 发布时间=今晚8点",
+                tenant_id="00000000-0000-4000-8000-000000000101",
                 no_write=True,
             )
         load_business.assert_not_called()
@@ -1481,6 +1663,7 @@ class CreationV1Tests(unittest.TestCase):
         ):
             result = handle_creation_command(
                 "【创作>小红书】赛道=职场 类型=图文 主体=表达力 发布时间=今晚8点",
+                tenant_id="00000000-0000-4000-8000-000000000101",
             )
         self.assertTrue(create_doc.called)
         self.assertTrue(write_v2.called)
@@ -1503,11 +1686,20 @@ class CreationV1Tests(unittest.TestCase):
             patch("selfmedia.creation.consultation.build_media_context", return_value={}),
             patch("selfmedia.creation.consultation.generate_consultation_answer", return_value={"reply": "ok"}),
         ):
-            handle_creation_consultation_command("【创作咨询】平台=小红书 问题=这个选题怎么讲更有记忆点")
+            handle_creation_consultation_command("【创作咨询】平台=小红书 问题=这个选题怎么讲更有记忆点", tenant_id="00000000-0000-4000-8000-000000000101")
             self.assertFalse(load_rows.call_args.kwargs["include_activity"])
 
-            handle_creation_consultation_command("【创作咨询】平台=小红书 问题=这个选题适合参加哪个活动")
+            handle_creation_consultation_command("【创作咨询】平台=小红书 问题=这个选题适合参加哪个活动", tenant_id="00000000-0000-4000-8000-000000000101")
             self.assertTrue(load_rows.call_args.kwargs["include_activity"])
+
+    def test_creation_consultation_parser_requires_entry_and_question(self) -> None:
+        with self.assertRaisesRegex(ValueError, "不是【创作咨询】入口"):
+            parse_consultation_request("问题=这个选题怎么讲")
+        with self.assertRaisesRegex(ValueError, "缺少问题"):
+            parse_consultation_request("【创作咨询】")
+
+        request = parse_consultation_request("【创作咨询】\n问题：商务合作建联信息应该怎么写")
+        self.assertEqual(request.question, "商务合作建联信息应该怎么写")
 
     def test_creation_workflow_rejects_draft_without_script_options(self) -> None:
         platform_fit = {
@@ -1529,6 +1721,7 @@ class CreationV1Tests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "missing_script_options_or_recommendation"):
                 handle_creation_command(
                     "【创作>小红书】赛道=职场 类型=图文 主体=表达力 发布时间=今晚8点",
+                    tenant_id="00000000-0000-4000-8000-000000000101",
                     no_write=True,
                 )
 

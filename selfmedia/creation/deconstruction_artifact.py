@@ -16,9 +16,9 @@ class DeconstructionArtifactUnavailable(RuntimeError):
     pass
 
 
-def attach_deconstruction_artifact_brief(record: CanonicalMediaRecord) -> CanonicalMediaRecord:
+def attach_deconstruction_artifact_brief(record: CanonicalMediaRecord, *, tenant_id: str) -> CanonicalMediaRecord:
     evidence_uri = str((record.detail_json or {}).get("evidence_uri") or record.doc_links.get("evidence") or "").strip()
-    artifact = load_deconstruction_artifact(evidence_uri)
+    artifact = load_deconstruction_artifact(evidence_uri, tenant_id=tenant_id)
     brief = distilled_usable_material_brief(artifact)
     enriched = deepcopy(record)
     enriched.detail_json = dict(enriched.detail_json or {})
@@ -34,11 +34,11 @@ def attach_deconstruction_artifact_brief(record: CanonicalMediaRecord) -> Canoni
     return enriched
 
 
-def load_deconstruction_artifact(evidence_uri: str) -> dict[str, Any]:
+def load_deconstruction_artifact(evidence_uri: str, *, tenant_id: str) -> dict[str, Any]:
     if not evidence_uri:
         raise DeconstructionArtifactUnavailable("missing_evidence_uri")
     try:
-        path = MediaVault().resolve_uri(evidence_uri)
+        path = MediaVault(tenant_id=tenant_id).resolve_uri(evidence_uri, require_exists=True)
     except Exception as exc:
         raise DeconstructionArtifactUnavailable(f"invalid_evidence_uri: {evidence_uri}") from exc
     if not path.is_file() or path.stat().st_size <= 0:

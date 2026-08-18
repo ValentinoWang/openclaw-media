@@ -38,13 +38,3 @@ def scan_forbidden_style_ssot(root: str | Path) -> list[str]:
         if path.is_dir() and path.name == "platform_profiles":
             failures.append(f"{path}: 平台机制必须读取 config/platform_mechanisms，不允许复制 platform_profiles")
     return failures
-
-
-def score_version(request: StylePolishRequest, text: str, *, failures: list[str]) -> dict[str, int]:
-    return {
-        "fact_preservation": 5 if not failures else 2,
-        "must_keep_preservation": 5 if all(item in text for item in request.must_keep) else 1,
-        "avoid_boundary": 5 if not any(item and item in text for item in request.avoid) else 1,
-        "ai_taste": 2,
-        "risk": 1 if not failures else 4,
-    }

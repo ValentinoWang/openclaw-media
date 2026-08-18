@@ -104,6 +104,148 @@ class ImagePostItem(BaseModel):
         return _non_empty_string(str(value or ""), "image_post_script.image_prompt")
 
 
+class AIBlendSegment(BaseModel):
+    segment_id: str
+    time_range: str
+    segment_type: str
+    confidence: float
+    reasoning_summary: str
+    evidence_asset_ids: list[str] = Field(min_items=1)
+    blend_method: str = ""
+    real_to_ai_transition: str = ""
+
+    class Config:
+        extra = "allow"
+
+    @validator("segment_id", "time_range", "segment_type", "reasoning_summary", pre=True)
+    def required_text(cls, value: Any) -> str:
+        return _non_empty_string(str(value or ""), "ai_blend_analysis")
+
+    @validator("segment_type", pre=True)
+    def allowed_segment_type(cls, value: Any) -> str:
+        text = _non_empty_string(str(value or ""), "ai_blend_analysis.segment_type")
+        if text not in {"real", "ai", "hybrid", "uncertain"}:
+            raise ValueError("ai_blend_analysis.segment_type 必须是 real/ai/hybrid/uncertain")
+        return text
+
+    @validator("confidence", pre=True)
+    def confidence_range(cls, value: Any) -> float:
+        number = float(value)
+        if not 0 <= number <= 1:
+            raise ValueError("ai_blend_analysis.confidence 必须在 0..1")
+        return number
+
+    @validator("evidence_asset_ids", pre=True)
+    def evidence_list(cls, value: Any) -> list[str]:
+        return _string_list(value, "ai_blend_analysis.evidence_asset_ids")
+
+
+class AIStoryboardPromptShot(BaseModel):
+    shot_id: str
+    segment_id: str
+    duration_seconds: float | int | str
+    start_frame_ref: str
+    end_frame_ref: str
+    continuity_to_real_footage: str
+    aspect_ratio: str
+    target_tool: str
+    prompt_language: str
+    prompt: str
+    negative_prompt: str
+    evidence_asset_ids: list[str] = Field(min_items=1)
+
+    class Config:
+        extra = "allow"
+
+    @validator(
+        "shot_id",
+        "segment_id",
+        "start_frame_ref",
+        "end_frame_ref",
+        "continuity_to_real_footage",
+        "aspect_ratio",
+        "target_tool",
+        "prompt_language",
+        "prompt",
+        "negative_prompt",
+        pre=True,
+    )
+    def required_text(cls, value: Any) -> str:
+        return _non_empty_string(_clean_text_value(value), "ai_storyboard_prompt_shots")
+
+    @validator("evidence_asset_ids", pre=True)
+    def evidence_list(cls, value: Any) -> list[str]:
+        return _string_list(value, "ai_storyboard_prompt_shots.evidence_asset_ids")
+
+
+class HumanInsightCandidate(BaseModel):
+    insight_id: str
+    evidence_quote: str = ""
+    evidence_asset_ids: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
+    mechanism_tag: str
+    candidate_tags: list[str] = Field(default_factory=list)
+    target_emotion: str
+    desire_or_fear: str
+    emotion_path: str
+    audience_group_hypothesis: str
+    trigger_pattern: str
+    risk_boundary: str
+    reuse_warning: str = ""
+    confidence: float
+    reasoning_summary: str
+    comment_data_boundary: str = ""
+
+    class Config:
+        extra = "allow"
+
+    @validator(
+        "insight_id",
+        "mechanism_tag",
+        "target_emotion",
+        "desire_or_fear",
+        "emotion_path",
+        "audience_group_hypothesis",
+        "trigger_pattern",
+        "risk_boundary",
+        "reasoning_summary",
+        pre=True,
+    )
+    def required_text(cls, value: Any) -> str:
+        return _non_empty_string(_clean_text_value(value), "human_insight_candidates")
+
+    @validator("candidate_tags", pre=True)
+    def optional_tags(cls, value: Any) -> list[str]:
+        if value in (None, "", []):
+            return []
+        return _string_list(value, "human_insight_candidates.candidate_tags")
+
+    @validator("evidence_asset_ids", pre=True)
+    def optional_evidence_list(cls, value: Any) -> list[str]:
+        if value in (None, "", []):
+            return []
+        return _string_list(value, "human_insight_candidates.evidence_asset_ids")
+
+    @validator("evidence_refs", pre=True)
+    def optional_evidence_refs(cls, value: Any) -> list[str]:
+        if value in (None, "", []):
+            return []
+        return _string_list(value, "human_insight_candidates.evidence_refs")
+
+    @validator("confidence", pre=True)
+    def confidence_range(cls, value: Any) -> float:
+        number = float(value)
+        if not 0 <= number <= 1:
+            raise ValueError("human_insight_candidates.confidence 必须在 0..1")
+        return number
+
+    @root_validator(skip_on_failure=True)
+    def require_text_or_frame_evidence(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if not str(values.get("evidence_quote") or "").strip() and not values.get("evidence_asset_ids") and not values.get("evidence_refs"):
+            raise ValueError("human_insight_candidates 每条必须有 evidence_quote、evidence_asset_ids 或 evidence_refs")
+        return values
+
+
 class PartialVisualOrderItem(BaseModel):
     segment: str
     evidence_asset_id: str
@@ -191,6 +333,11 @@ class DeconstructResult(BaseModel):
     viral_breakdown: str
     viral_migration: str
     creative_upgrade_suggestion: str
+    request_constraints: dict[str, Any] = Field(default_factory=dict)
+    ai_blend_analysis: list[AIBlendSegment] = Field(default_factory=list)
+    ai_storyboard_prompt_shots: list[AIStoryboardPromptShot] = Field(default_factory=list)
+    human_insight_candidates: list[HumanInsightCandidate] = Field(default_factory=list)
+    no_human_insight_detected: bool = False
     confidence: float = 0.72
 
     class Config:

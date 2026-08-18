@@ -4,6 +4,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,6 +21,7 @@ from .llm_client import ensure_llm_provider_available, generate_json
 from .media_parts import MediaEvidence, NoRealMediaError, _image_part, cleanup_temp_files, detect_media_type
 from .multi_signal_contract import build_multi_signal_contract
 from .prompt import DECONSTRUCT_PROMPT, PARTIAL_DECONSTRUCT_PROMPT, RECREATE_PROMPT
+from selfmedia.request_constraints import parse_request_constraints, validate_request_constraints_payload
 from .schemas import (
     DeconstructResult,
     PartialDeconstructResult,
@@ -39,6 +41,8 @@ RECREATE_VIDEO_KEYWORDS = ("视频", "短视频", "分镜", "镜头", "口播", 
 STORYBOARD_IMAGE_REQUEST_KEYWORDS = ("生成示意图", "生成分镜图", "生成画面图", "带示意图", "带分镜图", "带画面图", "image2", "gpt-image-2", "gpt_image2")
 STAGE_LOG_ENV = "OPENCLAW_DECONSTRUCT_STAGE_LOG"
 STAGE_DIR_ENV = "OPENCLAW_DECONSTRUCT_STAGE_DIR"
+MEDIA_RESOLVE_ATTEMPTS_ENV = "OPENCLAW_DECONSTRUCT_MEDIA_RESOLVE_ATTEMPTS"
+MEDIA_RESOLVE_RETRY_SECONDS_ENV = "OPENCLAW_DECONSTRUCT_MEDIA_RESOLVE_RETRY_SECONDS"
 
 
 def _stage_log(message: str) -> None:
@@ -81,8 +85,14 @@ def _load_content_ingest_modules():
     return load_settings, clean_douyin_url, resolve_media
 
 
-def _call_llm(parts: list[dict[str, Any]], schema: type[Any], post_validate: Any | None = None) -> dict[str, Any]:
-    return generate_json(parts, load_config(), schema=schema, post_validate=post_validate)
+def _call_llm(
+    parts: list[dict[str, Any]],
+    schema: type[Any],
+    post_validate: Any | None = None,
+    *,
+    profile_name: str = "media_analysis",
+) -> dict[str, Any]:
+    return generate_json(parts, load_config(profile_name), schema=schema, post_validate=post_validate)
 
 
 def _evidence_parts_for_llm(evidence: Any) -> list[dict[str, Any]]:
@@ -133,14 +143,14 @@ def _normalize_recreate_result(result: dict[str, Any], media_type: str) -> dict[
     result["media_type"] = media_type
     if media_type == "video":
         if not result.get("video_storyboard"):
-            raise RuntimeError("拆解-再创结果缺少 video_storyboard，无法生成视频脚本")
+            raise RuntimeError("创作交接结果缺少 video_storyboard，无法生成视频脚本")
         result["image_post_script"] = []
     elif media_type == "image_post":
         if not result.get("image_post_script"):
-            raise RuntimeError("拆解-再创结果缺少 image_post_script，无法生成图文脚本")
+            raise RuntimeError("创作交接结果缺少 image_post_script，无法生成图文脚本")
         result["video_storyboard"] = []
     else:
-        raise RuntimeError(f"不支持的拆解-再创交付类型：{media_type}")
+        raise RuntimeError(f"不支持的创作交接类型：{media_type}")
     return result
 
 
@@ -230,7 +240,7 @@ def _recreate_theme(recreate_result: dict[str, Any], source: dict[str, Any]) -> 
         or recreate_result.get("doc_title")
         or recreate_result.get("creative_positioning")
         or source.get("source_summary")
-        or "拆解-再创"
+        or "创作交接"
     )
 
 
@@ -243,7 +253,7 @@ def recreate_doc_title(text: str, recreate_result: dict[str, Any], source: dict[
     source_id = _source_id(source)
     short_id = source_id[-4:] if source_id and source_id != "unknown" else "未名"
     suffix = f"｜{landing_time}" if landing_time else ""
-    return f"拆解-再创｜{_recreate_theme(recreate_result, source)}｜{short_id}{suffix}"
+    return f"创作交接｜{_recreate_theme(recreate_result, source)}｜{short_id}{suffix}"
 
 
 def _prepare_deconstruct_inputs(text: str, *, max_frames: int = 8) -> dict[str, Any]:
@@ -260,17 +270,37 @@ def _prepare_deconstruct_inputs(text: str, *, max_frames: int = 8) -> dict[str, 
     else:
         load_settings, clean_douyin_url, resolve_media = content_ingest_modules
     settings = load_settings()
-    cleaned_url = clean_douyin_url(url)
-    _stage_log(f"prepare:resolve_media:start url={cleaned_url}")
-    media = resolve_media(cleaned_url, settings)
-    _stage_log(
-        "prepare:resolve_media:done "
-        f"video={bool(getattr(media, 'video_path', None))} "
-        f"images={len(getattr(media, 'image_paths', []) or [])} "
-        f"media_type={getattr(media, 'media_type', '')}"
-    )
+    attempts = max(1, min(5, int(os.getenv(MEDIA_RESOLVE_ATTEMPTS_ENV, "3") or "3")))
+    retry_seconds = max(0.0, min(30.0, float(os.getenv(MEDIA_RESOLVE_RETRY_SECONDS_ENV, "1") or "1")))
+    media = None
+    cleaned_url = url
+    last_error: NoRealMediaError | None = None
+    for attempt in range(1, attempts + 1):
+        cleaned_url = clean_douyin_url(url)
+        _stage_log(f"prepare:resolve_media:start attempt={attempt}/{attempts} url={cleaned_url}")
+        media = resolve_media(cleaned_url, settings)
+        _stage_log(
+            "prepare:resolve_media:done "
+            f"attempt={attempt}/{attempts} "
+            f"video={bool(getattr(media, 'video_path', None))} "
+            f"images={len(getattr(media, 'image_paths', []) or [])} "
+            f"media_type={getattr(media, 'media_type', '')}"
+        )
+        try:
+            detected_media_type = detect_media_type(media.video_path, media.image_paths)
+            break
+        except NoRealMediaError as exc:
+            last_error = exc
+            if attempt >= attempts:
+                raise
+            delay = retry_seconds * attempt
+            _stage_log(f"prepare:resolve_media:retry attempt={attempt}/{attempts} delay={delay:g}s reason={exc}")
+            if delay:
+                time.sleep(delay)
+    else:  # pragma: no cover - the final failed attempt raises above
+        raise last_error or NoRealMediaError("未下载到真实视频或图片，禁止仅根据链接拆解")
 
-    detected_media_type = detect_media_type(media.video_path, media.image_paths)
+    assert media is not None
     source_path = media.video_path or (media.image_paths[0] if media.image_paths else "")
     work_dir = str(Path(source_path).resolve().parent)
     media_stats = getattr(media, "stats", {}) or {}
@@ -468,13 +498,16 @@ def finalize_deconstruction_contract(
 
 def run_main_deconstruction_llm(
     *,
+    text: str,
     evidence_store: dict[str, Any],
     evidence: MediaEvidence,
     valid_asset_ids: set[str],
     media_type: str = "",
 ) -> dict[str, Any]:
+    request_constraints = parse_request_constraints(text, default_write_policy="partial_no_write").to_dict()
     parts: list[dict[str, Any]] = [
         {"text": DECONSTRUCT_PROMPT},
+        {"text": "本次 request_constraints：\n" + json.dumps(request_constraints, ensure_ascii=False)},
         {"text": evidence_store_prompt(evidence_store)},
         {
             "text": (
@@ -499,6 +532,7 @@ def run_main_deconstruction_llm(
         ),
     )
     result = merge_llm_result_with_evidence(result, evidence_store)
+    result["request_constraints"] = validate_request_constraints_payload(request_constraints)
     result.setdefault("analysis_evidence_count", len(evidence.evidence_paths))
     return result
 
@@ -537,6 +571,7 @@ def _deconstruct_from_prepared(text: str, prepared: dict[str, Any], *, stage_dir
     try:
         _stage_log("deconstruct:llm:start")
         result = run_main_deconstruction_llm(
+            text=text,
             evidence_store=evidence_store,
             evidence=evidence,
             valid_asset_ids=valid_asset_ids,
@@ -595,9 +630,11 @@ def partial_deconstruct(text: str) -> dict[str, Any]:
     media_stats = prepared["media_stats"]
     evidence_store = prepared.get("evidence_store") or {}
     valid_asset_ids = prepared["valid_asset_ids"]
+    request_constraints = parse_request_constraints(text, default_write_policy="partial_no_write").to_dict()
 
     parts: list[dict[str, Any]] = [
         {"text": PARTIAL_DECONSTRUCT_PROMPT},
+        {"text": "本次 request_constraints：\n" + json.dumps(request_constraints, ensure_ascii=False)},
         {
             "text": (
                 "轻量拆解仍必须基于 canonical evidence_store 事实层，不得读取非合同事实支路。\n"
@@ -633,6 +670,7 @@ def partial_deconstruct(text: str) -> dict[str, Any]:
         cleanup_temp_files(evidence.cleanup_paths)
 
     result.setdefault("mode", "partial_deconstruct")
+    result["request_constraints"] = validate_request_constraints_payload(request_constraints)
     result.setdefault("source_url", cleaned_url)
     result.setdefault("media_type", detected_media_type)
     result.setdefault("part1_media_type", getattr(media, "media_type", "") or "未抓取")
@@ -671,8 +709,8 @@ def recreate(text: str, source: dict[str, Any] | None = None) -> dict[str, Any]:
     source = source or {}
     multi_signal_contract = source.get("multi_signal_contract")
     if not source or not isinstance(multi_signal_contract, dict) or not multi_signal_contract:
-        raise RuntimeError("【拆解-再创】必须基于【拆解】结果执行：缺少 multi_signal_contract 多维证据合同")
-    ensure_llm_provider_available(load_config())
+        raise RuntimeError("创作交接必须基于拆解结果执行：缺少 multi_signal_contract 多维证据合同")
+    ensure_llm_provider_available(load_config("media_creation"))
     media_type = _select_recreate_media_type(text, source)
     recreate_contract = {
         "multi_signal_contract": multi_signal_contract,
@@ -680,7 +718,7 @@ def recreate(text: str, source: dict[str, Any] | None = None) -> dict[str, Any]:
     }
     parts = [
         {"text": RECREATE_PROMPT},
-        {"text": "本次拆解-再创交付类型：" + media_type + "。只输出这一种脚本，另一种脚本必须为空数组。"},
+        {"text": "本次创作交接类型：" + media_type + "。只输出这一种脚本，另一种脚本必须为空数组。"},
         {"text": "用户输入/想法：\n" + text},
         {"text": "唯一 multi_signal_contract 多维证据合同（最终再创只消费这个合同）：\n" + json.dumps(recreate_contract, ensure_ascii=False, indent=2)},
         {"text": "已有拆解信息 compact：\n" + json.dumps(_compact_recreate_source(source), ensure_ascii=False, separators=(",", ":"))},
@@ -698,6 +736,7 @@ def recreate(text: str, source: dict[str, Any] | None = None) -> dict[str, Any]:
             media_type=media_type,
             target_duration_sec=_storyboard_target_duration_from_evidence_store(source.get("evidence_store") or {}),
         ),
+        profile_name="media_creation",
     )
     result = _normalize_recreate_result(result, media_type)
     result["generate_storyboard_images"] = _should_generate_storyboard_images(text)
@@ -779,6 +818,7 @@ def _clip_text(value: Any, max_chars: int = 500) -> Any:
 def run_workflow(
     text: str,
     *,
+    tenant_id: str = "",
     write_feishu: bool = False,
     stage_dir: str | Path | None = None,
     resume_stage_json: str | Path | None = None,
@@ -788,29 +828,19 @@ def run_workflow(
         return {"skipped": True, "reason": "organize_only", "mode": mode.value}
     ensure_llm_provider_available(load_config())
 
-    recreate_result: dict[str, Any] | None = None
     if resume_stage_json:
         resume_payload = json.loads(Path(resume_stage_json).expanduser().read_text(encoding="utf-8"))
         if str(resume_payload.get("stage") or "") == "06_recreate":
-            deconstruct_result = resume_payload.get("deconstruct") if isinstance(resume_payload.get("deconstruct"), dict) else {}
-            recreate_result = resume_payload.get("recreate") if isinstance(resume_payload.get("recreate"), dict) else {}
-            if not deconstruct_result or not recreate_result:
-                raise ValueError("06_recreate 阶段 JSON 缺少 deconstruct/recreate，不能恢复写入")
-            _stage_log("resume:from_stage stage=06_recreate")
+            raise ValueError("06_recreate 是已退役阶段；请重新执行【拆解】并显式交接【创作】或【创作-拍摄执行】")
         else:
             deconstruct_result = resume_deconstruct_from_stage(resume_stage_json, stage_dir=stage_dir, user_intent=text)
     elif _resolve_stage_dir(stage_dir) is None:
         deconstruct_result = deconstruct(text)
     else:
         deconstruct_result = deconstruct(text, stage_dir=stage_dir)
-    if mode == WorkflowMode.DECONSTRUCT_AND_RECREATE and recreate_result is None:
-        recreate_result = recreate(text, deconstruct_result)
-        _write_stage_json(stage_dir, "06_recreate", {"recreate": recreate_result, "deconstruct": deconstruct_result})
 
     if not write_feishu:
         output = {"mode": mode.value, "deconstruct": deconstruct_result}
-        if recreate_result is not None:
-            output["recreate"] = recreate_result
         _write_stage_json(stage_dir, "99_workflow_output", output)
         return output
 
@@ -825,26 +855,12 @@ def run_workflow(
     deconstruct_result["deconstruct_doc_url"] = deconstruct_doc.url
 
     combined = dict(deconstruct_result)
-    if recreate_result is not None:
-        recreate_title = recreate_doc_title(text, recreate_result, deconstruct_result, landing_time)
-        recreate_result["recreate_doc_title"] = recreate_title
-        recreate_doc = create_checked_doc(
-            recreate_title,
-            recreate_result,
-            doc_kind="recreate",
-        )
-        recreate_result["recreate_doc_id"] = recreate_doc.document_id
-        recreate_result["recreate_doc_url"] = recreate_doc.url
-        combined["recreate_doc_id"] = recreate_doc.document_id
-        combined["recreate_doc_url"] = recreate_doc.url
 
     # Validate attachment existence and field mapping before the final write.
     build_attachment_plan(combined)
-    record_id = write_deconstruction(combined, text)
+    record_id = write_deconstruction(combined, text, tenant_id=tenant_id)
     combined["feishu_record_id"] = record_id
     sync_deconstruct_parent_index({deconstruct_title: record_id})
     output = {"mode": mode.value, "deconstruct": deconstruct_result, "feishu_record_id": record_id}
-    if recreate_result is not None:
-        output["recreate"] = recreate_result
     _write_stage_json(stage_dir, "99_workflow_output", output)
     return output

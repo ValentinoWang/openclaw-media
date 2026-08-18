@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from .llm_generator import call_creation_json
+from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+
+from .llm_generator import call_creation_json, creation_generation_metadata
 from .request_parser import CreationRequest
 
 
@@ -92,12 +94,12 @@ def generate_platform_mechanism_fit(
                 "请重新输出完整 JSON object，只修正格式和约束，不要解释。"
             )
         try:
-            payload = call_creation_json(message)
-            result = validate_platform_mechanism_fit_payload(payload, request)
-            result["generation"] = {
-                "provider": "codex_responses",
-                "mode": "platform_mechanism_fit",
-            }
+            result = call_creation_json(
+                message,
+                validation_contract=PLATFORM_FIT_VALIDATION_CONTRACT,
+                validation_context={"request": request},
+            )
+            result["generation"] = creation_generation_metadata("platform_mechanism_fit")
             result["platform_fit_meta"] = _build_platform_fit_meta(
                 request,
                 mechanism_version=str(result.get("platform_mechanism_version") or ""),
@@ -215,8 +217,11 @@ def parse_platform_mechanism_note(
     if use_llm and not _env_bool("SELFMEDIA_PLATFORM_MECHANISM_NOTE_DISABLE_LLM", False):
         prompt = _build_platform_mechanism_note_prompt(platform, raw_text, source_type=source_type, baseline=baseline)
         try:
-            payload = call_creation_json(prompt)
-            result = validate_platform_mechanism_note_payload(payload, platform=platform, source_type=source_type)
+            result = call_creation_json(
+                prompt,
+                validation_contract=PLATFORM_NOTE_VALIDATION_CONTRACT,
+                validation_context={"platform": platform, "source_type": source_type},
+            )
             result["parser"] = {"provider": "codex_responses"}
         except Exception as exc:
             raise _semantic_persistence_error("platform_mechanism_note", "llm_failed", str(exc)) from exc
@@ -251,6 +256,37 @@ def validate_platform_mechanism_note_payload(
     result["generated_at"] = _text(payload.get("generated_at")) or _now_iso()
     _assert_no_forbidden_claims(result)
     return result
+
+
+def _validate_platform_fit_contract(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    request = context.get("request")
+    if not isinstance(request, CreationRequest):
+        raise ValueError("platform fit validation requires CreationRequest context")
+    return validate_platform_mechanism_fit_payload(payload, request)
+
+
+def _validate_platform_note_contract(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    return validate_platform_mechanism_note_payload(
+        payload,
+        platform=str(context.get("platform") or ""),
+        source_type=str(context.get("source_type") or ""),
+    )
+
+
+PLATFORM_FIT_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.creation.platform_fit.v1",
+        profile="strict_structured",
+        validator=_validate_platform_fit_contract,
+    )
+)
+PLATFORM_NOTE_VALIDATION_CONTRACT = register_llm_validation_contract(
+    LLMValidationContract(
+        contract_id="selfmedia.creation.platform_note.v1",
+        profile="strict_structured",
+        validator=_validate_platform_note_contract,
+    )
+)
 
 
 def persist_platform_mechanism_observation(observation: dict[str, Any]) -> Path:

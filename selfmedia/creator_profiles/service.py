@@ -31,11 +31,13 @@ DEFAULT_ACCOUNT_METRIC_SNAPSHOT_URL = (
 
 def generate_candidate_run(
     *,
-    platform: str,
-    platform_id: str,
+    tenant_id: str,
+    platform: str = "",
+    platform_id: str = "",
     id_type: str = "",
     url: str = "",
     creator_name: str = "",
+    user_fields: dict[str, Any] | None = None,
     use_llm: bool = True,
 ) -> dict[str, Any]:
     run_id = now_run_id()
@@ -48,7 +50,11 @@ def generate_candidate_run(
         url=url,
         creator_name=creator_name,
     )
-    bundle = write_evidence_bundle(run_id=run_id, resolver_result=resolver_result)
+    bundle = write_evidence_bundle(
+        run_id=run_id,
+        resolver_result=resolver_result,
+        tenant_id=tenant_id,
+    )
     if not resolver_result.get("ok"):
         blocked = {
             "write_status": "blocked_not_written",
@@ -60,6 +66,21 @@ def generate_candidate_run(
         (Path(bundle["dir"]) / "candidate_result.json").write_text(json.dumps(blocked, ensure_ascii=False, indent=2), encoding="utf-8")
         return blocked
     candidate = build_candidate(run_id=run_id, resolver_result=resolver_result, evidence_uri=bundle["uri"], use_llm=use_llm)
+    if user_fields:
+        payload = candidate.get("candidate_payload")
+        field_candidates = candidate.get("field_candidates")
+        if not isinstance(payload, dict) or not isinstance(field_candidates, dict):
+            raise RuntimeError("creator profile candidate payload is invalid")
+        for key, value in user_fields.items():
+            if key not in CREATOR_PROFILE_FIELDS or value in (None, "", []):
+                continue
+            payload[key] = value
+            field_candidates[key] = {
+                "value": value,
+                "confidence": 1.0,
+                "evidence": ["explicit user input"],
+                "reason": "用户在任务表单中明确提供。",
+            }
     (Path(bundle["dir"]) / "candidate_result.json").write_text(json.dumps(candidate, ensure_ascii=False, indent=2), encoding="utf-8")
     return candidate
 
@@ -67,48 +88,36 @@ def generate_candidate_run(
 def confirm_candidate_run(
     run_id: str,
     *,
+    tenant_id: str,
     creator_profiles_url: str | None = None,
     account_metric_snapshot_url: str | None = None,
     user_edits: dict[str, Any] | None = None,
     write_metrics: bool = True,
 ) -> dict[str, Any]:
-    store = RunStore()
-    candidate = store.read_json(run_id, "candidate_result.json")
-    if candidate.get("write_status") != "candidate_only_not_written":
-        raise RuntimeError(f"candidate run is not writable: {candidate.get('write_status')}")
-    payload = dict(candidate.get("candidate_payload") or {})
-    if user_edits:
-        payload.update({key: value for key, value in user_edits.items() if key in CREATOR_PROFILE_FIELDS})
-    MediaModelContract().validate_payload("CreatorProfile", payload)
-    table_url = creator_profiles_url or os.getenv("MEDIA_OS_CREATOR_PROFILES_V2_URL", "").strip() or DEFAULT_CREATOR_PROFILE_URL
-    creator_result = upsert_entity_record("CreatorProfile", table_url, payload, key_field="creator_profile_id")
-    metric_results: list[dict[str, Any]] = []
-    metric_status = "skipped"
-    if write_metrics:
-        metric_url = (
-            account_metric_snapshot_url
-            or os.getenv("MEDIA_OS_ACCOUNT_METRIC_SNAPSHOT_URL", "").strip()
-            or DEFAULT_ACCOUNT_METRIC_SNAPSHOT_URL
-        )
-        extracted = store.read_json(run_id, "extracted_profile.json")
-        metric_payloads = build_account_metric_snapshots(
-            account_name=str(payload.get("account_name") or ""),
-            creator_profile_id=str(payload.get("creator_profile_id") or ""),
-            platform=str(payload.get("platform") or ""),
-            extracted_profile=extracted,
-            evidence_uri=str(candidate.get("evidence_uri") or ""),
-        )
-        for item in metric_payloads:
-            metric_results.append(upsert_entity_record("AccountMetricSnapshot", metric_url, item, key_field="snapshot_id"))
-        metric_status = "written" if metric_results else "no_metrics"
-    final = {
-        "write_status": "written",
-        "run_id": run_id,
-        "creator_profile": creator_result,
-        "metric_snapshot_status": metric_status,
-        "metric_snapshots": metric_results,
-        "candidate_payload": payload,
-        "evidence_uri": candidate.get("evidence_uri", ""),
-    }
-    store.write_json(run_id, "final_payload.json", final)
-    return final
+    store = RunStore(tenant_id=tenant_id)
+    # A successful final payload is the durable consumption receipt. Failed writes never create it.
+    with store.confirmation_lock(run_id):
+        final = store.read_optional_json(run_id, "final_payload.json")
+        if final is not None:
+            return final
+        candidate = store.read_json(run_id, "candidate_result.json")
+        if candidate.get("write_status") != "candidate_only_not_written":
+            raise RuntimeError(f"candidate run is not writable: {candidate.get('write_status')}")
+        payload = dict(candidate.get("candidate_payload") or {})
+        if user_edits:
+            payload.update({key: value for key, value in user_edits.items() if key in CREATOR_PROFILE_FIELDS})
+        MediaModelContract().validate_payload("CreatorProfile", payload)
+        table_url = creator_profiles_url or os.getenv("MEDIA_OS_CREATOR_PROFILES_V2_URL", "").strip() or DEFAULT_CREATOR_PROFILE_URL
+        creator_result = upsert_entity_record("CreatorProfile", table_url, payload, key_field="creator_profile_id", session_tenant_id=tenant_id)
+        metric_results: list[dict[str, Any]] = []
+        metric_status = "skipped"
+        if write_metrics:
+            metric_url = account_metric_snapshot_url or os.getenv("MEDIA_OS_ACCOUNT_METRIC_SNAPSHOT_URL", "").strip() or DEFAULT_ACCOUNT_METRIC_SNAPSHOT_URL
+            extracted = store.read_json(run_id, "extracted_profile.json")
+            metric_payloads = build_account_metric_snapshots(account_name=str(payload.get("account_name") or ""), creator_profile_id=str(payload.get("creator_profile_id") or ""), platform=str(payload.get("platform") or ""), extracted_profile=extracted, evidence_uri=str(candidate.get("evidence_uri") or ""))
+            for item in metric_payloads:
+                metric_results.append(upsert_entity_record("AccountMetricSnapshot", metric_url, item, key_field="snapshot_id", session_tenant_id=tenant_id))
+            metric_status = "written" if metric_results else "no_metrics"
+        final = {"write_status": "written", "run_id": run_id, "creator_profile": creator_result, "metric_snapshot_status": metric_status, "metric_snapshots": metric_results, "candidate_payload": payload, "evidence_uri": candidate.get("evidence_uri", "")}
+        store.write_json(run_id, "final_payload.json", final)
+        return final
