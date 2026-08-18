@@ -46,6 +46,13 @@ from .ports import (
     validate_entrypoint_io,
     validate_entrypoint_result,
 )
+from .platform_hashtags import (
+    MAX_PLATFORM_HASHTAGS,
+    MAX_PLATFORM_HASHTAG_LENGTH,
+    extract_platform_hashtags,
+    normalize_platform_hashtags,
+    resolve_platform_hashtags,
+)
 from .validators import (
     LLM_INPUT_SCHEMA,
     LLM_OUTPUT_SCHEMA,
@@ -68,6 +75,8 @@ __all__ = [
     "MediaModelContractError",
     "MediaModelPayloadError",
     "MediaModelWriter",
+    "MAX_PLATFORM_HASHTAGS",
+    "MAX_PLATFORM_HASHTAG_LENGTH",
     "MetricRegistryError",
     "QUOTE_SNAPSHOT_VERSION",
     "RENDER_SPEC_SCHEMA",
@@ -96,12 +105,15 @@ __all__ = [
     "metric_snapshot_idempotency_key",
     "metric_spec",
     "normalize_metric_key",
+    "normalize_platform_hashtags",
     "normalize_rebate_ratio",
     "normalize_source_url",
     "platform_validation_report",
     "render_spec_to_creator_doc_blocks",
     "render_spec_to_creator_draft",
     "render_spec_to_task_card_blocks",
+    "extract_platform_hashtags",
+    "resolve_platform_hashtags",
     "validate_entrypoint_io",
     "validate_entrypoint_result",
     "validate_llm_input_payload",

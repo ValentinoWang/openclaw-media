@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,6 +12,8 @@ if str(ROOT) not in sys.path:
 
 from integrations.feishu.media_writer import (
     MediaModelFeishuWriterError,
+    _inherit_source_asset_attachments,
+    _upload_missing_source_asset_attachments,
     prepare_entity_bitable_fields,
 )
 from media_model import (
@@ -36,6 +39,7 @@ from media_model import (
     content_fingerprint,
     metric_snapshot_idempotency_key,
     normalize_metric_key,
+    normalize_platform_hashtags,
     normalize_rebate_ratio,
     normalize_source_url,
     platform_validation_report,
@@ -54,16 +58,56 @@ class MediaModelTests(unittest.TestCase):
         self.assertIn("asset_id", contract.writable_fields("SourceAsset"))
         self.assertIn("DecisionTrace", contract.data["entity_contracts"])
 
+    def test_creator_profile_contract_accepts_avatar_url(self) -> None:
+        contract = MediaModelContract()
+        payload = {
+            "creator_profile_id": "creator_xhs_wangsports",
+            "platform": "小红书",
+            "author_id": "wangsports",
+            "account_name": "王教练",
+            "avatar_url": "https://sns.example/avatar.jpg",
+        }
+        contract.validate_payload("CreatorProfile", payload)
+        self.assertEqual(contract.feishu_field_name("CreatorProfile", "avatar_url"), "头像链接")
+
     def test_source_asset_payload_uses_normalized_url_and_media_uri(self) -> None:
         payload = build_source_asset_payload(
             platform="xhs",
             title="起跑前一秒",
             source_url="HTTPS://Example.com/a/?utm_source=x&foo=1",
             evidence_uri="media://source_assets/xhs/asset_1/evidence/evidence.json",
+            source_asset_id="source_asset_growth_1",
             author_id="author_1",
         )
         self.assertEqual(payload["source_url"], "https://example.com/a?foo=1")
+        self.assertEqual(payload["source_asset_id"], "source_asset_growth_1")
+        self.assertEqual(payload["status"], "candidate")
         self.assertTrue(payload["content_fingerprint"].startswith("sha256:"))
+
+    def test_platform_hashtags_use_structured_or_explicit_source_tokens_only(self) -> None:
+        self.assertEqual(
+            normalize_platform_hashtags(["#短跑", {"name": "训练"}, "标签"],),
+            ["短跑", "训练", "标签"],
+        )
+        payload = build_source_asset_payload(
+            platform="xhs",
+            title="标题 #校园跑",
+            source_url="https://example.com/a",
+            evidence_uri="media://source_assets/xhs/asset_1/evidence/evidence.json",
+            platform_hashtags=[],
+            body="普通分类 AI 赛道 跑步",
+        )
+        self.assertEqual(payload["platform_hashtags"], ["校园跑"])
+
+    def test_overlong_explicit_platform_hashtag_is_rejected_without_truncation(self) -> None:
+        token = "#" + ("长" * 65)
+        payload = build_source_asset_payload(
+            platform="xhs",
+            title=f"标题 {token} #有效",
+            source_url="https://example.com/a",
+            evidence_uri="media://source_assets/xhs/asset_1/evidence/evidence.json",
+        )
+        self.assertEqual(payload["platform_hashtags"], ["有效"])
 
     def test_source_asset_rejects_non_media_evidence(self) -> None:
         with self.assertRaises(MediaModelPayloadError):
@@ -83,6 +127,7 @@ class MediaModelTests(unittest.TestCase):
             prompt_bundle_version="prompt_v1",
             model="gpt-test",
             confidence=0.82,
+            source_asset_id="source_asset_growth_1",
             cover_opening_hook="封面前2秒抓手",
             core_data_summary="点赞收藏评论分享摘要",
             top_comment_insight="三条高赞评论洞察",
@@ -94,6 +139,7 @@ class MediaModelTests(unittest.TestCase):
             creative_upgrade_suggestion="千万年薪编导会怎么把这条改出彩",
         )
         self.assertEqual(payload["review_status"], "未复核")
+        self.assertEqual(payload["source_asset_id"], "source_asset_growth_1")
         self.assertEqual(payload["prompt_bundle_version"], "prompt_v1")
         self.assertEqual(payload["creative_upgrade_suggestion"], "千万年薪编导会怎么把这条改出彩")
 
@@ -121,9 +167,17 @@ class MediaModelTests(unittest.TestCase):
             status="待写入",
             generation_source="llm",
             run_artifact_uri="media://creation_runs/run_20260620_test/request.json",
+            source_asset_id="source_asset_growth_1",
+            platform="小红书",
+            content_type="图文",
+            track_name="跑步训练",
             render_spec_uri="media://renders/render_20260620_test/render_spec.json",
         )
         self.assertEqual(run["run_id"], "run_20260620_test")
+        self.assertEqual(run["source_asset_id"], "source_asset_growth_1")
+        self.assertEqual(run["platform"], "小红书")
+        self.assertEqual(run["content_type"], "图文")
+        self.assertEqual(run["track_name"], "跑步训练")
 
         traces = build_decision_trace_payloads(
             run_id="run_20260620_test",
@@ -180,11 +234,22 @@ class MediaModelTests(unittest.TestCase):
         payload = build_business_opportunity_payload(
             opportunity_id="opp_1",
             brand="adidas",
+            platform="小红书",
+            content_type="视频",
             current_quote_amount=1499,
             rebate_ratio="20%",
+            schedule="8月可发布",
+            price_protection_policy="7月下单保价至8月",
+            authorization_scope="官方自媒体及电商渠道",
+            authorization_duration="3个月",
             quote_snapshot_uri="media://business/opp_1/quote_snapshot.json",
         )
         self.assertEqual(payload["rebate_ratio"], 0.2)
+        self.assertEqual(payload["content_type"], "视频")
+        self.assertEqual(payload["schedule"], "8月可发布")
+        self.assertEqual(payload["price_protection_policy"], "7月下单保价至8月")
+        self.assertEqual(payload["authorization_scope"], "官方自媒体及电商渠道")
+        self.assertEqual(payload["authorization_duration"], "3个月")
 
     def test_url_and_fingerprint_are_stable(self) -> None:
         first = normalize_source_url("https://example.com/post?a=1&utm_source=x")
@@ -405,6 +470,90 @@ class MediaModelTests(unittest.TestCase):
                     "决策版本": 1,
                 },
             )
+
+    def test_prepare_source_asset_attachment_fields_preserves_file_tokens(self) -> None:
+        payload = build_source_asset_payload(
+            platform="抖音",
+            title="附件写入测试",
+            source_url="https://www.douyin.com/video/1234567890",
+            evidence_uri="media://source_assets/douyin/1234567890/evidence.json",
+        )
+        payload["cover_attachment"] = [{"file_token": "cover_token"}, {"file_token": "cover_token"}]
+        payload["video_attachment"] = [{"fileToken": "video_token"}]
+        fields = prepare_entity_bitable_fields(
+            "SourceAsset",
+            payload,
+            {
+                "素材ID": 1,
+                "内容指纹": 1,
+                "标题": 1,
+                "平台": 3,
+                "来源链接": 15,
+                "证据URI": 1,
+                "封面附件": 17,
+                "视频附件": 17,
+                "素材状态": 3,
+                "启用": 7,
+            },
+        )
+        self.assertEqual(fields["封面附件"], [{"file_token": "cover_token"}])
+        self.assertEqual(fields["视频附件"], [{"file_token": "video_token"}])
+
+    def test_duplicate_source_asset_inherits_canonical_attachment_tokens(self) -> None:
+        payload = build_source_asset_payload(
+            platform="抖音",
+            title="重复素材",
+            source_url="https://www.douyin.com/video/1234567890?utm_source=share",
+            evidence_uri="media://source_assets/douyin/duplicate/evidence.json",
+        )
+        payload["cover_attachment"] = [{"file_token": "new_cover"}]
+        payload["video_attachment"] = [{"file_token": "new_video"}]
+        inherited = _inherit_source_asset_attachments(
+            "SourceAsset",
+            payload,
+            [
+                {
+                    "record_id": "rec_existing",
+                    "fields": {
+                        "平台": "抖音",
+                        "来源链接": {"link": "https://www.douyin.com/video/1234567890", "text": "原链接"},
+                        "封面附件": [{"file_token": "canonical_cover"}],
+                        "视频附件": [{"fileToken": "canonical_video"}],
+                    },
+                }
+            ],
+            contract=MediaModelContract(),
+        )
+        self.assertEqual(inherited["cover_attachment"], [{"file_token": "canonical_cover"}])
+        self.assertEqual(inherited["video_attachment"], [{"file_token": "canonical_video"}])
+
+    def test_source_asset_upload_adds_only_missing_attachment(self) -> None:
+        cover = self._testMethodName + ".jpg"
+        cover_path = ROOT / cover
+        cover_path.write_bytes(b"jpeg")
+        response = Mock()
+        response.json.return_value = {"code": 0, "data": {"file_token": "uploaded_cover"}}
+        try:
+            with (
+                patch("integrations.feishu.media_writer.feishu_bitable_refs", return_value=("base", "table", "token")),
+                patch("integrations.feishu.media_writer.requests.post", return_value=response) as upload,
+            ):
+                result = _upload_missing_source_asset_attachments(
+                    "SourceAsset",
+                    "https://example.test/base",
+                    {"video_attachment": [{"file_token": "existing_video"}]},
+                    {
+                        "cover_attachment": str(cover_path),
+                        "video_attachment": str(cover_path.with_suffix(".mp4")),
+                    },
+                    contract=MediaModelContract(),
+                )
+            self.assertEqual(result["cover_attachment"], [{"file_token": "uploaded_cover"}])
+            self.assertEqual(result["video_attachment"], [{"file_token": "existing_video"}])
+            self.assertEqual(upload.call_count, 1)
+            response.raise_for_status.assert_called_once()
+        finally:
+            cover_path.unlink(missing_ok=True)
 
     def test_contract_normalizes_chinese_feishu_fields_to_canonical_keys(self) -> None:
         contract = MediaModelContract()

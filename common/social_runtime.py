@@ -185,7 +185,7 @@ def add_url_arguments(parser: argparse.ArgumentParser) -> None:
 
 def detect_platform(url: str) -> str:
     lower = (url or "").lower()
-    if "xiaohongshu.com" in lower or "xhslink.com" in lower:
+    if "xiaohongshu.com" in lower or "xhslink.com" in lower or "xhslink.cn" in lower:
         return "xiaohongshu"
     if "douyin.com" in lower or "iesdouyin.com" in lower:
         return "douyin"
@@ -463,6 +463,7 @@ def feishu_list_records(
     view_id: str = "",
     page_size: int = 200,
     token: str | None = None,
+    filter_formula: str = "",
 ) -> list[dict[str, Any]]:
     app_token, table_id, token = feishu_bitable_refs(bitable_url, token)
     parsed = urlparse(bitable_url)
@@ -474,6 +475,8 @@ def feishu_list_records(
         params: dict[str, Any] = {"page_size": min(max(page_size, 1), 500)}
         if view_id:
             params["view_id"] = view_id
+        if filter_formula:
+            params["filter"] = filter_formula
         if page_token:
             params["page_token"] = page_token
         resp = requests.get(
@@ -565,6 +568,23 @@ def _coerce_feishu_url(value: Any) -> dict[str, str] | str:
     return text
 
 
+def _coerce_feishu_attachments(value: Any) -> list[dict[str, str]]:
+    if value in (None, "", []):
+        return []
+    raw_items = value if isinstance(value, list) else [value]
+    attachments: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for item in raw_items:
+        if not isinstance(item, dict):
+            continue
+        file_token = str(item.get("file_token") or item.get("fileToken") or "").strip()
+        if not file_token or file_token in seen:
+            continue
+        seen.add(file_token)
+        attachments.append({"file_token": file_token})
+    return attachments
+
+
 def feishu_coerce_value(value: Any, field_type: Any) -> Any:
     if value is None:
         return ""
@@ -600,6 +620,8 @@ def feishu_coerce_value(value: Any, field_type: Any) -> Any:
         return feishu_bool(value, default=False)
     if field_type == 15:
         return _coerce_feishu_url(value)
+    if field_type == 17:
+        return _coerce_feishu_attachments(value)
     if isinstance(value, (dict, list)):
         return json_dumps(value)
     return str(value)

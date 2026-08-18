@@ -16,6 +16,7 @@ SPEC.loader.exec_module(MODULE)
 def _payload() -> dict[str, object]:
     return {
         "defaults": {},
+        "model_tiers": {"L": {"model": "gpt-5.6-luna", "reasoning": "low"}},
         "bots": {},
         "profiles": {},
         "providers": {},
@@ -65,34 +66,31 @@ def test_restart_services_is_noop_when_config_is_unchanged(tmp_path, monkeypatch
 def test_render_llm_usage_ssot_includes_profile_and_non_profile_paths() -> None:
     payload = {
         "defaults": {},
+        "model_tiers": {
+            "L": {"model": "gpt-5.6-luna", "reasoning": "low"},
+            "A": {"model": "gpt-5.6-terra", "reasoning": "medium"},
+            "B": {"model": "gpt-5.6-terra", "reasoning": "high"},
+            "C": {"model": "gpt-5.6-sol", "reasoning": "medium"},
+        },
         "bots": {
-            "media": {"provider": "openclaw_codex", "agent": "feishu-media", "cwd": "/agents/media"},
-            "social": {"provider": "openclaw_codex", "agent": "feishu-social", "cwd": "/agents/social"},
-            "main": {"provider": "openclaw_codex", "agent": "feishu-main", "cwd": "/agents/main"},
-            "daily": {"provider": "openclaw_codex", "agent": "feishu-daily", "cwd": "/agents/daily"},
-            "knowledge": {"provider": "openclaw_codex", "agent": "feishu-knowledge", "cwd": "/agents/knowledge"},
+            "media": {"provider": "openclaw_codex", "agent": "feishu-media", "cwd": "/agents/media", "model_tier": "C"},
+            "social": {"provider": "openclaw_codex", "agent": "feishu-social", "cwd": "/agents/social", "model_tier": "B"},
+            "main": {"provider": "openclaw_codex", "agent": "feishu-main", "cwd": "/agents/main", "model_tier": "B"},
+            "daily": {"provider": "openclaw_codex", "agent": "feishu-daily", "cwd": "/agents/daily", "model_tier": "A"},
+            "knowledge": {"provider": "openclaw_codex", "agent": "feishu-knowledge", "cwd": "/agents/knowledge", "model_tier": "B"},
         },
         "profiles": {
-            "media_creation": {"provider": "codex_responses", "bot": "media"},
-            "media_analysis": {"provider": "codex_responses", "bot": "media"},
-            "social_vision": {"provider": "codex_responses", "bot": "social"},
+            "media_creation": {"provider": "openclaw_codex", "bot": "media", "model_tier": "C"},
+            "media_analysis": {"provider": "openclaw_codex", "bot": "media", "model_tier": "B"},
+            "social_vision": {"provider": "openclaw_codex", "bot": "social", "model_tier": "C"},
         },
         "providers": {
-            "codex_responses": {
-                "model": "gpt-5.5",
-                "base_url": "https://chatgpt.com/backend-api/codex",
-                "api_key": "codex_auth_file",
-                "api_type": "openai_codex_responses",
-                "timeout": 1800,
-                "thinking": "high",
-            },
             "openclaw_codex": {
-                "model": "openai-codex/gpt-5.5",
+                "default_model_tier": "B",
                 "base_url": "openclaw://agent",
                 "api_key": "codex_auth_file",
                 "api_type": "openclaw_agent",
                 "timeout": 1800,
-                "thinking": "high",
                 "bin": "/bin/openclaw",
                 "codex_home": "/home/ubuntu/.codex",
             },
@@ -104,5 +102,5 @@ def test_render_llm_usage_ssot_includes_profile_and_non_profile_paths() -> None:
     assert "media_creation" in rendered
     assert "03 拆解关键帧/图文图片理解" in rendered
     assert "01 ingest 原始音频转写" in rendered
-    assert "gpt-5.5" in rendered
+    assert "gpt-5.6-sol" in rendered
     assert "已配置" in rendered

@@ -6,10 +6,26 @@ from .contract import MediaModelContract
 
 
 class MediaModelWriter(Protocol):
-    def write_entity_record(self, entity_name: str, payload: dict[str, Any], *, table_url: str) -> dict[str, Any]:
+    def write_entity_record(
+        self,
+        entity_name: str,
+        payload: dict[str, Any],
+        *,
+        table_url: str,
+        session_tenant_id: str,
+    ) -> dict[str, Any]:
         ...
 
-    def update_entity_record(self, entity_name: str, record_id: str, payload: dict[str, Any], *, table_url: str) -> dict[str, Any]:
+    def update_entity_record(
+        self,
+        entity_name: str,
+        record_id: str,
+        payload: dict[str, Any],
+        *,
+        table_url: str,
+        session_tenant_id: str,
+        canonical_resource_id: str,
+    ) -> dict[str, Any]:
         ...
 
 

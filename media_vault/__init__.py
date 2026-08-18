@@ -6,6 +6,7 @@ from .vault import (
     MediaVaultUriError,
     make_timestamp_id,
     normalize_uri_part,
+    require_tenant_id,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "MediaVaultUriError",
     "make_timestamp_id",
     "normalize_uri_part",
+    "require_tenant_id",
 ]

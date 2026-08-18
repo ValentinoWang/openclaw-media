@@ -1,0 +1,47 @@
+{
+  "contract_id": "media_vault_v2",
+  "identity_source": "openclaw_account.tenants.id",
+  "tenant_id": {
+    "format": "canonical_lowercase_uuid",
+    "immutable": true
+  },
+  "filesystem_root": "${OPENCLAW_MEDIA_VAULT_ROOT}/tenants/<tenant_id>",
+  "uri_format": "media://tenants/<tenant_id>/<namespace>/<resource>/<artifact>",
+  "artifact_manifest_required_fields": [
+    "artifact_id",
+    "tenant_id",
+    "owner_type",
+    "owner_id",
+    "artifact_type",
+    "uri",
+    "content_hash",
+    "created_at"
+  ],
+  "authorization": {
+    "source": "server tenant context",
+    "cross_tenant_result": "not_found",
+    "client_tenant_fields_trusted": false,
+    "uri_owner_must_match_context": true
+  },
+  "operations": [
+    "create",
+    "read",
+    "list",
+    "search",
+    "export",
+    "delete"
+  ],
+  "retired_runtime_paths": [
+    "media://source_assets/*",
+    "media://creation_runs/*",
+    "${OPENCLAW_MEDIA_VAULT_ROOT}/source_assets/*",
+    "${OPENCLAW_MEDIA_VAULT_ROOT}/creation_runs/*"
+  ],
+  "migration": {
+    "mode": "one_shot_migrate_and_delete",
+    "ownership_input": "explicit tenant mapping plus canonical owner sidecar",
+    "unprovable_owner_action": "move_to_offline_orphan_archive",
+    "runtime_legacy_reader": false,
+    "dual_write": false
+  }
+}
