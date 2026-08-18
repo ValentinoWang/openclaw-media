@@ -1,0 +1,305 @@
+{
+  "schemaVersion": "d2.fixture-coverage-matrix.v1",
+  "comparisonPolicy": {
+    "normalizationAllowedOnly": [
+      "surface_native_block_id",
+      "platform_invisible_container_id"
+    ],
+    "normalizationForbidden": [
+      "text_trim",
+      "whitespace_collapse",
+      "newline_conversion",
+      "punctuation_folding",
+      "mark_loss",
+      "link_flattening",
+      "table_flattening"
+    ],
+    "realSurfaceOnly": true
+  },
+  "requiredD2EvidenceForEveryRevision": [
+    "real React MediaApp screenshot and rendered-block manifest",
+    "authorized isolated real Feishu Docx screenshot",
+    "write receipt, remote document version and complete block-level readback",
+    "one-to-one canonical/react/feishu mapping and field-level diff report",
+    "zero unexplained differences, zero console failures and zero overflow"
+  ],
+  "protectedBlockCasesOutsideCanonicalBody": [
+    {
+      "caseId": "protected_whiteboard",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    },
+    {
+      "caseId": "protected_bitable",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    },
+    {
+      "caseId": "protected_sheet",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    },
+    {
+      "caseId": "protected_embedded_webpage",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    },
+    {
+      "caseId": "protected_synced_block",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    },
+    {
+      "caseId": "protected_third_party_widget",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    },
+    {
+      "caseId": "protected_agenda",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    },
+    {
+      "caseId": "protected_okr",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    },
+    {
+      "caseId": "protected_mind_note",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    },
+    {
+      "caseId": "protected_flowchart",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    },
+    {
+      "caseId": "protected_lark_task",
+      "fixturePlacement": "pre-existing controlled real Feishu Docx block; never encode an unsupported block in media.document.body.v1",
+      "expected": {
+        "status": 422,
+        "code": "unsupported_document_block",
+        "partialWrite": false,
+        "readbackUnchanged": true
+      }
+    }
+  ],
+  "revisions": [
+    {
+      "artifactKind": "research_snapshot",
+      "fixtureFile": "fixtures/research_snapshot.ready.body.v1.json",
+      "allSharedFeatures": [
+        "stable_block_ids",
+        "heading_levels",
+        "chinese_english_digits_punctuation",
+        "leading_internal_trailing_whitespace",
+        "exact_lf_and_blank_line",
+        "bold_italic_underline_strike_inline_code",
+        "link_text_target_title",
+        "bullet_ordered_nested_lists",
+        "checked_and_unchecked_todos",
+        "quote",
+        "code_language_and_final_lf",
+        "callout",
+        "image_alt_dimensions_checksum",
+        "attachment_name_mime_checksum",
+        "divider",
+        "data_snapshot"
+      ],
+      "tableSemanticPurpose": "evidence_index",
+      "tableBlocks": [
+        {
+          "id": "blk_rs_table_primary",
+          "rows": 3,
+          "columns": 3
+        }
+      ],
+      "specificRequirement": "research conclusion, source link, evidence index and comparison table"
+    },
+    {
+      "artifactKind": "asset_digest",
+      "fixtureFile": "fixtures/asset_digest.ready.body.v1.json",
+      "allSharedFeatures": [
+        "stable_block_ids",
+        "heading_levels",
+        "chinese_english_digits_punctuation",
+        "leading_internal_trailing_whitespace",
+        "exact_lf_and_blank_line",
+        "bold_italic_underline_strike_inline_code",
+        "link_text_target_title",
+        "bullet_ordered_nested_lists",
+        "checked_and_unchecked_todos",
+        "quote",
+        "code_language_and_final_lf",
+        "callout",
+        "image_alt_dimensions_checksum",
+        "attachment_name_mime_checksum",
+        "divider",
+        "data_snapshot"
+      ],
+      "tableSemanticPurpose": "general",
+      "tableBlocks": [
+        {
+          "id": "blk_ad_table_primary",
+          "rows": 3,
+          "columns": 3
+        }
+      ],
+      "specificRequirement": "selected assets, tags, creative pattern and controlled resource references"
+    },
+    {
+      "artifactKind": "decision_brief",
+      "fixtureFile": "fixtures/decision_brief.ready.body.v1.json",
+      "allSharedFeatures": [
+        "stable_block_ids",
+        "heading_levels",
+        "chinese_english_digits_punctuation",
+        "leading_internal_trailing_whitespace",
+        "exact_lf_and_blank_line",
+        "bold_italic_underline_strike_inline_code",
+        "link_text_target_title",
+        "bullet_ordered_nested_lists",
+        "checked_and_unchecked_todos",
+        "quote",
+        "code_language_and_final_lf",
+        "callout",
+        "image_alt_dimensions_checksum",
+        "attachment_name_mime_checksum",
+        "divider",
+        "data_snapshot"
+      ],
+      "tableSemanticPurpose": "evidence_index",
+      "tableBlocks": [
+        {
+          "id": "blk_db_table_primary",
+          "rows": 3,
+          "columns": 3
+        }
+      ],
+      "specificRequirement": "candidate topic, platform signal, human decision and risk text"
+    },
+    {
+      "artifactKind": "creation_document",
+      "fixtureFile": "fixtures/creation_document.ready.body.v1.json",
+      "allSharedFeatures": [
+        "stable_block_ids",
+        "heading_levels",
+        "chinese_english_digits_punctuation",
+        "leading_internal_trailing_whitespace",
+        "exact_lf_and_blank_line",
+        "bold_italic_underline_strike_inline_code",
+        "link_text_target_title",
+        "bullet_ordered_nested_lists",
+        "checked_and_unchecked_todos",
+        "quote",
+        "code_language_and_final_lf",
+        "callout",
+        "image_alt_dimensions_checksum",
+        "attachment_name_mime_checksum",
+        "divider",
+        "data_snapshot"
+      ],
+      "tableSemanticPurpose": "storyboard",
+      "tableBlocks": [
+        {
+          "id": "blk_cd_table_storyboard_01",
+          "rows": 9,
+          "columns": 4
+        },
+        {
+          "id": "blk_cd_table_storyboard_02",
+          "rows": 4,
+          "columns": 4
+        }
+      ],
+      "specificRequirement": "two consecutive storyboard tables with the required four columns and repeated header"
+    },
+    {
+      "artifactKind": "review_report",
+      "fixtureFile": "fixtures/review_report.ready.body.v1.json",
+      "allSharedFeatures": [
+        "stable_block_ids",
+        "heading_levels",
+        "chinese_english_digits_punctuation",
+        "leading_internal_trailing_whitespace",
+        "exact_lf_and_blank_line",
+        "bold_italic_underline_strike_inline_code",
+        "link_text_target_title",
+        "bullet_ordered_nested_lists",
+        "checked_and_unchecked_todos",
+        "quote",
+        "code_language_and_final_lf",
+        "callout",
+        "image_alt_dimensions_checksum",
+        "attachment_name_mime_checksum",
+        "divider",
+        "data_snapshot"
+      ],
+      "tableSemanticPurpose": "metric_snapshot",
+      "tableBlocks": [
+        {
+          "id": "blk_rr_table_metrics_01",
+          "rows": 9,
+          "columns": 6
+        },
+        {
+          "id": "blk_rr_table_metrics_02",
+          "rows": 3,
+          "columns": 6
+        }
+      ],
+      "specificRequirement": "two consecutive metric tables with the required six columns, 24h/7d windows and evidence quality"
+    }
+  ]
+}

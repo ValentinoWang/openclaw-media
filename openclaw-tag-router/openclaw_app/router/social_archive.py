@@ -1,52 +1,75 @@
 from __future__ import annotations
 
-from .tag_router_common import *
+import json
+import importlib.util
+import hashlib
+import os
+import re
+import sys
+import tempfile
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
+from ..models.message import Message
+from ..models.task import TaskResult
+from .media_subprocess import run_media_subprocess_with_watchdog
 
-SOCIAL_METADATA_EXTRACTION_PROMPT = """你是 OpenClaw Social 的社交档案元数据抽取器。只输出合法 JSON，不要 Markdown，不要解释。
-
-任务：从用户发来的社交/人脉档案材料中抽取 person、gender、relationship_category，用于调用 person_archive.py。
-
-约束：
-- 必须基于正文证据抽取，不要用正则模板猜字段。
-- person 是用户要建档/更新档案的对象称呼或昵称，不要输出“对象”“她”“他”“这个”“截图”“聊天”等泛词。
-- gender 只能是「男」「女」「未知」。用户没有明确指定性别时输出「女」；只有用户明确说男或未知时才输出对应值，不要因截图/头像/材料证据不足而输出「未知」。
-- relationship_category 只能是「异性关系」「无性关系」或空字符串。职业合作、人脉、朋友、客户、校友、投资人、无性社交都归「无性关系」。普通【社交】建档在没有无性/人脉/职业/朋友等特殊说明时按默认女性对象输出「异性关系」。
-- 如果当前入口 forced_category 非空，relationship_category 必须等于 forced_category，但 person/gender 仍要由 LLM 抽取。
-- 只有 confidence 低于 0.65 或缺少 person 时才需要待确认；默认 gender=女、relationship_category=异性关系 是可继续归档的有效值，不要作为阻断缺口。
-
-输出 JSON 字段固定为：
-{
-  "person": "称呼",
-  "gender": "男|女|未知",
-  "relationship_category": "异性关系|无性关系|",
-  "confidence": 0.0,
-  "missing_fields": ["..."],
-  "evidence": "支持抽取的原文片段",
-  "reason": "一句话说明判断依据"
-}
-"""
 
 SOCIAL_ARCHIVE_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".heic", ".webp"}
+SOCIAL_ARCHIVE_VIDEO_EXTS = {".mp4", ".mov", ".m4v", ".webm", ".mkv"}
 SOCIAL_ARCHIVE_AUDIO_EXTS = {".m4a", ".mp3", ".wav", ".aac", ".flac", ".caf"}
+SOCIAL_THEORY_TAGS = ("女性爱", "性兴趣", "风控", "性资源", "行动")
+BRACKET_THEORY_RE = re.compile(r"【(?P<tag>[^】\n]{1,32})】")
+THEORY_TAG_SUFFIXES = ("进行分析", "来分析", "分析一下", "分析")
+UPLOADED_MEDIA_ROOT = Path(os.environ.get("OPENCLAW_UPLOADED_MEDIA_ROOT", "/home/ubuntu/.openclaw/media/inbound"))
+UPLOADED_MEDIA_ROOTS = [
+    Path(item.strip())
+    for item in re.split(r"[:,]", os.environ.get("OPENCLAW_UPLOADED_MEDIA_ROOTS", ""))
+    if item.strip()
+] or [UPLOADED_MEDIA_ROOT, Path("/home/ubuntu/openclaw-feishu-gateway/downloads")]
+CHAT_SCREENSHOT_STRONG_INTENTS = {
+    "聊天截图",
+    "微信截图",
+    "短信截图",
+    "对话截图",
+    "聊天记录",
+    "聊天关系",
+    "关系分析",
+    "聊天录屏",
+    "微信录屏",
+    "对话录屏",
+}
+CHAT_TEXT_PAYLOAD_SCHEMA_VERSION = "wechat-chat-llm-text-v2"
+CHAT_RELATIONSHIP_SCHEMA_VERSION = "wechat-chat-relationship-analysis-v2"
+CHAT_RELATIONSHIP_CONTRACT = Path("person-profile-skill/references/relationship-analysis-contract.md")
+SOCIAL_METADATA_CONTRACT = Path("person-profile-skill/references/social-archive-metadata-contract.md")
+EXPECTED_RAPIDOCR_VERSION = "3.9.2"
+EXPECTED_ONNXRUNTIME_VERSION = "1.28.0"
+EXPECTED_RAPIDOCR_MODEL_SET = "PP-OCRv6_det_small+ch_ppocr_mobile_v2.0_cls_mobile+PP-OCRv6_rec_small"
+PERSON_ARCHIVE_REQUEST_NAME = "person-archive-write-request-v2.json"
+PERSON_ARCHIVE_REQUEST_SCHEMA = Path("person-profile-skill/contracts/person-archive-v2/write-request.schema.json")
+PERSON_ARCHIVE_RESULT_SCHEMA = Path("person-profile-skill/contracts/person-archive-v2/write-result.schema.json")
+CHAT_PROCESSING_VERSION = "vision-structure-selective-ocr-v1"
+CHAT_STRUCTURE_MODEL = "gpt-5.6-luna"
+CHAT_STRUCTURE_SCHEMA_VERSION = "wechat-vision-structure-v3"
 
 
 class SocialArchiveMixin:
     def handle_社交(self, message: Message) -> TaskResult:
-        return self._handle_person_archive_message(message, archive_kind="社交", forced_category="", skip_feishu=False)
+        return self._handle_person_archive_message(message, archive_kind="社交", skip_feishu=False)
 
     def handle_人脉(self, message: Message) -> TaskResult:
-        return self._handle_person_archive_message(message, archive_kind="人脉", forced_category="无性关系", skip_feishu=True)
+        return self._handle_person_archive_message(message, archive_kind="人脉", skip_feishu=True)
 
     def _handle_person_archive_message(
         self,
         message: Message,
         *,
         archive_kind: str,
-        forced_category: str = "",
         skip_feishu: bool = False,
     ) -> TaskResult:
-        metadata = self._extract_social_metadata_with_llm(message, archive_kind=archive_kind, forced_category=forced_category)
+        metadata = self._extract_social_metadata_with_llm(message, archive_kind=archive_kind)
         if not metadata.get("ok"):
             entry = self.archive_service.save_archive(
                 message,
@@ -54,15 +77,15 @@ class SocialArchiveMixin:
                 [
                     ("原始内容", message.body),
                     ("LLM元数据抽取", json.dumps(metadata, ensure_ascii=False, indent=2)),
-                    ("待补充信息", "缺少对象称呼，或 LLM 未能可靠抽取对象/性别/关系。请补一句：对象：称呼；性别：男/女/未知；关系：异性关系/无性关系"),
+                    ("待补充信息", "缺少对象称呼，或 LLM 未能可靠识别人物。请补一句：对象：称呼"),
                 ],
                 {"status": "pending_person", "tags": [archive_kind, "人物档案"], "llm_metadata_status": metadata.get("status", "")},
             )
             reply = "\n".join(
                 [
-                    f"{archive_kind}档案待确认：LLM 未能可靠抽取对象/性别/关系。",
+                    f"{archive_kind}档案待确认：LLM 未能可靠识别人物。",
                     f"原因：{metadata.get('reason') or '缺少必要字段'}",
-                    "请补一句：对象：称呼；性别：男/女/未知；关系：异性关系/无性关系",
+                    "请补一句：对象：称呼",
                     f"暂存路径：{entry.local_path}",
                 ]
             )
@@ -79,14 +102,20 @@ class SocialArchiveMixin:
             gender=gender,
             relationship_category=relationship_category,
         )
-        final_category = relationship_category or self._extract_output_path(archive_result.get("output", ""), "关系分类：") or "自动判定"
-        feishu_skipped = skip_feishu or self._should_skip_social_feishu(message.body, final_category)
+        final_category = relationship_category or "自动判定"
+        feishu_skipped = skip_feishu or self._should_skip_social_feishu(final_category)
         feishu_result = {} if feishu_skipped else self._sync_social_person_feishu_doc(person, message, archive_result)
-        status = "archived" if archive_result["ok"] else "pending_manual"
+        sync_ok = archive_result.get("ok") and (feishu_skipped or bool(feishu_result.get("doc") and not feishu_result.get("warning")))
+        status = "archived" if sync_ok else ("sync_failed" if archive_result.get("ok") else "pending_manual")
         sections = [
             ("原始内容", message.body),
             ("person-profile-skill 输出", archive_result["output"] or archive_result["error"]),
         ]
+        chat_batch = archive_result.get("chat_batch") or {}
+        if chat_batch.get("ok"):
+            sections.append(("聊天内容单一事实源", chat_batch.get("content_ssot_path", "")))
+            sections.append(("聊天文字稿", chat_batch.get("transcript_path", "")))
+            sections.append(("聊天关系分析", chat_batch.get("analysis_markdown_path", "")))
         if feishu_skipped:
             sections.append(("飞书云文档同步", "不同步：无性关系/人脉档案默认仅本地与 Obsidian"))
         if feishu_result.get("doc") or feishu_result.get("warning"):
@@ -99,8 +128,10 @@ class SocialArchiveMixin:
                 "status": status,
                 "tags": [archive_kind, "人物档案"],
                 "person": person,
-                "person_archive_path": archive_result.get("archive_path", ""),
-                "obsidian_path": archive_result.get("obsidian_path", ""),
+                "person_id": archive_result.get("person_id", ""),
+                "person_directory": archive_result.get("person_directory", ""),
+                "person_view_directory": archive_result.get("view_directory", ""),
+                "person_view_manifest_path": archive_result.get("view_manifest_path", ""),
                 "llm_person": person,
                 "llm_gender": gender,
                 "llm_relationship_category": relationship_category,
@@ -109,15 +140,22 @@ class SocialArchiveMixin:
                 "feishu_doc": feishu_result.get("doc", ""),
                 "feishu_synced": bool(feishu_result.get("doc") and not feishu_result.get("warning")),
                 "feishu_skipped": feishu_skipped,
+                "chat_batch_id": chat_batch.get("batch_id", ""),
+                "chat_batch_json": chat_batch.get("json_path", ""),
+                "chat_batch_content_ssot": chat_batch.get("content_ssot_path", ""),
+                "chat_batch_transcript": chat_batch.get("transcript_path", ""),
+                "chat_batch_analysis_markdown": chat_batch.get("analysis_markdown_path", ""),
             },
         )
-        if archive_result["ok"]:
+        if sync_ok:
             analysis_summary = self._social_archive_reply_summary(message, archive_result)
             reply_lines = [
                 f"{archive_kind}档案更新完成",
                 f"- 对象：【{person}】",
                 f"- 关系分类：{final_category}",
-                f"- 本地交互档案：{archive_result.get('archive_path') or '未解析到'}",
+                f"- 人物 ID：{archive_result['person_id']}",
+                f"- 人物目录：{archive_result['person_directory']}",
+                f"- 读取视图：{archive_result['view_directory']}",
             ]
             if analysis_summary:
                 reply_lines = [
@@ -128,33 +166,36 @@ class SocialArchiveMixin:
                     "",
                     f"- 对象：【{person}】",
                     f"- 关系分类：{final_category}",
-                    f"- 本地交互档案：{archive_result.get('archive_path') or '未解析到'}",
+                    f"- 人物 ID：{archive_result['person_id']}",
+                    f"- 人物目录：{archive_result['person_directory']}",
+                    f"- 读取视图：{archive_result['view_directory']}",
                 ]
-            if archive_result.get("obsidian_path"):
-                reply_lines.append(f"- Obsidian：{archive_result['obsidian_path']}")
-            else:
-                reply_lines.append("- Obsidian：未同步或未解析到路径")
+            if chat_batch.get("ok"):
+                reply_lines.append(f"- 聊天内容 SSOT：{chat_batch.get('content_ssot_path') or '未生成'}")
+                reply_lines.append(f"- 聊天文字稿：{chat_batch.get('transcript_path') or '未生成'}")
+                reply_lines.append(f"- 关系分析：{chat_batch.get('analysis_markdown_path') or '未生成'}")
             if feishu_result.get("doc"):
                 reply_lines.append(f"- 飞书云文档：{feishu_result['doc']}")
             elif feishu_result.get("warning"):
                 reply_lines.append(f"- 飞书云文档：同步受限：{feishu_result['warning']}")
             elif feishu_skipped:
                 reply_lines.append("- 飞书云文档：不同步（无性关系/人脉档案默认仅本地与 Obsidian）")
-            reply_lines.append("- 写入模板：已按 `【是不是不Jessica】交互档案` 标准，分为历史交互记录与分析区")
+            reply_lines.append("- 读取方式：结构化档案已生成多文件只读视图")
             if archive_kind == "人脉":
                 reply_lines.append("- 下一步：可继续补充微信截图、介绍人、职业需求、故事记忆点或下次跟进时间")
             else:
                 reply_lines.append("- 下一步：可继续补充截图、录音转写或指定 `【理论-...】` 视角")
             reply_lines.append(f"- 路由记录：{entry.local_path}")
             reply = "\n".join(reply_lines)
-            return TaskResult(ok=True, status=status, reply=reply, task_id=entry.frontmatter["id"], local_path=archive_result.get("archive_path") or entry.local_path, feishu_doc=feishu_result.get("doc", ""))
+            return TaskResult(ok=True, status=status, reply=reply, task_id=entry.frontmatter["id"], local_path=archive_result["view_directory"], feishu_doc=feishu_result.get("doc", ""))
 
+        sync_error = feishu_result.get("warning") or archive_result.get("error") or "外部同步未完成"
         reply = "\n".join(
             [
-                f"{archive_kind}档案更新失败，已保留路由记录。",
+                f"{archive_kind}档案未完成自动闭环，已保留路由记录。",
                 f"对象：【{person}】",
                 f"路由记录：{entry.local_path}",
-                f"错误：{archive_result['error']}",
+                f"错误：{sync_error}",
             ]
         )
         return TaskResult(ok=False, status=status, reply=reply, task_id=entry.frontmatter["id"], local_path=entry.local_path)
@@ -174,14 +215,43 @@ class SocialArchiveMixin:
                 break
         return tag.strip()
 
-    def _extract_social_metadata_with_llm(self, message: Message, *, archive_kind: str, forced_category: str) -> dict[str, Any]:
+    def _extract_social_metadata_with_llm(self, message: Message, *, archive_kind: str) -> dict[str, Any]:
+        request = (message.metadata or {}).get("person_archive_request")
+        if request is not None:
+            person_ref = request.get("person_ref") if isinstance(request, dict) else None
+            person = self._clean_social_person(str((person_ref or {}).get("display_name") or "")) if isinstance(person_ref, dict) else ""
+            if (
+                not isinstance(request, dict)
+                or request.get("schema_version") != "person-archive-write-request-v2"
+                or request.get("operation") not in {"append_claims", "append_self_reports", "append_action_events"}
+                or not isinstance(person_ref, dict)
+                or not str(person_ref.get("person_id") or "").startswith("per_")
+                or not person
+            ):
+                return {
+                    "ok": False,
+                    "status": "pending_manual",
+                    "reason": "v2 typed request 缺少有效 person_ref",
+                    "missing_fields": ["person_archive_request.person_ref"],
+                }
+            return {
+                "ok": True,
+                "status": "done",
+                "person": person,
+                "gender": "未知",
+                "relationship_category": "",
+                "confidence": 1.0,
+                "evidence": "person_archive_request.person_ref",
+                "reason": "",
+                "provider": "typed-request-v2",
+                "model": "",
+            }
         if not hasattr(self.content_flow_client, "_call_profile_provider_json"):
             return {"ok": False, "status": "pending_manual", "reason": "content_flow_client 缺少 LLM JSON 调用", "missing_fields": ["llm_result"]}
         user_content = json.dumps(
             {
                 "entry_tag": message.entry_tag,
                 "archive_kind": archive_kind,
-                "forced_category": forced_category,
                 "text": message.body,
                 "raw_text": message.raw_text,
                 "recent_conversation_context": self._conversation_context_prompt(message),
@@ -190,17 +260,18 @@ class SocialArchiveMixin:
             indent=2,
         )
         try:
+            prompt = self._load_social_metadata_prompt(self._social_root())
             result = self.content_flow_client._call_profile_provider_json(
                 "content_cleaner",
-                SOCIAL_METADATA_EXTRACTION_PROMPT,
+                prompt,
                 user_content,
                 "社交档案元数据 LLM 抽取",
             )
         except Exception as exc:
             return {"ok": False, "status": "pending_manual", "reason": f"LLM 抽取异常：{exc}", "missing_fields": ["llm_result"]}
-        return self._normalize_social_metadata(result, forced_category=forced_category)
+        return self._normalize_social_metadata(result)
 
-    def _normalize_social_metadata(self, result: dict[str, Any], *, forced_category: str) -> dict[str, Any]:
+    def _normalize_social_metadata(self, result: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(result, dict):
             return {"ok": False, "status": "pending_manual", "reason": "LLM 未返回对象", "missing_fields": ["llm_result"]}
         if result.get("status") not in {"done", "", None}:
@@ -213,13 +284,11 @@ class SocialArchiveMixin:
         confidence = self._social_float_confidence(result.get("confidence"))
         person = self._clean_social_person(str(result.get("person") or ""))
         gender = self._normalize_social_gender(str(result.get("gender") or ""))
-        relationship_category = forced_category or self._normalize_social_relationship_category(str(result.get("relationship_category") or ""))
+        relationship_category = self._normalize_social_relationship_category(str(result.get("relationship_category") or ""))
         missing_fields = [str(item).strip() for item in result.get("missing_fields") or [] if str(item).strip()]
         blocking_missing_fields = [item for item in missing_fields if item not in {"gender", "relationship_category"}]
         if not person:
             blocking_missing_fields.append("person")
-        if not gender:
-            blocking_missing_fields.append("gender")
         if confidence < 0.65:
             blocking_missing_fields.append("confidence")
         if blocking_missing_fields:
@@ -238,7 +307,7 @@ class SocialArchiveMixin:
             "ok": True,
             "status": "done",
             "person": person,
-            "gender": gender,
+            "gender": gender or "未知",
             "relationship_category": relationship_category,
             "confidence": confidence,
             "evidence": str(result.get("evidence") or "").strip(),
@@ -258,43 +327,12 @@ class SocialArchiveMixin:
     @staticmethod
     def _normalize_social_gender(value: str) -> str:
         text = str(value or "").strip()
-        if text in {"男", "女", "未知"}:
-            return text
-        if text in {"男性", "男生", "男的"}:
-            return "男"
-        if text in {"女性", "女生", "女的"}:
-            return "女"
-        if text in {"", "不明", "不确定", "unknown", "Unknown"}:
-            return "未知"
-        return ""
+        return text if text in {"男", "女", "未知"} else ""
 
     @staticmethod
     def _normalize_social_relationship_category(value: str) -> str:
         text = str(value or "").strip()
-        if text in {"异性关系", "无性关系", ""}:
-            return text
-        if text in {"人脉关系", "职业关系", "合作关系", "朋友关系", "同性关系", "微信人脉"}:
-            return "无性关系"
-        return ""
-
-    def _extract_social_person(self, body: str) -> str:
-        text = body.strip()
-        patterns = [
-            r"(?:对象|称呼|昵称|名字|姓名|person)\s*[：:]\s*【?([^】\s，,。；;\n]{1,32})】?",
-            r"(?:对象|她|他)?(?:就叫|叫|命名为|名字是|称呼是)\s*【?([^】\s，,。；;\n]{1,32})】?",
-            r"(?:给|为|帮|把)\s*【?([^】\s，,。；;\n]{1,32})】?\s*(?:建|建立|生成|创建|更新|补充|归档|做|整理).{0,12}(?:档案|记录)",
-            r"^【([^】\s]{1,32})】",
-            r"^([A-Za-z0-9_\-\u4e00-\u9fff]{1,32})[：:]\s*",
-            r"^([A-Za-z0-9_\-\u4e00-\u9fff]{1,32})\s+.{0,20}(?:档案|归档|建档|截图|聊天)",
-        ]
-        for pattern in patterns:
-            match = re.search(pattern, text, flags=re.IGNORECASE)
-            if not match:
-                continue
-            person = self._clean_social_person(match.group(1))
-            if person:
-                return person
-        return ""
+        return text if text in {"异性关系", "无性关系", ""} else ""
 
     def _clean_social_person(self, value: str) -> str:
         person = value.strip().strip("【】").strip()
@@ -322,30 +360,9 @@ class SocialArchiveMixin:
             return ""
         return person[:32]
 
-    def _extract_social_gender(self, body: str) -> str:
-        text = body.strip()
-        if re.search(r"性别\s*[：:]?\s*(未知|不明)", text):
-            return "未知"
-        if re.search(r"(性别\s*[：:]?\s*)?(男|男性|男生|男的)", text):
-            return "男"
-        if re.search(r"(性别\s*[：:]?\s*)?(女|女性|女生|女的)", text):
-            return "女"
-        return "女"
-
-    def _extract_social_relationship_category(self, body: str) -> str:
-        if any(keyword in body for keyword in DEMOTE_TO_ASEXUAL_KEYWORDS):
-            return "无性关系"
-        if any(keyword in body for keyword in ["无性关系", "人脉关系", "职业关系", "合作关系", "朋友关系", "同性关系", "微信人脉", "【人脉】"]):
-            return "无性关系"
-        if "异性关系" in body:
-            return "异性关系"
-        return ""
-
-    def _should_skip_social_feishu(self, body: str, relationship_category: str) -> bool:
-        if relationship_category == "无性关系":
-            return True
-        network_keywords = ["【人脉】", "人脉", "微信备注", "职业关系", "合作关系", "校友", "介绍人", "客户", "投资人"]
-        return any(keyword in body for keyword in network_keywords)
+    @staticmethod
+    def _should_skip_social_feishu(relationship_category: str) -> bool:
+        return relationship_category == "无性关系"
 
     def _append_social_person_archive(
         self,
@@ -356,36 +373,57 @@ class SocialArchiveMixin:
         gender: str,
         relationship_category: str,
     ) -> dict[str, Any]:
-        social_root = Path("/home/ubuntu/openclaw-agents/social")
+        social_root = self._social_root()
         script = social_root / "person-profile-skill" / "tools" / "person_archive.py"
         if not script.exists():
             return {"ok": False, "output": "", "error": f"person_archive.py 不存在：{script}"}
 
         tmp_dir = self.workspace_root / "tmp" / "social-profile"
         tmp_dir.mkdir(parents=True, exist_ok=True)
-        tmp_path = Path("")
+        tmp_path: Path | None = None
+        chat_batch_result: dict[str, Any] | None = None
         try:
-            with tempfile.NamedTemporaryFile("w", suffix=".txt", prefix="social-", encoding="utf-8", dir=tmp_dir, delete=False) as fh:
-                tmp_path = Path(fh.name)
-                fh.write(body.strip() + "\n")
-
-            title = self._social_archive_title(body)
-            input_path = self._social_person_archive_input_path(message, tmp_path)
+            media_paths = self._social_downloaded_media_paths(message)
+            if self._requires_chat_batch(message, media_paths):
+                chat_batch_result = self._run_chat_batch_pipeline(
+                    message=message,
+                    media_paths=media_paths,
+                    output_root=social_root / "person-profile-skill" / "data" / "chat-batches",
+                    social_root=social_root,
+                )
+                if not chat_batch_result.get("ok"):
+                    return {"ok": False, "output": chat_batch_result.get("output", ""), "error": chat_batch_result.get("error", "聊天批次提纯失败"), "chat_batch": chat_batch_result}
+                input_path = Path(str(chat_batch_result.get("output_dir") or ""))
+                request_path = input_path / PERSON_ARCHIVE_REQUEST_NAME
+                if not request_path.is_file():
+                    request_path = self._build_chat_archive_request(
+                        social_root=social_root,
+                        batch_dir=input_path,
+                        person=person,
+                        relationship_category=relationship_category,
+                    )
+                request = json.loads(request_path.read_text(encoding="utf-8"))
+            else:
+                request = (message.metadata or {}).get("person_archive_request")
+                if not isinstance(request, dict) or request.get("operation") not in {
+                    "append_claims", "append_self_reports", "append_action_events"
+                }:
+                    return {"ok": False, "output": "", "error": "非聊天材料缺少上游生成的 v2 typed request"}
+                fd, tmp_name = tempfile.mkstemp(prefix="request-", suffix=".json", dir=tmp_dir)
+                os.close(fd)
+                tmp_path = Path(tmp_name)
+                request_path = tmp_path
+                input_path = request_path
+            self._validate_person_archive_contract(request, "write-request.schema.json", social_root)
+            if tmp_path is not None:
+                tmp_path.write_text(json.dumps(request, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
             cmd = [
                 "/usr/bin/python3",
                 str(script),
-                "--person",
-                person,
-                "--gender",
-                gender,
-                "--self-gender",
-                "男",
-                "--title",
-                title,
+                "apply",
+                "--request",
+                str(request_path),
             ]
-            if relationship_category:
-                cmd.extend(["--relationship-category", relationship_category])
-            cmd.append(str(input_path))
             proc = run_media_subprocess_with_watchdog(
                 cmd,
                 cwd=social_root,
@@ -394,23 +432,24 @@ class SocialArchiveMixin:
             )
             if proc.returncode == -9:
                 return {"ok": False, "output": proc.stderr.strip(), "error": proc.stderr.strip() or "person_archive.py 超时"}
-            output = "\n".join(part for part in [proc.stdout.strip(), proc.stderr.strip()] if part)
-            archive_path = self._extract_output_path(output, "已追加到交互档案：")
-            obsidian_path = self._extract_output_path(output, "已同步到 Obsidian：")
-            syncthing_scan = self._extract_output_path(output, "Syncthing 扫描：")
-            return {
-                "ok": proc.returncode == 0,
-                "output": output,
-                "error": output if proc.returncode != 0 else "",
-                "archive_path": archive_path,
-                "obsidian_path": obsidian_path,
-                "syncthing_scan": syncthing_scan,
-                "input_path": str(input_path),
-            }
+            if proc.returncode != 0:
+                error = proc.stderr.strip() or f"person_archive.py exited {proc.returncode}"
+                return {"ok": False, "output": proc.stdout, "error": error, "chat_batch": chat_batch_result}
+            result = self._parse_person_archive_result(proc.stdout, social_root)
+            if result.get("delivery_status") != "succeeded":
+                return {
+                    "ok": False,
+                    "output": proc.stdout,
+                    "error": f"人物档案 Obsidian 交付未完成：{result.get('delivery_status') or 'unknown'}",
+                    **result,
+                    "input_path": str(input_path),
+                    "chat_batch": chat_batch_result,
+                }
+            return {"ok": True, "output": proc.stdout, "error": "", **result, "input_path": str(input_path), "chat_batch": chat_batch_result}
         except Exception as exc:
             return {"ok": False, "output": "", "error": str(exc)}
         finally:
-            if tmp_path:
+            if tmp_path is not None:
                 tmp_path.unlink(missing_ok=True)
 
     def _sync_social_person_feishu_doc(
@@ -421,50 +460,175 @@ class SocialArchiveMixin:
     ) -> dict[str, str]:
         if not archive_result.get("ok"):
             return {}
-        doc_name = f"【{person}】交互档案"
+        doc_name = f"【{person}】多维人物档案"
         content = self._social_feishu_content(person, message, archive_result)
+        content_sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
         try:
+            prior = self._read_person_delivery_state(archive_result)
+            prior_feishu = prior.get("feishu") or {}
+            if (
+                prior_feishu.get("status") == "succeeded"
+                and prior_feishu.get("content_sha256") == content_sha256
+                and prior_feishu.get("location")
+            ):
+                return {"doc": str(prior_feishu["location"]), "document_id": "", "reused": "true"}
             fs = self.feishu_service.append_entry(doc_name, content)
-            self._update_social_profile_cloud_doc(person, doc_name, fs)
-            return {"doc": fs.get("doc", ""), "document_id": fs.get("document_id", "")}
+            doc = str(fs.get("doc") or "")
+            if not doc:
+                raise RuntimeError("飞书写入未返回文档地址")
+            timestamp = datetime.now().astimezone().isoformat()
+            self._record_person_delivery(
+                archive_result,
+                "feishu",
+                {
+                    "status": "pending",
+                    "location": doc,
+                    "last_success_at": None,
+                    "content_sha256": content_sha256,
+                    "readback_status": "pending",
+                    "readback_at": None,
+                },
+            )
+            if not hasattr(self.feishu_service, "read_document_text"):
+                raise RuntimeError("飞书服务缺少写后读回能力")
+            readback = self.feishu_service.read_document_text(doc)
+            text_content = str(readback.get("text") or "") if isinstance(readback, dict) else ""
+            manifest_sha256 = hashlib.sha256(Path(str(archive_result["view_manifest_path"])).read_bytes()).hexdigest()
+            readback_markers = (str(archive_result["person_id"]), manifest_sha256)
+            if (
+                not isinstance(readback, dict)
+                or not readback.get("ok")
+                or not all(marker in text_content for marker in readback_markers)
+            ):
+                raise RuntimeError("飞书文档写后读回未匹配本次档案内容")
+            self._record_person_delivery(
+                archive_result,
+                "feishu",
+                {
+                    "status": "succeeded",
+                    "location": doc,
+                    "last_success_at": timestamp,
+                    "content_sha256": content_sha256,
+                    "readback_status": "matched",
+                    "readback_at": timestamp,
+                },
+            )
+            return {"doc": doc, "document_id": str(fs.get("document_id") or "")}
         except Exception as exc:
+            try:
+                prior = self._read_person_delivery_state(archive_result)
+                prior_feishu = prior.get("feishu") or {}
+                self._record_person_delivery(
+                    archive_result,
+                    "feishu",
+                    {
+                        "status": "failed",
+                        "location": prior_feishu.get("location"),
+                        "last_success_at": prior_feishu.get("last_success_at"),
+                        "content_sha256": prior_feishu.get("content_sha256"),
+                        "readback_status": "failed",
+                        "readback_at": datetime.now().astimezone().isoformat(),
+                    },
+                )
+            except Exception as state_exc:
+                return {"warning": f"飞书云文档同步失败：{exc}；交付状态记录失败：{state_exc}"}
             return {"warning": f"飞书云文档同步失败：{exc}"}
 
     def _social_feishu_content(self, person: str, message: Message, archive_result: dict[str, Any]) -> str:
+        view_directory = Path(str(archive_result.get("view_directory") or ""))
+        manifest_path = Path(str(archive_result.get("view_manifest_path") or ""))
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         lines = [
-            f"## {format_display_time(message.created_at)}｜社交档案更新",
+            f"# 【{person}】多维人物档案",
             "",
-            f"- 对象：【{person}】",
-            f"- 本地交互档案：{archive_result.get('archive_path', '')}",
-            f"- Obsidian：{archive_result.get('obsidian_path', '')}",
-            f"- 来源：{message.source.upper()}",
-            "",
-            "### 本次材料",
-            message.body.strip(),
+            f"- 人物 ID：{archive_result.get('person_id', '')}",
+            f"- 视图清单：{hashlib.sha256(manifest_path.read_bytes()).hexdigest()}",
         ]
+        for item in manifest.get("files") or []:
+            relative = str(item.get("path") or "")
+            path = view_directory / relative
+            if path.suffix.lower() != ".md" or not path.is_file() or not path.resolve().is_relative_to(view_directory.resolve()):
+                continue
+            lines.extend(["", f"## {relative}", "", path.read_text(encoding="utf-8").strip()])
         return "\n".join(lines).strip()
 
-    def _update_social_profile_cloud_doc(self, person: str, doc_name: str, fs: dict[str, str]) -> None:
-        doc_url = fs.get("doc", "")
-        document_id = fs.get("document_id", "")
-        if not doc_url and not document_id:
-            return
-        profile_path = Path("/home/ubuntu/openclaw-agents/social") / "person-profile-skill" / "data" / "persons" / person / "profile.json"
-        if not profile_path.exists():
-            return
+    def _person_archive_views_module(self, archive_result: dict[str, Any]):
+        person_directory = Path(str(archive_result.get("person_directory") or ""))
+        module_path = self._social_root() / "person-profile-skill" / "tools" / "person_archive_views.py"
+        spec = importlib.util.spec_from_file_location("person_archive_views_delivery_v2", module_path)
+        if spec is None or spec.loader is None:
+            raise ValueError(f"cannot load person archive delivery module: {module_path}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        if not person_directory.is_dir():
+            raise ValueError(f"person archive directory unavailable: {person_directory}")
+        return module, person_directory
+
+    def _read_person_delivery_state(self, archive_result: dict[str, Any]) -> dict[str, Any]:
+        module, person_directory = self._person_archive_views_module(archive_result)
+        return module.read_delivery_state(person_directory)
+
+    def _record_person_delivery(self, archive_result: dict[str, Any], channel: str, record: dict[str, Any]) -> dict[str, Any]:
+        module, person_directory = self._person_archive_views_module(archive_result)
+        state = module.read_delivery_state(person_directory)
+        return module.record_delivery(
+            person_directory.parent,
+            str(archive_result["person_id"]),
+            channel,
+            record,
+            expected_manifest_sha256=str(state["view_manifest_sha256"]),
+        )
+
+    def _parse_person_archive_result(self, stdout: str, social_root: Path) -> dict[str, Any]:
+        decoder = json.JSONDecoder()
         try:
-            profile = json.loads(profile_path.read_text(encoding="utf-8"))
-        except Exception:
-            return
-        profile["cloud_doc"] = {
-            "provider": "feishu",
-            "title": doc_name,
-            "doc_token": document_id,
-            "url": doc_url,
-            "sync_policy": "one_person_archive_to_one_cloud_doc",
-            "last_synced_at": datetime.now().isoformat(timespec="seconds"),
-        }
-        profile_path.write_text(json.dumps(profile, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            value, end = decoder.raw_decode(stdout)
+        except json.JSONDecodeError as exc:
+            raise ValueError("person_archive.py stdout is not one JSON object") from exc
+        if stdout[end:].strip() or not isinstance(value, dict):
+            raise ValueError("person_archive.py stdout must contain exactly one JSON object")
+        self._validate_person_archive_contract(value, "write-result.schema.json", social_root)
+        return value
+
+    def _validate_person_archive_contract(self, value: dict[str, Any], schema_name: str, social_root: Path) -> None:
+        store_path = social_root / "person-profile-skill" / "tools" / "person_archive_store.py"
+        spec = importlib.util.spec_from_file_location("person_archive_store_contract", store_path)
+        if spec is None or spec.loader is None:
+            raise ValueError(f"cannot load v2 contract validator: {store_path}")
+        store_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(store_module)
+        try:
+            store_module.validate_contract(
+                value,
+                schema_name,
+                contract_root=social_root / "person-profile-skill" / "contracts" / "person-archive-v2",
+            )
+        except ValueError as exc:
+            raise ValueError(f"invalid person archive contract {schema_name}: {exc}") from exc
+
+    def _build_chat_archive_request(
+        self,
+        *,
+        social_root: Path,
+        batch_dir: Path,
+        person: str,
+        relationship_category: str,
+    ) -> Path:
+        tools_dir = social_root / "person-profile-skill" / "tools"
+        module_path = tools_dir / "person_archive_intake.py"
+        if str(tools_dir) not in sys.path:
+            sys.path.insert(0, str(tools_dir))
+        spec = importlib.util.spec_from_file_location("person_archive_intake_v2", module_path)
+        if spec is None or spec.loader is None:
+            raise ValueError(f"cannot load v2 chat intake: {module_path}")
+        intake = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(intake)
+        return intake.build_chat_batch_request(
+            social_root=social_root,
+            batch_dir=batch_dir,
+            display_name=person,
+            relationship_category=relationship_category or None,
+        )
 
     def _social_archive_title(self, body: str) -> str:
         first_line = re.sub(r"\s+", " ", body.strip()).strip()
@@ -473,9 +637,427 @@ class SocialArchiveMixin:
 
     def _social_person_archive_input_path(self, message: Message, text_path: Path) -> Path:
         for path in self._social_downloaded_media_paths(message):
-            if path.suffix.lower() in SOCIAL_ARCHIVE_IMAGE_EXTS or path.suffix.lower() in SOCIAL_ARCHIVE_AUDIO_EXTS:
+            if path.suffix.lower() in SOCIAL_ARCHIVE_IMAGE_EXTS | SOCIAL_ARCHIVE_VIDEO_EXTS | SOCIAL_ARCHIVE_AUDIO_EXTS:
                 return path
         return text_path
+
+    def _social_root(self) -> Path:
+        """Resolve the active checkout without introducing a second source tree."""
+        configured = os.environ.get("SOCIAL_BOT_ROOT", "").strip()
+        candidates = [Path(configured).expanduser()] if configured else []
+        candidates.extend(
+            [
+                Path(__file__).resolve().parents[3],
+                Path("/home/ubuntu/openclaw-agents/social"),
+            ]
+        )
+        for root in candidates:
+            if (root / "person-profile-skill" / "tools" / "person_archive.py").is_file():
+                return root
+        return candidates[0] if candidates else Path(__file__).resolve().parents[3]
+
+    def _requires_chat_batch(self, message: Message, media_paths: list[Path]) -> bool:
+        chat_media = [
+            path
+            for path in media_paths
+            if path.suffix.lower() in SOCIAL_ARCHIVE_IMAGE_EXTS | SOCIAL_ARCHIVE_VIDEO_EXTS
+        ]
+        if not chat_media:
+            return False
+        metadata = message.metadata or {}
+        if metadata.get("chat_screenshot") is True:
+            return True
+        body = str(message.body or "")
+        if any(intent in body for intent in CHAT_SCREENSHOT_STRONG_INTENTS):
+            return True
+        if "截图" in body and any(keyword in body for keyword in ("聊天", "微信", "短信", "对话", "关系")):
+            return True
+        for path in chat_media:
+            if path.suffix.lower() in SOCIAL_ARCHIVE_VIDEO_EXTS:
+                continue
+            try:
+                from PIL import Image
+
+                with Image.open(path) as image:
+                    width, height = image.size
+                if height >= width * 2:
+                    return True
+            except Exception:
+                continue
+        return False
+
+    def _run_chat_batch_pipeline(
+        self,
+        *,
+        message: Message,
+        media_paths: list[Path],
+        output_root: Path,
+        social_root: Path,
+    ) -> dict[str, Any]:
+        pipeline = social_root / "person-profile-skill" / "tools" / "chat_batch_pipeline.py"
+        audit_script = social_root / "person-profile-skill" / "tools" / "audit_chat_batch.py"
+        missing_scripts = [str(path) for path in (pipeline, audit_script) if not path.is_file()]
+        if missing_scripts:
+            return {"ok": False, "error": "聊天批次生产脚本不存在：" + ", ".join(missing_scripts)}
+        message_id = str(getattr(message, "id", "unknown"))
+        batch_id = f"social-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{message_id}"
+        output_dir = output_root / batch_id
+        output_dir.mkdir(parents=True, exist_ok=True)
+        chat_media_paths = [
+            path
+            for path in media_paths
+            if path.suffix.lower() in SOCIAL_ARCHIVE_IMAGE_EXTS | SOCIAL_ARCHIVE_VIDEO_EXTS
+        ]
+        if not chat_media_paths:
+            return {"ok": False, "error": "聊天批次没有合法图片或视频附件", "output_dir": str(output_dir)}
+        cmd = [
+            os.environ.get("RAPIDOCR_PYTHON", sys.executable),
+            str(pipeline),
+            *[str(path) for path in chat_media_paths],
+            "--output-dir",
+            str(output_dir),
+            "--batch-id",
+            batch_id,
+            "--case-id",
+            f"social-{message_id}",
+            "--platform",
+            "wechat",
+            "--left-name",
+            "对方",
+            "--sender-alias",
+            "对方=女方",
+            "--sender-alias",
+            "用户=男方",
+        ]
+        review_path = str((message.metadata or {}).get("chat_review_path") or "").strip()
+        if review_path and Path(review_path).is_file():
+            cmd.extend(["--review-json", review_path])
+        try:
+            proc = run_media_subprocess_with_watchdog(
+                cmd,
+                cwd=social_root,
+                timeout=900,
+                env=self._subprocess_env_with_context(message),
+            )
+        except Exception as exc:
+            return {"ok": False, "error": f"聊天批次提纯进程异常：{exc}", "output_dir": str(output_dir)}
+        output_parts = [part for part in [proc.stdout.strip(), proc.stderr.strip()] if part]
+        content_ssot_json = output_dir / "chat-content-ssot.json"
+        transcript_md = output_dir / "chat-transcript.md"
+        llm_payload_json = output_dir / "llm-text-payload.json"
+        manifest_json = output_dir / "manifest.json"
+        extraction_json = output_dir / "extraction-batch.json"
+        if (
+            proc.returncode != 0
+            or not content_ssot_json.is_file()
+            or not transcript_md.is_file()
+            or not llm_payload_json.is_file()
+            or not manifest_json.is_file()
+            or not extraction_json.is_file()
+        ):
+            return {
+                "ok": False,
+                "error": f"聊天批次提纯未完成：{' '.join(output_parts) or proc.returncode}",
+                "output": "\n".join(output_parts),
+                "output_dir": str(output_dir),
+            }
+        try:
+            manifest = json.loads(manifest_json.read_text(encoding="utf-8"))
+            llm_payload = json.loads(llm_payload_json.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            return {"ok": False, "error": f"聊天批次产物无法回读：{exc}", "output": "\n".join(output_parts), "output_dir": str(output_dir)}
+        if (output_dir / "chat-analysis.json").exists() or (output_dir / "chat-analysis.md").exists():
+            return {
+                "ok": False,
+                "error": "聊天提取阶段错误地产生了未验收的最终分析文件",
+                "output": "\n".join(output_parts),
+                "output_dir": str(output_dir),
+            }
+        relationship_result = self._generate_chat_relationship_analysis(
+            {"llm_payload": llm_payload},
+            social_root=social_root,
+        )
+        if not relationship_result.get("ok"):
+            return {
+                "ok": False,
+                "error": relationship_result.get("error") or "聊天关系分析模型未完成",
+                "output": "\n".join(output_parts),
+                "output_dir": str(output_dir),
+            }
+        relationship_candidate_path = output_dir / "relationship-analysis-llm.candidate.json"
+        relationship_candidate_path.write_text(
+            json.dumps(relationship_result["analysis"], ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        rebuild_cmd = [
+            os.environ.get("RAPIDOCR_PYTHON", sys.executable),
+            str(pipeline),
+            "--extraction-json",
+            str(extraction_json),
+            "--output-dir",
+            str(output_dir),
+            "--relationship-analysis-json",
+            str(relationship_candidate_path),
+            "--require-relationship-analysis",
+            "--sender-alias",
+            "对方=女方",
+            "--sender-alias",
+            "用户=男方",
+        ]
+        if review_path and Path(review_path).is_file():
+            rebuild_cmd.extend(["--review-json", review_path])
+        try:
+            rebuild = run_media_subprocess_with_watchdog(
+                rebuild_cmd,
+                cwd=social_root,
+                timeout=180,
+                env=self._subprocess_env_with_context(message),
+            )
+        except Exception as exc:
+            return {"ok": False, "error": f"聊天关系分析合并异常：{exc}", "output_dir": str(output_dir)}
+        output_parts.extend(part for part in [rebuild.stdout.strip(), rebuild.stderr.strip()] if part)
+        if rebuild.returncode != 0:
+            return {
+                "ok": False,
+                "error": f"聊天关系分析未通过证据校验：{' '.join(output_parts) or rebuild.returncode}",
+                "output": "\n".join(output_parts),
+                "output_dir": str(output_dir),
+            }
+        analysis_json = output_dir / "chat-analysis.json"
+        analysis_md = output_dir / "chat-analysis.md"
+        relationship_path = output_dir / "relationship-analysis-llm.json"
+        if (
+            not content_ssot_json.is_file()
+            or not transcript_md.is_file()
+            or not analysis_json.is_file()
+            or not analysis_md.is_file()
+            or not relationship_path.is_file()
+        ):
+            for path in (relationship_path, analysis_json, analysis_md):
+                path.unlink(missing_ok=True)
+            return {
+                "ok": False,
+                "error": "聊天内容 SSOT、文字稿、关系分析或已验收模型输出未生成",
+                "output": "\n".join(output_parts),
+                "output_dir": str(output_dir),
+            }
+        audit_cmd = [
+            os.environ.get("RAPIDOCR_PYTHON", sys.executable),
+            str(audit_script),
+            str(output_dir),
+            "--require-relationship-analysis",
+        ]
+        if review_path and Path(review_path).is_file():
+            audit_cmd.extend(["--review", review_path])
+        try:
+            audit_proc = run_media_subprocess_with_watchdog(
+                audit_cmd,
+                cwd=social_root,
+                timeout=180,
+                env=self._subprocess_env_with_context(message),
+            )
+        except Exception as exc:
+            for path in (relationship_path, analysis_json, analysis_md):
+                path.unlink(missing_ok=True)
+            return {"ok": False, "error": f"聊天批次独立审计异常：{exc}", "output_dir": str(output_dir)}
+        output_parts.extend(part for part in [audit_proc.stdout.strip(), audit_proc.stderr.strip()] if part)
+        audit_path = output_dir / "independent-audit.json"
+        if audit_proc.returncode != 0 or not audit_path.is_file():
+            for path in (relationship_path, analysis_json, analysis_md):
+                path.unlink(missing_ok=True)
+            return {
+                "ok": False,
+                "error": f"聊天批次独立审计未通过：{' '.join(output_parts) or audit_proc.returncode}",
+                "output": "\n".join(output_parts),
+                "output_dir": str(output_dir),
+            }
+        try:
+            analysis = json.loads(analysis_json.read_text(encoding="utf-8"))
+            content_ssot = json.loads(content_ssot_json.read_text(encoding="utf-8"))
+            audit = json.loads(audit_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            for path in (relationship_path, analysis_json, analysis_md):
+                path.unlink(missing_ok=True)
+            return {"ok": False, "error": f"聊天关系分析产物无法回读：{exc}", "output_dir": str(output_dir)}
+        contract_errors = self._validate_chat_batch_artifacts(
+            manifest,
+            analysis,
+            expected_batch_id=batch_id,
+            expected_attachment_count=len(manifest.get("attachments") or []),
+            content_ssot=content_ssot,
+            independent_audit=audit,
+        )
+        if contract_errors:
+            for path in (relationship_path, analysis_json, analysis_md):
+                path.unlink(missing_ok=True)
+            return {
+                "ok": False,
+                "error": "聊天批次产物未通过最终合同：" + "; ".join(contract_errors),
+                "output": "\n".join(output_parts),
+                "output_dir": str(output_dir),
+            }
+        relationship_candidate_path.unlink(missing_ok=True)
+        return {
+            "ok": True,
+            "output": "\n".join(output_parts),
+            "output_dir": str(output_dir),
+            "json_path": str(analysis_json),
+            "content_ssot_path": str(content_ssot_json),
+            "transcript_path": str(transcript_md),
+            "analysis_markdown_path": str(analysis_md),
+            "relationship_analysis_path": str(relationship_path),
+            "independent_audit_path": str(audit_path),
+            "manifest_path": str(manifest_json),
+            "batch_id": batch_id,
+            "metrics": analysis.get("metrics") or {},
+        }
+
+    @staticmethod
+    def _load_project_skill_prompt(social_root: Path, contract_relative_path: Path, contract_name: str) -> str:
+        skill_path = social_root / "person-profile-skill" / "SKILL.md"
+        contract_path = social_root / contract_relative_path
+        missing = [str(path) for path in (skill_path, contract_path) if not path.is_file()]
+        if missing:
+            raise FileNotFoundError("项目语义 Skill 合同不存在：" + ", ".join(missing))
+        skill_text = skill_path.read_text(encoding="utf-8")
+        contract_text = contract_path.read_text(encoding="utf-8")
+        return (
+            f"你必须按以下项目 Skill 及其{contract_name}处理输入。只输出合同要求的 JSON object，"
+            "不要输出 Markdown 或额外解释。\n\n"
+            f"<project-skill>\n{skill_text}\n</project-skill>\n\n"
+            f"<project-contract>\n{contract_text}\n</project-contract>"
+        )
+
+    @classmethod
+    def _load_chat_relationship_prompt(cls, social_root: Path) -> str:
+        return cls._load_project_skill_prompt(social_root, CHAT_RELATIONSHIP_CONTRACT, "微信聊天关系时序分析合同")
+
+    @classmethod
+    def _load_social_metadata_prompt(cls, social_root: Path) -> str:
+        return cls._load_project_skill_prompt(social_root, SOCIAL_METADATA_CONTRACT, "社交档案元数据抽取合同")
+
+    def _generate_chat_relationship_analysis(
+        self,
+        analysis: dict[str, Any],
+        *,
+        social_root: Path | None = None,
+    ) -> dict[str, Any]:
+        if not hasattr(self.content_flow_client, "_call_profile_provider_json"):
+            return {"ok": False, "error": "content_flow_client 缺少聊天关系分析 LLM JSON 调用"}
+        llm_payload = analysis.get("llm_payload") or {}
+        if llm_payload.get("schema_version") != CHAT_TEXT_PAYLOAD_SCHEMA_VERSION:
+            return {"ok": False, "error": "聊天关系分析仅接受 wechat-chat-llm-text-v2 来源载荷"}
+        if not isinstance(llm_payload.get("messages"), list):
+            return {"ok": False, "error": "聊天关系分析来源载荷缺少 messages"}
+        try:
+            prompt = self._load_chat_relationship_prompt(social_root or self._social_root())
+        except OSError as exc:
+            return {"ok": False, "error": str(exc)}
+        try:
+            result = self.content_flow_client._call_profile_provider_json(
+                "content_cleaner",
+                prompt,
+                json.dumps(llm_payload, ensure_ascii=False, separators=(",", ":")),
+                "微信聊天关系时序分析",
+            )
+        except Exception as exc:
+            return {"ok": False, "error": f"聊天关系分析 LLM 调用异常：{exc}"}
+        if not isinstance(result, dict) or result.get("status") not in {"done", "", None}:
+            reason = result.get("reason") if isinstance(result, dict) else "LLM 未返回 JSON object"
+            return {"ok": False, "error": f"聊天关系分析 LLM 未完成：{reason}"}
+        relationship = dict(result)
+        generated_model = str(relationship.pop("postprocess_model", "") or "").strip()
+        relationship.pop("postprocess_provider", None)
+        relationship.pop("status", None)
+        if generated_model:
+            relationship["model"] = generated_model
+        if relationship.get("schema_version") != CHAT_RELATIONSHIP_SCHEMA_VERSION:
+            return {"ok": False, "error": "聊天关系分析模型未返回 wechat-chat-relationship-analysis-v2"}
+        if relationship.get("source_payload_schema_version") != CHAT_TEXT_PAYLOAD_SCHEMA_VERSION:
+            return {"ok": False, "error": "聊天关系分析模型的来源载荷版本不匹配"}
+        return {"ok": True, "analysis": relationship}
+
+    def _validate_chat_batch_artifacts(
+        self,
+        manifest: dict[str, Any],
+        analysis: dict[str, Any],
+        *,
+        expected_batch_id: str,
+        expected_attachment_count: int,
+        content_ssot: dict[str, Any] | None = None,
+        independent_audit: dict[str, Any] | None = None,
+    ) -> list[str]:
+        errors: list[str] = []
+        batch = dict(analysis.get("batch") or {})
+        if manifest.get("batch_id") != expected_batch_id or batch.get("batch_id") != expected_batch_id:
+            errors.append("batch_id mismatch")
+        if manifest.get("status") != "completed" or batch.get("status") != "completed":
+            errors.append("batch status is not completed")
+        if manifest.get("processing_version") != CHAT_PROCESSING_VERSION or batch.get("processing_version") != CHAT_PROCESSING_VERSION:
+            errors.append("chat processing version mismatch")
+        if manifest.get("structure_model") != CHAT_STRUCTURE_MODEL or batch.get("structure_model") != CHAT_STRUCTURE_MODEL:
+            errors.append("chat structure model mismatch")
+        if manifest.get("structure_schema_version") != CHAT_STRUCTURE_SCHEMA_VERSION:
+            errors.append("chat structure schema version mismatch")
+        if manifest.get("structure_status") != "completed" or batch.get("structure_status") != "completed":
+            errors.append("chat structure is not completed")
+        mode = manifest.get("transcription_mode")
+        if mode != batch.get("transcription_mode") or mode not in {"selective_ocr", "vision_only"}:
+            errors.append("chat transcription mode mismatch")
+        if mode == "selective_ocr":
+            runtime = dict(manifest.get("ocr_runtime") or {})
+            if manifest.get("ocr_provider") != "rapidocr-local" or batch.get("ocr_provider") != "rapidocr-local":
+                errors.append("selective OCR provider mismatch")
+            if manifest.get("ocr_action") != "SelectiveRapidOCR" or batch.get("ocr_action") != "SelectiveRapidOCR":
+                errors.append("selective OCR action mismatch")
+            if runtime.get("rapidocr_version") != EXPECTED_RAPIDOCR_VERSION:
+                errors.append("RapidOCR version mismatch")
+            if runtime.get("onnxruntime_version") != EXPECTED_ONNXRUNTIME_VERSION:
+                errors.append("ONNX Runtime version mismatch")
+            if runtime.get("model_set") != EXPECTED_RAPIDOCR_MODEL_SET:
+                errors.append("RapidOCR model set mismatch")
+        elif mode == "vision_only" and (
+            manifest.get("ocr_provider") != "none" or batch.get("ocr_provider") != "none"
+        ):
+            errors.append("vision-only batch declares an OCR provider")
+        if batch.get("failures") or batch.get("manifest_errors"):
+            errors.append("batch contains processing failures")
+        relationship = analysis.get("relationship_analysis") or {}
+        if (relationship.get("validation") or {}).get("ok") is not True:
+            errors.append("relationship analysis is not validated")
+        if relationship.get("schema_version") != CHAT_RELATIONSHIP_SCHEMA_VERSION:
+            errors.append("relationship analysis schema version mismatch")
+        if relationship.get("source_payload_schema_version") != CHAT_TEXT_PAYLOAD_SCHEMA_VERSION:
+            errors.append("relationship source payload schema version mismatch")
+        if (analysis.get("metrics") or {}).get("semantic_annotation_coverage") != 1.0:
+            errors.append("relationship message annotation coverage is incomplete")
+        if int(manifest.get("attachment_count") or -1) != expected_attachment_count:
+            errors.append("attachment_count mismatch")
+        if content_ssot is not None:
+            entries = content_ssot.get("entries")
+            content_ref = analysis.get("content_ssot") or {}
+            if content_ssot.get("schema_version") != "wechat-chat-content-ssot-v1":
+                errors.append("content SSOT schema version mismatch")
+            if content_ssot.get("batch_id") != expected_batch_id:
+                errors.append("content SSOT batch_id mismatch")
+            if not isinstance(entries, list) or content_ssot.get("entry_count") != len(entries or []):
+                errors.append("content SSOT entry_count mismatch")
+            if (
+                content_ref.get("path") != "chat-content-ssot.json"
+                or content_ref.get("schema_version") != content_ssot.get("schema_version")
+                or content_ref.get("entry_count") != content_ssot.get("entry_count")
+            ):
+                errors.append("analysis content SSOT reference mismatch")
+        if independent_audit is None or independent_audit.get("status") != "PASS":
+            errors.append("independent final audit is not PASS")
+        elif independent_audit.get("batch_id") != expected_batch_id:
+            errors.append("independent audit batch_id mismatch")
+        for attachment in manifest.get("attachments") or []:
+            if attachment.get("dedupe_status") == "canonical" and (
+                attachment.get("status") != "processed" or attachment.get("structure_status") != "completed"
+            ):
+                errors.append(f"attachment {attachment.get('attachment_id')} is not completed")
+        return errors
 
     def _social_downloaded_media_paths(self, message: Message) -> list[Path]:
         metadata = message.metadata or {}
@@ -510,54 +1092,12 @@ class SocialArchiveMixin:
         return any(path == root or root in path.parents for root in roots)
 
     def _social_archive_reply_summary(self, message: Message, archive_result: dict[str, Any]) -> str:
-        archive_path = Path(str(archive_result.get("archive_path") or ""))
-        if not archive_path.exists():
-            return ""
-        input_path = Path(str(archive_result.get("input_path") or ""))
-        has_media_input = input_path.suffix.lower() in SOCIAL_ARCHIVE_IMAGE_EXTS or input_path.suffix.lower() in SOCIAL_ARCHIVE_AUDIO_EXTS
-        if not has_media_input and not self._social_message_requests_analysis(message.body):
-            return ""
-        try:
-            text = archive_path.read_text(encoding="utf-8", errors="ignore")
-        except OSError:
-            return ""
-        latest = self._latest_social_record_block(text)
-        material = self._extract_latest_material_summary(latest)
-        if not material:
-            return "已归档，但本次没有提取到可回传的图像/材料结论；请重发原图或查看路由记录。"
-        return material[:1200].rstrip()
-
-    def _latest_social_record_block(self, archive_text: str) -> str:
-        matches = list(re.finditer(r"^## \d{3}｜", archive_text, flags=re.MULTILINE))
-        if not matches:
-            return archive_text
-        start = matches[-1].start()
-        next_match = re.search(r"^## \d{3}｜", archive_text[start + 1 :], flags=re.MULTILINE)
-        end = start + 1 + next_match.start() if next_match else len(archive_text)
-        return archive_text[start:end]
-
-    def _extract_latest_material_summary(self, block: str) -> str:
-        marker = "> 待归入本表的提纯材料如下。后续编辑时应拆成逐行聊天记录、事实摘要和分析证据；原始音频/截图/图片不进入档案。"
-        if marker in block:
-            content = block.split(marker, 1)[1]
-            content = content.split("| 日期/时间 |", 1)[0].strip()
-            if content and not self._looks_like_social_instruction_stub(content):
-                return content
-        fact_match = re.search(r"### 5\. 本次事实摘要\s*(?P<body>.*?)(?:\n### 6\.|\Z)", block, flags=re.S)
-        if fact_match:
-            content = fact_match.group("body").strip()
-            if content and "主要话题：\n-" not in content:
-                return content
+        chat_batch = archive_result.get("chat_batch") or {}
+        if chat_batch.get("ok"):
+            transcript_path = Path(str(chat_batch.get("transcript_path") or ""))
+            if transcript_path.is_file():
+                try:
+                    return transcript_path.read_text(encoding="utf-8", errors="ignore")[:1200].rstrip()
+                except OSError:
+                    pass
         return ""
-
-    def _looks_like_social_instruction_stub(self, content: str) -> bool:
-        instruction_markers = (
-            "这是一组连续上传的社交素材",
-            "等待池已结束",
-            "处理方式：先给整批素材建立 manifest",
-            "人物照片观察必须使用 social workspace",
-        )
-        return any(marker in content for marker in instruction_markers)
-
-    def _social_message_requests_analysis(self, body: str) -> bool:
-        return any(keyword in body for keyword in ("说明什么", "怎么看", "分析", "结论", "评价", "判断"))

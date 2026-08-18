@@ -1,101 +1,65 @@
 from __future__ import annotations
 
+from argparse import Namespace
+
 from .tag_router_common import *
 from datetime import date
 from zoneinfo import ZoneInfo
+from media_vault import MediaVaultError, require_tenant_id
 
 class BusinessVlogMixin:
     def handle_id_business(self, message: Message) -> TaskResult:
-        repo_root = Path("/home/ubuntu/selfmedia-tools")
-        script = repo_root / "selfmedia" / "business" / "id_business.py"
-        if not script.exists():
-            return TaskResult(
-                ok=False,
-                status="id_business_script_missing",
-                reply=f"商务>ID脚本不存在：{script}",
-                task_id="",
-            )
-
-        cmd = [sys.executable, "-m", "selfmedia.business.id_business", "ingest", "--stdin", "--require-feishu", "--notify-confirmation"]
         try:
-            proc = run_media_subprocess_with_watchdog(
-                cmd,
-                input=message.raw_text,
-                timeout=960,
-                cwd=str(repo_root),
-                env=self._subprocess_env_with_context(message),
-            )
-        except OSError as exc:
-            return TaskResult(
-                ok=False,
-                status="id_business_failed",
-                reply=f"无法调用 商务>ID脚本。\n错误：{exc}",
-                task_id="",
-            )
-        if proc.returncode == -9:
-            return TaskResult(
-                ok=False,
-                status="id_business_timeout",
-                reply=f"商务>ID处理超时，账号截图或飞书写入未完成。\n错误：{proc.stderr.strip()}",
-                task_id="",
-            )
+            tenant_id = require_tenant_id((message.metadata or {}).get("tenant_id"))
+        except MediaVaultError as exc:
+            return TaskResult(ok=False, status="tenant_context_required", reply=str(exc), task_id="")
+        from selfmedia.business.id_business import ingest
 
-        parsed = self._parse_openclaw_json(proc.stdout)
+        parsed = ingest(
+            Namespace(
+                text=message.raw_text,
+                stdin=False,
+                feishu_url="",
+                profile_url="",
+                screenshot="",
+                brief_file=[],
+                account_name="",
+                notify_confirmation=True,
+                require_feishu=True,
+                dry_run=False,
+                no_screenshot=False,
+                smoke=False,
+                tenant_id=tenant_id,
+            )
+        )
         if str(parsed.get("status") or "") == "id_business_llm_pending_manual":
             reason = str(parsed.get("reason") or parsed.get("error") or "商务>ID LLM 字段抽取待人工确认").strip()
             fields = parsed.get("fields") if isinstance(parsed.get("fields"), dict) else {}
             pending = str(fields.get("待补充字段") or "").strip()
-            reply_lines = [reason]
-            identified = [
-                f"{label}：{fields.get(label)}"
-                for label in ["作者ID", "账号名称", "平台", "品牌"]
-                if fields.get(label)
-            ]
-            if identified:
-                reply_lines.append("已识别：" + "；".join(identified))
-            if pending:
-                reply_lines.append(f"待补充字段：{pending}")
-            details = fields.get("详情JSON") if isinstance(fields.get("详情JSON"), dict) else {}
-            history = details.get("history_lookup") if isinstance(details.get("history_lookup"), dict) else {}
-            if history:
-                creator = history.get("creator_profiles") if isinstance(history.get("creator_profiles"), dict) else {}
-                business = history.get("business_accounts") if isinstance(history.get("business_accounts"), dict) else {}
-                creator_status = "命中" if creator.get("matched") else "未命中"
-                business_status = "命中" if business.get("matched") else "未命中"
-                copied = business.get("copied_fields") if isinstance(business.get("copied_fields"), list) else []
-                copied_text = "，补字段：" + "、".join(str(item) for item in copied) if copied else ""
-                reply_lines.append(f"历史查表：06_CreatorProfiles_达人账号档案{creator_status}；05A_BusinessAccounts_商务账号{business_status}{copied_text}")
+            details = parsed.get("details") if isinstance(parsed.get("details"), dict) else {}
             ai_reply = str(fields.get("AI回复话术") or "").strip()
             if not ai_reply and isinstance(details.get("ai_reply"), dict):
                 ai_reply = str(details["ai_reply"].get("reply") or "").strip()
-            if ai_reply:
-                reply_lines.append(f"AI回复：{ai_reply}")
-            if parsed.get("local_path"):
-                reply_lines.append(f"本地待确认记录：{parsed['local_path']}")
+            fallback_reply = reason
+            if pending:
+                fallback_reply += f"\n待补充字段：{pending}"
             return TaskResult(
                 ok=False,
                 status="id_business_llm_pending_manual",
-                reply="\n".join(reply_lines),
+                reply=ai_reply or fallback_reply,
                 task_id="",
                 local_path=str(parsed.get("local_path") or ""),
                 extra={"id_business": parsed},
             )
-        if proc.returncode != 0:
-            error_text = (
-                str(parsed.get("error") or parsed.get("reply") or "").strip()
-                or proc.stderr.strip()
-                or self._summarize_process_output(parsed, proc.stdout)
-                or f"id_business.py exited with {proc.returncode}"
-            )
-            return TaskResult(ok=False, status="id_business_failed", reply=error_text[-3000:], task_id="")
-
         fields = parsed.get("fields") if isinstance(parsed.get("fields"), dict) else {}
         feishu = parsed.get("feishu") if isinstance(parsed.get("feishu"), dict) else {}
         capture = parsed.get("capture") if isinstance(parsed.get("capture"), dict) else {}
-        record_id = str(feishu.get("record_id") or "")
-        action = {"created": "新建", "updated": "更新"}.get(str(feishu.get("action") or ""), "写入")
+        details = parsed.get("details") if isinstance(parsed.get("details"), dict) else {}
+        ai_reply_details = details.get("ai_reply") if isinstance(details.get("ai_reply"), dict) else {}
+        ai_reply_status = str(ai_reply_details.get("status") or "").strip()
+        record_id = str(feishu.get("account_record_id") or "")
         reply_lines = [
-            f"商务>ID已{action}到商务账号多维表格",
+            "商务>ID已写入商务账号与商务机会多维表格",
             f"平台：{fields.get('平台') or '未识别'}",
             f"作者ID：{fields.get('作者ID') or '未提取到'}",
             f"平台账号：{fields.get('账号名称') or '未提取到'}",
@@ -103,16 +67,10 @@ class BusinessVlogMixin:
             f"品牌：{fields.get('品牌') or '未提取到'}",
             f"产品：{fields.get('产品') or '未提取到'}",
         ]
-        if feishu.get("table_url"):
-            reply_lines.append(f"多维表格：{feishu['table_url']}")
-        if record_id:
-            reply_lines.append(f"记录 ID：{record_id}")
         if fields.get("主页链接"):
             reply_lines.append(f"主页链接：{fields['主页链接']}")
         if fields.get("Brief链接"):
             reply_lines.append(f"Brief链接：{fields['Brief链接']}")
-        if fields.get("主页截图路径"):
-            reply_lines.append(f"截图：{fields['主页截图路径']}")
         if fields.get("账号数据摘要"):
             reply_lines.append(f"账号数据：{fields['账号数据摘要']}")
         if capture.get("status") or fields.get("截图状态"):
@@ -121,20 +79,16 @@ class BusinessVlogMixin:
             reply_lines.append(f"需反问博主：{fields['需反问博主字段']}")
         if fields.get("反问博主状态"):
             reply_lines.append(f"反问状态：{fields['反问博主状态']}")
-        if fields.get("待补充字段"):
+        if fields.get("待补充字段") and ai_reply_status != "done":
             reply_lines.append(f"待补充字段：{fields['待补充字段']}")
-        details = fields.get("详情JSON") if isinstance(fields.get("详情JSON"), dict) else {}
         ai_reply = str(fields.get("AI回复话术") or "").strip()
         if not ai_reply and isinstance(details.get("ai_reply"), dict):
             ai_reply = str(details["ai_reply"].get("reply") or "").strip()
-        if ai_reply:
-            reply_lines.append(f"AI回复：{ai_reply}")
-        if fields.get("最近错误"):
-            reply_lines.append(f"最近错误：{fields['最近错误']}")
+        visible_reply = ai_reply or "\n".join(reply_lines)
         return TaskResult(
             ok=True,
             status="id_business_archived",
-            reply="\n".join(reply_lines),
+            reply=visible_reply,
             task_id=record_id,
             local_path=str(parsed.get("local_path") or ""),
             extra={"id_business": parsed},

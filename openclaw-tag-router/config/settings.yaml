@@ -2,29 +2,21 @@ workspace_root: /home/ubuntu/.openclaw/workspace/openclaw-tag-router
 source: feishu
 chat_type: private
 timezone: Asia/Shanghai
+daily_journal:
+  daily_prompt_time: "22:00"
+  weekly_summary_time: "23:59"
+  journal_root: /home/ubuntu/obsidian-日记/日记
+  weekly_archive_root: /home/ubuntu/obsidian-日记/Archieve
+  minimum_weekly_samples: 3
+  notification_channel: feishu
+  notification_account: daily
+  notification_target: ""
+  notification_sessions_path: /home/ubuntu/.openclaw/agents/feishu-daily/sessions/sessions.json
+  scheduler_state_path: /home/ubuntu/.openclaw/workspace/openclaw-tag-router/daily_journal_scheduler/state.json
 entry_tag_rules:
   社交:
     default_tags: [社交, 人物档案]
     feishu_doc: 社交档案记录
-  内容素材:
-    detect_links: true
-    category_rules:
-      - name: 运动-记录
-        keywords: [运动, 健身, 跑步, 训练, 骑行, 篮球, 足球, 瑜伽]
-      - name: AI工具-创作者提效
-        keywords: [AI, OpenClaw, Codex, Skill, 工具, 提示词, 自动化, 效率]
-      - name: 内容运营-爆款拆解
-        keywords: [小红书运营, 爆款, 创作者, 涨粉, 选题, 文案, 拆解]
-      - name: 教育-学习成长
-        keywords: [高考, 学习, 校园, 考研, 备考, 课程, 学生]
-      - name: 本地生活-探店美食
-        keywords: [探店, 美食, 餐厅, 咖啡, 打卡, 门店]
-      - name: 旅行-记录
-        keywords: [旅行, 旅拍, 城市, 景点, 攻略, 出行]
-      - name: 职场生活-身份反差
-        keywords: [毕业, 应届, 打工, 工厂, 车床, 职场, 上班, 厂仔, 身份反差]
-      - name: 情绪共鸣-青春回忆
-        keywords: [青春, 回忆, 高三, 毕业季, 遗憾, 成长]
 content_flow:
   base_url: http://127.0.0.1:8000
   poll_interval_seconds: 1
@@ -36,7 +28,6 @@ feishu_reminder:
   timeout_seconds: 1800
   bitable_url: https://tcnwueberajc.feishu.cn/base/Q7n4bucuGa3I2psTOyLcuepknkh
   config_paths:
-    内容素材: /home/ubuntu/openclaw-feishu-reminder/wiki-content-config.json
     活动: /home/ubuntu/openclaw-feishu-reminder/wiki-activity-config.json
     自媒体知识: /home/ubuntu/openclaw-feishu-reminder/knowledge-config.json
     知识: /home/ubuntu/openclaw-feishu-reminder/knowledge-config.json
@@ -69,12 +60,25 @@ feishu:
     - pattern: "*"
       space_id: ${FEISHU_KB_SPACE_ID}
       parent_node_token: ${FEISHU_KB_PARENT_NODE_TOKEN}
+deepmath_ceo_thinking:
+  enabled: true
+  resource_config_path: /home/ubuntu/selfmedia-tools/openclaw-tag-router/config/deepmath_ceo_thinking_resources.json
+  people_capability_base_id: ZKkpbMSraadzsSsYafxcPns8nbb
+  approval_state_path: /home/ubuntu/.openclaw-deepmath/state/deepmath-approval.sqlite3
+  approval_token_signing_secret: ${OPENCLAW_DEEPMATH_APPROVAL_TOKEN_SECRET}
+  approver_open_id: ou_0863a8d7dd01d2d1ca8780d29267dbb5
+content_os_project_board:
+  enabled: true
+  base_token: BazubRWJ7a9SLRsLr4Bc8IvAnCg
+  table_name: 00_Projects_项目看板
 mac_agent:
   mode: local
   queue_dir: /home/ubuntu/.openclaw/workspace/openclaw-tag-router/outbox/mac_agent_queue
   obsidian_root: /home/ubuntu/obsidian-日记/日程
   local_obsidian_root: /home/ubuntu/obsidian-日记/日程
 daily_checklist:
-  archive_root: /home/ubuntu/obsidian-日记/Archieve
+  weekly_archive_root: /home/ubuntu/obsidian-日记/Archieve
+development_checklist:
+  weekly_archive_root: /home/ubuntu/obsidian-日记/Archieve
 reply:
   include_paths: true

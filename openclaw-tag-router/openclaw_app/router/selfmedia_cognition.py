@@ -18,8 +18,9 @@ class SelfmediaCognitionMixin:
             return TaskResult(ok=False, status="selfmedia_cognition_list_failed", reply=f"读取自媒体认知池子文档失败：{exc}", task_id="")
 
         plan = self._selfmedia_cognition_plan(message, child_nodes)
-        if plan.get("status") == "pending_manual":
-            return TaskResult(ok=False, status="selfmedia_cognition_pending_manual", reply=f"自媒体认知分流失败：{plan.get('reason') or 'OpenClaw 未返回可用分流结果'}", task_id="")
+        if plan.get("status") != "done":
+            reason = self._selfmedia_cognition_pending_reason(plan, "分流")
+            return TaskResult(ok=False, status="selfmedia_cognition_pending_manual", reply=reason, task_id="")
 
         doc_title = self._selfmedia_cognition_doc_title(plan)
         existing = self._find_child_node_by_title(child_nodes, doc_title)
@@ -35,9 +36,12 @@ class SelfmediaCognitionMixin:
             plan=plan,
             existing_text=existing_text,
         )
+        if merged.get("status") != "done":
+            reason = self._selfmedia_cognition_pending_reason(merged, "整合")
+            return TaskResult(ok=False, status="selfmedia_cognition_pending_manual", reply=reason, task_id="")
         content = self._normalize_depatch_content(str(merged.get("content") or ""))
         if len(content) < 80:
-            return TaskResult(ok=False, status="selfmedia_cognition_empty", reply="自媒体认知整合失败：OpenClaw 返回正文过短，已停止写入。", task_id="")
+            return TaskResult(ok=False, status="selfmedia_cognition_pending_manual", reply="自媒体认知整合结果证据不足：OpenClaw 返回正文过短，已停止写入，请补充认知正文、判断依据或案例。", task_id="")
 
         try:
             blocks = [
@@ -159,6 +163,16 @@ class SelfmediaCognitionMixin:
             track = self._selfmedia_cognition_title_segment(str(plan.get("track") or ""), limit=10) or "通用"
             theme = self._selfmedia_cognition_title_segment(str(plan.get("theme") or plan.get("main_point") or plan.get("summary") or ""), limit=20) or "未命名认知"
         return f"自媒体认知｜{track}｜{theme}"
+
+    @staticmethod
+    def _selfmedia_cognition_pending_reason(result: dict[str, Any], stage: str) -> str:
+        source_reason = str(result.get("reason") or result.get("summary") or "").strip()
+        gaps = result.get("data_gaps") if isinstance(result.get("data_gaps"), list) else []
+        gap_text = "、".join(str(item).strip() for item in gaps if str(item).strip())
+        details = "；".join(item for item in (source_reason, gap_text) if item)
+        if not details:
+            details = "OpenClaw 未返回可用结果"
+        return f"自媒体认知{stage}需要补充来源：{details}。已停止写入。"
 
     def _selfmedia_cognition_title_segment(self, value: str, *, limit: int) -> str:
         text = re.sub(r"https?://\S+", "", str(value or ""))

@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openclaw.local/contracts/capability_catalog.schema.json",
+  "title": "OpenClaw CapabilityRegistry v3 catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "catalogVersion", "capabilities"],
+  "properties": {
+    "schemaVersion": {"const": "capability_catalog_v3"},
+    "catalogVersion": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "capabilities": {"type": "array", "items": {"$ref": "#/$defs/capability"}}
+  },
+  "$defs": {
+    "option": {
+      "type": "object", "additionalProperties": false,
+      "required": ["value", "label", "aliases", "source"],
+      "properties": {
+        "value": {"type": "string"}, "label": {"type": "string"},
+        "aliases": {"type": "array", "items": {"type": "string"}},
+        "source": {"type": "string", "minLength": 1}
+      }
+    },
+    "format": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "min", "max", "pattern", "urlSchemes"],
+      "properties": {
+        "name": {"enum": ["", "uri", "date"]},
+        "min": {"type": ["number", "null"]}, "max": {"type": ["number", "null"]},
+        "pattern": {"type": "string"},
+        "urlSchemes": {"type": "array", "items": {"enum": ["http", "https"]}}
+      }
+    },
+    "condition": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "operator", "value"],
+      "properties": {
+        "source": {"type": "string", "minLength": 1},
+        "operator": {"enum": ["equals", "not_equals", "in", "exists"]},
+        "value": {}
+      }
+    },
+    "field": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "sourceLabel", "label", "inputType", "valueType", "format", "required", "defaultValue", "options", "placeholder", "helpText", "order", "visibleWhen", "enabledWhen", "semanticOwner", "persistenceOwner", "provenance"],
+      "properties": {
+        "key": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "sourceLabel": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1},
+        "inputType": {"enum": ["text", "textarea", "select", "radio", "multiselect", "number", "date", "url", "file", "object"]},
+        "valueType": {"enum": ["string", "number", "boolean", "array", "object"]},
+        "format": {"$ref": "#/$defs/format"},
+        "required": {"type": "boolean"},
+        "defaultValue": {},
+        "options": {"type": "array", "items": {"$ref": "#/$defs/option"}},
+        "placeholder": {"type": "string"},
+        "helpText": {"type": "string"},
+        "order": {"type": "integer", "minimum": 0},
+        "visibleWhen": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+        "enabledWhen": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+        "semanticOwner": {"type": "string", "minLength": 1},
+        "persistenceOwner": {"type": "string", "minLength": 1},
+        "provenance": {"const": "declared_field_definition"}
+      }
+    },
+    "variant": {
+      "type": "object", "additionalProperties": false,
+      "required": ["variantId", "label", "requiredFields", "requiredAnyOf", "preActions", "controlledInputFields", "forbiddenFields", "fieldValues"],
+      "properties": {
+        "variantId": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1},
+        "requiredFields": {"type": "array", "items": {"type": "string"}},
+        "requiredAnyOf": {"type": "array", "items": {"type": "array", "minItems": 2, "items": {"type": "string"}}},
+        "preActions": {"type": "array", "items": {"type": "string"}},
+        "controlledInputFields": {"type": "array", "items": {"type": "string"}},
+        "forbiddenFields": {"type": "array", "items": {"type": "string"}},
+        "fieldValues": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}}
+      }
+    },
+    "rule": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "fields", "message"],
+      "properties": {
+        "type": {"enum": ["at_least_one"]},
+        "fields": {"type": "array", "minItems": 2, "items": {"type": "string"}},
+        "message": {"type": "string", "minLength": 1}
+      }
+    },
+    "hierarchy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["categoryId", "categoryName", "categoryOrder", "objectId", "objectName", "objectOrder", "actionId", "actionName", "actionOrder", "pathIds", "pathNames"],
+      "properties": {
+        "categoryId": {"type": "string"}, "categoryName": {"type": "string"}, "categoryOrder": {"type": "integer", "minimum": 0},
+        "objectId": {"type": "string"}, "objectName": {"type": "string"}, "objectOrder": {"type": "integer", "minimum": 0},
+        "actionId": {"type": "string"}, "actionName": {"type": "string"}, "actionOrder": {"type": "integer", "minimum": 0},
+        "pathIds": {"type": "array", "minItems": 2, "maxItems": 3, "items": {"type": "string"}},
+        "pathNames": {"type": "array", "minItems": 2, "maxItems": 3, "items": {"type": "string"}}
+      }
+    },
+    "confirmation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stage", "message"],
+      "properties": {
+        "stage": {"enum": ["none", "before_execute", "after_candidate", "destructive_preview_apply"]},
+        "message": {"type": "string"}
+      }
+    },
+    "attachmentPolicy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["types", "maxCount", "maxBytes"],
+      "properties": {
+        "types": {"type": "array", "items": {"enum": ["text", "url", "image", "video", "audio", "document"]}},
+        "maxCount": {"type": "integer", "minimum": 0, "maximum": 8},
+        "maxBytes": {"type": "integer", "minimum": 0, "maximum": 52428800}
+      }
+    },
+    "capability": {
+      "type": "object", "additionalProperties": false,
+      "required": ["capabilityId", "internalCode", "internalLabel", "label", "displayName", "description", "example", "aliases", "bots", "hierarchy", "fields", "variants", "validationRules", "supportedAttachments", "attachmentPolicy", "status", "enabled", "visibility", "riskLevel", "effect", "confirmationPolicy", "handler", "consumes", "produces", "writesTo", "sourceSystem", "ssotRefs", "inputContractSource", "searchKeywords", "provenance", "displayOrder", "requiresConfirmation"],
+      "properties": {
+        "capabilityId": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "internalCode": {"type": "string"}, "internalLabel": {"type": "string"}, "label": {"type": "string"}, "displayName": {"type": "string"}, "description": {"type": "string"}, "example": {"type": "string"},
+        "aliases": {"type": "array", "items": {"type": "string"}},
+        "bots": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["Media bot", "Daily bot", "Knowledge bot", "Social bot", "任意 Bot"]}},
+        "hierarchy": {"$ref": "#/$defs/hierarchy"},
+        "fields": {"type": "array", "items": {"$ref": "#/$defs/field"}},
+        "variants": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/variant"}},
+        "validationRules": {"type": "array", "items": {"$ref": "#/$defs/rule"}},
+        "supportedAttachments": {"type": "array", "items": {"enum": ["text", "url", "image", "video", "audio", "document"]}},
+        "attachmentPolicy": {"$ref": "#/$defs/attachmentPolicy"},
+        "status": {"enum": ["implemented", "external", "not_implemented"]},
+        "enabled": {"type": "boolean"}, "visibility": {"enum": ["public", "ops", "maintainer"]},
+        "riskLevel": {"enum": ["low", "medium", "high", "destructive"]},
+        "effect": {"enum": ["read", "write", "destructive"]},
+        "confirmationPolicy": {"$ref": "#/$defs/confirmation"},
+        "handler": {"type": "string"},
+        "consumes": {"type": "array", "items": {"type": "string"}}, "produces": {"type": "array", "items": {"type": "string"}},
+        "writesTo": {"type": "array", "items": {"type": "string"}}, "sourceSystem": {"type": "string"},
+        "ssotRefs": {"type": "array", "items": {"type": "string"}}, "inputContractSource": {"type": "string"},
+        "searchKeywords": {"type": "array", "items": {"type": "string"}}, "provenance": {"type": "string", "minLength": 1},
+        "displayOrder": {"type": "integer", "minimum": 0}, "requiresConfirmation": {"type": "boolean"}
+      }
+    }
+  }
+}

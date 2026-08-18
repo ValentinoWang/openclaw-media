@@ -56,6 +56,18 @@ class ObsidianDailyChecklistServiceTest(unittest.TestCase):
             self.assertEqual(result.target_date.isoformat(), "2026-06-29")
             self.assertTrue(result.path.endswith("20260629-20260705.md"))
 
+    def test_invalid_eight_digit_url_fragment_does_not_crash_or_override_message_date(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            service = ObsidianDailyChecklistService(Path(tmp) / "Archieve")
+            result = service.append_checklist(
+                text="拆解视频\nhttps://example.com/watch?share_id=20261345",
+                now=datetime(2026, 7, 12, 10, 0, tzinfo=TZ),
+                checklist_tree=[{"text": "拆解视频", "children": []}],
+            )
+
+            self.assertEqual(result.target_date.isoformat(), "2026-07-12")
+            self.assertTrue(result.path.endswith("20260706-20260712.md"))
+
     def test_inserts_todo_section_at_file_top(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "Archieve"
@@ -78,6 +90,30 @@ class ObsidianDailyChecklistServiceTest(unittest.TestCase):
             service.append_checklist(text="新事项", now=datetime(2026, 6, 29, 10, 0, tzinfo=TZ), checklist_tree=[{"text": "新事项", "children": []}])
             content = path.read_text(encoding="utf-8")
             self.assertTrue(content.startswith("# 待办\n- [ ] 新事项\n\n- [ ] 旧事项"))
+
+    def test_existing_todo_section_is_moved_to_file_top(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Archieve"
+            root.mkdir(parents=True)
+            path = root / "20260629-20260705.md"
+            path.write_text("# 20260703\n\n## 灵感\n\n内容\n\n# 待办\n- [ ] 旧事项\n\n# 开发\n\n开发记录\n", encoding="utf-8")
+            service = ObsidianDailyChecklistService(root)
+            service.append_checklist(text="新事项", now=datetime(2026, 7, 3, 10, 0, tzinfo=TZ), checklist_tree=[{"text": "新事项", "children": []}])
+            content = path.read_text(encoding="utf-8")
+            self.assertTrue(content.startswith("# 待办\n- [ ] 新事项\n\n- [ ] 旧事项\n\n# 20260703"))
+            self.assertLess(content.index("# 待办"), content.index("# 20260703"))
+
+    def test_development_todo_stays_after_primary_todo_heading(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Archieve"
+            root.mkdir(parents=True)
+            path = root / "20260629-20260705.md"
+            path.write_text("# 待办\n- [ ] 普通事项\n\n# 20260703\n\n内容\n", encoding="utf-8")
+            service = ObsidianDailyChecklistService(root, heading_label="开发待办")
+            service.append_checklist(text="开发事项", now=datetime(2026, 7, 3, 10, 0, tzinfo=TZ), checklist_tree=[{"text": "开发事项", "children": []}])
+            content = path.read_text(encoding="utf-8")
+            self.assertTrue(content.startswith("# 待办\n- [ ] 普通事项\n\n# 开发待办\n- [ ] 开发事项\n\n# 20260703"))
+            self.assertLess(content.index("# 待办"), content.index("# 开发待办"))
 
     def test_renders_nested_checklist_with_indentation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

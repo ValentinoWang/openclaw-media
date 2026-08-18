@@ -9,10 +9,29 @@ from typing import Any
 from ..models.message import Message
 from ..services.archive_service import ArchiveService
 from ..services.utils import cleanup_generated_file_duplicates, make_record_id
+from .content_os_project_lifecycle import set_project_reviewed_at, transition_project_status
+from .content_os_projections import write_project_registry_projection
+from .content_os_queue import accept_mac_result, create_ready_task
 from .tag_router_common import CONTENT_OS_SCRIPT_GENERATION_MODEL, CONTENT_OS_SCRIPT_GENERATION_THINKING
 
 
 class ContentOSBridgeMixin:
+    def _accept_content_os_mac_result(self, result: dict[str, Any], vault_root: Path | None = None) -> dict[str, str]:
+        """Receive a validated Mac result as evidence without touching project stage."""
+
+        vault_root = vault_root or self._content_os_vault_root()
+        accepted = accept_mac_result(vault_root, result)
+        write_project_registry_projection(vault_root)
+        sync_project_board = getattr(self, "_sync_content_os_feishu_project_board", None)
+        if callable(sync_project_board):
+            sync_project_board(vault_root, accepted.task.project_id)
+        return {
+            "status": "content_os_mac_result_accepted",
+            "task_id": accepted.task.task_id,
+            "project_id": accepted.task.project_id,
+            "result_path": str(accepted.result_path),
+        }
+
     def _maybe_create_content_os_project_from_inspiration(
         self,
         *,
@@ -35,7 +54,6 @@ class ContentOSBridgeMixin:
         vault_root = Path(os.environ.get("CONTENT_OS_VAULT_ROOT", "/home/ubuntu/obsidian-自媒体"))
         projects_root = vault_root / "08_内容项目"
         registries_root = vault_root / "90_索引与注册表"
-        task_ready_root = vault_root / "98_Agent任务队列" / "01_cloud_to_mac_ready"
         projects_root.mkdir(parents=True, exist_ok=True)
         registries_root.mkdir(parents=True, exist_ok=True)
 
@@ -44,8 +62,7 @@ class ContentOSBridgeMixin:
         project_slug_source = self._content_os_project_slug_source(local_project_path, title)
         project_id = self._unique_content_os_project_id(projects_root, created_date, project_slug_source)
         idea_id = self._next_content_os_id(registries_root / "idea_registry.md", f"idea_{created_date}_")
-        task_id = ""
-        task_path: Path | None = None
+        task = None
         project_dir = projects_root / project_id
         project_dir.mkdir(parents=True, exist_ok=True)
         mac_task_status = "ready" if local_material_binding == "bound" else "not_created"
@@ -122,40 +139,54 @@ class ContentOSBridgeMixin:
         for filename, content in files.items():
             self._write_text_if_absent(project_dir / filename, content)
 
+        transition_project_status(
+            vault_root,
+            project_id,
+            to_status="planned",
+            actor="cloud_openclaw",
+            reason="已生成项目说明、创作要求和当前脚本",
+            evidence={"01_idea_card.md", "02_project_brief.md", "04_script.md"},
+            now=message.created_at,
+        )
+
         if local_material_binding == "bound":
-            task_ready_root.mkdir(parents=True, exist_ok=True)
-            task_id = self._next_content_os_task_id(vault_root, created_date)
-            task_path = task_ready_root / f"{task_id}_material_match.yaml"
-            task_content = self._render_content_os_material_match_task(
-                task_id=task_id,
-                project_id=project_id,
-                idea_id=idea_id,
-                local_project_path=local_project_path,
-                batch_note_path=batch_note_path,
-                inbox_batch_path=inbox_batch_path,
-                status="ready",
+            task = create_ready_task(
+                vault_root,
+                project_id,
+                task_type="local_material_match",
+                project_revision=1,
+                change_request_id="",
+                editor_backend="handoff_pack",
+                inputs={
+                    "project_overview_path": f"08_内容项目/{project_id}/00_项目总览.md",
+                    "project_brief_path": f"08_内容项目/{project_id}/02_project_brief.md",
+                    "script_path": f"08_内容项目/{project_id}/04_script.md",
+                    "batch_note_path": batch_note_path,
+                    "inbox_batch_path": inbox_batch_path,
+                    "local_project_hint": self._content_os_path_name(local_project_path),
+                    "local_project_path": local_project_path,
+                },
+                expected_outputs=[
+                    f"08_内容项目/{project_id}/03_material_match_report.md",
+                    f"08_内容项目/{project_id}/05_storyboard.md",
+                    f"08_内容项目/{project_id}/06_edit_decision_list.json",
+                    f"08_内容项目/{project_id}/08_local_assets.md",
+                ],
+                allowed_actions=["analyze_project", "match_materials_to_brief", "generate_storyboard_edl", "write_local_assets"],
+                notes=["Mac 只回传证据和本地负责的产物，不能推进项目阶段。"],
+                now=message.created_at,
             )
-            self._write_text_if_absent(task_path, task_content)
 
         self._append_registry_row(
             registries_root / "idea_registry.md",
             header="# Idea Registry\n\n| idea_id | 标题/方向 | 来源 | status | project_id | 创建时间 |\n| --- | --- | --- | --- | --- | --- |\n",
             key=idea_id,
-            row=f"| {idea_id} | {self._md_cell(title)} | cloud_openclaw | brief_ready | {project_id} | {created_date} |",
+            row=f"| {idea_id} | {self._md_cell(title)} | cloud_openclaw | selected | {project_id} | {created_date} |",
         )
-        self._append_registry_row(
-            registries_root / "project_registry.md",
-            header="# Project Registry\n\n| project_id | 标题/主题 | status | 本地项目路径 | idea_id | post_id | review_id |\n| --- | --- | --- | --- | --- | --- | --- |\n",
-            key=project_id,
-            row=f"| {project_id} | {self._md_cell(theme or title)} | brief_ready | {self._md_cell(f'`{local_project_path}`' if local_project_path else f'批次说明: `{batch_note_path}`' if batch_note_path else f'Inbox批次: `{inbox_batch_path}`' if inbox_batch_path else '未绑定')} | {idea_id} |  |  |",
-        )
-        if task_id:
-            self._append_registry_row(
-                registries_root / "task_registry.md",
-                header="# Task Registry\n\n| task_id | project_id | task_type | status | owner | result_path | 下一步 |\n| --- | --- | --- | --- | --- | --- | --- |\n",
-                key=task_id,
-                row=f"| {task_id} | {project_id} | local_material_match | ready | mac_openclaw |  | Mac 读取 task，分析本地素材并回写 result |",
-            )
+        write_project_registry_projection(vault_root)
+        sync_project_board = getattr(self, "_sync_content_os_feishu_project_board", None)
+        if callable(sync_project_board):
+            sync_project_board(vault_root, project_id)
 
         response = {
             "project_id": project_id,
@@ -163,8 +194,8 @@ class ContentOSBridgeMixin:
             "project_path": str(project_dir),
             "local_material_binding": local_material_binding,
         }
-        if task_id and task_path:
-            response.update({"task_id": task_id, "task_path": str(task_path)})
+        if task is not None:
+            response.update({"task_id": task.task_id, "task_path": str(task.path)})
         return response
     def _maybe_write_content_os_creation_output(self, message: Message, parsed: dict[str, Any], reply: str) -> dict[str, Any]:
         vault_root = self._content_os_vault_root()
@@ -188,11 +219,11 @@ class ContentOSBridgeMixin:
         self._upsert_content_os_auto_section(
             project_dir / "04_script.md",
             frontmatter={
-                "spec_version": "content_os_v0.1",
+                "spec_version": "content_os_v0.2",
                 "doc_type": "script",
                 "project_id": project_id,
                 "idea_id": idea_id,
-                "status": "cloud_draft_ready",
+                "evidence_status": "current",
                 "writer_agent": "cloud_openclaw",
                 "owner_agent": "cloud_openclaw",
                 "next_owner": "human",
@@ -207,11 +238,11 @@ class ContentOSBridgeMixin:
         self._upsert_content_os_auto_section(
             project_dir / "09_publish_pack.md",
             frontmatter={
-                "spec_version": "content_os_v0.1",
+                "spec_version": "content_os_v0.2",
                 "doc_type": "publish_pack",
                 "project_id": project_id,
                 "idea_id": idea_id,
-                "status": "draft",
+                "evidence_status": "draft",
                 "writer_agent": "cloud_openclaw",
                 "owner_agent": "cloud_openclaw",
                 "next_owner": "human",
@@ -221,18 +252,8 @@ class ContentOSBridgeMixin:
             title="云端发布包",
             content=publish_content,
         )
-        status_reply = self._maybe_advance_content_os_status(
-            project_id=project_id,
-            from_status=self._content_os_project_status(project_id, vault_root),
-            to_status="script_publish_pack_draft_ready",
-            actor="cloud_openclaw",
-            evidence={"04_script.md", "09_publish_pack.md", "result_yaml_valid"},
-            reason="【创作】写入 04_script.md 和 09_publish_pack.md",
-            vault_root=vault_root,
-        )
         reply_line = f"Content OS 已写入：08_内容项目/{project_id}/04_script.md、09_publish_pack.md"
-        if status_reply:
-            reply_line = f"{reply_line}\n{status_reply}"
+        reply_line = f"{reply_line}\n项目阶段不会因单份创作稿或发布稿自动改变。"
         return {"project_id": project_id, "script_path": str(project_dir / "04_script.md"), "publish_pack_path": str(project_dir / "09_publish_pack.md"), "reply": reply_line}
     def _maybe_create_content_os_project_from_creation(self, message: Message, parsed: dict[str, Any], reply: str) -> dict[str, Any]:
         if not self._creation_requests_content_os_project(message.raw_text):
@@ -363,50 +384,6 @@ class ContentOSBridgeMixin:
         cleanup_generated_file_duplicates(script_path)
         rel_path = f"03_脚本生产/{script_path.name}"
         return {"status": "standalone_written", "script_path": str(script_path), "reply": f"创作稿已写入：{rel_path}"}
-    def _maybe_create_content_os_task_from_recreation(self, message: Message, unified_index: dict[str, str], fs: dict[str, str]) -> dict[str, Any]:
-        text = str(message.raw_text or message.body or "")
-        if not any(signal in text for signal in ("Mac", "本地素材", "素材匹配", "Storyboard", "EDL", "分镜", "本地处理")):
-            return {}
-        vault_root = self._content_os_vault_root()
-        project_id = self._extract_content_os_project_id(text, vault_root)
-        if not project_id:
-            return {}
-        project_dir = self._content_os_project_dir(project_id, vault_root)
-        if not project_dir.exists():
-            return {"project_id": project_id, "status": "blocked_missing_project"}
-        existing = self._find_content_os_ready_task(vault_root, project_id, "local_material_match")
-        if existing:
-            return {"project_id": project_id, "task_id": existing.stem, "task_path": str(existing), "status": "ready_task_exists"}
-        local_project_path = self._extract_content_os_local_project_path(text) or self._content_os_project_local_path(project_id, vault_root)
-        batch_note_path = self._extract_content_os_batch_note_path(text) or self._content_os_project_batch_note_path(project_id, vault_root)
-        inbox_batch_path = self._extract_content_os_inbox_batch_path(text) or self._content_os_project_inbox_batch_path(project_id, vault_root)
-        if not (local_project_path or batch_note_path or inbox_batch_path):
-            return {"project_id": project_id, "status": "blocked_missing_local_binding"}
-        idea_id = self._content_os_project_idea_id(project_id, vault_root)
-        task_id = self._next_content_os_task_id(vault_root, self._content_os_date(message.created_at))
-        task_root = vault_root / "98_Agent任务队列" / "01_cloud_to_mac_ready"
-        task_root.mkdir(parents=True, exist_ok=True)
-        task_path = task_root / f"{task_id}_material_match.yaml"
-        task_path.write_text(
-            self._render_content_os_material_match_task(
-                task_id=task_id,
-                project_id=project_id,
-                idea_id=idea_id,
-                local_project_path=local_project_path,
-                batch_note_path=batch_note_path,
-                inbox_batch_path=inbox_batch_path,
-                status="ready",
-            ).rstrip()
-            + "\n",
-            encoding="utf-8",
-        )
-        self._append_registry_row(
-            vault_root / "90_索引与注册表" / "task_registry.md",
-            header="# Task Registry\n\n| task_id | project_id | task_type | status | owner | result_path | 下一步 |\n| --- | --- | --- | --- | --- | --- | --- |\n",
-            key=task_id,
-            row=f"| {task_id} | {project_id} | local_material_match | ready | mac_openclaw |  | Mac 读取 task，分析本地素材并回写 result |",
-        )
-        return {"project_id": project_id, "task_id": task_id, "task_path": str(task_path), "status": "created"}
     def _maybe_apply_content_os_work_acceptance(self, message: Message, verdict: str, result: dict[str, Any], items: list[dict[str, str]]) -> dict[str, Any]:
         vault_root = self._content_os_vault_root()
         project_id = self._extract_content_os_project_id(message.raw_text, vault_root)
@@ -420,11 +397,11 @@ class ContentOSBridgeMixin:
         target_status = self._extract_labeled_value(message.raw_text, "目标状态") or self._extract_labeled_value(message.raw_text, "to")
         if target_status:
             target_status = re.split(r"\s+", target_status.strip(), maxsplit=1)[0]
-        if not target_status and current_status == "output_reviewed":
+        if not target_status and current_status == "editing":
             target_status = "final_ready"
         if not target_status:
             return {"project_id": project_id, "reply": f"Content OS 状态未推进：当前状态 {current_status} 没有可自动推断的下一状态"}
-        evidence = {"human_final_selected"}
+        evidence = {"human_final_selected", "output_review_evidence_exists"}
         if re.search(r"(/Users/|\.mp4|\.mov|Final|final|成片路径|导出路径|视频路径)", message.raw_text):
             evidence.add("output_video_exists")
         status_reply = self._maybe_advance_content_os_status(
@@ -450,11 +427,11 @@ class ContentOSBridgeMixin:
         self._upsert_content_os_auto_section(
             review_path,
             frontmatter={
-                "spec_version": "content_os_v0.1",
+                "spec_version": "content_os_v0.2",
                 "doc_type": "review",
                 "project_id": project_id,
                 "idea_id": idea_id,
-                "status": "reviewed",
+                "evidence_status": "reviewed",
                 "writer_agent": "cloud_openclaw",
                 "owner_agent": "cloud_openclaw",
                 "next_owner": "done",
@@ -471,6 +448,12 @@ class ContentOSBridgeMixin:
             key=review_id,
             row=f"| {review_id} | {project_id} | {self._md_cell(self._extract_labeled_value(message.raw_text, '平台') or '未指定')} | {self._md_cell(self._extract_labeled_value(message.raw_text, '复盘节点') or '未指定')} | `08_内容项目/{project_id}/10_review.md` | {self._content_os_date(message.created_at)} |",
         )
+        set_project_reviewed_at(
+            vault_root,
+            project_id,
+            reviewed_at=message.created_at.isoformat(timespec="seconds"),
+            now=message.created_at,
+        )
         current_status = self._content_os_project_status(project_id, vault_root)
         status_lines = []
         if current_status == "final_ready" and re.search(r"https?://|post_id|作品链接|发布链接", message.raw_text):
@@ -486,21 +469,9 @@ class ContentOSBridgeMixin:
             if advanced:
                 status_lines.append(advanced)
                 current_status = "published"
-        if current_status == "published":
-            advanced = self._maybe_advance_content_os_status(
-                project_id=project_id,
-                from_status="published",
-                to_status="reviewed",
-                actor="cloud_openclaw",
-                evidence={"10_review.md", "result_yaml_valid"},
-                reason="【数据复盘】写入 10_review.md",
-                vault_root=vault_root,
-            )
-            if advanced:
-                status_lines.append(advanced)
         reply_line = f"Content OS 复盘已写入：08_内容项目/{project_id}/10_review.md"
         if status_lines:
             reply_line = reply_line + "\n" + "\n".join(status_lines)
-        elif current_status not in {"published", "reviewed"}:
+        elif current_status != "published":
             reply_line = f"{reply_line}\nContent OS 状态未推进：当前状态 {current_status or '未记录'} 不是可复盘推进状态"
         return {"project_id": project_id, "review_path": str(review_path), "reply": reply_line}

@@ -1,35 +1,28 @@
 from __future__ import annotations
 
 from .tag_router_common import *
+from media_vault import MediaVaultError, require_tenant_id
 
 
 class MediaReviewMixin:
     def handle_数据复盘(self, message: Message) -> TaskResult:
         metadata = message.metadata or {}
+        try:
+            tenant_id = require_tenant_id(metadata.get("tenant_id"))
+        except MediaVaultError as exc:
+            return TaskResult(ok=False, status="tenant_context_required", reply=str(exc), task_id="")
         downloaded_paths = metadata.get("downloaded_paths") or []
         if not isinstance(downloaded_paths, list):
             downloaded_paths = []
-        command = [
-            "/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py",
-            "data-review",
-            "--text",
+        from selfmedia.review import handle_data_review_command
+
+        parsed = handle_data_review_command(
             message.raw_text,
-        ]
-        for path in downloaded_paths:
-            if str(path).strip():
-                command.extend(["--attachment", str(path).strip()])
-        self._append_conversation_context_arg(command, message)
-        try:
-            proc = run_media_subprocess_with_watchdog(command, timeout=10800, env=self._subprocess_env_with_context(message))
-        except OSError as exc:
-            return TaskResult(ok=False, status="data_review_failed", reply=f"【数据复盘】无法调用 media 工作流：{exc}", task_id="")
-        if proc.returncode == -9:
-            return TaskResult(ok=False, status="data_review_timeout", reply=(proc.stderr.strip() or "【数据复盘】处理超时")[-3000:], task_id="")
-        parsed = self._parse_openclaw_json(proc.stdout)
+            tenant_id=tenant_id,
+            attachment_paths=[str(path).strip() for path in downloaded_paths if str(path).strip()],
+            conversation_context=self._conversation_context(message),
+        )
         reply = str(parsed.get("reply") or "").strip()
-        if proc.returncode != 0:
-            error_text = proc.stderr.strip() or proc.stdout.strip() or f"data review exited with {proc.returncode}"
-            return TaskResult(ok=False, status="data_review_failed", reply=error_text[-3000:], task_id="")
         content_os_review = self._maybe_write_content_os_data_review(message, parsed, reply)
         if content_os_review.get("reply"):
             reply = f"{reply}\n{content_os_review['reply']}" if reply else content_os_review["reply"]
@@ -51,26 +44,16 @@ class MediaReviewMixin:
         return keyword_hits >= 2 or metric_hits >= 2
 
     def _record_media_review_memory(self, message: Message) -> dict[str, Any]:
-        command = [
-            "/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py",
-            "review",
-            "--text",
-            message.raw_text,
-            "--source",
-            message.source,
-        ]
         try:
-            proc = run_media_subprocess_with_watchdog(command, timeout=120, env=self._subprocess_env_with_context(message))
-        except OSError as exc:
-            return {"ok": False, "reply": f"媒体复盘记忆脚本无法调用：{exc}"}
-        if proc.returncode == -9:
-            return {"ok": False, "reply": (proc.stderr.strip() or "媒体复盘记忆写入超时")[-2000:]}
-        parsed = self._parse_openclaw_json(proc.stdout)
-        reply = str(parsed.get("reply") or "").strip()
-        if proc.returncode != 0:
-            error_text = proc.stderr.strip() or proc.stdout.strip() or f"media review exited with {proc.returncode}"
-            return {"ok": False, "reply": error_text[-2000:], "returncode": proc.returncode}
-        parsed["ok"] = bool(parsed.get("ok", True))
-        if reply:
-            parsed["reply"] = reply
-        return parsed
+            tenant_id = require_tenant_id((message.metadata or {}).get("tenant_id"))
+        except MediaVaultError as exc:
+            return {"ok": False, "status": "tenant_context_required", "reply": str(exc)}
+
+        from selfmedia.context import record_review_memory
+
+        parsed = record_review_memory(
+            message.raw_text,
+            tenant_id=tenant_id,
+            source=message.source,
+        )
+        return {**parsed, "ok": True}

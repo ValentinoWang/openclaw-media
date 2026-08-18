@@ -1,0 +1,10 @@
+[Unit]
+Description=OpenClaw Weekly Self Model Sunday 23:59 Timer
+
+[Timer]
+OnCalendar=Sun *-*-* 23:59:00
+Persistent=true
+Unit=openclaw-weekly-self-model-summary.service
+
+[Install]
+WantedBy=timers.target

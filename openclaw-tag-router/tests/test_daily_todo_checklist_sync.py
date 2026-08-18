@@ -29,7 +29,7 @@ class DailyTodoChecklistSyncTest(unittest.TestCase):
             weekly.write_text(
                 "\n".join(
                     [
-                        "# 20260628",
+                        "# 待办",
                         "- [x] 购买杠铃杆 <!-- openclaw:feishu_record=rec1;sync=todo_complete_v1 -->",
                         "- [ ] 购买起泡器 <!-- openclaw:feishu_record=rec2;sync=todo_complete_v1 -->",
                         "- [x] 整理购买清单",

@@ -1,0 +1,10 @@
+[Unit]
+Description=OpenClaw Daily Journal 22:00 Template Timer
+
+[Timer]
+OnCalendar=*-*-* 22:00:00
+Persistent=true
+Unit=openclaw-daily-journal-template.service
+
+[Install]
+WantedBy=timers.target

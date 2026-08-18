@@ -1,20 +1,54 @@
 from __future__ import annotations
 
 from selfmedia.style import StylePolishRequest, run_style_polish
+from media_vault import MediaVaultError, require_tenant_id
 
 from .tag_router_common import *
 
 
 STYLE_POLISH_TAGS = {"润色", "网感", "文案优化", "改标题", "去AI味", "小红书文案", "抖音文案"}
+FEISHU_DOC_REFERENCE_RE = re.compile(
+    r"https?://[^\s<>\]\)）\"']*(?:feishu\.cn|larksuite\.com|larkoffice\.com)"
+    r"[^\s<>\]\)）\"']*/(?:docx|wiki)(?:/|[?#]|$)",
+    re.I,
+)
+FEISHU_DOC_METADATA_TYPE_KEYS = {"message_type", "obj_type", "object_type", "doc_type", "resource_type", "file_type"}
+FEISHU_DOC_METADATA_TYPE_VALUES = {"docx", "wiki"}
 
 
 class StylePolishMixin:
     def handle_style_polish(self, message: Message) -> TaskResult:
+        if self._style_polish_has_feishu_doc_reference(message):
+            return TaskResult(
+                ok=False,
+                status="style_polish_requires_modify",
+                reply="【润色】检测到你提供的是飞书 Docx/Wiki 文档链接或回复文档。请改用【修改】处理已有文档；本次不会创建 style_polish_runs。",
+                task_id="",
+            )
         try:
             request = self._style_polish_request(message)
-            result = run_style_polish(request)
+            tenant_id = require_tenant_id((message.metadata or {}).get("tenant_id"))
+            result = run_style_polish(request, tenant_id=tenant_id)
+        except MediaVaultError as exc:
+            return TaskResult(
+                ok=False,
+                status="tenant_context_required",
+                reply=str(exc),
+                task_id="",
+            )
         except Exception as exc:
-            return TaskResult(ok=False, status="style_polish_failed", reply=f"【润色】处理失败：{exc}", task_id="")
+            return TaskResult(
+                ok=False,
+                status="style_polish_failed",
+                reply=(
+                    "【润色】这次没有生成可用成稿。\n"
+                    "code：style_polish_llm_failed\n"
+                    "原因：写作模型返回的内容没有通过事实或格式校验。\n"
+                    f"详情：{exc}\n"
+                    "建议：请稍后重试；若持续失败，请把这条错误交给维护人员。"
+                ),
+                task_id="",
+            )
         return TaskResult(
             ok=True,
             status="style_polish_done",
@@ -56,31 +90,10 @@ class StylePolishMixin:
         versions = payload.get("versions") or []
         recommended_name = str(payload.get("recommended_version") or "")
         recommended = next((item for item in versions if item.get("name") == recommended_name), versions[0] if versions else {})
-        other_versions = [item for item in versions if item is not recommended]
-        source_trace = payload.get("source_trace") or []
-        lines = [
-            "【润色】已完成。",
-            f"run_id：{payload.get('run_id')}",
-            f"artifact：{payload.get('artifact_uri')}",
-            "",
-            "诊断：",
-            *[f"- {item}" for item in payload.get("diagnosis") or []],
-            "",
-            f"推荐版本：{recommended.get('name') or recommended_name}",
-            str(recommended.get("text") or "").strip(),
-        ]
-        if other_versions:
-            lines.extend(["", "其他版本摘要："])
-            for item in other_versions:
-                text = str(item.get("text") or "").strip().replace("\n", " ")
-                lines.append(f"- {item.get('name')}：{text[:120]}")
-        if payload.get("risk_notes"):
-            lines.extend(["", "风险提示：", *[f"- {item}" for item in payload.get("risk_notes") or []]])
-        lines.extend(["", "source_trace："])
-        for item in source_trace:
-            loaded = "已读" if item.get("loaded") else "未读"
-            lines.append(f"- {item.get('source_type')}：{loaded}｜{item.get('source')}")
-        return "\n".join(line for line in lines if line is not None).strip()
+        text = str(recommended.get("text") or "").strip()
+        if not text:
+            raise RuntimeError("StylePolish result has no recommended publishable text")
+        return text
 
     @staticmethod
     def _style_labeled_value(text: str, labels: tuple[str, ...]) -> str:
@@ -108,6 +121,30 @@ class StylePolishMixin:
     @staticmethod
     def _style_split_items(value: str) -> list[str]:
         return [item.strip() for item in re.split(r"[\n,，、;；]+", str(value or "")) if item.strip()]
+
+    @classmethod
+    def _style_polish_has_feishu_doc_reference(cls, message: Message) -> bool:
+        for text in (message.body, message.raw_text):
+            if FEISHU_DOC_REFERENCE_RE.search(str(text or "")):
+                return True
+        return cls._style_polish_metadata_has_feishu_doc_reference(message.metadata or {})
+
+    @classmethod
+    def _style_polish_metadata_has_feishu_doc_reference(cls, value: Any) -> bool:
+        if isinstance(value, str):
+            return bool(FEISHU_DOC_REFERENCE_RE.search(value))
+        if isinstance(value, list):
+            return any(cls._style_polish_metadata_has_feishu_doc_reference(item) for item in value)
+        if not isinstance(value, dict):
+            return False
+
+        for key, item in value.items():
+            key_text = str(key or "").strip().lower()
+            if key_text in FEISHU_DOC_METADATA_TYPE_KEYS and str(item or "").strip().lower() in FEISHU_DOC_METADATA_TYPE_VALUES:
+                return True
+            if cls._style_polish_metadata_has_feishu_doc_reference(item):
+                return True
+        return False
 
     @staticmethod
     def _style_platform_from_tag(tag: str) -> str:

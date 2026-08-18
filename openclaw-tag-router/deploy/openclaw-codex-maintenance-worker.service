@@ -1,0 +1,24 @@
+[Unit]
+Description=OpenClaw durable Codex maintenance worker v2
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/.openclaw/extensions/openclaw-tag-router
+Environment=HOME=/home/ubuntu
+Environment=CODEX_HOME=/home/ubuntu/.codex
+Environment=PYTHONPATH=/home/ubuntu/selfmedia-tools:/home/ubuntu/.openclaw/extensions/openclaw-tag-router
+Environment=PATH=/home/ubuntu/.nvm/versions/node/v22.22.2/bin:/home/ubuntu/.local/bin:/home/ubuntu/bin:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=-/home/ubuntu/openclaw-feishu-gateway/openclaw-feishu-gateway.env
+EnvironmentFile=-/home/ubuntu/.openclaw/openclaw-feishu-env.conf
+EnvironmentFile=-/home/ubuntu/.openclaw/openclaw-media.env
+ExecStart=/usr/bin/python3 /home/ubuntu/.openclaw/extensions/openclaw-tag-router/codex_maintenance_worker.py --poll-seconds 2
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=3
+KillMode=control-group
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

@@ -7,7 +7,7 @@ from ..deletion_plan import DeletionEntity, DeletionPlan
 from .base import DeletionContext
 
 
-DAILY_LABELS = {"待办", "日程", "待办-开发", "今日", "完成", "延期", "取消", "开发-完成", "开发-验证"}
+DAILY_LABELS = {"待办", "日程", "待办-开发", "今日", "开发-完成", "开发-验证"}
 RECORD_KEYS = ("reminder_record_id", "record_id", "feishu_record_id")
 CALENDAR_ID_KEYS = ("calendar_id", "日历ID")
 EVENT_ID_KEYS = ("event_id", "calendar_event_id", "日历事件ID", "日程事件ID")

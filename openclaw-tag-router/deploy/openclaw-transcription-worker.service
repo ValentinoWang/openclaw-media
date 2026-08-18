@@ -1,0 +1,19 @@
+[Unit]
+Description=OpenClaw asynchronous transcription worker
+After=network-online.target openclaw-gateway.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/.openclaw/extensions/openclaw-tag-router
+EnvironmentFile=/home/ubuntu/openclaw-feishu-gateway/openclaw-feishu-gateway.env
+Environment=PYTHONPATH=/home/ubuntu/selfmedia-tools:/home/ubuntu/.openclaw/extensions/openclaw-tag-router
+Environment=PATH=/home/ubuntu/.nvm/versions/node/v22.22.2/bin:/home/ubuntu/.local/bin:/home/ubuntu/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/python3 /home/ubuntu/.openclaw/extensions/openclaw-tag-router/transcription_worker.py --poll-seconds 2
+Restart=always
+RestartSec=3
+KillMode=control-group
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

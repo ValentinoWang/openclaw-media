@@ -1,0 +1,18 @@
+schemaVersion: media_business_test_resources_v1
+versionTuple: 5/5/2/5
+chromiumConcurrency: 4
+lanes:
+  - {node: B01, port: 18001, database: media_b01_a3_20260805, ordinaryIdentity: ordinary-b01-a3, adminIdentity: admin-b01-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B01}
+  - {node: B02, port: 18002, database: media_b02_a3_20260805, ordinaryIdentity: ordinary-b02-a3, adminIdentity: admin-b02-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B02}
+  - {node: B03, port: 18003, database: media_b03_a3_20260805, ordinaryIdentity: ordinary-b03-a3, adminIdentity: admin-b03-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B03}
+  - {node: B04, port: 18004, database: media_b04_a3_20260805, ordinaryIdentity: ordinary-b04-a3, adminIdentity: admin-b04-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B04}
+  - {node: B05, port: 18005, database: media_b05_a3_20260805, ordinaryIdentity: ordinary-b05-a3, adminIdentity: admin-b05-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B05}
+  - {node: B06, port: 18006, database: media_b06_a3_20260805, ordinaryIdentity: ordinary-b06-a3, adminIdentity: admin-b06-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B06}
+  - {node: B07, port: 18007, database: media_b07_a3_20260805, ordinaryIdentity: ordinary-b07-a3, adminIdentity: admin-b07-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B07}
+  - {node: B08, port: 18008, database: media_b08_a3_20260805, ordinaryIdentity: ordinary-b08-a3, adminIdentity: admin-b08-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B08}
+  - {node: B09, port: 18009, database: media_b09_a3_20260805, ordinaryIdentity: ordinary-b09-a3, adminIdentity: admin-b09-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B09}
+  - {node: B10, port: 18010, database: media_b10_a3_20260805, ordinaryIdentity: ordinary-b10-a3, adminIdentity: admin-b10-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B10}
+  - {node: B11, port: 18011, database: media_b11_a3_20260805, ordinaryIdentity: ordinary-b11-a3, adminIdentity: admin-b11-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B11}
+  - {node: B12, port: 18012, database: media_b12_a3_20260805, ordinaryIdentity: ordinary-b12-a3, adminIdentity: admin-b12-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B12}
+  - {node: B13, port: 18013, database: media_b13_a3_20260805, ordinaryIdentity: ordinary-b13-a3, adminIdentity: admin-b13-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B13}
+  - {node: B14, port: 18014, database: media_b14_a3_20260805, ordinaryIdentity: ordinary-b14-a3, adminIdentity: admin-b14-a3, evidence: /home/ubuntu/media-business-api-evidence/5-5-2-5/B14}

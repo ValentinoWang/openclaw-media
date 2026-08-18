@@ -30,6 +30,10 @@ class CreatorProfileHarness(CreatorProfilesMixin):
         self.confirmed_runs: list[dict] = []
         self.timezone = "Asia/Shanghai"
 
+    @staticmethod
+    def _creator_profile_session_tenant_id() -> str:
+        return "101"
+
     def _creator_profile_records(self, *, url: str | None = None, token: str | None = None) -> list[dict]:
         return self.records
 
@@ -39,6 +43,22 @@ class CreatorProfileHarness(CreatorProfilesMixin):
 
     def _generate_creator_profile_candidate_run(self, **kwargs) -> dict:
         self.generated_candidates.append(kwargs)
+        user_fields = dict(kwargs.get("user_fields") or {})
+        candidate_payload = {
+            "platform": "抖音",
+            "author_id": "22654404058",
+            "account_name": "Ty.Mer",
+            "profile_url": "https://www.douyin.com/user/MS4w",
+            "identity_summary": "",
+            "identity_tags": [],
+            "education_background": "",
+            "expertise_domains": [],
+            "creator_role": "",
+            "public_persona_boundaries": "",
+            "story_usable_identity_points": "",
+            "current_metrics_summary": "粉丝数 901 人；关注 62；获赞 5810；作品 20",
+        }
+        candidate_payload.update({key: value for key, value in user_fields.items() if value not in (None, "", [])})
         return {
             "write_status": "candidate_only_not_written",
             "run_id": "20260630T144713Z",
@@ -48,20 +68,7 @@ class CreatorProfileHarness(CreatorProfilesMixin):
                 "input_platform_id": kwargs.get("platform_id"),
                 "resolve_status": "exact_profile_resolved",
             },
-            "candidate_payload": {
-                "platform": "抖音",
-                "author_id": "22654404058",
-                "account_name": "Ty.Mer",
-                "profile_url": "https://www.douyin.com/user/MS4w",
-                "identity_summary": "",
-                "identity_tags": [],
-                "education_background": "",
-                "expertise_domains": [],
-                "creator_role": "",
-                "public_persona_boundaries": "",
-                "story_usable_identity_points": "",
-                "current_metrics_summary": "粉丝数 901 人；关注 62；获赞 5810；作品 20",
-            },
+            "candidate_payload": candidate_payload,
         }
 
     def _confirm_creator_profile_candidate_run(self, run_id: str, *, user_edits: dict | None = None) -> dict:
@@ -78,6 +85,36 @@ class CreatorProfileHarness(CreatorProfilesMixin):
 
 
 class CreatorProfilesTest(unittest.TestCase):
+    def test_batch_blogger_ingestion_reuses_single_upsert_and_reports_each_row(self) -> None:
+        harness = CreatorProfileHarness()
+        result = harness.handle_博主_入库(
+            make_message(
+                "博主-入库",
+                "批量入库\n平台：抖音\n作者ID：author_1\n账号名称：账号一\n\n---\n\n平台：小红书\n作者ID：author_2\n账号名称：账号二",
+            )
+        )
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "creator_profile_batch_candidates_ready")
+        self.assertEqual(len(harness.generated_candidates), 2)
+        self.assertEqual(harness.upserted, [])
+        self.assertEqual(result.extra["creator_profile_batch"]["succeeded"], 2)
+
+    def test_batch_blogger_ingestion_keeps_partial_failure_outcomes(self) -> None:
+        harness = CreatorProfileHarness()
+        result = harness.handle_博主_入库(
+            make_message(
+                "博主-入库",
+                '批量导入：[{"平台":"抖音","作者ID":"author_1","账号名称":"账号一"},{"平台":"小红书","账号名称":"缺ID"}]',
+            )
+        )
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "creator_profile_batch_candidates_partial")
+        self.assertEqual(len(harness.generated_candidates), 1)
+        self.assertEqual(harness.upserted, [])
+        self.assertEqual(result.extra["creator_profile_batch"]["failed"], 1)
+
     def test_blogger_list_includes_external_unique_id_and_traits(self) -> None:
         harness = CreatorProfileHarness(
             [
@@ -106,6 +143,51 @@ class CreatorProfilesTest(unittest.TestCase):
         self.assertIn("身份信息", result.reply)
         self.assertIn("清华AI硕", result.reply)
 
+    def test_unified_blogger_query_strips_ability_and_info_fields(self) -> None:
+        harness = CreatorProfileHarness(
+            [
+                {
+                    "record_id": "rec-1",
+                    "fields": {
+                        "博主IP": "清华AI小王冲一级",
+                        "平台": ["抖音"],
+                        "平台ID": "93130816637",
+                        "账号名称": "小王冲一级",
+                    },
+                }
+            ]
+        )
+
+        result = harness.handle_博主(make_message("博主", "能力：查询\n信息：小王"))
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "creator_profile_listed")
+        self.assertIn("小王冲一级", result.reply)
+
+    def test_unified_blogger_upsert_is_rejected_in_read_capability(self) -> None:
+        harness = CreatorProfileHarness()
+
+        result = harness.handle_博主(
+            make_message(
+                "博主",
+                "能力：入库\n信息：\n博主IP：清华AI小王冲一级\n平台：抖音\n平台ID：93130816637\n个人特征：清华AI硕、体育生、跑步",
+            )
+        )
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.status, "creator_profile_write_requires_upsert_capability")
+        self.assertIn("【博主-入库】", result.reply)
+        self.assertEqual(harness.upserted, [])
+
+    def test_unified_blogger_rejects_commercial_delivery_dispatch(self) -> None:
+        harness = CreatorProfileHarness()
+
+        result = harness.handle_博主(make_message("博主", "能力：商单交付\n信息：品牌：测试品牌"))
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.status, "creator_profile_unknown_ability")
+        self.assertIn("商单交付请继续使用【商单交付】", result.reply)
+
     def test_blogger_upsert_requires_platform_id(self) -> None:
         harness = CreatorProfileHarness()
 
@@ -127,10 +209,35 @@ class CreatorProfilesTest(unittest.TestCase):
         )
 
         self.assertTrue(result.ok)
-        fields = harness.upserted[0]
+        fields = harness.generated_candidates[0]["user_fields"]
         self.assertEqual(fields["identity_tags"], ["清华AI硕", "体育生", "跑步"])
-        self.assertEqual(fields["粉丝数(k)"], 37)
-        self.assertIn("外部唯一ID：抖音:93130816637", result.reply)
+        self.assertIn("粉丝数(k)=37", fields["current_metrics_summary"])
+        self.assertEqual(harness.upserted, [])
+        self.assertIn("输入平台ID：93130816637", result.reply)
+
+    def test_blogger_account_type_alias_maps_to_expertise_domains(self) -> None:
+        harness = CreatorProfileHarness()
+        result = harness.handle_博主_入库(
+            make_message(
+                "博主-入库",
+                "账号名称：王教练\n平台：小红书\n作者ID：wangsports\n账号类型：运动训练、短跑",
+            )
+        )
+        self.assertTrue(result.ok)
+        payload = harness.generated_candidates[0]["user_fields"]
+        self.assertEqual(payload["expertise_domains"], ["运动训练", "短跑"])
+        self.assertNotIn("creator_type", payload)
+
+    def test_blogger_profile_url_only_generates_candidate_without_write(self) -> None:
+        harness = CreatorProfileHarness()
+        profile_url = "https://www.xiaohongshu.com/user/profile/creator"
+        result = harness.handle_博主_入库(make_message("博主-入库", f"主页链接：{profile_url}"))
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "creator_profile_candidate_ready")
+        self.assertEqual(harness.upserted, [])
+        self.assertEqual(harness.generated_candidates[0]["platform"], "")
+        self.assertEqual(harness.generated_candidates[0]["platform_id"], "")
+        self.assertEqual(harness.generated_candidates[0]["url"], profile_url)
 
     def test_blogger_upsert_preserves_explicit_current_metrics_summary(self) -> None:
         harness = CreatorProfileHarness()
@@ -150,7 +257,7 @@ class CreatorProfilesTest(unittest.TestCase):
         )
 
         self.assertTrue(result.ok)
-        payload = harness._creator_profile_v2_payload(harness.upserted[0])
+        payload = harness.generated_candidates[0]["user_fields"]
         self.assertEqual(payload["current_metrics_summary"], "粉丝数 901 人；关注 62；获赞 5810；作品 20")
 
     def test_blogger_auto_enrichment_generates_candidate_without_write(self) -> None:
@@ -178,6 +285,28 @@ class CreatorProfilesTest(unittest.TestCase):
         self.assertEqual(harness.generated_candidates[0]["platform_id"], "22654404058")
         self.assertIn("暂未写入", result.reply)
         self.assertIn("run_id：20260630T144713Z", result.reply)
+
+    def test_blogger_auto_enrichment_rejects_retired_mode_alias(self) -> None:
+        harness = CreatorProfileHarness()
+
+        result = harness.handle_博主_入库(
+            make_message(
+                "博主-入库",
+                "\n".join(("平台：抖音", "平台ID：22654404058", "模式：auto")),
+            )
+        )
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.status, "creator_profile_missing_required")
+        self.assertEqual(harness.generated_candidates, [])
+
+    def test_blogger_unified_entry_rejects_retired_action_alias(self) -> None:
+        harness = CreatorProfileHarness()
+
+        result = harness.handle_博主(make_message("博主", "能力：搜索\n信息：小王"))
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.status, "creator_profile_unknown_ability")
 
     def test_blogger_confirm_write_uses_run_id_and_user_edits(self) -> None:
         harness = CreatorProfileHarness()
@@ -251,9 +380,9 @@ class CreatorProfilesTest(unittest.TestCase):
         )
 
         self.assertTrue(result.ok)
-        fields = harness.upserted[0]
-        self.assertEqual(fields["平台"], "抖音")
-        self.assertEqual(fields["平台ID"], "93130816637")
+        fields = harness.generated_candidates[0]["user_fields"]
+        self.assertEqual(fields["platform"], "抖音")
+        self.assertEqual(fields["author_id"], "93130816637")
 
     def test_blogger_upsert_routes_profile_details_to_structured_identity_not_legacy_persona(self) -> None:
         harness = CreatorProfileHarness()
@@ -266,13 +395,12 @@ class CreatorProfilesTest(unittest.TestCase):
         )
 
         self.assertTrue(result.ok)
-        fields = harness.upserted[0]
-        payload = harness._creator_profile_v2_payload(fields)
-        self.assertEqual(fields["identity_summary"], "清华AI硕短跑创作者")
-        self.assertEqual(fields["identity_tags"], ["体育生"])
-        self.assertEqual(fields["story_usable_identity_points"], "短跑")
+        payload = harness.generated_candidates[0]["user_fields"]
+        self.assertEqual(payload["identity_summary"], "清华AI硕短跑创作者")
+        self.assertEqual(payload["identity_tags"], ["体育生"])
+        self.assertEqual(payload["story_usable_identity_points"], "短跑")
         self.assertNotIn("persona_summary", payload)
-        self.assertNotIn("详情JSON", fields)
+        self.assertNotIn("详情JSON", payload)
 
     def test_blogger_v2_payload_includes_structured_identity_fields(self) -> None:
         harness = CreatorProfileHarness()

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openclaw.local/contracts/media_web_task.schema.json",
+  "title": "OpenClaw Media Web structured task v3",
+  "type": "object",
+  "$defs": {
+    "value": {"oneOf": [{"type": "string"}, {"type": "number"}, {"type": "boolean"}, {"type": "array", "items": {"oneOf": [{"type": "string"}, {"type": "number"}]}}, {"type": "null"}]},
+    "createRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "capabilityId", "variantId", "params", "uploadIds", "idempotencyKey", "catalogVersion", "initiation", "confirmationReceipt"],
+      "properties": {
+        "schemaVersion": {"const": "3"}, "capabilityId": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}, "variantId": {"type": "string", "minLength": 1},
+        "params": {"type": "object", "additionalProperties": {"$ref": "#/$defs/value"}},
+        "uploadIds": {"type": "array", "maxItems": 8, "items": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,160}$"}},
+        "idempotencyKey": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,128}$"},
+        "catalogVersion": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "initiation": {"enum": ["manual", "ai"]},
+        "confirmationReceipt": {"oneOf": [{"$ref": "#/$defs/confirmationReceipt"}, {"type": "null"}]}
+      }
+    },
+    "confirmation": {
+      "type": "object", "additionalProperties": false, "required": ["state", "required", "note", "decidedAt"],
+      "properties": {"state": {"enum": ["not_required", "required", "approved", "rejected"]}, "required": {"type": "boolean"}, "note": {"type": "string"}, "decidedAt": {"type": "string"}}
+    },
+    "confirmationReceipt": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["kind", "previewTaskId", "targetIds", "targetCount", "entityCount", "planDigest", "expiresAt"], "properties": {"kind": {"const": "deletion_preview"}, "previewTaskId": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,160}$"}, "targetIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,160}$"}}, "targetCount": {"type": "integer", "minimum": 1}, "entityCount": {"type": "integer", "minimum": 0}, "planDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}, "expiresAt": {"type": "string", "format": "date-time"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "previewTaskId", "runId", "candidateDigest", "expiresAt"], "properties": {"kind": {"const": "creator_profile_candidate"}, "previewTaskId": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,160}$"}, "runId": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,160}$"}, "candidateDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}, "expiresAt": {"type": "string", "format": "date-time"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "previewTaskId", "fieldsDigest", "expiresAt"], "properties": {"kind": {"const": "track_creator_membership_preview"}, "previewTaskId": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,160}$"}, "fieldsDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}, "expiresAt": {"type": "string", "format": "date-time"}}}
+      ]
+    },
+    "resultReceipt": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["kind", "runId"], "properties": {"kind": {"const": "creator_profile_candidate"}, "runId": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,160}$"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "recordId"], "properties": {"kind": {"const": "creator_profile_written"}, "recordId": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,160}$"}}},
+        {"$ref": "#/$defs/confirmationReceipt"}
+      ]
+    },
+    "result": {
+      "type": "object", "additionalProperties": false, "required": ["ok", "status", "reply", "links", "receipt"],
+      "properties": {
+        "ok": {"type": "boolean"}, "status": {"enum": ["completed", "needs_attention", "failed"]}, "reply": {"type": "string"},
+        "links": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["label", "url"], "properties": {"label": {"type": "string"}, "url": {"type": "string", "format": "uri"}}}},
+        "receipt": {"oneOf": [{"$ref": "#/$defs/resultReceipt"}, {"type": "null"}]}
+      }
+    },
+    "task": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "taskId", "requestId", "modelCalls", "capabilityId", "capabilityPath", "variantId", "params", "confirmationReceipt", "status", "terminal", "progress", "summary", "createdAt", "updatedAt", "confirmation", "result", "error", "eventCursor"],
+      "properties": {
+        "schemaVersion": {"const": "media_web_task_v3"}, "taskId": {"type": "string"}, "requestId": {"type": "string"},
+        "modelCalls": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["requestId", "usageId", "status", "updatedAt"], "properties": {"requestId": {"type": "string"}, "usageId": {"type": ["string", "null"]}, "status": {"enum": ["pending", "succeeded", "failed", "unknown_reconcile"]}, "updatedAt": {"type": "integer"}}}}, "capabilityId": {"type": "string"},
+        "capabilityPath": {"type": "array", "minItems": 2, "maxItems": 3, "items": {"type": "string"}}, "variantId": {"type": "string"},
+        "params": {"type": "object", "additionalProperties": {"$ref": "#/$defs/value"}}, "confirmationReceipt": {"oneOf": [{"$ref": "#/$defs/confirmationReceipt"}, {"type": "null"}]}, "status": {"type": "string"}, "terminal": {"type": "boolean"},
+        "progress": {"type": "integer", "minimum": 0, "maximum": 100}, "summary": {"type": "string"}, "createdAt": {"type": "string"}, "updatedAt": {"type": "string"},
+        "confirmation": {"$ref": "#/$defs/confirmation"}, "result": {"oneOf": [{"$ref": "#/$defs/result"}, {"type": "null"}]}, "error": {"type": ["object", "null"]}, "eventCursor": {"type": "integer"}
+      }
+    },
+    "error": {
+      "type": "object", "additionalProperties": false, "required": ["ok", "error"],
+      "properties": {"ok": {"const": false}, "error": {"type": "object", "additionalProperties": false, "required": ["code", "reason", "action"], "properties": {"code": {"type": "string"}, "reason": {"type": "string"}, "action": {"type": "string"}, "detail": {"type": "string"}}}}
+      }
+  },
+  "oneOf": [{"$ref": "#/$defs/createRequest"}, {"$ref": "#/$defs/task"}, {"$ref": "#/$defs/error"}]
+}

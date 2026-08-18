@@ -1,34 +1,24 @@
 from __future__ import annotations
 
 from .tag_router_common import *
-from ..services.media_text_cleaner import MEDIA_TEXT_CLEANER, MediaCopyParts
+from ..services.media_text_cleaner import MEDIA_TEXT_CLEANER
 
 SELFMEDIA_ROOT = Path("/home/ubuntu/selfmedia-tools")
 if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
 from common.knowledge_categories import normalize_knowledge_secondary_categories  # noqa: E402
+from selfmedia.ingest.content_flow.src.semantic_persistence import (  # noqa: E402
+    LLM_SEMANTIC_PERSISTENCE_METADATA_KEY,
+    analysis_user_field_contract_issue,
+    build_user_field_persistence_metadata,
+)
 
 
 class MediaKnowledgeFieldsMixin:
     def _knowledge_title(self, body: str, analysis: dict[str, Any]) -> str:
-        for key in ("title", "标题", "name", "名称"):
-            value = self._knowledge_clean_analysis_value(analysis.get(key))
-            if value and not self._knowledge_looks_like_share_text(value):
-                return self._knowledge_compact_title(value)
-
-        summary_title = self._knowledge_title_from_summary(analysis.get("summary"))
-        if summary_title:
-            return summary_title
-
-        markdown_title = self._knowledge_title_from_share_text(body)
-        if markdown_title:
-            return markdown_title
-
-        caption = analysis.get("caption")
-        if isinstance(caption, str) and caption.strip() and not caption.strip().startswith("http"):
-            return self._knowledge_compact_title(caption.strip().splitlines()[0])
-        return self._knowledge_compact_title(body) or "未命名自媒体知识"
+        value = self._knowledge_clean_analysis_value(analysis.get("title"))
+        return self._knowledge_compact_title(value) if value and not self._knowledge_looks_like_share_text(value) else ""
 
     def _knowledge_compact_title(self, value: str, *, limit: int = 42) -> str:
         text = re.sub(r"^[-*•\d.、\s]+", "", str(value or "")).strip()
@@ -200,12 +190,6 @@ class MediaKnowledgeFieldsMixin:
             ocr_path = str(Path(str(result.get("media_dir"))) / "ocr.txt")
         return self._knowledge_read_text_file(ocr_path)
 
-    def _knowledge_clean_ocr_for_copy(self, text: str) -> str:
-        return MEDIA_TEXT_CLEANER.clean_ocr_for_copy(text)
-
-    def _knowledge_clean_transcript_for_copy(self, transcript: str) -> str:
-        return MEDIA_TEXT_CLEANER.clean_transcript_for_copy(transcript)
-
     def _knowledge_tags(self, analysis: dict[str, Any]) -> list[str]:
         tags = analysis.get("tags")
         if isinstance(tags, list):
@@ -213,42 +197,13 @@ class MediaKnowledgeFieldsMixin:
         text = self._knowledge_text_value(tags)
         return MEDIA_TEXT_CLEANER.clean_tags(text)
 
-    def _knowledge_unified_text(self, body: str, result: dict[str, Any]) -> str:
+    def _knowledge_has_structured_analysis(self, analysis: dict[str, Any]) -> bool:
+        return not analysis_user_field_contract_issue(analysis)
+
+    def _knowledge_user_field_contract_issue(self, result: dict[str, Any]) -> str:
         analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
         caption = self._knowledge_caption_text(result, analysis)
-        transcript = self._knowledge_read_text_file(str(result.get("transcript_path") or ""))
-        image_ocr = self._knowledge_image_ocr_text(result, analysis)
-        copy = MEDIA_TEXT_CLEANER.build_unified_copy(
-            MediaCopyParts(caption=caption, transcript=transcript, image_ocr=image_ocr, tags=tuple(self._knowledge_tags(analysis)))
-        )
-        if copy:
-            return copy
-        return ""
-
-    def _knowledge_has_structured_analysis(self, analysis: dict[str, Any]) -> bool:
-        if not analysis:
-            return False
-        if analysis.get("analysis_status") == "needs_model_rerun":
-            return False
-        if analysis.get("incomplete_reason"):
-            return False
-        for key in (
-            "summary",
-            "breakdown",
-            "hooks",
-            "action_plan",
-            "hidden_info",
-            "visual_cues",
-            "transferable_expression",
-            "target_audience",
-            "pain_point",
-            "work_copy",
-            "full_content",
-            "tags",
-        ):
-            if self._knowledge_clean_analysis_value(analysis.get(key)):
-                return True
-        return False
+        return analysis_user_field_contract_issue(analysis, require_work_copy=bool(caption))
 
     def _knowledge_completion_issue(self, result: dict[str, Any], *, require_video: bool) -> str:
         if result.get("status") != "done":
@@ -259,24 +214,25 @@ class MediaKnowledgeFieldsMixin:
         image_paths = self._knowledge_result_image_paths(result)
         transcript = self._knowledge_read_text_file(str(result.get("transcript_path") or ""))
         caption = self._knowledge_caption_text(result, analysis)
-        script_text = self._knowledge_script_text(result, analysis)
+        source_content_text = self._knowledge_full_content_text(result)
 
         if require_video and not video_path:
             return "content-flow 未产出可用视频文件"
         if not (video_path or image_paths or transcript or caption):
             return "content-flow 未产出可用媒体、字幕或逐字稿"
-        if require_video and not script_text:
-            return "content-flow 未产出逐字稿或完整内容"
-        if not self._knowledge_has_structured_analysis(analysis):
+        if analysis.get("analysis_status") == "needs_model_rerun":
+            return "结构化分析需要重新运行模型"
+        if require_video and not source_content_text:
+            return "content-flow 未产出视频逐字稿、OCR 或全部内容"
+        contract_issue = self._knowledge_user_field_contract_issue(result)
+        if contract_issue:
             if analysis.get("incomplete_reason") == "missing_GEMINI_API_KEY":
                 return "GEMINI_API_KEY 未配置，无法生成完整结构化分析"
             if analysis.get("incomplete_reason") == "missing_CODEX_RESPONSES_API_KEY":
                 return "config/openclaw_bots.json providers.codex_responses.api_key 未配置，无法生成完整结构化分析"
             if analysis.get("incomplete_reason") == "analysis_models_unavailable":
                 return "结构化分析模型当前不可用"
-            if analysis.get("analysis_status") == "needs_model_rerun":
-                return "结构化分析需要重新运行模型"
-            return "content-flow 未产出可用结构化分析"
+            return f"content-flow 未产出可入库的 LLM 清洗字段：{contract_issue}"
         return ""
 
     def _knowledge_platform_from_text(self, text: str) -> str:
@@ -285,7 +241,7 @@ class MediaKnowledgeFieldsMixin:
             return "公众号"
         if "douyin.com" in lower or "iesdouyin.com" in lower:
             return "抖音"
-        if "xiaohongshu.com" in lower or "xhslink.com" in lower:
+        if "xiaohongshu.com" in lower or "xhslink.com" in lower or "xhslink.cn" in lower:
             return "小红书"
         if "tiktok.com" in lower:
             return "TikTok"
@@ -389,47 +345,22 @@ class MediaKnowledgeFieldsMixin:
         return {"一级分类": category, "二级分类": secondary}
 
     def _knowledge_full_text(self, body: str, result: dict[str, Any]) -> str:
-        return self._knowledge_unified_text(body, result)
+        return "\n\n".join(
+            value
+            for value in (
+                self._knowledge_full_content_text(result),
+                self._knowledge_work_copy_text(body, result),
+            )
+            if value
+        )
 
     def _knowledge_work_copy_text(self, body: str, result: dict[str, Any]) -> str:
         analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
-        caption = self._knowledge_caption_text(result, analysis)
-        if caption:
-            return MEDIA_TEXT_CLEANER.build_work_copy(caption)
-        has_extracted_media = bool(
-            result.get("transcript_path")
-            or result.get("video_path")
-            or result.get("image_paths")
-            or self._knowledge_result_image_paths(result)
-            or self._knowledge_image_ocr_text(result, analysis)
-        )
-        explicit = self._knowledge_clean_analysis_value(
-            analysis.get("copy")
-            or analysis.get("文案")
-            or analysis.get("全部文案")
-            or analysis.get("work_copy")
-        )
-        if explicit and not has_extracted_media:
-            return MEDIA_TEXT_CLEANER.build_work_copy(explicit)
-        return ""
+        return self._knowledge_clean_analysis_value(analysis.get("work_copy"))
 
     def _knowledge_full_content_text(self, result: dict[str, Any]) -> str:
         analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
-        explicit = self._knowledge_clean_analysis_value(
-            analysis.get("full_content")
-            or analysis.get("全部内容")
-            or analysis.get("full_script")
-            or analysis.get("全部视频脚本")
-            or analysis.get("script")
-        )
-        if explicit:
-            media_type = str(result.get("media_type") or analysis.get("media_type") or "").lower()
-            if media_type in {"article", "wechat_article", "文章"} or analysis.get("analysis_provider") == "wechat-article-extractor":
-                return explicit.strip()
-            return MEDIA_TEXT_CLEANER.clean_generated_copy(explicit)
-        transcript = self._knowledge_read_text_file(str(result.get("transcript_path") or ""))
-        image_ocr = self._knowledge_image_ocr_text(result, analysis)
-        return MEDIA_TEXT_CLEANER.build_full_content(MediaCopyParts(transcript=transcript, image_ocr=image_ocr))
+        return self._knowledge_clean_analysis_value(analysis.get("full_content"))
 
     def _knowledge_topic_fields(self, analysis: dict[str, Any], source_text: str) -> dict[str, str]:
         audience = self._knowledge_clean_analysis_value(
@@ -459,10 +390,47 @@ class MediaKnowledgeFieldsMixin:
             return explicit_text
         return ""
 
+    def _knowledge_source_url(self, body: str, result: dict[str, Any], analysis: dict[str, Any]) -> str:
+        candidates = (
+            analysis.get("source_url"),
+            analysis.get("canonical_url"),
+            analysis.get("resolved_url"),
+            analysis.get("video_url"),
+            analysis.get("note_url"),
+            analysis.get("page_url"),
+            result.get("source_url"),
+            result.get("canonical_url"),
+            result.get("resolved_url"),
+            result.get("video_url"),
+            result.get("note_url"),
+            result.get("page_url"),
+            body,
+        )
+        for candidate in candidates:
+            url = self._extract_first_url(str(candidate or ""))
+            if url:
+                return url
+        return ""
+
+    def _knowledge_raw_evidence(self, body: str, result: dict[str, Any], analysis: dict[str, Any]) -> dict[str, Any]:
+        """Keep source artifacts out of user fields while retaining a traceable proof."""
+        evidence = {
+            "source_url": self._knowledge_source_url(body, result, analysis),
+            "media_dir": str(result.get("media_dir") or "").strip(),
+            "analysis_path": str(result.get("analysis_path") or "").strip(),
+            "caption_path": str(result.get("caption_path") or "").strip(),
+            "transcript_path": str(result.get("transcript_path") or "").strip(),
+            "ocr_path": str(result.get("ocr_path") or "").strip(),
+            "structure_path": str(result.get("structure_path") or analysis.get("article_structure_path") or "").strip(),
+            "original_file_count": len(self._knowledge_result_image_paths(result)) + int(bool(self._knowledge_result_video_path(result))),
+        }
+        return {key: value for key, value in evidence.items() if value not in (None, "", [], {}, 0)}
+
     def _knowledge_extra_fields(self, body: str, result: dict[str, Any]) -> dict[str, Any]:
         analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
-        if not self._knowledge_has_structured_analysis(analysis):
-            raise ValueError("LLM_SEMANTIC_PERSISTENCE_REQUIRED:knowledge_structured_analysis_required")
+        contract_issue = self._knowledge_user_field_contract_issue(result)
+        if contract_issue:
+            raise ValueError(f"LLM_SEMANTIC_PERSISTENCE_REQUIRED:knowledge_user_fields_{contract_issue}")
         full_text = self._knowledge_full_text(body, result)
         work_copy = self._knowledge_work_copy_text(body, result)
         full_content = self._knowledge_full_content_text(result)
@@ -489,7 +457,7 @@ class MediaKnowledgeFieldsMixin:
         content_type = self._knowledge_content_type(body, result, platform)
 
         fields: dict[str, Any] = {
-            "原链接": self._extract_first_url(body),
+            "原链接": self._knowledge_source_url(body, result, analysis),
             "名称": self._knowledge_title(body, analysis),
             "内容类型": content_type,
             **category_fields,
@@ -511,4 +479,10 @@ class MediaKnowledgeFieldsMixin:
         original_file_paths = [path for path in [video_path, *image_paths] if path]
         if original_file_paths:
             fields["_attachment_fields"] = {"原文件": original_file_paths}
-        return {key: value for key, value in fields.items() if value not in (None, "", [], {})}
+        persisted_fields = {key: value for key, value in fields.items() if value not in (None, "", [], {})}
+        persisted_fields[LLM_SEMANTIC_PERSISTENCE_METADATA_KEY] = build_user_field_persistence_metadata(
+            analysis,
+            persisted_fields,
+            raw_evidence=self._knowledge_raw_evidence(body, result, analysis),
+        )
+        return persisted_fields

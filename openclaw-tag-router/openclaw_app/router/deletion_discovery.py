@@ -10,6 +10,9 @@ import yaml
 
 TARGET_ID_RE = re.compile(
     r"https?://[^\s`，。；;,]+|"
+    r"\bper_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b|"
+    r"\basset_[A-Za-z0-9_-]{2,154}\b|"
+    r"\breview_[a-f0-9]{16}\b|"
     r"\brun_[A-Za-z0-9_:-]+\b|"
     r"\btask_\d{8}_\d{3}\b|"
     r"\brec[A-Za-z0-9_-]+\b|"
@@ -18,8 +21,9 @@ TARGET_ID_RE = re.compile(
     r"\b\d{8}-\d{6}-[A-Za-z0-9_-]+-[^\s`，。；;,]+"
 )
 RUN_ID_RE = re.compile(r"^run_[A-Za-z0-9_:-]+$")
+PERSON_ID_RE = re.compile(r"^per_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
 ARCHIVE_PREFIX_RE = re.compile(r"^(\d{8}-\d{6}-[A-Za-z0-9_-]+-.+?)(?:-[A-Za-z0-9]{4})?$")
-APPLY_KEYWORDS = ("确认删除", "真正删除", "执行", "--apply", "apply")
+APPLY_KEYWORDS = ("确认删除",)
 
 
 @dataclass

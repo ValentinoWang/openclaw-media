@@ -7,6 +7,39 @@ TRANSCRIPTION_TEXT_EXTS = {".txt", ".text", ".md", ".markdown"}
 
 
 class TranscriptionMixin:
+    def _emit_transcription_progress(self, message: Message, stage: str, **details: object) -> None:
+        path_value = str((message.metadata or {}).get("transcription_progress_path") or "").strip()
+        if not path_value:
+            return
+        path = Path(path_value)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "stage": stage,
+            "at": datetime.now().astimezone().isoformat(),
+            "job_id": str((message.metadata or {}).get("transcription_job_id") or ""),
+            **{key: value for key, value in details.items() if value not in (None, "", [], {})},
+        }
+        line = (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8")
+        descriptor = os.open(path, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o600)
+        try:
+            os.write(descriptor, line)
+        finally:
+            os.close(descriptor)
+
+    def _transcription_postprocess_artifact_dir(self, message: Message, default: Path) -> Path:
+        candidate_value = str((message.metadata or {}).get("transcription_resume_postprocess_dir") or "").strip()
+        if not candidate_value:
+            return default
+        candidate = Path(candidate_value)
+        try:
+            resolved = candidate.resolve(strict=True)
+            content_flow_root = (self.workspace_root / "content_flow").resolve(strict=True)
+            if resolved.name == "postprocess" and resolved.is_relative_to(content_flow_root):
+                return resolved
+        except (AttributeError, OSError):
+            pass
+        return default
+
     def handle_转写_文字(self, message: Message) -> TaskResult:
         body = message.body.strip()
         title_hint, body_transcript = self._transcription_text_body_parts(body)
@@ -75,10 +108,17 @@ class TranscriptionMixin:
             product_lines.append("- 无法读取的文字稿附件：\n" + "\n".join(f"- {item}" for item in unreadable_paths))
 
         source_hint = f"主题：{title_hint}" if title_hint else ""
-        formatted = self._format_dialogue_transcription(transcript_for_postprocess, source_hint or body, artifact_dir=task_dir / "postprocess")
+        self._emit_transcription_progress(
+            message,
+            "postprocess_started",
+            transcript_count=len(text_paths) + (1 if body_transcript else 0),
+        )
+        artifact_dir = self._transcription_postprocess_artifact_dir(message, task_dir / "postprocess")
+        formatted = self._format_dialogue_transcription(transcript_for_postprocess, source_hint or body, artifact_dir=artifact_dir)
         product_lines.extend(self._postprocess_artifact_lines(formatted))
         if not self._transcription_postprocess_succeeded(formatted):
-            reason = formatted["reason"] or "GPT-5.5 摘要/说话人整理失败"
+            self._emit_transcription_progress(message, "postprocess_failed")
+            reason = formatted["reason"] or "转写后处理摘要/说话人整理失败"
             entry = self.archive_service.save_archive(
                 message,
                 f"转写文字后处理失败：{title_hint}",
@@ -103,7 +143,7 @@ class TranscriptionMixin:
                 status="pending_manual",
                 reply=(
                     "转写文字整理未完成\n"
-                    f"原因：GPT-5.5 摘要/说话人整理失败：{reason}\n"
+                    f"原因：转写后处理摘要/说话人整理失败：{reason}\n"
                     f"文字稿任务目录：{task_dir}\n"
                     f"本地归档：{entry.local_path}"
                 ),
@@ -111,6 +151,13 @@ class TranscriptionMixin:
                 local_path=entry.local_path,
                 extra={"postprocess": formatted, "text_attachment_paths": text_paths},
             )
+
+        self._emit_transcription_progress(
+            message,
+            "postprocess_completed",
+            chunk_count=formatted.get("chunk_count", 0),
+            attachment_count=formatted.get("attachment_count", 0),
+        )
 
         topic = self._meeting_note_topic(title_hint, source_hint, formatted, text_names)
         obsidian_path = self._save_transcription_meeting_note(
@@ -124,6 +171,7 @@ class TranscriptionMixin:
             failures=unreadable_paths,
         )
         obsidian_transcript_path = str(formatted.get("obsidian_transcript_path") or "")
+        obsidian_topical_attachments_path = str(formatted.get("obsidian_topical_attachments_path") or "")
         entry = self.archive_service.save_archive(
             message,
             f"转写文字：{topic}",
@@ -132,39 +180,41 @@ class TranscriptionMixin:
                 ("产物", "\n".join(product_lines)),
                 ("Obsidian 会议纪要", obsidian_path),
                 ("Obsidian 原字稿", obsidian_transcript_path),
+                ("Obsidian 专题附件", obsidian_topical_attachments_path or "无独立专题附件"),
                 ("Knowledge 归档", self._transcription_knowledge_archive_summary(formatted)),
-                ("待解决的问题", formatted.get("pending_questions") or self._format_pending_questions("")),
-                ("内容整理", formatted["summary"]),
-                ("对话人说明", formatted["speaker_notes"]),
-                ("说话人标注逐字稿", formatted["labeled_transcript"]),
+                ("结论摘要", formatted["conclusion_summary"]),
+                ("决策清单", formatted["decision_list"]),
+                ("待拍板问题", formatted["pending_decisions"]),
+                ("待验证假设", formatted["validation_hypotheses"]),
+                ("行动项", formatted["action_items"]),
             ],
             {
                 "status": "archived" if not unreadable_paths else "partial",
-                "tags": ["转写", "转写-文字", "语音转文字", "内容整理", "说话人标注"],
+                "tags": ["转写", "转写-文字", "语音转文字", "会议纪要", "决策接口"],
                 "transcript_paths": [str(raw_path), str(clean_path)],
                 "text_attachment_paths": text_paths,
                 "media_dir": str(task_dir),
                 "postprocess_status": formatted["status"],
                 "obsidian_path": obsidian_path,
                 "obsidian_transcript_path": obsidian_transcript_path,
+                "obsidian_topical_attachments_path": obsidian_topical_attachments_path,
                 "knowledge_archive": formatted.get("knowledge_archive", {}),
                 "postprocess_artifacts": formatted.get("postprocess_artifacts", {}),
             },
         )
+        self._emit_transcription_progress(
+            message,
+            "persisted",
+            task_id=entry.frontmatter["id"],
+        )
         preview = self._truncate_transcript_reply(
             "\n".join(
                 [
-                    "待解决的问题：",
-                    formatted.get("pending_questions") or self._format_pending_questions(""),
+                    "结论摘要：",
+                    formatted["conclusion_summary"],
                     "",
-                    "内容整理：",
-                    formatted["summary"],
-                    "",
-                    "对话人说明：",
-                    formatted["speaker_notes"],
-                    "",
-                    "说话人标注逐字稿：",
-                    formatted["labeled_transcript"],
+                    "行动项：",
+                    formatted["action_items"],
                 ]
             )
         )
@@ -174,6 +224,7 @@ class TranscriptionMixin:
             f"本地归档：{entry.local_path}",
             f"Obsidian：{obsidian_path}",
             f"Obsidian原字稿：{obsidian_transcript_path}",
+            *([f"Obsidian专题附件：{obsidian_topical_attachments_path}"] if obsidian_topical_attachments_path else []),
             *self._transcription_knowledge_archive_reply_lines(formatted),
             f"文字稿任务目录：{task_dir}",
             "",
@@ -245,10 +296,11 @@ class TranscriptionMixin:
                 except OSError:
                     pass
             artifact_base = Path(str(result.get("media_dir") or "")) if result.get("media_dir") else self.workspace_root / "content_flow" / "postprocess"
-            formatted = self._format_dialogue_transcription(transcript_for_postprocess, body, artifact_dir=artifact_base / "postprocess")
+            artifact_dir = self._transcription_postprocess_artifact_dir(message, artifact_base / "postprocess")
+            formatted = self._format_dialogue_transcription(transcript_for_postprocess, body, artifact_dir=artifact_dir)
             product_lines.extend(self._postprocess_artifact_lines(formatted))
             if not self._transcription_postprocess_succeeded(formatted):
-                reason = formatted["reason"] or "GPT-5.5 摘要/说话人整理失败"
+                reason = formatted["reason"] or "转写后处理摘要/说话人整理失败"
                 entry = self.archive_service.save_archive(
                     message,
                     f"转写后处理失败：{title}",
@@ -272,7 +324,7 @@ class TranscriptionMixin:
                     status="pending_manual",
                     reply=(
                         "转写未完成\n"
-                        f"原因：GPT-5.5 摘要/说话人整理失败：{reason}\n"
+                        f"原因：转写后处理摘要/说话人整理失败：{reason}\n"
                         f"逐字稿路径：{result.get('transcript_path', '')}\n"
                         f"本地归档：{entry.local_path}"
                     ),
@@ -290,6 +342,7 @@ class TranscriptionMixin:
                 transcript_for_postprocess,
             )
             obsidian_transcript_path = str(formatted.get("obsidian_transcript_path") or "")
+            obsidian_topical_attachments_path = str(formatted.get("obsidian_topical_attachments_path") or "")
             entry = self.archive_service.save_archive(
                 message,
                 f"转写：{topic}",
@@ -298,20 +351,23 @@ class TranscriptionMixin:
                     ("产物", "\n".join(product_lines) or "content-flow 未返回本地产物路径"),
                     ("Obsidian 会议纪要", obsidian_path),
                     ("Obsidian 原字稿", obsidian_transcript_path),
+                    ("Obsidian 专题附件", obsidian_topical_attachments_path or "无独立专题附件"),
                     ("Knowledge 归档", self._transcription_knowledge_archive_summary(formatted)),
-                    ("待解决的问题", formatted.get("pending_questions") or self._format_pending_questions("")),
-                    ("内容整理", formatted["summary"]),
-                    ("对话人说明", formatted["speaker_notes"]),
-                    ("说话人标注逐字稿", formatted["labeled_transcript"]),
+                    ("结论摘要", formatted["conclusion_summary"]),
+                    ("决策清单", formatted["decision_list"]),
+                    ("待拍板问题", formatted["pending_decisions"]),
+                    ("待验证假设", formatted["validation_hypotheses"]),
+                    ("行动项", formatted["action_items"]),
                 ],
                 {
                     "status": "archived",
-                    "tags": ["转写", "语音转文字", "内容整理", "说话人标注"],
+                    "tags": ["转写", "语音转文字", "会议纪要", "决策接口"],
                     "transcript_path": result.get("transcript_path", ""),
                     "media_dir": result.get("media_dir", ""),
                     "postprocess_status": formatted["status"],
                     "obsidian_path": obsidian_path,
                     "obsidian_transcript_path": obsidian_transcript_path,
+                    "obsidian_topical_attachments_path": obsidian_topical_attachments_path,
                     "knowledge_archive": formatted.get("knowledge_archive", {}),
                     "postprocess_artifacts": formatted.get("postprocess_artifacts", {}),
                 },
@@ -319,17 +375,11 @@ class TranscriptionMixin:
             preview = self._truncate_transcript_reply(
                 "\n".join(
                     [
-                        "待解决的问题：",
-                        formatted.get("pending_questions") or self._format_pending_questions(""),
+                        "结论摘要：",
+                        formatted["conclusion_summary"],
                         "",
-                        "内容整理：",
-                        formatted["summary"],
-                        "",
-                        "对话人说明：",
-                        formatted["speaker_notes"],
-                        "",
-                        "说话人标注逐字稿：",
-                        formatted["labeled_transcript"],
+                        "行动项：",
+                        formatted["action_items"],
                     ]
                 )
             )
@@ -340,6 +390,7 @@ class TranscriptionMixin:
                     f"本地归档：{entry.local_path}",
                     f"Obsidian：{obsidian_path}",
                     f"Obsidian原字稿：{obsidian_transcript_path}",
+                    *([f"Obsidian专题附件：{obsidian_topical_attachments_path}"] if obsidian_topical_attachments_path else []),
                     *self._transcription_knowledge_archive_reply_lines(formatted),
                     f"逐字稿路径：{result.get('transcript_path', '')}",
                     "",
@@ -355,7 +406,7 @@ class TranscriptionMixin:
                 extra=result,
             )
 
-        reason = str(result.get("reason") or "content-flow 未产出逐字稿；可能是非视频、Codex Responses 音频理解失败，或音频提取失败")
+        reason = str(result.get("reason") or "content-flow 未产出逐字稿；可能是非视频、DashScope ASR 失败，或音频提取失败")
         entry = self.archive_service.save_archive(
             message,
             "转写待处理",
@@ -381,6 +432,11 @@ class TranscriptionMixin:
         )
 
     def _handle_transcription_files(self, message: Message, body: str, audio_paths: list[str]) -> TaskResult:
+        attachment_names = {
+            str(item.get("path") or ""): str(item.get("name") or "").strip()
+            for item in (message.metadata or {}).get("transcription_attachments", [])
+            if isinstance(item, dict) and str(item.get("path") or "").strip()
+        }
         task_dir = ensure_dir(
             self.workspace_root
             / "content_flow"
@@ -402,7 +458,7 @@ class TranscriptionMixin:
         manifest_failures: list[str] = []
         for original_index, audio_path in enumerate(audio_paths, start=1):
             source_path = Path(audio_path)
-            display_name = source_path.name or f"录音{original_index}"
+            display_name = attachment_names.get(str(source_path)) or source_path.name or f"录音{original_index}"
             size_bytes = source_path.stat().st_size if source_path.exists() and source_path.is_file() else 0
             sha256 = self._file_sha256(source_path) if source_path.exists() and source_path.is_file() else ""
             duplicate_of = sha_to_attachment_id.get(sha256) if sha256 else ""
@@ -461,6 +517,13 @@ class TranscriptionMixin:
             ]
             product_lines.append("- 重复附件去重：\n" + "\n".join(duplicate_lines))
 
+        self._emit_transcription_progress(
+            message,
+            "asr_started",
+            attachment_count=len(unique_entries),
+            task_dir=str(task_dir),
+        )
+
         for entry in unique_entries:
             source_path = Path(str(entry["path"]))
             attachment_id = str(entry["attachment_id"])
@@ -498,6 +561,15 @@ class TranscriptionMixin:
                         item["clean_transcript_path"] = str(clean_path)
                 audio_number = int(attachment_id.rsplit("-", 1)[-1]) if attachment_id.rsplit("-", 1)[-1].isdigit() else len(transcript_blocks) + 1
                 transcript_blocks.append(f"### 录音 {audio_number}：{display_name}\n{transcript}")
+                self._emit_transcription_progress(
+                    message,
+                    "asr_file_completed",
+                    attachment_id=attachment_id,
+                    completed_count=len(transcript_blocks),
+                    attachment_count=len(unique_entries),
+                    clean_transcript_path=str(clean_path),
+                    display_name=display_name,
+                )
             else:
                 failures.append(f"{display_name}：ASR 完成但逐字稿为空")
 
@@ -506,6 +578,8 @@ class TranscriptionMixin:
             display_name = str(item.get("filename") or source_path.name or f"附件{item.get('original_index')}")
             if item.get("transcription_status") != "done" and not item.get("duplicate_of"):
                 delete_status = "否（转写未完成，保留用于重试）"
+            elif bool((message.metadata or {}).get("transcription_defer_source_delete")):
+                delete_status = "否（异步任务完成后删除）"
             else:
                 delete_status = self._delete_uploaded_audio_file(source_path)
             item["delete_status"] = delete_status
@@ -550,11 +624,18 @@ class TranscriptionMixin:
                 extra={"results": results, "batch_manifest": manifest},
             )
 
-        formatted = self._format_dialogue_transcription(combined_transcript, body, artifact_dir=task_dir / "postprocess")
+        self._emit_transcription_progress(
+            message,
+            "postprocess_started",
+            transcript_count=len(transcript_blocks),
+        )
+        artifact_dir = self._transcription_postprocess_artifact_dir(message, task_dir / "postprocess")
+        formatted = self._format_dialogue_transcription(combined_transcript, body, artifact_dir=artifact_dir)
         product_lines.extend(self._postprocess_artifact_lines(formatted))
         title_hint = self._knowledge_title_from_share_text(body) if body else ""
         if not self._transcription_postprocess_succeeded(formatted):
-            reason = formatted["reason"] or "GPT-5.5 摘要/说话人整理失败"
+            self._emit_transcription_progress(message, "postprocess_failed")
+            reason = formatted["reason"] or "转写后处理摘要/说话人整理失败"
             entry = self.archive_service.save_archive(
                 message,
                 f"转写后处理失败：{title_hint}",
@@ -580,7 +661,7 @@ class TranscriptionMixin:
                 status="pending_manual",
                 reply=(
                     "转写未完成\n"
-                    f"原因：GPT-5.5 摘要/说话人整理失败：{reason}\n"
+                    f"原因：转写后处理摘要/说话人整理失败：{reason}\n"
                     f"素材目录：{task_dir}\n"
                     f"本地归档：{entry.local_path}"
                 ),
@@ -588,6 +669,12 @@ class TranscriptionMixin:
                 local_path=entry.local_path,
                 extra={"results": results, "postprocess": formatted, "batch_manifest": manifest},
             )
+        self._emit_transcription_progress(
+            message,
+            "postprocess_completed",
+            chunk_count=formatted.get("chunk_count", 0),
+            attachment_count=formatted.get("attachment_count", 0),
+        )
         audio_names = [str(entry.get("filename") or Path(str(entry.get("path") or "")).name) for entry in unique_entries]
         topic = self._meeting_note_topic(title_hint, body, formatted, audio_names)
         obsidian_path = self._save_transcription_meeting_note(
@@ -602,6 +689,7 @@ class TranscriptionMixin:
             delete_statuses=delete_statuses,
         )
         obsidian_transcript_path = str(formatted.get("obsidian_transcript_path") or "")
+        obsidian_topical_attachments_path = str(formatted.get("obsidian_topical_attachments_path") or "")
         entry = self.archive_service.save_archive(
             message,
             f"转写：{topic}",
@@ -610,40 +698,42 @@ class TranscriptionMixin:
                 ("产物", "\n".join(product_lines) or "content-flow 未返回本地产物路径"),
                 ("Obsidian 会议纪要", obsidian_path),
                 ("Obsidian 原字稿", obsidian_transcript_path),
+                ("Obsidian 专题附件", obsidian_topical_attachments_path or "无独立专题附件"),
                 ("Knowledge 归档", self._transcription_knowledge_archive_summary(formatted)),
-                ("待解决的问题", formatted.get("pending_questions") or self._format_pending_questions("")),
-                ("内容整理", formatted["summary"]),
-                ("对话人说明", formatted["speaker_notes"]),
-                ("说话人标注逐字稿", formatted["labeled_transcript"]),
+                ("结论摘要", formatted["conclusion_summary"]),
+                ("决策清单", formatted["decision_list"]),
+                ("待拍板问题", formatted["pending_decisions"]),
+                ("待验证假设", formatted["validation_hypotheses"]),
+                ("行动项", formatted["action_items"]),
             ],
             {
                 "status": "archived" if not failures else "partial",
-                "tags": ["转写", "语音转文字", "内容整理", "说话人标注"],
+                "tags": ["转写", "语音转文字", "会议纪要", "决策接口"],
                 "raw_audio_deleted": delete_statuses,
                 "transcript_paths": [str(result.get("transcript_path") or "") for result in results if result.get("transcript_path")],
                 "media_dir": str(task_dir),
                 "postprocess_status": formatted["status"],
                 "obsidian_path": obsidian_path,
                 "obsidian_transcript_path": obsidian_transcript_path,
+                "obsidian_topical_attachments_path": obsidian_topical_attachments_path,
                 "knowledge_archive": formatted.get("knowledge_archive", {}),
                 "batch_manifest": str(manifest_path),
                 "postprocess_artifacts": formatted.get("postprocess_artifacts", {}),
             },
         )
+        self._emit_transcription_progress(
+            message,
+            "persisted",
+            task_id=entry.frontmatter["id"],
+        )
         preview = self._truncate_transcript_reply(
             "\n".join(
                 [
-                    "待解决的问题：",
-                    formatted.get("pending_questions") or self._format_pending_questions(""),
+                    "结论摘要：",
+                    formatted["conclusion_summary"],
                     "",
-                    "内容整理：",
-                    formatted["summary"],
-                    "",
-                    "对话人说明：",
-                    formatted["speaker_notes"],
-                    "",
-                    "说话人标注逐字稿：",
-                    formatted["labeled_transcript"],
+                    "行动项：",
+                    formatted["action_items"],
                 ]
             )
         )
@@ -653,6 +743,7 @@ class TranscriptionMixin:
             f"本地归档：{entry.local_path}",
             f"Obsidian：{obsidian_path}",
             f"Obsidian原字稿：{obsidian_transcript_path}",
+            *([f"Obsidian专题附件：{obsidian_topical_attachments_path}"] if obsidian_topical_attachments_path else []),
             *self._transcription_knowledge_archive_reply_lines(formatted),
             f"素材目录：{task_dir}",
             "原始录音转写后删除：是" if delete_status_values and all(item == "是" for item in delete_status_values) else f"原始录音转写后删除：{'; '.join(delete_statuses) or '不适用'}",

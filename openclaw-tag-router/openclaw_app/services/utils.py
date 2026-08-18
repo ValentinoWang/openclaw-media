@@ -16,10 +16,6 @@ THINKING_SUFFIX_RE = re.compile(r"^(?P<tag>.+)\^(?P<thinking>xhigh|high|medium|l
 THINKING_SUFFIX_ALIASES = {
     "xhigh": "high",
 }
-TAG_ALIASES = {
-    "帮助": "说明",
-    "自媒体": "自媒体知识",
-}
 BUSINESS_AUTHOR_TAG_RE = re.compile(r"^商务>(?P<author>(?!ID$)[^】>\s]{1,32})$")
 
 
@@ -82,9 +78,6 @@ def parse_tag_message_with_metadata(text: str) -> tuple[str, str, dict[str, Any]
         metadata["raw_entry_tag"] = raw_tag
         metadata["tag_thinking_suffix"] = raw_thinking
         metadata["tag_thinking"] = THINKING_SUFFIX_ALIASES.get(raw_thinking, raw_thinking)
-    alias = TAG_ALIASES.get(tag)
-    if alias:
-        return alias, body, metadata
     business_author = BUSINESS_AUTHOR_TAG_RE.match(tag)
     if business_author and tag != "商务>ID":
         author_id = business_author.group("author").strip()

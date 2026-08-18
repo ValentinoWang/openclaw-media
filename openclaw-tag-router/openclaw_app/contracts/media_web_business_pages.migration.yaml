@@ -1,0 +1,519 @@
+schemaVersion: media_web_business_pages_migration_v2
+contract: media_web_business_pages.openapi.yaml
+runtimeDatabase: PostgreSQL
+legacyRuntimeReadFallback: false
+dualWriteAllowed: false
+canonicalEntities:
+  Activity:
+    table: media_product.activities
+    fieldAuthority: media-model-v2-contract.json#/entities/Activity
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - 01_Activity_近期活动
+    - activity_archive
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B03
+    - B04
+  SourceAsset:
+    table: media_product.assets
+    fieldAuthority: media-model-v2-contract.json#/entities/SourceAsset
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - 02A_SourceAssets_素材源
+    - MediaVault.source_assets
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B01
+    - B03
+    - B05
+  MaterialDeconstruction:
+    table: media_product.material_deconstructions
+    fieldAuthority: media-model-v2-contract.json#/entities/MaterialDeconstruction
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - 02B_MaterialDeconstructions_素材拆解
+    - deconstruction_artifacts
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B03
+    - B04
+  CreativePattern:
+    table: media_product.creative_patterns
+    fieldAuthority: media-model-v2-contract.json#/entities/CreativePattern
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - 02C_CreativePatterns_创作模式
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B03
+    - B05
+  CreationRun:
+    table: media_product.creation_runs
+    fieldAuthority: media-model-v2-contract.json#/entities/CreationRun
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - 03_CreationRuns_创作运行
+    - MediaVault.creation_runs
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B01
+    - B05
+    - B06
+  PublishedPost:
+    table: media_product.published_posts
+    fieldAuthority: media-model-v2-contract.json#/entities/PublishedPost
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - 04_PostReviews_发布复盘
+    - manual_publication_receipt
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B01
+    - B06
+    - B07
+  BusinessAccount:
+    table: media_product.business_accounts
+    fieldAuthority: media-model-v2-contract.json#/entities/BusinessAccount
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - 05A_BusinessAccounts_商务账号
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B05
+  BusinessOpportunity:
+    table: media_product.business_opportunities
+    fieldAuthority: media-model-v2-contract.json#/entities/BusinessOpportunity
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - 05B_BusinessOpportunities_商务机会
+    - id_business
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B05
+  CreatorProfile:
+    table: media_product.creator_profiles
+    fieldAuthority: media-model-v2-contract.json#/entities/CreatorProfile
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - 06_CreatorProfiles_达人账号档案
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B01
+    - B02
+    - B05
+  TrackRegistry:
+    table: media_product.tracks
+    fieldAuthority: media-model-v2-contract.json#/entities/TrackRegistry
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - 07_TrackRegistry_赛道注册表
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B01
+    - B02
+  MaterialUsage:
+    table: media_product.material_usages
+    fieldAuthority: media-model-v2-contract.json#/entities/MaterialUsage
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - R01_MaterialUsage_素材使用记录
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B03
+    - B05
+  DecisionTrace:
+    table: media_product.decision_traces
+    fieldAuthority: media-model-v2-contract.json#/entities/DecisionTrace
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - R02_DecisionTrace_决策轨迹
+    - run_decision_artifacts
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B01
+    - B04
+    - B05
+  TrackCreatorMembership:
+    table: media_product.track_creator_memberships
+    fieldAuthority: media-model-v2-contract.json#/entities/TrackCreatorMembership
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - R03_TrackCreatorMembership_赛道博主关系
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B02
+  MetricSnapshot:
+    table: media_product.metric_snapshots
+    fieldAuthority: media-model-v2-contract.json#/entities/MetricSnapshot
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - H01_MetricSnapshot_作品指标快照
+    - data_review_ocr
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B01
+    - B07
+  AccountMetricSnapshot:
+    table: media_product.account_metric_snapshots
+    fieldAuthority: media-model-v2-contract.json#/entities/AccountMetricSnapshot
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - H02_AccountMetricSnapshot_账号指标快照
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B01
+    - B02
+    - B07
+  GrowthSummary:
+    table: media_product.growth_summaries
+    fieldAuthority: media-model-v2-contract.json#/entities/GrowthSummary
+    requiredProductColumns:
+    - tenant_id
+    - public_id
+    - source_version
+    - revision
+    - created_at
+    - updated_at
+    legacySources:
+    - H03_GrowthSummary_增长摘要
+    - growth_projection
+    runtimeReaders:
+    - PostgreSQL
+    pageConsumers:
+    - B01
+    - B06
+    - B07
+productStateObjects:
+  content_projects:
+    table: media_product.content_projects
+    authority: project_identity_and_stage
+  document_artifacts:
+    table: media_product.document_artifacts
+    authority: artifact_identity_and_body_authority
+    requiredColumns:
+    - tenant_id
+    - public_id
+    - public_project_id
+    - artifact_kind
+    - workspace_mode
+    - body_authority
+    - current_revision
+    - created_at
+    - updated_at
+  document_revisions:
+    table: media_product.document_revisions
+    authority: revision_index_and_body_checksum
+    requiredColumns:
+    - tenant_id
+    - public_artifact_id
+    - revision
+    - state
+    - base_revision
+    - body_checksum
+    - actor_public_id
+    - generation_source
+    - created_at
+    - updated_at
+  document_revision_bodies:
+    table: media_document.revision_bodies
+    authority: canonical_internal_body_jsonb
+    requiredColumns:
+    - tenant_id
+    - public_artifact_id
+    - revision
+    - schema_version
+    - body_json
+    - body_checksum
+    - created_at
+    - updated_at
+  document_exports:
+    table: media_document.exports
+    authority: immutable_ready_revision_export
+    requiredColumns:
+    - tenant_id
+    - public_export_id
+    - public_artifact_id
+    - revision
+    - format
+    - state
+    - template_version
+    - renderer_version
+    - idempotency_identity
+    - source_body_checksum
+    - content_checksum
+    - object_ref
+    - created_at
+    - updated_at
+  owned_media_accounts:
+    table: media_product.owned_media_accounts
+    authority: owned_account_identity
+  account_track_strategies:
+    table: media_product.account_track_strategies
+    authority: account_strategy_and_confirmation
+  signal_snapshots:
+    table: media_product.signal_snapshots
+    authority: sourced_time_bounded_signal
+  publishing_packages:
+    table: media_product.publishing_packages
+    authority: structured_platform_package
+  publishing_checks:
+    table: media_product.publishing_checks
+    authority: human_pre_publish_check
+  review_records:
+    table: media_product.review_records
+    authority: review_model_and_human_conclusion
+  usage_events:
+    table: openclaw_account.usage_events
+    authority: immutable_usage_and_compensation
+larkExtensionObjects:
+  tenant_installations:
+    table: media_product.lark_tenant_installations
+    personalRuntimeDependency: false
+  document_bindings:
+    table: media_product.lark_document_bindings
+    personalRuntimeDependency: false
+    requiredColumns:
+    - tenant_id
+    - public_artifact_id
+    - remote_document_version
+    - body_checksum
+    - created_at
+    - updated_at
+  document_block_mappings:
+    table: media_product.lark_document_block_mappings
+    personalRuntimeDependency: false
+    requiredColumns:
+    - tenant_id
+    - public_artifact_id
+    - public_block_id
+    - remote_block_id
+    - remote_document_version
+    - block_checksum
+    - created_at
+    - updated_at
+  sync_batches:
+    table: media_product.sync_batches
+    personalRuntimeDependency: false
+documentBodyStorage:
+  schemaVersion: media.document.body.v1
+  table: media_document.revision_bodies
+  bodyColumn: body_json
+  bodyColumnType: JSONB
+  bodyChecksumColumn: body_checksum
+  noSecondEditableBody: true
+  readyRevisionImmutable: true
+  autosaveUpdatesDraftOnly: true
+  regenerationCreatesRevision: true
+  nonCanonicalFormats:
+  - markdown
+  - html
+  - editor_private_json
+  - lark_block_json
+  - docx
+  - pdf
+  objectStorage:
+    stores:
+    - images
+    - attachments
+    - exports
+    bodyStoresOnly:
+    - public_resource_id
+    - alt_text
+    - dimensions
+    - content_checksum
+artifactAuthorityMatrix:
+  personal_web:
+    internal:
+    - research_snapshot
+    - asset_digest
+    - decision_brief
+    - creation_document
+    - publishing_package
+    - review_report
+    - project_summary
+    lark: []
+  organization_lark:
+    internal:
+    - publishing_package
+    - project_summary
+    lark:
+    - research_snapshot
+    - asset_digest
+    - decision_brief
+    - creation_document
+    - review_report
+documentExportContract:
+  allowedSourceState: ready
+  formats:
+  - docx
+  - pdf
+  states:
+  - queued
+  - rendering
+  - ready
+  - failed
+  idempotencyIdentity:
+  - public_artifact_id
+  - revision
+  - format
+  - template_version
+  - renderer_version
+  filesStoredIn: controlled_object_storage
+  downloadsUse: short_lived_controlled_url
+larkBlockContract:
+  tableRootBlockType: 31
+  tableCellBlockType: 32
+  maxRowsPerTable: 9
+  maxColumnsPerTable: 9
+  maxCellsPerTable: 81
+  rowsPerSplitTable: 8
+  repeatHeaderOnSplit: true
+  tooManyColumnsError: lark_table_shape_unsupported
+  protectedBlockPolicy: preserve_and_fail_on_targeted_update_or_export
+  protectedBlocks:
+  - whiteboard
+  - bitable
+  - sheet
+  - embed
+  - synced_block
+  - third_party_widget
+  - agenda
+  - okr
+  - mind_note
+  - flowchart
+  - lark_task
+bodyAuthorityModes:
+- internal
+- lark
+documentRevisionStates:
+- draft
+- generating
+- ready
+- failed
+- conflict
+- archived
+migrationEvidence:
+- source_count
+- tenant_owner
+- source_version
+- target_count
+- sample_readback
+- difference_resolution
+forbiddenPublicFields:
+- accessToken
+- feishuRecordId
+- localPath
+- rawPrompt
+- rawResponse
+- recordId
+- refreshToken
+- secret
+- targetTenantId
+- tenantId
+- token

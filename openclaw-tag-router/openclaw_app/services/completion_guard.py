@@ -25,7 +25,7 @@ class CompletionGuard:
     ) -> dict[str, Any]:
         if not isinstance(result, dict):
             return {"status": "pending_manual", "reason": f"{kind} 返回非 JSON object"}
-        if kind in {"content_flow_analysis", "内容素材", "自媒体知识"}:
+        if kind in {"content_flow_analysis", "自媒体知识"}:
             return self.complete_content_flow_analysis(body=body, result=result, wait=wait)
         return result
 

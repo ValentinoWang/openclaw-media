@@ -4,6 +4,19 @@ from ..services.knowledge_archive_bridge import archive_meeting_content_section
 from .tag_router_common import *
 
 
+TRANSCRIPTION_MEETING_INFO_FRONTMATTER_FIELDS = (
+    "meeting_name",
+    "meeting_goal",
+    "meeting_time",
+    "participants",
+    "facilitator",
+    "minutes_owner",
+    "related_project",
+    "related_documents",
+    "version",
+)
+
+
 class TranscriptionStorageMixin:
     def _save_transcription_meeting_note(
         self,
@@ -21,9 +34,28 @@ class TranscriptionStorageMixin:
         topic = self._meeting_note_topic(title_hint, source_text, formatted, audio_names or [])
         date_prefix = message.created_at.strftime("%Y-%m-%d")
         note_dir = ensure_dir(MEETING_MINUTES_DIR)
-        note_path = self._unique_markdown_path(note_dir / f"{date_prefix}-{safe_slug(topic, max_len=60)}.md")
+        overwrite_existing = bool(
+            (message.metadata or {}).get("transcription_overwrite_existing")
+            or (message.metadata or {}).get("transcription_backwash")
+        )
+        note_candidate = note_dir / f"{date_prefix}-{safe_slug(topic, max_len=60)}.md"
+        note_path = note_candidate if overwrite_existing else self._unique_markdown_path(note_candidate)
         transcript_dir = ensure_dir(MEETING_TRANSCRIPTS_DIR)
-        transcript_path = self._unique_markdown_path(transcript_dir / f"{note_path.stem}-原字稿.md")
+        transcript_candidate = transcript_dir / f"{note_path.stem}-原字稿.md"
+        transcript_path = transcript_candidate if overwrite_existing else self._unique_markdown_path(transcript_candidate)
+        topical_items = (
+            formatted.get("topical_attachments_data")
+            if isinstance(formatted.get("topical_attachments_data"), list)
+            else []
+        )
+        topical_path: Path | None = None
+        topical_candidate = MEETING_TOPICAL_ATTACHMENTS_DIR / f"{note_path.stem}-专题附件.md"
+        if topical_items and str(formatted.get("topical_attachments") or "").strip():
+            topical_dir = ensure_dir(MEETING_TOPICAL_ATTACHMENTS_DIR)
+            topical_candidate = topical_dir / topical_candidate.name
+            topical_path = topical_candidate if overwrite_existing else self._unique_markdown_path(topical_candidate)
+        elif overwrite_existing and topical_candidate.is_file():
+            topical_candidate.unlink()
         note_tags = ["会议纪要", "转写", "语音转文字"]
         transcript_tags = ["原字稿", "转写", "语音转文字"]
         if message.entry_tag == "转写-文字":
@@ -36,12 +68,19 @@ class TranscriptionStorageMixin:
             "status": "archived" if not failures else "partial",
             "tags": note_tags,
             "raw_transcript_path": str(transcript_path),
+            "topical_attachments_path": str(topical_path or ""),
             "raw_audio_deleted": delete_statuses or [],
             "archive_macro_summary": formatted.get("archive_macro_summary", ""),
             "archive_summary_bullets": formatted.get("archive_summary_bullets", []),
             "postprocess_pipeline": formatted.get("postprocess_pipeline", ""),
             "postprocess_artifacts": formatted.get("postprocess_artifacts", {}),
+            "detail_fidelity_appendix_visibility": "restricted",
+            "detail_fidelity_appendix_public_use": "forbidden",
         }
+        meeting_info = formatted.get("meeting_info_data") if isinstance(formatted.get("meeting_info_data"), dict) else {}
+        frontmatter.update(
+            {field: meeting_info.get(field, "") for field in TRANSCRIPTION_MEETING_INFO_FRONTMATTER_FIELDS}
+        )
         transcript_frontmatter = {
             "source": message.source,
             "entry_tag": message.entry_tag,
@@ -65,6 +104,8 @@ class TranscriptionStorageMixin:
                 f"- Obsidian 原字稿：{transcript_path}",
             ]
         )
+        if topical_path:
+            source_lines.append(f"- Obsidian 专题附件：{topical_path}")
 
         transcript_source_lines = list(source_lines)
         transcript_source_lines.append(f"- 对应会议纪要：{note_path}")
@@ -73,7 +114,9 @@ class TranscriptionStorageMixin:
             f"{date_prefix} {topic} 原字稿",
             [
                 ("来源与产物", "\n".join(transcript_source_lines)),
-                ("原字稿", raw_transcript.strip() or formatted["labeled_transcript"]),
+                ("角色识别结果", formatted["speaker_notes"]),
+                ("按角色重洗文字稿", formatted["labeled_transcript"]),
+                ("原始转录", raw_transcript.strip() or formatted["labeled_transcript"]),
             ],
         )
         transcript_path.write_text(transcript_content, encoding="utf-8")
@@ -81,23 +124,51 @@ class TranscriptionStorageMixin:
         self._assert_transcription_raw_transcript_path(transcript_path)
         formatted["obsidian_transcript_path"] = str(transcript_path)
 
-        sections = [
-            ("待解决的问题", formatted.get("pending_questions") or self._format_pending_questions("")),
-            ("内容整理", formatted["summary"]),
-            ("主题细节", formatted.get("theme_sections") or "暂无额外主题细节。"),
-            ("决定与判断", formatted.get("decisions") or "暂无明确决定或判断。"),
-            ("行动项", formatted.get("action_items") or "暂无明确行动项。"),
-            ("对话人说明", formatted["speaker_notes"]),
-            ("说话人标注逐字稿", formatted["labeled_transcript"]),
-            ("来源与产物", "\n".join(source_lines)),
+        if topical_path:
+            topical_frontmatter = {
+                "source": message.source,
+                "entry_tag": message.entry_tag,
+                "created_at": format_display_time(message.created_at),
+                "status": "archived" if not failures else "partial",
+                "tags": ["会议纪要", "专题附件", "转写"],
+                "meeting_note_path": str(note_path),
+                "raw_transcript_path": str(transcript_path),
+            }
+            topical_content = ArchiveService.render_markdown(
+                topical_frontmatter,
+                f"{date_prefix} {topic} 专题附件",
+                [("专题内容", formatted["topical_attachments"])],
+            )
+            topical_path.write_text(topical_content, encoding="utf-8")
+            cleanup_generated_file_duplicates(topical_path)
+            self._assert_transcription_topical_attachments_path(topical_path)
+        formatted["obsidian_topical_attachments_path"] = str(topical_path or "")
+
+        topic_and_actions = "\n\n".join(
+            [
+                "### 3.1 议题分析\n" + formatted["topic_cards"],
+                "### 3.2 行动项\n" + formatted["action_items"],
+            ]
+        )
+        related_documents = [
+            f"- 原始转录：[{transcript_path.stem}](../原字稿/{transcript_path.name})",
         ]
-        consistency_section = self._format_consistency_check(formatted.get("consistency_check"))
-        if consistency_section:
-            sections.append(("一致性检查", consistency_section))
+        if topical_path:
+            related_documents.append(
+                f"- 专题附件：[{topical_path.stem}](../专题附件/{topical_path.name})"
+            )
+        related_documents.extend(["- 来源与产物：", *(f"  {line}" for line in source_lines)])
+        sections = [
+            ("1. 结论摘要", formatted["conclusion_section"]),
+            ("2. 决策清单", formatted["decision_list"]),
+            ("3. 议题分析与行动项", topic_and_actions),
+            ("4. 下次会议", formatted["next_meeting"]),
+            ("5. 细节保全附录（受限）", formatted["detail_fidelity_appendix"]),
+            ("6. 关联文档", "\n".join(related_documents)),
+        ]
         if failures:
             sections.append(("未完成文件", "\n".join(f"- {item}" for item in failures)))
         content = ArchiveService.render_markdown(frontmatter, f"{date_prefix} {topic}", sections)
-        content = content.replace("\n## 待解决的问题\n", "\n# 待解决的问题\n", 1)
         note_path.write_text(content, encoding="utf-8")
         cleanup_generated_file_duplicates(note_path)
         self._assert_transcription_meeting_note_path(note_path)
@@ -135,6 +206,21 @@ class TranscriptionStorageMixin:
         if resolved_note.suffix != ".md":
             raise RuntimeError(f"转写原字稿必须是 Markdown 文件：{resolved_note}")
 
+    def _assert_transcription_topical_attachments_path(self, topical_path: Path) -> None:
+        try:
+            resolved_note = topical_path.resolve(strict=True)
+            resolved_dir = MEETING_TOPICAL_ATTACHMENTS_DIR.resolve(strict=True)
+        except OSError as exc:
+            raise RuntimeError(f"转写专题附件落盘失败：{exc}") from exc
+        try:
+            is_under_topical_dir = resolved_note.is_relative_to(resolved_dir)
+        except AttributeError:
+            is_under_topical_dir = str(resolved_note).startswith(str(resolved_dir) + os.sep)
+        if not is_under_topical_dir:
+            raise RuntimeError(f"转写专题附件必须写入 {resolved_dir}，实际写入：{resolved_note}")
+        if resolved_note.suffix != ".md":
+            raise RuntimeError(f"转写专题附件必须是 Markdown 文件：{resolved_note}")
+
     def _meeting_note_topic(self, title_hint: str, source_text: str, formatted: dict[str, Any], audio_names: list[str]) -> str:
         body = (source_text or "").strip()
         is_batch_context = self._looks_like_transcription_batch_context(body)
@@ -155,7 +241,10 @@ class TranscriptionStorageMixin:
         topic = self._clean_meeting_topic_candidate(title_hint)
         if topic:
             return topic
-        summary_topic = self._topic_from_summary(formatted.get("summary", ""))
+        meeting_info = formatted.get("meeting_info_data") if isinstance(formatted.get("meeting_info_data"), dict) else {}
+        summary_topic = self._topic_from_summary(
+            str(meeting_info.get("meeting_name") or meeting_info.get("meeting_goal") or formatted.get("archive_macro_summary") or "")
+        )
         if summary_topic:
             return summary_topic
         for audio_name in audio_names:
@@ -317,9 +406,6 @@ class TranscriptionStorageMixin:
         for text in (message.body, message.raw_text, self._conversation_context_prompt(message)):
             add(text)
 
-        for recent_path in self._recent_uploaded_audio_paths(message.created_at):
-            add(str(recent_path))
-
         seen: set[str] = set()
         paths: list[str] = []
         for item in candidates:
@@ -333,35 +419,4 @@ class TranscriptionStorageMixin:
                 continue
             seen.add(normalized)
             paths.append(normalized)
-        return paths
-
-    def _recent_uploaded_audio_paths(self, created_at: datetime) -> list[Path]:
-        try:
-            created_ts = created_at.timestamp()
-        except Exception:
-            created_ts = datetime.now().timestamp()
-        start_ts = created_ts - TRANSCRIPTION_BATCH_WINDOW_SECONDS
-        # Allow a small positive skew for files whose mtime lands just after the tag message.
-        end_ts = created_ts + 10
-        paths: list[Path] = []
-        seen: set[str] = set()
-        for root in UPLOADED_MEDIA_ROOTS:
-            if not root.is_dir():
-                continue
-            try:
-                entries = list(root.iterdir())
-            except OSError:
-                continue
-            for path in entries:
-                if not path.is_file() or path.suffix.lower() not in TRANSCRIPTION_AUDIO_EXTS:
-                    continue
-                try:
-                    mtime = path.stat().st_mtime
-                except OSError:
-                    continue
-                normalized = str(path)
-                if start_ts <= mtime <= end_ts and normalized not in seen:
-                    seen.add(normalized)
-                    paths.append(path)
-        paths.sort(key=lambda item: item.stat().st_mtime if item.exists() else 0)
         return paths

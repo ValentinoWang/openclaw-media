@@ -37,7 +37,7 @@ class DevelopmentHarness(DevelopmentMixin):
         self.timezone = "Asia/Shanghai"
         self.archive_service = ArchiveService(root / "workspace")
         self.reminder_service = FakeReminderService()
-        self.obsidian_daily_checklist_service = ObsidianDailyChecklistService(root / "Archieve")
+        self.obsidian_development_checklist_service = ObsidianDailyChecklistService(root / "Archieve", heading_label="开发待办")
 
     def _configured_bitable_url(self, _kind: str) -> str:
         return "https://bitable.configured"
@@ -83,6 +83,8 @@ class DevelopmentTraceabilityTest(unittest.TestCase):
             self.assertEqual(archive.frontmatter["obsidian_path"], result.extra["obsidian_path"])
 
             checklist_text = Path(result.extra["obsidian_path"]).read_text(encoding="utf-8")
+            self.assertTrue(result.extra["obsidian_path"].endswith("20260629-20260705.md"))
+            self.assertTrue(checklist_text.startswith("# 开发待办\n"))
             self.assertIn("【待办-开发】修复同步", checklist_text)
             self.assertIn("openclaw:feishu_record=rec-dev-task", checklist_text)
 

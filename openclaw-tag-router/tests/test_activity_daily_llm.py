@@ -59,6 +59,7 @@ class FakeContentFlowClient:
 class FakeArchiveService:
     def __init__(self):
         self.calls: list[dict] = []
+        self.frontmatter_updates: list[dict] = []
 
     def save_archive(self, message: Message, title: str, sections: list[tuple[str, str]], extra_frontmatter: dict | None = None):
         self.calls.append(
@@ -70,6 +71,10 @@ class FakeArchiveService:
             }
         )
         return SimpleNamespace(frontmatter={"id": "archive-id"}, local_path="/tmp/archive.md")
+
+    def update_frontmatter(self, path: str, updates: dict):
+        self.frontmatter_updates.append({"path": path, "updates": updates})
+        return SimpleNamespace(frontmatter={"id": "archive-id", **updates}, local_path=path)
 
 
 class FakeReminderService:
@@ -495,9 +500,10 @@ class ActivityDailyLlmTest(unittest.TestCase):
 
         result = harness.handle_待办(message)
 
-        self.assertFalse(result.ok)
-        self.assertEqual(result.status, "pending_manual")
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "archived_with_feishu_warning")
         self.assertIn("飞书提醒写入失败", result.reply)
+        self.assertEqual(result.extra["feishu_warning"]["error"], "feishu unavailable")
         checklist_path = Path(result.reply.split("Obsidian：", 1)[1].splitlines()[0])
         content = checklist_path.read_text(encoding="utf-8")
         self.assertIn("- [ ] 买杠铃杆", content)
@@ -525,12 +531,46 @@ class ActivityDailyLlmTest(unittest.TestCase):
         self.assertEqual(result.status, "obsidian_checklist_archived")
         self.assertEqual(harness.reminder_service.calls, [])
         self.assertEqual(len(harness.content_flow_client.calls), 1)
-        self.assertIn("不要因为内容领域跨到 media 就拒绝或改路由", harness.content_flow_client.calls[0]["prompt"])
-        self.assertIn("已写入 Obsidian 当日待办清单", result.reply)
+        self.assertIn("不能把它改路由到 media、knowledge 或其他 Bot", harness.content_flow_client.calls[0]["prompt"])
+        self.assertIn("已写入 Obsidian 周记 # 待办", result.reply)
         obsidian_path = Path(result.extra["obsidian_path"])
         content = obsidian_path.read_text(encoding="utf-8")
         self.assertIn("- [ ] 跟进陈小杨 AI4Math 资源，用于博主宣传和 vibecoding 素材", content)
         self.assertNotIn("feishu_record", content)
+
+    def test_todo_video_script_work_stays_in_explicit_todo_route(self) -> None:
+        harness = DailyHarness(
+            [
+                {
+                    "mode": "structured_checklist",
+                    "items": [],
+                    "checklist_tree": [
+                        {
+                            "text": "制作 WAIC 视频脚本",
+                            "children": [
+                                {"text": "拆解参考视频并产出口播", "children": []},
+                                {"text": "将口碑脚本改写为分镜", "children": []},
+                            ],
+                        }
+                    ],
+                    "confidence": 0.94,
+                    "missing_fields": [],
+                    "evidence": "拆解出 WAIC 视频口播；把口碑脚本改写成分镜脚本",
+                    "reason": "显式待办入口下的视频脚本制作步骤",
+                }
+            ]
+        )
+        message = make_message(
+            "待办",
+            "根据这个视频拆解出一个WAIC的视频口播，然后尝试把一个口碑脚本改写成一个分镜脚本\nhttps://www.xiaohongshu.com/example",
+        )
+
+        result = harness.handle_待办(message)
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "structured_checklist_archived")
+        self.assertIn("不能把它改路由到 media、knowledge 或其他 Bot", harness.content_flow_client.calls[0]["prompt"])
+        self.assertIn("https://www.xiaohongshu.com/example", Path(result.extra["obsidian_path"]).read_text(encoding="utf-8"))
 
     def test_todo_knowledge_record_review_stays_checklist_only(self) -> None:
         harness = DailyHarness(
@@ -581,14 +621,25 @@ class ActivityDailyLlmTest(unittest.TestCase):
 
     def test_todo_plain_purchase_checklist_writes_obsidian_without_feishu(self) -> None:
         harness = DailyHarness(
-            {
-                "mode": "checklist_only",
-                "items": ["整理购买清单", "购买杠铃杆", "购买起泡器"],
-                "confidence": 0.95,
-                "missing_fields": [],
-                "evidence": "购买；1. 整理；2. 杠铃杆；3. 起泡器",
-                "reason": "原文是购物清单，没有提醒或截止诉求",
-            }
+            [
+                {
+                    "mode": "checklist_only",
+                    "items": ["整理购买清单", "购买杠铃杆", "购买起泡器"],
+                    "confidence": 0.95,
+                    "missing_fields": [],
+                    "evidence": "购买；1. 整理；2. 杠铃杆；3. 起泡器",
+                    "reason": "原文是购物清单，没有提醒或截止诉求",
+                },
+                {
+                    "mode": "checklist_only",
+                    "items": ["整理购买清单", "购买杠铃杆", "购买起泡器"],
+                    "checklist_tree": [],
+                    "confidence": 0.92,
+                    "missing_fields": [],
+                    "evidence": "购买；1. 整理；2. 杠铃杆；3. 起泡器",
+                    "reason": "这些是并列购物相关事项，不需要父子层级",
+                },
+            ]
         )
         message = make_message("待办", "购买\n1. 整理\n2. 杠铃杆\n3. 起泡器")
 
@@ -596,10 +647,11 @@ class ActivityDailyLlmTest(unittest.TestCase):
 
         self.assertTrue(result.ok)
         self.assertEqual(result.status, "obsidian_checklist_archived")
-        self.assertEqual(len(harness.content_flow_client.calls), 1)
+        self.assertEqual(len(harness.content_flow_client.calls), 2)
         self.assertEqual(harness.content_flow_client.calls[0]["stage"], "待办清单与提醒分流")
+        self.assertEqual(harness.content_flow_client.calls[1]["stage"], "待办父子层级复核")
         self.assertEqual(harness.reminder_service.calls, [])
-        self.assertIn("已写入 Obsidian 当日待办清单", result.reply)
+        self.assertIn("已写入 Obsidian 周记 # 待办", result.reply)
         obsidian_path = Path(result.extra["obsidian_path"])
         self.assertTrue(obsidian_path.is_file())
         content = obsidian_path.read_text(encoding="utf-8")
@@ -608,6 +660,100 @@ class ActivityDailyLlmTest(unittest.TestCase):
         self.assertIn("- [ ] 购买杠铃杆", content)
         self.assertIn("- [ ] 购买起泡器", content)
         self.assertNotIn("feishu_record", content)
+
+    def test_todo_explicit_nested_markdown_overrides_flat_llm_mode_to_parent_child_records(self) -> None:
+        harness = DailyHarness(
+            {
+                "mode": "checklist_only",
+                "items": ["按目标样式做设计", "给出第二份 HTML protocol", "进行视觉迭代"],
+                "checklist_tree": [],
+                "confidence": 0.95,
+                "missing_fields": [],
+                "evidence": "- [ ] 按目标样式做设计；- [ ] 给出第二份 HTML protocol；- [ ] 进行视觉迭代",
+                "reason": "模型误判为普通平铺清单",
+            }
+        )
+        message = make_message(
+            "待办",
+            "- [ ] 按目标样式做设计\n"
+            "  - [ ] 给出第二份 HTML protocol\n"
+            "  - [ ] 进行视觉迭代",
+        )
+
+        result = harness.handle_待办(message)
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "structured_checklist_archived")
+        self.assertEqual([call["kind"] for call in harness.reminder_service.calls], ["待办", "待办", "待办"])
+        parent_call, *child_calls = harness.reminder_service.calls
+        self.assertEqual(parent_call["title"], "按目标样式做设计")
+        self.assertEqual(parent_call["extra_fields"]["类型说明"], "待办父记录")
+        self.assertNotIn("父记录", parent_call["extra_fields"])
+        self.assertEqual([call["title"] for call in child_calls], ["给出第二份 HTML protocol", "进行视觉迭代"])
+        for child_call in child_calls:
+            self.assertEqual(child_call["extra_fields"]["父记录"], "rec-test")
+            self.assertEqual(child_call["extra_fields"]["类型说明"], "待办子记录")
+        obsidian_path = Path(result.extra["obsidian_path"])
+        content = obsidian_path.read_text(encoding="utf-8")
+        self.assertIn("- [ ] 按目标样式做设计", content)
+        self.assertIn("  - [ ] 给出第二份 HTML protocol", content)
+        self.assertIn("  - [ ] 进行视觉迭代", content)
+        self.assertEqual(result.extra["todo_intake"]["mode"], "structured_checklist")
+        self.assertIn("显式层级", result.extra["todo_intake"]["reason"])
+
+    def test_todo_flat_project_steps_are_reviewed_into_parent_child_records(self) -> None:
+        harness = DailyHarness(
+            [
+                {
+                    "mode": "checklist_only",
+                    "items": ["按目标样式做设计", "给出第二份 HTML protocol", "进行视觉迭代"],
+                    "checklist_tree": [],
+                    "confidence": 0.9,
+                    "missing_fields": [],
+                    "evidence": "按照目标样式做设计，给出第二份html protocol，视觉迭代",
+                    "reason": "原文是多个可执行事项，没有明确提醒、截止或需要保留父子层级",
+                },
+                {
+                    "mode": "structured_checklist",
+                    "items": [],
+                    "checklist_tree": [
+                        {
+                            "text": "按目标样式做设计",
+                            "children": [
+                                {"text": "给出第二份 HTML protocol", "children": []},
+                                {"text": "进行视觉迭代", "children": []},
+                            ],
+                        }
+                    ],
+                    "confidence": 0.92,
+                    "missing_fields": [],
+                    "evidence": "按照目标样式做设计；给出第二份html protocol；视觉迭代",
+                    "reason": "第一项是设计目标，后两项是围绕该目标的交付和迭代步骤",
+                },
+            ]
+        )
+        message = make_message("待办", "按照目标样式做设计，给出第二份html protocol，视觉迭代")
+
+        result = harness.handle_待办(message)
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "structured_checklist_archived")
+        self.assertEqual([call["stage"] for call in harness.content_flow_client.calls], ["待办清单与提醒分流", "待办父子层级复核"])
+        self.assertEqual([call["kind"] for call in harness.reminder_service.calls], ["待办", "待办", "待办"])
+        parent_call, *child_calls = harness.reminder_service.calls
+        self.assertEqual(parent_call["title"], "按目标样式做设计")
+        self.assertEqual(parent_call["extra_fields"]["类型说明"], "待办父记录")
+        self.assertNotIn("父记录", parent_call["extra_fields"])
+        self.assertEqual([call["title"] for call in child_calls], ["给出第二份 HTML protocol", "进行视觉迭代"])
+        for child_call in child_calls:
+            self.assertEqual(child_call["extra_fields"]["父记录"], "rec-test")
+            self.assertEqual(child_call["extra_fields"]["类型说明"], "待办子记录")
+        obsidian_path = Path(result.extra["obsidian_path"])
+        content = obsidian_path.read_text(encoding="utf-8")
+        self.assertIn("- [ ] 按目标样式做设计", content)
+        self.assertIn("  - [ ] 给出第二份 HTML protocol", content)
+        self.assertIn("  - [ ] 进行视觉迭代", content)
+        self.assertIn("层级复核", result.extra["todo_intake"]["reason"])
 
     def test_todo_structured_purchase_checklist_writes_feishu_parent_children_and_indented_obsidian(self) -> None:
         harness = DailyHarness(
@@ -654,8 +800,10 @@ class ActivityDailyLlmTest(unittest.TestCase):
         self.assertIn("  - [ ] 整理购买清单", content)
         self.assertIn("  - [ ] 购买杠铃杆", content)
         self.assertIn("飞书记录：", result.reply)
+        self.assertEqual(harness.archive_service.frontmatter_updates[0]["updates"]["feishu_sync_status"], "succeeded")
+        self.assertEqual(harness.archive_service.frontmatter_updates[0]["updates"]["feishu_parent_record_id"], "rec-test")
 
-    def test_todo_structured_purchase_checklist_reports_feishu_failure_without_success_claim(self) -> None:
+    def test_todo_structured_purchase_checklist_reports_feishu_warning_without_losing_obsidian_success(self) -> None:
         harness = DailyHarness(
             {
                 "mode": "structured_checklist",
@@ -672,15 +820,18 @@ class ActivityDailyLlmTest(unittest.TestCase):
 
         result = harness.handle_待办(message)
 
-        self.assertFalse(result.ok)
-        self.assertEqual(result.status, "partial_failed")
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "structured_checklist_archived_with_feishu_warning")
         self.assertIn("飞书父子待办创建失败", result.reply)
         self.assertNotIn("已创建飞书父子待办", result.reply)
         self.assertIn("feishu unavailable", result.reply)
         self.assertIn("表格里不会出现对应记录", result.reply)
+        self.assertIn("需稍后重试飞书同步", result.extra["warning"])
         self.assertFalse(harness.archive_service.calls[0]["extra_frontmatter"]["feishu_synced"])
+        self.assertEqual(harness.archive_service.frontmatter_updates[0]["updates"]["feishu_sync_status"], "failed")
+        self.assertFalse(harness.archive_service.frontmatter_updates[0]["updates"]["feishu_synced"])
 
-    def test_todo_completion_deadline_phrase_uses_llm_extracted_deadline(self) -> None:
+    def test_todo_completion_deadline_with_exact_time_uses_llm_extracted_deadline(self) -> None:
         harness = DailyHarness(
             [
                 {
@@ -688,31 +839,113 @@ class ActivityDailyLlmTest(unittest.TestCase):
                     "items": [],
                     "confidence": 0.95,
                     "missing_fields": [],
-                    "evidence": "2026-06-01 前完成关于租房的小红书帖子",
-                    "reason": "原文明确说明截止诉求",
+                    "evidence": "2026-06-01 18:00 前完成关于租房的小红书帖子",
+                    "reason": "原文明确说明具体截止时间",
                 },
                 {
                     "type": "待办",
                     "title": "完成租房小红书帖子",
-                    "due_at": "2026-06-01T23:59:00+08:00",
+                    "due_at": "2026-06-01T18:00:00+08:00",
                     "remind_at": "",
                     "confidence": 0.9,
                     "missing_fields": [],
-                    "evidence": "2026-06-01 前完成关于租房的小红书帖子",
-                    "reason": "原文明确说明需要在 2026-06-01 前完成该帖子",
+                    "evidence": "2026-06-01 18:00 前完成关于租房的小红书帖子",
+                    "reason": "原文明确说明需要在 2026-06-01 18:00 前完成该帖子",
                 },
             ]
         )
-        message = make_message("待办", "2026-06-01 前完成关于租房的小红书帖子")
+        message = make_message("待办", "2026-06-01 18:00 前完成关于租房的小红书帖子")
 
         result = harness.handle_待办(message)
 
         self.assertTrue(result.ok)
         self.assertIn("前完成", harness.content_flow_client.calls[1]["prompt"])
+        self.assertIn("不得补成 23:59", harness.content_flow_client.calls[1]["prompt"])
         reminder_call = harness.reminder_service.calls[0]
         self.assertEqual(reminder_call["title"], "完成租房小红书帖子")
-        self.assertEqual(reminder_call["due_at"].strftime("%y%m%d %H:%M"), "260601 23:59")
-        self.assertEqual(reminder_call["remind_at"].strftime("%y%m%d %H:%M"), "260601 23:29")
+        self.assertEqual(reminder_call["due_at"].strftime("%y%m%d %H:%M"), "260601 18:00")
+        self.assertEqual(reminder_call["remind_at"].strftime("%y%m%d %H:%M"), "260601 17:30")
+
+    def test_todo_without_time_creates_parallel_checklist_items(self) -> None:
+        harness = DailyHarness(
+            [
+                {
+                    "mode": "checklist_only",
+                    "items": ["完成自媒体创作工作流", "筹备上海行程"],
+                    "checklist_tree": [],
+                    "confidence": 0.94,
+                    "missing_fields": [],
+                    "evidence": "完成自媒体创作工作流；筹备上海行程",
+                    "reason": "两个可执行待办没有提醒或具体时刻要求",
+                },
+                {
+                    "mode": "checklist_only",
+                    "items": ["完成自媒体创作工作流", "筹备上海行程"],
+                    "checklist_tree": [],
+                    "confidence": 0.93,
+                    "missing_fields": [],
+                    "evidence": "两个互相独立的事项",
+                    "reason": "两个事项并列，不需要父子层级",
+                },
+            ]
+        )
+        message = make_message("待办", "完成自媒体创作工作流和筹备上海行程")
+
+        result = harness.handle_待办(message)
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "obsidian_checklist_archived")
+        self.assertEqual([call["stage"] for call in harness.content_flow_client.calls], ["待办清单与提醒分流", "待办父子层级复核"])
+        self.assertIn("时间只决定是否升级为 reminder_backed", harness.content_flow_client.calls[0]["prompt"])
+        self.assertEqual(harness.reminder_service.calls, [])
+        checklist_path = Path(result.extra["obsidian_path"])
+        content = checklist_path.read_text(encoding="utf-8")
+        self.assertIn("- [ ] 完成自媒体创作工作流", content)
+        self.assertIn("- [ ] 筹备上海行程", content)
+
+    def test_date_only_deadline_creates_checklist_without_invented_time(self) -> None:
+        harness = DailyHarness(
+            {
+                "mode": "checklist_only",
+                "items": ["完成上海行程筹备"],
+                "checklist_tree": [],
+                "confidence": 0.92,
+                "missing_fields": [],
+                "evidence": "2026-07-20 前完成上海行程筹备",
+                "reason": "只有截止日期，没有具体时刻或提醒诉求",
+            }
+        )
+        message = make_message("待办", "2026-07-20 前完成上海行程筹备")
+
+        result = harness.handle_待办(message)
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "obsidian_checklist_archived")
+        self.assertEqual(len(harness.content_flow_client.calls), 1)
+        self.assertEqual(harness.reminder_service.calls, [])
+        self.assertIn("日期：2026-07-20", result.reply)
+
+    def test_daily_task_normalization_keeps_explicit_entry_type(self) -> None:
+        harness = DailyHarness([])
+        message = make_message("待办", "2026-07-20 10:00 筹备上海行程")
+
+        normalized = harness._normalize_daily_task_extraction(
+            {
+                "type": "日程",
+                "title": "筹备上海行程",
+                "due_at": "2026-07-20T10:00:00+08:00",
+                "remind_at": "",
+                "confidence": 0.92,
+                "missing_fields": [],
+                "evidence": "2026-07-20 10:00 筹备上海行程",
+                "reason": "模型错误地按时间改判为日程",
+            },
+            "待办",
+            message,
+        )
+
+        self.assertTrue(normalized["ok"])
+        self.assertEqual(normalized["type"], "待办")
 
     def test_schedule_uses_llm_extracted_time_and_default_reminder(self) -> None:
         harness = DailyHarness(

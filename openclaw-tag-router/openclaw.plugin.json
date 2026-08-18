@@ -1,7 +1,10 @@
 {
   "id": "openclaw-tag-router",
   "name": "OpenClaw Tag Router",
-  "description": "Tag-driven ingress bridge for Feishu messages",
+  "description": "Canonical tag ingress for non-Media Feishu channels and Web-owned Media runtime",
+  "activation": {
+    "onStartup": true
+  },
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
@@ -25,6 +28,11 @@
       "settingsPath": {
         "type": "string",
         "default": "/home/ubuntu/.openclaw/extensions/openclaw-tag-router/config/settings.yaml"
+      },
+      "bridgeTimeoutMs": {
+        "type": "number",
+        "minimum": 1000,
+        "default": 270000
       },
       "qqWebhookPath": {
         "type": "string",

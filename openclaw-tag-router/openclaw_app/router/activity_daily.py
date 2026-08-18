@@ -3,6 +3,8 @@ from __future__ import annotations
 from urllib.parse import unquote, urlparse
 from zoneinfo import ZoneInfo
 
+from common.llm_client import is_model_capacity_failure, model_capacity_failure_detail
+
 from .tag_router_common import *
 
 
@@ -13,12 +15,14 @@ DAILY_TASK_EXTRACTION_PROMPT = """你是 OpenClaw Daily 的自然语言事项抽
 输入 JSON 会提供：
 - now：当前时间，ISO-8601
 - timezone：时区
-- expected_type：调用入口，可能是「待办」或「日程」
+- expected_type：调用入口，可能是「待办」或「日程」；这是用户已经确认的类型边界，不得跨类型改判
 - text/raw_text：用户原文
 - recent_conversation_context：最近对话上下文，可用于消解“上一条/这个/那个”，但当前 text 优先级最高
 
 语义抽取规则：
 - 先判断用户真正想记录的事项，而不是字面套模板；忽略“我收到了这条”“帮我记一下”“这条待办是”等外层转述。
+- expected_type="待办" 时 type 必须输出「待办」；即使正文提到出行、会议、上课或地点，也不得改成日程。
+- expected_type="日程" 时 type 必须输出「日程」；日程必须具有可落到日历上的完整日期和时间。
 - 「截止」「报名截止」「统计截止」「ddl/deadline」「前完成」「之前完成」「前提交」表示待办截止时间，type=待办。
 - 「到某地参加/旁听/上课/会议/面试/活动」表示日程时间，type=日程。
 - 允许处理同类说法：报名截止、材料提交、课程旁听、机器人汇报、面试、会议、出行、上课、活动提醒；遇到没见过但语义相同的表达，按语义归类，不要因为关键词不完全一致而失败。
@@ -30,6 +34,7 @@ DAILY_TASK_EXTRACTION_PROMPT = """你是 OpenClaw Daily 的自然语言事项抽
 校验约束：
 - due_at 必须来自用户原文或明确上下文，且必须是绝对 ISO-8601 时间。
 - 不允许把无法解析的时间默认成今天 14:00，也不允许编造地点、标题或提醒时间。
+- 只有日期、没有具体时刻时，不得补成 23:59、00:00 或其他默认时刻；due_at 置空。
 - 如果日期或具体时间缺失，due_at 置空，confidence 不得高于 0.6，并在 missing_fields 写缺什么。
 - 如果原文没有明确提醒时间，remind_at 可以置空；系统会按 type 使用默认提醒规则。
 - title 要短，像飞书提醒标题，不要机械包含“我收到了这条”。
@@ -50,14 +55,14 @@ DAILY_TASK_EXTRACTION_PROMPT = """你是 OpenClaw Daily 的自然语言事项抽
 输入 text="我收到了这条毕业典礼报名待办：第一批统计截止到 5 月 31 日中午 12:00。"，now="2026-05-29T10:00:00+08:00"
 输出 {"type":"待办","title":"毕业典礼报名第一批统计截止","due_at":"2026-05-31T12:00:00+08:00","remind_at":"","confidence":0.92,"missing_fields":[],"evidence":"第一批统计截止到 5 月 31 日中午 12:00","reason":"原文明确说明报名统计截止时间"}
 
-输入 text="2026-06-01 前完成关于租房的小红书帖子"，now="2026-05-30T22:00:00+08:00"
-输出 {"type":"待办","title":"完成租房小红书帖子","due_at":"2026-06-01T23:59:00+08:00","remind_at":"","confidence":0.9,"missing_fields":[],"evidence":"2026-06-01 前完成关于租房的小红书帖子","reason":"原文明确说明需要在 2026-06-01 前完成该帖子"}
+输入 text="2026-06-01 18:00 前完成关于租房的小红书帖子"，now="2026-05-30T22:00:00+08:00"
+输出 {"type":"待办","title":"完成租房小红书帖子","due_at":"2026-06-01T18:00:00+08:00","remind_at":"","confidence":0.9,"missing_fields":[],"evidence":"2026-06-01 18:00 前完成关于租房的小红书帖子","reason":"原文明确说明需要在 2026-06-01 18:00 前完成该帖子"}
 
 输入 text="思尧，明天下午去 C 楼教室吧。《机器人与仿生学》上课时间：5 月 29 日13:30，上课地点：深圳学思楼C3-202教室。"，now="2026-05-29T10:48:00+08:00"
 输出 {"type":"日程","title":"旁听机器人仿真汇报","due_at":"2026-05-29T13:30:00+08:00","remind_at":"","confidence":0.92,"missing_fields":[],"evidence":"上课时间：5 月 29 日13:30，上课地点：深圳学思楼C3-202教室","reason":"原文明确说明上课/旁听时间和地点"}
 """
 
-DAILY_TODO_INTAKE_PROMPT = """你是 OpenClaw Daily 的待办入口分流器。系统依赖你判断【待办】正文应该写 Obsidian checklist，还是创建飞书提醒。Python 只做 JSON 校验、日期路径计算、Markdown 写入和 Feishu record id 绑定，不会用关键词或规则补业务语义。
+DAILY_TODO_INTAKE_PROMPT = """你是 OpenClaw Daily 的待办入口分流器。系统依赖你判断【待办】正文应该写 Obsidian checklist，还是创建飞书提醒。Python 只做 JSON 校验、日期路径计算、Markdown 结构保留、Markdown 写入和 Feishu record id 绑定，不会用关键词或规则补业务语义。
 
 只输出一个 JSON object，不要 Markdown，不要解释。
 
@@ -67,12 +72,17 @@ DAILY_TODO_INTAKE_PROMPT = """你是 OpenClaw Daily 的待办入口分流器。�
 - text/raw_text：用户原文
 - recent_conversation_context：最近对话上下文，可用于消解明确指代；当前 text 优先级最高
 
-- mode="checklist_only"：普通购物、整理、检查、当天执行清单；没有明确到点提醒、截止、跨天跟踪或通知需求；且不需要保留父子层级时使用。输出 flat items。
+- mode="checklist_only"：普通购物、整理、检查、执行清单；没有明确到点提醒或具体时刻要求，且不需要保留父子层级时使用。输出 flat items。待办没有日期或时间也必须正常创建。
 - mode="structured_checklist"：原文明显是一个任务组/目标下面拆出多件可执行子事项，且父子关系值得保留时使用。输出 checklist_tree，系统会写飞书父记录/子记录，并在 Obsidian 用缩进 checkbox 表达。
-- mode="reminder_backed"：用户明确写了提醒、截止、ddl/deadline、到点通知、具体执行时间、前完成/前提交、报名统计截止等需要飞书提醒或后台跟踪的事项。
-- mode="pending_manual"：文本不足、语义冲突、无法判断用户要清单还是提醒。
+- mode="reminder_backed"：用户明确要求提醒/到点通知，或者原文明示了完整日期和具体时刻的截止、执行、前完成/前提交事项。只有日期但没有具体时刻、且没有提醒诉求时，不使用此模式。
+- mode="pending_manual"：仅当正文为空、内容自相矛盾，或 LLM 无法产生任何可执行待办文本时使用。不得因为正文属于其他 Bot 的业务领域而使用。
 - 不要强迫所有待办都有父子结构；只有需要拆、且拆出来比平铺更清楚时，才使用 structured_checklist。
-- `【待办】` 是用户显式指定的待办入口；正文主题属于科技媒体、自媒体、博主宣传、内容素材、vibecoding/AI 编程素材等领域时，也可以作为跟进事项写入待办。不要因为内容领域跨到 media 就拒绝或改路由；只有用户明确要求“作为素材入库/写知识表/建博主档案”时，才输出 pending_manual 提醒改用对应 media 入口。
+- 判断优先级：先确认是否存在可执行待办；存在就必须创建 checklist_only 或 structured_checklist。时间只决定是否升级为 reminder_backed，不能决定待办是否创建。
+- “完成、准备、筹备、整理、规划、跟进”表达的是待办动作；即使包含“上海行程、出行、会议材料、上课资料”等词，也不得据此改成日程。
+- 仅日期的“某日前完成/提交/截止”保留为 checklist，Obsidian 日期解析器会选择目标周记；不得为了写提醒补成 23:59。
+- 只有可落到具体时刻的提醒或截止才使用 reminder_backed；时间信息不足但用户明确要求提醒时仍使用 reminder_backed，由下一阶段请求补时间。
+- 如果用户原文已经写成 Markdown checkbox 且存在缩进子项，例如 `- [ ] 父主题` 下有 `  - [ ] 子任务`，必须使用 structured_checklist，并按原缩进保留父子层级；不要把显式父子清单扁平化成 checklist_only。
+- `【待办】` 是用户已经做出的入口决策。你只能决定 checklist_only、structured_checklist 或 reminder_backed，不能把它改路由到 media、knowledge 或其他 Bot。即使正文要求素材入库、研究、视频拆解、口播创作、脚本改写或分镜制作，也只把这些动作整理成待办，不在本轮执行。
 - 如果 `【待办】` 正文里提到“查看/看一下/判断/能否学习/能否复现/是否跟自己有关”，并附带 OpenClaw 视频知识、自媒体知识、知识库记录、Base、表格、文档标题、平台链接、原链接、来源平台、内容类型或分类字段，只把这些内容整理成一条或多条待办事项；不要打开或读取知识库/Base/表格/文档，不要请求飞书用户授权，不要改判为知识、学习、调研或自媒体知识入口。
 - checklist_only 的 items 是较少、可执行、可完成的平铺单元；每个 item 不超过 28 个汉字。
 - structured_checklist 的父节点表达任务组或目标，例如“购买”“整理房间”“准备出行”；子节点表达可执行动作，例如“购买杠铃杆”“确认证件”“收拾充电器”。
@@ -97,8 +107,17 @@ DAILY_TODO_INTAKE_PROMPT = """你是 OpenClaw Daily 的待办入口分流器。�
 输入 text="购买\\n1. 整理\\n2. 杠铃杆\\n3. 起泡器"
 输出 {"mode":"structured_checklist","items":[],"checklist_tree":[{"text":"购买","children":[{"text":"整理购买清单","children":[]},{"text":"购买杠铃杆","children":[]},{"text":"购买起泡器","children":[]}]}],"confidence":0.95,"missing_fields":[],"evidence":"购买；1. 整理；2. 杠铃杆；3. 起泡器","reason":"原文是购买任务组下面列出多个子事项，需要保留父子层级"}
 
+输入 text="- [ ] 按目标样式做设计\\n  - [ ] 给出第二份 HTML protocol\\n  - [ ] 进行视觉迭代"
+输出 {"mode":"structured_checklist","items":[],"checklist_tree":[{"text":"按目标样式做设计","children":[{"text":"给出第二份 HTML protocol","children":[]},{"text":"进行视觉迭代","children":[]}]}],"confidence":0.95,"missing_fields":[],"evidence":"- [ ] 按目标样式做设计；  - [ ] 给出第二份 HTML protocol；  - [ ] 进行视觉迭代","reason":"原文显式使用缩进 checkbox 表达父子待办，需要保留父主题和子任务"}
+
 输入 text="今天买杠铃杆、起泡器、垃圾袋"
 输出 {"mode":"checklist_only","items":["购买杠铃杆","购买起泡器","购买垃圾袋"],"checklist_tree":[],"confidence":0.9,"missing_fields":[],"evidence":"买杠铃杆、起泡器、垃圾袋","reason":"原文是平铺购物清单，没有必要建立父子记录"}
+
+输入 text="完成自媒体创作工作流和筹备上海行程"
+输出 {"mode":"checklist_only","items":["完成自媒体创作工作流","筹备上海行程"],"checklist_tree":[],"confidence":0.94,"missing_fields":[],"evidence":"完成自媒体创作工作流；筹备上海行程","reason":"原文包含两个可执行待办，但没有提醒或具体时刻要求，应直接创建普通待办"}
+
+输入 text="2026-07-20 前完成上海行程筹备"
+输出 {"mode":"checklist_only","items":["完成上海行程筹备"],"checklist_tree":[],"confidence":0.92,"missing_fields":[],"evidence":"2026-07-20 前完成上海行程筹备","reason":"原文只有截止日期，没有具体时刻或提醒诉求，保留为日期型普通待办"}
 
 输入 text="20260628 18:00 前买杠铃杆，提前 30 分钟提醒"
 输出 {"mode":"reminder_backed","items":[],"checklist_tree":[],"confidence":0.95,"missing_fields":[],"evidence":"20260628 18:00 前；提前 30 分钟提醒","reason":"原文明确要求截止时间和提醒"}
@@ -106,8 +125,50 @@ DAILY_TODO_INTAKE_PROMPT = """你是 OpenClaw Daily 的待办入口分流器。�
 输入 text="同济大学陈小杨有 AI4Math 的资源，可以用来做博主宣传做 vibecoding 的素材。"
 输出 {"mode":"checklist_only","items":["跟进陈小杨 AI4Math 资源，用于博主宣传和 vibecoding 素材"],"checklist_tree":[],"confidence":0.9,"missing_fields":[],"evidence":"同济大学陈小杨有 AI4Math 的资源；博主宣传；vibecoding 的素材","reason":"用户显式使用【待办】，原文是一条可跟进事项，且没有截止或提醒诉求"}
 
+输入 text="根据这个视频拆解出一个 WAIC 的视频口播，然后尝试把一个口碑脚本改写成分镜脚本\nhttps://www.xiaohongshu.com/example"
+输出 {"mode":"structured_checklist","items":[],"checklist_tree":[{"text":"制作 WAIC 视频脚本","children":[{"text":"拆解参考视频并产出口播","children":[]},{"text":"将口碑脚本改写为分镜","children":[]}]}],"confidence":0.94,"missing_fields":[],"evidence":"拆解出 WAIC 视频口播；把口碑脚本改写成分镜脚本","reason":"用户显式使用【待办】，两个动作属于同一视频脚本制作目标下的执行步骤"}
+
 输入 text="查看做题家清北光环为何难穿越创业泥潭否 跟自己有关\n做题家清北光环为何难穿越创业泥潭\n原链接\nhttp://xhslink.com/o/16704LMMFPp\n来源平台\n小红书\n内容类型\n图文\n一级分类\n财经/投资\n二级分类\n投资认知"
 输出 {"mode":"checklist_only","items":["查看清北光环创业泥潭是否相关"],"checklist_tree":[],"confidence":0.9,"missing_fields":[],"evidence":"查看做题家清北光环为何难穿越创业泥潭否 跟自己有关；原链接 http://xhslink.com/o/16704LMMFPp","reason":"用户显式使用【待办】，正文是查看并判断某条知识记录是否相关，没有提醒、截止或读取知识库诉求"}
+"""
+
+DAILY_TODO_HIERARCHY_REVIEW_PROMPT = """你是 OpenClaw Daily 的待办父子层级复核器。上游 LLM 已把【待办】正文拆成多个平铺 items；你只判断这些 items 是否其实属于同一个父主题/目标下的子任务。
+
+只输出一个 JSON object，不要 Markdown，不要解释。
+
+复核规则：
+- 如果 items 是同一个项目/目标的一组步骤，必须输出 mode="structured_checklist"，用第一项或更准确的概括作为父节点，后续执行项作为 children。
+- 如果第一项本身是总目标，后续项是交付物、协议、复核、迭代、检查、确认、发布等执行步骤，保留第一项为父节点。
+- 如果 items 只是并列购物、并列物品、互不依赖的零散事项，保持 mode="checklist_only"。
+- 不要编造提醒时间、截止时间或 Feishu 字段；本复核只决定 checklist_only 还是 structured_checklist。
+- 如果无法确认父子层级，保持 checklist_only。
+
+输入 JSON 会提供：
+- now/timezone
+- text/raw_text：用户原文
+- items：上游平铺待办项
+- original_reason：上游判断理由
+
+输出 JSON 字段：
+{
+  "mode": "checklist_only|structured_checklist",
+  "items": ["平铺待办项，若保持 checklist_only 才填写"],
+  "checklist_tree": [
+    {"text": "父主题/目标", "children": [{"text": "子任务", "children": []}]}
+  ],
+  "confidence": 0.0,
+  "missing_fields": [],
+  "evidence": "引用原文或 items 中支持判断的关键片段",
+  "reason": "一句话说明"
+}
+
+示例：
+输入 text="按照目标样式做设计，给出第二份html protocol，视觉迭代", items=["按目标样式做设计","给出第二份 HTML protocol","进行视觉迭代"]
+输出 {"mode":"structured_checklist","items":[],"checklist_tree":[{"text":"按目标样式做设计","children":[{"text":"给出第二份 HTML protocol","children":[]},{"text":"进行视觉迭代","children":[]}]}],"confidence":0.92,"missing_fields":[],"evidence":"按照目标样式做设计；给出第二份html protocol；视觉迭代","reason":"第一项是设计目标，后两项是围绕该目标的交付和迭代步骤，需要父子待办"}
+
+示例：
+输入 text="今天买杠铃杆、起泡器、垃圾袋", items=["购买杠铃杆","购买起泡器","购买垃圾袋"]
+输出 {"mode":"checklist_only","items":["购买杠铃杆","购买起泡器","购买垃圾袋"],"checklist_tree":[],"confidence":0.9,"missing_fields":[],"evidence":"买杠铃杆、起泡器、垃圾袋","reason":"三个 items 是并列购物项，不需要父子层级"}
 """
 
 DAILY_HIERARCHY_RECORDS_PROMPT = """你是 OpenClaw Daily 的层级结构清洗器。你的任务不是按关键词套模板，而是尽量还原用户原文里的父子层级：父记录承载整体事项/活动/通知，子记录承载可执行的日程、待办或提醒。
@@ -117,6 +178,9 @@ DAILY_HIERARCHY_RECORDS_PROMPT = """你是 OpenClaw Daily 的层级结构清洗�
 判断规则：
 - 如果原文只是单个原子事项，输出 status="single"，不要硬拆父子记录。
 - 如果原文包含整体背景 + 多个执行节点，输出 status="hierarchy"。
+- expected_type 是用户确认的入口类型，不得把显式待办改成日程，也不得把显式日程改成待办。
+- expected_type="待办" 且原文只是项目、目标、准备事项或无精确时间的任务拆解时，输出 status="single"，交给下游 checklist 分流器处理；不要创建需要时间的 Daily 日程层级。
+- 只有原文确实是通知/活动安排，并且需要保留的日程、截止等子节点都具有可解析的完整日期时间时，才输出 status="hierarchy"。
 - 整体背景可能是活动、课程安排、会议通知、报名说明、项目安排、材料提交链路等，不限于“通知/预通知”几个词。
 - 子记录要覆盖原文中真正需要执行或提醒的节点，例如当天参加、报名确认、统计截止、签到、材料提交、面试、会议等。
 
@@ -240,7 +304,7 @@ class ActivityDailyMixin:
             "boost_date": activity.get("boost_date", ""),
             "source_status": activity.get("source_status", ""),
             "manual_needed": bool(activity.get("manual_needed")),
-            "tags": ["内容素材", "活动", activity["platform"]],
+            "tags": ["素材", "活动", activity["platform"]],
             "source_extractions": source_extractions,
         }
         reminder = self.reminder_service.add(
@@ -508,7 +572,7 @@ class ActivityDailyMixin:
                 "kind": "xiaohongshu_publish_entry",
                 "reason": "已跳过：小红书发布入口/模板页，不是笔记正文链接",
             }
-        if host == "xhslink.com" or host.endswith(".xhslink.com"):
+        if host in {"xhslink.com", "xhslink.cn"} or host.endswith((".xhslink.com", ".xhslink.cn")):
             return {"action": "analyze", "kind": "xiaohongshu_shortlink", "reason": ""}
         if host == "xiaohongshu.com" or host.endswith(".xiaohongshu.com"):
             return {"action": "analyze", "kind": "xiaohongshu_page", "reason": ""}
@@ -924,6 +988,18 @@ class ActivityDailyMixin:
         todo_intake = self._extract_todo_intake_with_llm(message)
         if not todo_intake.get("ok"):
             return self._todo_intake_failure(message, todo_intake)
+        explicit_checklist_tree = self._extract_explicit_markdown_checklist_tree(message.body)
+        if explicit_checklist_tree and todo_intake.get("mode") in {"checklist_only", "structured_checklist"}:
+            reason = str(todo_intake.get("reason") or "").strip()
+            todo_intake = {
+                **todo_intake,
+                "mode": "structured_checklist",
+                "items": [],
+                "checklist_tree": explicit_checklist_tree,
+                "reason": (f"{reason}；" if reason else "") + "用户原文包含缩进 checkbox，按显式层级保留父子待办。",
+            }
+        if todo_intake.get("mode") == "checklist_only":
+            todo_intake = self._maybe_promote_todo_intake_hierarchy(message, todo_intake)
         if todo_intake.get("mode") == "checklist_only":
             try:
                 checklist_items = self._todo_items_with_explicit_links(todo_intake["items"], message.body)
@@ -933,7 +1009,14 @@ class ActivityDailyMixin:
                     checklist_tree=[{"text": item, "children": []} for item in checklist_items],
                 )
             except ValueError as exc:
-                return self._todo_intake_failure(message, {"reason": f"Obsidian checklist 写入参数无效：{exc}", "missing_fields": ["items"]})
+                return self._todo_intake_failure(
+                    message,
+                    {
+                        "error_code": "DAILY_TODO_OBSIDIAN_WRITE_FAILED",
+                        "reason": f"Obsidian checklist 写入失败：{exc}",
+                        "missing_fields": ["obsidian_write"],
+                    },
+                )
             sections = [
                 ("原始内容", message.raw_text),
                 ("LLM清单分流", json.dumps({key: todo_intake.get(key) for key in ("mode", "items", "confidence", "evidence", "reason")}, ensure_ascii=False, indent=2, default=str)),
@@ -954,7 +1037,7 @@ class ActivityDailyMixin:
             )
             reply = "\n".join(
                 [
-                    "已写入 Obsidian 当日待办清单",
+                    "已写入 Obsidian 周记 # 待办",
                     f"日期：{checklist.target_date:%Y-%m-%d}",
                     f"路径：{checklist.path}",
                     "",
@@ -1002,6 +1085,7 @@ class ActivityDailyMixin:
             local_path=entry.local_path,
         )
         fs = {"doc": ""}
+        extra: dict[str, Any] = {}
         if reminder.get("ok"):
             table_url = (reminder.get("data") or {}).get("table_url") or self._configured_bitable_url("待办")
             record_id = str((reminder.get("data") or {}).get("record_id") or "").strip()
@@ -1015,7 +1099,7 @@ class ActivityDailyMixin:
                 )
                 checklist_path = checklist.path
             reply = (
-                "已创建飞书待办提醒，并写入 Obsidian 当日清单\n"
+                "已创建飞书待办提醒，并写入 Obsidian 周记 # 待办\n"
                 f"事项时间：{format_display_time(due_at)}\n"
                 f"提醒时间：{format_display_time(remind_at)}\n"
                 f"多维表格：{table_url or '已写入'}\n"
@@ -1024,6 +1108,7 @@ class ActivityDailyMixin:
             )
             ok = True
             status = "archived"
+            extra = {"feishu_record_id": record_id, "obsidian_path": checklist_path}
         else:
             checklist = self.obsidian_daily_checklist_service.append_checklist(
                 text=message.body,
@@ -1031,26 +1116,35 @@ class ActivityDailyMixin:
                 checklist_tree=[{"text": extracted["title"], "children": []}],
             )
             reply = (
-                "待办已本地归档，并写入 Obsidian 当日清单；飞书提醒写入失败\n"
+                "待办已本地归档，并写入 Obsidian 周记 # 待办；飞书提醒写入失败\n"
                 f"本地路径：{entry.local_path}\n"
                 f"Obsidian：{checklist.path}"
             )
             if reminder.get("error"):
                 reply += f"\n错误：{reminder.get('error')}"
-            ok = False
-            status = "pending_manual"
-        return TaskResult(ok=ok, status=status, reply=reply, task_id=entry.frontmatter["id"], local_path=entry.local_path, feishu_doc=fs.get("doc", ""))
+            ok = True
+            status = "archived_with_feishu_warning"
+            extra = {"feishu_warning": reminder, "obsidian_path": checklist.path}
+        return TaskResult(ok=ok, status=status, reply=reply, task_id=entry.frontmatter["id"], local_path=entry.local_path, feishu_doc=fs.get("doc", ""), extra=extra)
 
     def _write_todo_structured_checklist(self, message: Message, todo_intake: dict[str, Any]) -> TaskResult:
         checklist_tree = todo_intake["checklist_tree"]
+        obsidian_checklist_tree = self._todo_tree_with_explicit_links(checklist_tree, message.body)
         try:
             checklist = self.obsidian_daily_checklist_service.append_checklist(
                 text=message.body,
                 now=message.created_at,
-                checklist_tree=checklist_tree,
+                checklist_tree=obsidian_checklist_tree,
             )
         except ValueError as exc:
-            return self._todo_intake_failure(message, {"reason": f"Obsidian checklist 写入参数无效：{exc}", "missing_fields": ["checklist_tree"]})
+            return self._todo_intake_failure(
+                message,
+                {
+                    "error_code": "DAILY_TODO_OBSIDIAN_WRITE_FAILED",
+                    "reason": f"Obsidian checklist 写入失败：{exc}",
+                    "missing_fields": ["obsidian_write"],
+                },
+            )
 
         sections = [
             ("原始内容", message.raw_text),
@@ -1130,6 +1224,21 @@ class ActivityDailyMixin:
 
         first_record_id = next((item["record_id"] for item in record_entries if item.get("record_id")), entry.frontmatter["id"])
         ok = bool(record_entries) and not failed_records
+        archive_updates: dict[str, Any] = {
+            "feishu_synced": ok,
+            "feishu_sync_status": "succeeded" if ok else "failed",
+            "feishu_bitable_url": table_url,
+            "feishu_record_ids": [item["record_id"] for item in record_entries if item.get("record_id")],
+        }
+        if ok:
+            archive_updates["feishu_parent_record_id"] = first_record_id
+        else:
+            archive_updates["feishu_failed_record_ids"] = [
+                item["record_id"] or item["parent_record_id"]
+                for item in failed_records
+                if item["record_id"] or item["parent_record_id"]
+            ]
+        entry = self.archive_service.update_frontmatter(entry.local_path, archive_updates)
         headline = "已创建飞书父子待办，并写入 Obsidian 缩进清单" if ok else "飞书父子待办创建失败；已写入 Obsidian 缩进清单"
         reply_lines = [
             headline,
@@ -1142,14 +1251,15 @@ class ActivityDailyMixin:
         if failed_records:
             reply_lines.append("说明：飞书失败时表格里不会出现对应记录；以上错误是底层写入返回。")
         reply = "\n".join(reply_lines)
+        warning = "飞书父子待办记录创建失败；Obsidian 缩进清单已写入，需稍后重试飞书同步。" if failed_records else ""
         return TaskResult(
-            ok=ok,
-            status="structured_checklist_archived" if ok else "partial_failed",
+            ok=True,
+            status="structured_checklist_archived" if ok else "structured_checklist_archived_with_feishu_warning",
             reply=reply,
             task_id=first_record_id,
             local_path=entry.local_path,
             feishu_doc="",
-            extra={"todo_intake": todo_intake, "obsidian_path": checklist.path, "feishu_records": record_entries},
+            extra={"todo_intake": todo_intake, "obsidian_path": checklist.path, "feishu_records": record_entries, **({"warning": warning} if warning else {})},
         )
 
     @staticmethod
@@ -1171,6 +1281,18 @@ class ActivityDailyMixin:
         return updated
 
     @staticmethod
+    def _todo_tree_with_explicit_links(checklist_tree: list[dict[str, Any]], text: str) -> list[dict[str, Any]]:
+        urls = ActivityDailyMixin._extract_explicit_urls(text)
+        if not urls or not checklist_tree:
+            return checklist_tree
+        copied = json.loads(json.dumps(checklist_tree, ensure_ascii=False))
+        root_text = str(copied[0].get("text") or "").strip()
+        if root_text and not any(url in root_text for url in urls):
+            extra_links = " ".join(f"[原链接{i + 2}]({url})" for i, url in enumerate(urls[1:3]))
+            copied[0]["text"] = f"[{ActivityDailyMixin._markdown_link_label(root_text)}]({urls[0]}) {extra_links}".strip()
+        return copied
+
+    @staticmethod
     def _extract_explicit_urls(text: str) -> list[str]:
         urls: list[str] = []
         for match in re.finditer(r"https?://[^\s<>\]\)\"'，。；、]+", str(text or "")):
@@ -1182,6 +1304,36 @@ class ActivityDailyMixin:
     @staticmethod
     def _markdown_link_label(text: str) -> str:
         return str(text or "").replace("[", "\\[").replace("]", "\\]")
+
+    @classmethod
+    def _extract_explicit_markdown_checklist_tree(cls, text: str) -> list[dict[str, Any]]:
+        rows: list[tuple[int, str]] = []
+        for line in str(text or "").splitlines():
+            match = re.match(r"^(?P<indent>[ \t]*)[-*]\s+\[[ xX]\]\s+(?P<text>.+?)\s*$", line)
+            if not match:
+                continue
+            item_text = re.sub(r"\s+", " ", match.group("text")).strip()
+            if not item_text:
+                continue
+            indent = len(match.group("indent").replace("\t", "  "))
+            rows.append((indent, item_text))
+        if not rows:
+            return []
+
+        roots: list[dict[str, Any]] = []
+        stack: list[tuple[int, dict[str, Any]]] = []
+        for indent, item_text in rows:
+            node = {"text": item_text, "children": []}
+            while stack and indent <= stack[-1][0]:
+                stack.pop()
+            if stack:
+                stack[-1][1].setdefault("children", []).append(node)
+            else:
+                roots.append(node)
+            stack.append((indent, node))
+
+        normalized = cls._normalize_todo_checklist_tree(roots)
+        return normalized if any(root.get("children") for root in normalized) else []
 
     def _maybe_handle_daily_hierarchy_records(self, message: Message, expected_type: str) -> TaskResult | None:
         if not self._should_attempt_hierarchy_extraction(message):
@@ -1690,6 +1842,15 @@ class ActivityDailyMixin:
                 "待办清单与提醒分流",
             )
         except Exception as exc:
+            if is_model_capacity_failure(exc):
+                return {
+                    "ok": False,
+                    "error_code": "DAILY_LLM_MODEL_AT_CAPACITY",
+                    "reason": "模型当前容量已满，待办未创建、未落盘。",
+                    "detail": model_capacity_failure_detail(exc),
+                    "suggested_action": "请稍后直接重试原消息。",
+                    "missing_fields": ["llm_result"],
+                }
             return {"ok": False, "reason": f"LLM分流异常：{exc}", "missing_fields": ["llm_result"]}
         return self._normalize_todo_intake(result)
 
@@ -1697,11 +1858,16 @@ class ActivityDailyMixin:
         if not isinstance(result, dict):
             return {"ok": False, "reason": "LLM未返回对象", "missing_fields": ["llm_result"]}
         if result.get("status") not in {"done", "", None}:
-            return {
+            normalized_failure = {
                 "ok": False,
                 "reason": str(result.get("reason") or "LLM分流未完成"),
                 "missing_fields": ["llm_result"],
             }
+            for field in ("error_code", "detail", "suggested_action"):
+                value = str(result.get(field) or "").strip()
+                if value:
+                    normalized_failure[field] = value
+            return normalized_failure
         mode = str(result.get("mode") or "").strip()
         confidence = self._float_confidence(result.get("confidence"))
         missing_fields = [str(item).strip() for item in result.get("missing_fields") or [] if str(item).strip()]
@@ -1747,6 +1913,41 @@ class ActivityDailyMixin:
             "reason": str(result.get("reason") or "").strip(),
         }
 
+    def _maybe_promote_todo_intake_hierarchy(self, message: Message, todo_intake: dict[str, Any]) -> dict[str, Any]:
+        items = [str(item or "").strip() for item in todo_intake.get("items") or [] if str(item or "").strip()]
+        if len(items) < 2:
+            return todo_intake
+        user_content = json.dumps(
+            {
+                "now": message.created_at.astimezone(ZoneInfo(self.timezone)).isoformat(timespec="seconds"),
+                "timezone": self.timezone,
+                "text": message.body,
+                "raw_text": message.raw_text,
+                "items": items,
+                "original_reason": str(todo_intake.get("reason") or "").strip(),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        try:
+            reviewed = self.content_flow_client._call_profile_provider_json(
+                "daily_task_extraction",
+                DAILY_TODO_HIERARCHY_REVIEW_PROMPT,
+                user_content,
+                "待办父子层级复核",
+            )
+        except Exception:
+            return todo_intake
+        normalized = self._normalize_todo_intake(reviewed)
+        if not normalized.get("ok") or normalized.get("mode") != "structured_checklist":
+            return todo_intake
+        reason = str(todo_intake.get("reason") or "").strip()
+        review_reason = str(normalized.get("reason") or "").strip()
+        return {
+            **normalized,
+            "reason": (f"{reason}；" if reason else "") + (f"层级复核：{review_reason}" if review_reason else "层级复核：应保留父子待办。"),
+        }
+
     @staticmethod
     def _normalize_todo_items(value: object) -> list[str]:
         if not isinstance(value, list):
@@ -1775,14 +1976,41 @@ class ActivityDailyMixin:
         return normalized
 
     def _todo_intake_failure(self, message: Message, result: dict[str, Any]) -> TaskResult:
+        error_code = str(result.get("error_code") or "DAILY_TODO_INTAKE_PENDING_MANUAL").strip()
         missing = "、".join(result.get("missing_fields") or []) or "待办分流"
         reason = str(result.get("reason") or "LLM未能判断待办分流").strip()
-        reply = (
-            "待办没有创建：系统未能判断应写 Obsidian 清单还是飞书提醒。\n"
-            f"缺少/不确定：{missing}\n"
-            f"原因：{reason}"
+        detail = str(result.get("detail") or "").strip()
+        suggested_action = str(result.get("suggested_action") or "").strip()
+        if error_code == "DAILY_LLM_MODEL_AT_CAPACITY":
+            reply = (
+                f"错误代码：{error_code}\n"
+                "状态：待办未创建、未落盘\n"
+                f"原因：{reason}\n"
+                f"详情：{detail or 'Selected model is at capacity. Please try a different model.'}\n"
+                f"建议：{suggested_action or '请稍后直接重试原消息。'}"
+            )
+        else:
+            reply = (
+                f"错误代码：{error_code}\n"
+                "状态：待办未创建、未落盘\n"
+                f"缺少/不确定：{missing}\n"
+                f"原因：{reason}\n"
+                "建议：可直接重试原消息；若再次出现，可用该错误代码排查。"
+            )
+        extra = {"todo_intake": result, "error_code": error_code, "persisted": False}
+        if detail:
+            extra["detail"] = detail
+        if suggested_action:
+            extra["suggested_action"] = suggested_action
+        return TaskResult(
+            ok=False,
+            status="pending_manual",
+            reply=reply,
+            task_id="",
+            local_path="",
+            feishu_doc="",
+            extra=extra,
         )
-        return TaskResult(ok=False, status="pending_manual", reply=reply, task_id="", local_path="", feishu_doc="", extra={"todo_intake": result})
 
     def _normalize_daily_task_extraction(self, result: dict[str, Any], expected_type: str, message: Message | None = None) -> dict[str, Any]:
         if not isinstance(result, dict):
@@ -1831,7 +2059,7 @@ class ActivityDailyMixin:
             }
         return {
             "ok": True,
-            "type": str(result.get("type") or expected_type).strip() or expected_type,
+            "type": expected_type,
             "title": title[:60],
             "due_at": due_at,
             "remind_at": remind_at,

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "tenant_key": "deepmath",
+  "base_name": "DeepMath CEO Thinking",
+  "tasklist_name": "DeepMath CEO Actions",
+  "calendar_name": "DeepMath CEO Calendar",
+  "timezone": "Asia/Shanghai",
+  "base_id": "Hx0rbolDbarXBYsFcBEciuA1nz2",
+  "tasklist_id": "484507af-3312-41e7-8b19-bdfd020c06a7",
+  "calendar_id": "feishu.cn_sciyVyZVBwLMeA0Md9sLJe@group.calendar.feishu.cn",
+  "base_url": "https://wcno23y5j2nl.feishu.cn/base/Hx0rbolDbarXBYsFcBEciuA1nz2",
+  "tenant_proof": "1936ac158fcb1cb9"
+}

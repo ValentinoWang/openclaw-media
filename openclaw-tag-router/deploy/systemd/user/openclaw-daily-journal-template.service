@@ -1,0 +1,6 @@
+[Unit]
+Description=OpenClaw Daily Journal 22:00 Template Prompt
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/ubuntu/.openclaw/extensions/openclaw-tag-router/scripts/daily_journal_scheduler.py daily-template --settings /home/ubuntu/.openclaw/extensions/openclaw-tag-router/config/settings.yaml

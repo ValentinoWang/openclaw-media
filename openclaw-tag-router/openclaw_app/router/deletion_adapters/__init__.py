@@ -3,24 +3,24 @@ from __future__ import annotations
 from ..deletion_discovery import DiscoveryResult
 from .archive_adapter import ArchiveDeletionAdapter
 from .base import CapabilityDeletionAdapter, DeletionContext
-from .bitable_record_adapter import BitableRecordDeletionAdapter
 from .content_os_adapter import ContentOSDeletionAdapter
 from .creation_run_adapter import CreationRunDeletionAdapter
-from .feishu_doc_adapter import FeishuDocDeletionAdapter
 from .obsidian_block_adapter import ObsidianBlockDeletionAdapter
 from .reminder_calendar_adapter import ReminderCalendarDeletionAdapter
+from .review_adapter import ReviewDeletionAdapter
+from .source_asset_adapter import SourceAssetDeletionAdapter
 from .transcription_adapter import TranscriptionDeletionAdapter
 
 
 def deletion_adapters() -> list[CapabilityDeletionAdapter]:
     return [
+        SourceAssetDeletionAdapter(),
+        ReviewDeletionAdapter(),
         CreationRunDeletionAdapter(),
         TranscriptionDeletionAdapter(),
         ReminderCalendarDeletionAdapter(),
         ContentOSDeletionAdapter(),
         ObsidianBlockDeletionAdapter(),
-        FeishuDocDeletionAdapter(),
-        BitableRecordDeletionAdapter(),
         ArchiveDeletionAdapter(),
     ]
 
