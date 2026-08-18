@@ -7,6 +7,7 @@ import pytest
 from openclaw_app.services.stage2_external_document import (
     BindingIdentity,
     ExternalDocumentWriter,
+    ExternalDocumentError,
     ExternalReadbackOutcome,
     ExternalWriteOutcome,
     IdempotencyConflict,
@@ -54,13 +55,14 @@ def successful_readback() -> ExternalReadbackOutcome:
     return ExternalReadbackOutcome("confirmed", "doc-1", "rev-1", TENANT, "binding-1", 7, DIGEST)
 
 
-def test_matching_write_and_readback_is_written_and_publishable() -> None:
+def test_matching_write_and_readback_is_ready_for_registration_but_not_publishable() -> None:
     adapter = FakeAdapter(successful_write(), successful_readback())
 
     result = ExternalDocumentWriter().write(request(), adapter)
 
     assert result.status == "written"
-    assert result.publishable is True
+    assert result.publishable is False
+    assert result.ready_for_registration is True
     assert result.remote_ref == "doc-1"
     assert result.remote_revision == "rev-1"
     assert adapter.write_calls == 1
@@ -71,14 +73,14 @@ def test_missing_or_inactive_binding_fails_before_adapter_call() -> None:
     adapter = FakeAdapter(successful_write(), successful_readback())
     writer = ExternalDocumentWriter()
 
-    with pytest.raises(Exception) as missing:
+    with pytest.raises(ExternalDocumentError) as missing:
         writer.write(OrganizationWriteRequest(None, "idem-missing", DIGEST), adapter)
     assert getattr(missing.value, "code") == "binding_required"
 
     inactive = OrganizationWriteRequest(
         BindingIdentity(TENANT, "binding-1", 7, status="revoked"), "idem-inactive", DIGEST
     )
-    with pytest.raises(Exception) as rejected:
+    with pytest.raises(ExternalDocumentError) as rejected:
         writer.write(inactive, adapter)
     assert getattr(rejected.value, "code") == "binding_inactive"
     assert adapter.write_calls == 0

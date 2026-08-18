@@ -125,6 +125,7 @@ class ExternalReadbackOutcome:
 class ExternalDocumentWriteResult:
     status: str
     publishable: bool
+    ready_for_registration: bool
     idempotency_key: str
     content_digest: str
     remote_ref: str | None
@@ -279,7 +280,11 @@ class ExternalDocumentWriter:
             else:
                 result = ExternalDocumentWriteResult(
                     status="written",
-                    publishable=True,
+                    # External write/readback is only the first part of the
+                    # Stage-2 success boundary. Artifact registration still
+                    # has to succeed before a caller may publish.
+                    publishable=False,
+                    ready_for_registration=True,
                     idempotency_key=request.idempotency_key,
                     content_digest=request.content_digest,
                     remote_ref=write.remote_ref,
@@ -390,6 +395,7 @@ class ExternalDocumentWriter:
         return ExternalDocumentWriteResult(
             status="needs_attention",
             publishable=False,
+            ready_for_registration=False,
             idempotency_key=request.idempotency_key,
             content_digest=request.content_digest,
             remote_ref=remote_ref,
