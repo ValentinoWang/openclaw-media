@@ -1,0 +1,398 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openclaw.local/contracts/stage2-writer-contract.v1.json",
+  "title": "OpenClaw Stage-2 writer boundary contract",
+  "description": "Implementation-independent contract for trusted context, context receipts, writer requests, write results, and fail-closed errors.",
+  "contractVersion": "stage2_writer_contract.v1",
+  "schemaVersion": 1,
+  "status": "provisional",
+  "runtimeIntegration": false,
+  "endpoints": [],
+  "authorityPolicy": {
+    "serverDerivedFields": [
+      "sessionRef",
+      "actorRef",
+      "workspace",
+      "bodyAuthority",
+      "organizationBindingRef",
+      "capabilityId",
+      "sourceRefs"
+    ],
+    "browserForbiddenFields": [
+      "authorityOverride",
+      "tenantId",
+      "tenant_id",
+      "bindingId",
+      "binding_id",
+      "workspace",
+      "bodyAuthority",
+      "body_authority",
+      "containerId",
+      "container_id",
+      "credentials",
+      "credential",
+      "larkAppId",
+      "lark_app_id",
+      "larkSpaceId",
+      "lark_space_id",
+      "parentNodeId",
+      "parent_node_id",
+      "role"
+    ],
+    "workspaceBodyPairs": [
+      {
+        "workspace": "personal_web",
+        "bodyAuthority": "internal",
+        "remoteRef": "forbidden"
+      },
+      {
+        "workspace": "organization_lark",
+        "bodyAuthority": "lark",
+        "remoteRef": "required"
+      }
+    ]
+  },
+  "errorCodes": [
+    {"code": "invalid_request", "failClosed": true, "retryable": false, "outcome": "reject"},
+    {"code": "contract_version_unsupported", "failClosed": true, "retryable": false, "outcome": "reject"},
+    {"code": "authority_override_forbidden", "failClosed": true, "retryable": false, "outcome": "reject"},
+    {"code": "authority_pair_invalid", "failClosed": true, "retryable": false, "outcome": "reject"},
+    {"code": "context_invalid", "failClosed": true, "retryable": false, "outcome": "reject"},
+    {"code": "context_receipt_invalid", "failClosed": true, "retryable": false, "outcome": "reject"},
+    {"code": "workspace_mismatch", "failClosed": true, "retryable": false, "outcome": "reject"},
+    {"code": "capability_not_registered", "failClosed": true, "retryable": false, "outcome": "reject"},
+    {"code": "capability_write_not_allowed", "failClosed": true, "retryable": false, "outcome": "reject"},
+    {"code": "idempotency_conflict", "failClosed": true, "retryable": false, "outcome": "reject"},
+    {"code": "write_failed", "failClosed": true, "retryable": true, "outcome": "needs_attention"},
+    {"code": "registration_failed", "failClosed": true, "retryable": true, "outcome": "needs_attention"},
+    {"code": "readback_incomplete", "failClosed": true, "retryable": true, "outcome": "needs_attention"},
+    {"code": "external_write_needs_attention", "failClosed": true, "retryable": true, "outcome": "needs_attention"},
+    {"code": "publish_blocked", "failClosed": true, "retryable": false, "outcome": "reject"}
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+    },
+    "capabilityId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,127}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "workspaceBodyPair": {
+      "type": "object",
+      "required": ["workspace", "bodyAuthority"],
+      "properties": {
+        "workspace": {"enum": ["personal_web", "organization_lark"]},
+        "bodyAuthority": {"enum": ["internal", "lark"]}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"workspace": {"const": "personal_web"}},
+            "required": ["workspace"]
+          },
+          "then": {"properties": {"bodyAuthority": {"const": "internal"}}}
+        },
+        {
+          "if": {
+            "properties": {"workspace": {"const": "organization_lark"}},
+            "required": ["workspace"]
+          },
+          "then": {"properties": {"bodyAuthority": {"const": "lark"}}}
+        }
+      ]
+    },
+    "trustedContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contextId",
+        "actorRef",
+        "sessionRef",
+        "workspace",
+        "bodyAuthority",
+        "organizationBindingRef",
+        "capabilityId",
+        "sourceRefs",
+        "issuedAt",
+        "expiresAt"
+      ],
+      "properties": {
+        "schemaVersion": {"const": "stage2_writer_contract.v1"},
+        "contextId": {"$ref": "#/$defs/identifier"},
+        "actorRef": {"$ref": "#/$defs/identifier"},
+        "sessionRef": {"$ref": "#/$defs/identifier"},
+        "workspace": {"enum": ["personal_web", "organization_lark"]},
+        "bodyAuthority": {"enum": ["internal", "lark"]},
+        "organizationBindingRef": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/identifier"}]
+        },
+        "capabilityId": {"$ref": "#/$defs/capabilityId"},
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/identifier"}
+        },
+        "issuedAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {"$ref": "#/$defs/workspaceBodyPair"},
+        {
+          "if": {
+            "properties": {"workspace": {"const": "personal_web"}},
+            "required": ["workspace"]
+          },
+          "then": {"properties": {"organizationBindingRef": {"type": "null"}}}
+        },
+        {
+          "if": {
+            "properties": {"workspace": {"const": "organization_lark"}},
+            "required": ["workspace"]
+          },
+          "then": {
+            "properties": {"organizationBindingRef": {"$ref": "#/$defs/identifier"}}
+          }
+        }
+      ]
+    },
+    "contextReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "receiptId",
+        "contextDigest",
+        "workspace",
+        "bodyAuthority",
+        "organizationBindingRef",
+        "issuedAt",
+        "expiresAt"
+      ],
+      "properties": {
+        "schemaVersion": {"const": "stage2_writer_contract.v1"},
+        "receiptId": {"$ref": "#/$defs/identifier"},
+        "contextDigest": {"$ref": "#/$defs/digest"},
+        "workspace": {"enum": ["personal_web", "organization_lark"]},
+        "bodyAuthority": {"enum": ["internal", "lark"]},
+        "organizationBindingRef": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/identifier"}]
+        },
+        "issuedAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {"$ref": "#/$defs/workspaceBodyPair"},
+        {
+          "if": {
+            "properties": {"workspace": {"const": "personal_web"}},
+            "required": ["workspace"]
+          },
+          "then": {"properties": {"organizationBindingRef": {"type": "null"}}}
+        },
+        {
+          "if": {
+            "properties": {"workspace": {"const": "organization_lark"}},
+            "required": ["workspace"]
+          },
+          "then": {
+            "properties": {"organizationBindingRef": {"$ref": "#/$defs/identifier"}}
+          }
+        }
+      ]
+    },
+    "writerContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "body", "format"],
+      "properties": {
+        "title": {"type": "string", "minLength": 1, "maxLength": 240},
+        "body": {"type": "string", "minLength": 1, "maxLength": 1000000},
+        "format": {"enum": ["markdown", "plain_text"]}
+      }
+    },
+    "writerRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "requestId",
+        "trustedContext",
+        "contextReceipt",
+        "capabilityId",
+        "content",
+        "idempotencyKey"
+      ],
+      "properties": {
+        "schemaVersion": {"const": "stage2_writer_contract.v1"},
+        "requestId": {"$ref": "#/$defs/identifier"},
+        "trustedContext": {"$ref": "#/$defs/trustedContext"},
+        "contextReceipt": {
+          "oneOf": [{"$ref": "#/$defs/contextReceipt"}, {"type": "null"}]
+        },
+        "capabilityId": {"$ref": "#/$defs/capabilityId"},
+        "content": {"$ref": "#/$defs/writerContent"},
+        "idempotencyKey": {"$ref": "#/$defs/identifier"}
+      },
+      "description": "Workspace and body authority are accepted only inside a server-derived trustedContext. Browser authority fields are forbidden."
+    },
+    "writeArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactId", "revision", "remoteRef"],
+      "properties": {
+        "artifactId": {"$ref": "#/$defs/identifier"},
+        "revision": {"$ref": "#/$defs/identifier"},
+        "remoteRef": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/identifier"}]
+        }
+      }
+    },
+    "registrationState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["not_required", "registered", "pending", "failed"]},
+        "receiptRef": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/identifier"}]
+        }
+      }
+    },
+    "readbackState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["not_required", "confirmed", "pending", "failed"]},
+        "revision": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/identifier"}]
+        }
+      }
+    },
+    "writeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "requestId",
+        "status",
+        "workspace",
+        "bodyAuthority",
+        "artifact",
+        "registration",
+        "readback",
+        "publishable",
+        "errorCode"
+      ],
+      "properties": {
+        "schemaVersion": {"const": "stage2_writer_contract.v1"},
+        "requestId": {"$ref": "#/$defs/identifier"},
+        "status": {"enum": ["written", "needs_attention", "rejected"]},
+        "workspace": {"enum": ["personal_web", "organization_lark"]},
+        "bodyAuthority": {"enum": ["internal", "lark"]},
+        "artifact": {"$ref": "#/$defs/writeArtifact"},
+        "registration": {"$ref": "#/$defs/registrationState"},
+        "readback": {"$ref": "#/$defs/readbackState"},
+        "publishable": {"const": false},
+        "errorCode": {
+          "oneOf": [
+            {"type": "null"},
+            {"enum": [
+              "invalid_request",
+              "contract_version_unsupported",
+              "authority_override_forbidden",
+              "authority_pair_invalid",
+              "context_invalid",
+              "context_receipt_invalid",
+              "workspace_mismatch",
+              "capability_not_registered",
+              "capability_write_not_allowed",
+              "idempotency_conflict",
+              "write_failed",
+              "registration_failed",
+              "readback_incomplete",
+              "external_write_needs_attention",
+              "publish_blocked"
+            ]}
+          ]
+        }
+      },
+      "allOf": [
+        {"$ref": "#/$defs/workspaceBodyPair"},
+        {
+          "if": {
+            "properties": {"workspace": {"const": "personal_web"}},
+            "required": ["workspace"]
+          },
+          "then": {
+            "properties": {
+              "bodyAuthority": {"const": "internal"},
+              "artifact": {"properties": {"remoteRef": {"type": "null"}}}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"workspace": {"const": "organization_lark"}},
+            "required": ["workspace"]
+          },
+          "then": {
+            "properties": {
+              "bodyAuthority": {"const": "lark"},
+              "artifact": {"properties": {"remoteRef": {"$ref": "#/$defs/identifier"}}}
+            }
+          }
+        }
+      ]
+    },
+    "failClosedError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "ok", "error"],
+      "properties": {
+        "schemaVersion": {"const": "stage2_writer_contract.v1"},
+        "ok": {"const": false},
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message", "retryable", "action", "publishable"],
+          "properties": {
+            "code": {
+              "enum": [
+                "invalid_request",
+                "contract_version_unsupported",
+                "authority_override_forbidden",
+                "authority_pair_invalid",
+                "context_invalid",
+                "context_receipt_invalid",
+                "workspace_mismatch",
+                "capability_not_registered",
+                "capability_write_not_allowed",
+                "idempotency_conflict",
+                "write_failed",
+                "registration_failed",
+                "readback_incomplete",
+                "external_write_needs_attention",
+                "publish_blocked"
+              ]
+            },
+            "message": {"type": "string", "minLength": 1, "maxLength": 500},
+            "retryable": {"type": "boolean"},
+            "action": {"type": "string", "minLength": 1, "maxLength": 500},
+            "publishable": {"const": false}
+          }
+        }
+      }
+    }
+  }
+}
