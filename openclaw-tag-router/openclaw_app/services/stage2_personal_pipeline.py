@@ -338,6 +338,12 @@ class PersonalContentPipeline:
                 "published": False,
                 "replayed": False,
             }
+            existing_artifact = self._artifacts.get(artifact_ref)
+            if existing_artifact is not None:
+                raise PersonalPipelineError(
+                    "artifact_identity_conflict",
+                    "writer returned an artifact identity that already exists",
+                )
             self._artifacts[artifact_ref] = copy.deepcopy(artifact)
             self._replays[replay_key] = _Replay(fingerprint, copy.deepcopy(artifact))
             return artifact

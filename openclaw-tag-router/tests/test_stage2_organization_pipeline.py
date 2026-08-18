@@ -145,6 +145,28 @@ def test_remote_edit_requires_new_revision_and_updates_mirror() -> None:
     assert unchanged.value.code == "remote_revision_unchanged"
 
 
+def test_rejected_remote_edit_does_not_mutate_artifact_state() -> None:
+    pipeline = OrganizationContentPipeline()
+    scope = pipeline.build_scope(context(), binding(), sources())
+    artifact = pipeline.write_document(
+        context(), scope, title="Doc", body="Body", idempotency_key="write-1",
+        binding=binding(), adapter=FakeAdapter(), credential_generation="cred-7",
+    )
+    with pytest.raises(OrganizationPipelineError) as wrong_document:
+        pipeline.record_remote_edit_and_readback(
+            artifact["artifactRef"], tenant_id=TENANT, binding=binding(), remote_ref="doc-other",
+            remote_revision="rev-2", content_digest="sha256:" + "b" * 64,
+            trusted_open_url="https://feishu.cn/docx/doc-other",
+        )
+    assert wrong_document.value.code == "remote_ref_mismatch"
+    mirror = pipeline.readback_mirror(
+        artifact["artifactRef"], tenant_id=TENANT, binding=binding(), remote_ref="doc-1",
+        remote_revision="rev-1", content_digest=artifact["contentDigest"],
+        trusted_open_url="https://feishu.cn/docx/doc-1",
+    )
+    assert mirror["remoteRevision"] == "rev-1"
+
+
 def test_exact_replay_and_conflict_are_idempotent() -> None:
     pipeline = OrganizationContentPipeline()
     scope = pipeline.build_scope(context(), binding(), sources())

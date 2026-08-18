@@ -159,3 +159,35 @@ def test_conflicting_idempotency_payload_is_rejected() -> None:
 
     assert conflict.value.code == "idempotency_conflict"
     assert adapter.write_calls == 1
+
+
+def test_partial_write_readback_can_resume_without_second_external_write() -> None:
+    adapter = FakeAdapter(
+        successful_write(),
+        replace(successful_readback(), remote_revision="wrong-revision"),
+    )
+    writer = ExternalDocumentWriter()
+
+    partial = writer.write(request(), adapter)
+    adapter.readback_outcome = successful_readback()
+    resumed = writer.resume_readback(request(), adapter)
+
+    assert partial.status == "needs_attention"
+    assert resumed.status == "written"
+    assert resumed.publishable is False
+    assert resumed.ready_for_registration is True
+    assert adapter.write_calls == 1
+    assert adapter.readback_calls == 2
+
+
+def test_resume_without_remote_identity_stays_fail_closed() -> None:
+    adapter = FakeAdapter(replace(successful_write(), remote_ref=None), successful_readback())
+    writer = ExternalDocumentWriter()
+
+    partial = writer.write(request(), adapter)
+    resumed = writer.resume_readback(request(), adapter)
+
+    assert resumed == partial
+    assert resumed.publishable is False
+    assert adapter.write_calls == 1
+    assert adapter.readback_calls == 0

@@ -195,3 +195,17 @@ def test_revision_conflict_and_stale_package_fail_closed() -> None:
             artifact["artifactRef"], revision=1, platform="douyin", platform_fields={}
         )
     assert stale.value.code == "stale_revision"
+
+
+def test_writer_cannot_reuse_existing_artifact_identity_for_another_request() -> None:
+    pipeline = PersonalContentPipeline()
+    _, _, _, context_bundle = bundle(pipeline)
+    writer = FakeWriter()
+    pipeline.create_artifact(
+        context(), context_bundle, title="Draft", body="Body", idempotency_key="write-1", writer=writer
+    )
+    with pytest.raises(PersonalPipelineError) as conflict:
+        pipeline.create_artifact(
+            context(), context_bundle, title="Other", body="Body", idempotency_key="write-2", writer=writer
+        )
+    assert conflict.value.code == "artifact_identity_conflict"
