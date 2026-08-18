@@ -1134,7 +1134,9 @@ class Stage2Runtime:
         error_message: str | None = None,
     ) -> dict[str, Any]:
         workspace, body_authority = mode.split("/", 1)
-        context_receipt = context_result.receipt.as_dict() if context_result is not None else None
+        context_receipt = (
+            _canonical(context_result.receipt.as_dict()) if context_result is not None else None
+        )
         state_receipt = state.as_dict() if state is not None else None
         payload: dict[str, Any] = {
             "schemaVersion": SCHEMA_VERSION,
