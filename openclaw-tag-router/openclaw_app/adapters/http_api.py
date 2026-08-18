@@ -3,10 +3,14 @@ from __future__ import annotations
 import json
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from ..app import OpenClawApp
-from .qq_bot_adapter import QQBotAdapter
+from ..services.stage2_gateway import Stage2GatewayError
+from ..services.stage2_runtime import Stage2RuntimeError
+
+if TYPE_CHECKING:
+    from ..app import OpenClawApp
+
 
 
 class OpenClawHttpHandler(BaseHTTPRequestHandler):
@@ -45,9 +49,25 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             if self.path == "/qqbot/event":
                 self._handle_qq_event(payload)
                 return
+            if self.path == "/stage2/personal":
+                self._handle_stage2("personal", payload)
+                return
+            if self.path == "/stage2/organization":
+                self._handle_stage2("organization", payload)
+                return
             self._send_json(HTTPStatus.NOT_FOUND, {"ok": False, "error": "not_found"})
+        except Stage2GatewayError as exc:
+            self._send_json(exc.status, {"ok": False, "error": {"code": exc.code, "message": exc.message}})
+        except Stage2RuntimeError as exc:
+            status = HTTPStatus.CONFLICT if exc.code == "idempotency_conflict" else HTTPStatus.UNPROCESSABLE_ENTITY
+            self._send_json(status, {"ok": False, "error": {"code": exc.code, "message": exc.message}})
         except ValueError as exc:
             self._send_json(HTTPStatus.BAD_REQUEST, {"ok": False, "error": str(exc)})
+        except RuntimeError as exc:
+            if str(exc) == "stage2_unavailable":
+                self._send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"ok": False, "error": {"code": "stage2_unavailable"}})
+                return
+            self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"ok": False, "error": str(exc)})
         except Exception as exc:
             self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"ok": False, "error": str(exc)})
 
@@ -70,6 +90,8 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         self._send_json(HTTPStatus.OK, result.__dict__)
 
     def _handle_qq_event(self, payload: dict[str, Any]) -> None:
+        from .qq_bot_adapter import QQBotAdapter
+
         if self.app is None:
             raise RuntimeError("app not configured")
         adapter = QQBotAdapter(self.app)
@@ -92,6 +114,12 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         response["chat_type"] = parsed.chat_type
         response["user_id"] = parsed.user_id
         self._send_json(HTTPStatus.OK, response)
+
+    def _handle_stage2(self, mode: str, payload: dict[str, Any]) -> None:
+        if self.app is None:
+            raise RuntimeError("app not configured")
+        receipt = self.app.process_stage2(mode, payload)
+        self._send_json(HTTPStatus.OK, {"ok": True, "receipt": receipt})
 
 
 def make_server(host: str, port: int, app: OpenClawApp) -> ThreadingHTTPServer:

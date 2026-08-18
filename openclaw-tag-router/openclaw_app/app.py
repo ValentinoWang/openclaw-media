@@ -17,12 +17,13 @@ from .services.obsidian_daily_checklist_service import ObsidianDailyChecklistSer
 from .services.reminder_service import ReminderService
 from .services.rule_service import RuleService
 from .services.schedule_service import ScheduleService
+from .services.stage2_gateway import Stage2Gateway
 from .services.utils import parse_tag_message_with_metadata
 from .services.vlog_storage_service import VlogStorageService
 
 
 class OpenClawApp:
-    def __init__(self, settings_path: str | Path):
+    def __init__(self, settings_path: str | Path, *, stage2_gateway: Stage2Gateway | None = None):
         self.settings_path = Path(settings_path)
         self.settings = yaml.safe_load(self.settings_path.read_text(encoding="utf-8"))
         workspace_root = self.settings["workspace_root"]
@@ -83,6 +84,9 @@ class OpenClawApp:
             vlog_storage_service,
             completion_guard,
         )
+        # Stage 2 stays disabled unless a server-owned gateway is explicitly
+        # supplied by an authenticated integration layer.
+        self.stage2_gateway = stage2_gateway
 
     def process_text(
         self,
@@ -97,3 +101,8 @@ class OpenClawApp:
         message_metadata = dict(metadata or {})
         message_metadata.update(tag_metadata)
         return self.router.route(tag, body, created_at=created_at, source=source, chat_type=chat_type, metadata=message_metadata)
+
+    def process_stage2(self, mode: str, payload: dict[str, Any]) -> dict[str, Any]:
+        if self.stage2_gateway is None:
+            raise RuntimeError("stage2_unavailable")
+        return self.stage2_gateway.run(mode, payload)
