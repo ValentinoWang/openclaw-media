@@ -8,11 +8,14 @@ from openclaw_app.services.stage2_external_document import (
     BindingIdentity,
     ExternalReadbackOutcome,
     ExternalWriteOutcome,
+    ExternalDocumentWriter,
+    SQLiteWriteReceiptStore,
 )
 from openclaw_app.services.stage2_organization_pipeline import (
     IdempotencyConflict,
     OrganizationContentPipeline,
     OrganizationPipelineError,
+    SQLiteOrganizationContentStore,
 )
 
 
@@ -103,6 +106,19 @@ def test_partial_external_write_fails_closed_and_missing_ref_is_preserved() -> N
     assert result["remoteRef"] == "doc-partial"
 
 
+def test_invalid_credential_generation_is_rejected_before_external_write() -> None:
+    pipeline = OrganizationContentPipeline()
+    scope = pipeline.build_scope(context(), binding(), sources())
+    adapter = FakeAdapter()
+    with pytest.raises(OrganizationPipelineError) as caught:
+        pipeline.write_document(
+            context(), scope, title="Doc", body="Body", idempotency_key="invalid-credential",
+            binding=binding(), adapter=adapter, credential_generation="\n",
+        )
+    assert caught.value.code == "invalid_request"
+    assert adapter.write_calls == 0
+
+
 def test_readback_mismatch_and_untrusted_url_fail_closed() -> None:
     pipeline = OrganizationContentPipeline()
     scope = pipeline.build_scope(context(), binding(), sources())
@@ -187,3 +203,44 @@ def test_exact_replay_and_conflict_are_idempotent() -> None:
             binding=binding(), adapter=adapter, credential_generation="cred-7",
         )
     assert first["remoteRef"] == replay["remoteRef"]
+
+
+def test_sqlite_organization_state_replays_artifact_and_mirror_after_restart(tmp_path) -> None:
+    database = tmp_path / "organization-state.sqlite3"
+    first_adapter = FakeAdapter()
+    first = OrganizationContentPipeline(
+        document_writer=ExternalDocumentWriter(SQLiteWriteReceiptStore(database)),
+        store=SQLiteOrganizationContentStore(database),
+    )
+    scope = first.build_scope(context(), binding(), sources())
+    artifact = first.write_document(
+        context(), scope, title="Doc", body="Body", idempotency_key="restart-write",
+        binding=binding(), adapter=first_adapter, credential_generation="cred-7",
+    )
+    mirror = first.readback_mirror(
+        artifact["artifactRef"], tenant_id=TENANT, binding=binding(), remote_ref="doc-1",
+        remote_revision="rev-1", content_digest=artifact["contentDigest"],
+        trusted_open_url="https://feishu.cn/docx/doc-1",
+    )
+
+    second_adapter = FakeAdapter()
+    second = OrganizationContentPipeline(
+        document_writer=ExternalDocumentWriter(SQLiteWriteReceiptStore(database)),
+        store=SQLiteOrganizationContentStore(database),
+    )
+    second_scope = second.build_scope(context(), binding(), sources())
+    replay = second.write_document(
+        context(), second_scope, title="Doc", body="Body", idempotency_key="restart-write",
+        binding=binding(), adapter=second_adapter, credential_generation="cred-7",
+    )
+    persisted = second.readback_mirror(
+        artifact["artifactRef"], tenant_id=TENANT, binding=binding(), remote_ref="doc-1",
+        remote_revision="rev-1", content_digest=artifact["contentDigest"],
+        trusted_open_url="https://feishu.cn/docx/doc-1",
+    )
+
+    assert replay["remoteRef"] == artifact["remoteRef"]
+    assert replay["replayed"] is True
+    assert persisted["mirrorDigest"] == mirror["mirrorDigest"]
+    assert first_adapter.write_calls == 1
+    assert second_adapter.write_calls == 0

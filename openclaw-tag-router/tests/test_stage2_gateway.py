@@ -22,6 +22,14 @@ from openclaw_app.services.stage2_gateway import (
     Stage2GatewayError,
 )
 from openclaw_app.services.stage2_runtime import Stage2Runtime
+from openclaw_app.services.stage2_server_context import (
+    AuthenticatedSessionProvider,
+    CurrentBindingProvider,
+    ServerStage2ContextProviders,
+    Stage2ServerContextError,
+    TenantProfileReader,
+    current_request_session_token,
+)
 
 
 PERSONAL_TENANT = "11111111-1111-4111-8111-111111111111"
@@ -174,12 +182,34 @@ def _app(gateway: Stage2Gateway | None) -> _App:
     return _App(gateway)
 
 
-def _post(server, path: str, payload: object) -> tuple[int, dict[str, object]]:
+def _fixture_gateway(
+    runtime: Stage2Runtime,
+    *,
+    personal_session_provider=_personal_session,
+    organization_context_provider=_organization_context,
+) -> Stage2Gateway:
+    return Stage2Gateway(
+        runtime,
+        capability_id=DOCUMENT_WRITER_FIXTURE_ID,
+        personal_session_provider=personal_session_provider,
+        organization_context_provider=organization_context_provider,
+        allow_transport_sources=True,
+    )
+
+
+def _post(
+    server,
+    path: str,
+    payload: object,
+    *,
+    headers: dict[str, str] | None = None,
+) -> tuple[int, dict[str, object]]:
     body = json.dumps(payload).encode("utf-8")
+    request_headers = {"Content-Type": "application/json", **(headers or {})}
     request = urllib.request.Request(
         f"http://127.0.0.1:{server.server_port}{path}",
         data=body,
-        headers={"Content-Type": "application/json"},
+        headers=request_headers,
         method="POST",
     )
     try:
@@ -198,9 +228,8 @@ def test_gateway_injects_server_personal_context_and_rejects_client_authority() 
         provider_calls += 1
         return _personal_session()
 
-    gateway = Stage2Gateway(
+    gateway = _fixture_gateway(
         _runtime(writer=writer),
-        capability_id=DOCUMENT_WRITER_FIXTURE_ID,
         personal_session_provider=personal_provider,
         organization_context_provider=_organization_context,
     )
@@ -218,12 +247,7 @@ def test_gateway_injects_server_personal_context_and_rejects_client_authority() 
 
 def test_gateway_keeps_organization_binding_and_credentials_server_owned() -> None:
     adapter = _OrganizationAdapter()
-    gateway = Stage2Gateway(
-        _runtime(adapter=adapter),
-        capability_id=DOCUMENT_WRITER_FIXTURE_ID,
-        personal_session_provider=_personal_session,
-        organization_context_provider=_organization_context,
-    )
+    gateway = _fixture_gateway(_runtime(adapter=adapter))
     receipt = gateway.run("organization", _organization_payload())
     assert receipt["route"] == "organization_lark/lark"
     assert adapter.write_calls == 1
@@ -253,12 +277,7 @@ def test_http_route_is_fail_closed_without_an_injected_gateway() -> None:
 def test_http_routes_dispatch_personal_and_organization_to_gateway() -> None:
     writer = _PersonalWriter()
     adapter = _OrganizationAdapter()
-    gateway = Stage2Gateway(
-        _runtime(writer=writer, adapter=adapter),
-        capability_id=DOCUMENT_WRITER_FIXTURE_ID,
-        personal_session_provider=_personal_session,
-        organization_context_provider=_organization_context,
-    )
+    gateway = _fixture_gateway(_runtime(writer=writer, adapter=adapter))
     server = make_server("127.0.0.1", 0, _app(gateway))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -279,3 +298,89 @@ def test_http_routes_dispatch_personal_and_organization_to_gateway() -> None:
     assert organization_status == 200
     assert organization_body["ok"] is True
     assert organization_body["receipt"]["route"] == "organization_lark/lark"
+
+
+def test_gateway_preserves_stable_server_context_error_status() -> None:
+    def missing_session() -> ServerSessionFacts:
+        raise Stage2ServerContextError(
+            "authentication_required",
+            "an authenticated session is required",
+            status=401,
+        )
+
+    gateway = _fixture_gateway(
+        _runtime(),
+        personal_session_provider=missing_session,
+        organization_context_provider=_organization_context,
+    )
+
+    with pytest.raises(Stage2GatewayError) as error:
+        gateway.run("personal", _personal_payload("missing-session"))
+
+    assert error.value.code == "authentication_required"
+    assert error.value.status == 401
+
+
+def test_http_cookie_context_is_request_scoped_and_cleared_after_dispatch() -> None:
+    session_record = {
+        "sessionId": "session-personal",
+        "userId": "user-personal",
+        "tenantId": PERSONAL_TENANT,
+        "tenantType": "personal",
+        "memberTenantId": PERSONAL_TENANT,
+        "status": "active",
+        "memberStatus": "active",
+        "tenantStatus": "active",
+    }
+    tokens: list[str] = []
+
+    def session_loader(token: str) -> dict[str, object] | None:
+        tokens.append(token)
+        return session_record if token == "cookie-token" else None
+
+    session_provider = AuthenticatedSessionProvider(
+        session_loader,
+        current_request_session_token,
+    )
+    contexts = ServerStage2ContextProviders(
+        session_provider,
+        CurrentBindingProvider(lambda tenant_id: None),
+        TenantProfileReader(
+            lambda tenant_id, tenant_type: {
+                "tenantId": tenant_id,
+                "tenantType": tenant_type,
+                "revision": "1",
+                "fields": {},
+            }
+        ),
+    )
+    gateway = _fixture_gateway(
+        _runtime(),
+        personal_session_provider=contexts.personal_session,
+        organization_context_provider=contexts.organization_context,
+    )
+    server = make_server("127.0.0.1", 0, _app(gateway))
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        ok_status, ok_body = _post(
+            server,
+            "/stage2/personal",
+            _personal_payload("cookie-authenticated"),
+            headers={"Cookie": "openclaw_session=cookie-token"},
+        )
+        missing_status, missing_body = _post(
+            server,
+            "/stage2/personal",
+            _personal_payload("cookie-missing"),
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=3)
+        server.server_close()
+
+    assert ok_status == 200
+    assert ok_body["ok"] is True
+    assert missing_status == 401
+    assert missing_body["error"]["code"] == "authentication_required"
+    assert tokens == ["cookie-token"]

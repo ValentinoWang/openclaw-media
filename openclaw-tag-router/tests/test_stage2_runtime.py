@@ -21,6 +21,7 @@ from openclaw_app.services.stage2_runtime import (
     Stage2Runtime,
     Stage2RuntimeError,
 )
+from openclaw_app.services.stage2_personal_pipeline import SQLitePersonalContentStore
 
 
 PERSONAL_TENANT = "11111111-1111-4111-8111-111111111111"
@@ -146,9 +147,10 @@ class FakeOrganizationAdapter:
         )
 
 
-def make_runtime(*, personal_writer=None, organization_adapter=None, store=None, clock=None) -> Stage2Runtime:
+def make_runtime(*, personal_writer=None, organization_adapter=None, store=None, personal_store=None, clock=None) -> Stage2Runtime:
     return Stage2Runtime(
         personal_writer=personal_writer or FakePersonalWriter(),
+        personal_store=personal_store,
         organization_adapter=organization_adapter or FakeOrganizationAdapter(),
         receipt_store=store,
         clock=clock,
@@ -331,3 +333,26 @@ def test_clock_and_generator_are_injected_without_direct_time_or_io() -> None:
 
     assert receipt["observedAt"] == "2026-08-19T00:00:00+00:00"
     assert generator.calls == 1
+
+
+def test_runtime_accepts_durable_personal_store_across_instances(tmp_path) -> None:
+    database = tmp_path / "runtime-personal.sqlite3"
+    writer = FakePersonalWriter()
+    first = make_runtime(
+        personal_writer=writer,
+        personal_store=SQLitePersonalContentStore(database),
+    )
+    first_receipt = run_personal(first, operation_id="durable-op")
+
+    second_writer = FakePersonalWriter()
+    second = make_runtime(
+        personal_writer=second_writer,
+        personal_store=SQLitePersonalContentStore(database),
+    )
+    second_receipt = run_personal(second, operation_id="durable-op")
+
+    assert first_receipt["artifactStatus"] == "readback_verified"
+    assert second_receipt["artifactStatus"] == "readback_verified"
+    assert second_receipt["artifact"]["replayed"] is True
+    assert writer.calls == 1
+    assert second_writer.calls == 0

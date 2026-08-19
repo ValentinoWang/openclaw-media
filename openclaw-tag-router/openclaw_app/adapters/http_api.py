@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import TYPE_CHECKING, Any
 
 from ..services.stage2_gateway import Stage2GatewayError
 from ..services.stage2_runtime import Stage2RuntimeError
+from ..services.stage2_server_context import stage2_request_context
 
 if TYPE_CHECKING:
     from ..app import OpenClawApp
@@ -59,7 +61,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except Stage2GatewayError as exc:
             self._send_json(exc.status, {"ok": False, "error": {"code": exc.code, "message": exc.message}})
         except Stage2RuntimeError as exc:
-            status = HTTPStatus.CONFLICT if exc.code == "idempotency_conflict" else HTTPStatus.UNPROCESSABLE_ENTITY
+            status = HTTPStatus.CONFLICT if exc.code in {"idempotency_conflict", "idempotency_in_progress"} else HTTPStatus.UNPROCESSABLE_ENTITY
             self._send_json(status, {"ok": False, "error": {"code": exc.code, "message": exc.message}})
         except ValueError as exc:
             self._send_json(HTTPStatus.BAD_REQUEST, {"ok": False, "error": str(exc)})
@@ -118,7 +120,28 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
     def _handle_stage2(self, mode: str, payload: dict[str, Any]) -> None:
         if self.app is None:
             raise RuntimeError("app not configured")
-        receipt = self.app.process_stage2(mode, payload)
+        cookies: dict[str, str] = {}
+        raw_cookie = self.headers.get("Cookie")
+        if raw_cookie:
+            parsed = SimpleCookie()
+            try:
+                parsed.load(raw_cookie)
+            except CookieError:
+                parsed = SimpleCookie()
+            session_cookie = parsed.get("openclaw_session")
+            if session_cookie is not None:
+                cookies["openclaw_session"] = session_cookie.value
+        authorizations = self.headers.get_all("Authorization", failobj=[])
+        if len(authorizations) > 1:
+            raise Stage2GatewayError(
+                "authentication_invalid",
+                "multiple Authorization headers are not allowed",
+                status=HTTPStatus.UNAUTHORIZED,
+            )
+        authorization = authorizations[0] if authorizations else None
+        headers = {"Authorization": authorization} if authorization else {}
+        with stage2_request_context({"headers": headers, "cookies": cookies}):
+            receipt = self.app.process_stage2(mode, payload)
         self._send_json(HTTPStatus.OK, {"ok": True, "receipt": receipt})
 
 

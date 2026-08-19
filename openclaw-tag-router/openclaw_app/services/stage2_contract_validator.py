@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from pathlib import Path
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -811,6 +812,45 @@ class Stage2ContractValidator:
         return validate_contract(contract, loader=loader)
 
 
+class Stage2ContractValidationError(ValueError):
+    """Raised by a startup/release owner when the persisted contract is invalid."""
+
+    def __init__(self, path: str | Path, receipt: Mapping[str, Any]) -> None:
+        self.path = str(path)
+        self.receipt = dict(receipt)
+        findings = self.receipt.get("findings", ())
+        summary = "; ".join(
+            str(item.get("code", "contract_invalid"))
+            for item in findings
+            if isinstance(item, Mapping)
+        ) or "contract_invalid"
+        super().__init__(f"Stage-2 contract validation failed for {self.path}: {summary}")
+
+
+def validate_contract_file(path: str | Path) -> dict[str, Any]:
+    """Load and validate the immutable JSON contract used by a start workflow."""
+
+    contract_path = Path(path)
+    try:
+        contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        receipt = validate_contract(None)
+        receipt["findings"] = [
+            {
+                "code": "contract_input_invalid",
+                "path": str(contract_path),
+                "message": f"contract file could not be loaded: {type(exc).__name__}",
+            }
+        ]
+        receipt["valid"] = False
+        raise Stage2ContractValidationError(contract_path, receipt) from exc
+
+    receipt = validate_contract(contract)
+    if not receipt["valid"]:
+        raise Stage2ContractValidationError(contract_path, receipt)
+    return receipt
+
+
 __all__ = [
     "CONTRACT_SCHEMA_VERSION",
     "CONTRACT_VERSION",
@@ -818,10 +858,12 @@ __all__ = [
     "PERSONAL_ROUTE",
     "SUPPORTED_ROUTES",
     "Stage2ContractValidator",
+    "Stage2ContractValidationError",
     "VALIDATOR_SCHEMA_VERSION",
     "contract_digest",
     "digest_contract",
     "load_contract",
     "validate_contract",
+    "validate_contract_file",
     "validate_stage2_contract",
 ]

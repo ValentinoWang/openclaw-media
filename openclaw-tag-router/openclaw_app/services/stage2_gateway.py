@@ -79,6 +79,26 @@ def _pick(payload: Mapping[str, Any], *names: str, default: Any = None) -> Any:
     return default
 
 
+def _server_context_error(exc: Exception, label: str) -> Stage2GatewayError:
+    code = getattr(exc, "code", None)
+    status = getattr(exc, "status", None)
+    message = getattr(exc, "message", None)
+    if (
+        isinstance(code, str)
+        and bool(code.strip())
+        and isinstance(status, int)
+        and 400 <= status <= 599
+        and isinstance(message, str)
+        and bool(message.strip())
+    ):
+        return Stage2GatewayError(code, message, status=status)
+    return Stage2GatewayError(
+        "server_context_unavailable",
+        f"{label} server context is unavailable",
+        status=503,
+    )
+
+
 class Stage2Gateway:
     """Compose transport data with server-owned Stage-2 authority facts."""
 
@@ -89,23 +109,37 @@ class Stage2Gateway:
         capability_id: str,
         personal_session_provider: Callable[[], ServerSessionFacts],
         organization_context_provider: Callable[[], OrganizationServerContext],
+        allow_transport_sources: bool = False,
     ) -> None:
         if not isinstance(runtime, Stage2Runtime):
             raise TypeError("runtime must be a Stage2Runtime")
         if not capability_id or not callable(personal_session_provider) or not callable(organization_context_provider):
             raise ValueError("Stage-2 gateway requires server-owned providers")
+        if not isinstance(allow_transport_sources, bool):
+            raise TypeError("allow_transport_sources must be a boolean")
         self.runtime = runtime
         self.capability_id = capability_id
         self.personal_session_provider = personal_session_provider
         self.organization_context_provider = organization_context_provider
+        self.allow_transport_sources = allow_transport_sources
+
+    def _reject_transport_sources(self, request: Mapping[str, Any]) -> None:
+        if not self.allow_transport_sources and any(
+            field in request for field in ("sources", "source_rows", "sourceRows")
+        ):
+            raise Stage2GatewayError(
+                "authority_override",
+                "request cannot provide server-owned source rows",
+            )
 
     def run_personal(self, payload: Mapping[str, Any] | None) -> dict[str, Any]:
         request = _require_mapping(payload)
         _reject_authority_fields(request, _PERSONAL_FIELDS)
+        self._reject_transport_sources(request)
         try:
             session = self.personal_session_provider()
         except Exception as exc:
-            raise Stage2GatewayError("server_context_unavailable", "personal server context is unavailable", status=503) from exc
+            raise _server_context_error(exc, "personal") from exc
         if not isinstance(session, ServerSessionFacts):
             raise Stage2GatewayError("server_context_invalid", "personal server context is invalid", status=503)
         args = {
@@ -125,10 +159,11 @@ class Stage2Gateway:
     def run_organization(self, payload: Mapping[str, Any] | None) -> dict[str, Any]:
         request = _require_mapping(payload)
         _reject_authority_fields(request, _ORGANIZATION_FIELDS)
+        self._reject_transport_sources(request)
         try:
             context = self.organization_context_provider()
         except Exception as exc:
-            raise Stage2GatewayError("server_context_unavailable", "organization server context is unavailable", status=503) from exc
+            raise _server_context_error(exc, "organization") from exc
         if not isinstance(context, OrganizationServerContext):
             raise Stage2GatewayError("server_context_invalid", "organization server context is invalid", status=503)
         args = {

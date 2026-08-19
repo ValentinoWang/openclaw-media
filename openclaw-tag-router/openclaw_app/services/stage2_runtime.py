@@ -48,6 +48,7 @@ from openclaw_app.services.stage2_organization_pipeline import (
 )
 from openclaw_app.services.stage2_personal_pipeline import (
     PersonalContentPipeline,
+    PersonalContentStore,
     PersonalPipelineError,
 )
 
@@ -141,6 +142,13 @@ class IdempotencyConflict(Stage2RuntimeError):
         super().__init__("idempotency_conflict", "operation id was reused with another request")
 
 
+class IdempotencyInProgress(Stage2RuntimeError):
+    """Another process has already claimed this operation for execution."""
+
+    def __init__(self) -> None:
+        super().__init__("idempotency_in_progress", "operation is already in progress")
+
+
 @dataclass(frozen=True, slots=True)
 class ReceiptRecord:
     request_fingerprint: str
@@ -151,6 +159,10 @@ class ReceiptStore(Protocol):
     def get(self, key: str) -> ReceiptRecord | Mapping[str, Any] | None: ...
 
     def put(self, key: str, request_fingerprint: str, response: Mapping[str, Any]) -> None: ...
+
+    def claim(self, key: str, request_fingerprint: str) -> ReceiptRecord | Mapping[str, Any] | None: ...
+
+    def release(self, key: str, request_fingerprint: str) -> None: ...
 
 
 class InMemoryReceiptStore:
@@ -180,6 +192,20 @@ class InMemoryReceiptStore:
                     request_fingerprint=request_fingerprint,
                     response=copy.deepcopy(dict(response)),
                 )
+
+    def claim(self, key: str, request_fingerprint: str) -> ReceiptRecord | None:
+        with self._lock:
+            record = self._records.get(key)
+            if record is not None:
+                if record.request_fingerprint != request_fingerprint:
+                    raise IdempotencyConflict()
+                return copy.deepcopy(record)
+            return None
+
+    def release(self, key: str, request_fingerprint: str) -> None:
+        # In-memory records are only written after operation completion, so a
+        # failed operation has no reservation to release.
+        return None
 
 
 class _CapturingPersonalWriter:
@@ -321,6 +347,17 @@ def _operation_key(operation_id: str | None, idempotency_key: str | None) -> str
     return _text(operation_id if operation_id is not None else idempotency_key, "operation_id", 256)
 
 
+def _receipt_storage_key(mode: str, tenant_id: str, operation_id: str) -> str:
+    identity = _canonical_json(
+        {
+            "mode": mode,
+            "operationId": operation_id,
+            "tenantId": tenant_id,
+        }
+    )
+    return "stage2-runtime:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
+
+
 def _error_details(exc: Exception, fallback: str = "Stage-2 operation failed") -> tuple[str, str]:
     code = getattr(exc, "code", None)
     if not isinstance(code, str) or not code.strip():
@@ -390,6 +427,7 @@ class Stage2Runtime:
         context_builder: ContextBuilder | None = None,
         source_reader: Any | None = None,
         personal_pipeline: PersonalContentPipeline | None = None,
+        personal_store: PersonalContentStore | None = None,
         organization_pipeline: OrganizationContentPipeline | None = None,
         personal_writer: Any | None = None,
         organization_adapter: ExternalDocumentAdapter | None = None,
@@ -401,13 +439,15 @@ class Stage2Runtime:
     ) -> None:
         if context_builder is not None and source_reader is not None:
             raise ValueError("context_builder and source_reader cannot both be supplied")
+        if personal_pipeline is not None and personal_store is not None:
+            raise ValueError("personal_pipeline and personal_store cannot both be supplied")
         self.effect_registry = effect_registry or DEFAULT_CAPABILITY_EFFECT_REGISTRY
         self.context_builder = context_builder or ContextBuilder(
             source_reader=source_reader,
             effect_registry=self.effect_registry,
             clock=clock,
         )
-        self.personal_pipeline = personal_pipeline or PersonalContentPipeline()
+        self.personal_pipeline = personal_pipeline or PersonalContentPipeline(store=personal_store)
         self.organization_pipeline = organization_pipeline or OrganizationContentPipeline()
         self.personal_writer = personal_writer
         self.organization_adapter = organization_adapter
@@ -1054,23 +1094,42 @@ class Stage2Runtime:
         operation: Callable[[], dict[str, Any]],
     ) -> dict[str, Any]:
         fingerprint = _digest(payload)
+        storage_key = _receipt_storage_key(mode, tenant_id, key)
         with self._lock:
-            existing = self._read_record(key)
+            existing = self._read_record(storage_key)
             if existing is not None:
                 if existing.request_fingerprint != fingerprint:
                     raise IdempotencyConflict()
                 replay = copy.deepcopy(existing.response)
                 replay["replayed"] = True
                 return replay
+            claim = getattr(self.receipt_store, "claim", None)
+            release = getattr(self.receipt_store, "release", None)
+            if callable(claim):
+                try:
+                    claimed = claim(storage_key, fingerprint)
+                except IdempotencyInProgress:
+                    raise
+                if claimed is not None:
+                    existing = self._coerce_receipt_record(claimed)
+                    replay = copy.deepcopy(existing.response)
+                    replay["replayed"] = True
+                    return replay
             try:
                 response = operation()
             except Stage2RuntimeError:
+                if callable(release):
+                    release(storage_key, fingerprint)
                 raise
             except (Stage2ContextError,) as exc:
+                if callable(release):
+                    release(storage_key, fingerprint)
                 raise _as_runtime_error(exc) from exc
             except Exception as exc:
                 code, message = _error_details(exc)
                 if code == "idempotency_conflict":
+                    if callable(release):
+                        release(storage_key, fingerprint)
                     raise IdempotencyConflict() from exc
                 response = self._failure_receipt(
                     key=key,
@@ -1079,8 +1138,24 @@ class Stage2Runtime:
                     error_code="pipeline_failed",
                     error_message=message,
                 )
-            self._write_record(key, fingerprint, response)
+            try:
+                self._write_record(storage_key, fingerprint, response)
+            except Exception:
+                if callable(release):
+                    release(storage_key, fingerprint)
+                raise
             return copy.deepcopy(response)
+
+    @staticmethod
+    def _coerce_receipt_record(raw: ReceiptRecord | Mapping[str, Any]) -> ReceiptRecord:
+        if isinstance(raw, ReceiptRecord):
+            return copy.deepcopy(raw)
+        if isinstance(raw, Mapping):
+            fingerprint = _lookup(raw, "request_fingerprint", "requestFingerprint", "fingerprint")
+            response = _lookup(raw, "response")
+            if isinstance(fingerprint, str) and isinstance(response, Mapping):
+                return ReceiptRecord(fingerprint, copy.deepcopy(dict(response)))
+        raise Stage2RuntimeError("receipt_store_invalid", "receipt store returned an invalid record")
 
     def _read_record(self, key: str) -> ReceiptRecord | None:
         if isinstance(self.receipt_store, MutableMapping):
@@ -1219,6 +1294,7 @@ RuntimeFacade = Stage2Runtime
 
 __all__ = [
     "IdempotencyConflict",
+    "IdempotencyInProgress",
     "InMemoryReceiptStore",
     "ORGANIZATION_MODE",
     "PERSONAL_MODE",
