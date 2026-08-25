@@ -12,8 +12,15 @@ import hashlib
 import json
 import threading
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
 from typing import Any, Protocol
+
+from openclaw_app.services.stage2_personal_store import (
+    InMemoryPersonalContentStore,
+    PersonalContentStore,
+    SQLitePersonalContentStore,
+    SqlitePersonalContentStore,
+    _StoreConflict,
+)
 
 
 SCHEMA_VERSION = "stage2.personal_pipeline.v1"
@@ -123,17 +130,22 @@ def _reject_browser_claims(claims: Mapping[str, Any] | None) -> None:
         )
 
 
-@dataclass(frozen=True, slots=True)
-class _Replay:
-    fingerprint: str
-    result: Mapping[str, Any]
-
-
 class PersonalContentPipeline:
-    def __init__(self) -> None:
-        self._artifacts: dict[str, dict[str, Any]] = {}
-        self._replays: dict[str, _Replay] = {}
+    def __init__(self, *, store: PersonalContentStore | None = None) -> None:
+        self.store = store or InMemoryPersonalContentStore()
         self._lock = threading.RLock()
+
+    def _record_failure(self, *, replay_key: str, fingerprint: str, code: str, message: str) -> None:
+        try:
+            self.store.record_failure(
+                replay_key=replay_key,
+                fingerprint=fingerprint,
+                failure={"status": "failed", "errorCode": code, "errorMessage": message},
+            )
+        except Exception:
+            # The original pipeline error remains the user-visible outcome. A
+            # storage failure must not turn a known failure into a false success.
+            return
 
     def build_scope(
         self,
@@ -298,28 +310,77 @@ class PersonalContentPipeline:
         )
         replay_key = f"artifact:{tenant_id}:{key}"
         with self._lock:
-            replay = self._replays.get(replay_key)
+            replay = self.store.get_replay(replay_key)
             if replay is not None:
                 if replay.fingerprint != fingerprint:
                     raise IdempotencyConflict()
                 value = copy.deepcopy(dict(replay.result))
                 value["replayed"] = True
                 return value
-            result = writer.write(
-                context,
-                normalized_content,
-                capability_id,
-                key,
-                context_receipt=context_receipt,
-            )
+            failure = self.store.get_failure(replay_key)
+            if failure is not None:
+                if failure.fingerprint != fingerprint:
+                    raise IdempotencyConflict()
+                details = failure.result
+                raise PersonalPipelineError(
+                    str(details.get("errorCode", "writer_failed")),
+                    str(details.get("errorMessage", "personal artifact write failed")),
+                )
+            try:
+                result = writer.write(
+                    context,
+                    normalized_content,
+                    capability_id,
+                    key,
+                    context_receipt=context_receipt,
+                )
+            except Exception as exc:
+                self._record_failure(
+                    replay_key=replay_key,
+                    fingerprint=fingerprint,
+                    code="writer_failed",
+                    message="personal artifact writer raised an exception",
+                )
+                raise PersonalPipelineError(
+                    "writer_failed", "personal artifact writer raised an exception"
+                ) from exc
             if not isinstance(result, Mapping) or str(result.get("status", "")).lower() not in _SUCCESS:
+                self._record_failure(
+                    replay_key=replay_key,
+                    fingerprint=fingerprint,
+                    code="writer_failed",
+                    message="personal artifact writer did not succeed",
+                )
                 raise PersonalPipelineError("writer_failed", "personal artifact writer did not succeed")
             if _lookup(result, "remote_ref", "remoteRef") is not None:
+                self._record_failure(
+                    replay_key=replay_key,
+                    fingerprint=fingerprint,
+                    code="personal_remote_ref_forbidden",
+                    message="personal writer returned a remote document",
+                )
                 raise PersonalPipelineError("personal_remote_ref_forbidden", "personal writer returned a remote document")
             artifact_ref = _text(_lookup(result, "artifact_ref", "artifactRef"), "artifact_ref", 256)
             readback = _lookup(result, "readback", default={})
             if not isinstance(readback, Mapping) or str(readback.get("status", "")).lower() not in _SUCCESS:
+                self._record_failure(
+                    replay_key=replay_key,
+                    fingerprint=fingerprint,
+                    code="readback_incomplete",
+                    message="personal artifact readback is required",
+                )
                 raise PersonalPipelineError("readback_incomplete", "personal artifact readback is required")
+            if _lookup(readback, "remote_ref", "remoteRef") is not None:
+                self._record_failure(
+                    replay_key=replay_key,
+                    fingerprint=fingerprint,
+                    code="personal_remote_ref_forbidden",
+                    message="personal readback returned a remote document",
+                )
+                raise PersonalPipelineError("personal_remote_ref_forbidden", "personal readback returned a remote document")
+            registration = _lookup(result, "registration", default={})
+            if not isinstance(registration, Mapping):
+                registration = {}
             revision = {
                 "revision": 1,
                 "content": normalized_content,
@@ -337,42 +398,90 @@ class PersonalContentPipeline:
                 "currentRevision": 1,
                 "published": False,
                 "replayed": False,
+                "writeReceipt": {
+                    "idempotencyKey": key,
+                    "writeStatus": str(result.get("status", "")).lower(),
+                    "registrationStatus": str(registration.get("status", "")).lower(),
+                    "readbackStatus": str(readback.get("status", "")).lower(),
+                    "readback": copy.deepcopy(dict(readback)),
+                    "failure": None,
+                },
             }
-            existing_artifact = self._artifacts.get(artifact_ref)
+            existing_artifact = self.store.get_artifact(artifact_ref, tenant_id=tenant_id)
             if existing_artifact is not None:
+                self._record_failure(
+                    replay_key=replay_key,
+                    fingerprint=fingerprint,
+                    code="artifact_identity_conflict",
+                    message="writer returned an artifact identity that already exists",
+                )
                 raise PersonalPipelineError(
                     "artifact_identity_conflict",
                     "writer returned an artifact identity that already exists",
                 )
-            self._artifacts[artifact_ref] = copy.deepcopy(artifact)
-            self._replays[replay_key] = _Replay(fingerprint, copy.deepcopy(artifact))
-            return artifact
+            try:
+                stored, replayed = self.store.create_artifact(
+                    artifact,
+                    tenant_id=tenant_id,
+                    replay_key=replay_key,
+                    fingerprint=fingerprint,
+                )
+            except _StoreConflict as exc:
+                if exc.code == "idempotency_conflict":
+                    raise IdempotencyConflict() from exc
+                raise PersonalPipelineError(exc.code, exc.message) from exc
+            value = copy.deepcopy(dict(stored))
+            value["replayed"] = replayed
+            return value
 
     def save_revision(
         self,
         artifact_ref: str,
         *,
+        tenant_id: str,
         title: str,
         body: str,
         baseline_revision: int,
         idempotency_key: str,
     ) -> dict[str, Any]:
         artifact_key = _text(artifact_ref, "artifact_ref", 256)
-        replay_key = f"revision:{artifact_key}:{_text(idempotency_key, 'idempotency_key', 256)}"
+        owner_tenant_id = _text(tenant_id, "tenant_id", 256)
+        replay_key = f"revision:{owner_tenant_id}:{artifact_key}:{_text(idempotency_key, 'idempotency_key', 256)}"
         content = {"title": _text(title, "title", 240), "body": _text(body, "body"), "format": "markdown"}
-        fingerprint = _digest({"artifactRef": artifact_key, "baselineRevision": baseline_revision, "content": content})
+        fingerprint = _digest({"tenantId": owner_tenant_id, "artifactRef": artifact_key, "baselineRevision": baseline_revision, "content": content})
         with self._lock:
-            replay = self._replays.get(replay_key)
+            replay = self.store.get_replay(replay_key)
             if replay is not None:
                 if replay.fingerprint != fingerprint:
                     raise IdempotencyConflict()
                 value = copy.deepcopy(dict(replay.result))
                 value["replayed"] = True
                 return value
-            artifact = self._artifacts.get(artifact_key)
+            failure = self.store.get_failure(replay_key)
+            if failure is not None:
+                if failure.fingerprint != fingerprint:
+                    raise IdempotencyConflict()
+                details = failure.result
+                raise PersonalPipelineError(
+                    str(details.get("errorCode", "revision_conflict")),
+                    str(details.get("errorMessage", "personal revision write failed")),
+                )
+            artifact = self.store.get_artifact(artifact_key, tenant_id=owner_tenant_id)
             if artifact is None:
+                self._record_failure(
+                    replay_key=replay_key,
+                    fingerprint=fingerprint,
+                    code="artifact_not_found",
+                    message="personal artifact does not exist",
+                )
                 raise PersonalPipelineError("artifact_not_found", "personal artifact does not exist")
             if isinstance(baseline_revision, bool) or baseline_revision != artifact["currentRevision"]:
+                self._record_failure(
+                    replay_key=replay_key,
+                    fingerprint=fingerprint,
+                    code="revision_conflict",
+                    message="baseline revision does not match the current revision",
+                )
                 raise RevisionConflict()
             revision_number = artifact["currentRevision"] + 1
             revision = {
@@ -383,22 +492,38 @@ class PersonalContentPipeline:
                 "verified": True,
                 "replayed": False,
             }
-            artifact["revisions"].append(copy.deepcopy(revision))
-            artifact["currentRevision"] = revision_number
-            self._replays[replay_key] = _Replay(fingerprint, copy.deepcopy(revision))
-            return revision
+            try:
+                stored, replayed = self.store.save_revision(
+                    artifact_key,
+                    revision,
+                    tenant_id=owner_tenant_id,
+                    baseline_revision=baseline_revision,
+                    replay_key=replay_key,
+                    fingerprint=fingerprint,
+                )
+            except _StoreConflict as exc:
+                if exc.code == "idempotency_conflict":
+                    raise IdempotencyConflict() from exc
+                if exc.code == "revision_conflict":
+                    raise RevisionConflict() from exc
+                raise PersonalPipelineError(exc.code, exc.message) from exc
+            value = copy.deepcopy(dict(stored))
+            value["replayed"] = replayed
+            return value
 
     def build_publish_package(
         self,
         artifact_ref: str,
         *,
+        tenant_id: str,
         revision: int,
         platform: str,
         platform_fields: Mapping[str, Any],
     ) -> dict[str, Any]:
         artifact_key = _text(artifact_ref, "artifact_ref", 256)
+        owner_tenant_id = _text(tenant_id, "tenant_id", 256)
         with self._lock:
-            artifact = self._artifacts.get(artifact_key)
+            artifact = self.store.get_artifact(artifact_key, tenant_id=owner_tenant_id)
             if artifact is None:
                 raise PersonalPipelineError("artifact_not_found", "personal artifact does not exist")
             if isinstance(revision, bool) or revision != artifact["currentRevision"]:
@@ -424,9 +549,13 @@ class PersonalContentPipeline:
 
 __all__ = [
     "IdempotencyConflict",
+    "InMemoryPersonalContentStore",
     "PersonalContentPipeline",
+    "PersonalContentStore",
     "PersonalPipelineError",
     "PersonalWriter",
     "RevisionConflict",
+    "SQLitePersonalContentStore",
+    "SqlitePersonalContentStore",
     "SCHEMA_VERSION",
 ]

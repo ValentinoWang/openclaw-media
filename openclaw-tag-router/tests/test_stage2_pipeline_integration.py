@@ -134,7 +134,7 @@ def test_personal_context_to_verified_artifact_and_package() -> None:
         "readbackRevision": "1",
     })
     package = pipeline.build_publish_package(
-        artifact["artifactRef"], revision=1, platform="douyin", platform_fields={"caption": "Draft"}
+        artifact["artifactRef"], tenant_id=PERSONAL_TENANT, revision=1, platform="douyin", platform_fields={"caption": "Draft"}
     )
     assert state.ready_for_publish is True
     assert package["externalPublishStatus"] == "not_published"
