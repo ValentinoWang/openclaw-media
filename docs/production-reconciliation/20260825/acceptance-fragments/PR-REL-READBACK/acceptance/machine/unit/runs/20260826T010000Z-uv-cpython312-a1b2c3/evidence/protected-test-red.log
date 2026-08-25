@@ -1,0 +1,27 @@
+# Protected red proof: PR-REL-READBACK
+
+- Run ID: 20260826T010000Z-uv-cpython312-a1b2c3
+- Execution time: 2026-08-25T16:27:38Z
+- Runtime command: `uv run --python 3.12 python --version`
+- Runtime result: `Python 3.12.11`
+- Test command: `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=openclaw-tag-router uv run --python 3.12 --with pytest python -m pytest -q openclaw-tag-router/tests/test_stage2_release_readback.py`
+- Test exit code: `1`
+- Pytest result: `13 errors in 0.08s`
+- Failure class: intended future implementation is absent
+- Failure origin: implementation
+
+## Redacted output excerpt
+
+```text
+ERROR at setup of Stage2ReleaseReadbackProtectedTests.test_accepts_complete_readback
+AssertionError: INTENDED_GUARD_MISSING: openclaw-tag-router/scripts/qa/check_stage2_release_process.py
+...
+13 errors in 0.08s
+```
+
+## Boundary checks
+
+- `openclaw-tag-router/scripts/qa/check_stage2_release_process.py` was absent before the test command.
+- The test command used only the protected local test file and injected fixtures; it did not use SSH, remote execution, `curl`, a live HTTP request, systemd, `/proc`, a database, Feishu, or a production host.
+- The stored excerpt omits pytest locals and raw observation payloads. It contains no environment values, tokens, cookies, Authorization values, or full secret-bearing argv.
+- This is a source red proof for the missing intended guard only; it is not production or deployment evidence.
