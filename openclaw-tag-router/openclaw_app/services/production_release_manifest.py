@@ -169,12 +169,9 @@ def _normalize_relative_path(raw_path: Any) -> str:
         _raise("PATH_TRAVERSAL")
 
     parts = path.split("/")
-    if any(part == ".." for part in parts):
+    if any(part in {"", ".", ".."} for part in parts):
         _raise("PATH_TRAVERSAL")
-    normalized_parts = [part for part in parts if part not in {"", "."}]
-    if not normalized_parts:
-        _raise("PATH_TRAVERSAL")
-    return "/".join(normalized_parts)
+    return path
 
 
 def _path_policy_error(path: str) -> str | None:
