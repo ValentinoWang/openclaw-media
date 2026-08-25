@@ -11,10 +11,14 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
+import sqlite3
 import re
 import threading
+from contextlib import contextmanager
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Protocol
 
 
@@ -91,10 +95,18 @@ class OrganizationWriteRequest:
     binding: BindingIdentity | None
     idempotency_key: str
     content_digest: str
+    title: str = ""
+    body: str = ""
+    content_format: str = "markdown"
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "idempotency_key", _required_text(self.idempotency_key, "idempotency_key"))
         object.__setattr__(self, "content_digest", _digest(self.content_digest))
+        if self.title:
+            object.__setattr__(self, "title", _required_text(self.title, "title", 240))
+        if self.body:
+            object.__setattr__(self, "body", _required_text(self.body, "body"))
+        object.__setattr__(self, "content_format", _required_text(self.content_format, "content_format", 32).lower())
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,11 +194,121 @@ class InMemoryWriteReceiptStore:
             self._records[key] = _StoredReceipt(fingerprint, copy.deepcopy(result))
 
 
+class SQLiteWriteReceiptStore:
+    """Restart-safe external write receipts used before artifact registration."""
+
+    def __init__(self, path: str | Path) -> None:
+        if str(path).strip() == ":memory:":
+            raise ExternalDocumentError("volatile_store_forbidden", "external write receipts must be file-backed")
+        self.path = str(path)
+        path_object = Path(self.path).expanduser().resolve()
+        path_object.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            os.chmod(path_object.parent, 0o700)
+        except OSError:
+            pass
+        self._lock = threading.RLock()
+        self._initialize()
+        try:
+            os.chmod(path_object, 0o600)
+        except OSError:
+            pass
+
+    def _connect(self) -> sqlite3.Connection:
+        connection = sqlite3.connect(self.path, timeout=30.0, isolation_level=None)
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA busy_timeout = 30000")
+        connection.execute("PRAGMA journal_mode = WAL")
+        connection.execute("PRAGMA synchronous = NORMAL")
+        return connection
+
+    @contextmanager
+    def _connection_scope(self):
+        connection = self._connect()
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
+
+    def _initialize(self) -> None:
+        with self._lock, self._connection_scope() as connection:
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS organization_external_receipts (
+                    idempotency_key TEXT PRIMARY KEY,
+                    fingerprint TEXT NOT NULL,
+                    result_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            columns = {str(row[1]) for row in connection.execute("PRAGMA table_info(organization_external_receipts)").fetchall()}
+            if not {"idempotency_key", "fingerprint", "result_json"}.issubset(columns):
+                raise ExternalDocumentError("receipt_schema_invalid", "external write receipt schema is incomplete")
+
+    @staticmethod
+    def _decode(raw: str) -> ExternalDocumentWriteResult:
+        try:
+            value = json.loads(raw)
+        except (TypeError, ValueError) as exc:
+            raise ExternalDocumentError("receipt_corrupt", "external write receipt is corrupt") from exc
+        if not isinstance(value, Mapping):
+            raise ExternalDocumentError("receipt_corrupt", "external write receipt must be an object")
+        try:
+            return ExternalDocumentWriteResult(
+                status=str(value["status"]),
+                publishable=bool(value["publishable"]),
+                ready_for_registration=bool(value["ready_for_registration"]),
+                idempotency_key=str(value["idempotency_key"]),
+                content_digest=str(value["content_digest"]),
+                remote_ref=value.get("remote_ref"),
+                remote_revision=value.get("remote_revision"),
+                error_code=value.get("error_code"),
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ExternalDocumentError("receipt_corrupt", "external write receipt fields are invalid") from exc
+
+    def get(self, key: str) -> _StoredReceipt | None:
+        with self._lock, self._connection_scope() as connection:
+            row = connection.execute("SELECT fingerprint, result_json FROM organization_external_receipts WHERE idempotency_key = ?", (key,)).fetchone()
+        if row is None:
+            return None
+        return _StoredReceipt(str(row["fingerprint"]), self._decode(str(row["result_json"])))
+
+    def put(self, key: str, fingerprint: str, result: ExternalDocumentWriteResult) -> None:
+        self._save(key, fingerprint, result, replace=False)
+
+    def replace(self, key: str, fingerprint: str, result: ExternalDocumentWriteResult) -> None:
+        self._save(key, fingerprint, result, replace=True)
+
+    def _save(self, key: str, fingerprint: str, result: ExternalDocumentWriteResult, *, replace: bool) -> None:
+        payload = json.dumps(result.as_dict(), ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+        with self._lock, self._connection_scope() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute("SELECT fingerprint FROM organization_external_receipts WHERE idempotency_key = ?", (key,)).fetchone()
+            if row is None:
+                if replace:
+                    connection.rollback()
+                    raise ExternalDocumentError("receipt_missing", "write receipt does not exist")
+                connection.execute("INSERT INTO organization_external_receipts(idempotency_key, fingerprint, result_json) VALUES (?, ?, ?)", (key, fingerprint, payload))
+            else:
+                if str(row["fingerprint"]) != fingerprint:
+                    connection.rollback()
+                    raise IdempotencyConflict()
+                if replace:
+                    connection.execute("UPDATE organization_external_receipts SET result_json = ? WHERE idempotency_key = ?", (payload, key))
+            connection.commit()
+
+
 def _fingerprint(request: OrganizationWriteRequest) -> str:
     payload = {
         "binding": asdict(request.binding) if request.binding is not None else None,
         "idempotency_key": request.idempotency_key,
         "content_digest": request.content_digest,
+        "title": request.title,
+        "body": request.body,
+        "content_format": request.content_format,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
@@ -229,7 +351,7 @@ def _readback_outcome(value: ExternalReadbackOutcome | Mapping[str, Any]) -> Ext
 class ExternalDocumentWriter:
     """Coordinate an injected write plus readback without external knowledge."""
 
-    def __init__(self, store: InMemoryWriteReceiptStore | None = None) -> None:
+    def __init__(self, store: InMemoryWriteReceiptStore | SQLiteWriteReceiptStore | None = None) -> None:
         self._store = store or InMemoryWriteReceiptStore()
         self._lock = threading.RLock()
 
@@ -414,5 +536,6 @@ __all__ = [
     "ExternalDocumentWriter",
     "IdempotencyConflict",
     "InMemoryWriteReceiptStore",
+    "SQLiteWriteReceiptStore",
     "OrganizationWriteRequest",
 ]
