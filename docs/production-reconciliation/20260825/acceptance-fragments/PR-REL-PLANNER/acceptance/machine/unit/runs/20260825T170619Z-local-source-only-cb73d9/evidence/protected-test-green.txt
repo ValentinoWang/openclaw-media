@@ -1,0 +1,3 @@
+$ env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=openclaw-tag-router uv run --python 3.12 --with pytest python -m pytest -q openclaw-tag-router/tests/test_production_reconciliation_planner.py
+............................................                             [100%]
+44 passed in 0.06s

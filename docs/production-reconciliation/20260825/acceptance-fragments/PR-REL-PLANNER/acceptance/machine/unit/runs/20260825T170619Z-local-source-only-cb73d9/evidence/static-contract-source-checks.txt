@@ -1,0 +1,10 @@
+$ python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/check_acceptance_contract.py docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance-contract.md --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-planner-impl
+OK: docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance-contract.md
+$ python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py check docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-planner-impl
+OK: docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER
+$ python3 -m py_compile openclaw-tag-router/openclaw_app/services/production_reconciliation_planner.py openclaw-tag-router/scripts/plan_production_reconciliation.py
+$ git diff --check 23b0487c8d8a9ddc0785ea68a242d2ad279d61f1..01a8d39e9053270c717f601c804bd2ec3a077093
+$ sha256sum docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance-contract.md openclaw-tag-router/tests/test_production_reconciliation_planner.py && git rev-parse HEAD
+b3db48de31efcb66970e2d77273e74294d1bfae7f20d8c0ef950dfe42f5526e4  docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance-contract.md
+b3deaca939d4b6746659c1e0a83e47c923857242f06218f7d95f8a13ac07e898  openclaw-tag-router/tests/test_production_reconciliation_planner.py
+01a8d39e9053270c717f601c804bd2ec3a077093
