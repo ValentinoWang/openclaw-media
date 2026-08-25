@@ -1,12 +1,12 @@
 # Acceptance Run: 20260825T162942Z-cpython312-red-a1b2c3
 
 - Run ID: 20260825T162942Z-cpython312-red-a1b2c3
-- Task ID: PR-REL-PLANNER-DESIGN-V2
+- Task ID: PR-REL-PLANNER
 - Lane: machine/unit
 - Status: FAIL
 - Acceptance contract: docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance-contract.md
 - Contract version: 1
-- Contract SHA-256: e8f8508d3badfe889930bc703c70dd6722222a4e4c70ab092f2bbe41637c84fc
+- Contract SHA-256: b3db48de31efcb66970e2d77273e74294d1bfae7f20d8c0ef950dfe42f5526e4
 - Source identity: commit:59e2adfd34853b6929d9fa69e69585806ac9c83a
 - Runtime identity: uv-cpython-3.12
 - Executor or reviewer: lw-luna-primary

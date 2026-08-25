@@ -1,20 +1,20 @@
-# Acceptance Contract: PR-REL-PLANNER-DESIGN-V2
+# Acceptance Contract: PR-REL-PLANNER
 
-- Task ID: PR-REL-PLANNER-DESIGN-V2
+- Task ID: PR-REL-PLANNER
 - Contract version: 1
 - Contract status: APPROVED
 - Test baseline: LOCKED
 - Acceptance owner: User-authorized source-only Production Reconciliation owner
 - Approval evidence: The supplied 2026-08-25 Production Reconciliation baseline (`BASELINE=59e2adfd34853b6929d9fa69e69585806ac9c83a`) and subsequent continuation authorization (`TASK_SOURCE_SHA256=a639ea7ae4b95fe6b2689fcbb5357d3851bd83a9e70f31d36b18bcad4fbb62a`). This records source-only acceptance authority only; it is not product, deployment, release, or production acceptance.
-- Request source: Bounded task PR-REL-PLANNER-DESIGN-V2 supplied by the user on 2026-08-25
+- Request source: Bounded task PR-REL-PLANNER supplied by the user on 2026-08-25
 - SSOT node: none
 - SSOT path: none
 - Readiness mode: FORMAL
 - Decision refs: none
 - Assumption IDs: none
-- Invalidation keys: pr-rel-planner-design-v2.contract, production-reconciliation-20260825.source-shas, production-reconciliation-20260825.deployment-gate, production-release-manifest-v1, production-reconciliation-planner-v1
+- Invalidation keys: pr-rel-planner.contract, production-reconciliation-20260825.source-shas, production-reconciliation-20260825.deployment-gate, production-release-manifest-v1, production-reconciliation-planner-v1
 - Baseline identity: branch `codex/pr-rel-planner-design`, commit `59e2adfd34853b6929d9fa69e69585806ac9c83a`, parent source authority GitHub main `5f06780569568ccc3197f0ab16aad74bdf9d1c6f`
-- Human acceptance workspace: acceptance/human/PR-REL-PLANNER-DESIGN-V2
+- Human acceptance workspace: acceptance/human/PR-REL-PLANNER
 
 ## User and scenario
 
@@ -227,9 +227,9 @@ Human judgment is limited to source-only boundary clarity and implementation han
 
 | ID | Summary | Checklist path | Required role | Blocking |
 | --- | --- | --- | --- | --- |
-| H-01 | The source-only boundary and remaining production blockers are understandable to an operator. | acceptance/human/PR-REL-PLANNER-DESIGN-V2/checklist.md#h-01 | Production reconciliation owner | No |
-| H-02 | The activation and rollback sequence is understandable as a plan and is not mistaken for an execution receipt. | acceptance/human/PR-REL-PLANNER-DESIGN-V2/checklist.md#h-02 | Production reconciliation owner | No |
-| H-03 | The reserved implementation paths, protected test, and handoff limits are unambiguous. | acceptance/human/PR-REL-PLANNER-DESIGN-V2/checklist.md#h-03 | Production reconciliation owner | No |
+| H-01 | The source-only boundary and remaining production blockers are understandable to an operator. | acceptance/human/PR-REL-PLANNER/checklist.md#h-01 | Production reconciliation owner | No |
+| H-02 | The activation and rollback sequence is understandable as a plan and is not mistaken for an execution receipt. | acceptance/human/PR-REL-PLANNER/checklist.md#h-02 | Production reconciliation owner | No |
+| H-03 | The reserved implementation paths, protected test, and handoff limits are unambiguous. | acceptance/human/PR-REL-PLANNER/checklist.md#h-03 | Production reconciliation owner | No |
 
 ## Protected acceptance tests
 
@@ -261,9 +261,9 @@ Human judgment is limited to source-only boundary clarity and implementation han
 | AC-18 | Protected input non-mutation tests | openclaw-tag-router/tests/test_production_reconciliation_planner.py | Automatic | Yes |
 | AC-19 | Protected stable error and red-proof tests | openclaw-tag-router/tests/test_production_reconciliation_planner.py | Automatic | Yes |
 | AC-20 | CPython 3.12 baseline red run | docs/production-reconciliation/20260825/acceptance/machine/unit/runs/<run-id>/result.md | Automatic | Yes |
-| H-01 | Scripted human boundary review | acceptance/human/PR-REL-PLANNER-DESIGN-V2/checklist.md#h-01 | Human | No |
-| H-02 | Scripted plan-versus-execution review | acceptance/human/PR-REL-PLANNER-DESIGN-V2/checklist.md#h-02 | Human | No |
-| H-03 | Scripted implementation handoff review | acceptance/human/PR-REL-PLANNER-DESIGN-V2/checklist.md#h-03 | Human | No |
+| H-01 | Scripted human boundary review | acceptance/human/PR-REL-PLANNER/checklist.md#h-01 | Human | No |
+| H-02 | Scripted plan-versus-execution review | acceptance/human/PR-REL-PLANNER/checklist.md#h-02 | Human | No |
+| H-03 | Scripted implementation handoff review | acceptance/human/PR-REL-PLANNER/checklist.md#h-03 | Human | No |
 
 ## Exploratory testing
 
