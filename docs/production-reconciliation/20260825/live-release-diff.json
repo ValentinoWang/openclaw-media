@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "main_sha": "5f06780569568ccc3197f0ab16aad74bdf9d1c6f",
+    "release_path": "/home/ubuntu/releases/openclaw-stage2-production-20260819T"
+  },
+  "writer_contract": {
+    "main": {
+      "sha256": "0e655d8d829674630738b84e9998d26d13adae3c5a01ac52708aa81864006410",
+      "status": "provisional",
+      "runtime_integration": false,
+      "endpoints": []
+    },
+    "release": {
+      "sha256": "f877a8bd4660b9e66130023f568e2405360da3b921e917cba6fe72bb42347869",
+      "status": "accepted",
+      "runtime_integration": true,
+      "endpoints": ["/stage2/personal", "/stage2/organization"]
+    },
+    "disposition": "Do not promote the state flip independently; contract acceptance must follow current-main integration and evidence."
+  },
+  "production_factory": {
+    "release_sha256": "d87a158cfa417ca2124585c310bc30f68349993e423afc9cb78ecdc8b75a411c",
+    "difference": "The release removed the fail-closed space ID and parent token pair check.",
+    "disposition": "Reject the workaround and preserve fail-closed validation in main."
+  },
+  "route_wiring": {
+    "main": "Stage-2 domain services exist but current server_cli.py and http_api.py do not expose Stage-2 routes.",
+    "release": "A release-specific server CLI and HTTP handler expose Stage-2 on an isolated process.",
+    "risk": "The release duplicates rather than proves current-main authentication, tenant and Binding composition."
+  }
+}

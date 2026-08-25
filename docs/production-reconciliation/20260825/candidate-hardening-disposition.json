@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "main_sha": "5f06780569568ccc3197f0ab16aad74bdf9d1c6f",
+    "candidate_head": "78120eea04392db2a254968cbe4d8f69f6fd7a84",
+    "candidate_diff_sha256": "ed9021a266600014bf1efe287b9dd10a38854059dbd4b2305a58285877c9e7e9"
+  },
+  "files": [
+    {
+      "path": "openclaw_app/adapters/http_api.py",
+      "disposition": "reimplement_on_main",
+      "reason": "The candidate handler conflicts with current AccountAuthService, SessionPrincipal, cookie and CSRF authority."
+    },
+    {
+      "path": "openclaw_app/services/stage2_external_document.py",
+      "disposition": "semantic_replay",
+      "reason": "Durable claims, strict receipt validation and resumable readback remain required."
+    },
+    {
+      "path": "openclaw_app/services/stage2_gateway.py",
+      "disposition": "semantic_replay",
+      "reason": "Ambiguous snake_case and camelCase aliases must fail before dispatch."
+    },
+    {
+      "path": "openclaw_app/services/stage2_personal_store.py",
+      "disposition": "semantic_replay",
+      "reason": "Persistent schema, tenant, digest and revision validation remain required."
+    },
+    {
+      "path": "openclaw_app/services/stage2_production.py",
+      "disposition": "semantic_replay",
+      "reason": "Keep main claim behavior and add strict schema, receipt and transaction validation."
+    },
+    {
+      "path": "openclaw_app/services/stage2_production_factory.py",
+      "disposition": "semantic_replay_with_current_binding_authority",
+      "reason": "Dynamic Binding target isolation and write/readback checks remain required."
+    },
+    {
+      "path": "openclaw_app/services/stage2_runtime.py",
+      "disposition": "semantic_replay",
+      "reason": "Claims and canonical source ordering remain required for deterministic idempotency."
+    },
+    {
+      "path": "openclaw_app/services/stage2_server_context.py",
+      "disposition": "reimplement_on_main",
+      "reason": "Strict validation is reusable, but candidate Bearer precedence cannot replace current authentication authority."
+    },
+    {
+      "path": "tests/test_stage2_feishu_hardening.py",
+      "disposition": "adapt_and_replay_as_fixture_tests",
+      "sha256": "119e6bd3e33d53465d6b41f1e23904758461ec6ae28a91ec3b5d5d6a466c1eba"
+    },
+    {
+      "path": "tests/test_stage2_runtime_hardening.py",
+      "disposition": "adapt_service_tests_and_rewrite_http_tests",
+      "sha256": "e0846a10a3b1f7b20d3057da0189e1a52fdf1e0fb80f889d0e1fe95b9d3ca091"
+    }
+  ],
+  "forbidden_shortcut": "Do not copy the candidate entrypoint or handler over current main."
+}

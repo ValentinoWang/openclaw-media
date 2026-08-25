@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-25T23:23:59+08:00",
+  "github_main": {
+    "repository": "ValentinoWang/openclaw-media",
+    "ref": "main",
+    "sha": "5f06780569568ccc3197f0ab16aad74bdf9d1c6f"
+  },
+  "remote_candidate": {
+    "host": "106.52.146.37",
+    "path": "/tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router",
+    "branch": "codex/stage2-handoff-final-20260819",
+    "head": "78120eea04392db2a254968cbe4d8f69f6fd7a84",
+    "tracked_diff_sha256": "ed9021a266600014bf1efe287b9dd10a38854059dbd4b2305a58285877c9e7e9"
+  },
+  "remote_server_worktree": {
+    "host": "106.52.146.37",
+    "path": "/home/ubuntu/selfmedia-tools",
+    "head": "e0dfbf0eab0c5942ae829a748ac78835cf90872f"
+  },
+  "active_release": {
+    "host": "106.52.146.37",
+    "path": "/home/ubuntu/releases/openclaw-stage2-production-20260819T",
+    "git_sha_manifest": null
+  },
+  "formal_stage2_ssot": {
+    "accepted_nodes": 3,
+    "total_nodes": 32,
+    "completion_percent": 9.4,
+    "accepted_node_ids": ["A", "A1", "K"]
+  },
+  "claim_boundary": "These identities are independent authority layers and are not interchangeable."
+}
