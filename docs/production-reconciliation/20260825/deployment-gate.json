@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "scope": "source_only",
+  "required_source_deliverables": [
+    "production-release-manifest.v1 schema and fail-closed validator",
+    "read-only Stage-2 user-systemd readback guard",
+    "pure dry-run activation and rollback planner"
+  ],
+  "source_gate_failure_classes": [
+    "SOURCE_IDENTITY_MISMATCH",
+    "MANIFEST_MISSING_OR_INVALID",
+    "FILE_HASH_OR_INVENTORY_DRIFT",
+    "MUTABLE_CONTENT_IN_RELEASE",
+    "SERVICE_RELEASE_BINDING_DRIFT",
+    "POINTER_CAS_CONFLICT",
+    "ROLLBACK_TARGET_INVALID",
+    "SECRET_DISCLOSURE"
+  ],
+  "forbidden_in_this_scope": [
+    "remote release creation or upload",
+    "symlink or pointer mutation",
+    "systemd reload or restart",
+    "Nginx mutation or reload",
+    "database reads, migration or restore",
+    "secret value reads",
+    "authenticated production requests",
+    "Feishu writes",
+    "production acceptance claims"
+  ],
+  "release_blockers_outside_source_scope": [
+    "current-main authenticated Stage-2 route composition",
+    "real database and external-system readback",
+    "authorized activation and rollback rehearsal",
+    "human release approval",
+    "Stage-1 C1/C3/DC2 acceptance"
+  ]
+}

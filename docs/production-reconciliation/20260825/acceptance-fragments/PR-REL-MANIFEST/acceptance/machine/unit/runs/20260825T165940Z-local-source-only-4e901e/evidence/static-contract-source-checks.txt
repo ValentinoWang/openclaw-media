@@ -1,0 +1,9 @@
+$ python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/check_acceptance_contract.py docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance-contract.md --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-manifest-impl
+OK: docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance-contract.md
+$ python3 -m json.tool openclaw-tag-router/openclaw_app/contracts/production-release-manifest.v1.schema.json >/dev/null
+$ env PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile openclaw-tag-router/openclaw_app/services/production_release_manifest.py openclaw-tag-router/scripts/build_production_release_manifest.py
+$ git diff --check bfa10178959e7cbde3bca9be6aa961f65d6343a5 HEAD
+$ sha256sum docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance-contract.md openclaw-tag-router/tests/test_production_release_manifest.py && git rev-parse HEAD
+8ffe2adebbf86aad61b0c1396b623a1321a6a97958eb1f327177481024000537  docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance-contract.md
+dd653b45ebce1d09593f232673506262e7720dff571474fe5f1afc19737e0187  openclaw-tag-router/tests/test_production_release_manifest.py
+7d385d3e117fe8848b8412c2630100dc0fd8b8c4

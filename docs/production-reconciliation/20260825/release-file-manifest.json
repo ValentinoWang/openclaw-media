@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "manifest_kind": "observed-selected-files",
+  "complete_inventory": false,
+  "release_root": "/home/ubuntu/releases/openclaw-stage2-production-20260819T",
+  "root_metadata": {
+    "owner": "ubuntu",
+    "group": "ubuntu",
+    "mode": "0775"
+  },
+  "selected_files": [
+    {
+      "relative_path": "openclaw_app/contracts/stage2_writer_contract.json",
+      "sha256": "f877a8bd4660b9e66130023f568e2405360da3b921e917cba6fe72bb42347869"
+    },
+    {
+      "relative_path": "openclaw_app/services/stage2_production_factory.py",
+      "sha256": "d87a158cfa417ca2124585c310bc30f68349993e423afc9cb78ecdc8b75a411c"
+    }
+  ],
+  "mutable_or_secret_path_metadata": [
+    {
+      "relative_path": "stage2.env",
+      "owner": "ubuntu",
+      "group": "ubuntu",
+      "mode": "0600",
+      "values_read": false
+    },
+    {
+      "relative_path": "session-material.env",
+      "owner": "ubuntu",
+      "group": "ubuntu",
+      "mode": "0600",
+      "values_read": false
+    },
+    {
+      "relative_path": "state/stage2.sqlite3",
+      "classification": "runtime_state_inside_release",
+      "contents_read": false
+    }
+  ],
+  "claim_boundary": "This is a selected-file observation, not an immutable release manifest."
+}

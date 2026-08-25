@@ -1,0 +1,16 @@
+
+==================================== ERRORS ====================================
+_ ERROR collecting openclaw-tag-router/tests/test_production_release_manifest.py _
+ImportError while importing test module '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-manifest-design/openclaw-tag-router/tests/test_production_release_manifest.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+openclaw-tag-router/tests/test_production_release_manifest.py:13: in <module>
+    from openclaw_app.services.production_release_manifest import (
+E   ModuleNotFoundError: No module named 'openclaw_app.services.production_release_manifest'
+=========================== short test summary info ============================
+ERROR openclaw-tag-router/tests/test_production_release_manifest.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.09s
