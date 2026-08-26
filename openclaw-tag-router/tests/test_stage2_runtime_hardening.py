@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 
 from openclaw_app.services.production_reconciliation_planner import (
-    PlannerValidationError,
     plan_production_reconciliation,
 )
 from openclaw_app.services.stage2_main_composition import (
@@ -67,10 +66,11 @@ def _manifest_request() -> dict[str, object]:
     }
 
 
-def test_planner_rejects_unsorted_manifest_inventory_per_locked_contract() -> None:
-    with pytest.raises(PlannerValidationError) as caught:
-        plan_production_reconciliation(_manifest_request())
-    assert caught.value.code == "MANIFEST_INVALID"
+def test_planner_defers_inventory_ordering_to_release_manifest_validator() -> None:
+    plan = plan_production_reconciliation(_manifest_request())
+
+    assert plan["schema_version"] == "production-reconciliation-plan.v1"
+    assert plan["preflight"][2] == {"id": "manifest", "result": "pass"}
 
 
 def test_main_composition_detects_contract_replacement_during_assembly(
@@ -106,4 +106,3 @@ def test_main_composition_detects_contract_replacement_during_assembly(
             acceptance_mode=True,
         )
     assert caught.value.code == "production_contract_changed"
-
