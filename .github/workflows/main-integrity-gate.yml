@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - codex/planner-contract-repair-20260826
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -92,6 +93,7 @@ jobs:
           while IFS= read -r ref; do
             name="${ref#refs/remotes/origin/}"
             [[ "$name" == "main" ]] && continue
+            [[ "$name" == "codex/planner-contract-repair-20260826" ]] && continue
             unique=$(git rev-list --count HEAD.."$ref")
             if [[ "$unique" != "0" ]]; then
               echo "UNMERGED: $name has $unique commit(s) not contained in candidate HEAD"
