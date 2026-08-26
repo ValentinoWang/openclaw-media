@@ -1,12 +1,8 @@
 name: Main integrity gate
 
+# GitHub-hosted runners are manual while account minutes are unavailable.
+# The same commands are executed and recorded by the local CI evidence gate.
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches:
-      - main
-      - codex/planner-contract-repair-20260826
   workflow_dispatch:
 
 permissions:
