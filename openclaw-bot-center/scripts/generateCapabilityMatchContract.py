@@ -7,7 +7,13 @@ import os
 from pathlib import Path
 
 
-CONTRACT_ROOT = Path(os.environ.get("OPENCLAW_CONTRACT_ROOT", "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/contracts"))
+# 仓库整合后契约随仓库走；旧的维护机绝对路径仅作最后回退。
+_REPO_CONTRACTS = Path(__file__).resolve().parents[2] / "openclaw-tag-router/openclaw_app/contracts"
+_LEGACY_CONTRACTS = Path("/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/contracts")
+CONTRACT_ROOT = Path(os.environ.get(
+    "OPENCLAW_CONTRACT_ROOT",
+    str(_REPO_CONTRACTS if _REPO_CONTRACTS.exists() else _LEGACY_CONTRACTS),
+))
 OUTPUT_ROOT = Path(__file__).resolve().parents[1] / "src/schemas"
 
 
@@ -171,11 +177,38 @@ const resultSchema = z.object({
 const modelCallSchema = z.object({
   requestId: z.string(), usageId: z.string().nullable(), status: z.enum(['pending', 'succeeded', 'failed', 'unknown_reconcile']), updatedAt: z.number().int(),
 }).strict()
+const taskErrorSchema = z.object({
+  code: z.string(), message: z.string(), action: z.string(),
+}).catchall(z.unknown())
+const accountBindingSchema = z.object({
+  userPublicId: z.string(), ownedAccountPublicId: z.string(), relationshipRef: z.string(), platform: z.string(), normalizedAccount: z.string(),
+}).strict()
+const attemptSchema = z.object({
+  attemptId: z.string(), runnerId: z.string(), executorId: z.string(), status: z.string(),
+  attemptNumber: z.number().int().min(1), recoveryOfAttemptId: z.string().nullable(),
+  startedAt: z.string().nullable().optional(), heartbeatAt: z.string().nullable().optional(), finishedAt: z.string().nullable().optional(),
+}).strict()
+const readbackSchema = z.object({
+  status: z.string(), required: z.boolean(), applicability: z.record(z.string(), z.unknown()), checkedAt: z.string().nullable(),
+}).strict()
+const readbacksSchema = z.object({ database: readbackSchema, external: readbackSchema, web: readbackSchema }).strict()
+const settlementReceiptSchema = z.object({
+  receiptId: z.string(), schemaVersion: z.literal('media_e2e_receipt_v1'), digest: receiptDigestSchema, status: z.string(), createdAt: z.string(),
+}).strict()
 export const mediaWebTaskSchema = z.object({
   schemaVersion: z.literal('media_web_task_v3'), taskId: z.string(), requestId: z.string(), modelCalls: z.array(modelCallSchema), capabilityId: z.string(), capabilityPath: z.array(z.string()).min(2).max(3),
-  variantId: z.string(), params: capabilityParamsSchema, status: z.string(), terminal: z.boolean(), progress: z.number().int().min(0).max(100),
+  variantId: z.string(), params: capabilityParamsSchema, status: z.string(), settlementStage: z.string(), terminal: z.boolean(), progress: z.number().int().min(0).max(100),
   summary: z.string(), createdAt: z.string(), updatedAt: z.string(), confirmationReceipt: confirmationReceiptSchema, confirmation: confirmationSchema, result: resultSchema.nullable(),
-  error: z.record(z.string(), z.unknown()).nullable(), eventCursor: z.number().int(),
+  error: taskErrorSchema.nullable(), eventCursor: z.number().int(),
+  accountBinding: accountBindingSchema.nullable().optional(), attempt: attemptSchema.nullable().optional(),
+  readbacks: readbacksSchema.nullable().optional(), missingReadbacks: z.array(z.enum(['database', 'external', 'web'])).optional(),
+  receipt: settlementReceiptSchema.nullable().optional(),
+}).strict()
+
+export const mediaWebUploadSchema = z.object({
+  schemaVersion: z.literal('3'), uploadId: z.string().regex(/^[A-Za-z0-9_-]{8,160}$/), filename: z.string(), mimeType: z.string(),
+  size: z.number().int().nonnegative(), sha256: receiptDigestSchema, status: z.string(), createdAt: z.string(),
+  parsing: z.object({ status: z.string(), failureCode: z.string(), nextAction: z.string() }).strict().optional(),
 }).strict()
 
 export const mediaWebTaskErrorSchema = z.object({
@@ -186,6 +219,7 @@ export type CapabilityParams = z.infer<typeof capabilityParamsSchema>
 export type MediaWebConfirmationReceipt = z.infer<typeof confirmationReceiptSchema>
 export type MediaWebTaskCreateRequest = z.infer<typeof mediaWebTaskCreateRequestSchema>
 export type MediaWebTask = z.infer<typeof mediaWebTaskSchema>
+export type MediaWebUpload = z.infer<typeof mediaWebUploadSchema>
 '''
 
 

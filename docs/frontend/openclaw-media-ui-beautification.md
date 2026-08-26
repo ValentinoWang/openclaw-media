@@ -62,6 +62,31 @@
   需要后端补 `counts7d` 与封面字段，**未做**，避免渲染假数据。
 - 全站视觉回归截图（`qa:media-role-screens`）需要部署环境与真实 cookie，本地无法跑。
 
+## 0.6 第二轮（同日）：既有破损修复，`build:all` 打通
+
+上一轮报告过「6 项改动前就坏的东西」。本轮全部查明并修复，根因只有一个：
+**仓库整合时丢了三样东西** —— 任务契约的新增字段、主应用的入口层、若干指向原维护机的绝对路径。
+
+| 症状 | 根因 | 修复 |
+|---|---|---|
+| `mediaWebApi.ts` 引用不存在的 `mediaWebUploadSchema`（7 个 tsc 错误的源头） | JSON 契约真源落后于消费方：结算投影（`settlementStage` / `accountBinding` / `attempt` / `readbacks` / `receipt`）与上传回执从未进入 `media_web_task.schema.json` | 按后端序列化代码与 QA fixture 重建契约：更新 JSON 真源 → 同步生成器模板 `_task()` → 重新生成 TS。`settlementStage` 必填是 QA 明确断言的（"must survive the frontend API boundary"） |
+| `vite build` 报 `media.login.js` ENOENT | 真凶是上面的缺失导出（rolldown 解析失败）；`closeBundle` 里的 copy 在构建失败后照跑，把真实错误顶掉了 | 修复导出；`closeBundle` 加 `dist-media` 存在性守卫，以后构建失败不再被掩盖 |
+| `npm run build`（主应用）不可构建 | `index.html` 与 `vite.config.ts` 从未迁入仓库（git 全历史均无） | 按 `vite.media.config.ts` 同款约定重建（base `/openclaw/`，react + tailwindcss 插件） |
+| `qa:contextual-capability-launches` spawn ENOENT | 默认后端根 `../backend` 是旧布局 | 默认根改为 `../openclaw-tag-router`（保留 `OPENCLAW_TAG_ROUTER_ROOT` 覆盖） |
+| `qa:media-role-ia` 断言失效 | 个人 / 组织工作区加入后管理员判定收敛为 `isAdminShell` | 断言对齐现状，意图不变（管理员壳层必须整体替换普通导航） |
+| `qa:media-recent-task-presentation` / `qa:material-parsing` 崩溃 | 同一个 schema 缺失的连带 | schema 修复后自动恢复 |
+| `qa:media-readable-fields` 失败 | `CreationRunDetailPage` 重设计时丢了冻结的可读字段呈现 | 在新版活稿编辑器上恢复契约：摘要带四项（运行状态 / 创作入口 / 发布平台 / 内容形态）、`metadataList`（含创建时间——后端一直在发 `createdAt`，前端类型漏声明）、技术字段标签映射、`humanize` 更名为显式 `blockFieldLabel` |
+| 生成器 `generateCapabilityMatchContract.py` 读 `/home/ubuntu/...` | 原维护机绝对路径 | 仓库内契约目录优先，环境变量可覆盖 |
+
+**终态**：`tsc` 0 错误；QA 21/22 通过（`build:media` 全链路含浏览器脚本全绿）；
+`npm run build:all` 端到端通过。唯一例外 `qa:media-w1` 依赖只存在于产品契约维护机的
+`openclaw-media-product-contract.json` 实例（仓库里只有它的 schema），已加
+`OPENCLAW_MEDIA_PRODUCT_CONTRACT_PATH` 注入口，有副本的环境即可跑。
+
+沙箱侧说明：本环境预装 chromium 1194、项目 playwright 1.61.1 期望 1228，
+用符号链接垫平（`/opt/pw-browsers/chromium-1228 → chromium-1194`）；
+这是环境适配，不入仓库，构建机版本匹配时无需任何操作。
+
 ---
 
 ## 1. 现状体检（可复现的硬数据）

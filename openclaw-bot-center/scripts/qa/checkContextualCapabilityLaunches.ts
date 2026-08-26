@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { delimiter, dirname, resolve } from "node:path";
 
 type RegistryCapability = {
@@ -42,8 +42,11 @@ for (const obsoleteId of [
 
 assert.match(assets, /\{ id: "(?:deconstruction|creation)", label:/, "ordinary tab ids are valid near misses, not capability launches");
 
+// 仓库整合后 python 后端位于 ../openclaw-tag-router（旧布局是 ../backend）。
 const registryRoot = process.env.OPENCLAW_TAG_ROUTER_ROOT
-  ?? resolve(process.cwd(), "../backend");
+  ?? [resolve(process.cwd(), "../openclaw-tag-router"), resolve(process.cwd(), "../backend")]
+    .find((candidate) => existsSync(candidate))
+  ?? resolve(process.cwd(), "../openclaw-tag-router");
 const registryCatalog = JSON.parse(execFileSync(
   "python3",
   [

@@ -43,7 +43,10 @@ const app = readFileSync(resolve('src/media/MediaApp.tsx'), 'utf8')
 requireContract(!app.includes('用量与套餐'), 'retired billing label remains in MediaApp')
 requireContract(/from\s+\x27\.\/mediaRoleIa\x27/.test(app), 'MediaApp does not consume the frozen Media IA')
 requireContract(app.includes("const isAdmin = session?.role === 'admin'"), 'administrator shell role boundary is missing')
-requireContract(app.includes('isAdmin ? adminMediaNav : ordinaryMediaNav'), 'administrator shell does not replace the ordinary shell')
+// 个人 / 组织工作区加入后，管理员判定收敛为 isAdminShell（isAdmin 且非组织模式）。
+// 断言意图不变：管理员壳层必须整体替换普通导航，而不是叠加。
+requireContract(app.includes("const isAdminShell = isAdmin && !isOrganization"), 'administrator shell boundary must derive from role and workspace mode')
+requireContract(app.includes('isAdminShell ? adminMediaNav : ordinaryMediaNav'), 'administrator shell does not replace the ordinary shell')
 requireContract(app.includes('ordinaryMediaNavGroups.map'), 'ordinary shell does not render frozen navigation groups')
 for (const { path } of [...ordinaryMediaNav, ...adminMediaNav]) {
   requireContract(app.includes('path="' + path + '"'), 'missing production route ' + path)

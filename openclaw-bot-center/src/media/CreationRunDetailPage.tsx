@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  AlertCircle, ArrowLeft, Bot, CheckCircle2, Clock3, FileCheck2, FilePenLine, Film,
+  AlertCircle, ArrowLeft, Bot, CheckCircle2, FileCheck2, FilePenLine, Film,
   History, Layers3, LoaderCircle, Lock, LockOpen, MessageSquareText, PackageCheck,
   RefreshCw, RotateCcw, Save, Send, Sparkles, Target,
 } from 'lucide-react'
@@ -22,7 +22,7 @@ type ValueMap = Readonly<Record<string, Value>>
 type Run = {
   publicRunId: string; title: string; platform: string | null; contentType: string | null;
   trackName: string | null; entrypoint: string; status: string; availableSections: SectionName[];
-  publicProjectId: string | null; updatedAt: string; revision: number
+  publicProjectId: string | null; createdAt: string; updatedAt: string; revision: number
 }
 type RunResponse = { revision: number; run: Run }
 type Evidence = { kind: string; label: string; publicUrl: string | null; qualityStatus: 'verified' | 'partial' | 'unverified' | 'unavailable' }
@@ -41,6 +41,27 @@ const editorTabs: Array<{ id: EditorKind; label: string; icon: typeof FilePenLin
   { id: 'shooting', label: '拍摄执行', icon: Target },
   { id: 'publish', label: '发布包', icon: PackageCheck },
 ]
+
+// 可读字段契约（scripts/qa/checkMediaReadableFields.ts）：
+// 技术字段一律映射为业务可读标签，摘要带固定呈现四项运行事实。
+const technicalFieldLabels = {
+  public_run_id: '公开运行编号',
+  available_sections: '可用分区',
+  response_revision: '响应修订',
+} as const
+const sectionDisplayLabels: Record<SectionName, string> = {
+  sources: '来源与证据',
+  decisions: '选题决策',
+  outputs: '创作成果',
+}
+function runSummaryItems(run: Run): Array<{ label: string; icon: ReactNode; value: ReactNode }> {
+  return [
+    { label: '运行状态', icon: <CheckCircle2 size={17} />, value: runStatusLabel(run.status) },
+    { label: '创作入口', icon: <Sparkles size={17} />, value: run.entrypoint || '未记录' },
+    { label: '发布平台', icon: <Target size={17} />, value: run.platform ? <PlatformIdentity platform={run.platform} size="sm" /> : '未记录' },
+    { label: '内容形态', icon: <FileCheck2 size={17} />, value: run.contentType ? mediaTypeDisplayLabel(run.contentType) : '未记录' },
+  ]
+}
 
 export default function CreationRunDetailPage() {
   const { runId = '' } = useParams()
@@ -163,11 +184,8 @@ export default function CreationRunDetailPage() {
         </div>
       </section>
 
-      <section className={styles.summaryBand} aria-label="项目摘要">
-        <Summary icon={<CheckCircle2 size={17} />} label="运行状态" value={runStatusLabel(run.status)} />
-        <Summary icon={<Target size={17} />} label="平台与赛道" value={<span>{run.platform ? <PlatformIdentity platform={run.platform} size="sm" /> : '未记录'}{run.trackName ? <small>{run.trackName}</small> : null}</span>} />
-        <Summary icon={<FileCheck2 size={17} />} label="内容形态" value={run.contentType ? mediaTypeDisplayLabel(run.contentType) : '未记录'} />
-        <Summary icon={<Clock3 size={17} />} label="当前修订" value={`R${run.revision} · ${formatDate(run.updatedAt)}`} />
+      <section className={styles.summaryBand} aria-label="运行摘要">
+        {runSummaryItems(run).map((item) => <Summary key={item.label} icon={item.icon} label={item.label} value={item.value} />)}
       </section>
 
       <div className={styles.contentGrid}>
@@ -184,7 +202,7 @@ export default function CreationRunDetailPage() {
             <div className={styles.canvas}>{selected ? <>
               <div className={styles.canvasMeta}><span>{kindLabel(selected.kind)}</span><strong>{selected.label}</strong><small>{selected.locked ? '人工锁定；编辑或 AI 修改前需解锁' : '可直接编辑，保存后形成浏览器草稿版本'}</small></div>
               <textarea aria-label={`编辑 ${selected.label}`} value={selected.text} readOnly={selected.locked} onChange={(event) => updateText(event.target.value)} />
-              <div className={styles.canvasFooter}><span>{selected.text.length} 字符</span><span>来源字段：{humanize(selected.sourceKey)}</span></div>
+              <div className={styles.canvasFooter}><span>{selected.text.length} 字符</span><span>来源字段：{blockFieldLabel(selected.sourceKey)}</span></div>
               {original && original.text !== selected.text ? <section className={styles.diffCard} aria-label="修改差异"><header><span><History size={16} />当前区块差异</span><small>服务端原文 → 浏览器草稿</small></header><div><article><strong>修改前</strong><p>{original.text}</p></article><article><strong>修改后</strong><p>{selected.text}</p></article></div></section> : null}
             </> : <State icon={<FilePenLine size={22} />} title="选择一个区块开始编辑" />}</div>
           </div> : null}
@@ -197,7 +215,7 @@ export default function CreationRunDetailPage() {
             <button type="button" role="tab" aria-selected={inspectorTab === 'versions'} className={inspectorTab === 'versions' ? styles.activeInspectorTab : undefined} onClick={() => setInspectorTab('versions')}><History size={15} />版本</button>
           </div>
           <div className={styles.inspectorBody}>
-            {inspectorTab === 'brief' ? <Brief state={sectionState} run={run} /> : null}
+            {inspectorTab === 'brief' ? <Brief state={sectionState} run={run} responseRevision={runState.data.revision} /> : null}
             {inspectorTab === 'agent' ? <div className={styles.agentPanel}><span><Sparkles size={17} />局部修改请求</span><h2>{selected?.label ?? '先选择一个区块'}</h2><p>只把当前区块交给 Agent，不要求整篇重写。</p><label><span>希望怎么改</span><textarea value={instruction} onChange={(event) => setInstruction(event.target.value)} placeholder="例如：保留卖点，只把开头改成第一人称现场感。" /></label><button type="button" disabled={!selected} onClick={() => void sendPatchRequest()}><Send size={16} />复制请求并打开 Agent</button>{notice ? <div className={styles.notice}>{notice}</div> : null}<div className={styles.agentRule}><Lock size={16} /><span><strong>修改边界</strong><small>锁定区块不进入改写；本轮只提交选中区块的 Patch。</small></span></div></div> : null}
             {inspectorTab === 'versions' ? <div className={styles.versionPanel}><span><History size={17} />浏览器草稿版本</span><p>这些版本只保存在当前浏览器。</p>{versions.length ? <div>{versions.map((snapshot) => <button type="button" key={snapshot.id} onClick={() => { setBlocks(snapshot.blocks.map((block) => ({ ...block }))); setSelectedId(snapshot.blocks[0]?.id ?? null); setNotice(`已恢复 ${snapshot.label}。`) }}><span><strong>{snapshot.label}</strong><small>{formatDate(snapshot.createdAt)} · {snapshot.blocks.length} 个区块</small></span><RefreshCw size={14} /></button>)}</div> : <State icon={<History size={21} />} title="还没有浏览器草稿" detail="修改后点击保存草稿即可创建版本。" />}</div> : null}
           </div>
@@ -207,13 +225,27 @@ export default function CreationRunDetailPage() {
   )
 }
 
-function Brief({ state, run }: { state: LoadState<Sections>; run: Run }) {
+function Brief({ state, run, responseRevision }: { state: LoadState<Sections>; run: Run; responseRevision: number }) {
   if (state.status === 'loading') return <State icon={<LoaderCircle className={styles.spin} size={21} />} title="正在读取 Brief 与证据" />
   if (state.status === 'error') return <State icon={<AlertCircle size={21} />} title={state.message} />
   const { sources, decisions } = state.data
-  return <div className={styles.briefPanel}><span><MessageSquareText size={17} />项目上下文</span><dl><div><dt>关联项目</dt><dd>{run.publicProjectId || '未关联项目'}</dd></div><div><dt>创作入口</dt><dd>{run.entrypoint || '未记录'}</dd></div><div><dt>来源类型</dt><dd>{sources?.sourceKinds.length ? sources.sourceKinds.join('、') : '未记录'}</dd></div><div><dt>人工决策</dt><dd>{decisions ? humanStateLabel(decisions.humanState) : '未记录'}</dd></div></dl><section><header><strong>已确认方向</strong><small>{decisions?.decisionItems.length ?? 0} 条</small></header>{decisions?.decisionItems.length ? decisions.decisionItems.slice(0, 4).map((item) => <article key={item.publicDecisionId}><span>{item.decisionStatus === 'confirmed' ? <CheckCircle2 size={15} /> : <Target size={15} />}</span><div><strong>{item.candidateTitle}</strong><small>{item.trackName || item.platform} · {item.evidenceCount} 条证据</small></div></article>) : <p>当前运行没有已持久化决定。</p>}</section><section><header><strong>证据引用</strong><small>{sources?.evidenceRefs.length ?? 0} 条</small></header>{sources?.evidenceRefs.length ? sources.evidenceRefs.slice(0, 5).map((item) => <a key={`${item.kind}-${item.label}`} href={item.publicUrl || undefined} aria-disabled={!item.publicUrl} target={item.publicUrl ? '_blank' : undefined} rel={item.publicUrl ? 'noreferrer' : undefined}><span><Layers3 size={15} /></span><div><strong>{item.label}</strong><small>{qualityLabel(item.qualityStatus)}</small></div></a>) : <p>当前运行没有可打开的证据引用。</p>}</section></div>
+  return <div className={styles.briefPanel}><span><MessageSquareText size={17} />项目上下文</span><dl className={styles.metadataList}>
+    <MetadataItem label="关联项目" value={run.publicProjectId || '未关联项目'} />
+    <MetadataItem label="内容赛道" value={run.trackName || '未记录'} />
+    <MetadataItem label="运行修订" value={`R${run.revision}`} />
+    <MetadataItem label="创建时间" value={formatDate(run.createdAt)} />
+    <MetadataItem label="更新时间" value={formatDate(run.updatedAt)} />
+    <MetadataItem label="来源类型" value={sources?.sourceKinds.length ? sources.sourceKinds.join('、') : '未记录'} />
+    <MetadataItem label="人工决策" value={decisions ? humanStateLabel(decisions.humanState) : '未记录'} />
+    <MetadataItem label={technicalFieldLabels.public_run_id} value={run.publicRunId} />
+    <MetadataItem label={technicalFieldLabels.available_sections} value={run.availableSections.length ? run.availableSections.map((name) => sectionDisplayLabels[name]).join('、') : '未开放'} />
+    <MetadataItem label={technicalFieldLabels.response_revision} value={`R${responseRevision}`} />
+  </dl><section><header><strong>已确认方向</strong><small>{decisions?.decisionItems.length ?? 0} 条</small></header>{decisions?.decisionItems.length ? decisions.decisionItems.slice(0, 4).map((item) => <article key={item.publicDecisionId}><span>{item.decisionStatus === 'confirmed' ? <CheckCircle2 size={15} /> : <Target size={15} />}</span><div><strong>{item.candidateTitle}</strong><small>{item.trackName || item.platform} · {item.evidenceCount} 条证据</small></div></article>) : <p>当前运行没有已持久化决定。</p>}</section><section><header><strong>证据引用</strong><small>{sources?.evidenceRefs.length ?? 0} 条</small></header>{sources?.evidenceRefs.length ? sources.evidenceRefs.slice(0, 5).map((item) => <a key={`${item.kind}-${item.label}`} href={item.publicUrl || undefined} aria-disabled={!item.publicUrl} target={item.publicUrl ? '_blank' : undefined} rel={item.publicUrl ? 'noreferrer' : undefined}><span><Layers3 size={15} /></span><div><strong>{item.label}</strong><small>{qualityLabel(item.qualityStatus)}</small></div></a>) : <p>当前运行没有可打开的证据引用。</p>}</section></div>
 }
 
+function MetadataItem({ label, value }: { label: string; value: ReactNode }) {
+  return <div><dt>{label}</dt><dd>{value}</dd></div>
+}
 function Summary({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) { return <div className={styles.summaryItem}>{icon}<div><span>{label}</span><strong>{value}</strong></div></div> }
 function State({ icon, title, detail, action }: { icon: ReactNode; title: string; detail?: string; action?: ReactNode }) { return <div className={styles.editorState}>{icon}<strong>{title}</strong>{detail ? <p>{detail}</p> : null}{action}</div> }
 function Loading() { return <main className="detail-loading" aria-busy="true"><LoaderCircle className="spin" size={23} /><span>正在打开 Studio</span></main> }
@@ -226,7 +258,7 @@ function buildBlocks(variants: ValueMap[]): Block[] {
     values.forEach((value, valueIndex) => {
       if (value === null || value === undefined || !String(value).trim()) return
       const text = String(value).trim()
-      blocks.push({ id: `${variantIndex}-${slug(key)}-${valueIndex}`, label: values.length > 1 ? `${humanize(key)} ${valueIndex + 1}` : humanize(key), text, kind: inferKind(key, text), locked: false, sourceKey: key })
+      blocks.push({ id: `${variantIndex}-${slug(key)}-${valueIndex}`, label: values.length > 1 ? `${blockFieldLabel(key)} ${valueIndex + 1}` : blockFieldLabel(key), text, kind: inferKind(key, text), locked: false, sourceKey: key })
     })
   }))
   return blocks.slice(0, 48)
@@ -240,7 +272,7 @@ function inferKind(key: string, text: string): EditorKind {
   return 'script'
 }
 
-function humanize(value: string): string {
+function blockFieldLabel(value: string): string {
   const labels: Record<string, string> = { title: '标题', body: '正文', publish_copy: '发布正文', opening_hook: '开头钩子', voiceover: '口播', storyboard: '分镜', shooting_script: '拍摄脚本', route_map: '拍摄路线', onsite_checklist: '现场检查', hashtags: '话题标签', cover_frame: '封面画面', content: '创作内容', script: '创作脚本' }
   return labels[value] ?? value.replace(/([a-z])([A-Z])/g, '$1 $2').replaceAll('_', ' ')
 }
