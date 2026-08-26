@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: main-integrity-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   router-and-contract:
     runs-on: ubuntu-latest
@@ -32,17 +36,17 @@ jobs:
             pytest pytest-asyncio pyyaml requests bcrypt 'psycopg[binary]' openai python-dotenv \
             beautifulsoup4 lxml feedparser httpx cryptography pillow openpyxl python-docx markdown
 
-      - name: Verify planner v2 binding and frozen test
+      - name: Verify Planner 1.1 amendment and frozen test
         run: |
+          test ! -e openclaw-tag-router/openclaw_app/services/production_reconciliation_planner_legacy.py
+          ! grep -q '_legacy' openclaw-tag-router/openclaw_app/services/production_reconciliation_planner.py
           python - <<'PY'
           from pathlib import Path
           import hashlib
 
           checks = {
-              Path('docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance-contract-v2.md'):
-                  'b92b59c1b56df6d0edb6554f3c048a0f846b871421a6ebe242ca96a97eca42e4',
-              Path('acceptance/human/PR-REL-PLANNER/checklist-v2.md'):
-                  '0a340369cabdff6a1a50bf807477f88ed16a331639331df756965fdef35537b9',
+              Path('acceptance/human/PR-REL-PLANNER/amendment-20260826.md'):
+                  '9140a93b35aa3349b28c5fe453891fad4077182154e3de6bd4df0455791e942a',
               Path('openclaw-tag-router/tests/test_production_reconciliation_planner.py'):
                   'b3deaca939d4b6746659c1e0a83e47c923857242f06218f7d95f8a13ac07e898',
           }
@@ -50,10 +54,7 @@ jobs:
               actual = hashlib.sha256(path.read_bytes()).hexdigest()
               if actual != expected:
                   raise SystemExit(f'hash mismatch: {path}: {actual} != {expected}')
-          legacy = Path('openclaw-tag-router/openclaw_app/services/production_reconciliation_planner_legacy.py')
-          if legacy.exists():
-              raise SystemExit('legacy planner copy must not exist')
-          print('planner v2 binding: OK')
+          print('planner 1.1 binding: OK')
           PY
 
       - name: Run protected release suites
@@ -66,6 +67,7 @@ jobs:
             tests/test_production_reconciliation_regressions.py \
             tests/test_production_reconciliation_contract_boundary.py \
             tests/test_production_release_manifest.py \
+            tests/test_stage2_release_gate.py \
             tests/test_stage2_gateway.py \
             tests/test_stage2_production.py \
             tests/test_stage2_server_context.py \
