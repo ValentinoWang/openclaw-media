@@ -60,7 +60,8 @@ type SettlementTask = TaskFeedItem & {
     status: string;
     createdAt: string;
   } | null;
-  error?: { code: string; message: string; action: string } | null;
+  // API 边界将 error 保持为宽松记录；呈现层自行收窄字符串字段。
+  error?: Record<string, unknown> | null;
 };
 
 const stableErrorMessages: Readonly<Record<string, string>> = {
@@ -145,7 +146,10 @@ export function taskSettlementPresentation(
       : null,
     receiptId: task.receipt?.receiptId ?? null,
     errorMessage: task.error
-      ? stableTaskErrorMessage(task.error.code, task.error.message)
+      ? stableTaskErrorMessage(
+          typeof task.error.code === "string" ? task.error.code : "",
+          typeof task.error.message === "string" ? task.error.message : undefined,
+        )
       : null,
     complete,
   };

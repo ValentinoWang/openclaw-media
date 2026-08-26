@@ -51,11 +51,40 @@ const resultSchema = z.object({
 const modelCallSchema = z.object({
   requestId: z.string(), usageId: z.string().nullable(), status: z.enum(['pending', 'succeeded', 'failed', 'unknown_reconcile']), updatedAt: z.number().int(),
 }).strict()
+const settlementReadbackSchema = z.object({
+  status: z.string(), required: z.boolean(), applicability: z.record(z.string(), z.unknown()), checkedAt: z.string().nullable(),
+}).strict()
+const accountBindingSchema = z.object({
+  userPublicId: z.string(), ownedAccountPublicId: z.string(), relationshipRef: z.string(),
+  platform: z.string(), normalizedAccount: z.string(),
+}).strict()
+const settlementAttemptSchema = z.object({
+  attemptId: z.string(), runnerId: z.string(), executorId: z.string(), status: z.string(),
+  attemptNumber: z.number().int(), recoveryOfAttemptId: z.string().nullable(),
+  startedAt: z.string().nullable().optional(), heartbeatAt: z.string().nullable().optional(), finishedAt: z.string().nullable().optional(),
+}).strict()
+const settlementReceiptSchema = z.object({
+  receiptId: z.string(), schemaVersion: z.string(), digest: receiptDigestSchema, status: z.string(), createdAt: z.string(),
+}).strict()
 export const mediaWebTaskSchema = z.object({
   schemaVersion: z.literal('media_web_task_v3'), taskId: z.string(), requestId: z.string(), modelCalls: z.array(modelCallSchema), capabilityId: z.string(), capabilityPath: z.array(z.string()).min(2).max(3),
   variantId: z.string(), params: capabilityParamsSchema, status: z.string(), terminal: z.boolean(), progress: z.number().int().min(0).max(100),
   summary: z.string(), createdAt: z.string(), updatedAt: z.string(), confirmationReceipt: confirmationReceiptSchema, confirmation: confirmationSchema, result: resultSchema.nullable(),
   error: z.record(z.string(), z.unknown()).nullable(), eventCursor: z.number().int(),
+  // 结算投影：settlementStage 是任务读回状态的稳定表达；缺失的绑定 / 尝试 /
+  // 读回事实保持为空，不由前端伪造。
+  settlementStage: z.string(),
+  accountBinding: accountBindingSchema.nullable().optional(),
+  attempt: settlementAttemptSchema.nullable().optional(),
+  readbacks: z.object({ database: settlementReadbackSchema, external: settlementReadbackSchema, web: settlementReadbackSchema }).strict().nullable().optional(),
+  missingReadbacks: z.array(z.enum(['database', 'external', 'web'])).optional(),
+  receipt: settlementReceiptSchema.nullable().optional(),
+}).strict()
+
+export const mediaWebUploadSchema = z.object({
+  schemaVersion: z.literal('media_web_task_v3'), uploadId: z.string().regex(/^[A-Za-z0-9_-]{8,160}$/),
+  filename: z.string(), mimeType: z.string(), size: z.number().int().min(0),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/), status: z.string(), createdAt: z.string(),
 }).strict()
 
 export const mediaWebTaskErrorSchema = z.object({
@@ -66,3 +95,4 @@ export type CapabilityParams = z.infer<typeof capabilityParamsSchema>
 export type MediaWebConfirmationReceipt = z.infer<typeof confirmationReceiptSchema>
 export type MediaWebTaskCreateRequest = z.infer<typeof mediaWebTaskCreateRequestSchema>
 export type MediaWebTask = z.infer<typeof mediaWebTaskSchema>
+export type MediaWebUpload = z.infer<typeof mediaWebUploadSchema>

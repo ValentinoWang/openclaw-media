@@ -1248,6 +1248,16 @@ class MediaWebTaskService:
             "result": task.get("result"),
             "error": task.get("error"),
             "eventCursor": int(task.get("event_cursor") or 0),
+            # Settlement projection consumed by the Media Web task feed. A task
+            # without recorded settlement facts reports its lifecycle status as
+            # the stage and leaves binding/attempt/readback facts empty rather
+            # than fabricating them.
+            "settlementStage": task.get("settlement_stage") or task["status"],
+            "accountBinding": task.get("account_binding"),
+            "attempt": task.get("attempt"),
+            "readbacks": task.get("readbacks"),
+            "missingReadbacks": list(task.get("missing_readbacks") or []),
+            "receipt": task.get("receipt"),
         }
 
     def _load_upload(self, upload_id: str, *, tenant_id: str) -> dict[str, Any]:

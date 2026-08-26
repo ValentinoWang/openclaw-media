@@ -2906,6 +2906,17 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             raise
         self._send_json(HTTPStatus.OK, result)
 
+    # The Media Web session schema is strict: binding/installation facts are
+    # served as `organizationConnection` / `installationConnection` enums.
+    _CONNECTION_PROJECTION = {
+        "NOT_APPLICABLE": "not_applicable",
+        "ACTIVE": "connected",
+        "PENDING": "pending",
+        "DISABLED": "disabled",
+        "REVOKED": "revoked",
+        "NEEDS_ATTENTION": "attention",
+    }
+
     def _handle_media_session(self, context: If2RequestContext) -> None:
         if context.principal.role == "user":
             role = "ordinary"
@@ -2914,6 +2925,17 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         else:
             raise RequestContextError("session principal role is invalid")
         binding_state, installation_state = self._binding_projection(context)
+        is_personal = context.principal.workspace_mode == "personal_web"
+        if is_personal:
+            organization_name = None
+        else:
+            resolution = context.workspace_resolution
+            candidate = getattr(resolution, "selected_workspace", None)
+            organization_name = (
+                getattr(candidate, "organization_name", None)
+                or getattr(resolution, "organization_name", None)
+                or "组织工作区"
+            )
         self._send_json(
             HTTPStatus.OK,
             {
@@ -2923,13 +2945,16 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                     "publicUserId": context.principal.user_public_id,
                     "tenantId": str(context.principal.tenant_id),
                     "workspaceMode": context.principal.workspace_mode,
-                    "editorMode": (
-                        "web_edit" if context.principal.workspace_mode == "personal_web" else "lark_edit"
-                    ),
+                    "editorMode": "web_edit" if is_personal else "lark_edit",
                     "bodyAuthority": context.principal.body_authority,
+                    "organizationName": organization_name,
                     "memberRole": context.principal.member_role,
-                    "bindingState": binding_state,
-                    "installationState": installation_state,
+                    "organizationConnection": self._CONNECTION_PROJECTION.get(
+                        binding_state, "attention"
+                    ),
+                    "installationConnection": self._CONNECTION_PROJECTION.get(
+                        installation_state, "attention"
+                    ),
                     "role": role,
                     "maintainer": context.principal.is_maintainer,
                     "csrfToken": context.csrf.response_token,

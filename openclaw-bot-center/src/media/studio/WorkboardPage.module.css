@@ -5,6 +5,8 @@
   margin: 0 auto;
 }
 
+/* ---------- Hero ---------- */
+
 .hero {
   position: relative;
   display: grid;
@@ -12,19 +14,32 @@
   gap: 28px;
   align-items: stretch;
   overflow: hidden;
-  padding: 34px;
+  padding: 36px;
   border: 1px solid color-mix(in srgb, var(--mg-primary) 15%, var(--mg-border));
-  border-radius: 22px;
+  border-radius: var(--mg-radius-xl);
   background:
-    radial-gradient(circle at 82% 14%, color-mix(in srgb, var(--mg-primary-soft) 82%, transparent), transparent 34%),
-    linear-gradient(135deg, #fff 0%, #fbfcf8 58%, #f0f7f2 100%);
-  box-shadow: 0 22px 55px rgba(25, 49, 40, .08);
+    radial-gradient(circle at 82% 12%, color-mix(in srgb, var(--mg-primary-soft) 85%, transparent), transparent 36%),
+    linear-gradient(135deg, #fff 0%, #fbfcf8 58%, #eef6f0 100%);
+  box-shadow: var(--mg-shadow-lg);
+}
+
+/* 有机形背景：与品牌 mark 呼应的软色块 */
+.hero::before {
+  position: absolute;
+  right: -120px;
+  top: -140px;
+  width: 380px;
+  height: 380px;
+  border-radius: 48% 52% 43% 57% / 46% 43% 57% 54%;
+  background: linear-gradient(135deg, rgba(156, 234, 195, .5), rgba(222, 244, 231, .34) 62%, rgba(231, 241, 251, .4));
+  transform: rotate(-9deg);
+  content: '';
 }
 
 .hero::after {
   position: absolute;
   right: -90px;
-  bottom: -130px;
+  bottom: -140px;
   width: 300px;
   height: 300px;
   border-radius: 50%;
@@ -51,9 +66,29 @@
 .heroCopy h1 {
   max-width: 760px;
   margin: 13px 0 12px;
-  font-size: clamp(2rem, 3.2vw, 3.35rem);
-  line-height: 1.06;
-  letter-spacing: -.055em;
+  font-family: var(--mg-font-display);
+  font-size: clamp(2.1rem, 3.4vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -.05em;
+}
+
+.heroCopy h1 em {
+  position: relative;
+  color: var(--mg-primary-dark);
+  font-style: normal;
+}
+
+.heroCopy h1 em::after {
+  position: absolute;
+  right: 0;
+  bottom: .06em;
+  left: 0;
+  z-index: -1;
+  height: .34em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--mg-primary-soft) 88%, transparent);
+  content: '';
 }
 
 .heroCopy p {
@@ -84,26 +119,36 @@
   font-size: .78rem;
   font-weight: 750;
   cursor: pointer;
+  transition:
+    transform var(--mg-speed) var(--mg-ease),
+    box-shadow var(--mg-speed) var(--mg-ease),
+    background var(--mg-speed) var(--mg-ease),
+    border-color var(--mg-speed) var(--mg-ease);
 }
+
+.heroActions button:hover { transform: translateY(-2px); }
 
 .primaryAction {
-  border: 1px solid var(--mg-primary-dark);
+  border: 1px solid transparent;
   color: white;
-  background: var(--mg-primary-dark);
-  box-shadow: 0 12px 24px color-mix(in srgb, var(--mg-primary) 22%, transparent);
+  background: linear-gradient(160deg, var(--mg-primary) 0%, var(--mg-primary-dark) 82%);
+  box-shadow: var(--mg-shadow-primary);
 }
+.primaryAction:hover { box-shadow: 0 16px 30px rgba(16, 104, 74, .27); }
 
 .secondaryAction {
-  border: 1px solid #6b5bc7;
-  color: #5144a9;
-  background: #f0edff;
+  border: 1px solid color-mix(in srgb, var(--mg-accent-violet) 34%, var(--mg-border));
+  color: var(--mg-accent-violet-deep);
+  background: var(--mg-accent-violet-soft);
 }
+.secondaryAction:hover { box-shadow: 0 12px 22px rgba(91, 75, 181, .16); }
 
 .ghostAction {
   border: 1px solid var(--mg-border-strong);
   color: var(--mg-ink);
   background: white;
 }
+.ghostAction:hover { border-color: var(--mg-primary); background: var(--mg-primary-soft); }
 
 .heroSignal {
   display: flex;
@@ -112,9 +157,9 @@
   align-items: flex-start;
   justify-content: center;
   padding: 26px;
-  border: 1px solid rgba(255,255,255,.85);
+  border: 1px solid rgba(255, 255, 255, .85);
   border-radius: 18px;
-  background: rgba(255,255,255,.72);
+  background: rgba(255, 255, 255, .74);
   box-shadow: 0 18px 38px rgba(31, 58, 48, .08);
   backdrop-filter: blur(16px);
 }
@@ -127,9 +172,12 @@
 
 .heroSignal > strong {
   margin: 9px 0 7px;
-  font-size: 3.8rem;
+  font-family: var(--mg-font-display);
+  font-size: 3.9rem;
+  font-weight: 800;
   line-height: .95;
-  letter-spacing: -.08em;
+  letter-spacing: -.07em;
+  font-variant-numeric: tabular-nums;
 }
 
 .heroSignal > p {
@@ -144,6 +192,8 @@
   font-size: .74rem;
 }
 
+/* ---------- 指标卡 ---------- */
+
 .metricGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -151,6 +201,8 @@
 }
 
 .metricCard {
+  --metric-accent: var(--mg-primary-dark);
+  --metric-soft: var(--mg-primary-soft);
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
   gap: 13px;
@@ -158,10 +210,17 @@
   min-width: 0;
   padding: 18px;
   border: 1px solid var(--mg-border);
-  border-radius: 14px;
+  border-radius: var(--mg-radius-lg);
   background: var(--mg-surface);
-  box-shadow: 0 6px 18px rgba(23, 48, 40, .045);
+  box-shadow: var(--mg-shadow-sm);
+  transition: transform var(--mg-speed) var(--mg-ease), box-shadow var(--mg-speed) var(--mg-ease);
 }
+
+.metricCard:hover { transform: translateY(-2px); box-shadow: var(--mg-shadow-md); }
+
+.metricCard[data-tone='violet'] { --metric-accent: var(--mg-accent-violet); --metric-soft: var(--mg-accent-violet-soft); }
+.metricCard[data-tone='amber'] { --metric-accent: var(--mg-accent-amber); --metric-soft: var(--mg-accent-amber-soft); }
+.metricCard[data-tone='blue'] { --metric-accent: var(--mg-accent-blue); --metric-soft: var(--mg-accent-blue-soft); }
 
 .metricCard > span {
   display: grid;
@@ -169,8 +228,8 @@
   height: 42px;
   place-items: center;
   border-radius: 12px;
-  color: var(--mg-primary-dark);
-  background: var(--mg-primary-soft);
+  color: var(--metric-accent);
+  background: var(--metric-soft);
 }
 
 .metricCard small,
@@ -186,8 +245,12 @@
 
 .metricCard strong {
   margin: 4px 0 2px;
-  font-size: 1.5rem;
+  font-family: var(--mg-font-display);
+  font-size: 1.55rem;
+  font-weight: 780;
   line-height: 1;
+  letter-spacing: -.045em;
+  font-variant-numeric: tabular-nums;
 }
 
 .metricCard p {
@@ -196,6 +259,8 @@
   font-size: .74rem;
 }
 
+/* ---------- 业务闭环卡 ---------- */
+
 .loopGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -203,33 +268,55 @@
 }
 
 .loopCard {
-  --loop-accent: var(--mg-primary);
-  --loop-soft: var(--mg-primary-soft);
+  --loop-accent: var(--mg-accent-mint);
+  --loop-deep: var(--mg-accent-mint-deep);
+  --loop-soft: var(--mg-accent-mint-soft);
+  position: relative;
   display: flex;
   min-width: 0;
   min-height: 228px;
   flex-direction: column;
+  overflow: hidden;
   padding: 20px;
-  border: 1px solid color-mix(in srgb, var(--loop-accent) 24%, var(--mg-border));
-  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--loop-accent) 22%, var(--mg-border));
+  border-radius: var(--mg-radius-lg);
   color: var(--mg-ink);
-  background: linear-gradient(180deg, var(--mg-surface), color-mix(in srgb, var(--loop-soft) 55%, white));
-  box-shadow: 0 8px 22px rgba(23, 48, 40, .045);
+  background: linear-gradient(180deg, var(--mg-surface) 0%, color-mix(in srgb, var(--loop-soft) 62%, white) 100%);
+  box-shadow: var(--mg-shadow-sm);
   text-decoration: none;
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  transition:
+    transform var(--mg-speed) var(--mg-ease),
+    box-shadow var(--mg-speed) var(--mg-ease),
+    border-color var(--mg-speed) var(--mg-ease);
+}
+
+.loopCard::after {
+  position: absolute;
+  right: -46px;
+  bottom: -58px;
+  width: 150px;
+  height: 150px;
+  border-radius: 47% 53% 44% 56% / 45% 44% 56% 55%;
+  background: color-mix(in srgb, var(--loop-soft) 68%, transparent);
+  transition: transform .24s var(--mg-ease);
+  content: '';
 }
 
 .loopCard:hover {
   transform: translateY(-4px);
   border-color: color-mix(in srgb, var(--loop-accent) 48%, var(--mg-border));
-  box-shadow: 0 18px 36px rgba(23, 48, 40, .1);
+  box-shadow: 0 20px 40px color-mix(in srgb, var(--loop-accent) 14%, rgba(23, 48, 40, .06));
 }
 
-.loopCard[data-tone='campaign'] { --loop-accent: #6c5acb; --loop-soft: #eeebff; }
-.loopCard[data-tone='business'] { --loop-accent: #d07a32; --loop-soft: #fff0df; }
-.loopCard[data-tone='desk'] { --loop-accent: #3f78bd; --loop-soft: #eaf2fc; }
+.loopCard:hover::after { transform: scale(1.16); }
+
+.loopCard[data-tone='campaign'] { --loop-accent: var(--mg-accent-violet); --loop-deep: var(--mg-accent-violet-deep); --loop-soft: var(--mg-accent-violet-soft); }
+.loopCard[data-tone='business'] { --loop-accent: var(--mg-accent-amber); --loop-deep: var(--mg-accent-amber-deep); --loop-soft: var(--mg-accent-amber-soft); }
+.loopCard[data-tone='desk'] { --loop-accent: var(--mg-accent-blue); --loop-deep: var(--mg-accent-blue-deep); --loop-soft: var(--mg-accent-blue-soft); }
 
 .loopCard header {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -241,12 +328,12 @@
   height: 38px;
   place-items: center;
   border-radius: 11px;
-  color: var(--loop-accent);
+  color: var(--loop-deep);
   background: var(--loop-soft);
 }
 
 .loopCard header small {
-  color: var(--loop-accent);
+  color: var(--loop-deep);
   font-size: .74rem;
   font-weight: 850;
   letter-spacing: .11em;
@@ -255,15 +342,23 @@
 .loopCard header > svg {
   margin-left: auto;
   color: var(--loop-accent);
+  transition: transform var(--mg-speed) var(--mg-ease);
 }
 
+.loopCard:hover header > svg { transform: translateX(3px); }
+
 .loopCard h2 {
+  position: relative;
+  z-index: 1;
   margin: 18px 0 8px;
   font-size: 1rem;
   line-height: 1.35;
+  letter-spacing: -.015em;
 }
 
 .loopCard > p {
+  position: relative;
+  z-index: 1;
   margin: 0;
   color: var(--mg-muted);
   font-size: .73rem;
@@ -271,12 +366,14 @@
 }
 
 .loopCard > div {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   margin-top: auto;
   padding-top: 18px;
-  color: var(--loop-accent);
+  color: var(--loop-deep);
   font-size: .74rem;
   font-weight: 700;
 }
@@ -287,6 +384,8 @@
 }
 
 .loopCard > div i { font-style: normal; opacity: .45; }
+
+/* ---------- 项目与行动区 ---------- */
 
 .workspaceGrid {
   display: grid;
@@ -299,9 +398,9 @@
 .actionPanel {
   overflow: hidden;
   border: 1px solid var(--mg-border);
-  border-radius: 16px;
+  border-radius: var(--mg-radius-lg);
   background: var(--mg-surface);
-  box-shadow: 0 10px 28px rgba(23, 48, 40, .055);
+  box-shadow: var(--mg-shadow-sm);
 }
 
 .sectionHeader {
@@ -340,7 +439,11 @@
   font-size: .74rem;
   font-weight: 700;
   text-decoration: none;
+  transition: border-color var(--mg-speed) var(--mg-ease), background var(--mg-speed) var(--mg-ease);
 }
+
+.sectionHeader > a:hover,
+.sectionHeader > button:hover { border-color: var(--mg-primary); background: var(--mg-primary-soft); }
 
 .projectList,
 .actionList {
@@ -352,8 +455,15 @@
 .projectCard {
   padding: 16px;
   border: 1px solid var(--mg-border);
-  border-radius: 12px;
+  border-radius: var(--mg-radius-md);
   background: var(--mg-bg);
+  transition: border-color var(--mg-speed) var(--mg-ease), box-shadow var(--mg-speed) var(--mg-ease), transform var(--mg-speed) var(--mg-ease);
+}
+
+.projectCard:hover {
+  border-color: color-mix(in srgb, var(--mg-primary) 36%, var(--mg-border));
+  box-shadow: var(--mg-shadow-sm);
+  transform: translateY(-1px);
 }
 
 .projectTopline {
@@ -388,6 +498,7 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--mg-primary-dark), var(--mg-primary));
+  transition: width .4s var(--mg-ease);
 }
 
 .projectCard footer {
@@ -410,6 +521,8 @@
   text-decoration: none;
 }
 
+.projectCard footer a:hover { color: var(--mg-primary-deep); }
+
 .taskCard {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) auto;
@@ -423,14 +536,16 @@
   background: var(--mg-bg);
   text-align: left;
   cursor: pointer;
+  transition: border-color var(--mg-speed) var(--mg-ease), background var(--mg-speed) var(--mg-ease), transform var(--mg-speed) var(--mg-ease);
 }
 
-.taskCard:hover { border-color: var(--mg-primary); background: var(--mg-primary-soft); }
+.taskCard:hover { border-color: var(--mg-primary); background: var(--mg-primary-soft); transform: translateX(2px); }
 .taskIcon { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; color: var(--mg-warning); background: var(--mg-warning-soft); }
 .taskCard strong, .taskCard small { display: block; }
 .taskCard strong { overflow: hidden; font-size: .73rem; text-overflow: ellipsis; white-space: nowrap; }
 .taskCard small { margin-top: 4px; color: var(--mg-muted); font-size: .74rem; }
-.taskCard > svg { color: var(--mg-muted); }
+.taskCard > svg { color: var(--mg-muted); transition: transform var(--mg-speed) var(--mg-ease), color var(--mg-speed) var(--mg-ease); }
+.taskCard:hover > svg { color: var(--mg-primary-dark); transform: translateX(2px); }
 
 .actionEmpty,
 .panelState {
@@ -450,13 +565,14 @@
 .panelState strong { margin-top: 10px; color: var(--mg-ink); font-size: .78rem; }
 .actionEmpty span,
 .panelState span { max-width: 48ch; margin-top: 5px; font-size: .74rem; line-height: 1.55; }
-.panelState button { margin-top: 13px; border: 1px solid var(--mg-primary); color: white; background: var(--mg-primary-dark); }
+.panelState button { margin-top: 13px; border: 1px solid transparent; color: white; background: linear-gradient(160deg, var(--mg-primary) 0%, var(--mg-primary-dark) 82%); box-shadow: var(--mg-shadow-primary); }
+.panelState button:hover { transform: translateY(-1px); }
 
 .deadlineCard {
   margin: 0 16px 16px;
   padding: 16px;
   border: 1px solid color-mix(in srgb, var(--mg-warning) 26%, var(--mg-border));
-  border-radius: 12px;
+  border-radius: var(--mg-radius-md);
   background: var(--mg-warning-soft);
 }
 
@@ -483,8 +599,8 @@
 
 @media (max-width: 760px) {
   .page { gap: 14px; }
-  .hero { grid-template-columns: 1fr; padding: 22px; border-radius: 16px; }
-  .heroCopy h1 { font-size: 2.15rem; }
+  .hero { grid-template-columns: 1fr; padding: 22px; border-radius: var(--mg-radius-lg); }
+  .heroCopy h1 { font-size: 2.2rem; }
   .heroActions { display: grid; grid-template-columns: 1fr; }
   .heroActions button { width: 100%; }
   .heroSignal { min-height: 160px; }
