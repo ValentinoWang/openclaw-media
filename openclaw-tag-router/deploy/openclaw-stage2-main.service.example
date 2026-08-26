@@ -1,0 +1,25 @@
+[Unit]
+Description=OpenClaw Stage-2 authenticated isolated service
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/releases/current/openclaw-tag-router
+EnvironmentFile=/home/ubuntu/.config/openclaw-bot-center/auth.env
+EnvironmentFile=/home/ubuntu/.config/openclaw-stage2/stage2.env
+ExecStart=/home/ubuntu/releases/current/.venv/bin/python -m openclaw_app.stage2_server_cli \
+  --settings /home/ubuntu/.openclaw/extensions/openclaw-tag-router/config/settings.yaml \
+  --host 127.0.0.1 \
+  --port 8892 \
+  --public-origin http://127.0.0.1:8892
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/.openclaw/state /home/ubuntu/.local/share/openclaw
+
+[Install]
+WantedBy=default.target
