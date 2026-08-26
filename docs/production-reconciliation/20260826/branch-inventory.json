@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "openclaw.branch-inventory.v1",
+  "observedMain": "ef7e1d32c3360c8bd548286ea3e64bb8f287bbd8",
+  "canonicalBranch": "main",
+  "workingBranch": "codex/main-reconciliation-20260826",
+  "branches": [
+    {
+      "name": "codex/production-reconciliation-20260825",
+      "observedSha": "22f0c91744d8046e884d2295a9f4191ecf784207",
+      "disposition": "already_merged_into_main"
+    },
+    {
+      "name": "codex/readme-refresh-20260826",
+      "observedSha": "2c0cd86c5f8cfeac3cd4382e88602f3b4866487d",
+      "disposition": "already_merged_into_main"
+    },
+    {
+      "name": "codex/non-tls-acceptance-experience-20260826",
+      "observedSha": "f0460b4ce84ca7efc7eb6d2f05c77d20eef68aaf",
+      "disposition": "no_unique_commits_repoint_after_merge"
+    },
+    {
+      "name": "codex/stage2-authenticated-integration-20260826-backup",
+      "observedSha": "f0460b4ce84ca7efc7eb6d2f05c77d20eef68aaf",
+      "disposition": "accidental_empty_ref_repoint_after_merge"
+    },
+    {
+      "name": "codex/stage2-authenticated-integration-20260826",
+      "observedSha": "f0460b4ce84ca7efc7eb6d2f05c77d20eef68aaf",
+      "disposition": "accidental_empty_ref_repoint_after_merge"
+    },
+    {
+      "name": "codex/stage2-authenticated-integration-final-20260826",
+      "observedSha": "f0460b4ce84ca7efc7eb6d2f05c77d20eef68aaf",
+      "disposition": "accidental_empty_ref_repoint_after_merge"
+    },
+    {
+      "name": "codex/stage2-authenticated-integration-final2-20260826",
+      "observedSha": "f0460b4ce84ca7efc7eb6d2f05c77d20eef68aaf",
+      "disposition": "accidental_empty_ref_repoint_after_merge"
+    },
+    {
+      "name": "codex/stage2-authenticated-integration-final3-20260826",
+      "observedSha": "f0460b4ce84ca7efc7eb6d2f05c77d20eef68aaf",
+      "disposition": "accidental_empty_ref_repoint_after_merge"
+    }
+  ],
+  "rule": "No branch is a release identity. After reconciliation, all retained refs must resolve to the canonical main commit and carry no unique changes."
+}
