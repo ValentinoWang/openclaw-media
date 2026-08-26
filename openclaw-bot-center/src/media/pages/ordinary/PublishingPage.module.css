@@ -19,9 +19,9 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
   font-weight: 650;
   cursor: pointer;
 }
@@ -30,7 +30,7 @@
   min-height: 38px;
   padding: 0 13px;
   border: 0;
-  color: white;
+  color: var(--mg-on-primary);
   background: var(--mg-primary-dark);
 }
 
@@ -92,10 +92,10 @@
   margin: -7px 0 12px;
   padding: 10px 12px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-surface);
-  font-size: 0.69rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
 }
 
@@ -106,7 +106,7 @@
 
 .boundaryNotice strong {
   color: var(--mg-ink);
-  font-size: 0.73rem;
+  font-size: var(--mg-text-sm);
 }
 
 .boundaryNotice p {
@@ -161,7 +161,7 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
@@ -180,24 +180,24 @@
 
 .emptyList strong {
   color: var(--mg-ink);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
 }
 
 .emptyList p,
 .emptyDetailSection > p {
   margin: 0;
   color: var(--mg-muted);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
 .emptyDetailPill {
   flex: 0 0 auto;
   padding: 3px 7px;
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.6rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 700;
 }
 
@@ -245,7 +245,7 @@
 .sectionHeading h3 {
   margin: 0;
   color: var(--mg-ink);
-  font-size: 0.88rem;
+  font-size: var(--mg-text-md);
   line-height: 1.35;
 }
 
@@ -255,7 +255,7 @@
   margin: 3px 0 0;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -346,13 +346,13 @@
   overflow-wrap: anywhere;
   color: var(--mg-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .packageRowMeta {
   justify-content: flex-start;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .packageRowMeta > span {
@@ -372,8 +372,8 @@
   flex: 0 0 auto;
   padding: 3px 7px;
   overflow-wrap: anywhere;
-  border-radius: 4px;
-  font-size: 0.6rem;
+  border-radius: var(--mg-r-xs);
+  font-size: var(--mg-text-2xs);
   font-weight: 700;
   line-height: 1.3;
 }
@@ -431,7 +431,7 @@
 }
 
 .sectionHeading h3 {
-  font-size: 0.8rem;
+  font-size: var(--mg-text-md);
 }
 
 .factGrid,
@@ -454,7 +454,7 @@
   display: block;
   margin-bottom: 4px;
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.35;
 }
 
@@ -463,7 +463,7 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -478,7 +478,7 @@
 .contentGrid {
   padding: 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-bg);
 }
 
@@ -487,7 +487,7 @@
   margin: 8px 0 0;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
 }
 
@@ -511,7 +511,7 @@
   align-items: start;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -536,7 +536,7 @@
   max-width: 100%;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .checkList {
@@ -552,7 +552,7 @@
   align-items: start;
   padding: 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-bg);
 }
 
@@ -572,21 +572,21 @@
 .checkCopy strong {
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.69rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.4;
 }
 
 .checkCopy small {
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
 .checkComplete,
 .checkPending {
   overflow-wrap: anywhere;
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.35;
 }
 
@@ -615,11 +615,11 @@
   min-width: 0;
   box-sizing: border-box;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-surface);
   font: inherit;
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .reasonField textarea {
@@ -664,10 +664,10 @@
   margin-top: 4px;
   padding: 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -681,7 +681,7 @@
   margin-top: 14px;
   padding: 12px;
   border: 1px solid var(--mg-primary);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-primary-soft);
 }
 
@@ -707,14 +707,14 @@
 
 .receiptHeader strong {
   color: var(--mg-ink);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .receiptHeader span {
   overflow-wrap: anywhere;
   color: var(--mg-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .receiptLink {
@@ -726,10 +726,10 @@
   margin-top: 12px;
   padding: 9px 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   text-decoration: none;
 }
 
@@ -750,7 +750,7 @@
   gap: 8px;
   margin-top: 12px;
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -768,7 +768,7 @@
 
 .reviewWindowNote strong {
   color: var(--mg-ink);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .reviewWindowNote span {
@@ -790,7 +790,7 @@
   gap: 8px;
   padding: 28px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-surface);
   text-align: center;
@@ -798,14 +798,14 @@
 
 .statePanel strong {
   color: var(--mg-ink);
-  font-size: 0.82rem;
+  font-size: var(--mg-text-md);
 }
 
 .statePanel p {
   max-width: 58ch;
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
 }
 

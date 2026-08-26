@@ -1,7 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import MediaStudioApp from './MediaStudioApp'
+import './mediaDesignTokens.css'
 import './media.css'
+import './mediaPrimitives.css'
 import './mediaStudioTheme.css'
 
 createRoot(document.getElementById('root')!).render(

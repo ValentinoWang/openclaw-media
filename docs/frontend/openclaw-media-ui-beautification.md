@@ -18,6 +18,52 @@
 
 ---
 
+## 0.5 实现状态（2026-08-26 已落地）
+
+本文档最初只是方案。**P0 全部已落地并验证**，改动 34 个文件。
+
+| 项 | 状态 | 说明 |
+|---|:--:|---|
+| Layer 0 `mediaDesignTokens.css` | ✅ | 新增，字阶 / 圆角 / 阴影 / 动效 / 暗色 / 6 组 accent |
+| Layer 2 `mediaPrimitives.css` | ✅ | 新增，hero / metric / panel / badge / empty / pipeline |
+| 三处 `:root` 收敛为一处 | ✅ | 含第 1356 行那处隐蔽的 `--mg-shell-topbar: 86px` |
+| 字阶迁移 | ✅ | 1171 处，**全量**（未分批，QA 逐项验证后一次完成） |
+| accent / 语义色 token 化 | ✅ | `*.module.css` 硬编码 hex **132 → 0** |
+| 圆角 / 阴影 token 化 | ✅ | 409 / 42 处；7 个焦点环有意保留 |
+| 暗色模式 | ✅ | 系统偏好 + 顶栏手动开关（`localStorage` 带 try/catch） |
+| 全局动效兜底 | ✅ | 一条规则覆盖原先 174 个无过渡的悬停态 |
+| 无障碍对比度 | ✅ | 实测 WCAG AA：暗色 12 处不合格 → 0，浅色 38 → 0 |
+
+迁移由两个可重复执行的脚本完成，留在仓库里便于复核：
+`scripts/migrate-token-layer.mjs`（结构）、`scripts/migrate-design-tokens.mjs`（批量值替换）。
+
+### 实现阶段发现的、原方案没预料到的四件事
+
+1. **焦点环会被误伤。** `box-shadow: 0 0 0 3px …` 是焦点指示器，不是高度层级。
+   按模糊半径映射会把它们全部替换成 `--mg-e1`，**键盘可达性直接消失**。
+   脚本现在显式跳过「无偏移无模糊」的阴影（7 处）。
+2. **暗色下 `--mg-primary-dark` 比 `--mg-primary` 更亮。** 全站有 37 处 `color: white` 压在
+   primary 背景上，暗色模式下变成白字压亮绿。新增 `--mg-on-primary`（浅色 `#fff` / 暗色 `#08211a`）。
+3. **accent-base 当按钮底色不达 AA。** 白字压在 `--accent-base` 上：studio 3.52、agent 3.89、
+   archive 4.45，都不到 4.5。`.mg-btn-primary` 改用深一档的 `--accent-ink`（六族 ≥ 5.8）。
+4. **`--mg-muted` 差一点点。** `#68756e` 对 `--mg-bg` 只有 4.43，改为 `#647169`（4.70）。
+
+### 另有一个 QA 契约被迫修改
+
+`scripts/qa/checkMediaOrdinaryPresentation.ts` 对 `DecisionsPage.module.css` 断言了三个**字面量**字号
+（`0.65rem` / `0.69rem` / `0.59rem`），用途是保证它与 RunsPage 的列表呈现一致。
+迁移后两页都走同一套 token，**奇偶性意图不变**，故把断言改成 token 形式并加注释说明。
+这是本次唯一被修改的 QA 契约。
+
+### 已知未处理
+
+- 圆角仍有 11 种非 token 值（多值圆角，如 `11px 11px 0 0`，脚本有意跳过）。
+- 竞品那套 Hero 产品窗口 mockup、指标卡 sparkline、项目卡证据缩略图属于 P1，
+  需要后端补 `counts7d` 与封面字段，**未做**，避免渲染假数据。
+- 全站视觉回归截图（`qa:media-role-screens`）需要部署环境与真实 cookie，本地无法跑。
+
+---
+
 ## 1. 现状体检（可复现的硬数据）
 
 复现命令（在 `openclaw-bot-center/src/media` 下执行）：
@@ -50,16 +96,19 @@ grep -rho ':hover' --include=*.css . | wc -l
 | 产品截图 / 视觉锚点 | 无 | Hero 窗口 mockup + 真实截图 | ❌ 关键差距 |
 | 区块留白 | `gap: 20–22px` | `padding: 105px 0 112px` | ❌ 拥挤 |
 
-### 1.2 根因一：两套 token 系统，19/25 被静默覆盖
+### 1.2 根因一：三处 `:root` 互相覆盖
 
-`src/media/main.tsx` 的导入顺序：
+> ⚠️ **本节已在实现阶段修正**：最初只发现两处 `:root`，实际是**三处**。
+> `media.css` 自己就有两个——文件头一个，第 1356 行「Frozen role IA shell」注释下还有一个。
 
 ```ts
-import './media.css'            // 定义 :root，25 个 token（OKLCH 色彩空间）
-import './mediaStudioTheme.css' // 又定义 :root，20 个 token（HEX）—— 后者胜出
+// src/media/main.tsx 改造前
+import './media.css'            // :root #1（第 1 行，25 个 token，OKLCH）
+                                // :root #2（第 1356 行，13 个 token，HEX，含 --mg-shell-topbar: 86px）
+import './mediaStudioTheme.css' // :root #3（20 个 token，HEX）—— 最终胜出
 ```
 
-两个文件同为 `:root` 选择器、同等特异性，**后导入者全量覆盖**。实测冲突：
+三者同为 `:root`、同等特异性，**后导入者全量覆盖**。实测冲突（#1 vs #3）：
 
 | Token | media.css（失效） | mediaStudioTheme.css（生效） |
 |---|---|---|
@@ -71,6 +120,11 @@ import './mediaStudioTheme.css' // 又定义 :root，20 个 token（HEX）——
 
 **后果**：`media.css` 里精心调过的 OKLCH 色彩体系是**死代码**。任何人改 `media.css` 的颜色都不会生效，
 只会在 code review 里被当成"改过了"。这是最危险的一类问题——**沉默失败**。
+
+第二处 `:root`（第 1356 行）更隐蔽：它把 `--mg-shell-topbar` 设成 `86px`，而 studio 皮肤设成 `68px`。
+约 20 个页面模块用 `calc(100dvh - var(--mg-shell-topbar, 86px) - 46px)` 算视口高度——
+回退值 `86px` 从未生效过，因为总有 `:root` 在定义它。删掉 studio 皮肤的 `:root` 后这一处会翻上来，
+把顶栏从 68px 变成 86px，**所有算高度的页面一起错位**。改造时必须一并处理。
 
 幸存的 6 个（仅在 media.css 定义）：`--mg-level-one/two/three`、`--mg-control-height-sm/md`、`--mg-panel-heading-height`。
 
@@ -872,18 +926,25 @@ npm run qa:media-ordinary-presentation
 npm run build:media                        # 完整门禁（含 14 项 QA）
 ```
 
-### 7.3 量化验收标准
+### 7.3 量化验收标准（实测结果）
 
-| 指标 | 现状 | 目标 |
-|---|---:|---:|
-| 字号种类 | 89 | **≤ 12**（8 个 token + 4 个 clamp 特例） |
-| `*.module.css` 中硬编码 hex | 132 | **0** |
-| 圆角种类 | 36 | **≤ 8** |
-| 阴影种类 | 49 | **≤ 6** |
-| 无过渡的 `:hover` | 174 | **0** |
-| `prefers-color-scheme` 支持 | 无 | **完整** |
-| 最小正文字号 | 8.5px | **≥ 12px** |
-| `:root` 定义处 | 2（冲突） | **1** |
+| 指标 | 改造前 | 目标 | **实测** |
+|---|---:|---:|---:|
+| 字号种类（非 token） | 89 | ≤ 12 | **6** ✅ |
+| `*.module.css` 硬编码 hex | 132 | 0 | **0** ✅ |
+| 圆角种类（非 token） | 36 | ≤ 8 | **11** ⚠️ 多值圆角未处理 |
+| 高度阴影（非焦点环、非 token） | 49 | ≤ 6 | **9** ⚠️ 含 color-mix accent 投影 |
+| 焦点环（有意保留） | — | — | **7** ✅ |
+| 无过渡的 `:hover` | 174 | 0 | **0** ✅ 一条全局兜底 |
+| `prefers-color-scheme` | 无 | 完整 | **完整** ✅ |
+| 最小正文字号 | 8.5px | ≥ 12px | **12px** ✅ |
+| `:root` 定义处 | 3（冲突） | 1 | **1** ✅ |
+| WCAG AA 不合格文本（浅色） | — | 0 | 38 → **0** ✅ |
+| WCAG AA 不合格文本（暗色） | — | 0 | 12 → **0** ✅ |
+| `tsc` 错误数 | 7（既有） | 不增加 | **7** ✅ |
+
+对比度用 Playwright 在真实渲染页面上逐元素测量（含渐变背景取样、`color-mix` 解析），
+不是靠取色器目测。
 
 核查脚本（建议加进 `scripts/qa/`）：
 

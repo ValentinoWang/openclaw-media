@@ -40,7 +40,7 @@ export default function CampaignsPage() {
   const completed = campaignTasks.filter((task) => task.terminal && task.status === 'succeeded')
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-accent="campaign">
       <section className={styles.hero}>
         <div>
           <span><Sparkles size={15} />CAMPAIGN DELIVERY</span>

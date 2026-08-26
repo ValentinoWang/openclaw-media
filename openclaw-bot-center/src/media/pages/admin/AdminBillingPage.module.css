@@ -36,11 +36,11 @@
   justify-content: center;
   gap: 7px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   padding: 0 13px;
   color: var(--mg-ink);
   background: var(--mg-surface);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
   font-weight: 650;
   cursor: pointer;
 }
@@ -55,7 +55,7 @@
 .headingActionPrimary,
 .submitButton {
   border-color: var(--mg-primary-dark);
-  color: white;
+  color: var(--mg-on-primary);
   background: var(--mg-primary-dark);
 }
 
@@ -81,7 +81,7 @@
   margin: 0;
   overflow: hidden;
   border: 1px solid var(--mg-border);
-  border-radius: 8px;
+  border-radius: var(--mg-r-md);
   background: var(--mg-surface);
 }
 
@@ -116,13 +116,13 @@
 .metric span,
 .metric small {
   color: var(--mg-muted);
-  font-size: 0.6rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .metric strong {
   margin: 2px 0 1px;
   color: var(--mg-ink);
-  font-size: 1rem;
+  font-size: var(--mg-text-lg);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -134,10 +134,10 @@
   margin: 0 0 14px;
   padding: 10px 12px;
   border: 1px solid oklch(0.84 0.06 72);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-warning-soft);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -164,7 +164,7 @@
   padding: 0 2px;
   color: var(--mg-muted);
   background: transparent;
-  font-size: 0.76rem;
+  font-size: var(--mg-text-sm);
   cursor: pointer;
 }
 
@@ -217,7 +217,7 @@
 .bottomPanel {
   min-width: 0;
   border: 1px solid var(--mg-border);
-  border-radius: 8px;
+  border-radius: var(--mg-r-md);
   background: var(--mg-surface);
 }
 
@@ -254,18 +254,18 @@
 .inspectorHeader h2 {
   margin: 2px 0 0;
   color: var(--mg-ink);
-  font-size: 0.9rem;
+  font-size: var(--mg-text-lg);
 }
 
 .eyebrow {
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .resultCount {
   flex: 0 0 auto;
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .tableViewport {
@@ -277,7 +277,7 @@
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.71rem;
+  font-size: var(--mg-text-sm);
 }
 
 .table th,
@@ -291,7 +291,7 @@
 .table thead th {
   color: var(--mg-muted);
   background: oklch(0.985 0.003 175);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   white-space: nowrap;
 }
@@ -340,7 +340,7 @@
   margin-top: 3px;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   font-weight: 450;
 }
 
@@ -368,8 +368,8 @@
   gap: 5px;
   padding: 4px 7px;
   border: 1px solid transparent;
-  border-radius: 5px;
-  font-size: 0.63rem;
+  border-radius: var(--mg-r-sm);
+  font-size: var(--mg-text-2xs);
   line-height: 1;
   white-space: nowrap;
 }
@@ -463,7 +463,7 @@
   width: 26px;
   height: 26px;
   place-items: center;
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-primary-soft);
 }
@@ -477,7 +477,7 @@
   padding: 5px 0 5px 5px;
   color: var(--mg-primary-dark);
   background: transparent;
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   cursor: pointer;
 }
 
@@ -509,19 +509,19 @@
 
 .compactMetrics span {
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .compactMetrics strong {
   margin-top: 5px;
-  font-size: 1rem;
+  font-size: var(--mg-text-lg);
   font-variant-numeric: tabular-nums;
 }
 
 .miniTable th,
 .miniTable td {
   padding: 9px 11px;
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
 }
 
 .miniTable th[scope="row"] {
@@ -558,7 +558,7 @@
 .inspectorTitle p {
   margin: 5px 0 0;
   color: var(--mg-muted);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -566,7 +566,7 @@
   display: block;
   margin: 10px 0 0 27px;
   color: var(--mg-muted);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
 }
 
 .actionSuccess {
@@ -586,7 +586,7 @@
 
 .operationTab {
   min-height: 39px;
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
 }
 
 .form {
@@ -606,13 +606,13 @@
 
 .field > span {
   color: var(--mg-ink);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
 }
 
 .field > small {
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -622,10 +622,10 @@
   width: 100%;
   min-width: 0;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-surface);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .field input,
@@ -666,10 +666,10 @@
   gap: 7px;
   padding: 9px 10px;
   border: 1px solid oklch(0.86 0.05 166);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-primary-soft);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -685,7 +685,7 @@
   margin-top: 16px;
   padding: 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-bg);
   cursor: pointer;
 }
@@ -707,13 +707,13 @@
 
 .confirmation strong {
   color: var(--mg-ink);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
 }
 
 .confirmation small {
   margin-top: 3px;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -728,7 +728,7 @@
 .formFooter > span {
   max-width: 210px;
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -744,7 +744,7 @@
   margin: 0 17px 17px;
   padding: 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-bg);
 }
@@ -780,7 +780,7 @@
 
 .receipt strong {
   color: var(--mg-ink);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .receipt span,
@@ -788,7 +788,7 @@
 .receipt code {
   margin-top: 4px;
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
@@ -806,7 +806,7 @@
   margin-top: 20px;
   padding: 22px;
   border: 1px solid var(--mg-border);
-  border-radius: 8px;
+  border-radius: var(--mg-r-md);
   color: var(--mg-muted);
   background: var(--mg-surface);
 }
@@ -825,12 +825,12 @@
 
 .statePanel strong {
   color: var(--mg-ink);
-  font-size: 0.82rem;
+  font-size: var(--mg-text-md);
 }
 
 .statePanel span {
   margin-top: 5px;
-  font-size: 0.69rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
@@ -856,7 +856,7 @@
   gap: 8px;
   padding: 20px;
   color: var(--mg-muted);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .emptyState svg {
@@ -974,7 +974,7 @@
   }
 
   .metric strong {
-    font-size: 1.2rem;
+    font-size: var(--mg-text-xl);
   }
 
   .tabs {

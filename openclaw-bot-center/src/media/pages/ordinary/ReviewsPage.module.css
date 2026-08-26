@@ -1,17 +1,17 @@
 :global(.fidelity-page).page {
-  --reviews-ink: #18212f;
-  --reviews-muted: #667384;
-  --reviews-line: #d9e1e7;
-  --reviews-surface: #ffffff;
-  --reviews-soft: #f5f8fa;
-  --reviews-teal: #087f7b;
-  --reviews-teal-soft: #e6f4f2;
-  --reviews-blue: #285c91;
-  --reviews-blue-soft: #eaf1f8;
-  --reviews-amber: #9a5d12;
-  --reviews-amber-soft: #fff3df;
-  --reviews-coral: #a44537;
-  --reviews-coral-soft: #fff0ed;
+  --reviews-ink: var(--mg-ink);
+  --reviews-muted: var(--mg-muted);
+  --reviews-line: var(--mg-border);
+  --reviews-surface: var(--mg-surface);
+  --reviews-soft: var(--mg-bg-sunken);
+  --reviews-teal: var(--mg-accent-agent-ink);
+  --reviews-teal-soft: var(--mg-accent-agent-soft);
+  --reviews-blue: var(--mg-accent-desk-ink);
+  --reviews-blue-soft: var(--mg-accent-desk-soft);
+  --reviews-amber: var(--mg-warning);
+  --reviews-amber-soft: var(--mg-warning-soft);
+  --reviews-coral: var(--mg-danger);
+  --reviews-coral-soft: var(--mg-danger-soft);
   min-width: 0;
   color: var(--reviews-ink);
 }
@@ -47,19 +47,19 @@
   border-radius: 0.4rem;
   cursor: pointer;
   white-space: nowrap;
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   font-weight: 780;
   line-height: 1.1;
 }
 
 .primaryButton {
-  color: #ffffff;
+  color: var(--mg-on-primary);
   background: var(--reviews-teal);
   border-color: var(--reviews-teal);
 }
 
 .primaryButton:hover {
-  background: #066663;
+  background: color-mix(in srgb, var(--mg-accent-agent-ink) 82%, black);
 }
 
 .secondaryButton {
@@ -143,7 +143,7 @@
 .summaryMetric span,
 .summaryMetric small {
   color: var(--reviews-muted);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.25;
 }
 
@@ -151,7 +151,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--reviews-ink);
-  font-size: 1.12rem;
+  font-size: var(--mg-text-xl);
   line-height: 1.2;
 }
 
@@ -172,7 +172,7 @@
   background: transparent;
   cursor: pointer;
   white-space: nowrap;
-  font-size: 0.82rem;
+  font-size: var(--mg-text-md);
   font-weight: 760;
 }
 
@@ -235,7 +235,7 @@
 .resourceState strong,
 .emptyState strong {
   max-width: 44rem;
-  font-size: 0.92rem;
+  font-size: var(--mg-text-lg);
   line-height: 1.35;
 }
 
@@ -244,7 +244,7 @@
   max-width: 44rem;
   margin: 0;
   color: var(--reviews-muted);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.55;
 }
 
@@ -257,7 +257,7 @@
   align-items: center;
   gap: 0.35rem;
   color: var(--reviews-teal);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   font-weight: 780;
   text-decoration: none;
 }
@@ -305,14 +305,14 @@
 .panelTitle h2 {
   margin: 0;
   color: var(--reviews-ink);
-  font-size: 1rem;
+  font-size: var(--mg-text-lg);
   line-height: 1.25;
 }
 
 .panelTitle p {
   margin: 0.18rem 0 0;
   color: var(--reviews-muted);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.4;
 }
 
@@ -326,7 +326,7 @@
   min-width: 58rem;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 0.75rem;
+  font-size: var(--mg-text-sm);
 }
 
 .table th,
@@ -343,7 +343,7 @@
 .table thead th {
   color: var(--reviews-muted);
   background: var(--reviews-soft);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -360,7 +360,7 @@
 
 .selectedRow th,
 .selectedRow td {
-  background: #f0f8f7;
+  background: var(--mg-accent-agent-soft);
 }
 
 .postCell {
@@ -412,7 +412,7 @@
   max-width: 100%;
   overflow: hidden;
   color: var(--reviews-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -431,7 +431,7 @@
 .codeValue {
   color: var(--reviews-blue);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .windowList {
@@ -445,7 +445,7 @@
   width: fit-content;
   padding: 0.18rem 0.35rem;
   border-radius: 0.25rem;
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   font-weight: 760;
   white-space: nowrap;
 }
@@ -468,7 +468,7 @@
   padding: 0.2rem 0.38rem;
   border: 1px solid transparent;
   border-radius: 0.3rem;
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   font-weight: 800;
   line-height: 1.2;
   white-space: nowrap;
@@ -477,19 +477,19 @@
 .qualityVerified {
   color: var(--reviews-teal);
   background: var(--reviews-teal-soft);
-  border-color: #b8ded9;
+  border-color: color-mix(in srgb, var(--mg-accent-agent-base) 40%, var(--mg-border));
 }
 
 .qualityPartial {
   color: var(--reviews-amber);
   background: var(--reviews-amber-soft);
-  border-color: #efd29e;
+  border-color: color-mix(in srgb, var(--mg-warning) 30%, var(--mg-border));
 }
 
 .qualityUnverified {
   color: var(--reviews-coral);
   background: var(--reviews-coral-soft);
-  border-color: #ecc1b9;
+  border-color: color-mix(in srgb, var(--mg-danger) 30%, var(--mg-border));
 }
 
 .qualityUnavailable {
@@ -524,7 +524,7 @@
   padding: 0.7rem 0.9rem;
   border-top: 1px solid var(--reviews-line);
   color: var(--reviews-muted);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .layers {
@@ -532,7 +532,7 @@
   gap: 0.65rem;
   padding: 0.9rem;
   border-top: 1px solid var(--reviews-line);
-  background: #fbfcfd;
+  background: var(--mg-bg);
 }
 
 .layersHeader {
@@ -545,14 +545,14 @@
 .layersHeader h2 {
   margin: 0;
   color: var(--reviews-ink);
-  font-size: 0.96rem;
+  font-size: var(--mg-text-lg);
   line-height: 1.25;
 }
 
 .layersHeader p {
   margin: 0.2rem 0 0;
   color: var(--reviews-muted);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
   overflow-wrap: anywhere;
 }
 
@@ -592,7 +592,7 @@
 .layerHeader h3 {
   margin: 0;
   color: var(--reviews-ink);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.2;
 }
 
@@ -600,7 +600,7 @@
   display: block;
   margin-top: 0.12rem;
   color: var(--reviews-muted);
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
 }
 
 .factList {
@@ -618,7 +618,7 @@
 
 .factList dt {
   color: var(--reviews-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   font-weight: 780;
 }
 
@@ -626,7 +626,7 @@
   min-width: 0;
   margin: 0;
   color: var(--reviews-ink);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
   overflow-wrap: anywhere;
 }
 
@@ -634,7 +634,7 @@
   min-height: 3.2rem;
   margin: 0;
   color: var(--reviews-ink);
-  font-size: 0.75rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
@@ -669,12 +669,12 @@
 
 .growthMetric span {
   color: var(--reviews-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .growthMetric strong {
   color: var(--reviews-ink);
-  font-size: 1rem;
+  font-size: var(--mg-text-lg);
   overflow-wrap: anywhere;
 }
 
@@ -707,7 +707,7 @@
   gap: 0.3rem;
   min-width: 0;
   color: var(--reviews-ink);
-  font-size: 0.73rem;
+  font-size: var(--mg-text-sm);
   font-weight: 780;
 }
 
@@ -718,9 +718,9 @@
   border: 1px solid var(--reviews-line);
   border-radius: 0.35rem;
   color: var(--reviews-ink);
-  background: #ffffff;
+  background: var(--mg-surface);
   padding: 0.55rem 0.6rem;
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.35;
 }
 
@@ -737,7 +737,7 @@
 .documentLink:focus-visible,
 .tab:focus-visible,
 .loginLink:focus-visible {
-  outline: 2px solid #5aa9a4;
+  outline: 2px solid var(--mg-accent-agent-base);
   outline-offset: 2px;
 }
 
@@ -752,13 +752,13 @@
 .readonlyContext span,
 .readonlyContext small {
   color: var(--reviews-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .readonlyContext strong {
   color: var(--reviews-ink);
   overflow-wrap: anywhere;
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
 }
 
 .formError {
@@ -767,7 +767,7 @@
   border-left: 3px solid var(--reviews-coral);
   color: var(--reviews-coral);
   background: var(--reviews-coral-soft);
-  font-size: 0.75rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.45;
 }
 
@@ -795,7 +795,7 @@
   border: 1px solid var(--reviews-line);
   border-radius: 0.5rem;
   background: var(--reviews-surface);
-  box-shadow: 0 18px 48px rgb(15 25 35 / 20%);
+  box-shadow: var(--mg-e4);
 }
 
 .dialogHeader {
@@ -810,7 +810,7 @@
 .dialogHeader h2 {
   margin: 0;
   color: var(--reviews-ink);
-  font-size: 1rem;
+  font-size: var(--mg-text-lg);
   line-height: 1.25;
 }
 

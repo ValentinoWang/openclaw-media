@@ -61,13 +61,16 @@ assert.equal(
   7,
   'DecisionsPage must expose all seven list columns to assistive technology',
 )
+// 列表呈现与 RunsPage 保持一致。字号自设计令牌迁移后走 mediaDesignTokens.css 的字阶：
+//   0.65rem / 0.69rem -> --mg-text-xs（13px）
+//   0.59rem           -> --mg-text-2xs（12px）
+// 此处断言的是「两页共用同一套 token」这一奇偶性，而不是某个具体像素值。
 for (const sharedRule of [
   'padding: 10px 12px;',
-  'font-size: 0.65rem;',
+  'font-size: var(--mg-text-xs);',
   'line-height: 1.45;',
   'margin-top: 5px;',
-  'font-size: 0.69rem;',
-  'font-size: 0.59rem;',
+  'font-size: var(--mg-text-2xs);',
   'text-overflow: ellipsis;',
   'white-space: nowrap;',
 ]) {
