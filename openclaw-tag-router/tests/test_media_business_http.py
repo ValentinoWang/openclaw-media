@@ -113,7 +113,10 @@ class _Tasks:
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
 
-    def cancel_task(self, task_id: str, *, tenant_id: str) -> dict[str, Any]:
+    def cancel_task(
+        self, task_id: str, *, tenant_id: str, user_public_id: str | None = None
+    ) -> dict[str, Any]:
+        del user_public_id
         self.calls.append({"operation": "cancel", "task_id": task_id, "tenant_id": tenant_id})
         return {"taskId": task_id, "status": "cancelled"}
 
@@ -123,7 +126,9 @@ class _Tasks:
         payload: dict[str, Any],
         *,
         tenant_id: str,
+        user_public_id: str | None = None,
     ) -> dict[str, Any]:
+        del user_public_id
         self.calls.append(
             {
                 "operation": "confirm",
@@ -267,9 +272,11 @@ class MediaBusinessHttpTests(unittest.TestCase):
         self.assertNotIn("COOKIE-", json.dumps(body))
 
     def test_media_session_matches_the_frozen_if2_response(self) -> None:
-        for token, expected_user_id, expected_role in (
-            ("user-token", USER_ID, "ordinary"),
-            ("admin-token", ADMIN_ID, "admin"),
+        # The frozen v2 session now carries the Stage-1 workspace facts the
+        # Media Web frontend schema requires (workspaceMode/editorMode/...).
+        for token, expected_user_id, expected_tenant_id, expected_role in (
+            ("user-token", USER_ID, TENANT_ID, "ordinary"),
+            ("admin-token", ADMIN_ID, ADMIN_TENANT_ID, "admin"),
         ):
             with self.subTest(token=token):
                 status, body = self._request(
@@ -283,7 +290,15 @@ class MediaBusinessHttpTests(unittest.TestCase):
                         "revision": 1,
                         "session": {
                             "publicUserId": str(expected_user_id),
+                            "tenantId": str(expected_tenant_id),
+                            "workspaceMode": "personal_web",
+                            "editorMode": "web_edit",
+                            "bodyAuthority": "internal",
+                            "memberRole": "owner",
+                            "bindingState": "NOT_APPLICABLE",
+                            "installationState": "NOT_APPLICABLE",
                             "role": expected_role,
+                            "maintainer": False,
                             "csrfToken": f"csrf-{token}",
                             "expiresAt": self.auth.sessions[token].expires_at.isoformat(),
                             "schemaVersion": "media_web_business_pages_v2",

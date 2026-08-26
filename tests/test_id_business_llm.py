@@ -11,7 +11,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 
-SCRIPT_PATH = Path("/home/ubuntu/selfmedia-tools/selfmedia/business/id_business.py")
+SCRIPT_PATH = Path(__file__).resolve().parents[1] / "selfmedia/business/id_business.py"
 SPEC = importlib.util.spec_from_file_location("id_business", SCRIPT_PATH)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader

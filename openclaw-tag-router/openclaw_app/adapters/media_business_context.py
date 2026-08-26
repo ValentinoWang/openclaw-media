@@ -76,6 +76,22 @@ class SessionPrincipal:
     is_maintainer: bool
     expires_at: datetime
     session_token_hash: bytes
+    # Stage-1 shared-session facts. Producers that resolve a workspace
+    # (WorkspaceResolver) populate every field; the http fallback principal
+    # keeps the personal-web defaults so legacy canonical sessions still bind.
+    workspace_mode: Literal["personal_web", "organization_lark"] = "personal_web"
+    body_authority: Literal["internal", "lark"] = "internal"
+    member_role: Literal["owner", "member"] = "owner"
+    schema_version: str = "media-stage1-shared-v1"
+    principal_id: str = ""
+    account_status: Literal["PENDING_EMAIL_VERIFICATION", "ACTIVE", "SUSPENDED"] = "ACTIVE"
+    workspace_intent: Literal["personal_web", "organization_lark"] = "personal_web"
+    personal_workspace_id: UUID | None = None
+    tenant_membership_ids: tuple[str, ...] = ()
+    active_binding_ids: tuple[str, ...] = ()
+    identity_link_receipt_ids: tuple[str, ...] = ()
+    authenticated_at: datetime | None = None
+    session_issued_at: datetime | None = None
 
     def __post_init__(self) -> None:
         if not self.user_public_id:
@@ -84,6 +100,11 @@ class SessionPrincipal:
             raise RequestContextError("session token identity must be SHA-256")
         if self.is_maintainer and self.role != "admin":
             raise RequestContextError("only an admin can hold maintainer authority")
+        if not self.principal_id:
+            object.__setattr__(self, "principal_id", self.user_public_id)
+        expected_authority = "internal" if self.workspace_mode == "personal_web" else "lark"
+        if self.body_authority != expected_authority:
+            raise RequestContextError("workspace mode and body authority disagree")
 
     @property
     def actor_user_id(self) -> UUID:
@@ -175,6 +196,9 @@ class If2RequestContext:
     expected_revision: int | None
     body: FrozenJson | None
     admin_audit: AdminAuditInput | None
+    # Optional Stage-1 workspace resolution facts (WorkspaceResolutionResult);
+    # typed loosely because the account layer depends on this module.
+    workspace_resolution: Any = None
 
     def __post_init__(self) -> None:
         if not self.canonical_path.startswith("/openclaw/media/api/"):

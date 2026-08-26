@@ -4,7 +4,7 @@ import importlib.util
 from pathlib import Path
 
 
-SCRIPT_PATH = Path("/home/ubuntu/selfmedia-tools/selfmedia/creator_profiles/anchor_crawler.py")
+SCRIPT_PATH = Path(__file__).resolve().parents[1] / "selfmedia/creator_profiles/anchor_crawler.py"
 SPEC = importlib.util.spec_from_file_location("crawl_creator_anchors", SCRIPT_PATH)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader

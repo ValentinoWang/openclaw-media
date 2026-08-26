@@ -12,7 +12,12 @@ from pathlib import Path
 from typing import Any
 
 
-REPO_CONFIG = Path("/home/ubuntu/selfmedia-tools/config/openclaw_bots.json")
+# The editable configuration SSOT lives in this repository; the env override
+# keeps the deployed host's split layout working.
+REPO_CONFIG = Path(
+    os.getenv("OPENCLAW_BOTS_CONFIG")
+    or Path(__file__).resolve().parents[3] / "config/openclaw_bots.json"
+)
 OBSIDIAN_DIR = Path("/home/ubuntu/obsidian-日记/openclaw配置")
 OBSIDIAN_CONFIG = OBSIDIAN_DIR / "openclaw_bots.json"
 OBSIDIAN_NOTE = OBSIDIAN_DIR / "OpenClaw Bot LLM 配置.md"

@@ -340,8 +340,19 @@ class MediaWebTaskService:
         return self._tenant_model_gateway.reconcile(tenant_id, resolver, limit=limit)
 
     def create_task(
-        self, payload: Mapping[str, Any], *, tenant_id: str, is_maintainer: bool = False,
+        self,
+        payload: Mapping[str, Any],
+        *,
+        tenant_id: str,
+        is_maintainer: bool = False,
+        user_public_id: str | None = None,
+        workspace_mode: str | None = None,
+        role: str | None = None,
     ) -> tuple[dict[str, Any], bool]:
+        # The IF2 surface forwards the acting principal; task storage remains
+        # tenant-scoped, so the identity kwargs are accepted for attribution
+        # without changing the tenant-level authorization model.
+        del user_public_id, workspace_mode, role
         tenant_id = _require_tenant_id(tenant_id)
         expected_keys = {"schemaVersion", "capabilityId", "variantId", "params", "uploadIds", "idempotencyKey", "catalogVersion", "initiation", "confirmationReceipt"}
         if set(payload) != expected_keys or payload.get("schemaVersion") != "3" or _contains_reserved_tenant_key(payload):
@@ -446,16 +457,25 @@ class MediaWebTaskService:
                 if not confirmation_required:
                     self._submit(task_id, tenant_id)
                 return self._project(task), True
-    def list_tasks(self, *, tenant_id: str, limit: int = 20) -> dict[str, Any]:
+    def list_tasks(
+        self, *, tenant_id: str, limit: int = 20, user_public_id: str | None = None
+    ) -> dict[str, Any]:
+        del user_public_id
         tenant_id = _require_tenant_id(tenant_id)
         tasks = self._iter_tenant_tasks(tenant_id)
         tasks.sort(key=lambda item: str(item.get("created_at") or ""), reverse=True)
         return {"schemaVersion": SCHEMA_VERSION, "tasks": [self._project(item) for item in tasks[: max(1, min(limit, 100))]]}
 
-    def get_task(self, task_id: str, *, tenant_id: str) -> dict[str, Any]:
+    def get_task(
+        self, task_id: str, *, tenant_id: str, user_public_id: str | None = None
+    ) -> dict[str, Any]:
+        del user_public_id
         return self._project(self._load_task(task_id, tenant_id=tenant_id))
 
-    def get_events(self, task_id: str, *, tenant_id: str, after: int = 0) -> list[dict[str, Any]]:
+    def get_events(
+        self, task_id: str, *, tenant_id: str, after: int = 0, user_public_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        del user_public_id
         tenant_id = _require_tenant_id(tenant_id)
         self._load_task(task_id, tenant_id=tenant_id)
         path = self._tenant_dir(self.events_dir, tenant_id) / f"{task_id}.jsonl"
@@ -472,7 +492,10 @@ class MediaWebTaskService:
                 events.append(event)
         return events
 
-    def cancel_task(self, task_id: str, *, tenant_id: str) -> dict[str, Any]:
+    def cancel_task(
+        self, task_id: str, *, tenant_id: str, user_public_id: str | None = None
+    ) -> dict[str, Any]:
+        del user_public_id
         tenant_id = _require_tenant_id(tenant_id)
         with self._lock:
             task = self._load_task(task_id, tenant_id=tenant_id)
@@ -487,7 +510,15 @@ class MediaWebTaskService:
             self._audit(tenant_id, "task.cancel", task_id, task["status"])
             return self._project(task)
 
-    def confirm_task(self, task_id: str, payload: Mapping[str, Any], *, tenant_id: str) -> dict[str, Any]:
+    def confirm_task(
+        self,
+        task_id: str,
+        payload: Mapping[str, Any],
+        *,
+        tenant_id: str,
+        user_public_id: str | None = None,
+    ) -> dict[str, Any]:
+        del user_public_id
         tenant_id = _require_tenant_id(tenant_id)
         if set(payload) != {"decision", "note"} or _contains_reserved_tenant_key(payload):
             raise MediaWebTaskError("invalid_request", "确认信息无效。")

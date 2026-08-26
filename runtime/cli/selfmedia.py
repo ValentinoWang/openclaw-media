@@ -778,13 +778,6 @@ def build_parser() -> argparse.ArgumentParser:
     backwash.add_argument("--stdin", action="store_true")
     backwash.add_argument("--tenant-id", required=True)
 
-    shooting = sub.add_parser("shooting-execution", help="Create an executable shooting plan from a concrete creation target.")
-    shooting.add_argument("--text", default="")
-    shooting.add_argument("--stdin", action="store_true")
-    shooting.add_argument("--dry-run", action="store_true")
-    shooting.add_argument("--no-write", action="store_true")
-    shooting.add_argument("--conversation-context-json", default="")
-
     consultation = sub.add_parser("consultation", help="Answer creation strategy questions from Feishu tables and media memory.")
     consultation.add_argument("--text", default="")
     consultation.add_argument("--stdin", action="store_true")
@@ -866,9 +859,6 @@ def main() -> None:
         return
     if args.command == "shooting-backwash":
         print_json(run_shooting_backwash(args))
-        return
-    if args.command == "shooting-execution":
-        print_json(run_shooting_execution(args))
         return
     if args.command == "consultation":
         print_json(run_creation_consultation(args))

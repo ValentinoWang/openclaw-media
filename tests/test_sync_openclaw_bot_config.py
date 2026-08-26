@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-MODULE_PATH = Path("/home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_bot_config.py")
+MODULE_PATH = Path(__file__).resolve().parents[1] / "runtime/maintenance/deploy/sync_openclaw_bot_config.py"
 SPEC = importlib.util.spec_from_file_location("sync_openclaw_bot_config", MODULE_PATH)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)

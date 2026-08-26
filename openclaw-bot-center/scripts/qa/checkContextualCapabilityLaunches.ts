@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { delimiter, dirname, resolve } from "node:path";
 
 type RegistryCapability = {
@@ -42,8 +42,25 @@ for (const obsoleteId of [
 
 assert.match(assets, /\{ id: "(?:deconstruction|creation)", label:/, "ordinary tab ids are valid near misses, not capability launches");
 
-const registryRoot = process.env.OPENCLAW_TAG_ROUTER_ROOT
-  ?? resolve(process.cwd(), "../backend");
+function resolveRegistryRoot(): string {
+  const configured = process.env.OPENCLAW_TAG_ROUTER_ROOT;
+  if (configured) return resolve(configured);
+  // `openclaw-tag-router/` is this repository's Tag Router source of truth;
+  // `../backend` is the layout used by the split-checkout deployment.
+  const candidates = ["../openclaw-tag-router", "../backend"].map((candidate) =>
+    resolve(process.cwd(), candidate),
+  );
+  const found = candidates.find((candidate) =>
+    existsSync(resolve(candidate, "openclaw_app/services/capability_registry.py")),
+  );
+  assert.ok(
+    found,
+    `Tag Router source not found. Set OPENCLAW_TAG_ROUTER_ROOT or check out one of: ${candidates.join(", ")}`,
+  );
+  return found;
+}
+
+const registryRoot = resolveRegistryRoot();
 const registryCatalog = JSON.parse(execFileSync(
   "python3",
   [
