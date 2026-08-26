@@ -735,9 +735,10 @@ table.plan code { font-family: ui-monospace, monospace; font-size: 11px; color: 
       <p class="eyebrow">Layer 0</p>
       <h2>设计令牌速查</h2>
       <p>
-        本页所有样式都由这一组 token 驱动。可直接复制为 <code>src/media/mediaDesignTokens.css</code>，
-        它同时解决了 <strong>token 双源冲突</strong>（现在 <code>media.css</code> 的 19 个 OKLCH token 被
-        <code>mediaStudioTheme.css</code> 静默覆盖，是死代码）。
+        本页所有样式都由这一组 token 驱动。它已经落地为 <code>src/media/mediaDesignTokens.css</code>，
+        并把原先<strong>三处互相覆盖的 <code>:root</code></strong> 收敛成一处——
+        <code>media.css</code> 自己就有两个，第二个还把 <code>--mg-shell-topbar</code> 钉成 86px，
+        而约 20 个页面模块拿它算视口高度。
       </p>
     </div>
 
@@ -969,54 +970,56 @@ table.plan code { font-family: ui-monospace, monospace; font-size: 11px; color: 
   <!-- ================= movement 5 : 落地 ================= -->
   <section class="movement wrap">
     <div class="movement-head">
-      <p class="eyebrow">落地顺序</p>
-      <h2>六个批次，按回流风险排</h2>
+      <p class="eyebrow">已落地</p>
+      <h2>P0 全部完成，34 个文件</h2>
       <p>
         <code>media.css</code> 被 <code>checkMediaDesignSystemContract.ts</code> 以<strong>字面量正则</strong>断言保护，
-        因此方案是「增量加层」而非「重写」。字阶迁移是唯一会撑破版面的改动，放在最后并分三批。
+        因此走的是「增量加层」而非「重写」。实测结果：硬编码 hex <strong>132 → 0</strong>，
+        字号种类 <strong>89 → 6</strong>，WCAG AA 不合格文本 <strong>浅色 38 → 0、暗色 12 → 0</strong>，
+        <code>tsc</code> 错误数维持在既有的 7 个。
       </p>
     </div>
 
     <div class="plan-table-wrap">
       <table class="plan">
         <thead>
-          <tr><th>批次</th><th>内容</th><th>回流风险</th><th>验收</th></tr>
+          <tr><th>批次</th><th>内容</th><th>状态</th><th>验收</th></tr>
         </thead>
         <tbody>
           <tr>
             <td>B1</td>
             <td>新建 <code>mediaDesignTokens.css</code>；删除 <code>mediaStudioTheme.css</code> 的重复 <code>:root</code>；接入全局动效兜底</td>
-            <td><span class="mg-badge" data-tone="success">无</span></td>
+            <td><span class="mg-badge" data-tone="success">已完成</span></td>
             <td><code>qa:media-design-system-contract</code></td>
           </tr>
           <tr>
             <td>B2</td>
             <td>新建 <code>mediaPrimitives.css</code>；Studio 五页改用 <code>data-accent</code>，清空 132 个硬编码 hex</td>
-            <td><span class="mg-badge" data-tone="success">低</span></td>
+            <td><span class="mg-badge" data-tone="success">已完成</span></td>
             <td><code>lint</code> + 契约</td>
           </tr>
           <tr>
             <td>B3</td>
             <td>字阶迁移 · 批次 1（Workboard / Campaigns / Business / Desk / MediaAgent）</td>
-            <td><span class="mg-badge" data-tone="warning">中</span></td>
+            <td><span class="mg-badge" data-tone="success">已完成</span></td>
             <td><code>qa:media-role-screens</code> 截图比对</td>
           </tr>
           <tr>
             <td>B4</td>
             <td>Hero 减重、顶栏暗色开关、胶囊 tab 替换方形 <code>.mode-switch</code></td>
-            <td><span class="mg-badge" data-tone="success">低</span></td>
+            <td><span class="mg-badge" data-tone="success">已完成</span></td>
             <td><code>build:media</code></td>
           </tr>
           <tr>
             <td>B5</td>
             <td>字阶迁移 · 批次 2、3（含 Tracks / Assets / AdminAccess 等密集表格页）</td>
-            <td><span class="mg-badge" data-tone="danger">高</span></td>
+            <td><span class="mg-badge" data-tone="success">已完成</span></td>
             <td><code>build:all</code> + 人工逐页比对</td>
           </tr>
           <tr>
             <td>B6</td>
             <td>指标卡 sparkline、项目卡证据缩略图与平台标</td>
-            <td><span class="mg-badge" data-tone="success">低</span></td>
+            <td><span class="mg-badge" data-tone="warning">待后端</span></td>
             <td>需后端 <code>counts7d</code> 就绪</td>
           </tr>
         </tbody>
