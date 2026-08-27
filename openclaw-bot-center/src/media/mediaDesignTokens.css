@@ -1,0 +1,249 @@
+/* =========================================================================
+   MediaClaw 设计令牌 —— 唯一真源
+
+   必须在 media.css / mediaPrimitives.css / mediaStudioTheme.css 之前导入。
+   收敛目标：
+     - 89 种散装字号  -> 8 级字阶（最小 12px，正文 14px）
+     - 132 个硬编码色 -> 语义色 + 6 组业务 accent
+     - 36 种圆角      -> 6 级
+     - 49 种阴影      -> 4 级
+     - 182 个 :hover 里 174 个没有过渡 -> 一条全局兜底
+     - 0 暗色支持     -> 系统偏好 + 手动开关双通道
+
+   注意：--mg-control-height-sm / -md / --mg-panel-heading-height 仍然留在
+   media.css 里，因为 checkMediaDesignSystemContract.ts 对那三行做字面量断言。
+   ========================================================================= */
+
+/* 字体经 index.media.html 的非阻塞 <link> 装载（media=print onload 切换），
+   避免外链样式表在弱网 / 离线环境阻塞首屏。 */
+
+:root {
+  /* ---- 字阶（root = 16px）---- */
+  --mg-text-2xs: 0.75rem;    /* 12px  角标 / 时间戳 / 表头 */
+  --mg-text-xs:  0.8125rem;  /* 13px  辅助说明 / 卡片副文案 */
+  --mg-text-sm:  0.875rem;   /* 14px  正文默认 */
+  --mg-text-md:  0.9375rem;  /* 15px  强调正文 */
+  --mg-text-lg:  1.0625rem;  /* 17px  卡片标题 */
+  --mg-text-xl:  1.375rem;   /* 22px  面板标题 */
+  --mg-text-2xl: 1.75rem;    /* 28px  页面标题 */
+  --mg-text-3xl: clamp(2rem, 2.6vw, 2.75rem); /* 32–44px Hero */
+
+  --mg-lh-tight: 1.25;
+  --mg-lh-snug:  1.45;
+  --mg-lh-base:  1.65;
+
+  --mg-font-sans: 'DM Sans', 'Noto Sans SC', Inter, ui-sans-serif, system-ui,
+                  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                  'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --mg-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  /* ---- 圆角 ---- */
+  --mg-r-xs: 6px;
+  --mg-r-sm: 8px;
+  --mg-r-md: 12px;
+  --mg-r-lg: 16px;
+  --mg-r-xl: 22px;
+  --mg-r-full: 999px;
+
+  /* ---- 高度层级 ---- */
+  --mg-shadow-color: 160 14% 16%;
+  --mg-e1: 0 1px 2px hsl(var(--mg-shadow-color) / .05);
+  --mg-e2: 0 4px 12px hsl(var(--mg-shadow-color) / .06);
+  --mg-e3: 0 10px 28px hsl(var(--mg-shadow-color) / .08);
+  --mg-e4: 0 24px 60px hsl(var(--mg-shadow-color) / .10);
+
+  /* ---- 动效 ---- */
+  --mg-ease: cubic-bezier(.2, .7, .3, 1);
+  --mg-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --mg-dur-1: 120ms;
+  --mg-dur-2: 190ms;
+  --mg-dur-3: 280ms;
+
+  /* ---- 间距节奏 ---- */
+  --mg-gap-1: 8px;
+  --mg-gap-2: 12px;
+  --mg-gap-3: 18px;
+  --mg-gap-4: 26px;
+  --mg-gap-5: 40px;
+  --mg-gap-6: 64px;
+
+  /* ---- 语义色（浅色）---- */
+  --mg-bg:            #f4f6f1;
+  --mg-bg-sunken:     #eceff0;
+  --mg-surface:       #ffffff;
+  --mg-surface-raised: #ffffff;
+  --mg-ink:           #17241f;
+  --mg-ink-soft:      #3f4f47;
+  --mg-muted:         #647169;   /* 4.70:1 on --mg-bg（原 #68756e 只有 4.43，不达 AA） */
+  --mg-border:        #dde5de;
+  --mg-border-strong: #cbd7ce;
+
+  --mg-primary:       #239b69;
+  --mg-primary-dark:  #126344;
+  --mg-primary-soft:  #dff4e8;
+  /* 压在 primary / primary-dark 上的字色：暗色模式下 primary 会变亮，白字会糊 */
+  --mg-on-primary:    #ffffff;
+  --mg-teal-soft:     #e2f3f1;
+  --mg-blue:          #4179b8;
+  --mg-blue-soft:     #e8f1fb;
+  --mg-warning:       #a96d18;
+  --mg-warning-soft:  #fff0d2;
+  --mg-danger:        #bd5147;
+  --mg-danger-soft:   #fde9e6;
+
+  --mg-sidebar:       #173029;
+  --mg-sidebar-muted: rgba(233, 246, 238, .62);
+
+  --mg-level-one:   #4d9e7d;
+  --mg-level-two:   #5b8ec9;
+  --mg-level-three: #b08236;
+
+  --mg-focus-ring: 3px solid color-mix(in srgb, var(--mg-primary) 55%, transparent);
+
+  /* ---- 业务模块 accent 族 ---- */
+  --mg-accent-studio-ink:   #0f6a49; --mg-accent-studio-base:   #239b69;
+  --mg-accent-studio-soft:  #dff4e8; --mg-accent-studio-line:   #b5e3cc;
+
+  --mg-accent-campaign-ink: #4e419d; --mg-accent-campaign-base: #5b4bb5;
+  --mg-accent-campaign-soft:#efecff; --mg-accent-campaign-line: #ded9fa;
+
+  --mg-accent-business-ink: #95551f; --mg-accent-business-base: #ad6426;
+  --mg-accent-business-soft:#fff0df; --mg-accent-business-line: #f0dcc6;
+
+  --mg-accent-desk-ink:     #2f6198; --mg-accent-desk-base:     #376da9;
+  --mg-accent-desk-soft:    #eaf2fc; --mg-accent-desk-line:     #cfdeef;
+
+  --mg-accent-agent-ink:    #14706b; --mg-accent-agent-base:    #1a908a;
+  --mg-accent-agent-soft:   #e0f4f2; --mg-accent-agent-line:    #bde5e1;
+
+  --mg-accent-archive-ink:  #6b5a44; --mg-accent-archive-base:  #8a7458;
+  --mg-accent-archive-soft: #f5efe6; --mg-accent-archive-line:  #e5dbca;
+
+  /* 默认 accent = studio，由 [data-accent] 覆盖 */
+  --accent-ink:  var(--mg-accent-studio-ink);
+  --accent-base: var(--mg-accent-studio-base);
+  --accent-soft: var(--mg-accent-studio-soft);
+  --accent-line: var(--mg-accent-studio-line);
+
+  /* ---- 平台品牌标（浅色）---- */
+  --mg-brand-xhs-ink: #cc4661;    --mg-brand-xhs-soft: #ffe1e5;
+  --mg-brand-douyin-ink: #108b88; --mg-brand-douyin-soft: #dff5f2;
+  --mg-brand-wx-ink: #2b7a3f;     --mg-brand-wx-soft: #ddf3e1;
+  --mg-brand-bili-ink: #c2557f;   --mg-brand-bili-soft: #ffe3ee;
+
+  /* ---- 兼容旧 token ---- */
+  --mg-radius: var(--mg-r-md);
+  --mg-shell-topbar: 68px;
+  --mg-shell-sidebar: 304px;   /* 冻结版 .media-* 壳层宽度 */
+
+  color-scheme: light;
+  color: var(--mg-ink);
+  background: var(--mg-bg);
+  font-family: var(--mg-font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-accent='studio']   { --accent-ink: var(--mg-accent-studio-ink);   --accent-base: var(--mg-accent-studio-base);   --accent-soft: var(--mg-accent-studio-soft);   --accent-line: var(--mg-accent-studio-line); }
+[data-accent='campaign'] { --accent-ink: var(--mg-accent-campaign-ink); --accent-base: var(--mg-accent-campaign-base); --accent-soft: var(--mg-accent-campaign-soft); --accent-line: var(--mg-accent-campaign-line); }
+[data-accent='business'] { --accent-ink: var(--mg-accent-business-ink); --accent-base: var(--mg-accent-business-base); --accent-soft: var(--mg-accent-business-soft); --accent-line: var(--mg-accent-business-line); }
+[data-accent='desk']     { --accent-ink: var(--mg-accent-desk-ink);     --accent-base: var(--mg-accent-desk-base);     --accent-soft: var(--mg-accent-desk-soft);     --accent-line: var(--mg-accent-desk-line); }
+[data-accent='agent']    { --accent-ink: var(--mg-accent-agent-ink);    --accent-base: var(--mg-accent-agent-base);    --accent-soft: var(--mg-accent-agent-soft);    --accent-line: var(--mg-accent-agent-line); }
+[data-accent='archive']  { --accent-ink: var(--mg-accent-archive-ink);  --accent-base: var(--mg-accent-archive-base);  --accent-soft: var(--mg-accent-archive-soft);  --accent-line: var(--mg-accent-archive-line); }
+
+/* =========================================================================
+   暗色调色板
+   每个 token 在 :root 里都有浅色定义，这里只做重定义 —— 任何只存在于
+   暗色块里的颜色都会在「跟随系统」且系统为浅色时失效。
+   ========================================================================= */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --mg-bg: #131c18;  --mg-bg-sunken: #0f1714;
+    --mg-surface: #1a2621;  --mg-surface-raised: #202e28;
+    --mg-ink: #e8f2ec;  --mg-ink-soft: #c2d2c9;  --mg-muted: #93a69c;
+    --mg-border: #2c3b34;  --mg-border-strong: #3c4f46;
+    --mg-primary: #4ec48d;  --mg-primary-dark: #7ad9ab;  --mg-primary-soft: #1c3d30;
+    --mg-on-primary: #08211a;
+    --mg-teal-soft: #17383a;
+    --mg-blue: #7db4ea;  --mg-blue-soft: #1b2f42;
+    --mg-warning: #d9a24a;  --mg-warning-soft: #3a2c14;
+    --mg-danger: #e8877c;  --mg-danger-soft: #3d201c;
+    --mg-sidebar: #0f1a16;
+    --mg-level-one: #63c39c;  --mg-level-two: #7fb0e8;  --mg-level-three: #d3a869;
+    --mg-shadow-color: 160 30% 3%;
+    --mg-e1: 0 1px 2px hsl(var(--mg-shadow-color) / .30);
+    --mg-e2: 0 4px 12px hsl(var(--mg-shadow-color) / .36);
+    --mg-e3: 0 10px 28px hsl(var(--mg-shadow-color) / .44);
+    --mg-e4: 0 24px 60px hsl(var(--mg-shadow-color) / .52);
+    --mg-accent-studio-soft:  #17392c; --mg-accent-studio-line:  #245842; --mg-accent-studio-ink:  #6fd4a5;
+    --mg-accent-campaign-soft:#262247; --mg-accent-campaign-line:#3b3470; --mg-accent-campaign-ink:#a99bec;
+    --mg-accent-business-soft:#3a2a17; --mg-accent-business-line:#57401f; --mg-accent-business-ink:#e0a668;
+    --mg-accent-desk-soft:    #1c2f44; --mg-accent-desk-line:    #2b4767; --mg-accent-desk-ink:    #8fbdea;
+    --mg-accent-agent-soft:   #133533; --mg-accent-agent-line:   #1e5350; --mg-accent-agent-ink:   #63cdc6;
+    --mg-accent-archive-soft: #302819; --mg-accent-archive-line: #4a3d28; --mg-accent-archive-ink: #cbb794;
+    --mg-brand-xhs-ink: #ff8fa3;    --mg-brand-xhs-soft: #45222a;
+    --mg-brand-douyin-ink: #4fd6d1; --mg-brand-douyin-soft: #14383a;
+    --mg-brand-wx-ink: #6fcf8a;     --mg-brand-wx-soft: #17361f;
+    --mg-brand-bili-ink: #f091b6;   --mg-brand-bili-soft: #42212f;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --mg-bg: #131c18;  --mg-bg-sunken: #0f1714;
+  --mg-surface: #1a2621;  --mg-surface-raised: #202e28;
+  --mg-ink: #e8f2ec;  --mg-ink-soft: #c2d2c9;  --mg-muted: #93a69c;
+  --mg-border: #2c3b34;  --mg-border-strong: #3c4f46;
+  --mg-primary: #4ec48d;  --mg-primary-dark: #7ad9ab;  --mg-primary-soft: #1c3d30;
+  --mg-on-primary: #08211a;
+  --mg-teal-soft: #17383a;
+  --mg-blue: #7db4ea;  --mg-blue-soft: #1b2f42;
+  --mg-warning: #d9a24a;  --mg-warning-soft: #3a2c14;
+  --mg-danger: #e8877c;  --mg-danger-soft: #3d201c;
+  --mg-sidebar: #0f1a16;
+  --mg-level-one: #63c39c;  --mg-level-two: #7fb0e8;  --mg-level-three: #d3a869;
+  --mg-shadow-color: 160 30% 3%;
+  --mg-e1: 0 1px 2px hsl(var(--mg-shadow-color) / .30);
+  --mg-e2: 0 4px 12px hsl(var(--mg-shadow-color) / .36);
+  --mg-e3: 0 10px 28px hsl(var(--mg-shadow-color) / .44);
+  --mg-e4: 0 24px 60px hsl(var(--mg-shadow-color) / .52);
+  --mg-accent-studio-soft:  #17392c; --mg-accent-studio-line:  #245842; --mg-accent-studio-ink:  #6fd4a5;
+  --mg-accent-campaign-soft:#262247; --mg-accent-campaign-line:#3b3470; --mg-accent-campaign-ink:#a99bec;
+  --mg-accent-business-soft:#3a2a17; --mg-accent-business-line:#57401f; --mg-accent-business-ink:#e0a668;
+  --mg-accent-desk-soft:    #1c2f44; --mg-accent-desk-line:    #2b4767; --mg-accent-desk-ink:    #8fbdea;
+  --mg-accent-agent-soft:   #133533; --mg-accent-agent-line:   #1e5350; --mg-accent-agent-ink:   #63cdc6;
+  --mg-accent-archive-soft: #302819; --mg-accent-archive-line: #4a3d28; --mg-accent-archive-ink: #cbb794;
+  --mg-brand-xhs-ink: #ff8fa3;    --mg-brand-xhs-soft: #45222a;
+  --mg-brand-douyin-ink: #4fd6d1; --mg-brand-douyin-soft: #14383a;
+  --mg-brand-wx-ink: #6fcf8a;     --mg-brand-wx-soft: #17361f;
+  --mg-brand-bili-ink: #f091b6;   --mg-brand-bili-soft: #42212f;
+}
+
+/* =========================================================================
+   全局动效兜底 —— 一次性覆盖 174 个没有过渡的悬停态
+   ========================================================================= */
+a, button, summary, input, select, textarea,
+[role='button'], [role='tab'], [role='menuitem'],
+.studio-nav-link, .section-panel, .data-table tbody tr {
+  transition:
+    color var(--mg-dur-1) var(--mg-ease),
+    background-color var(--mg-dur-1) var(--mg-ease),
+    border-color var(--mg-dur-1) var(--mg-ease),
+    box-shadow var(--mg-dur-2) var(--mg-ease),
+    transform var(--mg-dur-2) var(--mg-ease),
+    opacity var(--mg-dur-1) var(--mg-ease);
+}
+
+html { scroll-behavior: smooth; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

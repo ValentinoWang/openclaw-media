@@ -8,7 +8,13 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-CONFIG_PATH = Path("/home/ubuntu/selfmedia-tools/config/openclaw_bots.json")
+REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+# README and docs/architecture.md make `config/openclaw_bots.json` the single
+# editable configuration source of truth, so resolve it from the repository the
+# code was loaded from instead of one host's absolute checkout path.
+CONFIG_PATH = Path(
+    os.getenv("OPENCLAW_BOTS_CONFIG") or REPOSITORY_ROOT / "config/openclaw_bots.json"
+)
 BASE_URL_ENV_PREFIX = "env:"
 DEFAULT_OPENCLAW_MODEL_PROVIDER = "codex"
 OPENCLAW_THINKING_LEVELS = {"off", "minimal", "low", "medium", "high"}

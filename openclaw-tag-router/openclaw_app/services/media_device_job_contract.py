@@ -4,14 +4,38 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Mapping
 
 
-CANONICAL_GENERATED_CONTRACT = Path("/home/ubuntu/selfmedia-tools/media-agent-cli/generated_product_contract.py")
-FROZEN_CONTRACT = Path("/home/ubuntu/docs/ai-harness/openclaw-media-product-contract.json")
+# `parents[3]` is the repository root: <repo>/openclaw-tag-router/openclaw_app/services/…
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _resolve_contract(env_name: str, *candidates: Path) -> Path:
+    override = os.getenv(env_name)
+    search = (Path(override),) if override else candidates
+    for candidate in search:
+        if candidate.is_file():
+            return candidate
+    return search[0]
+
+
+# The deployed host keeps these under absolute paths; a clean checkout resolves
+# the same artifacts from the repository it was loaded from.
+CANONICAL_GENERATED_CONTRACT = _resolve_contract(
+    "OPENCLAW_MEDIA_GENERATED_CONTRACT",
+    Path("/home/ubuntu/selfmedia-tools/media-agent-cli/generated_product_contract.py"),
+    REPOSITORY_ROOT / "media-agent-cli/generated_product_contract.py",
+)
+FROZEN_CONTRACT = _resolve_contract(
+    "OPENCLAW_MEDIA_FROZEN_CONTRACT",
+    Path("/home/ubuntu/docs/ai-harness/openclaw-media-product-contract.json"),
+    REPOSITORY_ROOT / "media-agent-cli/contracts/openclaw-media-product-contract.json",
+)
 
 
 def _load_generated_contract() -> ModuleType:

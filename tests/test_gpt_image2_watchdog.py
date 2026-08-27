@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 
-SCRIPT_PATH = Path("/home/ubuntu/selfmedia-tools/selfmedia/creation/image_generation.py")
+SCRIPT_PATH = Path(__file__).resolve().parents[1] / "selfmedia/creation/image_generation.py"
 SPEC = importlib.util.spec_from_file_location("gpt_image2", SCRIPT_PATH)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader

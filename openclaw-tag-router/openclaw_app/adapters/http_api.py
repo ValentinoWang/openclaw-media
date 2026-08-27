@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from html import escape
 from http import HTTPStatus
-from http.cookies import SimpleCookie
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Mapping, Protocol
@@ -43,6 +43,9 @@ from ..services.guidance_plan import GuidancePlanError, GuidancePlanService
 from ..services.device_job_errors import DeviceJobError
 from ..services.media_web_tasks import MediaWebTaskError, MediaWebTaskService, TERMINAL_STATES
 from ..services.stage1_writer_gate import WRITER_CLOSED_ERROR_CODE
+from ..services.stage2_gateway import Stage2GatewayError
+from ..services.stage2_runtime import Stage2RuntimeError
+from ..services.stage2_server_context import stage2_request_context
 from ..services.stage1_organization_provisioning import ProvisioningError
 from ..services.stage1_provisioning_runtime import (
     Stage1ProvisioningRuntime,
@@ -113,10 +116,12 @@ def _first_contract_path(*paths: Path) -> Path:
 
 @lru_cache(maxsize=1)
 def _http_product_operations() -> Mapping[str, Mapping[str, Any]]:
-    backend_root = Path(__file__).resolve().parents[2]
+    # parents[2] is the Router root; parents[3] is this repository's root,
+    # which owns the checked-in `media-agent-cli/` client mirror.
+    repository_root = Path(__file__).resolve().parents[3]
     path = _first_contract_path(
         Path("/home/ubuntu/selfmedia-tools/media-agent-cli/generated_product_contract.py"),
-        backend_root / "media-agent-cli/generated_product_contract.py",
+        repository_root / "media-agent-cli/generated_product_contract.py",
     )
     spec = importlib.util.spec_from_file_location("openclaw_http_product_contract", path)
     if spec is None or spec.loader is None:
@@ -131,10 +136,10 @@ def _http_product_operations() -> Mapping[str, Mapping[str, Any]]:
 
 @lru_cache(maxsize=1)
 def _http_frozen_contract() -> Mapping[str, Any]:
-    backend_root = Path(__file__).resolve().parents[2]
+    repository_root = Path(__file__).resolve().parents[3]
     path = _first_contract_path(
         Path("/home/ubuntu/docs/ai-harness/openclaw-media-product-contract.json"),
-        backend_root / "contracts/openclaw-media-product-contract.json",
+        repository_root / "media-agent-cli/contracts/openclaw-media-product-contract.json",
     )
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, Mapping):
@@ -806,10 +811,22 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 client_ip = str(ipaddress.ip_address(forwarded_for))
             forwarded_proto = self.headers.get("X-Forwarded-Proto", "").strip().lower()
             forwarded_host = self.headers.get("X-Forwarded-Host", "").strip().lower()
-            expected_host = host if port in {80, 443} else f"{host}:{port}"
-            if forwarded_proto and forwarded_proto != scheme:
+            expected_hosts = {host if port in {80, 443} else f"{host}:{port}"}
+            expected_schemes = {scheme}
+            fallback = self.ephemeral_default_authority
+            if fallback is not None:
+                # An ephemeral loopback bind rewrites the effective origin port;
+                # a proxy forwarding the configured public origin stays valid.
+                fallback_scheme, fallback_host, fallback_port = fallback.origin_tuple
+                expected_schemes.add(fallback_scheme)
+                expected_hosts.add(
+                    fallback_host
+                    if fallback_port in {80, 443}
+                    else f"{fallback_host}:{fallback_port}"
+                )
+            if forwarded_proto and forwarded_proto not in expected_schemes:
                 raise RequestContextError("forwarded scheme does not match the public origin")
-            if forwarded_host and forwarded_host != expected_host:
+            if forwarded_host and forwarded_host not in expected_hosts:
                 raise RequestContextError("forwarded host does not match the public origin")
         return ExternalRequestAuthority(peer_ip, client_ip, scheme, host, port, trusted)
 
@@ -852,23 +869,29 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             if workspace_resolution is not None
             else None
         )
+        fallback_public_id = str(getattr(session, "user_public_id", session.user_id))
+        fallback_mode = getattr(session, "workspace_mode", "personal_web")
         principal = (
             SessionPrincipal(
                 session_id=session.session_id,
                 user_id=session.user_id,
                 tenant_id=session.tenant_id,
-                user_public_id=session.user_public_id,
+                user_public_id=fallback_public_id,
                 role=session.role,  # type: ignore[arg-type]
                 is_maintainer=session.is_maintainer,
                 expires_at=session.expires_at,
-                workspace_mode=session.workspace_mode,
-                body_authority=session.body_authority,
-                member_role=session.member_role,
+                workspace_mode=fallback_mode,
+                body_authority=getattr(
+                    session,
+                    "body_authority",
+                    "internal" if fallback_mode == "personal_web" else "lark",
+                ),
+                member_role=getattr(session, "member_role", "owner"),
                 session_token_hash=hashlib.sha256(token.encode("ascii")).digest(),
                 schema_version="media-stage1-shared-v1",
-                principal_id=session.user_public_id,
+                principal_id=fallback_public_id,
                 account_status=getattr(session, "account_status", "ACTIVE"),
-                workspace_intent=session.workspace_mode,
+                workspace_intent=fallback_mode,
                 personal_workspace_id=getattr(session, "personal_workspace_id", None),
                 tenant_membership_ids=tuple(getattr(session, "tenant_membership_ids", ())),
                 active_binding_ids=tuple(getattr(session, "active_binding_ids", ())),
@@ -1238,7 +1261,13 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         try:
             if self.personal_auth is not None and self._dispatch_personal_auth_post(path):
                 return
-            if path in {"/openclaw/auth/login", "/auth/login"} and self.personal_auth is None:
+            if (
+                path in {"/openclaw/auth/login", "/auth/login"}
+                and self.personal_auth is None
+                and self.media_feishu_login is None
+            ):
+                # Password login is retired once the Feishu media login flow is
+                # the configured entrypoint; it must not become a fallback.
                 self._handle_auth_login(self._read_json_body())
                 return
             if path == "/auth/feishu/start":
@@ -1279,6 +1308,12 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             if path == "/qqbot/event":
                 self._handle_qq_event(self._read_json_body())
                 return
+            if path == "/stage2/personal":
+                self._handle_stage2("personal", self._read_json_body(maximum_bytes=1024 * 1024))
+                return
+            if path == "/stage2/organization":
+                self._handle_stage2("organization", self._read_json_body(maximum_bytes=1024 * 1024))
+                return
             self._send_api_error(HTTPStatus.NOT_FOUND, "not_found", "未找到该接口。")
         except MediaWebTaskError as exc:
             self._handle_media_service_error(exc)
@@ -1302,7 +1337,13 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
     def do_PUT(self) -> None:
         try:
             path = self._request_path()
-            if path in {"/openclaw/auth/password", "/auth/password"} and self.personal_auth is None:
+            if (
+                path in {"/openclaw/auth/password", "/auth/password"}
+                and self.personal_auth is None
+                and self.media_feishu_login is None
+            ):
+                # Retired with password login: Feishu-authenticated accounts
+                # cannot mutate a password credential over this surface.
                 self._handle_auth_password_change(self._read_json_body(maximum_bytes=16 * 1024))
                 return
             if self._dispatch_legacy_support("PUT"):
@@ -2865,6 +2906,17 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             raise
         self._send_json(HTTPStatus.OK, result)
 
+    # The Media Web session schema is strict: binding/installation facts are
+    # served as `organizationConnection` / `installationConnection` enums.
+    _CONNECTION_PROJECTION = {
+        "NOT_APPLICABLE": "not_applicable",
+        "ACTIVE": "connected",
+        "PENDING": "pending",
+        "DISABLED": "disabled",
+        "REVOKED": "revoked",
+        "NEEDS_ATTENTION": "attention",
+    }
+
     def _handle_media_session(self, context: If2RequestContext) -> None:
         if context.principal.role == "user":
             role = "ordinary"
@@ -2873,6 +2925,17 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         else:
             raise RequestContextError("session principal role is invalid")
         binding_state, installation_state = self._binding_projection(context)
+        is_personal = context.principal.workspace_mode == "personal_web"
+        if is_personal:
+            organization_name = None
+        else:
+            resolution = context.workspace_resolution
+            candidate = getattr(resolution, "selected_workspace", None)
+            organization_name = (
+                getattr(candidate, "organization_name", None)
+                or getattr(resolution, "organization_name", None)
+                or "组织工作区"
+            )
         self._send_json(
             HTTPStatus.OK,
             {
@@ -2882,13 +2945,16 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                     "publicUserId": context.principal.user_public_id,
                     "tenantId": str(context.principal.tenant_id),
                     "workspaceMode": context.principal.workspace_mode,
-                    "editorMode": (
-                        "web_edit" if context.principal.workspace_mode == "personal_web" else "lark_edit"
-                    ),
+                    "editorMode": "web_edit" if is_personal else "lark_edit",
                     "bodyAuthority": context.principal.body_authority,
+                    "organizationName": organization_name,
                     "memberRole": context.principal.member_role,
-                    "bindingState": binding_state,
-                    "installationState": installation_state,
+                    "organizationConnection": self._CONNECTION_PROJECTION.get(
+                        binding_state, "attention"
+                    ),
+                    "installationConnection": self._CONNECTION_PROJECTION.get(
+                        installation_state, "attention"
+                    ),
                     "role": role,
                     "maintainer": context.principal.is_maintainer,
                     "csrfToken": context.csrf.response_token,
@@ -3354,6 +3420,63 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             "projection_unavailable": HTTPStatus.SERVICE_UNAVAILABLE,
         }
         self._send_api_error(statuses.get(exc.code, HTTPStatus.BAD_REQUEST), exc.code, exc.message)
+
+    def _handle_stage2(self, mode: str, payload: dict[str, Any]) -> None:
+        """Dispatch one Stage-2 write through the injected gateway.
+
+        The transport only forwards operation data plus the opaque request
+        credential; session, Binding, and trusted URLs stay server-resolved
+        inside the gateway. Errors map to the locked stable-code contract.
+        """
+
+        try:
+            if self.app is None:
+                raise RuntimeError("stage2_unavailable")
+            cookies: dict[str, str] = {}
+            raw_cookie = self.headers.get("Cookie")
+            if raw_cookie:
+                parsed = SimpleCookie()
+                try:
+                    parsed.load(raw_cookie)
+                except CookieError:
+                    parsed = SimpleCookie()
+                session_cookie = parsed.get("openclaw_session")
+                if session_cookie is not None:
+                    cookies["openclaw_session"] = session_cookie.value
+            authorizations = self.headers.get_all("Authorization", failobj=[])
+            if len(authorizations) > 1:
+                raise Stage2GatewayError(
+                    "authentication_invalid",
+                    "multiple Authorization headers are not allowed",
+                    status=HTTPStatus.UNAUTHORIZED,
+                )
+            authorization = authorizations[0] if authorizations else None
+            headers = {"Authorization": authorization} if authorization else {}
+            with stage2_request_context({"headers": headers, "cookies": cookies}):
+                receipt = self.app.process_stage2(mode, payload)
+        except Stage2GatewayError as exc:
+            self._send_json(
+                HTTPStatus(exc.status),
+                {"ok": False, "error": {"code": exc.code, "message": exc.message}},
+            )
+            return
+        except Stage2RuntimeError as exc:
+            status = (
+                HTTPStatus.CONFLICT
+                if exc.code in {"idempotency_conflict", "idempotency_in_progress"}
+                else HTTPStatus.UNPROCESSABLE_ENTITY
+            )
+            self._send_json(status, {"ok": False, "error": {"code": exc.code, "message": exc.message}})
+            return
+        except RuntimeError as exc:
+            if str(exc) == "stage2_unavailable":
+                self._send_json(
+                    HTTPStatus.SERVICE_UNAVAILABLE,
+                    {"ok": False, "error": {"code": "stage2_unavailable"}},
+                )
+                return
+            raise
+        self._send_json(HTTPStatus.OK, {"ok": True, "receipt": receipt})
 
     def _handle_qq_event(self, payload: dict[str, Any]) -> None:
         from .qq_bot_adapter import QQBotAdapter

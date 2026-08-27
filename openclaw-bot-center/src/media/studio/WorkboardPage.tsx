@@ -110,11 +110,11 @@ export default function WorkboardPage() {
   const activeTasks = useMemo(() => tasks.filter((task) => !task.terminal).slice(0, 4), [tasks])
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-accent="studio">
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
           <span className={styles.eyebrow}><Sparkles size={15} />CREATOR PRODUCTION DESK</span>
-          <h1>今天把内容推进到可交付</h1>
+          <h1>今天把内容推进到<em>可交付</em></h1>
           <p>从活动和商单 Brief 出发，持续维护可编辑脚本、分镜、拍摄单、返修版本与发布包。</p>
           <div className={styles.heroActions}>
             <button className={styles.primaryAction} type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Plus size={17} />新建内容项目</button>
@@ -131,10 +131,10 @@ export default function WorkboardPage() {
       </section>
 
       <section className={styles.metricGrid} aria-label="工作区关键指标">
-        <MetricCard icon={<FilePenLine size={18} />} label="内容项目" value={summary?.counts.contentProjects} detail="从 Brief 到发布" />
-        <MetricCard icon={<PenTool size={18} />} label="创作运行" value={summary?.counts.runs} detail="脚本、分镜与交付" />
-        <MetricCard icon={<Images size={18} />} label="素材证据" value={summary?.counts.assets} detail="原始素材与拆解" />
-        <MetricCard icon={<PackageCheck size={18} />} label="已发布作品" value={summary?.counts.publishedPosts} detail="等待持续复盘" />
+        <MetricCard tone="mint" icon={<FilePenLine size={18} />} label="内容项目" value={summary?.counts.contentProjects} detail="从 Brief 到发布" />
+        <MetricCard tone="violet" icon={<PenTool size={18} />} label="创作运行" value={summary?.counts.runs} detail="脚本、分镜与交付" />
+        <MetricCard tone="amber" icon={<Images size={18} />} label="素材证据" value={summary?.counts.assets} detail="原始素材与拆解" />
+        <MetricCard tone="blue" icon={<PackageCheck size={18} />} label="已发布作品" value={summary?.counts.publishedPosts} detail="等待持续复盘" />
       </section>
 
       <section className={styles.loopGrid} aria-label="高价值业务闭环">
@@ -225,8 +225,8 @@ export default function WorkboardPage() {
   )
 }
 
-function MetricCard({ icon, label, value, detail }: { icon: ReactNode; label: string; value?: number; detail: string }) {
-  return <article className={styles.metricCard}><span>{icon}</span><div><small>{label}</small><strong>{value === undefined ? '—' : value}</strong><p>{detail}</p></div></article>
+function MetricCard({ tone, icon, label, value, detail }: { tone: 'mint' | 'violet' | 'amber' | 'blue'; icon: ReactNode; label: string; value?: number; detail: string }) {
+  return <article className={styles.metricCard} data-tone={tone}><span>{icon}</span><div><small>{label}</small><strong>{value === undefined ? '—' : value}</strong><p>{detail}</p></div></article>
 }
 
 function LoopCard({ tone, icon, kicker, title, description, steps, to }: { tone: 'studio' | 'campaign' | 'business' | 'desk'; icon: ReactNode; kicker: string; title: string; description: string; steps: string[]; to: string }) {

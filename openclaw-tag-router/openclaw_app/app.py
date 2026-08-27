@@ -5,9 +5,12 @@ from datetime import datetime
 import os
 from pathlib import Path
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
+
+if TYPE_CHECKING:
+    from .services.stage2_gateway import Stage2Gateway
 
 from .adapters.mac_agent_client import MacAgentClient
 from .models.task import TaskResult
@@ -34,7 +37,8 @@ from .services.deepmath_people_runtime import load_people_capability_base_id
 
 
 class OpenClawApp:
-    def __init__(self, settings_path: str | Path):
+    def __init__(self, settings_path: str | Path, *, stage2_gateway: "Stage2Gateway | None" = None):
+        self.stage2_gateway = stage2_gateway
         self.settings_path = Path(settings_path)
         self.settings = yaml.safe_load(self.settings_path.read_text(encoding="utf-8"))
         deepmath_cfg = self.settings.get("deepmath_ceo_thinking", {})
@@ -140,6 +144,13 @@ class OpenClawApp:
             self.router.configure_content_os_feishu_project_board(client)
         else:
             self.router.configure_content_os_feishu_project_board(None)
+
+    def process_stage2(self, mode: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Route one Stage-2 write through the injected production gateway."""
+
+        if self.stage2_gateway is None:
+            raise RuntimeError("stage2_unavailable")
+        return self.stage2_gateway.run(mode, payload)
 
     def process_text(
         self,

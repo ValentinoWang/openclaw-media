@@ -35,7 +35,7 @@
 
 .searchField > span:first-child {
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
 }
 
@@ -47,7 +47,7 @@
   gap: 8px;
   padding: 0 11px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
 }
@@ -66,7 +66,7 @@
   outline: 0;
   color: var(--mg-ink);
   background: transparent;
-  font-size: 0.76rem;
+  font-size: var(--mg-text-sm);
 }
 
 .inputShell input::placeholder {
@@ -85,15 +85,15 @@
   justify-content: center;
   gap: 6px;
   min-height: 36px;
-  border-radius: 5px;
-  font-size: 0.7rem;
+  border-radius: var(--mg-r-sm);
+  font-size: var(--mg-text-xs);
   cursor: pointer;
 }
 
 .primaryAction {
   padding: 0 13px;
   border: 1px solid var(--mg-primary-dark);
-  color: #fff;
+  color: var(--mg-on-primary);
   background: var(--mg-primary-dark);
 }
 
@@ -149,9 +149,9 @@
   gap: 7px;
   padding: 7px 11px;
   border: 1px solid var(--mg-border);
-  border-radius: 20px;
+  border-radius: var(--mg-r-xl);
   overflow-wrap: anywhere;
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .scopeBadgeSelected {
@@ -201,13 +201,13 @@
 
 .panelHeading h2 {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: var(--mg-text-lg);
 }
 
 .panelHeading p {
   margin: 4px 0 0;
   color: var(--mg-muted);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
@@ -221,10 +221,10 @@
   gap: 5px;
   padding: 4px 8px;
   border: 1px solid oklch(0.84 0.06 166);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-primary-soft);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   white-space: nowrap;
 }
@@ -251,7 +251,7 @@
   min-width: 980px;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .directoryTable th,
@@ -268,7 +268,7 @@
 .runsTable thead th {
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   white-space: normal;
 }
@@ -316,7 +316,7 @@
 .publicId {
   color: var(--mg-ink);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
 }
 
@@ -328,7 +328,7 @@
 
 .monoValue {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
 }
 
 .statusBadge {
@@ -338,7 +338,7 @@
 .rowAction {
   min-height: 30px;
   padding: 0 8px;
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   white-space: nowrap;
 }
 
@@ -351,7 +351,7 @@
   padding: 10px 14px;
   border-top: 1px solid var(--mg-border);
   color: var(--mg-muted);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
 }
 
 .pagination button {
@@ -378,15 +378,15 @@
   gap: 5px;
   padding: 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .metric strong {
   min-width: 0;
   color: var(--mg-ink);
-  font-size: 0.86rem;
+  font-size: var(--mg-text-md);
   overflow-wrap: anywhere;
 }
 
@@ -408,7 +408,7 @@
 .factList dt {
   margin-bottom: 5px;
   color: var(--mg-muted);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
 }
 
@@ -416,7 +416,7 @@
   min-width: 0;
   margin: 0;
   color: var(--mg-ink);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.5;
 }
 
@@ -436,11 +436,11 @@
   resize: vertical;
   padding: 8px 9px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-surface);
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.5;
 }
 
@@ -466,7 +466,7 @@
   align-items: flex-start;
   gap: 5px;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -481,7 +481,7 @@
   margin: 0 17px 17px;
   padding: 10px;
   border: 1px solid oklch(0.86 0.045 166);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-primary-soft);
 }
@@ -497,13 +497,13 @@
 }
 
 .readOnlyNotice strong {
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .readOnlyNotice p {
   margin: 4px 0 0;
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -545,7 +545,7 @@
 .emptyState strong,
 .runtimeState strong {
   color: var(--mg-ink);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
 }
 
 .stateBlock p,
@@ -553,7 +553,7 @@
 .runtimeState p {
   max-width: 48ch;
   margin: 5px 0 0;
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
 }
 
@@ -575,7 +575,7 @@
   min-height: 30px;
   margin-top: 9px;
   padding: 0 9px;
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
 }
 
 .spinning {

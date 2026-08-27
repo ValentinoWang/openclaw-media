@@ -16,6 +16,7 @@ import {
   LogIn,
   LogOut,
   Menu,
+  Moon,
   PenTool,
   Plus,
   Search,
@@ -23,6 +24,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Sun,
   TrendingUp,
   UserRoundCog,
   Users,
@@ -121,6 +123,32 @@ const organizationNavigation: readonly NavigationGroup[] = [
   { label: '组织工作区', items: [{ path: '/organization-workspace', label: '组织工作区', icon: Cloud }] },
 ]
 
+/** 主题偏好：未显式选择时跟随系统（不打 data-theme 标记）。
+ *  localStorage 在隐私模式下会抛异常，读写都必须包 try/catch。 */
+function useThemePreference() {
+  const [theme, setTheme] = useState<'light' | 'dark' | null>(() => {
+    try {
+      const stored = localStorage.getItem('mg-theme')
+      return stored === 'light' || stored === 'dark' ? stored : null
+    } catch {
+      return null
+    }
+  })
+  useEffect(() => {
+    const root = document.documentElement
+    if (theme) root.dataset.theme = theme
+    else delete root.dataset.theme
+    try {
+      if (theme) localStorage.setItem('mg-theme', theme)
+      else localStorage.removeItem('mg-theme')
+    } catch {
+      /* 隐私模式：仅当前会话生效 */
+    }
+  }, [theme])
+  const resolved = theme ?? (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+  return { resolved, toggle: () => setTheme(resolved === 'dark' ? 'light' : 'dark') }
+}
+
 export default function MediaStudioApp() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
@@ -155,6 +183,7 @@ function ProductShell() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const { resolved: theme, toggle: toggleTheme } = useThemePreference()
   const [query, setQuery] = useState('')
   const location = useLocation()
   const navigate = useNavigate()
@@ -280,6 +309,10 @@ function ProductShell() {
                   </div>
                 ) : null}
               </div>
+              <button className="studio-command-button studio-theme-toggle" type="button"
+                aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到暗色主题'}
+                title={theme === 'dark' ? '切换到浅色主题' : '切换到暗色主题'}
+                onClick={toggleTheme}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button>
               <button className="studio-command-button topbar-command" type="button" aria-label="新建任务" onClick={() => openWorkspace()}><Command size={17} /><span>任务中心</span>{activeTasks.length ? <b>{activeTasks.length}</b> : null}</button>
               {!isAdminShell ? <button className="studio-primary-button" type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Plus size={17} /><span>新建内容项目</span></button> : null}
             </div>

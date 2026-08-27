@@ -1,0 +1,312 @@
+/* =========================================================================
+   MediaClaw 共享组件原语
+
+   收敛此前散落在 20 个 *.module.css 里的重复定义：
+     .page 20 份 / .panelHeader 12 份 / .metric 9 份 / .emptyState 9 份
+     .secondaryButton 8 份 / .statusBadge 7 份 / .primaryButton 7 份 / .hero 4 份
+
+   所有色彩走 var(--accent-*)，由祖先节点上的 [data-accent] 决定，
+   因此四个 Studio 页共用同一套样式而不是各自复制一份。
+   ========================================================================= */
+
+/* ---- 页容器 ---- */
+.mg-page {
+  display: grid;
+  gap: var(--mg-gap-4);
+  width: min(100%, 1480px);
+  margin: 0 auto;
+}
+
+/* ---- Hero（原 4 份逐行复制 -> 1 份）---- */
+.mg-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 330px);
+  gap: var(--mg-gap-4);
+  overflow: hidden;
+  padding: 30px 32px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--mg-r-xl);
+  background:
+    radial-gradient(circle at 84% 10%, var(--accent-soft), transparent 38%),
+    linear-gradient(140deg, var(--mg-surface), var(--mg-bg) 62%, var(--accent-soft));
+  box-shadow: var(--mg-e3);
+}
+.mg-hero::after {
+  position: absolute;
+  right: -90px;
+  bottom: -130px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-base) 7%, transparent);
+  content: '';
+}
+.mg-hero > * { position: relative; z-index: 1; }
+
+.mg-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mg-gap-1);
+  color: var(--accent-ink);
+  font-size: var(--mg-text-2xs);
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.mg-hero h1 {
+  margin: 14px 0 12px;
+  font-size: var(--mg-text-3xl);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -.045em;
+}
+.mg-hero-lead {
+  max-width: 68ch;
+  margin: 0;
+  color: var(--mg-muted);
+  font-size: var(--mg-text-md);
+  line-height: var(--mg-lh-base);
+}
+.mg-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mg-gap-1);
+  margin-top: 20px;
+}
+.mg-hero-signal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--mg-surface) 80%, var(--accent-line));
+  border-radius: var(--mg-r-lg);
+  background: color-mix(in srgb, var(--mg-surface) 74%, transparent);
+  box-shadow: var(--mg-e2);
+  backdrop-filter: blur(14px);
+}
+.mg-hero-signal > span { color: var(--mg-muted); font-size: var(--mg-text-2xs); font-weight: 700; }
+.mg-hero-signal > strong {
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.05em;
+  font-variant-numeric: tabular-nums;
+}
+.mg-hero-signal > p { margin: 0; color: var(--mg-ink-soft); font-size: var(--mg-text-2xs); line-height: var(--mg-lh-snug); }
+.mg-hero-signal > small { margin-top: 6px; color: var(--mg-muted); font-size: var(--mg-text-2xs); }
+
+/* ---- 按钮 ---- */
+.mg-btn {
+  display: inline-flex;
+  min-height: var(--mg-control-height-md);
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 16px;
+  border-radius: var(--mg-r-sm);
+  font-size: var(--mg-text-sm);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.mg-btn:hover { transform: translateY(-2px); }
+.mg-btn:active { transform: translateY(0); }
+/* 填充用 --accent-ink 而不是 --accent-base：
+   base 是品牌中间调，白字压上去 studio 3.52 / agent 3.89 / archive 4.45 都不到 AA。
+   ink 一档在六个色族上都 ≥ 4.9。 */
+.mg-btn-primary {
+  border: 1px solid var(--accent-ink);
+  color: #fff;
+  background: var(--accent-ink);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--accent-base) 24%, transparent);
+}
+.mg-btn-primary:hover { box-shadow: 0 14px 28px color-mix(in srgb, var(--accent-base) 34%, transparent); }
+.mg-btn-soft  { border: 1px solid var(--accent-line); color: var(--accent-ink); background: var(--accent-soft); }
+.mg-btn-ghost { border: 1px solid var(--mg-border-strong); color: var(--mg-ink); background: var(--mg-surface); }
+.mg-btn-ghost:hover { border-color: var(--accent-base); color: var(--accent-ink); }
+
+/* ---- 指标卡（原 9 份 -> 1 份）----
+   图标 + 文案一行，sparkline 独占底部整行并出血到卡片边缘。
+   不要把 sparkline 挤成第三列：4 栏布局下文案只剩约 106px，
+   「已发布作品」会断成「已发布作 / 品」。 */
+.mg-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--mg-gap-2);
+}
+.mg-metric {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-areas: 'icon body' 'spark spark';
+  gap: var(--mg-gap-2);
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--mg-gap-3) var(--mg-gap-3) 0;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--mg-r-lg);
+  background: var(--mg-surface);
+  box-shadow: var(--mg-e1);
+}
+.mg-metric:hover { border-color: var(--accent-line); box-shadow: var(--mg-e2); transform: translateY(-2px); }
+.mg-metric-icon {
+  grid-area: icon;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: var(--mg-r-md);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
+.mg-metric-body { grid-area: body; min-width: 0; }
+.mg-metric-body small {
+  display: block;
+  overflow: hidden;
+  color: var(--mg-muted);
+  font-size: var(--mg-text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mg-metric-body strong {
+  display: block;
+  margin: 3px 0 1px;
+  font-size: var(--mg-text-2xl);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+}
+.mg-metric-body p {
+  margin: 0;
+  overflow: hidden;
+  color: var(--mg-muted);
+  font-size: var(--mg-text-2xs);
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mg-metric-spark {
+  grid-area: spark;
+  display: block;
+  height: 38px;
+  width: calc(100% + var(--mg-gap-3) * 2);
+  margin-left: calc(var(--mg-gap-3) * -1);
+}
+
+/* ---- 面板（原 12 份 panelHeader -> 1 份）---- */
+.mg-panel {
+  overflow: hidden;
+  min-width: 0;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--mg-r-lg);
+  background: var(--mg-surface);
+  box-shadow: var(--mg-e2);
+}
+.mg-panel-head {
+  display: flex;
+  min-height: var(--mg-panel-heading-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mg-gap-2);
+  padding: 13px var(--mg-gap-3);
+  border-bottom: 1px solid var(--mg-border);
+}
+.mg-panel-head span { display: block; color: var(--mg-muted); font-size: var(--mg-text-2xs); font-weight: 700; }
+.mg-panel-head h2,
+.mg-panel-head h3 { margin: 2px 0 0; font-size: var(--mg-text-lg); font-weight: 700; letter-spacing: -.02em; }
+.mg-panel-head a { color: var(--accent-ink); font-size: var(--mg-text-2xs); font-weight: 700; text-decoration: none; }
+.mg-panel-head a:hover { text-decoration: underline; }
+.mg-panel-body { display: grid; gap: var(--mg-gap-1); padding: var(--mg-gap-2); }
+
+/* ---- 状态徽章（原 7 份 -> 1 份）---- */
+.mg-badge {
+  display: inline-flex;
+  min-height: 28px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--mg-r-full);
+  color: var(--mg-muted);
+  background: var(--mg-surface);
+  font-size: var(--mg-text-2xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.mg-badge[data-tone='success'] { color: var(--mg-primary-dark); border-color: color-mix(in srgb, var(--mg-primary) 32%, var(--mg-border)); background: var(--mg-primary-soft); }
+.mg-badge[data-tone='warning'] { color: var(--mg-warning);      border-color: color-mix(in srgb, var(--mg-warning) 28%, var(--mg-border)); background: var(--mg-warning-soft); }
+.mg-badge[data-tone='danger']  { color: var(--mg-danger);       border-color: color-mix(in srgb, var(--mg-danger) 28%, var(--mg-border));  background: var(--mg-danger-soft); }
+.mg-badge[data-tone='info']    { color: var(--mg-blue);         border-color: color-mix(in srgb, var(--mg-blue) 28%, var(--mg-border));    background: var(--mg-blue-soft); }
+.mg-badge[data-tone='accent']  { color: var(--accent-ink);      border-color: var(--accent-line); background: var(--accent-soft); }
+
+/* ---- 空态（原 9 份 -> 1 份）---- */
+.mg-empty {
+  display: flex;
+  min-height: 280px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mg-gap-5);
+  color: var(--mg-muted);
+  text-align: center;
+}
+.mg-empty > svg { color: var(--accent-base); }
+.mg-empty strong { margin-top: var(--mg-gap-2); color: var(--mg-ink); font-size: var(--mg-text-md); }
+.mg-empty p { max-width: 52ch; margin: 7px 0 0; font-size: var(--mg-text-xs); line-height: var(--mg-lh-snug); }
+
+/* ---- 内容流水线轨道 ---- */
+.mg-pipeline { display: flex; align-items: stretch; gap: 5px; }
+.mg-pipeline-step { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 6px; }
+.mg-pipeline-step::before {
+  height: 4px;
+  border-radius: var(--mg-r-full);
+  background: var(--mg-border);
+  content: '';
+}
+.mg-pipeline-step[data-state='done']::before { background: var(--accent-base); }
+.mg-pipeline-step[data-state='current']::before {
+  background: linear-gradient(90deg, var(--accent-base) 58%, var(--mg-border) 58%);
+}
+.mg-pipeline-step > span {
+  overflow: hidden;
+  color: var(--mg-muted);
+  font-size: var(--mg-text-2xs);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mg-pipeline-step[data-state='done'] > span    { color: var(--mg-ink-soft); }
+.mg-pipeline-step[data-state='current'] > span { color: var(--accent-ink); font-weight: 700; }
+
+/* ---- 平台品牌标 ---- */
+.mg-platforms { display: inline-flex; gap: 4px; }
+.mg-platforms i {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: var(--mg-r-xs);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+.mg-platforms i[data-platform='xhs']    { color: var(--mg-brand-xhs-ink);    background: var(--mg-brand-xhs-soft); }
+.mg-platforms i[data-platform='douyin'] { color: var(--mg-brand-douyin-ink); background: var(--mg-brand-douyin-soft); }
+.mg-platforms i[data-platform='wx']     { color: var(--mg-brand-wx-ink);     background: var(--mg-brand-wx-soft); }
+.mg-platforms i[data-platform='bili']   { color: var(--mg-brand-bili-ink);   background: var(--mg-brand-bili-soft); }
+
+@media (max-width: 1120px) {
+  .mg-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .mg-hero { grid-template-columns: 1fr; padding: 22px; border-radius: var(--mg-r-lg); }
+  .mg-hero-actions { display: grid; grid-template-columns: 1fr; }
+  .mg-btn { width: 100%; }
+  .mg-metric-grid { grid-template-columns: 1fr; }
+  .mg-pipeline { flex-wrap: wrap; }
+}

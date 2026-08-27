@@ -10,7 +10,12 @@ from pathlib import Path
 from typing import Any
 
 
-REPO_CONFIG = Path("/home/ubuntu/selfmedia-tools/config/openclaw_bots.json")
+# The editable configuration SSOT lives in this repository; the env override
+# keeps the deployed host's split layout working.
+REPO_CONFIG = Path(
+    os.getenv("OPENCLAW_BOTS_CONFIG")
+    or Path(__file__).resolve().parents[3] / "config/openclaw_bots.json"
+)
 OPENAI_ENV = Path("/home/ubuntu/.config/codex/openai.env")
 AGENTS_ROOT = Path("/home/ubuntu/.openclaw/agents")
 OPENCLAW_CONFIG = Path("/home/ubuntu/.openclaw/openclaw.json")

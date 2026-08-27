@@ -664,10 +664,14 @@ export function MediaCommandPanel({ inline = false }: { inline?: boolean }) {
       submittedTask.status === "succeeded" &&
       submittedTask.result?.ok === true;
     const deletionFinished = submittedTask?.terminal === true;
+    const deletionErrorText =
+      typeof submittedTask?.error?.message === "string"
+        ? submittedTask.error.message
+        : "";
     const deletionMessage = deletionSucceeded
       ? submittedTask.result?.reply || "目标及其关联数据已删除。"
       : deletionFinished
-        ? submittedTask?.error?.message ||
+        ? deletionErrorText ||
           submittedTask?.result?.reply ||
           "删除未完成，请查看任务结果后重试。"
         : submittedTask

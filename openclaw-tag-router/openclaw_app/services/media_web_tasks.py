@@ -340,8 +340,19 @@ class MediaWebTaskService:
         return self._tenant_model_gateway.reconcile(tenant_id, resolver, limit=limit)
 
     def create_task(
-        self, payload: Mapping[str, Any], *, tenant_id: str, is_maintainer: bool = False,
+        self,
+        payload: Mapping[str, Any],
+        *,
+        tenant_id: str,
+        is_maintainer: bool = False,
+        user_public_id: str | None = None,
+        workspace_mode: str | None = None,
+        role: str | None = None,
     ) -> tuple[dict[str, Any], bool]:
+        # The IF2 surface forwards the acting principal; task storage remains
+        # tenant-scoped, so the identity kwargs are accepted for attribution
+        # without changing the tenant-level authorization model.
+        del user_public_id, workspace_mode, role
         tenant_id = _require_tenant_id(tenant_id)
         expected_keys = {"schemaVersion", "capabilityId", "variantId", "params", "uploadIds", "idempotencyKey", "catalogVersion", "initiation", "confirmationReceipt"}
         if set(payload) != expected_keys or payload.get("schemaVersion") != "3" or _contains_reserved_tenant_key(payload):
@@ -446,16 +457,25 @@ class MediaWebTaskService:
                 if not confirmation_required:
                     self._submit(task_id, tenant_id)
                 return self._project(task), True
-    def list_tasks(self, *, tenant_id: str, limit: int = 20) -> dict[str, Any]:
+    def list_tasks(
+        self, *, tenant_id: str, limit: int = 20, user_public_id: str | None = None
+    ) -> dict[str, Any]:
+        del user_public_id
         tenant_id = _require_tenant_id(tenant_id)
         tasks = self._iter_tenant_tasks(tenant_id)
         tasks.sort(key=lambda item: str(item.get("created_at") or ""), reverse=True)
         return {"schemaVersion": SCHEMA_VERSION, "tasks": [self._project(item) for item in tasks[: max(1, min(limit, 100))]]}
 
-    def get_task(self, task_id: str, *, tenant_id: str) -> dict[str, Any]:
+    def get_task(
+        self, task_id: str, *, tenant_id: str, user_public_id: str | None = None
+    ) -> dict[str, Any]:
+        del user_public_id
         return self._project(self._load_task(task_id, tenant_id=tenant_id))
 
-    def get_events(self, task_id: str, *, tenant_id: str, after: int = 0) -> list[dict[str, Any]]:
+    def get_events(
+        self, task_id: str, *, tenant_id: str, after: int = 0, user_public_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        del user_public_id
         tenant_id = _require_tenant_id(tenant_id)
         self._load_task(task_id, tenant_id=tenant_id)
         path = self._tenant_dir(self.events_dir, tenant_id) / f"{task_id}.jsonl"
@@ -472,7 +492,10 @@ class MediaWebTaskService:
                 events.append(event)
         return events
 
-    def cancel_task(self, task_id: str, *, tenant_id: str) -> dict[str, Any]:
+    def cancel_task(
+        self, task_id: str, *, tenant_id: str, user_public_id: str | None = None
+    ) -> dict[str, Any]:
+        del user_public_id
         tenant_id = _require_tenant_id(tenant_id)
         with self._lock:
             task = self._load_task(task_id, tenant_id=tenant_id)
@@ -487,7 +510,15 @@ class MediaWebTaskService:
             self._audit(tenant_id, "task.cancel", task_id, task["status"])
             return self._project(task)
 
-    def confirm_task(self, task_id: str, payload: Mapping[str, Any], *, tenant_id: str) -> dict[str, Any]:
+    def confirm_task(
+        self,
+        task_id: str,
+        payload: Mapping[str, Any],
+        *,
+        tenant_id: str,
+        user_public_id: str | None = None,
+    ) -> dict[str, Any]:
+        del user_public_id
         tenant_id = _require_tenant_id(tenant_id)
         if set(payload) != {"decision", "note"} or _contains_reserved_tenant_key(payload):
             raise MediaWebTaskError("invalid_request", "确认信息无效。")
@@ -1217,6 +1248,16 @@ class MediaWebTaskService:
             "result": task.get("result"),
             "error": task.get("error"),
             "eventCursor": int(task.get("event_cursor") or 0),
+            # Settlement projection consumed by the Media Web task feed. A task
+            # without recorded settlement facts reports its lifecycle status as
+            # the stage and leaves binding/attempt/readback facts empty rather
+            # than fabricating them.
+            "settlementStage": task.get("settlement_stage") or task["status"],
+            "accountBinding": task.get("account_binding"),
+            "attempt": task.get("attempt"),
+            "readbacks": task.get("readbacks"),
+            "missingReadbacks": list(task.get("missing_readbacks") or []),
+            "receipt": task.get("receipt"),
         }
 
     def _load_upload(self, upload_id: str, *, tenant_id: str) -> dict[str, Any]:
@@ -1238,13 +1279,16 @@ class MediaWebTaskService:
         _atomic_write_json(self._tenant_dir(self.uploads_dir, tenant_id) / f"{upload_id}.json", item)
 
     def _project_upload(self, item: Mapping[str, Any]) -> dict[str, Any]:
+        # The Media Web upload contract (media_web_task.schema.json /
+        # checkMaterialParsing.ts) is frozen to schemaVersion "3" with a
+        # sha256-prefixed digest; storage keeps the bare digest.
         return {
-            "schemaVersion": SCHEMA_VERSION,
+            "schemaVersion": "3",
             "uploadId": item["upload_id"],
             "filename": item["filename"],
             "mimeType": item["mime_type"],
             "size": item["size"],
-            "sha256": item["sha256"],
+            "sha256": f"sha256:{item['sha256']}",
             "status": item["status"],
             "createdAt": item["created_at"],
         }

@@ -36,7 +36,9 @@ const client = new MediaProductClient(transport);
 
 const contract = JSON.parse(
   readFileSync(
-    "/home/ubuntu/docs/ai-harness/openclaw-media-product-contract.json",
+    // 机器契约实例只存在于产品契约维护机；其它环境通过环境变量注入副本。
+    process.env.OPENCLAW_MEDIA_PRODUCT_CONTRACT_PATH
+      ?? "/home/ubuntu/docs/ai-harness/openclaw-media-product-contract.json",
     "utf8",
   ),
 ) as { api_operations: Array<Record<string, unknown>> };

@@ -62,7 +62,7 @@ export default function BusinessPage() {
   const platforms = useMemo(() => new Set(opportunities.map((item) => item.platform).filter(Boolean)).size, [opportunities])
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-accent="business">
       <section className={styles.hero}>
         <div>
           <span><Sparkles size={15} />CREATOR BUSINESS OS</span>

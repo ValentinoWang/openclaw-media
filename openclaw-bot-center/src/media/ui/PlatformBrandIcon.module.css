@@ -4,7 +4,7 @@
   place-items: center;
   overflow: hidden;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-surface);
   vertical-align: middle;
@@ -43,17 +43,17 @@
 
 .identitySm {
   gap: 5px;
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .identityMd {
   gap: 6px;
-  font-size: 0.76rem;
+  font-size: var(--mg-text-sm);
 }
 
 .identityLg {
   gap: 8px;
-  font-size: 0.86rem;
+  font-size: var(--mg-text-md);
 }
 
 .label {
