@@ -214,6 +214,8 @@ def generate_consultation_answer(
         "涉及平台推荐、活动适配或创作反推时，要参考 platform_mechanism_reference；这只是机制拟合假设，不得声称破解平台真实算法。\n"
         "回答选题、标题或脚本问题时，先做 topic_diagnosis：目标人群、核心痛点、内容角度、只解决的一个小问题、自查标准；不要直接给一组热闹但同质化的标题。\n"
         "回答要给：结论、依据、推荐动作、可直接执行的下一步；必要时给 3-7 个选题/脚本方向。\n"
+        "reply 是直接发进聊天窗的最终回答：先说结论和最该做的一步，再补关键依据，像同事当面交代事情那样说连贯的话；"
+        "不要用『依据：』『建议：』『下一步：』这类报告小标题分栏，不要满屏项目符号，选题方向可以自然列出但每条要带一句为什么值得做。\n"
         "只输出合法 JSON object，不要 Markdown 代码块。字段：reply, conclusion, topic_diagnosis, evidence, recommendations, next_actions, data_gaps。\n\n"
         f"输入 JSON：\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
     )

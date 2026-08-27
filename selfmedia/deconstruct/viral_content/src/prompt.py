@@ -81,14 +81,14 @@ RECREATE_PROMPT = """
 
 必须输出严格 JSON，包含：
 - media_type: 只能是 "video" 或 "image_post"，必须和下方“本次创作交接类型”一致
-- editorial_plan: 必须回答“千万年薪编导会怎么把这条改出彩？”。object，包含 section_title、primary_plan、backup_variants。section_title 固定为“千万年薪编导会怎么把这条改出彩？”；primary_plan 是 1 个主方案，包含 title、why_better、learn_from_reference、must_transform、execution_angle；backup_variants 必须刚好 2 个备选改法，每个包含 title、difference、best_for、risk
+- editorial_plan: 必须回答“千万年薪编导会怎么把这条改出彩？”。object，包含 section_title、primary_plan、backup_variants。section_title 固定为“千万年薪编导会怎么把这条改出彩？”；primary_plan 是 1 个主方案，包含 title、why_better、learn_from_reference、must_transform、execution_angle；why_better 里必须显式说明对拆解阶段“创新修改建议”的态度：继承了哪一点、推翻了哪一点、为什么，不得当它不存在重新想一遍；backup_variants 必须刚好 2 个备选改法，每个包含 title、difference、best_for、risk
 - production_route_plan: 生产路线 object，包含 route_policy、shot_route_table、final_assembly。shot_route_table 每项包含 segment_id、story_purpose、route、needed_material、execution_note、risk_or_manual_check；route 只能从 capability_audit.routes_allowed 里选：真实素材剪辑、需要补拍、图片生成、动效字幕、Remotion、FFmpeg、人工待定。final_assembly 包含 remotion_usage、ffmpeg_usage、delivery_note
 - reusable_high_like_comment: 可复用高赞评论 object，必须给一条可直接放到评论区/置顶评论测试的评论种子，角度要刁钻但不攻击真人；包含 comment_text、sharp_angle、why_it_can_get_likes、reuse_instruction、risk_boundary
 - operation_plan: 自媒体运营计划 object，必须从发布运营角度说明这条怎么发、怎么引评论、怎么判断是否复投；包含 platform_fit、opening_3s_hook、audience_trigger、comment_area_design、publish_timing、success_metric、republish_or_iteration
 - material_checklist: 素材检查清单 object，包含 must_have、better_to_have、can_rescue_without、must_not_fabricate
 - risk_controls: 风险控制数组，每项包含 risk、control、applies_to
 - creative_positioning: 新作品定位，一句话说明和原作品的差异
-- final_script: 可直接发布正文/口播稿
+- final_script: 可直接发布正文/口播稿。必须像这个账号的真人在说话：口播每句尽量不超过 22 个字，允许口语连接词和自然的不完整句；用户给了人设/说话习惯就必须贴着写；写完要经得起“直接读出声不别扭”的检验。禁止『首先/其次/最后』连用、『总之』『综上』『值得一提的是』式书面套话、连续排比和每句感叹号
 - video_storyboard: 仅当 media_type 为 "video" 时输出非空视频分镜数组。每项包含 shot_no, duration, visual, subtitle, voiceover, camera_movement, props, edit_notes, evidence_asset_id；visual 写画面描述；subtitle 只有确实需要上屏文字时才写，否则空字符串；voiceover 只有确实需要口播时才写，否则空字符串；evidence_asset_id 必须引用 available_evidence_asset_ids 中的原作品代表帧，用来说明这一行学习自哪一段证据。media_type 为 "image_post" 时输出空数组。视频只覆盖前 60 秒：0-5 秒按 0-1s、1-2s、2-3s、3-4s、4-5s 每秒一行；5 秒后按 5-8s、8-11s、11-14s 这种每 3 秒一行，最后不足 3 秒也单独保留
 - image_post_script: 仅当 media_type 为 "image_post" 时输出非空图文脚本数组。每项包含 page_no, image_prompt, overlay_text, caption_note；media_type 为 "video" 时输出空数组
 - titles: 5 个标题备选
@@ -109,7 +109,7 @@ RECREATE_PROMPT = """
 10. sample_gate_enabled=false：不要输出“必须先跑样片门禁/渲染 QA 通过后才生产”的流程。可以给人工检查点，但不要把它写成门禁。
 11. Remotion 和 FFmpeg 是可选生产能力：适合模板化字幕、节奏动效、批量合成、转码压制时写入路线；不适合时明确写“本条不需要”。
 12. reusable_high_like_comment 是新作品的评论种子，不是原作品高赞评论证据；不要声称它来自原评论区。
-13. operation_plan 必须像自媒体运营能直接执行的发稿策略：写清首 3 秒钩子、目标人群被哪句话刺中、评论区如何接住、观察哪个数据决定复投；不要写“提升互动、增强传播”这类空话。
+13. operation_plan 必须像自媒体运营能直接执行的发稿策略：写清首 3 秒钩子、目标人群被哪句话刺中、评论区如何接住、观察哪个数据决定复投；不要写“提升互动、增强传播”这类空话。success_metric 必须写成可核对的一句话：观察哪个指标、多长时间窗口、达到什么数值算过线、过线/不过线各做什么，例如“发布后 24 小时内收藏率≥5% 则追投同选题第二条，否则换开头再测一次”；这句话要能被复盘环节直接拿来对数据。
 14. 如果 multi_signal_contract.validation.warnings 或 open_questions 显示证据不足，必须在 material_checklist 或 risk_controls 中显式承认缺口，不得补写不存在的评论、口播、OCR 或平台数据。
 15. 视频分镜脚本必须使用时间段 duration，禁止写成单点时间如“1s”；不允许输出 60 秒之后的分镜行。
 """.strip()

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import os
 import re
 import time
@@ -379,12 +378,6 @@ def _shooting_execution_doc_blocks(
             draft.get("storyboard"),
             ["time", "visual", "caption_or_voice", "sound_or_note"],
         ),
-        _heading("抽象化拆解口径"),
-        _table_block(
-            ["原始信号", "抽象后的任务层", "执行含义"],
-            draft.get("abstraction_map"),
-            ["source_signal", "task_layer", "execution_meaning"],
-        ),
         _heading("拍摄目标"),
         _paragraph(
             "\n".join(
@@ -417,6 +410,12 @@ def _shooting_execution_doc_blocks(
         ),
         _heading("现场 checklist"),
         _paragraph("\n".join(f"- {_text(item)}" for item in _as_list(draft.get("onsite_checklist")) if _text(item)) or "待补充"),
+        _heading("抽象化拆解口径"),
+        _table_block(
+            ["原始信号", "抽象后的任务层", "执行含义"],
+            draft.get("abstraction_map"),
+            ["source_signal", "task_layer", "execution_meaning"],
+        ),
         _heading("发布包"),
         _subheading("作品标题"),
         _paragraph(
@@ -451,11 +450,34 @@ def _shooting_execution_doc_blocks(
                     f"校验状态：{'通过' if validation.get('ok') else '待人工补充'}",
                     f"缺失字段：{_inline_list(validation.get('missing'))}",
                     f"空列表字段：{_inline_list(validation.get('empty_lists'))}",
-                    f"上下文加载：{json.dumps((media_context or {}).get('loaded') or {}, ensure_ascii=False, default=str)}",
+                    f"上下文加载：{_loaded_context_line((media_context or {}).get('loaded'))}",
                 ]
             )
         ),
     ]
+
+
+def _loaded_context_line(loaded: Any) -> str:
+    """把机器态的 loaded 字典翻译成中文；原始 JSON 不进用户文档。"""
+    if not isinstance(loaded, dict) or not loaded:
+        return "未加载账号上下文"
+    labels = {
+        "account_profile": "账号画像",
+        "creator_profile": "达人档案",
+        "recent_creations": "近期创作",
+        "recent_reviews": "历史复盘",
+        "conversation_context": "会话上下文",
+    }
+    parts: list[str] = []
+    for key, value in loaded.items():
+        label = labels.get(str(key), str(key))
+        if isinstance(value, bool):
+            parts.append(f"{label}{'已加载' if value else '未加载'}")
+        elif isinstance(value, int):
+            parts.append(f"{label} {value} 条")
+        else:
+            parts.append(f"{label}：{value}")
+    return "；".join(parts)
 
 
 def _shooting_evidence_appendix_blocks(items: Any) -> list[dict[str, Any]]:
@@ -495,7 +517,6 @@ def _creator_overview_blocks(
         f"适合参与的活动：{_text(overview['suitable_activity'])}",
         f"是否强烈建议参与活动：{_text(overview['strongly_recommend_activity'])}",
         f"最大风险：{_text(overview['biggest_risk'])}",
-        f"方案分数：{_option_score_summary(draft)}",
     ]
     blocks = [_paragraph("\n".join(lines))]
     if backups:
@@ -553,6 +574,7 @@ def _creator_publish_blocks(report: dict[str, Any], draft: dict[str, Any]) -> li
         f"话题：{_inline_list(pack['hashtags'])}",
         f"置顶评论：{_text(pack['pinned_comment'])}",
         f"评论区引导问题：{_inline_list(pack['comment_prompt'])}",
+        f"发布后 1 小时动作：{_text(pack.get('first_hour_action'))}",
     ]
     return [_paragraph("\n".join(line for line in lines if line.split("：", 1)[-1].strip()))]
 
@@ -600,6 +622,21 @@ def _script_options(draft: dict[str, Any]) -> list[dict[str, Any]]:
     return [item for item in options if isinstance(item, dict)]
 
 
+def _option_score_reason_lines(draft: dict[str, Any]) -> list[str]:
+    """评分与理由只出现在证据附录；执行区与方案正文不再渲染论证。"""
+    recommended_id = str(draft.get("recommended_option_id") or "").strip()
+    lines: list[str] = []
+    for index, option in enumerate(_script_options(draft)[:5], 1):
+        score = option.get("score")
+        reason = _text(option.get("score_reason"))
+        suffix = "（推荐）" if str(option.get("option_id") or "").strip() == recommended_id else ""
+        if reason:
+            lines.append(f"方案{index}{suffix}：{score}分，评分理由：{reason}")
+        else:
+            lines.append(f"方案{index}{suffix}：{score}分")
+    return lines
+
+
 def _option_score_summary(draft: dict[str, Any]) -> str:
     recommended_id = str(draft.get("recommended_option_id") or "").strip()
     parts: list[str] = []
@@ -614,16 +651,11 @@ def _option_score_summary(draft: dict[str, Any]) -> str:
 
 
 def _script_option_summary(option: dict[str, Any]) -> str:
+    # 执行信息在前；评分与选择论证不进入方案正文，统一收进证据附录。
     lines = [
-        f"分数：{option.get('score')}分（{'高分' if int(option.get('score') or 0) > 90 else '未达90'}）",
         f"执行角度：{_text(option.get('angle'))}",
-        f"评分理由：{_text(option.get('score_reason'))}",
         f"开场钩子：{_text(option.get('hook_3s'))}",
         f"成片文案：{_text(option.get('final_copy'))}",
-        f"话题：{_inline_list(option.get('tags'))}",
-        f"风险处理：{_inline_list(option.get('risks_or_missing_info'))}",
-        f"拍摄清单：{_inline_list(option.get('production_checklist'))}",
-        f"发布后验证：{_inline_list(option.get('review_plan'))}",
     ]
     voiceover = _text(option.get("voiceover"))
     subtitles = _inline_list(option.get("subtitles"))
@@ -634,6 +666,14 @@ def _script_option_summary(option: dict[str, Any]) -> str:
     image_script = _inline_list(option.get("image_script") or option.get("carousel"))
     if image_script:
         lines.append(f"图文页：{image_script}")
+    lines.extend(
+        [
+            f"话题：{_inline_list(option.get('tags'))}",
+            f"拍摄清单：{_inline_list(option.get('production_checklist'))}",
+            f"发布后验证：{_inline_list(option.get('review_plan'))}",
+            f"风险处理：{_inline_list(option.get('risks_or_missing_info'))}",
+        ]
+    )
     return "\n".join(line for line in lines if line.split("：", 1)[-1].strip())
 
 
@@ -855,6 +895,7 @@ def _score_id_appendix(
     lines = [
         f"推荐方案 id：{draft.get('recommended_option_id') or ''}",
         f"候选方案分数：{', '.join(str(item.get('score')) for item in draft.get('script_options') or [] if isinstance(item, dict))}",
+        *_option_score_reason_lines(draft),
         f"活动 record_id：{', '.join(item.record.source_record_id for item in activities)}",
         f"爆款 record_id：{', '.join(item.record.source_record_id for item in virals)}",
         f"灵感 record_id：{', '.join(item.record.source_record_id for item in inspirations)}",
