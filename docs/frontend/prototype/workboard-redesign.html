@@ -1,0 +1,1192 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="openclaw-media 前端美化改造原型：设计令牌、前后对照与改造后的今日工作台">
+<title>MediaClaw 工作台改造原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,400&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+
+<style>
+/* =====================================================================
+   Layer 0 — 提案中的 mediaDesignTokens.css（可直接复制到项目）
+   ===================================================================== */
+:root {
+  /* 字阶 */
+  --mg-text-2xs: 0.75rem;    /* 12px */
+  --mg-text-xs:  0.8125rem;  /* 13px */
+  --mg-text-sm:  0.875rem;   /* 14px  正文默认 */
+  --mg-text-md:  0.9375rem;  /* 15px */
+  --mg-text-lg:  1.0625rem;  /* 17px */
+  --mg-text-xl:  1.375rem;   /* 22px */
+  --mg-text-2xl: 1.75rem;    /* 28px */
+  --mg-text-3xl: clamp(2rem, 2.6vw, 2.75rem);
+
+  --mg-lh-tight: 1.25;
+  --mg-lh-snug:  1.45;
+  --mg-lh-base:  1.65;
+
+  --mg-font-sans: 'DM Sans', 'Noto Sans SC', Inter, ui-sans-serif, system-ui,
+                  -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --mg-font-edit: 'Newsreader', 'Noto Sans SC', Georgia, serif;
+
+  /* 圆角 */
+  --mg-r-xs: 6px;  --mg-r-sm: 8px;  --mg-r-md: 12px;
+  --mg-r-lg: 16px; --mg-r-xl: 22px; --mg-r-full: 999px;
+
+  /* 高度层级 */
+  --mg-shadow-color: 160 14% 16%;
+  --mg-e1: 0 1px 2px hsl(var(--mg-shadow-color) / .05);
+  --mg-e2: 0 4px 12px hsl(var(--mg-shadow-color) / .06);
+  --mg-e3: 0 10px 28px hsl(var(--mg-shadow-color) / .08);
+  --mg-e4: 0 24px 60px hsl(var(--mg-shadow-color) / .10);
+
+  /* 动效 */
+  --mg-ease: cubic-bezier(.2, .7, .3, 1);
+  --mg-dur-1: 120ms; --mg-dur-2: 190ms; --mg-dur-3: 280ms;
+
+  /* 间距 */
+  --mg-gap-1: 8px;  --mg-gap-2: 12px; --mg-gap-3: 18px;
+  --mg-gap-4: 26px; --mg-gap-5: 40px; --mg-gap-6: 64px;
+
+  /* 语义色 — 浅色 */
+  --mg-bg: #f4f6f1;  --mg-bg-sunken: #eceff0;
+  --mg-surface: #ffffff;
+  --mg-ink: #17241f;  --mg-ink-soft: #3f4f47;  --mg-muted: #68756e;
+  --mg-border: #dde5de;  --mg-border-strong: #cbd7ce;
+  --mg-primary: #239b69;  --mg-primary-dark: #126344;  --mg-primary-soft: #dff4e8;
+  --mg-blue: #4179b8;    --mg-blue-soft: #e8f1fb;
+  --mg-warning: #a96d18; --mg-warning-soft: #fff0d2;
+  --mg-danger: #bd5147;  --mg-danger-soft: #fde9e6;
+  --mg-sidebar: #173029; --mg-sidebar-muted: rgba(233,246,238,.62);
+
+  /* 业务模块 accent 族 */
+  --mg-accent-studio-ink:   #0f6a49; --mg-accent-studio-base:   #239b69;
+  --mg-accent-studio-soft:  #dff4e8; --mg-accent-studio-line:   #b5e3cc;
+  --mg-accent-campaign-ink: #4e419d; --mg-accent-campaign-base: #5b4bb5;
+  --mg-accent-campaign-soft:#efecff; --mg-accent-campaign-line: #ded9fa;
+  --mg-accent-business-ink: #95551f; --mg-accent-business-base: #ad6426;
+  --mg-accent-business-soft:#fff0df; --mg-accent-business-line: #f0dcc6;
+  --mg-accent-desk-ink:     #2f6198; --mg-accent-desk-base:     #376da9;
+  --mg-accent-desk-soft:    #eaf2fc; --mg-accent-desk-line:     #cfdeef;
+
+  --accent-ink:  var(--mg-accent-studio-ink);
+  --accent-base: var(--mg-accent-studio-base);
+  --accent-soft: var(--mg-accent-studio-soft);
+  --accent-line: var(--mg-accent-studio-line);
+
+  /* 平台品牌标（浅色） */
+  --mg-brand-xhs-ink: #cc4661;    --mg-brand-xhs-soft: #ffe1e5;
+  --mg-brand-douyin-ink: #108b88; --mg-brand-douyin-soft: #dff5f2;
+  --mg-brand-wx-ink: #2b7a3f;     --mg-brand-wx-soft: #ddf3e1;
+
+  --mg-radius: var(--mg-r-md);
+  color-scheme: light;
+}
+
+[data-accent='studio']   { --accent-ink: var(--mg-accent-studio-ink);   --accent-base: var(--mg-accent-studio-base);   --accent-soft: var(--mg-accent-studio-soft);   --accent-line: var(--mg-accent-studio-line); }
+[data-accent='campaign'] { --accent-ink: var(--mg-accent-campaign-ink); --accent-base: var(--mg-accent-campaign-base); --accent-soft: var(--mg-accent-campaign-soft); --accent-line: var(--mg-accent-campaign-line); }
+[data-accent='business'] { --accent-ink: var(--mg-accent-business-ink); --accent-base: var(--mg-accent-business-base); --accent-soft: var(--mg-accent-business-soft); --accent-line: var(--mg-accent-business-line); }
+[data-accent='desk']     { --accent-ink: var(--mg-accent-desk-ink);     --accent-base: var(--mg-accent-desk-base);     --accent-soft: var(--mg-accent-desk-soft);     --accent-line: var(--mg-accent-desk-line); }
+
+/* 暗色 — 系统偏好 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --mg-bg: #131c18; --mg-bg-sunken: #0f1714; --mg-surface: #1a2621;
+    --mg-ink: #e8f2ec; --mg-ink-soft: #c2d2c9; --mg-muted: #93a69c;
+    --mg-border: #2c3b34; --mg-border-strong: #3c4f46;
+    --mg-primary: #4ec48d; --mg-primary-dark: #7ad9ab; --mg-primary-soft: #1c3d30;
+    --mg-blue: #7db4ea; --mg-blue-soft: #1b2f42;
+    --mg-warning: #d9a24a; --mg-warning-soft: #3a2c14;
+    --mg-danger: #e8877c; --mg-danger-soft: #3d201c;
+    --mg-sidebar: #0f1a16;
+    --mg-shadow-color: 160 30% 3%;
+    --mg-e1: 0 1px 2px hsl(var(--mg-shadow-color) / .30);
+    --mg-e2: 0 4px 12px hsl(var(--mg-shadow-color) / .36);
+    --mg-e3: 0 10px 28px hsl(var(--mg-shadow-color) / .44);
+    --mg-e4: 0 24px 60px hsl(var(--mg-shadow-color) / .52);
+    --mg-accent-studio-soft:  #17392c; --mg-accent-studio-line:  #245842; --mg-accent-studio-ink:  #6fd4a5;
+    --mg-accent-campaign-soft:#262247; --mg-accent-campaign-line:#3b3470; --mg-accent-campaign-ink:#a99bec;
+    --mg-accent-business-soft:#3a2a17; --mg-accent-business-line:#57401f; --mg-accent-business-ink:#e0a668;
+    --mg-accent-desk-soft:    #1c2f44; --mg-accent-desk-line:    #2b4767; --mg-accent-desk-ink:    #8fbdea;
+    --mg-brand-xhs-ink: #ff8fa3;    --mg-brand-xhs-soft: #45222a;
+    --mg-brand-douyin-ink: #4fd6d1; --mg-brand-douyin-soft: #14383a;
+    --mg-brand-wx-ink: #6fcf8a;     --mg-brand-wx-soft: #17361f;
+  }
+}
+/* 暗色 — 手动开关 */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --mg-bg: #131c18; --mg-bg-sunken: #0f1714; --mg-surface: #1a2621;
+  --mg-ink: #e8f2ec; --mg-ink-soft: #c2d2c9; --mg-muted: #93a69c;
+  --mg-border: #2c3b34; --mg-border-strong: #3c4f46;
+  --mg-primary: #4ec48d; --mg-primary-dark: #7ad9ab; --mg-primary-soft: #1c3d30;
+  --mg-blue: #7db4ea; --mg-blue-soft: #1b2f42;
+  --mg-warning: #d9a24a; --mg-warning-soft: #3a2c14;
+  --mg-danger: #e8877c; --mg-danger-soft: #3d201c;
+  --mg-sidebar: #0f1a16;
+  --mg-shadow-color: 160 30% 3%;
+  --mg-e1: 0 1px 2px hsl(var(--mg-shadow-color) / .30);
+  --mg-e2: 0 4px 12px hsl(var(--mg-shadow-color) / .36);
+  --mg-e3: 0 10px 28px hsl(var(--mg-shadow-color) / .44);
+  --mg-e4: 0 24px 60px hsl(var(--mg-shadow-color) / .52);
+  --mg-accent-studio-soft:  #17392c; --mg-accent-studio-line:  #245842; --mg-accent-studio-ink:  #6fd4a5;
+  --mg-accent-campaign-soft:#262247; --mg-accent-campaign-line:#3b3470; --mg-accent-campaign-ink:#a99bec;
+  --mg-accent-business-soft:#3a2a17; --mg-accent-business-line:#57401f; --mg-accent-business-ink:#e0a668;
+  --mg-accent-desk-soft:    #1c2f44; --mg-accent-desk-line:    #2b4767; --mg-accent-desk-ink:    #8fbdea;
+  --mg-brand-xhs-ink: #ff8fa3;    --mg-brand-xhs-soft: #45222a;
+  --mg-brand-douyin-ink: #4fd6d1; --mg-brand-douyin-soft: #14383a;
+  --mg-brand-wx-ink: #6fcf8a;     --mg-brand-wx-soft: #17361f;
+}
+
+/* 全局动效兜底 */
+a, button, summary, input, select, [role='button'], [role='tab'],
+.mg-nav-link, .mg-panel, .mg-metric, .mg-card {
+  transition:
+    color var(--mg-dur-1) var(--mg-ease),
+    background-color var(--mg-dur-1) var(--mg-ease),
+    border-color var(--mg-dur-1) var(--mg-ease),
+    box-shadow var(--mg-dur-2) var(--mg-ease),
+    transform var(--mg-dur-2) var(--mg-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important; scroll-behavior: auto !important;
+  }
+}
+
+/* =====================================================================
+   旧 token 集 —— 用于左右对照。同一段 HTML，只换这一组变量。
+   数值取自当前代码库的真实高频值。
+   ===================================================================== */
+.legacy {
+  --mg-text-2xs: 0.62rem;  /*  9.9px */
+  --mg-text-xs:  0.64rem;  /* 10.2px */
+  --mg-text-sm:  0.68rem;  /* 10.9px  ← 现状最常用 */
+  --mg-text-md:  0.72rem;  /* 11.5px */
+  --mg-text-lg:  0.83rem;  /* 13.3px */
+  --mg-text-xl:  1.45rem;
+  --mg-text-2xl: 1.7rem;
+  --mg-r-xs: 4px; --mg-r-sm: 5px; --mg-r-md: 6px;
+  --mg-r-lg: 8px; --mg-r-xl: 12px;
+  --mg-e1: none;
+  --mg-e2: 0 1px 2px hsl(var(--mg-shadow-color) / .04);
+  --mg-e3: 0 4px 10px hsl(var(--mg-shadow-color) / .05);
+  --mg-dur-1: 0ms; --mg-dur-2: 0ms;
+  --mg-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* =====================================================================
+   页面外壳（注解层）
+   ===================================================================== */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-width: 320px;
+  font-family: var(--mg-font-sans);
+  font-size: var(--mg-text-sm);
+  line-height: var(--mg-lh-base);
+  color: var(--mg-ink);
+  background: var(--mg-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4, p, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+img { display: block; max-width: 100%; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--mg-primary) 55%, transparent); outline-offset: 2px; border-radius: 4px; }
+
+.wrap { width: min(1240px, calc(100% - 40px)); margin: 0 auto; }
+
+/* --- 页眉 --- */
+.doc-header {
+  position: sticky; top: 0; z-index: 40;
+  border-bottom: 1px solid var(--mg-border);
+  background: color-mix(in srgb, var(--mg-bg) 88%, transparent);
+  backdrop-filter: blur(18px);
+}
+.doc-header-inner { display: flex; align-items: center; gap: var(--mg-gap-3); min-height: 64px; }
+.doc-mark {
+  display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto;
+  border-radius: 10px; color: #0d2019;
+  background: linear-gradient(145deg, #95e4bd, #45b982);
+  font-weight: 800; font-size: var(--mg-text-2xs); letter-spacing: -.04em;
+}
+.doc-header h1 { font-size: var(--mg-text-md); font-weight: 700; letter-spacing: -.02em; }
+.doc-header p { color: var(--mg-muted); font-size: var(--mg-text-2xs); }
+.doc-header-actions { display: flex; align-items: center; gap: var(--mg-gap-1); margin-left: auto; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 34px; padding: 0 12px;
+  border: 1px solid var(--mg-border-strong); border-radius: var(--mg-r-full);
+  color: var(--mg-ink); background: var(--mg-surface);
+  font: inherit; font-size: var(--mg-text-2xs); font-weight: 600; cursor: pointer;
+}
+.chip:hover { border-color: var(--mg-primary); color: var(--mg-primary-dark); }
+.chip[aria-pressed='true'], .chip[aria-selected='true'] {
+  color: var(--mg-bg); background: var(--mg-ink); border-color: var(--mg-ink);
+}
+
+/* --- 章节 --- */
+.movement { padding: var(--mg-gap-6) 0; border-top: 1px solid var(--mg-border); }
+.movement:first-of-type { border-top: 0; }
+.movement-head { max-width: 68ch; margin-bottom: var(--mg-gap-4); }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  color: var(--accent-ink); font-size: var(--mg-text-2xs);
+  font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+}
+.eyebrow::before {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent-base);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-base) 14%, transparent);
+  content: '';
+}
+.movement-head h2 {
+  margin-top: 14px;
+  font-family: var(--mg-font-edit);
+  font-size: clamp(1.6rem, 2.6vw, 2.3rem);
+  font-weight: 600; line-height: 1.18; letter-spacing: -.02em;
+}
+.movement-head p { margin-top: 12px; color: var(--mg-muted); font-size: var(--mg-text-md); }
+.movement-head strong { color: var(--mg-ink); font-weight: 700; }
+
+/* --- 诊断数据条 --- */
+.diagnosis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--mg-gap-2); }
+.diag {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  padding: var(--mg-gap-3);
+  border: 1px solid var(--mg-border); border-left: 3px solid var(--diag-tone, var(--mg-border-strong));
+  border-radius: var(--mg-r-md);
+  background: var(--mg-surface); box-shadow: var(--mg-e1);
+}
+.diag[data-severity='high'] { --diag-tone: var(--mg-danger); }
+.diag[data-severity='mid']  { --diag-tone: var(--mg-warning); }
+.diag dt { color: var(--mg-muted); font-size: var(--mg-text-2xs); font-weight: 600; }
+.diag dd {
+  margin: 0; font-family: var(--mg-font-edit);
+  font-size: 2.1rem; font-weight: 600; line-height: 1;
+  letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+}
+.diag dd em { font-style: normal; font-size: var(--mg-text-sm); color: var(--mg-muted); font-family: var(--mg-font-sans); }
+.diag p { color: var(--mg-muted); font-size: var(--mg-text-2xs); line-height: var(--mg-lh-snug); }
+
+/* --- 对照 --- */
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--mg-gap-3); align-items: start; }
+.compare-col { display: grid; gap: var(--mg-gap-2); min-width: 0; }
+.compare-label { display: flex; align-items: baseline; gap: var(--mg-gap-1); flex-wrap: wrap; }
+.compare-label strong { font-size: var(--mg-text-md); font-weight: 700; }
+.compare-label span { color: var(--mg-muted); font-size: var(--mg-text-2xs); font-variant-numeric: tabular-nums; }
+.compare-col[data-side='before'] .compare-label strong { color: var(--mg-danger); }
+.compare-col[data-side='after']  .compare-label strong { color: var(--mg-primary-dark); }
+.compare-stage {
+  padding: var(--mg-gap-3);
+  border: 1px dashed var(--mg-border-strong); border-radius: var(--mg-r-lg);
+  background: var(--mg-bg-sunken);
+}
+.compare-note {
+  display: grid; gap: 4px; padding: var(--mg-gap-2) var(--mg-gap-3);
+  border-radius: var(--mg-r-sm); background: var(--mg-surface);
+  border: 1px solid var(--mg-border);
+  color: var(--mg-muted); font-size: var(--mg-text-2xs); line-height: var(--mg-lh-snug);
+}
+.compare-note b { color: var(--mg-ink); font-weight: 700; }
+
+/* =====================================================================
+   Layer 2 — 提案中的 mediaPrimitives.css（原型内联版）
+   ===================================================================== */
+.mg-metric {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-areas: 'icon body' 'spark spark';
+  gap: var(--mg-gap-2); align-items: center; min-width: 0;
+  padding: var(--mg-gap-3) var(--mg-gap-3) 0;
+  border: 1px solid var(--mg-border); border-radius: var(--mg-r-lg);
+  background: var(--mg-surface); box-shadow: var(--mg-e1);
+  font-family: var(--mg-font-sans);
+  overflow: hidden;
+}
+.mg-metric:hover { border-color: var(--accent-line); box-shadow: var(--mg-e2); transform: translateY(-2px); }
+.mg-metric-icon {
+  grid-area: icon;
+  display: grid; place-items: center; width: 44px; height: 44px;
+  border-radius: var(--mg-r-md); color: var(--accent-ink); background: var(--accent-soft);
+}
+.mg-metric-body { grid-area: body; min-width: 0; }
+.mg-metric-body small {
+  display: block; overflow: hidden; color: var(--mg-muted);
+  font-size: var(--mg-text-xs); text-overflow: ellipsis; white-space: nowrap;
+}
+.mg-metric-body strong {
+  display: block; margin: 3px 0 1px;
+  font-size: var(--mg-text-2xl); font-weight: 700; line-height: 1;
+  letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+}
+.mg-metric-body p {
+  overflow: hidden; color: var(--mg-muted); font-size: var(--mg-text-2xs);
+  line-height: 1.3; text-overflow: ellipsis; white-space: nowrap;
+}
+.mg-metric-spark { grid-area: spark; display: block; width: calc(100% + var(--mg-gap-3) * 2); margin-left: calc(var(--mg-gap-3) * -1); height: 38px; }
+
+.mg-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  min-height: 28px; flex: 0 0 auto; padding: 0 10px;
+  border: 1px solid var(--mg-border); border-radius: var(--mg-r-full);
+  color: var(--mg-muted); background: var(--mg-surface);
+  font-size: var(--mg-text-2xs); font-weight: 700; white-space: nowrap;
+}
+.mg-badge[data-tone='success'] { color: var(--mg-primary-dark); border-color: color-mix(in srgb, var(--mg-primary) 32%, var(--mg-border)); background: var(--mg-primary-soft); }
+.mg-badge[data-tone='warning'] { color: var(--mg-warning); border-color: color-mix(in srgb, var(--mg-warning) 28%, var(--mg-border)); background: var(--mg-warning-soft); }
+.mg-badge[data-tone='danger']  { color: var(--mg-danger);  border-color: color-mix(in srgb, var(--mg-danger) 28%, var(--mg-border));  background: var(--mg-danger-soft); }
+.mg-badge[data-tone='accent']  { color: var(--accent-ink); border-color: var(--accent-line); background: var(--accent-soft); }
+
+.mg-pipeline { display: flex; align-items: stretch; gap: 5px; }
+.mg-pipeline-step { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 6px; }
+.mg-pipeline-step::before {
+  height: 4px; border-radius: var(--mg-r-full); background: var(--mg-border); content: '';
+}
+.mg-pipeline-step[data-state='done']::before { background: var(--accent-base); }
+.mg-pipeline-step[data-state='current']::before {
+  background: linear-gradient(90deg, var(--accent-base) 58%, var(--mg-border) 58%);
+}
+.mg-pipeline-step > span {
+  overflow: hidden; color: var(--mg-muted);
+  font-size: var(--mg-text-2xs); font-weight: 600;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.mg-pipeline-step[data-state='done'] > span    { color: var(--mg-ink-soft); }
+.mg-pipeline-step[data-state='current'] > span { color: var(--accent-ink); font-weight: 700; }
+
+/* 项目卡 —— 对照演示的主角 */
+.mg-card {
+  display: grid; grid-template-columns: 62px minmax(0, 1fr);
+  gap: var(--mg-gap-2); min-width: 0;
+  padding: var(--mg-gap-2);
+  border: 1px solid var(--mg-border); border-radius: var(--mg-r-md);
+  background: var(--mg-surface); box-shadow: var(--mg-e1);
+  font-family: var(--mg-font-sans);
+}
+.mg-card:hover { border-color: var(--accent-line); box-shadow: var(--mg-e3); transform: translateY(-2px); }
+.mg-card-thumb {
+  display: grid; place-items: center;
+  aspect-ratio: 3 / 4; width: 62px;
+  border-radius: var(--mg-r-sm);
+  color: var(--accent-ink);
+  background: linear-gradient(150deg, var(--accent-soft), color-mix(in srgb, var(--accent-soft) 55%, var(--mg-surface)));
+  border: 1px solid var(--accent-line);
+}
+.mg-card-main { display: grid; gap: var(--mg-gap-1); min-width: 0; align-content: start; }
+.mg-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--mg-gap-1); }
+.mg-card-top h4 {
+  min-width: 0; font-size: var(--mg-text-lg); font-weight: 700;
+  line-height: var(--mg-lh-tight); letter-spacing: -.015em;
+}
+.mg-card-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+  color: var(--mg-muted); font-size: var(--mg-text-2xs);
+}
+.mg-card-meta b { color: var(--mg-ink-soft); font-weight: 700; font-variant-numeric: tabular-nums; }
+.mg-platforms { display: flex; gap: 4px; }
+.mg-platforms i {
+  display: grid; place-items: center; width: 20px; height: 20px;
+  border-radius: var(--mg-r-xs);
+  font-size: 10px; font-weight: 800; font-style: normal;
+}
+.mg-platforms i[data-p='xhs']    { color: var(--mg-brand-xhs-ink);    background: var(--mg-brand-xhs-soft); }
+.mg-platforms i[data-p='douyin'] { color: var(--mg-brand-douyin-ink); background: var(--mg-brand-douyin-soft); }
+.mg-platforms i[data-p='wx']     { color: var(--mg-brand-wx-ink);     background: var(--mg-brand-wx-soft); }
+
+/* =====================================================================
+   工作台 mockup
+   ===================================================================== */
+.mock-frame {
+  overflow: hidden;
+  border: 1px solid var(--mg-border-strong);
+  border-radius: var(--mg-r-xl);
+  background: var(--mg-surface);
+  box-shadow: var(--mg-e4);
+}
+.mock-chrome {
+  display: flex; align-items: center; gap: var(--mg-gap-2);
+  height: 40px; padding: 0 14px;
+  border-bottom: 1px solid var(--mg-border);
+  background: var(--mg-bg-sunken);
+}
+.mock-dots { display: flex; gap: 5px; }
+.mock-dots i { width: 9px; height: 9px; border-radius: 50%; background: #e9bda8; }
+.mock-dots i:nth-child(2) { background: #e8d48d; }
+.mock-dots i:nth-child(3) { background: #98d1ae; }
+.mock-url {
+  padding: 4px 12px; border-radius: var(--mg-r-full);
+  background: var(--mg-surface); border: 1px solid var(--mg-border);
+  color: var(--mg-muted); font-size: var(--mg-text-2xs);
+}
+.mock-body { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 620px; }
+
+/* 侧栏 */
+.mock-side {
+  display: flex; flex-direction: column; gap: var(--mg-gap-2);
+  padding: 16px 12px;
+  background:
+    radial-gradient(circle at 48% -8%, rgba(112,216,164,.16), transparent 32%),
+    linear-gradient(180deg, #19352c 0%, #142b24 68%, #11231d 100%);
+}
+:root[data-theme='dark'] .mock-side { background: linear-gradient(180deg, #0f1a16, #0b1512); }
+.mock-brand { display: flex; align-items: center; gap: 10px; padding: 2px 6px 14px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.mock-brand-mark {
+  display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto;
+  border-radius: 10px; color: #10271f;
+  background: linear-gradient(145deg, #95e4bd, #45b982);
+  font-weight: 800; font-size: var(--mg-text-2xs); letter-spacing: -.04em;
+}
+.mock-brand strong { display: block; color: #fff; font-size: var(--mg-text-sm); letter-spacing: -.02em; }
+.mock-brand span { display: block; color: rgba(234,246,238,.55); font-size: var(--mg-text-2xs); }
+.mock-nav-group > h5 {
+  margin: 10px 8px 6px; color: rgba(234,246,238,.4);
+  font-size: var(--mg-text-2xs); font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
+}
+.mg-nav-link {
+  display: grid; grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 9px; align-items: center; min-height: 42px; padding: 4px 9px;
+  border-radius: var(--mg-r-sm); color: rgba(237,247,241,.68); text-decoration: none;
+}
+.mg-nav-link:hover { color: #fff; background: rgba(255,255,255,.07); transform: translateX(2px); }
+.mg-nav-link[aria-current='page'] { color: #fff; background: rgba(74,169,123,.28); box-shadow: inset 3px 0 0 #7bd6aa; }
+.mg-nav-link svg { color: rgba(158,222,188,.85); }
+.mg-nav-link strong { display: block; font-size: var(--mg-text-xs); font-weight: 600; }
+.mg-nav-link small { display: block; color: rgba(234,246,238,.42); font-size: var(--mg-text-2xs); }
+.mg-nav-link b {
+  min-width: 20px; padding: 2px 6px; border-radius: var(--mg-r-full);
+  color: #133329; background: #a4dfbf; font-size: var(--mg-text-2xs); text-align: center;
+}
+
+/* 主区 */
+.mock-main { display: grid; gap: var(--mg-gap-3); align-content: start; padding: var(--mg-gap-3); background: var(--mg-bg); }
+.mock-top {
+  display: flex; align-items: center; gap: var(--mg-gap-2); flex-wrap: wrap;
+  padding-bottom: var(--mg-gap-2); border-bottom: 1px solid var(--mg-border);
+}
+.mock-crumb { display: flex; align-items: center; gap: 7px; color: var(--mg-muted); font-size: var(--mg-text-xs); }
+.mock-crumb strong { color: var(--mg-ink); }
+.mock-search {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  margin-left: auto; padding: 0 11px; height: 36px;
+  border: 1px solid var(--mg-border); border-radius: var(--mg-r-sm);
+  background: var(--mg-surface); color: var(--mg-muted); font-size: var(--mg-text-2xs);
+}
+.mock-search kbd {
+  padding: 2px 5px; border: 1px solid var(--mg-border); border-radius: 5px;
+  background: var(--mg-bg); font-family: inherit; font-size: 10px;
+}
+.mg-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 36px; padding: 0 14px;
+  border-radius: var(--mg-r-sm);
+  font-family: inherit; font-size: var(--mg-text-2xs); font-weight: 700;
+  text-decoration: none; cursor: pointer;
+}
+.mg-btn:hover { transform: translateY(-2px); }
+.mg-btn:active { transform: translateY(0); }
+.mg-btn-primary {
+  border: 1px solid var(--accent-base); color: #fff; background: var(--accent-base);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--accent-base) 24%, transparent);
+}
+.mg-btn-primary:hover { box-shadow: 0 14px 28px color-mix(in srgb, var(--accent-base) 34%, transparent); }
+.mg-btn-soft  { border: 1px solid var(--accent-line); color: var(--accent-ink); background: var(--accent-soft); }
+.mg-btn-ghost { border: 1px solid var(--mg-border-strong); color: var(--mg-ink); background: var(--mg-surface); }
+
+/* Hero */
+.mg-hero {
+  position: relative; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, 260px);
+  gap: var(--mg-gap-4); padding: 26px 28px;
+  border: 1px solid var(--accent-line); border-radius: var(--mg-r-xl);
+  background:
+    radial-gradient(circle at 84% 10%, var(--accent-soft), transparent 40%),
+    linear-gradient(140deg, var(--mg-surface), var(--mg-bg) 62%, var(--accent-soft));
+  box-shadow: var(--mg-e3);
+}
+.mg-hero::after {
+  position: absolute; right: -80px; bottom: -120px;
+  width: 280px; height: 280px; border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-base) 7%, transparent); content: '';
+}
+.mg-hero > * { position: relative; z-index: 1; }
+.mg-hero h3 {
+  margin: 12px 0 10px;
+  font-size: clamp(1.6rem, 2.2vw, 2.1rem); font-weight: 800;
+  line-height: 1.1; letter-spacing: -.04em;
+}
+.mg-hero-lead { max-width: 54ch; color: var(--mg-muted); font-size: var(--mg-text-sm); line-height: var(--mg-lh-base); }
+.mg-hero-actions { display: flex; flex-wrap: wrap; gap: var(--mg-gap-1); margin-top: 20px; }
+.mg-hero-signal {
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  gap: 5px; padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--mg-surface) 80%, var(--accent-line));
+  border-radius: var(--mg-r-lg);
+  background: color-mix(in srgb, var(--mg-surface) 74%, transparent);
+  backdrop-filter: blur(14px); box-shadow: var(--mg-e2);
+}
+.mg-hero-signal > span { color: var(--mg-muted); font-size: var(--mg-text-2xs); font-weight: 700; }
+.mg-hero-signal > strong {
+  font-size: 2.75rem; font-weight: 800; line-height: 1;
+  letter-spacing: -.05em; font-variant-numeric: tabular-nums;
+}
+.mg-hero-signal > p { color: var(--mg-ink-soft); font-size: var(--mg-text-2xs); line-height: var(--mg-lh-snug); }
+.mg-hero-signal > small { margin-top: 6px; color: var(--mg-muted); font-size: var(--mg-text-2xs); }
+
+.mg-metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--mg-gap-2); }
+
+.mock-split { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(240px, .8fr); gap: var(--mg-gap-2); align-items: start; }
+.mg-panel {
+  overflow: hidden; min-width: 0;
+  border: 1px solid var(--mg-border); border-radius: var(--mg-r-lg);
+  background: var(--mg-surface); box-shadow: var(--mg-e2);
+}
+.mg-panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--mg-gap-2);
+  padding: 13px var(--mg-gap-3); border-bottom: 1px solid var(--mg-border);
+}
+.mg-panel-head span { display: block; color: var(--mg-muted); font-size: var(--mg-text-2xs); font-weight: 700; }
+.mg-panel-head h4 { margin-top: 2px; font-size: var(--mg-text-lg); font-weight: 700; letter-spacing: -.02em; }
+.mg-panel-head a { color: var(--accent-ink); font-size: var(--mg-text-2xs); font-weight: 700; text-decoration: none; }
+.mg-panel-head a:hover { text-decoration: underline; }
+.mg-panel-body { display: grid; gap: var(--mg-gap-1); padding: var(--mg-gap-2); }
+
+.mg-task {
+  display: grid; grid-template-columns: 32px minmax(0, 1fr) 14px;
+  gap: 10px; align-items: center; width: 100%; text-align: left;
+  padding: 11px; border: 1px solid var(--mg-border); border-radius: var(--mg-r-sm);
+  background: var(--mg-surface); font: inherit; color: inherit; cursor: pointer;
+}
+.mg-task:hover { border-color: var(--accent-line); background: var(--accent-soft); transform: translateX(2px); }
+.mg-task-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--mg-r-sm); }
+.mg-task[data-tone='danger'] .mg-task-icon  { color: var(--mg-danger);  background: var(--mg-danger-soft); }
+.mg-task[data-tone='warning'] .mg-task-icon { color: var(--mg-warning); background: var(--mg-warning-soft); }
+.mg-task[data-tone='running'] .mg-task-icon { color: var(--mg-blue);    background: var(--mg-blue-soft); }
+.mg-task strong { display: block; font-size: var(--mg-text-xs); font-weight: 700; }
+.mg-task small { display: block; color: var(--mg-muted); font-size: var(--mg-text-2xs); font-variant-numeric: tabular-nums; }
+.mg-task svg { color: var(--mg-muted); }
+
+.mg-principle {
+  display: grid; gap: 5px; margin: 0 var(--mg-gap-2) var(--mg-gap-2);
+  padding: 14px; border: 1px solid var(--accent-line); border-radius: var(--mg-r-sm);
+  background: var(--accent-soft);
+}
+.mg-principle span { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-ink); font-size: var(--mg-text-2xs); font-weight: 800; }
+.mg-principle strong { font-size: var(--mg-text-xs); font-weight: 700; }
+.mg-principle p { color: var(--mg-muted); font-size: var(--mg-text-2xs); line-height: var(--mg-lh-snug); }
+
+/* --- token 速查表 --- */
+.token-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: var(--mg-gap-2); }
+.token-card {
+  display: grid; gap: var(--mg-gap-2); padding: var(--mg-gap-3);
+  border: 1px solid var(--mg-border); border-radius: var(--mg-r-lg);
+  background: var(--mg-surface); box-shadow: var(--mg-e1);
+}
+.token-card h4 { font-size: var(--mg-text-md); font-weight: 700; }
+.token-card h4 small { display: block; margin-top: 3px; color: var(--mg-muted); font-size: var(--mg-text-2xs); font-weight: 400; }
+.swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.swatch { display: grid; gap: 5px; }
+.swatch i { display: block; height: 40px; border-radius: var(--mg-r-sm); border: 1px solid var(--mg-border); }
+.swatch span { color: var(--mg-muted); font-size: 10px; font-weight: 600; }
+.type-rows { display: grid; gap: 7px; }
+.type-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--mg-gap-2); padding-bottom: 6px; border-bottom: 1px solid var(--mg-border); }
+.type-row:last-child { border-bottom: 0; }
+.type-row code { color: var(--mg-muted); font-size: 10px; font-family: ui-monospace, monospace; white-space: nowrap; }
+.radius-row { display: flex; align-items: flex-end; gap: 7px; }
+.radius-row div { display: grid; gap: 5px; justify-items: center; }
+.radius-row i { display: block; width: 42px; height: 42px; border: 1px solid var(--accent-line); background: var(--accent-soft); }
+.radius-row span { color: var(--mg-muted); font-size: 10px; }
+.elev-row { display: flex; gap: 10px; padding: 6px 2px 12px; }
+.elev-row div { display: grid; gap: 7px; justify-items: center; flex: 1; }
+.elev-row i { display: block; width: 100%; height: 40px; border-radius: var(--mg-r-sm); background: var(--mg-surface); border: 1px solid var(--mg-border); }
+.elev-row span { color: var(--mg-muted); font-size: 10px; }
+
+/* --- 落地清单 --- */
+.plan-table-wrap { overflow-x: auto; border: 1px solid var(--mg-border); border-radius: var(--mg-r-lg); background: var(--mg-surface); }
+table.plan { width: 100%; border-collapse: collapse; font-size: var(--mg-text-xs); }
+table.plan th, table.plan td { padding: 13px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--mg-border); }
+table.plan thead th {
+  color: var(--mg-muted); background: var(--mg-bg-sunken);
+  font-size: var(--mg-text-2xs); font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  white-space: nowrap;
+}
+table.plan tbody tr:last-child td { border-bottom: 0; }
+table.plan tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+table.plan td:first-child { font-weight: 700; white-space: nowrap; }
+table.plan code { font-family: ui-monospace, monospace; font-size: 11px; color: var(--accent-ink); }
+
+.doc-footer { padding: var(--mg-gap-5) 0 var(--mg-gap-6); border-top: 1px solid var(--mg-border); color: var(--mg-muted); font-size: var(--mg-text-2xs); }
+.doc-footer p + p { margin-top: 6px; }
+
+@media (max-width: 1080px) {
+  .diagnosis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mock-body { grid-template-columns: 1fr; }
+  .mock-side { display: none; }
+  .mock-split { grid-template-columns: 1fr; }
+  .mg-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .compare { grid-template-columns: 1fr; }
+  .mg-hero { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .diagnosis { grid-template-columns: 1fr; }
+  .mg-metric-grid { grid-template-columns: 1fr; }
+  .doc-header p { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="doc-header">
+  <div class="wrap doc-header-inner">
+    <div class="doc-mark">MC</div>
+    <div>
+      <h1>MediaClaw 工作台改造原型</h1>
+      <p>openclaw-media 前端美化方案 · 2026-08-26</p>
+    </div>
+    <div class="doc-header-actions">
+      <button class="chip" type="button" id="themeToggle" aria-pressed="false">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <span id="themeLabel">暗色</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= movement 1 : 诊断 ================= -->
+  <section class="movement wrap">
+    <div class="movement-head">
+      <p class="eyebrow">现状体检</p>
+      <h2>问题不是「不好看」，是「没有系统」</h2>
+      <p>
+        对 <strong>src/media/** 共 19,460 行 CSS</strong> 的静态扫描结果。
+        这四个数字不需要审美判断——它们本身就是结论。
+      </p>
+    </div>
+
+    <dl class="diagnosis">
+      <div class="diag" data-severity="high">
+        <dt>无过渡的悬停态</dt>
+        <dd>174<em> / 182</em></dd>
+        <p>182 个 <code>:hover</code>，只有 8 条 <code>transition</code>。鼠标划过时颜色 0ms 跳变——「廉价感」最直接的来源。</p>
+      </div>
+      <div class="diag" data-severity="high">
+        <dt>最常用正文字号</dt>
+        <dd>10.9<em> px</em></dd>
+        <p>出现 107 次。最小在用字号 8.5px。而 Hero 标题是 53px——比例失控到 5:1。</p>
+      </div>
+      <div class="diag" data-severity="mid">
+        <dt>散装字号种类</dt>
+        <dd>89<em> 种</em></dd>
+        <p>从 .53rem 到 3.35rem，没有可辨认的字阶。同一层级的文字在不同页面是不同大小。</p>
+      </div>
+      <div class="diag" data-severity="mid">
+        <dt>硬编码色值</dt>
+        <dd>132<em> 种</em></dd>
+        <p>分布在 200 处。4 个 Studio 页各自复制了一份 Hero CSS，只有色值不同。</p>
+      </div>
+    </dl>
+  </section>
+
+  <!-- ================= movement 2 : 对照 ================= -->
+  <section class="movement wrap">
+    <div class="movement-head">
+      <p class="eyebrow">核心论证</p>
+      <h2>同一段 HTML，只换一组 CSS 变量</h2>
+      <p>
+        下面左右两侧是<strong>逐字符相同的 DOM</strong>。唯一差别是左侧套了一层 <code>.legacy</code>，
+        把字阶、圆角、阴影、动效四组 token 换回代码库现在的真实数值。
+        <strong>这证明了改造不需要重写组件——只需要补一层 token。</strong>
+      </p>
+    </div>
+
+    <div class="compare">
+      <div class="compare-col" data-side="before">
+        <p class="compare-label"><strong>现状</strong> <span>正文 10.9px · 圆角 5px · 过渡 0ms</span></p>
+        <div class="compare-stage legacy" id="stageBefore"></div>
+        <div class="compare-note">
+          <b>问题</b>
+          <span>标题和正文几乎同重，扫读时抓不到层级；卡片边缘锐利、无投影，与背景黏在一起；悬停无反馈。</span>
+        </div>
+      </div>
+      <div class="compare-col" data-side="after">
+        <p class="compare-label"><strong>改造后</strong> <span>正文 14px · 圆角 12px · 过渡 190ms</span></p>
+        <div class="compare-stage" id="stageAfter"></div>
+        <div class="compare-note">
+          <b>改动</b>
+          <span>标题升到 17px/700，副文案 12px 收窄；进度条换成五段流水线轨道，当前阶段高亮；加封面缩略图与平台标——内容本身成为视觉主体。</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= movement 3 : token ================= -->
+  <section class="movement wrap">
+    <div class="movement-head">
+      <p class="eyebrow">Layer 0</p>
+      <h2>设计令牌速查</h2>
+      <p>
+        本页所有样式都由这一组 token 驱动。它已经落地为 <code>src/media/mediaDesignTokens.css</code>，
+        并把原先<strong>三处互相覆盖的 <code>:root</code></strong> 收敛成一处——
+        <code>media.css</code> 自己就有两个，第二个还把 <code>--mg-shell-topbar</code> 钉成 86px，
+        而约 20 个页面模块拿它算视口高度。
+      </p>
+    </div>
+
+    <div class="token-grid">
+      <div class="token-card">
+        <h4>语义色<small>浅色 / 暗色两套，随主题切换</small></h4>
+        <div class="swatches">
+          <div class="swatch"><i style="background:var(--mg-bg)"></i><span>bg</span></div>
+          <div class="swatch"><i style="background:var(--mg-surface)"></i><span>surface</span></div>
+          <div class="swatch"><i style="background:var(--mg-ink)"></i><span>ink</span></div>
+          <div class="swatch"><i style="background:var(--mg-muted)"></i><span>muted</span></div>
+          <div class="swatch"><i style="background:var(--mg-primary)"></i><span>primary</span></div>
+          <div class="swatch"><i style="background:var(--mg-warning)"></i><span>warning</span></div>
+          <div class="swatch"><i style="background:var(--mg-danger)"></i><span>danger</span></div>
+          <div class="swatch"><i style="background:var(--mg-blue)"></i><span>blue</span></div>
+        </div>
+      </div>
+
+      <div class="token-card">
+        <h4>模块 accent 族<small>替代 132 个硬编码 hex</small></h4>
+        <div class="swatches">
+          <div class="swatch"><i style="background:var(--mg-accent-studio-base)"></i><span>studio</span></div>
+          <div class="swatch"><i style="background:var(--mg-accent-campaign-base)"></i><span>campaign</span></div>
+          <div class="swatch"><i style="background:var(--mg-accent-business-base)"></i><span>business</span></div>
+          <div class="swatch"><i style="background:var(--mg-accent-desk-base)"></i><span>desk</span></div>
+          <div class="swatch"><i style="background:var(--mg-accent-studio-soft)"></i><span>-soft</span></div>
+          <div class="swatch"><i style="background:var(--mg-accent-campaign-soft)"></i><span>-soft</span></div>
+          <div class="swatch"><i style="background:var(--mg-accent-business-soft)"></i><span>-soft</span></div>
+          <div class="swatch"><i style="background:var(--mg-accent-desk-soft)"></i><span>-soft</span></div>
+        </div>
+      </div>
+
+      <div class="token-card">
+        <h4>字阶<small>8 级，替代 89 种散装字号</small></h4>
+        <div class="type-rows">
+          <div class="type-row"><span style="font-size:var(--mg-text-2xs)">角标 / 时间戳</span><code>--mg-text-2xs · 12px</code></div>
+          <div class="type-row"><span style="font-size:var(--mg-text-xs)">辅助说明</span><code>--mg-text-xs · 13px</code></div>
+          <div class="type-row"><span style="font-size:var(--mg-text-sm)">正文默认</span><code>--mg-text-sm · 14px</code></div>
+          <div class="type-row"><span style="font-size:var(--mg-text-lg);font-weight:700">卡片标题</span><code>--mg-text-lg · 17px</code></div>
+          <div class="type-row"><span style="font-size:var(--mg-text-2xl);font-weight:700">页面标题</span><code>--mg-text-2xl · 28px</code></div>
+        </div>
+      </div>
+
+      <div class="token-card">
+        <h4>圆角<small>6 级，替代 36 种</small></h4>
+        <div class="radius-row">
+          <div><i style="border-radius:var(--mg-r-xs)"></i><span>xs 6</span></div>
+          <div><i style="border-radius:var(--mg-r-sm)"></i><span>sm 8</span></div>
+          <div><i style="border-radius:var(--mg-r-md)"></i><span>md 12</span></div>
+          <div><i style="border-radius:var(--mg-r-lg)"></i><span>lg 16</span></div>
+          <div><i style="border-radius:var(--mg-r-xl)"></i><span>xl 22</span></div>
+        </div>
+      </div>
+
+      <div class="token-card">
+        <h4>高度层级<small>4 级，替代 49 种阴影</small></h4>
+        <div class="elev-row">
+          <div><i style="box-shadow:var(--mg-e1)"></i><span>e1</span></div>
+          <div><i style="box-shadow:var(--mg-e2)"></i><span>e2</span></div>
+          <div><i style="box-shadow:var(--mg-e3)"></i><span>e3</span></div>
+          <div><i style="box-shadow:var(--mg-e4)"></i><span>e4</span></div>
+        </div>
+      </div>
+
+      <div class="token-card">
+        <h4>动效<small>一条兜底规则覆盖 174 个悬停态</small></h4>
+        <div class="type-rows">
+          <div class="type-row"><span>颜色 / 边框</span><code>--mg-dur-1 · 120ms</code></div>
+          <div class="type-row"><span>阴影 / 位移</span><code>--mg-dur-2 · 190ms</code></div>
+          <div class="type-row"><span>抽屉 / 展开</span><code>--mg-dur-3 · 280ms</code></div>
+          <div class="type-row"><span>缓动</span><code>cubic-bezier(.2,.7,.3,1)</code></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= movement 4 : 工作台 ================= -->
+  <section class="movement wrap">
+    <div class="movement-head">
+      <p class="eyebrow">改造后</p>
+      <h2>今日工作台</h2>
+      <p>
+        默认落地页 <code>/today</code>。切换下面的模块色可以看到：
+        <strong>四个 Studio 页共用同一套组件</strong>，只靠祖先节点上的 <code>data-accent</code> 换色——
+        取代现在 4 份逐行复制的 Hero CSS。
+      </p>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:var(--mg-gap-2)" role="tablist" aria-label="模块配色">
+      <button class="chip" type="button" role="tab" data-accent-pick="studio"   aria-selected="true">Studio</button>
+      <button class="chip" type="button" role="tab" data-accent-pick="campaign" aria-selected="false">Campaigns</button>
+      <button class="chip" type="button" role="tab" data-accent-pick="business" aria-selected="false">Business</button>
+      <button class="chip" type="button" role="tab" data-accent-pick="desk"     aria-selected="false">Desk</button>
+    </div>
+
+    <div class="mock-frame" id="mockRoot" data-accent="studio">
+      <div class="mock-chrome">
+        <div class="mock-dots"><i></i><i></i><i></i></div>
+        <div class="mock-url">app.mediaclaw.cn/openclaw/media/today</div>
+      </div>
+
+      <div class="mock-body">
+        <aside class="mock-side">
+          <div class="mock-brand">
+            <div class="mock-brand-mark">MC</div>
+            <div><strong>MediaClaw</strong><span>AI 内容生产工作台</span></div>
+          </div>
+          <nav class="mock-nav-group" aria-label="核心工作区">
+            <h5>核心工作区</h5>
+            <a class="mg-nav-link" href="#today" aria-current="page">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+              <span><strong>今日工作台</strong><small>下一步与截止事项</small></span>
+              <b>7</b>
+            </a>
+            <a class="mg-nav-link" href="#studio">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+              <span><strong>Studio</strong><small>脚本、分镜与交付</small></span>
+            </a>
+            <a class="mg-nav-link" href="#campaigns">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              <span><strong>Campaigns</strong><small>活动与商单履约</small></span>
+              <b>3</b>
+            </a>
+            <a class="mg-nav-link" href="#business">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M15 9.5a3 3 0 0 0-3-1.5c-1.7 0-3 .9-3 2s1.3 2 3 2 3 .9 3 2-1.3 2-3 2a3 3 0 0 1-3-1.5"/></svg>
+              <span><strong>Business</strong><small>报价、档期与商机</small></span>
+            </a>
+            <a class="mg-nav-link" href="#desk">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8-4.9-3.6-4.9 3.6 1.9-5.8L4 8.8h6.1L12 3z"/></svg>
+              <span><strong>Desk</strong><small>情报、拆解与增长</small></span>
+            </a>
+          </nav>
+          <nav class="mock-nav-group" aria-label="资源与执行">
+            <h5>资源与执行</h5>
+            <a class="mg-nav-link" href="#assets">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <span><strong>素材库</strong><small>原始素材与证据</small></span>
+            </a>
+            <a class="mg-nav-link" href="#agent">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V4M8 2h8"/><circle cx="8.5" cy="14" r="1"/><circle cx="15.5" cy="14" r="1"/></svg>
+              <span><strong>Agent 任务</strong><small>本机执行与人工确认</small></span>
+              <b>2</b>
+            </a>
+          </nav>
+        </aside>
+
+        <div class="mock-main">
+          <div class="mock-top">
+            <p class="mock-crumb">MediaClaw <span>/</span> <strong>今日工作台</strong></p>
+            <div class="mock-search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <span>搜索 Studio、商单或素材…</span>
+              <kbd>⌘K</kbd>
+            </div>
+            <button class="mg-btn mg-btn-ghost" type="button">任务中心</button>
+            <button class="mg-btn mg-btn-primary" type="button">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              新建内容项目
+            </button>
+          </div>
+
+          <section class="mg-hero">
+            <div>
+              <p class="eyebrow">Creator Production Desk</p>
+              <h3>今天把内容推进到可交付</h3>
+              <p class="mg-hero-lead">从活动和商单 Brief 出发，持续维护可编辑脚本、分镜、拍摄单、返修版本与发布包。</p>
+              <div class="mg-hero-actions">
+                <button class="mg-btn mg-btn-primary" type="button">新建内容项目</button>
+                <button class="mg-btn mg-btn-soft" type="button">导入商单 Brief</button>
+                <button class="mg-btn mg-btn-ghost" type="button">打开 Agent 任务</button>
+              </div>
+            </div>
+            <div class="mg-hero-signal">
+              <span>今日推进信号</span>
+              <strong>7</strong>
+              <p>项内容、审核或发布事项等待处理</p>
+              <small>数据更新于 08-26 14:32</small>
+            </div>
+          </section>
+
+          <section class="mg-metric-grid" aria-label="关键指标"></section>
+
+          <div class="mock-split">
+            <section class="mg-panel">
+              <div class="mg-panel-head">
+                <div><span>正在推进</span><h4>内容项目</h4></div>
+                <a href="#overview">高级项目视图 →</a>
+              </div>
+              <div class="mg-panel-body" id="projectList"></div>
+            </section>
+
+            <aside class="mg-panel">
+              <div class="mg-panel-head">
+                <div><span>行动收件箱</span><h4>需要你处理</h4></div>
+                <a href="#tasks">全部</a>
+              </div>
+              <div class="mg-panel-body">
+                <button class="mg-task" type="button" data-tone="danger">
+                  <span class="mg-task-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.01"/></svg></span>
+                  <span><strong>秋冬护肤专场 · 品牌方返修意见</strong><small>等待确认 · 08-26 11:40</small></span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                </button>
+                <button class="mg-task" type="button" data-tone="warning">
+                  <span class="mg-task-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></span>
+                  <span><strong>通勤穿搭 EP.12 分镜待人工确认</strong><small>68% · 08-26 10:05</small></span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                </button>
+                <button class="mg-task" type="button" data-tone="running">
+                  <span class="mg-task-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3.5-7.1"/><path d="M21 4v5h-5"/></svg></span>
+                  <span><strong>咖啡探店合集 · 发布包生成中</strong><small>42% · 08-26 09:18</small></span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                </button>
+              </div>
+              <div class="mg-principle">
+                <span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  生产原则
+                </span>
+                <strong>人工修改优先，AI 只提交局部变更</strong>
+                <p>保留版本、来源与返修记录，避免每次修改都把整套内容推倒重来。</p>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= movement 5 : 落地 ================= -->
+  <section class="movement wrap">
+    <div class="movement-head">
+      <p class="eyebrow">已落地</p>
+      <h2>P0 全部完成，34 个文件</h2>
+      <p>
+        <code>media.css</code> 被 <code>checkMediaDesignSystemContract.ts</code> 以<strong>字面量正则</strong>断言保护，
+        因此走的是「增量加层」而非「重写」。实测结果：硬编码 hex <strong>132 → 0</strong>，
+        字号种类 <strong>89 → 6</strong>，WCAG AA 不合格文本 <strong>浅色 38 → 0、暗色 12 → 0</strong>，
+        <code>tsc</code> 错误数维持在既有的 7 个。
+      </p>
+    </div>
+
+    <div class="plan-table-wrap">
+      <table class="plan">
+        <thead>
+          <tr><th>批次</th><th>内容</th><th>状态</th><th>验收</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>B1</td>
+            <td>新建 <code>mediaDesignTokens.css</code>；删除 <code>mediaStudioTheme.css</code> 的重复 <code>:root</code>；接入全局动效兜底</td>
+            <td><span class="mg-badge" data-tone="success">已完成</span></td>
+            <td><code>qa:media-design-system-contract</code></td>
+          </tr>
+          <tr>
+            <td>B2</td>
+            <td>新建 <code>mediaPrimitives.css</code>；Studio 五页改用 <code>data-accent</code>，清空 132 个硬编码 hex</td>
+            <td><span class="mg-badge" data-tone="success">已完成</span></td>
+            <td><code>lint</code> + 契约</td>
+          </tr>
+          <tr>
+            <td>B3</td>
+            <td>字阶迁移 · 批次 1（Workboard / Campaigns / Business / Desk / MediaAgent）</td>
+            <td><span class="mg-badge" data-tone="success">已完成</span></td>
+            <td><code>qa:media-role-screens</code> 截图比对</td>
+          </tr>
+          <tr>
+            <td>B4</td>
+            <td>Hero 减重、顶栏暗色开关、胶囊 tab 替换方形 <code>.mode-switch</code></td>
+            <td><span class="mg-badge" data-tone="success">已完成</span></td>
+            <td><code>build:media</code></td>
+          </tr>
+          <tr>
+            <td>B5</td>
+            <td>字阶迁移 · 批次 2、3（含 Tracks / Assets / AdminAccess 等密集表格页）</td>
+            <td><span class="mg-badge" data-tone="success">已完成</span></td>
+            <td><code>build:all</code> + 人工逐页比对</td>
+          </tr>
+          <tr>
+            <td>B6</td>
+            <td>指标卡 sparkline、项目卡证据缩略图与平台标</td>
+            <td><span class="mg-badge" data-tone="warning">待后端</span></td>
+            <td>需后端 <code>counts7d</code> 就绪</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="doc-footer wrap">
+    <p>本页所有样式均由提案中的 token 驱动，可直接复制为 <code>src/media/mediaDesignTokens.css</code> 与 <code>src/media/mediaPrimitives.css</code>。</p>
+    <p>配套文档：<code>docs/frontend/openclaw-media-ui-beautification.md</code>　·　对标：<code>ValentinoWang/MediaClaw-Web</code></p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 主题切换 ---------- */
+  var root = document.documentElement;
+  var toggle = document.getElementById('themeToggle');
+  var label = document.getElementById('themeLabel');
+
+  function readStored() {
+    try { return localStorage.getItem('mg-proto-theme'); } catch (e) { return null; }
+  }
+  function writeStored(v) {
+    try { v ? localStorage.setItem('mg-proto-theme', v) : localStorage.removeItem('mg-proto-theme'); } catch (e) { /* 隐私模式 */ }
+  }
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function paint() {
+    var dark = isDark();
+    toggle.setAttribute('aria-pressed', String(dark));
+    label.textContent = dark ? '浅色' : '暗色';
+  }
+
+  var stored = readStored();
+  if (stored === 'dark' || stored === 'light') root.setAttribute('data-theme', stored);
+  paint();
+
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    writeStored(next);
+    paint();
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+    if (!root.getAttribute('data-theme')) paint();
+  });
+
+  /* ---------- 模块 accent 切换 ---------- */
+  var mock = document.getElementById('mockRoot');
+  var picks = document.querySelectorAll('[data-accent-pick]');
+  Array.prototype.forEach.call(picks, function (btn) {
+    btn.addEventListener('click', function () {
+      Array.prototype.forEach.call(picks, function (b) { b.setAttribute('aria-selected', 'false'); });
+      btn.setAttribute('aria-selected', 'true');
+      mock.setAttribute('data-accent', btn.dataset.accentPick);
+    });
+  });
+
+  /* ---------- 数据 ---------- */
+  var STAGES = ['脚本', '分镜', '拍摄', '剪辑', '发布'];
+
+  var PROJECTS = [
+    { title: '秋冬护肤专场 · 品牌合作短片', stage: 3, status: '返修中', tone: 'warning',
+      artifacts: 12, updated: '08-26 11:40', platforms: ['xhs', 'douyin'], glyph: '护' },
+    { title: '通勤穿搭 EP.12｜三件套通勤法', stage: 2, status: '拍摄待确认', tone: 'accent',
+      artifacts: 8, updated: '08-26 10:05', platforms: ['xhs'], glyph: '穿' },
+    { title: '城市咖啡探店合集 · 第二期', stage: 4, status: '发布包生成中', tone: 'accent',
+      artifacts: 21, updated: '08-26 09:18', platforms: ['douyin', 'wx'], glyph: '咖' },
+    { title: '年货节直播预热 · 口播脚本', stage: 1, status: '脚本已锁定', tone: 'success',
+      artifacts: 5, updated: '08-25 19:22', platforms: ['xhs', 'douyin', 'wx'], glyph: '年' }
+  ];
+
+  var METRICS = [
+    { label: '内容项目', value: 24, detail: '从 Brief 到发布', spark: [9, 11, 10, 14, 16, 19, 24],
+      icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 14h5"/>' },
+    { label: '创作运行', value: 61, detail: '脚本、分镜与交付', spark: [22, 30, 28, 41, 47, 52, 61],
+      icon: '<path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>' },
+    { label: '素材证据', value: 348, detail: '原始素材与拆解', spark: [180, 205, 240, 251, 288, 310, 348],
+      icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>' },
+    { label: '已发布作品', value: 17, detail: '等待持续复盘', spark: [4, 6, 7, 9, 12, 14, 17],
+      icon: '<path d="M20 7h-9M20 12H4M20 17h-9"/><circle cx="6" cy="7" r="2"/><circle cx="18" cy="17" r="2"/>' }
+  ];
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  /* 横向非等比缩放下，<circle> 会被拉成椭圆，因此端点强调交给面积渐变的收口，
+     而不是圆点；描边用 non-scaling-stroke 保持 2px 恒定。 */
+  var sparkSeq = 0;
+  function sparkline(points) {
+    if (!points || points.length < 2) return '';
+    var max = Math.max.apply(null, points);
+    var min = Math.min.apply(null, points);
+    var span = (max - min) || 1;
+    var id = 'mgSpark' + (++sparkSeq);
+    var line = points.map(function (p, i) {
+      var x = (i / (points.length - 1)) * 100;
+      var y = 34 - ((p - min) / span) * 26;
+      return x.toFixed(2) + ',' + y.toFixed(2);
+    }).join(' ');
+    return '<svg class="mg-metric-spark" viewBox="0 0 100 38" preserveAspectRatio="none" aria-hidden="true" focusable="false">'
+      + '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1">'
+      +   '<stop offset="0" stop-color="var(--accent-base)" stop-opacity=".26"/>'
+      +   '<stop offset="1" stop-color="var(--accent-base)" stop-opacity="0"/>'
+      + '</linearGradient></defs>'
+      + '<polygon points="0,38 ' + line + ' 100,38" fill="url(#' + id + ')"/>'
+      + '<polyline points="' + line + '" fill="none" stroke="var(--accent-base)" stroke-width="2"'
+      + ' stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'
+      + '</svg>';
+  }
+
+  function pipeline(currentIndex) {
+    return '<div class="mg-pipeline">' + STAGES.map(function (name, i) {
+      var state = i < currentIndex ? 'done' : i === currentIndex ? 'current' : 'todo';
+      return '<div class="mg-pipeline-step" data-state="' + state + '"><span>' + esc(name) + '</span></div>';
+    }).join('') + '</div>';
+  }
+
+  function projectCard(p) {
+    return '<article class="mg-card">'
+      + '<div class="mg-card-thumb" aria-hidden="true"><span style="font-size:var(--mg-text-lg);font-weight:800">' + esc(p.glyph) + '</span></div>'
+      + '<div class="mg-card-main">'
+      +   '<div class="mg-card-top">'
+      +     '<h4>' + esc(p.title) + '</h4>'
+      +     '<span class="mg-badge" data-tone="' + p.tone + '">' + esc(p.status) + '</span>'
+      +   '</div>'
+      +   pipeline(p.stage)
+      +   '<div class="mg-card-meta">'
+      +     '<span><b>' + p.artifacts + '</b> 个当前产物</span>'
+      +     '<span>更新于 <b>' + esc(p.updated) + '</b></span>'
+      +     '<span class="mg-platforms">' + p.platforms.map(function (x) {
+              return '<i data-p="' + x + '" title="' + x + '">' + (x === 'xhs' ? '书' : x === 'douyin' ? '抖' : '微') + '</i>';
+            }).join('') + '</span>'
+      +   '</div>'
+      + '</div>'
+      + '</article>';
+  }
+
+  function metricCard(m) {
+    return '<article class="mg-metric">'
+      + '<span class="mg-metric-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+      + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + m.icon + '</svg></span>'
+      + '<div class="mg-metric-body"><small>' + esc(m.label) + '</small><strong>' + m.value + '</strong><p>' + esc(m.detail) + '</p></div>'
+      + sparkline(m.spark)
+      + '</article>';
+  }
+
+  /* ---------- 渲染 ---------- */
+  document.querySelector('.mg-metric-grid').innerHTML = METRICS.map(metricCard).join('');
+  document.getElementById('projectList').innerHTML = PROJECTS.map(projectCard).join('');
+
+  /* 对照区：两侧注入完全相同的 HTML */
+  var sample = PROJECTS.slice(0, 2).map(projectCard).join('')
+    + '<div style="height:var(--mg-gap-1)"></div>'
+    + metricCard(METRICS[0]);
+  document.getElementById('stageBefore').innerHTML = sample;
+  document.getElementById('stageAfter').innerHTML = sample;
+}());
+</script>
+</body>
+</html>

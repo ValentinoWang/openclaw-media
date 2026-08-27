@@ -725,7 +725,7 @@ def test_upload_validates_content_deduplicates_and_becomes_consumed(tmp_path: Pa
                 "file_name": "source.txt",
                 "mime_type": "text/plain",
                 "local_path": upload_path,
-                "sha256": upload["sha256"],
+                "sha256": upload["sha256"].removeprefix("sha256:"),
             }
         ]
     finally:

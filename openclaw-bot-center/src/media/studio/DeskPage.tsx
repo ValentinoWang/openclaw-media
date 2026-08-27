@@ -60,7 +60,7 @@ const deskModules = [
 export default function DeskPage() {
   const { openWorkspace } = useMediaWeb()
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-accent="desk">
       <section className={styles.hero}>
         <div>
           <span><Sparkles size={15} />CONTENT INTELLIGENCE DESK</span>

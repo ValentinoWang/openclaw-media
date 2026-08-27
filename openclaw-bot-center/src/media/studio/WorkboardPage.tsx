@@ -110,7 +110,7 @@ export default function WorkboardPage() {
   const activeTasks = useMemo(() => tasks.filter((task) => !task.terminal).slice(0, 4), [tasks])
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-accent="studio">
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
           <span className={styles.eyebrow}><Sparkles size={15} />CREATOR PRODUCTION DESK</span>

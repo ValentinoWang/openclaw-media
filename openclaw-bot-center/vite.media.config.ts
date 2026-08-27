@@ -11,6 +11,9 @@ export default defineConfig({
     {
       name: 'media-index-name',
       closeBundle() {
+        // 构建失败时 vite 仍会触发 closeBundle；此时 dist-media 不存在，
+        // 这里的 copy/rename 会抛 ENOENT 并把真实构建错误顶掉。先行短路。
+        if (!existsSync(resolve(__dirname, 'dist-media'))) return
         const source = resolve(__dirname, 'dist-media/index.media.html')
         if (existsSync(source)) renameSync(source, resolve(__dirname, 'dist-media/index.html'))
         const loginSource = resolve(__dirname, 'dist-media/media.login.html')

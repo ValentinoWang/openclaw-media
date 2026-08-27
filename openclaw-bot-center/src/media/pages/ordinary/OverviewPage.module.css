@@ -3,7 +3,7 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 18px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
@@ -51,18 +51,18 @@
 }
 
 .metricCopy > span {
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .metricCopy > strong {
   margin: 4px 0 2px;
-  font-size: 1.45rem;
+  font-size: var(--mg-text-xl);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .metricCopy > small {
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .page {
@@ -78,10 +78,10 @@
   margin: -5px 0 18px;
   padding: 9px 12px;
   border: 1px solid var(--mg-warning);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-warning);
   background: var(--mg-warning-soft);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.4;
 }
 
@@ -111,11 +111,11 @@
   min-height: 28px;
   padding: 0 8px;
   border: 1px solid var(--mg-warning);
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-warning);
   background: var(--mg-surface);
   font: inherit;
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   cursor: pointer;
 }
 
@@ -175,10 +175,10 @@
   gap: 7px;
   padding: 8px 9px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.4;
 }
 
@@ -195,7 +195,7 @@
 .dashboardMetricGroup > h3 {
   margin: 0;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
 }
 
@@ -223,12 +223,12 @@
 
 .dashboardDetailItem span {
   color: var(--mg-muted);
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .dashboardDetailItem strong {
   color: var(--mg-ink);
-  font-size: 0.82rem;
+  font-size: var(--mg-text-md);
   font-variant-numeric: tabular-nums;
 }
 
@@ -255,13 +255,13 @@
 
 .countItem span {
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .countItem strong {
   margin-top: 5px;
   color: var(--mg-ink);
-  font-size: 1.05rem;
+  font-size: var(--mg-text-lg);
   font-variant-numeric: tabular-nums;
 }
 
@@ -287,12 +287,12 @@
 
 .stageItem span {
   color: var(--mg-muted);
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .stageItem strong {
   color: var(--mg-ink);
-  font-size: 0.85rem;
+  font-size: var(--mg-text-md);
   font-variant-numeric: tabular-nums;
 }
 
@@ -304,7 +304,7 @@
   padding-top: 11px;
   border-top: 1px solid var(--mg-border);
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .partialInline {
@@ -314,9 +314,9 @@
   gap: 7px;
   padding: 8px 9px;
   border: 1px solid var(--mg-warning);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-warning);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.4;
 }
 
@@ -346,11 +346,11 @@
   min-height: 32px;
   padding: 0 9px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-surface);
   font: inherit;
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
 }
 
 .searchControl input:focus,
@@ -431,7 +431,7 @@
 .projectItemCopy strong,
 .artifactCopy strong {
   color: var(--mg-ink);
-  font-size: 0.71rem;
+  font-size: var(--mg-text-sm);
 }
 
 .artifactCopy strong {
@@ -446,14 +446,14 @@
 .projectItemCopy small,
 .artifactCopy small {
   color: var(--mg-muted);
-  font-size: 0.6rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.35;
 }
 
 .projectItem time,
 .artifactMeta time {
   color: var(--mg-muted);
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -476,14 +476,14 @@
 .composerHeading h3 {
   margin: 0;
   color: var(--mg-ink);
-  font-size: 0.74rem;
+  font-size: var(--mg-text-sm);
 }
 
 .composerHeading p,
 .composerHeading > span {
   margin: 4px 0 0;
   color: var(--mg-muted);
-  font-size: 0.6rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
@@ -509,7 +509,7 @@
 
 .composerControls label > span {
   color: var(--mg-muted);
-  font-size: 0.6rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .composerControls button,
@@ -521,11 +521,11 @@
   gap: 5px;
   padding: 0 9px;
   border: 1px solid var(--mg-primary-dark);
-  border-radius: 5px;
-  color: white;
+  border-radius: var(--mg-r-sm);
+  color: var(--mg-on-primary);
   background: var(--mg-primary-dark);
   font: inherit;
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
   cursor: pointer;
 }
@@ -539,7 +539,7 @@
 .actionSuccess,
 .actionError {
   margin: 0;
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
@@ -627,7 +627,7 @@
   align-items: center;
   gap: 4px;
   color: var(--mg-primary-dark);
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -644,11 +644,11 @@
   gap: 4px;
   padding: 0 10px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
   font: inherit;
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.2;
   cursor: pointer;
   white-space: nowrap;
@@ -663,17 +663,17 @@
   justify-content: center;
   padding: 0 10px;
   border: 1px solid var(--mg-primary-dark);
-  border-radius: 4px;
-  color: white;
+  border-radius: var(--mg-r-xs);
+  color: var(--mg-on-primary);
   background: var(--mg-primary-dark);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
   text-decoration: none;
 }
 
 .artifactActions > .documentLink:hover {
   border-color: var(--mg-primary);
-  color: white;
+  color: var(--mg-on-primary);
   background: var(--mg-primary);
 }
 
@@ -701,13 +701,13 @@
 .documentPreviewHeader span {
   display: block;
   color: var(--mg-muted);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .documentPreviewHeader h3 {
   margin: 3px 0 0;
   color: var(--mg-ink);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -719,7 +719,7 @@
   gap: 9px;
   padding: 13px;
   border: 1px solid var(--mg-border);
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-muted);
   background: var(--mg-surface);
 }
@@ -736,11 +736,11 @@
 
 .documentUnavailable strong {
   color: var(--mg-ink);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
 }
 
 .documentUnavailable span {
-  font-size: 0.6rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
@@ -752,11 +752,11 @@
   gap: 4px;
   padding: 0 8px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
   font: inherit;
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -771,7 +771,7 @@
   gap: 9px;
   min-width: 0;
   color: var(--mg-ink);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.65;
   overflow-wrap: anywhere;
 }
@@ -793,13 +793,13 @@
 .documentBody h1,
 .documentBody h2,
 .documentBody h3 {
-  font-size: 0.76rem;
+  font-size: var(--mg-text-sm);
 }
 
 .documentBody h4,
 .documentBody h5,
 .documentBody h6 {
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .documentBody blockquote,
@@ -849,7 +849,7 @@
 .documentTodo span {
   flex: 0 0 auto;
   color: var(--mg-primary-dark);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .documentTableWrap {
@@ -969,7 +969,7 @@
 .headingTitle h2 {
   min-width: 0;
   margin: 0;
-  font-size: 0.94rem;
+  font-size: var(--mg-text-lg);
 }
 
 .headingTitle > span,
@@ -978,10 +978,10 @@
   min-height: 20px;
   align-items: center;
   padding: 0 6px;
-  border-radius: 10px;
+  border-radius: var(--mg-r-md);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -990,7 +990,7 @@
   margin: 4px 0 0;
   overflow: hidden;
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1003,7 +1003,7 @@
   align-items: center;
   gap: 4px;
   color: var(--mg-primary-dark);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   text-decoration: none;
 }
@@ -1061,21 +1061,21 @@
 
 .runTable thead th {
   color: var(--mg-muted);
-  background: color-mix(in srgb, var(--mg-bg) 68%, white);
-  font-size: 0.65rem;
+  background: color-mix(in srgb, var(--mg-bg) 68%, var(--mg-surface));
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   white-space: nowrap;
 }
 
 .runTable tbody th {
   color: var(--mg-ink);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
   font-weight: 650;
 }
 
 .runTable tbody td {
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .runTable tbody tr:last-child th,
@@ -1117,13 +1117,13 @@
 
 .notProvided {
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
 }
 
 .dateValue,
 .pendingTime {
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -1132,7 +1132,7 @@
   padding: 11px 16px;
   border-top: 1px solid var(--mg-border);
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .agentBody {
@@ -1148,10 +1148,10 @@
   gap: 7px;
   padding: 7px 9px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .catalogState > svg {
@@ -1194,12 +1194,12 @@
 .agentFacts span,
 .agentFacts small {
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .agentFacts strong {
   margin: 4px 0 2px;
-  font-size: 1.12rem;
+  font-size: var(--mg-text-xl);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1217,7 +1217,7 @@
 
 .subsectionHeading h3 {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .progressBlock {
@@ -1236,7 +1236,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--mg-ink);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1245,7 +1245,7 @@
 .progressMeta span {
   flex: 0 0 auto;
   color: var(--mg-ink);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1253,7 +1253,7 @@
   height: 5px;
   margin-top: 8px;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   background: var(--mg-border);
 }
 
@@ -1267,7 +1267,7 @@
 .taskPath {
   margin: 8px 0 0;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -1283,10 +1283,10 @@
   overflow: hidden;
   padding: 5px 7px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-primary-soft);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1297,7 +1297,7 @@
   padding-top: 10px;
   border-top: 1px solid var(--mg-border);
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.5;
 }
 
@@ -1325,9 +1325,9 @@
   gap: 5px;
   padding: 5px 1px;
   border: 1px solid transparent;
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
-  font-size: 0.54rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.25;
   text-align: center;
   text-decoration: none;
@@ -1406,7 +1406,7 @@
 .pendingTitle strong {
   min-width: 0;
   overflow: hidden;
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1414,7 +1414,7 @@
 .pendingCopy p {
   margin: 5px 0 3px;
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -1430,7 +1430,7 @@
   gap: 7px;
   align-items: baseline;
   margin: 5px 0;
-  font-size: 0.6rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -1449,7 +1449,7 @@
 .pendingPath {
   display: block;
   color: var(--mg-muted);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.35;
 }
 
@@ -1470,7 +1470,7 @@
   min-width: 0;
   flex: 1 1 220px;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.4;
 }
 
@@ -1481,8 +1481,8 @@
   gap: 5px;
   padding: 0 8px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
-  font-size: 0.62rem;
+  border-radius: var(--mg-r-sm);
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
   cursor: pointer;
 }
@@ -1518,7 +1518,7 @@
 .pendingActionError {
   flex: 1 0 100%;
   color: var(--mg-danger);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 600;
   line-height: 1.4;
 }
@@ -1540,7 +1540,7 @@
 .panelState {
   flex-direction: row;
   min-height: 160px;
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .panelState > svg {
@@ -1553,12 +1553,12 @@
 
 .panelEmpty > strong {
   color: var(--mg-ink);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .panelEmpty > span {
   max-width: 35ch;
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -1566,15 +1566,15 @@
 .compactEmpty {
   min-height: 72px;
   padding: 10px;
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .compactEmpty > strong {
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
 }
 
 .compactEmpty > span {
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .spin {
@@ -1705,7 +1705,7 @@
   }
 
   .metricCopy > strong {
-    font-size: 1.25rem;
+    font-size: var(--mg-text-xl);
   }
 
   .panelHeading {

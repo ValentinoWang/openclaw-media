@@ -42,25 +42,11 @@ for (const obsoleteId of [
 
 assert.match(assets, /\{ id: "(?:deconstruction|creation)", label:/, "ordinary tab ids are valid near misses, not capability launches");
 
-function resolveRegistryRoot(): string {
-  const configured = process.env.OPENCLAW_TAG_ROUTER_ROOT;
-  if (configured) return resolve(configured);
-  // `openclaw-tag-router/` is this repository's Tag Router source of truth;
-  // `../backend` is the layout used by the split-checkout deployment.
-  const candidates = ["../openclaw-tag-router", "../backend"].map((candidate) =>
-    resolve(process.cwd(), candidate),
-  );
-  const found = candidates.find((candidate) =>
-    existsSync(resolve(candidate, "openclaw_app/services/capability_registry.py")),
-  );
-  assert.ok(
-    found,
-    `Tag Router source not found. Set OPENCLAW_TAG_ROUTER_ROOT or check out one of: ${candidates.join(", ")}`,
-  );
-  return found;
-}
-
-const registryRoot = resolveRegistryRoot();
+// 仓库整合后 python 后端位于 ../openclaw-tag-router（旧布局是 ../backend）。
+const registryRoot = process.env.OPENCLAW_TAG_ROUTER_ROOT
+  ?? [resolve(process.cwd(), "../openclaw-tag-router"), resolve(process.cwd(), "../backend")]
+    .find((candidate) => existsSync(candidate))
+  ?? resolve(process.cwd(), "../openclaw-tag-router");
 const registryCatalog = JSON.parse(execFileSync(
   "python3",
   [

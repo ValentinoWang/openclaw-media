@@ -51,14 +51,14 @@
 
 .headingRow :global(.page-heading h1) {
   margin-bottom: 7px;
-  font-size: 1.55rem;
+  font-size: var(--mg-text-xl);
   line-height: 1.25;
 }
 
 .headingRow :global(.page-heading p) {
   max-width: 70ch;
   margin-bottom: 0;
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.55;
 }
 
@@ -73,8 +73,8 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border-radius: 6px;
-  font-size: 0.72rem;
+  border-radius: var(--mg-r-sm);
+  font-size: var(--mg-text-sm);
   font-weight: 650;
 }
 
@@ -82,7 +82,7 @@
   min-height: 40px;
   padding: 0 16px;
   border: 0;
-  color: white;
+  color: var(--mg-on-primary);
   background: var(--mg-primary-dark);
   cursor: pointer;
 }
@@ -138,7 +138,7 @@
   border-bottom: 2px solid transparent;
   color: var(--mg-muted);
   background: transparent;
-  font-size: 0.76rem;
+  font-size: var(--mg-text-sm);
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -166,7 +166,7 @@
 .tabPanel {
   min-width: 0;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
@@ -207,14 +207,14 @@
 
 .tabPanelHeader h2 {
   margin: 0;
-  font-size: 0.84rem;
+  font-size: var(--mg-text-md);
 }
 
 .tabPanelHeader p {
   margin: 4px 0 0;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .tabPanelBody {
@@ -239,7 +239,7 @@
   min-width: 0;
   gap: 5px;
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
 }
 
@@ -250,10 +250,10 @@
   height: 38px;
   padding: 0 10px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-surface);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .filterField select:disabled {
@@ -289,10 +289,10 @@
   gap: 5px;
   padding: 0 10px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   cursor: pointer;
 }
 
@@ -304,7 +304,7 @@
   border-bottom: 1px solid var(--mg-border);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -325,7 +325,7 @@
   margin-bottom: 12px;
   padding: 9px 12px 9px 14px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-primary-soft);
 }
 
@@ -342,12 +342,12 @@
   flex: 1 1 auto;
   row-gap: 4px;
   color: var(--mg-muted);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
 }
 
 .selectionSummary strong {
   color: var(--mg-primary-dark);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -392,7 +392,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
   transition:
     border-color 150ms ease,
@@ -436,7 +436,7 @@
   padding: 10px;
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   text-align: center;
 }
 
@@ -461,7 +461,7 @@
   height: 26px;
   place-items: center;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   background: rgb(255 255 255 / 92%);
   cursor: pointer;
 }
@@ -488,7 +488,7 @@
   border: 0;
   color: var(--mg-ink);
   background: transparent;
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
   font-weight: 700;
   line-height: 1.4;
   text-align: left;
@@ -500,7 +500,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--mg-ink);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.45;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -508,7 +508,7 @@
 
 .cardDate {
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -519,7 +519,7 @@
   justify-content: space-between;
   gap: 7px;
   color: var(--mg-muted);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .cardMeta > span {
@@ -541,7 +541,7 @@
   flex-wrap: wrap;
   gap: 7px;
   color: var(--mg-muted);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .cardPlatformIdentity {
@@ -552,7 +552,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--mg-muted);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -569,10 +569,10 @@
   overflow: hidden;
   padding: 2px 5px;
   border: 1px solid var(--mg-border);
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.56rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -608,14 +608,14 @@
 
 .inspectorHeader h2 {
   margin: 0;
-  font-size: 0.84rem;
+  font-size: var(--mg-text-md);
 }
 
 .inspectorHeader span {
   display: block;
   margin-top: 3px;
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .closeButton {
@@ -624,7 +624,7 @@
   height: 32px;
   place-items: center;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: transparent;
   cursor: pointer;
@@ -652,10 +652,10 @@
   justify-content: center;
   gap: 8px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   text-align: center;
 }
 
@@ -681,7 +681,7 @@
 .inspectorIdentity h3 {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 0.86rem;
+  font-size: var(--mg-text-md);
   line-height: 1.45;
 }
 
@@ -689,12 +689,12 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--mg-primary-dark);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .inspectorIdentity time {
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
 }
 
 .inspectorSection,
@@ -707,7 +707,7 @@
 .inspectorSection h4,
 .dangerZone h4 {
   margin: 0 0 9px;
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .inspectorList {
@@ -719,7 +719,7 @@
   grid-template-columns: 72px minmax(0, 1fr);
   gap: 8px;
   padding: 5px 0;
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.5;
 }
 
@@ -752,7 +752,7 @@
 
 .evidenceValue small {
   color: var(--mg-muted);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .relationBlock,
@@ -770,14 +770,14 @@
 .relationBlock > strong,
 .usageBlock > strong {
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
 }
 
 .relationBlock > p,
 .usageBlock > p {
   margin: 0;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .relationList {
@@ -790,7 +790,7 @@
   min-width: 0;
   padding: 8px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-bg);
 }
 
@@ -798,14 +798,14 @@
   margin: 0 0 4px;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
 .relationItem .inspectorList div {
   grid-template-columns: 64px minmax(0, 1fr);
   padding: 3px 0;
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .refList {
@@ -814,7 +814,7 @@
   margin: 0;
   padding-left: 17px;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .refList li {
@@ -848,14 +848,14 @@
 .actionNote {
   margin: 9px 0 0;
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.5;
 }
 
 .dangerZone p {
   margin: 0 0 10px;
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.55;
 }
 
@@ -909,7 +909,7 @@
   flex: 1;
   margin: 12px;
   border: 1px dashed var(--mg-border-strong);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-bg);
 }
 
@@ -935,7 +935,7 @@
 .tabPanelEmpty strong {
   margin-top: 11px;
   color: var(--mg-ink);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
 }
 
 .inspectorEmpty p,
@@ -943,7 +943,7 @@
 .tabPanelEmpty p {
   max-width: 48ch;
   margin: 6px 0 0;
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
 }
 
@@ -990,9 +990,9 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 7px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
-  box-shadow: 0 18px 60px rgb(15 23 42 / 24%);
+  box-shadow: var(--mg-e4);
 }
 
 .dialogHeader {
@@ -1006,13 +1006,13 @@
 .dialogHeader h2 {
   margin: 0;
   color: var(--mg-ink);
-  font-size: 1rem;
+  font-size: var(--mg-text-lg);
 }
 
 .dialogHeader p {
   margin: 5px 0 0;
   color: var(--mg-muted);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -1024,7 +1024,7 @@
   place-items: center;
   border-radius: 50%;
   color: var(--mg-danger);
-  background: color-mix(in srgb, var(--mg-danger) 10%, white);
+  background: color-mix(in srgb, var(--mg-danger) 10%, var(--mg-surface));
 }
 
 .dialogBody {
@@ -1038,7 +1038,7 @@
   align-items: center;
   gap: 10px;
   color: var(--mg-muted);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .dialogStatus div {
@@ -1049,11 +1049,11 @@
 .dialogStatus strong,
 .impactSummary {
   color: var(--mg-ink);
-  font-size: 0.76rem;
+  font-size: var(--mg-text-sm);
 }
 
 .dialogStatus span {
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
 }
 
 .impactSummary {
@@ -1067,10 +1067,10 @@
   margin: 14px 0 0;
   padding: 12px 12px 12px 28px;
   border: 1px solid color-mix(in srgb, var(--mg-danger) 28%, var(--mg-border));
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--mg-danger) 5%, white);
+  border-radius: var(--mg-r-sm);
+  background: color-mix(in srgb, var(--mg-danger) 5%, var(--mg-surface));
   color: var(--mg-ink);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
@@ -1078,7 +1078,7 @@
 .dialogError {
   margin: 14px 0 0;
   color: var(--mg-danger);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -1098,8 +1098,8 @@
   justify-content: center;
   gap: 6px;
   padding: 0 13px;
-  border-radius: 6px;
-  font-size: 0.7rem;
+  border-radius: var(--mg-r-sm);
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   cursor: pointer;
 }

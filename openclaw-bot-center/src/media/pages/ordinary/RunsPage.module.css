@@ -50,7 +50,7 @@
 .primaryAction {
   min-height: 38px;
   padding: 0 13px;
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .primaryAction:disabled {
@@ -75,7 +75,7 @@
   border-bottom: 2px solid transparent;
   color: var(--mg-muted);
   background: transparent;
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   font-weight: 650;
   cursor: pointer;
 }
@@ -114,7 +114,7 @@
   margin-bottom: 12px;
   overflow: hidden;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
@@ -128,12 +128,12 @@
 }
 
 .statusHeading strong {
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
 }
 
 .statusHeading span {
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.4;
 }
 
@@ -169,14 +169,14 @@
 .statusItem span:not(.statusDot) {
   overflow: hidden;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .statusItem strong {
   margin-top: 3px;
-  font-size: 1.02rem;
+  font-size: var(--mg-text-lg);
   font-variant-numeric: tabular-nums;
 }
 
@@ -198,7 +198,7 @@
   margin-bottom: 12px;
   padding: 7px 9px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
@@ -220,10 +220,10 @@
   height: 38px;
   padding: 0 12px 0 37px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-surface);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .searchField input::placeholder {
@@ -240,10 +240,10 @@
   height: 38px;
   padding: 0 9px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   cursor: not-allowed;
 }
 
@@ -259,16 +259,16 @@
   flex: 0 0 auto;
   padding: 0 10px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   cursor: pointer;
 }
 
 .submitButton {
-  color: white;
+  color: var(--mg-on-primary);
   border-color: var(--mg-primary-dark);
   background: var(--mg-primary-dark);
 }
@@ -299,7 +299,7 @@
   gap: 8px;
   padding: 30px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-surface);
   text-align: center;
@@ -321,7 +321,7 @@
 .emptyState h2 {
   margin: 0;
   color: var(--mg-ink);
-  font-size: 0.8rem;
+  font-size: var(--mg-text-md);
 }
 
 .readState .retryButton {
@@ -336,7 +336,7 @@
   max-width: 46ch;
   margin: 0 0 7px;
   color: var(--mg-muted);
-  font-size: 0.69rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
 }
 
@@ -350,7 +350,7 @@
 .statusLoading span {
   width: 74px;
   height: 22px;
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   background: var(--mg-bg);
   animation: pulse 1.4s ease-in-out infinite;
 }
@@ -388,7 +388,7 @@
 .inspector {
   overflow: hidden;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
@@ -420,12 +420,12 @@
 
 .tableHeader h2 {
   margin: 0;
-  font-size: 0.86rem;
+  font-size: var(--mg-text-md);
 }
 
 .tableHeader span {
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .tableScroll {
@@ -450,14 +450,14 @@
   padding: 10px 12px;
   border-bottom: 1px solid var(--mg-border);
   vertical-align: top;
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
 .table thead th {
   color: var(--mg-muted);
   background: oklch(0.985 0.003 175);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
   white-space: nowrap;
 }
@@ -535,7 +535,7 @@
 .runButton strong {
   margin-top: 5px;
   color: var(--mg-ink);
-  font-size: 0.69rem;
+  font-size: var(--mg-text-xs);
 }
 
 .runId {
@@ -543,7 +543,7 @@
   align-items: flex-start;
   gap: 5px;
   color: var(--mg-primary-dark);
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 550;
 }
 
@@ -578,8 +578,8 @@
   max-width: 100%;
   align-items: center;
   padding: 3px 6px;
-  border-radius: 4px;
-  font-size: 0.61rem;
+  border-radius: var(--mg-r-xs);
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
   line-height: 1.2;
   white-space: nowrap;
@@ -644,13 +644,13 @@
   display: block;
   margin-bottom: 6px;
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .inspectorHeading h2 {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 0.9rem;
+  font-size: var(--mg-text-lg);
   line-height: 1.35;
 }
 
@@ -660,7 +660,7 @@
   overflow-wrap: anywhere;
   color: var(--mg-muted);
   font-family: inherit;
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .closeButton {
@@ -671,7 +671,7 @@
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: transparent;
   cursor: pointer;
@@ -707,7 +707,7 @@
 
 .inspectorStatus > span:last-child {
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .inspectorFacts {
@@ -725,7 +725,7 @@
   gap: 9px;
   padding: 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
@@ -742,7 +742,7 @@
 .factCard h3 {
   margin: 0 0 4px;
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
 }
 
@@ -750,7 +750,7 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.69rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -766,7 +766,7 @@
 
 .extraFacts summary {
   color: var(--mg-primary-dark);
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   cursor: pointer;
 }
@@ -778,7 +778,7 @@
 
 .sectionPicker h3 {
   margin: 0 0 8px;
-  font-size: 0.74rem;
+  font-size: var(--mg-text-sm);
 }
 
 .sectionPicker > div {
@@ -796,10 +796,10 @@
   gap: 5px;
   padding: 0 8px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-surface);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   cursor: pointer;
 }
 
@@ -818,7 +818,7 @@
 .mutedCopy {
   margin: 0 0 2px;
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -826,7 +826,7 @@
   margin: 0 13px 12px;
   overflow: hidden;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
 }
 
 .deliveryResult > header {
@@ -843,7 +843,7 @@
 .deliveryResult h3,
 .deliveryResult > header span {
   margin: 0;
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
 }
 
 .deliveryResult > header span {
@@ -854,7 +854,7 @@
   margin: 0;
   padding: 11px;
   color: var(--mg-ink);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.6;
   white-space: pre-wrap;
 }
@@ -873,10 +873,10 @@
   gap: 5px;
   padding: 0 8px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
   text-decoration: none;
 }
@@ -895,7 +895,7 @@
   min-height: 26px;
   flex: 0 0 auto;
   padding: 0 6px;
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .deliveryParams {
@@ -918,7 +918,7 @@
 .deliveryParams dd {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.5;
 }
 
@@ -929,7 +929,7 @@
 .sectionResult {
   margin: 12px 13px 0;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   overflow: hidden;
 }
 
@@ -946,12 +946,12 @@
 
 .sectionResult > header h3 {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .sectionResult > header span {
   color: var(--mg-muted);
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .detailLink {
@@ -963,10 +963,10 @@
   margin: 14px 13px 15px;
   padding: 0 10px;
   border: 1px solid var(--mg-primary);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   text-decoration: none;
 }
@@ -994,12 +994,12 @@
 
 .inspectorEmpty strong {
   color: var(--mg-ink);
-  font-size: 0.77rem;
+  font-size: var(--mg-text-sm);
 }
 
 .inspectorEmpty span {
   max-width: 30ch;
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
 }
 
@@ -1023,14 +1023,14 @@
 
 .structuredList dt {
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .structuredList dd {
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
 }
 
 .structuredArray {
@@ -1042,7 +1042,7 @@
 .structuredArray li {
   padding-left: 2px;
   overflow-wrap: anywhere;
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
 }
 
 .longValue {
@@ -1074,7 +1074,7 @@
   gap: 8px;
   padding-bottom: 9px;
   border-bottom: 1px solid var(--mg-border);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
 }
 
 .sectionMeta span {
@@ -1100,7 +1100,7 @@
 .evidenceList h4 {
   margin: 0 0 7px;
   color: var(--mg-ink);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
 }
 
 .evidenceList {
@@ -1116,7 +1116,7 @@
   gap: 3px;
   padding: 8px 0;
   border-bottom: 1px solid var(--mg-border);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .evidenceItem:last-child {
@@ -1149,7 +1149,7 @@
   min-width: 0;
   padding: 9px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
@@ -1167,7 +1167,7 @@
   margin: 4px 0 0;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .decisionCard dl {
@@ -1183,13 +1183,13 @@
 
 .decisionCard dt {
   color: var(--mg-muted);
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .decisionCard dd {
   margin: 2px 0 0;
   overflow-wrap: anywhere;
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .artifactCard {
@@ -1198,7 +1198,7 @@
   justify-content: space-between;
   gap: 9px;
   margin-top: 7px;
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .artifactCard strong,
@@ -1210,7 +1210,7 @@
 .artifactCard strong {
   margin-top: 4px;
   color: var(--mg-ink);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
 }
 
 .artifactCard > span {
@@ -1225,7 +1225,7 @@
   gap: 4px;
   margin-left: 7px;
   color: var(--mg-primary-dark);
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -1242,7 +1242,7 @@
   gap: 7px;
   padding: 20px;
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   text-align: center;
 }
 
@@ -1256,7 +1256,7 @@
   margin-top: 4px;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 550;
 }
 

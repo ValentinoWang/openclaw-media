@@ -46,14 +46,57 @@
     },
     "task": {
       "type": "object", "additionalProperties": false,
-      "required": ["schemaVersion", "taskId", "requestId", "modelCalls", "capabilityId", "capabilityPath", "variantId", "params", "confirmationReceipt", "status", "terminal", "progress", "summary", "createdAt", "updatedAt", "confirmation", "result", "error", "eventCursor"],
+      "required": ["schemaVersion", "taskId", "requestId", "modelCalls", "capabilityId", "capabilityPath", "variantId", "params", "confirmationReceipt", "status", "settlementStage", "terminal", "progress", "summary", "createdAt", "updatedAt", "confirmation", "result", "error", "eventCursor"],
       "properties": {
         "schemaVersion": {"const": "media_web_task_v3"}, "taskId": {"type": "string"}, "requestId": {"type": "string"},
         "modelCalls": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["requestId", "usageId", "status", "updatedAt"], "properties": {"requestId": {"type": "string"}, "usageId": {"type": ["string", "null"]}, "status": {"enum": ["pending", "succeeded", "failed", "unknown_reconcile"]}, "updatedAt": {"type": "integer"}}}}, "capabilityId": {"type": "string"},
         "capabilityPath": {"type": "array", "minItems": 2, "maxItems": 3, "items": {"type": "string"}}, "variantId": {"type": "string"},
-        "params": {"type": "object", "additionalProperties": {"$ref": "#/$defs/value"}}, "confirmationReceipt": {"oneOf": [{"$ref": "#/$defs/confirmationReceipt"}, {"type": "null"}]}, "status": {"type": "string"}, "terminal": {"type": "boolean"},
+        "params": {"type": "object", "additionalProperties": {"$ref": "#/$defs/value"}}, "confirmationReceipt": {"oneOf": [{"$ref": "#/$defs/confirmationReceipt"}, {"type": "null"}]}, "status": {"type": "string"}, "settlementStage": {"type": "string"}, "terminal": {"type": "boolean"},
         "progress": {"type": "integer", "minimum": 0, "maximum": 100}, "summary": {"type": "string"}, "createdAt": {"type": "string"}, "updatedAt": {"type": "string"},
-        "confirmation": {"$ref": "#/$defs/confirmation"}, "result": {"oneOf": [{"$ref": "#/$defs/result"}, {"type": "null"}]}, "error": {"type": ["object", "null"]}, "eventCursor": {"type": "integer"}
+        "confirmation": {"$ref": "#/$defs/confirmation"}, "result": {"oneOf": [{"$ref": "#/$defs/result"}, {"type": "null"}]}, "error": {"oneOf": [{"$ref": "#/$defs/taskError"}, {"type": "null"}]}, "eventCursor": {"type": "integer"},
+        "accountBinding": {"oneOf": [{"$ref": "#/$defs/accountBinding"}, {"type": "null"}]}, "attempt": {"oneOf": [{"$ref": "#/$defs/attempt"}, {"type": "null"}]},
+        "readbacks": {"oneOf": [{"$ref": "#/$defs/readbacks"}, {"type": "null"}]}, "missingReadbacks": {"type": "array", "items": {"enum": ["database", "external", "web"]}},
+        "receipt": {"oneOf": [{"$ref": "#/$defs/settlementReceipt"}, {"type": "null"}]}
+      }
+    },
+    "taskError": {
+      "type": "object", "additionalProperties": true, "required": ["code", "message", "action"],
+      "properties": {"code": {"type": "string"}, "message": {"type": "string"}, "action": {"type": "string"}}
+    },
+    "accountBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["userPublicId", "ownedAccountPublicId", "relationshipRef", "platform", "normalizedAccount"],
+      "properties": {"userPublicId": {"type": "string"}, "ownedAccountPublicId": {"type": "string"}, "relationshipRef": {"type": "string"}, "platform": {"type": "string"}, "normalizedAccount": {"type": "string"}}
+    },
+    "attempt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["attemptId", "runnerId", "executorId", "status", "attemptNumber", "recoveryOfAttemptId"],
+      "properties": {
+        "attemptId": {"type": "string"}, "runnerId": {"type": "string"}, "executorId": {"type": "string"}, "status": {"type": "string"},
+        "attemptNumber": {"type": "integer", "minimum": 1}, "recoveryOfAttemptId": {"type": ["string", "null"]},
+        "startedAt": {"type": ["string", "null"]}, "heartbeatAt": {"type": ["string", "null"]}, "finishedAt": {"type": ["string", "null"]}
+      }
+    },
+    "readback": {
+      "type": "object", "additionalProperties": false, "required": ["status", "required", "applicability", "checkedAt"],
+      "properties": {"status": {"type": "string"}, "required": {"type": "boolean"}, "applicability": {"type": "object", "additionalProperties": true}, "checkedAt": {"type": ["string", "null"]}}
+    },
+    "readbacks": {
+      "type": "object", "additionalProperties": false, "required": ["database", "external", "web"],
+      "properties": {"database": {"$ref": "#/$defs/readback"}, "external": {"$ref": "#/$defs/readback"}, "web": {"$ref": "#/$defs/readback"}}
+    },
+    "settlementReceipt": {
+      "type": "object", "additionalProperties": false, "required": ["receiptId", "schemaVersion", "digest", "status", "createdAt"],
+      "properties": {"receiptId": {"type": "string"}, "schemaVersion": {"const": "media_e2e_receipt_v1"}, "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}, "status": {"type": "string"}, "createdAt": {"type": "string"}}
+    },
+    "upload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "uploadId", "filename", "mimeType", "size", "sha256", "status", "createdAt"],
+      "properties": {
+        "schemaVersion": {"const": "3"}, "uploadId": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,160}$"},
+        "filename": {"type": "string"}, "mimeType": {"type": "string"}, "size": {"type": "integer", "minimum": 0},
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}, "status": {"type": "string"}, "createdAt": {"type": "string"},
+        "parsing": {"type": "object", "additionalProperties": false, "required": ["status", "failureCode", "nextAction"], "properties": {"status": {"type": "string"}, "failureCode": {"type": "string"}, "nextAction": {"type": "string"}}}
       }
     },
     "error": {
@@ -61,5 +104,5 @@
       "properties": {"ok": {"const": false}, "error": {"type": "object", "additionalProperties": false, "required": ["code", "reason", "action"], "properties": {"code": {"type": "string"}, "reason": {"type": "string"}, "action": {"type": "string"}, "detail": {"type": "string"}}}}
       }
   },
-  "oneOf": [{"$ref": "#/$defs/createRequest"}, {"$ref": "#/$defs/task"}, {"$ref": "#/$defs/error"}]
+  "oneOf": [{"$ref": "#/$defs/createRequest"}, {"$ref": "#/$defs/task"}, {"$ref": "#/$defs/upload"}, {"$ref": "#/$defs/error"}]
 }

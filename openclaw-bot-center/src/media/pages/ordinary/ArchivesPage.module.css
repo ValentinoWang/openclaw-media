@@ -11,10 +11,10 @@
   flex: 0 0 auto;
   padding: 4px 8px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   white-space: nowrap;
 }
 
@@ -28,7 +28,7 @@
   margin-bottom: 14px;
   padding: 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 7px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
@@ -42,7 +42,7 @@
 .filterField > span,
 .dateField > span {
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
 }
 
 .filterField select,
@@ -51,10 +51,10 @@
   height: 38px;
   min-width: 0;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-surface);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .filterField select {
@@ -79,7 +79,7 @@
 
 .dateInputs > span {
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
 }
 
 .dateInputs input {
@@ -94,8 +94,8 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 5px;
-  font-size: 0.68rem;
+  border-radius: var(--mg-r-sm);
+  font-size: var(--mg-text-xs);
   font-weight: 650;
 }
 
@@ -144,7 +144,7 @@
   gap: 10px;
   padding: 9px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
 }
 .artifactList li span {
   display: grid;
@@ -157,11 +157,11 @@
 }
 .artifactList strong {
   color: var(--mg-ink);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
 }
 .artifactList small {
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .mainColumn {
@@ -178,7 +178,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--mg-border);
-  border-radius: 8px;
+  border-radius: var(--mg-r-md);
   background: var(--mg-surface);
 }
 
@@ -232,7 +232,7 @@
   height: 30px;
   flex: 0 0 30px;
   place-items: center;
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-primary-soft);
 }
@@ -241,7 +241,7 @@
 .dangerHeader h2 {
   margin: 0;
   color: var(--mg-ink);
-  font-size: 0.88rem;
+  font-size: var(--mg-text-md);
 }
 
 .panelHeader p,
@@ -249,7 +249,7 @@
   margin: 4px 0 0;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -278,7 +278,7 @@
 .table thead th {
   color: var(--mg-muted);
   background: oklch(0.985 0.003 175);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   white-space: nowrap;
 }
@@ -360,7 +360,7 @@
   gap: 7px;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.4;
 }
 
@@ -397,7 +397,7 @@
 .boundaryHeading {
   margin: 9px 0 0;
   color: var(--mg-ink);
-  font-size: 0.69rem;
+  font-size: var(--mg-text-xs);
 }
 
 .artifactIcon,
@@ -413,7 +413,7 @@
 .localMediaIcon {
   width: 29px;
   height: 29px;
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
 }
 
 .artifactCopy {
@@ -430,28 +430,28 @@
 
 .artifactCopy strong {
   color: var(--mg-ink);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
 }
 
 .artifactCopy small {
   color: var(--mg-muted);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.35;
 }
 
 .mutedValue {
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .localOnly {
   padding: 3px 6px;
   border: 1px solid oklch(0.82 0.08 166);
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-primary-dark);
   background: var(--mg-primary-soft);
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
   white-space: nowrap;
 }
 
@@ -493,7 +493,7 @@
   height: 30px;
   flex: 0 0 30px;
   place-items: center;
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-danger);
   background: var(--mg-danger-soft);
 }
@@ -502,7 +502,7 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.4;
 }
 
@@ -521,14 +521,14 @@
   gap: 6px;
   padding: 6px 5px;
   border: 1px solid oklch(0.91 0.04 25);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
 .impactIcon {
   width: 26px;
   height: 26px;
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-danger);
   background: var(--mg-danger-soft);
 }
@@ -547,12 +547,12 @@
 
 .impactItem strong {
   color: var(--mg-ink);
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .impactItem small {
   color: var(--mg-muted);
-  font-size: 0.57rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .dangerButton {
@@ -563,10 +563,10 @@
   justify-content: center;
   gap: 6px;
   border: 1px solid oklch(0.68 0.14 25);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-danger);
   background: transparent;
-  font-size: 0.69rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   cursor: not-allowed;
 }
@@ -603,7 +603,7 @@
 
 .receiptFacts dt {
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .receiptFacts dd {
@@ -614,7 +614,7 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -639,7 +639,7 @@
   height: 18px;
   flex: 0 0 18px;
   place-items: center;
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-primary-dark);
   background: var(--mg-primary-soft);
 }
@@ -679,24 +679,24 @@
   max-width: 34ch;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.75rem;
+  font-size: var(--mg-text-sm);
 }
 
 .stateSurface p {
   max-width: 48ch;
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
 }
 
 .stateSurface.compactState strong {
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .stateSurface.compactState p {
   max-width: 42ch;
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .loginLink,

@@ -22,7 +22,7 @@
   min-height: 112px;
   padding: 17px 16px;
   border: 1px solid var(--mg-border);
-  border-radius: 8px;
+  border-radius: var(--mg-r-md);
   background: var(--mg-surface);
 }
 
@@ -61,14 +61,14 @@
 
 .factCopy > span {
   color: var(--mg-muted);
-  font-size: 0.73rem;
+  font-size: var(--mg-text-sm);
 }
 
 .factCopy > strong {
   margin-top: 5px;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 1.25rem;
+  font-size: var(--mg-text-xl);
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
@@ -77,7 +77,7 @@
   margin-top: 5px;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.4;
 }
 
@@ -92,10 +92,10 @@
   margin: 0 0 12px;
   padding: 10px 12px;
   border: 1px solid oklch(0.86 0.08 75);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: oklch(0.49 0.11 65);
   background: var(--mg-warning-soft);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -127,7 +127,7 @@
   place-items: center;
   padding: 18px;
   border: 1px solid var(--mg-border);
-  border-radius: 8px;
+  border-radius: var(--mg-r-md);
   background: var(--mg-surface);
 }
 
@@ -160,7 +160,7 @@
 .rulesPanel {
   min-width: 0;
   border: 1px solid var(--mg-border);
-  border-radius: 8px;
+  border-radius: var(--mg-r-md);
   background: var(--mg-surface);
 }
 
@@ -180,20 +180,20 @@
 
 .panelHeader h2 {
   margin: 0;
-  font-size: 0.94rem;
+  font-size: var(--mg-text-lg);
 }
 
 .panelHeader p {
   margin: 5px 0 0;
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
 .recordCount {
   flex: 0 0 auto;
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -221,14 +221,14 @@
   text-align: left;
   vertical-align: top;
   overflow-wrap: anywhere;
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .table thead th {
   padding-top: 13px;
   padding-bottom: 11px;
   color: var(--mg-muted);
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   white-space: nowrap;
 }
@@ -271,7 +271,7 @@
   border-radius: 50%;
   color: var(--mg-ink);
   background: var(--mg-bg);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
 }
 
 .userText {
@@ -288,12 +288,12 @@
 
 .userText strong {
   color: var(--mg-ink);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .userText small {
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.35;
 }
 
@@ -306,8 +306,8 @@
   min-height: 24px;
   padding: 0 8px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
-  font-size: 0.64rem;
+  border-radius: var(--mg-r-sm);
+  font-size: var(--mg-text-xs);
   line-height: 1.35;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -332,7 +332,7 @@
   word-break: break-word;
   color: var(--mg-muted);
   font-family: inherit;
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.4;
   white-space: normal;
 }
@@ -342,7 +342,7 @@
   padding: 10px 16px 13px;
   border-top: 1px solid var(--mg-border);
   color: var(--mg-muted);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -355,7 +355,7 @@
   padding: 8px 14px;
   border-top: 1px solid var(--mg-border);
   color: var(--mg-muted);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
 }
 
 .paginationControls {
@@ -368,7 +368,7 @@
   min-width: 50px;
   color: var(--mg-ink);
   text-align: center;
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   font-weight: 600;
 }
 
@@ -380,7 +380,7 @@
   height: 34px;
   padding: 0;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-surface);
   cursor: pointer;
@@ -447,7 +447,7 @@
   display: block;
   margin-bottom: 7px;
   color: var(--mg-muted);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
 }
 
 .linkValue {
@@ -466,11 +466,11 @@
   overflow-wrap: anywhere;
   padding: 9px 11px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-surface);
   font-family: inherit;
-  font-size: 0.69rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
   white-space: normal;
 }
@@ -483,7 +483,7 @@
 
 .actionMessage {
   margin: 8px 0 0;
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -515,7 +515,7 @@
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -535,10 +535,10 @@
   gap: 6px;
   padding: 0 10px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-surface);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   cursor: pointer;
 }
 
@@ -554,7 +554,7 @@
   gap: 6px;
   margin: 15px 0 0;
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.5;
 }
 
@@ -571,7 +571,7 @@
 
 .rulesPanel h2 {
   margin: 0 0 12px;
-  font-size: 0.88rem;
+  font-size: var(--mg-text-md);
 }
 
 .rulesPanel ul {
@@ -580,7 +580,7 @@
   margin: 0;
   padding-left: 18px;
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
 }
 
@@ -593,7 +593,7 @@
   max-width: 100%;
   gap: 4px;
   color: var(--mg-muted);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
   text-align: center;
 }
@@ -606,7 +606,7 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.35;
 }
 

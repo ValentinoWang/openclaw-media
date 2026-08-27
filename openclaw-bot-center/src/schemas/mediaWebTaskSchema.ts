@@ -1,4 +1,4 @@
-// Generated from media_web_task.schema.json (sha256:06933aafb597cd6984be5c77f0098e631267d4be0e76624fb5e286a02ed8b466). Do not edit by hand.
+// Generated from media_web_task.schema.json (sha256:47ec597735d9c0fd37ad2e0f420b357ffe7d959f505592243630330e0b8fd9f5). Do not edit by hand.
 import { z } from 'zod'
 
 const taskValueSchema = z.union([z.string(), z.number(), z.boolean(), z.array(z.union([z.string(), z.number()])), z.null()])
@@ -51,40 +51,38 @@ const resultSchema = z.object({
 const modelCallSchema = z.object({
   requestId: z.string(), usageId: z.string().nullable(), status: z.enum(['pending', 'succeeded', 'failed', 'unknown_reconcile']), updatedAt: z.number().int(),
 }).strict()
-const settlementReadbackSchema = z.object({
-  status: z.string(), required: z.boolean(), applicability: z.record(z.string(), z.unknown()), checkedAt: z.string().nullable(),
-}).strict()
+const taskErrorSchema = z.object({
+  code: z.string(), message: z.string(), action: z.string(),
+}).catchall(z.unknown())
 const accountBindingSchema = z.object({
-  userPublicId: z.string(), ownedAccountPublicId: z.string(), relationshipRef: z.string(),
-  platform: z.string(), normalizedAccount: z.string(),
+  userPublicId: z.string(), ownedAccountPublicId: z.string(), relationshipRef: z.string(), platform: z.string(), normalizedAccount: z.string(),
 }).strict()
-const settlementAttemptSchema = z.object({
+const attemptSchema = z.object({
   attemptId: z.string(), runnerId: z.string(), executorId: z.string(), status: z.string(),
-  attemptNumber: z.number().int(), recoveryOfAttemptId: z.string().nullable(),
+  attemptNumber: z.number().int().min(1), recoveryOfAttemptId: z.string().nullable(),
   startedAt: z.string().nullable().optional(), heartbeatAt: z.string().nullable().optional(), finishedAt: z.string().nullable().optional(),
 }).strict()
+const readbackSchema = z.object({
+  status: z.string(), required: z.boolean(), applicability: z.record(z.string(), z.unknown()), checkedAt: z.string().nullable(),
+}).strict()
+const readbacksSchema = z.object({ database: readbackSchema, external: readbackSchema, web: readbackSchema }).strict()
 const settlementReceiptSchema = z.object({
-  receiptId: z.string(), schemaVersion: z.string(), digest: receiptDigestSchema, status: z.string(), createdAt: z.string(),
+  receiptId: z.string(), schemaVersion: z.literal('media_e2e_receipt_v1'), digest: receiptDigestSchema, status: z.string(), createdAt: z.string(),
 }).strict()
 export const mediaWebTaskSchema = z.object({
   schemaVersion: z.literal('media_web_task_v3'), taskId: z.string(), requestId: z.string(), modelCalls: z.array(modelCallSchema), capabilityId: z.string(), capabilityPath: z.array(z.string()).min(2).max(3),
-  variantId: z.string(), params: capabilityParamsSchema, status: z.string(), terminal: z.boolean(), progress: z.number().int().min(0).max(100),
+  variantId: z.string(), params: capabilityParamsSchema, status: z.string(), settlementStage: z.string(), terminal: z.boolean(), progress: z.number().int().min(0).max(100),
   summary: z.string(), createdAt: z.string(), updatedAt: z.string(), confirmationReceipt: confirmationReceiptSchema, confirmation: confirmationSchema, result: resultSchema.nullable(),
-  error: z.record(z.string(), z.unknown()).nullable(), eventCursor: z.number().int(),
-  // 结算投影：settlementStage 是任务读回状态的稳定表达；缺失的绑定 / 尝试 /
-  // 读回事实保持为空，不由前端伪造。
-  settlementStage: z.string(),
-  accountBinding: accountBindingSchema.nullable().optional(),
-  attempt: settlementAttemptSchema.nullable().optional(),
-  readbacks: z.object({ database: settlementReadbackSchema, external: settlementReadbackSchema, web: settlementReadbackSchema }).strict().nullable().optional(),
-  missingReadbacks: z.array(z.enum(['database', 'external', 'web'])).optional(),
+  error: taskErrorSchema.nullable(), eventCursor: z.number().int(),
+  accountBinding: accountBindingSchema.nullable().optional(), attempt: attemptSchema.nullable().optional(),
+  readbacks: readbacksSchema.nullable().optional(), missingReadbacks: z.array(z.enum(['database', 'external', 'web'])).optional(),
   receipt: settlementReceiptSchema.nullable().optional(),
 }).strict()
 
 export const mediaWebUploadSchema = z.object({
-  schemaVersion: z.literal('media_web_task_v3'), uploadId: z.string().regex(/^[A-Za-z0-9_-]{8,160}$/),
-  filename: z.string(), mimeType: z.string(), size: z.number().int().min(0),
-  sha256: z.string().regex(/^[a-f0-9]{64}$/), status: z.string(), createdAt: z.string(),
+  schemaVersion: z.literal('3'), uploadId: z.string().regex(/^[A-Za-z0-9_-]{8,160}$/), filename: z.string(), mimeType: z.string(),
+  size: z.number().int().nonnegative(), sha256: receiptDigestSchema, status: z.string(), createdAt: z.string(),
+  parsing: z.object({ status: z.string(), failureCode: z.string(), nextAction: z.string() }).strict().optional(),
 }).strict()
 
 export const mediaWebTaskErrorSchema = z.object({

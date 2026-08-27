@@ -87,3 +87,20 @@ accent   --mg-accent-{mint,violet,amber,blue}(+deep/soft) —— 四条业务闭
 
 验证入口：`npm run build:media`（其内部包含登录/注册合同、能力启动、设计系统合同、ordinary 呈现、缩略图、
 关系呈现、任务呈现、回执过期、删除恢复、确认安全、删除意图生命周期、tsc、vite build、release 标签）。
+
+## 4. 2026-08-27 两分支合流裁决
+
+同期存在两条前端美化分支，按以下裁决合并为一条（本分支）：
+
+| 维度 | `claude/openclaw-media-frontend-design-147q30` | `claude/frontend-ui-interaction-polish-0lywkr` | 采用 |
+| --- | --- | --- | --- |
+| Token 架构 | mediaDesignTokens.css 唯一真源 + mediaPrimitives.css 原语层，覆盖全部 26 个样式表；8 级字阶（最小 12px）、暗色双通道、逐元素实测 AA 对比度 | mediaStudioTheme.css 品牌层，覆盖壳层 + 四闭环页 | **147q30**（更系统） |
+| 任务契约 | 走生成器正路：media_web_task.schema.json + 生成器模板 + 重新生成 TS（该 TS 文件头明确 "Do not edit by hand"） | 直接手改生成文件（会被 `npm run build` 的生成器校验打回） | **147q30** |
+| 后端 / 验收修复 | 无 | Stage-2 路由、SessionPrincipal、会话投影、口令路由退役、可移植性、conftest 等全量 | **0lywkr** |
+| 登录链路品牌化 | 无 | media.auth.css（根 + src）+ 5 个 auth 页字体与主题色 | **0lywkr** |
+| 字体加载 | CSS 内 render-blocking `@import`（离线/弱网下阻塞首屏） | HTML 非阻塞 `<link media="print" onload>` | **0lywkr**（并取权重并集） |
+| Studio 表现力 | token 化但较克制 | 有机形 blob、`em` 高亮题词、指标卡分色、闭环卡 hover 位移 | **0lywkr** 细节以 token 安全方式回移 |
+| 上传投影 | 前端契约锁定 schemaVersion "3" + `sha256:` 前缀（checkMaterialParsing 冻结） | 服务端 `_project_upload` 旧形状 | 契约为准，**服务端对齐**（本次合并内完成） |
+
+合并后：`generateCapabilityMatchContract.py --check`、tsc、`build:media` 全链（含两个 Chromium 门禁与
+release 标签）、oxlint、受保护 Python 套件（12 套）与触及套件共 262 项全部通过；浅色与暗色两主题截图复验。

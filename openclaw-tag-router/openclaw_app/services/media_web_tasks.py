@@ -1279,13 +1279,16 @@ class MediaWebTaskService:
         _atomic_write_json(self._tenant_dir(self.uploads_dir, tenant_id) / f"{upload_id}.json", item)
 
     def _project_upload(self, item: Mapping[str, Any]) -> dict[str, Any]:
+        # The Media Web upload contract (media_web_task.schema.json /
+        # checkMaterialParsing.ts) is frozen to schemaVersion "3" with a
+        # sha256-prefixed digest; storage keeps the bare digest.
         return {
-            "schemaVersion": SCHEMA_VERSION,
+            "schemaVersion": "3",
             "uploadId": item["upload_id"],
             "filename": item["filename"],
             "mimeType": item["mime_type"],
             "size": item["size"],
-            "sha256": item["sha256"],
+            "sha256": f"sha256:{item['sha256']}",
             "status": item["status"],
             "createdAt": item["created_at"],
         }

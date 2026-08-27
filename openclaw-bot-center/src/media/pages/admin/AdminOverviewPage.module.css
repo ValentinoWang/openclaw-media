@@ -27,7 +27,7 @@
 
 .admin-overview-header h1 {
   margin: 0 0 6px;
-  font-size: 1.48rem;
+  font-size: var(--mg-text-xl);
   line-height: 1.25;
 }
 
@@ -35,14 +35,14 @@
   max-width: 70ch;
   margin: 0;
   color: var(--mg-muted);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.5;
 }
 
 .admin-eyebrow {
   margin: 0 0 5px;
   color: var(--mg-primary-dark);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 700;
 }
 
@@ -55,10 +55,10 @@
   gap: 6px;
   padding: 0 11px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   cursor: pointer;
 }
@@ -86,10 +86,10 @@
   margin-bottom: 14px;
   padding: 10px 13px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-surface);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .admin-error-state {
@@ -108,7 +108,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   border: 1px solid var(--mg-border);
-  border-radius: 8px;
+  border-radius: var(--mg-r-md);
   background: var(--mg-surface);
   margin-bottom: 18px;
 }
@@ -132,19 +132,19 @@
 
 .admin-metric span {
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .admin-metric strong {
   margin: 6px 0 4px;
-  font-size: 1.5rem;
+  font-size: var(--mg-text-xl);
   line-height: 1;
 }
 
 .admin-metric small {
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.6rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .admin-overview-grid {
@@ -174,7 +174,7 @@
   min-width: 0;
   overflow: visible;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
 }
 
@@ -190,13 +190,13 @@
 
 .admin-panel-heading h2 {
   margin: 0;
-  font-size: 0.86rem;
+  font-size: var(--mg-text-md);
 }
 
 .admin-panel-heading p {
   margin: 3px 0 0;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -214,7 +214,7 @@
   gap: 14px;
   padding: 12px 15px;
   border-bottom: 1px solid var(--mg-border);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -265,7 +265,7 @@
   padding: 11px 15px 11px 35px;
   border-bottom: 1px solid var(--mg-border);
   color: var(--mg-ink);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .admin-boundary-panel li:last-child {
@@ -291,7 +291,7 @@
   padding: 13px 15px;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .admin-unavailable-row svg {
@@ -332,7 +332,7 @@
 .admin-page-watermark {
   margin-top: 12px;
   color: var(--mg-muted);
-  font-size: 0.56rem;
+  font-size: var(--mg-text-2xs);
   text-align: right;
 }
 
@@ -428,10 +428,10 @@
   gap: 6px;
   padding: 0 11px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   cursor: pointer;
 }
@@ -461,10 +461,10 @@
   margin-bottom: 14px;
   padding: 10px 13px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-surface);
-  font-size: 0.72rem;
+  font-size: var(--mg-text-sm);
 }
 
 .admin-status-state.is-danger {
@@ -495,7 +495,7 @@
   padding: 13px 15px;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
 }
 
 .admin-empty-state svg {
@@ -539,7 +539,7 @@
 .admin-action-main strong {
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .admin-action-main span,
@@ -547,7 +547,7 @@
 .admin-action-meta time {
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -564,10 +564,10 @@
   align-items: center;
   padding: 2px 7px;
   border: 1px solid var(--mg-border);
-  border-radius: 999px;
+  border-radius: var(--mg-r-full);
   color: var(--mg-muted);
   background: var(--mg-surface-muted);
-  font-size: 0.6rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.35;
   white-space: normal;
 }
@@ -596,9 +596,9 @@
 
 .admin-action-status.is-degraded,
 .admin-service-status.is-degraded {
-  color: #8a5a00;
-  border-color: color-mix(in oklch, #b77700 30%, var(--mg-border));
-  background: color-mix(in oklch, #b77700 10%, var(--mg-surface));
+  color: var(--mg-warning);
+  border-color: color-mix(in oklch, var(--mg-warning) 30%, var(--mg-border));
+  background: color-mix(in oklch, var(--mg-warning) 10%, var(--mg-surface));
 }
 
 .admin-service-status.is-unknown,
@@ -611,7 +611,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
   text-align: right;
 }

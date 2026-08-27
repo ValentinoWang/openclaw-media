@@ -23,14 +23,14 @@
 
 .headingRow :global(.page-heading h1) {
   margin-bottom: 7px;
-  font-size: 1.55rem;
+  font-size: var(--mg-text-xl);
   line-height: 1.25;
 }
 
 .headingRow :global(.page-heading p) {
   max-width: 70ch;
   margin-bottom: 0;
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.55;
 }
 
@@ -42,8 +42,8 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border-radius: 6px;
-  font-size: 0.72rem;
+  border-radius: var(--mg-r-sm);
+  font-size: var(--mg-text-sm);
   font-weight: 650;
   text-decoration: none;
 }
@@ -67,7 +67,7 @@
   align-self: start;
   padding: 0 14px;
   border: 1px solid var(--mg-primary-dark);
-  color: white;
+  color: var(--mg-on-primary);
   background: var(--mg-primary-dark);
   cursor: pointer;
 }
@@ -140,7 +140,7 @@
   border-bottom: 2px solid transparent;
   color: var(--mg-muted);
   background: transparent;
-  font-size: 0.76rem;
+  font-size: var(--mg-text-sm);
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -163,10 +163,10 @@
   margin-top: 10px;
   padding: 9px 12px;
   border: 1px solid oklch(0.78 0.09 78);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: oklch(0.97 0.04 92);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -197,11 +197,11 @@
   min-height: 28px;
   padding: 0 8px;
   border: 1px solid var(--mg-warning);
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-warning);
   background: var(--mg-surface);
   font: inherit;
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   cursor: pointer;
 }
 
@@ -248,7 +248,7 @@
   min-height: 0;
   flex-direction: column;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
   overflow: hidden;
 }
@@ -282,7 +282,7 @@
 .panelTitle h2 {
   min-width: 0;
   margin: 0;
-  font-size: 0.84rem;
+  font-size: var(--mg-text-md);
   line-height: 1.35;
 }
 
@@ -290,7 +290,7 @@
   max-width: 48%;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.35;
   text-align: right;
 }
@@ -321,7 +321,7 @@
   gap: 8px;
   padding: 0 10px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-bg);
 }
@@ -334,7 +334,7 @@
   color: var(--mg-ink);
   background: transparent;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: var(--mg-text-xs);
 }
 
 .searchBox input::placeholder {
@@ -348,7 +348,7 @@
   gap: 3px;
   padding: 3px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-bg);
 }
 
@@ -361,11 +361,11 @@
   gap: 6px;
   padding: 0 9px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-muted);
   background: transparent;
   font: inherit;
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   font-weight: 650;
   white-space: nowrap;
   cursor: pointer;
@@ -385,10 +385,10 @@
 .filterCount {
   min-width: 18px;
   padding: 1px 5px;
-  border-radius: 9px;
+  border-radius: var(--mg-r-md);
   color: var(--mg-muted);
   background: var(--mg-border);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -407,10 +407,10 @@
   gap: 6px;
   padding: 0 5px 0 9px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-primary-soft);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
 }
 
 .contextFilter span {
@@ -424,7 +424,7 @@
   height: 24px;
   place-items: center;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: inherit;
   background: transparent;
   cursor: pointer;
@@ -461,7 +461,7 @@
   gap: 7px;
   padding: 13px 14px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-bg);
   text-align: left;
@@ -483,7 +483,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.75rem;
+  font-size: var(--mg-text-sm);
   font-weight: 700;
   line-height: 1.35;
 }
@@ -519,8 +519,8 @@
   justify-content: center;
   padding: 2px 7px;
   border: 1px solid transparent;
-  border-radius: 11px;
-  font-size: 0.58rem;
+  border-radius: var(--mg-r-md);
+  font-size: var(--mg-text-2xs);
   font-weight: 680;
   line-height: 1.2;
   white-space: nowrap;
@@ -555,7 +555,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--mg-muted);
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -583,7 +583,7 @@
   overflow: auto;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.68rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
   white-space: pre-wrap;
 }
@@ -606,7 +606,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 7px 14px;
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
@@ -674,7 +674,7 @@
   gap: 10px;
   padding: 13px 14px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: var(--mg-bg);
   font: inherit;
@@ -703,7 +703,7 @@
 .benchmarkRelations strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.4;
 }
 
@@ -717,10 +717,10 @@
 .statusWarning {
   padding: 9px 10px;
   border: 1px solid oklch(0.78 0.09 78);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-ink);
   background: oklch(0.97 0.04 92);
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.5;
 }
 
@@ -762,7 +762,7 @@
   border-radius: 50%;
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
-  font-size: 0.76rem;
+  font-size: var(--mg-text-sm);
   font-weight: 720;
 }
 
@@ -774,14 +774,14 @@
 }
 
 .identityCopy strong {
-  font-size: 0.76rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.35;
 }
 
 .scoreRow {
   margin-top: 9px;
   color: var(--mg-muted);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .inspectorBody {
@@ -798,7 +798,7 @@
   gap: 10px;
   padding: 7px 0;
   border-bottom: 1px solid var(--mg-border);
-  font-size: 0.64rem;
+  font-size: var(--mg-text-xs);
 }
 
 .fieldLabel {
@@ -886,13 +886,13 @@
 }
 
 .profileCopy > strong {
-  font-size: 0.82rem;
+  font-size: var(--mg-text-md);
   line-height: 1.4;
 }
 
 .profilePlatformRow {
   color: var(--mg-muted);
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
 }
 
 .profileRoleLabel {
@@ -921,14 +921,14 @@
 .trackInspectorHeader strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: 0.9rem;
+  font-size: var(--mg-text-lg);
   line-height: 1.35;
 }
 
 .trackInspectorHeader > span {
   flex: 0 0 auto;
   color: var(--mg-muted);
-  font-size: 0.6rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -954,7 +954,7 @@
 .inspectorSection > header h3 {
   margin: 0;
   color: var(--mg-ink);
-  font-size: 0.71rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.4;
 }
 
@@ -970,7 +970,7 @@
 .strategyNote p {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 0.65rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.6;
 }
 
@@ -992,10 +992,10 @@
 .tagList > span {
   padding: 4px 7px;
   border: 1px solid var(--mg-border);
-  border-radius: 4px;
+  border-radius: var(--mg-r-xs);
   color: var(--mg-muted);
   background: var(--mg-bg);
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.3;
 }
 
@@ -1006,7 +1006,7 @@
   gap: 9px;
   padding: 10px;
   border: 1px dashed var(--mg-border-strong);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-muted);
   background: var(--mg-bg);
 }
@@ -1024,7 +1024,7 @@
 .evidenceEmpty strong,
 .evidenceEmpty span {
   overflow-wrap: anywhere;
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.45;
 }
 
@@ -1042,11 +1042,11 @@
   justify-self: start;
   padding: 0 8px;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
   font: inherit;
-  font-size: 0.61rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
   text-decoration: none;
   cursor: pointer;
@@ -1070,7 +1070,7 @@
   gap: 7px;
   padding: 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-bg);
 }
 
@@ -1090,12 +1090,12 @@
 .relationshipEvidenceHeader strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
 }
 
 .relationshipMetrics {
   color: var(--mg-muted);
-  font-size: 0.58rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.4;
 }
 
@@ -1113,13 +1113,13 @@
   gap: 3px;
   padding: 8px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-bg);
 }
 
 .metric span {
   color: var(--mg-muted);
-  font-size: 0.57rem;
+  font-size: var(--mg-text-2xs);
   line-height: 1.35;
 }
 
@@ -1127,13 +1127,13 @@
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
-  font-size: 0.67rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.4;
 }
 
 .metricEmphasized strong {
   color: var(--mg-primary-dark);
-  font-size: 0.84rem;
+  font-size: var(--mg-text-md);
 }
 
 .roleBreakdown {
@@ -1148,7 +1148,7 @@
   gap: 10px;
   padding: 6px 0;
   border-bottom: 1px solid var(--mg-border);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .roleBreakdown > div:last-child {
@@ -1182,7 +1182,7 @@
   color: var(--mg-primary-dark);
   background: transparent;
   font: inherit;
-  font-size: 0.63rem;
+  font-size: var(--mg-text-2xs);
   font-weight: 650;
   cursor: pointer;
 }
@@ -1196,7 +1196,7 @@
   width: 100%;
   min-width: 300px;
   border-collapse: collapse;
-  font-size: 0.59rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .coverageTable th,
@@ -1226,13 +1226,13 @@
 .strategyNote {
   padding: 9px;
   border: 1px solid var(--mg-border);
-  border-radius: 5px;
+  border-radius: var(--mg-r-sm);
   background: var(--mg-bg);
 }
 
 .strategyNote strong {
   color: var(--mg-ink);
-  font-size: 0.62rem;
+  font-size: var(--mg-text-2xs);
 }
 
 .strategyNote p {
@@ -1271,7 +1271,7 @@
 
 .surfaceState strong {
   color: var(--mg-ink);
-  font-size: 0.78rem;
+  font-size: var(--mg-text-sm);
   line-height: 1.4;
 }
 
@@ -1279,7 +1279,7 @@
   max-width: 38ch;
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 0.66rem;
+  font-size: var(--mg-text-xs);
   line-height: 1.55;
 }
 
@@ -1289,7 +1289,7 @@
   height: 38px;
   place-items: center;
   border: 1px solid var(--mg-border-strong);
-  border-radius: 6px;
+  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
   background: var(--mg-bg);
 }
@@ -1297,7 +1297,7 @@
 .loginLink {
   margin-top: 10px;
   padding: 0 13px;
-  color: white;
+  color: var(--mg-on-primary);
   background: var(--mg-primary-dark);
 }
 
