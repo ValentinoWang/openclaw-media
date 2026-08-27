@@ -42,8 +42,8 @@ def validate_xhs_draft(content_type: str, draft: dict[str, Any]) -> ValidationRe
         issues.append(ValidationIssue("title", "小红书标题必须不超过 20 个字符"))
     if not title:
         issues.append(ValidationIssue("title", "小红书标题不能为空"))
-    if len(tags) != 10:
-        issues.append(ValidationIssue("tags", "小红书 Tags 必须正好 10 个"))
+    if not 5 <= len(tags) <= 10:
+        issues.append(ValidationIssue("tags", "小红书 Tags 需要 5-10 个强相关标签，不为凑数硬造"))
     if content_type == "图文" and not _list_value(draft.get("image_script")):
         issues.append(ValidationIssue("image_script", "小红书图文必须有图片脚本"))
     if content_type == "视频" and not _list_value(draft.get("storyboard")):
@@ -57,8 +57,8 @@ def validate_douyin_draft(content_type: str, draft: dict[str, Any]) -> Validatio
     tags = _list_value(draft.get("tags"))
     if not title:
         issues.append(ValidationIssue("title", "抖音标题不能为空"))
-    if len(tags) != 5:
-        issues.append(ValidationIssue("tags", "抖音 Tags 必须正好 5 个"))
+    if not 3 <= len(tags) <= 5:
+        issues.append(ValidationIssue("tags", "抖音 Tags 需要 3-5 个强相关标签，不为凑数硬造"))
     if content_type == "视频":
         if not str(draft.get("hook_3s") or "").strip():
             issues.append(ValidationIssue("hook_3s", "抖音视频必须有前 3 秒钩子"))
