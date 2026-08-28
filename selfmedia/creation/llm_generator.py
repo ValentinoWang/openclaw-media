@@ -143,8 +143,8 @@ def build_creation_prompt(
         "14. 每个 script_options 项都必须保留 activity_fit_reason、viral_reference_reason、inspiration_reference_reason 作为机器字段：写清用了哪个候选 id、迁移了哪一层、落到哪个镜头/页面/台词/封面/评论引导；没采用的来源要在 risks_or_missing_info 或 rejected_option_summaries 说明原因。活动只能约束发布/投稿/话题，不得硬改内容核心；爆款只能给结构和节奏，不得给事实；灵感和账号记忆优先决定内容事实与表达边界；洞察卡必须标为 insight-card reference，并在证据附录保留卡片路径/状态和风险边界。\n"
         f"15. 必须先评估多个创作方向，再把 2-5 个完整脚本放入 script_options；score > {CREATION_SCORE_THRESHOLD} 是高分方案，score <= {CREATION_SCORE_THRESHOLD} 也必须保留为可选方案，不得因为未达门槛而不给完整脚本。\n"
         f"16. script_options 最少 2 个、最多 5 个；如果没有方案超过 {CREATION_SCORE_THRESHOLD} 分，也必须输出至少 2 个评分最高且可执行的完整方案，并在风险中说明未达门槛的原因。\n"
-        f"17. 每个 script_options 项必须包含 option_id、score、score_breakdown、title、angle、score_reason、selected_*_ids、activity_fit_reason、viral_reference_reason、inspiration_reference_reason、risk_level、risks_or_missing_info、tags、final_copy、image_script、carousel、hook_3s、storyboard、voiceover、subtitles、production_checklist、review_plan。score_reason 对所有方案都写评分理由；未达 {CREATION_SCORE_THRESHOLD} 的方案要写“未达门槛的原因 + 为什么仍可作为备选执行”。\n"
-        "18. score_breakdown 固定 7 项：evidence_grounding(20)、platform_fit(15)、audience_pain(15)、creative_angle(15)、execution_completeness(15)、reference_integration(15)、risk_control(5)。score 必须等于这 7 项之和。\n"
+        f"17. 每个 script_options 项必须包含 option_id、score_breakdown、title、angle、score_reason、selected_*_ids、activity_fit_reason、viral_reference_reason、inspiration_reference_reason、risk_level、risks_or_missing_info、tags、final_copy、image_script、carousel、hook_3s、storyboard、voiceover、subtitles、production_checklist、review_plan。score_reason 对所有方案都写评分理由；未达 {CREATION_SCORE_THRESHOLD} 的方案要写“未达门槛的原因 + 为什么仍可作为备选执行”。\n"
+        "18. score_breakdown 固定 7 项：evidence_grounding(20)、platform_fit(15)、audience_pain(15)、creative_angle(15)、execution_completeness(15)、reference_integration(15)、risk_control(5)。总分由程序对分项求和，不要重复输出 score。\n"
         "19. script_options 初稿后必须输出 editor_pass。editor_pass 是同一次 LLM 输出里的苛刻总编二改阶段，必须检查：是否像真实内容而不是方案、是否有具体画面/动作/台词、是否有平庸表达、是否证据链污染执行稿、推荐方案改了哪些句子。"
         "editor_pass 还必须做去 AI 腔检查并把结论写进 blandness_risks：final_copy、voiceover、title、封面字、置顶评论里不得出现『首先/其次/最后』连用、『总之』『综上』『值得一提的是』『不难发现』『让我们一起』式套话、连续三个以上排比句、每句结尾都用感叹号、与账号无关的网络热词堆叠；口播每句尽量不超过 22 个字，允许口语连接词和自然的不完整句，写完要能直接读出口不别扭。"
         "editor_pass 完成后，必须把所有可执行修订直接写回 recommended_option_id 指向的 script_options 项；该项是唯一的可执行定稿，不能只改顶层字段。"
@@ -154,7 +154,7 @@ def build_creation_prompt(
         "22. 必须输出 candidate_match_assessments，对被选中的爆款和创作灵感给出 0-100 匹配分、分项和 selection_reason。"
         "candidate_match_assessments 固定是 object，且必须只包含两个数组字段：viral 和 inspiration；即使没有已选参考，也必须输出 \"viral\": [] 和 \"inspiration\": []。"
         "每个 selected_viral_ids 中的 id 都必须在 candidate_match_assessments.viral 里有一项；每个 selected_inspiration_ids 中的 id 都必须在 candidate_match_assessments.inspiration 里有一项。"
-        "每项固定结构为 {id, score, score_breakdown, selection_reason}；不得把 viral 或 inspiration 输出成 object、字符串或按 id 分组的 map。"
+        "每项固定结构为 {id, score_breakdown, selection_reason}；总分由程序对分项求和；不得把 viral 或 inspiration 输出成 object、字符串或按 id 分组的 map。"
         "爆款分项固定为 request_fit(40)、content_value(20)、transferability(25)、evidence_completeness(15)。"
         "灵感分项固定为 request_fit(35)、inspiration_quality(25)、transferability(25)、evidence_and_risk(15)。"
         "selected_viral_ids、selected_inspiration_ids 只是采用关系，不是满分依据；不得输出 LLM选择爆款=100 或 LLM选择创作灵感=100 作为评分。\n"
@@ -181,7 +181,7 @@ def build_creation_prompt(
         "topic_strategy 字段必须包含：target_audience, pain_point, content_angle, single_problem, self_check。\n\n"
         "usable_material_brief 字段必须包含：execution_brief, source_mapping, usage_boundaries。\n"
         "editor_pass 字段必须包含：recommended_option_id, blandness_risks, revisions_applied, final_recommendation_reason。\n\n"
-        "candidate_match_assessments 示例结构：{\"viral\":[{\"id\":\"候选id\",\"score\":84,\"score_breakdown\":{\"request_fit\":34,\"content_value\":16,\"transferability\":22,\"evidence_completeness\":12},\"selection_reason\":\"可迁移的开头结构\"}],\"inspiration\":[{\"id\":\"候选id\",\"score\":86,\"score_breakdown\":{\"request_fit\":30,\"inspiration_quality\":22,\"transferability\":22,\"evidence_and_risk\":12},\"selection_reason\":\"落到起跑前镜头\"}]}。\n\n"
+        "candidate_match_assessments 示例结构：{\"viral\":[{\"id\":\"候选id\",\"score_breakdown\":{\"request_fit\":34,\"content_value\":16,\"transferability\":22,\"evidence_completeness\":12},\"selection_reason\":\"可迁移的开头结构\"}],\"inspiration\":[{\"id\":\"候选id\",\"score_breakdown\":{\"request_fit\":30,\"inspiration_quality\":22,\"transferability\":22,\"evidence_and_risk\":12},\"selection_reason\":\"落到起跑前镜头\"}]}。\n\n"
         "report_mode 由程序注入，不要输出。\n"
         "creator_report 固定结构：{overview, opening_3s, mainline, storyboard, publishing_pack, material_checklist, risk_controls, evidence_appendix}。"
         "overview 包含 recommended_topic, core_sentence, platform, content_type, suitable_activity, strongly_recommend_activity, biggest_risk。"
@@ -569,8 +569,8 @@ def _normalize_script_options(
         if option_id in seen:
             raise ValueError(f"script_options option_id 重复：{option_id}")
         seen.add(option_id)
-        option["score"] = _coerce_option_score(option.get("score"))
-        option["score_breakdown"] = _normalize_score_breakdown(option.get("score_breakdown"), option["score"])
+        option["score_breakdown"] = _normalize_score_breakdown(option.get("score_breakdown"))
+        option["score"] = sum(option["score_breakdown"].values())
         for key in SCRIPT_OPTION_LIST_FIELDS:
             option[key] = _as_string_list(option.get(key)) if key != "storyboard" else _as_list(option.get(key))
         option["hook_3s"] = str(option.get("hook_3s") or "").strip()
@@ -592,17 +592,7 @@ def _normalize_script_options(
     return sorted(options, key=lambda item: int(item["score"]), reverse=True)
 
 
-def _coerce_option_score(value: Any) -> int:
-    try:
-        score = int(value)
-    except (TypeError, ValueError):
-        raise ValueError("script_options.score 必须是整数或可转整数") from None
-    if score < 0 or score > 100:
-        raise ValueError("script_options.score 必须在 0-100")
-    return score
-
-
-def _normalize_score_breakdown(value: Any, score: int) -> dict[str, int]:
+def _normalize_score_breakdown(value: Any) -> dict[str, int]:
     if not isinstance(value, dict):
         raise ValueError("script_options.score_breakdown 必须是 object")
     normalized: dict[str, int] = {}
@@ -616,8 +606,6 @@ def _normalize_score_breakdown(value: Any, score: int) -> dict[str, int]:
         if item < 0 or item > max_score:
             raise ValueError(f"script_options.score_breakdown.{key} 必须在 0-{max_score}")
         normalized[key] = item
-    if sum(normalized.values()) != score:
-        raise ValueError("script_options.score 必须等于 score_breakdown 之和")
     return normalized
 
 
@@ -660,8 +648,8 @@ def _normalize_candidate_match_assessments(
             if item_id in seen:
                 raise ValueError(f"candidate_match_assessments.{kind}.id 重复：{item_id}")
             seen.add(item_id)
-            score = _coerce_match_score(item.get("score"), f"candidate_match_assessments.{kind}.score")
-            breakdown = _normalize_match_breakdown(item.get("score_breakdown"), score, limits, f"candidate_match_assessments.{kind}.score_breakdown")
+            breakdown = _normalize_match_breakdown(item.get("score_breakdown"), limits, f"candidate_match_assessments.{kind}.score_breakdown")
+            score = sum(breakdown.values())
             selection_reason = str(item.get("selection_reason") or "").strip()
             if not selection_reason:
                 raise ValueError(f"candidate_match_assessments.{kind}.selection_reason 不能为空")
@@ -680,17 +668,7 @@ def _normalize_candidate_match_assessments(
     return normalized
 
 
-def _coerce_match_score(value: Any, path: str) -> int:
-    try:
-        score = int(value)
-    except (TypeError, ValueError):
-        raise ValueError(f"{path} 必须是整数或可转整数") from None
-    if score < 0 or score > 100:
-        raise ValueError(f"{path} 必须在 0-100")
-    return score
-
-
-def _normalize_match_breakdown(value: Any, score: int, limits: dict[str, int], path: str) -> dict[str, int]:
+def _normalize_match_breakdown(value: Any, limits: dict[str, int], path: str) -> dict[str, int]:
     if not isinstance(value, dict):
         raise ValueError(f"{path} 必须是 object")
     normalized: dict[str, int] = {}
@@ -704,8 +682,6 @@ def _normalize_match_breakdown(value: Any, score: int, limits: dict[str, int], p
         if item < 0 or item > max_score:
             raise ValueError(f"{path}.{key} 必须在 0-{max_score}")
         normalized[key] = item
-    if sum(normalized.values()) != score:
-        raise ValueError(f"{path} 之和必须等于 score")
     return normalized
 
 
@@ -940,13 +916,29 @@ def call_creation_json(
         settings,
         max_retries=1,
         error_prefix="Codex Responses 创作输出 JSON 校验失败",
-        instructions=(
-            "你是 OpenClaw Media 的中文自媒体创作大脑。输出协议是严格 JSON：只输出一个合法 JSON object，"
-            "不要 Markdown，不要解释。但 JSON 字段里的中文要像该账号的真人创作者写出来的话——"
-            "有具体画面和口语节奏，不用书面套话，不写机器口吻的总结句。"
-        ),
+        instructions=_creation_role_instructions(validation_contract),
         validation_contract=validation_contract,
         validation_context=validation_context,
+    )
+
+
+def _creation_role_instructions(validation_contract: str) -> str:
+    roles = {
+        "selfmedia.creation.request_inference.v1": "需求解析员，只提取用户明确表达或可直接推导的创作条件，不补写文案。",
+        "selfmedia.creation.platform_fit.v1": "平台策略编辑，依据平台机制和现有证据给出适配判断，不虚构数据。",
+        "selfmedia.creation.platform_note.v1": "平台资料编辑，把现有机制整理成简洁、可执行的创作提示。",
+        "selfmedia.creation.consultation.v1": "创作咨询同事，用自然中文回答当前选择和缺口，不写报告腔。",
+        "selfmedia.creation.shooting_request.v1": "拍摄需求解析员，只整理本轮拍摄目标、条件和限制。",
+        "selfmedia.creation.shooting_plan.v1": "拍摄导演，把已确认的创作方案转成现场可执行镜头和动作。",
+        "selfmedia.creation.shooting_narrative_plan.v1": "叙事导演，检查镜头顺序、节奏和信息递进。",
+        "selfmedia.creation.shooting_backwash_review.v1": "审稿编辑，只判断修改是否落实且是否引入新风险。",
+        "selfmedia.creation.draft.v1": "中文自媒体主编，基于给定证据产出可直接拍摄和发布的方案。",
+    }
+    role = roles.get(validation_contract, "中文内容编辑，严格按当前任务和证据工作。")
+    return (
+        f"你是 OpenClaw Media 的{role}"
+        "输出协议是严格 JSON：只输出一个合法 JSON object，不要 Markdown，不要解释。"
+        "用户可见字段使用自然中文；机器字段遵守约定枚举。"
     )
 
 

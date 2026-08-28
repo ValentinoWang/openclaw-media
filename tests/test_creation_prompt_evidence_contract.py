@@ -1,8 +1,12 @@
 from selfmedia.creation.llm_generator import (
     _compact_candidates,
+    _creation_role_instructions,
     _validate_insight_card_reference_boundary,
+    validate_llm_draft_payload,
 )
 from selfmedia.creation.platform_fit import _truncate_nested
+from selfmedia.creation.request_parser import CreationRequest
+from test_creation_v1 import _multi_option_payload, _script_option
 
 
 def test_viral_candidate_compaction_keeps_shot_and_production_evidence() -> None:
@@ -44,3 +48,35 @@ def test_platform_fit_truncation_reports_omitted_key_count() -> None:
     assert compacted["_truncated_keys"] == 5
     assert "field_29" in compacted
     assert "field_30" not in compacted
+
+
+def test_scores_are_derived_from_breakdowns_instead_of_model_arithmetic() -> None:
+    payload = _multi_option_payload([_script_option(score=91), _script_option("opt_2", score=88)])
+    payload["script_options"][0]["score"] = 1
+    payload["candidate_match_assessments"]["viral"][0]["score"] = 1
+    request = CreationRequest(platform="抖音", content_type="视频", track="体育", topic="跑步", publish_time="2026-08-29 20:00")
+
+    validated = validate_llm_draft_payload(
+        payload,
+        request,
+        candidate_ids={
+            "selected_activity_ids": {"act1"},
+            "selected_viral_ids": {"vir1"},
+            "selected_inspiration_ids": {"ins1"},
+            "selected_business_ids": set(),
+        },
+    )
+
+    assert validated["script_options"][0]["score"] == 91
+    assert validated["candidate_match_assessments"]["viral"][0]["score"] == 84
+
+
+def test_creation_roles_follow_validation_contract_responsibility() -> None:
+    request_role = _creation_role_instructions("selfmedia.creation.request_inference.v1")
+    shooting_role = _creation_role_instructions("selfmedia.creation.shooting_plan.v1")
+    review_role = _creation_role_instructions("selfmedia.creation.shooting_backwash_review.v1")
+
+    assert "需求解析员" in request_role
+    assert "拍摄导演" in shooting_role
+    assert "审稿编辑" in review_role
+    assert len({request_role, shooting_role, review_role}) == 3
