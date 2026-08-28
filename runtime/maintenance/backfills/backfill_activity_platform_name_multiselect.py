@@ -4,16 +4,17 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import sys
 from pathlib import Path
 from typing import Any
 
 
-ROOT = Path("/home/ubuntu")
-SELFMEDIA_ROOT = ROOT / "selfmedia-tools"
-REMINDER_PATH = ROOT / "openclaw-feishu-reminder/reminder.py"
-ACTIVITY_CONFIG_PATH = ROOT / "openclaw-feishu-reminder/wiki-activity-config.json"
+SELFMEDIA_ROOT = Path(__file__).resolve().parents[3]
+REMINDER_ROOT = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_ROOT") or Path.home() / "openclaw-feishu-reminder")
+REMINDER_PATH = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_SCRIPT") or REMINDER_ROOT / "reminder.py")
+ACTIVITY_CONFIG_PATH = Path(os.getenv("OPENCLAW_ACTIVITY_CONFIG_PATH") or REMINDER_ROOT / "wiki-activity-config.json")
 if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 

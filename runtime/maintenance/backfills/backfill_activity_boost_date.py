@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import sys
 from datetime import datetime, timedelta
@@ -13,10 +14,10 @@ from urllib.parse import unquote
 from zoneinfo import ZoneInfo
 
 
-ROOT = Path("/home/ubuntu")
-REMINDER_PATH = ROOT / "openclaw-feishu-reminder/reminder.py"
-ACTIVITY_CONFIG_PATH = ROOT / "openclaw-feishu-reminder/wiki-activity-config.json"
-DAILY_CONFIG_PATH = ROOT / "openclaw-feishu-reminder/config.json"
+REMINDER_ROOT = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_ROOT") or Path.home() / "openclaw-feishu-reminder")
+REMINDER_PATH = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_SCRIPT") or REMINDER_ROOT / "reminder.py")
+ACTIVITY_CONFIG_PATH = Path(os.getenv("OPENCLAW_ACTIVITY_CONFIG_PATH") or REMINDER_ROOT / "wiki-activity-config.json")
+DAILY_CONFIG_PATH = Path(os.getenv("OPENCLAW_DAILY_CONFIG_PATH") or REMINDER_ROOT / "config.json")
 TIMEZONE = "Asia/Shanghai"
 
 

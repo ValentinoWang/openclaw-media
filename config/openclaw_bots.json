@@ -12,7 +12,7 @@
       "reset_archive_retention": "14d"
     },
     "codex_app_server": {
-      "command": "/home/ubuntu/.nvm/versions/node/v22.22.2/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex",
+      "command": "codex",
       "args": [
         "app-server",
         "--listen",
@@ -50,38 +50,38 @@
     "main": {
       "provider": "openclaw_codex",
       "agent": "feishu-main",
-      "cwd": "/home/ubuntu/openclaw-agents/main",
+      "cwd": "${OPENCLAW_AGENTS_ROOT}/main",
       "model_tier": "B"
     },
     "daily": {
       "provider": "openclaw_codex",
       "agent": "feishu-daily",
-      "cwd": "/home/ubuntu/openclaw-agents/daily",
+      "cwd": "${OPENCLAW_AGENTS_ROOT}/daily",
       "model_tier": "A"
     },
     "deepmath": {
       "provider": "openclaw_codex",
       "agent": "deepmath-office",
-      "cwd": "/home/ubuntu/openclaw-agents/deepmath",
+      "cwd": "${OPENCLAW_AGENTS_ROOT}/deepmath",
       "runtime_config": ".openclaw-deepmath/openclaw.json",
       "model_tier": "A"
     },
     "knowledge": {
       "provider": "openclaw_codex",
       "agent": "feishu-knowledge",
-      "cwd": "/home/ubuntu/openclaw-agents/knowledge",
+      "cwd": "${OPENCLAW_AGENTS_ROOT}/knowledge",
       "model_tier": "B"
     },
     "media": {
       "provider": "openclaw_codex",
       "agent": "feishu-media",
-      "cwd": "/home/ubuntu/openclaw-agents/media",
+      "cwd": "${OPENCLAW_AGENTS_ROOT}/media",
       "model_tier": "C"
     },
     "social": {
       "provider": "openclaw_codex",
       "agent": "feishu-social",
-      "cwd": "/home/ubuntu/openclaw-agents/social",
+      "cwd": "${OPENCLAW_AGENTS_ROOT}/social",
       "model_tier": "B"
     }
   },
@@ -166,8 +166,8 @@
       "api_key": "codex_auth_file",
       "api_type": "openclaw_agent",
       "timeout": 1800,
-      "bin": "/home/ubuntu/.nvm/versions/node/v22.22.2/bin/openclaw",
-      "codex_home": "/home/ubuntu/.codex"
+      "bin": "openclaw",
+      "codex_home": "${OPENCLAW_CODEX_HOME}"
     }
   }
 }

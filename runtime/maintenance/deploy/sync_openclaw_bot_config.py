@@ -20,15 +20,19 @@ REPO_CONFIG = Path(
     os.getenv("OPENCLAW_BOTS_CONFIG")
     or REPO_ROOT / "config/openclaw_bots.json"
 )
-OBSIDIAN_DIR = Path("/home/ubuntu/obsidian-日记/openclaw配置")
+OBSIDIAN_VAULT_ROOT = Path(os.getenv("OPENCLAW_OBSIDIAN_VAULT_ROOT") or Path.home() / "obsidian-日记")
+OBSIDIAN_DIR = Path(os.getenv("OPENCLAW_OBSIDIAN_CONFIG_DIR") or OBSIDIAN_VAULT_ROOT / "openclaw配置")
 OBSIDIAN_CONFIG = OBSIDIAN_DIR / "openclaw_bots.json"
 OBSIDIAN_NOTE = OBSIDIAN_DIR / "OpenClaw Bot LLM 配置.md"
-PUBLIC_KNOWLEDGE_DIR = Path("/home/ubuntu/obsidian-日记/公共知识库")
+PUBLIC_KNOWLEDGE_DIR = Path(os.getenv("OPENCLAW_PUBLIC_KNOWLEDGE_DIR") or OBSIDIAN_VAULT_ROOT / "公共知识库")
 LLM_USAGE_SSOT_NOTE = PUBLIC_KNOWLEDGE_DIR / "OpenClaw Bot LLM 使用矩阵 SSOT.md"
 SYNC_STATE = OBSIDIAN_DIR / ".openclaw_bots_sync_state.json"
-MAC_OBSIDIAN_DIR = "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/openclaw配置"
-MAC_PUBLIC_KNOWLEDGE_DIR = "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/公共知识库"
-SYNC_AGENT_MODELS = REPO_ROOT / "runtime/maintenance/deploy/sync_openclaw_agent_models.py"
+MAC_OBSIDIAN_DIR = os.getenv("OPENCLAW_MAC_OBSIDIAN_CONFIG_DIR", "").strip()
+MAC_PUBLIC_KNOWLEDGE_DIR = os.getenv("OPENCLAW_MAC_PUBLIC_KNOWLEDGE_DIR", "").strip()
+SYNC_AGENT_MODELS = Path(
+    os.getenv("OPENCLAW_SYNC_AGENT_MODELS_SCRIPT")
+    or Path(__file__).with_name("sync_openclaw_agent_models.py")
+)
 DUPLICATE_NOTE_PATTERNS = (
     "OpenClaw Bot LLM 配置 [0-9]*.md",
     "OpenClaw Bot LLM 配置.sync-conflict-*.md",
@@ -47,7 +51,7 @@ PROFILE_USAGE_ROWS = (
         "usage": "【归档】【补全】【认知】【学习】【学习-整理】普通知识委托",
         "callers": "openclaw-tag-router/openclaw_app/router/knowledge_delegate.py",
         "surface": "profile_config/profile_runtime('knowledge_delegate') -> openclaw agent",
-        "state": "唯一转交 feishu-knowledge；认证来自 OpenClaw 对 /home/ubuntu/.codex/auth.json 的 OAuth 投影。",
+        "state": "唯一转交 feishu-knowledge；认证来自 OpenClaw 对 ~/.codex/auth.json 的 OAuth 投影。",
     },
     {
         "profile": "transcription_postprocess",
@@ -361,11 +365,11 @@ def render_note(payload: dict[str, Any], repo_hash: str, obsidian_hash: str) -> 
             "## Sync",
             "",
             "```bash",
-            f"python3 {Path(__file__).resolve()}",
-            f"python3 {Path(__file__).resolve()} --direction obsidian-to-repo",
-            f"python3 {Path(__file__).resolve()} --direction repo-to-obsidian",
-            f"python3 {SYNC_AGENT_MODELS}",
-            f"python3 {REPO_ROOT / 'runtime/maintenance/deploy/deploy_openclaw_runtime.py'}",
+            "python3 runtime/maintenance/deploy/sync_openclaw_bot_config.py",
+            "python3 runtime/maintenance/deploy/sync_openclaw_bot_config.py --direction obsidian-to-repo",
+            "python3 runtime/maintenance/deploy/sync_openclaw_bot_config.py --direction repo-to-obsidian",
+            "python3 runtime/maintenance/deploy/sync_openclaw_agent_models.py",
+            "python3 runtime/maintenance/deploy/deploy_openclaw_runtime.py",
             "```",
             "",
         ]
@@ -382,7 +386,7 @@ def render_llm_usage_ssot(payload: dict[str, Any], repo_hash: str) -> str:
         "> 自动生成公共知识库文件；描述当前真实代码状态，不描述目标改造状态。不要手工改这份 Markdown。",
         "",
         f"- 服务器公共知识库路径：`{PUBLIC_KNOWLEDGE_DIR}`",
-        f"- Mac 公共知识库目标路径：`{MAC_PUBLIC_KNOWLEDGE_DIR}`",
+        f"- Mac 公共知识库目标路径：`{MAC_PUBLIC_KNOWLEDGE_DIR or '未配置'}`",
         f"- 仓库配置事实源：`{REPO_CONFIG}`",
         f"- 配置 sha256：`{repo_hash}`",
         f"- 最近生成：`{now}`",
@@ -503,8 +507,8 @@ def render_llm_usage_ssot(payload: dict[str, Any], repo_hash: str) -> str:
             "## 7. 生成与验证",
             "",
             "```bash",
-            f"python3 {Path(__file__).resolve()}",
-            f"PYTHONPATH={REPO_ROOT} pytest -q {REPO_ROOT / 'tests/test_sync_openclaw_bot_config.py'}",
+            "python3 runtime/maintenance/deploy/sync_openclaw_bot_config.py",
+            "PYTHONPATH=. .venv/bin/pytest -q tests/test_sync_openclaw_bot_config.py",
             "```",
             "",
         ]

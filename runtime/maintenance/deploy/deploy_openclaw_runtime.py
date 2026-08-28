@@ -9,24 +9,27 @@ import time
 from pathlib import Path
 
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-NODE_RUNTIME_BIN = Path("/home/ubuntu/.nvm/versions/node/v22.22.2/bin")
+REPO_ROOT = Path(os.getenv("OPENCLAW_REPO_ROOT") or Path(__file__).resolve().parents[3])
+OPENCLAW_RUNTIME_HOME = Path(os.getenv("OPENCLAW_RUNTIME_HOME") or Path.home() / ".openclaw")
+NODE_RUNTIME_BIN = os.getenv("OPENCLAW_NODE_RUNTIME_BIN", "").strip()
 TAG_ROUTER_SOURCE_DIR = REPO_ROOT / "openclaw-tag-router"
-TAG_ROUTER_TARGET_DIR = Path("/home/ubuntu/.openclaw/extensions/openclaw-tag-router")
+TAG_ROUTER_TARGET_DIR = Path(os.getenv("OPENCLAW_TAG_ROUTER_TARGET_DIR") or OPENCLAW_RUNTIME_HOME / "extensions/openclaw-tag-router")
 TAG_ROUTER_SYSTEMD_SOURCE_DIR = TAG_ROUTER_SOURCE_DIR / "deploy/systemd/user"
-USER_SYSTEMD_DIR = Path("/home/ubuntu/.config/systemd/user")
-BOT_CENTER_ROOT = REPO_ROOT / "openclaw-bot-center"
-BOT_CENTER_PUBLISH_DIR = Path("/var/www/openclaw/bots")
+USER_SYSTEMD_DIR = Path(os.getenv("OPENCLAW_USER_SYSTEMD_DIR") or Path.home() / ".config/systemd/user")
+BOT_CENTER_ROOT = Path(os.getenv("OPENCLAW_BOT_CENTER_ROOT") or REPO_ROOT / "openclaw-bot-center")
+BOT_CENTER_PUBLISH_DIR = Path(os.getenv("OPENCLAW_BOT_CENTER_PUBLISH_DIR") or "/var/www/openclaw/bots")
 SYNC_MODELS_SCRIPT = REPO_ROOT / "runtime" / "maintenance" / "deploy" / "sync_openclaw_agent_models.py"
 SYNC_BOT_CONFIG_SCRIPT = REPO_ROOT / "runtime" / "maintenance" / "deploy" / "sync_openclaw_bot_config.py"
-SINGLE_SOURCE_GUARD = Path("/home/ubuntu/scripts/quality/check_openclaw_single_source_contract.py")
-MODEL_CONFIG_GUARD = Path("/home/ubuntu/scripts/quality/check_openclaw_model_tiers_contract.py")
-TAG_ROUTER_GUARD = Path("/home/ubuntu/scripts/quality/check_feishu_tag_router_contract.py")
-BOT_CENTER_CAPABILITY_GUARD = Path("/home/ubuntu/scripts/quality/check_bot_center_capability_detail_contract.py")
-BOT_CENTER_DELETION_GUARD = Path("/home/ubuntu/scripts/quality/check_deletion_contract_coverage.py")
-BOT_CENTER_PUBLISHED_DATA_GUARD = Path("/home/ubuntu/scripts/quality/check_bot_center_published_data_sync.py")
-SINGLE_SOURCE_RUNTIME_SMOKE = Path("/home/ubuntu/scripts/qa/openclaw_single_source_runtime_smoke.py")
-FEISHU_TRANSPORT_GUARD = Path("/home/ubuntu/scripts/quality/check_openclaw_feishu_transport_contract.py")
+OPENCLAW_QUALITY_ROOT = Path(os.getenv("OPENCLAW_QUALITY_ROOT") or REPO_ROOT / "scripts/quality")
+OPENCLAW_QA_ROOT = Path(os.getenv("OPENCLAW_QA_ROOT") or REPO_ROOT / "scripts/qa")
+SINGLE_SOURCE_GUARD = OPENCLAW_QUALITY_ROOT / "check_openclaw_single_source_contract.py"
+MODEL_CONFIG_GUARD = OPENCLAW_QUALITY_ROOT / "check_openclaw_model_tiers_contract.py"
+TAG_ROUTER_GUARD = OPENCLAW_QUALITY_ROOT / "check_feishu_tag_router_contract.py"
+BOT_CENTER_CAPABILITY_GUARD = OPENCLAW_QUALITY_ROOT / "check_bot_center_capability_detail_contract.py"
+BOT_CENTER_DELETION_GUARD = OPENCLAW_QUALITY_ROOT / "check_deletion_contract_coverage.py"
+BOT_CENTER_PUBLISHED_DATA_GUARD = OPENCLAW_QUALITY_ROOT / "check_bot_center_published_data_sync.py"
+SINGLE_SOURCE_RUNTIME_SMOKE = OPENCLAW_QA_ROOT / "openclaw_single_source_runtime_smoke.py"
+FEISHU_TRANSPORT_GUARD = OPENCLAW_QUALITY_ROOT / "check_openclaw_feishu_transport_contract.py"
 JOURNAL_TIMER_UNITS = (
     "openclaw-daily-journal-template.timer",
     "openclaw-weekly-self-model-summary.timer",
@@ -58,7 +61,8 @@ def assert_owned_maintenance_scripts() -> None:
 
 def run(command: list[str], *, cwd: Path | None = None, timeout: int | None = None) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
-    env["PATH"] = f"{NODE_RUNTIME_BIN}:{env.get('PATH', '')}"
+    if NODE_RUNTIME_BIN:
+        env["PATH"] = f"{NODE_RUNTIME_BIN}:{env.get('PATH', '')}"
     proc = subprocess.run(
         command,
         cwd=str(cwd) if cwd else None,
@@ -195,7 +199,7 @@ def deploy(*, restart_gateway: bool, skip_guards: bool = False) -> dict[str, obj
         "ok": True,
         "tag_router_source": str(TAG_ROUTER_SOURCE_DIR),
         "tag_router_target": str(TAG_ROUTER_TARGET_DIR),
-        "tag_router_workspace": "/home/ubuntu/.openclaw/workspace/openclaw-tag-router",
+        "tag_router_workspace": str(OPENCLAW_RUNTIME_HOME / "workspace/openclaw-tag-router"),
         "synced_config": str(SYNC_BOT_CONFIG_SCRIPT),
         "synced_models": str(SYNC_MODELS_SCRIPT),
         "installed_systemd_units": [str(USER_SYSTEMD_DIR / name) for name in JOURNAL_SYSTEMD_FILES],

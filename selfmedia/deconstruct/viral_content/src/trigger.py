@@ -21,10 +21,6 @@ def extract_url(text: str) -> str:
     return match.group(0).rstrip("，,。.)>") if match else ""
 
 
-def should_deconstruct_recreate(text: str) -> bool:
-    return False
-
-
 class RouteError(ValueError):
     pass
 

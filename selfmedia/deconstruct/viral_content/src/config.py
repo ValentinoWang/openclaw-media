@@ -51,7 +51,10 @@ def load_config(profile_name: str = "media_analysis") -> ViralDeconstructConfig:
         feishu_wiki_parent_node_token=os.getenv("FEISHU_WIKI_PARENT_NODE_TOKEN", "QA0BwF5Yji0EvfkmOiOcBuMQnze"),
         feishu_deconstruct_parent_node_token=os.getenv("SELFMEDIA_DECONSTRUCT_PARENT_NODE_TOKEN", "BqzWw9xZeiBu7Kk99YqcxEJ4nuf"),
         feishu_recreate_parent_node_token=os.getenv("SELFMEDIA_RECREATE_PARENT_NODE_TOKEN", "Tm69wEqFpi76d9k53KEcqK4Rnkh"),
-        part1_path=Path(os.getenv("SELFMEDIA_CONTENT_INGEST_PATH", "/home/ubuntu/selfmedia-tools/selfmedia/ingest/content_flow")),
+        part1_path=Path(
+            os.getenv("SELFMEDIA_CONTENT_INGEST_PATH")
+            or Path(__file__).resolve().parents[3] / "ingest" / "content_flow"
+        ).expanduser(),
         llm_api_type=llm_settings.api_type,
         thinking=llm_settings.thinking,
         bin=llm_settings.bin,

@@ -688,7 +688,7 @@ def test_doc_inaccessible_stops_before_bitable(monkeypatch: pytest.MonkeyPatch, 
         "evidence_assets": [{"asset_id": "image_001", "path": str(image), "kind": "source_image"}],
     }
 
-    monkeypatch.setattr(runner, "deconstruct", lambda text: dict(deconstruct_result))
+    monkeypatch.setattr(runner, "deconstruct", lambda text, **_kwargs: dict(deconstruct_result))
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
 
     def fail_doc(*args, **kwargs):
@@ -1219,7 +1219,7 @@ def test_missing_llm_key_fails_fast_before_part1(monkeypatch: pytest.MonkeyPatch
 
 def test_llm_missing_fields_stops_before_doc_and_bitable(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
-    monkeypatch.setattr(runner, "deconstruct", lambda text: (_ for _ in ()).throw(RuntimeError("LLM 输出 JSON 校验失败")))
+    monkeypatch.setattr(runner, "deconstruct", lambda text, **_kwargs: (_ for _ in ()).throw(RuntimeError("LLM 输出 JSON 校验失败")))
 
     import selfmedia.deconstruct.viral_content.src.feishu_doc_writer as doc_writer
     import selfmedia.deconstruct.viral_content.src.feishu_writer as bitable_writer

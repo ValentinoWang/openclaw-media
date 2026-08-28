@@ -27,9 +27,10 @@ CONSULTATION_VALIDATION_CONTRACT = register_llm_validation_contract(
     LLMValidationContract(
         contract_id="selfmedia.creation.consultation.v1",
         profile="bounded_open",
-        required_fields=("conclusion", "next_actions"),
-        non_empty_fields=("conclusion", "next_actions"),
+        required_fields=("reply", "conclusion", "next_actions"),
+        non_empty_fields=("reply", "conclusion", "next_actions"),
         field_types={
+            "reply": str,
             "conclusion": str,
             "topic_diagnosis": dict,
             "evidence": (list, str),

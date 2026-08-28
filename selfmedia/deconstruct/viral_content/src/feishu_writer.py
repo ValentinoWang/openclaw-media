@@ -188,7 +188,6 @@ def _artifact_uri(bundle: dict[str, Any], key: str) -> str:
     if not isinstance(uri, str) or not uri.startswith("media://"):
         raise RuntimeError(f"source bundle 缺少有效 {key} URI")
     return uri
-    return uri
 
 
 def _feishu_readback_receipt(entity_name: str, receipt: dict[str, Any]) -> dict[str, Any]:
@@ -196,7 +195,6 @@ def _feishu_readback_receipt(entity_name: str, receipt: dict[str, Any]) -> dict[
         raise RuntimeError(f"{entity_name} 写入回执缺少 record_id")
     if not isinstance(receipt.get("fields"), dict):
         raise RuntimeError(f"{entity_name} 写入回执缺少 fields")
-    return receipt
     return receipt
 
 
@@ -292,7 +290,11 @@ def write_deconstruction(
     tenant_id: str,
 ) -> str:
     load_default_env_files()
-    load_env_file(Path("/home/ubuntu/openclaw-agents/media/.env.local"))
+    media_agent_root = Path(
+        os.getenv("OPENCLAW_MEDIA_AGENT_ROOT")
+        or Path.home() / ".openclaw" / "agents" / "media"
+    ).expanduser()
+    load_env_file(media_agent_root / ".env.local")
     source_assets_url = os.getenv("MEDIA_OS_SOURCE_ASSETS_URL", "").strip()
     material_deconstructions_url = os.getenv("MEDIA_OS_MATERIAL_DECONSTRUCTIONS_URL", "").strip()
     if not source_assets_url or not material_deconstructions_url:
@@ -458,10 +460,6 @@ def write_deconstruction(
         captured_at=captured_at,
     )
     return str(deconstruction_record.get("record_id") or deconstruction_id)
-
-
-def _retired_02_material_write_error() -> None:
-    raise RuntimeError("旧 02 表 URL 写入已退役；拆解写入固定使用 Media Model v2 02A/02B")
 
 
 def _platform_from_url(url: str) -> str:

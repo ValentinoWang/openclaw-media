@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 
 from common.bot_llm_config import (
-    OPENCLAW_NODE_BIN_DIR,
     bot_runtime,
     load_bot_llm_config,
     openclaw_subprocess_env,
@@ -33,7 +32,9 @@ OPENCLAW_OAUTH_PROFILES = {
 }
 
 
-def test_openclaw_bots_keep_runtime_shell_configuration() -> None:
+def test_openclaw_bots_keep_runtime_shell_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENCLAW_AGENTS_ROOT", "/srv/openclaw/agents")
+    monkeypatch.setenv("OPENCLAW_CODEX_HOME", "/srv/openclaw/codex")
     config = load_bot_llm_config()
     assert config["defaults"] == {}
     assert config["model_tiers"] == {
@@ -54,15 +55,17 @@ def test_openclaw_bots_keep_runtime_shell_configuration() -> None:
     assert config["agent_overrides"] == {
         "openclaw-maintenance": {"model_tier": "C"},
     }
+    assert config["openclaw_runtime"]["codex_app_server"]["command"] == "codex"
+    assert config["providers"]["openclaw_codex"]["bin"] == "openclaw"
     for bot_name in config["bots"]:
         runtime = bot_runtime(bot_name)
         assert runtime.provider == "openclaw_codex"
-        assert runtime.bin.endswith("/openclaw")
+        assert runtime.bin == "openclaw"
         assert runtime.agent == ("deepmath-office" if bot_name == "deepmath" else f"feishu-{bot_name}")
         assert runtime.thinking
         assert runtime.timeout > 0
-        assert runtime.cwd.endswith(f"/{bot_name}")
-        assert runtime.codex_home == "/home/ubuntu/.codex"
+        assert runtime.cwd == f"/srv/openclaw/agents/{bot_name}"
+        assert runtime.codex_home == "/srv/openclaw/codex"
         assert runtime.model.startswith("codex/gpt-5.6-")
 
     assert bot_runtime("knowledge").thinking == "high"
@@ -81,7 +84,7 @@ def test_all_profiles_use_canonical_openclaw_oauth_provider() -> None:
         llm_settings = load_profile_llm_settings(profile_name)
         assert llm_settings.api_type == "openclaw_agent"
         assert llm_settings.agent.startswith("feishu-") or llm_settings.agent == "deepmath-office"
-        assert llm_settings.bin.endswith("/openclaw")
+        assert llm_settings.bin == "openclaw"
         assert llm_settings.model.startswith("codex/gpt-5.6-")
 
     assert load_profile_llm_settings("transcription_postprocess").model == "codex/gpt-5.6-terra"
@@ -108,16 +111,21 @@ def test_openclaw_thinking_levels_match_gateway_model_support() -> None:
     assert normalize_openclaw_thinking("unsupported") == ""
 
 
-def test_openclaw_subprocess_env_prepends_node_bin_to_existing_path() -> None:
+def test_openclaw_subprocess_env_discovers_node_bin_without_a_host_specific_path(tmp_path) -> None:
+    node_bin = tmp_path / "nvm/versions/node/v99.0.0/bin"
+    node_bin.mkdir(parents=True)
+    (node_bin / "node").touch()
     env = openclaw_subprocess_env(
         "/tmp/codex-home",
-        base_env={"PATH": f"/usr/bin:{OPENCLAW_NODE_BIN_DIR}:/bin"},
+        base_env={"HOME": "/srv/openclaw", "NVM_DIR": str(tmp_path / "nvm"), "PATH": "/usr/bin:/bin"},
     )
 
     parts = env["PATH"].split(":")
-    assert parts[0] == OPENCLAW_NODE_BIN_DIR
-    assert parts.count(OPENCLAW_NODE_BIN_DIR) == 1
-    assert env["HOME"] == "/home/ubuntu"
+    assert parts[0] == str(node_bin)
+    assert "/srv/openclaw/bin" in parts
+    assert "/srv/openclaw/.local/bin" in parts
+    assert all("/home/ubuntu" not in part for part in parts)
+    assert env["HOME"] == "/srv/openclaw"
     assert env["CODEX_HOME"] == "/tmp/codex-home"
 
 

@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 
 def load_sync_module():
-    path = Path("/home/ubuntu/selfmedia-tools/runtime/maintenance/sync/daily_todo_checklist_sync.py")
+    path = Path(__file__).resolve().parents[2] / "runtime/maintenance/sync/daily_todo_checklist_sync.py"
     spec = importlib.util.spec_from_file_location("daily_todo_checklist_sync", path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -20,6 +20,33 @@ def load_sync_module():
 
 
 class DailyTodoChecklistSyncTest(unittest.TestCase):
+    def test_defaults_are_repo_or_user_relative_and_dry_run_needs_no_reminder_script(self) -> None:
+        sync = load_sync_module()
+        self.assertTrue(str(sync.DEFAULT_STATE_PATH).endswith("data/daily_todo_sync_state.json"))
+        self.assertNotIn("/home/ubuntu", str(sync.DEFAULT_ARCHIVE_ROOT))
+        self.assertTrue(str(sync.DEFAULT_REMINDER_SCRIPT).endswith("openclaw-feishu-reminder/reminder.py"))
+        self.assertIn(str(sync.DEFAULT_REMINDER_ROOT / "reminder.env"), sync.DEFAULT_ENV_FILES)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "weekly"
+            root.mkdir()
+            state = Path(tmp) / "state.json"
+            with patch.object(
+                sys,
+                "argv",
+                [
+                    "daily_todo_checklist_sync.py",
+                    "--dry-run",
+                    "--weekly-root",
+                    str(root),
+                    "--development-weekly-root",
+                    str(root),
+                    "--state",
+                    str(state),
+                ],
+            ):
+                self.assertEqual(sync.main(), 0)
+            self.assertFalse(state.exists())
+
     def test_syncs_only_checked_feishu_records_once(self) -> None:
         sync = load_sync_module()
         with tempfile.TemporaryDirectory() as tmp:

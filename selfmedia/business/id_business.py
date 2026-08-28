@@ -16,10 +16,14 @@ from typing import Any, Callable
 import requests
 
 
-SELFMEDIA_ROOT = Path("/home/ubuntu/selfmedia-tools")
+SELFMEDIA_ROOT = Path(
+    os.getenv("OPENCLAW_SELFMEDIA_ROOT") or Path(__file__).resolve().parents[2]
+).expanduser()
 if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
-MEDIA_ROOT = Path(os.getenv("OPENCLAW_MEDIA_AGENT_ROOT", "/home/ubuntu/openclaw-agents/media"))
+MEDIA_ROOT = Path(
+    os.getenv("OPENCLAW_MEDIA_AGENT_ROOT") or Path.home() / ".openclaw" / "agents" / "media"
+).expanduser()
 
 from common.social_runtime import (  # noqa: E402
     FEISHU_BASE,

@@ -117,8 +117,8 @@ def build_creation_prompt(
         "report_mode": CREATOR_BRIEF_REPORT_MODE,
     })
     platform_rules = {
-        "小红书": "标题不超过 20 个字符；tags 给 5-10 个与内容强相关的标签，按检索价值挑选，宁少勿凑；图文必须输出 image_script 或 carousel；视频必须输出 storyboard。",
-        "抖音": "标题不能为空；tags 给 3-5 个与内容强相关的标签，按检索价值挑选，宁少勿凑；视频必须输出 hook_3s、storyboard、voiceover、subtitles；图文必须输出 image_script 或 carousel。",
+        "小红书": "标题不超过 20 个字符；tags 给 3-10 个与内容强相关的标签，按检索价值挑选，宁少勿凑；图文必须输出 image_script 或 carousel；视频必须输出 storyboard。",
+        "抖音": "标题不能为空；tags 给 2-5 个与内容强相关的标签，按检索价值挑选，宁少勿凑；视频必须输出 hook_3s、storyboard、voiceover、subtitles；图文必须输出 image_script 或 carousel。",
     }
     return (
         "你是 OpenClaw media bot 的创作总编。现在由 OpenClaw/LLM 接管【创作】主链路，"
@@ -819,7 +819,9 @@ def _validate_creator_report(value: Any, request: CreationRequest) -> dict[str, 
         raise ValueError(f"creator_report.overview.content_type 必须等于 {request.content_type}")
     _require_report_keys(report["opening_3s"], "creator_report.opening_3s", ("visual_0_0_5", "caption_or_voice_0_5_3", "do_not_open_like_this"))
     _require_report_keys(report["mainline"], "creator_report.mainline", ("conflict", "evidence", "emotional_payoff", "audience_resonance"))
-    _require_report_keys(report["publishing_pack"], "creator_report.publishing_pack", ("title_1", "title_2", "cover_text", "body_copy", "hashtags", "pinned_comment", "comment_prompt"))
+    _require_report_keys(report["publishing_pack"], "creator_report.publishing_pack", ("title_1", "title_2", "cover_text", "body_copy", "hashtags", "pinned_comment", "comment_prompt", "first_hour_action"))
+    if not str(report["publishing_pack"].get("first_hour_action") or "").strip():
+        raise ValueError("creator_report.publishing_pack.first_hour_action 不能为空")
     _require_report_keys(report["material_checklist"], "creator_report.material_checklist", ("must_have", "better_to_have", "can_rescue_without", "must_not_fabricate"))
     for index, row in enumerate(report["storyboard"], 1):
         if not isinstance(row, dict):

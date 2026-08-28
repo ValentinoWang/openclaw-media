@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -23,7 +24,10 @@ from media_model.platform_hashtags import normalize_platform_hashtags
 
 
 TARGET_TENANT_ID = "618ff8c4-cc5a-4034-a2c5-226e3ad6cd37"
-DEFAULT_REGISTRY_PATH = Path("/home/ubuntu/openclaw-feishu-reminder/media-bitable-registry.json")
+DEFAULT_REGISTRY_PATH = Path(
+    os.getenv("OPENCLAW_MEDIA_BITABLE_REGISTRY_PATH")
+    or Path.home() / "openclaw-feishu-reminder" / "media-bitable-registry.json"
+).expanduser()
 REGISTRY_VERSION = "media_operations_registry_v2"
 
 
