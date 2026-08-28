@@ -1,6 +1,8 @@
 {
   "platform": "B站",
   "mechanism_version": "bilibili_v1",
+  "reviewed_at": "2026-08-28",
+  "review_after_days": 90,
   "status": "active",
   "baseline_summary": "B站内容更重视分区、用户偏好、观看深度、社区互动和系列化价值，当前先做中低精度拟合。",
   "default_traffic_entries": ["首页推荐", "分区", "搜索", "动态/关注", "相关推荐"],

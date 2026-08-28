@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from functools import lru_cache
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -13,9 +15,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 # README and docs/architecture.md make `config/openclaw_bots.json` the single
 # editable configuration source of truth, so resolve it from the repository the
 # code was loaded from instead of one host's absolute checkout path.
-CONFIG_PATH = Path(
-    os.getenv("OPENCLAW_BOTS_CONFIG") or REPOSITORY_ROOT / "config/openclaw_bots.json"
-)
+DEFAULT_CONFIG_PATH = REPOSITORY_ROOT / "config/openclaw_bots.json"
 BASE_URL_ENV_PREFIX = "env:"
 DEFAULT_OPENCLAW_MODEL_PROVIDER = "codex"
 OPENCLAW_THINKING_LEVELS = {"off", "minimal", "low", "medium", "high"}
@@ -48,6 +48,10 @@ class LLMProviderRuntime:
     timeout: float
     thinking: str = ""
     fps: float = 0.0
+
+
+class BotLLMConfigError(RuntimeError):
+    """Raised when the repository-owned OpenClaw configuration is invalid."""
 
 
 def normalize_openclaw_model(model: str) -> str:
@@ -119,17 +123,139 @@ def _dedupe_path_parts(values: list[str]) -> list[str]:
     return parts
 
 
-@lru_cache(maxsize=1)
-def load_bot_llm_config() -> dict[str, Any]:
-    if not CONFIG_PATH.exists():
-        raise RuntimeError(f"OpenClaw Bot LLM 配置不存在：{CONFIG_PATH}")
-    parsed = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+def resolve_bot_llm_config_path() -> Path:
+    override = os.getenv("OPENCLAW_BOTS_CONFIG", "").strip()
+    return Path(override).expanduser() if override else DEFAULT_CONFIG_PATH
+
+
+def clear_bot_llm_config_cache() -> None:
+    _load_bot_llm_config.cache_clear()
+
+
+def _require_mapping(value: object, location: str) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping):
+        raise BotLLMConfigError(f"OpenClaw Bot LLM 配置字段必须是对象：{location}")
+    return value
+
+
+def _require_text(value: object, location: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        raise BotLLMConfigError(f"OpenClaw Bot LLM 配置字段不能为空：{location}")
+    return text
+
+
+def _require_positive_number(value: object, location: str) -> None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise BotLLMConfigError(f"OpenClaw Bot LLM 配置字段必须是正数：{location}") from exc
+    if not math.isfinite(number) or number <= 0:
+        raise BotLLMConfigError(f"OpenClaw Bot LLM 配置字段必须是正数：{location}")
+
+
+def _validate_tier_name(model_tiers: Mapping[str, Any], tier_name: object, location: str) -> None:
+    name = _require_text(tier_name, location)
+    tier = _require_mapping(model_tiers.get(name), f"model_tiers.{name}")
+    _require_text(tier.get("model"), f"model_tiers.{name}.model")
+    thinking = normalize_openclaw_thinking(_require_text(tier.get("reasoning"), f"model_tiers.{name}.reasoning"))
+    if not thinking:
+        raise BotLLMConfigError(f"OpenClaw Bot LLM model tier 推理档位不受支持：model_tiers.{name}.reasoning")
+
+
+def _resolved_tier_name(scope: Mapping[str, Any], fallback: Mapping[str, Any]) -> str:
+    return str(scope.get("model_tier") or fallback.get("model_tier") or fallback.get("default_model_tier") or "").strip()
+
+
+def _validate_bot_llm_config(parsed: Mapping[str, Any]) -> None:
+    required = ("defaults", "policy", "openclaw_runtime", "model_tiers", "bots", "profiles", "providers")
+    fields = {name: _require_mapping(parsed.get(name), name) for name in required}
+    model_tiers = fields["model_tiers"]
+    providers = fields["providers"]
+    bots = fields["bots"]
+    profiles = fields["profiles"]
+
+    if not model_tiers or not providers or not bots or not profiles:
+        raise BotLLMConfigError("OpenClaw Bot LLM 配置的 model_tiers/providers/bots/profiles 不能为空")
+
+    for tier_name, tier_value in model_tiers.items():
+        _validate_tier_name(model_tiers, tier_name, f"model_tiers.{tier_name}")
+
+    for provider_name, provider_value in providers.items():
+        provider = _require_mapping(provider_value, f"providers.{provider_name}")
+        for key in ("base_url", "api_key", "api_type", "timeout", "bin", "codex_home"):
+            _require_text(provider.get(key), f"providers.{provider_name}.{key}")
+        _require_positive_number(provider.get("timeout"), f"providers.{provider_name}.timeout")
+        _validate_tier_name(model_tiers, provider.get("default_model_tier"), f"providers.{provider_name}.default_model_tier")
+
+    for bot_name, bot_value in bots.items():
+        bot = _require_mapping(bot_value, f"bots.{bot_name}")
+        provider_name = _require_text(bot.get("provider"), f"bots.{bot_name}.provider")
+        provider = _require_mapping(providers.get(provider_name), f"providers.{provider_name}")
+        _require_text(bot.get("agent"), f"bots.{bot_name}.agent")
+        _require_text(bot.get("cwd"), f"bots.{bot_name}.cwd")
+        _validate_tier_name(model_tiers, _resolved_tier_name(bot, provider), f"bots.{bot_name}.model_tier")
+
+    for profile_name, profile_value in profiles.items():
+        profile = _require_mapping(profile_value, f"profiles.{profile_name}")
+        bot_name = _require_text(profile.get("bot"), f"profiles.{profile_name}.bot")
+        bot = _require_mapping(bots.get(bot_name), f"bots.{bot_name}")
+        provider_name = _require_text(profile.get("provider") or bot.get("provider"), f"profiles.{profile_name}.provider")
+        provider = _require_mapping(providers.get(provider_name), f"providers.{provider_name}")
+        _validate_tier_name(
+            model_tiers,
+            str(profile.get("model_tier") or bot.get("model_tier") or provider.get("default_model_tier") or ""),
+            f"profiles.{profile_name}.model_tier",
+        )
+
+    policy = fields["policy"]
+    for key in ("default_provider", "openclaw_runtime_provider"):
+        provider_name = _require_text(policy.get(key), f"policy.{key}")
+        _require_mapping(providers.get(provider_name), f"providers.{provider_name}")
+
+    overrides = parsed.get("agent_overrides", {})
+    for override_name, override_value in _require_mapping(overrides, "agent_overrides").items():
+        override = _require_mapping(override_value, f"agent_overrides.{override_name}")
+        _validate_tier_name(model_tiers, override.get("model_tier"), f"agent_overrides.{override_name}.model_tier")
+
+    runtime = fields["openclaw_runtime"]
+    for forbidden in ("heartbeat_every", "session_maintenance"):
+        if forbidden in runtime:
+            raise BotLLMConfigError(f"OpenClaw Bot LLM 配置不接受部署常量：openclaw_runtime.{forbidden}")
+    app_server = _require_mapping(runtime.get("codex_app_server"), "openclaw_runtime.codex_app_server")
+    for forbidden in ("args", "service_tier"):
+        if forbidden in app_server:
+            raise BotLLMConfigError(f"OpenClaw Bot LLM 配置不接受部署常量：openclaw_runtime.codex_app_server.{forbidden}")
+    _require_text(app_server.get("command"), "openclaw_runtime.codex_app_server.command")
+    _require_text(app_server.get("version"), "openclaw_runtime.codex_app_server.version")
+    timeout = app_server.get("turn_completion_idle_timeout_ms")
+    if isinstance(timeout, bool) or not isinstance(timeout, int) or timeout < 60000:
+        raise BotLLMConfigError(
+            "OpenClaw Bot LLM 配置字段必须是不小于 60000 的整数："
+            "openclaw_runtime.codex_app_server.turn_completion_idle_timeout_ms"
+        )
+
+
+@lru_cache(maxsize=8)
+def _load_bot_llm_config(path_text: str) -> dict[str, Any]:
+    path = Path(path_text)
+    if not path.is_file():
+        raise BotLLMConfigError(f"OpenClaw Bot LLM 配置不存在：{path}")
+    try:
+        parsed = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise BotLLMConfigError(f"无法读取 OpenClaw Bot LLM 配置：{path}") from exc
+    except json.JSONDecodeError as exc:
+        raise BotLLMConfigError(f"OpenClaw Bot LLM 配置 JSON 无效：{path}") from exc
     if not isinstance(parsed, dict):
-        raise RuntimeError(f"OpenClaw Bot LLM 配置格式错误：{CONFIG_PATH}")
-    for key in ("defaults", "model_tiers", "bots", "profiles", "providers"):
-        if not isinstance(parsed.get(key), dict):
-            raise RuntimeError(f"OpenClaw Bot LLM 配置缺少对象字段：{key}")
+        raise BotLLMConfigError(f"OpenClaw Bot LLM 配置格式错误：{path}")
+    _validate_bot_llm_config(parsed)
     return parsed
+
+
+def load_bot_llm_config() -> dict[str, Any]:
+    """Return an isolated copy of the validated configuration source of truth."""
+    return copy.deepcopy(_load_bot_llm_config(str(resolve_bot_llm_config_path())))
 
 
 def profile_config(profile_name: str) -> dict[str, Any]:

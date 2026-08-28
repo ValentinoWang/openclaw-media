@@ -1,6 +1,8 @@
 {
   "platform": "小红书",
   "mechanism_version": "xiaohongshu_v1",
+  "reviewed_at": "2026-08-28",
+  "review_after_days": 90,
   "status": "active",
   "baseline_summary": "小红书内容更重视封面点击、搜索长尾、收藏价值、评论互动和活动话题适配。",
   "default_traffic_entries": ["首页推荐", "搜索长尾", "活动话题", "关注关系"],
