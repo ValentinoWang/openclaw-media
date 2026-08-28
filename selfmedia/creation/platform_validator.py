@@ -46,8 +46,8 @@ def validate_xhs_draft(content_type: str, draft: dict[str, Any]) -> ValidationRe
         issues.append(ValidationIssue("title", "小红书标题不能为空"))
     if not 3 <= len(tags) <= 10:
         issues.append(ValidationIssue("tags", "小红书 Tags 需要 3-10 个强相关标签，宁少勿凑"))
-    if content_type == "图文" and not _list_value(draft.get("image_script")):
-        issues.append(ValidationIssue("image_script", "小红书图文必须有图片脚本"))
+    if content_type == "图文" and not (_list_value(draft.get("image_script")) or _list_value(draft.get("carousel"))):
+        issues.append(ValidationIssue("image_script", "小红书图文必须有图片脚本或轮播结构"))
     if content_type == "视频" and not _list_value(draft.get("storyboard")):
         issues.append(ValidationIssue("storyboard", "小红书视频必须有分镜脚本"))
     return ValidationResult(ok=not issues, issues=issues)

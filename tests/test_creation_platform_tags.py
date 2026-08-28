@@ -32,3 +32,13 @@ def test_platform_tag_minima_still_reject_insufficient_tags() -> None:
 
     assert not xhs.ok
     assert not douyin.ok
+
+
+def test_xhs_image_post_accepts_carousel_without_duplicate_image_script() -> None:
+    result = validate_platform_draft(
+        "小红书",
+        "图文",
+        {"title": "跑步热身", "tags": ["跑步", "热身", "训练"], "carousel": ["封面", "动作拆解"]},
+    )
+
+    assert result.ok

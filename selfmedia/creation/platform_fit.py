@@ -731,6 +731,7 @@ def _truncate_nested(value: Any, max_chars: int) -> Any:
         result: dict[str, Any] = {}
         for index, (key, item) in enumerate(value.items()):
             if index >= 30:
+                result["_truncated_keys"] = len(value) - 30
                 break
             result[str(key)] = _truncate_nested(item, max_chars)
         return result

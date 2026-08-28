@@ -382,6 +382,8 @@ CREATION_PROMPT_TEXT_LIMITS = {
     "viral_migration": 520,
     "creative_upgrade_suggestion": 520,
     "usable_material_brief": 900,
+    "reference_shots": 1200,
+    "reference_production_summary": 900,
     "reuse_guardrails": 900,
     "viral_reuse_assessment": 900,
 }
@@ -434,6 +436,8 @@ CREATION_PROMPT_CANDIDATE_FIELDS = (
     "viral_migration",
     "creative_upgrade_suggestion",
     "usable_material_brief",
+    "reference_shots",
+    "reference_production_summary",
     "reuse_guardrails",
     "viral_reuse_assessment",
     "pacing_notes",
@@ -731,9 +735,12 @@ def _validate_insight_card_reference_boundary(draft: dict[str, Any]) -> None:
         raise ValueError("selected insight_card inspiration 必须标注为 insight-card reference")
     if "public_content_only" not in payload_text:
         raise ValueError("selected insight_card inspiration 必须保留 public_content_only evidence_boundary")
-    forbidden = ("私密人物档案", "social 私密", "私人心理判断", "源视频事实")
+    forbidden = ("私密人物档案", "social 私密", "私人心理判断")
     if any(marker in payload_text for marker in forbidden):
         raise ValueError("selected insight_card inspiration 只能作为公开证据 reference，不能当作私密画像或源视频事实")
+    source_fact_claims = ("作为源视频事实", "当作源视频事实", "就是源视频事实")
+    if any(marker in payload_text for marker in source_fact_claims):
+        raise ValueError("selected insight_card inspiration 只能作为公开证据 reference，不能当作源视频事实")
 
 
 def _recommended_script_option(options: list[dict[str, Any]], recommended_option_id: str) -> dict[str, Any]:
