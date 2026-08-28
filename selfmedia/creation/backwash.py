@@ -14,6 +14,7 @@ from .shooting_execution import (
     ShootingExecutionRequest,
     creator_facing_deconstruction_evidence,
     localize_shooting_execution_plan_values,
+    _bounded_context_json,
     validate_shooting_execution_plan,
 )
 from .writer import rewrite_shooting_execution_doc
@@ -378,7 +379,7 @@ def _narrative_plan_prompt(
         "输出字段固定为 storyline, strategy, beats, global_rules。每个 beat 字段固定为 beat_id, order, subject_id, "
         "chapter, location, narrative_role, purpose, transition_from_previous, callback_to。无回扣时 callback_to 为空字符串。\n\n"
         f"用户修改要求：\n{requirements}\n\n"
-        f"账号与创作上下文：\n{json.dumps(_creator_facing_media_context(media_context), ensure_ascii=False, default=str)[:12000]}\n\n"
+        f"账号与创作上下文：\n{_bounded_context_json(_creator_facing_media_context(media_context))}\n\n"
         f"当前结构化执行单：\n{json.dumps(_creator_facing_draft(current), ensure_ascii=False)}\n\n"
         f"上次规划验收：\n{json.dumps(review or {}, ensure_ascii=False)}\n\n"
         f"上次叙事规划：\n{json.dumps(_creator_facing_narrative_plan(previous or {}), ensure_ascii=False)}"
@@ -453,7 +454,7 @@ def _revision_prompt(
         "来源状态只能写“已核验”“仅凭文字描述，未看过原片”或“待人工核实”。"
         "发布后首小时动作必须保留为创作者手动完成的具体动作，不得声称系统会自动执行或提醒。\n\n"
         f"用户修改要求：\n{requirements}\n\n"
-        f"账号与创作上下文：\n{json.dumps(_creator_facing_media_context(media_context), ensure_ascii=False, default=str)[:12000]}\n\n"
+        f"账号与创作上下文：\n{_bounded_context_json(_creator_facing_media_context(media_context))}\n\n"
         f"当前结构化执行单：\n{json.dumps(_creator_facing_draft(current), ensure_ascii=False)}\n\n"
         f"已通过验收的叙事规划（唯一顺序）：\n{json.dumps(_creator_facing_narrative_plan(narrative_plan), ensure_ascii=False)}\n\n"
         f"上次语义验收：\n{json.dumps(review or {}, ensure_ascii=False)}\n\n"

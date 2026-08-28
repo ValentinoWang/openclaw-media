@@ -300,7 +300,7 @@ def _validate_recommended_anti_patterns(draft: dict[str, Any], *, must_keep: Any
     for field in ("title", "final_copy", "hook_3s", "voiceover"):
         text = draft[field]
         for phrase in load_anti_patterns():
-            if phrase in preserved_phrases:
+            if any(phrase in preserved for preserved in preserved_phrases):
                 continue
             if phrase in text:
                 raise ValueError(f"推荐稿 {field} 包含通用模板表达：{phrase}")
