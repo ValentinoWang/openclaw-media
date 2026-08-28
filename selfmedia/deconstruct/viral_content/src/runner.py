@@ -19,7 +19,13 @@ from .config import load_config
 from .evidence.modality_dag import evidence_store_prompt, run_evidence_dag
 from .llm_client import ensure_llm_provider_available, generate_json
 from .media_parts import MediaEvidence, NoRealMediaError, _image_part, cleanup_temp_files, detect_media_type
-from .multi_signal_contract import build_multi_signal_contract
+from .multi_signal_contract import (
+    MULTI_SIGNAL_CONTRACT_DEFERRED_STATUS,
+    build_multi_signal_contract,
+    multi_signal_contract_is_ready,
+    multi_signal_contract_status,
+)
+from .multi_signal_schema import validate_multi_signal_contract_payload
 from .prompt import DECONSTRUCT_PROMPT, PARTIAL_DECONSTRUCT_PROMPT, RECREATE_PROMPT
 from selfmedia.request_constraints import parse_request_constraints, validate_request_constraints_payload
 from .schemas import (
@@ -492,9 +498,12 @@ def finalize_deconstruction_contract(
     stage_dir: str | Path | None = None,
     user_intent: str = "",
 ) -> dict[str, Any]:
-    if not result.get("multi_signal_contract"):
+    existing_contract = result.get("multi_signal_contract") if isinstance(result.get("multi_signal_contract"), dict) else {}
+    if not existing_contract:
         _stage_log("multi_signal_contract:start")
-        multi_signal_contract = build_multi_signal_contract(result, user_intent=user_intent)
+        contract_source = dict(result)
+        contract_source["_multi_signal_contract_request"] = "defer_until_creative_handoff"
+        multi_signal_contract = build_multi_signal_contract(contract_source, user_intent=user_intent)
         _stage_log("multi_signal_contract:done")
         result["multi_signal_contract"] = multi_signal_contract
         validation = dict(result.get("validation") or {})
@@ -761,11 +770,18 @@ def extract_evidence_store(text: str) -> dict[str, Any]:
         cleanup_temp_files(prepared["evidence"].cleanup_paths)
 
 
-def recreate(text: str, source: dict[str, Any] | None = None) -> dict[str, Any]:
+def recreate(
+    text: str,
+    source: dict[str, Any] | None = None,
+    *,
+    compatibility_handoff: bool = False,
+) -> dict[str, Any]:
     source = source or {}
     multi_signal_contract = source.get("multi_signal_contract")
     if not source or not isinstance(multi_signal_contract, dict) or not multi_signal_contract:
         raise RuntimeError("创作交接必须基于拆解结果执行：缺少 multi_signal_contract 多维证据合同")
+    if compatibility_handoff:
+        return _creation_handoff_from_multi_signal_contract(text, source)
     ensure_llm_provider_available(load_config("media_creation"))
     media_type = _select_recreate_media_type(text, source)
     recreate_contract = {
@@ -800,6 +816,39 @@ def recreate(text: str, source: dict[str, Any] | None = None) -> dict[str, Any]:
     result.setdefault("user_input", text)
     result.setdefault("source_url", source.get("source_url", ""))
     return result
+
+
+def _creation_handoff_from_multi_signal_contract(text: str, source: dict[str, Any]) -> dict[str, Any]:
+    contract = source.get("multi_signal_contract") if isinstance(source.get("multi_signal_contract"), dict) else {}
+    evidence_manifest = source.get("evidence_manifest") if isinstance(source.get("evidence_manifest"), dict) else {}
+    evidence_ids = {str(key).strip() for key in evidence_manifest if str(key).strip()}
+    if not evidence_ids:
+        raise RuntimeError("创作交接缺少 evidence_manifest，拒绝使用非合同 compact 兜底")
+
+    status = multi_signal_contract_status(contract)
+    if status == MULTI_SIGNAL_CONTRACT_DEFERRED_STATUS:
+        ensure_llm_provider_available(load_config())
+        contract = build_multi_signal_contract(source, user_intent=text)
+        status = multi_signal_contract_status(contract)
+    try:
+        validated = validate_multi_signal_contract_payload(contract, evidence_ids)
+    except ValueError as exc:
+        raise RuntimeError(f"创作交接 multi_signal_contract 校验失败：{exc}") from exc
+    if not multi_signal_contract_is_ready(validated):
+        raise RuntimeError(f"创作交接合同未就绪：{status or 'missing_status'}")
+    return {
+        "multi_signal_contract": {
+            key: validated[key]
+            for key in (
+                "contract_version",
+                "source_signal_dimensions",
+                "shot_adaptation_notes",
+                "conflict_notes",
+                "open_questions",
+                "validation",
+            )
+        }
+    }
 
 
 def _storyboard_target_duration_from_evidence_store(evidence_store: dict[str, Any]) -> float | None:

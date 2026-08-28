@@ -138,7 +138,7 @@ def build_creation_prompt(
         "9. topic_strategy 中拆清楚目标人群、真实痛点、单一内容角度、只解决的一个小问题和自查标准，再在 script_options 中生成 title/final_copy。\n"
         "10. 如果参考素材里有 OCR 或图片文字，只能当作素材证据和文案补全来源；最终 final_copy、title、content_core、topic_strategy 必须经过清洗和改写，不得原样堆叠 OCR。\n"
         "11. 必须参考 platform_mechanism_fit 里的 platform_strategy、activity_strategy、creation_reverse_plan 和 validation_targets；平台机制只能约束标题、封面/首屏、发布策略和验证指标，不能决定内容核心；不得声称破解平台真实算法或掌握黑箱权重。\n"
-        "12. 先生成 usable_material_brief，再写 script_options。usable_material_brief 必须按“来源 -> 可迁移层 -> 脚本落点”抽取可用素材：账号记忆的人设/禁区/复盘教训；创作灵感的真实场景/触发原话/核心观点；爆款候选只能使用 deconstruction.v2 artifact 蒸馏出的 usable_material_brief、reference_shots 五维镜头合同、reference_production_summary、reuse_guardrails、viral_reuse_assessment 和 pacing_notes；活动候选的投稿约束/话题/截止或返稿要求；商务候选的品牌边界。script_options 只能吃这个 brief 写稿，不要在脚本正文里展开完整来源映射。\n"
+        "12. 先生成 usable_material_brief，再写 script_options。usable_material_brief 必须按“来源 -> 可迁移层 -> 脚本落点”抽取可用素材：账号记忆的人设/禁区/复盘教训；创作灵感的真实场景/触发原话/核心观点；爆款候选只能使用其 multi_signal_contract 的 source_signal_dimensions、shot_adaptation_notes、conflict_notes、open_questions 和 validation。transform_rule 是可迁移结构，risk_boundary 与 do_not_copy 是硬边界；source_refs 只证明合同中的观察，不能补写原素材细节。不得绕回任何非合同的拆解摘要、镜头 compact、文档链接或内部源快照。活动候选的投稿约束/话题/截止或返稿要求；商务候选的品牌边界。script_options 只能吃这个 brief 写稿，不要在脚本正文里展开完整来源映射。\n"
         "13. 完整来源映射必须进入 usable_material_brief.source_mapping、creator_report.evidence_appendix 或 script_options 的机器字段；创作者执行区只出现拍摄、文案、发布和风险动作，不输出检索报告口吻。\n"
         "14. 每个 script_options 项都必须保留 activity_fit_reason、viral_reference_reason、inspiration_reference_reason 作为机器字段：写清用了哪个候选 id、迁移了哪一层、落到哪个镜头/页面/台词/封面/评论引导；没采用的来源要在 risks_or_missing_info 或 rejected_option_summaries 说明原因。活动只能约束发布/投稿/话题，不得硬改内容核心；爆款只能给结构和节奏，不得给事实；灵感和账号记忆优先决定内容事实与表达边界；洞察卡必须标为 insight-card reference，并在证据附录保留卡片路径/状态和风险边界。\n"
         f"15. 必须先评估多个创作方向，再把 2-5 个完整脚本放入 script_options；score > {CREATION_SCORE_THRESHOLD} 是高分方案，score <= {CREATION_SCORE_THRESHOLD} 也必须保留为可选方案，不得因为未达门槛而不给完整脚本。\n"
@@ -393,6 +393,7 @@ CREATION_PROMPT_CANDIDATE_FIELDS = (
     "relation_id",
     "source_table",
     "record_type",
+    "multi_signal_contract",
     "title",
     "content",
     "status",
@@ -485,6 +486,8 @@ def _compact_candidates(value: Any, max_items: int) -> list[dict[str, Any]]:
 
 
 def _compact_candidate_value(key: str, value: Any) -> Any:
+    if key == "multi_signal_contract":
+        return _truncate_nested(value or {}, 4000)
     if key == "tags":
         return _as_string_list(value)[:12]
     if key == "doc_links":

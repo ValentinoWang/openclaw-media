@@ -14,12 +14,15 @@ from .multi_signal_schema import (
 
 
 MULTI_SIGNAL_CONTRACT_VERSION = "multi_signal_contract.v1"
+MULTI_SIGNAL_CONTRACT_DEFERRED_STATUS = "deferred_for_creative_handoff"
+MULTI_SIGNAL_CONTRACT_READY_STATUSES = {"validated", "validated_with_warnings"}
+_DEFERRED_CONTRACT_REQUEST_KEY = "_multi_signal_contract_request"
 
 MULTI_SIGNAL_CONTRACT_PROMPT = """
 你是创作交接合同草稿生成器。基于 deconstruction 摘要、evidence_store 摘要和用户创作交接意图，只输出后续创作/拍摄链路要消费的证据信号草稿。
 
 只输出严格 JSON object，不要 Markdown，不要解释。顶层只需要这些字段：
-- source_signal_dimensions: 3-6 个维度即可，按证据自然形成 visual、speech、ocr、pacing、copy、comments、engagement、risk 等；每项包含 dimension_id、status、source_refs、observations、summary、reusable_signal、transform_rule、risk_boundary、confidence、insufficient_evidence、conflict_notes。
+- source_signal_dimensions: 维度数量由可验证证据决定，按证据自然形成 visual、speech、ocr、pacing、copy、comments、engagement、risk 等；有证据的维度要保留，证据不足的维度标记 insufficient_evidence，不要为了凑固定数量省略维度；每项包含 dimension_id、status、source_refs、observations、summary、reusable_signal、transform_rule、risk_boundary、confidence、insufficient_evidence、conflict_notes。
 - shot_adaptation_notes: 1-5 条镜头/图页/场景级适配建议；每项包含 note_id、source_refs、source_dimension_ids、learnable_pattern、adaptation_rule、do_not_copy、confidence。
 - conflict_notes: 多信号冲突。
 - open_questions: 证据不足或需要人工确认的问题。
@@ -36,6 +39,8 @@ MULTI_SIGNAL_CONTRACT_PROMPT = """
 
 
 def build_multi_signal_contract(deconstruction: dict[str, Any], *, user_intent: str = "") -> dict[str, Any]:
+    if deconstruction.get(_DEFERRED_CONTRACT_REQUEST_KEY) == "defer_until_creative_handoff":
+        return deferred_multi_signal_contract(deconstruction)
     parts = _contract_prompt_parts(deconstruction, user_intent=user_intent)
     config = _contract_llm_config()
     return generate_json(
@@ -44,6 +49,55 @@ def build_multi_signal_contract(deconstruction: dict[str, Any], *, user_intent: 
         schema=None,
         post_validate=lambda payload: _normalize_multi_signal_contract_payload(deconstruction, payload),
     )
+
+
+def deferred_multi_signal_contract(deconstruction: dict[str, Any]) -> dict[str, Any]:
+    evidence_ids = _evidence_ids(deconstruction)
+    payload = {
+        "contract_version": MULTI_SIGNAL_CONTRACT_VERSION,
+        "evidence_manifest_refs": sorted(evidence_ids),
+        "source_signal_dimensions": [
+            {
+                "dimension_id": "creative_handoff",
+                "status": "insufficient_evidence",
+                "source_refs": [],
+                "observations": [],
+                "summary": "",
+                "reusable_signal": "",
+                "transform_rule": "",
+                "risk_boundary": "",
+                "confidence": 0.0,
+                "insufficient_evidence": ["尚未收到明确创作交接；不得把拆解 compact 当作创作输入。"],
+                "conflict_notes": [],
+            }
+        ],
+        "shot_adaptation_notes": [],
+        "evidence_store_summary": _evidence_store_summary(deconstruction),
+        "aggregation_report": {
+            "dimension_count": 1,
+            "available_dimensions": [],
+            "insufficient_dimensions": ["creative_handoff"],
+            "failed_dimensions": [],
+            "source_ref_failures": [],
+        },
+        "conflict_notes": [],
+        "open_questions": ["请在【创作】请求中指定 source_asset_id 后再生成创作交接合同。"],
+        "validation": {
+            "source_refs_status": "validated",
+            "multi_signal_contract_status": MULTI_SIGNAL_CONTRACT_DEFERRED_STATUS,
+            "warnings": ["未请求创作交接，未调用 multi_signal_contract LLM。"],
+        },
+    }
+    return validate_multi_signal_contract_payload(payload, evidence_ids)
+
+
+def multi_signal_contract_status(contract: dict[str, Any]) -> str:
+    validation = contract.get("validation") if isinstance(contract.get("validation"), dict) else {}
+    return str(validation.get("multi_signal_contract_status") or "").strip()
+
+
+def multi_signal_contract_is_ready(contract: dict[str, Any]) -> bool:
+    return multi_signal_contract_status(contract) in MULTI_SIGNAL_CONTRACT_READY_STATUSES
 
 
 def _contract_llm_config() -> Any:

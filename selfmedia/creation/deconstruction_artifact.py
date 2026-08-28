@@ -5,6 +5,7 @@ from copy import deepcopy
 from typing import Any
 
 from selfmedia.deconstruct.viral_content.src.artifact_v2 import normalize_deconstruction_artifact_for_read
+from selfmedia.deconstruct.viral_content.src.multi_signal_contract import MULTI_SIGNAL_CONTRACT_DEFERRED_STATUS, multi_signal_contract_status
 
 from .field_contract import CanonicalMediaRecord
 from media_vault.vault import MediaVault
@@ -18,7 +19,14 @@ class DeconstructionArtifactUnavailable(RuntimeError):
     pass
 
 
-def attach_deconstruction_artifact_brief(record: CanonicalMediaRecord, *, tenant_id: str) -> CanonicalMediaRecord:
+def attach_deconstruction_artifact_brief(
+    record: CanonicalMediaRecord,
+    *,
+    tenant_id: str,
+    require_creative_handoff: bool = False,
+    creative_handoff_text: str = "",
+    materialize_deferred_contract: bool = False,
+) -> CanonicalMediaRecord:
     evidence_uri = str((record.detail_json or {}).get("evidence_uri") or record.doc_links.get("evidence") or "").strip()
     artifact = load_deconstruction_artifact(evidence_uri, tenant_id=tenant_id)
     brief = distilled_usable_material_brief(artifact)
@@ -32,6 +40,21 @@ def attach_deconstruction_artifact_brief(record: CanonicalMediaRecord, *, tenant
     enriched.detail_json["pacing_notes"] = _pacing_notes_for_prompt(artifact.get("pacing_profile") or {})
     enriched.detail_json["reference_shots"] = _reference_shots_for_prompt(artifact.get("reference_shots") or [])
     enriched.detail_json["reference_production_summary"] = artifact.get("reference_production_summary") or {}
+    if require_creative_handoff:
+        contract = artifact.get("multi_signal_contract") if isinstance(artifact.get("multi_signal_contract"), dict) else {}
+        if multi_signal_contract_status(contract) == MULTI_SIGNAL_CONTRACT_DEFERRED_STATUS and not materialize_deferred_contract:
+            raise DeconstructionArtifactUnavailable("creative_handoff_not_requested")
+        try:
+            from selfmedia.deconstruct.viral_content.src.runner import recreate
+
+            handoff = recreate(
+                creative_handoff_text,
+                artifact,
+                compatibility_handoff=True,
+            )
+        except RuntimeError as exc:
+            raise DeconstructionArtifactUnavailable(str(exc)) from exc
+        enriched.detail_json["creation_handoff"] = handoff
     enriched.core_value = brief.get("why_it_may_work") or enriched.core_value
     return enriched
 

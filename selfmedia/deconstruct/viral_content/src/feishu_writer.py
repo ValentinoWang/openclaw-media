@@ -573,6 +573,7 @@ def _localized_multi_signal_status(status: str, warnings: list[str]) -> str:
         "llm_failed": "解析失败",
         "validated": "已验证",
         "validated_with_warnings": "已验证，存在待确认项",
+        "deferred_for_creative_handoff": "待创作交接",
     }
     label = labels.get(status, "状态待确认")
     if status in {"schema_failed", "llm_failed"}:

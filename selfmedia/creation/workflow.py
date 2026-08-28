@@ -88,13 +88,20 @@ def handle_creation_command(
         enabled=not dry_run and not no_write,
         max_items=_env_int("SELFMEDIA_CREATION_ACTIVITY_EXAMPLE_DECONSTRUCT_LIMIT", 2),
     )
-    ranked_viral_candidates = rank_virals(virals, request)[: _env_int("SELFMEDIA_CREATION_VIRAL_CONTEXT_LIMIT", 40)]
+    viral_context_limit = _env_int("SELFMEDIA_CREATION_VIRAL_CONTEXT_LIMIT", 40)
+    ranked_viral_candidates = rank_virals(virals, request)[:viral_context_limit]
     if activity_example_virals:
         ranked_example_virals = rank_virals(activity_example_virals, request)
-        ranked_viral_candidates = _merge_ranked_records(ranked_example_virals, ranked_viral_candidates)[: _env_int("SELFMEDIA_CREATION_VIRAL_CONTEXT_LIMIT", 40)]
+        ranked_viral_candidates = _merge_ranked_records(ranked_example_virals, ranked_viral_candidates)[:viral_context_limit]
+    if request.source_asset_id:
+        ranked_viral_candidates = _merge_ranked_records(
+            _explicit_source_asset_virals(virals, request.source_asset_id),
+            ranked_viral_candidates,
+        )[:viral_context_limit]
     ranked_viral_candidates, viral_artifact_rejections = _require_deconstruction_artifacts(
         ranked_viral_candidates,
         tenant_id=tenant_id,
+        request=request,
     )
     viral_candidates = [item.record for item in ranked_viral_candidates]
     ranked_inspiration_candidates = rank_inspirations(inspirations, request)[: _env_int("SELFMEDIA_CREATION_INSPIRATION_CONTEXT_LIMIT", 40)]
@@ -323,12 +330,24 @@ def _require_deconstruction_artifacts(
     ranked: list[RankedRecord],
     *,
     tenant_id: str,
+    request: CreationRequest,
 ) -> tuple[list[RankedRecord], list[dict[str, Any]]]:
     accepted: list[RankedRecord] = []
     rejected: list[dict[str, Any]] = []
     for item in ranked:
         try:
-            record = attach_deconstruction_artifact_brief(item.record, tenant_id=tenant_id)
+            source_asset_id = str((item.record.detail_json or {}).get("source_asset_id") or "").strip()
+            materialize_deferred_contract = bool(
+                request.source_asset_id
+                and request.source_asset_id in {*_record_keys(item.record), source_asset_id}
+            )
+            record = attach_deconstruction_artifact_brief(
+                item.record,
+                tenant_id=tenant_id,
+                require_creative_handoff=materialize_deferred_contract,
+                creative_handoff_text=request.raw_text,
+                materialize_deferred_contract=materialize_deferred_contract,
+            )
         except DeconstructionArtifactUnavailable as exc:
             rejected.append(
                 {
@@ -339,6 +358,10 @@ def _require_deconstruction_artifacts(
                 }
             )
             continue
+        if not materialize_deferred_contract:
+            # Ranking may retain a legacy deconstruction for selection continuity,
+            # but its uncontracted material must never become LLM input.
+            record.detail_json["creation_handoff"] = {"status": "not_requested"}
         accepted.append(
             RankedRecord(
                 record=record,
@@ -352,6 +375,25 @@ def _require_deconstruction_artifacts(
 
 
 def _record_candidate_payload(record: CanonicalMediaRecord) -> dict[str, Any]:
+    creation_handoff = (record.detail_json or {}).get("creation_handoff")
+    contract = creation_handoff.get("multi_signal_contract") if isinstance(creation_handoff, dict) else None
+    if record.record_type == "素材拆解" and isinstance(creation_handoff, dict):
+        if isinstance(contract, dict):
+            return {
+                "id": _primary_record_id(record),
+                "source_record_id": record.source_record_id,
+                "relation_id": record.relation_id,
+                "source_table": record.source_table,
+                "record_type": record.record_type,
+                "multi_signal_contract": contract,
+            }
+        return {
+            "id": _primary_record_id(record),
+            "source_record_id": record.source_record_id,
+            "relation_id": record.relation_id,
+            "source_table": record.source_table,
+            "record_type": record.record_type,
+        }
     return {
         "id": _primary_record_id(record),
         "source_record_id": record.source_record_id,
@@ -488,6 +530,8 @@ def _run_viral_deconstruct(link: str, *, tenant_id: str) -> dict[str, Any]:
 
 def _ranked_candidate_payload(item: RankedRecord) -> dict[str, Any]:
     payload = _record_candidate_payload(item.record)
+    if item.record.record_type == "素材拆解" and isinstance((item.record.detail_json or {}).get("creation_handoff"), dict):
+        return payload
     payload["score"] = item.score
     payload["reasons"] = item.reasons
     payload["score_scale"] = item.score_scale
@@ -571,6 +615,17 @@ def _record_keys(record: CanonicalMediaRecord) -> set[str]:
     return {item for item in (record.source_record_id, record.relation_id, _primary_record_id(record)) if item}
 
 
+def _explicit_source_asset_virals(records: list[CanonicalMediaRecord], source_asset_id: str) -> list[RankedRecord]:
+    target = str(source_asset_id or "").strip()
+    if not target:
+        return []
+    return [
+        RankedRecord(record=record, score=100, reasons={"显式创作交接": 100})
+        for record in records
+        if target in {*_record_keys(record), str((record.detail_json or {}).get("source_asset_id") or "").strip()}
+    ]
+
+
 def _merge_ranked_records(*groups: list[RankedRecord]) -> list[RankedRecord]:
     merged: list[RankedRecord] = []
     seen: set[str] = set()
@@ -620,6 +675,8 @@ def _primary_record_id(record: CanonicalMediaRecord) -> str:
 def _reference_doc_urls_from_records(records: list[CanonicalMediaRecord], *, max_items: int) -> list[str]:
     urls: list[str] = []
     for record in records:
+        if record.record_type == "素材拆解" and isinstance((record.detail_json or {}).get("creation_handoff"), dict):
+            continue
         for url in record.doc_links.values():
             if url and url not in urls:
                 urls.append(url)
