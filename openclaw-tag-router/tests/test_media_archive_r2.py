@@ -4,7 +4,10 @@ import base64
 import hashlib
 import io
 import json
+import shutil
 import sqlite3
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -96,6 +99,50 @@ class MediaArchiveR2Test(unittest.TestCase):
         validate_r1_response("archive_detail", self.service.detail(TENANT_A, archive_id))
         validate_r1_response("archive_list", self.service.list(TENANT_A))
         validate_r1_response("archive_delete_plan", self.service.delete_plan(TENANT_A, archive_id, idempotency_key="plan"))
+
+    def test_generated_contract_resolves_from_clean_checkout_and_explicit_override(self) -> None:
+        checkout_root = Path(__file__).resolve().parents[2]
+        router_root = checkout_root / "openclaw-tag-router"
+        repository_contract = checkout_root / "media-agent-cli/generated_product_contract.py"
+        clean_import = "\n".join(
+            (
+                "from pathlib import Path",
+                "from openclaw_app.services import media_archive_service as archive",
+                "expected = Path(archive.__file__).resolve().parents[3] / 'media-agent-cli/generated_product_contract.py'",
+                "assert archive.CANONICAL_GENERATED_CONTRACT == expected",
+                "assert archive.resolve_archive_operation('/archives/commit', 'POST') == ('archive_commit', {})",
+                "archive.validate_r1_response('archive_list', {'archives': [], 'next_cursor': None})",
+            )
+        )
+        clean = subprocess.run(
+            [sys.executable, "-c", clean_import],
+            cwd=router_root,
+            env={},
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(clean.returncode, 0, clean.stderr)
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            override = Path(temporary_directory) / "generated_product_contract.py"
+            shutil.copyfile(repository_contract, override)
+            override_import = "\n".join(
+                (
+                    "import os",
+                    "from pathlib import Path",
+                    "from openclaw_app.services import media_archive_service as archive",
+                    "assert archive.CANONICAL_GENERATED_CONTRACT == Path(os.environ['OPENCLAW_MEDIA_GENERATED_CONTRACT'])",
+                    "assert archive.resolve_archive_operation('/archives/commit', 'POST') == ('archive_commit', {})",
+                )
+            )
+            overridden = subprocess.run(
+                [sys.executable, "-c", override_import],
+                cwd=router_root,
+                env={"OPENCLAW_MEDIA_GENERATED_CONTRACT": str(override)},
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(overridden.returncode, 0, overridden.stderr)
 
     def test_full_manifest_persists_text_content_and_descriptor_without_media_bytes(self) -> None:
         descriptor = self.item("asset:video", mode="descriptor_only", mime_type="video/mp4", sha256=hashlib.sha256(b"").hexdigest(), size_bytes=0)
