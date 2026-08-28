@@ -64,7 +64,7 @@ from ..services.resource_access import ResourceAccessService
 from ..services.retail_admin import RetailAdminService
 from ..services.retail_fulfillment import RetailFulfillmentService
 from ..services.upstream_gateway_credentials import UpstreamCredentialError
-from ..router.content_os_project_lifecycle import ContentOSContractError
+from ..services.cloud_media_task_receiver import CloudMediaTaskReceiver, CloudMediaTaskReceiverError
 from .audit_reason_header import AuditReasonHeaderError, decode_audit_reason_header
 from .media_business_context import (
     AdminAuditInput,
@@ -1185,6 +1185,8 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except TenantActivityAccessError as exc:
             status = HTTPStatus.NOT_FOUND if exc.code == "activity_not_found" else HTTPStatus.FORBIDDEN
             self._send_api_error(status, exc.code, str(exc))
+        except CloudMediaTaskReceiverError as exc:
+            self._send_api_error(HTTPStatus(exc.status), exc.code, exc.detail)
         except DeviceJobError as exc:
             self._send_api_error(HTTPStatus(exc.status), exc.code, exc.detail)
         except AccountError as exc:
@@ -1205,6 +1207,10 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
 
     def _do_GET(self) -> None:
         path = self._request_path()
+        match = re.fullmatch(r"/internal/content-os/mac-result/(task_\d{8}_\d{3})", path)
+        if match is not None:
+            self._handle_content_os_mac_result_readback(match.group(1))
+            return
         if path in {"/openclaw/media/oauth/callback", "/auth/feishu/callback"}:
             self._handle_auth_feishu_callback()
             return
@@ -1322,6 +1328,12 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 return
             if self._dispatch_media_business("POST"):
                 return
+            match = re.fullmatch(r"/internal/content-os/mac-result/(task_\d{8}_\d{3})/retry", path)
+            if match is not None:
+                self._handle_content_os_mac_result_retry(
+                    match.group(1), self._read_json_body(maximum_bytes=8 * 1024)
+                )
+                return
             if path == "/internal/content-os/mac-result":
                 self._handle_content_os_mac_result()
                 return
@@ -1358,6 +1370,8 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             self._send_api_error(HTTPStatus(exc.status), exc.code, exc.detail)
         except ProvisioningError as exc:
             self._send_stage1_provisioning_error(exc)
+        except CloudMediaTaskReceiverError as exc:
+            self._send_api_error(HTTPStatus(exc.status), exc.code, exc.detail)
         except DeviceJobError as exc:
             self._send_api_error(HTTPStatus(exc.status), exc.code, exc.detail)
         except UpstreamCredentialError:
@@ -1792,8 +1806,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         return value.strip()
 
     def _handle_content_os_mac_result(self) -> None:
-        """Accept a Mac result only when its device credential owns the task tenant."""
-
+        """Accept a Mac result and keep the legacy acknowledgement shape stable."""
         service = self._require_device_job_service()
         if service is None:
             return
@@ -1801,30 +1814,65 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         if credential is None:
             return
         payload = self._read_json_body(maximum_bytes=256 * 1024)
-        if payload.get("doc_type") != "mac_result":
-            self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_content_os_result", "Mac 回传格式无效。")
-            return
-        if self.app is None or not hasattr(self.app, "router"):
-            self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "content_os_unavailable", "Content OS 服务暂时不可用。")
-            return
-        receiver = getattr(self.app.router, "_accept_content_os_mac_result", None)
-        if not callable(receiver):
-            self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "content_os_unavailable", "Content OS 服务暂时不可用。")
-            return
-        identity = service.authenticated_credential(credential)
-        try:
-            accepted = receiver(payload, expected_tenant_id=identity["tenant_id"])
-        except ContentOSContractError:
-            self._send_api_error(HTTPStatus.UNPROCESSABLE_ENTITY, "content_os_result_rejected", "Mac 回传与当前任务契约不一致。")
-            return
+        accepted = self._content_os_cloud_receiver(service).receive(
+            credential=credential,
+            result=payload,
+            idempotency_key=self.headers.get("Idempotency-Key"),
+        )
         self._send_json(
             HTTPStatus.OK,
             {
                 "ok": True,
                 "status": accepted["status"],
-                "task_id": accepted["task_id"],
+                "task_id": accepted["task"]["task_id"],
             },
         )
+
+    def _handle_content_os_mac_result_readback(self, task_id: str) -> None:
+        service = self._require_device_job_service()
+        if service is None:
+            return
+        credential = self._device_credential()
+        if credential is None:
+            return
+        receipt = self._content_os_cloud_receiver(service).readback(
+            credential=credential,
+            task_id=task_id,
+        )
+        self._send_json(HTTPStatus.OK, {"ok": True, "receipt": receipt})
+
+    def _handle_content_os_mac_result_retry(self, task_id: str, payload: Mapping[str, Any]) -> None:
+        service = self._require_device_job_service()
+        if service is None:
+            return
+        credential = self._device_credential()
+        if credential is None:
+            return
+        key = self._require_idempotency_key()
+        if key is None:
+            return
+        if set(payload) != {"reason"}:
+            raise CloudMediaTaskReceiverError(
+                "invalid_request",
+                "重试请求只能包含 reason。",
+                status=HTTPStatus.BAD_REQUEST,
+            )
+        receipt = self._content_os_cloud_receiver(service).retry_blocked_change(
+            credential=credential,
+            task_id=task_id,
+            idempotency_key=key,
+            reason=payload["reason"],
+        )
+        self._send_json(HTTPStatus.CREATED, {"ok": True, "receipt": receipt})
+
+    def _content_os_cloud_receiver(self, service: DeviceJobService) -> CloudMediaTaskReceiver:
+        if self.app is None or not hasattr(self.app, "router"):
+            raise CloudMediaTaskReceiverError(
+                "content_os_unavailable",
+                "Content OS 服务暂时不可用。",
+                status=HTTPStatus.SERVICE_UNAVAILABLE,
+            )
+        return CloudMediaTaskReceiver(service, self.app.router)
 
     def _r1_pagination(self, *, include_state: bool = False) -> tuple[int, str | None]:
         query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
