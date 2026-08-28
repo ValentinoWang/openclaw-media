@@ -5,6 +5,12 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+
+import pytest
+
+from runtime.cli import selfmedia
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -124,3 +130,83 @@ def test_id_business_cli_smoke_validates_trigger_without_llm() -> None:
     assert payload["module"] == "selfmedia.business.id_business"
     assert payload["fields"]["作者ID"] == "小王"
     assert payload["fields"]["项目"] == "HF绿氨糖"
+
+
+def _daily_poll_args(**overrides: object) -> SimpleNamespace:
+    values: dict[str, object] = {
+        "monitor_url": "https://bitable.example.test/monitor",
+        "report_url": "",
+        "view_id": "",
+        "limit": 0,
+        "require_feishu": False,
+        "dry_run": True,
+        "tenant_id": TEST_TENANT_ID,
+    }
+    values.update(overrides)
+    return SimpleNamespace(**values)
+
+
+def test_daily_poll_smoke_honors_feishu_required_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FEISHU_REQUIRED", "1")
+
+    args = selfmedia.build_parser().parse_args(["daily-poll", "--tenant-id", TEST_TENANT_ID])
+
+    assert args.require_feishu is True
+    with pytest.raises(SystemExit, match="--require-feishu"):
+        selfmedia.daily_poll(_daily_poll_args(dry_run=False))
+
+
+def test_daily_poll_rejects_creator_profile_rows_without_feishu_write(monkeypatch: pytest.MonkeyPatch) -> None:
+    update_calls: list[object] = []
+    with patch.object(
+        selfmedia,
+        "feishu_list_records",
+        return_value=[{"record_id": "rec_profile", "fields": {"creator_profile_id": "creator-1", "platform": "抖音"}}],
+    ), patch.object(selfmedia, "feishu_update_record", side_effect=lambda *args, **kwargs: update_calls.append((args, kwargs))), patch.object(
+        selfmedia, "refresh_posts", side_effect=AssertionError("v2 profile rows must not be polled")
+    ):
+        with pytest.raises(SystemExit, match="CreatorProfile"):
+            selfmedia.daily_poll(_daily_poll_args())
+
+    assert update_calls == []
+
+
+def test_daily_poll_rejects_unclassified_rows_without_feishu_write() -> None:
+    with patch.object(
+        selfmedia,
+        "feishu_list_records",
+        return_value=[{"record_id": "rec_unknown", "fields": {"账号名称": "未分类账号", "平台": "抖音"}}],
+    ), patch.object(selfmedia, "feishu_update_record", side_effect=AssertionError("unclassified rows must not be updated")):
+        with pytest.raises(SystemExit, match="无法确认"):
+            selfmedia.daily_poll(_daily_poll_args())
+
+
+def test_daily_poll_report_is_chinese_and_redacts_runtime_exceptions(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tempfile import TemporaryDirectory
+
+    with TemporaryDirectory() as directory:
+        monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", directory)
+        with patch.object(
+            selfmedia,
+            "feishu_list_records",
+            return_value=[
+                {
+                    "record_id": "rec_monitor",
+                    "fields": {"账号名称": "测试账号", "平台": "抖音", "近期作品链接": "https://example.test/post", "启用": True},
+                }
+            ],
+        ), patch.object(
+            selfmedia,
+            "refresh_posts",
+            side_effect=RuntimeError("Traceback (most recent call last):\n  File '/Users/example/private.py', line 1\nnetwork failure"),
+        ), patch.object(selfmedia, "feishu_update_record", side_effect=AssertionError("dry run must not write Feishu")):
+            payload = selfmedia.daily_poll(_daily_poll_args())
+
+        report = Path(payload["report_path"]).read_text(encoding="utf-8")
+
+    assert payload["errors"] == [{"account_name": "测试账号", "error": "轮询失败，请检查运行日志。"}]
+    assert "## 轮询失败" in report
+    assert "轮询失败，请检查运行日志。" in report
+    assert "总互动" in report
+    assert "/Users/example" not in report
+    assert "Traceback" not in report

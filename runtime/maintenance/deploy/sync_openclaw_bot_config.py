@@ -12,11 +12,13 @@ from pathlib import Path
 from typing import Any
 
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
 # The editable configuration SSOT lives in this repository; the env override
 # keeps the deployed host's split layout working.
 REPO_CONFIG = Path(
     os.getenv("OPENCLAW_BOTS_CONFIG")
-    or Path(__file__).resolve().parents[3] / "config/openclaw_bots.json"
+    or REPO_ROOT / "config/openclaw_bots.json"
 )
 OBSIDIAN_DIR = Path("/home/ubuntu/obsidian-日记/openclaw配置")
 OBSIDIAN_CONFIG = OBSIDIAN_DIR / "openclaw_bots.json"
@@ -26,7 +28,7 @@ LLM_USAGE_SSOT_NOTE = PUBLIC_KNOWLEDGE_DIR / "OpenClaw Bot LLM 使用矩阵 SSOT
 SYNC_STATE = OBSIDIAN_DIR / ".openclaw_bots_sync_state.json"
 MAC_OBSIDIAN_DIR = "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/openclaw配置"
 MAC_PUBLIC_KNOWLEDGE_DIR = "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/公共知识库"
-SYNC_AGENT_MODELS = Path("/home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_agent_models.py")
+SYNC_AGENT_MODELS = REPO_ROOT / "runtime/maintenance/deploy/sync_openclaw_agent_models.py"
 DUPLICATE_NOTE_PATTERNS = (
     "OpenClaw Bot LLM 配置 [0-9]*.md",
     "OpenClaw Bot LLM 配置.sync-conflict-*.md",
@@ -195,6 +197,11 @@ def write_json_config(path: Path, payload: dict[str, Any], *, dry_run: bool) -> 
     atomic_write(path, canonical_text(payload))
 
 
+def assert_owned_script(path: Path) -> None:
+    if not path.is_file():
+        raise SystemExit(f"missing repository-owned maintenance script: {path}")
+
+
 def cleanup_duplicate_notes(*, dry_run: bool) -> list[str]:
     removed: list[str] = []
     for pattern in DUPLICATE_NOTE_PATTERNS:
@@ -354,11 +361,11 @@ def render_note(payload: dict[str, Any], repo_hash: str, obsidian_hash: str) -> 
             "## Sync",
             "",
             "```bash",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_bot_config.py",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_bot_config.py --direction obsidian-to-repo",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_bot_config.py --direction repo-to-obsidian",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_agent_models.py",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_runtime.py",
+            f"python3 {Path(__file__).resolve()}",
+            f"python3 {Path(__file__).resolve()} --direction obsidian-to-repo",
+            f"python3 {Path(__file__).resolve()} --direction repo-to-obsidian",
+            f"python3 {SYNC_AGENT_MODELS}",
+            f"python3 {REPO_ROOT / 'runtime/maintenance/deploy/deploy_openclaw_runtime.py'}",
             "```",
             "",
         ]
@@ -382,7 +389,7 @@ def render_llm_usage_ssot(payload: dict[str, Any], repo_hash: str) -> str:
         "",
         "## 1. 事实源边界",
         "",
-        "- Bot / profile / provider 的可编辑事实源是 `/home/ubuntu/selfmedia-tools/config/openclaw_bots.json`。",
+        f"- Bot / profile / provider 的可编辑事实源是 `{REPO_CONFIG}`。",
         "- `openclaw配置/OpenClaw Bot LLM 配置.md` 是配置镜像说明，由 `runtime/maintenance/deploy/sync_openclaw_bot_config.py` 生成。",
         "- 本文件是 LLM 使用矩阵 SSOT，由同一个脚本生成，覆盖 profile 路径和非 profile 模型理解路径。",
         "- 本文件不输出真实 API key，只输出配置状态。",
@@ -496,8 +503,8 @@ def render_llm_usage_ssot(payload: dict[str, Any], repo_hash: str) -> str:
             "## 7. 生成与验证",
             "",
             "```bash",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_bot_config.py",
-            "PYTHONPATH=/home/ubuntu/selfmedia-tools pytest -q /home/ubuntu/selfmedia-tools/tests/test_sync_openclaw_bot_config.py",
+            f"python3 {Path(__file__).resolve()}",
+            f"PYTHONPATH={REPO_ROOT} pytest -q {REPO_ROOT / 'tests/test_sync_openclaw_bot_config.py'}",
             "```",
             "",
         ]
@@ -582,6 +589,7 @@ def main() -> None:
     write_state(repo_hash, obsidian_hash, direction, dry_run=args.dry_run)
     restarted_services = False
     if args.restart_services and runtime_config_changed and direction != "none" and not args.dry_run:
+        assert_owned_script(SYNC_AGENT_MODELS)
         subprocess.run(
             ["python3", str(SYNC_AGENT_MODELS)],
             check=True,

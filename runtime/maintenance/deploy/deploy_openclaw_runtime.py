@@ -9,13 +9,13 @@ import time
 from pathlib import Path
 
 
-REPO_ROOT = Path("/home/ubuntu/selfmedia-tools")
+REPO_ROOT = Path(__file__).resolve().parents[3]
 NODE_RUNTIME_BIN = Path("/home/ubuntu/.nvm/versions/node/v22.22.2/bin")
 TAG_ROUTER_SOURCE_DIR = REPO_ROOT / "openclaw-tag-router"
 TAG_ROUTER_TARGET_DIR = Path("/home/ubuntu/.openclaw/extensions/openclaw-tag-router")
 TAG_ROUTER_SYSTEMD_SOURCE_DIR = TAG_ROUTER_SOURCE_DIR / "deploy/systemd/user"
 USER_SYSTEMD_DIR = Path("/home/ubuntu/.config/systemd/user")
-BOT_CENTER_ROOT = Path("/home/ubuntu/openclaw-bot-center")
+BOT_CENTER_ROOT = REPO_ROOT / "openclaw-bot-center"
 BOT_CENTER_PUBLISH_DIR = Path("/var/www/openclaw/bots")
 SYNC_MODELS_SCRIPT = REPO_ROOT / "runtime" / "maintenance" / "deploy" / "sync_openclaw_agent_models.py"
 SYNC_BOT_CONFIG_SCRIPT = REPO_ROOT / "runtime" / "maintenance" / "deploy" / "sync_openclaw_bot_config.py"
@@ -43,6 +43,17 @@ JOURNAL_SYSTEMD_FILES = (
 FORBIDDEN_CRON_JOB_NAMES = (
     "daily-weekly-self-model-review",
 )
+
+OWNED_MAINTENANCE_SCRIPTS = (
+    SYNC_MODELS_SCRIPT,
+    SYNC_BOT_CONFIG_SCRIPT,
+)
+
+
+def assert_owned_maintenance_scripts() -> None:
+    missing = [str(path) for path in OWNED_MAINTENANCE_SCRIPTS if not path.is_file()]
+    if missing:
+        raise SystemExit("missing repository-owned maintenance scripts: " + ", ".join(missing))
 
 
 def run(command: list[str], *, cwd: Path | None = None, timeout: int | None = None) -> subprocess.CompletedProcess[str]:
@@ -92,6 +103,7 @@ def run_with_retries(
 
 
 def sync_tag_router_source_to_active() -> None:
+    assert_owned_maintenance_scripts()
     if not TAG_ROUTER_SOURCE_DIR.is_dir():
         raise SystemExit(f"missing source dir: {TAG_ROUTER_SOURCE_DIR}")
     run(["python3", str(SYNC_BOT_CONFIG_SCRIPT), "--direction", "repo-to-obsidian"])

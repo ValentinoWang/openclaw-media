@@ -33,7 +33,7 @@ from common.social_runtime import (  # noqa: E402
     feishu_bool,
     feishu_first_field,
     feishu_list_records,
-    feishu_status_message,
+    feishu_required_default,
     feishu_table_url_from_env,
     feishu_update_record,
     feishu_urls_from_fields,
@@ -77,6 +77,28 @@ ACCOUNT_MONITOR_FIELD_SPECS = {
     "最近总互动": 2,
     "最近错误": 1,
     "最近日报摘要": 1,
+}
+
+ACCOUNT_MONITOR_LINK_FIELDS = frozenset(("近期作品链接", "作品链接", "监控链接", "链接", "URL", "urls"))
+CREATOR_PROFILE_FIELD_MARKERS = frozenset(
+    (
+        "creator_profile_id",
+        "profile_id",
+        "author_id",
+        "博主IP",
+        "作者ID",
+        "平台ID",
+        "主页链接",
+        "赛道",
+        "粉丝数(k)",
+    )
+)
+DAILY_POLL_STATUS_LABELS = {
+    "ok": "正常",
+    "partial": "部分成功",
+    "missing": "未获取到作品",
+    "missing_urls": "缺少作品链接",
+    "error": "轮询失败",
 }
 
 
@@ -507,6 +529,65 @@ def account_from_record(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def account_record_kind(record: dict[str, Any]) -> str:
+    fields = record.get("fields") or {}
+    if not isinstance(fields, dict):
+        return "unknown"
+    field_names = set(fields)
+    if field_names & CREATOR_PROFILE_FIELD_MARKERS:
+        return "creator_profile_v2"
+    if field_names & ACCOUNT_MONITOR_LINK_FIELDS:
+        return "account_monitor_v1"
+    return "unknown"
+
+
+def validate_account_monitor_records(records: list[dict[str, Any]]) -> None:
+    profile_record_ids = [
+        str(record.get("record_id") or "<unknown>")
+        for record in records
+        if account_record_kind(record) == "creator_profile_v2"
+    ]
+    if profile_record_ids:
+        raise SystemExit(
+            "daily-poll 仅支持 v1 账号监控表；检测到 v2 CreatorProfile 行，"
+            "已拒绝写入，避免向画像表添加监控字段："
+            + "、".join(profile_record_ids[:3])
+        )
+    if records and not any(account_record_kind(record) == "account_monitor_v1" for record in records):
+        raise SystemExit(
+            "daily-poll 无法确认这是 v1 账号监控表；至少一行需要包含近期作品链接、作品链接或监控链接字段。"
+        )
+
+
+def daily_poll_status_label(status: object) -> str:
+    value = str(status or "").strip()
+    return DAILY_POLL_STATUS_LABELS.get(value, "状态未知")
+
+
+def user_visible_poll_error(exc: Exception) -> str:
+    message = str(exc).lower()
+    if "timeout" in message or "timed out" in message:
+        return "轮询超时，请检查网络或平台登录状态。"
+    if "cookie" in message or "login" in message or "登录" in message:
+        return "平台登录状态异常，请更新登录凭据后重试。"
+    return "轮询失败，请检查运行日志。"
+
+
+def redacted_report_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): user_visible_poll_error(RuntimeError(str(item)))
+            if str(key).lower() in {"error", "exception", "failure_reason", "stderr", "stdout", "traceback"}
+            else redacted_report_value(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redacted_report_value(item) for item in value]
+    if isinstance(value, str):
+        return re.sub(r"(?<![\w.-])/(?:Users|home|private|tmp|var|opt)(?:/[^\s`'\"|<>()\[\]{}]*)?", "[本机路径已隐藏]", value)
+    return value
+
+
 def account_summary(account: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     totals = {key: sum(count_value(row, key) for row in rows) for key in INTERACTION_KEYS}
     total = sum(totals.values())
@@ -531,17 +612,23 @@ def account_summary(account: dict[str, Any], rows: list[dict[str, Any]]) -> dict
     }
 
 
-def build_daily_report(accounts: list[dict[str, Any]], account_rows: dict[str, list[dict[str, Any]]], summaries: list[dict[str, Any]]) -> list[str]:
+def build_daily_report(
+    accounts: list[dict[str, Any]],
+    account_rows: dict[str, list[dict[str, Any]]],
+    summaries: list[dict[str, Any]],
+    errors: list[dict[str, str]],
+) -> list[str]:
     lines = [
         "# 账号每日轮询",
         "",
-        "| 账号 | 平台 | 作品数 | 状态 | 点赞 | 收藏 | 评论 | 分享 | 总互动 | 最佳作品 |",
+        "| 账号 | 平台 | 作品数 | 状态 | 点赞 | 收藏 | 评论 | 分享 | 总互动 | 最佳作品链接 |",
         "| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for summary in sorted(summaries, key=lambda item: item["total_interactions"], reverse=True):
         lines.append(
-            "| {account_name} | {platform} | {post_count} | {overall_status} | {like_count} | {collect_count} | {comment_count} | {share_count} | {total_interactions} | {best_post_url} |".format(
-                **summary
+            "| {account_name} | {platform} | {post_count} | {status} | {like_count} | {collect_count} | {comment_count} | {share_count} | {total_interactions} | {best_post_url} |".format(
+                **redacted_report_value(summary),
+                status=daily_poll_status_label(summary["overall_status"]),
             )
         )
     missing = [item for item in accounts if item["enabled"] and not item["urls"]]
@@ -555,19 +642,24 @@ def build_daily_report(accounts: list[dict[str, Any]], account_rows: dict[str, l
             continue
         lines.extend(["", f"## {account['account_name']}", ""])
         for row in sorted(rows, key=total_interactions, reverse=True):
-            metrics = metric_summary(row)
+            report_row = redacted_report_value(row)
+            metrics = metric_summary(report_row)
             lines.append(
-                "- {post_id} total={total} like={like} collect={collect} comment={comment} share={share} status={status} {url}".format(
-                    post_id=row.get("post_id", ""),
+                "- 作品 {post_id}：总互动 {total}，点赞 {like}，收藏 {collect}，评论 {comment}，分享 {share}，状态 {status}，链接 {url}".format(
+                    post_id=report_row.get("post_id", ""),
                     total=metrics["total_interactions"],
-                    like=row.get("like_count"),
-                    collect=row.get("collect_count"),
-                    comment=row.get("comment_count"),
-                    share=row.get("share_count"),
-                    status=row.get("health_status", ""),
-                    url=row.get("cleaned_url") or row.get("url") or "",
+                    like=report_row.get("like_count"),
+                    collect=report_row.get("collect_count"),
+                    comment=report_row.get("comment_count"),
+                    share=report_row.get("share_count"),
+                    status=daily_poll_status_label(report_row.get("health_status", "")),
+                    url=report_row.get("cleaned_url") or report_row.get("url") or "",
                 )
             )
+    if errors:
+        lines.extend(["", "## 轮询失败", ""])
+        for error in errors:
+            lines.append(f"- {error['account_name']}：{error['error']}")
     return lines
 
 
@@ -580,10 +672,12 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
     report_url = args.report_url or os.getenv("FEISHU_ACCOUNT_REPORT_URL", "").strip()
     if not monitor_url:
         raise SystemExit("missing FEISHU_ACCOUNT_MONITOR_URL or --monitor-url")
-    if args.require_feishu and not report_url:
+    require_feishu = bool(args.require_feishu or feishu_required_default())
+    if require_feishu and not args.dry_run and not report_url:
         raise SystemExit("missing FEISHU_ACCOUNT_REPORT_URL or --report-url when --require-feishu is set")
 
     records = feishu_list_records(monitor_url, view_id=args.view_id)
+    validate_account_monitor_records(records)
     accounts = [account_from_record(record) for record in records]
     if args.limit:
         accounts = accounts[: args.limit]
@@ -606,7 +700,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
                     account["record_id"],
                     {
                         "最近运行时间": now_iso(),
-                        "最近状态": "missing_urls",
+                        "最近状态": daily_poll_status_label("missing_urls"),
                         "最近错误": "账号监控表需要填写近期作品链接/作品链接",
                     },
                     specs=ACCOUNT_MONITOR_FIELD_SPECS,
@@ -623,7 +717,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
                     account["record_id"],
                     {
                         "最近运行时间": summary["captured_at"],
-                        "最近状态": summary["overall_status"],
+                        "最近状态": daily_poll_status_label(summary["overall_status"]),
                         "最近作品数": summary["post_count"],
                         "最近总互动": summary["total_interactions"],
                         "最近错误": "",
@@ -632,7 +726,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
                     specs=ACCOUNT_MONITOR_FIELD_SPECS,
                 )
         except Exception as exc:
-            message = str(exc)
+            message = user_visible_poll_error(exc)
             errors.append({"account_name": account["account_name"], "error": message})
             if not args.dry_run:
                 feishu_update_record(
@@ -649,7 +743,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
     stamp = slug_time()
     json_path = output_dir / f"account_daily_{stamp}.json"
     md_path = output_dir / f"account_daily_{stamp}.md"
-    payload = {
+    payload = redacted_report_value({
         "tenant_id": args.tenant_id,
         "accounts": accounts,
         "summaries": summaries,
@@ -657,9 +751,9 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
         "errors": errors,
         "monitor_url": monitor_url,
         "report_url": report_url,
-    }
+    })
     write_json(json_path, payload)
-    write_markdown(md_path, build_daily_report(accounts, account_rows, summaries))
+    write_markdown(md_path, build_daily_report(accounts, account_rows, summaries, errors))
 
     feishu_records: list[dict[str, Any]] = []
     for account in accounts:
@@ -669,13 +763,13 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
             fields = row_to_feishu_fields(
                 "账号每日轮询",
                 row,
-                summary=f"{account['account_name']} daily; total={total_interactions(row)}; score={score['overall_score']}",
-                report_path=str(md_path),
+                summary=f"{account['account_name']} 每日轮询；总互动 {total_interactions(row)}；评分 {score['overall_score']}",
+                report_path=md_path.name,
                 score=score["overall_score"],
                 decision=score["decision"],
             )
             fields["详情JSON"] = {"account": account, "row": row, "score": score}
-            feishu_records.append(fields)
+            feishu_records.append(redacted_report_value(fields))
     record_ids: list[str] = []
     if not args.dry_run:
         record_ids = write_feishu_records(
@@ -683,7 +777,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
             feishu_records,
             module="08 账号每日轮询",
             report_path=str(md_path),
-            require=args.require_feishu,
+            require=require_feishu,
         )
 
     return {
@@ -693,7 +787,20 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
         "account_count": len(accounts),
         "polled_account_count": len(summaries),
         "record_ids": record_ids,
-        "feishu": feishu_status_message(record_ids, report_url, len(feishu_records)),
+        "feishu": {
+            "已写入": f"已写入 {len(record_ids)} 条飞书记录",
+            "无记录": "无需写入飞书记录",
+            "未配置": "未配置飞书日报表，未写入跨平台记录",
+            "未写入": "已配置飞书日报表，但没有写入记录",
+        }.get(
+            "已写入"
+            if record_ids
+            else "无记录"
+            if not feishu_records
+            else "未配置"
+            if not report_url
+            else "未写入"
+        ),
         "errors": errors,
     }
 
@@ -778,7 +885,7 @@ def build_parser() -> argparse.ArgumentParser:
     poll.add_argument("--report-url", default="")
     poll.add_argument("--view-id", default="")
     poll.add_argument("--limit", type=int, default=0)
-    poll.add_argument("--require-feishu", action="store_true")
+    poll.add_argument("--require-feishu", action="store_true", default=feishu_required_default())
     poll.add_argument("--dry-run", action="store_true")
     poll.add_argument("--tenant-id", required=True)
 
@@ -846,6 +953,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    load_default_env_files()
     args = build_parser().parse_args()
     ensure_creation_runtime(args)
     reject_social_theory_tags(" ".join(sys.argv[1:]))
