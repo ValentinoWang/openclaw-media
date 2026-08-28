@@ -212,7 +212,20 @@ def handle_shooting_execution_backwash(
     validation = validate_shooting_execution_plan(revised)
     if not validation.get("ok"):
         raise RuntimeError(f"拍摄执行回洗结构校验失败：{validation}")
-    _validate_practical_shape(current_draft, revised)
+    if not _reviews_passed(narrative_plan_review, review):
+        return {
+            "ok": False,
+            "status": "pending_manual",
+            "doc_link": target,
+            "creation_run_id": run_id,
+            "validation": validation,
+            "narrative_plan": narrative_plan,
+            "narrative_plan_review": narrative_plan_review,
+            "semantic_review": review,
+            "candidate_draft": revised,
+            "reply": "自动回洗已生成候选稿，但语义验收未通过；原拍摄执行文档未被覆盖，请根据问题清单人工确认后再处理。",
+        }
+    _validate_practical_shape(current_draft, revised, requirements=requirements)
     written_url = rewrite_shooting_execution_doc(target, request, revised, validation, media_context=media_context)
     if _canonical_doc_url(written_url) != target:
         raise RuntimeError(f"拍摄执行回洗返回了不同文档：{written_url}")
@@ -342,7 +355,7 @@ def _build_narrative_plan(
             review=last_review,
             previous=last_plan,
         )
-    raise RuntimeError("拍摄执行回洗叙事规划验收未通过：" + _review_failure_summary(last_review))
+    return last_plan, last_review
 
 
 def _narrative_plan_prompt(
@@ -415,9 +428,7 @@ def _generate_revised_draft(
             review=last_review,
             previous=candidate,
         )
-    raise RuntimeError(
-        "拍摄执行回洗连贯性验收未通过：" + _review_failure_summary(last_review)
-    )
+    return candidate, last_review
 
 
 def _revision_prompt(
@@ -432,7 +443,7 @@ def _revision_prompt(
     prompt = (
         "你是 OpenClaw Media 的拍摄执行回洗导演。根据用户修改要求整份重写现有执行单，只输出合法 JSON object。\n"
         "必须保持现有顶层结构和每个列表项字段；把要求吸收到分镜、路线、必拍、分支、现场检查和发布包等相关章节。\n"
-        "不得生成补充记录、修改记录、追加说明、证据附录正文或文末补丁。分镜保持可直接拍摄，整体长度和原稿相当。\n"
+        "不得生成补充记录、修改记录、追加说明、证据附录正文或文末补丁。分镜保持可直接拍摄；除非用户明确要求删减或压缩，否则整体长度和原稿相当。\n"
         "保留未被修改要求推翻的原事实、产品名、合规边界、交付规格和账号边界；不确定的信息标为“待人工核实”。\n"
         "分镜、拍摄目标主线、路线图、必拍镜头、现场检查和发布包必须使用叙事规划的唯一顺序。\n"
         "每个产品或主体必须连续介绍完成，禁止无理由 A→B→A；只有规划中明确成对的“悬念设置/悬念回收”才能回收。\n"
@@ -525,13 +536,47 @@ def _review_failure_summary(review: dict[str, Any]) -> str:
     return "；".join(issues)
 
 
-def _validate_practical_shape(current: dict[str, Any], revised: dict[str, Any]) -> None:
+def _reviews_passed(*reviews: dict[str, Any]) -> bool:
+    return all(review.get("status") == "passed" for review in reviews)
+
+
+def _validate_practical_shape(
+    current: dict[str, Any],
+    revised: dict[str, Any],
+    *,
+    requirements: str = "",
+) -> None:
+    if _requires_structural_reduction(requirements):
+        return
     for key in ("storyboard", "route_map", "must_shot_list", "onsite_checklist"):
         before = len(current.get(key) or [])
         after = len(revised.get(key) or [])
         minimum = max(1, int(before * 0.7))
         if after < minimum:
             raise RuntimeError(f"拍摄执行回洗后 {key} 过短：{after} < {minimum}")
+
+
+def _requires_structural_reduction(requirements: str) -> bool:
+    text = str(requirements or "").lower()
+    reduction_markers = (
+        "删除",
+        "删掉",
+        "删减",
+        "去掉",
+        "移除",
+        "精简",
+        "压缩",
+        "缩短",
+        "减少",
+        "砍掉",
+        "只保留",
+        "delete",
+        "remove",
+        "shorten",
+        "condense",
+        "cut ",
+    )
+    return any(marker in text for marker in reduction_markers)
 
 
 def _persist_backwash(

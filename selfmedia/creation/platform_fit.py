@@ -160,11 +160,13 @@ def build_platform_mechanism_prompt(
         "1. 只输出合法 JSON object，不要 Markdown 代码块，不要解释。\n"
         "2. platform_mechanism_version 必须由你基于输入和 platform_mechanism_reference 输出；不确定时返回风险说明，不要留空。\n"
         "3. mechanism_claim_boundary 必须说明：这是机制拟合假设，不是平台真实算法或权重结论。\n"
-        "4. creation_reverse_plan 必须能反推到标题、封面/首屏、开头、内容结构、收藏/评论/关注触发。\n"
-        "5. validation_targets 必须给出 2 小时、24 小时、7 天的可观察验证指标。\n"
-        "6. post_publish_correction 必须说明点击低、停留低、收藏/互动低、活动不适配时分别修什么。\n"
-        "7. activity_strategy 必须包含 matched_activities, natural_fit, hard_fit_risk, risk_reason, required_adjustments, do_not_force；hard_fit_risk 只能是 low/medium/high。\n"
-        "8. 不得编造活动 ID、爆款数据、账号数据或官方公告；不得出现“破解算法/平台真实权重/保证爆款/必爆”等表述。\n\n"
+        "4. mechanism_evidence_level 只能是 S/A/B/C/D：S=官方公开规则，A=本账号多次复盘，B=爆款拆解加少量自有数据，C=公开创作者实测，D=待验证假设。\n"
+        "5. source_weights 必须是 object，键为实际使用的证据来源（例如官方规则、账号复盘、爆款拆解、活动 Brief、人工假设），值为 0-1 的相对权重；只写输入中真实存在的来源。\n"
+        "6. creation_reverse_plan 必须能反推到标题、封面/首屏、开头、内容结构、收藏/评论/关注触发。\n"
+        "7. validation_targets 必须给出 2 小时、24 小时、7 天的可观察验证指标。\n"
+        "8. post_publish_correction 必须说明点击低、停留低、收藏/互动低、活动不适配时分别修什么。\n"
+        "9. activity_strategy 必须包含 matched_activities, natural_fit, hard_fit_risk, risk_reason, required_adjustments, do_not_force；hard_fit_risk 只能是 low/medium/high。\n"
+        "10. 不得编造活动 ID、爆款数据、账号数据或官方公告；不得出现“破解算法/平台真实权重/保证爆款/必爆”等表述。\n\n"
         "输出 JSON 字段固定为：\n"
         f"{', '.join(FIT_SCHEMA_KEYS)}。\n\n"
         "输入 JSON：\n"
@@ -181,9 +183,9 @@ def validate_platform_mechanism_fit_payload(
     result: dict[str, Any] = {}
     result["platform_mechanism_version"] = _text(payload.get("platform_mechanism_version"))
     result["mechanism_claim_boundary"] = _text(payload.get("mechanism_claim_boundary"))
-    result["mechanism_evidence_level"] = _text(payload.get("mechanism_evidence_level"))
+    result["mechanism_evidence_level"] = _normalize_fit_evidence_level(payload.get("mechanism_evidence_level"))
+    result["source_weights"] = _normalize_source_weights(payload.get("source_weights"))
     for key in (
-        "source_weights",
         "platform_strategy",
         "activity_strategy",
         "traffic_hypothesis",
@@ -207,6 +209,31 @@ def validate_platform_mechanism_fit_payload(
         raise ValueError("mechanism_claim_boundary 不能声称掌握平台真实算法")
     _assert_no_forbidden_claims(result)
     return result
+
+
+def _normalize_fit_evidence_level(value: Any) -> str:
+    level = _text(value).upper()
+    if level not in {"S", "A", "B", "C", "D"}:
+        raise ValueError("mechanism_evidence_level 必须是 S/A/B/C/D")
+    return level
+
+
+def _normalize_source_weights(value: Any) -> dict[str, float]:
+    weights = _as_dict(value)
+    if not weights:
+        raise ValueError("source_weights 必须是非空 object")
+    normalized: dict[str, float] = {}
+    for source, raw_weight in weights.items():
+        name = _text(source)
+        if not name or isinstance(raw_weight, bool) or not isinstance(raw_weight, (int, float)):
+            raise ValueError("source_weights 的键必须非空且权重必须是 0-1 数字")
+        weight = float(raw_weight)
+        if not 0 <= weight <= 1:
+            raise ValueError("source_weights 的权重必须在 0-1")
+        normalized[name] = weight
+    if not any(normalized.values()):
+        raise ValueError("source_weights 至少需要一个大于 0 的权重")
+    return normalized
 
 
 def parse_platform_mechanism_note(
@@ -574,6 +601,89 @@ def default_platform_mechanism(platform: str) -> dict[str, Any]:
             "seven_day": ["搜索长尾", "回访", "账号标签"],
         },
     }
+
+
+def fallback_platform_mechanism_fit(
+    request: CreationRequest,
+    *,
+    failure_reason: str,
+    activity_candidates: list[dict[str, Any]],
+    viral_candidates: list[dict[str, Any]],
+    inspiration_candidates: list[dict[str, Any]],
+    business_candidates: list[dict[str, Any]],
+    reference_docs: list[dict[str, str]],
+    media_context: dict[str, Any],
+) -> dict[str, Any]:
+    """Return an explicitly marked baseline when the auxiliary fit LLM is unavailable."""
+    baseline = default_platform_mechanism(request.platform)
+    actions_key = "image_actions" if request.content_type == "图文" else "video_actions"
+    actions = _as_dict(baseline.get(actions_key))
+    risk = f"平台推荐拟合暂不可用（{_text(failure_reason) or '未知原因'}）；本次仅按已加载的平台公开机制基线执行，发布后需要人工复核数据。"
+    result = {
+        "platform_mechanism_version": _text(baseline.get("version")) or f"{platform_slug(request.platform)}_baseline",
+        "mechanism_claim_boundary": "这是未经过本轮 LLM 拟合的平台机制基线，不是平台真实算法或权重结论。",
+        "mechanism_evidence_level": "D",
+        "source_weights": {"platform_mechanism_baseline": 1.0},
+        "platform_strategy": {
+            "summary": _text(baseline.get("platform_lens")),
+            "primary_entries": _as_string_list(baseline.get("primary_entries")),
+            "key_feedback": _text(baseline.get("key_feedback")),
+            "content_actions": actions,
+        },
+        "activity_strategy": {
+            "matched_activities": [],
+            "candidate_activity_ids": [],
+            "natural_fit": False,
+            "hard_fit_risk": "low",
+            "risk_reason": "本轮未完成活动适配拟合，不能为了活动改写内容主线。",
+            "required_adjustments": [],
+            "do_not_force": ["不要为了活动改写内容主线。"],
+        },
+        "traffic_hypothesis": {
+            "summary": "仅以平台机制基线设计标题、首屏和互动动作，具体效果需要发布后验证。",
+            "click_reason": _text(baseline.get("click_reason")),
+            "stay_reason": _text(baseline.get("stay_reason")),
+            "interaction_reason": _text(baseline.get("save_or_interaction_reason")),
+        },
+        "creation_reverse_plan": {
+            "cover_or_first_screen": _as_string_list(actions.get("cover_or_first_screen")),
+            "opening": _as_string_list(actions.get("opening")),
+            "structure": _as_string_list(actions.get("structure")),
+            "interaction_trigger": _as_string_list(actions.get("save_comment_follow_trigger")),
+        },
+        "validation_targets": _as_dict(baseline.get("validation_targets")),
+        "post_publish_correction": {
+            "if_low_click": "复核标题和封面是否清楚点出具体人群与问题。",
+            "if_low_stay": "复核开头是否兑现承诺，并减少抽象铺垫。",
+            "if_low_interaction": "补充可保存的具体动作或明确的评论问题。",
+            "if_activity_mismatch": "停止强行绑定活动，保留内容主线。",
+        },
+        "risks_or_missing_info": [risk],
+        "platform": request.platform,
+        "content_type": request.content_type,
+        "track": request.track,
+        "topic": request.topic,
+        "fallback_used": True,
+        "fallback_reason": _text(failure_reason),
+    }
+    result["platform_fit_meta"] = {
+        **_build_platform_fit_meta(
+            request,
+            mechanism_version=result["platform_mechanism_version"],
+            mechanism_source="baseline_fallback",
+            baseline_source=str(baseline.get("mechanism_source") or "config"),
+            activity_candidates=activity_candidates,
+            viral_candidates=viral_candidates,
+            inspiration_candidates=inspiration_candidates,
+            business_candidates=business_candidates,
+            reference_docs=reference_docs,
+            media_context=media_context,
+            include_llm=False,
+        ),
+        "fallback_used": True,
+        "fallback_reason": _text(failure_reason),
+    }
+    return result
 
 
 def load_platform_mechanism_config(platform: str) -> dict[str, Any]:

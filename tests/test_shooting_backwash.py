@@ -174,7 +174,7 @@ class ShootingBackwashPipelineTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(order, ["plan_review", "draft_review", "write", "persist"])
 
-    def test_failed_coherence_review_retries_and_never_calls_writer(self) -> None:
+    def test_failed_coherence_review_returns_candidate_without_writing_or_persisting(self) -> None:
         current = _draft()
         candidate = _draft()
         plan = _plan(
@@ -200,12 +200,36 @@ class ShootingBackwashPipelineTests(unittest.TestCase):
                 side_effect=[candidate, failed_review, candidate, failed_review],
             ) as llm_call,
             patch.object(backwash, "rewrite_shooting_execution_doc") as writer,
+            patch.object(backwash, "_persist_backwash") as persist,
+            patch.object(backwash, "validate_shooting_execution_plan", return_value={"ok": True}),
         ):
-            with self.assertRaisesRegex(RuntimeError, "A→B→A 回跳"):
-                backwash.handle_shooting_execution_backwash(DOC_URL, "消除产品回跳", tenant_id="00000000-0000-4000-8000-000000000101")
+            result = backwash.handle_shooting_execution_backwash(
+                DOC_URL,
+                "消除产品回跳",
+                tenant_id="00000000-0000-4000-8000-000000000101",
+            )
 
         self.assertEqual(llm_call.call_count, 4)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "pending_manual")
+        self.assertEqual(result["candidate_draft"]["shooting_goal"], candidate["shooting_goal"])
+        self.assertEqual(result["candidate_draft"]["storyboard"], candidate["storyboard"])
+        self.assertEqual(result["semantic_review"], failed_review)
         writer.assert_not_called()
+        persist.assert_not_called()
+
+    def test_practical_shape_still_rejects_unrequested_large_reduction(self) -> None:
+        current = {"storyboard": [{}] * 10}
+        revised = {"storyboard": [{}] * 5}
+
+        with self.assertRaisesRegex(RuntimeError, "storyboard 过短"):
+            backwash._validate_practical_shape(current, revised)
+
+    def test_practical_shape_allows_explicit_deletion_request(self) -> None:
+        current = {"storyboard": [{}] * 10}
+        revised = {"storyboard": [{}] * 2}
+
+        backwash._validate_practical_shape(current, revised, requirements="删除重复的分镜，并压缩到三分钟")
 
 
 if __name__ == "__main__":

@@ -11,7 +11,11 @@ from .insight_cards import load_insight_card_records
 from .llm_generator import generate_creation_draft
 from .matcher import RankedRecord, content_type_allowed, rank_activities, rank_businesses, rank_inspirations, rank_virals, request_has_business_context
 from .media_model_v2_writeback import write_creation_model_v2
-from .platform_fit import generate_platform_mechanism_fit
+from .platform_fit import (
+    SemanticPersistenceRequiredError,
+    fallback_platform_mechanism_fit,
+    generate_platform_mechanism_fit,
+)
 from .platform_validator import validate_platform_draft
 from .request_inference import parse_creation_request_with_llm
 from .request_parser import CreationRequest, parse_creation_request
@@ -108,15 +112,27 @@ def handle_creation_command(
             max_items=_env_int("SELFMEDIA_CREATION_REFERENCE_DOC_LIMIT", 10),
         )
     )
-    platform_fit = generate_platform_mechanism_fit(
-        request,
-        activity_candidates=activity_payloads,
-        viral_candidates=viral_payloads,
-        inspiration_candidates=inspiration_payloads,
-        business_candidates=business_payloads,
-        reference_docs=reference_docs,
-        media_context=media_context,
-    )
+    try:
+        platform_fit = generate_platform_mechanism_fit(
+            request,
+            activity_candidates=activity_payloads,
+            viral_candidates=viral_payloads,
+            inspiration_candidates=inspiration_payloads,
+            business_candidates=business_payloads,
+            reference_docs=reference_docs,
+            media_context=media_context,
+        )
+    except SemanticPersistenceRequiredError as exc:
+        platform_fit = fallback_platform_mechanism_fit(
+            request,
+            failure_reason=str(exc),
+            activity_candidates=activity_payloads,
+            viral_candidates=viral_payloads,
+            inspiration_candidates=inspiration_payloads,
+            business_candidates=business_payloads,
+            reference_docs=reference_docs,
+            media_context=media_context,
+        )
     draft = generate_creation_draft(
         request,
         activity_candidates=activity_payloads,

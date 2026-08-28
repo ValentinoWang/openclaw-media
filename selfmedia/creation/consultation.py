@@ -10,7 +10,14 @@ from selfmedia.context import build_media_context, merge_conversation_context
 
 from .adapters import ActivityAdapter, BusinessAdapter, CreationInspirationAdapter, ViralContentAdapter
 from .field_contract import normalize_platform, split_tags
-from .llm_generator import call_creation_json
+from .llm_generator import (
+    _compact_candidates,
+    _compact_reference_docs,
+    _truncate_list,
+    _truncate_nested,
+    _truncate_text,
+    call_creation_json,
+)
 from .platform_fit import default_platform_mechanism
 from .retrieval import load_business_rows_for_creation, load_inspiration_rows_for_creation, load_rows_for_creation, read_reference_docs
 from .workflow import _record_candidate_payload, _reference_doc_urls_from_records
@@ -196,24 +203,20 @@ def generate_consultation_answer(
     media_context: dict[str, Any],
     source_counts: dict[str, int],
 ) -> dict[str, Any]:
-    payload = {
-        "request": request.to_dict(),
-        "source_counts": source_counts,
-        "media_memory_prompt": (media_context or {}).get("prompt") or "",
-        "media_context_loaded": (media_context or {}).get("loaded") or {},
-        "account_profile": (media_context or {}).get("account_profile") or {},
-        "recent_creations": (media_context or {}).get("recent_creations") or [],
-        "recent_reviews": (media_context or {}).get("recent_reviews") or [],
-        "activity_candidates": activity_candidates,
-        "viral_candidates": viral_candidates,
-        "inspiration_candidates": inspiration_candidates,
-        "business_candidates": business_candidates,
-        "reference_docs": reference_docs,
-        "platform_mechanism_reference": default_platform_mechanism(request.platform) if request.platform else {},
-    }
+    payload = _compact_consultation_prompt_payload(
+        request,
+        activity_candidates=activity_candidates,
+        viral_candidates=viral_candidates,
+        inspiration_candidates=inspiration_candidates,
+        business_candidates=business_candidates,
+        reference_docs=reference_docs,
+        media_context=media_context,
+        source_counts=source_counts,
+    )
     prompt = (
         "你是 OpenClaw media bot 的创作顾问。你必须基于输入中的飞书数据表、创作灵感素材、SourceAsset/拆解 artifact 摘要、账号记忆和历史复盘回答用户的创作问题。\n"
         "不要凭空声称看过不存在的数据；如果数据不足，要明确说缺什么。\n"
+        "候选只保留与问题相关的摘要；没有强相关候选时，必须把输入中的相关性提示说清楚，不能把摘要当作完整证据。\n"
         "做个人 IP 选题时，优先检查 inspiration_candidates 里的真实场景、情绪信号、触发原话、错位点、核心观点和一鱼多吃方向，再参考爆款结构。\n"
         "涉及平台推荐、活动适配或创作反推时，要参考 platform_mechanism_reference；这只是机制拟合假设，不得声称破解平台真实算法。\n"
         "回答选题、标题或脚本问题时，先做 topic_diagnosis：目标人群、核心痛点、内容角度、只解决的一个小问题、自查标准；不要直接给一组热闹但同质化的标题。\n"
@@ -225,6 +228,36 @@ def generate_consultation_answer(
     )
     result = call_creation_json(prompt, validation_contract=CONSULTATION_VALIDATION_CONTRACT)
     return result if isinstance(result, dict) else {}
+
+
+def _compact_consultation_prompt_payload(
+    request: ConsultationRequest,
+    *,
+    activity_candidates: list[dict[str, Any]],
+    viral_candidates: list[dict[str, Any]],
+    inspiration_candidates: list[dict[str, Any]],
+    business_candidates: list[dict[str, Any]],
+    reference_docs: list[dict[str, str]],
+    media_context: dict[str, Any],
+    source_counts: dict[str, int],
+) -> dict[str, Any]:
+    payload = {
+        "request": request.to_dict(),
+        "source_counts": source_counts,
+        "media_memory_prompt": _truncate_text((media_context or {}).get("prompt"), 3000),
+        "media_context_loaded": _truncate_nested((media_context or {}).get("loaded") or {}, 300),
+        "account_profile": _truncate_nested((media_context or {}).get("account_profile") or {}, 2500),
+        "recent_creations": _truncate_list((media_context or {}).get("recent_creations"), 8, 900),
+        "recent_reviews": _truncate_list((media_context or {}).get("recent_reviews"), 8, 900),
+        "activity_candidates": _compact_candidates(activity_candidates, 10),
+        "viral_candidates": _compact_candidates(viral_candidates, 15),
+        "inspiration_candidates": _compact_candidates(inspiration_candidates, 15),
+        "business_candidates": _compact_candidates(business_candidates, 10),
+        "reference_docs": _compact_reference_docs(reference_docs),
+        "platform_mechanism_reference": default_platform_mechanism(request.platform) if request.platform else {},
+        "prompt_compaction_note": "候选已按字段白名单和长度预算压缩；detail_json 等原始快照不会进入咨询提示词。",
+    }
+    return payload
 
 
 def format_consultation_reply(answer: dict[str, Any]) -> str:

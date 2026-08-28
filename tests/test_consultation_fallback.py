@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -15,7 +16,9 @@ from common.llm_validation import LLMPostValidationError, validate_llm_payload
 from selfmedia.creation.consultation import (
     CONSULTATION_VALIDATION_CONTRACT,
     format_consultation_reply,
+    generate_consultation_answer,
     handle_creation_consultation_command,
+    parse_consultation_request,
 )
 
 
@@ -113,3 +116,43 @@ def test_consultation_hides_unreadable_model_reply_but_keeps_readable_reply() ->
         )
 
     assert readable_result["reply"] == "先收窄到一段可复述的真实经历，再写开头。"
+
+
+def test_consultation_prompt_compacts_candidates_and_excludes_detail_snapshots() -> None:
+    request = parse_consultation_request("【创作咨询】平台=小红书 问题=这个选题怎么讲更有记忆点")
+
+    def candidates(prefix: str, count: int) -> list[dict[str, object]]:
+        return [
+            {
+                "id": f"{prefix}-{index}",
+                "title": f"{prefix} 标题 {index}",
+                "content": "真实会议场景" * 100,
+                "reference_shots": [{"shot_id": f"shot-{index}", "framing": "近景"}],
+                "detail_json": {"must_not_reach_prompt": "raw-snapshot" * 100},
+            }
+            for index in range(count)
+        ]
+
+    with patch("selfmedia.creation.consultation.call_creation_json", return_value={"reply": "先写真实场景。"}) as call:
+        answer = generate_consultation_answer(
+            request,
+            activity_candidates=candidates("activity", 30),
+            viral_candidates=candidates("viral", 30),
+            inspiration_candidates=candidates("inspiration", 30),
+            business_candidates=candidates("business", 30),
+            reference_docs=[],
+            media_context={"prompt": "账号记忆" * 1000, "account_profile": {"bio": "简介" * 1000}},
+            source_counts={"activities": 30, "virals": 30, "inspirations": 30, "businesses": 30},
+        )
+
+    prompt = call.call_args.args[0]
+    payload = json.loads(prompt.split("输入 JSON：\n", 1)[1])
+    assert answer == {"reply": "先写真实场景。"}
+    assert len(payload["activity_candidates"]) == 10
+    assert len(payload["viral_candidates"]) == 15
+    assert len(payload["inspiration_candidates"]) == 15
+    assert len(payload["business_candidates"]) == 10
+    assert payload["viral_candidates"][0]["title"] == "viral 标题 0"
+    assert payload["viral_candidates"][0]["reference_shots"][0]["shot_id"] == "shot-0"
+    assert all("detail_json" not in item for group in ("activity_candidates", "viral_candidates", "inspiration_candidates", "business_candidates") for item in payload[group])
+    assert "must_not_reach_prompt" not in prompt

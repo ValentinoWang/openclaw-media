@@ -1386,7 +1386,7 @@ class CreationV1Tests(unittest.TestCase):
             "platform_mechanism_version": "xiaohongshu_v1",
             "mechanism_claim_boundary": "这是机制拟合假设，不是平台真实算法或权重结论。",
             "mechanism_evidence_level": "B",
-            "source_weights": {"llm": "B"},
+            "source_weights": {"账号复盘": 0.7, "爆款拆解": 0.3},
             "platform_strategy": {"summary": "LLM 平台策略"},
             "activity_strategy": {
                 "matched_activities": [],
@@ -1446,7 +1446,7 @@ class CreationV1Tests(unittest.TestCase):
             "platform_mechanism_version": "xiaohongshu_v1",
             "mechanism_claim_boundary": "这是机制拟合假设，不是平台真实算法或权重结论。",
             "mechanism_evidence_level": "C",
-            "source_weights": {"llm": "C"},
+            "source_weights": {"公开创作者实测": 1.0},
             "platform_strategy": {"summary": "保证爆款"},
             "activity_strategy": {"hard_fit_risk": "low", "risk_reason": "LLM", "do_not_force": ["不硬蹭"]},
             "traffic_hypothesis": {"summary": "LLM"},
