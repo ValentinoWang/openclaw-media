@@ -21,7 +21,8 @@ GROWTH_JSON_INSTRUCTIONS = (
     "你是一名中文内容增长与运营编辑。你的输出为创作者提供基于已验证证据的增长判断、可执行策略和人工复核所需的风险提示。\n\n"
     "输出协议：\n"
     "只输出一个合法 JSON object，不要输出 Markdown 或解释。不得将 Knowledge bot 的自然语言回复作为证据；"
-    "只能使用提供的已类型化 KnowledgeEvidenceBundle evidence_items。"
+    "只能使用提供的已类型化 KnowledgeEvidenceBundle evidence_items。收到账号长期上下文时，必须继承其中已验证的账号定位和复盘结论；"
+    "上下文缺少时只能在风险字段说明待补材料，不得补造账号事实、实时指标或已经发布的结果。"
 )
 
 GrowthJsonProvider = Callable[..., dict[str, Any]]
@@ -206,7 +207,7 @@ TASK_TEXT_LIST_FIELDS: dict[str, tuple[str, ...]] = {
 DECISION_CANDIDATE_REQUIRED_FIELDS = (
     "title",
     "target_audience",
-    "audience_pain",
+    "pain_point",
     "content_angle",
     "single_problem",
     "self_check",
@@ -474,6 +475,20 @@ def _normalize_task_payload_shapes(task: str, payload: dict[str, Any]) -> dict[s
             result["technical_specs"] = {"items": value}
         elif isinstance(value, (str, int, float, bool)) and str(value).strip():
             result["technical_specs"] = {"description": str(value).strip()}
+    if task == "creation_decision_brief" and isinstance(result.get("topic_candidates"), list):
+        normalized_candidates: list[Any] = []
+        for candidate in result["topic_candidates"]:
+            if not isinstance(candidate, dict):
+                normalized_candidates.append(candidate)
+                continue
+            normalized = dict(candidate)
+            pain_point = normalized.get("pain_point") or normalized.get("audience_pain")
+            if pain_point is not None:
+                normalized["pain_point"] = pain_point
+                # Keep the released Growth key readable for existing consumers.
+                normalized.setdefault("audience_pain", pain_point)
+            normalized_candidates.append(normalized)
+        result["topic_candidates"] = normalized_candidates
     return result
 
 

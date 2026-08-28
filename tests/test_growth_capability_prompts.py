@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from selfmedia.growth.capability_registry import capability_creator_field_mappings, capability_consumes
 from selfmedia.growth.service import GROWTH_CAPABILITY_PROMPTS
 
 
@@ -26,3 +27,25 @@ def test_publishing_pack_prompt_requires_natural_spoken_chinese() -> None:
     assert "可直接口播" in prompt
     assert "避免书面套话、空泛承诺和英文平台术语" in prompt
     assert "不得声称已经自动发布" in prompt
+    assert "title 对齐主创作链 title_1" in prompt
+    assert "caption 对齐 body_copy" in prompt
+
+
+def test_growth_prompts_share_main_creation_topic_vocabulary() -> None:
+    prompt = GROWTH_CAPABILITY_PROMPTS["creation_decision_brief"]
+
+    assert "pain_point" in prompt
+    assert "账号画像和复盘结论" in prompt
+    assert "audience_pain 会由系统兼容映射" in prompt
+
+
+def test_registry_declares_only_loaded_review_evidence_and_field_mappings() -> None:
+    assert capability_consumes("post_review_signal") == ()
+    assert capability_consumes("creation_decision_brief")[-1] == "ReviewSignal"
+    assert capability_creator_field_mappings("creation_decision_brief") == {
+        "topic_candidates[].pain_point": (
+            "topic_candidates[].pain_point",
+            "topic_candidates[].audience_pain",
+        ),
+    }
+    assert capability_creator_field_mappings("publishing_pack_build")["body_copy"] == ("caption",)
