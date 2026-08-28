@@ -5,14 +5,57 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
 
-ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = ROOT / "docs/ai-harness/openclaw-media-product-contract.json"
-CLIENT_ROOT = Path(__file__).resolve().parent
+REPOSITORY_ROOT_ENV = "OPENCLAW_MEDIA_PRODUCT_CLIENTS_ROOT"
+CONTRACT_RELATIVE_PATH = Path("docs/ai-harness/openclaw-media-product-contract.json")
+CLIENT_ROOT_RELATIVE_PATH = Path("media-agent-cli")
+GENERATOR_RELATIVE_PATH = CLIENT_ROOT_RELATIVE_PATH / "generate_product_clients.py"
+
+
+def _is_business_repository_root(path: Path) -> bool:
+    return (path / CONTRACT_RELATIVE_PATH).is_file() and (path / CLIENT_ROOT_RELATIVE_PATH).is_dir()
+
+
+def resolve_repository_root(
+    *,
+    environment: Mapping[str, str] | None = None,
+    script_path: Path | None = None,
+) -> Path:
+    environment = os.environ if environment is None else environment
+    override = environment.get(REPOSITORY_ROOT_ENV, "").strip()
+    if override:
+        root = Path(override).expanduser().resolve()
+        if not _is_business_repository_root(root):
+            raise RuntimeError(
+                f"{REPOSITORY_ROOT_ENV} must name a checkout containing "
+                f"{CONTRACT_RELATIVE_PATH} and {CLIENT_ROOT_RELATIVE_PATH}"
+            )
+        return root
+
+    generator = (script_path or Path(__file__)).resolve()
+    roots = tuple(
+        candidate
+        for candidate in generator.parents
+        if _is_business_repository_root(candidate)
+        and (candidate / GENERATOR_RELATIVE_PATH).resolve() == generator
+    )
+    if len(roots) != 1:
+        raise RuntimeError(
+            "unable to identify one checked-out Media business repository from "
+            f"{generator}; set {REPOSITORY_ROOT_ENV}"
+        )
+    return roots[0]
+
+
+ROOT = resolve_repository_root()
+CONTRACT = ROOT / CONTRACT_RELATIVE_PATH
+CLIENT_ROOT = ROOT / CLIENT_ROOT_RELATIVE_PATH
 PYTHON_OUTPUTS = (
     CLIENT_ROOT / "generated_product_contract.py",
     CLIENT_ROOT / "src/openclaw_media/product_contract.py",
