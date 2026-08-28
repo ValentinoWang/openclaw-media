@@ -273,12 +273,27 @@ def _review_prompt_lines(reviews: list[Any]) -> list[str]:
         performance_level = _clean_text(item.get("performance_level"))
         if performance_level:
             parts.append(f"表现评级：{performance_level}")
+        atomic_facts = _review_atomic_facts_for_prompt(item)
+        if atomic_facts:
+            parts.append(f"关键事实：{'；'.join(atomic_facts)}")
+        insights = _review_text_values(item.get("key_insights"), limit=4)
+        if insights:
+            parts.append(f"关键洞察：{'；'.join(insights)}")
         metrics = _review_metrics_for_prompt(item)
         if metrics:
             parts.append(f"关键指标：{'；'.join(metrics)}")
+        metric_reasons = _review_metric_reasons_for_prompt(item)
+        if metric_reasons:
+            parts.append(f"指标意义：{'；'.join(metric_reasons)}")
+        metric_actions = _review_metric_actions_for_prompt(item)
+        if metric_actions:
+            parts.append(f"指标内容动作：{'；'.join(metric_actions)}")
         actions = _review_actions_for_prompt(item)
         if actions:
             parts.append(f"下一步：{'；'.join(actions[:5])}")
+        content_guidance = _review_text_values(item.get("content_guidance"), limit=4)
+        if content_guidance:
+            parts.append(f"内容调整：{'；'.join(content_guidance)}")
         lines.append("  " + "；".join(parts))
     return lines
 
@@ -318,6 +333,44 @@ def _review_actions_for_prompt(review: dict[str, Any]) -> list[str]:
         values.append(metric.get("content_action"))
     values.extend(_as_list(review.get("next_actions")))
     return _dedupe(values)
+
+
+def _review_atomic_facts_for_prompt(review: dict[str, Any]) -> list[str]:
+    facts: list[str] = []
+    raw_facts = review.get("atomic_facts")
+    for item in raw_facts if isinstance(raw_facts, list) else []:
+        if not isinstance(item, dict):
+            continue
+        fact = _clean_text(item.get("fact"))
+        details = [
+            f"{label}：{_clean_text(item.get(key))}"
+            for key, label in (
+                ("metric", "指标"),
+                ("value", "数值"),
+                ("scope", "范围"),
+                ("evidence", "依据"),
+                ("implication", "创作含义"),
+                ("recommended_use", "推荐用法"),
+            )
+            if _clean_text(item.get(key))
+        ]
+        if fact:
+            facts.append(f"{fact}（{'；'.join(details)}）" if details else fact)
+        elif details:
+            facts.append("；".join(details))
+    return _dedupe(facts)[:4]
+
+
+def _review_metric_actions_for_prompt(review: dict[str, Any]) -> list[str]:
+    return _dedupe([item.get("content_action") for item in _review_priority_metrics(review)])[:5]
+
+
+def _review_metric_reasons_for_prompt(review: dict[str, Any]) -> list[str]:
+    return _dedupe([item.get("why_it_matters") for item in _review_priority_metrics(review)])[:5]
+
+
+def _review_text_values(value: Any, *, limit: int) -> list[str]:
+    return _dedupe(_as_list(value))[:limit]
 
 
 def _recent_daily_evidence(*, tenant_id: str, platform: str, account: str, limit: int) -> dict[str, list[Any]]:
@@ -447,6 +500,7 @@ def record_review_memory(
     *,
     tenant_id: str,
     source: str = "",
+    analysis: dict[str, Any] | None = None,
     root: str | Path | None = None,
 ) -> dict[str, Any]:
     tenant_id = require_tenant_id(tenant_id)
@@ -459,6 +513,7 @@ def record_review_memory(
         "created_at": _now_iso(),
         "source": source,
         **parsed,
+        **_review_memory_evidence(analysis),
     }
     _append_jsonl(memory_root / "reviews.jsonl", review)
     profile_result = {}
@@ -478,6 +533,26 @@ def record_review_memory(
         "profile": profile_result,
         "reply": format_review_reply(review, profile_result),
     }
+
+
+def _review_memory_evidence(analysis: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(analysis, dict):
+        return {}
+    evidence: dict[str, Any] = {}
+    performance_level = _clean_text(analysis.get("performance_level"))
+    if performance_level:
+        evidence["performance_level"] = performance_level
+    for key in ("atomic_facts", "priority_metrics"):
+        value = analysis.get(key)
+        if isinstance(value, list):
+            rows = [dict(item) for item in value if isinstance(item, dict) and item]
+            if rows:
+                evidence[key] = rows
+    for key in ("key_insights", "next_actions", "content_guidance", "publishing_guidance"):
+        values = _as_list(analysis.get(key))
+        if values:
+            evidence[key] = _dedupe(values)
+    return evidence
 
 
 def looks_like_media_review(text: str) -> bool:
@@ -815,6 +890,13 @@ def _public_context_row(row: dict[str, Any]) -> dict[str, Any]:
         "metrics",
         "lesson",
         "summary",
+        "performance_level",
+        "atomic_facts",
+        "priority_metrics",
+        "key_insights",
+        "next_actions",
+        "content_guidance",
+        "publishing_guidance",
         "positioning",
         "account_fit",
     )

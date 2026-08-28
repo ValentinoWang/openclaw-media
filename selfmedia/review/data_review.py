@@ -214,6 +214,7 @@ def handle_data_review_command(
             _review_memory_text(request, normalized),
             tenant_id=tenant_id,
             source="data-review",
+            analysis=normalized,
         )
         media_model_v2_result = write_data_review_model_v2(
             tenant_id=tenant_id,
