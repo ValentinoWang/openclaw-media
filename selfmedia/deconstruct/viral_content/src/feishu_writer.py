@@ -424,7 +424,7 @@ def write_deconstruction(
         transferable_points=_summary_text(result.get("production_checklist") or result.get("viral_mechanism")),
         non_transferable_points=_summary_text(result.get("avoid_copying") or result.get("uncertainty_notes") or ""),
         **_request_constraints_bitable_index(result),
-        **_shot_adaptation_bitable_index(result),
+        **_shot_adaptation_bitable_index(result, localized=False),
         cover_opening_hook=_summary_text(result.get("cover_opening_hook") or ""),
         core_data_summary=_summary_text(result.get("core_data_summary") or ""),
         top_comment_insight=_summary_text(result.get("top_comment_insight") or ""),
@@ -520,7 +520,7 @@ def _normalize_source_asset_ref(value: str) -> str:
     return match.group(0) if match else ""
 
 
-def _shot_adaptation_bitable_index(result: dict[str, Any]) -> dict[str, Any]:
+def _shot_adaptation_bitable_index(result: dict[str, Any], *, localized: bool = True) -> dict[str, Any]:
     contract = result.get("multi_signal_contract") if isinstance(result.get("multi_signal_contract"), dict) else {}
     notes = [item for item in contract.get("shot_adaptation_notes") or [] if isinstance(item, dict)]
     validation = contract.get("validation") if isinstance(contract.get("validation"), dict) else {}
@@ -528,11 +528,15 @@ def _shot_adaptation_bitable_index(result: dict[str, Any]) -> dict[str, Any]:
     warnings = [str(item).strip() for item in validation.get("warnings") or [] if str(item).strip()]
     document_url = str(result.get("deconstruct_doc_url") or result.get("feishu_doc_url") or "").strip()
     return {
-        "shot_adaptation_notes_status": _localized_multi_signal_status(status, warnings),
+        "shot_adaptation_notes_status": _localized_multi_signal_status(status, warnings) if localized else status,
         "shot_adaptation_note_count": len(notes) if notes else None,
         "recommended_production_route": "",
         "motion_type_summary": "",
-        "shot_adaptation_notes_summary": _shot_adaptation_notes_summary(notes, document_url=document_url),
+        "shot_adaptation_notes_summary": _shot_adaptation_notes_summary(
+            notes,
+            document_url=document_url,
+            include_note_ids=not localized,
+        ),
     }
 
 
@@ -564,7 +568,13 @@ def _localized_multi_signal_status(status: str, warnings: list[str]) -> str:
     return label
 
 
-def _shot_adaptation_notes_summary(notes: list[dict[str, Any]], *, document_url: str = "", limit: int = 500) -> str:
+def _shot_adaptation_notes_summary(
+    notes: list[dict[str, Any]],
+    *,
+    document_url: str = "",
+    limit: int = 500,
+    include_note_ids: bool = False,
+) -> str:
     lines: list[str] = []
     for item in notes[:8]:
         pattern = str(item.get("learnable_pattern") or "").strip()
@@ -572,7 +582,12 @@ def _shot_adaptation_notes_summary(notes: list[dict[str, Any]], *, document_url:
         avoid = _normalize_text(item.get("do_not_copy")).replace("\n", " ")
         line = "；".join(
             f"{label}：{value}"
-            for label, value in (("可学结构", pattern), ("适配方法", rule), ("避免照搬", avoid))
+            for label, value in (
+                ("记录ID", str(item.get("note_id") or "").strip() if include_note_ids else ""),
+                ("可学结构", pattern),
+                ("适配方法", rule),
+                ("避免照搬", avoid),
+            )
             if value
         )
         if line:
