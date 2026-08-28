@@ -97,6 +97,30 @@ class AnalyzerEvidenceContractTest(unittest.TestCase):
         self.assertNotIn(missing_path, message)
         self.assertNotIn("本地图片文件", message)
 
+    def test_text_only_response_clears_model_invented_visual_cues(self) -> None:
+        user_content = analyzer._build_analysis_user_content(
+            transcript="只有逐字稿。",
+            url="https://example.com/video",
+            video_path="/private/media/source.mp4",
+            image_paths=None,
+            caption="",
+            image_ocr="",
+            media_type="video",
+        )
+
+        with (
+            patch.object(analyzer, "load_profile_llm_settings", return_value=SimpleNamespace(model="test-model")),
+            patch.object(
+                analyzer,
+                "generate_json_from_parts",
+                return_value={"title": "逐字稿分析", "visual_cues": "模型猜测了镜头转场"},
+            ),
+        ):
+            result = analyzer.analyze_with_openclaw_agent(user_content, object())
+
+        assert result is not None
+        self.assertEqual(result["visual_cues"], "")
+
 
 if __name__ == "__main__":
     unittest.main()

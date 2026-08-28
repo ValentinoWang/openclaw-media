@@ -656,7 +656,13 @@ def validate_video_storyboard_granularity(
         raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 不能为空")
     if not storyboard:
         if allow_partial_coverage:
-            expected_ranges = _expected_storyboard_ranges(_storyboard_target_end(target_duration_sec, 0.0))
+            expected_ranges = [
+                expected
+                for start, end in _storyboard_analysis_ranges(payload, target_duration_sec, 0.0)
+                for expected in _expected_storyboard_ranges(end, start_sec=start)
+            ]
+            if not expected_ranges:
+                raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: analysis_time_range 与可拆解前 {STORYBOARD_ANALYSIS_MAX_SECONDS} 秒没有交集")
             _mark_partial_storyboard_coverage(payload, expected_ranges, [])
             return payload
         raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 不能为空")
@@ -666,8 +672,14 @@ def validate_video_storyboard_granularity(
     observed_end = max((end for _, end in actual_ranges), default=0.0)
     if observed_end > STORYBOARD_ANALYSIS_MAX_SECONDS + 0.01:
         raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: 长视频只允许拆解前 {STORYBOARD_ANALYSIS_MAX_SECONDS} 秒")
-    target_end = _storyboard_target_end(target_duration_sec, observed_end)
-    expected_ranges = _expected_storyboard_ranges(target_end)
+    analysis_ranges = _storyboard_analysis_ranges(payload, target_duration_sec, observed_end)
+    expected_ranges = [
+        expected
+        for start, end in analysis_ranges
+        for expected in _expected_storyboard_ranges(end, start_sec=start)
+    ]
+    if not expected_ranges:
+        raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: analysis_time_range 与可拆解前 {STORYBOARD_ANALYSIS_MAX_SECONDS} 秒没有交集")
     if allow_partial_coverage:
         _validate_partial_storyboard_ranges(storyboard, actual_ranges, expected_ranges)
         _mark_partial_storyboard_coverage(payload, expected_ranges, actual_ranges)
@@ -755,15 +767,47 @@ def _storyboard_target_end(target_duration_sec: float | int | None, observed_end
     return max(1, min(STORYBOARD_ANALYSIS_MAX_SECONDS, int(target + 0.999)))
 
 
-def _expected_storyboard_ranges(target_end: int) -> list[tuple[float, float]]:
+def _storyboard_analysis_ranges(
+    payload: dict[str, Any],
+    target_duration_sec: float | int | None,
+    observed_end: float,
+) -> list[tuple[float, float]]:
+    target_end = float(_storyboard_target_end(target_duration_sec, observed_end))
+    request_constraints = payload.get("request_constraints")
+    analysis_time_range = (
+        str(request_constraints.get("analysis_time_range") or "").strip()
+        if isinstance(request_constraints, dict)
+        else ""
+    )
+    if not analysis_time_range or analysis_time_range in {"全部", "历史未标注"}:
+        return [(0.0, target_end)]
+
     ranges: list[tuple[float, float]] = []
-    opening_end = min(STORYBOARD_OPENING_SECONDS, target_end)
-    for start in range(0, opening_end):
-        ranges.append((float(start), float(start + 1)))
-    current = STORYBOARD_OPENING_SECONDS
+    for item in analysis_time_range.split(","):
+        match = re.fullmatch(r"\s*(\d+(?:\.\d+)?)s?-(\d+(?:\.\d+)?)s?\s*", item)
+        if not match:
+            raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: analysis_time_range 格式无效: {analysis_time_range}")
+        start, end = float(match.group(1)), float(match.group(2))
+        if end <= start:
+            raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: analysis_time_range 结束时间必须大于开始时间")
+        bounded_start, bounded_end = max(0.0, start), min(target_end, end)
+        if bounded_end > bounded_start:
+            ranges.append((bounded_start, bounded_end))
+    return ranges
+
+
+def _expected_storyboard_ranges(target_end: float, *, start_sec: float = 0.0) -> list[tuple[float, float]]:
+    ranges: list[tuple[float, float]] = []
+    opening_end = min(float(STORYBOARD_OPENING_SECONDS), target_end)
+    current = max(0.0, start_sec)
+    while current < opening_end:
+        end = min(current + 1.0, opening_end)
+        ranges.append((current, end))
+        current = end
+    current = max(float(STORYBOARD_OPENING_SECONDS), start_sec)
     while current < target_end:
-        end = min(current + STORYBOARD_POST_OPENING_STEP_SECONDS, target_end)
-        ranges.append((float(current), float(end)))
+        end = min(current + float(STORYBOARD_POST_OPENING_STEP_SECONDS), target_end)
+        ranges.append((current, end))
         current = end
     return ranges
 

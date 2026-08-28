@@ -176,6 +176,23 @@ def test_candidate_builder_keeps_candidate_only_and_all_v2_fields():
     assert payload["identity_tags"] == ["清华", "中长跑"]
 
 
+def test_creator_profile_candidate_prompt_and_validation_errors_are_chinese():
+    prompt = candidate_builder.PROMPT_PATH.read_text(encoding="utf-8")
+
+    assert prompt.startswith("你根据公开主页证据")
+    assert "所有候选值、证据和理由均使用中文" in prompt
+    assert "JSON 键名保持既有合同，不翻译也不新增" in prompt
+    assert "You generate CreatorProfile" not in prompt
+    with pytest.raises(ValueError, match="必须是非空对象"):
+        candidate_builder._validate_creator_profile_candidate({}, {})
+    with pytest.raises(ValueError, match="必须包含 evidence 和 reason"):
+        candidate_builder._validate_creator_profile_candidate(
+            {"field_candidates": {"identity_summary": {"evidence": []}}},
+            {},
+        )
+    assert "公开证据不足" in candidate_builder.empty_semantic_candidate("identity_summary")["reason"]
+
+
 def test_account_metric_snapshots_use_existing_metric_registry():
     payloads = metric_snapshot.build_account_metric_snapshots(
         account_name="Ty.Mer",

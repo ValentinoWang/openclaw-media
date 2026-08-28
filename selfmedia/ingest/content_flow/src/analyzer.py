@@ -239,6 +239,9 @@ def analyze_with_openclaw_agent(user_content: str, settings: Settings) -> Option
         print("OpenClaw OAuth 结构化分析未返回可解析 JSON。", flush=True)
         return None
 
+    if not getattr(user_content, "evidence_parts", ()):
+        parsed["visual_cues"] = ""
+
     # The model makes the semantic decision; this only bounds its labels to the
     # shared vocabulary before the result is persisted or projected.
     primary = str(parsed.get("primary_category") or "").strip()

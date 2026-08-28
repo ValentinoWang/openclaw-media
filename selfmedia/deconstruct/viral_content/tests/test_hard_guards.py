@@ -584,6 +584,37 @@ def test_video_storyboard_granularity_accepts_first5_each_second_then_3s() -> No
     assert validate_video_storyboard_granularity(payload, media_type="video", target_duration_sec=11) is payload
 
 
+def test_video_storyboard_granularity_uses_nonzero_analysis_time_range() -> None:
+    payload = {
+        "media_type": "video",
+        "request_constraints": {"analysis_time_range": "12-15s,15-18s"},
+        "video_storyboard": [
+            {"shot_no": 1, "duration": "12-15s", "visual": "第一段", "subtitle": "", "voiceover": ""},
+            {"shot_no": 2, "duration": "15-18s", "visual": "第二段", "subtitle": "", "voiceover": ""},
+        ],
+    }
+
+    assert validate_video_storyboard_granularity(payload, media_type="video", target_duration_sec=18) is payload
+
+
+def test_video_storyboard_granularity_rejects_rows_before_nonzero_analysis_time_range() -> None:
+    payload = {
+        "media_type": "video",
+        "request_constraints": {"analysis_time_range": "12-15s,15-18s"},
+        "video_storyboard": [
+            {"shot_no": 1, "duration": "0-1s", "visual": "窗口外画面", "subtitle": "", "voiceover": ""},
+        ],
+    }
+
+    with pytest.raises(SchemaError, match="已定义的证据采样区间"):
+        validate_video_storyboard_granularity(
+            payload,
+            media_type="video",
+            target_duration_sec=18,
+            allow_partial_coverage=True,
+        )
+
+
 def test_video_storyboard_granularity_rejects_single_time_with_error_code() -> None:
     payload = {
         "media_type": "video",
@@ -690,6 +721,20 @@ def test_deconstruct_prompt_no_longer_requests_direct_recreation_script() -> Non
     assert "0-1s、1-2s、2-3s、3-4s、4-5s" in prompt.DECONSTRUCT_PROMPT
     assert "5-8s、8-11s、11-14s" in prompt.DECONSTRUCT_PROMPT
     assert "长视频只拆解前 60 秒" in prompt.DECONSTRUCT_PROMPT
+
+
+def test_recreate_prompt_does_not_require_missing_contract_dimensions() -> None:
+    assert "维度数量由已提供合同中的证据决定" in prompt.RECREATE_PROMPT
+    assert "不得要求、假定或补造合同中没有的第 7、8 个维度" in prompt.RECREATE_PROMPT
+    assert "可以是 7 维、8 维或更多" not in prompt.RECREATE_PROMPT
+
+
+def test_main_deconstruct_runner_keeps_nonzero_time_window_boundary() -> None:
+    source = inspect.getsource(runner.run_main_deconstruction_llm)
+
+    assert "analysis_time_range 的交集" in source
+    assert "不能补写窗口之前的分镜" in source
+    assert "0-5s 必须按" not in source
 
 
 def test_deconstruct_schema_allows_no_execution_scripts() -> None:
