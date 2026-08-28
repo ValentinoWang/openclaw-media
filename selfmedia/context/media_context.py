@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo
 from common.social_runtime import feishu_list_records, feishu_plain_text, load_default_env_files
 from media_model.contract import resolve_media_model_contract_path
 from media_vault.vault import MediaVault
-from selfmedia.business.schedule import upcoming_schedule_entries
+from selfmedia.business.schedule import schedule_snapshot_path, upcoming_schedule_entries
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -202,7 +202,7 @@ def build_media_context(
     )
     daily_evidence = _recent_daily_evidence(tenant_id=tenant_id, platform=platform, account=account, limit=limit)
     schedule_entries = upcoming_schedule_entries(
-        _iter_jsonl(memory_root / "schedule_snapshots.jsonl"),
+        _iter_jsonl(schedule_snapshot_path(tenant_id=tenant_id, root=root)),
         tenant_id=tenant_id,
         platform=platform,
         account=account,

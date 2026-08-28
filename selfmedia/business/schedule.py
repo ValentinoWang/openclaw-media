@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Iterable
 
 
@@ -18,6 +21,7 @@ _MONTH_WINDOW_RE = re.compile(
 _RELATIVE_MONTH_WINDOW_RE = re.compile(r"(?P<relative>本|这|下)月\s*(?P<period>上旬|中旬|下旬)")
 _DAYS_AFTER_RE = re.compile(r"(?P<days>[1-9]\d*)\s*天后")
 _TERMINAL_SCHEDULE_STATES = frozenset({"cancelled", "canceled", "completed", "deleted", "已取消", "已完成", "已删除"})
+SCHEDULE_SNAPSHOT_FILE = "schedule_snapshots.jsonl"
 
 
 def schedule_reference_time(now: datetime | date | None = None) -> datetime:
@@ -79,9 +83,123 @@ def is_confirmable_schedule_value(value: Any, *, now: datetime | date | None = N
     text = _text(value)
     if not text or re.search(r"尽快|尽早|待定|待确认|看情况|本周|下周|上旬|中旬|下旬", text):
         return False
-    if _explicit_dates(text, default_year=schedule_reference_time(now).year):
-        return not is_expired_schedule_value(text, now=now)
-    return False
+    return parse_schedule_window(text, now=now) is not None
+
+
+def parse_schedule_window(value: Any, *, now: datetime | date | None = None) -> dict[str, str] | None:
+    """Parse only an unexpired, year-anchored concrete date window.
+
+    A single date becomes an inclusive one-day window. Date-only phrases without
+    an explicit year remain manual/pending so the parser never guesses a year.
+    """
+    text = _text(value)
+    if not text or re.search(r"尽快|尽早|待定|待确认|看情况|本周|下周|上旬|中旬|下旬", text):
+        return None
+    reference = schedule_reference_time(now)
+    matches = sorted(
+        [*_DATE_RE.finditer(text), *_CHINESE_DATE_RE.finditer(text)],
+        key=lambda match: match.start(),
+    )
+    if not matches:
+        return None
+    # Require a stated year for a single date. In a range, an omitted second
+    # year may inherit the explicitly stated first year (including year rollover).
+    if not matches[0].group("year"):
+        return None
+    dates = _explicit_dates(text, default_year=reference.year)
+    if not dates:
+        return None
+    start, end = min(dates), max(dates)
+    if end < reference.date():
+        return None
+    return {"valid_from": start.isoformat(), "valid_until": end.isoformat(), "schedule": text}
+
+
+def schedule_snapshot_path(*, tenant_id: str, root: str | Path | None = None) -> Path:
+    """Return the canonical tenant-owned schedule snapshot path."""
+    from media_vault.vault import MediaVault
+
+    return MediaVault(tenant_id=tenant_id, root=root).root / SCHEDULE_SNAPSHOT_FILE
+
+
+def append_schedule_snapshot(
+    *,
+    tenant_id: str,
+    entries: Iterable[dict[str, Any]],
+    source_type: str,
+    source_id: str,
+    source_time: Any,
+    status: str = "confirmed",
+    dedupe_key: str = "",
+    provenance: dict[str, Any] | None = None,
+    root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Persist a tenant-scoped schedule snapshot once its source is durable."""
+    from common.resource_ownership import require_tenant_id
+
+    tenant_id = require_tenant_id(tenant_id)
+    clean_entries = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        item = dict(entry)
+        item["tenant_id"] = tenant_id
+        clean_entries.append(item)
+    if not clean_entries:
+        return {"status": "skipped", "persisted": False, "reason": "no_entries"}
+    clean_source_type = _text(source_type) or "unknown"
+    clean_source_id = _text(source_id) or "unknown"
+    clean_source_time = _source_time_iso(source_time)
+    key = _text(dedupe_key)
+    if not key:
+        key = "schedule:" + hashlib.sha256(
+            json.dumps(
+                {"tenant_id": tenant_id, "source_type": clean_source_type, "source_id": clean_source_id, "entries": clean_entries},
+                ensure_ascii=False,
+                sort_keys=True,
+                default=str,
+            ).encode("utf-8")
+        ).hexdigest()
+    path = schedule_snapshot_path(tenant_id=tenant_id, root=root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    existing_keys: set[str] = set()
+    if path.exists():
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                try:
+                    row = json.loads(line)
+                except (TypeError, ValueError):
+                    continue
+                if isinstance(row, dict) and _text(row.get("dedupe_key")):
+                    existing_keys.add(_text(row["dedupe_key"]))
+        except OSError:
+            existing_keys = set()
+    if key in existing_keys:
+        return {"status": "deduped", "persisted": False, "dedupe_key": key, "path": str(path)}
+    snapshot = {
+        "tenant_id": tenant_id,
+        "source_type": clean_source_type,
+        "source_id": clean_source_id,
+        "source_time": clean_source_time,
+        "status": _text(status) or "confirmed",
+        "dedupe_key": key,
+        "provenance": dict(provenance or {}),
+        "recorded_at": schedule_reference_time().isoformat(timespec="seconds"),
+        "entries": clean_entries,
+    }
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(snapshot, ensure_ascii=False, sort_keys=True) + "\n")
+    return {"status": "recorded", "persisted": True, "dedupe_key": key, "path": str(path), "snapshot": snapshot}
+
+
+def _source_time_iso(value: Any) -> str:
+    if isinstance(value, datetime):
+        parsed = schedule_reference_time(value)
+        return parsed.isoformat(timespec="seconds")
+    text = _text(value)
+    if text:
+        return text
+    return schedule_reference_time().isoformat(timespec="seconds")
 
 
 def upcoming_schedule_entries(

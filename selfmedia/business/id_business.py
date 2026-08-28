@@ -56,8 +56,10 @@ from media_vault.vault import MediaVault
 
 from selfmedia.business.commercial_loop import CommercialLoopLedger
 from selfmedia.business.schedule import (
+    append_schedule_snapshot,
     is_confirmable_schedule_value as _is_confirmable_schedule_value,
     is_expired_schedule_value as _is_expired_schedule_value,
+    parse_schedule_window,
 )
 
 
@@ -1706,7 +1708,9 @@ def normalize_business_llm_result(
     schedule_value = _field_text(fields, "具体档期") or _field_text(fields, "档期")
     if schedule_value and not is_confirmable_schedule_value(schedule_value):
         fields.pop("具体档期", None)
-        fields.pop("档期", None)
+        # Keep the source wording for the BusinessOpportunity.schedule text;
+        # only the machine-confirmed field is withheld and kept pending.
+        fields["档期"] = schedule_value
         pending_fields = list(dict.fromkeys([*pending_fields, "具体档期"]))
         confirmation_fields = list(dict.fromkeys([*confirmation_fields, "具体档期"]))
 
@@ -1882,6 +1886,7 @@ def commercial_loop_ledger_for_fields(
     details: dict[str, Any],
     *,
     tenant_id: str,
+    root: str | Path | None = None,
 ) -> CommercialLoopLedger:
     history_lookup = details.get("history_lookup") if isinstance(details.get("history_lookup"), dict) else {}
     account_lookup = history_lookup.get("business_accounts") if isinstance(history_lookup.get("business_accounts"), dict) else {}
@@ -1891,7 +1896,7 @@ def commercial_loop_ledger_for_fields(
         str(opportunity_lookup.get("opportunity_id") or "").strip()
         or business_opportunity_id_from_fields(fields, business_account_id)
     )
-    return CommercialLoopLedger(tenant_id=tenant_id, loop_id=opportunity_id)
+    return CommercialLoopLedger(tenant_id=tenant_id, loop_id=opportunity_id, root=root)
 
 
 def quote_refresh_plan(fields: dict[str, Any], *, today=None) -> dict[str, Any]:
@@ -1921,6 +1926,7 @@ def write_business_model_v2(
     *,
     tenant_id: str,
     dry_run: bool = False,
+    root: str | Path | None = None,
 ) -> dict[str, Any]:
     account_url = table_url_from_args("")
     opportunity_url = opportunity_table_url()
@@ -1948,7 +1954,7 @@ def write_business_model_v2(
         or business_opportunity_id_from_fields(fields, business_account_id)
     )
     creator_profile_id = str(creator_lookup.get("creator_profile_id") or "").strip()
-    vault = MediaVault(tenant_id=tenant_id)
+    vault = MediaVault(tenant_id=tenant_id, root=root)
     vault.ensure_manifest()
     quote_artifact = vault.write_json_artifact(
         vault.business_dir(opportunity_id),
@@ -1965,7 +1971,7 @@ def write_business_model_v2(
         artifact_type="business_quote_snapshot",
     )
     quote_uri = str(quote_artifact.get("uri") or "")
-    commercial_loop = commercial_loop_ledger_for_fields(fields, details, tenant_id=tenant_id)
+    commercial_loop = commercial_loop_ledger_for_fields(fields, details, tenant_id=tenant_id, root=root)
     loop_state = commercial_loop.ensure_quote_snapshot(
         business_account_id=business_account_id,
         quote_snapshot_uri=quote_uri,
@@ -1984,6 +1990,8 @@ def write_business_model_v2(
         quote_snapshot_uri=quote_uri,
     )
     brand = _field_text(fields, "品牌") or _field_text(fields, "项目")
+    schedule_value = _field_text(fields, "具体档期") or _field_text(fields, "档期")
+    schedule_window = parse_schedule_window(schedule_value)
     opportunity_payload = None
     if brand:
         opportunity_payload = build_business_opportunity_payload(
@@ -2000,9 +2008,9 @@ def write_business_model_v2(
                 video_quote=video_quote,
             ),
             rebate_ratio=parse_rebate_ratio_value(fields.get("报备返点")),
-            valid_from="",
-            valid_until="",
-            schedule=_field_text(fields, "具体档期") or _field_text(fields, "档期"),
+            valid_from=(schedule_window or {}).get("valid_from", ""),
+            valid_until=(schedule_window or {}).get("valid_until", ""),
+            schedule=schedule_value,
             price_protection_policy=(
                 _field_text(fields, "保价政策")
                 or _field_text(fields, "本月下单是否保价次月执行")
@@ -2024,6 +2032,7 @@ def write_business_model_v2(
             "quote_snapshot_uri": quote_uri,
             "commercial_loop_path": commercial_loop.artifact_path(),
             "quote_refresh": loop_state.get("quote_refresh") or {},
+            "schedule_window": schedule_window or {},
         }
     if not account_url:
         raise BusinessExternalRetryRequired("missing MEDIA_OS_BUSINESS_ACCOUNTS_V2_URL")
@@ -2050,6 +2059,36 @@ def write_business_model_v2(
         )
     except Exception as exc:
         raise BusinessExternalRetryRequired("business external projection is unverified") from exc
+    schedule_snapshot = {"status": "skipped", "persisted": False, "reason": "no_confirmed_schedule"}
+    if opportunity_payload is not None and schedule_window:
+        start = schedule_window["valid_from"]
+        end = schedule_window["valid_until"]
+        schedule_snapshot = append_schedule_snapshot(
+            tenant_id=tenant_id,
+            root=root,
+            entries=[
+                {
+                    "tenant_id": tenant_id,
+                    "platform": platform,
+                    "account": account_name,
+                    "title": f"{brand}商单档期",
+                    "starts_at": f"{start}T00:00:00+08:00",
+                    "ends_at": f"{end}T23:59:00+08:00",
+                    "status": "confirmed",
+                    "schedule": schedule_value,
+                    "opportunity_id": opportunity_id,
+                }
+            ],
+            source_type="business_opportunity",
+            source_id=opportunity_id,
+            source_time=business_now_iso(),
+            dedupe_key=f"business_opportunity:{opportunity_id}:{start}:{end}",
+            provenance={
+                "business_account_id": business_account_id,
+                "opportunity_record_id": str((opportunity_write or {}).get("record_id") or ""),
+                "source_fields": ["具体档期", "档期"],
+            },
+        )
     return {
         "mode": "write",
         "business_account_id": business_account_id,
@@ -2059,6 +2098,8 @@ def write_business_model_v2(
         "quote_snapshot_uri": quote_uri,
         "commercial_loop_path": commercial_loop.artifact_path(),
         "quote_refresh": loop_state.get("quote_refresh") or {},
+        "schedule_window": schedule_window or {},
+        "schedule_snapshot": schedule_snapshot,
         "writes": [item for item in (account_write, opportunity_write) if item is not None],
     }
 

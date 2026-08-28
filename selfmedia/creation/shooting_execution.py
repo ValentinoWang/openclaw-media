@@ -3,11 +3,13 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
 from typing import Any
 
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from media_model.payloads import normalize_source_url
 from selfmedia.context import build_media_context_for_request, merge_conversation_context
+from selfmedia.business.schedule import LOCAL_TZ
 from media_vault import require_tenant_id
 
 from .adapters import ViralContentAdapter
@@ -124,7 +126,7 @@ def handle_shooting_execution_command(
     validation = validate_shooting_execution_plan(draft)
     doc_link = ""
     media_model_v2_result: dict[str, Any] = {}
-    if not dry_run and not no_write:
+    if not dry_run and not no_write and not validation.get("schedule_conflicts"):
         doc_link = create_shooting_execution_doc(request, draft, validation, media_context=media_context)
         media_model_v2_result = write_creation_model_v2(
             tenant_id=tenant_id,
@@ -330,7 +332,8 @@ def generate_shooting_execution_plan(request: ShootingExecutionRequest, *, media
     payload = call_creation_json(prompt, validation_contract=SHOOTING_PLAN_VALIDATION_CONTRACT)
     if not isinstance(payload, dict):
         raise RuntimeError("shooting_execution_llm_output_not_object")
-    return localize_shooting_execution_plan_values(payload)
+    localized = localize_shooting_execution_plan_values(payload)
+    return _apply_schedule_conflicts(localized, request=request, media_context=media_context or {})
 
 
 def localize_shooting_execution_plan_values(draft: dict[str, Any]) -> dict[str, Any]:
@@ -419,9 +422,148 @@ def validate_shooting_execution_plan(draft: dict[str, Any]) -> dict[str, Any]:
         return {"ok": False, "status": "pending_manual", "missing": [], "empty_lists": [], "reason": "invalid_object_sections", "fallback": "disabled"}
     if not str(draft["publishing_pack"].get("first_hour_action") or "").strip():
         missing.append("first_hour_action")
+    schedule_conflicts = draft.get("schedule_conflicts")
+    if schedule_conflicts:
+        return {
+            "ok": False,
+            "status": "needs_review",
+            "missing": missing,
+            "empty_lists": empty_lists,
+            "schedule_conflicts": schedule_conflicts,
+            "reason": "generated shooting times overlap confirmed schedule windows",
+            "fallback": "manual_review",
+        }
     if missing or empty_lists:
         return {"ok": False, "status": "pending_manual", "missing": missing, "empty_lists": empty_lists, "fallback": "disabled"}
     return {"ok": True, "status": "passed", "missing": [], "empty_lists": [], "fallback": "disabled"}
+
+
+def _apply_schedule_conflicts(
+    draft: dict[str, Any],
+    *,
+    request: ShootingExecutionRequest,
+    media_context: dict[str, Any],
+) -> dict[str, Any]:
+    known_windows = []
+    for item in media_context.get("schedule") or []:
+        if not isinstance(item, dict):
+            continue
+        start = _parse_iso_datetime(item.get("starts_at") or item.get("start_at"))
+        end = _parse_iso_datetime(item.get("ends_at") or item.get("end_at")) or start
+        if start is not None and end is not None:
+            known_windows.append((start, end, str(item.get("title") or "已安排事项").strip() or "已安排事项"))
+    if not known_windows:
+        return draft
+
+    conflicts: list[dict[str, str]] = []
+    for index, row in enumerate(draft.get("route_map") or []):
+        if not isinstance(row, dict):
+            continue
+        window = _parse_structured_time_window(row.get("time_slot"))
+        if window is None:
+            continue
+        for start, end, title in known_windows:
+            if _windows_overlap(window[0], window[1], start, end):
+                conflicts.append(
+                    {
+                        "kind": "route_map",
+                        "item": str(index),
+                        "time_slot": str(row.get("time_slot") or ""),
+                        "schedule_title": title,
+                        "schedule_starts_at": start.isoformat(timespec="minutes"),
+                        "schedule_ends_at": end.isoformat(timespec="minutes"),
+                    }
+                )
+    publish_window = _parse_structured_time_window(request.publish_time)
+    if publish_window is not None:
+        for start, end, title in known_windows:
+            if _windows_overlap(publish_window[0], publish_window[1], start, end):
+                conflicts.append(
+                    {
+                        "kind": "publish_time",
+                        "item": "request",
+                        "time_slot": request.publish_time,
+                        "schedule_title": title,
+                        "schedule_starts_at": start.isoformat(timespec="minutes"),
+                        "schedule_ends_at": end.isoformat(timespec="minutes"),
+                    }
+                )
+    if not conflicts:
+        return draft
+    updated = dict(draft)
+    updated["schedule_conflicts"] = conflicts
+    updated["schedule_conflict_status"] = "needs_review"
+    branch_plans = list(updated.get("branch_plans") or [])
+    branch_plans.append(
+        {
+            "condition": "已生成时段与已确认档期冲突，需人工复核",
+            "plan": "暂停冲突时段；由创作者确认替代拍摄/发布时间后再执行。",
+            "priority": "必拍",
+        }
+    )
+    updated["branch_plans"] = branch_plans
+    checklist = list(updated.get("onsite_checklist") or [])
+    checklist.append("需人工复核：路线图或发布时间与已确认档期冲突，确认替代时段后再拍摄/发布。")
+    updated["onsite_checklist"] = checklist
+    return updated
+
+
+def _parse_structured_time_window(value: Any) -> tuple[datetime, datetime] | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    date_match = re.search(
+        r"(?P<year>20\d{2})(?:[-/.年])(?P<month>\d{1,2})(?:[-/.月])(?P<day>\d{1,2})(?:日|号)?",
+        text,
+    )
+    if not date_match:
+        return None
+    time_matches = re.findall(r"(?<!\d)(\d{1,2})(?::|点|时)(\d{2})?", text)
+    if not time_matches:
+        return None
+    try:
+        day = datetime(
+            int(date_match.group("year")),
+            int(date_match.group("month")),
+            int(date_match.group("day")),
+            int(time_matches[0][0]),
+            int(time_matches[0][1] or 0),
+            tzinfo=LOCAL_TZ,
+        )
+        end = (
+            datetime(
+                day.year,
+                day.month,
+                day.day,
+                int(time_matches[1][0]),
+                int(time_matches[1][1] or 0),
+                tzinfo=LOCAL_TZ,
+            )
+            if len(time_matches) > 1
+            else day + timedelta(hours=1)
+        )
+    except ValueError:
+        return None
+    if end < day:
+        end += timedelta(days=1)
+    return day, end
+
+
+def _parse_iso_datetime(value: Any) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=LOCAL_TZ)
+    return parsed.astimezone(LOCAL_TZ)
+
+
+def _windows_overlap(left_start: datetime, left_end: datetime, right_start: datetime, right_end: datetime) -> bool:
+    return left_start < right_end and right_start < left_end
 
 
 def _validate_shooting_plan(payload: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
