@@ -31,10 +31,11 @@ CANONICAL_GENERATED_CONTRACT = _resolve_contract(
     Path("/home/ubuntu/selfmedia-tools/media-agent-cli/generated_product_contract.py"),
     REPOSITORY_ROOT / "media-agent-cli/generated_product_contract.py",
 )
+REPOSITORY_FROZEN_CONTRACT = REPOSITORY_ROOT / "docs/ai-harness/openclaw-media-product-contract.json"
 FROZEN_CONTRACT = _resolve_contract(
     "OPENCLAW_MEDIA_FROZEN_CONTRACT",
+    REPOSITORY_FROZEN_CONTRACT,
     Path("/home/ubuntu/docs/ai-harness/openclaw-media-product-contract.json"),
-    REPOSITORY_ROOT / "media-agent-cli/contracts/openclaw-media-product-contract.json",
 )
 
 

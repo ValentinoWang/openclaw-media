@@ -1,0 +1,74 @@
+{
+  "$schema": "./agent_result_vault_contract.schema.json",
+  "contract_name": "openclaw_agent_results_vault",
+  "version": 1,
+  "physical_root": "/home/ubuntu/obsidian-日记/公共开发集",
+  "diary_vault": "/home/ubuntu/obsidian-日记",
+  "media_vault": "/home/ubuntu/obsidian-自媒体",
+  "syncthing_folder_ids": {
+    "diary": "obsidian-diary",
+    "media": "obsidian-media"
+  },
+  "required_folders": [
+    "media",
+    "daily",
+    "social",
+    "knowledge",
+    "public"
+  ],
+  "agent_aliases": {
+    "media": "media",
+    "feishu-media": "media",
+    "daily": "daily",
+    "feishu-daily": "daily",
+    "social": "social",
+    "feishu-social": "social",
+    "knowledge": "knowledge",
+    "feishu-knowledge": "knowledge",
+    "main": "public",
+    "feishu-main": "public",
+    "public": "public",
+    "common": "public",
+    "development": "public",
+    "openclaw-maintenance": "public"
+  },
+  "allowed_selector_env": "OPENCLAW_AGENT_RESULTS_AGENT",
+  "forbidden_base_env": "OPENCLAW_AGENT_RESULTS_BASE",
+  "forbidden_paths": [
+    "/home/ubuntu/agents-results",
+    "/home/ubuntu/agent-results",
+    "/home/ubuntu/obsidian-diary",
+    "/home/ubuntu/obsidian-media",
+    "/home/ubuntu/openclaw-agents/media/agents-results",
+    "/home/ubuntu/.openclaw/mcp-sources/ProjectNavigatorMCP/agents-results",
+    "/home/ubuntu/obsidian-自媒体/日记/公共开发集",
+    "/home/ubuntu/obsidian-自媒体/公共开发集",
+    "/home/ubuntu/obsidian-自媒体/10_开发过程",
+    "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/公共开发集",
+    "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/自媒体/10_开发过程"
+  ],
+  "control_metadata": {
+    "named_failure_class": "agent_results_wrong_obsidian_vault_sync_route",
+    "protected_invariant": "Agent result evidence belongs only under /home/ubuntu/obsidian-日记/公共开发集, split by media, daily, social, knowledge, and public folders.",
+    "canonical_contract": "docs/ai-harness/agent_result_vault_contract.json + runtime.evidence.agent_results.AgentResultsVaultContract",
+    "targeted_positive_case": "main resolves to public, feishu-media resolves to media, all required folders exist, and Syncthing routes the diary folder id to /home/ubuntu/obsidian-日记.",
+    "targeted_negative_case": "Retired agent-results or agents-results paths, fake /Users iCloud paths, media-vault 公共开发集 paths, hardcoded folder tuples, or OPENCLAW_AGENT_RESULTS_BASE fail static/schema/runtime checks.",
+    "scoped_surface_discovery": "scripts/qa agent_results_path, selfmedia-tools runtime.evidence.agent_results, active/source tag-router deletion and cleanup scripts, static vault guard, schema guard, and Syncthing runtime QA.",
+    "exception_policy": "Syncthing folder ids may remain English identifiers; physical vault paths must use the renamed Chinese directories. Runtime base override is disabled and must raise instead of silently changing roots.",
+    "deprecated_alias_set": [
+      "agent-results",
+      "agents-results",
+      "OPENCLAW_AGENT_RESULTS_BASE",
+      "/home/ubuntu/obsidian-diary",
+      "/home/ubuntu/obsidian-media",
+      "/home/ubuntu/obsidian-自媒体/10_开发过程",
+      "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/公共开发集",
+      "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/自媒体/10_开发过程"
+    ],
+    "downstream_consumer_test": "source/active test_deletion.py, source/active cleanup_creation_runs.py --help, check_openclaw_single_source_contract.py, and check_feishu_tag_router_contract.py.",
+    "runtime_fixture_or_route": "scripts/qa/check_agent_results_sync_route.py reads Syncthing config.xml and localhost REST API.",
+    "artifact_capture_path": "stdout/stderr from scripts/quality/check_agent_results_schema_contract.py and scripts/qa/check_agent_results_sync_route.py.",
+    "non_flaky_execution_boundary": "Static JSON/schema/path checks plus read-only local Syncthing API readback; no Feishu writes, LLM calls, or external network calls.",
+    "actionable_failure_message": "Fix the JSON contract or the named writer file; do not reintroduce retired path literals, fake iCloud roots, base env overrides, or duplicated folder lists."
+  }
+}

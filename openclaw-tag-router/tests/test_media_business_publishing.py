@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from openclaw_app.services.media_business.publishing import (
     PublishingService,
     PublishingUnprocessable,
 )
+from media_vault import MediaVault
 
 
 NOW = datetime(2026, 8, 5, 10, 0, tzinfo=timezone.utc)
@@ -413,3 +415,93 @@ def test_error_shape_and_migration_are_scoped_to_b06():
     assert "docx_url_expires_at" in migration
     assert "published_posts_b06_package_idx" in migration
     assert "publication_receipts" not in migration
+
+
+class CreationProjectionConnection:
+    def __init__(self):
+        self.calls = []
+        self.commits = 0
+        self.existing = None
+        self.counter = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def commit(self):
+        self.commits += 1
+
+    def new_id(self, prefix):
+        self.counter += 1
+        return f"{prefix}_projection_{self.counter:06d}"
+
+    def execute(self, query, params=()):
+        self.calls.append((query, tuple(params)))
+        sql = " ".join(query.split())
+        if "FROM media_product.publishing_packages" in sql:
+            return Cursor([] if self.existing is None else [self.existing])
+        if "INSERT INTO media_product.publishing_packages" in sql:
+            self.existing = (params[1],)
+        return Cursor()
+
+
+def test_creation_run_projection_is_tenant_scoped_transactional_and_idempotent():
+    connection = CreationProjectionConnection()
+    service = PublishingService(
+        lambda: connection,
+        cursor_secret=b"cursor-secret-0123456789",
+        public_id_secret=b"public-secret-0123456789",
+        id_factory=connection.new_id,
+        clock=lambda: NOW,
+    )
+    with tempfile.TemporaryDirectory() as temporary:
+        tenant_id = "11111111-1111-4111-8111-111111111111"
+        vault = MediaVault(tenant_id=tenant_id, root=temporary)
+        run_dir = vault.creation_run_dir(RUN_ID)
+        run_dir.mkdir(parents=True)
+        (run_dir / "draft_output.json").write_text(
+            json.dumps(
+                {
+                    "creator_report": {
+                        "overview": {"platform": "douyin", "recommended_topic": "训练日记"},
+                        "publishing_pack": {
+                            "title_1": "训练日记",
+                            "title_2": "训练前后",
+                            "cover_text": "坚持训练",
+                            "body_copy": "今天完成了一次训练。",
+                            "hashtags": ["训练", "日常"],
+                            "pinned_comment": "你今天训练了吗？",
+                            "comment_prompt": "你会如何开始？",
+                            "first_hour_action": "发布后回复前十条评论并置顶提问。",
+                        },
+                    }
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        (run_dir / "validation_report.json").write_text('{"ok": true}', encoding="utf-8")
+
+        created = service.project_creation_run(tenant_id, RUN_ID, vault_root=temporary)
+        replayed = service.project_creation_run(tenant_id, RUN_ID, vault_root=temporary)
+
+    assert created["created"] is True
+    assert replayed == {**created, "created": False}
+    assert connection.commits == 1
+    statements = [" ".join(query.split()) for query, _params in connection.calls]
+    assert any("pg_advisory_xact_lock" in query for query in statements)
+    for table in (
+        "media_product.content_projects",
+        "media_product.document_artifacts",
+        "media_product.document_revisions",
+        "media_document.revision_bodies",
+        "media_product.publishing_packages",
+    ):
+        assert any(f"INSERT INTO {table}" in query for query in statements)
+    package_insert = next(params for query, params in connection.calls if "INSERT INTO media_product.publishing_packages" in query)
+    package = json.loads(package_insert[-1])
+    assert package["public_run_id"] == RUN_ID
+    assert package["content_fields"]["first_hour_action"] == "发布后回复前十条评论并置顶提问。"
+    assert package["status"] == "draft"

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from selfmedia.context import (
     build_media_context,
@@ -90,6 +93,29 @@ class MediaContextTests(unittest.TestCase):
         self.assertIn("身份标签：清华、AI、体育生", prompt)
         self.assertIn("公开表达边界：可说清华和短跑，不提私人联系方式", prompt)
         self.assertIn("可创作身份卖点：AI硕士冲短跑一级的反差", prompt)
+
+    def test_context_consumes_tenant_daily_metrics_and_comments(self) -> None:
+        tenant_id = "00000000-0000-4000-8000-000000000101"
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"OPENCLAW_MEDIA_VAULT_ROOT": tmp}, clear=False):
+            daily_root = Path(tmp) / "tenants" / tenant_id / "account_daily_runs"
+            daily_root.mkdir(parents=True)
+            (daily_root / "account_daily_20260828.json").write_text(
+                json.dumps(
+                    {
+                        "tenant_id": tenant_id,
+                        "accounts": [{"record_id": "acc_1", "account_name": "主账号", "platform": "小红书"}],
+                        "summaries": [{"account_name": "主账号", "platform": "小红书", "captured_at": "2026-08-28T09:00:00+08:00", "post_count": 2, "total_interactions": 66, "best_post_url": "https://example.test/best"}],
+                        "rows": {"acc_1": [{"top_comments": [{"text": "求这个训练方案"}]}]},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            context = build_media_context(platform="小红书", account="主账号", tenant_id=tenant_id, root=tmp)
+
+        self.assertEqual(context["loaded"]["recent_daily_metrics"], 1)
+        self.assertEqual(context["top_comments"], ["求这个训练方案"])
+        self.assertIn("最近日报指标", context["prompt"])
 
 
 if __name__ == "__main__":

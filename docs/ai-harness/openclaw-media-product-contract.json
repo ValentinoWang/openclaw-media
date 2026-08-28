@@ -1,0 +1,357 @@
+{
+  "contract_id": "openclaw_media_product_v1",
+  "version": 1,
+  "release": {
+    "platforms": ["macos"],
+    "python_requires": ">=3.12,<3.14"
+  },
+  "api_base": "/openclaw/media/api",
+  "web": {
+    "local_collaboration": {
+      "surfaces": ["/media-agent", "/archives"],
+      "media_bytes": "local_only",
+      "api_consumption": "generated_client_only"
+    }
+  },
+  "objects": [
+    {
+      "id": "PipelineDefinition",
+      "location": "cloud",
+      "id_field": "pipeline_id",
+      "references": [
+        "CLIRelease"
+      ]
+    },
+    {
+      "id": "Device",
+      "location": "cloud",
+      "id_field": "device_id",
+      "references": []
+    },
+    {
+      "id": "LocalAgentJob",
+      "location": "cloud",
+      "id_field": "job_id",
+      "references": [
+        "Device",
+        "PipelineDefinition",
+        "LocalAnalysisRun"
+      ]
+    },
+    {
+      "id": "ArchiveRecord",
+      "location": "cloud",
+      "id_field": "archive_id",
+      "references": [
+        "LocalAnalysisRun",
+        "ArchiveManifest"
+      ]
+    },
+    {
+      "id": "CLIRelease",
+      "location": "cloud",
+      "id_field": "release_id",
+      "references": []
+    },
+    {
+      "id": "ProviderConfig",
+      "location": "local",
+      "id_field": "provider_config_id",
+      "references": []
+    },
+    {
+      "id": "LocalWorkspace",
+      "location": "local",
+      "id_field": "workspace_id",
+      "references": []
+    },
+    {
+      "id": "LocalAnalysisRun",
+      "location": "local",
+      "id_field": "run_id",
+      "references": [
+        "LocalWorkspace",
+        "PipelineDefinition",
+        "ProviderConfig"
+      ]
+    },
+    {
+      "id": "LocalArtifact",
+      "location": "local",
+      "id_field": "artifact_id",
+      "references": [
+        "LocalAnalysisRun"
+      ]
+    },
+    {
+      "id": "ArchiveManifest",
+      "location": "local",
+      "id_field": "manifest_id",
+      "references": [
+        "LocalAnalysisRun",
+        "LocalArtifact"
+      ]
+    }
+  ],
+  "state_machines": {
+    "MediaProject": [
+      "captured",
+      "planned",
+      "edit_ready",
+      "editing",
+      "final_ready",
+      "published"
+    ],
+    "MediaWebTask": [
+      "queued",
+      "awaiting_confirmation",
+      "succeeded",
+      "pending_manual",
+      "failed",
+      "cancelled"
+    ],
+    "LocalAgentJob": [
+      "queued",
+      "leased",
+      "acknowledged",
+      "running",
+      "succeeded",
+      "blocked",
+      "failed",
+      "expired",
+      "cancelled"
+    ],
+    "LocalAnalysisRun": [
+      "created",
+      "validating",
+      "preprocessing",
+      "analyzing",
+      "rendering",
+      "reviewing",
+      "ready_to_archive",
+      "succeeded",
+      "pending_manual",
+      "failed",
+      "cancelled"
+    ],
+    "ArchiveCommit": [
+      "draft",
+      "committing",
+      "verifying",
+      "archived",
+      "failed",
+      "cancelled"
+    ],
+    "ArchiveRecord": [
+      "active",
+      "deleting",
+      "delete_failed"
+    ]
+  },
+  "routes": [
+    {
+      "path": "/overview",
+      "object_id": "ArchiveRecord"
+    },
+    {
+      "path": "/tracks",
+      "object_id": "ArchiveRecord"
+    },
+    {
+      "path": "/assets",
+      "object_id": "LocalArtifact"
+    },
+    {
+      "path": "/runs",
+      "object_id": "LocalAgentJob"
+    },
+    {
+      "path": "/runs/:runId",
+      "object_id": "LocalAgentJob"
+    },
+    {
+      "path": "/publishing",
+      "object_id": "ArchiveRecord"
+    },
+    {
+      "path": "/reviews",
+      "object_id": "ArchiveRecord"
+    },
+    {
+      "path": "/media-agent",
+      "object_id": "LocalWorkspace"
+    },
+    {
+      "path": "/archives",
+      "object_id": "ArchiveRecord"
+    }
+  ],
+  "archive_modes": [
+    "content",
+    "descriptor_only",
+    "forbidden"
+  ],
+  "api_schemas": {
+    "PipelineListRequest": {"type": "object", "properties": {"cursor": {"type": "string"}, "limit": {"type": "integer", "minimum": 1, "maximum": 100}}, "additionalProperties": false},
+    "PipelineListResponse": {"type": "object", "required": ["pipelines", "next_cursor"], "properties": {"pipelines": {"type": "array", "items": {"$ref": "#/api_schemas/PipelineSummary"}}, "next_cursor": {"type": ["string", "null"]}}, "additionalProperties": false},
+    "PipelineSummary": {"type": "object", "required": ["pipeline_id", "version", "display_name", "catalog_digest"], "properties": {"pipeline_id": {"type": "string"}, "version": {"type": "string"}, "display_name": {"type": "string"}, "catalog_digest": {"type": "string"}}, "additionalProperties": false},
+    "PairCodeCreateRequest": {"type": "object", "required": ["device_label", "expires_in_seconds"], "properties": {"device_label": {"type": "string", "minLength": 1}, "expires_in_seconds": {"type": "integer", "minimum": 60, "maximum": 3600}}, "additionalProperties": false},
+    "PairCodeCreateResponse": {"type": "object", "required": ["pair_code", "expires_at"], "properties": {"pair_code": {"type": "string"}, "expires_at": {"type": "string", "format": "date-time"}}, "additionalProperties": false},
+    "DevicePairRequest": {"type": "object", "required": ["pair_code", "device_label", "device_platform", "client_version"], "properties": {"pair_code": {"type": "string"}, "device_label": {"type": "string"}, "device_platform": {"const": "macos"}, "client_version": {"type": "string"}}, "additionalProperties": false},
+    "DevicePairResponse": {"type": "object", "required": ["device", "device_credential"], "properties": {"device": {"$ref": "#/api_schemas/Device"}, "device_credential": {"type": "string"}}, "additionalProperties": false},
+    "DeviceListRequest": {"type": "object", "properties": {"cursor": {"type": "string"}, "limit": {"type": "integer", "minimum": 1, "maximum": 100}}, "additionalProperties": false},
+    "DeviceListResponse": {"type": "object", "required": ["devices", "next_cursor"], "properties": {"devices": {"type": "array", "items": {"$ref": "#/api_schemas/Device"}}, "next_cursor": {"type": ["string", "null"]}}, "additionalProperties": false},
+    "DeviceHeartbeatRequest": {"type": "object", "required": ["observed_at", "client_version", "api_version", "catalog_digest", "expected_revision"], "properties": {"observed_at": {"type": "string", "format": "date-time"}, "client_version": {"type": "string", "minLength": 1}, "api_version": {"type": "string", "minLength": 1}, "catalog_digest": {"type": "string", "minLength": 1}, "capabilities": {"type": "array", "items": {"type": "string"}}, "expected_revision": {"type": "integer", "minimum": 1}}, "additionalProperties": false},
+    "DeviceHeartbeatResponse": {"type": "object", "required": ["device_id", "accepted_at", "revision", "state", "accepted_client_version", "catalog_digest", "api_compatible", "catalog_compatible", "claimable_job"], "properties": {"device_id": {"type": "string"}, "accepted_at": {"type": "string", "format": "date-time"}, "revision": {"type": "integer", "minimum": 0}, "state": {"enum": ["paired", "online", "revoked"]}, "accepted_client_version": {"type": "string"}, "catalog_digest": {"type": "string"}, "api_compatible": {"type": "boolean"}, "catalog_compatible": {"type": "boolean"}, "claimable_job": {"anyOf": [{"$ref": "#/api_schemas/ClaimableJob"}, {"type": "null"}]}}, "additionalProperties": false},
+    "DeviceRevokeRequest": {"type": "object", "required": ["expected_revision"], "properties": {"expected_revision": {"type": "integer", "minimum": 1}}, "additionalProperties": false},
+    "DeviceRevokeResponse": {"type": "object", "required": ["device_id", "revoked_at"], "properties": {"device_id": {"type": "string"}, "revoked_at": {"type": "string", "format": "date-time"}}, "additionalProperties": false},
+    "JobCreateRequest": {"type": "object", "required": ["pipeline_id", "pipeline_version", "catalog_digest", "device_id", "input_refs", "output_selection"], "properties": {"pipeline_id": {"type": "string"}, "pipeline_version": {"type": "string"}, "catalog_digest": {"type": "string"}, "device_id": {"type": "string"}, "input_refs": {"type": "array", "items": {"type": "string"}}, "output_selection": {"type": "array", "items": {"type": "string"}}, "confirmation_ref": {"type": "string"}}, "additionalProperties": false},
+    "JobCreateResponse": {"type": "object", "required": ["job"], "properties": {"job": {"$ref": "#/api_schemas/LocalAgentJob"}}, "additionalProperties": false},
+    "JobListRequest": {"type": "object", "properties": {"cursor": {"type": "string"}, "limit": {"type": "integer", "minimum": 1, "maximum": 100}, "state": {"type": "string"}}, "additionalProperties": false},
+    "JobListResponse": {"type": "object", "required": ["jobs", "next_cursor"], "properties": {"jobs": {"type": "array", "items": {"$ref": "#/api_schemas/LocalAgentJob"}}, "next_cursor": {"type": ["string", "null"]}}, "additionalProperties": false},
+    "JobDetailResponse": {"type": "object", "required": ["job"], "properties": {"job": {"$ref": "#/api_schemas/LocalAgentJob"}}, "additionalProperties": false},
+    "JobLeaseRequest": {"type": "object", "required": ["lease_seconds", "expected_revision"], "properties": {"lease_seconds": {"type": "integer", "minimum": 1, "maximum": 3600}, "expected_revision": {"type": "integer", "minimum": 1}}, "additionalProperties": false},
+    "JobLeaseResponse": {"type": "object", "required": ["job"], "properties": {"job": {"$ref": "#/api_schemas/LocalAgentJob"}}, "additionalProperties": false},
+    "JobAckRequest": {"type": "object", "required": ["ack_ref", "expected_revision"], "properties": {"ack_ref": {"type": "string"}, "expected_revision": {"type": "integer", "minimum": 1}}, "additionalProperties": false},
+    "JobAckResponse": {"type": "object", "required": ["job"], "properties": {"job": {"$ref": "#/api_schemas/LocalAgentJob"}}, "additionalProperties": false},
+    "JobStartRequest": {"type": "object", "required": ["start_ref", "expected_revision"], "properties": {"start_ref": {"type": "string"}, "expected_revision": {"type": "integer", "minimum": 1}}, "additionalProperties": false},
+    "JobStartResponse": {"type": "object", "required": ["job"], "properties": {"job": {"$ref": "#/api_schemas/LocalAgentJob"}}, "additionalProperties": false},
+    "JobResultRequest": {"type": "object", "required": ["result_status", "result_refs", "expected_revision"], "properties": {"result_status": {"enum": ["succeeded", "blocked", "failed"]}, "result_refs": {"type": "array", "items": {"type": "string"}}, "artifact_refs": {"type": "array", "items": {"type": "string"}}, "failure_code": {"type": ["string", "null"]}, "expected_revision": {"type": "integer", "minimum": 1}}, "additionalProperties": false},
+    "JobResultResponse": {"type": "object", "required": ["job"], "properties": {"job": {"$ref": "#/api_schemas/LocalAgentJob"}}, "additionalProperties": false},
+    "ArchiveCommitRequest": {"type": "object", "required": ["run_id", "manifest", "confirmation_ref"], "properties": {"run_id": {"type": "string"}, "manifest": {"$ref": "#/api_schemas/ArchiveManifest"}, "confirmation_ref": {"type": "string"}}, "additionalProperties": false},
+    "ArchiveCommitResponse": {"type": "object", "required": ["archive", "commit_receipt", "readback_receipt"], "properties": {"archive": {"$ref": "#/api_schemas/ArchiveRecord"}, "commit_receipt": {"$ref": "#/api_schemas/ArchiveCommitReceipt"}, "readback_receipt": {"$ref": "#/api_schemas/ArchiveReadbackReceipt"}}, "additionalProperties": false},
+    "ArchiveListRequest": {"type": "object", "properties": {"cursor": {"type": "string"}, "limit": {"type": "integer", "minimum": 1, "maximum": 100}, "state": {"type": "string"}}, "additionalProperties": false},
+    "ArchiveListResponse": {"type": "object", "required": ["archives", "next_cursor"], "properties": {"archives": {"type": "array", "items": {"$ref": "#/api_schemas/ArchiveRecord"}}, "next_cursor": {"type": ["string", "null"]}}, "additionalProperties": false},
+    "ArchiveDetailResponse": {"type": "object", "required": ["archive"], "properties": {"archive": {"$ref": "#/api_schemas/ArchiveRecord"}}, "additionalProperties": false},
+    "ArchiveDeletePlanResponse": {"type": "object", "required": ["delete_plan_id", "archive_id", "expires_at"], "properties": {"delete_plan_id": {"type": "string"}, "archive_id": {"type": "string"}, "expires_at": {"type": "string", "format": "date-time"}}, "additionalProperties": false},
+    "ArchiveDeleteRequest": {"type": "object", "required": ["delete_plan_id", "confirmation_ref", "expected_revision"], "properties": {"delete_plan_id": {"type": "string"}, "confirmation_ref": {"type": "string"}, "expected_revision": {"type": "integer", "minimum": 1}}, "additionalProperties": false},
+    "ArchiveDeleteResponse": {"type": "object", "required": ["archive_id", "state", "delete_receipt", "hard_deleted"], "properties": {"archive_id": {"type": "string"}, "state": {"enum": ["deleted", "delete_failed"]}, "delete_receipt": {"$ref": "#/api_schemas/ArchiveDeleteReceipt"}, "hard_deleted": {"const": true}}, "additionalProperties": false},
+    "ArchiveReadbackRequest": {"type": "object", "required": ["readback_receipt_ref"], "properties": {"readback_receipt_ref": {"type": "string"}, "observed_refs": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": false},
+    "ArchiveReadbackResponse": {"type": "object", "required": ["archive", "verified", "readback_receipt", "hard_deleted"], "properties": {"archive": {"anyOf": [{"$ref": "#/api_schemas/ArchiveRecord"}, {"type": "null"}]}, "verified": {"type": "boolean"}, "readback_receipt": {"$ref": "#/api_schemas/ArchiveReadbackReceipt"}, "hard_deleted": {"type": "boolean"}}, "additionalProperties": false},
+    "CLIReleaseCompatibilityRequest": {"type": "object", "required": ["cli_version", "platform", "python_version", "catalog_digest", "api_version"], "properties": {"cli_version": {"type": "string"}, "platform": {"const": "macos"}, "python_version": {"type": "string"}, "catalog_digest": {"type": "string"}, "api_version": {"type": "string"}}, "additionalProperties": false},
+    "CLIReleaseCompatibilityResponse": {"type": "object", "required": ["compatible", "min_cli_version", "supported_python", "supported_platforms"], "properties": {"compatible": {"type": "boolean"}, "min_cli_version": {"type": "string"}, "supported_python": {"type": "string"}, "supported_platforms": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": false},
+    "Device": {"type": "object", "required": ["device_id", "state", "device_label", "device_platform", "client_version", "capabilities", "revision", "last_seen_at"], "properties": {"device_id": {"type": "string"}, "state": {"enum": ["paired", "online", "revoked"]}, "device_label": {"type": "string"}, "device_platform": {"const": "macos"}, "client_version": {"type": "string"}, "capabilities": {"type": "array", "items": {"type": "string"}}, "revision": {"type": "integer", "minimum": 0}, "last_seen_at": {"type": ["string", "null"], "format": "date-time"}}, "additionalProperties": false},
+    "LocalAgentJob": {"type": "object", "required": ["job_id", "state", "pipeline_id", "pipeline_version", "catalog_digest", "device_id", "input_refs", "output_selection", "confirmation_ref", "revision", "lease_id", "lease_expires_at", "ack_ref", "acknowledged_at", "start_ref", "started_at", "result_status", "result_refs", "artifact_refs", "failure_code", "created_at", "updated_at", "leased_at", "completed_at"], "properties": {"job_id": {"type": "string"}, "state": {"enum": ["queued", "leased", "acknowledged", "running", "succeeded", "blocked", "failed", "expired", "cancelled"]}, "pipeline_id": {"type": "string"}, "pipeline_version": {"type": "string"}, "catalog_digest": {"type": "string"}, "device_id": {"type": ["string", "null"]}, "input_refs": {"type": "array", "items": {"type": "string"}}, "output_selection": {"type": "array", "items": {"type": "string"}}, "confirmation_ref": {"type": ["string", "null"]}, "revision": {"type": "integer", "minimum": 0}, "lease_id": {"type": ["string", "null"]}, "lease_expires_at": {"type": ["string", "null"], "format": "date-time"}, "ack_ref": {"type": ["string", "null"]}, "acknowledged_at": {"type": ["string", "null"], "format": "date-time"}, "start_ref": {"type": ["string", "null"]}, "started_at": {"type": ["string", "null"], "format": "date-time"}, "result_status": {"enum": ["succeeded", "blocked", "failed", null]}, "result_refs": {"type": "array", "items": {"type": "string"}}, "artifact_refs": {"type": "array", "items": {"type": "string"}}, "failure_code": {"type": ["string", "null"]}, "created_at": {"type": "string", "format": "date-time"}, "updated_at": {"type": "string", "format": "date-time"}, "leased_at": {"type": ["string", "null"], "format": "date-time"}, "completed_at": {"type": ["string", "null"], "format": "date-time"}}, "additionalProperties": false},
+    "ArchiveContent": {"type": "object", "required": ["encoding", "value"], "properties": {"encoding": {"enum": ["utf8", "base64"]}, "value": {"type": "string", "maxLength": 1048576}}, "additionalProperties": false},
+    "ArchiveArtifact": {"type": "object", "required": ["ref", "mode", "mime_type", "sha256", "size_bytes", "descriptor", "metadata", "content"], "properties": {"ref": {"type": "string", "minLength": 1}, "mode": {"enum": ["content", "descriptor_only", "forbidden"]}, "mime_type": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "size_bytes": {"type": "integer", "minimum": 0}, "descriptor": {"type": "boolean"}, "metadata": {"type": "object", "required": ["name", "description", "source_ref"], "properties": {"name": {"type": "string"}, "description": {"type": ["string", "null"]}, "source_ref": {"type": ["string", "null"]}}, "additionalProperties": false}, "content": {"anyOf": [{"$ref": "#/api_schemas/ArchiveContent"}, {"type": "null"}]}}, "allOf": [{"if": {"properties": {"mode": {"const": "content"}}}, "then": {"properties": {"mime_type": {"enum": ["application/json", "text/plain", "text/markdown"]}, "size_bytes": {"maximum": 1048576}, "content": {"$ref": "#/api_schemas/ArchiveContent"}}}}, {"if": {"properties": {"mode": {"const": "descriptor_only"}}}, "then": {"properties": {"content": {"type": "null"}}}}, {"if": {"properties": {"mode": {"const": "forbidden"}}}, "then": {"properties": {"content": {"type": "null"}}}}], "additionalProperties": false},
+    "ClaimableJob": {"type": "object", "required": ["job_id", "state"], "properties": {"job_id": {"type": "string"}, "state": {"enum": ["queued", "leased", "acknowledged", "running", "succeeded", "blocked", "failed", "expired", "cancelled"]}}, "additionalProperties": false},
+    "ArchiveManifest": {"type": "object", "required": ["manifest_id", "run_id", "confirmation_ref", "items", "created_at"], "properties": {"manifest_id": {"type": "string"}, "run_id": {"type": "string"}, "confirmation_ref": {"type": "string"}, "items": {"type": "array", "minItems": 1, "maxItems": 32, "items": {"$ref": "#/api_schemas/ArchiveArtifact"}}, "created_at": {"type": "string", "format": "date-time"}}, "additionalProperties": false},
+    "ArchiveProjection": {"type": "object", "required": ["projection_id", "kind", "ref", "artifact_refs", "consistent"], "properties": {"projection_id": {"type": "string"}, "kind": {"enum": ["db", "attachment", "web"]}, "ref": {"type": "string"}, "artifact_refs": {"type": "array", "items": {"type": "string"}}, "consistent": {"type": "boolean"}}, "additionalProperties": false},
+    "ArchiveReadbackReceipt": {"type": "object", "required": ["receipt_ref", "archive_id", "verified", "db_present", "attachments_present", "projections_present", "checked_at"], "properties": {"receipt_ref": {"type": "string"}, "archive_id": {"type": "string"}, "verified": {"type": "boolean"}, "db_present": {"type": "boolean"}, "attachments_present": {"type": "boolean"}, "projections_present": {"type": "boolean"}, "checked_at": {"type": "string", "format": "date-time"}}, "additionalProperties": false},
+    "ArchiveCommitReceipt": {"type": "object", "required": ["commit_id", "manifest_id", "archive_id", "artifact_refs", "total_bytes", "cloud_bytes", "media_cloud_bytes", "committed_at"], "properties": {"commit_id": {"type": "string"}, "manifest_id": {"type": "string"}, "archive_id": {"type": "string"}, "artifact_refs": {"type": "array", "items": {"type": "string"}}, "total_bytes": {"type": "integer", "minimum": 0}, "cloud_bytes": {"type": "integer", "minimum": 0}, "media_cloud_bytes": {"const": 0}, "committed_at": {"type": "string", "format": "date-time"}}, "additionalProperties": false},
+    "ArchiveDeleteReceipt": {"type": "object", "required": ["receipt_ref", "archive_id", "deleted_artifact_refs", "deleted_projection_refs", "verified", "hard_deleted", "deleted_at"], "properties": {"receipt_ref": {"type": "string"}, "archive_id": {"type": "string"}, "deleted_artifact_refs": {"type": "array", "items": {"type": "string"}}, "deleted_projection_refs": {"type": "array", "items": {"type": "string"}}, "verified": {"type": "boolean"}, "hard_deleted": {"const": true}, "deleted_at": {"type": "string", "format": "date-time"}}, "additionalProperties": false},
+    "ArchiveRecord": {"type": "object", "required": ["archive_id", "state", "commit_id", "manifest_id", "run_id", "pipeline_id", "pipeline_version", "device_id", "artifacts", "projections", "cloud_bytes", "media_cloud_bytes", "revision", "created_at", "updated_at"], "properties": {"archive_id": {"type": "string"}, "state": {"enum": ["active", "deleting", "delete_failed"]}, "commit_id": {"type": "string"}, "manifest_id": {"type": "string"}, "run_id": {"type": "string"}, "pipeline_id": {"type": ["string", "null"]}, "pipeline_version": {"type": ["string", "null"]}, "device_id": {"type": ["string", "null"]}, "artifacts": {"type": "array", "items": {"$ref": "#/api_schemas/ArchiveArtifact"}}, "projections": {"type": "array", "items": {"$ref": "#/api_schemas/ArchiveProjection"}}, "cloud_bytes": {"type": "integer", "minimum": 0}, "media_cloud_bytes": {"const": 0}, "revision": {"type": "integer", "minimum": 0}, "created_at": {"type": "string", "format": "date-time"}, "updated_at": {"type": "string", "format": "date-time"}}, "additionalProperties": false}
+  },
+  "api_operations": [
+    {"operation_id": "pipeline_list", "method": "GET", "relative_path": "/pipelines", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "not_applicable", "request_schema_ref": "#/api_schemas/PipelineListRequest", "response_schema_ref": "#/api_schemas/PipelineListResponse", "error_codes": ["unauthenticated", "forbidden"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "pair_code_create", "method": "POST", "relative_path": "/pair-codes", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/PairCodeCreateRequest", "response_schema_ref": "#/api_schemas/PairCodeCreateResponse", "error_codes": ["unauthenticated", "forbidden", "rate_limited"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "device_pair", "method": "POST", "relative_path": "/devices/pair", "auth": "pair_code", "owner_rule": "pair_code_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/DevicePairRequest", "response_schema_ref": "#/api_schemas/DevicePairResponse", "error_codes": ["invalid_pair_code", "expired_pair_code", "platform_unsupported"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "device_list", "method": "GET", "relative_path": "/devices", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "not_applicable", "request_schema_ref": "#/api_schemas/DeviceListRequest", "response_schema_ref": "#/api_schemas/DeviceListResponse", "error_codes": ["unauthenticated", "forbidden"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "device_heartbeat", "method": "POST", "relative_path": "/devices/{device_id}/heartbeat", "auth": "device_credential", "owner_rule": "device_credential_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/DeviceHeartbeatRequest", "response_schema_ref": "#/api_schemas/DeviceHeartbeatResponse", "error_codes": ["invalid_device_credential", "device_revoked"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "device_revoke", "method": "POST", "relative_path": "/devices/{device_id}/revoke", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/DeviceRevokeRequest", "response_schema_ref": "#/api_schemas/DeviceRevokeResponse", "error_codes": ["unauthenticated", "forbidden", "not_found"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "job_create", "method": "POST", "relative_path": "/jobs", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/JobCreateRequest", "response_schema_ref": "#/api_schemas/JobCreateResponse", "error_codes": ["unauthenticated", "forbidden", "pipeline_unavailable", "device_unavailable"], "state_machine": "LocalAgentJob", "allowed_transitions": [{"from": null, "to": "queued"}]},
+    {"operation_id": "job_list", "method": "GET", "relative_path": "/jobs", "auth": "session_or_device_credential", "owner_rule": "verified_session_tenant_or_device_credential_bound_device_queued_or_claimable", "idempotency": "not_applicable", "request_schema_ref": "#/api_schemas/JobListRequest", "response_schema_ref": "#/api_schemas/JobListResponse", "error_codes": ["unauthenticated", "invalid_device_credential", "device_revoked", "forbidden"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "job_detail", "method": "GET", "relative_path": "/jobs/{job_id}", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "not_applicable", "request_schema_ref": null, "response_schema_ref": "#/api_schemas/JobDetailResponse", "error_codes": ["unauthenticated", "forbidden", "not_found"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "job_lease", "method": "POST", "relative_path": "/jobs/{job_id}/lease", "auth": "device_credential", "owner_rule": "device_credential_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/JobLeaseRequest", "response_schema_ref": "#/api_schemas/JobLeaseResponse", "error_codes": ["invalid_device_credential", "not_found", "invalid_state"], "state_machine": "LocalAgentJob", "allowed_transitions": [{"from": "queued", "to": "leased"}]},
+    {"operation_id": "job_ack", "method": "POST", "relative_path": "/jobs/{job_id}/ack", "auth": "device_credential", "owner_rule": "device_credential_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/JobAckRequest", "response_schema_ref": "#/api_schemas/JobAckResponse", "error_codes": ["invalid_device_credential", "not_found", "invalid_state"], "state_machine": "LocalAgentJob", "allowed_transitions": [{"from": "leased", "to": "acknowledged"}]},
+    {"operation_id": "job_start", "method": "POST", "relative_path": "/jobs/{job_id}/start", "auth": "device_credential", "owner_rule": "device_credential_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/JobStartRequest", "response_schema_ref": "#/api_schemas/JobStartResponse", "error_codes": ["invalid_device_credential", "not_found", "invalid_state"], "state_machine": "LocalAgentJob", "allowed_transitions": [{"from": "acknowledged", "to": "running"}]},
+    {"operation_id": "job_result", "method": "POST", "relative_path": "/jobs/{job_id}/result", "auth": "device_credential", "owner_rule": "device_credential_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/JobResultRequest", "response_schema_ref": "#/api_schemas/JobResultResponse", "error_codes": ["invalid_device_credential", "not_found", "invalid_state", "result_rejected"], "state_machine": "LocalAgentJob", "allowed_transitions": [{"from": "running", "to": "succeeded"}, {"from": "running", "to": "blocked"}, {"from": "running", "to": "failed"}]},
+    {"operation_id": "archive_commit", "method": "POST", "relative_path": "/archives/commit", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/ArchiveCommitRequest", "response_schema_ref": "#/api_schemas/ArchiveCommitResponse", "error_codes": ["unauthenticated", "forbidden", "invalid_mode", "commit_rejected"], "state_machine": "ArchiveCommit", "allowed_transitions": [{"from": "draft", "to": "committing"}]},
+    {"operation_id": "archive_list", "method": "GET", "relative_path": "/archives", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "not_applicable", "request_schema_ref": "#/api_schemas/ArchiveListRequest", "response_schema_ref": "#/api_schemas/ArchiveListResponse", "error_codes": ["unauthenticated", "forbidden"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "archive_detail", "method": "GET", "relative_path": "/archives/{archive_id}", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "not_applicable", "request_schema_ref": null, "response_schema_ref": "#/api_schemas/ArchiveDetailResponse", "error_codes": ["unauthenticated", "forbidden", "not_found"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "archive_delete_plan", "method": "POST", "relative_path": "/archives/{archive_id}/delete-plan", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "required", "request_schema_ref": null, "response_schema_ref": "#/api_schemas/ArchiveDeletePlanResponse", "error_codes": ["unauthenticated", "forbidden", "not_found", "delete_not_allowed"], "state_machine": null, "allowed_transitions": []},
+    {"operation_id": "archive_delete", "method": "DELETE", "relative_path": "/archives/{archive_id}", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/ArchiveDeleteRequest", "response_schema_ref": "#/api_schemas/ArchiveDeleteResponse", "error_codes": ["unauthenticated", "forbidden", "not_found", "invalid_delete_plan"], "state_machine": "ArchiveRecord", "allowed_transitions": [{"from": "active", "to": "deleting"}]},
+    {"operation_id": "archive_readback", "method": "POST", "relative_path": "/archives/{archive_id}/readback", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "required", "request_schema_ref": "#/api_schemas/ArchiveReadbackRequest", "response_schema_ref": "#/api_schemas/ArchiveReadbackResponse", "error_codes": ["unauthenticated", "forbidden", "not_found", "readback_failed"], "state_machine": "ArchiveCommit", "allowed_transitions": [{"from": "verifying", "to": "archived"}, {"from": "verifying", "to": "failed"}]},
+    {"operation_id": "cli_release_compatibility", "method": "POST", "relative_path": "/cli/releases/compatibility", "auth": "session", "owner_rule": "verified_session_tenant", "idempotency": "not_applicable", "request_schema_ref": "#/api_schemas/CLIReleaseCompatibilityRequest", "response_schema_ref": "#/api_schemas/CLIReleaseCompatibilityResponse", "error_codes": ["unauthenticated", "forbidden", "unsupported_release"], "state_machine": null, "allowed_transitions": []}
+  ],
+  "pipeline_definition_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": ["pipeline_id", "version", "min_cli_version", "display_name", "description", "capability_id", "input_schema", "nodes", "model_requirements", "output_allowlist", "retention_policy", "redaction_policy"],
+    "properties": {
+      "pipeline_id": {"type": "string", "pattern": "^media\\.[a-z.]+\\.v1$"},
+      "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+      "catalog_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+      "min_cli_version": {"type": "string"},
+      "display_name": {"type": "string", "minLength": 1},
+      "description": {"type": "string", "minLength": 1},
+      "capability_id": {"type": "string", "minLength": 1},
+      "input_schema": {"type": "object"},
+      "nodes": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["node_id", "type", "version", "outputs"], "properties": {"node_id": {"type": "string"}, "type": {"type": "string"}, "version": {"type": "string"}, "outputs": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": false}},
+      "model_requirements": {"type": "array"},
+      "output_allowlist": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["name", "mime_types", "max_bytes", "upload", "default_selected"], "properties": {"name": {"type": "string"}, "mime_types": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "max_bytes": {"type": "integer", "minimum": 0}, "upload": {"enum": ["content", "descriptor_only", "forbidden"]}, "default_selected": {"type": "boolean"}}, "additionalProperties": false}},
+      "retention_policy": {"type": "object"},
+      "redaction_policy": {"type": "object"}
+    },
+    "additionalProperties": false
+  },
+  "node_registry": [
+    {"node_type": "project.prepare", "version": "1.0.0", "outputs": ["project_overview"]},
+    {"node_type": "material.organize", "version": "1.0.0", "outputs": ["organization_plan"]},
+    {"node_type": "material.match", "version": "1.0.0", "outputs": ["edit_decision_list"]},
+    {"node_type": "edit.handoff", "version": "1.0.0", "outputs": ["handoff_manifest"]},
+    {"node_type": "edit.timeline", "version": "1.0.0", "outputs": ["timeline"]},
+    {"node_type": "edit.revise", "version": "1.0.0", "outputs": ["change_receipt"]},
+    {"node_type": "output.review", "version": "1.0.0", "outputs": ["review_report"]},
+    {"node_type": "rhythm.review", "version": "1.0.0", "outputs": ["rhythm_report"]},
+    {"node_type": "semantic.review", "version": "1.0.0", "outputs": ["semantic_report"]}
+  ],
+  "pipeline_catalog": [
+    {
+      "pipeline_id": "media.project.prepare.v1", "version": "1.0.0", "min_cli_version": "0.1.0", "display_name": "Project preparation", "description": "Scan local media and produce bounded analysis evidence.", "capability_id": "local_project_prepare",
+      "input_schema": {"type": "object", "required": ["workspace_ref"]}, "nodes": [{"node_id": "prepare", "type": "project.prepare", "version": "1.0.0", "outputs": ["project_overview"]}], "model_requirements": [{"protocol": "openai_compatible", "modalities": ["text"], "structured_output": true}],
+      "output_allowlist": [{"name": "project_overview", "mime_types": ["text/markdown"], "max_bytes": 1048576, "upload": "content", "default_selected": true}], "retention_policy": {"local_intermediates_days": 14}, "redaction_policy": {"absolute_paths": "remove", "credentials": "remove"}
+    },
+    {
+      "pipeline_id": "media.material.organize.v1", "version": "1.0.0", "min_cli_version": "0.1.0", "display_name": "Material organization", "description": "Plan and confirm local grouping, rename, and deduplication work.", "capability_id": "local_material_organize",
+      "input_schema": {"type": "object", "required": ["workspace_ref"]}, "nodes": [{"node_id": "organize", "type": "material.organize", "version": "1.0.0", "outputs": ["organization_plan"]}], "model_requirements": [],
+      "output_allowlist": [{"name": "organization_plan", "mime_types": ["application/json"], "max_bytes": 1048576, "upload": "content", "default_selected": true}], "retention_policy": {"local_intermediates_days": 14}, "redaction_policy": {"absolute_paths": "remove", "credentials": "remove"}
+    },
+    {
+      "pipeline_id": "media.material.match.v1", "version": "1.0.0", "min_cli_version": "0.1.0", "display_name": "Material matching", "description": "Match local material to a brief and produce storyboard and EDL evidence.", "capability_id": "local_material_match",
+      "input_schema": {"type": "object", "required": ["workspace_ref", "brief"]}, "nodes": [{"node_id": "match", "type": "material.match", "version": "1.0.0", "outputs": ["edit_decision_list"]}], "model_requirements": [{"protocol": "openai_compatible", "modalities": ["text"], "structured_output": true}],
+      "output_allowlist": [{"name": "edit_decision_list", "mime_types": ["application/json"], "max_bytes": 1048576, "upload": "content", "default_selected": true}], "retention_policy": {"local_intermediates_days": 14}, "redaction_policy": {"absolute_paths": "remove", "credentials": "remove"}
+    },
+    {
+      "pipeline_id": "media.edit.handoff.v1", "version": "1.0.0", "min_cli_version": "0.1.0", "display_name": "Edit handoff", "description": "Produce a validated package for manual fine editing.", "capability_id": "local_edit_handoff",
+      "input_schema": {"type": "object", "required": ["run_ref"]}, "nodes": [{"node_id": "handoff", "type": "edit.handoff", "version": "1.0.0", "outputs": ["handoff_manifest"]}], "model_requirements": [],
+      "output_allowlist": [{"name": "handoff_manifest", "mime_types": ["application/json"], "max_bytes": 1048576, "upload": "content", "default_selected": true}], "retention_policy": {"local_intermediates_days": 14}, "redaction_policy": {"absolute_paths": "remove", "credentials": "remove"}
+    },
+    {
+      "pipeline_id": "media.edit.timeline.v1", "version": "1.0.0", "min_cli_version": "0.1.0", "display_name": "Editable timeline", "description": "Build reopenable OTIO and Kdenlive timeline artifacts.", "capability_id": "local_edit_timeline",
+      "input_schema": {"type": "object", "required": ["edl_ref"]}, "nodes": [{"node_id": "timeline", "type": "edit.timeline", "version": "1.0.0", "outputs": ["timeline"]}], "model_requirements": [],
+      "output_allowlist": [{"name": "timeline", "mime_types": ["application/vnd.otio+json", "application/xml"], "max_bytes": 4194304, "upload": "content", "default_selected": true}], "retention_policy": {"local_intermediates_days": 14}, "redaction_policy": {"absolute_paths": "remove", "credentials": "remove"}
+    },
+    {
+      "pipeline_id": "media.edit.revise.v1", "version": "1.0.0", "min_cli_version": "0.1.0", "display_name": "Confirmed revision", "description": "Create a new revision and AI edit log only after confirmation.", "capability_id": "local_edit_revise",
+      "input_schema": {"type": "object", "required": ["run_ref", "confirmation_ref"]}, "nodes": [{"node_id": "revise", "type": "edit.revise", "version": "1.0.0", "outputs": ["change_receipt"]}], "model_requirements": [],
+      "output_allowlist": [{"name": "change_receipt", "mime_types": ["application/json"], "max_bytes": 1048576, "upload": "content", "default_selected": true}], "retention_policy": {"local_intermediates_days": 14}, "redaction_policy": {"absolute_paths": "remove", "credentials": "remove"}
+    },
+    {
+      "pipeline_id": "media.output.review.v1", "version": "1.0.0", "min_cli_version": "0.1.0", "display_name": "Output review", "description": "Run local technical, platform, and version-comparison review.", "capability_id": "local_output_review",
+      "input_schema": {"type": "object", "required": ["media_ref"]}, "nodes": [{"node_id": "review", "type": "output.review", "version": "1.0.0", "outputs": ["review_report"]}], "model_requirements": [],
+      "output_allowlist": [{"name": "review_report", "mime_types": ["text/markdown", "application/yaml"], "max_bytes": 2097152, "upload": "content", "default_selected": true}], "retention_policy": {"local_intermediates_days": 14}, "redaction_policy": {"absolute_paths": "remove", "credentials": "remove"}
+    },
+    {
+      "pipeline_id": "media.rhythm.review.v1", "version": "1.0.0", "min_cli_version": "0.1.0", "display_name": "Rhythm review", "description": "Assess audiovisual rhythm, version ranking, and fixable timestamps.", "capability_id": "local_rhythm_review",
+      "input_schema": {"type": "object", "required": ["media_ref"]}, "nodes": [{"node_id": "rhythm", "type": "rhythm.review", "version": "1.0.0", "outputs": ["rhythm_report"]}], "model_requirements": [],
+      "output_allowlist": [{"name": "rhythm_report", "mime_types": ["application/json", "text/markdown"], "max_bytes": 2097152, "upload": "content", "default_selected": true}], "retention_policy": {"local_intermediates_days": 14}, "redaction_policy": {"absolute_paths": "remove", "credentials": "remove"}
+    },
+    {
+      "pipeline_id": "media.semantic.review.v1", "version": "1.0.0", "min_cli_version": "0.1.0", "display_name": "Semantic review", "description": "Use the configured vision model for bounded semantic output review.", "capability_id": "local_semantic_review",
+      "input_schema": {"type": "object", "required": ["contact_sheet_ref"]}, "nodes": [{"node_id": "semantic", "type": "semantic.review", "version": "1.0.0", "outputs": ["semantic_report"]}], "model_requirements": [{"protocol": "openai_compatible", "modalities": ["text", "vision"], "structured_output": true}],
+      "output_allowlist": [{"name": "semantic_report", "mime_types": ["application/json", "text/markdown"], "max_bytes": 2097152, "upload": "content", "default_selected": true}], "retention_policy": {"local_intermediates_days": 14}, "redaction_policy": {"absolute_paths": "remove", "credentials": "remove", "raw_provider_payloads": "remove"}
+    }
+  ],
+  "historical_capability_coverage": [
+    {"source": "00_install_deps.sh/install_selfmedia_review_node.py/LaunchAgent", "capability": "dependency and node installation", "destination": "U5 uv tool package and doctor", "visibility": "/devices", "status": "mapped"},
+    {"source": "llm_common.py and legacy Codex/OpenAI branches", "capability": "local model invocation", "destination": "U4 ProviderAdapter and OS credential store", "visibility": "Pipeline requirements", "status": "mapped"},
+    {"source": "32_process_openclaw_queue.py/33_enqueue_openclaw_queue_job.py/YAML queue/Review Node", "capability": "cloud-to-Mac job execution", "destination": "U10 Device and LocalAgentJob lease API", "visibility": "/media-agent and /runs", "status": "mapped"},
+    {"source": "validate_content_os_task.py/validate_state_transition.py/mac_openclaw_runner.py", "capability": "task allowlist, revision, state and readback", "destination": "U7/U10 PipelineDefinition and LocalAgentJob contract", "visibility": "run validation receipt", "status": "mapped"},
+    {"source": "06/30/36/38/check_runtime_contract.sh", "capability": "document, registry, link and runtime gates", "destination": "U17 Harness", "visibility": "release and health evidence", "status": "mapped"},
+    {"source": "22-25 Jianying automation", "capability": "Jianying draft automation", "destination": "retirement evidence", "visibility": "historical coverage audit", "status": "retired"},
+    {"source": "26-28 native import pack", "capability": "Jianying import package", "destination": "media.edit.handoff.v1", "visibility": "new handoff Pipeline", "status": "retired"},
+    {"source": "37_migrate_content_os_v2.py", "capability": "legacy inventory migration", "destination": "historical evidence only", "visibility": "hidden", "status": "retired"},
+    {"source": "review_capabilities.registry.json:remote_work_acceptance_review", "capability": "remote acceptance and data review", "destination": "Web canonical capability", "visibility": "/publishing and /reviews", "status": "mapped"}
+  ]
+}

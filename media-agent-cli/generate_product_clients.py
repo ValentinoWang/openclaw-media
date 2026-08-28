@@ -10,13 +10,13 @@ from pathlib import Path
 from typing import Any
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "docs/ai-harness/openclaw-media-product-contract.json"
 CLIENT_ROOT = Path(__file__).resolve().parent
 PYTHON_OUTPUTS = (
     CLIENT_ROOT / "generated_product_contract.py",
     CLIENT_ROOT / "src/openclaw_media/product_contract.py",
-    ROOT / "selfmedia-tools/openclaw-media/openclaw_media/generated_product_contract.py",
+    ROOT / "openclaw-media/openclaw_media/generated_product_contract.py",
 )
 TYPESCRIPT_OUTPUTS = (
     CLIENT_ROOT / "generatedProductContract.ts",

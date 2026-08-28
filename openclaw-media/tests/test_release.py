@@ -14,8 +14,8 @@ from openclaw_media.catalog import catalog_digest
 from openclaw_media.release import ReleaseError, build_release
 
 
-PRODUCT_CONTRACT = Path("/home/ubuntu/docs/ai-harness/openclaw-media-product-contract.json")
 PROJECT_ROOT = Path(__file__).parents[1]
+PRODUCT_CONTRACT = PROJECT_ROOT.parent / "docs/ai-harness/openclaw-media-product-contract.json"
 
 
 def _uv_executable() -> str:

@@ -7,13 +7,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterator
 
+from media_model.contract import resolve_media_model_contract_path
+
 from .contract import StylePolishRequest, StyleSourceTrace
 
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MEMORY_ROOT = ROOT / "data" / "media_memory"
 DEFAULT_PLATFORM_MECHANISM_ROOT = ROOT / "config" / "platform_mechanisms"
-MEDIA_MODEL_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/media-model-v2-contract.json")
 ANTI_PATTERNS_PATH = Path(__file__).resolve().parent / "assets" / "anti_patterns.yaml"
 STYLE_DEFAULTS_PATH = Path(__file__).resolve().parent / "assets" / "style_defaults.yaml"
 
@@ -196,11 +197,12 @@ def _load_platform_mechanism(platform: str, root: Path, traces: list[StyleSource
 
 
 def _load_creative_pattern_contract(traces: list[StyleSourceTrace]) -> dict[str, Any]:
-    if not MEDIA_MODEL_CONTRACT_PATH.exists():
+    contract_path = resolve_media_model_contract_path()
+    if not contract_path.exists():
         traces.append(
             StyleSourceTrace(
                 source_type="creative_pattern_contract",
-                source=str(MEDIA_MODEL_CONTRACT_PATH),
+                source=str(contract_path),
                 loaded=False,
                 owner="media_model.contract",
                 fields=("CreativePattern", "pattern_status"),
@@ -208,12 +210,12 @@ def _load_creative_pattern_contract(traces: list[StyleSourceTrace]) -> dict[str,
             )
         )
         return {}
-    contract = json.loads(MEDIA_MODEL_CONTRACT_PATH.read_text(encoding="utf-8"))
+    contract = json.loads(contract_path.read_text(encoding="utf-8"))
     fields = ((contract.get("entity_contracts") or {}).get("CreativePattern") or {}).get("fields") or {}
     traces.append(
         StyleSourceTrace(
             source_type="creative_pattern_contract",
-            source=str(MEDIA_MODEL_CONTRACT_PATH),
+            source=str(contract_path),
             loaded=bool(fields),
             owner="media_model.contract",
             fields=tuple(sorted(fields.keys())),

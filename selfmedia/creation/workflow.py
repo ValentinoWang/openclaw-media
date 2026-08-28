@@ -232,6 +232,7 @@ def handle_creation_command(
             validation,
             media_context=media_context,
             memory=memory_result,
+            creation_record_id=creation_record_id,
             dry_run=dry_run or no_write,
             candidate_counts={"activities": len(activity_candidates), "virals": len(viral_candidates), "inspirations": len(inspiration_candidates), "businesses": len(business_candidates)},
             platform_fit=platform_fit,
@@ -251,6 +252,7 @@ def format_creation_reply(
     *,
     media_context: dict[str, Any] | None = None,
     memory: dict[str, Any] | None = None,
+    creation_record_id: str = "",
     dry_run: bool = False,
     candidate_counts: dict[str, int] | None = None,
     platform_fit: dict[str, Any] | None = None,
@@ -274,6 +276,8 @@ def format_creation_reply(
     ]
     if doc_link:
         lines.append(f"创作文档：{doc_link}")
+    if creation_record_id:
+        lines.append(f"创作记录ID：{creation_record_id}（数据复盘时请一并填写）")
     if profile.get("markdown_path"):
         lines.append(f"账号 Markdown 档案：{profile['markdown_path']}")
     if memory and memory.get("profile", {}).get("markdown_path"):

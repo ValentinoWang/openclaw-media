@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -573,20 +574,23 @@ def build_daily_report(accounts: list[dict[str, Any]], account_rows: dict[str, l
 def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
     load_default_env_files()
     monitor_url = args.monitor_url or feishu_table_url_from_env(
-        "MEDIA_OS_CREATOR_PROFILES_V2_URL",
         "FEISHU_ACCOUNT_MONITOR_URL",
         "FEISHU_SELFMEDIA_ACCOUNT_MONITOR_URL",
     )
-    report_url = args.report_url or ""
+    report_url = args.report_url or os.getenv("FEISHU_ACCOUNT_REPORT_URL", "").strip()
     if not monitor_url:
-        raise SystemExit("missing MEDIA_OS_CREATOR_PROFILES_V2_URL or --monitor-url")
+        raise SystemExit("missing FEISHU_ACCOUNT_MONITOR_URL or --monitor-url")
+    if args.require_feishu and not report_url:
+        raise SystemExit("missing FEISHU_ACCOUNT_REPORT_URL or --report-url when --require-feishu is set")
 
     records = feishu_list_records(monitor_url, view_id=args.view_id)
     accounts = [account_from_record(record) for record in records]
     if args.limit:
         accounts = accounts[: args.limit]
 
-    output_dir = ROOT / "data" / "media_vault" / "account_daily_runs"
+    from media_vault.vault import MediaVault
+
+    output_dir = MediaVault(tenant_id=args.tenant_id).root / "account_daily_runs"
     output_dir.mkdir(parents=True, exist_ok=True)
     account_rows: dict[str, list[dict[str, Any]]] = {}
     summaries: list[dict[str, Any]] = []
@@ -646,6 +650,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
     json_path = output_dir / f"account_daily_{stamp}.json"
     md_path = output_dir / f"account_daily_{stamp}.md"
     payload = {
+        "tenant_id": args.tenant_id,
         "accounts": accounts,
         "summaries": summaries,
         "rows": account_rows,
@@ -694,11 +699,23 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def install_cron(args: argparse.Namespace) -> dict[str, Any]:
-    command = "/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py daily-poll --require-feishu"
+    load_default_env_files()
+    report_url = args.report_url or os.getenv("FEISHU_ACCOUNT_REPORT_URL", "").strip()
+    if not report_url:
+        raise SystemExit("missing FEISHU_ACCOUNT_REPORT_URL or --report-url; refusing to register an unreported daily poll")
+    command_args = [
+        sys.executable,
+        str(Path(__file__).resolve()),
+        "daily-poll",
+        "--tenant-id",
+        args.tenant_id,
+        "--require-feishu",
+        "--report-url",
+        report_url,
+    ]
     if args.monitor_url:
-        command += f" --monitor-url {args.monitor_url!r}"
-    if args.report_url:
-        command += f" --report-url {args.report_url!r}"
+        command_args.extend(["--monitor-url", args.monitor_url])
+    command = shlex.join(command_args)
     runtime = bot_runtime("media")
     cron_command = [
         runtime.bin,
@@ -763,6 +780,7 @@ def build_parser() -> argparse.ArgumentParser:
     poll.add_argument("--limit", type=int, default=0)
     poll.add_argument("--require-feishu", action="store_true")
     poll.add_argument("--dry-run", action="store_true")
+    poll.add_argument("--tenant-id", required=True)
 
     shooting = sub.add_parser("shooting-execution", help="Create an executable shooting plan from a concrete creation target.")
     shooting.add_argument("--text", default="")
@@ -823,6 +841,7 @@ def build_parser() -> argparse.ArgumentParser:
     cron.add_argument("--monitor-url", default="")
     cron.add_argument("--report-url", default="")
     cron.add_argument("--disabled", action="store_true")
+    cron.add_argument("--tenant-id", required=True)
     return parser
 
 

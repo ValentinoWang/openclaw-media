@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -437,7 +438,7 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
                 "content_type": "视频",
                 "current_quote_amount": 6500,
                 "rebate_ratio": 0.3,
-                "schedule": "8月上旬可发布",
+                "schedule": "2099-09-10 可发布",
                 "price_protection_policy": "7月下单可保价至8月执行",
                 "authorization_scope": "李宁官方自媒体及电商渠道",
                 "authorization_duration": "3个月",
@@ -467,7 +468,7 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
         self.assertEqual(fields["视频报价"], "6800")
         self.assertEqual(fields["项目报价"], "6500")
         self.assertEqual(fields["报备返点"], "30%")
-        self.assertEqual(fields["具体档期"], "8月上旬可发布")
+        self.assertEqual(fields["具体档期"], "2099-09-10 可发布")
         self.assertEqual(fields["保价政策"], "7月下单可保价至8月执行")
         self.assertEqual(fields["授权范围"], "李宁官方自媒体及电商渠道")
         self.assertEqual(fields["授权时长"], "3个月")
@@ -645,7 +646,7 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
                 context,
             )
 
-    def test_user_confirmed_business_defaults_persist_and_only_fill_missing_terms(self) -> None:
+    def test_expired_schedule_default_is_not_applied_or_marked_complete(self) -> None:
         fields = {
             "报备返点": "05B已确认20%",
             "待补充字段": "报备返点、保价政策、最快档期、多双露出、蒲公英涨价、授权范围、授权时长、全渠道授权及时长、视频报价",
@@ -668,11 +669,15 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "id_business_reply_defaults.json"
             path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-            lookup = MODULE.apply_business_reply_defaults(fields, path=path)
+            lookup = MODULE.apply_business_reply_defaults(
+                fields,
+                path=path,
+                now=datetime(2026, 8, 28, tzinfo=MODULE.LOCAL_TZ),
+            )
 
         self.assertEqual(fields["报备返点"], "05B已确认20%")
         self.assertEqual(fields["保价政策"], "30天保价")
-        self.assertEqual(fields["具体档期"], "8月上旬")
+        self.assertNotIn("具体档期", fields)
         self.assertEqual(fields["多双露出"], "可增加一双露出")
         self.assertEqual(fields["蒲公英涨价"], "蒲公英不加价")
         self.assertEqual(fields["授权范围"], "全渠道使用")
@@ -680,8 +685,29 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
         self.assertEqual(fields["全渠道授权及时长"], "全渠道6个月")
         self.assertNotIn("视频报价", lookup["applied_fields"])
         self.assertIn("报备返点", lookup["skipped_existing_fields"])
+        self.assertEqual(lookup["stale_fields"], ["具体档期"])
         remaining = MODULE.refresh_pending_fields_from_values(fields, {"pending_fields": fields["待补充字段"].split("、")})
-        self.assertEqual(remaining, ["视频报价"])
+        self.assertEqual(remaining, ["具体档期", "视频报价"])
+
+    def test_future_schedule_default_can_fill_missing_field(self) -> None:
+        fields = {"待补充字段": "具体档期"}
+        payload = {
+            "schema_version": MODULE.BUSINESS_REPLY_DEFAULTS_SCHEMA_VERSION,
+            "updated_at": "2026-08-28T09:00:00+08:00",
+            "source": {"type": "user_confirmed", "scope": "global"},
+            "fields": {"具体档期": "2026-09-10"},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "id_business_reply_defaults.json"
+            path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            lookup = MODULE.apply_business_reply_defaults(
+                fields,
+                path=path,
+                now=datetime(2026, 8, 28, tzinfo=MODULE.LOCAL_TZ),
+            )
+
+        self.assertEqual(fields["具体档期"], "2026-09-10")
+        self.assertEqual(lookup["stale_fields"], [])
 
     def test_rebate_negotiation_text_only_writes_explicit_percentage(self) -> None:
         self.assertEqual(MODULE.parse_rebate_ratio_value("先按30%沟通，可谈"), 0.3)

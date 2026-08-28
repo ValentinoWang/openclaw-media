@@ -251,6 +251,28 @@ class MediaModelTests(unittest.TestCase):
         self.assertEqual(payload["authorization_scope"], "官方自媒体及电商渠道")
         self.assertEqual(payload["authorization_duration"], "3个月")
 
+    def test_business_unconstrained_content_type_is_omitted_from_v2_payload(self) -> None:
+        payload = build_business_opportunity_payload(
+            opportunity_id="opp_unlimited",
+            brand="adidas",
+            content_type="不限",
+        )
+        self.assertNotIn("content_type", payload)
+
+    def test_business_opportunity_lifecycle_requires_known_state_and_keeps_run_links(self) -> None:
+        payload = build_business_opportunity_payload(
+            opportunity_id="opp_lifecycle",
+            brand="adidas",
+            lifecycle_status="in_creation",
+            linked_run_ids=["run_1", "run_1", "run_2"],
+            delivery_evidence_uri="media://tenants/00000000-0000-4000-8000-000000000101/creation_runs/run_1/request.json",
+        )
+
+        self.assertEqual(payload["lifecycle_status"], "in_creation")
+        self.assertEqual(payload["linked_run_ids"], ["run_1", "run_2"])
+        with self.assertRaisesRegex(MediaModelPayloadError, "lifecycle_status"):
+            build_business_opportunity_payload(opportunity_id="opp_invalid", brand="adidas", lifecycle_status="draft")
+
     def test_url_and_fingerprint_are_stable(self) -> None:
         first = normalize_source_url("https://example.com/post?a=1&utm_source=x")
         second = normalize_source_url("https://EXAMPLE.com/post/?utm_medium=y&a=1")

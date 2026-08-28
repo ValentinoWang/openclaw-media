@@ -142,6 +142,20 @@ class DeviceJobStore:
             ).fetchall()
         return [self._device_projection(row) for row in rows]
 
+    def authenticated_credential(self, credential: str) -> dict[str, str]:
+        """Resolve one active device credential without exposing device state."""
+
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM devices WHERE credential_hash = ?",
+                (self._hash(credential),),
+            ).fetchone()
+        if row is None:
+            raise DeviceJobError("invalid_device_credential", "device credential is invalid")
+        if row["state"] == "revoked":
+            raise DeviceJobError("device_revoked", "device is revoked")
+        return {"tenant_id": str(row["tenant_id"]), "device_id": str(row["device_id"])}
+
     def heartbeat(
         self,
         *,

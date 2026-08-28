@@ -1,0 +1,3114 @@
+{
+  "version": "canonical_data_model_v2",
+  "schema": "docs/ai-harness/media-model-v2-contract.schema.json",
+    "updated_at": "2026-08-13",
+  "uri_scheme": "media://",
+  "field_classes": [
+    "owner_fact",
+    "snapshot",
+    "derived_analysis",
+    "pattern",
+    "matching_result",
+    "output",
+    "review_metric",
+    "evidence_ref",
+    "runtime_debug",
+    "relationship",
+    "rollup",
+    "computed",
+    "external_ref"
+  ],
+  "tenant_ownership_contract": {
+    "authorization_source": "selfmedia-tools/openclaw-tag-router/openclaw_app/services/resource_owner_registry.py:ResourceOwnerRegistry",
+    "writer_adapter": "selfmedia-tools/integrations/feishu/media_writer.py",
+    "tenant_source": "authenticated session tenant only",
+    "feishu_projection_field": "租户ID",
+    "feishu_projection_type": 1,
+    "projection_direction": "canonical_owner_to_feishu_only",
+    "projection_mismatch_policy": "fail_closed_and_enqueue_manual_repair",
+    "ordinary_owner_update": "forbidden",
+    "entities": {
+      "SourceAsset": {"resource_type": "media.source_asset", "canonical_id": "asset_id", "table": "02A_SourceAssets_素材源"},
+      "MaterialDeconstruction": {"resource_type": "media.material_deconstruction", "canonical_id": "deconstruction_id", "table": "02B_MaterialDeconstructions_素材拆解"},
+      "CreativePattern": {"resource_type": "media.creative_pattern", "canonical_id": "pattern_id", "table": "02C_CreativePatterns_创作模式"},
+      "CreationRun": {"resource_type": "media.creation_run", "canonical_id": "run_id", "table": "03_CreationRuns_创作运行"},
+      "CandidateTopic": {"resource_type": "media.candidate_topic", "canonical_id": "candidate_topic_id", "table": "D01_候选选题"},
+      "PublishedPost": {"resource_type": "media.post_review", "canonical_id": "post_id", "table": "04_PostReviews_发布复盘"},
+      "BusinessAccount": {"resource_type": "media.business_account", "canonical_id": "business_account_id", "table": "05A_BusinessAccounts_商务账号"},
+      "BusinessOpportunity": {"resource_type": "media.business_opportunity", "canonical_id": "opportunity_id", "table": "05B_BusinessOpportunities_商务机会"},
+      "CreatorProfile": {"resource_type": "media.creator_profile", "canonical_id": "creator_profile_id", "table": "06_CreatorProfiles_达人账号档案"},
+      "MaterialUsage": {"resource_type": "media.material_usage", "canonical_id": "usage_id", "table": "R01_MaterialUsage_素材使用记录"},
+      "DecisionTrace": {"resource_type": "media.decision_trace", "canonical_id": "trace_id", "table": "R02_DecisionTrace_决策轨迹"},
+      "TrackCreatorMembership": {"resource_type": "media.track_creator_membership", "canonical_id": "membership_id", "table": "R03_TrackCreatorMembership_赛道博主关系"},
+      "MetricSnapshot": {"resource_type": "media.metric_snapshot", "canonical_id": "snapshot_id", "table": "H01_MetricSnapshot_作品指标快照"},
+      "AccountMetricSnapshot": {"resource_type": "media.account_metric_snapshot", "canonical_id": "snapshot_id", "table": "H02_AccountMetricSnapshot_账号指标快照"},
+      "GrowthSummary": {"resource_type": "media.growth_summary", "canonical_id": "artifact_id", "table": "H03_GrowthSummary_增长摘要"}
+    }
+  },
+  "feishu_table_boundary": {
+    "principle": "Feishu Base stores business indexes, relationship facts, and historical metric snapshots only. Evidence, run logs, render artifacts, LLM intermediate JSON, output variants, and long documents are stored in media_vault, Hyperframe render output, or Feishu Docx documents.",
+    "core_business_tables": [
+      {
+        "entity": "Activity",
+        "feishu_table": "01_Activity_近期活动"
+      },
+      {
+        "entity": "SourceAsset",
+        "feishu_table": "02A_SourceAssets_素材源"
+      },
+      {
+        "entity": "MaterialDeconstruction",
+        "feishu_table": "02B_MaterialDeconstructions_素材拆解"
+      },
+      {
+        "entity": "CreativePattern",
+        "feishu_table": "02C_CreativePatterns_创作模式"
+      },
+      {
+        "entity": "CreationRun",
+        "feishu_table": "03_CreationRuns_创作运行"
+      },
+      {
+        "entity": "CandidateTopic",
+        "feishu_table": "D01_候选选题"
+      },
+      {
+        "entity": "PublishedPost",
+        "feishu_table": "04_PostReviews_发布复盘"
+      },
+      {
+        "entity": "BusinessAccount",
+        "feishu_table": "05A_BusinessAccounts_商务账号"
+      },
+      {
+        "entity": "BusinessOpportunity",
+        "feishu_table": "05B_BusinessOpportunities_商务机会"
+      },
+      {
+        "entity": "CreatorProfile",
+        "feishu_table": "06_CreatorProfiles_达人账号档案"
+      },
+      {
+        "entity": "TrackRegistry",
+        "feishu_table": "07_TrackRegistry_赛道注册表"
+      }
+    ],
+    "relationship_tables": [
+      {
+        "entity": "MaterialUsage",
+        "feishu_table": "R01_MaterialUsage_素材使用记录"
+      },
+      {
+        "entity": "DecisionTrace",
+        "feishu_table": "R02_DecisionTrace_决策轨迹"
+      },
+      {
+        "entity": "TrackCreatorMembership",
+        "feishu_table": "R03_TrackCreatorMembership_赛道博主关系"
+      }
+    ],
+    "history_snapshot_tables": [
+      {
+        "entity": "MetricSnapshot",
+        "feishu_table": "H01_MetricSnapshot_作品指标快照"
+      },
+      {
+        "entity": "AccountMetricSnapshot",
+        "feishu_table": "H02_AccountMetricSnapshot_账号指标快照"
+      },
+      {
+        "entity": "GrowthSummary",
+        "feishu_table": "H03_GrowthSummary_增长摘要"
+      }
+    ]
+  },
+  "non_feishu_objects": [
+    {
+      "object": "EvidenceArtifact",
+      "destination": "media_vault",
+      "feishu_reference": "evidence_uri",
+      "reason": "Evidence is file-like, high-cardinality, and must remain machine-readable without polluting visible Feishu tables."
+    },
+    {
+      "object": "OutputVariant",
+      "destination": "media_vault + Feishu Docx via existing creation writers",
+      "feishu_reference": "doc_link/render_spec_uri",
+      "reason": "Draft variants are long render outputs, not business index rows."
+    },
+    {
+      "object": "ReviewFinding",
+      "destination": "PostReview document section + media_vault review.md",
+      "feishu_reference": "review_doc_link",
+      "reason": "Findings are narrative review sections, not a separate Feishu table in v2."
+    },
+    {
+      "object": "QuoteHistory",
+      "destination": "media_vault/business/<opportunity_id>/quote_snapshot.json",
+      "feishu_reference": "quote_snapshot_uri",
+      "reason": "Quote history remains artifact-backed until pricing history becomes a high-frequency query surface."
+    },
+    {
+      "object": "AgentRunLog",
+      "destination": "media_vault/creation_runs/<run_id>",
+      "feishu_reference": "run_artifact_uri",
+      "reason": "Run logs are engineering artifacts."
+    },
+    {
+      "object": "RenderArtifact",
+      "destination": "media_vault/renders/<render_id> + Hyperframe output",
+      "feishu_reference": "render_spec_uri/render_doc_link",
+      "reason": "Render output is a view artifact, not a business fact."
+    },
+    {
+      "object": "RawJSON",
+      "destination": "media_vault artifact JSON",
+      "feishu_reference": "artifact_uri",
+      "reason": "Visible JSON fields are forbidden in main Feishu business tables."
+    }
+  ],
+  "entity_contracts": {
+    "Activity": {
+      "owner": "media_os.activity",
+      "feishu_table": "01_Activity_近期活动",
+      "primary_key": "activity_id",
+      "unique_keys": [
+        "activity_id",
+        "platform+activity_title+activity_start_at"
+      ],
+      "fields": {
+        "activity_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "title": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true
+        },
+        "platform_name": {
+          "class": "owner_fact",
+          "type": "multi_select",
+          "required": true,
+          "unit_policy": "platform display name, not option id"
+        },
+        "activity_start_at": {
+          "class": "owner_fact",
+          "type": "datetime",
+          "required": false
+        },
+        "activity_end_at": {
+          "class": "owner_fact",
+          "type": "datetime",
+          "required": false
+        },
+        "activity_doc_link": {
+          "class": "evidence_ref",
+          "type": "url",
+          "required": false
+        }
+      }
+    },
+    "SourceAsset": {
+      "owner": "media_os.viral_materials.source_assets",
+      "feishu_table": "02A_SourceAssets_素材源",
+      "primary_key": "asset_id",
+    "unique_keys": [
+      "content_fingerprint",
+      "platform+normalized_source_url",
+      "platform+author_id+external_post_id"
+    ],
+    "attachment_reuse_policy": {
+      "match_key": "platform+normalized_source_url",
+      "fields": [
+        "cover_attachment",
+        "video_attachment"
+      ],
+      "behavior": "Before every canonical SourceAsset upsert, inherit existing structured attachment file_tokens from a same-platform normalized-source-url row. Duplicate rows reuse the canonical tokens and never re-upload the same media. Explicit attachment correction uses direct record update plus readback."
+    },
+      "fields": {
+        "asset_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "source_asset_id": {
+          "class": "external_ref",
+          "type": "text",
+          "required": false,
+          "description": "Optional Media Growth SourceAsset artifact id from 【素材】 handoff. This links local media_vault/source_assets runs to the Feishu 02A row and does not replace asset_id."
+        },
+        "content_fingerprint": {
+          "class": "computed",
+          "type": "text",
+          "required": true
+        },
+        "title": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true
+        },
+        "original_title": {
+          "class": "snapshot",
+          "type": "text",
+          "required": false,
+          "snapshot_policy": "captured from original platform at collection time"
+        },
+        "platform": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true
+        },
+        "platform_hashtags": {
+          "class": "snapshot",
+          "type": "multi_select",
+          "required": false,
+          "description": "Hashtags explicitly supplied by the source platform or explicitly present as #话题 in captured original source text. Values are normalized without the leading # and must not contain AI classifications, tracks, creator labels, or publishing-package tags."
+        },
+        "source_url": {
+          "class": "owner_fact",
+          "type": "url",
+          "required": true
+        },
+        "author_id": {
+          "class": "external_ref",
+          "type": "text",
+          "required": false
+        },
+        "creator_profile_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "CreatorProfile",
+          "required": false
+        },
+        "account_name_snapshot": {
+          "class": "snapshot",
+          "type": "text",
+          "required": false
+        },
+        "evidence_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": true
+        },
+        "cover_attachment": {
+          "class": "evidence_ref",
+          "type": "attachment",
+          "required": false,
+          "description": "Original-link cover image uploaded to the canonical SourceAsset Bitable row. Python owns upload, idempotent attachment-token writes, and readback."
+        },
+        "video_attachment": {
+          "class": "evidence_ref",
+          "type": "attachment",
+          "required": false,
+          "description": "Original-link video uploaded to the canonical SourceAsset Bitable row. Python owns upload, idempotent attachment-token writes, and readback."
+        },
+        "status": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true
+        },
+        "enabled": {
+          "class": "owner_fact",
+          "type": "checkbox",
+          "required": true
+        },
+        "source_doc_link": {
+          "class": "evidence_ref",
+          "type": "url",
+          "required": false,
+          "description": "Human-facing Feishu document for original source asset context; full evidence remains in media_vault."
+        }
+      }
+    },
+    "MaterialDeconstruction": {
+      "owner": "media_os.viral_materials.deconstructions",
+      "feishu_table": "02B_MaterialDeconstructions_素材拆解",
+      "primary_key": "deconstruction_id",
+      "unique_keys": [
+        "asset_id+prompt_bundle_version+model+skill_version+deconstruction_type"
+      ],
+      "fields": {
+        "deconstruction_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "asset_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "SourceAsset",
+          "required": true
+        },
+        "source_asset_id": {
+          "class": "external_ref",
+          "type": "text",
+          "required": false,
+          "description": "Optional Media Growth SourceAsset artifact id from 【素材】 handoff; used only for lineage back to media_vault/source_assets when asset_id was generated from platform/url."
+        },
+        "analysis_scope": {
+          "class": "derived_analysis",
+          "type": "single_select",
+          "required": false,
+          "default": "全片",
+          "allowed_values": [
+            "全片",
+            "开头",
+            "转场",
+            "时间段",
+            "自定义",
+            "历史未标注"
+          ],
+          "description": "Lightweight index of the deconstruction range. Long request constraints remain in media_vault artifact."
+        },
+        "analysis_time_range": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "default": "全部",
+          "format": "全部|历史未标注|<start>-<end>s",
+          "description": "Human-readable time slice such as 0-5s. Use 历史未标注 for backfilled records that cannot prove the original scope."
+        },
+        "deconstruction_focus": {
+          "class": "derived_analysis",
+          "type": "multi_select",
+          "required": false,
+          "default": [
+            "常规拆解"
+          ],
+          "allowed_values": [
+            "常规拆解",
+            "钩子",
+            "转场",
+            "BGM",
+            "节奏",
+            "AI片段",
+            "人性洞察",
+            "结尾引导"
+          ],
+          "description": "Lightweight index of what this deconstruction focused on; detailed output belongs in the artifact."
+        },
+        "output_types": {
+          "class": "derived_analysis",
+          "type": "multi_select",
+          "required": false,
+          "default": [
+            "拆解摘要"
+          ],
+          "allowed_values": [
+            "拆解摘要",
+            "结构迁移",
+            "分镜提示词",
+            "心理机制卡",
+            "发布脚本",
+            "素材需求清单",
+            "再创任务卡"
+          ],
+          "description": "Lightweight index of requested output shape. Creation outputs are handed to creation workflows; long text is not stored in 02B."
+        },
+        "summary": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": true
+        },
+        "hook": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false
+        },
+        "transferable_points": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false
+        },
+        "non_transferable_points": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false
+        },
+        "shot_adaptation_notes_status": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Status of the canonical shot_adaptation_notes structure in the deconstruction artifact; full structure remains in media_vault."
+        },
+        "shot_adaptation_note_count": {
+          "class": "derived_analysis",
+          "type": "number",
+          "required": false,
+          "description": "Number of validated shot_adaptation_notes in the deconstruction artifact."
+        },
+        "recommended_production_route": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Recommended route from reference_production_summary; does not replace the artifact."
+        },
+        "motion_type_summary": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Compact count summary of shot_adaptation_notes.motion_type values."
+        },
+        "shot_adaptation_notes_summary": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Human-readable compact summary of shot_adaptation_notes for Bitable scanning; full JSON stays in media_vault artifact."
+        },
+        "reference_shots_status": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Status of the source reference_shots index retained for Feishu scanning; full reference_shots stay in the canonical media_vault artifact."
+        },
+        "reference_shot_count": {
+          "class": "derived_analysis",
+          "type": "number",
+          "required": false,
+          "description": "Number of source reference_shots retained as a lightweight Feishu index."
+        },
+        "reference_shots_summary": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Human-readable compact source reference_shots summary for Bitable scanning; full structure remains in media_vault."
+        },
+        "cover_opening_hook": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Short LLM conclusion explaining why the cover, first image, first pages, or video first two seconds can make users stop. For image_post assets, video first-two/first-five-second fields are not applicable and must be replaced by image cover/page-order/text/caption evidence. Raw frames/images stay in evidence artifacts."
+        },
+        "core_data_summary": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Short LLM conclusion from engagement evidence such as likes, saves, comments, shares, publish time, and screenshot/OCR status."
+        },
+        "top_comment_insight": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Short LLM conclusion from exactly-three top-comment evidence when available; raw comment text stays in evidence artifacts."
+        },
+        "target_audience_summary": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Human-scannable audience summary distilled from deconstruction.v2 target_audience."
+        },
+        "pain_pleasure_summary": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Human-scannable pain/pleasure summary distilled from audience, comment, and engagement evidence."
+        },
+        "attention_elements": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Attention-grabbing elements such as title, cover, visual contrast, first-screen text, or comment-triggering framing."
+        },
+        "viral_breakdown": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Independent human-readable breakdown of why the source content may spread; does not replace full viral_mechanism artifact."
+        },
+        "viral_migration": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Short migration strategy for applying the useful structure to the user's account and context."
+        },
+        "creative_upgrade_suggestion": {
+          "class": "derived_analysis",
+          "type": "text",
+          "required": false,
+          "description": "Positive creative upgrade answer to: 千万年薪编导会怎么把这条改出彩？"
+        },
+        "prompt_bundle_version": {
+          "class": "external_ref",
+          "type": "text",
+          "required": true
+        },
+        "model": {
+          "class": "external_ref",
+          "type": "text",
+          "required": true
+        },
+        "skill_version": {
+          "class": "external_ref",
+          "type": "text",
+          "required": false
+        },
+        "confidence": {
+          "class": "derived_analysis",
+          "type": "number",
+          "required": true,
+          "unit_policy": "0..1"
+        },
+        "evidence_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": true
+        },
+        "review_status": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true
+        },
+        "deconstruction_doc_link": {
+          "class": "evidence_ref",
+          "type": "url",
+          "required": false,
+          "description": "Human-facing Feishu document for this material deconstruction; full machine evidence remains in media_vault."
+        }
+      }
+    },
+    "CreativePattern": {
+      "owner": "media_os.viral_materials.creative_patterns",
+      "feishu_table": "02C_CreativePatterns_创作模式",
+      "primary_key": "pattern_id",
+      "unique_keys": [
+        "pattern_name+applicable_persona+platform+content_type"
+      ],
+      "fields": {
+        "pattern_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "pattern_name": {
+          "class": "pattern",
+          "type": "text",
+          "required": true
+        },
+        "pattern_status": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "candidate_pattern",
+            "validated_pattern",
+            "used_pattern",
+            "proven_pattern",
+            "retired_pattern"
+          ]
+        },
+        "supporting_asset_ids": {
+          "class": "relationship",
+          "type": "multi_link",
+          "target_entity": "SourceAsset",
+          "required": false
+        },
+        "supporting_run_ids": {
+          "class": "relationship",
+          "type": "multi_link",
+          "target_entity": "CreationRun",
+          "required": false
+        },
+        "platform": {
+          "class": "pattern",
+          "type": "text",
+          "required": false,
+          "description": "Platform where the reusable pattern applies; lightweight index only."
+        },
+        "content_type": {
+          "class": "pattern",
+          "type": "text",
+          "required": false,
+          "description": "Content type where the reusable pattern applies; lightweight index only."
+        },
+        "applicable_persona": {
+          "class": "pattern",
+          "type": "text",
+          "required": false,
+          "description": "Narrative persona or audience group reference. Full insight card body stays in Obsidian."
+        },
+        "applicable_scenarios": {
+          "class": "pattern",
+          "type": "text",
+          "required": false,
+          "description": "Reusable scenarios where the pattern can be applied."
+        },
+        "opening_template": {
+          "class": "pattern",
+          "type": "text",
+          "required": false,
+          "description": "Validated opening hook template for creation retrieval; not a long card body."
+        },
+        "structure_template": {
+          "class": "pattern",
+          "type": "text",
+          "required": false,
+          "description": "Compact structure template for creation retrieval."
+        },
+        "visual_template": {
+          "class": "pattern",
+          "type": "text",
+          "required": false,
+          "description": "Compact visual template for creation retrieval."
+        },
+        "emotional_levers": {
+          "class": "pattern",
+          "type": "text",
+          "required": false,
+          "description": "Controlled emotional levers or mechanism tags; full evidence stays in cards/artifacts."
+        },
+        "forbidden_scenarios": {
+          "class": "pattern",
+          "type": "text",
+          "required": false,
+          "description": "Risk, platform compliance, or audience backlash boundaries."
+        },
+        "historical_performance_summary": {
+          "class": "rollup",
+          "type": "text",
+          "required": false
+        }
+      },
+      "state_machine": {
+        "initial": "candidate_pattern",
+        "terminal": [
+          "retired_pattern"
+        ],
+        "promotion_rules": {
+          "candidate_pattern->validated_pattern": "manual confirmation or multiple supporting SourceAsset records",
+          "validated_pattern->used_pattern": "referenced by MaterialUsage",
+          "used_pattern->proven_pattern": "positive MetricSnapshot/PostReview evidence",
+          "any->retired_pattern": "manual retirement or negative evidence"
+        },
+        "guards": [
+          "single_source_asset_cannot_be_written_as_proven_pattern"
+        ]
+      }
+    },
+    "CreationRun": {
+      "owner": "media_os.creation_runs",
+      "feishu_table": "03_CreationRuns_创作运行",
+      "primary_key": "run_id",
+      "unique_keys": [
+        "run_id"
+      ],
+      "fields": {
+        "run_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "entrypoint": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "【创作】",
+            "【创作>小红书】",
+            "【创作>抖音】",
+            "【创作咨询】",
+            "【创作-拍摄执行】"
+          ]
+        },
+        "input_summary": {
+          "class": "snapshot",
+          "type": "text",
+          "required": true,
+          "description": "Human-readable creation topic only. Platform, content type, and track are stored in their dedicated fields."
+        },
+        "platform": {
+          "class": "snapshot",
+          "type": "multi_select",
+          "required": true
+        },
+        "content_type": {
+          "class": "snapshot",
+          "type": "multi_select",
+          "required": true
+        },
+        "track_name": {
+          "class": "snapshot",
+          "type": "multi_select",
+          "required": true
+        },
+        "source_asset_id": {
+          "class": "external_ref",
+          "type": "text",
+          "required": false,
+          "description": "Optional Media Growth SourceAsset artifact id carried by SourceAsset-first handoff into existing creation/shooting chains."
+        },
+        "status": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true
+        },
+        "generation_source": {
+          "class": "external_ref",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "rule_template",
+            "llm",
+            "manual"
+          ]
+        },
+        "run_artifact_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": true
+        },
+        "render_id": {
+          "class": "relationship",
+          "type": "text",
+          "required": false
+        },
+        "render_spec_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": false
+        },
+        "feishu_doc_link": {
+          "class": "evidence_ref",
+          "type": "url",
+          "required": false
+        }
+      }
+    },
+    "CandidateTopic": {
+      "owner": "media_os.candidate_topics",
+      "feishu_table": "D01_候选选题",
+      "primary_key": "candidate_topic_id",
+      "unique_keys": [
+        "candidate_topic_id"
+      ],
+      "fields": {
+        "candidate_topic_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "title": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true
+        },
+        "creation_run_id": {
+          "class": "relationship",
+          "type": "text",
+          "required": true
+        },
+        "tenant_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        }
+      }
+    },
+    "PublishedPost": {
+      "owner": "media_os.post_reviews",
+      "feishu_table": "04_PostReviews_发布复盘",
+      "primary_key": "post_id",
+      "unique_keys": [
+        "post_id",
+        "platform+published_url"
+      ],
+      "fields": {
+        "post_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "creation_run_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "CreationRun",
+          "required": false
+        },
+        "platform": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true
+        },
+        "published_url": {
+          "class": "owner_fact",
+          "type": "url",
+          "required": false
+        },
+        "review_node": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": false
+        },
+        "performance_rating": {
+          "class": "derived_analysis",
+          "type": "single_select",
+          "required": false
+        },
+        "key_metrics_summary": {
+          "class": "rollup",
+          "type": "text",
+          "required": false
+        },
+        "review_doc_link": {
+          "class": "evidence_ref",
+          "type": "url",
+          "required": false
+        },
+        "review_artifact_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": true
+        }
+      }
+    },
+    "BusinessAccount": {
+      "owner": "media_os.business_accounts_v2",
+      "feishu_table": "05A_BusinessAccounts_商务账号",
+      "primary_key": "business_account_id",
+      "unique_keys": [
+        "platform+author_id"
+      ],
+      "fields": {
+        "business_account_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "creator_profile_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "CreatorProfile",
+          "required": false
+        },
+        "author_id": {
+          "class": "external_ref",
+          "type": "text",
+          "required": true
+        },
+        "account_name_snapshot": {
+          "class": "snapshot",
+          "type": "text",
+          "required": true
+        },
+        "platform": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true
+        },
+        "current_image_quote_amount": {
+          "class": "owner_fact",
+          "type": "number",
+          "required": false,
+          "unit_policy": "CNY amount"
+        },
+        "current_video_quote_amount": {
+          "class": "owner_fact",
+          "type": "number",
+          "required": false,
+          "unit_policy": "CNY amount"
+        },
+        "quote_snapshot_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": false
+        }
+      }
+    },
+    "BusinessOpportunity": {
+      "owner": "media_os.business_opportunities",
+      "feishu_table": "05B_BusinessOpportunities_商务机会",
+      "primary_key": "opportunity_id",
+      "unique_keys": [
+        "business_account_id+brand+product+brief_link",
+        "opportunity_id"
+      ],
+      "fields": {
+        "opportunity_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "business_account_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "BusinessAccount",
+          "required": false
+        },
+        "brand": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true
+        },
+        "product": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "platform": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": false
+        },
+        "content_type": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": false,
+          "allowed_values": [
+            "图文",
+            "视频"
+          ]
+        },
+        "brief_link": {
+          "class": "evidence_ref",
+          "type": "url",
+          "required": false
+        },
+        "current_quote_amount": {
+          "class": "owner_fact",
+          "type": "number",
+          "required": false,
+          "unit_policy": "CNY amount"
+        },
+        "rebate_ratio": {
+          "class": "owner_fact",
+          "type": "number",
+          "required": false,
+          "unit_policy": "0..1"
+        },
+        "valid_from": {
+          "class": "owner_fact",
+          "type": "date",
+          "required": false
+        },
+        "valid_until": {
+          "class": "owner_fact",
+          "type": "date",
+          "required": false
+        },
+        "schedule": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "price_protection_policy": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "authorization_scope": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "authorization_duration": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "quote_snapshot_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": false
+        },
+        "lifecycle_status": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "quoted",
+            "in_creation",
+            "delivered",
+            "settled"
+          ]
+        },
+        "linked_run_ids": {
+          "class": "relationship",
+          "type": "multi_link",
+          "target_entity": "CreationRun",
+          "required": false
+        },
+        "delivery_evidence_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": false
+        },
+        "delivery_published_url": {
+          "class": "evidence_ref",
+          "type": "url",
+          "required": false
+        },
+        "delivered_at": {
+          "class": "owner_fact",
+          "type": "date",
+          "required": false
+        },
+        "settlement_evidence_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": false
+        },
+        "settled_at": {
+          "class": "owner_fact",
+          "type": "date",
+          "required": false
+        }
+      }
+    },
+    "CreatorProfile": {
+      "owner": "media_os.creator_profiles_v2",
+      "feishu_table": "06_CreatorProfiles_达人账号档案",
+      "primary_key": "creator_profile_id",
+      "unique_keys": [
+        "platform+author_id",
+        "creator_profile_id"
+      ],
+      "fields": {
+        "creator_profile_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "platform": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true
+        },
+        "author_id": {
+          "class": "external_ref",
+          "type": "text",
+          "required": true
+        },
+        "account_name": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true
+        },
+        "profile_url": {
+          "class": "external_ref",
+          "type": "url",
+          "required": false
+        },
+        "avatar_url": {
+          "class": "external_ref",
+          "type": "url",
+          "required": false
+        },
+        "identity_summary": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "identity_tags": {
+          "class": "owner_fact",
+          "type": "multi_select",
+          "required": false
+        },
+        "education_background": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "expertise_domains": {
+          "class": "owner_fact",
+          "type": "multi_select",
+          "required": false
+        },
+        "creator_role": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "public_persona_boundaries": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "story_usable_identity_points": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "current_metrics_summary": {
+          "class": "rollup",
+          "type": "text",
+          "required": false
+        }
+      },
+      "forbidden_field_terms": [
+        "报价",
+        "返点",
+        "保价",
+        "授权",
+        "Brief"
+      ]
+    },
+    "TrackRegistry": {
+      "owner": "media_os.track_registry",
+      "feishu_table": "07_TrackRegistry_赛道注册表",
+      "primary_key": "track_id",
+      "unique_keys": [
+        "track_id",
+        "track_name"
+      ],
+      "fields": {
+        "track_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "track_name": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true
+        },
+        "parent_track_id": {
+          "class": "relationship",
+          "type": "text",
+          "target_entity": "TrackRegistry",
+          "required": false
+        },
+        "description": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        },
+        "platform_scope": {
+          "class": "owner_fact",
+          "type": "multi_select",
+          "required": false,
+          "allowed_values": [
+            "小红书",
+            "抖音",
+            "B站",
+            "视频号"
+          ]
+        },
+        "status": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "active",
+            "inactive"
+          ]
+        },
+        "alias_names": {
+          "class": "owner_fact",
+          "type": "multi_select",
+          "required": false
+        }
+      },
+      "inference_policy": "Track rows are explicit registered facts. Runtime code must not infer or synthesize tracks from H03 summaries, tags, profile descriptions, or similarity."
+    },
+    "MaterialUsage": {
+      "owner": "media_os.material_usage",
+      "feishu_table": "R01_MaterialUsage_素材使用记录",
+      "primary_key": "usage_id",
+      "unique_keys": [
+        "run_id+asset_id+deconstruction_id+pattern_id+usage_type"
+      ],
+      "fields": {
+        "usage_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "run_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "CreationRun",
+          "required": true
+        },
+        "asset_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "SourceAsset",
+          "required": false
+        },
+        "deconstruction_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "MaterialDeconstruction",
+          "required": false
+        },
+        "pattern_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "CreativePattern",
+          "required": false
+        },
+        "usage_type": {
+          "class": "matching_result",
+          "type": "single_select",
+          "required": true
+        },
+        "score": {
+          "class": "matching_result",
+          "type": "number",
+          "required": false,
+          "unit_policy": "0..100"
+        },
+        "selected_for_final": {
+          "class": "matching_result",
+          "type": "checkbox",
+          "required": true
+        },
+        "performance_feedback_summary": {
+          "class": "rollup",
+          "type": "text",
+          "required": false
+        }
+      }
+    },
+    "DecisionTrace": {
+      "owner": "media_os.decision_trace",
+      "feishu_table": "R02_DecisionTrace_决策轨迹",
+      "primary_key": "trace_id",
+      "unique_keys": [
+        "run_id+candidate_type+candidate_id+rank"
+      ],
+      "fields": {
+        "trace_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "run_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "CreationRun",
+          "required": true
+        },
+        "candidate_type": {
+          "class": "matching_result",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "activity",
+            "material",
+            "deconstruction",
+            "pattern",
+            "business",
+            "creator"
+          ]
+        },
+        "candidate_id": {
+          "class": "relationship",
+          "type": "text",
+          "required": true
+        },
+        "rank": {
+          "class": "matching_result",
+          "type": "number",
+          "required": true
+        },
+        "score": {
+          "class": "matching_result",
+          "type": "number",
+          "required": true,
+          "unit_policy": "0..100"
+        },
+        "selected": {
+          "class": "matching_result",
+          "type": "checkbox",
+          "required": true
+        },
+        "reason_summary": {
+          "class": "matching_result",
+          "type": "text",
+          "required": true
+        },
+        "rejection_reason": {
+          "class": "matching_result",
+          "type": "text",
+          "required": false
+        },
+        "score_breakdown_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": false
+        },
+        "decision_version": {
+          "class": "external_ref",
+          "type": "text",
+          "required": true
+        }
+      }
+    },
+    "TrackCreatorMembership": {
+      "owner": "media_os.track_creator_membership",
+      "feishu_table": "R03_TrackCreatorMembership_赛道博主关系",
+      "primary_key": "membership_id",
+      "unique_keys": [
+        "track_id+creator_profile_id"
+      ],
+      "fields": {
+        "membership_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "track_id": {
+          "class": "relationship",
+          "type": "text",
+          "target_entity": "TrackRegistry",
+          "required": true
+        },
+        "creator_profile_id": {
+          "class": "relationship",
+          "type": "text",
+          "target_entity": "CreatorProfile",
+          "required": true
+        },
+        "platform": {
+          "class": "snapshot",
+          "type": "single_select",
+          "required": false
+        },
+        "author_id": {
+          "class": "snapshot",
+          "type": "text",
+          "required": false
+        },
+        "account_name_snapshot": {
+          "class": "snapshot",
+          "type": "text",
+          "required": false
+        },
+        "role": {
+          "class": "matching_result",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "标杆账号",
+            "竞品账号",
+            "合作候选",
+            "素材来源",
+            "同赛道观察",
+            "风险账号"
+          ]
+        },
+        "fit_score": {
+          "class": "matching_result",
+          "type": "number",
+          "required": true,
+          "unit_policy": "0..100"
+        },
+        "fit_reason": {
+          "class": "matching_result",
+          "type": "text",
+          "required": true,
+          "semantic_owner": "llm_or_explicit_source_fact"
+        },
+        "content_use_case": {
+          "class": "matching_result",
+          "type": "text",
+          "required": false,
+          "semantic_owner": "llm_or_explicit_source_fact"
+        },
+        "business_use_case": {
+          "class": "matching_result",
+          "type": "text",
+          "required": false,
+          "semantic_owner": "llm_or_explicit_source_fact"
+        },
+        "evidence_refs": {
+          "class": "evidence_ref",
+          "type": "text",
+          "required": false
+        },
+        "source_capability": {
+          "class": "external_ref",
+          "type": "text",
+          "required": true
+        },
+        "status": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "candidate",
+            "active",
+            "rejected"
+          ]
+        },
+        "last_evaluated_at": {
+          "class": "owner_fact",
+          "type": "datetime",
+          "required": false
+        },
+        "metrics_snapshot_id": {
+          "class": "relationship",
+          "type": "text",
+          "target_entity": "AccountMetricSnapshot",
+          "required": false
+        }
+      },
+      "inference_policy": "Membership is an explicit persisted relation confirmed by a user, capability output, or reviewed source fact. Runtime code must not infer membership from tags, profile descriptions, H03 summaries, or similarity."
+    },
+    "MetricSnapshot": {
+      "owner": "media_os.metric_snapshots",
+      "feishu_table": "H01_MetricSnapshot_作品指标快照",
+      "primary_key": "snapshot_id",
+      "unique_keys": [
+        "post_id+review_node+metric_key+collected_at"
+      ],
+      "fields": {
+        "snapshot_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "post_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "PublishedPost",
+          "required": true
+        },
+        "review_node": {
+          "class": "review_metric",
+          "type": "single_select",
+          "required": true
+        },
+        "metric_key": {
+          "class": "review_metric",
+          "type": "single_select",
+          "required": true,
+          "registry": "metric_registry"
+        },
+        "raw_metric_name": {
+          "class": "snapshot",
+          "type": "text",
+          "required": false
+        },
+        "metric_value": {
+          "class": "review_metric",
+          "type": "number",
+          "required": true
+        },
+        "unit": {
+          "class": "review_metric",
+          "type": "single_select",
+          "required": true
+        },
+        "evidence_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": true
+        },
+        "data_quality": {
+          "class": "review_metric",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "complete",
+            "partial",
+            "screenshot_only"
+          ]
+        }
+      }
+    },
+    "AccountMetricSnapshot": {
+      "owner": "media_os.account_metric_snapshots",
+      "feishu_table": "H02_AccountMetricSnapshot_账号指标快照",
+      "primary_key": "account_name",
+      "unique_keys": [
+        "snapshot_id"
+      ],
+      "fields": {
+        "account_name": {
+          "class": "snapshot",
+          "type": "text",
+          "required": true
+        },
+        "snapshot_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "creator_profile_id": {
+          "class": "relationship",
+          "type": "link",
+          "target_entity": "CreatorProfile",
+          "required": true
+        },
+        "platform": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true
+        },
+        "metric_key": {
+          "class": "review_metric",
+          "type": "single_select",
+          "required": true,
+          "registry": "metric_registry"
+        },
+        "raw_metric_name": {
+          "class": "snapshot",
+          "type": "text",
+          "required": false
+        },
+        "metric_value": {
+          "class": "review_metric",
+          "type": "number",
+          "required": true
+        },
+        "unit": {
+          "class": "review_metric",
+          "type": "single_select",
+          "required": true
+        },
+        "evidence_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": true
+        },
+        "data_quality": {
+          "class": "review_metric",
+          "type": "single_select",
+          "required": true
+        }
+      }
+    },
+    "GrowthSummary": {
+      "owner": "media_os.growth_summary",
+      "feishu_table": "H03_GrowthSummary_增长摘要",
+      "primary_key": "artifact_id",
+      "unique_keys": [
+        "artifact_id"
+      ],
+      "fields": {
+        "artifact_id": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true,
+          "writer_policy": "system_only"
+        },
+        "artifact_type": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": true
+        },
+        "source_capability_id": {
+          "class": "external_ref",
+          "type": "text",
+          "required": true
+        },
+        "display_title": {
+          "class": "snapshot",
+          "type": "text",
+          "required": true
+        },
+        "display_summary": {
+          "class": "snapshot",
+          "type": "text",
+          "required": true
+        },
+        "platform": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": false
+        },
+        "account_id": {
+          "class": "relationship",
+          "type": "text",
+          "required": false
+        },
+        "track_id": {
+          "class": "relationship",
+          "type": "text",
+          "required": false
+        },
+        "status": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "candidate",
+            "active",
+            "ready",
+            "published",
+            "reviewed",
+            "rejected",
+            "failed",
+            "pending_manual",
+            "plan_blocked",
+            "not_implemented",
+            "external_delegation_required"
+          ]
+        },
+        "quality_status": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "pending_review",
+            "cleaned",
+            "verified",
+            "accepted",
+            "rejected",
+            "raw"
+          ]
+        },
+        "visibility": {
+          "class": "owner_fact",
+          "type": "single_select",
+          "required": true,
+          "allowed_values": [
+            "ops",
+            "public",
+            "private",
+            "debug"
+          ]
+        },
+        "front_end_eligible": {
+          "class": "owner_fact",
+          "type": "checkbox",
+          "required": true
+        },
+        "artifact_uri": {
+          "class": "evidence_ref",
+          "type": "media_uri",
+          "required": true
+        },
+        "created_at": {
+          "class": "owner_fact",
+          "type": "datetime",
+          "required": true
+        },
+        "updated_at": {
+          "class": "owner_fact",
+          "type": "datetime",
+          "required": true
+        },
+        "reviewed_at": {
+          "class": "owner_fact",
+          "type": "datetime",
+          "required": false
+        },
+        "reviewed_by": {
+          "class": "owner_fact",
+          "type": "text",
+          "required": false
+        }
+      }
+    }
+  },
+  "projection_contracts": {
+    "feishu.01_activity": {
+      "entity": "Activity",
+      "feishu_table": "01_Activity_近期活动",
+      "human_view_fields": [
+        "title",
+        "platform_name",
+        "activity_start_at",
+        "activity_end_at",
+        "activity_doc_link"
+      ],
+      "agent_read_fields": [
+        "activity_id",
+        "title",
+        "platform_name",
+        "activity_start_at",
+        "activity_end_at",
+        "activity_doc_link"
+      ],
+      "agent_write_fields": [
+        "title",
+        "platform_name",
+        "activity_start_at",
+        "activity_end_at",
+        "activity_doc_link"
+      ],
+      "field_name_map": {
+        "activity_id": "关联ID",
+        "title": "标题",
+        "platform_name": "平台名称",
+        "activity_start_at": "活动开始时间",
+        "activity_end_at": "活动结束时间",
+        "activity_doc_link": "活动文档链接"
+      }
+    },
+    "feishu.02a_source_assets": {
+      "entity": "SourceAsset",
+      "feishu_table": "02A_SourceAssets_素材源",
+      "human_view_fields": [
+        "source_asset_id",
+        "title",
+        "platform",
+        "platform_hashtags",
+        "source_url",
+        "cover_attachment",
+        "video_attachment",
+        "status",
+        "enabled",
+        "source_doc_link"
+      ],
+      "agent_read_fields": [
+        "asset_id",
+        "source_asset_id",
+        "content_fingerprint",
+        "platform",
+        "platform_hashtags",
+        "source_url",
+        "evidence_uri",
+        "cover_attachment",
+        "video_attachment",
+        "status",
+        "enabled",
+        "source_doc_link"
+      ],
+      "agent_write_fields": [
+        "asset_id",
+        "source_asset_id",
+        "content_fingerprint",
+        "title",
+        "original_title",
+        "platform",
+        "platform_hashtags",
+        "source_url",
+        "author_id",
+        "creator_profile_id",
+        "account_name_snapshot",
+        "evidence_uri",
+        "cover_attachment",
+        "video_attachment",
+        "status",
+        "enabled",
+        "source_doc_link"
+      ],
+      "forbidden_write_terms": [
+        "报价",
+        "返点",
+        "Brief",
+        "发布链接",
+        "复盘",
+        "提醒"
+      ],
+      "field_name_map": {
+        "asset_id": "素材ID",
+        "source_asset_id": "SourceAsset来源ID",
+        "content_fingerprint": "内容指纹",
+        "title": "标题",
+        "original_title": "原作品标题",
+        "platform": "平台",
+        "platform_hashtags": "平台话题标签",
+        "source_url": "来源链接",
+        "author_id": "作者ID",
+        "creator_profile_id": "达人档案ID",
+        "account_name_snapshot": "账号名称快照",
+        "evidence_uri": "证据URI",
+        "cover_attachment": "封面附件",
+        "video_attachment": "视频附件",
+        "status": "素材状态",
+        "enabled": "启用",
+        "source_doc_link": "原作品文档链接"
+      }
+    },
+    "feishu.02b_deconstructions": {
+      "entity": "MaterialDeconstruction",
+      "feishu_table": "02B_MaterialDeconstructions_素材拆解",
+      "human_view_fields": [
+        "asset_id",
+        "source_asset_id",
+        "analysis_scope",
+        "analysis_time_range",
+        "deconstruction_focus",
+        "output_types",
+        "summary",
+        "hook",
+        "transferable_points",
+        "shot_adaptation_notes_status",
+        "shot_adaptation_note_count",
+        "recommended_production_route",
+        "motion_type_summary",
+        "shot_adaptation_notes_summary",
+        "reference_shots_status",
+        "reference_shot_count",
+        "reference_shots_summary",
+        "cover_opening_hook",
+        "core_data_summary",
+        "top_comment_insight",
+        "target_audience_summary",
+        "pain_pleasure_summary",
+        "attention_elements",
+        "viral_breakdown",
+        "viral_migration",
+        "creative_upgrade_suggestion",
+        "review_status",
+        "deconstruction_doc_link"
+      ],
+      "agent_read_fields": [
+        "deconstruction_id",
+        "asset_id",
+        "source_asset_id",
+        "analysis_scope",
+        "analysis_time_range",
+        "deconstruction_focus",
+        "output_types",
+        "summary",
+        "hook",
+        "transferable_points",
+        "non_transferable_points",
+        "shot_adaptation_notes_status",
+        "shot_adaptation_note_count",
+        "recommended_production_route",
+        "motion_type_summary",
+        "shot_adaptation_notes_summary",
+        "reference_shots_status",
+        "reference_shot_count",
+        "reference_shots_summary",
+        "cover_opening_hook",
+        "core_data_summary",
+        "top_comment_insight",
+        "target_audience_summary",
+        "pain_pleasure_summary",
+        "attention_elements",
+        "viral_breakdown",
+        "viral_migration",
+        "creative_upgrade_suggestion",
+        "confidence",
+        "evidence_uri",
+        "review_status",
+        "deconstruction_doc_link"
+      ],
+      "agent_write_fields": [
+        "deconstruction_id",
+        "asset_id",
+        "source_asset_id",
+        "analysis_scope",
+        "analysis_time_range",
+        "deconstruction_focus",
+        "output_types",
+        "summary",
+        "hook",
+        "transferable_points",
+        "non_transferable_points",
+        "shot_adaptation_notes_status",
+        "shot_adaptation_note_count",
+        "recommended_production_route",
+        "motion_type_summary",
+        "shot_adaptation_notes_summary",
+        "cover_opening_hook",
+        "core_data_summary",
+        "top_comment_insight",
+        "target_audience_summary",
+        "pain_pleasure_summary",
+        "attention_elements",
+        "viral_breakdown",
+        "viral_migration",
+        "creative_upgrade_suggestion",
+        "prompt_bundle_version",
+        "model",
+        "skill_version",
+        "confidence",
+        "evidence_uri",
+        "review_status",
+        "deconstruction_doc_link"
+      ],
+      "field_name_map": {
+        "deconstruction_id": "拆解ID",
+        "asset_id": "素材ID",
+        "source_asset_id": "SourceAsset来源ID",
+        "analysis_scope": "分析范围",
+        "analysis_time_range": "时间片段",
+        "deconstruction_focus": "拆解侧重",
+        "output_types": "输出类型",
+        "summary": "摘要",
+        "hook": "开头钩子",
+        "transferable_points": "可迁移点",
+        "non_transferable_points": "不可迁移点",
+        "shot_adaptation_notes_status": "镜头适配状态",
+        "shot_adaptation_note_count": "镜头适配建议数",
+        "recommended_production_route": "推荐生产路线",
+        "motion_type_summary": "运动类型摘要",
+        "shot_adaptation_notes_summary": "镜头适配摘要",
+        "reference_shots_status": "参考镜头状态",
+        "reference_shot_count": "参考镜头数",
+        "reference_shots_summary": "参考镜头摘要",
+        "cover_opening_hook": "封面/前2秒抓手",
+        "core_data_summary": "核心数据摘要",
+        "top_comment_insight": "高赞评论洞察",
+        "target_audience_summary": "目标受众",
+        "pain_pleasure_summary": "痛点/爽点",
+        "attention_elements": "吸睛元素",
+        "viral_breakdown": "爆点拆解",
+        "viral_migration": "爆点迁移",
+        "creative_upgrade_suggestion": "创新修改建议",
+        "prompt_bundle_version": "提示词版本",
+        "model": "模型",
+        "skill_version": "技能版本",
+        "confidence": "置信度",
+        "evidence_uri": "证据URI",
+        "review_status": "人工复核状态",
+        "deconstruction_doc_link": "拆解文档链接"
+      }
+    },
+    "feishu.02c_patterns": {
+      "entity": "CreativePattern",
+      "feishu_table": "02C_CreativePatterns_创作模式",
+      "human_view_fields": [
+        "pattern_name",
+        "pattern_status",
+        "platform",
+        "content_type",
+        "applicable_persona",
+        "applicable_scenarios",
+        "opening_template",
+        "emotional_levers",
+        "historical_performance_summary"
+      ],
+      "agent_read_fields": [
+        "pattern_id",
+        "pattern_name",
+        "pattern_status",
+        "supporting_asset_ids",
+        "supporting_run_ids",
+        "platform",
+        "content_type",
+        "applicable_persona",
+        "applicable_scenarios",
+        "opening_template",
+        "structure_template",
+        "visual_template",
+        "emotional_levers",
+        "forbidden_scenarios",
+        "historical_performance_summary"
+      ],
+      "agent_write_fields": [
+        "pattern_id",
+        "pattern_name",
+        "pattern_status",
+        "supporting_asset_ids",
+        "supporting_run_ids",
+        "platform",
+        "content_type",
+        "applicable_persona",
+        "applicable_scenarios",
+        "opening_template",
+        "structure_template",
+        "visual_template",
+        "emotional_levers",
+        "forbidden_scenarios",
+        "historical_performance_summary"
+      ],
+      "field_name_map": {
+        "pattern_id": "模式ID",
+        "pattern_name": "模式名称",
+        "pattern_status": "模式状态",
+        "supporting_asset_ids": "支持素材ID",
+        "supporting_run_ids": "支持创作运行ID",
+        "platform": "平台",
+        "content_type": "内容类型",
+        "applicable_persona": "适用人设",
+        "applicable_scenarios": "适用场景",
+        "opening_template": "开头模板",
+        "structure_template": "结构模板",
+        "visual_template": "视觉模板",
+        "emotional_levers": "情绪杠杆",
+        "forbidden_scenarios": "禁用场景",
+        "historical_performance_summary": "历史表现摘要"
+      }
+    },
+    "feishu.03_creation_runs": {
+      "entity": "CreationRun",
+      "feishu_table": "03_CreationRuns_创作运行",
+      "human_view_fields": [
+        "entrypoint",
+        "input_summary",
+        "platform",
+        "content_type",
+        "track_name",
+        "source_asset_id",
+        "status",
+        "feishu_doc_link",
+        "render_id"
+      ],
+      "agent_read_fields": [
+        "run_id",
+        "entrypoint",
+        "input_summary",
+        "platform",
+        "content_type",
+        "track_name",
+        "source_asset_id",
+        "status",
+        "run_artifact_uri",
+        "render_spec_uri",
+        "feishu_doc_link"
+      ],
+      "agent_write_fields": [
+        "run_id",
+        "entrypoint",
+        "input_summary",
+        "platform",
+        "content_type",
+        "track_name",
+        "source_asset_id",
+        "status",
+        "generation_source",
+        "run_artifact_uri",
+        "render_id",
+        "render_spec_uri",
+        "feishu_doc_link"
+      ],
+      "field_name_map": {
+        "run_id": "创作运行ID",
+        "entrypoint": "入口标签",
+        "input_summary": "输入需求摘要",
+        "platform": "平台",
+        "content_type": "内容类型",
+        "track_name": "赛道",
+        "source_asset_id": "SourceAsset来源ID",
+        "status": "状态",
+        "generation_source": "生成来源",
+        "run_artifact_uri": "运行产物URI",
+        "render_id": "渲染ID",
+        "render_spec_uri": "渲染规格URI",
+        "feishu_doc_link": "飞书文档链接"
+      }
+    },
+    "feishu.d01_candidate_topics": {
+      "entity": "CandidateTopic",
+      "feishu_table": "D01_候选选题",
+      "human_view_fields": [
+        "candidate_topic_id",
+        "title",
+        "creation_run_id",
+        "tenant_id"
+      ],
+      "agent_read_fields": [
+        "candidate_topic_id",
+        "title",
+        "creation_run_id",
+        "tenant_id"
+      ],
+      "agent_write_fields": [
+        "candidate_topic_id",
+        "title",
+        "creation_run_id",
+        "tenant_id"
+      ],
+      "field_name_map": {
+        "candidate_topic_id": "候选选题ID",
+        "title": "标题",
+        "creation_run_id": "创作运行ID",
+        "tenant_id": "租户ID"
+      }
+    },
+    "feishu.04_post_reviews": {
+      "entity": "PublishedPost",
+      "feishu_table": "04_PostReviews_发布复盘",
+      "human_view_fields": [
+        "platform",
+        "published_url",
+        "review_node",
+        "performance_rating",
+        "key_metrics_summary",
+        "review_doc_link"
+      ],
+      "agent_read_fields": [
+        "post_id",
+        "creation_run_id",
+        "platform",
+        "published_url",
+        "review_node",
+        "performance_rating",
+        "key_metrics_summary",
+        "review_artifact_uri"
+      ],
+      "agent_write_fields": [
+        "post_id",
+        "creation_run_id",
+        "platform",
+        "published_url",
+        "review_node",
+        "performance_rating",
+        "key_metrics_summary",
+        "review_doc_link",
+        "review_artifact_uri"
+      ],
+      "field_name_map": {
+        "post_id": "发布作品ID",
+        "creation_run_id": "创作运行ID",
+        "platform": "平台",
+        "published_url": "发布链接",
+        "review_node": "复盘节点",
+        "performance_rating": "表现评级",
+        "key_metrics_summary": "关键指标摘要",
+        "review_doc_link": "复盘文档链接",
+        "review_artifact_uri": "复盘产物URI"
+      }
+    },
+    "feishu.05a_business_accounts": {
+      "entity": "BusinessAccount",
+      "feishu_table": "05A_BusinessAccounts_商务账号",
+      "human_view_fields": [
+        "account_name_snapshot",
+        "platform",
+        "current_image_quote_amount",
+        "current_video_quote_amount",
+        "quote_snapshot_uri"
+      ],
+      "agent_read_fields": [
+        "business_account_id",
+        "creator_profile_id",
+        "author_id",
+        "account_name_snapshot",
+        "platform",
+        "current_image_quote_amount",
+        "current_video_quote_amount",
+        "quote_snapshot_uri"
+      ],
+      "agent_write_fields": [
+        "business_account_id",
+        "creator_profile_id",
+        "author_id",
+        "account_name_snapshot",
+        "platform",
+        "current_image_quote_amount",
+        "current_video_quote_amount",
+        "quote_snapshot_uri"
+      ],
+      "field_name_map": {
+        "business_account_id": "商务账号ID",
+        "creator_profile_id": "达人档案ID",
+        "author_id": "作者ID",
+        "account_name_snapshot": "账号名称快照",
+        "platform": "平台",
+        "current_image_quote_amount": "当前图文报价",
+        "current_video_quote_amount": "当前视频报价",
+        "quote_snapshot_uri": "报价快照URI"
+      }
+    },
+    "feishu.05b_business_opportunities": {
+      "entity": "BusinessOpportunity",
+      "feishu_table": "05B_BusinessOpportunities_商务机会",
+      "human_view_fields": [
+        "brand",
+        "product",
+        "platform",
+        "content_type",
+        "brief_link",
+        "current_quote_amount",
+        "rebate_ratio",
+        "schedule",
+        "price_protection_policy",
+        "authorization_scope",
+    "authorization_duration",
+    "valid_until",
+    "quote_snapshot_uri",
+    "lifecycle_status",
+    "linked_run_ids",
+    "delivery_published_url",
+    "delivered_at",
+    "settled_at"
+      ],
+      "agent_read_fields": [
+        "opportunity_id",
+        "business_account_id",
+        "brand",
+        "product",
+        "platform",
+        "content_type",
+        "brief_link",
+        "current_quote_amount",
+        "rebate_ratio",
+        "valid_from",
+        "valid_until",
+        "schedule",
+        "price_protection_policy",
+        "authorization_scope",
+    "authorization_duration",
+    "quote_snapshot_uri",
+    "lifecycle_status",
+    "linked_run_ids",
+    "delivery_evidence_uri",
+    "delivery_published_url",
+    "delivered_at",
+    "settlement_evidence_uri",
+    "settled_at"
+      ],
+      "agent_write_fields": [
+        "opportunity_id",
+        "business_account_id",
+        "brand",
+        "product",
+        "platform",
+        "content_type",
+        "brief_link",
+        "current_quote_amount",
+        "rebate_ratio",
+        "valid_from",
+        "valid_until",
+        "schedule",
+        "price_protection_policy",
+        "authorization_scope",
+        "authorization_duration",
+        "quote_snapshot_uri",
+        "lifecycle_status",
+        "linked_run_ids",
+        "delivery_evidence_uri",
+        "delivery_published_url",
+        "delivered_at",
+        "settlement_evidence_uri",
+        "settled_at"
+      ],
+      "field_name_map": {
+        "opportunity_id": "商务机会ID",
+        "business_account_id": "商务账号ID",
+        "brand": "品牌",
+        "product": "产品",
+        "platform": "平台",
+        "content_type": "内容类型",
+        "brief_link": "Brief链接",
+        "current_quote_amount": "当前报价",
+        "rebate_ratio": "返点比例",
+        "valid_from": "有效开始时间",
+        "valid_until": "有效结束时间",
+        "schedule": "档期",
+        "price_protection_policy": "保价政策",
+        "authorization_scope": "授权范围",
+    "authorization_duration": "授权时长",
+    "quote_snapshot_uri": "报价快照URI",
+    "lifecycle_status": "生命周期状态",
+    "linked_run_ids": "关联创作运行ID",
+    "delivery_evidence_uri": "交付证据URI",
+    "delivery_published_url": "交付发布链接",
+    "delivered_at": "交付时间",
+    "settlement_evidence_uri": "结算证据URI",
+    "settled_at": "结算时间"
+      }
+    },
+    "feishu.06_creator_profiles": {
+      "entity": "CreatorProfile",
+      "feishu_table": "06_CreatorProfiles_达人账号档案",
+      "human_view_fields": [
+        "account_name",
+        "platform",
+        "author_id",
+        "profile_url",
+        "avatar_url",
+        "identity_summary",
+        "identity_tags",
+        "education_background",
+        "expertise_domains",
+        "creator_role",
+        "public_persona_boundaries",
+        "story_usable_identity_points",
+        "current_metrics_summary"
+      ],
+      "agent_read_fields": [
+        "creator_profile_id",
+        "platform",
+        "author_id",
+        "account_name",
+        "profile_url",
+        "avatar_url",
+        "identity_summary",
+        "identity_tags",
+        "education_background",
+        "expertise_domains",
+        "creator_role",
+        "public_persona_boundaries",
+        "story_usable_identity_points",
+        "current_metrics_summary"
+      ],
+      "agent_write_fields": [
+        "creator_profile_id",
+        "platform",
+        "author_id",
+        "account_name",
+        "profile_url",
+        "avatar_url",
+        "identity_summary",
+        "identity_tags",
+        "education_background",
+        "expertise_domains",
+        "creator_role",
+        "public_persona_boundaries",
+        "story_usable_identity_points",
+        "current_metrics_summary"
+      ],
+      "forbidden_write_terms": [
+        "报价",
+        "返点",
+        "保价",
+        "授权",
+        "Brief"
+      ],
+      "field_name_map": {
+        "creator_profile_id": "达人档案ID",
+        "platform": "平台",
+        "author_id": "作者ID",
+        "account_name": "账号名称",
+        "profile_url": "主页链接",
+        "avatar_url": "头像链接",
+        "identity_summary": "身份定位",
+        "identity_tags": "身份标签",
+        "education_background": "教育背景",
+        "expertise_domains": "专业能力领域",
+        "creator_role": "创作者角色",
+        "public_persona_boundaries": "公开表达边界",
+        "story_usable_identity_points": "可创作身份卖点",
+        "current_metrics_summary": "当前指标摘要"
+      }
+    },
+    "feishu.07_track_registry": {
+      "entity": "TrackRegistry",
+      "feishu_table": "07_TrackRegistry_赛道注册表",
+      "human_view_fields": [
+        "track_name",
+        "parent_track_id",
+        "description",
+        "platform_scope",
+        "status",
+        "alias_names"
+      ],
+      "agent_read_fields": [
+        "track_id",
+        "track_name",
+        "parent_track_id",
+        "description",
+        "platform_scope",
+        "status",
+        "alias_names"
+      ],
+      "agent_write_fields": [
+        "track_id",
+        "track_name",
+        "parent_track_id",
+        "description",
+        "platform_scope",
+        "status",
+        "alias_names"
+      ],
+      "field_name_map": {
+        "track_id": "赛道ID",
+        "track_name": "赛道名称",
+        "parent_track_id": "父赛道ID",
+        "description": "赛道说明",
+        "platform_scope": "适用平台",
+        "status": "状态",
+        "alias_names": "赛道别名"
+      }
+    },
+    "feishu.r01_material_usage": {
+      "entity": "MaterialUsage",
+      "feishu_table": "R01_MaterialUsage_素材使用记录",
+      "human_view_fields": [
+        "run_id",
+        "asset_id",
+        "pattern_id",
+        "usage_type",
+        "score",
+        "selected_for_final"
+      ],
+      "agent_read_fields": [
+        "usage_id",
+        "run_id",
+        "asset_id",
+        "deconstruction_id",
+        "pattern_id",
+        "usage_type",
+        "score",
+        "selected_for_final",
+        "performance_feedback_summary"
+      ],
+      "agent_write_fields": [
+        "usage_id",
+        "run_id",
+        "asset_id",
+        "deconstruction_id",
+        "pattern_id",
+        "usage_type",
+        "score",
+        "selected_for_final",
+        "performance_feedback_summary"
+      ],
+      "field_name_map": {
+        "usage_id": "使用ID",
+        "run_id": "创作运行ID",
+        "asset_id": "素材ID",
+        "deconstruction_id": "拆解ID",
+        "pattern_id": "模式ID",
+        "usage_type": "使用方式",
+        "score": "匹配分",
+        "selected_for_final": "是否进入最终稿",
+        "performance_feedback_summary": "效果回流摘要"
+      }
+    },
+    "feishu.r02_decision_trace": {
+      "entity": "DecisionTrace",
+      "feishu_table": "R02_DecisionTrace_决策轨迹",
+      "human_view_fields": [
+        "run_id",
+        "candidate_type",
+        "candidate_id",
+        "rank",
+        "score",
+        "selected",
+        "reason_summary",
+        "rejection_reason"
+      ],
+      "agent_read_fields": [
+        "trace_id",
+        "run_id",
+        "candidate_type",
+        "candidate_id",
+        "rank",
+        "score",
+        "selected",
+        "reason_summary",
+        "rejection_reason",
+        "score_breakdown_uri",
+        "decision_version"
+      ],
+      "agent_write_fields": [
+        "trace_id",
+        "run_id",
+        "candidate_type",
+        "candidate_id",
+        "rank",
+        "score",
+        "selected",
+        "reason_summary",
+        "rejection_reason",
+        "score_breakdown_uri",
+        "decision_version"
+      ],
+      "field_name_map": {
+        "trace_id": "决策轨迹ID",
+        "run_id": "创作运行ID",
+        "candidate_type": "候选类型",
+        "candidate_id": "候选记录ID",
+        "rank": "候选排序",
+        "score": "匹配分",
+        "selected": "是否入选",
+        "reason_summary": "入选理由摘要",
+        "rejection_reason": "未入选原因",
+        "score_breakdown_uri": "分数拆解URI",
+        "decision_version": "决策版本"
+      }
+    },
+    "feishu.r03_track_creator_membership": {
+      "entity": "TrackCreatorMembership",
+      "feishu_table": "R03_TrackCreatorMembership_赛道博主关系",
+      "human_view_fields": [
+        "track_id",
+        "creator_profile_id",
+        "account_name_snapshot",
+        "platform",
+        "role",
+        "fit_score",
+        "fit_reason",
+        "content_use_case",
+        "business_use_case",
+        "status",
+        "last_evaluated_at"
+      ],
+      "agent_read_fields": [
+        "membership_id",
+        "track_id",
+        "creator_profile_id",
+        "platform",
+        "author_id",
+        "account_name_snapshot",
+        "role",
+        "fit_score",
+        "fit_reason",
+        "content_use_case",
+        "business_use_case",
+        "evidence_refs",
+        "source_capability",
+        "status",
+        "last_evaluated_at",
+        "metrics_snapshot_id"
+      ],
+      "agent_write_fields": [
+        "membership_id",
+        "track_id",
+        "creator_profile_id",
+        "platform",
+        "author_id",
+        "account_name_snapshot",
+        "role",
+        "fit_score",
+        "fit_reason",
+        "content_use_case",
+        "business_use_case",
+        "evidence_refs",
+        "source_capability",
+        "status",
+        "last_evaluated_at",
+        "metrics_snapshot_id"
+      ],
+      "field_name_map": {
+        "membership_id": "关系ID",
+        "track_id": "赛道ID",
+        "creator_profile_id": "达人档案ID",
+        "platform": "平台",
+        "author_id": "作者ID",
+        "account_name_snapshot": "账号名称快照",
+        "role": "赛道角色",
+        "fit_score": "匹配分",
+        "fit_reason": "匹配理由",
+        "content_use_case": "内容用途",
+        "business_use_case": "商务用途",
+        "evidence_refs": "证据引用",
+        "source_capability": "来源能力",
+        "status": "状态",
+        "last_evaluated_at": "最近评估时间",
+        "metrics_snapshot_id": "指标快照ID"
+      }
+    },
+    "feishu.h01_metric_snapshot": {
+      "entity": "MetricSnapshot",
+      "feishu_table": "H01_MetricSnapshot_作品指标快照",
+      "human_view_fields": [
+        "post_id",
+        "review_node",
+        "metric_key",
+        "metric_value",
+        "unit",
+        "data_quality"
+      ],
+      "agent_read_fields": [
+        "snapshot_id",
+        "post_id",
+        "review_node",
+        "metric_key",
+        "raw_metric_name",
+        "metric_value",
+        "unit",
+        "evidence_uri",
+        "data_quality"
+      ],
+      "agent_write_fields": [
+        "snapshot_id",
+        "post_id",
+        "review_node",
+        "metric_key",
+        "raw_metric_name",
+        "metric_value",
+        "unit",
+        "evidence_uri",
+        "data_quality"
+      ],
+      "field_name_map": {
+        "snapshot_id": "快照ID",
+        "post_id": "发布作品ID",
+        "review_node": "复盘节点",
+        "metric_key": "指标键",
+        "raw_metric_name": "原始指标名",
+        "metric_value": "指标值",
+        "unit": "单位",
+        "evidence_uri": "证据URI",
+        "data_quality": "数据质量"
+      }
+    },
+    "feishu.h02_account_metric_snapshot": {
+      "entity": "AccountMetricSnapshot",
+      "feishu_table": "H02_AccountMetricSnapshot_账号指标快照",
+      "human_view_fields": [
+        "account_name",
+        "creator_profile_id",
+        "platform",
+        "metric_key",
+        "metric_value",
+        "unit",
+        "data_quality"
+      ],
+      "agent_read_fields": [
+        "account_name",
+        "snapshot_id",
+        "creator_profile_id",
+        "platform",
+        "metric_key",
+        "raw_metric_name",
+        "metric_value",
+        "unit",
+        "evidence_uri",
+        "data_quality"
+      ],
+      "agent_write_fields": [
+        "account_name",
+        "snapshot_id",
+        "creator_profile_id",
+        "platform",
+        "metric_key",
+        "raw_metric_name",
+        "metric_value",
+        "unit",
+        "evidence_uri",
+        "data_quality"
+      ],
+      "field_name_map": {
+        "account_name": "博主昵称",
+        "snapshot_id": "快照ID",
+        "creator_profile_id": "达人档案ID",
+        "platform": "平台",
+        "metric_key": "指标键",
+        "raw_metric_name": "原始指标名",
+        "metric_value": "指标值",
+        "unit": "单位",
+        "evidence_uri": "证据URI",
+        "data_quality": "数据质量"
+      }
+    },
+    "feishu.h03_growth_summary": {
+      "entity": "GrowthSummary",
+      "feishu_table": "H03_GrowthSummary_增长摘要",
+      "human_view_fields": [
+        "display_title",
+        "display_summary",
+        "artifact_type",
+        "source_capability_id",
+        "platform",
+        "account_id",
+        "track_id",
+        "status",
+        "quality_status",
+        "visibility",
+        "front_end_eligible",
+        "artifact_uri"
+      ],
+      "agent_read_fields": [
+        "artifact_id",
+        "artifact_type",
+        "source_capability_id",
+        "display_title",
+        "display_summary",
+        "platform",
+        "account_id",
+        "track_id",
+        "status",
+        "quality_status",
+        "visibility",
+        "front_end_eligible",
+        "artifact_uri",
+        "created_at",
+        "updated_at",
+        "reviewed_at",
+        "reviewed_by"
+      ],
+      "agent_write_fields": [
+        "artifact_id",
+        "artifact_type",
+        "source_capability_id",
+        "display_title",
+        "display_summary",
+        "platform",
+        "account_id",
+        "track_id",
+        "status",
+        "quality_status",
+        "visibility",
+        "front_end_eligible",
+        "artifact_uri",
+        "created_at",
+        "updated_at",
+        "reviewed_at",
+        "reviewed_by"
+      ],
+      "field_name_map": {
+        "artifact_id": "产物ID",
+        "artifact_type": "产物类型",
+        "source_capability_id": "来源能力ID",
+        "display_title": "展示标题",
+        "display_summary": "展示摘要",
+        "platform": "平台",
+        "account_id": "账号ID",
+        "track_id": "赛道ID",
+        "status": "状态",
+        "quality_status": "质量状态",
+        "visibility": "可见范围",
+        "front_end_eligible": "前端可展示",
+        "artifact_uri": "产物URI",
+        "created_at": "创建时间",
+        "updated_at": "更新时间",
+        "reviewed_at": "复核时间",
+        "reviewed_by": "复核人"
+      }
+    }
+  },
+  "metric_registry": {
+    "registry_uri": "media://manifest/metric_registry.json",
+    "required_metric_keys": [
+      "impressions",
+      "views",
+      "reads",
+      "likes",
+      "saves",
+      "comments",
+      "shares",
+      "follows",
+      "followers",
+      "likes_total",
+      "works_count",
+      "avg_views_30d"
+    ],
+    "aliases": {
+      "impressions": [
+        "曝光",
+        "曝光量",
+        "展现",
+        "impression",
+        "impressions"
+      ],
+      "views": [
+        "播放",
+        "播放量",
+        "views",
+        "video_view"
+      ],
+      "reads": [
+        "阅读",
+        "阅读量"
+      ]
+    }
+  },
+  "agent_io_contracts": {
+    "creation_agent": {
+      "reads": [
+        "Activity",
+        "SourceAsset",
+        "MaterialDeconstruction",
+        "CreativePattern",
+        "BusinessOpportunity",
+        "CreatorProfile"
+      ],
+      "writes": [
+        "CreationRun",
+        "DecisionTrace",
+        "MaterialUsage"
+      ],
+      "writes_artifacts": [
+        "creation_run_artifacts",
+        "render_artifacts",
+        "validation_report",
+        "output_variant_artifacts"
+      ],
+      "must_not_write": [
+        "EvidenceArtifact as Feishu table",
+        "OutputVariant as Feishu table",
+        "RawJSON visible fields",
+        "live schema fields",
+        "PublishedPost before publish event"
+      ],
+      "requires": [
+        "DecisionTrace for candidate selection",
+        "MaterialUsage for final references",
+        "platform validation before final write"
+      ]
+    },
+    "review_agent": {
+      "reads": [
+        "CreationRun",
+        "MaterialUsage",
+        "PublishedPost",
+        "CreativePattern",
+        "CreatorProfile"
+      ],
+      "writes": [
+        "PublishedPost",
+        "MetricSnapshot",
+        "AccountMetricSnapshot"
+      ],
+      "writes_artifacts": [
+        "post_review_artifacts"
+      ],
+      "must_not_write": [
+        "ReviewFinding as Feishu table",
+        "metric JSON visible fields"
+      ]
+    },
+    "business_agent": {
+      "reads": [
+        "BusinessAccount",
+        "BusinessOpportunity",
+        "CreatorProfile"
+      ],
+      "writes": [
+        "BusinessAccount",
+        "BusinessOpportunity"
+      ],
+      "writes_artifacts": [
+        "quote_snapshot"
+      ],
+      "must_not_write": [
+        "QuoteHistory as Feishu table",
+        "creator identity fields owned by CreatorProfile"
+      ]
+    }
+  },
+  "entrypoint_io_contracts": {
+    "【创作】": {
+      "agent": "creation_agent",
+      "reads": [
+        "Activity",
+        "SourceAsset",
+        "MaterialDeconstruction",
+        "CreativePattern",
+        "BusinessOpportunity",
+        "CreatorProfile"
+      ],
+      "writes": [
+        "CreationRun",
+        "DecisionTrace",
+        "MaterialUsage"
+      ],
+      "writes_artifacts": [
+        "creation_run_artifacts",
+        "render_artifacts"
+      ],
+      "must_not_write": [
+        "MetricSnapshot",
+        "PublishedPost"
+      ],
+      "feishu_doc_landing": "create_creation_doc"
+    },
+    "【创作>小红书】": {
+      "agent": "creation_agent",
+      "reads": [
+        "Activity",
+        "SourceAsset",
+        "MaterialDeconstruction",
+        "CreativePattern",
+        "BusinessOpportunity",
+        "CreatorProfile"
+      ],
+      "writes": [
+        "CreationRun",
+        "DecisionTrace",
+        "MaterialUsage"
+      ],
+      "writes_artifacts": [
+        "creation_run_artifacts",
+        "render_artifacts"
+      ],
+      "validator": "xhs_platform_validator",
+      "feishu_doc_landing": "create_creation_doc"
+    },
+    "【创作>抖音】": {
+      "agent": "creation_agent",
+      "reads": [
+        "Activity",
+        "SourceAsset",
+        "MaterialDeconstruction",
+        "CreativePattern",
+        "BusinessOpportunity",
+        "CreatorProfile"
+      ],
+      "writes": [
+        "CreationRun",
+        "DecisionTrace",
+        "MaterialUsage"
+      ],
+      "writes_artifacts": [
+        "creation_run_artifacts",
+        "render_artifacts"
+      ],
+      "validator": "douyin_platform_validator",
+      "feishu_doc_landing": "create_creation_doc"
+    },
+    "【创作咨询】": {
+      "agent": "creation_agent",
+      "reads": [
+        "Activity",
+        "SourceAsset",
+        "BusinessOpportunity",
+        "CreatorProfile"
+      ],
+      "writes": [
+        "CreationRun"
+      ],
+      "writes_artifacts": [
+        "consultation_render_artifacts"
+      ],
+      "must_not_write": [
+        "MaterialUsage",
+        "PublishedPost",
+        "MetricSnapshot"
+      ],
+      "feishu_doc_landing": "FeishuDocxBlockRenderer"
+    },
+    "【素材】": {
+      "agent": "media_growth",
+      "reads": [],
+      "writes": [
+        "SourceAsset"
+      ],
+      "writes_artifacts": [
+        "source_asset_artifacts"
+      ],
+      "must_not_write": [
+        "CreationRun",
+        "MaterialDeconstruction",
+        "CreativePattern(proven_pattern)",
+        "MaterialUsage",
+        "PublishedPost",
+        "MetricSnapshot"
+      ],
+      "feishu_doc_landing": "media_vault/source_assets"
+    }
+  },
+  "idempotency": {
+    "SourceAsset": [
+      "platform+normalized_source_url",
+      "platform+author_id+external_post_id",
+      "content_hash",
+      "title+author_id+publish_time"
+    ],
+    "MaterialDeconstruction": [
+      "asset_id+prompt_bundle_version+model+skill_version+deconstruction_type"
+    ],
+    "CreativePattern": [
+      "pattern_name+applicable_persona+platform+content_type"
+    ],
+    "MaterialUsage": [
+      "creation_run_id+asset_id+deconstruction_id+pattern_id+usage_type"
+    ],
+    "DecisionTrace": [
+      "creation_run_id+candidate_type+candidate_id+rank"
+    ],
+    "MetricSnapshot": [
+      "published_post_id+review_node+metric_key+collected_at"
+    ],
+    "AccountMetricSnapshot": [
+      "creator_profile_id+platform+metric_key+collected_at"
+    ]
+  },
+  "lineage_policy": {
+    "generation_lineage": [
+      "model",
+      "prompt_bundle_version",
+      "skill_version",
+      "agent_run_id",
+      "generated_at",
+      "confidence",
+      "review_status"
+    ],
+    "evidence_lineage": [
+      "source_record_id",
+      "evidence_uri",
+      "evidence_type",
+      "evidence_hash",
+      "source_url",
+      "collected_at",
+      "extraction_version"
+    ],
+    "llm_failure_policy": "If LLM output is missing, invalid, or insufficiently evidenced, writers may only persist pending/manual engineering status and artifact error reports; they must not write semantic business conclusions."
+  },
+  "render_contract": {
+    "render_spec_schema": {
+      "required": [
+        "render_id",
+        "run_id",
+        "template_version",
+        "sections"
+      ],
+      "section_required": [
+        "type",
+        "title",
+        "data_ref"
+      ],
+      "data_ref_scheme": "media://"
+    },
+    "feishu_document_landing": {
+      "policy": "Reuse existing Feishu Docx landing capabilities. Hyperframe render_spec is an input artifact and must not introduce a parallel Markdown-to-Feishu writer.",
+      "creation_execution_doc": {
+        "function": "tools.creation.writer.create_creation_doc",
+        "block_builder": "tools.creation.writer._creation_doc_blocks",
+        "native_table_writer": "tools.creation.writer._append_native_table_chunk"
+      },
+      "task_pool_child_doc": {
+        "class": "openclaw_app.router.creation_feishu_writer.CreationFeishuDocumentWriter",
+        "service_method": "FeishuService.replace_child_entry_under_node_blocks"
+      },
+      "generic_docx_renderer": {
+        "class": "openclaw_app.services.feishu_docx_renderer.FeishuDocxBlockRenderer",
+        "service_method": "FeishuService._content_to_docx_blocks"
+      },
+      "forbidden": [
+        "business routers hand-build Markdown documents for Feishu landing",
+        "Markdown pipe tables as final storyboard tables",
+        "new direct docx append path bypassing FeishuDocxBlockRenderer/create_creation_doc/CreationFeishuDocumentWriter"
+      ]
+    }
+  },
+  "guards": {
+    "visible_json_forbidden": {
+      "forbidden_visible_field_suffixes": [
+        "JSON"
+      ],
+      "allowed_locations": [
+        "media_vault artifact JSON",
+        "guard fixtures",
+        "migration/readback scripts that mark fields retired"
+      ]
+    },
+    "feishu_persistent_path_policy": {
+      "forbidden_persistent_prefixes": [
+        "/home/",
+        "/tmp/",
+        "/home/ubuntu/obsidian-日记/公共开发集/"
+      ],
+      "required_reference_scheme_for_artifacts": "media://"
+    },
+    "owner_leakage": {
+      "SourceAsset": [
+        "报价",
+        "返点",
+        "档期",
+        "Brief收集状态",
+        "发布链接",
+        "复盘状态",
+        "已提醒"
+      ],
+      "CreatorProfile": [
+        "报价",
+        "返点",
+        "保价",
+        "授权",
+        "Brief"
+      ],
+      "PublishedPost": [
+        "爆点拆解",
+        "爆点迁移"
+      ]
+    },
+    "reader_fallback_forbidden": {
+      "forbidden_terms": [
+        "legacy runtime fallback",
+        "compat writer",
+        "read old JSON when new field empty"
+      ]
+    },
+    "platform_validation_required": {
+      "entrypoints": [
+        "【创作】",
+        "【创作>小红书】",
+        "【创作>抖音】"
+      ],
+      "failure_write_policy": "pending/manual only"
+    }
+  }
+}

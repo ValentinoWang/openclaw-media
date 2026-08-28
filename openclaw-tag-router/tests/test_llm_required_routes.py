@@ -121,10 +121,10 @@ class LlmRequiredRoutesTest(unittest.TestCase):
 
         self.assertFalse(result.ok)
         self.assertEqual(result.status, "pending_manual")
-        self.assertIn("错误代码：DAILY_TODO_INTAKE_PENDING_MANUAL", result.reply)
-        self.assertIn("待办未创建、未落盘", result.reply)
+        self.assertIn("待办没有创建", result.reply)
         self.assertIn("LLM分流异常", result.reply)
-        self.assertIn("fetch failed", result.reply)
+        self.assertNotIn("错误代码：", result.reply)
+        self.assertNotIn("fetch failed", result.reply)
         self.assertEqual(result.extra["error_code"], "DAILY_TODO_INTAKE_PENDING_MANUAL")
         self.assertFalse(result.extra["persisted"])
 
@@ -144,10 +144,11 @@ class LlmRequiredRoutesTest(unittest.TestCase):
 
         self.assertFalse(result.ok)
         self.assertEqual(result.status, "pending_manual")
-        self.assertIn("错误代码：DAILY_LLM_MODEL_AT_CAPACITY", result.reply)
+        self.assertIn("待办没有创建", result.reply)
         self.assertIn("原因：模型当前容量已满", result.reply)
-        self.assertIn("详情：Selected model is at capacity", result.reply)
         self.assertIn("建议：请稍后直接重试原消息", result.reply)
+        self.assertNotIn("错误代码：", result.reply)
+        self.assertNotIn("Selected model is at capacity", result.reply)
         self.assertNotIn("缺少/不确定", result.reply)
         self.assertNotIn("DAILY_TODO_INTAKE_PENDING_MANUAL", result.reply)
         self.assertEqual(result.extra["error_code"], "DAILY_LLM_MODEL_AT_CAPACITY")
@@ -169,10 +170,11 @@ class LlmRequiredRoutesTest(unittest.TestCase):
         result = harness.handle_待办(make_message("待办", "整理本周工作计划"))
 
         self.assertEqual(result.extra["error_code"], "DAILY_LLM_MODEL_AT_CAPACITY")
-        self.assertIn("详情：Selected model is at capacity", result.reply)
+        self.assertIn("待办没有创建", result.reply)
         self.assertNotIn("GatewayClientRequestError", result.reply)
         self.assertNotIn("internal transport trace", result.reply)
         self.assertNotIn("DAILY_TODO_INTAKE_PENDING_MANUAL", result.reply)
+        self.assertNotIn("错误代码：", result.reply)
         self.assertEqual(
             result.extra["detail"], "Selected model is at capacity. Retry after 90 seconds."
         )

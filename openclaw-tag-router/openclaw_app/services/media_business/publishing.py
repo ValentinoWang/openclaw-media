@@ -13,10 +13,20 @@ from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
-from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
+from media_vault import MediaVault, MediaVaultError
+
+from .foundation import (
+    MediaBusinessError,
+    TenantContext,
+    body_checksum,
+    public_projection,
+    require_context,
+    validate_body,
+)
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -29,6 +39,7 @@ PACKAGE_STATUSES = {"draft", "checking", "ready", "published"}
 _CURSOR_VERSION = 1
 _CURSOR_SCOPE = "publishing"
 _CURSOR_AAD = b"media-web-b06-publishing-v1"
+_CREATION_PROJECTION_SOURCE = "creation_run_projection.v1"
 
 
 class PublishingError(MediaBusinessError):
@@ -443,6 +454,13 @@ class PublishingService:
         WHERE tenant_id = %s
           AND public_id = %s
     """
+    _CREATION_PACKAGE_QUERY = """
+        SELECT public_id
+        FROM media_product.publishing_packages
+        WHERE tenant_id = %s
+          AND canonical_data->>'public_run_id' = %s
+        LIMIT 1
+    """
 
     def __init__(
         self,
@@ -506,6 +524,178 @@ class PublishingService:
         if not isinstance(value, datetime):
             raise PublishingInternalError("publishing clock returned an invalid value")
         return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+
+    @staticmethod
+    def _creation_text(value: Any, field: str) -> str:
+        if not isinstance(value, str) or not value.strip() or len(value.strip()) > 20_000:
+            raise PublishingUnprocessable(f"creation run {field} is missing or invalid")
+        return value.strip()
+
+    @classmethod
+    def _creation_tags(cls, value: Any) -> list[str]:
+        if not isinstance(value, list) or not value:
+            raise PublishingUnprocessable("creation run publishing_pack.hashtags is missing or invalid")
+        tags = [cls._creation_text(item, "publishing_pack.hashtags") for item in value]
+        if len(tags) != len(set(tags)) or len(tags) > 30:
+            raise PublishingUnprocessable("creation run publishing_pack.hashtags is invalid")
+        return tags
+
+    @classmethod
+    def _creation_projection_input(cls, draft: Mapping[str, Any]) -> tuple[str, str, dict[str, Any]]:
+        report = draft.get("creator_report")
+        if not isinstance(report, Mapping):
+            raise PublishingUnprocessable("creation run creator_report is missing")
+        overview = report.get("overview")
+        if not isinstance(overview, Mapping):
+            raise PublishingUnprocessable("creation run creator_report.overview is missing")
+        pack = report.get("publishing_pack")
+        if not isinstance(pack, Mapping):
+            pack = draft.get("publishing_pack")
+        if not isinstance(pack, Mapping):
+            raise PublishingUnprocessable("creation run publishing_pack is missing")
+        platform = cls._creation_text(overview.get("platform"), "creator_report.overview.platform")
+        title = cls._creation_text(overview.get("recommended_topic"), "creator_report.overview.recommended_topic")
+        fields = {
+            "title": cls._creation_text(pack.get("title_1"), "publishing_pack.title_1"),
+            "alternate_title": cls._creation_text(pack.get("title_2"), "publishing_pack.title_2"),
+            "cover_text": cls._creation_text(pack.get("cover_text"), "publishing_pack.cover_text"),
+            "body": cls._creation_text(pack.get("body_copy"), "publishing_pack.body_copy"),
+            "hashtags": cls._creation_tags(pack.get("hashtags")),
+            "pinned_comment": cls._creation_text(pack.get("pinned_comment"), "publishing_pack.pinned_comment"),
+            "comment_prompt": cls._creation_text(pack.get("comment_prompt"), "publishing_pack.comment_prompt"),
+            "first_hour_action": cls._creation_text(pack.get("first_hour_action"), "publishing_pack.first_hour_action"),
+        }
+        return title, platform, fields
+
+    @staticmethod
+    def _creation_document_body(title: str, platform: str, fields: Mapping[str, Any]) -> dict[str, Any]:
+        body = {
+            "schemaVersion": "media.document.body.v1",
+            "blocks": [
+                {
+                    "id": "creation_publishing_heading",
+                    "type": "heading_1",
+                    "attrs": {},
+                    "content": [{"type": "text", "text": title, "marks": []}],
+                },
+                {
+                    "id": "creation_publishing_platform",
+                    "type": "paragraph",
+                    "attrs": {},
+                    "content": [{"type": "text", "text": f"发布平台：{platform}", "marks": []}],
+                },
+                {
+                    "id": "creation_publishing_first_hour",
+                    "type": "paragraph",
+                    "attrs": {},
+                    "content": [{"type": "text", "text": f"发布后 1 小时动作：{fields['first_hour_action']}", "marks": []}],
+                },
+            ],
+        }
+        return validate_body(body)
+
+    def project_creation_run(
+        self,
+        tenant_id: str,
+        public_run_id: str,
+        *,
+        vault_root: str | Path | None = None,
+    ) -> dict[str, str | bool]:
+        """Project a trusted CreationRun publishing pack into the B06 tables."""
+
+        if not isinstance(tenant_id, str) or not tenant_id.strip():
+            raise PublishingUnprocessable("creation run tenant is invalid")
+        run_id = _request_public_id(public_run_id, "publicRunId")
+        try:
+            draft_path = MediaVault(tenant_id=tenant_id.strip(), root=vault_root).creation_run_dir(run_id) / "draft_output.json"
+            draft = _json_object(json.loads(draft_path.read_text(encoding="utf-8")), "creation run draft")
+        except (OSError, json.JSONDecodeError, MediaVaultError) as exc:
+            raise PublishingUnprocessable("creation run draft is unavailable") from exc
+        title, platform, content_fields = self._creation_projection_input(draft)
+        validation_path = draft_path.with_name("validation_report.json")
+        try:
+            validation = _json_object(json.loads(validation_path.read_text(encoding="utf-8")), "creation run validation")
+        except (OSError, json.JSONDecodeError) as exc:
+            raise PublishingUnprocessable("creation run validation is unavailable") from exc
+        if validation.get("ok") is not True:
+            raise PublishingUnprocessable("creation run validation did not pass")
+        body = self._creation_document_body(title, platform, content_fields)
+        checksum = body_checksum(body)
+        try:
+            with self._connection_factory() as connection:
+                connection.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                    (f"creation-publishing:{tenant_id}:{run_id}",),
+                )
+                existing = _fetchone(connection.execute(self._CREATION_PACKAGE_QUERY, (tenant_id, run_id)))
+                if existing is not None:
+                    package_id = existing.get("public_id") if isinstance(existing, Mapping) else existing[0]
+                    return {
+                        "public_package_id": _public_id(package_id, "existing publishing package id"),
+                        "public_run_id": run_id,
+                        "created": False,
+                    }
+                project_id = _public_id(self._id_factory("project"), "project public id")
+                artifact_id = _public_id(self._id_factory("artifact"), "artifact public id")
+                package_id = _public_id(self._id_factory("package"), "publishing package id")
+                project_data = {"public_run_id": run_id, "platform": platform, "source": _CREATION_PROJECTION_SOURCE}
+                package_data = {
+                    "public_run_id": run_id,
+                    "platform": platform,
+                    "content_fields": content_fields,
+                    "first_hour_action": content_fields["first_hour_action"],
+                    "rule_checks": [{"key": "creation_validation", "status": "pass", "source": "creation_run"}],
+                    "public_artifact_id": artifact_id,
+                    "status": "draft",
+                }
+                connection.execute(
+                    """
+                    INSERT INTO media_product.content_projects
+                        (tenant_id, public_id, title, stage, revision, canonical_data)
+                    VALUES (%s, %s, %s, 'creation_ready', 1, CAST(%s AS jsonb))
+                    """,
+                    (tenant_id, project_id, title, _as_json(project_data)),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO media_product.document_artifacts
+                        (tenant_id, public_id, public_project_id, artifact_kind,
+                         workspace_mode, body_authority, current_revision)
+                    VALUES (%s, %s, %s, 'publishing_package', 'personal_web', 'internal', 1)
+                    """,
+                    (tenant_id, artifact_id, project_id),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO media_product.document_revisions
+                        (tenant_id, public_artifact_id, revision, state, base_revision,
+                         body_checksum, actor_public_id, generation_source)
+                    VALUES (%s, %s, 1, 'ready', NULL, %s, 'system_creation_projection', %s)
+                    """,
+                    (tenant_id, artifact_id, checksum, _CREATION_PROJECTION_SOURCE),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO media_document.revision_bodies
+                        (tenant_id, public_artifact_id, revision, schema_version, body_json, body_checksum)
+                    VALUES (%s, %s, 1, 'media.document.body.v1', CAST(%s AS jsonb), %s)
+                    """,
+                    (tenant_id, artifact_id, _as_json(body), checksum),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO media_product.publishing_packages
+                        (tenant_id, public_id, revision, canonical_data)
+                    VALUES (%s, %s, 1, CAST(%s AS jsonb))
+                    """,
+                    (tenant_id, package_id, _as_json(package_data)),
+                )
+                self._commit(connection)
+                return {"public_package_id": package_id, "public_run_id": run_id, "created": True}
+        except PublishingError:
+            raise
+        except Exception as exc:
+            raise PublishingInternalError("creation publishing projection failed") from exc
 
     def _load_package(self, connection: DatabaseConnection, context: TenantContext, public_id: str) -> _PackageRow:
         row = _fetchone(connection.execute(self._PACKAGE_DETAIL_QUERY, (context.tenant_id, public_id)))

@@ -16,11 +16,17 @@ from .tag_router_common import CONTENT_OS_SCRIPT_GENERATION_MODEL, CONTENT_OS_SC
 
 
 class ContentOSBridgeMixin:
-    def _accept_content_os_mac_result(self, result: dict[str, Any], vault_root: Path | None = None) -> dict[str, str]:
+    def _accept_content_os_mac_result(
+        self,
+        result: dict[str, Any],
+        vault_root: Path | None = None,
+        *,
+        expected_tenant_id: str | None = None,
+    ) -> dict[str, str]:
         """Receive a validated Mac result as evidence without touching project stage."""
 
         vault_root = vault_root or self._content_os_vault_root()
-        accepted = accept_mac_result(vault_root, result)
+        accepted = accept_mac_result(vault_root, result, expected_tenant_id=expected_tenant_id)
         write_project_registry_projection(vault_root)
         sync_project_board = getattr(self, "_sync_content_os_feishu_project_board", None)
         if callable(sync_project_board):
@@ -174,6 +180,7 @@ class ContentOSBridgeMixin:
                 ],
                 allowed_actions=["analyze_project", "match_materials_to_brief", "generate_storyboard_edl", "write_local_assets"],
                 notes=["Mac 只回传证据和本地负责的产物，不能推进项目阶段。"],
+                tenant_id=str((message.metadata or {}).get("tenant_id") or "").strip() or None,
                 now=message.created_at,
             )
 

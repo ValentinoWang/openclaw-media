@@ -10,8 +10,23 @@ from typing import Any, Literal, Mapping, cast, get_args
 
 
 AgentResultFolder = Literal["media", "daily", "social", "knowledge", "public"]
-CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_result_vault_contract.json")
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+REPOSITORY_CONTRACT_PATH = REPOSITORY_ROOT / "docs/ai-harness/agent_result_vault_contract.json"
+LEGACY_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_result_vault_contract.json")
+CONTRACT_PATH_ENV = "OPENCLAW_AGENT_RESULTS_CONTRACT_PATH"
 VALID_FOLDERS = frozenset(get_args(AgentResultFolder))
+
+
+def resolve_agent_results_contract_path() -> Path:
+    override = os.getenv(CONTRACT_PATH_ENV)
+    if override:
+        return Path(override)
+    if REPOSITORY_CONTRACT_PATH.is_file():
+        return REPOSITORY_CONTRACT_PATH
+    return LEGACY_CONTRACT_PATH
+
+
+CONTRACT_PATH = resolve_agent_results_contract_path()
 
 
 @dataclass(frozen=True)

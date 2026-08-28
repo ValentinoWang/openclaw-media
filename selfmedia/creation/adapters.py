@@ -201,6 +201,9 @@ class BusinessAdapter:
         product = get_first_value(row, "product")
         brief_link = get_first_link(row, "brief_link")
         quote_amount = get_first_value(row, "current_quote_amount")
+        lifecycle_status = get_first_value(row, "lifecycle_status") or "quoted"
+        platform = get_first_value(row, "platform")
+        content_type = _business_content_type_requirement(row)
         title_parts = [item for item in (brand, product, business_account_id) if item]
         return CanonicalMediaRecord(
             source_table=self.source_table,
@@ -208,10 +211,10 @@ class BusinessAdapter:
             record_type="商务",
             title=" / ".join(title_parts) or relation_id or record_id,
             content=" / ".join(item for item in (brand, product, f"报价={quote_amount}" if quote_amount else "") if item),
-            status="active",
+            status="active" if lifecycle_status == "quoted" else lifecycle_status,
             relation_id=relation_id,
-            platform="",
-            content_type_requirement=_business_content_type_requirement(row),
+            platform=platform,
+            content_type_requirement=content_type,
             track="",
             topic=" ".join(item for item in (brand, product) if item),
             tags=split_tags(" ".join(item for item in (brand, product, business_account_id) if item)),
@@ -224,10 +227,25 @@ class BusinessAdapter:
                 "business_account_id": business_account_id,
                 "brand": brand,
                 "product": product,
+                "platform": platform,
+                "content_type": content_type,
                 "brief_link": brief_link,
                 "current_quote_amount": quote_amount,
                 "rebate_ratio": get_first_value(row, "rebate_ratio"),
+                "valid_from": get_first_value(row, "valid_from"),
+                "valid_until": get_first_value(row, "valid_until"),
+                "schedule": get_first_value(row, "schedule"),
+                "price_protection_policy": get_first_value(row, "price_protection_policy"),
+                "authorization_scope": get_first_value(row, "authorization_scope"),
+                "authorization_duration": get_first_value(row, "authorization_duration"),
                 "quote_snapshot_uri": get_first_value(row, "quote_snapshot_uri"),
+                "lifecycle_status": lifecycle_status,
+                "linked_run_ids": get_first_value(row, "linked_run_ids"),
+                "delivery_evidence_uri": get_first_value(row, "delivery_evidence_uri"),
+                "delivery_published_url": get_first_link(row, "delivery_published_url"),
+                "delivered_at": get_first_value(row, "delivered_at"),
+                "settlement_evidence_uri": get_first_value(row, "settlement_evidence_uri"),
+                "settled_at": get_first_value(row, "settled_at"),
             },
         )
 

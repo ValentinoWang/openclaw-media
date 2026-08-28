@@ -10,12 +10,12 @@ from urllib.parse import urlparse
 
 from common.social_runtime import feishu_list_records, feishu_plain_text, feishu_tenant_access_token
 from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id
-from media_model.contract import MediaModelContract
+from media_model.contract import MediaModelContract, resolve_creation_run_detail_contract_path
 from media_vault.vault import MediaVault, MediaVaultError
 
 
-ROOT = Path("/home/ubuntu")
-DETAIL_CONTRACT_PATH = ROOT / "docs/ai-harness/media-creation-run-detail-contract.json"
+ROOT = Path(__file__).resolve().parents[2]
+DETAIL_CONTRACT_PATH = resolve_creation_run_detail_contract_path()
 REGISTRY_PATH = ROOT / "openclaw-feishu-reminder/media-bitable-registry.json"
 KNOWN_ARTIFACT_FILES = (
     "request.json",
@@ -225,6 +225,10 @@ class CreationRunDetailBuilder:
         field_map = self.model_contract.field_name_map(entity)
         fields: list[dict[str, Any]] = []
         for canonical_name in human_fields:
+            # Document links grant access to a private workspace and do not belong
+            # in the public-safe run projection, even when a table exposes them.
+            if canonical_name.endswith("_doc_link"):
+                continue
             value = row.get(canonical_name)
             if value in (None, "", []):
                 continue
@@ -499,13 +503,21 @@ class CreationRunDetailExporter:
                 public_kind="run",
             )
             if not raw_run_id:
-                raise CreationRunDetailError("CreationRun detail not found")
+                # A hash-shaped public ID may only resolve through the tenant
+                # ownership registry. A non-public value is checked once as an
+                # opaque run key so an unknown request gets the same not-found
+                # result without probing relation tables.
+                if re.fullmatch(r"run_[a-f0-9]{16}", public_run_id):
+                    raise CreationRunDetailError("CreationRun detail not found")
+                raw_run_id = public_run_id
             run_rows = self._records(
                 run_spec["entity"],
                 run_spec["registry_key"],
                 token=token,
                 filter_formula=self._equals_filter("CreationRun", "run_id", raw_run_id),
             )
+        except CreationRunDetailError:
+            raise
         except Exception as exc:
             raise CreationRunDetailError("CreationRun source unavailable") from exc
         run = next((row for row in run_rows if _text(row.get("run_id")) == raw_run_id), None)

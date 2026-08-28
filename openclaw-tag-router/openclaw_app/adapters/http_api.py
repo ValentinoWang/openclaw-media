@@ -61,6 +61,7 @@ from ..services.resource_access import ResourceAccessService
 from ..services.retail_admin import RetailAdminService
 from ..services.retail_fulfillment import RetailFulfillmentService
 from ..services.upstream_gateway_credentials import UpstreamCredentialError
+from ..router.content_os_project_lifecycle import ContentOSContractError
 from .audit_reason_header import AuditReasonHeaderError, decode_audit_reason_header
 from .media_business_context import (
     AdminAuditInput,
@@ -137,10 +138,15 @@ def _http_product_operations() -> Mapping[str, Mapping[str, Any]]:
 @lru_cache(maxsize=1)
 def _http_frozen_contract() -> Mapping[str, Any]:
     repository_root = Path(__file__).resolve().parents[3]
-    path = _first_contract_path(
-        Path("/home/ubuntu/docs/ai-harness/openclaw-media-product-contract.json"),
-        repository_root / "media-agent-cli/contracts/openclaw-media-product-contract.json",
-    )
+    override = os.getenv("OPENCLAW_MEDIA_FROZEN_CONTRACT")
+    path = _first_contract_path(*(
+        (Path(override),)
+        if override
+        else (
+            repository_root / "docs/ai-harness/openclaw-media-product-contract.json",
+            Path("/home/ubuntu/docs/ai-harness/openclaw-media-product-contract.json"),
+        )
+    ))
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, Mapping):
         raise RuntimeError("frozen media product contract is invalid")
@@ -1288,6 +1294,9 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 return
             if self._dispatch_media_business("POST"):
                 return
+            if path == "/internal/content-os/mac-result":
+                self._handle_content_os_mac_result()
+                return
             resolved = self._resolve_r1_operation("POST")
             if resolved is not None:
                 self._handle_device_job_post(*resolved, payload=self._read_json_body(maximum_bytes=256 * 1024))
@@ -1750,6 +1759,41 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             self._send_api_error(HTTPStatus.UNAUTHORIZED, "invalid_device_credential", "设备凭据无效。")
             return None
         return value.strip()
+
+    def _handle_content_os_mac_result(self) -> None:
+        """Accept a Mac result only when its device credential owns the task tenant."""
+
+        service = self._require_device_job_service()
+        if service is None:
+            return
+        credential = self._device_credential()
+        if credential is None:
+            return
+        payload = self._read_json_body(maximum_bytes=256 * 1024)
+        if payload.get("doc_type") != "mac_result":
+            self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_content_os_result", "Mac 回传格式无效。")
+            return
+        if self.app is None or not hasattr(self.app, "router"):
+            self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "content_os_unavailable", "Content OS 服务暂时不可用。")
+            return
+        receiver = getattr(self.app.router, "_accept_content_os_mac_result", None)
+        if not callable(receiver):
+            self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "content_os_unavailable", "Content OS 服务暂时不可用。")
+            return
+        identity = service.authenticated_credential(credential)
+        try:
+            accepted = receiver(payload, expected_tenant_id=identity["tenant_id"])
+        except ContentOSContractError:
+            self._send_api_error(HTTPStatus.UNPROCESSABLE_ENTITY, "content_os_result_rejected", "Mac 回传与当前任务契约不一致。")
+            return
+        self._send_json(
+            HTTPStatus.OK,
+            {
+                "ok": True,
+                "status": accepted["status"],
+                "task_id": accepted["task_id"],
+            },
+        )
 
     def _r1_pagination(self, *, include_state: bool = False) -> tuple[int, str | None]:
         query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)

@@ -60,6 +60,10 @@ class DeviceJobService:
             raise DeviceJobError("invalid_request", "limit is invalid")
         return self.store.list_devices(tenant)[:limit]
 
+    def authenticated_credential(self, credential: str) -> dict[str, str]:
+        secret = self._text(credential, "device_credential", maximum=256)
+        return self.store.authenticated_credential(secret)
+
     def heartbeat(self, device_id: str, credential: str, *, observed_at: str, client_version: str, capabilities: list[str] | None, idempotency_key: str, expected_revision: int | None = None, api_version: str = SERVER_API_VERSION, reported_catalog_digest: str = catalog_digest()) -> dict[str, Any]:
         device = self._object_id(device_id, "device_id", prefix="dev_")
         secret = self._text(credential, "device_credential", maximum=256)

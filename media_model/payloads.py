@@ -678,6 +678,10 @@ def build_pattern_payload(
             "historical_performance_summary": historical_performance_summary,
         }
     )
+    # Candidate patterns must explicitly show that no evidence has promoted
+    # them.  Empty support lists are meaningful contract values, not blanks.
+    payload["supporting_asset_ids"] = supporting_asset_ids
+    payload["supporting_run_ids"] = supporting_run_ids
     _validate("CreativePattern", payload, contract)
     return payload
 
@@ -890,6 +894,13 @@ def build_business_opportunity_payload(
     authorization_scope: str = "",
     authorization_duration: str = "",
     quote_snapshot_uri: str = "",
+    lifecycle_status: str = "quoted",
+    linked_run_ids: list[str] | None = None,
+    delivery_evidence_uri: str = "",
+    delivery_published_url: str = "",
+    delivered_at: str = "",
+    settlement_evidence_uri: str = "",
+    settled_at: str = "",
     contract: MediaModelContract | None = None,
 ) -> dict[str, Any]:
     payload = _compact_payload(
@@ -899,7 +910,7 @@ def build_business_opportunity_payload(
             "brand": brand,
             "product": product,
             "platform": platform,
-            "content_type": content_type,
+            "content_type": _business_content_type(content_type),
             "brief_link": brief_link,
             "current_quote_amount": current_quote_amount,
             "rebate_ratio": normalize_rebate_ratio(rebate_ratio),
@@ -910,10 +921,40 @@ def build_business_opportunity_payload(
             "authorization_scope": authorization_scope,
             "authorization_duration": authorization_duration,
             "quote_snapshot_uri": quote_snapshot_uri,
+            "lifecycle_status": _business_lifecycle_status(lifecycle_status),
+            "linked_run_ids": _dedupe_nonempty(linked_run_ids or []),
+            "delivery_evidence_uri": delivery_evidence_uri,
+            "delivery_published_url": delivery_published_url,
+            "delivered_at": delivered_at,
+            "settlement_evidence_uri": settlement_evidence_uri,
+            "settled_at": settled_at,
         }
     )
     _validate("BusinessOpportunity", payload, contract)
     return payload
+
+
+def _business_lifecycle_status(value: Any) -> str:
+    status = str(value or "quoted").strip()
+    allowed = {"quoted", "in_creation", "delivered", "settled"}
+    if status not in allowed:
+        raise MediaModelPayloadError(f"unsupported business opportunity lifecycle_status: {status}")
+    return status
+
+
+def _business_content_type(value: Any) -> str:
+    """Map an unconstrained brief to the contract's optional content type."""
+    text = str(value or "").strip()
+    return "" if text in {"不限", "不限制", "全部"} else text
+
+
+def _dedupe_nonempty(values: list[str]) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        clean = str(value or "").strip()
+        if clean and clean not in result:
+            result.append(clean)
+    return result
 
 
 def _validate(entity_name: str, payload: dict[str, Any], contract: MediaModelContract | None) -> None:

@@ -389,6 +389,7 @@ def main() -> int:
         "admin_platform_cookies": AdminPlatformCookiesService(),
         "documents": DocumentsService(account_database.connect),
     }
+    app.router.publishing_service = media_business_services["publishing"]
     tenant_model_gateway.prepare()
     server = make_server(
         args.host,

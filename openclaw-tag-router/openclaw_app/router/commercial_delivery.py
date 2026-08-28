@@ -5,9 +5,10 @@ import json
 import os
 import re
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from .tag_router_common import Message, TaskResult
 from media_vault import require_tenant_id
@@ -161,6 +162,11 @@ class CommercialDeliveryMixin:
                 document_id=document_id,
             )
             record_id = str(record_result.get("record_id") or "")
+            reminder_result = self._commercial_delivery_create_deadline_reminders(
+                message=message,
+                payload=payload,
+                delivery_id=delivery_id,
+            )
             reply = "\n".join(
                 [
                     "已生成商单交付初稿",
@@ -170,6 +176,7 @@ class CommercialDeliveryMixin:
                     "权限：飞书云文档已设置为互联网所有人可编辑",
                     f"脚本类型：{payload.get('script_type')}",
                     f"写入字段：{record_result.get('written_fields')}",
+                    *(f"提醒提示：{item}" for item in reminder_result["warnings"]),
                 ]
             )
             return TaskResult(
@@ -183,6 +190,8 @@ class CommercialDeliveryMixin:
                     "doc": doc_result,
                     "record": record_result,
                     "permission": permission,
+                    "deadline_reminders": reminder_result["created"],
+                    "deadline_reminder_warnings": reminder_result["warnings"],
                     "persisted": True,
                 },
             )
@@ -194,6 +203,77 @@ class CommercialDeliveryMixin:
                 task_id="",
                 extra={"persisted": False, "error": str(exc)},
             )
+
+    def _commercial_delivery_create_deadline_reminders(
+        self,
+        *,
+        message: Message,
+        payload: dict[str, Any],
+        delivery_id: str,
+    ) -> dict[str, list[Any]]:
+        """Create reminders only after the delivery record is durably written."""
+        service = getattr(self, "reminder_service", None)
+        if service is None or not callable(getattr(service, "add", None)):
+            return {"created": [], "warnings": []}
+        work_info = self._commercial_delivery_dict(payload.get("work_info"))
+        title = str(payload.get("document_name_summary") or payload.get("brand") or "商单交付").strip()
+        created: list[dict[str, Any]] = []
+        warnings: list[str] = []
+        for field_name, key, suffix in (
+            ("初稿时间", "draft_due", "draft"),
+            ("发布时间", "publish_time", "publish"),
+        ):
+            raw_due = str(work_info.get(key) or "").strip()
+            due_at = self._commercial_delivery_parse_deadline(raw_due, message.created_at)
+            if due_at is None:
+                warnings.append(f"{field_name}“{raw_due or '未提供'}”无法解析，未建立提醒；请手动【日程】确认。")
+                continue
+            try:
+                reminder = service.add(
+                    kind="待办",
+                    title=f"商单{field_name}：{title}",
+                    text=f"商单交付ID：{delivery_id}\n{field_name}：{raw_due}",
+                    due_at=due_at,
+                    remind_at=due_at - timedelta(minutes=30),
+                    source=message.source,
+                    ref_id=f"{delivery_id}-{suffix}",
+                    local_path="",
+                )
+                created.append(reminder if isinstance(reminder, dict) else {"ref_id": f"{delivery_id}-{suffix}"})
+            except Exception as exc:
+                warnings.append(f"{field_name}提醒未建立：{exc}")
+        return {"created": created, "warnings": warnings}
+
+    def _commercial_delivery_parse_deadline(self, value: str, created_at: datetime) -> datetime | None:
+        text = str(value or "").strip().replace("/", "-")
+        if not text:
+            return None
+        tz = ZoneInfo(self.timezone)
+        iso_match = re.search(r"\d{4}-\d{1,2}-\d{1,2}(?:[T\s]\d{1,2}:\d{2})?", text)
+        if iso_match:
+            try:
+                parsed = datetime.fromisoformat(iso_match.group(0).replace("T", " "))
+                return (parsed.replace(tzinfo=tz) if parsed.tzinfo is None else parsed.astimezone(tz)).replace(second=0, microsecond=0)
+            except ValueError:
+                return None
+        chinese_match = re.search(
+            r"(?:(?P<year>\d{4})年)?(?P<month>\d{1,2})月(?P<day>\d{1,2})日(?:\s*(?P<hour>\d{1,2})(?::(?P<minute>\d{2}))?)?",
+            text,
+        )
+        if not chinese_match:
+            return None
+        try:
+            created = created_at if created_at.tzinfo is not None else created_at.replace(tzinfo=tz)
+            return datetime(
+                int(chinese_match.group("year") or created.astimezone(tz).year),
+                int(chinese_match.group("month")),
+                int(chinese_match.group("day")),
+                int(chinese_match.group("hour") or 9),
+                int(chinese_match.group("minute") or 0),
+                tzinfo=tz,
+            )
+        except ValueError:
+            return None
 
     def _commercial_delivery_generate_payload(self, message: Message) -> dict[str, Any]:
         if not getattr(self, "content_flow_client", None) or not hasattr(self.content_flow_client, "_call_profile_provider_json"):

@@ -13,7 +13,21 @@ from .tag_router_common import *
 from ..services.tenant_execution_context import current_session_tenant_id
 
 
-AGENT_RESULTS_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_result_vault_contract.json")
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+REPOSITORY_AGENT_RESULTS_CONTRACT_PATH = REPOSITORY_ROOT / "docs/ai-harness/agent_result_vault_contract.json"
+LEGACY_AGENT_RESULTS_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_result_vault_contract.json")
+
+
+def _agent_results_contract_path() -> Path:
+    override = os.getenv("OPENCLAW_AGENT_RESULTS_CONTRACT_PATH")
+    if override:
+        return Path(override)
+    if REPOSITORY_AGENT_RESULTS_CONTRACT_PATH.is_file():
+        return REPOSITORY_AGENT_RESULTS_CONTRACT_PATH
+    return LEGACY_AGENT_RESULTS_CONTRACT_PATH
+
+
+AGENT_RESULTS_CONTRACT_PATH = _agent_results_contract_path()
 
 
 def _agent_results_base() -> Path:

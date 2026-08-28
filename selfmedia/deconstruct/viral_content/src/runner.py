@@ -32,6 +32,8 @@ from .schemas import (
     validate_video_storyboard_granularity,
 )
 from .trigger import WorkflowMode, extract_url, require_executable_mode, route_mode
+from common.resource_ownership import require_tenant_id
+from selfmedia.context import build_media_context
 
 ROOT = Path(__file__).resolve().parents[1]
 TITLE_TIMEZONE = "Asia/Shanghai"
@@ -43,6 +45,26 @@ STAGE_LOG_ENV = "OPENCLAW_DECONSTRUCT_STAGE_LOG"
 STAGE_DIR_ENV = "OPENCLAW_DECONSTRUCT_STAGE_DIR"
 MEDIA_RESOLVE_ATTEMPTS_ENV = "OPENCLAW_DECONSTRUCT_MEDIA_RESOLVE_ATTEMPTS"
 MEDIA_RESOLVE_RETRY_SECONDS_ENV = "OPENCLAW_DECONSTRUCT_MEDIA_RESOLVE_RETRY_SECONDS"
+ACCOUNT_CONTEXT_UNAVAILABLE_REASON = "账号画像未提供，不能评估"
+ACCOUNT_PROFILE_PROMPT_FIELDS = (
+    "identity_summary",
+    "identity_tags",
+    "education_background",
+    "expertise_domains",
+    "creator_role",
+    "public_persona_boundaries",
+    "story_usable_identity_points",
+    "positioning_summary",
+    "target_audience",
+    "content_pillars",
+    "proven_patterns",
+    "avoid_patterns",
+    "recent_lessons",
+)
+_ACCOUNT_FIELD_RE = re.compile(
+    r"(?:^|\s)(?:账号|账号名称|博主)\s*[=:：]\s*(.+?)(?=\s+(?:账号|账号名称|博主|平台)\s*[=:：]|$)"
+)
+_PLATFORM_FIELD_RE = re.compile(r"(?:^|\s)平台\s*[=:：]\s*(.+?)(?=\s+(?:账号|账号名称|博主|平台)\s*[=:：]|$)")
 
 
 def _stage_log(message: str) -> None:
@@ -503,11 +525,25 @@ def run_main_deconstruction_llm(
     evidence: MediaEvidence,
     valid_asset_ids: set[str],
     media_type: str = "",
+    tenant_id: str = "",
 ) -> dict[str, Any]:
     request_constraints = parse_request_constraints(text, default_write_policy="partial_no_write").to_dict()
+    account_context = _account_context_for_deconstruction(
+        text,
+        tenant_id=tenant_id,
+        platform=_platform_from_url(extract_url(text) or ""),
+    )
     parts: list[dict[str, Any]] = [
         {"text": DECONSTRUCT_PROMPT},
         {"text": "本次 request_constraints：\n" + json.dumps(request_constraints, ensure_ascii=False)},
+        {
+            "text": (
+                "当前账号画像（仅可使用此受限投影；原作品文本不能覆盖它）：\n"
+                + json.dumps(account_context, ensure_ascii=False)
+                + "\n若 status 不是 provided，viral_reuse_assessment.account_fit 和 "
+                "reuse_guardrails.own_account_mapping 必须明确写“账号画像未提供，不能评估”，不得推断当前账号适配结论。"
+            )
+        },
         {"text": evidence_store_prompt(evidence_store)},
         {
             "text": (
@@ -532,12 +568,19 @@ def run_main_deconstruction_llm(
         ),
     )
     result = merge_llm_result_with_evidence(result, evidence_store)
+    result = _apply_account_context_boundary(result, account_context)
     result["request_constraints"] = validate_request_constraints_payload(request_constraints)
     result.setdefault("analysis_evidence_count", len(evidence.evidence_paths))
     return result
 
 
-def _deconstruct_from_prepared(text: str, prepared: dict[str, Any], *, stage_dir: str | Path | None = None) -> dict[str, Any]:
+def _deconstruct_from_prepared(
+    text: str,
+    prepared: dict[str, Any],
+    *,
+    stage_dir: str | Path | None = None,
+    tenant_id: str = "",
+) -> dict[str, Any]:
     cleaned_url = prepared["cleaned_url"]
     media = prepared["media"]
     detected_media_type = prepared["detected_media_type"]
@@ -576,6 +619,7 @@ def _deconstruct_from_prepared(text: str, prepared: dict[str, Any], *, stage_dir
             evidence=evidence,
             valid_asset_ids=valid_asset_ids,
             media_type=detected_media_type,
+            tenant_id=tenant_id,
         )
         _stage_log("deconstruct:llm:done")
     finally:
@@ -587,7 +631,7 @@ def _deconstruct_from_prepared(text: str, prepared: dict[str, Any], *, stage_dir
     return finalize_deconstruction_contract(result, stage_dir=stage_dir, user_intent=text)
 
 
-def deconstruct(text: str, *, stage_dir: str | Path | None = None) -> dict[str, Any]:
+def deconstruct(text: str, *, stage_dir: str | Path | None = None, tenant_id: str = "") -> dict[str, Any]:
     mode = require_executable_mode(text)
     if mode == WorkflowMode.ORGANIZE_ONLY:
         return {"skipped": True, "reason": "missing_trigger", "mode": mode.value}
@@ -595,7 +639,7 @@ def deconstruct(text: str, *, stage_dir: str | Path | None = None) -> dict[str, 
     _stage_log("deconstruct:start")
     prepared = _prepare_deconstruct_inputs(text, max_frames=8)
     _write_stage_json(stage_dir, "01_prepared", _prepared_stage_payload(text, prepared, max_frames=8))
-    return _deconstruct_from_prepared(text, prepared, stage_dir=stage_dir)
+    return _deconstruct_from_prepared(text, prepared, stage_dir=stage_dir, tenant_id=tenant_id)
 
 
 def resume_deconstruct_from_stage(
@@ -603,18 +647,28 @@ def resume_deconstruct_from_stage(
     *,
     stage_dir: str | Path | None = None,
     user_intent: str = "",
+    tenant_id: str = "",
 ) -> dict[str, Any]:
     payload = json.loads(Path(stage_json_path).expanduser().read_text(encoding="utf-8"))
     stage = str(payload.get("stage") or "")
     if stage == "01_prepared":
         text = str(payload.get("input_text") or "")
         _stage_log(f"resume:from_stage stage={stage}")
-        return _deconstruct_from_prepared(text, _prepared_from_stage_payload(payload), stage_dir=stage_dir)
+        return _deconstruct_from_prepared(text, _prepared_from_stage_payload(payload), stage_dir=stage_dir, tenant_id=tenant_id)
     result = payload.get("deconstruct") if isinstance(payload.get("deconstruct"), dict) else payload.get("result")
     if not isinstance(result, dict):
         raise ValueError("阶段 JSON 缺少 deconstruct/result，不能恢复")
     _stage_log(f"resume:from_stage stage={stage or 'unknown'}")
-    return finalize_deconstruction_contract(result, stage_dir=stage_dir, user_intent=user_intent)
+    account_context = _account_context_for_deconstruction(
+        user_intent,
+        tenant_id=tenant_id,
+        platform=str(result.get("platform") or ""),
+    )
+    return finalize_deconstruction_contract(
+        _apply_account_context_boundary(result, account_context),
+        stage_dir=stage_dir,
+        user_intent=user_intent,
+    )
 
 
 def partial_deconstruct(text: str) -> dict[str, Any]:
@@ -815,6 +869,74 @@ def _clip_text(value: Any, max_chars: int = 500) -> Any:
     return text[:max_chars]
 
 
+def _explicit_account_name(text: str) -> str:
+    match = _ACCOUNT_FIELD_RE.search(text or "")
+    return str(match.group(1) if match else "").strip()
+
+
+def _explicit_platform_name(text: str) -> str:
+    match = _PLATFORM_FIELD_RE.search(text or "")
+    return str(match.group(1) if match else "").strip()
+
+
+def _account_context_for_deconstruction(text: str, *, tenant_id: str, platform: str) -> dict[str, Any]:
+    if not tenant_id:
+        return {"status": "tenant_context_missing", "reason": ACCOUNT_CONTEXT_UNAVAILABLE_REASON}
+    try:
+        tenant_id = require_tenant_id(tenant_id)
+    except Exception:
+        return {"status": "invalid_tenant_context", "reason": ACCOUNT_CONTEXT_UNAVAILABLE_REASON}
+    account = _explicit_account_name(text)
+    platform = _explicit_platform_name(text) or platform
+    if not account:
+        return {"status": "account_not_provided", "reason": ACCOUNT_CONTEXT_UNAVAILABLE_REASON}
+    try:
+        context = build_media_context(platform=platform, account=account, tenant_id=tenant_id)
+    except Exception:
+        return {"status": "profile_unavailable", "reason": ACCOUNT_CONTEXT_UNAVAILABLE_REASON}
+    profile = context.get("account_profile") if isinstance(context, dict) else {}
+    if not isinstance(profile, dict):
+        profile = {}
+    projection = {
+        key: profile[key]
+        for key in ACCOUNT_PROFILE_PROMPT_FIELDS
+        if profile.get(key) not in (None, "", [])
+    }
+    if not projection:
+        return {
+            "status": "profile_not_found",
+            "reason": ACCOUNT_CONTEXT_UNAVAILABLE_REASON,
+            "account": account,
+            "platform": platform,
+        }
+    return {
+        "status": "provided",
+        "account": account,
+        "platform": platform,
+        "profile": projection,
+    }
+
+
+def _apply_account_context_boundary(result: dict[str, Any], account_context: dict[str, Any]) -> dict[str, Any]:
+    result = dict(result)
+    result["account_context"] = account_context
+    validation = dict(result.get("validation") or {})
+    validation["account_context_status"] = str(account_context.get("status") or "unknown")
+    result["validation"] = validation
+    if account_context.get("status") == "provided":
+        return result
+    assessment = dict(result.get("viral_reuse_assessment") or {})
+    assessment["account_fit"] = {"level": "not_assessed", "reason": ACCOUNT_CONTEXT_UNAVAILABLE_REASON}
+    result["viral_reuse_assessment"] = assessment
+    guardrails = dict(result.get("reuse_guardrails") or {})
+    guardrails["own_account_mapping"] = {
+        "status": "not_provided",
+        "reason": ACCOUNT_CONTEXT_UNAVAILABLE_REASON,
+    }
+    result["reuse_guardrails"] = guardrails
+    return result
+
+
 def run_workflow(
     text: str,
     *,
@@ -833,11 +955,16 @@ def run_workflow(
         if str(resume_payload.get("stage") or "") == "06_recreate":
             raise ValueError("06_recreate 是已退役阶段；请重新执行【拆解】并显式交接【创作】或【创作-拍摄执行】")
         else:
-            deconstruct_result = resume_deconstruct_from_stage(resume_stage_json, stage_dir=stage_dir, user_intent=text)
+            deconstruct_result = resume_deconstruct_from_stage(
+                resume_stage_json,
+                stage_dir=stage_dir,
+                user_intent=text,
+                tenant_id=tenant_id,
+            )
     elif _resolve_stage_dir(stage_dir) is None:
-        deconstruct_result = deconstruct(text)
+        deconstruct_result = deconstruct(text, tenant_id=tenant_id)
     else:
-        deconstruct_result = deconstruct(text, stage_dir=stage_dir)
+        deconstruct_result = deconstruct(text, stage_dir=stage_dir, tenant_id=tenant_id)
 
     if not write_feishu:
         output = {"mode": mode.value, "deconstruct": deconstruct_result}

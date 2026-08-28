@@ -13,6 +13,7 @@ from openclaw_app.services.feishu_service import FeishuService
 
 BITABLE_PREFIX = "/bitable" + "/v1/apps/"
 COMMERCIAL_RECORD_WRITE_CALL = "POST " + BITABLE_PREFIX + "appTest/tables/tblTest/records"
+TENANT_ID = "00000000-0000-4000-8000-000000000101"
 
 
 def delivery_payload(*, content_form: str = "图文", script_type: str = "图片脚本") -> dict[str, Any]:
@@ -164,12 +165,23 @@ class FakeOwnerService:
         }
 
 
+class FakeReminderService:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
+
+    def add(self, **kwargs: Any) -> dict[str, Any]:
+        self.calls.append(kwargs)
+        return {"ref_id": kwargs["ref_id"], "due_at": kwargs["due_at"].isoformat()}
+
+
 class CommercialDeliveryHarness(CommercialDeliveryMixin):
     def __init__(self, payload: dict[str, Any], *, fail_permission: bool = False, profile_records: list[dict[str, Any]] | None = None) -> None:
         self.content_flow_client = FakeContentFlowClient(payload)
         self.feishu_service = FakeFeishuService(fail_permission=fail_permission)
         self.tenant_owned_resources = FakeOwnerService()
         self.profile_records = profile_records or []
+        self.reminder_service = FakeReminderService()
+        self.timezone = "Asia/Shanghai"
 
     def _creator_profile_records(self) -> list[dict[str, Any]]:
         return self.profile_records
@@ -215,6 +227,20 @@ class CommercialDeliveryTest(unittest.TestCase):
         self.assertIn("训练日最怕补剂带一堆。", harness.feishu_service.rendered_markdown)
         self.assertNotIn("轻 CTA", harness.feishu_service.rendered_markdown)
         self.assertTrue(any(block.get("_openclaw_kind") == NATIVE_TABLE_KIND for block in harness.feishu_service.blocks))
+        self.assertEqual([item["ref_id"] for item in harness.reminder_service.calls], [f"{result.task_id}-draft", f"{result.task_id}-publish"])
+        self.assertEqual(harness.reminder_service.calls[0]["due_at"].isoformat(), "2026-07-08T18:00:00+08:00")
+
+    def test_unparseable_deadline_keeps_durable_delivery_and_reports_reminder_warning(self) -> None:
+        payload = delivery_payload()
+        payload["work_info"]["draft_due"] = "尽快提交"
+        harness = CommercialDeliveryHarness(payload)
+
+        result = harness.handle_商单交付(self._message("【商单交付】日期无法解析"))
+
+        self.assertTrue(result.ok, result.reply)
+        self.assertTrue(harness.feishu_service.record_written)
+        self.assertIn("初稿时间“尽快提交”无法解析", result.reply)
+        self.assertEqual(len(harness.reminder_service.calls), 1)
 
     def test_missing_persona_uses_creator_profile_context_without_blocking(self) -> None:
         payload = delivery_payload()
@@ -310,7 +336,7 @@ class CommercialDeliveryTest(unittest.TestCase):
         self.assertIn("分镜脚本", result.reply)
         self.assertEqual(harness.feishu_service.record_fields["脚本类型"], "分镜脚本")
         self.assertEqual("media.commercial_delivery", FakeOwnerService.registered_docx["resource_type"])
-        self.assertEqual("101", FakeOwnerService.registered_docx["tenant_id"])
+        self.assertEqual(TENANT_ID, FakeOwnerService.registered_docx["tenant_id"])
         self.assertEqual("anyone_editable", FakeOwnerService.registered_docx["policy"])
 
     def test_pending_payload_does_not_write_doc_or_record(self) -> None:
@@ -342,7 +368,7 @@ class CommercialDeliveryTest(unittest.TestCase):
             source="qq",
             chat_type="private",
             created_at=datetime(2026, 7, 5, 12, 0, 0),
-            metadata={"tenant_id": "101"},
+            metadata={"tenant_id": TENANT_ID},
         )
 
 

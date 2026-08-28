@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from selfmedia.growth import review_public_id
+from media_model.contract import resolve_media_model_contract_path
 
 from ..deletion_discovery import DiscoveryResult
 from ..deletion_plan import DeletionEntity, DeletionPlan
@@ -13,7 +14,6 @@ from .base import DeletionContext, resolve_media_registry_table
 
 
 PUBLIC_REVIEW_ID = re.compile(r"^review_[a-f0-9]{16}$")
-MODEL_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/media-model-v2-contract.json")
 
 
 class ReviewDeletionAdapter:
@@ -153,7 +153,8 @@ class ReviewDeletionAdapter:
         )
         if post_entry["app_token"] != metric_entry["app_token"]:
             raise ValueError("复盘主表与指标表不属于同一 canonical Media OS app")
-        contract = json.loads(MODEL_CONTRACT_PATH.read_text(encoding="utf-8"))
+        contract_path = resolve_media_model_contract_path()
+        contract = json.loads(contract_path.read_text(encoding="utf-8"))
         post_fields = self._field_map(contract, "PublishedPost")
         metric_fields = self._field_map(contract, "MetricSnapshot")
         post_ids = [

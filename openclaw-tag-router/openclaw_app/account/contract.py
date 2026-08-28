@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -8,8 +9,23 @@ from typing import Any
 from .errors import AccountContractError
 
 
-CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/openclaw-account-billing-ssot-contract.json")
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+REPOSITORY_CONTRACT_PATH = REPOSITORY_ROOT / "docs/ai-harness/openclaw-account-billing-ssot-contract.json"
+LEGACY_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/openclaw-account-billing-ssot-contract.json")
+CONTRACT_PATH_ENV = "OPENCLAW_ACCOUNT_CONTRACT_PATH"
 EXPECTED_SCHEMA_VERSION = "openclaw_account_billing_ssot_v1"
+
+
+def resolve_account_contract_path() -> Path:
+    override = os.getenv(CONTRACT_PATH_ENV)
+    if override:
+        return Path(override)
+    if REPOSITORY_CONTRACT_PATH.is_file():
+        return REPOSITORY_CONTRACT_PATH
+    return LEGACY_CONTRACT_PATH
+
+
+CONTRACT_PATH = resolve_account_contract_path()
 
 
 @dataclass(frozen=True)

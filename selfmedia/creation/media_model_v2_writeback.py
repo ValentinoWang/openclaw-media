@@ -9,6 +9,7 @@ from typing import Any
 from common.social_runtime import load_default_env_files
 from integrations.feishu.media_writer import upsert_entity_record
 from media_model.payloads import (
+    build_business_opportunity_payload,
     build_creation_run_payload,
     build_decision_trace_payloads,
     build_material_usage_payloads,
@@ -43,7 +44,7 @@ def write_creation_model_v2(
     platform_fit: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     load_default_env_files()
-    urls = _v2_urls()
+    urls = _v2_urls(require_business_opportunities=bool(selected_businesses))
     run_id = _run_id(creation_record_id)
     vault = MediaVault(tenant_id=tenant_id)
     vault.ensure_manifest()
@@ -129,13 +130,20 @@ def write_creation_model_v2(
         writes.append(_write("DecisionTrace", urls["DecisionTrace"], payload, tenant_id=tenant_id))
     for payload in usage_payloads:
         writes.append(_write("MaterialUsage", urls["MaterialUsage"], payload, tenant_id=tenant_id))
+    business_lifecycle_writes: list[dict[str, Any]] = []
+    for item in selected_businesses:
+        payload = _selected_business_lifecycle_payload(item, run_id=run_id, evidence_uri=evidence_uri)
+        business_lifecycle_writes.append(
+            _write("BusinessOpportunity", urls["BusinessOpportunity"], payload, tenant_id=tenant_id)
+        )
     report = {
         "run_id": run_id,
         "run_artifact_uri": evidence_uri,
         "retrieval_artifact_uri": retrieval_uri,
         "decision_trace_count": len(decision_payloads),
         "material_usage_count": len(usage_payloads),
-        "writes": writes,
+        "business_lifecycle_count": len(business_lifecycle_writes),
+        "writes": [*writes, *business_lifecycle_writes],
     }
     vault.write_json_artifact(
         vault.creation_run_dir(run_id),
@@ -148,17 +156,52 @@ def write_creation_model_v2(
     return report
 
 
-def _v2_urls() -> dict[str, str]:
+def _v2_urls(*, require_business_opportunities: bool = False) -> dict[str, str]:
     mapping = {
         "CreationRun": "MEDIA_OS_CREATION_RUNS_URL",
         "DecisionTrace": "MEDIA_OS_DECISION_TRACE_URL",
         "MaterialUsage": "MEDIA_OS_MATERIAL_USAGE_URL",
     }
+    if require_business_opportunities:
+        mapping["BusinessOpportunity"] = "MEDIA_OS_BUSINESS_OPPORTUNITIES_URL"
     urls = {entity: os.getenv(env_key, "").strip() for entity, env_key in mapping.items()}
     missing = [entity for entity, url in urls.items() if not url]
     if missing:
         raise RuntimeError(f"missing Media Model v2 table URLs for {missing}")
     return urls
+
+
+def _selected_business_lifecycle_payload(item: RankedRecord, *, run_id: str, evidence_uri: str) -> dict[str, Any]:
+    record = item.record
+    details = record.detail_json or {}
+    opportunity_id = _record_id(item)
+    brand = str(details.get("brand") or "").strip()
+    if not opportunity_id or not brand:
+        raise RuntimeError("selected BusinessOpportunity is missing opportunity_id or brand")
+    linked_run_ids = details.get("linked_run_ids")
+    if not isinstance(linked_run_ids, list):
+        linked_run_ids = [linked_run_ids] if linked_run_ids else []
+    return build_business_opportunity_payload(
+        opportunity_id=opportunity_id,
+        brand=brand,
+        business_account_id=str(details.get("business_account_id") or ""),
+        product=str(details.get("product") or ""),
+        platform=str(details.get("platform") or record.platform or ""),
+        content_type=str(details.get("content_type") or record.content_type_requirement or ""),
+        brief_link=str(details.get("brief_link") or record.source_link or ""),
+        current_quote_amount=details.get("current_quote_amount"),
+        rebate_ratio=details.get("rebate_ratio"),
+        valid_from=str(details.get("valid_from") or record.start_time or ""),
+        valid_until=str(details.get("valid_until") or record.end_time or ""),
+        schedule=str(details.get("schedule") or ""),
+        price_protection_policy=str(details.get("price_protection_policy") or ""),
+        authorization_scope=str(details.get("authorization_scope") or ""),
+        authorization_duration=str(details.get("authorization_duration") or ""),
+        quote_snapshot_uri=str(details.get("quote_snapshot_uri") or ""),
+        lifecycle_status="in_creation",
+        linked_run_ids=[*linked_run_ids, run_id],
+        delivery_evidence_uri=evidence_uri,
+    )
 
 
 def _run_id(creation_record_id: str) -> str:
@@ -244,6 +287,7 @@ def _write(
         "CreationRun": "run_id",
         "DecisionTrace": "trace_id",
         "MaterialUsage": "usage_id",
+        "BusinessOpportunity": "opportunity_id",
     }
     key_field = key_fields.get(entity)
     if not key_field:

@@ -338,6 +338,12 @@ class MediaCreationMixin:
         )
         reply = str(parsed.get("reply") or "").strip()
         try:
+            creation_run_id = str(parsed.get("creation_record_id") or "").strip()
+            if creation_run_id:
+                publisher = getattr(self, "publishing_service", None)
+                if publisher is None or not callable(getattr(publisher, "project_creation_run", None)):
+                    raise RuntimeError("publishing projection service is unavailable")
+                parsed["publishing_projection"] = publisher.project_creation_run(tenant_id, creation_run_id)
             content_os_output = self._maybe_write_content_os_creation_output(message, parsed, reply)
             if not content_os_output:
                 content_os_output = self._maybe_create_content_os_project_from_creation(message, parsed, reply)
@@ -346,8 +352,8 @@ class MediaCreationMixin:
         except Exception as exc:
             return TaskResult(
                 ok=False,
-                status="creation_local_persistence_failed",
-                reply=f"【创作】本地 Markdown 落盘失败：{exc}",
+                status="creation_publishing_projection_failed",
+                reply=f"【创作】发布包投影失败：{exc}",
                 task_id=str(parsed.get("creation_record_id") or ""),
                 feishu_doc=str(parsed.get("doc_link") or ""),
                 extra={**parsed, "local_persistence_error": str(exc)},

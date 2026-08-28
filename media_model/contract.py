@@ -1,21 +1,59 @@
 from __future__ import annotations
 
 import json
+import os
 from functools import cached_property
 from pathlib import Path
 from typing import Any
 
 
-DEFAULT_MEDIA_MODEL_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/media-model-v2-contract.json")
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+AI_HARNESS_CONTRACT_DIR = REPOSITORY_ROOT / "docs" / "ai-harness"
+REPOSITORY_MEDIA_MODEL_CONTRACT_PATH = AI_HARNESS_CONTRACT_DIR / "media-model-v2-contract.json"
+REPOSITORY_CREATION_RUN_DETAIL_CONTRACT_PATH = AI_HARNESS_CONTRACT_DIR / "media-creation-run-detail-contract.json"
+LEGACY_MEDIA_MODEL_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/media-model-v2-contract.json")
+LEGACY_CREATION_RUN_DETAIL_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/media-creation-run-detail-contract.json")
+MEDIA_MODEL_CONTRACT_PATH_ENV = "OPENCLAW_MEDIA_MODEL_CONTRACT_PATH"
+CREATION_RUN_DETAIL_CONTRACT_PATH_ENV = "OPENCLAW_MEDIA_CREATION_RUN_DETAIL_CONTRACT_PATH"
+DEFAULT_MEDIA_MODEL_CONTRACT_PATH = REPOSITORY_MEDIA_MODEL_CONTRACT_PATH
 
 
 class MediaModelContractError(RuntimeError):
     pass
 
 
+def _resolve_contract_path(*, environment_key: str, repository_path: Path, legacy_path: Path) -> Path:
+    override = os.getenv(environment_key, "").strip()
+    if override:
+        return Path(override).expanduser()
+    if repository_path.is_file():
+        return repository_path
+    if legacy_path.is_file():
+        return legacy_path
+    return repository_path
+
+
+def resolve_media_model_contract_path() -> Path:
+    """Return the explicit override or the repository-owned Media Model contract."""
+    return _resolve_contract_path(
+        environment_key=MEDIA_MODEL_CONTRACT_PATH_ENV,
+        repository_path=REPOSITORY_MEDIA_MODEL_CONTRACT_PATH,
+        legacy_path=LEGACY_MEDIA_MODEL_CONTRACT_PATH,
+    )
+
+
+def resolve_creation_run_detail_contract_path() -> Path:
+    """Return the explicit override or the repository-owned CreationRun detail contract."""
+    return _resolve_contract_path(
+        environment_key=CREATION_RUN_DETAIL_CONTRACT_PATH_ENV,
+        repository_path=REPOSITORY_CREATION_RUN_DETAIL_CONTRACT_PATH,
+        legacy_path=LEGACY_CREATION_RUN_DETAIL_CONTRACT_PATH,
+    )
+
+
 class MediaModelContract:
-    def __init__(self, path: str | Path = DEFAULT_MEDIA_MODEL_CONTRACT_PATH) -> None:
-        self.path = Path(path)
+    def __init__(self, path: str | Path | None = None) -> None:
+        self.path = Path(path).expanduser() if path is not None else resolve_media_model_contract_path()
 
     @cached_property
     def data(self) -> dict[str, Any]:

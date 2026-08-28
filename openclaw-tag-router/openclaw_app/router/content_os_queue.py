@@ -96,6 +96,13 @@ def _as_revision(value: Any, *, name: str) -> int:
     return parsed
 
 
+def _tenant_id(value: Any, *, name: str = "tenant_id") -> str:
+    tenant_id = str(value or "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,160}", tenant_id):
+        raise ContentOSContractError(f"{name} 格式不正确")
+    return tenant_id
+
+
 def _queue_root(vault_root: Path, directory: Path) -> Path:
     return Path(vault_root) / directory
 
@@ -218,6 +225,7 @@ def create_ready_task(
     expected_outputs: Iterable[str] | None = None,
     allowed_actions: Iterable[str] | None = None,
     notes: Iterable[str] | None = None,
+    tenant_id: str | None = None,
     now: datetime | None = None,
 ) -> ReadyTask:
     """Create one canonical Mac task after its identity is checked against SSOT."""
@@ -254,6 +262,8 @@ def create_ready_task(
         "allowed_actions": [str(item).strip() for item in (allowed_actions or []) if str(item).strip()],
         "notes": [str(item).strip() for item in (notes or []) if str(item).strip()],
     }
+    if tenant_id is not None:
+        payload["tenant_id"] = _tenant_id(tenant_id)
     path = _task_path(vault_root, task_id, task_type)
     _write_yaml(path, payload)
     return _to_ready_task(path, payload)
@@ -268,6 +278,7 @@ def enqueue_confirmed_change(
     expected_outputs: Iterable[str] | None = None,
     allowed_actions: Iterable[str] | None = None,
     notes: Iterable[str] | None = None,
+    tenant_id: str | None = None,
     now: datetime | None = None,
 ) -> ReadyTask:
     """Start the next revision and queue work only for a human-confirmed change."""
@@ -306,6 +317,7 @@ def enqueue_confirmed_change(
             expected_outputs=expected_outputs,
             allowed_actions=allowed_actions,
             notes=notes,
+            tenant_id=tenant_id,
             now=now,
         )
     except Exception as exc:
@@ -317,7 +329,12 @@ def enqueue_confirmed_change(
     return task
 
 
-def validate_mac_result(vault_root: Path, result: dict[str, Any]) -> ReadyTask:
+def validate_mac_result(
+    vault_root: Path,
+    result: dict[str, Any],
+    *,
+    expected_tenant_id: str | None = None,
+) -> ReadyTask:
     """Verify a Mac result identity without writing project state or registry."""
 
     if not isinstance(result, dict):
@@ -329,6 +346,16 @@ def validate_mac_result(vault_root: Path, result: dict[str, Any]) -> ReadyTask:
     if "proposed_next_status" in result or "project_status" in result:
         raise ContentOSContractError("Mac result 不得提出或写入项目阶段")
     task = load_ready_task(vault_root, str(result.get("task_id") or ""))
+    task_tenant_id = task.payload.get("tenant_id")
+    if expected_tenant_id is not None:
+        authenticated_tenant_id = _tenant_id(expected_tenant_id, name="authenticated tenant_id")
+        if _tenant_id(task_tenant_id, name="task tenant_id") != authenticated_tenant_id:
+            raise ContentOSContractError("Mac 任务不属于当前设备租户；结果已拒绝")
+        if _tenant_id(result.get("tenant_id"), name="result tenant_id") != authenticated_tenant_id:
+            raise ContentOSContractError("Mac result 的 tenant_id 与当前设备租户不一致；结果已拒绝")
+    elif task_tenant_id is not None:
+        if _tenant_id(result.get("tenant_id"), name="result tenant_id") != _tenant_id(task_tenant_id, name="task tenant_id"):
+            raise ContentOSContractError("Mac result 的 tenant_id 与任务不一致；结果已拒绝")
     for field, expected in (
         ("task_type", task.task_type),
         ("project_id", task.project_id),
@@ -348,10 +375,16 @@ def validate_mac_result(vault_root: Path, result: dict[str, Any]) -> ReadyTask:
     return task
 
 
-def accept_mac_result(vault_root: Path, result: dict[str, Any], *, now: datetime | None = None) -> AcceptedMacResult:
+def accept_mac_result(
+    vault_root: Path,
+    result: dict[str, Any],
+    *,
+    expected_tenant_id: str | None = None,
+    now: datetime | None = None,
+) -> AcceptedMacResult:
     """Store validated Mac evidence and close its task without altering project stage."""
 
-    task = validate_mac_result(vault_root, result)
+    task = validate_mac_result(vault_root, result, expected_tenant_id=expected_tenant_id)
     result_root = _queue_root(vault_root, RESULT_DIRECTORY)
     done_root = _queue_root(vault_root, DONE_DIRECTORY)
     result_path = result_root / f"result_{task.task_id.removeprefix('task_')}_{task.task_type}.yaml"

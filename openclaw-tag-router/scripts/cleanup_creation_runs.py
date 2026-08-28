@@ -28,7 +28,21 @@ from openclaw_app.services.tenant_owned_resources import TenantOwnedResourceServ
 
 
 DEFAULT_MEDIA_ENV_PATH = Path("/home/ubuntu/openclaw-agents/media/.env.local")
-AGENT_RESULTS_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_result_vault_contract.json")
+REPOSITORY_ROOT = PLUGIN_ROOT.parent
+REPOSITORY_AGENT_RESULTS_CONTRACT_PATH = REPOSITORY_ROOT / "docs/ai-harness/agent_result_vault_contract.json"
+LEGACY_AGENT_RESULTS_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_result_vault_contract.json")
+
+
+def agent_results_contract_path() -> Path:
+    override = os.getenv("OPENCLAW_AGENT_RESULTS_CONTRACT_PATH")
+    if override:
+        return Path(override)
+    if REPOSITORY_AGENT_RESULTS_CONTRACT_PATH.is_file():
+        return REPOSITORY_AGENT_RESULTS_CONTRACT_PATH
+    return LEGACY_AGENT_RESULTS_CONTRACT_PATH
+
+
+AGENT_RESULTS_CONTRACT_PATH = agent_results_contract_path()
 
 
 def agent_results_base() -> Path:

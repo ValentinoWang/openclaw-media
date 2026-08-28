@@ -11,11 +11,14 @@ import tempfile
 import threading
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID
 
 from openclaw_app.adapters.http_api import AuthConfig, make_server
+from openclaw_app.router.content_os_bridge import ContentOSBridgeMixin
+from openclaw_app.router.content_os_queue import create_ready_task
 from openclaw_app.services.device_job_service import DeviceJobError, DeviceJobService
 from openclaw_app.services.device_job_store import DeviceJobStore
 from openclaw_app.services.media_device_job_contract import (
@@ -55,6 +58,14 @@ class MutableClock:
 
     def advance(self, seconds: float) -> None:
         self.value += seconds
+
+
+class ContentOSMacResultRouter(ContentOSBridgeMixin):
+    def __init__(self, vault_root: Path) -> None:
+        self.vault_root = vault_root
+
+    def _content_os_vault_root(self) -> Path:
+        return self.vault_root
 
 
 class DeviceJobR1Test(unittest.TestCase):
@@ -533,6 +544,89 @@ print(json.dumps({'devices': service.list_devices(sys.argv[2]), 'job': service.g
 
     def test_mutating_service_does_not_accept_body_tenant_parameter(self) -> None:
         self.assertNotIn("body_tenant_id", inspect.signature(self.service.create_job).parameters)
+
+    def test_internal_content_os_mac_result_requires_device_tenant_and_contract(self) -> None:
+        vault_temporary = tempfile.TemporaryDirectory()
+        server = None
+        thread = None
+        try:
+            vault_root = Path(vault_temporary.name)
+            project_id = "20260710_http_result"
+            project_dir = vault_root / "08_内容项目" / project_id
+            project_dir.mkdir(parents=True)
+            (project_dir / "00_项目总览.md").write_text(
+                "---\n"
+                "spec_version: content_os_v0.2\n"
+                "doc_type: project_overview\n"
+                f"project_id: {project_id}\n"
+                "idea_id: idea_20260710_http_result\n"
+                "status: captured\n"
+                "project_revision: 1\n"
+                "editor_backend: handoff_pack\n"
+                "---\n\n# HTTP 回传测试\n",
+                encoding="utf-8",
+            )
+            task = create_ready_task(
+                vault_root,
+                project_id,
+                task_type="local_material_match",
+                project_revision=1,
+                change_request_id=None,
+                editor_backend="handoff_pack",
+                human_confirmed_impact=False,
+                tenant_id=TENANT_A,
+                now=datetime(2026, 8, 28, tzinfo=timezone.utc),
+            )
+            _device, credential = self.pair(TENANT_A, heartbeat=False)
+            app = SimpleNamespace(router=ContentOSMacResultRouter(vault_root))
+            server = make_server("127.0.0.1", 0, app, device_job_service=self.service)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+
+            def request(payload: dict[str, object], credential_value: str | None = None) -> tuple[int, dict[str, object]]:
+                connection = http.client.HTTPConnection(*server.server_address, timeout=3)
+                encoded = json.dumps(payload).encode("utf-8")
+                headers = {"Content-Type": "application/json"}
+                if credential_value is not None:
+                    headers["Authorization"] = f"Bearer {credential_value}"
+                connection.request("POST", "/internal/content-os/mac-result", body=encoded, headers=headers)
+                response = connection.getresponse()
+                body = json.loads(response.read() or b"{}")
+                connection.close()
+                return response.status, body
+
+            result = {
+                "spec_version": "content_os_v0.2",
+                "doc_type": "mac_result",
+                "task_id": task.task_id,
+                "task_type": task.task_type,
+                "completed_by": "mac_openclaw",
+                "status": "done",
+                "project_id": task.project_id,
+                "project_revision": task.project_revision,
+                "change_request_id": task.change_request_id,
+                "editor_backend": task.editor_backend,
+                "tenant_id": TENANT_A,
+            }
+            status, unauthenticated = request(result)
+            self.assertEqual(status, 401, unauthenticated)
+            status, invalid_type = request({**result, "doc_type": "mac_task"}, credential)
+            self.assertEqual(status, 400, invalid_type)
+            status, invalid_credential = request(result, "not-a-device-credential")
+            self.assertEqual(status, 401, invalid_credential)
+            status, wrong_tenant = request({**result, "tenant_id": TENANT_B}, credential)
+            self.assertEqual(status, 422, wrong_tenant)
+            status, accepted = request(result, credential)
+            self.assertEqual(status, 200, accepted)
+            self.assertEqual(accepted, {"ok": True, "status": "content_os_mac_result_accepted", "task_id": task.task_id})
+            self.assertNotIn("result_path", accepted)
+        finally:
+            if server is not None:
+                server.shutdown()
+                server.server_close()
+            if thread is not None:
+                thread.join(timeout=3)
+            vault_temporary.cleanup()
 
 
 if __name__ == "__main__":

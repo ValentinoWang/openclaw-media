@@ -8,7 +8,7 @@ import os
 import re
 import sys
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -31,8 +31,9 @@ from common.social_runtime import (
     load_default_env_files,
 )
 from selfmedia.context import record_review_memory
+from selfmedia.context.media_context import build_media_context_for_request, merge_conversation_context
 from integrations.feishu.media_writer import upsert_entity_record
-from media_model.payloads import build_metric_snapshot_payload
+from media_model.payloads import build_business_opportunity_payload, build_metric_snapshot_payload
 from media_vault.vault import MediaVault, make_timestamp_id
 
 
@@ -44,6 +45,13 @@ REQUEST_KEYS = (
 )
 KEY_VALUE_RE = re.compile(rf"(?P<key>{REQUEST_KEYS})\s*[=:：]\s*(?P<value>.*?)(?=\s+(?:{REQUEST_KEYS})\s*[=:：]|$)")
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".heic"}
+CREATION_PLAN_FIELDS = (
+    "title",
+    "hook_3s",
+    "validation_targets",
+    "review_plan",
+    "publishing_pack",
+)
 
 DEFAULT_GUIDE_URL = "https://tcnwueberajc.feishu.cn/wiki/UyFJwM6SEipIXokm5RFcz0XsnXg"
 DEFAULT_TABLE_URL = os.getenv(
@@ -147,12 +155,21 @@ def handle_data_review_command(
         }
 
     guide_text = read_feishu_document_text(guide_url or DEFAULT_GUIDE_URL)
+    creation_plan = resolve_creation_plan_for_review(tenant_id, request)
+    resolved_creation_record_id = str(creation_plan.get("creation_record_id") or "").strip()
+    if resolved_creation_record_id and resolved_creation_record_id != request.creation_record_id:
+        request = replace(request, creation_record_id=resolved_creation_record_id)
+    review_context = merge_conversation_context(
+        build_media_context_for_request(request, tenant_id=tenant_id),
+        conversation_context,
+    )
     analysis = analyze_data_screenshots(
         request=request,
         screenshots=attachments,
         reviewed_at=reviewed_at,
         guide_text=guide_text,
-        conversation_context=conversation_context or {},
+        conversation_context=review_context,
+        creation_plan=creation_plan,
     )
     normalized = normalize_analysis(analysis, request)
 
@@ -187,7 +204,7 @@ def handle_data_review_command(
             screenshots=attachments,
             reviewed_at=reviewed_at,
             doc_link=doc_link,
-            source_record_id="",
+            source_record_id=str(creation_plan.get("creation_record_id") or ""),
         )
         record_id = str(media_model_v2_result.get("post_id") or "")
 
@@ -198,6 +215,7 @@ def handle_data_review_command(
         "request": request.to_dict(),
         "screenshots": attachments,
         "analysis": normalized,
+        "creation_plan": creation_plan,
         "doc_link": doc_link,
         "record_id": record_id,
         "memory": memory_result,
@@ -268,6 +286,145 @@ def _existing_images(paths: list[str]) -> list[str]:
     return result
 
 
+def load_creation_plan(tenant_id: str, creation_record_id: str) -> dict[str, Any]:
+    """Load the small, review-relevant projection of a prior CreationRun.
+
+    A review must remain usable when the user does not supply an ID or the
+    referenced run was pruned, so a missing artifact is explicit context rather
+    than a hard failure. Only the fields needed for outcome comparison reach the
+    review model.
+    """
+    run_id = str(creation_record_id or "").strip()
+    if not run_id:
+        return {"status": "not_requested", "creation_record_id": ""}
+    vault = MediaVault(tenant_id=tenant_id)
+    path = vault.creation_run_dir(run_id) / "draft_output.json"
+    if not path.is_file():
+        return {
+            "status": "not_found",
+            "creation_record_id": run_id,
+            "reason": "creation_run_artifact_not_found",
+        }
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {
+            "status": "unreadable",
+            "creation_record_id": run_id,
+            "reason": "creation_run_artifact_unreadable",
+        }
+    if not isinstance(payload, dict):
+        return {
+            "status": "unreadable",
+            "creation_record_id": run_id,
+            "reason": "creation_run_artifact_invalid",
+        }
+    report = payload.get("creator_report") if isinstance(payload.get("creator_report"), dict) else {}
+    overview = report.get("overview") if isinstance(report.get("overview"), dict) else {}
+    publishing_pack = payload.get("publishing_pack")
+    if not isinstance(publishing_pack, dict):
+        publishing_pack = report.get("publishing_pack") if isinstance(report.get("publishing_pack"), dict) else {}
+    plan = {
+        "title": payload.get("title") or overview.get("recommended_topic") or "",
+        "hook_3s": payload.get("hook_3s") or "",
+        "validation_targets": payload.get("validation_targets") or {},
+        "review_plan": payload.get("review_plan") or [],
+        "publishing_pack": {
+            key: publishing_pack.get(key)
+            for key in ("title_1", "title_2", "cover_text", "pinned_comment", "comment_prompt", "first_hour_action")
+            if publishing_pack.get(key) not in (None, "", [])
+        },
+    }
+    return {
+        "status": "loaded",
+        "creation_record_id": run_id,
+        "plan": {key: plan[key] for key in CREATION_PLAN_FIELDS},
+    }
+
+
+def resolve_creation_plan_for_review(tenant_id: str, request: DataReviewRequest) -> dict[str, Any]:
+    """Resolve a review's CreationRun without crossing tenant boundaries.
+
+    An explicit run ID is authoritative. Without one, only an exact published
+    URL or exact title-plus-account match can be selected automatically. A
+    review with multiple plausible plans stays unlinked until the creator picks
+    a run instead of silently attributing evidence to the wrong work.
+    """
+    if request.creation_record_id:
+        return load_creation_plan(tenant_id, request.creation_record_id)
+    candidates = _matching_creation_run_ids(tenant_id, request)
+    if len(candidates) == 1:
+        plan = load_creation_plan(tenant_id, candidates[0])
+        if plan.get("status") == "loaded":
+            plan["matched_by"] = "publish_url_or_title_account"
+        return plan
+    if len(candidates) > 1:
+        return {
+            "status": "ambiguous",
+            "creation_record_id": "",
+            "candidate_creation_record_ids": candidates[:8],
+            "reason": "multiple_creation_runs_match_review",
+        }
+    return {"status": "not_requested", "creation_record_id": ""}
+
+
+def _matching_creation_run_ids(tenant_id: str, request: DataReviewRequest) -> list[str]:
+    vault = MediaVault(tenant_id=tenant_id)
+    runs_root = vault.root / "creation_runs"
+    if not runs_root.is_dir():
+        return []
+    request_url = _canonical_public_url(request.publish_url)
+    request_title = _match_text(request.title or request.topic)
+    request_account = _match_text(request.account)
+    matches: list[str] = []
+    for run_dir in sorted(runs_root.iterdir(), reverse=True):
+        if not run_dir.is_dir():
+            continue
+        run_id = run_dir.name
+        draft_path = run_dir / "draft_output.json"
+        request_path = run_dir / "request.json"
+        try:
+            draft = json.loads(draft_path.read_text(encoding="utf-8")) if draft_path.is_file() else {}
+            saved_request = json.loads(request_path.read_text(encoding="utf-8")) if request_path.is_file() else {}
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(draft, dict) or not isinstance(saved_request, dict):
+            continue
+        saved_request = saved_request.get("request") if isinstance(saved_request.get("request"), dict) else saved_request
+        saved_urls = {
+            _canonical_public_url(value)
+            for value in (
+                draft.get("publish_url"),
+                draft.get("published_url"),
+                saved_request.get("publish_url"),
+                saved_request.get("published_url"),
+            )
+            if _canonical_public_url(value)
+        }
+        if request_url and request_url in saved_urls:
+            matches.append(run_id)
+            continue
+        saved_title = _match_text(draft.get("title") or saved_request.get("title") or saved_request.get("topic"))
+        saved_account = _match_text(saved_request.get("account"))
+        if request_title and request_account and saved_title == request_title and saved_account == request_account:
+            matches.append(run_id)
+    return matches
+
+
+def _canonical_public_url(value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    parsed = urlparse(text)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return ""
+    return f"{parsed.scheme.lower()}://{parsed.netloc.lower()}{parsed.path.rstrip('/')}"
+
+
+def _match_text(value: Any) -> str:
+    return re.sub(r"\s+", "", str(value or "").strip()).casefold()
+
+
 def analyze_data_screenshots(
     *,
     request: DataReviewRequest,
@@ -275,6 +432,7 @@ def analyze_data_screenshots(
     reviewed_at: str,
     guide_text: str,
     conversation_context: dict[str, Any],
+    creation_plan: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     prompt = (
         "你是 Media bot 的自媒体作品数据复盘分析器。只输出合法 JSON object，不要 Markdown，不要解释。\n"
@@ -293,7 +451,8 @@ def analyze_data_screenshots(
         "11. key_insights 写 3-6 条数据洞察；next_actions 写可执行动作，不要泛泛建议。\n"
         "12. problems、content_guidance、publishing_guidance、next_actions、data_quality_notes 尽量输出对象数组，不要把多个维度挤进一条字符串。\n"
         "13. 不要为了填表重复输出同一批指标；原始可见数据放 metrics，作品形式专项指标放 format_specific_metrics，曲线只放 trend_curves，后续由脚本合并成表格字段。\n"
-        "14. 输出字段固定为：platform, account, media_format, media_format_evidence, format_specific_metrics, track, title, publish_time, data_window, metrics, atomic_facts, priority_metrics, trend_curves, metric_interpretation, conclusion, performance_level, key_insights, problems, content_guidance, publishing_guidance, next_actions, data_quality_notes。\n"
+        "14. 当创作计划状态为 loaded 时，必须输出 plan_comparison 对象数组，逐条对照标题、前三秒钩子、验证指标、复盘计划和发布动作。每项包含 plan_item、status（已兑现/未兑现/证据不足）、evidence、next_step；没有计划时 plan_comparison 必须为空数组，且不得编造归因。\n"
+        "15. 输出字段固定为：platform, account, media_format, media_format_evidence, format_specific_metrics, track, title, publish_time, data_window, metrics, atomic_facts, priority_metrics, trend_curves, metric_interpretation, conclusion, performance_level, key_insights, problems, content_guidance, publishing_guidance, next_actions, data_quality_notes, plan_comparison。\n"
     )
     user_payload = {
         "reviewed_at": reviewed_at,
@@ -301,6 +460,7 @@ def analyze_data_screenshots(
         "guide_or_template_from_feishu": guide_text[:20000],
         "recent_conversation_context": conversation_context.get("prompt", ""),
         "screenshot_count": len(screenshots),
+        "creation_plan": creation_plan or {"status": "not_requested", "creation_record_id": ""},
     }
     parts: list[dict[str, Any]] = [
         {"text": prompt + "\n\n输入上下文：" + json.dumps(user_payload, ensure_ascii=False)},
@@ -309,10 +469,14 @@ def analyze_data_screenshots(
         parts.append({"text": f"数据截图 {index}：{path}。请先 OCR 可见字段，再做复盘判断。"})
         parts.append(_image_part(path))
     config = load_llm_config()
-    return generate_validated_review_json(parts, config)
+    return generate_validated_review_json(
+        parts,
+        config,
+        creation_plan_loaded=bool((creation_plan or {}).get("status") == "loaded"),
+    )
 
 
-def validate_data_review_analysis(payload: dict[str, Any]) -> dict[str, Any]:
+def validate_data_review_analysis(payload: dict[str, Any], context: dict[str, Any] | None = None) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("数据复盘模型输出必须是 JSON object")
     analysis = dict(payload)
@@ -344,6 +508,20 @@ def validate_data_review_analysis(payload: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("数据复盘必须输出 content_guidance 内容指导")
     if not analysis["publishing_guidance"]:
         raise ValueError("数据复盘必须输出 publishing_guidance 发布建议")
+    analysis["plan_comparison"] = normalize_structured_list(analysis.get("plan_comparison"))
+    if (context or {}).get("creation_plan_loaded"):
+        if not analysis["plan_comparison"]:
+            raise ValueError("已加载创作计划时必须输出 plan_comparison")
+        allowed_statuses = {"已兑现", "未兑现", "证据不足"}
+        for item in analysis["plan_comparison"]:
+            if not str(item.get("plan_item") or "").strip():
+                raise ValueError("plan_comparison 每项必须包含 plan_item")
+            if str(item.get("status") or "").strip() not in allowed_statuses:
+                raise ValueError("plan_comparison.status 必须为已兑现/未兑现/证据不足")
+            if not str(item.get("evidence") or "").strip():
+                raise ValueError("plan_comparison 每项必须包含 evidence")
+            if not str(item.get("next_step") or "").strip():
+                raise ValueError("plan_comparison 每项必须包含 next_step")
     return analysis
 
 
@@ -352,7 +530,7 @@ DATA_REVIEW_VALIDATION_CONTRACT = register_llm_validation_contract(
         contract_id="selfmedia.review.data_review.v1",
         profile="bounded_open",
         evidence_fields=("atomic_facts", "media_format_evidence"),
-        validator=lambda payload, _context: validate_data_review_analysis(payload),
+        validator=lambda payload, context: validate_data_review_analysis(payload, dict(context)),
     )
 )
 
@@ -836,7 +1014,7 @@ def write_data_review_model_v2(
     review_artifact_uri = review_artifacts["metrics"]["uri"]
     post_payload = {
         "post_id": post_id,
-        "creation_run_id": request.creation_record_id,
+        "creation_run_id": source_record_id or request.creation_record_id,
         "platform": analysis.get("platform") or request.platform or "unknown",
         "published_url": request.publish_url,
         "review_node": review_node,
@@ -863,13 +1041,153 @@ def write_data_review_model_v2(
                 session_tenant_id=tenant_id,
             )
         )
+    business_delivery_writes = _write_selected_business_deliveries(
+        tenant_id=tenant_id,
+        creation_run_id=source_record_id or request.creation_record_id,
+        review_artifact_uri=review_artifact_uri,
+        published_url=request.publish_url,
+        delivered_at=reviewed_at,
+    )
     return {
         "post_id": post_id,
         "review_artifact_uri": review_artifact_uri,
         "post_review_record_id": post_write.get("record_id", ""),
         "metric_snapshot_count": len(metric_writes),
         "metric_snapshot_record_ids": [item.get("record_id", "") for item in metric_writes],
+        "business_delivery_count": len(business_delivery_writes),
+        "business_delivery_record_ids": [item.get("record_id", "") for item in business_delivery_writes],
     }
+
+
+def _write_selected_business_deliveries(
+    *,
+    tenant_id: str,
+    creation_run_id: str,
+    review_artifact_uri: str,
+    published_url: str,
+    delivered_at: str,
+) -> list[dict[str, Any]]:
+    """Advance only the business candidates explicitly selected by this run."""
+    run_id = str(creation_run_id or "").strip()
+    if not run_id:
+        return []
+    candidates = _selected_business_candidates(tenant_id, run_id)
+    if not candidates:
+        return []
+    table_url = os.getenv("MEDIA_OS_BUSINESS_OPPORTUNITIES_URL", "").strip()
+    if not table_url:
+        raise RuntimeError("missing MEDIA_OS_BUSINESS_OPPORTUNITIES_URL for selected business delivery writeback")
+    writes: list[dict[str, Any]] = []
+    for record in candidates:
+        payload = _business_delivery_payload(
+            record,
+            run_id=run_id,
+            review_artifact_uri=review_artifact_uri,
+            published_url=published_url,
+            delivered_at=delivered_at,
+        )
+        writes.append(
+            upsert_entity_record(
+                "BusinessOpportunity",
+                table_url,
+                payload,
+                key_field="opportunity_id",
+                session_tenant_id=tenant_id,
+            )
+        )
+    return writes
+
+
+def _selected_business_candidates(tenant_id: str, run_id: str) -> list[dict[str, Any]]:
+    vault = MediaVault(tenant_id=tenant_id)
+    run_dir = vault.creation_run_dir(run_id)
+    traces = _read_json_object(run_dir / "decision_trace.json", default=[])
+    candidates = _read_json_object(run_dir / "retrieval_candidates.json", default={})
+    if not isinstance(traces, list) or not isinstance(candidates, dict):
+        return []
+    selected_ids = {
+        str(item.get("candidate_id") or "").strip()
+        for item in traces
+        if isinstance(item, dict) and item.get("candidate_type") == "business" and item.get("selected") is True
+    }
+    if not selected_ids:
+        return []
+    selected: list[dict[str, Any]] = []
+    for item in candidates.get("businesses") or []:
+        if not isinstance(item, dict):
+            continue
+        record = item.get("record")
+        if not isinstance(record, dict):
+            continue
+        candidate_id = _business_candidate_id(record)
+        if candidate_id in selected_ids:
+            selected.append(record)
+    missing = selected_ids - {_business_candidate_id(record) for record in selected}
+    if missing:
+        raise RuntimeError(f"selected business decision has no matching retrieval candidate: {sorted(missing)}")
+    return selected
+
+
+def _read_json_object(path: Path, *, default: Any) -> Any:
+    if not path.is_file():
+        return default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"cannot read CreationRun artifact: {path}") from exc
+
+
+def _business_candidate_id(record: dict[str, Any]) -> str:
+    return str(
+        record.get("relation_id")
+        or record.get("source_record_id")
+        or record.get("source_link")
+        or record.get("title")
+        or ""
+    ).strip()
+
+
+def _business_delivery_payload(
+    record: dict[str, Any],
+    *,
+    run_id: str,
+    review_artifact_uri: str,
+    published_url: str,
+    delivered_at: str,
+) -> dict[str, Any]:
+    details = record.get("detail_json") if isinstance(record.get("detail_json"), dict) else {}
+    opportunity_id = _business_candidate_id(record)
+    brand = str(details.get("brand") or "").strip()
+    if not opportunity_id or not brand:
+        raise RuntimeError("selected BusinessOpportunity is missing opportunity_id or brand")
+    linked_run_ids = details.get("linked_run_ids")
+    if not isinstance(linked_run_ids, list):
+        linked_run_ids = [linked_run_ids] if linked_run_ids else []
+    return build_business_opportunity_payload(
+        opportunity_id=opportunity_id,
+        brand=brand,
+        business_account_id=str(details.get("business_account_id") or ""),
+        product=str(details.get("product") or ""),
+        platform=str(details.get("platform") or record.get("platform") or ""),
+        content_type=str(details.get("content_type") or record.get("content_type_requirement") or ""),
+        brief_link=str(details.get("brief_link") or record.get("source_link") or ""),
+        current_quote_amount=details.get("current_quote_amount"),
+        rebate_ratio=details.get("rebate_ratio"),
+        valid_from=str(details.get("valid_from") or record.get("start_time") or ""),
+        valid_until=str(details.get("valid_until") or record.get("end_time") or ""),
+        schedule=str(details.get("schedule") or ""),
+        price_protection_policy=str(details.get("price_protection_policy") or ""),
+        authorization_scope=str(details.get("authorization_scope") or ""),
+        authorization_duration=str(details.get("authorization_duration") or ""),
+        quote_snapshot_uri=str(details.get("quote_snapshot_uri") or ""),
+        lifecycle_status="delivered",
+        linked_run_ids=[*linked_run_ids, run_id],
+        delivery_evidence_uri=review_artifact_uri,
+        delivery_published_url=published_url,
+        delivered_at=delivered_at,
+        settlement_evidence_uri=str(details.get("settlement_evidence_uri") or ""),
+        settled_at=str(details.get("settled_at") or ""),
+    )
 
 
 def _metric_snapshot_payloads(post_id: str, review_node: str, analysis: dict[str, Any], evidence_uri: str) -> list[dict[str, Any]]:
@@ -997,29 +1315,29 @@ def data_review_doc_blocks(
         _paragraph(f"参考模板：{guide_url}"),
         _heading(2, "一、核心结论"),
         _paragraph(str(analysis.get("conclusion") or "")),
-        _heading(2, "二、核心数据"),
-        _paragraph(json.dumps(analysis.get("metrics") or {}, ensure_ascii=False, indent=2)),
-        _heading(2, "三、作品形式专项指标"),
-        _paragraph(json.dumps(analysis.get("format_specific_metrics") or {}, ensure_ascii=False, indent=2)),
-        _heading(2, "四、单一事实"),
-        _paragraph(json.dumps(analysis.get("atomic_facts") or [], ensure_ascii=False, indent=2)),
-        _heading(2, "五、最有意义的指标"),
-        _paragraph(json.dumps(analysis.get("priority_metrics") or [], ensure_ascii=False, indent=2)),
-        _heading(2, "六、曲线/趋势判断"),
-        _paragraph(json.dumps(analysis.get("trend_curves") or {}, ensure_ascii=False, indent=2)),
-        _heading(2, "七、数据解释"),
-        *_list_blocks(analysis.get("metric_interpretation") or analysis.get("key_insights") or []),
-        _heading(2, "八、问题判断"),
-        *_list_blocks(analysis.get("problems") or []),
-        _heading(2, "九、内容指导"),
-        *_list_blocks(analysis.get("content_guidance") or []),
-        _heading(2, "十、发布建议"),
-        *_list_blocks(analysis.get("publishing_guidance") or []),
-        _heading(2, "十一、下一步动作"),
-        *_list_blocks(analysis.get("next_actions") or []),
-        _heading(2, "十二、截图与可信度"),
+        _heading(2, "二、创作计划对照"),
+        *_list_blocks(_review_lines(analysis.get("plan_comparison"))),
+        _heading(2, "三、下一步动作"),
+        *_list_blocks(_review_lines(analysis.get("next_actions"))),
+        _heading(2, "四、内容调整"),
+        *_list_blocks(_review_lines(analysis.get("content_guidance"))),
+        _heading(2, "五、发布建议"),
+        *_list_blocks(_review_lines(analysis.get("publishing_guidance"))),
+        _heading(2, "六、关键数据"),
+        *_list_blocks(_review_lines(analysis.get("metrics"))),
+        _heading(2, "七、作品形式专项指标"),
+        *_list_blocks(_review_lines(analysis.get("format_specific_metrics"))),
+        _heading(2, "八、数据解释"),
+        *_list_blocks(_review_lines(analysis.get("metric_interpretation") or analysis.get("key_insights"))),
+        _heading(2, "九、问题判断"),
+        *_list_blocks(_review_lines(analysis.get("problems"))),
+        _heading(2, "十、关键事实与趋势依据"),
+        *_list_blocks(_review_lines(analysis.get("atomic_facts"))),
+        *_list_blocks(_review_lines(analysis.get("priority_metrics"))),
+        *_list_blocks(_review_lines(analysis.get("trend_curves"))),
+        _heading(2, "十一、截图与可信度"),
         _paragraph("\n".join(screenshots)),
-        *_list_blocks(analysis.get("data_quality_notes") or ["截图字段可读"]),
+        *_list_blocks(_review_lines(analysis.get("data_quality_notes") or ["截图字段可读"])),
     ]
 
 
@@ -1033,6 +1351,79 @@ def _heading(level: int, text: str) -> dict[str, Any]:
 
 def _paragraph(text: str) -> dict[str, Any]:
     return {"block_type": 2, "text": {"elements": [{"text_run": {"content": str(text or "")[:1800]}}]}}
+
+
+_REVIEW_LABELS = {
+    "fact": "事实",
+    "metric": "指标",
+    "name": "指标",
+    "value": "数值",
+    "scope": "范围",
+    "evidence": "依据",
+    "source": "来源",
+    "confidence": "可信度",
+    "implication": "含义",
+    "recommended_use": "建议用途",
+    "signal": "信号",
+    "why_it_matters": "重要原因",
+    "content_action": "内容动作",
+    "peak": "峰值",
+    "turning_point": "拐点",
+    "trend": "趋势",
+    "views": "播放/阅读",
+    "impressions": "曝光",
+    "likes": "点赞",
+    "saves": "收藏",
+    "comments": "评论",
+    "shares": "分享",
+    "follows": "新增关注",
+    "retention": "留存",
+    "traffic": "流量来源",
+    "interaction": "互动",
+    "audience": "受众",
+    "diagnosis": "平台诊断",
+    "plan_item": "计划项",
+    "status": "对照结果",
+    "next_step": "后续动作",
+}
+
+
+def _review_label(key: Any) -> str:
+    text = str(key or "").strip()
+    if text in _REVIEW_LABELS:
+        return _REVIEW_LABELS[text]
+    if any("\u4e00" <= char <= "\u9fff" for char in text):
+        return text
+    return "说明"
+
+
+def _review_value(value: Any, *, depth: int = 0) -> str:
+    if depth > 3:
+        return "内容较多，详见复盘产物"
+    if value in (None, "", []):
+        return "未提供"
+    if isinstance(value, dict):
+        return "；".join(
+            f"{_review_label(key)}：{_review_value(item, depth=depth + 1)}"
+            for key, item in value.items()
+            if item not in (None, "", [])
+        ) or "未提供"
+    if isinstance(value, list):
+        return "；".join(_review_value(item, depth=depth + 1) for item in value[:12]) or "未提供"
+    return str(value).strip() or "未提供"
+
+
+def _review_lines(value: Any) -> list[str]:
+    if value in (None, "", []):
+        return ["暂无"]
+    if isinstance(value, dict):
+        return [
+            f"{_review_label(key)}：{_review_value(item)}"
+            for key, item in value.items()
+            if item not in (None, "", [])
+        ] or ["暂无"]
+    items = value if isinstance(value, list) else [value]
+    return [_review_value(item) for item in items[:12] if item not in (None, "", [])] or ["暂无"]
 
 
 def _list_blocks(value: Any) -> list[dict[str, Any]]:
@@ -1227,6 +1618,11 @@ def format_data_review_reply(payload: dict[str, Any]) -> str:
     ]
     if payload.get("record_id"):
         lines.append(f"数据复盘表记录：{payload['record_id']}")
+    creation_plan = payload.get("creation_plan") if isinstance(payload.get("creation_plan"), dict) else {}
+    if creation_plan.get("status") == "loaded":
+        lines.append(f"已按创作记录 {creation_plan.get('creation_record_id')} 对照复盘")
+    elif creation_plan.get("creation_record_id"):
+        lines.append("创作记录未找到，本次未做创作计划对照")
     if payload.get("doc_link"):
         lines.append(f"复盘文档：{payload['doc_link']}")
     for error in payload.get("write_errors") or []:
@@ -1236,50 +1632,37 @@ def format_data_review_reply(payload: dict[str, Any]) -> str:
 
 def render_data_review_report(payload: dict[str, Any]) -> str:
     analysis = payload.get("analysis") or {}
-    return "\n".join(
-        [
-            "# 数据复盘",
-            "",
-            f"时间戳：{payload.get('reviewed_at') or ''}",
-            "",
-            "## 结论",
-            "",
-            str(analysis.get("conclusion") or ""),
-            "",
-            "## 作品形式",
-            "",
-            f"{analysis.get('media_format') or 'unknown'}：{analysis.get('media_format_evidence') or ''}",
-            "",
-            "## 核心数据",
-            "",
-            json.dumps(analysis.get("metrics") or {}, ensure_ascii=False, indent=2),
-            "",
-            "## 作品形式专项指标",
-            "",
-            json.dumps(analysis.get("format_specific_metrics") or {}, ensure_ascii=False, indent=2),
-            "",
-            "## 单一事实",
-            "",
-            json.dumps(analysis.get("atomic_facts") or [], ensure_ascii=False, indent=2),
-            "",
-            "## 最有意义的指标",
-            "",
-            json.dumps(analysis.get("priority_metrics") or [], ensure_ascii=False, indent=2),
-            "",
-            "## 内容指导",
-            "",
-            "\n".join(f"- {item}" for item in analysis.get("content_guidance") or []) or "- 暂无",
-            "",
-            "## 发布建议",
-            "",
-            "\n".join(f"- {item}" for item in analysis.get("publishing_guidance") or []) or "- 暂无",
-            "",
-            "## 下一步",
-            "",
-            "\n".join(f"- {item}" for item in analysis.get("next_actions") or []) or "- 暂无",
-            "",
-        ]
+    sections = (
+        ("创作计划对照", analysis.get("plan_comparison")),
+        ("下一步动作", analysis.get("next_actions")),
+        ("内容调整", analysis.get("content_guidance")),
+        ("发布建议", analysis.get("publishing_guidance")),
+        ("关键数据", analysis.get("metrics")),
+        ("作品形式专项指标", analysis.get("format_specific_metrics")),
+        ("数据解释", analysis.get("metric_interpretation") or analysis.get("key_insights")),
+        ("问题判断", analysis.get("problems")),
+        ("关键事实与趋势依据", [
+            *(analysis.get("atomic_facts") or []),
+            *(analysis.get("priority_metrics") or []),
+            analysis.get("trend_curves") or {},
+        ]),
     )
+    lines = [
+        "# 数据复盘",
+        "",
+        f"时间戳：{payload.get('reviewed_at') or ''}",
+        "",
+        "## 核心结论",
+        "",
+        str(analysis.get("conclusion") or ""),
+        "",
+        "## 作品形式",
+        "",
+        f"{analysis.get('media_format') or 'unknown'}：{analysis.get('media_format_evidence') or ''}",
+    ]
+    for title, value in sections:
+        lines.extend(["", f"## {title}", "", *(f"- {item}" for item in _review_lines(value))])
+    return "\n".join(lines) + "\n"
 
 
 def _image_part(path: str) -> dict[str, Any]:
@@ -1305,13 +1688,20 @@ def load_llm_config() -> dict[str, Any]:
     }
 
 
-def generate_validated_review_json(parts: list[dict[str, Any]], config: dict[str, Any], max_retries: int = 2) -> dict[str, Any]:
+def generate_validated_review_json(
+    parts: list[dict[str, Any]],
+    config: dict[str, Any],
+    max_retries: int = 2,
+    *,
+    creation_plan_loaded: bool = False,
+) -> dict[str, Any]:
     return common_generate_json_from_parts(
         parts,
         _llm_provider_from_dict(config),
         max_retries=max_retries,
         error_prefix="数据复盘 LLM 输出 JSON 校验失败",
         validation_contract=DATA_REVIEW_VALIDATION_CONTRACT,
+        validation_context={"creation_plan_loaded": creation_plan_loaded},
     )
 
 

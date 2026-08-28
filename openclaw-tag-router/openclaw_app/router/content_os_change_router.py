@@ -95,8 +95,15 @@ class ContentOSChangeRouterMixin:
                             "references": list(request.payload.get("references") or []),
                         },
                     },
+                    expected_outputs=[
+                        f"08_内容项目/{project_id}/04_script.md",
+                        f"08_内容项目/{project_id}/05_storyboard.md",
+                        f"08_内容项目/{project_id}/06_edit_decision_list.json",
+                        f"90_Draft_Project/edit_handoff/{request.target_revision}/",
+                    ],
                     allowed_actions=["apply_confirmed_revision"],
                     notes=["仅处理这张已确认修改单；不能自行改变项目阶段或切换剪辑方式。"],
+                    tenant_id=str((message.metadata or {}).get("tenant_id") or "").strip() or None,
                     now=message.created_at,
                 )
                 sync_project_board = getattr(self, "_sync_content_os_feishu_project_board", None)

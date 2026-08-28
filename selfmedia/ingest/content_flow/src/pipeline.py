@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import subprocess
 import time
@@ -19,6 +20,7 @@ from .utils import (
 
 
 ProgressFn = Callable[[str, int, str], None]
+PATTERN_TENANT_ID_ENV = "CONTENT_FLOW_PATTERN_TENANT_ID"
 
 
 def _noop_progress(_: str, __: int, ___: str) -> None:
@@ -27,6 +29,75 @@ def _noop_progress(_: str, __: int, ___: str) -> None:
 
 def _cached_analysis_needs_rerun(payload: dict) -> bool:
     return bool(analysis_user_field_contract_issue(payload))
+
+
+def _sync_creative_pattern_from_analysis(state: FlowState, analysis: dict) -> dict:
+    """Persist only a candidate pattern under an explicitly configured service tenant."""
+    tenant_id = os.getenv(PATTERN_TENANT_ID_ENV, "").strip()
+    if not tenant_id:
+        return {
+            "status": "skipped",
+            "reason": "not_configured",
+            "tenant_env": PATTERN_TENANT_ID_ENV,
+        }
+    try:
+        from common.resource_ownership import require_tenant_id
+        from integrations.feishu.media_writer import upsert_entity_record
+        from media_model.payloads import build_pattern_payload, normalize_source_url
+        from selfmedia.creation.retrieval import resolve_inspiration_bitable_url
+
+        tenant_id = require_tenant_id(tenant_id)
+    except Exception as exc:
+        return {"status": "failed", "reason": "invalid_tenant_configuration", "detail": str(exc)}
+
+    action_plan = str(analysis.get("action_plan") or "").strip()
+    transferable_expression = str(analysis.get("transferable_expression") or "").strip()
+    hooks = str(analysis.get("hooks") or "").strip()
+    if not any((action_plan, transferable_expression, hooks)):
+        return {"status": "skipped", "reason": "no_candidate_evidence"}
+
+    table_url = resolve_inspiration_bitable_url()
+    if not table_url:
+        return {"status": "skipped", "reason": "inspiration_table_not_configured"}
+
+    source_url = normalize_source_url(state.get("url") or "")
+    if not source_url:
+        return {"status": "failed", "reason": "missing_normalized_source_url"}
+    fingerprint = hashlib.sha256(source_url.encode("utf-8")).hexdigest()[:24]
+    platform = str(state.get("platform") or analysis.get("platform") or "").strip()
+    category = "/".join(str(item).strip() for item in (analysis.get("secondary_category") or []) if str(item).strip())
+    pattern_name = str(analysis.get("title") or "").strip() or f"{platform or '内容'}可迁移创作模式"
+    payload = build_pattern_payload(
+        pattern_id=f"pattern_ingest_{fingerprint}",
+        pattern_name=pattern_name[:120],
+        pattern_status="candidate_pattern",
+        platform=platform,
+        content_type=str(state.get("media_type") or "").strip(),
+        applicable_persona=str(analysis.get("target_audience") or "").strip(),
+        applicable_scenarios=" / ".join(item for item in (str(analysis.get("primary_category") or "").strip(), category) if item),
+        opening_template=hooks,
+        structure_template=action_plan,
+        visual_template=str(analysis.get("visual_cues") or "").strip(),
+        emotional_levers=str(analysis.get("emotion") or "").strip(),
+        forbidden_scenarios=str(analysis.get("hidden_info") or "").strip(),
+        historical_performance_summary=f"可迁移表达：{transferable_expression}" if transferable_expression else "",
+    )
+    try:
+        write = upsert_entity_record(
+            "CreativePattern",
+            table_url,
+            payload,
+            session_tenant_id=tenant_id,
+            key_field="pattern_id",
+        )
+    except Exception as exc:
+        return {"status": "failed", "reason": "creative_pattern_upsert_failed", "detail": str(exc)}
+    return {
+        "status": "persisted",
+        "pattern_id": payload["pattern_id"],
+        "write_mode": str(write.get("mode") or ""),
+        "record_id": str(write.get("record_id") or ""),
+    }
 
 
 def _clean_ocr_text(text: str) -> str:
@@ -243,6 +314,7 @@ def make_analyst_node(settings: Settings, progress: ProgressFn):
                 if isinstance(current_value, list) and not current_value:
                     analysis_payload[key] = value
             enrich_tags(analysis_payload)
+            analysis_payload["creative_pattern_sync"] = _sync_creative_pattern_from_analysis(state, analysis_payload)
             save_json(paths.analysis_path, analysis_payload)
             return {"analysis_result": analysis_payload, "image_ocr": image_ocr, "is_success": True}
         if cached_analysis:
@@ -294,6 +366,7 @@ def make_analyst_node(settings: Settings, progress: ProgressFn):
             if value is not None:
                 analysis_result[key] = value
         enrich_tags(analysis_result)
+        analysis_result["creative_pattern_sync"] = _sync_creative_pattern_from_analysis(state, analysis_result)
         save_json(paths.analysis_path, analysis_result)
         progress("analyst", 90, "分析完成")
         return {"analysis_result": analysis_result, "image_ocr": image_ocr, "is_success": True}

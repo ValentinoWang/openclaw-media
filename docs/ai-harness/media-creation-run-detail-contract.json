@@ -1,0 +1,109 @@
+{
+  "version": "media_creation_run_detail_v1",
+  "schema_version": "media_creation_run_detail_v1",
+  "owner": "selfmedia.growth.creation_run_detail",
+  "model_contract": "docs/ai-harness/media-model-v2-contract.json",
+  "activity_contract": "openclaw-feishu-reminder/media_os_field_contract.py",
+  "authentication": "required",
+  "source_groups": [
+    {
+      "key": "activities",
+      "entity": "Activity",
+      "registry_key": "activity",
+      "source_table": "01_近期活动",
+      "candidate_types": ["activity"]
+    },
+    {
+      "key": "assets",
+      "entity": "SourceAsset",
+      "registry_key": "source_assets",
+      "source_table": "02A_SourceAssets_素材源",
+      "candidate_types": ["material"]
+    },
+    {
+      "key": "deconstructions",
+      "entity": "MaterialDeconstruction",
+      "registry_key": "material_deconstructions",
+      "source_table": "02B_MaterialDeconstructions_素材拆解",
+      "candidate_types": ["deconstruction", "material"]
+    },
+    {
+      "key": "patterns",
+      "entity": "CreativePattern",
+      "registry_key": "creative_patterns",
+      "source_table": "02C_CreativePatterns_创作模式",
+      "candidate_types": ["pattern", "material"]
+    },
+    {
+      "key": "run",
+      "entity": "CreationRun",
+      "registry_key": "creation_runs",
+      "source_table": "03_CreationRuns_创作运行",
+      "candidate_types": []
+    },
+    {
+      "key": "business",
+      "entity": "BusinessOpportunity",
+      "registry_key": "business_opportunities",
+      "source_table": "05B_BusinessOpportunities_商务机会",
+      "candidate_types": ["business"]
+    },
+    {
+      "key": "creators",
+      "entity": "CreatorProfile",
+      "registry_key": "creator_profiles_v2",
+      "source_table": "06_CreatorProfiles_达人账号档案",
+      "candidate_types": ["creator"]
+    },
+    {
+      "key": "material_usage",
+      "entity": "MaterialUsage",
+      "registry_key": "material_usage",
+      "source_table": "R01_MaterialUsage_素材使用记录",
+      "candidate_types": []
+    },
+    {
+      "key": "decision_traces",
+      "entity": "DecisionTrace",
+      "registry_key": "decision_trace",
+      "source_table": "R02_DecisionTrace_决策轨迹",
+      "candidate_types": []
+    }
+  ],
+  "safe_json_groups": {
+    "run": ["entrypoint", "input_summary", "status", "generation_source"],
+    "sources": ["activities", "assets", "deconstructions", "patterns", "business", "creators"],
+    "decisions": ["traces", "material_usage"],
+    "artifact.content_core": ["title", "topic", "platform", "content_type", "hook_3s", "final_copy", "tags", "voiceover", "subtitles"],
+    "artifact.usable_material_brief": ["selected_source_count", "selected_usage_count", "material_checklist", "risks_or_missing_info"],
+    "artifact.options": ["title", "angle", "platform", "content_type", "hook_3s", "score", "score_breakdown", "risk_level", "why_over_90", "production_checklist", "review_plan"],
+    "artifact.storyboard": ["time", "visual", "subtitle", "sound", "shooting_note"],
+    "artifact.creator_report": ["overview", "mainline", "opening_3s", "material_checklist", "risk_controls", "storyboard", "publishing_pack"],
+    "outputs": ["target", "field_or_block", "write_state", "expected_value_summary", "actual_value_summary", "readback_state", "checked_at", "field_count", "document_url"]
+  },
+  "timeline_steps": [
+    "请求校验",
+    "来源检索",
+    "候选排序",
+    "LLM 选择/生成",
+    "editor pass",
+    "持久化",
+    "渲染/readback"
+  ],
+  "read_states": ["not_queried", "available", "no_match", "upstream_empty", "unavailable"],
+  "step_states": ["not_started", "running", "succeeded", "pending_manual", "failed", "cancelled"],
+  "writeback_states": ["not_attempted", "pending", "matched", "mismatched", "failed", "unavailable"],
+  "forbidden_output_tokens": [
+    "/home/",
+    "media://",
+    "raw_prompt",
+    "raw_response",
+    "stack trace",
+    "traceback",
+    "record_id",
+    "record_ids",
+    "creation_record_id",
+    "token",
+    "debug"
+  ]
+}

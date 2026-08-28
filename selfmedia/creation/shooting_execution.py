@@ -6,13 +6,17 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+from media_model.payloads import normalize_source_url
 from selfmedia.context import build_media_context_for_request, merge_conversation_context
 from media_vault import require_tenant_id
 
+from .adapters import ViralContentAdapter
+from .deconstruction_artifact import DeconstructionArtifactUnavailable, attach_deconstruction_artifact_brief
 from .field_contract import normalize_content_type, normalize_platform, split_tags
 from .llm_generator import call_creation_json
 from .media_model_v2_writeback import write_creation_model_v2
 from .request_parser import CreationRequest, extract_source_asset_id
+from .retrieval import load_material_candidate_rows_for_creation
 from .writer import create_shooting_execution_doc
 
 
@@ -97,6 +101,9 @@ def handle_shooting_execution_command(
     request = parse_shooting_execution_request(raw_text)
     creation_request = request.to_creation_request()
     media_context = merge_conversation_context(build_media_context_for_request(creation_request, tenant_id=tenant_id), conversation_context)
+    deconstruction_evidence = _resolve_deconstruction_evidence(request, tenant_id=tenant_id)
+    media_context = dict(media_context)
+    media_context["deconstruction_evidence"] = deconstruction_evidence
     draft = generate_shooting_execution_plan(request, media_context=media_context)
     validation = validate_shooting_execution_plan(draft)
     doc_link = ""
@@ -132,7 +139,61 @@ def handle_shooting_execution_command(
         "doc_link": doc_link,
         "creation_record_id": str(media_model_v2_result.get("run_id") or ""),
         "media_model_v2": media_model_v2_result,
+        "deconstruction_evidence": deconstruction_evidence,
         "reply": format_shooting_execution_reply(request, doc_link, validation, media_model_v2_result, dry_run=dry_run or no_write),
+    }
+
+
+def _resolve_deconstruction_evidence(request: ShootingExecutionRequest, *, tenant_id: str) -> dict[str, Any]:
+    reference_urls = {
+        normalize_source_url(value)
+        for value in (request.reference_links or [])
+        if normalize_source_url(value)
+    }
+    if not reference_urls:
+        return {"status": "manual_description_only", "reason": "no_reference_links", "items": []}
+    try:
+        rows = load_material_candidate_rows_for_creation(tenant_id=tenant_id)
+    except Exception:
+        return {"status": "manual_description_only", "reason": "candidate_lookup_unavailable", "items": []}
+
+    adapter = ViralContentAdapter()
+    items: list[dict[str, Any]] = []
+    unavailable: list[dict[str, str]] = []
+    for row in rows:
+        try:
+            record = adapter.to_record(row)
+        except Exception:
+            unavailable.append({"source_link": "", "reason": "candidate_record_invalid"})
+            continue
+        source_url = normalize_source_url(record.source_link)
+        if not source_url or source_url not in reference_urls:
+            continue
+        try:
+            enriched = attach_deconstruction_artifact_brief(record, tenant_id=tenant_id)
+        except DeconstructionArtifactUnavailable as exc:
+            unavailable.append({"source_link": source_url, "reason": str(exc)})
+            continue
+        except Exception:
+            unavailable.append({"source_link": source_url, "reason": "artifact_lookup_unavailable"})
+            continue
+        detail = enriched.detail_json or {}
+        items.append(
+            {
+                "source_link": source_url,
+                "source_status": "confirmed",
+                "reference_shots": detail.get("reference_shots") or [],
+                "pacing_notes": detail.get("pacing_notes") or {},
+                "reuse_guardrails": detail.get("reuse_guardrails") or {},
+            }
+        )
+    if items:
+        return {"status": "confirmed", "items": items, "unavailable": unavailable}
+    return {
+        "status": "manual_description_only",
+        "reason": "no_valid_deconstruction_artifact",
+        "items": [],
+        "unavailable": unavailable,
     }
 
 
@@ -216,6 +277,7 @@ def infer_shooting_execution_request(raw_text: str, explicit: dict[str, str]) ->
 
 
 def generate_shooting_execution_plan(request: ShootingExecutionRequest, *, media_context: dict[str, Any] | None = None) -> dict[str, Any]:
+    deconstruction_evidence = (media_context or {}).get("deconstruction_evidence") or {}
     prompt = (
         "你是 OpenClaw Media bot 的拍摄执行导演。请把用户的【创作-拍摄执行】请求生成现场可执行拍摄单。\n"
         "硬性规则：\n"
@@ -225,6 +287,8 @@ def generate_shooting_execution_plan(request: ShootingExecutionRequest, *, media
         "4. 用户显式给出时间窗口时，路线图必须按该时间窗口组织；不得擅自缩短或改写为更短拍摄时长。\n"
         "5. 路线、镜头、分支方案、checklist 必须能在现场直接执行。\n"
         "6. 证据附录放最后；裸链接不能打断执行稿。\n\n"
+        "拆解证据只能使用下方 deconstruction_evidence.status=confirmed 的内容；其余参考链接一律是 manual_description_only，"
+        "不得根据链接补写镜头、节奏或原作细节。\n\n"
         "JSON schema：\n"
         "{\n"
         "  \"shooting_goal\": {\"platform\":\"\", \"content_type\":\"\", \"core_emotion\":\"\", \"mainline\":\"\", \"deliverable\":\"\"},\n"
@@ -238,6 +302,7 @@ def generate_shooting_execution_plan(request: ShootingExecutionRequest, *, media
         "  \"evidence_appendix\": [{\"source\":\"\", \"source_status\":\"confirmed|manual_description_only|pending_manual\", \"available_evidence\":\"\", \"usage_reason\":\"\", \"risk\":\"\"}]\n"
         "}\n\n"
         f"请求字段：\n{json.dumps(request.to_dict(), ensure_ascii=False, indent=2)}\n\n"
+        f"拆解证据：\n{json.dumps(deconstruction_evidence, ensure_ascii=False, indent=2, default=str)[:12000]}\n\n"
         f"媒体上下文：\n{json.dumps(media_context or {}, ensure_ascii=False, indent=2, default=str)[:12000]}"
     )
     payload = call_creation_json(prompt, validation_contract=SHOOTING_PLAN_VALIDATION_CONTRACT)

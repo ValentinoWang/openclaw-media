@@ -128,6 +128,7 @@ def build_deconstruction_artifact(
         "evidence_store": result.get("evidence_store") or {},
         "multi_signal_contract": result.get("multi_signal_contract") or {},
         "request_constraints": result.get("request_constraints") or {},
+        "account_context": result.get("account_context") or {},
         "ai_blend_analysis": result.get("ai_blend_analysis") or [],
         "ai_storyboard_prompt_shots": result.get("ai_storyboard_prompt_shots") or [],
         "human_insight_candidates": result.get("human_insight_candidates") or [],

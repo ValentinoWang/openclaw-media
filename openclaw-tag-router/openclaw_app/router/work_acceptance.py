@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from typing import Any
+
+from media_vault import MediaVault, MediaVaultError, require_tenant_id
 
 from ..models.message import Message
 from ..models.task import TaskResult
@@ -85,6 +88,18 @@ class WorkAcceptanceMixin:
         if result.get("status") == "pending_manual":
             lines.extend(["", f"注意：{result.get('reason') or 'OpenClaw 语义验收结果需要人工复核。'}"])
 
+        creation_run_status = self._persist_creation_run_acceptance(
+            message,
+            verdict=verdict,
+            result=result,
+            items=items,
+            pass_count=pass_count,
+            fail_count=fail_count,
+            uncertain_count=uncertain_count,
+        )
+        if creation_run_status.get("reply"):
+            lines.extend(["", str(creation_run_status["reply"])])
+
         content_os_status = self._maybe_apply_content_os_work_acceptance(message, verdict, result, items)
         if content_os_status.get("reply"):
             lines.extend(["", content_os_status["reply"]])
@@ -100,9 +115,78 @@ class WorkAcceptanceMixin:
                 "pass_count": pass_count,
                 "fail_count": fail_count,
                 "uncertain_count": uncertain_count,
+                "creation_run_status": creation_run_status,
                 "content_os_status": content_os_status,
             },
         )
+
+    @staticmethod
+    def _creation_run_id_from_message(message: Message) -> str:
+        match = re.search(r"(?:创作记录ID|作品档案)\s*[=:：]\s*([A-Za-z0-9_.-]+)", str(message.raw_text or ""))
+        return match.group(1).strip() if match else ""
+
+    def _persist_creation_run_acceptance(
+        self,
+        message: Message,
+        *,
+        verdict: str,
+        result: dict[str, Any],
+        items: list[dict[str, str]],
+        pass_count: int,
+        fail_count: int,
+        uncertain_count: int,
+    ) -> dict[str, Any]:
+        creation_run_id = self._creation_run_id_from_message(message)
+        if not creation_run_id:
+            return {
+                "status": "creation_record_id_required",
+                "reply": "验收结果尚未关联创作记录：请补充 `创作记录ID=...` 后重新验收，系统会把逐项结论写入该创作档案。",
+            }
+        try:
+            tenant_id = require_tenant_id((message.metadata or {}).get("tenant_id"))
+        except MediaVaultError as exc:
+            return {
+                "status": "tenant_context_required",
+                "creation_run_id": creation_run_id,
+                "reply": f"验收结果未写入创作记录：{exc}",
+            }
+        vault = MediaVault(tenant_id=tenant_id)
+        run_dir = vault.creation_run_dir(creation_run_id)
+        if not run_dir.is_dir():
+            return {
+                "status": "creation_run_not_found",
+                "creation_run_id": creation_run_id,
+                "reply": f"验收结果未写入：未找到创作记录 {creation_run_id}。请确认创作记录ID属于当前租户。",
+            }
+        accepted_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        artifact = vault.write_json_artifact(
+            run_dir,
+            "acceptance.json",
+            {
+                "creation_run_id": creation_run_id,
+                "verdict": verdict,
+                "counts": {
+                    "passed": pass_count,
+                    "failed": fail_count,
+                    "uncertain": uncertain_count,
+                },
+                "items": items,
+                "summary": str(result.get("summary") or "").strip(),
+                "release_advice": str(result.get("release_advice") or "").strip(),
+                "next_actions": self._normalize_work_acceptance_actions(result.get("next_actions")),
+                "accepted_at": accepted_at,
+            },
+            owner_type="CreationRun",
+            owner_id=creation_run_id,
+            artifact_type="work_acceptance",
+            artifact_id=f"work_acceptance_{creation_run_id}",
+        )
+        return {
+            "status": "persisted",
+            "creation_run_id": creation_run_id,
+            "artifact_uri": artifact["uri"],
+            "reply": f"验收证据已写入创作记录：{creation_run_id}",
+        }
 
     def _work_acceptance_review(self, message: Message) -> dict[str, Any]:
         if not hasattr(self.content_flow_client, "_call_postprocess_json"):

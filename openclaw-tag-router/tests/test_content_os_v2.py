@@ -476,6 +476,39 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(read_project_state(root, project_id).status, "planned")
             self.assertEqual(self._read_yaml(accepted.done_task_path)["status"], "done")
 
+    def test_http_result_requires_the_authenticated_tenant_on_task_and_result(self) -> None:
+        temporary, root, project_id = self._make_vault(status="planned")
+        with temporary:
+            task = create_ready_task(
+                root,
+                project_id,
+                task_type="local_material_match",
+                project_revision=1,
+                change_request_id="",
+                editor_backend="handoff_pack",
+                tenant_id="tenant_a",
+                now=FIXED_NOW,
+            )
+            result = {
+                "spec_version": CONTENT_OS_SPEC_VERSION,
+                "doc_type": "mac_result",
+                "task_id": task.task_id,
+                "task_type": task.task_type,
+                "completed_by": "mac_openclaw",
+                "status": "done",
+                "project_id": project_id,
+                "project_revision": 1,
+                "change_request_id": "",
+                "editor_backend": "handoff_pack",
+                "tenant_id": "tenant_a",
+                "outputs": {},
+            }
+            self.assertEqual(validate_mac_result(root, result, expected_tenant_id="tenant_a").task_id, task.task_id)
+            with self.assertRaisesRegex(ContentOSContractError, "当前设备租户"):
+                validate_mac_result(root, {**result, "tenant_id": "tenant_b"}, expected_tenant_id="tenant_a")
+            with self.assertRaisesRegex(ContentOSContractError, "不属于当前设备租户"):
+                validate_mac_result(root, result, expected_tenant_id="tenant_b")
+
     def test_registry_and_feishu_are_derived_projections(self) -> None:
         temporary, root, project_id = self._make_vault(status="editing", backend="otio_kdenlive")
         with temporary:

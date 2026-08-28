@@ -13,12 +13,13 @@ from common.resource_ownership import canonical_tenant_owned_resources, require_
 from zoneinfo import ZoneInfo
 
 from common.social_runtime import feishu_list_records, feishu_plain_text, load_default_env_files
+from media_model.contract import resolve_media_model_contract_path
+from media_vault.vault import MediaVault
 
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MEMORY_ROOT = ROOT / "data" / "media_memory"
 MEDIA_AGENT_ROOT = Path("/home/ubuntu/openclaw-agents/media")
-MEDIA_MODEL_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/media-model-v2-contract.json")
 CREATOR_PROFILE_URL_ENV = "MEDIA_OS_CREATOR_PROFILES_V2_URL"
 CREATOR_PROFILE_CONTEXT_FIELDS = (
     "creator_profile_id",
@@ -121,6 +122,7 @@ def build_media_context(
         query_terms=query_terms,
         limit=limit,
     )
+    daily_evidence = _recent_daily_evidence(tenant_id=tenant_id, platform=platform, account=account, limit=limit)
     context = {
         "platform": platform,
         "account": account,
@@ -131,12 +133,16 @@ def build_media_context(
         "account_profile": profile,
         "recent_creations": creations,
         "recent_reviews": reviews,
+        "recent_daily_metrics": daily_evidence["metrics"],
+        "top_comments": daily_evidence["top_comments"],
         "global_rules": _load_media_rule_snippets(),
         "loaded": {
             "account_profile": bool(profile),
             "creator_profile": bool(creator_profile),
             "recent_creations": len(creations),
             "recent_reviews": len(reviews),
+            "recent_daily_metrics": len(daily_evidence["metrics"]),
+            "top_comments": len(daily_evidence["top_comments"]),
         },
     }
     if creator_profile_error:
@@ -165,6 +171,8 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int = 2600)
     profile = context.get("account_profile") or {}
     creations = context.get("recent_creations") or []
     reviews = context.get("recent_reviews") or []
+    daily_metrics = context.get("recent_daily_metrics") or []
+    top_comments = context.get("top_comments") or []
     rules = context.get("global_rules") or []
     lines = ["媒体长期上下文："]
     if profile:
@@ -203,6 +211,17 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int = 2600)
         lines.append("- 相关历史创作：")
         for item in creations[:3]:
             lines.append(f"  {item.get('created_at', '')[:10]} {item.get('topic') or '未命名'}：{item.get('title') or item.get('doc_link') or item.get('creation_id') or ''}")
+    if daily_metrics:
+        lines.append("- 最近日报指标：")
+        for item in daily_metrics[:3]:
+            lines.append(
+                f"  {item.get('captured_at', '')[:10]} {item.get('account_name') or '账号'}："
+                f"作品 {item.get('post_count', 0)} 条，总互动 {item.get('total_interactions', 0)}，"
+                f"最佳作品 {item.get('best_post_url') or '未记录'}"
+            )
+    if top_comments:
+        lines.append("- 最近高价值评论原话：")
+        lines.extend(f"  {item}" for item in top_comments[:6])
     if rules:
         lines.append("- 媒体 Bot 长期规则摘要：")
         lines.extend(f"  {item}" for item in rules[:4])
@@ -211,6 +230,68 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int = 2600)
     if len(text) <= max_chars:
         return text
     return text[: max_chars - 20].rstrip() + "\n...（上下文已截断）"
+
+
+def _recent_daily_evidence(*, tenant_id: str, platform: str, account: str, limit: int) -> dict[str, list[Any]]:
+    """Read bounded, tenant-owned daily evidence without cross-tenant fallback."""
+    output_dir = MediaVault(tenant_id=tenant_id).root / "account_daily_runs"
+    if not output_dir.is_dir():
+        return {"metrics": [], "top_comments": []}
+    metrics: list[dict[str, Any]] = []
+    comments: list[str] = []
+    for path in sorted(output_dir.glob("account_daily_*.json"), reverse=True)[: max(1, limit) * 3]:
+        payload = _read_json(path, default={})
+        if not isinstance(payload, dict) or str(payload.get("tenant_id") or "") != tenant_id:
+            continue
+        accounts_by_id = {
+            str(item.get("record_id") or ""): item
+            for item in payload.get("accounts") or []
+            if isinstance(item, dict)
+        }
+        for summary in payload.get("summaries") or []:
+            if not isinstance(summary, dict) or not _daily_summary_matches(summary, account=account, platform=platform):
+                continue
+            metrics.append(
+                {
+                    key: summary.get(key)
+                    for key in ("account_name", "platform", "captured_at", "post_count", "total_interactions", "best_post_url")
+                }
+            )
+        for record_id, rows in (payload.get("rows") or {}).items():
+            owner = accounts_by_id.get(str(record_id), {})
+            if not _daily_summary_matches(owner, account=account, platform=platform):
+                continue
+            for row in rows if isinstance(rows, list) else []:
+                if isinstance(row, dict):
+                    comments.extend(_daily_comment_texts(row))
+        if len(metrics) >= limit and len(comments) >= limit * 2:
+            break
+    return {"metrics": metrics[:limit], "top_comments": _dedupe(comments)[: max(2, limit * 2)]}
+
+
+def _daily_summary_matches(value: dict[str, Any], *, account: str, platform: str) -> bool:
+    candidate_account = _search_text(value.get("account_name") or value.get("account"))
+    candidate_platform = _clean_text(value.get("platform"))
+    if account and candidate_account and candidate_account != _search_text(account):
+        return False
+    if platform and candidate_platform and candidate_platform != platform:
+        return False
+    return bool(candidate_account or candidate_platform or not account)
+
+
+def _daily_comment_texts(row: dict[str, Any]) -> list[str]:
+    values: list[Any] = []
+    for key in ("top_comments", "comments", "hot_comments", "high_like_comments"):
+        value = row.get(key)
+        values.extend(value if isinstance(value, list) else [value])
+    result: list[str] = []
+    for value in values:
+        if isinstance(value, dict):
+            value = value.get("text") or value.get("comment") or value.get("content")
+        text = _clean_text(value)
+        if text:
+            result.append(text)
+    return result
 
 
 def record_creation_memory(
@@ -868,10 +949,11 @@ def _should_load_live_creator_profile(root: str | Path | None) -> bool:
 
 
 def _creator_profile_field_name_map() -> dict[str, str]:
+    contract_path = resolve_media_model_contract_path()
     try:
-        contract = json.loads(MEDIA_MODEL_CONTRACT_PATH.read_text(encoding="utf-8"))
+        contract = json.loads(contract_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise RuntimeError(f"无法读取 CreatorProfile 字段契约：{MEDIA_MODEL_CONTRACT_PATH}: {exc}") from exc
+        raise RuntimeError(f"无法读取 CreatorProfile 字段契约：{contract_path}: {exc}") from exc
     projections = contract.get("projection_contracts") or {}
     if not isinstance(projections, dict):
         raise RuntimeError("CreatorProfile 字段契约缺少 projection_contracts")

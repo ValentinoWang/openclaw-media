@@ -337,6 +337,10 @@ BUSINESS_REPLY_DEFAULT_FIELDS = (
     "授权时长",
     "全渠道授权及时长",
 )
+SCHEDULE_WINDOW_RE = re.compile(
+    r"(?:(?P<year>20\d{2})\s*年\s*)?(?P<month>1[0-2]|[1-9])\s*月\s*(?P<period>上旬|中旬|下旬)"
+)
+SCHEDULE_DATE_RE = re.compile(r"(?P<year>20\d{2})[-/.](?P<month>1[0-2]|0?[1-9])[-/.](?P<day>3[01]|[12]\d|0?[1-9])")
 BUSINESS_LLM_FIELD_NAMES = (
     "博主IP",
     "作者ID",
@@ -2013,20 +2017,64 @@ def apply_business_reply_defaults(
     fields: dict[str, Any],
     *,
     path: str | Path | None = None,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     lookup = load_business_reply_defaults(path)
     defaults = lookup.pop("fields", {})
+    stale_fields = [
+        name
+        for name, value in defaults.items()
+        if name == "具体档期" and is_expired_schedule_value(value, now=now)
+    ]
+    defaults = {name: value for name, value in defaults.items() if name not in stale_fields}
     applied_fields = copy_missing_plain_fields(fields, defaults, BUSINESS_REPLY_DEFAULT_FIELDS)
     return {
         **lookup,
         "applied_fields": applied_fields,
         "skipped_existing_fields": [name for name in defaults if name not in applied_fields],
+        "stale_fields": stale_fields,
     }
+
+
+def is_expired_schedule_value(value: Any, *, now: datetime | None = None) -> bool:
+    """Return whether a date-like availability promise has already elapsed.
+
+    Unqualified month windows are interpreted in the current year. That is
+    deliberately conservative for global defaults: an ambiguous stale promise
+    must be confirmed again instead of being sent to a brand automatically.
+    """
+    text = _business_text_value(value)
+    if not text:
+        return False
+    today = (now or datetime.now(LOCAL_TZ)).astimezone(LOCAL_TZ).date()
+    for match in SCHEDULE_DATE_RE.finditer(text):
+        try:
+            scheduled = datetime(
+                int(match.group("year")), int(match.group("month")), int(match.group("day")), tzinfo=LOCAL_TZ
+            ).date()
+        except ValueError:
+            continue
+        return scheduled < today
+    for match in SCHEDULE_WINDOW_RE.finditer(text):
+        year = int(match.group("year") or today.year)
+        month = int(match.group("month"))
+        period = match.group("period")
+        if period == "上旬":
+            end_day = 10
+        elif period == "中旬":
+            end_day = 20
+        else:
+            next_month = datetime(year + (month == 12), 1 if month == 12 else month + 1, 1, tzinfo=LOCAL_TZ)
+            end_day = (next_month - timedelta(days=1)).day
+        return datetime(year, month, end_day, tzinfo=LOCAL_TZ).date() < today
+    return False
 
 
 def refresh_pending_fields_from_values(fields: dict[str, Any], parsed: dict[str, Any]) -> list[str]:
     pending = _business_list_value(fields.get("待补充字段") or parsed.get("pending_fields"))
     normalized = [canonical_confirmation_field(item) for item in pending]
+    if is_expired_schedule_value(_field_text(fields, "具体档期")):
+        fields.pop("具体档期", None)
     remaining = [item for item in normalized if item and not _field_text(fields, item)]
     fields["待补充字段"] = "、".join(dict.fromkeys(remaining))
     parsed["pending_fields"] = list(dict.fromkeys(remaining))
@@ -2054,6 +2102,7 @@ def enrich_business_fields_from_history(
     opportunity_url: str = "",
 ) -> dict[str, Any]:
     tenant_id = require_tenant_id(tenant_id)
+    profiles: list[dict[str, Any]] = []
     summary: dict[str, Any] = {
         "creator_profiles": {"table": "06_CreatorProfiles_达人账号档案", "url_env": "MEDIA_OS_CREATOR_PROFILES_V2_URL", "matched": False, "copied_fields": []},
         "business_accounts": {"table": "05A_BusinessAccounts_商务账号", "url_env": "MEDIA_OS_BUSINESS_ACCOUNTS_V2_URL", "matched": False, "copied_fields": []},
@@ -2107,6 +2156,42 @@ def enrich_business_fields_from_history(
                 creator_profile_id=creator_profile_id,
             )
         ]
+        if not creator_profile_id and profiles and candidates:
+            linked_profile_ids = {
+                _field_text(record.get("fields") or {}, "creator_profile_id")
+                for record in candidates
+                if _field_text(record.get("fields") or {}, "creator_profile_id")
+            }
+            linked_profiles = [
+                record
+                for record in profiles
+                if _field_text(record.get("fields") or {}, "creator_profile_id") in linked_profile_ids
+            ]
+            if len(linked_profiles) == 1:
+                profile = linked_profiles[0]
+                profile_fields = profile.get("fields") or {}
+                copied = copy_creator_profile_v2_fields(fields, profile_fields)
+                creator_profile_id = _field_text(profile_fields, "creator_profile_id")
+                summary["creator_profiles"].update(
+                    {
+                        "matched": True,
+                        "record_id": profile.get("record_id") or "",
+                        "creator_profile_id": creator_profile_id,
+                        "author_id": _field_text(profile_fields, "author_id"),
+                        "account_name": _field_text(profile_fields, "account_name"),
+                        "copied_fields": copied,
+                        "resolution": "business_account_link",
+                    }
+                )
+                candidates = [
+                    record
+                    for record in records
+                    if same_business_account_v2(
+                        fields,
+                        record.get("fields") or {},
+                        creator_profile_id=creator_profile_id,
+                    )
+                ]
         existing = next(
             (
                 record
@@ -2313,10 +2398,13 @@ def copy_business_account_v2_fields(fields: dict[str, Any], source: dict[str, An
         "current_video_quote_amount": "视频报价",
     }
     for src, dst in mapping.items():
-        if _field_text(fields, dst):
+        # A historical quote is evidence, not a gap to be refreshed from a
+        # newly parsed brand message.  Account identity fields remain
+        # canonicalized from the matched authority record.
+        if dst in {"图文报价", "视频报价"} and _field_text(fields, dst):
             continue
         value = _field_text(source, src)
-        if value:
+        if value and _field_text(fields, dst) != value:
             fields[dst] = value
             copied.append(dst)
     return copied
