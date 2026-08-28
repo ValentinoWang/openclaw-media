@@ -5,9 +5,12 @@ from copy import deepcopy
 import pytest
 
 from media_vault.vault import MediaVault, MediaVaultError, MediaVaultUriError
+from selfmedia.creation.insight_cards import load_approved_human_insight_aggregation_records
 from selfmedia.deconstruct.viral_content.src import feishu_writer
 from selfmedia.deconstruct.viral_content.src.human_insight_writeback import (
+    HumanInsightApprovalError,
     UNTRUSTED_EVIDENCE_STATUS,
+    approve_human_insight_aggregation,
     project_id_for_deconstruction,
     write_human_insight_candidates,
 )
@@ -133,6 +136,109 @@ def test_unavailable_or_failed_write_has_no_readback_claim(tmp_path, monkeypatch
     assert failed["status"] == "partial"
     assert failed["candidate_library_uri"] == ""
     assert failed["readback_status"] == "not_attempted"
+
+
+def test_pending_candidates_are_not_consumed_by_creation(tmp_path) -> None:
+    vault = MediaVault(tenant_id=TENANT_ID, root=tmp_path)
+
+    _write(vault, [_candidate()])
+
+    assert load_approved_human_insight_aggregation_records(
+        vault=vault,
+        project_id="project_training",
+        source_asset_id="asset_source_702",
+    ) == []
+
+
+def test_operator_approved_aggregation_is_idempotent_and_consumed_by_creation(tmp_path) -> None:
+    vault = MediaVault(tenant_id=TENANT_ID, root=tmp_path)
+    report = _write(vault, [_candidate()])
+    library = vault.read_json_artifact(str(report["candidate_library_uri"]))
+    candidate_id = library["candidates"][0]["candidate_id"]
+    approval = {
+        "vault": vault,
+        "project_id": "project_training",
+        "source_asset_id": "asset_source_702",
+        "deconstruction_id": "decon_702",
+        "candidate_ids": [candidate_id],
+        "operator_id": "operator_702",
+        "approval_id": "approval_702",
+        "approved_at": "2026-08-29T10:15:00+08:00",
+        "reviewed_source_refs": ["comment_001"],
+    }
+
+    first = approve_human_insight_aggregation(**approval)
+    second = approve_human_insight_aggregation(**approval)
+    records = load_approved_human_insight_aggregation_records(
+        vault=vault,
+        project_id="project_training",
+        source_asset_id="asset_source_702",
+    )
+
+    assert first["status"] == "verified"
+    assert first["readback_status"] == "verified"
+    assert second["replayed"] is True
+    assert first["aggregation_uri"] == second["aggregation_uri"]
+    assert len(records) == 1
+    assert records[0].source_record_id.startswith("insight_card:approved_aggregation:")
+    assert records[0].detail_json["operator_verification_id"] == "approval_702"
+    assert records[0].detail_json["source_refs"]
+
+
+def test_approved_aggregations_are_isolated_between_tenants(tmp_path) -> None:
+    own_vault = MediaVault(tenant_id=TENANT_ID, root=tmp_path)
+    other_vault = MediaVault(tenant_id=OTHER_TENANT_ID, root=tmp_path)
+    report = _write(own_vault, [_candidate()])
+    candidate_id = own_vault.read_json_artifact(str(report["candidate_library_uri"]))["candidates"][0]["candidate_id"]
+    approval = approve_human_insight_aggregation(
+        vault=own_vault,
+        project_id="project_training",
+        source_asset_id="asset_source_702",
+        deconstruction_id="decon_702",
+        candidate_ids=[candidate_id],
+        operator_id="operator_702",
+        approval_id="approval_703",
+        approved_at="2026-08-29T10:15:00+08:00",
+        reviewed_source_refs=["comment_001"],
+    )
+
+    with pytest.raises(MediaVaultUriError, match="does not belong to the authenticated tenant"):
+        other_vault.read_json_artifact(str(approval["aggregation_uri"]))
+    assert load_approved_human_insight_aggregation_records(
+        vault=other_vault,
+        project_id="project_training",
+        source_asset_id="asset_source_702",
+    ) == []
+
+
+@pytest.mark.parametrize(
+    ("override", "error"),
+    [
+        ({"operator_id": ""}, "operator_id"),
+        ({"approved_at": ""}, "approved_at"),
+        ({"reviewed_source_refs": []}, "reviewed_source_refs"),
+        ({"reviewed_source_refs": ["unreviewed_ref"]}, "exact reviewed source evidence"),
+    ],
+)
+def test_operator_approval_rejects_missing_or_unlinked_evidence(tmp_path, override, error: str) -> None:
+    vault = MediaVault(tenant_id=TENANT_ID, root=tmp_path)
+    report = _write(vault, [_candidate()])
+    candidate_id = vault.read_json_artifact(str(report["candidate_library_uri"]))["candidates"][0]["candidate_id"]
+    approval = {
+        "vault": vault,
+        "project_id": "project_training",
+        "source_asset_id": "asset_source_702",
+        "deconstruction_id": "decon_702",
+        "candidate_ids": [candidate_id],
+        "operator_id": "operator_702",
+        "approval_id": "approval_704",
+        "approved_at": "2026-08-29T10:15:00+08:00",
+        "reviewed_source_refs": ["comment_001"],
+    }
+    approval.update(override)
+
+    with pytest.raises(HumanInsightApprovalError, match=error):
+        approve_human_insight_aggregation(**approval)
 
 
 def test_feishu_write_calls_candidate_consumer_only_after_projection(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:

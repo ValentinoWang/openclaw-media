@@ -7,7 +7,7 @@ from typing import Any
 from .adapters import ActivityAdapter, BusinessAdapter, CreationInspirationAdapter, ViralContentAdapter
 from .deconstruction_artifact import DeconstructionArtifactUnavailable, attach_deconstruction_artifact_brief
 from .field_contract import CanonicalMediaRecord, normalize_key
-from .insight_cards import load_insight_card_records
+from .insight_cards import load_approved_human_insight_aggregation_records, load_insight_card_records
 from .llm_generator import generate_creation_draft
 from .matcher import RankedRecord, content_type_allowed, rank_activities, rank_businesses, rank_inspirations, rank_virals, request_has_business_context
 from .media_model_v2_writeback import write_creation_model_v2
@@ -23,7 +23,8 @@ from .retrieval import load_business_rows_for_creation, load_inspiration_rows_fo
 from .schema import ensure_creation_source_schema
 from .writer import create_creation_doc
 from selfmedia.context import build_media_context_for_request, merge_conversation_context, record_creation_memory
-from media_vault import require_tenant_id
+from media_vault import MediaVault, require_tenant_id
+from selfmedia.deconstruct.viral_content.src.human_insight_writeback import project_id_for_human_insight_scope
 
 
 def smoke_creation_command(
@@ -78,6 +79,20 @@ def handle_creation_command(
     businesses = [BusinessAdapter().to_record(row) for row in business_rows]
     inspirations = [CreationInspirationAdapter().to_record(row) for row in inspiration_rows]
     inspirations.extend(load_insight_card_records(limit=_env_int("SELFMEDIA_CREATION_INSIGHT_CARD_CONTEXT_LIMIT", 30)))
+    insight_project_id = project_id_for_human_insight_scope(
+        project_id=request.project,
+        account=request.account,
+        platform=request.platform,
+    )
+    if request.source_asset_id and insight_project_id:
+        inspirations.extend(
+            load_approved_human_insight_aggregation_records(
+                vault=MediaVault(tenant_id=tenant_id),
+                project_id=insight_project_id,
+                source_asset_id=request.source_asset_id,
+                limit=_env_int("SELFMEDIA_CREATION_INSIGHT_AGGREGATION_CONTEXT_LIMIT", 30),
+            )
+        )
 
     ranked_activity_candidates = rank_activities(activities, request)[: _env_int("SELFMEDIA_CREATION_ACTIVITY_CONTEXT_LIMIT", 30)]
     activity_candidates = [item.record for item in ranked_activity_candidates]
