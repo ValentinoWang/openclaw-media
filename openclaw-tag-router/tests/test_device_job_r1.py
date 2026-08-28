@@ -443,11 +443,15 @@ print(json.dumps({'devices': service.list_devices(sys.argv[2]), 'job': service.g
 
     def test_http_round_trip_uses_session_or_device_credential_only(self) -> None:
         auth = HttpAccountAuth()
+        auth_config = AuthConfig(
+            session_secret=b"r1-http-secret-which-is-at-least-32-bytes",
+            cookie_secure=False,
+        )
         server = make_server(
             "127.0.0.1",
             0,
             None,
-            auth_config=AuthConfig(session_secret=b"r1-http-secret-which-is-at-least-32-bytes", cookie_secure=False),
+            auth_config=auth_config,
             account_auth=auth,
             authority_config=HttpAuthorityConfig("http://127.0.0.1"),
             device_job_service=self.service,
@@ -457,7 +461,7 @@ print(json.dumps({'devices': service.list_devices(sys.argv[2]), 'job': service.g
 
         def request(method: str, path: str, body: dict[str, object] | None = None, headers: dict[str, str] | None = None, *, include_session: bool = True):
             connection = http.client.HTTPConnection(*server.server_address, timeout=3)
-            request_headers = {"Cookie": "openclaw_account_session=session-a"} if include_session else {}
+            request_headers = {"Cookie": f"{auth_config.cookie_name}=session-a"} if include_session else {}
             request_headers.update(headers or {})
             encoded = None if body is None else json.dumps(body).encode("utf-8")
             if encoded is not None:
