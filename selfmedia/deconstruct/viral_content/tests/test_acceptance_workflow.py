@@ -33,11 +33,13 @@ def test_cli_run_uses_current_workflow_signature(monkeypatch: pytest.MonkeyPatch
     def fake_run_workflow(
         text: str,
         *,
+        tenant_id: str = "",
         write_feishu: bool = False,
         stage_dir: str | None = None,
         resume_stage_json: str | None = None,
     ) -> dict[str, object]:
         assert text == "【拆解】 https://example.com/video"
+        assert tenant_id == ""
         assert write_feishu is False
         assert stage_dir == "/tmp/deconstruct-stage"
         assert resume_stage_json is None
@@ -376,8 +378,9 @@ def test_acceptance_deconstruct_video_full_order(tmp_path, monkeypatch: pytest.M
         doc_writer.append_blocks("doc_deconstruct", content, "token", doc_kind="deconstruct")
         return DocRef("doc_deconstruct", "https://feishu/doc_deconstruct")
 
-    def fake_write(result, source_text):
+    def fake_write(result, source_text, *, tenant_id=""):
         events.append("bitable")
+        assert tenant_id == ""
         assert "doc_deconstruct" in result["deconstruct_doc_url"]
         assert "video_storyboard" in result  # full result may exist here, writer owns field filtering.
         return "rec1"

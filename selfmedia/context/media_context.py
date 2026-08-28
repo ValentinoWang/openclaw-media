@@ -19,7 +19,9 @@ from media_vault.vault import MediaVault
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MEMORY_ROOT = ROOT / "data" / "media_memory"
-MEDIA_AGENT_ROOT = Path("/home/ubuntu/openclaw-agents/media")
+MEDIA_AGENT_ROOT = Path(
+    os.getenv("OPENCLAW_MEDIA_AGENT_ROOT") or Path.home() / ".openclaw" / "agents" / "media"
+).expanduser()
 CONTEXT_PROMPT_MAX_CHARS_ENV = "OPENCLAW_MEDIA_CONTEXT_MAX_CHARS"
 DEFAULT_CONTEXT_PROMPT_MAX_CHARS = 10_000
 MAX_CONTEXT_PROMPT_MAX_CHARS = 12_000

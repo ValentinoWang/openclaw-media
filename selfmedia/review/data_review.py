@@ -22,10 +22,6 @@ from common.llm_validation import LLMValidationContract, register_llm_validation
 from common.llm_settings import LLMProviderSettings, load_profile_llm_settings
 from common.social_runtime import (
     FEISHU_BASE,
-    feishu_bitable_refs,
-    feishu_coerce_value,
-    feishu_ensure_fields,
-    feishu_field_types,
     feishu_headers,
     feishu_tenant_access_token,
     load_default_env_files,
@@ -54,10 +50,6 @@ CREATION_PLAN_FIELDS = (
 )
 
 DEFAULT_GUIDE_URL = "https://tcnwueberajc.feishu.cn/wiki/UyFJwM6SEipIXokm5RFcz0XsnXg"
-DEFAULT_TABLE_URL = os.getenv(
-    "MEDIA_OS_POST_REVIEWS_URL",
-    "",
-)
 DEFAULT_OUTPUT_PARENT_NODE_TOKEN = os.getenv("MEDIA_OS_DATA_REVIEW_PARENT_NODE_TOKEN", "CNKdwXKFzi3Wb5k5ePpcbzcmnTg")
 
 DATA_REVIEW_FIELD_SPECS = {
@@ -239,7 +231,6 @@ def handle_data_review_command(
         "record_id": record_id,
         "memory": memory_result,
         "media_model_v2": media_model_v2_result,
-        "write_errors": [],
         "local_json": str(local_json),
         "local_report": str(local_md),
     }
@@ -1295,10 +1286,6 @@ def _metric_number(value: Any) -> float | None:
         return None
 
 
-def data_review_bitable_refs(url: str, token: str) -> tuple[str, str, str]:
-    return feishu_bitable_refs(url, token)
-
-
 def create_data_review_doc(
     *,
     request: DataReviewRequest,
@@ -1667,8 +1654,6 @@ def format_data_review_reply(payload: dict[str, Any]) -> str:
         lines.append("创作记录未找到，本次未做创作计划对照")
     if payload.get("doc_link"):
         lines.append(f"复盘文档：{payload['doc_link']}")
-    for error in payload.get("write_errors") or []:
-        lines.append(f"写入提示：{error}")
     return "\n".join(lines)
 
 

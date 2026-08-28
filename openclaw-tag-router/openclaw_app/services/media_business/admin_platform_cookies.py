@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import stat as stat_module
 import sys
 from datetime import datetime, timezone
@@ -10,7 +11,9 @@ from typing import Any, Callable, Sequence
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
-SELFMEDIA_ROOT = Path("/home/ubuntu/selfmedia-tools")
+SELFMEDIA_ROOT = Path(
+    os.getenv("OPENCLAW_SELFMEDIA_ROOT") or Path(__file__).resolve().parents[4]
+).expanduser()
 COOKIE_SCRIPT = SELFMEDIA_ROOT / "integrations/platform_auth/cookies/save_platform_cookie_secret.py"
 PLATFORMS = ("douyin", "xiaohongshu")
 _PLATFORM_LABELS = {"douyin": "抖音", "xiaohongshu": "小红书"}
