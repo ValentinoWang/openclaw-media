@@ -309,14 +309,7 @@ def build_and_publish_bot_center() -> None:
 
 def deploy(*, restart_gateway: bool, skip_guards: bool = False) -> dict[str, object]:
     assert_preflight_scripts()
-    try:
-        monthly_quote_reminder_timer = register_monthly_quote_reminder_timer()
-    except SystemExit as exc:
-        # The legacy test-only --skip-guards path has no deployment tenant. Keep
-        # that path observable as failed while standard deployment still fails closed.
-        if not skip_guards or "missing OPENCLAW_BUSINESS_QUOTE_REMINDER_TENANT_ID" not in str(exc):
-            raise
-        monthly_quote_reminder_timer = {"status": "failed", "reason": str(exc)}
+    monthly_quote_reminder_timer = register_monthly_quote_reminder_timer()
     sync_tag_router_source_to_active()
     install_journal_systemd_units()
     build_and_publish_bot_center()
