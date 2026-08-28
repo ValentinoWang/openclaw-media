@@ -352,7 +352,7 @@ class DeepMathApprovalCoreTests(unittest.TestCase):
         created, item, common = self.proposal(service)
         config = DeepMathApprovalCallbackConfig(
             state_path=str(self.path), approver_user_id="approver", authorized_actor_ids=frozenset({"approver"}),
-            token_signing_secret="stable-secret",
+            token_signing_secret="stable-secret", clock=lambda: self.now,
         )
         result = process_verified_callback({"transport_verified": True, "action": "save", **common}, config)
         self.assertEqual(result["status"], "saved")
@@ -377,7 +377,7 @@ class DeepMathApprovalCoreTests(unittest.TestCase):
         _, _, common = self.proposal(service, payload=payload, proposal_id="callback-task")
         config = DeepMathApprovalCallbackConfig(
             state_path=str(self.path), approver_user_id="approver", authorized_actor_ids=frozenset({"approver"}),
-            token_signing_secret="stable-secret", resource_config_path="/controlled/resource.json",
+            token_signing_secret="stable-secret", resource_config_path="/controlled/resource.json", clock=lambda: self.now,
         )
         resource = DeepMathResourceConfig(
             tenant_key="deepmath", base_name="DeepMath CEO Thinking", tasklist_name="DeepMath CEO Actions",
@@ -405,8 +405,9 @@ class DeepMathApprovalCoreTests(unittest.TestCase):
         self.assertEqual(result["execution_state"], "执行成功")
 
     def test_json_callback_cli_emits_only_safe_result(self):
-        service = self.service()
-        created, _, common = self.proposal(service, proposal_id="cli-proposal")
+        now = datetime.now(UTC)
+        service = self.service(clock=lambda: now)
+        created, _, common = self.proposal(service, expires_at=now + timedelta(hours=1), proposal_id="cli-proposal")
         config_path = Path(self.tempdir.name) / "deepmath.json"
         config_path.write_text(
             json.dumps({
@@ -438,7 +439,7 @@ class DeepMathApprovalCoreTests(unittest.TestCase):
         _, _, common = self.proposal(service, proposal_id="modify-card-proposal")
         config = DeepMathApprovalCallbackConfig(
             state_path=str(self.path), approver_user_id="approver", authorized_actor_ids=frozenset({"approver"}),
-            token_signing_secret="stable-secret",
+            token_signing_secret="stable-secret", clock=lambda: self.now,
         )
         result = process_verified_callback(
             {

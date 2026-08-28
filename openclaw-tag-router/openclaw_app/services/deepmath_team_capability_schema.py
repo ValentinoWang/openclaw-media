@@ -316,10 +316,12 @@ def eligible_records(
     return [record for record in materialized if record.get("记录状态") == "有效"]
 
 
-def feishu_record_payload(record: Mapping[str, Any]) -> dict[str, Any]:
+def feishu_record_payload(
+    record: Mapping[str, Any], *, now: datetime | str | None = None
+) -> dict[str, Any]:
     """Render a validated record without copying user display names or select ids."""
 
-    validate_record(record)
+    validate_record(record, now=now)
     fields: dict[str, Any] = {}
     for field in TEAM_CAPABILITY_FIELDS:
         if field.name not in record or _is_blank(record[field.name]):

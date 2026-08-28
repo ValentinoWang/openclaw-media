@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 import re
 import sys
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 from datetime import datetime
 
 try:
@@ -61,6 +61,7 @@ class DeepMathApprovalCallbackConfig:
     token_signing_secret: str | None = None
     resource_config_path: str = ""
     settings_path: str = ""
+    clock: Callable[[], datetime] | None = None
 
 
 def _resolve_config_value(value: Any, *, secret: bool = False) -> str:
@@ -257,6 +258,7 @@ def process_verified_callback(facts: Mapping[str, Any], config: DeepMathApproval
         authorized_actor_ids=config.authorized_actor_ids,
         executor_registry=_tasks_executor_registry(config),
         token_signing_secret=config.token_signing_secret,
+        clock=config.clock,
         people_resolver=lambda selection: _resolve_people_selection(config, selection),
     )
     raw_result = service.handle_callback(facts)

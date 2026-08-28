@@ -120,7 +120,7 @@ class DeepMathTeamCapabilitySchemaTest(unittest.TestCase):
             validate_records([option_id_status], now=NOW)
 
     def test_record_payload_strips_user_display_copy_and_keeps_status_name(self):
-        payload = feishu_record_payload(_valid_record())
+        payload = feishu_record_payload(_valid_record(), now=NOW)
         self.assertEqual(payload["fields"]["成员"], [{"id": "fixture-member"}])
         self.assertEqual(payload["fields"]["维护人"], [{"id": "fixture-maintainer"}])
         self.assertEqual(payload["fields"]["记录状态"], "有效")
