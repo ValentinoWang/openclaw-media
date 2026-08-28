@@ -52,6 +52,39 @@ EVIDENCE_DRIVEN_CAPABILITY_IDS = frozenset(
     }
 )
 LLM_DRIVEN_CAPABILITY_IDS = frozenset((*EVIDENCE_DRIVEN_CAPABILITY_IDS, "commercial_brief"))
+GROWTH_CAPABILITY_PROMPTS = {
+    "external_research_brief": (
+        "请基于已提供的类型化证据，整理一份面向创作者的内容调研简报。返回一个合法 JSON 对象，"
+        "字段必须包含：status、research_question、media_goal、audience_relevance、content_opportunity、"
+        "usable_angles、unusable_angles、risk_notes、next_content_actions、source_evidence、display_title、"
+        "display_summary。每一项事实判断都必须能追溯到类型化证据；所有面向创作者显示的文字均使用中文，"
+        "JSON 键名保持既有合同，不要翻译或新增字段。"
+    ),
+    "commercial_brief": (
+        "请清理并结构化品牌方提供的视频拍摄需求，形成可供创作者执行的商单简报。返回一个合法 JSON 对象，"
+        "字段必须包含：status、brand、project_name、products、platforms、content_format、duration_requirement、"
+        "locations、required_brand_mentions、must_cover、narrative_direction、interaction_design、"
+        "compliance_restrictions、deliverables、technical_specs、approval_requirements、cleaned_brief、risk_notes、"
+        "next_content_actions、source_evidence、display_title、display_summary。只能使用粘贴的需求和已加载素材；"
+        "原文意图明确时可以修正识别噪声，不明确处写入 risk_notes，不得编造事实或宣称医疗诊断功能。"
+        "所有面向创作者显示的文字均使用中文，JSON 键名保持既有合同，不要翻译或新增字段。"
+    ),
+    "creation_decision_brief": (
+        "请基于已提供的类型化证据，为创作者整理下一步选题决策简报。返回一个合法 JSON 对象，"
+        "字段必须包含：status、decision_goal、topic_candidates、recommended_next_capability_id、"
+        "risk_or_missing_info、display_title、display_summary。每个 topic_candidates 条目都必须包含 title、"
+        "target_audience、audience_pain、content_angle、single_problem、self_check、source_refs，"
+        "并能追溯到类型化证据。所有面向创作者显示的文字均使用中文，JSON 键名保持既有合同，"
+        "不要翻译或新增字段。"
+    ),
+    "publishing_pack_build": (
+        "请基于已提供的类型化证据与创作草稿，整理一份可人工确认后发布的内容发布包。返回一个合法 JSON 对象，"
+        "字段必须包含：status、title、cover_text、caption、hashtags、comment_seed、publish_checklist、"
+        "risk_notes、display_title、display_summary。标题、封面文案、正文和评论引导必须使用中文，"
+        "表达自然、短句清楚、可直接口播，避免书面套话、空泛承诺和英文平台术语。不得声称已经自动发布。"
+        "所有面向创作者显示的文字均使用中文，JSON 键名保持既有合同，不要翻译或新增字段。"
+    ),
+}
 
 
 def capture_source_asset(
@@ -137,12 +170,7 @@ def build_external_research_brief(
         raise MediaGrowthPendingManual("external_research_brief requires explicit URL or pasted evidence text before writing artifact.")
     llm_payload = _growth_llm_payload(
         task="external_research_brief",
-        prompt=(
-            "Fill an ExternalResearchBrief for Mediaclaw. Return JSON fields: status, research_question, "
-            "media_goal, audience_relevance, content_opportunity, usable_angles, unusable_angles, "
-            "risk_notes, next_content_actions, source_evidence, display_title, display_summary. "
-            "Every semantic claim must be grounded in the typed evidence bundle."
-        ),
+        prompt=GROWTH_CAPABILITY_PROMPTS["external_research_brief"],
         text=text,
         platform=platform,
         account_id=account_id,
@@ -208,15 +236,7 @@ def build_commercial_brief(
         raise MediaGrowthPendingManual("commercial_brief requires pasted brand brief text or a readable input artifact.")
     llm_payload = _growth_llm_payload(
         task="commercial_brief",
-        prompt=(
-            "Clean and structure a brand video shooting brief for Mediaclaw. Return JSON fields: "
-            "status, brand, project_name, products, platforms, content_format, duration_requirement, locations, "
-            "required_brand_mentions, must_cover, narrative_direction, interaction_design, compliance_restrictions, "
-            "deliverables, technical_specs, approval_requirements, cleaned_brief, risk_notes, next_content_actions, "
-            "source_evidence, display_title, display_summary. "
-            "Use only the pasted brief and loaded input artifacts. Repair OCR noise when the intended wording is clear; "
-            "mark unclear items in risk_notes instead of inventing facts. Do not claim medical diagnosis functions."
-        ),
+        prompt=GROWTH_CAPABILITY_PROMPTS["commercial_brief"],
         text=text,
         platform=platform,
         account_id=account_id,
@@ -299,12 +319,7 @@ def build_decision_brief(
         _require_ready_knowledge_evidence_bundle(evidence_bundle)
     llm_payload = _growth_llm_payload(
         task="creation_decision_brief",
-        prompt=(
-            "Fill a DecisionBrief for Mediaclaw. Return JSON fields: status, decision_goal, "
-            "topic_candidates, recommended_next_capability_id, risk_or_missing_info, display_title, display_summary. "
-            "Each topic candidate must include title, target_audience, audience_pain, content_angle, "
-            "single_problem, self_check, and source_refs grounded in typed evidence."
-        ),
+        prompt=GROWTH_CAPABILITY_PROMPTS["creation_decision_brief"],
         text=text,
         platform=platform,
         account_id=account_id,
@@ -375,11 +390,7 @@ def build_publishing_pack(
         _require_ready_knowledge_evidence_bundle(evidence_bundle)
     llm_payload = _growth_llm_payload(
         task="publishing_pack_build",
-        prompt=(
-            "Fill a PublishingPack for Mediaclaw. Return JSON fields: status, title, cover_text, caption, "
-            "hashtags, comment_seed, publish_checklist, risk_notes, display_title, display_summary. "
-            "Use typed evidence and the provided draft only; do not claim automatic publication."
-        ),
+        prompt=GROWTH_CAPABILITY_PROMPTS["publishing_pack_build"],
         text=text,
         platform=platform,
         account_id=account_id,
