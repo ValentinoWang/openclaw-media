@@ -123,6 +123,7 @@ def test_creator_reply_hides_provider_and_run_identifiers() -> None:
 
     assert "拍摄执行单已生成。" in reply
     assert "https://example.com/doc" in reply
+    assert reply.splitlines()[1] == "拍摄执行文档：https://example.com/doc"
     assert "run_creator_123" not in reply
     assert "codex" not in reply.lower()
     assert "provider" not in reply.lower()
@@ -167,7 +168,10 @@ def test_creator_appendices_use_human_labels_and_keep_evidence() -> None:
                 "inspiration_reference_reason": "落到结尾提问。",
             }
         ],
-        "usable_material_brief": {"execution_brief": "先拍体验，再收束结论。"},
+        "usable_material_brief": {
+            "execution_brief": "先拍体验，再收束结论。",
+            "source_mapping": [{"source": "insight-001", "transfer": "真实体验", "placement": "开场镜头"}],
+        },
     }
 
     blocks = _evidence_appendix_blocks([], [], [inspiration], [], draft, {"ok": True})
@@ -180,8 +184,12 @@ def test_creator_appendices_use_human_labels_and_keep_evidence() -> None:
     assert "灵感落地说明" in rendered
     assert "引用类型：洞察卡（仅公开内容）" in rendered
     assert "证据边界：仅公开内容" in rendered
-    assert "来源编号：insight-001" in rendered
+    assert "卡片关联：被理解感.md（内部证据已保留）" in rendered
+    assert "可用内容：真实体验；落地位置：开场镜头" in rendered
     assert "发布后首小时动作（需由创作者手动完成）：发布后手动回复评论" in rendered
     assert "record_id" not in rendered
     assert "insight-card reference" not in rendered
     assert "public_content_only" not in rendered
+    assert "insight-001" not in rendered
+    assert "option-1" not in rendered
+    assert "人性洞察库/被理解感.md" not in rendered

@@ -283,14 +283,13 @@ def format_creation_reply(
     del candidate_counts, platform_fit, generation
     lines = [
         "【创作】草稿已就绪" if not dry_run else "【创作】预览已就绪",
+        *( [f"创作文档：{doc_link}"] if doc_link else [] ),
         f"平台：{request.platform}",
         f"内容类型：{request.content_type}",
         f"赛道：{request.track}",
         f"主体：{request.topic}",
         f"平台规则校验：{'通过' if validation.get('ok') else '未通过'}",
     ]
-    if doc_link:
-        lines.append(f"创作文档：{doc_link}")
     if creation_record_id:
         lines.append(f"创作记录ID：{creation_record_id}（数据复盘时请一并填写）")
     if creator_profile_error:

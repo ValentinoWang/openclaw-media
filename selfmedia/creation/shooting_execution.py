@@ -448,13 +448,12 @@ def format_shooting_execution_reply(
 ) -> str:
     lines = [
         "拍摄执行草案已生成，尚未写入文档。" if dry_run else "拍摄执行单已生成。",
+        *( [f"拍摄执行文档：{doc_link}"] if doc_link else [] ),
         f"平台：{request.platform}",
         f"内容类型：{request.content_type}",
         f"主体：{request.topic}",
         f"校验：{'通过' if validation.get('ok') else '待人工补充'}",
     ]
-    if doc_link:
-        lines.append(f"拍摄执行文档：{doc_link}")
     return "\n".join(lines)
 
 

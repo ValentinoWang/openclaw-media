@@ -406,16 +406,13 @@ class ContentOSBridgeMixin:
         )
         return project
     def _creation_content_os_project_reply(self, project: dict[str, Any], creation_output: dict[str, Any]) -> str:
-        lines = [
-            f"Content OS 项目已创建：{project.get('project_id')}",
-            f"项目包：{project.get('project_path')}",
-        ]
+        lines = ["创作项目已创建。"]
         if creation_output.get("reply"):
-            lines.append(str(creation_output["reply"]))
+            lines.append("创作内容已同步到项目档案。")
         if project.get("task_path"):
-            lines.append(f"Mac 任务：{project.get('task_path')}")
+            lines.append("本地素材匹配任务已创建。")
         else:
-            lines.append("Mac 素材未绑定：回复 `本地素材路径：/Users/...` 即可创建 Mac 素材匹配任务。")
+            lines.append("下一步：如需匹配本地素材，请补充素材位置。")
         return "\n".join(lines)
     def _write_standalone_creation_output(self, message: Message, parsed: dict[str, Any], reply: str) -> dict[str, Any]:
         if not self._content_os_cloud_markdown_enabled():

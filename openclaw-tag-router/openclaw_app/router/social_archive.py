@@ -112,14 +112,7 @@ class SocialArchiveMixin:
                 entry.frontmatter["id"],
                 {"message": message.body, "metadata": metadata},
             )
-            reply = "\n".join(
-                [
-                    f"{archive_kind}档案待确认：LLM 未能可靠识别人物。",
-                    f"原因：{metadata.get('reason') or '缺少必要字段'}",
-                    "请补一句：对象：称呼",
-                    f"暂存路径：{entry.local_path}",
-                ]
-            )
+            reply = self._social_archive_metadata_pending_reply(archive_kind, metadata.get("reason"))
             return TaskResult(
                 ok=False,
                 status="pending_person",
@@ -212,7 +205,7 @@ class SocialArchiveMixin:
             if feishu_result.get("doc"):
                 reply_lines.append(f"- 飞书云文档：{feishu_result['doc']}")
             elif feishu_result.get("warning"):
-                reply_lines.append(f"- 飞书云文档：同步受限：{feishu_result['warning']}")
+                reply_lines.append(self._social_archive_sync_warning_reply(feishu_result.get("warning")))
             elif feishu_skipped:
                 reply_lines.append("- 飞书云文档：不同步（无性关系/人脉档案默认仅本地与 Obsidian）")
             if archive_kind == "人脉":
@@ -238,14 +231,7 @@ class SocialArchiveMixin:
             )
 
         sync_error = feishu_result.get("warning") or archive_result.get("error") or "外部同步未完成"
-        reply = "\n".join(
-            [
-                f"{archive_kind}档案未完成自动闭环，已保留路由记录。",
-                f"对象：【{person}】",
-                f"路由记录：{entry.local_path}",
-                f"错误：{sync_error}",
-            ]
-        )
+        reply = self._social_archive_sync_failure_reply(archive_kind, person, sync_error)
         return TaskResult(
             ok=False,
             status=status,
@@ -269,6 +255,29 @@ class SocialArchiveMixin:
                 f"- 性别：{gender or '未知'}",
                 f"- 关系分类：{category}",
                 "- 说明：原始材料与处理回执保存在内部归档产物中。",
+            ]
+        )
+
+    @staticmethod
+    def _social_archive_metadata_pending_reply(archive_kind: str, _reason: object) -> str:
+        return "\n".join(
+            [
+                f"{archive_kind}档案待确认：暂未可靠识别人物。",
+                "请补一句：对象：称呼。",
+            ]
+        )
+
+    @staticmethod
+    def _social_archive_sync_warning_reply(_warning: object) -> str:
+        return "- 飞书云文档：同步受限，请稍后重试或核实文档权限。"
+
+    @staticmethod
+    def _social_archive_sync_failure_reply(archive_kind: str, person: str, _reason: object) -> str:
+        return "\n".join(
+            [
+                f"{archive_kind}档案暂未完成同步。",
+                f"对象：【{person}】",
+                "本次材料已保留，请稍后重试。",
             ]
         )
 

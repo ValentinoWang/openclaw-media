@@ -103,6 +103,51 @@ def test_unknown_performance_level_is_explicitly_unrated():
     assert validated["performance_level"] == "未评级"
 
 
+def test_review_renderers_hide_internal_identifiers_paths_and_exceptions():
+    analysis = _analysis_with_guidance(["先缩短开头"])
+    analysis["metrics"] = {
+        "播放量": 1200,
+        "record_id": "review_internal_123",
+        "screenshot_path": "/Users/example/private/review-shot.png",
+        "error": "RuntimeError: upstream credentials unavailable",
+    }
+    analysis["priority_metrics"] = [
+        {
+            "metric": "完播率",
+            "value": "32%",
+            "source_record_id": "metric_private_456",
+            "artifact_uri": "media://private/review.json",
+            "exception": "ValueError: provider response invalid",
+        }
+    ]
+
+    blocks = data_review_doc_blocks(
+        "数据复盘",
+        DataReviewRequest(platform="抖音", account="小王"),
+        analysis,
+        [],
+        "2026-08-28T10:00:00+08:00",
+        "https://example.com/guide",
+    )
+    rendered_values = (
+        "\n".join(_block_texts(blocks)),
+        render_data_review_report({"analysis": analysis}),
+    )
+
+    for rendered in rendered_values:
+        assert "播放量：1200" in rendered
+        assert "完播率" in rendered
+        for internal_value in (
+            "review_internal_123",
+            "metric_private_456",
+            "/Users/example/private/review-shot.png",
+            "media://private/review.json",
+            "RuntimeError: upstream credentials unavailable",
+            "ValueError: provider response invalid",
+        ):
+            assert internal_value not in rendered
+
+
 def test_retired_bitable_field_writer_surface_is_removed():
     retired_names = (
         "ensure_data_review_fields",
