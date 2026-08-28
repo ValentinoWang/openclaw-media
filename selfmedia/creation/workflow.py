@@ -409,6 +409,7 @@ def _record_candidate_payload(record: CanonicalMediaRecord) -> dict[str, Any]:
     if record.record_type == "素材拆解" and isinstance(creation_handoff, dict):
         if isinstance(contract, dict):
             payload = {
+            payload = {
                 "id": _primary_record_id(record),
                 "source_record_id": record.source_record_id,
                 "relation_id": record.relation_id,
