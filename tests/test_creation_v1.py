@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from selfmedia.creation.adapters import ActivityAdapter, BusinessAdapter, CreationInspirationAdapter, ViralContentAdapter
+from selfmedia.creation import backwash
 from selfmedia.creation.field_contract import CREATION_OUTPUT_TABLE_CONTRACT, CREATION_SOURCE_TABLE_CONTRACTS, CanonicalMediaRecord
 from selfmedia.creation.matcher import RankedRecord, rank_activities, rank_businesses, rank_inspirations, rank_virals
 from selfmedia.creation.platform_fit import (
@@ -31,7 +32,11 @@ from selfmedia.creation.platform_validator import validate_platform_draft
 from selfmedia.creation.llm_generator import CREATOR_BRIEF_REPORT_MODE, build_creation_prompt, validate_llm_draft_payload
 from selfmedia.creation.request_inference import parse_creation_request_with_llm
 from selfmedia.creation.request_parser import CreationRequest, parse_creation_request
-from selfmedia.creation.shooting_execution import parse_shooting_execution_request
+from selfmedia.creation.shooting_execution import (
+    ShootingExecutionRequest,
+    generate_shooting_execution_plan,
+    parse_shooting_execution_request,
+)
 from selfmedia.creation.consultation import handle_creation_consultation_command, parse_consultation_request, request_needs_activity_candidates
 from selfmedia.creation.workflow import _deconstruct_activity_example_links, _record_candidate_payload, _run_viral_deconstruct, handle_creation_command
 from selfmedia.creation.writer import _creation_doc_blocks, _creation_output_fields_for_write, _find_wiki_child_doc, _shooting_execution_doc_blocks, _url_field_value
@@ -1016,10 +1021,40 @@ class CreationV1Tests(unittest.TestCase):
             },
             "evidence_appendix": [{"source": "Brief", "source_status": "confirmed", "available_evidence": "已提供", "usage_reason": "执行依据", "risk": "无"}],
         }
-        blocks = _shooting_execution_doc_blocks("拍摄执行", request, draft, {"ok": True})
-        self.assertEqual(_blocks_text(blocks).splitlines()[:2], ["拍摄执行", "分镜脚本"])
+        blocks = _shooting_execution_doc_blocks(
+            "拍摄执行",
+            request,
+            draft,
+            {
+                "ok": False,
+                "missing": ["route_map", "must_shot_list"],
+                "empty_lists": ["onsite_checklist"],
+            },
+            media_context={"loaded": {"account_profile": True, "future_runtime_flag": True}},
+        )
+        rendered = _blocks_text(blocks)
+        self.assertEqual(rendered.splitlines()[:2], ["拍摄执行", "分镜脚本"])
         self.assertEqual(blocks[2]["rows"][0], ["时间", "画面", "字幕/口播", "声音/拍摄注意"])
-        self.assertNotIn("证据附录", _blocks_text(blocks))
+        native_tables = [block["rows"] for block in blocks if block.get("_openclaw_kind") == "_openclaw_feishu_table"]
+        must_shot_table = next(rows for rows in native_tables if rows[0][0] == "优先级")
+        branch_plan_table = next(rows for rows in native_tables if rows[0] == ["触发条件", "执行方案", "优先级"])
+        self.assertEqual(must_shot_table[1][0], "必拍")
+        self.assertEqual(branch_plan_table[1][2], "重要")
+        table_text = "\n".join(cell for rows in native_tables for row in rows for cell in row)
+        self.assertNotIn("P0", table_text)
+        self.assertNotIn("P1", table_text)
+        self.assertNotIn("P2", table_text)
+        self.assertIn("必拍", rendered)
+        self.assertIn("现场检查清单", rendered)
+        self.assertIn("缺失字段：路线图、必拍镜头清单", rendered)
+        self.assertIn("空列表字段：现场检查清单", rendered)
+        self.assertIn("其他上下文已加载", rendered)
+        self.assertNotIn("route_map", rendered)
+        self.assertNotIn("must_shot_list", rendered)
+        self.assertNotIn("onsite_checklist", rendered)
+        self.assertNotIn("future_runtime_flag", rendered)
+        self.assertIn("证据附录", rendered)
+        self.assertIn("来源状态：已核验", rendered)
         self.assertTrue(draft["evidence_appendix"])
         publishing_index = next(index for index, block in enumerate(blocks) if "发布包" in _blocks_text([block]))
         publishing_blocks = blocks[publishing_index:]
@@ -1031,6 +1066,47 @@ class CreationV1Tests(unittest.TestCase):
         self.assertEqual(subheadings, ["作品标题", "封面图方案", "发布文案", "话题与互动", "声音方案"])
         self.assertIn("标题 1：主标题", _blocks_text(publishing_blocks))
         self.assertIn("完整发布文案。", _blocks_text(publishing_blocks))
+
+    def test_shooting_prompts_do_not_direct_user_visible_machine_states(self) -> None:
+        request = ShootingExecutionRequest(
+            platform="抖音",
+            content_type="视频",
+            track="科技",
+            topic="WAIC 探展",
+            shooting_goal="完成第一视角探展",
+            locations=["展位"],
+            people=["博主"],
+        )
+        captured: list[str] = []
+        complete_draft = {
+            "shooting_goal": {},
+            "route_map": [{}],
+            "must_shot_list": [{}],
+            "branch_plans": [{}],
+            "storyboard": [{}],
+            "onsite_checklist": ["回看"],
+            "publishing_pack": {},
+            "evidence_appendix": [{}],
+        }
+
+        def fake_call(prompt: str, **_kwargs: object) -> dict[str, object]:
+            captured.append(prompt)
+            return complete_draft
+
+        with patch("selfmedia.creation.shooting_execution.call_creation_json", side_effect=fake_call):
+            self.assertEqual(generate_shooting_execution_plan(request), complete_draft)
+
+        self.assertEqual(len(captured), 1)
+        self.assertIn("仅凭文字描述，未看过原片", captured[0])
+        self.assertIn("待人工核实", captured[0])
+        self.assertNotIn("manual_description_only", captured[0])
+        self.assertNotIn("pending_manual", captured[0])
+
+        revision_prompt = backwash._revision_prompt({}, "按事实重写", {}, {})
+        self.assertIn("待人工核实", revision_prompt)
+        self.assertIn("悬念设置/悬念回收", revision_prompt)
+        self.assertNotIn("pending_manual", revision_prompt)
+        self.assertNotIn("hook_setup/hook_payoff", revision_prompt)
 
     def test_creation_doc_renders_creator_brief_before_evidence(self) -> None:
         req = parse_creation_request(
