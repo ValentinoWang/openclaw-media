@@ -362,8 +362,8 @@ def run_engagement_comments_interaction_pipeline(*, asset_manifest: dict[str, An
 
 def run_keyframe_observation_facts_pipeline(*, visual_facts: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
     visual_payload = _fact_payload(visual_facts, "visual_assets")
-    llm_assets = _select_llm_visual_assets(visual_payload.get("assets") or [])
-    frame_assets = [asset for asset in llm_assets if str(asset.get("asset_id") or "").startswith("frame_")]
+    visual_assets = visual_payload.get("assets") or []
+    frame_assets = [asset for asset in visual_assets if str(asset.get("asset_id") or "").startswith("frame_")]
     if not frame_assets:
         return _validated_facts(
             {
@@ -377,6 +377,7 @@ def run_keyframe_observation_facts_pipeline(*, visual_facts: dict[str, dict[str,
             }
         )
 
+    llm_assets = _select_llm_visual_assets(visual_assets)
     try:
         raw_observations = run_keyframe_observation_pipeline(llm_assets, _visual_parts_for_llm(llm_assets))
     except Exception:
@@ -394,7 +395,7 @@ def run_keyframe_observation_facts_pipeline(*, visual_facts: dict[str, dict[str,
             }
         )
 
-    normalized = _normalize_keyframe_observations(visual_payload.get("assets") or [], raw_observations)
+    normalized = _normalize_keyframe_observations(visual_assets, raw_observations)
     return _validated_facts(
         {
             "keyframe_observations": _fact(

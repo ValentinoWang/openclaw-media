@@ -19,6 +19,18 @@ def _keyframe_fact(facts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     return facts["keyframe_observations"]
 
 
+def _asset_manifest() -> dict[str, Any]:
+    return modality_dag.prepare_asset_manifest(
+        source_url="https://www.douyin.com/video/123",
+        media_type="video",
+        source_path="/tmp/source.mp4",
+        work_dir="/tmp",
+        video_path="/tmp/source.mp4",
+        image_paths=[],
+        media_stats={},
+    )
+
+
 def test_keyframe_observation_without_frame_assets_is_not_applicable(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(modality_dag, "generate_json", lambda *args, **kwargs: pytest.fail("LLM must not run without frame assets"))
 
@@ -30,6 +42,17 @@ def test_keyframe_observation_without_frame_assets_is_not_applicable(monkeypatch
 
     assert fact["status"] == "not_applicable"
     assert fact["missing_reason"] == "no_keyframe_observations"
+
+
+def test_keyframe_observation_selection_cannot_hide_frame_assets(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(modality_dag, "_select_llm_visual_assets", lambda assets: [])
+
+    fact = _keyframe_fact(
+        modality_dag.run_keyframe_observation_facts_pipeline(visual_facts=_visual_facts(_frame_asset()))
+    )
+
+    assert fact["status"] == "failed"
+    assert fact["missing_reason"] == "keyframe_observation_empty_result"
 
 
 @pytest.mark.parametrize(
@@ -52,6 +75,35 @@ def test_keyframe_observation_generation_failures_are_observable(
     assert fact["status"] == "failed"
     assert fact["missing_reason"] == "keyframe_observation_generation_failed"
     assert "secret-token" not in fact["missing_reason"]
+
+
+def test_keyframe_observation_generation_failure_is_preserved_in_evidence_store(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_generate_json(*args: object, **kwargs: object) -> object:
+        raise RuntimeError("provider unavailable")
+
+    monkeypatch.setattr(modality_dag, "generate_json", fake_generate_json)
+    monkeypatch.setattr(modality_dag, "load_config", lambda: object())
+
+    fact = _keyframe_fact(
+        modality_dag.run_keyframe_observation_facts_pipeline(visual_facts=_visual_facts(_frame_asset()))
+    )
+    store = modality_dag.build_evidence_store(
+        asset_manifest=_asset_manifest(),
+        modality_facts={"keyframe_observations": fact},
+    )
+
+    assert store["modality_facts"]["keyframe_observations"]["status"] == "failed"
+    assert (
+        store["llm_input_compact"]["facts"]["keyframe_observations"]["missing_reason"]
+        == "keyframe_observation_generation_failed"
+    )
+    assert store["missing_evidence_report"] == [
+        {
+            "fact_type": "keyframe_observations",
+            "status": "failed",
+            "missing_reason": "keyframe_observation_generation_failed",
+        }
+    ]
 
 
 @pytest.mark.parametrize(
