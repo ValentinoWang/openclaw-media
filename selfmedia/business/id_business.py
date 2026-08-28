@@ -36,6 +36,7 @@ from common.social_runtime import (  # noqa: E402
     feishu_field_types,
     feishu_headers,
     feishu_list_records,
+    feishu_update_record,
     feishu_plain_text,
     feishu_table_url_from_env,
     feishu_tenant_access_token,
@@ -3267,6 +3268,206 @@ def summarize_openclaw_cli_output(stdout: str) -> str:
     return text[-1000:]
 
 
+def _quote_reminder_record_fields(record: dict[str, Any]) -> dict[str, Any]:
+    """Project legacy and Media Model v2 account fields into reminder names."""
+    raw_fields = record.get("fields") if isinstance(record.get("fields"), dict) else {}
+    fields = dict(raw_fields)
+    aliases = {
+        "current_image_quote_amount": "图文报价",
+        "当前图文报价": "图文报价",
+        "current_video_quote_amount": "视频报价",
+        "当前视频报价": "视频报价",
+        "account_name_snapshot": "账号名称",
+        "账号名称快照": "账号名称",
+        "author_id": "作者ID",
+        "platform": "平台",
+    }
+    for source, target in aliases.items():
+        if not quote_text(fields, target) and fields.get(source) not in (None, "", []):
+            fields[target] = fields[source]
+    return fields
+
+
+def _record_tenant_id(record: dict[str, Any]) -> str:
+    fields = record.get("fields") if isinstance(record.get("fields"), dict) else {}
+    for key in ("租户ID", "tenant_id", "tenantId"):
+        value = feishu_plain_text(fields.get(key)).strip()
+        if value:
+            return value
+    return ""
+
+
+def _reminder_error(phase: str, exc: Exception) -> str:
+    """Keep exception details out of result payloads while retaining a traceable class."""
+    return f"{phase}失败（{type(exc).__name__}）"
+
+
+def run_monthly_quote_reminder(
+    *,
+    tenant_id: str,
+    today=None,
+    dry_run: bool = False,
+    table_url: str = "",
+) -> dict[str, Any]:
+    """Deliver the bounded, idempotent first-of-month quote reminder run."""
+    tenant_id = require_tenant_id(tenant_id)
+    if isinstance(today, str):
+        current_day = local_today(today)
+    else:
+        current_day = today or local_today()
+    month_key = current_day.strftime("%Y-%m")
+    counts = {"success": 0, "skipped": 0, "failed": 0, "dry_run": 0}
+    results: list[dict[str, Any]] = []
+    resolved_url = table_url.strip() or table_url_from_args("")
+    if not resolved_url:
+        return {
+            "ok": False,
+            "status": "failed",
+            "mode": "dry_run" if dry_run else "live",
+            "tenant_id": tenant_id,
+            "month_key": month_key,
+            "counts": {**counts, "failed": 1},
+            "records": [],
+            "error": "缺少 05A 商务账号表 URL",
+        }
+    try:
+        token = feishu_tenant_access_token()
+        records = feishu_list_records(resolved_url, page_size=200, token=token)
+        if not isinstance(records, list):
+            raise TypeError("records response must be a list")
+    except Exception as exc:
+        return {
+            "ok": False,
+            "status": "failed",
+            "mode": "dry_run" if dry_run else "live",
+            "tenant_id": tenant_id,
+            "month_key": month_key,
+            "counts": {**counts, "failed": 1},
+            "records": [],
+            "error": _reminder_error("读取商务账号记录", exc),
+        }
+
+    for record in records:
+        record_id = str(record.get("record_id") or "").strip() if isinstance(record, dict) else ""
+        result: dict[str, Any] = {"record_id": record_id}
+        if not isinstance(record, dict) or not record_id:
+            result.update({"status": "failed", "reason": "缺少飞书记录 ID"})
+            counts["failed"] += 1
+            results.append(result)
+            continue
+        scoped_tenant = _record_tenant_id(record)
+        if scoped_tenant and scoped_tenant != tenant_id:
+            result.update({"status": "skipped", "reason": "租户不匹配"})
+            counts["skipped"] += 1
+            results.append(result)
+            continue
+        fields = _quote_reminder_record_fields(record)
+        try:
+            due, missing, due_month = monthly_quote_reminder_due(fields, today=current_day)
+        except Exception as exc:
+            result.update({"status": "failed", "reason": _reminder_error("判定报价提醒", exc)})
+            counts["failed"] += 1
+            results.append(result)
+            continue
+        if not due:
+            reminded_month = quote_text(fields, "报价提醒月份")
+            if reminded_month == due_month:
+                reason = "本月已提醒"
+            elif not missing:
+                reason = "报价已完整"
+            else:
+                reason = "非提醒日期"
+            result.update({"status": "skipped", "reason": reason})
+            counts["skipped"] += 1
+            results.append(result)
+            continue
+        try:
+            enabled = record_enabled(fields)
+        except Exception as exc:
+            result.update({"status": "failed", "reason": _reminder_error("读取账号启用状态", exc)})
+            counts["failed"] += 1
+            results.append(result)
+            continue
+        if not enabled:
+            result.update({"status": "skipped", "reason": "账号未启用"})
+            counts["skipped"] += 1
+            results.append(result)
+            continue
+        try:
+            message = quote_reminder_message(
+                fields,
+                record_id=record_id,
+                missing=missing,
+                month_key=due_month,
+            )
+        except Exception as exc:
+            result.update({"status": "failed", "reason": _reminder_error("生成报价提醒", exc)})
+            counts["failed"] += 1
+            results.append(result)
+            continue
+        result["message"] = message
+        if dry_run:
+            result.update({"status": "dry_run", "reason": "试运行未发送"})
+            counts["dry_run"] += 1
+            results.append(result)
+            continue
+        try:
+            delivery = notify_social(message, dry_run=False)
+        except Exception as exc:
+            result.update({"status": "failed", "reason": _reminder_error("投递报价提醒", exc)})
+            counts["failed"] += 1
+            results.append(result)
+            continue
+        if not isinstance(delivery, dict) or not delivery.get("ok"):
+            if isinstance(delivery, dict) and delivery.get("skipped"):
+                result.update({"status": "skipped", "reason": "通知未投递"})
+                counts["skipped"] += 1
+            else:
+                result.update({"status": "failed", "reason": "通知投递失败"})
+                counts["failed"] += 1
+            results.append(result)
+            continue
+        try:
+            feishu_update_record(
+                resolved_url,
+                record_id,
+                {"报价提醒月份": due_month, "报价提醒状态": business_status_label("notification", "sent")},
+                specs=FIELD_SPECS,
+                token=token,
+            )
+        except Exception as exc:
+            result.update({"status": "failed", "reason": _reminder_error("回写报价提醒状态", exc)})
+            counts["failed"] += 1
+            results.append(result)
+            continue
+        result.update({"status": "success", "status_label": business_status_label("notification", "sent")})
+        counts["success"] += 1
+        results.append(result)
+
+    failed = counts["failed"]
+    return {
+        "ok": failed == 0,
+        "status": "partial_failure" if failed else "completed",
+        "mode": "dry_run" if dry_run else "live",
+        "tenant_id": tenant_id,
+        "month_key": month_key,
+        "counts": counts,
+        "records": results,
+    }
+
+
+def remind(args: argparse.Namespace) -> dict[str, Any]:
+    return run_monthly_quote_reminder(
+        tenant_id=args.tenant_id,
+        today=local_today(getattr(args, "date", "")),
+        dry_run=bool(getattr(args, "dry_run", False)),
+    )
+
+
+# Keep a discoverable runner name for integrations that prefer a noun-based entrypoint.
+monthly_quote_reminder_runner = run_monthly_quote_reminder
+
+
 def record_enabled(fields: dict[str, Any]) -> bool:
     if "启用" not in fields:
         return True
@@ -3292,6 +3493,15 @@ def build_parser() -> argparse.ArgumentParser:
     ingest_parser.add_argument("--smoke", action="store_true", help="Validate trigger/input parsing without LLM, screenshot, Feishu reads, or writes.")
     ingest_parser.add_argument("--tenant-id", required=True)
     ingest_parser.set_defaults(func=ingest)
+
+    remind_parser = sub.add_parser(
+        "remind",
+        help="Send the first-of-month quote reminder for tenant-owned business accounts.",
+    )
+    remind_parser.add_argument("--tenant-id", required=True)
+    remind_parser.add_argument("--date", default="", help="Override local date for an isolated run (YYYY-MM-DD).")
+    remind_parser.add_argument("--dry-run", action="store_true")
+    remind_parser.set_defaults(func=remind)
 
     return parser
 

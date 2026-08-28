@@ -1,0 +1,6 @@
+[Unit]
+Description=OpenClaw Monthly Business Quote Reminder
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/ubuntu/selfmedia/business/id_business.py remind --tenant-id @TENANT_ID@
