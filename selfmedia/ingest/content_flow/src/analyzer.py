@@ -96,6 +96,12 @@ transferable_expression (可迁移表达):
 提炼可直接迁移到新视频的句式、镜头套路、情绪包装或结构模板。不能迁移时返回空字符串。
 """
 
+ANALYST_INSTRUCTIONS = """你是一名中文内容分析与运营编辑。你的输出为创作者提供内容洞察，帮助他们理解内容价值、受众痛点与可执行的创作方向。
+
+输出协议：
+只输出合法 JSON object，不要输出 Markdown，不要解释。
+"""
+
 
 ProgressFn = Callable[[str, int, str], None]
 
@@ -171,8 +177,7 @@ def analyze_with_openclaw_agent(user_content: str, settings: Settings) -> Option
     message = (
         f"{ANALYST_SYSTEM_PROMPT}\n\n"
         "输入内容：\n"
-        f"{user_content}\n\n"
-        "只输出 JSON，不要输出 Markdown，不要解释。"
+        f"{user_content}"
     )
     try:
         llm_settings = load_profile_llm_settings("media_analysis")
@@ -181,7 +186,7 @@ def analyze_with_openclaw_agent(user_content: str, settings: Settings) -> Option
             llm_settings,
             max_retries=1,
             error_prefix="Codex Responses 结构化分析 JSON 校验失败",
-            instructions="你是 Media 内容分析 JSON 引擎。必须只输出合法 JSON object，不要 Markdown，不要解释。",
+            instructions=ANALYST_INSTRUCTIONS,
             validation_contract=CONTENT_ANALYSIS_VALIDATION_CONTRACT,
         )
     except Exception as exc:
