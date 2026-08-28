@@ -8,43 +8,190 @@ from .tag_router_common import CONTENT_OS_SCRIPT_GENERATION_MODEL, CONTENT_OS_SC
 
 
 class ContentOSRenderersMixin:
+    @staticmethod
+    def _content_os_text(value: Any) -> str:
+        if value is None or isinstance(value, (dict, list, tuple, set)):
+            return ""
+        return str(value).strip()
+
+    def _content_os_readable_list(self, value: Any, *, fields: tuple[tuple[str, str], ...] = ()) -> str:
+        if not isinstance(value, list):
+            return self._markdown_list(value)
+        lines: list[str] = []
+        for item in value:
+            if isinstance(item, dict):
+                details = [
+                    f"{label}：{text}"
+                    for key, label in fields
+                    if (text := self._content_os_text(item.get(key)))
+                ]
+                if details:
+                    lines.append(f"- {'；'.join(details)}")
+                continue
+            text = self._content_os_text(item)
+            if text:
+                lines.append(f"- {text}")
+        return "\n".join(lines)
+
+    def _content_os_storyboard(self, value: Any) -> str:
+        return self._content_os_readable_list(
+            value,
+            fields=(
+                ("time", "时间"),
+                ("scene", "镜头"),
+                ("visual", "画面"),
+                ("subtitle", "字幕/口播"),
+                ("caption", "字幕/口播"),
+                ("voiceover", "口播"),
+                ("sound", "声音"),
+                ("shooting_note", "拍摄注意"),
+                ("note", "拍摄注意"),
+            ),
+        )
+
+    def _content_os_image_script(self, value: Any) -> str:
+        return self._content_os_readable_list(
+            value,
+            fields=(
+                ("page", "页码"),
+                ("visual", "画面"),
+                ("image", "画面"),
+                ("caption", "文案"),
+                ("copy", "文案"),
+                ("note", "说明"),
+            ),
+        )
+
+    def _content_os_publish_actions(self, value: Any) -> str:
+        if not isinstance(value, dict):
+            return ""
+        lines = []
+        for key, label in (
+            ("cover_text", "封面字"),
+            ("body_copy", "发布正文"),
+            ("pinned_comment", "置顶评论"),
+            ("comment_prompt", "评论区引导"),
+            ("first_hour_action", "发布后首小时动作"),
+        ):
+            text = self._content_os_text(value.get(key))
+            if text:
+                lines.append(f"- {label}：{text}")
+        hashtags = value.get("hashtags")
+        if isinstance(hashtags, list):
+            tags = " ".join(self._content_os_text(item) for item in hashtags if self._content_os_text(item))
+            if tags:
+                lines.append(f"- 话题：{tags}")
+        return "\n".join(lines)
+
     def _render_content_os_creation_script_section(self, message: Message, parsed: dict[str, Any], reply: str, doc_link: str, record_id: str) -> str:
+        draft = parsed.get("draft") if isinstance(parsed.get("draft"), dict) else {}
+        request = parsed.get("request") if isinstance(parsed.get("request"), dict) else {}
+        if not request and isinstance(parsed.get("creation_request"), dict):
+            request = parsed.get("creation_request") or {}
+        creator_report = draft.get("creator_report") if isinstance(draft.get("creator_report"), dict) else {}
+        publishing_pack = creator_report.get("publishing_pack") if isinstance(creator_report.get("publishing_pack"), dict) else {}
+        title = self._content_os_text(draft.get("title") or parsed.get("title") or request.get("topic") or request.get("主题"))
+        title_options = self._content_os_readable_list(
+            draft.get("script_options") or draft.get("title_options") or [],
+            fields=(("title", "标题"), ("angle", "角度")),
+        )
+        hooks = self._content_os_readable_list(draft.get("hook_3s") or draft.get("hook_options") or [])
+        final_copy = self._content_os_text(draft.get("final_copy"))
+        voiceover = self._content_os_text(draft.get("voiceover"))
+        storyboard = self._content_os_storyboard(draft.get("storyboard") or creator_report.get("storyboard") or [])
+        image_script = self._content_os_image_script(draft.get("image_script") or draft.get("carousel") or [])
+        publish_actions = self._content_os_publish_actions(publishing_pack)
+        next_actions = self._content_os_readable_list(draft.get("next_actions") or [])
         payload = json.dumps({key: value for key, value in parsed.items() if key not in {"ok"}}, ensure_ascii=False, indent=2, default=str)
-        return f"""来源：`{message.entry_tag}`
+        return f"""## 标题
 
-飞书创作文档：{doc_link or "未记录"}
-创作记录 ID：`{record_id or "未记录"}`
+{title or "创作桥未提供标题。"}
 
-## 原始输入
+## 标题候选
+
+{title_options or "- 创作桥未提供标题候选。"}
+
+## 成稿
+
+```text
+{final_copy or "创作桥未提供成稿。"}
+```
+
+## 3 秒钩子
+
+{hooks or "- 创作桥未提供 3 秒钩子。"}
+
+## 口播
+
+```text
+{voiceover or "创作桥未提供口播。"}
+```
+
+## 镜头脚本
+
+{storyboard or "- 创作桥未提供镜头脚本。"}
+
+## 图文脚本
+
+{image_script or "- 创作桥未提供图文脚本。"}
+
+## 发布动作
+
+{publish_actions or "- 创作桥未提供发布动作。"}
+
+## 下一步
+
+{next_actions or "- 创作桥未提供下一步。"}
+
+## 追溯附录
+
+- 来源：`{message.entry_tag}`
+- 飞书创作文档：{doc_link or "未记录"}
+- 创作记录 ID：`{record_id or "未记录"}`
+
+### 原始输入
 
 ```text
 {message.raw_text[:3000]}
 ```
 
-## 生成结果
+### 生成说明
 
 ```text
-{(reply or parsed.get("reply") or "未记录")[:5000]}
+{(reply or parsed.get("reply") or "未提供")[:5000]}
 ```
 
-## 结构化结果
+### 结构化结果
 
 ```json
 {payload[:8000]}
 ```
 """
     def _render_content_os_publish_pack_section(self, message: Message, parsed: dict[str, Any], reply: str, doc_link: str, record_id: str) -> str:
-        return f"""来源：`{message.entry_tag}`
+        draft = parsed.get("draft") if isinstance(parsed.get("draft"), dict) else {}
+        creator_report = draft.get("creator_report") if isinstance(draft.get("creator_report"), dict) else {}
+        publishing_pack = creator_report.get("publishing_pack") if isinstance(creator_report.get("publishing_pack"), dict) else {}
+        title = self._content_os_text(draft.get("title") or parsed.get("title"))
+        final_copy = self._content_os_text(draft.get("final_copy"))
+        publish_actions = self._content_os_publish_actions(publishing_pack)
+        next_actions = self._content_os_readable_list(draft.get("next_actions") or [])
+        return f"""## 发布标题
 
-- 飞书创作文档：{doc_link or "未记录"}
-- 创作记录 ID：`{record_id or "未记录"}`
-- 发布动作负责人：人
+{title or "创作桥未提供标题。"}
 
 ## 发布前使用稿
 
 ```text
-{(reply or parsed.get("reply") or "未记录")[:5000]}
+{final_copy or "创作桥未提供成稿。"}
 ```
+
+## 发布动作
+
+{publish_actions or "- 创作桥未提供发布动作。"}
+
+## 下一步
+
+{next_actions or "- 创作桥未提供下一步。"}
 
 ## 发布检查
 
@@ -54,27 +201,47 @@ class ContentOSRenderersMixin:
 - [ ] 平台话题已人工确认
 - [ ] 成片路径已回填
 - [ ] 发布链接已回填
+
+## 追溯附录
+
+- 来源：`{message.entry_tag}`
+- 飞书创作文档：{doc_link or "未记录"}
+- 创作记录 ID：`{record_id or "未记录"}`
+
+### 生成说明
+
+```text
+{(reply or parsed.get("reply") or "未提供")[:5000]}
+```
 """
     def _render_content_os_data_review_section(self, message: Message, parsed: dict[str, Any], reply: str) -> str:
+        next_actions = self._content_os_readable_list(
+            parsed.get("next_actions") or parsed.get("next_steps") or parsed.get("action_items") or []
+        )
         payload = json.dumps({key: value for key, value in parsed.items() if key not in {"ok"}}, ensure_ascii=False, indent=2, default=str)
-        return f"""复盘来源：`{message.entry_tag}`
+        return f"""## 复盘结论
 
-飞书复盘文档：{parsed.get("doc_link") or "未记录"}
-复盘记录 ID：`{parsed.get("record_id") or parsed.get("review_id") or "未记录"}`
+```text
+{(reply or parsed.get("reply") or "未提供")[:5000]}
+```
 
-## 原始输入
+## 下一步
+
+{next_actions or "- 复盘结果未提供下一步。"}
+
+## 追溯附录
+
+- 复盘来源：`{message.entry_tag}`
+- 飞书复盘文档：{parsed.get("doc_link") or "未记录"}
+- 复盘记录 ID：`{parsed.get("record_id") or parsed.get("review_id") or "未记录"}`
+
+### 原始输入
 
 ```text
 {message.raw_text[:3000]}
 ```
 
-## 复盘结论
-
-```text
-{(reply or parsed.get("reply") or "未记录")[:5000]}
-```
-
-## 结构化结果
+### 结构化结果
 
 ```json
 {payload[:8000]}
@@ -355,8 +522,17 @@ Mac OpenClaw 在本地素材绑定后，读取真实素材并输出：
         created_date: str,
         record_text: str,
     ) -> str:
-        title_options = self._markdown_list(result.get("title_options") or [])
-        hooks = self._markdown_list(result.get("hook_options") or [])
+        title_options = self._content_os_readable_list(
+            result.get("title_options") or [],
+            fields=(("title", "标题"), ("angle", "角度")),
+        )
+        hooks = self._content_os_readable_list(result.get("hook_options") or [])
+        final_copy = self._content_os_text(result.get("final_copy"))
+        voiceover = self._content_os_text(result.get("voiceover"))
+        storyboard = self._content_os_storyboard(result.get("storyboard") or [])
+        image_script = self._content_os_image_script(result.get("image_script") or result.get("carousel") or [])
+        publish_actions = self._content_os_publish_actions(result.get("publishing_pack"))
+        next_actions = self._content_os_readable_list(result.get("next_actions") or [])
         outline = self._markdown_list(result.get("script_outline") or [])
         formats = self._markdown_list(result.get("publishable_formats") or [])
         risks = self._markdown_list(result.get("risks") or [])
@@ -394,9 +570,9 @@ created_at: {created_date}
 
 ## 标题候选
 
-{title_options or "- 待补充"}
+{title_options or "- 创作桥未提供标题候选。"}
 
-## 封面候选
+## 封面校准参考（非创作桥生成内容）
 
 | 画面 | 字幕 |
 | --- | --- |
@@ -406,9 +582,31 @@ created_at: {created_date}
 
 ## 开头钩子候选
 
-{hooks or "- 待补充"}
+{hooks or "- 创作桥未提供 3 秒钩子。"}
 
-## 完整时间轴脚本
+## 成稿
+
+```text
+{final_copy or "创作桥未提供成稿。"}
+```
+
+## 口播
+
+```text
+{voiceover or "创作桥未提供口播。"}
+```
+
+## 镜头 / 图文脚本
+
+### 镜头脚本
+
+{storyboard or "- 创作桥未提供镜头脚本。"}
+
+### 图文脚本
+
+{image_script or "- 创作桥未提供图文脚本。"}
+
+## Mac 素材校准参考（非创作桥生成的镜头脚本）
 
 | 时间 | 画面 | 旁白 / 字幕 | 声音与剪辑 |
 | --- | --- | --- | --- |
@@ -421,7 +619,7 @@ created_at: {created_date}
 | 42.0-50.0s | 结果揭晓：成绩、结论、反应、对比或证据截图。 | 兑现开头悬念。 | 结果字幕定格 0.5-1 秒。 |
 | 50.0-60.0s | 情绪收束或下一条钩子。 | 给出一句人味结尾，或明确预告下一条。 | 结尾留干净画面，方便停留和转场。 |
 
-## 口播版
+## 口播结构参考（非创作桥生成的口播）
 
 ```text
 开头：用一句话抛出悬念。
@@ -439,7 +637,7 @@ created_at: {created_date}
 结尾：把结果落到人的感受，并给下一条留下钩子。
 ```
 
-## 字幕版
+## 字幕结构参考（非创作桥生成的字幕）
 
 ```text
 第 1 屏：核心悬念
@@ -485,7 +683,11 @@ Mac OpenClaw 读取素材后，需要优先确认：
 | 环境 / 场景交代 | 建议 | 建立真实感 |
 | 原声素材 | 建议 | 增强沉浸感 |
 
-## 发布包草案
+## 发布动作
+
+{publish_actions or "- 创作桥未提供发布动作。"}
+
+## 发布准备参考（非创作桥生成内容）
 
 ### 平台形式
 
@@ -507,6 +709,10 @@ Mac OpenClaw 读取素材后，需要优先确认：
 
 {risks or "- 待 Mac 根据素材补充"}
 
+## 下一步
+
+{next_actions or "- 创作桥未提供下一步。"}
+
 ## 当前版本说明
 
 - 目标平台：{platform or "未指定"}
@@ -514,7 +720,9 @@ Mac OpenClaw 读取素材后，需要优先确认：
 - `04_script.md` 必须达到可剪辑执行稿粒度：时间轴、画面、口播/字幕、声音剪辑、Mac 检查项和发布草案都要具备。
 - Mac 需要根据真实素材、画面稳定性、证明镜头、声音和结果证据进行二次修订。
 
-## 原始任务卡摘录
+## 追溯附录
+
+### 原始任务卡摘录
 
 ```text
 {record_text[:5000]}
