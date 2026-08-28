@@ -26,6 +26,11 @@ CREATOR_BRIEF_REPORT_MODE = {
     "appendix_enabled": True,
 }
 
+# These phrases extend the shared style policy with the shorter variants used
+# by the creation prompt. Both the prompt and final-draft validator consume it.
+CREATION_PROMPT_ANTI_PATTERNS = ("总之", "综上")
+CREATION_ENUMERATION_SEQUENCE = ("首先", "其次", "最后")
+
 
 def creation_generation_metadata(mode: str) -> dict[str, str]:
     settings = load_profile_llm_settings("media_creation")
@@ -141,42 +146,32 @@ def build_creation_prompt(
         "12. 先生成 usable_material_brief，再写 script_options。usable_material_brief 必须按“来源 -> 可迁移层 -> 脚本落点”抽取可用素材：账号记忆的人设/禁区/复盘教训；创作灵感的真实场景/触发原话/核心观点；爆款候选只能使用其 multi_signal_contract 的 source_signal_dimensions、shot_adaptation_notes、conflict_notes、open_questions 和 validation。transform_rule 是可迁移结构，risk_boundary 与 do_not_copy 是硬边界；source_refs 只证明合同中的观察，不能补写原素材细节。不得绕回任何非合同的拆解摘要、镜头 compact、文档链接或内部源快照。活动候选的投稿约束/话题/截止或返稿要求；商务候选的品牌边界。script_options 只能吃这个 brief 写稿，不要在脚本正文里展开完整来源映射。\n"
         "13. 完整来源映射必须进入 usable_material_brief.source_mapping、creator_report.evidence_appendix 或 script_options 的机器字段；创作者执行区只出现拍摄、文案、发布和风险动作，不输出检索报告口吻。\n"
         "14. 每个 script_options 项都必须保留 activity_fit_reason、viral_reference_reason、inspiration_reference_reason 作为机器字段：写清用了哪个候选 id、迁移了哪一层、落到哪个镜头/页面/台词/封面/评论引导；没采用的来源要在 risks_or_missing_info 或 rejected_option_summaries 说明原因。活动只能约束发布/投稿/话题，不得硬改内容核心；爆款只能给结构和节奏，不得给事实；灵感和账号记忆优先决定内容事实与表达边界；洞察卡必须标为 insight-card reference，并在证据附录保留卡片路径/状态和风险边界。\n"
-        f"15. 必须先评估多个创作方向，再把 2-5 个完整脚本放入 script_options；score > {CREATION_SCORE_THRESHOLD} 是高分方案，score <= {CREATION_SCORE_THRESHOLD} 也必须保留为可选方案，不得因为未达门槛而不给完整脚本。\n"
-        f"16. script_options 最少 2 个、最多 5 个；如果没有方案超过 {CREATION_SCORE_THRESHOLD} 分，也必须输出至少 2 个评分最高且可执行的完整方案，并在风险中说明未达门槛的原因。\n"
-        f"17. 每个 script_options 项必须包含 option_id、score_breakdown、title、angle、score_reason、selected_*_ids、activity_fit_reason、viral_reference_reason、inspiration_reference_reason、risk_level、risks_or_missing_info、tags、final_copy、image_script、carousel、hook_3s、storyboard、voiceover、subtitles、production_checklist、review_plan。score_reason 对所有方案都写评分理由；未达 {CREATION_SCORE_THRESHOLD} 的方案要写“未达门槛的原因 + 为什么仍可作为备选执行”。\n"
-        "18. score_breakdown 固定 7 项：evidence_grounding(20)、platform_fit(15)、audience_pain(15)、creative_angle(15)、execution_completeness(15)、reference_integration(15)、risk_control(5)。总分由程序对分项求和，不要重复输出 score。\n"
-        "19. script_options 初稿后必须输出 editor_pass。editor_pass 是同一次 LLM 输出里的苛刻总编二改阶段，必须检查：是否像真实内容而不是方案、是否有具体画面/动作/台词、是否有平庸表达、是否证据链污染执行稿、推荐方案改了哪些句子。"
-        "editor_pass 还必须做去 AI 腔检查并把结论写进 blandness_risks：final_copy、voiceover、title、封面字、置顶评论里不得出现『首先/其次/最后』连用、『总之』『综上』『值得一提的是』『不难发现』『让我们一起』式套话、连续三个以上排比句、每句结尾都用感叹号、与账号无关的网络热词堆叠；口播每句尽量不超过 22 个字，允许口语连接词和自然的不完整句，写完要能直接读出口不别扭。"
-        "editor_pass 完成后，必须把所有可执行修订直接写回 recommended_option_id 指向的 script_options 项；该项是唯一的可执行定稿，不能只改顶层字段。"
-        "顶层 title/tags/final_copy/image_script/carousel/hook_3s/storyboard/voiceover/subtitles/production_checklist/review_plan/risks_or_missing_info 是旧消费者可选镜像，新输出不要重复完整脚本；如输出，必须逐字段等于编辑后的推荐项。\n"
-        "20. recommended_option_id 必须来自 script_options 里的 option_id，并且 editor_pass.recommended_option_id 必须相同。\n"
-        f"21. 可以输出 rejected_option_summaries 说明未进入前 5 的方向为什么被舍弃；但前 2 个最可执行方向必须进入 script_options，即使 score <= {CREATION_SCORE_THRESHOLD}。\n"
-        "22. 必须输出 candidate_match_assessments，对被选中的爆款和创作灵感给出 0-100 匹配分、分项和 selection_reason。"
-        "candidate_match_assessments 固定是 object，且必须只包含两个数组字段：viral 和 inspiration；即使没有已选参考，也必须输出 \"viral\": [] 和 \"inspiration\": []。"
-        "每个 selected_viral_ids 中的 id 都必须在 candidate_match_assessments.viral 里有一项；每个 selected_inspiration_ids 中的 id 都必须在 candidate_match_assessments.inspiration 里有一项。"
-        "每项固定结构为 {id, score_breakdown, selection_reason}；总分由程序对分项求和；不得把 viral 或 inspiration 输出成 object、字符串或按 id 分组的 map。"
-        "爆款分项固定为 request_fit(40)、content_value(20)、transferability(25)、evidence_completeness(15)。"
-        "灵感分项固定为 request_fit(35)、inspiration_quality(25)、transferability(25)、evidence_and_risk(15)。"
-        "selected_viral_ids、selected_inspiration_ids 只是采用关系，不是满分依据；不得输出 LLM选择爆款=100 或 LLM选择创作灵感=100 作为评分。\n"
-        "23. 输出协议必须是 creator_brief：你不是检索结果报告生成器，而是自媒体创作总编。"
+        f"15. 先评估多个方向，只把前 2-5 个完整且可执行的方向放入 script_options；无论是否超过 {CREATION_SCORE_THRESHOLD} 分，都不能省略完整脚本。没有高分方案时，保留评分最高的至少 2 个并在风险中说明原因；其余方向可写入 rejected_option_summaries。\n"
+        "16. script_options 初稿后必须输出 editor_pass。它要检查画面、动作、台词、平庸表达和证据链污染，必须把所有可执行修订直接写回 recommended_option_id 指向的 script_options 项；recommended_option_id 与 editor_pass.recommended_option_id 必须相同。推荐方案是唯一可执行定稿，不能只改顶层字段。"
+        f"推荐稿的 title、final_copy、hook_3s、voiceover 会被机器校验：不得出现通用套话（{'、'.join(_creation_anti_patterns())}）或“首先/其次/最后”顺序套壳。editor_pass 还要检查封面字、置顶评论、连续排比、感叹号堆叠和脱离账号的热词，并把判断写进 blandness_risks；口播每句尽量不超过 22 个字，允许自然口语和不完整句。"
+        "顶层 title/tags/final_copy/image_script/carousel/hook_3s/storyboard/voiceover/subtitles/production_checklist/review_plan/risks_or_missing_info 是旧消费者可选镜像；新输出不要重复完整脚本，如输出必须逐字段等于编辑后的推荐项。\n"
+        "17. 必须输出 candidate_match_assessments：只含 viral 与 inspiration 两个数组（无已选参考也输出空数组），每个已选 id 恰有一项 {id, score_breakdown, selection_reason}。总分由程序对分项求和，不要输出 score；爆款分项为 request_fit(40)、content_value(20)、transferability(25)、evidence_completeness(15)，灵感分项为 request_fit(35)、inspiration_quality(25)、transferability(25)、evidence_and_risk(15)。采用关系不是满分依据。\n"
+        "18. 输出协议必须是 creator_brief：你不是检索结果报告生成器，而是自媒体创作总编。"
         "creator_report 是给真人创作者看的执行稿，必须先讲拍什么、怎么开头、怎么发；不得在 creator_report 的执行区输出原始 JSON、record_id、评分细节、数据库字段、长链接或重复活动说明。\n"
-        "24. creator_report 必须分两层：第一层创作者执行版；第二层证据附录。执行版包含创作方案总览、这条内容怎么拍、这条内容怎么发、素材检查清单、风险控制。证据附录只能放在最后，且必须摘要化展示：只保留来源类型、record_id、采用原因、可迁移层、脚本落点和风险边界；不得粘贴候选原文、长段活动 brief、完整爆款拆解或原始检索结果。\n"
-        "25. creator_report 第一屏最终推荐只能有 1 个主方案，最多 2 个备选方向摘要；但 script_options 中 2-5 个完整脚本都必须保留，并由 writer 渲染在同一个创作文档的脚本方案区；不得拆成多个文档。"
+        "19. creator_report 必须分两层：第一层创作者执行版；第二层证据附录。执行版包含创作方案总览、这条内容怎么拍、这条内容怎么发、素材检查清单、风险控制。证据附录只能放在最后，且必须摘要化展示：只保留来源类型、record_id、采用原因、可迁移层、脚本落点和风险边界；不得粘贴候选原文、长段活动 brief、完整爆款拆解或原始检索结果。\n"
+        "20. creator_report 第一屏最终推荐只能有 1 个主方案，最多 2 个备选方向摘要；但 script_options 中 2-5 个完整脚本都必须保留，并由 writer 渲染在同一个创作文档的脚本方案区；不得拆成多个文档。"
         "评分、评分理由、选择论证、来源匹配论证一律只出现在证据附录和机器字段：执行区、脚本方案正文不得出现分数、score_reason、命中理由或任何『为什么选它』的论证段。"
         "活动最多保留 1 个父活动 + 推荐子方向；爆款最多 3 个且必须转译成“这条视频学什么”；灵感最多 3 个且必须说明落到哪个镜头/台词/道具。\n"
-        "26. creator_report 不设置固定总字数预算，不以总长度作为裁剪依据。长度控制方式是结构完整性、去重复、去系统解释和执行密度控制：执行区必须清楚可扫读，脚本区必须完整可执行，证据附录必须摘要化后置；不得为了压缩篇幅牺牲完整 script_options、素材检查、风险控制或 evidence_appendix。\n"
-        "27. 图文字段和视频字段条件化：content_type=图文 时 image_script 或 carousel 必须非空，hook_3s/storyboard/voiceover/subtitles 可为空字符串/空数组；content_type=视频 时 hook_3s、storyboard、voiceover、subtitles 必须非空，image_script/carousel 可为空数组。不要为了填满 irrelevant 字段硬编。\n"
-        "28. 同一句策略不得在多个章节重复出现；只输出合法 JSON object，不要 Markdown 代码块，不要解释。\n"
-        "29. 复盘必须回流：recent_reviews 非空时，usable_material_brief.execution_brief 必须写明上一轮复盘教训对这一条的具体动作（沿用什么、这次改掉什么），并且 creator_report.risk_controls 至少有一条直接来自最近复盘；recent_reviews 为空时在 risks_or_missing_info 说明缺少复盘数据。\n"
-        "30. 账号声音优先：final_copy、voiceover、置顶评论必须贴合 account_profile 里可见的说话方式（称呼观众的习惯、常用句式、语气边界）；不得写成平台通用腔。account_profile 缺少语言风格信息时，在 risks_or_missing_info 写明需要补充账号语言样本，但仍按现有信息完成初稿。\n"
-        "31. 商单必须落到执行：selected_business_ids 非空时，usable_material_brief 的 usage_boundaries 必须写明品牌必提点、禁词/禁区和审核红线各自落到哪一句文案或哪个镜头；publishing_pack.first_hour_action 必须给出发布后 1 小时内的具体运营动作（例如回评引导句、置顶时机、投放判断信号），无商单时 first_hour_action 也要给自然流量版动作。\n\n"
-        "输出 JSON 字段固定为：\n"
-        "platform, content_type, topic, content_core, topic_strategy, usable_material_brief, inspiration, activity_constraint, "
-        "viral_reference, inspiration_reference, business_reference, account_context, positioning_analysis, platform_strategy, "
-        "activity_strategy, traffic_hypothesis, creation_reverse_plan, validation_targets, selected_activity_ids, "
-        "selected_viral_ids, selected_inspiration_ids, selected_business_ids, image_script, carousel, hook_3s, storyboard, voiceover, "
-        "subtitles, production_checklist, review_plan, risks_or_missing_info, script_options, recommended_option_id, rejected_option_summaries, "
-        "editor_pass, candidate_match_assessments, creator_report。report_mode 由程序注入，不要输出。\n\n"
+        "21. creator_report 不设置固定总字数预算，不以总长度作为裁剪依据。长度控制方式是结构完整性、去重复、去系统解释和执行密度控制：执行区必须清楚可扫读，脚本区必须完整可执行，证据附录必须摘要化后置；不得为了压缩篇幅牺牲完整 script_options、素材检查、风险控制或 evidence_appendix。\n"
+        "22. 图文字段和视频字段条件化：content_type=图文 时 image_script 或 carousel 必须非空，hook_3s/storyboard/voiceover/subtitles 可为空字符串/空数组；content_type=视频 时 hook_3s、storyboard、voiceover、subtitles 必须非空，image_script/carousel 可为空数组。不要为了填满 irrelevant 字段硬编。\n"
+        "23. 同一句策略不得在多个章节重复出现；只输出合法 JSON object，不要 Markdown 代码块，不要解释。\n"
+        "24. 复盘必须回流：recent_reviews 非空时，usable_material_brief.execution_brief 必须写明上一轮复盘教训对这一条的具体动作（沿用什么、这次改掉什么），并且 creator_report.risk_controls 至少有一条直接来自最近复盘；recent_reviews 为空时在 risks_or_missing_info 说明缺少复盘数据。\n"
+        "25. 账号声音优先：final_copy、voiceover、置顶评论必须贴合 account_profile 里可见的说话方式（称呼观众的习惯、常用句式、语气边界）；不得写成平台通用腔。account_profile 缺少语言风格信息时，在 risks_or_missing_info 写明需要补充账号语言样本，但仍按现有信息完成初稿。\n"
+        "26. 商单必须落到执行：selected_business_ids 非空时，usable_material_brief 的 usage_boundaries 必须写明品牌必提点、禁词/禁区和审核红线各自落到哪一句文案或哪个镜头；publishing_pack.first_hour_action 必须给出发布后 1 小时内的具体运营动作（例如回评引导句、置顶时机、投放判断信号），无商单时 first_hour_action 也要给自然流量版动作。\n\n"
+        "模型输出的核心字段为：platform, content_type, inspiration, content_core, topic_strategy, usable_material_brief, "
+        "script_options, recommended_option_id, rejected_option_summaries, editor_pass, candidate_match_assessments, creator_report。"
+        "其余兼容字段由程序从推荐方案、平台拟合和空值安全归一；report_mode 由程序注入，不要输出。\n\n"
+        "script_options 每项必须包含 option_id、score_breakdown、title、angle、score_reason、selected_*_ids、activity_fit_reason、"
+        "viral_reference_reason、inspiration_reference_reason、risk_level、risks_or_missing_info、tags、final_copy、image_script、carousel、"
+        "hook_3s、storyboard、voiceover、subtitles、production_checklist、review_plan。score_reason 对所有方案都写评分理由；"
+        f"未达 {CREATION_SCORE_THRESHOLD} 的方案要写“未达门槛的原因 + 为什么仍可作为备选执行”。score_breakdown 固定为 "
+        "evidence_grounding(20)、platform_fit(15)、audience_pain(15)、creative_angle(15)、execution_completeness(15)、"
+        "reference_integration(15)、risk_control(5)；总分由程序求和，不要输出 score。\n\n"
         "content_core 字段必须包含：content_promise, viewer_problem, specific_scene, memorable_point, must_show。\n"
         "topic_strategy 字段必须包含：target_audience, pain_point, content_angle, single_problem, self_check。\n\n"
         "usable_material_brief 字段必须包含：execution_brief, source_mapping, usage_boundaries。\n"
@@ -299,11 +294,30 @@ def _validate_recommended_anti_patterns(draft: dict[str, Any], *, must_keep: Any
         preserved_phrases = set()
     for field in ("title", "final_copy", "hook_3s", "voiceover"):
         text = draft[field]
-        for phrase in load_anti_patterns():
-            if any(phrase in preserved for preserved in preserved_phrases):
+        for phrase in _creation_anti_patterns():
+            if _is_preserved_phrase(phrase, preserved_phrases):
                 continue
             if phrase in text:
                 raise ValueError(f"推荐稿 {field} 包含通用模板表达：{phrase}")
+        if _has_enumeration_sequence(text) and not _is_preserved_enumeration_sequence(preserved_phrases):
+            raise ValueError(f"推荐稿 {field} 包含首先/其次/最后顺序套壳")
+
+
+def _creation_anti_patterns() -> tuple[str, ...]:
+    return tuple(dict.fromkeys((*load_anti_patterns(), *CREATION_PROMPT_ANTI_PATTERNS)))
+
+
+def _is_preserved_phrase(phrase: str, preserved_phrases: set[str]) -> bool:
+    return any(phrase in preserved for preserved in preserved_phrases)
+
+
+def _has_enumeration_sequence(text: str) -> bool:
+    positions = [text.find(marker) for marker in CREATION_ENUMERATION_SEQUENCE]
+    return all(position >= 0 for position in positions) and positions == sorted(positions)
+
+
+def _is_preserved_enumeration_sequence(preserved_phrases: set[str]) -> bool:
+    return any(_has_enumeration_sequence(phrase) for phrase in preserved_phrases)
 
 
 CREATION_SCORE_THRESHOLD = 90
