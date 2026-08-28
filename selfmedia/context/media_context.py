@@ -18,6 +18,9 @@ from common.social_runtime import feishu_list_records, feishu_plain_text, load_d
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MEMORY_ROOT = ROOT / "data" / "media_memory"
 MEDIA_AGENT_ROOT = Path("/home/ubuntu/openclaw-agents/media")
+CONTEXT_PROMPT_MAX_CHARS_ENV = "OPENCLAW_MEDIA_CONTEXT_MAX_CHARS"
+DEFAULT_CONTEXT_PROMPT_MAX_CHARS = 10_000
+MAX_CONTEXT_PROMPT_MAX_CHARS = 12_000
 MEDIA_MODEL_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/media-model-v2-contract.json")
 CREATOR_PROFILE_URL_ENV = "MEDIA_OS_CREATOR_PROFILES_V2_URL"
 CREATOR_PROFILE_CONTEXT_FIELDS = (
@@ -161,12 +164,15 @@ def merge_conversation_context(media_context: dict[str, Any], conversation_conte
     return context
 
 
-def render_context_for_prompt(context: dict[str, Any], *, max_chars: int = 2600) -> str:
+def render_context_for_prompt(context: dict[str, Any], *, max_chars: int | None = None) -> str:
+    max_chars = _context_prompt_max_chars(max_chars)
     profile = context.get("account_profile") or {}
     creations = context.get("recent_creations") or []
     reviews = context.get("recent_reviews") or []
     rules = context.get("global_rules") or []
     lines = ["媒体长期上下文："]
+    # Review findings lead because they are the direct evidence for the next draft.
+    lines.extend(_review_prompt_lines(reviews))
     if profile:
         lines.extend(
             [
@@ -195,10 +201,6 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int = 2600)
             lines.append(markdown_profile[:1200])
     else:
         lines.append("- 账号画像：未找到；若要连续复盘，请在消息中填写 账号=xxx。")
-    if reviews:
-        lines.append("- 相关历史复盘：")
-        for item in reviews[:4]:
-            lines.append(f"  {item.get('created_at', '')[:10]} {item.get('topic') or item.get('title') or '未命名作品'}：{item.get('lesson') or item.get('summary') or ''}")
     if creations:
         lines.append("- 相关历史创作：")
         for item in creations[:3]:
@@ -208,9 +210,95 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int = 2600)
         lines.extend(f"  {item}" for item in rules[:4])
     lines.append("生成要求：必须显式继承账号定位和复盘结论；如果没有账号画像，先指出需要补齐的人设/栏目/目标受众。")
     text = "\n".join(line for line in lines if line is not None)
+    return _truncate_context_prompt(text, max_chars=max_chars)
+
+
+def _context_prompt_max_chars(max_chars: int | None) -> int:
+    if max_chars is not None:
+        if isinstance(max_chars, bool) or not isinstance(max_chars, int):
+            raise ValueError("max_chars must be an integer or None")
+        return max(0, max_chars)
+    raw_value = os.getenv(CONTEXT_PROMPT_MAX_CHARS_ENV, "").strip()
+    if not raw_value:
+        return DEFAULT_CONTEXT_PROMPT_MAX_CHARS
+    try:
+        configured = int(raw_value)
+    except ValueError:
+        return DEFAULT_CONTEXT_PROMPT_MAX_CHARS
+    return min(MAX_CONTEXT_PROMPT_MAX_CHARS, max(1, configured))
+
+
+def _truncate_context_prompt(text: str, *, max_chars: int) -> str:
+    if max_chars <= 0:
+        return ""
     if len(text) <= max_chars:
         return text
-    return text[: max_chars - 20].rstrip() + "\n...（上下文已截断）"
+    suffix = "\n...（上下文已截断）"
+    if max_chars <= len(suffix):
+        return suffix[:max_chars]
+    return text[: max_chars - len(suffix)].rstrip() + suffix
+
+
+def _review_prompt_lines(reviews: list[Any]) -> list[str]:
+    if not reviews:
+        return []
+    lines = ["- 相关历史复盘："]
+    for item in reviews[:5]:
+        if not isinstance(item, dict):
+            continue
+        title = _clean_text(item.get("topic") or item.get("title")) or "未命名作品"
+        parts = [f"{_clean_text(item.get('created_at'))[:10]} {title}"]
+        lesson = _clean_text(item.get("lesson") or item.get("summary")) or _join(item.get("key_insights"), limit=3)
+        if lesson:
+            parts.append(f"结论：{lesson}")
+        performance_level = _clean_text(item.get("performance_level"))
+        if performance_level:
+            parts.append(f"表现评级：{performance_level}")
+        metrics = _review_metrics_for_prompt(item)
+        if metrics:
+            parts.append(f"关键指标：{'；'.join(metrics)}")
+        actions = _review_actions_for_prompt(item)
+        if actions:
+            parts.append(f"下一步：{'；'.join(actions[:5])}")
+        lines.append("  " + "；".join(parts))
+    return lines
+
+
+def _review_metrics_for_prompt(review: dict[str, Any]) -> list[str]:
+    metrics: list[str] = []
+    for item in _review_priority_metrics(review):
+        name = _clean_text(item.get("metric"))
+        value = _clean_text(item.get("value"))
+        if not name or not value:
+            continue
+        signal = _clean_text(item.get("signal"))
+        metrics.append(f"{name}={value}{f'（{signal}）' if signal else ''}")
+    if metrics:
+        return _dedupe(metrics)[:8]
+    raw_metrics = review.get("metrics")
+    if not isinstance(raw_metrics, dict):
+        return []
+    for name, value in raw_metrics.items():
+        clean_name = _clean_text(name)
+        clean_value = _clean_text(value)
+        if clean_name and clean_value:
+            metrics.append(f"{clean_name}={clean_value}")
+    return _dedupe(metrics)[:8]
+
+
+def _review_priority_metrics(review: dict[str, Any]) -> list[dict[str, Any]]:
+    value = review.get("priority_metrics")
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
+
+
+def _review_actions_for_prompt(review: dict[str, Any]) -> list[str]:
+    values: list[Any] = _as_list(review.get("priority_actions"))
+    for metric in _review_priority_metrics(review):
+        values.append(metric.get("content_action"))
+    values.extend(_as_list(review.get("next_actions")))
+    return _dedupe(values)
 
 
 def record_creation_memory(

@@ -363,7 +363,37 @@ def run_engagement_comments_interaction_pipeline(*, asset_manifest: dict[str, An
 def run_keyframe_observation_facts_pipeline(*, visual_facts: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
     visual_payload = _fact_payload(visual_facts, "visual_assets")
     llm_assets = _select_llm_visual_assets(visual_payload.get("assets") or [])
-    raw_observations = run_keyframe_observation_pipeline(llm_assets, _visual_parts_for_llm(llm_assets))
+    frame_assets = [asset for asset in llm_assets if str(asset.get("asset_id") or "").startswith("frame_")]
+    if not frame_assets:
+        return _validated_facts(
+            {
+                "keyframe_observations": _fact(
+                    "keyframe_observations",
+                    refs=[],
+                    facts={"keyframe_observations": []},
+                    status="not_applicable",
+                    missing_reason="no_keyframe_observations",
+                )
+            }
+        )
+
+    try:
+        raw_observations = run_keyframe_observation_pipeline(llm_assets, _visual_parts_for_llm(llm_assets))
+    except Exception:
+        raw_observations = None
+    if raw_observations is None:
+        return _validated_facts(
+            {
+                "keyframe_observations": _fact(
+                    "keyframe_observations",
+                    refs=[],
+                    facts={"keyframe_observations": []},
+                    status="failed",
+                    missing_reason="keyframe_observation_generation_failed",
+                )
+            }
+        )
+
     normalized = _normalize_keyframe_observations(visual_payload.get("assets") or [], raw_observations)
     return _validated_facts(
         {
@@ -371,14 +401,14 @@ def run_keyframe_observation_facts_pipeline(*, visual_facts: dict[str, dict[str,
                 "keyframe_observations",
                 refs=_keyframe_refs(normalized),
                 facts={"keyframe_observations": normalized},
-                status="success" if normalized else "not_applicable",
-                missing_reason="" if normalized else "no_keyframe_observations",
+                status="success" if normalized else "failed",
+                missing_reason="" if normalized else "keyframe_observation_empty_result",
             )
         }
     )
 
 
-def run_keyframe_observation_pipeline(visual_assets: list[dict[str, Any]], visual_parts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def run_keyframe_observation_pipeline(visual_assets: list[dict[str, Any]], visual_parts: list[dict[str, Any]]) -> list[dict[str, Any]] | None:
     frame_assets = [asset for asset in visual_assets if str(asset.get("asset_id") or "").startswith("frame_")]
     if not frame_assets:
         return []
@@ -400,9 +430,11 @@ def run_keyframe_observation_pipeline(visual_assets: list[dict[str, Any]], visua
             max_retries=1,
         )
     except Exception:
-        return []
+        return None
+    if not isinstance(result, dict):
+        return None
     observations = result.get("keyframe_observations")
-    return observations if isinstance(observations, list) else []
+    return observations if isinstance(observations, list) else None
 
 
 def run_ocr_pipeline(*, visual_facts: dict[str, dict[str, Any]], ocr_path: str = "") -> dict[str, dict[str, Any]]:
