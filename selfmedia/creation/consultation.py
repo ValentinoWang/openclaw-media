@@ -224,30 +224,30 @@ def generate_consultation_answer(
 
 
 def format_consultation_reply(answer: dict[str, Any]) -> str:
-    lines: list[str] = []
-    if answer.get("conclusion"):
-        lines.append(str(answer["conclusion"]).strip())
-    diagnosis = answer.get("topic_diagnosis")
-    if isinstance(diagnosis, dict) and diagnosis:
-        lines.append("\n选题拆解：")
-        for key, label in (
-            ("target_audience", "目标人群"),
-            ("pain_point", "核心痛点"),
-            ("content_angle", "内容角度"),
-            ("single_problem", "单一问题"),
-            ("self_check", "自查标准"),
-        ):
-            value = diagnosis.get(key) or diagnosis.get(label)
-            if value:
-                lines.append(f"- {label}：{value}")
-    for label, key in (("依据", "evidence"), ("建议", "recommendations"), ("下一步", "next_actions"), ("缺口", "data_gaps")):
-        items = answer.get(key)
-        if isinstance(items, list) and items:
-            lines.append(f"\n{label}：")
-            lines.extend(f"- {item}" for item in items[:8])
-        elif isinstance(items, str) and items.strip():
-            lines.append(f"\n{label}：{items.strip()}")
-    return "\n".join(lines).strip() or "创作咨询已完成，但未生成可读回答。"
+    conclusion = str(answer.get("conclusion") or "").strip()
+    next_action = _first_consultation_reply_item(answer.get("next_actions"))
+    evidence = _first_consultation_reply_item(answer.get("evidence"))
+    data_gap = _first_consultation_reply_item(answer.get("data_gaps"))
+
+    sentences = [conclusion] if conclusion else []
+    if next_action:
+        sentences.append(f"最该做的一步是{next_action}")
+    if evidence:
+        sentences.append(f"主要依据是{evidence}")
+    if data_gap:
+        sentences.append(f"还需要补充{data_gap}")
+    return "\n".join(sentences).strip() or "创作咨询已完成，但未生成可读回答。"
+
+
+def _first_consultation_reply_item(value: Any) -> str:
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, list):
+        for item in value:
+            text = str(item or "").strip()
+            if text:
+                return text
+    return ""
 
 
 def _top_relevant_records(records: list[Any], request: ConsultationRequest, *, max_items: int) -> list[Any]:
