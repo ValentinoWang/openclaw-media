@@ -5,11 +5,12 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 
-REPO_ROOT = Path(os.getenv("OPENCLAW_REPO_ROOT") or Path(__file__).resolve().parents[3])
+REPO_ROOT = Path(__file__).resolve().parents[3]
 OPENCLAW_RUNTIME_HOME = Path(os.getenv("OPENCLAW_RUNTIME_HOME") or Path.home() / ".openclaw")
 NODE_RUNTIME_BIN = os.getenv("OPENCLAW_NODE_RUNTIME_BIN", "").strip()
 TAG_ROUTER_SOURCE_DIR = REPO_ROOT / "openclaw-tag-router"
@@ -20,8 +21,9 @@ BOT_CENTER_ROOT = Path(os.getenv("OPENCLAW_BOT_CENTER_ROOT") or REPO_ROOT / "ope
 BOT_CENTER_PUBLISH_DIR = Path(os.getenv("OPENCLAW_BOT_CENTER_PUBLISH_DIR") or "/var/www/openclaw/bots")
 SYNC_MODELS_SCRIPT = REPO_ROOT / "runtime" / "maintenance" / "deploy" / "sync_openclaw_agent_models.py"
 SYNC_BOT_CONFIG_SCRIPT = REPO_ROOT / "runtime" / "maintenance" / "deploy" / "sync_openclaw_bot_config.py"
-OPENCLAW_QUALITY_ROOT = Path(os.getenv("OPENCLAW_QUALITY_ROOT") or REPO_ROOT / "scripts/quality")
-OPENCLAW_QA_ROOT = Path(os.getenv("OPENCLAW_QA_ROOT") or REPO_ROOT / "scripts/qa")
+SELFMEDIA_CLI = REPO_ROOT / "runtime" / "cli" / "selfmedia.py"
+OPENCLAW_QUALITY_ROOT = REPO_ROOT / "scripts/quality"
+OPENCLAW_QA_ROOT = REPO_ROOT / "scripts/qa"
 SINGLE_SOURCE_GUARD = OPENCLAW_QUALITY_ROOT / "check_openclaw_single_source_contract.py"
 MODEL_CONFIG_GUARD = OPENCLAW_QUALITY_ROOT / "check_openclaw_model_tiers_contract.py"
 TAG_ROUTER_GUARD = OPENCLAW_QUALITY_ROOT / "check_feishu_tag_router_contract.py"
@@ -50,6 +52,19 @@ FORBIDDEN_CRON_JOB_NAMES = (
 OWNED_MAINTENANCE_SCRIPTS = (
     SYNC_MODELS_SCRIPT,
     SYNC_BOT_CONFIG_SCRIPT,
+    SELFMEDIA_CLI,
+)
+
+PRE_DEPLOY_SCRIPTS = (
+    *OWNED_MAINTENANCE_SCRIPTS,
+    SINGLE_SOURCE_GUARD,
+    MODEL_CONFIG_GUARD,
+    TAG_ROUTER_GUARD,
+    BOT_CENTER_CAPABILITY_GUARD,
+    BOT_CENTER_DELETION_GUARD,
+    BOT_CENTER_PUBLISHED_DATA_GUARD,
+    FEISHU_TRANSPORT_GUARD,
+    SINGLE_SOURCE_RUNTIME_SMOKE,
 )
 
 
@@ -57,6 +72,20 @@ def assert_owned_maintenance_scripts() -> None:
     missing = [str(path) for path in OWNED_MAINTENANCE_SCRIPTS if not path.is_file()]
     if missing:
         raise SystemExit("missing repository-owned maintenance scripts: " + ", ".join(missing))
+
+
+def assert_preflight_scripts() -> None:
+    repo_root = REPO_ROOT.resolve()
+    outside_repo = [str(path) for path in PRE_DEPLOY_SCRIPTS if not path.resolve().is_relative_to(repo_root)]
+    if outside_repo:
+        raise SystemExit("preflight scripts must be repository-owned: " + ", ".join(outside_repo))
+    missing = [str(path) for path in PRE_DEPLOY_SCRIPTS if not path.is_file()]
+    if missing:
+        raise SystemExit(
+            "missing repository preflight scripts: "
+            + ", ".join(missing)
+            + "; restore the tracked scripts before deployment"
+        )
 
 
 def run(command: list[str], *, cwd: Path | None = None, timeout: int | None = None) -> subprocess.CompletedProcess[str]:
@@ -158,6 +187,46 @@ def assert_no_forbidden_openclaw_cron_jobs() -> None:
         raise SystemExit(f"remove journal/self-model OpenClaw cron jobs before deploy: {offenders}")
 
 
+def register_media_daily_poll_timer() -> dict[str, str]:
+    tenant_id = os.getenv("OPENCLAW_MEDIA_DAILY_POLL_TENANT_ID", "").strip()
+    if not tenant_id:
+        raise SystemExit(
+            "missing OPENCLAW_MEDIA_DAILY_POLL_TENANT_ID; "
+            "refusing to register a tenantless media daily poll"
+        )
+    name = os.getenv("OPENCLAW_MEDIA_DAILY_POLL_NAME", "selfmedia-account-daily-poll").strip()
+    cron = os.getenv("OPENCLAW_MEDIA_DAILY_POLL_CRON", "0 8 * * *").strip()
+    timezone = os.getenv("OPENCLAW_MEDIA_DAILY_POLL_TZ", "Asia/Shanghai").strip()
+    if not name or not cron or not timezone:
+        raise SystemExit(
+            "OPENCLAW_MEDIA_DAILY_POLL_NAME, OPENCLAW_MEDIA_DAILY_POLL_CRON, and "
+            "OPENCLAW_MEDIA_DAILY_POLL_TZ must be non-empty"
+        )
+    run(
+        [
+            sys.executable,
+            str(SELFMEDIA_CLI),
+            "install-cron",
+            "--name",
+            name,
+            "--cron",
+            cron,
+            "--tz",
+            timezone,
+            "--tenant-id",
+            tenant_id,
+        ],
+        cwd=REPO_ROOT,
+        timeout=90,
+    )
+    return {
+        "tenant_id": tenant_id,
+        "timer_name": f"{name}.timer",
+        "schedule": cron,
+        "timezone": timezone,
+    }
+
+
 def build_and_publish_bot_center() -> None:
     if not BOT_CENTER_ROOT.is_dir():
         raise SystemExit(f"missing Bot Center root: {BOT_CENTER_ROOT}")
@@ -181,10 +250,12 @@ def build_and_publish_bot_center() -> None:
 
 
 def deploy(*, restart_gateway: bool, skip_guards: bool = False) -> dict[str, object]:
+    assert_preflight_scripts()
     sync_tag_router_source_to_active()
     install_journal_systemd_units()
     build_and_publish_bot_center()
     assert_no_forbidden_openclaw_cron_jobs()
+    media_daily_poll_timer = register_media_daily_poll_timer()
     if not skip_guards:
         run(["python3", str(MODEL_CONFIG_GUARD)])
         run(["python3", str(TAG_ROUTER_GUARD)])
@@ -206,6 +277,7 @@ def deploy(*, restart_gateway: bool, skip_guards: bool = False) -> dict[str, obj
         "bot_center_root": str(BOT_CENTER_ROOT),
         "bot_center_published": str(BOT_CENTER_PUBLISH_DIR),
         "checked_cron_forbidden_jobs": list(FORBIDDEN_CRON_JOB_NAMES),
+        "media_daily_poll_timer": media_daily_poll_timer,
         "ran_guards": not skip_guards,
         "ran_runtime_smoke": restart_gateway and not skip_guards,
         "restarted_gateway": restart_gateway,
