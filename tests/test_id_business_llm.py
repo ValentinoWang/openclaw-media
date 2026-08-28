@@ -537,6 +537,7 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
         self.assertEqual(first, second)
 
     def test_ai_reply_uses_current_table_fields_after_history_lookup(self) -> None:
+        configured_rebate = MODULE.load_business_reply_defaults()["fields"]["报备返点"]
         fields = {
             "作者ID": "小王",
             "账号名称": "清华AI小王冲一级",
@@ -557,15 +558,15 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
             self.assertIn('"图文报价": "1499"', payload_text)
             self.assertIn('"视频报价": "2499"', payload_text)
             self.assertIn("报价按账号/平台级别使用", payload_text)
-            self.assertIn("30%", parts[0]["text"])
+            self.assertIn(configured_rebate, parts[0]["text"])
             self.assertIn("required_opening", payload_text)
             self.assertIn("逐行字段格式", parts[0]["text"])
             return {
                 "status": "pending_manual",
-                "reply": "老师您好，这里是清华AI小王冲一级博主\n图文报价：1499元\n视频报价：2499元\n返点：先按30%沟通，可谈\n档期：待博主确认",
+                "reply": f"老师您好，这里是清华AI小王冲一级博主\n图文报价：1499元\n视频报价：2499元\n返点：{configured_rebate}\n档期：待博主确认",
                 "missing_fields": ["报备返点", "具体档期"],
                 "selection_options": {
-                    "报备返点": ["先按30%沟通", "暂不接受返点", "其他（请填写）"],
+                    "报备返点": [configured_rebate, "暂不接受返点", "其他（请填写）"],
                     "具体档期": ["本周可执行", "下周可执行", "其他（请填写）"],
                 },
                 "evidence": "使用 05 商务账号表中账号级报价。",
@@ -715,6 +716,7 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
             "schema_version": MODULE.BUSINESS_REPLY_DEFAULTS_SCHEMA_VERSION,
             "updated_at": "2026-07-24T07:20:28+08:00",
             "source": {"type": "user_confirmed", "scope": "global"},
+            "current_month": "2026-08",
             "fields": {
                 "报备返点": "先按30%沟通，可谈",
                 "保价政策": "30天保价",
@@ -799,31 +801,45 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
         fields = {
             "平台": "小红书",
             "账号名称": "清华AI小王冲一级",
-            "报备返点": "先按30%沟通，可谈",
-            "保价政策": "30天保价",
-            "具体档期": "8月上旬",
-            "多双露出": "可增加一双露出",
-            "蒲公英涨价": "蒲公英不加价",
-            "授权范围": "全渠道使用",
-            "授权时长": "6个月",
-            "全渠道授权及时长": "全渠道6个月",
+            "待补充字段": "视频报价",
         }
-        default_lookup = {
-            "matched": True,
-            "storage": "local_json",
-            "applied_fields": list(MODULE.BUSINESS_REPLY_DEFAULT_FIELDS),
+        defaults = {
+            "schema_version": MODULE.BUSINESS_REPLY_DEFAULTS_SCHEMA_VERSION,
+            "updated_at": "2026-08-28T09:00:00+08:00",
             "source": {"type": "user_confirmed", "scope": "global"},
+            "current_month": "2026-08",
+            "fields": {
+                "报备返点": "先按25%沟通，可谈",
+                "保价政策": "30天保价",
+                "多双露出": "可增加一双露出",
+                "蒲公英涨价": "蒲公英不加价",
+                "授权范围": "全渠道使用",
+                "授权时长": "6个月",
+                "全渠道授权及时长": "全渠道6个月",
+            },
         }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "id_business_reply_defaults.json"
+            path.write_text(json.dumps(defaults, ensure_ascii=False), encoding="utf-8")
+            default_lookup = MODULE.apply_business_reply_defaults(
+                fields,
+                path=path,
+                now=datetime(2026, 8, 28, tzinfo=MODULE.LOCAL_TZ),
+            )
 
         def fake_generate(parts, provider, **_kwargs):
             self.assertEqual(provider, "fake")
             payload = parts[1]["text"]
             parsed_payload = json.loads(payload)
             self.assertIn('"default_lookup"', payload)
+            self.assertIn('"报备返点": "先按25%沟通，可谈"', payload)
             self.assertIn('"保价政策": "30天保价"', payload)
             self.assertNotIn("视频报价", parsed_payload["current_fields"])
             self.assertEqual(parsed_payload["pending_fields"], ["视频报价"])
+            self.assertTrue(parsed_payload["default_lookup"]["month_context"]["is_current"])
+            self.assertIn("报备返点", parsed_payload["default_lookup"]["applied_fields"])
             self.assertIn("当前默认沟通口径", parts[0]["text"])
+            self.assertIn("先按25%沟通，可谈", parts[0]["text"])
             return {
                 "status": "pending_manual",
                 "reply": "老师您好，这里是清华AI小王冲一级博主\n视频报价：待博主确认",
@@ -845,6 +861,46 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
 
         self.assertEqual(reply["missing_fields"], ["视频报价"])
         self.assertNotIn("待你选择", reply["reply"])
+
+    def test_ai_reply_keeps_explicit_rebate_ahead_of_current_default_anchor(self) -> None:
+        fields = {"博主IP": "清华AI小王", "报备返点": "品牌确认20%"}
+        default_lookup = {
+            "fields": {"报备返点": "先按25%沟通，可谈"},
+            "applied_fields": [],
+            "month_context": {
+                "configured_month": "2026-08",
+                "is_current": True,
+                "current_month": "8月",
+                "next_month": "9月",
+            },
+        }
+
+        def fake_generate(parts, provider, **_kwargs):
+            self.assertEqual(provider, "fake")
+            payload = json.loads(parts[1]["text"])
+            self.assertEqual(payload["current_fields"]["报备返点"], "品牌确认20%")
+            self.assertEqual(payload["default_lookup"]["fields"]["报备返点"], "先按25%沟通，可谈")
+            self.assertNotIn("当前报备返点默认沟通口径：先按25%沟通，可谈", parts[0]["text"])
+            return {
+                "status": "done",
+                "reply": "老师您好，这里是清华AI小王博主\n返点：品牌确认20%",
+                "missing_fields": [],
+                "selection_options": {},
+                "evidence": "使用品牌确认返点。",
+            }
+
+        settings = SimpleNamespace(enabled=True, provider="fake", max_chars=4000)
+        with patch.object(MODULE, "load_content_cleaner_llm_settings", return_value=settings):
+            with patch.object(MODULE, "generate_json_from_parts", side_effect=fake_generate):
+                reply = MODULE.generate_business_reply_from_current_fields(
+                    fields,
+                    history_lookup={"business_opportunities": {"matched": True}},
+                    default_lookup=default_lookup,
+                    pending_fields=[],
+                    request_text="请回复返点",
+                )
+
+        self.assertEqual(reply["reply"], "老师您好，这里是清华AI小王博主\n返点：品牌确认20%")
 
     def test_ai_reply_receives_single_fact_request_and_profile_url(self) -> None:
         fields = {

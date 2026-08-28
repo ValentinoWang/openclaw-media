@@ -87,6 +87,7 @@ BUSINESS_TRIGGER_RE = re.compile(
     re.IGNORECASE,
 )
 LOCAL_TZ = timezone(timedelta(hours=8))
+BUSINESS_REPLY_MONTH_RE = re.compile(r"^(?P<year>20\d{2})-(?P<month>0[1-9]|1[0-2])$")
 
 
 LEGACY_FIELD_SPECS: dict[str, int] = {
@@ -283,14 +284,14 @@ QUESTION_TEMPLATES = {
     "具体档期": "最快可执行/可发布的具体档期是什么？请具体到日期或日期区间，不要只写“尽快”。",
     "图文报价": "{current_month}图文报价是多少？请注明报备/非报备。",
     "视频报价": "{current_month}视频报价是多少？请注明报备/非报备。",
-    "非报备图文/视频单品报价": "非报备图文/视频单品报价分别是多少？",
-    "报备视频、图文/单品报价": "报备图文、报备视频单品报价分别是多少？",
+    "非报备图文/视频单品报价": "{current_month}非报备图文/视频单品报价分别是多少？",
+    "报备视频、图文/单品报价": "{current_month}报备图文、报备视频单品报价分别是多少？",
     "报备返点": "返点是否接受？如不接受，请给可接受返点。",
-    "本月下单是否保价次月执行": "本月下单是否可以保价到次月执行？如果不行，请给次月价格。",
+    "本月下单是否保价次月执行": "{price_protection_question}",
     "排竞时长": "是否可接受前 15 天后 15 天排竞？如果不能，可接受的排竞时长是多少？",
     "是否有免费分发平台": "是否有可免费同步/分发的平台？具体哪些平台？",
     "全渠道授权及时长": "是否可以全渠道授权？可授权哪些渠道，授权时长多久？",
-    "保价政策": "本次合作是否保价？如果保价，请给出适用月份或执行截止时间；如果不保价，请给调整后的报价。",
+    "保价政策": "{price_protection_policy_question}",
     "授权范围": "可授权哪些渠道和用途（品牌自媒体、电商、信息流或其他）？",
     "授权时长": "授权时长可选多久？请确认起止口径。",
     "多双露出": "是否接受同一内容多双产品露出？如果接受，最多几双、是否需要加价？",
@@ -556,6 +557,7 @@ JSON 结构：
 - 如果报价来自历史表字段，要自然说明“当前表内报价为...”，不要说成用户刚刚提供。
 - 如果仍缺返点、档期、保价、授权等字段，回复里要明确向博主补问。
 - 如果 current_fields 没有报备返点，但 default_lookup 提供了报备返点默认口径，可按该口径作为初期谈判锚点；必须表达为“当前默认沟通口径”，不得写成表内已确认返点。
+- 只有 default_lookup.month_context.is_current 为 true，且 default_lookup.applied_fields 包含报备返点时，才可把该默认值表述为“当前默认沟通口径”；已有 current_fields 报备返点时必须优先使用它。
 - 先把 current_fields/history_lookup 中已查到的博主IP、平台ID、图文报价、视频报价、报备视频或图文/单品报价自然写入 reply，再处理缺项；不得让用户重复填写已经查到的事实。
 - 对本轮询问但仍缺失的可协商字段（报备返点、保价政策、最快档期、多双露出、蒲公英涨价、授权范围、授权时长、全渠道授权及时长），必须在 selection_options 中按字段给出 2-4 个简短可选口径，最后一项是“其他（请填写）”。这些只是让用户选择的候选，不能写成已确认事实。
 - 报价、博主IP、平台ID等客观字段缺失时只能说明未查到并要求补充，不得为它们编造 selection_options。
@@ -1105,13 +1107,52 @@ def confirmation_required_fields(body: str, fields: dict[str, Any], pending: lis
     return [label for label in sorted(required) if label in CONFIRMATION_FIELDS]
 
 
-def business_local_month(now: datetime | None = None) -> str:
+def business_reply_month_context(defaults: dict[str, Any], *, now: datetime | None = None) -> dict[str, Any]:
+    configured_month = _business_text_value(defaults.get("current_month"))
+    configured = BUSINESS_REPLY_MONTH_RE.fullmatch(configured_month)
     moment = now or datetime.now(LOCAL_TZ)
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=LOCAL_TZ)
     else:
         moment = moment.astimezone(LOCAL_TZ)
-    return f"{moment.month}月"
+    current_month = f"{moment.year:04d}-{moment.month:02d}"
+    if not configured or configured_month != current_month:
+        return {
+            "configured_month": configured_month,
+            "is_current": False,
+            "current_month": "",
+            "next_month": "",
+        }
+    month = int(configured.group("month"))
+    next_month = 1 if month == 12 else month + 1
+    return {
+        "configured_month": configured_month,
+        "is_current": True,
+        "current_month": f"{month}月",
+        "next_month": f"{next_month}月",
+    }
+
+
+def business_reply_question_context(defaults: dict[str, Any], *, now: datetime | None = None) -> dict[str, str]:
+    month_context = business_reply_month_context(defaults, now=now)
+    if month_context["is_current"]:
+        current_month = str(month_context["current_month"])
+        next_month = str(month_context["next_month"])
+        return {
+            "current_month": current_month,
+            "price_protection_question": (
+                f"{current_month}下单是否可以保价至{next_month}执行？如果不行，请给{next_month}价格。"
+            ),
+            "price_protection_policy_question": (
+                f"本次合作是否保价？如按{current_month}下单保价至{next_month}执行，请确认；"
+                f"如不保价，请给{next_month}报价或执行截止时间。"
+            ),
+        }
+    return {
+        "current_month": "最新",
+        "price_protection_question": "本次下单是否可以按报价保价至执行月？如果不行，请给执行月价格。",
+        "price_protection_policy_question": "本次合作是否保价？请给出执行截止时间；如果不保价，请给执行月报价。",
+    }
 
 
 def build_creator_question_text(
@@ -1132,15 +1173,15 @@ def build_creator_question_text(
     if project:
         lines.append(f"项目：{project}")
     lines.append("以下信息不确定，不能直接粘贴给品牌方；请先向博主确认：")
-    defaults = load_business_reply_defaults(defaults_path) if "报备返点" in confirmation_fields else {}
+    defaults = load_business_reply_defaults(defaults_path)
+    month_context = business_reply_month_context(defaults, now=now)
+    question_context = business_reply_question_context(defaults, now=now)
     default_rebate = _business_text_value((defaults.get("fields") or {}).get("报备返点"))
     for index, field in enumerate(confirmation_fields, start=1):
-        if field == "报备返点" and default_rebate:
+        if field == "报备返点" and default_rebate and month_context["is_current"]:
             question = f"返点是否接受？当前默认沟通口径为“{default_rebate}”；如不接受，请给可接受返点。"
         else:
-            question = QUESTION_TEMPLATES.get(field, f"{field} 请确认。").format(
-                current_month=business_local_month(now)
-            )
+            question = QUESTION_TEMPLATES.get(field, f"{field} 请确认。").format(**question_context)
         lines.append(f"{index}. {field}：{question}")
     return "\n".join(lines)
 
@@ -1344,7 +1385,11 @@ def generate_business_reply_from_current_fields(
     if not settings.enabled:
         return {"status": "pending_manual", "reason": f"{BUSINESS_LLM_PROFILE_NAME} 已禁用"}
     request_text_value = str(request_text or "").strip()
-    effective_default_lookup = default_lookup if default_lookup is not None else load_business_reply_defaults()
+    effective_default_lookup = dict(default_lookup) if default_lookup is not None else load_business_reply_defaults()
+    month_context = effective_default_lookup.get("month_context")
+    if not isinstance(month_context, dict):
+        month_context = business_reply_month_context(effective_default_lookup)
+        effective_default_lookup["month_context"] = month_context
     current_fields = {
         name: _field_text(fields, name)
         for name in (
@@ -1395,8 +1440,17 @@ def generate_business_reply_from_current_fields(
         payload["history_lookup"] = {"truncated": True, "summary": history_lookup}
         payload_text = json.dumps(payload, ensure_ascii=False, indent=2)[:max_chars]
     default_rebate = _business_text_value((effective_default_lookup.get("fields") or {}).get("报备返点"))
+    rebate_was_defaulted = "报备返点" in _business_list_value(effective_default_lookup.get("applied_fields"))
     prompt = BUSINESS_REPLY_PROMPT
-    if default_rebate:
+    if month_context.get("is_current"):
+        prompt += (
+            "\n本轮报价与保价月份口径由 default_lookup.month_context 提供："
+            f"{month_context.get('current_month')}报价，"
+            f"{month_context.get('current_month')}下单保价至{month_context.get('next_month')}执行。"
+        )
+    else:
+        prompt += "\ndefault_lookup 未提供本月有效口径；报价和保价回复不得写出具体月份。"
+    if default_rebate and month_context.get("is_current") and (rebate_was_defaulted or not _field_text(fields, "报备返点")):
         prompt += f"\n当前报备返点默认沟通口径：{default_rebate}。"
     result = generate_json_from_parts(
         [{"text": prompt}, {"text": payload_text}],
@@ -2023,6 +2077,9 @@ def load_business_reply_defaults(path: str | Path | None = None) -> dict[str, An
     raw_fields = payload.get("fields")
     if not isinstance(raw_fields, dict):
         raise ValueError(f"business reply defaults fields must be an object: {target}")
+    current_month = _business_text_value(payload.get("current_month"))
+    if current_month and not BUSINESS_REPLY_MONTH_RE.fullmatch(current_month):
+        raise ValueError(f"business reply defaults current_month must use YYYY-MM: {target}")
     fields: dict[str, str] = {}
     for name in BUSINESS_REPLY_DEFAULT_FIELDS:
         value = _business_text_value(raw_fields.get(name))
@@ -2039,6 +2096,7 @@ def load_business_reply_defaults(path: str | Path | None = None) -> dict[str, An
         "path": str(target),
         "schema_version": BUSINESS_REPLY_DEFAULTS_SCHEMA_VERSION,
         "updated_at": _business_text_value(payload.get("updated_at")),
+        "current_month": current_month,
         "fields": fields,
         "source": source,
     }
@@ -2051,16 +2109,22 @@ def apply_business_reply_defaults(
     now: datetime | None = None,
 ) -> dict[str, Any]:
     lookup = load_business_reply_defaults(path)
-    defaults = lookup.pop("fields", {})
+    defaults = dict(lookup.get("fields") or {})
+    month_context = business_reply_month_context(lookup, now=now)
     stale_fields = [
         name
         for name, value in defaults.items()
         if name == "具体档期" and is_expired_schedule_value(value, now=now)
     ]
     defaults = {name: value for name, value in defaults.items() if name not in stale_fields}
+    if "报备返点" in defaults and not month_context["is_current"] and not _field_text(fields, "报备返点"):
+        defaults.pop("报备返点")
+        stale_fields.append("报备返点")
     applied_fields = copy_missing_plain_fields(fields, defaults, BUSINESS_REPLY_DEFAULT_FIELDS)
     return {
         **lookup,
+        "fields": defaults,
+        "month_context": month_context,
         "applied_fields": applied_fields,
         "skipped_existing_fields": [name for name in defaults if name not in applied_fields],
         "stale_fields": stale_fields,
