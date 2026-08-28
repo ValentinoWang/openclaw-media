@@ -21,9 +21,10 @@ import {
 import { Link } from 'react-router-dom'
 import { useMediaWeb } from '../MediaWebWorkspace'
 import { BusinessOperationError, callBusinessOperation } from '../generatedBusinessPagesContract'
-import { projectStageDisplayLabel, projectStatusDisplayLabel } from '../ui/displayLabels'
+import { projectStatusDisplayLabel } from '../ui/displayLabels'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
 import styles from './WorkboardPage.module.css'
+import { filterWorkboardAttentionTasks, workboardStageProgress } from './workboardPresentation'
 
 type DashboardResponse = {
   revision: number
@@ -67,15 +68,6 @@ type LoadState<T> =
   | { status: 'ready'; data: T }
   | { status: 'error'; message: string }
 
-const stageProgress: Record<string, number> = {
-  research: 15,
-  assets: 30,
-  decision: 45,
-  creation: 65,
-  publishing: 85,
-  review: 100,
-}
-
 export default function WorkboardPage() {
   const { openWorkspace, tasks } = useMediaWeb()
   const [dashboard, setDashboard] = useState<LoadState<DashboardResponse>>({ status: 'loading' })
@@ -104,7 +96,7 @@ export default function WorkboardPage() {
   const summary = dashboard.status === 'ready' ? dashboard.data.summary : null
   const pendingTotal = summary ? summary.pendingDecisions + summary.pendingPublishing + summary.pendingReviews + summary.taskSummary.needsAttention : 0
   const attentionTasks = useMemo(
-    () => tasks.filter((task) => task.status === 'awaiting_confirmation' || (task.terminal && ['pending_manual', 'failed'].includes(task.status))).slice(0, 4),
+    () => filterWorkboardAttentionTasks(tasks).slice(0, 4),
     [tasks],
   )
   const activeTasks = useMemo(() => tasks.filter((task) => !task.terminal).slice(0, 4), [tasks])
@@ -241,16 +233,16 @@ function LoopCard({ tone, icon, kicker, title, description, steps, to }: { tone:
 }
 
 function ProjectCard({ project }: { project: ContentProjectSummary }) {
-  const progress = stageProgress[project.stage] ?? 20
+  const stage = workboardStageProgress(project.stage)
   const artifactCount = Object.values(project.artifactCounts).reduce((total, count) => total + count, 0)
   return (
     <article className={styles.projectCard}>
       <div className={styles.projectTopline}>
-        <span>{projectStageDisplayLabel(project.stage)}</span>
-        <small>{projectStatusDisplayLabel(project.status)}</small>
+        <span>{stage.label}</span>
+        <small>{projectStatusDisplayLabel(project.status)}{stage.progress === null ? ' · 进度待确认' : null}</small>
       </div>
       <h3>{project.title}</h3>
-      <div className={styles.projectProgress}><span style={{ width: `${progress}%` }} /></div>
+      <div className={styles.projectProgress}>{stage.progress === null ? null : <span style={{ width: `${stage.progress}%` }} />}</div>
       <footer><span>{artifactCount} 个当前产物</span><span>更新于 {formatDate(project.updatedAt)}</span><Link to="/studio">打开 Studio<ArrowRight size={14} /></Link></footer>
     </article>
   )

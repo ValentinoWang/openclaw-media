@@ -1,0 +1,1 @@
+{"contract_id":"EX-P10","node_id":"P10","read_set":["module:selfmedia.scheduling"],"write_set":["module:selfmedia.scheduling"],"resource_claims":[{"resource_id":"module:selfmedia.scheduling","mode":"W","isolation_key":"p10-schedule"}],"acceptance_commands":["pytest -q tests"],"evidence_outputs":["agents-results/2026-08-29/media-p1-remaining-development-paths/evidence/P10.json"]}

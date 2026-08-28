@@ -254,6 +254,48 @@ def _usage_candidates(items: list[RankedRecord], usage_type: str) -> list[dict[s
     return result
 
 
+def load_material_usage_feedback_payloads(
+    *,
+    tenant_id: str,
+    run_id: str,
+    performance_feedback_summary: str,
+) -> list[dict[str, Any]]:
+    """Rebuild feedback payloads from a tenant-local CreationRun artifact."""
+    normalized_run_id = str(run_id or "").strip()
+    summary = str(performance_feedback_summary or "").strip()
+    if not normalized_run_id or not summary:
+        return []
+    path = MediaVault(tenant_id=tenant_id).creation_run_dir(normalized_run_id) / "material_usage.json"
+    if not path.is_file():
+        return []
+    try:
+        saved_usages = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"cannot read CreationRun material usage artifact: {path}") from exc
+    if not isinstance(saved_usages, list):
+        raise RuntimeError(f"CreationRun material usage artifact must be a list: {path}")
+    usages: list[dict[str, Any]] = []
+    for index, item in enumerate(saved_usages, 1):
+        if not isinstance(item, dict):
+            raise RuntimeError(f"CreationRun material usage artifact contains non-object item {index}: {path}")
+        artifact_run_id = str(item.get("run_id") or "").strip()
+        if artifact_run_id != normalized_run_id:
+            raise RuntimeError(f"CreationRun material usage artifact run_id mismatch at item {index}: {path}")
+        usages.append(
+            {
+                "usage_id": item.get("usage_id"),
+                "asset_id": item.get("asset_id"),
+                "deconstruction_id": item.get("deconstruction_id"),
+                "pattern_id": item.get("pattern_id"),
+                "usage_type": item.get("usage_type"),
+                "score": item.get("score"),
+                "selected_for_final": item.get("selected_for_final"),
+                "performance_feedback_summary": summary,
+            }
+        )
+    return build_material_usage_payloads(run_id=normalized_run_id, usages=usages)
+
+
 def _record_id(item: RankedRecord) -> str:
     record = item.record
     return str(record.relation_id or record.source_record_id or record.source_link or record.title or "unknown").strip()

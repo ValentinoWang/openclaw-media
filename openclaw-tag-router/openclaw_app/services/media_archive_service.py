@@ -5,6 +5,7 @@ import binascii
 import hashlib
 import importlib.util
 import json
+import os
 import re
 import uuid
 from datetime import datetime, timezone
@@ -16,7 +17,11 @@ from .media_archive_store import MediaArchiveStore
 from .media_device_job_contract import validate_r1_response
 
 
-CANONICAL_GENERATED_CONTRACT = Path("/home/ubuntu/selfmedia-tools/media-agent-cli/generated_product_contract.py")
+# `parents[3]` is the repository root: <repo>/openclaw-tag-router/openclaw_app/services/...
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+ARCHIVE_CONTRACT_PATH_ENV = "OPENCLAW_MEDIA_GENERATED_CONTRACT"
+REPOSITORY_GENERATED_CONTRACT = REPOSITORY_ROOT / "media-agent-cli/generated_product_contract.py"
+LEGACY_GENERATED_CONTRACT = Path("/home/ubuntu/selfmedia-tools/media-agent-cli/generated_product_contract.py")
 _KEY = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 _REF = re.compile(r"[A-Za-z0-9_:/?.=-]{1,500}\Z")
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
@@ -39,6 +44,18 @@ ARCHIVE_HTTP_BODY_MAXIMUM_BYTES = (
     + _ARCHIVE_MANIFEST_JSON_OVERHEAD_BYTES
 )
 _MEDIA_MARKER = re.compile(r"(?:^|[:/_.-])(raw|proxy|final|audio|video|media)(?:$|[:/_.-])", re.IGNORECASE)
+
+
+def resolve_archive_contract_path() -> Path:
+    override = os.getenv(ARCHIVE_CONTRACT_PATH_ENV)
+    candidates = (Path(override),) if override else (REPOSITORY_GENERATED_CONTRACT, LEGACY_GENERATED_CONTRACT)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return candidates[0]
+
+
+CANONICAL_GENERATED_CONTRACT = resolve_archive_contract_path()
 
 
 def _load_contract() -> ModuleType:

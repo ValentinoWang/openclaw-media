@@ -12,11 +12,13 @@ from pathlib import Path
 from typing import Any
 
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
 # The editable configuration SSOT lives in this repository; the env override
 # keeps the deployed host's split layout working.
 REPO_CONFIG = Path(
     os.getenv("OPENCLAW_BOTS_CONFIG")
-    or Path(__file__).resolve().parents[3] / "config/openclaw_bots.json"
+    or REPO_ROOT / "config/openclaw_bots.json"
 )
 OBSIDIAN_VAULT_ROOT = Path(os.getenv("OPENCLAW_OBSIDIAN_VAULT_ROOT") or Path.home() / "obsidian-日记")
 OBSIDIAN_DIR = Path(os.getenv("OPENCLAW_OBSIDIAN_CONFIG_DIR") or OBSIDIAN_VAULT_ROOT / "openclaw配置")
@@ -197,6 +199,11 @@ def write_json_config(path: Path, payload: dict[str, Any], *, dry_run: bool) -> 
     if dry_run:
         return
     atomic_write(path, canonical_text(payload))
+
+
+def assert_owned_script(path: Path) -> None:
+    if not path.is_file():
+        raise SystemExit(f"missing repository-owned maintenance script: {path}")
 
 
 def cleanup_duplicate_notes(*, dry_run: bool) -> list[str]:
@@ -586,6 +593,7 @@ def main() -> None:
     write_state(repo_hash, obsidian_hash, direction, dry_run=args.dry_run)
     restarted_services = False
     if args.restart_services and runtime_config_changed and direction != "none" and not args.dry_run:
+        assert_owned_script(SYNC_AGENT_MODELS)
         subprocess.run(
             ["python3", str(SYNC_AGENT_MODELS)],
             check=True,

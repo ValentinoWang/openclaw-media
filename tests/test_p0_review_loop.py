@@ -62,7 +62,7 @@ class P0ReviewLoopTests(unittest.TestCase):
             data_review, "generate_validated_review_json", side_effect=lambda parts, _config, **_kwargs: captured.extend(parts) or {"conclusion": "ok"}
         ):
             data_review.analyze_data_screenshots(
-                request=request,
+                request=data_review.DataReviewRequest(creation_record_id="run_missing", platform="抖音"),
                 screenshots=[],
                 reviewed_at="2026-08-28T10:00:00+08:00",
                 guide_text="",
@@ -121,10 +121,68 @@ class P0ReviewLoopTests(unittest.TestCase):
 
     def test_review_write_uses_creation_record_as_stable_post_key(self) -> None:
         request = data_review.DataReviewRequest(creation_record_id="run_review_loop", platform="抖音")
-        writes: list[tuple[object, ...]] = []
-        with patch.dict(
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
             os.environ,
             {
+                "OPENCLAW_MEDIA_VAULT_ROOT": directory,
+                "MEDIA_OS_POST_REVIEWS_URL": "https://bitable.example.test/post-reviews",
+                "MEDIA_OS_METRIC_SNAPSHOT_URL": "https://bitable.example.test/metrics",
+            },
+            clear=False,
+        ):
+            vault = MediaVault(tenant_id=TENANT_ID)
+            vault.write_creation_run_artifacts("run_review_loop", request={}, draft_output={})
+            writes: list[tuple[object, ...]] = []
+            with patch.object(data_review.MediaVault, "write_post_review", return_value={"metrics": {"uri": "media://review"}}), patch.object(
+                data_review, "upsert_entity_record", side_effect=lambda *args, **_kwargs: writes.append(args) or {"record_id": "rec_1"}
+            ):
+                result = data_review.write_data_review_model_v2(
+                    tenant_id=TENANT_ID,
+                    request=request,
+                    analysis={"data_window": "2h", "metrics": {}, "priority_metrics": [], "atomic_facts": [], "trend_curves": {}},
+                    screenshots=[],
+                    reviewed_at="2026-08-28T10:00:00+08:00",
+                    doc_link="",
+                    source_record_id="",
+                )
+
+        self.assertEqual(result["post_id"], "post_run_review_loop")
+        self.assertEqual(writes[0][2]["creation_run_id"], "run_review_loop")
+
+    def test_review_metric_snapshots_preserve_ratio_duration_and_custom_semantics(self) -> None:
+        payloads = data_review._metric_snapshot_payloads(
+            "post_1",
+            "2h",
+            {
+                "priority_metrics": [
+                    {"metric": "完播率", "value": "31%"},
+                    {"metric": "2s跳出率", "value": 0.42},
+                    {"metric": "平均播放时长", "value": "16.5秒"},
+                    {"metric": "高价值互动指数", "value": 12},
+                ]
+            },
+            "media://post_reviews/post_1/metrics.json",
+        )
+        by_name = {item["raw_metric_name"]: item for item in payloads}
+
+        self.assertEqual(by_name["完播率"]["metric_key"], "completion_rate")
+        self.assertEqual(by_name["完播率"]["metric_value"], 0.31)
+        self.assertEqual(by_name["完播率"]["unit"], "ratio")
+        self.assertEqual(by_name["2s跳出率"]["metric_key"], "bounce_2s_rate")
+        self.assertEqual(by_name["2s跳出率"]["metric_value"], 0.42)
+        self.assertEqual(by_name["2s跳出率"]["unit"], "ratio")
+        self.assertEqual(by_name["平均播放时长"]["metric_key"], "avg_watch_duration")
+        self.assertEqual(by_name["平均播放时长"]["metric_value"], 16.5)
+        self.assertEqual(by_name["平均播放时长"]["unit"], "seconds")
+        self.assertEqual(by_name["高价值互动指数"]["metric_key"], "custom")
+        self.assertEqual(by_name["高价值互动指数"]["metric_value"], 12)
+
+    def test_review_write_does_not_link_missing_creation_run(self) -> None:
+        writes: list[tuple[object, ...]] = []
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            os.environ,
+            {
+                "OPENCLAW_MEDIA_VAULT_ROOT": directory,
                 "MEDIA_OS_POST_REVIEWS_URL": "https://bitable.example.test/post-reviews",
                 "MEDIA_OS_METRIC_SNAPSHOT_URL": "https://bitable.example.test/metrics",
             },
@@ -134,18 +192,89 @@ class P0ReviewLoopTests(unittest.TestCase):
         ):
             result = data_review.write_data_review_model_v2(
                 tenant_id=TENANT_ID,
-                request=request,
+                request=data_review.DataReviewRequest(creation_record_id="run_missing", platform="抖音"),
                 analysis={"data_window": "2h", "performance_level": "建议重剪", "metrics": {}, "priority_metrics": [], "atomic_facts": [], "trend_curves": {}},
                 screenshots=[],
                 reviewed_at="2026-08-28T10:00:00+08:00",
                 doc_link="",
-                source_record_id="run_review_loop",
+                source_record_id="run_missing",
             )
 
-        self.assertEqual(result["post_id"], "post_run_review_loop")
-        self.assertEqual(writes[0][2]["creation_run_id"], "run_review_loop")
+        self.assertNotEqual(result["post_id"], "post_run_missing")
+        self.assertEqual(writes[0][2]["creation_run_id"], "")
         self.assertEqual(writes[0][2]["performance_rating"], "值得重剪")
         self.assertIn(writes[0][2]["performance_rating"], data_review.PERFORMANCE_LEVELS)
+
+    def test_review_writes_missing_creation_run_without_false_link(self) -> None:
+        writes: list[tuple[object, ...]] = []
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            os.environ,
+            {
+                "OPENCLAW_MEDIA_VAULT_ROOT": directory,
+                "MEDIA_OS_POST_REVIEWS_URL": "https://bitable.example.test/post-reviews",
+                "MEDIA_OS_METRIC_SNAPSHOT_URL": "https://bitable.example.test/metrics",
+            },
+            clear=False,
+        ), patch.object(data_review.MediaVault, "write_post_review", return_value={"metrics": {"uri": "media://review"}}), patch.object(
+            data_review, "upsert_entity_record", side_effect=lambda *args, **_kwargs: writes.append(args) or {"record_id": "rec_1"}
+        ):
+            result = data_review.write_data_review_model_v2(
+                tenant_id=TENANT_ID,
+                request=data_review.DataReviewRequest(creation_record_id="run_missing", platform="抖音"),
+                analysis={"data_window": "2h", "metrics": {}, "priority_metrics": [], "atomic_facts": [], "trend_curves": {}},
+                screenshots=[],
+                reviewed_at="2026-08-28T10:00:00+08:00",
+                doc_link="",
+                source_record_id="run_missing",
+            )
+
+        self.assertNotEqual(result["post_id"], "post_run_missing")
+        self.assertEqual(writes[0][2]["creation_run_id"], "")
+        self.assertEqual(result["material_feedback_count"], 0)
+
+    def test_review_writes_material_feedback_from_resolved_run_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            os.environ,
+            {
+                "OPENCLAW_MEDIA_VAULT_ROOT": directory,
+                "MEDIA_OS_POST_REVIEWS_URL": "https://bitable.example.test/post-reviews",
+                "MEDIA_OS_METRIC_SNAPSHOT_URL": "https://bitable.example.test/metrics",
+                "MEDIA_OS_MATERIAL_USAGE_URL": "https://bitable.example.test/material-usage",
+            },
+            clear=False,
+        ):
+            vault = MediaVault(tenant_id=TENANT_ID)
+            run_dir = vault.creation_run_dir("run_material_feedback")
+            vault.write_creation_run_artifacts("run_material_feedback", request={}, draft_output={})
+            vault.write_json_artifact(
+                run_dir, "material_usage.json",
+                [{"usage_id": "usage_feedback", "run_id": "run_material_feedback", "asset_id": "asset_1", "usage_type": "选题参考", "score": 93, "selected_for_final": True, "performance_feedback_summary": "pending_post_review"}],
+                owner_type="CreationRun", owner_id="run_material_feedback", artifact_type="material_usage",
+            )
+            writes: list[tuple[object, ...]] = []
+            with patch.object(data_review.MediaVault, "write_post_review", return_value={"metrics": {"uri": "media://review/artifact"}}), patch.object(
+                data_review, "upsert_entity_record", side_effect=lambda *args, **_kwargs: writes.append(args) or {"record_id": "rec_1"}
+            ):
+                result = data_review.write_data_review_model_v2(
+                    tenant_id=TENANT_ID,
+                    request=data_review.DataReviewRequest(creation_record_id="run_material_feedback", platform="抖音"),
+                    analysis={"data_window": "2h", "metrics": {}, "priority_metrics": [], "atomic_facts": [], "trend_curves": {}, "conclusion": "完播率偏低，需要压缩中段。", "performance_level": "值得重剪"},
+                    screenshots=[], reviewed_at="2026-08-28T10:00:00+08:00", doc_link="", source_record_id="run_material_feedback",
+                )
+        feedback_payload = next(payload for entity, _url, payload in writes if entity == "MaterialUsage")
+        self.assertEqual(result["material_feedback_count"], 1)
+        self.assertEqual(feedback_payload["usage_id"], "usage_feedback")
+        self.assertIn("完播率偏低", feedback_payload["performance_feedback_summary"])
+        self.assertIn("media://review/artifact", feedback_payload["performance_feedback_summary"])
+
+    def test_resolve_creation_plan_refuses_ambiguous_title_and_account_match(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"OPENCLAW_MEDIA_VAULT_ROOT": directory}, clear=False):
+            vault = MediaVault(tenant_id=TENANT_ID)
+            for run_id in ("run_first", "run_second"):
+                vault.write_creation_run_artifacts(run_id, request={"request": {"account": "训练小王", "topic": "跑步训练"}}, draft_output={"title": "跑步训练", "validation_targets": {}})
+            resolved = data_review.resolve_creation_plan_for_review(TENANT_ID, data_review.DataReviewRequest(account="训练小王", title="跑步训练"))
+        self.assertEqual(resolved["status"], "ambiguous")
+        self.assertEqual(resolved["creation_record_id"], "")
 
     def test_review_advances_explicitly_selected_business_to_delivered(self) -> None:
         with tempfile.TemporaryDirectory() as directory, patch.dict(
@@ -160,6 +289,7 @@ class P0ReviewLoopTests(unittest.TestCase):
         ):
             vault = MediaVault(tenant_id=TENANT_ID)
             run_dir = vault.creation_run_dir("run_business_delivery")
+            vault.write_creation_run_artifacts("run_business_delivery", request={}, draft_output={})
             vault.write_json_artifact(
                 run_dir,
                 "decision_trace.json",

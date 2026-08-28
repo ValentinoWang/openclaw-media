@@ -35,6 +35,9 @@ SHOOTING_PRIORITY_LABELS = {
     "P0": "必拍",
     "P1": "重要",
     "P2": "可选",
+    "必拍": "必拍",
+    "重要": "重要",
+    "可选": "可选",
 }
 SHOOTING_PLAN_FIELD_LABELS = {
     "shooting_goal": "拍摄目标",
@@ -44,12 +47,16 @@ SHOOTING_PLAN_FIELD_LABELS = {
     "storyboard": "分镜脚本",
     "onsite_checklist": "现场检查清单",
     "publishing_pack": "发布包",
+    "first_hour_action": "发布后首小时动作",
     "evidence_appendix": "证据附录",
 }
 EVIDENCE_SOURCE_STATUS_LABELS = {
     "confirmed": "已核验",
     "manual_description_only": "仅凭文字描述，未看过原片",
     "pending_manual": "待人工核实",
+    "已核验": "已核验",
+    "仅凭文字描述，未看过原片": "仅凭文字描述，未看过原片",
+    "待人工核实": "待人工核实",
 }
 
 
@@ -371,6 +378,7 @@ def _shooting_execution_doc_blocks(
                 [
                     f"话题标签：{_inline_list(pack.get('hashtags'))}",
                     f"评论区引导：{_text(pack.get('comment_prompt'))}",
+                    f"发布后首小时动作（需由创作者手动完成）：{_text(pack.get('first_hour_action')) or '待补充'}",
                 ]
             )
         ),
@@ -448,7 +456,7 @@ def _shooting_plan_field_labels(fields: Any) -> str:
 
 def _evidence_source_status_label(value: Any) -> str:
     raw_status = _text(value)
-    return EVIDENCE_SOURCE_STATUS_LABELS.get(raw_status, raw_status)
+    return EVIDENCE_SOURCE_STATUS_LABELS.get(raw_status, "待人工核实")
 
 
 def _creator_overview_blocks(
@@ -525,7 +533,7 @@ def _creator_publish_blocks(report: dict[str, Any], draft: dict[str, Any]) -> li
         f"话题：{_inline_list(pack['hashtags'])}",
         f"置顶评论：{_text(pack['pinned_comment'])}",
         f"评论区引导问题：{_inline_list(pack['comment_prompt'])}",
-        f"发布后 1 小时动作：{_text(pack.get('first_hour_action'))}",
+        f"发布后首小时动作（需由创作者手动完成）：{_text(pack.get('first_hour_action')) or '待补充'}",
     ]
     return [_paragraph("\n".join(line for line in lines if line.split("：", 1)[-1].strip()))]
 
@@ -665,7 +673,7 @@ def _evidence_appendix_blocks(
 ) -> list[dict[str, Any]]:
     recommended = _recommended_option(draft)
     blocks = [
-        _heading("素材 brief 与来源映射"),
+        _heading("素材说明与来源映射"),
         _paragraph(_usable_material_appendix(draft, recommended)),
         _heading("匹配活动"),
         _paragraph(_activity_appendix(activities[:3], recommended)),
@@ -675,7 +683,7 @@ def _evidence_appendix_blocks(
         _paragraph(_reference_appendix(inspirations[:3], recommended.get("inspiration_reference_reason") or _compact_text(draft.get("inspiration_reference") or {}), label="落地位置")),
         _heading("商务信息"),
         _paragraph(_business_appendix(businesses[:3])),
-        _heading("评分和 record_id"),
+        _heading("评分与追溯信息"),
         _paragraph(_score_id_appendix(activities, virals, inspirations, businesses, draft, validation, platform_fit=platform_fit)),
     ]
     return blocks
@@ -695,12 +703,12 @@ def _content_core_summary(draft: dict[str, Any]) -> str:
 def _usable_material_appendix(draft: dict[str, Any], option: dict[str, Any]) -> str:
     brief = draft.get("usable_material_brief") if isinstance(draft.get("usable_material_brief"), dict) else {}
     lines = [
-        f"执行 brief：{_compact_text(brief.get('execution_brief') or '')}",
+        f"执行说明：{_compact_text(brief.get('execution_brief') or '')}",
         f"来源映射：{_compact_text(brief.get('source_mapping') or '')}",
         f"使用边界：{_compact_text(brief.get('usage_boundaries') or '')}",
-        f"活动机器字段：{_text(option.get('activity_fit_reason'))}",
-        f"爆款机器字段：{_text(option.get('viral_reference_reason'))}",
-        f"灵感机器字段：{_text(option.get('inspiration_reference_reason'))}",
+        f"活动采用说明：{_text(option.get('activity_fit_reason'))}",
+        f"爆款迁移说明：{_text(option.get('viral_reference_reason'))}",
+        f"灵感落地说明：{_text(option.get('inspiration_reference_reason'))}",
     ]
     return "\n".join(line for line in lines if line.split("：", 1)[-1].strip())
 
@@ -763,7 +771,7 @@ def _activity_appendix(items: list[RankedRecord], option: dict[str, Any]) -> str
                     f"- {record.title or record.topic or record.source_record_id}",
                     f"  选择/放弃理由：{reason or _inline_list(item.reasons)}",
                     f"  推荐子方向：{direction}",
-                    f"  record_id：{record.source_record_id}",
+                    f"  来源编号：{record.source_record_id}",
                     f"  返稿链接：{record.submission_link}",
                 )
                 if not line.endswith("：")
@@ -785,7 +793,7 @@ def _reference_appendix(items: list[RankedRecord], reason: str, *, label: str) -
                 [
                     f"- {title}",
                     f"  {label}：{reason or _inline_list(item.reasons)}",
-                    f"  record_id：{record.source_record_id}",
+                    f"  来源编号：{record.source_record_id}",
                     *extra,
                 ]
             )
@@ -798,18 +806,22 @@ def _insight_card_reference_lines(record: Any) -> list[str]:
         return []
     detail = getattr(record, "detail_json", None) if isinstance(getattr(record, "detail_json", None), dict) else {}
     return [
-        "  reference_type：insight-card reference",
-        f"  card_path：{_text(detail.get('insight_card_path'))}",
-        f"  card_status：{_text(detail.get('insight_card_status') or getattr(record, 'status', ''))}",
-        f"  evidence_boundary：{_text(detail.get('evidence_boundary') or 'public_content_only')}",
-        f"  risk_boundary：{_text(detail.get('risk_boundary') or '未标注')}",
+        "  引用类型：洞察卡（仅公开内容）",
+        f"  卡片路径：{_text(detail.get('insight_card_path'))}",
+        f"  卡片状态：{_text(detail.get('insight_card_status') or getattr(record, 'status', ''))}",
+        f"  证据边界：{_evidence_boundary_label(detail.get('evidence_boundary'))}",
+        f"  风险边界：{_text(detail.get('risk_boundary') or '未标注')}",
     ]
+
+
+def _evidence_boundary_label(value: Any) -> str:
+    return {"public_content_only": "仅公开内容"}.get(_text(value), "待人工核实")
 
 
 def _business_appendix(items: list[RankedRecord]) -> str:
     if not items:
         return "无商务信息。"
-    return "\n".join(f"- {item.record.title or item.record.source_record_id}；record_id：{item.record.source_record_id}" for item in items)
+    return "\n".join(f"- {item.record.title or item.record.source_record_id}；来源编号：{item.record.source_record_id}" for item in items)
 
 
 def _score_id_appendix(
@@ -823,16 +835,15 @@ def _score_id_appendix(
     platform_fit: dict[str, Any] | None = None,
 ) -> str:
     lines = [
-        f"推荐方案 id：{draft.get('recommended_option_id') or ''}",
+        f"推荐方案编号：{draft.get('recommended_option_id') or ''}",
         f"候选方案分数：{', '.join(str(item.get('score')) for item in draft.get('script_options') or [] if isinstance(item, dict))}",
         *_option_score_reason_lines(draft),
-        f"活动 record_id：{', '.join(item.record.source_record_id for item in activities)}",
-        f"爆款 record_id：{', '.join(item.record.source_record_id for item in virals)}",
-        f"灵感 record_id：{', '.join(item.record.source_record_id for item in inspirations)}",
-        f"商务 record_id：{', '.join(item.record.source_record_id for item in businesses)}",
+        f"活动来源编号：{', '.join(item.record.source_record_id for item in activities)}",
+        f"爆款来源编号：{', '.join(item.record.source_record_id for item in virals)}",
+        f"灵感来源编号：{', '.join(item.record.source_record_id for item in inspirations)}",
+        f"商务来源编号：{', '.join(item.record.source_record_id for item in businesses)}",
         *_score_summary_lines(activities, virals, businesses, inspirations=inspirations),
         f"平台规则校验：{_validation_summary(validation)}",
-        f"平台机制版本：{_compact_text((platform_fit or {}).get('platform_mechanism_version') or '')}",
     ]
     return "\n".join(line for line in lines if not line.endswith("："))
 
@@ -855,7 +866,7 @@ def _score_summary_lines(
         if not items:
             continue
         summary = "；".join(
-            f"{item.record.source_record_id or item.record.title or 'unknown'}：{item.score}"
+            f"{item.record.source_record_id or item.record.title or '未提供来源编号'}：{item.score}"
             for item in items[:5]
         )
         if summary:
@@ -932,7 +943,7 @@ def _display_shooting_priorities(rows: Any) -> list[Any]:
             continue
         display_row = dict(row)
         raw_priority = _text(row.get("priority"))
-        display_row["priority"] = SHOOTING_PRIORITY_LABELS.get(raw_priority, raw_priority)
+        display_row["priority"] = SHOOTING_PRIORITY_LABELS.get(raw_priority, "待人工确认")
         display_rows.append(display_row)
     return display_rows
 

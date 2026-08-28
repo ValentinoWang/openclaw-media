@@ -49,5 +49,7 @@ def test_growth_provider_instructions_define_editorial_role() -> None:
     assert "输出协议：" in instructions
     assert "只输出一个合法 JSON object" in instructions
     assert "KnowledgeEvidenceBundle evidence_items" in instructions
+    assert "账号长期上下文" in instructions
+    assert "不得补造账号事实、实时指标或已经发布的结果" in instructions
     assert "JSON 引擎" not in instructions
     assert "JSON engine" not in instructions

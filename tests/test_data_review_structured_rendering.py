@@ -117,3 +117,16 @@ def test_review_reply_leads_with_result_and_document_without_internal_metadata()
     assert "post_internal_1" not in reply
     assert "run_internal_1" not in reply
     assert "2026-08-29T10:00:00+08:00" not in reply
+
+
+def test_review_memory_text_retains_publish_and_creation_links():
+    request = DataReviewRequest(
+        platform="抖音",
+        account="小王",
+        publish_url="https://example.com/post/1",
+        creation_record_id="run_review_loop",
+    )
+    memory_text = _review_memory_text(request, _analysis_with_guidance(["重剪前三秒"]))
+
+    assert "发布链接=https://example.com/post/1" in memory_text
+    assert "创作记录ID=run_review_loop" in memory_text

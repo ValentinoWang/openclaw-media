@@ -196,7 +196,7 @@ def _creator_report() -> dict[str, object]:
             "hashtags": ["毕业季", "田径", "100米", "清华研究生", "青春"],
             "pinned_comment": "你毕业后还保留了哪件热爱的事？",
             "comment_prompt": "你觉得毕业是一场告别，还是一次重新起跑？",
-            "first_hour_action": "发布后 1 小时内回复前 3 条具体经历，并观察评论是否围绕毕业与坚持。",
+            "first_hour_action": "发布后置顶提问，1 小时内优先回复前 3 条具体经历，并持续回复前十条有效评论，观察评论是否围绕毕业与坚持。",
         },
         "material_checklist": {
             "must_have": ["起跑", "冲刺", "成绩或赛后反应"],
@@ -1050,12 +1050,12 @@ class CreationV1Tests(unittest.TestCase):
         complete_draft = {
             "shooting_goal": {},
             "route_map": [{}],
-            "must_shot_list": [{}],
-            "branch_plans": [{}],
+            "must_shot_list": [{"priority": "P0"}],
+            "branch_plans": [{"priority": "P1"}],
             "storyboard": [{}],
             "onsite_checklist": ["回看"],
             "publishing_pack": {},
-            "evidence_appendix": [{}],
+            "evidence_appendix": [{"source_status": "confirmed"}],
         }
 
         def fake_call(prompt: str, **_kwargs: object) -> dict[str, object]:
@@ -1063,19 +1063,58 @@ class CreationV1Tests(unittest.TestCase):
             return complete_draft
 
         with patch("selfmedia.creation.shooting_execution.call_creation_json", side_effect=fake_call):
-            self.assertEqual(generate_shooting_execution_plan(request), complete_draft)
+            generated = generate_shooting_execution_plan(
+                request,
+                media_context={
+                    "deconstruction_evidence": {
+                        "status": "confirmed",
+                        "items": [{"source_link": "https://example.com/ref", "source_status": "confirmed"}],
+                    }
+                },
+            )
 
         self.assertEqual(len(captured), 1)
+        self.assertEqual(generated["must_shot_list"][0]["priority"], "必拍")
+        self.assertEqual(generated["branch_plans"][0]["priority"], "重要")
+        self.assertEqual(generated["evidence_appendix"][0]["source_status"], "已核验")
+        self.assertIn('"priority":"必拍|重要|可选"', captured[0])
+        self.assertIn("来源状态为“已核验”", captured[0])
         self.assertIn("仅凭文字描述，未看过原片", captured[0])
         self.assertIn("待人工核实", captured[0])
+        self.assertNotIn("confirmed", captured[0])
         self.assertNotIn("manual_description_only", captured[0])
         self.assertNotIn("pending_manual", captured[0])
 
-        revision_prompt = backwash._revision_prompt({}, "按事实重写", {}, {})
+        revision_prompt = backwash._revision_prompt(
+            {
+                "must_shot_list": [{"priority": "P0"}],
+                "branch_plans": [{"priority": "P1"}],
+                "evidence_appendix": [{"source_status": "confirmed"}],
+            },
+            "按事实重写",
+            {"deconstruction_evidence": {"status": "manual_description_only"}},
+            {"strategy": "result_hook_then_chronological", "beats": [{"narrative_role": "hook_setup"}]},
+        )
+        self.assertIn("优先级只能写“必拍”“重要”或“可选”", revision_prompt)
+        self.assertIn("来源状态只能写“已核验”“仅凭文字描述，未看过原片”或“待人工核实”", revision_prompt)
         self.assertIn("待人工核实", revision_prompt)
         self.assertIn("悬念设置/悬念回收", revision_prompt)
+        self.assertNotIn("P0", revision_prompt)
+        self.assertNotIn("P1", revision_prompt)
+        self.assertNotIn("confirmed", revision_prompt)
         self.assertNotIn("pending_manual", revision_prompt)
         self.assertNotIn("hook_setup/hook_payoff", revision_prompt)
+        self.assertNotIn("hook_setup", revision_prompt)
+
+        narrative_prompt = backwash._narrative_plan_prompt(
+            {"must_shot_list": [{"priority": "P0"}]},
+            "按事实重写",
+            {},
+            previous={"strategy": "result_hook_then_chronological", "beats": [{"narrative_role": "hook_setup"}]},
+        )
+        self.assertIn("叙事角色只能是悬念设置", narrative_prompt)
+        self.assertNotIn("hook_setup", narrative_prompt)
+        self.assertNotIn("result_hook_then_chronological", narrative_prompt)
 
     def test_creation_doc_renders_creator_brief_before_evidence(self) -> None:
         req = parse_creation_request(
@@ -1163,9 +1202,12 @@ class CreationV1Tests(unittest.TestCase):
         self.assertNotIn("平台推荐拟合", main_text)
         self.assertNotIn("option_id", main_text)
         self.assertNotIn("record_id", main_text)
-        self.assertIn("record_id", appendix_text)
-        self.assertIn("insight-card reference", appendix_text)
-        self.assertIn("public_content_only", appendix_text)
+        self.assertNotIn("record_id", appendix_text)
+        self.assertIn("来源编号", appendix_text)
+        self.assertNotIn("insight-card reference", appendix_text)
+        self.assertNotIn("public_content_only", appendix_text)
+        self.assertIn("引用类型：洞察卡（仅公开内容）", appendix_text)
+        self.assertIn("证据边界：仅公开内容", appendix_text)
         self.assertIn("避免焦虑营销", appendix_text)
         self.assertIn("被理解感.md", appendix_text)
         self.assertIn("候选方案分数", appendix_text)
@@ -1374,8 +1416,8 @@ class CreationV1Tests(unittest.TestCase):
         self.assertEqual(fit["platform_mechanism_version"], "xiaohongshu_v1")
         self.assertEqual(fit["generation"]["provider"], "codex_responses")
         self.assertEqual(fit["generation"]["profile"], "media_creation")
-        self.assertEqual(fit["generation"]["model"], "codex/gpt-5.6-sol")
-        self.assertEqual(fit["generation"]["thinking"], "medium")
+        self.assertEqual(fit["generation"]["model"], "codex/gpt-5.6-terra")
+        self.assertEqual(fit["generation"]["thinking"], "high")
         self.assertEqual(fit["platform_fit_meta"]["mechanism_source"], "llm")
 
     def test_platform_mechanism_fit_errors_when_llm_fails(self) -> None:

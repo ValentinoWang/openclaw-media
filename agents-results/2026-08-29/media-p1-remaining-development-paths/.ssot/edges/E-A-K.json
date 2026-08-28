@@ -1,0 +1,1 @@
+{"edge_id":"E-A-K","from":"A","to":"K","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["charter-to-scope"],"transferred_input":"DL-A","gate_evidence":"范围章程已接受","reason_code":"external-prerequisite","necessity_proof":"章程冻结本路径范围","transferred_artifact_ids":[],"resource_ids":["authority:p1-scope"]}

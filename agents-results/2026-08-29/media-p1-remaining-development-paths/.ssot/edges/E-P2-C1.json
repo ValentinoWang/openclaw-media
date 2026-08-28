@@ -1,0 +1,1 @@
+{"edge_id":"E-P2-C1","from":"P2","to":"C1","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["creation-to-ux"],"transferred_input":"DL-P2","gate_evidence":"P2 定向测试","reason_code":"acceptance-dependency","necessity_proof":"C1 需要 P2 的创作交付","transferred_artifact_ids":["DL-P2"],"resource_ids":[]}

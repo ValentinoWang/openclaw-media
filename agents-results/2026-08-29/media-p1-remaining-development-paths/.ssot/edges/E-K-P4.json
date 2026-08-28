@@ -1,0 +1,1 @@
+{"edge_id":"E-K-P4","from":"K","to":"P4","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["scope-to-pipeline"],"transferred_input":"DL-K","gate_evidence":"P4 范围决定已接受","reason_code":"contract-dependency","necessity_proof":"P4 消费冻结范围","transferred_artifact_ids":["DL-K"],"resource_ids":[]}

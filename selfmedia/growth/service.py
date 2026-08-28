@@ -11,9 +11,15 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from media_vault import MediaVault, MediaVaultError, make_timestamp_id
+from selfmedia.context.media_context import DEFAULT_MEMORY_ROOT, load_account_profile, record_review_memory
 from selfmedia.request_constraints import parse_request_constraints
 
-from .capability_registry import CAPABILITY_SPECS, capability_implementation_status, is_capability_implemented
+from .capability_registry import (
+    CAPABILITY_SPECS,
+    capability_creator_field_mappings,
+    capability_implementation_status,
+    is_capability_implemented,
+)
 from .contracts import (
     CommercialBrief,
     DecisionBrief,
@@ -77,16 +83,20 @@ GROWTH_CAPABILITY_PROMPTS = {
         "请基于已提供的类型化证据，为创作者整理下一步选题决策简报。返回一个合法 JSON 对象，"
         "字段必须包含：status、decision_goal、topic_candidates、recommended_next_capability_id、"
         "risk_or_missing_info、display_title、display_summary。每个 topic_candidates 条目都必须包含 title、"
-        "target_audience、audience_pain、content_angle、single_problem、self_check、source_refs，"
-        "并能追溯到类型化证据。所有面向创作者显示的文字均使用中文，JSON 键名保持既有合同，"
-        "不要翻译或新增字段。"
+        "target_audience、pain_point、content_angle、single_problem、self_check、source_refs。"
+        "pain_point 对齐主创作链的选题五要素；旧版 audience_pain 会由系统兼容映射。每项必须能追溯到类型化证据，"
+        "并继承已加载账号画像和复盘结论；缺少画像或复盘时写入 risk_or_missing_info。"
+        "所有面向创作者显示的文字均使用中文，JSON 键名保持既有合同，不要翻译或新增字段。"
     ),
     "publishing_pack_build": (
         "请基于已提供的类型化证据与创作草稿，整理一份可人工确认后发布的内容发布包。返回一个合法 JSON 对象，"
         "字段必须包含：status、title、cover_text、caption、hashtags、comment_seed、publish_checklist、"
-        "risk_notes、display_title、display_summary。标题、封面文案、正文和评论引导必须使用中文，"
+        "risk_notes、display_title、display_summary。title 对齐主创作链 title_1，caption 对齐 body_copy，"
+        "comment_seed 对齐置顶评论和评论引导；publish_checklist 如有发布后 1 小时动作，必须单列写清。"
+        "标题、封面文案、正文和评论引导必须使用中文，"
         "表达自然、短句清楚、可直接口播，避免书面套话、空泛承诺和英文平台术语。不得声称已经自动发布。"
-        "所有面向创作者显示的文字均使用中文，JSON 键名保持既有合同，不要翻译或新增字段。"
+        "必须继承已加载账号画像和复盘结论；缺少画像或复盘时写入 risk_notes。所有面向创作者显示的文字均使用中文，"
+        "JSON 键名保持既有合同，不要翻译或新增字段。"
     ),
 }
 
@@ -311,13 +321,27 @@ def build_decision_brief(
 ) -> DecisionBrief:
     actual_run_id = run_id or make_timestamp_id("decision_brief")
     parsed = parse_media_growth_input(text)
-    loaded_refs = _load_input_artifact_summaries(input_artifact_ids, vault=vault)
+    loaded_refs = _merge_artifact_summaries(
+        _load_input_artifact_summaries(input_artifact_ids, vault=vault),
+        _load_owned_review_signal_summaries(
+            vault=vault,
+            account_id=account_id,
+            platform=platform,
+            track_id=track_id,
+        ),
+    )
+    creator_context = _load_owned_creator_context(
+        vault=vault,
+        account_id=account_id,
+        platform=platform,
+    )
     display_text = _display_text_from_parsed(parsed, "主题", "目标", "问题", "备注", "正文") or _display_text_from_artifacts(loaded_refs)
     evidence_bundle = _effective_knowledge_evidence_bundle(
         knowledge_evidence_bundle,
         display_text,
         loaded_refs,
         enabled=require_typed_evidence or growth_json_provider is not None or knowledge_evidence_bundle is not None,
+        owned_memory_evidence=creator_context["evidence_items"],
     )
     if require_typed_evidence:
         _require_ready_knowledge_evidence_bundle(evidence_bundle)
@@ -331,7 +355,7 @@ def build_decision_brief(
         knowledge_evidence_bundle=evidence_bundle,
         growth_json_provider=growth_json_provider,
         growth_json_settings=growth_json_settings,
-        extra_context={"input_artifacts": list(loaded_refs)},
+        extra_context={"input_artifacts": list(loaded_refs), "creator_context": creator_context["payload"]},
     )
     if _is_pending_llm_payload(llm_payload):
         raise MediaGrowthPendingManual(str(llm_payload.get("reason") or "Growth LLM evidence is pending/manual."))
@@ -360,6 +384,7 @@ def build_decision_brief(
             },
             loaded_refs,
             _knowledge_evidence_trace(evidence_bundle),
+            creator_context["trace"],
         ),
     )
     return _persist_growth_artifact(brief, vault=vault, root="decision_briefs")
@@ -382,6 +407,11 @@ def build_publishing_pack(
     actual_run_id = run_id or make_timestamp_id("publishing_pack")
     parsed = parse_media_growth_input(text)
     loaded_refs = _load_input_artifact_summaries(_merge_artifact_refs(input_artifact_ids, parsed.artifact_refs), vault=vault)
+    creator_context = _load_owned_creator_context(
+        vault=vault,
+        account_id=account_id,
+        platform=platform,
+    )
     caption_text = parsed.value("草稿", "正文", "draft", "body") or parsed.content_text or _draft_text_from_artifacts(loaded_refs)
     display_text = caption_text or _display_text_from_artifacts(loaded_refs)
     evidence_bundle = _effective_knowledge_evidence_bundle(
@@ -389,6 +419,7 @@ def build_publishing_pack(
         display_text,
         loaded_refs,
         enabled=require_typed_evidence or growth_json_provider is not None or knowledge_evidence_bundle is not None,
+        owned_memory_evidence=creator_context["evidence_items"],
     )
     if require_typed_evidence:
         _require_ready_knowledge_evidence_bundle(evidence_bundle)
@@ -402,7 +433,11 @@ def build_publishing_pack(
         knowledge_evidence_bundle=evidence_bundle,
         growth_json_provider=growth_json_provider,
         growth_json_settings=growth_json_settings,
-        extra_context={"input_artifacts": list(loaded_refs), "draft_text": caption_text},
+        extra_context={
+            "input_artifacts": list(loaded_refs),
+            "draft_text": caption_text,
+            "creator_context": creator_context["payload"],
+        },
     )
     if _is_pending_llm_payload(llm_payload):
         raise MediaGrowthPendingManual(str(llm_payload.get("reason") or "Growth LLM evidence is pending/manual."))
@@ -435,9 +470,36 @@ def build_publishing_pack(
             },
             loaded_refs,
             _knowledge_evidence_trace(evidence_bundle),
+            creator_context["trace"],
         ),
     )
     return _persist_growth_artifact(pack, vault=vault, root="publishing_packs")
+
+
+def normalize_publishing_pack_for_creation(value: PublishingPack | dict[str, Any]) -> dict[str, Any]:
+    """Expose only source-backed Growth values under the main creation package names."""
+    source = value.to_dict() if isinstance(value, PublishingPack) else dict(value)
+    mappings = capability_creator_field_mappings("publishing_pack_build")
+    creation_pack: dict[str, Any] = {
+        "title_1": clean_text(source.get("title")),
+        "title_2": "",
+        "cover_text": clean_text(source.get("cover_text")),
+        "body_copy": clean_text(source.get("caption")),
+        "hashtags": list(source.get("hashtags") or []),
+        "pinned_comment": clean_text(source.get("comment_seed")),
+        "comment_prompt": clean_text(source.get("comment_seed")),
+        "first_hour_action": _first_post_publish_action(source.get("publish_checklist")),
+    }
+    missing_creator_fields = tuple(
+        field_name for field_name, field_value in creation_pack.items() if field_value in ("", [], None)
+    )
+    return {
+        "adapter_version": "growth_to_creation_publishing_pack_v1",
+        "source_contract": clean_text(source.get("artifact_type")) or "PublishingPack",
+        "creator_publishing_pack": creation_pack,
+        "field_mappings": {target: list(sources) for target, sources in mappings.items()},
+        "missing_creator_fields": list(missing_creator_fields),
+    }
 
 
 def capture_review_signal(
@@ -484,7 +546,9 @@ def capture_review_signal(
             loaded_refs,
         ),
     )
-    return _persist_growth_artifact(signal, vault=vault, root="review_signals")
+    persisted_signal = _persist_growth_artifact(signal, vault=vault, root="review_signals")
+    _record_growth_review_memory(signal, vault=vault)
+    return persisted_signal
 
 
 def build_publish_readiness_gate(
@@ -1287,6 +1351,275 @@ def _load_input_artifact_summaries(
     return tuple(summaries)
 
 
+def _merge_artifact_summaries(*groups: tuple[dict[str, Any], ...] | list[dict[str, Any]]) -> tuple[dict[str, Any], ...]:
+    summaries: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for group in groups:
+        for summary in group:
+            if not isinstance(summary, dict):
+                continue
+            key = str(summary.get("artifact_uri") or summary.get("reference") or summary.get("artifact_id") or "").strip()
+            if key and key in seen:
+                continue
+            if key:
+                seen.add(key)
+            summaries.append(dict(summary))
+    return tuple(summaries)
+
+
+def _load_owned_review_signal_summaries(
+    *,
+    vault: MediaVault | None,
+    account_id: str,
+    platform: str,
+    track_id: str,
+    limit: int = 5,
+) -> tuple[dict[str, Any], ...]:
+    """Load recent ReviewSignals only from the current tenant's owned vault partition."""
+    if vault is None or not clean_text(account_id):
+        return ()
+    review_root = vault.root / "review_signals"
+    if not review_root.is_dir():
+        return ()
+    candidates: list[tuple[str, str]] = []
+    try:
+        paths = tuple(review_root.glob("*/result.json"))
+    except OSError:
+        return ()
+    for path in paths:
+        try:
+            uri = vault.to_uri(path)
+            payload = load_growth_artifact_payload(uri, vault=vault)
+        except (MediaVaultError, OSError):
+            continue
+        if str(payload.get("artifact_type") or "") != "ReviewSignal":
+            continue
+        if clean_text(payload.get("account_id")) != clean_text(account_id):
+            continue
+        if platform and clean_text(payload.get("platform")) and clean_text(payload.get("platform")) != clean_text(platform):
+            continue
+        if track_id and clean_text(payload.get("track_id")) and clean_text(payload.get("track_id")) != clean_text(track_id):
+            continue
+        candidates.append((str(payload.get("updated_at") or payload.get("created_at") or ""), uri))
+    refs = tuple(uri for _, uri in sorted(candidates, reverse=True)[: max(1, limit)])
+    return _load_input_artifact_summaries(refs, vault=vault)
+
+
+def _load_owned_creator_context(
+    *,
+    vault: MediaVault | None,
+    account_id: str,
+    platform: str,
+    review_limit: int = 5,
+) -> dict[str, Any]:
+    empty = {
+        "payload": {"source": "owned_local_media_memory", "loaded": False},
+        "evidence_items": (),
+        "trace": {"source_type": "owned_account_memory", "loaded": False},
+    }
+    if vault is None or not clean_text(account_id):
+        return empty
+    try:
+        profile = load_account_profile(
+            clean_text(platform),
+            clean_text(account_id),
+            tenant_id=vault.tenant_id,
+            root=_owned_media_memory_base(),
+        )
+    except (OSError, ValueError):
+        profile = {}
+    reviews_path = _owned_media_memory_root(vault.tenant_id) / "reviews.jsonl"
+    reviews = _load_owned_review_memory(
+        reviews_path,
+        tenant_id=vault.tenant_id,
+        account_id=account_id,
+        platform=platform,
+        limit=review_limit,
+    )
+    profile_fields = {
+        key: profile[key]
+        for key in (
+            "identity_summary",
+            "identity_tags",
+            "creator_role",
+            "public_persona_boundaries",
+            "story_usable_identity_points",
+            "positioning_summary",
+            "target_audience",
+            "content_pillars",
+            "proven_patterns",
+            "avoid_patterns",
+            "recent_lessons",
+        )
+        if profile.get(key) not in (None, "", [])
+    }
+    review_text = _owned_review_context_text(reviews)
+    prompt_lines = ["仅使用本租户本地账号档案与历史复盘："]
+    for label, key in (
+        ("账号定位", "positioning_summary"),
+        ("核心受众", "target_audience"),
+        ("已验证有效模式", "proven_patterns"),
+        ("需要规避", "avoid_patterns"),
+        ("最近复盘结论", "recent_lessons"),
+    ):
+        value = profile_fields.get(key)
+        if isinstance(value, (list, tuple)):
+            value = "；".join(clean_text(item) for item in value if clean_text(item))
+        if clean_text(value):
+            prompt_lines.append(f"- {label}：{clean_text(value)}")
+    if review_text:
+        prompt_lines.append("- 历史复盘：" + review_text)
+    loaded = bool(profile_fields or reviews)
+    source_url = _owned_memory_uri(vault.tenant_id, "reviews.jsonl") if reviews else ""
+    evidence_items: tuple[dict[str, Any], ...] = ()
+    if review_text and source_url:
+        evidence_items = (
+            {
+                "source_url": source_url,
+                "source_type": "account_memory",
+                "text_or_summary": review_text,
+                "citations": [source_url],
+                "status": "ready",
+                "metadata": {
+                    "tenant_id": vault.tenant_id,
+                    "account_id": clean_text(account_id),
+                    "platform": clean_text(platform),
+                    "record_count": len(reviews),
+                },
+            },
+        )
+    return {
+        "payload": {
+            "source": "owned_local_media_memory",
+            "loaded": loaded,
+            "profile": profile_fields,
+            "recent_reviews": list(reviews),
+            "prompt": "\n".join(prompt_lines) if loaded else "",
+        },
+        "evidence_items": evidence_items,
+        "trace": {
+            "source_type": "owned_account_memory",
+            "loaded": loaded,
+            "profile_loaded": bool(profile_fields),
+            "recent_review_count": len(reviews),
+            "source_urls": [source_url] if source_url else [],
+        },
+    }
+
+
+def _load_owned_review_memory(
+    path: Path,
+    *,
+    tenant_id: str,
+    account_id: str,
+    platform: str,
+    limit: int,
+) -> tuple[dict[str, Any], ...]:
+    if not path.is_file():
+        return ()
+    rows: list[dict[str, Any]] = []
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            lines = handle.readlines()[-200:]
+    except OSError:
+        return ()
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        if clean_text(row.get("tenant_id")) != tenant_id:
+            continue
+        if clean_text(row.get("account")) != clean_text(account_id):
+            continue
+        if platform and clean_text(row.get("platform")) and clean_text(row.get("platform")) != clean_text(platform):
+            continue
+        rows.append(
+            {
+                key: row.get(key)
+                for key in (
+                    "created_at",
+                    "platform",
+                    "account",
+                    "track",
+                    "topic",
+                    "title",
+                    "metrics",
+                    "lesson",
+                    "summary",
+                    "next_step",
+                    "performance_level",
+                    "key_insights",
+                    "next_actions",
+                )
+                if row.get(key) not in (None, "", [])
+            }
+        )
+    rows.sort(key=lambda row: str(row.get("created_at") or ""), reverse=True)
+    return tuple(rows[: max(1, limit)])
+
+
+def _owned_review_context_text(reviews: tuple[dict[str, Any], ...]) -> str:
+    lines: list[str] = []
+    for review in reviews:
+        lesson = clean_text(review.get("lesson") or review.get("summary"))
+        next_step = clean_text(review.get("next_step"))
+        if lesson:
+            lines.append((lesson + (f"；下一步：{next_step}" if next_step else ""))[:600])
+    return "\n".join(dict.fromkeys(lines))[:4000]
+
+
+def _record_growth_review_memory(signal: ReviewSignal, *, vault: MediaVault | None) -> None:
+    if vault is None or not signal.account_id:
+        return
+    lines = ["【复盘】", f"账号={signal.account_id}"]
+    if signal.platform:
+        lines.append(f"平台={signal.platform}")
+    if signal.track_id:
+        lines.append(f"赛道={signal.track_id}")
+    if signal.publish_id:
+        lines.append(f"作品链接={signal.publish_id}")
+    for key, value in signal.metrics_summary.items():
+        if clean_text(key) and clean_text(value):
+            lines.append(f"{clean_text(key)}={clean_text(value)}")
+    if signal.single_fact:
+        lines.append(f"结论={signal.single_fact}")
+    if signal.next_decision_inputs:
+        lines.append(f"下一步={'；'.join(signal.next_decision_inputs)}")
+    record_review_memory(
+        "\n".join(lines),
+        tenant_id=vault.tenant_id,
+        source=f"media_growth:ReviewSignal:{signal.artifact_id}",
+        analysis={
+            "key_insights": list(signal.effective_patterns),
+            "next_actions": list(signal.next_decision_inputs),
+        },
+        root=_owned_media_memory_base(),
+    )
+
+
+def _owned_media_memory_base() -> Path:
+    configured = os.environ.get("SELFMEDIA_MEMORY_ROOT", "").strip()
+    return Path(configured).expanduser() if configured else DEFAULT_MEMORY_ROOT
+
+
+def _owned_media_memory_root(tenant_id: str) -> Path:
+    return _owned_media_memory_base() / "tenants" / tenant_id
+
+
+def _owned_memory_uri(tenant_id: str, filename: str) -> str:
+    return f"media-memory://tenants/{tenant_id}/{filename}"
+
+
+def _first_post_publish_action(value: Any) -> str:
+    for item in _tuple_text(value):
+        if any(marker in item for marker in ("发布后", "首小时", "第一小时", "1小时", "1 小时")):
+            return item
+    return ""
+
+
 def _growth_llm_payload(
     *,
     task: str,
@@ -1423,10 +1756,12 @@ def _candidate_dicts(value: Any) -> tuple[dict[str, Any], ...]:
             refs = [str(item or "").strip() for item in source_refs if str(item or "").strip()]
         else:
             refs = []
+        pain_point = clean_text(raw.get("pain_point") or raw.get("audience_pain") or raw.get("受众痛点"))
         candidate = {
             "title": clean_text(raw.get("title") or raw.get("标题")),
             "target_audience": clean_text(raw.get("target_audience") or raw.get("目标受众")),
-            "audience_pain": clean_text(raw.get("audience_pain") or raw.get("受众痛点")),
+            "pain_point": pain_point,
+            "audience_pain": pain_point,
             "content_angle": clean_text(raw.get("content_angle") or raw.get("内容角度")),
             "single_problem": clean_text(raw.get("single_problem") or raw.get("单一问题")),
             "self_check": clean_text(raw.get("self_check") or raw.get("自检")),
@@ -1474,15 +1809,66 @@ def _effective_knowledge_evidence_bundle(
     artifact_summaries: tuple[dict[str, Any], ...] | list[dict[str, Any]],
     *,
     enabled: bool,
+    owned_memory_evidence: tuple[dict[str, Any], ...] | list[dict[str, Any]] = (),
 ) -> KnowledgeEvidenceBundle | dict[str, Any] | None:
     if not enabled:
         return knowledge_evidence_bundle
+    bundles: list[KnowledgeEvidenceBundle] = []
     if _has_ready_knowledge_evidence_bundle(knowledge_evidence_bundle):
-        return knowledge_evidence_bundle
+        bundles.append(coerce_knowledge_evidence_bundle(knowledge_evidence_bundle))
     artifact_bundle = _knowledge_evidence_bundle_from_artifacts(query, artifact_summaries)
     if artifact_bundle is not None:
-        return artifact_bundle
-    return knowledge_evidence_bundle
+        bundles.append(artifact_bundle)
+    if owned_memory_evidence:
+        bundles.append(
+            KnowledgeEvidenceBundle.from_dict(
+                {
+                    "bundle_id": "owned_account_memory",
+                    "query": clean_text(query),
+                    "status": "ready",
+                    "source_system": "owned_account_memory",
+                    "evidence_items": [dict(item) for item in owned_memory_evidence if isinstance(item, dict)],
+                }
+            )
+        )
+    if not bundles:
+        return knowledge_evidence_bundle
+    if len(bundles) == 1 and _has_ready_knowledge_evidence_bundle(knowledge_evidence_bundle):
+        return bundles[0]
+    return _merge_knowledge_evidence_bundles(query, bundles)
+
+
+def _merge_knowledge_evidence_bundles(
+    query: str,
+    bundles: list[KnowledgeEvidenceBundle],
+) -> KnowledgeEvidenceBundle:
+    evidence_items: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for bundle in bundles:
+        for item in bundle.evidence_items:
+            payload = item.to_dict()
+            key = str(payload.get("source_hash") or payload.get("source_url") or "")
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            evidence_items.append(payload)
+    payload = json.dumps(
+        {
+            "query": clean_text(query),
+            "evidence_items": evidence_items,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+    return KnowledgeEvidenceBundle.from_dict(
+        {
+            "bundle_id": "combined_bundle_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16],
+            "query": clean_text(query),
+            "status": "ready",
+            "source_system": "media_growth_owned_contracts",
+            "evidence_items": evidence_items,
+        }
+    )
 
 
 def _knowledge_evidence_bundle_from_artifacts(

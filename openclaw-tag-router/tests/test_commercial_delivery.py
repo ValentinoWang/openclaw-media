@@ -214,8 +214,8 @@ class CommercialDeliveryTest(unittest.TestCase):
         result = harness.handle_商单交付(self._message("【商单交付】测试图文商单"))
 
         self.assertTrue(result.ok, result.reply)
-        self.assertIn("互联网所有人可编辑", result.reply)
-        self.assertIn("图片脚本", result.reply)
+        self.assertIn("商单交付初稿已生成", result.reply)
+        self.assertIn("下一步", result.reply)
         self.assertTrue(harness.feishu_service.record_written)
         self.assertLess(harness.feishu_service.calls.index("permission"), harness.feishu_service.calls.index(COMMERCIAL_RECORD_WRITE_CALL))
         self.assertLess(harness.feishu_service.calls.index("native_table"), harness.feishu_service.calls.index(COMMERCIAL_RECORD_WRITE_CALL))
@@ -333,7 +333,6 @@ class CommercialDeliveryTest(unittest.TestCase):
         result = harness.handle_商单交付(self._message("【商单交付】测试视频商单"))
 
         self.assertTrue(result.ok, result.reply)
-        self.assertIn("分镜脚本", result.reply)
         self.assertEqual(harness.feishu_service.record_fields["脚本类型"], "分镜脚本")
         self.assertEqual("media.commercial_delivery", FakeOwnerService.registered_docx["resource_type"])
         self.assertEqual(TENANT_ID, FakeOwnerService.registered_docx["tenant_id"])
@@ -355,8 +354,10 @@ class CommercialDeliveryTest(unittest.TestCase):
         result = harness.handle_商单交付(self._message("【商单交付】权限失败"))
 
         self.assertFalse(result.ok)
-        self.assertIn("错误类型：commercial_delivery_failed", result.reply)
-        self.assertIn("permission readback failed", result.reply)
+        self.assertIn("商单交付未完成", result.reply)
+        self.assertIn("请稍后重试原始需求", result.reply)
+        self.assertNotIn("commercial_delivery_failed", result.reply)
+        self.assertNotIn("permission readback failed", result.reply)
         self.assertFalse(harness.feishu_service.record_written)
 
     @staticmethod

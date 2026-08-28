@@ -47,6 +47,17 @@ FORBIDDEN_CRON_JOB_NAMES = (
     "daily-weekly-self-model-review",
 )
 
+OWNED_MAINTENANCE_SCRIPTS = (
+    SYNC_MODELS_SCRIPT,
+    SYNC_BOT_CONFIG_SCRIPT,
+)
+
+
+def assert_owned_maintenance_scripts() -> None:
+    missing = [str(path) for path in OWNED_MAINTENANCE_SCRIPTS if not path.is_file()]
+    if missing:
+        raise SystemExit("missing repository-owned maintenance scripts: " + ", ".join(missing))
+
 
 def run(command: list[str], *, cwd: Path | None = None, timeout: int | None = None) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
@@ -96,6 +107,7 @@ def run_with_retries(
 
 
 def sync_tag_router_source_to_active() -> None:
+    assert_owned_maintenance_scripts()
     if not TAG_ROUTER_SOURCE_DIR.is_dir():
         raise SystemExit(f"missing source dir: {TAG_ROUTER_SOURCE_DIR}")
     run(["python3", str(SYNC_BOT_CONFIG_SCRIPT), "--direction", "repo-to-obsidian"])

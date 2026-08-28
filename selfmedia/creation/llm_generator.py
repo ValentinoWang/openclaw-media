@@ -135,7 +135,7 @@ def build_creation_prompt(
         "6. 参考爆款只能迁移结构、冲突、情绪推进、行动门槛和画面组织，不得复刻原文；参考创作灵感优先迁移真实场景、信号、观点和可复用角度。inspiration_memory_candidates 里 source_table=Obsidian:人性洞察库 的记录只能作为 insight-card reference，帮助选择目标群体、情绪路径和开头钩子句式；它不是源视频事实，不得写成观众真实画像或私人心理判断。\n"
         "7. 如果账号 Markdown 档案信息不足，要在 risks_or_missing_info 中说明要补什么，但仍基于现有输入完成初稿。\n"
         "8. 不要直接从主题跳到标题或脚本。必须先输出 content_core，再输出 topic_strategy；content_core 要回答这条内容真正要让观众记住什么、看见什么具体场景、解决哪个非泛泛的问题、用哪句内容承诺钉住主线。\n"
-        "9. topic_strategy 中拆清楚目标人群、真实痛点、单一内容角度、只解决的一个小问题和自查标准，再生成 title/final_copy。\n"
+        "9. topic_strategy 中拆清楚目标人群、真实痛点、单一内容角度、只解决的一个小问题和自查标准，再在 script_options 中生成 title/final_copy。\n"
         "10. 如果参考素材里有 OCR 或图片文字，只能当作素材证据和文案补全来源；最终 final_copy、title、content_core、topic_strategy 必须经过清洗和改写，不得原样堆叠 OCR。\n"
         "11. 必须参考 platform_mechanism_fit 里的 platform_strategy、activity_strategy、creation_reverse_plan 和 validation_targets；平台机制只能约束标题、封面/首屏、发布策略和验证指标，不能决定内容核心；不得声称破解平台真实算法或掌握黑箱权重。\n"
         "12. 先生成 usable_material_brief，再写 script_options。usable_material_brief 必须按“来源 -> 可迁移层 -> 脚本落点”抽取可用素材：账号记忆的人设/禁区/复盘教训；创作灵感的真实场景/触发原话/核心观点；爆款候选只能使用 deconstruction.v2 artifact 蒸馏出的 usable_material_brief、reference_shots 五维镜头合同、reference_production_summary、reuse_guardrails、viral_reuse_assessment 和 pacing_notes；活动候选的投稿约束/话题/截止或返稿要求；商务候选的品牌边界。script_options 只能吃这个 brief 写稿，不要在脚本正文里展开完整来源映射。\n"
@@ -147,8 +147,9 @@ def build_creation_prompt(
         "18. score_breakdown 固定 7 项：evidence_grounding(20)、platform_fit(15)、audience_pain(15)、creative_angle(15)、execution_completeness(15)、reference_integration(15)、risk_control(5)。score 必须等于这 7 项之和。\n"
         "19. script_options 初稿后必须输出 editor_pass。editor_pass 是同一次 LLM 输出里的苛刻总编二改阶段，必须检查：是否像真实内容而不是方案、是否有具体画面/动作/台词、是否有平庸表达、是否证据链污染执行稿、推荐方案改了哪些句子。"
         "editor_pass 还必须做去 AI 腔检查并把结论写进 blandness_risks：final_copy、voiceover、title、封面字、置顶评论里不得出现『首先/其次/最后』连用、『总之』『综上』『值得一提的是』『不难发现』『让我们一起』式套话、连续三个以上排比句、每句结尾都用感叹号、与账号无关的网络热词堆叠；口播每句尽量不超过 22 个字，允许口语连接词和自然的不完整句，写完要能直接读出口不别扭。"
-        "顶层 title/final_copy/hook_3s/storyboard/image_script/carousel/creator_report 必须镜像 editor_pass 后的推荐版本。\n"
-        "20. recommended_option_id 必须来自 script_options 里的 option_id；顶层 title/final_copy 等字段应与 editor_pass 后的推荐 option 一致。\n"
+        "editor_pass 完成后，必须把所有可执行修订直接写回 recommended_option_id 指向的 script_options 项；该项是唯一的可执行定稿，不能只改顶层字段。"
+        "顶层 title/tags/final_copy/image_script/carousel/hook_3s/storyboard/voiceover/subtitles/production_checklist/review_plan/risks_or_missing_info 是旧消费者可选镜像，新输出不要重复完整脚本；如输出，必须逐字段等于编辑后的推荐项。\n"
+        "20. recommended_option_id 必须来自 script_options 里的 option_id，并且 editor_pass.recommended_option_id 必须相同。\n"
         f"21. 可以输出 rejected_option_summaries 说明未进入前 5 的方向为什么被舍弃；但前 2 个最可执行方向必须进入 script_options，即使 score <= {CREATION_SCORE_THRESHOLD}。\n"
         "22. 必须输出 candidate_match_assessments，对被选中的爆款和创作灵感给出 0-100 匹配分、分项和 selection_reason。"
         "candidate_match_assessments 固定是 object，且必须只包含两个数组字段：viral 和 inspiration；即使没有已选参考，也必须输出 \"viral\": [] 和 \"inspiration\": []。"
@@ -170,7 +171,7 @@ def build_creation_prompt(
         "30. 账号声音优先：final_copy、voiceover、置顶评论必须贴合 account_profile 里可见的说话方式（称呼观众的习惯、常用句式、语气边界）；不得写成平台通用腔。account_profile 缺少语言风格信息时，在 risks_or_missing_info 写明需要补充账号语言样本，但仍按现有信息完成初稿。\n"
         "31. 商单必须落到执行：selected_business_ids 非空时，usable_material_brief 的 usage_boundaries 必须写明品牌必提点、禁词/禁区和审核红线各自落到哪一句文案或哪个镜头；publishing_pack.first_hour_action 必须给出发布后 1 小时内的具体运营动作（例如回评引导句、置顶时机、投放判断信号），无商单时 first_hour_action 也要给自然流量版动作。\n\n"
         "输出 JSON 字段固定为：\n"
-        "platform, content_type, title, tags, topic, content_core, topic_strategy, usable_material_brief, final_copy, inspiration, activity_constraint, "
+        "platform, content_type, topic, content_core, topic_strategy, usable_material_brief, inspiration, activity_constraint, "
         "viral_reference, inspiration_reference, business_reference, account_context, positioning_analysis, platform_strategy, "
         "activity_strategy, traffic_hypothesis, creation_reverse_plan, validation_targets, selected_activity_ids, "
         "selected_viral_ids, selected_inspiration_ids, selected_business_ids, image_script, carousel, hook_3s, storyboard, voiceover, "
@@ -207,6 +208,7 @@ def validate_llm_draft_payload(
     if not isinstance(payload, dict):
         raise ValueError("LLM JSON 顶层必须是 object")
     draft = dict(payload)
+    optional_top_level_mirrors = _promote_legacy_top_level_mirror_to_recommended_option(draft)
     script_options = _normalize_script_options(draft.get("script_options"), request, candidate_ids=candidate_ids)
     if not script_options:
         raise ValueError("script_options_empty")
@@ -216,6 +218,7 @@ def validate_llm_draft_payload(
     if not recommended:
         raise ValueError("recommended_option_id 必须来自 script_options")
     draft["recommended_option_id"] = recommended["option_id"]
+    _validate_optional_top_level_mirrors(optional_top_level_mirrors, recommended)
     _mirror_recommended_option_to_draft(draft, recommended)
     for key in ("platform", "content_type", "title", "topic", "final_copy", "hook_3s", "voiceover"):
         draft[key] = str(draft.get(key) or "").strip()
@@ -743,25 +746,73 @@ def _recommended_script_option(options: list[dict[str, Any]], recommended_option
 
 
 def _mirror_recommended_option_to_draft(draft: dict[str, Any], option: dict[str, Any]) -> None:
-    for key in (
-        "title",
-        "tags",
-        "final_copy",
-        "selected_activity_ids",
-        "selected_viral_ids",
-        "selected_inspiration_ids",
-        "selected_business_ids",
-        "image_script",
-        "carousel",
-        "hook_3s",
-        "storyboard",
-        "voiceover",
-        "subtitles",
-        "production_checklist",
-        "review_plan",
-        "risks_or_missing_info",
-    ):
+    for key in SCRIPT_OPTION_MIRROR_FIELDS:
         draft[key] = option.get(key)
+
+
+SCRIPT_OPTION_MIRROR_FIELDS = (
+    "title",
+    "tags",
+    "final_copy",
+    "selected_activity_ids",
+    "selected_viral_ids",
+    "selected_inspiration_ids",
+    "selected_business_ids",
+    "image_script",
+    "carousel",
+    "hook_3s",
+    "storyboard",
+    "voiceover",
+    "subtitles",
+    "production_checklist",
+    "review_plan",
+    "risks_or_missing_info",
+)
+
+
+def _promote_legacy_top_level_mirror_to_recommended_option(draft: dict[str, Any]) -> dict[str, Any]:
+    """Normalize legacy editor revisions into the canonical recommended option."""
+    top_level_mirrors = {key: draft[key] for key in SCRIPT_OPTION_MIRROR_FIELDS if key in draft}
+    if not top_level_mirrors:
+        return {}
+    if len(top_level_mirrors) != len(SCRIPT_OPTION_MIRROR_FIELDS):
+        return top_level_mirrors
+    options = draft.get("script_options")
+    recommended_option_id = str(draft.get("recommended_option_id") or "").strip()
+    if not isinstance(options, list) or not recommended_option_id:
+        return top_level_mirrors
+    for index, raw_option in enumerate(options):
+        if not isinstance(raw_option, dict) or str(raw_option.get("option_id") or "").strip() != recommended_option_id:
+            continue
+        option = dict(raw_option)
+        option.update(top_level_mirrors)
+        options[index] = option
+        return {}
+    return top_level_mirrors
+
+
+def _validate_optional_top_level_mirrors(mirrors: dict[str, Any], option: dict[str, Any]) -> None:
+    for key, value in mirrors.items():
+        if _normalized_mirror_value(key, value) != option.get(key):
+            raise ValueError(f"顶层 {key} 必须等于 recommended_option_id 指向的 script_options 项")
+
+
+def _normalized_mirror_value(key: str, value: Any) -> Any:
+    if key in {"title", "final_copy", "hook_3s", "voiceover"}:
+        return str(value or "").strip()
+    if key == "storyboard":
+        return _as_list(value)
+    return _as_string_list(value)
+
+
+def _validate_report_mode(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError("report_mode 必须是 object")
+    normalized = dict(value)
+    for key, expected in CREATOR_BRIEF_REPORT_MODE.items():
+        if normalized.get(key) != expected:
+            raise ValueError(f"report_mode.{key} 必须等于 {expected!r}")
+    return normalized
 
 
 def _validate_content_core(value: Any) -> dict[str, Any]:

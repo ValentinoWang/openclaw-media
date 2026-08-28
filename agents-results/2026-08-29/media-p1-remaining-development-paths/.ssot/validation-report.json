@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-28T17:04:51.385043+00:00",
+  "generator": {
+    "repository": "ValentinoWang/Harness_Engineering",
+    "commit": "93d2a2f03770f66094285981b2a6dc26b1a5f0e5",
+    "dirty": true,
+    "dirty_files": [
+      "Core/skills/business-plan-commercial-story/SKILL.md",
+      "Core/skills/business-plan-facts-evidence/SKILL.md",
+      "Core/skills/business-plan-facts-evidence/scripts/test_validate_business_plan_sources.py",
+      "Core/skills/business-plan-facts-evidence/scripts/validate_business_plan_sources.py",
+      "Core/skills/business-plan-release-qa/SKILL.md",
+      "Core/skills/business-plan-release-qa/scripts/check_external_visible_copy.py",
+      "Core/skills/business-plan-release-qa/tests/test_check_external_visible_copy.py",
+      "Core/skills/business-plan/SKILL.md",
+      "Core/skills/codex-explicit-worker-orchestration/SKILL.md",
+      "Core/skills/design-acceptance-contract/SKILL.md",
+      "Core/skills/report-to-ssot-development-paths/SKILL.md",
+      "Core/skills/report-to-ssot-development-paths/references/node-escalation-contract.md",
+      "Core/skills/report-to-ssot-development-paths/references/release-slicing-contract.md",
+      "Core/skills/report-to-ssot-development-paths/scripts/analyze_ssot_parallelism.py",
+      "Core/skills/report-to-ssot-development-paths/scripts/check_ssot_program.py",
+      "Core/skills/report-to-ssot-development-paths/scripts/check_ssot_structure.py",
+      "Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_bundle.py",
+      "Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_complexity.py",
+      "Core/skills/report-to-ssot-development-paths/tests/fixtures/complexity/bank-migration-l3.json",
+      "Core/skills/report-to-ssot-development-paths/tests/fixtures/complexity/login-organization-l2.json",
+      "Core/skills/report-to-ssot-development-paths/tests/test_schema_v2_regressions.py",
+      "Core/skills/report-to-ssot-development-paths/tests/test_ssot_complexity.py",
+      "Projects/Athlete-OS_repo/harnesses/fullstack-ai-harness-kit-20260529.zip",
+      "Projects/Athlete-OS_repo/harnesses/fullstack-ai-harness-kit.zip",
+      "Projects/Athlete-OS_repo/skills/ai-harness-maintenance/SKILL.md",
+      "Projects/Athlete-OS_repo/skills/athlete-os-acceptance-e2e-adapter/SKILL.md",
+      "Projects/Athlete-OS_repo/skills/athlete-os-frontend-modification/SKILL.md",
+      "Projects/Athlete-OS_repo/skills/athlete-os-frontend-modification/references/frontend-ia-route-shell.md",
+      "registry.yaml"
+    ],
+    "dirty_diff_sha256": "a00c796916deacc91f2ca46aeb9a5ee79a4181f870f4d5781213fa8d8c0071c7",
+    "skill_path": "Core/skills/report-to-ssot-development-paths",
+    "skill_realpath": "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths",
+    "skill_sha256": "653cd9fbbb3afaeff289cb34978b3449440f2de4fe91149eeaeaa70c9e0888da",
+    "checker_bundle_sha256": "284d62641347b466235d047e8b61b30e52712e4c1826f5711bbe8bc127cb3a04",
+    "validation_contract": "strict-schema-v2-release-v1"
+  },
+  "runtime": {
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration",
+    "project_commit": "cffda6e257b483e28b5074eee0e5b7b43b6a9598",
+    "project_dirty": true,
+    "project_dirty_diff_sha256": "47e388396a66639020f666fdd0f7a076fe69dab7e519d19cba27d6b296bde7e7",
+    "harness_lock_sha256": null
+  },
+  "bundle": {
+    "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths",
+    "sha256": "93c8d00029ee831db5094e95eccdee7f20ffd4e2ea6e82cd1e348f93198ee903",
+    "content_sha256": "93c8d00029ee831db5094e95eccdee7f20ffd4e2ea6e82cd1e348f93198ee903",
+    "manifest_sha256": "5e5ef50676504d5254e8d34f9753d2545e9dafbb0db14680b57eaeb70ed4d603",
+    "manifest_identity_sha256": "5e5ef50676504d5254e8d34f9753d2545e9dafbb0db14680b57eaeb70ed4d603"
+  },
+  "checks": [
+    {
+      "id": "runtime-skill-provenance",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/tools/harnessctl.py",
+        "doctor",
+        "--project",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration",
+        "--check-runtime-skills"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "project: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration\nmode: symlink-local\nsource: /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering\nlinks: 30\nruntime_skill_check: enabled\nWARN Harness source dirty files: 29\ndoctor: ok\n"
+    },
+    {
+      "id": "complexity",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_complexity.py",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/planning-compiler.json"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "SSOT complexity check passed: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/planning-compiler.json (depth=L2, releases=5, nodes=22, workers=0)\n"
+    },
+    {
+      "id": "render",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/render_ssot_views.py",
+        "--check",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/manifest.json"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "SSOT views verified: 1 manifest(s)\n"
+    },
+    {
+      "id": "machine-program",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_program.py",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/manifest.json"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "SSOT program check passed: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/manifest.json (nodes=22, formal_ready=14, conditional_ready=0)\n"
+    },
+    {
+      "id": "parallelism-analysis",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/analyze_ssot_parallelism.py",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/manifest.json"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "{\n  \"actor_pools\": {\n    \"codex-primary\": {\n      \"actor\": \"codex\",\n      \"capacity\": 1\n    },\n    \"orchestrator\": {\n      \"actor\": \"orchestrator\",\n      \"capacity\": 1\n    },\n    \"release-acceptance\": {\n      \"actor\": \"human\",\n      \"capacity\": 1\n    }\n  },\n  \"critical_path_edges\": 4,\n  \"current_ready_nodes\": [\n    \"P1\",\n    \"P10\",\n    \"P11\",\n    \"P12\",\n    \"P13\",\n    \"P14\",\n    \"P2\",\n    \"P3\",\n    \"P4\",\n    \"P5\",\n    \"P6\",\n    \"P7\",\n    \"P8\",\n    \"P9\"\n  ],\n  \"current_ready_width\": 14,\n  \"frontier_transitions\": [\n    {\n      \"accepted_node\": \"A\",\n      \"unlocks\": [\n        \"K\"\n      ],\n      \"waits_for\": []\n    },\n    {\n      \"accepted_node\": \"K\",\n      \"unlocks\": [\n        \"P1\",\n        \"P10\",\n        \"P11\",\n        \"P12\",\n        \"P13\",\n        \"P14\",\n        \"P2\",\n        \"P3\",\n        \"P4\",\n        \"P5\",\n        \"P6\",\n        \"P7\",\n        \"P8\",\n        \"P9\"\n      ],\n      \"waits_for\": [\n        \"A\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P1\",\n      \"unlocks\": [\n        \"C1\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P10\",\n      \"unlocks\": [\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P11\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P12\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P13\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C4\",\n      \"unlocks\": [\n        \"D\"\n      ],\n      \"waits_for\": [\n        \"P11\",\n        \"P12\",\n        \"P13\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P14\",\n      \"unlocks\": [\n        \"C5\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C5\",\n      \"unlocks\": [\n        \"D\"\n      ],\n      \"waits_for\": [\n        \"P14\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P2\",\n      \"unlocks\": [\n        \"C1\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P3\",\n      \"unlocks\": [\n        \"C1\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C1\",\n      \"unlocks\": [\n        \"D\"\n      ],\n      \"waits_for\": [\n        \"P1\",\n        \"P2\",\n        \"P3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P4\",\n      \"unlocks\": [\n        \"C2\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P5\",\n      \"unlocks\": [\n        \"C2\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P6\",\n      \"unlocks\": [\n        \"C2\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C2\",\n      \"unlocks\": [\n        \"D\"\n      ],\n      \"waits_for\": [\n        \"P4\",\n        \"P5\",\n        \"P6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P7\",\n      \"unlocks\": [\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P8\",\n      \"unlocks\": [\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P9\",\n      \"unlocks\": [\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C3\",\n      \"unlocks\": [\n        \"D\"\n      ],\n      \"waits_for\": [\n        \"P10\",\n        \"P7\",\n        \"P8\",\n        \"P9\"\n      ]\n    }\n  ],\n  \"manifest\": \"/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/manifest.json\",\n  \"maximum_antichain_width\": 14,\n  \"parallelism_contract_activation_error\": null,\n  \"parallelism_contract_active\": true,\n  \"resource_verified_antichain_width\": 14,\n  \"resource_verified_width\": 14,\n  \"scheduling_model\": \"event-driven\",\n  \"static_waves_are_authority\": false\n}\n"
+    },
+    {
+      "id": "structure",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_structure.py",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/ssot-development-paths.md"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "SSOT structure check passed.\n"
+    },
+    {
+      "id": "chinese-readability",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_chinese_readability.py",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/ssot-development-paths.md"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "中文可读性检查通过。\n"
+    },
+    {
+      "id": "archive-check",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/ssot-obsidian-snapshot/scripts/snapshot_ssot.py",
+        "--source",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths",
+        "--project-root",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration",
+        "--check"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "{\n  \"status\": \"verified\",\n  \"source\": \"/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths\",\n  \"destination\": \"/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/开发/每日开发/SSOT合集/2026-08-29/openclaw-media/media-p1-remaining-development-paths\",\n  \"project_name\": \"openclaw-media\",\n  \"ssot_name\": \"media-p1-remaining-development-paths\",\n  \"snapshot_date\": \"2026-08-29\",\n  \"main_document\": \"ssot-development-paths.md\",\n  \"file_count\": 1,\n  \"contains_openproblem\": false\n}\n"
+    }
+  ],
+  "parallelism": {
+    "actor_pools": {
+      "codex-primary": {
+        "actor": "codex",
+        "capacity": 1
+      },
+      "orchestrator": {
+        "actor": "orchestrator",
+        "capacity": 1
+      },
+      "release-acceptance": {
+        "actor": "human",
+        "capacity": 1
+      }
+    },
+    "critical_path_edges": 4,
+    "current_ready_nodes": [
+      "P1",
+      "P10",
+      "P11",
+      "P12",
+      "P13",
+      "P14",
+      "P2",
+      "P3",
+      "P4",
+      "P5",
+      "P6",
+      "P7",
+      "P8",
+      "P9"
+    ],
+    "current_ready_width": 14,
+    "frontier_transitions": [
+      {
+        "accepted_node": "A",
+        "unlocks": [
+          "K"
+        ],
+        "waits_for": []
+      },
+      {
+        "accepted_node": "K",
+        "unlocks": [
+          "P1",
+          "P10",
+          "P11",
+          "P12",
+          "P13",
+          "P14",
+          "P2",
+          "P3",
+          "P4",
+          "P5",
+          "P6",
+          "P7",
+          "P8",
+          "P9"
+        ],
+        "waits_for": [
+          "A"
+        ]
+      },
+      {
+        "accepted_node": "P1",
+        "unlocks": [
+          "C1"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "P10",
+        "unlocks": [
+          "C3"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "P11",
+        "unlocks": [
+          "C4"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "P12",
+        "unlocks": [
+          "C4"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "P13",
+        "unlocks": [
+          "C4"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "C4",
+        "unlocks": [
+          "D"
+        ],
+        "waits_for": [
+          "P11",
+          "P12",
+          "P13"
+        ]
+      },
+      {
+        "accepted_node": "P14",
+        "unlocks": [
+          "C5"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "C5",
+        "unlocks": [
+          "D"
+        ],
+        "waits_for": [
+          "P14"
+        ]
+      },
+      {
+        "accepted_node": "P2",
+        "unlocks": [
+          "C1"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "P3",
+        "unlocks": [
+          "C1"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "C1",
+        "unlocks": [
+          "D"
+        ],
+        "waits_for": [
+          "P1",
+          "P2",
+          "P3"
+        ]
+      },
+      {
+        "accepted_node": "P4",
+        "unlocks": [
+          "C2"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "P5",
+        "unlocks": [
+          "C2"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "P6",
+        "unlocks": [
+          "C2"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "C2",
+        "unlocks": [
+          "D"
+        ],
+        "waits_for": [
+          "P4",
+          "P5",
+          "P6"
+        ]
+      },
+      {
+        "accepted_node": "P7",
+        "unlocks": [
+          "C3"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "P8",
+        "unlocks": [
+          "C3"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "P9",
+        "unlocks": [
+          "C3"
+        ],
+        "waits_for": [
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "C3",
+        "unlocks": [
+          "D"
+        ],
+        "waits_for": [
+          "P10",
+          "P7",
+          "P8",
+          "P9"
+        ]
+      }
+    ],
+    "manifest": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/manifest.json",
+    "maximum_antichain_width": 14,
+    "parallelism_contract_activation_error": null,
+    "parallelism_contract_active": true,
+    "resource_verified_antichain_width": 14,
+    "resource_verified_width": 14,
+    "scheduling_model": "event-driven",
+    "static_waves_are_authority": false
+  },
+  "result": "pass"
+}
