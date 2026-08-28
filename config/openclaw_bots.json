@@ -104,12 +104,12 @@
     "media_analysis": {
       "provider": "openclaw_codex",
       "bot": "media",
-      "model_tier": "C"
+      "model_tier": "B"
     },
     "media_creation": {
       "provider": "openclaw_codex",
       "bot": "media",
-      "model_tier": "C"
+      "model_tier": "B"
     },
     "activity_cleaning": {
       "provider": "openclaw_codex",

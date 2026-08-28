@@ -85,7 +85,7 @@ def test_all_profiles_use_canonical_openclaw_oauth_provider() -> None:
         assert llm_settings.model.startswith("codex/gpt-5.6-")
 
     assert load_profile_llm_settings("transcription_postprocess").model == "codex/gpt-5.6-terra"
-    assert load_profile_llm_settings("media_creation").model == "codex/gpt-5.6-sol"
+    assert load_profile_llm_settings("media_creation").model == "codex/gpt-5.6-terra"
 
 
 def test_only_canonical_openclaw_provider_lives_in_config() -> None:
