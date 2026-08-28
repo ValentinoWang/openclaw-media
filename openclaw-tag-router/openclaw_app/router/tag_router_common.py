@@ -4,11 +4,9 @@ import json
 import hashlib
 import os
 import re
-import subprocess
 import sys
 import tempfile
 import urllib.parse
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -20,7 +18,6 @@ if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
 from common.llm_settings import load_profile_llm_settings
-from common.model_transport_context import tenant_model_transport_required
 
 from ..models.message import Message
 from ..models.task import TaskResult
@@ -46,6 +43,7 @@ from .media_intake_guides import (
     is_media_intake_tag,
     render_media_intake_prompt,
 )
+from .media_subprocess import run_media_subprocess_with_watchdog
 from .openclaw_bot_llm import bot_runtime, display_openclaw_model, profile_config, profile_provider_runtime, profile_runtime
 
 
@@ -67,50 +65,6 @@ COMMON_ENTRY_FACTS = (
 )
 
 
-def run_media_subprocess_with_watchdog(
-    command: list[str],
-    *,
-    env: dict[str, str] | None,
-    timeout: int,
-    cwd: str | Path | None = None,
-    input: str | None = None,
-) -> subprocess.CompletedProcess[str]:
-    if tenant_model_transport_required():
-        raise RuntimeError(
-            "authenticated Media execution cannot delegate model work to a process outside the tenant transport"
-        )
-    heartbeat_seconds = max(10, int(float(os.getenv("OPENCLAW_TAG_ROUTER_SUBPROCESS_WATCHDOG_HEARTBEAT_SECONDS", "60"))))
-    started_at = time.monotonic()
-    process = subprocess.Popen(
-        command,
-        cwd=str(cwd) if cwd is not None else None,
-        text=True,
-        stdin=subprocess.PIPE if input is not None else None,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        env=env,
-    )
-    watchdog_lines: list[str] = []
-    pending_input = input
-    while True:
-        elapsed = time.monotonic() - started_at
-        remaining = max(0.1, float(timeout) - elapsed)
-        wait_for = min(float(heartbeat_seconds), remaining)
-        try:
-            stdout, stderr = process.communicate(input=pending_input, timeout=wait_for)
-            if watchdog_lines:
-                stderr = "\n".join([*(line for line in watchdog_lines if line), stderr or ""]).strip()
-            return subprocess.CompletedProcess(command, process.returncode, stdout or "", stderr or "")
-        except subprocess.TimeoutExpired:
-            pending_input = None
-            elapsed = time.monotonic() - started_at
-            if elapsed >= timeout:
-                process.kill()
-                stdout, stderr = process.communicate()
-                watchdog_lines.append(f"[watchdog] timeout_after={int(elapsed)}s limit={timeout}s command={command[0]}")
-                stderr = "\n".join([*(line for line in watchdog_lines if line), stderr or ""]).strip()
-                return subprocess.CompletedProcess(command, -9, stdout or "", stderr)
-            watchdog_lines.append(f"[watchdog] still_running elapsed={int(elapsed)}s command={command[0]}")
 COMMON_BOUNDARY_FACTS = (
     "`【说明】` 只返回能力说明，不执行归档、创作、入库或同步。",
     "自然语言能力展示请求只回复 `请发送【说明】`。",

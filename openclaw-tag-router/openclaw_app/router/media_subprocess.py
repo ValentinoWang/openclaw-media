@@ -1,11 +1,27 @@
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 import time
 from pathlib import Path
 
 from common.model_transport_context import tenant_model_transport_required
+
+
+def _kill_media_process_group(process: subprocess.Popen[str]) -> None:
+    if os.name == "posix":
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            # The process group can disappear between communicate() timing out and killpg().
+            pass
+        return
+
+    try:
+        process.kill()
+    except ProcessLookupError:
+        pass
 
 
 def run_media_subprocess_with_watchdog(
@@ -22,15 +38,17 @@ def run_media_subprocess_with_watchdog(
         )
     heartbeat_seconds = max(10, int(float(os.getenv("OPENCLAW_TAG_ROUTER_SUBPROCESS_WATCHDOG_HEARTBEAT_SECONDS", "60"))))
     started_at = time.monotonic()
-    process = subprocess.Popen(
-        command,
-        cwd=str(cwd) if cwd is not None else None,
-        text=True,
-        stdin=subprocess.PIPE if input is not None else None,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        env=env,
-    )
+    popen_kwargs = {
+        "cwd": str(cwd) if cwd is not None else None,
+        "text": True,
+        "stdin": subprocess.PIPE if input is not None else None,
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+        "env": env,
+    }
+    if os.name == "posix":
+        popen_kwargs["start_new_session"] = True
+    process = subprocess.Popen(command, **popen_kwargs)
     watchdog_lines: list[str] = []
     pending_input = input
     while True:
@@ -46,7 +64,7 @@ def run_media_subprocess_with_watchdog(
             pending_input = None
             elapsed = time.monotonic() - started_at
             if elapsed >= timeout:
-                process.kill()
+                _kill_media_process_group(process)
                 stdout, stderr = process.communicate()
                 watchdog_lines.append(f"[watchdog] timeout_after={int(elapsed)}s limit={timeout}s command={command[0]}")
                 stderr = "\n".join([*(line for line in watchdog_lines if line), stderr or ""]).strip()
