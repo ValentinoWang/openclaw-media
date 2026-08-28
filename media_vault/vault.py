@@ -13,9 +13,8 @@ from urllib.parse import quote, unquote, urlparse
 
 
 MEDIA_URI_SCHEME = "media"
-DEFAULT_MEDIA_VAULT_ROOT = Path(
-    os.getenv("OPENCLAW_MEDIA_VAULT_ROOT", "/home/ubuntu/selfmedia-tools/data/media_vault")
-)
+MEDIA_VAULT_ROOT_ENV = "OPENCLAW_MEDIA_VAULT_ROOT"
+DEFAULT_MEDIA_VAULT_ROOT = Path("~/.openclaw/media_vault")
 MEDIA_VAULT_VERSION = "media_vault_v2"
 SAFE_URI_PART_RE = re.compile(r"[^A-Za-z0-9_.=-]+")
 TENANT_DIRECTORIES = (
@@ -58,6 +57,17 @@ class MediaVaultError(RuntimeError):
 
 class MediaVaultUriError(MediaVaultError):
     pass
+
+
+def resolve_media_vault_root(root: str | Path | None = None) -> Path:
+    configured_root: str | Path | None = root
+    if configured_root is None:
+        configured_root = os.getenv(MEDIA_VAULT_ROOT_ENV)
+    if configured_root is None:
+        configured_root = DEFAULT_MEDIA_VAULT_ROOT
+    elif isinstance(configured_root, str) and not configured_root.strip():
+        raise MediaVaultError(f"{MEDIA_VAULT_ROOT_ENV} must not be empty")
+    return Path(configured_root).expanduser().resolve()
 
 
 def utc_now_iso() -> str:
@@ -107,9 +117,7 @@ class MediaVault:
 
     def __init__(self, *, tenant_id: str, root: str | Path | None = None) -> None:
         self.tenant_id = require_tenant_id(tenant_id)
-        self.vault_root = Path(
-            root or os.getenv("OPENCLAW_MEDIA_VAULT_ROOT", str(DEFAULT_MEDIA_VAULT_ROOT))
-        ).expanduser().resolve()
+        self.vault_root = resolve_media_vault_root(root)
         self.tenant_root = (self.vault_root / "tenants" / self.tenant_id).resolve()
         self._assert_under(self.tenant_root, self.vault_root / "tenants")
         # Existing domain code treats ``vault.root`` as its writable root. In
