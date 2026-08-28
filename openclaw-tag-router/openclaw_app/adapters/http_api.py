@@ -624,7 +624,16 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         error: dict[str, Any] = {"code": code, "message": message}
         if details:
             error["details"] = dict(details)
-        self._send_json(status, {"ok": False, "error": error}, headers=headers)
+        response_headers = dict(headers or {})
+        response_headers.setdefault("X-Request-ID", self._correlation_id())
+        self._send_json(status, {"ok": False, "error": error}, headers=response_headers)
+
+    def _correlation_id(self) -> str:
+        request_id = getattr(self, "_request_id", None)
+        if request_id is None:
+            request_id = uuid.uuid4().hex
+            self._request_id = request_id
+        return request_id
 
     def _send_r1_json(self, operation_id: str, status: HTTPStatus, payload: Any) -> None:
         _device_job_contract().validate_r1_response(operation_id, payload)
@@ -1202,7 +1211,10 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
         except Exception:
-            LOGGER.exception("HTTP request failed", extra={"method": "GET", "path": self.path})
+            LOGGER.exception(
+                "HTTP request failed",
+                extra={"method": "GET", "path": self._request_path(), "request_id": self._correlation_id()},
+            )
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
     def _do_GET(self) -> None:
@@ -1383,7 +1395,10 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
         except Exception:
-            LOGGER.exception("HTTP request failed", extra={"method": "POST", "path": self.path})
+            LOGGER.exception(
+                "HTTP request failed",
+                extra={"method": "POST", "path": self._request_path(), "request_id": self._correlation_id()},
+            )
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
     def do_PUT(self) -> None:
@@ -1410,7 +1425,10 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
         except Exception:
-            LOGGER.exception("HTTP request failed", extra={"method": "PUT", "path": self.path})
+            LOGGER.exception(
+                "HTTP request failed",
+                extra={"method": "PUT", "path": self._request_path(), "request_id": self._correlation_id()},
+            )
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
     def do_DELETE(self) -> None:
@@ -1427,7 +1445,10 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
         except Exception:
-            LOGGER.exception("HTTP request failed", extra={"method": "DELETE", "path": self.path})
+            LOGGER.exception(
+                "HTTP request failed",
+                extra={"method": "DELETE", "path": self._request_path(), "request_id": self._correlation_id()},
+            )
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
     def _dispatch_stage1_provisioning(self, method: str) -> bool:
@@ -3287,7 +3308,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         _token, session = resolved
         return TenantContext(
             tenant_id=str(session.tenant_id),
-            user_public_id=session.user_public_id,
+            user_public_id=str(session.user_id),
         )
 
     def _projection_page_query(self) -> tuple[str | None, int, str]:
