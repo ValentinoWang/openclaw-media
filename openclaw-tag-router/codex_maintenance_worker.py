@@ -83,8 +83,10 @@ class CodexMaintenanceWorker:
         heartbeat_seconds: int = HEARTBEAT_SECONDS,
         progress_seconds: int = PROGRESS_NOTIFICATION_SECONDS,
         task_max_seconds: int = TASK_MAX_SECONDS,
+        working_directory: Path | None = None,
     ) -> None:
         self.root = root or tasks.task_root()
+        self.working_directory = working_directory or tasks.codex_working_directory()
         self.poll_seconds = max(0.2, poll_seconds)
         self.heartbeat_seconds = max(5, heartbeat_seconds)
         self.progress_seconds = max(1, progress_seconds)
@@ -146,7 +148,7 @@ class CodexMaintenanceWorker:
         if delivery.get("channel") != "feishu" or not delivery.get("accountId") or not delivery.get("target"):
             return {"error": "delivery_not_configured"}
         command = [
-            tasks.OPENCLAW_BIN,
+            tasks.openclaw_bin(),
             "message",
             "send",
             "--channel",
@@ -375,6 +377,7 @@ class CodexMaintenanceWorker:
                         str(state["taskId"]),
                         str(state.get("plannedProvider") or ""),
                         resume_thread_id=str(state.get("resumeThreadId") or ""),
+                        working_directory=self.working_directory,
                     ),
                     stdin=stdin,
                     stdout=stdout,
@@ -382,7 +385,7 @@ class CodexMaintenanceWorker:
                     text=True,
                     start_new_session=True,
                     close_fds=True,
-                    cwd="/home/ubuntu",
+                    cwd=self.working_directory,
                     env=tasks.execution_environment(state),
                 )
             except (OSError, ValueError) as exc:

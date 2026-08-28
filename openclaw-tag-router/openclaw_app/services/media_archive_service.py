@@ -21,7 +21,6 @@ from .media_device_job_contract import validate_r1_response
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 ARCHIVE_CONTRACT_PATH_ENV = "OPENCLAW_MEDIA_GENERATED_CONTRACT"
 REPOSITORY_GENERATED_CONTRACT = REPOSITORY_ROOT / "media-agent-cli/generated_product_contract.py"
-LEGACY_GENERATED_CONTRACT = Path("/home/ubuntu/selfmedia-tools/media-agent-cli/generated_product_contract.py")
 _KEY = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 _REF = re.compile(r"[A-Za-z0-9_:/?.=-]{1,500}\Z")
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
@@ -47,8 +46,8 @@ _MEDIA_MARKER = re.compile(r"(?:^|[:/_.-])(raw|proxy|final|audio|video|media)(?:
 
 
 def resolve_archive_contract_path() -> Path:
-    override = os.getenv(ARCHIVE_CONTRACT_PATH_ENV)
-    candidates = (Path(override),) if override else (REPOSITORY_GENERATED_CONTRACT, LEGACY_GENERATED_CONTRACT)
+    override = os.getenv(ARCHIVE_CONTRACT_PATH_ENV, "").strip()
+    candidates = (Path(override).expanduser(),) if override else (REPOSITORY_GENERATED_CONTRACT,)
     for candidate in candidates:
         if candidate.is_file():
             return candidate

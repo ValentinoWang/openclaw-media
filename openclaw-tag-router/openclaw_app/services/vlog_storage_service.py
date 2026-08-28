@@ -45,17 +45,22 @@ VLOG_ASSET_EXTS = {
     ".docx",
 }
 
-UPLOADED_MEDIA_ROOTS = [
-    Path(item.strip())
-    for item in re.split(
-        r"[:,]",
-        os.environ.get(
-            "OPENCLAW_UPLOADED_MEDIA_ROOTS",
-            "/home/ubuntu/.openclaw/media/inbound:/home/ubuntu/openclaw-feishu-gateway/downloads",
-        ),
-    )
-    if item.strip()
-]
+UPLOADED_MEDIA_ROOTS_ENV = "OPENCLAW_UPLOADED_MEDIA_ROOTS"
+
+
+def uploaded_media_roots() -> list[Path]:
+    configured = os.environ.get(UPLOADED_MEDIA_ROOTS_ENV, "").strip()
+    if configured:
+        return [
+            Path(item.strip()).expanduser()
+            for item in re.split(rf"[{re.escape(os.pathsep)},]", configured)
+            if item.strip()
+        ]
+    home = Path.home()
+    return [
+        home / ".openclaw" / "media" / "inbound",
+        home / "openclaw-feishu-gateway" / "downloads",
+    ]
 
 
 class VlogStorageService:
@@ -70,7 +75,8 @@ class VlogStorageService:
         self.upload_timeout_seconds = int(os.environ.get("OPENCLAW_VLOG_UPLOAD_TIMEOUT_SECONDS", "900"))
         self.auth_script = Path(__file__).resolve().parents[2] / "scripts" / "icloud_auth_relay.py"
         self.pyicloud_script = Path(__file__).resolve().parents[2] / "scripts" / "pyicloud_bridge.py"
-        self.pyicloud_python = os.environ.get("OPENCLAW_PYICLOUD_PYTHON", "/home/ubuntu/.openclaw/venvs/pyicloud/bin/python")
+        configured_python = os.environ.get("OPENCLAW_PYICLOUD_PYTHON", "").strip()
+        self.pyicloud_python = str(Path(configured_python).expanduser()) if configured_python else sys.executable
         self.pyicloud_china_mainland = os.environ.get("OPENCLAW_VLOG_ICLOUD_CHINA_MAINLAND", "").strip().lower() in {
             "1",
             "true",
@@ -958,7 +964,7 @@ class VlogStorageService:
             resolved = path.resolve(strict=False)
         except OSError as exc:
             return f"否（路径解析失败：{exc}）"
-        for root_path in UPLOADED_MEDIA_ROOTS:
+        for root_path in uploaded_media_roots():
             try:
                 root = root_path.resolve()
             except OSError:

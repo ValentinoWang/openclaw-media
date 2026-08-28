@@ -1,12 +1,23 @@
 from __future__ import annotations
 
 import re
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 
-DEFAULT_WARDROBE_ITEMS_ROOT = Path("/home/ubuntu/obsidian-日记/物品")
+WARDROBE_ITEMS_ROOT_ENV = "OPENCLAW_WARDROBE_ITEMS_ROOT"
+
+
+def resolve_wardrobe_items_root() -> Path:
+    configured = os.getenv(WARDROBE_ITEMS_ROOT_ENV, "").strip()
+    if configured:
+        return Path(configured).expanduser()
+    return Path.home() / "obsidian-日记" / "物品"
+
+
+DEFAULT_WARDROBE_ITEMS_ROOT = resolve_wardrobe_items_root()
 
 
 def _safe_filename(value: str) -> str:
@@ -33,7 +44,7 @@ def _line_text(item: dict[str, Any]) -> str:
 
 
 def render_wardrobe_markdown_artifact(artifact: dict[str, Any], *, root: Path | None = None) -> Path:
-    target_root = Path(root or DEFAULT_WARDROBE_ITEMS_ROOT)
+    target_root = Path(root).expanduser() if root is not None else resolve_wardrobe_items_root()
     target_root.mkdir(parents=True, exist_ok=True)
     title = str(artifact.get("title") or "今日穿搭").strip()
     date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")

@@ -6,6 +6,7 @@ import {
   renameSync,
   writeFileSync,
 } from "node:fs";
+import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
 const AUDIO_EXTENSIONS = new Set([
@@ -13,6 +14,7 @@ const AUDIO_EXTENSIONS = new Set([
   ".mp3", ".mp4", ".ogg", ".opus", ".wav", ".webm",
 ]);
 const DEFAULT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const TRANSCRIPTION_QUEUE_ROOT_ENV = "OPENCLAW_TRANSCRIPTION_QUEUE_ROOT";
 
 function nowIso(now) {
   return new Date(now).toISOString();
@@ -20,6 +22,11 @@ function nowIso(now) {
 
 function cleanString(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function defaultQueueRoot() {
+  return cleanString(process.env[TRANSCRIPTION_QUEUE_ROOT_ENV])
+    || join(homedir(), ".openclaw", "workspace", "openclaw-tag-router", "transcription-queue");
 }
 
 function scopeFrom(event, context) {
@@ -158,7 +165,7 @@ function missingBatchReply(state, action) {
 
 export class TranscriptionQueue {
   constructor({ dataRoot, retentionMs = DEFAULT_RETENTION_MS, now = () => Date.now(), logger } = {}) {
-    this.root = join(dataRoot || "/home/ubuntu/.openclaw/workspace/openclaw-tag-router", "transcription-queue");
+    this.root = dataRoot ? join(dataRoot, "transcription-queue") : defaultQueueRoot();
     this.retentionMs = retentionMs;
     this.now = now;
     this.logger = logger;

@@ -8,6 +8,7 @@ import os
 import re
 import secrets
 import signal
+import shutil
 import subprocess
 import tomllib
 from datetime import UTC, datetime
@@ -30,11 +31,13 @@ RESUME_INSTRUCTION = (
     "events.jsonl、final.txt 或 worker/child 进程，这些运行状态描述的是你自身。"
     "直接依据已完成上下文推进目标，完成后返回完整最终结果。"
 )
-OPENCLAW_BIN = "/home/ubuntu/.nvm/versions/node/v22.22.2/bin/openclaw"
-CODEX_BIN = "/home/ubuntu/.nvm/versions/node/v22.22.2/bin/codex"
+OPENCLAW_BIN_ENV = "OPENCLAW_BIN"
+CODEX_BIN_ENV = "OPENCLAW_CODEX_BIN"
+DEEPMATH_ENV_FILE_ENV = "OPENCLAW_DEEPMATH_ENV_FILE"
+CODEX_WORKING_DIRECTORY_ENV = "OPENCLAW_CODEX_WORKING_DIRECTORY"
 WORKER_HEALTH_MAX_AGE_SECONDS = 15
 DEEPMATH_TENANT_PROFILE = "deepmath"
-DEEPMATH_ENV_FILE = Path("/home/ubuntu/.openclaw-deepmath/openclaw.env")
+DEEPMATH_ENV_FILE: Path | None = None
 DEEPMATH_CODEX_EXECUTION_CONTRACT = """\
 DeepMath tenant execution contract:
 - This task originated from the DeepMath Feishu account. Use only the DeepMath tenant credentials supplied in the process environment. Never use the default/main, media, daily, social, or knowledge Feishu credentials.
@@ -55,11 +58,37 @@ def parse_status_task_id(value: object) -> str:
 
 def task_root() -> Path:
     configured = os.environ.get("OPENCLAW_CODEX_TASK_ROOT", "").strip()
-    return Path(configured) if configured else Path("/home/ubuntu/.openclaw/state/codex_maintenance_tasks")
+    return Path(configured).expanduser() if configured else Path.home() / ".openclaw" / "state" / "codex_maintenance_tasks"
 
 
 def codex_home() -> Path:
-    return Path(os.environ.get("CODEX_HOME", "/home/ubuntu/.codex"))
+    configured = os.environ.get("CODEX_HOME", "").strip()
+    return Path(configured).expanduser() if configured else Path.home() / ".codex"
+
+
+def _executable_from_environment(environment_key: str, command_name: str) -> str:
+    configured = os.environ.get(environment_key, "").strip()
+    return configured or shutil.which(command_name) or command_name
+
+
+def openclaw_bin() -> str:
+    return _executable_from_environment(OPENCLAW_BIN_ENV, "openclaw")
+
+
+def codex_bin() -> str:
+    return _executable_from_environment(CODEX_BIN_ENV, "codex")
+
+
+def deepmath_env_file() -> Path:
+    configured = os.environ.get(DEEPMATH_ENV_FILE_ENV, "").strip()
+    if configured:
+        return Path(configured).expanduser()
+    return DEEPMATH_ENV_FILE or Path.home() / ".openclaw-deepmath" / "openclaw.env"
+
+
+def codex_working_directory() -> Path:
+    configured = os.environ.get(CODEX_WORKING_DIRECTORY_ENV, "").strip()
+    return Path(configured).expanduser() if configured else Path.cwd()
 
 
 def configured_provider() -> str:
@@ -213,7 +242,7 @@ def execution_environment(state: dict[str, Any], base: dict[str, str] | None = N
     env = dict(base or os.environ)
     if state.get("tenantProfile") != DEEPMATH_TENANT_PROFILE:
         return env
-    values = parse_env_file(DEEPMATH_ENV_FILE)
+    values = parse_env_file(deepmath_env_file())
     required = {
         "OPENCLAW_STATE_DIR",
         "OPENCLAW_CONFIG_PATH",
@@ -346,12 +375,17 @@ def status_snapshot(task_id: str) -> dict[str, Any]:
 
 
 def agent_command(
-    directory: Path, task_id: str, planned_provider: str, *, resume_thread_id: str = ""
+    directory: Path,
+    task_id: str,
+    planned_provider: str,
+    *,
+    resume_thread_id: str = "",
+    working_directory: Path | None = None,
 ) -> list[str]:
     if not planned_provider.strip():
         raise ValueError("Codex maintenance task requires a frozen planned provider")
     command = [
-        CODEX_BIN,
+        codex_bin(),
         "exec",
     ]
     if resume_thread_id:
@@ -375,7 +409,7 @@ def agent_command(
     if resume_thread_id:
         command.extend([resume_thread_id, RESUME_INSTRUCTION])
     else:
-        command.extend(["--cd", "/home/ubuntu", "-"])
+        command.extend(["--cd", str(working_directory or codex_working_directory()), "-"])
     return command
 
 

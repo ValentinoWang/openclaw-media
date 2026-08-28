@@ -11,16 +11,24 @@ from typing import Any
 import requests
 
 IMAGE2_MODULE = "selfmedia.creation.image_generation"
-IMAGE2_OUTPUT_DIR = Path(os.getenv("GPT_IMAGE2_OUTPUT_DIR", "/home/ubuntu/openclaw-agents/media/generated/gpt-image-2"))
+IMAGE2_OUTPUT_DIR_ENV = "GPT_IMAGE2_OUTPUT_DIR"
 FEISHU_BASE = "https://open.feishu.cn/open-apis"
 DEFAULT_STORYBOARD_IMAGE_MAX_IMAGES = int(os.getenv("STORYBOARD_IMAGE_MAX_IMAGES", "12"))
 STORYBOARD_IMAGE_TIMEOUT_SEC = int(os.getenv("STORYBOARD_IMAGE_TIMEOUT_SEC", "60"))
+
+
+def resolve_image2_output_dir() -> Path:
+    configured = os.getenv(IMAGE2_OUTPUT_DIR_ENV, "").strip()
+    if configured:
+        return Path(configured).expanduser()
+    return Path.home() / ".openclaw" / "generated" / "gpt-image-2"
 
 
 def generate_storyboard_images(storyboard: list[dict[str, Any]], out_dir: str, max_images: int = DEFAULT_STORYBOARD_IMAGE_MAX_IMAGES) -> list[str]:
     """Generate visual reference images for storyboard shots via gpt-image-2 script."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    image2_output_dir = resolve_image2_output_dir()
     generated: list[str] = []
     for item in storyboard[:max_images]:
         shot_no = item.get("shot_no") or len(generated) + 1
@@ -32,13 +40,13 @@ def generate_storyboard_images(storyboard: list[dict[str, Any]], out_dir: str, m
             f"运镜：{item.get('camera_movement','')}\n"
             "要求：只做拍摄示意图，不模仿具体真人，不使用名人脸。"
         )
-        before = set(IMAGE2_OUTPUT_DIR.glob("*"))
+        before = set(image2_output_dir.glob("*"))
         cmd = [sys.executable, "-m", IMAGE2_MODULE, "--prompt", prompt, "--size", "1024x1536", "--format", "png", "--send", "none"]
         try:
             subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=STORYBOARD_IMAGE_TIMEOUT_SEC)
         except Exception:
             continue
-        after = set(IMAGE2_OUTPUT_DIR.glob("*"))
+        after = set(image2_output_dir.glob("*"))
         new_files = sorted(after - before, key=lambda p: p.stat().st_mtime, reverse=True)
         if new_files:
             target = out / f"shot_{shot_no}.png"
