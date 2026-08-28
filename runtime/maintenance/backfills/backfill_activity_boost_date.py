@@ -22,6 +22,11 @@ TIMEZONE = "Asia/Shanghai"
 
 
 def load_reminder() -> Any:
+    if not REMINDER_PATH.is_file():
+        raise SystemExit(
+            f"missing required reminder script: {REMINDER_PATH}; "
+            "set OPENCLAW_FEISHU_REMINDER_SCRIPT or OPENCLAW_FEISHU_REMINDER_ROOT"
+        )
     spec = importlib.util.spec_from_file_location("openclaw_feishu_reminder_backfill", REMINDER_PATH)
     if not spec or not spec.loader:
         raise RuntimeError(f"cannot import {REMINDER_PATH}")
@@ -30,7 +35,9 @@ def load_reminder() -> Any:
     return module
 
 
-def load_json(path: Path) -> dict[str, Any]:
+def load_json(path: Path, *, env_name: str) -> dict[str, Any]:
+    if not path.is_file():
+        raise SystemExit(f"missing required JSON config: {path}; set {env_name}")
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -216,8 +223,8 @@ def main() -> int:
 
     reminder = load_reminder()
     token = reminder._tenant_token()
-    activity_cfg = load_json(ACTIVITY_CONFIG_PATH)
-    daily_cfg = load_json(DAILY_CONFIG_PATH)
+    activity_cfg = load_json(ACTIVITY_CONFIG_PATH, env_name="OPENCLAW_ACTIVITY_CONFIG_PATH")
+    daily_cfg = load_json(DAILY_CONFIG_PATH, env_name="OPENCLAW_DAILY_CONFIG_PATH")
 
     reminder._ensure_fields(token, activity_cfg["app_token"], activity_cfg["table_id"], "活动")
     activity_field_defs = reminder._field_definitions(token, activity_cfg["app_token"], activity_cfg["table_id"])

@@ -16,6 +16,11 @@ DEFAULT_STATUS = "进行中"
 
 
 def load_reminder() -> Any:
+    if not REMINDER_PATH.is_file():
+        raise SystemExit(
+            f"missing required reminder script: {REMINDER_PATH}; "
+            "set OPENCLAW_FEISHU_REMINDER_SCRIPT or OPENCLAW_FEISHU_REMINDER_ROOT"
+        )
     spec = importlib.util.spec_from_file_location("openclaw_feishu_reminder_status_backfill", REMINDER_PATH)
     if not spec or not spec.loader:
         raise RuntimeError(f"cannot import {REMINDER_PATH}")
@@ -25,6 +30,11 @@ def load_reminder() -> Any:
 
 
 def load_activity_config() -> dict[str, str]:
+    if not ACTIVITY_CONFIG_PATH.is_file():
+        raise SystemExit(
+            f"missing required JSON config: {ACTIVITY_CONFIG_PATH}; "
+            "set OPENCLAW_ACTIVITY_CONFIG_PATH"
+        )
     data = json.loads(ACTIVITY_CONFIG_PATH.read_text(encoding="utf-8"))
     app_token = str(data.get("obj_token") or data.get("app_token") or "").strip()
     table_id = str(data.get("table_id") or "").strip()

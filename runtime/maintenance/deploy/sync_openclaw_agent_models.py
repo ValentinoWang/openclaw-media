@@ -39,6 +39,8 @@ RUNTIME_SESSION_MAINTENANCE = {
 
 
 def canonical_openai_base_url() -> str:
+    if not OPENAI_ENV.is_file():
+        raise SystemExit(f"missing required OpenAI environment file: {OPENAI_ENV}; set OPENCLAW_OPENAI_ENV")
     values: dict[str, str] = {}
     for raw_line in OPENAI_ENV.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
@@ -53,6 +55,8 @@ def canonical_openai_base_url() -> str:
 
 
 def load_payload() -> dict[str, Any]:
+    if not REPO_CONFIG.is_file():
+        raise SystemExit(f"missing required repository config: {REPO_CONFIG}; set OPENCLAW_BOTS_CONFIG")
     payload = json.loads(REPO_CONFIG.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise SystemExit(f"invalid config json: {REPO_CONFIG}")
