@@ -646,6 +646,7 @@ export async function uploadMediaFile(session: MediaWebSession, file: File): Pro
     body: JSON.stringify({
       schemaVersion: '3',
       filename: file.name,
+      mimeType: file.type,
       contentBase64: await fileAsBase64(file),
       idempotencyKey: idempotencyKey,
     }),

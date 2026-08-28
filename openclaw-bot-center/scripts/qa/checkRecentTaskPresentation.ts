@@ -9,6 +9,10 @@ import {
   stableTaskErrorMessage,
   taskSettlementPresentation,
 } from "../../src/media/recentTaskPresentation";
+import {
+  filterWorkboardAttentionTasks,
+  workboardStageProgress,
+} from "../../src/media/studio/workboardPresentation";
 
 const completedTask = {
   schemaVersion: "media_web_task_v3",
@@ -98,16 +102,14 @@ const completedTask = {
 const parsedCompleted = mediaWebTaskSchema.parse(completedTask);
 const completedPresentation = taskSettlementPresentation(parsedCompleted);
 assert.equal(completedPresentation.complete, true);
-assert.equal(completedPresentation.stageLabel, "多系统读回完成");
+assert.equal(completedPresentation.stageLabel, "结果已确认");
 assert.equal(
   completedPresentation.bindingSummary,
   "xiaohongshu · customer-main",
 );
 assert.equal(completedPresentation.attemptSummary, "第 2 次处理 · 已完成");
-assert.equal(completedPresentation.executorSummary, null);
 assert.equal(completedPresentation.recoverySummary, "已从上一次中断处恢复");
 assert.equal(completedPresentation.missingReadbackLabels.length, 0);
-assert.equal(completedPresentation.receiptId, "mtr-receipt-public-1");
 
 const waitingTask = mediaWebTaskSchema.parse({
   ...completedTask,
@@ -136,9 +138,8 @@ const waitingTask = mediaWebTaskSchema.parse({
 const waitingPresentation = taskSettlementPresentation(waitingTask);
 assert.equal(waitingPresentation.complete, false);
 assert.equal(waitingTask.result?.ok, true);
-assert.equal(waitingPresentation.stageLabel, "等待外部系统读回");
+assert.equal(waitingPresentation.stageLabel, "正在确认任务结果");
 assert.deepEqual(waitingPresentation.missingReadbackLabels, ["外部系统", "网页"]);
-assert.equal(waitingPresentation.receiptId, null);
 
 for (const [code, expected] of [
   ["required_input_missing", "请补充必填的平台、客户自有账号或能力输入。"],
@@ -147,13 +148,36 @@ for (const [code, expected] of [
 ] as const) {
   assert.equal(stableTaskErrorMessage(code, "不稳定的后端原文"), expected);
 }
-assert.equal(stableTaskErrorMessage("other_error", "后端可读提示"), "后端可读提示");
+assert.equal(stableTaskErrorMessage("other_error", "后端可读提示"), "任务未完成，请稍后重试。");
 assert.equal(
   stableTaskErrorMessage("other_error", "executor lease expired"),
   "任务未完成，请稍后重试。",
 );
-assert.equal(settlementStageLabel("runner_claimed"), "执行器已领取");
+assert.equal(settlementStageLabel("runner_claimed"), "开始处理");
 assert.equal(settlementStageLabel("generating"), "正在生成内容");
+assert.equal(settlementStageLabel("awaiting_confirmation"), "等待你确认");
+
+for (const [stage, expectedProgress] of [
+  ["research", 12],
+  ["assets", 28],
+  ["decision", 46],
+  ["creation", 66],
+  ["publishing", 86],
+  ["review", 100],
+] as const) {
+  assert.equal(workboardStageProgress(stage).progress, expectedProgress);
+}
+assert.deepEqual(
+  filterWorkboardAttentionTasks([
+    { status: "awaiting_confirmation", terminal: false },
+    { status: "pending_manual", terminal: true },
+    { status: "failed", terminal: true },
+    { status: "pending_manual", terminal: false },
+    { status: "failed", terminal: false },
+    { status: "succeeded", terminal: true },
+  ]).map((task) => task.status),
+  ["awaiting_confirmation", "pending_manual", "failed"],
+);
 
 assert.equal(
   mediaWebTaskSchema.safeParse({ ...completedTask, settlementStage: undefined }).success,
@@ -240,7 +264,7 @@ for (const [name, source] of [
 }
 assert.doesNotMatch(
   workspaceSource + overviewSource + runsSource,
-  /localStorage|sessionStorage/,
+  /localStorage|sessionStorage|执行器尚未领取|租约恢复|待完成读回|最终收据/,
   "task completion must not be restored from local success state",
 );
 assert.match(

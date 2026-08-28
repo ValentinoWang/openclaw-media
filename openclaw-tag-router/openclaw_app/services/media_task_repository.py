@@ -389,7 +389,7 @@ class PostgresMediaTaskRepository:
                 event_type="task.created",
                 status=str(task["status"]),
                 progress=int(task.get("progress") or 0),
-                message="任务已提交并持久排队。",
+                message="任务已提交，正在排队。",
             )
             row = connection.execute(
                 f"SELECT {self._TASK_COLUMNS} FROM media_product.media_web_tasks WHERE tenant_id = %s AND task_public_id = %s",
@@ -602,7 +602,7 @@ class PostgresMediaTaskRepository:
                 event_type="task.cancelled" if terminal else "task.status",
                 status=status,
                 progress=progress,
-                message="任务已取消。" if terminal else "取消请求已记录，已发生的写入不会伪装回滚。",
+                message="任务已取消。" if terminal else "取消请求已记录；已生成的内容会保留。",
             )
         return self.get_task(tenant_id, actor_public_id, task_public_id)
 
@@ -755,7 +755,7 @@ class PostgresMediaTaskRepository:
                 event_type="task.runner_claimed",
                 status="runner_claimed",
                 progress=5,
-                message="独立 runner 已领取任务。",
+                message="任务已开始处理。",
             )
             task.update(
                 {
@@ -1038,7 +1038,7 @@ class PostgresMediaTaskRepository:
                 event_type="task.readback",
                 status="waiting_web_readback",
                 progress=90,
-                message="数据库及适用的外部读回已完成，等待网页读回。",
+                message="任务结果正在同步到网页。",
             )
         return self._get_task_unscoped(tenant_id, task_public_id)
 
@@ -1338,7 +1338,7 @@ class PostgresMediaTaskRepository:
                 event_type="task.receipt",
                 status="multi_system_readback_complete",
                 progress=100,
-                message="数据库、适用的外部系统和网页读回已由同一收据结算。",
+                message="任务结果已确认。",
             )
         return self.get_task(tenant_id, actor_public_id, task_public_id)
 
@@ -1443,7 +1443,7 @@ class PostgresMediaTaskRepository:
                 status = "pending_manual"
                 stage = "needs_manual"
                 progress = 100
-                summary = "取消请求后 runner 租约失效，任务需要人工对账。"
+                summary = "取消后任务处理已中断，需要人工确认已生成的内容。"
                 error_projection = {
                     "code": "cancelled_lease_expired",
                     "message": summary,
@@ -1453,7 +1453,7 @@ class PostgresMediaTaskRepository:
                 status = "queued"
                 stage = "queued"
                 progress = 0
-                summary = "runner 租约过期，任务已进入恢复队列。"
+                summary = "任务处理暂时中断，已重新排队。"
                 error_projection = None
             connection.execute(
                 """

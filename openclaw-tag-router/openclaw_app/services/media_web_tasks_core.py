@@ -111,10 +111,55 @@ RESERVED_TENANT_KEYS = frozenset(
 
 
 class MediaWebTaskError(RuntimeError):
-    def __init__(self, code: str, message: str) -> None:
+    _STATUS_BY_CODE = {
+        "authentication_required": 401,
+        "csrf_rejected": 403,
+        "workspace_not_allowed": 403,
+        "invalid_request": 400,
+        "invalid_tenant": 400,
+        "required_input_missing": 422,
+        "material_parsing_incomplete": 422,
+        "capability_not_found": 404,
+        "task_not_found": 404,
+        "upload_not_found": 404,
+        "account_relationship_unavailable": 404,
+        "payload_too_large": 413,
+        "catalog_conflict": 409,
+        "task_conflict": 409,
+        "idempotency_conflict": 409,
+        "account_relationship_conflict": 409,
+        "confirmation_required": 409,
+        "confirmation_expired": 409,
+        "invalid_task_state": 409,
+        "rate_limited": 429,
+        "identity_unavailable": 503,
+        "model_settlement_unknown": 503,
+        "model_transport_unavailable": 503,
+        "service_unavailable": 503,
+    }
+
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        status: int | None = None,
+        details: Mapping[str, Any] | None = None,
+    ) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
+        self.status = status if status is not None else self._STATUS_BY_CODE.get(code, 400)
+        self.details = dict(details or {})
+
+    @property
+    def issues(self) -> list[Any]:
+        value = self.details.get("issues")
+        return list(value) if isinstance(value, list) else []
+
+    @issues.setter
+    def issues(self, value: list[Any]) -> None:
+        self.details["issues"] = list(value)
 
 
 def _utc_now() -> str:
@@ -371,9 +416,11 @@ class MediaWebTaskService:
             raise MediaWebTaskError("payload_too_large", "输入或文件超过大小限制。")
         issues = self._registry.validation_issues(capability_id, variant_id, params)
         if issues:
-            error = MediaWebTaskError(str(issues[0]["code"]), str(issues[0]["message"]))
-            error.issues = list(issues)
-            raise error
+            raise MediaWebTaskError(
+                str(issues[0]["code"]),
+                str(issues[0]["message"]),
+                details={"issues": list(issues)},
+            )
         upload_ids = payload.get("uploadIds") or []
         if not isinstance(upload_ids, list) or len(upload_ids) > MAX_UPLOADS_PER_TASK:
             raise MediaWebTaskError("invalid_request", "上传文件引用无效。")
@@ -506,7 +553,7 @@ class MediaWebTaskService:
                 self._transition(task, "cancelled", progress=100, event_type="task.cancelled", message="任务已取消。")
             else:
                 self._write_task(task)
-                self._append_event(task, "task.status", "取消请求已记录；已发生的持久化写入不会伪装回滚。")
+                self._append_event(task, "task.status", "取消请求已记录；已生成的内容会保留。")
             self._audit(tenant_id, "task.cancel", task_id, task["status"])
             return self._project(task)
 
@@ -911,7 +958,7 @@ class MediaWebTaskService:
                 capability = self._registry.require_valid_invocation(capability_id, variant_id, params)
                 handler_callable = callable(getattr(getattr(self.app, "router", None), capability.handler, None))
                 if not handler_callable or not callable(getattr(self.app, "process_capability_invocation", None)):
-                    raise MediaWebTaskError("service_unavailable", "canonical handler 验证失败。")
+                    raise MediaWebTaskError("service_unavailable", "能力处理服务暂时不可用。")
                 uploads = [self._load_upload(value, tenant_id=tenant_id) for value in invocation.get("upload_ids", [])]
                 self._validate_upload_contract(capability, uploads)
                 downloaded_paths = [str(item["storage_path"]) for item in uploads]
@@ -954,7 +1001,7 @@ class MediaWebTaskService:
                     metadata["operator_id"] = operator_id
                 task["canonical_execution_started_at"] = _utc_now()
                 task["canonical_execution_owner_pid"] = os.getpid()
-                self._transition(task, "generating", progress=40, message="已进入 canonical Media 执行器。")
+                self._transition(task, "generating", progress=40, message="开始生成内容。")
             model_request_root = str(task.get("model_request_root") or "")
             requires_model_transport = _requires_model_transport(capability_id, variant_id)
             if self._tenant_model_gateway is not None and requires_model_transport:
@@ -1009,7 +1056,7 @@ class MediaWebTaskService:
                     safe_result = {
                         "ok": False,
                         "status": "needs_attention",
-                        "reply": "素材已保存，但网页素材库投影失败；系统将保留证据并等待幂等修复。",
+                        "reply": "素材已保存，但暂未显示在网页素材库。请稍后刷新查看。",
                         "links": [],
                         "receipt": safe_result.get("receipt"),
                     }
@@ -1189,7 +1236,7 @@ class MediaWebTaskService:
         if receipt and receipt.get("kind") == "track_creator_membership_preview":
             return "赛道-博主关系预览已生成，请核对后确认写入。"
         if receipt and receipt.get("kind") == "creator_profile_written":
-            return "达人档案已写入并完成读回校验。"
+            return "达人档案已写入并确认完成。"
         if receipt and receipt.get("kind") == "deletion_preview":
             return "删除影响范围已生成。"
 
@@ -1358,8 +1405,8 @@ class MediaWebTaskService:
                 if canonical_started:
                     task["error"] = {
                         "code": "recovery_requires_manual_review",
-                        "message": "服务中断前任务已进入 canonical 执行边界，未自动重放。",
-                        "action": "核对业务写入与交付物后再决定是否创建新任务。",
+                        "message": "服务中断时任务已开始处理，为避免重复处理，未自动重新开始。",
+                        "action": "请确认已生成的内容后，再决定是否创建新任务。",
                     }
                     self._transition(
                         task,
@@ -1372,7 +1419,7 @@ class MediaWebTaskService:
                     continue
                 task["status"] = "queued"
                 task["progress"] = 0
-                self._append_event(task, "task.status", "服务恢复后任务已重新进入跨进程单 worker 队列。")
+                self._append_event(task, "task.status", "服务恢复后任务已重新排队。")
                 resumable.append((str(task["task_id"]), tenant_id))
         for task_id, tenant_id in resumable:
             self._submit(task_id, tenant_id)

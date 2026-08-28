@@ -1425,72 +1425,47 @@ export function TaskSettlementDetails({
   compact?: boolean;
 }) {
   const presentation = taskSettlementPresentation(task);
-  const binding = task.accountBinding;
   return (
     <section
       className={`task-settlement ${compact ? "is-compact" : ""} ${presentation.complete ? "is-complete" : ""}`}
-      aria-label="任务结算状态"
+      aria-label="任务状态"
       data-task-settlement-stage={task.settlementStage}
     >
       <header>
-        <strong>结算状态</strong>
+        <strong>任务状态</strong>
         <span>{presentation.stageLabel}</span>
       </header>
       <dl>
         <div>
-          <dt>账号绑定</dt>
+          <dt>关联账号</dt>
           <dd>
             {presentation.bindingSummary ?? "此任务不适用客户自有账号绑定"}
           </dd>
         </div>
-        {binding ? (
-          <>
-            <div>
-              <dt>正式关系</dt>
-              <dd>{binding.relationshipRef}</dd>
-            </div>
-            <div>
-              <dt>认证用户</dt>
-              <dd>{binding.userPublicId}</dd>
-            </div>
-            <div>
-              <dt>客户账号</dt>
-              <dd>{binding.ownedAccountPublicId}</dd>
-            </div>
-          </>
-        ) : null}
         <div>
-          <dt>执行尝试</dt>
-          <dd>{presentation.attemptSummary ?? "执行器尚未领取"}</dd>
+          <dt>处理进度</dt>
+          <dd>{presentation.attemptSummary ?? "等待开始处理"}</dd>
         </div>
-        {presentation.executorSummary ? (
-          <div>
-            <dt>执行器</dt>
-            <dd>{presentation.executorSummary}</dd>
-          </div>
-        ) : null}
         {presentation.recoverySummary ? (
           <div>
-            <dt>租约恢复</dt>
+            <dt>处理状态</dt>
             <dd>{presentation.recoverySummary}</dd>
           </div>
         ) : null}
         <div>
-          <dt>待完成读回</dt>
+          <dt>同步状态</dt>
           <dd>
             {presentation.missingReadbackLabels.length
-              ? presentation.missingReadbackLabels.join("、")
+              ? `正在同步：${presentation.missingReadbackLabels.join("、")}`
               : presentation.complete
-                ? "无，数据库、外部适用性和网页读回均已完成"
-                : "服务端尚未登记缺失读回"}
+                ? "任务结果已确认"
+                : "等待任务处理"}
           </dd>
         </div>
         <div>
-          <dt>最终收据</dt>
+          <dt>结果确认</dt>
           <dd>
-            {presentation.receiptId
-              ? `${presentation.receiptId} · ${presentation.receiptSummary}`
-              : "尚未生成"}
+            {presentation.receiptSummary ?? "尚未完成"}
           </dd>
         </div>
       </dl>

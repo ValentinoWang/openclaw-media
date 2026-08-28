@@ -29,13 +29,6 @@ const unknownStageProgress: WorkboardStageProgress = {
   progress: null,
 }
 
-const attentionTaskStatuses = new Set([
-  'awaiting_confirmation',
-  'pending_manual',
-  'needs_attention',
-  'failed',
-])
-
 export function workboardStageProgress(stage: string): WorkboardStageProgress {
   return stageProgressByStage[stage] ?? unknownStageProgress
 }
@@ -43,5 +36,9 @@ export function workboardStageProgress(stage: string): WorkboardStageProgress {
 export function filterWorkboardAttentionTasks<T extends WorkboardTask>(
   tasks: readonly T[],
 ): T[] {
-  return tasks.filter((task) => attentionTaskStatuses.has(task.status))
+  return tasks.filter((task) =>
+    task.status === 'awaiting_confirmation' || (
+      task.terminal && ['pending_manual', 'failed'].includes(task.status)
+    ),
+  )
 }

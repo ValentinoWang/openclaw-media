@@ -346,12 +346,6 @@ class MediaBusinessHttpTests(unittest.TestCase):
         self.assertEqual(self.decisions.calls[0]["idempotency_key"], "mutation-key-01")
 
     def test_upload_creation_fails_closed_on_contract_violations(self) -> None:
-        # 生产入口（server_cli）在启动时通过 facade 安装 v3 上传处理器；
-        # 这里显式安装，保证测试结果与用例执行顺序无关。
-        from openclaw_app.services import media_web_tasks as media_web_tasks_facade
-
-        media_web_tasks_facade._install_upload_handler()
-
         status, body = self._request(
             "POST",
             "/openclaw/media/api/uploads",

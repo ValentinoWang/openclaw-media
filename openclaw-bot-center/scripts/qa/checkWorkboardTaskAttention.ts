@@ -14,7 +14,7 @@ const tasks = [
 
 assert.deepEqual(
   filterWorkboardAttentionTasks(tasks).map((task) => task.taskId),
-  ['failed-terminal', 'manual-terminal', 'confirmation', 'attention'],
+  ['failed-terminal', 'manual-terminal', 'confirmation'],
   'failed and manual-action tasks must remain visible even after they are terminal',
 )
 

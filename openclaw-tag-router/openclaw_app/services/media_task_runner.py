@@ -240,7 +240,7 @@ class MediaTaskRunner:
             settlement_stage="executing",
             attempt_status="running",
             progress=20,
-            message="独立执行器已开始处理任务。",
+            message="任务开始处理。",
         )
         with _LeaseHeartbeat(
             self.repository,
@@ -303,7 +303,7 @@ class MediaTaskRunner:
                 settlement_stage="database_readback",
                 attempt_status="waiting_database_readback",
                 progress=70,
-                message="能力执行完成，正在验证数据库结果。",
+                message="内容已生成，正在确认保存结果。",
             )
             artifacts = self._artifact_records(task, raw_result, result_projection)
             self.repository.transition_claim(
@@ -312,7 +312,7 @@ class MediaTaskRunner:
                 settlement_stage="external_readback",
                 attempt_status="waiting_external_readback",
                 progress=80,
-                message="数据库结果已准备，正在验证适用的外部系统。",
+                message="正在确认任务结果。",
             )
             external_objects, external_readback = self._external_readback(
                 capability_id,
@@ -406,7 +406,7 @@ class MediaTaskRunner:
             self.repository.record_failure(
                 claim,
                 code=str(code or "task_execution_failed"),
-                message="任务未形成完整的多系统结算结果。",
+                message="任务未形成完整结果。",
                 action=(
                     "请由维护者核对已发生的执行和外部写入后再处理。"
                     if needs_manual
@@ -526,7 +526,7 @@ class MediaTaskRunner:
         if receipt_kind == "creator_profile_candidate":
             return "候选已生成，请核对表单后确认写入达人档案。"
         if receipt_kind == "creator_profile_written":
-            return "达人档案已写入并完成读回校验。"
+            return "达人档案已写入并确认完成。"
         if receipt_kind == "deletion_preview":
             return "删除影响范围已生成。"
         lines: list[str] = []

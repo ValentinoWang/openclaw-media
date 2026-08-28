@@ -1080,20 +1080,26 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             self._send_api_error(
                 HTTPStatus.SERVICE_UNAVAILABLE,
                 "service_unavailable",
-                "服务暂时不可用。",
+                "上传服务暂时不可用。",
             )
             return
         if context.idempotency is None:
-            raise RequestContextError("upload mutation is missing an idempotency key")
-        expected_fields = {"schemaVersion", "filename", "contentBase64", "idempotencyKey"}
-        if set(body) != expected_fields or body.get("schemaVersion") != "3":
+            raise RequestContextError("上传请求缺少幂等键。")
+        required_fields = {"schemaVersion", "filename", "contentBase64", "idempotencyKey"}
+        optional_fields = {"mimeType"}
+        if (
+            not isinstance(body, Mapping)
+            or not required_fields.issubset(body)
+            or set(body) - required_fields - optional_fields
+            or body.get("schemaVersion") != "3"
+        ):
             raise MediaWebTaskError("invalid_request", "上传请求不符合结构化契约。")
         if body.get("idempotencyKey") != context.idempotency.key:
-            raise RequestContextError("body and header idempotency keys differ")
+            raise RequestContextError("上传请求的幂等键不一致。")
         projection, created = self.media_web_tasks.create_upload(
             {
                 "filename": body["filename"],
-                "mimeType": "",
+                "mimeType": body.get("mimeType", ""),
                 "contentBase64": body["contentBase64"],
             },
             tenant_id=str(context.principal.tenant_id),
