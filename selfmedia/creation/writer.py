@@ -704,13 +704,34 @@ def _usable_material_appendix(draft: dict[str, Any], option: dict[str, Any]) -> 
     brief = draft.get("usable_material_brief") if isinstance(draft.get("usable_material_brief"), dict) else {}
     lines = [
         f"执行说明：{_compact_text(brief.get('execution_brief') or '')}",
-        f"来源映射：{_compact_text(brief.get('source_mapping') or '')}",
+        f"来源映射：{_source_mapping_summary(brief.get('source_mapping'))}",
         f"使用边界：{_compact_text(brief.get('usage_boundaries') or '')}",
         f"活动采用说明：{_text(option.get('activity_fit_reason'))}",
         f"爆款迁移说明：{_text(option.get('viral_reference_reason'))}",
         f"灵感落地说明：{_text(option.get('inspiration_reference_reason'))}",
     ]
     return "\n".join(line for line in lines if line.split("：", 1)[-1].strip())
+
+
+def _source_mapping_summary(value: Any) -> str:
+    """Keep evidence usable to creators without disclosing retrieval keys or paths."""
+    summaries: list[str] = []
+    for item in _as_list(value):
+        if not isinstance(item, dict):
+            continue
+        transfer = _text(item.get("transfer"))
+        placement = _text(item.get("placement"))
+        summary = "；".join(
+            part
+            for part in (
+                f"可用内容：{transfer}" if transfer else "",
+                f"落地位置：{placement}" if placement else "",
+            )
+            if part
+        )
+        if summary:
+            summaries.append(summary)
+    return "；".join(summaries) or "已关联素材，详见证据附录。"
 
 
 def _recommended_option(draft: dict[str, Any]) -> dict[str, Any]:
@@ -768,10 +789,9 @@ def _activity_appendix(items: list[RankedRecord], option: dict[str, Any]) -> str
             "\n".join(
                 line
                 for line in (
-                    f"- {record.title or record.topic or record.source_record_id}",
+                    f"- {_source_title(record, fallback='已关联活动')}",
                     f"  选择/放弃理由：{reason or _inline_list(item.reasons)}",
                     f"  推荐子方向：{direction}",
-                    f"  来源编号：{record.source_record_id}",
                     f"  返稿链接：{record.submission_link}",
                 )
                 if not line.endswith("：")
@@ -786,14 +806,13 @@ def _reference_appendix(items: list[RankedRecord], reason: str, *, label: str) -
     lines = []
     for item in items:
         record = item.record
-        title = record.title or record.topic or record.source_record_id
+        title = _source_title(record, fallback="已关联参考素材")
         extra = _insight_card_reference_lines(record)
         lines.append(
             "\n".join(
                 [
                     f"- {title}",
                     f"  {label}：{reason or _inline_list(item.reasons)}",
-                    f"  来源编号：{record.source_record_id}",
                     *extra,
                 ]
             )
@@ -805,13 +824,19 @@ def _insight_card_reference_lines(record: Any) -> list[str]:
     if getattr(record, "source_table", "") != "Obsidian:人性洞察库":
         return []
     detail = getattr(record, "detail_json", None) if isinstance(getattr(record, "detail_json", None), dict) else {}
+    card_name = _insight_card_name(detail.get("insight_card_path"))
     return [
         "  引用类型：洞察卡（仅公开内容）",
-        f"  卡片路径：{_text(detail.get('insight_card_path'))}",
+        f"  卡片关联：{card_name}（内部证据已保留）" if card_name else "  卡片关联：已保留在内部证据中",
         f"  卡片状态：{_text(detail.get('insight_card_status') or getattr(record, 'status', ''))}",
         f"  证据边界：{_evidence_boundary_label(detail.get('evidence_boundary'))}",
         f"  风险边界：{_text(detail.get('risk_boundary') or '未标注')}",
     ]
+
+
+def _insight_card_name(value: Any) -> str:
+    path = _text(value).replace("\\", "/")
+    return path.rsplit("/", 1)[-1] if path else ""
 
 
 def _evidence_boundary_label(value: Any) -> str:
@@ -821,7 +846,7 @@ def _evidence_boundary_label(value: Any) -> str:
 def _business_appendix(items: list[RankedRecord]) -> str:
     if not items:
         return "无商务信息。"
-    return "\n".join(f"- {item.record.title or item.record.source_record_id}；来源编号：{item.record.source_record_id}" for item in items)
+    return "\n".join(f"- {_source_title(item.record, fallback='已关联商务信息')}" for item in items)
 
 
 def _score_id_appendix(
@@ -835,13 +860,13 @@ def _score_id_appendix(
     platform_fit: dict[str, Any] | None = None,
 ) -> str:
     lines = [
-        f"推荐方案编号：{draft.get('recommended_option_id') or ''}",
+        "推荐方案：已选定",
         f"候选方案分数：{', '.join(str(item.get('score')) for item in draft.get('script_options') or [] if isinstance(item, dict))}",
         *_option_score_reason_lines(draft),
-        f"活动来源编号：{', '.join(item.record.source_record_id for item in activities)}",
-        f"爆款来源编号：{', '.join(item.record.source_record_id for item in virals)}",
-        f"灵感来源编号：{', '.join(item.record.source_record_id for item in inspirations)}",
-        f"商务来源编号：{', '.join(item.record.source_record_id for item in businesses)}",
+        f"已关联活动：{len(activities)} 条",
+        f"已关联爆款参考：{len(virals)} 条",
+        f"已关联创作灵感：{len(inspirations)} 条",
+        f"已关联商务信息：{len(businesses)} 条",
         *_score_summary_lines(activities, virals, businesses, inspirations=inspirations),
         f"平台规则校验：{_validation_summary(validation)}",
     ]
@@ -866,12 +891,20 @@ def _score_summary_lines(
         if not items:
             continue
         summary = "；".join(
-            f"{item.record.source_record_id or item.record.title or '未提供来源编号'}：{item.score}"
+            f"{_source_title(item.record, fallback=f'已关联{label}来源')}：{item.score}"
             for item in items[:5]
         )
         if summary:
             lines.append(f"{label}：{summary}")
     return lines
+
+
+def _source_title(record: Any, *, fallback: str) -> str:
+    for value in (getattr(record, "title", ""), getattr(record, "topic", "")):
+        text = _text(value)
+        if text:
+            return text
+    return fallback
 
 
 def _section(report: dict[str, Any], key: str) -> Any:

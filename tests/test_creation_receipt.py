@@ -37,6 +37,7 @@ def test_creation_receipt_hides_internal_telemetry_and_keeps_delivery_details() 
     assert "创作文档：https://example.test/creation-doc" in reply
     assert "创作记录ID：creation_record_123" in reply
     assert "达人档案未加载：CreatorProfile 字段契约不可用" in reply
+    assert reply.splitlines()[1] == "创作文档：https://example.test/creation-doc"
 
     for internal_value in (
         "internal-provider",

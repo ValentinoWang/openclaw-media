@@ -199,6 +199,28 @@ class ContentOSBridgePresentationTests(unittest.TestCase):
             for raw_stage in RAW_STAGES:
                 self.assertNotIn(raw_stage, str(result["reply"]))
 
+    def test_creation_project_receipt_hides_machine_identifiers_and_local_paths(self) -> None:
+        reply = ContentOSBridgeHarness(Path("/tmp/content-os"))._creation_content_os_project_reply(
+            {
+                "project_id": "20260829_internal_project_001",
+                "project_path": "/Users/creator/08_内容项目/20260829_internal_project_001",
+                "task_path": "/Users/creator/tasks/task_internal_001.json",
+            },
+            {
+                "reply": "Content OS 已写入：08_内容项目/20260829_internal_project_001/04_script.md",
+                "script_path": "/Users/creator/08_内容项目/20260829_internal_project_001/04_script.md",
+            },
+        )
+
+        self.assertEqual(reply, "创作项目已创建。\n创作内容已同步到项目档案。\n本地素材匹配任务已创建。")
+        for internal_value in (
+            "20260829_internal_project_001",
+            "task_internal_001",
+            "/Users/creator",
+            "Content OS 已写入",
+        ):
+            self.assertNotIn(internal_value, reply)
+
 
 if __name__ == "__main__":
     unittest.main()

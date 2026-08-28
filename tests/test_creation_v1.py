@@ -1203,7 +1203,9 @@ class CreationV1Tests(unittest.TestCase):
         self.assertNotIn("option_id", main_text)
         self.assertNotIn("record_id", main_text)
         self.assertNotIn("record_id", appendix_text)
-        self.assertIn("来源编号", appendix_text)
+        self.assertIn("已关联活动：1 条", appendix_text)
+        for internal_value in ("来源编号", "act1", "vir1", "ins1", "/home/ubuntu/obsidian-自媒体/"):
+            self.assertNotIn(internal_value, appendix_text)
         self.assertNotIn("insight-card reference", appendix_text)
         self.assertNotIn("public_content_only", appendix_text)
         self.assertIn("引用类型：洞察卡（仅公开内容）", appendix_text)

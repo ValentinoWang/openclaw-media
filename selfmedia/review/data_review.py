@@ -1282,6 +1282,21 @@ _REVIEW_LABELS = {
     "next_step": "后续动作",
 }
 
+_REVIEW_INTERNAL_FIELDS = frozenset(
+    {
+        "artifact_uri",
+        "creation_record_id",
+        "error",
+        "exception",
+        "local_path",
+        "record_id",
+        "run_id",
+        "screenshot_path",
+        "source_record_id",
+        "traceback",
+    }
+)
+
 
 def _review_label(key: Any) -> str:
     text = str(key or "").strip()
@@ -1290,6 +1305,11 @@ def _review_label(key: Any) -> str:
     if any("\u4e00" <= char <= "\u9fff" for char in text):
         return text
     return "说明"
+
+
+def _is_internal_review_field(key: Any) -> bool:
+    name = str(key or "").strip().lower()
+    return name in _REVIEW_INTERNAL_FIELDS or name.endswith(("_id", "_path", "_uri")) or name.startswith("raw_")
 
 
 def _review_value(value: Any, *, depth: int = 0) -> str:
@@ -1301,7 +1321,7 @@ def _review_value(value: Any, *, depth: int = 0) -> str:
         return "；".join(
             f"{_review_label(key)}：{_review_value(item, depth=depth + 1)}"
             for key, item in value.items()
-            if item not in (None, "", [])
+            if not _is_internal_review_field(key) and item not in (None, "", [])
         ) or "未提供"
     if isinstance(value, list):
         return "；".join(_review_value(item, depth=depth + 1) for item in value[:12]) or "未提供"
@@ -1315,7 +1335,7 @@ def _review_lines(value: Any) -> list[str]:
         return [
             f"{_review_label(key)}：{_review_value(item)}"
             for key, item in value.items()
-            if item not in (None, "", [])
+            if not _is_internal_review_field(key) and item not in (None, "", [])
         ] or ["暂无"]
     items = value if isinstance(value, list) else [value]
     return [_review_value(item) for item in items[:12] if item not in (None, "", [])] or ["暂无"]
