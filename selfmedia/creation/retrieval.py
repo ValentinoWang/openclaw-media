@@ -22,10 +22,10 @@ from .field_contract import CREATION_SOURCE_TABLE_CONTRACTS
 from media_model.contract import MediaModelContract
 
 
-DEFAULT_ACTIVITY_CONFIG = Path("/home/ubuntu/openclaw-feishu-reminder/wiki-activity-config.json")
+DEFAULT_ACTIVITY_CONFIG = Path.home() / "openclaw-feishu-reminder" / "wiki-activity-config.json"
 MEDIA_ENV_FILES = (
-    Path("/home/ubuntu/openclaw-agents/media/.env"),
-    Path("/home/ubuntu/openclaw-agents/media/.env.local"),
+    Path.home() / "openclaw-agents" / "media" / ".env",
+    Path.home() / "openclaw-agents" / "media" / ".env.local",
 )
 BUSINESS_URL_ENV_NAMES = (
     "MEDIA_OS_BUSINESS_OPPORTUNITIES_URL",
@@ -223,7 +223,8 @@ def resolve_activity_bitable_url(explicit: str = "") -> str:
     env_url = os.getenv("MEDIA_OS_ACTIVITY_URL")
     if env_url:
         return env_url
-    cfg = _load_json(DEFAULT_ACTIVITY_CONFIG)
+    cfg_path = Path(os.getenv("OPENCLAW_ACTIVITY_CONFIG_PATH", str(DEFAULT_ACTIVITY_CONFIG))).expanduser()
+    cfg = _load_json(cfg_path)
     return _bitable_url_from_config(cfg)
 
 
@@ -251,7 +252,14 @@ def resolve_inspiration_bitable_url(explicit: str = "") -> str:
 
 def load_creation_env_files() -> None:
     load_default_env_files()
-    for path in MEDIA_ENV_FILES:
+    configured_root = os.getenv("OPENCLAW_MEDIA_AGENT_ROOT", "").strip()
+    if configured_root:
+        root = Path(configured_root).expanduser()
+        env_files = (root / ".env", root / ".env.local")
+    else:
+        env_override = os.getenv("OPENCLAW_MEDIA_ENV_FILE", "").strip()
+        env_files = (Path(env_override).expanduser(),) if env_override else MEDIA_ENV_FILES
+    for path in env_files:
         load_env_file(path)
 
 

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import json
 from typing import Optional
 
-from notion_client import Client
 import requests
 
 from .config import Settings
@@ -43,20 +41,49 @@ def _normalize_text(value: object) -> str:
     if isinstance(value, (int, float, bool)):
         return str(value)
     if isinstance(value, list):
-        parts = []
+        parts: list[str] = []
         for item in value:
             if item is None:
                 continue
             if isinstance(item, (str, int, float, bool)):
                 parts.append(str(item))
             elif isinstance(item, dict):
-                parts.append(json.dumps(item, ensure_ascii=False))
+                parts.append(_format_mapping(item))
             else:
                 parts.append(str(item))
         return "\n".join([part for part in parts if part])
     if isinstance(value, dict):
-        return json.dumps(value, ensure_ascii=False)
+        return _format_mapping(value)
     return str(value)
+
+
+def _format_mapping(value: dict[object, object]) -> str:
+    """Render structured model output as readable lines instead of JSON."""
+    lines = []
+    for key, item in value.items():
+        rendered = _normalize_text(item)
+        if rendered:
+            lines.append(f"{key}：{rendered}")
+    return "\n".join(lines)
+
+
+_INTERACTION_STATUS_LABELS = {
+    "verified_douyin_aweme_detail_statistics": "已核实",
+    "verified_xhs_interact_info": "已核实",
+    "partial_missing_douyin_aweme_detail_statistics": "部分数据缺失，待复核",
+    "partial_missing_xhs_interact_info": "部分数据缺失，待复核",
+    "douyin_webpage_visible_text_pending_review": "网页可见文本待复核",
+}
+
+_SCREENSHOT_STATUS_LABELS = {
+    "captured_for_ocr": "截图已获取，待复核",
+    "capture_failed": "截图失败，待复核",
+}
+
+
+def _status_label(value: object, labels: dict[str, str], fallback: str = "待复核") -> str:
+    raw = str(value or "").strip()
+    return labels.get(raw, fallback)
 
 
 def _make_paragraph(text: str) -> dict:
@@ -278,21 +305,17 @@ def _build_properties(
     interaction_status = analysis.get("interaction_status") if analysis else None
     stats_notice = analysis.get("stats_notice") if analysis else None
     missing_fields = analysis.get("missing_interaction_fields") if analysis else None
-    screenshot_path = analysis.get("interaction_screenshot_path") if analysis else None
     screenshot_status = analysis.get("interaction_screenshot_status") if analysis else None
-    screenshot_error = analysis.get("interaction_screenshot_error") if analysis else None
     if interaction_status:
-        stats_notice_parts.append(str(interaction_status))
+        stats_notice_parts.append(_status_label(interaction_status, _INTERACTION_STATUS_LABELS))
     if stats_notice:
-        stats_notice_parts.append(str(stats_notice))
+        stats_notice_parts.append(_normalize_text(stats_notice))
     if missing_fields:
         stats_notice_parts.append("缺失字段：" + ", ".join(str(item) for item in missing_fields))
-    if screenshot_path:
-        stats_notice_parts.append(f"作品截图：{screenshot_path}")
-    elif screenshot_status:
-        stats_notice_parts.append(f"作品截图状态：{screenshot_status}")
-    if screenshot_error:
-        stats_notice_parts.append(f"作品截图错误：{screenshot_error}")
+    # The local screenshot path and capture exception are operational details;
+    # expose only a concise review status in the user's Notion record.
+    if screenshot_status:
+        stats_notice_parts.append(_status_label(screenshot_status, _SCREENSHOT_STATUS_LABELS))
     if stats_notice_key and stats_notice_parts:
         notion_props[stats_notice_key] = {"rich_text": _build_rich_text("\n".join(stats_notice_parts))}
 
@@ -369,6 +392,8 @@ def write_to_notion(
     if not settings.notion_token or not settings.notion_database_id:
         print("Notion 配置缺失，跳过写入。", flush=True)
         return None
+
+    from notion_client import Client
 
     client = Client(auth=settings.notion_token)
     try:

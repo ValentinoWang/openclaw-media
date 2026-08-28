@@ -3,7 +3,12 @@ from __future__ import annotations
 import unittest
 from types import SimpleNamespace
 
-from selfmedia.ingest.content_flow.src.notion_writer import _build_children, write_to_notion
+from selfmedia.ingest.content_flow.src.notion_writer import (
+    _build_children,
+    _build_properties,
+    _normalize_text,
+    write_to_notion,
+)
 
 
 class NotionWriterSemanticPersistenceTest(unittest.TestCase):
@@ -41,6 +46,37 @@ class NotionWriterSemanticPersistenceTest(unittest.TestCase):
         )
 
         self.assertIsNone(result)
+
+    def test_structured_user_fields_are_rendered_as_readable_lines(self) -> None:
+        rendered = _normalize_text({"开头": "先给结论", "步骤": [{"动作": "展示前后对比"}]})
+
+        self.assertIn("开头：先给结论", rendered)
+        self.assertIn("步骤：动作：展示前后对比", rendered)
+        self.assertNotIn("{", rendered)
+        self.assertNotIn('"开头"', rendered)
+
+    def test_interaction_notice_hides_machine_status_path_and_exception(self) -> None:
+        properties = {
+            "Name": {"type": "title"},
+            "互动状态": {"type": "rich_text"},
+        }
+        analysis = {
+            **self._analysis(),
+            "interaction_status": "partial_missing_douyin_aweme_detail_statistics",
+            "interaction_screenshot_status": "capture_failed",
+            "interaction_screenshot_path": "/Users/vsiyo/private/screenshots/interaction.png",
+            "interaction_screenshot_error": "BrowserError: raw internal failure",
+        }
+
+        notion_props = _build_properties(properties, "标题", "https://example.com/post", analysis)
+        rendered = notion_props["互动状态"]["rich_text"][0]["text"]["content"]
+
+        self.assertIn("部分数据缺失，待复核", rendered)
+        self.assertIn("截图失败，待复核", rendered)
+        self.assertNotIn("partial_missing_douyin_aweme_detail_statistics", rendered)
+        self.assertNotIn("capture_failed", rendered)
+        self.assertNotIn("/Users/vsiyo", rendered)
+        self.assertNotIn("BrowserError", rendered)
 
 
 if __name__ == "__main__":

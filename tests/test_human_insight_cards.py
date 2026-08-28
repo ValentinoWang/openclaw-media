@@ -79,7 +79,27 @@ status: 已验证
             validate_card_markdown(card, card_type="mechanism")
 
     def test_template_frontmatter_does_not_treat_status_as_mechanism_tag(self) -> None:
-        template = (CARD_LIBRARY_ROOT / "机制卡" / "_template.md").read_text(encoding="utf-8")
+        template = """---
+card_type: mechanism
+mechanism_tag: 被理解感
+status: 假设
+---
+# 被理解感
+## 定义
+待补充。
+## 触发方式
+待补充。
+## 情绪路径
+待补充。
+## 适用群体标签
+待补充。
+## 证据条目
+待补充。
+## 反例/失效条件
+待补充。
+## 平台风控风险
+待补充。
+"""
         validate_card_markdown(template, card_type="mechanism")
 
     def test_deconstruct_prompt_injects_taxonomy_values(self) -> None:

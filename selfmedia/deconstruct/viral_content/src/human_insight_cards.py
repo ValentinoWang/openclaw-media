@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 from typing import Any
 
 
 TAXONOMY_PATH = Path(__file__).resolve().parent / "contracts" / "human_insight_taxonomy.yaml"
-CARD_LIBRARY_ROOT = Path("/home/ubuntu/obsidian-自媒体/05_素材与爆款库/人性洞察库")
+CARD_LIBRARY_ROOT = Path.home() / "obsidian-自媒体" / "05_素材与爆款库" / "人性洞察库"
 REQUIRED_MECHANISM_SECTIONS = ("定义", "触发方式", "情绪路径", "适用群体标签", "证据条目", "反例/失效条件", "平台风控风险")
 REQUIRED_GROUP_SECTIONS = ("核心欲望/恐惧", "身份认同叙事", "高频触发机制", "语言风格", "平台分布", "证据视频列表", "当前状态")
 
@@ -85,7 +86,8 @@ def validate_card_markdown(text: str, *, card_type: str, taxonomy: dict[str, Any
 
 
 def card_library_paths(root: Path | None = None) -> dict[str, Path]:
-    base = root or CARD_LIBRARY_ROOT
+    configured_root = os.environ.get("OPENCLAW_INSIGHT_CARD_LIBRARY_ROOT", "").strip()
+    base = root or (Path(configured_root).expanduser() if configured_root else CARD_LIBRARY_ROOT)
     return {
         "root": base,
         "mechanisms": base / "机制卡",

@@ -7,6 +7,23 @@ from datetime import date
 from zoneinfo import ZoneInfo
 from media_vault import MediaVaultError, require_tenant_id
 
+
+BUSINESS_PRESENTATION_STATUS_LABELS = {
+    "captured": "已获取",
+    "collected": "已收集",
+    "done": "已完成",
+    "pending": "待确认",
+    "pending_manual": "待人工确认",
+    "capture_auth_required": "登录状态失效，待重新获取",
+    "capture_failed": "获取失败，待复核",
+}
+
+
+def _business_presentation_status(value: object) -> str:
+    raw = str(value or "").strip()
+    return BUSINESS_PRESENTATION_STATUS_LABELS.get(raw, "待复核")
+
+
 class BusinessVlogMixin:
     def handle_id_business(self, message: Message) -> TaskResult:
         try:
@@ -74,11 +91,11 @@ class BusinessVlogMixin:
         if fields.get("账号数据摘要"):
             reply_lines.append(f"账号数据：{fields['账号数据摘要']}")
         if capture.get("status") or fields.get("截图状态"):
-            reply_lines.append(f"截图状态：{capture.get('status') or fields.get('截图状态')}")
+            reply_lines.append(f"截图状态：{_business_presentation_status(capture.get('status') or fields.get('截图状态'))}")
         if fields.get("需反问博主字段"):
             reply_lines.append(f"需反问博主：{fields['需反问博主字段']}")
         if fields.get("反问博主状态"):
-            reply_lines.append(f"反问状态：{fields['反问博主状态']}")
+            reply_lines.append(f"反问状态：{_business_presentation_status(fields['反问博主状态'])}")
         if fields.get("待补充字段") and ai_reply_status != "done":
             reply_lines.append(f"待补充字段：{fields['待补充字段']}")
         ai_reply = str(fields.get("AI回复话术") or "").strip()

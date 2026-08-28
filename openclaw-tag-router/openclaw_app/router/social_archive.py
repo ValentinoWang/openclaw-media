@@ -103,11 +103,14 @@ class SocialArchiveMixin:
                 message,
                 f"{archive_kind}档案待确认",
                 [
-                    ("原始内容", message.body),
-                    ("LLM元数据抽取", json.dumps(metadata, ensure_ascii=False, indent=2)),
+                    ("事实摘要", f"已收到{archive_kind}档案材料，但暂未可靠识别对象称呼。"),
                     ("待补充信息", "缺少对象称呼，或 LLM 未能可靠识别人物。请补一句：对象：称呼"),
                 ],
-                {"status": "pending_person", "tags": [archive_kind, "人物档案"], "llm_metadata_status": metadata.get("status", "")},
+                {"status": "pending_person", "tags": [archive_kind, "人物档案"]},
+            )
+            internal_artifact = self._write_social_internal_artifact(
+                entry.frontmatter["id"],
+                {"message": message.body, "metadata": metadata},
             )
             reply = "\n".join(
                 [
@@ -117,7 +120,14 @@ class SocialArchiveMixin:
                     f"暂存路径：{entry.local_path}",
                 ]
             )
-            return TaskResult(ok=False, status="pending_person", reply=reply, task_id=entry.frontmatter["id"], local_path=entry.local_path)
+            return TaskResult(
+                ok=False,
+                status="pending_person",
+                reply=reply,
+                task_id=entry.frontmatter["id"],
+                local_path=entry.local_path,
+                extra={"internal_artifact": internal_artifact},
+            )
 
         person = str(metadata["person"])
         gender = str(metadata.get("gender") or "未知")
@@ -136,8 +146,7 @@ class SocialArchiveMixin:
         sync_ok = archive_result.get("ok") and (feishu_skipped or bool(feishu_result.get("doc") and not feishu_result.get("warning")))
         status = "archived" if sync_ok else ("sync_failed" if archive_result.get("ok") else "pending_manual")
         sections = [
-            ("原始内容", message.body),
-            ("person-profile-skill 输出", archive_result["output"] or archive_result["error"]),
+            ("事实摘要", self._social_archive_facts_summary(person, gender, final_category, status)),
         ]
         chat_batch = archive_result.get("chat_batch") or {}
         if chat_batch.get("ok"):
@@ -160,11 +169,6 @@ class SocialArchiveMixin:
                 "person_directory": archive_result.get("person_directory", ""),
                 "person_view_directory": archive_result.get("view_directory", ""),
                 "person_view_manifest_path": archive_result.get("view_manifest_path", ""),
-                "llm_person": person,
-                "llm_gender": gender,
-                "llm_relationship_category": relationship_category,
-                "llm_metadata_confidence": metadata.get("confidence", 0),
-                "llm_metadata_evidence": metadata.get("evidence", ""),
                 "feishu_doc": feishu_result.get("doc", ""),
                 "feishu_synced": bool(feishu_result.get("doc") and not feishu_result.get("warning")),
                 "feishu_skipped": feishu_skipped,
@@ -173,6 +177,17 @@ class SocialArchiveMixin:
                 "chat_batch_content_ssot": chat_batch.get("content_ssot_path", ""),
                 "chat_batch_transcript": chat_batch.get("transcript_path", ""),
                 "chat_batch_analysis_markdown": chat_batch.get("analysis_markdown_path", ""),
+            },
+        )
+        internal_artifact = self._write_social_internal_artifact(
+            entry.frontmatter["id"],
+            {
+                "message": message.body,
+                "metadata": metadata,
+                "person_archive": {
+                    "output": archive_result.get("output", ""),
+                    "error": archive_result.get("error", ""),
+                },
             },
         )
         if sync_ok:
@@ -217,6 +232,7 @@ class SocialArchiveMixin:
                     "person_directory": archive_result.get("person_directory", ""),
                     "view_directory": archive_result.get("view_directory", ""),
                     "route_record": entry.local_path,
+                    "internal_artifact": internal_artifact,
                     "chat_batch": chat_batch,
                 },
             )
@@ -230,7 +246,38 @@ class SocialArchiveMixin:
                 f"错误：{sync_error}",
             ]
         )
-        return TaskResult(ok=False, status=status, reply=reply, task_id=entry.frontmatter["id"], local_path=entry.local_path)
+        return TaskResult(
+            ok=False,
+            status=status,
+            reply=reply,
+            task_id=entry.frontmatter["id"],
+            local_path=entry.local_path,
+            extra={"internal_artifact": internal_artifact},
+        )
+
+    def _social_archive_facts_summary(self, person: str, gender: str, category: str, status: str) -> str:
+        """Keep user-facing archive notes factual without exposing model receipts."""
+        status_label = {
+            "archived": "已归档",
+            "sync_failed": "同步未完成",
+            "pending_manual": "待人工处理",
+        }.get(status, "待复核")
+        return "\n".join(
+            [
+                f"- 归档状态：{status_label}",
+                f"- 对象：{person}",
+                f"- 性别：{gender or '未知'}",
+                f"- 关系分类：{category}",
+                "- 说明：原始材料与处理回执保存在内部归档产物中。",
+            ]
+        )
+
+    def _write_social_internal_artifact(self, record_id: str, payload: dict[str, Any]) -> str:
+        artifact_dir = self.workspace_root / "internal-artifacts" / "social-archive"
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+        artifact_path = artifact_dir / f"{record_id}.json"
+        artifact_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return str(artifact_path)
 
     def _blocked_social_theory_tags(self, tag: str, body: str) -> list[str]:
         if tag == "社交":
@@ -1125,10 +1172,5 @@ class SocialArchiveMixin:
     def _social_archive_reply_summary(self, message: Message, archive_result: dict[str, Any]) -> str:
         chat_batch = archive_result.get("chat_batch") or {}
         if chat_batch.get("ok"):
-            transcript_path = Path(str(chat_batch.get("transcript_path") or ""))
-            if transcript_path.is_file():
-                try:
-                    return transcript_path.read_text(encoding="utf-8", errors="ignore")[:1200].rstrip()
-                except OSError:
-                    pass
+            return "已完成聊天材料提取与关系事实整理，原始文字稿仅保存在内部事实归档中。"
         return ""
