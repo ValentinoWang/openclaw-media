@@ -210,6 +210,13 @@ METRIC_REGISTRY = {
     },
 }
 
+METRIC_DATA_QUALITY_VALUES = frozenset({"complete", "partial", "screenshot_only"})
+METRIC_DATA_QUALITY_LABELS = {
+    "complete": "数据完整",
+    "partial": "数据不完整",
+    "screenshot_only": "仅截图来源",
+}
+
 
 class MetricRegistryError(RuntimeError):
     pass
@@ -231,6 +238,36 @@ def normalize_metric_key(raw_name: Any) -> str:
 def metric_spec(metric_key: str) -> dict[str, Any]:
     key = normalize_metric_key(metric_key)
     return dict(METRIC_REGISTRY[key])
+
+
+def normalize_metric_data_quality(value: Any, *, default: str = "complete") -> str:
+    """Map a user-facing label to the contract's canonical single-select value."""
+    if default not in METRIC_DATA_QUALITY_VALUES:
+        raise MetricRegistryError(f"unsupported metric data-quality default: {default}")
+    text = str(value or "").strip()
+    if not text:
+        return default
+    key = re.sub(r"[\s_-]+", "", text).casefold()
+    aliases = {
+        "complete": "complete",
+        "完整": "complete",
+        "数据完整": "complete",
+        "partial": "partial",
+        "部分": "partial",
+        "数据不完整": "partial",
+        "不完整": "partial",
+        "screenshotonly": "screenshot_only",
+        "仅截图来源": "screenshot_only",
+        "截图来源": "screenshot_only",
+    }
+    normalized = aliases.get(key)
+    if normalized is None:
+        raise MetricRegistryError(f"unsupported metric data quality: {value}")
+    return normalized
+
+
+def metric_data_quality_label(value: Any) -> str:
+    return METRIC_DATA_QUALITY_LABELS[normalize_metric_data_quality(value)]
 
 
 def metric_snapshot_idempotency_key(*, post_id: str, review_node: str, metric_key: str, collected_at: str) -> str:
@@ -809,7 +846,7 @@ def build_metric_snapshot_payload(
             "metric_value": metric_value,
             "unit": unit,
             "evidence_uri": evidence_uri,
-            "data_quality": data_quality,
+            "data_quality": normalize_metric_data_quality(data_quality),
         }
     )
     _validate("MetricSnapshot", payload, contract)
@@ -841,7 +878,7 @@ def build_account_metric_snapshot_payload(
             "metric_value": metric_value,
             "unit": unit,
             "evidence_uri": evidence_uri,
-            "data_quality": data_quality,
+            "data_quality": normalize_metric_data_quality(data_quality),
         }
     )
     _validate("AccountMetricSnapshot", payload, contract)

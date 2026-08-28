@@ -30,7 +30,13 @@ from selfmedia.context import record_review_memory
 from selfmedia.context.media_context import build_media_context_for_request, merge_conversation_context
 from selfmedia.creation.media_model_v2_writeback import load_material_usage_feedback_payloads
 from integrations.feishu.media_writer import upsert_entity_record
-from media_model.payloads import build_business_opportunity_payload, build_metric_snapshot_payload
+from media_model.payloads import (
+    MetricRegistryError,
+    build_business_opportunity_payload,
+    build_metric_snapshot_payload,
+    metric_data_quality_label,
+    normalize_metric_data_quality,
+)
 from media_vault.vault import MediaVault, make_timestamp_id
 
 
@@ -57,6 +63,21 @@ PLATFORM_VALUES = ["抖音", "小红书", "视频号", "B站", "未知"]
 MEDIA_FORMAT_VALUES = ["视频", "图文", "笔记", "直播", "unknown"]
 TRACK_VALUES = ["校园生活", "运动康复", "跑步训练", "AI科技", "学习方法", "职场成长", "生活方式", "商业合作", "所有赛道", "未提供", "其他"]
 PERFORMANCE_LEVELS = ["高价值延续", "值得重剪", "观察", "不建议延续", "未评级"]
+REVIEW_WINDOW_ALIASES = {
+    "2h": "2h",
+    "2小时": "2h",
+    "两小时": "2h",
+    "twohour": "2h",
+    "24h": "24h",
+    "24小时": "24h",
+    "一天": "24h",
+    "一日": "24h",
+    "oneday": "24h",
+    "7d": "7d",
+    "7天": "7d",
+    "七天": "7d",
+    "oneweek": "7d",
+}
 
 NOT_SHOWN_TEXT = "截图未显示"
 GUIDANCE_LABELS = {
@@ -426,8 +447,8 @@ def analyze_data_screenshots(
         "12. problems、content_guidance、publishing_guidance、next_actions、data_quality_notes 尽量输出对象数组，不要把多个维度挤进一条字符串。\n"
         "13. performance_level 只能是：高价值延续、值得重剪、观察、不建议延续、未评级。\n"
         "14. 不要为了填表重复输出同一批指标；原始可见数据放 metrics，作品形式专项指标放 format_specific_metrics，曲线只放 trend_curves，后续由脚本合并成表格字段。\n"
-        "15. 当创作计划状态为 loaded 时，必须输出 plan_comparison 对象数组，逐条对照标题、前三秒钩子、验证指标、复盘计划和发布动作。每项包含 plan_item、status（已兑现/未兑现/证据不足）、evidence、next_step；没有计划时 plan_comparison 必须为空数组，且不得编造归因。\n"
-        "16. 输出字段固定为：platform, account, media_format, media_format_evidence, format_specific_metrics, track, title, publish_time, data_window, metrics, atomic_facts, priority_metrics, trend_curves, metric_interpretation, conclusion, performance_level, key_insights, problems, content_guidance, publishing_guidance, next_actions, data_quality_notes, plan_comparison。\n"
+        "15. 当创作计划状态为 loaded 时，必须输出 plan_comparison 对象数组，逐条对照标题、前三秒钩子、验证指标、复盘计划和发布动作。每项包含 plan_item、status（已兑现/未兑现/证据不足）、evidence、next_step；若本次数据节点命中 validation_targets，必须额外写 validation_target，值精确为“窗口:指标”（如 2h:收藏），逐项覆盖该窗口指标；没有计划时 plan_comparison 必须为空数组，且不得编造归因。\n"
+        "16. metric_data_quality 只能是 complete、partial 或 screenshot_only；只依据用户提供截图时必须为 screenshot_only，截图存在缺页、不可读或无法核验的指标时必须为 partial。输出字段固定为：platform, account, media_format, media_format_evidence, format_specific_metrics, track, title, publish_time, data_window, metrics, atomic_facts, priority_metrics, trend_curves, metric_interpretation, conclusion, performance_level, key_insights, problems, content_guidance, publishing_guidance, next_actions, data_quality_notes, metric_data_quality, plan_comparison。\n"
     )
     user_payload = {
         "reviewed_at": reviewed_at,
@@ -448,6 +469,8 @@ def analyze_data_screenshots(
         parts,
         config,
         creation_plan_loaded=bool((creation_plan or {}).get("status") == "loaded"),
+        validation_targets=_creation_validation_targets(creation_plan),
+        review_window=request.data_window,
     )
 
 
@@ -480,6 +503,10 @@ def validate_data_review_analysis(payload: dict[str, Any], context: dict[str, An
         raise ValueError("数据复盘必须输出 priority_metrics 关键指标列表")
     for key in ("metric_interpretation", "key_insights", "problems", "content_guidance", "publishing_guidance", "next_actions", "data_quality_notes"):
         analysis[key] = normalize_text_list(analysis.get(key))
+    try:
+        analysis["metric_data_quality"] = review_metric_data_quality(analysis)
+    except MetricRegistryError as exc:
+        raise ValueError(f"metric_data_quality 必须为 complete、partial 或 screenshot_only: {exc}") from exc
     if not analysis["content_guidance"]:
         raise ValueError("数据复盘必须输出 content_guidance 内容指导")
     if not analysis["publishing_guidance"]:
@@ -498,6 +525,7 @@ def validate_data_review_analysis(payload: dict[str, Any], context: dict[str, An
                 raise ValueError("plan_comparison 每项必须包含 evidence")
             if not str(item.get("next_step") or "").strip():
                 raise ValueError("plan_comparison 每项必须包含 next_step")
+    _validate_validation_target_coverage(analysis.get("plan_comparison") or [], context or {})
     return analysis
 
 
@@ -509,6 +537,56 @@ DATA_REVIEW_VALIDATION_CONTRACT = register_llm_validation_contract(
         validator=lambda payload, context: validate_data_review_analysis(payload, dict(context)),
     )
 )
+
+
+def _creation_validation_targets(creation_plan: dict[str, Any] | None) -> dict[str, list[str]]:
+    if not isinstance(creation_plan, dict) or creation_plan.get("status") != "loaded":
+        return {}
+    plan = creation_plan.get("plan") if isinstance(creation_plan.get("plan"), dict) else {}
+    raw_targets = plan.get("validation_targets") if isinstance(plan, dict) else {}
+    if not isinstance(raw_targets, dict):
+        return {}
+    targets: dict[str, list[str]] = {}
+    for raw_window, raw_values in raw_targets.items():
+        window = _canonical_review_window(raw_window)
+        if not window:
+            continue
+        values = raw_values if isinstance(raw_values, list) else [raw_values]
+        cleaned = [str(value).strip() for value in values if str(value or "").strip()]
+        if cleaned:
+            targets[window] = list(dict.fromkeys(cleaned))
+    return targets
+
+
+def _canonical_review_window(value: Any) -> str:
+    text = re.sub(r"[\s_-]+", "", str(value or "")).casefold()
+    return REVIEW_WINDOW_ALIASES.get(text, "")
+
+
+def _validation_target_reference(window: str, metric: str) -> str:
+    return f"{window}:{metric}"
+
+
+def _validate_validation_target_coverage(plan_comparison: list[dict[str, Any]], context: dict[str, Any]) -> None:
+    targets = context.get("validation_targets") if isinstance(context.get("validation_targets"), dict) else {}
+    review_window = _canonical_review_window(context.get("review_window"))
+    if not targets or not review_window:
+        return
+    required_metrics = targets.get(review_window) if isinstance(targets.get(review_window), list) else []
+    if not required_metrics:
+        return
+    recorded = {
+        str(item.get("validation_target") or "").strip()
+        for item in plan_comparison
+        if isinstance(item, dict)
+    }
+    missing = [
+        _validation_target_reference(review_window, metric)
+        for metric in required_metrics
+        if _validation_target_reference(review_window, metric) not in recorded
+    ]
+    if missing:
+        raise ValueError("plan_comparison 缺少本次验证指标对照: " + ", ".join(missing))
 
 
 def normalize_text_list(value: Any) -> list[str]:
@@ -760,6 +838,14 @@ def build_data_quality_json(analysis: dict[str, Any]) -> dict[str, Any]:
     return quality
 
 
+def review_metric_data_quality(analysis: dict[str, Any]) -> str:
+    explicit = analysis.get("metric_data_quality")
+    if explicit not in (None, "", []):
+        return normalize_metric_data_quality(explicit, default="screenshot_only")
+    # This workflow only consumes creator-supplied screenshots, never a full export.
+    return "screenshot_only"
+
+
 def _required_text(value: Any, default: str) -> str:
     text = str(value or "").strip()
     return text or default
@@ -788,6 +874,7 @@ def write_data_review_model_v2(
     creation_run_id = _verified_creation_run_id(tenant_id, source_record_id or request.creation_record_id)
     post_id = f"post_{creation_run_id}" if creation_run_id else make_timestamp_id("post_review", token_bytes=2)
     review_node = str(analysis.get("data_window") or request.data_window or "unknown").strip() or "unknown"
+    metric_data_quality = review_metric_data_quality(analysis)
     vault = MediaVault(tenant_id=tenant_id)
     review_artifacts = vault.write_post_review(
         post_id,
@@ -798,6 +885,7 @@ def write_data_review_model_v2(
             "atomic_facts": analysis.get("atomic_facts") or [],
             "trend_curves": analysis.get("trend_curves") or {},
             "data_quality": build_data_quality_json(analysis),
+            "metric_data_quality": metric_data_quality,
             "screenshots": screenshots,
             "reviewed_at": reviewed_at,
         },
@@ -832,7 +920,13 @@ def write_data_review_model_v2(
         session_tenant_id=tenant_id,
     )
     metric_writes: list[dict[str, Any]] = []
-    for metric in _metric_snapshot_payloads(post_id, review_node, analysis, review_artifact_uri):
+    for metric in _metric_snapshot_payloads(
+        post_id,
+        review_node,
+        analysis,
+        review_artifact_uri,
+        data_quality=metric_data_quality,
+    ):
         metric_writes.append(
             upsert_entity_record(
                 "MetricSnapshot",
@@ -862,6 +956,8 @@ def write_data_review_model_v2(
         "post_review_record_id": post_write.get("record_id", ""),
         "metric_snapshot_count": len(metric_writes),
         "metric_snapshot_record_ids": [item.get("record_id", "") for item in metric_writes],
+        "metric_snapshot_data_quality": metric_data_quality,
+        "metric_snapshot_data_quality_label": metric_data_quality_label(metric_data_quality),
         "material_feedback_count": len(material_feedback_writes),
         "material_feedback_record_ids": [item.get("record_id", "") for item in material_feedback_writes],
         "business_delivery_count": len(business_delivery_writes),
@@ -891,7 +987,7 @@ def _write_material_usage_feedback(
         return []
     summary = _material_feedback_summary(
         review_node=review_node,
-        performance_level=str(analysis.get("performance_level") or "").strip(),
+        performance_level=normalize_performance_rating(analysis.get("performance_level")),
         conclusion=conclusion,
         review_artifact_uri=review_artifact_uri,
     )
@@ -1059,8 +1155,19 @@ def _business_delivery_payload(
     )
 
 
-def _metric_snapshot_payloads(post_id: str, review_node: str, analysis: dict[str, Any], evidence_uri: str) -> list[dict[str, Any]]:
+def _metric_snapshot_payloads(
+    post_id: str,
+    review_node: str,
+    analysis: dict[str, Any],
+    evidence_uri: str,
+    *,
+    data_quality: str | None = None,
+) -> list[dict[str, Any]]:
     payloads: list[dict[str, Any]] = []
+    canonical_data_quality = normalize_metric_data_quality(
+        data_quality or review_metric_data_quality(analysis),
+        default="screenshot_only",
+    )
     for index, item in enumerate(analysis.get("priority_metrics") or [], 1):
         if not isinstance(item, dict):
             continue
@@ -1080,7 +1187,7 @@ def _metric_snapshot_payloads(post_id: str, review_node: str, analysis: dict[str
                 metric_value=numeric,
                 unit=unit,
                 evidence_uri=evidence_uri,
-                data_quality="screenshot_only",
+                data_quality=canonical_data_quality,
             )
         )
     return payloads
@@ -1533,11 +1640,15 @@ def format_data_review_reply(payload: dict[str, Any]) -> str:
         "【数据复盘】已完成" if payload.get("ok") else "【数据复盘】已部分完成",
         f"结论：{analysis.get('conclusion') or ''}",
         f"复盘文档：{payload['doc_link']}" if payload.get("doc_link") else "",
-        f"表现评级：{analysis.get('performance_level') or '未评级'}",
+        f"表现评级：{normalize_performance_rating(analysis.get('performance_level'))}",
         f"平台：{analysis.get('platform') or '未识别'}",
         f"账号：{analysis.get('account') or '未填写'}",
     ]
     creation_plan = payload.get("creation_plan") if isinstance(payload.get("creation_plan"), dict) else {}
+    model_result = payload.get("media_model_v2") if isinstance(payload.get("media_model_v2"), dict) else {}
+    quality_label = str(model_result.get("metric_snapshot_data_quality_label") or "").strip()
+    if quality_label:
+        lines.append(f"数据来源：{quality_label}")
     if creation_plan.get("status") == "loaded":
         lines.append("已按创作计划完成对照复盘")
     elif creation_plan.get("creation_record_id"):
@@ -1607,6 +1718,8 @@ def generate_validated_review_json(
     max_retries: int = 2,
     *,
     creation_plan_loaded: bool = False,
+    validation_targets: dict[str, list[str]] | None = None,
+    review_window: str = "",
 ) -> dict[str, Any]:
     return common_generate_json_from_parts(
         parts,
@@ -1614,7 +1727,11 @@ def generate_validated_review_json(
         max_retries=max_retries,
         error_prefix="数据复盘 LLM 输出 JSON 校验失败",
         validation_contract=DATA_REVIEW_VALIDATION_CONTRACT,
-        validation_context={"creation_plan_loaded": creation_plan_loaded},
+        validation_context={
+            "creation_plan_loaded": creation_plan_loaded,
+            "validation_targets": validation_targets or {},
+            "review_window": review_window,
+        },
     )
 
 
