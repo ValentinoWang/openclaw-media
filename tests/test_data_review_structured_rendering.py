@@ -62,3 +62,16 @@ def test_plain_string_guidance_remains_unchanged():
     assert analysis["content_guidance"] == guidance
     assert analysis["publishing_guidance"] == guidance
     assert analysis["next_actions"] == guidance
+
+
+def test_review_memory_text_retains_publish_and_creation_links():
+    request = DataReviewRequest(
+        platform="抖音",
+        account="小王",
+        publish_url="https://example.com/post/1",
+        creation_record_id="run_review_loop",
+    )
+    memory_text = _review_memory_text(request, _analysis_with_guidance(["重剪前三秒"]))
+
+    assert "发布链接=https://example.com/post/1" in memory_text
+    assert "创作记录ID=run_review_loop" in memory_text

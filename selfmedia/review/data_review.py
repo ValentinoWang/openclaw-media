@@ -32,6 +32,7 @@ from common.social_runtime import (
 )
 from selfmedia.context import record_review_memory
 from selfmedia.context.media_context import build_media_context_for_request, merge_conversation_context
+from selfmedia.creation.media_model_v2_writeback import load_material_usage_feedback_payloads
 from integrations.feishu.media_writer import upsert_entity_record
 from media_model.payloads import build_business_opportunity_payload, build_metric_snapshot_payload
 from media_vault.vault import MediaVault, make_timestamp_id
@@ -174,7 +175,7 @@ def handle_data_review_command(
 
     guide_text = read_feishu_document_text(guide_url or DEFAULT_GUIDE_URL)
     creation_plan = resolve_creation_plan_for_review(tenant_id, request)
-    resolved_creation_record_id = str(creation_plan.get("creation_record_id") or "").strip()
+    resolved_creation_record_id = _loaded_creation_run_id(creation_plan)
     if resolved_creation_record_id and resolved_creation_record_id != request.creation_record_id:
         request = replace(request, creation_record_id=resolved_creation_record_id)
     review_context = merge_conversation_context(
@@ -223,7 +224,7 @@ def handle_data_review_command(
             screenshots=attachments,
             reviewed_at=reviewed_at,
             doc_link=doc_link,
-            source_record_id=str(creation_plan.get("creation_record_id") or ""),
+            source_record_id=resolved_creation_record_id,
         )
         record_id = str(media_model_v2_result.get("post_id") or "")
 
@@ -385,6 +386,12 @@ def resolve_creation_plan_for_review(tenant_id: str, request: DataReviewRequest)
             "reason": "multiple_creation_runs_match_review",
         }
     return {"status": "not_requested", "creation_record_id": ""}
+
+
+def _loaded_creation_run_id(creation_plan: dict[str, Any]) -> str:
+    if creation_plan.get("status") != "loaded":
+        return ""
+    return str(creation_plan.get("creation_record_id") or "").strip()
 
 
 def _matching_creation_run_ids(tenant_id: str, request: DataReviewRequest) -> list[str]:
@@ -1028,7 +1035,8 @@ def write_data_review_model_v2(
     metric_snapshot_url = os.getenv("MEDIA_OS_METRIC_SNAPSHOT_URL", "").strip()
     if not post_reviews_url or not metric_snapshot_url:
         raise RuntimeError("missing MEDIA_OS_POST_REVIEWS_URL or MEDIA_OS_METRIC_SNAPSHOT_URL")
-    post_id = f"post_{source_record_id}" if source_record_id else make_timestamp_id("post_review", token_bytes=2)
+    creation_run_id = _verified_creation_run_id(tenant_id, source_record_id or request.creation_record_id)
+    post_id = f"post_{creation_run_id}" if creation_run_id else make_timestamp_id("post_review", token_bytes=2)
     review_node = str(analysis.get("data_window") or request.data_window or "unknown").strip() or "unknown"
     vault = MediaVault(tenant_id=tenant_id)
     review_artifacts = vault.write_post_review(
@@ -1049,7 +1057,7 @@ def write_data_review_model_v2(
                 "analysis": analysis,
                 "screenshots": screenshots,
                 "doc_link": doc_link,
-                "record_id": source_record_id,
+                "record_id": creation_run_id,
                 "reviewed_at": reviewed_at,
             }
         ),
@@ -1057,7 +1065,7 @@ def write_data_review_model_v2(
     review_artifact_uri = review_artifacts["metrics"]["uri"]
     post_payload = {
         "post_id": post_id,
-        "creation_run_id": source_record_id or request.creation_record_id,
+        "creation_run_id": creation_run_id,
         "platform": analysis.get("platform") or request.platform or "unknown",
         "published_url": request.publish_url,
         "review_node": review_node,
@@ -1084,9 +1092,16 @@ def write_data_review_model_v2(
                 session_tenant_id=tenant_id,
             )
         )
+    material_feedback_writes = _write_material_usage_feedback(
+        tenant_id=tenant_id,
+        creation_run_id=creation_run_id,
+        review_node=review_node,
+        analysis=analysis,
+        review_artifact_uri=review_artifact_uri,
+    )
     business_delivery_writes = _write_selected_business_deliveries(
         tenant_id=tenant_id,
-        creation_run_id=source_record_id or request.creation_record_id,
+        creation_run_id=creation_run_id,
         review_artifact_uri=review_artifact_uri,
         published_url=request.publish_url,
         delivered_at=reviewed_at,
@@ -1097,9 +1112,70 @@ def write_data_review_model_v2(
         "post_review_record_id": post_write.get("record_id", ""),
         "metric_snapshot_count": len(metric_writes),
         "metric_snapshot_record_ids": [item.get("record_id", "") for item in metric_writes],
+        "material_feedback_count": len(material_feedback_writes),
+        "material_feedback_record_ids": [item.get("record_id", "") for item in material_feedback_writes],
         "business_delivery_count": len(business_delivery_writes),
         "business_delivery_record_ids": [item.get("record_id", "") for item in business_delivery_writes],
     }
+
+
+def _verified_creation_run_id(tenant_id: str, source_record_id: str) -> str:
+    source_id = str(source_record_id or "").strip()
+    if not source_id:
+        return ""
+    return _loaded_creation_run_id(load_creation_plan(tenant_id, source_id))
+
+
+def _write_material_usage_feedback(
+    *,
+    tenant_id: str,
+    creation_run_id: str,
+    review_node: str,
+    analysis: dict[str, Any],
+    review_artifact_uri: str,
+) -> list[dict[str, Any]]:
+    if not creation_run_id or not str(review_artifact_uri).startswith("media://"):
+        return []
+    conclusion = str(analysis.get("conclusion") or "").strip()
+    if not conclusion:
+        return []
+    summary = _material_feedback_summary(
+        review_node=review_node,
+        performance_level=str(analysis.get("performance_level") or "").strip(),
+        conclusion=conclusion,
+        review_artifact_uri=review_artifact_uri,
+    )
+    payloads = load_material_usage_feedback_payloads(
+        tenant_id=tenant_id,
+        run_id=creation_run_id,
+        performance_feedback_summary=summary,
+    )
+    if not payloads:
+        return []
+    table_url = os.getenv("MEDIA_OS_MATERIAL_USAGE_URL", "").strip()
+    if not table_url:
+        raise RuntimeError("missing MEDIA_OS_MATERIAL_USAGE_URL for material feedback writeback")
+    return [
+        upsert_entity_record(
+            "MaterialUsage",
+            table_url,
+            payload,
+            key_field="usage_id",
+            session_tenant_id=tenant_id,
+        )
+        for payload in payloads
+    ]
+
+
+def _material_feedback_summary(
+    *,
+    review_node: str,
+    performance_level: str,
+    conclusion: str,
+    review_artifact_uri: str,
+) -> str:
+    rating = performance_level or "未评级"
+    return f"复盘节点={review_node}；表现评级={rating}；结论={conclusion}；复盘证据={review_artifact_uri}"
 
 
 def _write_selected_business_deliveries(
@@ -1240,12 +1316,10 @@ def _metric_snapshot_payloads(post_id: str, review_node: str, analysis: dict[str
             continue
         raw_name = str(item.get("metric") or item.get("name") or "").strip()
         metric_key = _metric_key(raw_name)
-        if not metric_key:
+        measurement = _metric_measurement(metric_key, item.get("value"))
+        if measurement is None:
             continue
-        numeric = _metric_number(item.get("value"))
-        if numeric is None:
-            continue
-        unit = "%" if "%" in str(item.get("value") or "") else "次"
+        numeric, unit = measurement
         payloads.append(
             build_metric_snapshot_payload(
                 snapshot_id=f"{post_id}_{review_node}_{metric_key}_{index}",
@@ -1264,6 +1338,22 @@ def _metric_snapshot_payloads(post_id: str, review_node: str, analysis: dict[str
 
 def _metric_key(raw_name: str) -> str:
     text = raw_name.lower()
+    if ("2s" in text and "跳出" in raw_name) or ("2秒" in raw_name and "跳出" in raw_name):
+        return "bounce_2s_rate"
+    if ("5s" in text and "完播" in raw_name) or ("5秒" in raw_name and "完播" in raw_name):
+        return "completion_5s_rate"
+    if "完播" in raw_name or "completion" in text:
+        return "completion_rate"
+    if "跳出" in raw_name or "bounce" in text:
+        return "bounce_rate"
+    if "互动率" in raw_name or "engagement rate" in text:
+        return "interaction_rate"
+    if "点击率" in raw_name or "ctr" in text or "click through" in text:
+        return "ctr"
+    if "曝光到观看转化" in raw_name or "conversion rate" in text:
+        return "view_conversion_rate"
+    if "平均播放时长" in raw_name or "平均观看时长" in raw_name or "average watch" in text:
+        return "avg_watch_duration"
     if any(word in raw_name for word in ("曝光", "展现")) or "impression" in text:
         return "impressions"
     if any(word in raw_name for word in ("播放", "观看")) or "view" in text:
@@ -1280,7 +1370,23 @@ def _metric_key(raw_name: str) -> str:
         return "shares"
     if "吸粉" in raw_name or "涨粉" in raw_name or "follow" in text:
         return "follows"
-    return ""
+    return "custom"
+
+
+def _metric_measurement(metric_key: str, value: Any) -> tuple[float, str] | None:
+    numeric = _metric_number(value)
+    if numeric is None:
+        return None
+    text = str(value or "").strip().lower().replace("％", "%")
+    if metric_key.endswith("_rate") or metric_key in {"ctr", "view_conversion_rate"}:
+        if "%" in text or numeric > 1:
+            return numeric / 100, "ratio"
+        return numeric, "ratio"
+    if metric_key == "avg_watch_duration" or any(token in text for token in ("秒", "second", " sec", "s")):
+        if "分钟" in text or "minute" in text or " min" in text:
+            return numeric * 60, "seconds"
+        return numeric, "seconds"
+    return numeric, "count"
 
 
 def _metric_number(value: Any) -> float | None:
@@ -1640,6 +1746,8 @@ def _review_memory_text(request: DataReviewRequest, analysis: dict[str, Any]) ->
             f"平台={analysis.get('platform') or request.platform}" if analysis.get("platform") or request.platform else "",
             f"账号={analysis.get('account') or request.account}" if analysis.get("account") or request.account else "",
             f"主题={analysis.get('topic') or analysis.get('title') or request.topic or request.title}" if analysis.get("topic") or analysis.get("title") or request.topic or request.title else "",
+            f"发布链接={request.publish_url}" if request.publish_url else "",
+            f"创作记录ID={request.creation_record_id}" if request.creation_record_id else "",
             " ".join(metric_bits),
             f"关键指标={'；'.join(priority_bits)}" if priority_bits else "",
             f"结论={analysis.get('conclusion') or ''}",
