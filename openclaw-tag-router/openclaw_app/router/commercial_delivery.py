@@ -161,23 +161,14 @@ class CommercialDeliveryMixin:
                 delivery_id=delivery_id,
                 document_id=document_id,
             )
-            record_id = str(record_result.get("record_id") or "")
             reminder_result = self._commercial_delivery_create_deadline_reminders(
                 message=message,
                 payload=payload,
                 delivery_id=delivery_id,
             )
-            reply = "\n".join(
-                [
-                    "已生成商单交付初稿",
-                    f"名称：{doc_name}",
-                    f"作品初稿链接：{doc_result.get('doc')}",
-                    f"多维表记录：{record_result.get('record_url') or record_id}",
-                    "权限：飞书云文档已设置为互联网所有人可编辑",
-                    f"脚本类型：{payload.get('script_type')}",
-                    f"写入字段：{record_result.get('written_fields')}",
-                    *(f"提醒提示：{item}" for item in reminder_result["warnings"]),
-                ]
+            reply = self._commercial_delivery_success_reply(
+                str(doc_result.get("doc") or ""),
+                reminder_result["warnings"],
             )
             return TaskResult(
                 ok=True,
@@ -240,8 +231,8 @@ class CommercialDeliveryMixin:
                     local_path="",
                 )
                 created.append(reminder if isinstance(reminder, dict) else {"ref_id": f"{delivery_id}-{suffix}"})
-            except Exception as exc:
-                warnings.append(f"{field_name}提醒未建立：{exc}")
+            except Exception:
+                warnings.append(f"{field_name}提醒未建立；请手动【日程】确认。")
         return {"created": created, "warnings": warnings}
 
     def _commercial_delivery_parse_deadline(self, value: str, created_at: datetime) -> datetime | None:
@@ -937,12 +928,21 @@ class CommercialDeliveryMixin:
         return urllib.parse.urlunparse(parsed._replace(query=urllib.parse.urlencode(query, doseq=True)))
 
     @staticmethod
-    def _commercial_delivery_failure_reply(code: str, detail: str) -> str:
+    def _commercial_delivery_success_reply(doc_url: str, warnings: list[str]) -> str:
         return "\n".join(
             [
-                "⚠️ OpenClaw 执行失败",
-                f"错误类型：{code}",
-                f"详情：{detail}",
-                "处理建议：检查商单交付多维表链接、Feishu 应用是否加入目标知识库/多维表，以及文档公开编辑权限接口是否可用。",
+                "商单交付初稿已生成。",
+                f"初稿链接：{doc_url}",
+                "下一步：请打开初稿核对内容；确认后提交给 PR 审核。",
+                *warnings,
+            ]
+        )
+
+    @staticmethod
+    def _commercial_delivery_failure_reply(_code: str, _detail: str) -> str:
+        return "\n".join(
+            [
+                "商单交付未完成。",
+                "请稍后重试原始需求；若仍无法完成，请联系管理员检查交付配置与文档权限。",
             ]
         )
