@@ -2574,11 +2574,6 @@ def copy_business_account_v2_fields(fields: dict[str, Any], source: dict[str, An
         "current_video_quote_amount": "视频报价",
     }
     for src, dst in mapping.items():
-        # A historical quote is evidence, not a gap to be refreshed from a
-        # newly parsed brand message.  Account identity fields remain
-        # canonicalized from the matched authority record.
-        if dst in {"图文报价", "视频报价"} and _field_text(fields, dst):
-            continue
         value = _field_text(source, src)
         if value and _field_text(fields, dst) != value:
             fields[dst] = value

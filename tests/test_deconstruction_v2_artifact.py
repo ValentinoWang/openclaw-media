@@ -140,6 +140,8 @@ class DeconstructionV2ArtifactTests(unittest.TestCase):
                 "insight_id": "insight_001",
                 "evidence_quote": "所有自媒体博主都关心拉片。",
                 "evidence_asset_ids": ["frame_001"],
+                "evidence_provenance": "external_content_untrusted",
+                "comment_data_boundary": "untrusted_external_data",
                 "mechanism_tag": "被理解感",
                 "candidate_tags": [],
                 "target_emotion": "复杂工作被拆简单后的释然",

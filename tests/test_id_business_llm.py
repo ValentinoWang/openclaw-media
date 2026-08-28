@@ -325,6 +325,27 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
         self.assertEqual(remaining, [])
         self.assertNotIn("需反问博主字段", fields)
 
+    def test_history_quote_overrides_untrusted_inbound_quote(self) -> None:
+        fields = {
+            "平台": "小红书",
+            "作者ID": "小王",
+            "图文报价": "1",
+            "视频报价": "2",
+        }
+        copied = MODULE.copy_business_account_v2_fields(
+            fields,
+            {
+                "platform": "小红书",
+                "author_id": "小王",
+                "current_image_quote_amount": "1499",
+                "current_video_quote_amount": "2499",
+            },
+        )
+
+        self.assertEqual(fields["图文报价"], "1499")
+        self.assertEqual(fields["视频报价"], "2499")
+        self.assertEqual(copied, ["图文报价", "视频报价"])
+
     def test_history_lookup_canonicalizes_alias_to_creator_author_id(self) -> None:
         fields = {"作者ID": "小王", "平台": "小红书", "待补充字段": "视频报价"}
         profile_record = {

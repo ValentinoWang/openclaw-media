@@ -6,6 +6,7 @@ from typing import Any
 
 from selfmedia.deconstruct.viral_content.src.human_insight_cards import (
     HumanInsightCardError,
+    TRUSTED_CARD_EVIDENCE_PROVENANCE,
     card_library_paths,
     validate_card_markdown,
 )
@@ -50,6 +51,11 @@ def _card_to_record(path: Path, *, card_type: str) -> CanonicalMediaRecord | Non
     except HumanInsightCardError:
         return None
     frontmatter = _frontmatter(text)
+    if (
+        frontmatter.get("evidence_provenance") != TRUSTED_CARD_EVIDENCE_PROVENANCE
+        or not frontmatter.get("operator_verification_id")
+    ):
+        return None
     status = frontmatter.get("status") or _heading_value(text, "当前状态") or "假设"
     tag = (
         frontmatter.get("mechanism_tag")
@@ -79,6 +85,8 @@ def _card_to_record(path: Path, *, card_type: str) -> CanonicalMediaRecord | Non
             "insight_card_type": card_type,
             "insight_card_status": status,
             "evidence_boundary": "public_content_only",
+            "evidence_provenance": frontmatter["evidence_provenance"],
+            "operator_verification_id": frontmatter["operator_verification_id"],
             "risk_boundary": _heading_value(text, "平台风控风险"),
         },
     )
