@@ -34,8 +34,8 @@ from selfmedia.growth.knowledge_evidence_contract import (
 from selfmedia.growth.llm_runner import GrowthLLMJsonRunner
 
 
-BACKFILL_SCRIPT = Path(__file__).resolve().parents[2] / "scripts/qa/check_media_growth_visibility_backfill.py"
-DISPLAY_BACKFILL_SCRIPT = Path(__file__).resolve().parents[2] / "scripts/qa/check_media_growth_display_backfill.py"
+BACKFILL_SCRIPT = Path(__file__).resolve().parents[1] / "scripts/qa/check_media_growth_visibility_backfill.py"
+DISPLAY_BACKFILL_SCRIPT = Path(__file__).resolve().parents[1] / "scripts/qa/check_media_growth_display_backfill.py"
 
 
 def _load_optional_qa_backfill(path: Path, module_name: str):
@@ -1329,7 +1329,6 @@ class MediaGrowthV2Tests(unittest.TestCase):
         with self.assertRaises(ValueError):
             assert_dashboard_eligible(asset)
 
-    @unittest.skipUnless(backfill_module is not None, "requires external visibility-backfill QA script")
     def test_visibility_backfill_uses_vault_root_and_updates_sidecar_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
@@ -1370,7 +1369,6 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(manifest["content_hash"], f"sha256:{hashlib.sha256(result_bytes).hexdigest()}")
         self.assertEqual(manifest["size_bytes"], len(result_bytes))
 
-    @unittest.skipUnless(backfill_module is not None, "requires external visibility-backfill QA script")
     def test_visibility_backfill_skips_reviewed_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
@@ -1403,7 +1401,6 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(applied["updated"], 0)
         self.assertEqual(updated["quality_status"], "cleaned")
 
-    @unittest.skipUnless(display_backfill_module is not None, "requires external display-backfill QA script")
     def test_display_backfill_strips_urls_and_updates_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
@@ -1447,7 +1444,6 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(manifest["content_hash"], f"sha256:{hashlib.sha256(result_bytes).hexdigest()}")
         self.assertEqual(manifest["size_bytes"], len(result_bytes))
 
-    @unittest.skipUnless(display_backfill_module is not None, "requires external display-backfill QA script")
     def test_display_backfill_skips_non_growth_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
