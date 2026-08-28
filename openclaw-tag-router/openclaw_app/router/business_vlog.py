@@ -68,6 +68,15 @@ class BusinessVlogMixin:
                 local_path=str(parsed.get("local_path") or ""),
                 extra={"id_business": parsed},
             )
+        if str(parsed.get("status") or "") == "id_business_external_retry_pending":
+            return TaskResult(
+                ok=False,
+                status="id_business_external_retry_pending",
+                reply="商务账号与商机尚未完成外部读回，已保留可重试记录。请在外部配置恢复后重试原始【商务>ID】消息。",
+                task_id="",
+                local_path=str(parsed.get("local_path") or parsed.get("commercial_loop_path") or ""),
+                extra={"id_business": parsed},
+            )
         fields = parsed.get("fields") if isinstance(parsed.get("fields"), dict) else {}
         feishu = parsed.get("feishu") if isinstance(parsed.get("feishu"), dict) else {}
         capture = parsed.get("capture") if isinstance(parsed.get("capture"), dict) else {}

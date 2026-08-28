@@ -19,12 +19,12 @@ class CommercialDeliveryReplyTest(unittest.TestCase):
 
     def test_failure_reply_is_actionable_and_hides_raw_failure_details(self) -> None:
         reply = CommercialDeliveryMixin._commercial_delivery_failure_reply(
-            "commercial_delivery_failed",
-            "HTTP 403 permission readback failed",
+            "commercial_delivery_abc",
+            retry_saved=True,
         )
 
         self.assertIn("商单交付未完成", reply)
-        self.assertIn("请稍后重试原始需求", reply)
+        self.assertIn("交付编号：commercial_delivery_abc", reply)
+        self.assertIn("已保留可重试交付记录", reply)
         self.assertNotIn("commercial_delivery_failed", reply)
-        self.assertNotIn("HTTP 403", reply)
         self.assertNotIn("permission readback failed", reply)

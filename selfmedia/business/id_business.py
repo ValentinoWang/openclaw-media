@@ -54,6 +54,8 @@ from media_model.contract import MediaModelContract
 from media_model.payloads import build_business_account_payload, build_business_opportunity_payload
 from media_vault.vault import MediaVault
 
+from selfmedia.business.commercial_loop import CommercialLoopLedger
+
 
 BUSINESS_REPLY_DEFAULTS_SCHEMA_VERSION = "id_business_reply_defaults_v1"
 BUSINESS_REPLY_DEFAULTS_ENV = "ID_BUSINESS_REPLY_DEFAULTS_PATH"
@@ -92,6 +94,10 @@ BUSINESS_TRIGGER_RE = re.compile(
 )
 LOCAL_TZ = timezone(timedelta(hours=8))
 BUSINESS_REPLY_MONTH_RE = re.compile(r"^(?P<year>20\d{2})-(?P<month>0[1-9]|1[0-2])$")
+
+
+class BusinessExternalRetryRequired(RuntimeError):
+    """The local business state is valid but its external projection is unverified."""
 
 
 LEGACY_FIELD_SPECS: dict[str, int] = {
@@ -1848,6 +1854,44 @@ def business_opportunity_id_from_fields(fields: dict[str, Any], business_account
     return f"business_opportunity_{digest}"
 
 
+def commercial_loop_ledger_for_fields(
+    fields: dict[str, Any],
+    details: dict[str, Any],
+    *,
+    tenant_id: str,
+) -> CommercialLoopLedger:
+    history_lookup = details.get("history_lookup") if isinstance(details.get("history_lookup"), dict) else {}
+    account_lookup = history_lookup.get("business_accounts") if isinstance(history_lookup.get("business_accounts"), dict) else {}
+    opportunity_lookup = history_lookup.get("business_opportunities") if isinstance(history_lookup.get("business_opportunities"), dict) else {}
+    business_account_id = str(account_lookup.get("business_account_id") or "").strip() or business_account_id_from_fields(fields)
+    opportunity_id = (
+        str(opportunity_lookup.get("opportunity_id") or "").strip()
+        or business_opportunity_id_from_fields(fields, business_account_id)
+    )
+    return CommercialLoopLedger(tenant_id=tenant_id, loop_id=opportunity_id)
+
+
+def quote_refresh_plan(fields: dict[str, Any], *, today=None) -> dict[str, Any]:
+    current_day = today or local_today()
+    due, missing, month_key = monthly_quote_reminder_due(fields, today=current_day)
+    next_month = (current_day.replace(day=28) + timedelta(days=4)).replace(day=1)
+    return {
+        "status": "pending_local_runner" if missing else "not_required",
+        "current_month": month_key,
+        "next_check_on": next_month.isoformat(),
+        "due_now": due,
+        "missing_fields": missing,
+        "manual_action": "补充本月报价后重试【商务>ID】" if missing else "",
+    }
+
+
+def external_retry_reason_code(exc: Exception) -> str:
+    message = str(exc)
+    if "missing MEDIA_OS_" in message:
+        return "external_configuration_missing"
+    return "external_write_or_readback_unverified"
+
+
 def write_business_model_v2(
     fields: dict[str, Any],
     details: dict[str, Any],
@@ -1857,10 +1901,6 @@ def write_business_model_v2(
 ) -> dict[str, Any]:
     account_url = table_url_from_args("")
     opportunity_url = opportunity_table_url()
-    if not account_url:
-        raise RuntimeError("missing MEDIA_OS_BUSINESS_ACCOUNTS_V2_URL")
-    if has_business_opportunity_context(fields) and not opportunity_url:
-        raise RuntimeError("missing MEDIA_OS_BUSINESS_OPPORTUNITIES_URL")
     history_lookup = details.get("history_lookup") if isinstance(details.get("history_lookup"), dict) else {}
     creator_lookup = history_lookup.get("creator_profiles") if isinstance(history_lookup.get("creator_profiles"), dict) else {}
     account_lookup = history_lookup.get("business_accounts") if isinstance(history_lookup.get("business_accounts"), dict) else {}
@@ -1902,6 +1942,12 @@ def write_business_model_v2(
         artifact_type="business_quote_snapshot",
     )
     quote_uri = str(quote_artifact.get("uri") or "")
+    commercial_loop = commercial_loop_ledger_for_fields(fields, details, tenant_id=tenant_id)
+    loop_state = commercial_loop.ensure_quote_snapshot(
+        business_account_id=business_account_id,
+        quote_snapshot_uri=quote_uri,
+        quote_refresh=quote_refresh_plan(fields),
+    )
     image_quote = parse_quote_amount(fields.get("图文报价") or fields.get("非报备图文/视频单品报价") or fields.get("报备视频、图文/单品报价"))
     video_quote = parse_quote_amount(fields.get("视频报价") or fields.get("非报备图文/视频单品报价") or fields.get("报备视频、图文/单品报价"))
     account_payload = build_business_account_payload(
@@ -1953,25 +1999,34 @@ def write_business_model_v2(
             "business_account": account_payload,
             "business_opportunity": opportunity_payload,
             "quote_snapshot_uri": quote_uri,
+            "commercial_loop_path": commercial_loop.artifact_path(),
+            "quote_refresh": loop_state.get("quote_refresh") or {},
         }
-    account_write = upsert_entity_record(
-        "BusinessAccount",
-        account_url,
-        account_payload,
-        key_field="business_account_id",
-        session_tenant_id=tenant_id,
-    )
-    opportunity_write = (
-        upsert_entity_record(
-            "BusinessOpportunity",
-            opportunity_url,
-            opportunity_payload,
-            key_field="opportunity_id",
+    if not account_url:
+        raise BusinessExternalRetryRequired("missing MEDIA_OS_BUSINESS_ACCOUNTS_V2_URL")
+    if opportunity_payload is not None and not opportunity_url:
+        raise BusinessExternalRetryRequired("missing MEDIA_OS_BUSINESS_OPPORTUNITIES_URL")
+    try:
+        account_write = upsert_entity_record(
+            "BusinessAccount",
+            account_url,
+            account_payload,
+            key_field="business_account_id",
             session_tenant_id=tenant_id,
         )
-        if opportunity_payload is not None
-        else None
-    )
+        opportunity_write = (
+            upsert_entity_record(
+                "BusinessOpportunity",
+                opportunity_url,
+                opportunity_payload,
+                key_field="opportunity_id",
+                session_tenant_id=tenant_id,
+            )
+            if opportunity_payload is not None
+            else None
+        )
+    except Exception as exc:
+        raise BusinessExternalRetryRequired("business external projection is unverified") from exc
     return {
         "mode": "write",
         "business_account_id": business_account_id,
@@ -1979,6 +2034,8 @@ def write_business_model_v2(
         "account_record_id": str(account_write.get("record_id") or ""),
         "opportunity_record_id": str((opportunity_write or {}).get("record_id") or ""),
         "quote_snapshot_uri": quote_uri,
+        "commercial_loop_path": commercial_loop.artifact_path(),
+        "quote_refresh": loop_state.get("quote_refresh") or {},
         "writes": [item for item in (account_write, opportunity_write) if item is not None],
     }
 
@@ -2670,7 +2727,7 @@ def ingest(args: argparse.Namespace) -> dict[str, Any]:
             creator_profiles_url=creator_profile_table_url(),
             opportunity_url=opportunity_table_url(),
         )
-    except Exception as exc:
+    except BusinessExternalRetryRequired as exc:
         history_lookup = {"ok": False, "error": str(exc)[:500]}
     details = parsed.get("details") if isinstance(parsed.get("details"), dict) else {}
     details["history_lookup"] = history_lookup
@@ -2746,8 +2803,6 @@ def ingest(args: argparse.Namespace) -> dict[str, Any]:
     summary = account_data_summary(fields)
     if summary:
         fields["账号数据摘要"] = summary
-    if args.require_feishu and not args.dry_run and not table_url:
-        raise RuntimeError("缺少商务账号多维表格链接：设置 MEDIA_OS_BUSINESS_ACCOUNTS_V2_URL")
     confirmation_notify: dict[str, Any] = {}
     if args.notify_confirmation and fields.get("需反问博主字段") and fields.get("反问博主话术"):
         fields["反问博主时间"] = business_now_iso()
@@ -2770,12 +2825,38 @@ def ingest(args: argparse.Namespace) -> dict[str, Any]:
         "ingested_at": business_now_iso(),
     }
 
-    feishu = write_business_model_v2(
-        fields,
-        details,
-        tenant_id=tenant_id,
-        dry_run=args.dry_run,
-    )
+    try:
+        feishu = write_business_model_v2(
+            fields,
+            details,
+            tenant_id=tenant_id,
+            dry_run=args.dry_run,
+        )
+    except BusinessExternalRetryRequired as exc:
+        commercial_loop = commercial_loop_ledger_for_fields(fields, details, tenant_id=tenant_id)
+        loop_state = commercial_loop.mark_external_retry(reason_code=external_retry_reason_code(exc))
+        local_path = save_local(
+            {
+                "status": "id_business_external_retry_pending",
+                "fields": fields,
+                "details": details,
+                "commercial_loop_path": commercial_loop.artifact_path(),
+                "retry": loop_state.get("retry") or {},
+                "account_name": display_creator_name(fields),
+            },
+            tenant_id=tenant_id,
+        )
+        return {
+            "ok": False,
+            "status": "id_business_external_retry_pending",
+            "reason": "商务账号和商机尚未完成外部读回，已保留可重试记录。",
+            "fields": fields,
+            "details": details,
+            "feishu": {"ok": False, "skipped": False, "status": "retry_pending"},
+            "commercial_loop_path": commercial_loop.artifact_path(),
+            "local_path": local_path,
+            "capture": capture,
+        }
     local_path = save_local(
         {"fields": fields, "details": details, "feishu": feishu, "capture": capture, "account_name": display_creator_name(fields)},
         tenant_id=tenant_id,

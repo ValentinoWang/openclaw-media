@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 
 from .tag_router_common import Message, TaskResult
 from media_vault import require_tenant_id
+from selfmedia.business.commercial_loop import CommercialLoopLedger
 
 
 COMMERCIAL_DELIVERY_URL_ENV = "MEDIA_OS_COMMERCIAL_DELIVERY_URL"
@@ -46,6 +47,13 @@ COMMERCIAL_DELIVERY_FIELD_SPECS: dict[str, int] = {
     "来源输入摘要": 1,
     "创建时间": 5,
     "运行ID": 1,
+    "关联商机ID": 1,
+    "关联创作记录ID": 1,
+    "发布链接": 15,
+    "发布状态": 3,
+    "验收状态": 3,
+    "复盘状态": 3,
+    "回款状态": 3,
     "租户ID": 1,
 }
 
@@ -55,6 +63,10 @@ COMMERCIAL_DELIVERY_SELECT_OPTIONS: dict[str, list[str]] = {
     "内容形式": ["图文", "视频", "图文+视频", "直播", "其他", "未知"],
     "脚本类型": ["图片脚本", "分镜脚本"],
     "状态": ["初稿待审", "需补充", "需返修", "待发布", "已发布", "写入失败"],
+    "发布状态": ["待人工发布", "发布待核验"],
+    "验收状态": ["待人工验收"],
+    "复盘状态": ["待人工复盘"],
+    "回款状态": ["待人工对账"],
 }
 
 COMMERCIAL_DELIVERY_PROMPT = """
@@ -124,6 +136,8 @@ COMMERCIAL_DELIVERY_PROMPT = """
 
 class CommercialDeliveryMixin:
     def handle_商单交付(self, message: Message) -> TaskResult:
+        delivery_id = ""
+        commercial_loop: CommercialLoopLedger | None = None
         try:
             payload = self._commercial_delivery_generate_payload(message)
             self._commercial_delivery_apply_input_defaults(payload)
@@ -138,24 +152,58 @@ class CommercialDeliveryMixin:
                 )
 
             doc_name = self._commercial_delivery_doc_name(message, payload)
+            delivery_id = self._commercial_delivery_id(message, doc_name)
+            commercial_loop = self._commercial_delivery_loop_ledger(message, delivery_id)
+            loop_state, replayed = commercial_loop.begin_delivery(
+                request_text=message.raw_text,
+                links=self._commercial_delivery_loop_links(message, payload),
+            )
+            if replayed:
+                document = commercial_loop.document()
+                return TaskResult(
+                    ok=True,
+                    status="commercial_delivery_created",
+                    reply=self._commercial_delivery_success_reply(document["document_url"], [], delivery_id=delivery_id),
+                    task_id=delivery_id,
+                    feishu_doc=document["document_url"],
+                    local_path=commercial_loop.artifact_path(),
+                    extra={"persisted": True, "replayed": True, "commercial_loop": loop_state},
+                )
+
+            document = commercial_loop.document()
             blocks = self._commercial_delivery_doc_blocks(payload)
-            doc_result = self._commercial_delivery_write_doc(doc_name, blocks)
-            document_id = str(doc_result.get("document_id") or "")
+            document_id = document["document_id"]
+            doc_url = document["document_url"]
+            doc_result: dict[str, str] = {
+                "document_id": document_id,
+                "doc": doc_url,
+            }
+            if not document_id:
+                doc_result = self._commercial_delivery_write_doc(doc_name, blocks)
+                document_id = str(doc_result.get("document_id") or "")
+                doc_url = str(doc_result.get("doc") or "")
+                if not document_id:
+                    raise RuntimeError("创建飞书云文档后未读到 document_id")
+                commercial_loop.record_document(document_id=document_id, document_url=doc_url)
             if not document_id:
                 raise RuntimeError("创建飞书云文档后未读到 document_id")
+            if not doc_url:
+                raise RuntimeError("创建飞书云文档后未读到文档链接")
             permission = self.feishu_service.set_docx_public_editable(document_id)
             if not self.feishu_service.document_has_native_table(document_id):
                 raise RuntimeError("飞书文档读回未发现原生表格 block_type=31")
 
-            delivery_id = self._commercial_delivery_id(message, doc_name)
-            record_result = self._commercial_delivery_write_record(
-                message=message,
-                payload=payload,
-                delivery_id=delivery_id,
-                doc_name=doc_name,
-                doc_url=str(doc_result.get("doc") or ""),
-                document_id=document_id,
-            )
+            record_result = commercial_loop.external_record()
+            if not str(record_result.get("record_id") or "").strip():
+                record_result = self._commercial_delivery_write_record(
+                    message=message,
+                    payload=payload,
+                    delivery_id=delivery_id,
+                    doc_name=doc_name,
+                    doc_url=doc_url,
+                    document_id=document_id,
+                )
+                commercial_loop.record_external_record(record_result)
             self._commercial_delivery_register_docx(
                 message=message,
                 delivery_id=delivery_id,
@@ -166,16 +214,23 @@ class CommercialDeliveryMixin:
                 payload=payload,
                 delivery_id=delivery_id,
             )
+            loop_state = commercial_loop.confirm_delivery(
+                doc_url=doc_url,
+                record=record_result,
+                review_links=self._commercial_delivery_loop_links(message, payload),
+            )
             reply = self._commercial_delivery_success_reply(
-                str(doc_result.get("doc") or ""),
+                doc_url,
                 reminder_result["warnings"],
+                delivery_id=delivery_id,
             )
             return TaskResult(
                 ok=True,
                 status="commercial_delivery_created",
                 reply=reply,
                 task_id=delivery_id,
-                feishu_doc=str(doc_result.get("doc") or ""),
+                feishu_doc=doc_url,
+                local_path=commercial_loop.artifact_path(),
                 extra={
                     "delivery_id": delivery_id,
                     "doc": doc_result,
@@ -184,16 +239,52 @@ class CommercialDeliveryMixin:
                     "deadline_reminders": reminder_result["created"],
                     "deadline_reminder_warnings": reminder_result["warnings"],
                     "persisted": True,
+                    "commercial_loop": loop_state,
                 },
             )
         except Exception as exc:
+            if commercial_loop is not None:
+                loop_state = commercial_loop.mark_external_retry(
+                    reason_code=self._commercial_delivery_external_reason_code(exc)
+                )
+                return TaskResult(
+                    ok=False,
+                    status="commercial_delivery_retry_pending",
+                    reply=self._commercial_delivery_failure_reply(delivery_id, retry_saved=True),
+                    task_id=delivery_id,
+                    local_path=commercial_loop.artifact_path(),
+                    extra={"persisted": True, "commercial_loop": loop_state},
+                )
             return TaskResult(
                 ok=False,
                 status="commercial_delivery_failed",
-                reply=self._commercial_delivery_failure_reply("commercial_delivery_failed", str(exc)),
+                reply=self._commercial_delivery_failure_reply("", retry_saved=False),
                 task_id="",
-                extra={"persisted": False, "error": str(exc)},
+                extra={"persisted": False},
             )
+
+    @staticmethod
+    def _commercial_delivery_loop_ledger(message: Message, delivery_id: str) -> CommercialLoopLedger:
+        return CommercialLoopLedger(
+            tenant_id=require_tenant_id((message.metadata or {}).get("tenant_id")),
+            loop_id=delivery_id,
+        )
+
+    def _commercial_delivery_loop_links(self, message: Message, payload: dict[str, Any]) -> dict[str, str]:
+        work_info = self._commercial_delivery_dict(payload.get("work_info"))
+        return {
+            "business_opportunity_id": self._commercial_delivery_labeled_line(message.body, ("商务机会ID", "商机ID")),
+            "creation_run_id": self._commercial_delivery_labeled_line(message.body, ("创作记录ID", "创作运行ID")),
+            "publish_url": self._commercial_delivery_labeled_line(message.body, ("发布链接", "作品链接")),
+            "platform": str(work_info.get("platform") or ""),
+        }
+
+    @staticmethod
+    def _commercial_delivery_external_reason_code(exc: Exception) -> str:
+        detail = str(exc)
+        if "缺少 MEDIA_OS_COMMERCIAL_DELIVERY_URL" in detail:
+            return "external_configuration_missing"
+        return "external_write_or_readback_unverified"
 
     def _commercial_delivery_create_deadline_reminders(
         self,
@@ -671,6 +762,8 @@ class CommercialDeliveryMixin:
     ) -> dict[str, Any]:
         work_info = self._commercial_delivery_dict(payload.get("work_info"))
         content = self._commercial_delivery_dict(payload.get("content"))
+        links = self._commercial_delivery_loop_links(message, payload)
+        publish_url = links["publish_url"]
         return {
             "名称": doc_name,
             "商单交付ID": delivery_id,
@@ -694,6 +787,13 @@ class CommercialDeliveryMixin:
             "来源输入摘要": payload.get("source_summary") or message.body[:500],
             "创建时间": message.created_at,
             "运行ID": delivery_id,
+            "关联商机ID": links["business_opportunity_id"],
+            "关联创作记录ID": links["creation_run_id"],
+            "发布链接": publish_url,
+            "发布状态": "发布待核验" if publish_url else "待人工发布",
+            "验收状态": "待人工验收",
+            "复盘状态": "待人工复盘",
+            "回款状态": "待人工对账",
         }
 
     def _commercial_delivery_table_url(self) -> str:
@@ -908,8 +1008,11 @@ class CommercialDeliveryMixin:
         if isinstance(content, dict) and not str(content.get("platform_requirements") or "").strip():
             content["platform_requirements"] = COMMERCIAL_DELIVERY_DEFAULT_TEXT
 
-    @staticmethod
-    def _commercial_delivery_id(message: Message, doc_name: str) -> str:
+    @classmethod
+    def _commercial_delivery_id(cls, message: Message, doc_name: str) -> str:
+        retry_id = cls._commercial_delivery_labeled_line(message.body, ("交付编号", "商单交付ID"))
+        if re.fullmatch(r"commercial_delivery_[0-9a-f]{16}", retry_id):
+            return retry_id
         seed = f"{message.created_at.isoformat()}|{message.source}|{doc_name}|{message.body}"
         return "commercial_delivery_" + hashlib.sha1(seed.encode("utf-8")).hexdigest()[:16]
 
@@ -928,21 +1031,25 @@ class CommercialDeliveryMixin:
         return urllib.parse.urlunparse(parsed._replace(query=urllib.parse.urlencode(query, doseq=True)))
 
     @staticmethod
-    def _commercial_delivery_success_reply(doc_url: str, warnings: list[str]) -> str:
+    def _commercial_delivery_success_reply(doc_url: str, warnings: list[str], *, delivery_id: str = "") -> str:
         return "\n".join(
             [
                 "商单交付初稿已生成。",
                 f"初稿链接：{doc_url}",
+                *( [f"交付编号：{delivery_id}"] if delivery_id else [] ),
                 "下一步：请打开初稿核对内容；确认后提交给 PR 审核。",
+                "发布、验收与复盘仍待人工确认，不会自动标记完成。",
                 *warnings,
             ]
         )
 
     @staticmethod
-    def _commercial_delivery_failure_reply(_code: str, _detail: str) -> str:
+    def _commercial_delivery_failure_reply(delivery_id: str, *, retry_saved: bool) -> str:
+        retry_lines = ["已保留可重试交付记录；请在外部配置或权限恢复后重试原始需求。"] if retry_saved else ["请稍后重试原始需求；若仍无法完成，请联系管理员检查交付配置与文档权限。"]
         return "\n".join(
             [
                 "商单交付未完成。",
-                "请稍后重试原始需求；若仍无法完成，请联系管理员检查交付配置与文档权限。",
+                *( [f"交付编号：{delivery_id}"] if delivery_id else [] ),
+                *retry_lines,
             ]
         )

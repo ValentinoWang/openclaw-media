@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import json
+import tempfile
 import unittest
 from datetime import datetime
 from typing import Any
@@ -132,6 +134,7 @@ class FakeFeishuService:
 
 class FakeOwnerService:
     registered_docx: dict[str, Any] = {}
+    fail_registration = False
 
     @staticmethod
     def create_projection(resource_type: str, resource_id: str, *, session_tenant_id: str, fields: dict[str, Any], writer):
@@ -156,6 +159,8 @@ class FakeOwnerService:
         document_url: str,
         policy: str,
     ) -> None:
+        if cls.fail_registration:
+            raise RuntimeError("local ownership registration unavailable")
         cls.registered_docx = {
             "resource_type": resource_type,
             "resource_id": resource_id,
@@ -193,8 +198,12 @@ class CommercialDeliveryHarness(CommercialDeliveryMixin):
 class CommercialDeliveryTest(unittest.TestCase):
     def setUp(self) -> None:
         FakeOwnerService.registered_docx = {}
+        FakeOwnerService.fail_registration = False
         self.old_url = os.environ.get("MEDIA_OS_COMMERCIAL_DELIVERY_URL")
         self.old_parent = os.environ.get("MEDIA_OS_COMMERCIAL_DELIVERY_PARENT_NODE_TOKEN")
+        self.old_vault_root = os.environ.get("OPENCLAW_MEDIA_VAULT_ROOT")
+        self.vault_root = tempfile.TemporaryDirectory()
+        os.environ["OPENCLAW_MEDIA_VAULT_ROOT"] = self.vault_root.name
         os.environ["MEDIA_OS_COMMERCIAL_DELIVERY_URL"] = "https://tcnwueberajc.feishu.cn/base/appTest?table=tblTest"
         os.environ.pop("MEDIA_OS_COMMERCIAL_DELIVERY_PARENT_NODE_TOKEN", None)
 
@@ -207,6 +216,11 @@ class CommercialDeliveryTest(unittest.TestCase):
             os.environ.pop("MEDIA_OS_COMMERCIAL_DELIVERY_PARENT_NODE_TOKEN", None)
         else:
             os.environ["MEDIA_OS_COMMERCIAL_DELIVERY_PARENT_NODE_TOKEN"] = self.old_parent
+        if self.old_vault_root is None:
+            os.environ.pop("OPENCLAW_MEDIA_VAULT_ROOT", None)
+        else:
+            os.environ["OPENCLAW_MEDIA_VAULT_ROOT"] = self.old_vault_root
+        self.vault_root.cleanup()
 
     def test_graphic_success_writes_public_doc_native_table_and_summary_record(self) -> None:
         harness = CommercialDeliveryHarness(delivery_payload())
@@ -354,21 +368,98 @@ class CommercialDeliveryTest(unittest.TestCase):
         result = harness.handle_商单交付(self._message("【商单交付】权限失败"))
 
         self.assertFalse(result.ok)
+        self.assertEqual(result.status, "commercial_delivery_retry_pending")
         self.assertIn("商单交付未完成", result.reply)
-        self.assertIn("请稍后重试原始需求", result.reply)
-        self.assertNotIn("commercial_delivery_failed", result.reply)
+        self.assertIn("已保留可重试交付记录", result.reply)
+        self.assertTrue(result.task_id)
+        self.assertTrue(result.local_path)
+        persisted = json.loads(open(result.local_path, encoding="utf-8").read())
+        self.assertEqual(persisted["external_status"], "document_created_unverified")
+        self.assertEqual(persisted["retry"]["action"], "retry_commercial_delivery")
         self.assertNotIn("permission readback failed", result.reply)
         self.assertFalse(harness.feishu_service.record_written)
 
+    def test_retry_reuses_unverified_document_and_confirms_after_readback(self) -> None:
+        harness = CommercialDeliveryHarness(delivery_payload(), fail_permission=True)
+        message = self._message("【商单交付】权限先失败再恢复")
+
+        first = harness.handle_商单交付(message)
+        self.assertEqual(first.status, "commercial_delivery_retry_pending")
+        self.assertEqual(harness.feishu_service.calls.count("create_doc"), 1)
+
+        harness.feishu_service.fail_permission = False
+        second = harness.handle_商单交付(
+            self._message(
+                f"【商单交付】权限先失败再恢复\n交付编号：{first.task_id}",
+                created_at=datetime(2026, 7, 6, 12, 0, 0),
+            )
+        )
+
+        self.assertTrue(second.ok, second.reply)
+        self.assertEqual(second.task_id, first.task_id)
+        self.assertEqual(harness.feishu_service.calls.count("create_doc"), 1)
+        persisted = json.loads(open(second.local_path, encoding="utf-8").read())
+        self.assertEqual(persisted["external_status"], "confirmed")
+        self.assertEqual(persisted["publish_status"], "pending_manual")
+        self.assertEqual(persisted["acceptance_status"], "pending_manual")
+        self.assertEqual(persisted["retrospective_status"], "pending_manual")
+        self.assertEqual(persisted["settlement_status"], "pending_manual")
+        self.assertEqual(persisted["lifecycle_status"], "delivered")
+
+    def test_retry_after_local_registration_failure_reuses_confirmed_external_record(self) -> None:
+        harness = CommercialDeliveryHarness(delivery_payload())
+        message = self._message("【商单交付】登记失败后重试")
+        FakeOwnerService.fail_registration = True
+
+        first = harness.handle_商单交付(message)
+
+        self.assertEqual(first.status, "commercial_delivery_retry_pending")
+        self.assertEqual(harness.feishu_service.calls.count(COMMERCIAL_RECORD_WRITE_CALL), 1)
+        persisted = json.loads(open(first.local_path, encoding="utf-8").read())
+        self.assertEqual(persisted["external_status"], "record_created_unverified")
+        self.assertEqual(persisted["delivery"]["record"]["record_id"], "rec-test")
+
+        FakeOwnerService.fail_registration = False
+        second = harness.handle_商单交付(message)
+
+        self.assertTrue(second.ok, second.reply)
+        self.assertEqual(harness.feishu_service.calls.count("create_doc"), 1)
+        self.assertEqual(harness.feishu_service.calls.count(COMMERCIAL_RECORD_WRITE_CALL), 1)
+        self.assertEqual(json.loads(open(second.local_path, encoding="utf-8").read())["external_status"], "confirmed")
+
+    def test_replay_after_confirmed_delivery_does_not_create_duplicate_external_records(self) -> None:
+        harness = CommercialDeliveryHarness(delivery_payload())
+        message = self._message(
+            "【商单交付】幂等确认\n商务机会ID：opp-1\n创作记录ID：run-1\n发布链接：https://example.test/post-1"
+        )
+
+        first = harness.handle_商单交付(message)
+        self.assertTrue(first.ok, first.reply)
+        second = harness.handle_商单交付(message)
+
+        self.assertTrue(second.ok, second.reply)
+        self.assertTrue(second.extra["replayed"])
+        self.assertEqual(second.task_id, first.task_id)
+        self.assertEqual(harness.feishu_service.calls.count("create_doc"), 1)
+        self.assertEqual(harness.feishu_service.calls.count(COMMERCIAL_RECORD_WRITE_CALL), 1)
+        self.assertEqual(harness.feishu_service.record_fields["关联商机ID"], "opp-1")
+        self.assertEqual(harness.feishu_service.record_fields["关联创作记录ID"], "run-1")
+        self.assertEqual(harness.feishu_service.record_fields["发布链接"]["link"], "https://example.test/post-1")
+        self.assertEqual(harness.feishu_service.record_fields["发布状态"], "发布待核验")
+        persisted = json.loads(open(first.local_path, encoding="utf-8").read())
+        self.assertEqual(persisted["business_opportunity_id"], "opp-1")
+        self.assertEqual(persisted["creation_run_id"], "run-1")
+        self.assertEqual(persisted["publish_status"], "evidence_submitted_pending_verification")
+
     @staticmethod
-    def _message(text: str) -> Message:
+    def _message(text: str, *, created_at: datetime | None = None) -> Message:
         return Message(
             entry_tag="商单交付",
             raw_text=text,
             body=text.removeprefix("【商单交付】"),
             source="qq",
             chat_type="private",
-            created_at=datetime(2026, 7, 5, 12, 0, 0),
+            created_at=created_at or datetime(2026, 7, 5, 12, 0, 0),
             metadata={"tenant_id": TENANT_ID},
         )
 
