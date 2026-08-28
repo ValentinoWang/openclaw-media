@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
 import tempfile
@@ -19,10 +20,12 @@ from media_vault.vault import MediaVault
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MEMORY_ROOT = ROOT / "data" / "media_memory"
-MEDIA_AGENT_ROOT = Path("/home/ubuntu/openclaw-agents/media")
+MEDIA_CONTEXT_RULES_ROOT_ENV = "OPENCLAW_MEDIA_CONTEXT_RULES_ROOT"
+DEFAULT_MEDIA_CONTEXT_RULES_ROOT = ROOT
 CONTEXT_PROMPT_MAX_CHARS_ENV = "OPENCLAW_MEDIA_CONTEXT_MAX_CHARS"
 DEFAULT_CONTEXT_PROMPT_MAX_CHARS = 10_000
 MAX_CONTEXT_PROMPT_MAX_CHARS = 12_000
+CONTEXT_TRUNCATION_SUFFIX = "\n...（上下文已截断）"
 CREATOR_PROFILE_URL_ENV = "MEDIA_OS_CREATOR_PROFILES_V2_URL"
 CREATOR_PROFILE_CONTEXT_FIELDS = (
     "creator_profile_id",
@@ -70,6 +73,49 @@ MEDIA_REVIEW_KEYWORDS = (
     "互动率",
     "账号",
 )
+LOGGER = logging.getLogger(__name__)
+
+_PROFILE_PROMPT_FIELDS = (
+    ("账号ID", "profile_id"),
+    ("主页链接", "profile_url"),
+    ("身份定位", "identity_summary"),
+    ("身份标签", "identity_tags"),
+    ("教育背景", "education_background"),
+    ("专业/能力领域", "expertise_domains"),
+    ("创作者角色", "creator_role"),
+    ("公开表达边界", "public_persona_boundaries"),
+    ("可创作身份卖点", "story_usable_identity_points"),
+    ("账号定位", "positioning_summary"),
+    ("核心受众", "target_audience"),
+    ("内容支柱", "content_pillars"),
+    ("已验证有效模式", "proven_patterns"),
+    ("需要规避", "avoid_patterns"),
+    ("最近复盘结论", "recent_lessons"),
+)
+
+_PROMPT_SECTION_MIN_CHARS = {
+    "header": 16,
+    "instructions": 120,
+    "rules": 240,
+    "reviews": 600,
+    "daily_comments": 360,
+    "profile": 700,
+    "daily_metrics": 300,
+    "creations": 300,
+    "profile_markdown": 0,
+}
+
+_PROMPT_SECTION_PRIORITY = {
+    "header": 0,
+    "instructions": 1,
+    "rules": 2,
+    "reviews": 3,
+    "daily_comments": 4,
+    "profile": 5,
+    "daily_metrics": 6,
+    "creations": 7,
+    "profile_markdown": 8,
+}
 
 
 def build_media_context_for_request(request: Any, *, tenant_id: str, root: str | Path | None = None, limit: int = 5) -> dict[str, Any]:
@@ -178,58 +224,41 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int | None 
     daily_metrics = context.get("recent_daily_metrics") or []
     top_comments = context.get("top_comments") or []
     rules = context.get("global_rules") or []
-    lines = ["媒体长期上下文："]
-    # Review findings lead because they are the direct evidence for the next draft.
-    lines.extend(_review_prompt_lines(reviews))
-    if profile:
-        lines.extend(
-            [
-                f"- 账号ID：{profile.get('profile_id') or profile.get('account') or context.get('account')}",
-                f"- 账号：{profile.get('platform') or context.get('platform')}/{profile.get('account') or context.get('account')}",
-                f"- Markdown档案：{profile.get('markdown_path') or '未建立'}",
-                f"- 主页链接：{profile.get('profile_url') or '未沉淀'}",
-                f"- 身份定位：{profile.get('identity_summary') or '未沉淀'}",
-                f"- 身份标签：{_join(profile.get('identity_tags')) or '未沉淀'}",
-                f"- 教育背景：{profile.get('education_background') or '未沉淀'}",
-                f"- 专业/能力领域：{_join(profile.get('expertise_domains')) or '未沉淀'}",
-                f"- 创作者角色：{profile.get('creator_role') or '未沉淀'}",
-                f"- 公开表达边界：{profile.get('public_persona_boundaries') or '未沉淀'}",
-                f"- 可创作身份卖点：{profile.get('story_usable_identity_points') or '未沉淀'}",
-                f"- 账号定位：{profile.get('positioning_summary') or '未沉淀'}",
-                f"- 核心受众：{_join(profile.get('target_audience')) or '未沉淀'}",
-                f"- 内容支柱：{_join(profile.get('content_pillars')) or '未沉淀'}",
-                f"- 已验证有效模式：{_join(profile.get('proven_patterns')) or '未沉淀'}",
-                f"- 需要规避：{_join(profile.get('avoid_patterns')) or '未沉淀'}",
-                f"- 最近复盘结论：{_join(profile.get('recent_lessons'), limit=4) or '未沉淀'}",
-            ]
-        )
-        markdown_profile = _clean_text(profile.get("markdown"))
-        if markdown_profile:
-            lines.append("- 账号 Markdown 档案原文：")
-            lines.append(markdown_profile[:1200])
-    else:
-        lines.append("- 账号画像：未找到；若要连续复盘，请在消息中填写 账号=xxx。")
+    sections: list[tuple[str, list[str]]] = [
+        ("header", ["媒体长期上下文："]),
+        (
+            "instructions",
+            ["生成要求：必须显式继承账号定位和复盘结论；如果没有账号画像，先指出需要补齐的人设/栏目/目标受众。"],
+        ),
+    ]
+    if rules:
+        sections.append(("rules", ["- 媒体 Bot 长期规则摘要：", *(f"  {item}" for item in rules[:4])]))
+    review_lines = _review_prompt_lines(reviews)
+    if review_lines:
+        sections.append(("reviews", review_lines))
+    if top_comments:
+        sections.append(("daily_comments", ["- 最近自有作品高价值评论原话（日报采集）：", *(f"  {item}" for item in top_comments[:6])]))
+    profile_lines = _profile_prompt_lines(profile, context=context)
+    if profile_lines:
+        sections.append(("profile", profile_lines))
     if creations:
-        lines.append("- 相关历史创作：")
+        creation_lines = ["- 相关历史创作："]
         for item in creations[:3]:
-            lines.append(f"  {item.get('created_at', '')[:10]} {item.get('topic') or '未命名'}：{item.get('title') or item.get('doc_link') or item.get('creation_id') or ''}")
+            creation_lines.append(f"  {item.get('created_at', '')[:10]} {item.get('topic') or '未命名'}：{item.get('title') or item.get('doc_link') or item.get('creation_id') or ''}")
+        sections.append(("creations", creation_lines))
     if daily_metrics:
-        lines.append("- 最近日报指标：")
+        metric_lines = ["- 最近自有作品日报指标："]
         for item in daily_metrics[:3]:
-            lines.append(
+            metric_lines.append(
                 f"  {item.get('captured_at', '')[:10]} {item.get('account_name') or '账号'}："
                 f"作品 {item.get('post_count', 0)} 条，总互动 {item.get('total_interactions', 0)}，"
                 f"最佳作品 {item.get('best_post_url') or '未记录'}"
             )
-    if top_comments:
-        lines.append("- 最近高价值评论原话：")
-        lines.extend(f"  {item}" for item in top_comments[:6])
-    if rules:
-        lines.append("- 媒体 Bot 长期规则摘要：")
-        lines.extend(f"  {item}" for item in rules[:4])
-    lines.append("生成要求：必须显式继承账号定位和复盘结论；如果没有账号画像，先指出需要补齐的人设/栏目/目标受众。")
-    text = "\n".join(line for line in lines if line is not None)
-    return _truncate_context_prompt(text, max_chars=max_chars)
+        sections.append(("daily_metrics", metric_lines))
+    markdown_profile = _clean_text(profile.get("markdown")) if isinstance(profile, dict) else ""
+    if markdown_profile:
+        sections.append(("profile_markdown", ["- 账号 Markdown 档案原文：", markdown_profile[:1200]]))
+    return _render_context_sections(sections, max_chars=max_chars)
 
 
 def _context_prompt_max_chars(max_chars: int | None) -> int:
@@ -252,10 +281,94 @@ def _truncate_context_prompt(text: str, *, max_chars: int) -> str:
         return ""
     if len(text) <= max_chars:
         return text
-    suffix = "\n...（上下文已截断）"
-    if max_chars <= len(suffix):
-        return suffix[:max_chars]
-    return text[: max_chars - len(suffix)].rstrip() + suffix
+    if max_chars <= len(CONTEXT_TRUNCATION_SUFFIX):
+        return CONTEXT_TRUNCATION_SUFFIX[:max_chars]
+    return text[: max_chars - len(CONTEXT_TRUNCATION_SUFFIX)].rstrip() + CONTEXT_TRUNCATION_SUFFIX
+
+
+def _profile_prompt_lines(profile: dict[str, Any], *, context: dict[str, Any]) -> list[str]:
+    if not profile:
+        lines = ["- 账号画像：未找到；若要连续复盘，请在消息中填写 账号=xxx。"]
+        creator_profile_error = _clean_text(context.get("creator_profile_error"))
+        if creator_profile_error:
+            lines.append(f"- 账号档案加载失败：{creator_profile_error}（人设未注入）")
+        return lines
+    lines: list[str] = []
+    platform = _clean_text(profile.get("platform") or context.get("platform"))
+    account = _clean_text(profile.get("account") or context.get("account"))
+    if platform or account:
+        lines.append(f"- 账号：{platform}/{account}".rstrip("/"))
+    for label, key in _PROFILE_PROMPT_FIELDS:
+        value = _join(profile.get(key), limit=4) if key in CREATOR_PROFILE_LIST_FIELDS or isinstance(profile.get(key), (list, tuple)) else _clean_text(profile.get(key))
+        if value:
+            lines.append(f"- {label}：{value}")
+    creator_profile_error = _clean_text(context.get("creator_profile_error"))
+    if creator_profile_error:
+        lines.append(f"- 账号档案加载失败：{creator_profile_error}（人设未注入）")
+    return lines
+
+
+def _render_context_sections(sections: list[tuple[str, list[str]]], *, max_chars: int) -> str:
+    if max_chars <= 0:
+        return ""
+    rendered = [(name, "\n".join(line for line in lines if line)) for name, lines in sections]
+    rendered = [(name, text) for name, text in rendered if text]
+    full_text = "\n".join(text for _, text in rendered)
+    if len(full_text) <= max_chars:
+        return full_text
+    if max_chars <= len(CONTEXT_TRUNCATION_SUFFIX):
+        return CONTEXT_TRUNCATION_SUFFIX[:max_chars]
+
+    content_budget = max_chars - len(CONTEXT_TRUNCATION_SUFFIX)
+    allocations = _allocate_context_section_budget(rendered, content_budget=content_budget)
+    text = "\n".join(_truncate_context_section(item, allocations[name]) for name, item in rendered if allocations.get(name, 0))
+    return text[:content_budget].rstrip() + CONTEXT_TRUNCATION_SUFFIX
+
+
+def _allocate_context_section_budget(sections: list[tuple[str, str]], *, content_budget: int) -> dict[str, int]:
+    minimums = {
+        name: min(len(text), _PROMPT_SECTION_MIN_CHARS.get(name, 0))
+        for name, text in sections
+    }
+    allocated_names = [name for name, value in minimums.items() if value]
+    minimum_size = sum(minimums.values()) + max(0, len(allocated_names) - 1)
+    if minimum_size > content_budget:
+        allocations: dict[str, int] = {}
+        remaining = content_budget
+        for name, text in sorted(sections, key=lambda item: _PROMPT_SECTION_PRIORITY.get(item[0], 99)):
+            separator = 1 if allocations else 0
+            if remaining <= separator:
+                break
+            allocation = min(len(text), minimums[name], remaining - separator)
+            if allocation:
+                allocations[name] = allocation
+                remaining -= allocation + separator
+        return allocations
+
+    allocations = {name: value for name, value in minimums.items() if value}
+    remaining = content_budget - minimum_size
+    for name, text in sorted(sections, key=lambda item: _PROMPT_SECTION_PRIORITY.get(item[0], 99)):
+        if remaining <= 0:
+            break
+        current = allocations.get(name, 0)
+        separator = 1 if not current and allocations else 0
+        if remaining <= separator:
+            continue
+        extension = min(len(text) - current, remaining - separator)
+        if extension:
+            allocations[name] = current + extension
+            remaining -= extension + separator
+    return allocations
+
+
+def _truncate_context_section(text: str, max_chars: int) -> str:
+    if len(text) <= max_chars:
+        return text
+    candidate = text[:max_chars].rstrip()
+    last_newline = candidate.rfind("\n")
+    if last_newline > max_chars // 2:
+        return candidate[:last_newline].rstrip()
+    return candidate
 
 
 def _review_prompt_lines(reviews: list[Any]) -> list[str]:
@@ -660,11 +773,14 @@ def upsert_account_profile(
         lesson = _clean_text(review.get("lesson") or review.get("summary") or "")
         if lesson:
             _merge_list(profile, "recent_lessons", [lesson], max_len=12)
-        raw = str(review.get("raw_text") or "")
-        if any(word in raw for word in ("有效", "表现好", "高", "爆", "转化好", "收藏高", "评论好", "完播高")):
-            _merge_list(profile, "proven_patterns", [lesson or review.get("summary")], max_len=12)
-        if any(word in raw for word in ("无效", "表现差", "低", "失败", "流失", "不适合", "别再", "不要")):
-            _merge_list(profile, "avoid_patterns", [lesson or review.get("summary")], max_len=12)
+        pattern = lesson or _clean_text(review.get("summary"))
+        pattern_destination = _review_pattern_destination(review)
+        if pattern and pattern_destination:
+            target = "proven_patterns" if pattern_destination == "proven" else "avoid_patterns"
+            opposite = "avoid_patterns" if target == "proven_patterns" else "proven_patterns"
+            profile[opposite] = [value for value in _as_list(profile.get(opposite)) if value != pattern]
+            _merge_list(profile, target, [pattern], max_len=12)
+        _remove_ambiguous_profile_patterns(profile)
         profile["last_reviewed_at"] = now
     path.parent.mkdir(parents=True, exist_ok=True)
     _write_json_atomic(path, profile)
@@ -677,6 +793,25 @@ def upsert_account_profile(
         "account": account,
         "platform": platform,
     }
+
+
+def _review_pattern_destination(review: dict[str, Any]) -> str:
+    """Classify only from the structured review rating, never incidental prose."""
+    performance_level = _clean_text(review.get("performance_level"))
+    if performance_level == "高价值延续":
+        return "proven"
+    if performance_level == "不建议延续":
+        return "avoid"
+    return ""
+
+
+def _remove_ambiguous_profile_patterns(profile: dict[str, Any]) -> None:
+    proven = _as_list(profile.get("proven_patterns"))
+    avoid = _as_list(profile.get("avoid_patterns"))
+    overlap = set(proven).intersection(avoid)
+    if overlap:
+        profile["proven_patterns"] = [value for value in proven if value not in overlap]
+        profile["avoid_patterns"] = [value for value in avoid if value not in overlap]
 
 
 def load_account_profile(
@@ -826,12 +961,22 @@ def _memory_root(*, tenant_id: str, root: str | Path | None = None) -> Path:
 
 def _load_media_rule_snippets() -> list[str]:
     snippets: list[str] = []
-    for path in (MEDIA_AGENT_ROOT / "USER.md", MEDIA_AGENT_ROOT / "MEMORY.md"):
-        if not path.exists():
-            continue
+    configured_root = os.getenv(MEDIA_CONTEXT_RULES_ROOT_ENV, "").strip()
+    rules_root = Path(configured_root).expanduser() if configured_root else DEFAULT_MEDIA_CONTEXT_RULES_ROOT
+    rule_paths = (rules_root / "USER.md", rules_root / "MEMORY.md")
+    readable_paths = [path for path in rule_paths if path.is_file()]
+    if not readable_paths:
+        LOGGER.warning(
+            "Media long-term rules are unavailable at %s; set %s to a directory containing USER.md or MEMORY.md.",
+            rules_root,
+            MEDIA_CONTEXT_RULES_ROOT_ENV,
+        )
+        return snippets
+    for path in readable_paths:
         try:
             lines = path.read_text(encoding="utf-8").splitlines()
-        except OSError:
+        except OSError as exc:
+            LOGGER.warning("Unable to read media long-term rules from %s: %s", path, exc)
             continue
         for line in lines:
             clean = line.strip()

@@ -75,3 +75,33 @@ def test_explicit_small_budget_truncates_review_deterministically() -> None:
     assert first.endswith("\n...（上下文已截断）")
     assert "账号 Markdown 档案原文" not in first
     assert render_context_for_prompt(context, max_chars=0) == ""
+
+
+def test_budget_reserves_each_available_evidence_dimension_before_profile_markdown() -> None:
+    prompt = render_context_for_prompt(
+        {
+            "recent_reviews": [_review()],
+            "account_profile": {
+                "platform": "抖音",
+                "account": "跑步小王",
+                "identity_summary": "面向初跑者的配速训练创作者",
+                "markdown": "账号档案原文" * 800,
+            },
+            "recent_creations": [{"created_at": "2026-08-27", "topic": "历史创作", "title": "历史标题"}],
+            "recent_daily_metrics": [{"captured_at": "2026-08-28", "account_name": "跑步小王", "post_count": 2, "total_interactions": 66}],
+            "top_comments": ["求这个训练方案"],
+            "global_rules": ["只基于已收到的评论原话提出选题。" * 300],
+        },
+        max_chars=2_500,
+    )
+
+    assert len(prompt) <= 2_500
+    assert "生成要求：必须显式继承账号定位和复盘结论" in prompt
+    assert "相关历史复盘" in prompt
+    assert "首屏先明确被追问的冲突" in prompt
+    assert "最近自有作品高价值评论原话（日报采集）" in prompt
+    assert "求这个训练方案" in prompt
+    assert "身份定位：面向初跑者的配速训练创作者" in prompt
+    assert "最近自有作品日报指标" in prompt
+    assert "相关历史创作" in prompt
+    assert "未沉淀" not in prompt

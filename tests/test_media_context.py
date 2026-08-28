@@ -14,7 +14,7 @@ from selfmedia.context import (
     record_review_memory,
     render_context_for_prompt,
 )
-from selfmedia.context.media_context import merge_creator_profile_identity
+from selfmedia.context.media_context import MEDIA_CONTEXT_RULES_ROOT_ENV, merge_creator_profile_identity
 from selfmedia.creation.request_parser import parse_creation_request
 
 
@@ -115,7 +115,55 @@ class MediaContextTests(unittest.TestCase):
 
         self.assertEqual(context["loaded"]["recent_daily_metrics"], 1)
         self.assertEqual(context["top_comments"], ["求这个训练方案"])
-        self.assertIn("最近日报指标", context["prompt"])
+        self.assertIn("最近自有作品日报指标", context["prompt"])
+        self.assertIn("最近自有作品高价值评论原话（日报采集）", context["prompt"])
+        self.assertIn("求这个训练方案", context["prompt"])
+
+    def test_review_patterns_require_structured_rating_and_remain_exclusive(self) -> None:
+        tenant_id = "00000000-0000-4000-8000-000000000101"
+        with tempfile.TemporaryDirectory() as tmp:
+            record_review_memory(
+                "平台=小红书 账号=主账号 结论=播放量低但收藏高的封面结构仍值得沿用",
+                tenant_id=tenant_id,
+                analysis={"performance_level": "高价值延续"},
+                root=tmp,
+            )
+            record_review_memory(
+                "平台=小红书 账号=主账号 结论=看似表现好但评论区反复追问的结构不能沿用",
+                tenant_id=tenant_id,
+                analysis={"performance_level": "不建议延续"},
+                root=tmp,
+            )
+            record_review_memory(
+                "平台=小红书 账号=主账号 结论=播放量高低并存，只记录待验证经验",
+                tenant_id=tenant_id,
+                root=tmp,
+            )
+
+            context = build_media_context(platform="小红书", account="主账号", tenant_id=tenant_id, root=tmp)
+
+        profile = context["account_profile"]
+        self.assertEqual(profile["proven_patterns"], ["播放量低但收藏高的封面结构仍值得沿用"])
+        self.assertEqual(profile["avoid_patterns"], ["看似表现好但评论区反复追问的结构不能沿用"])
+        self.assertTrue(set(profile["proven_patterns"]).isdisjoint(profile["avoid_patterns"]))
+
+    def test_rules_root_is_configurable_and_creator_profile_failure_is_visible(self) -> None:
+        tenant_id = "00000000-0000-4000-8000-000000000101"
+        with tempfile.TemporaryDirectory() as tmp:
+            rules_root = Path(tmp) / "rules"
+            rules_root.mkdir()
+            (rules_root / "USER.md").write_text("- 小红书创作必须保留真实评论原话\n", encoding="utf-8")
+            with patch.dict(os.environ, {MEDIA_CONTEXT_RULES_ROOT_ENV: str(rules_root)}, clear=False):
+                context = build_media_context(platform="小红书", account="主账号", tenant_id=tenant_id, root=tmp)
+
+        self.assertEqual(context["global_rules"], ["- 小红书创作必须保留真实评论原话"])
+        self.assertIn("媒体 Bot 长期规则摘要", context["prompt"])
+        failure_prompt = render_context_for_prompt(
+            {
+                "creator_profile_error": "CreatorProfile 字段契约不可用",
+            }
+        )
+        self.assertIn("账号档案加载失败：CreatorProfile 字段契约不可用（人设未注入）", failure_prompt)
 
 
 if __name__ == "__main__":
