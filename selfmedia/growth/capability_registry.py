@@ -19,6 +19,7 @@ class GrowthCapabilitySpec:
     frontend_group: str = "能力目录"
     default_mode: str = "reply_and_persist"
     ssot_refs: tuple[str, ...] = field(default_factory=tuple)
+    creator_field_mappings: tuple[tuple[str, tuple[str, ...]], ...] = field(default_factory=tuple)
 
     @property
     def implemented(self) -> bool:
@@ -73,7 +74,20 @@ CAPABILITY_SPECS: dict[str, GrowthCapabilitySpec] = {
         implementation_status="implemented",
         lifecycle_layer="Decide",
         frontend_group="选题与决策",
-        ssot_refs=("SourceAsset", "ExternalResearchBrief", "CommercialBrief", "ReviewSignal"),
+        ssot_refs=(
+            "SourceAsset",
+            "ExternalResearchBrief",
+            "CommercialBrief",
+            "ReviewSignal",
+            "media://tenants/<tenant_id>/review_signals",
+            "selfmedia.context.media_context.record_review_memory",
+        ),
+        creator_field_mappings=(
+            (
+                "topic_candidates[].pain_point",
+                ("topic_candidates[].pain_point", "topic_candidates[].audience_pain"),
+            ),
+        ),
     ),
     "creator_brief_to_draft": GrowthCapabilitySpec(
         canonical_capability_id="creator_brief_to_draft",
@@ -166,16 +180,28 @@ CAPABILITY_SPECS: dict[str, GrowthCapabilitySpec] = {
         risk_level="medium",
         frontend_group="发布准备",
         ssot_refs=("DraftPackage", "StylePolishResult", "media://tenants/<tenant_id>/creation_runs", "platform_mechanisms", "media_vault_v2"),
+        creator_field_mappings=(
+            ("title_1", ("title",)),
+            ("cover_text", ("cover_text",)),
+            ("body_copy", ("caption",)),
+            ("hashtags", ("hashtags",)),
+            ("pinned_comment", ("comment_seed",)),
+            ("comment_prompt", ("comment_seed",)),
+            ("first_hour_action", ("publish_checklist",)),
+        ),
     ),
     "post_review_signal": GrowthCapabilitySpec(
         canonical_capability_id="post_review_signal",
         produces=("ReviewSignal",),
-        consumes=("MetricSnapshot", "PublishedPost"),
         writes_to=("media_vault/tenants/<tenant_id>/review_signals",),
         implementation_status="implemented",
         lifecycle_layer="Learn",
         frontend_group="数据复盘",
-        ssot_refs=("ReviewSignal", "media://tenants/<tenant_id>/review_signals", "SystemRoutesMixin.handle_generic", "MediaReviewMixin._record_media_review_memory"),
+        ssot_refs=(
+            "ReviewSignal",
+            "media://tenants/<tenant_id>/review_signals",
+            "selfmedia.context.media_context.record_review_memory",
+        ),
     ),
     "account_track_strategy": GrowthCapabilitySpec(
         canonical_capability_id="account_track_strategy",
@@ -287,6 +313,13 @@ def capability_consumes(capability_id: str) -> tuple[str, ...]:
 def capability_writes_to(capability_id: str) -> tuple[str, ...]:
     spec = get_capability_spec(capability_id)
     return spec.writes_to if spec else ()
+
+
+def capability_creator_field_mappings(capability_id: str) -> dict[str, tuple[str, ...]]:
+    spec = get_capability_spec(capability_id)
+    if spec is None:
+        return {}
+    return {target: tuple(sources) for target, sources in spec.creator_field_mappings}
 
 
 def capability_implementation_status(capability_id: str) -> str:

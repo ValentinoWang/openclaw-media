@@ -35,16 +35,23 @@ from selfmedia.growth.llm_runner import GrowthLLMJsonRunner
 
 
 BACKFILL_SCRIPT = Path(__file__).resolve().parents[2] / "scripts/qa/check_media_growth_visibility_backfill.py"
-spec = importlib.util.spec_from_file_location("check_media_growth_visibility_backfill", BACKFILL_SCRIPT)
-backfill_module = importlib.util.module_from_spec(spec)
-assert spec and spec.loader
-spec.loader.exec_module(backfill_module)
-
 DISPLAY_BACKFILL_SCRIPT = Path(__file__).resolve().parents[2] / "scripts/qa/check_media_growth_display_backfill.py"
-display_spec = importlib.util.spec_from_file_location("check_media_growth_display_backfill", DISPLAY_BACKFILL_SCRIPT)
-display_backfill_module = importlib.util.module_from_spec(display_spec)
-assert display_spec and display_spec.loader
-display_spec.loader.exec_module(display_backfill_module)
+
+
+def _load_optional_qa_backfill(path: Path, module_name: str):
+    """Keep external operational-backfill checks out of the owned Growth suite."""
+    if not path.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+backfill_module = _load_optional_qa_backfill(BACKFILL_SCRIPT, "check_media_growth_visibility_backfill")
+display_backfill_module = _load_optional_qa_backfill(DISPLAY_BACKFILL_SCRIPT, "check_media_growth_display_backfill")
 
 
 class MediaGrowthV2Tests(unittest.TestCase):
@@ -306,6 +313,20 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(result["technical_specs"], {"description": "1080P"})
         self.assertEqual(result["platforms"], ["小红书"])
         self.assertEqual(result["products"], [{"name": "QA 产品"}])
+
+    def test_growth_llm_runner_normalizes_legacy_audience_pain_to_main_creation_field(self) -> None:
+        result = GrowthLLMJsonRunner(
+            provider=lambda *_args, **_kwargs: self._decision_payload(),
+            settings=object(),
+        ).run_json(
+            task="creation_decision_brief",
+            prompt="基于证据生成选题。",
+            evidence_bundle=self._ready_knowledge_evidence_bundle(),
+        )
+
+        candidate = result["topic_candidates"][0]
+        self.assertEqual(candidate["pain_point"], "训练有效但不知道怎么复盘")
+        self.assertEqual(candidate["audience_pain"], candidate["pain_point"])
 
     def test_growth_llm_runner_normalizes_completed_to_done(self) -> None:
         for provider_status in ("complete", "completed", "structured", "ready", "success", "succeeded"):
@@ -733,6 +754,26 @@ class MediaGrowthV2Tests(unittest.TestCase):
             self.assertFalse(payload["automatic_publish_allowed"])
             self.assertIn("不执行自动发布", " ".join(payload["risk_notes"]))
 
+    def test_publishing_pack_adapter_maps_only_source_backed_creator_fields(self) -> None:
+        legacy_pack = self._publishing_payload(
+            title="起跑前一秒",
+            caption="起跑前一秒，所有准备都变成身体的记忆。",
+            hashtags=["短跑", "比赛"],
+        )
+        legacy_pack["publish_checklist"] = ["发布后 1 小时回复前三条具体提问"]
+        adapter = growth_service.normalize_publishing_pack_for_creation(legacy_pack)
+
+        creator_pack = adapter["creator_publishing_pack"]
+        self.assertEqual(creator_pack["title_1"], "起跑前一秒")
+        self.assertEqual(creator_pack["cover_text"], "起跑前一秒")
+        self.assertEqual(creator_pack["body_copy"], "起跑前一秒，所有准备都变成身体的记忆。")
+        self.assertEqual(creator_pack["pinned_comment"], legacy_pack["comment_seed"])
+        self.assertEqual(creator_pack["comment_prompt"], legacy_pack["comment_seed"])
+        self.assertEqual(creator_pack["first_hour_action"], "发布后 1 小时回复前三条具体提问")
+        self.assertEqual(creator_pack["title_2"], "")
+        self.assertEqual(adapter["missing_creator_fields"], ["title_2"])
+        self.assertEqual(adapter["field_mappings"]["body_copy"], ["caption"])
+
     def test_publishing_pack_loads_bare_creation_run_draft_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
@@ -952,6 +993,55 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(payload["preset_node_results"][0]["artifact_type"], "ReviewSignal")
         self.assertEqual(payload["topic_candidates"][0]["title"], "高收藏内容为什么值得做系列化")
         self.assertEqual(len(calls), 1)
+
+    def test_decision_brief_loads_only_same_tenant_review_memory_and_signals(self) -> None:
+        captured: list[str] = []
+
+        def provider(parts, _settings, **_kwargs):
+            captured.append("\n".join(str(part.get("text") or "") for part in parts))
+            return self._decision_payload(source_ref="same_tenant_review")
+
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"SELFMEDIA_MEMORY_ROOT": tmp}):
+            own_vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
+            foreign_vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000102", root=tmp)
+            own_signal = growth_service.capture_review_signal(
+                "【复盘】结论=同租户复盘：收藏高的训练拆解值得继续做 下一步=继续做训练复盘系列",
+                platform="抖音",
+                account_id="主账号",
+                vault=own_vault,
+                run_id="same_tenant_review",
+            )
+            growth_service.capture_review_signal(
+                "【复盘】结论=跨租户内容绝不能进入当前选题 下一步=不应被读取",
+                platform="抖音",
+                account_id="主账号",
+                vault=foreign_vault,
+                run_id="foreign_review",
+            )
+            brief = growth_service.build_decision_brief(
+                "【选题】主题=训练复盘系列",
+                platform="抖音",
+                account_id="主账号",
+                vault=own_vault,
+                run_id="decision_from_owned_review",
+                growth_json_provider=provider,
+                growth_json_settings=object(),
+            )
+            memory_rows = [
+                json.loads(line)
+                for line in (Path(tmp) / "tenants" / own_vault.tenant_id / "reviews.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+
+        self.assertEqual(len(captured), 1)
+        self.assertIn("同租户复盘：收藏高的训练拆解值得继续做", captured[0])
+        self.assertNotIn("跨租户内容绝不能进入当前选题", captured[0])
+        self.assertIn("account_memory", captured[0])
+        self.assertEqual(memory_rows[0]["source"], "media_growth:ReviewSignal:same_tenant_review")
+        self.assertEqual(memory_rows[0]["account"], "主账号")
+        self.assertEqual(brief.topic_candidates[0]["pain_point"], "训练有效但不知道怎么复盘")
+        self.assertEqual(brief.topic_candidates[0]["audience_pain"], brief.topic_candidates[0]["pain_point"])
+        trace = next(item for item in brief.to_dict()["source_trace"] if item["source_type"] == "input_artifacts")
+        self.assertEqual(trace["artifacts"][0]["artifact_uri"], own_signal.artifact_uri)
 
     def test_default_full_plan_stops_pending_manual_without_llm_candidates(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1239,6 +1329,7 @@ class MediaGrowthV2Tests(unittest.TestCase):
         with self.assertRaises(ValueError):
             assert_dashboard_eligible(asset)
 
+    @unittest.skipUnless(backfill_module is not None, "requires external visibility-backfill QA script")
     def test_visibility_backfill_uses_vault_root_and_updates_sidecar_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
@@ -1279,6 +1370,7 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(manifest["content_hash"], f"sha256:{hashlib.sha256(result_bytes).hexdigest()}")
         self.assertEqual(manifest["size_bytes"], len(result_bytes))
 
+    @unittest.skipUnless(backfill_module is not None, "requires external visibility-backfill QA script")
     def test_visibility_backfill_skips_reviewed_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
@@ -1311,6 +1403,7 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(applied["updated"], 0)
         self.assertEqual(updated["quality_status"], "cleaned")
 
+    @unittest.skipUnless(display_backfill_module is not None, "requires external display-backfill QA script")
     def test_display_backfill_strips_urls_and_updates_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
@@ -1354,6 +1447,7 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(manifest["content_hash"], f"sha256:{hashlib.sha256(result_bytes).hexdigest()}")
         self.assertEqual(manifest["size_bytes"], len(result_bytes))
 
+    @unittest.skipUnless(display_backfill_module is not None, "requires external display-backfill QA script")
     def test_display_backfill_skips_non_growth_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
