@@ -343,8 +343,13 @@ def bot_runtime(bot_name: str) -> BotLLMRuntime:
     return _merged_runtime(bot)
 
 
-def profile_runtime(profile_name: str) -> BotLLMRuntime:
-    return _merged_runtime(profile_config(profile_name))
+def profile_runtime(
+    profile_name: str,
+    *,
+    selected_profile: Mapping[str, Any] | None = None,
+) -> BotLLMRuntime:
+    profile = dict(selected_profile) if selected_profile is not None else profile_config(profile_name)
+    return _merged_runtime(profile)
 
 
 def provider_runtime(provider_name: str, *, model_tier: str = "") -> LLMProviderRuntime:

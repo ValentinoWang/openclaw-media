@@ -15,7 +15,8 @@ class KnowledgeDelegateMixin:
 
     def _delegate_to_knowledge_bot(self, message: Message, *, thinking_level: str) -> TaskResult:
         profile_name = "knowledge_delegate"
-        runtime = profile_runtime(profile_name)
+        selected_profile = profile_config(profile_name)
+        runtime = profile_runtime(profile_name, selected_profile=selected_profile)
         cmd = [
             runtime.bin,
             "agent",
