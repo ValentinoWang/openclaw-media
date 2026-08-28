@@ -38,6 +38,7 @@ export function shouldSubscribeToTask(
 
 type SettlementTask = TaskFeedItem & {
   settlementStage: string;
+  result?: { ok?: boolean } | null;
   accountBinding?: {
     userPublicId: string;
     ownedAccountPublicId: string;
@@ -82,6 +83,19 @@ const settlementStageLabels: Readonly<Record<string, string>> = {
   needs_manual: "需要人工处理",
   failed: "执行失败",
   cancelled: "已取消",
+  validating: "正在检查输入",
+  generating: "正在生成内容",
+  succeeded: "已完成",
+  pending_manual: "需要补充信息",
+};
+
+const attemptStatusLabels: Readonly<Record<string, string>> = {
+  queued: "已排队",
+  claimed: "已开始处理",
+  running: "处理中",
+  succeeded: "已完成",
+  failed: "处理失败",
+  cancelled: "已取消",
 };
 
 const readbackLabels: Readonly<Record<"database" | "external" | "web", string>> = {
@@ -105,7 +119,12 @@ export type TaskSettlementPresentation = {
 };
 
 export function stableTaskErrorMessage(code: string, fallback?: string): string {
-  return stableErrorMessages[code] ?? (fallback?.trim() || "任务未完成，请稍后重试。");
+  if (stableErrorMessages[code]) return stableErrorMessages[code];
+  const candidate = fallback?.trim() || "";
+  // Never echo infrastructure/English errors into the creator-facing UI.
+  return candidate && /[\u4e00-\u9fff]/.test(candidate)
+    ? candidate
+    : "任务未完成，请稍后重试。";
 }
 
 export function settlementStageLabel(stage: string): string {
@@ -120,9 +139,11 @@ export function taskSettlementPresentation(
   const missingReadbackLabels = (task.missingReadbacks ?? []).map(
     (kind) => readbackLabels[kind],
   );
-  const complete =
+  const fileBackedComplete = task.status === "succeeded" && task.result?.ok === true;
+  const complete = fileBackedComplete || (
     task.settlementStage === "multi_system_readback_complete" &&
-    task.receipt?.status === "multi_system_readback_complete";
+    task.receipt?.status === "multi_system_readback_complete"
+  );
   return {
     stageLabel: settlementStageLabel(task.settlementStage),
     bindingSummary: binding
@@ -130,16 +151,13 @@ export function taskSettlementPresentation(
       : null,
     relationshipRef: binding?.relationshipRef ?? null,
     attemptSummary: attempt
-      ? `第 ${attempt.attemptNumber} 次执行 · ${attempt.status}`
+      ? `第 ${attempt.attemptNumber} 次处理 · ${attemptStatusLabels[attempt.status] ?? "处理中"}`
       : null,
-    executorSummary: attempt
-      ? `runner ${attempt.runnerId} · executor ${attempt.executorId}`
-      : null,
+    // IDs and lease terminology are technical diagnostics, not creator content.
+    executorSummary: null,
     recoverySummary: attempt?.recoveryOfAttemptId
-      ? `从执行尝试 ${attempt.recoveryOfAttemptId} 恢复`
-      : attempt
-        ? "本次执行不是租约恢复尝试"
-        : null,
+      ? "已从上一次中断处恢复"
+      : null,
     missingReadbackLabels,
     receiptSummary: task.receipt
       ? `${complete ? "最终收据已生成" : "收据尚未完成"} · ${task.receipt.createdAt}`

@@ -103,7 +103,9 @@ assert.equal(
   completedPresentation.bindingSummary,
   "xiaohongshu · customer-main",
 );
-assert.match(completedPresentation.recoverySummary ?? "", /attempt-public-1/);
+assert.equal(completedPresentation.attemptSummary, "第 2 次处理 · 已完成");
+assert.equal(completedPresentation.executorSummary, null);
+assert.equal(completedPresentation.recoverySummary, "已从上一次中断处恢复");
 assert.equal(completedPresentation.missingReadbackLabels.length, 0);
 assert.equal(completedPresentation.receiptId, "mtr-receipt-public-1");
 
@@ -146,7 +148,12 @@ for (const [code, expected] of [
   assert.equal(stableTaskErrorMessage(code, "不稳定的后端原文"), expected);
 }
 assert.equal(stableTaskErrorMessage("other_error", "后端可读提示"), "后端可读提示");
+assert.equal(
+  stableTaskErrorMessage("other_error", "executor lease expired"),
+  "任务未完成，请稍后重试。",
+);
 assert.equal(settlementStageLabel("runner_claimed"), "执行器已领取");
+assert.equal(settlementStageLabel("generating"), "正在生成内容");
 
 assert.equal(
   mediaWebTaskSchema.safeParse({ ...completedTask, settlementStage: undefined }).success,

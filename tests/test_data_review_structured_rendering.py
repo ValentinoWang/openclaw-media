@@ -65,6 +65,26 @@ def test_plain_string_guidance_remains_unchanged():
     assert analysis["next_actions"] == guidance
 
 
+def test_review_document_localizes_media_format_without_exposing_screenshot_paths():
+    analysis = validate_data_review_analysis(_analysis_with_guidance(["先缩短开头"]))
+    screenshot_path = "/Users/example/private/review-shot.png"
+    blocks = data_review_doc_blocks(
+        "数据复盘",
+        DataReviewRequest(platform="抖音", account="小王"),
+        analysis,
+        [screenshot_path],
+        "2026-08-28T10:00:00+08:00",
+        "https://example.com/guide",
+    )
+    block_text = "\n".join(_block_texts(blocks))
+    report = render_data_review_report({"analysis": analysis})
+
+    assert "作品形式：视频" in block_text
+    assert "数据截图：共 1 张" in block_text
+    assert screenshot_path not in block_text
+    assert "## 作品形式\n\n视频：" in report
+
+
 def test_performance_level_is_canonicalized_for_published_post():
     analysis = _analysis_with_guidance(["先缩短开头"])
     analysis["performance_level"] = "建议重剪"

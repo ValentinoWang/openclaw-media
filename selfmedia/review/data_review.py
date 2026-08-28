@@ -1205,8 +1205,8 @@ def data_review_doc_blocks(
         _paragraph(f"平台：{analysis.get('platform') or request.platform or '未识别'}"),
         _paragraph(f"账号：{analysis.get('account') or request.account or '未填写'}"),
         _paragraph(f"作品：{analysis.get('title') or analysis.get('topic') or request.title or request.topic or '未填写'}"),
-        _paragraph(f"作品形式：{analysis.get('media_format') or 'unknown'}；依据：{analysis.get('media_format_evidence') or '未填写'}"),
-        _paragraph(f"数据截图：{len(screenshots)} 张"),
+        _paragraph(f"作品形式：{_media_format_label(analysis.get('media_format'))}；依据：{analysis.get('media_format_evidence') or '未填写'}"),
+        _paragraph(f"数据截图：共 {len(screenshots)} 张，原图已作为复盘附件保留。"),
         _paragraph(f"参考模板：{guide_url}"),
         _heading(2, "一、核心结论"),
         _paragraph(str(analysis.get("conclusion") or "")),
@@ -1231,7 +1231,7 @@ def data_review_doc_blocks(
         *_list_blocks(_review_lines(analysis.get("priority_metrics"))),
         *_list_blocks(_review_lines(analysis.get("trend_curves"))),
         _heading(2, "十一、截图与可信度"),
-        _paragraph("\n".join(screenshots)),
+        _paragraph(f"共 {len(screenshots)} 张后台截图，原图作为附件保留。"),
         *_list_blocks(_review_lines(analysis.get("data_quality_notes") or ["截图字段可读"])),
     ]
 
@@ -1319,6 +1319,10 @@ def _review_lines(value: Any) -> list[str]:
         ] or ["暂无"]
     items = value if isinstance(value, list) else [value]
     return [_review_value(item) for item in items[:12] if item not in (None, "", [])] or ["暂无"]
+
+
+def _media_format_label(value: Any) -> str:
+    return {"video": "视频", "image_text": "图文", "unknown": "无法判断"}.get(str(value or "unknown"), "无法判断")
 
 
 def _list_blocks(value: Any) -> list[dict[str, Any]]:
@@ -1549,7 +1553,7 @@ def render_data_review_report(payload: dict[str, Any]) -> str:
         "",
         "## 作品形式",
         "",
-        f"{analysis.get('media_format') or 'unknown'}：{analysis.get('media_format_evidence') or ''}",
+        f"{_media_format_label(analysis.get('media_format'))}：{analysis.get('media_format_evidence') or ''}",
     ]
     for title, value in sections:
         lines.extend(["", f"## {title}", "", *(f"- {item}" for item in _review_lines(value))])
