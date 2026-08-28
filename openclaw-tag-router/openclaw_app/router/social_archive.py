@@ -22,12 +22,12 @@ SOCIAL_ARCHIVE_AUDIO_EXTS = {".m4a", ".mp3", ".wav", ".aac", ".flac", ".caf"}
 SOCIAL_THEORY_TAGS = ("女性爱", "性兴趣", "风控", "性资源", "行动")
 BRACKET_THEORY_RE = re.compile(r"【(?P<tag>[^】\n]{1,32})】")
 THEORY_TAG_SUFFIXES = ("进行分析", "来分析", "分析一下", "分析")
-UPLOADED_MEDIA_ROOT = Path(os.environ.get("OPENCLAW_UPLOADED_MEDIA_ROOT", "/home/ubuntu/.openclaw/media/inbound"))
+UPLOADED_MEDIA_ROOT = Path(os.environ.get("OPENCLAW_UPLOADED_MEDIA_ROOT", str(Path(__file__).resolve().parents[3] / "media" / "inbound")))
 UPLOADED_MEDIA_ROOTS = [
     Path(item.strip())
     for item in re.split(r"[:,]", os.environ.get("OPENCLAW_UPLOADED_MEDIA_ROOTS", ""))
     if item.strip()
-] or [UPLOADED_MEDIA_ROOT, Path("/home/ubuntu/openclaw-feishu-gateway/downloads")]
+] or [UPLOADED_MEDIA_ROOT, Path(__file__).resolve().parents[3] / "downloads"]
 CHAT_SCREENSHOT_STRONG_INTENTS = {
     "聊天截图",
     "微信截图",
@@ -181,9 +181,6 @@ class SocialArchiveMixin:
                 f"{archive_kind}档案更新完成",
                 f"- 对象：【{person}】",
                 f"- 关系分类：{final_category}",
-                f"- 人物 ID：{archive_result['person_id']}",
-                f"- 人物目录：{archive_result['person_directory']}",
-                f"- 读取视图：{archive_result['view_directory']}",
             ]
             if analysis_summary:
                 reply_lines = [
@@ -194,28 +191,35 @@ class SocialArchiveMixin:
                     "",
                     f"- 对象：【{person}】",
                     f"- 关系分类：{final_category}",
-                    f"- 人物 ID：{archive_result['person_id']}",
-                    f"- 人物目录：{archive_result['person_directory']}",
-                    f"- 读取视图：{archive_result['view_directory']}",
                 ]
             if chat_batch.get("ok"):
-                reply_lines.append(f"- 聊天内容 SSOT：{chat_batch.get('content_ssot_path') or '未生成'}")
-                reply_lines.append(f"- 聊天文字稿：{chat_batch.get('transcript_path') or '未生成'}")
-                reply_lines.append(f"- 关系分析：{chat_batch.get('analysis_markdown_path') or '未生成'}")
+                reply_lines.append("- 聊天原文存档：已生成")
             if feishu_result.get("doc"):
                 reply_lines.append(f"- 飞书云文档：{feishu_result['doc']}")
             elif feishu_result.get("warning"):
                 reply_lines.append(f"- 飞书云文档：同步受限：{feishu_result['warning']}")
             elif feishu_skipped:
                 reply_lines.append("- 飞书云文档：不同步（无性关系/人脉档案默认仅本地与 Obsidian）")
-            reply_lines.append("- 读取方式：结构化档案已生成多文件只读视图")
             if archive_kind == "人脉":
                 reply_lines.append("- 下一步：可继续补充微信截图、介绍人、职业需求、故事记忆点或下次跟进时间")
             else:
                 reply_lines.append("- 下一步：可继续补充截图、录音转写或指定 `【理论-...】` 视角")
-            reply_lines.append(f"- 路由记录：{entry.local_path}")
             reply = "\n".join(reply_lines)
-            return TaskResult(ok=True, status=status, reply=reply, task_id=entry.frontmatter["id"], local_path=archive_result["view_directory"], feishu_doc=feishu_result.get("doc", ""))
+            return TaskResult(
+                ok=True,
+                status=status,
+                reply=reply,
+                task_id=entry.frontmatter["id"],
+                local_path=archive_result["view_directory"],
+                feishu_doc=feishu_result.get("doc", ""),
+                extra={
+                    "person_id": archive_result.get("person_id", ""),
+                    "person_directory": archive_result.get("person_directory", ""),
+                    "view_directory": archive_result.get("view_directory", ""),
+                    "route_record": entry.local_path,
+                    "chat_batch": chat_batch,
+                },
+            )
 
         sync_error = feishu_result.get("warning") or archive_result.get("error") or "外部同步未完成"
         reply = "\n".join(
@@ -676,7 +680,6 @@ class SocialArchiveMixin:
         candidates.extend(
             [
                 Path(__file__).resolve().parents[3],
-                Path("/home/ubuntu/openclaw-agents/social"),
             ]
         )
         for root in candidates:

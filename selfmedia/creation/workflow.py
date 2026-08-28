@@ -258,6 +258,9 @@ def format_creation_reply(
     platform_fit: dict[str, Any] | None = None,
     generation: dict[str, Any] | None = None,
 ) -> str:
+    creator_profile_error = " ".join(
+        str((media_context or {}).get("creator_profile_error") or "").split()
+    )[:240]
     # The optional inputs remain part of the callable contract, but are
     # operational telemetry and must not be sent in a creator-facing receipt.
     del activities, virals, inspirations, businesses, media_context, memory
@@ -274,6 +277,8 @@ def format_creation_reply(
         lines.append(f"创作文档：{doc_link}")
     if creation_record_id:
         lines.append(f"创作记录ID：{creation_record_id}（数据复盘时请一并填写）")
+    if creator_profile_error:
+        lines.append(f"达人档案未加载：{creator_profile_error}")
     return "\n".join(lines)
 
 
@@ -296,7 +301,7 @@ def _constraint_business_candidates(
             if not content_type_allowed(request.content_type, record.content_type_requirement):
                 continue
         constrained.append(record)
-    return (constrained or records)[:max_items]
+    return constrained[:max_items]
 
 
 def _require_deconstruction_artifacts(
@@ -374,10 +379,10 @@ def _record_candidate_payload(record: CanonicalMediaRecord) -> dict[str, Any]:
         "cover_opening_hook": _truncate(str((record.detail_json or {}).get("cover_opening_hook") or ""), 420),
         "core_data_summary": _truncate(str((record.detail_json or {}).get("core_data_summary") or ""), 420),
         "top_comment_insight": _truncate(str((record.detail_json or {}).get("top_comment_insight") or ""), 420),
-        "target_audience_summary": _truncate(str((record.detail_json or {}).get("target_audience_summary") or ""), 420),
-        "pain_pleasure_summary": _truncate(str((record.detail_json or {}).get("pain_pleasure_summary") or ""), 420),
+        "target_audience": _truncate(str((record.detail_json or {}).get("target_audience") or ""), 420),
+        "pain_or_pleasure_points": _truncate(str((record.detail_json or {}).get("pain_or_pleasure_points") or ""), 420),
         "attention_elements": _truncate(str((record.detail_json or {}).get("attention_elements") or ""), 420),
-        "viral_breakdown": _truncate(str((record.detail_json or {}).get("viral_breakdown") or ""), 520),
+        "viral_mechanism": _truncate(str((record.detail_json or {}).get("viral_mechanism") or ""), 520),
         "viral_migration": _truncate(str((record.detail_json or {}).get("viral_migration") or ""), 520),
         "creative_upgrade_suggestion": _truncate(str((record.detail_json or {}).get("creative_upgrade_suggestion") or ""), 520),
         "usable_material_brief": _truncate_nested((record.detail_json or {}).get("usable_material_brief") or {}, 900),

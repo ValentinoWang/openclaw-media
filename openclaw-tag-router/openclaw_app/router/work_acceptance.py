@@ -213,9 +213,7 @@ class WorkAcceptanceMixin:
             ensure_ascii=False,
         )
         try:
-            env = self.content_flow_client._content_flow_env()
-            env.setdefault("TRANSCRIPTION_POSTPROCESS_PROVIDER", "openclaw")
-            result = self.content_flow_client._call_postprocess_json(prompt, user_content, env, "作品验收")
+            result = self.content_flow_client._call_postprocess_json(prompt, user_content, "作品验收")
         except Exception as exc:
             return {"status": "pending_manual", "reason": str(exc)}
         return result if isinstance(result, dict) else {"status": "pending_manual", "reason": "OpenClaw 返回非 JSON object"}

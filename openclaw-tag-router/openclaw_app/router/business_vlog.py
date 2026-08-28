@@ -114,8 +114,9 @@ class BusinessVlogMixin:
             "灵感待 LLM 整理",
             [
                 ("原始内容", message.body.strip()),
-                ("LLM整理结果", json.dumps(result, ensure_ascii=False, indent=2)),
-                ("处理状态", "pending_manual\n本入口不再使用确定性规则生成灵感卡主体。"),
+                ("整理失败原因", reason),
+                ("已识别内容", self._inspiration_failure_summary(result)),
+                ("建议补充", "补充清晰的主题、目标产物或可验证动作后重新整理。"),
             ],
             {
                 "tags": ["灵感", "LLM整理失败"],
@@ -196,7 +197,7 @@ class BusinessVlogMixin:
         )
 
     def _mirror_inspiration_to_obsidian(self, local_path: str) -> Path:
-        obsidian_root = Path(os.environ.get("OPENCLAW_OBSIDIAN_ROOT", "/home/ubuntu/obsidian-日记"))
+        obsidian_root = Path(os.environ.get("OPENCLAW_OBSIDIAN_ROOT", str(self.workspace_root / "obsidian")))
         target_dir = ensure_dir(obsidian_root / "灵感" / "归档")
         target_path = target_dir / Path(local_path).name
         target_path.write_text(Path(local_path).read_text(encoding="utf-8"), encoding="utf-8")
@@ -212,7 +213,7 @@ class BusinessVlogMixin:
         zoned = message.created_at.astimezone(ZoneInfo(self.timezone))
         start = zoned.date() - timedelta(days=zoned.weekday())
         end = start + timedelta(days=6)
-        archive_root = Path(os.environ.get("OPENCLAW_WEEKLY_ARCHIVE_ROOT", "/home/ubuntu/obsidian-日记/Archieve"))
+        archive_root = Path(os.environ.get("OPENCLAW_WEEKLY_ARCHIVE_ROOT", str(self.workspace_root / "obsidian" / "Archieve")))
         weekly_path = archive_root / f"{start.strftime('%Y%m%d')}-{end.strftime('%Y%m%d')}.md"
         ensure_dir(weekly_path.parent)
         relative_path = os.path.relpath(Path(obsidian_note_path), weekly_path.parent).replace(os.sep, "/")
@@ -417,6 +418,19 @@ class BusinessVlogMixin:
         if len([str(item).strip() for item in bullets if str(item).strip()]) > 5:
             return "LLM 灵感整理周记分点摘要超过 5 条"
         return ""
+
+    @staticmethod
+    def _inspiration_failure_summary(result: dict[str, Any]) -> str:
+        labels = (("主题", "core_theme"), ("一句话火花", "spark"), ("标题", "title"), ("可展开方向", "expansion_directions"))
+        lines: list[str] = []
+        for label, key in labels:
+            value = result.get(key)
+            if isinstance(value, list):
+                value = "、".join(str(item).strip() for item in value if str(item).strip())
+            text = re.sub(r"\s+", " ", str(value or "")).strip()
+            if text:
+                lines.append(f"{label}：{text[:500]}")
+        return "\n".join(lines) if lines else "暂未识别出可直接归档的主题或行动信息。"
 
     @staticmethod
     def _inspiration_archive_macro_summary(result: dict[str, Any]) -> str:

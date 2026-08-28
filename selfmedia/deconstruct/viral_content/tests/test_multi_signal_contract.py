@@ -128,6 +128,14 @@ def test_contract_normalizes_illegal_dimension_status_conservatively() -> None:
     assert result["validation"]["multi_signal_contract_status"] == "validated_with_warnings"
 
 
+def test_contract_prompt_limits_llm_status_to_evidence_states() -> None:
+    prompt = multi_signal_contract.MULTI_SIGNAL_CONTRACT_PROMPT
+
+    assert "只能从 available、insufficient_evidence 中选择" in prompt
+    assert "不确定就写 insufficient_evidence" in prompt
+    assert "四个字符串" not in prompt
+
+
 def test_build_multi_signal_contract_uses_single_llm_call(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[dict[str, object]]] = []
 

@@ -181,17 +181,6 @@ class MediaCreationMixin:
             f"- 媒体目录：`{result.get('media_dir') or '未记录'}`",
         ]
         # Raw source evidence is retained in the media directory; the readable card exposes only LLM analysis and metadata.
-        raw_evidence_keys = {
-            "caption",
-            "image_ocr",
-            "ocr_path",
-            "article_structure",
-            "source_image_manifest",
-            "source_diagnostics",
-            "source_tags",
-        }
-        display_analysis = {key: value for key, value in analysis.items() if key not in raw_evidence_keys}
-        analysis_payload = json.dumps(display_analysis, ensure_ascii=False, indent=2, default=str)
         sections = [
             ("来源与入库", "\n".join(source_lines)),
             ("摘要", self._knowledge_text_value(extra_fields.get("摘要")) or "未记录"),
@@ -211,7 +200,6 @@ class MediaCreationMixin:
                 )
                 or "未记录",
             ),
-            ("结构化分析JSON", f"```json\n{analysis_payload[:12000]}\n```"),
         ]
         path.write_text(ArchiveService.render_markdown(frontmatter, title, sections), encoding="utf-8")
         cleanup_generated_file_duplicates(path)

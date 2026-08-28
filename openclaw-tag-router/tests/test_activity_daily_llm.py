@@ -15,11 +15,6 @@ from openclaw_app.services.obsidian_daily_checklist_service import ObsidianDaily
 TZ = ZoneInfo("Asia/Shanghai")
 
 
-class ForbiddenScheduleService:
-    def parse(self, *_args, **_kwargs):
-        raise AssertionError("daily task extraction must use LLM, not schedule_service.parse")
-
-
 class FakeContentFlowClient:
     def __init__(self, result: dict | list[dict], *, activity_result: dict | None = None, analyze_result: dict | None = None):
         self.result = result
@@ -137,7 +132,6 @@ class DailyHarness(ActivityDailyMixin):
         self.content_flow_client = FakeContentFlowClient(llm_result, activity_result=activity_result, analyze_result=analyze_result)
         self.archive_service = FakeArchiveService()
         self.reminder_service = FakeReminderService()
-        self.schedule_service = ForbiddenScheduleService()
         self.obsidian_daily_checklist_service = ObsidianDailyChecklistService(Path(self._tmpdir.name) / "Archieve")
 
     def _conversation_context_prompt(self, _message: Message) -> str:

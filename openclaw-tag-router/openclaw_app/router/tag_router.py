@@ -89,7 +89,6 @@ class TagRouter(
         rule_service: RuleService,
         feishu_service: FeishuService,
         content_flow_client: ContentFlowClient,
-        schedule_service: ScheduleService,
         reminder_service: ReminderService,
         obsidian_daily_checklist_service: Any,
         obsidian_development_checklist_service: Any,
@@ -108,7 +107,6 @@ class TagRouter(
         self.rule_service = rule_service
         self.feishu_service = feishu_service
         self.content_flow_client = content_flow_client
-        self.schedule_service = schedule_service
         self.reminder_service = reminder_service
         self.obsidian_daily_checklist_service = obsidian_daily_checklist_service
         self.obsidian_development_checklist_service = obsidian_development_checklist_service

@@ -220,7 +220,7 @@ def test_resume_from_prepared_stage_rebuilds_image_parts(monkeypatch, tmp_path: 
     assert result["multi_signal_contract"]["contract_version"] == "multi_signal_contract.v1"
 
 
-def test_run_workflow_resume_from_recreate_stage_skips_recreate_llm(monkeypatch, tmp_path: Path) -> None:
+def test_run_workflow_rejects_retired_recreate_stage(monkeypatch, tmp_path: Path) -> None:
     deconstruct_payload = _core_payload()
     deconstruct_payload.update(
         {
@@ -231,10 +231,9 @@ def test_run_workflow_resume_from_recreate_stage_skips_recreate_llm(monkeypatch,
             "multi_signal_contract": _multi_payload(),
         }
     )
-    recreate_payload = {"media_type": "image_post", "image_post_script": [{"page_no": 1}], "video_storyboard": []}
     source = tmp_path / "06_recreate.json"
     source.write_text(
-        json.dumps({"stage": "06_recreate", "deconstruct": deconstruct_payload, "recreate": recreate_payload}, ensure_ascii=False),
+        json.dumps({"stage": "06_recreate", "deconstruct": deconstruct_payload}, ensure_ascii=False),
         encoding="utf-8",
     )
 
@@ -242,11 +241,12 @@ def test_run_workflow_resume_from_recreate_stage_skips_recreate_llm(monkeypatch,
     monkeypatch.setattr(runner, "load_config", lambda: object())
     monkeypatch.setattr(runner, "recreate", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("recreate reran")))
 
-    result = runner.run_workflow(
-        "【拆解-再创】 https://example.com/note",
-        write_feishu=False,
-        stage_dir=tmp_path / "resume_recreate",
-        resume_stage_json=source,
-    )
+    import pytest
 
-    assert result["recreate"] == recreate_payload
+    with pytest.raises(ValueError, match="已退役阶段"):
+        runner.run_workflow(
+            "【拆解】 https://example.com/note",
+            write_feishu=False,
+            stage_dir=tmp_path / "resume_recreate",
+            resume_stage_json=source,
+        )

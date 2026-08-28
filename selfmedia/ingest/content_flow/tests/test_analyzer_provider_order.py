@@ -101,6 +101,18 @@ class AnalyzerProviderOrderTest(unittest.TestCase):
         self.assertEqual(result["analysis_provider"], "openclaw_codex")
         self.assertEqual(result["semantic_persistence_version"], "llm_cleaned_user_fields_v1")
 
+    def test_model_categories_are_bounded_to_shared_vocabulary(self) -> None:
+        with patch.object(
+            analyzer,
+            "generate_json_from_parts",
+            return_value={"primary_category": "自由分类", "secondary_category": ["自造分类"]},
+        ):
+            result = analyzer.analyze_with_openclaw_agent("测试内容", SimpleNamespace(model="test-model"))
+
+        assert result is not None
+        self.assertEqual(result["primary_category"], "其他")
+        self.assertEqual(result["secondary_category"], ["未细分"])
+
     def test_openclaw_oauth_failure_marks_incomplete_without_local_semantics(self) -> None:
         original_openclaw = analyzer.analyze_with_openclaw_agent
 

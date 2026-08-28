@@ -26,7 +26,7 @@ def canonical_tenant_owned_resources() -> TenantOwnedResourceService:
     path = Path(
         os.getenv(
             "OPENCLAW_RESOURCE_OWNER_DB_PATH",
-            "/home/ubuntu/.openclaw/state/resource_owners.sqlite3",
+            str(Path.home() / ".openclaw/state/resource_owners.sqlite3"),
         )
     )
     return TenantOwnedResourceService(ResourceOwnerRegistry(path))

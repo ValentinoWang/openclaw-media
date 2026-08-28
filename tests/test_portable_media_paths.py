@@ -11,11 +11,11 @@ def test_media_path_defaults_use_the_repository_or_current_user_home(monkeypatch
     monkeypatch.delenv("SELFMEDIA_CONTENT_INGEST_PATH", raising=False)
 
     repo_root = Path(__file__).resolve().parents[1]
-    expected_agent_root = Path.home() / ".openclaw" / "agents" / "media"
+    expected_agent_root = repo_root / "config" / "media-agent"
 
     assert media_context.MEDIA_AGENT_ROOT == expected_agent_root
     assert id_business.SELFMEDIA_ROOT == repo_root
-    assert id_business.MEDIA_ROOT == expected_agent_root
+    assert id_business.MEDIA_ROOT == Path.home() / ".openclaw" / "agents" / "media"
     assert load_config().part1_path == repo_root / "selfmedia" / "ingest" / "content_flow"
 
 

@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from selfmedia.deconstruct.viral_content.src.human_insight_cards import promotion_evidence_threshold
+
 
 ANALYSIS_SCOPES = ("全片", "开头", "转场", "时间段", "自定义", "历史未标注")
 DECONSTRUCTION_FOCUS_VALUES = ("常规拆解", "钩子", "转场", "BGM", "节奏", "AI片段", "人性洞察", "结尾引导")
@@ -11,7 +13,6 @@ OUTPUT_TYPE_VALUES = ("拆解摘要", "结构迁移", "分镜提示词", "心理
 DECONSTRUCTION_DEPTH_VALUES = ("brief", "detailed")
 WRITE_POLICY_VALUES = ("source_asset_only", "partial_no_write", "full_write_02b", "creation_handoff")
 INSIGHT_CARD_POLICY_VALUES = ("single_video_only", "candidate_for_promotion", "promote_to_library")
-DEFAULT_PROMOTION_EVIDENCE_THRESHOLD = 3
 TAXONOMY_VERSION = "human_insight_taxonomy_v1"
 
 
@@ -25,7 +26,7 @@ class RequestConstraints:
     write_policy: str = "source_asset_only"
     human_insight_focus: str = "常规洞察"
     insight_card_policy: str = "single_video_only"
-    promotion_evidence_threshold: int = DEFAULT_PROMOTION_EVIDENCE_THRESHOLD
+    promotion_evidence_threshold: int = field(default_factory=promotion_evidence_threshold)
     taxonomy_version: str = TAXONOMY_VERSION
     privacy_boundary: str = "public_content_only"
     source: str = "explicit_user_request"
@@ -150,6 +151,7 @@ def constraints_for_deconstruct_text(text: Any) -> dict[str, Any]:
 def validate_request_constraints_payload(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("request_constraints 必须是 object")
+    threshold = promotion_evidence_threshold()
     normalized = RequestConstraints(
         analysis_scope=_allowed(str(value.get("analysis_scope") or ""), ANALYSIS_SCOPES, "全片"),
         analysis_time_range=_validate_time_range(str(value.get("analysis_time_range") or "全部")),
@@ -161,14 +163,14 @@ def validate_request_constraints_payload(value: Any) -> dict[str, Any]:
         write_policy=_allowed(str(value.get("write_policy") or ""), WRITE_POLICY_VALUES, "source_asset_only"),
         human_insight_focus=str(value.get("human_insight_focus") or "常规洞察").strip() or "常规洞察",
         insight_card_policy=_allowed(str(value.get("insight_card_policy") or ""), INSIGHT_CARD_POLICY_VALUES, "single_video_only"),
-        promotion_evidence_threshold=int(value.get("promotion_evidence_threshold") or DEFAULT_PROMOTION_EVIDENCE_THRESHOLD),
+        promotion_evidence_threshold=int(value.get("promotion_evidence_threshold") or threshold),
         taxonomy_version=str(value.get("taxonomy_version") or TAXONOMY_VERSION).strip() or TAXONOMY_VERSION,
         privacy_boundary=str(value.get("privacy_boundary") or "public_content_only").strip() or "public_content_only",
         source=str(value.get("source") or "explicit_user_request").strip() or "explicit_user_request",
         raw_constraints=tuple(_list_value(value.get("raw_constraints"))),
     )
-    if normalized.promotion_evidence_threshold < DEFAULT_PROMOTION_EVIDENCE_THRESHOLD:
-        raise ValueError("promotion_evidence_threshold 不能小于 3")
+    if normalized.promotion_evidence_threshold < threshold:
+        raise ValueError(f"promotion_evidence_threshold 不能小于 {threshold}")
     if normalized.taxonomy_version != TAXONOMY_VERSION:
         raise ValueError(f"taxonomy_version 必须是 {TAXONOMY_VERSION}")
     if normalized.privacy_boundary != "public_content_only":

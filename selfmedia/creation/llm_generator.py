@@ -117,8 +117,9 @@ def build_creation_prompt(
         "report_mode": CREATOR_BRIEF_REPORT_MODE,
     })
     platform_rules = {
-        "小红书": "标题不超过 20 个字符；tags 给 3-10 个与内容强相关的标签，按检索价值挑选，宁少勿凑；图文必须输出 image_script 或 carousel；视频必须输出 storyboard。",
-        "抖音": "标题不能为空；tags 给 2-5 个与内容强相关的标签，按检索价值挑选，宁少勿凑；视频必须输出 hook_3s、storyboard、voiceover、subtitles；图文必须输出 image_script 或 carousel。",
+        "小红书": "标题不超过 20 个字符；tags 必须给 3-10 个与内容强相关的标签，不得用无关标签凑数；图文必须输出 image_script 或 carousel；视频必须输出 storyboard。",
+        "抖音": "标题不能为空；tags 必须给 2-5 个与内容强相关的标签，不得用无关标签凑数；视频必须输出 hook_3s、storyboard、voiceover、subtitles；图文必须输出 image_script 或 carousel。",
+        "B站": "标题不能为空；tags 给 2-8 个与分区和主题强相关的标签；视频必须输出 hook_3s、storyboard、voiceover、subtitles；图文必须输出 image_script 或 carousel。",
     }
     return (
         "你是 OpenClaw media bot 的创作总编。现在由 OpenClaw/LLM 接管【创作】主链路，"
@@ -140,15 +141,15 @@ def build_creation_prompt(
         "12. 先生成 usable_material_brief，再写 script_options。usable_material_brief 必须按“来源 -> 可迁移层 -> 脚本落点”抽取可用素材：账号记忆的人设/禁区/复盘教训；创作灵感的真实场景/触发原话/核心观点；爆款候选只能使用 deconstruction.v2 artifact 蒸馏出的 usable_material_brief、reference_shots 五维镜头合同、reference_production_summary、reuse_guardrails、viral_reuse_assessment 和 pacing_notes；活动候选的投稿约束/话题/截止或返稿要求；商务候选的品牌边界。script_options 只能吃这个 brief 写稿，不要在脚本正文里展开完整来源映射。\n"
         "13. 完整来源映射必须进入 usable_material_brief.source_mapping、creator_report.evidence_appendix 或 script_options 的机器字段；创作者执行区只出现拍摄、文案、发布和风险动作，不输出检索报告口吻。\n"
         "14. 每个 script_options 项都必须保留 activity_fit_reason、viral_reference_reason、inspiration_reference_reason 作为机器字段：写清用了哪个候选 id、迁移了哪一层、落到哪个镜头/页面/台词/封面/评论引导；没采用的来源要在 risks_or_missing_info 或 rejected_option_summaries 说明原因。活动只能约束发布/投稿/话题，不得硬改内容核心；爆款只能给结构和节奏，不得给事实；灵感和账号记忆优先决定内容事实与表达边界；洞察卡必须标为 insight-card reference，并在证据附录保留卡片路径/状态和风险边界。\n"
-        "15. 必须先评估多个创作方向，再把 2-5 个完整脚本放入 script_options；score > 90 是高分方案，score <= 90 也必须保留为可选方案，不得因为未达 90 分而不给完整脚本。\n"
-        "16. script_options 最少 2 个、最多 5 个；如果没有方案超过 90 分，也必须输出至少 2 个评分最高且可执行的完整方案，并在风险中说明未达 90 分的原因。\n"
-        "17. 每个 script_options 项必须包含 option_id、score、score_breakdown、title、angle、score_reason、selected_*_ids、activity_fit_reason、viral_reference_reason、inspiration_reference_reason、risk_level、risks_or_missing_info、tags、final_copy、image_script、carousel、hook_3s、storyboard、voiceover、subtitles、production_checklist、review_plan。score_reason 对所有方案都写评分理由；未达 90 的方案要写“未达 90 的原因 + 为什么仍可作为备选执行”。\n"
+        f"15. 必须先评估多个创作方向，再把 2-5 个完整脚本放入 script_options；score > {CREATION_SCORE_THRESHOLD} 是高分方案，score <= {CREATION_SCORE_THRESHOLD} 也必须保留为可选方案，不得因为未达门槛而不给完整脚本。\n"
+        f"16. script_options 最少 2 个、最多 5 个；如果没有方案超过 {CREATION_SCORE_THRESHOLD} 分，也必须输出至少 2 个评分最高且可执行的完整方案，并在风险中说明未达门槛的原因。\n"
+        f"17. 每个 script_options 项必须包含 option_id、score、score_breakdown、title、angle、score_reason、selected_*_ids、activity_fit_reason、viral_reference_reason、inspiration_reference_reason、risk_level、risks_or_missing_info、tags、final_copy、image_script、carousel、hook_3s、storyboard、voiceover、subtitles、production_checklist、review_plan。score_reason 对所有方案都写评分理由；未达 {CREATION_SCORE_THRESHOLD} 的方案要写“未达门槛的原因 + 为什么仍可作为备选执行”。\n"
         "18. score_breakdown 固定 7 项：evidence_grounding(20)、platform_fit(15)、audience_pain(15)、creative_angle(15)、execution_completeness(15)、reference_integration(15)、risk_control(5)。score 必须等于这 7 项之和。\n"
         "19. script_options 初稿后必须输出 editor_pass。editor_pass 是同一次 LLM 输出里的苛刻总编二改阶段，必须检查：是否像真实内容而不是方案、是否有具体画面/动作/台词、是否有平庸表达、是否证据链污染执行稿、推荐方案改了哪些句子。"
         "editor_pass 还必须做去 AI 腔检查并把结论写进 blandness_risks：final_copy、voiceover、title、封面字、置顶评论里不得出现『首先/其次/最后』连用、『总之』『综上』『值得一提的是』『不难发现』『让我们一起』式套话、连续三个以上排比句、每句结尾都用感叹号、与账号无关的网络热词堆叠；口播每句尽量不超过 22 个字，允许口语连接词和自然的不完整句，写完要能直接读出口不别扭。"
         "顶层 title/final_copy/hook_3s/storyboard/image_script/carousel/creator_report 必须镜像 editor_pass 后的推荐版本。\n"
         "20. recommended_option_id 必须来自 script_options 里的 option_id；顶层 title/final_copy 等字段应与 editor_pass 后的推荐 option 一致。\n"
-        "21. 可以输出 rejected_option_summaries 说明未进入前 5 的方向为什么被舍弃；但前 2 个最可执行方向必须进入 script_options，即使 score <= 90。\n"
+        f"21. 可以输出 rejected_option_summaries 说明未进入前 5 的方向为什么被舍弃；但前 2 个最可执行方向必须进入 script_options，即使 score <= {CREATION_SCORE_THRESHOLD}。\n"
         "22. 必须输出 candidate_match_assessments，对被选中的爆款和创作灵感给出 0-100 匹配分、分项和 selection_reason。"
         "candidate_match_assessments 固定是 object，且必须只包含两个数组字段：viral 和 inspiration；即使没有已选参考，也必须输出 \"viral\": [] 和 \"inspiration\": []。"
         "每个 selected_viral_ids 中的 id 都必须在 candidate_match_assessments.viral 里有一项；每个 selected_inspiration_ids 中的 id 都必须在 candidate_match_assessments.inspiration 里有一项。"
@@ -174,13 +175,13 @@ def build_creation_prompt(
         "activity_strategy, traffic_hypothesis, creation_reverse_plan, validation_targets, selected_activity_ids, "
         "selected_viral_ids, selected_inspiration_ids, selected_business_ids, image_script, carousel, hook_3s, storyboard, voiceover, "
         "subtitles, production_checklist, review_plan, risks_or_missing_info, script_options, recommended_option_id, rejected_option_summaries, "
-        "editor_pass, candidate_match_assessments, report_mode, creator_report。\n\n"
+        "editor_pass, candidate_match_assessments, creator_report。report_mode 由程序注入，不要输出。\n\n"
         "content_core 字段必须包含：content_promise, viewer_problem, specific_scene, memorable_point, must_show。\n"
         "topic_strategy 字段必须包含：target_audience, pain_point, content_angle, single_problem, self_check。\n\n"
         "usable_material_brief 字段必须包含：execution_brief, source_mapping, usage_boundaries。\n"
         "editor_pass 字段必须包含：recommended_option_id, blandness_risks, revisions_applied, final_recommendation_reason。\n\n"
         "candidate_match_assessments 示例结构：{\"viral\":[{\"id\":\"候选id\",\"score\":84,\"score_breakdown\":{\"request_fit\":34,\"content_value\":16,\"transferability\":22,\"evidence_completeness\":12},\"selection_reason\":\"可迁移的开头结构\"}],\"inspiration\":[{\"id\":\"候选id\",\"score\":86,\"score_breakdown\":{\"request_fit\":30,\"inspiration_quality\":22,\"transferability\":22,\"evidence_and_risk\":12},\"selection_reason\":\"落到起跑前镜头\"}]}。\n\n"
-        "report_mode 必须等于输入 report_mode 对象。\n"
+        "report_mode 由程序注入，不要输出。\n"
         "creator_report 固定结构：{overview, opening_3s, mainline, storyboard, publishing_pack, material_checklist, risk_controls, evidence_appendix}。"
         "overview 包含 recommended_topic, core_sentence, platform, content_type, suitable_activity, strongly_recommend_activity, biggest_risk。"
         "opening_3s 包含 visual_0_0_5, caption_or_voice_0_5_3, do_not_open_like_this。"
@@ -280,7 +281,7 @@ def validate_llm_draft_payload(
         messages = "; ".join(issue.message for issue in validation.issues)
         raise ValueError(f"平台规则校验失败：{messages}")
     draft["editor_pass"] = _validate_editor_pass(draft.get("editor_pass"), draft["recommended_option_id"])
-    draft["report_mode"] = _validate_report_mode(draft.get("report_mode"))
+    draft["report_mode"] = dict(CREATOR_BRIEF_REPORT_MODE)
     draft["creator_report"] = _validate_creator_report(draft.get("creator_report"), request)
     _validate_insight_card_reference_boundary(draft)
     return draft
@@ -302,7 +303,7 @@ def _validate_recommended_anti_patterns(draft: dict[str, Any], *, must_keep: Any
                 raise ValueError(f"推荐稿 {field} 包含通用模板表达：{phrase}")
 
 
-SCRIPT_OPTION_SCORE_LIMIT = 90
+CREATION_SCORE_THRESHOLD = 90
 SCRIPT_OPTION_MIN_COUNT = 2
 SCRIPT_OPTION_MAX_COUNT = 5
 SCRIPT_OPTION_SCORE_BREAKDOWN_LIMITS = {
@@ -370,13 +371,16 @@ CREATION_PROMPT_TEXT_LIMITS = {
     "activity_reward": 260,
     "cover_opening_hook": 420,
     "core_data_summary": 420,
-    "top_comment_insight": 420,
-    "target_audience_summary": 420,
-    "pain_pleasure_summary": 420,
-    "attention_elements": 420,
-    "viral_breakdown": 520,
+    "top_comment_insight": 900,
+    "target_audience": 700,
+    "pain_or_pleasure_points": 700,
+    "attention_elements": 700,
+    "viral_mechanism": 520,
     "viral_migration": 520,
     "creative_upgrade_suggestion": 520,
+    "usable_material_brief": 900,
+    "reuse_guardrails": 900,
+    "viral_reuse_assessment": 900,
 }
 CREATION_PROMPT_CANDIDATE_FIELDS = (
     "id",
@@ -420,10 +424,10 @@ CREATION_PROMPT_CANDIDATE_FIELDS = (
     "cover_opening_hook",
     "core_data_summary",
     "top_comment_insight",
-    "target_audience_summary",
-    "pain_pleasure_summary",
+    "target_audience",
+    "pain_or_pleasure_points",
     "attention_elements",
-    "viral_breakdown",
+    "viral_mechanism",
     "viral_migration",
     "creative_upgrade_suggestion",
     "usable_material_brief",
@@ -451,7 +455,6 @@ def _compact_creation_prompt_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "business_memory_candidates": _compact_candidates(payload.get("business_memory_candidates"), 12),
         "reference_docs": _compact_reference_docs(payload.get("reference_docs")),
         "platform_mechanism_fit": _truncate_nested(payload.get("platform_mechanism_fit") or {}, 3000),
-        "report_mode": payload.get("report_mode") or CREATOR_BRIEF_REPORT_MODE,
         "prompt_compaction_note": (
             "候选证据已按字段白名单和长度预算压缩；候选 id、标题、时间、状态、活动 brief、话题、"
             "报名/返稿链接、爆款示范链接、文档链接和 02B 可读拆解字段优先保留。详情 JSON 源快照不进入最终创作提示词。"
@@ -761,16 +764,6 @@ def _mirror_recommended_option_to_draft(draft: dict[str, Any], option: dict[str,
         draft[key] = option.get(key)
 
 
-def _validate_report_mode(value: Any) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise ValueError("report_mode 必须是 object")
-    normalized = dict(value)
-    for key, expected in CREATOR_BRIEF_REPORT_MODE.items():
-        if normalized.get(key) != expected:
-            raise ValueError(f"report_mode.{key} 必须等于 {expected!r}")
-    return normalized
-
-
 def _validate_content_core(value: Any) -> dict[str, Any]:
     data = _as_dict(value, default_key="summary")
     _require_mapping_keys(data, "content_core", ("content_promise", "viewer_problem", "specific_scene", "memorable_point", "must_show"))
@@ -897,27 +890,6 @@ def call_creation_json(
         validation_contract=validation_contract,
         validation_context=validation_context,
     )
-
-
-def _parse_json_payload(text: str) -> dict[str, Any]:
-    cleaned = (text or "").strip()
-    if not cleaned:
-        return {}
-    fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", cleaned, flags=re.S | re.I)
-    if fence:
-        cleaned = fence.group(1).strip()
-    try:
-        parsed = json.loads(cleaned)
-    except json.JSONDecodeError:
-        start = cleaned.find("{")
-        end = cleaned.rfind("}")
-        if start < 0 or end <= start:
-            return {}
-        try:
-            parsed = json.loads(cleaned[start : end + 1])
-        except json.JSONDecodeError:
-            return {}
-    return parsed if isinstance(parsed, dict) else {}
 
 
 def _as_string_list(value: Any) -> list[str]:

@@ -18,13 +18,21 @@ def validate_version_text(request: StylePolishRequest, text: str, *, platform_me
     for required in request.must_keep:
         if required and required not in candidate:
             failures.append(f"缺少必须保留事实：{required}")
+    residual = _remove_must_keep(candidate, request.must_keep)
     for forbidden in request.avoid:
-        if forbidden and forbidden in candidate:
+        if forbidden and forbidden in residual:
             failures.append(f"出现禁止表达：{forbidden}")
     for forbidden in (platform_mechanism or {}).get("forbidden_claim_patterns") or []:
-        if forbidden and str(forbidden) in candidate:
+        if forbidden and str(forbidden) in residual:
             failures.append(f"出现平台机制禁用宣称：{forbidden}")
     return failures
+
+
+def _remove_must_keep(candidate: str, must_keep: tuple[str, ...]) -> str:
+    residual = candidate
+    for phrase in sorted((item for item in must_keep if item), key=len, reverse=True):
+        residual = residual.replace(phrase, "")
+    return residual
 
 
 def scan_forbidden_style_ssot(root: str | Path) -> list[str]:

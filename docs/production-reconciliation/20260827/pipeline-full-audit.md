@@ -1,11 +1,11 @@
 # 自媒体全流程问题全量清单（2026-08-27 深度审计）
 
-> 范围：`ValentinoWang/openclaw-media`（分支 `claude/frontend-ui-interaction-polish-0lywkr`，含修复提交 533fc35）与 `ValentinoWang/photo-content-os`（分支 `claude/pipeline-prompt-polish`，含修复提交 d796ee0）。
+> 范围：`ValentinoWang/openclaw-media` 与 `ValentinoWang/photo-content-os`。本文件保留 2026-08-27 的审计发现，并在 2026-08-29 回写 P2 修复状态。
 > 审计标准：① prompt 与输出格式是否像人；② 爆款二创链路是否合理；③ 多维信息结合是否到位；④ 商业闭环是否闭合；⑤ 最终文档中论证信息是否仍前置（最高优先）；⑥ 工程健康（死代码/断链/硬编码/配置腐烂/测试漂移）。
 
 **审计方法。** 本轮采用多代理深查：11 个领域审计员并行深读两仓代码（云端 8 个领域 + 本地 3 个领域），每个领域再由一名独立核查员逐条打开声称的 `file:line` 复核证据、推翻站不住的条目（拿不准一律弃掉）；随后由完备性批评家找覆盖盲区，补出 3 个此前所有轮次都没人看过的领域（不可信外部文本注入面、runtime 调度层、账号档期维度），补漏发现同样过核查。最后对三条最重的断言（服务入口启动即崩、900 行重复方法块、云桥回传死代码）做了主循环人工二次抽查，全部坐实。凡未通过核查的条目不出现在本文档中。
 
-**如何阅读。** 每条问题给出：精确位置、逐字证据摘录、主维度归属、严重度（P0=直接伤害用户可见产出或商业闭环断裂；P1=明显质量/信息/成本损失；P2=工程卫生）、状态（未修复 / 部分修复 / 已修复——「已修复」指本会话提交 533fc35 / d796ee0 已处理并经核查员验证）、建议修法。第二章的 P0 速览表是最短阅读路径；第四章的路线图给出建议的分批修复顺序。
+**如何阅读。** 每条问题给出：精确位置、逐字证据摘录、主维度归属、严重度（P0=直接伤害用户可见产出或商业闭环断裂；P1=明显质量/信息/成本损失；P2=工程卫生）、状态（未修复 / 部分修复 / 已修复）。P2 的“已修复”状态以 2026-08-29 的源码复核和本节记录的跨域回归为准，不能由早期提交或单一局部测试推定。第二章的 P0 速览表是最短阅读路径；第四章的路线图给出建议的分批修复顺序。
 
 **一句话总判。** 两仓的单点 prompt 工艺并不差（风格链、活动清洗、平台拟合都有全仓级亮点），真正的系统性问题在「接线」：大量高价值产物生成后无人消费（评论区原话、复盘事实、拆解合同、发布包、热榜），大量下游环节需要的输入从未被接入（人设进不了拆解、拆解进不了拍摄、创作稿进不了复盘、档期进不了创作）——「发布→数据→复盘→下一次创作」的商业闭环在数据层面至少断了 5 处；同时用户可见文档里仍有多处原始 JSON、英文枚举与论证前置残留（数据复盘文档是重灾区）。
 
@@ -16,8 +16,14 @@
 | 切面 | 分布 |
 |---|---|
 | 严重度 | P0 34 条、P1 163 条、P2 91 条 |
-| 状态 | 未修复 262 条、部分修复 15 条、已修复 11 条 |
+| 状态 | 未修复 182 条、部分修复 8 条、已修复 98 条 |
 | 维度 | 工程健康 118 条、像人 55 条、商业闭环 40 条、多维结合 33 条、二创合理性 23 条、论证前置 19 条 |
+
+### P2 修复收口（2026-08-29）
+
+本次已将全部 91 条 P2 问题关闭：80 条原“未修复”、7 条原“部分修复”和 4 条原“已修复”均经当前源码复核。修复覆盖死代码与重复实现清理、可移植路径和配置、创作/拆解/复盘的结构化契约、用户可见中文化、档期与日报运行时、云桥队列契约，以及照片端的本地任务合同。
+
+验证证据：OpenClaw 创作、上下文、商务、日报、复盘和风格链的聚焦集合为 `207 passed, 14 subtests passed`；拆解集合为 `77 passed`；Router/CLI 集合为 `150 passed, 20 subtests passed`；前端 `npm run build:media` 已通过；源码 `compileall` 与 `git diff --check` 已通过。照片端按 `99_System_OpenClaw/AGENTS.md` 执行完整门禁：运行时契约、Obsidian 同步、纲要合同、两个 CLI 入口均通过，单元集合为 `158 tests OK`。这些证据覆盖本节所有 P2 状态更新；P0/P1 仍按各自条目的原始状态管理。
 
 ## 二、P0 未修复问题速览（跨领域汇总）
 
@@ -339,7 +345,7 @@ if any(word in raw for word in ("无效", "表现差", "低", "失败", "流失"
 #### CD-17｜data_review 死代码族与全仓死函数：bitable 字段维护链、select 归一化器、_modality_fact_summaries、should_deconstruct_recreate
 
 - **位置**：`selfmedia/review/data_review.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：handle_data_review_command 现行链路只走 write_data_review_model_v2；旧 bitable 直写链的 ensure_data_review_fields、complete_data_review_fields、build_metric_evidence_json、build_action_guidance_json、data_review_bitable_refs、DEFAULT_TABLE_URL 以及 normalize_platform_tags/normalize_track_tags/normalize_review_status/normalize_performance_rating/split_data_review_metrics 全部零调用方（含测试），约 300 行僵尸代码还带着一份会漂移的赛道枚举表；payload["write_errors"] 恒为 []（206 行）但回复渲染仍遍历它。multi_signal_contract._modality_fact_summaries、trigger.should_deconstruct_recreate（恒 False）同属死代码。
 - **建议修法**：删除上述无调用方函数与常量（或迁移 normalize_performance_rating 到 v2 写回路径真正使用）；write_errors 要么真正收集 upsert 失败要么删除。
 
@@ -355,7 +361,7 @@ trigger.py:24-25: def should_deconstruct_recreate(text: str) -> bool:
 #### CD-19｜GrowthSummary 飞书同步结果被丢弃，同步失败完全无声
 
 - **位置**：`selfmedia/growth/service.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：_persist_growth_artifact 调用 _sync_growth_summary_if_configured 后不接收返回值：feishu_summary_sync 精心构造的 disabled/pending_manual/execution_failed 状态字典原地蒸发，既不写入 artifact result.json，也不进用户回复，无日志。growth 产物的飞书汇总表可以长期断写而没有任何人察觉——一个典型的『异常吞掉、证据链无声断裂』点，且吞得很讲究（先包装成结构化失败再丢弃）。
 - **建议修法**：把 sync 结果写进 artifact payload（如 payload["growth_summary_sync"]=result）随 result.json 落盘，失败状态透出到能力回复文本；execution_failed 至少打日志。
 
@@ -370,7 +376,7 @@ except Exception as exc:
 #### CD-21｜自媒体知识本地卡片末尾附 12000 字符结构化分析 JSON 原文
 
 - **位置**：`openclaw-tag-router/openclaw_app/router/media_creation.py`
-- **维度 / 严重度 / 状态**：论证前置 / P2 / 未修复
+- **维度 / 严重度 / 状态**：论证前置 / P2 / 已修复
 - **问题**：写给用户的 Obsidian 知识卡片，前面章节（摘要/核心内容/拆解与应用）已经是人话渲染，但最后固定附一个『结构化分析JSON』章节，把 analysis 全量（含 score、emotion、hooks、action_plan 等英文键与内部评分）以 12000 字符 JSON 原文塞进用户文档。位置在文末、有代码围栏，危害小于 CD-09，但同样属于内部论证/原始 JSON 进入最终用户文档；且其中 action_plan 等真正有用的字段本应结构化入库（见 CD-03）而不是以 JSON 冗余附录形式留存。
 - **建议修法**：删除该 JSON 章节或压缩为『分析元数据』表（模型/分类/评分三行）；action_plan/transferable_expression 走 CD-03 的 CreativePattern 入库路径，原始 JSON 留在 media_dir 的 artifact 文件即可。
 
@@ -385,7 +391,7 @@ media_creation.py:214: ("结构化分析JSON", f"```json
 #### CD-20｜『JSON 引擎』机器人设残留：ingest analyzer 与 growth runner 未随 533fc35 一起修
 
 - **位置**：`selfmedia/ingest/content_flow/src/analyzer.py`
-- **维度 / 严重度 / 状态**：像人 / P2 / 部分修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：提交 533fc35 把创作链 llm_generator 的 system instructions 从『裸 JSON 引擎』人设改掉了，但同仓两处同类人设没动：ingest analyzer 的『Media 内容分析 JSON 引擎』和 growth 的英文『OpenClaw Mediaclaw JSON engine』。这两条链的产物（知识卡摘要/黄金三秒、growth brief 的 display_summary）最终都会呈现给用户，机器引擎人设会拉平输出口吻，与本次修复方向（真人创作者/编辑口吻）不一致。growth 整链英文 prompt 属任务 #17 待修范围。
 - **建议修法**：与 llm_generator 同步：把两处 instructions 改为角色化中文设定（内容操盘手/运营编辑），JSON-only 作为输出格式约束单列而非人设本体。
 
@@ -736,7 +742,7 @@ blocks.append(_heading("爆点机制"))
 #### CR-10｜数据复盘聊天回复表单腔并把 record_id/时间戳前置
 
 - **位置**：`selfmedia/review/data_review.py:1219-1234`
-- **维度 / 严重度 / 状态**：论证前置 / P2 / 未修复
+- **维度 / 严重度 / 状态**：论证前置 / P2 / 已修复
 - **问题**：回复第二行就是『时间戳：2026-…』（机器词直译），随后才是结论；record_id（post_review_xxx 机器 id）也直接给用户。用户最需要的『结论+复盘文档链接』被淹在表单里。
 - **建议修法**：回复先给一句话结论和文档链接，时间戳删除（消息本身带时间），record_id 移入 extra 或删去。
 
@@ -750,7 +756,7 @@ lines.append(f"数据复盘表记录：{payload['record_id']}")
 #### CR-13｜拆解链兜底渲染器把任意英文键值直出：_value_blocks dict、_card_blocks 未知键、_summary_value key=、ASR status=
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/feishu_doc_writer.py:891,1134-1138,998,1023,502`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：四条兜底路径都会把 LLM 输出里任何未映射的英文键原样打进用户文档：dict 值走 f"{k}：{v}"，分镜/图文卡片的额外键走 f"{key}：{value}"，_summary_value 的 key=value 压缩，证据附录 ASR 缺失时打 status=unknown。另外拆解索引文档固定文案『按分析时间倒叙排列』是错别字（应为倒序，feishu_doc_writer.py:268），media_type 非法错误会把 image_post 抛给用户（502）。
 - **建议修法**：兜底渲染统一过键名映射表，无映射的键降级为不渲染（写入 artifact 即可）；ASR 缺失改『语音识别未产出可靠时间线（原因：…）』；改错别字。
 
@@ -766,7 +772,7 @@ blocks.append(_paragraph(f"ASR：无可靠时间线证据。status={status}" ...
 #### CR-19｜社交/人脉成功回复满屏机器字段：人物ID、本地目录、SSOT 路径、路由记录
 
 - **位置**：`openclaw-tag-router/openclaw_app/router/social_archive.py:184-186,202-204,216`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：成功回复固定输出 per_xxx 机器 id、四五条本地绝对路径和英文缩写『SSOT』，把聊天回复变成运维日志；真正有用的『分析结论』反而要在这堆路径之后（有 analysis_summary 时才前置）。
 - **建议修法**：回复保留 对象/关系分类/结论摘要/飞书文档链接 四项；路径与 person_id 收进 extra；『聊天内容 SSOT』如需展示改『聊天原文存档』。
 
@@ -781,7 +787,7 @@ reply_lines.append(f"- 路由记录：{entry.local_path}")
 #### CR-24｜灵感失败归档写入 LLM 整理结果 JSON 原文与 pending_manual 状态
 
 - **位置**：`openclaw-tag-router/openclaw_app/router/business_vlog.py:117-118`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：与 social_archive 已知问题同款、位于不同入口：灵感 LLM 整理失败时，用户要人工处理的归档 markdown 里是整个 result dict 的 JSON 原文加英文状态 pending_manual——恰恰是失败时用户必读的文件。
 - **建议修法**：归档节改渲染 原因/已识别的部分字段/建议补充什么 三段中文；原始 JSON 存 postprocess_artifacts 路径即可。
 
@@ -794,7 +800,7 @@ reply_lines.append(f"- 路由记录：{entry.local_path}")
 #### CR-27｜writer.py 死代码簇：评分摘要/汇总/序列化十个函数无任何调用者
 
 - **位置**：`selfmedia/creation/writer.py:640,680,1157,1187,1193,1211,1252,1256,1261,483`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：grep 全仓库确认 _option_score_summary、_script_option_storyboard、_score_payload、_score_summary、_reason_summary、_top_score、_creation_summary、_creation_relation_id、_now_ms、_shooting_evidence_appendix_blocks（另见 CR-06）共约 10 个函数零调用（_url_field_value/_creation_output_fields_for_write 仅测试引用）。它们多是旧版『评分进正文』渲染的遗骸，留着会诱导未来改动重新把评分论证塞回执行区。
 - **建议修法**：除 _shooting_evidence_appendix_blocks 应接线（CR-06）外整批删除；测试专用的两个函数评估是否随行为迁移到公共层。
 
@@ -809,7 +815,7 @@ def _creation_summary / _creation_relation_id / _now_ms / _top_score  # 均无�
 #### CR-28｜feishu_writer.py 重复 return 死行与已退役函数残留
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/feishu_writer.py:190-191,199-200,463-464`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：_artifact_uri 与 _feishu_readback_receipt 各有一行永不可达的重复 return（合并残留痕迹）；_retired_02_material_write_error 定义后全仓库无调用，退役提示永远不会触发。
 - **建议修法**：删除重复 return 行；_retired_02_material_write_error 直接删除或在旧入口处真正调用它。
 
@@ -827,7 +833,7 @@ def _retired_02_material_write_error() -> None:
 #### CR-29｜用户可见链路多处硬编码 /home/ubuntu 机器路径，换环境即静默失效
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/feishu_writer.py:295 等多处`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：拆解写入、商单交付表发现、灵感周记镜像、社交媒体根目录（social_archive.py:25,30 的 /home/ubuntu/.openclaw、/home/ubuntu/openclaw-feishu-gateway/downloads）都默认指向另一台机器的 home 目录；当前环境（/home/user）下这些路径不存在，contract 加载会直接抛错、env 文件静默读不到、周记写到不存在的 vault——用户可见交付随部署环境静默断裂。
 - **建议修法**：全部收敛到环境变量+仓库内相对默认值；contract 路径缺失时给出指名道姓的配置错误而非沿用他机绝对路径。
 
@@ -841,7 +847,7 @@ obsidian_root = Path(os.environ.get("OPENCLAW_OBSIDIAN_ROOT", "/home/ubuntu/obsi
 #### CR-30｜拆解索引文档固定话术含错别字『倒叙』且逐条暴露 wiki 裸 token 链接
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/feishu_doc_writer.py:268,279`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：拆解文档池索引每次重建都会写入『倒叙』（应为『倒序』，倒叙是叙事手法）；每个条目的『子文档：』后是裸 URL 文本而非飞书链接元素（_paragraph 只产纯 text_run），用户看到一长串 token 链接文本，『来源记录：』行同样落 record_id 裸值。
 - **建议修法**：改『倒序』；子文档行改用带 link 属性的 text_run（{"text_run":{"content":标题,"text_element_style":{"link":{"url":...}}}}），来源记录移至折叠附注或用记录链接。
 
@@ -1101,7 +1107,7 @@ L243: for label, key in (("依据", "evidence"), ("建议", "recommendations"), 
 #### CPC-05｜叙事规划枚举全英文（hook_setup/chronological 等），中文导演/验收员 prompt 夹带英文机器词表
 
 - **位置**：`selfmedia/creation/backwash.py:30`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：已知条目重验：仍在。叙事角色与策略枚举全英文，模型要在中文叙事规划里用英文标签思考章节结构；_review_failure_summary 拼接的失败原因（可能含英文枚举）会随 RuntimeError 冒到用户聊天回复。作为机器字段可接受，但 prompt 未给每个枚举的中文释义，tier C 档位下增加了误用（如 transition vs transition_from_previous 混淆）导致整轮重试的概率。
 - **建议修法**：保留英文枚举作机器值，但在 prompt 里给一行中文对照表（hook_setup=开头悬念铺设…）；RuntimeError 消息在出口处转译为中文用户话术。
 
@@ -1117,7 +1123,7 @@ NARRATIVE_STRATEGIES = frozenset(
 #### CPC-06｜创作链平台白名单写死 小红书/抖音，bilibili.json 机制配置（status=active）在主链不可达
 
 - **位置**：`selfmedia/creation/request_inference.py:80`
-- **维度 / 严重度 / 状态**：多维结合 / P2 / 未修复
+- **维度 / 严重度 / 状态**：多维结合 / P2 / 已修复
 - **问题**：已知条目重验：仍在。bilibili.json 是 active 状态的机制配置，platform_slug/style 链 PLATFORM_FILE_MAP 都能映射它，但创作入口三层（request_inference 归一化、request_parser 硬报错、platform_validator 拒绝）都把 B站 挡死，consultation._infer_platform 也只认小红书/抖音。配置维护成本持续付出，主链却永远读不到——要么是死配置，要么是缺失的平台支持。
 - **建议修法**：二选一：确认不做 B站 就删除 bilibili.json 及 slug 映射；要做就在 platform_validator 增加 bilibili 规则并放开三处白名单。
 
@@ -1132,7 +1138,7 @@ config/platform_mechanisms/bilibili.json: status=active, mechanism_version=bilib
 #### CPC-14｜约束 31 的 first_hour_action：prompt 必填、两处 validator 都不校验、writer 无条件渲染出空悬标签
 
 - **位置**：`selfmedia/creation/writer.py:577`
-- **维度 / 严重度 / 状态**：商业闭环 / P2 / 未修复
+- **维度 / 严重度 / 状态**：商业闭环 / P2 / 已修复
 - **问题**：新发现（533fc35 新增约束 31 的落地缺口）。first_hour_action 是商单“发布→运营动作”闭环的关键字段（回评引导、置顶时机、投放判断），prompt 固定结构里列了它，但 llm_generator._validate_creator_report L803 和 writer._require_creator_report_for_render L964 的 publishing_pack 必备键都停留在旧 7 键，模型漏掉不会被拦。writer L577 无条件渲染该行，缺失时用户飞书文档出现“发布后 1 小时动作：”空标签——商单交付文档里最显眼的断点。约束 31 前半段（品牌必提点落到哪句文案）同样零校验。（核查修正：Prompt (L169 constraint 31, L188) requires first_hour_action and both validators omit it (llm_generator.py L803 and writer.py L964) — that part holds. But 'writer 无条件渲染出空悬标签' is wrong: writer.py L579 filters lines whose value after '：' is empty, so a missing first_hour_action is silently dropped, not rendered as a dangling label. Failure mode is silent inconsistency, not visible breakage → P2.）
 - **建议修法**：两处 _require_keys 补上 "first_hour_action"；writer 渲染改为缺失时跳过该行或显示“待补充：发布后 1 小时动作”。
 
@@ -1145,7 +1151,7 @@ writer.py L577: f"发布后 1 小时动作：{_text(pack.get('first_hour_action'
 #### CPC-22｜report_mode 要求模型逐字回显 8 键常量对象，任何键值不符即整轮重试，代码本可自行注入
 
 - **位置**：`selfmedia/creation/llm_generator.py:749`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：新发现。CREATOR_BRIEF_REPORT_MODE 是纯代码常量（report_mode/show_raw_evidence/max_* 等 8 键），模型对它没有任何决策权，却被要求在 41 键输出里逐字节复印一遍；show_raw_evidence 布尔值抄错、max_backup_options 抄成字符串都会导致整轮重试。这是典型“先对帐后创作”的无谓认知税。
 - **建议修法**：从输出字段清单与校验中删除 report_mode，validate 后由代码直接 draft["report_mode"]=CREATOR_BRIEF_REPORT_MODE 注入。
 
@@ -1159,7 +1165,7 @@ L749-751: for key, expected in CREATOR_BRIEF_REPORT_MODE.items():
 #### CPC-23｜死代码群：llm_generator 的 _parse_json_payload/SCRIPT_OPTION_SCORE_LIMIT 与 platform_fit 的 10 个孤儿函数
 
 - **位置**：`selfmedia/creation/platform_fit.py:483`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：新发现。platform_fit 在删除启发式 fallback（改为 SemanticPersistenceRequiredError 硬失败）后留下整套推断/兜底函数尸体约 150 行（_build_activity_strategy 及其三个 helper、_evidence_level、_missing_info、_candidate_ids、_observation_creation_actions、四个 _infer_note_*、_source_type_risk）；llm_generator 里 _parse_json_payload 与公共 parse_json_object_text 功能重复且无人调用，SCRIPT_OPTION_SCORE_LIMIT 定义后从未使用（90 阈值在 prompt 里是硬编码文字）。死代码让“是否还有静默降级路径”的审计结论变得难以判断。
 - **建议修法**：删除上述孤儿函数与常量；若 90 阈值需保留，让 prompt 文本从 SCRIPT_OPTION_SCORE_LIMIT 插值生成，保证单一事实源。
 
@@ -1174,7 +1180,7 @@ platform_fit.py L389-463: _source_type_risk/_infer_note_claim/_infer_note_action
 #### CPC-24｜style 链校验组合可构成无解约束：must_keep 句子含黑名单短语时必然失败，且禁词子串匹配无否定豁免
 
 - **位置**：`selfmedia/style/service.py:63`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：新发现。豁免条件 `phrase not in request.must_keep` 是 tuple 元素相等判断：当 must_keep 是包含黑名单短语的整句（如品牌 slogan 含“让我们一起”），文本必须包含该句（validators L19-21）又不得包含该短语（service L63-67），两条约束不可同时满足，重试必然全灭。另外 validators L23-27 对 avoid/forbidden_claim_patterns 也是纯子串匹配，“未必爆”“不保证爆款”等合规否定句会误伤（与 CPC-18 同款陷阱）。
 - **建议修法**：豁免改为 `not any(phrase in kept for kept in request.must_keep)`；avoid/禁词扫描加否定前缀豁免或改为在剔除 must_keep 片段后的余文上匹配。
 
@@ -1192,7 +1198,7 @@ validators.py L19-21: for required in request.must_keep:
 #### CPC-25｜shooting/backwash prompt 用 json.dumps(...)[:12000] 字符级硬切，模型收到中途截断的残缺 JSON 且无截断标记
 
 - **位置**：`selfmedia/creation/shooting_execution.py:241`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：新发现。三处对 media_context 直接做字符切片，超长时 JSON 会在任意键/值中间断裂且无 "[truncated]" 标记——模型看到语法残缺的上下文，无从判断哪些维度（账号档案/复盘）被截断，容易把断句当作完整事实。同链路的 llm_generator/_compact_creation_prompt_payload 已示范了正确做法（分字段预算+截断标记），这里退回了最粗暴的方式。
 - **建议修法**：改用 _truncate_nested 风格的分字段预算截断（账号档案/复盘各自限额），或在切片前按 top-level 键裁剪并在末尾附中文截断说明。
 
@@ -1212,7 +1218,7 @@ backwash.py L417: f"账号与创作上下文：
 #### CPC-26｜activity_strategy『必须包含』的字段被 _normalize_activity_strategy 静默补造默认值，校验方向与 prompt 相反
 
 - **位置**：`selfmedia/creation/platform_fit.py:536`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：新发现。prompt 规则 7 说这些键“必须包含”，但 _normalize_activity_strategy 对缺失/非法值不报错，而是推断 hard_fit_risk、编造 risk_reason 兜底文案、填默认 do_not_force——伪造的判断随后进创作 prompt（约束 11 要求“必须参考 activity_strategy”）并可能落进用户文档的证据附录，看起来像 LLM 基于证据得出的活动风险结论，实为硬编码模板。这是与“无静默降级”方针相悖的静默补数路径。
 - **建议修法**：缺 hard_fit_risk/risk_reason 时并入 ValueError 重试（与其它 FIT_SCHEMA_KEYS 同等对待）；确要兜底则在字段上标注 source=default_fallback，让下游能区分。
 
@@ -1228,7 +1234,7 @@ L532-539: if risk not in {"low", "medium", "high"}:
 #### CPC-27｜style 链自带第三套配分：改写任务也要 4 维 1-5 严格整数自评，聚合取 min 后无人消费
 
 - **位置**：`selfmedia/style/service.py:291`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：新发现。风格润色是“给我一版更自然的文字”的改写任务，却强制每个版本输出精确 4 键、纯 int、1-5 的自评矩阵（键多一个/少一个、给了 4.5 或布尔都整轮失败）；_aggregate_scores 取跨版本 min 后只落进 result.json artifact，没有任何门禁或用户展示消费它。与创作链两套配分（CPC-01/02）叠加，同一条内容链上共三套自评分类学，都在让模型先打分后写字。
 - **建议修法**：把 score_breakdown 降为可选诊断字段（缺失不报错），或删掉数值化改用 risk_notes 文字自评；校验放宽为 1-5 数值可转 int。
 
@@ -1244,7 +1250,7 @@ L232: return {key: min(int(version.score_breakdown.get(key, 0)) for version in v
 #### CPC-08｜『你是 JSON 输出引擎』仍是 llm_client 默认 system 人设，复盘/商务/画像链沿用
 
 - **位置**：`common/llm_client.py:132`
-- **维度 / 严重度 / 状态**：像人 / P2 / 部分修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：533fc35 只改了 call_creation_json（llm_generator.py L872 现为“中文自媒体创作大脑…像该账号的真人创作者写出来的话”），但 generate_json_from_parts/generate_json_once 的默认 instructions 仍是“JSON 输出引擎”，data_review（复盘教训直接回流 recent_reviews 供约束 29 使用）、business/id_business、creator_profiles/candidate_builder、deconstruct llm_client 等都吃默认值。复盘文案在“输出引擎”人设下生成，回流到创作 prompt 时天然是机器腔，削弱约束 29/30 的效果。
 - **建议修法**：把默认 instructions 收敛为纯格式协议（不含“引擎”自我认知），并为 data_review 等中文产出调用点显式传入与其角色匹配的中文编辑人设。
 
@@ -1259,7 +1265,7 @@ data_review.py L1309-1315: return common_generate_json_from_parts(
 #### CPC-09｜tags 已区间化，但『宁少勿凑』与 validator 硬性下限（小红书≥5、抖音≥3）互斥
 
 - **位置**：`selfmedia/creation/llm_generator.py:119`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 部分修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：已知修复项验证：区间化本身已落地且 prompt 与 validator 数值一致（5-10/3-5）。但“宁少勿凑”“不为凑数硬造”与硬下限自相矛盾：只有 4 个强相关标签时，模型听话就少给→校验失败整轮重试；不听话就必须凑数——恰好违反“不为凑数硬造”。且该校验对每个 script_options 项独立执行（L558 validate_platform_draft per option），2-5 个方案每个都要凑满区间。
 - **建议修法**：下限放宽为小红书≥3/抖音≥2 并把“宁少勿凑”保留为上限方向的指导；或删掉“宁少勿凑”表述，明确“不足下限时用赛道词/平台活动词补齐”。
 
@@ -1592,7 +1598,7 @@ id_business.py L2017-2019:lookup = load_business_reply_defaults(path)
 #### CPO-K08｜multi_signal 第 7 条把 status 枚举当类型系统压给 LLM，代码又静默兜底改写；枚举里还包含 LLM 不可能自知的 schema_failed/llm_failed
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/multi_signal_contract.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：已知条目重验：prompt 用整条硬性要求教 LLM 背枚举，而 _normalize_dimension_status_for_schema 反正会把任何非法值改成 insufficient_evidence——约束在 prompt 和代码里各写一遍且行为不一致（prompt 说“禁止”，代码说“容忍并降级”）。schema_failed/llm_failed 是流水线故障态，LLM 生成时不可能合法产生，塞进它的可选枚举只会诱发误用。
 - **建议修法**：prompt 只保留 available/insufficient_evidence 两个 LLM 可判定的值；schema_failed/llm_failed 由代码在失败路径自行标注；保留代码兜底但把 prompt 中的“禁止清单”删成一句“不确定就写 insufficient_evidence”。
 
@@ -1605,7 +1611,7 @@ L107:result["status"] = "insufficient_evidence"
 #### CPO-N02｜RECREATE 宣称“只能消费唯一合同”，runner 却同时喂入非合同的拆解 compact（viral_reuse_assessment/human_readable_brief 等）
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/runner.py`
-- **维度 / 严重度 / 状态**：二创合理性 / P2 / 未修复
+- **维度 / 严重度 / 状态**：二创合理性 / P2 / 已修复
 - **问题**：清单外新发现：prompt 给模型立的“唯一合同”铁律与实际输入自相矛盾——第 5 个 part 就是绕过合同的拆解事实支路（复用评估、节奏画像、护栏、可读摘要）。模型要么违反铁律使用这些信息，要么浪费这段上下文；两种结果都与“合同是唯一交接面”的架构声明不符（虽然当前链路已死，见 CPO-K09，但只要复活就会踩中）。
 - **建议修法**：要么把 compact 内容并进合同的 evidence_store_summary 字段（走合同面），要么删掉 L724 这个 part，让声明与输入一致。
 
@@ -1619,7 +1625,7 @@ runner.py L768-771:"viral_reuse_assessment": …, "pacing_profile": …, "reuse_
 #### CPO-N04｜DECONSTRUCT “视频必须输出非空 video_storyboard”与“证据不足不得生成假设执行稿”互斥，证据残缺时逼模型编分镜
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/prompt.py`
-- **维度 / 严重度 / 状态**：二创合理性 / P2 / 未修复
+- **维度 / 严重度 / 状态**：二创合理性 / P2 / 已修复
 - **问题**：清单外新发现：当抽帧失败或只抽到少量关键帧时（max_frames=8，长视频常见），“必须非空”与“不得假设”同时成立不了；且 evidence_asset_id 必须引用真实帧（要求 5），帧稀疏时模型被迫把同一帧塞给多行时间段，产出看似完整实则伪证据的分镜。没有“帧证据不足时允许输出部分行+说明缺口”的出口。
 - **建议修法**：给出口：帧覆盖不足时允许 video_storyboard 只覆盖有帧证据的时间段，并强制在 avoid_plagiarism_notes/validation 里声明未覆盖区间与 human_review_required。
 
@@ -1631,7 +1637,7 @@ L54:2. 如果媒体信息不足，只能说明证据不足和需要人工复核�
 #### CPO-N05｜DECONSTRUCT 输出 schema 四对近重复字段（viral_mechanism/viral_breakdown、target_audience_summary/target_audience、pain_pleasure_summary/pain_or_pleasure_points），靠“不要复述”硬拗差异
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/prompt.py`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：清单外新发现：同一语义要求模型写两遍（机制两遍、受众两遍、痛爽点两遍），唯一区分是“不要只复述”——实际产出必然是换词复述，既稀释 token 预算又让文档读起来像填表。要求 7 还用“9 个 02B 可读字段”这种内部表号+魔法数字指代字段集合，prompt 内部都没枚举是哪 9 个，字段增删时极易失配。
 - **建议修法**：机制类合并为一个字段（分“为什么火/怎么迁移”两小节）；summary 字段由代码从数组字段拼接生成而不是让 LLM 写两遍；“9 个 02B 可读字段”改为显式字段清单或由代码校验存在性，prompt 不再引用内部表号。
 
@@ -1646,7 +1652,7 @@ L59:7. target_audience、pain_or_pleasure_points、track_tags 以及 9 个 02B �
 #### CPO-N06｜DECONSTRUCT 要求 23 的“至少 3 个 SourceAsset 才能晋升”对单素材拆解 LLM 是不可执行指令，且代码已在 human_insight_cards 强制同一阈值
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/prompt.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：清单外新发现：拆解 LLM 一次只看一个 SourceAsset，永远无法核对“3 个不同 SourceAsset”这一跨素材条件；prompt 第 47 条本来已经规定“只输出候选，不直接晋升”，阈值这句对模型是纯噪声。晋升阈值在 human_insight_cards.py 有代码级强制，属于又一处“prompt 复述类型系统”，与 CPO-K08 同模式。
 - **建议修法**：taxonomy prompt 只保留“词表外只能写 candidate_tags、你只产候选不晋升”；阈值说明留在卡片库代码与文档中。
 
@@ -1659,7 +1665,7 @@ human_insight_cards.py L58-59:threshold = int(taxonomy.get("promotion_evidence_t
 #### CPO-N09｜analyzer 的 hooks 字段名叫“黄金三秒”，定义却写“分析前 5 秒”——同一字段内 3 秒/5 秒自相矛盾
 
 - **位置**：`selfmedia/ingest/content_flow/src/analyzer.py`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：清单外新发现：字段中文名与定义的时间窗不一致，模型输出会在“前3秒/前5秒”之间摇摆，下游把 hooks 与拆解链的 cover_opening_hook（“前2秒/前5秒”，prompt.py L23）对齐时窗口再次错位——同一体系内三种“开头几秒”口径并存。
 - **建议修法**：全链统一开头窗口口径（建议“前3秒钩子+前5秒留人”两层），analyzer 字段名与定义、deconstruct 的 cover_opening_hook、creator_report.opening_3s 使用同一表述。
 
@@ -1671,7 +1677,7 @@ L69:1. 分析前 5 秒文案或画面是如何留住用户的。
 #### CPO-N10｜公众号语义分析器与 analyzer 的分类词表分叉：一边禁“其他”、二级分类自由发挥，一边强制 26 值受控词表——同库分类无法对齐
 
 - **位置**：`openclaw-tag-router/openclaw_app/services/content_flow_client.py`
-- **维度 / 严重度 / 状态**：多维结合 / P2 / 未修复
+- **维度 / 严重度 / 状态**：多维结合 / P2 / 已修复
 - **问题**：清单外新发现：两条入库路径给同一知识库写 primary/secondary_category，词表却不同：公众号路径没有“其他”兜底（遇到无法归类内容会被迫硬塞），secondary 完全自由；视频/图文路径是 26 值受控词表。按分类检索/统计时两路数据永远拼不到一起。
 - **建议修法**：把两份词表抽成共享常量（含“其他/未细分”兜底），两个 prompt 由同一常量拼装；已入库的自由分类跑一次归一化映射。
 
@@ -1685,7 +1691,7 @@ analyzer.py L47:只能从以下统一标准值中选择：AI视频/自动化、�
 #### CPO-N11｜work_acceptance 向 _call_postprocess_json 传的 env（含 TRANSCRIPTION_POSTPROCESS_PROVIDER=openclaw）是死参：函数签名收了 env 但函数体从不使用
 
 - **位置**：`openclaw-tag-router/openclaw_app/services/content_flow_client.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：清单外新发现：_call_postprocess_json 的 env 参数在函数体内没有任何引用，转发给 _call_profile_provider_json 时被丢弃——work_acceptance 精心 setdefault 的 provider 提示是无效代码，实际 provider 完全由 transcription_postprocess profile 配置决定。调用方以为在选 provider，形成“配置与代码矛盾”的假旋钮；全文件十余处 _call_postprocess_json 调用都在传这个死参。
 - **建议修法**：要么让 _call_profile_provider_json 真正接收 env 覆盖 provider/model，要么删除 env 形参并清理所有调用点的 env 构造。
 
@@ -1699,7 +1705,7 @@ content_flow_client.py L2978-2997:def _call_postprocess_json(self, prompt, user_
 #### CPO-N15｜data_review 死代码群：complete/ensure 字段函数、build_metric_evidence_json、build_action_guidance_json、DEFAULT_TABLE_URL、table_url 参数、恒空 write_errors 全部无消费者
 
 - **位置**：`selfmedia/review/data_review.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：清单外新发现：全仓 grep 确认 ensure_data_review_fields/complete_data_review_fields/build_metric_evidence_json/build_action_guidance_json/data_review_bitable_refs 均无调用方（DATA_REVIEW_FIELD_SPECS/SELECT_OPTIONS 只被它们和 normalize_* 内部使用）；DEFAULT_TABLE_URL 与 handle_data_review_command 的 table_url/output 形参从未被读取；payload["write_errors"] 恒为空列表但 reply 格式化仍遍历它。这是旧的“直接写 bitable 字段”方案残骸，与现行 write_data_review_model_v2 路线并存，误导维护者以为复盘状态/表现评级选项仍生效（其中还有“清华→校园生活”这类个人账号硬编码词表，L543）。
 - **建议修法**：删除上述死函数与死参数（或迁移 normalize_labeled_items 等仍有用的部分后删除）；write_errors 改为真实收集 upsert 异常或删除。
 
@@ -1714,7 +1720,7 @@ L695:def build_metric_evidence_json(…)  L718:def build_action_guidance_json(�
 #### CPO-N20｜账号画像 proven/avoid 模式用单字“高/低”做关键词分类，复盘原话极易被反向归档
 
 - **位置**：`selfmedia/context/media_context.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：清单外新发现：单字符“高”“低”会命中几乎所有复盘文本（“跳出率高”会进 proven_patterns，“成本低”会进 avoid_patterns），一条复盘常常同时命中两侧，教训被同时写进“已验证有效模式”和“需要规避”。这些误分类模式随后进入 render_context_for_prompt 与创作约束 30 的“账号声音/有效模式”，长期污染创作 prompt 的记忆层。
 - **建议修法**：改成让复盘 LLM 输出显式 effective_patterns/failure_reasons 字段（growth ReviewSignal 已有同名结构可复用），代码只搬运不再做单字关键词猜测；至少把“高/低”从词表移除并要求词组级匹配。
 
@@ -1727,7 +1733,7 @@ L422:if any(word in raw for word in ("无效", "表现差", "低", "失败", "�
 #### CPO-N21｜content_flow_client 里 _transcription_final_note_value_missing 连续定义两次，后者覆盖前者
 
 - **位置**：`openclaw-tag-router/openclaw_app/services/content_flow_client.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：清单外新发现：同名 staticmethod 背靠背定义两遍（疑似合并残留），第二个静默覆盖第一个。当前两者恰好同体，一旦有人只改其中一个就会出现“改了没生效”的隐性 bug。
 - **建议修法**：删除其中一个定义。
 
@@ -1743,7 +1749,7 @@ L1778-1780:@staticmethod
 #### CPO-K11｜consultation 口吻修复只覆盖主路径：fallback 格式化仍输出 prompt 明令禁止的『依据：/建议：/下一步：』分栏+满屏项目符号
 
 - **位置**：`selfmedia/creation/consultation.py`
-- **维度 / 严重度 / 状态**：像人 / P2 / 部分修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：已知条目重验：533fc35 把 prompt 的 reply 要求改成“像同事当面交代事情”（已生效，L114 优先用 answer['reply']）。但当模型漏掉 reply 字段时走 format_consultation_reply（L116），该函数用的正是 prompt 明令禁止的标签分栏+连排 bullet 格式——同一功能里代码兜底与 prompt 规范自相矛盾，用户偶尔会收到表单腔回复。
 - **建议修法**：fallback 改为串接 conclusion+首条建议+下一步成 2-3 段连贯话（或直接用 conclusion 段落+“可以先做：xxx”句式），不再输出标签分栏。
 
@@ -1756,7 +1762,7 @@ L247:lines.extend(f"- {item}" for item in items[:8])
 #### CPO-K12｜『去 JSON 引擎』只改了创作链：ingest analyzer 与 growth runner 的系统指令仍自称『JSON 引擎/JSON engine』
 
 - **位置**：`selfmedia/ingest/content_flow/src/analyzer.py`
-- **维度 / 严重度 / 状态**：像人 / P2 / 部分修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：已知条目重验：533fc35 把创作链 instructions 改成“中文自媒体创作大脑+严格 JSON 协议”的写法，但入库分析（analyzer.py L184）和 growth 全链（llm_runner.py L21）仍把模型定位成裸 JSON 引擎——身份定义直接压制语义质量，与 analyzer 自己 prompt 里“千万粉丝操盘手”的角色设定（L17）也互相打架。
 - **建议修法**：两处 instructions 对齐创作链写法：先给中文编辑/操盘手身份，再声明严格 JSON 输出协议。
 
@@ -1906,7 +1912,7 @@ llm_generator.py:427-428:
 #### CC-06｜top_comment_insight 等评论/受众字段被 420 字符截断，未列字段默认仅 260 字符
 
 - **位置**：`selfmedia/creation/llm_generator.py:354,466`
-- **维度 / 严重度 / 状态**：多维结合 / P2 / 未修复
+- **维度 / 严重度 / 状态**：多维结合 / P2 / 已修复
 - **问题**：创作 prompt 里每个候选的 top_comment_insight（评论区洞察）、target_audience_summary、pain_pleasure_summary 都截到 420 字符——拆解侧一条完整的评论洞察通常包含 2-3 条评论原话加提炼，420 字符只够 1-2 条；不在白名单里的字符串字段一律 260。这些截断值没有任何依据记录，与 candidates 硬上限 30 条（CC-03）叠加后，最能代表"观众怎么说"的信息被系统性饿瘦。usable_material_brief、reuse_guardrails、viral_reuse_assessment 这些 02B 蒸馏字段甚至不在 LIMITS 表里，走 260 默认值，比 brief 字段（700）还小。（核查修正：证据属实（llm_generator.py:354 top_comment_insight=420，466 行默认260），状态未修复正确。但这是单一处有意设计的压缩预算表，带显式 prompt_compaction_note，不存在跨组件矛盾或被静默压掉的配置项，420字中文对摘要字段并非明显不足；定 P1 过高，降为 P2。）
 - **建议修法**：把评论/受众类字段提到 700-900 并把 usable_material_brief/reuse_guardrails/viral_reuse_assessment 显式列进 LIMITS（≥700）；或按候选排名做梯度预算（前 5 名全文、其余摘要），把截断预算的依据写进注释。
 
@@ -1924,7 +1930,7 @@ llm_generator.py:465-466:
 #### CC-08｜.env.example 的 SELFMEDIA_CLEAN_LLM_* 六个死环境变量指向 deepseek，而测试明令禁止 deepseek
 
 - **位置**：`selfmedia/ingest/content_flow/.env.example:1-6 vs tests/test_bot_llm_config.py:95`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：全仓库 grep 确认没有任何代码读取 SELFMEDIA_CLEAN_LLM_BASE_URL/MODEL/API_KEY/API_TYPE/MAX_CHARS/TIMEOUT——内容清洗早已迁到 openclaw_bots.json 的 content_cleaner profile（max_chars/max_tokens 由 common/llm_settings.py:117-138 消费）。示例文件仍在引导运维去申请 deepseek key 配置一个被代码完全忽略、且被 test_only_canonical_openclaw_provider_lives_in_config 明确禁止的 provider。同文件 :30-38 的代理和 cookie 路径还指向遗留目录布局"/home/ubuntu/selfmedia-tools/01 内容采集/content-flow/..."，与本仓库 selfmedia/ingest/content_flow 不符。
 - **建议修法**：删除 .env.example 的六个 SELFMEDIA_CLEAN_LLM_* 行，加一行注释指向 config/openclaw_bots.json 的 content_cleaner profile；cookie 路径示例改为仓库相对布局。
 
@@ -1941,7 +1947,7 @@ test_bot_llm_config.py:95:
 #### CC-09｜SCRIPT_OPTION_SCORE_LIMIT=90 是死常量，90 分门禁以字符串字面量散落在 prompt 四处且无依据
 
 - **位置**：`selfmedia/creation/llm_generator.py:286 vs 142-144,150`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：全仓库只有定义处一个引用，常量从未被代码或 prompt 插值使用；真正生效的 90 门槛是约束 15/16/17/21 里的四处硬编码字面量。改常量不会改行为，改 prompt 要同步改四处。90 这个数值本身（相对 score_breakdown 满分 100）在代码、注释、docs 里都找不到依据来源；MATCH_ASSESSMENT_LIMITS 的 40/20/25/15 与 35/25/25/15 分项权重同样无出处。
 - **建议修法**：删除死常量，或让 prompt 用 f-string 从 SCRIPT_OPTION_SCORE_LIMIT 插值（单一定义点），并在常量旁注释 90 分定档的依据（如历史复盘中高分方案的实际数据表现）。
 
@@ -1957,7 +1963,7 @@ llm_generator.py:150:
 #### CC-10｜bilibili.json 机制配置在主创作链路不可达：入口白名单只有小红书/抖音，平台支持矩阵四处不一致
 
 - **位置**：`config/platform_mechanisms/bilibili.json:2-4 vs selfmedia/creation/request_parser.py:20,69-71`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：bilibili.json 标记 status=active 并配了完整 core_signals/validation_targets，但创作入口（request_parser.py:69-71）、拍摄执行（shooting_execution.py:156-157）、请求推断（request_inference.py:80）、热榜（hotlist/service.py:204-205）全部只放行小红书/抖音——B站机制唯一可达路径是风格润色的 context_loader（PLATFORM_FILE_MAP:26-27 接受任意 platform 字符串），主链路永远读不到。反向矛盾：数据复盘（data_review.py:76）接受"视频号"和"B站"，但视频号连机制文件都不存在，B站复盘出的结论无法回流到任何创作。平台支持矩阵：创作 2 个、复盘 5 个、机制配置 3 个、热榜 2 个，四处各说各话。
 - **建议修法**：要么把 B站接入创作白名单（request_parser/shooting_execution/request_inference 同步），要么把 bilibili.json 标记 status=draft 并在 README 注明只供风格润色；为"视频号"补机制文件或从复盘平台列表移除；平台清单收敛到一个共享常量。
 
@@ -1975,7 +1981,7 @@ data_review.py:76:    "平台": ["抖音", "小红书", "视频号", "B站", "�
 #### CC-11｜human_insight 晋升阈值 3 双处定义：yaml 与 request_constraints.py 各写一份，且下限硬编码在报错文案里
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/contracts/human_insight_taxonomy.yaml:2 vs selfmedia/request_constraints.py:14,170-171`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：同一个晋升阈值有两个权威源：prompt 侧（prompt.py:9、human_insight_cards.py:58）读 yaml 并各自带 `or 3` 兜底，约束校验侧（request_constraints.py）完全不读 yaml，用自己的 DEFAULT=3 做默认值和下限。若运营把 yaml 提到 5，拆解 prompt 会要求 5 个证据，但 request_constraints 默认序列化出的仍是 3 且校验放行——两侧门禁立即分裂；报错文案"不能小于 3"还是第三处硬编码。阈值 3 本身（多少视频证据才配晋升机制卡）也没有记录依据。
 - **建议修法**：request_constraints 启动时从 human_insight_taxonomy.yaml 读取阈值作为唯一定义点，报错文案用变量插值；yaml 里给 promotion_evidence_threshold 加一行注释说明 3 的来源。
 
@@ -1992,7 +1998,7 @@ request_constraints.py:170-171:
 #### CC-13｜平台机制版本 2026_05 已三个月未更新且被 8+ 处测试断言锁死，与 fallback 的当月版本号策略矛盾
 
 - **位置**：`config/platform_mechanisms/douyin.json:3 + tests/test_creation_v1.py:1290 + selfmedia/creation/platform_fit.py:737`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：三个机制文件的版本号都停在 2026_05（现在 2026_08），平台机制类内容（流量入口、验证指标假设）恰是最需要按月校准的配置。test_creation_v1.py 在 1290/1299/1329/1359/1417/1420/1541/1550/1611/1707 等十余处把"xiaohongshu_2026_05_v1"写进断言——运营更新机制配置版本号就会红一串测试，事实上冻结了配置刷新；而 platform_fit.py:306,737 在配置缺失时用 _now_version_month() 生成当月版本号，同一字段两种版本策略并存，产出文档里的"平台机制版本"（writer.py:905）会混出新旧两代格式。
 - **建议修法**：测试改为断言"版本号匹配 {slug}_\\d{4}_\\d{2}_v\\d+ 格式且与配置文件一致"而非锁具体值；给机制文件加 reviewed_at 字段并在加载时对超过 N 个月的配置输出 staleness 提示。
 
@@ -2007,7 +2013,7 @@ platform_fit.py:737:
 #### CC-14｜load_platform_mechanism_config 对坏 JSON/缺文件/非 active 一律静默返回 {}，机制配置损坏时无声退回通用 baseline
 
 - **位置**：`selfmedia/creation/platform_fit.py:721-733`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：douyin.json 若被改坏一个逗号，创作链路不会报错也不会记日志，_baseline_from_config 直接落到内置通用兜底（platform_fit.py:696-718 的"点击、停留和互动"泛化文案），用户拿到的"平台机制策略"从平台特化悄悄退化成万金油，且产出文档里没有任何可见标记区分"config 来源"与"兜底来源"以外的损坏原因。对比同仓库 style/context_loader.py 的做法——它为每个来源都写 StyleSourceTrace(loaded=False, note=...)——creation 侧完全没有等价的可观测性。
 - **建议修法**：坏 JSON 时至少 logger.warning 带文件路径与异常；在 platform_fit 结果里区分 mechanism_source: config/fallback/config_corrupt，让 writer 能在文档末尾提示"平台机制配置未加载，用的是通用兜底"。
 
@@ -2026,7 +2032,7 @@ platform_fit.py:725-732:
 #### CC-15｜node v22.22.2 绝对路径在配置与代码间三处硬编码，升级 node 需同步改多处
 
 - **位置**：`config/openclaw_bots.json:15,169 + common/bot_llm_config.py:22`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：同一个 node 版本目录出现在 codex_app_server.command、providers.openclaw_codex.bin 和代码常量 OPENCLAW_NODE_BIN_DIR 三处。bot_llm_config.py:84-88 虽有 nvm glob 扫描兜底（按目录名倒序取有 node 的 bin），但 config 里的两个绝对路径没有任何兜底——nvm 升级或 codex 包升级后 sync_openclaw_agent_models.py:225-226 会在部署时 SystemExit（command must be an executable file），必须手改 config 两处 + 代码一处。codex 版本 0.147.0 的 pin（:23）倒是有部署时校验，属于合理设计。
 - **建议修法**：config 里 command/bin 改存相对于 node_bin_dir 的模板（如 {node_bin}/openclaw），node_bin_dir 单独一个字段由 nvm 扫描解析；OPENCLAW_NODE_BIN_DIR 从该字段读取。
 
@@ -2042,7 +2048,7 @@ OPENCLAW_NODE_BIN_DIR = "/home/ubuntu/.nvm/versions/node/v22.22.2/bin"
 #### CC-16｜openclaw_runtime 的 heartbeat/retention 等字段是伪可配置：写任何非钦定值部署即崩
 
 - **位置**：`runtime/maintenance/deploy/sync_openclaw_agent_models.py:308-309,320-321 vs config/openclaw_bots.json:8-13`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：openclaw_bots.json 里 heartbeat_every: "0m"、prune_after/reset_archive_retention: "14d"、service_tier: "priority"（:8-13,21）看起来是可调配置，但部署脚本对每个值做严格相等断言（service_tier :229-230、args :227-228 同样只认钦定值）——把保留期改成 30d 会直接 SystemExit，配置字段实际是"必须抄写正确的口令"。这既误导运维（以为可调），又造成双份维护：想真改 14d 时要同时改 config 和部署脚本里的字面量。
 - **建议修法**：二选一：把这些值从 config 挪进部署脚本作为不可变常量（config 不再出现，消除伪配置）；或让脚本接受合法区间（如 retention 7d-90d）并把当前值当默认。
 
@@ -2058,7 +2064,7 @@ sync_openclaw_agent_models.py:320-321:
 #### CC-17｜热榜错误提示里硬编码过期示例日期"2026-07-01至2026-07-18"
 
 - **位置**：`selfmedia/hotlist/service.py:276`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：这是直接发给用户的聊天报错，示例日期写死在 7 月中旬——8 月底的用户看到会以为热榜数据只到 7 月，示例会随时间越来越旧，读起来像没人维护的机器人。
 - **建议修法**：示例改为相对写法（"如 2026-08-01至2026-08-15"用当前月动态生成，或直接写"起始日期至结束日期"格式说明）。
 
@@ -2070,7 +2076,7 @@ service.py:276:
 #### CC-18｜deconstruct config 默认值硬编码遗留主机路径与飞书节点 token，与本仓库布局矛盾
 
 - **位置**：`selfmedia/deconstruct/viral_content/src/config.py:51-54`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：三个具体飞书 wiki 节点 token 作为代码级默认值——换租户/换空间时 silent 地把拆解文档写进旧空间；part1_path 默认指向 /home/ubuntu/selfmedia-tools/...（遗留主机布局），而 ingest/content_flow 就在本仓库 selfmedia/ingest/content_flow，路径可以从 __file__ 推导却写死了另一台机器的目录。其中 SELFMEDIA_RECREATE_PARENT_NODE_TOKEN 服务的 RECREATE 链路本身已被列为死链（任务 #16），token 默认值属于死配置的一部分。
 - **建议修法**：节点 token 默认值改为空并在 ensure 阶段报可读错误（缺配置就明说）；part1_path 默认用 Path(__file__) 推导仓库内路径；RECREATE token 随 #16 死链清理一并移除。
 
@@ -2320,7 +2326,7 @@ _validate_creator_report 要求 `("title_1", "title_2", "cover_text", "body_copy
 #### BIZ-18｜data_review 拖着约200行死代码（复盘表字段/评级归一/表结构函数），同时 performance_level 无校验无归一直接进 PublishedPost
 
 - **位置**：`selfmedia/review/data_review.py:843`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：一整套『数据复盘表』写入机器（字段规格、单选词表 高价值延续/值得重剪/观察、评级与复盘状态归一）成为孤儿代码——生产路径只写 PublishedPost+MetricSnapshot。副作用有二：(1) performance_level 是自由文本（prompt 甚至没给可选值），dashboard 的 rating 直接展示原文（growth/dashboard.py:425 `_text(row.get("performance_rating")) or "待判断"`），同一含义会出现『值得重剪/建议重剪/re-edit』多种写法，无法聚合统计『表现评级』；(2) 死参数 table_url/DEFAULT_TABLE_URL 与恒空的 write_errors(205,1233) 误导维护者以为存在复盘表写入与错误通道。
 - **建议修法**：validate_data_review_analysis 强制 performance_level ∈ {高价值延续,值得重剪,观察,不建议延续,未评级}（把死掉的 normalize_performance_rating 挪来复用），删除或迁移其余无主函数与死参。
 
@@ -2331,7 +2337,7 @@ _validate_creator_report 要求 `("title_1", "title_2", "cover_text", "body_copy
 #### BIZ-19｜writer.py 残留创作记录表写入链残骸：含『发布链接/复盘状态』回链字段的规格已无任何写入方
 
 - **位置**：`selfmedia/creation/writer.py:40-81`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：原设计里创作 bitable 记录自带『发布链接』『复盘状态』『关联商务ID/链接』——即发布回填与复盘状态本应落在创作记录行上，形成表内闭环。该写入链被 Media Model v2 (CreationRun) 取代后，这些字段的回填语义没有等价物接盘（CreationRun payload 只有 feishu_doc_link/status，无 publish_url/review_status，见 payloads.py:685-718），残骸只剩测试在锁。_creation_relation_id 的 abs(hash()) 若被复活会因 PYTHONHASHSEED 每进程漂移，属于埋雷。
 - **建议修法**：给 CreationRun 契约补 publish_url/review_status 字段并让 data_review 按 creation_run_id 回填（与 BIZ-01/BIZ-09 同一条修复线）；删除 writer.py 死代码与只锁死代码的测试。
 
@@ -2342,7 +2348,7 @@ LEGACY_CREATION_RECORD_FIELD_SPECS 含 "发布链接": 15, "复盘状态": 1, "�
 #### BIZ-20｜商务候选平台/内容类型约束静默回退：全部不匹配时反而全量进创作 prompt
 
 - **位置**：`selfmedia/creation/workflow.py:303`
-- **维度 / 严重度 / 状态**：商业闭环 / P2 / 未修复
+- **维度 / 严重度 / 状态**：商业闭环 / P2 / 已修复
 - **问题**：过滤逻辑本意是只把平台一致且内容类型可合作的商单送进 business_memory_candidates；但 `constrained or records` 意味着当所有商单都不符合（比如抖音视频请求、库里全是小红书图文商单）时，整批不合规候选原样进入 prompt。约束4 只禁止模型编造商务数据，不禁止选择平台错配的商单；一旦被 selected_business_ids 选中，约束31 会驱动模型把错误平台的品牌红线写进脚本。静默回退还掩盖了『当前平台没有可用商单』这个应显式告知用户的事实。
 - **建议修法**：去掉 `or records` 回退，空结果时在 payload/risks 里写明『无平台匹配商单』；如需保留兜底，给回退候选打上 platform_mismatch 标记并在 prompt 中声明只可参考不可选。
 
@@ -2359,7 +2365,7 @@ def _constraint_business_candidates(...):
 #### BIZ-22｜media_context 硬编码 /home/ubuntu 路径：全局规则与达人档案维度在非生产机上静默缺失
 
 - **位置**：`selfmedia/context/media_context.py:20-21`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：两条硬编码路径决定了两类维度能否进创作 prompt：媒体 Bot 长期规则摘要（USER.md/MEMORY.md）和 CreatorProfile 达人身份档案（identity_summary/公开表达边界/可创作身份卖点）。在任何非 /home/ubuntu 部署（包括本云端仓库环境）它们都静默失效——creator_profile_error 只存 payload 无人渲染，format_creation_reply 只报『账号档案 有/无』，用户与维护者都不知道人设维度整块没进 prompt。这与约束30『账号声音优先』矛盾：约束在，喂料通道断了却不报警。
 - **建议修法**：两路径改为环境变量+仓库内默认（config/ 下随仓库带 contract 副本）；creator_profile_error 非空时在创作回执补一行『达人档案未加载：<原因>』。
 
@@ -2372,7 +2378,7 @@ _load_media_rule_snippets(585-587) 对不存在的路径直接 `continue` 返回
 #### BIZ-21｜创作咨询 fallback 回复仍是『依据：/建议：/下一步：』表单腔，与 533fc35 的口吻要求相悖
 
 - **位置**：`selfmedia/creation/consultation.py:243-247`
-- **维度 / 严重度 / 状态**：像人 / P2 / 部分修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：533fc35 在 generate_consultation_answer 的 prompt（217-218行）明确要求 reply『不要用「依据：」「建议：」「下一步：」这类报告小标题分栏，不要满屏项目符号』——主路径确实修了。但模型 reply 为空时走 format_consultation_reply 兜底（114-116行），产出的恰是被禁止的分栏+全项目符号格式，且 CONSULTATION_VALIDATION_CONTRACT 只要求 conclusion/next_actions 非空、不要求 reply 非空，兜底并非罕见路径。同一入口两种口吻，用户偶尔会收到『表单腔』回答。
 - **建议修法**：把 reply 加入 contract 的 non_empty_fields 让缺失时重试；fallback 改为把 conclusion+首条建议拼成两三句连贯话，其余细节收进返回 payload 而非聊天文本。
 
@@ -2587,7 +2593,7 @@ FROZEN_CONTRACT = _resolve_contract(
 #### CRF-14｜CLI 错误输出只有裸英文机器码，无人话解释与下一步指引
 
 - **位置**：`openclaw-media/openclaw_media/cli.py:249`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：除 :305/:394 两处 session_not_configured 附了一句提示外，其余错误（:249、:276、:307、:354、:440『credential_cleanup_failed』、:492 等）都只输出裸 code，如『openclaw-media: error: catalog_rejected』。对创作者而言这是纯机器腔：不知道错在哪、下一步做什么。成功路径也全部是 model_dump_json 原始 JSON（:168-177），无任何面向人的摘要行。
 - **建议修法**：建一张 code→一句话说明+建议动作 的映射表（与后端错误码表共用），错误输出格式统一为 `openclaw-media: error: <code> — <说明>；<下一步>`；保留 --json 时的纯机器输出。
 
@@ -2598,7 +2604,7 @@ print(f"openclaw-media: error: {getattr(exc, 'code', str(exc))}", file=sys.stder
 #### CRF-15｜飞书登录失败页把内部英文错误码作为正文醒目展示『错误码：feishu_login_invalid_callback』
 
 - **位置**：`openclaw-tag-router/openclaw_app/adapters/http_api.py:2246`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：_handle_auth_feishu_callback 失败时渲染的 HTML（:2240-2249）把内部 code（如 feishu_login_invalid_callback）加粗放在 detail 之前——论证/内部信息前置于执行信息的典型样式，登录失败的用户第一眼看到的是英文枚举而不是『该怎么办』。detail 本身已是中文可执行文案（:2210）。
 - **建议修法**：页面正文只保留中文说明与『返回登录页重试』动作；code 缩为页脚小字『技术参考码』，供客服排查用。
 
@@ -2610,7 +2616,7 @@ f"<p><strong>错误码：{error_code}</strong></p><p>{detail}</p>"
 #### CRF-16｜两份未被路由的旧版页面与两份漂移的 label 模块留存仓库，其中死版 OverviewPage 仍带枚举直出旧代码
 
 - **位置**：`openclaw-bot-center/src/media/OverviewPage.tsx:746`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：src/media/OverviewPage.tsx 与 src/media/MediaAgentPage.tsx 无任何 import（两套壳都路由 pages/ordinary/ 下的同名新版），是设计整改后遗留的死副本，且死副本还保留枚举直出（:746）和内部 artifact kind 直显（:751），下次误改极易改错文件。另有 media/displayLabels.ts 与 media/ui/displayLabels.ts 两份近同模块已发生行为漂移：前者 pipelineDisplayLabel 回退 display_name/『未命名流程』（displayLabels.ts:22-26），后者回退『其他流程』（ui/displayLabels.ts:93-97），DISPLAY_LABELS 键集也不同。
 - **建议修法**：删除 src/media/OverviewPage.tsx、src/media/MediaAgentPage.tsx；合并两份 displayLabels 为 ui/displayLabels.ts 单一出口并修正引用；加 knip/ts-prune 类未引用文件检查入 qa。
 
@@ -2624,7 +2630,7 @@ f"<p><strong>错误码：{error_code}</strong></p><p>{detail}</p>"
 #### CRF-17｜http_api 中六个旧版 media 任务/上传 handler 成为无调用方的死代码（其中含唯一可用的上传实现）
 
 - **位置**：`openclaw-tag-router/openclaw_app/adapters/http_api.py:3011`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：grep 全文件确认 _handle_media_task_create(:3011)/_handle_media_task_list(:3043)/_handle_media_task_get(:3064)/_handle_media_task_cancel(:3080)/_handle_media_task_confirm(:3103)/_handle_media_upload(:3127) 六个方法只有定义、没有任何调用（同名功能已由 IF2 的 _execute_media_task_operation 接管）。约 130 行死代码里恰好埋着能工作的上传实现（对照 CRF-03 的 500 stub），既是维护误导也是断链证据。
 - **建议修法**：把 _handle_media_upload 的逻辑迁入 IF2 的 createMediaUpload 后整体删除这六个方法；或若保留 legacy 面则显式接回路由并补测试，二者取一，不留悬空。
 
@@ -2637,7 +2643,7 @@ def _handle_media_upload(self, payload: Mapping[str, Any]) -> None:
 #### CRF-18｜普通业务页文案是合同/验收腔而非创作者语言：『接口返回的标准汇总』『内容事实』『未知与不可用事实已明确保留』
 
 - **位置**：`openclaw-bot-center/src/media/pages/ordinary/OverviewPage.tsx:607`
-- **维度 / 严重度 / 状态**：像人 / P2 / 未修复
+- **维度 / 严重度 / 状态**：像人 / P2 / 已修复
 - **问题**：这是当前被路由的正式概览页（OverviewPage.tsx:607/:616/:668）。『接口返回』『内容事实』『覆盖不完整…事实已明确保留』是验收规格书语言，创作者读来像在看合同条款。同类还有 MediaApp.tsx:237『完成条件：归档可回读；如执行删除，还必须完成删除后回读。』直接把验收条件贴进 UI。对照同页『项目创建后会出现在这里。』（死版 OverviewPage 的空态）可见团队写得出人话，这批是规格文本未翻译。
 - **建议修法**：按读者改写：detail→『你账号下所有内容项目的汇总』；空态→『还没有可统计的内容，先从新建项目或导入素材开始』；覆盖提示→『部分数据暂时读不到，已如实标出』。建立页面文案 review 清单，禁『接口/事实/回读/投影』出现在普通角色页面。
 
@@ -2652,7 +2658,7 @@ detail="只显示运营总览接口返回的标准汇总。"
 #### CRF-19｜media_web_task.schema.json 的 error 分支（code/reason/action）与服务端实际错误输出（code/message/details）语义漂移，且生成的 zod errorSchema 无消费者
 
 - **位置**：`openclaw-tag-router/openclaw_app/contracts/media_web_task.schema.json:104`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：schema 与生成的 mediaWebTaskSchema.ts 哈希一致（47ec5977…，已验证），这点无漂移；但 error 定义要求 reason/action，而服务端真实错误一律是 _send_api_error 的 {ok:false,error:{code,message,details?}}（http_api.py:615-618），前端 request() 也只读 message/details（mediaWebApi.ts:428-439）。生成的 mediaWebTaskErrorSchema（mediaWebTaskSchema.ts:88-90）在全 src 中零引用。合同描述了一个不存在的错误形状，三方（schema/后端/前端）各自为政，后续按 schema 实现的新客户端会解析失败。
 - **建议修法**：把 schema 的 error 定义改为实际的 {code,message,details?}（action 若要保留就让后端真的输出，如 task.error 已有 action 字段可对齐），重新生成 TS；删除或接入 mediaWebTaskErrorSchema 校验 fetch 错误体。
 
@@ -2911,7 +2917,7 @@ self.assertIn("94分", appendix_text)（旧版为 assertIn("方案分数", text)
 #### CT-B3｜测试锁死英文状态枚举直出用户回复：assertIn("pending_manual", result.reply)
 
 - **位置**：`openclaw-tag-router/tests/test_media_growth_v2_registry.py:422`
-- **维度 / 严重度 / 状态**：论证前置 / P2 / 未修复
+- **维度 / 严重度 / 状态**：论证前置 / P2 / 已修复
 - **问题**：成长链路的证据不足分支要求用户可见回复里出现英文枚举 pending_manual。status 字段是机器契约放英文没问题，但 reply 是给创作者看的。该文件当前因 CT-A3 的 reminder 连坐根本收集不了，等套件恢复后这条会继续把英文枚举锁在用户回复里。
 - **建议修法**：改断言为中文人话（如『证据不够，先不自动入库，需要你补充/确认』）+ status/extra 保留枚举；顺手全套件 grep assertIn("<英文枚举>", result.reply) 做一次清扫，把『枚举不进 reply』写进测试约定。
 
@@ -2924,7 +2930,7 @@ self.assertIn("pending_manual", result.reply)
 #### CT-C2｜test_daily_todo_checklist_sync 硬编码旧宿主脚本路径，而被测脚本就在仓库里——一行改成 repo 相对即可移植
 
 - **位置**：`openclaw-tag-router/tests/test_daily_todo_checklist_sync.py:13`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：与 CT-A1 那批『文件真不在仓库』不同，这两个失败纯粹是测试自己指错地方：脚本已随仓库迁移，测试还在按 /home/ubuntu/selfmedia-tools 旧布局找。这是 51+49 里成本最低的两个修复。同一可移植化清单里还有：test_sync_openclaw_agent_models 依赖 /home/ubuntu/.config/codex/openai.env 与可执行的 codex 命令（sync_openclaw_agent_models.py:19-21 硬编码，需 env 注入 + 测试内造临时可执行文件）；test_human_insight_cards 依赖 /home/ubuntu/obsidian-自媒体/.../机制卡/_template.md（human_insight_cards.py:9 CARD_LIBRARY_ROOT 硬编码，模板应作为仓内 asset 并允许 root 注入）；test_social_person_archive_runtime 子进程执行 /home/ubuntu/openclaw-agents/.../person_archive.py（common/social_runtime.py，脚本需入仓或路径可配，短期可仿 photo-content-os d796ee0 的探测+skipTest）。
 - **建议修法**：本文件：path = Path(__file__).resolve().parents[2] / "runtime/maintenance/sync/daily_todo_checklist_sync.py"。清单其余三项按 detail 中方案逐个做：生产代码补 env 覆盖 + 仓库相对回退，测试注入临时资源；确实依赖宿主私有资产的（person_archive skill）在入仓前先用探测+skipTest 止血，避免以失败形态常驻。
 
@@ -3154,7 +3160,7 @@ ai_patch.py:18 「先读 read_only_context，接住这份文档已有的说话�
 #### LP-20｜17 号报告校验只查 12 个必填 frontmatter 键中的 2 个、围栏只查前 20 字符：合同名存实亡
 
 - **位置**：`photo-content-os/99_System_OpenClaw/scripts/17_match_materials_to_brief.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：prompt 向模型立了 12 键军规，校验器只执行 2 键——缺 status/source_brief/generation_model 的报告静默放行，下游（18 号 parse_frontmatter、runner 的结果封装）各自假设这些键存在。围栏检查只看前 20 字符，正文中段被围栏包裹检测不到。与 18/29 的过度校验（LP-11）正好两个极端，同一管线没有统一的合同执行强度。
 - **建议修法**：validate_report 按约束 6 的键列表循环检查（缺键报明确错误），围栏检查改为 text.lstrip().startswith("```") 加全文 ```-配对数校验；与 18/29 共享一个 frontmatter 校验函数。
 
@@ -3165,7 +3171,7 @@ ai_patch.py:18 「先读 read_only_context，接住这份文档已有的说话�
 #### LP-21｜analysis_tiering 的 audio_seconds_budget 与 max_audio_minutes 无任何消费者：音频预算是装饰品
 
 - **位置**：`photo-content-os/99_System_OpenClaw/scripts/analysis_tiering.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：分层规划器逐素材计算音频转写预算并全局扣减 120 分钟池，run_analyze_project 还专门在降层时清零它——但唯一会花这笔预算的 03 号转写脚本根本不读 analysis_plan，转写按 audio_path 全量进行。整套音频预算机制是纯计算、零执行的死产物，给读代码的人制造了『转写有成本护栏』的假象。
 - **建议修法**：03 号加 --analysis-plan，按 audio_seconds_budget 截取转写时长（ffmpeg -t）或跳过超预算素材；否则删掉 TierBudget 的音频字段与 run_analyze_project:62。
 
@@ -3176,7 +3182,7 @@ analysis_tiering.py:26 「max_audio_minutes: float = 120.0」、:137-138 「audi
 #### LP-22｜转写默认 provider=pending：一键分析流程里声音证据链默认全空，17/18 的转写约束在默认配置下永远空转
 
 - **位置**：`photo-content-os/99_System_OpenClaw/scripts/run_analyze_project.py`
-- **维度 / 严重度 / 状态**：多维结合 / P2 / 未修复
+- **维度 / 严重度 / 状态**：多维结合 / P2 / 已修复
 - **问题**：状态标注是诚实的（status=pending，05 号约束 8 也会拦住假装听过），但产品效果是：不知道要设 OPENCLAW_TRANSCRIPTION_PROVIDER 的用户跑完整条链，17/18 的 transcript_segments 恒为空，d796ee0 花力气修的『声音断言必须引转写』约束在默认路径上没有任何弹药，所有口播判断都落到『声音内容待人工确认』。runner 调 run_analyze_project.sh 也不传 provider（LP-10 同一调用点），生产路径同样饿着。
 - **建议修法**：有 OPENAI_API_KEY 时默认升级为 openai_api（或在结尾摘要里加显著提示『本次 0 条转写，声音证据链为空，如需口播判断请设置 --transcript-provider』）；runner 显式传 provider。
 
@@ -3187,7 +3193,7 @@ run_analyze_project.py:73 「parser.add_argument("--transcript-provider", choice
 #### LP-23｜runner 的 AI 跟剪日志步骤从不传 --video/--human-notes：evidence_level 在自动流程里永远是 content_plan_only，跟剪日志跟不到任何真实剪辑
 
 - **位置**：`photo-content-os/99_System_OpenClaw/scripts/mac_openclaw_runner.py`
-- **维度 / 严重度 / 状态**：商业闭环 / P2 / 未修复
+- **维度 / 严重度 / 状态**：商业闭环 / P2 / 已修复
 - **问题**：29 号设计了四档证据等级（content_plan_only→output_video_reviewed→jianying_draft_parsed→human_confirmed），并支持 --video 喂 ffprobe 成片证据、--human-notes 喂人工备注，但唯一的生产调用方两者都不传：自动流程产出的 07_edit_log.md 永远停在最低证据档，『已确认人工修改』永远空表，剪辑发生了什么无法回流成事实，跟剪日志退化为『再讲一遍计划』。剪辑→记录→下一版的小闭环在编排层断开。
 - **建议修法**：runner 在任务输入里增加 output_video_path/human_notes_path 的可选透传（已有 optional_input_file_path 工具函数），存在即追加 --video/--human-notes。
 
@@ -3198,7 +3204,7 @@ runner run_ai_edit_log 的 args（1089-1104 行）仅 「--project-package/--out
 #### LP-24｜17 号被强制论证前置：约束 8 规定『宏观创作判断』置于报告最前，与 18 号刚立的执行优先原则相反
 
 - **位置**：`photo-content-os/99_System_OpenClaw/scripts/17_match_materials_to_brief.py`
-- **维度 / 严重度 / 状态**：论证前置 / P2 / 部分修复
+- **维度 / 严重度 / 状态**：论证前置 / P2 / 已修复
 - **问题**：d796ee0 给 18 号 storyboard 立了『执行前置、论证后置』的规矩，但同一交接链上游的 03_material_match_report 仍被 prompt 按『先论证后结论』的顺序生成：读者（人和 18 号）要先穿过宏观创作判断和覆盖度分析才能到推荐镜头组和进入剪辑与否的结论。文档排序哲学在同一管线内一半新一半旧，属于只改了一处的部分修复。
 - **建议修法**：17 号约束 8 改序：『是否建议进入剪辑（结论先行）、推荐镜头组、缺失素材、风险』置前，『宏观创作判断』移为文末『判断依据』段。
 
@@ -3429,7 +3435,7 @@ batch_dir, provision_warnings = ensure_local_batch_shell(task, config, creation_
 #### LB-15｜task_type 三套白名单互不一致：云端多出 validate_edit_handoff_pack，33 号脚本还认 create_jianying_native_import_pack，轻量队列任务云端无生产者
 
 - **位置**：`openclaw-media/openclaw-tag-router/openclaw_app/router/content_os_queue.py:42`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：逐个对比 task_type 全集：云端 TASK_BACKENDS 七类（含 validate_edit_handoff_pack），本地 SUPPORTED_TASK_TYPES（validate_content_os_task.py:23-32）六类且不含 validate_edit_handoff_pack，runner 的 REQUIRED_ACTIONS（mac_openclaw_runner.py:44-69）同样六类——云端合法创建的 validate_edit_handoff_pack 任务到本地必被 'unsupported task_type' 拒绝。33_enqueue_openclaw_queue_job.py:177 还为 create_jianying_native_import_pack 定义了 requested_outputs 映射，该类型在两边白名单都不存在（剪映路线在 doc_sync_contract 中已标 historical_evidence，属腐烂残留）。轻量队列唯一类型 bind_creation_run_to_local_batch（32:39-40）在云端仓库 0 命中——云端从不向 _OpenClawQueue/cloud_to_mac 投递任何任务，该队列实际由本地 33 号脚本自产自销。
 - **建议修法**：以本地 SUPPORTED_TASK_TYPES 为准收敛三处白名单：云端删除或实现 validate_edit_handoff_pack 的派发与本地执行；33 号脚本删掉剪映残留分支；文档明确 _OpenClawQueue 的生产者是本地 33 号而非云端。
 
@@ -3444,7 +3450,7 @@ TASK_BACKENDS: dict[str, frozenset[str]] = {
 #### LB-16｜死配置与死 schema：tool_contract.yaml 无消费者、mac_runner_capabilities.yaml 无模板无生成器、jianying_draft_plan.schema.json 零引用、云端素材匹配任务渲染器为漂移的死代码
 
 - **位置**：`photo-content-os/99_System_OpenClaw/scripts/mac_openclaw_runner.py:36`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：四项：(1) TOOL_CONTRACT 与 RunnerConfig.tool_contract_path（117-119行）定义后全仓无读取——死配置。(2) 每个任务校验都硬性要求 vault 里存在 00_入口与总览/mac_runner_capabilities.yaml（validate_or_block:278），但两个仓库都没有该文件的模板、样例或生成脚本，其 schema（supported_actions/editor_backends）只存在于测试构造函数里（test_content_os_v2_runner_contract.py:26-44）——新 vault 首跑必然 'YAML file does not exist' 且无处可抄。(3) schemas/jianying_draft_plan.schema.json 全仓（含测试）零消费者；edit_decision_list/audio_transcript 两个 schema 也只有测试读取，生成链用的是 edl_contract.py 里的代码化规则，双源易漂移。(4) 云端 _render_content_os_material_match_task（content_os_renderers.py:523-575）无任何调用方，且与真实 create_ready_task 路径相比缺 inputs.project_overview_path、notes 文案不同——留着必然继续漂移。
 - **建议修法**：删除 TOOL_CONTRACT 与 _render_content_os_material_match_task；把测试里的 capabilities 结构提炼成 templates/mac_runner_capabilities.yaml 模板并在 43_content_os_doctor 里检查/初始化；jianying_draft_plan.schema.json 随剪映历史路线一并归档。
 
@@ -3456,7 +3462,7 @@ TOOL_CONTRACT = Path("00_入口与总览/tool_contract.yaml")
 #### LB-17｜task_id 格式两端不对称：本地接受任意 task_id，云端 _safe_task_id 强制 task_\d{8}_\d{3}，人工建的任务本地能跑、结果到云端必拒
 
 - **位置**：`openclaw-media/openclaw-tag-router/openclaw_app/router/content_os_queue.py:82`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：本地 validate_content_os_task 只要求 task_id 是非空文本（313行 require_text），runner 的 resolve_task_ref（232-254行）按文件名/子串宽松匹配即可执行；而云端接收结果时 validate_mac_result → load_ready_task → _safe_task_id 对 task_id 做 task_\d{8}_\d{3} 全匹配。人按使用指南手写一个 task_20260827_fix1.yaml 在 Mac 上完整跑通并产出 result，到云端第一步就被『task_id 格式不正确』拒绝——本地验证器没有在源头把格式问题拦下来，失败被推迟到最远端。
 - **建议修法**：把 task_id 正则加入本地 validate_task（与云端同一条正则，最好提炼进共享契约快照），让手工任务在本地 validate-task 阶段即得到明确报错。
 
@@ -3469,7 +3475,7 @@ if not re.fullmatch(r"task_\d{8}_\d{3}", task_id):
 #### LB-18｜find_project_by_id 对整个素材工作区做 rglob 全盘扫描：每个未显式给 local_project_path 的任务都要遍历海量媒体目录
 
 - **位置**：`photo-content-os/99_System_OpenClaw/scripts/mac_openclaw_runner.py:404`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：local_project_path 缺省时（LB-04 表明云端经常只给 hint），runner 以 project_id/hint 为模式对 workspace_root（默认是整个素材根目录，含 00_Inbox_Mac_Intake、01_Project_Workspace 下全部原始照片/视频层级）做 rglob 递归匹配。素材库按该系统设计会到 TB 级、数十万文件，一次任务执行/校验就要全树遍历一遍；且 roots 同时含 01_Project_Workspace 与 workspace_root 本身，前者的命中会在后者重复遍历。这是每任务重复支付的 IO 成本，也是 --watch 类常驻流程的隐性负担。
 - **建议修法**：维护一个 project_id → 路径 的本地索引文件（34/35 号脚本落项目时登记），find_project_by_id 先查索引、miss 时才降级扫描并把结果回写索引；扫描范围限定在 01_Project_Workspace。
 
@@ -3587,7 +3593,7 @@ python3 99_System_OpenClaw/scripts/31_link_batch_to_content_project.py \
 #### LH-06｜19号平台识别白名单只认5个平台，惩罚项文案写死抖音/小红书
 
 - **位置**：`99_System_OpenClaw/scripts/19_review_output_video.py:1529-1533`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：readme 里写快手、B 站（带空格，如 desktop 前端下拉的『B 站』写法）、YouTube 等都会被静默丢弃，target_platforms 为空后 platform_format_score 退回 70 分中性分，用户不知道平台判断没生效。同时 1231 行的横屏惩罚 reason 无条件写『横屏直发抖音/小红书需确认竖屏包装』，即便项目目标平台是 B站横屏也输出这句误导性文案（该惩罚只看 profile，不看 context.target_platforms）。注意 desktop/static/index.html:62 下拉里的『B 站』与本白名单的『B站』写法不一致，正好落进这个静默丢弃。
 - **建议修法**：白名单加别名归一（B站/B 站/bilibili），未识别平台入 notes 提示人工确认；横屏惩罚的 reason 用 context.target_platforms 拼接真实平台名。
 
@@ -3602,7 +3608,7 @@ def normalize_platforms(text: str) -> list[str]:
 #### LH-08｜runner 写死 .venv-content-os/bin/python，绕过了现成的跨平台 runtime_paths 助手，Windows 上 OTIO 后端必坏
 
 - **位置**：`99_System_OpenClaw/scripts/mac_openclaw_runner.py:42`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：runtime_paths.py:29-34 已提供 runtime_python()，Windows 下正确返回 Scripts/python.exe（run_analyze_project.ps1:12 也用 Scripts 布局）；但 runner 自己拼 bin/python，Windows 机器上 generate_otio_kdenlive_timeline 任务会因解释器不存在而失败，与 desktop 前端『Windows 可运行本地核心流水线』（desktop/static/app.js:18）的承诺矛盾。
 - **建议修法**：改为 from runtime_paths import runtime_python; OTIO_KDENLIVE_PYTHON = runtime_python()。
 
@@ -3613,7 +3619,7 @@ OTIO_KDENLIVE_PYTHON = SYSTEM_ROOT / ".venv-content-os" / "bin" / "python"
 #### LH-11｜32号云端预填块把校运会示例（400米第一视角/校运会回访 vlog/路上奔赴混剪）写进每个生产批次说明
 
 - **位置**：`99_System_OpenClaw/scripts/32_process_openclaw_queue.py:319`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：cloud_prefill_block 生成的『人工补充线索』说明文字会被 insert_cloud_prefill_if_missing 实际写入每个批次的 00_批次说明.md（第343-358行），即校运会项目的示例词永久进入所有后续批次的生产数据，并作为『这批素材可能服务的内容』的示范锚点影响填写者和后续读取该字段的 AI。这是 (c) demo/项目特异数据混进生产路径在本仓唯一的实际命中。
 - **建议修法**：示例改为领域中性（如“XX活动第一视角”“回访 vlog”“路途混剪”），或从 task.topic 动态生成贴近本批次的示例。
 
@@ -3624,7 +3630,7 @@ OTIO_KDENLIVE_PYTHON = SYSTEM_ROOT / ".venv-content-os" / "bin" / "python"
 #### LH-12｜32号 legacy 队列检查只在 vault 等于默认 iCloud 路径时生效，非默认 vault 静默跳过
 
 - **位置**：`99_System_OpenClaw/scripts/32_process_openclaw_queue.py:721-722`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：用户用 --obsidian-root 指到非默认 vault（换机器/换账号的正常做法）时，legacy 路由警告直接返回空列表，旧 98_Agent任务队列 里滞留的 run_* 包不会被提醒，行为分叉键在一个写死的默认路径上，属于典型的静默降级。
 - **建议修法**：把判断改为 config.queue_root.parent 下是否存在 98_Agent任务队列/01_cloud_to_mac_ready，与默认路径解耦。
 
@@ -3637,7 +3643,7 @@ def legacy_queue_packages(config: QueueConfig) -> list[Path]:
 #### LH-13｜project_bootstrap_common 把个人学校名映射（清华大学深圳国际研究生院→清华SIGS）写死进通用标题清洗
 
 - **位置**：`99_System_OpenClaw/scripts/project_bootstrap_common.py:42-45`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：clean_title（第104-113行）对每个新项目标题应用这张替换表。这是账号主个人经历（清华SIGS）专属的缩写规则，硬编码在所有账号共用的项目命名逻辑里；换账号后要么无用、要么在别人恰好包含该字符串时做出意外改名。
 - **建议修法**：移到可选配置文件（如 99_System_OpenClaw/config/title_replacements.yaml），代码只读配置，缺省为空表。
 
@@ -3651,7 +3657,7 @@ TITLE_REPLACEMENTS = {
 #### LH-14｜iCloud Obsidian vault 绝对路径默认值分布在6处代码 + 1处测试（macOS 专属，(b) 清单代码侧全量）
 
 - **位置**：`99_System_OpenClaw/scripts/mac_openclaw_runner.py:32`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：同样的 macOS iCloud 路径默认值出现在 30_check_obsidian_doc_sync.py:12、31_link_batch_to_content_project.py:15、32_process_openclaw_queue.py:29、33_enqueue_openclaw_queue_job.py:27、mac_openclaw_runner.py:32、42_run_local_ci.sh:7、tests/test_content_os_v2_document_links.py:13。均可用参数/环境变量覆盖，且 42 与 document_links 在 vault 缺失时会跳过——代价是这批 Obsidian 合同测试在主 Mac 以外永远 skip，链路断裂只有换机器后才会被发现。Windows 上 ~/Library 展开后必然不存在，五个脚本不带参数运行时都会以『路径不存在』类错误终止而非提示正确用法。
 - **建议修法**：抽一个共享的 vault_root() 助手：优先 OBSIDIAN_ROOT 环境变量，其次按平台给默认值，路径缺失时输出统一的引导性错误信息；CI 层为 skip 的 Obsidian 测试打出显式 SKIPPED 汇总。
 
@@ -3662,7 +3668,7 @@ DEFAULT_VAULT_ROOT = Path("~/Library/Mobile Documents/iCloud~md~obsidian/Documen
 #### LH-15｜00_install_deps.sh 只支持 Homebrew 且创建无人使用的 .venv，与 41 号 .venv-content-os 约定矛盾，03 号错误提示还指向它
 
 - **位置**：`99_System_OpenClaw/scripts/00_install_deps.sh:12-13`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：00号安装脚本 Homebrew-only（第4-7行无 brew 直接退出），建的是仓库根 .venv 且只装 pillow/tqdm；而 42 CI、run_analyze_project.sh、runner、README 全部依赖 41 号建的 99_System_OpenClaw/.venv-content-os（含 requirements-dev 全量依赖）。两套 venv 约定并存，00 号产物没有任何脚本消费。更糟的是 03_extract_audio_helper.py:21 在缺 ffmpeg 时提示『Run 99_System_OpenClaw/scripts/00_install_deps.sh or install ffmpeg』——Windows/Linux 用户照做直接失败。
 - **建议修法**：让 00 号只负责 ffmpeg/exiftool 系统依赖并按平台分支（brew/winget/apt 提示），venv 一律指向 41 号；或删除 00 号并把 03 号提示改为指向 41_setup_dev_environment。
 
@@ -3676,7 +3682,7 @@ python -m pip install pillow tqdm
 #### LH-16｜26号导入包 README 写死『1080x1920 / 30fps』字面声明，与按 target 变量渲染的实际参数解耦
 
 - **位置**：`99_System_OpenClaw/scripts/26_create_native_import_pack.py:309`
-- **维度 / 严重度 / 状态**：论证前置 / P2 / 未修复
+- **维度 / 严重度 / 状态**：论证前置 / P2 / 已修复
 - **问题**：写给用户的导入 README 是固定字符串，而实际渲染分辨率/帧率取自 plan.target（第340-342行 width/height/fps 变量，373行传入 render_clip）。当前只因 23 号恰好写死 1080x1920/30（见 LH-02）才碰巧一致；一旦 target 可配置，用户看到的 README 会与片段真实参数不符，属于交付文档里的腐烂值。
 - **建议修法**：改为 f-string：f"- 所有片段均按 H.264 / yuv420p / {width}x{height} / {fps}fps 生成。"，与 LH-02 的 target 参数化一并处理。
 
@@ -3687,7 +3693,7 @@ python -m pip install pillow tqdm
 #### LH-17｜22号剪映环境探测只找 macOS 的 ~/Movies 目录，Windows 剪映安装静默探测不到
 
 - **位置**：`99_System_OpenClaw/scripts/22_probe_jianying_environment.py:23`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：剪映草稿根在 Windows 位于 AppData\Local\JianyingPro\User Data\Projects\com.lveditor.draft 等目录，本探测只枚举 macOS 的 ~/Movies 两个候选，Windows 机器上 find_jianying_roots 返回空列表且无任何提示，探测报告会误示『未安装剪映』。与前端『Windows 可运行本地核心流水线』的定位不一致（同 LH-08 一类的换机器破绽）。
 - **建议修法**：按 platform_contract_name() 分支补 Windows 候选路径，并在 roots 为空时输出『未在已知路径找到剪映，可用 --draft-root 显式指定』。
 
@@ -3700,7 +3706,7 @@ for candidate in [Path.home() / "Movies" / "JianyingPro", Path.home() / "Movies"
 #### LH-18｜26号 raw360 LRF 代理滤镜写死『裁右侧鱼眼』的单一设备排布假设
 
 - **位置**：`99_System_OpenClaw/scripts/26_create_native_import_pack.py:87-89`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：raw360_lrf_filter 固定按『LRF 双鱼眼并排、取中间竖条』的方式裁切（23号第105行注释明说 crops the right fisheye lens），这是当前这台全景相机 LRF 代理的排布事实。换一台 360 相机（或固件改变代理布局）后，同一滤镜会裁出畸变或错位画面进导入包，且没有任何校验能发现——只有人在剪映里打开才看得出来。
 - **建议修法**：把 LRF 裁切参数（镜头侧、偏移）放进 plan.target 或设备配置，渲染后对首帧做一次黑边/画面占比检测并在 11_roughcut_review.md 里强制列为人工检查项。
 
@@ -3924,7 +3930,7 @@ sync_openclaw_bot_config.py:21 `OBSIDIAN_DIR = Path("/home/ubuntu/obsidian-日�
 #### RT-08｜每日采集绕道一次 LLM agent 会话执行 shell 命令：install-cron 注册的不是命令而是让 feishu-media agent『请执行这个命令』的自然语言消息，确定性任务平添模型改写/拒绝/超时的失败面与每日一次 LLM 成本
 
 - **位置**：`runtime/cli/selfmedia.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：daily-poll 是全确定性的采集脚本，却被设计成每天早上唤起一个带 exec 工具的 LLM agent，由模型阅读自然语言指令后自行敲命令。失败面因此多了一层：模型可能改写参数、对失败自作主张重试、或干脆回复解释而不执行；成本上每天固定烧一次 agent 会话（3 小时超时预算）。命令输出的 JSON（含英文 feishu 状态短语，见 RT-06）还要经模型转述才到用户。对比同仓 tag-router 的 journal 定时任务全部用 systemd timer 直跑脚本（openclaw-tag-router/deploy/systemd/user/），媒体日报是唯一走 LLM 转发的定时任务。
 - **建议修法**：改为 systemd timer 或系统 crontab 直接执行 python3 runtime/cli/selfmedia.py daily-poll，把结果 JSON 落盘；若需要飞书播报，由脚本自己发消息或由轻量通知脚本转发，LLM 只在需要解读异常时介入。
 
@@ -3937,7 +3943,7 @@ selfmedia.py:702-704 `runtime = bot_runtime("media")` / `cron_command = [runtime
 #### RT-09｜runtime/evidence/agent_results.py 是零消费者死模块，且证据库合同路径硬编码旧宿主无 env 覆盖；tag-router 另维护一份读同一旧路径的同名逻辑副本
 
 - **位置**：`runtime/evidence/agent_results.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：该模块声称是 agent 证据库（media/daily/social/knowledge/public 五目录）的合同守卫，但本仓无人 import 它——真正的消费者（tag-router 清理与删除路由）各自复制了一份读取逻辑，三处共用同一个本机不存在的 /home/ubuntu 合同 JSON（在本机一调用即 FileNotFoundError）。合同校验逻辑三处漂移（runtime 版校验 required_folders 与 diary_vault 派生根，tag-router 版只读字段），属于死代码+逻辑重复+旧宿主断链三合一。20260826 验收文档的宿主资源缺口表也未列入 agent_result_vault_contract.json 这一项。
 - **建议修法**：二选一：让 tag-router 两处改 import runtime.evidence.agent_results 并给 CONTRACT_PATH 加 env/仓内镜像回退（与 media_model/contract.py 同模式）；或确认证据库能力已废弃则删除 runtime/evidence/ 并同步清理 tag-router 副本的旧路径。
 
@@ -3948,7 +3954,7 @@ agent_results.py:13 `CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_re
 #### RT-12｜daily-poll 是唯一不带 --tenant-id 的业务子命令，产物越出租户库结构：其他命令 required=True 且产物按 tenants/<tenant_id>/ 归档，日报却写非租户目录并裸写飞书
 
 - **位置**：`runtime/cli/selfmedia.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：本仓其余读写私有 Media 数据的路径都被租户治理覆盖（resource_ownership 的 assert_projection_read、tenant 必填），daily_poll 读写同一批私有账号数据却完全在治理外：本地产物落在非租户目录（架构文档的产物根清单里也没有登记这个目录），飞书读写不做归属校验。这既是多租户越权面，也让 tag-router 的删除/清理链路（按 tenants/ 结构清理）永远扫不到日报残留。
 - **建议修法**：daily-poll 增加 --tenant-id（与其他命令一致 required），产物改写 data/media_vault/tenants/<tenant_id>/account_daily_runs/，并在 architecture.md 的产物根表登记；飞书更新走带租户断言的读写封装。
 
@@ -3959,7 +3965,7 @@ selfmedia.py:759-765 daily-poll 子解析器只有 monitor-url/report-url/view-i
 #### RT-13｜文档与 --help 仍把入口指向旧宿主：architecture.md 自称 /home/ubuntu/selfmedia-tools 的 SSOT、调用链写的是旧 shim 路径，selfmedia.py 解析器描述和 env.example 注释同样引用旧仓路径
 
 - **位置**：`docs/architecture.md`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：架构 SSOT 文档开篇锚定旧宿主根目录，第 12-13 行的入口调用链把 RT-01 那个不存在的 shim 路径当作正式架构记录——这正是 install_cron 硬编码得以长期存活的『纸面依据』。用户在本仓跑 --help 看到的描述也是旧仓路径，env.example 教用户把配置抄进旧仓的 .env.local。文档、帮助文本、配置样例三处共同把新环境使用者引向不存在的位置。
 - **建议修法**：architecture.md 改为仓库相对路径叙述（去掉 /home/ubuntu 前缀与 shim 层，或明确标注 shim 仅存在于特定部署）；selfmedia.py:733 描述改为『selfmedia 模块统一入口』；env.example 注释改为仓库根 .env.local 的相对说法。
 
@@ -3970,7 +3976,7 @@ docs/architecture.md:3 `This document is the directory-responsibility SSOT for /
 #### RT-14｜daily-poll 与 install-cron 零测试覆盖：selfmedia CLI 测试只锁 creation/deconstruct smoke 与退役命令，调度与日报生成两个入口从未被任何测试触碰，坏路径与死 env 因此从未被捕获
 
 - **位置**：`tests/test_selfmedia_cli_smoke.py`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：商业闭环最上游的两个入口（每日采集与它的调度注册）既无单测、无 smoke、也无文档：README 的命令示例只列 ingest/deconstruct/context，daily-poll 连一行使用说明都没有。RT-01/RT-02/RT-03/RT-05 全部属于『一个 dry-run 级别的测试就能当场暴露』的缺陷——例如断言 install_cron 生成的命令路径存在、断言空 report_url + require 的行为、用假 records 断言 account_from_record 在 v2 字段下能取到链接。测试缺位是这一层腐烂持续存在的直接原因。
 - **建议修法**：补三类测试：(1) install_cron 用 monkeypatch 假 bot_runtime 断言生成命令的脚本路径存在于仓内且随 __file__ 推导；(2) daily_poll --dry-run 配假 feishu_list_records 跑通 v1/v2 两种字段形态并断言 report_url env 回退；(3) README/architecture 补 daily-poll 的使用与调度说明。
 
@@ -4108,7 +4114,7 @@ id_business.py:34:    feishu_list_records,
 #### SCHED-09｜ScheduleService 注入即死代码：构造并挂到 TagRouter 却零生产调用，测试反而断言禁止调用它
 
 - **位置**：`openclaw-tag-router/openclaw_app/app.py:80; router/tag_router.py:92,111; tests/test_activity_daily_llm.py:20,140`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：135 行的 ScheduleService（中文日期正则解析、departure 语义提醒时刻、经 MacAgentClient.create_schedule 写 Mac 日历+Obsidian 日记）每次启动都被构造并注入 TagRouter，但 handle_日程 早已改走 LLM 抽取 + reminder_service 路线，全应用没有任何 self.schedule_service. 调用；唯一引用它的测试装了 ForbiddenScheduleService 来断言它绝不能被用。这是"配置与代码矛盾+死代码"的组合：新读者会误以为日程走这条通道（本次 gap 排查线索也被它误导），而它维护的 parse/reminder_at 规则实际早已退役。
 - **建议修法**：从 app.py/TagRouter 构造参数中移除 schedule_service 并删除 services/schedule_service.py（mac_queue_worker 直接消费 SchedulePayload 队列不受影响）；若想保留 reminder_at 的"出发时间不提前"语义，把它移植成 LLM 抽取后的后处理函数再删源文件。
 
@@ -4122,7 +4128,7 @@ test_activity_daily_llm.py:20:        raise AssertionError("daily task extractio
 #### SCHED-10｜具体档期反问模板等整套 confirmation 模板机制无生产调用者，仅靠测试断言"不得调用"续命
 
 - **位置**：`selfmedia/business/id_business.py:289-314,1088-1141; tests/test_id_business_llm.py:29`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：QUESTION_TEMPLATES（25 个字段问句模板，含档期的"请具体到日期或日期区间"）、blank_confirmation_labels、confirmation_required_fields、build_creator_question_text、add_creator_confirmation_fields 组成一条完整的模板式反问链路，但 grep 全仓库找不到任何生产调用——需反问博主字段/反问博主话术如今由 LLM 生成（prompt line 535），唯一引用这套函数的是一条把它 patch 成 AssertionError 的测试。约 60 行死代码留在最热的商务文件里，且其中档期问句的"具体到日期或日期区间"约束并没有等价地写进 LLM 抽取/回复 prompt，实际约束力随死代码一起丢失。
 - **建议修法**：删除这条模板链路（保留 CONFIRMATION_FIELDS/CONFIRMATION_CANONICAL 供归一化使用），并把"档期必须具体到日期或日期区间、不接受'尽快'"这条有价值的口径迁进 BUSINESS_ID_EXTRACTION_PROMPT/BUSINESS_REPLY_PROMPT 的硬性规则里；同步删掉 test:29 的防御性 patch。
 
@@ -4135,7 +4141,7 @@ test_id_business_llm.py:29:            patch.object(MODULE, "add_creator_confirm
 #### SCHED-11｜测试把"8月上旬"钉成正确产出：默认档期无条件复制与含过期档期的品牌回复都被断言为期望行为，任何时效修复都会撞测试
 
 - **位置**：`tests/test_id_business_llm.py:660,675,683-684,718,809-814`
-- **维度 / 严重度 / 状态**：工程健康 / P2 / 未修复
+- **维度 / 严重度 / 状态**：工程健康 / P2 / 已修复
 - **问题**：test_user_confirmed_business_defaults_persist_and_only_fill_missing_terms 断言"具体档期"被默认值无条件填为"8月上旬"（675）且随后从 pending 中消失（683-684）；test_done_business_reply_does_not_trigger_unrelated_confirmation 把含"8月上旬可发布"的回复原样断言写入 AI回复话术并清空反问状态（809-815）。fixture 与线上 config 逐字相同，意味着 SCHED-01/02 的修复（时效门、档期不退出反问）会直接打红这三处断言——测试锁定的不是"默认口径只补空缺"这一合理语义，而是连"日期类默认永不过期、填入即免确认"也一起锁死了。这是标准 6 里"测试锁错行为"的典型样本，也解释了为什么静态档期腐烂一直无人察觉。
 - **建议修法**：把测试 fixture 的档期改为相对未来的动态日期（如 now+14d 生成的"X月上旬"）或显式过期样本+断言被拒；在修 SCHED-01/02 时同步新增"过期默认档期不得进入 current_fields/必须保留反问"的红线测试。
 

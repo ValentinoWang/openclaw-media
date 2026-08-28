@@ -8,6 +8,9 @@ from typing import Any, Callable, Optional
 from common.llm_client import generate_json_from_parts
 from common.llm_settings import load_profile_llm_settings
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+from common.knowledge_categories import (
+    normalize_knowledge_secondary_categories,
+)
 
 from .config import Settings
 from .semantic_persistence import LLM_CLEANED_USER_FIELDS_VERSION
@@ -65,7 +68,7 @@ full_content (全部内容):
 3. 不要保留 `## 01 image-01.jpg`、乱码、重复页脚、无意义符号；不要改写成分析结论。
 
 hooks (开场抓手):
-分析前 5 秒中可见的文案、画面或转场如何建立继续观看的理由，并说明它采用的抓手类型（例如：具体问题、反差、利益承诺）。没有画面证据时只分析已有文案或转写，不要假设镜头。
+区分前 3 秒的停留抓手与前 5 秒的留人理由，分别说明可见文案、画面或转场采用的抓手类型（例如：具体问题、反差、利益承诺）。没有画面证据时只分析已有文案或转写，不要假设镜头。
 
 emotion (情绪价值):
 1. 这是一个单选或双选：焦虑 / 爽感 / 好奇 / 共鸣 / 愤怒 / 治愈。
@@ -90,6 +93,11 @@ visual_cues (镜头/画面线索):
 transferable_expression (可迁移表达):
 提炼可直接迁移到新视频的句式、镜头套路、情绪包装或结构模板。不能迁移时返回空字符串。
 """
+
+ANALYSIS_PRIMARY_CATEGORIES = (
+    "AI/工具", "商业/产品", "运营/管理", "学习/认知", "健康/运动", "财经/投资",
+    "法律/政策", "生活/效率", "科技/科学", "人物/案例", "其他",
+)
 
 ANALYST_INSTRUCTIONS = """你是一名中文内容分析与运营编辑。你的输出为创作者提供内容洞察，帮助他们理解内容价值、受众痛点与可执行的创作方向。
 
@@ -191,6 +199,17 @@ def analyze_with_openclaw_agent(user_content: str, settings: Settings) -> Option
     if not parsed:
         print("OpenClaw OAuth 结构化分析未返回可解析 JSON。", flush=True)
         return None
+
+    # The model makes the semantic decision; this only bounds its labels to the
+    # shared vocabulary before the result is persisted or projected.
+    primary = str(parsed.get("primary_category") or "").strip()
+    if primary and primary not in ANALYSIS_PRIMARY_CATEGORIES:
+        parsed["primary_category"] = "其他"
+        primary = "其他"
+    if parsed.get("secondary_category") not in (None, "", [], {}):
+        parsed["secondary_category"] = normalize_knowledge_secondary_categories(
+            parsed.get("secondary_category"), primary=primary, text=""
+        )
 
     parsed.setdefault("analysis_provider", "openclaw_codex")
     parsed.setdefault("analysis_runtime", "openclaw_agent")

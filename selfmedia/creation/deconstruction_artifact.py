@@ -4,6 +4,8 @@ import json
 from copy import deepcopy
 from typing import Any
 
+from selfmedia.deconstruct.viral_content.src.artifact_v2 import normalize_deconstruction_artifact_for_read
+
 from .field_contract import CanonicalMediaRecord
 from media_vault.vault import MediaVault
 
@@ -47,8 +49,9 @@ def load_deconstruction_artifact(evidence_uri: str, *, tenant_id: str) -> dict[s
         artifact = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise DeconstructionArtifactUnavailable(f"deconstruction_artifact_unreadable: {evidence_uri}") from exc
-    validate_deconstruction_artifact(artifact)
-    return artifact
+    normalized = normalize_deconstruction_artifact_for_read(artifact)
+    validate_deconstruction_artifact(normalized)
+    return normalized
 
 
 def validate_deconstruction_artifact(artifact: dict[str, Any]) -> None:
@@ -67,6 +70,7 @@ def validate_deconstruction_artifact(artifact: dict[str, Any]) -> None:
 
 
 def distilled_usable_material_brief(artifact: dict[str, Any]) -> dict[str, Any]:
+    artifact = normalize_deconstruction_artifact_for_read(artifact)
     validate_deconstruction_artifact(artifact)
     summary = artifact.get("content_summary") or {}
     assessment = artifact.get("viral_reuse_assessment") or {}

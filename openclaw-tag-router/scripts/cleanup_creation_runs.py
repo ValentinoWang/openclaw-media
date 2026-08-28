@@ -22,46 +22,23 @@ import requests
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 if str(PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUGIN_ROOT))
+REPOSITORY_ROOT = PLUGIN_ROOT.parent
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(1, str(REPOSITORY_ROOT))
 
+from runtime.evidence.agent_results import agent_results_base, agent_results_contract
 from openclaw_app.services.resource_owner_registry import ResourceOwnerRegistry, require_tenant_id
 from openclaw_app.services.tenant_owned_resources import TenantOwnedResourceService
 
 
 DEFAULT_MEDIA_ENV_PATH = Path("/home/ubuntu/openclaw-agents/media/.env.local")
-REPOSITORY_ROOT = PLUGIN_ROOT.parent
-REPOSITORY_AGENT_RESULTS_CONTRACT_PATH = REPOSITORY_ROOT / "docs/ai-harness/agent_result_vault_contract.json"
-LEGACY_AGENT_RESULTS_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_result_vault_contract.json")
+
+def agent_result_roots() -> tuple[Path, ...]:
+    contract = agent_results_contract()
+    base = agent_results_base()
+    return tuple(base / folder for folder in contract.required_folders)
 
 
-def agent_results_contract_path() -> Path:
-    override = os.getenv("OPENCLAW_AGENT_RESULTS_CONTRACT_PATH")
-    if override:
-        return Path(override)
-    if REPOSITORY_AGENT_RESULTS_CONTRACT_PATH.is_file():
-        return REPOSITORY_AGENT_RESULTS_CONTRACT_PATH
-    return LEGACY_AGENT_RESULTS_CONTRACT_PATH
-
-
-AGENT_RESULTS_CONTRACT_PATH = agent_results_contract_path()
-
-
-def agent_results_base() -> Path:
-    contract = json.loads(AGENT_RESULTS_CONTRACT_PATH.read_text(encoding="utf-8"))
-    return Path(str(contract["physical_root"]))
-
-
-def agent_results_required_folders() -> tuple[str, ...]:
-    contract = json.loads(AGENT_RESULTS_CONTRACT_PATH.read_text(encoding="utf-8"))
-    folders = contract.get("required_folders")
-    if not isinstance(folders, list) or not all(isinstance(folder, str) for folder in folders):
-        raise RuntimeError(f"invalid agent result vault contract folders: {AGENT_RESULTS_CONTRACT_PATH}")
-    return tuple(folders)
-
-
-AGENT_RESULTS_BASE = agent_results_base()
-AGENT_RESULT_ROOTS = tuple(
-    AGENT_RESULTS_BASE / folder for folder in agent_results_required_folders()
-)
 DEFAULT_MEDIA_VAULT_ROOT = Path("/home/ubuntu/selfmedia-tools/data/media_vault")
 RUN_ID_RE = re.compile(r"^run_[A-Za-z0-9_:-]+$")
 URL_RE = re.compile(r"https?://[^\s，。；;、)）>\"']+")
@@ -559,7 +536,7 @@ def main() -> int:
             session_tenant_id=tenant_id,
         )
     tenant_vault_root = DEFAULT_MEDIA_VAULT_ROOT / "tenants" / tenant_id
-    local_roots = [Path(item).expanduser() for item in (args.local_root or [])] or [tenant_vault_root, *AGENT_RESULT_ROOTS]
+    local_roots = [Path(item).expanduser() for item in (args.local_root or [])] or [tenant_vault_root, *agent_result_roots()]
     creation_runs_url = load_creation_runs_url(args.creation_runs_url)
     if not creation_runs_url:
         raise SystemExit("MEDIA_OS_CREATION_RUNS_URL is not configured")

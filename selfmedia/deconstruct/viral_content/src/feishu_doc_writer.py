@@ -265,10 +265,10 @@ def _deconstruct_index_blocks(child_docs: list[dict[str, Any]], source_records: 
     blocks: list[dict[str, Any]] = [
         _heading("拆解文档池"),
         _paragraph("这里是 Media Model v2 素材拆解文档索引；每条拆解文档已作为本页下的独立子文档存放，标题按“爆款拆解文档｜主旨”命名。"),
-        _paragraph("排序规则：按分析时间倒叙排列，最新分析在最上面。"),
+        _paragraph("排序规则：按分析时间倒序排列，最新分析在最上面。"),
     ]
     if source_table_url:
-        blocks.append(_paragraph(f"来源表格：{source_table_url}"))
+        blocks.append(_link_paragraph("来源表格", source_table_url, "打开来源表格"))
     for node in child_docs:
         title = str(node.get("title") or "未命名拆解文档").strip()
         node_token = str(node.get("node_token") or "").strip()
@@ -276,8 +276,8 @@ def _deconstruct_index_blocks(child_docs: list[dict[str, Any]], source_records: 
             [
                 _heading3(title),
                 _paragraph(f"分析时间：{_format_node_time(node.get('obj_edit_time') or node.get('node_create_time') or node.get('obj_create_time'))}"),
-                _paragraph(f"子文档：https://tcnwueberajc.feishu.cn/wiki/{node_token}" if node_token else "子文档：待补"),
-                _paragraph(f"来源记录：{source_records.get(title) or '待补'}"),
+                _link_paragraph("子文档", f"https://tcnwueberajc.feishu.cn/wiki/{node_token}" if node_token else "", "打开子文档"),
+                _paragraph("来源：已关联素材表（见上方链接）" if source_records.get(title) else "来源：待补"),
             ]
         )
     return blocks
@@ -883,12 +883,31 @@ def _paragraph(text: str) -> dict[str, Any]:
     return {"block_type": 2, "text": {"elements": [{"text_run": {"content": text[:1800]}}]}}
 
 
+def _link_paragraph(label: str, url: str, link_text: str = "打开链接") -> dict[str, Any]:
+    if not url:
+        return _paragraph(f"{label}：待补")
+    return {"block_type": 2, "text": {"elements": [
+        {"text_run": {"content": f"{label}："}},
+        {"text_run": {"content": link_text, "text_element_style": {"link": {"url": url}}}},
+    ]}}
+
+
+_DISPLAY_LABELS = {
+    "level": "等级", "overall": "总体判断", "label": "标签", "summary": "摘要",
+    "reason": "依据", "item": "事项", "element": "要素", "required_change": "必要调整",
+    "visual": "画面", "subtitle": "字幕", "voiceover": "口播", "camera_movement": "运镜",
+    "props": "道具", "edit_notes": "剪辑要点", "image_prompt": "图片提示词",
+    "overlay_text": "图上文字", "caption_note": "配文要点",
+}
+
+
 def _value_blocks(value: Any) -> list[dict[str, Any]]:
     value = _coerce_list_like_text(value)
     if isinstance(value, str):
         return [_paragraph(chunk) for chunk in _chunks(value)]
     if isinstance(value, dict):
-        return [_paragraph(f"{k}：{v}") for k, v in value.items()]
+        return [_paragraph(f"{_DISPLAY_LABELS[key]}：{item}") for key, item in value.items()
+                if key in _DISPLAY_LABELS and item not in (None, "", [], {})]
     if isinstance(value, list):
         if value and all(isinstance(item, dict) for item in value):
             return _card_blocks(value)
@@ -995,7 +1014,8 @@ def _summary_value(value: Any, *, limit: int = 320) -> str:
                 preferred.append(str(item))
         if preferred:
             return "；".join(preferred)[:limit]
-        compact = [f"{key}={_summary_value(item, limit=120)}" for key, item in value.items() if item not in (None, "", [], {}) and key != "python_facts"]
+        compact = [f"{_DISPLAY_LABELS[key]}：{_summary_value(item, limit=120)}" for key, item in value.items()
+                   if key in _DISPLAY_LABELS and item not in (None, "", [], {}) and key != "python_facts"]
         return "；".join(item for item in compact if item)[:limit]
     if isinstance(value, list):
         items = [_summary_value(item, limit=120) for item in value if item not in (None, "", [], {})]
@@ -1018,9 +1038,8 @@ def _deconstruct_evidence_blocks(content: dict[str, Any]) -> list[dict[str, Any]
         blocks.append(_heading3("ASR 摘要"))
         blocks.extend(_value_blocks([_format_speech_timeline_item(item) for item in speech_timeline[:20] if isinstance(item, dict)]))
     else:
-        status = str(speech_transcript.get("status") or "unknown")
         reason = str(speech_transcript.get("reason") or "")
-        blocks.append(_paragraph(f"ASR：无可靠时间线证据。status={status}" + (f"；{reason}" if reason else "")))
+        blocks.append(_paragraph("ASR：语音识别未产出可靠时间线" + (f"（原因：{reason}）" if reason else "，需要人工复核")))
 
     if visible_text_segments:
         blocks.append(_heading3("OCR 摘要"))
@@ -1134,8 +1153,9 @@ def _card_blocks(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for key, value in item.items():
             if key in used or key in {"shot_no", "page_no", "duration", "evidence_asset_id"}:
                 continue
-            if value not in (None, ""):
-                blocks.append(_paragraph(f"{key}：{value}"))
+            label = _DISPLAY_LABELS.get(key)
+            if label and value not in (None, ""):
+                blocks.append(_paragraph(f"{label}：{value}"))
     return blocks
 
 

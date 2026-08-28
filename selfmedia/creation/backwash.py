@@ -8,8 +8,8 @@ from urllib.parse import urlparse
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from media_vault.vault import MediaVault, utc_now_iso
 
-from .llm_generator import call_creation_json
-from .shooting_execution import SHOOTING_PLAN_VALIDATION_CONTRACT, ShootingExecutionRequest, validate_shooting_execution_plan
+from .llm_generator import CREATION_SCORE_THRESHOLD, call_creation_json
+from .shooting_execution import SHOOTING_PLAN_VALIDATION_CONTRACT, ShootingExecutionRequest, _bounded_context_json, validate_shooting_execution_plan
 from .writer import rewrite_shooting_execution_doc
 
 
@@ -33,6 +33,15 @@ NARRATIVE_ROLES = frozenset(
 NARRATIVE_STRATEGIES = frozenset(
     {"chronological", "result_hook_then_chronological", "problem_solution", "experience_escalation"}
 )
+COHERENCE_PASS_SCORE = CREATION_SCORE_THRESHOLD
+NARRATIVE_ROLE_LABELS = {
+    "hook_setup": "开头悬念铺设", "context": "背景交代", "introduction": "主体引入",
+    "development": "内容推进", "transition": "章节转场", "hook_payoff": "悬念兑现", "conclusion": "结尾收束",
+}
+NARRATIVE_STRATEGY_LABELS = {
+    "chronological": "按时间顺序", "result_hook_then_chronological": "先给结果再按时间推进",
+    "problem_solution": "问题到解决方案", "experience_escalation": "经验逐步升级",
+}
 BACKWASH_REVIEW_FIELDS = frozenset(
     {
         "status",
@@ -117,7 +126,7 @@ def _validate_backwash_review(payload: dict[str, Any], _context: dict[str, Any])
     if not str(payload.get("storyline_summary") or "").strip() or not str(payload.get("reason") or "").strip():
         raise ValueError("backwash review summary/reason missing")
     if payload.get("status") == "passed" and (
-        score < 90
+        score < COHERENCE_PASS_SCORE
         or payload.get("critical_issues")
         or payload.get("transition_issues")
         or payload.get("subject_reentry_issues")
@@ -336,12 +345,12 @@ def _narrative_plan_prompt(
         "并用 callback_to 指向前面的 hook_setup。结尾总结不得重新介绍已经结束的产品。\n"
         "transition_from_previous 必须说明相邻两拍的事实、空间、时间或因果关系，不能用一句口播掩盖无关主题切换。\n"
         "beats 按 order 严格排序，subject_id 对同一主体始终使用同一个稳定名称。\n"
-        "strategy 只能是 chronological、result_hook_then_chronological、problem_solution、experience_escalation 之一。\n"
-        "narrative_role 只能是 hook_setup、context、introduction、development、transition、hook_payoff、conclusion 之一。\n"
+        "strategy 只能是 chronological、result_hook_then_chronological、problem_solution、experience_escalation 之一；中文含义分别是：按时间顺序、先给结果再按时间推进、问题到解决方案、经验逐步升级。\n"
+        "narrative_role 只能是 hook_setup、context、introduction、development、transition、hook_payoff、conclusion 之一；中文含义分别是：开头悬念铺设、背景交代、主体引入、内容推进、章节转场、悬念兑现、结尾收束。JSON 仍使用英文机器值。\n"
         "输出字段固定为 storyline, strategy, beats, global_rules。每个 beat 字段固定为 beat_id, order, subject_id, "
         "chapter, location, narrative_role, purpose, transition_from_previous, callback_to。无回扣时 callback_to 为空字符串。\n\n"
         f"用户修改要求：\n{requirements}\n\n"
-        f"账号与创作上下文：\n{json.dumps(media_context, ensure_ascii=False, default=str)[:12000]}\n\n"
+        f"账号与创作上下文：\n{_bounded_context_json(media_context)}\n\n"
         f"当前结构化执行单：\n{json.dumps(current, ensure_ascii=False)}\n\n"
         f"上次规划验收：\n{json.dumps(review or {}, ensure_ascii=False)}\n\n"
         f"上次叙事规划：\n{json.dumps(previous or {}, ensure_ascii=False)}"
@@ -356,7 +365,7 @@ def _review_narrative_plan(
         "逐一审核所有相邻 beat：是否有明确的事实、时间、空间或因果承接；是否用口播假装连接无关主体；"
         "是否出现无理由的主体回流、场地回流、章节重复开启；开头悬念是否有唯一且明确的 setup/payoff；"
         "结尾是否只收束已建立主线而没有重新介绍产品；用户要求和原稿未被推翻的事实是否完整保留。\n"
-        "coherence_score 必须严格评分。只有分数不低于90，且 critical_issues、transition_issues、"
+        f"coherence_score 必须严格评分。只有分数不低于{COHERENCE_PASS_SCORE}，且 critical_issues、transition_issues、"
         "subject_reentry_issues、missing_requirements 全部为空时，status 才能是 passed。\n"
         "输出字段固定为 status, coherence_score, storyline_summary, critical_issues, transition_issues, "
         "subject_reentry_issues, satisfied_requirements, missing_requirements, reason。\n\n"
@@ -414,7 +423,7 @@ def _revision_prompt(
         "结尾 montage 只能收束主线，不得用回闪重新介绍已结束产品，也不得重新开启产品章节。\n"
         "evidence_appendix 只保留 artifact 证据，不写给创作者看的解释。\n\n"
         f"用户修改要求：\n{requirements}\n\n"
-        f"账号与创作上下文：\n{json.dumps(media_context, ensure_ascii=False, default=str)[:12000]}\n\n"
+        f"账号与创作上下文：\n{_bounded_context_json(media_context)}\n\n"
         f"当前结构化执行单：\n{json.dumps(current, ensure_ascii=False)}\n\n"
         f"已通过验收的叙事规划（唯一顺序）：\n{json.dumps(narrative_plan, ensure_ascii=False)}\n\n"
         f"上次语义验收：\n{json.dumps(review or {}, ensure_ascii=False)}\n\n"
@@ -436,7 +445,7 @@ def _review_revision(
         "shooting_goal.mainline、route_map、must_shot_list、onsite_checklist、publishing_pack 的顺序是否一致。\n"
         "transition_issues 必须列出靠空泛口播掩盖的主题切换、缺少空间/时间/因果承接的相邻镜头和场地跳转。"
         "subject_reentry_issues 必须列出无明确 setup/payoff 的 A→B→A、结尾 montage 重新介绍产品、已结束章节再次开启。\n"
-        "coherence_score 必须严格评分。只有分数不低于90，且 critical_issues、transition_issues、"
+        f"coherence_score 必须严格评分。只有分数不低于{COHERENCE_PASS_SCORE}，且 critical_issues、transition_issues、"
         "subject_reentry_issues、missing_requirements 全部为空时，status 才能是 passed。\n"
         "输出字段固定为 status, coherence_score, storyline_summary, critical_issues, transition_issues, "
         "subject_reentry_issues, satisfied_requirements, missing_requirements, reason。\n\n"
@@ -453,7 +462,7 @@ def _review_failure_summary(review: dict[str, Any]) -> str:
     for key in ("critical_issues", "transition_issues", "subject_reentry_issues", "missing_requirements"):
         issues.extend(str(item) for item in review.get(key) or [] if str(item).strip())
     if not issues:
-        issues.append(str(review.get("reason") or "未达到90分连贯性门槛"))
+        issues.append(str(review.get("reason") or f"未达到{COHERENCE_PASS_SCORE}分连贯性门槛"))
     return "；".join(issues)
 
 

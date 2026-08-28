@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from .field_contract import normalize_content_type, normalize_platform, split_tags
 
 
-CREATION_PATTERN = re.compile(r"^\s*【创作(?:>(?P<platform>小红书|抖音))?】")
+CREATION_PATTERN = re.compile(r"^\s*【创作(?:>(?P<platform>小红书|抖音|B站|哔哩哔哩|bilibili))?】")
 REQUEST_KEYS = (
     "平台|赛道|类型|内容类型|主体|主题|发布时间|用户想法|想法|"
     "素材/参考|素材参考|参考素材|参考|素材|希望产出|输出要求|目标人群|"
@@ -17,7 +17,7 @@ REQUEST_KEYS = (
     "source_asset_id|source|来源|素材源ID|SourceAsset来源ID|路径续接ID"
 )
 KEY_VALUE_RE = re.compile(rf"(?P<key>{REQUEST_KEYS})\s*[=:：]\s*(?P<value>.*?)(?=\s+(?:{REQUEST_KEYS})\s*[=:：]|$)")
-KNOWN_PLATFORMS = {"小红书", "抖音"}
+KNOWN_PLATFORMS = {"小红书", "抖音", "B站"}
 SOURCE_ASSET_ID_RE = re.compile(r"\bsource_asset[_-][A-Za-z0-9_.:-]+\b")
 
 
@@ -66,9 +66,9 @@ def parse_creation_request(
     raw_content_type = values.get("内容类型") or values.get("类型") or ""
     content_type = normalize_content_type(raw_content_type) or inferred.get("内容类型", "")
     if not platform:
-        raise ValueError("【创作】必须能解析出平台，请使用【创作>小红书】、【创作>抖音】或填写 平台=小红书/抖音")
+        raise ValueError("【创作】必须能解析出平台，请使用【创作>小红书】、【创作>抖音】、【创作>B站】或填写 平台=小红书/抖音/B站")
     if platform not in KNOWN_PLATFORMS:
-        raise ValueError("【创作】平台只支持 小红书 或 抖音")
+        raise ValueError("【创作】平台只支持 小红书、抖音 或 B站")
     if not content_type:
         raise ValueError("【创作】缺少内容类型")
     if content_type not in {"图文", "视频"}:

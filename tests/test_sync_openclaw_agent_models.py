@@ -68,13 +68,18 @@ def test_repo_config_has_no_secondary_model_key() -> None:
     assert all("thinking" not in profile for profile in payload["profiles"].values())
 
 
-def test_repo_config_explicitly_disables_default_heartbeat() -> None:
+def test_runtime_policy_is_deploy_owned_not_pseudo_config() -> None:
     payload = MODULE.load_payload()
-    assert payload["openclaw_runtime"]["heartbeat_every"] == "0m"
-    assert payload["openclaw_runtime"]["session_maintenance"] == {
+    app_server = payload["openclaw_runtime"]["codex_app_server"]
+    assert "heartbeat_every" not in payload["openclaw_runtime"]
+    assert "session_maintenance" not in payload["openclaw_runtime"]
+    assert "args" not in app_server
+    assert "service_tier" not in app_server
+    assert MODULE.RUNTIME_HEARTBEAT_EVERY == "0m"
+    assert MODULE.RUNTIME_SESSION_MAINTENANCE == {
         "mode": "enforce",
-        "prune_after": "14d",
-        "reset_archive_retention": "14d",
+        "pruneAfter": "14d",
+        "resetArchiveRetention": "14d",
     }
 
 

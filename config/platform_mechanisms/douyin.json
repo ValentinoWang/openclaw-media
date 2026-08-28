@@ -1,6 +1,6 @@
 {
   "platform": "抖音",
-  "mechanism_version": "douyin_2026_05_v2",
+  "mechanism_version": "douyin_v2",
   "status": "active",
   "baseline_summary": "抖音内容更重视推荐流首帧、前段停留、完播/观看深度、复看收藏、优质评论、粉丝互动和长尾回访。",
   "default_traffic_entries": ["推荐流", "搜索", "话题/挑战", "同城或关注关系"],

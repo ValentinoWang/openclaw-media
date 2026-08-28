@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from copy import deepcopy
 from typing import Any
 
 from selfmedia.request_constraints import validate_request_constraints_payload
@@ -13,10 +14,48 @@ from .multi_signal_schema import validate_multi_signal_contract_payload
 
 DECONSTRUCTION_SCHEMA_VERSION = "deconstruction.v2"
 SUPPORTED_REUSE_LABELS = {"strong_reuse_candidate", "weak_reuse_candidate", "reject"}
+_RETIRED_ANALYSIS_FIELDS = {
+    "target_audience_summary",
+    "pain_pleasure_summary",
+    "viral_breakdown",
+}
 
 
 class DeconstructionArtifactError(ValueError):
     pass
+
+
+def normalize_deconstruction_artifact_for_read(artifact: dict[str, Any]) -> dict[str, Any]:
+    """Convert retired artifact keys at the storage boundary without rewriting them."""
+    normalized = deepcopy(artifact)
+    analysis_fields = normalized.get("analysis_fields")
+    if not isinstance(analysis_fields, dict):
+        analysis_fields = {}
+        normalized["analysis_fields"] = analysis_fields
+    content_summary = normalized.get("content_summary")
+    if not isinstance(content_summary, dict):
+        content_summary = {}
+        normalized["content_summary"] = content_summary
+
+    legacy_mechanism = analysis_fields.pop("viral_breakdown", "")
+    if not content_summary.get("viral_mechanism") and legacy_mechanism:
+        content_summary["viral_mechanism"] = str(legacy_mechanism)
+    for canonical_key, retired_key in (
+        ("target_audience", "target_audience_summary"),
+        ("pain_or_pleasure_points", "pain_pleasure_summary"),
+    ):
+        if canonical_key not in analysis_fields:
+            analysis_fields[canonical_key] = _normalize_string_list(analysis_fields.pop(retired_key, []))
+        else:
+            analysis_fields.pop(retired_key, None)
+    return normalized
+
+
+def _normalize_string_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    text = str(value or "").strip()
+    return [text] if text else []
 
 
 def validate_llm_deconstruction_v2_payload(payload: dict[str, Any], evidence_store: dict[str, Any]) -> dict[str, Any]:
@@ -152,10 +191,9 @@ def build_deconstruction_artifact(
             "cover_opening_hook": result.get("cover_opening_hook") or "",
             "core_data_summary": result.get("core_data_summary") or "",
             "top_comment_insight": result.get("top_comment_insight") or "",
-            "target_audience_summary": result.get("target_audience_summary") or "",
-            "pain_pleasure_summary": result.get("pain_pleasure_summary") or "",
+            "target_audience": result.get("target_audience") or [],
+            "pain_or_pleasure_points": result.get("pain_or_pleasure_points") or [],
             "attention_elements": result.get("attention_elements") or [],
-            "viral_breakdown": result.get("viral_breakdown") or "",
             "viral_migration": result.get("viral_migration") or "",
             "creative_upgrade_suggestion": result.get("creative_upgrade_suggestion") or "",
         },
@@ -185,6 +223,10 @@ def validate_deconstruction_artifact(artifact: dict[str, Any]) -> None:
     for key in ("deconstruction_id", "source_asset_id", "evidence_manifest", "viral_reuse_assessment", "pacing_profile", "reuse_guardrails"):
         if artifact.get(key) in (None, "", [], {}):
             raise DeconstructionArtifactError(f"deconstruction artifact 缺少必需字段: {key}")
+    analysis_fields = artifact.get("analysis_fields") if isinstance(artifact.get("analysis_fields"), dict) else {}
+    retired = sorted(_RETIRED_ANALYSIS_FIELDS & set(analysis_fields))
+    if retired:
+        raise DeconstructionArtifactError("deconstruction artifact 禁止写入已移除字段: " + ", ".join(retired))
     _validate_evidence_refs(artifact, set((artifact.get("evidence_manifest") or {}).keys()))
     if artifact.get("multi_signal_contract"):
         try:
@@ -205,6 +247,7 @@ def validate_deconstruction_artifact(artifact: dict[str, Any]) -> None:
 
 
 def distilled_usable_material_brief(artifact: dict[str, Any]) -> dict[str, Any]:
+    artifact = normalize_deconstruction_artifact_for_read(artifact)
     validate_deconstruction_artifact(artifact)
     brief = artifact.get("human_readable_brief") or {}
     assessment = artifact.get("viral_reuse_assessment") or {}

@@ -16,11 +16,6 @@ from zoneinfo import ZoneInfo
 import requests
 
 from selfmedia.business.id_business import load_playwright_cookies
-from selfmedia.ingest.content_flow.src.downloader import (
-    _extract_xhs_interaction_stats,
-    _parse_xhs_initial_state,
-    extract_router_data,
-)
 
 
 SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
@@ -273,7 +268,7 @@ def parse_time_window(value: str, *, now: datetime) -> TimeWindow:
     if re.fullmatch(r"20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?", raw):
         day = _parse_date(raw)
         return TimeWindow(label=raw, start=_at_start(day), end=_at_end(day))
-    raise HotlistValidationError("时间支持：近24小时、近7天、近30天、今天、2026-07-01至2026-07-18 或 不限。")
+    raise HotlistValidationError("时间支持：近24小时、近7天、近30天、今天、YYYY-MM-DD至YYYY-MM-DD 或 不限。")
 
 
 def _parse_sort(value: str) -> tuple[str, str]:
@@ -497,6 +492,8 @@ class PlatformShareDetailReader:
             raise DetailSourceError("HOTLIST_DETAIL_UNREACHABLE", f"作品详情源不可达：{type(exc).__name__}") from exc
 
     def _read_douyin(self, candidate: SearchCandidate) -> HotlistItem:
+        from selfmedia.ingest.content_flow.src.downloader import extract_router_data
+
         kind = "note" if "/note/" in candidate.url else "video"
         source_url = f"https://www.iesdouyin.com/share/{kind}/{candidate.content_id}/"
         response = self._get(
@@ -561,6 +558,11 @@ class PlatformShareDetailReader:
         return max(matches, key=lambda item: len(item))
 
     def _read_xhs(self, candidate: SearchCandidate) -> HotlistItem:
+        from selfmedia.ingest.content_flow.src.downloader import (
+            _extract_xhs_interaction_stats,
+            _parse_xhs_initial_state,
+        )
+
         cookies = {item["name"]: item["value"] for item in load_playwright_cookies("小红书")}
         response = self._get(
             candidate.url,

@@ -43,16 +43,16 @@ class ViralContentAdapter:
         cover_opening_hook = get_first_value(row, "cover_opening_hook")
         core_data_summary = get_first_value(row, "core_data_summary")
         top_comment_insight = get_first_value(row, "top_comment_insight")
-        target_audience_summary = get_first_value(row, "target_audience_summary")
-        pain_pleasure_summary = get_first_value(row, "pain_pleasure_summary")
+        target_audience = get_first_value(row, "target_audience")
+        pain_or_pleasure_points = get_first_value(row, "pain_or_pleasure_points")
         attention_elements = get_first_value(row, "attention_elements")
-        viral_breakdown = get_first_value(row, "viral_breakdown")
+        viral_mechanism = get_first_value(row, "viral_mechanism")
         viral_migration = get_first_value(row, "viral_migration")
         creative_upgrade_suggestion = get_first_value(row, "creative_upgrade_suggestion")
         evidence_uri = get_first_value(row, "evidence_uri")
         source_doc_link = get_first_link(row, "source_doc_link")
         deconstruction_doc_link = get_first_link(row, "deconstruction_doc_link")
-        topic = " ".join(item for item in (title, hook, cover_opening_hook, attention_elements, viral_breakdown) if item)
+        topic = " ".join(item for item in (title, hook, cover_opening_hook, attention_elements, viral_mechanism) if item)
         tags = split_tags(" ".join(item for item in (title, hook, transferable_points, attention_elements, viral_migration) if item))
         core_value = "\n".join(
             item
@@ -60,7 +60,7 @@ class ViralContentAdapter:
                 transferable_points,
                 viral_migration,
                 creative_upgrade_suggestion,
-                viral_breakdown,
+                viral_mechanism,
                 summary,
             )
             if item
@@ -88,10 +88,10 @@ class ViralContentAdapter:
             "cover_opening_hook": cover_opening_hook,
             "core_data_summary": core_data_summary,
             "top_comment_insight": top_comment_insight,
-            "target_audience_summary": target_audience_summary,
-            "pain_pleasure_summary": pain_pleasure_summary,
+            "target_audience": target_audience,
+            "pain_or_pleasure_points": pain_or_pleasure_points,
             "attention_elements": attention_elements,
-            "viral_breakdown": viral_breakdown,
+            "viral_mechanism": viral_mechanism,
             "viral_migration": viral_migration,
             "creative_upgrade_suggestion": creative_upgrade_suggestion,
             "prompt_bundle_version": get_first_value(row, "prompt_bundle_version"),
@@ -112,8 +112,8 @@ class ViralContentAdapter:
             track="",
             topic=topic,
             tags=tags,
-            audience=target_audience_summary,
-            pain_points=pain_pleasure_summary or hook,
+            audience=target_audience,
+            pain_points=pain_or_pleasure_points or hook,
             core_value=core_value,
             publish_time=None,
             source_link=get_first_link(row, "source_url"),

@@ -31,7 +31,6 @@ from ..services.feishu_service import FeishuService
 from ..services.reminder_service import ReminderService
 from ..services.reply_service import ReplyService
 from ..services.rule_service import RuleService
-from ..services.schedule_service import ScheduleService
 from ..services.utils import cleanup_generated_file_duplicates, contains_link, ensure_dir, format_display_time, make_record_id, now_in_tz, safe_slug
 from ..services.vlog_storage_service import VlogStorageService
 from .tag_capabilities import (

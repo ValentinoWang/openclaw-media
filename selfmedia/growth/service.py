@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import fcntl
 import hashlib
+import logging
 import re
 import json
 import os
@@ -34,6 +35,9 @@ from .knowledge_evidence_contract import (
 )
 from .llm_runner import GrowthJsonProvider, GrowthLLMJsonRunner
 from .planner import WorkflowPlan, plan_media_growth_workflow
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 RUNNER_STATUS_ARTIFACT_CREATED = "artifact_created"
@@ -628,7 +632,7 @@ def run_media_growth_capability(
                     "planned_node_statuses": _planned_node_statuses(plan),
                     "reason": str(exc),
                 }
-            payload = artifact.to_dict()
+            payload = _artifact_response_payload(artifact, vault=vault)
             payload["runtime_status"] = RUNNER_STATUS_ARTIFACT_CREATED
             node_payloads.append(payload)
             next_input_refs = (str(payload.get("artifact_uri") or payload.get("artifact_id") or ""),)
@@ -665,7 +669,7 @@ def run_media_growth_capability(
         return plan, {"runtime_status": RUNNER_STATUS_PENDING_MANUAL, "status": "pending_manual", "reason": str(exc)}
     except Exception as exc:
         return plan, {"runtime_status": RUNNER_STATUS_EXECUTION_FAILED, "status": "execution_failed", "reason": str(exc)}
-    payload = artifact.to_dict()
+    payload = _artifact_response_payload(artifact, vault=vault)
     payload["runtime_status"] = RUNNER_STATUS_ARTIFACT_CREATED
     return plan, payload
 
@@ -1106,8 +1110,36 @@ def _persist_growth_artifact(artifact: Any, *, vault: MediaVault | None, root: s
         owner_id=artifact.artifact_id,
         artifact_type=artifact.artifact_type,
     )
-    _sync_growth_summary_if_configured(payload, tenant_id=actual_vault.tenant_id)
+    summary_sync = _sync_growth_summary_if_configured(payload, tenant_id=actual_vault.tenant_id)
+    payload["growth_summary_sync"] = summary_sync
+    if summary_sync.get("status") == RUNNER_STATUS_EXECUTION_FAILED:
+        payload["display_summary"] = "；".join(
+            item
+            for item in (
+                str(payload.get("display_summary") or "").strip(),
+                f"GrowthSummary 同步失败：{str(summary_sync.get('reason') or '未知原因').strip()}",
+            )
+            if item
+        )
+    actual_vault.write_json_artifact(
+        directory,
+        "result.json",
+        payload,
+        owner_type=artifact.artifact_type,
+        owner_id=artifact.artifact_id,
+        artifact_type=artifact.artifact_type,
+    )
     return _replace_artifact_uri(artifact, uri)
+
+
+def _artifact_response_payload(artifact: Any, *, vault: MediaVault | None) -> dict[str, Any]:
+    payload = artifact.to_dict()
+    if vault is None or not payload.get("artifact_uri"):
+        return payload
+    persisted = vault.read_json_artifact(str(payload["artifact_uri"]))
+    if isinstance(persisted, dict):
+        payload.update(persisted)
+    return payload
 
 
 def _sync_growth_summary_if_configured(
@@ -1118,9 +1150,17 @@ def _sync_growth_summary_if_configured(
     try:
         result = sync_growth_summary_artifact(payload, tenant_id=tenant_id)
     except Exception as exc:
+        LOGGER.exception("GrowthSummary sync execution failed for artifact_id=%s", payload.get("artifact_id"))
         return {"ok": False, "status": "execution_failed", "reason": str(exc)}
     if not isinstance(result, dict):
+        LOGGER.error("GrowthSummary sync returned non-object result for artifact_id=%s", payload.get("artifact_id"))
         return {"ok": False, "status": "execution_failed", "reason": "GrowthSummary sync returned non-object result"}
+    if result.get("status") == "execution_failed":
+        LOGGER.error(
+            "GrowthSummary sync execution failed for artifact_id=%s: %s",
+            payload.get("artifact_id"),
+            result.get("reason") or "unknown reason",
+        )
     return result
 
 

@@ -135,7 +135,7 @@ class P0ReviewLoopTests(unittest.TestCase):
             result = data_review.write_data_review_model_v2(
                 tenant_id=TENANT_ID,
                 request=request,
-                analysis={"data_window": "2h", "metrics": {}, "priority_metrics": [], "atomic_facts": [], "trend_curves": {}},
+                analysis={"data_window": "2h", "performance_level": "建议重剪", "metrics": {}, "priority_metrics": [], "atomic_facts": [], "trend_curves": {}},
                 screenshots=[],
                 reviewed_at="2026-08-28T10:00:00+08:00",
                 doc_link="",
@@ -144,6 +144,8 @@ class P0ReviewLoopTests(unittest.TestCase):
 
         self.assertEqual(result["post_id"], "post_run_review_loop")
         self.assertEqual(writes[0][2]["creation_run_id"], "run_review_loop")
+        self.assertEqual(writes[0][2]["performance_rating"], "值得重剪")
+        self.assertIn(writes[0][2]["performance_rating"], data_review.PERFORMANCE_LEVELS)
 
     def test_review_advances_explicitly_selected_business_to_delivered(self) -> None:
         with tempfile.TemporaryDirectory() as directory, patch.dict(

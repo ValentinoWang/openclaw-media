@@ -377,7 +377,7 @@ export default function ReviewsPage() {
       <div data-page-prelude>
         <PageHeading
           title="复盘增长"
-          description="发布后的事实、证据质量和报告版本在同一工作区内闭环。"
+          description="发布后的数据、证据质量和报告版本在同一工作区内闭环。"
           action={
             authenticated ? (
               <div className={styles.headingActions}>
@@ -397,7 +397,7 @@ export default function ReviewsPage() {
       {runtimeState === "checking" ? (
         <SessionState kind="loading" title="正在确认访问权限" detail="页面数据将在身份确认后读取。" />
       ) : runtimeState === "unauthenticated" || !session ? (
-        <SessionState kind="permission" title="需要登录才能查看" detail="此页面只展示当前账户可读的发布复盘投影。" />
+        <SessionState kind="permission" title="需要登录才能查看" detail="此页面只展示当前账户可查看的发布复盘记录。" />
       ) : runtimeState === "unavailable" ? (
         <SessionState kind="error" title="暂时无法读取页面数据" detail="身份服务或任务服务尚未就绪，请稍后重试。" />
       ) : (
@@ -540,12 +540,12 @@ function ReviewsView({
         detail={state.status === "ready" ? recordCountLabel(state.data.items.length) : "读取状态"}
       />
       {state.status !== "ready" ? <ResourceState state={state} resource="复盘列表" onRetry={onRetry} /> : state.data.items.length === 0 ? (
-        <EmptyState title="暂无复盘记录" detail="创建报告后，24 小时和 7 天事实会进入同一版本链。" />
+        <EmptyState title="暂无复盘记录" detail="创建报告后，24 小时和 7 天数据会进入同一版本链。" />
       ) : (
         <>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
-              <thead><tr><th scope="col">作品</th><th scope="col">平台</th><th scope="col">事实窗口</th><th scope="col">证据质量</th><th scope="col">模型建议</th><th scope="col">人工决策</th><th scope="col">版本</th><th scope="col">操作</th></tr></thead>
+              <thead><tr><th scope="col">作品</th><th scope="col">平台</th><th scope="col">统计时间</th><th scope="col">证据质量</th><th scope="col">模型建议</th><th scope="col">人工决策</th><th scope="col">版本</th><th scope="col">操作</th></tr></thead>
               <tbody>
                 {state.data.items.map((item) => (
                   <tr key={item.publicReviewId} className={selectedReview?.publicReviewId === item.publicReviewId ? styles.selectedRow : ""}>
@@ -629,7 +629,7 @@ function MetricView({
 function GrowthView({ summary, onRetry }: { summary: LoadState<ReviewSummaryResponse>; onRetry: () => void }) {
   return (
     <section className={styles.panel} id="growth-tabpanel" role="tabpanel" aria-label="增长摘要" data-page-terminal-surface="primary">
-      <PanelHeader icon={<BarChart3 size={19} aria-hidden="true" />} title="增长摘要" detail="仅呈现已返回的聚合事实" />
+      <PanelHeader icon={<BarChart3 size={19} aria-hidden="true" />} title="增长摘要" detail="仅呈现已汇总的数据" />
       {summary.status !== "ready" ? <ResourceState state={summary} resource="增长摘要" onRetry={onRetry} /> : (
         <>
           <div className={styles.growthGrid}>
@@ -656,7 +656,7 @@ function ReviewInspector({ selectedReview, canConfirm, onConfirm }: { selectedRe
       {selectedReview ? (
         <ReviewLayers review={selectedReview} onConfirm={canConfirm ? onConfirm : undefined} />
       ) : (
-        <EmptyState title="请选择一条复盘报告" detail="事实、模型建议和人工决策会在这里分层显示。" />
+        <EmptyState title="请选择一条复盘报告" detail="数据、模型建议和人工决策会在这里分层显示。" />
       )}
     </aside>
   );
@@ -677,7 +677,7 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
         {onConfirm ? <button className={styles.primaryButton} type="button" onClick={onConfirm} disabled={review.humanDecision !== null || review.status === "confirmed"}><CheckCircle2 size={15} aria-hidden="true" />{review.humanDecision === null ? "确认人工决策" : "已完成确认"}</button> : null}
       </div>
       <div className={styles.layerGrid}>
-        <LayerPanel icon={<Database size={17} aria-hidden="true" />} title="事实层" caption="由指标快照返回">
+        <LayerPanel icon={<Database size={17} aria-hidden="true" />} title="数据层" caption="由指标快照提供">
           <dl className={styles.factList}>
             <div><dt>24h 快照</dt><dd>{valueOrUnknown(review.snapshot24h)}</dd></div>
             <div><dt>7d 快照</dt><dd>{valueOrUnknown(review.snapshot7d)}</dd></div>

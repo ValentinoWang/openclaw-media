@@ -31,7 +31,7 @@ MULTI_SIGNAL_CONTRACT_PROMPT = """
 4. 证据不足只能写 insufficient_evidence/open_questions，不能补造事实。
 5. source_refs 只能引用 evidence_manifest_sample 中可见的 id；不确定时少引用或留空并标记 insufficient_evidence。
 6. 不需要输出 contract_version、evidence_manifest_refs、evidence_store_summary、aggregation_report、validation，这些由代码补齐。
-7. 每个 source_signal_dimensions[*].status 只能从这四个字符串中选择：available、insufficient_evidence、schema_failed、llm_failed。禁止输出 available_with_caution、partial、unknown、missing、not_applicable 或其他枚举。
+7. 每个 source_signal_dimensions[*].status 只能从 available、insufficient_evidence 中选择；不确定就写 insufficient_evidence。schema_failed、llm_failed 由流水线在失败路径自行标注，不要由模型生成。
 """.strip()
 
 
@@ -129,7 +129,7 @@ def _contract_prompt_parts(deconstruction: dict[str, Any], *, user_intent: str) 
     }
     return [
         {"text": MULTI_SIGNAL_CONTRACT_PROMPT},
-        {"text": "用户创作交接意图：\n" + str(user_intent or "").strip()},
+        {"text": "用户【拆解-再创】意图：\n" + str(user_intent or "").strip()},
         {"text": "deconstruction + evidence_store compact payload：\n" + json.dumps(compact_payload, ensure_ascii=False, separators=(",", ":"))},
     ]
 

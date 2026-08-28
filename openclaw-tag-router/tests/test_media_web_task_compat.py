@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import base64
+import json
 import uuid
+from http import HTTPStatus
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from jsonschema import Draft202012Validator
 
 from openclaw_app.adapters import http_api
 from openclaw_app.services.media_web_tasks import MediaWebTaskError, MediaWebTaskService
@@ -46,6 +50,44 @@ def test_media_web_error_exposes_stable_http_contract(code: str, status: int) ->
     assert error.details == {}
     error.issues = [{"field": "title", "code": "required"}]
     assert error.details == {"issues": error.issues}
+
+
+def test_api_error_matches_media_web_task_error_schema() -> None:
+    captured: dict[str, object] = {}
+    handler = SimpleNamespace(
+        _send_json=lambda status, payload, headers=None: captured.update(
+            status=int(status),
+            payload=payload,
+            headers=headers,
+        )
+    )
+
+    http_api.OpenClawHttpHandler._send_api_error(
+        handler,
+        HTTPStatus.SERVICE_UNAVAILABLE,
+        "service_unavailable",
+        "服务暂时不可用，请稍后重试。",
+        details={"retryAfterSeconds": 30},
+    )
+
+    schema = json.loads(
+        (Path(__file__).resolve().parents[1] / "openclaw_app/contracts/media_web_task.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    Draft202012Validator(schema).validate(captured["payload"])
+    assert captured == {
+        "status": 503,
+        "payload": {
+            "ok": False,
+            "error": {
+                "code": "service_unavailable",
+                "message": "服务暂时不可用，请稍后重试。",
+                "details": {"retryAfterSeconds": 30},
+            },
+        },
+        "headers": None,
+    }
 
 
 def test_if2_upload_v3_calls_real_upload_service(tmp_path) -> None:
@@ -109,3 +151,15 @@ def test_upload_rejects_header_body_idempotency_drift(tmp_path) -> None:
             http_api.OpenClawHttpHandler._execute_media_upload(handler, context, body)
     finally:
         service.close()
+
+
+def test_media_task_compatibility_has_no_unrouted_legacy_handlers() -> None:
+    for handler_name in (
+        "_handle_media_task_create",
+        "_handle_media_task_list",
+        "_handle_media_task_get",
+        "_handle_media_task_cancel",
+        "_handle_media_task_confirm",
+        "_handle_media_upload",
+    ):
+        assert not hasattr(http_api.OpenClawHttpHandler, handler_name)

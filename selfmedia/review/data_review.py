@@ -52,54 +52,12 @@ CREATION_PLAN_FIELDS = (
 DEFAULT_GUIDE_URL = "https://tcnwueberajc.feishu.cn/wiki/UyFJwM6SEipIXokm5RFcz0XsnXg"
 DEFAULT_OUTPUT_PARENT_NODE_TOKEN = os.getenv("MEDIA_OS_DATA_REVIEW_PARENT_NODE_TOKEN", "CNKdwXKFzi3Wb5k5ePpcbzcmnTg")
 
-DATA_REVIEW_FIELD_SPECS = {
-    "标题": 1,
-    "记录类型": 1,
-    "主题": 1,
-    "平台": 4,
-    "账号名称": 1,
-    "内容类型": 4,
-    "赛道": 4,
-    "发布时间": 1,
-    "发布链接": 15,
-    "复盘节点": 1,
-    "复盘状态": 3,
-    "主状态": 3,
-    "入库时间": 5,
-    "创建时间": 5,
-    "更新时间": 5,
-    "摘要": 1,
-    "表现评级": 3,
-}
+PLATFORM_VALUES = ["抖音", "小红书", "视频号", "B站", "未知"]
+MEDIA_FORMAT_VALUES = ["视频", "图文", "笔记", "直播", "unknown"]
+TRACK_VALUES = ["校园生活", "运动康复", "跑步训练", "AI科技", "学习方法", "职场成长", "生活方式", "商业合作", "所有赛道", "未提供", "其他"]
+PERFORMANCE_LEVELS = ["高价值延续", "值得重剪", "观察", "不建议延续", "未评级"]
 
-DATA_REVIEW_SELECT_OPTIONS = {
-    "平台": ["抖音", "小红书", "视频号", "B站", "未知"],
-    "内容类型": ["视频", "图文", "笔记", "直播", "unknown"],
-    "赛道": ["校园生活", "运动康复", "跑步训练", "AI科技", "学习方法", "职场成长", "生活方式", "商业合作", "所有赛道", "未提供", "其他"],
-    "主状态": ["待处理", "处理中", "已完成", "待人工补充", "失败", "已归档", "已发布", "已复盘", "已建档"],
-    "复盘状态": ["待复盘", "已复盘", "2小时已复盘", "24小时已复盘", "7天已复盘", "复盘完成", "写入失败"],
-    "表现评级": ["高价值延续", "值得重剪", "观察", "不建议延续", "未评级"],
-}
-
-DATA_REVIEW_SELECT_FIELD_TYPES = {
-    "平台": 4,
-    "内容类型": 4,
-    "赛道": 4,
-    "主状态": 3,
-    "复盘状态": 3,
-    "表现评级": 3,
-}
-DATA_REVIEW_OPTIONAL_FIELDS = {"发布链接"}
-
-METRIC_GROUPS = ("overview", "retention", "traffic", "interaction", "audience", "diagnosis")
-AUDIENCE_KEYWORDS = ("观众", "受众", "粉丝画像", "性别", "女性", "男性", "年龄", "城市", "省", "地域", "兴趣", "职业", "设备", "新老用户", "城市等级")
-TRAFFIC_KEYWORDS = ("来源", "推荐", "首页", "搜索", "朋友页", "关注页", "个人主页", "消息页", "同城", "曝光到观看转化", "占总曝光", "占总观看")
-RETENTION_KEYWORDS = ("跳出", "完播", "留存", "播放时长", "观看时长", "播放占比", "观看深度", "停留", "平均观看")
-INTERACTION_KEYWORDS = ("点赞", "评论", "收藏", "分享", "互动", "弹幕", "赞藏", "不感兴趣")
-DIAGNOSIS_KEYWORDS = ("诊断", "状态", "内容丰富度得分", "分数", "评级")
-MISSING_TEXT = "未提供"
 NOT_SHOWN_TEXT = "截图未显示"
-NO_EXTRA_TEXT = "无"
 GUIDANCE_LABELS = {
     "dimension": "维度",
     "category": "维度",
@@ -146,7 +104,6 @@ def handle_data_review_command(
     tenant_id: str,
     attachment_paths: list[str] | None = None,
     no_write: bool = False,
-    table_url: str = "",
     output_parent_node_token: str = "",
     guide_url: str = "",
     conversation_context: dict[str, Any] | None = None,
@@ -460,9 +417,10 @@ def analyze_data_screenshots(
         "10. conclusion 必须是一句话结论，说明这条作品是否值得延续、问题在哪里、下一步怎么做。\n"
         "11. key_insights 写 3-6 条数据洞察；next_actions 写可执行动作，不要泛泛建议。\n"
         "12. problems、content_guidance、publishing_guidance、next_actions、data_quality_notes 尽量输出对象数组，不要把多个维度挤进一条字符串。\n"
-        "13. 不要为了填表重复输出同一批指标；原始可见数据放 metrics，作品形式专项指标放 format_specific_metrics，曲线只放 trend_curves，后续由脚本合并成表格字段。\n"
-        "14. 当创作计划状态为 loaded 时，必须输出 plan_comparison 对象数组，逐条对照标题、前三秒钩子、验证指标、复盘计划和发布动作。每项包含 plan_item、status（已兑现/未兑现/证据不足）、evidence、next_step；没有计划时 plan_comparison 必须为空数组，且不得编造归因。\n"
-        "15. 输出字段固定为：platform, account, media_format, media_format_evidence, format_specific_metrics, track, title, publish_time, data_window, metrics, atomic_facts, priority_metrics, trend_curves, metric_interpretation, conclusion, performance_level, key_insights, problems, content_guidance, publishing_guidance, next_actions, data_quality_notes, plan_comparison。\n"
+        "13. performance_level 只能是：高价值延续、值得重剪、观察、不建议延续、未评级。\n"
+        "14. 不要为了填表重复输出同一批指标；原始可见数据放 metrics，作品形式专项指标放 format_specific_metrics，曲线只放 trend_curves，后续由脚本合并成表格字段。\n"
+        "15. 当创作计划状态为 loaded 时，必须输出 plan_comparison 对象数组，逐条对照标题、前三秒钩子、验证指标、复盘计划和发布动作。每项包含 plan_item、status（已兑现/未兑现/证据不足）、evidence、next_step；没有计划时 plan_comparison 必须为空数组，且不得编造归因。\n"
+        "16. 输出字段固定为：platform, account, media_format, media_format_evidence, format_specific_metrics, track, title, publish_time, data_window, metrics, atomic_facts, priority_metrics, trend_curves, metric_interpretation, conclusion, performance_level, key_insights, problems, content_guidance, publishing_guidance, next_actions, data_quality_notes, plan_comparison。\n"
     )
     user_payload = {
         "reviewed_at": reviewed_at,
@@ -494,6 +452,7 @@ def validate_data_review_analysis(payload: dict[str, Any], context: dict[str, An
     if not conclusion:
         raise ValueError("数据复盘结论不能为空")
     analysis["conclusion"] = conclusion
+    analysis["performance_level"] = normalize_performance_rating(analysis.get("performance_level"))
     analysis["media_format"] = str(analysis.get("media_format") or "").strip()
     if analysis["media_format"] not in {"video", "image_text", "unknown"}:
         raise ValueError("数据复盘必须输出 media_format，且只能是 video/image_text/unknown")
@@ -671,46 +630,6 @@ def normalize_analysis(raw: dict[str, Any], request: DataReviewRequest) -> dict[
     return analysis
 
 
-def split_data_review_metrics(analysis: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    metrics: dict[str, Any] = {}
-    _merge_metric_map(metrics, analysis.get("metrics"))
-    _merge_metric_map(metrics, analysis.get("format_specific_metrics"))
-    grouped: dict[str, dict[str, Any]] = {name: {} for name in METRIC_GROUPS}
-    for key, value in metrics.items():
-        if _is_not_applicable_metric(value):
-            continue
-        group = metric_group_for_key(str(key))
-        add_flat_metric(grouped[group], str(key), value)
-    return grouped
-
-
-def add_flat_metric(target: dict[str, Any], key: str, value: Any) -> None:
-    if isinstance(value, dict):
-        for child_key, child_value in value.items():
-            child_name = f"{key}_{child_key}"
-            add_flat_metric(target, child_name, child_value)
-        return
-    if isinstance(value, list):
-        for index, child_value in enumerate(value, 1):
-            child_name = f"{key}_{index}"
-            add_flat_metric(target, child_name, child_value)
-        return
-    target[key] = value
-
-
-def _merge_metric_map(target: dict[str, Any], value: Any) -> None:
-    if not isinstance(value, dict):
-        return
-    for raw_key, item in value.items():
-        key = str(raw_key).strip()
-        if not key or _is_not_applicable_metric(item):
-            continue
-        if key in {"video", "image_text", "unknown"} and isinstance(item, dict):
-            _merge_metric_map(target, item)
-            continue
-        target[key] = item
-
-
 def normalize_platform_tags(value: Any) -> list[str]:
     mapping = {
         "douyin": "抖音",
@@ -727,7 +646,7 @@ def normalize_platform_tags(value: Any) -> list[str]:
         "b站": "B站",
         "bilibili": "B站",
     }
-    return normalize_select_tags(value, default="未知", mapping=mapping, allowed=DATA_REVIEW_SELECT_OPTIONS["平台"])
+    return normalize_select_tags(value, default="未知", mapping=mapping, allowed=PLATFORM_VALUES)
 
 
 def normalize_media_format_tags(value: Any) -> list[str]:
@@ -745,7 +664,7 @@ def normalize_media_format_tags(value: Any) -> list[str]:
         "unknown": "unknown",
         "未知": "unknown",
     }
-    return normalize_select_tags(value, default="unknown", mapping=mapping, allowed=DATA_REVIEW_SELECT_OPTIONS["内容类型"])
+    return normalize_select_tags(value, default="unknown", mapping=mapping, allowed=MEDIA_FORMAT_VALUES)
 
 
 def normalize_track_tags(value: Any) -> list[str]:
@@ -773,27 +692,7 @@ def normalize_track_tags(value: Any) -> list[str]:
         "未提供": "未提供",
         "其他": "其他",
     }
-    return normalize_select_tags(value, default="未提供", mapping=mapping, allowed=DATA_REVIEW_SELECT_OPTIONS["赛道"])
-
-
-def normalize_review_status(value: Any) -> str:
-    mapping = {
-        "待复盘": "待复盘",
-        "未复盘": "待复盘",
-        "已复盘": "已复盘",
-        "复盘完成": "复盘完成",
-        "完成": "复盘完成",
-        "写入失败": "写入失败",
-        "失败": "写入失败",
-    }
-    text = _select_source_text(value)
-    if "2" in text and "小时" in text:
-        return "2小时已复盘"
-    if "24" in text and "小时" in text:
-        return "24小时已复盘"
-    if "7" in text and "天" in text:
-        return "7天已复盘"
-    return normalize_single_select(value, default="已复盘", mapping=mapping, allowed=DATA_REVIEW_SELECT_OPTIONS["复盘状态"])
+    return normalize_select_tags(value, default="未提供", mapping=mapping, allowed=TRACK_VALUES)
 
 
 def normalize_performance_rating(value: Any) -> str:
@@ -806,7 +705,7 @@ def normalize_performance_rating(value: Any) -> str:
         return "不建议延续"
     if "观察" in text:
         return "观察"
-    return normalize_single_select(value, default="未评级", mapping={"未评级": "未评级"}, allowed=DATA_REVIEW_SELECT_OPTIONS["表现评级"])
+    return normalize_single_select(value, default="未评级", mapping={"未评级": "未评级"}, allowed=PERFORMANCE_LEVELS)
 
 
 def normalize_select_tags(value: Any, *, default: str, mapping: dict[str, str], allowed: list[str]) -> list[str]:
@@ -846,152 +745,12 @@ def _select_source_text(value: Any) -> str:
     return str(value).strip()
 
 
-def ensure_data_review_fields(app_token: str, table_id: str, token: str) -> None:
-    feishu_ensure_fields(app_token, table_id, token, DATA_REVIEW_FIELD_SPECS)
-    fields = _data_review_field_items(app_token, table_id, token)
-    for name, options in DATA_REVIEW_SELECT_OPTIONS.items():
-        item = fields.get(name)
-        if not item:
-            continue
-        target_type = DATA_REVIEW_SELECT_FIELD_TYPES.get(name, 4)
-        option_names = [
-            str(option.get("name") or "").strip()
-            for option in ((item.get("property") or {}).get("options") or [])
-            if str(option.get("name") or "").strip()
-        ]
-        merged_options = [option for option in options if option]
-        for option in option_names:
-            if option not in merged_options:
-                merged_options.append(option)
-        if item.get("type") == target_type and all(option in option_names for option in options):
-            continue
-        resp = requests.put(
-            f"{FEISHU_BASE}/bitable/v1/apps/{app_token}/tables/{table_id}/fields/{item.get('field_id')}",
-            headers=feishu_headers(token),
-            json={"field_name": name, "type": target_type, "property": {"options": [{"name": option} for option in merged_options]}},
-            timeout=20,
-        )
-        resp.raise_for_status()
-        payload = resp.json()
-        if payload.get("code") != 0:
-            raise RuntimeError(f"更新数据复盘多选字段失败：{payload}")
-
-
-def _data_review_field_items(app_token: str, table_id: str, token: str) -> dict[str, dict[str, Any]]:
-    items: list[dict[str, Any]] = []
-    page_token = ""
-    while True:
-        params: dict[str, Any] = {"page_size": 100}
-        if page_token:
-            params["page_token"] = page_token
-        resp = requests.get(
-            f"{FEISHU_BASE}/bitable/v1/apps/{app_token}/tables/{table_id}/fields",
-            headers=feishu_headers(token),
-            params=params,
-            timeout=20,
-        )
-        resp.raise_for_status()
-        payload = resp.json()
-        if payload.get("code") != 0:
-            raise RuntimeError(f"读取数据复盘字段失败：{payload}")
-        data = payload.get("data") or {}
-        items.extend(item for item in data.get("items") or [] if isinstance(item, dict))
-        if not data.get("has_more"):
-            break
-        page_token = str(data.get("page_token") or "")
-        if not page_token:
-            break
-    return {str(item.get("field_name")): item for item in items if item.get("field_name")}
-
-
-def build_metric_evidence_json(analysis: dict[str, Any]) -> dict[str, Any]:
-    metric_groups = split_data_review_metrics(analysis)
-    evidence: dict[str, Any] = {}
-    labels = {
-        "overview": "总览",
-        "retention": "留存",
-        "traffic": "流量来源",
-        "interaction": "互动",
-        "audience": "受众画像",
-        "diagnosis": "平台诊断",
-    }
-    for key, label in labels.items():
-        if metric_groups.get(key):
-            evidence[label] = metric_groups[key]
-    format_specific = analysis.get("format_specific_metrics")
-    if isinstance(format_specific, dict) and format_specific:
-        evidence["作品形式专项指标"] = format_specific
-    interpretation = normalize_table_items(analysis.get("metric_interpretation") or analysis.get("key_insights") or [])
-    if interpretation:
-        evidence["数据解释"] = interpretation
-    return evidence or {"说明": NOT_SHOWN_TEXT}
-
-
-def build_action_guidance_json(analysis: dict[str, Any]) -> dict[str, Any]:
-    actions = {
-        "内容调整": normalize_labeled_items(analysis.get("content_guidance") or [], "建议"),
-        "发布策略": normalize_labeled_items(analysis.get("publishing_guidance") or [], "策略"),
-        "下一步动作": normalize_labeled_items(analysis.get("next_actions") or [], "动作"),
-    }
-    return {key: value for key, value in actions.items() if value} or {"说明": NOT_SHOWN_TEXT}
-
-
 def build_data_quality_json(analysis: dict[str, Any]) -> dict[str, Any]:
     quality = {
         "作品形式依据": _required_text(analysis.get("media_format_evidence"), NOT_SHOWN_TEXT),
         "截图识别说明": normalize_labeled_items(analysis.get("data_quality_notes") or [], "说明"),
     }
     return quality
-
-
-def _is_not_applicable_metric(value: Any) -> bool:
-    if value in (None, "", []):
-        return True
-    if isinstance(value, str):
-        clean = value.strip()
-        return not clean or clean.startswith("不适用")
-    if isinstance(value, dict):
-        return not value or all(_is_not_applicable_metric(item) for item in value.values())
-    if isinstance(value, list):
-        return not value or all(_is_not_applicable_metric(item) for item in value)
-    return False
-
-
-def metric_group_for_key(key: str) -> str:
-    if any(word in key for word in DIAGNOSIS_KEYWORDS):
-        return "diagnosis"
-    if "不感兴趣" in key:
-        return "interaction"
-    if any(word in key for word in AUDIENCE_KEYWORDS):
-        return "audience"
-    if any(word in key for word in TRAFFIC_KEYWORDS):
-        return "traffic"
-    if any(word in key for word in RETENTION_KEYWORDS):
-        return "retention"
-    if any(word in key for word in INTERACTION_KEYWORDS):
-        return "interaction"
-    return "overview"
-
-
-def complete_data_review_fields(fields: dict[str, Any], *, reviewed_at: str) -> dict[str, Any]:
-    completed = dict(fields)
-    title = str(completed.get("标题") or "数据复盘").strip()
-    completed["标题"] = title
-    completed["平台"] = normalize_platform_tags(completed.get("平台"))
-    completed["赛道"] = normalize_track_tags(completed.get("赛道"))
-    completed["账号名称"] = _required_text(completed.get("账号名称"), MISSING_TEXT)
-    completed["发布时间"] = _required_text(completed.get("发布时间"), NOT_SHOWN_TEXT)
-    completed["发布链接"] = str(completed.get("发布链接") or "").strip()
-    completed["内容类型"] = normalize_media_format_tags(completed.get("内容类型"))
-    completed["复盘节点"] = _required_text(completed.get("复盘节点"), NOT_SHOWN_TEXT)
-    completed["复盘状态"] = normalize_review_status(completed.get("复盘状态"))
-    completed["主状态"] = _required_text(completed.get("主状态"), "已复盘")
-    completed["入库时间"] = completed.get("入库时间") or reviewed_at
-    completed["创建时间"] = completed.get("创建时间") or reviewed_at
-    completed["更新时间"] = completed.get("更新时间") or reviewed_at
-    completed["摘要"] = _required_text(completed.get("摘要"), "模型未输出结论，应视为写入失败")
-    completed["表现评级"] = normalize_performance_rating(completed.get("表现评级"))
-    return completed
 
 
 def _required_text(value: Any, default: str) -> str:
@@ -1052,7 +811,7 @@ def write_data_review_model_v2(
         "platform": analysis.get("platform") or request.platform or "unknown",
         "published_url": request.publish_url,
         "review_node": review_node,
-        "performance_rating": analysis.get("performance_level") or "",
+        "performance_rating": normalize_performance_rating(analysis.get("performance_level")),
         "key_metrics_summary": analysis.get("conclusion") or "",
         "review_doc_link": doc_link,
         "review_artifact_uri": review_artifact_uri,
@@ -1640,21 +1399,18 @@ def format_data_review_reply(payload: dict[str, Any]) -> str:
     analysis = payload.get("analysis") or {}
     lines = [
         "【数据复盘】已完成" if payload.get("ok") else "【数据复盘】已部分完成",
-        f"时间戳：{payload.get('reviewed_at') or ''}",
+        f"结论：{analysis.get('conclusion') or ''}",
+        f"复盘文档：{payload['doc_link']}" if payload.get("doc_link") else "",
+        f"表现评级：{analysis.get('performance_level') or '未评级'}",
         f"平台：{analysis.get('platform') or '未识别'}",
         f"账号：{analysis.get('account') or '未填写'}",
-        f"结论：{analysis.get('conclusion') or ''}",
     ]
-    if payload.get("record_id"):
-        lines.append(f"数据复盘表记录：{payload['record_id']}")
     creation_plan = payload.get("creation_plan") if isinstance(payload.get("creation_plan"), dict) else {}
     if creation_plan.get("status") == "loaded":
-        lines.append(f"已按创作记录 {creation_plan.get('creation_record_id')} 对照复盘")
+        lines.append("已按创作计划完成对照复盘")
     elif creation_plan.get("creation_record_id"):
         lines.append("创作记录未找到，本次未做创作计划对照")
-    if payload.get("doc_link"):
-        lines.append(f"复盘文档：{payload['doc_link']}")
-    return "\n".join(lines)
+    return "\n".join(line for line in lines if line)
 
 
 def render_data_review_report(payload: dict[str, Any]) -> str:

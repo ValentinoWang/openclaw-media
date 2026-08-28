@@ -39,7 +39,7 @@ from selfmedia.creation.shooting_execution import (
 )
 from selfmedia.creation.consultation import handle_creation_consultation_command, parse_consultation_request, request_needs_activity_candidates
 from selfmedia.creation.workflow import _deconstruct_activity_example_links, _record_candidate_payload, _run_viral_deconstruct, handle_creation_command
-from selfmedia.creation.writer import _creation_doc_blocks, _creation_output_fields_for_write, _find_wiki_child_doc, _shooting_execution_doc_blocks, _url_field_value
+from selfmedia.creation.writer import _creation_doc_blocks, _find_wiki_child_doc, _shooting_execution_doc_blocks
 from media_vault.vault import MediaVault
 
 
@@ -196,6 +196,7 @@ def _creator_report() -> dict[str, object]:
             "hashtags": ["毕业季", "田径", "100米", "清华研究生", "青春"],
             "pinned_comment": "你毕业后还保留了哪件热爱的事？",
             "comment_prompt": "你觉得毕业是一场告别，还是一次重新起跑？",
+            "first_hour_action": "发布后 1 小时内回复前 3 条具体经历，并观察评论是否围绕毕业与坚持。",
         },
         "material_checklist": {
             "must_have": ["起跑", "冲刺", "成绩或赛后反应"],
@@ -509,7 +510,7 @@ class CreationV1Tests(unittest.TestCase):
                     "目标受众": "刚入职但表达卡住的女生。",
                     "痛点/爽点": "被追问时脑子空白，但想有体面回应。",
                     "吸睛元素": "会议追问和嘴笨标签形成反差。",
-                    "爆点拆解": "真实尴尬场景前置，再给一套练习法。",
+                    "爆点机制": "真实尴尬场景前置，再给一套练习法。",
                     "爆点迁移": "迁移到自己的会议复盘和表达训练步骤。",
                     "创新修改建议": "加入自己的录音复盘动作，减少说教感。",
                     "evidence_uri": "media://deconstructions/decon1/deconstruction.json",
@@ -528,16 +529,16 @@ class CreationV1Tests(unittest.TestCase):
         self.assertEqual(viral.detail_json["cover_opening_hook"], "封面直接放会议被问住的瞬间。")
         self.assertEqual(viral.detail_json["core_data_summary"], "点赞 12000，收藏 3000，评论 800。")
         self.assertEqual(viral.detail_json["top_comment_insight"], "大家都在问如何练习临场表达。")
-        self.assertEqual(viral.detail_json["target_audience_summary"], "刚入职但表达卡住的女生。")
-        self.assertEqual(viral.detail_json["pain_pleasure_summary"], "被追问时脑子空白，但想有体面回应。")
+        self.assertEqual(viral.detail_json["target_audience"], "刚入职但表达卡住的女生。")
+        self.assertEqual(viral.detail_json["pain_or_pleasure_points"], "被追问时脑子空白，但想有体面回应。")
         self.assertEqual(viral.detail_json["attention_elements"], "会议追问和嘴笨标签形成反差。")
-        self.assertEqual(viral.detail_json["viral_breakdown"], "真实尴尬场景前置，再给一套练习法。")
+        self.assertEqual(viral.detail_json["viral_mechanism"], "真实尴尬场景前置，再给一套练习法。")
         self.assertEqual(viral.detail_json["viral_migration"], "迁移到自己的会议复盘和表达训练步骤。")
         self.assertEqual(viral.detail_json["creative_upgrade_suggestion"], "加入自己的录音复盘动作，减少说教感。")
         candidate_payload = _record_candidate_payload(viral)
         self.assertEqual(candidate_payload["audience"], "刚入职但表达卡住的女生。")
         self.assertIn("脑子空白", candidate_payload["pain_points"])
-        self.assertIn("viral_breakdown", candidate_payload["detail_json"])
+        self.assertIn("viral_mechanism", candidate_payload["detail_json"])
         self.assertIn("录音复盘", candidate_payload["detail_json"]["creative_upgrade_suggestion"])
         prompt = build_creation_prompt(
             parse_creation_request("【创作>小红书】赛道=职场成长 类型=图文 主体=表达力"),
@@ -945,38 +946,6 @@ class CreationV1Tests(unittest.TestCase):
         self.assertIn("run_artifact_uri", CREATION_OUTPUT_TABLE_CONTRACT["fields"])
         self.assertIn("feishu_doc_link", CREATION_OUTPUT_TABLE_CONTRACT["fields"])
 
-    def test_creation_writer_keeps_readable_output_fields(self) -> None:
-        fields = _creation_output_fields_for_write(
-            {
-                "标题": "视频 - 测试",
-                "类型": "创作",
-                "状态": "已生成",
-                "关联活动ID": "act1",
-                "参考爆款ID": "vir1",
-                "创作文档链接": "https://example.com/doc",
-                "文档链接JSON": {"创作文档链接": "https://example.com/doc"},
-                "详情JSON": {"关联活动ID": "act1"},
-            }
-        )
-        self.assertEqual(fields["创作文档链接"], "https://example.com/doc")
-        self.assertEqual(fields["关联活动ID"], "act1")
-        self.assertEqual(fields["参考爆款ID"], "vir1")
-        self.assertNotIn("文档链接JSON", fields)
-        self.assertNotIn("详情JSON", fields)
-
-    def test_creation_writer_coerces_embedded_url_text_to_url_field_object(self) -> None:
-        value = _url_field_value(
-            "社群邀约Brief：https://bytedance.larkoffice.com/wiki/PLTqwuvpUio8SikYOEsc6Ai5nAg",
-            text="毕业季活动",
-        )
-        self.assertEqual(
-            value,
-            {
-                "text": "毕业季活动",
-                "link": "https://bytedance.larkoffice.com/wiki/PLTqwuvpUio8SikYOEsc6Ai5nAg",
-            },
-        )
-
     def test_creation_doc_lookup_reuses_latest_same_title_doc(self) -> None:
         with patch("selfmedia.creation.writer.requests.get") as mock_get:
             mock_get.return_value = _JsonResponse(
@@ -1363,7 +1332,7 @@ class CreationV1Tests(unittest.TestCase):
 
     def test_platform_mechanism_config_is_available_as_llm_reference(self) -> None:
         config = load_platform_mechanism_config("小红书")
-        self.assertEqual(config["mechanism_version"], "xiaohongshu_2026_05_v1")
+        self.assertEqual(config["mechanism_version"], "xiaohongshu_v1")
         self.assertIn("content_reasoning", config)
 
     def test_platform_mechanism_fit_uses_llm_output(self) -> None:
@@ -1372,7 +1341,7 @@ class CreationV1Tests(unittest.TestCase):
             now=datetime(2026, 5, 10, 9, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
         )
         payload = {
-            "platform_mechanism_version": "xiaohongshu_2026_05_v1",
+            "platform_mechanism_version": "xiaohongshu_v1",
             "mechanism_claim_boundary": "这是机制拟合假设，不是平台真实算法或权重结论。",
             "mechanism_evidence_level": "B",
             "source_weights": {"llm": "B"},
@@ -1402,7 +1371,7 @@ class CreationV1Tests(unittest.TestCase):
                 reference_docs=[],
                 media_context={},
             )
-        self.assertEqual(fit["platform_mechanism_version"], "xiaohongshu_2026_05_v1")
+        self.assertEqual(fit["platform_mechanism_version"], "xiaohongshu_v1")
         self.assertEqual(fit["generation"]["provider"], "codex_responses")
         self.assertEqual(fit["generation"]["profile"], "media_creation")
         self.assertEqual(fit["generation"]["model"], "codex/gpt-5.6-sol")
@@ -1432,7 +1401,7 @@ class CreationV1Tests(unittest.TestCase):
             now=datetime(2026, 5, 10, 9, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
         )
         payload = {
-            "platform_mechanism_version": "xiaohongshu_2026_05_v1",
+            "platform_mechanism_version": "xiaohongshu_v1",
             "mechanism_claim_boundary": "这是机制拟合假设，不是平台真实算法或权重结论。",
             "mechanism_evidence_level": "C",
             "source_weights": {"llm": "C"},
@@ -1490,10 +1459,10 @@ class CreationV1Tests(unittest.TestCase):
 
     def test_creation_workflow_uses_llm_draft_without_template_fallback(self) -> None:
         platform_fit = {
-            "platform_mechanism_version": "xiaohongshu_2026_05_v1",
+            "platform_mechanism_version": "xiaohongshu_v1",
             "mechanism_claim_boundary": "这是机制拟合假设，不是平台真实算法或权重结论。",
             "platform_fit_meta": {
-                "mechanism_version": "xiaohongshu_2026_05_v1",
+                "mechanism_version": "xiaohongshu_v1",
                 "fallback_used": False,
                 "fit_source": ["llm", "activity_table", "hot_content_table"],
                 "confidence": "medium",
@@ -1614,7 +1583,7 @@ class CreationV1Tests(unittest.TestCase):
         self.assertTrue(generate.called)
         self.assertTrue(fit_generator.called)
         self.assertEqual(result["generation_mode"], "openclaw_llm_first")
-        self.assertEqual(result["platform_fit"]["platform_mechanism_version"], "xiaohongshu_2026_05_v1")
+        self.assertEqual(result["platform_fit"]["platform_mechanism_version"], "xiaohongshu_v1")
         self.assertEqual(generate.call_args.kwargs["platform_fit"]["platform_strategy"]["fit_summary"], "封面点击、收藏和评论要明确设计")
         self.assertEqual(result["draft"]["title"], "表达力这样练")
         self.assertEqual(result["activities"][0]["source_record_id"], "act1")
@@ -1623,7 +1592,7 @@ class CreationV1Tests(unittest.TestCase):
 
     def test_creation_workflow_skips_business_table_without_business_context(self) -> None:
         platform_fit = {
-            "platform_mechanism_version": "xiaohongshu_2026_05_v1",
+            "platform_mechanism_version": "xiaohongshu_v1",
             "platform_strategy": {"fit_summary": "按真实场景写"},
             "activity_strategy": {},
             "traffic_hypothesis": {},
@@ -1684,7 +1653,7 @@ class CreationV1Tests(unittest.TestCase):
 
     def test_creation_write_mode_calls_media_model_v2_writeback(self) -> None:
         platform_fit = {
-            "platform_mechanism_version": "xiaohongshu_2026_05_v1",
+            "platform_mechanism_version": "xiaohongshu_v1",
             "platform_strategy": {"fit_summary": "按真实场景写"},
             "activity_strategy": {},
             "traffic_hypothesis": {},
@@ -1780,7 +1749,7 @@ class CreationV1Tests(unittest.TestCase):
 
     def test_creation_workflow_rejects_draft_without_script_options(self) -> None:
         platform_fit = {
-            "platform_mechanism_version": "xiaohongshu_2026_05_v1",
+            "platform_mechanism_version": "xiaohongshu_v1",
             "platform_strategy": {},
             "activity_strategy": {},
             "traffic_hypothesis": {},

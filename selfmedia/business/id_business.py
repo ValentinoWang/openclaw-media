@@ -282,30 +282,6 @@ CONFIRMATION_CANONICAL = {
     "最快档期": "具体档期",
     "返点": "报备返点",
 }
-AMBIGUOUS_VALUE_RE = re.compile(r"待补充|待确认|不确定|看情况|尽快|最快|可沟通|都行|\\?|？")
-QUESTION_TEMPLATES = {
-    "具体档期": "最快可执行/可发布的具体档期是什么？请具体到日期或日期区间，不要只写“尽快”。",
-    "图文报价": "{current_month}图文报价是多少？请注明报备/非报备。",
-    "视频报价": "{current_month}视频报价是多少？请注明报备/非报备。",
-    "非报备图文/视频单品报价": "非报备图文/视频单品报价分别是多少？",
-    "报备视频、图文/单品报价": "报备图文、报备视频单品报价分别是多少？",
-    "报备返点": "返点是否接受？如不接受，请给可接受返点。",
-    "本月下单是否保价次月执行": "本月下单是否可以保价到次月执行？如果不行，请给次月价格。",
-    "排竞时长": "是否可接受前 15 天后 15 天排竞？如果不能，可接受的排竞时长是多少？",
-    "是否有免费分发平台": "是否有可免费同步/分发的平台？具体哪些平台？",
-    "全渠道授权及时长": "是否可以全渠道授权？可授权哪些渠道，授权时长多久？",
-    "保价政策": "本次合作是否保价？如果保价，请给出适用月份或执行截止时间；如果不保价，请给调整后的报价。",
-    "授权范围": "可授权哪些渠道和用途（品牌自媒体、电商、信息流或其他）？",
-    "授权时长": "授权时长可选多久？请确认起止口径。",
-    "多双露出": "是否接受同一内容多双产品露出？如果接受，最多几双、是否需要加价？",
-    "蒲公英涨价": "蒲公英报备合作是否需要涨价？请确认不涨价、固定加价金额或涨价比例。",
-    "笔记默认保留时长": "笔记是否默认保留一年以上？",
-    "评论区置顶": "发布后第二天是否能配合评论区置顶？",
-    "素材收集要求": "是否能提供纯净版和发布版素材？",
-    "所在地区是否可以正常收发快递": "所在地区是否可以正常收发快递？",
-    "可同步平台": "可同步哪些平台？",
-    "尺码": "尺码是多少？",
-}
 BUSINESS_LLM_PROFILE_NAME = "content_cleaner"
 BUSINESS_LLM_MIN_CONFIDENCE = 0.55
 BUSINESS_NEGOTIABLE_SELECTION_FIELDS = frozenset(
@@ -519,6 +495,7 @@ BUSINESS_ID_EXTRACTION_PROMPT = """你是 OpenClaw Media bot 的【商务>ID】�
 硬性规则：
 - 主体字段必须来自输入证据；不确定就留空，并放入 pending_fields。
 - 把“报备视频/视频笔记”提取为内容类型=视频，把“报备图文/图文笔记”提取为内容类型=图文；不要把内容类型误写进报价字段。
+- 具体档期只有明确日期或日期区间才可填写，例如“2026-09-10”或“2026-09-10 至 2026-09-15”。“尽快”“本周”“8月上旬”等不构成已确认档期，必须留空并把具体档期放入 pending_fields。
 - 当文本同时给出授权渠道/用途与期限时，分别提取授权范围和授权时长；保留原始合并表述到全渠道授权及时长。
 - “最快档期”统一提取到具体档期；“多双露出”和“蒲公英涨价”只在输入有明确事实时填写，没有明确答案时放入 pending_fields，不能猜测。
 - 这是查 06/05 历史表之前的字段抽取。只要输入提供了平台，并提供博主IP、账号名称、作者ID或平台ID之一，就必须保留这些身份字段，让后续历史查表解析；不得因为本轮索要的主页链接、报价或其他事实尚未出现在消息正文中而把 status 设为 pending_manual。
@@ -559,6 +536,7 @@ JSON 结构：
 - 项目报价、返点、档期、保价政策、授权范围和授权时长来自 05B 商务机会；必须按当前商务账号和品牌/产品/Brief 唯一匹配后使用，并与 05A 的账号级报价区分。
 - 如果报价来自历史表字段，要自然说明“当前表内报价为...”，不要说成用户刚刚提供。
 - 如果仍缺返点、档期、保价、授权等字段，回复里要明确向博主补问。
+- 档期未给出具体日期或日期区间时，必须视为待确认，不能把“尽快”“本周”或“8月上旬”写成已确认的可发布档期。
 - 如果 current_fields 没有报备返点，但 default_lookup 提供了报备返点默认口径，可按该口径作为初期谈判锚点；必须表达为“当前默认沟通口径”，不得写成表内已确认返点。
 - 先把 current_fields/history_lookup 中已查到的博主IP、平台ID、图文报价、视频报价、报备视频或图文/单品报价自然写入 reply，再处理缺项；不得让用户重复填写已经查到的事实。
 - 对本轮询问但仍缺失的可协商字段（报备返点、保价政策、最快档期、多双露出、蒲公英涨价、授权范围、授权时长、全渠道授权及时长），必须在 selection_options 中按字段给出 2-4 个简短可选口径，最后一项是“其他（请填写）”。这些只是让用户选择的候选，不能写成已确认事实。
@@ -1073,103 +1051,6 @@ def canonical_confirmation_field(name: str) -> str:
     return CONFIRMATION_CANONICAL.get(name, name)
 
 
-def uncertain_value(value: Any) -> bool:
-    text = str(value or "").strip()
-    if not text:
-        return True
-    return bool(AMBIGUOUS_VALUE_RE.search(text))
-
-
-def blank_confirmation_labels(body: str) -> set[str]:
-    labels: set[str] = set()
-    for raw_line in body.splitlines():
-        line = re.sub(r"^\s*\d+\s*[、.．]\s*", "", raw_line.strip())
-        if not line:
-            continue
-        match = re.match(r"^【?(?P<label>[^】：:]{1,140})】?\s*[：:]\s*(?P<value>.*)$", line)
-        if not match:
-            continue
-        label = canonical_confirmation_field(normalize_label(match.group("label")))
-        value = match.group("value").strip()
-        if label in CONFIRMATION_FIELDS and not value:
-            labels.add(label)
-    return labels
-
-
-def confirmation_required_fields(body: str, fields: dict[str, Any], pending: list[str]) -> list[str]:
-    required: set[str] = {canonical_confirmation_field(label) for label in pending}
-    required.update(blank_confirmation_labels(body))
-    for label in list(CONFIRMATION_FIELDS):
-        if label in required:
-            continue
-        if label in fields and uncertain_value(fields.get(label)):
-            required.add(label)
-    if (fields.get("具体档期") or fields.get("档期")) and "具体档期" in required and not uncertain_value(fields.get("具体档期") or fields.get("档期")):
-        required.discard("具体档期")
-    return [label for label in sorted(required) if label in CONFIRMATION_FIELDS]
-
-
-def business_local_month(now: datetime | None = None) -> str:
-    moment = now or datetime.now(LOCAL_TZ)
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=LOCAL_TZ)
-    else:
-        moment = moment.astimezone(LOCAL_TZ)
-    return f"{moment.month}月"
-
-
-def build_creator_question_text(
-    fields: dict[str, Any],
-    confirmation_fields: list[str],
-    *,
-    now: datetime | None = None,
-    defaults_path: str | Path | None = None,
-) -> str:
-    if not confirmation_fields:
-        return ""
-    creator = display_creator_name(fields)
-    project = feishu_plain_text(fields.get("项目") or fields.get("品牌") or fields.get("产品"))
-    lines = [
-        "【商务>ID】需要先反问博主确认",
-        f"作者ID：{creator}",
-    ]
-    if project:
-        lines.append(f"项目：{project}")
-    lines.append("以下信息不确定，不能直接粘贴给品牌方；请先向博主确认：")
-    defaults = load_business_reply_defaults(defaults_path) if "报备返点" in confirmation_fields else {}
-    default_rebate = _business_text_value((defaults.get("fields") or {}).get("报备返点"))
-    for index, field in enumerate(confirmation_fields, start=1):
-        if field == "报备返点" and default_rebate:
-            question = f"返点是否接受？当前默认沟通口径为“{default_rebate}”；如不接受，请给可接受返点。"
-        else:
-            question = QUESTION_TEMPLATES.get(field, f"{field} 请确认。").format(
-                current_month=business_local_month(now)
-            )
-        lines.append(f"{index}. {field}：{question}")
-    return "\n".join(lines)
-
-
-def add_creator_confirmation_fields(
-    body: str,
-    fields: dict[str, Any],
-    pending: list[str],
-    *,
-    now: datetime | None = None,
-    defaults_path: str | Path | None = None,
-) -> list[str]:
-    confirmation_fields = confirmation_required_fields(body, fields, pending)
-    if confirmation_fields:
-        fields["需反问博主字段"] = "、".join(confirmation_fields)
-        fields["反问博主话术"] = build_creator_question_text(
-            fields,
-            confirmation_fields,
-            now=now,
-            defaults_path=defaults_path,
-        )
-        fields["反问博主状态"] = "pending"
-    return confirmation_fields
-
-
 def extract_project_short_name(project: str) -> str:
     return re.split(r"[（(]", project.strip(), maxsplit=1)[0].strip()
 
@@ -1617,6 +1498,13 @@ def normalize_business_llm_result(
     if status == "done" and not any(_business_text_value(fields.get(name)) for name in BUSINESS_LLM_SIGNAL_FIELDS):
         status = "pending_manual"
         reason = reason or "LLM 未产出可校验的商务核心字段"
+
+    schedule_value = _field_text(fields, "具体档期") or _field_text(fields, "档期")
+    if schedule_value and not is_confirmable_schedule_value(schedule_value):
+        fields.pop("具体档期", None)
+        fields.pop("档期", None)
+        pending_fields = list(dict.fromkeys([*pending_fields, "具体档期"]))
+        confirmation_fields = list(dict.fromkeys([*confirmation_fields, "具体档期"]))
 
     fields["分享原文"] = body
     fields["商务原文"] = body
@@ -2103,6 +1991,17 @@ def is_expired_schedule_value(value: Any, *, now: datetime | None = None) -> boo
             end_day = (next_month - timedelta(days=1)).day
         return datetime(year, month, end_day, tzinfo=LOCAL_TZ).date() < today
     return False
+
+
+def is_confirmable_schedule_value(value: Any) -> bool:
+    """Return whether an availability value includes a concrete date commitment."""
+    text = _business_text_value(value)
+    if not text or re.search(r"尽快|尽早|待定|待确认|看情况|本周|下周|上旬|中旬|下旬", text):
+        return False
+    return bool(
+        SCHEDULE_DATE_RE.search(text)
+        or re.search(r"(?<!\d)(?:1[0-2]|0?[1-9])\s*月\s*(?:3[01]|[12]\d|0?[1-9])\s*[日号]", text)
+    )
 
 
 def refresh_pending_fields_from_values(fields: dict[str, Any], parsed: dict[str, Any]) -> list[str]:

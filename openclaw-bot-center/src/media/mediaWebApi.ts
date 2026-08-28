@@ -1,6 +1,6 @@
 import { capabilityCatalogSchema, type CapabilityCatalog, type CapabilityDefinition } from '../schemas/capabilityCatalogSchema'
 import { capabilityMatchResponseSchema, type CapabilityMatchResponse } from '../schemas/capabilityMatchSchema'
-import { mediaWebTaskCreateRequestSchema, mediaWebTaskSchema, mediaWebUploadSchema, type MediaWebTask as GeneratedMediaWebTask, type MediaWebTaskCreateRequest, type MediaWebUpload } from '../schemas/mediaWebTaskSchema'
+import { mediaWebTaskCreateRequestSchema, mediaWebTaskErrorSchema, mediaWebTaskSchema, mediaWebUploadSchema, type MediaWebTask as GeneratedMediaWebTask, type MediaWebTaskCreateRequest, type MediaWebUpload } from '../schemas/mediaWebTaskSchema'
 import { z } from 'zod'
 import { secureUuid } from './secureUuid'
 import { stableTaskErrorMessage } from './recentTaskPresentation'
@@ -425,24 +425,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   })
   if (!response.ok) {
-    const payload = await response.json().catch(() => null) as {
-      error?: {
-        code?: string
-        message?: string
-        parsing?: unknown
-        materialParsing?: unknown
-        details?: unknown
-      }
-    } | null
-    const errorPayload = payload?.error
-    const code = errorPayload?.code ?? 'request_failed'
-    const details = errorPayload?.parsing ?? errorPayload?.materialParsing ?? errorPayload?.details ?? null
+    const payload = await response.json().catch(() => null)
+    const parsedError = mediaWebTaskErrorSchema.safeParse(payload)
+    if (!parsedError.success) {
+      throw new MediaWebApiError(response.status, 'invalid_error_response', '服务返回了无法识别的错误。')
+    }
+    const { code, message, details = null } = parsedError.data.error
     throw new MediaWebApiError(
       response.status,
       code,
       code === 'material_parsing_incomplete'
-        ? materialParsingServerFailureMessage(code, errorPayload?.message, details)
-        : stableTaskErrorMessage(code, errorPayload?.message),
+        ? materialParsingServerFailureMessage(code, message, details)
+        : stableTaskErrorMessage(code, message),
       details,
     )
   }

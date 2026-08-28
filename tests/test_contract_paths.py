@@ -70,6 +70,16 @@ def test_explicit_environment_overrides_are_honored(tmp_path: Path, monkeypatch)
     assert resolve_media_model_contract_path() == override
     assert MediaModelContract().path == override
 
+    agent_results_override = tmp_path / "agent-results-contract.json"
+    agent_results_payload = json.loads(REPOSITORY_AGENT_RESULTS_CONTRACT_PATH.read_text(encoding="utf-8"))
+    diary_vault = tmp_path / "diary-vault"
+    agent_results_payload["diary_vault"] = str(diary_vault)
+    agent_results_payload["physical_root"] = str(diary_vault / "公共开发集")
+    agent_results_override.write_text(json.dumps(agent_results_payload, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setenv("OPENCLAW_AGENT_RESULTS_CONTRACT_PATH", str(agent_results_override))
+    assert resolve_agent_results_contract_path() == agent_results_override
+    assert agent_results_contract().physical_root == diary_vault / "公共开发集"
+
 
 def test_runtime_readers_do_not_hardcode_the_legacy_model_contract_path() -> None:
     readers = (

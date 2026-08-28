@@ -169,7 +169,36 @@ def write_frontmatter(path: Path, frontmatter: dict[str, object], body: str = ""
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def write_agent_results_contract(directory: Path) -> tuple[Path, Path]:
+    repository_root = Path(__file__).resolve().parents[2]
+    payload = json.loads(
+        (repository_root / "docs" / "ai-harness" / "agent_result_vault_contract.json").read_text(encoding="utf-8")
+    )
+    diary_vault = directory / "diary-vault"
+    payload["diary_vault"] = str(diary_vault)
+    payload["physical_root"] = str(diary_vault / "公共开发集")
+    contract_path = directory / "agent-results-contract.json"
+    contract_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return contract_path, diary_vault / "公共开发集"
+
+
 class DeletionMixinTest(unittest.TestCase):
+    def test_allowed_roots_use_the_runtime_contract_environment_override(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(
+            os.environ,
+            {"OPENCLAW_MEDIA_VAULT_ROOT": str(Path(tmp) / "media_vault")},
+            clear=False,
+        ):
+            contract_path, results_root = write_agent_results_contract(Path(tmp))
+            with patch.dict(os.environ, {"OPENCLAW_AGENT_RESULTS_CONTRACT_PATH": str(contract_path)}, clear=False):
+                mixin = DeletionMixin()
+                mixin.workspace_root = Path(tmp) / "workspace"
+                roots = mixin._deletion_allowed_roots(TENANT_A)
+
+        self.assertTrue(
+            all(results_root / folder in roots for folder in ("media", "daily", "social", "knowledge", "public"))
+        )
+
     def test_default_allowed_roots_include_only_authenticated_tenant_vault(self) -> None:
         with tempfile.TemporaryDirectory() as tmp, patch.dict(
             os.environ,

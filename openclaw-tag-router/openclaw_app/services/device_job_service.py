@@ -64,13 +64,13 @@ class DeviceJobService:
         secret = self._text(credential, "device_credential", maximum=256)
         return self.store.authenticated_credential(secret)
 
-    def heartbeat(self, device_id: str, credential: str, *, observed_at: str, client_version: str, capabilities: list[str] | None, idempotency_key: str, expected_revision: int | None = None, api_version: str = SERVER_API_VERSION, reported_catalog_digest: str = catalog_digest()) -> dict[str, Any]:
+    def heartbeat(self, device_id: str, credential: str, *, observed_at: str, client_version: str, capabilities: list[str] | None, idempotency_key: str, expected_revision: int | None = None, api_version: str = SERVER_API_VERSION, reported_catalog_digest: str | None = None) -> dict[str, Any]:
         device = self._object_id(device_id, "device_id", prefix="dev_")
         secret = self._text(credential, "device_credential", maximum=256)
         observed = self._timestamp(observed_at)
         version = self._text(client_version, "client_version", maximum=100)
         normalized_api_version = self._text(api_version, "api_version", maximum=50)
-        normalized_catalog_digest = self._text(reported_catalog_digest, "catalog_digest", maximum=300)
+        normalized_catalog_digest = self._text(reported_catalog_digest or catalog_digest(), "catalog_digest", maximum=300)
         caps = capabilities or []
         if not isinstance(caps, list) or any(not isinstance(item, str) or not item.strip() for item in caps) or len(caps) > 100:
             raise DeviceJobError("invalid_request", "capabilities is invalid")

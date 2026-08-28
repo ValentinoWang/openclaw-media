@@ -94,6 +94,28 @@ class MediaContextTests(unittest.TestCase):
         self.assertIn("公开表达边界：可说清华和短跑，不提私人联系方式", prompt)
         self.assertIn("可创作身份卖点：AI硕士冲短跑一级的反差", prompt)
 
+    def test_creator_profile_error_is_visible_to_prompt(self) -> None:
+        prompt = render_context_for_prompt({"creator_profile_error": "字段契约不可用"})
+
+        self.assertIn("达人档案加载失败：字段契约不可用", prompt)
+        self.assertIn("人设未注入", prompt)
+
+    def test_explicit_review_patterns_do_not_depend_on_single_character_rating(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = record_review_memory(
+                "【复盘】平台=小红书 账号=主账号 主题=表达力 结论=跳出率高但收藏低",
+                tenant_id="00000000-0000-4000-8000-000000000101",
+                root=tmp,
+                analysis={
+                    "effective_patterns": ["冲突式开头"],
+                    "failure_reasons": ["信息密度过高"],
+                },
+            )
+
+            profile = json.loads(Path(result["profile"]["path"]).read_text(encoding="utf-8"))
+            self.assertEqual(profile["proven_patterns"], ["冲突式开头"])
+            self.assertEqual(profile["avoid_patterns"], ["信息密度过高"])
+
     def test_context_consumes_tenant_daily_metrics_and_comments(self) -> None:
         tenant_id = "00000000-0000-4000-8000-000000000101"
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"OPENCLAW_MEDIA_VAULT_ROOT": tmp}, clear=False):

@@ -13,7 +13,7 @@ if str(ROOT) not in sys.path:
 
 from selfmedia.style import STYLE_POLISH_CAPABILITY, StylePolishRequest, normalize_style_polish_tag, run_style_polish
 from selfmedia.style.feedback import build_pattern_candidate
-from selfmedia.style.validators import scan_forbidden_style_ssot
+from selfmedia.style.validators import scan_forbidden_style_ssot, validate_version_text
 
 
 def style_payload(*, recommended_text: str) -> dict[str, object]:
@@ -39,6 +39,40 @@ def style_payload(*, recommended_text: str) -> dict[str, object]:
 
 
 class StylePolishTests(unittest.TestCase):
+    def test_must_keep_sentence_can_contain_an_anti_pattern(self) -> None:
+        request = StylePolishRequest(raw_text="原文", must_keep=("让我们一起完成这项训练",))
+        self.assertEqual(
+            validate_version_text(
+                request,
+                "让我们一起完成这项训练。",
+                platform_mechanism={"forbidden_claim_patterns": ["让我们一起"]},
+            ),
+            [],
+        )
+
+    def test_forbidden_phrase_outside_must_keep_is_still_rejected(self) -> None:
+        request = StylePolishRequest(raw_text="原文", must_keep=("让我们一起完成这项训练",))
+        failures = validate_version_text(
+            request,
+            "让我们一起完成这项训练。让我们一起冲刺。",
+            platform_mechanism={"forbidden_claim_patterns": ["让我们一起"]},
+        )
+        self.assertTrue(any("让我们一起" in item for item in failures))
+
+    def test_score_breakdown_is_optional_and_numeric_diagnostic(self) -> None:
+        payload = style_payload(recommended_text="原文。")
+        payload["versions"][0].pop("score_breakdown")  # type: ignore[index]
+        with tempfile.TemporaryDirectory() as tmp:
+            result = run_style_polish(
+                StylePolishRequest(raw_text="原文。"),
+                tenant_id="00000000-0000-4000-8000-000000000101",
+                vault_root=tmp,
+                run_id="style_polish_optional_scores",
+                provider=lambda _prompt: payload,
+            )
+        self.assertEqual(result.versions[0].score_breakdown, {})
+        self.assertEqual(result.score_breakdown, {})
+
     def test_aliases_normalize_to_one_capability(self) -> None:
         for tag in ("【润色】", "【网感】", "【文案优化】", "【改标题】", "【去AI味】", "【小红书文案】", "【抖音文案】"):
             self.assertEqual(normalize_style_polish_tag(f"{tag} 原文"), STYLE_POLISH_CAPABILITY)

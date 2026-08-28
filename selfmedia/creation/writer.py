@@ -18,17 +18,13 @@ from common.feishu_docx_table_limits import (
 )
 from common.social_runtime import (
     FEISHU_BASE,
-    feishu_bitable_refs,
-    feishu_coerce_value,
-    feishu_ensure_fields,
-    feishu_field_types,
     feishu_headers,
     feishu_tenant_access_token,
     load_default_env_files,
 )
-from common.standard_fields import standard_field_specs
 
 from .matcher import RankedRecord
+from .llm_generator import CREATION_SCORE_THRESHOLD
 from .request_parser import CreationRequest
 
 
@@ -54,57 +50,6 @@ EVIDENCE_SOURCE_STATUS_LABELS = {
     "confirmed": "已核验",
     "manual_description_only": "仅凭文字描述，未看过原片",
     "pending_manual": "待人工核实",
-}
-
-
-LEGACY_CREATION_RECORD_FIELD_SPECS = {
-    "标题": 1,
-    "类型": 3,
-    "内容": 1,
-    "状态": 3,
-    "关联ID": 1,
-    "创建时间": 5,
-    "更新时间": 5,
-    "平台": 1,
-    "内容类型": 1,
-    "赛道": 1,
-    "主题": 1,
-    "关键词/标签": 1,
-    "发布时间": 1,
-    "关联活动ID": 1,
-    "关联活动链接": 15,
-    "返稿链接": 15,
-    "关联商务ID": 1,
-    "关联商务链接": 15,
-    "账号": 1,
-    "素材来源": 1,
-    "定位分析": 1,
-    "平台策略": 1,
-    "发布链接": 15,
-    "复盘状态": 1,
-    "参考爆款ID": 1,
-    "参考灵感ID": 1,
-    "参考灵感文档链接": 15,
-    "参考拆解文档链接": 15,
-    "创作文档链接": 15,
-    "活动匹配分": 2,
-    "爆款匹配分": 2,
-    "灵感匹配分": 2,
-    "商务匹配分": 2,
-    "匹配理由": 1,
-    "标题校验": 1,
-    "Tags校验": 1,
-    "平台规则校验": 1,
-    "校验结果": 1,
-    "失败原因": 1,
-    "创作请求": 1,
-}
-
-_STANDARD_CREATION_RECORD_FIELD_SPECS = standard_field_specs(LEGACY_CREATION_RECORD_FIELD_SPECS)
-CREATION_RECORD_FIELD_SPECS = {
-    name: _STANDARD_CREATION_RECORD_FIELD_SPECS[name]
-    for name in LEGACY_CREATION_RECORD_FIELD_SPECS
-    if not name.endswith("JSON")
 }
 
 
@@ -185,36 +130,6 @@ def rewrite_shooting_execution_doc(
     blocks = _shooting_execution_doc_blocks(title, request, draft, validation, media_context=media_context)
     _replace_blocks(document_id, blocks, token)
     return canonical_url
-
-
-def _creation_output_fields_for_write(record_fields: dict[str, Any]) -> dict[str, Any]:
-    return {
-        field: record_fields[field]
-        for field in CREATION_RECORD_FIELD_SPECS
-        if field in record_fields
-    }
-
-
-def _url_field_value(value: Any, *, text: str = "") -> dict[str, str] | str:
-    if value in (None, "", []):
-        return ""
-    if isinstance(value, dict):
-        link = str(value.get("link") or value.get("url") or "").strip()
-        label = str(value.get("text") or text or link).strip()
-        return {"text": label or link, "link": link} if _is_url(link) else ""
-    raw = str(value).strip()
-    if _is_url(raw):
-        return {"text": text or raw, "link": raw}
-    match = re.search(r"https?://[^\s，。；;）)】>]+", raw)
-    if not match:
-        return ""
-    link = match.group(0)
-    label = (text or raw[: match.start()].strip(" ：:") or link).strip()
-    return {"text": label, "link": link}
-
-
-def _is_url(value: str) -> bool:
-    return value.startswith(("http://", "https://"))
 
 
 def _create_doc(title: str, token: str) -> tuple[str, str, bool]:
@@ -673,19 +588,6 @@ def _option_score_reason_lines(draft: dict[str, Any]) -> list[str]:
     return lines
 
 
-def _option_score_summary(draft: dict[str, Any]) -> str:
-    recommended_id = str(draft.get("recommended_option_id") or "").strip()
-    parts: list[str] = []
-    for index, option in enumerate(_script_options(draft)[:5], 1):
-        score = option.get("score")
-        suffix = "推荐" if str(option.get("option_id") or "").strip() == recommended_id else ""
-        gate = "高分" if isinstance(score, int) and score > 90 else "未达90"
-        label = f"方案{index}"
-        detail = " / ".join(item for item in (suffix, gate) if item)
-        parts.append(f"{label}：{score}分（{detail}）" if detail else f"{label}：{score}分")
-    return "；".join(parts)
-
-
 def _script_option_summary(option: dict[str, Any]) -> str:
     # 执行信息在前；评分与选择论证不进入方案正文，统一收进证据附录。
     lines = [
@@ -711,14 +613,6 @@ def _script_option_summary(option: dict[str, Any]) -> str:
         ]
     )
     return "\n".join(line for line in lines if line.split("：", 1)[-1].strip())
-
-
-def _script_option_storyboard(option: dict[str, Any]) -> str:
-    rows = _script_option_storyboard_rows(option)
-    lines: list[str] = []
-    for row in rows[1:]:
-        lines.append(f"{row[0]}：{' / '.join(item for item in row[1:] if item)}")
-    return "\n".join(lines)
 
 
 def _script_option_storyboard_rows(option: dict[str, Any]) -> list[list[str]]:
@@ -1205,76 +1099,6 @@ def _append_cell_text(document_id: str, token: str, cell_id: str, text: str) -> 
     time.sleep(FEISHU_DOC_WRITE_SLEEP_SEC)
 
 
-def _score_payload(
-    activities: list[RankedRecord],
-    virals: list[RankedRecord],
-    businesses: list[RankedRecord] | None = None,
-    *,
-    inspirations: list[RankedRecord] | None = None,
-) -> dict[str, Any]:
-    businesses = businesses or []
-    inspirations = inspirations or []
-    def serialize(item: RankedRecord) -> dict[str, Any]:
-        payload: dict[str, Any] = {
-            "record_id": item.record.source_record_id,
-            "score": item.score,
-            "score_scale": item.score_scale,
-            "reasons": item.reasons,
-        }
-        if item.raw_score is not None:
-            payload["raw_score"] = item.raw_score
-        if isinstance(item.reasons, dict) and item.reasons.get("LLM选择原因"):
-            payload["selection_reason"] = item.reasons.get("LLM选择原因")
-        return payload
-
-    return {
-        "activity": [serialize(item) for item in activities],
-        "viral": [serialize(item) for item in virals],
-        "inspiration": [serialize(item) for item in inspirations],
-        "business": [serialize(item) for item in businesses],
-    }
-
-
-def _top_score(items: list[RankedRecord]) -> float | None:
-    if not items:
-        return None
-    return float(max(item.score for item in items))
-
-
-def _score_summary(score_payload: dict[str, Any]) -> str:
-    labels = {
-        "activity": "活动",
-        "viral": "爆款",
-        "inspiration": "灵感",
-        "business": "商务",
-    }
-    lines: list[str] = []
-    for key, label in labels.items():
-        items = score_payload.get(key) or []
-        if not items:
-            continue
-        top = items[0]
-        reasons = _reason_summary(top.get("reasons") or {})
-        lines.append(f"{label} {top.get('record_id', '')}：{top.get('score', '')}；{reasons}")
-    return "\n".join(lines)
-
-
-def _reason_summary(reasons: Any) -> str:
-    if not isinstance(reasons, dict):
-        return _compact_text(reasons)
-    parts: list[str] = []
-    for key, value in reasons.items():
-        if key == "LLM语义分项":
-            continue
-        if key == "LLM选择原因":
-            text = _compact_text(value)
-            if text:
-                parts.append(f"{key}：{text}")
-            continue
-        parts.append(f"{key}({value})")
-    return "、".join(parts)
-
-
 def _validation_summary(validation: dict[str, Any]) -> str:
     status = "通过" if validation.get("ok") else "未通过"
     issues = [
@@ -1298,18 +1122,3 @@ def _compact_text(value: Any) -> str:
     if isinstance(value, list):
         return "\n".join(f"- {_compact_text(item)}" for item in value if item not in (None, "", []))
     return str(value).strip()
-
-
-def _creation_summary(request: CreationRequest, activities: list[RankedRecord], virals: list[RankedRecord]) -> str:
-    return f"{request.platform} {request.content_type}｜{request.track}｜{request.topic}｜活动 {len(activities)} 条｜爆款参考 {len(virals)} 条"
-
-
-def _creation_relation_id(request: CreationRequest) -> str:
-    raw = "|".join([request.platform, request.content_type, request.track, request.topic, request.publish_time])
-    return "creation:" + str(abs(hash(raw)))
-
-
-def _now_ms() -> int:
-    import time
-
-    return int(time.time() * 1000)

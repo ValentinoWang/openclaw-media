@@ -31,6 +31,8 @@ def validate_platform_draft(platform: str, content_type: str, draft: dict[str, A
         return validate_xhs_draft(content_type, draft)
     if platform == "抖音":
         return validate_douyin_draft(content_type, draft)
+    if platform == "B站":
+        return validate_bilibili_draft(content_type, draft)
     return ValidationResult(ok=False, issues=[ValidationIssue("platform", f"不支持的平台：{platform}")])
 
 
@@ -70,6 +72,25 @@ def validate_douyin_draft(content_type: str, draft: dict[str, Any]) -> Validatio
             issues.append(ValidationIssue("subtitles", "抖音视频必须有字幕"))
     if content_type == "图文" and not (_list_value(draft.get("image_script")) or _list_value(draft.get("carousel"))):
         issues.append(ValidationIssue("image_script", "抖音图文必须有图文页脚本或轮播结构"))
+    return ValidationResult(ok=not issues, issues=issues)
+
+
+def validate_bilibili_draft(content_type: str, draft: dict[str, Any]) -> ValidationResult:
+    issues: list[ValidationIssue] = []
+    if not str(draft.get("title") or "").strip():
+        issues.append(ValidationIssue("title", "B站标题不能为空"))
+    tags = _list_value(draft.get("tags"))
+    if not 2 <= len(tags) <= 8:
+        issues.append(ValidationIssue("tags", "B站 Tags 需要 2-8 个强相关标签，不得用无关标签凑数"))
+    if content_type == "视频":
+        for field, message in (("hook_3s", "B站视频必须有开头钩子"), ("voiceover", "B站视频必须有口播")):
+            if not str(draft.get(field) or "").strip():
+                issues.append(ValidationIssue(field, message))
+        for field in ("storyboard", "subtitles"):
+            if not _list_value(draft.get(field)):
+                issues.append(ValidationIssue(field, f"B站视频必须有{field}"))
+    elif content_type == "图文" and not (_list_value(draft.get("image_script")) or _list_value(draft.get("carousel"))):
+        issues.append(ValidationIssue("image_script", "B站图文必须有图文页脚本或轮播结构"))
     return ValidationResult(ok=not issues, issues=issues)
 
 def _list_value(value: Any) -> list[Any]:

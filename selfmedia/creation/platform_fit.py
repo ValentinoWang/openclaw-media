@@ -48,6 +48,10 @@ class SemanticPersistenceRequiredError(RuntimeError):
     pass
 
 
+class PlatformMechanismConfigError(RuntimeError):
+    """Raised when an explicitly selected platform config cannot be trusted."""
+
+
 def _semantic_persistence_error(area: str, reason: str, detail: str = "") -> SemanticPersistenceRequiredError:
     parts = [LLM_SEMANTIC_PERSISTENCE_ERROR_CODE, area, reason]
     if detail:
@@ -386,83 +390,6 @@ def _normalize_evidence_level(value: Any, source_type: str) -> str:
     return _source_type_evidence_level(source_type)
 
 
-def _source_type_risk(source_type: str) -> str:
-    level = _source_type_evidence_level(source_type)
-    if level == "S":
-        return "来自官方或明确规则，仍需确认适用范围和发布时间。"
-    if level == "A":
-        return "来自本账号复盘，仍需继续观察是否受平台版本变化影响。"
-    if level == "B":
-        return "已有爆款或少量内部数据支持，仍需扩大样本验证。"
-    if level == "C":
-        return "该结论来自外部实测或经验帖，未经过本账号数据验证。"
-    return "该结论主要来自人工或 LLM 推测，只能作为低置信候选命题。"
-
-
-def _infer_note_claim(raw_text: str) -> str:
-    text = _sanitize_forbidden_claims(_truncate(" ".join(str(raw_text or "").split()), 120))
-    if "收藏" in text and "搜索" in text:
-        return "内容可能需要同时强化收藏理由和搜索长尾。"
-    if "前3秒" in text or "前三秒" in text or "完播" in text:
-        return "视频内容可能需要优先强化前段停留和观看深度。"
-    if "评论" in text or "互动" in text:
-        return "内容可能需要设计更具体的评论触发问题。"
-    if text:
-        return f"该材料提出一个待验证平台机制命题：{text}"
-    return "该材料需要整理为待验证平台机制命题。"
-
-
-def _infer_note_actions(raw_text: str, baseline: dict[str, Any]) -> list[str]:
-    text = str(raw_text or "")
-    actions: list[str] = []
-    if "搜索" in text:
-        actions.append("标题、正文和标签保留明确搜索词。")
-    if "收藏" in text:
-        actions.append("前半段提供步骤、清单、模板或自查标准。")
-    if "封面" in text or "点击" in text:
-        actions.append("封面或首屏突出具体痛点、结果或收益。")
-    if "评论" in text or "互动" in text:
-        actions.append("结尾提出用户能直接回答的具体问题。")
-    if "前3秒" in text or "前三秒" in text or "完播" in text:
-        actions.append("前 3 秒给出冲突、结果或看完理由。")
-    if actions:
-        return actions
-    image_actions = baseline.get("image_actions") or {}
-    return _as_string_list(image_actions.get("structure")) or ["把机制命题转成标题、首屏、结构和验证指标。"]
-
-
-def _infer_note_metrics(raw_text: str, baseline: dict[str, Any]) -> list[str]:
-    text = str(raw_text or "")
-    metrics: list[str] = []
-    if "搜索" in text:
-        metrics.extend(["搜索来源占比", "7天长尾阅读"])
-    if "收藏" in text:
-        metrics.extend(["收藏率", "收藏/点赞比"])
-    if "评论" in text or "互动" in text:
-        metrics.extend(["评论率", "评论关键词"])
-    if "前3秒" in text or "前三秒" in text:
-        metrics.extend(["前 3 秒留存", "平均观看时长"])
-    if "完播" in text:
-        metrics.append("完播率")
-    if metrics:
-        return _dedupe(metrics)
-    targets = baseline.get("validation_targets") or {}
-    return _dedupe([*(_as_string_list(targets.get("two_hour"))), *(_as_string_list(targets.get("twenty_four_hour")))])[:5]
-
-
-def _infer_note_applies_to(platform: str, raw_text: str) -> list[str]:
-    text = str(raw_text or "")
-    result = [platform] if platform else []
-    if "图文" in text or "笔记" in text:
-        result.append("图文")
-    if "视频" in text or "前3秒" in text or "前三秒" in text or "完播" in text:
-        result.append("视频")
-    for keyword in ("知识型内容", "个人IP", "自媒体运营", "内容创作", "选题", "素材库"):
-        if keyword in text:
-            result.append(keyword)
-    return _dedupe(result) or ["内容创作"]
-
-
 def _sanitize_forbidden_claims(text: str) -> str:
     cleaned = _text(text)
     replacements = {
@@ -480,98 +407,29 @@ def _sanitize_forbidden_claims(text: str) -> str:
     return cleaned
 
 
-def _build_activity_strategy(
-    request: CreationRequest,
-    activity_candidates: list[dict[str, Any]],
-    activity_ids: list[str],
-) -> dict[str, Any]:
-    matched = [_activity_summary(item) for item in activity_candidates[:8]]
-    if not activity_candidates:
-        return {
-            "fit": "暂无匹配活动，先按平台推荐/搜索/互动机制完成作品。",
-            "matched_activities": [],
-            "candidate_activity_ids": [],
-            "natural_fit": False,
-            "hard_fit_risk": "low",
-            "risk_reason": "没有活动候选时不做活动包装，因此不存在硬蹭风险。",
-            "required_adjustments": [],
-            "do_not_force": ["不要为了活动流量临时改写主题。", "不要把作品改成和账号定位无关的泛话题。"],
-            "adaptation_actions": ["不强行包装活动入口；发布后再按平台活动表补投适配话题。"],
-            "decision_boundary": "活动是短期入口信号，不等同于平台推荐算法；只在自然适配时合流。",
-        }
-
-    risk = _activity_hard_fit_risk(request, activity_candidates)
-    risk_reason = {
-        "low": "候选活动和平台、赛道或主体有明确重叠，适合自然合流。",
-        "medium": "候选活动有可借势空间，但需要保持作品主线，避免为了活动改题。",
-        "high": "候选活动和当前平台、内容类型或主题存在明显错位，建议不投或换活动。",
-    }[risk]
-    return {
-        "fit": "有候选活动，可作为短期流量入口，但必须围绕主体自然承接，避免硬蹭。",
-        "matched_activities": matched,
-        "candidate_activity_ids": activity_ids[:8],
-        "natural_fit": risk in {"low", "medium"},
-        "hard_fit_risk": risk,
-        "risk_reason": risk_reason,
-        "required_adjustments": ["标题或正文保留活动主话题的自然承接。", "标签区补充活动关键词。"] if risk != "high" else [],
-        "do_not_force": ["不要为了活动改成泛话题。", "不要牺牲账号定位和用户真实问题。", "不要编造活动奖励或投稿规则。"],
-        "adaptation_actions": [
-            "优先选择和主体、赛道、内容类型都匹配的活动。",
-            "标题和封面保留用户问题本身，活动话题放在标签或正文承接处。",
-            "如果活动要求和账号定位冲突，宁可不投，不为活动牺牲作品主线。",
-        ],
-        "decision_boundary": "活动是短期入口信号，不等同于平台推荐算法；只在自然适配时合流。",
-    }
-
-
 def _normalize_activity_strategy(value: Any, baseline: Any) -> dict[str, Any]:
     base = _as_dict(baseline)
-    strategy = {**base, **_as_dict(value)}
+    supplied = _as_dict(value)
+    required = ("hard_fit_risk", "risk_reason")
+    missing = [key for key in required if key not in supplied and key not in base]
+    if missing:
+        raise ValueError(f"activity_strategy 缺少必填字段：{missing}")
+    strategy = {**base, **supplied}
     risk = str(strategy.get("hard_fit_risk") or "").strip().lower()
     if risk not in {"low", "medium", "high"}:
-        risk = "medium" if strategy.get("matched_activities") or strategy.get("candidate_activity_ids") else "low"
+        raise ValueError("activity_strategy.hard_fit_risk 必须是 low、medium 或 high")
     strategy["hard_fit_risk"] = risk
     strategy["matched_activities"] = _as_list_of_dicts(strategy.get("matched_activities"))
     strategy["candidate_activity_ids"] = _as_string_list(strategy.get("candidate_activity_ids"))
     strategy["natural_fit"] = bool(strategy.get("natural_fit")) if "natural_fit" in strategy else risk != "high"
-    strategy["risk_reason"] = _text(strategy.get("risk_reason")) or _text(base.get("risk_reason")) or "活动适配风险需要发布前人工复核。"
+    strategy["risk_reason"] = _text(strategy.get("risk_reason"))
+    if not strategy["risk_reason"]:
+        raise ValueError("activity_strategy.risk_reason 不能为空")
     strategy["required_adjustments"] = _as_string_list(strategy.get("required_adjustments"))
-    strategy["do_not_force"] = _as_string_list(strategy.get("do_not_force")) or ["不要为了活动改写内容主线。"]
+    strategy["do_not_force"] = _as_string_list(strategy.get("do_not_force"))
+    if not strategy["do_not_force"]:
+        raise ValueError("activity_strategy.do_not_force 不能为空")
     return strategy
-
-
-def _activity_hard_fit_risk(request: CreationRequest, candidates: list[dict[str, Any]]) -> str:
-    strong_match = False
-    weak_match = False
-    for item in candidates:
-        platform = _text(item.get("platform"))
-        if platform and request.platform and platform != request.platform:
-            return "high"
-        requirement = _text(item.get("content_type_requirement") or item.get("content_type"))
-        if requirement and requirement not in {"不限", request.content_type}:
-            return "high"
-        haystack = _candidate_text(item)
-        if request.topic and request.topic in haystack:
-            strong_match = True
-        if request.track and request.track in haystack:
-            weak_match = True
-        for keyword in request.keywords or []:
-            if keyword and str(keyword).strip() in haystack:
-                weak_match = True
-    if strong_match:
-        return "low"
-    if weak_match:
-        return "medium"
-    return "medium"
-
-
-def _activity_summary(item: dict[str, Any]) -> dict[str, str]:
-    return {
-        "id": _text(item.get("id") or item.get("source_record_id") or item.get("relation_id")),
-        "title": _text(item.get("title")),
-        "topic": _text(item.get("topic")),
-        "deadline": _text(item.get("deadline")),
-    }
 
 
 def _build_platform_fit_meta(
@@ -726,10 +584,12 @@ def load_platform_mechanism_config(platform: str) -> dict[str, Any]:
         return {}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
+    except OSError as exc:
+        raise PlatformMechanismConfigError(f"平台机制配置不可读：{path}") from exc
+    except json.JSONDecodeError as exc:
+        raise PlatformMechanismConfigError(f"平台机制配置 JSON 损坏：{path}") from exc
     if not isinstance(payload, dict) or payload.get("status") not in ("", None, "active"):
-        return {}
+        raise PlatformMechanismConfigError(f"平台机制配置未激活或结构无效：{path}")
     return payload
 
 
@@ -830,13 +690,6 @@ def _observation_hypotheses_from_config(config: dict[str, Any]) -> list[dict[str
     return hypotheses[-20:]
 
 
-def _observation_creation_actions(hypotheses: list[dict[str, Any]]) -> list[str]:
-    actions: list[str] = []
-    for item in hypotheses[-8:]:
-        actions.extend(_as_string_list(item.get("creation_action")))
-    return _dedupe(actions)[:8]
-
-
 def platform_slug(platform: str) -> str:
     mapping = {
         "小红书": "xiaohongshu",
@@ -849,65 +702,6 @@ def platform_slug(platform: str) -> str:
         return mapping[platform]
     text = re.sub(r"[^a-zA-Z0-9]+", "_", str(platform or "platform").strip().lower()).strip("_")
     return text or "platform"
-
-
-def _evidence_level(has_reviews: bool, has_viral: bool, has_activity: bool) -> str:
-    parts = ["platform_public_baseline"]
-    if has_reviews:
-        parts.append("internal_replay")
-    if has_viral:
-        parts.append("hot_content")
-    if has_activity:
-        parts.append("activity_brief")
-    parts.append("llm_or_manual_hypothesis")
-    return " + ".join(parts)
-
-
-def _missing_info(
-    media_context: dict[str, Any],
-    viral_candidates: list[dict[str, Any]],
-    activity_candidates: list[dict[str, Any]],
-    inspiration_candidates: list[dict[str, Any]],
-) -> list[str]:
-    risks: list[str] = []
-    loaded = (media_context or {}).get("loaded") or {}
-    if not loaded.get("account_profile"):
-        risks.append("缺少账号档案，账号垂直度和受众画像只能按请求推断。")
-    if not (media_context or {}).get("recent_reviews"):
-        risks.append("缺少近期发布复盘，机制判断无法用同账号数据校准。")
-    if not viral_candidates:
-        risks.append("缺少同平台同赛道爆款拆解，结构迁移依据偏弱。")
-    if not inspiration_candidates:
-        risks.append("缺少可复用创作灵感，真实场景和个人 IP 记忆偏弱。")
-    if not activity_candidates:
-        risks.append("未匹配到近期活动，活动入口暂不参与创作反推。")
-    return risks or ["当前输入具备基础拟合条件，仍需发布后用数据复盘校准。"]
-
-
-def _candidate_ids(candidates: list[dict[str, Any]]) -> list[str]:
-    ids = []
-    for item in candidates:
-        value = item.get("id") or item.get("source_record_id") or item.get("relation_id")
-        text = str(value or "").strip()
-        if text and text not in ids:
-            ids.append(text)
-    return ids
-
-
-def _candidate_text(item: dict[str, Any]) -> str:
-    parts = [
-        item.get("title"),
-        item.get("content"),
-        item.get("platform"),
-        item.get("content_type"),
-        item.get("content_type_requirement"),
-        item.get("track"),
-        item.get("topic"),
-        " ".join(str(tag) for tag in item.get("tags") or []),
-        item.get("direction"),
-        item.get("participation_requirement"),
-    ]
-    return " ".join(str(part or "") for part in parts)
 
 
 def _dedupe(items: list[Any]) -> list[str]:

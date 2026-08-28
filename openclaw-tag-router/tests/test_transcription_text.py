@@ -8,7 +8,6 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from openclaw_app.adapters.mac_agent_client import MacAgentClient
 from openclaw_app.router.tag_router import TagRouter
 from openclaw_app.services.archive_service import ArchiveService
 from openclaw_app.services.completion_guard import CompletionGuard
@@ -23,7 +22,6 @@ from openclaw_app.services.knowledge_archive_bridge import (
 from openclaw_app.services.obsidian_daily_checklist_service import ObsidianDailyChecklistService
 from openclaw_app.services.reminder_service import ReminderService
 from openclaw_app.services.rule_service import RuleService
-from openclaw_app.services.schedule_service import ScheduleService
 from openclaw_app.services.vlog_storage_service import VlogStorageService
 import openclaw_app.router.transcription_storage as transcription_storage
 
@@ -132,7 +130,6 @@ class MultiAudioContentFlowClient(FakeContentFlowClient):
 
 def make_router(workspace: Path, content_flow_client: FakeContentFlowClient) -> TagRouter:
     feishu_service = FeishuService("local_markdown", str(workspace / "feishu_docs"))
-    mac_agent = MacAgentClient("queue", str(workspace / "mac_queue"), str(workspace / "obsidian"), str(workspace / "obsidian-local"))
     return TagRouter(
         str(workspace),
         "test",
@@ -142,7 +139,6 @@ def make_router(workspace: Path, content_flow_client: FakeContentFlowClient) -> 
         RuleService(workspace / "rules" / "user_rules.yaml"),
         feishu_service,
         content_flow_client,
-        ScheduleService("Asia/Shanghai", mac_agent, str(workspace / "obsidian")),
         ReminderService(False, "/usr/bin/python3", str(workspace / "missing_reminder.py")),
         ObsidianDailyChecklistService(workspace / "obsidian" / "Archieve"),
         ObsidianDailyChecklistService(workspace / "obsidian" / "Archieve", heading_label="开发待办"),

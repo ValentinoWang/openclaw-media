@@ -21,6 +21,20 @@ def load_human_insight_taxonomy(path: Path | None = None) -> dict[str, Any]:
     return _parse_minimal_yaml(text)
 
 
+def promotion_evidence_threshold(taxonomy: dict[str, Any] | None = None) -> int:
+    source = taxonomy if taxonomy is not None else load_human_insight_taxonomy()
+    raw_threshold = source.get("promotion_evidence_threshold")
+    if isinstance(raw_threshold, bool):
+        raise HumanInsightCardError("promotion_evidence_threshold 必须是正整数")
+    try:
+        threshold = int(raw_threshold)
+    except (TypeError, ValueError) as exc:
+        raise HumanInsightCardError("promotion_evidence_threshold 必须是正整数") from exc
+    if threshold < 1:
+        raise HumanInsightCardError("promotion_evidence_threshold 必须是正整数")
+    return threshold
+
+
 def validate_human_insight_candidate(candidate: dict[str, Any], taxonomy: dict[str, Any] | None = None) -> None:
     taxonomy = taxonomy or load_human_insight_taxonomy()
     mechanism_tag = str(candidate.get("mechanism_tag") or "").strip()
@@ -55,7 +69,7 @@ def validate_card_markdown(text: str, *, card_type: str, taxonomy: dict[str, Any
             raise HumanInsightCardError(f"mechanism_tag 不在受控词表: {mechanism_tag}")
     status_match = re.search(r"^status:[^\S\r\n]*(.*)$", text, flags=re.M)
     status = status_match.group(1).strip() if status_match else ""
-    threshold = int(taxonomy.get("promotion_evidence_threshold") or 3)
+    threshold = promotion_evidence_threshold(taxonomy)
     if status in {"已验证", "validated_pattern", "proven_pattern"} and len(evidence_asset_ids) < threshold:
         raise HumanInsightCardError(f"已验证卡片至少需要 {threshold} 个不同 SourceAsset 证据")
     if status in {"已验证", "validated_pattern", "proven_pattern"}:
@@ -81,10 +95,11 @@ def card_library_paths(root: Path | None = None) -> dict[str, Path]:
 
 
 def aggregation_prompt_contract() -> str:
+    threshold = promotion_evidence_threshold()
     return (
         "你是人性洞察库维护助手。只输出卡片更新 diff，不要重写全卡。"
         "输入包括现有机制卡、现有群体卡、human_insight_taxonomy_v1 和新增单视频洞察候选。"
-        "只追加，不静默改写；矛盾证据进入「冲突待裁」；少于 3 个不同 SourceAsset 证据只能保持「假设」。"
+        f"只追加，不静默改写；矛盾证据进入「冲突待裁」；少于 {threshold} 个不同 SourceAsset 证据只能保持「假设」。"
     )
 
 

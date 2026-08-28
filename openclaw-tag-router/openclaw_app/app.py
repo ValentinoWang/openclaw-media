@@ -25,7 +25,6 @@ from .services.content_os_feishu_project_board import FeishuBitableProjectBoardC
 from .services.obsidian_daily_checklist_service import ObsidianDailyChecklistService
 from .services.reminder_service import ReminderService
 from .services.rule_service import RuleService
-from .services.schedule_service import ScheduleService
 from .services.utils import parse_tag_message_with_metadata
 from .services.vlog_storage_service import VlogStorageService
 from .services.resource_owner_registry import ResourceOwnerRegistry
@@ -77,7 +76,6 @@ class OpenClawApp:
         self.feishu_service = feishu_service
         content_flow_client = ContentFlowClient(content_cfg.get("base_url", ""), content_cfg.get("poll_interval_seconds", 0.2), content_cfg.get("poll_attempts", 10), workspace_root)
         mac_agent = MacAgentClient(mac_cfg.get("mode", "queue"), mac_cfg["queue_dir"], mac_cfg["obsidian_root"], mac_cfg["local_obsidian_root"])
-        schedule_service = ScheduleService(self.settings.get("timezone", "Asia/Shanghai"), mac_agent, mac_cfg["obsidian_root"] if mac_cfg.get("mode") != "local" else mac_cfg["local_obsidian_root"])
         obsidian_daily_checklist_service = ObsidianDailyChecklistService(checklist_archive_root)
         obsidian_development_checklist_service = ObsidianDailyChecklistService(development_checklist_archive_root, heading_label="开发待办")
         reminder_service = ReminderService(
@@ -122,7 +120,6 @@ class OpenClawApp:
             rule_service,
             feishu_service,
             content_flow_client,
-            schedule_service,
             reminder_service,
             obsidian_daily_checklist_service,
             obsidian_development_checklist_service,

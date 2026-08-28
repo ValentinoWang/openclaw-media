@@ -11,6 +11,26 @@ from scripts import cleanup_creation_runs
 
 
 class CleanupCreationRunsTests(unittest.TestCase):
+    def test_cleanup_roots_use_the_runtime_contract_environment_override(self) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+        contract_payload = json.loads(
+            (repository_root / "docs" / "ai-harness" / "agent_result_vault_contract.json").read_text(encoding="utf-8")
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            diary_vault = Path(tmp) / "diary-vault"
+            contract_payload["diary_vault"] = str(diary_vault)
+            contract_payload["physical_root"] = str(diary_vault / "公共开发集")
+            contract_path = Path(tmp) / "agent-results-contract.json"
+            contract_path.write_text(json.dumps(contract_payload, ensure_ascii=False), encoding="utf-8")
+
+            with patch.dict(os.environ, {"OPENCLAW_AGENT_RESULTS_CONTRACT_PATH": str(contract_path)}, clear=False):
+                roots = cleanup_creation_runs.agent_result_roots()
+
+        self.assertEqual(
+            roots,
+            tuple(diary_vault / "公共开发集" / folder for folder in ("media", "daily", "social", "knowledge", "public")),
+        )
+
     def test_media_account_credentials_override_inherited_feishu_credentials(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config_path = Path(tmp) / "openclaw.json"

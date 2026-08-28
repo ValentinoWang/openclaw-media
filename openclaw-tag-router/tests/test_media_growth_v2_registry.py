@@ -22,6 +22,12 @@ from openclaw_app.router.tag_router import TagRouter
 from selfmedia.growth.capability_registry import MEDIA_GROWTH_LABEL_CAPABILITIES
 from selfmedia.growth import service as growth_service
 
+TEST_TENANT_ID = "00000000-0000-4000-8000-000000000001"
+
+
+def _tenant_vault_root(root: str | Path) -> Path:
+    return Path(root) / "tenants" / TEST_TENANT_ID
+
 
 class FakeGrowthContentFlowClient:
     def analyze(self, url: str, **_kwargs):
@@ -156,6 +162,19 @@ class MediaGrowthRouteHarness(TagRouter):
             extra={"raw_text": message.raw_text},
         )
 
+    def route(self, tag: str, body: str, created_at=None, *, source=None, chat_type=None, metadata=None) -> TaskResult:
+        authenticated_metadata = dict(metadata or {})
+        if str(authenticated_metadata.get("account_id") or "").strip() == "media":
+            authenticated_metadata.setdefault("tenant_id", TEST_TENANT_ID)
+        return super().route(
+            tag,
+            body,
+            created_at,
+            source=source,
+            chat_type=chat_type,
+            metadata=authenticated_metadata,
+        )
+
 
 class MediaGrowthV2RegistryTests(unittest.TestCase):
     def test_growth_labels_have_v2_registry_fields(self) -> None:
@@ -256,7 +275,7 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
                     "平台=抖音 Brief=上海灵瑙科技 2026 WAIC 展会体验视频拍摄要求：必须覆盖沉境睡眠仪和 MindBCI 脑电耳机。",
                     metadata={"account_id": "media"},
                 )
-                payload = json.loads((Path(tmp) / "commercial_briefs" / result.task_id / "result.json").read_text(encoding="utf-8"))
+                payload = json.loads((_tenant_vault_root(tmp) / "commercial_briefs" / result.task_id / "result.json").read_text(encoding="utf-8"))
             finally:
                 if old_root is None:
                     os.environ.pop("OPENCLAW_MEDIA_VAULT_ROOT", None)
@@ -269,8 +288,8 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
         self.assertEqual(payload["artifact_type"], "CommercialBrief")
         self.assertEqual(payload["brand"], "上海灵瑙科技")
         self.assertIn("上海灵瑙科技沉境睡眠仪", payload["required_brand_mentions"])
-        self.assertIn("media://commercial_briefs/", payload["artifact_uri"])
-        self.assertIn("拍摄执行续跑指令：发送【拍摄】source=media://commercial_briefs/", result.reply)
+        self.assertIn(f"media://tenants/{TEST_TENANT_ID}/commercial_briefs/", payload["artifact_uri"])
+        self.assertIn(f"拍摄执行续跑指令：发送【拍摄】source=media://tenants/{TEST_TENANT_ID}/commercial_briefs/", result.reply)
 
     def test_research_route_is_unsupported_outside_media_context(self) -> None:
         router = MediaGrowthRouteHarness()
@@ -311,8 +330,8 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
             os.environ["OPENCLAW_MEDIA_VAULT_ROOT"] = tmp
             try:
                 result = router.route("素材", "请给我完整发布方案", metadata={"account_id": "media"})
-                self.assertTrue((Path(tmp) / "source_assets").exists())
-                self.assertTrue((Path(tmp) / "decision_briefs").exists())
+                self.assertTrue((_tenant_vault_root(tmp) / "source_assets").exists())
+                self.assertTrue((_tenant_vault_root(tmp) / "decision_briefs").exists())
             finally:
                 if old_root is None:
                     os.environ.pop("OPENCLAW_MEDIA_VAULT_ROOT", None)
@@ -335,8 +354,8 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
             os.environ["OPENCLAW_MEDIA_VAULT_ROOT"] = tmp
             try:
                 result = router.route("素材", "流程=activity_brief_to_shooting 主题=毕业季田径赛", metadata={"account_id": "media"})
-                self.assertTrue((Path(tmp) / "source_assets").exists())
-                self.assertTrue((Path(tmp) / "decision_briefs").exists())
+                self.assertTrue((_tenant_vault_root(tmp) / "source_assets").exists())
+                self.assertTrue((_tenant_vault_root(tmp) / "decision_briefs").exists())
             finally:
                 if old_root is None:
                     os.environ.pop("OPENCLAW_MEDIA_VAULT_ROOT", None)
@@ -350,7 +369,7 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
         self.assertIn("可执行：creation_decision_brief", result.reply)
         self.assertIn("既有链路：shooting_execution_plan", result.reply)
         self.assertIn("已写入产物：2 个", result.reply)
-        self.assertIn("续跑指令：发送【拍摄】source=media://decision_briefs/", result.reply)
+        self.assertIn(f"续跑指令：发送【拍摄】source=media://tenants/{TEST_TENANT_ID}/decision_briefs/", result.reply)
         node_statuses = result.extra["artifact"]["planned_node_statuses"]
         self.assertEqual(node_statuses[0]["canonical_capability_id"], "source_asset_intake")
         self.assertTrue(node_statuses[0]["implemented"])
@@ -382,8 +401,8 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
                     "流程=metrics_to_next_topics 平台=小红书 播放=1000 收藏=300 结论=收藏明显高于点赞 下一步=做收藏理由拆解",
                     metadata={"account_id": "media"},
                 )
-                self.assertTrue((Path(tmp) / "review_signals").exists())
-                self.assertTrue((Path(tmp) / "decision_briefs").exists())
+                self.assertTrue((_tenant_vault_root(tmp) / "review_signals").exists())
+                self.assertTrue((_tenant_vault_root(tmp) / "decision_briefs").exists())
             finally:
                 if old_root is None:
                     os.environ.pop("OPENCLAW_MEDIA_VAULT_ROOT", None)
@@ -410,7 +429,7 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
                     "账号=小王 平台=抖音 赛道=校园体育 问题=校园体育长期内容策略怎么拆？",
                     metadata={"account_id": "media"},
                 )
-                self.assertFalse((Path(tmp) / "research_briefs").exists())
+                self.assertFalse((_tenant_vault_root(tmp) / "research_briefs").exists())
             finally:
                 if old_root is None:
                     os.environ.pop("OPENCLAW_MEDIA_VAULT_ROOT", None)
@@ -419,7 +438,20 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
 
         self.assertTrue(result.ok)
         self.assertEqual(result.status, "media_growth_pending_manual")
-        self.assertIn("pending_manual", result.reply)
+        self.assertIn("证据不足", result.reply)
+        self.assertNotIn("pending_manual", result.reply)
+        self.assertIn("等待人工补充或确认", result.reply)
+
+    def test_growth_reply_hides_internal_evidence_diagnostics(self) -> None:
+        mixin = MediaGrowthMixin()
+        reply_reason = mixin._media_growth_display_reason(
+            "KnowledgeEvidenceContractError: typed KnowledgeEvidenceBundle has no evidence_items"
+        )
+
+        self.assertIn("证据不足", reply_reason)
+        self.assertNotIn("pending_manual", reply_reason)
+        self.assertNotIn("KnowledgeEvidence", reply_reason)
+        self.assertNotIn("typed evidence", reply_reason)
 
     def test_runtime_artifact_consumer_contract_rejects_wrong_type(self) -> None:
         router = MediaGrowthRouteHarness()
@@ -456,7 +488,7 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
         review_card = result.extra["review_card"]
         self.assertEqual(review_card["artifact_id"], result.task_id)
         self.assertEqual(review_card["artifact_type"], "SourceAsset")
-        self.assertTrue(review_card["artifact_ref"].startswith("media://source_assets/"))
+        self.assertTrue(review_card["artifact_ref"].startswith(f"media://tenants/{TEST_TENANT_ID}/source_assets/"))
         self.assertIn({"action": "approve", "label": "通过复核"}, review_card["actions"])
         self.assertIn("通过复核模板：【复核】artifact_id=", result.reply)
         self.assertIn("废弃模板：【复核】artifact_id=", result.reply)
@@ -471,7 +503,7 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
                 source = router.route("素材", "备注=一条可通过素材", metadata={"account_id": "media"})
                 os.environ["OPENCLAW_MEDIA_GROWTH_REVIEWERS"] = "media"
                 result = router.route("复核", f"artifact_id={source.task_id} 动作=通过 备注=证据够用", metadata={"account_id": "media"})
-                payload = json.loads((Path(tmp) / "source_assets" / source.task_id / "result.json").read_text(encoding="utf-8"))
+                payload = json.loads((_tenant_vault_root(tmp) / "source_assets" / source.task_id / "result.json").read_text(encoding="utf-8"))
             finally:
                 if old_root is None:
                     os.environ.pop("OPENCLAW_MEDIA_VAULT_ROOT", None)
@@ -502,7 +534,7 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
                         "canonical_capability_id": "post_review_signal",
                     },
                 )
-                payload = json.loads((Path(tmp) / "review_signals" / result.task_id / "result.json").read_text(encoding="utf-8"))
+                payload = json.loads((_tenant_vault_root(tmp) / "review_signals" / result.task_id / "result.json").read_text(encoding="utf-8"))
             finally:
                 if old_root is None:
                     os.environ.pop("OPENCLAW_MEDIA_VAULT_ROOT", None)
@@ -557,7 +589,7 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertEqual(result.status, "media_growth_failed")
         self.assertIn("已写入产物：1 个", result.reply)
-        self.assertIn("续跑指令：发送【选题】source=media://source_assets/", result.reply)
+        self.assertIn(f"续跑指令：发送【选题】source=media://tenants/{TEST_TENANT_ID}/source_assets/", result.reply)
         self.assertIn("source_asset_id=source_asset_", result.reply)
 
     def test_verify_capability_selection(self) -> None:
@@ -572,7 +604,7 @@ class MediaGrowthV2RegistryTests(unittest.TestCase):
             old_root = os.environ.get("OPENCLAW_MEDIA_VAULT_ROOT")
             os.environ["OPENCLAW_MEDIA_VAULT_ROOT"] = tmp
             try:
-                vault = growth_service.make_media_vault()
+                vault = growth_service.make_media_vault(TEST_TENANT_ID)
                 vault.write_creation_run_artifacts(
                     "creation_run_for_check",
                     request={"entrypoint": "【创作>抖音】", "input": "短跑赛前准备"},

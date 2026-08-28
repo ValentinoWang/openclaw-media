@@ -1,4 +1,5 @@
 version: human_insight_taxonomy_v1
+# Three independent source assets prevent a single video from becoming a library-level pattern.
 promotion_evidence_threshold: 3
 privacy_boundary: public_content_only
 mechanism_tags:

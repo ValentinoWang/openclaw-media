@@ -130,7 +130,7 @@ function UsageBillingPage() {
       setReceipt(result)
       setCode('')
       setIdempotencyKey(newIdempotencyKey('redemption'))
-      setAction({ kind: 'success', message: '兑换接口已返回成功，正在重新读取余额、额度包和用量。' })
+      setAction({ kind: 'success', message: '兑换已成功，正在重新读取余额、额度包和用量。' })
       setRefresh((value) => value + 1)
     } catch (error) {
       setAction({ kind: 'error', message: readableError(error, '兑换') })
@@ -312,7 +312,7 @@ function ReceiptPanel({ receipt, events, balanceStatus, onOpen }: { receipt: Mut
   const redemptionEvents = events.filter((event) => event.kind === 'credit' || event.kind === 'compensation').slice(-5).reverse()
   return <section className={styles.railPanel} data-page-terminal-surface="inspector">
     <PanelHeading title="最近兑换记录" detail={receipt ? '显示本次会话最新兑换结果' : redemptionEvents.length ? '显示已记录的额度变动' : '等待额度变动记录'} icon={<ReceiptText size={17} />} action={<button className={styles.textButton} type="button" onClick={onOpen}>打开兑换页 <ArrowUpRight size={13} /></button>} />
-    {receipt ? <ReceiptDetails receipt={receipt} balanceStatus={balanceStatus} /> : redemptionEvents.length ? <RedemptionHistory events={redemptionEvents} /> : <EmptyState icon={<ReceiptText size={18} />} title="暂无可回读的历史记录" detail="服务端用量明细没有返回额度兑换事件。" compact />}
+    {receipt ? <ReceiptDetails receipt={receipt} balanceStatus={balanceStatus} /> : redemptionEvents.length ? <RedemptionHistory events={redemptionEvents} /> : <EmptyState icon={<ReceiptText size={18} />} title="暂无历史记录" detail="服务端用量明细没有返回额度兑换事件。" compact />}
   </section>
 }
 

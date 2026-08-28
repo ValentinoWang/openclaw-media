@@ -604,7 +604,7 @@ function DashboardPanel({ state }: { state: B01LoadState<DashboardResponse> }) {
       <PanelHeading
         icon={Layers3}
         title="租户概览"
-        detail="只显示运营总览接口返回的标准汇总。"
+        detail="显示你账号下所有内容项目的汇总。"
       />
       {state.status !== "ready" ? (
         <BusinessPanelState state={state} loadingText="正在读取租户概览" />
@@ -613,7 +613,7 @@ function DashboardPanel({ state }: { state: B01LoadState<DashboardResponse> }) {
           {isEmptyDashboard(state.data.summary) ? (
             <div className={styles.emptyDashboardHint} role="status">
               <CircleDashed size={15} />
-              <span>当前租户没有可汇总的内容事实，以下仍保留接口返回的完整字段。</span>
+              <span>还没有可统计的内容，先从新建项目或导入素材开始。</span>
             </div>
           ) : null}
           <div className={styles.countGrid}>
@@ -665,8 +665,8 @@ function DashboardPanel({ state }: { state: B01LoadState<DashboardResponse> }) {
             )}
             <span>
               {state.data.summary.coverage.unknown || state.data.summary.coverage.unavailable
-                ? "覆盖不完整，未知与不可用事实已明确保留。"
-                : "覆盖完整，未知与不可用事实均为 0。"}
+                ? "部分数据暂时读不到，已如实标出。"
+                : "数据已完整读取。"}
             </span>
           </div>
           <div className={styles.dashboardFooter}>

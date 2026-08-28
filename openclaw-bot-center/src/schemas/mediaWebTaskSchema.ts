@@ -1,4 +1,4 @@
-// Generated from media_web_task.schema.json (sha256:47ec597735d9c0fd37ad2e0f420b357ffe7d959f505592243630330e0b8fd9f5). Do not edit by hand.
+// Generated from media_web_task.schema.json (sha256:6667583ef6828fb99bb13811098805f031120f9f0c6f5fa9fcdc82132a58f449). Do not edit by hand.
 import { z } from 'zod'
 
 const taskValueSchema = z.union([z.string(), z.number(), z.boolean(), z.array(z.union([z.string(), z.number()])), z.null()])
@@ -86,7 +86,7 @@ export const mediaWebUploadSchema = z.object({
 }).strict()
 
 export const mediaWebTaskErrorSchema = z.object({
-  ok: z.literal(false), error: z.object({ code: z.string(), reason: z.string(), action: z.string(), detail: z.string().optional() }).strict(),
+  ok: z.literal(false), error: z.object({ code: z.string(), message: z.string(), details: z.record(z.string(), z.unknown()).optional() }).strict(),
 }).strict()
 
 export type CapabilityParams = z.infer<typeof capabilityParamsSchema>

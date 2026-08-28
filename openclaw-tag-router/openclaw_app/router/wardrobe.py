@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import importlib
 import json
 import mimetypes
 import os
@@ -9,11 +10,14 @@ import sys
 import urllib.parse
 import uuid
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
-SELFMEDIA_ROOT = Path("/home/ubuntu/selfmedia-tools")
-if str(SELFMEDIA_ROOT) not in sys.path:
-    sys.path.insert(0, str(SELFMEDIA_ROOT))
+WORKSPACE_ROOT = Path(
+    os.getenv("OPENCLAW_MEDIA_WORKSPACE_ROOT", str(Path(__file__).resolve().parents[3]))
+).expanduser()
+if str(WORKSPACE_ROOT) not in sys.path:
+    sys.path.insert(0, str(WORKSPACE_ROOT))
 
 from common.llm_client import generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
@@ -28,18 +32,18 @@ from ..services.wardrobe_markdown_renderer import (
 from ..services.wardrobe_weather import WardrobeWeatherError, fetch_wardrobe_weather
 
 
-ROOT = Path("/home/ubuntu")
-REMINDER_ROOT = ROOT / "openclaw-feishu-reminder"
-if str(REMINDER_ROOT) not in sys.path:
-    sys.path.insert(0, str(REMINDER_ROOT))
-
-import reminder as feishu_reminder  # noqa: E402
-import setup_media_bitable_registry as feishu_registry  # noqa: E402
-
-
-WARDROBE_CONTRACT_PATH = ROOT / "docs/ai-harness/wardrobe-model-contract.json"
-WARDROBE_CONTEXT_CONTRACT_PATH = ROOT / "docs/ai-harness/wardrobe-context-contract.json"
-WARDROBE_REGISTRY_PATH = REMINDER_ROOT / "wardrobe-config.json"
+REMINDER_ROOT = Path(
+    os.getenv("OPENCLAW_REMINDER_ROOT", str(Path.home() / "openclaw-feishu-reminder"))
+).expanduser()
+WARDROBE_CONTRACT_PATH = Path(
+    os.getenv("OPENCLAW_WARDROBE_CONTRACT_PATH", str(WORKSPACE_ROOT / "docs/ai-harness/wardrobe-model-contract.json"))
+).expanduser()
+WARDROBE_CONTEXT_CONTRACT_PATH = Path(
+    os.getenv("OPENCLAW_WARDROBE_CONTEXT_CONTRACT_PATH", str(WORKSPACE_ROOT / "docs/ai-harness/wardrobe-context-contract.json"))
+).expanduser()
+WARDROBE_REGISTRY_PATH = Path(
+    os.getenv("OPENCLAW_WARDROBE_REGISTRY_PATH", str(REMINDER_ROOT / "wardrobe-config.json"))
+).expanduser()
 WARDROBE_ITEM_ID_RE = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.I)
 LOCATION_RE = re.compile(r"(?:位置|地点|当前在|我在)\s*[:：]?\s*([^\s，,。；;\n]+)")
 WEATHER_LOCATION_RE = re.compile(r"(?:天气地点|天气城市|目的地|城市)\s*[:：]?\s*([^\s，,。；;\n]+)")
@@ -48,6 +52,27 @@ MAX_IMAGE_PART_BYTES = 8 * 1024 * 1024
 INVENTORY_LOCATION_ALIASES = {"深圳市": "深圳", "深圳": "深圳", "老家": "老家", "行李中": "行李中", "未定位": "未定位"}
 DAILY_CURRENT_LOCATION_KEYS = {"current_location", "wardrobe_location", "location", "地点", "位置"}
 DAILY_WEATHER_LOCATION_KEYS = {"weather_location", "destination", "destination_location", "目的地", "天气地点", "天气城市"}
+_feishu_reminder: ModuleType | None = None
+_feishu_registry: ModuleType | None = None
+
+
+def _load_feishu_integrations() -> tuple[ModuleType, ModuleType]:
+    """Load the optional companion integration only when a Feishu write/read is needed."""
+    global _feishu_reminder, _feishu_registry
+    if _feishu_reminder is not None and _feishu_registry is not None:
+        return _feishu_reminder, _feishu_registry
+    if REMINDER_ROOT.is_dir() and str(REMINDER_ROOT) not in sys.path:
+        sys.path.insert(0, str(REMINDER_ROOT))
+    try:
+        _feishu_reminder = importlib.import_module("reminder")
+        _feishu_registry = importlib.import_module("setup_media_bitable_registry")
+    except ModuleNotFoundError as exc:
+        _feishu_reminder = None
+        _feishu_registry = None
+        raise RuntimeError(
+            "衣橱飞书集成不可用：请设置 OPENCLAW_REMINDER_ROOT，或安装 reminder 与 setup_media_bitable_registry。"
+        ) from exc
+    return _feishu_reminder, _feishu_registry
 
 
 def _validate_wardrobe_llm_payload(payload: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
@@ -284,27 +309,30 @@ class WardrobeMixin:
         }
 
     def _wardrobe_token(self) -> str:
-        return feishu_registry.tenant_access_token()
+        _, registry = _load_feishu_integrations()
+        return registry.tenant_access_token()
 
     def _wardrobe_field_defs(self, token: str, table_ref: dict[str, str]) -> dict[str, dict[str, Any]]:
-        items = feishu_registry.list_fields(token, table_ref["app_token"], table_ref["table_id"])
+        _, registry = _load_feishu_integrations()
+        items = registry.list_fields(token, table_ref["app_token"], table_ref["table_id"])
         return {str(item.get("field_name") or ""): item for item in items if item.get("field_name")}
 
     def _wardrobe_records(self, token: str, table_ref: dict[str, str], field_defs: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+        reminder, registry = _load_feishu_integrations()
         records: list[dict[str, Any]] = []
         page_token = ""
         while True:
             query = {"page_size": 100}
             if page_token:
                 query["page_token"] = page_token
-            payload = feishu_registry.request_json(
+            payload = registry.request_json(
                 "GET",
                 f"/bitable/v1/apps/{table_ref['app_token']}/tables/{table_ref['table_id']}/records?{urllib.parse.urlencode(query)}",
                 token=token,
             )
             data = payload.get("data") or {}
             for record in data.get("items") or []:
-                decoded = feishu_reminder._decode_fields_for_read(record.get("fields") or {}, field_defs)
+                decoded = reminder._decode_fields_for_read(record.get("fields") or {}, field_defs)
                 records.append({"record_id": str(record.get("record_id") or ""), "fields": decoded})
             if not data.get("has_more"):
                 return records
@@ -357,6 +385,7 @@ class WardrobeMixin:
         return {field_map[key]: value for key, value in canonical_fields.items() if key in field_map}
 
     def _wardrobe_uploads(self, token: str, table_ref: dict[str, str], paths: list[str], indexes: list[int]) -> list[dict[str, str]]:
+        reminder, _ = _load_feishu_integrations()
         uploads: list[dict[str, str]] = []
         for index in indexes:
             if index < 0 or index >= len(paths):
@@ -364,7 +393,7 @@ class WardrobeMixin:
             path = paths[index]
             if not Path(path).is_file():
                 continue
-            uploads.append(feishu_reminder._upload_bitable_attachment(token, table_ref["app_token"], path))
+            uploads.append(reminder._upload_bitable_attachment(token, table_ref["app_token"], path))
         return uploads
 
     def _create_wardrobe_record(
@@ -374,8 +403,9 @@ class WardrobeMixin:
         field_defs: dict[str, dict[str, Any]],
         fields: dict[str, Any],
     ) -> str:
-        coerced = feishu_reminder._coerce_fields_for_write(fields, field_defs)
-        payload = feishu_registry.request_json(
+        reminder, registry = _load_feishu_integrations()
+        coerced = reminder._coerce_fields_for_write(fields, field_defs)
+        payload = registry.request_json(
             "POST",
             f"/bitable/v1/apps/{table_ref['app_token']}/tables/{table_ref['table_id']}/records",
             token=token,
@@ -391,8 +421,9 @@ class WardrobeMixin:
         record_id: str,
         fields: dict[str, Any],
     ) -> None:
-        coerced = feishu_reminder._coerce_fields_for_write(fields, field_defs)
-        feishu_registry.request_json(
+        reminder, registry = _load_feishu_integrations()
+        coerced = reminder._coerce_fields_for_write(fields, field_defs)
+        registry.request_json(
             "PUT",
             f"/bitable/v1/apps/{table_ref['app_token']}/tables/{table_ref['table_id']}/records/{record_id}",
             token=token,

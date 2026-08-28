@@ -48,9 +48,9 @@ def load_config(profile_name: str = "media_analysis") -> ViralDeconstructConfig:
         source_assets_url=os.getenv("MEDIA_OS_SOURCE_ASSETS_URL", ""),
         material_deconstructions_url=os.getenv("MEDIA_OS_MATERIAL_DECONSTRUCTIONS_URL", ""),
         feishu_doc_folder_token=os.getenv("FEISHU_DOC_FOLDER_TOKEN", ""),
-        feishu_wiki_parent_node_token=os.getenv("FEISHU_WIKI_PARENT_NODE_TOKEN", "QA0BwF5Yji0EvfkmOiOcBuMQnze"),
-        feishu_deconstruct_parent_node_token=os.getenv("SELFMEDIA_DECONSTRUCT_PARENT_NODE_TOKEN", "BqzWw9xZeiBu7Kk99YqcxEJ4nuf"),
-        feishu_recreate_parent_node_token=os.getenv("SELFMEDIA_RECREATE_PARENT_NODE_TOKEN", "Tm69wEqFpi76d9k53KEcqK4Rnkh"),
+        feishu_wiki_parent_node_token=os.getenv("FEISHU_WIKI_PARENT_NODE_TOKEN", ""),
+        feishu_deconstruct_parent_node_token=os.getenv("SELFMEDIA_DECONSTRUCT_PARENT_NODE_TOKEN", ""),
+        feishu_recreate_parent_node_token=os.getenv("SELFMEDIA_RECREATE_PARENT_NODE_TOKEN", ""),
         part1_path=Path(
             os.getenv("SELFMEDIA_CONTENT_INGEST_PATH")
             or Path(__file__).resolve().parents[3] / "ingest" / "content_flow"

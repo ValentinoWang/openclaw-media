@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import sys
 from pathlib import Path
 
 from media_vault import MediaVault
@@ -14,33 +14,10 @@ from ..services.tenant_execution_context import current_session_tenant_id
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
-REPOSITORY_AGENT_RESULTS_CONTRACT_PATH = REPOSITORY_ROOT / "docs/ai-harness/agent_result_vault_contract.json"
-LEGACY_AGENT_RESULTS_CONTRACT_PATH = Path("/home/ubuntu/docs/ai-harness/agent_result_vault_contract.json")
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
-
-def _agent_results_contract_path() -> Path:
-    override = os.getenv("OPENCLAW_AGENT_RESULTS_CONTRACT_PATH")
-    if override:
-        return Path(override)
-    if REPOSITORY_AGENT_RESULTS_CONTRACT_PATH.is_file():
-        return REPOSITORY_AGENT_RESULTS_CONTRACT_PATH
-    return LEGACY_AGENT_RESULTS_CONTRACT_PATH
-
-
-AGENT_RESULTS_CONTRACT_PATH = _agent_results_contract_path()
-
-
-def _agent_results_base() -> Path:
-    contract = json.loads(AGENT_RESULTS_CONTRACT_PATH.read_text(encoding="utf-8"))
-    return Path(str(contract["physical_root"]))
-
-
-def _agent_results_required_folders() -> tuple[str, ...]:
-    contract = json.loads(AGENT_RESULTS_CONTRACT_PATH.read_text(encoding="utf-8"))
-    folders = contract.get("required_folders")
-    if not isinstance(folders, list) or not all(isinstance(folder, str) for folder in folders):
-        raise RuntimeError(f"invalid agent result vault contract folders: {AGENT_RESULTS_CONTRACT_PATH}")
-    return tuple(folders)
+from runtime.evidence.agent_results import agent_results_base, agent_results_contract
 
 
 class DeletionMixin:
@@ -52,8 +29,9 @@ class DeletionMixin:
 
     def _deletion_allowed_roots(self, tenant_id: str | None = None) -> list[Path]:
         workspace_root = self._deletion_workspace_root()
-        agent_results_base = _agent_results_base()
-        agent_results_roots = [agent_results_base / folder for folder in _agent_results_required_folders()]
+        results_contract = agent_results_contract()
+        results_base = agent_results_base()
+        agent_results_roots = [results_base / folder for folder in results_contract.required_folders]
         verified_tenant_id = str(tenant_id or current_session_tenant_id())
         tenant_vault_root = MediaVault(tenant_id=verified_tenant_id).root
         return [

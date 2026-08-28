@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pipelineDisplayLabel } from '../../src/media/ui/displayLabels'
 import { generationSourceLabel, runStatusLabel } from '../../src/media/statusPresentation'
@@ -24,6 +24,14 @@ const ordinaryPages = readdirSync(ordinaryDirectory)
   .filter((name) => name.endsWith('Page.tsx'))
   .sort()
 
+for (const retiredSource of [
+  resolve('src/media/OverviewPage.tsx'),
+  resolve('src/media/MediaAgentPage.tsx'),
+  resolve('src/media/displayLabels.ts'),
+]) {
+  assert.equal(existsSync(retiredSource), false, `${retiredSource} is a retired duplicate; use pages/ordinary and ui/displayLabels instead`)
+}
+
 assert.equal(ordinaryPages.length, 11, 'ordinary Media page scope changed; update this presentation gate deliberately')
 
 const presentationFiles = [
@@ -45,7 +53,35 @@ for (const file of presentationFiles) {
     /(?:部分|该|以下)?业务投影(?:暂时)?(?:不可用|无法读取)/,
     `${file} must name the failed resource instead of showing a generic projection failure`,
   )
+  assert.doesNotMatch(
+    source,
+    /接口|事实|回读|投影/,
+    `${file} must not expose API or contract terminology to ordinary users`,
+  )
 }
+
+const overviewSource = readFileSync(resolve('src/media/pages/ordinary/OverviewPage.tsx'), 'utf8')
+for (const expectedCopy of [
+  '你账号下所有内容项目的汇总',
+  '还没有可统计的内容，先从新建项目或导入素材开始',
+  '部分数据暂时读不到，已如实标出',
+]) {
+  assert.match(overviewSource, new RegExp(expectedCopy), `OverviewPage must keep ordinary-user copy: ${expectedCopy}`)
+}
+for (const retiredCopy of [
+  '运营总览接口返回的标准汇总',
+  '当前租户没有可汇总的内容事实',
+  '覆盖不完整，未知与不可用事实已明确保留',
+]) {
+  assert.doesNotMatch(overviewSource, new RegExp(retiredCopy), `OverviewPage must not restore contract copy: ${retiredCopy}`)
+}
+
+const ordinaryHelpSource = readFileSync(resolve('src/media/MediaApp.tsx'), 'utf8')
+assert.doesNotMatch(
+  ordinaryHelpSource,
+  /接口|事实|回读|投影/,
+  'ordinary-user help must not expose API or contract terminology',
+)
 
 const runsSource = readFileSync(resolve('src/media/pages/ordinary/RunsPage.tsx'), 'utf8')
 const decisionsSource = readFileSync(resolve('src/media/pages/ordinary/DecisionsPage.tsx'), 'utf8')

@@ -563,6 +563,7 @@ def run_main_deconstruction_llm(
                 validate_evidence_asset_ids(payload, valid_asset_ids),
                 media_type=media_type,
                 target_duration_sec=_storyboard_target_duration_from_evidence_store(evidence_store),
+                allow_partial_coverage=True,
             ),
             evidence_store,
         ),
@@ -775,7 +776,6 @@ def recreate(text: str, source: dict[str, Any] | None = None) -> dict[str, Any]:
         {"text": "本次创作交接类型：" + media_type + "。只输出这一种脚本，另一种脚本必须为空数组。"},
         {"text": "用户输入/想法：\n" + text},
         {"text": "唯一 multi_signal_contract 多维证据合同（最终再创只消费这个合同）：\n" + json.dumps(recreate_contract, ensure_ascii=False, indent=2)},
-        {"text": "已有拆解信息 compact：\n" + json.dumps(_compact_recreate_source(source), ensure_ascii=False, separators=(",", ":"))},
     ]
     source_evidence_asset_ids = {
         str(item.get("asset_id") or "").strip()
@@ -809,64 +809,6 @@ def _storyboard_target_duration_from_evidence_store(evidence_store: dict[str, An
     except (TypeError, ValueError, AttributeError):
         return None
     return duration or None
-
-
-def _compact_recreate_source(source: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "schema_version": source.get("schema_version") or "",
-        "source_url": source.get("source_url") or "",
-        "platform": source.get("platform") or "",
-        "media_type": source.get("media_type") or "",
-        "content_summary": _clip_text(source.get("content_summary"), 800),
-        "source_summary": _clip_text(source.get("source_summary"), 800),
-        "viral_reuse_assessment": _compact_prompt_value(source.get("viral_reuse_assessment") or {}, max_items=8, max_string=500, max_depth=3),
-        "pacing_profile": _compact_prompt_value(source.get("pacing_profile") or {}, max_items=8, max_string=500, max_depth=3),
-        "reuse_guardrails": _compact_prompt_value(source.get("reuse_guardrails") or {}, max_items=8, max_string=500, max_depth=3),
-        "human_readable_brief": _compact_prompt_value(source.get("human_readable_brief") or {}, max_items=8, max_string=500, max_depth=3),
-        "evidence_store_uri": source.get("evidence_store_uri") or "",
-        "interaction_status": source.get("interaction_status") or "",
-        "available_evidence_asset_ids": [
-            str(item.get("asset_id") or "")
-            for item in (source.get("evidence_assets") or [])
-            if isinstance(item, dict) and str(item.get("asset_id") or "")
-        ][:40],
-    }
-
-
-def _compact_prompt_value(value: Any, *, max_items: int = 8, max_string: int = 500, max_depth: int = 3) -> Any:
-    if max_depth <= 0:
-        if isinstance(value, (dict, list, tuple)):
-            return f"<omitted {type(value).__name__}>"
-        return _clip_text(value, max_string)
-    if isinstance(value, dict):
-        result: dict[str, Any] = {}
-        for index, (key, item) in enumerate(value.items()):
-            if index >= max_items:
-                result["_truncated_keys"] = len(value) - max_items
-                break
-            result[str(key)] = _compact_prompt_value(item, max_items=max_items, max_string=max_string, max_depth=max_depth - 1)
-        return result
-    if isinstance(value, (list, tuple)):
-        result = [
-            _compact_prompt_value(item, max_items=max_items, max_string=max_string, max_depth=max_depth - 1)
-            for item in list(value)[:max_items]
-        ]
-        if len(value) > max_items:
-            result.append({"_truncated_items": len(value) - max_items})
-        return result
-    return _clip_text(value, max_string)
-
-
-def _clip_text(value: Any, max_chars: int = 500) -> Any:
-    if isinstance(value, str):
-        text = value.strip()
-        if len(text) > max_chars:
-            return text[:max_chars] + f"...<truncated {len(text) - max_chars} chars>"
-        return text
-    if isinstance(value, (int, float, bool)) or value is None:
-        return value
-    text = str(value)
-    return text[:max_chars]
 
 
 def _explicit_account_name(text: str) -> str:

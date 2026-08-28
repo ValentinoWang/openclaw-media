@@ -1052,7 +1052,7 @@ function BenchmarkInspector({
                 <ImageOff size={20} aria-hidden="true" />
                 <div>
                   <strong>暂无截图或代表内容凭证</strong>
-                  <span>当前接口只提供公开主页；补充证据后再用于运营判断。</span>
+                  <span>当前仅提供公开主页；补充证据后再用于运营判断。</span>
                 </div>
               </div>
               {creator.profileUrl ? (
@@ -1115,7 +1115,7 @@ function BenchmarkInspector({
             </div>
           </div>
         ) : (
-          <SurfaceState kind="empty" title="详情为空" detail="该档案没有可公开的详情投影。" />
+          <SurfaceState kind="empty" title="详情为空" detail="该档案没有可公开的详情记录。" />
         )}
       </section>
     </aside>
@@ -1201,7 +1201,7 @@ function OwnedAccountInspector({
             </InspectorSection>
           </div>
         ) : (
-          <SurfaceState kind="empty" title="详情为空" detail="该账号没有可展示的详情投影。" />
+          <SurfaceState kind="empty" title="详情为空" detail="该账号没有可展示的详情记录。" />
         )}
       </section>
     </aside>

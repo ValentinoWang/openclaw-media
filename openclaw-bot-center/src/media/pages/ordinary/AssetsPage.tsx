@@ -123,17 +123,17 @@ const relationTabMeta: Record<
   deconstruction: {
     label: "内容拆解",
     emptyTitle: "暂无内容拆解记录",
-    emptyDetail: "素材详情接口没有返回可展示的内容拆解关联记录。",
+    emptyDetail: "素材详情里还没有可展示的内容拆解关联记录。",
   },
   creation: {
     label: "创作模式",
     emptyTitle: "暂无创作模式记录",
-    emptyDetail: "素材详情接口没有返回可展示的创作模式关联记录。",
+    emptyDetail: "素材详情里还没有可展示的创作模式关联记录。",
   },
   usage: {
     label: "使用记录",
     emptyTitle: "暂无使用记录",
-    emptyDetail: "素材详情接口没有返回可展示的使用记录关联。",
+    emptyDetail: "素材详情里还没有可展示的使用记录关联。",
 
   },
 };
@@ -549,7 +549,7 @@ function AssetWorkspace({
         <div className={styles.filterNote}>
           <AlertCircle size={14} aria-hidden="true" />
           <span>
-            搜索由素材接口执行；平台、赛道、质量和时间筛选作用于当前已读取页。
+            搜索会在素材库中进行；平台、赛道、质量和时间筛选作用于当前已读取页。
           </span>
         </div>
 
@@ -562,19 +562,19 @@ function AssetWorkspace({
         ) : state.status === "loading" ? (
           <ProjectionSurface
             kind="loading"
-            title="正在读取素材投影"
+            title="正在读取素材"
             detail="只读取当前账户租户可见的素材摘要。"
           />
         ) : state.status === "permission" ? (
           <ProjectionSurface
             kind="permission"
             title="需要登录才能查看"
-            detail="素材页面只展示当前账户有权读取的素材投影。"
+            detail="素材页面只展示当前账户有权查看的素材。"
           />
         ) : state.status === "error" ? (
           <ProjectionSurface
             kind="error"
-            title="暂时无法读取素材投影"
+            title="暂时无法读取素材"
             detail={state.message}
             onRetry={onRetry}
           />
@@ -583,24 +583,24 @@ function AssetWorkspace({
             {pageItems.length === 0 ? (
               <ProjectionSurface
                 kind="empty"
-                title={search ? "没有匹配的素材" : "当前账户没有可读素材投影"}
+                title={search ? "没有匹配的素材" : "当前账户没有可查看的素材"}
                 detail={
                   search
-                    ? "接口返回了空集合；调整搜索词后重新读取。"
-                    : "接口返回了真实空集合；页面不会用样例封面或相邻业务数据填充。"
+                    ? "没有找到匹配的素材；调整搜索词后重新读取。"
+                    : "暂时没有素材记录；页面不会用样例封面或相邻业务数据填充。"
                 }
               />
             ) : items.length === 0 ? (
               <ProjectionSurface
                 kind="filtered"
                 title="没有符合当前筛选的素材"
-                detail="调整筛选条件后，页面会继续使用当前已读取的素材投影。"
+                detail="调整筛选条件后，页面会继续显示当前已读取的素材。"
               />
             ) : (
               <div
                 className={styles.assetGrid}
                 role="list"
-                aria-label="素材投影网格"
+                aria-label="素材网格"
                 tabIndex={0}
               >
                 {items.map((asset) => (
@@ -822,7 +822,7 @@ function AssetTabPanel({
         <ProjectionSurface
           kind="loading"
           title="正在读取素材详情"
-          detail="当前视图使用所选素材详情接口返回的关联记录。"
+          detail="当前视图展示所选素材详情中的关联记录。"
         />
       </div>
     );
@@ -935,7 +935,7 @@ function TabSelectionSurface({ label }: { label: string }) {
         <Database size={22} aria-hidden="true" />
       </span>
       <strong>选择素材后查看{label}</strong>
-      <p>当前视图只展示素材详情接口返回的真实关联记录。</p>
+      <p>当前视图只展示素材详情中的关联记录。</p>
     </div>
   );
 }
@@ -1232,14 +1232,14 @@ function AssetInspector({
         {!asset ? (
           <div className={styles.inspectorEmpty}>
             <Database size={22} aria-hidden="true" />
-            <strong>选择一个素材投影</strong>
+            <strong>选择一个素材</strong>
             <p>选择后读取详情、预览、证据和关联记录。</p>
           </div>
         ) : state.status === "waiting" || state.status === "loading" ? (
           <InspectorSurface
             kind="loading"
             title="正在读取素材详情"
-            detail="详情只从当前账户可见的 PostgreSQL 投影读取。"
+            detail="详情只展示当前账户可查看的内容。"
           />
         ) : state.status === "permission" ? (
           <InspectorSurface
@@ -1403,13 +1403,13 @@ function AssetDetailBody({
           </button>
         </div>
         <p className={styles.actionNote}>
-          通过现有能力目录打开任务工作区；当前详情只把已提供的素材投影用于展示。
+          通过现有能力目录打开任务工作区；当前详情只展示已提供的素材信息。
         </p>
       </section>
       <section className={styles.dangerZone} aria-label="删除影响">
         <h4>删除影响</h4>
         <p>
-          删除前会检查当前影响；确认后永久删除素材及其受管投影，本地媒体文件不会被页面隐式删除。
+          删除前会检查当前影响；确认后永久删除素材及其相关页面记录，本地媒体文件不会被页面隐式删除。
         </p>
         <button type="button" onClick={() => onRequestDeletion([summary.publicAssetId])}>
           <Trash2 size={15} aria-hidden="true" />
@@ -1585,7 +1585,7 @@ function useAssetProjection(
         }
         setState({
           status: "error",
-          message: "素材投影暂时无法读取。请点击“重新读取”重试。",
+          message: "素材暂时无法读取。请点击“重新读取”重试。",
         });
       });
     return () => {

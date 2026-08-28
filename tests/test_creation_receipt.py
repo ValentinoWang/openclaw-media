@@ -22,6 +22,7 @@ def test_creation_receipt_hides_internal_telemetry_and_keeps_delivery_details() 
         media_context={
             "loaded": {"account_profile": True, "recent_creations": 11},
             "account_profile": {"markdown_path": "/private/telemetry/account-profile.md"},
+            "creator_profile_error": "CreatorProfile 字段契约不可用",
         },
         memory={"profile": {"markdown_path": "/private/telemetry/memory-profile.md"}},
         creation_record_id="creation_record_123",
@@ -35,6 +36,7 @@ def test_creation_receipt_hides_internal_telemetry_and_keeps_delivery_details() 
     assert "主体：训练日记" in reply
     assert "创作文档：https://example.test/creation-doc" in reply
     assert "创作记录ID：creation_record_123" in reply
+    assert "达人档案未加载：CreatorProfile 字段契约不可用" in reply
 
     for internal_value in (
         "internal-provider",

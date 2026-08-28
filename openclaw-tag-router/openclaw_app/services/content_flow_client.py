@@ -21,7 +21,12 @@ import requests
 from common.llm_client import generate_json_from_parts, is_model_capacity_failure, model_capacity_failure_detail
 from common.llm_settings import LLMProviderSettings, load_profile_llm_settings
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+from common.knowledge_categories import (
+    STANDARD_KNOWLEDGE_SECONDARY_CATEGORIES,
+    normalize_knowledge_secondary_categories,
+)
 from selfmedia.ingest.content_flow.src.pipeline import _extract_image_ocr
+from selfmedia.ingest.content_flow.src.analyzer import ANALYSIS_PRIMARY_CATEGORIES
 from selfmedia.ingest.content_flow.src.semantic_persistence import (
     LLM_CLEANED_USER_FIELDS_VERSION,
     analysis_user_field_contract_issue,
@@ -36,7 +41,6 @@ from .transcription_postprocess_contract import (
 from .utils import ensure_dir
 from ..router.openclaw_bot_llm import (
     profile_config,
-    profile_provider_runtime,
 )
 
 
@@ -728,8 +732,8 @@ class ContentFlowClient:
             "你是 OpenClaw 自媒体知识库的公众号图文结构化分析器。只输出合法 JSON，不要 Markdown 代码块。\n"
             "只基于提供的公众号正文、结构、图片 OCR 和元数据分析；不要访问外部链接，不要编造图片内容。\n"
             "必须输出字段：title、summary、breakdown、hooks、action_plan、hidden_info、visual_cues、transferable_expression、target_audience、pain_point、primary_category、secondary_category、tags、questions、open_questions、risks。\n"
-            "primary_category 必须是以下之一：AI/工具、商业/产品、运营/管理、学习/认知、健康/运动、财经/投资、法律/政策、生活/效率、科技/科学、人物/案例。\n"
-            "secondary_category 使用 1-3 个中文短分类；tags 使用 3-8 个短标签。\n"
+            "primary_category 必须是以下之一：AI/工具、商业/产品、运营/管理、学习/认知、健康/运动、财经/投资、法律/政策、生活/效率、科技/科学、人物/案例、其他。\n"
+            f"secondary_category 必须从统一词表选择 1-3 个：{'、'.join(STANDARD_KNOWLEDGE_SECONDARY_CATEGORIES)}。无法可靠细分时使用“未细分”。\n"
             "cleaned_full_content 是已完成 LLM 保真清洗的全文，分析时以它为主要文本依据。\n"
             "platform_caption 已由独立 LLM 清洗器处理，只作为分析背景，不要在 JSON 中输出或改写平台文案。\n"
             "图片 OCR 存在时，它是图集中文字的唯一事实来源；可据此分析，不得补写 OCR 中没有的图片文字。\n"
@@ -762,6 +766,14 @@ class ContentFlowClient:
         )
         if result.get("status") != "done":
             return result
+        primary = str(result.get("primary_category") or "").strip()
+        if primary and primary not in ANALYSIS_PRIMARY_CATEGORIES:
+            result["primary_category"] = "其他"
+            primary = "其他"
+        if result.get("secondary_category") not in (None, "", [], {}):
+            result["secondary_category"] = normalize_knowledge_secondary_categories(
+                result.get("secondary_category"), primary=primary, text=""
+            )
         text_fields = ("title",)
         missing = [field for field in text_fields if not self._semantic_text(result.get(field))]
         missing.extend(
@@ -1678,7 +1690,7 @@ print(json.dumps({
             },
             ensure_ascii=False,
         )
-        return self._call_postprocess_json(prompt, user_content, env, "人物与角色识别")
+        return self._call_postprocess_json(prompt, user_content, "人物与角色识别")
 
     @classmethod
     def _transcription_rewrite_coverage_error(
@@ -1769,12 +1781,9 @@ print(json.dumps({
             },
             ensure_ascii=False,
         )
-        return self._call_postprocess_json(prompt, user_content, env, "按角色重洗文字稿")
+        return self._call_postprocess_json(prompt, user_content, "按角色重洗文字稿")
 
     @staticmethod
-    def _transcription_final_note_value_missing(value: Any) -> bool:
-        return transcription_final_note_value_missing(value)
-
     @staticmethod
     def _transcription_final_note_value_missing(value: Any) -> bool:
         return transcription_final_note_value_missing(value)
@@ -1812,7 +1821,7 @@ print(json.dumps({
             },
             ensure_ascii=False,
         )
-        result = self._call_postprocess_json(prompt, user_content, env, "灵感整理")
+        result = self._call_postprocess_json(prompt, user_content, "灵感整理")
         if artifact_dir:
             root = ensure_dir(artifact_dir)
             self._write_json_artifact(root, "inspiration-summary.json", result)
@@ -2479,7 +2488,7 @@ print(json.dumps({
             },
             ensure_ascii=False,
         )
-        parsed = self._call_postprocess_json(prompt, user_content, env, "分片整理")
+        parsed = self._call_postprocess_json(prompt, user_content, "分片整理")
         coverage_error = self._transcription_source_unit_coverage_error(parsed, source_units, env)
         if coverage_error:
             repair_content = json.dumps(
@@ -2491,7 +2500,7 @@ print(json.dumps({
                 },
                 ensure_ascii=False,
             )
-            parsed = self._call_postprocess_json(prompt, repair_content, env, "分片整理覆盖修复")
+            parsed = self._call_postprocess_json(prompt, repair_content, "分片整理覆盖修复")
             coverage_error = self._transcription_source_unit_coverage_error(parsed, source_units, env)
         if coverage_error:
             return {
@@ -2533,7 +2542,7 @@ print(json.dumps({
             },
             ensure_ascii=False,
         )
-        return self._call_postprocess_json(prompt, user_content, env, "单附件合并")
+        return self._call_postprocess_json(prompt, user_content, "单附件合并")
 
     def _summarize_attachment_group(self, group_index: int, attachments: list[dict[str, Any]], source_hint: str, env: dict[str, str]) -> dict[str, Any]:
         prompt = (
@@ -2551,7 +2560,7 @@ print(json.dumps({
             },
             ensure_ascii=False,
         )
-        return self._call_postprocess_json(prompt, user_content, env, "中间合并")
+        return self._call_postprocess_json(prompt, user_content, "中间合并")
 
     def _summarize_global_note(self, summaries: list[dict[str, Any]], source_hint: str, env: dict[str, str]) -> dict[str, Any]:
         prompt = (
@@ -2587,7 +2596,7 @@ print(json.dumps({
             },
             ensure_ascii=False,
         )
-        return self._call_postprocess_json(prompt, user_content, env, "全局整理")
+        return self._call_postprocess_json(prompt, user_content, "全局整理")
 
     def _check_global_note_consistency(self, final_note: dict[str, Any], attachments: list[dict[str, Any]], env: dict[str, str]) -> dict[str, Any]:
         prompt = (
@@ -2614,7 +2623,7 @@ print(json.dumps({
             },
             ensure_ascii=False,
         )
-        parsed = self._call_postprocess_json(prompt, user_content, env, "一致性检查")
+        parsed = self._call_postprocess_json(prompt, user_content, "一致性检查")
         if parsed.get("status") != "done":
             return {"approved": False, "blocking_issues": [parsed.get("reason") or "一致性检查失败"], "warnings": [], "revision_notes": ""}
         parsed.pop("status", None)
@@ -2650,7 +2659,7 @@ print(json.dumps({
             },
             ensure_ascii=False,
         )
-        return self._call_postprocess_json(prompt, user_content, env, "全局纪要 schema 修复")
+        return self._call_postprocess_json(prompt, user_content, "全局纪要 schema 修复")
 
     def _repair_global_note_contract_with_retries(
         self,
@@ -2814,7 +2823,7 @@ print(json.dumps({
             },
             ensure_ascii=False,
         )
-        return self._call_postprocess_json(prompt, user_content, env, "一致性修订")
+        return self._call_postprocess_json(prompt, user_content, "一致性修订")
 
     def _run_job(self, endpoint: str, url: str, *, poll_attempts: int | None = None) -> dict[str, Any]:
         if not self.base_url:
@@ -2979,7 +2988,6 @@ print(json.dumps({
         self,
         prompt: str,
         user_content: str,
-        env: dict[str, str],
         stage: str,
         *,
         timeout_seconds: float | None = None,

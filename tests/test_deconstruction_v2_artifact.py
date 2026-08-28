@@ -13,7 +13,12 @@ for path in (ROOT, DECONSTRUCT_ROOT):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from selfmedia.deconstruct.viral_content.src.artifact_v2 import build_deconstruction_artifact, validate_deconstruction_artifact, validate_llm_deconstruction_v2_payload
+from selfmedia.deconstruct.viral_content.src.artifact_v2 import (
+    build_deconstruction_artifact,
+    normalize_deconstruction_artifact_for_read,
+    validate_deconstruction_artifact,
+    validate_llm_deconstruction_v2_payload,
+)
 from selfmedia.creation.deconstruction_artifact import DeconstructionArtifactUnavailable, attach_deconstruction_artifact_brief
 from selfmedia.creation.field_contract import CanonicalMediaRecord
 from media_vault.vault import MediaVault
@@ -33,11 +38,8 @@ def _result_payload() -> dict[str, object]:
         "core_data_summary": "平台数据不足，暂按机制强度和证据完整度判断。",
         "top_comment_insight": "评论证据不足，需要补抓 3 条高赞评论。",
         "target_audience": ["自媒体学习者", "内容运营"],
-        "target_audience_summary": "想把爆款拆成 SOP 的内容创作者。",
         "pain_or_pleasure_points": ["省时间", "可复刻"],
-        "pain_pleasure_summary": "用户爽点是把复杂拉片变成可执行清单。",
         "attention_elements": ["封面大字", "结果承诺", "流程感"],
-        "viral_breakdown": "强需求开头、流程承诺和成本消疑共同降低学习门槛。",
         "viral_migration": "迁移到自有工具链演示，保留结果前置和步骤化结构。",
         "creative_upgrade_suggestion": "千万年薪编导会把它改成真实项目闯关式拆解，增加前后对比和失败代价。",
         "evidence_manifest": {
@@ -190,7 +192,35 @@ class DeconstructionV2ArtifactTests(unittest.TestCase):
         self.assertEqual(artifact["request_constraints"]["analysis_time_range"], "0-5s")
         self.assertEqual(artifact["human_insight_candidates"][0]["mechanism_tag"], "被理解感")
         self.assertEqual(artifact["analysis_fields"]["creative_upgrade_suggestion"], "千万年薪编导会把它改成真实项目闯关式拆解，增加前后对比和失败代价。")
+        self.assertEqual(artifact["analysis_fields"]["target_audience"], ["自媒体学习者", "内容运营"])
+        self.assertEqual(artifact["analysis_fields"]["pain_or_pleasure_points"], ["省时间", "可复刻"])
+        for field_name in ("target_audience_summary", "pain_pleasure_summary", "viral_breakdown"):
+            self.assertNotIn(field_name, artifact["analysis_fields"])
         validate_deconstruction_artifact(artifact)
+
+    def test_normalizes_retired_artifact_fields_only_at_read_boundary(self) -> None:
+        artifact = build_deconstruction_artifact(
+            result=_result_payload(),
+            deconstruction_id="decon_test",
+            source_asset_id="asset_test",
+            source_asset_evidence_uri="media://tenants/00000000-0000-4000-8000-000000000101/source_assets/xhs/asset_test/evidence/evidence.json",
+            source_text="原文",
+        )
+        artifact["analysis_fields"] = {
+            "target_audience_summary": "内容创作者",
+            "pain_pleasure_summary": "降低拉片门槛",
+            "viral_breakdown": "结果前置降低理解成本",
+        }
+        artifact["content_summary"]["viral_mechanism"] = ""
+
+        normalized = normalize_deconstruction_artifact_for_read(artifact)
+
+        self.assertEqual(normalized["analysis_fields"]["target_audience"], ["内容创作者"])
+        self.assertEqual(normalized["analysis_fields"]["pain_or_pleasure_points"], ["降低拉片门槛"])
+        self.assertEqual(normalized["content_summary"]["viral_mechanism"], "结果前置降低理解成本")
+        self.assertIn("target_audience_summary", artifact["analysis_fields"])
+        for field_name in ("target_audience_summary", "pain_pleasure_summary", "viral_breakdown"):
+            self.assertNotIn(field_name, normalized["analysis_fields"])
 
     def test_rejects_invalid_request_constraints(self) -> None:
         result = _result_payload()

@@ -104,10 +104,9 @@ def _deconstruct_payload(asset_id: str = "frame_001") -> dict[str, object]:
         "cover_opening_hook": "首帧用红光近景和关系问题制造停留。",
         "core_data_summary": "互动证据不足，需人工复核热度。",
         "top_comment_insight": "评论证据不足，不能冒充原评论区高赞观点。",
-        "target_audience_summary": "暧昧关系和情绪短视频受众。",
-        "pain_pleasure_summary": "痛点是关系拉扯，爽点是评论区替主角判案。",
+        "target_audience": ["暧昧关系受众", "情绪短视频受众"],
+        "pain_or_pleasure_points": ["关系拉扯", "评论区替主角判案"],
         "attention_elements": ["红光暗房", "近景自拍", "关系问题"],
-        "viral_breakdown": "低成本视觉符号叠加情绪留白，促使观众补故事。",
         "viral_migration": "迁移关系留白结构，替换人物身份、场景和文案。",
         "creative_upgrade_suggestion": "把暧昧提问升级成观众审判局，让评论区承担第二叙事层。",
     }

@@ -214,8 +214,8 @@ def parse_shooting_execution_request(raw_text: str, *, infer_missing: bool = Tru
     people = _list(values.get("人物") or inferred.get("people") or "")
     if not platform:
         raise ValueError("【创作-拍摄执行】缺少平台")
-    if platform not in {"小红书", "抖音"}:
-        raise ValueError("【创作-拍摄执行】平台只支持 小红书 或 抖音")
+    if platform not in {"小红书", "抖音", "B站"}:
+        raise ValueError("【创作-拍摄执行】平台只支持 小红书、抖音 或 B站")
     if not content_type:
         content_type = "视频"
     if content_type not in {"图文", "视频"}:
@@ -302,13 +302,33 @@ def generate_shooting_execution_plan(request: ShootingExecutionRequest, *, media
         "  \"evidence_appendix\": [{\"source\":\"\", \"source_status\":\"已核验|仅凭文字描述，未看过原片|待人工核实\", \"available_evidence\":\"\", \"usage_reason\":\"\", \"risk\":\"\"}]\n"
         "}\n\n"
         f"请求字段：\n{json.dumps(request.to_dict(), ensure_ascii=False, indent=2)}\n\n"
-        f"拆解证据：\n{json.dumps(deconstruction_evidence, ensure_ascii=False, indent=2, default=str)[:12000]}\n\n"
-        f"媒体上下文：\n{json.dumps(media_context or {}, ensure_ascii=False, indent=2, default=str)[:12000]}"
+        f"拆解证据：\n{_bounded_context_json(deconstruction_evidence)}\n\n"
+        f"媒体上下文：\n{_bounded_context_json(media_context or {})}"
     )
     payload = call_creation_json(prompt, validation_contract=SHOOTING_PLAN_VALIDATION_CONTRACT)
     if not isinstance(payload, dict):
         raise RuntimeError("shooting_execution_llm_output_not_object")
     return payload
+
+
+def _bounded_context_json(value: Any, *, max_chars: int = 12000) -> str:
+    """Keep prompt context valid JSON while marking fields that exceed budget."""
+    if not isinstance(value, dict):
+        value = {"value": value}
+    compact: dict[str, Any] = {}
+    used = 2
+    for key, item in value.items():
+        encoded = json.dumps(item, ensure_ascii=False, default=str)
+        if len(encoded) > 2400:
+            encoded = encoded[:2380].rstrip() + "...[上下文字段已截断]"
+            item = encoded
+        candidate = json.dumps({key: item}, ensure_ascii=False, default=str)
+        if used + len(candidate) > max_chars:
+            compact["_truncated"] = "媒体上下文已按字段预算截断"
+            break
+        compact[key] = item
+        used += len(candidate)
+    return json.dumps(compact, ensure_ascii=False, indent=2, default=str)
 
 
 def validate_shooting_execution_plan(draft: dict[str, Any]) -> dict[str, Any]:

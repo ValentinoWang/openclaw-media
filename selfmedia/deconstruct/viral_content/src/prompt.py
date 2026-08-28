@@ -6,10 +6,9 @@ from .human_insight_cards import load_human_insight_taxonomy
 def _human_insight_taxonomy_prompt() -> str:
     taxonomy = load_human_insight_taxonomy()
     mechanism_tags = "、".join(str(item) for item in taxonomy.get("mechanism_tags") or [])
-    threshold = taxonomy.get("promotion_evidence_threshold") or 3
     return (
         f"human_insight_taxonomy_v1.mechanism_tags 只能从以下值选择：{mechanism_tags}。"
-        f"词表外新发现只能写 candidate_tags；至少 {threshold} 个不同 SourceAsset / 视频证据才能晋升机制卡或群体卡。"
+        "词表外新发现只能写 candidate_tags；本次只产出候选，不负责晋升卡片。"
     )
 
 
@@ -19,17 +18,14 @@ DECONSTRUCT_PROMPT = f"""
 必须输出严格 JSON，包含以下 key：
 - content_summary: 多维表格「总结」字段，统筹原文案、画面、互动数据、目标受众、痛点/爽点和赛道标签后给出的主题总结；12-24 个中文字符，适合作为文档标题主题
 - source_summary: 原作品一句话总结
-- viral_mechanism: 爆点机制，分点说明为什么容易火
+- viral_mechanism: 爆点机制，分点说明为什么容易火，以及哪些机制可在不复制原作品表达的前提下迁移
 - cover_opening_hook: 封面/前2秒抓手。视频优先解释前 2 秒/前 5 秒关键帧；图文没有视频前五秒，必须改用首图/封面/前几页顺序/上屏字/OCR/caption 节奏解释为什么让人停留
 - core_data_summary: 核心数据摘要。基于 engagement evidence 解释点赞、收藏、评论、分享、发布时间、互动截图状态对复用判断的意义
 - top_comment_insight: 高赞评论洞察。基于 comments evidence 提炼观众共鸣、争议、评论触发点；评论不足 3 条时必须说明证据不足
-- target_audience_summary: 目标受众短摘要，给 02B 主表扫描使用
-- pain_pleasure_summary: 痛点/爽点短摘要，说明观众停留、共鸣、转发、评论的原因
 - attention_elements: 吸睛元素数组，拆出标题、封面、视觉符号、反差、首屏文字、评论触发等具体抓手
-- viral_breakdown: 爆点拆解，独立说明传播机制，不要只复述 viral_mechanism
 - viral_migration: 爆点迁移，说明可迁移到我们账号的结构、节奏、表达策略
 - creative_upgrade_suggestion: 创新修改建议，必须回答“千万年薪编导会怎么把这条改出彩？”，给出可执行的创意增量
-- video_storyboard: 视频必须输出非空；图文输出空数组。只记录原作品中确有证据支撑的画面段落草稿；不是复刻执行稿。每项包含 shot_no, duration, visual, subtitle, voiceover, camera_movement, props, edit_notes, evidence_asset_id。视频只覆盖前 60 秒：0-5 秒按 0-1s、1-2s、2-3s、3-4s、4-5s 每秒一行；5 秒后按 5-8s、8-11s、11-14s 这种每 3 秒一行，最后不足 3 秒也单独保留。每行 evidence_asset_id 必须引用对应代表帧
+- video_storyboard: 视频只记录原作品中有帧证据支撑的画面段落草稿；证据覆盖不足时允许只输出已覆盖区间，并说明缺口且设置 human_review_required；图文输出空数组。每项包含 shot_no, duration, visual, subtitle, voiceover, camera_movement, props, edit_notes, evidence_asset_id。视频只覆盖前 60 秒：0-5 秒按 0-1s、1-2s、2-3s、3-4s、4-5s 组织，5-8s、8-11s、11-14s 等后续区间按证据覆盖的时间段组织，不能为了凑满时间轴重复引用同一帧
 - image_post_script: 可选。只记录原图文结构草稿；不是可直接生图提示词。每项包含 page_no, image_prompt, evidence_asset_id, overlay_text, caption_note。证据不足或风险较高时输出空数组
 - avoid_plagiarism_notes: 原创边界说明，说明哪些具体表达、人物身份、原经历、视觉组合不能直接复用
 - production_checklist: 发布前检查清单
@@ -56,7 +52,7 @@ DECONSTRUCT_PROMPT = f"""
 4. 中文输出。
 5. 如果输出 video_storyboard 或 image_post_script，evidence_asset_id 必须引用用户消息里给出的视觉证据 asset_id，例如 frame_001 或 image_001；不能编造，不能留空。视频 video_storyboard 的 duration 必须是时间段，禁止写成单点时间如“1s”。
 6. visual 写画面描述；subtitle 只写真实识别/抓取到的画面字幕；voiceover 只写真识别/抓取到的口播。没有就填空字符串，禁止写“假设复刻字幕/假设口播”或补写推测文案。
-7. target_audience、pain_or_pleasure_points、track_tags 以及 9 个 02B 可读字段必须存在；不要编造平台热榜排名。
+7. target_audience、pain_or_pleasure_points、track_tags 以及主表要求的可读字段必须存在；不要编造平台热榜排名。
 8. 所有 evidence_ids、source_ref、segment_id、text_segment_id、asset_id 只能引用 deconstruction.v2 证据包中列出的 ID。
 9. Viral Reuse Assessment 只评估“是否值得当前账号复用”，不要输出 is_viral，不要用点赞阈值做单一结论。
 10. Reuse Guardrails 必须具体说明哪些能学、哪些必须改、哪些绝对不能碰；allowed_reuse 不等于 transferable_points。

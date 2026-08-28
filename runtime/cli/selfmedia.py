@@ -10,6 +10,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -49,7 +50,6 @@ from common.social_runtime import (  # noqa: E402
     write_json,
     write_markdown,
 )
-from common.bot_llm_config import bot_runtime
 
 SOCIAL_THEORY_TAGS = ("/女性爱", "/性兴趣", "/风控", "/性资源", "/行动")
 BLOCKED_SOCIAL_THEORY_TAGS = ("/风控量表",)
@@ -698,11 +698,28 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def _systemd_calendar(cron: str, *, timezone: str = "") -> str:
+    """Translate the supported five-field daily cron form to OnCalendar."""
+    fields = str(cron or "").split()
+    if len(fields) != 5 or fields[2:] != ["*", "*", "*"]:
+        raise SystemExit("--cron must use daily five-field form: '<minute> <hour> * * *'")
+    minute, hour = fields[:2]
+    if not (minute.isdigit() and hour.isdigit() and 0 <= int(minute) <= 59 and 0 <= int(hour) <= 23):
+        raise SystemExit("--cron minute/hour must be numeric and within valid ranges")
+    if timezone:
+        try:
+            ZoneInfo(timezone)
+        except ZoneInfoNotFoundError as exc:
+            raise SystemExit(f"--tz must be a valid IANA timezone: {timezone}") from exc
+    return f"*-*-* {int(hour):02d}:{int(minute):02d}:00"
+
+
 def install_cron(args: argparse.Namespace) -> dict[str, Any]:
     load_default_env_files()
     report_url = args.report_url or os.getenv("FEISHU_ACCOUNT_REPORT_URL", "").strip()
     if not report_url:
         raise SystemExit("missing FEISHU_ACCOUNT_REPORT_URL or --report-url; refusing to register an unreported daily poll")
+    on_calendar = _systemd_calendar(args.cron, timezone=args.tz)
     command_args = [
         sys.executable,
         str(Path(__file__).resolve()),
@@ -715,39 +732,34 @@ def install_cron(args: argparse.Namespace) -> dict[str, Any]:
     ]
     if args.monitor_url:
         command_args.extend(["--monitor-url", args.monitor_url])
-    command = shlex.join(command_args)
-    runtime = bot_runtime("media")
-    cron_command = [
-        runtime.bin,
-        "cron",
-        "add",
-        "--name",
-        args.name,
-        "--agent",
-        runtime.agent,
-        "--cron",
-        args.cron,
-        "--tz",
-        args.tz,
-        "--session",
-        "isolated",
-        "--tools",
-        "exec",
-        "--timeout-seconds",
-        str(args.timeout_seconds),
-        "--expect-final",
-        "--no-deliver",
-        "--message",
-        f"请执行这个本机自媒体每日轮询命令，并只返回飞书写入结果、失败账号和阻塞点：\n\n{command}",
-        "--json",
-    ]
-    if args.disabled:
-        cron_command.append("--disabled")
-    return run_command(cron_command, ROOT, timeout=60)
+    unit_name = re.sub(r"[^A-Za-z0-9_.-]+", "-", str(args.name or "selfmedia-account-daily-poll")).strip("-")
+    if not unit_name:
+        raise SystemExit("--name must contain at least one usable unit-name character")
+    systemd_dir = Path(os.getenv("OPENCLAW_USER_SYSTEMD_DIR") or Path.home() / ".config/systemd/user")
+    service_path = systemd_dir / f"{unit_name}.service"
+    timer_path = systemd_dir / f"{unit_name}.timer"
+    service_path.parent.mkdir(parents=True, exist_ok=True)
+    service_path.write_text(
+        "[Unit]\nDescription=SelfMedia tenant account daily poll\n\n[Service]\n"
+        f"Type=oneshot\nWorkingDirectory={ROOT}\nExecStart={shlex.join(command_args)}\n",
+        encoding="utf-8",
+    )
+    timer_path.write_text(
+        "[Unit]\nDescription=SelfMedia tenant account daily poll timer\n\n[Timer]\n"
+        f"OnCalendar={on_calendar} {args.tz}\nPersistent=true\nUnit={unit_name}.service\n\n[Install]\nWantedBy=timers.target\n",
+        encoding="utf-8",
+    )
+    reload_result = run_command(["systemctl", "--user", "daemon-reload"], ROOT, timeout=60)
+    if not reload_result["ok"]:
+        return {**reload_result, "service_path": str(service_path), "timer_path": str(timer_path)}
+    action = "disable --now" if args.disabled else "enable --now"
+    action_args = ["systemctl", "--user", *action.split(), timer_path.name]
+    result = run_command(action_args, ROOT, timeout=60)
+    return {**result, "service_path": str(service_path), "timer_path": str(timer_path), "calendar": on_calendar}
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="OpenClaw bridge for /home/ubuntu/selfmedia-tools readable modules.")
+    parser = argparse.ArgumentParser(description="Selfmedia module unified entrypoint.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("list", help="List routable selfmedia parts.")
@@ -833,11 +845,10 @@ def build_parser() -> argparse.ArgumentParser:
     context.add_argument("--limit", type=int, default=5)
     context.add_argument("--tenant-id", required=True)
 
-    cron = sub.add_parser("install-cron", help="Register the daily Feishu account poll through OpenClaw cron.")
+    cron = sub.add_parser("install-cron", help="Register the daily Feishu account poll as a systemd user timer.")
     cron.add_argument("--name", default="selfmedia-account-daily-poll")
     cron.add_argument("--cron", default="0 8 * * *")
     cron.add_argument("--tz", default="Asia/Shanghai")
-    cron.add_argument("--timeout-seconds", type=int, default=10800)
     cron.add_argument("--monitor-url", default="")
     cron.add_argument("--report-url", default="")
     cron.add_argument("--disabled", action="store_true")

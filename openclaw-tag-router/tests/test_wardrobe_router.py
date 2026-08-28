@@ -3,13 +3,28 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+import pytest
+
 from openclaw_app.models.message import Message
+from openclaw_app.router import wardrobe
 from openclaw_app.router.wardrobe import WardrobeMixin, _wardrobe_item_id_from_message
 from openclaw_app.services.wardrobe_weather import WardrobeWeatherError
 
 
 class DummyWardrobeRouter(WardrobeMixin):
     pass
+
+
+def test_wardrobe_import_is_independent_from_optional_feishu_companion(monkeypatch, tmp_path: Path) -> None:
+    source = Path(wardrobe.__file__).read_text(encoding="utf-8")
+    assert 'import reminder as' not in source
+    assert 'import setup_media_bitable_registry as' not in source
+    assert "/home/ubuntu" not in source
+
+    monkeypatch.setattr(wardrobe, "REMINDER_ROOT", tmp_path)
+    monkeypatch.setattr(wardrobe.importlib, "import_module", lambda _name: (_ for _ in ()).throw(ModuleNotFoundError("missing")))
+    with pytest.raises(RuntimeError, match="衣橱飞书集成不可用"):
+        wardrobe._load_feishu_integrations()
 
 
 def test_wardrobe_item_id_reads_replied_bot_confirmation_metadata() -> None:
@@ -240,6 +255,19 @@ def test_wardrobe_recommendation_writes_obsidian_artifact(tmp_path: Path, monkey
         lambda: {"app_token": "app", "table_id": "tbl", "url": "https://example.test/base/app?table=tbl"},
     )
     monkeypatch.setattr(router, "_wardrobe_field_defs", lambda token, table_ref: {})
+    monkeypatch.setattr(
+        router,
+        "_wardrobe_field_map",
+        lambda: {
+            "item_id": "衣物ID",
+            "display_name": "名称",
+            "color": "颜色",
+            "brand": "品牌",
+            "occasion": "用途/场景",
+            "status": "状态",
+            "location": "位置",
+        },
+    )
     monkeypatch.setattr(
         router,
         "_wardrobe_records",

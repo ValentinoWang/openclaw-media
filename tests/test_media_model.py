@@ -131,10 +131,10 @@ class MediaModelTests(unittest.TestCase):
             cover_opening_hook="封面前2秒抓手",
             core_data_summary="点赞收藏评论分享摘要",
             top_comment_insight="三条高赞评论洞察",
-            target_audience_summary="目标受众",
-            pain_pleasure_summary="痛点爽点",
+            target_audience="目标受众",
+            pain_or_pleasure_points="痛点爽点",
             attention_elements="吸睛元素",
-            viral_breakdown="爆点拆解",
+            viral_mechanism="爆点机制",
             viral_migration="爆点迁移",
             creative_upgrade_suggestion="千万年薪编导会怎么把这条改出彩",
         )

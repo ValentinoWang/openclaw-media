@@ -15,7 +15,7 @@
 ## 运行
 
 ```bash
-cd /home/ubuntu/selfmedia-tools
+# Run from the repository root.
 python3 -m selfmedia.deconstruct.viral_content.src.cli '【拆解】 https://v.douyin.com/xxxx/' --out data/media_vault/deconstruct_demo.json
 ```
 
@@ -62,4 +62,4 @@ LLM 输出的 `video_storyboard` / `image_post_script` 必须用 `evidence_asset
 
 当前路线固定为本地抽帧/提音频形成证据包，全部关键帧/图文图片 parts 直接交给 `media_analysis` profile 的 Codex Responses API，由同一个主模型输出拆解 JSON。
 
-主模型配置读取 `/home/ubuntu/selfmedia-tools/config/openclaw_bots.json` 的 `media_analysis` profile；`api_key` 可使用 `codex_auth_file` 从本机 Codex auth 文件解析。最终拆解继续校验 `evidence_asset_id`，主模型不可用则中止，不写文档、不写表。
+主模型配置读取 `config/openclaw_bots.json` 的 `media_analysis` profile；`api_key` 可使用 `codex_auth_file` 从本机 Codex auth 文件解析。最终拆解继续校验 `evidence_asset_id`，主模型不可用则中止，不写文档、不写表。

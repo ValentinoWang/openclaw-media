@@ -316,7 +316,7 @@ export default function DecisionsPage() {
         <header className={`page-heading ${styles.heading}`}>
           <div>
             <h1>选题与决策</h1>
-            <p>候选选题、来源信号和人工确认都来自当前租户的业务接口。</p>
+            <p>候选选题、来源信号和人工确认都来自当前租户的业务记录。</p>
           </div>
           <div className="page-heading-actions"><button
             className={`primary-button ${styles.primaryAction}`}
@@ -556,7 +556,7 @@ function SignalPanel({
           </ul>
           {!state.data.items.length ? <EmptyState title="暂无来源信号" detail="当前租户还没有热榜或活动信号快照。" /> : null}
           <footer className={styles.tableFooter}>
-            <span>来源快照不会替代决策事实。</span>
+            <span>来源快照不会替代决策判断。</span>
             <CursorPagination
               page={page}
               canPrevious={page > 1}

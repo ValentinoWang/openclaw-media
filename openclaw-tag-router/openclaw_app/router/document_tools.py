@@ -780,11 +780,9 @@ class DocumentToolsMixin:
             ensure_ascii=False,
         )
         try:
-            env = self.content_flow_client._content_flow_env()
             result = self.content_flow_client._call_postprocess_json(
                 prompt,
                 user_content,
-                env,
                 "文档修改 patch plan",
                 timeout_seconds=self._document_edit_patch_plan_timeout_seconds(),
                 max_retries=0,
@@ -979,11 +977,9 @@ class DocumentToolsMixin:
             ensure_ascii=False,
         )
         try:
-            env = self.content_flow_client._content_flow_env()
             result = self.content_flow_client._call_postprocess_json(
                 prompt,
                 user_content,
-                env,
                 "文档修改 target plan",
                 timeout_seconds=self._document_edit_patch_stage1_timeout_seconds(),
                 max_retries=0,

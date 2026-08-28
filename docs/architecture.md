@@ -1,6 +1,6 @@
 # SelfMedia Tools Architecture
 
-This document is the directory-responsibility SSOT for `/home/ubuntu/selfmedia-tools`.
+This document is the directory-responsibility reference for this repository.
 `README.md` is only an entry page. Bot-local `AGENTS.md` files may point here, but must not redefine these boundaries.
 
 ## Core Rule
@@ -9,8 +9,7 @@ Every selfmedia capability has exactly one code owner, one runtime entrypoint, a
 
 ```text
 OpenClaw media Bot
-  -> openclaw-agents/media/scripts/selfmedia.py
-  -> selfmedia-tools/runtime/cli/selfmedia.py
+  -> runtime/cli/selfmedia.py
   -> selfmedia/*
   -> media_model / media_vault / integrations
 ```
@@ -18,19 +17,19 @@ OpenClaw media Bot
 The following paths are different roles, not competing implementations:
 
 ```text
-selfmedia-tools/media_vault/
+media_vault/
   role: code package
   owns: MediaVault API, media:// URI, manifest validation, artifact write helpers
   may contain: Python source and tests
   must not contain: run artifacts, downloaded media, CreationRun payloads
 
-selfmedia-tools/data/media_vault/
+data/media_vault/
   role: canonical artifact storage root
   owns: CreationRun, deconstruction, creator profile, business, review, style_polish artifacts
   may contain: JSON, Markdown, screenshots, media files, manifests
   must not contain: Python business logic or alternative writers
 
-selfmedia-tools/openclaw-tag-router/
+openclaw-tag-router/
   role: source SSOT for the OpenClaw tag-router adapter
   owns: tag routing code, capability definitions, adapter tests
   must be edited before deployment
@@ -38,7 +37,7 @@ selfmedia-tools/openclaw-tag-router/
 .openclaw/extensions/openclaw-tag-router/
   role: deployed runtime copy
   owns: the files loaded by OpenClaw at runtime
-  must match: selfmedia-tools/openclaw-tag-router/
+  must match: the repository `openclaw-tag-router/` source after deployment
   must not be used as the source edit location
 
 .openclaw/workspace/openclaw-tag-router/
@@ -79,7 +78,7 @@ openclaw-agents/media/
 ## Canonical Directory Tree
 
 ```text
-selfmedia-tools/
+repository root/
 |-- README.md                         # entry page; points to this document
 |-- docs/
 |   `-- architecture.md               # directory-responsibility SSOT
@@ -135,6 +134,7 @@ selfmedia-tools/
 | Field health diagnostics | `selfmedia/ingest/diagnostics/field_health.py` | direct module call | `data/media_vault/tenants/<tenant_id>/field_health_runs/` |
 | Viral deconstruction | `selfmedia/deconstruct/viral_content/` | `runtime/cli/selfmedia.py run deconstruct` | `data/media_vault/tenants/<tenant_id>/deconstructions/` |
 | Creation workflows | `selfmedia/creation/` | `runtime/cli/selfmedia.py` creation commands | `data/media_vault/tenants/<tenant_id>/creation_runs/` |
+| Account daily polling | `runtime/cli/selfmedia.py` | `runtime/cli/selfmedia.py daily-poll --tenant-id <tenant_id>` | `data/media_vault/tenants/<tenant_id>/account_daily_runs/` |
 | Data review | `selfmedia/review/` | `runtime/cli/selfmedia.py data-review` | `data/media_vault/tenants/<tenant_id>/data_review_runs/` |
 | Creator profiles | `selfmedia/creator_profiles/` | tag-router adapter or public service call | `data/media_vault/tenants/<tenant_id>/creator_profiles/` |
 | Business ID and quotes | `selfmedia/business/` | `python3 -m selfmedia.business.id_business` | `data/media_vault/tenants/<tenant_id>/business/` |
@@ -173,19 +173,19 @@ openclaw-agents/media -> independent selfmedia business workflows
 Only this path is editable source:
 
 ```text
-/home/ubuntu/selfmedia-tools/openclaw-tag-router/
+openclaw-tag-router/
 ```
 
-This path is a deployed copy and must match the source after deployment:
+The configured OpenClaw extension directory is a deployed copy and must match the source after deployment:
 
 ```text
-/home/ubuntu/.openclaw/extensions/openclaw-tag-router/
+<openclaw-extension-root>/openclaw-tag-router/
 ```
 
-This path is runtime workspace data:
+The configured OpenClaw workspace directory stores runtime data:
 
 ```text
-/home/ubuntu/.openclaw/workspace/openclaw-tag-router/
+<openclaw-workspace-root>/openclaw-tag-router/
 ```
 
 The single-source guard must compare source and deployed copy. Runtime workspace data is not compared to source because it stores messages, archives, logs, and temporary runtime state.
@@ -193,22 +193,22 @@ The single-source guard must compare source and deployed copy. Runtime workspace
 The canonical deployment command is:
 
 ```bash
-python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_runtime.py
+python3 runtime/maintenance/deploy/deploy_openclaw_runtime.py
 ```
 
 It performs the full source-to-runtime projection:
 
 ```text
-selfmedia-tools/openclaw-tag-router/
+openclaw-tag-router/
   -> rsync --delete
-  -> .openclaw/extensions/openclaw-tag-router/
+  -> configured OpenClaw extension directory
   -> install deploy/systemd/user units
   -> generate:data / validate:data / npm run build
-  -> /var/www/openclaw/bots/
+  -> configured published Bot Center directory
   -> guard source/active drift, Bot Center parity, and cron/systemd scheduler authority
 ```
 
-Do not use `.openclaw/extensions/openclaw-tag-router/` as a long-lived edit location. If an emergency hotfix is applied there, immediately backport it to `selfmedia-tools/openclaw-tag-router/` and run the deployment command so the guard can prove the copies converged again.
+Do not use the configured extension directory as a long-lived edit location. If an emergency hotfix is applied there, immediately backport it to `openclaw-tag-router/` and run the deployment command so the guard can prove the copies converged again.
 
 ## OpenClaw Frontend Projection
 
@@ -216,11 +216,11 @@ Bot Center is a frontend projection of the active tag-router capability registry
 
 ```text
 active tag-router capability registry
-  -> /home/ubuntu/openclaw-bot-center/scripts/generateDashboardData.py
-  -> /home/ubuntu/openclaw-bot-center/public/data/openclaw-bot-center.generated.json
+  -> openclaw-bot-center/scripts/generateDashboardData.py
+  -> openclaw-bot-center/public/data/openclaw-bot-center.generated.json
   -> npm run build
-  -> /home/ubuntu/openclaw-bot-center/dist/
-  -> /var/www/openclaw/bots/
+  -> openclaw-bot-center/dist/
+  -> configured published Bot Center directory
 ```
 
 The published JSON must match both local `public/` and `dist/`; otherwise users may see a stale ability page even when the runtime route has changed.
@@ -236,24 +236,25 @@ openclaw-weekly-self-model-summary.timer  -> Sunday 23:59
 
 OpenClaw cron may continue to own unrelated scheduled jobs, but it must not retain competing Daily journal or weekly self-model jobs. The runtime smoke must read both systemd and `openclaw cron list --json`.
 
+Media account polling is installed as a systemd user timer by `runtime/cli/selfmedia.py install-cron`. Its service directly invokes `daily-poll` with the configured tenant and Feishu report target; it does not route the collection through an OpenClaw agent session.
+
 ## OpenClaw Media Agent Boundary
 
-`/home/ubuntu/openclaw-agents/media/scripts/selfmedia.py` is the only selfmedia script entrypoint inside `openclaw-agents/media/scripts/`.
-It must remain a thin subprocess wrapper around:
+The repository-owned selfmedia entrypoint is:
 
 ```text
-/home/ubuntu/selfmedia-tools/runtime/cli/selfmedia.py
+runtime/cli/selfmedia.py
 ```
 
-Other media-specific commands must live in `selfmedia-tools` as package modules or runtime commands. `openclaw-agents/media/generated/`, `tmp/`, `tmp_analysis/`, `analysis_frames/`, and `attachment_manifests/` are runtime product directories.
+Deployment-specific wrappers may call this entrypoint, but they are not a second source of business behavior. Generated media-agent directories are runtime product directories, not source authority.
 
 ## Media Vault Naming
 
 The repeated `media_vault` name is intentional and only legal in these two roles:
 
 ```text
-selfmedia-tools/media_vault/       # code package
-selfmedia-tools/data/media_vault/  # artifact storage root
+media_vault/       # code package
+data/media_vault/  # artifact storage root
 ```
 
 Any new `media_vault` path outside those roles needs a documented owner and a guard update before it is introduced.
@@ -262,7 +263,7 @@ Any new `media_vault` path outside those roles needs a documented owner and a gu
 
 - Long JSON, evidence bundles, screenshots, and generated variants go under `data/media_vault/` through `MediaVault` where practical.
 - Feishu visible fields receive summaries, stable IDs, links, and status fields.
-- `data/`, `downloads/`, `outputs/`, `.openclaw/workspace/*`, and `openclaw-agents/media/tmp*` are not code ownership locations.
+- `data/`, `downloads/`, `outputs/`, configured OpenClaw workspace data, and media-agent temporary files are not code ownership locations.
 - Imported numbered-Part artifacts may remain under `data/media_vault/numbered_part_archive/`, but no runtime command may call those directories.
 
 ## Required Guards
@@ -271,8 +272,7 @@ Any new `media_vault` path outside those roles needs a documented owner and a gu
 
 - this document exists and declares `docs/architecture.md` as the directory-responsibility SSOT;
 - README points to this document instead of redefining source/deployment/workspace roles;
-- `openclaw-agents/media/scripts/` contains only the thin `selfmedia.py` entrypoint;
-- `openclaw-agents/media/scripts/selfmedia.py` points to `selfmedia-tools/runtime/cli/selfmedia.py`;
+- repository-owned calls use `runtime/cli/selfmedia.py` as the selfmedia entrypoint;
 - tag-router source and deployed copy are byte-identical except ignored cache files;
 - tag-router source, active copy, and installed journal systemd units are identical for the Daily journal timers;
 - Bot Center `public/`, `dist/`, and `/var/www/openclaw/bots/` generated JSON are identical;

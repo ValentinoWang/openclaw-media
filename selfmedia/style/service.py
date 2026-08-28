@@ -19,7 +19,7 @@ from .contract import (
     StyleVersion,
 )
 from .feedback import empty_feedback_record
-from .validators import validate_version_text
+from .validators import _remove_must_keep, validate_version_text
 
 
 StylePayloadProvider = Callable[[str], dict[str, Any]]
@@ -60,10 +60,11 @@ def _validate_style_payload(payload: dict[str, Any], validation_context: dict[st
             raise ValueError(f"duplicate version name: {name}")
         names.add(name)
         failures = validate_version_text(request, text, platform_mechanism=context.platform_mechanism)
+        residual = _remove_must_keep(text, request.must_keep)
         failures.extend(
             f"出现通用模板表达：{phrase}"
             for phrase in context.anti_patterns
-            if phrase and phrase in text and phrase not in request.must_keep
+            if phrase and phrase in residual
         )
         if failures:
             raise ValueError("; ".join(failures))
@@ -187,13 +188,13 @@ def _build_style_prompt(request: StylePolishRequest, context: StyleContext) -> s
         "3. 保留一点自然节奏，不要把每段写得同样长，也不要为了口语化机械添加‘说实话’‘其实’‘那一刻’。\n"
         "4. 把作者为什么在意、看到哪一步产生判断写清楚；没有输入依据时不要补个人经历或情绪。\n"
         "5. 保留原文所有可验证事实、专名、因果边界和合规限定。不得把演示、相关或参考结果升级成已证实的控制、诊断或疗效。\n"
-        "6. 必须保留 must_keep；不得出现 avoid、anti_patterns 或平台禁用宣称。账号资料没读到时，不模拟账号人格。\n"
+        "6. 必须保留 must_keep；不得在 must_keep 之外出现 avoid、anti_patterns 或平台禁用宣称。账号资料没读到时，不模拟账号人格。\n"
         "7. 小红书正文优先第一人称现场感、短段落和一个清楚判断；标题必须是人会点开的具体体验，不堆地点、编号和流程术语。\n"
         "8. 只生成 request.variants 指定数量，默认只给一个最自然、可直接发布的版本，不用凑三版。\n\n"
         "输出 JSON 固定为：diagnosis, style_strategy, versions, recommended_version。\n"
         "diagnosis 是内部审计用的短数组；style_strategy 是一句内部策略。\n"
         "versions 每项固定字段为 name, text, target_use, score_breakdown, risk_notes。\n"
-        "score_breakdown 固定为 naturalness, voice, clarity, fact_fidelity 四项，每项 1-5 的整数。\n"
+        "score_breakdown 是可选诊断字段；如提供，使用 naturalness, voice, clarity, fact_fidelity 四项，每项为可转成 1-5 的数值。\n"
         "risk_notes 是内部风险短数组。recommended_version 必须等于某个 versions.name。\n\n"
         "输入 JSON：\n"
         f"{json.dumps(payload, ensure_ascii=False, indent=2)}"
@@ -229,7 +230,10 @@ def _aggregate_scores(versions: list[StyleVersion]) -> dict[str, Any]:
     if not versions:
         return {}
     keys = sorted({key for version in versions for key in version.score_breakdown})
-    return {key: min(int(version.score_breakdown.get(key, 0)) for version in versions) for key in keys}
+    return {
+        key: min(int(version.score_breakdown[key]) for version in versions if key in version.score_breakdown)
+        for key in keys
+    }
 
 
 def _creation_binding(request: StylePolishRequest, artifact_uri: str) -> dict[str, Any]:
@@ -288,12 +292,20 @@ def _string_list(value: Any) -> list[str]:
 
 
 def _validate_style_scores(value: Any, *, index: int) -> dict[str, int]:
-    if not isinstance(value, dict) or set(value) != set(STYLE_SCORE_FIELDS):
-        raise ValueError(f"versions[{index}].score_breakdown must contain exactly {STYLE_SCORE_FIELDS}")
+    if value in (None, {}):
+        return {}
+    if not isinstance(value, dict) or not set(value).issubset(set(STYLE_SCORE_FIELDS)):
+        raise ValueError(f"versions[{index}].score_breakdown must use only {STYLE_SCORE_FIELDS}")
     scores: dict[str, int] = {}
-    for field in STYLE_SCORE_FIELDS:
+    for field in value:
         score = value[field]
-        if isinstance(score, bool) or not isinstance(score, int) or not 1 <= score <= 5:
-            raise ValueError(f"versions[{index}].score_breakdown.{field} must be an integer from 1 to 5")
-        scores[field] = score
+        if isinstance(score, bool):
+            raise ValueError(f"versions[{index}].score_breakdown.{field} must be numeric from 1 to 5")
+        try:
+            normalized = int(float(score))
+        except (TypeError, ValueError):
+            raise ValueError(f"versions[{index}].score_breakdown.{field} must be numeric from 1 to 5") from None
+        if not 1 <= normalized <= 5:
+            raise ValueError(f"versions[{index}].score_breakdown.{field} must be numeric from 1 to 5")
+        scores[field] = normalized
     return scores

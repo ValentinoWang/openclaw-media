@@ -635,7 +635,7 @@ function DeletionPanel({
           <>
             <p className={styles.dangerIntro}>
               目标：{archive.archive_id}
-              ；服务端将删除归档记录、小附件和投影，并返回读回收据。
+              ；系统将删除归档记录和小附件，并在完成后提示确认结果。
             </p>
             {plan ? (
               <div className={styles.impactPlan}>

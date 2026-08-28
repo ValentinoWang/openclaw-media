@@ -5,20 +5,8 @@
     "openclaw_runtime_provider": "openclaw_codex"
   },
   "openclaw_runtime": {
-    "heartbeat_every": "0m",
-    "session_maintenance": {
-      "mode": "enforce",
-      "prune_after": "14d",
-      "reset_archive_retention": "14d"
-    },
     "codex_app_server": {
       "command": "codex",
-      "args": [
-        "app-server",
-        "--listen",
-        "stdio://"
-      ],
-      "service_tier": "priority",
       "turn_completion_idle_timeout_ms": 180000,
       "version": "0.147.0"
     }

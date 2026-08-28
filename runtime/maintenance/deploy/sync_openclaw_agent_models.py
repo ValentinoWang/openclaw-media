@@ -28,6 +28,14 @@ OPENCLAW_THINKING_ALIASES = {
     "max": "high",
     "adaptive": "high",
 }
+CODEX_APP_SERVER_ARGS = ["app-server", "--listen", "stdio://"]
+CODEX_APP_SERVER_SERVICE_TIER = "priority"
+RUNTIME_HEARTBEAT_EVERY = "0m"
+RUNTIME_SESSION_MAINTENANCE = {
+    "mode": "enforce",
+    "pruneAfter": "14d",
+    "resetArchiveRetention": "14d",
+}
 
 
 def canonical_openai_base_url() -> str:
@@ -227,17 +235,11 @@ def _codex_app_server(payload: dict[str, Any]) -> dict[str, Any]:
     runtime = payload.get("openclaw_runtime") if isinstance(payload.get("openclaw_runtime"), dict) else {}
     app_server = runtime.get("codex_app_server") if isinstance(runtime.get("codex_app_server"), dict) else {}
     command = str(app_server.get("command") or "").strip()
-    args = app_server.get("args")
-    service_tier = str(app_server.get("service_tier") or "").strip()
     turn_completion_idle_timeout_ms = app_server.get("turn_completion_idle_timeout_ms")
     version = str(app_server.get("version") or "").strip()
     executable = _resolve_executable(command) if command else ""
     if not executable:
         raise SystemExit("openclaw_runtime.codex_app_server.command must resolve to an executable file or PATH command")
-    if args != ["app-server", "--listen", "stdio://"]:
-        raise SystemExit("openclaw_runtime.codex_app_server.args must be the canonical stdio app-server command")
-    if service_tier != "priority":
-        raise SystemExit("openclaw_runtime.codex_app_server.service_tier must be priority")
     if not isinstance(turn_completion_idle_timeout_ms, int) or turn_completion_idle_timeout_ms < 60000:
         raise SystemExit(
             "openclaw_runtime.codex_app_server.turn_completion_idle_timeout_ms must be an integer >= 60000"
@@ -261,8 +263,8 @@ def _codex_app_server(payload: dict[str, Any]) -> dict[str, Any]:
         )
     return {
         "command": command,
-        "args": list(args),
-        "serviceTier": service_tier,
+        "args": list(CODEX_APP_SERVER_ARGS),
+        "serviceTier": CODEX_APP_SERVER_SERVICE_TIER,
         "turnCompletionIdleTimeoutMs": turn_completion_idle_timeout_ms,
     }
 
@@ -313,28 +315,9 @@ def sync_openclaw_gateway_config(payload: dict[str, Any], *, dry_run: bool) -> s
     defaults["timeoutSeconds"] = max(30, int(float(provider_config.get("timeout") or 1800)))
     defaults["model"] = {"primary": allowed_refs[0]}
     defaults["models"] = {ref: {} for ref in allowed_refs}
-    runtime_config = payload.get("openclaw_runtime") if isinstance(payload.get("openclaw_runtime"), dict) else {}
-    heartbeat_every = str(runtime_config.get("heartbeat_every") or "").strip()
-    if heartbeat_every != "0m":
-        raise SystemExit("openclaw_runtime.heartbeat_every must be explicitly set to 0m")
-    defaults["heartbeat"] = {"every": heartbeat_every}
-    session_maintenance = runtime_config.get("session_maintenance")
-    if not isinstance(session_maintenance, dict):
-        raise SystemExit("openclaw_runtime.session_maintenance must be an object")
-    if session_maintenance.get("mode") != "enforce":
-        raise SystemExit("openclaw_runtime.session_maintenance.mode must be enforce")
-    prune_after = str(session_maintenance.get("prune_after") or "").strip()
-    reset_archive_retention = str(
-        session_maintenance.get("reset_archive_retention") or ""
-    ).strip()
-    if prune_after != "14d" or reset_archive_retention != "14d":
-        raise SystemExit("OpenClaw session retention must be exactly 14d")
+    defaults["heartbeat"] = {"every": RUNTIME_HEARTBEAT_EVERY}
     session = parsed.setdefault("session", {})
-    session["maintenance"] = {
-        "mode": "enforce",
-        "pruneAfter": prune_after,
-        "resetArchiveRetention": reset_archive_retention,
-    }
+    session["maintenance"] = dict(RUNTIME_SESSION_MAINTENANCE)
     plugins = parsed.setdefault("plugins", {})
     allow = plugins.get("allow")
     if isinstance(allow, list):

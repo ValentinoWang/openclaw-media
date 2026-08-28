@@ -327,10 +327,7 @@ class DeconstructResult(BaseModel):
     cover_opening_hook: str
     core_data_summary: str
     top_comment_insight: str
-    target_audience_summary: str
-    pain_pleasure_summary: str
     attention_elements: list[str] = Field(min_items=1)
-    viral_breakdown: str
     viral_migration: str
     creative_upgrade_suggestion: str
     request_constraints: dict[str, Any] = Field(default_factory=dict)
@@ -355,6 +352,9 @@ class DeconstructResult(BaseModel):
                 "comment_trigger_lines",
                 "cta_lines",
                 "usable_material_brief",
+                "target_audience_summary",
+                "pain_pleasure_summary",
+                "viral_breakdown",
             }
             present = sorted(removed & set(values))
             if present:
@@ -369,9 +369,6 @@ class DeconstructResult(BaseModel):
         "cover_opening_hook",
         "core_data_summary",
         "top_comment_insight",
-        "target_audience_summary",
-        "pain_pleasure_summary",
-        "viral_breakdown",
         "viral_migration",
         "creative_upgrade_suggestion",
         pre=True,
@@ -650,11 +647,18 @@ def validate_video_storyboard_granularity(
     *,
     media_type: str = "video",
     target_duration_sec: float | int | None = None,
+    allow_partial_coverage: bool = False,
 ) -> dict[str, Any]:
     if str(media_type or payload.get("media_type") or "").lower() != "video":
         return payload
     storyboard = payload.get("video_storyboard")
-    if not isinstance(storyboard, list) or not storyboard:
+    if not isinstance(storyboard, list):
+        raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 不能为空")
+    if not storyboard:
+        if allow_partial_coverage:
+            expected_ranges = _expected_storyboard_ranges(_storyboard_target_end(target_duration_sec, 0.0))
+            _mark_partial_storyboard_coverage(payload, expected_ranges, [])
+            return payload
         raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 不能为空")
     actual_ranges = [_parse_storyboard_duration(item.get("duration")) for item in storyboard if isinstance(item, dict)]
     if len(actual_ranges) != len(storyboard):
@@ -664,6 +668,10 @@ def validate_video_storyboard_granularity(
         raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: 长视频只允许拆解前 {STORYBOARD_ANALYSIS_MAX_SECONDS} 秒")
     target_end = _storyboard_target_end(target_duration_sec, observed_end)
     expected_ranges = _expected_storyboard_ranges(target_end)
+    if allow_partial_coverage:
+        _validate_partial_storyboard_ranges(storyboard, actual_ranges, expected_ranges)
+        _mark_partial_storyboard_coverage(payload, expected_ranges, actual_ranges)
+        return payload
     if len(actual_ranges) < len(expected_ranges):
         raise SchemaError(
             f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 行数不足，"
@@ -676,6 +684,63 @@ def validate_video_storyboard_granularity(
                 f"{_format_range(expected)}，实际为 {_format_range(actual)}"
             )
     return payload
+
+
+def _validate_partial_storyboard_ranges(
+    storyboard: list[dict[str, Any]],
+    actual_ranges: list[tuple[float, float]],
+    expected_ranges: list[tuple[float, float]],
+) -> None:
+    matched_indices: list[int] = []
+    for index, actual in enumerate(actual_ranges, 1):
+        match_index = next((position for position, expected in enumerate(expected_ranges) if _close_range(expected, actual)), None)
+        if match_index is None:
+            raise SchemaError(
+                f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard[{index}].duration 必须是已定义的证据采样区间，"
+                f"实际为 {_format_range(actual)}"
+            )
+        if match_index in matched_indices:
+            raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 不可重复覆盖同一时间段")
+        matched_indices.append(match_index)
+    if matched_indices != sorted(matched_indices):
+        raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 必须按时间顺序排列")
+
+    is_partial_coverage = len(matched_indices) < len(expected_ranges)
+    evidence_asset_ids = [str(item.get("evidence_asset_id") or "").strip() for item in storyboard]
+    known_asset_ids = [asset_id for asset_id in evidence_asset_ids if asset_id]
+    if is_partial_coverage and len(known_asset_ids) != len(set(known_asset_ids)):
+        raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: 帧证据不足时不可重复使用同一 evidence_asset_id 填充分镜")
+
+
+def _mark_partial_storyboard_coverage(
+    payload: dict[str, Any],
+    expected_ranges: list[tuple[float, float]],
+    actual_ranges: list[tuple[float, float]],
+) -> None:
+    missing_ranges = [expected for expected in expected_ranges if not any(_close_range(expected, actual) for actual in actual_ranges)]
+    if not missing_ranges:
+        return
+    covered = _format_duration_ranges(actual_ranges) if actual_ranges else "无"
+    warning = (
+        f"视频分镜仅覆盖有帧证据的区间：{covered}；未覆盖区间：{_format_duration_ranges(missing_ranges)}，"
+        "需要人工复核，禁止补造分镜。"
+    )
+    validation = payload.get("validation")
+    if not isinstance(validation, dict):
+        validation = {}
+    warnings = validation.get("warnings")
+    if not isinstance(warnings, list):
+        warnings = [str(warnings).strip()] if str(warnings or "").strip() else []
+    if warning not in warnings:
+        warnings.append(warning)
+    validation["warnings"] = warnings
+    validation["storyboard_coverage_status"] = "partial_evidence"
+    validation["storyboard_missing_ranges"] = [_format_range(item) for item in missing_ranges]
+    payload["validation"] = validation
+    for field_name in ("viral_reuse_assessment", "reuse_guardrails"):
+        value = payload.get(field_name)
+        if isinstance(value, dict):
+            value["human_review_required"] = True
 
 
 def _storyboard_target_end(target_duration_sec: float | int | None, observed_end: float) -> int:

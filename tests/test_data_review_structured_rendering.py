@@ -1,3 +1,4 @@
+import selfmedia.review.data_review as data_review
 from selfmedia.review.data_review import (
     DataReviewRequest,
     _review_memory_text,
@@ -62,3 +63,57 @@ def test_plain_string_guidance_remains_unchanged():
     assert analysis["content_guidance"] == guidance
     assert analysis["publishing_guidance"] == guidance
     assert analysis["next_actions"] == guidance
+
+
+def test_performance_level_is_canonicalized_for_published_post():
+    analysis = _analysis_with_guidance(["先缩短开头"])
+    analysis["performance_level"] = "建议重剪"
+
+    validated = validate_data_review_analysis(analysis)
+
+    assert validated["performance_level"] == "值得重剪"
+
+
+def test_unknown_performance_level_is_explicitly_unrated():
+    analysis = _analysis_with_guidance(["先缩短开头"])
+    analysis["performance_level"] = "模型自定义评级"
+
+    validated = validate_data_review_analysis(analysis)
+
+    assert validated["performance_level"] == "未评级"
+
+
+def test_retired_bitable_field_writer_surface_is_removed():
+    retired_names = (
+        "ensure_data_review_fields",
+        "_data_review_field_items",
+        "complete_data_review_fields",
+        "build_metric_evidence_json",
+        "build_action_guidance_json",
+    )
+
+    for name in retired_names:
+        assert not hasattr(data_review, name)
+
+
+def test_review_reply_leads_with_result_and_document_without_internal_metadata():
+    reply = data_review.format_data_review_reply(
+        {
+            "ok": True,
+            "doc_link": "https://example.test/review/doc-1",
+            "record_id": "post_internal_1",
+            "reviewed_at": "2026-08-29T10:00:00+08:00",
+            "analysis": {"platform": "抖音", "account": "小王", "conclusion": "先重剪开头", "performance_level": "值得重剪"},
+            "creation_plan": {"status": "loaded", "creation_record_id": "run_internal_1"},
+        }
+    )
+
+    lines = reply.splitlines()
+    assert lines[:3] == [
+        "【数据复盘】已完成",
+        "结论：先重剪开头",
+        "复盘文档：https://example.test/review/doc-1",
+    ]
+    assert "post_internal_1" not in reply
+    assert "run_internal_1" not in reply
+    assert "2026-08-29T10:00:00+08:00" not in reply

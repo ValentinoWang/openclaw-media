@@ -101,7 +101,7 @@
     },
     "error": {
       "type": "object", "additionalProperties": false, "required": ["ok", "error"],
-      "properties": {"ok": {"const": false}, "error": {"type": "object", "additionalProperties": false, "required": ["code", "reason", "action"], "properties": {"code": {"type": "string"}, "reason": {"type": "string"}, "action": {"type": "string"}, "detail": {"type": "string"}}}}
+      "properties": {"ok": {"const": false}, "error": {"type": "object", "additionalProperties": false, "required": ["code", "message"], "properties": {"code": {"type": "string"}, "message": {"type": "string"}, "details": {"type": "object", "additionalProperties": true}}}}
       }
   },
   "oneOf": [{"$ref": "#/$defs/createRequest"}, {"$ref": "#/$defs/task"}, {"$ref": "#/$defs/upload"}, {"$ref": "#/$defs/error"}]

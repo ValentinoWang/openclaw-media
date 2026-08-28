@@ -75,10 +75,7 @@ def _required_deconstruct_v2_fields() -> dict[str, object]:
         "cover_opening_hook": "首帧用红光近景和关系问题制造停留。",
         "core_data_summary": "互动证据不足，需人工复核热度。",
         "top_comment_insight": "评论证据不足，不能冒充原评论区高赞观点。",
-        "target_audience_summary": "暧昧关系和情绪短视频受众。",
-        "pain_pleasure_summary": "痛点是关系拉扯，爽点是评论区替主角判案。",
         "attention_elements": ["红光暗房", "近景自拍", "关系问题"],
-        "viral_breakdown": "低成本视觉符号叠加情绪留白，促使观众补故事。",
         "viral_migration": "迁移关系留白结构，替换人物身份、场景和文案。",
         "creative_upgrade_suggestion": "把暧昧提问升级成观众审判局，让评论区承担第二叙事层。",
     }
@@ -595,6 +592,48 @@ def test_video_storyboard_granularity_rejects_single_time_with_error_code() -> N
 
     with pytest.raises(SchemaError, match="E_STORYBOARD_GRANULARITY"):
         validate_video_storyboard_granularity(payload, media_type="video", target_duration_sec=5)
+
+
+def test_deconstruct_storyboard_allows_partial_evidence_and_marks_manual_review() -> None:
+    payload = {
+        "media_type": "video",
+        "video_storyboard": [
+            {"shot_no": 1, "duration": "0-1s", "visual": "首帧", "subtitle": "", "voiceover": "", "evidence_asset_id": "frame_001"},
+            {"shot_no": 2, "duration": "5-8s", "visual": "关键帧", "subtitle": "", "voiceover": "", "evidence_asset_id": "frame_002"},
+        ],
+        "viral_reuse_assessment": {"human_review_required": False},
+        "reuse_guardrails": {"human_review_required": False},
+    }
+
+    result = validate_video_storyboard_granularity(
+        payload,
+        media_type="video",
+        target_duration_sec=8,
+        allow_partial_coverage=True,
+    )
+
+    assert result["validation"]["storyboard_coverage_status"] == "partial_evidence"
+    assert result["validation"]["storyboard_missing_ranges"] == ["1-2s", "2-3s", "3-4s", "4-5s"]
+    assert result["viral_reuse_assessment"]["human_review_required"] is True
+    assert result["reuse_guardrails"]["human_review_required"] is True
+
+
+def test_deconstruct_storyboard_partial_evidence_rejects_reused_frame_padding() -> None:
+    payload = {
+        "media_type": "video",
+        "video_storyboard": [
+            {"shot_no": 1, "duration": "0-1s", "visual": "首帧", "subtitle": "", "voiceover": "", "evidence_asset_id": "frame_001"},
+            {"shot_no": 2, "duration": "1-2s", "visual": "重复帧", "subtitle": "", "voiceover": "", "evidence_asset_id": "frame_001"},
+        ],
+    }
+
+    with pytest.raises(SchemaError, match="不可重复使用同一 evidence_asset_id"):
+        validate_video_storyboard_granularity(
+            payload,
+            media_type="video",
+            target_duration_sec=5,
+            allow_partial_coverage=True,
+        )
 
 
 def test_video_storyboard_granularity_rejects_rows_after_60s() -> None:
@@ -1445,7 +1484,7 @@ def test_recreate_requires_multi_signal_contract(monkeypatch: pytest.MonkeyPatch
         runner.recreate("【拆解-再创】做转场短视频", source)
 
 
-def test_recreate_prompt_uses_compact_source(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_recreate_prompt_only_receives_multi_signal_contract(monkeypatch: pytest.MonkeyPatch) -> None:
     captured_parts: list[dict[str, object]] = []
     source = {
         "media_type": "video",
@@ -1453,6 +1492,10 @@ def test_recreate_prompt_uses_compact_source(monkeypatch: pytest.MonkeyPatch) ->
         "content_summary": "summary",
         "evidence_store": {"huge": "x" * 20000},
         "modality_facts": {"ocr": {"facts": {"visible_text_segments": ["x" * 20000]}}},
+        "viral_reuse_assessment": {"non_contract_assessment": "不得进入再创输入"},
+        "pacing_profile": {"non_contract_pacing": "不得进入再创输入"},
+        "reuse_guardrails": {"non_contract_guardrail": "不得进入再创输入"},
+        "human_readable_brief": {"non_contract_brief": "不得进入再创输入"},
         "multi_signal_contract": _multi_signal_contract_payload(),
     }
     monkeypatch.setattr(runner, "ensure_llm_provider_available", lambda config: None)
@@ -1467,9 +1510,10 @@ def test_recreate_prompt_uses_compact_source(monkeypatch: pytest.MonkeyPatch) ->
     runner.recreate("【拆解-再创】做转场短视频", source)
 
     serialized = json.dumps(captured_parts, ensure_ascii=False)
-    assert "已有拆解信息 compact" in serialized
+    assert "已有拆解信息 compact" not in serialized
     assert "visible_text_segments" not in serialized
     assert '"huge"' not in serialized
+    assert "不得进入再创输入" not in serialized
     assert len(serialized) < 50000
 
 

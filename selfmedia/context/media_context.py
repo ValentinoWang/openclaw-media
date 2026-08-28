@@ -19,8 +19,9 @@ from media_vault.vault import MediaVault
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MEMORY_ROOT = ROOT / "data" / "media_memory"
+REPOSITORY_MEDIA_AGENT_ROOT = ROOT / "config" / "media-agent"
 MEDIA_AGENT_ROOT = Path(
-    os.getenv("OPENCLAW_MEDIA_AGENT_ROOT") or Path.home() / ".openclaw" / "agents" / "media"
+    os.getenv("OPENCLAW_MEDIA_AGENT_ROOT") or REPOSITORY_MEDIA_AGENT_ROOT
 ).expanduser()
 CONTEXT_PROMPT_MAX_CHARS_ENV = "OPENCLAW_MEDIA_CONTEXT_MAX_CHARS"
 DEFAULT_CONTEXT_PROMPT_MAX_CHARS = 10_000
@@ -181,6 +182,9 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int | None 
     top_comments = context.get("top_comments") or []
     rules = context.get("global_rules") or []
     lines = ["媒体长期上下文："]
+    creator_profile_error = _clean_text(context.get("creator_profile_error"))
+    if creator_profile_error:
+        lines.append(f"- 达人档案加载失败：{creator_profile_error}（人设未注入，请勿假设账号身份）")
     # Review findings lead because they are the direct evidence for the next draft.
     lines.extend(_review_prompt_lines(reviews))
     if profile:
@@ -550,7 +554,14 @@ def _review_memory_evidence(analysis: dict[str, Any] | None) -> dict[str, Any]:
             rows = [dict(item) for item in value if isinstance(item, dict) and item]
             if rows:
                 evidence[key] = rows
-    for key in ("key_insights", "next_actions", "content_guidance", "publishing_guidance"):
+    for key in (
+        "key_insights",
+        "next_actions",
+        "content_guidance",
+        "publishing_guidance",
+        "effective_patterns",
+        "failure_reasons",
+    ):
         values = _as_list(analysis.get(key))
         if values:
             evidence[key] = _dedupe(values)
@@ -662,11 +673,18 @@ def upsert_account_profile(
         lesson = _clean_text(review.get("lesson") or review.get("summary") or "")
         if lesson:
             _merge_list(profile, "recent_lessons", [lesson], max_len=12)
-        raw = str(review.get("raw_text") or "")
-        if any(word in raw for word in ("有效", "表现好", "高", "爆", "转化好", "收藏高", "评论好", "完播高")):
-            _merge_list(profile, "proven_patterns", [lesson or review.get("summary")], max_len=12)
-        if any(word in raw for word in ("无效", "表现差", "低", "失败", "流失", "不适合", "别再", "不要")):
-            _merge_list(profile, "avoid_patterns", [lesson or review.get("summary")], max_len=12)
+        effective = _as_list(review.get("effective_patterns"))
+        failures = _as_list(review.get("failure_reasons"))
+        if effective:
+            _merge_list(profile, "proven_patterns", effective, max_len=12)
+        if failures:
+            _merge_list(profile, "avoid_patterns", failures, max_len=12)
+        if not effective and not failures:
+            raw = str(review.get("raw_text") or "")
+            if any(phrase in raw for phrase in ("有效", "表现好", "高价值", "值得延续", "转化好", "收藏高", "评论好", "完播高")):
+                _merge_list(profile, "proven_patterns", [lesson or review.get("summary")], max_len=12)
+            if any(phrase in raw for phrase in ("无效", "表现差", "低价值", "不建议延续", "失败", "流失", "不适合", "别再", "不要")):
+                _merge_list(profile, "avoid_patterns", [lesson or review.get("summary")], max_len=12)
         profile["last_reviewed_at"] = now
     path.parent.mkdir(parents=True, exist_ok=True)
     _write_json_atomic(path, profile)

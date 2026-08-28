@@ -299,7 +299,7 @@ class ContentFlowClientCompletionTest(unittest.TestCase):
         client = ContentFlowClient("")
         seen: dict[str, str] = {}
 
-        def fake_call(prompt: str, user_content: str, env: dict[str, str], stage: str) -> dict[str, object]:
+        def fake_call(prompt: str, user_content: str, stage: str) -> dict[str, object]:
             seen["prompt"] = prompt
             return {"status": "done"}
 
@@ -323,7 +323,7 @@ class ContentFlowClientCompletionTest(unittest.TestCase):
         client = ContentFlowClient("")
         seen: list[str] = []
 
-        def fake_call(prompt: str, user_content: str, env: dict[str, str], stage: str) -> dict[str, object]:
+        def fake_call(prompt: str, user_content: str, stage: str) -> dict[str, object]:
             seen.append(prompt)
             if stage == "分片整理":
                 source_units = json.loads(user_content)["source_units"]
@@ -413,7 +413,7 @@ class ContentFlowClientCompletionTest(unittest.TestCase):
         client = ContentFlowClient("")
         seen: dict[str, object] = {}
 
-        def fake_call(prompt: str, user_content: str, env: dict[str, str], stage: str) -> dict[str, object]:
+        def fake_call(prompt: str, user_content: str, stage: str) -> dict[str, object]:
             seen.update(json.loads(user_content))
             return {"status": "done"}
 
@@ -1590,6 +1590,33 @@ class ContentFlowClientCompletionTest(unittest.TestCase):
         self.assertEqual(result["status"], "done")
         self.assertEqual(result["postprocess_provider"], "openclaw_codex")
 
+    def test_wechat_semantics_uses_shared_categories_and_bounded_fallback(self) -> None:
+        client = ContentFlowClient("")
+        captured: dict[str, str] = {}
+
+        def fake_call(_profile: str, prompt: str, _content: str, _stage: str, **_kwargs: object) -> dict[str, object]:
+            captured["prompt"] = prompt
+            return {
+                "status": "done",
+                "title": "一篇内容",
+                "summary": "摘要",
+                "primary_category": "非标准分类",
+                "secondary_category": ["非标准细分"],
+            }
+
+        with patch.object(client, "_call_profile_provider_json", side_effect=fake_call):
+            result = client._analyze_wechat_article_semantics(
+                url="https://mp.weixin.qq.com/s/example",
+                article={"body_text": "正文", "blocks": []},
+                base_analysis={"title": "标题", "full_content": "正文"},
+                image_count=0,
+            )
+
+        self.assertIn("统一词表", captured["prompt"])
+        self.assertIn("未细分", captured["prompt"])
+        self.assertEqual(result["primary_category"], "其他")
+        self.assertEqual(result["secondary_category"], ["未细分"])
+
     def test_profile_provider_json_accepts_timeout_override(self) -> None:
         client = ContentFlowClient("")
         runtime = Mock(
@@ -2672,8 +2699,11 @@ class ContentFlowClientCompletionTest(unittest.TestCase):
                     "secondary_category": ["AI工具应用"],
                     "target_audience": "教师",
                     "pain_point": "备课材料整理耗时",
-                    "work_copy": "模型正文不应覆盖平台正文",
+                    "work_copy": "平台正文只进入全部文案",
                     "full_content": "第 1 页：数学老师的省时备课法。\n第 2 页：教材目录 + 手写思路图。",
+                    "analysis_provider": "codex_responses",
+                    "analysis_status": "complete",
+                    "semantic_persistence_version": "llm_cleaned_user_fields_v1",
                 },
             }
             harness = KnowledgeFieldHarness()
@@ -2937,11 +2967,13 @@ class ContentFlowClientCompletionTest(unittest.TestCase):
                 result = {
                     "status": "done",
                     "media_dir": "/tmp/douyin-7649061784112362610",
-                    "analysis": {
-                        "title": "拆解低门槛口播智能体的赚钱逻辑",
-                        "video_id": "7649061784112362610",
-                        "hooks": "千万销售额制造好奇。",
-                        "image_ocr": "## 01 image-01.jpg\n原始 OCR 不应出现在知识卡。",
+                        "analysis": {
+                            "title": "拆解低门槛口播智能体的赚钱逻辑",
+                            "video_id": "7649061784112362610",
+                            "hooks": "千万销售额制造好奇。",
+                            "score": 97,
+                            "internal_only_marker": "must remain in analysis artifact only",
+                            "image_ocr": "## 01 image-01.jpg\n原始 OCR 不应出现在知识卡。",
                     },
                 }
                 local_path = harness._write_selfmedia_knowledge_markdown(
@@ -2969,6 +3001,8 @@ class ContentFlowClientCompletionTest(unittest.TestCase):
                 self.assertIn("拆解低门槛口播智能体的赚钱逻辑", text)
                 self.assertIn("今天拆解了一个爆款口播视频生成智能体。", text)
                 self.assertNotIn("## 01 image-01.jpg", text)
+                self.assertNotIn("结构化分析JSON", text)
+                self.assertNotIn("internal_only_marker", text)
             finally:
                 if old_root is None:
                     os.environ.pop("CONTENT_OS_VAULT_ROOT", None)

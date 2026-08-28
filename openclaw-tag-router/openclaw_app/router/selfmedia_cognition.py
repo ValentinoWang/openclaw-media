@@ -115,8 +115,7 @@ class SelfmediaCognitionMixin:
             ensure_ascii=False,
         )
         try:
-            env = self.content_flow_client._content_flow_env()
-            result = self.content_flow_client._call_postprocess_json(prompt, user_content, env, "自媒体认知分流")
+            result = self.content_flow_client._call_postprocess_json(prompt, user_content, "自媒体认知分流")
         except Exception as exc:
             return {"status": "pending_manual", "reason": str(exc)}
         return result if isinstance(result, dict) else {"status": "pending_manual", "reason": "OpenClaw 返回非 JSON object"}
@@ -147,8 +146,7 @@ class SelfmediaCognitionMixin:
             ensure_ascii=False,
         )
         try:
-            env = self.content_flow_client._content_flow_env()
-            result = self.content_flow_client._call_postprocess_json(prompt, user_content, env, "自媒体认知整合")
+            result = self.content_flow_client._call_postprocess_json(prompt, user_content, "自媒体认知整合")
         except Exception as exc:
             return {"status": "pending_manual", "reason": str(exc), "content": ""}
         return result if isinstance(result, dict) else {"status": "pending_manual", "reason": "OpenClaw 返回非 JSON object", "content": ""}

@@ -28,6 +28,7 @@
     "qa:media-registration": "tsx scripts/qa/checkMediaRegistrationPage.ts",
     "qa:media-session-contract": "tsx scripts/qa/checkMediaSessionContract.ts",
     "qa:media-login-contract": "tsx scripts/qa/checkMediaLoginContract.ts",
+    "qa:media-web-task-error-contract": "npm run validate:capability-match-contract && tsx scripts/qa/checkMediaWebTaskErrorContract.ts",
     "qa:creator-avatar-cookie-contract": "tsx scripts/qa/checkCreatorAvatarCookieContract.ts",
     "qa:creator-avatar-cookie-production": "bash scripts/qa/withChromiumSlot.sh -- tsx scripts/qa/checkCreatorAvatarCookieProduction.ts",
     "qa:media-release-labels": "tsx scripts/qa/checkMediaReleaseLabels.ts",
@@ -59,7 +60,7 @@
     "qa:media-platform-registry": "tsx scripts/quality/checkMediaPlatformRegistry.ts",
     "qa:media-platform-registry-fixtures": "tsx scripts/quality/checkMediaPlatformRegistry.ts --self-test",
     "build": "npm run generate:capability-match-contract && tsc -b && vite build",
-    "build:media": "npm run qa:media-login-contract && npm run qa:media-registration && npm run qa:contextual-capability-launches && npm run qa:media-design-system-contract && npm run qa:media-ordinary-presentation && npm run qa:media-assets-thumbnail && npm run qa:track-relationship-presentation && npm run qa:media-recent-task-presentation && npm run qa:confirmation-receipt-expiry && npm run qa:task-workspace-deletion-recovery && npm run qa:overview-task-confirmation-contract && npm run qa:deletion-intent-lifecycle && tsc -b tsconfig.media-u12b.json && vite build --config vite.media.config.ts && npm run qa:media-release-labels",
+    "build:media": "npm run qa:media-login-contract && npm run qa:media-web-task-error-contract && npm run qa:media-registration && npm run qa:contextual-capability-launches && npm run qa:media-design-system-contract && npm run qa:media-ordinary-presentation && npm run qa:media-assets-thumbnail && npm run qa:track-relationship-presentation && npm run qa:media-recent-task-presentation && npm run qa:confirmation-receipt-expiry && npm run qa:task-workspace-deletion-recovery && npm run qa:overview-task-confirmation-contract && npm run qa:deletion-intent-lifecycle && tsc -b tsconfig.media-u12b.json && vite build --config vite.media.config.ts && npm run qa:media-release-labels",
     "build:all": "npm run build && npm run build:media",
     "lint": "oxlint src scripts --ignore-pattern 'dist/**' --ignore-pattern 'dist-media/**'",
     "preview": "vite preview --host 0.0.0.0"

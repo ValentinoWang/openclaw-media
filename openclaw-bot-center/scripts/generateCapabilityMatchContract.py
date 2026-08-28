@@ -212,7 +212,7 @@ export const mediaWebUploadSchema = z.object({
 }).strict()
 
 export const mediaWebTaskErrorSchema = z.object({
-  ok: z.literal(false), error: z.object({ code: z.string(), reason: z.string(), action: z.string(), detail: z.string().optional() }).strict(),
+  ok: z.literal(false), error: z.object({ code: z.string(), message: z.string(), details: z.record(z.string(), z.unknown()).optional() }).strict(),
 }).strict()
 
 export type CapabilityParams = z.infer<typeof capabilityParamsSchema>

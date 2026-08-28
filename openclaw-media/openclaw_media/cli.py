@@ -32,6 +32,46 @@ from .run import execute_descriptor
 
 _DISTRIBUTION_NAME = "openclaw-media"
 
+_CLI_ERROR_GUIDANCE: dict[str, tuple[str, str]] = {
+    "catalog_rejected": ("本地流程目录未通过校验", "更新流程目录后重试。"),
+    "credential_cleanup_failed": ("设备已撤销，但本机凭据尚未清理完成", "重新执行设备撤销以完成清理。"),
+    "invalid_credential": ("凭据无效或未提供", "重新输入有效凭据后重试。"),
+    "invalid_descriptor": ("流程请求描述格式无效", "检查 --descriptor-json 后重试。"),
+    "invalid_manifest": ("归档清单格式无效", "重新导出清单后重试。"),
+    "invalid_min_age_seconds": ("清理保留时长无效", "使用大于或等于 0 的有限秒数。"),
+    "launchctl_failed": ("macOS 服务管理命令执行失败", "检查 launchctl 状态后重试。"),
+    "launchctl_unavailable": ("找不到 macOS 服务管理命令", "请在 macOS 上运行并确认 launchctl 可用。"),
+    "launchd_not_installed": ("本地服务尚未安装", "先运行 openclaw-media launchd install。"),
+    "launchd_not_running": ("本地服务未能启动", "检查 launchctl 状态和服务日志。"),
+    "macos_required": ("此命令只能在 macOS 上运行", "请在已配对的 Mac 上执行。"),
+    "not_paired": ("这台设备尚未配对", "先运行 openclaw-media pair 完成配对。"),
+    "provider_key_argv_forbidden": ("为保护凭据，不能通过命令行参数提供 API 密钥", "请通过标准输入提供 API 密钥。"),
+    "session_not_configured": ("尚未配置所有者会话凭据", "先运行 openclaw-media session 并通过标准输入提供凭据。"),
+    "workspace_not_configured": ("未找到可用的本地工作区", "使用 --workspace 指定一个存在的目录。"),
+}
+
+
+def _cli_error_code(error: object) -> str:
+    candidate = error if isinstance(error, str) else getattr(error, "code", "")
+    if isinstance(candidate, str) and candidate and all(
+        character.isascii() and (character.isalnum() or character == "_")
+        for character in candidate
+    ):
+        return candidate
+    return "operation_failed"
+
+
+def _emit_cli_error(error: object, *, json_output: bool = False) -> None:
+    code = _cli_error_code(error)
+    if json_output:
+        print(json.dumps({"error": {"code": code}}, ensure_ascii=False, separators=(",", ":")), file=sys.stderr)
+        return
+    detail, next_step = _CLI_ERROR_GUIDANCE.get(
+        code,
+        ("操作未完成", "检查输入和本地配置后重试。"),
+    )
+    print(f"openclaw-media: error: {code} — {detail}；{next_step}", file=sys.stderr)
+
 
 def _installed_version() -> str:
     """Read the version from the installed distribution, the sole release SSOT."""
@@ -235,7 +275,7 @@ def _read_manifest(value: str) -> dict[str, object]:
     return parsed
 
 
-def _run_pair_command(opts: argparse.Namespace) -> int:
+def _run_pair_command(opts: argparse.Namespace, *, json_output: bool = False) -> int:
     store = _agent_store(opts.agent_dir)
     previous = store.load()
     try:
@@ -246,14 +286,14 @@ def _run_pair_command(opts: argparse.Namespace) -> int:
         _json_result(agent.pair(pair_code=opts.pair_code, device_label=opts.device_label, client_version=opts.client_version))
         return 0
     except (AgentError, DeviceCredentialError, RemoteError) as exc:
-        print(f"openclaw-media: error: {getattr(exc, 'code', str(exc))}", file=sys.stderr)
+        _emit_cli_error(exc, json_output=json_output)
         return 2
     finally:
         if "remote" in locals():
             remote.close()
 
 
-def _run_agent_command(opts: argparse.Namespace) -> int:
+def _run_agent_command(opts: argparse.Namespace, *, json_output: bool = False) -> int:
     store = _agent_store(opts.agent_dir)
     if opts.agent_command == "status":
         _json_result(store.load())
@@ -273,11 +313,11 @@ def _run_agent_command(opts: argparse.Namespace) -> int:
         finally:
             remote.close()
     except (AgentError, DeviceCredentialError, RemoteError) as exc:
-        print(f"openclaw-media: error: {getattr(exc, 'code', str(exc))}", file=sys.stderr)
+        _emit_cli_error(exc, json_output=json_output)
         return 2
 
 
-def _run_archive_command(opts: argparse.Namespace) -> int:
+def _run_archive_command(opts: argparse.Namespace, *, json_output: bool = False) -> int:
     try:
         if opts.archive_command == "confirm":
             manifest = _read_manifest(opts.manifest_json)
@@ -300,17 +340,12 @@ def _run_archive_command(opts: argparse.Namespace) -> int:
             return 0
         finally:
             remote.close()
-    except DeviceCredentialError as exc:
-        if exc.code == "session_not_configured":
-            print("openclaw-media: error: session_not_configured; run `openclaw-media session --agent-dir ...` and provide the credential on stdin", file=sys.stderr)
-        else:
-            print(f"openclaw-media: error: {exc.code}", file=sys.stderr)
-        return 2
-    except (ArchiveClientError, RemoteError):
+    except (DeviceCredentialError, ArchiveClientError, RemoteError) as exc:
+        _emit_cli_error(exc, json_output=json_output)
         return 2
 
 
-def _run_gc_command(opts: argparse.Namespace) -> int:
+def _run_gc_command(opts: argparse.Namespace, *, json_output: bool = False) -> int:
     try:
         if not math.isfinite(opts.min_age_seconds) or opts.min_age_seconds < 0:
             raise ArchiveClientError("invalid_min_age_seconds")
@@ -325,11 +360,12 @@ def _run_gc_command(opts: argparse.Namespace) -> int:
         result.workspace = workspace
         _json_result(result.gc(dry_run=not opts.apply, min_age_seconds=opts.min_age_seconds))
         return 0
-    except (ArchiveClientError, AgentError):
+    except (ArchiveClientError, AgentError) as exc:
+        _emit_cli_error(exc, json_output=json_output)
         return 2
 
 
-def _run_launchd_command(opts: argparse.Namespace) -> int:
+def _run_launchd_command(opts: argparse.Namespace, *, json_output: bool = False) -> int:
     try:
         agent_dir_value = getattr(opts, "agent_dir", None)
         manager = LaunchdManager(
@@ -351,7 +387,7 @@ def _run_launchd_command(opts: argparse.Namespace) -> int:
             return 2
         return 0
     except LaunchdError as exc:
-        print(f"openclaw-media: error: {exc.code}", file=sys.stderr)
+        _emit_cli_error(exc, json_output=json_output)
         return 2
 
 
@@ -379,7 +415,7 @@ def _read_provider_key() -> str:
     return value
 
 
-def _run_session_command(opts: argparse.Namespace) -> int:
+def _run_session_command(opts: argparse.Namespace, *, json_output: bool = False) -> int:
     try:
         store = _agent_store(opts.agent_dir)
         state = store.load()
@@ -390,16 +426,14 @@ def _run_session_command(opts: argparse.Namespace) -> int:
         _json_result({"configured": True, "session_ref": refs.session})
         return 0
     except DeviceCredentialError as exc:
-        if exc.code == "session_not_configured":
-            print("openclaw-media: error: session_not_configured; pair a device, then provide the owner credential on stdin", file=sys.stderr)
-        else:
-            print(f"openclaw-media: error: {exc.code}", file=sys.stderr)
+        _emit_cli_error(exc, json_output=json_output)
         return 2
-    except AgentError:
+    except AgentError as exc:
+        _emit_cli_error(exc, json_output=json_output)
         return 2
 
 
-def _run_device_command(opts: argparse.Namespace) -> int:
+def _run_device_command(opts: argparse.Namespace, *, json_output: bool = False) -> int:
     if opts.device_command != "revoke":
         return 2
     remote = None
@@ -437,18 +471,16 @@ def _run_device_command(opts: argparse.Namespace) -> int:
             cleanup_errors.append(exc.code)
         if cleanup_errors:
             store.save(replace(updated, status="revoked", last_code="credential_cleanup_failed"))
-            print("openclaw-media: error: credential_cleanup_failed", file=sys.stderr)
+            _emit_cli_error("credential_cleanup_failed", json_output=json_output)
             return 2
         store.save(replace(updated, status="revoked", last_code="device_revoked", credential_ref=None, session_ref=None))
         _json_result(response)
         return 0
     except DeviceCredentialError as exc:
-        if exc.code == "session_not_configured":
-            print("openclaw-media: error: session_not_configured; configure the owner session from stdin first", file=sys.stderr)
-        else:
-            print(f"openclaw-media: error: {exc.code}", file=sys.stderr)
+        _emit_cli_error(exc, json_output=json_output)
         return 2
-    except (AgentError, RemoteError):
+    except (AgentError, RemoteError) as exc:
+        _emit_cli_error(exc, json_output=json_output)
         return 2
     finally:
         if remote is not None:
@@ -468,7 +500,7 @@ def _provider() -> ProviderAdapter | None:
         return None
 
 
-def _run_pipeline_command(arguments: list[str]) -> int:
+def _run_pipeline_command(arguments: list[str], *, json_output: bool = False) -> int:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("pipeline_id")
     parser.add_argument("--descriptor-json", required=True)
@@ -480,8 +512,10 @@ def _run_pipeline_command(arguments: list[str]) -> int:
     try:
         descriptor = json.loads(opts.descriptor_json)
     except (TypeError, json.JSONDecodeError):
+        _emit_cli_error("invalid_descriptor", json_output=json_output)
         return 2
     if not isinstance(descriptor, dict):
+        _emit_cli_error("invalid_descriptor", json_output=json_output)
         return 2
     try:
         workspace = _workspace(opts.workspace)
@@ -489,10 +523,13 @@ def _run_pipeline_command(arguments: list[str]) -> int:
         registry = NodeRegistry(catalog, provider=_provider())
         runtime = PipelineRuntime(Path(workspace), catalog=catalog, node_registry=registry)
     except AgentError as exc:
-        print(f"openclaw-media: error: {exc.code}", file=sys.stderr)
+        _emit_cli_error(exc, json_output=json_output)
         return 2
     except CatalogError:
-        print(json.dumps({"status": "pending_manual", "code": "catalog_rejected", "receipt": None}, separators=(",", ":")))
+        if json_output:
+            print(json.dumps({"status": "pending_manual", "code": "catalog_rejected", "receipt": None}, separators=(",", ":")))
+        else:
+            _emit_cli_error("catalog_rejected")
         return 1
     outcome = execute_descriptor(runtime, opts.pipeline_id, descriptor)
     print(outcome.model_dump_json())
@@ -515,21 +552,19 @@ def _projection_json(service: ProviderConfigService, config_id: str) -> str:
     )
 
 
-def _run_provider_command(arguments: list[str]) -> int:
+def _run_provider_command(arguments: list[str], *, json_output: bool = False) -> int:
     # Parse manually after the stable command shape so secrets never appear in
     # argparse-generated diagnostics or help output.
     action = arguments[2] if len(arguments) > 2 else ""
     if action not in {"create", "update", "rotate", "read", "delete"}:
+        _emit_cli_error("invalid_provider_request", json_output=json_output)
         return 2
     provider_arguments = arguments[3:]
     if any(
         option == "--api-key" or option.startswith("--api-key=")
         for option in provider_arguments
     ):
-        print(
-            "openclaw-media: error: provider key must be supplied on stdin; --api-key is not supported",
-            file=sys.stderr,
-        )
+        _emit_cli_error("provider_key_argv_forbidden", json_output=json_output)
         return 2
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
     parser.add_argument("--id", dest="config_id")
@@ -540,11 +575,13 @@ def _run_provider_command(arguments: list[str]) -> int:
     try:
         opts, unknown = parser.parse_known_args(provider_arguments)
         if unknown:
+            _emit_cli_error("invalid_provider_request", json_output=json_output)
             return 2
         service = _provider_service()
         if action in {"create", "update"}:
             required = (opts.config_id, opts.base_url, opts.model, opts.model_label)
             if not all(isinstance(value, str) and value for value in required):
+                _emit_cli_error("invalid_provider_request", json_output=json_output)
                 return 2
             api_key = _read_provider_key()
             config = service.configure(
@@ -555,6 +592,7 @@ def _run_provider_command(arguments: list[str]) -> int:
             print(_projection_json(service, config.config_id))
             return 0
         if not isinstance(opts.config_id, str) or not opts.config_id:
+            _emit_cli_error("invalid_provider_request", json_output=json_output)
             return 2
         if action == "read":
             print(_projection_json(service, opts.config_id))
@@ -577,7 +615,8 @@ def _run_provider_command(arguments: list[str]) -> int:
         ProviderConfigError,
         CredentialStoreError,
         ValueError,
-    ):
+    ) as exc:
+        _emit_cli_error(exc, json_output=json_output)
         return 2
     return parser
 
@@ -597,6 +636,9 @@ def main(
         return 2
 
     arguments = list(sys.argv[1:] if argv is None else argv)
+    json_output = "--json" in arguments
+    if json_output:
+        arguments = [argument for argument in arguments if argument != "--json"]
     if arguments[:1] == ["doctor"]:
         parser = build_parser(resolved_version)
         try:
@@ -605,58 +647,58 @@ def main(
             return int(exc.code) if isinstance(exc.code, int) else 0
         return _run_doctor_command()
     if len(arguments) >= 3 and arguments[:2] == ["config", "provider"]:
-        return _run_provider_command(arguments)
+        return _run_provider_command(arguments, json_output=json_output)
     if arguments[:1] == ["run"]:
-        return _run_pipeline_command(arguments)
+        return _run_pipeline_command(arguments, json_output=json_output)
     if arguments[:1] == ["pair"]:
         parser = build_parser(resolved_version)
         try:
             opts = parser.parse_args(arguments)
         except SystemExit as exc:
             return int(exc.code) if isinstance(exc.code, int) else 0
-        return _run_pair_command(opts)
+        return _run_pair_command(opts, json_output=json_output)
     if arguments[:1] == ["agent"]:
         parser = build_parser(resolved_version)
         try:
             opts = parser.parse_args(arguments)
         except SystemExit as exc:
             return int(exc.code) if isinstance(exc.code, int) else 0
-        return _run_agent_command(opts)
+        return _run_agent_command(opts, json_output=json_output)
     if arguments[:1] == ["archive"]:
         parser = build_parser(resolved_version)
         try:
             opts = parser.parse_args(arguments)
         except SystemExit as exc:
             return int(exc.code) if isinstance(exc.code, int) else 0
-        return _run_archive_command(opts)
+        return _run_archive_command(opts, json_output=json_output)
     if arguments[:1] == ["gc"]:
         parser = build_parser(resolved_version)
         try:
             opts = parser.parse_args(arguments)
         except SystemExit as exc:
             return int(exc.code) if isinstance(exc.code, int) else 0
-        return _run_gc_command(opts)
+        return _run_gc_command(opts, json_output=json_output)
     if arguments[:1] == ["session"]:
         parser = build_parser(resolved_version)
         try:
             opts = parser.parse_args(arguments)
         except SystemExit as exc:
             return int(exc.code) if isinstance(exc.code, int) else 0
-        return _run_session_command(opts)
+        return _run_session_command(opts, json_output=json_output)
     if arguments[:1] == ["device"]:
         parser = build_parser(resolved_version)
         try:
             opts = parser.parse_args(arguments)
         except SystemExit as exc:
             return int(exc.code) if isinstance(exc.code, int) else 0
-        return _run_device_command(opts)
+        return _run_device_command(opts, json_output=json_output)
     if arguments[:1] == ["launchd"]:
         parser = build_parser(resolved_version)
         try:
             opts = parser.parse_args(arguments)
         except SystemExit as exc:
             return int(exc.code) if isinstance(exc.code, int) else 0
-        return _run_launchd_command(opts)
+        return _run_launchd_command(opts, json_output=json_output)
     parser = build_parser(resolved_version)
     if not arguments:
         parser.print_help()

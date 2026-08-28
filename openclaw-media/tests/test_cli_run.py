@@ -46,4 +46,6 @@ def test_cli_rejects_invalid_descriptor_without_runner_fallback(capsys):
     captured = capsys.readouterr()
     assert code == 2
     assert captured.out == ""
-    assert captured.err == ""
+    assert captured.err == (
+        "openclaw-media: error: invalid_descriptor — 流程请求描述格式无效；检查 --descriptor-json 后重试。\n"
+    )

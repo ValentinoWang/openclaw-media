@@ -4,7 +4,9 @@ import json
 import io
 import tempfile
 import unittest
+from http import HTTPStatus
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlsplit
 
@@ -16,6 +18,7 @@ from openclaw_app.account import (
     MediaFeishuLoginService,
     load_media_feishu_identity,
 )
+from openclaw_app.adapters.http_api import OpenClawHttpHandler
 
 
 class MediaFeishuLoginServiceTests(unittest.TestCase):
@@ -211,6 +214,33 @@ class MediaFeishuLoginServiceTests(unittest.TestCase):
                 "media-secret",
                 "http://106.52.146.37/openclaw/OPC/system/oauth-return/",
             )
+
+
+class MediaFeishuCallbackPresentationTests(unittest.TestCase):
+    def test_callback_failure_shows_detail_before_technical_reference(self) -> None:
+        captured: dict[str, object] = {}
+        handler = SimpleNamespace(
+            path="/openclaw/media/oauth/callback?state=invalid-state",
+            media_feishu_login=None,
+            account_auth=None,
+            auth_config=None,
+            _send_binary=lambda status, body, **kwargs: captured.update(
+                status=status,
+                body=body,
+                **kwargs,
+            ),
+        )
+
+        OpenClawHttpHandler._handle_auth_feishu_callback(handler)
+
+        page = captured["body"].decode("utf-8")
+        detail = "MediaClaw 收到的飞书回调无效，请返回登录页重新发起登录。"
+        self.assertEqual(captured["status"], HTTPStatus.BAD_REQUEST)
+        self.assertNotIn("<strong>错误码：", page)
+        self.assertLess(page.index(detail), page.index("技术参考码："))
+        self.assertIn("<small>技术参考码：feishu_login_invalid_callback</small>", page)
+        self.assertEqual(page.count("feishu_login_invalid_callback"), 1)
+        self.assertIn('href="/openclaw/media/login"', page)
 
 
 if __name__ == "__main__":

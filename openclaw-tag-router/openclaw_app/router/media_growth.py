@@ -486,10 +486,10 @@ class MediaGrowthMixin:
         ]
         runtime_status = str(payload.get("runtime_status") or payload.get("status") or "")
         if runtime_status in {"not_implemented", "plan_blocked", "pending_manual", "external_delegation_required", "contract_failed", "execution_failed"}:
-            lines.append(f"状态：{runtime_status}")
+            lines.append(f"状态：{self._media_growth_display_status(runtime_status)}")
             if payload.get("blocked_capability_id"):
                 lines.append(f"阻塞节点：{payload.get('blocked_capability_id')}")
-            reason = str(payload.get("reason") or "当前节点还没有本地 runner")
+            reason = self._media_growth_display_reason(payload.get("reason"))
             if runtime_status == "plan_blocked":
                 reason = f"{reason} 本次不写入部分产物；请先逐个触发已实装节点，或等阻塞节点接入 canonical runner。"
                 node_status_lines = self._media_growth_plan_status_lines(payload)
@@ -551,6 +551,30 @@ class MediaGrowthMixin:
         if parse_notice:
             lines.append(parse_notice)
         return "\n".join(lines)
+
+    @staticmethod
+    def _media_growth_display_reason(value: Any) -> str:
+        reason = str(value or "当前节点还没有本地执行器").strip()
+        lowered = reason.casefold()
+        if (
+            "knowledgeevidence" in lowered
+            or "typed evidence" in lowered
+            or "pending_manual" in lowered
+            or "evidence_items" in lowered
+        ):
+            return "可核验的调研证据不足。请补充来源链接、已归档素材或人工确认的事实后再试。"
+        return reason
+
+    @staticmethod
+    def _media_growth_display_status(value: str) -> str:
+        return {
+            "not_implemented": "暂未接入执行能力",
+            "plan_blocked": "执行计划暂时受阻",
+            "pending_manual": "等待人工补充或确认",
+            "external_delegation_required": "需要转交既有处理链路",
+            "contract_failed": "输入未通过合同校验",
+            "execution_failed": "执行失败",
+        }.get(str(value or "").strip(), "处理中")
 
     @staticmethod
     def _media_growth_source_asset_continuation_lines(payload: dict[str, Any]) -> list[str]:

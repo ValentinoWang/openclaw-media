@@ -293,4 +293,6 @@ def _infer_platform(text: str) -> str:
         return "小红书"
     if "抖音" in text:
         return "抖音"
+    if "B站" in text or "哔哩哔哩" in text or "bilibili" in text.lower():
+        return "B站"
     return ""

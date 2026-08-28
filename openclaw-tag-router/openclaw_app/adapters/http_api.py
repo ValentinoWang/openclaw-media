@@ -6,6 +6,7 @@ import importlib.util
 import inspect
 import ipaddress
 import json
+import logging
 import os
 import re
 import threading
@@ -22,6 +23,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Mapping, Protocol
 from urllib.parse import parse_qs, quote, urlsplit, urlunsplit
+
+LOGGER = logging.getLogger(__name__)
 
 from ..account import (
     AccountAuthService,
@@ -1073,11 +1076,29 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         return method(**kwargs)
 
     def _execute_media_upload(self, context: If2RequestContext, body: Mapping[str, Any]) -> None:
-        self._send_api_error(
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            "durable_idempotency_unavailable",
-            "Upload creation is unavailable until a durable idempotency receipt store is configured.",
+        if self.media_web_tasks is None:
+            self._send_api_error(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "service_unavailable",
+                "服务暂时不可用。",
+            )
+            return
+        if context.idempotency is None:
+            raise RequestContextError("upload mutation is missing an idempotency key")
+        expected_fields = {"schemaVersion", "filename", "contentBase64", "idempotencyKey"}
+        if set(body) != expected_fields or body.get("schemaVersion") != "3":
+            raise MediaWebTaskError("invalid_request", "上传请求不符合结构化契约。")
+        if body.get("idempotencyKey") != context.idempotency.key:
+            raise RequestContextError("body and header idempotency keys differ")
+        projection, created = self.media_web_tasks.create_upload(
+            {
+                "filename": body["filename"],
+                "mimeType": "",
+                "contentBase64": body["contentBase64"],
+            },
+            tenant_id=str(context.principal.tenant_id),
         )
+        self._send_json(HTTPStatus.CREATED if created else HTTPStatus.OK, projection)
 
     def _execute_media_task_operation(
         self,
@@ -1173,6 +1194,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
         except Exception:
+            LOGGER.exception("HTTP request failed", extra={"method": "GET", "path": self.path})
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
     def _do_GET(self) -> None:
@@ -1341,6 +1363,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
         except Exception:
+            LOGGER.exception("HTTP request failed", extra={"method": "POST", "path": self.path})
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
     def do_PUT(self) -> None:
@@ -1367,6 +1390,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
         except Exception:
+            LOGGER.exception("HTTP request failed", extra={"method": "PUT", "path": self.path})
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
     def do_DELETE(self) -> None:
@@ -1383,6 +1407,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
         except Exception:
+            LOGGER.exception("HTTP request failed", extra={"method": "DELETE", "path": self.path})
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
     def _dispatch_stage1_provisioning(self, method: str) -> bool:
@@ -2282,13 +2307,12 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 failure = exc
         assert failure is not None
         title = "MediaClaw 登录失败"
-        error_code = escape(failure.code)
         detail = escape(failure.detail)
         body = (
             "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             f"<title>{title}</title></head><body><main><h1>{title}</h1>"
-            f"<p><strong>错误码：{error_code}</strong></p><p>{detail}</p>"
+            f"<p>{detail}</p><p><small>技术参考码：{escape(failure.code)}</small></p>"
             "<p><a href=\"/openclaw/media/login\">返回 MediaClaw 登录页</a></p>"
             "</main></body></html>"
         ).encode("utf-8")
@@ -3051,139 +3075,6 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         resolved = self._resolved_session()
         is_maintainer = resolved is not None and resolved[1].is_maintainer
         self._send_json(HTTPStatus.OK, self.media_web_tasks.capability_catalog(is_maintainer=is_maintainer))
-
-    def _handle_media_task_create(self, payload: Mapping[str, Any]) -> None:
-        tenant_id = self._require_media_mutation_auth()
-        if tenant_id is None:
-            return
-        idempotency_key = self._require_idempotency_key()
-        if idempotency_key is None:
-            return
-        if payload.get("idempotencyKey") != idempotency_key:
-            self._send_api_error(HTTPStatus.CONFLICT, "idempotency_conflict", "幂等键与任务请求不一致。")
-            return
-        if self.media_web_tasks is None:
-            self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "service_unavailable", "服务暂时不可用，请稍后重试。")
-            return
-        resolved = self._resolved_session()
-        if resolved is None:
-            self._send_api_error(
-                HTTPStatus.UNAUTHORIZED,
-                "authentication_required",
-                "请先登录。",
-            )
-            return
-        session = resolved[1]
-        projection, created = self.media_web_tasks.create_task(
-            payload,
-            tenant_id=tenant_id,
-            user_public_id=session.user_public_id,
-            workspace_mode=session.workspace_mode,
-            role=session.role,
-            is_maintainer=session.is_maintainer,
-        )
-        self._send_json(HTTPStatus.ACCEPTED if created else HTTPStatus.OK, projection)
-
-    def _handle_media_task_list(self) -> None:
-        tenant_id = self._require_media_auth()
-        if tenant_id is None:
-            return
-        if self.media_web_tasks is None:
-            self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "service_unavailable", "服务暂时不可用，请稍后重试。")
-            return
-        query = parse_qs(urlsplit(self.path).query)
-        try:
-            limit = int((query.get("limit") or ["20"])[0])
-        except ValueError as exc:
-            raise MediaWebTaskError("invalid_request", "请求格式无效。") from exc
-        self._send_json(
-            HTTPStatus.OK,
-            self.media_web_tasks.list_tasks(
-                tenant_id=tenant_id,
-                user_public_id=self._media_actor_public_id(),
-                limit=limit,
-            ),
-        )
-
-    def _handle_media_task_get(self, task_id: str) -> None:
-        tenant_id = self._require_media_auth()
-        if tenant_id is None:
-            return
-        if self.media_web_tasks is None:
-            self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "service_unavailable", "服务暂时不可用，请稍后重试。")
-            return
-        self._send_json(
-            HTTPStatus.OK,
-            self.media_web_tasks.get_task(
-                task_id,
-                tenant_id=tenant_id,
-                user_public_id=self._media_actor_public_id(),
-            ),
-        )
-
-    def _handle_media_task_cancel(self, task_id: str) -> None:
-        tenant_id = self._require_media_mutation_auth()
-        if tenant_id is None:
-            return
-        idempotency_key = self._require_idempotency_key()
-        if idempotency_key is None:
-            return
-        if not self._bind_mutation_payload(
-            tenant_id, f"media.task.cancel:{task_id}", idempotency_key, {}
-        ):
-            return
-        if self.media_web_tasks is None:
-            self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "service_unavailable", "服务暂时不可用，请稍后重试。")
-            return
-        self._send_json(
-            HTTPStatus.OK,
-            self.media_web_tasks.cancel_task(
-                task_id,
-                tenant_id=tenant_id,
-                user_public_id=self._media_actor_public_id(),
-            ),
-        )
-
-    def _handle_media_task_confirm(self, task_id: str, payload: Mapping[str, Any]) -> None:
-        tenant_id = self._require_media_mutation_auth()
-        if tenant_id is None:
-            return
-        idempotency_key = self._require_idempotency_key()
-        if idempotency_key is None:
-            return
-        if not self._bind_mutation_payload(
-            tenant_id, f"media.task.confirm:{task_id}", idempotency_key, payload
-        ):
-            return
-        if self.media_web_tasks is None:
-            self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "service_unavailable", "服务暂时不可用，请稍后重试。")
-            return
-        self._send_json(
-            HTTPStatus.OK,
-            self.media_web_tasks.confirm_task(
-                task_id,
-                payload,
-                tenant_id=tenant_id,
-                user_public_id=self._media_actor_public_id(),
-            ),
-        )
-
-    def _handle_media_upload(self, payload: Mapping[str, Any]) -> None:
-        tenant_id = self._require_media_mutation_auth()
-        if tenant_id is None:
-            return
-        idempotency_key = self._require_idempotency_key()
-        if idempotency_key is None:
-            return
-        if not self._bind_mutation_payload(
-            tenant_id, "media.upload.create", idempotency_key, payload
-        ):
-            return
-        if self.media_web_tasks is None:
-            self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "service_unavailable", "服务暂时不可用，请稍后重试。")
-            return
-        projection, created = self.media_web_tasks.create_upload(payload, tenant_id=tenant_id)
-        self._send_json(HTTPStatus.CREATED if created else HTTPStatus.OK, projection)
 
     def _handle_media_task_events(
         self,

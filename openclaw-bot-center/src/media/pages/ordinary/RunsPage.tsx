@@ -727,7 +727,7 @@ function SectionContent({ response, activeSection }: { response: SectionResponse
 function SourceContent({ section }: { section: RunSourceSection }) {
   const empty = section.items.length === 0 && section.evidenceRefs.length === 0;
   if (empty) return <SectionEmpty message="该运行没有已持久化来源。" />;
-  return <div className={styles.sectionBody}><div className={styles.sectionMeta}><span>来源类型</span><strong>{section.sourceKinds.length ? `已登记 ${section.sourceKinds.length} 类来源` : "未记录"}</strong></div>{section.items.map((item, index) => <TypedMap key={`source-${index}`} title={`来源事实 ${index + 1}`} value={item} />)}{section.evidenceRefs.length ? <div className={styles.evidenceList}><h4>证据引用</h4>{section.evidenceRefs.map((ref) => <div className={styles.evidenceItem} key={`${ref.kind}-${ref.label}`}><strong>{ref.label}</strong><span>来源证据 · {qualityDisplayLabel(ref.qualityStatus)}</span>{ref.publicUrl ? <a href={ref.publicUrl} target="_blank" rel="noreferrer">打开公开来源</a> : null}</div>)}</div> : null}</div>;
+  return <div className={styles.sectionBody}><div className={styles.sectionMeta}><span>来源类型</span><strong>{section.sourceKinds.length ? `已登记 ${section.sourceKinds.length} 类来源` : "未记录"}</strong></div>{section.items.map((item, index) => <TypedMap key={`source-${index}`} title={`来源记录 ${index + 1}`} value={item} />)}{section.evidenceRefs.length ? <div className={styles.evidenceList}><h4>证据引用</h4>{section.evidenceRefs.map((ref) => <div className={styles.evidenceItem} key={`${ref.kind}-${ref.label}`}><strong>{ref.label}</strong><span>来源证据 · {qualityDisplayLabel(ref.qualityStatus)}</span>{ref.publicUrl ? <a href={ref.publicUrl} target="_blank" rel="noreferrer">打开公开来源</a> : null}</div>)}</div> : null}</div>;
 }
 
 function DecisionContent({ section }: { section: RunDecisionSection }) {
@@ -773,7 +773,7 @@ function InspectorEmpty({ view }: { view: View }) {
 }
 
 function RunsEmpty({ searched, onClear }: { searched: boolean; onClear: () => void }) {
-  return <section className={styles.emptyState}><AlertCircle size={22} aria-hidden="true" /><h2>{searched ? "没有匹配的创作运行" : "当前账户还没有创作运行"}</h2><p>{searched ? "当前接口响应没有符合搜索条件的运行。" : "任务创建并持久化后会显示在这里。"}</p>{searched ? <button className={styles.clearButton} type="button" onClick={onClear}><X size={15} />清除搜索</button> : null}</section>;
+  return <section className={styles.emptyState}><AlertCircle size={22} aria-hidden="true" /><h2>{searched ? "没有匹配的创作运行" : "当前账户还没有创作运行"}</h2><p>{searched ? "当前结果里没有符合搜索条件的运行。" : "任务创建并持久化后会显示在这里。"}</p>{searched ? <button className={styles.clearButton} type="button" onClick={onClear}><X size={15} />清除搜索</button> : null}</section>;
 }
 
 function BusinessOpportunityEmpty() {

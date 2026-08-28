@@ -89,7 +89,7 @@ def load_env_file(path: str | Path, *, override: bool = False) -> None:
 
 def load_openclaw_feishu_account_env(account: str | None = None, *, override: bool = False) -> None:
     account = account or os.getenv("SELFMEDIA_OPENCLAW_FEISHU_ACCOUNT", "media")
-    config_path = Path(os.getenv("OPENCLAW_CONFIG", "/home/ubuntu/.openclaw/openclaw.json")).expanduser()
+    config_path = Path(os.getenv("OPENCLAW_CONFIG") or Path.home() / ".openclaw/openclaw.json").expanduser()
     if not config_path.exists():
         return
     try:
@@ -106,12 +106,17 @@ def load_openclaw_feishu_account_env(account: str | None = None, *, override: bo
 
 
 def load_default_env_files() -> None:
+    media_env = Path(
+        os.getenv("OPENCLAW_MEDIA_ENV_FILE") or Path.home() / ".openclaw/openclaw-media.env"
+    ).expanduser()
+    reminder_env = Path(
+        os.getenv("OPENCLAW_FEISHU_REMINDER_ENV_FILE") or Path.home() / "openclaw-feishu-reminder/reminder.env"
+    ).expanduser()
     for path in (
         ROOT / ".env",
         ROOT / ".env.local",
-        Path("/home/ubuntu/openclaw-agents/media/.env.local"),
-        Path("/home/ubuntu/.openclaw/openclaw-media.env"),
-        Path("/home/ubuntu/openclaw-feishu-reminder/reminder.env"),
+        media_env,
+        reminder_env,
         ROOT / "selfmedia" / "ingest" / "content_flow" / ".env",
         ROOT / "integrations" / "platform_auth" / "cookies" / ".env.local",
     ):
@@ -760,9 +765,9 @@ def add_feishu_argument(parser: argparse.ArgumentParser) -> None:
 def feishu_status_message(record_ids: list[str], bitable_url: str | None, record_count: int) -> str:
     bitable_url = bitable_url or ""
     if record_ids:
-        return f"wrote {len(record_ids)} feishu records"
+        return f"已写入飞书 {len(record_ids)} 条记录"
     if not record_count:
-        return "feishu skipped: no records to write"
+        return "未发现需要写入的记录"
     if not bitable_url:
-        return "feishu skipped: pass an explicit Feishu table URL to write cross-platform records"
-    return "feishu configured but no records were written"
+        return "未写入飞书：请提供明确的飞书多维表链接"
+    return "已配置飞书，但没有写入记录"

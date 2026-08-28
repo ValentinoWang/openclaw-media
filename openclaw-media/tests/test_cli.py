@@ -1,4 +1,5 @@
 from importlib.metadata import PackageNotFoundError
+import json
 from pathlib import Path
 
 import pytest
@@ -58,3 +59,29 @@ def test_cli_source_contains_no_development_generator_or_absolute_path():
 
     assert "generate-catalog" not in source
     assert "/home/" not in source
+
+
+def test_cli_errors_explain_the_problem_and_json_mode_stays_machine_readable(tmp_path, capsys):
+    arguments = [
+        "pair",
+        "--base-url",
+        "https://example.invalid",
+        "--pair-code",
+        "one-time",
+        "--device-label",
+        "Mac",
+        "--agent-dir",
+        str(tmp_path / "agent"),
+    ]
+
+    assert cli.main(arguments, package_version="1.2.3") == 2
+    human_error = capsys.readouterr()
+    assert human_error.out == ""
+    assert human_error.err == (
+        "openclaw-media: error: workspace_not_configured — 未找到可用的本地工作区；使用 --workspace 指定一个存在的目录。\n"
+    )
+
+    assert cli.main(["--json", *arguments], package_version="1.2.3") == 2
+    machine_error = capsys.readouterr()
+    assert machine_error.out == ""
+    assert json.loads(machine_error.err) == {"error": {"code": "workspace_not_configured"}}

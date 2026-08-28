@@ -34,13 +34,13 @@ from selfmedia.growth.knowledge_evidence_contract import (
 from selfmedia.growth.llm_runner import GrowthLLMJsonRunner
 
 
-BACKFILL_SCRIPT = Path(__file__).resolve().parents[2] / "scripts/qa/check_media_growth_visibility_backfill.py"
+BACKFILL_SCRIPT = Path(__file__).resolve().parents[1] / "scripts/qa/check_media_growth_visibility_backfill.py"
 spec = importlib.util.spec_from_file_location("check_media_growth_visibility_backfill", BACKFILL_SCRIPT)
 backfill_module = importlib.util.module_from_spec(spec)
 assert spec and spec.loader
 spec.loader.exec_module(backfill_module)
 
-DISPLAY_BACKFILL_SCRIPT = Path(__file__).resolve().parents[2] / "scripts/qa/check_media_growth_display_backfill.py"
+DISPLAY_BACKFILL_SCRIPT = Path(__file__).resolve().parents[1] / "scripts/qa/check_media_growth_display_backfill.py"
 display_spec = importlib.util.spec_from_file_location("check_media_growth_display_backfill", DISPLAY_BACKFILL_SCRIPT)
 display_backfill_module = importlib.util.module_from_spec(display_spec)
 assert display_spec and display_spec.loader
@@ -1475,6 +1475,43 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0]["artifact_id"], "summary_sync_on_create")
         self.assertEqual(calls[0]["artifact_uri"], asset.artifact_uri)
+
+    def test_growth_summary_sync_result_is_persisted_and_returned(self) -> None:
+        sync_result = {"ok": True, "status": "synced", "record_id": "rec_summary"}
+        with tempfile.TemporaryDirectory() as tmp:
+            vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
+            with patch.object(growth_service, "sync_growth_summary_artifact", return_value=sync_result):
+                _plan, payload = run_media_growth_capability(
+                    "source_asset_intake",
+                    "【素材】备注=持久化同步结果",
+                    vault=vault,
+                )
+            asset_uri = str(payload["artifact_uri"])
+            persisted = vault.read_json_artifact(asset_uri)
+
+        self.assertEqual(persisted["growth_summary_sync"], sync_result)
+        self.assertEqual(payload["growth_summary_sync"], sync_result)
+
+    def test_growth_summary_execution_failure_is_persisted_returned_and_logged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            vault = MediaVault(tenant_id="00000000-0000-4000-8000-000000000101", root=tmp)
+            with patch.object(
+                growth_service,
+                "sync_growth_summary_artifact",
+                side_effect=RuntimeError("Feishu unavailable"),
+            ):
+                with self.assertLogs(growth_service.LOGGER, level="ERROR") as logs:
+                    asset = capture_source_asset(
+                        "【素材】备注=同步失败可见",
+                        vault=vault,
+                        run_id="summary_sync_failed",
+                    )
+            persisted = vault.read_json_artifact(asset.artifact_uri)
+
+        self.assertEqual(persisted["growth_summary_sync"]["status"], "execution_failed")
+        self.assertIn("Feishu unavailable", persisted["growth_summary_sync"]["reason"])
+        self.assertIn("GrowthSummary 同步失败", persisted["display_summary"])
+        self.assertTrue(any("GrowthSummary sync execution failed" in message for message in logs.output))
 
     def test_growth_artifact_review_returns_growth_summary_sync_result(self) -> None:
         calls: list[dict[str, object]] = []

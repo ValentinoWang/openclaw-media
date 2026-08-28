@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from selfmedia.request_constraints import parse_request_constraints
 from selfmedia.deconstruct.viral_content.src.artifact_v2 import DeconstructionArtifactError, build_deconstruction_artifact
 from selfmedia.deconstruct.viral_content.src.feishu_doc_writer import append_blocks
 
@@ -79,6 +80,7 @@ def _deconstruction_result(ref: str = "frame_001") -> dict[str, object]:
         },
         "human_readable_brief": {"usable_patterns": ["开头"]},
         "multi_signal_contract": _multi_signal_payload(ref),
+        "request_constraints": parse_request_constraints("【拆解】 https://example.com").to_dict(),
     }
 
 

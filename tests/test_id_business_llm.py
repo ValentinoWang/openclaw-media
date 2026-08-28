@@ -27,7 +27,6 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
             patch.object(MODULE, "infer_author_id", side_effect=AssertionError("must not infer author id with rules")),
             patch.object(MODULE, "detect_platform_cn", side_effect=AssertionError("must not infer platform with rules")),
             patch.object(MODULE, "add_brief_fields", side_effect=AssertionError("must not build brief fields with rules")),
-            patch.object(MODULE, "add_creator_confirmation_fields", side_effect=AssertionError("must not build confirmation fields with templates")),
             patch.object(MODULE, "build_brand_brief", side_effect=AssertionError("must not build brand brief with template")),
         ]
 
@@ -769,6 +768,22 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
         self.assertEqual(fields["具体档期"], "2026-09-10")
         self.assertEqual(lookup["stale_fields"], [])
 
+    def test_ambiguous_schedule_is_not_accepted_as_a_confirmation(self) -> None:
+        parsed = MODULE.parse_business_text(
+            "【商务>ID】\n作者ID：小王\n平台：小红书\n最快档期：尽快",
+            llm_extractor=lambda **_kwargs: {
+                "status": "done",
+                "confidence": 0.9,
+                "fields": {"作者ID": "小王", "平台": "小红书", "具体档期": "尽快"},
+                "pending_fields": [],
+                "confirmation_fields": [],
+            },
+        )
+
+        self.assertNotIn("具体档期", parsed["fields"])
+        self.assertIn("具体档期", parsed["pending_fields"])
+        self.assertIn("具体档期", parsed["confirmation_fields"])
+
     def test_rebate_negotiation_text_only_writes_explicit_percentage(self) -> None:
         self.assertEqual(MODULE.parse_rebate_ratio_value("先按30%沟通，可谈"), 0.3)
         self.assertEqual(MODULE.parse_rebate_ratio_value("20％"), 0.2)
@@ -892,12 +907,12 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
             fields,
             {
                 "status": "done",
-                "reply": "当前视频报价6800元，8月上旬可发布，授权3个月。",
+                "reply": "当前视频报价6800元，2026-09-10可发布，授权3个月。",
                 "missing_fields": [],
             },
         )
 
-        self.assertEqual(fields["AI回复话术"], "当前视频报价6800元，8月上旬可发布，授权3个月。")
+        self.assertEqual(fields["AI回复话术"], "当前视频报价6800元，2026-09-10可发布，授权3个月。")
         self.assertNotIn("需反问博主字段", fields)
         self.assertNotIn("反问博主话术", fields)
         self.assertNotIn("反问博主状态", fields)

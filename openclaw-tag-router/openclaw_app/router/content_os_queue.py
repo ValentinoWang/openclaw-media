@@ -39,7 +39,6 @@ DONE_DIRECTORY = Path("98_Agent任务队列") / "04_mac_done"
 TASK_BACKENDS: dict[str, frozenset[str]] = {
     "local_material_match": frozenset(EDITOR_BACKENDS),
     "generate_edit_handoff_pack": frozenset({"handoff_pack"}),
-    "validate_edit_handoff_pack": frozenset({"handoff_pack"}),
     "revise_local_edit_artifacts": frozenset(EDITOR_BACKENDS),
     "generate_otio_kdenlive_timeline": frozenset({"otio_kdenlive"}),
     "local_output_review": frozenset(EDITOR_BACKENDS),
@@ -341,7 +340,7 @@ def validate_mac_result(
         raise ContentOSContractError("Mac result 必须是对象")
     if result.get("spec_version") != CONTENT_OS_SPEC_VERSION or result.get("doc_type") != "mac_result":
         raise ContentOSContractError("Mac result 不是 Content OS v0.2 格式")
-    if result.get("completed_by") != "mac_openclaw" or result.get("status") != "done":
+    if result.get("completed_by") != "mac_openclaw" or result.get("status") not in {"done", "blocked"}:
         raise ContentOSContractError("Mac result 的完成者或状态不正确")
     if "proposed_next_status" in result or "project_status" in result:
         raise ContentOSContractError("Mac result 不得提出或写入项目阶段")
@@ -387,7 +386,7 @@ def accept_mac_result(
     task = validate_mac_result(vault_root, result, expected_tenant_id=expected_tenant_id)
     result_root = _queue_root(vault_root, RESULT_DIRECTORY)
     done_root = _queue_root(vault_root, DONE_DIRECTORY)
-    result_path = result_root / f"result_{task.task_id.removeprefix('task_')}_{task.task_type}.yaml"
+    result_path = result_root / f"accepted_{task.task_id.removeprefix('task_')}_{task.task_type}.yaml"
     done_path = done_root / f"{task.task_id}_{task.task_type}.yaml"
     if result_path.exists() or done_path.exists():
         raise ContentOSContractError("这个任务已有已接收的结果，不能重复接收")
@@ -396,7 +395,7 @@ def accept_mac_result(
     accepted_payload["accepted_at"] = _now_iso(now)
     _write_yaml(result_path, accepted_payload)
     done_payload = dict(task.payload)
-    done_payload.update({"status": "done", "completed_at": _now_iso(now), "result_path": str(result_path.relative_to(vault_root))})
+    done_payload.update({"status": str(result.get("status") or "done"), "completed_at": _now_iso(now), "result_path": str(result_path.relative_to(vault_root))})
     _write_yaml(done_path, done_payload)
     task.path.unlink()
     return AcceptedMacResult(task=task, result_path=result_path, done_task_path=done_path)

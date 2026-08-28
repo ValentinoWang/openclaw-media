@@ -68,12 +68,12 @@ type LoadState<T> =
   | { status: 'error'; message: string }
 
 const stageProgress: Record<string, number> = {
-  captured: 12,
-  planned: 28,
-  edit_ready: 46,
-  editing: 66,
-  final_ready: 86,
-  published: 100,
+  research: 15,
+  assets: 30,
+  decision: 45,
+  creation: 65,
+  publishing: 85,
+  review: 100,
 }
 
 export default function WorkboardPage() {
@@ -104,7 +104,7 @@ export default function WorkboardPage() {
   const summary = dashboard.status === 'ready' ? dashboard.data.summary : null
   const pendingTotal = summary ? summary.pendingDecisions + summary.pendingPublishing + summary.pendingReviews + summary.taskSummary.needsAttention : 0
   const attentionTasks = useMemo(
-    () => tasks.filter((task) => !task.terminal && ['awaiting_confirmation', 'pending_manual', 'failed'].includes(task.status)).slice(0, 4),
+    () => tasks.filter((task) => task.status === 'awaiting_confirmation' || (task.terminal && ['pending_manual', 'failed'].includes(task.status))).slice(0, 4),
     [tasks],
   )
   const activeTasks = useMemo(() => tasks.filter((task) => !task.terminal).slice(0, 4), [tasks])

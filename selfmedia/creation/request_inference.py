@@ -59,7 +59,7 @@ def build_request_inference_prompt(raw_text: str) -> str:
         "只做字段理解，不写稿，不扩写创意。\n\n"
         "规则：\n"
         "1. 只能根据用户原文推断；不确定就留空字符串，不要编造账号、品牌、发布时间、链接内容或外部事实。\n"
-        "2. platform 只能是 小红书、抖音 或空字符串。用户明确写了平台时必须尊重。\n"
+        "2. platform 只能是 小红书、抖音、B站 或空字符串。用户明确写了平台时必须尊重。\n"
         "3. content_type 只能是 图文、视频 或空字符串。视频脚本、镜头、字幕、开头几秒、素材剪辑通常是 视频；笔记、首图、页卡通常是 图文。\n"
         "4. track 是粗粒度赛道，例如 体育、职场成长、亲子教育、美妆护肤、旅行、美食、教育；不确定可留空。\n"
         "5. topic 是本次要创作的具体主体/主题，要短而具体，优先抽取用户说的「主题/主体/聚焦/围绕」内容。\n"
@@ -77,7 +77,7 @@ def normalize_inferred_creation_fields(payload: dict[str, Any]) -> dict[str, Any
     if not isinstance(payload, dict):
         return {}
     platform = normalize_platform(payload.get("platform") or payload.get("平台") or "")
-    if platform not in {"小红书", "抖音"}:
+    if platform not in {"小红书", "抖音", "B站"}:
         platform = ""
     content_type = normalize_content_type(payload.get("content_type") or payload.get("内容类型") or "")
     if content_type not in {"图文", "视频"}:
