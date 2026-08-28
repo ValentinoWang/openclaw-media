@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 
 from .tag_router_common import Message, TaskResult
 from media_vault import require_tenant_id
-from selfmedia.business.commercial_loop import CommercialLoopLedger
+from selfmedia.business.commercial_loop import CommercialLifecycleError, CommercialLoopLedger
 
 
 COMMERCIAL_DELIVERY_URL_ENV = "MEDIA_OS_COMMERCIAL_DELIVERY_URL"
@@ -159,6 +159,11 @@ class CommercialDeliveryMixin:
                 links=self._commercial_delivery_loop_links(message, payload),
             )
             if replayed:
+                publication_verification = self._commercial_delivery_confirm_verified_publication(
+                    message=message,
+                    commercial_loop=commercial_loop,
+                    payload=payload,
+                )
                 document = commercial_loop.document()
                 return TaskResult(
                     ok=True,
@@ -167,7 +172,12 @@ class CommercialDeliveryMixin:
                     task_id=delivery_id,
                     feishu_doc=document["document_url"],
                     local_path=commercial_loop.artifact_path(),
-                    extra={"persisted": True, "replayed": True, "commercial_loop": loop_state},
+                    extra={
+                        "persisted": True,
+                        "replayed": True,
+                        "commercial_loop": publication_verification["commercial_loop"],
+                        "publication_verification": publication_verification,
+                    },
                 )
 
             document = commercial_loop.document()
@@ -219,6 +229,11 @@ class CommercialDeliveryMixin:
                 record=record_result,
                 review_links=self._commercial_delivery_loop_links(message, payload),
             )
+            publication_verification = self._commercial_delivery_confirm_verified_publication(
+                message=message,
+                commercial_loop=commercial_loop,
+                payload=payload,
+            )
             reply = self._commercial_delivery_success_reply(
                 doc_url,
                 reminder_result["warnings"],
@@ -239,7 +254,8 @@ class CommercialDeliveryMixin:
                     "deadline_reminders": reminder_result["created"],
                     "deadline_reminder_warnings": reminder_result["warnings"],
                     "persisted": True,
-                    "commercial_loop": loop_state,
+                    "commercial_loop": publication_verification["commercial_loop"],
+                    "publication_verification": publication_verification,
                 },
             )
         except Exception as exc:
@@ -278,6 +294,33 @@ class CommercialDeliveryMixin:
             "publish_url": self._commercial_delivery_labeled_line(message.body, ("发布链接", "作品链接")),
             "platform": str(work_info.get("platform") or ""),
         }
+
+    def _commercial_delivery_confirm_verified_publication(
+        self,
+        *,
+        message: Message,
+        commercial_loop: CommercialLoopLedger,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Advance publication only from a separately authenticated readback signal."""
+        links = self._commercial_delivery_loop_links(message, payload)
+        published_url = links["publish_url"]
+        metadata = message.metadata if isinstance(message.metadata, dict) else {}
+        if not published_url:
+            return {"status": "not_requested", "commercial_loop": commercial_loop.load()}
+        if metadata.get("commercial_publication_external_verified") is not True:
+            return {
+                "status": "evidence_submitted_pending_verification",
+                "commercial_loop": commercial_loop.load(),
+            }
+        try:
+            state = commercial_loop.record_publication(
+                published_url=published_url,
+                evidence_uri=published_url,
+            )
+        except CommercialLifecycleError:
+            return {"status": "pending_manual", "commercial_loop": commercial_loop.load()}
+        return {"status": "confirmed", "commercial_loop": state}
 
     @staticmethod
     def _commercial_delivery_external_reason_code(exc: Exception) -> str:

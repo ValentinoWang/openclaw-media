@@ -75,7 +75,7 @@ class WorkAcceptanceWriteback:
         status = "confirmed" if has_external_evidence(evidence) and external_verified else "pending_manual"
         identity = idempotency_key or "acceptance:" + hashlib.sha256(run_id.encode("utf-8")).hexdigest()
         ledger_before = self.ledger.load()
-        if status == "confirmed" and ledger_before.get("lifecycle_stage") != "published":
+        if ledger_before.get("lifecycle_stage") != "published":
             replayed = any(
                 isinstance(event, dict)
                 and event.get("event") == "acceptance_confirmed"

@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from media_vault import MediaVault, MediaVaultError, require_tenant_id
+from selfmedia.business.work_acceptance import WorkAcceptanceError, WorkAcceptanceWriteback
 
 from ..models.message import Message
 from ..models.task import TaskResult
@@ -100,6 +101,16 @@ class WorkAcceptanceMixin:
         if creation_run_status.get("reply"):
             lines.extend(["", str(creation_run_status["reply"])])
 
+        commercial_acceptance_status = self._maybe_write_commercial_acceptance(
+            message,
+            creation_run_status=creation_run_status,
+            verdict=verdict,
+            result=result,
+            items=items,
+        )
+        if commercial_acceptance_status.get("reply"):
+            lines.extend(["", str(commercial_acceptance_status["reply"])])
+
         content_os_status = self._maybe_apply_content_os_work_acceptance(message, verdict, result, items)
         if content_os_status.get("reply"):
             lines.extend(["", content_os_status["reply"]])
@@ -116,6 +127,7 @@ class WorkAcceptanceMixin:
                 "fail_count": fail_count,
                 "uncertain_count": uncertain_count,
                 "creation_run_status": creation_run_status,
+                "commercial_acceptance_status": commercial_acceptance_status,
                 "content_os_status": content_os_status,
             },
         )
@@ -187,6 +199,105 @@ class WorkAcceptanceMixin:
             "artifact_uri": artifact["uri"],
             "reply": f"验收证据已写入创作记录：{creation_run_id}",
         }
+
+    def _maybe_write_commercial_acceptance(
+        self,
+        message: Message,
+        *,
+        creation_run_status: dict[str, Any],
+        verdict: str,
+        result: dict[str, Any],
+        items: list[dict[str, str]],
+    ) -> dict[str, Any]:
+        loop_id, loop_id_source = self._commercial_acceptance_loop_id(message)
+        if not loop_id:
+            return {"status": "not_requested"}
+        if creation_run_status.get("status") != "persisted":
+            return {
+                "status": "pending_manual",
+                "commercial_loop_id": loop_id,
+                "reply": "商单验收未写入：创作记录验收尚未持久化。",
+            }
+
+        metadata = message.metadata if isinstance(message.metadata, dict) else {}
+        external_verified = metadata.get("commercial_acceptance_external_verified") is True
+        evidence_uri = self._commercial_acceptance_evidence_uri(message)
+        try:
+            writeback = WorkAcceptanceWriteback(
+                tenant_id=require_tenant_id(metadata.get("tenant_id")),
+                opportunity_id=loop_id,
+            )
+            written = writeback.record(
+                creation_run_id=str(creation_run_status["creation_run_id"]),
+                verdict=verdict,
+                items=items,
+                summary=str(result.get("summary") or "").strip(),
+                evidence_uri=evidence_uri,
+                external_verified=external_verified,
+            )
+        except WorkAcceptanceError as exc:
+            if str(exc) == "work acceptance requires a confirmed publication":
+                return {
+                    "status": "awaiting_publication_confirmation",
+                    "commercial_loop_id": loop_id,
+                    "loop_id_source": loop_id_source,
+                    "reply": "商单验收待回写：请先完成受认证的发布核验；当前未写入商单验收记录。",
+                }
+            return {
+                "status": "pending_manual",
+                "commercial_loop_id": loop_id,
+                "loop_id_source": loop_id_source,
+                "reply": "商单验收未写入：请人工核对交付编号和验收记录后重试。",
+            }
+        except MediaVaultError:
+            return {
+                "status": "pending_manual",
+                "commercial_loop_id": loop_id,
+                "loop_id_source": loop_id_source,
+                "reply": "商单验收未写入：缺少有效租户上下文。",
+            }
+
+        status = str(written.get("status") or "pending_manual")
+        response = {
+            "status": status,
+            "commercial_loop_id": loop_id,
+            "loop_id_source": loop_id_source,
+            "artifact_uri": str(written.get("artifact_uri") or ""),
+            "commercial_loop": written.get("commercial_loop"),
+        }
+        if status == "confirmed":
+            response["reply"] = "商单验收已写入，并已确认商业生命周期。"
+        else:
+            response["reply"] = "商单验收证据已关联，仍待外部核验，未推进商业生命周期。"
+        return response
+
+    @staticmethod
+    def _commercial_acceptance_loop_id(message: Message) -> tuple[str, str]:
+        raw_text = str(message.raw_text or "")
+        for source, labels in (
+            ("commercial_delivery_id", ("商单交付ID", "交付编号")),
+            ("business_opportunity_fallback", ("商务机会ID", "商机ID")),
+        ):
+            value = WorkAcceptanceMixin._commercial_acceptance_labeled_line(raw_text, labels)
+            if re.fullmatch(r"[A-Za-z0-9_.-]{1,160}", value):
+                return value, source
+        return "", ""
+
+    @staticmethod
+    def _commercial_acceptance_evidence_uri(message: Message) -> str:
+        return WorkAcceptanceMixin._commercial_acceptance_labeled_line(
+            str(message.raw_text or ""),
+            ("验收证据链接", "验收链接", "发布链接", "作品链接"),
+        )
+
+    @staticmethod
+    def _commercial_acceptance_labeled_line(raw_text: str, labels: tuple[str, ...]) -> str:
+        label_pattern = "|".join(re.escape(label) for label in labels)
+        for line in str(raw_text or "").replace("\r\n", "\n").splitlines():
+            match = re.match(rf"\s*(?:{label_pattern})\s*[：:=]\s*(.+?)\s*$", line)
+            if match:
+                return match.group(1).strip()
+        return ""
 
     def _work_acceptance_review(self, message: Message) -> dict[str, Any]:
         if not hasattr(self.content_flow_client, "_call_postprocess_json"):
