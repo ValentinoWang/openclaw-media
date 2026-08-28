@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import patch
 
 from selfmedia.business import id_business
@@ -173,9 +175,9 @@ def test_business_write_persists_structured_opportunity_and_schedule_snapshot_af
                 "record_id": "rec-1",
                 "opportunity_id": "opp-1",
                 "brand": "测试品牌",
-                "valid_from": "2026-09-02",
-                "valid_until": "2026-09-03",
-                "schedule": "2026-09-02 至 2026-09-03",
+                    "valid_from": "2026-09-02",
+                    "valid_until": "2026-09-03",
+                    "schedule": "2026-09-02 至 2026-09-03",
             }
         )
         assert adapted.start_time.startswith("2026-09-02")
