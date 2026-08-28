@@ -1,0 +1,1 @@
+{"edge_id":"E-P1-C1","from":"P1","to":"C1","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["rendering-to-ux"],"transferred_input":"DL-P1","gate_evidence":"P1 定向测试","reason_code":"acceptance-dependency","necessity_proof":"C1 需要 P1 的渲染交付","transferred_artifact_ids":["DL-P1"],"resource_ids":[]}

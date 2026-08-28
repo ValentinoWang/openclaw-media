@@ -1,0 +1,1 @@
+{"edge_id":"E-P3-C1","from":"P3","to":"C1","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["interface-to-ux"],"transferred_input":"DL-P3","gate_evidence":"P3 定向测试","reason_code":"acceptance-dependency","necessity_proof":"C1 需要 P3 的界面交付","transferred_artifact_ids":["DL-P3"],"resource_ids":[]}

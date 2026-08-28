@@ -1,0 +1,64 @@
+{
+  "ssot_schema_version": 2,
+  "artifact_class": "ssot-development",
+  "plan_version": 1,
+  "dag_version": 1,
+  "interface_freeze_version": 1,
+  "node_contract_version": 2,
+  "machine_validation_profile": "release",
+  "parallelism_contract_version": 1,
+  "execution_contract_validation": "strict",
+  "main_thread_policy": "orchestration-only",
+  "main_thread_source_write": false,
+  "execution_contracts_dir": "execution-contracts",
+  "planning_compiler": "planning-compiler.json",
+  "actor_pools": {
+    "codex-primary": {
+      "actor": "codex",
+      "capacity": 1
+    },
+    "orchestrator": {
+      "actor": "orchestrator",
+      "capacity": 1
+    },
+    "release-acceptance": {
+      "actor": "human",
+      "capacity": 1
+    }
+  },
+  "executor_policy": {
+    "schema_version": 3,
+    "allowed_primary_executors": {
+      "lw-luna": "run-lw-luna.sh",
+      "lw-terra": "run-lw-terra.sh"
+    },
+    "default_primary_executor": "lw-terra",
+    "default_writable_parallel_executor": "lw-terra",
+    "default_writable_wrapper": "run-lw-terra.sh",
+    "fallback_executor": "l3",
+    "fallback_wrapper": "run-l3.sh",
+    "primary_retry_limit": 1,
+    "l3_escalation_limit": 1
+  },
+  "generated_main": "../ssot-development-paths.md",
+  "generated_views": [
+    {
+      "view_id": "main",
+      "source": "view-sources/main.md",
+      "source_sha256": "23931aca2e7218a66c7c89e3067583627bacd728450897461f0ecc2046d36ee7",
+      "output": "../ssot-development-paths.md"
+    }
+  ],
+  "nodes_dir": "nodes",
+  "edges_dir": "edges",
+  "assumptions_dir": "assumptions",
+  "conflicts_dir": "conflicts",
+  "target_evidence_level": "static-test",
+  "test_spec_status": "frozen",
+  "validation_report": {
+    "path": "validation-report.json",
+    "sha256": "6085e7ca2fd0e8ca4af84b5f5813c4bd2454c16475e3dfed813cf54980d6a53b",
+    "manifest_identity_sha256": "5e5ef50676504d5254e8d34f9753d2545e9dafbb0db14680b57eaeb70ed4d603",
+    "bundle_content_sha256": "93c8d00029ee831db5094e95eccdee7f20ffd4e2ea6e82cd1e348f93198ee903"
+  }
+}
