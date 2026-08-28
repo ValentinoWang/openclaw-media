@@ -8,20 +8,10 @@ from zoneinfo import ZoneInfo
 from media_vault import MediaVaultError, require_tenant_id
 
 
-BUSINESS_PRESENTATION_STATUS_LABELS = {
-    "captured": "已获取",
-    "collected": "已收集",
-    "done": "已完成",
-    "pending": "待确认",
-    "pending_manual": "待人工确认",
-    "capture_auth_required": "登录状态失效，待重新获取",
-    "capture_failed": "获取失败，待复核",
-}
+def _business_presentation_status(value: object, workflow: str = "capture") -> str:
+    from selfmedia.business.id_business import business_status_label
 
-
-def _business_presentation_status(value: object) -> str:
-    raw = str(value or "").strip()
-    return BUSINESS_PRESENTATION_STATUS_LABELS.get(raw, "待复核")
+    return business_status_label(workflow, value)
 
 
 class BusinessVlogMixin:
@@ -30,7 +20,7 @@ class BusinessVlogMixin:
             tenant_id = require_tenant_id((message.metadata or {}).get("tenant_id"))
         except MediaVaultError as exc:
             return TaskResult(ok=False, status="tenant_context_required", reply=str(exc), task_id="")
-        from selfmedia.business.id_business import ingest
+        from selfmedia.business.id_business import ingest, sanitize_business_user_text
 
         parsed = ingest(
             Namespace(
@@ -63,7 +53,7 @@ class BusinessVlogMixin:
             return TaskResult(
                 ok=False,
                 status="id_business_llm_pending_manual",
-                reply=ai_reply or fallback_reply,
+                reply=sanitize_business_user_text(ai_reply or fallback_reply),
                 task_id="",
                 local_path=str(parsed.get("local_path") or ""),
                 extra={"id_business": parsed},
@@ -100,17 +90,31 @@ class BusinessVlogMixin:
         if fields.get("账号数据摘要"):
             reply_lines.append(f"账号数据：{fields['账号数据摘要']}")
         if capture.get("status") or fields.get("截图状态"):
-            reply_lines.append(f"截图状态：{_business_presentation_status(capture.get('status') or fields.get('截图状态'))}")
+            reply_lines.append(
+                "截图状态："
+                + _business_presentation_status(
+                    capture.get("machine_status") or capture.get("status") or fields.get("截图状态"),
+                    "capture",
+                )
+            )
+        if fields.get("Brief收集状态"):
+            reply_lines.append(
+                "Brief收集状态："
+                + _business_presentation_status(fields["Brief收集状态"], "brief_collection")
+            )
         if fields.get("需反问博主字段"):
             reply_lines.append(f"需反问博主：{fields['需反问博主字段']}")
         if fields.get("反问博主状态"):
-            reply_lines.append(f"反问状态：{_business_presentation_status(fields['反问博主状态'])}")
+            reply_lines.append(
+                "反问状态："
+                + _business_presentation_status(fields["反问博主状态"], "creator_confirmation")
+            )
         if fields.get("待补充字段") and ai_reply_status != "done":
             reply_lines.append(f"待补充字段：{fields['待补充字段']}")
         ai_reply = str(fields.get("AI回复话术") or "").strip()
         if not ai_reply and isinstance(details.get("ai_reply"), dict):
             ai_reply = str(details["ai_reply"].get("reply") or "").strip()
-        visible_reply = ai_reply or "\n".join(reply_lines)
+        visible_reply = sanitize_business_user_text(ai_reply or "\n".join(reply_lines))
         return TaskResult(
             ok=True,
             status="id_business_archived",

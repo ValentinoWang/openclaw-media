@@ -75,6 +75,35 @@ class BusinessVlogReplyTest(unittest.TestCase):
         self.assertNotIn("capture_auth_required", result.reply)
         self.assertNotIn("pending", result.reply)
 
+    def test_router_reply_localizes_brief_and_generated_status_tokens(self) -> None:
+        payload = {
+            "ok": True,
+            "fields": {
+                "作者ID": "creator",
+                "账号名称": "账号",
+                "平台": "小红书",
+                "Brief收集状态": "collected",
+                "AI回复话术": "Brief collected; capture_failed; notify_skipped",
+            },
+            "details": {},
+            "capture": {"ok": False, "status": "empty_screenshot"},
+            "feishu": {"account_record_id": "rec_account"},
+        }
+        with patch("selfmedia.business.id_business.ingest", return_value=payload):
+            result = BusinessReplyHarness().handle_id_business(
+                Message(
+                    entry_tag="商务>ID",
+                    raw_text="【商务>ID】测试",
+                    body="测试",
+                    metadata={"tenant_id": self.TENANT_ID},
+                )
+            )
+
+        self.assertIn("已收集", result.reply)
+        self.assertNotIn("collected", result.reply)
+        self.assertNotIn("capture_failed", result.reply)
+        self.assertNotIn("notify_skipped", result.reply)
+
 
 if __name__ == "__main__":
     unittest.main()

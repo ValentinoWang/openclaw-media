@@ -94,6 +94,147 @@ NOTIFY_TARGET_ENV_NAMES = (
     "OPENCLAW_LAST_TO",
     "OPENCLAW_TARGET",
 )
+
+# Machine states stay available to the workflow, while these labels are the
+# only values allowed into user-facing business fields and replies.
+BUSINESS_STATUS_LABELS: dict[str, dict[str, str]] = {
+    "capture": {
+        "captured": "已获取",
+        "captured_cached": "已获取（缓存）",
+        "capture_failed": "获取失败，待复核",
+        "capture_auth_required": "登录状态失效，待重新获取",
+        "capture_access_restricted": "访问受限，待复核",
+        "empty_screenshot": "截图为空，待复核",
+        "playwright_unavailable": "截图工具不可用，待复核",
+        "manual_screenshot": "已提供人工截图",
+        "missing_url": "缺少主页链接",
+    },
+    "creator_confirmation": {
+        "pending": "待确认",
+        "pending_manual": "待人工确认",
+        "collected": "已收集",
+        "done": "已完成",
+        "sent": "已通知",
+        "dry_run": "试运行未发送",
+        "notify_skipped": "未投递",
+        "notify_failed": "投递失败，待重试",
+    },
+    "brief_collection": {
+        "pending": "待收集",
+        "pending_manual": "待人工确认",
+        "collected": "已收集",
+        "done": "已收集",
+    },
+    "notification": {
+        "pending": "待发送",
+        "pending_manual": "待人工确认",
+        "dry_run": "试运行未发送",
+        "sent": "已发送",
+        "notify_skipped": "未投递",
+        "notify_failed": "投递失败，待重试",
+    },
+}
+BUSINESS_STATUS_FALLBACKS = {
+    "capture": "截图状态待复核",
+    "creator_confirmation": "反问状态待复核",
+    "brief_collection": "Brief收集状态待复核",
+    "notification": "通知结果待复核",
+}
+BUSINESS_STATUS_FIELD_WORKFLOWS = {
+    "截图状态": "capture",
+    "反问博主状态": "creator_confirmation",
+    "Brief收集状态": "brief_collection",
+}
+BUSINESS_RECENT_STATUS_LABELS = {
+    "llm_parsed": "已解析",
+    "llm_pending_manual": "待人工确认",
+}
+BUSINESS_STATUS_MACHINE_TOKENS = {
+    machine: label
+    for labels in BUSINESS_STATUS_LABELS.values()
+    for machine, label in labels.items()
+}
+BUSINESS_STATUS_MACHINE_TOKENS.update(BUSINESS_RECENT_STATUS_LABELS)
+
+
+def business_status_label(workflow: str, value: Any) -> str:
+    """Project a workflow's machine status into a safe Chinese label."""
+    labels = BUSINESS_STATUS_LABELS.get(workflow, {})
+    raw = str(value or "").strip()
+    lookup_key = raw.lower()
+    if lookup_key in labels:
+        return labels[lookup_key]
+    if raw in labels.values():
+        return raw
+    return BUSINESS_STATUS_FALLBACKS.get(workflow, "状态待复核")
+
+
+def sanitize_business_user_text(value: Any) -> str:
+    """Prevent known machine tokens from leaking through generated copy."""
+    text = str(value or "")
+    for machine, label in sorted(BUSINESS_STATUS_MACHINE_TOKENS.items(), key=lambda item: len(item[0]), reverse=True):
+        text = re.sub(re.escape(machine), label, text, flags=re.IGNORECASE)
+    return text
+
+
+def localize_business_workflow_fields(
+    fields: dict[str, Any],
+    details: dict[str, Any] | None = None,
+    *,
+    capture: dict[str, Any] | None = None,
+    notification: dict[str, Any] | None = None,
+) -> dict[str, str]:
+    """Localize status fields and retain their raw values in an internal trace."""
+    if details is not None and not isinstance(details.get("machine_status"), dict):
+        details["machine_status"] = {}
+    machine_status = details.setdefault("machine_status", {}) if details is not None else {}
+
+    for field_name, workflow in BUSINESS_STATUS_FIELD_WORKFLOWS.items():
+        raw = str(fields.get(field_name) or "").strip()
+        if not raw:
+            continue
+        label = business_status_label(workflow, raw)
+        fields[field_name] = label
+        if raw not in BUSINESS_STATUS_LABELS[workflow].values():
+            machine_status[workflow] = raw
+
+    recent_status = str(fields.get("最近状态") or "").strip()
+    if recent_status in BUSINESS_STATUS_LABELS["capture"]:
+        fields["最近状态"] = business_status_label("capture", recent_status)
+        machine_status["recent_status"] = recent_status
+    elif recent_status in BUSINESS_RECENT_STATUS_LABELS:
+        fields["最近状态"] = BUSINESS_RECENT_STATUS_LABELS[recent_status]
+        machine_status["recent_status"] = recent_status
+
+    ai_reply = details.get("ai_reply") if details and isinstance(details.get("ai_reply"), dict) else None
+    if ai_reply and ai_reply.get("reply"):
+        ai_reply["reply"] = sanitize_business_user_text(ai_reply["reply"])
+    for field_name in ("AI回复话术", "反问博主话术"):
+        if fields.get(field_name):
+            fields[field_name] = sanitize_business_user_text(fields[field_name])
+    if fields.get("最近错误"):
+        fields["最近错误"] = sanitize_business_user_text(fields["最近错误"])
+
+    if capture is not None:
+        raw = str(capture.get("machine_status") or capture.get("status") or "").strip()
+        if raw:
+            capture["machine_status"] = raw
+            capture["status"] = business_status_label("capture", raw)
+            machine_status["capture"] = raw
+            fields["截图状态"] = capture["status"]
+
+    if notification is not None:
+        raw = str(notification.get("machine_status") or notification.get("status") or "").strip()
+        if raw:
+            notification["machine_status"] = raw
+            notification["status_label"] = business_status_label("notification", raw)
+            machine_status["notification"] = raw
+            machine_status["creator_confirmation"] = raw
+            fields["反问博主状态"] = business_status_label("creator_confirmation", raw)
+
+    return machine_status
+
+
 BUSINESS_TRIGGER_RE = re.compile(
     r"^\s*【(?P<tag>商务>ID|商务>(?P<author>(?!ID$)[^】>\s]{1,32}))】\s*",
     re.IGNORECASE,
@@ -2673,6 +2814,10 @@ def coerce_for_feishu(fields: dict[str, Any], field_types: dict[str, Any]) -> di
     for key, value in fields.items():
         if key not in field_types or value in (None, "", []):
             continue
+        if key in BUSINESS_STATUS_FIELD_WORKFLOWS:
+            value = business_status_label(BUSINESS_STATUS_FIELD_WORKFLOWS[key], value)
+        elif key == "反问博主通知结果":
+            value = sanitize_business_user_text(value)
         if field_types[key] == 7:
             payload[key] = bool(value)
         else:
@@ -2684,7 +2829,13 @@ def coerce_for_feishu(fields: dict[str, Any], field_types: dict[str, Any]) -> di
 
 def merge_standard_business_fields(fields: dict[str, Any]) -> dict[str, Any]:
     normalized = normalize_standard_fields(fields)
-    return select_fields_for_write(fields, normalized_fields=normalized)
+    merged = select_fields_for_write(fields, normalized_fields=normalized)
+    for key, workflow in BUSINESS_STATUS_FIELD_WORKFLOWS.items():
+        if key in merged and merged[key] not in (None, "", []):
+            merged[key] = business_status_label(workflow, merged[key])
+    if merged.get("反问博主通知结果"):
+        merged["反问博主通知结果"] = sanitize_business_user_text(merged["反问博主通知结果"])
+    return merged
 
 
 def _business_run_directory(tenant_id: str) -> Path:
@@ -2792,6 +2943,7 @@ def ingest(args: argparse.Namespace) -> dict[str, Any]:
         required_confirmation_fields=_business_list_value(parsed.get("confirmation_fields")),
     )
     if parsed.get("status") != "done":
+        localize_business_workflow_fields(fields, details)
         local_path = save_local(
             {
                 "status": "id_business_llm_pending_manual",
@@ -2821,6 +2973,10 @@ def ingest(args: argparse.Namespace) -> dict[str, Any]:
             display_creator_name(fields),
             tenant_id=tenant_id,
         )
+        capture_machine_status = str(capture.get("status") or "").strip()
+        if capture_machine_status:
+            capture["machine_status"] = capture_machine_status
+            capture["status"] = business_status_label("capture", capture_machine_status)
         fields["截图状态"] = capture.get("status", "")
         if capture.get("path"):
             fields["主页截图路径"] = capture["path"]
@@ -2831,9 +2987,11 @@ def ingest(args: argparse.Namespace) -> dict[str, Any]:
         if isinstance(capture.get("metrics"), dict):
             fields.update(capture["metrics"])
         if capture.get("ok"):
-            fields["最近状态"] = "captured"
+            fields["最近状态"] = business_status_label("capture", "captured")
+            capture["recent_machine_status"] = "captured"
         else:
-            fields["最近状态"] = "capture_failed"
+            fields["最近状态"] = business_status_label("capture", "capture_failed")
+            capture["recent_machine_status"] = "capture_failed"
             fields["最近错误"] = str(capture.get("error") or "")
     summary = account_data_summary(fields)
     if summary:
@@ -2842,8 +3000,10 @@ def ingest(args: argparse.Namespace) -> dict[str, Any]:
     if args.notify_confirmation and fields.get("需反问博主字段") and fields.get("反问博主话术"):
         fields["反问博主时间"] = business_now_iso()
         confirmation_notify = notify_social(str(fields["反问博主话术"]), dry_run=args.dry_run)
-        fields["反问博主状态"] = notify_delivery_status(confirmation_notify, dry_run=args.dry_run)
-        fields["反问博主通知结果"] = json.dumps(confirmation_notify, ensure_ascii=False)[:3000]
+        notify_machine_status = notify_delivery_status(confirmation_notify, dry_run=args.dry_run)
+        confirmation_notify["machine_status"] = notify_machine_status
+        fields["反问博主状态"] = business_status_label("creator_confirmation", notify_machine_status)
+        fields["反问博主通知结果"] = notification_user_payload(confirmation_notify, notify_machine_status)[:3000]
     details = {
         "urls": parsed.get("urls") or [],
         "profile_urls": parsed.get("profile_urls") or [],
@@ -2859,6 +3019,12 @@ def ingest(args: argparse.Namespace) -> dict[str, Any]:
         "ai_reply": ai_reply,
         "ingested_at": business_now_iso(),
     }
+    localize_business_workflow_fields(
+        fields,
+        details,
+        capture=capture or None,
+        notification=confirmation_notify or None,
+    )
 
     try:
         feishu = write_business_model_v2(
@@ -2989,6 +3155,22 @@ def notify_delivery_status(result: dict[str, Any], *, dry_run: bool = False) -> 
     if result.get("skipped"):
         return "notify_skipped"
     return "notify_failed"
+
+
+def notification_user_payload(result: dict[str, Any], machine_status: str) -> str:
+    """Build a Chinese-only notification result for the Feishu text field."""
+    label = business_status_label("notification", machine_status)
+    if machine_status == "sent":
+        description = "已向指定会话投递反问话术。"
+    elif machine_status == "dry_run":
+        description = "本次为试运行，未实际投递。"
+    elif machine_status == "notify_skipped":
+        description = "未找到可用投递目标，未实际投递。"
+    elif machine_status == "notify_failed":
+        description = "投递未成功，请检查目标后重试。"
+    else:
+        description = "通知结果待复核。"
+    return json.dumps({"结果": label, "说明": description}, ensure_ascii=False)
 
 
 def notify_social(message: str, *, dry_run: bool = False) -> dict[str, Any]:

@@ -194,6 +194,146 @@ class IdBusinessLlmExtractionTest(unittest.TestCase):
         self.assertEqual(cached["path"], str(screenshot))
         self.assertIsNone(missing)
 
+    def test_business_status_labels_cover_known_states_and_unknown_fallback(self) -> None:
+        expected = {
+            "capture": {
+                "captured": "已获取",
+                "captured_cached": "已获取（缓存）",
+                "capture_failed": "获取失败，待复核",
+                "capture_auth_required": "登录状态失效，待重新获取",
+                "capture_access_restricted": "访问受限，待复核",
+                "empty_screenshot": "截图为空，待复核",
+                "playwright_unavailable": "截图工具不可用，待复核",
+                "manual_screenshot": "已提供人工截图",
+                "missing_url": "缺少主页链接",
+            },
+            "creator_confirmation": {
+                "pending": "待确认",
+                "collected": "已收集",
+                "done": "已完成",
+                "sent": "已通知",
+                "dry_run": "试运行未发送",
+                "notify_skipped": "未投递",
+                "notify_failed": "投递失败，待重试",
+            },
+            "brief_collection": {"pending": "待收集", "collected": "已收集", "done": "已收集"},
+            "notification": {
+                "pending": "待发送",
+                "dry_run": "试运行未发送",
+                "sent": "已发送",
+                "notify_skipped": "未投递",
+                "notify_failed": "投递失败，待重试",
+            },
+        }
+        for workflow, states in expected.items():
+            for machine, label in states.items():
+                self.assertEqual(MODULE.business_status_label(workflow, machine), label)
+            self.assertEqual(
+                MODULE.business_status_label(workflow, "unexpected_machine_state"),
+                MODULE.BUSINESS_STATUS_FALLBACKS[workflow],
+            )
+
+    def test_business_status_projection_localizes_fields_and_keeps_machine_trace(self) -> None:
+        fields = {
+            "截图状态": "capture_failed",
+            "最近状态": "captured",
+            "反问博主状态": "pending",
+            "Brief收集状态": "collected",
+            "AI回复话术": "状态 pending / captured_cached / notify_failed",
+        }
+        details: dict[str, object] = {}
+        capture = {"ok": False, "status": "capture_access_restricted"}
+        notification = {"machine_status": "notify_failed", "ok": False}
+
+        MODULE.localize_business_workflow_fields(
+            fields,
+            details,
+            capture=capture,
+            notification=notification,
+        )
+
+        self.assertEqual(fields["截图状态"], "访问受限，待复核")
+        self.assertEqual(fields["最近状态"], "已获取")
+        self.assertEqual(fields["反问博主状态"], "投递失败，待重试")
+        self.assertEqual(fields["Brief收集状态"], "已收集")
+        self.assertEqual(capture["status"], "访问受限，待复核")
+        self.assertEqual(details["machine_status"], {
+            "capture": "capture_access_restricted",
+            "recent_status": "captured",
+            "creator_confirmation": "notify_failed",
+            "brief_collection": "collected",
+            "notification": "notify_failed",
+        })
+        self.assertEqual(notification["status_label"], "投递失败，待重试")
+        serialized_fields = json.dumps(fields, ensure_ascii=False)
+        for token in MODULE.BUSINESS_STATUS_MACHINE_TOKENS:
+            self.assertNotIn(token, serialized_fields)
+
+    def test_ingest_persists_chinese_status_fields_with_machine_trace(self) -> None:
+        args = SimpleNamespace(
+            text="【商务>ID】测试",
+            stdin=False,
+            screenshot="",
+            account_name="",
+            profile_url="",
+            brief_file=[],
+            feishu_url="",
+            no_screenshot=True,
+            dry_run=False,
+            require_feishu=True,
+            notify_confirmation=False,
+            tenant_id="00000000-0000-4000-8000-000000000101",
+        )
+        parsed = {
+            "status": "done",
+            "fields": {
+                "作者ID": "creator",
+                "账号名称": "账号",
+                "平台": "小红书",
+                "截图状态": "playwright_unavailable",
+                "反问博主状态": "pending",
+                "Brief收集状态": "collected",
+                "AI回复话术": "capture_failed / pending / collected",
+            },
+            "details": {},
+            "pending_fields": [],
+            "confirmation_fields": [],
+            "urls": [],
+            "profile_urls": [],
+            "brief_urls": [],
+        }
+        saved: dict[str, object] = {}
+
+        def fake_save(payload, *, tenant_id):
+            saved.update(payload)
+            return "/tmp/id-business-localized.json"
+
+        with patch.object(MODULE, "load_id_business_env_files"):
+            with patch.object(MODULE, "parse_business_text", return_value=parsed):
+                with patch.object(MODULE, "table_url_from_args", return_value=""):
+                    with patch.object(MODULE, "creator_profile_table_url", return_value=""):
+                        with patch.object(MODULE, "opportunity_table_url", return_value=""):
+                            with patch.object(MODULE, "enrich_business_fields_from_history", return_value={}):
+                                with patch.object(MODULE, "apply_business_reply_defaults", return_value={}):
+                                    with patch.object(MODULE, "refresh_pending_fields_from_values", return_value=[]):
+                                        with patch.object(MODULE, "generate_business_reply_from_current_fields", return_value={"status": "pending_manual", "reply": "capture_failed / pending", "missing_fields": ["视频报价"]}):
+                                            with patch.object(MODULE, "write_business_model_v2", return_value={"mode": "write"}):
+                                                with patch.object(MODULE, "save_local", side_effect=fake_save):
+                                                    result = MODULE.ingest(args)
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["fields"]["截图状态"], "截图工具不可用，待复核")
+        self.assertEqual(result["fields"]["反问博主状态"], "待确认")
+        self.assertEqual(result["fields"]["Brief收集状态"], "已收集")
+        self.assertEqual(result["details"]["machine_status"], {
+            "capture": "playwright_unavailable",
+            "creator_confirmation": "pending",
+            "brief_collection": "collected",
+        })
+        persisted_fields = json.dumps(saved["fields"], ensure_ascii=False)
+        for token in MODULE.BUSINESS_STATUS_MACHINE_TOKENS:
+            self.assertNotIn(token, persisted_fields)
+
     def test_extraction_prompt_keeps_identity_for_creator_profile_lookup(self) -> None:
         self.assertIn("这是查 06/05 历史表之前的字段抽取", MODULE.BUSINESS_ID_EXTRACTION_PROMPT)
         self.assertIn("消息未附主页链接是正常查表场景", MODULE.BUSINESS_ID_EXTRACTION_PROMPT)
