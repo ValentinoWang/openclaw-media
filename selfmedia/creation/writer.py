@@ -997,7 +997,9 @@ def _require_creator_report_for_render(draft: dict[str, Any], request: CreationR
         raise ValueError(f"creator_report.overview.content_type 必须等于 {request.content_type}")
     _require_keys(report["opening_3s"], "creator_report.opening_3s", ("visual_0_0_5", "caption_or_voice_0_5_3", "do_not_open_like_this"))
     _require_keys(report["mainline"], "creator_report.mainline", ("conflict", "evidence", "emotional_payoff", "audience_resonance"))
-    _require_keys(report["publishing_pack"], "creator_report.publishing_pack", ("title_1", "title_2", "cover_text", "body_copy", "hashtags", "pinned_comment", "comment_prompt"))
+    _require_keys(report["publishing_pack"], "creator_report.publishing_pack", ("title_1", "title_2", "cover_text", "body_copy", "hashtags", "pinned_comment", "comment_prompt", "first_hour_action"))
+    if not str(report["publishing_pack"].get("first_hour_action") or "").strip():
+        raise ValueError("creator_report.publishing_pack.first_hour_action 不能为空")
     _require_keys(report["material_checklist"], "creator_report.material_checklist", ("must_have", "better_to_have", "can_rescue_without", "must_not_fabricate"))
     for index, row in enumerate(report["storyboard"], 1):
         if not isinstance(row, dict):

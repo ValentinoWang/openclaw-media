@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -16,9 +17,10 @@ REPO_CONFIG = Path(
     os.getenv("OPENCLAW_BOTS_CONFIG")
     or Path(__file__).resolve().parents[3] / "config/openclaw_bots.json"
 )
-OPENAI_ENV = Path("/home/ubuntu/.config/codex/openai.env")
-AGENTS_ROOT = Path("/home/ubuntu/.openclaw/agents")
-OPENCLAW_CONFIG = Path("/home/ubuntu/.openclaw/openclaw.json")
+OPENCLAW_RUNTIME_HOME = Path(os.getenv("OPENCLAW_RUNTIME_HOME") or Path.home() / ".openclaw")
+OPENAI_ENV = Path(os.getenv("OPENCLAW_OPENAI_ENV") or Path.home() / ".config/codex/openai.env")
+AGENTS_ROOT = Path(os.getenv("OPENCLAW_AGENTS_ROOT") or OPENCLAW_RUNTIME_HOME / "agents")
+OPENCLAW_CONFIG = Path(os.getenv("OPENCLAW_CONFIG_PATH") or OPENCLAW_RUNTIME_HOME / "openclaw.json")
 CODEX_MODEL_PROVIDER = "codex"
 OPENCLAW_THINKING_LEVELS = {"off", "minimal", "low", "medium", "high"}
 OPENCLAW_THINKING_ALIASES = {
@@ -214,6 +216,13 @@ def _runtime_provider_name(payload: dict[str, Any]) -> str:
     return provider_name
 
 
+def _resolve_executable(command: str) -> str:
+    candidate = Path(command).expanduser()
+    if candidate.is_absolute() or "/" in command:
+        return str(candidate) if candidate.is_file() and os.access(candidate, os.X_OK) else ""
+    return shutil.which(command) or ""
+
+
 def _codex_app_server(payload: dict[str, Any]) -> dict[str, Any]:
     runtime = payload.get("openclaw_runtime") if isinstance(payload.get("openclaw_runtime"), dict) else {}
     app_server = runtime.get("codex_app_server") if isinstance(runtime.get("codex_app_server"), dict) else {}
@@ -222,8 +231,9 @@ def _codex_app_server(payload: dict[str, Any]) -> dict[str, Any]:
     service_tier = str(app_server.get("service_tier") or "").strip()
     turn_completion_idle_timeout_ms = app_server.get("turn_completion_idle_timeout_ms")
     version = str(app_server.get("version") or "").strip()
-    if not command or not Path(command).is_file() or not os.access(command, os.X_OK):
-        raise SystemExit("openclaw_runtime.codex_app_server.command must be an executable file")
+    executable = _resolve_executable(command) if command else ""
+    if not executable:
+        raise SystemExit("openclaw_runtime.codex_app_server.command must resolve to an executable file or PATH command")
     if args != ["app-server", "--listen", "stdio://"]:
         raise SystemExit("openclaw_runtime.codex_app_server.args must be the canonical stdio app-server command")
     if service_tier != "priority":
@@ -236,7 +246,7 @@ def _codex_app_server(payload: dict[str, Any]) -> dict[str, Any]:
         raise SystemExit("openclaw_runtime.codex_app_server.version must be configured")
     try:
         actual_version = subprocess.run(
-            [command, "--version"],
+            [executable, "--version"],
             check=True,
             capture_output=True,
             text=True,

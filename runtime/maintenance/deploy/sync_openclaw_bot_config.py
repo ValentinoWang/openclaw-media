@@ -18,15 +18,19 @@ REPO_CONFIG = Path(
     os.getenv("OPENCLAW_BOTS_CONFIG")
     or Path(__file__).resolve().parents[3] / "config/openclaw_bots.json"
 )
-OBSIDIAN_DIR = Path("/home/ubuntu/obsidian-日记/openclaw配置")
+OBSIDIAN_VAULT_ROOT = Path(os.getenv("OPENCLAW_OBSIDIAN_VAULT_ROOT") or Path.home() / "obsidian-日记")
+OBSIDIAN_DIR = Path(os.getenv("OPENCLAW_OBSIDIAN_CONFIG_DIR") or OBSIDIAN_VAULT_ROOT / "openclaw配置")
 OBSIDIAN_CONFIG = OBSIDIAN_DIR / "openclaw_bots.json"
 OBSIDIAN_NOTE = OBSIDIAN_DIR / "OpenClaw Bot LLM 配置.md"
-PUBLIC_KNOWLEDGE_DIR = Path("/home/ubuntu/obsidian-日记/公共知识库")
+PUBLIC_KNOWLEDGE_DIR = Path(os.getenv("OPENCLAW_PUBLIC_KNOWLEDGE_DIR") or OBSIDIAN_VAULT_ROOT / "公共知识库")
 LLM_USAGE_SSOT_NOTE = PUBLIC_KNOWLEDGE_DIR / "OpenClaw Bot LLM 使用矩阵 SSOT.md"
 SYNC_STATE = OBSIDIAN_DIR / ".openclaw_bots_sync_state.json"
-MAC_OBSIDIAN_DIR = "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/openclaw配置"
-MAC_PUBLIC_KNOWLEDGE_DIR = "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/公共知识库"
-SYNC_AGENT_MODELS = Path("/home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_agent_models.py")
+MAC_OBSIDIAN_DIR = os.getenv("OPENCLAW_MAC_OBSIDIAN_CONFIG_DIR", "").strip()
+MAC_PUBLIC_KNOWLEDGE_DIR = os.getenv("OPENCLAW_MAC_PUBLIC_KNOWLEDGE_DIR", "").strip()
+SYNC_AGENT_MODELS = Path(
+    os.getenv("OPENCLAW_SYNC_AGENT_MODELS_SCRIPT")
+    or Path(__file__).with_name("sync_openclaw_agent_models.py")
+)
 DUPLICATE_NOTE_PATTERNS = (
     "OpenClaw Bot LLM 配置 [0-9]*.md",
     "OpenClaw Bot LLM 配置.sync-conflict-*.md",
@@ -45,7 +49,7 @@ PROFILE_USAGE_ROWS = (
         "usage": "【归档】【补全】【认知】【学习】【学习-整理】普通知识委托",
         "callers": "openclaw-tag-router/openclaw_app/router/knowledge_delegate.py",
         "surface": "profile_config/profile_runtime('knowledge_delegate') -> openclaw agent",
-        "state": "唯一转交 feishu-knowledge；认证来自 OpenClaw 对 /home/ubuntu/.codex/auth.json 的 OAuth 投影。",
+        "state": "唯一转交 feishu-knowledge；认证来自 OpenClaw 对 ~/.codex/auth.json 的 OAuth 投影。",
     },
     {
         "profile": "transcription_postprocess",
@@ -354,11 +358,11 @@ def render_note(payload: dict[str, Any], repo_hash: str, obsidian_hash: str) -> 
             "## Sync",
             "",
             "```bash",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_bot_config.py",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_bot_config.py --direction obsidian-to-repo",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_bot_config.py --direction repo-to-obsidian",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_agent_models.py",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/deploy_openclaw_runtime.py",
+            "python3 runtime/maintenance/deploy/sync_openclaw_bot_config.py",
+            "python3 runtime/maintenance/deploy/sync_openclaw_bot_config.py --direction obsidian-to-repo",
+            "python3 runtime/maintenance/deploy/sync_openclaw_bot_config.py --direction repo-to-obsidian",
+            "python3 runtime/maintenance/deploy/sync_openclaw_agent_models.py",
+            "python3 runtime/maintenance/deploy/deploy_openclaw_runtime.py",
             "```",
             "",
         ]
@@ -375,14 +379,14 @@ def render_llm_usage_ssot(payload: dict[str, Any], repo_hash: str) -> str:
         "> 自动生成公共知识库文件；描述当前真实代码状态，不描述目标改造状态。不要手工改这份 Markdown。",
         "",
         f"- 服务器公共知识库路径：`{PUBLIC_KNOWLEDGE_DIR}`",
-        f"- Mac 公共知识库目标路径：`{MAC_PUBLIC_KNOWLEDGE_DIR}`",
+        f"- Mac 公共知识库目标路径：`{MAC_PUBLIC_KNOWLEDGE_DIR or '未配置'}`",
         f"- 仓库配置事实源：`{REPO_CONFIG}`",
         f"- 配置 sha256：`{repo_hash}`",
         f"- 最近生成：`{now}`",
         "",
         "## 1. 事实源边界",
         "",
-        "- Bot / profile / provider 的可编辑事实源是 `/home/ubuntu/selfmedia-tools/config/openclaw_bots.json`。",
+        f"- Bot / profile / provider 的可编辑事实源是 `{REPO_CONFIG}`。",
         "- `openclaw配置/OpenClaw Bot LLM 配置.md` 是配置镜像说明，由 `runtime/maintenance/deploy/sync_openclaw_bot_config.py` 生成。",
         "- 本文件是 LLM 使用矩阵 SSOT，由同一个脚本生成，覆盖 profile 路径和非 profile 模型理解路径。",
         "- 本文件不输出真实 API key，只输出配置状态。",
@@ -496,8 +500,8 @@ def render_llm_usage_ssot(payload: dict[str, Any], repo_hash: str) -> str:
             "## 7. 生成与验证",
             "",
             "```bash",
-            "python3 /home/ubuntu/selfmedia-tools/runtime/maintenance/deploy/sync_openclaw_bot_config.py",
-            "PYTHONPATH=/home/ubuntu/selfmedia-tools pytest -q /home/ubuntu/selfmedia-tools/tests/test_sync_openclaw_bot_config.py",
+            "python3 runtime/maintenance/deploy/sync_openclaw_bot_config.py",
+            "PYTHONPATH=. .venv/bin/pytest -q tests/test_sync_openclaw_bot_config.py",
             "```",
             "",
         ]

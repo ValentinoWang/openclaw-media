@@ -13,6 +13,27 @@ from pathlib import Path
 from typing import Any, Callable
 
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
+OPENCLAW_RUNTIME_HOME = Path(os.getenv("OPENCLAW_RUNTIME_HOME") or Path.home() / ".openclaw")
+DEFAULT_ARCHIVE_ROOT = Path(os.getenv("OPENCLAW_DAILY_TODO_ARCHIVE_ROOT") or Path.home() / "obsidian-日记/Archieve")
+DEFAULT_DEVELOPMENT_ARCHIVE_ROOT = Path(
+    os.getenv("OPENCLAW_DEVELOPMENT_WEEKLY_ROOT") or DEFAULT_ARCHIVE_ROOT
+)
+DEFAULT_STATE_PATH = Path(
+    os.getenv("OPENCLAW_DAILY_TODO_SYNC_STATE") or REPO_ROOT / "data/daily_todo_sync_state.json"
+)
+DEFAULT_REMINDER_ROOT = Path(
+    os.getenv("OPENCLAW_FEISHU_REMINDER_ROOT") or Path.home() / "openclaw-feishu-reminder"
+)
+DEFAULT_REMINDER_SCRIPT = Path(
+    os.getenv("OPENCLAW_FEISHU_REMINDER_SCRIPT") or DEFAULT_REMINDER_ROOT / "reminder.py"
+)
+DEFAULT_ENV_FILES = [
+    str(OPENCLAW_RUNTIME_HOME / "openclaw-feishu-env.conf"),
+    str(DEFAULT_REMINDER_ROOT / "reminder.env"),
+]
+
+
 CHECKED_FEISHU_RE = re.compile(
     r"^\s*-\s*\[[xX]\]\s*(?P<title>.*?)\s*<!--\s*openclaw:feishu_record=(?P<record>rec[A-Za-z0-9_-]+);sync=todo_complete_v1\s*-->\s*$"
 )
@@ -131,23 +152,23 @@ def reminder_complete_runner(command: str, script: str, env: dict[str, str]) -> 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Sync checked Obsidian weekly todo checkboxes to Feishu completion status.")
-    parser.add_argument("--weekly-root", default="/home/ubuntu/obsidian-日记/Archieve")
-    parser.add_argument("--development-weekly-root", default="/home/ubuntu/obsidian-日记/Archieve")
-    parser.add_argument("--state", default="/home/ubuntu/selfmedia-tools/data/daily_todo_sync_state.json")
+    parser.add_argument("--weekly-root", default=str(DEFAULT_ARCHIVE_ROOT))
+    parser.add_argument("--development-weekly-root", default=str(DEFAULT_DEVELOPMENT_ARCHIVE_ROOT))
+    parser.add_argument("--state", default=str(DEFAULT_STATE_PATH))
     parser.add_argument("--days", type=int, default=14)
     parser.add_argument("--today", default="")
     parser.add_argument("--command", default="/usr/bin/python3")
-    parser.add_argument("--reminder-script", default="/home/ubuntu/openclaw-feishu-reminder/reminder.py")
+    parser.add_argument("--reminder-script", default=str(DEFAULT_REMINDER_SCRIPT))
     parser.add_argument(
         "--env-file",
         action="append",
-        default=[
-            "/home/ubuntu/.openclaw/openclaw-feishu-env.conf",
-            "/home/ubuntu/openclaw-feishu-reminder/reminder.env",
-        ],
+        default=DEFAULT_ENV_FILES,
     )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+
+    if not args.dry_run and not Path(args.reminder_script).is_file():
+        parser.error("--reminder-script must name an existing reminder.py; set OPENCLAW_FEISHU_REMINDER_SCRIPT or pass the flag")
 
     today = date.fromisoformat(args.today) if args.today else date.today()
     files = recent_weekly_files_for_roots([Path(args.weekly_root), Path(args.development_weekly_root)], today, args.days)

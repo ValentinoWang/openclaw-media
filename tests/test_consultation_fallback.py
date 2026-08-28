@@ -3,12 +3,27 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from selfmedia.creation.consultation import format_consultation_reply
+from common.llm_validation import LLMPostValidationError, validate_llm_payload
+from selfmedia.creation.consultation import CONSULTATION_VALIDATION_CONTRACT, format_consultation_reply
+
+
+def test_consultation_contract_requires_a_chat_ready_reply() -> None:
+    payload = {
+        "reply": "",
+        "conclusion": "选题可做。",
+        "next_actions": ["先写开头。"],
+        "evidence": ["已有相关素材。"],
+    }
+
+    with pytest.raises(LLMPostValidationError, match=r"fields must not be empty: \['reply'\]"):
+        validate_llm_payload(payload, CONSULTATION_VALIDATION_CONTRACT)
 
 
 def test_format_consultation_reply_uses_concise_colleague_voice() -> None:

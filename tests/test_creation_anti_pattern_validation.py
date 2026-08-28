@@ -5,6 +5,7 @@ import unittest
 
 from selfmedia.creation.llm_generator import CREATOR_BRIEF_REPORT_MODE, validate_llm_draft_payload
 from selfmedia.creation.request_parser import CreationRequest
+from selfmedia.creation.writer import _require_creator_report_for_render
 from selfmedia.style.context_loader import load_anti_patterns
 
 
@@ -194,6 +195,15 @@ class CreationAntiPatternValidationTests(unittest.TestCase):
         draft = validate_llm_draft_payload(payload, _request())
 
         self.assertEqual(draft["recommended_option_id"], "recommended")
+
+    def test_requires_first_hour_action_for_validation_and_rendering(self) -> None:
+        payload = _payload()
+        del payload["creator_report"]["publishing_pack"]["first_hour_action"]  # type: ignore[index]
+
+        with self.assertRaisesRegex(ValueError, "first_hour_action"):
+            validate_llm_draft_payload(payload, _request())
+        with self.assertRaisesRegex(ValueError, "first_hour_action"):
+            _require_creator_report_for_render(payload, _request())
 
 
 if __name__ == "__main__":

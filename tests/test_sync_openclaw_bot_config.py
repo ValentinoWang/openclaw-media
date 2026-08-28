@@ -104,3 +104,7 @@ def test_render_llm_usage_ssot_includes_profile_and_non_profile_paths() -> None:
     assert "01 ingest 原始音频转写" in rendered
     assert "gpt-5.6-sol" in rendered
     assert "已配置" in rendered
+
+
+def test_sync_agent_models_uses_the_sibling_script_by_default() -> None:
+    assert MODULE.SYNC_AGENT_MODELS == MODULE_PATH.with_name("sync_openclaw_agent_models.py")

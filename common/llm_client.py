@@ -29,7 +29,7 @@ from .model_transport_context import ModelCall, ModelTransport, ModelTransportEr
 
 
 CODEX_AUTH_FILE_SENTINEL = "codex_auth_file"
-DEFAULT_CODEX_AUTH_PATH = Path("/home/ubuntu/.codex/auth.json")
+DEFAULT_CODEX_AUTH_PATH = Path.home() / ".codex/auth.json"
 DEFAULT_CODEX_RESPONSES_CONNECT_TIMEOUT_SECONDS = 30.0
 DEFAULT_CODEX_RESPONSES_READ_TIMEOUT_SECONDS = 120.0
 CODEX_RESPONSES_CONNECT_TIMEOUT_ENV = "OPENCLAW_CODEX_RESPONSES_CONNECT_TIMEOUT_SECONDS"
@@ -38,6 +38,7 @@ CODEX_RESPONSES_TOTAL_TIMEOUT_ENV = "OPENCLAW_CODEX_RESPONSES_TOTAL_TIMEOUT_SECO
 MODEL_CAPACITY_RETRY_DELAYS_SECONDS = (15.0, 45.0)
 MODEL_CAPACITY_ERROR_MARKER = "selected model is at capacity"
 MODEL_CAPACITY_DEFAULT_DETAIL = "Selected model is at capacity. Please try a different model."
+DEFAULT_JSON_OUTPUT_INSTRUCTIONS = "输出协议：只输出一个合法 JSON object，不要 Markdown，不要额外解释。"
 
 
 def is_model_capacity_failure(error: object) -> bool:
@@ -60,7 +61,7 @@ def _json_retry_delay_seconds(error: object, attempt: int) -> float:
 
 
 CODEX_AUTH_FILE_SENTINEL = "codex_auth_file"
-DEFAULT_CODEX_AUTH_PATH = Path("/home/ubuntu/.codex/auth.json")
+DEFAULT_CODEX_AUTH_PATH = Path.home() / ".codex/auth.json"
 DEFAULT_CODEX_RESPONSES_CONNECT_TIMEOUT_SECONDS = 30.0
 DEFAULT_CODEX_RESPONSES_READ_TIMEOUT_SECONDS = 120.0
 CODEX_RESPONSES_CONNECT_TIMEOUT_ENV = "OPENCLAW_CODEX_RESPONSES_CONNECT_TIMEOUT_SECONDS"
@@ -129,7 +130,7 @@ def generate_json_from_parts(
     capacity_max_retries: int | None = None,
     error_prefix: str = "LLM 输出 JSON 校验失败",
     retry_text: str = "上一次输出没有通过 JSON 校验：{error}\n请只返回合法 JSON object，不要 Markdown。",
-    instructions: str = "你是 JSON 输出引擎。必须只输出合法 JSON object，不要 Markdown，不要解释。",
+    instructions: str = DEFAULT_JSON_OUTPUT_INSTRUCTIONS,
     validation_contract: str,
     validation_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -161,7 +162,7 @@ def generate_json_once(
     parts: list[dict[str, Any]],
     config: LLMProviderSettings,
     *,
-    instructions: str = "你是 JSON 输出引擎。必须只输出合法 JSON object，不要 Markdown，不要解释。",
+    instructions: str = DEFAULT_JSON_OUTPUT_INSTRUCTIONS,
 ) -> dict[str, Any]:
     ensure_llm_provider_available(config)
     if current_model_transport() is not None:

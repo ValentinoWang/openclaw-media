@@ -5,6 +5,7 @@ from functools import lru_cache
 import json
 import os
 from pathlib import Path
+import re
 from typing import Any, Mapping
 
 
@@ -19,14 +20,11 @@ BASE_URL_ENV_PREFIX = "env:"
 DEFAULT_OPENCLAW_MODEL_PROVIDER = "codex"
 OPENCLAW_THINKING_LEVELS = {"off", "minimal", "low", "medium", "high"}
 OPENCLAW_THINKING_ALIASES = {"xhigh": "high", "max": "high", "adaptive": "high"}
-OPENCLAW_NODE_BIN_DIR = "/home/ubuntu/.nvm/versions/node/v22.22.2/bin"
-OPENCLAW_BASE_PATH_DIRS = (
-    "/home/ubuntu/bin",
-    "/home/ubuntu/.local/bin",
-    "/usr/local/bin",
-    "/usr/bin",
-    "/bin",
-)
+RUNTIME_TEMPLATE_RE = re.compile(r"\$\{([A-Z][A-Z0-9_]*)\}")
+RUNTIME_TEMPLATE_DEFAULTS = {
+    "OPENCLAW_AGENTS_ROOT": lambda: str(Path.home() / ".openclaw" / "agents"),
+    "OPENCLAW_CODEX_HOME": lambda: str(Path.home() / ".codex"),
+}
 
 
 @dataclass(frozen=True)
@@ -70,23 +68,41 @@ def normalize_openclaw_thinking(value: str) -> str:
     return normalized if normalized in OPENCLAW_THINKING_LEVELS else ""
 
 
+def resolve_runtime_template(value: object) -> str:
+    """Expand the small, audited template vocabulary used by the runtime SSOT."""
+    text = str(value or "").strip()
+
+    def replace(match: re.Match[str]) -> str:
+        name = match.group(1)
+        configured = str(os.getenv(name) or "").strip()
+        if configured:
+            return configured
+        default = RUNTIME_TEMPLATE_DEFAULTS.get(name)
+        if default is None:
+            raise RuntimeError(f"OpenClaw Bot LLM 配置使用了未定义的运行时模板：{name}")
+        return default()
+
+    return RUNTIME_TEMPLATE_RE.sub(replace, text)
+
+
 def openclaw_subprocess_env(codex_home: str = "", *, base_env: Mapping[str, str] | None = None) -> dict[str, str]:
     env = dict(os.environ if base_env is None else base_env)
-    env.setdefault("HOME", "/home/ubuntu")
+    env.setdefault("HOME", str(Path.home()))
     if codex_home:
         env["CODEX_HOME"] = codex_home
-    env["PATH"] = os.pathsep.join(_dedupe_path_parts([*_openclaw_path_prefixes(), env.get("PATH", "")]))
+    env["PATH"] = os.pathsep.join(_dedupe_path_parts([*_openclaw_path_prefixes(env), env.get("PATH", "")]))
     return env
 
 
-def _openclaw_path_prefixes() -> list[str]:
-    prefixes = [OPENCLAW_NODE_BIN_DIR]
-    nvm_root = Path("/home/ubuntu/.nvm/versions/node")
+def _openclaw_path_prefixes(env: Mapping[str, str]) -> list[str]:
+    home = Path(str(env.get("HOME") or Path.home())).expanduser()
+    prefixes = [str(env.get("OPENCLAW_NODE_BIN_DIR") or "")]
+    nvm_root = Path(str(env.get("NVM_DIR") or home / ".nvm")).expanduser() / "versions" / "node"
     if nvm_root.is_dir():
         for path in sorted(nvm_root.glob("*/bin"), reverse=True):
             if (path / "node").is_file():
                 prefixes.append(str(path))
-    prefixes.extend(OPENCLAW_BASE_PATH_DIRS)
+    prefixes.extend((str(home / "bin"), str(home / ".local" / "bin"), "/usr/local/bin", "/usr/bin", "/bin"))
     return _dedupe_path_parts(prefixes)
 
 
@@ -183,13 +199,13 @@ def _merged_runtime(profile_or_bot: dict[str, Any]) -> BotLLMRuntime:
         raise RuntimeError(f"OpenClaw Bot LLM 配置不完整：{', '.join(missing)}")
     return BotLLMRuntime(
         provider=provider_name,
-        bin=str(merged["bin"]).strip(),
-        agent=str(merged["agent"]).strip(),
+        bin=resolve_runtime_template(merged["bin"]),
+        agent=resolve_runtime_template(merged["agent"]),
         model=normalize_openclaw_model(str(tier["model"])),
         thinking=normalize_openclaw_thinking(str(tier["reasoning"])),
         timeout=float(merged["timeout"]),
-        cwd=str(merged["cwd"]).strip(),
-        codex_home=str(merged["codex_home"]).strip(),
+        cwd=resolve_runtime_template(merged["cwd"]),
+        codex_home=resolve_runtime_template(merged["codex_home"]),
     )
 
 

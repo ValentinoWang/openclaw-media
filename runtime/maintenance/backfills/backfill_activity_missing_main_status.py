@@ -2,22 +2,26 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
-import sys
+import os
 from pathlib import Path
 from typing import Any
 
 
-ROOT = Path("/home/ubuntu")
-REMINDER_ROOT = ROOT / "openclaw-feishu-reminder"
-if str(REMINDER_ROOT) not in sys.path:
-    sys.path.insert(0, str(REMINDER_ROOT))
-
-import reminder  # noqa: E402
-
-
-ACTIVITY_CONFIG_PATH = ROOT / "openclaw-feishu-reminder/wiki-activity-config.json"
+REMINDER_ROOT = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_ROOT") or Path.home() / "openclaw-feishu-reminder")
+REMINDER_PATH = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_SCRIPT") or REMINDER_ROOT / "reminder.py")
+ACTIVITY_CONFIG_PATH = Path(os.getenv("OPENCLAW_ACTIVITY_CONFIG_PATH") or REMINDER_ROOT / "wiki-activity-config.json")
 DEFAULT_STATUS = "进行中"
+
+
+def load_reminder() -> Any:
+    spec = importlib.util.spec_from_file_location("openclaw_feishu_reminder_status_backfill", REMINDER_PATH)
+    if not spec or not spec.loader:
+        raise RuntimeError(f"cannot import {REMINDER_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def load_activity_config() -> dict[str, str]:
@@ -35,6 +39,7 @@ def load_activity_config() -> dict[str, str]:
 
 def backfill(*, dry_run: bool) -> dict[str, Any]:
     cfg = load_activity_config()
+    reminder = load_reminder()
     token = reminder._tenant_token()
     reminder._ensure_fields(token, cfg["app_token"], cfg["table_id"], "活动")
     reminder._ensure_single_select_options(token, cfg["app_token"], cfg["table_id"], {"主状态": DEFAULT_STATUS})
