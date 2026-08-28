@@ -126,6 +126,8 @@ class MediaWebTaskService(_core.MediaWebTaskService):
         uploads = [self._load_upload(value, tenant_id=tenant_id) for value in upload_ids]
         if any(item["status"] != "ready" for item in uploads):
             raise _core.MediaWebTaskError("task_conflict", "上传文件尚未准备完成。")
+        if capability_id == _core.MATERIAL_PARSING_CAPABILITY_ID:
+            _core._validate_source_asset_material_parsing(params, uploads)
         self._validate_upload_contract(capability, uploads)
 
         if str(payload.get("initiation") or "") not in {"manual", "ai"}:

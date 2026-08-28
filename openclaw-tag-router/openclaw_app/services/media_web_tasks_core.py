@@ -87,6 +87,64 @@ PROJECTION_MUTATION_STATUSES = {
     "track_creator_membership_confirmed",
 }
 SOURCE_ASSET_COMPLETION_STATUS = "media_growth_done"
+MATERIAL_PARSING_CAPABILITY_ID = "source_asset_intake"
+MATERIAL_TYPE_FIELD_KEY = "field_3be96f8eb83d"
+MATERIAL_SOURCE_FIELD_KEY = "field_c675ffae69a2"
+MATERIAL_MANUAL_SUPPLEMENT_FIELD_KEY = "remark"
+MATERIAL_TYPE_ALIASES = {
+    "text": "text",
+    "文本": "text",
+    "url": "url",
+    "链接": "url",
+    "image": "image",
+    "图片": "image",
+    "audio": "audio",
+    "音频": "audio",
+    "video": "video",
+    "视频": "video",
+    "pdf": "pdf",
+    "PDF": "pdf",
+}
+MATERIAL_PLATFORM_ALIASES = {
+    "douyin": "douyin",
+    "抖音": "douyin",
+    "xiaohongshu": "xiaohongshu",
+    "小红书": "xiaohongshu",
+    "kuaishou": "kuaishou",
+    "快手": "kuaishou",
+    "bilibili": "bilibili",
+    "哔哩哔哩": "bilibili",
+    "wechat": "wechat",
+    "微信": "wechat",
+    "weibo": "weibo",
+    "微博": "weibo",
+    "zhihu": "zhihu",
+    "知乎": "zhihu",
+    "web": "web",
+    "普通网页": "web",
+    "unknown": "unknown",
+    "其他或未知平台": "unknown",
+}
+MATERIAL_PLATFORM_LABELS = {
+    "douyin": "抖音",
+    "xiaohongshu": "小红书",
+    "kuaishou": "快手",
+    "bilibili": "哔哩哔哩",
+    "wechat": "微信",
+    "weibo": "微博",
+    "zhihu": "知乎",
+    "web": "普通网页",
+    "unknown": "其他或未知平台",
+}
+MATERIAL_TYPE_LABELS = {
+    "text": "文本",
+    "url": "链接",
+    "image": "图片",
+    "audio": "音频",
+    "video": "视频",
+    "pdf": "PDF",
+}
+MATERIAL_AUTOMATIC_URL_PLATFORMS = frozenset({"douyin", "xiaohongshu", "wechat"})
 RESERVED_TENANT_KEYS = frozenset(
     {
         "tenant",
@@ -160,6 +218,189 @@ class MediaWebTaskError(RuntimeError):
     @issues.setter
     def issues(self, value: list[Any]) -> None:
         self.details["issues"] = list(value)
+
+
+def _material_value(params: Mapping[str, Any], key: str) -> str:
+    value = params.get(key)
+    return value.strip() if isinstance(value, str) else ""
+
+
+def _material_upload_kind(mime_type: str) -> str:
+    if mime_type.startswith("image/"):
+        return "image"
+    if mime_type.startswith("audio/"):
+        return "audio"
+    if mime_type.startswith("video/"):
+        return "video"
+    if mime_type == "application/pdf":
+        return "pdf"
+    return "text"
+
+
+def _material_failure_prompt(platform: str, material_type: str, *, automatic: bool) -> str:
+    platform_label = MATERIAL_PLATFORM_LABELS[platform]
+    if material_type == "text":
+        return "文本未能解析为有效内容。"
+    if material_type == "url":
+        if automatic:
+            if platform == "wechat":
+                return "微信文章链接自动解析失败或返回内容不完整。"
+            return f"{platform_label}链接自动解析失败或返回内容不完整。"
+        if platform == "unknown":
+            return "当前无法确认该平台并自动解析链接。"
+        return f"当前未接入{platform_label}链接自动解析。"
+    if platform == "unknown":
+        if material_type == "video":
+            return "当前无法确认该平台并自动解析视频文件。"
+        if material_type == "pdf":
+            return "当前无法确认该平台并自动解析 PDF 素材。"
+        return f"当前无法确认该平台并自动解析{MATERIAL_TYPE_LABELS[material_type]}素材。"
+    if material_type == "video":
+        return f"当前不支持自动解析{platform_label}视频文件。"
+    if material_type == "pdf":
+        return f"当前不支持自动解析{platform_label} PDF 素材。"
+    return f"当前不支持自动解析{platform_label}{MATERIAL_TYPE_LABELS[material_type]}素材。"
+
+
+def _material_next_action(platform: str, material_type: str, *, source_missing: bool) -> str:
+    if source_missing:
+        if material_type in {"image", "audio", "video", "pdf"}:
+            return "请先提供原始素材并填写人工补充后重新校验。"
+        return "请补充原始文本或链接后重新校验。"
+    if material_type == "text":
+        return "请补充素材摘要后重新校验。"
+    if material_type == "url":
+        if platform in MATERIAL_AUTOMATIC_URL_PLATFORMS:
+            if platform == "wechat":
+                return "请确认文章可访问，或补充标题、正文摘要和用途后重新校验。"
+            return "请确认链接可访问，或补充标题、正文摘要和用途后重新校验。"
+        if platform == "unknown":
+            return "请选择准确平台，或补充链接标题、正文摘要和用途后重新校验。"
+        return "请补充链接标题、正文摘要和用途后重新校验。"
+    prompts = {
+        "image": "请补充图片主体、关键信息和用途后重新校验。",
+        "audio": "请补充音频主题、关键内容和用途后重新校验。",
+        "video": "请补充视频主题、关键画面或口播摘要和用途后重新校验。",
+        "pdf": "请补充文档主题、关键结论和用途后重新校验。",
+    }
+    prompt = prompts[material_type]
+    return f"请选择准确平台，并{prompt[1:]}" if platform == "unknown" else prompt
+
+
+def _raise_material_parsing_incomplete(
+    *,
+    failure: str,
+    failure_prompt: str,
+    missing_fields: Sequence[str],
+    next_action: str,
+) -> None:
+    raise MediaWebTaskError(
+        "material_parsing_incomplete",
+        "素材解析未完成。",
+        details={
+            "failure": failure,
+            "failurePrompt": failure_prompt,
+            "missingFields": list(missing_fields),
+            "nextAction": next_action,
+        },
+    )
+
+
+def _validate_source_asset_material_parsing(
+    params: Mapping[str, Any],
+    uploads: Sequence[Mapping[str, Any]],
+) -> None:
+    material_type_value = _material_value(params, MATERIAL_TYPE_FIELD_KEY)
+    platform_value = _material_value(params, "platform")
+    manual_supplement = _material_value(params, MATERIAL_MANUAL_SUPPLEMENT_FIELD_KEY)
+    if not (material_type_value or platform_value or manual_supplement):
+        return
+
+    material_type = MATERIAL_TYPE_ALIASES.get(material_type_value)
+    platform = MATERIAL_PLATFORM_ALIASES.get(platform_value)
+    if material_type is None or platform is None:
+        missing_fields = []
+        if material_type is None:
+            missing_fields.append(MATERIAL_TYPE_FIELD_KEY)
+        if platform is None:
+            missing_fields.append("platform")
+        _raise_material_parsing_incomplete(
+            failure="material_parsing_combination_missing",
+            failure_prompt="当前素材类型和平台无法对应到唯一的解析合同。",
+            missing_fields=missing_fields,
+            next_action="请选择合同中的素材类型和平台后重新校验。",
+        )
+
+    automatic = material_type == "text" or (
+        material_type == "url" and platform in MATERIAL_AUTOMATIC_URL_PLATFORMS
+    )
+    source_is_file = material_type in {"image", "audio", "video", "pdf"}
+    source_value = _material_value(params, MATERIAL_SOURCE_FIELD_KEY)
+    source_missing = not uploads if source_is_file else not source_value
+    missing_fields: list[str] = []
+    if source_missing:
+        missing_fields.append("uploadIds" if source_is_file else MATERIAL_SOURCE_FIELD_KEY)
+    if source_is_file and uploads and any(
+        _material_upload_kind(str(upload.get("mime_type") or "")) != material_type
+        for upload in uploads
+    ):
+        missing_fields.append("uploadIds.mimeType")
+    if not automatic and not manual_supplement:
+        missing_fields.append(MATERIAL_MANUAL_SUPPLEMENT_FIELD_KEY)
+
+    if material_type == "url" and source_value and automatic:
+        parsed = urlparse(source_value)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            missing_fields.append("sourceUrl")
+
+    if missing_fields:
+        if source_missing:
+            failure = "material_source_missing"
+        elif material_type == "text":
+            failure = "text_parse_failed"
+        else:
+            failure = f"{platform}_{material_type}_{'parse_failed' if automatic else 'unsupported'}"
+        _raise_material_parsing_incomplete(
+            failure=failure,
+            failure_prompt=_material_failure_prompt(
+                platform,
+                material_type,
+                automatic=automatic,
+            ),
+            missing_fields=tuple(dict.fromkeys(missing_fields)),
+            next_action=_material_next_action(
+                platform,
+                material_type,
+                source_missing=source_missing,
+            ),
+        )
+
+
+def _upload_parsing_facts(content: bytes, mime_type: str, *, accepted: bool) -> dict[str, str]:
+    if not accepted:
+        return {
+            "status": "failed",
+            "failure_code": "upload_rejected",
+            "next_action": "请更换符合要求的原始文件后重新上传。",
+        }
+    if mime_type in {"text/plain", "text/markdown"}:
+        text = content.decode("utf-8")
+        if text.strip():
+            return {
+                "status": "completed_auto",
+                "failure_code": "",
+                "next_action": "文本素材已完成自动解析校验。",
+            }
+        return {
+            "status": "failed",
+            "failure_code": "text_parse_failed",
+            "next_action": "请补充有效文本后重新上传。",
+        }
+    return {
+        "status": "pending_manual",
+        "failure_code": "material_context_required",
+        "next_action": "请在素材入池时选择平台、素材类型并填写补充说明后重新校验。",
+    }
 
 
 def _utc_now() -> str:
@@ -428,6 +669,8 @@ class MediaWebTaskService:
         uploads = [self._load_upload(value, tenant_id=tenant_id) for value in upload_ids]
         if any(item["status"] != "ready" for item in uploads):
             raise MediaWebTaskError("task_conflict", "上传文件尚未准备完成。")
+        if capability_id == MATERIAL_PARSING_CAPABILITY_ID:
+            _validate_source_asset_material_parsing(params, uploads)
         self._validate_upload_contract(capability, uploads)
         if str(payload.get("initiation") or "") not in {"manual", "ai"}:
             raise MediaWebTaskError("invalid_request", "任务发起来源无效。")
@@ -679,6 +922,11 @@ class MediaWebTaskService:
                 "code": scan_code,
                 "checked_at": _utc_now(),
             }
+            item["parsing"] = _upload_parsing_facts(
+                content,
+                detected_mime,
+                accepted=accepted,
+            )
             if accepted:
                 binary_path = tenant_uploads_dir / f"{upload_id}.bin"
                 os.replace(quarantine_path, binary_path)
@@ -1329,7 +1577,7 @@ class MediaWebTaskService:
         # The Media Web upload contract (media_web_task.schema.json /
         # checkMaterialParsing.ts) is frozen to schemaVersion "3" with a
         # sha256-prefixed digest; storage keeps the bare digest.
-        return {
+        projection = {
             "schemaVersion": "3",
             "uploadId": item["upload_id"],
             "filename": item["filename"],
@@ -1339,6 +1587,14 @@ class MediaWebTaskService:
             "status": item["status"],
             "createdAt": item["created_at"],
         }
+        parsing = item.get("parsing")
+        if isinstance(parsing, Mapping):
+            projection["parsing"] = {
+                "status": str(parsing.get("status") or "pending"),
+                "failureCode": str(parsing.get("failure_code") or ""),
+                "nextAction": str(parsing.get("next_action") or ""),
+            }
+        return projection
 
     @contextmanager
     def _reservation_lease(self) -> Iterator[None]:
