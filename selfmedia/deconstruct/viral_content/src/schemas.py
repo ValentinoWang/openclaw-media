@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError, root_validator, validator
 
+from .storyboard_window import parse_explicit_analysis_time_range
+
 
 class SchemaError(ValueError):
     pass
@@ -662,7 +664,7 @@ def validate_video_storyboard_granularity(
                 for expected in _expected_storyboard_ranges(end, start_sec=start)
             ]
             if not expected_ranges:
-                raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: analysis_time_range 与可拆解前 {STORYBOARD_ANALYSIS_MAX_SECONDS} 秒没有交集")
+                raise SchemaError(_missing_storyboard_window_error(payload))
             _mark_partial_storyboard_coverage(payload, expected_ranges, [])
             return payload
         raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 不能为空")
@@ -670,7 +672,7 @@ def validate_video_storyboard_granularity(
     if len(actual_ranges) != len(storyboard):
         raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 每行 duration 必须是时间段")
     observed_end = max((end for _, end in actual_ranges), default=0.0)
-    if observed_end > STORYBOARD_ANALYSIS_MAX_SECONDS + 0.01:
+    if not _has_explicit_analysis_time_range(payload) and observed_end > STORYBOARD_ANALYSIS_MAX_SECONDS + 0.01:
         raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: 长视频只允许拆解前 {STORYBOARD_ANALYSIS_MAX_SECONDS} 秒")
     analysis_ranges = _storyboard_analysis_ranges(payload, target_duration_sec, observed_end)
     expected_ranges = [
@@ -679,7 +681,7 @@ def validate_video_storyboard_granularity(
         for expected in _expected_storyboard_ranges(end, start_sec=start)
     ]
     if not expected_ranges:
-        raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: analysis_time_range 与可拆解前 {STORYBOARD_ANALYSIS_MAX_SECONDS} 秒没有交集")
+        raise SchemaError(_missing_storyboard_window_error(payload))
     if allow_partial_coverage:
         _validate_partial_storyboard_ranges(storyboard, actual_ranges, expected_ranges)
         _mark_partial_storyboard_coverage(payload, expected_ranges, actual_ranges)
@@ -688,6 +690,11 @@ def validate_video_storyboard_granularity(
         raise SchemaError(
             f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 行数不足，"
             f"需要覆盖 {_format_duration_ranges(expected_ranges)}"
+        )
+    if len(actual_ranges) > len(expected_ranges):
+        raise SchemaError(
+            f"{STORYBOARD_GRANULARITY_ERROR_CODE}: video_storyboard 包含请求窗口外的时间段，"
+            f"只允许覆盖 {_format_duration_ranges(expected_ranges)}"
         )
     for index, (expected, actual) in enumerate(zip(expected_ranges, actual_ranges), 1):
         if not _close_range(expected, actual):
@@ -755,14 +762,23 @@ def _mark_partial_storyboard_coverage(
             value["human_review_required"] = True
 
 
-def _storyboard_target_end(target_duration_sec: float | int | None, observed_end: float) -> int:
+def _storyboard_target_end(
+    target_duration_sec: float | int | None,
+    observed_end: float,
+    *,
+    explicit_ranges: list[tuple[float, float]],
+) -> int:
     if target_duration_sec not in (None, ""):
         try:
             target = float(target_duration_sec)
         except (TypeError, ValueError):
             target = 0.0
+    elif explicit_ranges:
+        target = max(end for _, end in explicit_ranges)
     else:
         target = observed_end
+    if explicit_ranges:
+        return max(1, int(target + 0.999))
     target = max(target, float(STORYBOARD_OPENING_SECONDS))
     return max(1, min(STORYBOARD_ANALYSIS_MAX_SECONDS, int(target + 0.999)))
 
@@ -772,28 +788,48 @@ def _storyboard_analysis_ranges(
     target_duration_sec: float | int | None,
     observed_end: float,
 ) -> list[tuple[float, float]]:
-    target_end = float(_storyboard_target_end(target_duration_sec, observed_end))
     request_constraints = payload.get("request_constraints")
     analysis_time_range = (
         str(request_constraints.get("analysis_time_range") or "").strip()
         if isinstance(request_constraints, dict)
         else ""
     )
-    if not analysis_time_range or analysis_time_range in {"全部", "历史未标注"}:
+    try:
+        explicit_ranges = parse_explicit_analysis_time_range(analysis_time_range)
+    except ValueError as exc:
+        raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: {exc}") from exc
+    target_end = float(
+        _storyboard_target_end(
+            target_duration_sec,
+            observed_end,
+            explicit_ranges=explicit_ranges,
+        )
+    )
+    if not explicit_ranges:
         return [(0.0, target_end)]
 
     ranges: list[tuple[float, float]] = []
-    for item in analysis_time_range.split(","):
-        match = re.fullmatch(r"\s*(\d+(?:\.\d+)?)s?-(\d+(?:\.\d+)?)s?\s*", item)
-        if not match:
-            raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: analysis_time_range 格式无效: {analysis_time_range}")
-        start, end = float(match.group(1)), float(match.group(2))
-        if end <= start:
-            raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: analysis_time_range 结束时间必须大于开始时间")
+    for start, end in explicit_ranges:
         bounded_start, bounded_end = max(0.0, start), min(target_end, end)
         if bounded_end > bounded_start:
             ranges.append((bounded_start, bounded_end))
     return ranges
+
+
+def _has_explicit_analysis_time_range(payload: dict[str, Any]) -> bool:
+    request_constraints = payload.get("request_constraints")
+    if not isinstance(request_constraints, dict):
+        return False
+    try:
+        return bool(parse_explicit_analysis_time_range(request_constraints.get("analysis_time_range")))
+    except ValueError as exc:
+        raise SchemaError(f"{STORYBOARD_GRANULARITY_ERROR_CODE}: {exc}") from exc
+
+
+def _missing_storyboard_window_error(payload: dict[str, Any]) -> str:
+    if _has_explicit_analysis_time_range(payload):
+        return f"{STORYBOARD_GRANULARITY_ERROR_CODE}: analysis_time_range 不在已知媒体时长内"
+    return f"{STORYBOARD_GRANULARITY_ERROR_CODE}: 默认前 {STORYBOARD_ANALYSIS_MAX_SECONDS} 秒内没有可拆解窗口"
 
 
 def _expected_storyboard_ranges(target_end: float, *, start_sec: float = 0.0) -> list[tuple[float, float]]:

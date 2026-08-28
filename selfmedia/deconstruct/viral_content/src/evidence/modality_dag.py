@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
@@ -18,6 +19,7 @@ from ..media_parts import (
     ensure_real_file,
     ensure_real_files,
 )
+from ..storyboard_window import parse_explicit_analysis_time_range
 from .ocr import build_ocr_evidence
 from .schemas import (
     ASSET_MANIFEST_SCHEMA_VERSION,
@@ -45,6 +47,7 @@ def run_evidence_dag(
     artifact_root: str | Path | None = None,
     max_frames: int = 8,
     existing_audio_path: str | None = None,
+    analysis_time_range: str = "",
 ) -> dict[str, Any]:
     """Build the canonical asset_manifest -> facts -> evidence_store DAG."""
     root = Path(artifact_root or Path(work_dir) / "evidence_dag").expanduser()
@@ -72,6 +75,7 @@ def run_evidence_dag(
         ocr_path=ocr_path,
         facts_dir=facts_dir,
         max_frames=max_frames,
+        analysis_time_range=analysis_time_range,
     )
     evidence_store = build_evidence_store(
         asset_manifest=asset_manifest,
@@ -148,12 +152,27 @@ def run_modality_pipelines(
     ocr_path: str = "",
     facts_dir: str | Path | None = None,
     max_frames: int = 8,
+    analysis_time_range: str = "",
 ) -> dict[str, dict[str, Any]]:
     facts_root = Path(facts_dir).expanduser() if facts_dir else None
     with ThreadPoolExecutor(max_workers=4) as executor:
         source_copy_future = executor.submit(run_source_copy_pipeline, asset_manifest=asset_manifest, caption_path=caption_path)
-        visual_future = executor.submit(run_visual_asset_pipeline, asset_manifest=asset_manifest, max_frames=max_frames)
-        speech_audio_future = executor.submit(run_speech_audio_pipeline, asset_manifest=asset_manifest, transcript_path=transcript_path)
+        visual_future = executor.submit(
+            run_visual_asset_pipeline,
+            asset_manifest=asset_manifest,
+            max_frames=max_frames,
+            analysis_time_range=analysis_time_range,
+        )
+        speech_audio_future = (
+            executor.submit(
+                run_speech_audio_pipeline,
+                asset_manifest=asset_manifest,
+                transcript_path=transcript_path,
+                analysis_time_range=analysis_time_range,
+            )
+            if analysis_time_range
+            else executor.submit(run_speech_audio_pipeline, asset_manifest=asset_manifest, transcript_path=transcript_path)
+        )
         platform_future = executor.submit(run_engagement_comments_interaction_pipeline, asset_manifest=asset_manifest)
 
         source_copy_facts = _persist_fact_group(source_copy_future.result(), facts_root)
@@ -174,6 +193,7 @@ def run_modality_pipelines(
             visual_facts=visual_facts,
             ocr_facts=ocr_facts,
             speech_audio_facts=speech_audio_facts,
+            analysis_time_range=analysis_time_range,
         ),
         facts_root,
     )
@@ -219,16 +239,31 @@ def run_source_copy_pipeline(*, asset_manifest: dict[str, Any], caption_path: st
     )
 
 
-def run_visual_asset_pipeline(*, asset_manifest: dict[str, Any], max_frames: int = 8) -> dict[str, dict[str, Any]]:
+def run_visual_asset_pipeline(
+    *,
+    asset_manifest: dict[str, Any],
+    max_frames: int = 8,
+    analysis_time_range: str = "",
+) -> dict[str, dict[str, Any]]:
     media_type = str(asset_manifest.get("media_type") or "")
     work_dir = str(asset_manifest.get("work_dir") or "")
+    explicit_ranges = parse_explicit_analysis_time_range(analysis_time_range)
+    analysis_window_sec = sum(end - start for start, end in explicit_ranges)
     visual_assets: list[dict[str, Any]] = []
     evidence_paths: list[str] = []
     cleanup_paths: list[str] = []
     preview_path = ""
     if media_type == "video":
         checked_video = ensure_real_file(str(asset_manifest.get("video_path") or ""), "原视频")
-        frames = media_parts_module.extract_video_frames(checked_video, str(Path(work_dir) / "frames"), max_frames=max_frames)
+        if explicit_ranges:
+            frames = media_parts_module.extract_video_frames(
+                checked_video,
+                str(Path(work_dir) / "frames"),
+                max_frames=max_frames,
+                analysis_time_range=analysis_time_range,
+            )
+        else:
+            frames = media_parts_module.extract_video_frames(checked_video, str(Path(work_dir) / "frames"), max_frames=max_frames)
         frames = [ensure_real_file(frame, "视频关键帧") for frame in frames]
         if not frames:
             raise RuntimeError(f"视频已下载但抽帧失败，不能进行假拆解：{checked_video}")
@@ -240,8 +275,13 @@ def run_visual_asset_pipeline(*, asset_manifest: dict[str, Any], max_frames: int
             source_name = Path(frame).name
             timestamp_sec = _frame_timestamp_from_name(source_name)
             is_first5 = timestamp_sec <= media_parts_module.STORYBOARD_OPENING_SECONDS
+            is_explicit_window = bool(explicit_ranges)
             kind = "first5s_frame" if is_first5 else "keyframe"
-            phase = "0-5秒分镜脚本每秒代表帧" if is_first5 else "5秒后分镜脚本每3秒代表帧"
+            phase = (
+                "0-5秒分镜脚本每秒代表帧"
+                if is_first5
+                else ("显式分析窗口内每3秒分镜代表帧" if is_explicit_window else "5秒后分镜脚本每3秒代表帧")
+            )
             visual_assets.append(
                 {
                     "asset_id": asset_id,
@@ -250,8 +290,13 @@ def run_visual_asset_pipeline(*, asset_manifest: dict[str, Any], max_frames: int
                     "phase": phase,
                     "role": "visual",
                     "timestamp_sec": timestamp_sec,
-                    "sampling_reason": "opening_1s_storyboard_frame" if is_first5 else "post5_3s_storyboard_frame",
-                    "analysis_window_sec": media_parts_module.VIDEO_ANALYSIS_MAX_SECONDS,
+                    "sampling_reason": (
+                        "opening_1s_storyboard_frame"
+                        if is_first5
+                        else ("requested_window_3s_storyboard_frame" if is_explicit_window else "post5_3s_storyboard_frame")
+                    ),
+                    "analysis_window_sec": analysis_window_sec if is_explicit_window else media_parts_module.VIDEO_ANALYSIS_MAX_SECONDS,
+                    "analysis_time_range": analysis_time_range if is_explicit_window else "",
                 }
             )
             evidence_paths.append(asset_path)
@@ -282,6 +327,7 @@ def run_visual_asset_pipeline(*, asset_manifest: dict[str, Any], max_frames: int
                         video_path=str(asset_manifest.get("video_path") or ""),
                         image_paths=[str(path) for path in asset_manifest.get("image_paths") or []],
                         visual_assets=visual_assets,
+                        analysis_time_range=analysis_time_range,
                     ),
                 },
             )
@@ -289,15 +335,33 @@ def run_visual_asset_pipeline(*, asset_manifest: dict[str, Any], max_frames: int
     )
 
 
-def run_speech_audio_pipeline(*, asset_manifest: dict[str, Any], transcript_path: str = "") -> dict[str, dict[str, Any]]:
-    audio_path = str(asset_manifest.get("audio_path") or "")
-    if not audio_path and asset_manifest.get("media_type") == "video" and asset_manifest.get("video_path"):
+def run_speech_audio_pipeline(
+    *,
+    asset_manifest: dict[str, Any],
+    transcript_path: str = "",
+    analysis_time_range: str = "",
+) -> dict[str, dict[str, Any]]:
+    explicit_ranges = parse_explicit_analysis_time_range(analysis_time_range)
+    audio_path = str(asset_manifest.get("audio_path") or "") if not explicit_ranges else ""
+    effective_transcript_path = transcript_path if not explicit_ranges else ""
+    if not audio_path and asset_manifest.get("media_type") == "video" and asset_manifest.get("video_path") and len(explicit_ranges) <= 1:
+        start_seconds = explicit_ranges[0][0] if explicit_ranges else 0.0
+        duration_seconds = (
+            max(1, int(math.ceil(explicit_ranges[0][1] - explicit_ranges[0][0])))
+            if explicit_ranges
+            else media_parts_module.VIDEO_ANALYSIS_MAX_SECONDS
+        )
         audio_path = media_parts_module.extract_audio(
             str(asset_manifest.get("video_path") or ""),
             str(Path(str(asset_manifest.get("work_dir") or "")) / "audio"),
-            max_duration_sec=media_parts_module.VIDEO_ANALYSIS_MAX_SECONDS,
+            max_duration_sec=duration_seconds,
+            **({"start_seconds": start_seconds} if explicit_ranges else {}),
         )
-    speech = build_speech_evidence(audio_path or None, transcript_path=transcript_path or None)
+    speech = build_speech_evidence(audio_path or None, transcript_path=effective_transcript_path or None)
+    if explicit_ranges:
+        speech["analysis_time_range"] = analysis_time_range
+        if len(explicit_ranges) > 1:
+            speech["reason"] = "multiple_explicit_windows_require_separate_timestamped_audio_evidence"
     timeline = speech.get("segments") or []
     return _validated_facts(
         {
@@ -461,12 +525,13 @@ def run_temporal_pacing_pipeline(
     visual_facts: dict[str, dict[str, Any]],
     ocr_facts: dict[str, dict[str, Any]],
     speech_audio_facts: dict[str, dict[str, Any]],
+    analysis_time_range: str = "",
 ) -> dict[str, dict[str, Any]]:
     visual_assets = _fact_payload(visual_facts, "visual_assets").get("assets") or []
     speech_timeline = _fact_payload(speech_audio_facts, "speech").get("speech_timeline") or []
     visible_text_segments = _fact_payload(ocr_facts, "ocr").get("visible_text_segments") or []
     duration_sec = _probe_duration(str(asset_manifest.get("video_path") or ""))
-    scenes = _detect_scene_segments(visual_assets, duration_sec)
+    scenes = _detect_scene_segments(visual_assets, duration_sec, analysis_time_range=analysis_time_range)
     return _validated_facts(
         {
             "pacing": _fact(
@@ -479,6 +544,7 @@ def run_temporal_pacing_pipeline(
                         visual_assets=visual_assets,
                         speech_timeline=speech_timeline,
                         visible_text_segments=visible_text_segments,
+                        analysis_time_range=analysis_time_range,
                     ),
                 },
                 status="success",
@@ -732,11 +798,29 @@ def _normalize_keyframe_observations(visual_assets: list[dict[str, Any]], keyfra
     return normalized
 
 
-def _build_visual_hook(*, media_type: str, video_path: str, image_paths: list[str], visual_assets: list[dict[str, Any]]) -> dict[str, Any]:
+def _build_visual_hook(
+    *,
+    media_type: str,
+    video_path: str,
+    image_paths: list[str],
+    visual_assets: list[dict[str, Any]],
+    analysis_time_range: str = "",
+) -> dict[str, Any]:
     if media_type == "video" and video_path:
         opening_assets = [str(item.get("asset_id") or "") for item in visual_assets if str(item.get("kind") or "") == "first5s_frame"]
         if not opening_assets:
             opening_assets = [str(item.get("asset_id") or "") for item in visual_assets]
+        explicit_ranges = parse_explicit_analysis_time_range(analysis_time_range)
+        if explicit_ranges:
+            return {
+                "status": "success" if opening_assets else "no_visual",
+                "media_kind": "video",
+                "primary_asset_ids": [asset_id for asset_id in opening_assets[:20] if asset_id],
+                "sampling_policy": "requested_storyboard_window;opening_1s_step_when_requested;otherwise_3s_step",
+                "analysis_focus": f"只分析请求的时间窗口：{analysis_time_range}",
+                "analysis_window_sec": sum(end - start for start, end in explicit_ranges),
+                "analysis_time_range": analysis_time_range,
+            }
         return {
             "status": "success" if opening_assets else "no_visual",
             "media_kind": "video",
@@ -826,10 +910,37 @@ def _frame_timestamp_from_name(name: str) -> int:
     return 0
 
 
-def _detect_scene_segments(visual_assets: list[dict[str, Any]], duration_sec: float) -> list[dict[str, Any]]:
+def _detect_scene_segments(
+    visual_assets: list[dict[str, Any]],
+    duration_sec: float,
+    *,
+    analysis_time_range: str = "",
+) -> list[dict[str, Any]]:
     frame_assets = [asset for asset in visual_assets if str(asset.get("asset_id") or "").startswith("frame_")]
     if not frame_assets:
         return []
+    explicit_ranges = parse_explicit_analysis_time_range(analysis_time_range)
+    if explicit_ranges:
+        segments: list[dict[str, Any]] = []
+        for index, (start, end) in enumerate(explicit_ranges, 1):
+            bounded_end = min(end, duration_sec) if duration_sec else end
+            refs = [
+                str(asset.get("asset_id") or "")
+                for asset in frame_assets
+                if start <= float(asset.get("timestamp_sec") or 0.0) < bounded_end
+            ]
+            if refs:
+                segments.append(
+                    {
+                        "evidence_id": f"scene_{index:03d}",
+                        "scene_id": f"scene_{index:03d}",
+                        "start_sec": start,
+                        "end_sec": round(bounded_end, 2),
+                        "source_frame_refs": refs,
+                        "reason": "explicit_requested_window",
+                    }
+                )
+        return segments
     analysis_duration = min(max(float(duration_sec or 0), 0.0) or float(media_parts_module.VIDEO_ANALYSIS_MAX_SECONDS), float(media_parts_module.VIDEO_ANALYSIS_MAX_SECONDS))
     first5_refs = [str(asset.get("asset_id")) for asset in frame_assets if str(asset.get("kind") or "") == "first5s_frame"]
     later_refs = [str(asset.get("asset_id")) for asset in frame_assets if str(asset.get("kind") or "") != "first5s_frame"]
@@ -866,12 +977,19 @@ def _build_pacing_python_facts(
     visual_assets: list[dict[str, Any]],
     speech_timeline: list[dict[str, Any]],
     visible_text_segments: list[dict[str, Any]],
+    analysis_time_range: str = "",
 ) -> dict[str, Any]:
+    explicit_ranges = parse_explicit_analysis_time_range(analysis_time_range)
+    analyzed_duration = float(duration_sec or 0.0) if explicit_ranges else min(
+        float(duration_sec or 0.0),
+        float(media_parts_module.VIDEO_ANALYSIS_MAX_SECONDS),
+    )
     return {
         "source_duration_sec": round(float(duration_sec or 0.0), 3),
-        "duration_sec": round(min(float(duration_sec or 0.0), float(media_parts_module.VIDEO_ANALYSIS_MAX_SECONDS)), 3),
-        "analysis_window_sec": media_parts_module.VIDEO_ANALYSIS_MAX_SECONDS,
-        "analysis_window_policy": "long_video_first_60s_only",
+        "duration_sec": round(analyzed_duration, 3),
+        "analysis_window_sec": sum(end - start for start, end in explicit_ranges) if explicit_ranges else media_parts_module.VIDEO_ANALYSIS_MAX_SECONDS,
+        "analysis_window_policy": "explicit_requested_time_range" if explicit_ranges else "long_video_first_60s_only",
+        "analysis_time_range": analysis_time_range if explicit_ranges else "",
         "visual_asset_count": len(visual_assets),
         "opening_visual_asset_count": len([asset for asset in visual_assets if str(asset.get("kind") or "") == "first5s_frame"]),
         "speech_segment_count": len(speech_timeline),

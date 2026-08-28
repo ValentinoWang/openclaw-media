@@ -332,6 +332,7 @@ def _prepare_deconstruct_inputs(text: str, *, max_frames: int = 8) -> dict[str, 
     source_path = media.video_path or (media.image_paths[0] if media.image_paths else "")
     work_dir = str(Path(source_path).resolve().parent)
     media_stats = getattr(media, "stats", {}) or {}
+    request_constraints = parse_request_constraints(text, default_write_policy="partial_no_write").to_dict()
     transcript_path = _existing_sibling_file(source_path, "transcript.txt")
     ocr_path = _existing_sibling_file(source_path, "ocr.txt")
     caption_path = _existing_sibling_file(source_path, "caption.txt")
@@ -350,6 +351,7 @@ def _prepare_deconstruct_inputs(text: str, *, max_frames: int = 8) -> dict[str, 
         artifact_root=Path(work_dir) / "evidence_dag",
         max_frames=max_frames,
         existing_audio_path=getattr(media, "audio_path", None),
+        analysis_time_range=str(request_constraints.get("analysis_time_range") or ""),
     )
     evidence = dag["evidence"]
     asset_manifest = dag["asset_manifest"]
@@ -558,9 +560,10 @@ def run_main_deconstruction_llm(
             "text": (
                 "以下图片是代码从已下载原视频抽取的关键帧，或已下载原图文素材。"
                 "每张图前都有唯一 asset_id。video_storyboard 和 image_post_script 每一行必须输出 evidence_asset_id，"
-                "且只能引用给出的 asset_id，禁止自造 ID。视频分镜只覆盖前 60 秒与 analysis_time_range 的交集；"
-                "全片窗口的 0-5s 按 0-1s、1-2s、2-3s、3-4s、4-5s 输出，5s 后按 5-8s、8-11s、11-14s 这种每 3 秒一行；"
-                "非零时间窗从窗口起点开始，不能补写窗口之前的分镜，最后不足 3 秒也单独保留。"
+                "且只能引用给出的 asset_id，禁止自造 ID。未明确 analysis_time_range 时，视频分镜默认只覆盖前 60 秒；"
+                "明确 analysis_time_range 时，直接覆盖该请求窗口并受已知媒体时长限制，不得套用“前 60 秒与 analysis_time_range 的交集”规则。"
+                "请求窗口包含 0-5s 时才按 0-1s、1-2s、2-3s、3-4s、4-5s 输出；其他区间从窗口起点按每 3 秒一行，"
+                "不能补写窗口之前的分镜，最后不足 3 秒也单独保留。"
             )
         },
     ]
@@ -600,6 +603,7 @@ def _deconstruct_from_prepared(
     evidence_store = prepared.get("evidence_store") or {}
     valid_asset_ids = prepared["valid_asset_ids"]
     if not evidence_store:
+        request_constraints = parse_request_constraints(text, default_write_policy="partial_no_write").to_dict()
         dag = run_evidence_dag(
             source_url=cleaned_url,
             platform_asset_id=str(media_stats.get("video_id") or media_stats.get("note_id") or ""),
@@ -613,6 +617,7 @@ def _deconstruct_from_prepared(
             caption_path=_existing_sibling_file(prepared.get("source_path") or "", "caption.txt"),
             artifact_root=Path(prepared.get("work_dir") or "") / "evidence_dag",
             existing_audio_path=evidence.audio_path,
+            analysis_time_range=str(request_constraints.get("analysis_time_range") or ""),
         )
         evidence = dag["evidence"]
         evidence_store = dag["evidence_store"]

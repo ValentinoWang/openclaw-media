@@ -25,7 +25,7 @@ DECONSTRUCT_PROMPT = f"""
 - attention_elements: 吸睛元素数组，拆出标题、封面、视觉符号、反差、首屏文字、评论触发等具体抓手
 - viral_migration: 爆点迁移，说明可迁移到我们账号的结构、节奏、表达策略
 - creative_upgrade_suggestion: 创新修改建议，必须回答“千万年薪编导会怎么把这条改出彩？”，给出可执行的创意增量
-- video_storyboard: 视频只记录原作品中有帧证据支撑的画面段落草稿；证据覆盖不足时允许只输出已覆盖区间，并说明缺口且设置 human_review_required；图文输出空数组。每项包含 shot_no, duration, visual, subtitle, voiceover, camera_movement, props, edit_notes, evidence_asset_id。视频分镜只覆盖前 60 秒与 request_constraints.analysis_time_range 的交集；全片时从 0 秒开始，非全片时间窗不得回填到 0 秒。0-5 秒按 0-1s、1-2s、2-3s、3-4s、4-5s 组织，5-8s、8-11s、11-14s 等后续区间按证据覆盖的时间段组织，不能为了凑满时间轴重复引用同一帧
+- video_storyboard: 视频只记录原作品中有帧证据支撑的画面段落草稿；证据覆盖不足时允许只输出已覆盖区间，并说明缺口且设置 human_review_required；图文输出空数组。每项包含 shot_no, duration, visual, subtitle, voiceover, camera_movement, props, edit_notes, evidence_asset_id。未明确 request_constraints.analysis_time_range 时默认覆盖前 60 秒；明确时间窗时只覆盖该窗口，不能回填到窗口之外。请求窗口包含 0-5 秒时按 0-1s、1-2s、2-3s、3-4s、4-5s 组织；其他区间从窗口起点按每 3 秒组织，例如 5-8s、8-11s、11-14s，但不得越出请求窗口或为了凑满时间轴重复引用同一帧
 - image_post_script: 可选。只记录原图文结构草稿；不是可直接生图提示词。每项包含 page_no, image_prompt, evidence_asset_id, overlay_text, caption_note。证据不足或风险较高时输出空数组
 - avoid_plagiarism_notes: 原创边界说明，说明哪些具体表达、人物身份、原经历、视觉组合不能直接复用
 - production_checklist: 发布前检查清单
@@ -63,7 +63,7 @@ DECONSTRUCT_PROMPT = f"""
 15. `封面/前2秒抓手`、`核心数据摘要`、`高赞评论洞察` 必须分别来自 visual_hook、engagement、comments evidence；证据不足时写清不足，不要空泛判断。
 16. `创新修改建议` 必须用正向创意增量回答“千万年薪编导会怎么把这条改出彩？”，不要只写风险、规避或不可复制点。
 17. 必须读取 visual_hook.media_kind、feature_fields、not_applicable_fields、substitute_fields 后再分析：media_kind=image_post 时，不得使用“前2秒”“前5秒”“镜头节奏”“音频时间线”等视频字段作为结论依据；应使用首图、前几页顺序、图文版式、可见文字/OCR、caption 结构作为替代字段。media_kind=video 时，才使用视频前2秒/前5秒、关键帧、音频时间线和节奏画像。
-18. 长视频只拆解前 60 秒；视频分镜脚本的实际范围是“前 60 秒”和 request_constraints.analysis_time_range 的交集：不要输出交集之外或 60 秒之后的分镜行；如果原视频短于 60 秒，只覆盖实际证据窗口。全片窗口按 0-5 秒每秒一行、5 秒后每 3 秒一行组织；非零时间窗从窗口起点开始，不能为了套用开头粒度补写窗口之前的分镜。
+18. 未明确 request_constraints.analysis_time_range 时，长视频只拆解前 60 秒。明确时间窗口时，视频分镜只覆盖该窗口，并以已知媒体时长和实际帧证据为边界；不得因为窗口晚于 60 秒就改写为开头拆解，也不得输出窗口外分镜。请求窗口包含 0-5 秒时，0-5 秒按每秒一行；其他区间从窗口起点按每 3 秒一行组织，最后不足 3 秒也单独保留，不得为了套用开头粒度补写窗口之前的分镜。
 19. 如果 request_constraints.analysis_scope 不是全片，所有结论必须限定在 request_constraints.analysis_time_range；不能退化成全片拆解。
 20. 声音、口播、BGM、节奏只能基于 evidence_store 里实际提供的音频、ASR、字幕、OCR 或 pacing 证据；没有证据就写证据不足，不得编造声音层结论。
 21. AI 片段判断是模型软判断，不是事实入库。ai_blend_analysis 每段归属一律强制 confidence 和 reasoning_summary，并引用证据帧；平台合规风险必须提醒 AI 生成内容可能需要按平台规则标注。

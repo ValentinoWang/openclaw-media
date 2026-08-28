@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import base64
+import math
 import mimetypes
 import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from .storyboard_window import parse_explicit_analysis_time_range
 
 
 class NoRealMediaError(RuntimeError):
@@ -126,23 +129,48 @@ def _extract_frame_at(video_path: str, out_dir: Path, timestamp_sec: int) -> str
     return str(target) if target.exists() and target.stat().st_size > 0 else ""
 
 
-def storyboard_sample_timestamps(max_seconds: int = VIDEO_ANALYSIS_MAX_SECONDS) -> list[int]:
+def storyboard_sample_timestamps(
+    max_seconds: int = VIDEO_ANALYSIS_MAX_SECONDS,
+    *,
+    start_seconds: float = 0.0,
+) -> list[int]:
     max_seconds = max(1, int(max_seconds or VIDEO_ANALYSIS_MAX_SECONDS))
-    timestamps = list(range(0, min(STORYBOARD_OPENING_SECONDS, max_seconds) + 1))
-    next_timestamp = STORYBOARD_OPENING_SECONDS + STORYBOARD_POST_OPENING_STEP_SECONDS
+    start_seconds = max(0.0, float(start_seconds or 0.0))
+    if start_seconds < STORYBOARD_OPENING_SECONDS:
+        timestamps = list(range(int(math.ceil(start_seconds)), min(STORYBOARD_OPENING_SECONDS, max_seconds) + 1))
+        next_timestamp = STORYBOARD_OPENING_SECONDS + STORYBOARD_POST_OPENING_STEP_SECONDS
+    else:
+        timestamps = [int(math.ceil(start_seconds))]
+        next_timestamp = int(math.ceil(start_seconds)) + STORYBOARD_POST_OPENING_STEP_SECONDS
     while next_timestamp < max_seconds:
         timestamps.append(next_timestamp)
         next_timestamp += STORYBOARD_POST_OPENING_STEP_SECONDS
     return sorted(set(timestamps))
 
 
-def extract_video_frames(video_path: str, out_dir: str, max_frames: int = 8) -> list[str]:
+def extract_video_frames(
+    video_path: str,
+    out_dir: str,
+    max_frames: int = 8,
+    *,
+    analysis_time_range: str = "",
+) -> list[str]:
     video = Path(video_path)
     ensure_real_file(str(video), "原视频")
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     frames: list[str] = []
-    for timestamp_sec in storyboard_sample_timestamps(VIDEO_ANALYSIS_MAX_SECONDS):
+    requested_ranges = parse_explicit_analysis_time_range(analysis_time_range)
+    if requested_ranges:
+        timestamps = [
+            timestamp
+            for start, end in requested_ranges
+            for timestamp in storyboard_sample_timestamps(int(math.ceil(end)), start_seconds=start)
+            if timestamp < end
+        ]
+    else:
+        timestamps = storyboard_sample_timestamps(VIDEO_ANALYSIS_MAX_SECONDS)
+    for timestamp_sec in sorted(set(timestamps)):
         frame = _extract_frame_at(str(video), out, timestamp_sec)
         if frame:
             frames.append(frame)
@@ -174,12 +202,34 @@ def extract_first_frame(video_path: str, out_dir: str) -> str:
     return str(target) if target.exists() and target.stat().st_size > 0 else ""
 
 
-def extract_audio(video_path: str, out_dir: str, max_duration_sec: int = VIDEO_ANALYSIS_MAX_SECONDS) -> str:
+def extract_audio(
+    video_path: str,
+    out_dir: str,
+    max_duration_sec: int = VIDEO_ANALYSIS_MAX_SECONDS,
+    *,
+    start_seconds: float = 0.0,
+) -> str:
     ensure_real_file(video_path, "原视频")
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     target = out / "audio.mp3"
-    cmd = ["ffmpeg", "-y", "-t", str(max(1, int(max_duration_sec or VIDEO_ANALYSIS_MAX_SECONDS))), "-i", video_path, "-vn", "-acodec", "libmp3lame", "-q:a", "4", str(target)]
+    cmd = ["ffmpeg", "-y"]
+    if start_seconds > 0:
+        cmd.extend(["-ss", str(max(0.0, float(start_seconds)))])
+    cmd.extend(
+        [
+            "-t",
+            str(max(1, int(max_duration_sec or VIDEO_ANALYSIS_MAX_SECONDS))),
+            "-i",
+            video_path,
+            "-vn",
+            "-acodec",
+            "libmp3lame",
+            "-q:a",
+            "4",
+            str(target),
+        ]
+    )
     try:
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=90)
     except Exception:
