@@ -258,30 +258,22 @@ def format_creation_reply(
     platform_fit: dict[str, Any] | None = None,
     generation: dict[str, Any] | None = None,
 ) -> str:
-    loaded = (media_context or {}).get("loaded") or {}
-    profile = (media_context or {}).get("account_profile") or {}
-    candidate_counts = candidate_counts or {}
+    # The optional inputs remain part of the callable contract, but are
+    # operational telemetry and must not be sent in a creator-facing receipt.
+    del activities, virals, inspirations, businesses, media_context, memory
+    del candidate_counts, platform_fit, generation
     lines = [
-        "【创作】已完成（Codex Responses 主导）" if not dry_run else "【创作】dry-run 已完成（Codex Responses 主导）",
+        "【创作】草稿已就绪" if not dry_run else "【创作】预览已就绪",
         f"平台：{request.platform}",
         f"内容类型：{request.content_type}",
         f"赛道：{request.track}",
         f"主体：{request.topic}",
-        f"生成模型：{(generation or {}).get('model') or '未记录'} / {(generation or {}).get('thinking') or '未记录'}",
-        f"候选记忆：活动 {candidate_counts.get('activities', 0)} 条，爆款 {candidate_counts.get('virals', 0)} 条，灵感 {candidate_counts.get('inspirations', 0)} 条，商务 {candidate_counts.get('businesses', 0)} 条",
-        f"LLM选择：活动 {len(activities)} 条，爆款 {len(virals)} 条，灵感 {len(inspirations)} 条，商务 {len(businesses)} 条",
-        f"上下文：账号档案 {'有' if loaded.get('account_profile') else '无'}，历史创作 {loaded.get('recent_creations', 0)} 条，历史复盘 {loaded.get('recent_reviews', 0)} 条，对话 {loaded.get('conversation_context', 0)} 条",
-        f"平台机制版本：{(platform_fit or {}).get('platform_mechanism_version') or '未生成'}",
         f"平台规则校验：{'通过' if validation.get('ok') else '未通过'}",
     ]
     if doc_link:
         lines.append(f"创作文档：{doc_link}")
     if creation_record_id:
         lines.append(f"创作记录ID：{creation_record_id}（数据复盘时请一并填写）")
-    if profile.get("markdown_path"):
-        lines.append(f"账号 Markdown 档案：{profile['markdown_path']}")
-    if memory and memory.get("profile", {}).get("markdown_path"):
-        lines.append(f"账号档案已更新：{memory['profile']['markdown_path']}")
     return "\n".join(lines)
 
 
