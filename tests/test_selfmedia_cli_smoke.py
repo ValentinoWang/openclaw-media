@@ -210,3 +210,77 @@ def test_daily_poll_report_is_chinese_and_redacts_runtime_exceptions(monkeypatch
     assert "总互动" in report
     assert "/Users/example" not in report
     assert "Traceback" not in report
+
+
+def test_daily_poll_redacts_monitor_status_write_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tempfile import TemporaryDirectory
+
+    records = [
+        {
+            "record_id": "rec_monitor",
+            "fields": {"账号名称": "测试账号", "平台": "抖音", "近期作品链接": "", "启用": True},
+        }
+    ]
+    with TemporaryDirectory() as directory:
+        monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", directory)
+        with patch.object(selfmedia, "feishu_list_records", return_value=records), patch.object(
+            selfmedia,
+            "feishu_update_record",
+            side_effect=RuntimeError("Traceback: /Users/example/private.py"),
+        ):
+            with pytest.raises(SystemExit, match="账号监控表状态写入失败：轮询失败，请检查运行日志。") as exc_info:
+                selfmedia.daily_poll(_daily_poll_args(dry_run=False))
+
+    assert "/Users/example" not in str(exc_info.value)
+
+
+def test_daily_poll_feishu_fields_are_compact_and_user_facing(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tempfile import TemporaryDirectory
+
+    written: list[dict[str, object]] = []
+    rows = [
+        {
+            "post_id": "post-1",
+            "url": "https://example.test/post-1",
+            "health_status": "error",
+            "failure_reason": "Traceback: /Users/example/private.py",
+            "like_count": 12,
+            "collect_count": 3,
+            "comment_count": 2,
+            "share_count": 1,
+            "top_comments": [{"text": "这条怎么练", "author": "不应写入"}],
+            "raw_fields": {"private": "不应写入"},
+            "raw_stats": {"secret": "不应写入"},
+        }
+    ]
+    with TemporaryDirectory() as directory:
+        monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", directory)
+        with patch.object(
+            selfmedia,
+            "feishu_list_records",
+            return_value=[
+                {
+                    "record_id": "rec_monitor",
+                    "fields": {"账号名称": "测试账号", "平台": "抖音", "近期作品链接": "https://example.test/post", "启用": True},
+                }
+            ],
+        ), patch.object(selfmedia, "refresh_posts", return_value=rows), patch.object(selfmedia, "feishu_update_record"), patch.object(
+            selfmedia,
+            "write_feishu_records",
+            side_effect=lambda _url, records, **_kwargs: written.extend(records) or ["rec_report"],
+        ):
+            payload = selfmedia.daily_poll(_daily_poll_args(dry_run=False, report_url="https://bitable.example.test/report"))
+
+    assert payload["record_ids"] == ["rec_report"]
+    assert len(written) == 1
+    fields = written[0]
+    details = fields["详情JSON"]
+    assert fields["状态"] == "轮询失败"
+    assert fields["失败原因"] == "轮询失败，请检查运行日志。"
+    assert fields["决策"] == "继续观察"
+    assert fields["报告路径"] == Path(payload["report_path"]).name
+    assert details["高价值评论原话"] == ["这条怎么练"]
+    serialized = json.dumps(fields, ensure_ascii=False)
+    assert "raw_fields" not in serialized
+    assert "raw_stats" not in serialized
+    assert "/Users/example" not in serialized

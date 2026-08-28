@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import re
 import shlex
@@ -12,7 +13,6 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = Path(__file__).resolve().parents[2]
 try:
@@ -21,6 +21,8 @@ except ValueError:
     pass
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+from media_vault.vault import MediaVault, require_tenant_id  # noqa: E402
 
 MEDIA_CREATION_RUNTIME_PYTHON = Path(os.getenv("SELFMEDIA_RUNTIME_PYTHON", sys.executable))
 CREATION_RUNTIME_COMMANDS = {"consultation", "shooting-execution", "shooting-backwash"}
@@ -80,6 +82,7 @@ ACCOUNT_MONITOR_FIELD_SPECS = {
 }
 
 ACCOUNT_MONITOR_LINK_FIELDS = frozenset(("近期作品链接", "作品链接", "监控链接", "链接", "URL", "urls"))
+ACCOUNT_MONITOR_ENABLED_FIELDS = frozenset(("启用", "是否启用", "监控", "enabled"))
 CREATOR_PROFILE_FIELD_MARKERS = frozenset(
     (
         "creator_profile_id",
@@ -100,6 +103,13 @@ DAILY_POLL_STATUS_LABELS = {
     "missing_urls": "缺少作品链接",
     "error": "轮询失败",
 }
+DAILY_POLL_DECISION_LABELS = {
+    "deconstruct": "建议拆解",
+    "review": "继续观察",
+    "skip": "暂不处理",
+}
+DAILY_POLL_DETAIL_COMMENT_KEYS = ("top_comments", "comments", "hot_comments", "high_like_comments")
+LOGGER = logging.getLogger(__name__)
 
 
 def print_json(payload: Any) -> None:
@@ -507,9 +517,11 @@ def run_part(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def account_enabled(fields: dict[str, Any]) -> bool:
-    if any(name in fields for name in ("启用", "是否启用", "监控", "enabled")):
-        return any(feishu_bool(fields.get(name), default=True) for name in ("启用", "是否启用", "监控", "enabled") if name in fields)
-    return True
+    return any(
+        feishu_bool(fields.get(name), default=False)
+        for name in ACCOUNT_MONITOR_ENABLED_FIELDS
+        if name in fields
+    )
 
 
 def account_from_record(record: dict[str, Any]) -> dict[str, Any]:
@@ -557,11 +569,26 @@ def validate_account_monitor_records(records: list[dict[str, Any]]) -> None:
         raise SystemExit(
             "daily-poll 无法确认这是 v1 账号监控表；至少一行需要包含近期作品链接、作品链接或监控链接字段。"
         )
+    missing_enabled_record_ids = [
+        str(record.get("record_id") or "<unknown>")
+        for record in records
+        if account_record_kind(record) == "account_monitor_v1"
+        and not (set((record.get("fields") or {})) & ACCOUNT_MONITOR_ENABLED_FIELDS)
+    ]
+    if missing_enabled_record_ids:
+        raise SystemExit(
+            "daily-poll 账号监控表需要每行显式包含启用字段，已拒绝轮询："
+            + "、".join(missing_enabled_record_ids[:3])
+        )
 
 
 def daily_poll_status_label(status: object) -> str:
     value = str(status or "").strip()
     return DAILY_POLL_STATUS_LABELS.get(value, "状态未知")
+
+
+def daily_poll_decision_label(decision: object) -> str:
+    return DAILY_POLL_DECISION_LABELS.get(str(decision or "").strip(), "待人工判断")
 
 
 def user_visible_poll_error(exc: Exception) -> str:
@@ -571,6 +598,37 @@ def user_visible_poll_error(exc: Exception) -> str:
     if "cookie" in message or "login" in message or "登录" in message:
         return "平台登录状态异常，请更新登录凭据后重试。"
     return "轮询失败，请检查运行日志。"
+
+
+def account_monitor_url(value: str) -> str:
+    monitor_url = value or feishu_table_url_from_env(
+        "FEISHU_ACCOUNT_MONITOR_URL",
+        "FEISHU_SELFMEDIA_ACCOUNT_MONITOR_URL",
+    )
+    if not monitor_url:
+        raise SystemExit("missing FEISHU_ACCOUNT_MONITOR_URL or --monitor-url")
+    return monitor_url
+
+
+def list_account_monitor_records(monitor_url: str, *, view_id: str) -> list[dict[str, Any]]:
+    try:
+        return feishu_list_records(monitor_url, view_id=view_id)
+    except Exception as exc:
+        LOGGER.warning("daily-poll could not read account monitor table", exc_info=True)
+        raise SystemExit(f"无法读取账号监控表：{user_visible_poll_error(exc)}") from None
+
+
+def update_account_monitor_record(monitor_url: str, record_id: str, fields: dict[str, Any]) -> None:
+    try:
+        feishu_update_record(
+            monitor_url,
+            record_id,
+            fields,
+            specs=ACCOUNT_MONITOR_FIELD_SPECS,
+        )
+    except Exception as exc:
+        LOGGER.warning("daily-poll could not update account monitor record %s", record_id, exc_info=True)
+        raise SystemExit(f"账号监控表状态写入失败：{user_visible_poll_error(exc)}") from None
 
 
 def redacted_report_value(value: Any) -> Any:
@@ -586,6 +644,34 @@ def redacted_report_value(value: Any) -> Any:
     if isinstance(value, str):
         return re.sub(r"(?<![\w.-])/(?:Users|home|private|tmp|var|opt)(?:/[^\s`'\"|<>()\[\]{}]*)?", "[本机路径已隐藏]", value)
     return value
+
+
+def compact_daily_poll_comments(row: dict[str, Any]) -> list[str]:
+    comments: list[str] = []
+    for key in DAILY_POLL_DETAIL_COMMENT_KEYS:
+        value = row.get(key)
+        for item in value if isinstance(value, list) else [value]:
+            if isinstance(item, dict):
+                item = item.get("text") or item.get("comment") or item.get("content")
+            text = str(item or "").strip()
+            if text:
+                comments.append(text[:240])
+    return list(dict.fromkeys(comments))[:3]
+
+
+def compact_daily_poll_detail(row: dict[str, Any], score: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "互动数据": {
+            "点赞": count_value(row, "like_count"),
+            "收藏": count_value(row, "collect_count"),
+            "评论": count_value(row, "comment_count"),
+            "分享": count_value(row, "share_count"),
+            "总互动": total_interactions(row),
+        },
+        "采集状态": daily_poll_status_label(row.get("health_status")),
+        "建议": daily_poll_decision_label(score.get("decision")),
+        "高价值评论原话": compact_daily_poll_comments(row),
+    }
 
 
 def account_summary(account: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -665,26 +751,20 @@ def build_daily_report(
 
 def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
     load_default_env_files()
-    monitor_url = args.monitor_url or feishu_table_url_from_env(
-        "FEISHU_ACCOUNT_MONITOR_URL",
-        "FEISHU_SELFMEDIA_ACCOUNT_MONITOR_URL",
-    )
+    tenant_id = require_tenant_id(args.tenant_id)
+    monitor_url = account_monitor_url(args.monitor_url)
     report_url = args.report_url or os.getenv("FEISHU_ACCOUNT_REPORT_URL", "").strip()
-    if not monitor_url:
-        raise SystemExit("missing FEISHU_ACCOUNT_MONITOR_URL or --monitor-url")
     require_feishu = bool(args.require_feishu or feishu_required_default())
     if require_feishu and not args.dry_run and not report_url:
         raise SystemExit("missing FEISHU_ACCOUNT_REPORT_URL or --report-url when --require-feishu is set")
 
-    records = feishu_list_records(monitor_url, view_id=args.view_id)
+    records = list_account_monitor_records(monitor_url, view_id=args.view_id)
     validate_account_monitor_records(records)
     accounts = [account_from_record(record) for record in records]
     if args.limit:
         accounts = accounts[: args.limit]
 
-    from media_vault.vault import MediaVault
-
-    output_dir = MediaVault(tenant_id=args.tenant_id).root / "account_daily_runs"
+    output_dir = MediaVault(tenant_id=tenant_id).root / "account_daily_runs"
     output_dir.mkdir(parents=True, exist_ok=True)
     account_rows: dict[str, list[dict[str, Any]]] = {}
     summaries: list[dict[str, Any]] = []
@@ -695,7 +775,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
         if not account["urls"]:
             errors.append({"account_name": account["account_name"], "error": "missing_urls"})
             if not args.dry_run:
-                feishu_update_record(
+                update_account_monitor_record(
                     monitor_url,
                     account["record_id"],
                     {
@@ -703,7 +783,6 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
                         "最近状态": daily_poll_status_label("missing_urls"),
                         "最近错误": "账号监控表需要填写近期作品链接/作品链接",
                     },
-                    specs=ACCOUNT_MONITOR_FIELD_SPECS,
                 )
             continue
         try:
@@ -712,7 +791,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
             summary = account_summary(account, rows)
             summaries.append(summary)
             if not args.dry_run:
-                feishu_update_record(
+                update_account_monitor_record(
                     monitor_url,
                     account["record_id"],
                     {
@@ -723,13 +802,13 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
                         "最近错误": "",
                         "最近日报摘要": f"{summary['post_count']} 条作品，总互动 {summary['total_interactions']}，最佳作品 {summary['best_post_id']}",
                     },
-                    specs=ACCOUNT_MONITOR_FIELD_SPECS,
                 )
         except Exception as exc:
+            LOGGER.warning("daily-poll failed for account %s", account["record_id"], exc_info=True)
             message = user_visible_poll_error(exc)
             errors.append({"account_name": account["account_name"], "error": message})
             if not args.dry_run:
-                feishu_update_record(
+                update_account_monitor_record(
                     monitor_url,
                     account["record_id"],
                     {
@@ -737,14 +816,13 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
                         "最近状态": "error",
                         "最近错误": message[:500],
                     },
-                    specs=ACCOUNT_MONITOR_FIELD_SPECS,
                 )
 
     stamp = slug_time()
     json_path = output_dir / f"account_daily_{stamp}.json"
     md_path = output_dir / f"account_daily_{stamp}.md"
     payload = redacted_report_value({
-        "tenant_id": args.tenant_id,
+        "tenant_id": tenant_id,
         "accounts": accounts,
         "summaries": summaries,
         "rows": account_rows,
@@ -768,17 +846,25 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
                 score=score["overall_score"],
                 decision=score["decision"],
             )
-            fields["详情JSON"] = {"account": account, "row": row, "score": score}
+            fields["状态"] = daily_poll_status_label(row.get("health_status"))
+            if row.get("failure_reason"):
+                fields["失败原因"] = user_visible_poll_error(RuntimeError(str(row["failure_reason"])))
+            fields["决策"] = daily_poll_decision_label(score["decision"])
+            fields["详情JSON"] = compact_daily_poll_detail(row, score)
             feishu_records.append(redacted_report_value(fields))
     record_ids: list[str] = []
     if not args.dry_run:
-        record_ids = write_feishu_records(
-            report_url,
-            feishu_records,
-            module="08 账号每日轮询",
-            report_path=str(md_path),
-            require=require_feishu,
-        )
+        try:
+            record_ids = write_feishu_records(
+                report_url,
+                feishu_records,
+                module="08 账号每日轮询",
+                report_path=str(md_path),
+                require=require_feishu,
+            )
+        except Exception as exc:
+            LOGGER.warning("daily-poll could not write report records", exc_info=True)
+            raise SystemExit(f"日报飞书写入失败：{user_visible_poll_error(exc)}") from None
 
     return {
         "ok": not errors,
@@ -823,6 +909,8 @@ def _systemd_calendar(cron: str, *, timezone: str = "") -> str:
 
 def install_cron(args: argparse.Namespace) -> dict[str, Any]:
     load_default_env_files()
+    tenant_id = require_tenant_id(args.tenant_id)
+    monitor_url = account_monitor_url(args.monitor_url)
     report_url = args.report_url or os.getenv("FEISHU_ACCOUNT_REPORT_URL", "").strip()
     if not report_url:
         raise SystemExit("missing FEISHU_ACCOUNT_REPORT_URL or --report-url; refusing to register an unreported daily poll")
@@ -832,13 +920,13 @@ def install_cron(args: argparse.Namespace) -> dict[str, Any]:
         str(Path(__file__).resolve()),
         "daily-poll",
         "--tenant-id",
-        args.tenant_id,
+        tenant_id,
         "--require-feishu",
         "--report-url",
         report_url,
+        "--monitor-url",
+        monitor_url,
     ]
-    if args.monitor_url:
-        command_args.extend(["--monitor-url", args.monitor_url])
     unit_name = re.sub(r"[^A-Za-z0-9_.-]+", "-", str(args.name or "selfmedia-account-daily-poll")).strip("-")
     if not unit_name:
         raise SystemExit("--name must contain at least one usable unit-name character")
