@@ -196,6 +196,7 @@ def _creator_report() -> dict[str, object]:
             "hashtags": ["毕业季", "田径", "100米", "清华研究生", "青春"],
             "pinned_comment": "你毕业后还保留了哪件热爱的事？",
             "comment_prompt": "你觉得毕业是一场告别，还是一次重新起跑？",
+            "first_hour_action": "发布后置顶提问，并回复前十条有效评论。",
         },
         "material_checklist": {
             "must_have": ["起跑", "冲刺", "成绩或赛后反应"],
@@ -1233,9 +1234,12 @@ class CreationV1Tests(unittest.TestCase):
         self.assertNotIn("平台推荐拟合", main_text)
         self.assertNotIn("option_id", main_text)
         self.assertNotIn("record_id", main_text)
-        self.assertIn("record_id", appendix_text)
-        self.assertIn("insight-card reference", appendix_text)
-        self.assertIn("public_content_only", appendix_text)
+        self.assertNotIn("record_id", appendix_text)
+        self.assertIn("来源编号", appendix_text)
+        self.assertNotIn("insight-card reference", appendix_text)
+        self.assertNotIn("public_content_only", appendix_text)
+        self.assertIn("引用类型：洞察卡（仅公开内容）", appendix_text)
+        self.assertIn("证据边界：仅公开内容", appendix_text)
         self.assertIn("避免焦虑营销", appendix_text)
         self.assertIn("被理解感.md", appendix_text)
         self.assertIn("候选方案分数", appendix_text)
