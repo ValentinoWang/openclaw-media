@@ -106,6 +106,7 @@ def handle_creation_command(
         max_items=_env_int("SELFMEDIA_CREATION_ACTIVITY_EXAMPLE_DECONSTRUCT_LIMIT", 2),
     )
     viral_context_limit = candidate_context_limits["viral"]
+    viral_context_limit = candidate_context_limits["viral"]
     ranked_viral_candidates = rank_virals(virals, request)[:viral_context_limit]
     if activity_example_virals:
         ranked_example_virals = rank_virals(activity_example_virals, request)
@@ -354,6 +355,8 @@ def _require_deconstruction_artifacts(
         try:
             evidence_uri = str((item.record.detail_json or {}).get("evidence_uri") or item.record.doc_links.get("evidence") or "").strip()
             artifact = deconstruction_artifact.load_deconstruction_artifact(evidence_uri, tenant_id=tenant_id)
+            evidence_uri = str((item.record.detail_json or {}).get("evidence_uri") or item.record.doc_links.get("evidence") or "").strip()
+            artifact = deconstruction_artifact.load_deconstruction_artifact(evidence_uri, tenant_id=tenant_id)
             source_asset_id = str((item.record.detail_json or {}).get("source_asset_id") or "").strip()
             materialize_deferred_contract = bool(
                 request.source_asset_id
@@ -368,6 +371,8 @@ def _require_deconstruction_artifacts(
             )
             if "comments" in artifact:
                 record.detail_json["comment_evidence"] = normalize_comment_evidence_for_prompt(artifact.get("comments"))
+            if "comments" in artifact:
+                record.detail_json["comment_evidence"] = normalize_comment_evidence_for_prompt(artifact.get("comments"))
         except DeconstructionArtifactUnavailable as exc:
             rejected.append(
                 {
@@ -379,6 +384,9 @@ def _require_deconstruction_artifacts(
             )
             continue
         if not materialize_deferred_contract:
+            # Ranking may retain a legacy deconstruction for selection continuity.
+            # The separately classified comment evidence remains traceable and
+            # explicitly untrusted; all other uncontracted material stays out.
             # Ranking may retain a legacy deconstruction for selection continuity.
             # The separately classified comment evidence remains traceable and
             # explicitly untrusted; all other uncontracted material stays out.
