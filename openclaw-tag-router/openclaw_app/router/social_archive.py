@@ -22,6 +22,11 @@ SOCIAL_ARCHIVE_AUDIO_EXTS = {".m4a", ".mp3", ".wav", ".aac", ".flac", ".caf"}
 SOCIAL_THEORY_TAGS = ("女性爱", "性兴趣", "风控", "性资源", "行动")
 BRACKET_THEORY_RE = re.compile(r"【(?P<tag>[^】\n]{1,32})】")
 THEORY_TAG_SUFFIXES = ("进行分析", "来分析", "分析一下", "分析")
+SOCIAL_ARCHIVE_MATERIAL_BLOCK_RE = re.compile(
+    r"(?ms)^[ \t]*## \d{3}｜[^\n]+\n"
+    r"(?:[ \t]*\n)*[ \t]*> 待归入本表的提纯材料如下。后续编辑时应拆成逐行聊天记录、事实摘要和分析证据；原始音频/截图/图片不进入档案。\n"
+    r"(?:[ \t]*\n)*(?P<material>.*?)(?=^[ \t]*\| 日期/时间 \| 发言人 \| 内容 \| 备注 \|\s*$)"
+)
 UPLOADED_MEDIA_ROOT = Path(os.environ.get("OPENCLAW_UPLOADED_MEDIA_ROOT", str(Path(__file__).resolve().parents[3] / "media" / "inbound")))
 UPLOADED_MEDIA_ROOTS = [
     Path(item.strip())
@@ -1182,4 +1187,14 @@ class SocialArchiveMixin:
         chat_batch = archive_result.get("chat_batch") or {}
         if chat_batch.get("ok"):
             return "已完成聊天材料提取与关系事实整理，原始文字稿仅保存在内部事实归档中。"
-        return ""
+        archive_path = archive_result.get("archive_path")
+        if not isinstance(archive_path, str) or not archive_path.strip():
+            return ""
+        try:
+            archive_text = Path(archive_path).read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            return ""
+        material_blocks = list(SOCIAL_ARCHIVE_MATERIAL_BLOCK_RE.finditer(archive_text))
+        if not material_blocks:
+            return ""
+        return material_blocks[-1].group("material").strip()
