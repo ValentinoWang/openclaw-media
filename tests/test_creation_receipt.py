@@ -35,8 +35,8 @@ def test_creation_receipt_hides_internal_telemetry_and_keeps_delivery_details() 
     assert "平台：抖音" in reply
     assert "主体：训练日记" in reply
     assert "创作文档：https://example.test/creation-doc" in reply
-    assert "创作记录ID：creation_record_123" in reply
-    assert "达人档案未加载：CreatorProfile 字段契约不可用" in reply
+    assert "创作档案已关联，可在发布后发起数据复盘。" in reply
+    assert "达人档案暂未加载，不影响当前草稿。" in reply
     assert reply.splitlines()[1] == "创作文档：https://example.test/creation-doc"
 
     for internal_value in (
@@ -46,6 +46,8 @@ def test_creation_receipt_hides_internal_telemetry_and_keeps_delivery_details() 
         "internal-mechanism-v42",
         "/private/telemetry/account-profile.md",
         "/private/telemetry/memory-profile.md",
+        "creation_record_123",
+        "CreatorProfile 字段契约不可用",
         "候选记忆",
         "LLM选择",
         "平台机制版本",
