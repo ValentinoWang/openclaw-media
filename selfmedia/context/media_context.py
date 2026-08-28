@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 from common.social_runtime import feishu_list_records, feishu_plain_text, load_default_env_files
 from media_model.contract import resolve_media_model_contract_path
 from media_vault.vault import MediaVault
+from selfmedia.business.schedule import upcoming_schedule_entries
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -109,6 +110,7 @@ _PROMPT_SECTION_MIN_CHARS = {
     "daily_comments": 360,
     "profile": 700,
     "daily_metrics": 300,
+    "schedule": 420,
     "hotlist": 360,
     "creations": 300,
     "profile_markdown": 0,
@@ -122,13 +124,21 @@ _PROMPT_SECTION_PRIORITY = {
     "daily_comments": 4,
     "profile": 5,
     "daily_metrics": 6,
-    "hotlist": 7,
-    "creations": 8,
-    "profile_markdown": 9,
+    "schedule": 7,
+    "hotlist": 8,
+    "creations": 9,
+    "profile_markdown": 10,
 }
 
 
-def build_media_context_for_request(request: Any, *, tenant_id: str, root: str | Path | None = None, limit: int = 5) -> dict[str, Any]:
+def build_media_context_for_request(
+    request: Any,
+    *,
+    tenant_id: str,
+    root: str | Path | None = None,
+    limit: int = 5,
+    now: datetime | None = None,
+) -> dict[str, Any]:
     return build_media_context(
         platform=str(getattr(request, "platform", "") or ""),
         account=str(getattr(request, "account", "") or ""),
@@ -138,6 +148,7 @@ def build_media_context_for_request(request: Any, *, tenant_id: str, root: str |
         tenant_id=tenant_id,
         root=root,
         limit=limit,
+        now=now,
     )
 
 
@@ -151,6 +162,7 @@ def build_media_context(
     tenant_id: str,
     root: str | Path | None = None,
     limit: int = 5,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     tenant_id = require_tenant_id(tenant_id)
     memory_root = _memory_root(tenant_id=tenant_id, root=root)
@@ -189,6 +201,14 @@ def build_media_context(
         limit=limit,
     )
     daily_evidence = _recent_daily_evidence(tenant_id=tenant_id, platform=platform, account=account, limit=limit)
+    schedule_entries = upcoming_schedule_entries(
+        _iter_jsonl(memory_root / "schedule_snapshots.jsonl"),
+        tenant_id=tenant_id,
+        platform=platform,
+        account=account,
+        now=now,
+        limit=limit,
+    )
     context = {
         "platform": platform,
         "account": account,
@@ -202,6 +222,7 @@ def build_media_context(
         "recent_hotlist_snapshots": hotlist_snapshots,
         "recent_daily_metrics": daily_evidence["metrics"],
         "top_comments": daily_evidence["top_comments"],
+        "schedule": schedule_entries,
         "global_rules": _load_media_rule_snippets(),
         "loaded": {
             "account_profile": bool(profile),
@@ -211,6 +232,7 @@ def build_media_context(
             "recent_hotlist_snapshots": len(hotlist_snapshots),
             "recent_daily_metrics": len(daily_evidence["metrics"]),
             "top_comments": len(daily_evidence["top_comments"]),
+            "schedule": len(schedule_entries),
         },
     }
     if creator_profile_error:
@@ -243,6 +265,7 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int | None 
     hotlist_snapshots = context.get("recent_hotlist_snapshots") or []
     daily_metrics = context.get("recent_daily_metrics") or []
     top_comments = context.get("top_comments") or []
+    schedule_entries = context.get("schedule") or []
     rules = context.get("global_rules") or []
     sections: list[tuple[str, list[str]]] = [
         ("header", ["媒体长期上下文："]),
@@ -278,6 +301,14 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int | None 
                 f"最佳作品 {item.get('best_post_url') or '未记录'}"
             )
         sections.append(("daily_metrics", metric_lines))
+    if schedule_entries:
+        schedule_lines = ["- 未来7天已确认档期（本地快照）："]
+        for item in schedule_entries[:5]:
+            title = _clean_text(item.get("title")) if isinstance(item, dict) else "已安排事项"
+            starts_at = _clean_text(item.get("starts_at")) if isinstance(item, dict) else ""
+            ends_at = _clean_text(item.get("ends_at")) if isinstance(item, dict) else ""
+            schedule_lines.append(f"  {starts_at} 至 {ends_at}：{title}")
+        sections.append(("schedule", schedule_lines))
     markdown_profile = _clean_text(profile.get("markdown")) if isinstance(profile, dict) else ""
     if markdown_profile:
         sections.append(("profile_markdown", ["- 账号 Markdown 档案原文：", markdown_profile[:1200]]))
@@ -1092,6 +1123,7 @@ def format_media_context_reply(context: dict[str, Any]) -> str:
         f"账号画像：{'有' if loaded.get('account_profile') else '无'}",
         f"历史创作：{loaded.get('recent_creations', 0)} 条",
         f"历史复盘：{loaded.get('recent_reviews', 0)} 条",
+        f"未来7天档期：{loaded.get('schedule', 0)} 项",
         f"存储目录：{context.get('memory_root')}",
         "",
         context.get("prompt") or "",

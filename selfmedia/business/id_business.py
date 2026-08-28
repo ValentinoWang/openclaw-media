@@ -55,6 +55,10 @@ from media_model.payloads import build_business_account_payload, build_business_
 from media_vault.vault import MediaVault
 
 from selfmedia.business.commercial_loop import CommercialLoopLedger
+from selfmedia.business.schedule import (
+    is_confirmable_schedule_value as _is_confirmable_schedule_value,
+    is_expired_schedule_value as _is_expired_schedule_value,
+)
 
 
 BUSINESS_REPLY_DEFAULTS_SCHEMA_VERSION = "id_business_reply_defaults_v1"
@@ -338,10 +342,6 @@ BUSINESS_REPLY_DEFAULT_FIELDS = (
     "授权时长",
     "全渠道授权及时长",
 )
-SCHEDULE_WINDOW_RE = re.compile(
-    r"(?:(?P<year>20\d{2})\s*年\s*)?(?P<month>1[0-2]|[1-9])\s*月\s*(?P<period>上旬|中旬|下旬)"
-)
-SCHEDULE_DATE_RE = re.compile(r"(?P<year>20\d{2})[-/.](?P<month>1[0-2]|0?[1-9])[-/.](?P<day>3[01]|[12]\d|0?[1-9])")
 BUSINESS_LLM_FIELD_NAMES = (
     "博主IP",
     "作者ID",
@@ -1548,12 +1548,35 @@ def validate_business_reply_payload(payload: dict[str, Any], context: Any) -> di
     return payload
 
 
-def apply_business_reply_result(fields: dict[str, Any], ai_reply: dict[str, Any]) -> None:
+def apply_business_reply_result(
+    fields: dict[str, Any],
+    ai_reply: dict[str, Any],
+    *,
+    required_confirmation_fields: list[str] | None = None,
+    now: datetime | None = None,
+    defaults_path: str | Path | None = None,
+) -> None:
+    enforced_fields = list(
+        dict.fromkeys(
+            canonical_confirmation_field(value)
+            for value in (required_confirmation_fields or [])
+            if canonical_confirmation_field(value) in CONFIRMATION_FIELDS
+        )
+    )
     reply = str(ai_reply.get("reply") or "").strip()
     if reply:
         fields["AI回复话术"] = reply
     missing_fields = _business_list_value(ai_reply.get("missing_fields"))
-    if ai_reply.get("status") == "pending_manual" and reply and missing_fields:
+    if enforced_fields:
+        missing_fields = list(dict.fromkeys([*missing_fields, *enforced_fields]))
+        reply = build_creator_question_text(
+            fields,
+            missing_fields,
+            now=now,
+            defaults_path=defaults_path,
+        )
+        fields["AI回复话术"] = reply
+    if (ai_reply.get("status") == "pending_manual" or enforced_fields) and reply and missing_fields:
         fields["需反问博主字段"] = "、".join(missing_fields)
         fields["反问博主话术"] = reply
         fields["反问博主状态"] = "pending"
@@ -2202,55 +2225,25 @@ def apply_business_reply_defaults(
 
 
 def is_expired_schedule_value(value: Any, *, now: datetime | None = None) -> bool:
-    """Return whether a date-like availability promise has already elapsed.
-
-    Unqualified month windows are interpreted in the current year. That is
-    deliberately conservative for global defaults: an ambiguous stale promise
-    must be confirmed again instead of being sent to a brand automatically.
-    """
-    text = _business_text_value(value)
-    if not text:
-        return False
-    today = (now or datetime.now(LOCAL_TZ)).astimezone(LOCAL_TZ).date()
-    for match in SCHEDULE_DATE_RE.finditer(text):
-        try:
-            scheduled = datetime(
-                int(match.group("year")), int(match.group("month")), int(match.group("day")), tzinfo=LOCAL_TZ
-            ).date()
-        except ValueError:
-            continue
-        return scheduled < today
-    for match in SCHEDULE_WINDOW_RE.finditer(text):
-        year = int(match.group("year") or today.year)
-        month = int(match.group("month"))
-        period = match.group("period")
-        if period == "上旬":
-            end_day = 10
-        elif period == "中旬":
-            end_day = 20
-        else:
-            next_month = datetime(year + (month == 12), 1 if month == 12 else month + 1, 1, tzinfo=LOCAL_TZ)
-            end_day = (next_month - timedelta(days=1)).day
-        return datetime(year, month, end_day, tzinfo=LOCAL_TZ).date() < today
-    return False
+    return _is_expired_schedule_value(value, now=now)
 
 
-def is_confirmable_schedule_value(value: Any) -> bool:
-    """Return whether an availability value includes a concrete date commitment."""
-    text = _business_text_value(value)
-    if not text or re.search(r"尽快|尽早|待定|待确认|看情况|本周|下周|上旬|中旬|下旬", text):
-        return False
-    return bool(
-        SCHEDULE_DATE_RE.search(text)
-        or re.search(r"(?<!\d)(?:1[0-2]|0?[1-9])\s*月\s*(?:3[01]|[12]\d|0?[1-9])\s*[日号]", text)
-    )
+def is_confirmable_schedule_value(value: Any, *, now: datetime | None = None) -> bool:
+    return _is_confirmable_schedule_value(value, now=now)
 
 
-def refresh_pending_fields_from_values(fields: dict[str, Any], parsed: dict[str, Any]) -> list[str]:
+def refresh_pending_fields_from_values(
+    fields: dict[str, Any],
+    parsed: dict[str, Any],
+    *,
+    now: datetime | None = None,
+) -> list[str]:
     pending = _business_list_value(fields.get("待补充字段") or parsed.get("pending_fields"))
     normalized = [canonical_confirmation_field(item) for item in pending]
-    if is_expired_schedule_value(_field_text(fields, "具体档期")):
+    stale_schedule = is_expired_schedule_value(_field_text(fields, "具体档期"), now=now)
+    if stale_schedule:
         fields.pop("具体档期", None)
+        normalized.append("具体档期")
     remaining = [item for item in normalized if item and not _field_text(fields, item)]
     fields["待补充字段"] = "、".join(dict.fromkeys(remaining))
     parsed["pending_fields"] = list(dict.fromkeys(remaining))
@@ -2260,6 +2253,8 @@ def refresh_pending_fields_from_values(fields: dict[str, Any], parsed: dict[str,
         for item in (canonical_confirmation_field(value) for value in confirmation)
         if item and not _field_text(fields, item)
     ]
+    if stale_schedule:
+        confirmation_remaining.append("具体档期")
     if confirmation_remaining:
         fields["需反问博主字段"] = "、".join(dict.fromkeys(confirmation_remaining))
         parsed["confirmation_fields"] = list(dict.fromkeys(confirmation_remaining))
@@ -2750,7 +2745,11 @@ def ingest(args: argparse.Namespace) -> dict[str, Any]:
     except Exception as exc:
         ai_reply = {"status": "pending_manual", "reason": f"商务>ID LLM 回复生成失败：{exc}"}
     details["ai_reply"] = ai_reply
-    apply_business_reply_result(fields, ai_reply)
+    apply_business_reply_result(
+        fields,
+        ai_reply,
+        required_confirmation_fields=_business_list_value(parsed.get("confirmation_fields")),
+    )
     if parsed.get("status") != "done":
         local_path = save_local(
             {
