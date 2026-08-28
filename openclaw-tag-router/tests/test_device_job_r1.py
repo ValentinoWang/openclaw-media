@@ -16,7 +16,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID
 
-from openclaw_app.adapters.http_api import AuthConfig, make_server
+from openclaw_app.adapters.http_api import AuthConfig, HttpAuthorityConfig, make_server
 from openclaw_app.router.content_os_bridge import ContentOSBridgeMixin
 from openclaw_app.router.content_os_queue import create_ready_task
 from openclaw_app.services.device_job_service import DeviceJobError, DeviceJobService
@@ -449,6 +449,7 @@ print(json.dumps({'devices': service.list_devices(sys.argv[2]), 'job': service.g
             None,
             auth_config=AuthConfig(session_secret=b"r1-http-secret-which-is-at-least-32-bytes", cookie_secure=False),
             account_auth=auth,
+            authority_config=HttpAuthorityConfig("http://127.0.0.1"),
             device_job_service=self.service,
         )
         thread = threading.Thread(target=server.serve_forever, daemon=True)
