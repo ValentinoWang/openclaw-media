@@ -100,6 +100,24 @@ DIAGNOSIS_KEYWORDS = ("诊断", "状态", "内容丰富度得分", "分数", "�
 MISSING_TEXT = "未提供"
 NOT_SHOWN_TEXT = "截图未显示"
 NO_EXTRA_TEXT = "无"
+GUIDANCE_LABELS = {
+    "dimension": "维度",
+    "category": "维度",
+    "topic": "主题",
+    "suggestion": "建议",
+    "advice": "建议",
+    "recommendation": "建议",
+    "strategy": "策略",
+    "action": "动作",
+    "task": "动作",
+    "reason": "原因",
+    "evidence": "依据",
+    "note": "说明",
+    "details": "说明",
+    "owner": "负责人",
+    "deadline": "完成时间",
+    "priority": "优先级",
+}
 
 
 @dataclass(frozen=True)
@@ -360,21 +378,45 @@ DATA_REVIEW_VALIDATION_CONTRACT = register_llm_validation_contract(
 def normalize_text_list(value: Any) -> list[str]:
     if value in (None, "", []):
         return []
-    if isinstance(value, str):
-        return [item.strip(" -•\t") for item in re.split(r"[\n;；]+", value) if item.strip(" -•\t")]
-    if isinstance(value, list):
-        return [str(item).strip() for item in value if str(item).strip()]
-    if isinstance(value, dict):
+    parsed = parse_structured_text(value)
+    if isinstance(parsed, str):
+        return [item.strip(" -•\t") for item in re.split(r"[\n;；]+", parsed) if item.strip(" -•\t")]
+    if isinstance(parsed, list):
         result: list[str] = []
-        for key, item in value.items():
-            if isinstance(item, (dict, list)):
-                rendered = json.dumps(item, ensure_ascii=False, separators=(",", ":"))
-            else:
-                rendered = str(item).strip()
+        for item in parsed:
+            item = parse_structured_text(item)
+            if isinstance(item, list):
+                result.extend(normalize_text_list(item))
+                continue
+            rendered = render_guidance_value(item)
             if rendered:
-                result.append(f"{key}：{rendered}")
+                result.append(rendered)
         return result
-    return [str(value).strip()]
+    rendered = render_guidance_value(parsed)
+    return [rendered] if rendered else []
+
+
+def render_guidance_value(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "是" if value else "否"
+    if isinstance(value, dict):
+        parts = []
+        for key, item in value.items():
+            rendered = render_guidance_value(item)
+            if rendered:
+                parts.append(f"{guidance_label(key)}：{rendered}")
+        return "；".join(parts)
+    if isinstance(value, list):
+        return "、".join(item for item in (render_guidance_value(item) for item in value) if item)
+    return str(value).strip()
+
+
+def guidance_label(value: Any) -> str:
+    label = str(value or "").strip()
+    normalized = re.sub(r"[ _-]+", " ", label).lower()
+    return GUIDANCE_LABELS.get(normalized, label)
 
 
 def normalize_table_items(value: Any) -> list[Any]:
@@ -1036,8 +1078,7 @@ def _paragraph(text: str) -> dict[str, Any]:
 
 
 def _list_blocks(value: Any) -> list[dict[str, Any]]:
-    items = value if isinstance(value, list) else [value]
-    clean = [str(item).strip() for item in items if str(item).strip()]
+    clean = normalize_text_list(value)
     if not clean:
         clean = ["暂无"]
     return [_paragraph(f"{index}. {item}") for index, item in enumerate(clean, 1)]
@@ -1210,7 +1251,7 @@ def _review_memory_text(request: DataReviewRequest, analysis: dict[str, Any]) ->
             " ".join(metric_bits),
             f"关键指标={'；'.join(priority_bits)}" if priority_bits else "",
             f"结论={analysis.get('conclusion') or ''}",
-            f"下一步={'；'.join(analysis.get('next_actions') or [])}",
+            f"下一步={'；'.join(normalize_text_list(analysis.get('next_actions')))}",
         ]
         if item
     )
@@ -1268,18 +1309,22 @@ def render_data_review_report(payload: dict[str, Any]) -> str:
             "",
             "## 内容指导",
             "",
-            "\n".join(f"- {item}" for item in analysis.get("content_guidance") or []) or "- 暂无",
+            _markdown_list(analysis.get("content_guidance")),
             "",
             "## 发布建议",
             "",
-            "\n".join(f"- {item}" for item in analysis.get("publishing_guidance") or []) or "- 暂无",
+            _markdown_list(analysis.get("publishing_guidance")),
             "",
             "## 下一步",
             "",
-            "\n".join(f"- {item}" for item in analysis.get("next_actions") or []) or "- 暂无",
+            _markdown_list(analysis.get("next_actions")),
             "",
         ]
     )
+
+
+def _markdown_list(value: Any) -> str:
+    return "\n".join(f"- {item}" for item in normalize_text_list(value)) or "- 暂无"
 
 
 def _image_part(path: str) -> dict[str, Any]:

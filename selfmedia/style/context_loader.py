@@ -86,7 +86,7 @@ def load_style_context(
     profile = media_context.get("account_profile") or {}
     platform_mechanism = _load_platform_mechanism(request.platform, Path(platform_mechanism_root or DEFAULT_PLATFORM_MECHANISM_ROOT), traces)
     creative_pattern_contract = _load_creative_pattern_contract(traces)
-    anti_patterns = tuple(_read_yaml_list(ANTI_PATTERNS_PATH, "avoid_phrases"))
+    anti_patterns = load_anti_patterns()
     traces.append(
         StyleSourceTrace(
             source_type="anti_patterns",
@@ -229,6 +229,10 @@ def _read_yaml_list(path: Path, key: str) -> list[str]:
     if isinstance(values, list):
         return [str(item).strip() for item in values if str(item).strip()]
     return []
+
+
+def load_anti_patterns() -> tuple[str, ...]:
+    return tuple(_read_yaml_list(ANTI_PATTERNS_PATH, "avoid_phrases"))
 
 
 def _read_yaml_mapping(path: Path) -> dict[str, Any]:

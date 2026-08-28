@@ -1,0 +1,32 @@
+{
+  "task_id": "P1-CD-08",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "actual_changed_paths": [
+    "selfmedia/context/media_context.py",
+    "tests/test_media_context_review_bandwidth.py",
+    "agents-results/2026-08-28/media-p1-implementation/worker-orchestration/CD-08/return.json",
+    "agents-results/2026-08-28/media-p1-implementation/worker-orchestration/CD-08/returns/P1-CD-08-primary.json"
+  ],
+  "command_results": [
+    {
+      "command": "/bin/bash agents-results/2026-08-28/media-p1-implementation/worker-orchestration/CD-08/validate.sh",
+      "status": "pass",
+      "summary": "3 passed in 1.48s; validation script also ran git diff --check."
+    },
+    {
+      "command": "UV_CACHE_DIR=/tmp/openclaw-media-p1-cd08-uv-cache uv run --no-project --python /Users/vsiyo/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/bin/python3.11 --with pytest --with 'pydantic>=2,<3' --with requests --with python-dotenv --with pyyaml --with openai -m pytest -q tests/test_media_context.py tests/test_media_context_review_bandwidth.py",
+      "status": "pass",
+      "summary": "9 passed in 0.44s."
+    },
+    {
+      "command": "git diff --check",
+      "status": "pass",
+      "summary": "Passed after writing this return artifact."
+    }
+  ],
+  "unverified_items": [],
+  "rationale": "The default prompt budget is 10,000 characters, environment-configurable up to 12,000 characters. Structured reviews render first with conclusion, performance level, metric values, and next actions; explicit small budgets truncate deterministically."
+}
