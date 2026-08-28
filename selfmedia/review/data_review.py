@@ -39,6 +39,8 @@ from media_model.payloads import (
 )
 from media_vault.vault import MediaVault, make_timestamp_id
 
+from .validation_window_scheduler import ValidationWindowScheduler
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_REVIEW_PATTERN = re.compile(r"^\s*【数据复盘】")
@@ -64,6 +66,11 @@ MEDIA_FORMAT_VALUES = ["视频", "图文", "笔记", "直播", "unknown"]
 TRACK_VALUES = ["校园生活", "运动康复", "跑步训练", "AI科技", "学习方法", "职场成长", "生活方式", "商业合作", "所有赛道", "未提供", "其他"]
 PERFORMANCE_LEVELS = ["高价值延续", "值得重剪", "观察", "不建议延续", "未评级"]
 REVIEW_WINDOW_ALIASES = {
+    "1h": "1h",
+    "1小时": "1h",
+    "一小时": "1h",
+    "首小时": "1h",
+    "firsthour": "1h",
     "2h": "2h",
     "2小时": "2h",
     "两小时": "2h",
@@ -118,6 +125,69 @@ class DataReviewRequest:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+def due_validation_review_tasks(
+    *,
+    tenant_id: str,
+    now: datetime | str | None = None,
+) -> list[dict[str, Any]]:
+    """Return due review tasks without completing or claiming any of them."""
+    return ValidationWindowScheduler(tenant_id=tenant_id).due_pending_windows(now=now)
+
+
+def consume_scheduled_validation_review(
+    *,
+    tenant_id: str,
+    creation_run_id: str,
+    task_id: str,
+    evidence_uri: str,
+    attachment_paths: list[str],
+    now: datetime | str | None = None,
+    retry_blocked: bool = False,
+    output_parent_node_token: str = "",
+    guide_url: str = "",
+    conversation_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Consume one due task through the normal data-review validation path."""
+    attachments = _existing_images(attachment_paths)
+    scheduler = ValidationWindowScheduler(tenant_id=tenant_id)
+
+    def run_review(task: dict[str, Any]) -> dict[str, Any]:
+        if not attachments:
+            return {"ok": False, "status": "missing_screenshots"}
+        requirement = "；".join(str(item) for item in task.get("validation_targets", []) if str(item).strip())
+        if task.get("first_hour_action"):
+            requirement = f"首小时动作：{task['first_hour_action']}；{requirement}".strip("；")
+        requirement = f"{requirement}；外部复盘证据={evidence_uri}".strip("；")
+        text = "\n".join(
+            item
+            for item in (
+                "【数据复盘】",
+                f"创作记录ID={task['creation_run_id']}",
+                f"数据节点={task['window']}",
+                f"发布链接={task['published_url']}",
+                f"分析要求={requirement}" if requirement else "",
+            )
+            if item
+        )
+        return handle_data_review_command(
+            text,
+            tenant_id=tenant_id,
+            attachment_paths=attachments,
+            output_parent_node_token=output_parent_node_token,
+            guide_url=guide_url,
+            conversation_context=conversation_context,
+        )
+
+    return scheduler.consume_due_task(
+        creation_run_id=creation_run_id,
+        task_id=task_id,
+        evidence_uri=evidence_uri,
+        review_runner=run_review,
+        now=now,
+        retry_blocked=retry_blocked,
+    )
 
 
 def handle_data_review_command(

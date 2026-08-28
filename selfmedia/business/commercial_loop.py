@@ -262,6 +262,7 @@ class CommercialLoopLedger:
         published_url: str,
         evidence_uri: str = "",
         idempotency_key: str = "",
+        published_at: str = "",
     ) -> dict[str, Any]:
         state = self.load()
         url = str(published_url or "").strip()
@@ -272,9 +273,19 @@ class CommercialLoopLedger:
         )
         if url and not has_external_evidence(url):
             raise CommercialLifecycleError("published_url must be a public URL")
+        existing_publication = state.get("publication") if isinstance(state.get("publication"), dict) else {}
+        recorded_at = str(published_at or existing_publication.get("published_at") or "").strip() or _now()
         state["publish_status"] = "pending_manual" if not url or not has_external_evidence(evidence) else "evidence_submitted_pending_verification"
-        state["publication"] = {"published_url": url, "evidence_uri": evidence}
+        state["publication"] = {
+            "published_url": url,
+            "evidence_uri": evidence,
+            "published_at": recorded_at,
+        }
         if not url or not has_external_evidence(evidence):
+            state["validation_schedule"] = {
+                "status": "blocked",
+                "blocking_reason": "publication_confirmation_missing",
+            }
             self._append_event(state, "publication_missing_external_evidence")
             return self._save(state)
         self._transition(
@@ -285,7 +296,37 @@ class CommercialLoopLedger:
             metadata={"published_url": url},
         )
         state["publish_status"] = "confirmed"
+        self._schedule_validation_windows_after_publication(state)
         return self._save(state)
+
+    def _schedule_validation_windows_after_publication(self, state: dict[str, Any]) -> None:
+        """Create review work only after this ledger recorded external publication proof."""
+        from selfmedia.review.validation_window_scheduler import (
+            ValidationWindowScheduleError,
+            ValidationWindowScheduler,
+        )
+
+        publication = state.get("publication") if isinstance(state.get("publication"), dict) else {}
+        try:
+            schedule = ValidationWindowScheduler(tenant_id=self.tenant_id, root=self.vault.vault_root).schedule_for_publication(
+                creation_run_id=str(state.get("creation_run_id") or ""),
+                published_url=str(publication.get("published_url") or ""),
+                publication_evidence_uri=str(publication.get("evidence_uri") or ""),
+                publication_confirmed=True,
+                published_at=str(publication.get("published_at") or ""),
+            )
+        except (OSError, RuntimeError, ValidationWindowScheduleError) as exc:
+            state["validation_schedule"] = {"status": "blocked", "blocking_reason": str(exc)}
+            self._append_event(state, "validation_schedule_blocked")
+            return
+        state["validation_schedule"] = {
+            "status": schedule.get("status"),
+            "schedule_id": schedule.get("schedule_id", ""),
+            "creation_run_id": schedule.get("creation_run_id", ""),
+            "task_count": len(schedule.get("tasks") or []),
+            "blocking_reason": schedule.get("blocking_reason", ""),
+        }
+        self._append_event(state, "validation_schedule_created" if schedule.get("status") == "scheduled" else "validation_schedule_blocked")
 
     def record_acceptance(
         self,
