@@ -299,9 +299,7 @@ def format_creation_reply(
     platform_fit: dict[str, Any] | None = None,
     generation: dict[str, Any] | None = None,
 ) -> str:
-    creator_profile_error = " ".join(
-        str((media_context or {}).get("creator_profile_error") or "").split()
-    )[:240]
+    creator_profile_unavailable = bool((media_context or {}).get("creator_profile_error"))
     # The optional inputs remain part of the callable contract, but are
     # operational telemetry and must not be sent in a creator-facing receipt.
     del activities, virals, inspirations, businesses, media_context, memory
@@ -316,9 +314,9 @@ def format_creation_reply(
         f"平台规则校验：{'通过' if validation.get('ok') else '未通过'}",
     ]
     if creation_record_id:
-        lines.append(f"创作记录ID：{creation_record_id}（数据复盘时请一并填写）")
-    if creator_profile_error:
-        lines.append(f"达人档案未加载：{creator_profile_error}")
+        lines.append("创作档案已关联，可在发布后发起数据复盘。")
+    if creator_profile_unavailable:
+        lines.append("达人档案暂未加载，不影响当前草稿。")
     return "\n".join(lines)
 
 

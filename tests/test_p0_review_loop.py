@@ -99,7 +99,7 @@ class P0ReviewLoopTests(unittest.TestCase):
         self.assertNotIn('"atomic_facts"', rendered_blocks)
         self.assertIn("事实：收藏偏低", report)
 
-    def test_creation_reply_exposes_record_id_for_later_review(self) -> None:
+    def test_creation_reply_keeps_review_handoff_internal(self) -> None:
         request = CreationRequest(
             platform="抖音",
             content_type="视频",
@@ -117,7 +117,8 @@ class P0ReviewLoopTests(unittest.TestCase):
             {"ok": True},
             creation_record_id="run_review_loop",
         )
-        self.assertIn("创作记录ID：run_review_loop", reply)
+        self.assertIn("创作档案已关联，可在发布后发起数据复盘。", reply)
+        self.assertNotIn("run_review_loop", reply)
 
     def test_review_write_uses_creation_record_as_stable_post_key(self) -> None:
         request = data_review.DataReviewRequest(creation_record_id="run_review_loop", platform="抖音")
