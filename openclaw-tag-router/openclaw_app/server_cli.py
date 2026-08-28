@@ -4,6 +4,10 @@ import argparse
 import os
 from pathlib import Path
 
+from integrations.feishu.lark_document_gateway import (
+    build_production_lark_document_gateway,
+)
+
 from .account import (
     AccountAuthService,
     AccountDatabase,
@@ -357,6 +361,13 @@ def main() -> int:
         administrator_authorizer=stage1_authorizer,
         resource_target_resolver=resolve_stage1_resource_target,
     )
+    feishu_document_config = app.settings.get("feishu") or {}
+    lark_gateway = build_production_lark_document_gateway(
+        app.feishu_service,
+        account_database.connect,
+        feishu_document_config.get("document_bindings"),
+        resources=feishu_document_config.get("document_resources"),
+    )
     media_business_services = {
         "overview": OverviewService(account_database.connect, task_reader=media_web_tasks, cursor_secret=secret),
         "tracks": TracksService(account_database.connect, cursor_secret=secret),
@@ -387,7 +398,7 @@ def main() -> int:
         ),
         "admin_upstreams": AdminUpstreamsService(account_database, upstream_gateway=tenant_model_gateway),
         "admin_platform_cookies": AdminPlatformCookiesService(),
-        "documents": DocumentsService(account_database.connect),
+        "documents": DocumentsService(account_database.connect, lark_gateway=lark_gateway),
     }
     app.router.publishing_service = media_business_services["publishing"]
     tenant_model_gateway.prepare()
