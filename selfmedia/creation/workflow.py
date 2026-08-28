@@ -4,11 +4,12 @@ import json
 import os
 from typing import Any
 
+from . import deconstruction_artifact
 from .adapters import ActivityAdapter, BusinessAdapter, CreationInspirationAdapter, ViralContentAdapter
 from .deconstruction_artifact import DeconstructionArtifactUnavailable, attach_deconstruction_artifact_brief
 from .field_contract import CanonicalMediaRecord, normalize_key
 from .insight_cards import load_approved_human_insight_aggregation_records, load_insight_card_records
-from .llm_generator import generate_creation_draft
+from .llm_generator import creation_candidate_context_limits, generate_creation_draft, normalize_comment_evidence_for_prompt
 from .matcher import RankedRecord, content_type_allowed, rank_activities, rank_businesses, rank_inspirations, rank_virals, request_has_business_context
 from .media_model_v2_writeback import write_creation_model_v2
 from .platform_fit import (
@@ -93,8 +94,9 @@ def handle_creation_command(
                 limit=_env_int("SELFMEDIA_CREATION_INSIGHT_AGGREGATION_CONTEXT_LIMIT", 30),
             )
         )
+    candidate_context_limits = creation_candidate_context_limits()
 
-    ranked_activity_candidates = rank_activities(activities, request)[: _env_int("SELFMEDIA_CREATION_ACTIVITY_CONTEXT_LIMIT", 30)]
+    ranked_activity_candidates = rank_activities(activities, request)[: candidate_context_limits["activity"]]
     activity_candidates = [item.record for item in ranked_activity_candidates]
     activity_example_virals, activity_example_deconstructs = _deconstruct_activity_example_links(
         ranked_activity_candidates,
@@ -103,7 +105,7 @@ def handle_creation_command(
         enabled=not dry_run and not no_write,
         max_items=_env_int("SELFMEDIA_CREATION_ACTIVITY_EXAMPLE_DECONSTRUCT_LIMIT", 2),
     )
-    viral_context_limit = _env_int("SELFMEDIA_CREATION_VIRAL_CONTEXT_LIMIT", 40)
+    viral_context_limit = candidate_context_limits["viral"]
     ranked_viral_candidates = rank_virals(virals, request)[:viral_context_limit]
     if activity_example_virals:
         ranked_example_virals = rank_virals(activity_example_virals, request)
@@ -119,9 +121,9 @@ def handle_creation_command(
         request=request,
     )
     viral_candidates = [item.record for item in ranked_viral_candidates]
-    ranked_inspiration_candidates = rank_inspirations(inspirations, request)[: _env_int("SELFMEDIA_CREATION_INSPIRATION_CONTEXT_LIMIT", 40)]
+    ranked_inspiration_candidates = rank_inspirations(inspirations, request)[: candidate_context_limits["inspiration"]]
     inspiration_candidates = [item.record for item in ranked_inspiration_candidates]
-    business_candidates = _constraint_business_candidates(businesses, request, max_items=_env_int("SELFMEDIA_CREATION_BUSINESS_CONTEXT_LIMIT", 20))
+    business_candidates = _constraint_business_candidates(businesses, request, max_items=candidate_context_limits["business"])
     activity_payloads = [_ranked_candidate_payload(item) for item in ranked_activity_candidates]
     viral_payloads = [_ranked_candidate_payload(item) for item in ranked_viral_candidates]
     inspiration_payloads = [_ranked_candidate_payload(item) for item in ranked_inspiration_candidates]
@@ -164,6 +166,7 @@ def handle_creation_command(
         reference_docs=reference_docs,
         media_context=media_context,
         platform_fit=platform_fit,
+        candidate_context_limits=candidate_context_limits,
     )
     if not draft.get("script_options") or not draft.get("recommended_option_id"):
         raise RuntimeError("missing_script_options_or_recommendation")
@@ -351,6 +354,8 @@ def _require_deconstruction_artifacts(
     rejected: list[dict[str, Any]] = []
     for item in ranked:
         try:
+            evidence_uri = str((item.record.detail_json or {}).get("evidence_uri") or item.record.doc_links.get("evidence") or "").strip()
+            artifact = deconstruction_artifact.load_deconstruction_artifact(evidence_uri, tenant_id=tenant_id)
             source_asset_id = str((item.record.detail_json or {}).get("source_asset_id") or "").strip()
             materialize_deferred_contract = bool(
                 request.source_asset_id
@@ -363,6 +368,8 @@ def _require_deconstruction_artifacts(
                 creative_handoff_text=request.raw_text,
                 materialize_deferred_contract=materialize_deferred_contract,
             )
+            if "comments" in artifact:
+                record.detail_json["comment_evidence"] = normalize_comment_evidence_for_prompt(artifact.get("comments"))
         except DeconstructionArtifactUnavailable as exc:
             rejected.append(
                 {
@@ -374,8 +381,9 @@ def _require_deconstruction_artifacts(
             )
             continue
         if not materialize_deferred_contract:
-            # Ranking may retain a legacy deconstruction for selection continuity,
-            # but its uncontracted material must never become LLM input.
+            # Ranking may retain a legacy deconstruction for selection continuity.
+            # The separately classified comment evidence remains traceable and
+            # explicitly untrusted; all other uncontracted material stays out.
             record.detail_json["creation_handoff"] = {"status": "not_requested"}
         accepted.append(
             RankedRecord(
@@ -394,7 +402,7 @@ def _record_candidate_payload(record: CanonicalMediaRecord) -> dict[str, Any]:
     contract = creation_handoff.get("multi_signal_contract") if isinstance(creation_handoff, dict) else None
     if record.record_type == "素材拆解" and isinstance(creation_handoff, dict):
         if isinstance(contract, dict):
-            return {
+            payload = {
                 "id": _primary_record_id(record),
                 "source_record_id": record.source_record_id,
                 "relation_id": record.relation_id,
@@ -402,14 +410,18 @@ def _record_candidate_payload(record: CanonicalMediaRecord) -> dict[str, Any]:
                 "record_type": record.record_type,
                 "multi_signal_contract": contract,
             }
-        return {
-            "id": _primary_record_id(record),
-            "source_record_id": record.source_record_id,
-            "relation_id": record.relation_id,
-            "source_table": record.source_table,
-            "record_type": record.record_type,
-        }
-    return {
+        else:
+            payload = {
+                "id": _primary_record_id(record),
+                "source_record_id": record.source_record_id,
+                "relation_id": record.relation_id,
+                "source_table": record.source_table,
+                "record_type": record.record_type,
+            }
+        if "comment_evidence" in (record.detail_json or {}):
+            payload["comment_evidence"] = normalize_comment_evidence_for_prompt((record.detail_json or {}).get("comment_evidence"))
+        return payload
+    payload = {
         "id": _primary_record_id(record),
         "source_record_id": record.source_record_id,
         "relation_id": record.relation_id,
@@ -450,7 +462,7 @@ def _record_candidate_payload(record: CanonicalMediaRecord) -> dict[str, Any]:
         "activity_doc_link": record.activity_doc_link,
         "cover_opening_hook": _truncate(str((record.detail_json or {}).get("cover_opening_hook") or ""), 420),
         "core_data_summary": _truncate(str((record.detail_json or {}).get("core_data_summary") or ""), 420),
-        "top_comment_insight": _truncate(str((record.detail_json or {}).get("top_comment_insight") or ""), 420),
+        "top_comment_insight": _truncate(str((record.detail_json or {}).get("top_comment_insight") or ""), 900),
         "target_audience": _truncate(str((record.detail_json or {}).get("target_audience") or ""), 420),
         "pain_or_pleasure_points": _truncate(str((record.detail_json or {}).get("pain_or_pleasure_points") or ""), 420),
         "attention_elements": _truncate(str((record.detail_json or {}).get("attention_elements") or ""), 420),
@@ -465,6 +477,9 @@ def _record_candidate_payload(record: CanonicalMediaRecord) -> dict[str, Any]:
         "pacing_notes": _truncate_nested((record.detail_json or {}).get("pacing_notes") or {}, 500),
         "detail_json": _truncate_nested(record.detail_json),
     }
+    if "comment_evidence" in (record.detail_json or {}):
+        payload["comment_evidence"] = normalize_comment_evidence_for_prompt((record.detail_json or {}).get("comment_evidence"))
+    return payload
 
 
 def _deconstruct_activity_example_links(

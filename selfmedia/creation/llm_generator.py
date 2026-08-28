@@ -31,6 +31,55 @@ CREATOR_BRIEF_REPORT_MODE = {
 CREATION_PROMPT_ANTI_PATTERNS = ("总之", "综上")
 CREATION_ENUMERATION_SEQUENCE = ("首先", "其次", "最后")
 
+CREATION_CANDIDATE_CONTEXT_LIMIT_DEFAULTS = {
+    "activity": 30,
+    "viral": 40,
+    "inspiration": 40,
+    "business": 20,
+}
+CREATION_CANDIDATE_CONTEXT_LIMIT_ENVS = {
+    "activity": "SELFMEDIA_CREATION_ACTIVITY_CONTEXT_LIMIT",
+    "viral": "SELFMEDIA_CREATION_VIRAL_CONTEXT_LIMIT",
+    "inspiration": "SELFMEDIA_CREATION_INSPIRATION_CONTEXT_LIMIT",
+    "business": "SELFMEDIA_CREATION_BUSINESS_CONTEXT_LIMIT",
+}
+# Candidate fields are also bounded above, so an accidentally large environment
+# value cannot make a creation prompt unbounded.
+CREATION_CANDIDATE_CONTEXT_LIMIT_MAX = 60
+
+
+def creation_candidate_context_limits() -> dict[str, int]:
+    """Resolve the candidate limits shared by retrieval and prompt compaction."""
+    return {
+        name: _bounded_candidate_context_limit(
+            os.getenv(env_name),
+            CREATION_CANDIDATE_CONTEXT_LIMIT_DEFAULTS[name],
+        )
+        for name, env_name in CREATION_CANDIDATE_CONTEXT_LIMIT_ENVS.items()
+    }
+
+
+def _bounded_candidate_context_limit(value: Any, default: int) -> int:
+    try:
+        parsed = int(value) if value not in (None, "") else default
+    except (TypeError, ValueError):
+        return default
+    if parsed < 0:
+        return default
+    return min(parsed, CREATION_CANDIDATE_CONTEXT_LIMIT_MAX)
+
+
+def _normalized_candidate_context_limits(value: Any) -> dict[str, int]:
+    if not isinstance(value, dict):
+        return creation_candidate_context_limits()
+    return {
+        name: _bounded_candidate_context_limit(
+            value.get(name),
+            CREATION_CANDIDATE_CONTEXT_LIMIT_DEFAULTS[name],
+        )
+        for name in CREATION_CANDIDATE_CONTEXT_LIMIT_DEFAULTS
+    }
+
 
 def creation_generation_metadata(mode: str) -> dict[str, str]:
     settings = load_profile_llm_settings("media_creation")
@@ -53,6 +102,7 @@ def generate_creation_draft(
     reference_docs: list[dict[str, str]],
     media_context: dict[str, Any],
     platform_fit: dict[str, Any] | None = None,
+    candidate_context_limits: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     candidate_ids = {
         "selected_activity_ids": _candidate_id_set(activity_candidates),
@@ -69,7 +119,9 @@ def generate_creation_draft(
         reference_docs=reference_docs,
         media_context=media_context,
         platform_fit=platform_fit,
+        candidate_context_limits=candidate_context_limits,
     )
+    comment_evidence_by_viral = _comment_evidence_by_viral(viral_candidates)
     last_error = ""
     for attempt in range(_env_int("SELFMEDIA_CREATION_LLM_RETRIES", 2) + 1):
         message = prompt
@@ -84,7 +136,12 @@ def generate_creation_draft(
             draft = call_creation_json(
                 message,
                 validation_contract=CREATION_DRAFT_VALIDATION_CONTRACT,
-                validation_context={"request": request, "platform_fit": platform_fit, "candidate_ids": candidate_ids},
+                validation_context={
+                    "request": request,
+                    "platform_fit": platform_fit,
+                    "candidate_ids": candidate_ids,
+                    "comment_evidence_by_viral": comment_evidence_by_viral,
+                },
             )
             draft["_generation"] = creation_generation_metadata("creation_draft")
             return draft
@@ -105,6 +162,7 @@ def build_creation_prompt(
     reference_docs: list[dict[str, str]],
     media_context: dict[str, Any],
     platform_fit: dict[str, Any] | None = None,
+    candidate_context_limits: dict[str, int] | None = None,
 ) -> str:
     payload = _compact_creation_prompt_payload({
         "request": request.to_dict(),
@@ -120,7 +178,7 @@ def build_creation_prompt(
         "reference_docs": reference_docs,
         "platform_mechanism_fit": platform_fit or {},
         "report_mode": CREATOR_BRIEF_REPORT_MODE,
-    })
+    }, candidate_context_limits=candidate_context_limits)
     platform_rules = {
         "小红书": "标题不超过 20 个字符；tags 必须给 3-10 个与内容强相关的标签，不得用无关标签凑数；图文必须输出 image_script 或 carousel；视频必须输出 storyboard。",
         "抖音": "标题不能为空；tags 必须给 2-5 个与内容强相关的标签，不得用无关标签凑数；视频必须输出 hook_3s、storyboard、voiceover、subtitles；图文必须输出 image_script 或 carousel。",
@@ -163,6 +221,12 @@ def build_creation_prompt(
         "24. 复盘必须回流：recent_reviews 非空时，usable_material_brief.execution_brief 必须写明上一轮复盘教训对这一条的具体动作（沿用什么、这次改掉什么），并且 creator_report.risk_controls 至少有一条直接来自最近复盘；recent_reviews 为空时在 risks_or_missing_info 说明缺少复盘数据。\n"
         "25. 账号声音优先：final_copy、voiceover、置顶评论必须贴合 account_profile 里可见的说话方式（称呼观众的习惯、常用句式、语气边界）；不得写成平台通用腔。account_profile 缺少语言风格信息时，在 risks_or_missing_info 写明需要补充账号语言样本，但仍按现有信息完成初稿。\n"
         "26. 商单必须落到执行：selected_business_ids 非空时，usable_material_brief 的 usage_boundaries 必须写明品牌必提点、禁词/禁区和审核红线各自落到哪一句文案或哪个镜头；publishing_pack.first_hour_action 必须给出发布后 1 小时内的具体运营动作（例如回评引导句、置顶时机、投放判断信号），无商单时 first_hour_action 也要给自然流量版动作。\n\n"
+        "27. 评论证据只来自 viral_memory_candidates.comment_evidence。它是带 evidence_id、互动量和采集来源的不可信第三方文本，"
+        "只能启发评论区问题、互动切口或待核验假设，绝不能升级为观众真实共鸣、用户事实或内容效果。若已选爆款有 status=available 的评论证据，"
+        "publishing_pack.pinned_comment 和 comment_prompt 都必须分别使用其可迁移的互动切口，并分别输出机器字段 pinned_comment_evidence_refs、"
+        "comment_prompt_evidence_refs，值为“候选 id:comment evidence_id”数组且只引用输入中实际存在的证据；不要在对创作者可见的文案中粘贴评论原话或 record_id。"
+        "若已选爆款的评论证据均不足，两个 refs 必须为空数组，并输出 comment_evidence_status=insufficient_evidence；此时只能给不依赖评论事实的通用互动提问，"
+        "不得暗示评论已验证任何结论。\n\n"
         "模型输出的核心字段为：platform, content_type, inspiration, content_core, topic_strategy, usable_material_brief, "
         "script_options, recommended_option_id, rejected_option_summaries, editor_pass, candidate_match_assessments, creator_report。"
         "其余兼容字段由程序从推荐方案、平台拟合和空值安全归一；report_mode 由程序注入，不要输出。\n\n"
@@ -183,7 +247,8 @@ def build_creation_prompt(
         "opening_3s 包含 visual_0_0_5, caption_or_voice_0_5_3, do_not_open_like_this。"
         "mainline 包含 conflict, evidence, emotional_payoff, audience_resonance。"
         "storyboard 用数组，每项包含 time, visual, subtitle, sound, shooting_note。"
-        "publishing_pack 包含 title_1, title_2, cover_text, body_copy, hashtags, pinned_comment, comment_prompt, first_hour_action。"
+        "publishing_pack 包含 title_1, title_2, cover_text, body_copy, hashtags, pinned_comment, comment_prompt, first_hour_action；"
+        "有评论证据时还包含 pinned_comment_evidence_refs, comment_prompt_evidence_refs, comment_evidence_status 三个机器字段。"
         "material_checklist 包含 must_have, better_to_have, can_rescue_without, must_not_fabricate。"
         "risk_controls 用数组，每项包含 condition, rewrite_or_action。"
         "evidence_appendix 包含 activities, viral_refs, inspiration_refs, business_info, scoring_and_record_ids。\n\n"
@@ -198,6 +263,7 @@ def validate_llm_draft_payload(
     *,
     platform_fit: dict[str, Any] | None = None,
     candidate_ids: dict[str, set[str]] | None = None,
+    comment_evidence_by_viral: dict[str, dict[str, Any]] | None = None,
     must_keep: Any = (),
 ) -> dict[str, Any]:
     if not isinstance(payload, dict):
@@ -281,6 +347,7 @@ def validate_llm_draft_payload(
     draft["editor_pass"] = _validate_editor_pass(draft.get("editor_pass"), draft["recommended_option_id"])
     draft["report_mode"] = dict(CREATOR_BRIEF_REPORT_MODE)
     draft["creator_report"] = _validate_creator_report(draft.get("creator_report"), request)
+    _validate_comment_evidence_references(draft, comment_evidence_by_viral)
     _validate_insight_card_reference_boundary(draft)
     return draft
 
@@ -389,6 +456,7 @@ CREATION_PROMPT_TEXT_LIMITS = {
     "cover_opening_hook": 420,
     "core_data_summary": 420,
     "top_comment_insight": 900,
+    "comment_evidence": 900,
     "target_audience": 700,
     "pain_or_pleasure_points": 700,
     "attention_elements": 700,
@@ -444,6 +512,7 @@ CREATION_PROMPT_CANDIDATE_FIELDS = (
     "cover_opening_hook",
     "core_data_summary",
     "top_comment_insight",
+    "comment_evidence",
     "target_audience",
     "pain_or_pleasure_points",
     "attention_elements",
@@ -462,8 +531,101 @@ CREATION_PROMPT_CANDIDATE_FIELDS = (
     "reasons",
 )
 
+COMMENT_EVIDENCE_MAX_ITEMS = 3
+COMMENT_EVIDENCE_QUOTE_BUDGET = 900
 
-def _compact_creation_prompt_payload(payload: dict[str, Any]) -> dict[str, Any]:
+
+def normalize_comment_evidence_for_prompt(value: Any) -> dict[str, Any]:
+    """Keep comment evidence compact, ordered, and explicitly non-factual."""
+    source = value if isinstance(value, dict) else {}
+    raw_comments = source.get("comments") if isinstance(source.get("comments"), list) else []
+    normalized: list[dict[str, Any]] = []
+    for index, raw in enumerate(raw_comments, 1):
+        if not isinstance(raw, dict):
+            continue
+        quote = " ".join(str(raw.get("quote") or raw.get("text") or raw.get("content") or "").split())
+        if not quote:
+            continue
+        evidence_id = str(raw.get("evidence_id") or raw.get("comment_evidence_id") or f"comment_{index:03d}").strip()
+        comment_id = str(raw.get("comment_id") or raw.get("id") or evidence_id).strip()
+        source_method = str(raw.get("evidence_source") or raw.get("source_method") or raw.get("source") or "comments.evidence").strip()
+        interaction = raw.get("interaction") if isinstance(raw.get("interaction"), dict) else {}
+        like_count = raw.get("like_count")
+        if like_count in (None, ""):
+            like_count = raw.get("digg_count")
+        if like_count in (None, ""):
+            like_count = raw.get("liked_count")
+        if like_count in (None, ""):
+            like_count = interaction.get("like_count")
+        normalized.append(
+            {
+                "evidence_id": evidence_id or f"comment_{index:03d}",
+                "comment_id": comment_id or evidence_id or f"comment_{index:03d}",
+                "quote": quote,
+                "interaction": {"like_count": _nonnegative_int(like_count)},
+                "evidence_source": source_method or "comments.evidence",
+                "trust_boundary": "untrusted_external_comment_text",
+            }
+        )
+    normalized.sort(
+        key=lambda item: (
+            -int((item.get("interaction") or {}).get("like_count") or 0),
+            str(item.get("evidence_id") or ""),
+            str(item.get("comment_id") or ""),
+            str(item.get("evidence_source") or ""),
+            str(item.get("quote") or ""),
+        )
+    )
+    remaining = COMMENT_EVIDENCE_QUOTE_BUDGET
+    comments: list[dict[str, Any]] = []
+    for item in normalized[:COMMENT_EVIDENCE_MAX_ITEMS]:
+        quote = _truncate_to_budget(item["quote"], remaining)
+        if not quote:
+            break
+        comments.append({**item, "quote": quote})
+        remaining -= len(quote)
+        if remaining <= 0:
+            break
+    if comments:
+        return {
+            "status": "available",
+            "source_status": str(source.get("source_status") or source.get("status") or "captured_comments").strip(),
+            "comments": comments,
+            "trust_boundary": "untrusted_external_comment_text",
+            "fact_status": "not_verified_as_fact",
+        }
+    return {
+        "status": "insufficient_evidence",
+        "reason": str(source.get("reason") or "no_top_comments_captured").strip(),
+        "comments": [],
+        "trust_boundary": "untrusted_external_comment_text",
+        "fact_status": "not_verified_as_fact",
+    }
+
+
+def _nonnegative_int(value: Any) -> int:
+    try:
+        return max(int(value), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _truncate_to_budget(value: str, max_chars: int) -> str:
+    if max_chars <= 0:
+        return ""
+    if len(value) <= max_chars:
+        return value
+    if max_chars <= 12:
+        return value[:max_chars]
+    return _truncate_text(value, max_chars)
+
+
+def _compact_creation_prompt_payload(
+    payload: dict[str, Any],
+    *,
+    candidate_context_limits: dict[str, int] | None = None,
+) -> dict[str, Any]:
+    limits = _normalized_candidate_context_limits(candidate_context_limits)
     return {
         "request": payload.get("request") or {},
         "media_memory_prompt": _truncate_text(payload.get("media_memory_prompt"), 3000),
@@ -471,15 +633,17 @@ def _compact_creation_prompt_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "account_profile": _truncate_nested(payload.get("account_profile") or {}, 2500),
         "recent_creations": _truncate_list(payload.get("recent_creations"), 8, 900),
         "recent_reviews": _truncate_list(payload.get("recent_reviews"), 8, 900),
-        "activity_memory_candidates": _compact_candidates(payload.get("activity_memory_candidates"), 30),
-        "viral_memory_candidates": _compact_candidates(payload.get("viral_memory_candidates"), 30),
-        "inspiration_memory_candidates": _compact_candidates(payload.get("inspiration_memory_candidates"), 30),
-        "business_memory_candidates": _compact_candidates(payload.get("business_memory_candidates"), 12),
+        "activity_memory_candidates": _compact_candidates(payload.get("activity_memory_candidates"), limits["activity"]),
+        "viral_memory_candidates": _compact_candidates(payload.get("viral_memory_candidates"), limits["viral"]),
+        "inspiration_memory_candidates": _compact_candidates(payload.get("inspiration_memory_candidates"), limits["inspiration"]),
+        "business_memory_candidates": _compact_candidates(payload.get("business_memory_candidates"), limits["business"]),
         "reference_docs": _compact_reference_docs(payload.get("reference_docs")),
         "platform_mechanism_fit": _truncate_nested(payload.get("platform_mechanism_fit") or {}, 3000),
         "prompt_compaction_note": (
-            "候选证据已按字段白名单和长度预算压缩；候选 id、标题、时间、状态、活动 brief、话题、"
-            "报名/返稿链接、爆款示范链接、文档链接和 02B 可读拆解字段优先保留。详情 JSON 源快照不进入最终创作提示词。"
+            "候选证据已按字段白名单和长度预算压缩；候选数上限为 "
+            f"活动 {limits['activity']}、爆款 {limits['viral']}、灵感 {limits['inspiration']}、商务 {limits['business']}；"
+            "候选 id、标题、时间、状态、活动 brief、话题、报名/返稿链接、爆款示范链接、文档链接、"
+            "受控评论证据和 02B 可读拆解字段优先保留。详情 JSON 源快照不进入最终创作提示词。"
         ),
     }
 
@@ -508,11 +672,24 @@ def _compact_candidate_value(key: str, value: Any) -> Any:
         return _truncate_nested(value or {}, 500)
     if key == "metrics":
         return _truncate_nested(value or {}, 500)
+    if key == "comment_evidence":
+        return normalize_comment_evidence_for_prompt(value)
     if isinstance(value, str):
         return _truncate_text(value, CREATION_PROMPT_TEXT_LIMITS.get(key, 260))
     if isinstance(value, (dict, list)):
         return _truncate_nested(value, CREATION_PROMPT_TEXT_LIMITS.get(key, 500))
     return value
+
+
+def _comment_evidence_by_viral(candidates: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    evidence: dict[str, dict[str, Any]] = {}
+    for candidate in candidates:
+        if not isinstance(candidate, dict) or "comment_evidence" not in candidate:
+            continue
+        candidate_id = str(candidate.get("id") or "").strip()
+        if candidate_id:
+            evidence[candidate_id] = normalize_comment_evidence_for_prompt(candidate.get("comment_evidence"))
+    return evidence
 
 
 def _compact_reference_docs(value: Any) -> list[dict[str, str]]:
@@ -878,6 +1055,49 @@ def _validate_creator_report(value: Any, request: CreationRequest) -> dict[str, 
     return report
 
 
+def _validate_comment_evidence_references(
+    draft: dict[str, Any],
+    comment_evidence_by_viral: dict[str, dict[str, Any]] | None,
+) -> None:
+    if not isinstance(comment_evidence_by_viral, dict):
+        return
+    selected = [str(value).strip() for value in draft.get("selected_viral_ids") or [] if str(value).strip()]
+    selected_evidence = {
+        candidate_id: normalize_comment_evidence_for_prompt(comment_evidence_by_viral[candidate_id])
+        for candidate_id in selected
+        if candidate_id in comment_evidence_by_viral
+    }
+    if not selected_evidence:
+        return
+    publishing_pack = (draft.get("creator_report") or {}).get("publishing_pack") or {}
+    available_refs = {
+        f"{candidate_id}:{comment.get('evidence_id')}"
+        for candidate_id, evidence in selected_evidence.items()
+        if evidence.get("status") == "available"
+        for comment in evidence.get("comments") or []
+        if isinstance(comment, dict) and str(comment.get("evidence_id") or "").strip()
+    }
+    if available_refs:
+        if str(publishing_pack.get("comment_evidence_status") or "").strip() != "available":
+            raise ValueError("有可用评论证据时 publishing_pack.comment_evidence_status 必须为 available")
+        for key in ("pinned_comment_evidence_refs", "comment_prompt_evidence_refs"):
+            refs = publishing_pack.get(key)
+            if not isinstance(refs, list) or not refs:
+                raise ValueError(f"有可用评论证据时 publishing_pack.{key} 必须引用评论证据")
+            normalized_refs = {str(value).strip() for value in refs if str(value).strip()}
+            if not normalized_refs or not normalized_refs <= available_refs:
+                raise ValueError(f"publishing_pack.{key} 只能引用已选爆款的评论证据")
+        for key in ("pinned_comment", "comment_prompt"):
+            if not str(publishing_pack.get(key) or "").strip():
+                raise ValueError(f"有可用评论证据时 publishing_pack.{key} 不能为空")
+        return
+    if str(publishing_pack.get("comment_evidence_status") or "").strip() != "insufficient_evidence":
+        raise ValueError("评论证据不足时 publishing_pack.comment_evidence_status 必须为 insufficient_evidence")
+    for key in ("pinned_comment_evidence_refs", "comment_prompt_evidence_refs"):
+        if publishing_pack.get(key) != []:
+            raise ValueError(f"评论证据不足时 publishing_pack.{key} 必须为空数组")
+
+
 def _require_report_keys(data: dict[str, Any], path: str, keys: tuple[str, ...]) -> None:
     missing = [key for key in keys if key not in data]
     if missing:
@@ -909,6 +1129,7 @@ def _validate_creation_draft_contract(payload: dict[str, Any], context: dict[str
         request,
         platform_fit=context.get("platform_fit"),
         candidate_ids=context.get("candidate_ids"),
+        comment_evidence_by_viral=context.get("comment_evidence_by_viral"),
     )
 
 

@@ -8,6 +8,9 @@ from pathlib import Path
 import pytest
 
 from common import bot_llm_config
+from selfmedia.creation import workflow
+from selfmedia.creation.llm_generator import build_creation_prompt, creation_candidate_context_limits
+from selfmedia.creation.request_parser import CreationRequest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -90,3 +93,49 @@ def test_product_contract_has_one_repository_owned_source() -> None:
     assert json.loads(canonical.read_text(encoding="utf-8"))["contract_id"] == "openclaw_media_product_v1"
     assert not legacy_duplicate.exists()
     assert "docs/ai-harness/openclaw-media-product-contract.json" in generator.read_text(encoding="utf-8")
+
+
+def test_creation_candidate_defaults_match_retrieval_and_prompt_compaction(monkeypatch: pytest.MonkeyPatch) -> None:
+    for env_name in (
+        "SELFMEDIA_CREATION_ACTIVITY_CONTEXT_LIMIT",
+        "SELFMEDIA_CREATION_VIRAL_CONTEXT_LIMIT",
+        "SELFMEDIA_CREATION_INSPIRATION_CONTEXT_LIMIT",
+        "SELFMEDIA_CREATION_BUSINESS_CONTEXT_LIMIT",
+    ):
+        monkeypatch.delenv(env_name, raising=False)
+
+    expected = {"activity": 30, "viral": 40, "inspiration": 40, "business": 20}
+
+    assert workflow.creation_candidate_context_limits() == expected
+    assert creation_candidate_context_limits() == expected
+
+
+def test_creation_candidate_expansion_reaches_prompt_with_a_finite_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SELFMEDIA_CREATION_ACTIVITY_CONTEXT_LIMIT", "35")
+    monkeypatch.setenv("SELFMEDIA_CREATION_VIRAL_CONTEXT_LIMIT", "45")
+    monkeypatch.setenv("SELFMEDIA_CREATION_INSPIRATION_CONTEXT_LIMIT", "50")
+    monkeypatch.setenv("SELFMEDIA_CREATION_BUSINESS_CONTEXT_LIMIT", "25")
+
+    limits = workflow.creation_candidate_context_limits()
+    assert limits == {"activity": 35, "viral": 45, "inspiration": 50, "business": 25}
+
+    candidates = lambda prefix: [{"id": f"{prefix}-{index}"} for index in range(60)]
+    prompt = build_creation_prompt(
+        CreationRequest(platform="抖音", content_type="视频", track="体育", topic="跑步", publish_time=""),
+        activity_candidates=candidates("activity"),
+        viral_candidates=candidates("viral"),
+        inspiration_candidates=candidates("inspiration"),
+        business_candidates=candidates("business"),
+        reference_docs=[],
+        media_context={},
+        candidate_context_limits=limits,
+    )
+    payload = json.loads(prompt.rsplit("输入 JSON：\n", 1)[1])
+
+    assert len(payload["activity_memory_candidates"]) == 35
+    assert len(payload["viral_memory_candidates"]) == 45
+    assert len(payload["inspiration_memory_candidates"]) == 50
+    assert len(payload["business_memory_candidates"]) == 25
+
+    monkeypatch.setenv("SELFMEDIA_CREATION_VIRAL_CONTEXT_LIMIT", "9999")
+    assert creation_candidate_context_limits()["viral"] == 60
