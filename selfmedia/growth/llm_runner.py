@@ -18,9 +18,10 @@ GROWTH_LLM_SUCCESS_STATUSES = frozenset(
     {"done", "complete", "completed", "structured", "ready", "success", "succeeded"}
 )
 GROWTH_JSON_INSTRUCTIONS = (
-    "You are the OpenClaw Mediaclaw JSON engine. "
-    "Return one valid JSON object only. Do not use natural-language Knowledge bot replies as evidence; "
-    "use only the provided typed KnowledgeEvidenceBundle evidence_items."
+    "你是一名中文内容增长与运营编辑。你的输出为创作者提供基于已验证证据的增长判断、可执行策略和人工复核所需的风险提示。\n\n"
+    "输出协议：\n"
+    "只输出一个合法 JSON object，不要输出 Markdown 或解释。不得将 Knowledge bot 的自然语言回复作为证据；"
+    "只能使用提供的已类型化 KnowledgeEvidenceBundle evidence_items。"
 )
 
 GrowthJsonProvider = Callable[..., dict[str, Any]]
