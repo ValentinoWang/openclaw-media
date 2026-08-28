@@ -68,6 +68,8 @@ from ..services.cloud_media_task_receiver import CloudMediaTaskReceiver, CloudMe
 from .audit_reason_header import AuditReasonHeaderError, decode_audit_reason_header
 from .media_business_context import (
     AdminAuditInput,
+    AdminPermissionRequiredError,
+    CsrfRejectedError,
     CsrfAssessment,
     ExternalRequestAuthority,
     IdempotencyInput,
@@ -109,6 +111,19 @@ _R2_OPERATION_IDS = frozenset(
         "archive_readback",
     }
 )
+
+
+def if2_public_error(exc: RequestContextError | AuditReasonHeaderError) -> tuple[HTTPStatus, str, str]:
+    """Keep IF2 implementation diagnostics out of creator-facing API responses."""
+    if isinstance(exc, RequestAuthenticationError):
+        return HTTPStatus.UNAUTHORIZED, "authentication_required", "请先登录后再继续操作。"
+    if isinstance(exc, CsrfRejectedError):
+        return HTTPStatus.FORBIDDEN, "csrf_rejected", "安全校验未通过，请刷新页面后重试。"
+    if isinstance(exc, AdminPermissionRequiredError):
+        return HTTPStatus.FORBIDDEN, "admin_required", "当前账号没有此操作权限。"
+    if isinstance(exc, RequestAuthorizationError):
+        return HTTPStatus.FORBIDDEN, "forbidden", "当前账号没有此操作权限。"
+    return HTTPStatus.BAD_REQUEST, "invalid_request", "请求信息不完整或格式不正确，请检查后重试。"
 
 
 def _first_contract_path(*paths: Path) -> Path:
@@ -677,17 +692,9 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 request_target,
                 (self, context, body),
             )
-        except RequestAuthenticationError as exc:
-            self._send_api_error(HTTPStatus.UNAUTHORIZED, "authentication_required", str(exc))
-        except RequestAuthorizationError as exc:
-            message = str(exc)
-            code = "csrf_rejected" if "CSRF assessment" in message else (
-                "admin_required" if "admin principal" in message or "maintainer authority" in message
-                else "forbidden"
-            )
-            self._send_api_error(HTTPStatus.FORBIDDEN, code, message)
         except (RequestContextError, AuditReasonHeaderError) as exc:
-            self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", str(exc))
+            status, code, message = if2_public_error(exc)
+            self._send_api_error(status, code, message)
         except MediaBusinessError as exc:
             status = int(getattr(exc, "status", 400))
             self._send_api_error(HTTPStatus(status), exc.code, getattr(exc, "message", str(exc)))

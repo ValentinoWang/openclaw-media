@@ -29,6 +29,14 @@ class RequestAuthorizationError(RequestContextError):
     pass
 
 
+class CsrfRejectedError(RequestAuthorizationError):
+    pass
+
+
+class AdminPermissionRequiredError(RequestAuthorizationError):
+    pass
+
+
 def freeze_json(value: Any) -> FrozenJson:
     if value is None or isinstance(value, (bool, int, float, str)):
         return value
@@ -145,7 +153,7 @@ class CsrfAssessment:
 
     def __post_init__(self) -> None:
         if self.required and (self.origin is None or not self.same_origin or not self.token_valid):
-            raise RequestAuthorizationError("required CSRF assessment did not pass")
+            raise CsrfRejectedError("required CSRF assessment did not pass")
         if not self.response_token:
             raise RequestContextError("CSRF response token is required")
 
@@ -206,9 +214,9 @@ class If2RequestContext:
         if self.route.permission == "ordinary-session" and self.principal.role != "user":
             raise RequestAuthorizationError("ordinary route requires an ordinary-user principal")
         if self.route.permission.startswith("admin-") and self.principal.role != "admin":
-            raise RequestAuthorizationError("admin route requires an admin principal")
+            raise AdminPermissionRequiredError("admin route requires an admin principal")
         if self.route.permission == "admin-maintainer" and not self.principal.is_maintainer:
-            raise RequestAuthorizationError("maintainer route requires explicit maintainer authority")
+            raise AdminPermissionRequiredError("maintainer route requires explicit maintainer authority")
         if self.route.mutation != (self.idempotency is not None):
             raise RequestContextError("mutation context must carry exactly one idempotency input")
         if self.route.permission == "admin-cross-tenant-read" and self.admin_audit is None:
