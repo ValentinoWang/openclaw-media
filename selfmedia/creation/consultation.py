@@ -19,6 +19,9 @@ from .workflow import _record_candidate_payload, _reference_doc_urls_from_record
 CONSULTATION_PATTERN = re.compile(r"^\s*【创作咨询】")
 KEY_VALUE_RE = re.compile(r"(?P<key>平台|账号|作者ID|博主|赛道|主题|主体|问题|关键词|标签)\s*[=:：]\s*(?P<value>.*?)(?=\s+(?:平台|账号|作者ID|博主|赛道|主题|主体|问题|关键词|标签)\s*[=:：]|$)")
 ACTIVITY_INTENT_RE = re.compile(r"(活动|平台活动|话题活动|投稿|返稿|冲榜|挑战赛|活动适配|适合参加|挂什么话题|参与哪个话题)")
+CONSULTATION_REPORT_LABELS = ("选题拆解：", "依据：", "建议：", "下一步：", "缺口：")
+DEFAULT_CONSULTATION_CONCLUSION = "现有信息还不足以给出可靠的创作判断。"
+DEFAULT_CONSULTATION_NEXT_ACTION = "先补充一个准备讲述的具体场景或素材。"
 
 CONSULTATION_VALIDATION_CONTRACT = register_llm_validation_contract(
     LLMValidationContract(
@@ -111,7 +114,7 @@ def handle_creation_consultation_command(
         media_context=media_context,
         source_counts={"virals": len(virals), "activities": len(activities), "inspirations": len(inspirations), "businesses": len(businesses)},
     )
-    reply = str(answer.get("reply") or "").strip()
+    reply = _readable_consultation_reply(answer.get("reply"))
     if not reply:
         reply = format_consultation_reply(answer)
     return {
@@ -224,29 +227,34 @@ def generate_consultation_answer(
 
 
 def format_consultation_reply(answer: dict[str, Any]) -> str:
-    conclusion = str(answer.get("conclusion") or "").strip()
+    conclusion = _readable_consultation_reply(answer.get("conclusion")) or DEFAULT_CONSULTATION_CONCLUSION
     next_action = _first_consultation_reply_item(answer.get("next_actions"))
     evidence = _first_consultation_reply_item(answer.get("evidence"))
     data_gap = _first_consultation_reply_item(answer.get("data_gaps"))
 
-    sentences = [conclusion] if conclusion else []
-    if next_action:
-        sentences.append(f"最该做的一步是{next_action}")
+    sentences = [conclusion, f"最该做的一步是{next_action or DEFAULT_CONSULTATION_NEXT_ACTION}"]
     if evidence:
         sentences.append(f"主要依据是{evidence}")
-    if data_gap:
+    elif data_gap:
         sentences.append(f"还需要补充{data_gap}")
-    return "\n".join(sentences).strip() or "创作咨询已完成，但未生成可读回答。"
+    return "\n".join(sentences)
+
+
+def _readable_consultation_reply(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    text = value.strip()
+    if not text or any(label in text for label in CONSULTATION_REPORT_LABELS):
+        return ""
+    return text
 
 
 def _first_consultation_reply_item(value: Any) -> str:
-    if isinstance(value, str):
-        return value.strip()
-    if isinstance(value, list):
-        for item in value:
-            text = str(item or "").strip()
-            if text:
-                return text
+    candidates = (value,) if isinstance(value, str) else value if isinstance(value, list) else ()
+    for item in candidates:
+        text = _readable_consultation_reply(item)
+        if text:
+            return text
     return ""
 
 
