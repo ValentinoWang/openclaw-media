@@ -13,7 +13,6 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlparse
 import yaml
 
 ROUTER_ROOT = Path(__file__).resolve().parents[1]
@@ -36,62 +35,6 @@ from openclaw_app.services.media_business.lark_base_projection import (
     TARGET_TENANT_ID,
     LarkBaseProjection,
 )
-
-
-def _settings_activity_url(settings: dict[str, Any], env: dict[str, str]) -> str:
-    """Read an explicitly declared activity URL without inventing a default."""
-
-    for mapping, key in (
-        (settings.get("media_os"), "activity_url"),
-        (settings.get("media_business"), "activity_url"),
-        (settings.get("feishu"), "media_os_activity_url"),
-    ):
-        if isinstance(mapping, dict):
-            value = _resolved(mapping.get(key, ""), env)
-            if value:
-                return value
-    return ""
-
-
-def _validate_activity_url(value: str) -> str:
-    url = str(value or "").strip()
-    parsed = urlparse(url)
-    table_id = (parse_qs(parsed.query).get("table") or [""])[0].strip()
-    if parsed.scheme != "https" or not parsed.netloc or not table_id:
-        raise RuntimeError("MEDIA_OS_ACTIVITY_URL must be an HTTPS Feishu Base/Wiki URL with a table query parameter")
-    if not (parsed.path.startswith("/wiki/") or parsed.path.startswith("/base/")):
-        raise RuntimeError("MEDIA_OS_ACTIVITY_URL must point to a Feishu Base or Wiki node")
-    return url
-
-
-def _resolve_activity_url(
-    settings: dict[str, Any],
-    registry_path: Path,
-    env: dict[str, str],
-) -> tuple[str, str]:
-    """Resolve an activity URL in declared-authority order."""
-
-    registry_value = ""
-    if registry_path.is_file():
-        registry = json.loads(registry_path.read_text(encoding="utf-8"))
-        tables = registry.get("tables") if isinstance(registry, dict) else None
-        if isinstance(tables, dict):
-            activity = tables.get("activity")
-            if isinstance(activity, dict):
-                env_values = activity.get("env")
-                if isinstance(env_values, dict):
-                    registry_value = str(env_values.get("MEDIA_OS_ACTIVITY_URL") or "").strip()
-    if registry_value:
-        return _validate_activity_url(registry_value), "registry"
-
-    configured = _settings_activity_url(settings, env)
-    if configured:
-        return _validate_activity_url(configured), "settings"
-
-    environment_value = str(env.get("MEDIA_OS_ACTIVITY_URL") or "").strip()
-    if environment_value:
-        return _validate_activity_url(environment_value), "environment"
-    raise RuntimeError("MEDIA_OS_ACTIVITY_URL is not declared by registry, settings, or environment")
 
 
 def _load_registry_table_bindings(path: Path) -> tuple[str, dict[str, dict[str, str]]]:
