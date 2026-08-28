@@ -30,7 +30,11 @@ from .services.vlog_storage_service import VlogStorageService
 from .services.resource_owner_registry import ResourceOwnerRegistry
 from .services.tenant_owned_resources import TenantOwnedResourceService
 from .services.tenant_execution_context import bind_session_tenant_id
-from .services.deepmath_resources import load_resource_config
+from .services.deepmath_resources import (
+    default_resource_config_path,
+    load_resource_config,
+    resolve_resource_config_path,
+)
 from .services.deepmath_thinking_intake import DeepMathThinkingIntakeService
 from .services.deepmath_people_runtime import load_people_capability_base_id
 
@@ -41,13 +45,16 @@ class OpenClawApp:
         self.settings_path = Path(settings_path)
         self.settings = yaml.safe_load(self.settings_path.read_text(encoding="utf-8"))
         deepmath_cfg = self.settings.get("deepmath_ceo_thinking", {})
-        self.deepmath_resource_config = load_resource_config(
-            deepmath_cfg.get(
-                "resource_config_path",
-                "/home/ubuntu/selfmedia-tools/openclaw-tag-router/config/deepmath_ceo_thinking_resources.json",
+        resource_config_path = (
+            resolve_resource_config_path(
+                deepmath_cfg["resource_config_path"], settings_path=self.settings_path
             )
+            if "resource_config_path" in deepmath_cfg
+            else default_resource_config_path()
         )
+        self.deepmath_resource_config = load_resource_config(resource_config_path)
         workspace_root = self.settings["workspace_root"]
+        workspace_state_root = Path(workspace_root) / "state"
         archive_service = ArchiveService(workspace_root)
         rule_service = RuleService(Path(workspace_root) / "rules" / "user_rules.yaml")
         feishu_cfg = self.settings["feishu"]
@@ -94,18 +101,18 @@ class OpenClawApp:
             Path(
                 os.getenv("OPENCLAW_RESOURCE_OWNER_DB_PATH")
                 or owner_cfg.get("path")
-                or "/home/ubuntu/.openclaw/state/resource_owners.sqlite3"
+                or workspace_state_root / "resource_owners.sqlite3"
             )
         )
         tenant_owned_resources = TenantOwnedResourceService(owner_registry)
         self.guidance_plan_service = GuidancePlanService(
-            store=GuidancePlanStore(Path("/home/ubuntu/.openclaw/state/capability_guidance_plans"))
+            store=GuidancePlanStore(workspace_state_root / "capability_guidance_plans")
         )
         self.guidance_plan_service.purge_expired()
         deepmath_intake = None
         if bool(deepmath_cfg.get("enabled", False)):
             deepmath_intake = DeepMathThinkingIntakeService(
-                str(deepmath_cfg.get("resource_config_path")),
+                str(resource_config_path),
                 content_flow_client,
                 people_capability_base_id=load_people_capability_base_id(self.settings_path),
                 approval_state_path=str(deepmath_cfg.get("approval_state_path") or ""),

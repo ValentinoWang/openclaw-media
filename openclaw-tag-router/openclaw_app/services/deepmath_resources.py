@@ -23,12 +23,29 @@ TASKLIST_NAME = "DeepMath CEO Actions"
 CALENDAR_NAME = "DeepMath CEO Calendar"
 DEFAULT_TIMEZONE = "Asia/Shanghai"
 RESOURCE_CONFIG_VERSION = 1
+RESOURCE_CONFIG_FILENAME = "deepmath_ceo_thinking_resources.json"
 _BITABLE_TOKEN = re.compile(r"[A-Za-z0-9_-]{8,160}\Z")
 _FEISHU_HOSTS = ("feishu.cn", "larksuite.com", "larkoffice.com")
 
 
 class DeepMathResourceContractError(ValueError):
     """Configuration or candidate data would violate tenant isolation."""
+
+
+def default_resource_config_path() -> Path:
+    """Locate the bundled resource contract without depending on a deploy root."""
+
+    return Path(__file__).resolve().parents[2] / "config" / RESOURCE_CONFIG_FILENAME
+
+
+def resolve_resource_config_path(configured_path: Any, *, settings_path: str | Path) -> Path:
+    """Resolve an explicit path relative to its settings file, without fallback."""
+
+    raw_path = str(configured_path or "").strip()
+    if not raw_path:
+        raise DeepMathResourceContractError("explicit DeepMath resource config path is required")
+    path = Path(raw_path).expanduser()
+    return path if path.is_absolute() else Path(settings_path).parent / path
 
 
 @dataclass(frozen=True)
