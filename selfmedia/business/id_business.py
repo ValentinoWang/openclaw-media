@@ -53,7 +53,8 @@ from media_vault.vault import MediaVault
 
 BUSINESS_REPLY_DEFAULTS_SCHEMA_VERSION = "id_business_reply_defaults_v1"
 BUSINESS_REPLY_DEFAULTS_ENV = "ID_BUSINESS_REPLY_DEFAULTS_PATH"
-BUSINESS_REPLY_DEFAULTS_PATH = SELFMEDIA_ROOT / "config" / "id_business_reply_defaults.json"
+BUSINESS_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BUSINESS_REPLY_DEFAULTS_PATH = BUSINESS_PROJECT_ROOT / "config" / "id_business_reply_defaults.json"
 BUSINESS_REPLY_INTERNAL_TERMS = (
     "05A",
     "05B",
@@ -126,11 +127,8 @@ LEGACY_FIELD_SPECS: dict[str, int] = {
     "视频报价": 1,
     "非报备图文/视频单品报价": 1,
     "报备视频、图文/单品报价": 1,
-    "4月报备图文价格": 1,
-    "5月报备图文价格": 1,
     "报备返点": 1,
     "本月下单是否保价次月执行": 1,
-    "是否可保价5月": 1,
     "排竞时长": 1,
     "是否有免费分发平台": 1,
     "全渠道授权及时长": 1,
@@ -154,10 +152,14 @@ LEGACY_FIELD_SPECS: dict[str, int] = {
     "报价提醒状态": 1,
     "待补充字段": 1,
 }
+HISTORICAL_MONTH_QUOTE_LABEL_RE = re.compile(r"^(?:1[0-2]|[1-9])月份?报备图文价格$")
+HISTORICAL_MONTH_PRICE_PROTECTION_LABEL_RE = re.compile(r"^(?:是否)?可保价(?:1[0-2]|[1-9])月$")
 FIELD_SPECS: dict[str, int] = {
     name: field_type
     for name, field_type in standard_field_specs(LEGACY_FIELD_SPECS).items()
     if not name.endswith("JSON")
+    and not HISTORICAL_MONTH_QUOTE_LABEL_RE.fullmatch(name)
+    and not HISTORICAL_MONTH_PRICE_PROTECTION_LABEL_RE.fullmatch(name)
 }
 
 
@@ -209,14 +211,8 @@ LABEL_ALIASES = {
     "报备视频图文/单品报价": "报备视频、图文/单品报价",
     "报备视频": "报备视频、图文/单品报价",
     "报备图文": "报备视频、图文/单品报价",
-    "4月份报备图文价格": "4月报备图文价格",
-    "4月报备图文价格": "4月报备图文价格",
-    "5月份报备图文价格": "5月报备图文价格",
-    "5月报备图文价格": "5月报备图文价格",
     "返点": "报备返点",
     "报备返点": "报备返点",
-    "是否可保价5月": "是否可保价5月",
-    "可保价5月": "是否可保价5月",
     "是否保价": "保价政策",
     "保价": "保价政策",
     "保价政策": "保价政策",
@@ -260,11 +256,8 @@ CONFIRMATION_FIELDS = {
     "视频报价",
     "非报备图文/视频单品报价",
     "报备视频、图文/单品报价",
-    "4月报备图文价格",
-    "5月报备图文价格",
     "报备返点",
     "本月下单是否保价次月执行",
-    "是否可保价5月",
     "排竞时长",
     "是否有免费分发平台",
     "全渠道授权及时长",
@@ -288,15 +281,12 @@ CONFIRMATION_CANONICAL = {
 AMBIGUOUS_VALUE_RE = re.compile(r"待补充|待确认|不确定|看情况|尽快|最快|可沟通|都行|\\?|？")
 QUESTION_TEMPLATES = {
     "具体档期": "最快可执行/可发布的具体档期是什么？请具体到日期或日期区间，不要只写“尽快”。",
-    "图文报价": "本月图文报价是多少？请注明报备/非报备。",
-    "视频报价": "本月视频报价是多少？请注明报备/非报备。",
+    "图文报价": "{current_month}图文报价是多少？请注明报备/非报备。",
+    "视频报价": "{current_month}视频报价是多少？请注明报备/非报备。",
     "非报备图文/视频单品报价": "非报备图文/视频单品报价分别是多少？",
     "报备视频、图文/单品报价": "报备图文、报备视频单品报价分别是多少？",
-    "4月报备图文价格": "4月份报备图文价格是多少？",
-    "5月报备图文价格": "5月份报备图文价格是多少？",
-    "报备返点": "返点是否接受？可先按 30% 作为谈判锚点；如不接受，请给可接受返点。",
+    "报备返点": "返点是否接受？如不接受，请给可接受返点。",
     "本月下单是否保价次月执行": "本月下单是否可以保价到次月执行？如果不行，请给次月价格。",
-    "是否可保价5月": "是否可以保价到 5 月执行？如果不行，请给 5 月价格。",
     "排竞时长": "是否可接受前 15 天后 15 天排竞？如果不能，可接受的排竞时长是多少？",
     "是否有免费分发平台": "是否有可免费同步/分发的平台？具体哪些平台？",
     "全渠道授权及时长": "是否可以全渠道授权？可授权哪些渠道，授权时长多久？",
@@ -367,11 +357,8 @@ BUSINESS_LLM_FIELD_NAMES = (
     "视频报价",
     "非报备图文/视频单品报价",
     "报备视频、图文/单品报价",
-    "4月报备图文价格",
-    "5月报备图文价格",
     "报备返点",
     "本月下单是否保价次月执行",
-    "是否可保价5月",
     "保价政策",
     "排竞时长",
     "是否有免费分发平台",
@@ -434,11 +421,8 @@ BUSINESS_HISTORY_FIELDS = (
     "视频报价",
     "非报备图文/视频单品报价",
     "报备视频、图文/单品报价",
-    "4月报备图文价格",
-    "5月报备图文价格",
     "报备返点",
     "本月下单是否保价次月执行",
-    "是否可保价5月",
     "保价政策",
     "排竞时长",
     "是否有免费分发平台",
@@ -498,11 +482,8 @@ BUSINESS_ID_EXTRACTION_PROMPT = """你是 OpenClaw Media bot 的【商务>ID】�
     "视频报价": "",
     "非报备图文/视频单品报价": "",
     "报备视频、图文/单品报价": "",
-    "4月报备图文价格": "",
-    "5月报备图文价格": "",
     "报备返点": "",
     "本月下单是否保价次月执行": "",
-    "是否可保价5月": "",
     "保价政策": "",
     "排竞时长": "",
     "是否有免费分发平台": "",
@@ -574,7 +555,7 @@ JSON 结构：
 - 项目报价、返点、档期、保价政策、授权范围和授权时长来自 05B 商务机会；必须按当前商务账号和品牌/产品/Brief 唯一匹配后使用，并与 05A 的账号级报价区分。
 - 如果报价来自历史表字段，要自然说明“当前表内报价为...”，不要说成用户刚刚提供。
 - 如果仍缺返点、档期、保价、授权等字段，回复里要明确向博主补问。
-- 如果 current_fields 没有报备返点，但业务回复需要给初期谈判口径，可以用 30% 作为初期返点锚点；必须表达为“先按 30% 沟通/锚定/可谈”，不得写成表内已确认返点。
+- 如果 current_fields 没有报备返点，但 default_lookup 提供了报备返点默认口径，可按该口径作为初期谈判锚点；必须表达为“当前默认沟通口径”，不得写成表内已确认返点。
 - 先把 current_fields/history_lookup 中已查到的博主IP、平台ID、图文报价、视频报价、报备视频或图文/单品报价自然写入 reply，再处理缺项；不得让用户重复填写已经查到的事实。
 - 对本轮询问但仍缺失的可协商字段（报备返点、保价政策、最快档期、多双露出、蒲公英涨价、授权范围、授权时长、全渠道授权及时长），必须在 selection_options 中按字段给出 2-4 个简短可选口径，最后一项是“其他（请填写）”。这些只是让用户选择的候选，不能写成已确认事实。
 - 报价、博主IP、平台ID等客观字段缺失时只能说明未查到并要求补充，不得为它们编造 selection_options。
@@ -624,9 +605,10 @@ def normalize_label(label: str) -> str:
     mapped = LABEL_ALIASES.get(cleaned) or LABEL_ALIASES.get(cleaned_base)
     if mapped:
         return mapped
-    if re.match(r"^\d{1,2}月份?报备图文价格$", cleaned_base):
-        month = re.match(r"^(\d{1,2})月份?报备图文价格$", cleaned_base).group(1)
-        return f"{month}月报备图文价格"
+    if HISTORICAL_MONTH_QUOTE_LABEL_RE.fullmatch(cleaned_base):
+        return "图文报价"
+    if HISTORICAL_MONTH_PRICE_PROTECTION_LABEL_RE.fullmatch(cleaned_base):
+        return "本月下单是否保价次月执行"
     if cleaned_base.endswith("图文报价") or cleaned_base.endswith("图文单品报价"):
         return "图文报价"
     if cleaned_base.endswith("视频报价") or cleaned_base.endswith("视频单品报价"):
@@ -1025,15 +1007,12 @@ def build_brand_brief(fields: dict[str, Any], pending: list[str]) -> str:
         f"品牌/产品：{get('品牌')} / {get('产品')}",
         f"合作流程：{get('合作流程')}",
         f"档期：{get('具体档期', get('档期'))}",
-        f"4月报备图文价格：{get('4月报备图文价格')}",
-        f"5月报备图文价格：{get('5月报备图文价格')}",
         f"图文报价：{get('图文报价')}",
         f"视频报价：{get('视频报价')}",
         f"非报备图文/视频单品报价：{get('非报备图文/视频单品报价')}",
         f"报备视频、图文/单品报价：{get('报备视频、图文/单品报价')}",
         f"报备返点：{get('报备返点')}",
         f"保价次月执行：{get('本月下单是否保价次月执行')}",
-        f"是否可保价5月：{get('是否可保价5月')}",
         f"排竞时长：{get('排竞时长')}",
         f"非商用授权：{get('非商用授权', '3个月')}",
         f"商用授权：{get('商用授权', '3个月')}",
@@ -1126,7 +1105,22 @@ def confirmation_required_fields(body: str, fields: dict[str, Any], pending: lis
     return [label for label in sorted(required) if label in CONFIRMATION_FIELDS]
 
 
-def build_creator_question_text(fields: dict[str, Any], confirmation_fields: list[str]) -> str:
+def business_local_month(now: datetime | None = None) -> str:
+    moment = now or datetime.now(LOCAL_TZ)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=LOCAL_TZ)
+    else:
+        moment = moment.astimezone(LOCAL_TZ)
+    return f"{moment.month}月"
+
+
+def build_creator_question_text(
+    fields: dict[str, Any],
+    confirmation_fields: list[str],
+    *,
+    now: datetime | None = None,
+    defaults_path: str | Path | None = None,
+) -> str:
     if not confirmation_fields:
         return ""
     creator = display_creator_name(fields)
@@ -1138,17 +1132,36 @@ def build_creator_question_text(fields: dict[str, Any], confirmation_fields: lis
     if project:
         lines.append(f"项目：{project}")
     lines.append("以下信息不确定，不能直接粘贴给品牌方；请先向博主确认：")
+    defaults = load_business_reply_defaults(defaults_path) if "报备返点" in confirmation_fields else {}
+    default_rebate = _business_text_value((defaults.get("fields") or {}).get("报备返点"))
     for index, field in enumerate(confirmation_fields, start=1):
-        question = QUESTION_TEMPLATES.get(field, f"{field} 请确认。")
+        if field == "报备返点" and default_rebate:
+            question = f"返点是否接受？当前默认沟通口径为“{default_rebate}”；如不接受，请给可接受返点。"
+        else:
+            question = QUESTION_TEMPLATES.get(field, f"{field} 请确认。").format(
+                current_month=business_local_month(now)
+            )
         lines.append(f"{index}. {field}：{question}")
     return "\n".join(lines)
 
 
-def add_creator_confirmation_fields(body: str, fields: dict[str, Any], pending: list[str]) -> list[str]:
+def add_creator_confirmation_fields(
+    body: str,
+    fields: dict[str, Any],
+    pending: list[str],
+    *,
+    now: datetime | None = None,
+    defaults_path: str | Path | None = None,
+) -> list[str]:
     confirmation_fields = confirmation_required_fields(body, fields, pending)
     if confirmation_fields:
         fields["需反问博主字段"] = "、".join(confirmation_fields)
-        fields["反问博主话术"] = build_creator_question_text(fields, confirmation_fields)
+        fields["反问博主话术"] = build_creator_question_text(
+            fields,
+            confirmation_fields,
+            now=now,
+            defaults_path=defaults_path,
+        )
         fields["反问博主状态"] = "pending"
     return confirmation_fields
 
@@ -1331,6 +1344,7 @@ def generate_business_reply_from_current_fields(
     if not settings.enabled:
         return {"status": "pending_manual", "reason": f"{BUSINESS_LLM_PROFILE_NAME} 已禁用"}
     request_text_value = str(request_text or "").strip()
+    effective_default_lookup = default_lookup if default_lookup is not None else load_business_reply_defaults()
     current_fields = {
         name: _field_text(fields, name)
         for name in (
@@ -1353,7 +1367,6 @@ def generate_business_reply_from_current_fields(
             "具体档期",
             "档期",
             "本月下单是否保价次月执行",
-            "是否可保价5月",
             "保价政策",
             "全渠道授权及时长",
             "授权范围",
@@ -1373,7 +1386,7 @@ def generate_business_reply_from_current_fields(
         "current_fields": current_fields,
         "pending_fields": pending_fields,
         "history_lookup": history_lookup,
-        "default_lookup": default_lookup or {},
+        "default_lookup": effective_default_lookup,
         "reply_boundary": "只能基于 current_fields/history_lookup/default_lookup 生成回复；报价按账号/平台级别使用，不按项目绑定；默认口径只补可协商字段，不补报价。",
     }
     payload_text = json.dumps(payload, ensure_ascii=False, indent=2)
@@ -1381,8 +1394,12 @@ def generate_business_reply_from_current_fields(
     if len(payload_text) > max_chars:
         payload["history_lookup"] = {"truncated": True, "summary": history_lookup}
         payload_text = json.dumps(payload, ensure_ascii=False, indent=2)[:max_chars]
+    default_rebate = _business_text_value((effective_default_lookup.get("fields") or {}).get("报备返点"))
+    prompt = BUSINESS_REPLY_PROMPT
+    if default_rebate:
+        prompt += f"\n当前报备返点默认沟通口径：{default_rebate}。"
     result = generate_json_from_parts(
-        [{"text": BUSINESS_REPLY_PROMPT}, {"text": payload_text}],
+        [{"text": prompt}, {"text": payload_text}],
         settings.provider,
         max_retries=1,
         error_prefix="商务>ID LLM 回复生成失败",
@@ -1553,10 +1570,14 @@ def normalize_business_llm_result(
     raw_fields = payload.get("fields") if isinstance(payload.get("fields"), dict) else {}
     if not raw_fields:
         raw_fields = {key: payload.get(key) for key in BUSINESS_LLM_FIELD_NAMES if key in payload}
+    normalized_raw_fields = {
+        normalize_label(str(key)): value
+        for key, value in raw_fields.items()
+    }
 
     fields: dict[str, Any] = {}
     for key in BUSINESS_LLM_FIELD_NAMES:
-        value = _business_text_value(raw_fields.get(key))
+        value = _business_text_value(normalized_raw_fields.get(key))
         if value:
             fields[key] = value
 
@@ -1849,7 +1870,6 @@ def write_business_model_v2(
             price_protection_policy=(
                 _field_text(fields, "保价政策")
                 or _field_text(fields, "本月下单是否保价次月执行")
-                or _field_text(fields, "是否可保价5月")
             ),
             authorization_scope=(
                 _field_text(fields, "授权范围")
