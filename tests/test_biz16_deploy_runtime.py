@@ -72,3 +72,19 @@ def test_deploy_main_invokes_monthly_registration(monkeypatch: pytest.MonkeyPatc
 
     assert calls == ["preflight", "monthly-quote", "sync", "journals", "bot-center", "cron-check", "daily-poll"]
     assert result["monthly_quote_reminder_timer"]["timer_name"] == deploy.MONTHLY_QUOTE_REMINDER_TIMER
+
+
+@pytest.mark.parametrize("skip_guards", [False, True])
+def test_deploy_fails_closed_without_quote_reminder_tenant(
+    monkeypatch: pytest.MonkeyPatch, skip_guards: bool
+) -> None:
+    deploy = _load_module(f"biz16_deploy_missing_tenant_{skip_guards}")
+    monkeypatch.delenv("OPENCLAW_BUSINESS_QUOTE_REMINDER_TENANT_ID", raising=False)
+    calls: list[str] = []
+    monkeypatch.setattr(deploy, "assert_preflight_scripts", lambda: calls.append("preflight"))
+    monkeypatch.setattr(deploy, "sync_tag_router_source_to_active", lambda: calls.append("sync"))
+
+    with pytest.raises(SystemExit, match="OPENCLAW_BUSINESS_QUOTE_REMINDER_TENANT_ID"):
+        deploy.deploy(restart_gateway=False, skip_guards=skip_guards)
+
+    assert calls == ["preflight"]

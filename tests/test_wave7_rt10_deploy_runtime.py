@@ -87,11 +87,17 @@ def test_deploy_registers_daily_poll_before_reporting_success(monkeypatch: pytes
     monkeypatch.setattr(deploy, "assert_no_forbidden_openclaw_cron_jobs", lambda: calls.append("cron-check"))
     monkeypatch.setattr(
         deploy,
+        "register_monthly_quote_reminder_timer",
+        lambda: calls.append("monthly-quote") or {"timer_name": deploy.MONTHLY_QUOTE_REMINDER_TIMER},
+    )
+    monkeypatch.setattr(
+        deploy,
         "register_media_daily_poll_timer",
         lambda: calls.append("daily-poll") or {"timer_name": "selfmedia-account-daily-poll.timer"},
     )
 
     result = deploy.deploy(restart_gateway=False, skip_guards=True)
 
-    assert calls == ["preflight", "sync", "journals", "bot-center", "cron-check", "daily-poll"]
+    assert calls == ["preflight", "monthly-quote", "sync", "journals", "bot-center", "cron-check", "daily-poll"]
     assert result["media_daily_poll_timer"]["timer_name"] == "selfmedia-account-daily-poll.timer"
+    assert result["monthly_quote_reminder_timer"]["timer_name"] == deploy.MONTHLY_QUOTE_REMINDER_TIMER
