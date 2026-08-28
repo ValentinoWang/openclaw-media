@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 
@@ -44,6 +45,12 @@ JOURNAL_SYSTEMD_FILES = (
     "openclaw-weekly-self-model-summary.timer",
     "openclaw-feishu-transport-smoke.service",
     "openclaw-feishu-transport-smoke.timer",
+)
+MONTHLY_QUOTE_REMINDER_SERVICE = "openclaw-monthly-quote-reminder.service"
+MONTHLY_QUOTE_REMINDER_TIMER = "openclaw-monthly-quote-reminder.timer"
+MONTHLY_QUOTE_REMINDER_SYSTEMD_FILES = (
+    MONTHLY_QUOTE_REMINDER_SERVICE,
+    MONTHLY_QUOTE_REMINDER_TIMER,
 )
 FORBIDDEN_CRON_JOB_NAMES = (
     "daily-weekly-self-model-review",
@@ -227,6 +234,57 @@ def register_media_daily_poll_timer() -> dict[str, str]:
     }
 
 
+def register_monthly_quote_reminder_timer() -> dict[str, str]:
+    """Install the tenant-bound monthly quote reminder systemd user timer."""
+    tenant_id = os.getenv("OPENCLAW_BUSINESS_QUOTE_REMINDER_TENANT_ID", "").strip()
+    if not tenant_id:
+        raise SystemExit(
+            "missing OPENCLAW_BUSINESS_QUOTE_REMINDER_TENANT_ID; "
+            "set this canonical tenant UUID before deployment"
+        )
+    try:
+        if str(uuid.UUID(tenant_id)) != tenant_id:
+            raise ValueError
+    except ValueError as exc:
+        raise SystemExit(
+            "OPENCLAW_BUSINESS_QUOTE_REMINDER_TENANT_ID must be a canonical tenant UUID"
+        ) from exc
+    source_dir = TAG_ROUTER_SYSTEMD_SOURCE_DIR
+    service_source = source_dir / MONTHLY_QUOTE_REMINDER_SERVICE
+    timer_source = source_dir / MONTHLY_QUOTE_REMINDER_TIMER
+    missing = [str(path) for path in (service_source, timer_source) if not path.is_file()]
+    if missing:
+        raise SystemExit(f"missing monthly quote reminder systemd source units: {missing}")
+    USER_SYSTEMD_DIR.mkdir(parents=True, exist_ok=True)
+    service_text = service_source.read_text(encoding="utf-8")
+    service_text = service_text.replace("@TENANT_ID@", tenant_id).replace(
+        "/home/ubuntu/selfmedia/business/id_business.py",
+        str(REPO_ROOT / "selfmedia" / "business" / "id_business.py"),
+    )
+    if "@TENANT_ID@" in service_text:
+        raise SystemExit("monthly quote reminder service template contains unresolved placeholders")
+    (USER_SYSTEMD_DIR / MONTHLY_QUOTE_REMINDER_SERVICE).write_text(service_text, encoding="utf-8")
+    run(
+        [
+            "install",
+            "-m",
+            "0644",
+            str(timer_source),
+            str(USER_SYSTEMD_DIR / MONTHLY_QUOTE_REMINDER_TIMER),
+        ]
+    )
+    run(["systemctl", "--user", "daemon-reload"])
+    run(["systemctl", "--user", "enable", "--now", MONTHLY_QUOTE_REMINDER_TIMER])
+    return {
+        "tenant_id": tenant_id,
+        "service_name": MONTHLY_QUOTE_REMINDER_SERVICE,
+        "timer_name": MONTHLY_QUOTE_REMINDER_TIMER,
+        "schedule": "*-*-01 00:00:00 Asia/Shanghai",
+        "service_path": str(USER_SYSTEMD_DIR / MONTHLY_QUOTE_REMINDER_SERVICE),
+        "timer_path": str(USER_SYSTEMD_DIR / MONTHLY_QUOTE_REMINDER_TIMER),
+    }
+
+
 def build_and_publish_bot_center() -> None:
     if not BOT_CENTER_ROOT.is_dir():
         raise SystemExit(f"missing Bot Center root: {BOT_CENTER_ROOT}")
@@ -251,6 +309,14 @@ def build_and_publish_bot_center() -> None:
 
 def deploy(*, restart_gateway: bool, skip_guards: bool = False) -> dict[str, object]:
     assert_preflight_scripts()
+    try:
+        monthly_quote_reminder_timer = register_monthly_quote_reminder_timer()
+    except SystemExit as exc:
+        # The legacy test-only --skip-guards path has no deployment tenant. Keep
+        # that path observable as failed while standard deployment still fails closed.
+        if not skip_guards or "missing OPENCLAW_BUSINESS_QUOTE_REMINDER_TENANT_ID" not in str(exc):
+            raise
+        monthly_quote_reminder_timer = {"status": "failed", "reason": str(exc)}
     sync_tag_router_source_to_active()
     install_journal_systemd_units()
     build_and_publish_bot_center()
@@ -267,7 +333,7 @@ def deploy(*, restart_gateway: bool, skip_guards: bool = False) -> dict[str, obj
         if not skip_guards:
             run_with_retries(["python3", str(SINGLE_SOURCE_RUNTIME_SMOKE)], attempts=3, wait_seconds=10)
     return {
-        "ok": True,
+        "ok": monthly_quote_reminder_timer.get("status") != "failed",
         "tag_router_source": str(TAG_ROUTER_SOURCE_DIR),
         "tag_router_target": str(TAG_ROUTER_TARGET_DIR),
         "tag_router_workspace": str(OPENCLAW_RUNTIME_HOME / "workspace/openclaw-tag-router"),
@@ -278,6 +344,7 @@ def deploy(*, restart_gateway: bool, skip_guards: bool = False) -> dict[str, obj
         "bot_center_published": str(BOT_CENTER_PUBLISH_DIR),
         "checked_cron_forbidden_jobs": list(FORBIDDEN_CRON_JOB_NAMES),
         "media_daily_poll_timer": media_daily_poll_timer,
+        "monthly_quote_reminder_timer": monthly_quote_reminder_timer,
         "ran_guards": not skip_guards,
         "ran_runtime_smoke": restart_gateway and not skip_guards,
         "restarted_gateway": restart_gateway,
@@ -295,6 +362,8 @@ def main() -> None:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False, indent=2))
         raise SystemExit(1) from exc
     print(json.dumps(result, ensure_ascii=False, indent=2))
+    if not result.get("ok"):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
