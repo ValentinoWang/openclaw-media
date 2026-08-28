@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import base64
 import json
+import mimetypes
 import threading
 import time
+from pathlib import Path
 from typing import Any, Callable, Optional
 
 from common.llm_client import generate_json_from_parts
@@ -14,7 +17,7 @@ from .semantic_persistence import LLM_CLEANED_USER_FIELDS_VERSION
 
 
 ANALYST_SYSTEM_PROMPT = """
-你是一名中文内容分析与运营编辑。你基于作品中可见的文案、画面与转写，说明内容为什么值得参考，以及创作者可以怎样做出自己的版本。
+你是一名中文内容分析与运营编辑。你只基于本次标为 available 的内容证据说明作品为什么值得参考，以及创作者可以怎样做出自己的版本；只有随附视觉画面时才分析画面。
 
 请根据用户提供的【视频文案/逐字稿/图文 OCR】，输出一份结构化内容分析。
 
@@ -100,6 +103,16 @@ ANALYST_INSTRUCTIONS = """你是一名中文内容分析与运营编辑。你的
 
 ProgressFn = Callable[[str, int, str], None]
 
+
+class _AnalysisUserContent(str):
+    """Text prompt plus the visual evidence that is actually attached to it."""
+
+    def __new__(cls, text: str, evidence_parts: list[dict[str, Any]]) -> _AnalysisUserContent:
+        value = super().__new__(cls, text)
+        value.evidence_parts = evidence_parts
+        return value
+
+
 ANALYSIS_REQUIRED_FIELDS = (
     "title", "summary", "primary_category", "secondary_category", "target_audience", "pain_point",
     "work_copy", "full_content", "hooks", "emotion", "score", "tags", "action_plan", "hidden_info",
@@ -138,6 +151,28 @@ def _analysis_media_kind(
     return "视频"
 
 
+def _attached_image_parts(image_paths: Optional[list[str]]) -> list[dict[str, Any]]:
+    parts: list[dict[str, Any]] = []
+    for raw_path in (image_paths or [])[:12]:
+        try:
+            path = Path(raw_path)
+            if not path.is_file() or path.stat().st_size <= 0:
+                continue
+            mime_type = mimetypes.guess_type(path.name)[0] or "image/jpeg"
+            if not mime_type.startswith("image/"):
+                continue
+            parts.append({
+                "image_data": {
+                    "mime_type": mime_type,
+                    "data": base64.b64encode(path.read_bytes()).decode("ascii"),
+                    "path": str(path),
+                }
+            })
+        except OSError:
+            continue
+    return parts
+
+
 def _build_analysis_user_content(
     transcript: str,
     url: str,
@@ -146,26 +181,28 @@ def _build_analysis_user_content(
     caption: str,
     image_ocr: str,
     media_type: Optional[str],
-) -> str:
+) -> _AnalysisUserContent:
     kind = _analysis_media_kind(video_path, image_paths, media_type)
     caption_block = f"文案:\n{caption}" if caption else "文案: (空)"
     transcript_block = f"逐字稿:\n{transcript}" if transcript else "逐字稿: (空)"
     ocr_block = f"图文 OCR:\n{image_ocr}" if image_ocr else "图文 OCR: (空)"
-    media_lines: list[str] = []
-    if video_path:
-        media_lines.append(f"本地视频文件: {video_path}")
-    if image_paths:
-        media_lines.append("本地图片文件:")
-        media_lines.extend(f"- {path}" for path in image_paths[:12])
-    media_block = "\n".join(media_lines) if media_lines else "本地媒体文件: (无)"
-    return (
+    image_parts = _attached_image_parts(image_paths)
+    visual_status = "available" if image_parts else "unavailable"
+    text = (
         f"内容类型: {kind}\n"
         f"链接: {url}\n"
-        f"{media_block}\n"
-        "请优先基于媒体内容与文案完成分析。\n"
-        "若是图文/动图，请以图片内容为主，文案为辅。\n\n"
+        "证据可用性:\n"
+        f"- 文案: {'available' if caption else 'unavailable'}\n"
+        f"- 逐字稿: {'available' if transcript else 'unavailable'}\n"
+        f"- OCR 文本: {'available' if image_ocr else 'unavailable'}\n"
+        f"- 视觉画面: {visual_status}\n"
+        "- 互动数据: unavailable\n"
+        "证据边界：只可依据标为 available 的文本或本次随附的视觉画面作出判断。"
+        "视觉画面为 unavailable 时，visual_cues 必须为空字符串，hooks 和 action_plan 不得假设镜头、字幕、场景或剪辑；"
+        "互动数据为 unavailable 时，score 只能依据已提供的内容结构、真实经验可迁移性、制作成本和风险，不得推断播放、点赞、收藏、评论或传播表现。\n\n"
         f"{caption_block}\n\n{transcript_block}\n\n{ocr_block}"
     )
+    return _AnalysisUserContent(text, image_parts)
 
 
 def analyze_with_openclaw_agent(user_content: str, settings: Settings) -> Optional[dict]:
@@ -174,10 +211,12 @@ def analyze_with_openclaw_agent(user_content: str, settings: Settings) -> Option
         "输入内容：\n"
         f"{user_content}"
     )
+    parts: list[dict[str, Any]] = [{"text": message}]
+    parts.extend(getattr(user_content, "evidence_parts", []))
     try:
         llm_settings = load_profile_llm_settings("media_analysis")
         parsed = generate_json_from_parts(
-            [{"text": message}],
+            parts,
             llm_settings,
             max_retries=1,
             error_prefix="Codex Responses 结构化分析 JSON 校验失败",
