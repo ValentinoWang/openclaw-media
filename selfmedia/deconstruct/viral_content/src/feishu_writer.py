@@ -25,6 +25,10 @@ from media_model.payloads import build_material_deconstruction_payload, build_so
 from media_vault.vault import MediaVault
 
 from .artifact_v2 import build_deconstruction_artifact
+from .human_insight_writeback import (
+    project_id_for_deconstruction,
+    write_human_insight_candidates,
+)
 
 
 FEISHU_BASE = os.getenv("FEISHU_API_BASE_URL", "https://open.feishu.cn/open-apis").rstrip("/")
@@ -458,6 +462,15 @@ def write_deconstruction(
         deconstruction_record=deconstruction_record,
         result=result,
         captured_at=captured_at,
+    )
+    result["human_insight_writeback"] = write_human_insight_candidates(
+        vault=vault,
+        project_id=project_id_for_deconstruction(result),
+        source_asset_id=asset_id,
+        deconstruction_id=deconstruction_id,
+        candidates=result.get("human_insight_candidates"),
+        source_evidence_uri=asset_evidence_uri,
+        external_write_available=True,
     )
     return str(deconstruction_record.get("record_id") or deconstruction_id)
 

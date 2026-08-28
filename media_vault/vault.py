@@ -187,6 +187,22 @@ class MediaVault:
     def account_memory_dir(self, account_id: str) -> Path:
         return self._directory("account_memory", account_id)
 
+    def human_insight_candidate_dir(
+        self,
+        project_id: str,
+        source_asset_id: str,
+        deconstruction_id: str,
+    ) -> Path:
+        """Return the isolated review-only candidate collection for one source analysis."""
+        project_key = "project-" + sha256_text(str(project_id or ""))[:24]
+        return self._directory(
+            "account_memory",
+            project_key,
+            "human_insight_candidates",
+            source_asset_id,
+            deconstruction_id,
+        )
+
     def published_post_review_dir(self, post_id: str, review_node: str) -> Path:
         return self._directory("published_posts", post_id, "review", review_node)
 
