@@ -30,6 +30,64 @@ GENERATE_STORYBOARD_IMAGES = os.getenv("FEISHU_GENERATE_STORYBOARD_IMAGES", "0")
 DEFAULT_DECONSTRUCT_SOURCE_TABLE_URL = ""
 
 
+DOCUMENT_FIELD_LABELS = {
+    "source_summary": "素材概括",
+    "why_it_may_work": "为什么可能有效",
+    "account_fit_reason": "账号契合原因",
+    "usable_patterns": "可复用打法",
+    "recommended_script_directions": "建议脚本方向",
+    "must_transform": "必须改造",
+    "must_not_copy": "禁止照搬",
+    "human_review_flags": "需人工确认",
+    "summary": "摘要",
+    "rhythm_pattern": "节奏模式",
+    "edit_recommendations": "剪辑建议",
+    "reuse_notes": "复用提示",
+    "level": "等级",
+    "overall": "整体判断",
+    "label": "结论",
+    "reason": "原因",
+    "item": "要点",
+    "element": "内容",
+    "required_change": "必须改造",
+    "subtitle": "字幕",
+    "voiceover": "口播",
+}
+
+DOCUMENT_VALUE_LABELS = {
+    "strong_reuse_candidate": "强复用候选",
+    "weak_reuse_candidate": "弱复用候选",
+    "reject": "不建议复用",
+    "unknown": "未知",
+    "strong": "强",
+    "medium": "中等",
+    "low": "低",
+    "high": "高",
+    "easy": "容易",
+    "hard": "困难",
+    "available": "证据充分",
+    "insufficient_evidence": "证据不足",
+    "schema_failed": "解析失败",
+    "llm_failed": "解析失败",
+    "validated": "已验证",
+    "validated_with_warnings": "已验证，存在待确认项",
+    "success": "成功",
+    "no_audio": "无音频",
+    "asr_failed": "语音识别失败",
+    "transcript_only": "仅有文字稿",
+    "no_visible_text": "未识别到屏幕文字",
+    "ocr_failed": "文字识别失败",
+    "verified_three_comments": "已核验三条评论",
+    "insufficient_comments": "评论证据不足",
+    "no_comments": "未采集到评论",
+    "captured": "已采集",
+    "missing": "缺失",
+    "failed": "失败",
+    "not_applicable": "不适用",
+    "human_review_required": "需要人工确认",
+}
+
+
 @dataclass(frozen=True)
 class DocRef:
     document_id: str
@@ -888,12 +946,19 @@ def _value_blocks(value: Any) -> list[dict[str, Any]]:
     if isinstance(value, str):
         return [_paragraph(chunk) for chunk in _chunks(value)]
     if isinstance(value, dict):
-        return [_paragraph(f"{k}：{v}") for k, v in value.items()]
+        blocks: list[dict[str, Any]] = []
+        for key, item in value.items():
+            text = _summary_value(item)
+            if not text:
+                continue
+            label = DOCUMENT_FIELD_LABELS.get(str(key), "未标注信息")
+            blocks.append(_paragraph(f"{label}：{text}"))
+        return blocks
     if isinstance(value, list):
         if value and all(isinstance(item, dict) for item in value):
             return _card_blocks(value)
-        return [_paragraph(f"{idx}. {item}") for idx, item in enumerate(value, 1)]
-    return [_paragraph(str(value))]
+        return [_paragraph(f"{idx}. {_summary_value(item)}") for idx, item in enumerate(value, 1)]
+    return [_paragraph(_display_document_value(value))]
 
 
 def _evidence_manifest_summary(evidence_manifest: dict[str, Any]) -> list[str]:
@@ -927,7 +992,7 @@ def _assessment_summary_lines(assessment: dict[str, Any]) -> list[str]:
     label = assessment.get("final_label")
     confidence = assessment.get("confidence")
     if label not in (None, ""):
-        lines.append(f"复用结论：{label}" + (f"；confidence={confidence}" if confidence not in (None, "") else ""))
+        lines.append(f"复用结论：{_display_document_status(label)}" + (f"；置信度：{confidence}" if confidence not in (None, "") else ""))
     for key, label_text in [
         ("observed_virality", "可见热度"),
         ("mechanism_strength", "机制强度"),
@@ -939,7 +1004,7 @@ def _assessment_summary_lines(assessment: dict[str, Any]) -> list[str]:
         if value:
             lines.append(f"{label_text}：{value}")
     if assessment.get("human_review_required") not in (None, ""):
-        lines.append(f"人工复核：{assessment.get('human_review_required')}")
+        lines.append(f"人工复核：{_display_document_value(assessment.get('human_review_required'))}")
     return lines
 
 
@@ -949,10 +1014,16 @@ def _pacing_summary_lines(pacing_profile: dict[str, Any]) -> list[str]:
     interpretation = pacing_profile.get("llm_interpretation")
     if isinstance(interpretation, dict):
         lines: list[str] = []
-        for key in ("summary", "rhythm_pattern", "edit_recommendations", "reuse_notes"):
+        pacing_labels = {
+            "summary": "节奏概述",
+            "rhythm_pattern": DOCUMENT_FIELD_LABELS["rhythm_pattern"],
+            "edit_recommendations": DOCUMENT_FIELD_LABELS["edit_recommendations"],
+            "reuse_notes": DOCUMENT_FIELD_LABELS["reuse_notes"],
+        }
+        for key in pacing_labels:
             value = _summary_value(interpretation.get(key))
             if value:
-                lines.append(f"{key}：{value}")
+                lines.append(f"{pacing_labels[key]}：{value}")
         if lines:
             return lines
     value = _summary_value(interpretation)
@@ -980,7 +1051,7 @@ def _guardrail_summary_blocks(guardrails: dict[str, Any]) -> list[dict[str, Any]
             section_index += 1
     if guardrails.get("human_review_required") not in (None, ""):
         blocks.append(_heading3(f"{section_index}. 人工复核"))
-        blocks.extend(_value_blocks(str(guardrails.get("human_review_required"))))
+        blocks.extend(_value_blocks(_display_document_value(guardrails.get("human_review_required"))))
     return blocks
 
 
@@ -992,15 +1063,19 @@ def _summary_value(value: Any, *, limit: int = 320) -> str:
         for key in ("level", "overall", "label", "summary", "reason", "item", "element", "required_change"):
             item = value.get(key)
             if item not in (None, "", [], {}):
-                preferred.append(str(item))
+                preferred.append(_summary_value(item, limit=120))
         if preferred:
             return "；".join(preferred)[:limit]
-        compact = [f"{key}={_summary_value(item, limit=120)}" for key, item in value.items() if item not in (None, "", [], {}) and key != "python_facts"]
+        compact = [
+            f"{DOCUMENT_FIELD_LABELS.get(str(key), '未标注信息')}：{_summary_value(item, limit=120)}"
+            for key, item in value.items()
+            if item not in (None, "", [], {}) and key != "python_facts"
+        ]
         return "；".join(item for item in compact if item)[:limit]
     if isinstance(value, list):
         items = [_summary_value(item, limit=120) for item in value if item not in (None, "", [], {})]
         return "；".join(item for item in items if item)[:limit]
-    return str(value).strip()[:limit]
+    return _display_document_value(value)[:limit]
 
 
 def _deconstruct_evidence_blocks(content: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1020,7 +1095,7 @@ def _deconstruct_evidence_blocks(content: dict[str, Any]) -> list[dict[str, Any]
     else:
         status = str(speech_transcript.get("status") or "unknown")
         reason = str(speech_transcript.get("reason") or "")
-        blocks.append(_paragraph(f"ASR：无可靠时间线证据。status={status}" + (f"；{reason}" if reason else "")))
+        blocks.append(_paragraph(f"ASR：无可靠时间线证据。状态：{_display_document_status(status)}" + (f"；{reason}" if reason else "")))
 
     if visible_text_segments:
         blocks.append(_heading3("OCR 摘要"))
@@ -1077,14 +1152,32 @@ def _compact_brief_lines(brief: dict[str, Any]) -> list[str]:
     for key in ("source_summary", "why_it_may_work", "account_fit_reason"):
         value = brief.get(key)
         if value:
-            lines.append(f"{key}：{value}")
+            lines.append(f"{DOCUMENT_FIELD_LABELS[key]}：{_summary_value(value)}")
     for key in ("usable_patterns", "recommended_script_directions", "must_transform", "must_not_copy", "human_review_flags"):
         value = brief.get(key)
         if isinstance(value, list):
-            lines.append(f"{key}：" + "；".join(str(item).strip() for item in value if str(item).strip()))
+            items = [_summary_value(item) for item in value if str(item).strip()]
+            if items:
+                lines.append(f"{DOCUMENT_FIELD_LABELS[key]}：" + "；".join(items))
         elif value:
-            lines.append(f"{key}：{value}")
+            lines.append(f"{DOCUMENT_FIELD_LABELS[key]}：{_summary_value(value)}")
     return lines
+
+
+def _display_document_value(value: Any) -> str:
+    if value is True:
+        return "是"
+    if value is False:
+        return "否"
+    text = str(value).strip()
+    return DOCUMENT_VALUE_LABELS.get(text, text)
+
+
+def _display_document_status(value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return "状态待确认"
+    return DOCUMENT_VALUE_LABELS.get(text, "状态待确认")
 
 
 def _coerce_list_like_text(value: Any) -> Any:
@@ -1135,7 +1228,8 @@ def _card_blocks(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if key in used or key in {"shot_no", "page_no", "duration", "evidence_asset_id"}:
                 continue
             if value not in (None, ""):
-                blocks.append(_paragraph(f"{key}：{value}"))
+                label = DOCUMENT_FIELD_LABELS.get(str(key), "未标注信息")
+                blocks.append(_paragraph(f"{label}：{_summary_value(value)}"))
     return blocks
 
 

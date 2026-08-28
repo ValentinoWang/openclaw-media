@@ -527,12 +527,14 @@ def _shot_adaptation_bitable_index(result: dict[str, Any]) -> dict[str, Any]:
     notes = [item for item in contract.get("shot_adaptation_notes") or [] if isinstance(item, dict)]
     validation = contract.get("validation") if isinstance(contract.get("validation"), dict) else {}
     status = str(validation.get("multi_signal_contract_status") or "").strip()
+    warnings = [str(item).strip() for item in validation.get("warnings") or [] if str(item).strip()]
+    document_url = str(result.get("deconstruct_doc_url") or result.get("feishu_doc_url") or "").strip()
     return {
-        "shot_adaptation_notes_status": status,
+        "shot_adaptation_notes_status": _localized_multi_signal_status(status, warnings),
         "shot_adaptation_note_count": len(notes) if notes else None,
         "recommended_production_route": "",
         "motion_type_summary": "",
-        "shot_adaptation_notes_summary": _shot_adaptation_notes_summary(notes),
+        "shot_adaptation_notes_summary": _shot_adaptation_notes_summary(notes, document_url=document_url),
     }
 
 
@@ -548,18 +550,38 @@ def _request_constraints_bitable_index(result: dict[str, Any]) -> dict[str, str]
     }
 
 
-def _shot_adaptation_notes_summary(notes: list[dict[str, Any]], *, limit: int = 500) -> str:
+def _localized_multi_signal_status(status: str, warnings: list[str]) -> str:
+    labels = {
+        "available": "证据充分",
+        "insufficient_evidence": "证据不足",
+        "schema_failed": "解析失败",
+        "llm_failed": "解析失败",
+        "validated": "已验证",
+        "validated_with_warnings": "已验证，存在待确认项",
+    }
+    label = labels.get(status, "状态待确认")
+    if status in {"schema_failed", "llm_failed"}:
+        reason = _summary_text(warnings, 200)
+        return f"{label}；原因：{reason or '待确认'}"
+    return label
+
+
+def _shot_adaptation_notes_summary(notes: list[dict[str, Any]], *, document_url: str = "", limit: int = 500) -> str:
     lines: list[str] = []
     for item in notes[:8]:
-        note_id = str(item.get("note_id") or "").strip()
         pattern = str(item.get("learnable_pattern") or "").strip()
         rule = str(item.get("adaptation_rule") or "").strip()
         avoid = _normalize_text(item.get("do_not_copy")).replace("\n", " ")
-        line = " | ".join(part for part in (note_id, pattern, rule, avoid) if part)
+        line = "；".join(
+            f"{label}：{value}"
+            for label, value in (("可学结构", pattern), ("适配方法", rule), ("避免照搬", avoid))
+            if value
+        )
         if line:
             lines.append(line)
     if len(notes) > 8:
-        lines.append(f"...共 {len(notes)} 条，完整结构见 multi_signal_contract")
+        link_suffix = f"：{document_url}" if document_url else "（文档链接待补）"
+        lines.append(f"共 {len(notes)} 条，完整清单见拆解文档证据附录{link_suffix}")
     return _summary_text(lines, limit)
 
 
