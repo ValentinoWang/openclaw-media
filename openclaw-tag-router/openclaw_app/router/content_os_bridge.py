@@ -6,16 +6,92 @@ import re
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from ..models.message import Message
 from ..services.archive_service import ArchiveService
 from ..services.utils import cleanup_generated_file_duplicates, make_record_id
-from .content_os_project_lifecycle import set_project_reviewed_at, transition_project_status
+from .content_os_project_lifecycle import ContentOSContractError, read_project_state, set_project_reviewed_at, transition_project_status
 from .content_os_projections import write_project_registry_projection
-from .content_os_queue import accept_mac_result, create_ready_task
+from .content_os_queue import RESULT_DIRECTORY, accept_mac_result, create_ready_task
 from .tag_router_common import CONTENT_OS_SCRIPT_GENERATION_MODEL, CONTENT_OS_SCRIPT_GENERATION_THINKING
 
 
 class ContentOSBridgeMixin:
+    _CONTENT_OS_CREATOR_STAGE_LABELS = {
+        "captured": "选题已收录",
+        "planned": "创作准备中",
+        "edit_ready": "等待开始剪辑",
+        "editing": "剪辑中",
+        "final_ready": "成片就绪",
+        "published": "已发布",
+    }
+
+    @classmethod
+    def _content_os_creator_stage_label(cls, status: str, *, fallback: str = "当前创作环节") -> str:
+        return cls._CONTENT_OS_CREATOR_STAGE_LABELS.get(str(status or "").strip(), fallback)
+
+    def _content_os_has_accepted_output_review(self, vault_root: Path, project_id: str) -> bool:
+        """Return whether this revision has cloud-accepted terminal review evidence."""
+
+        try:
+            project_revision = read_project_state(vault_root, project_id).project_revision
+        except ContentOSContractError:
+            return False
+
+        results_root = vault_root / RESULT_DIRECTORY
+        if not results_root.exists():
+            return False
+        for result_path in sorted(results_root.glob("*.y*ml")):
+            try:
+                candidate = yaml.safe_load(result_path.read_text(encoding="utf-8")) or {}
+            except (OSError, yaml.YAMLError):
+                continue
+            if not isinstance(candidate, dict):
+                continue
+            outputs = candidate.get("outputs")
+            validation = candidate.get("validation")
+            if not isinstance(outputs, dict) or not isinstance(validation, dict):
+                continue
+            output_review = str(outputs.get("output_review") or "").strip()
+            if not output_review or Path(output_review).is_absolute() or ".." in Path(output_review).parts:
+                continue
+            result_revision = candidate.get("project_revision")
+            if isinstance(result_revision, bool):
+                continue
+            try:
+                revision_matches = int(result_revision) == project_revision
+            except (TypeError, ValueError):
+                revision_matches = False
+            if not revision_matches:
+                continue
+            if (
+                candidate.get("spec_version") == "content_os_v0.2"
+                and candidate.get("doc_type") == "mac_result"
+                and candidate.get("task_type") == "local_output_review"
+                and candidate.get("completed_by") == "mac_openclaw"
+                and candidate.get("status") == "done"
+                and candidate.get("task_status") == "success"
+                and candidate.get("project_id") == project_id
+                and candidate.get("schema_version") == "output_review_result.v1"
+                and candidate.get("accepted_by") == "cloud_openclaw"
+                and bool(str(candidate.get("accepted_at") or "").strip())
+                and validation.get("output_review_nonempty") is True
+                and validation.get("metrics_json_parse_passed") is True
+                and validation.get("result_yaml_parse_passed") is True
+                and validation.get("human_final_ready_confirmation_required") is True
+            ):
+                return True
+        return False
+
+    def _content_os_transition_reply(self, *, current_status: str, target_status: str, advanced: bool) -> str:
+        if advanced:
+            return f"项目进度已更新：{self._content_os_creator_stage_label(target_status, fallback='下一创作环节')}。"
+        return (
+            f"项目进度暂未更新：当前处于{self._content_os_creator_stage_label(current_status)}，"
+            f"暂不能标记为{self._content_os_creator_stage_label(target_status, fallback='下一创作环节')}。"
+        )
+
     def _accept_content_os_mac_result(
         self,
         result: dict[str, Any],
@@ -398,19 +474,43 @@ class ContentOSBridgeMixin:
             return {}
         current_status = self._content_os_project_status(project_id, vault_root)
         if not current_status:
-            return {"project_id": project_id, "reply": f"Content OS 状态未推进：项目不存在或缺少状态 {project_id}"}
+            return {"project_id": project_id, "reply": f"项目进度暂未更新：未找到项目或项目资料不完整（{project_id}）。"}
         if verdict != "通过":
-            return {"project_id": project_id, "reply": f"Content OS 状态未推进：验收结果为 {verdict}"}
+            return {"project_id": project_id, "reply": f"项目暂不标记成片就绪：本次作品验收结果为{verdict}。"}
         target_status = self._extract_labeled_value(message.raw_text, "目标状态") or self._extract_labeled_value(message.raw_text, "to")
         if target_status:
             target_status = re.split(r"\s+", target_status.strip(), maxsplit=1)[0]
         if not target_status and current_status == "editing":
             target_status = "final_ready"
         if not target_status:
-            return {"project_id": project_id, "reply": f"Content OS 状态未推进：当前状态 {current_status} 没有可自动推断的下一状态"}
-        evidence = {"human_final_selected", "output_review_evidence_exists"}
-        if re.search(r"(/Users/|\.mp4|\.mov|Final|final|成片路径|导出路径|视频路径)", message.raw_text):
-            evidence.add("output_video_exists")
+            return {
+                "project_id": project_id,
+                "reply": f"项目进度暂未更新：当前处于{self._content_os_creator_stage_label(current_status)}，请明确下一步创作安排。",
+            }
+        if target_status == "final_ready":
+            if current_status != "editing":
+                return {
+                    "project_id": project_id,
+                    "from": current_status,
+                    "to": target_status,
+                    "reply": self._content_os_transition_reply(
+                        current_status=current_status,
+                        target_status=target_status,
+                        advanced=False,
+                    ),
+                }
+            if not self._content_os_has_accepted_output_review(vault_root, project_id):
+                return {
+                    "project_id": project_id,
+                    "from": current_status,
+                    "to": target_status,
+                    "reply": "项目仍在剪辑中：请先回传并接收本次成片质检结果，再确认标记成片就绪。",
+                }
+            # The accepted terminal review proves the output and its quality check;
+            # this passing acceptance route remains the required human selection.
+            evidence = {"output_video_exists", "output_review_evidence_exists", "human_final_selected"}
+        else:
+            evidence = set()
         status_reply = self._maybe_advance_content_os_status(
             project_id=project_id,
             from_status=current_status,
@@ -420,7 +520,16 @@ class ContentOSBridgeMixin:
             reason="【作品验收】通过",
             vault_root=vault_root,
         )
-        return {"project_id": project_id, "from": current_status, "to": target_status, "reply": status_reply or f"Content OS 状态未推进：{current_status} -> {target_status} 缺少状态机许可或证据"}
+        return {
+            "project_id": project_id,
+            "from": current_status,
+            "to": target_status,
+            "reply": self._content_os_transition_reply(
+                current_status=current_status,
+                target_status=target_status,
+                advanced=status_reply.startswith("Content OS 状态已推进："),
+            ),
+        }
     def _maybe_write_content_os_data_review(self, message: Message, parsed: dict[str, Any], reply: str) -> dict[str, Any]:
         vault_root = self._content_os_vault_root()
         project_id = self._extract_content_os_project_id(message.raw_text, vault_root)
@@ -428,7 +537,7 @@ class ContentOSBridgeMixin:
             return {}
         project_dir = self._content_os_project_dir(project_id, vault_root)
         if not project_dir.exists():
-            return {"project_id": project_id, "reply": f"Content OS 复盘未写入：项目不存在 {project_id}"}
+            return {"project_id": project_id, "reply": f"复盘未写入项目档案：未找到项目（{project_id}）。"}
         review_path = project_dir / "10_review.md"
         idea_id = self._content_os_project_idea_id(project_id, vault_root)
         self._upsert_content_os_auto_section(
@@ -473,12 +582,16 @@ class ContentOSBridgeMixin:
                 reason="【数据复盘】包含发布链接或作品 ID",
                 vault_root=vault_root,
             )
-            if advanced:
-                status_lines.append(advanced)
+            if advanced.startswith("Content OS 状态已推进："):
+                status_lines.append(self._content_os_transition_reply(
+                    current_status="final_ready",
+                    target_status="published",
+                    advanced=True,
+                ))
                 current_status = "published"
-        reply_line = f"Content OS 复盘已写入：08_内容项目/{project_id}/10_review.md"
+        reply_line = f"复盘已写入项目档案：08_内容项目/{project_id}/10_review.md"
         if status_lines:
             reply_line = reply_line + "\n" + "\n".join(status_lines)
         elif current_status != "published":
-            reply_line = f"{reply_line}\nContent OS 状态未推进：当前状态 {current_status or '未记录'} 不是可复盘推进状态"
+            reply_line = f"{reply_line}\n项目当前处于{self._content_os_creator_stage_label(current_status)}；发布后可继续记录发布效果。"
         return {"project_id": project_id, "review_path": str(review_path), "reply": reply_line}
