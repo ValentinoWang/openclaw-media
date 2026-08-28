@@ -29,6 +29,16 @@ SHOOTING_REQUEST_FIELDS = frozenset({
     "time_window", "publish_time", "project", "account", "reference_links", "must_shoot",
     "constraints", "source_asset_id",
 })
+SHOOTING_PRIORITY_LABELS = {
+    "P0": "必拍",
+    "P1": "重要",
+    "P2": "可选",
+}
+EVIDENCE_SOURCE_STATUS_LABELS = {
+    "confirmed": "已核验",
+    "manual_description_only": "仅凭文字描述，未看过原片",
+    "pending_manual": "待人工核实",
+}
 
 
 def _validate_shooting_request(payload: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
@@ -278,6 +288,9 @@ def infer_shooting_execution_request(raw_text: str, explicit: dict[str, str]) ->
 
 def generate_shooting_execution_plan(request: ShootingExecutionRequest, *, media_context: dict[str, Any] | None = None) -> dict[str, Any]:
     deconstruction_evidence = (media_context or {}).get("deconstruction_evidence") or {}
+    creator_facing_evidence = creator_facing_deconstruction_evidence(deconstruction_evidence)
+    creator_facing_context = dict(media_context or {})
+    creator_facing_context.pop("deconstruction_evidence", None)
     prompt = (
         "你是 OpenClaw Media bot 的拍摄执行导演。请把用户的【创作-拍摄执行】请求生成现场可执行拍摄单。\n"
         "硬性规则：\n"
@@ -287,7 +300,7 @@ def generate_shooting_execution_plan(request: ShootingExecutionRequest, *, media
         "4. 用户显式给出时间窗口时，路线图必须按该时间窗口组织；不得擅自缩短或改写为更短拍摄时长。\n"
         "5. 路线、镜头、分支方案、checklist 必须能在现场直接执行。\n"
         "6. 证据附录放最后；裸链接不能打断执行稿。\n\n"
-        "拆解证据只能使用下方状态为 confirmed 的内容；其余参考链接一律仅凭文字描述，未看过原片，"
+        "拆解证据只能使用下方来源状态为“已核验”的内容；其余参考链接一律仅凭文字描述，未看过原片，"
         "不得根据链接补写镜头、节奏或原作细节。\n\n"
         "JSON schema：\n"
         "{\n"
@@ -295,20 +308,74 @@ def generate_shooting_execution_plan(request: ShootingExecutionRequest, *, media
         "  \"abstraction_map\": [{\"source_signal\":\"\", \"task_layer\":\"\", \"execution_meaning\":\"\"}],\n"
         "  \"route_map\": [{\"time_slot\":\"\", \"location\":\"\", \"shooting_task\":\"\", \"people\":\"\", \"backup\":\"\"}],\n"
         "  \"must_shot_list\": [{\"priority\":\"必拍|重要|可选\", \"location\":\"\", \"people\":\"\", \"action\":\"\", \"shot_size\":\"\", \"reference\":\"\", \"usage\":\"\", \"reshoot_check\":\"\"}],\n"
-        "  \"branch_plans\": [{\"condition\":\"\", \"plan\":\"\", \"priority\":\"\"}],\n"
+        "  \"branch_plans\": [{\"condition\":\"\", \"plan\":\"\", \"priority\":\"必拍|重要|可选\"}],\n"
         "  \"storyboard\": [{\"time\":\"\", \"visual\":\"\", \"caption_or_voice\":\"\", \"sound_or_note\":\"\"}],\n"
         "  \"onsite_checklist\": [\"\"],\n"
         "  \"publishing_pack\": {\"title_directions\":[\"\"], \"cover_frame\":\"\", \"body_copy\":\"\", \"hashtags\":[\"\"], \"bgm_suggestion\":\"\", \"comment_prompt\":\"\"},\n"
         "  \"evidence_appendix\": [{\"source\":\"\", \"source_status\":\"已核验|仅凭文字描述，未看过原片|待人工核实\", \"available_evidence\":\"\", \"usage_reason\":\"\", \"risk\":\"\"}]\n"
         "}\n\n"
         f"请求字段：\n{json.dumps(request.to_dict(), ensure_ascii=False, indent=2)}\n\n"
-        f"拆解证据：\n{json.dumps(deconstruction_evidence, ensure_ascii=False, indent=2, default=str)[:12000]}\n\n"
-        f"媒体上下文：\n{json.dumps(media_context or {}, ensure_ascii=False, indent=2, default=str)[:12000]}"
+        f"拆解证据：\n{json.dumps(creator_facing_evidence, ensure_ascii=False, indent=2, default=str)[:12000]}\n\n"
+        f"媒体上下文：\n{json.dumps(creator_facing_context, ensure_ascii=False, indent=2, default=str)[:12000]}"
     )
     payload = call_creation_json(prompt, validation_contract=SHOOTING_PLAN_VALIDATION_CONTRACT)
     if not isinstance(payload, dict):
         raise RuntimeError("shooting_execution_llm_output_not_object")
-    return payload
+    return localize_shooting_execution_plan_values(payload)
+
+
+def localize_shooting_execution_plan_values(draft: dict[str, Any]) -> dict[str, Any]:
+    localized = dict(draft)
+    if "must_shot_list" in draft:
+        localized["must_shot_list"] = _localized_rows(draft.get("must_shot_list"), "priority", SHOOTING_PRIORITY_LABELS)
+    if "branch_plans" in draft:
+        localized["branch_plans"] = _localized_rows(draft.get("branch_plans"), "priority", SHOOTING_PRIORITY_LABELS)
+    if "evidence_appendix" in draft:
+        localized["evidence_appendix"] = _localized_rows(
+            draft.get("evidence_appendix"), "source_status", EVIDENCE_SOURCE_STATUS_LABELS
+        )
+    return localized
+
+
+def creator_facing_deconstruction_evidence(value: Any) -> dict[str, Any]:
+    evidence = value if isinstance(value, dict) else {}
+    items: list[dict[str, Any]] = []
+    for item in evidence.get("items") or []:
+        if not isinstance(item, dict):
+            continue
+        items.append(
+            {
+                "参考链接": item.get("source_link") or "",
+                "来源状态": _creator_facing_source_status(item.get("source_status")),
+                "可参考镜头": item.get("reference_shots") or [],
+                "节奏提示": item.get("pacing_notes") or {},
+                "复用边界": item.get("reuse_guardrails") or {},
+            }
+        )
+    return {
+        "核验状态": _creator_facing_source_status(evidence.get("status")),
+        "可用参考素材": items,
+    }
+
+
+def _localized_rows(rows: Any, field: str, labels: dict[str, str]) -> Any:
+    if not isinstance(rows, list):
+        return rows
+    localized: list[Any] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            localized.append(row)
+            continue
+        display_row = dict(row)
+        raw_value = str(row.get(field) or "").strip()
+        display_row[field] = labels.get(raw_value, raw_value)
+        localized.append(display_row)
+    return localized
+
+
+def _creator_facing_source_status(value: Any) -> str:
+    raw_status = str(value or "").strip()
+    return EVIDENCE_SOURCE_STATUS_LABELS.get(raw_status, "待人工核实")
 
 
 def validate_shooting_execution_plan(draft: dict[str, Any]) -> dict[str, Any]:

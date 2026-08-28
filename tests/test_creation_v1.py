@@ -1081,12 +1081,12 @@ class CreationV1Tests(unittest.TestCase):
         complete_draft = {
             "shooting_goal": {},
             "route_map": [{}],
-            "must_shot_list": [{}],
-            "branch_plans": [{}],
+            "must_shot_list": [{"priority": "P0"}],
+            "branch_plans": [{"priority": "P1"}],
             "storyboard": [{}],
             "onsite_checklist": ["回看"],
             "publishing_pack": {},
-            "evidence_appendix": [{}],
+            "evidence_appendix": [{"source_status": "confirmed"}],
         }
 
         def fake_call(prompt: str, **_kwargs: object) -> dict[str, object]:
@@ -1094,19 +1094,58 @@ class CreationV1Tests(unittest.TestCase):
             return complete_draft
 
         with patch("selfmedia.creation.shooting_execution.call_creation_json", side_effect=fake_call):
-            self.assertEqual(generate_shooting_execution_plan(request), complete_draft)
+            generated = generate_shooting_execution_plan(
+                request,
+                media_context={
+                    "deconstruction_evidence": {
+                        "status": "confirmed",
+                        "items": [{"source_link": "https://example.com/ref", "source_status": "confirmed"}],
+                    }
+                },
+            )
 
         self.assertEqual(len(captured), 1)
+        self.assertEqual(generated["must_shot_list"][0]["priority"], "必拍")
+        self.assertEqual(generated["branch_plans"][0]["priority"], "重要")
+        self.assertEqual(generated["evidence_appendix"][0]["source_status"], "已核验")
+        self.assertIn('"priority":"必拍|重要|可选"', captured[0])
+        self.assertIn("来源状态为“已核验”", captured[0])
         self.assertIn("仅凭文字描述，未看过原片", captured[0])
         self.assertIn("待人工核实", captured[0])
+        self.assertNotIn("confirmed", captured[0])
         self.assertNotIn("manual_description_only", captured[0])
         self.assertNotIn("pending_manual", captured[0])
 
-        revision_prompt = backwash._revision_prompt({}, "按事实重写", {}, {})
+        revision_prompt = backwash._revision_prompt(
+            {
+                "must_shot_list": [{"priority": "P0"}],
+                "branch_plans": [{"priority": "P1"}],
+                "evidence_appendix": [{"source_status": "confirmed"}],
+            },
+            "按事实重写",
+            {"deconstruction_evidence": {"status": "manual_description_only"}},
+            {"strategy": "result_hook_then_chronological", "beats": [{"narrative_role": "hook_setup"}]},
+        )
+        self.assertIn("优先级只能写“必拍”“重要”或“可选”", revision_prompt)
+        self.assertIn("来源状态只能写“已核验”“仅凭文字描述，未看过原片”或“待人工核实”", revision_prompt)
         self.assertIn("待人工核实", revision_prompt)
         self.assertIn("悬念设置/悬念回收", revision_prompt)
+        self.assertNotIn("P0", revision_prompt)
+        self.assertNotIn("P1", revision_prompt)
+        self.assertNotIn("confirmed", revision_prompt)
         self.assertNotIn("pending_manual", revision_prompt)
         self.assertNotIn("hook_setup/hook_payoff", revision_prompt)
+        self.assertNotIn("hook_setup", revision_prompt)
+
+        narrative_prompt = backwash._narrative_plan_prompt(
+            {"must_shot_list": [{"priority": "P0"}]},
+            "按事实重写",
+            {},
+            previous={"strategy": "result_hook_then_chronological", "beats": [{"narrative_role": "hook_setup"}]},
+        )
+        self.assertIn("叙事角色只能是悬念设置", narrative_prompt)
+        self.assertNotIn("hook_setup", narrative_prompt)
+        self.assertNotIn("result_hook_then_chronological", narrative_prompt)
 
     def test_creation_doc_renders_creator_brief_before_evidence(self) -> None:
         req = parse_creation_request(

@@ -9,7 +9,13 @@ from common.llm_validation import LLMValidationContract, register_llm_validation
 from media_vault.vault import MediaVault, utc_now_iso
 
 from .llm_generator import call_creation_json
-from .shooting_execution import SHOOTING_PLAN_VALIDATION_CONTRACT, ShootingExecutionRequest, validate_shooting_execution_plan
+from .shooting_execution import (
+    SHOOTING_PLAN_VALIDATION_CONTRACT,
+    ShootingExecutionRequest,
+    creator_facing_deconstruction_evidence,
+    localize_shooting_execution_plan_values,
+    validate_shooting_execution_plan,
+)
 from .writer import rewrite_shooting_execution_doc
 
 
@@ -33,6 +39,23 @@ NARRATIVE_ROLES = frozenset(
 NARRATIVE_STRATEGIES = frozenset(
     {"chronological", "result_hook_then_chronological", "problem_solution", "experience_escalation"}
 )
+NARRATIVE_STRATEGY_CODES = {
+    "按时间推进": "chronological",
+    "先给结果再回到过程": "result_hook_then_chronological",
+    "问题与解决": "problem_solution",
+    "体验逐层升级": "experience_escalation",
+}
+NARRATIVE_ROLE_CODES = {
+    "悬念设置": "hook_setup",
+    "背景交代": "context",
+    "介绍主体": "introduction",
+    "展开": "development",
+    "转场": "transition",
+    "悬念回收": "hook_payoff",
+    "收束": "conclusion",
+}
+NARRATIVE_STRATEGY_LABELS = {value: key for key, value in NARRATIVE_STRATEGY_CODES.items()}
+NARRATIVE_ROLE_LABELS = {value: key for key, value in NARRATIVE_ROLE_CODES.items()}
 BACKWASH_REVIEW_FIELDS = frozenset(
     {
         "status",
@@ -51,7 +74,7 @@ BACKWASH_REVIEW_FIELDS = frozenset(
 def _validate_narrative_plan(payload: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
     if set(payload) != NARRATIVE_PLAN_FIELDS:
         raise ValueError("narrative plan fields invalid")
-    if str(payload.get("strategy") or "") not in NARRATIVE_STRATEGIES:
+    if _narrative_strategy_code(payload.get("strategy")) not in NARRATIVE_STRATEGIES:
         raise ValueError("narrative strategy invalid")
     if not str(payload.get("storyline") or "").strip():
         raise ValueError("narrative storyline missing")
@@ -72,7 +95,7 @@ def _validate_narrative_plan(payload: dict[str, Any], _context: dict[str, Any]) 
         if not beat_id or beat_id in seen_beat_ids:
             raise ValueError("narrative beat_id must be non-empty and unique")
         seen_beat_ids.add(beat_id)
-        role = str(beat.get("narrative_role") or "").strip()
+        role = _narrative_role_code(beat.get("narrative_role"))
         if role not in NARRATIVE_ROLES:
             raise ValueError(f"narrative beat {beat_id} role invalid")
         for name in ("subject_id", "chapter", "location", "purpose", "transition_from_previous"):
@@ -332,19 +355,19 @@ def _narrative_plan_prompt(
     return (
         "你是 OpenClaw Media 的叙事规划导演。先规划整条拍摄执行稿的唯一叙事顺序，不写最终分镜，只输出合法 JSON object。\n"
         "先固定一条主线和连续章节，再安排产品、地点与因果关系。每个产品或主题必须在一个连续章节内介绍完成。\n"
-        "禁止无理由的 A→B→A 主体回跳或场地回跳；只有开头设置的明确悬念，才允许在后文以 hook_payoff 回收，"
-        "并用 callback_to 指向前面的 hook_setup。结尾总结不得重新介绍已经结束的产品。\n"
+        "禁止无理由的 A→B→A 主体回跳或场地回跳；只有开头设置的明确悬念，才允许在后文以悬念回收处理，"
+        "并用 callback_to 指向前面的悬念设置。结尾总结不得重新介绍已经结束的产品。\n"
         "transition_from_previous 必须说明相邻两拍的事实、空间、时间或因果关系，不能用一句口播掩盖无关主题切换。\n"
         "beats 按 order 严格排序，subject_id 对同一主体始终使用同一个稳定名称。\n"
-        "strategy 只能是 chronological、result_hook_then_chronological、problem_solution、experience_escalation 之一。\n"
-        "narrative_role 只能是 hook_setup、context、introduction、development、transition、hook_payoff、conclusion 之一。\n"
+        "叙事策略只能是按时间推进、先给结果再回到过程、问题与解决、体验逐层升级之一。\n"
+        "叙事角色只能是悬念设置、背景交代、介绍主体、展开、转场、悬念回收、收束之一。\n"
         "输出字段固定为 storyline, strategy, beats, global_rules。每个 beat 字段固定为 beat_id, order, subject_id, "
         "chapter, location, narrative_role, purpose, transition_from_previous, callback_to。无回扣时 callback_to 为空字符串。\n\n"
         f"用户修改要求：\n{requirements}\n\n"
-        f"账号与创作上下文：\n{json.dumps(media_context, ensure_ascii=False, default=str)[:12000]}\n\n"
-        f"当前结构化执行单：\n{json.dumps(current, ensure_ascii=False)}\n\n"
+        f"账号与创作上下文：\n{json.dumps(_creator_facing_media_context(media_context), ensure_ascii=False, default=str)[:12000]}\n\n"
+        f"当前结构化执行单：\n{json.dumps(_creator_facing_draft(current), ensure_ascii=False)}\n\n"
         f"上次规划验收：\n{json.dumps(review or {}, ensure_ascii=False)}\n\n"
-        f"上次叙事规划：\n{json.dumps(previous or {}, ensure_ascii=False)}"
+        f"上次叙事规划：\n{json.dumps(_creator_facing_narrative_plan(previous or {}), ensure_ascii=False)}"
     )
 
 
@@ -377,7 +400,9 @@ def _generate_revised_draft(
     last_review: dict[str, Any] = {}
     candidate: dict[str, Any] = {}
     for _attempt in range(2):
-        candidate = call_creation_json(prompt, validation_contract=SHOOTING_PLAN_VALIDATION_CONTRACT)
+        candidate = localize_shooting_execution_plan_values(
+            call_creation_json(prompt, validation_contract=SHOOTING_PLAN_VALIDATION_CONTRACT)
+        )
         last_review = _review_revision(current, candidate, requirements, narrative_plan)
         if last_review.get("status") == "passed":
             return candidate, last_review
@@ -405,22 +430,63 @@ def _revision_prompt(
 ) -> str:
     prompt = (
         "你是 OpenClaw Media 的拍摄执行回洗导演。根据用户修改要求整份重写现有执行单，只输出合法 JSON object。\n"
-        "必须保持现有顶层 schema 和每个列表项字段；把要求吸收到分镜、路线、必拍、分支、checklist、发布包等相关章节。\n"
+        "必须保持现有顶层结构和每个列表项字段；把要求吸收到分镜、路线、必拍、分支、现场检查和发布包等相关章节。\n"
         "不得生成补充记录、修改记录、追加说明、证据附录正文或文末补丁。分镜保持可直接拍摄，整体长度和原稿相当。\n"
         "保留未被修改要求推翻的原事实、产品名、合规边界、交付规格和账号边界；不确定的信息标为“待人工核实”。\n"
-        "storyboard、shooting_goal.mainline、route_map、must_shot_list、onsite_checklist 和 publishing_pack 必须使用叙事规划的 beat 顺序。\n"
+        "分镜、拍摄目标主线、路线图、必拍镜头、现场检查和发布包必须使用叙事规划的唯一顺序。\n"
         "每个产品或主体必须连续介绍完成，禁止无理由 A→B→A；只有规划中明确成对的“悬念设置/悬念回收”才能回收。\n"
         "每个相邻分镜必须有可见动作、空间、时间或因果承接；禁止用空泛口播把无关主体粘在一起。\n"
         "结尾 montage 只能收束主线，不得用回闪重新介绍已结束产品，也不得重新开启产品章节。\n"
-        "evidence_appendix 只保留 artifact 证据，不写给创作者看的解释。\n\n"
+        "证据附录只保留已有证据，不写给创作者看的解释。优先级只能写“必拍”“重要”或“可选”；"
+        "来源状态只能写“已核验”“仅凭文字描述，未看过原片”或“待人工核实”。\n\n"
         f"用户修改要求：\n{requirements}\n\n"
-        f"账号与创作上下文：\n{json.dumps(media_context, ensure_ascii=False, default=str)[:12000]}\n\n"
-        f"当前结构化执行单：\n{json.dumps(current, ensure_ascii=False)}\n\n"
-        f"已通过验收的叙事规划（唯一顺序）：\n{json.dumps(narrative_plan, ensure_ascii=False)}\n\n"
+        f"账号与创作上下文：\n{json.dumps(_creator_facing_media_context(media_context), ensure_ascii=False, default=str)[:12000]}\n\n"
+        f"当前结构化执行单：\n{json.dumps(_creator_facing_draft(current), ensure_ascii=False)}\n\n"
+        f"已通过验收的叙事规划（唯一顺序）：\n{json.dumps(_creator_facing_narrative_plan(narrative_plan), ensure_ascii=False)}\n\n"
         f"上次语义验收：\n{json.dumps(review or {}, ensure_ascii=False)}\n\n"
-        f"上次候选稿：\n{json.dumps(previous or {}, ensure_ascii=False)}"
+        f"上次候选稿：\n{json.dumps(_creator_facing_draft(previous or {}), ensure_ascii=False)}"
     )
     return prompt
+
+
+def _narrative_strategy_code(value: Any) -> str:
+    raw_value = str(value or "").strip()
+    return NARRATIVE_STRATEGY_CODES.get(raw_value, raw_value)
+
+
+def _narrative_role_code(value: Any) -> str:
+    raw_value = str(value or "").strip()
+    return NARRATIVE_ROLE_CODES.get(raw_value, raw_value)
+
+
+def _creator_facing_draft(draft: dict[str, Any]) -> dict[str, Any]:
+    return localize_shooting_execution_plan_values(draft)
+
+
+def _creator_facing_narrative_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    creator_plan = dict(plan)
+    raw_strategy = str(plan.get("strategy") or "").strip()
+    creator_plan["strategy"] = NARRATIVE_STRATEGY_LABELS.get(raw_strategy, raw_strategy)
+    beats: list[Any] = []
+    for beat in plan.get("beats") or []:
+        if not isinstance(beat, dict):
+            beats.append(beat)
+            continue
+        creator_beat = dict(beat)
+        raw_role = str(beat.get("narrative_role") or "").strip()
+        creator_beat["narrative_role"] = NARRATIVE_ROLE_LABELS.get(raw_role, raw_role)
+        beats.append(creator_beat)
+    creator_plan["beats"] = beats
+    return creator_plan
+
+
+def _creator_facing_media_context(media_context: dict[str, Any]) -> dict[str, Any]:
+    creator_context = dict(media_context)
+    if "deconstruction_evidence" in creator_context:
+        creator_context["deconstruction_evidence"] = creator_facing_deconstruction_evidence(
+            creator_context["deconstruction_evidence"]
+        )
+    return creator_context
 
 
 def _review_revision(

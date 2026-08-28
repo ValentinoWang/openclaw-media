@@ -102,6 +102,21 @@ class NarrativePlanContractTests(unittest.TestCase):
         self.assertEqual(result.state, "validated")
         self.assertEqual(result.payload, payload)
 
+    def test_creator_facing_narrative_labels_are_accepted(self) -> None:
+        payload = _plan(
+            [
+                _beat("beat-1", 1, "机器狗结果", "TechJoy", "悬念设置"),
+                _beat("beat-2", 2, "脑电因果链", "FT-D019", "展开"),
+                _beat("beat-3", 3, "机器狗结果", "TechJoy", "悬念回收", callback_to="beat-1"),
+            ]
+        )
+        payload["strategy"] = "先给结果再回到过程"
+
+        result = validate_llm_payload(payload, backwash.NARRATIVE_PLAN_CONTRACT)
+
+        self.assertEqual(result.state, "validated")
+        self.assertEqual(result.payload, payload)
+
 
 class CoherenceReviewContractTests(unittest.TestCase):
     def test_passed_review_below_ninety_is_rejected(self) -> None:
