@@ -10,6 +10,21 @@ import selfmedia.ingest.content_flow.src.analyzer as analyzer
 
 
 class AnalyzerProviderOrderTest(unittest.TestCase):
+    def test_system_prompt_uses_editorial_judgment_instead_of_course_templates(self) -> None:
+        prompt = analyzer.ANALYST_SYSTEM_PROMPT
+
+        self.assertIn("中文内容分析与运营编辑", prompt)
+        self.assertIn("可迁移参考指数", prompt)
+        self.assertIn("前 5 秒", prompt)
+        self.assertIn("不要用“高流量”“爆款”等假设作为依据", prompt)
+        self.assertIn("不要为了凑条数重复同一个判断", prompt)
+        self.assertIn("可用一段连贯说明或少量要点", prompt)
+        self.assertNotIn("拥有千万粉丝", prompt)
+        self.assertNotIn("拒绝正确的废话", prompt)
+        self.assertNotIn("黄金三秒", prompt)
+        self.assertNotIn("万能结构公式", prompt)
+        self.assertNotIn('必须按照 "1. 2. 3." 的格式', prompt)
+
     def test_openclaw_provider_instructions_define_content_editor_role(self) -> None:
         captured: dict[str, object] = {}
         llm_settings = SimpleNamespace(model="test-model")
