@@ -24,6 +24,7 @@ import {
 import { loginUrl } from "./mediaWebApi";
 import { useMediaWeb } from "./MediaWebWorkspace";
 import CanonicalDocumentRenderer from "./pages/ordinary/CanonicalDocumentRenderer";
+import { projectStageDisplayLabel, projectStatusDisplayLabel } from "./ui/displayLabels";
 
 type PersonalProject = {
   publicProjectId: string;
@@ -256,7 +257,7 @@ export default function PersonalWorkspaceShellPage() {
                     aria-pressed={project.publicProjectId === selectedProjectId}
                     onClick={() => setSelectedProjectId(project.publicProjectId)}
                   >
-                    <span className="personal-project-copy"><strong>{project.title || "未命名项目"}</strong><span>{project.stage} · {project.status}</span></span>
+                    <span className="personal-project-copy"><strong>{project.title || "未命名项目"}</strong><span>{projectStageDisplayLabel(project.stage)} · {projectStatusDisplayLabel(project.status)}</span></span>
                     <time dateTime={project.updatedAt}>{formatDate(project.updatedAt)}</time>
                   </button>
                 ))}
