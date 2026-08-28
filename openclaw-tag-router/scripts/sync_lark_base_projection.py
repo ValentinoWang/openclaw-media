@@ -16,9 +16,17 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+ROUTER_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = ROUTER_ROOT.parent
+
+# The projection imports both Router-local packages and repository-root
+# packages such as ``media_model``. Insert in reverse priority order so the
+# Router-owned ``integrations`` package remains authoritative.
+for import_root in (REPOSITORY_ROOT, ROUTER_ROOT):
+    entry = str(import_root)
+    if entry in sys.path:
+        sys.path.remove(entry)
+    sys.path.insert(0, entry)
 
 from openclaw_app.account import AccountDatabase, AccountDatabaseSettings
 from openclaw_app.services.feishu_service import FeishuService
