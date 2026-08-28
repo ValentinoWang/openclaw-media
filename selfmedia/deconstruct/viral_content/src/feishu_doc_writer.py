@@ -663,13 +663,21 @@ def _deconstruct_doc_blocks(content: dict[str, Any], *, include_evidence_appendi
     for title, key in [
         ("总结", "content_summary"),
         ("原作品总结", "source_summary"),
-        ("爆点机制", "viral_mechanism"),
     ]:
         value = content.get(key)
         if value in (None, "", []):
             continue
         blocks.append(_heading(title))
         blocks.extend(_value_blocks(value))
+    # 先给下一步（创作交接提示），论证段（爆点机制、复用评估）后置。
+    brief_lines = _compact_brief_lines(content.get("human_readable_brief") or {})
+    if brief_lines:
+        blocks.append(_heading("创作交接提示"))
+        blocks.extend(_value_blocks(brief_lines))
+    mechanism_value = content.get("viral_mechanism")
+    if mechanism_value not in (None, "", []):
+        blocks.append(_heading("爆点机制"))
+        blocks.extend(_value_blocks(mechanism_value))
     assessment_lines = _assessment_summary_lines(content.get("viral_reuse_assessment") or {})
     if assessment_lines:
         blocks.append(_heading("爆款复用价值摘要"))
@@ -682,10 +690,6 @@ def _deconstruct_doc_blocks(content: dict[str, Any], *, include_evidence_appendi
     if guardrail_blocks:
         blocks.append(_heading("复用护栏"))
         blocks.extend(guardrail_blocks)
-    brief_lines = _compact_brief_lines(content.get("human_readable_brief") or {})
-    if brief_lines:
-        blocks.append(_heading("创作交接提示"))
-        blocks.extend(_value_blocks(brief_lines))
     for title, key in [
         ("避重/改写建议", "avoid_plagiarism_notes"),
         ("后续复用检查清单", "production_checklist"),

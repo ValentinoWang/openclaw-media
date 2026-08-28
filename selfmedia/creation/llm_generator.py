@@ -116,8 +116,8 @@ def build_creation_prompt(
         "report_mode": CREATOR_BRIEF_REPORT_MODE,
     })
     platform_rules = {
-        "小红书": "标题不超过 20 个字符；tags 必须正好 10 个；图文必须输出 image_script 或 carousel；视频必须输出 storyboard。",
-        "抖音": "标题不能为空；tags 必须正好 5 个；视频必须输出 hook_3s、storyboard、voiceover、subtitles；图文必须输出 image_script 或 carousel。",
+        "小红书": "标题不超过 20 个字符；tags 给 5-10 个与内容强相关的标签，按检索价值挑选，宁少勿凑；图文必须输出 image_script 或 carousel；视频必须输出 storyboard。",
+        "抖音": "标题不能为空；tags 给 3-5 个与内容强相关的标签，按检索价值挑选，宁少勿凑；视频必须输出 hook_3s、storyboard、voiceover、subtitles；图文必须输出 image_script 或 carousel。",
     }
     return (
         "你是 OpenClaw media bot 的创作总编。现在由 OpenClaw/LLM 接管【创作】主链路，"
@@ -143,7 +143,9 @@ def build_creation_prompt(
         "16. script_options 最少 2 个、最多 5 个；如果没有方案超过 90 分，也必须输出至少 2 个评分最高且可执行的完整方案，并在风险中说明未达 90 分的原因。\n"
         "17. 每个 script_options 项必须包含 option_id、score、score_breakdown、title、angle、score_reason、selected_*_ids、activity_fit_reason、viral_reference_reason、inspiration_reference_reason、risk_level、risks_or_missing_info、tags、final_copy、image_script、carousel、hook_3s、storyboard、voiceover、subtitles、production_checklist、review_plan。score_reason 对所有方案都写评分理由；未达 90 的方案要写“未达 90 的原因 + 为什么仍可作为备选执行”。\n"
         "18. score_breakdown 固定 7 项：evidence_grounding(20)、platform_fit(15)、audience_pain(15)、creative_angle(15)、execution_completeness(15)、reference_integration(15)、risk_control(5)。score 必须等于这 7 项之和。\n"
-        "19. script_options 初稿后必须输出 editor_pass。editor_pass 是同一次 LLM 输出里的苛刻总编二改阶段，必须检查：是否像真实内容而不是方案、是否有具体画面/动作/台词、是否有平庸表达、是否证据链污染执行稿、推荐方案改了哪些句子。顶层 title/final_copy/hook_3s/storyboard/image_script/carousel/creator_report 必须镜像 editor_pass 后的推荐版本。\n"
+        "19. script_options 初稿后必须输出 editor_pass。editor_pass 是同一次 LLM 输出里的苛刻总编二改阶段，必须检查：是否像真实内容而不是方案、是否有具体画面/动作/台词、是否有平庸表达、是否证据链污染执行稿、推荐方案改了哪些句子。"
+        "editor_pass 还必须做去 AI 腔检查并把结论写进 blandness_risks：final_copy、voiceover、title、封面字、置顶评论里不得出现『首先/其次/最后』连用、『总之』『综上』『值得一提的是』『不难发现』『让我们一起』式套话、连续三个以上排比句、每句结尾都用感叹号、与账号无关的网络热词堆叠；口播每句尽量不超过 22 个字，允许口语连接词和自然的不完整句，写完要能直接读出口不别扭。"
+        "顶层 title/final_copy/hook_3s/storyboard/image_script/carousel/creator_report 必须镜像 editor_pass 后的推荐版本。\n"
         "20. recommended_option_id 必须来自 script_options 里的 option_id；顶层 title/final_copy 等字段应与 editor_pass 后的推荐 option 一致。\n"
         "21. 可以输出 rejected_option_summaries 说明未进入前 5 的方向为什么被舍弃；但前 2 个最可执行方向必须进入 script_options，即使 score <= 90。\n"
         "22. 必须输出 candidate_match_assessments，对被选中的爆款和创作灵感给出 0-100 匹配分、分项和 selection_reason。"
@@ -156,10 +158,15 @@ def build_creation_prompt(
         "23. 输出协议必须是 creator_brief：你不是检索结果报告生成器，而是自媒体创作总编。"
         "creator_report 是给真人创作者看的执行稿，必须先讲拍什么、怎么开头、怎么发；不得在 creator_report 的执行区输出原始 JSON、record_id、评分细节、数据库字段、长链接或重复活动说明。\n"
         "24. creator_report 必须分两层：第一层创作者执行版；第二层证据附录。执行版包含创作方案总览、这条内容怎么拍、这条内容怎么发、素材检查清单、风险控制。证据附录只能放在最后，且必须摘要化展示：只保留来源类型、record_id、采用原因、可迁移层、脚本落点和风险边界；不得粘贴候选原文、长段活动 brief、完整爆款拆解或原始检索结果。\n"
-        "25. creator_report 第一屏最终推荐只能有 1 个主方案，最多 2 个备选方向摘要；但 script_options 中 2-5 个完整脚本都必须保留，并由 writer 渲染在同一个创作文档的脚本方案区。文档顶部必须写出每个方案分数；不得拆成多个文档。活动最多保留 1 个父活动 + 推荐子方向；爆款最多 3 个且必须转译成“这条视频学什么”；灵感最多 3 个且必须说明落到哪个镜头/台词/道具。\n"
+        "25. creator_report 第一屏最终推荐只能有 1 个主方案，最多 2 个备选方向摘要；但 script_options 中 2-5 个完整脚本都必须保留，并由 writer 渲染在同一个创作文档的脚本方案区；不得拆成多个文档。"
+        "评分、评分理由、选择论证、来源匹配论证一律只出现在证据附录和机器字段：执行区、脚本方案正文不得出现分数、score_reason、命中理由或任何『为什么选它』的论证段。"
+        "活动最多保留 1 个父活动 + 推荐子方向；爆款最多 3 个且必须转译成“这条视频学什么”；灵感最多 3 个且必须说明落到哪个镜头/台词/道具。\n"
         "26. creator_report 不设置固定总字数预算，不以总长度作为裁剪依据。长度控制方式是结构完整性、去重复、去系统解释和执行密度控制：执行区必须清楚可扫读，脚本区必须完整可执行，证据附录必须摘要化后置；不得为了压缩篇幅牺牲完整 script_options、素材检查、风险控制或 evidence_appendix。\n"
         "27. 图文字段和视频字段条件化：content_type=图文 时 image_script 或 carousel 必须非空，hook_3s/storyboard/voiceover/subtitles 可为空字符串/空数组；content_type=视频 时 hook_3s、storyboard、voiceover、subtitles 必须非空，image_script/carousel 可为空数组。不要为了填满 irrelevant 字段硬编。\n"
-        "28. 同一句策略不得在多个章节重复出现；只输出合法 JSON object，不要 Markdown 代码块，不要解释。\n\n"
+        "28. 同一句策略不得在多个章节重复出现；只输出合法 JSON object，不要 Markdown 代码块，不要解释。\n"
+        "29. 复盘必须回流：recent_reviews 非空时，usable_material_brief.execution_brief 必须写明上一轮复盘教训对这一条的具体动作（沿用什么、这次改掉什么），并且 creator_report.risk_controls 至少有一条直接来自最近复盘；recent_reviews 为空时在 risks_or_missing_info 说明缺少复盘数据。\n"
+        "30. 账号声音优先：final_copy、voiceover、置顶评论必须贴合 account_profile 里可见的说话方式（称呼观众的习惯、常用句式、语气边界）；不得写成平台通用腔。account_profile 缺少语言风格信息时，在 risks_or_missing_info 写明需要补充账号语言样本，但仍按现有信息完成初稿。\n"
+        "31. 商单必须落到执行：selected_business_ids 非空时，usable_material_brief 的 usage_boundaries 必须写明品牌必提点、禁词/禁区和审核红线各自落到哪一句文案或哪个镜头；publishing_pack.first_hour_action 必须给出发布后 1 小时内的具体运营动作（例如回评引导句、置顶时机、投放判断信号），无商单时 first_hour_action 也要给自然流量版动作。\n\n"
         "输出 JSON 字段固定为：\n"
         "platform, content_type, title, tags, topic, content_core, topic_strategy, usable_material_brief, final_copy, inspiration, activity_constraint, "
         "viral_reference, inspiration_reference, business_reference, account_context, positioning_analysis, platform_strategy, "
@@ -178,7 +185,7 @@ def build_creation_prompt(
         "opening_3s 包含 visual_0_0_5, caption_or_voice_0_5_3, do_not_open_like_this。"
         "mainline 包含 conflict, evidence, emotional_payoff, audience_resonance。"
         "storyboard 用数组，每项包含 time, visual, subtitle, sound, shooting_note。"
-        "publishing_pack 包含 title_1, title_2, cover_text, body_copy, hashtags, pinned_comment, comment_prompt。"
+        "publishing_pack 包含 title_1, title_2, cover_text, body_copy, hashtags, pinned_comment, comment_prompt, first_hour_action。"
         "material_checklist 包含 must_have, better_to_have, can_rescue_without, must_not_fabricate。"
         "risk_controls 用数组，每项包含 condition, rewrite_or_action。"
         "evidence_appendix 包含 activities, viral_refs, inspiration_refs, business_info, scoring_and_record_ids。\n\n"
@@ -861,7 +868,11 @@ def call_creation_json(
         settings,
         max_retries=1,
         error_prefix="Codex Responses 创作输出 JSON 校验失败",
-        instructions="你是 Media 创作 JSON 引擎。只输出合法 JSON object，不要 Markdown，不要解释。",
+        instructions=(
+            "你是 OpenClaw Media 的中文自媒体创作大脑。输出协议是严格 JSON：只输出一个合法 JSON object，"
+            "不要 Markdown，不要解释。但 JSON 字段里的中文要像该账号的真人创作者写出来的话——"
+            "有具体画面和口语节奏，不用书面套话，不写机器口吻的总结句。"
+        ),
         validation_contract=validation_contract,
         validation_context=validation_context,
     )
