@@ -1444,8 +1444,8 @@ class CreationV1Tests(unittest.TestCase):
         self.assertEqual(fit["platform_mechanism_version"], "xiaohongshu_2026_05_v1")
         self.assertEqual(fit["generation"]["provider"], "codex_responses")
         self.assertEqual(fit["generation"]["profile"], "media_creation")
-        self.assertEqual(fit["generation"]["model"], "codex/gpt-5.6-sol")
-        self.assertEqual(fit["generation"]["thinking"], "medium")
+        self.assertEqual(fit["generation"]["model"], "codex/gpt-5.6-terra")
+        self.assertEqual(fit["generation"]["thinking"], "high")
         self.assertEqual(fit["platform_fit_meta"]["mechanism_source"], "llm")
 
     def test_platform_mechanism_fit_errors_when_llm_fails(self) -> None:
