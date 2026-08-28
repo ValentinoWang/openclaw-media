@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 from ..services.document_edit_contract import (
     DocumentEditContractViolation,
     DocumentEditIntentOperation,
