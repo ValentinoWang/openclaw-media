@@ -12,6 +12,7 @@ from common.llm_settings import load_profile_llm_settings
 
 from .platform_validator import validate_platform_draft
 from .request_parser import CreationRequest
+from selfmedia.style.context_loader import load_anti_patterns
 
 
 CREATOR_BRIEF_REPORT_MODE = {
@@ -200,6 +201,7 @@ def validate_llm_draft_payload(
     *,
     platform_fit: dict[str, Any] | None = None,
     candidate_ids: dict[str, set[str]] | None = None,
+    must_keep: Any = (),
 ) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("LLM JSON 顶层必须是 object")
@@ -272,6 +274,7 @@ def validate_llm_draft_payload(
             raise ValueError("视频稿必须输出 voiceover")
         if not draft["subtitles"]:
             raise ValueError("视频稿必须输出 subtitles")
+    _validate_recommended_anti_patterns(draft, must_keep=must_keep)
     validation = validate_platform_draft(request.platform, request.content_type, draft)
     if not validation.ok:
         messages = "; ".join(issue.message for issue in validation.issues)
@@ -281,6 +284,22 @@ def validate_llm_draft_payload(
     draft["creator_report"] = _validate_creator_report(draft.get("creator_report"), request)
     _validate_insight_card_reference_boundary(draft)
     return draft
+
+
+def _validate_recommended_anti_patterns(draft: dict[str, Any], *, must_keep: Any) -> None:
+    if isinstance(must_keep, str):
+        preserved_phrases = {must_keep.strip()} if must_keep.strip() else set()
+    elif isinstance(must_keep, (list, tuple, set, frozenset)):
+        preserved_phrases = {str(phrase).strip() for phrase in must_keep if str(phrase).strip()}
+    else:
+        preserved_phrases = set()
+    for field in ("title", "final_copy", "hook_3s", "voiceover"):
+        text = draft[field]
+        for phrase in load_anti_patterns():
+            if phrase in preserved_phrases:
+                continue
+            if phrase in text:
+                raise ValueError(f"推荐稿 {field} 包含通用模板表达：{phrase}")
 
 
 SCRIPT_OPTION_SCORE_LIMIT = 90

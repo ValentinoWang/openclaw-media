@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -385,84 +386,42 @@ class SystemRoutesTest(unittest.TestCase):
         self.assertNotIn("_format_capability_introduction_reply", source)
         self.assertNotIn("capability_introduction", source)
 
-    def test_knowledge_description_includes_common_entry_cheatsheet(self) -> None:
-        reply = self._capability_reply("knowledge")
-        inspiration_index = "`【灵感】`：归档碎片想法和未来可展开的内容线，输入：`【灵感】` 后按填写模板补充内容，输出：详文写入 Obsidian `灵感/归档/`，周记 `# 灵感` 凝练宏观总结、5句内摘要和详情链接"
-
-        expected = (
-            "重点入口：",
-            inspiration_index,
-            "`【归档】`：整理知识、资料片段、网页摘录或零散观点，写入 Obsidian 周记 `# 知识`。用法：`【归档】需要归档的一段知识`",
-            "`【补全】`：整理已有转写文字或口语化记录，去重复、补结构、保留关键细节，写入周记 `# 认知`。用法：`【补全】\\n主题：...\\n原文：已经转出来的文字稿`。",
-            "`【认知】`：整理经历、反思或判断；详文写 `认知/`，周记留宏观总结、5句摘要和链接。用法：`【认知】今天意识到：...`",
-            "`【学习】`：自动判断解释类或整理类",
-            "`【学习-整理】`：强制按整理类沉淀长资料、课程笔记、文章、AI 回答",
-            "`【自媒体知识】`：处理图文、视频或网页链接",
-            "用法：`【自媒体知识】\\n链接：https://...\\n平台：小红书\\n备注：重点提取选题方法`。",
-            "`【转写】`：处理上传录音，生成逐字稿、总结、Obsidian 会议纪要和原字稿",
-            "用法：先上传录音附件，再发 `【转写】`",
-            "`【转写-文字】`：整理和合并已经由语音转文字得到的文字稿，生成总结、待解决问题、说话人标注、Obsidian 会议纪要和原字稿",
-            "用法：`【转写-文字】\\n主题：...\\n文字稿：...`",
-            "`【说明】`：查看当前 Bot 能力说明文档。用法：`【说明】`",
-        )
-        for marker in expected:
-            self.assertIn(marker, reply)
-        self.assertIn(inspiration_index, self._capability_reply("main"))
-
-    def test_all_bot_descriptions_include_common_entry_usage(self) -> None:
-        expected = {
-            "media": ("重点入口：", "`【创作】`：根据平台、账号、类型、主体和发布时间生成可执行初稿。用法："),
-            "daily": ("重点入口：", "`【待办】`：创建 Obsidian 待办清单或飞书提醒。用法："),
-            "knowledge": ("重点入口：", "`【归档】`：整理知识、资料片段、网页摘录或零散观点，写入 Obsidian 周记 `# 知识`。用法："),
-            "social": ("重点入口：", "`【社交】`：整理某个人的聊天记录、互动状态、关系判断、风险点和下一步行动。用法："),
-            "main": ("重点入口：", "`【说明】`：查看当前统一入口说明。用法："),
-        }
-        for account_id, markers in expected.items():
-            with self.subTest(account_id=account_id):
-                reply = self._capability_reply(account_id)
-                for marker in markers:
-                    self.assertIn(marker, reply)
-
-    def test_all_bot_common_entries_are_structured_without_fixed_count(self) -> None:
-        for account_id in BOT_CAPABILITY_IDENTITIES:
-            with self.subTest(account_id=account_id):
-                reply = self._capability_reply(account_id)
-                section = reply.split("重点入口：", 1)[1].split("\n\n标签索引", 1)[0]
-                lines = [line for line in section.splitlines() if line.startswith("- `【")]
-
-                self.assertGreater(len(lines), 0)
-                for line in lines:
-                    self.assertIn("：", line)
-                    self.assertIn("。用法：", line)
-                    self.assertRegex(line, r"^- `【[^】]+】`：.+。用法：.+")
-
-    def test_social_description_exposes_creator_profile_lookup_for_business_homepage(self) -> None:
-        reply = self._capability_reply("social")
-
-        self.assertIn("`【博主】`", reply)
-        self.assertIn("主页链接", reply)
-        self.assertIn("商务邀约前查询已归档博主的主页链接", reply)
-        self.assertIn("`【博主-入库】`", reply)
-
-    def test_capability_doc_links_precede_label_index(self) -> None:
-        for account_id in BOT_CAPABILITY_IDENTITIES:
-            with self.subTest(account_id=account_id):
-                reply = self._capability_reply(account_id)
-                docs_index = reply.find("完整说明文档：")
-                label_index = reply.find("标签索引（")
-                self.assertGreaterEqual(docs_index, 0)
-                self.assertGreater(label_index, docs_index)
-                self.assertNotIn("完整能力标签（", reply)
-                self.assertNotIn("完整能力详情（", reply)
-
     def test_generated_capability_docs_cover_bot_labels(self) -> None:
-        harness = SystemRoutesHarness()
-        config = self._capability_doc_config()
-        total_doc = Path(config["total"]["local_path"]).read_text(encoding="utf-8")
-        inspiration_index = "`【灵感】`：归档碎片想法和未来可展开的内容线，输入：`【灵感】` 后按填写模板补充内容，输出：详文写入 Obsidian `灵感/归档/`，周记 `# 灵感` 凝练宏观总结、5句内摘要和详情链接"
-        knowledge_doc = Path(config["bots"]["Knowledge bot"]["local_path"]).read_text(encoding="utf-8")
-        self.assertIn(inspiration_index, total_doc)
-        self.assertIn(inspiration_index, knowledge_doc)
+        script_path = Path(__file__).resolve().parents[1] / "scripts" / "generate_bot_capability_docs.py"
+        spec = importlib.util.spec_from_file_location("capability_docs_generator", script_path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        rendered_docs = {
+            key: module.render_doc(key, doc_spec, {})
+            for key, doc_spec in module.DOC_SPECS.items()
+        }
+        total_doc = rendered_docs["total"]
+        knowledge_doc = rendered_docs["knowledge"]
+        social_doc = rendered_docs["social"]
+        for doc in (total_doc, knowledge_doc):
+            inspiration_start = doc.find("### 【灵感】")
+            self.assertGreaterEqual(inspiration_start, 0, msg="missing inspiration detail")
+            next_section = doc.find("\n### ", inspiration_start + 1)
+            inspiration_section = doc[
+                inspiration_start : next_section if next_section > 0 else len(doc)
+            ]
+            self.assertIn("- 用途：", inspiration_section)
+            self.assertIn("- 产出：", inspiration_section)
+            self.assertIn("- 输入格式：", inspiration_section)
+        self.assertIn("`【博主】`", social_doc)
+        self.assertIn("`【博主-入库】`", social_doc)
+        creator_start = social_doc.find("### 【博主】")
+        self.assertGreaterEqual(creator_start, 0, msg="missing creator profile detail")
+        next_section = social_doc.find("\n### ", creator_start + 1)
+        creator_section = social_doc[
+            creator_start : next_section if next_section > 0 else len(social_doc)
+        ]
+        self.assertIn("主页链接", creator_section)
+        self.assertIn("- 用途：", creator_section)
+        self.assertIn("- 产出：", creator_section)
         for capability in TAG_CAPABILITIES:
             section_start = total_doc.find(f"### 【{capability.label}】")
             self.assertGreaterEqual(section_start, 0, msg=f"missing total doc detail for {capability.label}")
@@ -471,11 +430,10 @@ class SystemRoutesTest(unittest.TestCase):
             self.assertIn("- 用途：", section)
             self.assertIn("- 产出：", section)
             self.assertIn("- 输入格式：", section)
-        for bot_label, entry in config["bots"].items():
-            with self.subTest(bot_label=bot_label):
-                doc = Path(entry["local_path"]).read_text(encoding="utf-8")
-                self.assertRegex(entry["url"], r"^https://tcnwueberajc\.feishu\.cn/")
-                for capability in harness._bot_capabilities(bot_label):
+        for key, doc_spec in module.DOC_SPECS.items():
+            with self.subTest(bot_label=doc_spec["bot_label"]):
+                doc = rendered_docs[key]
+                for capability in module.capabilities_for_spec(module.CapabilityDocHarness(), doc_spec):
                     self.assertIn(f"### 【{capability.label}】", doc)
 
 

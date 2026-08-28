@@ -35,6 +35,26 @@ from .request_parser import CreationRequest
 FEISHU_DOC_WRITE_SLEEP_SEC = sleep_seconds_for_docx_write()
 NATIVE_TABLE_KIND = "_openclaw_feishu_table"
 CREATION_TASK_POOL_PARENT_NODE_TOKEN = "Tm69wEqFpi76d9k53KEcqK4Rnkh"
+SHOOTING_PRIORITY_LABELS = {
+    "P0": "必拍",
+    "P1": "重要",
+    "P2": "可选",
+}
+SHOOTING_PLAN_FIELD_LABELS = {
+    "shooting_goal": "拍摄目标",
+    "route_map": "路线图",
+    "must_shot_list": "必拍镜头清单",
+    "branch_plans": "分支方案",
+    "storyboard": "分镜脚本",
+    "onsite_checklist": "现场检查清单",
+    "publishing_pack": "发布包",
+    "evidence_appendix": "证据附录",
+}
+EVIDENCE_SOURCE_STATUS_LABELS = {
+    "confirmed": "已核验",
+    "manual_description_only": "仅凭文字描述，未看过原片",
+    "pending_manual": "待人工核实",
+}
 
 
 LEGACY_CREATION_RECORD_FIELD_SPECS = {
@@ -399,16 +419,16 @@ def _shooting_execution_doc_blocks(
         _heading("必拍镜头清单"),
         _table_block(
             ["优先级", "地点", "人物", "动作", "景别", "参考", "用途", "补拍判断"],
-            draft.get("must_shot_list"),
+            _display_shooting_priorities(draft.get("must_shot_list")),
             ["priority", "location", "people", "action", "shot_size", "reference", "usage", "reshoot_check"],
         ),
         _heading("分支方案"),
         _table_block(
             ["触发条件", "执行方案", "优先级"],
-            draft.get("branch_plans"),
+            _display_shooting_priorities(draft.get("branch_plans")),
             ["condition", "plan", "priority"],
         ),
-        _heading("现场 checklist"),
+        _heading("现场检查清单"),
         _paragraph("\n".join(f"- {_text(item)}" for item in _as_list(draft.get("onsite_checklist")) if _text(item)) or "待补充"),
         _heading("抽象化拆解口径"),
         _table_block(
@@ -448,12 +468,14 @@ def _shooting_execution_doc_blocks(
             "\n".join(
                 [
                     f"校验状态：{'通过' if validation.get('ok') else '待人工补充'}",
-                    f"缺失字段：{_inline_list(validation.get('missing'))}",
-                    f"空列表字段：{_inline_list(validation.get('empty_lists'))}",
+                    f"缺失字段：{_shooting_plan_field_labels(validation.get('missing'))}",
+                    f"空列表字段：{_shooting_plan_field_labels(validation.get('empty_lists'))}",
                     f"上下文加载：{_loaded_context_line((media_context or {}).get('loaded'))}",
                 ]
             )
         ),
+        _heading("证据附录"),
+        *_shooting_evidence_appendix_blocks(draft.get("evidence_appendix")),
     ]
 
 
@@ -470,7 +492,10 @@ def _loaded_context_line(loaded: Any) -> str:
     }
     parts: list[str] = []
     for key, value in loaded.items():
-        label = labels.get(str(key), str(key))
+        label = labels.get(str(key))
+        if label is None:
+            parts.append(f"其他上下文{'已加载' if bool(value) else '未加载'}")
+            continue
         if isinstance(value, bool):
             parts.append(f"{label}{'已加载' if value else '未加载'}")
         elif isinstance(value, int):
@@ -491,13 +516,24 @@ def _shooting_evidence_appendix_blocks(items: Any) -> list[dict[str, Any]]:
             continue
         lines = [
             f"{index}. 来源：{_text(item.get('source'))}",
-            f"来源状态：{_text(item.get('source_status'))}",
+            f"来源状态：{_evidence_source_status_label(item.get('source_status'))}",
             f"可用证据：{_text(item.get('available_evidence'))}",
             f"采用理由：{_text(item.get('usage_reason'))}",
             f"风险：{_text(item.get('risk'))}",
         ]
         blocks.append(_paragraph("\n".join(line for line in lines if not line.endswith("："))))
     return blocks
+
+
+def _shooting_plan_field_labels(fields: Any) -> str:
+    return _inline_list(
+        [SHOOTING_PLAN_FIELD_LABELS.get(_text(field), "其他项目") for field in _as_list(fields)]
+    )
+
+
+def _evidence_source_status_label(value: Any) -> str:
+    raw_status = _text(value)
+    return EVIDENCE_SOURCE_STATUS_LABELS.get(raw_status, raw_status)
 
 
 def _creator_overview_blocks(
@@ -990,6 +1026,19 @@ def _table_block(headers: list[str], rows: Any, keys: list[str]) -> dict[str, An
     if len(table_rows) == 1:
         table_rows.append(["待补充", *["" for _ in headers[1:]]])
     return {"_openclaw_kind": NATIVE_TABLE_KIND, "rows": table_rows}
+
+
+def _display_shooting_priorities(rows: Any) -> list[Any]:
+    display_rows: list[Any] = []
+    for row in _as_list(rows):
+        if not isinstance(row, dict):
+            display_rows.append(row)
+            continue
+        display_row = dict(row)
+        raw_priority = _text(row.get("priority"))
+        display_row["priority"] = SHOOTING_PRIORITY_LABELS.get(raw_priority, raw_priority)
+        display_rows.append(display_row)
+    return display_rows
 
 
 def _as_list(value: Any) -> list[Any]:
