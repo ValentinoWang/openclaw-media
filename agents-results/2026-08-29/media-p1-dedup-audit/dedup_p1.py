@@ -36,6 +36,13 @@ CLOSED = {
     "CD-06": "e48fccf", "CD-07": "e48fccf", "CD-08": "e48fccf",
 }
 
+# Source and focused-test evidence exists, but the acceptance layer still needs
+# production/runtime proof. These remain open and must not count as closed.
+PARTIAL = {
+    "BIZ-05": "ec8c88c",
+    "CD-13": "ec8c88c",
+}
+
 def parse_items(text: str):
     out = {}
     for block in re.split(r"(?=^#### )", text, flags=re.M):
@@ -64,13 +71,17 @@ def main():
     for v in CLOSED.values():
         if v not in hist_short:
             raise SystemExit(f"evidence commit {v} is absent from current main")
+    for v in PARTIAL.values():
+        if v not in hist_short:
+            raise SystemExit(f"partial evidence commit {v} is absent from current main")
     records = []
     for key, ids in groups.items():
         present = [items[i] for i in ids if i in items]
         if not present: continue
-        statuses = ["已修复" if x["id"] in CLOSED else x["baseline"] for x in present]
-        status = "已修复" if all(x == "已修复" for x in statuses) else ("部分修复" if any(x == "已修复" for x in statuses) or "部分修复" in statuses else "未修复")
-        records.append({"key": key, "ids": ids, "status": status, "evidence": sorted({CLOSED[x["id"]] for x in present if x["id"] in CLOSED})})
+        statuses = ["已修复" if x["id"] in CLOSED else ("部分修复" if x["id"] in PARTIAL else x["baseline"]) for x in present]
+        status = "已修复" if all(x == "已修复" for x in statuses) else ("部分修复" if any(x in {"已修复", "部分修复"} for x in statuses) else "未修复")
+        evidence = sorted({(CLOSED | PARTIAL)[x["id"]] for x in present if x["id"] in (CLOSED | PARTIAL)})
+        records.append({"key": key, "ids": ids, "status": status, "evidence": evidence})
     result = {"source": str(AUDIT), "followup": str(FOLLOWUP), "progress": str(PROGRESS), "main": git_sha(), "raw_p1": len(items), "unique_dedup_p1": len(records), "groups": records}
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2)); return

@@ -2,7 +2,7 @@
   "source": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260827/pipeline-full-audit.md",
   "followup": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260828/audit-followup-review.md",
   "progress": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/implementation-progress.md",
-  "main": "83a25e2c007823da5db479bb8ac9c3b265b0c2cc",
+  "main": "ec8c88c842c05cac40333441707a47e3f4e64507",
   "raw_p1": 163,
   "unique_dedup_p1": 155,
   "groups": [
@@ -138,8 +138,10 @@
       "ids": [
         "CD-13"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "部分修复",
+      "evidence": [
+        "ec8c88c"
+      ]
     },
     {
       "key": "singleton:CD-15",
@@ -626,8 +628,10 @@
       "ids": [
         "BIZ-05"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "部分修复",
+      "evidence": [
+        "ec8c88c"
+      ]
     },
     {
       "key": "singleton:BIZ-07",
