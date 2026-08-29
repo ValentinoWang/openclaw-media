@@ -56,6 +56,7 @@ CLOSED = {
     "CPO-K01": "9683c38", "CPO-K02": "9683c38", "CPO-K03": "510229d",
     "CPO-N01": "124db7d", "CPO-N03": "61443a6",
     "CPO-N07": "089ae7b", "CPO-N08": "089ae7b",
+    "CPO-N13": "7226e02",
     "CR-02": "fc37d2e",
     "CR-03": "9660f04",
     "CR-04": "9660f04",
@@ -70,6 +71,7 @@ CLOSED = {
     "BIZ-11": "7209710",
     "CPC-12": "9520b5e",
     "CC-04": "9520b5e",
+    "CPC-13": "c024d4f",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
