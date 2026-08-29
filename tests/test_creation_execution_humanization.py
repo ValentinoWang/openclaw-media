@@ -151,7 +151,7 @@ def test_creator_appendices_use_human_labels_and_keep_evidence() -> None:
         status="已验证",
         detail_json={
             "insight_card_path": "人性洞察库/被理解感.md",
-            "insight_card_status": "已验证",
+            "insight_card_status": "operator_verified",
             "evidence_boundary": "public_content_only",
             "risk_boundary": "避免焦虑营销。",
         },
@@ -185,11 +185,13 @@ def test_creator_appendices_use_human_labels_and_keep_evidence() -> None:
     assert "引用类型：洞察卡（仅公开内容）" in rendered
     assert "证据边界：仅公开内容" in rendered
     assert "卡片关联：被理解感.md（内部证据已保留）" in rendered
+    assert "卡片状态：已人工核验" in rendered
     assert "可用内容：真实体验；落地位置：开场镜头" in rendered
     assert "发布后首小时动作（需由创作者手动完成）：发布后手动回复评论" in rendered
     assert "record_id" not in rendered
     assert "insight-card reference" not in rendered
     assert "public_content_only" not in rendered
+    assert "operator_verified" not in rendered
     assert "insight-001" not in rendered
     assert "option-1" not in rendered
     assert "人性洞察库/被理解感.md" not in rendered

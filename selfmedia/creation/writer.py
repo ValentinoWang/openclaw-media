@@ -58,6 +58,13 @@ EVIDENCE_SOURCE_STATUS_LABELS = {
     "仅凭文字描述，未看过原片": "仅凭文字描述，未看过原片",
     "待人工核实": "待人工核实",
 }
+INSIGHT_CARD_STATUS_LABELS = {
+    "pending_operator_verification": "待人工核实",
+    "operator_verified": "已人工核验",
+    "rejected": "未通过核验",
+    "pending_manual": "待人工核实",
+    "已验证": "已验证",
+}
 
 
 def create_creation_doc(
@@ -844,7 +851,7 @@ def _insight_card_reference_lines(record: Any) -> list[str]:
     return [
         "  引用类型：洞察卡（仅公开内容）",
         f"  卡片关联：{card_name}（内部证据已保留）" if card_name else "  卡片关联：已保留在内部证据中",
-        f"  卡片状态：{_text(detail.get('insight_card_status') or getattr(record, 'status', ''))}",
+        f"  卡片状态：{_insight_card_status_label(detail.get('insight_card_status') or getattr(record, 'status', ''))}",
         f"  证据边界：{_evidence_boundary_label(detail.get('evidence_boundary'))}",
         f"  风险边界：{_text(detail.get('risk_boundary') or '未标注')}",
     ]
@@ -857,6 +864,11 @@ def _insight_card_name(value: Any) -> str:
 
 def _evidence_boundary_label(value: Any) -> str:
     return {"public_content_only": "仅公开内容"}.get(_text(value), "待人工核实")
+
+
+def _insight_card_status_label(value: Any) -> str:
+    raw = _text(value)
+    return INSIGHT_CARD_STATUS_LABELS.get(raw, "待人工核实" if raw else "状态待确认")
 
 
 def _business_appendix(items: list[RankedRecord]) -> str:
