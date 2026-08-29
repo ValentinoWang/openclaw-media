@@ -2,7 +2,7 @@
   "source": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260827/pipeline-full-audit.md",
   "followup": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260828/audit-followup-review.md",
   "progress": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/implementation-progress.md",
-  "main": "d205788f343c7303e2a6971340732869ae07291d",
+  "main": "ed2c9b2d94887cf39c7321272da77b93aceb730d",
   "raw_p1": 163,
   "unique_dedup_p1": 155,
   "groups": [
@@ -34,8 +34,10 @@
         "CPC-11",
         "BIZ-11"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "7209710"
+      ]
     },
     {
       "key": "xiaohongshu_carousel_contract",
@@ -43,8 +45,10 @@
         "CPC-12",
         "CC-04"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "9520b5e"
+      ]
     },
     {
       "key": "business_stale_month_and_price",
@@ -432,8 +436,10 @@
       "ids": [
         "CPC-13"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "c024d4f"
+      ]
     },
     {
       "key": "singleton:CPC-15",
@@ -626,8 +632,10 @@
       "ids": [
         "CPO-N13"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "7226e02"
+      ]
     },
     {
       "key": "singleton:CPO-N16",

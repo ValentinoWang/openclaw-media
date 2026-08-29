@@ -40,6 +40,16 @@ def _analysis_with_stringified_evidence():
 def test_review_rendering_humanizes_nested_json_and_puts_appendix_last():
     analysis = _analysis_with_stringified_evidence()
     report = render_data_review_report({"reviewed_at": "2026-08-29", "analysis": analysis})
+    document = _block_text(
+        data_review_doc_blocks(
+            "数据复盘",
+            DataReviewRequest(platform="抖音", account="小王"),
+            analysis,
+            [],
+            "2026-08-29",
+            "",
+        )
+    )
     blocks = data_review_doc_blocks(
         "数据复盘",
         DataReviewRequest(platform="抖音", account="小王"),
@@ -79,3 +89,24 @@ def test_review_renderer_keeps_internal_fields_out_of_nested_stringified_json():
     assert "private-1" not in report
     assert "/private/review.png" not in report
     assert "峰值：首小时" in report
+
+
+def test_review_renderer_humanizes_object_arrays_in_guidance_fields():
+    analysis = _analysis_with_stringified_evidence()
+    analysis.update(
+        {
+            "problems": [{"维度": "选题", "问题": "承诺不够具体"}],
+            "content_guidance": [{"维度": "封面", "建议": "先展示结果"}],
+            "publishing_guidance": [{"渠道": "抖音", "建议": "晚八点发布"}],
+            "next_actions": [{"动作": "重做封面", "期限": "今天"}],
+            "data_quality_notes": [{"来源": "截图", "说明": "字段可读"}],
+        }
+    )
+
+    report = render_data_review_report({"reviewed_at": "2026-08-29", "analysis": analysis})
+
+    assert "维度：封面；建议：先展示结果" in report
+    assert "渠道：抖音；建议：晚八点发布" in report
+    assert "动作：重做封面；期限：今天" in report
+    assert "{'维度':" not in report
+    assert "{'动作':" not in report
