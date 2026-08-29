@@ -117,5 +117,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - 生产证据核对：对 SSH 别名 `103` 与 `106` 执行只读服务/timer 检查均返回 `No route to host`，未取得生产轮询回执。BIZ-05/CD-13 继续保持 `部分修复`，待远端网络恢复后以实际 timer 状态、日志和租户隔离产物完成验收。
 
 - 远端实时复核（2026-08-29）：`106.52.146.37` 主机的 `openclaw-stage2.service` 正常运行，`openclaw-media-watchdog.timer` 持续执行；但用户级 timer 列表没有 `selfmedia-account-daily-poll.timer`，也没有发现日报轮询运行日志。当前仓内 `install-cron` 会在注册前强制要求租户编号和 `FEISHU_ACCOUNT_REPORT_URL`，因此不能在缺少这两个生产配置时盲目安装。`BIZ-05`、`CD-13` 的剩余性质确认为“生产安装与运行证据缺口”，不是源码缺失。
+- 同一远端的 `/home/ubuntu/selfmedia-tools` 当前处于 `codex/media-semantic-20260819`，HEAD 为 `e0dfbf0`，且工作树存在未跟踪与备份文件；它不是当前 integration `main`，不能直接作为本次 P1 主线发布候选。远端安装前必须先完成独立的干净发布目录、明确租户编号与飞书日报地址，再安装并回读 timer、服务日志和租户隔离产物。
 
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。尚未复验的 114 条不得自动记为已覆盖，部分覆盖条目也不得计入关闭数。
