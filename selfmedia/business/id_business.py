@@ -2388,7 +2388,39 @@ def coerce_for_feishu(fields: dict[str, Any], field_types: dict[str, Any]) -> di
 
 
 def merge_standard_business_fields(fields: dict[str, Any]) -> dict[str, Any]:
-    normalized = normalize_standard_fields(fields)
+    # Feishu's standard fields are user-facing. Keep machine states in the
+    # local/LLM details, but never persist their English enum values here.
+    status_labels = {
+        "pending": "待确认",
+        "pending_manual": "待人工确认",
+        "llm_pending_manual": "待人工确认",
+        "llm_parsed": "已解析",
+        "collected": "已收集",
+        "done": "已完成",
+        "sent": "已通知",
+        "dry_run": "试运行未发送",
+        "notify_skipped": "未投递",
+        "notify_failed": "投递失败，待重试",
+        "captured": "已获取",
+        "captured_cached": "已获取（缓存）",
+        "capture_failed": "获取失败，待复核",
+        "capture_auth_required": "登录状态失效，待重新获取",
+        "capture_access_restricted": "访问受限，待复核",
+        "empty_screenshot": "截图为空，待复核",
+        "playwright_unavailable": "截图工具不可用，待复核",
+        "manual_screenshot": "已提供人工截图",
+        "missing_url": "缺少主页链接",
+    }
+    localized_fields = dict(fields)
+    for field_name in ("最近状态", "反问博主状态", "Brief收集状态", "截图状态"):
+        value = localized_fields.get(field_name)
+        if isinstance(value, str) and value.strip() in status_labels:
+            localized_fields[field_name] = status_labels[value.strip()]
+    normalized = normalize_standard_fields(localized_fields)
+    for field_name in ("监控状态", "反问状态", "Brief收集状态", "截图状态"):
+        value = normalized.get(field_name)
+        if isinstance(value, str) and value.strip() in status_labels:
+            normalized[field_name] = status_labels[value.strip()]
     return select_fields_for_write(fields, normalized_fields=normalized)
 
 

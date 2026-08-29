@@ -19,6 +19,22 @@ SPEC.loader.exec_module(MODULE)
 
 
 class IdBusinessLlmExtractionTest(unittest.TestCase):
+    def test_standard_business_write_localizes_machine_statuses(self) -> None:
+        fields = {
+            "最近状态": "llm_pending_manual",
+            "反问博主状态": "pending",
+            "Brief收集状态": "collected",
+            "截图状态": "capture_auth_required",
+            "作者ID": "author-1",
+        }
+
+        selected = MODULE.merge_standard_business_fields(fields)
+
+        self.assertEqual(selected["监控状态"], "待人工确认")
+        self.assertEqual(selected["反问状态"], "待确认")
+        self.assertEqual(selected["Brief收集状态"], "已收集")
+        self.assertNotIn("llm_pending_manual", selected.values())
+
     def _forbid_legacy_field_rules(self):
         return [
             patch.object(MODULE, "extract_labeled_fields", side_effect=AssertionError("must not use labeled-field parser")),
