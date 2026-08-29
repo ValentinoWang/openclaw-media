@@ -9,6 +9,7 @@ import pytest
 
 from openclaw_app.services.media_business.foundation import TenantContext
 from openclaw_app.services.media_business.tracks import (
+    H00AccountMonitorAdapter,
     TrackForbidden,
     TrackInternalError,
     TrackInvalidRequest,
@@ -332,6 +333,32 @@ def test_monitor_mutation_rejects_invalid_urls_before_database_access() -> None:
     assert connection.calls == []
 
 
+def test_monitor_adapter_is_injected_for_real_status_and_mutations() -> None:
+    class Adapter:
+        def get(self, context: TenantContext, public_account_id: str) -> dict[str, Any]:
+            return {"status": "available", "publicAccountId": public_account_id}
+
+        def update(self, context: TenantContext, public_account_id: str, recent_post_urls: list[str], enabled: bool) -> dict[str, Any]:
+            return {"status": "available", "enabled": enabled, "recentPostUrls": recent_post_urls}
+
+        def poll(self, context: TenantContext, public_account_id: str) -> dict[str, Any]:
+            return {"status": "available", "publicAccountId": public_account_id}
+
+    connection = FakeConnection()
+    @contextmanager
+    def factory() -> Any:
+        yield connection
+
+    configured = TracksService(
+        factory,
+        cursor_secret=b"b02-test-cursor-secret",
+        monitor_adapter=Adapter(),
+    )
+    assert configured.get_account_monitor(context(), ACCOUNT_ID)["status"] == "available"
+    assert configured.update_account_monitor(context(), ACCOUNT_ID, ["https://example.test/post/1"], True, "key")["enabled"] is True
+    assert configured.poll_account_monitor(context(), ACCOUNT_ID, "poll-key")["status"] == "available"
+
+
 def test_monitor_mutation_rejects_profile_url_and_platform_mismatch() -> None:
     connection = FakeConnection()
     with pytest.raises(TrackInvalidRequest, match="账号主页"):
@@ -342,6 +369,48 @@ def test_monitor_mutation_rejects_profile_url_and_platform_mismatch() -> None:
         service(connection).update_account_monitor(
             context(), ACCOUNT_ID, ["https://www.douyin.com/video/1234567890123456789"], True, "platform-key"
         )
+
+
+def test_h00_adapter_translates_cli_failures_to_monitor_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter = H00AccountMonitorAdapter("https://example.test/base/table")
+
+    class Module:
+        def require_valid_schema(self, monitor_url: str) -> dict[str, Any]:
+            raise SystemExit("missing public_account_id")
+
+    monkeypatch.setattr(adapter, "_module", lambda: Module())
+    with pytest.raises(TrackMonitorUnavailable, match="schema"):
+        adapter.get(context(), ACCOUNT_ID)
+
+
+def test_h00_adapter_rejects_write_that_does_not_read_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter = H00AccountMonitorAdapter("https://example.test/base/table")
+    record = {"record_id": "rec_123", "fields": {"public_account_id": ACCOUNT_ID}}
+
+    class Module:
+        def require_valid_schema(self, monitor_url: str) -> dict[str, Any]:
+            return {"ok": True}
+
+        def list_account_monitor_records(self, monitor_url: str, *, view_id: str) -> list[dict[str, Any]]:
+            return [record]
+
+        def validate_account_monitor_records(self, records: list[dict[str, Any]], **kwargs: Any) -> None:
+            return None
+
+        def account_from_record(self, value: dict[str, Any]) -> dict[str, Any]:
+            return {
+                "account_name": "我的账号",
+                "platform": "xiaohongshu",
+                "enabled": False,
+                "urls": [],
+            }
+
+        def update_account_monitor_record(self, monitor_url: str, record_id: str, fields: dict[str, Any]) -> None:
+            return None
+
+    monkeypatch.setattr(adapter, "_module", lambda: Module())
+    with pytest.raises(TrackMonitorUnavailable, match="读回不一致"):
+        adapter.update(context(), ACCOUNT_ID, ["https://example.test/note/1"], True)
 
 
 def test_owned_account_avatar_and_platform_identifier_are_nullable_but_explicit() -> None:

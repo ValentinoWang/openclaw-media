@@ -6855,6 +6855,12 @@ components:
           enum:
           - available
           - unavailable
+        publicAccountId:
+          type: string
+        accountName:
+          type: string
+        platform:
+          type: string
         checkedAt:
           type:
           - string
@@ -6864,12 +6870,49 @@ components:
           type:
           - string
           - 'null'
+        enabled:
+          type: boolean
+        recentPostUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+        recentStatus:
+          type:
+          - string
+          - 'null'
+        recentPostCount:
+          type:
+          - integer
+          - 'null'
+        recentTotalInteractions:
+          type:
+          - integer
+          - 'null'
+        recentError:
+          type:
+          - string
+          - 'null'
+        recentReportSummary:
+          type:
+          - string
+          - 'null'
       required:
       - schemaVersion
       - revision
       - status
+      - publicAccountId
+      - accountName
+      - platform
       - checkedAt
       - detail
+      - enabled
+      - recentPostUrls
+      - recentStatus
+      - recentPostCount
+      - recentTotalInteractions
+      - recentError
+      - recentReportSummary
     AccountMonitorUpdateRequest:
       type: object
       additionalProperties: false

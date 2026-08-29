@@ -62,7 +62,7 @@ from .services.media_business.source_asset_projection import (
     SourceAssetProjection,
     project_growth_source_asset,
 )
-from .services.media_business.tracks import TracksService
+from .services.media_business.tracks import H00AccountMonitorAdapter, TracksService
 from .services.media_business.usage_billing import UsageBillingService
 
 
@@ -368,9 +368,23 @@ def main() -> int:
         feishu_document_config.get("document_bindings"),
         resources=feishu_document_config.get("document_resources"),
     )
+    monitor_url = os.getenv("FEISHU_ACCOUNT_MONITOR_URL", "").strip()
+    monitor_adapter = None
+    if monitor_url:
+        def monitor_binding_validator(tenant_id: str, public_account_id: str) -> bool:
+            with account_database.connect() as connection:
+                return connection.execute(
+                    "SELECT 1 FROM media_product.owned_media_accounts WHERE tenant_id = %s AND public_id = %s",
+                    (tenant_id, public_account_id),
+                ).fetchone() is not None
+        monitor_adapter = H00AccountMonitorAdapter(
+            monitor_url,
+            view_id=os.getenv("FEISHU_ACCOUNT_MONITOR_VIEW_ID", "").strip(),
+            binding_validator=monitor_binding_validator,
+        )
     media_business_services = {
         "overview": OverviewService(account_database.connect, task_reader=media_web_tasks, cursor_secret=secret),
-        "tracks": TracksService(account_database.connect, cursor_secret=secret),
+        "tracks": TracksService(account_database.connect, cursor_secret=secret, monitor_adapter=monitor_adapter),
         "assets": assets_service,
         "decisions": DecisionsService(account_database.connect, cursor_secret=secret, public_id_secret=secret),
         "runs": RunsService(account_database.connect, cursor_secret=secret),

@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import json
 import math
+import os
 import re
 from uuid import uuid4
 from contextlib import AbstractContextManager
@@ -70,6 +71,115 @@ class TrackMonitorUnavailable(TracksError):
 
     def __init__(self, message: str = "account monitor is unavailable") -> None:
         super().__init__("monitor_unavailable", message, status=503)
+
+
+class AccountMonitorAdapter(Protocol):
+    def get(self, context: TenantContext, public_account_id: str) -> dict[str, Any]: ...
+    def update(self, context: TenantContext, public_account_id: str, recent_post_urls: list[str], enabled: bool) -> dict[str, Any]: ...
+    def poll(self, context: TenantContext, public_account_id: str) -> dict[str, Any]: ...
+
+
+class H00AccountMonitorAdapter:
+    """Thin boundary around the existing H00 Feishu and daily-poll helpers."""
+
+    def __init__(self, monitor_url: str, *, view_id: str = "", binding_validator: Callable[[str, str], bool] | None = None) -> None:
+        self._monitor_url = monitor_url.strip()
+        self._view_id = view_id
+        self._binding_validator = binding_validator
+
+    def get(self, context: TenantContext, public_account_id: str) -> dict[str, Any]:
+        module = self._module()
+        records = self._validated_records(module, context)
+        record = self._record(records, public_account_id)
+        account = module.account_from_record(record)
+        fields = record.get("fields") or {}
+        return {
+            "schemaVersion": SCHEMA_VERSION,
+            "revision": 0,
+            "status": "available",
+            "publicAccountId": public_account_id,
+            "accountName": account["account_name"],
+            "platform": account["platform"],
+            "checkedAt": fields.get("最近运行时间"),
+            "detail": fields.get("最近错误") or fields.get("最近日报摘要"),
+            "enabled": account["enabled"],
+            "recentPostUrls": account["urls"],
+            "recentStatus": fields.get("最近状态"),
+            "recentPostCount": fields.get("最近作品数"),
+            "recentTotalInteractions": fields.get("最近总互动"),
+            "recentError": fields.get("最近错误"),
+            "recentReportSummary": fields.get("最近日报摘要"),
+        }
+
+    def update(self, context: TenantContext, public_account_id: str, recent_post_urls: list[str], enabled: bool) -> dict[str, Any]:
+        module = self._module()
+        records = self._validated_records(module, context)
+        record = self._record(records, public_account_id)
+        module.update_account_monitor_record(
+            self._monitor_url,
+            str(record.get("record_id") or ""),
+            {"近期作品链接": recent_post_urls, "启用": enabled},
+        )
+        response = self.get(context, public_account_id)
+        expected_urls = [value.strip() for value in recent_post_urls]
+        actual_urls = [str(value).strip() for value in response["recentPostUrls"]]
+        if response["enabled"] is not enabled or actual_urls != expected_urls:
+            raise TrackMonitorUnavailable("账号监控表写入后读回不一致，已拒绝报告成功")
+        return response
+
+    def poll(self, context: TenantContext, public_account_id: str) -> dict[str, Any]:
+        module = self._module()
+        records = self._validated_records(module, context)
+        record = self._record(records, public_account_id)
+        account = module.account_from_record(record)
+        if not account["enabled"]:
+            return self.get(context, public_account_id)
+        if not account["urls"]:
+            raise TrackInvalidRequest("账号监控表需要填写近期作品链接", field="recentPostUrls")
+        try:
+            rows = module.refresh_posts(account["urls"])
+            summary = module.account_summary(account, rows)
+            fields = {
+                "最近运行时间": summary["captured_at"],
+                "最近状态": module.daily_poll_status_label(summary["overall_status"]),
+                "最近作品数": summary["post_count"],
+                "最近总互动": summary["total_interactions"],
+                "最近错误": "",
+            }
+        except Exception as exc:
+            fields = {"最近运行时间": module.now_iso(), "最近状态": "轮询失败", "最近错误": module.user_visible_poll_error(exc)}
+        module.update_account_monitor_record(self._monitor_url, str(record.get("record_id") or ""), fields)
+        return self.get(context, public_account_id)
+
+    def _module(self) -> Any:
+        from runtime.cli import selfmedia
+        return selfmedia
+
+    def _validated_records(self, module: Any, context: TenantContext) -> list[dict[str, Any]]:
+        try:
+            schema = module.require_valid_schema(self._monitor_url)
+            records = module.list_account_monitor_records(self._monitor_url, view_id=self._view_id)
+            module.validate_account_monitor_records(
+                records,
+                tenant_id=context.tenant_id,
+                binding_validator=self._binding_validator,
+                require_binding=True,
+            )
+            if not schema["ok"]:
+                raise ValueError("H00 schema validation failed")
+            return records
+        except SystemExit as exc:
+            raise TrackMonitorUnavailable("账号监控表 schema、权限或身份绑定不可用") from exc
+        except Exception as exc:
+            raise TrackMonitorUnavailable("account monitor schema or identity binding is unavailable") from exc
+
+    @staticmethod
+    def _record(records: list[dict[str, Any]], public_account_id: str) -> dict[str, Any]:
+        for record in records:
+            fields = record.get("fields") or {}
+            if str(fields.get("public_account_id") or fields.get("publicAccountId") or "").strip() == public_account_id:
+                return record
+        raise TrackNotFound("owned account monitor not found")
 
 
 class DatabaseConnection(Protocol):
@@ -256,11 +366,12 @@ class TracksService:
         LIMIT 1
     """
 
-    def __init__(self, connection_factory: ConnectionFactory, *, cursor_secret: bytes) -> None:
+    def __init__(self, connection_factory: ConnectionFactory, *, cursor_secret: bytes, monitor_adapter: AccountMonitorAdapter | None = None) -> None:
         if len(cursor_secret) < 16:
             raise ValueError("B02 cursor secret must be at least 16 bytes")
         self._connection_factory = connection_factory
         self._cursor_key = hashlib.sha256(bytes(cursor_secret)).digest()
+        self._monitor_adapter = monitor_adapter
 
     def list_tracks(
         self,
@@ -600,10 +711,12 @@ class TracksService:
         )
 
     def get_account_monitor(self, context: TenantContext, public_account_id: str) -> dict[str, Any]:
-        """Expose the contract boundary without claiming a Feishu read succeeded."""
         self._tenant_id(context)
-        _requested_public_id(public_account_id)
-        raise TrackMonitorUnavailable()
+        account_id = _requested_public_id(public_account_id)
+        if self._monitor_adapter is None:
+            raise TrackMonitorUnavailable()
+        self._detail(context, self._ACCOUNT_DETAIL_QUERY, account_id, "owned account")
+        return self._monitor_adapter.get(context, account_id)
 
     def update_account_monitor(
         self,
@@ -618,7 +731,9 @@ class TracksService:
         account_row = self._detail(context, self._ACCOUNT_DETAIL_QUERY, public_account_id, "owned account")
         expected_platform = self._account_row(account_row)["platform"]
         self._validate_monitor_platforms(recent_post_urls, expected_platform)
-        raise TrackMonitorUnavailable()
+        if self._monitor_adapter is None:
+            raise TrackMonitorUnavailable()
+        return self._monitor_adapter.update(context, public_account_id, recent_post_urls, enabled)
 
     def poll_account_monitor(
         self,
@@ -628,7 +743,9 @@ class TracksService:
     ) -> dict[str, Any]:
         self._validate_monitor_input([], True, idempotency_key)
         self._detail(context, self._ACCOUNT_DETAIL_QUERY, public_account_id, "owned account")
-        raise TrackMonitorUnavailable()
+        if self._monitor_adapter is None:
+            raise TrackMonitorUnavailable()
+        return self._monitor_adapter.poll(context, public_account_id)
 
     @staticmethod
     def _validate_monitor_input(
