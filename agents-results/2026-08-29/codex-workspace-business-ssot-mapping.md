@@ -8,7 +8,7 @@
 
 需要特别区分两件事：
 
-1. 当前权威源码仓库是 `production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration` 的 `main`，其工作树干净；`origin/main` 已同步到 `5c0283b`，包含 `4a41061`（H00 身份绑定）、`ada2963`（账号监控 API 合同边界）和本报告更新。
+1. 当前权威源码仓库是 `production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration` 的 `main`，其工作树干净；`origin/main` 已同步到 `fa33bc2`，包含 H00 身份绑定、账号监控 API 合同边界、Stage-2 Feishu 原子加固、Stage-2 严格鉴权和 Stage-2 runtime 原子加固。
 2. 某个容器里存在 Stage‑2 同名文件，不等于该容器的加固提交已经进入当前 `main`。四个 `stage2-hardening-*` 是独立仓库，提交对象不在当前 `main` 历史中。
 
 ## 时间窗口与权威文档
@@ -39,7 +39,8 @@
 
 ## 当前主线关系
 
-- 当前 `main` 已包含 `b87bf91`、`a1ab425`、`85f6608`、`4a41061`、`ada2963`；其中 `ada2963` 只提供明确的 `503 monitor_unavailable` 合同边界，尚未接入真实 Feishu H00 adapter，不能视为生产监控已可用。
+- 当前 `main` 已包含 `b87bf91`、`a1ab425`、`85f6608`、`4a41061`、`ada2963`、`7ed45ab`、`fa33bc2`；其中 `ada2963` 只提供明确的 `503 monitor_unavailable` 合同边界，尚未接入真实 Feishu H00 adapter，不能视为生产监控已可用。
+- `7ed45ab` 将 Cookie/Bearer 冲突、空白令牌、重复会话 Cookie、服务端别名冲突限定在 Stage-2 请求上下文；旧端点兼容取值优先级和空白清理由回归测试锁定。`fa33bc2` 仅收 Stage-2 重复字段拒绝、幂等 claim 和 source 稳定化；均不代表真实认证或生产验收完成。
 - `integration/main` 当前存在 `stage2_server_context.py`、`stage2_external_document.py`、`stage2_production_factory.py`、`stage2_runtime.py`、`stage2_gateway.py`、`stage2_personal_store.py` 等基础文件，但四个独立加固提交 `d0d399a`、`948b36b`、`ae0b614`、`76f8725` 都不是当前 `main` 的祖先提交，因此不能写成“已经合入 main”。
 - `23ba056`、`f533317` 也不是当前 `main` 的祖先提交；`f533317` 与当前账号监控 schema 主题重叠，按 superseded/diff 处理，不整体迁移。
 - 四个 `stage2-hardening-*` 候选仍然不能整体合并；如需提取，必须以当前 `main` 为基线逐文件、逐符号去重后形成原子提交。
