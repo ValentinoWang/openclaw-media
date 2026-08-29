@@ -10,6 +10,25 @@ from selfmedia.business import id_business
 
 
 class BusinessReplyFreshnessTest(unittest.TestCase):
+    def test_brand_brief_uses_canonical_rolling_quote_labels(self) -> None:
+        brief = id_business.build_brand_brief(
+            {
+                "平台": "小红书",
+                "作者ID": "creator-1",
+                "图文报价": "1200",
+                "视频报价": "2400",
+                "本月下单是否保价次月执行": "可保价至执行月",
+            },
+            [],
+        )
+
+        self.assertIn("图文报价：1200", brief)
+        self.assertIn("视频报价：2400", brief)
+        self.assertIn("保价次月执行：可保价至执行月", brief)
+        self.assertNotIn("4月报备", brief)
+        self.assertNotIn("5月报备", brief)
+        self.assertNotIn("是否可保价5月", brief)
+
     def test_historical_month_labels_normalize_to_current_quote_question(self) -> None:
         august_2026 = datetime(2026, 8, 28, 9, 0, tzinfo=id_business.LOCAL_TZ)
         fields, pending = id_business.extract_labeled_fields(
