@@ -261,8 +261,9 @@ class CommercialDeliveryMixin:
             )
         except Exception as exc:
             if commercial_loop is not None:
+                error_code = self._commercial_delivery_external_reason_code(exc)
                 loop_state = commercial_loop.mark_external_retry(
-                    reason_code=self._commercial_delivery_external_reason_code(exc)
+                    reason_code=error_code
                 )
                 return TaskResult(
                     ok=False,
@@ -270,14 +271,23 @@ class CommercialDeliveryMixin:
                     reply=self._commercial_delivery_failure_reply(delivery_id, retry_saved=True),
                     task_id=delivery_id,
                     local_path=commercial_loop.artifact_path(),
-                    extra={"persisted": True, "commercial_loop": loop_state},
+                    extra={
+                        "persisted": True,
+                        "commercial_loop": loop_state,
+                        "error_code": "commercial_delivery_failed",
+                        "detail": str(exc),
+                    },
                 )
             return TaskResult(
                 ok=False,
                 status="commercial_delivery_failed",
                 reply=self._commercial_delivery_failure_reply("", retry_saved=False),
                 task_id="",
-                extra={"persisted": False},
+                extra={
+                    "persisted": False,
+                    "error_code": "commercial_delivery_failed",
+                    "detail": str(exc),
+                },
             )
 
     @staticmethod
