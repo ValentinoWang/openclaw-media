@@ -15,6 +15,7 @@ from urllib.parse import parse_qs, urlparse
 
 import requests
 
+from common import feishu_urls as _feishu_urls
 from common import url_text as _url_text
 from common.platform_links import platform_for_url
 
@@ -446,14 +447,12 @@ def resolve_wiki_bitable(wiki_token: str, token: str) -> str:
 
 
 def parse_feishu_bitable_url(url: str, token: str) -> tuple[str, str]:
-    wiki_match = re.search(r"/wiki/([A-Za-z0-9]+)", url)
-    table_match = re.search(r"[?&]table=([^&#]+)", url)
-    if wiki_match and table_match:
-        return resolve_wiki_bitable(wiki_match.group(1), token), table_match.group(1)
-    parsed = urlparse(url)
-    app_match = re.search(r"/base/([A-Za-z0-9]+)", parsed.path)
-    if app_match and table_match:
-        return app_match.group(1), table_match.group(1)
+    parsed = _feishu_urls.parse_bitable_url(url)
+    table_id = parsed["table_id"]
+    if parsed["wiki_token"] and table_id:
+        return resolve_wiki_bitable(parsed["wiki_token"], token), table_id
+    if parsed["app_token"] and table_id:
+        return parsed["app_token"], table_id
     raise ValueError("飞书链接必须包含 /wiki/<token> 或 /base/<app_token>，且带 table= 参数")
 
 

@@ -4,10 +4,10 @@ import hashlib
 import json
 import os
 import re
-import urllib.parse
 from datetime import datetime
 from typing import Any
 
+from common.feishu_urls import parse_bitable_url
 from common.social_runtime import BITABLE_OPTION_ID_RE, feishu_coerce_value
 
 from .creation_feishu_writer import RouterCreationFeishuDocumentWriter
@@ -384,21 +384,18 @@ class UnifiedCreationMixin:
         return status + (f"：{'；'.join(issues)}" if issues else "")
 
     def _unified_creation_bitable_refs(self, table_url: str) -> tuple[str, str]:
-        parsed = urllib.parse.urlparse(table_url)
-        query = urllib.parse.parse_qs(parsed.query)
-        table_id = (query.get("table") or [""])[0]
+        parsed = parse_bitable_url(table_url)
+        table_id = parsed["table_id"]
         if not table_id:
             raise RuntimeError("CreationRun 表链接缺少 table 参数")
-        wiki_match = re.search(r"/wiki/([A-Za-z0-9]+)", parsed.path)
-        if wiki_match:
-            payload = self.feishu_service._request("GET", "/wiki/v2/spaces/get_node", params={"token": wiki_match.group(1)})
+        if parsed["wiki_token"]:
+            payload = self.feishu_service._request("GET", "/wiki/v2/spaces/get_node", params={"token": parsed["wiki_token"]})
             node = payload.get("data", {}).get("node") or {}
             if node.get("obj_type") != "bitable":
                 raise RuntimeError(f"CreationRun wiki 节点不是多维表格：{node.get('obj_type')}")
             return str(node.get("obj_token") or ""), table_id
-        base_match = re.search(r"/base/([A-Za-z0-9]+)", parsed.path)
-        if base_match:
-            return base_match.group(1), table_id
+        if parsed["app_token"]:
+            return parsed["app_token"], table_id
         raise RuntimeError("CreationRun 表链接必须包含 /wiki/<token> 或 /base/<app_token>")
 
     def _unified_creation_field_types(self, app_token: str, table_id: str) -> dict[str, Any]:

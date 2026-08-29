@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from common.feishu_urls import parse_bitable_url
 from common.social_runtime import feishu_coerce_value
 
 from .tag_router_common import Message, TaskResult
@@ -902,20 +903,17 @@ class CommercialDeliveryMixin:
         return ""
 
     def _commercial_delivery_bitable_refs(self, table_url: str) -> tuple[str, str, str]:
-        parsed = urllib.parse.urlparse(table_url)
-        query = urllib.parse.parse_qs(parsed.query)
-        table_id = (query.get("table") or [""])[0]
+        parsed = parse_bitable_url(table_url)
+        table_id = parsed["table_id"]
         app_token = ""
-        wiki_match = re.search(r"/wiki/([A-Za-z0-9]+)", parsed.path)
-        if wiki_match:
-            payload = self.feishu_service._request("GET", "/wiki/v2/spaces/get_node", params={"token": wiki_match.group(1)})
+        if parsed["wiki_token"]:
+            payload = self.feishu_service._request("GET", "/wiki/v2/spaces/get_node", params={"token": parsed["wiki_token"]})
             node = payload.get("data", {}).get("node") or {}
             if node.get("obj_type") != "bitable":
                 raise RuntimeError(f"商单交付目标 wiki 节点不是多维表格：{node.get('obj_type')}")
             app_token = str(node.get("obj_token") or "")
-        base_match = re.search(r"/base/([A-Za-z0-9]+)", parsed.path)
-        if base_match:
-            app_token = base_match.group(1)
+        elif parsed["app_token"]:
+            app_token = parsed["app_token"]
         if not app_token:
             raise RuntimeError("商单交付表链接必须包含 /wiki/<token> 或 /base/<app_token>")
         if not table_id:
