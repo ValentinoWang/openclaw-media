@@ -128,4 +128,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - 远端旧配置边界补充（2026-08-29）：`/home/ubuntu/openclaw-agents/media/.env.local` 和 `/home/ubuntu/.openclaw/openclaw-feishu-env.conf` 含旧系统的飞书凭据或媒体服务地址，但不含当前 release 所需的完整租户轮询配置。未将旧配置复制或链接到新 release，也未把历史地址推断为 `FEISHU_ACCOUNT_MONITOR_URL`/`FEISHU_ACCOUNT_REPORT_URL`；待明确生产租户编号、监控表地址、日报回写地址及是否批准复用飞书应用身份后再安装。
 - 远端 release 无副作用检查（2026-08-29）：`/home/ubuntu/releases/openclaw-media-p1-1511254/.venv/bin/python runtime/cli/selfmedia.py --help` 与 `compileall` 均通过，release 大小约 `53M`；该结果只证明发布目录可启动和可编译，不替代生产配置、timer 或日报运行证据。
 
+- 远端租户与安装记录复核（2026-08-29）：通过远端 `openclaw_account` 数据库确认当前最近活跃的组织租户为 `618ff8c4-cc5a-4034-a2c5-226e3ad6cd37`（组织名“清华AI小王冲一级的自媒体工作室”，`organization_lark`），且 `media_product.lark_tenant_bindings` 有一条 `active` 绑定。`media_product.lark_tenant_installations` 当前为空，`business_accounts`/`owned_media_accounts` 仅包含账号与飞书来源记录，没有 `FEISHU_ACCOUNT_MONITOR_URL` 或 `FEISHU_ACCOUNT_REPORT_URL` 权威字段。因此租户身份已确认，但监控表地址、日报回写地址和可复用的飞书应用身份仍缺生产配置；继续拒绝无地址安装，`BIZ-05`、`CD-13` 保持“部分修复”。
+
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。上方 `31/7/11` 与“尚未复验 114 条”均为历史分片快照，不是当前实时总计；当前总计以 `dedup_p1.py --json` 输出的 `153/2/0` 为准。
