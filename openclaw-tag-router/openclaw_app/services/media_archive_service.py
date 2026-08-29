@@ -5,7 +5,6 @@ import binascii
 import hashlib
 import importlib.util
 import json
-import os
 import re
 import uuid
 from datetime import datetime, timezone
@@ -14,7 +13,7 @@ from types import ModuleType
 from typing import Any, Mapping
 
 from .media_archive_store import MediaArchiveStore
-from .media_device_job_contract import validate_r1_response
+from .media_device_job_contract import resolve_contract_path, validate_r1_response
 
 
 # `parents[3]` is the repository root: <repo>/openclaw-tag-router/openclaw_app/services/...
@@ -46,12 +45,7 @@ _MEDIA_MARKER = re.compile(r"(?:^|[:/_.-])(raw|proxy|final|audio|video|media)(?:
 
 
 def resolve_archive_contract_path() -> Path:
-    override = os.getenv(ARCHIVE_CONTRACT_PATH_ENV, "").strip()
-    candidates = (Path(override).expanduser(),) if override else (REPOSITORY_GENERATED_CONTRACT,)
-    for candidate in candidates:
-        if candidate.is_file():
-            return candidate
-    return candidates[0]
+    return resolve_contract_path(ARCHIVE_CONTRACT_PATH_ENV, REPOSITORY_GENERATED_CONTRACT)
 
 
 CANONICAL_GENERATED_CONTRACT = resolve_archive_contract_path()

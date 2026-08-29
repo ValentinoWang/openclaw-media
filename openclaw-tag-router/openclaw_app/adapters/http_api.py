@@ -167,12 +167,18 @@ def _first_contract_path(*paths: Path) -> Path:
 @lru_cache(maxsize=1)
 def _http_product_operations() -> Mapping[str, Mapping[str, Any]]:
     # parents[2] is the Router root; parents[3] is this repository's root,
-    # which owns the checked-in `media-agent-cli/` client mirror.
+    # which owns the checked-in `media-agent-cli/` client mirror. Deferred
+    # import matches the lazy-loading of media_device_job_contract elsewhere
+    # in this module (see _device_job_contract()).
+    from ..services.media_device_job_contract import resolve_contract_path
+
     repository_root = Path(__file__).resolve().parents[3]
-    path = _first_contract_path(
-        Path("/home/ubuntu/selfmedia-tools/media-agent-cli/generated_product_contract.py"),
+    path = resolve_contract_path(
+        "OPENCLAW_MEDIA_GENERATED_CONTRACT",
         repository_root / "media-agent-cli/generated_product_contract.py",
     )
+    if not path.is_file():
+        raise RuntimeError(f"media product contract is missing: {path}")
     spec = importlib.util.spec_from_file_location("openclaw_http_product_contract", path)
     if spec is None or spec.loader is None:
         raise RuntimeError("media product contract cannot be loaded")

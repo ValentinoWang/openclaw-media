@@ -15,7 +15,12 @@ from typing import Any, Mapping
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 
 
-def _resolve_contract(env_name: str, *candidates: Path) -> Path:
+def resolve_contract_path(env_name: str, *candidates: Path) -> Path:
+    """Resolve a contract file: env override (if set) else the first existing candidate.
+
+    Returns the first candidate even when none exist, so callers get a
+    stable path to report in their own "is missing" error message.
+    """
     override = os.getenv(env_name)
     search = (Path(override),) if override else candidates
     for candidate in search:
@@ -24,18 +29,17 @@ def _resolve_contract(env_name: str, *candidates: Path) -> Path:
     return search[0]
 
 
-# The deployed host keeps these under absolute paths; a clean checkout resolves
-# the same artifacts from the repository it was loaded from.
-CANONICAL_GENERATED_CONTRACT = _resolve_contract(
+# A clean checkout resolves these artifacts from the repository it was loaded
+# from; OPENCLAW_MEDIA_GENERATED_CONTRACT / OPENCLAW_MEDIA_FROZEN_CONTRACT
+# override the repository path for deployments that keep it elsewhere.
+CANONICAL_GENERATED_CONTRACT = resolve_contract_path(
     "OPENCLAW_MEDIA_GENERATED_CONTRACT",
-    Path("/home/ubuntu/selfmedia-tools/media-agent-cli/generated_product_contract.py"),
     REPOSITORY_ROOT / "media-agent-cli/generated_product_contract.py",
 )
 REPOSITORY_FROZEN_CONTRACT = REPOSITORY_ROOT / "docs/ai-harness/openclaw-media-product-contract.json"
-FROZEN_CONTRACT = _resolve_contract(
+FROZEN_CONTRACT = resolve_contract_path(
     "OPENCLAW_MEDIA_FROZEN_CONTRACT",
     REPOSITORY_FROZEN_CONTRACT,
-    Path("/home/ubuntu/docs/ai-harness/openclaw-media-product-contract.json"),
 )
 
 

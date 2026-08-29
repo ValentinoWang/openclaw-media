@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import http.client
 import json
+import os
 import threading
 import tempfile
 import unittest
@@ -1341,6 +1342,50 @@ class AuthConfigTests(unittest.TestCase):
         bindings = MutationIdempotencyBindings(maximum_entries=10, ttl_seconds=60)
         self.assertTrue(bindings.bind(str(USER_A), "password", "key", {"value": 1}))
         self.assertFalse(bindings.bind(str(USER_A), "password", "key", {"value": 2}))
+
+
+class ProductContractResolutionTests(unittest.TestCase):
+    """Regression coverage for the H11 fix to _http_product_operations().
+
+    Before the fix, OPENCLAW_MEDIA_GENERATED_CONTRACT was silently ignored
+    here (a hardcoded /home/ubuntu/... path was tried instead), so an
+    override could never take effect.
+    """
+
+    def test_http_product_operations_honors_generated_contract_env_override(self) -> None:
+        from openclaw_app.adapters import http_api as http_api_module
+
+        missing_override = "/nonexistent/openclaw-media-generated-contract-override.py"
+        http_api_module._http_product_operations.cache_clear()
+        self.addCleanup(http_api_module._http_product_operations.cache_clear)
+        previous = os.environ.get("OPENCLAW_MEDIA_GENERATED_CONTRACT")
+        os.environ["OPENCLAW_MEDIA_GENERATED_CONTRACT"] = missing_override
+        try:
+            with self.assertRaises(RuntimeError) as raised:
+                http_api_module._http_product_operations()
+        finally:
+            if previous is None:
+                os.environ.pop("OPENCLAW_MEDIA_GENERATED_CONTRACT", None)
+            else:
+                os.environ["OPENCLAW_MEDIA_GENERATED_CONTRACT"] = previous
+
+        message = str(raised.exception)
+        self.assertIn(missing_override, message)
+        self.assertNotIn("/home/ubuntu", message)
+
+    def test_http_product_operations_resolves_from_repository_without_overrides(self) -> None:
+        from openclaw_app.adapters import http_api as http_api_module
+
+        http_api_module._http_product_operations.cache_clear()
+        self.addCleanup(http_api_module._http_product_operations.cache_clear)
+        previous = os.environ.pop("OPENCLAW_MEDIA_GENERATED_CONTRACT", None)
+        try:
+            operations = http_api_module._http_product_operations()
+        finally:
+            if previous is not None:
+                os.environ["OPENCLAW_MEDIA_GENERATED_CONTRACT"] = previous
+
+        self.assertIn("archive_commit", operations)
 
 
 if __name__ == "__main__":
