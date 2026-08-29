@@ -46,23 +46,6 @@ class AttachmentItem:
     kind: str
 
 
-def tenant_access_token() -> str:
-    app_id = os.getenv("FEISHU_APP_ID", "")
-    app_secret = os.getenv("FEISHU_APP_SECRET", "")
-    if not app_id or not app_secret:
-        raise RuntimeError("FEISHU_APP_ID / FEISHU_APP_SECRET 未配置")
-    resp = requests.post(
-        f"{FEISHU_BASE}/auth/v3/tenant_access_token/internal",
-        json={"app_id": app_id, "app_secret": app_secret},
-        timeout=10,
-    )
-    resp.raise_for_status()
-    payload = resp.json()
-    if payload.get("code") != 0:
-        raise RuntimeError(f"获取飞书 token 失败：{payload}")
-    return payload["tenant_access_token"]
-
-
 def _headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=utf-8"}
 

@@ -25,10 +25,10 @@ from common.feishu_wiki_docs import (
     resolve_wiki_space_id as _shared_resolve_wiki_space_id,
     requests_adapter,
 )
-from common.social_runtime import load_default_env_files
+from common.social_runtime import feishu_tenant_access_token as tenant_access_token, load_default_env_files
 
 from .config import load_config
-from .feishu_writer import FEISHU_BASE, _headers, resolve_wiki_bitable, tenant_access_token
+from .feishu_writer import FEISHU_BASE, _headers, resolve_wiki_bitable
 from .storyboard_images import generate_and_upload_storyboard_images, upload_feishu_doc_image
 
 MAX_SOURCE_TEXT_CHARS_IN_DOC = 300

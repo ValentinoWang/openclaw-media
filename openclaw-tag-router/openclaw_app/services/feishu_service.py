@@ -17,6 +17,7 @@ from typing import Any, Callable, Iterator
 import requests
 
 from common.feishu_urls import feishu_doc_url, parse_feishu_document_ref
+from common.social_runtime import fetch_tenant_access_token
 from common.feishu_wiki_docs import (
     find_wiki_child_doc as _shared_find_wiki_child_doc,
     iter_wiki_children as _shared_iter_wiki_children,
@@ -1858,36 +1859,18 @@ class FeishuService:
             if not self.app_id or not self.app_secret:
                 raise RuntimeError("飞书 API 配置缺少 app_id/app_secret")
 
-            payload = {"app_id": self.app_id, "app_secret": self.app_secret}
-            headers = {"Content-Type": "application/json; charset=utf-8"}
-            try:
-                response = requests.post(f"{self.api_base_url}/auth/v3/tenant_access_token/internal", json=payload, headers=headers, timeout=20)
-            except requests.RequestException as exc:
-                raise RuntimeError(f"获取 tenant_access_token 失败：{exc}") from exc
-            try:
-                data = response.json()
-            except ValueError:
-                data = {"raw": response.text}
-            if response.status_code >= 400:
-                raise RuntimeError(f"获取 tenant_access_token 失败 status={response.status_code}, body={data}")
-
-            code = data.get("code")
-            if code not in {None, 0}:
-                raise RuntimeError(f"获取 tenant_access_token 失败 code={code}, msg={data.get('msg')}")
-
-            token = self._extract_payload_value(data, "tenant_access_token")
-            if not token:
-                token = self._extract_payload_value(data, "data", "tenant_access_token")
-            if not token:
-                raise RuntimeError("返回值中未找到 tenant_access_token")
-
-            expire = data.get("expire") or self._extract_payload_value(data, "data", "expire")
-            try:
-                expire_seconds = float(expire) if expire not in (None, "") else 3600.0
-            except (TypeError, ValueError):
-                expire_seconds = 3600.0
+            # The HTTP fetch (91403 explanation, code!=0 handling, and
+            # payload/data dual-path token extraction) lives in the shared,
+            # identity-keyed cache in common.social_runtime -- this
+            # instance keeps its own cache/lock on top of it. The real
+            # `expire` value from the API response isn't surfaced back
+            # here, so this instance-level fast path uses the same 60s
+            # floor the shared cache itself guarantees as a minimum: never
+            # longer than what the shared cache would also still consider
+            # valid.
+            token = fetch_tenant_access_token(self.app_id, self.app_secret, api_base=self.api_base_url, timeout=20)
             self._tenant_access_token = token
-            self._tenant_access_expire_at = now + max(expire_seconds - 60, 60)
+            self._tenant_access_expire_at = now + 60
             return token
 
     def _get_or_create_document(self, doc_name: str) -> tuple[str, str]:

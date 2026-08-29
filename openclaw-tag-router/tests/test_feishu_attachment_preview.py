@@ -25,6 +25,9 @@ class _TokenResponse:
     status_code = 200
     text = ""
 
+    def raise_for_status(self) -> None:
+        return None
+
     def json(self) -> dict[str, Any]:
         return {"code": 0, "tenant_access_token": "shared-token", "expire": 3600}
 

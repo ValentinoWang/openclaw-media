@@ -7,9 +7,11 @@ import os
 import re
 import sqlite3
 import sys
+import time
 from dataclasses import dataclass
 from datetime import date, datetime, timezone, tzinfo as TzInfo
 from pathlib import Path
+from threading import Lock
 from typing import Any, Iterable, Literal
 from urllib.parse import parse_qs, urlparse
 
@@ -404,25 +406,77 @@ def slug_time() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
 
 
-def feishu_tenant_access_token() -> str:
-    app_id = effective_feishu_app_id()
-    app_secret = os.getenv("FEISHU_APP_SECRET", "")
+#: (api_base, app_id) -> (token, expire_at_monotonic_time). Deliberately
+#: keyed by identity, never a single process-wide slot -- different
+#: identities (e.g. the DeepMath branch's injected app_id/app_secret vs.
+#: this process's own default identity) must never share a cached token.
+_TENANT_ACCESS_TOKEN_CACHE: dict[tuple[str, str], tuple[str, float]] = {}
+_TENANT_ACCESS_TOKEN_CACHE_LOCK = Lock()
+
+
+def fetch_tenant_access_token(
+    app_id: str,
+    app_secret: str,
+    *,
+    api_base: str = FEISHU_BASE,
+    timeout: float = 10,
+) -> str:
+    """Fetch (and cache) a Feishu tenant_access_token for one (api_base, app_id) identity.
+
+    Consolidates fetch logic that used to be duplicated across several call
+    sites: a Chinese-language explanation for the 91403 permission error,
+    raising on any other non-zero ``code``, and extracting the token from
+    either a top-level or ``data``-nested payload shape.
+
+    Cached entries expire 60s before the token's real ``expire``, with a
+    60s floor -- matching FeishuService's own per-instance cache policy.
+    """
     if not app_id or not app_secret:
         raise RuntimeError("FEISHU_APP_ID / FEISHU_APP_SECRET 未配置")
-    resp = requests.post(
-        f"{FEISHU_BASE}/auth/v3/tenant_access_token/internal",
-        json={"app_id": app_id, "app_secret": app_secret},
+    cache_key = (api_base, app_id)
+    now = time.time()
+    cached = _TENANT_ACCESS_TOKEN_CACHE.get(cache_key)
+    if cached and now < cached[1]:
+        return cached[0]
+    with _TENANT_ACCESS_TOKEN_CACHE_LOCK:
+        now = time.time()
+        cached = _TENANT_ACCESS_TOKEN_CACHE.get(cache_key)
+        if cached and now < cached[1]:
+            return cached[0]
+        resp = requests.post(
+            f"{api_base}/auth/v3/tenant_access_token/internal",
+            json={"app_id": app_id, "app_secret": app_secret},
+            timeout=timeout,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        if payload.get("code") != 0:
+            if str(payload.get("code")) == "91403":
+                raise RuntimeError(
+                    f"当前身份 {feishu_app_id_prefix(app_id)} 对该 Base 无权限（不等于表被删）"
+                )
+            raise RuntimeError(f"获取飞书 token 失败：{payload}")
+        token = payload.get("tenant_access_token") or (payload.get("data") or {}).get("tenant_access_token")
+        if not token:
+            raise RuntimeError(f"获取飞书 token 失败：{payload}")
+        expire = payload.get("expire")
+        if expire in (None, ""):
+            expire = (payload.get("data") or {}).get("expire")
+        try:
+            expire_seconds = float(expire) if expire not in (None, "") else 3600.0
+        except (TypeError, ValueError):
+            expire_seconds = 3600.0
+        _TENANT_ACCESS_TOKEN_CACHE[cache_key] = (token, now + max(expire_seconds - 60, 60))
+        return token
+
+
+def feishu_tenant_access_token() -> str:
+    return fetch_tenant_access_token(
+        effective_feishu_app_id(),
+        os.getenv("FEISHU_APP_SECRET", ""),
+        api_base=FEISHU_BASE,
         timeout=10,
     )
-    resp.raise_for_status()
-    payload = resp.json()
-    if payload.get("code") != 0:
-        if str(payload.get("code")) == "91403":
-            raise RuntimeError(
-                f"当前身份 {feishu_app_id_prefix(app_id)} 对该 Base 无权限（不等于表被删）"
-            )
-        raise RuntimeError(f"获取飞书 token 失败：{payload}")
-    return payload["tenant_access_token"]
 
 
 def feishu_headers(token: str) -> dict[str, str]:
