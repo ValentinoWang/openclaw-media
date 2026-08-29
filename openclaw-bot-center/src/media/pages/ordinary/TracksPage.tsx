@@ -108,6 +108,14 @@ type DetailResponse<T> = {
   item: T;
 };
 
+type AccountMonitorResponse = {
+  schemaVersion: string;
+  revision: number;
+  status: "available" | "unavailable";
+  checkedAt: string | null;
+  detail: string | null;
+};
+
 type ResourceState<T> =
   | { kind: "loading" }
   | { kind: "ready"; data: T }
@@ -157,6 +165,9 @@ function TracksPage() {
   >(null);
   const [accountDetailState, setAccountDetailState] = useState<
     ResourceState<DetailResponse<OwnedAccountSummary>> | null
+  >(null);
+  const [accountMonitorState, setAccountMonitorState] = useState<
+    ResourceState<AccountMonitorResponse> | null
   >(null);
   const taskRefreshKey = tasks
     .filter(
@@ -243,6 +254,26 @@ function TracksPage() {
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
           setAccountDetailState(toResourceError(error, "自有账号详情"));
+        }
+      });
+    return () => controller.abort();
+  }, [runtimeState, selectedAccountId, session]);
+
+  useEffect(() => {
+    if (!selectedAccountId || runtimeState !== "authenticated" || !session) {
+      setAccountMonitorState(null);
+      return;
+    }
+    const controller = new AbortController();
+    setAccountMonitorState({ kind: "loading" });
+    callBusinessOperation<AccountMonitorResponse>("getAccountMonitor", {
+      path: { publicAccountId: selectedAccountId },
+      signal: controller.signal,
+    })
+      .then((data) => setAccountMonitorState({ kind: "ready", data }))
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setAccountMonitorState(toMonitorResourceError(error));
         }
       });
     return () => controller.abort();
@@ -425,6 +456,7 @@ function TracksPage() {
           <OwnedAccountInspector
             selectedAccountId={selectedAccountId}
             state={accountDetailState}
+            monitorState={accountMonitorState}
             trackState={trackState}
           />
         ) : activeTab === "tracks" ? (
@@ -1125,10 +1157,12 @@ function BenchmarkInspector({
 function OwnedAccountInspector({
   selectedAccountId,
   state,
+  monitorState,
   trackState,
 }: {
   selectedAccountId: string | null;
   state: ResourceState<DetailResponse<OwnedAccountSummary>> | null;
+  monitorState: ResourceState<AccountMonitorResponse> | null;
   trackState: ResourceState<ListResponse<TrackSummary>>;
 }) {
   const account = state?.kind === "ready" ? state.data.item : null;
@@ -1199,12 +1233,64 @@ function OwnedAccountInspector({
               <Field label="资料来源" value={ownedAccountDataSourceDisplayLabel(account.dataSource)} />
               <Field label="台账更新时间" value={formatDate(account.updatedAt)} />
             </InspectorSection>
+
+            <AccountMonitorSection state={monitorState} />
           </div>
         ) : (
           <SurfaceState kind="empty" title="详情为空" detail="该账号没有可展示的详情记录。" />
         )}
       </section>
     </aside>
+  );
+}
+
+const H00_MONITOR_URL = "https://tcnwueberajc.feishu.cn/base/OmjkbgBkwa2JEysEN8uc5PMhnTb?table=tblc65xqnUjSw9Ah";
+const H00_MONITOR_FIELDS = [
+  "账号名称",
+  "平台",
+  "近期作品链接",
+  "启用",
+  "最近运行时间",
+  "最近状态",
+  "最近作品数",
+  "最近总互动",
+  "最近错误",
+  "最近日报摘要",
+];
+
+function AccountMonitorSection({ state }: { state: ResourceState<AccountMonitorResponse> | null }) {
+  return (
+    <InspectorSection title="账号监控" icon={<RefreshCw size={15} aria-hidden="true" />}>
+      {state?.kind === "loading" || state === null ? (
+        <SurfaceState kind="loading" title="正在读取监控状态" detail="正在确认 H00 账号监控适配器是否可用。" />
+      ) : state.kind === "forbidden" ? (
+        <SurfaceState kind="forbidden" title="无权查看监控状态" detail={state.message} />
+      ) : state.kind === "error" ? (
+        <SurfaceState kind="error" title="监控状态读取失败" detail={state.message} />
+      ) : state.data.status === "unavailable" ? (
+        <SurfaceState
+          kind="error"
+          title="账号监控暂不可用"
+          detail={state.data.detail || "当前运行环境未安装或未配置 H00 账号监控适配器；页面不会将其显示为已成功监控。"}
+        />
+      ) : (
+        <div className={styles.monitorContent} data-monitor-state="available">
+          <StatusBadge tone="success">监控适配器可用</StatusBadge>
+          <Field label="最近检查" value={formatDate(state.data.checkedAt)} />
+          {state.data.detail ? <p className={styles.mutedCopy}>{state.data.detail}</p> : null}
+        </div>
+      )}
+      <div className={styles.monitorReference} data-monitor-reference>
+        <div className={styles.monitorReferenceHeader}>
+          <strong>H00 账号监控表</strong>
+          <a href={H00_MONITOR_URL} target="_blank" rel="noreferrer">打开外链</a>
+        </div>
+        <p className={styles.mutedCopy}>外链用于维护账号和近期作品链接；以下字段由轮询任务读写。</p>
+        <div className={styles.monitorFields} aria-label="H00 账号监控字段">
+          {H00_MONITOR_FIELDS.map((field) => <span key={field}>{field}</span>)}
+        </div>
+      </div>
+    </InspectorSection>
   );
 }
 
@@ -1701,6 +1787,19 @@ function toResourceError<T>(error: unknown, subject: string): ResourceState<T> {
     return { kind: "forbidden", message: `${subject}暂无查看权限。请确认当前账户权限后刷新。` };
   }
   return { kind: "error", message: `${subject}暂时无法读取。请点击“刷新”重新读取。` };
+}
+
+function toMonitorResourceError(error: unknown): ResourceState<AccountMonitorResponse> {
+  if (error instanceof BusinessOperationError && (error.status === 401 || error.status === 403)) {
+    return { kind: "forbidden", message: "账号监控状态暂无查看权限。请确认当前账户权限后刷新。" };
+  }
+  if (error instanceof BusinessOperationError && error.status === 503 && error.code === "monitor_unavailable") {
+    return {
+      kind: "error",
+      message: "当前运行环境未安装或未配置 H00 账号监控适配器；页面不会将其显示为已成功监控。",
+    };
+  }
+  return { kind: "error", message: "账号监控状态暂时无法读取。请点击“刷新”重新读取。" };
 }
 
 function formatDate(value: string | null): string {

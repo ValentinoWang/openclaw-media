@@ -19,6 +19,7 @@ export type GeneratedOperation = {
 };
 
 export const schemaNames = [
+  "AccountMonitorResponse",
   "AccountTrackStrategyResponse",
   "AccountTrackStrategySummary",
   "AdminActionRequest",
@@ -199,6 +200,7 @@ export const schemaNames = [
 ] as const;
 
 export const schemaRefs = {
+  "AccountMonitorResponse": "#/components/schemas/AccountMonitorResponse",
   "AccountTrackStrategyResponse": "#/components/schemas/AccountTrackStrategyResponse",
   "AccountTrackStrategySummary": "#/components/schemas/AccountTrackStrategySummary",
   "AdminActionRequest": "#/components/schemas/AdminActionRequest",
@@ -388,6 +390,7 @@ export const operationIdsByPage = {
   ],
   "B02": [
     "createMediaTask",
+    "getAccountMonitor",
     "getAccountTrackStrategy",
     "getCreator",
     "getDocumentResource",
@@ -1387,6 +1390,27 @@ export const operations = {
       "B02"
     ],
     "path": "/owned-accounts/{publicAccountId}",
+    "pathParameters": [
+      "publicAccountId"
+    ],
+    "permission": "ordinary-session",
+    "productReadModels": [
+      "owned_media_accounts"
+    ],
+    "queryParameters": [],
+    "runtimeStatus": "new"
+  },
+  "getAccountMonitor": {
+    "canonicalCapabilityIds": [
+      "account_monitor"
+    ],
+    "category": "page",
+    "existingHandlers": [],
+    "method": "GET",
+    "pageContracts": [
+      "B02"
+    ],
+    "path": "/owned-accounts/{publicAccountId}/monitor",
     "pathParameters": [
       "publicAccountId"
     ],

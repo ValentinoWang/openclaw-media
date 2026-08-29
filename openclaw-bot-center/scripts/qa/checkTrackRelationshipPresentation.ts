@@ -52,6 +52,14 @@ assert.match(pageSource, /data-page-list="benchmark-accounts"/);
 assert.match(pageSource, /onShowOwned\(track\.publicTrackId\)/);
 assert.match(pageSource, /onShowBenchmarks\(track\.publicTrackId\)/);
 assert.match(pageSource, /title="平台覆盖"/);
+assert.match(pageSource, /getAccountMonitor/);
+assert.match(pageSource, /monitor_unavailable/);
+assert.match(pageSource, /账号监控暂不可用/);
+assert.match(pageSource, /H00 账号监控表/);
+assert.match(pageSource, /https:\/\/tcnwueberajc\.feishu\.cn\/base\/OmjkbgBkwa2JEysEN8uc5PMhnTb\?table=tblc65xqnUjSw9Ah/);
+for (const field of ["账号名称", "近期作品链接", "启用", "最近运行时间", "最近日报摘要"]) {
+  assert.ok(pageSource.includes(`"${field}"`), `missing H00 monitor field ${field}`);
+}
 assert.match(pageSource, /trackById\.get\(relationship\.publicTrackId\)/);
 assert.match(pageSource, /creatorById\.get\(relationship\.publicCreatorId\)/);
 assert.match(pageSource, /import \{ PlatformIdentity \} from "\.\.\/\.\.\/ui\/PlatformIdentity";/);
