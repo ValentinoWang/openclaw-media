@@ -413,6 +413,32 @@ def test_h00_adapter_rejects_write_that_does_not_read_back(monkeypatch: pytest.M
         adapter.update(context(), ACCOUNT_ID, ["https://example.test/note/1"], True)
 
 
+def test_h00_adapter_creates_first_record_from_account_metadata_and_reads_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter = H00AccountMonitorAdapter(
+        "https://example.test/base/table",
+        account_metadata=lambda tenant_id, account_id: {"account_name": "数据库账号", "platform": "xiaohongshu"},
+    )
+    created = {"record_id": "rec_new", "fields": {}}
+
+    class Module:
+        def require_valid_schema(self, monitor_url: str) -> dict[str, Any]: return {"ok": True}
+        def list_account_monitor_records(self, monitor_url: str, *, view_id: str) -> list[dict[str, Any]]:
+            return [created] if created["fields"] else []
+        def validate_account_monitor_records(self, records: list[dict[str, Any]], **kwargs: Any) -> None: return None
+        def write_feishu_records(self, url: str, records: list[dict[str, Any]], **kwargs: Any) -> list[str]:
+            created["fields"] = records[0]
+            return ["rec_new"]
+        def update_account_monitor_record(self, *args: Any, **kwargs: Any) -> None: return None
+        def account_from_record(self, record: dict[str, Any]) -> dict[str, Any]:
+            return {"account_name": record["fields"]["账号名称"], "platform": record["fields"]["平台"], "enabled": record["fields"]["启用"], "urls": record["fields"]["近期作品链接"]}
+
+    monkeypatch.setattr(adapter, "_module", lambda: Module())
+    response = adapter.update(context(), ACCOUNT_ID, ["https://example.test/note/1"], True)
+    assert response["enabled"] is True
+    assert response["recentPostUrls"] == ["https://example.test/note/1"]
+    assert created["fields"]["账号名称"] == "数据库账号"
+
+
 def test_owned_account_avatar_and_platform_identifier_are_nullable_but_explicit() -> None:
     row = (
         ACCOUNT_ID,

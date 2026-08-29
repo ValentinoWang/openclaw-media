@@ -82,10 +82,11 @@ class AccountMonitorAdapter(Protocol):
 class H00AccountMonitorAdapter:
     """Thin boundary around the existing H00 Feishu and daily-poll helpers."""
 
-    def __init__(self, monitor_url: str, *, view_id: str = "", binding_validator: Callable[[str, str], bool] | None = None) -> None:
+    def __init__(self, monitor_url: str, *, view_id: str = "", binding_validator: Callable[[str, str], bool] | None = None, account_metadata: Callable[[str, str], Mapping[str, Any] | None] | None = None) -> None:
         self._monitor_url = monitor_url.strip()
         self._view_id = view_id
         self._binding_validator = binding_validator
+        self._account_metadata = account_metadata
 
     def get(self, context: TenantContext, public_account_id: str) -> dict[str, Any]:
         module = self._module()
@@ -115,12 +116,35 @@ class H00AccountMonitorAdapter:
     def update(self, context: TenantContext, public_account_id: str, recent_post_urls: list[str], enabled: bool) -> dict[str, Any]:
         module = self._module()
         records = self._validated_records(module, context)
-        record = self._record(records, public_account_id)
-        module.update_account_monitor_record(
-            self._monitor_url,
-            str(record.get("record_id") or ""),
-            {"近期作品链接": recent_post_urls, "启用": enabled},
-        )
+        record = self._find_record(records, public_account_id)
+        if record is None:
+            if self._account_metadata is None:
+                raise TrackMonitorUnavailable("无法从账号身份源读取 H00 记录创建信息")
+            metadata = self._account_metadata(context.tenant_id, public_account_id)
+            if not metadata:
+                raise TrackNotFound("owned account monitor not found")
+            if not str(metadata.get("account_name") or "").strip() or not str(metadata.get("platform") or "").strip():
+                raise TrackMonitorUnavailable("账号身份源缺少账号名称或平台")
+            record_ids = module.write_feishu_records(
+                self._monitor_url,
+                [{
+                    "public_account_id": public_account_id,
+                    "账号名称": str(metadata["account_name"]),
+                    "平台": str(metadata["platform"]),
+                    "近期作品链接": recent_post_urls,
+                    "启用": enabled,
+                }],
+                module="账号监控",
+                require=True,
+            )
+            if len(record_ids) != 1:
+                raise TrackMonitorUnavailable("H00 记录创建未返回唯一 record_id")
+        else:
+            module.update_account_monitor_record(
+                self._monitor_url,
+                str(record.get("record_id") or ""),
+                {"近期作品链接": recent_post_urls, "启用": enabled},
+            )
         response = self.get(context, public_account_id)
         expected_urls = [value.strip() for value in recent_post_urls]
         actual_urls = [str(value).strip() for value in response["recentPostUrls"]]
@@ -175,12 +199,19 @@ class H00AccountMonitorAdapter:
             raise TrackMonitorUnavailable("account monitor schema or identity binding is unavailable") from exc
 
     @staticmethod
-    def _record(records: list[dict[str, Any]], public_account_id: str) -> dict[str, Any]:
+    def _find_record(records: list[dict[str, Any]], public_account_id: str) -> dict[str, Any] | None:
         for record in records:
             fields = record.get("fields") or {}
             if str(fields.get("public_account_id") or fields.get("publicAccountId") or "").strip() == public_account_id:
                 return record
-        raise TrackNotFound("owned account monitor not found")
+        return None
+
+    @classmethod
+    def _record(cls, records: list[dict[str, Any]], public_account_id: str) -> dict[str, Any]:
+        record = cls._find_record(records, public_account_id)
+        if record is None:
+            raise TrackNotFound("owned account monitor not found")
+        return record
 
 
 def _monitor_link_results(urls: list[str]) -> list[dict[str, Any]]:

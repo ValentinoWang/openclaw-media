@@ -377,10 +377,26 @@ def main() -> int:
                     "SELECT 1 FROM media_product.owned_media_accounts WHERE tenant_id = %s AND public_id = %s",
                     (tenant_id, public_account_id),
                 ).fetchone() is not None
+        def monitor_account_metadata(tenant_id: str, public_account_id: str) -> dict[str, str] | None:
+            with account_database.connect() as connection:
+                row = connection.execute(
+                    "SELECT canonical_data FROM media_product.owned_media_accounts WHERE tenant_id = %s AND public_id = %s",
+                    (tenant_id, public_account_id),
+                ).fetchone()
+            if not row:
+                return None
+            data = row[0] if isinstance(row, (tuple, list)) else row
+            if not isinstance(data, dict):
+                return None
+            return {
+                "account_name": str(data.get("account_name") or data.get("accountName") or "").strip(),
+                "platform": str(data.get("platform") or "").strip(),
+            }
         monitor_adapter = H00AccountMonitorAdapter(
             monitor_url,
             view_id=os.getenv("FEISHU_ACCOUNT_MONITOR_VIEW_ID", "").strip(),
             binding_validator=monitor_binding_validator,
+            account_metadata=monitor_account_metadata,
         )
     media_business_services = {
         "overview": OverviewService(account_database.connect, task_reader=media_web_tasks, cursor_secret=secret),
