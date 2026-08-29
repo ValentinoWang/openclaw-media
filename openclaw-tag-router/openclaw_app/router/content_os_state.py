@@ -66,12 +66,12 @@ class ContentOSStateMixin:
         evidence: set[str],
         reason: str,
         vault_root: Path,
-    ) -> str:
+    ) -> bool:
         try:
             current = read_project_state(vault_root, project_id)
             if current.status != from_status:
-                return f"Content OS 状态未推进：当前阶段是 {current.status}，不是 {from_status}"
-            next_state = transition_project_status(
+                return False
+            transition_project_status(
                 vault_root,
                 project_id,
                 to_status=to_status,
@@ -79,8 +79,8 @@ class ContentOSStateMixin:
                 reason=reason,
                 evidence=evidence,
             )
-        except ContentOSContractError as exc:
-            return f"Content OS 状态未推进：{exc}"
+        except ContentOSContractError:
+            return False
         write_project_registry_projection(vault_root)
         self._sync_content_os_feishu_project_board(vault_root, project_id)
-        return f"Content OS 状态已推进：{current.status} -> {next_state.status}"
+        return True

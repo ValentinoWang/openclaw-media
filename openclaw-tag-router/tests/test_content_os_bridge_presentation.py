@@ -151,6 +151,37 @@ class ContentOSBridgePresentationTests(unittest.TestCase):
             for raw_stage in RAW_STAGES:
                 self.assertNotIn(raw_stage, str(result["reply"]))
 
+    def test_status_transition_helper_returns_machine_result_not_user_text(self) -> None:
+        temporary, vault_root, project_id = self._make_vault()
+        with temporary:
+            advanced = ContentOSBridgeHarness(vault_root)._maybe_advance_content_os_status(
+                project_id=project_id,
+                from_status="editing",
+                to_status="final_ready",
+                actor="human",
+                evidence={
+                    "output_video_exists",
+                    "output_review_evidence_exists",
+                    "human_final_selected",
+                },
+                reason="作品验收通过",
+                vault_root=vault_root,
+            )
+
+            self.assertIs(advanced, True)
+            self.assertEqual(read_project_state(vault_root, project_id).status, "final_ready")
+
+            not_advanced = ContentOSBridgeHarness(vault_root)._maybe_advance_content_os_status(
+                project_id=project_id,
+                from_status="editing",
+                to_status="published",
+                actor="human",
+                evidence=set(),
+                reason="重复推进",
+                vault_root=vault_root,
+            )
+            self.assertIs(not_advanced, False)
+
     def test_chat_text_and_local_path_cannot_replace_accepted_review_evidence(self) -> None:
         temporary, vault_root, project_id = self._make_vault()
         with temporary:

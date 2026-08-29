@@ -535,7 +535,7 @@ class ContentOSBridgeMixin:
             "reply": self._content_os_transition_reply(
                 current_status=current_status,
                 target_status=target_status,
-                advanced=status_reply.startswith("Content OS 状态已推进："),
+                advanced=status_reply,
             ),
         }
     def _maybe_write_content_os_data_review(self, message: Message, parsed: dict[str, Any], reply: str) -> dict[str, Any]:
@@ -590,7 +590,7 @@ class ContentOSBridgeMixin:
                 reason="【数据复盘】包含发布链接或作品 ID",
                 vault_root=vault_root,
             )
-            if advanced.startswith("Content OS 状态已推进："):
+            if advanced:
                 status_lines.append(self._content_os_transition_reply(
                     current_status="final_ready",
                     target_status="published",
