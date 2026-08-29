@@ -13,6 +13,7 @@ from .field_contract import normalize_platform, split_tags
 from .llm_generator import (
     _compact_candidates,
     _compact_reference_docs,
+    _compact_review_list,
     _truncate_list,
     _truncate_nested,
     _truncate_text,
@@ -248,7 +249,7 @@ def _compact_consultation_prompt_payload(
         "media_context_loaded": _truncate_nested((media_context or {}).get("loaded") or {}, 300),
         "account_profile": _truncate_nested((media_context or {}).get("account_profile") or {}, 2500),
         "recent_creations": _truncate_list((media_context or {}).get("recent_creations"), 8, 900),
-        "recent_reviews": _truncate_list((media_context or {}).get("recent_reviews"), 8, 900),
+        "recent_reviews": _compact_review_list((media_context or {}).get("recent_reviews"), 8, 900),
         "activity_candidates": _compact_candidates(activity_candidates, 10),
         "viral_candidates": _compact_candidates(viral_candidates, 15),
         "inspiration_candidates": _compact_candidates(inspiration_candidates, 15),
