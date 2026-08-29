@@ -147,4 +147,5 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - 配置持久化复核（2026-08-29）：发现 release `.env.local` 仍残留旧 v2 `FEISHU_ACCOUNT_MONITOR_URL`，已原子替换为 `tblc65xqnUjSw9Ah` 并保持文件权限 `600`。重启 service 后回读 `Result=success`、`ExecMainStatus=0`，生成 `account_daily_20260829100811.json/.md`，无错误；因此后续重新生成 systemd unit 不会回退到旧表。运行仍为 `account_count=0`，不改变 BIZ-05/CD-13 的非空业务证据要求。
 
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。上方 `31/7/11` 与“尚未复验 114 条”均为历史分片快照，不是当前实时总计；当前总计以 `dedup_p1.py --json` 输出的 `153/2/0` 为准。
-\n+- 产品承接补强（2026-08-29）：`/tracks` 自有账号详情新增“账号监控”分区，调用 `GET /owned-accounts/{publicAccountId}/monitor`；`monitor_unavailable` 映射为中文状态并展示 H00 外链和字段说明。新增 `PUT .../monitor` 与 `POST .../monitor/poll` 合同及租户/URL/幂等键输入校验，但当前运行时仍在未接入真实 H00 adapter 时明确返回 `503 monitor_unavailable`，不把页面展示、空表轮询或合同边界写成真实监控可用。
+
+- 产品承接补强（2026-08-29）：`/tracks` 自有账号详情新增“账号监控”分区，调用 `GET /owned-accounts/{publicAccountId}/monitor`；`monitor_unavailable` 映射为中文状态并展示 H00 外链和字段说明。新增 `PUT .../monitor` 与 `POST .../monitor/poll` 合同及租户/URL/幂等键输入校验，但当前运行时仍在未接入真实 H00 adapter 时明确返回 `503 monitor_unavailable`，不把页面展示、空表轮询或合同边界写成真实监控可用。

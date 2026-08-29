@@ -165,7 +165,6 @@ CAPABILITY_STATUSES = {
     "id_business": "external",
     "account_track_strategy": "not_implemented",
     "owned_media_account_lookup": "not_implemented",
-    "account_monitor": "not_implemented",
 }
 
 CANONICAL_TABLES = {

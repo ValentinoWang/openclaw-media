@@ -23,18 +23,18 @@ x-openclaw-pages:
     route: /tracks
     operationIds:
     - createMediaTask
+    - getAccountMonitor
     - getAccountTrackStrategy
     - getCreator
     - getDocumentResource
     - getOwnedAccount
-    - getAccountMonitor
-    - pollAccountMonitor
-    - updateAccountMonitor
     - getTrack
     - listCreators
     - listOwnedAccounts
     - listTrackRelationships
     - listTracks
+    - pollAccountMonitor
+    - updateAccountMonitor
     - updateTrackRelationshipStatus
   B03:
     role: ordinary
