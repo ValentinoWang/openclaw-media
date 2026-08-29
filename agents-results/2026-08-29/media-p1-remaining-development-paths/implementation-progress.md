@@ -4,7 +4,7 @@
 
 | 冻结基线 | 当前状态 | 说明 |
 |---|---|---|
-| P1 未修复 148 条 | 持续逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；此前投影为 49 条已逐条复验（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；基于 `main@f71105a` 本轮新增明确关闭 CPC-16、BIZ-01、BIZ-08、BIZ-10，评论证据隔离门禁已由 `22292a7` 进入主线；待下一轮逐条汇总重算，不能用提交数量自动扣减 |
+| P1 未修复 148 条 | 持续逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；此前投影为 49 条已逐条复验（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；基于 `main@3ff51c4` 本轮新增明确关闭 CPC-16、BIZ-01、BIZ-08、BIZ-10，评论证据隔离门禁已由 `22292a7` 进入主线；待下一轮逐条汇总重算，不能用提交数量自动扣减 |
 | 发布切片 | 5 个已建立 | `REL-P1-UX`、`REL-P1-PIPE`、`REL-P1-BIZ`、`REL-P1-PORT`、`REL-P1-QA` 均未组装候选 |
 | 当前就绪交付包 | 14 个 | P1 至 P14 均可继续；本轮已处理用户可见渲染、Router 状态呈现和创作证据合同，尚未完成全部交付包验收 |
 | 已接受发布验收 | 0 个 | C1 至 C5 均等待对应交付包 |
@@ -65,6 +65,8 @@
 - 本轮 SSOT 快照已刷新并通过项目级 `--check`（Obsidian 管理文件 1 个）；全局 `--audit-archive` 被集合内既有 AthleteOS 快照的哈希漂移阻塞，未将该外部失败归因于本项目。
 
 补充复验（2026-08-29 后续轮次）：
+
+- P13/RT-11 可移植部署修复已确认在 `main` 的 `4899f9f`：月度报价提醒 systemd 模板不再写死 `/home/ubuntu`，部署器注入仓内 `id_business.py` 路径并拒绝未解析占位符；`tests/test_biz16_deploy_runtime.py tests/test_maintenance_portability.py tests/test_runtime_entrypoint_portability.py tests/test_p13_portability.py tests/test_portable_media_paths.py` 结果 `17 passed`。该项为已进入主线的既有提交，不重复计数。
 
 - 修复 `selfmedia/creation/workflow.py` 中候选 payload 重复字典起始行后，原 P1 定向集合重新通过：`120 passed, 14 subtests passed`。
 - 仓库根目录全量 `pytest` 当前不能作为整体绿灯：跨子项目收集时缺少 `openclaw_media` 安装包、`httpx`、`opentimelineio` 等独立依赖，收集阶段出现 71 个错误；这些错误不归因于本轮 P1 定向改动，后续按子项目依赖矩阵拆开验证。
