@@ -108,4 +108,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 
 - 并行云桥修复：`LB-03`、`LB-05`、`LB-06` 已分别由 `343424e`、`808395f`、`7acaf97` 收口；`LB-07` 由 `9aa8607` 增加 done 结果的内容等价幂等回执，重复接收不再因共享 vault 路径冲突失败。云桥定向集合 `24 passed`。
 
+- 并行运行时核对：`LB-10` 已由 `808395f` 使 frozen media contract 在仓内 clean checkout 可解析，`test_cloud_media_task_receiver.py` 相关集合 `4 passed`。`LB-13/LB-14/LH-01` 仍明确属于当前仓不存在的 `photo-content-os/` 脚本边界，未伪造关闭。
+
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。尚未复验的 114 条不得自动记为已覆盖，部分覆盖条目也不得计入关闭数。
