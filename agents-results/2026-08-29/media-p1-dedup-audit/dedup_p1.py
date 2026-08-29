@@ -82,6 +82,9 @@ CLOSED = {
     "CPC-15": "c51fb43",
     "CPC-17": "c51fb43",
     "CPC-18": "fc37d2e",
+    "CPC-19": "8d3410c",
+    "CPC-20": "c51fb43",
+    "CPC-21": "6dbc1ba",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
