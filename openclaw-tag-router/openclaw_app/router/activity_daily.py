@@ -1,8 +1,14 @@
 from __future__ import annotations
 
-from urllib.parse import unquote, urlparse
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
+from common.activity_links import (
+    canonical_link_url as _shared_canonical_link_url,
+    link_field_name as _shared_link_field_name,
+    normalize_link_items as _shared_normalize_link_items,
+    split_link_fields as _shared_split_link_fields,
+)
 from common.llm_client import is_model_capacity_failure, model_capacity_failure_detail
 
 from .tag_router_common import *
@@ -840,24 +846,11 @@ class ActivityDailyMixin:
 
     @classmethod
     def _activity_split_link_fields(cls, links: Any) -> dict[str, str]:
-        fields: dict[str, list[str]] = {}
-        for item in cls._activity_normalize_link_items(links):
-            field_name = cls._activity_link_field_name(item["label"], item["url"])
-            if not field_name:
-                continue
-            fields.setdefault(field_name, []).append(f"{item['label']}：{item['url']}")
-        return {field: "\n".join(values) for field, values in fields.items()}
+        return _shared_split_link_fields(links)
 
     @staticmethod
     def _activity_link_field_name(label: str, url: str) -> str:
-        text = f"{label} {url}".lower()
-        if "douyin.com/note" in text or any(keyword in text for keyword in ("爆款", "示范", "范式", "参考")):
-            return "爆款示范链接"
-        if any(keyword in text for keyword in ("返稿", "报名", "报名表", "表单", "sheets", "forms", "wjx")):
-            return "返稿链接"
-        if any(keyword in text for keyword in ("活动文档", "文档", "详情", "规则", "brief", "wiki", "docx")):
-            return "活动文档链接"
-        return ""
+        return _shared_link_field_name(label, url)
 
     @classmethod
     def _activity_fields_with_split_links(cls, fields: dict[str, Any]) -> dict[str, Any]:
@@ -869,53 +862,11 @@ class ActivityDailyMixin:
 
     @staticmethod
     def _activity_canonical_link_url(url: str) -> str:
-        cleaned = str(url or "").strip().rstrip("，。；、.）)]】")
-        text_fragment = re.search(r"(?:[#?&](?::~:)?text=)([^\s]+)", cleaned)
-        if text_fragment:
-            decoded = unquote(text_fragment.group(1)).strip().rstrip("，。；、.）)]】")
-            nested = re.search(r"https?://\S+", decoded)
-            if nested:
-                cleaned = nested.group(0).rstrip("，。；、.）)]】")
-        return cleaned
+        return _shared_canonical_link_url(url)
 
     @staticmethod
     def _activity_normalize_link_items(links: Any) -> list[dict[str, str]]:
-        if isinstance(links, str):
-            raw_items = []
-            for line in links.splitlines():
-                line = line.strip(" -\t")
-                if not line:
-                    continue
-                match = re.search(r"(https?://\S+)", line)
-                if not match:
-                    continue
-                url = ActivityDailyMixin._activity_canonical_link_url(match.group(1))
-                label = line[: match.start()].rstrip("：: -\t") or "来源链接"
-                raw_items.append({"label": label, "url": url})
-        elif isinstance(links, list):
-            raw_items = links
-        else:
-            raw_items = []
-        normalized: list[dict[str, str]] = []
-        seen: set[str] = set()
-        for item in raw_items:
-            if isinstance(item, dict):
-                label = str(item.get("label") or "来源链接").strip() or "来源链接"
-                url = ActivityDailyMixin._activity_canonical_link_url(str(item.get("url") or ""))
-            else:
-                text = str(item or "").strip()
-                match = re.search(r"(https?://\S+)", text)
-                if not match:
-                    continue
-                url = ActivityDailyMixin._activity_canonical_link_url(match.group(1))
-                label = text[: match.start()].rstrip("：: -\t") or "来源链接"
-            if not url:
-                continue
-            if url in seen:
-                continue
-            seen.add(url)
-            normalized.append({"label": label, "url": url})
-        return normalized
+        return _shared_normalize_link_items(links)
 
     def handle_日程(self, message: Message) -> TaskResult:
         hierarchy_result = self._maybe_handle_daily_hierarchy_records(message, "日程")

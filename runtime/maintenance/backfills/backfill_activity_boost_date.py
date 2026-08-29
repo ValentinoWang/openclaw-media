@@ -10,8 +10,18 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote
 from zoneinfo import ZoneInfo
+
+ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from common.activity_links import (  # noqa: E402
+    canonical_link_url,
+    link_field_name,
+    normalize_link_items,
+    split_link_fields,
+)
 
 
 REMINDER_ROOT = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_ROOT") or Path.home() / "openclaw-feishu-reminder")
@@ -41,76 +51,10 @@ def load_json(path: Path, *, env_name: str) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def canonical_link_url(url: str) -> str:
-    cleaned = str(url or "").strip().rstrip("，。；、.）)]】")
-    text_fragment = re.search(r"(?:[#?&](?::~:)?text=)([^\s]+)", cleaned)
-    if text_fragment:
-        decoded = unquote(text_fragment.group(1)).strip().rstrip("，。；、.）)]】")
-        nested = re.search(r"https?://\S+", decoded)
-        if nested:
-            cleaned = nested.group(0).rstrip("，。；、.）)]】")
-    return cleaned
-
-
-def normalize_link_items(links: Any) -> list[dict[str, str]]:
-    raw_items: list[Any]
-    if isinstance(links, str):
-        raw_items = []
-        for line in links.splitlines():
-            line = line.strip(" -\t")
-            if not line:
-                continue
-            match = re.search(r"(https?://\S+)", line)
-            if not match:
-                continue
-            raw_items.append(
-                {
-                    "label": line[: match.start()].rstrip("：: -\t") or "来源链接",
-                    "url": canonical_link_url(match.group(1)),
-                }
-            )
-    elif isinstance(links, list):
-        raw_items = links
-    else:
-        raw_items = []
-    normalized: list[dict[str, str]] = []
-    seen: set[str] = set()
-    for item in raw_items:
-        if isinstance(item, dict):
-            label = str(item.get("label") or "来源链接").strip() or "来源链接"
-            url = canonical_link_url(str(item.get("url") or ""))
-        else:
-            text = str(item or "").strip()
-            match = re.search(r"(https?://\S+)", text)
-            if not match:
-                continue
-            label = text[: match.start()].rstrip("：: -\t") or "来源链接"
-            url = canonical_link_url(match.group(1))
-        if url and url not in seen:
-            seen.add(url)
-            normalized.append({"label": label, "url": url})
-    return normalized
-
-
-def link_field_name(label: str, url: str) -> str:
-    text = f"{label} {url}".lower()
-    if any(marker in text for marker in ("爆款", "示范", "范式", "参考", "douyin.com/note")):
-        return "爆款示范链接"
-    if any(marker in text for marker in ("返稿", "报名", "表单", "报名表", "sheets/", "forms.", "wjx.cn")):
-        return "返稿链接"
-    if any(marker in text for marker in ("活动文档", "文档", "详情", "规则", "brief", "wiki/", "docx/")):
-        return "活动文档链接"
-    return ""
-
-
-def split_link_fields(links: Any) -> dict[str, str]:
-    grouped: dict[str, list[str]] = {}
-    for item in normalize_link_items(links):
-        field_name = link_field_name(item["label"], item["url"])
-        if not field_name:
-            continue
-        grouped.setdefault(field_name, []).append(f"{item['label']}：{item['url']}")
-    return {name: "\n".join(values) for name, values in grouped.items() if values}
+# canonical_link_url / normalize_link_items / link_field_name /
+# split_link_fields now live in common/activity_links.py (imported above)
+# -- consolidated from this file and activity_daily.py's near-duplicate
+# ActivityDailyMixin._activity_* methods, see the url-12 dedup audit.
 
 
 def normalize_date(value: Any, *, base_year: int) -> str:

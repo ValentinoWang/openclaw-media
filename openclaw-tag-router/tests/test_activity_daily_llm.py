@@ -295,6 +295,42 @@ class ActivityDailyLlmTest(unittest.TestCase):
         self.assertEqual(split["返稿链接"], "返稿报名表：https://bytedance.larkoffice.com/sheets/Ho28s2373h4akNtWWz8cnxqZnhb")
         self.assertEqual(split["活动文档链接"], "活动文档：https://bytedance.larkoffice.com/wiki/Ixs9wp88vioGt0kVrhHcZmkgnZg")
 
+    def test_activity_link_field_name_does_not_misfire_on_bare_forms_or_sheets_word(self) -> None:
+        # "forms"/"sheets" appearing as ordinary label text (not a "forms."
+        # or "sheets/" URL fragment) must not be misclassified as a 返稿链接
+        # -- regression coverage for the url-12 dedup audit's anchored
+        # keyword fix (common/activity_links.py::link_field_name).
+        harness = DailyHarness({})
+        links = [
+            {
+                "label": "这是forms与sheets排版说明文档",
+                "url": "https://bytedance.larkoffice.com/docx/AbCdEfG12345",
+            }
+        ]
+
+        split = harness._activity_split_link_fields(links)
+
+        self.assertNotIn("返稿链接", split)
+        self.assertEqual(
+            split["活动文档链接"],
+            "这是forms与sheets排版说明文档：https://bytedance.larkoffice.com/docx/AbCdEfG12345",
+        )
+
+    def test_activity_link_field_name_matches_anchored_forms_and_wjx_domains(self) -> None:
+        harness = DailyHarness({})
+        links = [
+            {"label": "参与本次活动", "url": "https://forms.feishu.cn/share/AbCdEfG12345"},
+            {"label": "参与本次活动", "url": "https://v.wjx.cn/vm/Q0Rf163.aspx"},
+        ]
+
+        split = harness._activity_split_link_fields(links)
+
+        self.assertEqual(
+            split["返稿链接"],
+            "参与本次活动：https://forms.feishu.cn/share/AbCdEfG12345\n"
+            "参与本次活动：https://v.wjx.cn/vm/Q0Rf163.aspx",
+        )
+
     def test_activity_legacy_brief_link_text_remains_renderable(self) -> None:
         harness = DailyHarness({})
         legacy_text = (
