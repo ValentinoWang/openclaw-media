@@ -6877,6 +6877,10 @@ components:
           items:
             type: string
             format: uri
+        recentPostLinkResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountMonitorLinkResult'
         recentStatus:
           type:
           - string
@@ -6908,6 +6912,7 @@ components:
       - detail
       - enabled
       - recentPostUrls
+      - recentPostLinkResults
       - recentStatus
       - recentPostCount
       - recentTotalInteractions
@@ -6929,6 +6934,27 @@ components:
       required:
       - recentPostUrls
       - enabled
+    AccountMonitorLinkResult:
+      type: object
+      additionalProperties: false
+      properties:
+        url:
+          type: string
+          format: uri
+        platform:
+          type: string
+        kind:
+          type: string
+          enum: [post, profile, short, unknown]
+        content_id:
+          type:
+          - string
+          - 'null'
+        canonical_url:
+          type:
+          - string
+          - 'null'
+      required: [url, platform, kind, content_id, canonical_url]
     AssetListResponse:
       type: object
       additionalProperties: false

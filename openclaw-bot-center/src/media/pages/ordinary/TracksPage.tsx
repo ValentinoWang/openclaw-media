@@ -117,6 +117,18 @@ type AccountMonitorResponse = {
   detail: string | null;
   enabled?: boolean;
   recentPostUrls?: string[];
+  recentPostLinkResults?: Array<{
+    url: string;
+    platform: string;
+    kind: "post" | "profile" | "short" | "unknown";
+    content_id: string | null;
+    canonical_url: string | null;
+  }>;
+  recentStatus?: string | null;
+  recentPostCount?: number | null;
+  recentTotalInteractions?: number | null;
+  recentError?: string | null;
+  recentReportSummary?: string | null;
 };
 
 type ResourceState<T> =
@@ -460,6 +472,7 @@ function TracksPage() {
             selectedAccountId={selectedAccountId}
             state={accountDetailState}
             monitorState={accountMonitorState}
+            onMonitorStateChange={setAccountMonitorState}
             session={session}
             trackState={trackState}
           />
@@ -1162,12 +1175,14 @@ function OwnedAccountInspector({
   selectedAccountId,
   state,
   monitorState,
+  onMonitorStateChange,
   session,
   trackState,
 }: {
   selectedAccountId: string | null;
   state: ResourceState<DetailResponse<OwnedAccountSummary>> | null;
   monitorState: ResourceState<AccountMonitorResponse> | null;
+  onMonitorStateChange: Dispatch<ResourceState<AccountMonitorResponse> | null>;
   session: NonNullable<ReturnType<typeof useMediaWeb>["session"]>;
   trackState: ResourceState<ListResponse<TrackSummary>>;
 }) {
@@ -1240,7 +1255,7 @@ function OwnedAccountInspector({
               <Field label="台账更新时间" value={formatDate(account.updatedAt)} />
             </InspectorSection>
 
-            <AccountMonitorSection state={monitorState} accountId={account.publicAccountId} session={session} />
+            <AccountMonitorSection state={monitorState} accountId={account.publicAccountId} session={session} onStateChange={onMonitorStateChange} />
           </div>
         ) : (
           <SurfaceState kind="empty" title="详情为空" detail="该账号没有可展示的详情记录。" />
@@ -1268,10 +1283,12 @@ function AccountMonitorSection({
   state,
   accountId,
   session,
+  onStateChange,
 }: {
   state: ResourceState<AccountMonitorResponse> | null;
   accountId: string;
   session: NonNullable<ReturnType<typeof useMediaWeb>["session"]>;
+  onStateChange: Dispatch<ResourceState<AccountMonitorResponse> | null>;
 }) {
   const [editing, setEditing] = useState(false);
   const [enabled, setEnabled] = useState(true);
@@ -1280,6 +1297,7 @@ function AccountMonitorSection({
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const urls = extractHttpUrls(urlText);
   const submittedUrls = state?.kind === "ready" ? state.data.recentPostUrls ?? [] : [];
+  const canEdit = state?.kind === "ready" && state.data.status === "available";
 
   useEffect(() => {
     if (state?.kind !== "ready") return;
@@ -1304,6 +1322,7 @@ function AccountMonitorSection({
         csrfToken: session.csrfToken,
         idempotencyKey: newIdempotencyKey("account-monitor-poll"),
       });
+      onStateChange({ kind: "ready", data: polled });
       setActionMessage(polled.detail || saved.detail || (polled.status === "available" ? "轮询完成，但未返回作品结果。" : "账号监控暂不可用。"));
       setActionState("idle");
       setEditing(false);
@@ -1329,12 +1348,30 @@ function AccountMonitorSection({
         />
       ) : (
         <div className={styles.monitorContent} data-monitor-state="available">
-          <StatusBadge tone="success">监控适配器可用</StatusBadge>
+          <StatusBadge tone={monitorStatusTone(state.data.recentStatus)}>{monitorStatusLabel(state.data.recentStatus)}</StatusBadge>
+          <Field label="监控开关" value={state.data.enabled ? "已启用" : "未启用"} />
           <Field label="最近检查" value={formatDate(state.data.checkedAt)} />
-          {state.data.detail ? <p className={styles.mutedCopy}>{state.data.detail}</p> : null}
+          <Field label="最近作品数" value={formatMetric(state.data.recentPostCount)} />
+          <Field label="最近总互动" value={formatMetric(state.data.recentTotalInteractions)} />
+          <Field label="近期作品链接" value={formatMetric(state.data.recentPostUrls?.length)} />
+          {state.data.recentPostLinkResults?.length ? (
+            <div className={styles.monitorLinkResults} aria-label="近期作品链接判定">
+              {state.data.recentPostLinkResults.map((result) => (
+                <div className={styles.monitorLinkResult} key={`${result.url}-${result.kind}`}>
+                  <StatusBadge tone={result.kind === "post" ? "success" : result.kind === "short" ? "warning" : "accent"}>
+                    {monitorLinkLabel(result)}
+                  </StatusBadge>
+                  <span className={styles.monitorLinkUrl}>{result.url}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {state.data.recentError ? <p className={styles.monitorError}>{state.data.recentError}</p> : null}
+          {state.data.recentReportSummary ? <p className={styles.mutedCopy}>{state.data.recentReportSummary}</p> : null}
+          {state.data.detail && state.data.detail !== state.data.recentReportSummary ? <p className={styles.mutedCopy}>{state.data.detail}</p> : null}
         </div>
       )}
-      {editing ? (
+      {canEdit && editing ? (
         <div className={styles.monitorEditor} data-monitor-editor>
           <label className={styles.monitorEditorLabel}>
             <span>近期作品链接</span>
@@ -1347,9 +1384,9 @@ function AccountMonitorSection({
             <button className={styles.secondaryAction} type="button" disabled={actionState === "saving" || actionState === "polling"} onClick={() => setEditing(false)}>取消</button>
           </div>
         </div>
-      ) : (
+      ) : canEdit ? (
         <button className={styles.secondaryAction} type="button" onClick={() => setEditing(true)}>编辑监控</button>
-      )}
+      ) : null}
       {actionMessage ? <p className={styles.monitorActionMessage} role="status">{actionMessage}</p> : null}
       <div className={styles.monitorReference} data-monitor-reference>
         <div className={styles.monitorReferenceHeader}>
@@ -1368,6 +1405,43 @@ function AccountMonitorSection({
 function extractHttpUrls(value: string): string[] {
   const matches = value.match(/https?:\/\/[^\s<>"'`]+/gi) ?? [];
   return Array.from(new Set(matches.map((url) => url.replace(/[),.;!?]+$/, ""))));
+}
+
+function formatMetric(value: number | null | undefined): string {
+  return value === null || value === undefined ? "未记录" : value.toLocaleString("zh-CN");
+}
+
+function monitorLinkLabel(result: { platform: string; kind: string; content_id: string | null }): string {
+  const platform = result.platform === "douyin" ? "抖音" : result.platform === "xiaohongshu" ? "小红书" : "未知平台";
+  if (result.kind === "post") return `${platform}作品${result.content_id ? ` ${result.content_id}` : ""}`;
+  if (result.kind === "profile") return "这是账号主页";
+  if (result.kind === "short") return `${platform}短链，待轮询确认`;
+  return "链接格式无法确认";
+}
+
+function monitorStatusLabel(value: string | null | undefined): string {
+  const labels: Record<string, string> = {
+    ok: "监控正常",
+    正常: "监控正常",
+    ok_empty: "未监控到内容",
+    无可轮询账号: "未监控到内容",
+    partial: "部分完成",
+    部分成功: "部分完成",
+    error: "轮询失败",
+    轮询失败: "轮询失败",
+    missing: "未获取到作品",
+    未获取到作品: "未获取到作品",
+  };
+  return labels[value || ""] || "监控适配器可用";
+}
+
+function monitorStatusTone(value: string | null | undefined): "success" | "warning" | "accent" | "neutral" {
+  const normalized = monitorStatusLabel(value);
+  if (normalized === "监控正常") return "success";
+  if (normalized === "监控适配器可用") return "neutral";
+  if (normalized === "部分完成" || normalized === "未监控到内容" || normalized === "未获取到作品") return "warning";
+  if (normalized === "轮询失败") return "accent";
+  return "neutral";
 }
 
 function toMonitorActionError(error: unknown): string {

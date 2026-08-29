@@ -104,6 +104,7 @@ class H00AccountMonitorAdapter:
             "detail": fields.get("最近错误") or fields.get("最近日报摘要"),
             "enabled": account["enabled"],
             "recentPostUrls": account["urls"],
+            "recentPostLinkResults": _monitor_link_results(account["urls"]),
             "recentStatus": fields.get("最近状态"),
             "recentPostCount": fields.get("最近作品数"),
             "recentTotalInteractions": fields.get("最近总互动"),
@@ -180,6 +181,11 @@ class H00AccountMonitorAdapter:
             if str(fields.get("public_account_id") or fields.get("publicAccountId") or "").strip() == public_account_id:
                 return record
         raise TrackNotFound("owned account monitor not found")
+
+
+def _monitor_link_results(urls: list[str]) -> list[dict[str, Any]]:
+    """Expose the shared link classification so clients never reimplement platform rules."""
+    return [{"url": url, **classify_post_link(url)} for url in urls]
 
 
 class DatabaseConnection(Protocol):

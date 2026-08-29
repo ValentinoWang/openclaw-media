@@ -6978,12 +6978,13 @@ components:
         detail: { type: [string, 'null'] }
         enabled: { type: boolean }
         recentPostUrls: { type: array, items: { type: string, format: uri } }
+        recentPostLinkResults: { type: array, items: { $ref: '#/components/schemas/AccountMonitorLinkResult' } }
         recentStatus: { type: [string, 'null'] }
         recentPostCount: { type: [integer, 'null'] }
         recentTotalInteractions: { type: [integer, 'null'] }
         recentError: { type: [string, 'null'] }
         recentReportSummary: { type: [string, 'null'] }
-      required: [schemaVersion, revision, status, publicAccountId, accountName, platform, checkedAt, detail, enabled, recentPostUrls, recentStatus, recentPostCount, recentTotalInteractions, recentError, recentReportSummary]
+      required: [schemaVersion, revision, status, publicAccountId, accountName, platform, checkedAt, detail, enabled, recentPostUrls, recentPostLinkResults, recentStatus, recentPostCount, recentTotalInteractions, recentError, recentReportSummary]
     AccountMonitorUpdateRequest:
       type: object
       additionalProperties: false
@@ -6994,6 +6995,16 @@ components:
           items: { type: string, format: uri, pattern: '^https?://' }
         enabled: { type: boolean }
       required: [recentPostUrls, enabled]
+    AccountMonitorLinkResult:
+      type: object
+      additionalProperties: false
+      properties:
+        url: { type: string, format: uri }
+        platform: { type: string }
+        kind: { type: string, enum: [post, profile, short, unknown] }
+        content_id: { type: [string, 'null'] }
+        canonical_url: { type: [string, 'null'] }
+      required: [url, platform, kind, content_id, canonical_url]
     AssetListResponse:
       type: object
       additionalProperties: false

@@ -825,6 +825,35 @@
   padding: 12px 0;
 }
 
+.monitorError {
+  margin: 0;
+  color: var(--mg-danger);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.monitorLinkResults {
+  display: grid;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.monitorLinkResult {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.monitorLinkUrl {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--mg-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .monitorReference {
   margin-top: 4px;
   padding-top: 12px;
