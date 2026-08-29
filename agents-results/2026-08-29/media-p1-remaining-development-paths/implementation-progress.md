@@ -138,4 +138,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 
 - 飞书 Base 表清单复核（2026-08-29）：使用远端已配置应用身份调用官方 Bitable 表清单接口，应用 `OmjkbgBkwa2JEysEN8uc5PMhnTb` 共返回 18 张表，包含 `P01_达人档案`（`tblBrERiQnWvZFwp`）和 `H02_账号指标快照`（`tblYqbE2vkr9RGSK`），未发现字段含 `近期作品链接`、`作品链接` 或 `监控链接` 的独立 v1 账号监控表。`P01_达人档案` 已被运行时门禁识别为 v2 并拒绝写入。当前 release 环境文件已设为 `600`，但 timer 保持禁用；需要在该 Base 中建立/提供 v1 监控表及 URL 后，才能完成 `BIZ-05`、`CD-13` 的真实日报验收。
 
+- 历史飞书应用复核（2026-08-29）：继续检查远端旧配置引用的两个 Base 应用，`BazubRWJ7a9SLRsLr4Bc8IvAnCg` 仅有项目、任务、发布复盘和商务账号表，`GgOewSQVziIEaIkYoZYcs1c7nTh` 仅有爆款内容积累表；两者同样没有可识别为 v1 账号监控表的表。旧生成备份虽保留过“近期作品链接”字段定义，但没有当前可用的 Base/表地址，不能据此伪造 URL。
+
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。上方 `31/7/11` 与“尚未复验 114 条”均为历史分片快照，不是当前实时总计；当前总计以 `dedup_p1.py --json` 输出的 `153/2/0` 为准。
