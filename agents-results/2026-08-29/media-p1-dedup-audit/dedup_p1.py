@@ -36,6 +36,7 @@ CLOSED = {
     "CD-06": "e48fccf", "CD-07": "e48fccf", "CD-08": "e48fccf",
     "CD-02": "cedd7e9", "CD-10": "a248d8b", "CD-11": "7fe94e4",
     "CD-14": "7fe94e4", "CD-16": "0d6e8b8",
+    "CD-18": "6a669f2",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
