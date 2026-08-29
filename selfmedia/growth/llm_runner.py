@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable
 
@@ -173,7 +174,6 @@ TASK_TEXT_FIELDS: dict[str, tuple[str, ...]] = {
     ),
     "creation_decision_brief": (
         "decision_goal",
-        "recommended_next_capability_id",
         "display_title",
         "display_summary",
     ),
@@ -201,7 +201,7 @@ TASK_TEXT_LIST_FIELDS: dict[str, tuple[str, ...]] = {
         "next_content_actions",
     ),
     "creation_decision_brief": ("risk_or_missing_info",),
-    "publishing_pack_build": ("hashtags", "publish_checklist", "risk_notes"),
+    "publishing_pack_build": ("publish_checklist", "risk_notes"),
 }
 
 DECISION_CANDIDATE_REQUIRED_FIELDS = (
@@ -213,6 +213,8 @@ DECISION_CANDIDATE_REQUIRED_FIELDS = (
     "self_check",
     "source_refs",
 )
+DECISION_CANDIDATE_TEXT_FIELDS = DECISION_CANDIDATE_REQUIRED_FIELDS[:-1]
+CHINESE_OUTPUT_MIN_RATIO = 0.2
 
 
 @dataclass(frozen=True)
@@ -433,6 +435,20 @@ def _task_payload_validation_error(task: str, payload: dict[str, Any]) -> str:
     ]
     if invalid_text_lists:
         return f"增长内容结果的列表项必须是文本（任务 {task}）：{', '.join(invalid_text_lists)}"
+    non_chinese_fields = [
+        field
+        for field in TASK_TEXT_FIELDS.get(task, ())
+        if not _has_sufficient_chinese(payload[field])
+    ]
+    if non_chinese_fields:
+        return f"增长内容结果的创作者可见文本必须使用中文（任务 {task}）：{', '.join(non_chinese_fields)}"
+    non_chinese_lists = [
+        field
+        for field in TASK_TEXT_LIST_FIELDS.get(task, ())
+        if any(not _has_sufficient_chinese(item) for item in payload[field])
+    ]
+    if non_chinese_lists:
+        return f"增长内容结果的创作者可见列表文本必须使用中文（任务 {task}）：{', '.join(non_chinese_lists)}"
     non_empty_fields = TASK_REQUIRED_NON_EMPTY_FIELDS.get(task, ())
     empty = [field for field in non_empty_fields if not _has_semantic_value(payload.get(field))]
     if empty:
@@ -505,14 +521,20 @@ def _decision_candidate_validation_error(value: Any) -> str:
     for index, candidate in enumerate(value):
         if not isinstance(candidate, dict):
             return f"增长内容结果的第 {index + 1} 个选题候选必须是对象"
-        text_fields = DECISION_CANDIDATE_REQUIRED_FIELDS[:-1]
         invalid_text = [
             field
-            for field in text_fields
+            for field in DECISION_CANDIDATE_TEXT_FIELDS
             if not isinstance(candidate.get(field), str) or not candidate[field].strip()
         ]
         if invalid_text:
             return f"增长内容结果的第 {index + 1} 个选题候选文本字段无效：{', '.join(invalid_text)}"
+        non_chinese = [
+            field
+            for field in DECISION_CANDIDATE_TEXT_FIELDS
+            if not _has_sufficient_chinese(candidate[field])
+        ]
+        if non_chinese:
+            return f"增长内容结果的第 {index + 1} 个选题候选文本必须使用中文：{', '.join(non_chinese)}"
         missing = [field for field in DECISION_CANDIDATE_REQUIRED_FIELDS if not _has_semantic_value(candidate.get(field))]
         if missing:
             return f"增长内容结果的第 {index + 1} 个选题候选缺少必填字段：{', '.join(missing)}"
@@ -521,6 +543,14 @@ def _decision_candidate_validation_error(value: Any) -> str:
         if any(not isinstance(item, str) or not item.strip() for item in candidate["source_refs"]):
             return f"增长内容结果的第 {index + 1} 个选题候选 source_refs 必须包含非空文本"
     return ""
+
+
+def _has_sufficient_chinese(value: str) -> bool:
+    text = re.sub(r"(?<![A-Za-z0-9_])[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+(?![A-Za-z0-9_])", "", value.strip())
+    text = re.sub(r"(?<![A-Za-z0-9])[A-Za-z]+[A-Z][A-Za-z0-9]*(?![A-Za-z0-9])", "", text)
+    cjk = len(re.findall(r"[\u3400-\u9fff]", text))
+    letters = len(re.findall(r"[A-Za-z\u3400-\u9fff]", text))
+    return cjk / letters >= CHINESE_OUTPUT_MIN_RATIO if letters else True
 
 
 def _dedupe(values: Iterable[str]) -> list[str]:

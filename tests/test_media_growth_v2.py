@@ -252,6 +252,24 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(result["status"], "pending_manual")
         self.assertIn("缺少必填字段", result["reason"])
 
+    def test_growth_llm_runner_rejects_english_creator_visible_text(self) -> None:
+        payload = self._research_payload()
+        payload["display_summary"] = "A generic English summary"
+
+        result = GrowthLLMJsonRunner(
+            provider=lambda *_args, **_kwargs: payload,
+            settings=object(),
+            max_retries=0,
+        ).run_json(
+            task="external_research_brief",
+            prompt="基于证据生成调研结论。",
+            evidence_bundle=self._ready_knowledge_evidence_bundle(),
+        )
+
+        self.assertEqual(result["status"], "pending_manual")
+        self.assertIn("创作者可见文本必须使用中文", result["reason"])
+        self.assertIn("display_summary", result["reason"])
+
     def test_growth_llm_runner_repairs_incomplete_success_once_with_llm(self) -> None:
         calls: list[str] = []
 
