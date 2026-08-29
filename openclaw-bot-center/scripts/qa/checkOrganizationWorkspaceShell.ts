@@ -47,7 +47,9 @@ assert.doesNotMatch(workspace, /tenantId/, 'shared workspace shell must not disp
 
 assert.match(app, /const isOrganization = session\?\.workspaceMode === 'organization_lark' && session\.bodyAuthority === 'lark'/, 'MediaApp must use the server workspace authority for organization routing')
 assert.match(app, /const organizationMediaNav/, 'organization shell must have a dedicated read-only navigation')
+assert.match(app, /organizationMediaNav = \[[\s\S]*path: '\/tracks', label: '账号与赛道'/, 'organization navigation must expose the account and track page')
 assert.match(app, /path="\/organization-workspace"/, 'organization shell route is missing')
+assert.match(app, /path="\/tracks" element=\{isOrganization \? <TracksPage \/> : ordinaryRoute\(<TracksPage \/>\)\}/, 'organization members must be able to open the account and track page')
 assert.match(app, /isOrganization\s*\?\s*<OrganizationGlobalToolbar\s*\/>/, 'organization mode must not render the ordinary task toolbar')
 assert.match(app, /isOrganization\s*\?\s*<Navigate to="\/organization-workspace" replace \/>/, 'ordinary and admin routes must return to the organization shell')
 

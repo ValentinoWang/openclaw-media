@@ -57,6 +57,7 @@ const personalMediaNav = [
 
 const organizationMediaNav = [
   { path: '/organization-workspace', label: '组织工作区' },
+  { path: '/tracks', label: '账号与赛道' },
 ] as const
 
 export default function MediaApp() {
@@ -129,7 +130,7 @@ function ProductShell() {
         <Route path="/workspace/preview/:artifactId" element={isPersonal ? <PersonalWorkspaceShellPage /> : <Navigate to="/workspace" replace />} />
         <Route path="/organization-workspace" element={isOrganization ? <OrganizationWorkspaceShellPage /> : <Navigate to={defaultRoute} replace />} />
         <Route path="/overview" element={ordinaryRoute(<OverviewPage />)} />
-        <Route path="/tracks" element={ordinaryRoute(<TracksPage />)} />
+        <Route path="/tracks" element={isOrganization ? <TracksPage /> : ordinaryRoute(<TracksPage />)} />
         <Route path="/assets" element={ordinaryRoute(<AssetsPage />)} />
         <Route path="/decisions" element={ordinaryRoute(<DecisionsPage />)} />
         <Route path="/runs" element={ordinaryRoute(<RunsPage />)} />

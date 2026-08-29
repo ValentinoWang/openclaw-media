@@ -120,7 +120,13 @@ const personalNavigation: readonly NavigationGroup[] = [
 ]
 
 const organizationNavigation: readonly NavigationGroup[] = [
-  { label: '组织工作区', items: [{ path: '/organization-workspace', label: '组织工作区', icon: Cloud }] },
+  {
+    label: '组织工作区',
+    items: [
+      { path: '/organization-workspace', label: '组织工作区', icon: Cloud },
+      { path: '/tracks', label: '账号与赛道', detail: '自有账号与监控', icon: Users },
+    ],
+  },
 ]
 
 /** 主题偏好：未显式选择时跟随系统（不打 data-theme 标记）。
@@ -331,7 +337,7 @@ function ProductShell() {
             <Route path="/business" element={ordinaryRoute(<BusinessPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
             <Route path="/desk" element={ordinaryRoute(<DeskPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
             <Route path="/overview" element={ordinaryRoute(<OverviewPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/tracks" element={ordinaryRoute(<TracksPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
+            <Route path="/tracks" element={isOrganization ? <TracksPage /> : ordinaryRoute(<TracksPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
             <Route path="/assets" element={ordinaryRoute(<AssetsPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
             <Route path="/decisions" element={ordinaryRoute(<DecisionsPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
             <Route path="/publishing" element={ordinaryRoute(<PublishingPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
