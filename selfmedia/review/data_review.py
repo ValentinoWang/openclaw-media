@@ -1484,6 +1484,7 @@ def data_review_doc_blocks(
         _paragraph(f"参考模板：{guide_url}"),
         _heading(2, "一、核心结论"),
         _paragraph(str(analysis.get("conclusion") or "")),
+        _paragraph(f"表现评级：{normalize_performance_rating(analysis.get('performance_level'))}"),
         _heading(2, "二、创作计划对照"),
         *_list_blocks(_review_lines(analysis.get("plan_comparison"))),
         _heading(2, "三、下一步动作"),
@@ -1509,6 +1510,8 @@ def data_review_doc_blocks(
         _heading(2, "十二、截图与可信度"),
         _paragraph(f"共 {len(screenshots)} 张后台截图，原图作为附件保留。"),
         *_list_blocks(_review_lines(analysis.get("data_quality_notes") or ["截图字段可读"])),
+        _heading(2, "十三、证据附录"),
+        _paragraph("原始分析结构保留在复盘 JSON 产物中；正文仅展示中文可读摘要，后台截图原图作为附件保留。"),
     ]
 
 
@@ -1525,6 +1528,36 @@ def _paragraph(text: str) -> dict[str, Any]:
 
 
 _REVIEW_LABELS = {
+    "account": "账号",
+    "data_quality_notes": "数据质量说明",
+    "data_window": "数据节点",
+    "metric_data_quality": "数据完整度",
+    "metric_interpretation": "数据解读",
+    "media_format": "作品形式",
+    "media_format_evidence": "形式依据",
+    "platform": "平台",
+    "publish_time": "发布时间",
+    "reviewed_at": "复盘时间",
+    "title": "作品标题",
+    "top_comments": "评论原话",
+    "track": "赛道",
+    "key_insights": "关键洞察",
+    "avg_watch_duration": "平均观看时长",
+    "bounce_2s_rate": "2 秒跳出率",
+    "bounce_rate": "跳出率",
+    "comments": "评论",
+    "completion_5s_rate": "5 秒完播率",
+    "completion_rate": "完播率",
+    "ctr": "点击率",
+    "follows": "新增关注",
+    "impressions": "曝光",
+    "interaction_rate": "互动率",
+    "likes": "点赞",
+    "reads": "阅读",
+    "saves": "收藏",
+    "shares": "分享",
+    "view_conversion_rate": "曝光到观看转化",
+    "views": "播放/阅读",
     "fact": "事实",
     "metric": "指标",
     "name": "指标",
@@ -1556,6 +1589,7 @@ _REVIEW_LABELS = {
     "plan_item": "计划项",
     "status": "对照结果",
     "next_step": "后续动作",
+    "validation_target": "验证指标",
 }
 
 _REVIEW_INTERNAL_FIELDS = frozenset(
@@ -1593,9 +1627,14 @@ def _review_value(value: Any, *, depth: int = 0) -> str:
         return "内容较多，详见复盘产物"
     if value in (None, "", []):
         return "未提供"
+    if isinstance(value, str):
+        parsed = parse_structured_text(value)
+        if not isinstance(parsed, str) or parsed != value:
+            return _review_value(parsed, depth=depth)
+        return value.strip() or "未提供"
     if isinstance(value, dict):
         return "；".join(
-            f"{_review_label(key)}：{_review_value(item, depth=depth + 1)}"
+            f"{_review_label(key)}：{_review_field_value(key, item, depth=depth + 1)}"
             for key, item in value.items()
             if not _is_internal_review_field(key) and item not in (None, "", [])
         ) or "未提供"
@@ -1604,12 +1643,22 @@ def _review_value(value: Any, *, depth: int = 0) -> str:
     return str(value).strip() or "未提供"
 
 
+def _review_field_value(key: Any, value: Any, *, depth: int) -> str:
+    """Translate canonical metric names while retaining the value renderer."""
+    if str(key or "").strip().lower() in {"metric", "name"} and isinstance(value, str):
+        mapped = _REVIEW_LABELS.get(value.strip().lower())
+        if mapped:
+            return mapped
+    return _review_value(value, depth=depth)
+
+
 def _review_lines(value: Any) -> list[str]:
     if value in (None, "", []):
         return ["暂无"]
+    value = parse_structured_text(value)
     if isinstance(value, dict):
         return [
-            f"{_review_label(key)}：{_review_value(item)}"
+            f"{_review_label(key)}：{_review_field_value(key, item, depth=1)}"
             for key, item in value.items()
             if not _is_internal_review_field(key) and item not in (None, "", [])
         ] or ["暂无"]
@@ -1631,7 +1680,7 @@ def _list_blocks(value: Any) -> list[dict[str, Any]]:
 def append_screenshot_images(document_id: str, screenshots: list[str], token: str) -> None:
     if not screenshots:
         return
-    _post_docx_children(document_id, document_id, [_heading(2, "十三、后台截图原图")], token)
+    _post_docx_children(document_id, document_id, [_heading(2, "十四、后台截图原图")], token)
     for path in screenshots[:12]:
         payload = _post_docx_children(document_id, document_id, [{"block_type": 27, "image": {}}], token)
         image_block_id = _find_created_block_id(payload, 27)
@@ -1852,12 +1901,22 @@ def render_data_review_report(payload: dict[str, Any]) -> str:
         "",
         str(analysis.get("conclusion") or ""),
         "",
+        f"表现评级：{normalize_performance_rating(analysis.get('performance_level'))}",
+        "",
         "## 作品形式",
         "",
         f"{_media_format_label(analysis.get('media_format'))}：{analysis.get('media_format_evidence') or ''}",
     ]
     for title, value in sections:
         lines.extend(["", f"## {title}", "", *(f"- {item}" for item in _review_lines(value))])
+    lines.extend(
+        [
+            "",
+            "## 证据附录",
+            "",
+            "原始分析结构保留在复盘 JSON 产物中；本报告正文仅展示中文可读摘要。",
+        ]
+    )
     return "\n".join(lines) + "\n"
 def _image_part(path: str) -> dict[str, Any]:
     p = Path(path)
