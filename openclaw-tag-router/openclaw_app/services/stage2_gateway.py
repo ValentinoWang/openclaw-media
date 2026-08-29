@@ -66,10 +66,16 @@ def _require_mapping(payload: Mapping[str, Any] | None) -> Mapping[str, Any]:
 
 
 def _reject_authority_fields(payload: Mapping[str, Any], allowed: frozenset[str]) -> None:
-    unknown = sorted(set(payload) - allowed)
+    unknown = sorted((str(key) for key in payload if not isinstance(key, str) or key not in allowed))
     if unknown:
         code = "authority_override" if any(key in _FORBIDDEN_AUTHORITY_FIELDS for key in unknown) else "invalid_request"
         raise Stage2GatewayError(code, "request contains server-owned or unsupported fields")
+
+
+def _reject_duplicate_aliases(payload: Mapping[str, Any], groups: tuple[tuple[str, ...], ...]) -> None:
+    for group in groups:
+        if sum(name in payload for name in group) > 1:
+            raise Stage2GatewayError("invalid_request", "request contains duplicate fields")
 
 
 def _pick(payload: Mapping[str, Any], *names: str, default: Any = None) -> Any:
@@ -134,6 +140,11 @@ class Stage2Gateway:
 
     def run_personal(self, payload: Mapping[str, Any] | None) -> dict[str, Any]:
         request = _require_mapping(payload)
+        _reject_duplicate_aliases(request, (
+            ("operation_id", "operationId"), ("idempotency_key", "idempotencyKey"),
+            ("confirmed_by", "confirmedBy"), ("confirmation_ref", "confirmationRef"),
+            ("source_rows", "sourceRows"), ("platform_constraints", "platformConstraints"),
+        ))
         _reject_authority_fields(request, _PERSONAL_FIELDS)
         self._reject_transport_sources(request)
         try:
@@ -158,6 +169,10 @@ class Stage2Gateway:
 
     def run_organization(self, payload: Mapping[str, Any] | None) -> dict[str, Any]:
         request = _require_mapping(payload)
+        _reject_duplicate_aliases(request, (
+            ("operation_id", "operationId"), ("idempotency_key", "idempotencyKey"),
+            ("source_rows", "sourceRows"),
+        ))
         _reject_authority_fields(request, _ORGANIZATION_FIELDS)
         self._reject_transport_sources(request)
         try:

@@ -170,6 +170,7 @@ class InMemoryReceiptStore:
 
     def __init__(self) -> None:
         self._records: dict[str, ReceiptRecord] = {}
+        self._claims: dict[str, tuple[str, float]] = {}
         self._lock = threading.RLock()
 
     @property
@@ -184,14 +185,19 @@ class InMemoryReceiptStore:
 
     def put(self, key: str, request_fingerprint: str, response: Mapping[str, Any]) -> None:
         with self._lock:
+            normalized_response = copy.deepcopy(dict(response))
             existing = self._records.get(key)
-            if existing is not None and existing.request_fingerprint != request_fingerprint:
-                raise IdempotencyConflict()
-            if existing is None:
+            if existing is not None:
+                if existing.request_fingerprint != request_fingerprint or _canonical_json(existing.response) != _canonical_json(normalized_response):
+                    raise IdempotencyConflict()
+            else:
                 self._records[key] = ReceiptRecord(
                     request_fingerprint=request_fingerprint,
-                    response=copy.deepcopy(dict(response)),
+                    response=normalized_response,
                 )
+            claim = self._claims.get(key)
+            if claim is not None and claim[0] == request_fingerprint:
+                self._claims.pop(key, None)
 
     def claim(self, key: str, request_fingerprint: str) -> ReceiptRecord | None:
         with self._lock:
@@ -200,12 +206,21 @@ class InMemoryReceiptStore:
                 if record.request_fingerprint != request_fingerprint:
                     raise IdempotencyConflict()
                 return copy.deepcopy(record)
+            now = datetime.now(timezone.utc).timestamp()
+            claim = self._claims.get(key)
+            if claim is not None:
+                if claim[0] != request_fingerprint:
+                    raise IdempotencyConflict()
+                if claim[1] > now:
+                    raise IdempotencyInProgress()
+            self._claims[key] = (request_fingerprint, now + 300.0)
             return None
 
     def release(self, key: str, request_fingerprint: str) -> None:
-        # In-memory records are only written after operation completion, so a
-        # failed operation has no reservation to release.
-        return None
+        with self._lock:
+            claim = self._claims.get(key)
+            if claim is not None and claim[0] == request_fingerprint:
+                self._claims.pop(key, None)
 
 
 class _CapturingPersonalWriter:
@@ -273,6 +288,18 @@ def _canonical_json(value: Any) -> str:
 
 def _digest(value: Any) -> str:
     return "sha256:" + hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def _stable_source_rows(value: list[Any] | None) -> list[Any] | None:
+    if value is None:
+        return None
+    def sort_value(row: Any) -> str:
+        as_dict = getattr(row, "as_dict", None)
+        return _canonical_json(as_dict() if callable(as_dict) else row)
+    try:
+        return sorted(value, key=sort_value)
+    except (TypeError, ValueError):
+        return value
 
 
 def _text(value: Any, label: str, maximum: int = 512) -> str:
@@ -504,7 +531,7 @@ class Stage2Runtime:
         confirmation_ref = _text(confirmation_ref, "confirmation_ref", 256)
         tradeoffs = _materialize_texts(tradeoffs, "tradeoff")
         risks = _materialize_texts(risks, "risk")
-        selected_sources = _choose_sources(sources, source_rows)
+        selected_sources = _stable_source_rows(_choose_sources(sources, source_rows))
         if platform_constraints is None:
             platform_constraints = {}
         if not isinstance(platform_constraints, Mapping):
@@ -599,7 +626,7 @@ class Stage2Runtime:
         trusted_open_url = _text(trusted_open_url, "trusted_open_url", 2048)
         if not trusted_open_url.startswith("https://") or any(char.isspace() for char in trusted_open_url):
             raise Stage2RuntimeError("untrusted_remote_url", "only an HTTPS trusted open URL is allowed")
-        selected_sources = _choose_sources(sources, source_rows)
+        selected_sources = _stable_source_rows(_choose_sources(sources, source_rows))
         payload = {
             "operationId": key,
             "route": mode,

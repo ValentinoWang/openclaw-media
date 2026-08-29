@@ -26,6 +26,33 @@ from urllib.parse import parse_qs, quote, urlsplit, urlunsplit
 
 LOGGER = logging.getLogger(__name__)
 
+
+def _reject_duplicate_json_fields(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in payload:
+            raise ValueError("request body contains duplicate fields")
+        payload[key] = value
+    return payload
+
+
+def _stage2_runtime_status(code: str) -> HTTPStatus:
+    if code in {"idempotency_conflict", "idempotency_in_progress"}:
+        return HTTPStatus.CONFLICT
+    if code in {"invalid_request", "route_mismatch", "generator_invalid"}:
+        return HTTPStatus.BAD_REQUEST
+    if code in {"authentication_required", "authentication_invalid", "session_invalid"}:
+        return HTTPStatus.UNAUTHORIZED
+    if code in {"authority_override", "binding_inactive", "binding_required", "binding_generation_mismatch", "binding_mismatch", "binding_tenant_mismatch", "personal_binding_forbidden", "unregistered_capability"}:
+        return HTTPStatus.FORBIDDEN
+    if code in {"adapter_required", "receipt_store_invalid", "writer_required"}:
+        return HTTPStatus.SERVICE_UNAVAILABLE
+    return HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def _stage2_authentication_error(exc: Stage2ServerContextError) -> Stage2GatewayError:
+    return Stage2GatewayError(exc.code, exc.message, status=exc.status)
+
 from ..account import (
     AccountAuthService,
     AccountError,
@@ -48,7 +75,11 @@ from ..services.media_web_tasks import MediaWebTaskError, MediaWebTaskService, T
 from ..services.stage1_writer_gate import WRITER_CLOSED_ERROR_CODE
 from ..services.stage2_gateway import Stage2GatewayError
 from ..services.stage2_runtime import Stage2RuntimeError
-from ..services.stage2_server_context import stage2_request_context
+from ..services.stage2_server_context import (
+    Stage2ServerContextError,
+    extract_session_token,
+    stage2_request_context,
+)
 from ..services.stage1_organization_provisioning import ProvisioningError
 from ..services.stage1_provisioning_runtime import (
     Stage1ProvisioningRuntime,
@@ -1388,10 +1419,10 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 self._handle_qq_event(self._read_json_body())
                 return
             if path == "/stage2/personal":
-                self._handle_stage2("personal", self._read_json_body(maximum_bytes=1024 * 1024))
+                self._handle_stage2("personal", self._read_json_body(maximum_bytes=1024 * 1024, reject_duplicates=True))
                 return
             if path == "/stage2/organization":
-                self._handle_stage2("organization", self._read_json_body(maximum_bytes=1024 * 1024))
+                self._handle_stage2("organization", self._read_json_body(maximum_bytes=1024 * 1024, reject_duplicates=True))
                 return
             self._send_api_error(HTTPStatus.NOT_FOUND, "not_found", "未找到该接口。")
         except MediaWebTaskError as exc:
@@ -1589,7 +1620,12 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: Any) -> None:
         return
 
-    def _read_json_body(self, *, maximum_bytes: int = 2 * 1024 * 1024) -> dict[str, Any]:
+    def _read_json_body(
+        self,
+        *,
+        maximum_bytes: int = 2 * 1024 * 1024,
+        reject_duplicates: bool = False,
+    ) -> dict[str, Any]:
         content_length = self.headers.get("Content-Length")
         if content_length is None:
             raise ValueError("missing content length")
@@ -1603,7 +1639,10 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             raise MediaWebTaskError("payload_too_large", "输入或文件超过大小限制。")
         raw_payload = self.rfile.read(length)
         try:
-            payload = json.loads(raw_payload or b"{}")
+            payload = json.loads(
+                raw_payload or b"{}",
+                object_pairs_hook=_reject_duplicate_json_fields if reject_duplicates else None,
+            )
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise ValueError("request body is not valid json") from exc
         if not isinstance(payload, dict):
@@ -3478,14 +3517,19 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             cookies: dict[str, str] = {}
             raw_cookie = self.headers.get("Cookie")
             if raw_cookie:
-                parsed = SimpleCookie()
-                try:
-                    parsed.load(raw_cookie)
-                except CookieError:
-                    parsed = SimpleCookie()
-                session_cookie = parsed.get("openclaw_session")
-                if session_cookie is not None:
-                    cookies["openclaw_session"] = session_cookie.value
+                session_values: list[str] = []
+                for fragment in raw_cookie.split(";"):
+                    name, separator, value = fragment.strip().partition("=")
+                    if separator and name.casefold() == "openclaw_session":
+                        session_values.append(value)
+                if len(session_values) > 1:
+                    raise Stage2GatewayError(
+                        "authentication_invalid",
+                        "检测到多个会话 Cookie，请只保留一个",
+                        status=HTTPStatus.UNAUTHORIZED,
+                    )
+                if session_values:
+                    cookies["openclaw_session"] = session_values[0]
             authorizations = self.headers.get_all("Authorization", failobj=[])
             if len(authorizations) > 1:
                 raise Stage2GatewayError(
@@ -3494,6 +3538,24 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                     status=HTTPStatus.UNAUTHORIZED,
                 )
             authorization = authorizations[0] if authorizations else None
+            bearer_token = None
+            if authorization is not None:
+                try:
+                    bearer_token = extract_session_token({"headers": {"Authorization": authorization}, "cookies": {}})
+                except Stage2ServerContextError as exc:
+                    raise _stage2_authentication_error(exc) from exc
+            cookie_token = None
+            if "openclaw_session" in cookies:
+                try:
+                    cookie_token = extract_session_token({"headers": {}, "cookies": cookies})
+                except Stage2ServerContextError as exc:
+                    raise _stage2_authentication_error(exc) from exc
+            if bearer_token is not None and cookie_token is not None and bearer_token != cookie_token:
+                raise Stage2GatewayError(
+                    "authentication_invalid",
+                    "conflicting request credentials are not allowed",
+                    status=HTTPStatus.UNAUTHORIZED,
+                )
             headers = {"Authorization": authorization} if authorization else {}
             with stage2_request_context({"headers": headers, "cookies": cookies}):
                 receipt = self.app.process_stage2(mode, payload)
@@ -3504,11 +3566,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             )
             return
         except Stage2RuntimeError as exc:
-            status = (
-                HTTPStatus.CONFLICT
-                if exc.code in {"idempotency_conflict", "idempotency_in_progress"}
-                else HTTPStatus.UNPROCESSABLE_ENTITY
-            )
+            status = _stage2_runtime_status(exc.code)
             self._send_json(status, {"ok": False, "error": {"code": exc.code, "message": exc.message}})
             return
         except RuntimeError as exc:
