@@ -2,7 +2,7 @@
   "source": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260827/pipeline-full-audit.md",
   "followup": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260828/audit-followup-review.md",
   "progress": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/implementation-progress.md",
-  "main": "f02ffe24bb8e69fe2e78cc6dd431a2f41e84275c",
+  "main": "d205788f343c7303e2a6971340732869ae07291d",
   "raw_p1": 163,
   "unique_dedup_p1": 155,
   "groups": [
@@ -578,32 +578,40 @@
       "ids": [
         "CPO-N01"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "124db7d"
+      ]
     },
     {
       "key": "singleton:CPO-N03",
       "ids": [
         "CPO-N03"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "61443a6"
+      ]
     },
     {
       "key": "singleton:CPO-N07",
       "ids": [
         "CPO-N07"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "089ae7b"
+      ]
     },
     {
       "key": "singleton:CPO-N08",
       "ids": [
         "CPO-N08"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "089ae7b"
+      ]
     },
     {
       "key": "singleton:CPO-N12",

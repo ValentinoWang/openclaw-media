@@ -54,6 +54,8 @@ CLOSED = {
     "CPO-K04": "facda23", "CC-07": "facda23", "BIZ-17": "facda23",
     "CPO-K05": "197ae56",
     "CPO-K01": "9683c38", "CPO-K02": "9683c38", "CPO-K03": "510229d",
+    "CPO-N01": "124db7d", "CPO-N03": "61443a6",
+    "CPO-N07": "089ae7b", "CPO-N08": "089ae7b",
     "CR-02": "fc37d2e",
     "CR-03": "9660f04",
     "CR-04": "9660f04",
