@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
+from common.feishu_docx_writer import find_created_block
 from common.feishu_urls import feishu_doc_url
 from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
@@ -1723,22 +1724,7 @@ def _post_docx_children(document_id: str, parent_block_id: str, children: list[d
 
 
 def _find_created_block_id(payload: dict[str, Any], block_type: int) -> str:
-    def visit(value: Any) -> str:
-        if isinstance(value, dict):
-            if value.get("block_type") == block_type and value.get("block_id"):
-                return str(value["block_id"])
-            for child in value.values():
-                found = visit(child)
-                if found:
-                    return found
-        elif isinstance(value, list):
-            for child in value:
-                found = visit(child)
-                if found:
-                    return found
-        return ""
-
-    return visit(payload)
+    return str(find_created_block(payload, block_type).get("block_id") or "")
 
 
 def upload_doc_image(document_id: str, image_block_id: str, file_path: str, token: str) -> str:

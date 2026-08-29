@@ -17,6 +17,13 @@ from common.feishu_docx_table_limits import (
     sleep_seconds_for_docx_write,
     validate_docx_table_create_shape,
 )
+from common.feishu_docx_writer import (
+    extract_block_id as _shared_extract_block_id,
+    extract_table_cell_ids as _shared_extract_table_cell_ids,
+    find_created_block as _shared_find_created_block,
+    get_docx_block as _shared_get_docx_block,
+    get_docx_children as _shared_get_docx_children,
+)
 from common.feishu_urls import feishu_doc_url
 from common.feishu_wiki_docs import (
     create_wiki_doc as _shared_create_wiki_doc,
@@ -741,61 +748,46 @@ def _post_docx_children(
     return payload
 
 
+def _docx_get_request(token: str, error_label: str) -> Any:
+    def request(method: str, path: str, **kwargs: Any) -> dict[str, Any]:
+        resp = requests.request(method, f"{FEISHU_BASE}{path}", headers=_headers(token), timeout=10, **kwargs)
+        try:
+            payload = resp.json()
+        except ValueError:
+            payload = {"raw": resp.text}
+        if resp.status_code >= 400 or payload.get("code") != 0:
+            raise RuntimeError(f"{error_label} HTTP {resp.status_code}：{payload}")
+        return payload
+
+    return request
+
+
 def _get_docx_block(document_id: str, block_id: str, token: str, error_label: str) -> dict[str, Any]:
-    resp = requests.get(f"{FEISHU_BASE}/docx/v1/documents/{document_id}/blocks/{block_id}", headers=_headers(token), timeout=10)
-    try:
-        payload = resp.json()
-    except ValueError:
-        payload = {"raw": resp.text}
-    if resp.status_code >= 400 or payload.get("code") != 0:
-        raise RuntimeError(f"{error_label} HTTP {resp.status_code}：{payload}")
-    return payload.get("data", {}).get("block") or payload.get("data", {})
+    # retry_codes=(): this call site never retried on a transient error
+    # before, and (unlike writer.py) isn't part of the append_table_chunk
+    # orchestration the audit called out for that improvement -- keep it
+    # exactly as-is, just deduplicated.
+    return _shared_get_docx_block(document_id, block_id, request=_docx_get_request(token, error_label), retry_codes=())
 
 
 def _get_docx_children(document_id: str, block_id: str, token: str, error_label: str) -> list[dict[str, Any]]:
-    resp = requests.get(f"{FEISHU_BASE}/docx/v1/documents/{document_id}/blocks/{block_id}/children", headers=_headers(token), timeout=10)
-    try:
-        payload = resp.json()
-    except ValueError:
-        payload = {"raw": resp.text}
-    if resp.status_code >= 400 or payload.get("code") != 0:
-        raise RuntimeError(f"{error_label} HTTP {resp.status_code}：{payload}")
-    return payload.get("data", {}).get("items") or payload.get("data", {}).get("children") or []
+    return _shared_get_docx_children(document_id, block_id, request=_docx_get_request(token, error_label), retry_codes=())
 
 
 def _extract_block_id(item: Any) -> str:
-    if isinstance(item, str):
-        return item
-    if isinstance(item, dict):
-        return str(item.get("block_id") or item.get("id") or "")
-    return ""
+    return _shared_extract_block_id(item)
 
 
 def _extract_table_cell_ids(table_block: dict[str, Any], expected: int) -> list[str]:
-    table = table_block.get("table") if isinstance(table_block, dict) else {}
-    candidates = []
-    if isinstance(table, dict):
-        candidates.extend(table.get("cells") or [])
-    candidates.extend(table_block.get("children") or [])
-    ids = [_extract_block_id(item) for item in candidates]
-    ids = [item for item in ids if item]
-    return ids[:expected] if len(ids) >= expected else ids
+    return _shared_extract_table_cell_ids(table_block, expected)
 
 
 def _find_created_table(payload: dict[str, Any]) -> dict[str, Any]:
-    children = payload.get("data", {}).get("children") or payload.get("data", {}).get("items") or []
-    for child in children:
-        if isinstance(child, dict) and child.get("block_type") == 31:
-            return child
-    return {}
+    return _shared_find_created_block(payload, 31)
 
 
 def _find_created_block(payload: dict[str, Any], block_type: int) -> dict[str, Any]:
-    children = payload.get("data", {}).get("children") or payload.get("data", {}).get("items") or []
-    for child in children:
-        if isinstance(child, dict) and child.get("block_type") == block_type:
-            return child
-    return {}
+    return _shared_find_created_block(payload, block_type)
 
 
 def _create_docx_table(

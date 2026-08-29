@@ -18,6 +18,16 @@ import requests
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PLUGIN_ROOT))
+REPOSITORY_ROOT = PLUGIN_ROOT.parent
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(1, str(REPOSITORY_ROOT))
+from common.feishu_docx_writer import (  # noqa: E402
+    extract_block_id as _shared_extract_block_id,
+    extract_table_cell_ids as _shared_extract_table_cell_ids,
+    find_created_block as _shared_find_created_block,
+    get_docx_block as _shared_get_docx_block,
+    get_docx_children as _shared_get_docx_children,
+)
 from openclaw_app.services.feishu_docx_renderer import expand_inline_code_literal_newlines  # noqa: E402
 from openclaw_app.services.feishu_docx_table_limits import (  # noqa: E402
     chunk_docx_table_rows,
@@ -507,63 +517,31 @@ def append_blocks(document_id: str, token: str, blocks: list[dict[str, Any]]) ->
 
 
 def extract_block_id(item: Any) -> str:
-    if isinstance(item, str):
-        return item
-    if isinstance(item, dict):
-        return str(item.get("block_id") or item.get("id") or "")
-    return ""
+    return _shared_extract_block_id(item)
 
 
 def find_created_table(payload: dict[str, Any]) -> dict[str, Any]:
-    children = payload.get("data", {}).get("children") or payload.get("data", {}).get("items") or []
-    for child in children:
-        if isinstance(child, dict) and child.get("block_type") == 31:
-            return child
-    return {}
+    return _shared_find_created_block(payload, 31)
 
 
 def extract_table_cell_ids(table_block: dict[str, Any], expected: int) -> list[str]:
-    table = table_block.get("table") if isinstance(table_block, dict) else {}
-    candidates: list[Any] = []
-    if isinstance(table, dict):
-        candidates.extend(table.get("cells") or [])
-    candidates.extend(table_block.get("children") or [])
-    ids = [extract_block_id(item) for item in candidates]
-    ids = [item for item in ids if item]
-    return ids[:expected] if len(ids) >= expected else ids
+    return _shared_extract_table_cell_ids(table_block, expected)
 
 
 def get_docx_block(document_id: str, block_id: str, token: str) -> dict[str, Any]:
-    last_error: Exception | None = None
-    for attempt in range(30):
-        try:
-            payload = request_json("GET", f"/docx/v1/documents/{document_id}/blocks/{block_id}", token=token)
-            return payload.get("data", {}).get("block") or payload.get("data", {})
-        except RuntimeError as exc:
-            last_error = exc
-            if "1770002" not in str(exc) or attempt >= 29:
-                raise
-            time.sleep(1.0)
-    raise last_error or RuntimeError(f"failed to get block {block_id}")
+    return _shared_get_docx_block(
+        document_id,
+        block_id,
+        request=lambda method, path, **kw: request_json(method, path, token=token, **kw),
+    )
 
 
 def get_docx_children(document_id: str, block_id: str, token: str) -> list[dict[str, Any]]:
-    last_error: Exception | None = None
-    for attempt in range(30):
-        try:
-            payload = request_json(
-                "GET",
-                f"/docx/v1/documents/{document_id}/blocks/{block_id}/children",
-                token=token,
-                params={"document_revision_id": -1},
-            )
-            return payload.get("data", {}).get("items") or payload.get("data", {}).get("children") or []
-        except RuntimeError as exc:
-            last_error = exc
-            if "1770002" not in str(exc) or attempt >= 29:
-                raise
-            time.sleep(1.0)
-    raise last_error or RuntimeError(f"failed to get block children {block_id}")
+    return _shared_get_docx_children(
+        document_id,
+        block_id,
+        request=lambda method, path, **kw: request_json(method, path, token=token, **kw),
+    )
 
 
 def clear_block_children(document_id: str, block_id: str, token: str) -> None:
