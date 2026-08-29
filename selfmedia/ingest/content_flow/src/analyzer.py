@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import mimetypes
+import re
 import threading
 import time
 from pathlib import Path
@@ -21,6 +22,7 @@ from .semantic_persistence import LLM_CLEANED_USER_FIELDS_VERSION
 
 ANALYST_SYSTEM_PROMPT = """
 你是一名中文内容分析与运营编辑。你只基于本次标为 available 的内容证据说明作品为什么值得参考，以及创作者可以怎样做出自己的版本；只有随附视觉画面时才分析画面。
+所有自然语言字段使用自然、具体的中文编辑口吻；不得直接输出英文或把英文句式逐字翻译成中文。
 
 请根据用户提供的【视频文案/逐字稿/图文 OCR】，输出一份结构化内容分析。
 
@@ -126,6 +128,57 @@ ANALYSIS_REQUIRED_FIELDS = (
     "work_copy", "full_content", "hooks", "emotion", "score", "tags", "action_plan", "hidden_info",
     "visual_cues", "transferable_expression",
 )
+
+_ANALYSIS_TEXT_FIELDS = (
+    "title", "summary", "target_audience", "pain_point", "work_copy", "full_content",
+    "hooks", "emotion", "action_plan", "hidden_info", "visual_cues", "transferable_expression",
+)
+_ANALYSIS_TEMPLATE_PHRASES = (
+    "黄金三秒",
+    "万能结构公式",
+    "拒绝正确的废话",
+    '必须按照 "1. 2. 3." 的格式',
+    "必须按 1. 2. 3. 分点",
+)
+_ANALYSIS_NUMBERED_ITEM = re.compile(r"(?:^|\n)\s*[1-3][.、)]\s*")
+_ANALYSIS_VISUAL_CLAIM_TERMS = ("镜头", "画面", "场景", "字幕", "转场", "运镜", "特写", "道具", "剪辑", "B-roll")
+
+
+def _chinese_ratio(value: Any) -> float:
+    text = str(value or "")
+    cjk = len(re.findall(r"[\u3400-\u9fff]", text))
+    letters = len(re.findall(r"[A-Za-z\u3400-\u9fff]", text))
+    return cjk / letters if letters else 1.0
+
+
+def _iter_analysis_text(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [item for item in value if isinstance(item, str)]
+    return []
+
+
+def _validate_content_analysis_payload(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    for field_name in _ANALYSIS_TEXT_FIELDS:
+        for text in _iter_analysis_text(payload.get(field_name)):
+            if any(phrase in text for phrase in _ANALYSIS_TEMPLATE_PHRASES):
+                raise ValueError(f"{field_name} 含固定课程模板话术，必须改写为具体编辑判断")
+            if text.strip() and _chinese_ratio(text) < 0.2:
+                raise ValueError(f"{field_name} 必须使用中文，不能直接回灌英文或翻译腔")
+    action_plan = "\n".join(_iter_analysis_text(payload.get("action_plan")))
+    if _ANALYSIS_NUMBERED_ITEM.search(action_plan):
+        raise ValueError("action_plan 不得强制使用 1、2、3 编号模板")
+    if not context.get("visual_evidence_available", False):
+        if str(payload.get("visual_cues") or "").strip():
+            raise ValueError("没有随附视觉证据时 visual_cues 必须为空")
+        for field_name in ("hooks", "action_plan"):
+            text = "\n".join(_iter_analysis_text(payload.get(field_name)))
+            if any(term in text for term in _ANALYSIS_VISUAL_CLAIM_TERMS):
+                raise ValueError(f"没有随附视觉证据时 {field_name} 不得假设镜头或画面")
+    return payload
+
+
 CONTENT_ANALYSIS_VALIDATION_CONTRACT = register_llm_validation_contract(
     LLMValidationContract(
         contract_id="selfmedia.content_flow.analysis.v1",
@@ -133,6 +186,7 @@ CONTENT_ANALYSIS_VALIDATION_CONTRACT = register_llm_validation_contract(
         required_fields=ANALYSIS_REQUIRED_FIELDS,
         allowed_fields=frozenset(ANALYSIS_REQUIRED_FIELDS),
         field_types={"secondary_category": list, "score": (int, float), "tags": list},
+        validator=_validate_content_analysis_payload,
     )
 )
 
@@ -230,6 +284,9 @@ def analyze_with_openclaw_agent(user_content: str, settings: Settings) -> Option
             error_prefix="Codex Responses 结构化分析 JSON 校验失败",
             instructions=ANALYST_INSTRUCTIONS,
             validation_contract=CONTENT_ANALYSIS_VALIDATION_CONTRACT,
+            validation_context={
+                "visual_evidence_available": bool(getattr(user_content, "evidence_parts", ())),
+            },
         )
     except Exception as exc:
         print(f"OpenClaw OAuth 结构化分析失败：{str(exc)[-1800:]}。", flush=True)
@@ -239,7 +296,7 @@ def analyze_with_openclaw_agent(user_content: str, settings: Settings) -> Option
         print("OpenClaw OAuth 结构化分析未返回可解析 JSON。", flush=True)
         return None
 
-    if not getattr(user_content, "evidence_parts", ()):
+    if not getattr(user_content, "evidence_parts", ()) and "visual_cues" in parsed:
         parsed["visual_cues"] = ""
 
     # The model makes the semantic decision; this only bounds its labels to the

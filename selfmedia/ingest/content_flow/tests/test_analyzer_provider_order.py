@@ -16,6 +16,7 @@ class AnalyzerProviderOrderTest(unittest.TestCase):
         self.assertIn("中文内容分析与运营编辑", prompt)
         self.assertIn("可迁移参考指数", prompt)
         self.assertIn("前 5 秒", prompt)
+        self.assertIn("所有自然语言字段使用自然、具体的中文编辑口吻", prompt)
         self.assertIn("不要用“高流量”“爆款”等假设作为依据", prompt)
         self.assertIn("不要为了凑条数重复同一个判断", prompt)
         self.assertIn("可用一段连贯说明或少量要点", prompt)
@@ -137,6 +138,35 @@ class AnalyzerProviderOrderTest(unittest.TestCase):
         self.assertEqual(result["incomplete_reason"], "primary_analysis_unavailable")
         self.assertEqual(result["summary"], [])
         self.assertEqual(result["tags"], [])
+
+    def test_analysis_validator_rejects_course_template_and_english_output(self) -> None:
+        with self.assertRaisesRegex(ValueError, "固定课程模板话术"):
+            analyzer._validate_content_analysis_payload(
+                {"action_plan": "万能结构公式：开头+中间+结尾"},
+                {"visual_evidence_available": False},
+            )
+        with self.assertRaisesRegex(ValueError, "必须使用中文"):
+            analyzer._validate_content_analysis_payload(
+                {"title": "A generic English title"},
+                {"visual_evidence_available": False},
+            )
+
+    def test_analysis_validator_rejects_unavailable_visual_claims_and_numbered_plan(self) -> None:
+        with self.assertRaisesRegex(ValueError, "visual_cues 必须为空"):
+            analyzer._validate_content_analysis_payload(
+                {"visual_cues": "镜头切到白板"},
+                {"visual_evidence_available": False},
+            )
+        with self.assertRaisesRegex(ValueError, "不得假设镜头或画面"):
+            analyzer._validate_content_analysis_payload(
+                {"hooks": "用镜头推进制造反差"},
+                {"visual_evidence_available": False},
+            )
+        with self.assertRaisesRegex(ValueError, "不得强制使用"):
+            analyzer._validate_content_analysis_payload(
+                {"action_plan": "1. 保留冲突\n2. 更换案例"},
+                {"visual_evidence_available": True},
+            )
 
 
 if __name__ == "__main__":

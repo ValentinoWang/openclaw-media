@@ -181,6 +181,7 @@ def test_creator_profile_candidate_prompt_and_validation_errors_are_chinese():
 
     assert prompt.startswith("你根据公开主页证据")
     assert "所有候选值、证据和理由均使用中文" in prompt
+    assert "像编辑给账号写的一句话" in prompt
     assert "JSON 键名保持既有合同，不翻译也不新增" in prompt
     assert "You generate CreatorProfile" not in prompt
     with pytest.raises(ValueError, match="必须是非空对象"):
@@ -191,6 +192,45 @@ def test_creator_profile_candidate_prompt_and_validation_errors_are_chinese():
             {},
         )
     assert "公开证据不足" in candidate_builder.empty_semantic_candidate("identity_summary")["reason"]
+
+
+def test_creator_profile_candidate_validator_rejects_english_values_and_business_fields():
+    valid_item = {"value": "", "evidence": [], "confidence": 0, "reason": "公开证据不足。"}
+    with pytest.raises(ValueError, match="必须使用中文"):
+        candidate_builder._validate_creator_profile_candidate(
+            {"field_candidates": {"identity_summary": {**valid_item, "value": "fitness creator"}}},
+            {},
+        )
+    with pytest.raises(ValueError, match="不允许的字段"):
+        candidate_builder._validate_creator_profile_candidate(
+            {"field_candidates": {"quote": valid_item}},
+            {},
+        )
+    with pytest.raises(ValueError, match="必须是数组"):
+        candidate_builder._validate_creator_profile_candidate(
+            {"field_candidates": {"identity_tags": {**valid_item, "value": "人工智能"}}},
+            {},
+        )
+
+
+def test_creator_profile_candidate_validator_requires_every_semantic_field():
+    with pytest.raises(ValueError, match="缺少字段"):
+        candidate_builder._validate_creator_profile_candidate(
+            {"field_candidates": {"identity_summary": {"value": "", "evidence": [], "confidence": 0, "reason": "公开证据不足。"}}},
+            {},
+        )
+
+
+def test_creator_profile_llm_failure_is_visible_in_empty_candidate_reasons(monkeypatch):
+    monkeypatch.setattr(candidate_builder, "call_llm_candidate", lambda *_args: {"_error": "llm_generation_failed"})
+    candidate = candidate_builder.build_candidate(
+        run_id="20260829T120000Z",
+        resolver_result={"ok": True, "platform": "小红书", "resolved_author_id": "abc", "extracted_profile": {}},
+        evidence_uri="media://creator_profiles/xhs/abc/20260829T120000Z",
+        use_llm=True,
+    )
+    assert candidate["llm_status"] == "failed"
+    assert all("生成失败" in candidate["field_candidates"][field]["reason"] for field in candidate_builder.SEMANTIC_FIELDS)
 
 
 def test_account_metric_snapshots_use_existing_metric_registry():

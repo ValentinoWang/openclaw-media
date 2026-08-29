@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -18,15 +19,54 @@ from common.llm_validation import LLMValidationContract, register_llm_validation
 PROMPT_PATH = PACKAGE_ROOT / "prompts" / "creator_profile_candidate_v2.md"
 
 
+def _chinese_ratio(value: Any) -> float:
+    text = str(value or "")
+    cjk = len(re.findall(r"[\u3400-\u9fff]", text))
+    letters = len(re.findall(r"[A-Za-z\u3400-\u9fff]", text))
+    return cjk / letters if letters else 1.0
+
+
+def _validate_chinese_text(value: Any, *, location: str) -> None:
+    if isinstance(value, str) and value.strip() and _chinese_ratio(value) < 0.2:
+        raise ValueError(f"{location} 必须使用中文，不能直接回灌英文或翻译腔")
+
+
 def _validate_creator_profile_candidate(payload: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
     candidates = payload.get("field_candidates")
     if not isinstance(candidates, dict) or not candidates:
         raise ValueError("field_candidates 必须是非空对象")
+    unknown_fields = set(candidates) - set(SEMANTIC_FIELDS)
+    if unknown_fields:
+        raise ValueError(f"field_candidates 含不允许的字段：{sorted(unknown_fields)}")
     for field_name, item in candidates.items():
         if not isinstance(item, dict):
             raise ValueError(f"field_candidates.{field_name} 必须是对象")
         if not isinstance(item.get("evidence"), list) or not str(item.get("reason") or "").strip():
             raise ValueError(f"field_candidates.{field_name} 必须包含 evidence 和 reason")
+        required = {"value", "evidence", "confidence", "reason"}
+        missing = required - set(item)
+        if missing:
+            raise ValueError(f"field_candidates.{field_name} 缺少字段：{sorted(missing)}")
+        confidence = item.get("confidence")
+        if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
+            raise ValueError(f"field_candidates.{field_name}.confidence 必须是 0 到 1 之间的数字")
+        value = item.get("value")
+        if field_name in LIST_FIELDS and not isinstance(value, list):
+            raise ValueError(f"field_candidates.{field_name}.value 必须是数组")
+        if field_name not in LIST_FIELDS and not isinstance(value, str):
+            raise ValueError(f"field_candidates.{field_name}.value 必须是文本")
+        _validate_chinese_text(value, location=f"field_candidates.{field_name}.value")
+        if isinstance(value, list):
+            for index, part in enumerate(value):
+                _validate_chinese_text(part, location=f"field_candidates.{field_name}.value[{index}]")
+        _validate_chinese_text(item.get("reason"), location=f"field_candidates.{field_name}.reason")
+        for index, evidence in enumerate(item["evidence"]):
+            if not isinstance(evidence, str) or not evidence.strip():
+                raise ValueError(f"field_candidates.{field_name}.evidence[{index}] 必须是非空文本")
+            _validate_chinese_text(evidence, location=f"field_candidates.{field_name}.evidence[{index}]")
+    missing_fields = set(SEMANTIC_FIELDS) - set(candidates)
+    if missing_fields:
+        raise ValueError(f"field_candidates 缺少字段：{sorted(missing_fields)}")
     return payload
 
 
@@ -78,10 +118,12 @@ def build_candidate(
     }
 
     semantic = llm_payload if llm_payload is not None else (call_llm_candidate(resolver_result, profile) if use_llm else {})
-    llm_status = "ok" if semantic else ("skipped" if not use_llm else "failed")
+    llm_failed = use_llm and (not semantic or bool(semantic.get("_error")))
+    llm_status = "failed" if llm_failed else ("ok" if semantic else "skipped")
+    semantic_failure_reason = "人设候选生成失败，未注入人设字段；请重新运行或人工补充。" if llm_failed else "LLM 候选不可用或公开证据不足，保持待人工补充。"
     semantic_candidates = normalize_semantic_candidates(semantic.get("field_candidates") if isinstance(semantic, dict) else {})
     for field in SEMANTIC_FIELDS:
-        candidates[field] = semantic_candidates.get(field) or empty_semantic_candidate(field)
+        candidates[field] = semantic_candidates.get(field) or empty_semantic_candidate(field, reason=semantic_failure_reason)
 
     payload = {field: candidates[field]["value"] for field in CREATOR_PROFILE_FIELDS}
     payload["identity_tags"] = normalize_list(payload.get("identity_tags"))
@@ -139,7 +181,7 @@ def call_llm_candidate(resolver_result: dict[str, Any], profile: dict[str, Any])
             validation_contract=CREATOR_PROFILE_CANDIDATE_VALIDATION_CONTRACT,
         )
     except Exception:
-        return {}
+        return {"_error": "llm_generation_failed"}
 
 
 def normalize_semantic_candidates(payload: Any) -> dict[str, dict[str, Any]]:
@@ -162,9 +204,14 @@ def normalize_semantic_candidates(payload: Any) -> dict[str, dict[str, Any]]:
     return result
 
 
-def empty_semantic_candidate(field: str) -> dict[str, Any]:
+def empty_semantic_candidate(field: str, *, reason: str | None = None) -> dict[str, Any]:
     value: Any = [] if field in LIST_FIELDS else ""
-    return field_candidate(value, confidence=0.0, evidence=[], reason="LLM 候选不可用或公开证据不足，保持待人工补充。")
+    return field_candidate(
+        value,
+        confidence=0.0,
+        evidence=[],
+        reason=reason or "LLM 候选不可用或公开证据不足，保持待人工补充。",
+    )
 
 
 def normalize_list(value: Any) -> list[str]:
