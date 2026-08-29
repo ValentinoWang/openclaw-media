@@ -5,7 +5,7 @@
 ## 当前结论
 
 - 权威源码：`production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration` 的 `main`。
-- 当前本机 `main` 与 `origin/main` 均为 `b0f9816`，工作树干净。
+- 当前本机 `main` 与 `origin/main` 均为 `8140669`，工作树干净。
 - `d0d399a`、`948b36b`、`ae0b614`、`76f8725`、`23ba056`、`f533317` 均不是 `main` 的祖先提交。
 - 部分能力已用新的原子提交进入 `main`：Feishu（`943e874`、`18a616a`、`109e8ff`）、身份 transport（`7ed45ab`）、身份 A1/A2（`828111e`、`5bf62d9`）、runtime（`fa33bc2`）、H00 绑定（`4a41061`）和监控 API 边界（`ada2963`）。这不等于原候选提交已合入，也不等于真实生产验收完成。
 - 四个 `stage2-hardening-*` 候选均不得整体合并；auth 与 persistence 已完成原子提取，runtime 已确认 superseded。
