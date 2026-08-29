@@ -192,6 +192,25 @@ def append_schedule_snapshot(
     return {"status": "recorded", "persisted": True, "dedupe_key": key, "path": str(path), "snapshot": snapshot}
 
 
+def project_reminder_schedule(*, tenant_id: str, reminders: Iterable[dict[str, Any]], platform: str = "", account: str = "", source_time: Any = None, root: str | Path | None = None) -> list[dict[str, Any]]:
+    """Project successful commercial reminders into the tenant media schedule."""
+    from common.resource_ownership import require_tenant_id
+    tenant_id = require_tenant_id(tenant_id)
+    projected: list[dict[str, Any]] = []
+    for reminder in reminders:
+        if not isinstance(reminder, dict) or reminder.get("ok") is False:
+            continue
+        data = reminder.get("data") if isinstance(reminder.get("data"), dict) else reminder
+        due_at = data.get("due_at") or reminder.get("due_at")
+        ref_id = _text(data.get("record_id") or data.get("ref_id") or reminder.get("ref_id"))
+        if not due_at or not ref_id:
+            continue
+        entry = {"tenant_id": tenant_id, "platform": _text(platform), "account": _text(account), "title": _text(data.get("title") or reminder.get("title") or "已安排事项"), "starts_at": _source_time_iso(due_at), "status": "confirmed", "source_type": "commercial_delivery_reminder", "source_id": ref_id}
+        result = append_schedule_snapshot(tenant_id=tenant_id, entries=[entry], source_type="commercial_delivery_reminder", source_id=ref_id, source_time=source_time or due_at, dedupe_key=f"commercial-delivery-reminder:{tenant_id}:{ref_id}", provenance={"source": "commercial_delivery", "ref_id": ref_id}, root=root)
+        projected.append({"ref_id": ref_id, **result})
+    return projected
+
+
 def _source_time_iso(value: Any) -> str:
     if isinstance(value, datetime):
         parsed = schedule_reference_time(value)

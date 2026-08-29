@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from selfmedia.business import id_business
-from selfmedia.business.schedule import LOCAL_TZ, is_expired_schedule_value, upcoming_schedule_entries
+from selfmedia.business.schedule import LOCAL_TZ, is_expired_schedule_value, project_reminder_schedule, upcoming_schedule_entries
 from selfmedia.context import build_media_context
 from selfmedia.creation.shooting_execution import ShootingExecutionRequest, generate_shooting_execution_plan
 
@@ -117,6 +117,17 @@ class ScheduleContextTest(unittest.TestCase):
         )
 
         self.assertEqual(entries, [{"title": "可用档期", "starts_at": "2026-08-29T09:00+08:00", "ends_at": "2026-08-29T09:00+08:00", "status": "confirmed"}])
+
+    def test_commercial_reminder_projects_to_context_and_dedupes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            reminder = {"ref_id": "delivery-1-draft", "due_at": "2026-08-29T18:00:00+08:00", "title": "商单初稿"}
+            first = project_reminder_schedule(tenant_id=TENANT_ID, reminders=[reminder], platform="小红书", account="主账号", root=directory)
+            second = project_reminder_schedule(tenant_id=TENANT_ID, reminders=[reminder], platform="小红书", account="主账号", root=directory)
+            context = build_media_context(tenant_id=TENANT_ID, platform="小红书", account="主账号", root=directory, now=datetime(2026, 8, 29, 9, tzinfo=LOCAL_TZ))
+        self.assertEqual(first[0]["status"], "recorded")
+        self.assertEqual(second[0]["status"], "deduped")
+        self.assertEqual(context["loaded"]["schedule"], 1)
+        self.assertEqual(context["schedule"][0]["title"], "商单初稿")
 
     def test_shooting_prompt_protects_known_schedule_windows(self) -> None:
         request = ShootingExecutionRequest(

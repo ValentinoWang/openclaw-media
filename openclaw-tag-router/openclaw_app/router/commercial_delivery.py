@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 from .tag_router_common import Message, TaskResult
 from media_vault import require_tenant_id
 from selfmedia.business.commercial_loop import CommercialLifecycleError, CommercialLoopLedger
+from selfmedia.business.schedule import project_reminder_schedule
 
 
 COMMERCIAL_DELIVERY_URL_ENV = "MEDIA_OS_COMMERCIAL_DELIVERY_URL"
@@ -367,7 +368,14 @@ class CommercialDeliveryMixin:
                 created.append(reminder if isinstance(reminder, dict) else {"ref_id": f"{delivery_id}-{suffix}"})
             except Exception:
                 warnings.append(f"{field_name}提醒未建立；请手动【日程】确认。")
-        return {"created": created, "warnings": warnings}
+        tenant_id = require_tenant_id((message.metadata or {}).get("tenant_id"))
+        work_info = self._commercial_delivery_dict(payload.get("work_info"))
+        try:
+            projected = project_reminder_schedule(tenant_id=tenant_id, reminders=created, platform=str(work_info.get("platform") or ""), account=str(work_info.get("blogger_name") or ""), source_time=message.created_at)
+        except Exception as exc:
+            projected = []
+            warnings.append(f"提醒已建立但未同步创作排期：{exc}")
+        return {"created": created, "warnings": warnings, "projected": projected}
 
     def _commercial_delivery_parse_deadline(self, value: str, created_at: datetime) -> datetime | None:
         text = str(value or "").strip().replace("/", "-")
