@@ -15,12 +15,15 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from types import MappingProxyType
 from typing import Any, Protocol
+from uuid import UUID
 
 from .stage2_context import (
     ContextSourceRow,
     OrganizationBinding,
     ServerSessionFacts,
     Stage2ContextError,
+    ORGANIZATION_WORKSPACE_MODE,
+    PERSONAL_WORKSPACE_MODE,
 )
 from .stage2_gateway import OrganizationServerContext
 
@@ -61,6 +64,7 @@ _REQUEST_CONTEXT: ContextVar[Mapping[str, Any] | None] = ContextVar(
     default=None,
 )
 _MISSING = object()
+_SUPPORTED_WORKSPACE_MODES = frozenset({PERSONAL_WORKSPACE_MODE, ORGANIZATION_WORKSPACE_MODE})
 
 
 def _record_value(record: Mapping[str, Any], *names: str, default: Any = _MISSING) -> Any:
@@ -135,7 +139,7 @@ def _bearer_token(value: Any) -> str:
     if not isinstance(value, str):
         raise Stage2ServerContextError("authentication_invalid", "Authorization 请求头无效，请使用 Bearer 会话")
     scheme, separator, token = value.partition(" ")
-    if not separator or scheme.casefold() != "bearer" or not token or any(char.isspace() for char in token):
+    if not separator or scheme.casefold() != "bearer" or not token or "," in token or any(char.isspace() for char in token):
         raise Stage2ServerContextError("authentication_invalid", "Authorization 必须是 Bearer 会话且令牌不得为空白")
     return _session_token(token)
 
@@ -270,6 +274,10 @@ class CurrentBindingProvider:
         if session.tenant_type != "organization":
             raise Stage2ServerContextError("organization_context_required", "an organization session is required", status=403)
         try:
+            session.assert_active()
+        except Stage2ContextError as exc:
+            raise Stage2ServerContextError("session_invalid", str(exc)) from exc
+        try:
             record = self._binding_loader(session.tenant_id)
         except Exception as exc:
             raise Stage2ServerContextError("binding_unavailable", "current organization Binding is unavailable", status=503) from exc
@@ -331,6 +339,10 @@ class TenantProfileReader:
         if not isinstance(session, ServerSessionFacts):
             raise Stage2ServerContextError("session_invalid", "server session facts are required")
         try:
+            session.assert_active()
+        except Stage2ContextError as exc:
+            raise Stage2ServerContextError("session_invalid", str(exc)) from exc
+        try:
             record = self._profile_loader(session.tenant_id, session.tenant_type)
         except Exception as exc:
             raise Stage2ServerContextError("tenant_profile_unavailable", "tenant profile is unavailable", status=503) from exc
@@ -368,6 +380,9 @@ class TenantSourceReader:
         workspace_mode: str,
         source_kinds: tuple[str, ...],
     ) -> tuple[Mapping[str, Any], ...]:
+        tenant_id = self._validate_tenant_scope(tenant_id)
+        workspace_mode = self._validate_workspace_scope(workspace_mode)
+        source_kinds = self._validate_source_kinds(source_kinds)
         try:
             rows = self._source_loader(tenant_id, workspace_mode, tuple(source_kinds))
         except Exception as exc:
@@ -382,13 +397,69 @@ class TenantSourceReader:
                 row = ContextSourceRow.from_record(raw)
             except Exception as exc:
                 raise Stage2ServerContextError("source_invalid", "tenant source row is invalid", status=503) from exc
-            if row.tenant_id != tenant_id or row.workspace_mode != workspace_mode:
+            if row.tenant_id != tenant_id:
                 raise Stage2ServerContextError("source_tenant_mismatch", "source row escaped the tenant scope", status=403)
+            if row.workspace_mode != workspace_mode:
+                raise Stage2ServerContextError("source_workspace_mismatch", "source row escaped the workspace scope", status=403)
             if row.source_kind not in source_kinds:
                 raise Stage2ServerContextError("source_kind_mismatch", "source reader returned an unauthorized source kind", status=403)
+            has_binding = row.binding_present or row.binding_id is not None or row.binding_generation is not None
+            if workspace_mode == PERSONAL_WORKSPACE_MODE:
+                if has_binding:
+                    raise Stage2ServerContextError("personal_binding_forbidden", "personal source rows cannot carry a Binding", status=403)
+            else:
+                if not has_binding or row.binding_id is None or row.binding_generation is None:
+                    raise Stage2ServerContextError("source_binding_required", "organization source rows require a Binding", status=403)
+                if row.binding_tenant_id != tenant_id:
+                    raise Stage2ServerContextError("source_binding_tenant_mismatch", "source Binding tenant does not match the source tenant", status=403)
             normalized.append(row.as_dict())
+        organization_binding: tuple[str, int] | None = None
+        for item in normalized:
+            if workspace_mode != ORGANIZATION_WORKSPACE_MODE:
+                break
+            current = (str(item.get("bindingId") or ""), int(item.get("bindingGeneration")))
+            if organization_binding is None:
+                organization_binding = current
+            elif current != organization_binding:
+                raise Stage2ServerContextError("source_binding_mismatch", "source rows use different Binding generations", status=403)
         normalized.sort(key=lambda item: (str(item["sourceKind"]), str(item["sourceId"])))
         return tuple(normalized)
+
+    @staticmethod
+    def _validate_tenant_scope(value: Any) -> str:
+        if not isinstance(value, str):
+            raise Stage2ServerContextError("source_scope_invalid", "tenant scope must be a UUID", status=400)
+        normalized = value.strip()
+        try:
+            canonical = str(UUID(normalized))
+        except (ValueError, AttributeError) as exc:
+            raise Stage2ServerContextError("source_scope_invalid", "tenant scope must be a UUID", status=400) from exc
+        if normalized != canonical:
+            raise Stage2ServerContextError("source_scope_invalid", "tenant scope must be a canonical UUID", status=400)
+        return canonical
+
+    @staticmethod
+    def _validate_workspace_scope(value: Any) -> str:
+        if not isinstance(value, str):
+            raise Stage2ServerContextError("source_scope_invalid", "workspace scope is invalid", status=400)
+        normalized = value.strip()
+        if normalized != value or normalized not in _SUPPORTED_WORKSPACE_MODES:
+            raise Stage2ServerContextError("source_scope_invalid", "workspace scope is invalid", status=400)
+        return normalized
+
+    @staticmethod
+    def _validate_source_kinds(value: Any) -> tuple[str, ...]:
+        if isinstance(value, (str, bytes)):
+            raise Stage2ServerContextError("source_scope_invalid", "source kind scope is invalid", status=400)
+        try:
+            normalized = tuple(str(item).strip() for item in value)
+        except TypeError as exc:
+            raise Stage2ServerContextError("source_scope_invalid", "source kind scope is invalid", status=400) from exc
+        if not normalized or any(not item or any(char.isspace() for char in item) for item in normalized):
+            raise Stage2ServerContextError("source_scope_invalid", "source kind scope is invalid", status=400)
+        if len(set(normalized)) != len(normalized):
+            raise Stage2ServerContextError("source_scope_invalid", "source kind scope is ambiguous", status=400)
+        return normalized
 
 
 class ServerStage2ContextProviders:
@@ -415,8 +486,8 @@ class ServerStage2ContextProviders:
         session = self.session_provider.resolve()
         if session.tenant_type != "organization":
             raise Stage2ServerContextError("organization_context_required", "an organization session is required", status=403)
-        self.profile_reader.read(session)
         binding = self.binding_provider.resolve(session)
+        self.profile_reader.read(session)
         return OrganizationServerContext(
             session=session,
             binding=binding.identity,
