@@ -2,7 +2,7 @@
   "source": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260827/pipeline-full-audit.md",
   "followup": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260828/audit-followup-review.md",
   "progress": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/implementation-progress.md",
-  "main": "947199329d5d732dbb465aa6d2079d26bfc270a9",
+  "main": "dd4b3e9fa52ee31e173f8ffbcf405d1d218d47ba",
   "raw_p1": 163,
   "unique_dedup_p1": 155,
   "groups": [
@@ -160,7 +160,7 @@
       ],
       "status": "已修复",
       "evidence": [
-        "0e28196"
+        "dd4b3e9"
       ]
     },
     {
