@@ -1,0 +1,133 @@
+{
+  "task_id": "C4-BACKEND-VERIFY-R4",
+  "attempt_role": "luna",
+  "proposed_state": "FAILED",
+  "acceptance_self_check": "fail",
+  "failure_class": "verification",
+  "failure": {
+    "stage": "focused_pytest_collection",
+    "validation_command_exit_code": 2,
+    "direct_exec_exit_code": 126,
+    "direct_exec_note": "The frozen file is not executable; the unchanged file was run with its declared Bash interpreter.",
+    "collection_error_count": 3,
+    "error": "Candidate imports require /home/ubuntu/selfmedia-tools/media-agent-cli/generated_product_contract.py, which is absent in the fixed validation image at that canonical path.",
+    "classification_reason": "The fixed validation command failed during test collection. The task contract classifies test, dependency, interpreter, Docker, fixture, database, and acceptance-command failures as verification."
+  },
+  "frozen_input_check": {
+    "status": "pass",
+    "task_source_path": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-15/C4-BACKEND-VERIFY-R4/tasks/C4-BACKEND-VERIFY-R4.md",
+    "task_source_sha256": "1fafaf9bdb64dbc95a837b8450afa1ad2f68a93a56384917e72a15bbb92608bb",
+    "validation_command_sha256": "02b2e5bc2e8cc0a9e3e6561773054e3d2c85af0411a4ac84a16eb5a5ccbb8c67",
+    "ssot_manifest_sha256": "c6aca57fc2676e8a51704bb607c84245a0e55681bd4202270e659a8290ce9782",
+    "b1_node_sha256": "cd561d9e4d8b2184b4932da81fc143ae105bf917fc0e520849b6547ca92fabbc",
+    "c4_node_sha256": "e8d5102533b0597d7bff0a7d6469262fb48d6efe8e8a8c92b1561cab5f015b21",
+    "b1_execution_state": "ACCEPTED",
+    "b1_readiness_mode": "FORMAL",
+    "c4_execution_state": "READY",
+    "c4_readiness_mode": "FORMAL",
+    "auth_contract_sha256": "a0feedc825fff609f3cd72cbe7a0705ee0f0276fa18209a7f6192d4393984fdc",
+    "task_contract_sha256": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+    "c2_protected_test_sha256": "dee8b55304a60b4284462310f68f03099369af15071efc2fe5f39dcc8f67b73d",
+    "c2_source_manifest_sha256": "23d4017ba54422ba30f1aceb88ff34b2d0a034470d1bb70b9015e95613abe927"
+  },
+  "baseline_manifest": {
+    "path": ".codex-work/production-baseline-20260814T084319Z/backend/.manifest.sha256",
+    "sha256": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+    "line_count": 786,
+    "persistent_count": 550,
+    "transient_count": 236,
+    "persistent_content_check": "pass",
+    "original_manifest_preserved": true
+  },
+  "candidate_manifest": {
+    "path": ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+    "sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+    "managed_entry_count": 562,
+    "content_check": "pass",
+    "candidate_symlinks": 0,
+    "candidate_transient_residue": 0,
+    "candidate_bytes_modified": false
+  },
+  "image": {
+    "id": "sha256:edb4dc9c110bb4b0303d7e85d2f3e73e9dd1a777282c10c73fc664c6d6557db3",
+    "architecture": "arm64",
+    "os": "linux",
+    "base_digest_label": "sha256:824f1a789072e648c62541c2cfa4479c4061a290d5c27766d67dc1dcbc19b321",
+    "frontend_lock_sha256_label": "f3dd4e9e3671ff2d774938b96bfacf083bdfaad454ee19d8effc9d5b96541dd7",
+    "dockerfile_sha256": "b1b7ea34b23463f79bed155c30e112f440d908baa8eb1c768522b26b3baf952d",
+    "build_receipt_sha256": "d8741b8c05a0ee5b36cb4fc8f748eccb3225e535d84180168335f8f1749cae2a"
+  },
+  "test_substitutes": {
+    "config_mount": "read-only temporary openclaw_bots.json",
+    "bots": ["knowledge"],
+    "profiles": ["knowledge_delegate", "media_creation", "media_analysis", "content_cleaner"],
+    "provider_base_url": "http://127.0.0.1:9",
+    "provider_timeout_seconds": 1,
+    "test_model": "qa-model",
+    "content_cleaner_enabled": false,
+    "external_modules": ["reminder.py", "setup_media_bitable_registry.py"],
+    "external_modules_are_empty_and_read_only": true,
+    "external_module_purpose": "Import-only substitutes; no success implementation was provided."
+  },
+  "runtime": {
+    "network_pattern": "c4-backend-verify-r4-net-<pid>",
+    "network_mode": "internal",
+    "published_host_ports": false,
+    "remote_or_public_network_access": false,
+    "python_version_and_import_self_check": "pass",
+    "python_compile_to_temporary_path": "pass",
+    "pytest_cache_plugin_disabled": true,
+    "focused_pytest": "failed during collection",
+    "postgres_migration_apply": "not reached",
+    "postgresql_focused_tests": "not reached",
+    "postgres_migration_verify": "not reached"
+  },
+  "production_receipt_gates": {
+    "fixed_script_gate_block_reached": false,
+    "independent_internal_network_probe": true,
+    "task_run_v3": {"expected_exit": 3, "actual_exit": 3},
+    "auth_web_local_candidate": {"expected_exit": 20, "actual_exit": 20},
+    "auth_web_production": {"expected_exit": 20, "actual_exit": 20}
+  },
+  "cleanup": {
+    "verification_container": "pass",
+    "postgres_container": "pass",
+    "docker_network": "pass",
+    "temporary_directories": "pass",
+    "candidate_residue_after_exit": 0,
+    "matching_container_count_after_exit": 0,
+    "matching_network_count_after_exit": 0,
+    "matching_tmp_entry_count_after_exit": 0
+  },
+  "actual_read_write_scope": {
+    "writes_performed": [
+      "Created and removed only the frozen command scratch directory under /tmp/c4-backend-verify-r4.*.",
+      "Created and removed only one-time c4-backend-verify-r4-* Docker containers and internal networks.",
+      "Created a disposable candidate copy, empty external-module substitutes, fake-key fixture, and logs only inside the frozen scratch/container scope.",
+      "Wrote this supervisor-designated structured return file."
+    ],
+    "candidate_source_writes": false,
+    "frontend_candidate_writes": false,
+    "production_snapshot_writes": false,
+    "ssot_contract_protected_test_writes": false,
+    "remote_production_writes": false,
+    "feishu_account_or_private_data_writes": false,
+    "forbidden_scope_touched": false
+  },
+  "unverified_items": [
+    "The fixed script did not reach PostgreSQL 16 migration apply, database-focused tests, or migration verify.",
+    "The fixed script did not reach its own final red-light gate block; the independent internal-network probe matched all three required fail-closed exit codes.",
+    "C4 was not marked ACCEPTED and the candidate was not published or deployed."
+  ],
+  "risks": [
+    "The fixed image validation environment does not expose the candidate generated contract at the hard-coded canonical path required during import.",
+    "Because the fixed validation command exited 2 during collection, backend acceptance is not established despite all frozen-input, manifest, image, and red-light prechecks passing."
+  ],
+  "sensitive_information_boundary": {
+    "status": "pass",
+    "real_production_configuration_read": false,
+    "real_credentials_or_cookies_used": false,
+    "fixture_contains_only_fake_nonproduction_values": true,
+    "logs_and_return_contain_no_secrets_tokens_passwords_or_private_body_text": true
+  }
+}

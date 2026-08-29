@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "node_id": "G1",
+  "status": "passed",
+  "observed_at": "2026-08-17T23:38:59.602927+00:00",
+  "registry": "config/runner-profiles/registry.json",
+  "registry_sha256": "ad3af167b07dd0287ea1f22dd3f90d893d7cffee16aea5082303d7e7b331e0ed",
+  "launcher_sha256": "30f15c7c9999b9d2100906aaf364e38412adeec60fb7a43263f6de6f363b5bb7",
+  "profiles": [
+    {
+      "profile_id": "external-test",
+      "owner": "runtime acceptance owner",
+      "launcher": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/scripts/runner-profiles/run-external-test.sh",
+      "launcher_sha256": "bb1cf4397c19d33d403010166acba372f91e5160ca70b10811c92d09897ed94f",
+      "mode": "evidence-write-only",
+      "network": "sandbox-only"
+    },
+    {
+      "profile_id": "implementation-runner",
+      "owner": "main orchestrator",
+      "launcher": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/scripts/runner-profiles/run-implementation.sh",
+      "launcher_sha256": "37a7dd10215a5d1fbc8095dd9a36e3ce0b0bad1d37b0725fc550348f43639599",
+      "mode": "declared-project-write",
+      "network": "deny"
+    },
+    {
+      "profile_id": "independent-readonly",
+      "owner": "independent acceptance owner",
+      "launcher": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/scripts/runner-profiles/run-independent-readonly.sh",
+      "launcher_sha256": "d95f1fdf76013d1e03e818b5bd258be2cef9b116bdbb35d4e5283ac841fcb4b8",
+      "mode": "zero-project-write",
+      "network": "deny"
+    },
+    {
+      "profile_id": "production-release",
+      "owner": "release owner",
+      "launcher": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/scripts/runner-profiles/run-production-release.sh",
+      "launcher_sha256": "04500d1908e4e8e59f6012843981efda1d59239de4993ec4760f4d3612d42221",
+      "mode": "evidence-write-only",
+      "network": "production-approved"
+    },
+    {
+      "profile_id": "static-validation",
+      "owner": "runtime acceptance owner",
+      "launcher": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/scripts/runner-profiles/run-static-validation.sh",
+      "launcher_sha256": "ba6197b2874bf2b6dc98cda0a639e221fb4dfd38545197e03decb8be8eaa1233",
+      "mode": "temporary-write-only",
+      "network": "deny"
+    }
+  ],
+  "probes": [
+    {
+      "probe": "implementation declared write succeeds",
+      "exit_code": 0,
+      "stderr_class": "none"
+    },
+    {
+      "probe": "implementation undeclared write denied",
+      "exit_code": 1
+    },
+    {
+      "probe": "static temporary write succeeds",
+      "exit_code": 0,
+      "stderr_class": "none"
+    },
+    {
+      "probe": "static source write contract rejected",
+      "exit_code": 64,
+      "stderr_class": "runner-profile-error"
+    },
+    {
+      "probe": "external identity required",
+      "exit_code": 64,
+      "stderr_class": "runner-profile-error"
+    },
+    {
+      "probe": "external sandbox profile starts with isolated fixture identity",
+      "exit_code": 0,
+      "stderr_class": "none"
+    },
+    {
+      "probe": "external profile rejects production target",
+      "exit_code": 64,
+      "stderr_class": "runner-profile-error"
+    },
+    {
+      "probe": "production profile rejects missing identity and approval",
+      "exit_code": 64,
+      "stderr_class": "runner-profile-error"
+    },
+    {
+      "probe": "independent readonly can read frozen inputs",
+      "exit_code": 0,
+      "stderr_class": "none"
+    },
+    {
+      "probe": "independent readonly rejects declared project writes",
+      "exit_code": 64,
+      "stderr_class": "runner-profile-error"
+    }
+  ],
+  "evidence_level": "local-runtime",
+  "mock_or_fixture": true,
+  "proves": "five runner configurations exist, start through absolute launchers, isolate credentials, and fail closed on forbidden capability probes",
+  "does_not_prove": "real external account access, production authorization, deployment, or production behavior"
+}

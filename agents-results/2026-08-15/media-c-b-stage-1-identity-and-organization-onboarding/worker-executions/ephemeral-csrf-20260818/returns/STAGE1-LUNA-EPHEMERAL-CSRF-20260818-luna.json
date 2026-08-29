@@ -1,0 +1,97 @@
+{
+  "task_id": "STAGE1-LUNA-EPHEMERAL-CSRF-20260818",
+  "attempt_role": "luna",
+  "proposed_state": "partial",
+  "acceptance_self_check": {
+    "production_source_only": "pass",
+    "ephemeral_loopback_default_origin_uses_bound_port": "pass",
+    "non_ephemeral_and_explicit_port_origins_remain_strict": "pass",
+    "arbitrary_port_generalization": "not_added",
+    "required_postgresql_regression": "csrf_regression_fixed; command remains red on an unrelated route mismatch",
+    "http_api_suite": "pass with PYTHONPATH=. required by this checkout",
+    "source_compiles": "pass"
+  },
+  "failure_class": "partial_due_to_out_of_scope_route_contract_and_required_command_environment",
+  "failure_origin": {
+    "repaired": "make_server created the handler before binding, so an unported loopback public origin normalized to port 80 instead of the bound ephemeral port",
+    "remaining_postgresql_failure": "tests/test_account_registration_http_postgres.py requests /media/api/session, while the candidate handler exposes /openclaw/media/api/session; this was not changed because it is outside the requested CSRF scope",
+    "required_http_command_failure": "the exact command without PYTHONPATH cannot import openclaw_app in this checkout"
+  },
+  "changed_files": [
+    "backend/openclaw_app/adapters/http_api.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/ephemeral-csrf-20260818/returns/STAGE1-LUNA-EPHEMERAL-CSRF-20260818-luna.json"
+  ],
+  "commands": [
+    {
+      "command": "PYTHONPATH=. OPENCLAW_ACCOUNT_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55416/stage1_i2_luna_20260818 OPENCLAW_ACCOUNT_IDENTITY_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55416/stage1_i2_luna_20260818 OPENCLAW_ACCOUNT_DATABASE_URL=postgresql://postgres@127.0.0.1:55416/stage1_i2_luna_20260818 .venv/bin/pytest -q tests/test_account_auth.py::AccountAuthPostgreSQLTests::test_password_change_and_reset_revoke_sessions tests/test_account_registration_http_postgres.py",
+      "exit_code": 1,
+      "result": "2 passed, 1 failed; the remaining failure is the /media/api/session 404"
+    },
+    {
+      "command": ".venv/bin/pytest -q tests/test_http_api.py",
+      "exit_code": 2,
+      "result": "collection failed with ModuleNotFoundError: openclaw_app"
+    },
+    {
+      "command": ".venv/bin/python -m py_compile openclaw_app/adapters/http_api.py",
+      "exit_code": 0,
+      "result": "compiled"
+    },
+    {
+      "command": "sha256sum tests/test_account_auth.py tests/test_account_identity_workspace.py tests/test_account_workspace_fail_closed.py tests/test_account_identity_postgres.py",
+      "exit_code": 0,
+      "result": "hashes recorded below; no protected account test file was written"
+    },
+    {
+      "command": "PYTHONPATH=. .venv/bin/pytest -q tests/test_http_api.py",
+      "exit_code": 0,
+      "result": "25 passed, 7 subtests passed"
+    }
+  ],
+  "red_green_evidence": {
+    "before_patch": {
+      "required_postgresql_command": "1 passed, 2 failed with csrf_rejected on the dynamic-port admin mutations"
+    },
+    "after_patch": {
+      "required_postgresql_command": "the dynamic-port admin mutations pass; 2 passed and the run reaches the unrelated /media/api/session 404",
+      "http_api_suite_with_checkout_import_path": "25 passed, 7 subtests passed",
+      "authority_binding_assertions": "ephemeral default loopback resolves to the bound port; fixed binds retain port 80; explicit :9443 remains :9443 with no fallback",
+      "py_compile": "exit 0"
+    }
+  },
+  "protected_test_hashes_after": {
+    "backend/tests/test_account_auth.py": {
+      "sha256": "23fee6e00c24386ea18f5a1ebaa004f0e3e22c5af0dd891d24dbf6648e942326",
+      "status": "unchanged"
+    },
+    "backend/tests/test_account_identity_workspace.py": {
+      "sha256": "d6630cd3f7395275eee5aaba93e266c628cf48041391a85b40708fde6966c79e",
+      "status": "unchanged"
+    },
+    "backend/tests/test_account_workspace_fail_closed.py": {
+      "sha256": "6fcb450ddb35d52be69006e677f53ac8ab3418b9d623458c4b94ca9665e20e1e",
+      "status": "unchanged"
+    },
+    "backend/tests/test_account_identity_postgres.py": {
+      "sha256": "d89258a136ed5e1c87c3bf978f474aff18abf44d2e27cc9353b923e7380a7e93",
+      "status": "unchanged"
+    }
+  },
+  "unverified_items": [
+    "No production or remote deployment verification",
+    "No browser/device acceptance",
+    "The out-of-scope /media/api/session versus /openclaw/media/api/session contract mismatch",
+    "The exact unprefixed HTTP-suite command cannot collect without PYTHONPATH=."
+  ],
+  "residual_risks": [
+    "The required PostgreSQL command is not fully green because of the existing route mismatch after the CSRF assertions pass.",
+    "The default unported loopback origin is retained only as an alias for the exceptional port=0 loopback bind; explicit configured ports and non-ephemeral binds have no alias.",
+    "No production readiness or release conclusion can be drawn from local evidence."
+  ],
+  "explicit_non_claims": [
+    "No SSOT acceptance claimed",
+    "No release or production readiness claimed",
+    "No deployment, restart, remote, or external-system action claimed",
+    "No test, migration, manifest, SSOT/evidence, frontend, or Git file was intentionally modified"
+  ]
+}

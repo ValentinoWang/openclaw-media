@@ -1,0 +1,88 @@
+{
+  "node_id": "C1",
+  "semantic_key": "media.stage1.identity-convergence",
+  "stage": "C",
+  "work_kind": "convergence",
+  "domain_lane": "identity",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "I4",
+    "I5",
+    "I6",
+    "I9",
+    "IL1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.identity-convergence.v5"
+  ],
+  "write_authority": "shared-generated",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "CA"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [
+    "EV-MPE2E-C5-R3-SHARED-LOCAL"
+  ],
+  "description": "接受后可移交第二阶段个人支线",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "C1.json",
+  "execution_contract_sha256": "43678f0ca25eacc9997adbe9ed3fb1e69d176a07149e33eb9d630d0c6bc05443",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "freezes",
+  "deliverable_ids": [
+    "DL-C1"
+  ],
+  "produced_artifact_ids": [
+    "ART-C1"
+  ],
+  "consumed_artifact_ids": [
+    "DL-I4",
+    "DL-I5",
+    "DL-I6",
+    "DL-I9",
+    "DL-IL1"
+  ],
+  "read_set": [
+    "artifact:I4",
+    "artifact:I5",
+    "artifact:I6",
+    "artifact:I9",
+    "artifact:IL1"
+  ],
+  "write_set": [
+    "artifact:C1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:C1",
+      "mode": "W",
+      "isolation_key": "node:C1"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance C1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/C1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-9",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "artifact:C1"
+    ]
+  }
+}

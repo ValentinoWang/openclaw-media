@@ -1,0 +1,23 @@
+{
+  "node_id": "DC",
+  "semantic_key": "media.production-e2e-release-decision",
+  "stage": "D",
+  "work_kind": "release-decision",
+  "domain_lane": "release",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": ["DB"],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": ["release.media-production-e2e"],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "independent acceptance owner",
+  "unlocks": [],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "L3", "wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh", "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent", "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access", "sandbox": "danger-full-access", "sandbox_authority": "writable sandbox", "task_argument": "zero-write 独立核对原始要求、发布身份、同收据链路、回滚与清除清单。", "return_path": "agents-results/2026-08-13/media-production-e2e-closure/worker-returns/DC.json", "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/prompts/DC.txt", "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/worker-logs/DC.log", "prompt_sha256": "capture-before-launch", "launch_barrier": "all wave PIDs registered before first wait", "prompt_cleanup": "delete after exit evidence registration", "runtime_handle_cleanup": "release after exit evidence registration", "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions", "dispatch_state": "BLOCKED"
+  }
+}

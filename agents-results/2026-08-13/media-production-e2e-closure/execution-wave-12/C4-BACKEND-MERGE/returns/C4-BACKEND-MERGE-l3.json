@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "task_id": "C4-BACKEND-MERGE",
+  "attempt_role": "l3",
+  "proposed_state": "FAILED",
+  "acceptance_self_check": "fail",
+  "failure_class": "verification",
+  "failure_summary": "The frozen C4 validation command exited 1 during the read-only production baseline manifest content check. The manifest hash matched, but 236 listed cache or transient paths are absent from the frozen production snapshot. No non-transient baseline file was missing.",
+  "frozen_input_proof": {
+    "task_source_sha256": "6e827597ab0b1b2fb725fae837213624a4c4bd01ec6141dd1d9b078954b316a4",
+    "ssot_manifest_sha256": "c6aca57fc2676e8a51704bb607c84245a0e55681bd4202270e659a8290ce9782",
+    "b1_node_sha256": "cd561d9e4d8b2184b4932da81fc143ae105bf917fc0e520849b6547ca92fabbc",
+    "b1_node_state": "ACCEPTED",
+    "b1_readiness_mode": "FORMAL",
+    "c4_node_sha256": "e8d5102533b0597d7bff0a7d6469262fb48d6efe8e8a8c92b1561cab5f015b21",
+    "c4_node_state": "READY",
+    "c4_readiness_mode": "FORMAL",
+    "auth_contract_sha256": "a0feedc825fff609f3cd72cbe7a0705ee0f0276fa18209a7f6192d4393984fdc",
+    "c2_task_contract_sha256": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+    "c2_protected_test_sha256": "dee8b55304a60b4284462310f68f03099369af15071efc2fe5f39dcc8f67b73d",
+    "production_backend_manifest_sha256": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+    "production_backend_manifest_check": "manifest hash matched; content check failed on 236 missing cache or transient entries",
+    "c2_source_manifest_sha256": "23d4017ba54422ba30f1aceb88ff34b2d0a034470d1bb70b9015e95613abe927",
+    "validation_command_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/validation/C4-BACKEND-MERGE.sh",
+    "validation_command_sha256": "725363ac96d3e1f213ad9965b13cab976e8e7a8548f00bd72c12bd48ee5873b4"
+  },
+  "actual_read_write_scope": {
+    "read_roots": [
+      ".ssot and acceptance inputs",
+      ".codex-work/production-baseline-20260814T084319Z/backend",
+      ".codex-work/c2-main-takeover/backend",
+      ".codex-work/merge-candidate-v4/backend",
+      "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/postrepair-source.sha256",
+      "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/validation/C4-BACKEND-MERGE.sh"
+    ],
+    "write_roots": [
+      ".codex-work/merge-candidate-v4/backend/**",
+      "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/returns/C4-BACKEND-MERGE-l3.json",
+      "/tmp validation artifacts only"
+    ],
+    "forbidden_scope_touched": false,
+    "remote_production_touched": false,
+    "production_snapshot_modified": false,
+    "c2_candidate_modified": false,
+    "ssot_contracts_and_protected_tests_modified": false,
+    "database_touched": false,
+    "feishu_touched": false,
+    "accounts_touched": false,
+    "subagents_or_workers_started": false
+  },
+  "candidate": {
+    "root": ".codex-work/merge-candidate-v4/backend",
+    "base": ".codex-work/production-baseline-20260814T084319Z/backend",
+    "baseline_release": "20260814T062408Z-opc-feishu-login",
+    "candidate_source_manifest": ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+    "candidate_source_manifest_sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+    "file_count_in_hash_scope": 562,
+    "source_directory_symlinks": "none",
+    "provenance_file": ".codex-work/merge-candidate-v4/backend/.merge-provenance.json",
+    "provenance_file_json": "valid",
+    "candidate_manifest_check": "passed before frozen validation; unchanged after provenance update",
+    "hash_scope_excludes": [
+      "cache directories",
+      "logs",
+      ".DS_Store",
+      ".merge-provenance.json",
+      ".candidate-source.sha256"
+    ]
+  },
+  "merged_files": {
+    "c2_backend_file_count": 25,
+    "c2_exact_files": [
+      "common/__init__.py",
+      "common/model_transport_context.py",
+      "integrations/feishu/media_writer.py",
+      "openclaw_app/contracts/media_web_task.schema.json",
+      "openclaw_app/migrations/canonical/037_media_task_runner_receipts.sql",
+      "openclaw_app/migrations/postgres_manifest.json",
+      "openclaw_app/services/capability_input_contracts.py",
+      "openclaw_app/services/media_task_repository.py",
+      "openclaw_app/services/media_task_runner.py",
+      "openclaw_app/services/media_web_tasks.py",
+      "scripts/run_postgres_migrations.py",
+      "selfmedia/growth/__init__.py",
+      "tests/test_capability_registry.py",
+      "tests/test_http_api.py",
+      "tests/test_media_business_http.py",
+      "tests/test_media_task_repository_postgres.py",
+      "tests/test_media_task_runner.py",
+      "tests/test_media_task_v3_contract.py",
+      "tests/test_media_web_tasks.py",
+      "tests/test_media_web_tasks_postgres.py",
+      "tests/test_postgres_migration_runner.py",
+      "tests/test_tenant_projection_http.py"
+    ],
+    "semantic_merge_files": [
+      "openclaw_app/account/auth.py",
+      "openclaw_app/adapters/http_api.py",
+      "openclaw_app/server_cli.py"
+    ],
+    "semantic_merge_note": "Production authentication and service behavior were retained while adding C2 task authority and user_public_id wiring. The duplicate feishu_login keyword in server_cli.py was removed. No additional code deviation was introduced in the L3 retry."
+  },
+  "authentication_retained": [
+    "login_verified_email",
+    "OpcFeishuLoginClient",
+    "/auth/feishu/start",
+    "/auth/feishu/status",
+    "trusted Feishu HTTPS host checks",
+    "unique owned account and valid tenant member relationship checks",
+    "tenant role and maintenance permission",
+    "session expiry",
+    "CSRF validation",
+    "user_public_id passed into task creation and subsequent reads"
+  ],
+  "postgres_and_runner_wiring": {
+    "task_repository": "PostgresMediaTaskRepository",
+    "facts_in_postgresql": [
+      "tasks",
+      "events",
+      "attempts",
+      "leases",
+      "artifacts",
+      "external objects",
+      "readbacks",
+      "receipts"
+    ],
+    "http_authority": [
+      "enqueue",
+      "readback",
+      "cancel",
+      "confirmation",
+      "event stream read"
+    ],
+    "runner_authority": [
+      "claim",
+      "heartbeat",
+      "lease recovery",
+      "execute",
+      "settle"
+    ],
+    "dual_write": false,
+    "legacy_file_or_memory_queue": false,
+    "thread_execution_fallback": false,
+    "runtime_verified": false
+  },
+  "migration_conclusion": {
+    "canonical_manifest": "openclaw_app/migrations/postgres_manifest.json",
+    "ledger": "openclaw_account.schema_migrations",
+    "production_number_review": "Production non-canonical openclaw_app/migrations/037_media_document_workspace_authority.sql coexists with C2 canonical openclaw_app/migrations/canonical/037_media_task_runner_receipts.sql.",
+    "candidate_resolution": "No canonical identity collision was found; retain the production migration, consume the C2 canonical 037 manifest entry, and do not rewrite published migrations or fabricate ledger rows.",
+    "manifest_rewritten": false,
+    "runtime_migration_verified": false
+  },
+  "receipt_boundary": {
+    "consultation_external_write": "must be recorded as none",
+    "self_media_creation_external_readback": "required",
+    "final_receipt_requires": [
+      "database readback",
+      "applicable external object readback",
+      "web readback",
+      "same-task consistency"
+    ],
+    "production_receipt_claimed": false
+  },
+  "validation": {
+    "command": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/validation/C4-BACKEND-MERGE.sh",
+    "command_sha256": "725363ac96d3e1f213ad9965b13cab976e8e7a8548f00bd72c12bd48ee5873b4",
+    "exit_code": 1,
+    "status": "FAILED",
+    "failure_class": "verification",
+    "reached": [
+      "frozen input hash assertions",
+      "read-only production baseline manifest hash assertion",
+      "read-only production baseline manifest content check"
+    ],
+    "stopped_at": "(cd production baseline backend && shasum -a 256 -c .manifest.sha256)",
+    "stderr_summary": "shasum reported No such file or directory for 236 cache or transient manifest entries; all missing entries were cache/transient and no non-transient baseline file was missing",
+    "not_reached": [
+      "C2 manifest content check",
+      "candidate source hash check",
+      "candidate symlink and required-file checks",
+      "py_compile",
+      "authentication regression",
+      "HTTP and task contract pytest",
+      "independent runner pytest",
+      "migration pytest",
+      "disposable PostgreSQL integration",
+      "production receipt red gates"
+    ]
+  },
+  "unverified_items": [
+    "The fixed validation command did not reach candidate runtime or integration checks.",
+    "Candidate compile, protected regression, migration, disposable PostgreSQL integration, and production receipt red gates were not reached by the frozen command.",
+    "No remote production release, restart, database, Feishu, account, or service configuration was touched.",
+    "No authenticated browser, device, or production receipt was claimed.",
+    "The candidate has not been published and C4 has not been marked ACCEPTED.",
+    "The frozen production baseline manifest must be repaired or regenerated by its authority owner before the unchanged validation command can run to completion; this attempt did not modify it."
+  ],
+  "risks": [
+    "The frozen production baseline manifest is not self-consistent with its read-only snapshot because it includes missing transient files.",
+    "Candidate code and migration behavior remain unverified by the required fixed command due to the upstream verification stop."
+  ],
+  "deviations": [
+    "No code deviation from the bounded merge was introduced after the duplicate server_cli keyword fix.",
+    "Acceptance remains FAILED/verification because the frozen command stopped before candidate checks; the frozen input was not altered to force progress."
+  ],
+  "sensitive_information_boundary": {
+    "allowed": [
+      "release identifiers",
+      "sha256 digests",
+      "relative source paths",
+      "public schema and status names"
+    ],
+    "excluded": [
+      "real identities",
+      "cookies",
+      "tokens",
+      "passwords",
+      "private content",
+      "remote host data",
+      "database data",
+      "Feishu data"
+    ],
+    "written": false
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "contract_id": "DA2",
+  "schema_version": 1,
+  "node_id": "DA2",
+  "node_role": "acceptance-gate",
+  "execution_actor": "external-system",
+  "work_kind": "validation",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:CB"
+  ],
+  "write_set": [
+    "evidence:DA2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DA2",
+      "mode": "W",
+      "isolation_key": "node:DA2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DA2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DA2-return.json"
+  ]
+}

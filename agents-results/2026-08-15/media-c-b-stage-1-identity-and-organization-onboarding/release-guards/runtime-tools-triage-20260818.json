@@ -1,0 +1,21 @@
+{
+  "schema_version": "quality-gate-triage-v1",
+  "failing_guard": "/usr/local/sbin/deploy-openclaw-media-locked",
+  "failing_stage": "source snapshot metadata collection",
+  "failure_class": "infrastructure runtime tool resolution",
+  "severity": "blocking with successful rollback",
+  "root_cause": "the source release contract executes bare node, while sudo secure_path excludes /home/ubuntu/.nvm/versions/node/v22.22.2/bin",
+  "source_fix": "validate the managed node and npm executables and export an authoritative deployment PATH before normal release execution",
+  "guard_change": "add --self-test-runtime-tools with path, rule, reason, and repair output",
+  "red_proof": {
+    "exit_code": 2,
+    "case": "OPENCLAW_MEDIA_NODE_BIN_DIR points to a missing directory"
+  },
+  "green_proof": {
+    "exit_code": 0,
+    "case": "sudo secure_path environment resolves managed node v22.22.2 and npm 10.9.7"
+  },
+  "wider_gate": "historical backend deployment policy self-test and the complete r4 locked release both passed",
+  "rollback_proof": "r3 frontend and backend were active and healthy after the failed attempt; no r4 frontend release or source snapshot remained",
+  "remaining_risk": "the managed Node version is an explicit operational dependency and must be updated together with this guard when the runtime is intentionally promoted"
+}

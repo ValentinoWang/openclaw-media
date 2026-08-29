@@ -1,0 +1,396 @@
+{
+  "task_id": "B4-R2",
+  "attempt_role": "luna",
+  "attempt_number": 1,
+  "task_source_sha256": "9a179773df3fa5980ed5c0442cf7cf75e3f0bb2d745b316eb6b8cdb86a36d908",
+  "structured_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4-R2/returns/B4-R2-luna.json",
+  "version_tuple": {
+    "plan": 1,
+    "dependency_graph": 1,
+    "interface_freeze": 1,
+    "node_contract": 1,
+    "ssot_schema": 1
+  },
+  "decision_ref": "media.no-inference-completion-boundary@1",
+  "invalidation_key": "deployment.media-release-guard",
+  "execution_identity": {
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+    "wrapper_from_ledger": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+    "session_id": "019ffac0-8a29-7352-aadc-ddf5bec29305",
+    "worker_pid": null,
+    "worker_pid_note": "No Luna worker PID was recorded in the supervisor log.",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "sandbox": "danger-full-access"
+  },
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_classification": "none",
+  "validation": {
+    "command_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/commands/B4-R2.sh",
+    "command_file_sha256": "792d494f97e5f0ad61c54640db50e8c822011a032bb02cd73bdd59042c13701d",
+    "command": "bash agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/commands/B4-R2.sh",
+    "exit_code": 0,
+    "output": "B4_R2_VALIDATION_PASS release=20260813T184753CST-media-e2e-b4-label-guard-r2 backend=openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2 index_sha256=3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64"
+  },
+  "fixed_identity": {
+    "remote_host": "ubuntu@106.52.146.37",
+    "base_source_snapshot": "/home/ubuntu/worktrees/openclaw-bot-center-a1-media-cb-preview-20260808",
+    "base_commit": "db13e39aa4914d2168efcab5e2d9d6c2b26a41d8",
+    "base_status_digest": "a13fef62351d368256cee5361d11887a4fc53db800417c0304db73797ec5123d",
+    "base_source_file_list_sha256": "2c90c87838d89e1e90570174ffdd1b852d8752a0fd1262d383f458651967f0eb",
+    "old_frontend_release": "20260811T201753CST-media-cb-preview-cp1-r2",
+    "old_frontend_index_sha256": "af38cc8fa89a45de2f3ddcbd1f3fe9f27bd9c8b431695483dc7b71b2450e5d2c",
+    "old_frontend_manifest_sha256": "8bba584e84fc338f7892ff2158d6715d922eb18afbffed2d6b254ad0e73b2a9c",
+    "new_frontend_release": "20260813T184753CST-media-e2e-b4-label-guard-r2",
+    "backend_release_link": "/home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "backend_release_real": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "backend_tree_digest": "d4f036a093cc3714d6f295b1e44db34dc3c10f0e684d7b8c64fcfdedba9b6c1b",
+    "deploy_script_sha256": "007ce7ed6d2f3444cf94f9a08b6936f2ff5547163c4abadefd5338917c3358b0",
+    "production_guard_script_sha256": "e7c4e3d31be27a64c551b2bfde6b08c88922d6bb207408b78d73aec64204428e",
+    "active_link_before": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260811T201753CST-media-cb-preview-cp1-r2",
+    "active_link_after": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260813T184753CST-media-e2e-b4-label-guard-r2",
+    "new_release_before": "absent",
+    "new_release_after": "present",
+    "old_release_after": "present"
+  },
+  "fixed_input_files": [
+    "src/media/mediaRoleIa.ts",
+    "src/media/i18n/resourceLabels.ts",
+    "src/media/displayLabels.ts",
+    "src/media/ui/displayLabels.ts",
+    "src/media/pages/ordinary/TracksPage.tsx",
+    "scripts/qa/checkMediaRoleIa.ts",
+    "scripts/qa/checkMediaLanguageCatalog.ts",
+    "scripts/qa/checkMediaReleaseLabels.ts",
+    "package.json",
+    "package-lock.json",
+    "vite.media.config.ts"
+  ],
+  "scope": {
+    "actual_read_paths": [
+      "/home/ubuntu/worktrees/openclaw-bot-center-a1-media-cb-preview-20260808",
+      "/usr/local/sbin/deploy-openclaw-media-locked",
+      "/usr/local/sbin/verify-openclaw-media",
+      "/var/www/openclaw/media",
+      "/mnt/openclaw-data/openclaw-media-frontend-releases/20260811T201753CST-media-cb-preview-cp1-r2",
+      "/mnt/openclaw-data/openclaw-media-frontend-releases/20260813T184753CST-media-e2e-b4-label-guard-r2",
+      "/home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+      "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+      "/var/lock/openclaw-release.lock",
+      "port 8787 /proc listener identity",
+      "healthz and readyz on http://127.0.0.1:8787",
+      "openclaw-media-deployment-guard.service and openclaw-media-deployment-guard.timer"
+    ],
+    "actual_write_paths": [
+      "/tmp/media-e2e-b4.mciZul",
+      "/mnt/openclaw-data/openclaw-media-frontend-releases/20260813T184753CST-media-e2e-b4-label-guard-r2",
+      "/var/www/openclaw/media during atomic old/new link switches under /var/lock/openclaw-release.lock",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4-R2/returns/B4-R2-luna.json"
+    ],
+    "forbidden_scope_touched": false,
+    "forbidden_scope_note": "No base source, backend source or release, database, Feishu object, service definition, deployment script, production guard script, credential, commit, push, pull, browser session, or unrelated release was modified."
+  },
+  "patch": {
+    "modified_file_count": 8,
+    "modified_files": [
+      {
+        "path": "src/media/mediaRoleIa.ts",
+        "sha256": "7aa6d84f323565ebf488e81a0172276be76dc8a997f07e32d7c0d12142330e27"
+      },
+      {
+        "path": "src/media/i18n/resourceLabels.ts",
+        "sha256": "33364e0f9acd06e714d9b827beda201399ccb92ea0690b625104e7f5ef1605b7"
+      },
+      {
+        "path": "src/media/displayLabels.ts",
+        "sha256": "f96ee51362e374d7533e6d62acdbfd2425d944499319e791335e941f43489692"
+      },
+      {
+        "path": "src/media/ui/displayLabels.ts",
+        "sha256": "a23ac2bf50de334d0303f7ac1281c516a35f19fa1ea1bcb92ed2b90233ec0e15"
+      },
+      {
+        "path": "src/media/pages/ordinary/TracksPage.tsx",
+        "sha256": "1cd1d32aa45a54a2a95b8d1658c3936611446db259b23ec4e1c711aa0f851efb"
+      },
+      {
+        "path": "scripts/qa/checkMediaRoleIa.ts",
+        "sha256": "68d6aaa6fb8a4792ba1b8e7be0d83ebde0a87a349120f3587539d2c7ffeda2ec"
+      },
+      {
+        "path": "scripts/qa/checkMediaLanguageCatalog.ts",
+        "sha256": "28af8e96889eec6670c235deec2354c27e627c36f269099d4623a6e34d10c715"
+      },
+      {
+        "path": "scripts/qa/checkMediaReleaseLabels.ts",
+        "sha256": "63f6cacab47b0229483d2ece5204980c6b26583b4df7c00b6308f1a8ef8ff944"
+      }
+    ],
+    "patched_source_file_list_sha256": "3c291acdedb94cb8607854a9b5b848641cdbf9f18ac61d36a0009bb91da5f8f5",
+    "label_change": {
+      "ordinary_web_track_task": "账号与赛道",
+      "institutional_feishu_track_business": "赛道管理",
+      "retired_label_guard_strengthened": true,
+      "existing_billing_platform_icon_assertions_preserved": true
+    }
+  },
+  "commands": [
+    {
+      "id": "qa_media_role_ia",
+      "command": "cd /tmp/media-e2e-b4.mciZul && npm run qa:media-role-ia",
+      "exit_code": 0,
+      "result": "Media role IA contract passed: 11 ordinary routes + 5 administrator routes"
+    },
+    {
+      "id": "qa_media_language_catalog",
+      "command": "cd /tmp/media-e2e-b4.mciZul && npx tsx scripts/qa/checkMediaLanguageCatalog.ts",
+      "exit_code": 0,
+      "result": "Media language catalog contract passed: 17 resources, isolated C/B labels, session-authority navigation"
+    },
+    {
+      "id": "build_media",
+      "command": "cd /tmp/media-e2e-b4.mciZul && npm run build:media",
+      "exit_code": 0,
+      "result": "Vite build passed with vite.media.config.ts; three entries and hashed JS/CSS assets generated; media release label QA passed"
+    },
+    {
+      "id": "candidate_artifact_checks",
+      "command": "Candidate artifact and metadata checks for three entries, /openclaw/media/ prefixes, 16 current labels, 6 retired exact labels, hashed assets, and both source schemas",
+      "exit_code": 0,
+      "result": "artifact_pass entries=3 current_labels=16 retired_exact=6 hashed_assets=2; metadata_pass schemas=2 patched_files=8"
+    },
+    {
+      "id": "initial_locked_deploy",
+      "command": "sudo -n /usr/local/sbin/deploy-openclaw-media-locked /tmp/media-e2e-b4.mciZul/dist-media /home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2 20260813T184753CST-media-e2e-b4-label-guard-r2",
+      "exit_code": 4,
+      "result": "Bounded first invocation stopped at the fixed backend listener check; no new managed release or link switch remained. The old release stayed active."
+    },
+    {
+      "id": "retry_locked_deploy",
+      "command": "sudo -n /usr/local/sbin/deploy-openclaw-media-locked /tmp/media-e2e-b4.mciZul/dist-media /home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2 20260813T184753CST-media-e2e-b4-label-guard-r2",
+      "exit_code": 0,
+      "result": "OpenClaw Media release PASS: 20260813T184753CST-media-e2e-b4-label-guard-r2 backend=openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2"
+    },
+    {
+      "id": "first_new_release_gate",
+      "command": "sudo -n /usr/local/sbin/verify-openclaw-media plus locked first-new-release entry and manifest served-hash readback",
+      "exit_code": 0,
+      "result": "B4_R2_FIRST_NEW_GATE_PASS; disk and served index hashes matched; manifest_files=8; backend_pid=2397553; both release directories immutable"
+    },
+    {
+      "id": "old_release_rollback_readback",
+      "command": "Atomic switch to the fixed old release under /var/lock/openclaw-release.lock, followed by old entry, manifest, backend health and readiness readback",
+      "exit_code": 0,
+      "result": "B4_R2_ROLLBACK_READ_PASS; old active path and served index matched; old manifest_files=8; backend_health=pass; new_retained=true"
+    },
+    {
+      "id": "new_release_restore_readback",
+      "command": "Atomic restore to the fixed new release under /var/lock/openclaw-release.lock, followed by production guard, systemd, entry, manifest and backend readback",
+      "exit_code": 0,
+      "result": "B4_R2_RESTORE_READ_PASS; disk and served index hashes matched; manifest_files=8; health=pass; guard_result=success; guard_status=0; guard_timer=active"
+    },
+    {
+      "id": "cleanup_and_identity_recheck",
+      "command": "Remove /tmp/media-e2e-b4.mciZul and recheck source, backend, deployment-script, guard-script, release and immutable identities",
+      "exit_code": 0,
+      "result": "cleanup_pass tmp_absent=true; all fixed source, backend, script and release identities matched"
+    },
+    {
+      "id": "supervisor_validation",
+      "command": "bash agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/commands/B4-R2.sh",
+      "exit_code": 0,
+      "result": "B4_R2_VALIDATION_PASS"
+    }
+  ],
+  "artifact": {
+    "release_root": "/mnt/openclaw-data/openclaw-media-frontend-releases",
+    "new_release_path": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260813T184753CST-media-e2e-b4-label-guard-r2",
+    "old_release_path": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260811T201753CST-media-cb-preview-cp1-r2",
+    "new_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+    "new_manifest_sha256": "775a801ed850241cae738afb69c6b7c7cc0d98c326a1bf1726c74acd07a1efea",
+    "coordination_sha256": "dda8d63d458b953f16439012a3571441ff289fe64e5acf474450e492cf08d67c",
+    "source_snapshot_sha256": "b9771bc41cb7d79b992b6a249248eb5620b108a943951cdf30da2af985d7db7c",
+    "source_to_artifact_sha256": "301604e878d6d2236ce42302e2a535178d715b8e46ebb5d50fbd3e11fbdcf3c1",
+    "manifest_file_count": 8,
+    "manifest_files": [
+      ".release-coordination.json",
+      ".source-snapshot.json",
+      ".source-to-artifact.json",
+      "assets/index-CTDYybQb.js",
+      "assets/index-rAqH7ync.css",
+      "index.html",
+      "login.html",
+      "register.html"
+    ],
+    "entry_files": [
+      "index.html",
+      "login.html",
+      "register.html"
+    ],
+    "hashed_assets": [
+      "assets/index-CTDYybQb.js",
+      "assets/index-rAqH7ync.css"
+    ],
+    "asset_base_prefix": "/openclaw/media/",
+    "new_immutable_attributes": "----i---------e-------",
+    "old_immutable_attributes": "----i---------e-------",
+    "old_release_preserved": true
+  },
+  "source_metadata": {
+    "snapshot_schema": "openclaw-media-source-snapshot-v1",
+    "mapping_schema": "openclaw-media-source-to-artifact-v1",
+    "build_command": "npm run build:media",
+    "build_config": "vite.media.config.ts",
+    "build_timestamp": "2026-08-13T11:19:45.793328Z",
+    "base_commit": "db13e39aa4914d2168efcab5e2d9d6c2b26a41d8",
+    "base_status_digest": "a13fef62351d368256cee5361d11887a4fc53db800417c0304db73797ec5123d",
+    "base_source_file_list_sha256": "2c90c87838d89e1e90570174ffdd1b852d8752a0fd1262d383f458651967f0eb",
+    "patched_source_file_list_sha256": "3c291acdedb94cb8607854a9b5b848641cdbf9f18ac61d36a0009bb91da5f8f5",
+    "frontend_release": "20260813T184753CST-media-e2e-b4-label-guard-r2",
+    "old_frontend_release": "20260811T201753CST-media-cb-preview-cp1-r2",
+    "backend_release": "openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "artifact_file_count": 5,
+    "artifact_file_list_sha256": "504b3851eb3bd6d0c7f3a3f6cad3fa1e5f4bc06b9da2b479f6ad5bb048f70f7d",
+    "rollback_plan": {
+      "required": true,
+      "activation_link": "/var/www/openclaw/media",
+      "old_frontend_release": "20260811T201753CST-media-cb-preview-cp1-r2",
+      "steps": [
+        "switch-to-old-under-release-lock",
+        "read-old-served-entry-and-health",
+        "restore-new-under-release-lock",
+        "read-new-served-manifest-and-health"
+      ]
+    }
+  },
+  "label_gate": {
+    "current_navigation_label_count": 16,
+    "current_navigation_labels": [
+      "总览",
+      "账号与赛道",
+      "素材与灵感",
+      "选题与决策",
+      "创作与交付",
+      "发布准备",
+      "复盘增长",
+      "Media Agent",
+      "云端归档",
+      "用量与余额",
+      "邀请中心",
+      "平台总览",
+      "用户与准入",
+      "租户资源",
+      "计费运营",
+      "上游服务"
+    ],
+    "retired_exact_label_count": 6,
+    "retired_exact_labels_absent_from_artifact": [
+      "媒体处理",
+      "系统与工具",
+      "设置与偏好",
+      "平台管理",
+      "用量与套餐",
+      "赛道与博主"
+    ],
+    "guard_semantics": [
+      "double-quoted exact labels",
+      "single-quoted exact labels",
+      "backtick exact labels",
+      "HTML text exact labels"
+    ]
+  },
+  "backend": {
+    "release_link": "/home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "release_real_path": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "tree_digest": "d4f036a093cc3714d6f295b1e44db34dc3c10f0e684d7b8c64fcfdedba9b6c1b",
+    "pid": 2397553,
+    "port": 8787,
+    "argv_identity": "/usr/bin/python3 -m openclaw_app.server_cli --settings <fixed-backend-release>/config/settings.yaml --host 127.0.0.1 --port 8787",
+    "settings_path_matches_fixed_release": true,
+    "healthz": "pass",
+    "readyz": "pass"
+  },
+  "release_readbacks": {
+    "first_new_release_gate": {
+      "active_release": "20260813T184753CST-media-e2e-b4-label-guard-r2",
+      "disk_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+      "served_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+      "served_manifest_file_count": 8,
+      "backend_pid": 2397553,
+      "guard": "pass",
+      "new_immutable": true,
+      "old_immutable": true
+    },
+    "old_release_rollback": {
+      "active_release": "20260811T201753CST-media-cb-preview-cp1-r2",
+      "disk_index_sha256": "af38cc8fa89a45de2f3ddcbd1f3fe9f27bd9c8b431695483dc7b71b2450e5d2c",
+      "served_index_sha256": "af38cc8fa89a45de2f3ddcbd1f3fe9f27bd9c8b431695483dc7b71b2450e5d2c",
+      "served_manifest_file_count": 8,
+      "backend_health": "pass",
+      "old_immutable": true,
+      "new_release_retained": true
+    },
+    "new_release_restore": {
+      "active_release": "20260813T184753CST-media-e2e-b4-label-guard-r2",
+      "disk_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+      "served_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+      "served_manifest_file_count": 8,
+      "backend_pid": 2397553,
+      "healthz": "pass",
+      "readyz": "pass",
+      "guard_result": "success",
+      "guard_exec_main_status": 0,
+      "guard_timer": "active",
+      "new_immutable": true,
+      "old_immutable": true
+    }
+  },
+  "systemd": {
+    "unit": "openclaw-media-deployment-guard.service",
+    "result": "success",
+    "exec_main_status": 0,
+    "timer": "openclaw-media-deployment-guard.timer",
+    "timer_state": "active"
+  },
+  "cleanup": {
+    "temporary_directory": "/tmp/media-e2e-b4.mciZul",
+    "temporary_directory_removed": true,
+    "temporary_directory_pattern_clear": true,
+    "old_release_removed": false,
+    "old_release_preserved": true,
+    "new_release_removed": false,
+    "new_release_preserved": true
+  },
+  "fixed_identity_after": {
+    "base_commit": "db13e39aa4914d2168efcab5e2d9d6c2b26a41d8",
+    "base_status_digest": "a13fef62351d368256cee5361d11887a4fc53db800417c0304db73797ec5123d",
+    "base_source_file_list_sha256": "2c90c87838d89e1e90570174ffdd1b852d8752a0fd1262d383f458651967f0eb",
+    "backend_link_real_path": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "backend_tree_digest": "d4f036a093cc3714d6f295b1e44db34dc3c10f0e684d7b8c64fcfdedba9b6c1b",
+    "deploy_script_sha256": "007ce7ed6d2f3444cf94f9a08b6936f2ff5547163c4abadefd5338917c3358b0",
+    "guard_script_sha256": "e7c4e3d31be27a64c551b2bfde6b08c88922d6bb207408b78d73aec64204428e",
+    "active_release": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260813T184753CST-media-e2e-b4-label-guard-r2",
+    "old_release_present": true,
+    "new_release_present": true,
+    "old_index_sha256": "af38cc8fa89a45de2f3ddcbd1f3fe9f27bd9c8b431695483dc7b71b2450e5d2c",
+    "old_manifest_sha256": "8bba584e84fc338f7892ff2158d6715d922eb18afbffed2d6b254ad0e73b2a9c",
+    "new_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+    "new_manifest_sha256": "775a801ed850241cae738afb69c6b7c7cc0d98c326a1bf1726c74acd07a1efea",
+    "new_immutable_attributes": "----i---------e-------",
+    "old_immutable_attributes": "----i---------e-------",
+    "backend_pid": 2397553
+  },
+  "unverified_items": [
+    "This node does not prove authenticated page acceptance beyond static release and entry-file integrity.",
+    "This node does not prove a real authenticated task execution, database side effect, Feishu object, or complete production end-to-end flow.",
+    "This node does not establish B4 ACCEPTED; the proposed state is only VERIFIED for the bounded production frontend release guard and rollback control."
+  ],
+  "completion_boundary": "仅证明生产前端发布门禁、发布身份、不可变产物、固定后端进程关联、服务端清单校验以及旧发布回退/新发布恢复可用性；不证明认证页面、真实任务、数据库、飞书或完整生产端到端已经验收。",
+  "deviation": {
+    "level": "none",
+    "note": "The first fixed deployment invocation returned 4 because the fixed backend listener was temporarily absent. The existing watchdog restored the listener; the same fixed deployment command then returned 0. No script, service, backend, source snapshot, or contract was changed to accommodate the retry."
+  },
+  "statement": "All bounded implementation requirements and the supervisor validation command passed. The final active release is the new immutable frontend release, the old immutable release remains available, and the rollback/readback drill completed successfully."
+}

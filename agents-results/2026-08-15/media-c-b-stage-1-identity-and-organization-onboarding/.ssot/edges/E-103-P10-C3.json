@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-103-P10-C3",
+  "from": "P10",
+  "to": "C3",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.p10.c3.v5"
+  ],
+  "transferred_input": "成员停用服务与会话撤销回执",
+  "gate_evidence": "disabled 成员的已有会话立即失效，且不能通过旧 token 刷新",
+  "reason_code": "acceptance-dependency",
+  "transferred_artifact_ids": [
+    "DL-P10"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C3 consumes the explicitly produced artifact DL-P10"
+}

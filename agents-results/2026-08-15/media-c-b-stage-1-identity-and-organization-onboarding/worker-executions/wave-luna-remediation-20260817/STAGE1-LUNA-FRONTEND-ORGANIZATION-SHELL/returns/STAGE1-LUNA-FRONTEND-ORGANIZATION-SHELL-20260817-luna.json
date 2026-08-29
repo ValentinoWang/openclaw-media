@@ -1,0 +1,156 @@
+{
+  "task_id": "STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817",
+  "attempt_role": "luna",
+  "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": {
+    "status": "passed",
+    "frozen_validation_script": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817.sh",
+      "exit_code": 0,
+      "checks": [
+        "organization workspace shell QA passed",
+        "personal workspace shell QA passed",
+        "Oxlint passed without warnings",
+        "tsc -b tsconfig.media-u12b.json passed",
+        "Stage 1 runtime QA passed six scenarios"
+      ]
+    },
+    "runtime": {
+      "scenario_count": 6,
+      "console_errors": 0,
+      "page_errors": 0,
+      "organization_post_requests": 0,
+      "all_observed_requests_are_get": true,
+      "desktop_mobile_geometry_passed": true
+    }
+  },
+  "failure_class": "none",
+  "failure_origin": "none",
+  "actual_read_scope": [
+    "frontend/src/media/OrganizationWorkspaceShellPage.tsx",
+    "frontend/src/media/mediaWebApi.ts",
+    "frontend/src/media/secureUuid.ts",
+    "frontend/src/media/MediaWebWorkspace.tsx",
+    "frontend/src/media/WorkspaceShellPage.tsx",
+    "frontend/src/media/MediaApp.tsx",
+    "frontend/src/media/media.css",
+    "frontend/scripts/qa/checkOrganizationWorkspaceShell.ts",
+    "frontend/scripts/qa/checkPersonalWorkspaceShell.ts",
+    "frontend/scripts/qa/checkStage1WorkspaceRuntime.ts",
+    "frontend/package.json",
+    "backend/openclaw_app/services/stage1_organization_provisioning.py",
+    "backend/openclaw_app/services/stage1_administrator_authorization.py",
+    "backend/openclaw_app/services/stage1_provisioning_runtime.py",
+    "backend/openclaw_app/adapters/http_api.py",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/generated-views/30-node-contracts-and-acceptance.md",
+    "/Users/vsiyo/.agents/skills/playwright-best-practices/SKILL.md"
+  ],
+  "actual_write_scope": [
+    "frontend/src/media/OrganizationWorkspaceShellPage.tsx",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/returns/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817-luna.json",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/evidence/*.png",
+    "frontend/node_modules/.tmp/tsconfig.media-u12b.tsbuildinfo"
+  ],
+  "changed_files": [
+    "frontend/src/media/OrganizationWorkspaceShellPage.tsx",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/returns/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817-luna.json"
+  ],
+  "commands": [
+    {
+      "command": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817.sh",
+      "exit_code": 0
+    },
+    {
+      "command": "shasum -a 256 frozen QA/API inputs and target page",
+      "exit_code": 0
+    },
+    {
+      "command": "Playwright screenshot visual inspection for six runtime artifacts",
+      "exit_code": 0
+    }
+  ],
+  "red_green_evidence": {
+    "red": {
+      "source_defects_observed_before_change": [
+        "organization page derived operation authority from session.tenantId-backed browser storage",
+        "organization page allowed session.role=admin to bypass memberRole ownership",
+        "organization page persisted the provision run id and idempotency keys in localStorage"
+      ],
+      "frozen_source_hashes_unchanged": true
+    },
+    "green": {
+      "organization_authority": "only session.memberRole=owner renders Provision controls",
+      "browser_state": "run identity and idempotency keys are retained only in React memory while mounted",
+      "polling": "only a server-returned provisionRunId is polled, with no reload recovery from browser state",
+      "presentation": "ACTIVE, PENDING, DISABLED, REVOKED, and unknown-to-NEEDS_ATTENTION presentation remains fail closed",
+      "runtime": "six desktop/mobile scenarios passed with no organization POST request, page error, or console error"
+    }
+  },
+  "frozen_hashes_after": {
+    "ssot_manifest.json": {
+      "expected": "c5e1ae813b2cb33acbd51f27674df80735de54dd8165013dd6af431e6df14168",
+      "actual": "c5e1ae813b2cb33acbd51f27674df80735de54dd8165013dd6af431e6df14168",
+      "match": true
+    },
+    "checkOrganizationWorkspaceShell.ts": {
+      "expected": "331ca8c98818f68d0c34edbc78f80e4f0641063229204914fe14a48d437a5253",
+      "actual": "331ca8c98818f68d0c34edbc78f80e4f0641063229204914fe14a48d437a5253",
+      "match": true
+    },
+    "checkPersonalWorkspaceShell.ts": {
+      "expected": "13cdb48ff3d0ecc792e0957d98771ad45be7bbc85d577a3df9f8069f089a7953",
+      "actual": "13cdb48ff3d0ecc792e0957d98771ad45be7bbc85d577a3df9f8069f089a7953",
+      "match": true
+    },
+    "checkStage1WorkspaceRuntime.ts": {
+      "expected": "ecb4a33cb7cb698aeba3b3ecf77d0bb5c08730a07a9ef56345103f12f42ba56a",
+      "actual": "ecb4a33cb7cb698aeba3b3ecf77d0bb5c08730a07a9ef56345103f12f42ba56a",
+      "match": true
+    },
+    "mediaWebApi.ts": {
+      "expected": "92914cb2b0a83f62e6bc66adc9e9e8f4aceb4ea141404e894e25463afc8743ff",
+      "actual": "92914cb2b0a83f62e6bc66adc9e9e8f4aceb4ea141404e894e25463afc8743ff",
+      "match": true
+    },
+    "OrganizationWorkspaceShellPage.tsx": {
+      "initial": "86e82694d6468fdcdb193180841d6f8a424ef614689eeda7dea6a6b846944318",
+      "after": "714d937979d958f2c649b450860f9b0635e846063e93d8265b710af4412e752d",
+      "task_owned_change": true
+    }
+  },
+  "screenshot_paths": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/evidence/personal-desktop.png",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/evidence/organization-active-desktop.png",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/evidence/organization-disabled-desktop.png",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/evidence/personal-mobile.png",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/evidence/organization-active-mobile.png",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/evidence/organization-disabled-mobile.png"
+  ],
+  "behavior_coverage": [
+    "server workspaceMode=organization_lark and bodyAuthority=lark gate organization rendering",
+    "server memberRole is rendered and only owner can expose Provision controls",
+    "platform role is not read by the organization page",
+    "server Binding projection drives ACTIVE, PENDING, DISABLED, REVOKED, and fail-closed NEEDS_ATTENTION states",
+    "server-returned runs remain mounted-page React state and poll by provisionRunId while pending or running",
+    "complete secureUuid idempotency keys remain in a component ref and satisfy server syntax without truncation",
+    "read-only organization resource messaging and no Writer, document-write, media-task, external-link, or ordinary-navigation surface are preserved",
+    "desktop and mobile component geometry stays inside the viewport"
+  ],
+  "unverified_items": [
+    "Owner button-click and live Provision API behavior were not part of the frozen six member-fixture runtime scenarios.",
+    "No production, release, real Feishu, email, device, or external-system validation was performed.",
+    "No full repository CI or backend test suite was run because this bounded lane owns only the organization frontend shell."
+  ],
+  "residual_risks": [
+    "The server must continue to enforce owner and tenant authorization; this frontend change only removes browser-side bypasses and persistence.",
+    "A mounted-page Provision run is intentionally lost on reload and must be represented again by the current server session and Binding projection."
+  ],
+  "explicit_non_claims": [
+    "This is a local candidate implementation only.",
+    "VERIFIED here does not mean ACCEPTED node status, formal SSOT completion, production readiness, release, deployment, Feishu acceptance, or device evidence.",
+    "No claim is made about production behavior or real external credentials."
+  ]
+}

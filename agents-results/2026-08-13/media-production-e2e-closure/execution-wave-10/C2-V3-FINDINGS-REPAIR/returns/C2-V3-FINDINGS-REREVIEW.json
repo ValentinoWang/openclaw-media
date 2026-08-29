@@ -1,0 +1,224 @@
+{
+  "task_id": "C2-V3-FINDINGS-REREVIEW",
+  "node_id": "C2",
+  "review_scope": "f-01-through-f-05-repair-only",
+  "write_authority": "zero-write",
+  "versions": {
+    "plan": 3,
+    "dag": 3,
+    "interface_freeze": 3,
+    "node_contract": 3,
+    "ssot_schema": 1
+  },
+  "source_and_evidence_identity": {
+    "repair_source_manifest_sha256": "e70cb4be1ea5d6b75855d87b9680d0d55ff2cd54883e7245348d18844054b55d",
+    "repair_source_file_count": 13,
+    "protected_assets_manifest_sha256": "c3b1b270f0c3348a8614af0b951d03790e2653d33182e6713160db56c7a4b4f2",
+    "validation_log_sha256": "64c2f0dea27589868b6f63b6aec50d7056b05db2f598f218564c3f09e726161b",
+    "prior_review_sha256": "78d3f460f83a10baf4d3d2da5a6dc134bc0e67e2e1a32ac0d1919ce946e7dd2f"
+  },
+  "review_completion": "done",
+  "finding_dispositions": [
+    {
+      "id": "F-01",
+      "status": "fixed",
+      "blocking": false,
+      "evidence": [
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:340-378",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:446-455",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:1185-1258",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_media_task_repository_postgres.py:437-465"
+      ],
+      "reason": "Expired leases now send cancel-requested active tasks to pending_manual/needs_manual with an explicit reconciliation error, while ordinary recovery sets error_projection to SQL NULL and returns the task to queued only when cancellation was not requested."
+    },
+    {
+      "id": "F-02",
+      "status": "fixed",
+      "blocking": false,
+      "evidence": [
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/account/auth.py:20-30",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py:571-582",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py:756-789",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py:1053-1058",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py:2137-2152",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_web_tasks.py:301-329",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_media_task_v3_contract.py:47-59"
+      ],
+      "reason": "AccountSession requires a non-optional user_public_id, HTTP and IF2 task paths pass that field directly without an internal user_id fallback, and the service rejects an empty public identifier before capability processing or repository enqueue."
+    },
+    {
+      "id": "F-03",
+      "status": "fixed",
+      "blocking": false,
+      "evidence": [
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media/MediaWebWorkspace.tsx:935-960",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media/MediaWebWorkspace.tsx:1271-1282",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media/recentTaskPresentation.ts:114-151",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/scripts/qa/checkRecentTaskPresentation.ts:234-248",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/scripts/qa/checkRecentTaskPresentation.ts:110-139"
+      ],
+      "reason": "The generic result card derives its success class from task.result.ok and the settlement presentation's complete predicate, which requires both multi_system_readback_complete stage and final receipt status; intermediate waiting states remain warning/not complete."
+    },
+    {
+      "id": "F-04",
+      "status": "fixed",
+      "blocking": false,
+      "evidence": [
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_web_tasks.py:396-434",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:946-1016",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:1017-1059",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/migrations/canonical/037_media_task_runner_receipts.sql:178-194",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_media_task_repository_postgres.py:374-435",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_media_task_repository_postgres.py:468-526"
+      ],
+      "reason": "Settlement reconstructs and compares every frozen binding component, including relationship reference, actor, owned account, platform, normalized account, digest, and canonical account platform; drift raises before receipt insertion. The receipt contains the normalized account relation and attempt data including recoveryOfAttemptId."
+    },
+    {
+      "id": "F-05",
+      "status": "fixed",
+      "blocking": false,
+      "evidence": [
+        "shasum -a 256 /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/repair-source.sha256 /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/protected-assets.sha256 /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/logs/C2-V3-FINDINGS-REPAIR.validation.log /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-9/C2-V3-INDEPENDENT-REVIEW/returns/C2-V3-INDEPENDENT-REVIEW.json",
+        "shasum -a 256 -c /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/repair-source.sha256",
+        "shasum -a 256 -c /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/protected-assets.sha256",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/logs/C2-V3-FINDINGS-REPAIR.validation.log:1-2",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/logs/C2-V3-FINDINGS-REPAIR.validation.log:176"
+      ],
+      "reason": "All reads used only the explicit whitelist, both frozen manifests verified all listed files with exit code 0, and the sole write is this return path."
+    }
+  ],
+  "findings": [],
+  "commands": [
+    {
+      "command": "shasum -a 256 /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/repair-source.sha256 /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/protected-assets.sha256 /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/logs/C2-V3-FINDINGS-REPAIR.validation.log /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-9/C2-V3-INDEPENDENT-REVIEW/returns/C2-V3-INDEPENDENT-REVIEW.json",
+      "exit_code": 0,
+      "result": "All four frozen identity hashes matched."
+    },
+    {
+      "command": "shasum -a 256 -c /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/repair-source.sha256",
+      "exit_code": 0,
+      "result": "All 13 repair source files: OK."
+    },
+    {
+      "command": "shasum -a 256 -c /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/protected-assets.sha256",
+      "exit_code": 0,
+      "result": "All 5 protected assets: OK."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/logs/C2-V3-FINDINGS-REPAIR.validation.log",
+      "exit_code": 0,
+      "result": "Fixed validation log read; it records local validation exit 0 and retains the production receipt gate for DB."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/account/auth.py",
+      "exit_code": 0,
+      "result": "AccountSession user_public_id is a required string field."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py | sed -n '571,605p'",
+      "exit_code": 0,
+      "result": "IF2 context passes session.user_public_id without an internal user_id fallback."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py | sed -n '756,830p'",
+      "exit_code": 0,
+      "result": "Task operations use context.principal.user_public_id, including enqueue."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py | sed -n '1053,1058p'",
+      "exit_code": 0,
+      "result": "Legacy task actor helper returns session.user_public_id directly."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py | sed -n '2137,2152p'",
+      "exit_code": 0,
+      "result": "HTTP task creation passes session.user_public_id directly."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_web_tasks.py | sed -n '301,329p'",
+      "exit_code": 0,
+      "result": "Empty actor_public_id raises required_input_missing before task creation."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py | sed -n '340,455p'",
+      "exit_code": 0,
+      "result": "Cancellation and claim predicates were reviewed."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py | sed -n '945,1104p'",
+      "exit_code": 0,
+      "result": "Receipt settlement binding checks and receipt projection were reviewed."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py | sed -n '1185,1258p'",
+      "exit_code": 0,
+      "result": "Lease expiry recovery branches were reviewed."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media/MediaWebWorkspace.tsx | sed -n '935,960p'",
+      "exit_code": 0,
+      "result": "Generic result success is gated by final settlement completion."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media/recentTaskPresentation.ts | sed -n '114,151p'",
+      "exit_code": 0,
+      "result": "Settlement complete requires final stage and final receipt status."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/scripts/qa/checkRecentTaskPresentation.ts | sed -n '110,139p'",
+      "exit_code": 0,
+      "result": "Intermediate waiting state is asserted not complete and without a receipt."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/scripts/qa/checkRecentTaskPresentation.ts | sed -n '234,248p'",
+      "exit_code": 0,
+      "result": "QA asserts the generic result card success guard."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_media_task_repository_postgres.py | sed -n '374,526p'",
+      "exit_code": 0,
+      "result": "Protected PostgreSQL tests cover ordinary lease recovery, cancelled lease expiry, recovery receipt linkage, and relationship drift rejection."
+    },
+    {
+      "command": "nl -ba /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_media_task_v3_contract.py | sed -n '47,59p'",
+      "exit_code": 0,
+      "result": "Contract test asserts stable errors and removal of HTTP public-id fallbacks."
+    }
+  ],
+  "actual_read_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/account/auth.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_web_tasks.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/migrations/canonical/037_media_task_runner_receipts.sql",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_http_api.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_tenant_projection_http.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_media_business_http.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_media_task_repository_postgres.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/tests/test_media_task_v3_contract.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media/MediaWebWorkspace.tsx",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media/recentTaskPresentation.ts",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/scripts/qa/checkRecentTaskPresentation.ts",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/repair-source.sha256",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/protected-assets.sha256",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/logs/C2-V3-FINDINGS-REPAIR.validation.log",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-9/C2-V3-INDEPENDENT-REVIEW/returns/C2-V3-INDEPENDENT-REVIEW.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN-V3/acceptance-contract.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/scripts/acceptance/test-mpe2e-task-run-v3.sh",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/acceptance/human/MPE2E-TASK-RUN-V3/binding.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/acceptance/human/MPE2E-TASK-RUN-V3/checklist.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-8/validation/C2-V3-IMPLEMENT.sh"
+  ],
+  "actual_write_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/returns/C2-V3-FINDINGS-REREVIEW.json"
+  ],
+  "forbidden_scope_touched": false,
+  "unverified_items": [
+    "Production database migration and two real same-receipt production records remain unverified; the fixed validation log explicitly retains this production receipt gate for DB.",
+    "Local validation, tests, and build evidence are not production or device acceptance proof."
+  ],
+  "acceptance_recommendation": "accept-c2-implementation",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none"
+}

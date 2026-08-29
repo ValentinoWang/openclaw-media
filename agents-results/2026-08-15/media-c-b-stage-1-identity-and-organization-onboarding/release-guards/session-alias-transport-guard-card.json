@@ -1,0 +1,48 @@
+{
+  "schema_version": "harness-guard-card-v1",
+  "guard_id": "OPENCLAW-MEDIA-SESSION-ALIAS-TRANSPORT-V1",
+  "owner": "OpenClaw Media Nginx transport and deployment verifier",
+  "failure_class": "backend compatibility route omitted from the public transport layer",
+  "severity": "blocking",
+  "trigger": "every /usr/local/sbin/verify-openclaw-media invocation",
+  "scope": {
+    "included": [
+      "GET /openclaw/media/api/session",
+      "GET /media/api/session",
+      "negative probe /media/api/account/affiliate"
+    ],
+    "excluded": [
+      "all other /media/api paths",
+      "authenticated session contents",
+      "database and external-system behavior"
+    ]
+  },
+  "root_cause": "the backend owned the exact compatibility alias, but the production Nginx server only proxied /openclaw/media/api/",
+  "source_fix": "add one exact-match Nginx carrier for /media/api/session; retain backend method filtering and leave the /media/api/ prefix closed",
+  "guard_change": "the official deployment verifier requires unauthenticated canonical and alias responses to be byte-identical 401 responses and requires a representative neighboring legacy route to remain 404",
+  "red_proof": {
+    "command": "/tmp/verify-openclaw-media.r4 before Nginx reload",
+    "exit_code": 1,
+    "result": "exact compatibility alias returned 404 while canonical returned 401"
+  },
+  "green_proof": {
+    "command": "/usr/local/sbin/verify-openclaw-media --self-test-session-alias and full runtime verification",
+    "exit_code": 0,
+    "result": "synthetic positive and negative cases passed; full runtime verification passed after the exact Nginx carrier was reloaded",
+    "required_cases": [
+      "canonical equivalence accepted",
+      "missing alias rejected",
+      "body drift rejected",
+      "broadened legacy route rejected"
+    ]
+  },
+  "failure_output_contract": [
+    "route class",
+    "observed status or drift reason",
+    "expected status"
+  ],
+  "repair_skill": "quality-gate-triage",
+  "repair_path": "inspect the exact Nginx location, backend alias normalization, and neighboring legacy-route negative probe; never add a /media/api/ prefix proxy",
+  "evidence_level": "remote-runtime",
+  "production_data_touched": false
+}

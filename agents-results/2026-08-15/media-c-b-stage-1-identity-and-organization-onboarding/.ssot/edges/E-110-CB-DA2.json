@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-110-CB-DA2",
+  "from": "CB",
+  "to": "DA2",
+  "dependency_type": "hard",
+  "dependency_scope": "global-completeness",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.cb.da2.v5"
+  ],
+  "transferred_input": "哈希绑定的 Release 1B 候选",
+  "gate_evidence": "不得绕过 DC1、E11 或带入 Stage 1C 目录成熟化",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "ART-CB"
+  ],
+  "resource_ids": [
+    "candidate:REL-1B"
+  ],
+  "necessity_proof": "DA2 must retain the immutable candidate:REL-1B identity from CB"
+}

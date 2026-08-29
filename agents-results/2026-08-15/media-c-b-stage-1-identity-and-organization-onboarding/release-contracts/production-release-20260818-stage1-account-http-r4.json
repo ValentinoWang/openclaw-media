@@ -1,0 +1,88 @@
+{
+  "schema_version": "openclaw-media-production-release-task-v1",
+  "task_id": "production-release-20260818-stage1-account-http-r4",
+  "candidate_manifest": {
+    "path": ".codex-work/stage1-integrated/candidate-manifest.json",
+    "sha256": "0eddea7f096dc0a65ba4b1336a9591baf702a6290cf4b8cc80696a4bebd9c4d1"
+  },
+  "source_manifests": {
+    "frontend": {
+      "path": ".codex-work/stage1-integrated/frontend/.candidate-source.sha256",
+      "sha256": "92e0ced44f838fb6abbc8349dee927e3510237fdab90a0181debddab769d1eeb",
+      "file_count": 206
+    },
+    "backend": {
+      "path": ".codex-work/stage1-integrated/backend/.candidate-source.sha256",
+      "sha256": "17cc26611275c04d110143d50c5a064b7c02cf77cfe9729efabc52a6c218343a",
+      "file_count": 651
+    }
+  },
+  "remote": {
+    "host": "ubuntu@106.52.146.37",
+    "frontend_release_root": "/mnt/openclaw-data/openclaw-media-frontend-releases",
+    "backend_stage_root": "/mnt/openclaw-data/openclaw-media-release-stage",
+    "backend_release_root": "/home/ubuntu/.openclaw/releases",
+    "frontend_target": "/var/www/openclaw/media",
+    "backend_service": "openclaw-bot-center-api.service",
+    "frontend_entrypoint": "/usr/local/sbin/deploy-openclaw-media-locked",
+    "verification_entrypoint": "/usr/local/sbin/verify-openclaw-media",
+    "nginx_authority": "/etc/nginx/sites-available/openclaw-bot-center"
+  },
+  "release_ids": {
+    "frontend": "20260818T-stage1-account-http-r4",
+    "backend": "openclaw-tag-router-media-tenant-20260818T-stage1-account-http-r4"
+  },
+  "preflight": {
+    "candidate_integrity": "frontend and backend sha256sum -c passed",
+    "candidate_binding": "candidate manifest binding passed",
+    "postgresql_http_regression": "53 passed, 9 subtests passed before release",
+    "frontend_build": "npm run build:media passed before release and again in the locked remote build",
+    "runner_profiles": "python3 tools/verify_runner_profiles.py --all --fail-closed passed"
+  },
+  "execution": {
+    "backend": [
+      "copy the exact candidate backend while excluding runtime caches and local virtual environments",
+      "verify the candidate source manifest and SessionPrincipal composition",
+      "create a managed release-root symlink",
+      "update the Media systemd drop-in, restart, and verify health and readiness"
+    ],
+    "frontend": [
+      "copy exact managed source while excluding node_modules and generated dist output",
+      "invoke the official locked entrypoint with a temporary backend sibling used only by source QA",
+      "build, bind, seal, and atomically switch the immutable frontend release",
+      "remove the temporary backend sibling"
+    ],
+    "transport_and_guards": [
+      "make the managed Node toolchain authoritative inside the locked deployment entrypoint",
+      "add only location = /media/api/session to the production Nginx authority",
+      "require canonical and compatibility session responses to be byte-identical while a neighboring legacy route remains 404"
+    ]
+  },
+  "guards": {
+    "runtime_tools": "OPENCLAW-MEDIA-DEPLOY-RUNTIME-TOOLS-V1",
+    "session_alias_transport": "OPENCLAW-MEDIA-SESSION-ALIAS-TRANSPORT-V1",
+    "session_principal_composition": "passed",
+    "official_deployment_guard": "passed",
+    "no_database_migration": true,
+    "no_external_writes": true,
+    "rollback": "restore the prior systemd drop-in and frontend symlink on release failure; restore prior Nginx and verifier files on transport-guard failure"
+  },
+  "acceptance": {
+    "required": [
+      "candidate and remote source identities agree",
+      "backend process uses the r4 settings path",
+      "healthz and readyz pass",
+      "frontend and backend coordination metadata agree",
+      "disk, loopback, and external index hashes agree",
+      "canonical and exact compatibility session routes return the same unauthenticated response",
+      "wrong-method, trailing-slash, and neighboring legacy routes remain closed"
+    ],
+    "not_claimed": [
+      "SSOT node ACCEPTED",
+      "production database migration or readback",
+      "real email or Feishu flow",
+      "authenticated browser or physical-device acceptance"
+    ]
+  },
+  "approval_receipt": "manual-receipts/production-release-20260818-stage1-account-http-r4.json"
+}

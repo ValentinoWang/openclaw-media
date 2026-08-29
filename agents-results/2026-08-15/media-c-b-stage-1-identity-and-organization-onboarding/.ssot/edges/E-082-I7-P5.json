@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-082-I7-P5",
+  "from": "I7",
+  "to": "P5",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.i7.p5.v5"
+  ],
+  "transferred_input": "BindingResourceResolver",
+  "gate_evidence": "本节点不接入任何人工智能 Writer",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-I7"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "P5 consumes the explicitly produced artifact DL-I7"
+}

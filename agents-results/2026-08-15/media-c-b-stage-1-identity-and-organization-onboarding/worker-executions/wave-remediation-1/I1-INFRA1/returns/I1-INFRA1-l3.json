@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "task_id": "I1-INFRA1",
+  "attempt_role": "l3",
+  "node_id": "I1-INFRA1",
+  "direct_parent": "I1",
+  "semantic_key": "media.stage1.unified-login",
+  "invalidation_key": "media.stage1.unified-login.v4",
+  "execution_guard": "G-PHASE1",
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-i1",
+  "task_source_sha256": "2c48e117402e1f16194a68ab2c198229332c0903e8e3cf0dc5ab6e2d920d0211",
+  "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-remediation-1/I1-INFRA1/returns/I1-INFRA1-l3.json",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I1-INFRA1.sh",
+  "validation_command_sha256": "e16c0a0d73b7d857ca7cfe8df2f5b223e55196a43b6090c80a4b872b3fff0712",
+  "execution_identity": {
+    "wrapper": "frontend/scripts/qa/withChromiumSlot.sh",
+    "pid": "final audit shell pid 68236",
+    "session_identity": "current Codex task session; frozen validation PTY sessions 45851 and 71994; downstream diagnostic PTY session 96084"
+  },
+  "frozen_inputs": {
+    "ssot_manifest_sha256": "3f08c4cbfa7edbc19a846038cee611888a6952418722ec00857de62bd3e12347",
+    "i1_node_sha256": "f77520da4cf2395e86150e08bd3e4c86a08c48305a83e8749b11542a4a36f2d6",
+    "media_login_sha256": "18f64fcdce9c30341491788e53c7df16fb49cf6a03421725244375f875ddbe47",
+    "check_stage1_identity_entry_sha256": "2ae4ed1210c5973968996bc0d6a94cdd270fb4345a1bc9876579702fbe11f349",
+    "original_slot_wrapper_sha256": "8734cf544a9289ca0494954ec5a10227e11b4617127cefdf244e64c4cc0fccd7",
+    "original_package_json_sha256": "e8fa0e1e953c339b82e26a18b7c788f4b3401692e0e2024c416d7929588e8659"
+  },
+  "changed_files": [
+    {
+      "path": "frontend/scripts/qa/withChromiumSlot.sh",
+      "sha256": "b43072de2367e5c5e41e1d549393976272409ec575baa2d90e53435d0e23581f",
+      "ownership": "declared"
+    },
+    {
+      "path": "frontend/scripts/qa/checkChromiumSlotContract.sh",
+      "sha256": "f9b974921ee1bf3d32e0fd64178252acc5a924a867ddd63f93df337606ae9468",
+      "ownership": "declared"
+    },
+    {
+      "path": "frontend/package.json",
+      "sha256": "2d2a10a68bee189af24811ce4f314d60ae7af7450f61afb4f37ba8c849036c41",
+      "ownership": "declared"
+    }
+  ],
+  "scope_audit": {
+    "source_changes_outside_declared_files": [],
+    "generated_validation_outputs_ignored": [
+      "frontend/dist-media",
+      "frontend/node_modules/.vite",
+      "frontend/node_modules/.tmp/tsconfig.media-u12b.tsbuildinfo"
+    ],
+    "package_lock_sha256": "f3dd4e9e3671ff2d774938b96bfacf083bdfaad454ee19d8effc9d5b96541dd7",
+    "temporary_validation_outputs_cleaned": true
+  },
+  "commands_and_results": [
+    {
+      "command": "bash -n frontend/scripts/qa/withChromiumSlot.sh && bash -n frontend/scripts/qa/checkChromiumSlotContract.sh",
+      "exit_code": 0,
+      "result": "bash-syntax=PASS"
+    },
+    {
+      "command": "package contract wiring check",
+      "exit_code": 0,
+      "result": "qa:chromium-slot-contract is registered and build:media starts with it"
+    },
+    {
+      "command": "npm run qa:chromium-slot-contract",
+      "exit_code": 0,
+      "result": "anonymous descriptor syntax rejected; isolated temporary lock root executed the wrapped command and propagated exit code 37"
+    },
+    {
+      "command": "isolated two-process Chromium slot contention check",
+      "exit_code": 0,
+      "result": "one-slot contender timed out with exit 75 while holder retained the Darwin lockf-backed descriptor lock"
+    },
+    {
+      "command": "bash /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I1-INFRA1.sh",
+      "exit_code": 1,
+      "result": "nested stage1_identity_entry and every build:media gate through qa:task-workspace-deletion-recovery passed; unchanged checkDeletionIntentLifecycle.ts then failed with ENOENT mkdir /home/ubuntu"
+    },
+    {
+      "command": "bash /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I1.sh",
+      "exit_code": 1,
+      "result": "stage1_identity_entry=PASS; the same unchanged deletion-intent fixture failed with ENOENT mkdir /home/ubuntu"
+    },
+    {
+      "command": "DELETION_INTENT_QA_OUTPUT=<temporary writable directory> npm run build:media",
+      "exit_code": 0,
+      "result": "diagnostic only, not frozen acceptance: deletion lifecycle, tsc, Vite build, and media release-label gate all passed"
+    },
+    {
+      "command": "source ownership, frozen hash, and temporary-output audit",
+      "exit_code": 0,
+      "result": "only the three declared source files changed after task start; frozen I1 implementation and package-lock hashes remain unchanged; diagnostic temporary files were removed"
+    }
+  ],
+  "evidence_identities": [
+    "sha256:task-source:2c48e117402e1f16194a68ab2c198229332c0903e8e3cf0dc5ab6e2d920d0211",
+    "sha256:validation-command:e16c0a0d73b7d857ca7cfe8df2f5b223e55196a43b6090c80a4b872b3fff0712",
+    "sha256:ssot-manifest:3f08c4cbfa7edbc19a846038cee611888a6952418722ec00857de62bd3e12347",
+    "sha256:i1-node:f77520da4cf2395e86150e08bd3e4c86a08c48305a83e8749b11542a4a36f2d6",
+    "sha256:withChromiumSlot.sh:b43072de2367e5c5e41e1d549393976272409ec575baa2d90e53435d0e23581f",
+    "sha256:checkChromiumSlotContract.sh:f9b974921ee1bf3d32e0fd64178252acc5a924a867ddd63f93df337606ae9468",
+    "sha256:package.json:2d2a10a68bee189af24811ce4f314d60ae7af7450f61afb4f37ba8c849036c41",
+    "run:qa:chromium-slot-contract:pass",
+    "run:slot-contention-timeout:pass",
+    "run:I1-INFRA1:partial-enoent-home-ubuntu",
+    "run:I1:partial-enoent-home-ubuntu",
+    "run:build-media-with-portable-output-diagnostic:pass"
+  ],
+  "external_side_effects": [],
+  "destructive_actions": [],
+  "unverified_items": [
+    "The unchanged frozen validation cannot reach its TypeScript, Vite, and release-label stages on this macOS host because the unmodifiable deletion-intent QA fixture defaults to the absent and non-creatable /home/ubuntu path.",
+    "The portable-output build was a diagnostic environment override and does not replace the required frozen validation result.",
+    "No production, database, real email, Feishu, credential, network, or external-system behavior was exercised."
+  ],
+  "deviation": "L3 preserved the already-present declared remediation and independently revalidated it. The wrapper uses a Darwin-only lockf fallback because macOS Bash 3.2 lacks flock(1); the diagnostic output override was limited to a separate local health check and left frozen validation and source unchanged.",
+  "risks": [
+    "Formal frozen validation remains partial until the unchanged QA fixture is made portable within authorized scope or runs in an authorized environment that provides its /home/ubuntu output root.",
+    "On Darwin, descriptor close releases the lock after the retained flock -u call; Linux continues to use flock(1)."
+  ],
+  "proposed_state": "BLOCKED",
+  "acceptance_self_check": "partial",
+  "failure_class": "verification"
+}

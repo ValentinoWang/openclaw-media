@@ -1,0 +1,227 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "escalate_l3",
+        "effective_failure_class": "transport",
+        "maximum_escalations_remaining": 1,
+        "next_attempt": "l3",
+        "next_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+        "reason": "non-complete proposed state None"
+      },
+      "classifier_exit_code": 10,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/prompts/T1-TEST-LOCK-luna.txt)"
+      ],
+      "ended_at": "2026-08-16T15:24:17.792613+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/logs/T1-TEST-LOCK-luna.log",
+      "pid": 34778,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-t1",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/prompts/T1-TEST-LOCK-luna.txt",
+      "prompt_sha256": "40b8062448ac77a98abbe9f5815199212c83c457b7da1019443e2e3374d0261d",
+      "started_at": "2026-08-16T15:17:41.674044+00:00",
+      "structured_return": null,
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/returns/T1-TEST-LOCK-luna.json",
+      "structured_return_state": "missing",
+      "task_sha256": "2c923111b91a75e2c6ff77c24fef4ec443a926dfcead1d146dc5ee722d3fc80b",
+      "timed_out": false,
+      "validation_command_sha256": "fed224b5efbcb2f19326ba838f2972c2af6992e60b12cdaa20ff491d4907946d",
+      "validation_ended_at": "2026-08-16T15:24:20.239733+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/logs/T1-TEST-LOCK-luna.validation.log",
+      "validation_pid": 40537,
+      "validation_started_at": "2026-08-16T15:24:17.792761+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    },
+    {
+      "attempt_role": "l3",
+      "classification": {
+        "attempt": "l3",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-l3.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/prompts/T1-TEST-LOCK-l3.txt)"
+      ],
+      "ended_at": "2026-08-16T15:29:49.278131+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/logs/T1-TEST-LOCK-l3.log",
+      "pid": 40693,
+      "prior_attempt_index": 0,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-t1",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/prompts/T1-TEST-LOCK-l3.txt",
+      "prompt_sha256": "eae5f6ed5dd211aa1ecb8dbc46934b96ac46d546399673e58b8cfa625bffd53d",
+      "started_at": "2026-08-16T15:24:20.270049+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "actual_read_scopes": [
+          "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md",
+          "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/test-change-requests/TCR-T1-ROUTE-CARRIER.md",
+          "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/approvals/main-orchestrator-route-contract-v1.md",
+          "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml via the protected test and frozen validation command",
+          "backend/tests/test_media_stage1_shared_contract.py",
+          "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1-TEST-LOCK.sh",
+          "/Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md",
+          "/Users/vsiyo/.agents/skills/code-quality/SKILL.md"
+        ],
+        "actual_write_scopes": [
+          "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/returns/T1-TEST-LOCK-l3.json"
+        ],
+        "attempt_role": "l3",
+        "changed_file": {
+          "l3_source_write": false,
+          "path": "backend/tests/test_media_stage1_shared_contract.py",
+          "pre_change_sha256": "c1fbb5b6655ff2f4bb6f90152a8ab6705d77f6d2744744014f99e0d9dafa01a8",
+          "provenance": "The approved protected-test update was already present when this L3 retry began; this retry independently verified it and emitted the missing structured return.",
+          "sha256": "80759c80b90339095a255c5c1d6a831e4fbcd74e3e598fcd7a1ec8fe57d64e8d"
+        },
+        "commands": [
+          {
+            "command": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1-TEST-LOCK.sh",
+            "exit_code": 126,
+            "result": "The frozen script has no executable bit; direct invocation returned permission denied and no file was modified."
+          },
+          {
+            "command": "/bin/bash /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1-TEST-LOCK.sh",
+            "exit_code": 0,
+            "result": "8 passed in 1.88s; T1_TEST_BASELINE=GREEN"
+          }
+        ],
+        "decision_refs": [
+          "media.stage1.stable-decisions@2",
+          "media.stage1.decision.personal-auth-contract@1"
+        ],
+        "destructive_actions": [],
+        "deviations": [
+          "The frozen validation file is not executable. It was executed unchanged through /bin/bash after direct invocation returned exit 126."
+        ],
+        "execution_identity": {
+          "observed_audit_shell_pid": 43929,
+          "observed_audit_shell_ppid": 40695,
+          "observed_audit_shell_tty": "??",
+          "session_identity": "noninteractive Codex execution; no reusable exec session was exposed",
+          "wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh"
+        },
+        "external_side_effects": [],
+        "failure_class": "none",
+        "frozen_hash_audit": {
+          "acceptance_contract": {
+            "actual": "d1cc1861d89112729b46f741d33ef2db9b08844c567409779bb16117f02b7858",
+            "expected": "d1cc1861d89112729b46f741d33ef2db9b08844c567409779bb16117f02b7858",
+            "unchanged": true
+          },
+          "approval_evidence": {
+            "actual": "6ccaf7929e076e41c6d362931f14a32cd5665d19c3179e2f954833285b95f0bc",
+            "expected": "6ccaf7929e076e41c6d362931f14a32cd5665d19c3179e2f954833285b95f0bc",
+            "unchanged": true
+          },
+          "approved_tcr": {
+            "actual": "27047ecb06196f6b1a6300a99b4db9298432d53608f858aa6187fd77cb0a9dcc",
+            "expected": "27047ecb06196f6b1a6300a99b4db9298432d53608f858aa6187fd77cb0a9dcc",
+            "unchanged": true
+          },
+          "candidate_json": {
+            "actual": "775ddfa6fcfb5e04a931dfa5e03dfd08891365fc4491c16d8a6e49ede1c58611",
+            "expected": "775ddfa6fcfb5e04a931dfa5e03dfd08891365fc4491c16d8a6e49ede1c58611",
+            "unchanged": true
+          },
+          "cross_root_gate": {
+            "actual": "6fa14dc5655ac77bd1a78bad0a132ff8ed81ac2fca8aafb2d5bb69448086f236",
+            "expected": "6fa14dc5655ac77bd1a78bad0a132ff8ed81ac2fca8aafb2d5bb69448086f236",
+            "unchanged": true
+          },
+          "manifest": {
+            "actual": "3f08c4cbfa7edbc19a846038cee611888a6952418722ec00857de62bd3e12347",
+            "expected": "3f08c4cbfa7edbc19a846038cee611888a6952418722ec00857de62bd3e12347",
+            "unchanged": true
+          },
+          "openapi": {
+            "actual": "f4f4cd16bf3e4ad3ddfd0080da6ccfb7fd7f2ba6469871edcb45e957c2854790",
+            "expected": "f4f4cd16bf3e4ad3ddfd0080da6ccfb7fd7f2ba6469871edcb45e957c2854790",
+            "unchanged": true
+          },
+          "protected_test": {
+            "actual": "80759c80b90339095a255c5c1d6a831e4fbcd74e3e598fcd7a1ec8fe57d64e8d",
+            "changed_from_pre_change_identity": true,
+            "pre_change_expected": "c1fbb5b6655ff2f4bb6f90152a8ab6705d77f6d2744744014f99e0d9dafa01a8"
+          },
+          "t1_harness": {
+            "actual": "13219785db38866e00387d4ce09553ef05c34ab21b5c6a4fbf9709f583d73009",
+            "expected": "13219785db38866e00387d4ce09553ef05c34ab21b5c6a4fbf9709f583d73009",
+            "unchanged": true
+          },
+          "t1_node": {
+            "actual": "613e2d5bbe52227f38c321d4f243e772efa02309bda4a97084916f8a3b66c910",
+            "expected": "613e2d5bbe52227f38c321d4f243e772efa02309bda4a97084916f8a3b66c910",
+            "unchanged": true
+          },
+          "validation_command": {
+            "actual": "fed224b5efbcb2f19326ba838f2972c2af6992e60b12cdaa20ff491d4907946d",
+            "expected": "fed224b5efbcb2f19326ba838f2972c2af6992e60b12cdaa20ff491d4907946d",
+            "unchanged": true
+          }
+        },
+        "invalidation_key": "media.stage1.acceptance-harness.v4",
+        "proposed_state": "VERIFIED",
+        "risks": [
+          "This verifies the frozen shared OpenAPI contract only; it is not implementation, human acceptance, release, or production evidence."
+        ],
+        "role": "independent acceptance-design test owner",
+        "task_id": "T1-TEST-LOCK",
+        "version_tuple": {
+          "DAG": 4,
+          "INTERFACE_FREEZE": 4,
+          "NODE_CONTRACT": 4,
+          "PLAN": 4,
+          "SSOT_SCHEMA": 1
+        }
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/returns/T1-TEST-LOCK-l3.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "2c923111b91a75e2c6ff77c24fef4ec443a926dfcead1d146dc5ee722d3fc80b",
+      "timed_out": false,
+      "validation_command_sha256": "fed224b5efbcb2f19326ba838f2972c2af6992e60b12cdaa20ff491d4907946d",
+      "validation_ended_at": "2026-08-16T15:29:51.422637+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/logs/T1-TEST-LOCK-l3.validation.log",
+      "validation_pid": 45590,
+      "validation_started_at": "2026-08-16T15:29:49.278425+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-l3.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-16T15:29:51.465587+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "l3_wrapper_resolved_at": "2026-08-16T15:24:20.268983+00:00",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-t1",
+  "resolved_l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-16T15:17:41.672940+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-tasks/T1-TEST-LOCK.txt",
+  "task_id": "T1-TEST-LOCK",
+  "task_sha256": "2c923111b91a75e2c6ff77c24fef4ec443a926dfcead1d146dc5ee722d3fc80b",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1-TEST-LOCK.sh",
+  "validation_command_sha256": "fed224b5efbcb2f19326ba838f2972c2af6992e60b12cdaa20ff491d4907946d",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

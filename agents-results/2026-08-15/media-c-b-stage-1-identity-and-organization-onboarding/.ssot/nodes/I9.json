@@ -1,0 +1,139 @@
+{
+  "node_id": "I9",
+  "semantic_key": "media.stage1.writer-fail-closed",
+  "stage": "B",
+  "work_kind": "implementation",
+  "domain_lane": "writer-boundary",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "B",
+    "G1",
+    "K5",
+    "M1",
+    "T1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.stable-decisions",
+      "version": 2
+    },
+    {
+      "semantic_key": "media.stage1.decision.writer-boundary",
+      "version": 2
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.writer-fail-closed.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "C1",
+    "I8"
+  ],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "LW",
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "danger-full-access",
+    "sandbox_authority": "writable sandbox",
+    "task_argument": "实现页面与 API 一致的 Writer 失败关闭。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-returns/I9.json",
+    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/prompts/I9.txt",
+    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-logs/I9.log",
+    "prompt_sha256": "capture-before-launch",
+    "launch_barrier": "all wave PIDs registered before first wait",
+    "prompt_cleanup": "delete after exit evidence registration",
+    "runtime_handle_cleanup": "release after exit evidence registration",
+    "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions",
+    "dispatch_state": "BLOCKED",
+    "runtime_profile_requirement": "implementation-runner",
+    "runtime_profile_available": true,
+    "launch_authorized": false,
+    "blocking_capability_node": "none"
+  },
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [],
+  "description": "Release 1A 独立发布后不存在可调用的全局 Writer；第二阶段由唯一 WriterRouter 接管",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "execution_contract_ref": "I9.json",
+  "execution_contract_sha256": "578a47b97a5f19f280d8a8483fad866a8b6e42e8d16b981bf770500ec8af73d2",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-I9"
+  ],
+  "produced_artifact_ids": [
+    "ART-I9"
+  ],
+  "consumed_artifact_ids": [
+    "ART-B",
+    "DL-G1",
+    "DL-K5",
+    "DL-M1",
+    "DL-T1"
+  ],
+  "read_set": [
+    "artifact:B",
+    "artifact:G1",
+    "artifact:K5",
+    "artifact:M1",
+    "artifact:T1"
+  ],
+  "write_set": [
+    "artifact:I9"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:I9",
+      "mode": "W",
+      "isolation_key": "node:I9"
+    }
+  ],
+  "actor_pool": "codex-primary",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance I9\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I9-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-6",
+  "executor_route": "lw-terra",
+  "primary_executor": "lw-terra",
+  "primary_wrapper": "run-lw-terra.sh",
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  }
+}

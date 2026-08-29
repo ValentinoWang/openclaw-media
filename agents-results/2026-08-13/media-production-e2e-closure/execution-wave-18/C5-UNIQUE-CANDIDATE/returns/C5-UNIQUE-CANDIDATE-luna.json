@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "task_id": "C5-UNIQUE-CANDIDATE",
+  "attempt_role": "luna",
+  "task_source_sha256": "f261225240091a67eaaf58c2895a651b60e26b8b0fb0e612a5df75898fd4ab9c",
+  "structured_return_path": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/returns/C5-UNIQUE-CANDIDATE-luna.json",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "version_tuple": {
+    "plan": 5,
+    "dag": 5,
+    "interface_freeze": 5,
+    "node_contract": 4,
+    "ssot_schema": 1
+  },
+  "wrapper": null,
+  "wrapper_detail": "Direct bounded execution; no child worker or long-lived process was started.",
+  "actual_read_scope": [
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/manifest.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/C3.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/C4.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/C5.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/contracts/material-parsing-coverage-v1.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-17/result.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-17/validation/material-parsing-main-thread-review.sh",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/validation/C5-UNIQUE-CANDIDATE.sh",
+    ".codex-work/merge-candidate-v4/frontend/**",
+    ".codex-work/merge-candidate-v4/backend/**"
+  ],
+  "actual_write_scope": [
+    ".codex-work/merge-candidate-v4/frontend/.candidate-source.sha256",
+    ".codex-work/merge-candidate-v4/frontend/.merge-provenance.json",
+    ".codex-work/merge-candidate-v4/backend/.release-coordination.json",
+    ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+    ".codex-work/merge-candidate-v4/backend/.merge-provenance.json",
+    ".codex-work/merge-candidate-v4/candidate-manifest.json",
+    ".codex-work/merge-candidate-v4/candidate-manifest.sha256",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/result.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/returns/C5-UNIQUE-CANDIDATE-luna.json"
+  ],
+  "forbidden_scope_respected": true,
+  "changed_files": [
+    ".codex-work/merge-candidate-v4/frontend/.candidate-source.sha256",
+    ".codex-work/merge-candidate-v4/frontend/.merge-provenance.json",
+    ".codex-work/merge-candidate-v4/backend/.release-coordination.json",
+    ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+    ".codex-work/merge-candidate-v4/backend/.merge-provenance.json",
+    ".codex-work/merge-candidate-v4/candidate-manifest.json",
+    ".codex-work/merge-candidate-v4/candidate-manifest.sha256",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/result.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/returns/C5-UNIQUE-CANDIDATE-luna.json"
+  ],
+  "validation": {
+    "command_file": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/validation/C5-UNIQUE-CANDIDATE.sh",
+    "command_sha256": "34b6451ec3644a0bf902fbb4f65ea66d92c6d38f5a7ce165d22cdbadc2fffcaf",
+    "runs": [
+      {
+        "exit_code": 1,
+        "status": "failed_before_acceptance",
+        "note": "The backend source manifest was generated before the required release-coordination frontendRelease update; it was rebuilt using the frozen exclusion rule."
+      },
+      {
+        "exit_code": 0,
+        "status": "pass",
+        "note": "Frozen C5 validation passed."
+      },
+      {
+        "exit_code": 0,
+        "status": "pass",
+        "note": "Final frozen validation after result.md update passed."
+      }
+    ],
+    "final_exit_code": 0
+  },
+  "candidate_manifests": {
+    "frontend": {
+      "path": ".codex-work/merge-candidate-v4/frontend/.candidate-source.sha256",
+      "sha256": "e4b35df091184f2d51be0c5ccb675223ddc7b6fb1df6ebf366956c1ac9619580",
+      "managed_file_count": 200
+    },
+    "backend": {
+      "path": ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+      "sha256": "c67461000c4dd3cee5f5087d76880a402f2831c20ba365e6c4e719abf3a32b44",
+      "managed_file_count": 566
+    },
+    "top_level": {
+      "path": ".codex-work/merge-candidate-v4/candidate-manifest.json",
+      "sha256": "62f0fd2a23b614483482242ea6294e0bb3cf7edc0037a740a99f19690fecad4a",
+      "checksum_path": ".codex-work/merge-candidate-v4/candidate-manifest.sha256"
+    }
+  },
+  "material_parsing_contract": {
+    "contract_id": "media-material-parsing-coverage-v1",
+    "contract_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+    "coverage_count": 54,
+    "wave_17_result_sha256": "27cfc24b13d7618127996a72f57c38608f4a0df2a32f213104823b6c97021dbf",
+    "wave_17_validation_sha256": "fc2bec23ab69da35d18e269bb4cd1a0236eb3929c33c943ee4bff4e6da02de8b",
+    "production_accepted": false
+  },
+  "production_baselines": {
+    "frontend": "20260814T084319Z-media-login-canonical",
+    "backend": "20260814T062408Z-opc-feishu-login"
+  },
+  "release_coordination": {
+    "frontendRelease": "20260814T084319Z-media-login-canonical",
+    "backendRelease": "openclaw-tag-router-media-tenant-20260814T062408Z-opc-feishu-login"
+  },
+  "production_not_touched": true,
+  "shared_resource_impact": {
+    "remote_host": false,
+    "production_database": false,
+    "feishu": false,
+    "accounts_credentials_cookies_tokens": false,
+    "long_lived_processes": false,
+    "child_workers": false
+  },
+  "unverified_items": [
+    "The candidate is local-only and not deployed; no production release, restart, or service configuration was performed.",
+    "No production database, Feishu, account, credential, cookie, token, browser, device, or real-QA acceptance evidence was used.",
+    "C5 was not marked ACCEPTED; independent release or human acceptance remains outside this bounded task."
+  ],
+  "deviations": [
+    "The first validation invocation exited 1 because the backend manifest preceded the required release-coordination update; the manifest, provenance, top-level manifest, checksum, and result were synchronized and two subsequent invocations exited 0."
+  ],
+  "remaining_risks": [
+    "This evidence establishes a content-bound local unique candidate only; it does not establish deployment, production integration, or production efficacy."
+  ],
+  "cleanup": {
+    "validation_scratch_cleaned_by_frozen_command": true,
+    "persistent_worker_left_running": false
+  }
+}

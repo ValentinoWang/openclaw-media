@@ -1,0 +1,7 @@
+task_id	supervisor_pid	started_at_utc	project_root	artifact_dir
+MB1	68673	2026-08-16T19:48:31Z	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-mb1	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-code-1/MB1
+P9	68676	2026-08-16T19:48:31Z	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-p9	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-code-1/P9
+P10	68679	2026-08-16T19:48:31Z	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-p10	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-code-1/P10
+I4	68682	2026-08-16T19:48:31Z	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i4	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-code-1/I4
+I5	68685	2026-08-16T19:48:31Z	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i5	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-code-1/I5
+I6	68688	2026-08-16T19:48:31Z	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i6	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-code-1/I6

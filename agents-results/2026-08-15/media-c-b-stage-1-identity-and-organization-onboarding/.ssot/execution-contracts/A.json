@@ -1,0 +1,28 @@
+{
+  "contract_id": "A",
+  "schema_version": 1,
+  "node_id": "A",
+  "node_role": "charter",
+  "execution_actor": "human",
+  "work_kind": "charter",
+  "write_authority": "authoritative-contract",
+  "read_set": [
+    "contract:media.stage1.charter"
+  ],
+  "write_set": [
+    "artifact:A"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:A",
+      "mode": "W",
+      "isolation_key": "node:A"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance A\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/A-return.json"
+  ]
+}

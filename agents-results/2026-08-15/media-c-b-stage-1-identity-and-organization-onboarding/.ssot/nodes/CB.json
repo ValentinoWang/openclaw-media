@@ -1,0 +1,96 @@
+{
+  "node_id": "CB",
+  "semantic_key": "media.stage1.release1b-candidate",
+  "stage": "C",
+  "work_kind": "convergence",
+  "domain_lane": "release-1b",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "C3",
+    "DC1",
+    "E11",
+    "K2",
+    "M1",
+    "T1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.release1b-candidate.v5"
+  ],
+  "write_authority": "shared-generated",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "DA2"
+  ],
+  "worker_transport": "deterministic-local",
+  "worker_registration": {
+    "executor": "outer orchestrator",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "command": "./tools/rebuild_stage1_candidate --manifest RELEASE_1B_PATCH_MANIFEST --base promotion --output FRESH_CB_DIR --check-twice",
+    "task_argument": "汇合 Release 1B；不部署。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/CB.json",
+    "determinism_key": "DC1-candidate-plus-accepted-release1b-patch-manifests",
+    "dispatch_state": "BLOCKED",
+    "note": "deterministic local execution; zero Codex processes"
+  },
+  "runtime_profile_requirement": "none",
+  "related_evidence_ids": [],
+  "description": "候选冻结后修改必须重建并重跑 DA2",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "CB.json",
+  "execution_contract_sha256": "fafaa606bd7c6201d82e6bb11ab4ffae5348aef9f85d2ee0ca63a53d8956f89b",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "freezes",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-CB"
+  ],
+  "consumed_artifact_ids": [
+    "DL-C3",
+    "DL-DC1",
+    "DL-E11",
+    "DL-K2",
+    "DL-M1",
+    "DL-T1"
+  ],
+  "read_set": [
+    "artifact:C3",
+    "artifact:DC1",
+    "artifact:E11",
+    "artifact:K2",
+    "artifact:M1",
+    "artifact:T1"
+  ],
+  "write_set": [
+    "artifact:CB"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:CB",
+      "mode": "W",
+      "isolation_key": "node:CB"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "./tools/rebuild_stage1_candidate --manifest RELEASE_1B_PATCH_MANIFEST --base promotion --output FRESH_CB_DIR --check-twice"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/CB-return.json"
+  ],
+  "release_slice": "REL-1B",
+  "wave_id": "W-1B-20",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "artifact:CB"
+    ]
+  }
+}

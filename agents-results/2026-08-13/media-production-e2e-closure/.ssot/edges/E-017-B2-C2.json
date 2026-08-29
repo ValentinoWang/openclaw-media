@@ -1,0 +1,1 @@
+{"edge_id":"E-017-B2-C2","from":"B2","to":"C2","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["integration.task-runner-receipt"],"transferred_input":"已批准任务 E2E 合同","gate_evidence":"B2 已接受"}

@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-093-P3-P9",
+  "from": "P3",
+  "to": "P9",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.p3.p9.v5"
+  ],
+  "transferred_input": "管理员授权、owner 与外部身份回执",
+  "gate_evidence": "只有匹配组织管理员可确认；唯一约束至少为 (binding_id, open_id)",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-P3"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "P9 consumes the explicitly produced artifact DL-P3"
+}

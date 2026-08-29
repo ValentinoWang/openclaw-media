@@ -1,0 +1,28 @@
+{
+  "contract_id": "G1",
+  "schema_version": 1,
+  "node_id": "G1",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "work_kind": "foundation",
+  "write_authority": "authoritative-contract",
+  "read_set": [
+    "artifact:GA1"
+  ],
+  "write_set": [
+    "artifact:G1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:G1",
+      "mode": "W",
+      "isolation_key": "node:G1"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 tools/verify_runner_profiles.py --all --fail-closed"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/G1-return.json"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "task_id": "B1",
+  "contract": "MPE2E-AUTH-WEB",
+  "validation_command_exit_code": 0,
+  "validation_command_sha256": "b8ebae233a982f0cf7187d5d8303063ac417b165735e11f49df8b636118b94f0",
+  "conditions": {
+    "contract_status": "DRAFT",
+    "test_baseline": "PLANNED",
+    "op01": "unresolved"
+  },
+  "scope_statement": "仅证明条件合同结构、中文人工清单及哈希绑定的冻结核验通过；不代表合同获批、页面完成或认证浏览器验收完成。"
+}

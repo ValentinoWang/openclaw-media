@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-098-P9-P10",
+  "from": "P9",
+  "to": "P10",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.p9.p10.v5"
+  ],
+  "transferred_input": "即时成员接入服务与回执",
+  "gate_evidence": "唯一外部成员字段是服务端 open_id，数据库唯一约束至少为 (binding_id, open_id)",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-P9"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "P10 consumes the explicitly produced artifact DL-P9"
+}

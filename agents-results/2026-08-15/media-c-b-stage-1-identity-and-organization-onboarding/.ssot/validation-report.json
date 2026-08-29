@@ -1,0 +1,762 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-18T13:41:37.922754+00:00",
+  "generator": {
+    "repository": "ValentinoWang/Harness_Engineering",
+    "commit": "93d2a2f03770f66094285981b2a6dc26b1a5f0e5",
+    "dirty": true,
+    "dirty_files": [
+      "Core/skills/business-plan-commercial-story/SKILL.md",
+      "Core/skills/business-plan-facts-evidence/SKILL.md",
+      "Core/skills/business-plan-facts-evidence/scripts/test_validate_business_plan_sources.py",
+      "Core/skills/business-plan-facts-evidence/scripts/validate_business_plan_sources.py",
+      "Core/skills/business-plan-release-qa/SKILL.md",
+      "Core/skills/business-plan-release-qa/scripts/check_external_visible_copy.py",
+      "Core/skills/business-plan-release-qa/tests/test_check_external_visible_copy.py",
+      "Core/skills/business-plan/SKILL.md",
+      "Core/skills/design-acceptance-contract/SKILL.md",
+      "Core/skills/report-to-ssot-development-paths/SKILL.md",
+      "Core/skills/report-to-ssot-development-paths/references/node-escalation-contract.md",
+      "Core/skills/report-to-ssot-development-paths/references/release-slicing-contract.md",
+      "Core/skills/report-to-ssot-development-paths/scripts/analyze_ssot_parallelism.py",
+      "Core/skills/report-to-ssot-development-paths/scripts/check_ssot_program.py",
+      "Core/skills/report-to-ssot-development-paths/scripts/check_ssot_structure.py",
+      "Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_bundle.py",
+      "Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_complexity.py",
+      "Core/skills/report-to-ssot-development-paths/tests/fixtures/complexity/bank-migration-l3.json",
+      "Core/skills/report-to-ssot-development-paths/tests/fixtures/complexity/login-organization-l2.json",
+      "Core/skills/report-to-ssot-development-paths/tests/test_schema_v2_regressions.py",
+      "Core/skills/report-to-ssot-development-paths/tests/test_ssot_complexity.py",
+      "Projects/Athlete-OS_repo/harnesses/fullstack-ai-harness-kit-20260529.zip",
+      "Projects/Athlete-OS_repo/harnesses/fullstack-ai-harness-kit.zip",
+      "Projects/Athlete-OS_repo/skills/ai-harness-maintenance/SKILL.md",
+      "Projects/Athlete-OS_repo/skills/athlete-os-acceptance-e2e-adapter/SKILL.md",
+      "registry.yaml"
+    ],
+    "dirty_diff_sha256": "73679a7fad8a06b701c4317262505c83ebe26365908d7fd49050f91315d48396",
+    "skill_path": "Core/skills/report-to-ssot-development-paths",
+    "skill_realpath": "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths",
+    "skill_sha256": "653cd9fbbb3afaeff289cb34978b3449440f2de4fe91149eeaeaa70c9e0888da",
+    "checker_bundle_sha256": "6b346fe7a25bdd9d2238a2566602e6f8e45ef039ef0fc54ef603f587854d8d48",
+    "validation_contract": "strict-schema-v2-release-v1"
+  },
+  "runtime": {
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "project_commit": "",
+    "project_dirty": false,
+    "project_dirty_diff_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "harness_lock_sha256": null
+  },
+  "bundle": {
+    "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding",
+    "sha256": "9fd9bd794a0803f4b6b97e5524842ec43c534e1f8bf453ccaeda9ec757a824fe",
+    "content_sha256": "9fd9bd794a0803f4b6b97e5524842ec43c534e1f8bf453ccaeda9ec757a824fe",
+    "manifest_sha256": "ab616fd4e55b5360343e2521815f3f1e5fe4bf91dd9020c68d0c4798e480301a",
+    "manifest_identity_sha256": "ab616fd4e55b5360343e2521815f3f1e5fe4bf91dd9020c68d0c4798e480301a"
+  },
+  "checks": [
+    {
+      "id": "runtime-skill-provenance",
+      "command": [
+        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/tools/harnessctl.py",
+        "doctor",
+        "--project",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+        "--check-runtime-skills"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "project: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent\nmode: symlink-local\nsource: /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering\nlinks: 30\nruntime_skill_check: enabled\nWARN Harness source dirty files: 26\ndoctor: ok\n"
+    },
+    {
+      "id": "complexity",
+      "command": [
+        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_complexity.py",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/planning-compiler.json"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "SSOT complexity check passed: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/planning-compiler.json (depth=L2, releases=2, nodes=50, workers=18)\n"
+    },
+    {
+      "id": "render",
+      "command": [
+        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/render_ssot_views.py",
+        "--check",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "SSOT views verified: 1 manifest(s)\n"
+    },
+    {
+      "id": "machine-program",
+      "command": [
+        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_program.py",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "SSOT program check passed: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json (nodes=50, formal_ready=0, conditional_ready=0)\n"
+    },
+    {
+      "id": "parallelism-analysis",
+      "command": [
+        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/analyze_ssot_parallelism.py",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "{\n  \"actor_pools\": {\n    \"codex-primary\": {\n      \"actor\": \"codex\",\n      \"capacity\": 4\n    },\n    \"external-acceptance\": {\n      \"actor\": \"external-system\",\n      \"capacity\": 1\n    },\n    \"human-authority\": {\n      \"actor\": \"human\",\n      \"capacity\": 1\n    },\n    \"orchestrator\": {\n      \"actor\": \"orchestrator\",\n      \"capacity\": 1\n    }\n  },\n  \"critical_path_edges\": 26,\n  \"current_ready_nodes\": [],\n  \"current_ready_width\": 0,\n  \"frontier_transitions\": [\n    {\n      \"accepted_node\": \"A\",\n      \"unlocks\": [\n        \"A1\"\n      ],\n      \"waits_for\": []\n    },\n    {\n      \"accepted_node\": \"A1\",\n      \"unlocks\": [\n        \"B\",\n        \"E11\",\n        \"GA1\",\n        \"K\",\n        \"K1\",\n        \"K2\",\n        \"K3\",\n        \"K4\",\n        \"K5\",\n        \"K6\"\n      ],\n      \"waits_for\": [\n        \"A\"\n      ]\n    },\n    {\n      \"accepted_node\": \"E11\",\n      \"unlocks\": [\n        \"CA\",\n        \"CB\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"GA1\",\n      \"unlocks\": [\n        \"G1\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"G1\",\n      \"unlocks\": [\n        \"I1\",\n        \"I2\",\n        \"I9\",\n        \"M1\",\n        \"MA1\",\n        \"MB1\",\n        \"T1\"\n      ],\n      \"waits_for\": [\n        \"GA1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K\",\n      \"unlocks\": [\n        \"B\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"B\",\n      \"unlocks\": [\n        \"I1\",\n        \"I2\",\n        \"I9\",\n        \"M1\",\n        \"MA1\",\n        \"T1\"\n      ],\n      \"waits_for\": [\n        \"A1\",\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K1\",\n      \"unlocks\": [\n        \"I1\",\n        \"I2\",\n        \"IL1\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K2\",\n      \"unlocks\": [\n        \"CA\",\n        \"CB\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K3\",\n      \"unlocks\": [\n        \"P9\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K4\",\n      \"unlocks\": [\n        \"I6\",\n        \"MA1\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K5\",\n      \"unlocks\": [\n        \"I7\",\n        \"I9\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K6\",\n      \"unlocks\": [\n        \"I1\",\n        \"I2\",\n        \"IL1\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"M1\",\n      \"unlocks\": [\n        \"CA\",\n        \"CB\",\n        \"I1\",\n        \"I2\",\n        \"I9\",\n        \"MA1\",\n        \"MB1\",\n        \"T1\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"G1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"I1\",\n      \"unlocks\": [\n        \"I3\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"G1\",\n        \"K1\",\n        \"K6\",\n        \"M1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"I2\",\n      \"unlocks\": [\n        \"I3\",\n        \"IL1\",\n        \"P9\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"G1\",\n        \"K1\",\n        \"K6\",\n        \"M1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"IL1\",\n      \"unlocks\": [\n        \"C1\",\n        \"I3\"\n      ],\n      \"waits_for\": [\n        \"I2\",\n        \"K1\",\n        \"K6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"MA1\",\n      \"unlocks\": [\n        \"I3\",\n        \"I6\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"G1\",\n        \"K4\",\n        \"M1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"I3\",\n      \"unlocks\": [\n        \"I4\",\n        \"I5\",\n        \"I6\",\n        \"I7\",\n        \"P10\"\n      ],\n      \"waits_for\": [\n        \"I1\",\n        \"I2\",\n        \"IL1\",\n        \"MA1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"I4\",\n      \"unlocks\": [\n        \"C1\"\n      ],\n      \"waits_for\": [\n        \"I3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"I5\",\n      \"unlocks\": [\n        \"C1\",\n        \"I7\",\n        \"I8\"\n      ],\n      \"waits_for\": [\n        \"I3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"I6\",\n      \"unlocks\": [\n        \"C1\",\n        \"I7\",\n        \"I8\"\n      ],\n      \"waits_for\": [\n        \"I3\",\n        \"K4\",\n        \"MA1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"I7\",\n      \"unlocks\": [\n        \"I8\",\n        \"P5\",\n        \"P8\"\n      ],\n      \"waits_for\": [\n        \"I3\",\n        \"I5\",\n        \"I6\",\n        \"K5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"T1\",\n      \"unlocks\": [\n        \"CA\",\n        \"CB\",\n        \"I8\",\n        \"I9\",\n        \"P10\",\n        \"P6\",\n        \"P9\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"G1\",\n        \"M1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"I9\",\n      \"unlocks\": [\n        \"C1\",\n        \"I8\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"G1\",\n        \"K5\",\n        \"M1\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C1\",\n      \"unlocks\": [\n        \"CA\"\n      ],\n      \"waits_for\": [\n        \"I4\",\n        \"I5\",\n        \"I6\",\n        \"I9\",\n        \"IL1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"I8\",\n      \"unlocks\": [\n        \"C2\"\n      ],\n      \"waits_for\": [\n        \"I5\",\n        \"I6\",\n        \"I7\",\n        \"I9\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C2\",\n      \"unlocks\": [\n        \"CA\",\n        \"MB1\"\n      ],\n      \"waits_for\": [\n        \"I8\"\n      ]\n    },\n    {\n      \"accepted_node\": \"CA\",\n      \"unlocks\": [\n        \"DA1\"\n      ],\n      \"waits_for\": [\n        \"C1\",\n        \"C2\",\n        \"E11\",\n        \"K2\",\n        \"M1\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DA1\",\n      \"unlocks\": [\n        \"DB1\"\n      ],\n      \"waits_for\": [\n        \"CA\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DB1\",\n      \"unlocks\": [\n        \"DC1\"\n      ],\n      \"waits_for\": [\n        \"DA1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DC1\",\n      \"unlocks\": [\n        \"CB\",\n        \"DA\"\n      ],\n      \"waits_for\": [\n        \"DB1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"MB1\",\n      \"unlocks\": [\n        \"P1\",\n        \"P3\",\n        \"P9\"\n      ],\n      \"waits_for\": [\n        \"C2\",\n        \"G1\",\n        \"M1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P1\",\n      \"unlocks\": [\n        \"P2\",\n        \"P6\"\n      ],\n      \"waits_for\": [\n        \"MB1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P2\",\n      \"unlocks\": [\n        \"P3\",\n        \"P6\"\n      ],\n      \"waits_for\": [\n        \"P1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P3\",\n      \"unlocks\": [\n        \"P10\",\n        \"P5\",\n        \"P6\",\n        \"P9\"\n      ],\n      \"waits_for\": [\n        \"MB1\",\n        \"P2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P5\",\n      \"unlocks\": [\n        \"P6\"\n      ],\n      \"waits_for\": [\n        \"I7\",\n        \"P3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P6\",\n      \"unlocks\": [\n        \"P7\",\n        \"P8\"\n      ],\n      \"waits_for\": [\n        \"P1\",\n        \"P2\",\n        \"P3\",\n        \"P5\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P7\",\n      \"unlocks\": [\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"P6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P8\",\n      \"unlocks\": [\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"I7\",\n        \"P6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P9\",\n      \"unlocks\": [\n        \"C3\",\n        \"P10\"\n      ],\n      \"waits_for\": [\n        \"I2\",\n        \"K3\",\n        \"MB1\",\n        \"P3\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"P10\",\n      \"unlocks\": [\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"I3\",\n        \"P3\",\n        \"P9\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C3\",\n      \"unlocks\": [\n        \"CB\"\n      ],\n      \"waits_for\": [\n        \"P10\",\n        \"P7\",\n        \"P8\",\n        \"P9\"\n      ]\n    },\n    {\n      \"accepted_node\": \"CB\",\n      \"unlocks\": [\n        \"DA2\"\n      ],\n      \"waits_for\": [\n        \"C3\",\n        \"DC1\",\n        \"E11\",\n        \"K2\",\n        \"M1\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DA2\",\n      \"unlocks\": [\n        \"DB2\"\n      ],\n      \"waits_for\": [\n        \"CB\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DB2\",\n      \"unlocks\": [\n        \"DC2\"\n      ],\n      \"waits_for\": [\n        \"DA2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DC2\",\n      \"unlocks\": [\n        \"DA\"\n      ],\n      \"waits_for\": [\n        \"DB2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DA\",\n      \"unlocks\": [\n        \"DB\"\n      ],\n      \"waits_for\": [\n        \"DC1\",\n        \"DC2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DB\",\n      \"unlocks\": [\n        \"DC\"\n      ],\n      \"waits_for\": [\n        \"DA\"\n      ]\n    }\n  ],\n  \"manifest\": \"/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json\",\n  \"maximum_antichain_width\": 9,\n  \"parallelism_contract_activation_error\": null,\n  \"parallelism_contract_active\": true,\n  \"resource_verified_antichain_width\": null,\n  \"resource_verified_width\": 0,\n  \"scheduling_model\": \"event-driven\",\n  \"static_waves_are_authority\": false\n}\n"
+    },
+    {
+      "id": "structure",
+      "command": [
+        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_structure.py",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "SSOT structure check passed.\n"
+    },
+    {
+      "id": "chinese-readability",
+      "command": [
+        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_chinese_readability.py",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "中文可读性检查通过。\n"
+    },
+    {
+      "id": "archive-check",
+      "command": [
+        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/ssot-obsidian-snapshot/scripts/snapshot_ssot.py",
+        "--source",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding",
+        "--project-root",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+        "--check"
+      ],
+      "exit_code": 0,
+      "result": "passed",
+      "output": "{\n  \"status\": \"verified\",\n  \"source\": \"/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding\",\n  \"destination\": \"/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/开发/每日开发/SSOT合集/2026-08-15/openclaw-media/media-c-b-stage-1-identity-organization-onboarding\",\n  \"project_name\": \"openclaw-media\",\n  \"ssot_name\": \"media-c-b-stage-1-identity-organization-onboarding\",\n  \"snapshot_date\": \"2026-08-15\",\n  \"main_document\": \"ssot-development-paths.md\",\n  \"file_count\": 1,\n  \"contains_openproblem\": false\n}\n"
+    }
+  ],
+  "parallelism": {
+    "actor_pools": {
+      "codex-primary": {
+        "actor": "codex",
+        "capacity": 4
+      },
+      "external-acceptance": {
+        "actor": "external-system",
+        "capacity": 1
+      },
+      "human-authority": {
+        "actor": "human",
+        "capacity": 1
+      },
+      "orchestrator": {
+        "actor": "orchestrator",
+        "capacity": 1
+      }
+    },
+    "critical_path_edges": 26,
+    "current_ready_nodes": [],
+    "current_ready_width": 0,
+    "frontier_transitions": [
+      {
+        "accepted_node": "A",
+        "unlocks": [
+          "A1"
+        ],
+        "waits_for": []
+      },
+      {
+        "accepted_node": "A1",
+        "unlocks": [
+          "B",
+          "E11",
+          "GA1",
+          "K",
+          "K1",
+          "K2",
+          "K3",
+          "K4",
+          "K5",
+          "K6"
+        ],
+        "waits_for": [
+          "A"
+        ]
+      },
+      {
+        "accepted_node": "E11",
+        "unlocks": [
+          "CA",
+          "CB"
+        ],
+        "waits_for": [
+          "A1"
+        ]
+      },
+      {
+        "accepted_node": "GA1",
+        "unlocks": [
+          "G1"
+        ],
+        "waits_for": [
+          "A1"
+        ]
+      },
+      {
+        "accepted_node": "G1",
+        "unlocks": [
+          "I1",
+          "I2",
+          "I9",
+          "M1",
+          "MA1",
+          "MB1",
+          "T1"
+        ],
+        "waits_for": [
+          "GA1"
+        ]
+      },
+      {
+        "accepted_node": "K",
+        "unlocks": [
+          "B"
+        ],
+        "waits_for": [
+          "A1"
+        ]
+      },
+      {
+        "accepted_node": "B",
+        "unlocks": [
+          "I1",
+          "I2",
+          "I9",
+          "M1",
+          "MA1",
+          "T1"
+        ],
+        "waits_for": [
+          "A1",
+          "K"
+        ]
+      },
+      {
+        "accepted_node": "K1",
+        "unlocks": [
+          "I1",
+          "I2",
+          "IL1"
+        ],
+        "waits_for": [
+          "A1"
+        ]
+      },
+      {
+        "accepted_node": "K2",
+        "unlocks": [
+          "CA",
+          "CB"
+        ],
+        "waits_for": [
+          "A1"
+        ]
+      },
+      {
+        "accepted_node": "K3",
+        "unlocks": [
+          "P9"
+        ],
+        "waits_for": [
+          "A1"
+        ]
+      },
+      {
+        "accepted_node": "K4",
+        "unlocks": [
+          "I6",
+          "MA1"
+        ],
+        "waits_for": [
+          "A1"
+        ]
+      },
+      {
+        "accepted_node": "K5",
+        "unlocks": [
+          "I7",
+          "I9"
+        ],
+        "waits_for": [
+          "A1"
+        ]
+      },
+      {
+        "accepted_node": "K6",
+        "unlocks": [
+          "I1",
+          "I2",
+          "IL1"
+        ],
+        "waits_for": [
+          "A1"
+        ]
+      },
+      {
+        "accepted_node": "M1",
+        "unlocks": [
+          "CA",
+          "CB",
+          "I1",
+          "I2",
+          "I9",
+          "MA1",
+          "MB1",
+          "T1"
+        ],
+        "waits_for": [
+          "B",
+          "G1"
+        ]
+      },
+      {
+        "accepted_node": "I1",
+        "unlocks": [
+          "I3"
+        ],
+        "waits_for": [
+          "B",
+          "G1",
+          "K1",
+          "K6",
+          "M1"
+        ]
+      },
+      {
+        "accepted_node": "I2",
+        "unlocks": [
+          "I3",
+          "IL1",
+          "P9"
+        ],
+        "waits_for": [
+          "B",
+          "G1",
+          "K1",
+          "K6",
+          "M1"
+        ]
+      },
+      {
+        "accepted_node": "IL1",
+        "unlocks": [
+          "C1",
+          "I3"
+        ],
+        "waits_for": [
+          "I2",
+          "K1",
+          "K6"
+        ]
+      },
+      {
+        "accepted_node": "MA1",
+        "unlocks": [
+          "I3",
+          "I6"
+        ],
+        "waits_for": [
+          "B",
+          "G1",
+          "K4",
+          "M1"
+        ]
+      },
+      {
+        "accepted_node": "I3",
+        "unlocks": [
+          "I4",
+          "I5",
+          "I6",
+          "I7",
+          "P10"
+        ],
+        "waits_for": [
+          "I1",
+          "I2",
+          "IL1",
+          "MA1"
+        ]
+      },
+      {
+        "accepted_node": "I4",
+        "unlocks": [
+          "C1"
+        ],
+        "waits_for": [
+          "I3"
+        ]
+      },
+      {
+        "accepted_node": "I5",
+        "unlocks": [
+          "C1",
+          "I7",
+          "I8"
+        ],
+        "waits_for": [
+          "I3"
+        ]
+      },
+      {
+        "accepted_node": "I6",
+        "unlocks": [
+          "C1",
+          "I7",
+          "I8"
+        ],
+        "waits_for": [
+          "I3",
+          "K4",
+          "MA1"
+        ]
+      },
+      {
+        "accepted_node": "I7",
+        "unlocks": [
+          "I8",
+          "P5",
+          "P8"
+        ],
+        "waits_for": [
+          "I3",
+          "I5",
+          "I6",
+          "K5"
+        ]
+      },
+      {
+        "accepted_node": "T1",
+        "unlocks": [
+          "CA",
+          "CB",
+          "I8",
+          "I9",
+          "P10",
+          "P6",
+          "P9"
+        ],
+        "waits_for": [
+          "B",
+          "G1",
+          "M1"
+        ]
+      },
+      {
+        "accepted_node": "I9",
+        "unlocks": [
+          "C1",
+          "I8"
+        ],
+        "waits_for": [
+          "B",
+          "G1",
+          "K5",
+          "M1",
+          "T1"
+        ]
+      },
+      {
+        "accepted_node": "C1",
+        "unlocks": [
+          "CA"
+        ],
+        "waits_for": [
+          "I4",
+          "I5",
+          "I6",
+          "I9",
+          "IL1"
+        ]
+      },
+      {
+        "accepted_node": "I8",
+        "unlocks": [
+          "C2"
+        ],
+        "waits_for": [
+          "I5",
+          "I6",
+          "I7",
+          "I9",
+          "T1"
+        ]
+      },
+      {
+        "accepted_node": "C2",
+        "unlocks": [
+          "CA",
+          "MB1"
+        ],
+        "waits_for": [
+          "I8"
+        ]
+      },
+      {
+        "accepted_node": "CA",
+        "unlocks": [
+          "DA1"
+        ],
+        "waits_for": [
+          "C1",
+          "C2",
+          "E11",
+          "K2",
+          "M1",
+          "T1"
+        ]
+      },
+      {
+        "accepted_node": "DA1",
+        "unlocks": [
+          "DB1"
+        ],
+        "waits_for": [
+          "CA"
+        ]
+      },
+      {
+        "accepted_node": "DB1",
+        "unlocks": [
+          "DC1"
+        ],
+        "waits_for": [
+          "DA1"
+        ]
+      },
+      {
+        "accepted_node": "DC1",
+        "unlocks": [
+          "CB",
+          "DA"
+        ],
+        "waits_for": [
+          "DB1"
+        ]
+      },
+      {
+        "accepted_node": "MB1",
+        "unlocks": [
+          "P1",
+          "P3",
+          "P9"
+        ],
+        "waits_for": [
+          "C2",
+          "G1",
+          "M1"
+        ]
+      },
+      {
+        "accepted_node": "P1",
+        "unlocks": [
+          "P2",
+          "P6"
+        ],
+        "waits_for": [
+          "MB1"
+        ]
+      },
+      {
+        "accepted_node": "P2",
+        "unlocks": [
+          "P3",
+          "P6"
+        ],
+        "waits_for": [
+          "P1"
+        ]
+      },
+      {
+        "accepted_node": "P3",
+        "unlocks": [
+          "P10",
+          "P5",
+          "P6",
+          "P9"
+        ],
+        "waits_for": [
+          "MB1",
+          "P2"
+        ]
+      },
+      {
+        "accepted_node": "P5",
+        "unlocks": [
+          "P6"
+        ],
+        "waits_for": [
+          "I7",
+          "P3"
+        ]
+      },
+      {
+        "accepted_node": "P6",
+        "unlocks": [
+          "P7",
+          "P8"
+        ],
+        "waits_for": [
+          "P1",
+          "P2",
+          "P3",
+          "P5",
+          "T1"
+        ]
+      },
+      {
+        "accepted_node": "P7",
+        "unlocks": [
+          "C3"
+        ],
+        "waits_for": [
+          "P6"
+        ]
+      },
+      {
+        "accepted_node": "P8",
+        "unlocks": [
+          "C3"
+        ],
+        "waits_for": [
+          "I7",
+          "P6"
+        ]
+      },
+      {
+        "accepted_node": "P9",
+        "unlocks": [
+          "C3",
+          "P10"
+        ],
+        "waits_for": [
+          "I2",
+          "K3",
+          "MB1",
+          "P3",
+          "T1"
+        ]
+      },
+      {
+        "accepted_node": "P10",
+        "unlocks": [
+          "C3"
+        ],
+        "waits_for": [
+          "I3",
+          "P3",
+          "P9",
+          "T1"
+        ]
+      },
+      {
+        "accepted_node": "C3",
+        "unlocks": [
+          "CB"
+        ],
+        "waits_for": [
+          "P10",
+          "P7",
+          "P8",
+          "P9"
+        ]
+      },
+      {
+        "accepted_node": "CB",
+        "unlocks": [
+          "DA2"
+        ],
+        "waits_for": [
+          "C3",
+          "DC1",
+          "E11",
+          "K2",
+          "M1",
+          "T1"
+        ]
+      },
+      {
+        "accepted_node": "DA2",
+        "unlocks": [
+          "DB2"
+        ],
+        "waits_for": [
+          "CB"
+        ]
+      },
+      {
+        "accepted_node": "DB2",
+        "unlocks": [
+          "DC2"
+        ],
+        "waits_for": [
+          "DA2"
+        ]
+      },
+      {
+        "accepted_node": "DC2",
+        "unlocks": [
+          "DA"
+        ],
+        "waits_for": [
+          "DB2"
+        ]
+      },
+      {
+        "accepted_node": "DA",
+        "unlocks": [
+          "DB"
+        ],
+        "waits_for": [
+          "DC1",
+          "DC2"
+        ]
+      },
+      {
+        "accepted_node": "DB",
+        "unlocks": [
+          "DC"
+        ],
+        "waits_for": [
+          "DA"
+        ]
+      }
+    ],
+    "manifest": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json",
+    "maximum_antichain_width": 9,
+    "parallelism_contract_activation_error": null,
+    "parallelism_contract_active": true,
+    "resource_verified_antichain_width": null,
+    "resource_verified_width": 0,
+    "scheduling_model": "event-driven",
+    "static_waves_are_authority": false
+  },
+  "result": "pass"
+}

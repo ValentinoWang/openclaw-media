@@ -1,0 +1,44 @@
+{
+  "evidence_id": "EV-SSOT-EXECUTOR-TERRA-20260818",
+  "evidence_level": "static-test",
+  "observed_at": "2026-08-18T04:53:09+08:00",
+  "source_revision": "non-git-project-bundle-generated-from-stage1_model.py",
+  "environment_identity": "macOS local Harness SSOT validation",
+  "runtime_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-keyword-session-r3",
+  "actor_role": "main orchestrator",
+  "mock_or_fixture": false,
+  "executor_policy": {
+    "default_primary_executor": "lw-terra",
+    "default_writable_parallel_executor": "lw-terra",
+    "default_writable_wrapper": "run-lw-terra.sh",
+    "allowed_primary_executors": {
+      "lw-luna": "run-lw-luna.sh",
+      "lw-terra": "run-lw-terra.sh"
+    }
+  },
+  "checks": {
+    "provenance_bound_ssot_bundle": "passed",
+    "ssot_complexity": "passed",
+    "ssot_program": "passed",
+    "ssot_views": "passed",
+    "chinese_readability": "passed",
+    "parallelism": "passed",
+    "harness_routing_contract": "13 passed",
+    "harness_schema_regressions": "15 passed",
+    "obsidian_snapshot_check": "verified",
+    "remote_r3_health": "passed",
+    "remote_r3_readiness": "passed",
+    "remote_deployment_guard": "passed"
+  },
+  "harness_remote": {
+    "repository": "ValentinoWang/Harness_Engineering",
+    "branch": "main",
+    "commit": "93d2a2f03770f66094285981b2a6dc26b1a5f0e5",
+    "tree": "7678a1fbb3cad51d41f8784c46bc532f2e64038d",
+    "status": "pushed-and-read-back"
+  },
+  "archive_audit": {
+    "status": "partial",
+    "reason": "four unrelated historical archive declarations reference unavailable source directories"
+  }
+}

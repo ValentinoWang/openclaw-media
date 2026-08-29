@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-055-I4-C1",
+  "from": "I4",
+  "to": "C1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.i4.c1.v5"
+  ],
+  "transferred_input": "PersonalWorkspaceShell",
+  "gate_evidence": "个人路径不进入组织资源或飞书文档",
+  "reason_code": "acceptance-dependency",
+  "transferred_artifact_ids": [
+    "DL-I4"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C1 consumes the explicitly produced artifact DL-I4"
+}

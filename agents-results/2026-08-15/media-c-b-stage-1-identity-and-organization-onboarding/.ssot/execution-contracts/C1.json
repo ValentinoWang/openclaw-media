@@ -1,0 +1,32 @@
+{
+  "contract_id": "C1",
+  "schema_version": 1,
+  "node_id": "C1",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "work_kind": "convergence",
+  "write_authority": "shared-generated",
+  "read_set": [
+    "artifact:I4",
+    "artifact:I5",
+    "artifact:I6",
+    "artifact:I9",
+    "artifact:IL1"
+  ],
+  "write_set": [
+    "artifact:C1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:C1",
+      "mode": "W",
+      "isolation_key": "node:C1"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance C1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/C1-return.json"
+  ]
+}

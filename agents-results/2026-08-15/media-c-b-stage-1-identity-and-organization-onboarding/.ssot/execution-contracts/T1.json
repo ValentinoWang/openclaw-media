@@ -1,0 +1,30 @@
+{
+  "contract_id": "T1",
+  "schema_version": 1,
+  "node_id": "T1",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "work_kind": "acceptance-design",
+  "write_authority": "implementation",
+  "read_set": [
+    "artifact:B",
+    "artifact:G1",
+    "artifact:M1"
+  ],
+  "write_set": [
+    "artifact:T1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:T1",
+      "mode": "W",
+      "isolation_key": "node:T1"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance T1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1-return.json"
+  ]
+}

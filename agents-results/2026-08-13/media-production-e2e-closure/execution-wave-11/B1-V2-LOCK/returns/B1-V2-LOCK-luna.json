@@ -1,0 +1,179 @@
+{
+  "task_id": "B1-V2-LOCK",
+  "attempt_role": "luna",
+  "task_source_sha256": "776d51054cc520db25a32d077861d952103a38670dacc8dfa5f06a856061dd05",
+  "validation_command_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-11/B1-V2-LOCK/validation/B1-V2-LOCK.sh",
+  "validation_command_sha256": "a0dbd8e0a00c2860e655867071c49ed9dd7706c42c438e4c09193d18877916d7",
+  "return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-11/B1-V2-LOCK/returns/B1-V2-LOCK-luna.json",
+  "versions": {
+    "plan": 4,
+    "dependency_graph": 4,
+    "interface_freeze": 4,
+    "node_contract": 3,
+    "ssot_schema": 1,
+    "contract_task": "MPE2E-AUTH-WEB",
+    "contract_version": 2,
+    "contract_status": "APPROVED",
+    "test_baseline": "LOCKED",
+    "readiness_mode": "FORMAL",
+    "assumption_ids": "none"
+  },
+  "decision_refs": [
+    "media.no-inference-completion-boundary@1",
+    "media.qa-identity@1"
+  ],
+  "invalidation_keys": [
+    "contract.authenticated-web",
+    "decision.qa-identity"
+  ],
+  "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "process_session_identity": {
+    "worker_level": "LW",
+    "execution_identity": "current bounded Codex task session",
+    "attempt_role": "luna",
+    "child_agents_started": false,
+    "separate_pid_or_session_handle": "not exposed by current invocation"
+  },
+  "actual_read_scope": [
+    "Frozen .ssot manifest, B1, D1, D3 and openproblem.md",
+    "Frozen frontend and backend read-only production manifests",
+    "Existing MPE2E-AUTH-WEB v1 contract, checklist, binding and protected test",
+    "Current MPE2E-AUTH-WEB acceptance indexes",
+    "Official design-acceptance-contract templates, validator and artifact manager",
+    "Supplied B1-V2-LOCK task metadata and validation command"
+  ],
+  "actual_write_scope": {
+    "allowed_paths_written": [
+      "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-AUTH-WEB/acceptance-contract.md",
+      "acceptance/human/MPE2E-AUTH-WEB/checklist.md",
+      "acceptance/human/MPE2E-AUTH-WEB/binding.md",
+      "scripts/acceptance/test-mpe2e-auth-web.sh",
+      "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-AUTH-WEB/acceptance/index.md",
+      "acceptance/index.md",
+      "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-11/B1-V2-LOCK/returns/B1-V2-LOCK-luna.json"
+    ],
+    "outside_scope_writes_observed": false
+  },
+  "commands": [
+    {
+      "command": "python3 .../check_acceptance_contract.py acceptance-fragments/MPE2E-AUTH-WEB/acceptance-contract.md --project-root PROJECT_ROOT",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 .../manage_acceptance_artifacts.py bind-human TASK_ROOT --project-root PROJECT_ROOT --replace",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 .../manage_acceptance_artifacts.py index TASK_ROOT --project-root PROJECT_ROOT",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 .../manage_acceptance_artifacts.py check TASK_ROOT --project-root PROJECT_ROOT --contract ABSOLUTE_CONTRACT",
+      "exit_code": 0
+    },
+    {
+      "command": "bash -n scripts/acceptance/test-mpe2e-auth-web.sh",
+      "exit_code": 0
+    },
+    {
+      "command": "jq syntax check of the protected receipt filter without writing a receipt",
+      "exit_code": 0
+    },
+    {
+      "command": "bash /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-11/B1-V2-LOCK/validation/B1-V2-LOCK.sh",
+      "exit_code": 0
+    },
+    {
+      "command": "MPE2E_AUTH_WEB_MODE=local-candidate scripts/acceptance/test-mpe2e-auth-web.sh with no receipt",
+      "exit_code": 20,
+      "expected_red_light": "safe_metadata_file_required"
+    },
+    {
+      "command": "MPE2E_AUTH_WEB_MODE=production scripts/acceptance/test-mpe2e-auth-web.sh with no receipt",
+      "exit_code": 20,
+      "expected_red_light": "safe_metadata_file_required"
+    }
+  ],
+  "artifact_hashes": {
+    "contract": {
+      "path": "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-AUTH-WEB/acceptance-contract.md",
+      "sha256": "a0feedc825fff609f3cd72cbe7a0705ee0f0276fa18209a7f6192d4393984fdc"
+    },
+    "checklist": {
+      "path": "acceptance/human/MPE2E-AUTH-WEB/checklist.md",
+      "sha256": "36dae88f75fde2409be382addbf41046ac4dd3a7d7a7d825c1543a2fae59966a"
+    },
+    "binding": {
+      "path": "acceptance/human/MPE2E-AUTH-WEB/binding.md",
+      "sha256": "8a704298fe840fb6421fe1e256dc0dd6918d803f02342c4d5d95cdc44cf55725"
+    },
+    "protected_test": {
+      "path": "scripts/acceptance/test-mpe2e-auth-web.sh",
+      "sha256": "28dac368e7e780b35072d22a3261ce5e125b5cbb43e8b6912267ba23ff17fcda"
+    },
+    "task_acceptance_index": {
+      "path": "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-AUTH-WEB/acceptance/index.md",
+      "sha256": "5d9dcd49fdc0b0a0d82f95ecb1b1c01da5e913673647ed3fcbba5fb16adfdd2f"
+    },
+    "project_human_index": {
+      "path": "acceptance/index.md",
+      "sha256": "6320ec7f56efbe309463233f51ca40bed64a8c3fd63e8c6e5b69f5f6a8a9fb9b"
+    }
+  },
+  "frozen_input_unchanged_proof": {
+    "ssot_manifest": "e6ac97c7864162751ab8ec1df73b0c5f9cd425b3ac746c550d89bba6382673c3",
+    "B1": "7ff91b1f3cc446c368074f31b3aa8a1f1749eed5efbdf975df4521a747d4d1f3",
+    "D1": "8fafa1208ead99395489353de9bc32560a6b82863bb9028fda670fc3526a9997",
+    "D3": "a53cbc80ea0b2010643e20194f2dc115e42b007014e356787e1ede9fa7cb2c47",
+    "openproblem": "f708e01fd4b0e0320ed0eb5c23b8c27f5348eaac4fce82841c21cbb8e94072ae",
+    "frontend_source_manifest": "7e27523e6fbb3f5297a15917672ad03082e3c7b919cb99fccf9cba738bc80f14",
+    "backend_manifest": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+    "B1_state_assertion": "execution_state=READY, readiness_mode=FORMAL, required_contract_version=2, assumption_ids=[]"
+  },
+  "missing_receipt_red_light_evidence": {
+    "local_candidate": {
+      "mode": "local-candidate",
+      "receipt_present": false,
+      "exit_code": 20,
+      "reason": "safe_metadata_file_required",
+      "receipt_content_printed": false
+    },
+    "production": {
+      "mode": "production",
+      "receipt_present": false,
+      "exit_code": 20,
+      "reason": "safe_metadata_file_required",
+      "receipt_content_printed": false
+    }
+  },
+  "forbidden_scope_unchanged": {
+    "ssot_and_view_sources_modified": false,
+    "production_baseline_modified": false,
+    "C2_candidate_or_application_sources_modified": false,
+    "business_tests_modified": false,
+    "remote_hosts_database_feishu_accounts_or_releases_touched": false,
+    "credentials_or_private_content_saved_or_output": false,
+    "child_agents_or_workers_started": false
+  },
+  "unverified_items": [
+    "No real local-candidate browser receipt was supplied or promoted; only the protected filter syntax and missing-receipt red light were checked.",
+    "No production receipt, real QA tenant identity, desktop/mobile browser run, or current-release runtime readback was supplied; these remain DB-owned.",
+    "No product-owner or security-owner human acceptance run was performed.",
+    "No B1 SSOT node migration or ACCEPTED state transition was authorized in this bounded task."
+  ],
+  "shared_resource_impact": {
+    "impact": "none",
+    "details": "Only acceptance artifacts and the designated return were written; frozen source manifests and shared runtime resources remained read-only."
+  },
+  "risks": [
+    "The locked contract now blocks unsafe or incomplete receipts, but it does not prove C1 implementation or DB production acceptance.",
+    "DB still must obtain two real isolated QA identities and same-run desktop/mobile production evidence before production authentication can be accepted."
+  ],
+  "deviations": [
+    "None from the bounded write scope or acceptance commands.",
+    "The repository root has no .git directory, so git-status inspection was not applicable; no repository mutation was performed."
+  ],
+  "failure_class": "none",
+  "acceptance_self_check": "pass",
+  "proposed_state": "VERIFIED"
+}

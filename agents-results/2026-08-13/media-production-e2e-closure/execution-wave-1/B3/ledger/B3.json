@@ -1,0 +1,121 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/B3",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/B3/prompts/B3-luna.txt)"
+      ],
+      "ended_at": "2026-08-13T10:00:37.078332+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/B3/logs/B3-luna.log",
+      "pid": 34475,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/B3/prompts/B3-luna.txt",
+      "prompt_sha256": "9ab3b0d658818624ab2dc0d6db9d0734c9dd84a811279d8a81164ac283a32c17",
+      "started_at": "2026-08-13T09:59:07.840506+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "attempt_role": "luna",
+        "deviation_level": "none",
+        "failure_class": "none",
+        "failure_classification": "none",
+        "proposed_state": "VERIFIED",
+        "scope": {
+          "actual_write_scope": "Only the supervisor-specified structured return path was written.",
+          "forbidden_scope_touched": false,
+          "read_files": [
+            {
+              "path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/scripts/check-media-e2e-receipt.mjs",
+              "sha256": "a39884fdd312270ca0d5b623c9fb8d997aa64e607a2f51cf67c312df125dd6da"
+            },
+            {
+              "path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/scripts/test-media-e2e-receipt.sh",
+              "sha256": "81ca3548460aad7d48a5a2e3638ecbe117c3cfd760fe0a0841031d91a7a8ad51"
+            },
+            {
+              "path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/tests/fixtures/media-e2e-receipt/complete.json",
+              "sha256": "a2f3611ff63defef45a0095dccf57d6939f40301f7f9e7d824e778daf3838811"
+            },
+            {
+              "path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/tests/fixtures/media-e2e-receipt/missing-runner.json",
+              "sha256": "e8190d292384cda8ead9f3e7d3c2461d165c31c1df5b944bd96451c651ccbb66"
+            },
+            {
+              "path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/commands/B3.sh",
+              "sha256": "660fe832e191fec125481985e98061d4568b7805036be2d573f7cbadc7905819"
+            }
+          ],
+          "written_files": [
+            "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/B3/returns/B3-luna.json"
+          ]
+        },
+        "statement": "The complete fixture passes and the fixture missing runner identity fails closed. This proves only the local structural gate; it does not prove that the production chain has generated a qualified receipt.",
+        "suggested_state": "VERIFIED",
+        "task_id": "B3",
+        "unverified_items": [
+          "This verifies only the local media_e2e_receipt_v1 structural gate.",
+          "No production end-to-end execution or production-qualified receipt was verified.",
+          "No remote host, database, Feishu object, deployed service, or real browser session was exercised."
+        ],
+        "validation": {
+          "command": "bash scripts/test-media-e2e-receipt.sh",
+          "command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/commands/B3.sh",
+          "command_file_sha256": "660fe832e191fec125481985e98061d4568b7805036be2d573f7cbadc7905819",
+          "exit_code": 0,
+          "output": [
+            "PASS: receipt_20260813_demo01 links authenticated browser, context, task, runner, result, external/database and Web readback",
+            "PASS: incomplete receipt fails closed"
+          ]
+        },
+        "version_tuple": {
+          "dependency_graph": 1,
+          "interface_freeze": 1,
+          "node_contract": 1,
+          "plan": 1,
+          "ssot_schema": 1
+        }
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/B3/returns/B3-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "4627dd1cef6b7f22736e92775598d4344dd580ebbd21c55199ff18d820a70553",
+      "timed_out": false,
+      "validation_command_sha256": "660fe832e191fec125481985e98061d4568b7805036be2d573f7cbadc7905819",
+      "validation_ended_at": "2026-08-13T10:00:37.260792+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/B3/logs/B3-luna.validation.log",
+      "validation_pid": 35443,
+      "validation_started_at": "2026-08-13T10:00:37.078659+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-13T10:00:37.329234+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-13T09:59:07.836543+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/tasks/B3.md",
+  "task_id": "B3",
+  "task_sha256": "4627dd1cef6b7f22736e92775598d4344dd580ebbd21c55199ff18d820a70553",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/commands/B3.sh",
+  "validation_command_sha256": "660fe832e191fec125481985e98061d4568b7805036be2d573f7cbadc7905819",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-053-K5-I9",
+  "from": "K5",
+  "to": "I9",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.k5.i9.v5"
+  ],
+  "transferred_input": "阶段所有权决定第 2 版",
+  "gate_evidence": "第一阶段不得创建或更新人工智能文档，也不得保留可调用的全局凭据写入路径",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "DL-K5"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "I9 consumes the explicitly produced artifact DL-K5"
+}

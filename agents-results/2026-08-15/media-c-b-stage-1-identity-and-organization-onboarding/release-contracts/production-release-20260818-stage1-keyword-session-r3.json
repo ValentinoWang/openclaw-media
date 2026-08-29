@@ -1,0 +1,80 @@
+{
+  "schema_version": "openclaw-media-production-release-task-v1",
+  "task_id": "production-release-20260818-stage1-keyword-session-r3",
+  "candidate_manifest": {
+    "path": ".codex-work/stage1-integrated/candidate-manifest.json",
+    "sha256": "edda28759442676faa91ed6692f1fec8a703c730b8ad176cdc2c317e53f2b612"
+  },
+  "source_manifests": {
+    "frontend": {
+      "path": ".codex-work/stage1-integrated/frontend/.candidate-source.sha256",
+      "sha256": "92e0ced44f838fb6abbc8349dee927e3510237fdab90a0181debddab769d1eeb",
+      "file_count": 206
+    },
+    "backend": {
+      "path": ".codex-work/stage1-integrated/backend/.candidate-source.sha256",
+      "sha256": "0210aa094663a8a1b551b021ec55702050c5d72633db7e2825dfedd634f7a138",
+      "file_count": 651
+    }
+  },
+  "remote": {
+    "host": "ubuntu@106.52.146.37",
+    "frontend_release_root": "/mnt/openclaw-data/openclaw-media-frontend-releases",
+    "backend_stage_root": "/mnt/openclaw-data/openclaw-media-release-stage",
+    "backend_release_root": "/home/ubuntu/.openclaw/releases",
+    "frontend_target": "/var/www/openclaw/media",
+    "backend_service": "openclaw-bot-center-api.service",
+    "frontend_entrypoint": "/usr/local/sbin/deploy-openclaw-media-locked"
+  },
+  "release_ids": {
+    "frontend": "20260818T-stage1-keyword-session-r3",
+    "backend": "openclaw-tag-router-media-tenant-20260818T-stage1-keyword-session-r3"
+  },
+  "preflight": {
+    "candidate_integrity": "required",
+    "stage1_pytest": "208 passed before the final AST guard addition; full rerun required",
+    "frontend_build": "npm run build:media passed",
+    "remote_watchdog": "must pass --session-composition-root against the new backend release"
+  },
+  "execution": {
+    "backend": [
+      "copy the exact candidate backend, excluding local virtualenv and runtime caches",
+      "create a new managed release stage and direct release-root symlink",
+      "verify the candidate source hash and remote SessionPrincipal composition",
+      "update only the Media systemd drop-in under the shared release lock",
+      "daemon-reload, restart, and verify /healthz"
+    ],
+    "frontend": [
+      "temporarily expose the new backend as the sibling registry root required by the existing frontend QA",
+      "invoke /usr/local/sbin/deploy-openclaw-media-locked with the new source and backend release",
+      "remove the temporary sibling after the entrypoint exits",
+      "require the official deployment guard to pass"
+    ]
+  },
+  "guards": {
+    "no_database_migration": true,
+    "no_external_writes": true,
+    "no_dirty_source_checkout_write": true,
+    "no_guard_bypass": true,
+    "rollback": "restore the prior Media systemd drop-in and frontend symlink only after failed post-switch verification"
+  },
+  "acceptance": {
+    "required": [
+      "candidate and remote source hashes agree",
+      "remote SessionPrincipal composition guard passes",
+      "backend service process uses the new settings path",
+      "GET /healthz returns ok true",
+      "official frontend deployment entrypoint succeeds",
+      "official deployment guard passes",
+      "public frontend index hash equals active release index hash",
+      "frontend/backend coordination metadata agrees"
+    ],
+    "not_claimed": [
+      "SSOT node ACCEPTED",
+      "real email or Feishu flow",
+      "production database migration or readback",
+      "authenticated browser or device acceptance"
+    ]
+  },
+  "approval_receipt": "manual-receipts/production-release-20260818-stage1-keyword-session-r3.json"
+}

@@ -1,0 +1,137 @@
+{
+  "task_id": "stage1-OAS-document-lw-20260817",
+  "version_tuple": {
+    "plan": 5,
+    "dag": 5,
+    "interfaceFreeze": 5,
+    "nodeContract": 4,
+    "ssotSchema": 1,
+    "source": "candidate-manifest.json"
+  },
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-lw-OAS-document",
+  "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "task_source_sha256": "b85642b973acd6a7616eb86bb896f7a40d141895c2d5d3fb6c3aae1b8713fcad",
+  "validation_command_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/validation/OAS-document.sh",
+  "validation_command_sha256": "d52993735b01a27185e24e82ebb638313bb164c642067c5b2da571e47dfae15f",
+  "actual_read_scope": [
+    "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+    "backend/openclaw_app/contracts/media_web_business_pages.lark_resources.yaml",
+    "backend/openclaw_app/contracts/media_web_business_pages.resources.yaml",
+    "backend/openclaw_app/services/media_business/documents.py",
+    "backend/openclaw_app/services/media_business/trusted_resources.py",
+    "backend/openclaw_app/services/media_business/decisions.py",
+    "backend/openclaw_app/services/media_business/runs.py",
+    "backend/tests/test_media_business_documents.py",
+    "backend/tests/test_media_resource_url_trust_contract.py",
+    "backend/tests/test_d2_document_projection_source_identity.py",
+    "backend/tests/test_media_web_business_pages_contract.py",
+    "frontend/src/media/generatedBusinessPagesContract.ts",
+    "frontend/src/media/documentWorkflow.ts",
+    "candidate-manifest.json",
+    "dispatch task and validation command files",
+    "/Users/vsiyo/.codex/skills/implement-acceptance-locked-change/SKILL.md",
+    "/Users/vsiyo/.agents/skills/code-quality/SKILL.md",
+    "/Users/vsiyo/.codex/memories/MEMORY.md",
+    "../stage1-lw-I7/backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+    "../stage1-lw-I7/backend/tests/test_media_web_business_pages_contract.py"
+  ],
+  "actual_write_scope": [
+    "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+    "backend/tests/test_stage1_document_projection_openapi.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-OAS-document/returns/stage1-OAS-document-lw-20260817-luna.json"
+  ],
+  "changed_files": [
+    "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+    "backend/tests/test_stage1_document_projection_openapi.py"
+  ],
+  "transport_artifact": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-OAS-document/returns/stage1-OAS-document-lw-20260817-luna.json",
+  "acceptance_commands": [
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=backend ./backend/.venv/bin/python -m pytest -q -p no:cacheprovider backend/tests/test_stage1_document_projection_openapi.py",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=backend ./backend/.venv/bin/python -m pytest -q -p no:cacheprovider backend/tests/test_stage1_document_projection_openapi.py backend/tests/test_media_web_business_pages_contract.py backend/tests/test_media_business_documents.py backend/tests/test_media_resource_url_trust_contract.py backend/tests/test_d2_document_projection_source_identity.py",
+    "bash /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/validation/OAS-document.sh"
+  ],
+  "command_results": [
+    {
+      "command": "focused projection test",
+      "exit_code": 0,
+      "result": "pass",
+      "detail": "3 passed"
+    },
+    {
+      "command": "frozen acceptance command",
+      "exit_code": 1,
+      "result": "verification_failed",
+      "detail": "50 passed, 2 failed; existing interface-freeze assertion expects 3 while YAML is 4, and existing InviteeSummary forbidden-response assertion fails"
+    },
+    {
+      "command": "validation command file",
+      "exit_code": 1,
+      "result": "verification_failed",
+      "detail": "same 50 passed and 2 pre-existing contract-baseline failures"
+    },
+    {
+      "command": "unmodified sibling baseline diagnostic",
+      "exit_code": 1,
+      "result": "verification_failed",
+      "detail": "the same two existing failures reproduce with identical baseline YAML and contract-test hashes"
+    }
+  ],
+  "evidence_identities": [
+    {
+      "id": "EV-OAS-DOCUMENT-IMPLEMENTATION-20260817",
+      "level": "local-runtime",
+      "scope": "OpenAPI projection schema and focused test",
+      "artifact_hashes": {
+        "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml": "sha256:67f89467496a3873910c5f8a779374ac5d19a544e016b855de0962c9c52ddf90",
+        "backend/tests/test_stage1_document_projection_openapi.py": "sha256:73bf29c4c6cec291c9169e9dfd662e5fc9db52477f1ea8eda1306c0fe2985917"
+      },
+      "result": "YAML parse passed; focused projection test passed with 3 tests"
+    },
+    {
+      "id": "EV-OAS-DOCUMENT-RUNTIME-SHAPE-20260817",
+      "level": "source-and-local-fixture",
+      "scope": "DocumentsService and trusted organization resource projection",
+      "artifact_hashes": {
+        "backend/openclaw_app/services/media_business/documents.py": "sha256:d0fe6142ce7e6f3ffeffcfced6ba422d193bd680434c322bc2693171c1609725",
+        "backend/openclaw_app/services/media_business/trusted_resources.py": "sha256:062d2feded1f40a49ede89f80b1d9a53dc4d778cc3c1e9445563e7c814ca7d0f",
+        "backend/tests/test_media_business_documents.py": "sha256:ebbaf85a46eb2cbe7078827a60720a209c60482d30c3a6ae73c4f1826c96bb82",
+        "backend/tests/test_media_resource_url_trust_contract.py": "sha256:7476c5a2059f113e643c3094b1f4c52f6f2e09e448bb32c9bfdd6169d20a21de8"
+      },
+      "result": "Runtime shape and fail-closed expiry, retired, and URL tests passed in the frozen suite"
+    },
+    {
+      "id": "EV-OAS-DOCUMENT-BASELINE-20260817",
+      "level": "local-baseline-diagnostic",
+      "scope": "Pre-existing shared contract failures",
+      "artifact_hashes": {
+        "../stage1-lw-I7/backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml": "sha256:57fe43d162da50c9c836e1011f91eee2cb1cb6286a3937be01135e0bced98f40",
+        "../stage1-lw-I7/backend/tests/test_media_web_business_pages_contract.py": "sha256:3217a4348de15c8f8aaaa0a9e1029e778b8e68c15d8b7cdf72095f9ae55c0022"
+      },
+      "result": "The same two failures reproduce before this lane's schema changes"
+    },
+    {
+      "id": "EV-OAS-DOCUMENT-INPUTS-20260817",
+      "level": "provenance",
+      "scope": "Frozen task and validation command",
+      "artifact_hashes": {
+        "task_source": "sha256:b85642b973acd6a7616eb86bb896f7a40d141895c2d5d3fb6c3aae1b8713fcad",
+        "validation_command": "sha256:d52993735b01a27185e24e82ebb638313bb164c642067c5b2da571e47dfae15f"
+      },
+      "result": "Input identities match the supplied frozen values"
+    }
+  ],
+  "unverified_items": [
+    "Formal shared-contract acceptance remains partial until the two pre-existing assertions are reconciled by their owning lane.",
+    "No generated client or frontend refresh was performed, per forbidden scope.",
+    "No HTTP deployment, production, database, browser, external Feishu, or device evidence was produced or required."
+  ],
+  "deviation_level": "none",
+  "failure_class": "verification",
+  "shared_resource_impact": "No remote or shared runtime resources were called or mutated. Only the two authorized project files were changed; the required return artifact was written separately.",
+  "risks": [
+    "The frozen command remains non-green because its existing interface-freeze version assertion and InviteeSummary response-field assertion are inconsistent with the current baseline.",
+    "The OpenAPI projection is source and local-test verified only; it is not generated-client, deployment, production, or external Feishu evidence."
+  ],
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "partial"
+}

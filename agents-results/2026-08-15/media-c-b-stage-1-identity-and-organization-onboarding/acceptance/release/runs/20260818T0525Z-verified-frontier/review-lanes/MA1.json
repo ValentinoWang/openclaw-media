@@ -1,0 +1,161 @@
+{
+  "task_id": "REVIEW-MA1-20260818",
+  "reviewer_route": {
+    "role": "independent_readonly_acceptance_reviewer",
+    "node_id": "MA1",
+    "semantic_key": "media.stage1.release1a-migration-owner",
+    "run_id": "20260818T0525Z-verified-frontier",
+    "executor": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "model": "gpt-5.6-terra",
+    "reasoning_effort": "xhigh",
+    "sandbox": "writable sandbox; zero-write except this lane return",
+    "current_node_state": "VERIFIED",
+    "acceptance_authority": "main orchestrator"
+  },
+  "frozen_hashes_verified": {
+    "node": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/MA1.json",
+      "expected_sha256": "fe60cd1e0bb12d04f38aadc26206ff2adf62d3ce98c3850daf41fb188d08acb1",
+      "observed_sha256": "fe60cd1e0bb12d04f38aadc26206ff2adf62d3ce98c3850daf41fb188d08acb1",
+      "match": true
+    },
+    "deterministic_receipt": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/MA1-rerun-20260817.json",
+      "expected_sha256": "8056704a4c314bd0965767d65fe0499f9b90e66820289be1581d8d7f33bcc28a",
+      "observed_sha256": "8056704a4c314bd0965767d65fe0499f9b90e66820289be1581d8d7f33bcc28a",
+      "match": true
+    },
+    "migration_source": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-ma1-migration/backend/openclaw_app/migrations/canonical/040_stage1_release1a_identity_workspace.sql",
+      "expected_sha256_from_node": "61e739379c9e81d3d1a5bb7239e3695d1d709e2109eb1fd816b078bacc6da475",
+      "observed_sha256": "61e739379c9e81d3d1a5bb7239e3695d1d709e2109eb1fd816b078bacc6da475",
+      "match": true
+    },
+    "progress_view_sha256": "ce579cec2558c16d4db1b88d64e492dcaf2302fb218f2356de04e9ed36ec96ec",
+    "development_paths_view_sha256": "558b40b11c399fd6f5d8b9e766562a07e7ecd8968c83df9a07a60496112659e6",
+    "evidence_directory_inventory": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-local-pg16-20260817",
+      "files": ["postgres.log"],
+      "postgres_log_sha256": "4ddbb1692092c7ed7348b1da0eb02c0b853b48533a9cfe4e7740d85c3c4f2dd1",
+      "contains_query_or_readback_artifact": false
+    }
+  },
+  "findings": [
+    {
+      "severity": "BLOCKER",
+      "id": "MA1-ACC-001",
+      "title": "No real PostgreSQL migration and independent readback proof",
+      "assessment": "The frozen receipt records a local fixture run and explicitly states that no real or shared PostgreSQL migration was executed. The supplied PostgreSQL evidence directory contains only a server log, not applied migration output, schema/catalog assertions, data readback, or ledger readback.",
+      "evidence_refs": [
+        "deterministic-receipts/MA1-rerun-20260817.json:9-16",
+        "deterministic-receipts/MA1-rerun-20260817.json:27-35",
+        "evidence-local-pg16-20260817/postgres.log:1-41"
+      ],
+      "required_for_acceptance": "Run the frozen migration against an approved isolated PostgreSQL instance and preserve independent SQL/catalog/data/ledger readback for the MA1 acceptance cases."
+    },
+    {
+      "severity": "BLOCKER",
+      "id": "MA1-ACC-002",
+      "title": "Forward and recovery evidence is absent",
+      "assessment": "The MA1 acceptance contract requires upgrade, repeat execution, legacy-value ownership backfill, conflict quarantine, no-evidence hiding, and recovery tests. The static tests inspect SQL text and mocked runner behavior only; no forward-recovery or restore/readback result is present in the fixed evidence scope.",
+      "evidence_refs": [
+        ".ssot/view-sources/30-acceptance.md:21",
+        ".ssot/nodes/MA1.json:83-108",
+        "deterministic-receipts/MA1-rerun-20260817.json:27-35"
+      ],
+      "required_for_acceptance": "Provide an immutable forward/recovery run with before/after and post-recovery readback, including idempotent rerun and quarantine/hidden-state assertions."
+    },
+    {
+      "severity": "HIGH",
+      "id": "MA1-ACC-003",
+      "title": "Fixture provenance cannot support acceptance",
+      "assessment": "Both the node evidence identity and receipt mark mock_or_fixture=true, evidence_level=local-runtime, environment=local macOS isolated candidate root, account/tenant=n/a, and runtime_release_id=n/a. This is sufficient to retain VERIFIED but is not an independent database acceptance identity.",
+      "evidence_refs": [
+        ".ssot/nodes/MA1.json:91-108",
+        "deterministic-receipts/MA1-rerun-20260817.json:8-11"
+      ],
+      "required_for_acceptance": "Bind the database run to an identified approved environment, database identity, timestamp, migration ledger, and independent read-only reviewer evidence."
+    },
+    {
+      "severity": "HIGH",
+      "id": "MA1-ACC-004",
+      "title": "Generated progress narrative conflicts with frozen evidence provenance",
+      "assessment": "The progress view narrates a real empty-database validation and readback, while the frozen MA1 receipt says no real/shared PostgreSQL migration was executed and the evidence directory has no corresponding readback artifact. The unsupported narrative cannot promote the node.",
+      "evidence_refs": [
+        "implementation-progress.md:5-11",
+        "implementation-progress.md:13",
+        "deterministic-receipts/MA1-rerun-20260817.json:27-35",
+        "evidence-local-pg16-20260817/postgres.log:1-41"
+      ],
+      "required_for_acceptance": "Resolve the provenance discrepancy with a hash-bound database run artifact; do not use the progress narrative as a substitute for raw readback evidence."
+    },
+    {
+      "severity": "INFO",
+      "id": "MA1-ACC-005",
+      "title": "Static source checks and frozen hashes are intact",
+      "assessment": "The MA1 node hash, deterministic receipt hash, and migration source hash match the pinned values. The receipt reports 27 passed and 3 subtests passed. This supports the existing VERIFIED state only and does not satisfy the missing runtime acceptance gates.",
+      "evidence_refs": [
+        ".ssot/nodes/MA1.json:7",
+        ".ssot/nodes/MA1.json:94-108",
+        "deterministic-receipts/MA1-rerun-20260817.json:5-23"
+      ]
+    }
+  ],
+  "evidence_disposition": {
+    "static_source_and_contract": "SUPPORTED_FOR_VERIFIED_ONLY",
+    "real_postgresql_execution": "MISSING",
+    "postgresql_readback": "MISSING",
+    "forward_migration_readback": "MISSING",
+    "recovery_or_restore_readback": "MISSING",
+    "fixture_boundary": "EXPLICIT_AND_BLOCKING_FOR_ACCEPTANCE",
+    "environment_identity": "local macOS isolated stage1-ma1-migration root with existing Python virtualenv; account_or_tenant=n/a; runtime_release_id=n/a",
+    "overall": "INSUFFICIENT_FOR_ACCEPTANCE"
+  },
+  "acceptance_self_check": {
+    "status": "fail",
+    "current_state_preserved": "VERIFIED",
+    "accepted_candidate_allowed": false,
+    "reason": "The required real database and forward/recovery evidence are absent; no acceptance promotion is authorized by this review."
+  },
+  "failure_class": "missing-real-database-and-recovery-evidence",
+  "failure_origin": {
+    "primary": "deterministic-receipt-explicitly-unverified",
+    "secondary": "evidence-directory-lacks-readback-artifacts",
+    "provenance_conflict": "implementation-progress-claims-real-empty-database-validation-but-fixed-receipt-does-not"
+  },
+  "unverified_items": [
+    "Execution of migration 040 on an approved real PostgreSQL database",
+    "PostgreSQL schema, constraint, index, view, and migration-ledger readback",
+    "Legacy ordinary-value ownership backfill readback",
+    "Conflict quarantine and NEEDS_ATTENTION readback",
+    "No-evidence hidden-state readback",
+    "Idempotent repeat execution readback",
+    "Forward recovery or restore rehearsal and post-recovery readback",
+    "Independent database reviewer evidence and acceptance binding",
+    "Production, deployment, device, email, and Feishu verification"
+  ],
+  "actual_read_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/develop/Harness/fullstack-ai-harness.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.harness/overlays/project-harness-adapter.yaml",
+    "/Users/vsiyo/.codex/skills/verify-acceptance-release/SKILL.md",
+    "/Users/vsiyo/.codex/memories/MEMORY.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/MA1.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/MA1-rerun-20260817.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/implementation-progress.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/view-sources/30-acceptance.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-ma1-migration/backend/openclaw_app/migrations/canonical/040_stage1_release1a_identity_workspace.sql",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-ma1-migration/backend/scripts/run_postgres_migrations.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-ma1-migration/backend/tests/test_stage1_release1a_migration.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-ma1-migration/backend/tests/test_postgres_migration_runner.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-local-pg16-20260817/postgres.log",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-remote-release-20260818/remote-readback-20260818T0517.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance/release/runs/20260818T0525Z-verified-frontier/terra-dispatch-ledger.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance/release/runs/20260818T0525Z-verified-frontier/prompts/MA1.txt",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance/release/runs/20260818T0525Z-verified-frontier/logs/MA1.log"
+  ],
+  "actual_write_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance/release/runs/20260818T0525Z-verified-frontier/review-lanes/MA1.json"
+  ],
+  "proposed_state": "BLOCKED"
+}

@@ -1,0 +1,150 @@
+{
+  "ssot_schema_version": 2,
+  "artifact_class": "ssot-development",
+  "plan_version": 5,
+  "dag_version": 5,
+  "interface_freeze_version": 4,
+  "node_contract_version": 5,
+  "machine_validation_profile": "release",
+  "parallelism_contract_version": 1,
+  "execution_contract_validation": "strict",
+  "main_thread_policy": "orchestration-only",
+  "main_thread_source_write": false,
+  "execution_contracts_dir": "execution-contracts",
+  "planning_compiler": "planning-compiler.json",
+  "generated_main": "../ssot-development-paths.md",
+  "generated_views": [
+    {
+      "view_id": "main",
+      "source": "view-sources/00-main.md",
+      "source_sha256": "558b40b11c399fd6f5d8b9e766562a07e7ecd8968c83df9a07a60496112659e6",
+      "output": "../ssot-development-paths.md"
+    },
+    {
+      "view_id": "dependency-topology",
+      "source": "view-sources/10-topology.md",
+      "source_sha256": "84f8d76c673a6b7731cc232b1194473573580312b8914a740efa1bca4d0e21ee",
+      "output": "../generated-views/10-dependency-topology.md"
+    },
+    {
+      "view_id": "execution-governance",
+      "source": "view-sources/20-execution.md",
+      "source_sha256": "c870a609b368b824d947253f4443a63e16cb30f7af3fd589de527fd76d490605",
+      "output": "../generated-views/20-execution-governance.md"
+    },
+    {
+      "view_id": "contracts-acceptance",
+      "source": "view-sources/30-acceptance.md",
+      "source_sha256": "07510ecf83e18030eccd43b7f98ff9f823dbe95dbce124084c2f6fdbaad008f6",
+      "output": "../generated-views/30-node-contracts-and-acceptance.md"
+    },
+    {
+      "view_id": "implementation-progress",
+      "source": "view-sources/40-progress.md",
+      "source_sha256": "02c1cac2205c0115e3a3d34883175650238ad9d4f2f4a5ae837143222e45447c",
+      "output": "../implementation-progress.md"
+    }
+  ],
+  "nodes_dir": "nodes",
+  "edges_dir": "edges",
+  "assumptions_dir": "assumptions",
+  "conflicts_dir": "conflicts",
+  "actor_pools": {
+    "codex-primary": {
+      "actor": "codex",
+      "capacity": 4
+    },
+    "human-authority": {
+      "actor": "human",
+      "capacity": 1
+    },
+    "external-acceptance": {
+      "actor": "external-system",
+      "capacity": 1
+    },
+    "orchestrator": {
+      "actor": "orchestrator",
+      "capacity": 1
+    }
+  },
+  "executor_policy": {
+    "schema_version": 3,
+    "default_primary_executor": "lw-terra",
+    "default_writable_parallel_executor": "lw-terra",
+    "default_writable_wrapper": "run-lw-terra.sh",
+    "fallback_executor": "l3",
+    "fallback_wrapper": "run-l3.sh",
+    "primary_retry_limit": 1,
+    "l3_escalation_limit": 1,
+    "allowed_primary_executors": {
+      "lw-luna": "run-lw-luna.sh",
+      "lw-terra": "run-lw-terra.sh"
+    }
+  },
+  "external_gates": [
+    {
+      "node_id": "E11",
+      "semantic_key": "media.external.revision11-d3a",
+      "required_state": "ACCEPTED",
+      "authority_path": "/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/公共开发集/media/2026-08-07/media-visual-fix/agents-results/2026-08-07/media-cb-web-document-preview/ssot-development-paths.md",
+      "authority_revision": "revision11-d3a",
+      "consumers": [
+        "CA",
+        "CB"
+      ],
+      "projection_mode": "automatic-projection",
+      "canonical_evidence_write_allowed": false
+    }
+  ],
+  "stage_handoffs": [
+    {
+      "handoff_id": "stage-1c-directory-maturity",
+      "title": "完整组织目录成熟化",
+      "status": "OUTSIDE_CURRENT_DAG",
+      "source_decision_node": "K3",
+      "excluded_from_completion_nodes": [
+        "CA",
+        "CB",
+        "DC1",
+        "DC2"
+      ],
+      "required_future_scope": [
+        "分页目录读取",
+        "部门树",
+        "增量同步",
+        "大组织恢复"
+      ]
+    }
+  ],
+  "shared_evidence": [
+    {
+      "evidence_id": "EV-MPE2E-C5-R3-SHARED-LOCAL",
+      "evidence_level": "local-runtime",
+      "source_bundle": "agents-results/2026-08-13/media-production-e2e-closure",
+      "source_revision": "sha256:f1ac786573e76aa40a0d69a10aab6dba5bd6a345596242d93f37773b59f45bcb",
+      "artifact_hashes": [
+        "sha256:420b4ac3c9a064a21c2511d3b71750bedc3fed1b5a2f85ace236d5930cefccb0",
+        "sha256:a5e34064d554fe6a11b93f608b23202e737b40eac9dcedc4388c18dc952710be",
+        "sha256:134106d20f47b98b9600777490f5d22d48d32c4f6421c23a8fc11aaf3726569e",
+        "sha256:3f6028f577dc6674eb2afa3e48238ad503b042bb60436b737778a31a95bcd241"
+      ],
+      "environment_identity": "local macOS candidate with disposable PostgreSQL 16 and contract fixtures",
+      "actor_role": "main orchestrator deterministic revalidation",
+      "mock_or_fixture": true,
+      "observed_at": "2026-08-16T00:49:11+08:00",
+      "applies_to_nodes": [
+        "IL1",
+        "I3",
+        "C1"
+      ],
+      "proves": "当前共享本地候选按租户、当前用户、平台、账号和有效正式关系唯一匹配客户自有账号，并在非目标工作区、错误角色、无效维护者或成员时于入队前失败关闭",
+      "does_not_prove": "第一阶段显式身份关联完整流程、SessionPrincipal v2、WorkspaceResolutionResult、身份候选汇合、部署或生产验收"
+    }
+  ],
+  "validation_report": {
+    "path": "validation-report.json",
+    "sha256": "b612583181c1357dcdf5376f4f65cfd72faf68b9d9dece781f5764a1395452f9",
+    "manifest_identity_sha256": "ab616fd4e55b5360343e2521815f3f1e5fe4bf91dd9020c68d0c4798e480301a",
+    "bundle_content_sha256": "9fd9bd794a0803f4b6b97e5524842ec43c534e1f8bf453ccaeda9ec757a824fe"
+  }
+}

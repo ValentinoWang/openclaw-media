@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-012-K-B",
+  "from": "K",
+  "to": "B",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.k.b.v5"
+  ],
+  "transferred_input": "稳定决定记录第 2 版",
+  "gate_evidence": "只冻结已有明确证据的决定",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "ART-K"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "B consumes the explicitly produced artifact ART-K"
+}

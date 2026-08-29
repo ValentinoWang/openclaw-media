@@ -1,0 +1,28 @@
+{
+  "contract_id": "K",
+  "schema_version": 1,
+  "node_id": "K",
+  "node_role": "leaf",
+  "execution_actor": "human",
+  "work_kind": "decision-acceptance",
+  "write_authority": "authoritative-contract",
+  "read_set": [
+    "artifact:A1"
+  ],
+  "write_set": [
+    "artifact:K"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:K",
+      "mode": "W",
+      "isolation_key": "node:K"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance K\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/K-return.json"
+  ]
+}

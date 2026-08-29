@@ -1,0 +1,28 @@
+{
+  "contract_id": "GA1",
+  "schema_version": 1,
+  "node_id": "GA1",
+  "node_role": "leaf",
+  "execution_actor": "human",
+  "work_kind": "foundation",
+  "write_authority": "authoritative-contract",
+  "read_set": [
+    "artifact:A1"
+  ],
+  "write_set": [
+    "artifact:GA1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:GA1",
+      "mode": "W",
+      "isolation_key": "node:GA1"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance GA1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/GA1-return.json"
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "node_id": "C3",
+  "semantic_key": "media.stage1.provision-convergence",
+  "stage": "C",
+  "work_kind": "convergence",
+  "domain_lane": "provision",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "P10",
+    "P7",
+    "P8",
+    "P9"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.provision-convergence.v5"
+  ],
+  "write_authority": "shared-generated",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "CB"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [],
+  "description": "完整目录同步不是本节点依赖",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "C3.json",
+  "execution_contract_sha256": "9675f3cc848070359c9ec90c139acccf7dd530edeaec2d1eaa0c579ea521fb63",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "freezes",
+  "deliverable_ids": [
+    "DL-C3"
+  ],
+  "produced_artifact_ids": [
+    "ART-C3"
+  ],
+  "consumed_artifact_ids": [
+    "DL-P10",
+    "DL-P7",
+    "DL-P8",
+    "DL-P9"
+  ],
+  "read_set": [
+    "artifact:P10",
+    "artifact:P7",
+    "artifact:P8",
+    "artifact:P9"
+  ],
+  "write_set": [
+    "artifact:C3"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:C3",
+      "mode": "W",
+      "isolation_key": "node:C3"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance C3\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/C3-return.json"
+  ],
+  "release_slice": "REL-1B",
+  "wave_id": "W-1B-19",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "artifact:C3"
+    ]
+  }
+}

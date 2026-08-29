@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-084-P2-P6",
+  "from": "P2",
+  "to": "P6",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.p2.p6.v5"
+  ],
+  "transferred_input": "事件服务与幂等回执",
+  "gate_evidence": "事件只影响匹配安装身份",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-P2"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "P6 consumes the explicitly produced artifact DL-P2"
+}

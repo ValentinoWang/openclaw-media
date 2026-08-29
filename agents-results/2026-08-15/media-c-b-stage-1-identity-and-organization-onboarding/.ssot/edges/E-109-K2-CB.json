@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-109-K2-CB",
+  "from": "K2",
+  "to": "CB",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.k2.cb.v5"
+  ],
+  "transferred_input": "发布控制决定第 1 版",
+  "gate_evidence": "不保留白名单、灰度、长期功能开关或双路径",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "DL-K2"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "CB consumes the explicitly produced artifact DL-K2"
+}

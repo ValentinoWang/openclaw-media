@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "node_id": "M1",
+  "status": "passed",
+  "observed_at": "2026-08-16T20:28:37+08:00",
+  "task_id": "M1-remediation-1",
+  "attempt_role": "main-orchestrator",
+  "transport": "deterministic-local",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+  "frozen_task_sha256": "80b1c915091ec9a983e25d6d79a1730d0617a5cbedf3bc232ac4c4ed6c810402",
+  "frozen_validation_sha256": "05b724f6d4b252705a8ae4d6899ec8eae4867ff3b09f4543b12cef5e9269115b",
+  "implementation": {
+    "tool": "tools/rebuild_stage1_candidate",
+    "schema": "tools/stage1_candidate_manifest.schema.json",
+    "tests": "tests/test_rebuild_stage1_candidate.py",
+    "fixture": "tests/fixtures/stage1_candidate_rebuild",
+    "input_mutation": false,
+    "external_side_effects": false,
+    "git_used": false
+  },
+  "commands": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/merge-candidate-v4/backend/.venv/bin/python -m pytest -q -p no:cacheprovider tests/test_rebuild_stage1_candidate.py",
+      "result": "32 passed",
+      "exit_code": 0
+    },
+    {
+      "command": "./tools/rebuild_stage1_candidate --manifest tests/fixtures/stage1_candidate_rebuild/manifest.json --base development --output FRESH_DIR --check-twice",
+      "result": "deterministic candidate manifest and content identity",
+      "exit_code": 0
+    },
+    {
+      "command": "./tools/rebuild_stage1_candidate --manifest tests/fixtures/stage1_candidate_rebuild/manifest.json --base promotion --output FRESH_DIR --check-twice",
+      "result": "promotion-base candidate deterministically rebuilt",
+      "exit_code": 0
+    }
+  ],
+  "artifact_hashes": {
+    "tool": "sha256:4c0cfef4e24625dfb671fe4736a04725432d41a4243d0be1f04d5303135a42a2",
+    "schema": "sha256:ad8aa24bf7481da33b26bf05e7dad37dec4ba2e9b4b2dbbf0cd9c73a1a94e7ce",
+    "tests": "sha256:11c13d6197b1fa61735f6d81ee8f78e92e38a2dd2ab1d9b48d0498aaded9cc09",
+    "fixture_manifest": "sha256:dece265db4b42a0ddba574932c2916aaa1efa5604b45f0243cb648e5265c4eb0",
+    "development_candidate_manifest": "sha256:946d168ecbbbb3437a2b30a94442e75673b62f9407580d12f8c47a290c192819",
+    "promotion_candidate_manifest": "sha256:c291be2e3367b402d0c38c4992c49c49fa048803f684a2b2993a4609be56dd1b"
+  },
+  "unverified_items": [
+    "real release promotion, production behavior, external accounts, and Revision 11 remain out of scope",
+    "M1-retry-2 external Codex worker transport remained BLOCKED; no worker output was consumed"
+  ],
+  "supersedes": "M1 receipt observed at 2026-08-16T18:08:43+08:00; remediation closes duplicate patch IDs, distinct dual-base binding, and CA/CB CLI drift",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": {
+    "schema_closed": true,
+    "both_bases": true,
+    "distinct_base_hash_bindings": true,
+    "ordered_patches": true,
+    "unique_patch_ids_for_multi_file_patches": true,
+    "candidate_node_cli_aligned": true,
+    "ownership_and_conflict_fail_closed": true,
+    "stale_and_before_hash_fail_closed": true,
+    "unsafe_paths_symlinks_and_overlay_fail_closed": true,
+    "check_twice": true,
+    "input_unchanged": true
+  },
+  "failure_class": "none",
+  "shared_resource_impact": "none",
+  "risk": "tool is local governance infrastructure only; no product runtime or external system was touched"
+}

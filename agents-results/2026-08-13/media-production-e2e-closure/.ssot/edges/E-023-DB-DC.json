@@ -1,0 +1,1 @@
+{"edge_id":"E-023-DB-DC","from":"DB","to":"DC","dependency_type":"hard","dependency_scope":"global-completeness","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["release.media-production-e2e"],"transferred_input":"真实认证生产 E2E 收据和监控证据","gate_evidence":"DB 已接受"}

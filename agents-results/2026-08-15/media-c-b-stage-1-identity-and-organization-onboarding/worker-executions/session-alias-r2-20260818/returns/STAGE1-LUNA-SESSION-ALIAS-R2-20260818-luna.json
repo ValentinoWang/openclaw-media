@@ -1,0 +1,78 @@
+{
+  "task_id": "STAGE1-LUNA-SESSION-ALIAS-R2-20260818",
+  "attempt_role": "primary",
+  "executor": "lw-luna",
+  "runner_interrupted_after_evidence": true,
+  "proposed_state": "BLOCKED",
+  "acceptance_self_check": "fail",
+  "failure_class": "verification",
+  "failure_origin": "test-oracle",
+  "concise_change_description": "Added exact GET /media/api/session request-target normalization in the existing IF2 dispatcher so it reaches the canonical authenticated session handler and canonical If2RequestContext path. The canonical response shape is preserved.",
+  "actual_read_scope": [
+    "backend/openclaw_app/adapters/http_api.py",
+    "backend/openclaw_app/adapters/media_business_dispatcher.py",
+    "backend/openclaw_app/adapters/media_business_context.py",
+    "backend/tests/test_http_api.py",
+    "backend/tests/test_account_auth.py",
+    "backend/tests/test_account_registration_http_postgres.py",
+    "backend/tests/test_account_registration.py",
+    "backend/tests/test_account_identity_postgres.py",
+    "project Harness instructions and task-local evidence"
+  ],
+  "actual_write_scope": [
+    "backend/openclaw_app/adapters/http_api.py",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/session-alias-r2-20260818/returns/STAGE1-LUNA-SESSION-ALIAS-R2-20260818-luna.json"
+  ],
+  "changed_files": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-integrated/backend/openclaw_app/adapters/http_api.py"
+  ],
+  "commands": [
+    {
+      "command": "focused PostgreSQL baseline and post-fix command",
+      "exit_code": 1,
+      "result": "2 passed, 1 failed; after the alias the request returns HTTP 200 but the protected test asserts removed top-level session[userId] instead of canonical session[session][publicUserId]"
+    },
+    {
+      "command": "PYTHONPATH=. .venv/bin/pytest -q tests/test_http_api.py",
+      "exit_code": 0,
+      "result": "25 passed, 7 subtests passed"
+    },
+    {
+      "command": ".venv/bin/python -m py_compile openclaw_app/adapters/http_api.py",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "command": "sha256sum tests/test_account_auth.py tests/test_account_registration.py tests/test_account_registration_http_postgres.py tests/test_account_identity_postgres.py",
+      "exit_code": 0,
+      "result": "protected hashes recorded unchanged"
+    }
+  ],
+  "red_green_evidence": {
+    "baseline": "PostgreSQL reachable; /media/api/session returned 404 and the focused command was 2 passed, 1 failed.",
+    "post_fix": "The exact alias reaches the canonical handler and returns HTTP 200; the same command remains red only on the stale response-shape assertion.",
+    "product_behavior": "Canonical HTTP behavior and auth/IF2 route guards remain green in test_http_api.py.",
+    "test_infrastructure": "No test-infrastructure failure observed."
+  },
+  "protected_test_hashes_after": {
+    "tests/test_account_auth.py": "23fee6e00c24386ea18f5a1ebaa004f0e3e22c5af0dd891d24dbf6648e942326",
+    "tests/test_account_registration.py": "3cf49c52dda208d122938d505595ce2a4ba318a8d343277b51700edde86b173c",
+    "tests/test_account_registration_http_postgres.py": "5200874682b200fca3b06491113009f31a10951e050334d6074557493b324cb7",
+    "tests/test_account_identity_postgres.py": "d89258a136ed5e1c87c3bf978f474aff18abf44d2e27cc9353b923e7380a7e93"
+  },
+  "unverified_items": [
+    "Focused PostgreSQL suite cannot be fully green until the stale test oracle is corrected under an explicit test-contract change.",
+    "Candidate manifests and remote release evidence are not refreshed by this bounded worker."
+  ],
+  "residual_risks": [
+    "The compatibility path is intentionally limited to exact GET /media/api/session; other legacy IF2 paths remain fail-closed.",
+    "The required return write was completed by the outer task after the Luna process stalled during closeout."
+  ],
+  "explicit_non_claims": [
+    "No SSOT acceptance",
+    "No release",
+    "No deployment",
+    "No production readiness",
+    "No ACCEPTED state"
+  ]
+}

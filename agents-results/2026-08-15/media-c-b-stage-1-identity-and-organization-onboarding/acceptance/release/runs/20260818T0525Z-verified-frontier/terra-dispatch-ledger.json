@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "run_id": "20260818T0525Z-verified-frontier",
+  "primary_executor": "lw-terra",
+  "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+  "model": "gpt-5.6-terra",
+  "reasoning_effort": "xhigh",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+  "sandbox": "writable sandbox; task contract is zero-write except lane return",
+  "launch_barrier": "all four workers launched before first wait",
+  "workers": [
+    {
+      "lane": "MA1",
+      "task_id": "REVIEW-MA1-20260818",
+      "prompt": "acceptance/release/runs/20260818T0525Z-verified-frontier/prompts/MA1.txt",
+      "prompt_sha256": "753000a12eeb1a5bd1b69f5b912ff514576a213af99f727db6fa97c89a0c542d",
+      "log": "acceptance/release/runs/20260818T0525Z-verified-frontier/logs/MA1.log",
+      "return": "acceptance/release/runs/20260818T0525Z-verified-frontier/review-lanes/MA1.json",
+      "pid": 8089,
+      "started_at": "2026-08-18T05:32:13+08:00",
+      "ended_at": "2026-08-18T06:40:00+08:00",
+      "exit_code": 0,
+      "prompt_deleted": true,
+      "proposed_state": "BLOCKED",
+      "return_sha256": "304bc9bb8a6c71b7f9120d3a025759021e680c8297a917bc800a3bd357e25346"
+    },
+    {
+      "lane": "I1",
+      "task_id": "REVIEW-I1-20260818",
+      "prompt": "acceptance/release/runs/20260818T0525Z-verified-frontier/prompts/I1.txt",
+      "prompt_sha256": "0d1d70d0a3a23bc198592596bff455b6038c97750e5993b90e5e22ac4e238861",
+      "log": "acceptance/release/runs/20260818T0525Z-verified-frontier/logs/I1.log",
+      "return": "acceptance/release/runs/20260818T0525Z-verified-frontier/review-lanes/I1.json",
+      "pid": 8090,
+      "started_at": "2026-08-18T05:32:13+08:00",
+      "ended_at": "2026-08-18T06:40:00+08:00",
+      "exit_code": 137,
+      "prompt_deleted": true,
+      "retry_reason": "worker-transport stall with no structured return",
+      "retry_authorized": true
+    },
+    {
+      "lane": "I2",
+      "task_id": "REVIEW-I2-20260818",
+      "prompt": "acceptance/release/runs/20260818T0525Z-verified-frontier/prompts/I2.txt",
+      "prompt_sha256": "39b8bfb083e99505e3922267632d86a2da8874f7143412fe77bbbcca32cb1a5b",
+      "log": "acceptance/release/runs/20260818T0525Z-verified-frontier/logs/I2.log",
+      "return": "acceptance/release/runs/20260818T0525Z-verified-frontier/review-lanes/I2.json",
+      "pid": 8091,
+      "started_at": "2026-08-18T05:32:13+08:00",
+      "ended_at": "2026-08-18T06:40:00+08:00",
+      "exit_code": 137,
+      "prompt_deleted": true,
+      "retry_reason": "worker-transport stall with no structured return",
+      "retry_authorized": true
+    },
+    {
+      "lane": "T1",
+      "task_id": "REVIEW-T1-20260818",
+      "prompt": "acceptance/release/runs/20260818T0525Z-verified-frontier/prompts/T1.txt",
+      "prompt_sha256": "f198bdc0ca9f9a487a55f1bf5d930d55c2060c59e0de4a1bf38ec73fbbb67124",
+      "log": "acceptance/release/runs/20260818T0525Z-verified-frontier/logs/T1.log",
+      "return": "acceptance/release/runs/20260818T0525Z-verified-frontier/review-lanes/T1.json",
+      "pid": 8092,
+      "started_at": "2026-08-18T05:32:13+08:00",
+      "ended_at": "2026-08-18T06:40:00+08:00",
+      "exit_code": 0,
+      "prompt_deleted": true,
+      "proposed_state": "BLOCKED",
+      "return_sha256": "df70287467370673767c99825373d3c102fb7fba1227da48e4e1c30281296200"
+    }
+  ],
+  "retry_wave": {
+    "reason": "I1/I2 first attempt stalled in worker transport and did not produce structured returns",
+    "primary_executor_unchanged": "lw-terra",
+    "wrapper_unchanged": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "prompt_paths": {
+      "I1": "acceptance/release/runs/20260818T0525Z-verified-frontier/prompts/I1-retry-1.txt",
+      "I2": "acceptance/release/runs/20260818T0525Z-verified-frontier/prompts/I2-retry-1.txt"
+    },
+    "log_paths": {
+      "I1": "acceptance/release/runs/20260818T0525Z-verified-frontier/logs/I1-retry-1.log",
+      "I2": "acceptance/release/runs/20260818T0525Z-verified-frontier/logs/I2-retry-1.log"
+    },
+    "attempts": [
+      {
+        "lane": "I1",
+        "attempt": "primary-retry",
+        "task_id": "REVIEW-I1-20260818-RETRY1",
+        "prompt_sha256": "551a579d19b67d01b189b12cfd0c75ea21236b91037ec4e96a2032ffc39beb67",
+        "pid": 18856,
+        "started_at": "2026-08-18T05:45:19+08:00",
+        "ended_at": "2026-08-18T05:49:28+08:00",
+        "status": "COMPLETED",
+        "exit_code": 0,
+        "return": "acceptance/release/runs/20260818T0525Z-verified-frontier/review-lanes/I1.json",
+        "return_sha256": "c407bb7234164c288f07d534bc2deb77062b5f89a26fe798e5a8cec2e39773e5",
+        "proposed_state": "VERIFIED",
+        "prompt_deleted": true
+      },
+      {
+        "lane": "I2",
+        "attempt": "primary-retry",
+        "task_id": "REVIEW-I2-20260818-RETRY1",
+        "prompt_sha256": "6e884d10b5946f1ec46b30cbbcfb56d64780ac687d83e785a64694c6da5109c5",
+        "pid": 18857,
+        "started_at": "2026-08-18T05:45:19+08:00",
+        "ended_at": "2026-08-18T05:51:36+08:00",
+        "status": "COMPLETED_RETURN_THEN_TERMINATED",
+        "exit_code": 143,
+        "return": "acceptance/release/runs/20260818T0525Z-verified-frontier/review-lanes/I2.json",
+        "return_sha256": "2016d25df4bad7f7eb3e09c6fc058f6eed117726f35cc443c4df66a6098f439d",
+        "proposed_state": "BLOCKED",
+        "prompt_deleted": true,
+        "termination_note": "Structured return was written before the stale transport process was SIGTERM-terminated."
+      }
+    ]
+  }
+}

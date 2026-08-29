@@ -1,0 +1,128 @@
+{
+  "node_id": "P3",
+  "semantic_key": "media.stage1.admin-confirmation-owner",
+  "stage": "B",
+  "work_kind": "implementation",
+  "domain_lane": "provision-admin",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "MB1",
+    "P2"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.stable-decisions",
+      "version": 2
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.admin-confirmation-owner.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "P10",
+    "P5",
+    "P6",
+    "P9"
+  ],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "LW",
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "danger-full-access",
+    "sandbox_authority": "writable sandbox",
+    "task_argument": "实现管理员确认、owner 创建及 owner 外部身份。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-returns/P3.json",
+    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/prompts/P3.txt",
+    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-logs/P3.log",
+    "prompt_sha256": "capture-before-launch",
+    "launch_barrier": "all wave PIDs registered before first wait",
+    "prompt_cleanup": "delete after exit evidence registration",
+    "runtime_handle_cleanup": "release after exit evidence registration",
+    "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions",
+    "dispatch_state": "BLOCKED",
+    "runtime_profile_requirement": "implementation-runner",
+    "runtime_profile_available": true,
+    "launch_authorized": false,
+    "blocking_capability_node": "none"
+  },
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [],
+  "description": "tenant、owner、Binding 与 owner 飞书外部身份一致可审计",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "execution_contract_ref": "P3.json",
+  "execution_contract_sha256": "ee5d7d796b5d7c938c3cb243905197624acdf7fb8a7758a9407895cfda82b97d",
+  "side_effect_class": "reversible",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-P3"
+  ],
+  "produced_artifact_ids": [
+    "ART-P3"
+  ],
+  "consumed_artifact_ids": [
+    "DL-MB1",
+    "DL-P2"
+  ],
+  "read_set": [
+    "artifact:MB1",
+    "artifact:P2"
+  ],
+  "write_set": [
+    "artifact:P3"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:P3",
+      "mode": "W",
+      "isolation_key": "node:P3"
+    }
+  ],
+  "actor_pool": "codex-primary",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance P3\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/P3-return.json"
+  ],
+  "release_slice": "REL-1B",
+  "wave_id": "W-1B-15",
+  "executor_route": "lw-terra",
+  "primary_executor": "lw-terra",
+  "primary_wrapper": "run-lw-terra.sh",
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  }
+}

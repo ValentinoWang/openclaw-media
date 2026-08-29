@@ -1,0 +1,80 @@
+{
+  "task_id": "C3-FRONTEND-VERIFY-R3",
+  "attempt_role": "luna",
+  "proposed_state": "FAILED",
+  "acceptance_self_check": "fail",
+  "failure_class": "verification",
+  "validation": {
+    "script": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C3-FRONTEND-VERIFY-R3/validation/C3-FRONTEND-VERIFY-R3.sh",
+    "expected_sha256": "a8c81d0e6e622c0273ec852b677bafe1b47edd3f5d5418c6a573858d640f322a",
+    "observed_sha256": "a8c81d0e6e622c0273ec852b677bafe1b47edd3f5d5418c6a573858d640f322a",
+    "command": "bash /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C3-FRONTEND-VERIFY-R3/validation/C3-FRONTEND-VERIFY-R3.sh",
+    "exit_code": 1,
+    "error": "template parsing error: template: :1: unexpected backslash in operand",
+    "failure_stage": "docker image label inspection before scratch copy and container launch"
+  },
+  "scope": {
+    "read": [
+      "frozen .ssot manifest, B1/C3 nodes, acceptance contract, production baseline manifest, C2 manifest",
+      "frontend and backend candidate manifests and candidate trees",
+      "frontend merge provenance and frozen image Dockerfile/build receipt",
+      "frozen image metadata"
+    ],
+    "persistent_write": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C3-FRONTEND-VERIFY-R3/returns/C3-FRONTEND-VERIFY-R3-luna.json",
+    "other_persistent_writes": [],
+    "remote_or_production_side_effects": false
+  },
+  "image": {
+    "id": "sha256:edb4dc9c110bb4b0303d7e85d2f3e73e9dd1a777282c10c73fc664c6d6557db3",
+    "os": "linux",
+    "architecture": "arm64",
+    "base_digest": "sha256:824f1a789072e648c62541c2cfa4479c4061a290d5c27766d67dc1dcbc19b321",
+    "frontend_lock_sha256": "f3dd4e9e3671ff2d774938b96bfacf083bdfaad454ee19d8effc9d5b96541dd7"
+  },
+  "network": {
+    "requested_mode": "none",
+    "container_created": false,
+    "network_isolation_executed": false,
+    "reason": "validation stopped before docker run"
+  },
+  "candidate_manifests": {
+    "frontend": {
+      "sha256": "17fa19526a96ff2c82df5cd57e162675511a1a9a36718ad186c4d4d619ffa51f",
+      "managed_entry_count": 197,
+      "pre_failure_frozen_checks": "passed"
+    },
+    "backend": {
+      "sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+      "managed_entry_count": 562,
+      "pre_failure_frozen_checks": "passed"
+    }
+  },
+  "command_exit_codes": {
+    "frozen_validation_script": 1,
+    "post_failure_image_identity_read": 0,
+    "post_failure_image_label_read": 0,
+    "post_failure_candidate_manifest_hash_read": 0,
+    "post_failure_cleanup_checks": 0
+  },
+  "cleanup": {
+    "trap_ran": true,
+    "docker_container": "not-created; runtime name prefix was c3-frontend-verify-r3-<shell-pid>",
+    "docker_container_remaining": false,
+    "scratch_directory_created": false,
+    "matching_tmp_residue_remaining": false
+  },
+  "unverified": [
+    "container Bash version, flock, and python3 checks",
+    "offline npm ci",
+    "media login, contextual capability launch, and recent task QA",
+    "TypeScript compilation",
+    "npm run build:media",
+    "container network-none runtime proof",
+    "post-container candidate content/hash checks and final success sentinel"
+  ],
+  "risk": "The frozen supervisor script reaches Docker label inspection with a backslash-escaped Go-template quote and Docker rejects it. The script was not edited and no acceptance behavior was weakened; C3 remains unverified until the authority owner supplies a corrected frozen script or otherwise resolves this verification-command defect.",
+  "sensitive_information_boundary": {
+    "secrets_cookies_tokens_passwords_private_text_written": false,
+    "logs_and_return_contain_only": "paths, hashes, image metadata, exit codes, cleanup state, and the non-sensitive Docker parser error"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "contract_id": "B",
+  "schema_version": 1,
+  "node_id": "B",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "work_kind": "contract-assembly",
+  "write_authority": "authoritative-contract",
+  "read_set": [
+    "artifact:A1",
+    "artifact:K"
+  ],
+  "write_set": [
+    "artifact:B"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:B",
+      "mode": "W",
+      "isolation_key": "node:B"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance B\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/B-return.json"
+  ],
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  }
+}

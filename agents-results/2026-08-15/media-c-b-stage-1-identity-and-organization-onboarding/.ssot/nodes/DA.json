@@ -1,0 +1,86 @@
+{
+  "node_id": "DA",
+  "semantic_key": "media.stage1.macro-static-projection",
+  "stage": "D",
+  "work_kind": "validation",
+  "domain_lane": "macro-projection",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "DC1",
+    "DC2"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.macro-static-projection.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "DB"
+  ],
+  "worker_transport": "automatic-projection",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "DC1",
+      "DC2"
+    ],
+    "projection_rule": "ACCEPTED iff DC1 and DC2 are ACCEPTED; emit stage1-summary.json",
+    "task_argument": "零写入生成宏观阶段静态汇总。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/projections/DA.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  },
+  "runtime_profile_requirement": "none",
+  "related_evidence_ids": [],
+  "description": "结构兼容投影不成为新的发布完成门",
+  "node_role": "acceptance-gate",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "DA.json",
+  "execution_contract_sha256": "1496ef3e73509969ba61e437201ca21769aaaf4e647df7639e03e0c1b6d973fe",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-DA"
+  ],
+  "consumed_artifact_ids": [
+    "DL-DC1",
+    "DL-DC2"
+  ],
+  "read_set": [
+    "artifact:DC1",
+    "artifact:DC2"
+  ],
+  "write_set": [
+    "evidence:DA"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DA",
+      "mode": "W",
+      "isolation_key": "node:DA"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DA\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DA-return.json"
+  ],
+  "release_slice": "REL-1B",
+  "wave_id": "W-1B-24",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "evidence:DA"
+    ]
+  }
+}

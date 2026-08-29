@@ -1,0 +1,57 @@
+{
+  "task_id": "C1-AUTH-IMPLEMENT-MAIN-TAKEOVER",
+  "node_id": "C1",
+  "versions": {
+    "plan": 3,
+    "dag": 3,
+    "interface_freeze": 3,
+    "node_contract": 3,
+    "ssot_schema": 1
+  },
+  "worker_role": "main-orchestrator-takeover-after-luna-and-l3-timeout",
+  "starting_state": "BLOCKED",
+  "proposed_code_state": "IMPLEMENTED",
+  "formal_node_state": "BLOCKED",
+  "source_identity": {
+    "authorized_source_manifest": "execution-wave-9/C1-MAIN-TAKEOVER/baseline/source.post.sha256",
+    "authorized_source_manifest_sha256": "0016b3740d307013c35855d53c255993a0720f6e1169c5d231f5704c721d7c0b",
+    "authorized_source_file_count": 10,
+    "source_unchanged_during_validation": true,
+    "protected_test_sha256": "b52c61bbeaf71ad3db874a5493479d8d0d0ae5a53362cadc2ebe67cc1976c204"
+  },
+  "commands": [
+    {
+      "command": "bash execution-wave-7/validation/C1-AUTH-IMPLEMENT.sh",
+      "exit_code": 1,
+      "result": "transport-only failure before tests: candidate __pycache__ was not writable"
+    },
+    {
+      "command": "PYTHONPYCACHEPREFIX=execution-wave-9/C1-MAIN-TAKEOVER/pycache bash execution-wave-7/validation/C1-AUTH-IMPLEMENT.sh",
+      "exit_code": 0,
+      "result": "pass: 12 Python tests, login contract QA, TypeScript checks, production build, release-label QA and required static assertions"
+    }
+  ],
+  "evidence": {
+    "validation_log": "execution-wave-9/C1-MAIN-TAKEOVER/logs/C1-AUTH-IMPLEMENT-main-thread.validation-r2.log",
+    "validation_log_sha256": "2ab76addbe316c4209ea0c8d6877a79d1c26b6addbc43fd0c2a9f5c2322049db",
+    "evidence_level": "local-runtime",
+    "environment_identity": "local Mac candidate worktree",
+    "mock_or_fixture": true,
+    "acceptance_contract": "acceptance-fragments/MPE2E-AUTH-WEB/acceptance-contract.md@1"
+  },
+  "actual_source_writes": [],
+  "validation_writes": [
+    ".codex-work/c1-20260814T020215CST/frontend/dist-media/**",
+    "execution-wave-9/C1-MAIN-TAKEOVER/**"
+  ],
+  "unverified_items": [
+    "security-owner managed ordinary and administrator QA identities",
+    "authenticated production browser flow on desktop and mobile",
+    "same-run redacted production receipt",
+    "H-01 product-owner acceptance"
+  ],
+  "blocker_class": "execution-blocker",
+  "blocking_reason": "valid QA identities and security-owner safe receipt location are unavailable",
+  "acceptance_self_check": "pass",
+  "formal_acceptance_recommendation": "keep-c1-blocked-until-production-auth-evidence"
+}

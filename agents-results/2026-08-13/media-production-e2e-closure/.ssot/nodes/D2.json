@@ -1,0 +1,22 @@
+{
+  "node_id": "D2",
+  "semantic_key": "media.same-receipt-proof",
+  "stage": "A",
+  "work_kind": "decision-acceptance",
+  "domain_lane": "completion-semantics",
+  "execution_state": "ACCEPTED",
+  "decision_state": "ACCEPTED",
+  "decision_version": 1,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": ["A"],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": ["decision.same-receipt-proof"],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "user and planning authority",
+  "unlocks": ["B2", "B3"],
+  "worker_transport": "historical-unregistered",
+  "worker_registration": {"note": "no retroactive worker claim"},
+  "description": "完成证据必须由同一收据关联身份、上下文、任务、runner、产物、外部与数据库写入及 Web 读回。"
+}

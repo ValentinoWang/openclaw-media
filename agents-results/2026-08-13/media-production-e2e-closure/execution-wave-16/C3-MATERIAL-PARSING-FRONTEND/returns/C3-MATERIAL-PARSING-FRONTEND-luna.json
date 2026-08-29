@@ -1,0 +1,66 @@
+{
+  "task_id": "C3-MATERIAL-PARSING-FRONTEND",
+  "attempt_role": "luna",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "actual_modified_files": [
+    ".codex-work/merge-candidate-v4/frontend/contracts/material-parsing-coverage-v1.json",
+    ".codex-work/merge-candidate-v4/frontend/src/media/task-launch/materialParsing.ts",
+    ".codex-work/merge-candidate-v4/frontend/src/media/task-launch/DynamicTaskForm.tsx",
+    ".codex-work/merge-candidate-v4/frontend/src/media/task-launch/TaskReview.tsx",
+    ".codex-work/merge-candidate-v4/frontend/src/media/task-launch/taskDraft.ts",
+    ".codex-work/merge-candidate-v4/frontend/src/media/MediaWebWorkspace.tsx",
+    ".codex-work/merge-candidate-v4/frontend/src/media/mediaWebApi.ts",
+    ".codex-work/merge-candidate-v4/frontend/src/schemas/mediaWebTaskSchema.ts",
+    ".codex-work/merge-candidate-v4/frontend/src/media/media.css",
+    ".codex-work/merge-candidate-v4/frontend/scripts/qa/checkMaterialParsing.ts",
+    ".codex-work/merge-candidate-v4/frontend/package.json",
+    ".codex-work/merge-candidate-v4/frontend/tsconfig.app.json"
+  ],
+  "validation": {
+    "command_file": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/validation/C3-MATERIAL-PARSING-FRONTEND.sh",
+    "command_sha256": "32397d19dddb92f06c06f5f28a5b995c0060a2ea61f36db53931601a3ab4d98d",
+    "final_exit_code": 0,
+    "passed": [
+      "contract hash and byte comparison",
+      "qa:material-parsing",
+      "qa:task-launch",
+      "tsc --noEmit -p tsconfig.media-u12b.json",
+      "build:media",
+      "Vite media production build"
+    ],
+    "intermediate_exit_codes": [
+      {
+        "exit_code": 2,
+        "cause": "TypeScript rejected a string | false filter predicate in materialParsing.ts; fixed with an explicit boolean predicate."
+      },
+      {
+        "exit_code": 1,
+        "cause": "Protected confirmation-receipt QA required the existing exact TaskReview disabled expression; preserved it while folding incomplete material parsing into the local block condition."
+      },
+      {
+        "exit_code": 0,
+        "cause": "Final fixed validation passed."
+      }
+    ]
+  },
+  "contract": {
+    "authority_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+    "candidate_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+    "coverage_count": 54,
+    "byte_equal": true
+  },
+  "unverified": [
+    "No authenticated production or device acceptance evidence was collected.",
+    "Backend candidate runtime compatibility is outside this frontend-only write scope.",
+    "C3 was not marked ACCEPTED."
+  ],
+  "risks": [
+    "Material parsing behavior is verified against the frozen frontend contract and isolated backend mount, not a remote production deployment.",
+    "The final build emitted only the existing large-chunk warning; it did not fail validation."
+  ],
+  "production_touched": false,
+  "remote_touched": false,
+  "structured_return_path": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/returns/C3-MATERIAL-PARSING-FRONTEND-luna.json"
+}

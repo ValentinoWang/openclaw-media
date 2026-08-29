@@ -1,0 +1,3 @@
+task_id	supervisor_pid	started_at_utc	project_root	artifact_dir
+T1-TEST-LOCK	34768	2026-08-16T15:17:41Z	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-t1	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK
+I2-TEST-LOCK	34771	2026-08-16T15:17:41Z	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i2	/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/I2-TEST-LOCK

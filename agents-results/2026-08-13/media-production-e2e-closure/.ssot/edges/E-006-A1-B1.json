@@ -1,0 +1,1 @@
+{"edge_id":"E-006-A1-B1","from":"A1","to":"B1","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":["A-QA"],"invalidation_keys":["contract.authenticated-web"],"transferred_input":"认证生产链路事实","gate_evidence":"A1 通过"}

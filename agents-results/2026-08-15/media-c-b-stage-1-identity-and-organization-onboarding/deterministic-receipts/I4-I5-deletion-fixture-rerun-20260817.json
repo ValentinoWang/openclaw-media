@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "receipt_id": "EV-I4-I5-DELETION-FIXTURE-RERUN-20260817",
+  "node_ids": ["I4", "I5"],
+  "execution_state": "BLOCKED",
+  "acceptance_self_check": "partial",
+  "failure_class": "protected_fixture_contract_conflict",
+  "observed_at": "2026-08-17T21:31:09+08:00",
+  "environment_identity": "local macOS integrated candidate .codex-work/stage1-integrated with bundled Node dependencies and Chromium slot wrapper",
+  "evidence_level": "local-runtime",
+  "mock_or_fixture": true,
+  "commands": [
+    {
+      "command": "npm run qa:task-workspace-deletion-recovery",
+      "cwd": ".codex-work/stage1-integrated/frontend",
+      "exit_code": 1,
+      "result": "locator.waitFor timeout at checkTaskWorkspaceDeletionRecovery.ts:355 waiting for .media-shell"
+    },
+    {
+      "command": "npm run qa:deletion-intent-lifecycle",
+      "cwd": ".codex-work/stage1-integrated/frontend",
+      "exit_code": 1,
+      "result": "locator.waitFor timeout at checkDeletionIntentLifecycle.ts:383 waiting for heading 素材与灵感"
+    }
+  ],
+  "protected_test_hashes": {
+    "frontend/scripts/qa/checkTaskWorkspaceDeletionRecovery.ts": "sha256:65780fdc165b8a44ac245eaa3e649639cfa8e37a140dc5ecc265b4d783c6e108",
+    "frontend/scripts/qa/checkDeletionIntentLifecycle.ts": "sha256:17648858baa7a2d77db17ff8690d74224ed02c92cc22358ee5f56833113f49e7"
+  },
+  "observed_conflicts": [
+    "Both personal_web fixtures omit the current required bindingState and installationState fields; the production backend emits both fields.",
+    "The deletion-intent fixture requires the retired ordinary personal asset page, while Stage 1 personal_web is a server-authorized read-only cloud-deliverable and preview shell.",
+    "The task-workspace fixture can only be made compatible by a formal fixture or acceptance-contract decision; no production session fallback was introduced."
+  ],
+  "external_side_effects": [],
+  "destructive_actions": [],
+  "unverified_items": [
+    "No external browser, deployment, production, email, Feishu, database, or device verification was performed.",
+    "The owning acceptance lane has not approved a fixture update or a backward-compatible session contract revision."
+  ],
+  "deviation": "none",
+  "shared_resource_impact": "none; protected tests and candidate source were not modified",
+  "proposed_state": "BLOCKED"
+}

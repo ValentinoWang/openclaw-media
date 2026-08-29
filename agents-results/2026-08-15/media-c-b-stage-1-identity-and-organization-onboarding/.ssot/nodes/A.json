@@ -1,0 +1,78 @@
+{
+  "node_id": "A",
+  "semantic_key": "media.stage1.charter",
+  "stage": "A",
+  "work_kind": "charter",
+  "domain_lane": "governance",
+  "execution_state": "ACCEPTED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.charter.v5"
+  ],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "user and planning authority",
+  "unlocks": [
+    "A1"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "none",
+  "related_evidence_ids": [],
+  "description": "六项决定全部进入机器权威，个人认证合同关闭待决状态，即时成员接入纳入 1B",
+  "node_role": "charter",
+  "execution_actor": "human",
+  "execution_contract_ref": "A.json",
+  "execution_contract_sha256": "09d91e7f4449843c07748cd83aff58e29cc3cc4f7b7999a77717a600ae2cd6c0",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-A"
+  ],
+  "consumed_artifact_ids": [],
+  "read_set": [
+    "contract:media.stage1.charter"
+  ],
+  "write_set": [
+    "artifact:A"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:A",
+      "mode": "W",
+      "isolation_key": "node:A"
+    }
+  ],
+  "actor_pool": "human-authority",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance A\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/A-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-0",
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "user-request-2026-08-15",
+    "artifact_hashes": [
+      "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+      "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5",
+      "sha256:97000cc86e80993997153e0fb193ee877daea85c5695a60cf1645bf40596d471"
+    ],
+    "environment_identity": "current Codex task and local attachment",
+    "runtime_release_id": "n/a",
+    "actor_role": "user and planning authority",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-15T20:37:42+08:00",
+    "acceptance_contract": "Phase-1 SSOT restructuring charter v4"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "receipt_id": "EV-MA1-RERUN-20260817",
+  "node_id": "MA1",
+  "execution_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "observed_at": "2026-08-17T00:47:00+08:00",
+  "environment_identity": "local macOS isolated stage1-ma1-migration root with existing Python virtualenv",
+  "evidence_level": "local-runtime",
+  "mock_or_fixture": true,
+  "commands": [
+    {
+      "command": "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/MA1.sh",
+      "exit_code": 0,
+      "result": "27 passed, 3 subtests passed"
+    }
+  ],
+  "changed_source_hashes": {
+    "backend/openclaw_app/migrations/canonical/040_stage1_release1a_identity_workspace.sql": "61e739379c9e81d3d1a5bb7239e3695d1d709e2109eb1fd816b078bacc6da475",
+    "backend/openclaw_app/migrations/postgres_manifest.json": "6dd8c8034b8a3546c56bc53ac3454843f147ac35a3619037fa2d051de1efd5cd",
+    "backend/tests/test_stage1_release1a_migration.py": "1d8dc2dc6516bef8007d4f2903c28495bb29cab7cfb1ca8a38658f8321051de0",
+    "backend/tests/test_postgres_migration_runner.py": "dc2dea9a677fb77f0db3c8c31f27aff04cefbfeac43e658fc402831510125943"
+  },
+  "external_side_effects": [],
+  "destructive_actions": [],
+  "unverified_items": [
+    "No real or shared PostgreSQL migration was executed.",
+    "No production, deployment, device, email, or Feishu verification was performed.",
+    "The static test contract does not replace independent database readback acceptance."
+  ],
+  "deviation": "none",
+  "shared_resource_impact": "none; isolated candidate root only",
+  "remaining_risks": [
+    "Database-specific runtime behavior and recovery readback remain unverified until an approved isolated database is available."
+  ],
+  "proposed_state": "VERIFIED"
+}

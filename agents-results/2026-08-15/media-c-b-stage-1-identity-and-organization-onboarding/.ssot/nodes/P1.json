@@ -1,0 +1,123 @@
+{
+  "node_id": "P1",
+  "semantic_key": "media.stage1.provision-model",
+  "stage": "B",
+  "work_kind": "data-change",
+  "domain_lane": "provision-data",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "MB1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.stable-decisions",
+      "version": 2
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.provision-model.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "P2",
+    "P6"
+  ],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "LW",
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "danger-full-access",
+    "sandbox_authority": "writable sandbox",
+    "task_argument": "实现 Provision 前向模型与恢复合同。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-returns/P1.json",
+    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/prompts/P1.txt",
+    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-logs/P1.log",
+    "prompt_sha256": "capture-before-launch",
+    "launch_barrier": "all wave PIDs registered before first wait",
+    "prompt_cleanup": "delete after exit evidence registration",
+    "runtime_handle_cleanup": "release after exit evidence registration",
+    "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions",
+    "dispatch_state": "BLOCKED",
+    "runtime_profile_requirement": "implementation-runner",
+    "runtime_profile_available": true,
+    "launch_authorized": false,
+    "blocking_capability_node": "none"
+  },
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [],
+  "description": "旧 Binding 不被静默解释为已激活",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "execution_contract_ref": "P1.json",
+  "execution_contract_sha256": "ff257dda801ff580f04f63f56f5c17ca85f2e2a0551e8fb9091aa614689b8884",
+  "side_effect_class": "reversible",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-P1"
+  ],
+  "produced_artifact_ids": [
+    "ART-P1"
+  ],
+  "consumed_artifact_ids": [
+    "DL-MB1"
+  ],
+  "read_set": [
+    "artifact:MB1"
+  ],
+  "write_set": [
+    "artifact:P1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:P1",
+      "mode": "W",
+      "isolation_key": "node:P1"
+    }
+  ],
+  "actor_pool": "codex-primary",
+  "acceptance_commands": [
+    "python3 -m pytest -q"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/P1-return.json"
+  ],
+  "release_slice": "REL-1B",
+  "wave_id": "W-1B-13",
+  "executor_route": "lw-terra",
+  "primary_executor": "lw-terra",
+  "primary_wrapper": "run-lw-terra.sh",
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  }
+}

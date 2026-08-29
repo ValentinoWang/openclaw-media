@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-039-MA1-I3",
+  "from": "MA1",
+  "to": "I3",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.ma1.i3.v5"
+  ],
+  "transferred_input": "Release 1A 前向迁移与回读合同",
+  "gate_evidence": "可证明归属则回填；冲突进入 quarantine/NEEDS_ATTENTION；完全无证据则对所有租户不可见",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-MA1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "I3 consumes the explicitly produced artifact DL-MA1"
+}

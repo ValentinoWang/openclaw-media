@@ -1,0 +1,64 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/IL1-lw-luna",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/IL1-lw-luna/prompts/IL1-lw-luna-luna.txt)"
+      ],
+      "ended_at": "2026-08-16T19:04:27.826041+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/IL1-lw-luna/logs/IL1-lw-luna-luna.log",
+      "pid": 532,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-i2",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/IL1-lw-luna/prompts/IL1-lw-luna-luna.txt",
+      "prompt_sha256": "7079e789627351cbfd4f1d5f6cc966868fd70c89b866007799f4200fc60dc4f4",
+      "started_at": "2026-08-16T18:35:07.385156+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "failure_class": "none",
+        "proposed_state": "VERIFIED"
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/IL1-lw-luna/returns/IL1-lw-luna-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "94d07e61cf07005e365e5f95ea4eecc5e4ae98582c0da07763a27055e88dc220",
+      "timed_out": false,
+      "validation_command_sha256": "9997987dd7563c17f43e0c04e9e1e9a0c4b2996b4a9a088b5b556e8ad46fb7b0",
+      "validation_ended_at": "2026-08-16T19:04:28.528734+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/IL1-lw-luna/logs/IL1-lw-luna-luna.validation.log",
+      "validation_pid": 27735,
+      "validation_started_at": "2026-08-16T19:04:27.826402+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-16T19:04:28.571485+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-i2",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-16T18:35:07.384455+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-tasks/IL1-lw-luna.txt",
+  "task_id": "IL1-lw-luna",
+  "task_sha256": "94d07e61cf07005e365e5f95ea4eecc5e4ae98582c0da07763a27055e88dc220",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/IL1-lw-luna.sh",
+  "validation_command_sha256": "9997987dd7563c17f43e0c04e9e1e9a0c4b2996b4a9a088b5b556e8ad46fb7b0",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

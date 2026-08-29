@@ -1,0 +1,124 @@
+{
+  "task_id": "T1-TEST-LOCK",
+  "role": "independent acceptance-design test owner",
+  "attempt_role": "l3",
+  "version_tuple": {
+    "PLAN": 4,
+    "DAG": 4,
+    "INTERFACE_FREEZE": 4,
+    "NODE_CONTRACT": 4,
+    "SSOT_SCHEMA": 1
+  },
+  "decision_refs": [
+    "media.stage1.stable-decisions@2",
+    "media.stage1.decision.personal-auth-contract@1"
+  ],
+  "invalidation_key": "media.stage1.acceptance-harness.v4",
+  "execution_identity": {
+    "wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+    "observed_audit_shell_pid": 43929,
+    "observed_audit_shell_ppid": 40695,
+    "observed_audit_shell_tty": "??",
+    "session_identity": "noninteractive Codex execution; no reusable exec session was exposed"
+  },
+  "actual_read_scopes": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/test-change-requests/TCR-T1-ROUTE-CARRIER.md",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/approvals/main-orchestrator-route-contract-v1.md",
+    "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml via the protected test and frozen validation command",
+    "backend/tests/test_media_stage1_shared_contract.py",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1-TEST-LOCK.sh",
+    "/Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md",
+    "/Users/vsiyo/.agents/skills/code-quality/SKILL.md"
+  ],
+  "actual_write_scopes": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/T1-TEST-LOCK/returns/T1-TEST-LOCK-l3.json"
+  ],
+  "changed_file": {
+    "path": "backend/tests/test_media_stage1_shared_contract.py",
+    "pre_change_sha256": "c1fbb5b6655ff2f4bb6f90152a8ab6705d77f6d2744744014f99e0d9dafa01a8",
+    "sha256": "80759c80b90339095a255c5c1d6a831e4fbcd74e3e598fcd7a1ec8fe57d64e8d",
+    "l3_source_write": false,
+    "provenance": "The approved protected-test update was already present when this L3 retry began; this retry independently verified it and emitted the missing structured return."
+  },
+  "commands": [
+    {
+      "command": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1-TEST-LOCK.sh",
+      "exit_code": 126,
+      "result": "The frozen script has no executable bit; direct invocation returned permission denied and no file was modified."
+    },
+    {
+      "command": "/bin/bash /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1-TEST-LOCK.sh",
+      "exit_code": 0,
+      "result": "8 passed in 1.88s; T1_TEST_BASELINE=GREEN"
+    }
+  ],
+  "frozen_hash_audit": {
+    "manifest": {
+      "expected": "3f08c4cbfa7edbc19a846038cee611888a6952418722ec00857de62bd3e12347",
+      "actual": "3f08c4cbfa7edbc19a846038cee611888a6952418722ec00857de62bd3e12347",
+      "unchanged": true
+    },
+    "t1_node": {
+      "expected": "613e2d5bbe52227f38c321d4f243e772efa02309bda4a97084916f8a3b66c910",
+      "actual": "613e2d5bbe52227f38c321d4f243e772efa02309bda4a97084916f8a3b66c910",
+      "unchanged": true
+    },
+    "acceptance_contract": {
+      "expected": "d1cc1861d89112729b46f741d33ef2db9b08844c567409779bb16117f02b7858",
+      "actual": "d1cc1861d89112729b46f741d33ef2db9b08844c567409779bb16117f02b7858",
+      "unchanged": true
+    },
+    "approved_tcr": {
+      "expected": "27047ecb06196f6b1a6300a99b4db9298432d53608f858aa6187fd77cb0a9dcc",
+      "actual": "27047ecb06196f6b1a6300a99b4db9298432d53608f858aa6187fd77cb0a9dcc",
+      "unchanged": true
+    },
+    "approval_evidence": {
+      "expected": "6ccaf7929e076e41c6d362931f14a32cd5665d19c3179e2f954833285b95f0bc",
+      "actual": "6ccaf7929e076e41c6d362931f14a32cd5665d19c3179e2f954833285b95f0bc",
+      "unchanged": true
+    },
+    "openapi": {
+      "expected": "f4f4cd16bf3e4ad3ddfd0080da6ccfb7fd7f2ba6469871edcb45e957c2854790",
+      "actual": "f4f4cd16bf3e4ad3ddfd0080da6ccfb7fd7f2ba6469871edcb45e957c2854790",
+      "unchanged": true
+    },
+    "candidate_json": {
+      "expected": "775ddfa6fcfb5e04a931dfa5e03dfd08891365fc4491c16d8a6e49ede1c58611",
+      "actual": "775ddfa6fcfb5e04a931dfa5e03dfd08891365fc4491c16d8a6e49ede1c58611",
+      "unchanged": true
+    },
+    "t1_harness": {
+      "expected": "13219785db38866e00387d4ce09553ef05c34ab21b5c6a4fbf9709f583d73009",
+      "actual": "13219785db38866e00387d4ce09553ef05c34ab21b5c6a4fbf9709f583d73009",
+      "unchanged": true
+    },
+    "cross_root_gate": {
+      "expected": "6fa14dc5655ac77bd1a78bad0a132ff8ed81ac2fca8aafb2d5bb69448086f236",
+      "actual": "6fa14dc5655ac77bd1a78bad0a132ff8ed81ac2fca8aafb2d5bb69448086f236",
+      "unchanged": true
+    },
+    "validation_command": {
+      "expected": "fed224b5efbcb2f19326ba838f2972c2af6992e60b12cdaa20ff491d4907946d",
+      "actual": "fed224b5efbcb2f19326ba838f2972c2af6992e60b12cdaa20ff491d4907946d",
+      "unchanged": true
+    },
+    "protected_test": {
+      "pre_change_expected": "c1fbb5b6655ff2f4bb6f90152a8ab6705d77f6d2744744014f99e0d9dafa01a8",
+      "actual": "80759c80b90339095a255c5c1d6a831e4fbcd74e3e598fcd7a1ec8fe57d64e8d",
+      "changed_from_pre_change_identity": true
+    }
+  },
+  "deviations": [
+    "The frozen validation file is not executable. It was executed unchanged through /bin/bash after direct invocation returned exit 126."
+  ],
+  "risks": [
+    "This verifies the frozen shared OpenAPI contract only; it is not implementation, human acceptance, release, or production evidence."
+  ],
+  "external_side_effects": [],
+  "destructive_actions": [],
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none"
+}

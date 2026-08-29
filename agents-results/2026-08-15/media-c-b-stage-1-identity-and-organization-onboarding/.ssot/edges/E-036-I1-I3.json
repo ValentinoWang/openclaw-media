@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-036-I1-I3",
+  "from": "I1",
+  "to": "I3",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.i1.i3.v5"
+  ],
+  "transferred_input": "可访问且边界明确的统一认证界面",
+  "gate_evidence": "个人分支不调用飞书，组织分支不暴露平台注册或密码找回，所有返回地址必须是站内允许目标",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-I1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "I3 consumes the explicitly produced artifact DL-I1"
+}

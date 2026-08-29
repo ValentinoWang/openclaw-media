@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "built_at": "2026-08-14T17:12:42.913901003Z",
+  "base_reference": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:824f1a789072e648c62541c2cfa4479c4061a290d5c27766d67dc1dcbc19b321",
+  "base_digest": "sha256:824f1a789072e648c62541c2cfa4479c4061a290d5c27766d67dc1dcbc19b321",
+  "frontend_lock_sha256": "f3dd4e9e3671ff2d774938b96bfacf083bdfaad454ee19d8effc9d5b96541dd7",
+  "image_tag": "media-e2e-verify:r3-f3dd4e9e",
+  "image_id": "sha256:edb4dc9c110bb4b0303d7e85d2f3e73e9dd1a777282c10c73fc664c6d6557db3",
+  "os": "linux",
+  "architecture": "arm64",
+  "image_size_bytes": 3101624102,
+  "offline_smoke": {
+    "network": "none",
+    "python_imports": "pass",
+    "npm_ci_offline": "pass"
+  },
+  "build_transport": {
+    "attempt_1": "failed: Python Playwright wheel download timed out",
+    "attempt_2": "passed: prewarmed pip cache plus bounded network retry"
+  },
+  "secrets_or_private_data": false
+}

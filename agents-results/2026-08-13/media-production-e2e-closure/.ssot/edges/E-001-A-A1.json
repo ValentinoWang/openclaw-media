@@ -1,0 +1,1 @@
+{"edge_id":"E-001-A-A1","from":"A","to":"A1","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["runtime.media-chain"],"transferred_input":"完成边界和只读事实范围","gate_evidence":"A 已接受"}

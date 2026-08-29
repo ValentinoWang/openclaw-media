@@ -1,0 +1,43 @@
+{
+  "node_id": "D3",
+  "semantic_key": "media.qa-identity",
+  "stage": "A",
+  "work_kind": "decision-acceptance",
+  "domain_lane": "auth",
+  "execution_state": "ACCEPTED",
+  "decision_state": "ACCEPTED",
+  "decision_version": 1,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": ["A1"],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": ["decision.qa-identity"],
+  "write_authority": "isolated-record",
+  "acceptance_authority": "user or named security owner",
+  "unlocks": ["B1"],
+  "worker_transport": "historical-unregistered",
+  "worker_registration": {"note": "no retroactive worker claim"},
+  "decision_record": {
+    "approved_value": "Use an isolated QA tenant with separate renewable least-privilege ordinary-user and administrator identities; a named security owner manages credentials, renewal, and revocation, while evidence stores only redacted stable references.",
+    "approval_authority": "user",
+    "approval_evidence": "User message on 2026-08-13: 请按照推荐方案排版OP",
+    "approved_at": "2026-08-13T12:12:47Z"
+  },
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "user-decision-2026-08-13-op01",
+    "artifact_hashes": [
+      "sha256:cbd1f717653724ca862639f85f98cb82d254383d8b1b9db59b6287cf1c2d7b54"
+    ],
+    "environment_identity": "current task",
+    "runtime_release_id": "n/a",
+    "actor_role": "user and security decision authority",
+    "account_or_tenant": "redacted policy only",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-13T12:12:47Z",
+    "acceptance_contract": "MPE2E-AUTH-WEB v1 approved and locked"
+  },
+  "description": "已批准可续期 QA 身份策略：独立验收租户、普通用户与管理员分离、安全负责人保管凭据；该决定不等于身份已创建或凭据当前可用。"
+}

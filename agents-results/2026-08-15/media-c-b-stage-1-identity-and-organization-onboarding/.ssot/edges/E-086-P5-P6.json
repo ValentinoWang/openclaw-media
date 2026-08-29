@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-086-P5-P6",
+  "from": "P5",
+  "to": "P6",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.p5.p6.v5"
+  ],
+  "transferred_input": "资源步骤和 Binding 更新",
+  "gate_evidence": "每项资源都回读并绑定当前安装",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-P5"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "P6 consumes the explicitly produced artifact DL-P5"
+}

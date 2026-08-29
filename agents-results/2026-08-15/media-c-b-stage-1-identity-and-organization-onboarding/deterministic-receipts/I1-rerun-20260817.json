@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "receipt_id": "EV-I1-RERUN-20260817",
+  "node_id": "I1",
+  "execution_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "observed_at": "2026-08-17T00:47:00+08:00",
+  "environment_identity": "local macOS isolated stage1-i1 root with existing Node dependencies",
+  "evidence_level": "local-runtime",
+  "mock_or_fixture": true,
+  "commands": [
+    {
+      "command": "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I1.sh",
+      "exit_code": 0,
+      "result": "stage1_identity_entry=PASS; build:media passed"
+    },
+    {
+      "command": "npm run qa:media-login-contract",
+      "exit_code": 0,
+      "result": "media login contract QA passed"
+    }
+  ],
+  "changed_source_hashes": {
+    "frontend/media.login.html": "7ace5ecb3b9a14d8bcf4cd7c86bebfc8892857a31b8edfd929a3c3f00041b12d",
+    "frontend/media.login.js": "1ed4259a8ab4f492a1d323c4c4867f061843c0d4b1fb4bb2ea02533c9836f6e2",
+    "frontend/media.register.html": "12d4309211434786d403d7c987633d9a85bbe49632a3cdbd4e9e5325d570a1c6",
+    "frontend/media.verify.html": "84d20bf30aa862c6efb90a56baf04bab3e0db96c4c2fb3249c162c1a5b1eba5d",
+    "frontend/media.recover.html": "b2126f3786da69e7fc113504c89667a9d4308d41776399957531e98f415cfa8e",
+    "frontend/media.reset.html": "864097f80bcf2273971491f84ea92252a82df9fc79c8ec12947e56a94bfe725c",
+    "frontend/media.auth.css": "a428cd86b19fbd0f89bb72460d441fa27ca066bd45a591845d03e3e2cf32aa4b",
+    "frontend/vite.media.config.ts": "45dffceaada3e9f9111ce2dfa5ed047e20fb5e7655710313951a7ccbe9407d4c",
+    "frontend/deploy/nginx-openclaw-bot-center.conf": "4410457643280b3ac967bcd06971e2300e1499ed15edb2c6677fd38d103ac728",
+    "frontend/scripts/qa/checkStage1IdentityEntry.ts": "d26f6c48108286e5647535994536066fa9f6db0d029aa8b1ff2d355b3ca28c9a",
+    "frontend/scripts/qa/checkMediaLoginContract.ts": "5b61cf52ae421e1dbe1d37d34c7c43ca3c492224aa28758c4ae40eb265d24206",
+    "frontend/package.json": "2d2a10a68bee189af24811ce4f314d60ae7af7450f61afb4f37ba8c849036c41",
+    "frontend/package-lock.json": "f3dd4e9e3671ff2d774938b96bfacf083bdfaad454ee19d8effc9d5b96541dd7"
+  },
+  "external_side_effects": [],
+  "destructive_actions": [],
+  "unverified_items": [
+    "No external browser, deployment, production, email, or Feishu verification was performed.",
+    "The QA is source and local-build evidence; it does not prove authenticated device behavior."
+  ],
+  "deviation": "none",
+  "shared_resource_impact": "none; isolated candidate root only",
+  "remaining_risks": [
+    "Authenticated network and browser readback remain required before release acceptance."
+  ],
+  "proposed_state": "VERIFIED"
+}

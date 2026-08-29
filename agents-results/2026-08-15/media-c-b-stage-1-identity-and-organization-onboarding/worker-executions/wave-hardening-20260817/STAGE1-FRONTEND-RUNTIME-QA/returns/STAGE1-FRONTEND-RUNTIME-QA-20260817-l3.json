@@ -1,0 +1,136 @@
+{
+  "task_id": "STAGE1-FRONTEND-RUNTIME-QA-20260817",
+  "attempt_role": "l3",
+  "task_source_sha256": "c624831b9bdf45b998b897f4ae9c28b15b3c98adc752163a0a398d281b5753bf",
+  "validation_command_sha256": "a08d8e71677ed1f70b9e0a7281e060d11d9fd70e1e3fe22db491a5b9741897da",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "commands": [
+    {
+      "command": "cd /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-integrated/frontend && npx tsx scripts/qa/checkStage1WorkspaceRuntime.ts",
+      "exit_code": 0,
+      "result": "passed; isolated loopback Vite server exercised six local scenarios and wrote six screenshots"
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/personal-desktop.png",
+      "sha256": "cade4cba6d25a20baca026942e78764eeac1d62344c88a896b6277187b0e225a",
+      "viewport": { "width": 1440, "height": 1000 }
+    },
+    {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/organization-active-desktop.png",
+      "sha256": "d3a35dd3bf93d06e2961be69ed2c504132c51d46ef4a0dcdbccaca57d956f6c5",
+      "viewport": { "width": 1440, "height": 1000 }
+    },
+    {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/organization-disabled-desktop.png",
+      "sha256": "fe8892c955fbe8235c497ff826e511d8fe02b9ae45f9922e86349cdf72eb2799",
+      "viewport": { "width": 1440, "height": 1000 }
+    },
+    {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/personal-mobile.png",
+      "sha256": "47783c9035dd42329b4e15619d1760902cc56aca4a005aa19ab237623041f637",
+      "viewport": { "width": 390, "height": 844 }
+    },
+    {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/organization-active-mobile.png",
+      "sha256": "680b0ed47a514d6689b240dacc72f7598ca1760b4853127fd4fed99df9aa5d19",
+      "viewport": { "width": 390, "height": 844 }
+    },
+    {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/organization-disabled-mobile.png",
+      "sha256": "08f9fbe8599a2b7809f67a88a6fa0a9d23db1ddc5e0241f2f67aa36d6ccf42ba",
+      "viewport": { "width": 390, "height": 844 }
+    }
+  ],
+  "viewport_results": [
+    {
+      "scenario": "personal",
+      "viewport": { "width": 1440, "height": 1000 },
+      "screenshot": "personal-desktop.png",
+      "status": "pass",
+      "route_authority": "personal workspace route asserted data-workspace-mode=personal_web",
+      "requests": "GET only"
+    },
+    {
+      "scenario": "organization-active",
+      "viewport": { "width": 1440, "height": 1000 },
+      "screenshot": "organization-active-desktop.png",
+      "status": "pass",
+      "route_authority": "organization workspace route asserted data-binding-state=ACTIVE",
+      "requests": "GET only"
+    },
+    {
+      "scenario": "organization-disabled",
+      "viewport": { "width": 1440, "height": 1000 },
+      "screenshot": "organization-disabled-desktop.png",
+      "status": "pass",
+      "route_authority": "organization workspace route asserted data-binding-state=DISABLED and no ACTIVE state",
+      "requests": "GET only"
+    },
+    {
+      "scenario": "personal",
+      "viewport": { "width": 390, "height": 844 },
+      "screenshot": "personal-mobile.png",
+      "status": "pass",
+      "route_authority": "personal workspace route asserted data-workspace-mode=personal_web",
+      "requests": "GET only"
+    },
+    {
+      "scenario": "organization-active",
+      "viewport": { "width": 390, "height": 844 },
+      "screenshot": "organization-active-mobile.png",
+      "status": "pass",
+      "route_authority": "organization workspace route asserted data-binding-state=ACTIVE",
+      "requests": "GET only"
+    },
+    {
+      "scenario": "organization-disabled",
+      "viewport": { "width": 390, "height": 844 },
+      "screenshot": "organization-disabled-mobile.png",
+      "status": "pass",
+      "route_authority": "organization workspace route asserted data-binding-state=DISABLED and no ACTIVE state",
+      "requests": "GET only"
+    }
+  ],
+  "console_state": {
+    "status": "pass",
+    "console_errors": [],
+    "page_errors": [],
+    "evidence": "the QA script asserted empty console and page-error collections for all six scenarios"
+  },
+  "overflow_state": {
+    "status": "pass",
+    "document_overflow": "none detected",
+    "component_overflow": "none detected for media shell, topbar, content, personal workspace, organization workspace, and their grid containers at both viewports"
+  },
+  "visual_findings": [
+    "All six screenshots are nonblank and readable.",
+    "Desktop personal preview, organization ACTIVE, and organization DISABLED layouts have coherent hierarchy with no visible clipping or incoherent overlap.",
+    "Mobile personal preview and both organization states retain readable wrapped text, separated cards, visible status indicators, and unobscured controls without horizontal clipping or incoherent overlap.",
+    "The disabled organization screenshots visibly retain the DISABLED state and closed-resource guidance; the active screenshots visibly retain the ACTIVE state."
+  ],
+  "changed_files": {
+    "candidate_frontend": [],
+    "runtime_evidence": [
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/personal-desktop.png",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/organization-active-desktop.png",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/organization-disabled-desktop.png",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/personal-mobile.png",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/organization-active-mobile.png",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-stage1-runtime/organization-disabled-mobile.png"
+    ],
+    "structured_return": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-FRONTEND-RUNTIME-QA/returns/STAGE1-FRONTEND-RUNTIME-QA-20260817-l3.json"
+  },
+  "unverified_items": [
+    "No real authenticated tenant, live backend, or production API was exercised; the local script fulfilled fixture GET responses.",
+    "No real Feishu interaction, remote host, physical device, formal SSOT node execution, or release acceptance was performed.",
+    "The candidate frontend directory is not a Git worktree, so a VCS diff attestation was unavailable; this attempt made no source edit."
+  ],
+  "risks": [
+    "Headless Chromium at the two specified viewport sizes does not replace a real-device or wider browser-matrix check.",
+    "This evidence is valid only for the inspected local candidate and can become stale after source changes."
+  ]
+}

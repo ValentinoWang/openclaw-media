@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "evidence_id": "EV-REMOTE-RELEASE-20260818-R4",
+  "status": "passed",
+  "observed_at": "2026-08-18T07:52:49+08:00",
+  "host": "ubuntu@106.52.146.37",
+  "candidate": {
+    "candidate_manifest_sha256": "0eddea7f096dc0a65ba4b1336a9591baf702a6290cf4b8cc80696a4bebd9c4d1",
+    "frontend_source_identity": "92e0ced44f838fb6abbc8349dee927e3510237fdab90a0181debddab769d1eeb",
+    "backend_source_identity": "17cc26611275c04d110143d50c5a064b7c02cf77cfe9729efabc52a6c218343a"
+  },
+  "local_gates": {
+    "backend_postgresql_http": "53 passed, 9 subtests passed",
+    "frontend_build_media": "passed",
+    "runner_profiles_all_fail_closed": "passed",
+    "candidate_manifest_binding": "passed",
+    "backend_source_manifest_check": "passed",
+    "frontend_source_manifest_check": "passed"
+  },
+  "remote_release": {
+    "backend_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-account-http-r4",
+    "backend_stage_path": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260818T-stage1-account-http-r4",
+    "frontend_release_id": "20260818T-stage1-account-http-r4",
+    "frontend_release_path": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260818T-stage1-account-http-r4",
+    "backend_service": "openclaw-bot-center-api.service",
+    "backend_service_state": "active",
+    "backend_main_pid": 3037509,
+    "healthz": {"ok": true},
+    "readyz": {"ok": true, "matcher_ready": true, "auth_ready": true, "if2_ready": true},
+    "session_principal_watchdog": "passed",
+    "official_deployment_guard": "passed",
+    "frontend_backend_coordination": "passed",
+    "backend_source_manifest_sha256": "17cc26611275c04d110143d50c5a064b7c02cf77cfe9729efabc52a6c218343a",
+    "frontend_source_manifest_sha256": "92e0ced44f838fb6abbc8349dee927e3510237fdab90a0181debddab769d1eeb",
+    "frontend_index_sha256": "6a9d49013b0888c83c6fe557ab96e68ed93bc60c4be03b1d6f7d87a059ea72d9",
+    "frontend_index_disk_loopback_external_match": true,
+    "temporary_backend_sibling_removed": true
+  },
+  "session_transport": {
+    "canonical_session": {"status": 401, "body_sha256": "958b39f714ac7b46f2fe894bed0fa3d4f8e1f6d9b3a9e9fbf2b34ea8d0bcdbb2"},
+    "exact_compatibility_alias": {"status": 401, "body_sha256": "958b39f714ac7b46f2fe894bed0fa3d4f8e1f6d9b3a9e9fbf2b34ea8d0bcdbb2"},
+    "neighboring_legacy_affiliate": {"status": 404},
+    "alias_wrong_method": {"status": 404},
+    "alias_trailing_slash": {"status": 404}
+  },
+  "guard_hardening": {
+    "deploy_entrypoint_sha256": "51571164f5bfafc4a5c40f9d0dbf0b8cd494b0eaee936a8a3706d43f0fca788c",
+    "verification_entrypoint_sha256": "12a6da26478b12e373502e3b64a81778970e2505fcb8952064778fb35a03b487",
+    "nginx_authority_sha256": "876fc1e0a2b426eb44c91f1794755443b891736abbc2b82b052b7db751e80a7e",
+    "runtime_tools_self_test": "passed with node v22.22.2 and npm 10.9.7",
+    "session_alias_positive_negative_self_test": "passed"
+  },
+  "fail_closed_attempt": {
+    "stage": "frontend source snapshot",
+    "failure": "sudo secure_path could not resolve bare node",
+    "frontend_switched": false,
+    "backend_rolled_back_to_r3": true,
+    "partial_frontend_release_removed": true,
+    "retry_after_source_fix": "passed"
+  },
+  "scope_boundary": {
+    "code_and_transport_release": true,
+    "production_database_migration": false,
+    "database_backfill_or_seed_write": false,
+    "feishu_or_email_write": false,
+    "ssot_node_acceptance_claimed": false,
+    "browser_device_or_real_mail_acceptance_claimed": false
+  }
+}

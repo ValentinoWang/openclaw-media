@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-071-CA-DA1",
+  "from": "CA",
+  "to": "DA1",
+  "dependency_type": "hard",
+  "dependency_scope": "global-completeness",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.ca.da1.v5"
+  ],
+  "transferred_input": "哈希绑定的 Release 1A 候选",
+  "gate_evidence": "R11 只在候选晋升时成为硬门；不得继续使用 development_base 直接晋升",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "ART-CA"
+  ],
+  "resource_ids": [
+    "candidate:REL-1A"
+  ],
+  "necessity_proof": "DA1 must retain the immutable candidate:REL-1A identity from CA"
+}

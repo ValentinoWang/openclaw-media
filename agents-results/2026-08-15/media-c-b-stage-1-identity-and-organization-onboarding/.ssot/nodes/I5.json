@@ -1,0 +1,187 @@
+{
+  "node_id": "I5",
+  "semantic_key": "media.stage1.organization-workspace-shell",
+  "stage": "B",
+  "work_kind": "verification-remediation",
+  "domain_lane": "frontend-organization",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "I3"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.stable-decisions",
+      "version": 2
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.organization-workspace-shell.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "C1",
+    "I7",
+    "I8"
+  ],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "LW",
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "danger-full-access",
+    "sandbox_authority": "writable sandbox",
+    "task_argument": "实现组织工作区壳。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-returns/I5.json",
+    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/prompts/I5.txt",
+    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-logs/I5.log",
+    "prompt_sha256": "capture-before-launch",
+    "launch_barrier": "all wave PIDs registered before first wait",
+    "prompt_cleanup": "delete after exit evidence registration",
+    "runtime_handle_cleanup": "release after exit evidence registration",
+    "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions",
+    "dispatch_state": "BLOCKED",
+    "runtime_profile_requirement": "implementation-runner",
+    "runtime_profile_available": true,
+    "launch_authorized": false,
+    "blocking_capability_node": "none"
+  },
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [],
+  "description": "组织壳只展示服务端真实状态",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "execution_contract_ref": "I5.json",
+  "execution_contract_sha256": "6768ab1e770a6cc29e4a9166eea4385be3c348d02ee589684ce913aac4c0878b",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-I5"
+  ],
+  "produced_artifact_ids": [
+    "ART-I5"
+  ],
+  "consumed_artifact_ids": [
+    "DL-I3"
+  ],
+  "read_set": [
+    "artifact:I3"
+  ],
+  "write_set": [
+    "artifact:I5"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:I5",
+      "mode": "W",
+      "isolation_key": "node:I5"
+    }
+  ],
+  "actor_pool": "codex-primary",
+  "acceptance_commands": [
+    "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817.sh"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I5-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-8",
+  "executor_route": "lw-terra",
+  "primary_executor": "lw-terra",
+  "primary_wrapper": "run-lw-terra.sh",
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  },
+  "test_oracle": {
+    "mode": "frozen",
+    "writable": false,
+    "spec": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817.sh",
+    "spec_sha256": "ec956d67b71acf8982e302f5f5cc7f831a39b1397b2df516a400eb5b48829d61",
+    "assertion_authority": "stage1-organization-shell-acceptance-v1"
+  },
+  "source_write": {
+    "allowed": true,
+    "bounded": true,
+    "allowed_paths": [
+      ".codex-work/stage1-integrated/frontend/src/media/OrganizationWorkspaceShellPage.tsx",
+      "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/returns/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817-luna.json"
+    ],
+    "forbidden_paths": [
+      "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817.sh",
+      ".codex-work/stage1-integrated/frontend/scripts/qa",
+      ".codex-work/stage1-integrated/frontend/src/media/mediaWebApi.ts",
+      "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md"
+    ]
+  },
+  "interactive_loop": {
+    "targeted_first": true,
+    "max_iterations": 6,
+    "max_wall_time_minutes": 30
+  },
+  "lifecycle": [
+    "REPAIR",
+    "PROVE",
+    "PACKAGE"
+  ],
+  "observability": [
+    "playwright-trace",
+    "screenshot",
+    "browser-console",
+    "network-log",
+    "backend-log"
+  ],
+  "completion": {
+    "targeted_test_pass": true,
+    "required_regression_pass": true
+  },
+  "stop_conditions": [
+    "frozen-oracle-disputed",
+    "architecture-conflict",
+    "scope-conflict",
+    "product-decision",
+    "permission"
+  ],
+  "resource_contract": {
+    "browser_context": "pw-i5",
+    "storage_state": "storage-i5.json",
+    "test_account": "coach-i5@example.test",
+    "tenant": "tenant-i5",
+    "training_session": "session-i5",
+    "database_namespace": "e2e-i5",
+    "backend_port": 18105,
+    "frontend_port": 18106,
+    "artifact_dir": "worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/evidence",
+    "internal_runner_workers": 1,
+    "runner_concurrency_scope": "node-internal-only"
+  },
+  "priority_class": "primary"
+}

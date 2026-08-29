@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "task_id": "I2-REVIEW1",
+  "attempt_role": "luna",
+  "review_kind": "independent_source_verification",
+  "direct_parent": "I2 (media.stage1.auth-intent-binding)",
+  "node_id": "I2",
+  "invalidation_key": "media.stage1.auth-intent-binding.v4",
+  "versions": {
+    "plan": 4,
+    "dag": 4,
+    "interface_freeze": 4,
+    "node_contract": 4,
+    "ssot_schema": 1
+  },
+  "authority": "zero-write verification lane",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i2",
+  "task_source_sha256": "1e8addfae92cc3903aa4b57a4e5ee87942d70c1682404e6c31cee35612d6f153",
+  "validation_command_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I2-REVIEW1.sh",
+  "validation_command_sha256": "dbf1300430fc14c095118602471a2732741b773cc2ce8dd7e6ff0e6bd5cbaf40",
+  "frozen_authority": {
+    "ssot_manifest": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json",
+      "sha256": "3f08c4cbfa7edbc19a846038cee611888a6952418722ec00857de62bd3e12347"
+    },
+    "i2_node": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/I2.json",
+      "sha256": "b98d71040a330c85daaf409d7e2a9c11bc4d35e1e5d9c4675432d8a804513be6"
+    },
+    "source_files": [
+      {
+        "path": "backend/openclaw_app/account/lifecycle.py",
+        "sha256": "fee996c70dcb1662a5409416eced0259072689c48c749cd45e2ce96b705324ac"
+      },
+      {
+        "path": "backend/openclaw_app/account/__init__.py",
+        "sha256": "7c715e8291c7c9a36ed1bb4d944692d46a443a6cc9f4e99232a36ca03846fde4"
+      },
+      {
+        "path": "backend/openclaw_app/adapters/http_api.py",
+        "sha256": "f6555e31d0aca19d81d07d13142e9d5ff4b9c6e7c5234889825a9bf9f2c7c20f"
+      }
+    ],
+    "protected_test": {
+      "path": "backend/tests/test_stage1_personal_auth_lifecycle.py",
+      "sha256": "eb232753cc58e00401e6e697effec60681b7d392ae351dd9b11070304422b4e2"
+    },
+    "frozen_validation": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I2.sh",
+      "sha256": "1330937b7f5501fd1c05140118a20ae7f789eb3d74ee474d9828c3c647a8785d"
+    }
+  },
+  "prior_execution": {
+    "ledger_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-ready-1/I2/ledger/I2.json",
+    "prior_luna_exit_code": 124,
+    "prior_l3_exit_code": 124,
+    "prior_terminal_state": "BLOCKED",
+    "prior_validation_exit_code": 0,
+    "prior_structured_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-ready-1/I2/returns/I2-l3.json",
+    "interpretation": "The prior implementation process timed out at transport completion; this review independently checks the frozen source and does not inherit its VERIFIED claim."
+  },
+  "hash_verification": {
+    "status": "pass",
+    "command": "shasum -a 256 on the frozen manifest, I2 node, source files, protected test, validation scripts, and review task",
+    "exit_code": 0,
+    "drift": [],
+    "result": "All requested frozen SHA-256 values matched the observed files before review."
+  },
+  "read_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/I2.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-tasks/I2.txt",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-tasks/I2-REVIEW1.txt",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-ready-1/I2/ledger/I2.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-ready-1/I2/logs/I2-luna.log",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-ready-1/I2/logs/I2-l3.log",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-ready-1/I2/returns/I2-l3.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I2.sh",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I2-REVIEW1.sh",
+    "backend/openclaw_app/account/lifecycle.py",
+    "backend/openclaw_app/account/errors.py",
+    "backend/openclaw_app/account/__init__.py",
+    "backend/openclaw_app/adapters/http_api.py",
+    "backend/tests/test_stage1_personal_auth_lifecycle.py",
+    "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+    "backend/.candidate-source.sha256"
+  ],
+  "write_scope": {
+    "allowed_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-i2-review1/I2-REVIEW1/returns/I2-REVIEW1-luna.json",
+    "source_write_count": 0,
+    "source_write_paths": [],
+    "other_write_paths": [],
+    "scope_result": "pass; only the supervisor-provided return path is written"
+  },
+  "command_results": [
+    {
+      "name": "frozen_validation",
+      "command": "bash /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I2-REVIEW1.sh",
+      "exit_code": 0,
+      "validation_script_sha256": "dbf1300430fc14c095118602471a2732741b773cc2ce8dd7e6ff0e6bd5cbaf40",
+      "delegated_frozen_validation_sha256": "1330937b7f5501fd1c05140118a20ae7f789eb3d74ee474d9828c3c647a8785d",
+      "stdout_summary": "17 passed, 16 skipped",
+      "result": "pass for the frozen in-memory and local HTTP suite; database skips remain explicit"
+    },
+    {
+      "name": "mail_failure_public_response_probe",
+      "command": "focused in-memory lifecycle and HTTP probe with a failing mail adapter and an unknown identifier",
+      "exit_code": 0,
+      "stdout_summary": [
+        "delivery-a 503 email_delivery_unavailable",
+        "missing-delivery accepted 如果账号符合条件，我们会向邮箱发送找回邮件。"
+      ],
+      "result": "blocking contract difference reproduced without external network or mail side effects"
+    }
+  ],
+  "protected_test_integrity": {
+    "status": "pass",
+    "path": "backend/tests/test_stage1_personal_auth_lifecycle.py",
+    "observed_sha256": "eb232753cc58e00401e6e697effec60681b7d392ae351dd9b11070304422b4e2",
+    "frozen_sha256": "eb232753cc58e00401e6e697effec60681b7d392ae351dd9b11070304422b4e2",
+    "weakened_or_deleted": false,
+    "result": "Protected test identity is intact."
+  },
+  "findings": [
+    {
+      "id": "I2-REVIEW1-F001",
+      "severity": "blocking",
+      "category": "security_contract",
+      "status": "open",
+      "title": "Mail delivery failure bypasses the uniform public recovery response",
+      "references": [
+        {
+          "path": "backend/openclaw_app/account/lifecycle.py",
+          "lines": "795-838",
+          "detail": "request_password_recovery commits the latest recovery token and then calls _send_recovery."
+        },
+        {
+          "path": "backend/openclaw_app/account/lifecycle.py",
+          "lines": "918-928",
+          "detail": "_send_verification and _send_recovery convert adapter exceptions into email_delivery_unavailable."
+        },
+        {
+          "path": "backend/openclaw_app/account/errors.py",
+          "lines": "12-15",
+          "detail": "AccountContractError maps email_delivery_unavailable to HTTP 503."
+        },
+        {
+          "path": "worker-executions/wave-i2-review1/I2-REVIEW1/logs/I2-REVIEW1-luna.log",
+          "lines": "27567-27584",
+          "detail": "Focused probe reproduced 503/email_delivery_unavailable for delivery-a and the uniform accepted response for missing-delivery."
+        }
+      ],
+      "observed_behavior": {
+        "known_active_verified_identifier_with_failing_mail": "503/email_delivery_unavailable",
+        "unknown_identifier": "accepted with the uniform recovery message"
+      },
+      "impact": "A public caller can distinguish an eligible existing account when delivery fails, violating the frozen uniform recovery response. Registration and verification resend have the same post-commit mail failure pattern through _send_verification.",
+      "disposition": "fail; report to the implementation owner and do not repair in this lane"
+    }
+  ],
+  "requirement_dispositions": [
+    {
+      "requirement": "Frozen hash integrity and fail-closed drift handling",
+      "disposition": "pass",
+      "evidence": "All frozen hashes matched and hash_verification.drift is empty."
+    },
+    {
+      "requirement": "Unchanged frozen validation command",
+      "disposition": "pass",
+      "evidence": "Exit 0; 17 passed and 16 explicit database skips."
+    },
+    {
+      "requirement": "Registration and verification do not auto-login",
+      "disposition": "pass",
+      "evidence": "Frozen unit and HTTP tests cover pending registration, verification, login-required results, and absence of a session."
+    },
+    {
+      "requirement": "Digest-only latest verification and recovery tokens",
+      "disposition": "pass",
+      "evidence": "Source stores token digests, invalidates prior unconsumed tokens, and frozen tests cover replay and old-link invalidation."
+    },
+    {
+      "requirement": "Generic recovery and credential errors",
+      "disposition": "fail",
+      "evidence": "Unknown, pending, and invalid-credential paths are generic, but F001 exposes 503/email_delivery_unavailable for a known eligible identifier when mail delivery fails."
+    },
+    {
+      "requirement": "Pending account behavior",
+      "disposition": "pass",
+      "evidence": "Pending status, verification-required username login, and verified transition are covered by the frozen suite."
+    },
+    {
+      "requirement": "Reset revocation transaction",
+      "disposition": "pass",
+      "evidence": "Reset consumes the token, updates the password, revokes account sessions and unused recovery tokens in one repository transaction; tests pass."
+    },
+    {
+      "requirement": "Opaque eight-hour sessions",
+      "disposition": "pass",
+      "evidence": "Session implementation and frozen tests cover opaque tokens, rotation, expiry, and the eight-hour TTL."
+    },
+    {
+      "requirement": "Session-bound CSRF rotation",
+      "disposition": "pass",
+      "evidence": "CSRF is derived from the session token and the frozen HTTP lifecycle tests cover cookie rotation and rejection."
+    },
+    {
+      "requirement": "Feishu separation",
+      "disposition": "pass",
+      "evidence": "Reviewed personal register, verify, login, recovery, and reset paths contain no Feishu invocation; real Feishu behavior remains unverified."
+    },
+    {
+      "requirement": "Organization state, callback allowlist, and one-time use",
+      "disposition": "pass",
+      "evidence": "Frozen unit and HTTP tests cover callback mismatch, expiry, consumption, and replay."
+    },
+    {
+      "requirement": "Source and account rate-limit accounting",
+      "disposition": "pass",
+      "evidence": "Frozen tests cover both dimensions and denied-request accounting; focused review probe disproved the suspected identifier enumeration rate-limit issue."
+    },
+    {
+      "requirement": "Reset/login race handling",
+      "disposition": "pass",
+      "evidence": "Frozen regression covers the transaction-time credential recheck."
+    },
+    {
+      "requirement": "Legacy password routes remain 404 and no explicit identity link is created",
+      "disposition": "pass",
+      "evidence": "Frozen HTTP test covers legacy 404 and organization intent remains separate from explicit identity linking."
+    },
+    {
+      "requirement": "No hard-coded fixtures, hidden external calls, swallowed failures, out-of-scope source changes, or weakened tests",
+      "disposition": "pass_with_f001_exception",
+      "evidence": "No fixture-specific branch, hidden external call, swallowed failure, or test weakening was found in the reviewed I2 paths; F001 is an exposed contract error, not a swallowed failure."
+    }
+  ],
+  "machine_layer_results": {
+    "static_source_review": "pass for the reviewed I2 scope, with F001 blocking the contract result",
+    "unit_and_local_http": "pass; 17 tests passed",
+    "database_integration": "skipped; see skipped_test_interpretation",
+    "real_mail_sandbox": "unverified and intentionally not run",
+    "real_feishu_sandbox": "unverified and intentionally not run",
+    "production_or_device": "unverified and out of scope"
+  },
+  "skipped_test_interpretation": {
+    "count": 16,
+    "gate": "OPENCLAW_ACCOUNT_TEST_DATABASE_URL",
+    "meaning": "The 16 PostgreSQL integration tests were skipped because the database URL was not provided.",
+    "dependency": "later MA1/integration owner",
+    "does_not_prove": "A live database, durable repository behavior, deployment readiness, or production acceptance."
+  },
+  "external_sandbox_evidence": [],
+  "human_acceptance": {
+    "status": "unverified",
+    "note": "No human product-owner acceptance or production readiness decision is claimed by this source-verification lane."
+  },
+  "monitoring_and_rollback": {
+    "status": "unverified",
+    "note": "No production deployment was performed; monitoring and rollback controls are not established by this lane."
+  },
+  "external_side_effects": [],
+  "destructive_actions": [],
+  "unverified_items": [
+    "No live PostgreSQL database or durable repository adapter was exercised; the 16 skipped tests remain a later MA1/integration dependency.",
+    "No real mail delivery, real Feishu call, deployment, browser, device, or production acceptance was performed.",
+    "The focused mail failure probe used an in-memory adapter and did not establish behavior of a production mail provider.",
+    "The unrelated shared OpenAPI contract drift is outside I2 authority and was not used as an I2 implementation finding."
+  ],
+  "risks": [
+    {
+      "id": "I2-REVIEW1-R001",
+      "severity": "blocking",
+      "description": "F001 prevents a VERIFIED result for the frozen public recovery contract until the mail-failure path is corrected and rereviewed."
+    },
+    {
+      "id": "I2-REVIEW1-R002",
+      "severity": "non_blocking_out_of_scope",
+      "path": "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+      "observed_sha256": "6d325c6736389b7dde8eb1e5ef0c91e166d4a68578d05324dad3cadf294af9d0",
+      "candidate_marker_sha256": "006bbb749dafef063ab92680fa3a1140da93fa5edb48b7c5464d2f99166f0604",
+      "description": "Pre-existing T1/shared-contract source-marker drift observed during review; it predates the I2 source changes and is outside this zero-write I2 lane."
+    }
+  ],
+  "proposed_state": "FAILED",
+  "acceptance_self_check": "fail",
+  "failure_class": "implementation"
+}

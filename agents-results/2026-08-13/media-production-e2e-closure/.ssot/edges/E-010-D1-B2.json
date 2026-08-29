@@ -1,0 +1,1 @@
+{"edge_id":"E-010-D1-B2","from":"D1","to":"B2","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["contract.context-task-e2e"],"transferred_input":"入口证明不等于闭环决定","gate_evidence":"D1 v1"}

@@ -1,0 +1,3 @@
+task_id	supervisor_pid	exit_code	finished_at_utc
+T1-TEST-LOCK	34768	0	2026-08-16T15:29:51Z
+I2-TEST-LOCK	34771	20	2026-08-16T15:31:16Z

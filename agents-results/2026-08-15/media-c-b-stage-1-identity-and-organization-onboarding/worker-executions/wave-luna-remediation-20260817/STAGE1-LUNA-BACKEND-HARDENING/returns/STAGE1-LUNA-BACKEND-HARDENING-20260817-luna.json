@@ -1,0 +1,110 @@
+{
+  "task_id": "STAGE1-LUNA-BACKEND-HARDENING-20260817",
+  "attempt_role": "luna",
+  "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "partial",
+  "failure_class": "scope_conflict",
+  "failure_origin": "The integrated HTTP adapter rejects every session whose workspace_mode is not organization_lark or whose body_authority is not lark at backend/openclaw_app/adapters/http_api.py:1271-1273. That file is outside the explicit allowed write scope, so a fresh-install personal platform session cannot reach POST /openclaw/media/api/organization/provision/confirm even though the service-layer authorization path has server-owned installation/grant inputs. An adapter change was investigated and then fully reverted; no forbidden durable source edit remains.",
+  "validation_command_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-BACKEND-HARDENING-20260817.sh",
+  "validation_command_sha256": "a34ab68b7048edd35ec3710a7bd8a3fb4eb712286ca03dc7679326f6dc29f619",
+  "actual_read_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/generated-views/30-node-contracts-and-acceptance.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-terra-hardening-20260817/STAGE1-TERRA-AUTH-PG-REVIEW/returns/STAGE1-TERRA-AUTH-PG-REVIEW-20260817-terra.json",
+    "backend/openclaw_app/services/stage1_administrator_authorization.py",
+    "backend/openclaw_app/services/stage1_organization_provisioning.py",
+    "backend/openclaw_app/services/stage1_postgres_provisioning.py",
+    "backend/openclaw_app/services/stage1_provisioning_runtime.py",
+    "backend/openclaw_app/services/stage1_feishu_provisioning_gateway.py",
+    "backend/openclaw_app/account/repository.py",
+    "backend/openclaw_app/server_cli.py",
+    "backend/openclaw_app/adapters/http_api.py (read-only blocker diagnosis)",
+    "implementation-owned Stage 1 and account identity tests",
+    "backend/tests/test_media_stage1_shared_contract.py",
+    "backend/tests/test_stage1_personal_auth_lifecycle.py",
+    "worker validation command file and integrated candidate manifest (read-only)"
+  ],
+  "actual_write_scope": [
+    "backend/openclaw_app/services/stage1_postgres_provisioning.py",
+    "backend/tests/test_stage1_postgres_provisioning.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-BACKEND-HARDENING/returns/STAGE1-LUNA-BACKEND-HARDENING-20260817-luna.json"
+  ],
+  "changed_files": [
+    {
+      "path": "backend/openclaw_app/services/stage1_postgres_provisioning.py",
+      "change": "Validate the canonical 8-160 resource-run key in completed_resource_step before issuing the SQL lookup."
+    },
+    {
+      "path": "backend/tests/test_stage1_postgres_provisioning.py",
+      "change": "Add a regression asserting a short resource-run key fails before any database query."
+    }
+  ],
+  "commands": [
+    {
+      "command": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-BACKEND-HARDENING-20260817.sh",
+      "exit_code": 126,
+      "result": "Permission denied because the validation file is mode 0644; this is an invocation issue, not a test result."
+    },
+    {
+      "command": "/bin/bash /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-BACKEND-HARDENING-20260817.sh",
+      "exit_code": 0,
+      "result": "60 passed, 8 skipped in 1.04s; the script's compile command also passed."
+    },
+    {
+      "command": "/Users/vsiyo/.local/bin/uv run --python 3.13 --with pytest --with bcrypt --with cryptography --with 'psycopg[binary]' python -m py_compile backend/openclaw_app/services/stage1_postgres_provisioning.py backend/tests/test_stage1_postgres_provisioning.py",
+      "exit_code": 0,
+      "result": "All retained changed Python modules compiled under the isolated Python 3.13 environment."
+    },
+    {
+      "command": "shasum -a 256 backend/tests/test_media_stage1_shared_contract.py backend/tests/test_stage1_personal_auth_lifecycle.py",
+      "exit_code": 0,
+      "result": "Both protected hashes match the frozen values."
+    }
+  ],
+  "red_green_evidence": {
+    "resource_run_key_boundary": {
+      "red": "The pre-fix repository path did not validate the resource-run key before the completed-resource-step lookup; the regression was added for that failure class. The pre-fix run is not retained as a separate artifact.",
+      "green": "test_completed_resource_step_rejects_short_key_before_query passes and observes zero database calls before rollback/close."
+    },
+    "frozen_validation": {
+      "green": "The frozen command passes with 60 passed and 8 skipped."
+    },
+    "http_fresh_install": {
+      "red": "The current adapter gate rejects the personal platform session before runtime confirmation dispatch.",
+      "green": "Not achieved within this lane because repairing http_api.py is outside the allowed write scope."
+    }
+  },
+  "protected_test_hashes_after": {
+    "backend/tests/test_media_stage1_shared_contract.py": "c1fbb5b6655ff2f4bb6f90152a8ab6705d77f6d2744744014f99e0d9dafa01a8",
+    "backend/tests/test_stage1_personal_auth_lifecycle.py": "d149a683ee0ef2825e5151005d0679f0d883e62b5810aeede637a5c87e7e1e6d"
+  },
+  "behavior_coverage": {
+    "green": [
+      "Existing fake-backed Stage 1 authorization, organization provisioning, PostgreSQL repository, runtime, HTTP contract, composition, and account identity tests pass in the frozen suite.",
+      "Projection confirmation/deprovision keys continue to use the IF2 validator, while resource-run keys use their separate canonical validator.",
+      "A short resource-run key is rejected before SQL and cannot alias a persisted receipt."
+    ],
+    "partial_or_blocked": [
+      "Fresh-install P3 confirmation through the HTTP route is blocked before the runtime by the adapter workspace/body-authority check.",
+      "The required new race, per-call fencing, retry-across-repository-instance, and IF2 boundary evidence is not independently established as a new end-to-end acceptance artifact in this lane; local unit coverage remains fake-backed."
+    ]
+  },
+  "unverified_items": [
+    "Real PostgreSQL transaction and row-lock behavior.",
+    "Real Feishu discovery/create/readback behavior and binding-scoped credential-client resolution.",
+    "Fresh-install personal-session HTTP confirmation after the forbidden adapter gate is repaired.",
+    "Production deployment, release pointer, remote host state, Feishu acceptance, browser/device evidence, and node ACCEPTED status."
+  ],
+  "residual_risks": [
+    "The adapter gate remains a functional blocker for the required fresh-install flow.",
+    "No migration 043 or canonical 042 edit was made, so any missing schema support must be resolved within the existing contract or by a separately authorized control-plane decision.",
+    "The candidate manifest/source hashes were not regenerated because that output is forbidden by the task scope."
+  ],
+  "explicit_non_claims": [
+    "This is local candidate development only.",
+    "No production, release, deployment, real Feishu, real PostgreSQL, email, credential, browser/device, or acceptance claim is made.",
+    "No node ACCEPTED status or 100% SSOT completion is claimed.",
+    "No forbidden file, migration, frontend file, lockfile, manifest, evidence ledger, commit, tag, push, stash, branch operation, descendant, or fallback worker was used."
+  ]
+}

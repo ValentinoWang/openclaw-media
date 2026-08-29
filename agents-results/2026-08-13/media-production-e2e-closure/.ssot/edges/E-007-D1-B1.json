@@ -1,0 +1,1 @@
+{"edge_id":"E-007-D1-B1","from":"D1","to":"B1","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["contract.authenticated-web"],"transferred_input":"界面不可代替后台完整的决定","gate_evidence":"D1 v1"}

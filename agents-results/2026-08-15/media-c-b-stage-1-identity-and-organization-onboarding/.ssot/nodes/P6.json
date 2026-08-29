@@ -1,0 +1,135 @@
+{
+  "node_id": "P6",
+  "semantic_key": "media.stage1.provision-orchestrator",
+  "stage": "B",
+  "work_kind": "implementation",
+  "domain_lane": "provision-runtime",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "P1",
+    "P2",
+    "P3",
+    "P5",
+    "T1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.stable-decisions",
+      "version": 2
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.provision-orchestrator.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "P7",
+    "P8"
+  ],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "LW",
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "danger-full-access",
+    "sandbox_authority": "writable sandbox",
+    "task_argument": "实现可续接编排和补偿门禁。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-returns/P6.json",
+    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/prompts/P6.txt",
+    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-logs/P6.log",
+    "prompt_sha256": "capture-before-launch",
+    "launch_barrier": "all wave PIDs registered before first wait",
+    "prompt_cleanup": "delete after exit evidence registration",
+    "runtime_handle_cleanup": "release after exit evidence registration",
+    "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions",
+    "dispatch_state": "BLOCKED",
+    "runtime_profile_requirement": "implementation-runner",
+    "runtime_profile_available": true,
+    "launch_authorized": false,
+    "blocking_capability_node": "none"
+  },
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [],
+  "description": "飞书动作不宣称跨系统原子事务",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "execution_contract_ref": "P6.json",
+  "execution_contract_sha256": "4ce4d6c80803a60127d5f68d82337225edaad63a6e77e5fef77bc19fe4ca61eb",
+  "side_effect_class": "reversible",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-P6"
+  ],
+  "produced_artifact_ids": [
+    "ART-P6"
+  ],
+  "consumed_artifact_ids": [
+    "DL-P1",
+    "DL-P2",
+    "DL-P3",
+    "DL-P5",
+    "DL-T1"
+  ],
+  "read_set": [
+    "artifact:P1",
+    "artifact:P2",
+    "artifact:P3",
+    "artifact:P5",
+    "artifact:T1"
+  ],
+  "write_set": [
+    "artifact:P6"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:P6",
+      "mode": "W",
+      "isolation_key": "node:P6"
+    }
+  ],
+  "actor_pool": "codex-primary",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance P6\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/P6-return.json"
+  ],
+  "release_slice": "REL-1B",
+  "wave_id": "W-1B-17",
+  "executor_route": "lw-terra",
+  "primary_executor": "lw-terra",
+  "primary_wrapper": "run-lw-terra.sh",
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  }
+}

@@ -1,0 +1,537 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "escalate_l3",
+        "effective_failure_class": "verification",
+        "maximum_escalations_remaining": 1,
+        "next_attempt": "l3",
+        "next_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+        "reason": "verification failure"
+      },
+      "classifier_exit_code": 10,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/prompts/C4-BACKEND-MERGE-luna.txt)"
+      ],
+      "ended_at": "2026-08-14T15:24:16.692035+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/logs/C4-BACKEND-MERGE-luna.log",
+      "pid": 88863,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/prompts/C4-BACKEND-MERGE-luna.txt",
+      "prompt_sha256": "140d340299f8d04f0fe708e106d23a8811339c82bda89a41bd0fbaccebc7c372",
+      "started_at": "2026-08-14T15:08:10.098419+00:00",
+      "structured_return": {
+        "acceptance_self_check": "fail",
+        "actual_read_write_scope": {
+          "forbidden_scope_touched": false,
+          "read_roots": [
+            ".ssot and acceptance inputs",
+            ".codex-work/production-baseline-20260814T084319Z/backend",
+            ".codex-work/c2-main-takeover/backend",
+            "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/postrepair-source.sha256"
+          ],
+          "remote_production_touched": false,
+          "subagents_or_workers_started": false,
+          "write_roots": [
+            ".codex-work/merge-candidate-v4/backend/**",
+            "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/returns/C4-BACKEND-MERGE-luna.json"
+          ]
+        },
+        "attempt_role": "luna",
+        "authentication_retained": [
+          "login_verified_email",
+          "OpcFeishuLoginClient",
+          "/auth/feishu/start",
+          "/auth/feishu/status",
+          "trusted Feishu HTTPS host checks",
+          "unique owned account and valid tenant member relationship checks",
+          "tenant role and maintenance permission",
+          "session expiry",
+          "CSRF validation",
+          "user_public_id passed into task creation and subsequent reads"
+        ],
+        "candidate": {
+          "base": ".codex-work/production-baseline-20260814T084319Z/backend",
+          "baseline_release": "20260814T062408Z-opc-feishu-login",
+          "candidate_source_manifest": ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+          "candidate_source_manifest_sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+          "file_count_in_hash_scope": 562,
+          "hash_scope_excludes": [
+            "cache directories",
+            "logs",
+            ".DS_Store",
+            ".merge-provenance.json",
+            ".candidate-source.sha256"
+          ],
+          "provenance_file": ".codex-work/merge-candidate-v4/backend/.merge-provenance.json",
+          "provenance_file_json": "valid",
+          "root": ".codex-work/merge-candidate-v4/backend",
+          "source_directory_symlinks": "none",
+          "symlink_count": 0
+        },
+        "deviations": [
+          "No code deviation from the bounded merge was introduced after the duplicate server_cli keyword fix.",
+          "Acceptance is incomplete because the frozen command failed before candidate checks; state is FAILED/verification, not VERIFIED."
+        ],
+        "failure_class": "verification",
+        "failure_summary": "The frozen C4 validation command exited 1 during the read-only production baseline manifest check because 236 cache/transient paths listed by the frozen manifest are absent. No non-transient baseline file was missing.",
+        "frozen_input_proof": {
+          "auth_contract_sha256": "a0feedc825fff609f3cd72cbe7a0705ee0f0276fa18209a7f6192d4393984fdc",
+          "b1_node_sha256": "cd561d9e4d8b2184b4932da81fc143ae105bf917fc0e520849b6547ca92fabbc",
+          "b1_node_state": "ACCEPTED/FORMAL",
+          "c2_protected_test_sha256": "dee8b55304a60b4284462310f68f03099369af15071efc2fe5f39dcc8f67b73d",
+          "c2_source_manifest_sha256": "23d4017ba54422ba30f1aceb88ff34b2d0a034470d1bb70b9015e95613abe927",
+          "c2_task_contract_sha256": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+          "c4_node_sha256": "e8d5102533b0597d7bff0a7d6469262fb48d6efe8e8a8c92b1561cab5f015b21",
+          "c4_node_state": "READY/FORMAL",
+          "production_backend_manifest_check": "manifest hash matched; content check failed on 236 missing cache/transient entries",
+          "production_backend_manifest_sha256": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+          "ssot_manifest_sha256": "c6aca57fc2676e8a51704bb607c84245a0e55681bd4202270e659a8290ce9782",
+          "task_source_sha256": "6e827597ab0b1b2fb725fae837213624a4c4bd01ec6141dd1d9b078954b316a4",
+          "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/validation/C4-BACKEND-MERGE.sh",
+          "validation_command_sha256": "725363ac96d3e1f213ad9965b13cab976e8e7a8548f00bd72c12bd48ee5873b4"
+        },
+        "merged_files": {
+          "c2_backend_file_count": 25,
+          "c2_exact_files": [
+            "common/__init__.py",
+            "common/model_transport_context.py",
+            "integrations/feishu/media_writer.py",
+            "openclaw_app/contracts/media_web_task.schema.json",
+            "openclaw_app/migrations/canonical/037_media_task_runner_receipts.sql",
+            "openclaw_app/migrations/postgres_manifest.json",
+            "openclaw_app/services/capability_input_contracts.py",
+            "openclaw_app/services/media_task_repository.py",
+            "openclaw_app/services/media_task_runner.py",
+            "openclaw_app/services/media_web_tasks.py",
+            "scripts/run_postgres_migrations.py",
+            "selfmedia/growth/__init__.py",
+            "tests/test_capability_registry.py",
+            "tests/test_http_api.py",
+            "tests/test_media_business_http.py",
+            "tests/test_media_task_repository_postgres.py",
+            "tests/test_media_task_runner.py",
+            "tests/test_media_task_v3_contract.py",
+            "tests/test_media_web_tasks.py",
+            "tests/test_media_web_tasks_postgres.py",
+            "tests/test_postgres_migration_runner.py",
+            "tests/test_tenant_projection_http.py"
+          ],
+          "semantic_merge_files": [
+            "openclaw_app/account/auth.py",
+            "openclaw_app/adapters/http_api.py",
+            "openclaw_app/server_cli.py"
+          ],
+          "semantic_merge_note": "auth.py, http_api.py, and server_cli.py retain production authentication and service behavior while adding C2 task authority and user_public_id wiring; server_cli duplicate feishu_login keyword was removed before validation"
+        },
+        "migration_conclusion": {
+          "candidate_resolution": "no canonical identity collision; retain the production file, consume the C2 canonical 037 manifest entry, and do not rewrite published migrations or fabricate ledger rows",
+          "canonical_manifest": "openclaw_app/migrations/postgres_manifest.json",
+          "ledger": "openclaw_account.schema_migrations",
+          "manifest_rewritten": false,
+          "production_number_review": "production non-canonical openclaw_app/migrations/037_media_document_workspace_authority.sql coexists with C2 canonical openclaw_app/migrations/canonical/037_media_task_runner_receipts.sql",
+          "runtime_migration_verified": false
+        },
+        "postgres_and_runner_wiring": {
+          "dual_write": false,
+          "facts_in_postgresql": [
+            "tasks",
+            "events",
+            "attempts",
+            "leases",
+            "artifacts",
+            "external objects",
+            "readbacks",
+            "receipts"
+          ],
+          "http_authority": [
+            "enqueue",
+            "readback",
+            "cancel",
+            "confirmation",
+            "event stream read"
+          ],
+          "legacy_file_or_memory_queue": false,
+          "runner_authority": [
+            "claim",
+            "heartbeat",
+            "lease recovery",
+            "execute",
+            "settle"
+          ],
+          "runtime_verified": false,
+          "task_repository": "PostgresMediaTaskRepository",
+          "thread_execution_fallback": false
+        },
+        "proposed_state": "FAILED",
+        "receipt_boundary": {
+          "consultation_external_write": "must be recorded as none",
+          "final_receipt_requires": [
+            "database readback",
+            "applicable external object readback",
+            "web readback",
+            "same-task consistency"
+          ],
+          "production_receipt_claimed": false,
+          "self_media_creation_external_readback": "required"
+        },
+        "risks": [
+          "The frozen production baseline manifest is not self-consistent with its read-only snapshot because it includes missing transient files.",
+          "Candidate code and migration behavior remain unverified by the required fixed command due to that upstream verification stop."
+        ],
+        "schema_version": 1,
+        "sensitive_information_boundary": {
+          "allowed": [
+            "release identifiers",
+            "sha256 digests",
+            "relative source paths",
+            "public schema/status names"
+          ],
+          "excluded": [
+            "real identities",
+            "cookies",
+            "tokens",
+            "passwords",
+            "private content",
+            "remote host data",
+            "database data",
+            "Feishu data"
+          ],
+          "written": false
+        },
+        "task_id": "C4-BACKEND-MERGE",
+        "unverified_items": [
+          "The fixed validation command did not reach candidate runtime or integration checks.",
+          "No remote production release, restart, database, Feishu, account, service configuration, or production receipt was touched.",
+          "C4 was not marked ACCEPTED.",
+          "The frozen baseline manifest must be repaired or regenerated by its authority owner before this exact validation command can run to completion; this attempt did not modify it."
+        ],
+        "validation": {
+          "command": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/validation/C4-BACKEND-MERGE.sh",
+          "exit_code": 1,
+          "not_reached": [
+            "candidate source hash check",
+            "py_compile",
+            "auth regression",
+            "HTTP/task contract pytest",
+            "runner pytest",
+            "migration pytest",
+            "disposable PostgreSQL integration",
+            "production receipt red gates"
+          ],
+          "reached": [
+            "frozen input hash assertions"
+          ],
+          "stderr_summary": "236 listed cache/transient files could not be read; all missing entries classified as cache/transient and no other manifest entry was missing",
+          "stopped_at": "read-only production baseline shasum -a 256 -c .manifest.sha256"
+        }
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/returns/C4-BACKEND-MERGE-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "6e827597ab0b1b2fb725fae837213624a4c4bd01ec6141dd1d9b078954b316a4",
+      "timed_out": false,
+      "validation_command_sha256": "725363ac96d3e1f213ad9965b13cab976e8e7a8548f00bd72c12bd48ee5873b4",
+      "validation_ended_at": "2026-08-14T15:24:17.103991+00:00",
+      "validation_exit_code": 1,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/logs/C4-BACKEND-MERGE-luna.validation.log",
+      "validation_pid": 10026,
+      "validation_started_at": "2026-08-14T15:24:16.695836+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    },
+    {
+      "attempt_role": "l3",
+      "classification": {
+        "attempt": "l3",
+        "decision": "stop",
+        "maximum_escalations_remaining": 0,
+        "reason": "L3 one-shot escalation did not complete",
+        "terminal_state": "BLOCKED"
+      },
+      "classifier_exit_code": 20,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-l3.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/prompts/C4-BACKEND-MERGE-l3.txt)"
+      ],
+      "ended_at": "2026-08-14T15:29:48.023539+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/logs/C4-BACKEND-MERGE-l3.log",
+      "pid": 10055,
+      "prior_attempt_index": 0,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/prompts/C4-BACKEND-MERGE-l3.txt",
+      "prompt_sha256": "8124651327e0fecaa8b7939bcb7baaad23ec26bbdfb82bca77bdb6715d533e7c",
+      "started_at": "2026-08-14T15:24:17.145677+00:00",
+      "structured_return": {
+        "acceptance_self_check": "fail",
+        "actual_read_write_scope": {
+          "accounts_touched": false,
+          "c2_candidate_modified": false,
+          "database_touched": false,
+          "feishu_touched": false,
+          "forbidden_scope_touched": false,
+          "production_snapshot_modified": false,
+          "read_roots": [
+            ".ssot and acceptance inputs",
+            ".codex-work/production-baseline-20260814T084319Z/backend",
+            ".codex-work/c2-main-takeover/backend",
+            ".codex-work/merge-candidate-v4/backend",
+            "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/postrepair-source.sha256",
+            "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/validation/C4-BACKEND-MERGE.sh"
+          ],
+          "remote_production_touched": false,
+          "ssot_contracts_and_protected_tests_modified": false,
+          "subagents_or_workers_started": false,
+          "write_roots": [
+            ".codex-work/merge-candidate-v4/backend/**",
+            "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/returns/C4-BACKEND-MERGE-l3.json",
+            "/tmp validation artifacts only"
+          ]
+        },
+        "attempt_role": "l3",
+        "authentication_retained": [
+          "login_verified_email",
+          "OpcFeishuLoginClient",
+          "/auth/feishu/start",
+          "/auth/feishu/status",
+          "trusted Feishu HTTPS host checks",
+          "unique owned account and valid tenant member relationship checks",
+          "tenant role and maintenance permission",
+          "session expiry",
+          "CSRF validation",
+          "user_public_id passed into task creation and subsequent reads"
+        ],
+        "candidate": {
+          "base": ".codex-work/production-baseline-20260814T084319Z/backend",
+          "baseline_release": "20260814T062408Z-opc-feishu-login",
+          "candidate_manifest_check": "passed before frozen validation; unchanged after provenance update",
+          "candidate_source_manifest": ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+          "candidate_source_manifest_sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+          "file_count_in_hash_scope": 562,
+          "hash_scope_excludes": [
+            "cache directories",
+            "logs",
+            ".DS_Store",
+            ".merge-provenance.json",
+            ".candidate-source.sha256"
+          ],
+          "provenance_file": ".codex-work/merge-candidate-v4/backend/.merge-provenance.json",
+          "provenance_file_json": "valid",
+          "root": ".codex-work/merge-candidate-v4/backend",
+          "source_directory_symlinks": "none"
+        },
+        "deviations": [
+          "No code deviation from the bounded merge was introduced after the duplicate server_cli keyword fix.",
+          "Acceptance remains FAILED/verification because the frozen command stopped before candidate checks; the frozen input was not altered to force progress."
+        ],
+        "failure_class": "verification",
+        "failure_summary": "The frozen C4 validation command exited 1 during the read-only production baseline manifest content check. The manifest hash matched, but 236 listed cache or transient paths are absent from the frozen production snapshot. No non-transient baseline file was missing.",
+        "frozen_input_proof": {
+          "auth_contract_sha256": "a0feedc825fff609f3cd72cbe7a0705ee0f0276fa18209a7f6192d4393984fdc",
+          "b1_node_sha256": "cd561d9e4d8b2184b4932da81fc143ae105bf917fc0e520849b6547ca92fabbc",
+          "b1_node_state": "ACCEPTED",
+          "b1_readiness_mode": "FORMAL",
+          "c2_protected_test_sha256": "dee8b55304a60b4284462310f68f03099369af15071efc2fe5f39dcc8f67b73d",
+          "c2_source_manifest_sha256": "23d4017ba54422ba30f1aceb88ff34b2d0a034470d1bb70b9015e95613abe927",
+          "c2_task_contract_sha256": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+          "c4_node_sha256": "e8d5102533b0597d7bff0a7d6469262fb48d6efe8e8a8c92b1561cab5f015b21",
+          "c4_node_state": "READY",
+          "c4_readiness_mode": "FORMAL",
+          "production_backend_manifest_check": "manifest hash matched; content check failed on 236 missing cache or transient entries",
+          "production_backend_manifest_sha256": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+          "ssot_manifest_sha256": "c6aca57fc2676e8a51704bb607c84245a0e55681bd4202270e659a8290ce9782",
+          "task_source_sha256": "6e827597ab0b1b2fb725fae837213624a4c4bd01ec6141dd1d9b078954b316a4",
+          "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/validation/C4-BACKEND-MERGE.sh",
+          "validation_command_sha256": "725363ac96d3e1f213ad9965b13cab976e8e7a8548f00bd72c12bd48ee5873b4"
+        },
+        "merged_files": {
+          "c2_backend_file_count": 25,
+          "c2_exact_files": [
+            "common/__init__.py",
+            "common/model_transport_context.py",
+            "integrations/feishu/media_writer.py",
+            "openclaw_app/contracts/media_web_task.schema.json",
+            "openclaw_app/migrations/canonical/037_media_task_runner_receipts.sql",
+            "openclaw_app/migrations/postgres_manifest.json",
+            "openclaw_app/services/capability_input_contracts.py",
+            "openclaw_app/services/media_task_repository.py",
+            "openclaw_app/services/media_task_runner.py",
+            "openclaw_app/services/media_web_tasks.py",
+            "scripts/run_postgres_migrations.py",
+            "selfmedia/growth/__init__.py",
+            "tests/test_capability_registry.py",
+            "tests/test_http_api.py",
+            "tests/test_media_business_http.py",
+            "tests/test_media_task_repository_postgres.py",
+            "tests/test_media_task_runner.py",
+            "tests/test_media_task_v3_contract.py",
+            "tests/test_media_web_tasks.py",
+            "tests/test_media_web_tasks_postgres.py",
+            "tests/test_postgres_migration_runner.py",
+            "tests/test_tenant_projection_http.py"
+          ],
+          "semantic_merge_files": [
+            "openclaw_app/account/auth.py",
+            "openclaw_app/adapters/http_api.py",
+            "openclaw_app/server_cli.py"
+          ],
+          "semantic_merge_note": "Production authentication and service behavior were retained while adding C2 task authority and user_public_id wiring. The duplicate feishu_login keyword in server_cli.py was removed. No additional code deviation was introduced in the L3 retry."
+        },
+        "migration_conclusion": {
+          "candidate_resolution": "No canonical identity collision was found; retain the production migration, consume the C2 canonical 037 manifest entry, and do not rewrite published migrations or fabricate ledger rows.",
+          "canonical_manifest": "openclaw_app/migrations/postgres_manifest.json",
+          "ledger": "openclaw_account.schema_migrations",
+          "manifest_rewritten": false,
+          "production_number_review": "Production non-canonical openclaw_app/migrations/037_media_document_workspace_authority.sql coexists with C2 canonical openclaw_app/migrations/canonical/037_media_task_runner_receipts.sql.",
+          "runtime_migration_verified": false
+        },
+        "postgres_and_runner_wiring": {
+          "dual_write": false,
+          "facts_in_postgresql": [
+            "tasks",
+            "events",
+            "attempts",
+            "leases",
+            "artifacts",
+            "external objects",
+            "readbacks",
+            "receipts"
+          ],
+          "http_authority": [
+            "enqueue",
+            "readback",
+            "cancel",
+            "confirmation",
+            "event stream read"
+          ],
+          "legacy_file_or_memory_queue": false,
+          "runner_authority": [
+            "claim",
+            "heartbeat",
+            "lease recovery",
+            "execute",
+            "settle"
+          ],
+          "runtime_verified": false,
+          "task_repository": "PostgresMediaTaskRepository",
+          "thread_execution_fallback": false
+        },
+        "proposed_state": "FAILED",
+        "receipt_boundary": {
+          "consultation_external_write": "must be recorded as none",
+          "final_receipt_requires": [
+            "database readback",
+            "applicable external object readback",
+            "web readback",
+            "same-task consistency"
+          ],
+          "production_receipt_claimed": false,
+          "self_media_creation_external_readback": "required"
+        },
+        "risks": [
+          "The frozen production baseline manifest is not self-consistent with its read-only snapshot because it includes missing transient files.",
+          "Candidate code and migration behavior remain unverified by the required fixed command due to the upstream verification stop."
+        ],
+        "schema_version": 1,
+        "sensitive_information_boundary": {
+          "allowed": [
+            "release identifiers",
+            "sha256 digests",
+            "relative source paths",
+            "public schema and status names"
+          ],
+          "excluded": [
+            "real identities",
+            "cookies",
+            "tokens",
+            "passwords",
+            "private content",
+            "remote host data",
+            "database data",
+            "Feishu data"
+          ],
+          "written": false
+        },
+        "task_id": "C4-BACKEND-MERGE",
+        "unverified_items": [
+          "The fixed validation command did not reach candidate runtime or integration checks.",
+          "Candidate compile, protected regression, migration, disposable PostgreSQL integration, and production receipt red gates were not reached by the frozen command.",
+          "No remote production release, restart, database, Feishu, account, or service configuration was touched.",
+          "No authenticated browser, device, or production receipt was claimed.",
+          "The candidate has not been published and C4 has not been marked ACCEPTED.",
+          "The frozen production baseline manifest must be repaired or regenerated by its authority owner before the unchanged validation command can run to completion; this attempt did not modify it."
+        ],
+        "validation": {
+          "command": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/validation/C4-BACKEND-MERGE.sh",
+          "command_sha256": "725363ac96d3e1f213ad9965b13cab976e8e7a8548f00bd72c12bd48ee5873b4",
+          "exit_code": 1,
+          "failure_class": "verification",
+          "not_reached": [
+            "C2 manifest content check",
+            "candidate source hash check",
+            "candidate symlink and required-file checks",
+            "py_compile",
+            "authentication regression",
+            "HTTP and task contract pytest",
+            "independent runner pytest",
+            "migration pytest",
+            "disposable PostgreSQL integration",
+            "production receipt red gates"
+          ],
+          "reached": [
+            "frozen input hash assertions",
+            "read-only production baseline manifest hash assertion",
+            "read-only production baseline manifest content check"
+          ],
+          "status": "FAILED",
+          "stderr_summary": "shasum reported No such file or directory for 236 cache or transient manifest entries; all missing entries were cache/transient and no non-transient baseline file was missing",
+          "stopped_at": "(cd production baseline backend && shasum -a 256 -c .manifest.sha256)"
+        }
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/returns/C4-BACKEND-MERGE-l3.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "6e827597ab0b1b2fb725fae837213624a4c4bd01ec6141dd1d9b078954b316a4",
+      "timed_out": false,
+      "validation_command_sha256": "725363ac96d3e1f213ad9965b13cab976e8e7a8548f00bd72c12bd48ee5873b4",
+      "validation_ended_at": "2026-08-14T15:29:48.588069+00:00",
+      "validation_exit_code": 1,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/logs/C4-BACKEND-MERGE-l3.validation.log",
+      "validation_pid": 14938,
+      "validation_started_at": "2026-08-14T15:29:48.024052+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-l3.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-14T15:29:48.661553+00:00",
+  "final_decision": "stop",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "l3_wrapper_resolved_at": "2026-08-14T15:24:17.145098+00:00",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "resolved_l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-14T15:08:10.097395+00:00",
+  "stop_reason": "L3 one-shot escalation did not complete",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/tasks/C4-BACKEND-MERGE.md",
+  "task_id": "C4-BACKEND-MERGE",
+  "task_sha256": "6e827597ab0b1b2fb725fae837213624a4c4bd01ec6141dd1d9b078954b316a4",
+  "terminal_state": "BLOCKED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-12/C4-BACKEND-MERGE/validation/C4-BACKEND-MERGE.sh",
+  "validation_command_sha256": "725363ac96d3e1f213ad9965b13cab976e8e7a8548f00bd72c12bd48ee5873b4",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

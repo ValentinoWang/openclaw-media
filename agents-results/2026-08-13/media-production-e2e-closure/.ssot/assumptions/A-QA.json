@@ -1,0 +1,7 @@
+{
+  "assumption_id": "A-QA",
+  "decision_semantic_key": "media.qa-identity",
+  "expected_value": "Use renewable least-privilege ordinary and admin QA identities whose stable references can be recorded without storing credentials.",
+  "state": "CONFIRMED",
+  "invalidation_keys": ["decision.qa-identity"]
+}

@@ -1,0 +1,33 @@
+{
+  "contract_id": "CB",
+  "schema_version": 1,
+  "node_id": "CB",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "work_kind": "convergence",
+  "write_authority": "shared-generated",
+  "read_set": [
+    "artifact:C3",
+    "artifact:DC1",
+    "artifact:E11",
+    "artifact:K2",
+    "artifact:M1",
+    "artifact:T1"
+  ],
+  "write_set": [
+    "artifact:CB"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:CB",
+      "mode": "W",
+      "isolation_key": "node:CB"
+    }
+  ],
+  "acceptance_commands": [
+    "./tools/rebuild_stage1_candidate --manifest RELEASE_1B_PATCH_MANIFEST --base promotion --output FRESH_CB_DIR --check-twice"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/CB-return.json"
+  ]
+}

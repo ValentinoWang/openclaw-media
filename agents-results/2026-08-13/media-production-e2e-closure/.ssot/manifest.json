@@ -1,0 +1,33 @@
+{
+  "ssot_schema_version": 1,
+  "artifact_class": "ssot-development",
+  "plan_version": 5,
+  "dag_version": 5,
+  "interface_freeze_version": 5,
+  "node_contract_version": 4,
+  "generated_main": "../ssot-development-paths.md",
+  "generated_views": [
+    {
+      "view_id": "main",
+      "source": "view-sources/00-main.md",
+      "source_sha256": "2062f0f8a553e777fdc988a0c36599bb74d0c93671b43d5eb2b5971c18316924",
+      "output": "../ssot-development-paths.md"
+    },
+    {
+      "view_id": "openproblem",
+      "source": "view-sources/10-decisions.md",
+      "source_sha256": "f82c54b3cee00223f3c26f3fb2577df9c7669f8fa348b9f6c5087f4e770c6cfb",
+      "output": "../openproblem.md"
+    },
+    {
+      "view_id": "implementation-progress",
+      "source": "view-sources/20-implementation-progress.md",
+      "source_sha256": "e7989da9e210ded47a15c144e31bb6071891054649b70ed9c17999fd299bd3e6",
+      "output": "../implementation-progress.md"
+    }
+  ],
+  "nodes_dir": "nodes",
+  "edges_dir": "edges",
+  "assumptions_dir": "assumptions",
+  "conflicts_dir": "conflicts"
+}

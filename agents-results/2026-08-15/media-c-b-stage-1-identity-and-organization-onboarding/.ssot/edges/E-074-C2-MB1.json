@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-074-C2-MB1",
+  "from": "C2",
+  "to": "MB1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c2.mb1.v5"
+  ],
+  "transferred_input": "Pilot 子候选",
+  "gate_evidence": "Pilot 正负例绑定同一候选",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-C2"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "MB1 consumes the explicitly produced artifact DL-C2"
+}

@@ -1,0 +1,573 @@
+{
+  "schemaVersion": "openclaw_login_surface_watchdog_v1",
+  "owner": "openclaw-maintenance",
+  "publicBaseUrl": "http://106.52.146.37",
+  "loopbackBaseUrl": "http://127.0.0.1",
+  "stateFile": "/var/lib/openclaw-login-surface-watchdog/status.json",
+  "deepProbeIntervalSeconds": 86400,
+  "historicalReleases": {
+    "r6": {
+      "evidenceOnly": true,
+      "executionEligible": false,
+      "continuationEligible": false,
+      "deploymentEligible": false,
+      "rollbackEligible": false,
+      "artifactsDeleted": true,
+      "backendReleaseIds": [
+        "openclaw-tag-router-media-tenant-20260814T062408Z-opc-feishu-login",
+        "openclaw-tag-router-media-tenant-20260814T084852Z-media-cb-preview-r6"
+      ],
+      "frontendReleaseIds": [
+        "20260814T084852Z-media-cb-preview-r6"
+      ],
+      "sourceSnapshotIds": [
+        "20260814T084852Z-media-cb-preview-r6"
+      ]
+    }
+  },
+  "services": [
+    "nginx.service",
+    "openclaw-opc-api.service",
+    "openclaw-opc-worker.service"
+  ],
+  "mediaDeploymentGuard": {
+    "canonicalSource": "/home/ubuntu/openclaw-ops/bin/verify-openclaw-media",
+    "installedProjection": "/usr/local/sbin/verify-openclaw-media",
+    "projectionMustBeByteIdentical": true,
+    "routeSemanticSelfTestCommand": "bash /home/ubuntu/openclaw-ops/bin/verify-openclaw-media --self-test-login-route"
+  },
+  "mediaDeploymentEntry": {
+    "installedPath": "/usr/local/sbin/deploy-openclaw-media-locked",
+    "historicalReleaseContractPath": "/home/ubuntu/docs/ai-harness/openclaw-login-surface-watchdog-contract.json",
+    "historicalPolicySelfTestCommand": "bash /usr/local/sbin/deploy-openclaw-media-locked --self-test-historical-release-policy",
+    "rejectDeclaredHistoricalBackendReleaseIds": true
+  },
+  "nginx": {
+    "canonicalMainConfig": "/home/ubuntu/openclaw-bot-center/deploy/nginx-openclaw-bot-center.conf",
+    "availableMainConfig": "/etc/nginx/sites-available/openclaw-bot-center",
+    "enabledMainConfig": "/etc/nginx/sites-enabled/openclaw-bot-center",
+    "enabledSymlinkTarget": "../sites-available/openclaw-bot-center",
+    "canonicalOpcSnippet": "/home/ubuntu/openclaw-opc/deploy/nginx-openclaw-opc.conf",
+    "installedOpcSnippet": "/etc/nginx/snippets/openclaw-opc.conf",
+    "allowedLoginLocations": [
+      "= /openclaw/OPC/api/oauth/feishu/login/start",
+      "= /openclaw/OPC/api/oauth/feishu/login/status",
+      "= /openclaw/OPC/login",
+      "= /openclaw/OPC/login/index.html",
+      "= /openclaw/media/login",
+      "= /openclaw/media/login.html",
+      "= /openclaw/media/login/",
+      "= /openclaw/media/login/index.html",
+      "= /media.login.js",
+      "~* /[^/]*login[^/]*\\.html$",
+      "@openclaw_bot_center_login"
+    ],
+    "activeStage1AuthLocations": [
+      "= /openclaw/auth/register",
+      "= /openclaw/auth/verify-email",
+      "= /openclaw/auth/verify-email/resend",
+      "= /openclaw/auth/login",
+      "= /openclaw/auth/recover",
+      "= /openclaw/auth/reset",
+      "= /openclaw/auth/logout",
+      "= /openclaw/auth/feishu/start",
+      "= /openclaw/auth/feishu/status"
+    ],
+    "retiredMediaPasswordLocations": [
+      "= /openclaw/media/auth/login",
+      "= /openclaw/media/auth/password"
+    ]
+  },
+  "opc": {
+    "environmentFile": "/etc/openclaw-opc/opc.env",
+    "expectedEnvironment": {
+      "FEISHU_OAUTH_REDIRECT_URI": "https://106.52.146.37:80/openclaw/OPC/system/oauth-return/",
+      "OPC_ALLOW_HTTP_OAUTH_REDIRECT": "0",
+      "FEISHU_OAUTH_SCOPES": "offline_access contact:contact.base:readonly contact:user.employee:readonly contact:user.employee_id:readonly bitable:app wiki:space:write_only wiki:space:read"
+    },
+    "currentReleasePath": "/opt/openclaw-opc/current",
+    "releaseRoot": "/opt/openclaw-opc/releases",
+    "healthPath": "/openclaw/OPC/api/health"
+  },
+  "httpSurfaces": [
+    {
+      "id": "media_login",
+      "path": "/openclaw/media/login",
+      "expectedStatus": 200,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "text/html",
+      "cacheControlContains": "no-store"
+    },
+    {
+      "id": "opc_login",
+      "path": "/openclaw/OPC/login/",
+      "expectedStatus": 200,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "text/html"
+    },
+    {
+      "id": "bot_center_auth_gate",
+      "path": "/openclaw/bots/",
+      "expectedStatus": 302,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "expectedLocation": "/openclaw/media/login?next=/openclaw/bots/"
+    },
+    {
+      "id": "retired_root_login",
+      "path": "/openclaw/login",
+      "expectedStatus": 404,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "forbidLocation": true
+    },
+    {
+      "id": "retired_bot_center_login",
+      "path": "/openclaw/bots/login.html",
+      "expectedStatus": 404,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "forbidLocation": true
+    },
+    {
+      "id": "retired_media_release_login",
+      "path": "/openclaw/media-releases/openclaw-tag-router-media-login-20260806T021905Z/login.html",
+      "expectedStatus": 404,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "forbidLocation": true
+    },
+    {
+      "id": "media_file_alias",
+      "path": "/openclaw/media/login.html",
+      "expectedStatus": 308,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "expectedLocation": "/openclaw/media/login"
+    },
+    {
+      "id": "media_directory_alias",
+      "path": "/openclaw/media/login/",
+      "expectedStatus": 308,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "expectedLocation": "/openclaw/media/login"
+    },
+    {
+      "id": "media_index_alias",
+      "path": "/openclaw/media/login/index.html",
+      "expectedStatus": 308,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "expectedLocation": "/openclaw/media/login"
+    },
+    {
+      "id": "opc_directory_alias",
+      "path": "/openclaw/OPC/login",
+      "expectedStatus": 308,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "expectedLocation": "/openclaw/OPC/login/"
+    },
+    {
+      "id": "opc_index_alias",
+      "path": "/openclaw/OPC/login/index.html",
+      "expectedStatus": 308,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "expectedLocation": "/openclaw/OPC/login/"
+    },
+    {
+      "id": "private_media_oauth_start",
+      "path": "/openclaw/OPC/api/oauth/feishu/login/start",
+      "expectedStatus": 404,
+      "scopes": [
+        "public"
+      ],
+      "forbidLocation": true
+    },
+    {
+      "id": "private_media_oauth_status",
+      "path": "/openclaw/OPC/api/oauth/feishu/login/status",
+      "expectedStatus": 404,
+      "scopes": [
+        "public"
+      ],
+      "forbidLocation": true
+    },
+    {
+      "id": "stage1_auth_register",
+      "path": "/openclaw/auth/register",
+      "method": "POST",
+      "expectedStatus": 400,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "application/json"
+    },
+    {
+      "id": "stage1_auth_verify_email",
+      "path": "/openclaw/auth/verify-email",
+      "method": "POST",
+      "expectedStatus": 400,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "application/json"
+    },
+    {
+      "id": "stage1_auth_verify_email_resend",
+      "path": "/openclaw/auth/verify-email/resend",
+      "method": "POST",
+      "expectedStatus": 400,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "application/json"
+    },
+    {
+      "id": "stage1_auth_login",
+      "path": "/openclaw/auth/login",
+      "method": "POST",
+      "expectedStatus": 400,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "application/json"
+    },
+    {
+      "id": "stage1_auth_recover",
+      "path": "/openclaw/auth/recover",
+      "method": "POST",
+      "expectedStatus": 400,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "application/json"
+    },
+    {
+      "id": "stage1_auth_reset",
+      "path": "/openclaw/auth/reset",
+      "method": "POST",
+      "expectedStatus": 400,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "application/json"
+    },
+    {
+      "id": "stage1_auth_logout",
+      "path": "/openclaw/auth/logout",
+      "method": "POST",
+      "expectedStatus": 200,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "application/json"
+    },
+    {
+      "id": "stage1_auth_feishu_start",
+      "path": "/openclaw/auth/feishu/start",
+      "method": "POST",
+      "expectedStatus": 200,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "application/json"
+    },
+    {
+      "id": "stage1_auth_feishu_status",
+      "path": "/openclaw/auth/feishu/status",
+      "method": "POST",
+      "expectedStatus": 400,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "application/json"
+    },
+    {
+      "id": "stage1_media_session",
+      "path": "/openclaw/media/api/session",
+      "method": "GET",
+      "expectedStatus": 401,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "application/json"
+    },
+    {
+      "id": "retired_media_password_login",
+      "path": "/openclaw/media/auth/login",
+      "method": "POST",
+      "expectedStatus": 404,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "forbidLocation": true
+    },
+    {
+      "id": "retired_media_password_change",
+      "path": "/openclaw/media/auth/password",
+      "method": "PUT",
+      "expectedStatus": 404,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "forbidLocation": true
+    },
+    {
+      "id": "retired_media_oauth_polling_status",
+      "path": "/openclaw/media/auth/feishu/status",
+      "expectedStatus": 404,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "forbidLocation": true
+    },
+    {
+      "id": "media_oauth_callback_without_query",
+      "path": "/openclaw/media/oauth/callback",
+      "expectedStatus": 400,
+      "scopes": [
+        "public",
+        "loopback"
+      ],
+      "contentTypePrefix": "text/html",
+      "forbidLocation": true
+    }
+  ],
+  "oauth": {
+    "authorizeHost": "open.feishu.cn",
+    "invalidPageMarkers": [
+      "20029",
+      "20043",
+      "redirect uri is invalid",
+      "redirect_url is invalid",
+      "redirect url is invalid",
+      "redirect uri error",
+      "redirect url error"
+    ],
+    "media": {
+      "applicationId": "cli_a97e4492acb8dbd6",
+      "callbackUrl": "http://106.52.146.37/openclaw/media/oauth/callback",
+      "credentialSource": {
+        "type": "openclawAccount",
+        "path": "/home/ubuntu/.openclaw/openclaw.json",
+        "accountKey": "media"
+      },
+      "startPath": "/openclaw/media/auth/feishu/start",
+      "completionMode": "same_browser_callback_session",
+      "successRedirect": "/openclaw/media/overview",
+      "statePrefix": "m_",
+      "requiredScopes": [
+        "contact:user.email:readonly"
+      ]
+    },
+    "opc": {
+      "applicationId": "cli_aae6449cb878dbd7",
+      "callbackUrl": "https://106.52.146.37:80/openclaw/OPC/system/oauth-return/",
+      "credentialSource": {
+        "type": "environmentFile",
+        "path": "/etc/openclaw-opc/opc.env",
+        "appIdKey": "FEISHU_APP_ID",
+        "appSecretKey": "FEISHU_APP_SECRET"
+      },
+      "startPath": "/openclaw/OPC/api/session/feishu/start",
+      "statePrefix": "c_",
+      "requiredScopes": [
+        "offline_access",
+        "contact:contact.base:readonly",
+        "contact:user.employee:readonly",
+        "contact:user.employee_id:readonly",
+        "bitable:app",
+        "wiki:space:write_only",
+        "wiki:space:read"
+      ],
+      "forbiddenScopes": [
+        "contact:user.base:readonly",
+        "wiki:space:write"
+      ]
+    },
+    "feishuApplication": {
+      "tokenPath": "/open-apis/auth/v3/tenant_access_token/internal",
+      "readPathTemplate": "/open-apis/application/v6/applications/{app_id}?lang=zh_cn",
+      "patchPathTemplate": "/open-apis/application/v7/applications/{app_id}/config"
+    }
+  },
+  "staticSourceScan": {
+    "artifactRoots": [
+      "/home/ubuntu/openclaw-bot-center",
+      "/home/ubuntu/selfmedia-tools/openclaw-tag-router",
+      "/home/ubuntu/.openclaw/extensions/openclaw-tag-router"
+    ],
+    "forbiddenArtifactSuffixes": [
+      ".orig",
+      ".rej",
+      ".bak"
+    ],
+    "roots": [
+      "/home/ubuntu/openclaw-bot-center/src",
+      "/home/ubuntu/openclaw-opc/apps/web",
+      "/home/ubuntu/openclaw-opc/services"
+    ],
+    "topLevelFiles": [
+      "/home/ubuntu/openclaw-bot-center/media.login.html",
+      "/home/ubuntu/openclaw-bot-center/media.login.js",
+      "/home/ubuntu/openclaw-bot-center/media.register.html",
+      "/home/ubuntu/openclaw-bot-center/media.register.js"
+    ],
+    "forbiddenPublicPageTokens": [
+      "/openclaw/login",
+      "/openclaw/bots/login",
+      "/openclaw/media/login.html",
+      "/openclaw/OPC/login/index.html"
+    ],
+    "excludedNames": [
+      "node_modules",
+      "dist",
+      "out",
+      "__pycache__"
+    ],
+    "excludedSuffixes": []
+  },
+  "productIsolation": {
+    "authorityMode": "strict_product_owned",
+    "loginTopology": "independent_product_logins",
+    "mediaAuthenticationMode": "feishu_oauth_only",
+    "mediaLoginPath": "/openclaw/media/login",
+    "opcLoginPath": "/openclaw/OPC/login/",
+    "mediaSessionCookieName": "openclaw_session",
+    "opcSessionCookieName": "opc_session",
+    "mediaSessionSource": "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/adapters/http_api.py",
+    "opcSessionSource": "/home/ubuntu/openclaw-opc/services/api/opc_api/routes.py",
+    "retiredMediaPasswordPublicPaths": [
+      "/openclaw/media/auth/login",
+      "/openclaw/media/auth/password"
+    ],
+    "forbiddenMediaPasswordHandlerTokens": [
+      "if path == \"/auth/login\":",
+      "self._handle_auth_login(",
+      "def _handle_auth_login(",
+      "self.account_auth.login(",
+      "if path == \"/auth/password\":",
+      "self._handle_auth_password_change(",
+      "def _handle_auth_password_change(",
+      "self.account_auth.change_password("
+    ],
+    "mediaPasswordHandlerSourceFiles": [
+      "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/adapters/http_api.py",
+      "/home/ubuntu/.openclaw/extensions/openclaw-tag-router/openclaw_app/adapters/http_api.py",
+      "/home/ubuntu/worktrees/a1-media-cb-preview-recovery-20260808/openclaw-tag-router/openclaw_app/adapters/http_api.py"
+    ],
+    "activeConsumerSourceFiles": [
+      "/home/ubuntu/openclaw-bot-center/src/media/mediaWebApi.ts",
+      "/home/ubuntu/openclaw-bot-center/scripts/qa/checkLiveAssetsAndDeletionPreview.ts",
+      "/home/ubuntu/openclaw-bot-center/scripts/qa/checkMediaProductionApiAudit.ts",
+      "/home/ubuntu/openclaw-bot-center/scripts/qa/checkMediaProductionProjection.ts",
+      "/home/ubuntu/openclaw-bot-center/scripts/qa/checkOverviewArtifactNamesProduction.ts",
+      "/home/ubuntu/scripts/qa/media_tenant_cross_user_denial_smoke.py",
+      "/home/ubuntu/scripts/qa/media_web_activity_archive_write_readback_smoke.py",
+      "/home/ubuntu/scripts/qa/media_web_ai_decomposition_smoke.py",
+      "/home/ubuntu/scripts/qa/media_web_all_capability_matrix.py",
+      "/home/ubuntu/scripts/qa/media_web_bff_session.py",
+      "/home/ubuntu/scripts/qa/media_web_channel_runtime_smoke.py",
+      "/home/ubuntu/scripts/qa/media_web_confirmation_write_readback_smoke.py",
+      "/home/ubuntu/scripts/qa/media_web_creation_long_task_smoke.py",
+      "/home/ubuntu/scripts/qa/media_web_creator_profile_resolver_smoke.py",
+      "/home/ubuntu/scripts/qa/media_web_id_business_write_readback_smoke.py",
+      "/home/ubuntu/scripts/qa/media_web_publishing_pack_smoke.py",
+      "/home/ubuntu/scripts/qa/media_web_vlog_inspiration_write_readback_smoke.py",
+      "/home/ubuntu/scripts/qa/openclaw_admin_browser_matrix.py",
+      "/home/ubuntu/scripts/qa/openclaw_seed_retail_inventory.py",
+      "/home/ubuntu/scripts/qa/test_media_web_bff_session.py",
+      "/home/ubuntu/scripts/quality/check_bot_center_published_data_sync.py"
+    ],
+    "forbiddenActiveConsumerTokens": [
+      "/openclaw/media/auth/login",
+      "/openclaw/media/auth/password",
+      "/openclaw/auth/",
+      "/auth/login",
+      "OPENCLAW_MEDIA_QA_EMAIL",
+      "OPENCLAW_MEDIA_QA_PASSWORD",
+      "OPENCLAW_QA_ADMIN_EMAIL",
+      "OPENCLAW_QA_ADMIN_PASSWORD",
+      "MEDIA_QA_USERNAME",
+      "MEDIA_QA_PASSWORD",
+      "openclaw_account_session",
+      "changeInitialPassword"
+    ],
+    "mediaSourceFiles": [
+      "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/account/__init__.py",
+      "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/account/media_feishu_login.py",
+      "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/account/repository.py",
+      "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/adapters/http_api.py",
+      "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/server_cli.py",
+      "/home/ubuntu/openclaw-bot-center/media.login.js",
+      "/home/ubuntu/openclaw-bot-center/deploy/nginx-openclaw-bot-center.conf"
+    ],
+    "forbiddenMediaTokens": [
+      "OpcFeishuLoginClient",
+      "opc_login",
+      "--opc-base-url",
+      "OPENCLAW_OPC_BASE_URL",
+      "opc_session",
+      "/api/oauth/feishu/login/start",
+      "/api/oauth/feishu/login/status",
+      "/openclaw/OPC/system/oauth-return/"
+    ],
+    "opcSourceFiles": [
+      "/home/ubuntu/openclaw-opc/services/api/opc_api/routes.py",
+      "/home/ubuntu/openclaw-opc/apps/web/app/login/session-data.ts"
+    ],
+    "forbiddenOpcTokens": [
+      "openclaw_session",
+      "/openclaw/media/auth/",
+      "/openclaw/media/oauth/callback"
+    ],
+    "requiredMediaModule": "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/account/media_feishu_login.py",
+    "retiredMediaModule": "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/account/opc_login.py"
+  },
+  "systemd": {
+    "serviceSource": "/home/ubuntu/openclaw-ops/systemd/openclaw-login-surface-watchdog.service",
+    "timerSource": "/home/ubuntu/openclaw-ops/systemd/openclaw-login-surface-watchdog.timer",
+    "installedService": "/etc/systemd/system/openclaw-login-surface-watchdog.service",
+    "installedTimer": "/etc/systemd/system/openclaw-login-surface-watchdog.timer"
+  }
+}

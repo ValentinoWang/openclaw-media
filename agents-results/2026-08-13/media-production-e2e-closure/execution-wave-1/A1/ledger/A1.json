@@ -1,0 +1,64 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/A1",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/A1/prompts/A1-luna.txt)"
+      ],
+      "ended_at": "2026-08-13T10:02:28.042115+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/A1/logs/A1-luna.log",
+      "pid": 29783,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/A1/prompts/A1-luna.txt",
+      "prompt_sha256": "f2aec459a855a4ce0d9f42ce9bbd2afd370f9ccd63224c6623431c6d69ff9f80",
+      "started_at": "2026-08-13T09:51:31.791607+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "failure_class": "none",
+        "proposed_state": "VERIFIED"
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/A1/returns/A1-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "56915e900a90e317033b1db536a76538dd21cf8869a54c293f55841f95fd1ef5",
+      "timed_out": false,
+      "validation_command_sha256": "653582a34b4c8443d9aeabf8747fa9f66009daadcc348fdb5adb84052b692d75",
+      "validation_ended_at": "2026-08-13T10:02:28.121633+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/A1/logs/A1-luna.validation.log",
+      "validation_pid": 36671,
+      "validation_started_at": "2026-08-13T10:02:28.042397+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-13T10:02:28.179820+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-13T09:51:31.790369+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/tasks/A1.md",
+  "task_id": "A1",
+  "task_sha256": "56915e900a90e317033b1db536a76538dd21cf8869a54c293f55841f95fd1ef5",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-1/commands/A1.sh",
+  "validation_command_sha256": "653582a34b4c8443d9aeabf8747fa9f66009daadcc348fdb5adb84052b692d75",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "openclaw-media-remote-release-evidence-v1",
+  "recordedAt": "2026-08-18T15:38:07Z",
+  "release": {
+    "frontendRelease": "20260818T-stage1-media-feishu-oauth-r11",
+    "backendRelease": "openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9",
+    "activeFrontendPath": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260818T-stage1-media-feishu-oauth-r11",
+    "backendListener": "127.0.0.1:8787",
+    "opcListener": "127.0.0.1:8098"
+  },
+  "deployment": {
+    "entrypoint": "/usr/local/sbin/deploy-openclaw-media-locked",
+    "result": "PASS",
+    "officialVerifier": "PASS",
+    "publicIndexSha256": "6a9d49013b0888c83c6fe557ab96e68ed93bc60c4be03b1d6f7d87a059ea72d",
+    "mediaLoginSourceSha256": "bd9e4e5e676e809910fbcff918aba0f17c883351ab2330eb06f1dd2d8ca17267"
+  },
+  "contractReadback": {
+    "mediaFeishuStart": {
+      "ok": true,
+      "authorizationUrl": true,
+      "attemptToken": false,
+      "bindingToken": false,
+      "maximumAge": 300
+    },
+    "opcFeishuStart": {
+      "authorizationUrl": true,
+      "statePrefix": "c_"
+    }
+  },
+  "browserSmoke": {
+    "url": "http://106.52.146.37/openclaw/media/login",
+    "mode": "organization",
+    "mediaFeishuStartRequests": 1,
+    "legacyStatusRequests": 0,
+    "canvas": {
+      "width": 200,
+      "height": 200,
+      "darkPixels": 19067,
+      "placeholderHidden": true
+    },
+    "authorizeHost": "open.feishu.cn",
+    "pageErrors": []
+  },
+  "evidenceBoundary": "This receipt proves a code-only remote frontend release, public route contract readback, and unauthenticated browser QR generation. It does not prove completion of a real Feishu account authorization, tenant membership readback, production database acceptance, or formal Stage 1 node acceptance."
+}

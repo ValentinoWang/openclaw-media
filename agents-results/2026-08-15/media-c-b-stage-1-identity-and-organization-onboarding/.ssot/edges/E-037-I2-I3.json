@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-037-I2-I3",
+  "from": "I2",
+  "to": "I3",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.i2.i3.v5"
+  ],
+  "transferred_input": "个人认证生命周期与可验证的组织意图收据",
+  "gate_evidence": "浏览器不能自行激活账号、选择租户或改变认证权威；找回请求不泄露账号是否存在，注册和验证不自动登录，密码重置后所有旧会话和未使用找回令牌失效",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-I2"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "I3 consumes the explicitly produced artifact DL-I2"
+}

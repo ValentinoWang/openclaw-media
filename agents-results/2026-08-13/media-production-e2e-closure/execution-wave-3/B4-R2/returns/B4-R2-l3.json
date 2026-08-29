@@ -1,0 +1,255 @@
+{
+  "task_id": "B4-R2",
+  "attempt_role": "l3",
+  "attempt_number": 2,
+  "task_source_sha256": "9a179773df3fa5980ed5c0442cf7cf75e3f0bb2d745b316eb6b8cdb86a36d908",
+  "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4-R2/returns/B4-R2-l3.json",
+  "version_tuple": {
+    "plan": 1,
+    "dependency_graph": 1,
+    "interface_freeze": 1,
+    "node_contract": 1,
+    "ssot_schema": 1
+  },
+  "decision_ref": "media.no-inference-completion-boundary@1",
+  "invalidation_key": "deployment.media-release-guard",
+  "execution_identity": {
+    "wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+    "worker_pid": null,
+    "worker_pid_note": "No child worker was spawned; the fixed supervisor validation ran in direct L3 shell session 74541.",
+    "validation_shell_session_id": 74541
+  },
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_classification": "none",
+  "luna_failure_resolution": {
+    "reported_failure_class": "verification",
+    "reported_validation_exit_code": 1,
+    "l3_validation_exit_code": 0,
+    "resolution": "Re-ran the unchanged supervisor command against the already-created fixed release; it passed without rebuilding, redeploying, or changing any gate."
+  },
+  "validation": {
+    "command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/commands/B4-R2.sh",
+    "command_file_sha256": "792d494f97e5f0ad61c54640db50e8c822011a032bb02cd73bdd59042c13701d",
+    "command": "bash agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/commands/B4-R2.sh",
+    "exit_code": 0,
+    "output": "OpenClaw Media deployment guard PASS: 20260813T184753CST-media-e2e-b4-label-guard-r2 3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64\\nB4_R2_VALIDATION_PASS release=20260813T184753CST-media-e2e-b4-label-guard-r2 backend=openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2 index_sha256=3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64"
+  },
+  "fixed_identity_before": {
+    "remote_host": "ubuntu@106.52.146.37",
+    "base_source_snapshot": "/home/ubuntu/worktrees/openclaw-bot-center-a1-media-cb-preview-20260808",
+    "base_commit": "db13e39aa4914d2168efcab5e2d9d6c2b26a41d8",
+    "base_status_digest": "a13fef62351d368256cee5361d11887a4fc53db800417c0304db73797ec5123d",
+    "base_source_file_list_sha256": "2c90c87838d89e1e90570174ffdd1b852d8752a0fd1262d383f458651967f0eb",
+    "active_link": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260813T184753CST-media-e2e-b4-label-guard-r2",
+    "old_frontend_release": "20260811T201753CST-media-cb-preview-cp1-r2",
+    "new_frontend_release": "20260813T184753CST-media-e2e-b4-label-guard-r2",
+    "old_release_present": true,
+    "new_release_present": true,
+    "backend_release_link": "/home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "backend_release_real": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "backend_tree_digest": "d4f036a093cc3714d6f295b1e44db34dc3c10f0e684d7b8c64fcfdedba9b6c1b",
+    "deploy_script_sha256": "007ce7ed6d2f3444cf94f9a08b6936f2ff5547163c4abadefd5338917c3358b0",
+    "production_guard_script_sha256": "e7c4e3d31be27a64c551b2bfde6b08c88922d6bb207408b78d73aec64204428e"
+  },
+  "fixed_identity_after": {
+    "active_release": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260813T184753CST-media-e2e-b4-label-guard-r2",
+    "old_release_present": true,
+    "new_release_present": true,
+    "old_index_sha256": "af38cc8fa89a45de2f3ddcbd1f3fe9f27bd9c8b431695483dc7b71b2450e5d2c",
+    "old_manifest_sha256": "8bba584e84fc338f7892ff2158d6715d922eb18afbffed2d6b254ad0e73b2a9c",
+    "new_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+    "new_manifest_sha256": "775a801ed850241ca738afb69c6b7c7cc0d98c326a1bf1726c74acd07a1efea",
+    "new_immutable_attributes": "----i---------e-------",
+    "old_immutable_attributes": "----i---------e-------",
+    "backend_pid": 2397553,
+    "backend_tree_digest": "d4f036a093cc3714d6f295b1e44db34dc3c10f0e684d7b8c64fcfdedba9b6c1b",
+    "base_commit": "db13e39aa4914d2168efcab5e2d9d6c2b26a41d8",
+    "base_status_digest": "a13fef62351d368256cee5361d11887a4fc53db800417c0304db73797ec5123d",
+    "base_source_file_list_sha256": "2c90c87838d89e1e90570174ffdd1b852d8752a0fd1262d383f458651967f0eb",
+    "deploy_script_sha256": "007ce7ed6d2f3444cf94f9a08b6936f2ff5547163c4abadefd5338917c3358b0",
+    "production_guard_script_sha256": "e7c4e3d31be27a64c551b2bfde6b08c88922d6bb207408b78d73aec64204428e"
+  },
+  "fixed_input_files": [
+    "src/media/mediaRoleIa.ts",
+    "src/media/i18n/resourceLabels.ts",
+    "src/media/displayLabels.ts",
+    "src/media/ui/displayLabels.ts",
+    "src/media/pages/ordinary/TracksPage.tsx",
+    "scripts/qa/checkMediaRoleIa.ts",
+    "scripts/qa/checkMediaLanguageCatalog.ts",
+    "scripts/qa/checkMediaReleaseLabels.ts",
+    "package.json",
+    "package-lock.json",
+    "vite.media.config.ts"
+  ],
+  "patch": {
+    "modified_file_count": 8,
+    "patched_source_file_list_sha256": "3c291acdedb94cb8607854a9b5b848641cdbf9f18ac61d36a0009bb91da5f8f5",
+    "modified_files": [
+      {"path": "src/media/mediaRoleIa.ts", "sha256": "7aa6d84f323565ebf488e81a0172276be76dc8a997f07e32d7c0d12142330e27"},
+      {"path": "src/media/i18n/resourceLabels.ts", "sha256": "33364e0f9acd06e714d9b827beda201399ccb92ea0690b625104e7f5ef1605b7"},
+      {"path": "src/media/displayLabels.ts", "sha256": "f96ee51362e374d7533e6d62acdbfd2425d944499319e791335e941f43489692"},
+      {"path": "src/media/ui/displayLabels.ts", "sha256": "a23ac2bf50de334d0303f7ac1281c516a35f19fa1ea1bcb92ed2b90233ec0e15"},
+      {"path": "src/media/pages/ordinary/TracksPage.tsx", "sha256": "1cd1d32aa45a54a2a95b8d1658c3936611446db259b23ec4e1c711aa0f851efb"},
+      {"path": "scripts/qa/checkMediaRoleIa.ts", "sha256": "68d6aaa6fb8a4792ba1b8e7be0d83ebde0a87a349120f3587539d2c7ffeda2ec"},
+      {"path": "scripts/qa/checkMediaLanguageCatalog.ts", "sha256": "28af8e96889eec6670c235deec2354c27e627c36f269099d4623a6e34d10c715"},
+      {"path": "scripts/qa/checkMediaReleaseLabels.ts", "sha256": "63f6cacab47b0229483d2ece5204980c6b26583b4df7c00b6308f1a8ef8ff944"}
+    ],
+    "label_change": {
+      "ordinary_web_track_task": "\u8d26\u53f7\u4e0e\u8d5b\u9053",
+      "institutional_feishu_track_business": "\u8d5b\u9053\u7ba1\u7406",
+      "retired_label_guard_strengthened": true,
+      "existing_billing_platform_icon_assertions_preserved": true
+    }
+  },
+  "artifact": {
+    "release_root": "/mnt/openclaw-data/openclaw-media-frontend-releases",
+    "new_release_path": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260813T184753CST-media-e2e-b4-label-guard-r2",
+    "old_release_path": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260811T201753CST-media-cb-preview-cp1-r2",
+    "asset_base_prefix": "/openclaw/media/",
+    "entry_files": ["index.html", "login.html", "register.html"],
+    "hashed_assets": ["assets/index-CTDYybQb.js", "assets/index-rAqH7ync.css"],
+    "manifest_file_count": 8,
+    "manifest_files": [".release-coordination.json", ".source-snapshot.json", ".source-to-artifact.json", "assets/index-CTDYybQb.js", "assets/index-rAqH7ync.css", "index.html", "login.html", "register.html"],
+    "new_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+    "new_manifest_sha256": "775a801ed850241ca738afb69c6b7c7cc0d98c326a1bf1726c74acd07a1efea",
+    "coordination_sha256": "dda8d63d458b953f16439012a3571441ff289fe64e5acf474450e492cf08d67c",
+    "source_snapshot_sha256": "b9771bc41cb7d79b992b6a249248eb5620b108a943951cdf30da2af985d7db7c",
+    "source_to_artifact_sha256": "301604e878d6d2236ce42302e2a535178d715b8e46ebb5d50fbd3e11fbdcf3c1"
+  },
+  "source_metadata": {
+    "snapshot_schema": "openclaw-media-source-snapshot-v1",
+    "mapping_schema": "openclaw-media-source-to-artifact-v1",
+    "base_commit": "db13e39aa4914d2168efcab5e2d9d6c2b26a41d8",
+    "base_status_digest": "a13fef62351d368256cee5361d11887a4fc53db800417c0304db73797ec5123d",
+    "base_source_file_list_sha256": "2c90c87838d89e1e90570174ffdd1b852d8752a0fd1262d383f458651967f0eb",
+    "patched_source_file_list_sha256": "3c291acdedb94cb8607854a9b5b848641cdbf9f18ac61d36a0009bb91da5f8f5",
+    "frontend_release": "20260813T184753CST-media-e2e-b4-label-guard-r2",
+    "old_frontend_release": "20260811T201753CST-media-cb-preview-cp1-r2",
+    "backend_release": "openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "build_command": "npm run build:media",
+    "build_config": "vite.media.config.ts",
+    "rollback_plan": {
+      "required": true,
+      "activation_link": "/var/www/openclaw/media",
+      "old_frontend_release": "20260811T201753CST-media-cb-preview-cp1-r2",
+      "steps": ["switch-to-old-under-release-lock", "read-old-served-entry-and-health", "restore-new-under-release-lock", "read-new-served-manifest-and-health"]
+    }
+  },
+  "label_gate": {
+    "current_navigation_label_count": 16,
+    "current_navigation_labels": ["\u603b\u89c8", "\u8d26\u53f7\u4e0e\u8d5b\u9053", "\u7d20\u6750\u4e0e\u7075\u611f", "\u9009\u9898\u4e0e\u51b3\u7b56", "\u521b\u4f5c\u4e0e\u4ea4\u4ed8", "\u53d1\u5e03\u51c6\u5907", "\u590d\u76d8\u589e\u957f", "Media Agent", "\u4e91\u7aef\u5f52\u6863", "\u7528\u91cf\u4e0e\u4f59\u989d", "\u9080\u8bf7\u4e2d\u5fc3", "\u5e73\u53f0\u603b\u89c8", "\u7528\u6237\u4e0e\u51c6\u5165", "\u79df\u6237\u8d44\u6e90", "\u8ba1\u8d39\u8fd0\u8425", "\u4e0a\u6e38\u670d\u52a1"],
+    "retired_exact_label_count": 6,
+    "retired_exact_labels_absent_from_artifact": ["\u5a92\u4f53\u5904\u7406", "\u7cfb\u7edf\u4e0e\u5de5\u5177", "\u8bbe\u7f6e\u4e0e\u504f\u597d", "\u5e73\u53f0\u7ba1\u7406", "\u7528\u91cf\u4e0e\u5957\u9910", "\u8d5b\u9053\u4e0e\u535a\u4e3b"],
+    "guard_semantics": ["double-quoted exact labels", "single-quoted exact labels", "backtick exact labels", "HTML text exact labels"]
+  },
+  "backend": {
+    "release_link": "/home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "release_real_path": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+    "tree_digest": "d4f036a093cc3714d6f295b1e44db34dc3c10f0e684d7b8c64fcfdedba9b6c1b",
+    "pid": 2397553,
+    "port": 8787,
+    "argv_identity": "/usr/bin/python3 -m openclaw_app.server_cli --settings <fixed-backend-release>/config/settings.yaml --host 127.0.0.1 --port 8787",
+    "settings_path_matches_fixed_release": true,
+    "healthz": "pass",
+    "readyz": "pass"
+  },
+  "commands": [
+    {"id": "qa_media_role_ia", "exit_code": 0},
+    {"id": "qa_media_language_catalog", "exit_code": 0},
+    {"id": "build_media", "exit_code": 0},
+    {"id": "candidate_artifact_checks", "exit_code": 0},
+    {"id": "initial_locked_deploy", "exit_code": 4, "result": "Fixed backend listener was temporarily absent; no new managed release or link switch remained."},
+    {"id": "retry_locked_deploy", "exit_code": 0},
+    {"id": "first_new_release_gate", "exit_code": 0},
+    {"id": "old_release_rollback_readback", "exit_code": 0},
+    {"id": "new_release_restore_readback", "exit_code": 0},
+    {"id": "cleanup_and_identity_recheck", "exit_code": 0},
+    {"id": "supervisor_validation", "command": "bash agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/commands/B4-R2.sh", "exit_code": 0}
+  ],
+  "release_readbacks": {
+    "first_new_release_gate": {
+      "active_release": "20260813T184753CST-media-e2e-b4-label-guard-r2",
+      "disk_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+      "served_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+      "served_manifest_file_count": 8,
+      "guard": "pass",
+      "new_immutable": true,
+      "old_immutable": true
+    },
+    "old_release_rollback": {
+      "active_release": "20260811T201753CST-media-cb-preview-cp1-r2",
+      "disk_index_sha256": "af38cc8fa89a45de2f3ddcbd1f3fe9f27bd9c8b431695483dc7b71b2450e5d2c",
+      "served_index_sha256": "af38cc8fa89a45de2f3ddcbd1f3fe9f27bd9c8b431695483dc7b71b2450e5d2c",
+      "served_manifest_file_count": 8,
+      "backend_health": "pass",
+      "new_release_retained": true,
+      "old_immutable": true
+    },
+    "new_release_restore": {
+      "active_release": "20260813T184753CST-media-e2e-b4-label-guard-r2",
+      "disk_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+      "served_index_sha256": "3ce9bbbde5656ee720fc2bb7d93761a7277c474b3d3308fec59849c9bc7ada64",
+      "served_manifest_file_count": 8,
+      "healthz": "pass",
+      "readyz": "pass",
+      "guard_result": "success",
+      "guard_exec_main_status": 0,
+      "guard_timer": "active",
+      "new_immutable": true,
+      "old_immutable": true
+    }
+  },
+  "systemd": {
+    "unit": "openclaw-media-deployment-guard.service",
+    "result": "success",
+    "exec_main_status": 0,
+    "timer": "openclaw-media-deployment-guard.timer",
+    "timer_state": "active"
+  },
+  "scope": {
+    "actual_read_paths": [
+      "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/commands/B4-R2.sh",
+      "/home/ubuntu/worktrees/openclaw-bot-center-a1-media-cb-preview-20260808",
+      "/usr/local/sbin/deploy-openclaw-media-locked",
+      "/usr/local/sbin/verify-openclaw-media",
+      "/var/www/openclaw/media",
+      "/mnt/openclaw-data/openclaw-media-frontend-releases/20260811T201753CST-media-cb-preview-cp1-r2",
+      "/mnt/openclaw-data/openclaw-media-frontend-releases/20260813T184753CST-media-e2e-b4-label-guard-r2",
+      "/home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+      "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260811T201753CST-media-cb-preview-cp1-r2",
+      "/var/lock/openclaw-release.lock",
+      "port 8787 /proc listener identity",
+      "http://127.0.0.1:8787/healthz",
+      "http://127.0.0.1:8787/readyz",
+      "openclaw-media-deployment-guard.service",
+      "openclaw-media-deployment-guard.timer"
+    ],
+    "actual_write_paths": [
+      "/tmp/media-e2e-b4.mciZul during Luna implementation; removed before L3 validation",
+      "/mnt/openclaw-data/openclaw-media-frontend-releases/20260813T184753CST-media-e2e-b4-label-guard-r2 during Luna implementation",
+      "/var/www/openclaw/media during Luna atomic old/new link switches under /var/lock/openclaw-release.lock",
+      "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4-R2/returns/B4-R2-l3.json"
+    ],
+    "forbidden_scope_touched": false,
+    "forbidden_scope_note": "No base source, backend source or release, database, Feishu object, service definition, deployment script, production guard script, credential, commit, push, pull, browser session, or unrelated release was modified."
+  },
+  "cleanup": {
+    "temporary_directory": "/tmp/media-e2e-b4.mciZul",
+    "temporary_directory_removed": true,
+    "temporary_directory_pattern_clear": true,
+    "old_release_removed": false,
+    "old_release_preserved": true,
+    "new_release_removed": false,
+    "new_release_preserved": true
+  },
+  "unverified_items": [
+    "This node does not prove authenticated page acceptance beyond static release and entry-file integrity.",
+    "This node does not prove a real authenticated task execution, database side effect, Feishu object, or complete production end-to-end flow.",
+    "This node does not establish B4 ACCEPTED; the proposed state is only VERIFIED for the bounded production frontend release guard and rollback control."
+  ],
+  "completion_boundary": "\u4ec5\u8bc1\u660e\u751f\u4ea7\u524d\u7aef\u53d1\u5e03\u95e8\u7981\u3001\u53d1\u5e03\u8eab\u4efd\u3001\u4e0d\u53ef\u53d8\u4ea7\u7269\u3001\u56fa\u5b9a\u540e\u7aef\u8fdb\u7a0b\u5173\u8054\u3001\u670d\u52a1\u7aef\u6e05\u5355\u6821\u9a8c\u4ee5\u53ca\u65e7\u53d1\u5e03\u56de\u9000/\u65b0\u53d1\u5e03\u6062\u590d\u53ef\u7528\u6027\uff1b\u4e0d\u8bc1\u660e\u8ba4\u8bc1\u9875\u9762\u3001\u771f\u5b9e\u4efb\u52a1\u3001\u6570\u636e\u5e93\u3001\u98de\u4e66\u6216\u5b8c\u6574\u751f\u4ea7\u7aef\u5230\u7aef\u5df2\u7ecf\u9a8c\u6536\u3002",
+  "statement": "All bounded implementation requirements and the unchanged supervisor validation command passed. The final active release is the new immutable frontend release, the old immutable release remains available, and the rollback/readback drill completed successfully. This result does not mark B4 ACCEPTED."
+}

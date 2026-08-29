@@ -1,0 +1,163 @@
+{
+  "task_id": "REVIEW-I2-20260818-RETRY1",
+  "reviewer_route": {
+    "executor": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "model": "gpt-5.6-terra",
+    "reasoning": "xhigh",
+    "mode": "same-main-executor-independent-read-only-review",
+    "child_worker_invoked": false,
+    "codex_exec_invoked": false
+  },
+  "frozen_hashes_verified": {
+    "status": "PASS",
+    "items": [
+      {
+        "path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/I2.json",
+        "expected": "04bd30428e17479e255a7cb9fdb294250ebb56447f45067b639e74ea5f7092d0",
+        "actual": "04bd30428e17479e255a7cb9fdb294250ebb56447f45067b639e74ea5f7092d0",
+        "match": true
+      },
+      {
+        "path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/I2-rerun-20260817.json",
+        "expected": "4b4b9cee5fcf5c04367d0f72e25322e475388e1ec95d8b2c7b662300691046b5",
+        "actual": "4b4b9cee5fcf5c04367d0f72e25322e475388e1ec95d8b2c7b662300691046b5",
+        "match": true
+      },
+      {
+        "path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md",
+        "expected": "e9ddd43a95249bf996cb9833b44cf436b745b81886f0020d7856bb45bc6e325b",
+        "actual": "e9ddd43a95249bf996cb9833b44cf436b745b81886f0020d7856bb45bc6e325b",
+        "match": true
+      },
+      {
+        "path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/index.md",
+        "expected": "d01f1b032ce20691111d2f7fda8e918d21b5ad556e8c04ae8779412bed81e847",
+        "actual": "d01f1b032ce20691111d2f7fda8e918d21b5ad556e8c04ae8779412bed81e847",
+        "match": true
+      }
+    ]
+  },
+  "findings": [
+    {
+      "severity": "BLOCKER",
+      "id": "I2-PG-INTEGRATION-SKIP",
+      "title": "All 16 PostgreSQL integration tests are skipped",
+      "evidence_refs": [
+        "deterministic-receipts/I2-rerun-20260817.json:14-17",
+        "deterministic-receipts/I2-rerun-20260817.json:30-32",
+        ".codex-work/stage1-i2/backend/tests/test_account_auth.py:96-104",
+        ".codex-work/stage1-i2/backend/tests/test_account_registration.py:39-47",
+        "acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/evidence/i2.log"
+      ],
+      "impact": "The 7 PostgreSQL auth tests and 9 PostgreSQL registration tests do not execute because OPENCLAW_ACCOUNT_TEST_DATABASE_URL is unset. Durable token/session persistence, transactional revocation, and database failure behavior are therefore not proven."
+    },
+    {
+      "severity": "BLOCKER",
+      "id": "I2-EXTERNAL-EVIDENCE-MISSING",
+      "title": "External and human acceptance evidence is explicitly absent",
+      "evidence_refs": [
+        "deterministic-receipts/I2-rerun-20260817.json:9-11",
+        "deterministic-receipts/I2-rerun-20260817.json:30-32",
+        "acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md:31-36",
+        "acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md:92-113",
+        "acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/result.md:19-19",
+        "acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/result.md:56-58",
+        "implementation-progress.md:11-15"
+      ],
+      "impact": "The mail failure test uses an injected in-memory adapter and Feishu coverage uses local fake/fixture boundaries. No real mail delivery, Feishu authorization/readback, deployed production runtime, browser/device acceptance, or blocking Product Owner H-01/H-02 result is present."
+    },
+    {
+      "severity": "BLOCKER",
+      "id": "I2-EVIDENCE-IDENTITY-DRIFT",
+      "title": "The manifest-bound evidence does not match the current source identity",
+      "evidence_refs": [
+        "acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/evidence/source-hashes.txt",
+        "deterministic-receipts/I2-rerun-20260817.json:24-28",
+        "acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md:99-104",
+        ".ssot/nodes/I2.json:89-100"
+      ],
+      "impact": "Current shasums are 5d0feb4210e7e13f522422389bb5c5d8585f7d7928bc7e101be4e3713719539b for account/__init__.py and f573d1ad3d16006a070978b2b7f12ee920b08f6b4d29d0c34f878457cd7f1d19 for adapters/http_api.py, while the frozen run binds 759cdd8c... and 6805c5fb.... The current protected lifecycle test matches d149a683..., but the rerun receipt records 24cfb61f.... The node also declares validation/I2-return.json, which is absent. This prevents reuse of the run as current acceptance proof."
+    },
+    {
+      "severity": "HIGH",
+      "id": "I2-LOCAL-ONLY-BOUNDARY",
+      "title": "Passing local route and fixture checks are narrower than I2 acceptance",
+      "evidence_refs": [
+        "deterministic-receipts/I2-rerun-20260817.json:18-21",
+        "acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/result.md:31-41",
+        "acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/result.md:60-62"
+      ],
+      "impact": "Cross-root public-route alignment, CSRF boundaries, token/session fixture assertions, and mail-failure enumeration behavior are useful local evidence, but the run itself says it only advances the contract baseline to consumable and does not accept I2 or production."
+    }
+  ],
+  "evidence_disposition": {
+    "local_lifecycle_fixture": "PARTIAL_PASS",
+    "mail_failure_injection": "LOCAL_IN_MEMORY_PASS_ONLY",
+    "token_and_session_semantics": "LOCAL_IN_MEMORY_PASS_ONLY",
+    "public_routes_and_csrf": "STATIC_AND_CROSS_ROOT_PASS",
+    "postgresql_persistence": "UNVERIFIED_BLOCKING",
+    "protected_test_lock": "CONTRACT_HASH_MATCHES_CURRENT_LIFECYCLE_TEST; RUN_SOURCE_TUPLE_DRIFTS",
+    "real_email": "MISSING",
+    "real_feishu": "MISSING",
+    "deployment_production_browser_device": "MISSING",
+    "human_acceptance": "MISSING"
+  },
+  "acceptance_self_check": {
+    "receipt_self_check": "PASS",
+    "independent_review": "NOT_READY",
+    "decision": "Evidence cannot migrate I2 from VERIFIED to ACCEPTED"
+  },
+  "failure_class": "ACCEPTANCE_EVIDENCE_INCOMPLETE_WITH_SOURCE_IDENTITY_DRIFT",
+  "failure_origin": [
+    {
+      "layer": "environment",
+      "cause": "OPENCLAW_ACCOUNT_TEST_DATABASE_URL is not configured, causing 16 PostgreSQL tests to skip"
+    },
+    {
+      "layer": "evidence_scope",
+      "cause": "The frozen run is local-runtime and mock_or_fixture=true; its own unverified list excludes external, device, browser, and human acceptance"
+    },
+    {
+      "layer": "provenance",
+      "cause": "Current isolated source hashes and the rerun source tuple do not reconcile, and the declared I2-return artifact is absent"
+    }
+  ],
+  "unverified_items": [
+    "16 PostgreSQL integration tests and all durable database persistence/readback assertions",
+    "Persistent token/session revocation and database transaction behavior under the skipped integration layer",
+    "Real email delivery and provider-side failure behavior",
+    "Real Feishu authorization and readback",
+    "Deployment, production runtime, browser, and device acceptance",
+    "Product Owner H-01 and H-02 human acceptance binding/checklist/results",
+    "Current source provenance for account/__init__.py and adapters/http_api.py against the manifest-bound run",
+    "The node-declared validation/I2-return.json artifact"
+  ],
+  "actual_read_scope": [
+    "/Users/vsiyo/.codex/memories/MEMORY.md (keyword query only)",
+    "/Users/vsiyo/.codex/skills/verify-acceptance-release/SKILL.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/develop/Harness/fullstack-ai-harness.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.harness/overlays/project-harness-adapter.yaml",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/I2.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/I2-rerun-20260817.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/index.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/implementation-progress.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i2/backend/openclaw_app/account/lifecycle.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i2/backend/openclaw_app/account/__init__.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i2/backend/openclaw_app/adapters/http_api.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i2/backend/tests/test_stage1_personal_auth_lifecycle.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i2/backend/tests/test_account_auth.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-i2/backend/tests/test_account_registration.py",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I2.sh",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/approvals/main-orchestrator-route-contract-v1.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/result.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/evidence/source-hashes.txt",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/evidence/i2.log",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/evidence/route-alignment.log"
+  ],
+  "actual_write_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance/release/runs/20260818T0525Z-verified-frontier/review-lanes/I2.json"
+  ],
+  "proposed_state": "BLOCKED"
+}

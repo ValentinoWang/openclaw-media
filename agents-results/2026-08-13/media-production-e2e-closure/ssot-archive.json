@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "artifact_class": "ssot-development",
+  "artifact_date": "2026-08-13",
+  "project_name": "self-media-creation-agent",
+  "ssot_name": "media-production-e2e-closure",
+  "main_document": "ssot-development-paths.md",
+  "problem_documents": ["openproblem.md"]
+}

@@ -1,0 +1,96 @@
+{
+  "node_id": "CA",
+  "semantic_key": "media.stage1.release1a-candidate",
+  "stage": "C",
+  "work_kind": "convergence",
+  "domain_lane": "release-1a",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "C1",
+    "C2",
+    "E11",
+    "K2",
+    "M1",
+    "T1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.release1a-candidate.v5"
+  ],
+  "write_authority": "shared-generated",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "DA1"
+  ],
+  "worker_transport": "deterministic-local",
+  "worker_registration": {
+    "executor": "outer orchestrator",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "command": "./tools/rebuild_stage1_candidate --manifest RELEASE_1A_PATCH_MANIFEST --base promotion --output FRESH_CA_DIR --check-twice",
+    "task_argument": "汇合 Release 1A；不部署。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/CA.json",
+    "determinism_key": "E11-candidate-plus-accepted-release1a-patch-manifests",
+    "dispatch_state": "BLOCKED",
+    "note": "deterministic local execution; zero Codex processes"
+  },
+  "runtime_profile_requirement": "none",
+  "related_evidence_ids": [],
+  "description": "候选冻结后修改必须重建并重跑 DA1",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "CA.json",
+  "execution_contract_sha256": "f239b08ab66119b75977a06e163383e0531d78d983061448a4847aed58facf93",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "freezes",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-CA"
+  ],
+  "consumed_artifact_ids": [
+    "DL-C1",
+    "DL-C2",
+    "DL-E11",
+    "DL-K2",
+    "DL-M1",
+    "DL-T1"
+  ],
+  "read_set": [
+    "artifact:C1",
+    "artifact:C2",
+    "artifact:E11",
+    "artifact:K2",
+    "artifact:M1",
+    "artifact:T1"
+  ],
+  "write_set": [
+    "artifact:CA"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:CA",
+      "mode": "W",
+      "isolation_key": "node:CA"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "./tools/rebuild_stage1_candidate --manifest RELEASE_1A_PATCH_MANIFEST --base promotion --output FRESH_CA_DIR --check-twice"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/CA-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-12",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "artifact:CA"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-105-DC1-CB",
+  "from": "DC1",
+  "to": "CB",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.dc1.cb.v5"
+  ],
+  "transferred_input": "Release 1A 独立结论",
+  "gate_evidence": "全部 1A 完成条件成立",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-DC1"
+  ],
+  "resource_ids": [
+    "candidate:REL-1B"
+  ],
+  "necessity_proof": "CB must retain the immutable candidate:REL-1B identity from DC1"
+}

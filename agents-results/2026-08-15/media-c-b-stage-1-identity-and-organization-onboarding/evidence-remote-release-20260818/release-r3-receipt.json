@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "evidence_id": "EV-REMOTE-RELEASE-20260818-R3",
+  "status": "passed",
+  "observed_at": "2026-08-18T04:24:53+08:00",
+  "host": "ubuntu@106.52.146.37",
+  "candidate": {
+    "candidate_manifest_sha256": "edda28759442676faa91ed6692f1fec8a703c730b8ad176cdc2c317e53f2b612",
+    "frontend_source_identity": "92e0ced44f838fb6abbc8349dee927e3510237fdab90a0181debddab769d1eeb",
+    "backend_source_identity": "0210aa094663a8a1b551b021ec55702050c5d72633db7e2825dfedd634f7a138"
+  },
+  "local_gates": {
+    "backend_stage1_pytest": "208 passed",
+    "frontend_build_media": "passed",
+    "runner_profiles_all_fail_closed": "passed",
+    "candidate_manifest_check": "passed",
+    "backend_source_manifest_check": "passed",
+    "frontend_source_manifest_check": "passed"
+  },
+  "remote_release": {
+    "backend_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-keyword-session-r3",
+    "backend_release_path": "/home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260818T-stage1-keyword-session-r3",
+    "backend_stage_path": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260818T-stage1-keyword-session-r3",
+    "frontend_release_id": "20260818T-stage1-keyword-session-r3",
+    "frontend_release_path": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260818T-stage1-keyword-session-r3",
+    "frontend_source_path": "/mnt/openclaw-data/openclaw-media-frontend-stage/20260818T-stage1-keyword-session-r3",
+    "backend_service": "openclaw-bot-center-api.service",
+    "backend_main_pid": 2833354,
+    "healthz": {"ok": true},
+    "readyz": {"ok": true, "matcher_ready": true, "auth_ready": true, "if2_ready": true},
+    "session_principal_watchdog": "passed",
+    "official_deployment_guard": "passed",
+    "frontend_backend_coordination": "passed",
+    "backend_source_manifest_sha256": "0210aa094663a8a1b551b021ec55702050c5d72633db7e2825dfedd634f7a138",
+    "frontend_source_manifest_sha256": "92e0ced44f838fb6abbc8349dee927e3510237fdab90a0181debddab769d1eeb",
+    "frontend_index_sha256": "6a9d49013b0888c83c6fe557ab96e68ed93bc60c4be03b1d6f7d87a059ea72d",
+    "frontend_index_disk_public_loopback_external_match": true,
+    "temporary_backend_sibling_removed": true
+  },
+  "scope_boundary": {
+    "code_only_remote_release": true,
+    "production_database_migration": false,
+    "database_backfill_or_seed_write": false,
+    "feishu_or_email_write": false,
+    "dirty_remote_source_checkout_modified": false,
+    "ssot_node_acceptance_claimed": false,
+    "browser_device_or_real_mail_acceptance_claimed": false
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "node_id": "DC1",
+  "semantic_key": "media.stage1.release1a-final",
+  "stage": "D",
+  "work_kind": "release-decision",
+  "domain_lane": "release-1a",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "DB1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.release1a-final.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "independent acceptance owner",
+  "unlocks": [
+    "CB",
+    "DA"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "independent-readonly-runner",
+  "related_evidence_ids": [],
+  "description": "接受后成为 Release 1B 的不可变基线",
+  "node_role": "release-decision",
+  "execution_actor": "human",
+  "execution_contract_ref": "DC1.json",
+  "execution_contract_sha256": "d925058343737200c771289f65580048e0bdded729a788d181d0faafaccd53e4",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [
+    "DL-DC1"
+  ],
+  "produced_artifact_ids": [
+    "ART-DC1"
+  ],
+  "consumed_artifact_ids": [
+    "DL-DB1"
+  ],
+  "read_set": [
+    "artifact:DB1"
+  ],
+  "write_set": [
+    "evidence:DC1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DC1",
+      "mode": "W",
+      "isolation_key": "node:DC1"
+    }
+  ],
+  "actor_pool": "human-authority",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DC1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DC1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-15"
+}

@@ -1,0 +1,29 @@
+{
+  "contract_id": "M1",
+  "schema_version": 1,
+  "node_id": "M1",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "work_kind": "implementation",
+  "write_authority": "implementation",
+  "read_set": [
+    "artifact:B",
+    "artifact:G1"
+  ],
+  "write_set": [
+    "artifact:M1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:M1",
+      "mode": "W",
+      "isolation_key": "node:M1"
+    }
+  ],
+  "acceptance_commands": [
+    "./tools/rebuild_stage1_candidate --manifest PATH --base development|promotion --output FRESH_DIR --check-twice"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/M1-return.json"
+  ]
+}

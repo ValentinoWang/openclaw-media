@@ -1,0 +1,32 @@
+{
+  "contract_id": "I2",
+  "schema_version": 1,
+  "node_id": "I2",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "work_kind": "implementation",
+  "write_authority": "implementation",
+  "read_set": [
+    "artifact:B",
+    "artifact:G1",
+    "artifact:K1",
+    "artifact:K6",
+    "artifact:M1"
+  ],
+  "write_set": [
+    "artifact:I2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:I2",
+      "mode": "W",
+      "isolation_key": "node:I2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance I2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I2-return.json"
+  ]
+}

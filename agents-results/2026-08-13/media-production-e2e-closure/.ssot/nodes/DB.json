@@ -1,0 +1,23 @@
+{
+  "node_id": "DB",
+  "semantic_key": "media.release-e2e-validation",
+  "stage": "D",
+  "work_kind": "validation",
+  "domain_lane": "release",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": ["DA"],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": ["validation.production-e2e"],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "runtime acceptance owner",
+  "unlocks": ["DC"],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "LW", "wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent", "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access", "sandbox": "danger-full-access", "sandbox_authority": "writable sandbox", "task_argument": "运行真实认证浏览器、生产任务、飞书和数据库读回、失败重试与监控验收。", "return_path": "agents-results/2026-08-13/media-production-e2e-closure/worker-returns/DB.json", "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/prompts/DB.txt", "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/worker-logs/DB.log", "prompt_sha256": "capture-before-launch", "launch_barrier": "all wave PIDs registered before first wait", "prompt_cleanup": "delete after exit evidence registration", "runtime_handle_cleanup": "release after exit evidence registration", "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions", "dispatch_state": "BLOCKED"
+  }
+}

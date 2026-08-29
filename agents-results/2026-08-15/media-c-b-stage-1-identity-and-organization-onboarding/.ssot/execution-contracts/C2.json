@@ -1,0 +1,28 @@
+{
+  "contract_id": "C2",
+  "schema_version": 1,
+  "node_id": "C2",
+  "node_role": "convergence",
+  "execution_actor": "external-system",
+  "work_kind": "convergence",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:I8"
+  ],
+  "write_set": [
+    "evidence:C2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:C2",
+      "mode": "W",
+      "isolation_key": "node:C2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance C2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/C2-return.json"
+  ]
+}

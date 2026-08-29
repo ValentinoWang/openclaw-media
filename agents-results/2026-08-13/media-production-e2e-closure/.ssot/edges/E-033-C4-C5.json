@@ -1,0 +1,1 @@
+{"edge_id":"E-033-C4-C5","from":"C4","to":"C5","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["candidate.media-production-e2e-v4","merge.backend-current-production"],"transferred_input":"后端独立合并候选及清单","gate_evidence":"C4 已接受"}

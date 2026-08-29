@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-112-DB2-DC2",
+  "from": "DB2",
+  "to": "DC2",
+  "dependency_type": "hard",
+  "dependency_scope": "global-completeness",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.db2.dc2.v5"
+  ],
+  "transferred_input": "Release 1B 生产同收据证据",
+  "gate_evidence": "不声称跨系统原子回滚",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-DB2"
+  ],
+  "resource_ids": [
+    "candidate:REL-1B"
+  ],
+  "necessity_proof": "DC2 must retain the immutable candidate:REL-1B identity from DB2"
+}

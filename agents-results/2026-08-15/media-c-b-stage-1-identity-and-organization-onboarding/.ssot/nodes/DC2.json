@@ -1,0 +1,67 @@
+{
+  "node_id": "DC2",
+  "semantic_key": "media.stage1.release1b-final",
+  "stage": "D",
+  "work_kind": "release-decision",
+  "domain_lane": "release-1b",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "DB2"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.release1b-final.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "independent acceptance owner",
+  "unlocks": [
+    "DA"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "independent-readonly-runner",
+  "related_evidence_ids": [],
+  "description": "仅 DC2 ACCEPTED 可宣告第一宏观阶段必需交付完成",
+  "node_role": "release-decision",
+  "execution_actor": "human",
+  "execution_contract_ref": "DC2.json",
+  "execution_contract_sha256": "cae5ce213cd02bf3d4b6346293ec46ee1f6a76c39e840c5e324781d209cc4292",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [
+    "DL-DC2"
+  ],
+  "produced_artifact_ids": [
+    "ART-DC2"
+  ],
+  "consumed_artifact_ids": [
+    "DL-DB2"
+  ],
+  "read_set": [
+    "artifact:DB2"
+  ],
+  "write_set": [
+    "evidence:DC2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DC2",
+      "mode": "W",
+      "isolation_key": "node:DC2"
+    }
+  ],
+  "actor_pool": "human-authority",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DC2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DC2-return.json"
+  ],
+  "release_slice": "REL-1B",
+  "wave_id": "W-1B-23"
+}

@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "task_id": "C5-UNIQUE-CANDIDATE-R2",
+  "attempt_role": "luna",
+  "task_source_sha256": "f606c0a71f6c015998bd8392acd7e407916e5698bc5ddfaeb973a78d37a477c3",
+  "structured_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/returns/C5-UNIQUE-CANDIDATE-R2-luna.json",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "version_tuple": {
+    "plan": 5,
+    "dag": 5,
+    "interface_freeze": 5,
+    "node_contract": 4,
+    "ssot_schema": 1
+  },
+  "wrapper": null,
+  "pid": null,
+  "session": null,
+  "execution_mode": "direct bounded execution; no child worker or long-lived process",
+  "actual_read_scope": [
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/manifest.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/C3.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/C4.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/C5.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/edges/E-032-C3-C5.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/edges/E-033-C4-C5.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/edges/E-034-C5-C1.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/contracts/material-parsing-coverage-v1.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-17/result.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-17/validation/material-parsing-main-thread-review.sh",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-21/C2-ACCOUNT-WORKSPACE-GATE-R2/baseline/current-candidate-source.sha256",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-21/C2-ACCOUNT-WORKSPACE-GATE-R2/result.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-21/C2-ACCOUNT-WORKSPACE-GATE-R2/logs/C2-ACCOUNT-WORKSPACE-GATE-R2-main-thread-final.validation.log",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/tasks/C5-UNIQUE-CANDIDATE-R2.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/validation/C5-UNIQUE-CANDIDATE-R2.sh",
+    ".codex-work/merge-candidate-v4/frontend/**",
+    ".codex-work/merge-candidate-v4/backend/**",
+    ".codex-work/merge-candidate-v4/candidate-manifest.json",
+    ".codex-work/merge-candidate-v4/backend/.merge-provenance.json"
+  ],
+  "actual_write_scope": [
+    ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+    ".codex-work/merge-candidate-v4/backend/.merge-provenance.json",
+    ".codex-work/merge-candidate-v4/candidate-manifest.json",
+    ".codex-work/merge-candidate-v4/candidate-manifest.sha256",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/result.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/returns/C5-UNIQUE-CANDIDATE-R2-luna.json"
+  ],
+  "changed_files": [
+    ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+    ".codex-work/merge-candidate-v4/backend/.merge-provenance.json",
+    ".codex-work/merge-candidate-v4/candidate-manifest.json",
+    ".codex-work/merge-candidate-v4/candidate-manifest.sha256",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/result.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/returns/C5-UNIQUE-CANDIDATE-R2-luna.json"
+  ],
+  "commands": [
+    {
+      "command": "bash agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/validation/C5-UNIQUE-CANDIDATE-R2.sh",
+      "exit_code": 1,
+      "status": "failed_before_acceptance",
+      "note": "Initial run found the checksum file path column was project-root relative instead of candidate-manifest.json; no acceptance bypass occurred."
+    },
+    {
+      "command": "bash -x agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/validation/C5-UNIQUE-CANDIDATE-R2.sh",
+      "exit_code": 1,
+      "status": "diagnostic_trace",
+      "note": "Same frozen script traced the checksum path assertion."
+    },
+    {
+      "command": "cd .codex-work/merge-candidate-v4 && sha256sum candidate-manifest.json > candidate-manifest.sha256",
+      "exit_code": 0,
+      "status": "checksum_path_corrected"
+    },
+    {
+      "command": "bash agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/validation/C5-UNIQUE-CANDIDATE-R2.sh",
+      "exit_code": 0,
+      "status": "pass",
+      "output": "C5 unique candidate R2 validation passed: ef8bfb2f251b99bc0b4c262e3e82ecd9a4a4ca0406408b94b5dedae6db7072bc"
+    }
+  ],
+  "validation": {
+    "command_file": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-22/C5-UNIQUE-CANDIDATE-R2/validation/C5-UNIQUE-CANDIDATE-R2.sh",
+    "command_sha256": "e8ac86d051e84852a90a98818641964af5b4cbef9f0c304a341266d5057baa5e",
+    "final_exit_code": 0,
+    "final_status": "pass",
+    "independent_frontend_file_count": 200,
+    "independent_backend_file_count": 605,
+    "symlink_check": "pass",
+    "unmanaged_temporary_file_check": "pass",
+    "contract_byte_identity_check": "pass",
+    "source_manifest_checksum_check": "pass",
+    "candidate_manifest_checksum_check": "pass"
+  },
+  "candidate_manifests": {
+    "frontend": {
+      "path": ".codex-work/merge-candidate-v4/frontend/.candidate-source.sha256",
+      "sha256": "e4b35df091184f2d51be0c5ccb675223ddc7b6fb1df6ebf366956c1ac9619580",
+      "managed_file_count": 200
+    },
+    "backend": {
+      "path": ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+      "sha256": "80612a3bd5742de73eff2ee1e5fc6b1793ab3cfd071b58e3c3de229effdaa2e6",
+      "managed_file_count": 605
+    },
+    "top_level": {
+      "path": ".codex-work/merge-candidate-v4/candidate-manifest.json",
+      "sha256": "ef8bfb2f251b99bc0b4c262e3e82ecd9a4a4ca0406408b94b5dedae6db7072bc",
+      "checksum_path": ".codex-work/merge-candidate-v4/candidate-manifest.sha256",
+      "checksum_sha256": "3b71c29f977d2293898275635549d7ee6ba3c77abbd167d207cead2c06b36257"
+    }
+  },
+  "evidence_identity": {
+    "ssot_manifest_sha256": "f289160fffc2db7f8072ca73db41567e6240894e33f8fd78ed54c0b758ec7160",
+    "c3_node_sha256": "87f9b93556f99b8358540dc076bcdf9cf2fc496b7cad787d1aef8b5e611559d0",
+    "c4_node_sha256": "7af875a1a952683da37ee9095a784037356e6e8f50e38d136bdfee1658298e9c",
+    "c5_node_sha256": "a90ac98f4c6f0496b7a4f8b0d1e76b854a1658a23fc832dd7142ab5481fc27d8",
+    "c3_to_c5_edge_sha256": "3172246838e098b7f48e7a3f652e5905b79d9d1976995d626d49df80de2bf37d",
+    "c4_to_c5_edge_sha256": "dfeb316e51bd77f6c85fa38838338e82fe5f314bb93117939ded1b876915b21d",
+    "c5_to_c1_edge_sha256": "d83269732a79df90ca221913b1637068c1596f60d82ee543189ecd012ca78ccd",
+    "frontend_source_identity": "57b0b13ef179977d3b70c95caea660b2af54aa2859ec0f575f8db8d644a71edd",
+    "material_parsing_contract_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+    "wave17_result_sha256": "27cfc24b13d7618127996a72f57c38608f4a0df2a32f213104823b6c97021dbf",
+    "wave17_validation_sha256": "fc2bec23ab69da35d18e269bb4cd1a0236eb3929c33c943ee4bff4e6da02de8b",
+    "wave21_result_sha256": "7f13ec0caef574073bf9ce907a503171be25fccf66bf7c2fbedc7dc4073cbc3b",
+    "wave21_validation_log_sha256": "bc5f878b45b1b7f08050715470b823f840732d33a63efd593c8a6ab1f79cdbb8",
+    "wave21_non_database_result": "86 passed, 16 skipped",
+    "wave21_canonical_migration_count": 33,
+    "wave21_postgresql_result": "27 passed",
+    "wave21_production_receipt_gate_exit_code": 3,
+    "wave21_production_accepted": false
+  },
+  "release_coordination": {
+    "frontend_release": "20260814T084319Z-media-login-canonical",
+    "backend_release": "openclaw-tag-router-media-tenant-20260814T062408Z-opc-feishu-login"
+  },
+  "unverified_items": [
+    "The candidate is local-only and not deployed; no production release, restart, or service configuration was performed.",
+    "No production database, Feishu, account, credential, cookie, token, browser, device, or real-QA acceptance evidence was used.",
+    "C5 was not marked ACCEPTED and C1 was not unlocked.",
+    "The initial validation invocation failed only on the checksum path-column assertion and the final frozen validation passed after the scoped correction."
+  ],
+  "external_side_effects": {
+    "remote_host_touched": false,
+    "production_database_touched": false,
+    "feishu_touched": false,
+    "accounts_credentials_cookies_tokens_touched": false,
+    "deployment_performed": false,
+    "restart_performed": false,
+    "long_lived_process_left_running": false,
+    "child_worker_started": false,
+    "frozen_validator_temporary_scratch_created_and_cleaned": true
+  },
+  "shared_resource_impact": {
+    "project_source": "read-only",
+    "ssot_machine_sources": "read-only",
+    "frontend_candidate": "read-only",
+    "backend_candidate": "source manifest and provenance record only",
+    "historical_wave_18_and_wave_21_evidence": "read-only",
+    "remote_systems": "none",
+    "persistent_services": "none"
+  },
+  "deviations": [
+    "The first frozen validation run exited 1 because candidate-manifest.sha256 contained a project-root relative path; the checksum file was rewritten from the candidate directory and the unchanged frozen command then exited 0.",
+    "No frozen input, node, edge, source, contract, historical evidence, validation script, business source, test, or SSOT machine file drift was observed."
+  ],
+  "remaining_risks": [
+    "This evidence establishes a content-bound local unique candidate only; it does not establish deployment, production integration, real-account QA, or production efficacy.",
+    "C5 acceptance remains the supervisor/orchestrator decision and was not performed by this attempt."
+  ],
+  "recommended_state": "VERIFIED; keep C5 READY until supervisor acceptance and do not unlock C1 from this worker return alone"
+}

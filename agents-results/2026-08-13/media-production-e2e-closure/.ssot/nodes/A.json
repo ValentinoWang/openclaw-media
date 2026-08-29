@@ -1,0 +1,22 @@
+{
+  "node_id": "A",
+  "semantic_key": "media.e2e-charter",
+  "stage": "A",
+  "work_kind": "charter",
+  "domain_lane": "governance",
+  "execution_state": "ACCEPTED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": ["charter.media-production-e2e"],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "user and planning authority",
+  "unlocks": ["A1", "D1", "D2", "D6"],
+  "worker_transport": "historical-unregistered",
+  "worker_registration": {"note": "no retroactive worker claim"},
+  "description": "界面、入口、接口或单点读回均不得代替真实认证任务闭环。"
+}

@@ -1,0 +1,67 @@
+{
+  "node_id": "DA1",
+  "semantic_key": "media.stage1.release1a-static",
+  "stage": "D",
+  "work_kind": "validation",
+  "domain_lane": "release-1a",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "CA"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.release1a-static.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "DB1"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "static-validation-runner",
+  "related_evidence_ids": [],
+  "description": "禁止修改候选、生产数据库和外部系统；失败返回所属节点并重建候选",
+  "node_role": "acceptance-gate",
+  "execution_actor": "external-system",
+  "execution_contract_ref": "DA1.json",
+  "execution_contract_sha256": "a46c491c3ee36a14628a2f9c1f779c3d0a7151237d71e5941e44dd287f47ee69",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [
+    "DL-DA1"
+  ],
+  "produced_artifact_ids": [
+    "ART-DA1"
+  ],
+  "consumed_artifact_ids": [
+    "ART-CA"
+  ],
+  "read_set": [
+    "artifact:CA"
+  ],
+  "write_set": [
+    "evidence:DA1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DA1",
+      "mode": "W",
+      "isolation_key": "node:DA1"
+    }
+  ],
+  "actor_pool": "external-acceptance",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DA1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DA1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-13"
+}

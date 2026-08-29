@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "receipt_id": "EV-I2-RERUN-20260817",
+  "node_id": "I2",
+  "execution_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "observed_at": "2026-08-17T00:01:14+08:00",
+  "environment_identity": "local macOS isolated stage1-i2 root with existing Python virtualenv",
+  "evidence_level": "local-runtime",
+  "mock_or_fixture": true,
+  "commands": [
+    {
+      "command": "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I2.sh",
+      "exit_code": 0,
+      "result": "20 passed, 16 skipped"
+    },
+    {
+      "command": "python3 .codex-work/stage1-t1/backend/tests/check_stage1_auth_route_alignment.py --t1-root .codex-work/stage1-t1 --i1-root .codex-work/stage1-i1 --i2-root .codex-work/stage1-i2",
+      "exit_code": 0,
+      "result": "STAGE1_AUTH_ROUTE_ALIGNMENT=GREEN"
+    }
+  ],
+  "changed_source_hashes": {
+    "backend/openclaw_app/account/lifecycle.py": "ca419df8c77318d4ce15d873add236248be26147225363ed29e5731cb8d09013",
+    "backend/openclaw_app/account/__init__.py": "759cdd8c311e19e47cc291f9c97b22be7892a314d1f7b62bc186476c246a24bf",
+    "backend/openclaw_app/adapters/http_api.py": "6805c5fba5492916bc079bce87e4ed4c1633ab0c649f37d8fc0bf81a4353438f",
+    "backend/tests/test_stage1_personal_auth_lifecycle.py": "24cfb61f4412ed4dcff4daba71e64bddfee586b57652da83c7d7620db1515726"
+  },
+  "unverified_items": [
+    "16 PostgreSQL integration tests skipped because OPENCLAW_ACCOUNT_TEST_DATABASE_URL is not configured.",
+    "No real email delivery, Feishu authorization, deployment, production or device acceptance was performed."
+  ]
+}

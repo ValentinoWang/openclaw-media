@@ -1,0 +1,1 @@
+{"edge_id":"E-002-A-D1","from":"A","to":"D1","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["decision.no-inference-completion"],"transferred_input":"用户明确完成边界","gate_evidence":"用户原始请求"}

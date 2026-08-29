@@ -1,0 +1,191 @@
+{
+  "task_id": "C4-BACKEND-VERIFY-R3",
+  "attempt_role": "l3",
+  "task_source_sha256": "f36f84626563cea7b3440da3ebef204a502218c73eaa68391b7a55fbc637906e",
+  "proposed_state": "FAILED",
+  "acceptance_self_check": "partial",
+  "failure_class": "verification",
+  "baseline": {
+    "manifest_sha256": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+    "manifest_rewritten": false,
+    "total_entries": 786,
+    "persistent_entries": 550,
+    "transient_entries": 236,
+    "invalid_entries": 0,
+    "split_check": "pass",
+    "persistent_content_sha256_check": "pass"
+  },
+  "candidate": {
+    "candidate_manifest_sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+    "managed_entry_count": 562,
+    "managed_content_sha256_check": "pass",
+    "post_run_manifest_sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+    "source_written": false,
+    "symlink_count": 0,
+    "transient_residue": "none",
+    "tests_run_on_original_candidate": false,
+    "tests_run_on_temporary_copy": true
+  },
+  "frozen_input_checks": {
+    "ssot_manifest_sha256": "c6aca57fc2676e8a51704bb607c84245a0e55681bd4202270e659a8290ce9782",
+    "b1_sha256": "cd561d9e4d8b2184b4932da81fc143ae105bf917fc0e520849b6547ca92fabbc",
+    "c4_sha256": "e8d5102533b0597d7bff0a7d6469262fb48d6efe8e8a8c92b1561cab5f015b21",
+    "b1_contract_sha256": "a0feedc825fff609f3cd72cbe7a0705ee0f0276fa18209a7f6192d4393984fdc",
+    "c2_contract_sha256": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+    "c2_protected_test_sha256": "dee8b55304a60b4284462310f68f03099369af15071efc2fe5f39dcc8f67b73d",
+    "c2_36_file_manifest_sha256": "23d4017ba54422ba30f1aceb88ff34b2d0a034470d1bb70b9015e95613abe927",
+    "production_backend_manifest_sha256": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+    "candidate_manifest_sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+    "image_dockerfile_sha256": "b1b7ea34b23463f79bed155c30e112f440d908baa8eb1c768522b26b3baf952d",
+    "image_build_receipt_sha256": "d8741b8c05a0ee5b36cb4fc8f748eccb3225e535d84180168335f8f1749cae2a",
+    "validation_script_sha256": "bcbe02a26542fff5ebb868d5363c9bda5903ca8cb66aff45308fa96449edeb58",
+    "status": "all frozen input checks passed"
+  },
+  "runtime_identity": {
+    "image_id": "sha256:edb4dc9c110bb4b0303d7e85d2f3e73e9dd1a777282c10c73fc664c6d6557db3",
+    "architecture": "arm64",
+    "os": "linux",
+    "base_image_digest": "sha256:824f1a789072e648c62541c2cfa4479c4061a290d5c27766d67dc1dcbc19b321",
+    "frontend_lock_sha256": "f3dd4e9e3671ff2d774938b96bfacf083bdfaad454ee19d8effc9d5b96541dd7",
+    "image_identity_check": "pass for ID, architecture, OS, base label, and frontend lock label",
+    "postgres_image": "postgres:16",
+    "postgres_image_id": "sha256:a50864fb29a78647fdea5923ab249a1f07c39474b18eb4a9cbd07ebacc08f",
+    "network_name": "c4-backend-verify-r3-net-41209",
+    "network_internal": true,
+    "network_created": true,
+    "network_removed": true,
+    "postgres_container_name": "c4-backend-verify-r3-pg-41209",
+    "postgres_container_created": true,
+    "postgres_container_removed": true,
+    "postgres_startup_check": "pass",
+    "runner_container_name": "c4-backend-verify-r3-runner-41209",
+    "runner_container_created": true,
+    "runner_container_removed": true,
+    "published_ports": false,
+    "external_network_access": "not available to the internal validation network"
+  },
+  "fixture": {
+    "fixture_is_keyless": true,
+    "api_key": "fake placeholder only; value omitted",
+    "production_config_read": false,
+    "instantiated": true,
+    "read_only_mount": "pass: /home/ubuntu/selfmedia-tools/config/openclaw_bots.json:ro",
+    "planned_bots": ["knowledge"],
+    "planned_profiles": ["knowledge_delegate", "media_creation", "media_analysis", "content_cleaner"],
+    "planned_model": "qa-model",
+    "planned_provider_base_url": "http://127.0.0.1:9",
+    "planned_timeout_seconds": 1,
+    "content_cleaner_enabled": false,
+    "fixture_config_self_check": "pass"
+  },
+  "command_exit_codes": {
+    "baseline_split_and_persistent_check": 0,
+    "c2_manifest_check": 0,
+    "candidate_integrity_check": 0,
+    "image_id_check": 0,
+    "image_architecture_check": 0,
+    "image_os_check": 0,
+    "image_base_label_check": 0,
+    "image_frontend_lock_label_check": 0,
+    "python_version_and_import_self_check": 0,
+    "fixture_config_self_check": 0,
+    "py_compile": 0,
+    "focused_unit_http_tests": 2,
+    "postgres_startup": 0,
+    "postgres_focused_tests": null,
+    "postgres_migration_apply": null,
+    "postgres_migration_verify": null,
+    "task_run_v3_red_light": null,
+    "auth_web_local_candidate_red_light": null,
+    "auth_web_production_red_light": null,
+    "frozen_script": 2
+  },
+  "red_light_gates": [
+    {
+      "name": "task-run-v3-production-receipt",
+      "expected_exit_code": 3,
+      "observed_exit_code": null,
+      "status": "not_run"
+    },
+    {
+      "name": "auth-web-local-candidate-receipt",
+      "expected_exit_code": 20,
+      "observed_exit_code": null,
+      "status": "not_run"
+    },
+    {
+      "name": "auth-web-production-receipt",
+      "expected_exit_code": 20,
+      "observed_exit_code": null,
+      "status": "not_run"
+    }
+  ],
+  "failure": {
+    "stage": "runner container first focused pytest collection",
+    "message": "pytest collection failed with ModuleNotFoundError: No module named 'reminder' in openclaw_app/router/wardrobe.py",
+    "cause": "The frozen candidate imports reminder from the external path /home/ubuntu/openclaw-feishu-reminder, but that module is absent from the 562-entry candidate and the fixed verification image.",
+    "remote_or_production_touched": false,
+    "source_or_candidate_modified": false,
+    "external_module_injected": false,
+    "reason_not_injected": "Injecting an external module would change the frozen candidate dependency boundary and mask the verification failure."
+  },
+  "validation_command": {
+    "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C4-BACKEND-VERIFY-R3/validation/C4-BACKEND-VERIFY-R3.sh",
+    "sha256": "bcbe02a26542fff5ebb868d5363c9bda5903ca8cb66aff45308fa96449edeb58",
+    "exit_code": 2,
+    "script_unchanged": true,
+    "process_local_label_adapter": "used only to normalize the two malformed escaped Docker label query arguments; no script, source, candidate, or frozen input was written",
+    "validation_log_path": "/tmp/c4-backend-verify-r3.l3.log"
+  },
+  "cleanup": {
+    "trap_registered": true,
+    "cleanup_status": "pass",
+    "containers_after_exit": [],
+    "networks_after_exit": [],
+    "validation_scratch_directories_after_exit": [],
+    "temporary_candidate_copy_created": true,
+    "temporary_candidate_copy_removed": true,
+    "temporary_fixture_removed": true,
+    "allowed_validation_log_retained": "/tmp/c4-backend-verify-r3.l3.log"
+  },
+  "read_write_scope": {
+    "read_scope": [
+      "frozen SSOT manifest, B1 and C4 node files",
+      "frozen B1 and C2 acceptance contracts",
+      "frozen C2 protected-test guard and C2 36-file manifest contents",
+      "production backend manifest and its 550 persistent file contents",
+      "backend candidate manifest and its 562 managed file contents",
+      "frozen validation script and wave image metadata files",
+      "local Docker image metadata"
+    ],
+    "write_scope": [
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C4-BACKEND-VERIFY-R3/returns/C4-BACKEND-VERIFY-R3-l3.json",
+      "/tmp/c4-backend-verify-r3.* transient validation area only",
+      "c4-backend-verify-r3-* containers and internal Docker network"
+    ],
+    "actual_project_source_written": false,
+    "candidate_source_written": false,
+    "production_snapshot_written": false,
+    "ssot_contract_or_protected_test_written": false,
+    "remote_host_feishu_account_or_release_written": false
+  },
+  "unverified": [
+    "focused authentication, HTTP, account binding, task, runner, migration, and tenant/owner tests after collection",
+    "PostgreSQL database-focused tests",
+    "PostgreSQL migration apply and verify",
+    "all three red-light gate exit codes 3, 20, and 20"
+  ],
+  "risks": [
+    "C4 cannot be accepted because the frozen candidate test collection fails before the required runtime and database evidence.",
+    "The candidate is not self-contained: wardrobe.py requires an external reminder module absent from the candidate and verification image.",
+    "The frozen script still contains malformed escaped Docker label templates; the process-local adapter did not modify the script and native execution would stop at that preflight."
+  ],
+  "node_status_update": "not performed",
+  "sensitive_information_boundary": {
+    "fixture_is_keyless": true,
+    "private_content_in_return": false,
+    "real_production_config_read": false,
+    "secrets_cookies_tokens_passwords_in_return": false
+  },
+  "structured_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C4-BACKEND-VERIFY-R3/returns/C4-BACKEND-VERIFY-R3-l3.json"
+}

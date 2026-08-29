@@ -1,0 +1,184 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "escalate_l3",
+        "effective_failure_class": "verification",
+        "maximum_escalations_remaining": 1,
+        "next_attempt": "l3",
+        "next_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+        "reason": "verification failure"
+      },
+      "classifier_exit_code": 10,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/prompts/stage1-I7-lw-20260817-luna.txt)"
+      ],
+      "ended_at": "2026-08-16T21:12:50.921619+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/logs/stage1-I7-lw-20260817-luna.log",
+      "pid": 48485,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-lw-I7",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/prompts/stage1-I7-lw-20260817-luna.txt",
+      "prompt_sha256": "bb3738c3a0d877071d2146092993fe52ccd807656a0f69b308c643d52c244600",
+      "started_at": "2026-08-16T20:54:28.643980+00:00",
+      "structured_return": {
+        "acceptance_commands": [
+          "./backend/.venv/bin/python -m pytest -q backend/tests/test_stage1_resource_resolver.py",
+          "./backend/.venv/bin/python -m pytest -q backend/tests/test_media_resource_url_trust_contract.py backend/tests/test_media_stage1_shared_contract.py"
+        ],
+        "acceptance_self_check": "partial",
+        "actual_read_scope": [
+          "backend/openclaw_app/services/stage1_resource_resolver.py",
+          "backend/tests/test_stage1_resource_resolver.py",
+          "backend/tests/test_media_resource_url_trust_contract.py",
+          "backend/tests/test_media_stage1_shared_contract.py",
+          "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/I7.json",
+          "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/view-sources/30-acceptance.md",
+          "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/validation/I7.sh"
+        ],
+        "actual_write_scope": [
+          "backend/openclaw_app/services/stage1_resource_resolver.py",
+          "backend/tests/test_stage1_resource_resolver.py",
+          "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/returns/stage1-I7-lw-20260817-luna.json"
+        ],
+        "changed_files": [
+          "backend/openclaw_app/services/stage1_resource_resolver.py",
+          "backend/tests/test_stage1_resource_resolver.py"
+        ],
+        "command_results": [
+          {
+            "command": "./backend/.venv/bin/python -m pytest -q backend/tests/test_stage1_resource_resolver.py",
+            "detail": "ModuleNotFoundError: No module named 'openclaw_app' from the project-root invocation",
+            "exit_code": 2,
+            "result": "verification_failed_at_collection"
+          },
+          {
+            "command": "./backend/.venv/bin/python -m pytest -q backend/tests/test_media_resource_url_trust_contract.py backend/tests/test_media_stage1_shared_contract.py",
+            "detail": "ModuleNotFoundError: No module named 'openclaw_app' from the project-root invocation",
+            "exit_code": 2,
+            "result": "verification_failed_at_collection"
+          },
+          {
+            "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=backend ./backend/.venv/bin/python -m pytest -q backend/tests/test_stage1_resource_resolver.py",
+            "detail": "24 passed",
+            "exit_code": 0,
+            "result": "pass"
+          },
+          {
+            "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=backend ./backend/.venv/bin/python -m pytest -q backend/tests/test_media_resource_url_trust_contract.py backend/tests/test_media_stage1_shared_contract.py",
+            "detail": "18 passed, 1 failed; test_b_side_trusted_resource_consumers_use_expiry_and_retired_gate failed for forbidden-scope backend/openclaw_app/services/media_business/documents.py",
+            "exit_code": 1,
+            "result": "verification_failed"
+          },
+          {
+            "command": "PYTHONDONTWRITEBYTECODE=1 ./backend/.venv/bin/python -c 'import ast; from pathlib import Path; [ast.parse(Path(path).read_text(encoding=\"utf-8\"), filename=path) for path in (\"backend/openclaw_app/services/stage1_resource_resolver.py\", \"backend/tests/test_stage1_resource_resolver.py\")]'",
+            "detail": "AST parse passed for both authorized files",
+            "exit_code": 0,
+            "result": "pass"
+          }
+        ],
+        "evidence_identities": [
+          "ssot_node_I7_sha256:85040f15da70d402bd064257f73b89438c9a3a1d856e1d7d2f576e2b8162046d",
+          "acceptance_view_30_acceptance_sha256:dc5c59f78c61a0b53b901720fc51e51cf7c6c31acb3f506343cb0688ea17b072",
+          "validation_I7_sh_sha256:51f3bb65a9b95a592ece58f5c41b33a112a8e3c6be81d04aad9f25589eb707aa",
+          "resolver_source_sha256:63345091a5a6d9f54537b5a484f9be881531d09bc1307c9a91497d952586a20a",
+          "resolver_test_sha256:11d4754018220b73811b716f6f2936f1aaaf94f6ca4f2c9fe43c4a5591eb65b3",
+          "evidence_level:local-runtime-fixture-only"
+        ],
+        "failure_class": "verification",
+        "proposed_state": "IMPLEMENTED",
+        "risks": [
+          "Formal acceptance remains partial until the supervisor resolves the isolated import-path verification issue and the out-of-scope shared contract failure.",
+          "This receipt is implementation and local-fixture evidence only; it is not acceptance or production evidence."
+        ],
+        "shared_resource_impact": "No remote or shared runtime resources were called or mutated. Only the two authorized local files were manually changed; the shared-suite failure was left untouched because its target is outside this lane.",
+        "task_id": "stage1-I7-lw-20260817",
+        "unverified_items": [
+          "The exact supervisor commands cannot import openclaw_app from the project root without PYTHONPATH=backend or a backend working directory.",
+          "The shared contract suite still has an unrelated failure in forbidden-scope documents.py and was not changed.",
+          "No real Feishu service, credentials, remote mutation, database projection, production deployment, browser, or external-system evidence was used."
+        ]
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/returns/stage1-I7-lw-20260817-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "12f1a1787becafbbbba24de2762b49a78eff15286e15fede267c1974d3c90da0",
+      "timed_out": false,
+      "validation_command_sha256": "51f3bb65a9b95a592ece58f5c41b33a112a8e3c6be81d04aad9f25589eb707aa",
+      "validation_ended_at": "2026-08-16T21:12:51.174832+00:00",
+      "validation_exit_code": 2,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/logs/stage1-I7-lw-20260817-luna.validation.log",
+      "validation_pid": 65601,
+      "validation_started_at": "2026-08-16T21:12:50.921792+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    },
+    {
+      "attempt_role": "l3",
+      "classification": {
+        "attempt": "l3",
+        "decision": "stop",
+        "maximum_escalations_remaining": 0,
+        "reason": "L3 one-shot escalation did not complete",
+        "terminal_state": "BLOCKED"
+      },
+      "classifier_exit_code": 20,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-l3.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/prompts/stage1-I7-lw-20260817-l3.txt)"
+      ],
+      "ended_at": "2026-08-16T21:42:51.364878+00:00",
+      "exit_code": 124,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/logs/stage1-I7-lw-20260817-l3.log",
+      "pid": 65621,
+      "prior_attempt_index": 0,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-lw-I7",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/prompts/stage1-I7-lw-20260817-l3.txt",
+      "prompt_sha256": "3c1e0f7d624b95713731b3fb8b0b30a2c019ff5840d2de46de49ac78befcce9d",
+      "started_at": "2026-08-16T21:12:51.214709+00:00",
+      "structured_return": null,
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/returns/stage1-I7-lw-20260817-l3.json",
+      "structured_return_state": "missing",
+      "task_sha256": "12f1a1787becafbbbba24de2762b49a78eff15286e15fede267c1974d3c90da0",
+      "timed_out": true,
+      "validation_command_sha256": "51f3bb65a9b95a592ece58f5c41b33a112a8e3c6be81d04aad9f25589eb707aa",
+      "validation_ended_at": "2026-08-16T21:42:51.608149+00:00",
+      "validation_exit_code": 2,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/artifacts-I7/logs/stage1-I7-lw-20260817-l3.validation.log",
+      "validation_pid": 91640,
+      "validation_started_at": "2026-08-16T21:42:51.365017+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-l3.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-16T21:42:51.650807+00:00",
+  "final_decision": "stop",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "l3_wrapper_resolved_at": "2026-08-16T21:12:51.214045+00:00",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-lw-I7",
+  "resolved_l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-16T20:54:28.643140+00:00",
+  "stop_reason": "L3 one-shot escalation did not complete",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/tasks/I7.txt",
+  "task_id": "stage1-I7-lw-20260817",
+  "task_sha256": "12f1a1787becafbbbba24de2762b49a78eff15286e15fede267c1974d3c90da0",
+  "terminal_state": "BLOCKED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/dispatch-stage1-lw/validation/I7.sh",
+  "validation_command_sha256": "51f3bb65a9b95a592ece58f5c41b33a112a8e3c6be81d04aad9f25589eb707aa",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

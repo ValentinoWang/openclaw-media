@@ -1,0 +1,200 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN/prompts/MPE2E-MATERIAL-PARSING-DESIGN-luna.txt)"
+      ],
+      "ended_at": "2026-08-15T12:06:55.790285+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN/logs/MPE2E-MATERIAL-PARSING-DESIGN-luna.log",
+      "pid": 76057,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN/prompts/MPE2E-MATERIAL-PARSING-DESIGN-luna.txt",
+      "prompt_sha256": "11659a8e0d65bccee2efd76ab66f6e0c8fb86e92056ce7978f412983b13a3951",
+      "started_at": "2026-08-15T11:56:40.608156+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "artifact_hashes": {
+          "production_monitoring_plan": "17e197ca0a38da847e9b87eb85e6a8d2eee2934c58384ec8b9342e8fa545b3ed",
+          "project_human_acceptance_index": "6320ec7f56efbe309463233f51ca40bed64a8c3fd63e8c6e5b69f5f6a8a9fb9b",
+          "task_acceptance_index": "5d9dcd49fdc0b0a0d82f95ecb1b1c01da5e913673647ed3fcbba5fb16adfdd2f"
+        },
+        "attempt_history": [
+          {
+            "cause": "The first version of the new gate over-escaped the jq Chinese-character regular expression and rejected valid matrix rows.",
+            "command": "bash scripts/acceptance/test-mpe2e-material-parsing.sh",
+            "exit_code": 1,
+            "failure_class": "verification",
+            "repair": "Corrected only the new gate, updated its protected SHA-256, rebound the human binding, reran all artifact checks, and obtained the final passing run.",
+            "status": "repaired"
+          }
+        ],
+        "attempt_role": "luna",
+        "changed_files": [
+          "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-MATERIAL-PARSING/acceptance-contract.md",
+          "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-MATERIAL-PARSING/acceptance/production/monitoring-plan.md",
+          "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-MATERIAL-PARSING/acceptance/index.md",
+          "acceptance/human/MPE2E-MATERIAL-PARSING/checklist.md",
+          "acceptance/human/MPE2E-MATERIAL-PARSING/binding.md",
+          "acceptance/index.md",
+          "scripts/acceptance/test-mpe2e-material-parsing.sh",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN/returns/MPE2E-MATERIAL-PARSING-DESIGN-luna.json"
+        ],
+        "command_results": [
+          {
+            "command": "manage_acceptance_artifacts.py bind-human ... --replace",
+            "exit_code": 0,
+            "status": "pass"
+          },
+          {
+            "command": "check_acceptance_contract.py acceptance-contract.md --project-root PROJECT_ROOT",
+            "exit_code": 0,
+            "status": "pass"
+          },
+          {
+            "command": "manage_acceptance_artifacts.py index ... --project-root PROJECT_ROOT",
+            "exit_code": 0,
+            "generated": [
+              "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-MATERIAL-PARSING/acceptance/index.md",
+              "acceptance/index.md"
+            ],
+            "status": "pass"
+          },
+          {
+            "command": "manage_acceptance_artifacts.py check ... --project-root PROJECT_ROOT",
+            "exit_code": 0,
+            "status": "pass"
+          },
+          {
+            "command": "bash scripts/acceptance/test-mpe2e-material-parsing.sh",
+            "exit_code": 0,
+            "status": "pass",
+            "summary": "Frozen matrix and byte-copy checks passed; C4 backend validation passed with 40 tests; frontend material parsing and task-launch QA passed; Media build and existing Chromium gates passed; Wave 17 HTTP review passed 1 test; final gate passed."
+          }
+        ],
+        "contract": {
+          "acceptance_owner": "\u4ea7\u54c1\u8d1f\u8d23\u4eba\u548c\u8fd0\u884c\u9a8c\u6536\u8d1f\u8d23\u4eba",
+          "decision_refs": [
+            "media.material-parsing-coverage@1"
+          ],
+          "invalidation_keys": [
+            "decision.material-parsing-coverage",
+            "contract.material-parsing-coverage-v1"
+          ],
+          "path": "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-MATERIAL-PARSING/acceptance-contract.md",
+          "sha256": "b81eeb74cd32420f6bbdf7d70acd469423cb1e1ec34a787f6c6fb4288cca9533",
+          "ssot_node": "D6",
+          "status": "APPROVED",
+          "test_baseline": "LOCKED",
+          "version": 1
+        },
+        "evidence_identity": {
+          "candidate_id": "media-production-e2e-v4",
+          "candidate_manifest_sha256": "62f0fd2a23b614483482242ea6294e0bb3cf7edc0037a740a99f19690fecad4a",
+          "completion_statuses": [
+            "completed_auto",
+            "completed_manual"
+          ],
+          "environment": "local merge-candidate-v4; isolated Docker backend, disposable frontend dependencies, local Chromium and HTTP fixture evidence",
+          "evidence_level": "local-runtime",
+          "fixture_or_mock_evidence": true,
+          "incomplete_error_code": "material_parsing_incomplete",
+          "incomplete_http_status": 422,
+          "matrix_contract_id": "media-material-parsing-coverage-v1",
+          "matrix_contract_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+          "matrix_material_type_count": 6,
+          "matrix_platform_count": 9,
+          "matrix_unique_combination_count": 54,
+          "production_state": "not_deployed",
+          "wave17_result_sha256": "27cfc24b13d7618127996a72f57c38608f4a0df2a32f213104823b6c97021dbf",
+          "wave17_validation_sha256": "fc2bec23ab69da35d18e269bb4cd1a0236eb3929c33c943ee4bff4e6da02de8b"
+        },
+        "failure_class": "none",
+        "forbidden_scope_touched": false,
+        "human_acceptance": {
+          "binding_path": "acceptance/human/MPE2E-MATERIAL-PARSING/binding.md",
+          "binding_sha256": "6448b3d168cfecffd81dcf4945bb4ce2390437244a8307c04522c73bd58219fe",
+          "binding_status": "ACTIVE",
+          "checklist_path": "acceptance/human/MPE2E-MATERIAL-PARSING/checklist.md",
+          "checklist_sha256": "8da2420192a6fd1b3d52d40f22258e620982b90581df80508fee70d39a38d909",
+          "checklist_status": "\u5df2\u6279\u51c6",
+          "unverified_items": [
+            "\u6ca1\u6709\u6267\u884c\u6216\u7b7e\u7f72\u672c\u6b21\u4eba\u5de5\u9a8c\u6536\u6e05\u5355\uff1b\u6e05\u5355\u53ea\u5b9a\u4e49\u4e09\u9879\u673a\u5668\u65e0\u6cd5\u66ff\u4ee3\u7684\u4ea7\u54c1\u7406\u89e3\u5224\u65ad\u3002",
+            "\u6ca1\u6709\u771f\u5b9e\u8d28\u91cf\u9a8c\u6536\u8d26\u53f7\u3001\u771f\u5b9e\u751f\u4ea7\u6d4f\u89c8\u5668\u3001\u8bbe\u5907\u6216\u771f\u5b9e\u5916\u90e8\u5e73\u53f0\u7d20\u6750\u8bc1\u636e\u3002"
+          ]
+        },
+        "implementation_changed": false,
+        "production_touched": false,
+        "proposed_state": "VERIFIED",
+        "protected_test_hashes": {
+          ".codex-work/merge-candidate-v4/backend/tests/test_material_parsing.py": "cf6417ae0fc2e7320880fff1a3e6ef11290d2afa6c1953ba4f596fcdd8a97ce0",
+          ".codex-work/merge-candidate-v4/backend/tests/test_media_web_tasks.py": "c265bee32f4a7726cfbc7060394027fafd17941700b6bcab30b02268b7945153",
+          ".codex-work/merge-candidate-v4/frontend/scripts/qa/checkMaterialParsing.ts": "251ecad97df5ecbff3a3925165d1a60020c0cf6cae7b0420b44ef21928e9f773",
+          ".codex-work/merge-candidate-v4/frontend/scripts/qa/checkTaskLaunchDraft.ts": "a8ae1148331f6006ff89a1d150cc91e167fe95429f8b921770161a712bb00f3f",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/validation/C3-MATERIAL-PARSING-FRONTEND.sh": "32397d19dddb92f06c06f5f28a5b995c0060a2ea61f36db53931601a3ab4d98d",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/validation/C4-MATERIAL-PARSING-BACKEND.sh": "301e62e40c9dbc68269d5b16395ea8b1dfcf1c042eac835514591a8a30a85bb9",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-17/validation/material-parsing-main-thread-review.sh": "fc2bec23ab69da35d18e269bb4cd1a0236eb3929c33c943ee4bff4e6da02de8b",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/validation/C5-UNIQUE-CANDIDATE.sh": "34b6451ec3644a0bf902fbb4f65ea66d92c6d38f5a7ce165d22cdbadc2fffcaf",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN/validation/MPE2E-MATERIAL-PARSING-DESIGN.sh": "b86d8c6924c0a7fa0603daa83b6f8ffdccda7f45bb228ebcfe9ac17a48a29d2d",
+          "scripts/acceptance/test-mpe2e-material-parsing.sh": "3d1e8b2cbcfe24c37876fb9ffaf30c36fdae3832a4aba7e635ee97f48b3c7a2f"
+        },
+        "remote_touched": false,
+        "risks": [
+          "\u5f53\u524d\u8bc1\u636e\u53ea\u8bc1\u660e\u51bb\u7ed3\u5019\u9009\u548c\u672c\u5730\u9694\u79bb\u8fd0\u884c\uff1b\u4e0d\u8bc1\u660e\u90e8\u7f72\u3001\u751f\u4ea7\u96c6\u6210\u3001\u771f\u5b9e\u9644\u4ef6\u6548\u679c\u6216\u751f\u4ea7\u53ef\u7528\u6027\u3002",
+          "\u751f\u4ea7\u76d1\u63a7\u8ba1\u5212\u4e2d\u7684\u9608\u503c\u548c\u56de\u9000\u52a8\u4f5c\u4ecd\u9700\u5728\u53d1\u5e03\u6743\u5a01\u3001\u771f\u5b9e\u90e8\u7f72\u548c\u8fd0\u884c\u9a8c\u6536\u4e2d\u72ec\u7acb\u6267\u884c\u3002",
+          "\u4efb\u4e00\u4fdd\u62a4\u6027\u6d4b\u8bd5\u3001QA \u6216\u9a8c\u8bc1\u811a\u672c\u54c8\u5e0c\u6f02\u79fb\u90fd\u5fc5\u987b\u963b\u65ad\u5e76\u91cd\u65b0\u7ed1\u5b9a\u672c\u5951\u7ea6\uff0c\u4e0d\u80fd\u9759\u9ed8\u66f4\u65b0\u57fa\u7ebf\u3002"
+        ],
+        "structured_return_path": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN/returns/MPE2E-MATERIAL-PARSING-DESIGN-luna.json",
+        "task_id": "MPE2E-MATERIAL-PARSING-DESIGN",
+        "unverified_production_items": [
+          "\u672a\u90e8\u7f72\u5230 106.52.146.37\uff0c\u672a\u91cd\u542f\u670d\u52a1\uff0c\u672a\u8fd0\u884c\u751f\u4ea7\u8fc1\u79fb\u6216\u4fee\u6539\u751f\u4ea7\u914d\u7f6e\u3002",
+          "\u672a\u89e6\u78b0\u751f\u4ea7\u6570\u636e\u5e93\u3001\u98de\u4e66\u3001\u8d26\u53f7\u3001\u51ed\u636e\u3001Cookie\u3001\u4ee4\u724c\u6216\u8fdc\u7a0b\u4e3b\u673a\u3002",
+          "\u672a\u4f7f\u7528\u771f\u5b9e\u56fe\u7247\u3001\u97f3\u9891\u3001\u89c6\u9891\u3001PDF \u6216\u5916\u90e8\u5e73\u53f0\u94fe\u63a5\u751f\u6210\u751f\u4ea7\u6536\u636e\u3002",
+          "\u672a\u5b8c\u6210\u771f\u5b9e\u751f\u4ea7\u6570\u636e\u5e93\u8bfb\u56de\u3001\u5916\u90e8\u5e73\u53f0\u8bfb\u56de\u3001\u8bbe\u5907\u9a8c\u6536\u6216\u771f\u5b9e\u8d28\u91cf\u9a8c\u6536\u8d26\u53f7\u9a8c\u6536\u3002"
+        ]
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN/returns/MPE2E-MATERIAL-PARSING-DESIGN-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "69c7f5be4cae36f9a834dc768b3a153e25c14cae755cae2bbc2aa4ae1f0dffa6",
+      "timed_out": false,
+      "validation_command_sha256": "b86d8c6924c0a7fa0603daa83b6f8ffdccda7f45bb228ebcfe9ac17a48a29d2d",
+      "validation_ended_at": "2026-08-15T12:07:35.432621+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN/logs/MPE2E-MATERIAL-PARSING-DESIGN-luna.validation.log",
+      "validation_pid": 85626,
+      "validation_started_at": "2026-08-15T12:06:55.790430+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-15T12:07:35.478485+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-15T11:56:40.607158+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN/tasks/MPE2E-MATERIAL-PARSING-DESIGN.md",
+  "task_id": "MPE2E-MATERIAL-PARSING-DESIGN",
+  "task_sha256": "69c7f5be4cae36f9a834dc768b3a153e25c14cae755cae2bbc2aa4ae1f0dffa6",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-19/MPE2E-MATERIAL-PARSING-DESIGN/validation/MPE2E-MATERIAL-PARSING-DESIGN.sh",
+  "validation_command_sha256": "b86d8c6924c0a7fa0603daa83b6f8ffdccda7f45bb228ebcfe9ac17a48a29d2d",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

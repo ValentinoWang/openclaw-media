@@ -1,0 +1,83 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/I7-I9-lw-luna",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/I7-I9-lw-luna/prompts/I7-I9-lw-luna-luna.txt)"
+      ],
+      "ended_at": "2026-08-16T18:59:43.508420+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/I7-I9-lw-luna/logs/I7-I9-lw-luna-luna.log",
+      "pid": 533,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-t1",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/I7-I9-lw-luna/prompts/I7-I9-lw-luna-luna.txt",
+      "prompt_sha256": "d1de3b2cee8d2c4b73ffe560f2b5132359b114c03010ce8e791d5ac9f062eeaa",
+      "started_at": "2026-08-16T18:35:07.385378+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "attempt_role": "luna",
+        "failure_class": "none",
+        "notes": [
+          "BindingResourceResolver is server-tenant and active-binding scoped, read-only, tenant-owned, binding-generation checked, credential-free, and validates Feishu HTTPS open links.",
+          "WriterClosed fails closed with capability_unavailable_until_writer_migration, rejects direct and stale replay attempts, exposes no credentials, and retains zero invocation and external-write counters.",
+          "No production, deployment, or formal acceptance evidence is claimed."
+        ],
+        "proposed_state": "VERIFIED",
+        "task_id": "I7-I9-lw-luna",
+        "validation": {
+          "command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I7-I9-lw-luna.sh",
+          "command_sha256": "a84065520ef19d602342b32cfc94d5d7a04527ba406ff2c563204bfbaa086290",
+          "exit_code": 0,
+          "result": "29 passed in 0.10s"
+        },
+        "write_scope": [
+          "backend/openclaw_app/services/stage1_resource_resolver.py",
+          "backend/openclaw_app/services/stage1_writer_gate.py",
+          "backend/tests/test_stage1_resource_resolver.py",
+          "backend/tests/test_stage1_writer_gate.py"
+        ]
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/I7-I9-lw-luna/returns/I7-I9-lw-luna-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "323276f07871ee1b6b3da859fc56fea5b77dd91ae391bbd3fd078cee35bc651b",
+      "timed_out": false,
+      "validation_command_sha256": "a84065520ef19d602342b32cfc94d5d7a04527ba406ff2c563204bfbaa086290",
+      "validation_ended_at": "2026-08-16T18:59:43.824367+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/I7-I9-lw-luna/logs/I7-I9-lw-luna-luna.validation.log",
+      "validation_pid": 23769,
+      "validation_started_at": "2026-08-16T18:59:43.508740+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-16T18:59:43.866951+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-t1",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-16T18:35:07.384529+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-tasks/I7-I9-lw-luna.txt",
+  "task_id": "I7-I9-lw-luna",
+  "task_sha256": "323276f07871ee1b6b3da859fc56fea5b77dd91ae391bbd3fd078cee35bc651b",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I7-I9-lw-luna.sh",
+  "validation_command_sha256": "a84065520ef19d602342b32cfc94d5d7a04527ba406ff2c563204bfbaa086290",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

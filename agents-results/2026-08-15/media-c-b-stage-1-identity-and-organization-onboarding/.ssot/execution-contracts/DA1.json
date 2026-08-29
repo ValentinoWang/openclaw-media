@@ -1,0 +1,28 @@
+{
+  "contract_id": "DA1",
+  "schema_version": 1,
+  "node_id": "DA1",
+  "node_role": "acceptance-gate",
+  "execution_actor": "external-system",
+  "work_kind": "validation",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:CA"
+  ],
+  "write_set": [
+    "evidence:DA1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DA1",
+      "mode": "W",
+      "isolation_key": "node:DA1"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DA1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DA1-return.json"
+  ]
+}

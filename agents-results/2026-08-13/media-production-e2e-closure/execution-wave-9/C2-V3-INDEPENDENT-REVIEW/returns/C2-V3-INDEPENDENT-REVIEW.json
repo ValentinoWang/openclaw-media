@@ -1,0 +1,187 @@
+{
+  "task_id": "C2-V3-INDEPENDENT-REVIEW",
+  "node_id": "C2",
+  "review_scope": "frozen-31-file-c2-v3-candidate",
+  "write_authority": "zero-write",
+  "versions": {
+    "plan": 3,
+    "dag": 3,
+    "interface_freeze": 3,
+    "node_contract": 3,
+    "ssot_schema": 1
+  },
+  "source_and_evidence_identity": {
+    "source_manifest_sha256": "f36330fc9dd994df878e2d4a37deb3bed8fe02ca32c75464a69c786e1691d337",
+    "source_file_count": 31,
+    "contract_sha256": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+    "protected_test_sha256": "dee8b55304a60b4284462310f68f03099369af15071efc2fe5f39dcc8f67b73d",
+    "validation_command_sha256": "c4761038d60531b50bd0a1f13df8ed287833237172507bb6b1c37501a133248e",
+    "validation_log_sha256": "97849f27db4084181b2370c2e9bdcacfb8525b3ed7279b219b99b255e53c9dba"
+  },
+  "review_completion": "done",
+  "findings": [
+    {
+      "id": "F-01",
+      "severity": "blocking",
+      "blocking": true,
+      "title": "Cancelled running tasks become unclaimable after lease recovery",
+      "evidence": [
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:340-368",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:446-451",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:1126-1155"
+      ],
+      "reason": "request_cancel sets cancel_requested=true while a running task remains nonterminal. _recover_expired_tx later changes that task to queued without clearing cancel_requested, while claim_next only claims queued rows with cancel_requested=false. The expired attempt is recorded, but the task can never be reclaimed or settled."
+    },
+    {
+      "id": "F-02",
+      "severity": "blocking",
+      "blocking": true,
+      "title": "Missing authenticated public user ID is silently replaced by the internal user ID",
+      "evidence": [
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py:2145-2152",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py:571-583",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_web_tasks.py:310-329"
+      ],
+      "reason": "Both HTTP task creation and IF2 context construction use session.user_public_id or session.user_id. The service only rejects an empty actor_public_id, so a session missing the required public identifier can be resolved under an internal identifier, producing the wrong identity or accepting a task instead of the frozen required_input_missing/422 before-enqueue failure."
+    },
+    {
+      "id": "F-03",
+      "severity": "blocking",
+      "blocking": true,
+      "title": "Frontend renders a successful result before final receipt settlement",
+      "evidence": [
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:787-814",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media/MediaWebWorkspace.tsx:1269-1280",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media/recentTaskPresentation.ts:122-150"
+      ],
+      "reason": "record_execution_result writes result_projection while the task is waiting_web_readback and no receipt exists. The generic task result view applies is-success solely from task.result.ok, so it can display a success result during the pre-settlement window. The separate settlement presentation correctly requires the terminal stage and receipt, but that guard is not applied to the generic result block."
+    },
+    {
+      "id": "F-04",
+      "severity": "blocking",
+      "blocking": true,
+      "title": "Receipt settlement does not revalidate the frozen relationship or project recovery linkage",
+      "evidence": [
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_web_tasks.py:396-434",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/migrations/canonical/037_media_task_runner_receipts.sql:76-82",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:945-1001",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:1064-1104"
+      ],
+      "reason": "Enqueue stores account_binding in the invocation, but settlement looks up the current active row only by tenant, actor and owned account, then copies its current relationship id, platform and digest into the receipt without comparing them with the invocation binding. The task foreign key likewise pins only tenant/actor/owned-account, so mutable relationship metadata can drift between enqueue and settlement. The receipt projection omits recoveryOfAttemptId; that recovery field is exposed separately by get_settlement rather than being part of the same receipt projection."
+    },
+    {
+      "id": "F-05",
+      "severity": "blocking",
+      "blocking": true,
+      "title": "Independent-review read scope was exceeded",
+      "evidence": [
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media"
+      ],
+      "reason": "Two read-only search commands used a broad backend/openclaw_app tree and frontend/src/media glob expansion instead of only the frozen 31 files. No file was written and no network or remote system was accessed, but the allowlist and zero-write review procedure prohibit expanding the read scope; an independent rerun is required before acceptance."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "frozen-identity",
+      "status": "pass",
+      "evidence": "The 31-line source manifest, contract, protected test, fixed validation command and validation log all matched their frozen SHA-256 values; shasum -a 256 -c reported all 31 candidate files OK."
+    },
+    {
+      "id": "protected-test-integrity",
+      "status": "pass",
+      "evidence": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/scripts/acceptance/test-mpe2e-task-run-v3.sh:35-43 performs the required production-receipt gate and the frozen implementation return records exit 3 because both required production receipts are absent; the protected-test hash matched."
+    },
+    {
+      "id": "postgres-task-ssot",
+      "status": "pass",
+      "evidence": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:92-104 defines the PostgreSQL task authority and /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_web_tasks.py:247-262 requires that repository for the HTTP-facing service; the frozen migration defines task, attempt, lease and receipt tables."
+    },
+    {
+      "id": "pre-enqueue-binding",
+      "status": "finding",
+      "evidence": "The resolver enforces tenant/user/platform/account and a unique formal row at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:115-181, but the authenticated public-user fallback in /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/adapters/http_api.py:2145-2152 violates the required public-ID input boundary (F-02)."
+    },
+    {
+      "id": "fail-closed-errors",
+      "status": "finding",
+      "evidence": "The frozen 422/404/409 map is present at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_web_tasks.py:115-127 and relationship failures are before task creation at :396-406, but missing public ID can be converted to an internal ID before the empty-value check at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_web_tasks.py:328-329 (F-02)."
+    },
+    {
+      "id": "independent-runner",
+      "status": "pass",
+      "evidence": "Distinct runner/executor validation and PostgreSQL claim/lease creation are implemented at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:430-455 and /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_runner.py:145-175, with the database constraint at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/migrations/canonical/037_media_task_runner_receipts.sql:84-111."
+    },
+    {
+      "id": "lease-recovery-idempotency",
+      "status": "finding",
+      "evidence": "Lease expiry recovery and the queued claim predicate are at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:446-455 and :1126-1158; cancellation leaves cancel_requested set at :340-368, so F-01 blocks recovery for cancelled running tasks."
+    },
+    {
+      "id": "same-receipt-projection",
+      "status": "finding",
+      "evidence": "The task freezes account_binding at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_web_tasks.py:425-434, while receipt settlement re-queries a weaker current binding at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:945-1001 and exposes recovery separately at :1064-1123 (F-04)."
+    },
+    {
+      "id": "frontend-projection",
+      "status": "finding",
+      "evidence": "The backend exposes result_projection during waiting_web_readback at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app/services/media_task_repository.py:787-803, and the generic frontend result class uses only result.ok at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/frontend/src/media/MediaWebWorkspace.tsx:1269-1278 (F-03)."
+    },
+    {
+      "id": "legacy-path-removal",
+      "status": "pass",
+      "evidence": "The frozen implementation report records no file-task queue, file event/audit store, fcntl lock, ThreadPoolExecutor or Web-process execution path at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-8/C2-V3-IMPLEMENT/returns/C2-V3-IMPLEMENT-main-thread.json:35-41, and the fixed validation log completed the local gate at :176."
+    },
+    {
+      "id": "local-evidence-boundary",
+      "status": "pass",
+      "evidence": "The local validation evidence reports 34 passed and 2 skipped at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-8/C2-V3-IMPLEMENT/logs/C2-V3-IMPLEMENT-main-thread.validation.log:1-2; the implementation return explicitly leaves production migration, two real same-receipt records and H-01 through H-05 unverified at :79-84, and the protected gate remains blocked at :176."
+    },
+    {
+      "id": "forbidden-scope",
+      "status": "finding",
+      "evidence": "Review command history includes broad read-only searches over /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/c2-main-takeover/backend/openclaw_app and frontend/src/media rather than only the frozen manifest files; see F-05."
+    }
+  ],
+  "commands": [
+    {
+      "command": "shasum -a 256 <source-manifest> <contract> <protected-test> <validation-command> <validation-log>",
+      "exit_code": 0,
+      "result": "All five hashes matched the frozen identity values."
+    },
+    {
+      "command": "wc -l agents-results/2026-08-13/media-production-e2e-closure/execution-wave-8/C2-V3-IMPLEMENT/postimplementation-source.sha256",
+      "exit_code": 0,
+      "result": "31 lines."
+    },
+    {
+      "command": "shasum -a 256 -c agents-results/2026-08-13/media-production-e2e-closure/execution-wave-8/C2-V3-IMPLEMENT/postimplementation-source.sha256",
+      "exit_code": 0,
+      "result": "All 31 candidate source files: OK."
+    },
+    {
+      "command": "read-only rg over backend/migrations backend/openclaw_app",
+      "exit_code": 0,
+      "result": "Scope violation: read outside the frozen allowlist; no write, build, test, network or remote access."
+    },
+    {
+      "command": "read-only rg with frontend/src/media/*.tsx and frontend/src/media/*.ts globs",
+      "exit_code": 0,
+      "result": "Scope violation: glob expansion read outside the frozen allowlist; no write, build, test, network or remote access."
+    }
+  ],
+  "actual_write_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-9/C2-V3-INDEPENDENT-REVIEW/returns/C2-V3-INDEPENDENT-REVIEW.json"
+  ],
+  "forbidden_scope_touched": true,
+  "unverified_items": [
+    "两份真实生产同收据记录及生产数据库/飞书/Web同次读回",
+    "H-01 至 H-05 人工验收结果",
+    "生产发布、最终终验和不可变发布候选合并",
+    "由于本次复核读取范围越界，独立复核自检需要重新运行"
+  ],
+  "acceptance_recommendation": "blocked",
+  "proposed_state": "BLOCKED",
+  "acceptance_self_check": "fail",
+  "failure_class": "scope-conflict"
+}

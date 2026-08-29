@@ -1,0 +1,273 @@
+{
+  "task_id": "STAGE1-ADMIN-AUTH-REVIEW-20260817",
+  "attempt_role": "l3",
+  "task_source_sha256": "a5ec1058cbf9e83c14d9181ffefeb9be7b1c1a57308ccddd326b44f9e2cebcb4",
+  "validation_command_sha256": "d64edcaf48f071fe56e77fe01228ea414357eff8a9c8d0124d1fab6c006155b9",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "review_outcome": "Completed zero-write review. The current server composition cannot successfully confirm an organization installation because it does not inject administrator_authorizer. This verifies the review only; it does not accept the blocked Stage 1 node or establish release readiness.",
+  "findings": [
+    {
+      "severity": "critical",
+      "title": "The production CLI omits administrator_authorizer, so POST /organization/provision/confirm always fails before confirmation work begins.",
+      "references": [
+        "openclaw_app/server_cli.py:328",
+        "openclaw_app/server_cli.py:329",
+        "openclaw_app/server_cli.py:330",
+        "openclaw_app/services/stage1_provisioning_runtime.py:40",
+        "openclaw_app/services/stage1_provisioning_runtime.py:69",
+        "openclaw_app/services/stage1_provisioning_runtime.py:70",
+        "openclaw_app/services/stage1_provisioning_runtime.py:71",
+        "openclaw_app/services/stage1_provisioning_runtime.py:77",
+        "openclaw_app/adapters/http_api.py:1294",
+        "openclaw_app/adapters/http_api.py:1295"
+      ],
+      "evidence": "Stage1ProvisioningRuntime permits an injected Callable[[AccountSession, str], TrustedFeishuAdministrator], but server_cli constructs it with only connection_factory and gateway. confirm_for_session checks for None before repository work and raises feishu_administrator_authorization_unavailable with HTTP 503.",
+      "impact": "No local or server launch through server_cli can complete the confirmation route, even when an authenticated owner, CSRF token, and idempotency key are valid.",
+      "minimum_fix": "Build and inject a server-only administrator authorizer in server_cli; do not bypass the None check or manufacture TrustedFeishuAdministrator from request data."
+    },
+    {
+      "severity": "high",
+      "title": "Existing OAuth, identity-link, and installation-event state does not prove all required administrator authorization claims.",
+      "references": [
+        "openclaw_app/services/stage1_organization_provisioning.py:90",
+        "openclaw_app/services/stage1_organization_provisioning.py:95",
+        "openclaw_app/services/stage1_organization_provisioning.py:96",
+        "openclaw_app/services/stage1_organization_provisioning.py:119",
+        "openclaw_app/services/stage1_organization_provisioning.py:319",
+        "openclaw_app/services/stage1_organization_provisioning.py:321",
+        "openclaw_app/services/stage1_install_events.py:123",
+        "openclaw_app/services/stage1_install_events.py:127",
+        "openclaw_app/services/stage1_install_events.py:130",
+        "openclaw_app/services/stage1_install_events.py:355",
+        "openclaw_app/services/stage1_install_events.py:358",
+        "openclaw_app/account/identity_link.py:159",
+        "openclaw_app/account/identity_link.py:163",
+        "openclaw_app/account/identity_link.py:164",
+        "openclaw_app/account/identity_link.py:167",
+        "openclaw_app/account/identity_link.py:697",
+        "openclaw_app/account/identity_link.py:714",
+        "openclaw_app/adapters/http_api.py:2063",
+        "openclaw_app/adapters/http_api.py:2070",
+        "openclaw_app/adapters/http_api.py:2071"
+      ],
+      "evidence": "The required object has tenant_key, open_id, scopes, expires_at, and is_tenant_administrator. Verified installation events establish installation/app/tenant_key only. Identity links persist an active or revoked tenant_key/open_id pair only. The inspected OAuth login path consumes tenant_key/open_id to create a platform session and does not carry administrator status, tenant:provision scope, or an authorization expiry into the provisioning path. A repository-wide producer search found TrustedFeishuAdministrator.from_server_adapter only in tests, not in production composition.",
+      "impact": "The existing state can be used as an identity and tenant consistency check, but cannot safely create the required TrustedFeishuAdministrator. Treating a VERIFIED string or a stable identity pair as an administrator grant would create a privilege escalation.",
+      "minimum_fix": "At confirmation time, use a server-held provider credential or a server-persisted, one-time, expiry-bounded administrator grant to verify the active identity pair, tenant administrator status, required scope, and expiry."
+    },
+    {
+      "severity": "high",
+      "title": "credentialRef is accepted from the browser and becomes durable credential-selection state used by later provisioning.",
+      "references": [
+        "openclaw_app/adapters/http_api.py:1289",
+        "openclaw_app/adapters/http_api.py:1290",
+        "openclaw_app/adapters/http_api.py:1295",
+        "openclaw_app/services/stage1_provisioning_runtime.py:69",
+        "openclaw_app/services/stage1_provisioning_runtime.py:85",
+        "openclaw_app/services/stage1_provisioning_runtime.py:91",
+        "openclaw_app/services/stage1_organization_provisioning.py:300",
+        "openclaw_app/services/stage1_organization_provisioning.py:327",
+        "openclaw_app/services/stage1_organization_provisioning.py:335",
+        "openclaw_app/services/stage1_organization_provisioning.py:385",
+        "openclaw_app/services/stage1_provisioning_runtime.py:101",
+        "openclaw_app/services/stage1_provisioning_runtime.py:108"
+      ],
+      "evidence": "The HTTP forbidden-field set excludes credentialRef, then forwards body.get(credentialRef). The service only performs lexical normalization, records the value in the confirmation digest, and assigns it to the installation. start_for_session later loads the stored credential_ref into ResourceBindingContext for external resource work.",
+      "impact": "A request can select arbitrary durable credential-reference material without a server-side ownership, installation, tenant, freshness, or secret-store check. Depending on the downstream resolver, this can produce cross-tenant credential confusion or persist material that should never have entered from the browser.",
+      "minimum_fix": "Remove credentialRef from the HTTP request entirely. Resolve an opaque credential reference server-side from the verified installation and administrator grant, validate it against the selected installation and tenant, and pass a trusted typed grant or server-owned value into confirmation."
+    },
+    {
+      "severity": "high",
+      "title": "Platform admin is implicitly converted to tenant support and may bypass the organization-workspace gate for start, status, and deprovision operations.",
+      "references": [
+        "openclaw_app/adapters/http_api.py:1271",
+        "openclaw_app/adapters/http_api.py:1272",
+        "openclaw_app/services/stage1_provisioning_runtime.py:50",
+        "openclaw_app/services/stage1_provisioning_runtime.py:51",
+        "openclaw_app/services/stage1_provisioning_runtime.py:52",
+        "openclaw_app/services/stage1_provisioning_runtime.py:53",
+        "openclaw_app/services/stage1_provisioning_runtime.py:94",
+        "openclaw_app/services/stage1_provisioning_runtime.py:131",
+        "openclaw_app/services/stage1_organization_provisioning.py:733",
+        "openclaw_app/services/stage1_organization_provisioning.py:736",
+        "tests/test_stage1_authorization.py:164",
+        "tests/test_stage1_authorization.py:168",
+        "tests/test_stage1_authorization.py:170"
+      ],
+      "evidence": "The route admits a session whose global role is admin even outside organization_lark. actor_for_session then maps global admin to support without a tenant-scoped support assignment, current membership readback, or support-grant expiry. ProvisionOrchestrator only validates the trusted marker, not the role's provenance. Existing authorization coverage separately asserts that a platform admin cannot select or read another tenant, but it does not cover this support conversion or the Stage 1 control plane.",
+      "impact": "A global control-plane role is being treated as tenant-scoped operational authority. Confirmation still requires an owner record, but support can start or deprovision once the runtime derives the actor.",
+      "minimum_fix": "Make support an explicit tenant-scoped, auditable, expiry-bounded authorization source. If product policy does not authorize that role, remove the global-admin workspace bypass and map only an active tenant owner to the provision actor."
+    },
+    {
+      "severity": "medium",
+      "title": "The current runtime errors and HTTP envelope are outside the frozen Stage 1 OpenAPI error contract, and no composition or endpoint test catches it.",
+      "references": [
+        "openclaw_app/contracts/media_web_business_pages.openapi.yaml:10",
+        "openclaw_app/contracts/media_web_business_pages.openapi.yaml:26",
+        "openclaw_app/contracts/media_web_business_pages.openapi.yaml:31",
+        "openclaw_app/contracts/media_web_business_pages.openapi.yaml:88",
+        "openclaw_app/contracts/media_web_business_pages.openapi.yaml:91",
+        "openclaw_app/contracts/media_web_business_pages.openapi.yaml:8648",
+        "openclaw_app/contracts/media_web_business_pages.openapi.yaml:8672",
+        "openclaw_app/services/stage1_provisioning_runtime.py:71",
+        "openclaw_app/adapters/http_api.py:569",
+        "openclaw_app/adapters/http_api.py:578",
+        "openclaw_app/adapters/http_api.py:581",
+        "openclaw_app/adapters/http_api.py:1207",
+        "openclaw_app/adapters/http_api.py:1208"
+      ],
+      "evidence": "The contract declares closed Stage 1 error codes, but feishu_administrator_authorization_unavailable and the admin_confirmation_* codes are not in the enumerated list. The route returns the generic {ok:false,error:{code,message}} envelope, while the declared Stage 1 response schema requires a different closed error shape. No test references Stage1ProvisioningRuntime, confirm_for_session, /organization/provision/confirm, or administrator_authorizer.",
+      "impact": "Clients cannot rely on the frozen control-plane interface for retry/reauthorization behavior, and an authorization failure may appear as an undocumented response.",
+      "minimum_fix": "Obtain interface-freeze approval to add a precise request/response and error mapping, or map only to approved generic closed codes without leaking provider details. Add HTTP contract tests before release."
+    }
+  ],
+  "trusted_server_side_evidence": {
+    "tenant_key": {
+      "status": "conditionally available",
+      "evidence": "A real TrustedInstallationEventAdapter can verify/decrypt an event and bind tenant_key to an installation; the service also detects cross-bound app or tenant identity.",
+      "limitations": "The inspected server_cli composition does not construct an InstallationEventService or its adapter, and tenant_key alone is not administrator authorization."
+    },
+    "open_id": {
+      "status": "partially available",
+      "evidence": "IdentityLinkRecord stores tenant_key/open_id with active or revoked status, and the OAuth login handler receives a verified pair before platform login.",
+      "limitations": "The identity-link result type accepts a status string and a stable pair but contains no administrator claim, scope, grant provenance, or authorization expiry. It must be independently rechecked against the active session and provider evidence."
+    },
+    "administrator_status": {
+      "status": "not available in deployed composition",
+      "evidence": "TrustedFeishuAdministrator has is_tenant_administrator, but no production producer was found; the only direct factory uses are test fixtures."
+    },
+    "required_scope": {
+      "status": "not available in deployed composition",
+      "evidence": "tenant:provision is a local constant and is checked by confirmation, but no OAuth, install-event, identity-link, or server-cli path supplies it."
+    },
+    "expiry": {
+      "status": "not available for administrator authorization",
+      "evidence": "Identity-link intents and OAuth scan attempts have their own expiries, but the inspected provisioning path has no persisted or live administrator-grant expiry."
+    }
+  },
+  "implementation_recommendation": {
+    "minimum_safe_closure": "Introduce one server-only administrator authorization adapter and wire it into server_cli. It must resolve the current platform session's active tenant identity, verify a provider-backed or server-persisted administrator grant for the expected installation tenant, select the credential reference server-side, and return a trusted context. Browser input must contain no identity or credential-selector fields.",
+    "proposed_interface": {
+      "name": "Stage1AdministratorAuthorizer",
+      "method": "authorize(session: AccountSession, expected_tenant_key: str) -> AuthorizedProvisioningContext",
+      "return_shape": {
+        "administrator": "TrustedFeishuAdministrator created only after server-side verification of tenant_key, open_id, is_tenant_administrator, tenant:provision, and expires_at",
+        "credential": "trusted server-selected opaque credential reference bound to the same installation and tenant"
+      },
+      "required_checks": [
+        "Resolve one active server-side identity link for session.user_id and session.tenant_id; reject missing, ambiguous, revoked, or tenant/open_id mismatch.",
+        "Verify or read a fresh administrator grant using server-held provider credentials; never trust browser fields, a VERIFIED status string, or a stable identity pair as a grant.",
+        "Require the expected tenant_key, is_tenant_administrator true, tenant:provision present, and expires_at later than the server clock.",
+        "Resolve credential_ref from the verified installation/grant on the server and check installation and tenant ownership before it reaches ResourceBindingContext.",
+        "Audit the grant identity, installation, decision, and non-secret reference identifier; do not log OAuth tokens, raw credentials, ciphertext, or browser-supplied values."
+      ]
+    },
+    "error_handling": [
+      "Return a fail-closed 403 for missing/revoked/ambiguous identity, tenant or open_id mismatch, non-administrator, missing scope, and expired grant.",
+      "Return a sanitized 503 for unavailable provider verification, unavailable credential store, or unconfigured server credential; do not fall back to platform admin or cached identity alone.",
+      "Reject a confirm body containing credentialRef or any identity/role/installation field with 403. The normal body should be empty until an approved request schema says otherwise.",
+      "Map all outcomes to approved frozen OpenAPI error codes and response schema before changing the public endpoint."
+    ],
+    "not_authorized_by_this_review": "No source, migration, credential configuration, deployment, or SSOT acceptance is authorized by this review."
+  },
+  "required_files": [
+    {
+      "path": "openclaw_app/services/stage1_feishu_administrator_authorizer.py",
+      "change": "New server-only adapter that combines active server identity evidence, provider/admin-grant verification, expiry checks, and installation-owned credential selection."
+    },
+    {
+      "path": "openclaw_app/services/stage1_organization_provisioning.py",
+      "change": "Add a marked trusted credential/grant boundary so AdministratorConfirmationService cannot receive a browser-originated raw credential_ref string. Preserve the existing administrator, scope, expiry, and tenant checks."
+    },
+    {
+      "path": "openclaw_app/services/stage1_provisioning_runtime.py",
+      "change": "Consume AuthorizedProvisioningContext from the authorizer, remove the credential_ref argument from confirm_for_session, and fail closed when the authorizer cannot supply a verified context."
+    },
+    {
+      "path": "openclaw_app/server_cli.py",
+      "change": "Construct the authorizer from explicit server configuration and account/provider repositories, fail startup or return a deterministic unavailable state when the required credential configuration is absent, and inject it into Stage1ProvisioningRuntime."
+    },
+    {
+      "path": "openclaw_app/adapters/http_api.py",
+      "change": "Reject credentialRef as a browser field, retain CSRF and idempotency requirements, and translate the authorizer's sanitized errors into the approved contract response."
+    },
+    {
+      "path": "openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+      "change": "Only after interface-freeze approval: define the confirm request as server-derived/no credential selector and add or approve the exact closed error mapping and response envelope."
+    }
+  ],
+  "required_tests": [
+    {
+      "path": "tests/test_stage1_feishu_administrator_authorizer.py",
+      "coverage": "Active identity plus matching tenant/open_id/admin/scope/future expiry succeeds; missing, revoked, ambiguous, cross-tenant, non-admin, missing-scope, expired, and unavailable-provider paths fail closed without secret leakage."
+    },
+    {
+      "path": "tests/test_stage1_organization_provisioning.py",
+      "coverage": "Replace raw credential_ref fixture input with a trusted server grant and assert direct untrusted credential values are rejected. Keep atomic and idempotent confirmation coverage."
+    },
+    {
+      "path": "tests/test_stage1_provisioning_runtime.py",
+      "coverage": "Default missing authorizer returns 503; injected authorizer is called with the session and server-derived expected tenant_key; only its server-selected credential reaches confirmation."
+    },
+    {
+      "path": "tests/test_stage1_provisioning_http.py",
+      "coverage": "Exercise /openclaw/media/api/organization/provision/confirm with session, CSRF, and idempotency. Verify empty-body success with a fake trusted authorizer; reject tenant/openId/role/installationId/credentialRef; assert approved 403 and 503 contracts."
+    },
+    {
+      "path": "tests/test_server_cli_stage1_composition.py",
+      "coverage": "Verify server_cli supplies the authorizer in HTTP composition and fails deterministically when required server configuration is absent."
+    },
+    {
+      "path": "tests/test_stage1_provisioning_openapi.py",
+      "coverage": "Validate the frozen request and error schema against the actual confirm route, including no browser credential selector."
+    }
+  ],
+  "decisions_needed": [
+    {
+      "decision": "Administrator proof source",
+      "why": "Choose the supported Feishu API/grant that proves tenant administrator status and determine whether tenant:provision is a provider scope or an application-local, server-signed policy scope. This cannot be inferred from the current OAuth login or install-event data."
+    },
+    {
+      "decision": "Credential ownership model",
+      "why": "Decide whether provisioning uses an app-owned server credential selected solely from installation state or a per-tenant credential stored in an approved server-side vault. The browser must never select the reference."
+    },
+    {
+      "decision": "Platform-admin support policy",
+      "why": "Decide whether global platform admins may act as tenant-scoped support. If yes, define an explicit tenant assignment, audit, and expiry; if no, remove the implicit mapping and workspace bypass."
+    },
+    {
+      "decision": "Interface-freeze error mapping",
+      "why": "Approve exact public request and error semantics or require mapping to existing closed generic codes. This review must not alter the frozen contract."
+    }
+  ],
+  "commands": [
+    {
+      "command": "shasum -a 256 worker-tasks/STAGE1-ADMIN-AUTH-REVIEW-20260817.txt",
+      "result": "pass: a5ec1058cbf9e83c14d9181ffefeb9be7b1c1a57308ccddd326b44f9e2cebcb4"
+    },
+    {
+      "command": "shasum -a 256 worker-validation/STAGE1-ADMIN-AUTH-REVIEW-20260817.sh",
+      "result": "pass: d64edcaf48f071fe56e77fe01228ea414357eff8a9c8d0124d1fab6c006155b9"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -q tests/test_stage1_organization_provisioning.py tests/test_account_identity_link.py tests/test_stage1_install_events.py",
+      "result": "pass: 42 passed in 0.14s"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -q tests/test_stage1_authorization.py tests/test_stage1_postgres_provisioning.py",
+      "result": "pass: 18 passed in 0.05s"
+    },
+    {
+      "command": "rg -n 'TrustedFeishuAdministrator.from_server_adapter|administrator_authorizer' openclaw_app tests -g '*.py'",
+      "result": "review evidence: production contains the injectable slot only; direct trusted-administrator factory uses were test fixtures."
+    }
+  ],
+  "changed_files": [],
+  "residual_risks": [
+    "Passing focused tests prove pure service behavior and selected authorization semantics, not CLI composition, HTTP confirm behavior, provider credential availability, or a real Feishu administrator readback.",
+    "No live provider, local deployment, database migration, external credential store, or production system was touched by this zero-write review.",
+    "The Stage 1 SSOT node remains formally blocked until an approved credential and support policy is implemented and independently verified against the frozen acceptance path.",
+    "The candidate backend directory is not itself a Git worktree, so this review did not use Git diff as evidence; no candidate source, test, migration, manifest, contract, or SSOT file was edited."
+  ]
+}

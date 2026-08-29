@@ -1,0 +1,78 @@
+{
+  "node_id": "E11",
+  "semantic_key": "media.external.revision11-d3a",
+  "stage": "A",
+  "work_kind": "external-prerequisite",
+  "domain_lane": "revision11",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "A1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.external.revision11-d3a.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "canonical acceptance owner",
+  "unlocks": [
+    "CA",
+    "CB"
+  ],
+  "worker_transport": "automatic-projection",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "canonical:D3A"
+    ],
+    "projection_rule": "ACCEPTED iff canonical D3A is ACCEPTED and its candidate receipt is hash-bound",
+    "task_argument": "自动读取 canonical D3A 并生成零写入外部门状态。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/projections/E11.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  },
+  "runtime_profile_requirement": "none",
+  "related_evidence_ids": [],
+  "description": "成为 CA 与 CB 的真实机器硬依赖，但不接管 R1-R4",
+  "node_role": "leaf",
+  "execution_actor": "external-system",
+  "execution_contract_ref": "E11.json",
+  "execution_contract_sha256": "58cf5a774337888781e670e0786510ccf5022ce4f6806d9850a40d64f36fc7b0",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [
+    "DL-E11"
+  ],
+  "produced_artifact_ids": [
+    "ART-E11"
+  ],
+  "consumed_artifact_ids": [
+    "DL-A1"
+  ],
+  "read_set": [
+    "artifact:A1"
+  ],
+  "write_set": [
+    "evidence:E11"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:E11",
+      "mode": "W",
+      "isolation_key": "node:E11"
+    }
+  ],
+  "actor_pool": "external-acceptance",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance E11\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/E11-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-2"
+}

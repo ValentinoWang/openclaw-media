@@ -1,0 +1,125 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/prompts/C3-MATERIAL-PARSING-FRONTEND-luna.txt)"
+      ],
+      "ended_at": "2026-08-15T10:20:58.342443+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/logs/C3-MATERIAL-PARSING-FRONTEND-luna.log",
+      "pid": 33735,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/prompts/C3-MATERIAL-PARSING-FRONTEND-luna.txt",
+      "prompt_sha256": "17ead93030e02f93508422260fb60e99af0bfd1f68c1840d3e9e398d323d3acc",
+      "started_at": "2026-08-15T09:54:47.112894+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "actual_modified_files": [
+          ".codex-work/merge-candidate-v4/frontend/contracts/material-parsing-coverage-v1.json",
+          ".codex-work/merge-candidate-v4/frontend/src/media/task-launch/materialParsing.ts",
+          ".codex-work/merge-candidate-v4/frontend/src/media/task-launch/DynamicTaskForm.tsx",
+          ".codex-work/merge-candidate-v4/frontend/src/media/task-launch/TaskReview.tsx",
+          ".codex-work/merge-candidate-v4/frontend/src/media/task-launch/taskDraft.ts",
+          ".codex-work/merge-candidate-v4/frontend/src/media/MediaWebWorkspace.tsx",
+          ".codex-work/merge-candidate-v4/frontend/src/media/mediaWebApi.ts",
+          ".codex-work/merge-candidate-v4/frontend/src/schemas/mediaWebTaskSchema.ts",
+          ".codex-work/merge-candidate-v4/frontend/src/media/media.css",
+          ".codex-work/merge-candidate-v4/frontend/scripts/qa/checkMaterialParsing.ts",
+          ".codex-work/merge-candidate-v4/frontend/package.json",
+          ".codex-work/merge-candidate-v4/frontend/tsconfig.app.json"
+        ],
+        "attempt_role": "luna",
+        "contract": {
+          "authority_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+          "byte_equal": true,
+          "candidate_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+          "coverage_count": 54
+        },
+        "failure_class": "none",
+        "production_touched": false,
+        "proposed_state": "VERIFIED",
+        "remote_touched": false,
+        "risks": [
+          "Material parsing behavior is verified against the frozen frontend contract and isolated backend mount, not a remote production deployment.",
+          "The final build emitted only the existing large-chunk warning; it did not fail validation."
+        ],
+        "structured_return_path": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/returns/C3-MATERIAL-PARSING-FRONTEND-luna.json",
+        "task_id": "C3-MATERIAL-PARSING-FRONTEND",
+        "unverified": [
+          "No authenticated production or device acceptance evidence was collected.",
+          "Backend candidate runtime compatibility is outside this frontend-only write scope.",
+          "C3 was not marked ACCEPTED."
+        ],
+        "validation": {
+          "command_file": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/validation/C3-MATERIAL-PARSING-FRONTEND.sh",
+          "command_sha256": "32397d19dddb92f06c06f5f28a5b995c0060a2ea61f36db53931601a3ab4d98d",
+          "final_exit_code": 0,
+          "intermediate_exit_codes": [
+            {
+              "cause": "TypeScript rejected a string | false filter predicate in materialParsing.ts; fixed with an explicit boolean predicate.",
+              "exit_code": 2
+            },
+            {
+              "cause": "Protected confirmation-receipt QA required the existing exact TaskReview disabled expression; preserved it while folding incomplete material parsing into the local block condition.",
+              "exit_code": 1
+            },
+            {
+              "cause": "Final fixed validation passed.",
+              "exit_code": 0
+            }
+          ],
+          "passed": [
+            "contract hash and byte comparison",
+            "qa:material-parsing",
+            "qa:task-launch",
+            "tsc --noEmit -p tsconfig.media-u12b.json",
+            "build:media",
+            "Vite media production build"
+          ]
+        }
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/returns/C3-MATERIAL-PARSING-FRONTEND-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "f43f53d87e88df4cd5d2c4731b67a0d8702dd05cc98a0fad122356ef2c1450a2",
+      "timed_out": false,
+      "validation_command_sha256": "32397d19dddb92f06c06f5f28a5b995c0060a2ea61f36db53931601a3ab4d98d",
+      "validation_ended_at": "2026-08-15T10:22:01.553371+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/logs/C3-MATERIAL-PARSING-FRONTEND-luna.validation.log",
+      "validation_pid": 64687,
+      "validation_started_at": "2026-08-15T10:20:58.359022+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-15T10:22:01.615023+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-15T09:54:47.111752+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/tasks/C3-MATERIAL-PARSING-FRONTEND.md",
+  "task_id": "C3-MATERIAL-PARSING-FRONTEND",
+  "task_sha256": "f43f53d87e88df4cd5d2c4731b67a0d8702dd05cc98a0fad122356ef2c1450a2",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C3-MATERIAL-PARSING-FRONTEND/validation/C3-MATERIAL-PARSING-FRONTEND.sh",
+  "validation_command_sha256": "32397d19dddb92f06c06f5f28a5b995c0060a2ea61f36db53931601a3ab4d98d",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-078-P1-P2",
+  "from": "P1",
+  "to": "P2",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.p1.p2.v5"
+  ],
+  "transferred_input": "Provision 模型",
+  "gate_evidence": "覆盖 ACTIVE、NEEDS_ATTENTION、DISABLED 和 REVOKED",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-P1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "P2 consumes the explicitly produced artifact DL-P1"
+}

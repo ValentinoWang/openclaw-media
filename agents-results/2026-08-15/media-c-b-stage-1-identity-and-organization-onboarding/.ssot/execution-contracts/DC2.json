@@ -1,0 +1,28 @@
+{
+  "contract_id": "DC2",
+  "schema_version": 1,
+  "node_id": "DC2",
+  "node_role": "release-decision",
+  "execution_actor": "human",
+  "work_kind": "release-decision",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:DB2"
+  ],
+  "write_set": [
+    "evidence:DC2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DC2",
+      "mode": "W",
+      "isolation_key": "node:DC2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DC2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DC2-return.json"
+  ]
+}

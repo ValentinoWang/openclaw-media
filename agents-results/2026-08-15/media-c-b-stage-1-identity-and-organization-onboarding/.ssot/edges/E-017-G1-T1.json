@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-017-G1-T1",
+  "from": "G1",
+  "to": "T1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.g1.t1.v5"
+  ],
+  "transferred_input": "五类配置能力回执",
+  "gate_evidence": "五种配置均有真实启动命令、能力边界和失败关闭证据",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-G1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "T1 consumes the explicitly produced artifact DL-G1"
+}

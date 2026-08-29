@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-013-GA1-G1",
+  "from": "GA1",
+  "to": "G1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.ga1.g1.v5"
+  ],
+  "transferred_input": "五类配置定位与权限声明回执",
+  "gate_evidence": "每类配置都有可定位身份，且人工初始化本身不依赖任一配置",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-GA1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "G1 consumes the explicitly produced artifact DL-GA1"
+}

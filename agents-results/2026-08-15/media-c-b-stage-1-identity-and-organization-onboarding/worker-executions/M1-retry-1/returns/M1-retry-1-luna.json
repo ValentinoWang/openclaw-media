@@ -1,0 +1,78 @@
+{
+  "task_id": "M1-retry-1",
+  "node_id": "M1",
+  "versions": {
+    "plan": 4,
+    "dag": 4,
+    "interface_freeze": 4,
+    "node_contract": 4
+  },
+  "attempt_role": "luna",
+  "wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "pid_or_session_identity": null,
+  "frozen_input_hashes": {
+    "task_source_sha256": "6269b26aed35c9181c7e7f2d65ae2d38a5ae90e9ba67d72a90a84736cbf408c0",
+    "validation_command_sha256": "f8e6d892c94b2f8b9666bee018ffba3baa72ecca9c8a524c97b50a195af76768",
+    "ssot_manifest_sha256": "377e81adf7d6c8b1b6439e350f307f479f1fd16e8e1be2e2f51ad3828dbfaa26",
+    "m1_node_sha256": "fd7cbf43f108bdfef18fff2050a7f419596c2945d3fdfd9f6a2c874f613d2253",
+    "accepted_b_node_sha256": "7d44ad0ee48dc259b4daba4ee9881a81568f8783a8203732369257f5d5f8fed2",
+    "accepted_g1_node_sha256": "11d83ad61cbb84bdb956d7a6336f48c7775d98941cb555dc6eaecae1151add24",
+    "candidate_manifest_sha256": "f1ac786573e76aa40a0d69a10aab6dba5bd6a345596242d93f37773b59f45bcb",
+    "candidate_frontend_source_identity_sha256": "420b4ac3c9a064a21c2511d3b71750bedc3fed1b5a2f85ace236d5930cefccb0",
+    "candidate_backend_source_identity_sha256": "a5e34064d554fe6a11b93f608b23202e737b40eac9dcedc4388c18dc952710be",
+    "candidate_frontend_provenance_sha256": "c2dbdd4643849d4322db6d75a9bfe8dd687f38fc34a033b488600ebd584d68ac",
+    "candidate_backend_provenance_sha256": "68c4ce5bae5c07e3be2a2a00f878c443e1165c15e72fa910bda686a4a38765c9"
+  },
+  "actual_read_scope": [
+    "/Users/vsiyo/.codex/memories/MEMORY.md",
+    "/Users/vsiyo/.agents/skills/code-quality/SKILL.md",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/M1-retry-1.sh",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/M1.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/B.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/G1.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/merge-candidate-v4/candidate-manifest.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/merge-candidate-v4/frontend/.candidate-source.sha256",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/merge-candidate-v4/frontend/.merge-provenance.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/merge-candidate-v4/backend/.merge-provenance.json"
+  ],
+  "actual_write_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/M1-retry-1/returns/M1-retry-1-luna.json"
+  ],
+  "changed_files": [],
+  "commands_and_results": [
+    {
+      "command": "shasum -a 256 <frozen input files>",
+      "result": "all declared frozen input hashes matched"
+    },
+    {
+      "command": "python3 -m pytest --version",
+      "result": "failed: No module named pytest"
+    },
+    {
+      "command": "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/M1-retry-1.sh",
+      "result": "not run because the required test runner is unavailable"
+    }
+  ],
+  "evidence_identities": [
+    "sha256:377e81adf7d6c8b1b6439e350f307f479f1fd16e8e1be2e2f51ad3828dbfaa26",
+    "sha256:fd7cbf43f108bdfef18fff2050a7f419596c2945d3fdfd9f6a2c874f613d2253",
+    "sha256:7d44ad0ee48dc259b4daba4ee9881a81568f8783a8203732369257f5d5f8fed2",
+    "sha256:11d83ad61cbb84bdb956d7a6336f48c7775d98941cb555dc6eaecae1151add24",
+    "environment:python3.13-without-pytest"
+  ],
+  "unverified_items": [
+    "No implementation, schema, fixture, or focused test was created because the frozen test runner is unavailable.",
+    "The exact frozen validation command was not executed.",
+    "No candidate rebuild, deterministic check-twice result, or write-scope validation is available."
+  ],
+  "deviation_level": "none",
+  "shared_resource_impact": "none; no shared source, candidate, SSOT, or external resource was modified",
+  "risks": [
+    "The requested M1 implementation remains undone until a Python environment with pytest is available for the exact acceptance command."
+  ],
+  "proposed_state": "BLOCKED",
+  "acceptance_self_check": "fail",
+  "failure_class": "verification"
+}

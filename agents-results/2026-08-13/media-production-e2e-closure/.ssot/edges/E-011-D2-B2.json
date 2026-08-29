@@ -1,0 +1,1 @@
+{"edge_id":"E-011-D2-B2","from":"D2","to":"B2","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["contract.context-task-e2e"],"transferred_input":"同收据证明决定","gate_evidence":"D2 v1"}

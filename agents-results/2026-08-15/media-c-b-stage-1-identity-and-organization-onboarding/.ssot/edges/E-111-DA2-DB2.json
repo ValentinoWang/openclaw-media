@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-111-DA2-DB2",
+  "from": "DA2",
+  "to": "DB2",
+  "dependency_type": "hard",
+  "dependency_scope": "global-completeness",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.da2.db2.v5"
+  ],
+  "transferred_input": "Release 1B 静态证据包",
+  "gate_evidence": "全部门禁对同一候选通过",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-DA2"
+  ],
+  "resource_ids": [
+    "candidate:REL-1B"
+  ],
+  "necessity_proof": "DB2 must retain the immutable candidate:REL-1B identity from DA2"
+}

@@ -1,0 +1,74 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-2/B1",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-2/B1/prompts/B1-luna.txt)"
+      ],
+      "ended_at": "2026-08-13T10:06:46.643567+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-2/B1/logs/B1-luna.log",
+      "pid": 38264,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-2/B1/prompts/B1-luna.txt",
+      "prompt_sha256": "6c5fad539f4ec8ac5421f93ae9e2bf3395f11195058fa1698795ee403e0adbc8",
+      "started_at": "2026-08-13T10:04:48.811901+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "conditions": {
+          "contract_status": "DRAFT",
+          "op01": "unresolved",
+          "test_baseline": "PLANNED"
+        },
+        "contract": "MPE2E-AUTH-WEB",
+        "failure_class": "none",
+        "proposed_state": "VERIFIED",
+        "scope_statement": "\u4ec5\u8bc1\u660e\u6761\u4ef6\u5408\u540c\u7ed3\u6784\u3001\u4e2d\u6587\u4eba\u5de5\u6e05\u5355\u53ca\u54c8\u5e0c\u7ed1\u5b9a\u7684\u51bb\u7ed3\u6838\u9a8c\u901a\u8fc7\uff1b\u4e0d\u4ee3\u8868\u5408\u540c\u83b7\u6279\u3001\u9875\u9762\u5b8c\u6210\u6216\u8ba4\u8bc1\u6d4f\u89c8\u5668\u9a8c\u6536\u5b8c\u6210\u3002",
+        "task_id": "B1",
+        "validation_command_exit_code": 0,
+        "validation_command_sha256": "b8ebae233a982f0cf7187d5d8303063ac417b165735e11f49df8b636118b94f0"
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-2/B1/returns/B1-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "cff93495e0bb6b99766993bb3e5a5f85920d6376c9045601379a5ed3c7dfd741",
+      "timed_out": false,
+      "validation_command_sha256": "b8ebae233a982f0cf7187d5d8303063ac417b165735e11f49df8b636118b94f0",
+      "validation_ended_at": "2026-08-13T10:06:46.770850+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-2/B1/logs/B1-luna.validation.log",
+      "validation_pid": 39807,
+      "validation_started_at": "2026-08-13T10:06:46.643812+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-13T10:06:46.820082+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-13T10:04:48.810321+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-2/tasks/B1.md",
+  "task_id": "B1",
+  "task_sha256": "cff93495e0bb6b99766993bb3e5a5f85920d6376c9045601379a5ed3c7dfd741",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-2/commands/B1.sh",
+  "validation_command_sha256": "b8ebae233a982f0cf7187d5d8303063ac417b165735e11f49df8b636118b94f0",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

@@ -1,0 +1,97 @@
+{
+  "node_id": "K1",
+  "semantic_key": "media.stage1.decision.personal-auth",
+  "stage": "A",
+  "work_kind": "decision-acceptance",
+  "domain_lane": "product-decision",
+  "execution_state": "ACCEPTED",
+  "decision_state": "ACCEPTED",
+  "decision_version": 1,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "A1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.decision.personal-auth.v5"
+  ],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "user",
+  "unlocks": [
+    "I1",
+    "I2",
+    "IL1"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "human-decision",
+  "related_evidence_ids": [],
+  "description": "解锁 I1 与 I2；第二阶段个人文档继续写入云端内部成果",
+  "node_role": "leaf",
+  "execution_actor": "human",
+  "execution_contract_ref": "K1.json",
+  "execution_contract_sha256": "a0daa93d30f3e536e8dfd375ff4b1d61804f8f92bb025229d412ebf92b5015c1",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-K1"
+  ],
+  "produced_artifact_ids": [
+    "ART-K1"
+  ],
+  "consumed_artifact_ids": [
+    "DL-A1"
+  ],
+  "read_set": [
+    "artifact:A1"
+  ],
+  "write_set": [
+    "artifact:K1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:K1",
+      "mode": "W",
+      "isolation_key": "node:K1"
+    }
+  ],
+  "actor_pool": "human-authority",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance K1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/K1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-2",
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "user-five-decisions-2026-08-15",
+    "artifact_hashes": [
+      "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+      "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5"
+    ],
+    "environment_identity": "current Codex task; user decision message",
+    "runtime_release_id": "n/a",
+    "actor_role": "user and product decision authority",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-15",
+    "acceptance_contract": "个人路径不调用飞书且不自动按邮箱或姓名合并身份"
+  },
+  "decision_record": {
+    "approved_value": {
+      "personal_authentication": "平台独立认证；个人第一版不要求飞书登录",
+      "document_storage_and_preview": "所有交付文档均在云端保存和预览；个人路径使用平台内部成果容器",
+      "identity_linking": "平台账号与飞书成员身份只能显式关联，不按邮箱或姓名自动合并"
+    },
+    "approval_authority": "user",
+    "approval_evidence": "用户在 2026-08-15 明确答复：个人第一版不用飞书登录，所有交付文档在云端储存和预览。",
+    "approved_at": "2026-08-15",
+    "scope": "第一阶段个人登录、会话分流和第二阶段个人云端成果入口",
+    "existing_data_handling": "不自动合并既有平台账号与飞书成员；需要关联时使用显式、可审计流程"
+  }
+}

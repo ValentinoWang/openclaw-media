@@ -1,0 +1,32 @@
+{
+  "contract_id": "I1",
+  "schema_version": 1,
+  "node_id": "I1",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "work_kind": "implementation",
+  "write_authority": "implementation",
+  "read_set": [
+    "artifact:B",
+    "artifact:G1",
+    "artifact:K1",
+    "artifact:K6",
+    "artifact:M1"
+  ],
+  "write_set": [
+    "artifact:I1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:I1",
+      "mode": "W",
+      "isolation_key": "node:I1"
+    }
+  ],
+  "acceptance_commands": [
+    "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I1.sh"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I1-return.json"
+  ]
+}

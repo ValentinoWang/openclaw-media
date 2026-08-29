@@ -1,0 +1,105 @@
+{
+  "node_id": "K4",
+  "semantic_key": "media.stage1.decision.recent-activity-ownership",
+  "stage": "A",
+  "work_kind": "decision-acceptance",
+  "domain_lane": "product-decision",
+  "execution_state": "ACCEPTED",
+  "decision_state": "ACCEPTED",
+  "decision_version": 2,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "A1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.decision.recent-activity-ownership.v5"
+  ],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "user",
+  "unlocks": [
+    "I6",
+    "MA1"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "human-decision",
+  "related_evidence_ids": [],
+  "description": "解锁 I6 的近期活动合同",
+  "node_role": "leaf",
+  "execution_actor": "human",
+  "execution_contract_ref": "K4.json",
+  "execution_contract_sha256": "7efafc3aeb2916895f71c73fcc4cd8107d41bc6df3218c90fea9caa84d24499f",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-K4"
+  ],
+  "produced_artifact_ids": [
+    "ART-K4"
+  ],
+  "consumed_artifact_ids": [
+    "DL-A1"
+  ],
+  "read_set": [
+    "artifact:A1"
+  ],
+  "write_set": [
+    "artifact:K4"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:K4",
+      "mode": "W",
+      "isolation_key": "node:K4"
+    }
+  ],
+  "actor_pool": "human-authority",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance K4\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/K4-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-2",
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "user-five-decisions-2026-08-15",
+    "artifact_hashes": [
+      "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+      "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5"
+    ],
+    "environment_identity": "current Codex task; user decision message",
+    "runtime_release_id": "n/a",
+    "actor_role": "user and product decision authority",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-15",
+    "acceptance_contract": "可证明归属则回填；冲突进入隔离待处置；完全无证据则对所有租户不可见"
+  },
+  "decision_record": {
+    "approved_value": {
+      "recent_activity_ownership": "租户私有数据",
+      "required_controls": [
+        "租户归属字段",
+        "存量前向迁移",
+        "服务端强制过滤",
+        "跨租户负例"
+      ],
+      "unowned_legacy_rows": {
+        "provable_owner": "回填到可证明租户",
+        "conflicting_evidence": "隔离并进入 NEEDS_ATTENTION",
+        "no_evidence": "对所有租户不可见"
+      }
+    },
+    "approval_authority": "user",
+    "approval_evidence": "用户在 2026-08-15 明确确认近期活动属于租户私有数据。",
+    "approved_at": "2026-08-15",
+    "scope": "近期活动的读取、写入、迁移、审计和跨租户拒绝",
+    "existing_data_handling": "可证明归属则回填；证据冲突则隔离并进入 NEEDS_ATTENTION；完全无证据则对所有租户不可见"
+  }
+}

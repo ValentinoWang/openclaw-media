@@ -1,0 +1,22 @@
+{
+  "node_id": "D1",
+  "semantic_key": "media.no-inference-completion-boundary",
+  "stage": "A",
+  "work_kind": "decision-acceptance",
+  "domain_lane": "completion-semantics",
+  "execution_state": "ACCEPTED",
+  "decision_state": "ACCEPTED",
+  "decision_version": 1,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": ["A"],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": ["decision.no-inference-completion"],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "user",
+  "unlocks": ["B1", "B2"],
+  "worker_transport": "historical-unregistered",
+  "worker_registration": {"note": "no retroactive worker claim"},
+  "description": "已证明正确打开和带入上下文，不等于后续任务真实端到端完成。"
+}

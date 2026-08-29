@@ -1,0 +1,9 @@
+{
+  "assumption_id": "A-SAMPLES",
+  "decision_semantic_key": "media.release-capability-samples",
+  "expected_value": "Require one read-only analysis capability and one write-producing creation capability as the initial production E2E release samples.",
+  "state": "REJECTED",
+  "rejected_at": "2026-08-13T20:49:39+08:00",
+  "rejection_reason": "The named read-only sample viral_deconstruction has real write side effects in the authoritative router and writer sources.",
+  "invalidation_keys": ["decision.release-capability-samples"]
+}

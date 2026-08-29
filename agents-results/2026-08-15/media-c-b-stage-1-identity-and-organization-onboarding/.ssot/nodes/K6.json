@@ -1,0 +1,204 @@
+{
+  "node_id": "K6",
+  "semantic_key": "media.stage1.decision.personal-auth-contract",
+  "stage": "A",
+  "work_kind": "decision-acceptance",
+  "domain_lane": "product-decision",
+  "execution_state": "ACCEPTED",
+  "decision_state": "ACCEPTED",
+  "decision_version": 1,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "A1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.decision.personal-auth",
+      "version": 1
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.decision.personal-auth-contract.v5"
+  ],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "user",
+  "unlocks": [
+    "I1",
+    "I2",
+    "IL1"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "human-decision",
+  "related_evidence_ids": [],
+  "description": "解除 I1、I2 与 IL1 的决定阻塞；它们仍等待各自其他硬依赖",
+  "node_role": "leaf",
+  "execution_actor": "human",
+  "execution_contract_ref": "K6.json",
+  "execution_contract_sha256": "10dfb816f36b2385f825202df9e0fbfccf70bcf5aabdb0ee74d7f92c72dd8d70",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-K6"
+  ],
+  "produced_artifact_ids": [
+    "ART-K6"
+  ],
+  "consumed_artifact_ids": [
+    "DL-A1"
+  ],
+  "read_set": [
+    "artifact:A1"
+  ],
+  "write_set": [
+    "artifact:K6"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:K6",
+      "mode": "W",
+      "isolation_key": "node:K6"
+    }
+  ],
+  "actor_pool": "human-authority",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance K6\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/K6-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-2",
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "user-decision-k6-2026-08-16",
+    "artifact_hashes": [
+      "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+      "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5"
+    ],
+    "environment_identity": "current Codex task; user decision message",
+    "runtime_release_id": "n/a",
+    "actor_role": "user and product decision authority",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-16",
+    "acceptance_contract": "注册和验证成功均不自动登录；重置密码后撤销全部旧会话和未使用找回令牌；新合同不恢复旧 Media 密码接口，不按邮箱或姓名自动合并身份"
+  },
+  "decision_record": {
+    "approved_value": {
+      "login": {
+        "accepted_identifiers": [
+          "唯一用户名",
+          "已验证邮箱"
+        ],
+        "credential": "密码",
+        "eligible_account_status": "ACTIVE",
+        "failure_response": "用户名、邮箱、密码或账号状态不符合时统一返回凭据无效，不暴露账号是否存在",
+        "pending_account_response": "只有密码校验通过后，才可提示该账号需要完成邮箱验证并提供重发入口",
+        "success": "轮换会话标识并进入个人工作区",
+        "feishu_dependency": "none"
+      },
+      "registration": {
+        "availability": "个人用户可自助注册；只创建平台个人账号，不创建组织身份或飞书身份",
+        "required_fields": [
+          "唯一用户名",
+          "唯一邮箱",
+          "密码"
+        ],
+        "initial_status": "PENDING_EMAIL_VERIFICATION",
+        "email_required": true,
+        "email_unique_after_normalization": true,
+        "username_unique_after_normalization": true,
+        "password_policy": {
+          "minimum_characters": 12,
+          "maximum_characters": 128,
+          "composition_rule": "不强制大小写、数字或符号组合",
+          "compromised_passwords": "拒绝已知泄露或常见弱密码",
+          "paste_and_password_manager": "允许"
+        },
+        "session_after_submit": "不得签发完整登录会话",
+        "workspace_creation": "邮箱首次验证成功时幂等建立个人工作区",
+        "public_response": "除用户名冲突需要用户改名外，提交后统一提示检查邮箱，不暴露邮箱是否已注册"
+      },
+      "email_verification": {
+        "validity": "24 hours",
+        "single_use": true,
+        "resend_policy": "重发后立即撤销此前全部未使用验证链接，只有最新一封有效",
+        "resend_public_response": "无论账号是否存在或是否仍待验证，都返回相同提示",
+        "token_entropy_minimum_bits": 256,
+        "server_storage": "只保存令牌摘要，不保存可直接使用的原值",
+        "success_transition": "PENDING_EMAIL_VERIFICATION -> ACTIVE",
+        "success_session": "验证成功后返回个人登录入口，不自动登录"
+      },
+      "password_recovery": {
+        "accepted_identifiers": [
+          "用户名",
+          "邮箱"
+        ],
+        "public_response": "无论账号是否存在、是否激活或邮箱是否已验证，都返回相同提示",
+        "delivery_eligibility": "仅 ACTIVE 且拥有已验证邮箱的账号接收找回邮件",
+        "validity": "30 minutes",
+        "single_use": true,
+        "latest_token_only": true,
+        "token_entropy_minimum_bits": 256,
+        "server_storage": "只保存令牌摘要，不保存可直接使用的原值",
+        "reset_result": "撤销该账号全部旧会话和全部未使用找回令牌，不自动登录并返回个人登录入口"
+      },
+      "account_statuses": [
+        "PENDING_EMAIL_VERIFICATION",
+        "ACTIVE",
+        "SUSPENDED"
+      ],
+      "rate_limiting": "登录、验证邮件重发和找回请求必须同时按来源与账号标识限流；具体阈值由 B 编译为安全配置并由 T1 锁定负例",
+      "session": {
+        "type": "服务端不透明会话",
+        "absolute_lifetime": "8 hours",
+        "remember_me": false,
+        "rotation": [
+          "登录成功",
+          "权限变化",
+          "密码重置"
+        ],
+        "cookie": [
+          "HttpOnly",
+          "Secure",
+          "SameSite=Lax"
+        ],
+        "cross_site_request_protection": "所有修改数据的请求校验与当前会话绑定且可轮换的保护令牌"
+      },
+      "existing_accounts": {
+        "login": "既有平台账号可从新个人入口继续使用用户名和密码登录",
+        "legacy_email": "既有邮箱不得自动视为已验证；验证前不能用邮箱登录或找回密码",
+        "identity_merge": "不得按邮箱或姓名自动合并平台账号与飞书身份"
+      },
+      "support_boundary": {
+        "allowed": [
+          "重发标准验证或找回邮件",
+          "撤销账号会话",
+          "引导用户完成标准流程"
+        ],
+        "forbidden": [
+          "读取用户密码",
+          "生成临时密码",
+          "绕过邮箱验证",
+          "代替用户绑定飞书身份"
+        ]
+      },
+      "identity_linking": "已登录用户主动发起飞书授权并二次确认后才允许绑定",
+      "forbidden_paths": [
+        "旧 Media 密码登录接口继续返回 404",
+        "旧 Media 改密接口继续返回 404",
+        "禁止按邮箱或姓名自动合并平台账号与飞书身份",
+        "不提供记住我、短信找回、客服临时密码或验证成功后自动登录"
+      ]
+    },
+    "approval_authority": "user",
+    "approval_evidence": "用户在 2026-08-16 对个人平台账号具体如何登录、注册和找回明确选择推荐方案。",
+    "approved_at": "2026-08-16",
+    "scope": "第一阶段个人登录、自助注册、账号找回、浏览器会话、跨站请求保护和显式身份关联",
+    "existing_data_handling": "既有平台账号继续从新个人入口用用户名登录；旧邮箱在完成验证前不能用于登录或找回；不恢复旧 Media 密码接口，也不自动合并平台账号与飞书身份"
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "task_id": "STAGE1-MEDIA-OAUTH-R5",
+  "attempt_role": "primary",
+  "executor": "lw-luna",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": {
+    "backend_release": "openclaw-tag-router-media-tenant-20260818T-stage1-media-oauth-r5",
+    "previous_release_preserved": true,
+    "previous_release": "openclaw-tag-router-media-tenant-20260818T-stage1-account-http-r4",
+    "source_to_release_module_hashes": "PASS",
+    "py_compile": "PASS",
+    "import_smoke": "PASS",
+    "healthz": "200 with ok=true",
+    "readyz": "200 with ok=true and if2_ready=true",
+    "canonical_session": "GET 401",
+    "exact_session_alias": "GET 401 with identical body SHA-256",
+    "session_alias_negative_contract": {
+      "POST /media/api/session": 404,
+      "GET /media/api/session/": 404,
+      "GET /media/api/account/affiliate": 404,
+      "GET /openclaw/auth/feishu/start/status": 404
+    },
+    "callback_contract": {
+      "GET /openclaw/media/oauth/callback without state": "400 text/html; charset=utf-8 Cache-Control: no-store",
+      "GET /auth/feishu/callback without state": "400 text/html; charset=utf-8 Cache-Control: no-store"
+    },
+    "watchdog_start": "exit 0, Result=success, ExecMainStatus=0",
+    "official_verifier": "exit 0",
+    "nginx_test": "PASS",
+    "immutable_release_stage": true,
+    "frontend_static_bytes_unchanged": true,
+    "rollback_release_available": true
+  },
+  "failure_class": "resolved runtime/infrastructure, release-contract metadata, and verifier-guard logic failures",
+  "failure_origin": "The running Nginx workers had not reloaded the newly installed exact location; the frontend source-to-artifact binding still named r4 after coordination moved to r5; the Session alias verifier guard contained literal plus characters from a malformed multiline patch.",
+  "concise_change_description": "Merged Media Feishu OAuth into the active Stage1/IF2 backend from r4, published immutable r5, switched only the requested user-service release identity lines, added the exact GET /media/api/session proxy alias, repaired and atomically installed the Session alias verifier guard, rebound frontend release metadata to r5, reloaded Nginx under the release lock, and verified all requested unauthenticated and negative contracts.",
+  "actual_read_scope": [
+    "User-provided AGENTS.md instructions, develop/Harness/fullstack-ai-harness.md, .harness/overlays/project-harness-adapter.yaml, and quality-gate-triage Skill",
+    "Remote /home/ubuntu/selfmedia-tools/openclaw-tag-router active r4 and canonical account, HTTP adapter, server CLI, and Media OAuth source files",
+    "Remote /home/ubuntu/.config/systemd/user/openclaw-bot-center-api.service.d/media-control-plane.conf and systemctl --user runtime state",
+    "Remote Nginx canonical, installed, loaded config, OPC snippet, access/error logs, and listener topology",
+    "Remote canonical and installed verify-openclaw-media plus /usr/local/libexec/openclaw-media-release-contract",
+    "Remote watchdog contract checker and release/source/artifact metadata",
+    "Remote HTTP responses from 8787, Nginx port 80, healthz, readyz, callback, and negative route probes"
+  ],
+  "actual_write_scope": [
+    "Remote canonical backend: four requested merged Python modules only",
+    "Remote immutable stage /mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260818T-stage1-media-oauth-r5 and its direct symlink under /home/ubuntu/.openclaw/releases",
+    "Remote user drop-in: WorkingDirectory, PYTHONPATH, three contract env paths, and ExecStart settings path release identity lines only",
+    "Remote Nginx canonical and installed config: one exact /media/api/session location, atomically synced and reloaded under /var/lock/openclaw-release.lock",
+    "Remote canonical and installed verifier: minimal Session alias positive/negative guard, atomically projected after canonical patch",
+    "Remote frontend release metadata only: source-to-artifact backendRelease rebound to r5; frontend static bytes were not changed",
+    "Local requested JSON receipt only"
+  ],
+  "changed_files": [
+    "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/account/__init__.py",
+    "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/account/media_feishu_login.py",
+    "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/adapters/http_api.py",
+    "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/server_cli.py",
+    "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260818T-stage1-media-oauth-r5/RELEASE_ID",
+    "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260818T-stage1-media-oauth-r5/.release-coordination.json",
+    "/home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260818T-stage1-media-oauth-r5",
+    "/home/ubuntu/.config/systemd/user/openclaw-bot-center-api.service.d/media-control-plane.conf",
+    "/home/ubuntu/openclaw-bot-center/deploy/nginx-openclaw-bot-center.conf",
+    "/etc/nginx/sites-available/openclaw-bot-center",
+    "/home/ubuntu/openclaw-ops/bin/verify-openclaw-media",
+    "/usr/local/sbin/verify-openclaw-media",
+    "/mnt/openclaw-data/openclaw-media-frontend-releases/20260818T-stage1-account-http-r4/.release-coordination.json",
+    "/mnt/openclaw-data/openclaw-media-frontend-releases/20260818T-stage1-account-http-r4/.source-to-artifact.json",
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/stage1-media-oauth-r5/returns/STAGE1-MEDIA-OAUTH-R5-luna.json"
+  ],
+  "release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-media-oauth-r5",
+  "previous_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-account-http-r4",
+  "pid": 3092104,
+  "commands": [
+    {
+      "command": "PYTHONPYCACHEPREFIX=/tmp/openclaw-r5.HGX9IB/final-runtime/pycache python3 -m py_compile <four r5 modules>",
+      "exit_code": 0,
+      "output": "py_compile_r5=PASS"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<r5>:/home/ubuntu/selfmedia-tools python3 import smoke",
+      "exit_code": 0,
+      "output": "account, media_feishu_login, http_api, and server_cli imported from the r5 resolved path"
+    },
+    {
+      "command": "curl 127.0.0.1:8787/healthz and /readyz",
+      "exit_code": 0,
+      "output": "health_status=200 body={\"ok\":true}; ready_status=200 with matcher_ready=true auth_ready=true if2_ready=true"
+    },
+    {
+      "command": "curl canonical and exact alias session plus negative route probes",
+      "exit_code": 0,
+      "output": "canonical GET=401, alias GET=401, identical body SHA-256=958b39f714ac7b46f2fe894bed0fa3d4f8e1f6d9b3a9e9fbf2b34ea8d0bcdbb2; alias POST=404; trailing slash=404; account affiliate=404; retired start/status=404"
+    },
+    {
+      "command": "curl public and internal Feishu callbacks without state",
+      "exit_code": 0,
+      "output": "both status=400, Content-Type=text/html; charset=utf-8, Cache-Control=no-store"
+    },
+    {
+      "command": "sudo -n systemctl start openclaw-login-surface-watchdog.service",
+      "exit_code": 0,
+      "output": "Result=success; ExecMainStatus=0; ActiveState=inactive; SubState=dead"
+    },
+    {
+      "command": "sudo -n nginx -t",
+      "exit_code": 0,
+      "output": "syntax is ok; test is successful"
+    },
+    {
+      "command": "sudo -n /usr/local/sbin/verify-openclaw-media --self-test-session-alias",
+      "exit_code": 0,
+      "output": "canonical_equivalence PASS; missing_alias REJECTED; body_drift REJECTED; broadened_legacy_route REJECTED"
+    },
+    {
+      "command": "sudo -n /usr/local/sbin/verify-openclaw-media",
+      "exit_code": 0,
+      "output": "openclaw_media_session_composition=PASS; OpenClaw Media deployment guard PASS: 20260818T-stage1-account-http-r4 6a9d49013b0888c83c6fe557ab96e68ed93bc60c4be03b1d6f7d87a059ea72d9"
+    },
+    {
+      "command": "sha256sum canonical/installed Nginx and verifier",
+      "exit_code": 0,
+      "output": "Nginx both=541a5670389b1b5abfb1e20b5b75fc933bf3233fcbeca75d5866d36d3bbb5391; verifier both=12a6da26478b12e373502e3b64a81778970e2505fcb8952064778fb35a03b487"
+    },
+    {
+      "command": "python3 check_openclaw_login_surface_watchdog_contract.py --session-composition-root <r5>",
+      "exit_code": 0,
+      "output": "openclaw_media_session_composition=PASS; watchdog_contract_check=PASS"
+    }
+  ],
+  "red_green_evidence": [
+    {
+      "failure_class": "runtime/infrastructure",
+      "red": "Before the locked reload, GET /media/api/session returned 404 and Nginx error.log showed static open() /var/www/media/api/session.",
+      "green": "After locked nginx -t and systemctl reload nginx, the exact alias returned 401 with the canonical body SHA."
+    },
+    {
+      "failure_class": "release-contract metadata",
+      "red": "Official verifier rejected source-to-artifact backend identity mismatch while frontend coordination named r5 and its binding named r4.",
+      "green": "The immutable frontend metadata binding and new r5 identity now agree; official verifier exit code is 0."
+    },
+    {
+      "failure_class": "verifier-guard logic",
+      "red": "Session alias verifier curl calls contained literal plus characters and failed with curl error 3 Bad hostname.",
+      "green": "Canonical guard was patched with asserted multiline shell syntax, atomically installed, self-test passed, and official verifier passed."
+    }
+  ],
+  "unverified_items": [
+    "No authenticated session was created or read back.",
+    "No valid Feishu OAuth state/code exchange or real provider callback was executed.",
+    "No production database, Feishu, email, account, device, or browser workflow was exercised.",
+    "No human UI acceptance or full formal SSOT acceptance was performed."
+  ],
+  "residual_risks": [
+    "This is a release/runtime contract verification, not evidence of an end-to-end authenticated OAuth or tenant onboarding flow.",
+    "The remote business source worktree remains broadly dirty; unrelated dirty files were preserved and not cleaned.",
+    "r4 remains the rollback release, but rollback was not performed as part of this verification."
+  ],
+  "explicit_non_claims": [
+    "No SSOT node ACCEPTED.",
+    "No 100% formal completion.",
+    "No production DB/Feishu/email/device/browser acceptance.",
+    "No authenticated or real OAuth completion claim.",
+    "No database migration, backfill, seed, Feishu write, email write, account write, commit, push, pull, reset, checkout, or clean was performed."
+  ]
+}

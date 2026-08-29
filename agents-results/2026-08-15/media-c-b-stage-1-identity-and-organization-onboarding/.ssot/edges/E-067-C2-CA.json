@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-067-C2-CA",
+  "from": "C2",
+  "to": "CA",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c2.ca.v5"
+  ],
+  "transferred_input": "Pilot 子候选",
+  "gate_evidence": "Pilot 正负例绑定同一候选",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-C2"
+  ],
+  "resource_ids": [
+    "candidate:REL-1A"
+  ],
+  "necessity_proof": "CA must retain the immutable candidate:REL-1A identity from C2"
+}

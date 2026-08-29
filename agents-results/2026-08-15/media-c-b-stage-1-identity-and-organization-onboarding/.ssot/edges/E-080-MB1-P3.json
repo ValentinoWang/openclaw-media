@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-080-MB1-P3",
+  "from": "MB1",
+  "to": "P3",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.mb1.p3.v5"
+  ],
+  "transferred_input": "Release 1B 前向迁移与回读合同",
+  "gate_evidence": "1B 迁移不占用或改写 MA1 的 1A 编号范围",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-MB1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "P3 consumes the explicitly produced artifact DL-MB1"
+}

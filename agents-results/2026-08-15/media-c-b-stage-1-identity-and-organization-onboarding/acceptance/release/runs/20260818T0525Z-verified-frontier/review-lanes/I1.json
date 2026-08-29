@@ -1,0 +1,102 @@
+{
+  "task_id": "REVIEW-I1-20260818-RETRY1",
+  "reviewer_route": {
+    "mode": "independent-read-only-review",
+    "declared_fixed_executor": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "declared_model": "gpt-5.6-terra",
+    "declared_reasoning_effort": "xhigh",
+    "transport_attempt": "I1 same-executor retry 1 after the initial worker-transport stall",
+    "nested_worker_or_codex_exec_invoked": false
+  },
+  "frozen_hashes_verified": {
+    "all_match_expected": true,
+    "I1_node_json": "sha256:bf5cdaed38d224be71e27d3c597e8efea4afbf1cda40b485f03649090525b4d5",
+    "I1_deterministic_receipt": "sha256:54a342e69719f97a20bf5968e8ca8aaf5e4384d13abe347569d6491e7f48ab09",
+    "I4_I5_protected_fixture_contract": "sha256:cca830f521897609ae0307422550aae437c37ce8ad6f52cec192b8dcedae6c54",
+    "remote_release_r3_receipt": "sha256:37b87a9cff648c14e79488821140f1341ba409fa948f77432bedb76691e90aed",
+    "remote_readback": "sha256:38b3ffd161925e20a565abcf7c90c5dd2fcae40f2d3138e4af305ba3abef9f27"
+  },
+  "findings": [
+    {
+      "severity": "BLOCKER",
+      "id": "I1-ACCEPTANCE-EXTERNAL-HUMAN-GAP",
+      "finding": "I1 remains a FORMAL node in VERIFIED. The local receipt is explicitly mock-or-fixture evidence and explicitly excludes external browser, deployment, production, email, and Feishu verification. No authenticated browser journey, real email delivery/link lifecycle, real Feishu authorization/readback, or human/device acceptance is present.",
+      "evidence": [
+        ".ssot/nodes/I1.json:evidence_identity",
+        "deterministic-receipts/I1-rerun-20260817.json:unverified_items",
+        "implementation-progress.md:13,37"
+      ],
+      "effect": "Insufficient evidence for ACCEPTED or ACCEPTED_CANDIDATE; retain VERIFIED."
+    },
+    {
+      "severity": "HIGH",
+      "id": "I1-REMOTE-SCOPE-NOT-NODE-ACCEPTANCE",
+      "finding": "The r3 release receipt proves the immutable candidate, local build gate, active code release, health, readiness, and frontend/backend identity coordination, but its scope boundary is code-only and expressly does not claim browser/device/real-mail acceptance or SSOT node acceptance.",
+      "evidence": [
+        "evidence-remote-release-20260818/release-r3-receipt.json:local_gates,remote_release,scope_boundary",
+        "implementation-progress.md:15"
+      ],
+      "effect": "Remote release evidence strengthens deployment identity but cannot promote I1 formal acceptance."
+    },
+    {
+      "severity": "MEDIUM",
+      "id": "I1-REMOTE-READBACK-LIMIT",
+      "finding": "The independent 05:17 remote readback confirms a healthy process, ready endpoints, and active frontend release, while explicitly declining the historical systemd-unit claim and SSOT-node acceptance. It is process-level runtime evidence only.",
+      "evidence": [
+        "evidence-remote-release-20260818/remote-readback-20260818T0517.json:runtime_readback,scope_note",
+        "implementation-progress.md:15"
+      ],
+      "effect": "No authenticated end-user or device behavior is demonstrated."
+    },
+    {
+      "severity": "INFO",
+      "id": "I1-MACHINE-AND-PROTECTED-TEST-PROOF",
+      "finding": "The deterministic I1 receipt reports stage1_identity_entry=PASS, build:media passed, and qa:media-login-contract passed. The approved and relocked I4/I5 deletion-fixture contract records its focused green results and the integrated build:media gate, but it is scoped to I4/I5 fixture semantics and does not substitute for I1 external or human acceptance.",
+      "evidence": [
+        "deterministic-receipts/I1-rerun-20260817.json:commands",
+        "acceptance-fragments/TCR-I4-PERSONAL-WORKSPACE-DELETION-FIXTURES.md:Approval",
+        "implementation-progress.md:13,37,41"
+      ],
+      "effect": "Machine and protected-fixture evidence supports VERIFIED only."
+    }
+  ],
+  "evidence_disposition": {
+    "I1_acceptance_semantics": "The frozen path requires personal registration, verification, login, recovery/reset, secure session behavior, and the no-automatic-Feishu boundary; I1 supplies entry UI while I2/I3 compile the broader contract.",
+    "full_build_media_receipt": "PASS: I1 deterministic validation reports build:media passed; the r3 release receipt independently records frontend_build_media=passed.",
+    "protected_test_status": "PASS_WITH_SCOPE: I4/I5 fixture contract is APPROVED_AND_RELOCKED with recorded focused green tests and integrated build:media, but it is not an I1 formal-acceptance or external-system proof.",
+    "remote_release_and_readback": "PASS_WITH_SCOPE: r3 identity, healthz, readyz, coordination, active frontend release, and process-level readback are consistent; neither receipt claims I1 acceptance.",
+    "formal_acceptance": "NOT_ESTABLISHED: required authenticated browser, real mail, Feishu, human, and device evidence is absent."
+  },
+  "acceptance_self_check": {
+    "deterministic_receipt_self_check": "pass",
+    "reviewer_formal_acceptance_check": "fail",
+    "reason": "A passing local receipt and code-release readback do not satisfy the formal external and human/device evidence requirements."
+  },
+  "failure_class": "MISSING_REAL_AUTHENTICATED_BROWSER_EMAIL_FEISHU_HUMAN_DEVICE_ACCEPTANCE_EVIDENCE",
+  "failure_origin": "Evidence scope and availability gap; no observed machine-gate regression or hash mismatch.",
+  "unverified_items": [
+    "Authenticated browser execution of I1 registration, verification, login, recovery, reset, secure-cookie, and CSRF behavior against the active release.",
+    "Real email delivery plus verification and recovery-link lifecycle: receipt, expiry, single-use, resend revocation, and user-visible result.",
+    "Real Feishu authorization and required remote readback/compensation-state evidence for the binding boundary.",
+    "Independent human acceptance bound to I1's formal contract and a real device/browser result.",
+    "Production database/readback and recovery evidence where the formal release contract requires it."
+  ],
+  "actual_read_scope": {
+    "requested_evidence_files": [
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/I1.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/I1-rerun-20260817.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/TCR-I4-PERSONAL-WORKSPACE-DELETION-FIXTURES.md",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-remote-release-20260818/release-r3-receipt.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-remote-release-20260818/remote-readback-20260818T0517.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/implementation-progress.md",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md"
+    ],
+    "direct_project_dependencies_read": [],
+    "required_workflow_instruction_read": "/Users/vsiyo/.codex/skills/verify-acceptance-release/SKILL.md",
+    "external_or_runtime_access": "none"
+  },
+  "actual_write_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance/release/runs/20260818T0525Z-verified-frontier/review-lanes/I1.json"
+  ],
+  "proposed_state": "VERIFIED"
+}

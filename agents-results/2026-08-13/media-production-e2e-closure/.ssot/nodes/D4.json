@@ -1,0 +1,55 @@
+{
+  "node_id": "D4",
+  "semantic_key": "media.release-capability-samples",
+  "stage": "A",
+  "work_kind": "decision-acceptance",
+  "domain_lane": "release-scope",
+  "execution_state": "ACCEPTED",
+  "decision_state": "ACCEPTED",
+  "decision_version": 2,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": ["A1"],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": ["decision.release-capability-samples"],
+  "write_authority": "isolated-record",
+  "acceptance_authority": "user or product owner",
+  "unlocks": ["B2", "D5"],
+  "worker_transport": "historical-unregistered",
+  "worker_registration": {"note": "no retroactive worker claim"},
+  "decision_record": {
+    "approved_value": {
+      "read_only_consultation": "selfmedia_creation_consultation",
+      "write_producing_creation": "selfmedia_creation"
+    },
+    "approval_authority": "user",
+    "approval_evidence": "User instruction on 2026-08-13: 请按照推荐方案排版OP. In the current OP decision context, this confirms adoption of the documented recommended OP01 and OP02 options.",
+    "approved_at": "2026-08-13T21:03:00+08:00",
+    "authority_evidence": [
+      "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/router/tag_capabilities.py:339",
+      "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/router/media_creation.py:389"
+    ],
+    "supersedes": {
+      "decision_version": 1,
+      "invalidated_at": "2026-08-13T20:49:39+08:00",
+      "reason": "viral_deconstruction has real write side effects and cannot represent a read-only sample"
+    }
+  },
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "user-decision-2026-08-13-op02-v2",
+    "artifact_hashes": [
+      "sha256:1a52fedeb944d1d81107936d904d6e0a0e0fc17cb32cec421e9fde34e046db16"
+    ],
+    "environment_identity": "current task and remote authority readback",
+    "runtime_release_id": "n/a",
+    "actor_role": "user and product decision authority",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-13T21:03:00+08:00",
+    "acceptance_contract": "MPE2E-TASK-RUN v2 approved and locked"
+  },
+  "description": "D4 第 2 版已接受：selfmedia_creation_consultation 验证只读咨询链，selfmedia_creation 验证数据库与飞书写入链；第 1 版错误样本保持失效历史。"
+}

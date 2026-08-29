@@ -1,0 +1,211 @@
+{
+  "task_id": "REVIEW-T1-20260818",
+  "reviewer_route": {
+    "node_id": "T1",
+    "fragment_id": "T1-AUTH-ROUTES",
+    "review_mode": "independent_read_only",
+    "executor": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "model": "gpt-5.6-terra",
+    "reasoning_effort": "xhigh",
+    "sandbox": "writable capability; zero-write except this lane return"
+  },
+  "frozen_hashes_verified": {
+    "status": "PASS",
+    "inputs": [
+      {
+        "path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/T1.json",
+        "expected_sha256": "aed2c64acd92d5b0c5c31e6487e3f3981577044c4641b9035d43a9a89e5fe340",
+        "actual_sha256": "aed2c64acd92d5b0c5c31e6487e3f3981577044c4641b9035d43a9a89e5fe340",
+        "match": true
+      },
+      {
+        "path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/T1-rerun-20260817.json",
+        "expected_sha256": "a79017ede7c186a616ab842c3c4df5c384d551e50f84155a43338ff61956f131",
+        "actual_sha256": "a79017ede7c186a616ab842c3c4df5c384d551e50f84155a43338ff61956f131",
+        "match": true
+      },
+      {
+        "path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md",
+        "expected_sha256": "e9ddd43a95249bf996cb9833b44cf436b745b81886f0020d7856bb45bc6e325b",
+        "actual_sha256": "e9ddd43a95249bf996cb9833b44cf436b745b81886f0020d7856bb45bc6e325b",
+        "match": true
+      },
+      {
+        "path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/index.md",
+        "expected_sha256": "d01f1b032ce20691111d2f7fda8e918d21b5ad556e8c04ae8779412bed81e847",
+        "actual_sha256": "d01f1b032ce20691111d2f7fda8e918d21b5ad556e8c04ae8779412bed81e847",
+        "match": true
+      },
+      {
+        "path": "acceptance/human/T1-AUTH-ROUTES/binding.md",
+        "expected_sha256": "8c794dc20bd83aecbcd8bcddb2d7d81c8d7d718c9e6dd9126ad738797a91cdb7",
+        "actual_sha256": "8c794dc20bd83aecbcd8bcddb2d7d81c8d7d718c9e6dd9126ad738797a91cdb7",
+        "match": true
+      },
+      {
+        "path": "acceptance/human/T1-AUTH-ROUTES/checklist.md",
+        "expected_sha256": "48b4c0746fa26bcf63992978bfa5593a1350ce2e20ca9fc8c829d4e9b2f2c3b7",
+        "actual_sha256": "48b4c0746fa26bcf63992978bfa5593a1350ce2e20ca9fc8c829d4e9b2f2c3b7",
+        "match": true
+      },
+      {
+        "path": "acceptance/index.md",
+        "expected_sha256": "6320ec7f56efbe309463233f51ca40bed64a8c3fd63e8c6e5b69f5f6a8a9fb9b",
+        "actual_sha256": "6320ec7f56efbe309463233f51ca40bed64a8c3fd63e8c6e5b69f5f6a8a9fb9b",
+        "match": true
+      }
+    ]
+  },
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "id": "T1-HUMAN-ACCEPTANCE-MISSING",
+      "title": "Blocking H-01 and H-02 have no signed Product owner results",
+      "evidence": [
+        "acceptance/human/T1-AUTH-ROUTES/binding.md",
+        "acceptance/human/T1-AUTH-ROUTES/checklist.md",
+        "acceptance/index.md",
+        "acceptance/human/T1-AUTH-ROUTES/"
+      ],
+      "detail": "The binding is ACTIVE and marks H-01 and H-02 as required Product owner items with Blocking=Yes. The checklist requires signed results under acceptance/human/T1-AUTH-ROUTES/runs/<run-id>/result.md, but that runs directory/result is absent. The project human index is empty.",
+      "impact": "The AI reviewer cannot sign or substitute for the Product owner; VERIFIED cannot migrate to ACCEPTED_CANDIDATE."
+    },
+    {
+      "severity": "BLOCKING",
+      "id": "T1-CURRENT-BINDING-DRIFT",
+      "title": "The current T1 node is not bound to the frozen acceptance fragment identity",
+      "evidence": [
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/T1.json",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/generated-views/10-dependency-topology.md"
+      ],
+      "detail": "The fixed T1 node and generated topology use invalidation key media.stage1.acceptance-harness.v5. The fixed acceptance contract declares media.stage1.acceptance-harness.v4 and baseline manifest sha256 54aecfee53d8bb462156866305a0ac870a224b973e64d12fffdfb6d16e359624, while the current manifest hashes to 260a99635a4eedc3d3780a41baee5ea24200320517acf76361db2bb4c418471e. The PASS run is bound to the contract hash but does not establish a v5/current-manifest binding.",
+      "impact": "Current-node applicability and invalidation lineage are not proven, so the fragment cannot be used as formal ACCEPTED evidence without rebinding."
+    },
+    {
+      "severity": "HIGH",
+      "id": "T1-PROTECTED-LOCK-PROVENANCE",
+      "title": "Protected test bytes match, but formal baseline lock provenance is contradictory",
+      "evidence": [
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/T1-rerun-20260817.json",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/evidence/source-hashes.txt",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/I2-TEST-LOCK/ledger/I2-TEST-LOCK.json"
+      ],
+      "detail": "The current files match the contract hashes 80759c80b90339095a255c5c1d6a831e4fbcd74e3e598fcd7a1ec8fe57d64e8d and d149a683ee0ef2825e5151005d0679f0d883e62b5810aeede637a5c87e7e1e6d, and the final local run reports PASS. However, the fixed T1 receipt still says the formal baseline was pending after the I2 update, while the I2-TEST-LOCK ledger has terminal_state BLOCKED and no structured return. Hash equality alone does not prove an approved, current, re-locked baseline.",
+      "impact": "Protected-test integrity is byte-level PASS but formal lock status remains NOT_PROVEN."
+    },
+    {
+      "severity": "MEDIUM",
+      "id": "T1-FIXTURE-BOUNDARY",
+      "title": "Machine evidence is local and fixture-scoped",
+      "evidence": [
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/T1.json",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/T1-rerun-20260817.json",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/result.md"
+      ],
+      "detail": "The evidence identity is local-runtime with mock_or_fixture=true. The receipt explicitly excludes real email delivery, Feishu authorization, deployment, production, device and human acceptance. This is consistent with the contract non-goals, but fixture/local evidence cannot replace the blocking H items or establish formal product acceptance.",
+      "impact": "Automatic AC evidence remains machine-only and does not close the human or external evidence boundary."
+    }
+  ],
+  "evidence_disposition": {
+    "automatic_ac": {
+      "AC-01": "PASS",
+      "AC-02": "PASS",
+      "AC-03": "PASS",
+      "AC-04": "PASS",
+      "AC-05": "PASS",
+      "AC-06": "PASS",
+      "AC-07": "PASS",
+      "source": "acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/result.md and its t1.log, i2.log, and route-alignment.log",
+      "qualification": "These are local deterministic machine results; applicability to current node v5 is not established by the stale v4 contract binding."
+    },
+    "protected_tests": {
+      "byte_integrity": "PASS",
+      "tests": [
+        {
+          "path": ".codex-work/stage1-t1/backend/tests/test_media_stage1_shared_contract.py",
+          "expected_sha256": "80759c80b90339095a255c5c1d6a831e4fbcd74e3e598fcd7a1ec8fe57d64e8d",
+          "actual_sha256": "80759c80b90339095a255c5c1d6a831e4fbcd74e3e598fcd7a1ec8fe57d64e8d",
+          "match": true
+        },
+        {
+          "path": ".codex-work/stage1-i2/backend/tests/test_stage1_personal_auth_lifecycle.py",
+          "expected_sha256": "d149a683ee0ef2825e5151005d0679f0d883e62b5810aeede637a5c87e7e1e6d",
+          "actual_sha256": "d149a683ee0ef2825e5151005d0679f0d883e62b5810aeede637a5c87e7e1e6d",
+          "match": true
+        }
+      ],
+      "formal_lock": "NOT_PROVEN"
+    },
+    "human_acceptance": {
+      "binding_status": "ACTIVE",
+      "H-01": {
+        "required_role": "Product owner",
+        "blocking": true,
+        "signed_result": "MISSING"
+      },
+      "H-02": {
+        "required_role": "Product owner",
+        "blocking": true,
+        "signed_result": "MISSING"
+      },
+      "project_index": "EMPTY"
+    },
+    "fixture_vs_formal": "Local fixture and deterministic contract evidence are not formal Product owner acceptance, real external-system acceptance, or production/device evidence."
+  },
+  "acceptance_self_check": {
+    "status": "pass",
+    "frozen_hashes": "pass",
+    "read_only_review": "pass",
+    "external_requests": "none",
+    "product_owner_impersonation": "not_performed",
+    "writes": "only the designated lane return path"
+  },
+  "failure_class": "blocking_acceptance_evidence_missing",
+  "failure_origin": "missing_product_owner_signoff_with_current_node_contract_binding_drift",
+  "unverified_items": [
+    "No signed Product owner result exists for blocking H-01.",
+    "No signed Product owner result exists for blocking H-02.",
+    "The v5 T1 invalidation key is not bound by the v4 acceptance contract and its old manifest baseline.",
+    "Formal I2 protected-test lock provenance is unresolved; the I2-TEST-LOCK lane is terminal BLOCKED despite current byte hashes matching.",
+    "No real email delivery, Feishu authorization, deployment, production, device, or browser acceptance was performed; the contract treats these as non-goals for T1, but they remain outside this evidence."
+  ],
+  "actual_read_scope": [
+    "/Users/vsiyo/.codex/skills/verify-acceptance-release/SKILL.md",
+    "/Users/vsiyo/.codex/memories/MEMORY.md",
+    "/Users/vsiyo/.codex/memories/rollout_summaries/2026-08-15T09-09-50-jONG-phase1_cb_identity_organization_ssot_k6_auth_contract.md",
+    "develop/Harness/fullstack-ai-harness.md",
+    ".harness/overlays/project-harness-adapter.yaml",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/T1.json",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/generated-views/10-dependency-topology.md",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/T1-rerun-20260817.json",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance-contract.md",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/index.md",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/approvals/main-orchestrator-route-contract-v1.md",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/result.md",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/evidence/t1.log",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/evidence/i2.log",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/evidence/route-alignment.log",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance-fragments/T1-AUTH-ROUTES/acceptance/machine/integration-contract/runs/20260817T031500Z-local-final-f4a5b6/evidence/source-hashes.txt",
+    "acceptance/human/T1-AUTH-ROUTES/binding.md",
+    "acceptance/human/T1-AUTH-ROUTES/checklist.md",
+    "acceptance/human/T1-AUTH-ROUTES/",
+    "acceptance/index.md",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/I2-TEST-LOCK/ledger/I2-TEST-LOCK.json",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-t1-test-lock/I2-TEST-LOCK/logs/I2-TEST-LOCK-l3.log",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-ready-1/T1/returns/T1-luna.json",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-ready-1/T1/ledger/T1.json",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance/release/runs/20260818T0525Z-verified-frontier/prompts/T1.txt",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance/release/runs/20260818T0525Z-verified-frontier/logs/T1.log",
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance/release/runs/20260818T0525Z-verified-frontier/terra-dispatch-ledger.json",
+    ".codex-work/stage1-t1/backend/tests/test_media_stage1_shared_contract.py",
+    ".codex-work/stage1-i2/backend/tests/test_stage1_personal_auth_lifecycle.py"
+  ],
+  "actual_write_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/acceptance/release/runs/20260818T0525Z-verified-frontier/review-lanes/T1.json"
+  ],
+  "proposed_state": "BLOCKED"
+}

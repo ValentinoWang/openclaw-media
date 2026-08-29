@@ -1,0 +1,1 @@
+{"edge_id":"E-009-A1-B2","from":"A1","to":"B2","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["contract.context-task-e2e"],"transferred_input":"任务 runner 和读回连接点","gate_evidence":"A1 通过"}

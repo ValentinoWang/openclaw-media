@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-095-T1-P9",
+  "from": "T1",
+  "to": "P9",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.t1.p9.v5"
+  ],
+  "transferred_input": "保护测试与人工验收矩阵",
+  "gate_evidence": "每个稳定失败类有红绿门禁",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "DL-T1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "P9 consumes the explicitly produced artifact DL-T1"
+}

@@ -1,0 +1,80 @@
+{
+  "node_id": "DC",
+  "semantic_key": "media.stage1.macro-final-projection",
+  "stage": "D",
+  "work_kind": "release-decision",
+  "domain_lane": "macro-projection",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "DB"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.macro-final-projection.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "independent acceptance owner",
+  "unlocks": [],
+  "worker_transport": "automatic-projection",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "DB"
+    ],
+    "projection_rule": "ACCEPTED iff DB projects accepted DC1 and DC2 evidence; no new release gate",
+    "task_argument": "零写入生成宏观阶段完成状态投影。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/projections/DC.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  },
+  "runtime_profile_requirement": "none",
+  "related_evidence_ids": [],
+  "description": "只兼容统一阶段报告，不阻塞或替代 DC1、DC2",
+  "node_role": "release-decision",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "DC.json",
+  "execution_contract_sha256": "76aac4285f7128dc0d96403ca77088b863bb9b41f17e16e06e10321262e2e7e9",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-DC"
+  ],
+  "consumed_artifact_ids": [
+    "ART-DB"
+  ],
+  "read_set": [
+    "artifact:DB"
+  ],
+  "write_set": [
+    "evidence:DC"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DC",
+      "mode": "W",
+      "isolation_key": "node:DC"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DC\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DC-return.json"
+  ],
+  "release_slice": "REL-1B",
+  "wave_id": "W-1B-26",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "evidence:DC"
+    ]
+  }
+}

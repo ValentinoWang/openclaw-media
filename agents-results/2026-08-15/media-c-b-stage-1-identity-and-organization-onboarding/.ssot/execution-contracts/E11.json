@@ -1,0 +1,28 @@
+{
+  "contract_id": "E11",
+  "schema_version": 1,
+  "node_id": "E11",
+  "node_role": "leaf",
+  "execution_actor": "external-system",
+  "work_kind": "external-prerequisite",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:A1"
+  ],
+  "write_set": [
+    "evidence:E11"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:E11",
+      "mode": "W",
+      "isolation_key": "node:E11"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance E11\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/E11-return.json"
+  ]
+}

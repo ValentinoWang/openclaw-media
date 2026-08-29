@@ -1,0 +1,77 @@
+{
+  "contract_id": "I8",
+  "schema_version": 1,
+  "node_id": "I8",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "work_kind": "frozen-acceptance",
+  "write_authority": "isolated-record",
+  "read_set": [
+    "artifact:I5",
+    "artifact:I6",
+    "artifact:I7",
+    "artifact:I9",
+    "artifact:T1"
+  ],
+  "write_set": [
+    "evidence:I8"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:I8",
+      "mode": "W",
+      "isolation_key": "node:I8"
+    }
+  ],
+  "acceptance_commands": [
+    "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-FRONTEND-RUNTIME-QA-20260817.sh"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I8-return.json"
+  ],
+  "test_oracle": {
+    "mode": "frozen",
+    "writable": false,
+    "spec": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-FRONTEND-RUNTIME-QA-20260817.sh",
+    "spec_sha256": "a08d8e71677ed1f70b9e0a7281e060d11d9fd70e1e3fe22db491a5b9741897da",
+    "assertion_authority": "stage1-organization-pilot-frozen-proof-v1"
+  },
+  "source_write": {
+    "allowed": false,
+    "bounded": true,
+    "allowed_paths": [],
+    "forbidden_paths": [
+      ".codex-work/stage1-integrated/frontend/src",
+      ".codex-work/stage1-integrated/backend",
+      "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-FRONTEND-RUNTIME-QA-20260817.sh",
+      "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md"
+    ]
+  },
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  },
+  "proof_context": "fresh"
+}

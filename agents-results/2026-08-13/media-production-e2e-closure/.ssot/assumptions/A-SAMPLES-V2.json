@@ -1,0 +1,9 @@
+{
+  "assumption_id": "A-SAMPLES-V2",
+  "decision_semantic_key": "media.release-capability-samples",
+  "expected_value": "Use selfmedia_creation_consultation as the read-only consultation sample and selfmedia_creation as the write-producing creation sample for the initial production E2E release.",
+  "state": "CONFIRMED",
+  "confirmed_at": "2026-08-13T21:03:00+08:00",
+  "confirmation_authority": "user",
+  "invalidation_keys": ["decision.release-capability-samples"]
+}

@@ -1,0 +1,1 @@
+{"edge_id":"E-018-B3-C2","from":"B3","to":"C2","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["guard.e2e-receipt-v1"],"transferred_input":"收据门禁","gate_evidence":"B3 红绿通过"}

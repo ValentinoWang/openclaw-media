@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-101-P8-C3",
+  "from": "P8",
+  "to": "C3",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.p8.c3.v5"
+  ],
+  "transferred_input": "DISABLED 或 REVOKED 回执",
+  "gate_evidence": "撤销后不能再访问或写入",
+  "reason_code": "acceptance-dependency",
+  "transferred_artifact_ids": [
+    "DL-P8"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C3 consumes the explicitly produced artifact DL-P8"
+}

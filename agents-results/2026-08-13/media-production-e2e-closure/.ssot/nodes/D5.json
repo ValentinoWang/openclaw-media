@@ -1,0 +1,61 @@
+{
+  "node_id": "D5",
+  "semantic_key": "media.representative-account-binding-input",
+  "stage": "A",
+  "work_kind": "decision-acceptance",
+  "domain_lane": "task-e2e",
+  "execution_state": "ACCEPTED",
+  "decision_state": "ACCEPTED",
+  "decision_version": 1,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": ["D4"],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {"semantic_key": "media.release-capability-samples", "version": 2}
+  ],
+  "invalidation_keys": ["decision.representative-account-binding-input"],
+  "write_authority": "isolated-record",
+  "acceptance_authority": "user or product owner",
+  "unlocks": ["B2"],
+  "worker_transport": "historical-unregistered",
+  "worker_registration": {"note": "no retroactive worker claim"},
+  "decision_record": {
+    "approved_value": {
+      "capability_ids": [
+        "selfmedia_creation_consultation",
+        "selfmedia_creation"
+      ],
+      "required_task_inputs": [
+        "platform",
+        "customer_owned_account"
+      ],
+      "binding_key": [
+        "tenant_public_id",
+        "actor_public_id",
+        "normalized_platform",
+        "normalized_account_name"
+      ],
+      "failure_policy": "fail_closed_before_enqueue",
+      "other_media_capabilities": "unchanged"
+    },
+    "approval_authority": "user",
+    "approval_evidence": "User instruction on 2026-08-14: 请按照推荐方案排版OP. In the active OP decision context, this approves the documented recommendation for representative-capability account-binding inputs.",
+    "approved_at": "2026-08-14T05:00:48+08:00",
+    "interface_effect": "The two representative capabilities must require platform and customer-owned account at task creation; interface freeze advances from 2 to 3."
+  },
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "user-decision-2026-08-14-op03-v1",
+    "artifact_hashes": [],
+    "environment_identity": "current task and local C2 candidate source readback",
+    "runtime_release_id": "n/a",
+    "actor_role": "user and product decision authority",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-14T05:00:48+08:00",
+    "acceptance_contract": "MPE2E-TASK-RUN v3 relock required"
+  },
+  "description": "D5 第 1 版已接受：只对 selfmedia_creation_consultation 与 selfmedia_creation 强制平台和客户自有账号，并按租户、认证用户、规范化平台和规范化账号精确唯一绑定；缺失、多义、越权或冲突时在入队前失败关闭，其他 Media 能力不扩大约束。"
+}

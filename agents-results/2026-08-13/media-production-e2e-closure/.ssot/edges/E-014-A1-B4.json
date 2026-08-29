@@ -1,0 +1,1 @@
+{"edge_id":"E-014-A1-B4","from":"A1","to":"B4","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["deployment.media-release-guard"],"transferred_input":"部署门禁失败事实","gate_evidence":"A1 生产只读证据"}

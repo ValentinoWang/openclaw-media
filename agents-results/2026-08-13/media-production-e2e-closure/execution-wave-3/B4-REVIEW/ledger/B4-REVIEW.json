@@ -1,0 +1,59 @@
+{
+  "task_id": "B4-REVIEW",
+  "semantic_key": "media.release-guard-repair.review",
+  "versions": {
+    "plan": 1,
+    "dag": 1,
+    "interface_freeze": 1,
+    "node_contract": 1,
+    "ssot_schema": 1
+  },
+  "transport": "external-codex-exec",
+  "wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "wrapper_sha256": "67b6c79390710c106431e22cb542b346737d60dd0338e8f7c2f14e2fc73268df",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+  "wrapper_contract": "codex exec -C /Users/vsiyo/Desktop/创业项目/自媒体创作Agent --skip-git-repo-check --sandbox danger-full-access",
+  "sandbox_authority": "writable sandbox capability; task authority zero-write",
+  "task_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/tasks/B4-REVIEW.md",
+  "task_sha256": "cbda79bdbb3d4467e707792256fde19f95a31de50e2e1eaab790ed7f93129df8",
+  "validation_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/commands/B4-REVIEW.sh",
+  "validation_sha256": "deb8e1d3f87a786a0ea56329cc03628573b8f2f7419dbfa58bf44f822bddc821",
+  "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4-REVIEW/prompts/B4-REVIEW.txt",
+  "prompt_sha256": "478dc1850e1d38b5a1e0cf853ac361d8f2f6dd315444e448cf6a81774ff1df21",
+  "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4-REVIEW/logs/B4-REVIEW.log",
+  "return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4-REVIEW/returns/B4-REVIEW.json",
+  "validation_log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4-REVIEW/logs/B4-REVIEW.validation.log",
+  "write_authority": "zero-write",
+  "allowed_write": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4-REVIEW/returns/B4-REVIEW.json"
+  ],
+  "external_side_effects": [],
+  "destructive_actions": [],
+  "process_budget": {
+    "worker_processes": 1,
+    "retry_limit": 0,
+    "stop_condition": "structured return written or declared blocker",
+    "cancellation_owner": "main orchestrator",
+    "idempotency_key": "1/B4-REVIEW/1"
+  },
+  "dispatch_state": "EXITED",
+  "pid": 14980,
+  "worker_pid": 14988,
+  "codex_session_id": "019ffaff-49ec-7621-aea6-1c09193fa789",
+  "started_at": "2026-08-13T12:00:53Z",
+  "ended_at": "2026-08-13T12:08:29Z",
+  "exit_code": 0,
+  "return_sha256": "e17e91e38e850381c4ce0886d8617a61d04170de819126a52d350571c7ca6cf7",
+  "validation_exit_code": 0,
+  "validation_result": "B4_REVIEW_VALIDATION_PASS",
+  "validation_repair": {
+    "failure_class": "verification",
+    "red_result": "validator rejected a valid return because it read criteria.result instead of criteria.status and required the recovered first deploy attempt to exit zero",
+    "green_result": "validator now checks the declared status field, the expected first-attempt exit 4, the unchanged retry exit 0, and the fixed validation exit 0",
+    "scope": "review validator only; fixed B4-R2 production validation was not modified"
+  },
+  "prompt_cleanup_state": "deleted-after-exit-evidence-registration",
+  "runtime_handle_cleanup_state": "released",
+  "codex_transcript_retention": "preserved",
+  "transcript_path": "/Users/vsiyo/.codex/sessions/2026/08/13/rollout-2026-08-13T20-01-02-019ffaff-49ec-7621-aea6-1c09193fa789.jsonl"
+}

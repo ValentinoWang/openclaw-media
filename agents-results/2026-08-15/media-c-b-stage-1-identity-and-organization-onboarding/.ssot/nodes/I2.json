@@ -1,0 +1,120 @@
+{
+  "node_id": "I2",
+  "semantic_key": "media.stage1.auth-intent-binding",
+  "stage": "B",
+  "work_kind": "implementation",
+  "domain_lane": "identity-security",
+  "execution_state": "VERIFIED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "B",
+    "G1",
+    "K1",
+    "K6",
+    "M1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.stable-decisions",
+      "version": 2
+    },
+    {
+      "semantic_key": "media.stage1.decision.personal-auth",
+      "version": 1
+    },
+    {
+      "semantic_key": "media.stage1.decision.personal-auth-contract",
+      "version": 1
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.auth-intent-binding.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "I3",
+    "IL1",
+    "P9"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [],
+  "description": "个人与组织身份不得按邮箱或姓名自动合并",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "I2.json",
+  "execution_contract_sha256": "2631b1a4813911597d66dacbf737d40a0232ee55709a602508147df27f154404",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-I2"
+  ],
+  "produced_artifact_ids": [
+    "ART-I2"
+  ],
+  "consumed_artifact_ids": [
+    "ART-B",
+    "DL-G1",
+    "DL-K1",
+    "DL-K6",
+    "DL-M1"
+  ],
+  "read_set": [
+    "artifact:B",
+    "artifact:G1",
+    "artifact:K1",
+    "artifact:K6",
+    "artifact:M1"
+  ],
+  "write_set": [
+    "artifact:I2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:I2",
+      "mode": "W",
+      "isolation_key": "node:I2"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance I2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I2-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-5",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "artifact:I2"
+    ]
+  },
+  "evidence_identity": {
+    "evidence_level": "local-runtime",
+    "source_revision": "stage1-i2-auth-routes-locked-2026-08-17",
+    "artifact_hashes": [
+      "sha256:ca419df8c77318d4ce15d873add236248be26147225363ed29e5731cb8d09013",
+      "sha256:759cdd8c311e19e47cc291f9c97b22be7892a314d1f7b62bc186476c246a24bf",
+      "sha256:6805c5fba5492916bc079bce87e4ed4c1633ab0c649f37d8fc0bf81a4353438f",
+      "sha256:d149a683ee0ef2825e5151005d0679f0d883e62b5810aeede637a5c87e7e1e6d",
+      "sha256:1330937b7f5501fd1c05140118a20ae7f789eb3d74ee474d9828c3c647a8785d"
+    ],
+    "environment_identity": "local macOS isolated stage1-i2 root with existing Python virtualenv",
+    "runtime_release_id": "n/a",
+    "actor_role": "main orchestrator deterministic rerun",
+    "account_or_tenant": "local fixtures only",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": true,
+    "observed_at": "2026-08-17T00:01:14+08:00",
+    "acceptance_contract": "共享路由验收合同（T1-AUTH-ROUTES）运行 20260817T031500Z-local-final-f4a5b6；I2 20 passed, 16 skipped；保护基线 LOCKED；正式接受待完成"
+  }
+}

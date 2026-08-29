@@ -1,0 +1,27 @@
+{
+  "guardId": "media-public-session-projection-v1",
+  "failureClass": "security-contract-backend-enum-or-secret-leak",
+  "trigger": "every public Media /session response before serialization",
+  "sourceGuard": "backend/openclaw_app/adapters/http_api.py:_assert_public_media_session_projection",
+  "scope": "Media web session envelope only; internal workspace resolution remains server-side",
+  "allowlist": [
+    "organizationName",
+    "organizationConnection",
+    "installationConnection",
+    "publicUserId",
+    "tenantId",
+    "workspaceMode",
+    "editorMode",
+    "bodyAuthority",
+    "memberRole",
+    "role",
+    "maintainer",
+    "csrfToken",
+    "expiresAt",
+    "schemaVersion"
+  ],
+  "redProof": "tests/test_public_media_session_guard.py rejects bindingState, ACTIVE, personal installation state, and a sensitive environment value",
+  "greenProof": "tests/test_public_media_session_guard.py::test_public_session_guard_accepts_public_projection",
+  "repair": "map internal binding and installation states through _public_connection_state, then keep the public field allowlist and guard in the response path",
+  "evidence": "agents-results/2026-08-19/media-c-b-organization-identity-public-projection/backend-tests.txt"
+}

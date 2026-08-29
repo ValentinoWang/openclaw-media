@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "receipt_id": "EV-T1-RERUN-20260817",
+  "node_id": "T1",
+  "execution_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "observed_at": "2026-08-17T00:01:14+08:00",
+  "environment_identity": "local macOS isolated stage1-t1 root with existing Python virtualenv",
+  "evidence_level": "local-runtime",
+  "mock_or_fixture": true,
+  "commands": [
+    {
+      "command": "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1.sh",
+      "exit_code": 0,
+      "result": "15 passed"
+    },
+    {
+      "command": "python3 .codex-work/stage1-t1/backend/tests/check_stage1_auth_route_alignment.py --t1-root .codex-work/stage1-t1 --i1-root .codex-work/stage1-i1 --i2-root .codex-work/stage1-i2",
+      "exit_code": 0,
+      "result": "STAGE1_AUTH_ROUTE_ALIGNMENT=GREEN"
+    }
+  ],
+  "unverified_items": [
+    "Formal protected-test baseline remains pending lock after the I2 lifecycle test update.",
+    "Human acceptance, real email delivery, Feishu authorization, deployment, production or device acceptance was not performed."
+  ]
+}

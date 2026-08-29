@@ -1,0 +1,28 @@
+{
+  "contract_id": "DB",
+  "schema_version": 1,
+  "node_id": "DB",
+  "node_role": "acceptance-gate",
+  "execution_actor": "orchestrator",
+  "work_kind": "validation",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:DA"
+  ],
+  "write_set": [
+    "evidence:DB"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DB",
+      "mode": "W",
+      "isolation_key": "node:DB"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DB\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DB-return.json"
+  ]
+}

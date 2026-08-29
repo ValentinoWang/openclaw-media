@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-022-K4-MA1",
+  "from": "K4",
+  "to": "MA1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.k4.ma1.v5"
+  ],
+  "transferred_input": "数据归属决定第 2 版",
+  "gate_evidence": "可证明归属则回填；冲突进入隔离待处置；完全无证据则对所有租户不可见",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "DL-K4"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "MA1 consumes the explicitly produced artifact DL-K4"
+}

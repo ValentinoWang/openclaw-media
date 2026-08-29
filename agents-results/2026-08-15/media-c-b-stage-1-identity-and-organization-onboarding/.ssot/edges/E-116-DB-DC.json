@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-116-DB-DC",
+  "from": "DB",
+  "to": "DC",
+  "dependency_type": "hard",
+  "dependency_scope": "global-completeness",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.db.dc.v5"
+  ],
+  "transferred_input": "宏观阶段回归汇总记录",
+  "gate_evidence": "不产生新的生产或外部系统动作",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "ART-DB"
+  ],
+  "resource_ids": [
+    "candidate:REL-1B"
+  ],
+  "necessity_proof": "DC must retain the immutable candidate:REL-1B identity from DB"
+}

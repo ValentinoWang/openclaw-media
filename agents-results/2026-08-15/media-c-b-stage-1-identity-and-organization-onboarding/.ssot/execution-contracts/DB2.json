@@ -1,0 +1,28 @@
+{
+  "contract_id": "DB2",
+  "schema_version": 1,
+  "node_id": "DB2",
+  "node_role": "acceptance-gate",
+  "execution_actor": "external-system",
+  "work_kind": "validation",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:DA2"
+  ],
+  "write_set": [
+    "evidence:DB2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DB2",
+      "mode": "W",
+      "isolation_key": "node:DB2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DB2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DB2-return.json"
+  ]
+}

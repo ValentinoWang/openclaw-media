@@ -1,0 +1,52 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "decision": "cancelled_before_mutation",
+        "failure_class": "scope-conflict",
+        "reason": "The task froze /home/ubuntu/openclaw-bot-center with an inherited parent /home/ubuntu Git status digest. That digest included unrelated dynamic files outside the B4 frontend release scope, so the outer owner cancelled the attempt instead of accepting a false deployment precondition."
+      },
+      "codex_session_identifier": "019ffab0-024e-7f71-baf1-5537e0af5cb2",
+      "ended_at": "2026-08-13T10:40:24+00:00",
+      "exit_code": null,
+      "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4/logs/B4-luna.log",
+      "log_sha256": "970c460145df24357f9dcd51155bc77ddb6f2cdedeae4c6ed9c99e3fce27f9a5",
+      "process_cleanup_state": "confirmed-no-matching-worker-process",
+      "prompt_cleanup_state": "deleted-after-evidence-registration",
+      "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4/prompts/B4-luna.txt",
+      "prompt_sha256": "71042e17550ecec816949ef2ad920cf7281c3f37e7c094ea7c59c0bc96809536",
+      "remote_post_cancel_readback": {
+        "active_frontend_release": "20260811T201753CST-media-cb-preview-cp1-r2",
+        "new_release_exists": false,
+        "temporary_build_directory_exists": false
+      },
+      "remote_writes": [],
+      "started_at": "2026-08-13T10:34:23.129990+00:00",
+      "structured_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/B4/returns/B4-luna.json",
+      "structured_return_state": "missing",
+      "transcript_path": "/Users/vsiyo/.codex/sessions/2026/08/13/rollout-2026-08-13T18-34-26-019ffab0-024e-7f71-baf1-5537e0af5cb2.jsonl",
+      "transcript_retention_state": "preserved",
+      "validation_state": "not_run_after_owner_cancellation",
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-13T10:40:24+00:00",
+  "final_decision": "cancelled_before_mutation",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-13T10:34:23.129990+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/tasks/B4.md",
+  "task_id": "B4",
+  "task_sha256": "8689e9875ad4b5322969d357d4542a4e1ae231dc1f2063c6548a5c661e64e985",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-3/commands/B4.sh",
+  "validation_command_sha256": "6abd124f87ee1410ba22ae9054a5e2ee18962efbd00de125b0d955b022891e93",
+  "terminal_state": "CANCELLED_SCOPE_CONTRACT",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

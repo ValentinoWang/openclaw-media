@@ -1,0 +1,136 @@
+{
+  "node_id": "I1",
+  "semantic_key": "media.stage1.unified-login",
+  "stage": "B",
+  "work_kind": "implementation",
+  "domain_lane": "identity",
+  "execution_state": "VERIFIED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "B",
+    "G1",
+    "K1",
+    "K6",
+    "M1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.stable-decisions",
+      "version": 2
+    },
+    {
+      "semantic_key": "media.stage1.decision.personal-auth",
+      "version": 1
+    },
+    {
+      "semantic_key": "media.stage1.decision.personal-auth-contract",
+      "version": 1
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.unified-login.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "I3"
+  ],
+  "worker_transport": "deterministic-local",
+  "worker_registration": {
+    "executor": "outer orchestrator",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "command": "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I1.sh",
+    "task_argument": "实现单一入口内的个人登录、注册、邮箱验证、找回和组织飞书授权界面。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/I1-rerun-20260817.json",
+    "determinism_key": "stage1-i1-source-plus-frozen-validation-command",
+    "dispatch_state": "EXITED",
+    "note": "deterministic local execution; zero Codex processes"
+  },
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [],
+  "description": "与 I2 独立开发，在 I3 前汇合",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "I1.json",
+  "execution_contract_sha256": "ff5a6b17cfae6bb0f7703d95338bd7d74efe9295e660386159c4eaeaa9c454c6",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-I1"
+  ],
+  "produced_artifact_ids": [
+    "ART-I1"
+  ],
+  "consumed_artifact_ids": [
+    "ART-B",
+    "DL-G1",
+    "DL-K1",
+    "DL-K6",
+    "DL-M1"
+  ],
+  "read_set": [
+    "artifact:B",
+    "artifact:G1",
+    "artifact:K1",
+    "artifact:K6",
+    "artifact:M1"
+  ],
+  "write_set": [
+    "artifact:I1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:I1",
+      "mode": "W",
+      "isolation_key": "node:I1"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I1.sh"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-5",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "artifact:I1"
+    ]
+  },
+  "evidence_identity": {
+    "evidence_level": "local-runtime",
+    "source_revision": "stage1-i1-isolated-root-2026-08-17",
+    "artifact_hashes": [
+      "sha256:7ace5ecb3b9a14d8bcf4cd7c86bebfc8892857a31b8edfd929a3c3f00041b12d",
+      "sha256:1ed4259a8ab4f492a1d323c4c4867f061843c0d4b1fb4bb2ea02533c9836f6e2",
+      "sha256:12d4309211434786d403d7c987633d9a85bbe49632a3cdbd4e9e5325d570a1c6",
+      "sha256:84d20bf30aa862c6efb90a56baf04bab3e0db96c4c2fb3249c162c1a5b1eba5d",
+      "sha256:b2126f3786da69e7fc113504c89667a9d4308d41776399957531e98f415cfa8e",
+      "sha256:864097f80bcf2273971491f84ea92252a82df9fc79c8ec12947e56a94bfe725c",
+      "sha256:a428cd86b19fbd0f89bb72460d441fa27ca066bd45a591845d03e3e2cf32aa4b",
+      "sha256:45dffceaada3e9f9111ce2dfa5ed047e20fb5e7655710313951a7ccbe9407d4c",
+      "sha256:4410457643280b3ac967bcd06971e2300e1499ed15edb2c6677fd38d103ac728",
+      "sha256:d26f6c48108286e5647535994536066fa9f6db0d029aa8b1ff2d355b3ca28c9a",
+      "sha256:5b61cf52ae421e1dbe1d37d34c7c43ca3c492224aa28758c4ae40eb265d24206",
+      "sha256:2d2a10a68bee189af24811ce4f314d60ae7af7450f61afb4f37ba8c849036c41",
+      "sha256:f3dd4e9e3671ff2d774938b96bfacf083bdfaad454ee19d8effc9d5b96541dd7",
+      "sha256:54a342e69719f97a20bf5968e8ca8aaf5e4384d13abe347569d6491e7f48ab09"
+    ],
+    "environment_identity": "local macOS isolated stage1-i1 root with existing Node dependencies",
+    "runtime_release_id": "n/a",
+    "actor_role": "main orchestrator deterministic local execution",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "source QA and local Vite build; no external browser acceptance",
+    "mock_or_fixture": true,
+    "observed_at": "2026-08-17T00:47:00+08:00",
+    "acceptance_contract": "I1 frozen validation receipt EV-I1-RERUN-20260817; stage1_identity_entry=PASS; build:media passed"
+  }
+}

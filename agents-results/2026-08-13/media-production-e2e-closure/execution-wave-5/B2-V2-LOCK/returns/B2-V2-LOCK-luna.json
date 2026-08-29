@@ -1,0 +1,131 @@
+{
+  "task_id": "B2-V2-LOCK",
+  "attempt_role": "luna",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "version_tuple": {
+    "plan": 2,
+    "dependency_graph": 2,
+    "interface_freeze": 2,
+    "node_contract": 2,
+    "ssot_schema": 1
+  },
+  "frozen_inputs": {
+    "task_source_sha256": "3f761a71c3f54eadf0b67b55f1fdc3a38f1ff75882a0cae6e9d482920b3e2909",
+    "validation_command_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-5/validation/B2-V2-LOCK.sh",
+    "validation_command_sha256": "6a6dd0883ee5dabf30b19d88226899d17ddd5d97386a3928720fd6e2bcf3452b",
+    "d4_path": "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/D4.json",
+    "d4_sha256": "8879cea622a6be53484b6d6b85ed96f10db86b5a8c70b903360735408021f580",
+    "d4_state": "ACCEPTED",
+    "d4_decision_version": 2,
+    "b2_path": "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/B2.json",
+    "b2_sha256": "79847d2c006515237e4561df86e507444a510e961ebdff5dd504bfeaf979c708",
+    "b2_execution_state": "READY",
+    "b2_readiness_mode": "FORMAL",
+    "b2_assumption_ids": "none",
+    "reused_b3_checker": "scripts/check-media-e2e-receipt.mjs",
+    "reused_b3_checker_sha256": "a39884fdd312270ca0d5b623c9fb8d997aa64e607a2f51cf67c312df125dd6da"
+  },
+  "wrapper": {
+    "name": "run-lw-luna.sh",
+    "path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+    "invocation_contract": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "writable sandbox"
+  },
+  "actual_write_paths": [
+    "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN/acceptance-contract.md",
+    "acceptance/human/MPE2E-TASK-RUN/checklist.md",
+    "acceptance/human/MPE2E-TASK-RUN/binding.md",
+    "scripts/acceptance/test-mpe2e-task-run.sh",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-5/B2-V2-LOCK/returns/B2-V2-LOCK-luna.json"
+  ],
+  "artifacts": {
+    "contract": {
+      "path": "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN/acceptance-contract.md",
+      "sha256": "f2f97099c514b8a9b5570c7626cc5e746ce99394370985000cdddd5094a18bf2",
+      "version": 2,
+      "status": "APPROVED",
+      "test_baseline": "LOCKED",
+      "readiness_mode": "FORMAL",
+      "assumption_ids": "none"
+    },
+    "human_checklist": {
+      "path": "acceptance/human/MPE2E-TASK-RUN/checklist.md",
+      "sha256": "45664f75ee37535b3e67242a4c0550735a131f50281d5fca34f0e6d1e095724f",
+      "status": "已批准",
+      "coverage": [
+        "selfmedia_creation_consultation",
+        "selfmedia_creation"
+      ],
+      "run_results_written": false
+    },
+    "binding": {
+      "path": "acceptance/human/MPE2E-TASK-RUN/binding.md",
+      "sha256": "48b84499da08393953eec17fe7afc0fed209ed908e427522254ef20414c2fe9b",
+      "status": "ACTIVE",
+      "contract_sha256_in_binding": "f2f97099c514b8a9b5570c7626cc5e746ce99394370985000cdddd5094a18bf2",
+      "checklist_sha256_in_binding": "45664f75ee37535b3e67242a4c0550735a131f50281d5fca34f0e6d1e095724f"
+    },
+    "protected_test": {
+      "path": "scripts/acceptance/test-mpe2e-task-run.sh",
+      "sha256": "334d2393059e54980a8434a99d59bef1b1f82d1466549f540aa40e4f5f0e50d0",
+      "summary": "Fail-closed v2 gate for two distinct production same-receipt records; checks account and tenant binding, independent task attempts and account aggregation, source/task/result/readbacks, consultation no-new-Feishu-object and empty external write set, creation Feishu readback, recovery matrix, duplicate artifacts, timestamps, and sensitive-field absence."
+    }
+  },
+  "validation": {
+    "command": "bash agents-results/2026-08-13/media-production-e2e-closure/execution-wave-5/validation/B2-V2-LOCK.sh",
+    "exit_code": 0,
+    "checks": [
+      "D4 decision_state ACCEPTED and decision_version 2",
+      "B2 execution_state READY, readiness_mode FORMAL, and assumption_ids empty",
+      "contract validator passed",
+      "Contract version is 2",
+      "Contract status is APPROVED",
+      "Test baseline is LOCKED",
+      "Readiness mode is FORMAL",
+      "Assumption IDs are none",
+      "v2 capability names are present in the contract",
+      "human checklist status is 已批准",
+      "protected test reads selfmedia_creation_consultation.json and selfmedia_creation.json",
+      "old viral_deconstruction read-only semantics are absent from the protected test",
+      "protected test shell syntax passed",
+      "binding is ACTIVE and contains current contract and checklist hashes",
+      "missing production receipts produce the required red-light exit code 3"
+    ]
+  },
+  "preimplementation_red_light": {
+    "command": "scripts/acceptance/test-mpe2e-task-run.sh",
+    "shell_syntax_exit_code": 0,
+    "test_exit_code": 3,
+    "valid_red_light": true,
+    "reason": "Neither required real production receipt exists at acceptance/production/MPE2E-TASK-RUN/receipts/selfmedia_creation_consultation.json or acceptance/production/MPE2E-TASK-RUN/receipts/selfmedia_creation.json.",
+    "failure_origin": "missing production implementation/evidence, not shell syntax or test self-crash",
+    "stderr_summary": "FAIL: production same-receipt evidence missing: .../selfmedia_creation_consultation.json .../selfmedia_creation.json"
+  },
+  "fixture_negative_check": {
+    "b3_checker_command": "node scripts/check-media-e2e-receipt.mjs tests/fixtures/media-e2e-receipt/complete.json",
+    "b3_checker_exit_code": 0,
+    "b3_checker_result": "fixture passes the reused generic media_e2e_receipt_v1 structure check",
+    "b2_fixture_command": "MPE2E_RECEIPT_DIR=<temporary-copy-of-complete-fixture> scripts/acceptance/test-mpe2e-task-run.sh",
+    "b2_fixture_exit_code": 1,
+    "b2_fixture_result": "fixture is rejected by the v2 production same-receipt evidence gate",
+    "evidence": "FAIL: selfmedia_creation_consultation receipt lacks the locked B2 same-receipt production evidence"
+  },
+  "forbidden_scope_untouched": [
+    ".ssot/** and generated SSOT views",
+    "scripts/check-media-e2e-receipt.mjs",
+    "scripts/test-media-e2e-receipt.sh",
+    "tests/fixtures/**",
+    "remote hosts, production tasks, databases, Feishu, external systems, and release state",
+    "project-level indexes and human run results"
+  ],
+  "unverified_items": [
+    "C2 has not been implemented.",
+    "No real production task was started and no production receipt was generated or read back.",
+    "No database, Feishu, remote host, or other external write was initiated.",
+    "No human acceptance run result was recorded; the checklist remains an approved procedure only.",
+    "The v2 protected test is locked for implementation and release verification, but cannot pass until both real production receipts exist."
+  ],
+  "stop_condition": "Contract, checklist, binding, and protected test were relocked for v2; frozen validation passed; expected pre-C2 red light was observed; no production evidence was generated."
+}

@@ -1,0 +1,1 @@
+{"edge_id":"E-008-D3-B1","from":"D3","to":"B1","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":["A-QA"],"invalidation_keys":["decision.qa-identity"],"transferred_input":"QA 身份管理决定","gate_evidence":"D3 v1 或条件草案"}

@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-066-C1-CA",
+  "from": "C1",
+  "to": "CA",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c1.ca.v5"
+  ],
+  "transferred_input": "身份工作区子候选",
+  "gate_evidence": "个人与组织可信分流及负例通过",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-C1"
+  ],
+  "resource_ids": [
+    "candidate:REL-1A"
+  ],
+  "necessity_proof": "CA must retain the immutable candidate:REL-1A identity from C1"
+}

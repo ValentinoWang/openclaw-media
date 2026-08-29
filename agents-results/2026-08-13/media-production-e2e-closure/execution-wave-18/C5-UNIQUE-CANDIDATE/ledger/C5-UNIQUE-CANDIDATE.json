@@ -1,0 +1,192 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/prompts/C5-UNIQUE-CANDIDATE-luna.txt)"
+      ],
+      "ended_at": "2026-08-15T11:32:35.463624+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/logs/C5-UNIQUE-CANDIDATE-luna.log",
+      "pid": 32615,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/prompts/C5-UNIQUE-CANDIDATE-luna.txt",
+      "prompt_sha256": "1beeeb35e9dbabd23f4ca81187b651a9cc357b8de5229c264f2ac0bdb4a91ded",
+      "started_at": "2026-08-15T11:21:06.687647+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "actual_read_scope": [
+          "agents-results/2026-08-13/media-production-e2e-closure/.ssot/manifest.json",
+          "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/C3.json",
+          "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/C4.json",
+          "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/C5.json",
+          "agents-results/2026-08-13/media-production-e2e-closure/contracts/material-parsing-coverage-v1.json",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-17/result.md",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-17/validation/material-parsing-main-thread-review.sh",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/validation/C5-UNIQUE-CANDIDATE.sh",
+          ".codex-work/merge-candidate-v4/frontend/**",
+          ".codex-work/merge-candidate-v4/backend/**"
+        ],
+        "actual_write_scope": [
+          ".codex-work/merge-candidate-v4/frontend/.candidate-source.sha256",
+          ".codex-work/merge-candidate-v4/frontend/.merge-provenance.json",
+          ".codex-work/merge-candidate-v4/backend/.release-coordination.json",
+          ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+          ".codex-work/merge-candidate-v4/backend/.merge-provenance.json",
+          ".codex-work/merge-candidate-v4/candidate-manifest.json",
+          ".codex-work/merge-candidate-v4/candidate-manifest.sha256",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/result.md",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/returns/C5-UNIQUE-CANDIDATE-luna.json"
+        ],
+        "attempt_role": "luna",
+        "candidate_manifests": {
+          "backend": {
+            "managed_file_count": 566,
+            "path": ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+            "sha256": "c67461000c4dd3cee5f5087d76880a402f2831c20ba365e6c4e719abf3a32b44"
+          },
+          "frontend": {
+            "managed_file_count": 200,
+            "path": ".codex-work/merge-candidate-v4/frontend/.candidate-source.sha256",
+            "sha256": "e4b35df091184f2d51be0c5ccb675223ddc7b6fb1df6ebf366956c1ac9619580"
+          },
+          "top_level": {
+            "checksum_path": ".codex-work/merge-candidate-v4/candidate-manifest.sha256",
+            "path": ".codex-work/merge-candidate-v4/candidate-manifest.json",
+            "sha256": "62f0fd2a23b614483482242ea6294e0bb3cf7edc0037a740a99f19690fecad4a"
+          }
+        },
+        "changed_files": [
+          ".codex-work/merge-candidate-v4/frontend/.candidate-source.sha256",
+          ".codex-work/merge-candidate-v4/frontend/.merge-provenance.json",
+          ".codex-work/merge-candidate-v4/backend/.release-coordination.json",
+          ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+          ".codex-work/merge-candidate-v4/backend/.merge-provenance.json",
+          ".codex-work/merge-candidate-v4/candidate-manifest.json",
+          ".codex-work/merge-candidate-v4/candidate-manifest.sha256",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/result.md",
+          "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/returns/C5-UNIQUE-CANDIDATE-luna.json"
+        ],
+        "cleanup": {
+          "persistent_worker_left_running": false,
+          "validation_scratch_cleaned_by_frozen_command": true
+        },
+        "deviations": [
+          "The first validation invocation exited 1 because the backend manifest preceded the required release-coordination update; the manifest, provenance, top-level manifest, checksum, and result were synchronized and two subsequent invocations exited 0."
+        ],
+        "failure_class": "none",
+        "forbidden_scope_respected": true,
+        "material_parsing_contract": {
+          "contract_id": "media-material-parsing-coverage-v1",
+          "contract_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+          "coverage_count": 54,
+          "production_accepted": false,
+          "wave_17_result_sha256": "27cfc24b13d7618127996a72f57c38608f4a0df2a32f213104823b6c97021dbf",
+          "wave_17_validation_sha256": "fc2bec23ab69da35d18e269bb4cd1a0236eb3929c33c943ee4bff4e6da02de8b"
+        },
+        "production_baselines": {
+          "backend": "20260814T062408Z-opc-feishu-login",
+          "frontend": "20260814T084319Z-media-login-canonical"
+        },
+        "production_not_touched": true,
+        "proposed_state": "VERIFIED",
+        "release_coordination": {
+          "backendRelease": "openclaw-tag-router-media-tenant-20260814T062408Z-opc-feishu-login",
+          "frontendRelease": "20260814T084319Z-media-login-canonical"
+        },
+        "remaining_risks": [
+          "This evidence establishes a content-bound local unique candidate only; it does not establish deployment, production integration, or production efficacy."
+        ],
+        "schema_version": 1,
+        "shared_resource_impact": {
+          "accounts_credentials_cookies_tokens": false,
+          "child_workers": false,
+          "feishu": false,
+          "long_lived_processes": false,
+          "production_database": false,
+          "remote_host": false
+        },
+        "structured_return_path": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/returns/C5-UNIQUE-CANDIDATE-luna.json",
+        "task_id": "C5-UNIQUE-CANDIDATE",
+        "task_source_sha256": "f261225240091a67eaaf58c2895a651b60e26b8b0fb0e612a5df75898fd4ab9c",
+        "unverified_items": [
+          "The candidate is local-only and not deployed; no production release, restart, or service configuration was performed.",
+          "No production database, Feishu, account, credential, cookie, token, browser, device, or real-QA acceptance evidence was used.",
+          "C5 was not marked ACCEPTED; independent release or human acceptance remains outside this bounded task."
+        ],
+        "validation": {
+          "command_file": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/validation/C5-UNIQUE-CANDIDATE.sh",
+          "command_sha256": "34b6451ec3644a0bf902fbb4f65ea66d92c6d38f5a7ce165d22cdbadc2fffcaf",
+          "final_exit_code": 0,
+          "runs": [
+            {
+              "exit_code": 1,
+              "note": "The backend source manifest was generated before the required release-coordination frontendRelease update; it was rebuilt using the frozen exclusion rule.",
+              "status": "failed_before_acceptance"
+            },
+            {
+              "exit_code": 0,
+              "note": "Frozen C5 validation passed.",
+              "status": "pass"
+            },
+            {
+              "exit_code": 0,
+              "note": "Final frozen validation after result.md update passed.",
+              "status": "pass"
+            }
+          ]
+        },
+        "version_tuple": {
+          "dag": 5,
+          "interface_freeze": 5,
+          "node_contract": 4,
+          "plan": 5,
+          "ssot_schema": 1
+        },
+        "wrapper": null,
+        "wrapper_detail": "Direct bounded execution; no child worker or long-lived process was started."
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/returns/C5-UNIQUE-CANDIDATE-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "f261225240091a67eaaf58c2895a651b60e26b8b0fb0e612a5df75898fd4ab9c",
+      "timed_out": false,
+      "validation_command_sha256": "34b6451ec3644a0bf902fbb4f65ea66d92c6d38f5a7ce165d22cdbadc2fffcaf",
+      "validation_ended_at": "2026-08-15T11:33:57.326571+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/logs/C5-UNIQUE-CANDIDATE-luna.validation.log",
+      "validation_pid": 50698,
+      "validation_started_at": "2026-08-15T11:32:35.467029+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-15T11:33:57.399868+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-15T11:21:06.682230+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/tasks/C5-UNIQUE-CANDIDATE.md",
+  "task_id": "C5-UNIQUE-CANDIDATE",
+  "task_sha256": "f261225240091a67eaaf58c2895a651b60e26b8b0fb0e612a5df75898fd4ab9c",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-18/C5-UNIQUE-CANDIDATE/validation/C5-UNIQUE-CANDIDATE.sh",
+  "validation_command_sha256": "34b6451ec3644a0bf902fbb4f65ea66d92c6d38f5a7ce165d22cdbadc2fffcaf",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

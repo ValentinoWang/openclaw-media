@@ -1,0 +1,142 @@
+{
+  "node_id": "B",
+  "semantic_key": "media.stage1.contract-assembly",
+  "stage": "A",
+  "work_kind": "contract-assembly",
+  "domain_lane": "new-candidates",
+  "execution_state": "ACCEPTED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "A1",
+    "K"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.contract-assembly.v5"
+  ],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "I1",
+    "I2",
+    "I9",
+    "M1",
+    "MA1",
+    "T1"
+  ],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "LW",
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "danger-full-access",
+    "sandbox_authority": "writable sandbox",
+    "task_argument": "汇编第 4 版共享合同；不得启动产品实现。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/B-retry-2/returns/B-retry-2-luna.json",
+    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/B-retry-2/prompts/B-retry-2-luna.txt",
+    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/B-retry-2/logs/B-retry-2-luna.log",
+    "prompt_sha256": "15765b36988bd97f2665e5ed9dde674025a23820ca04fec82a21610d84c8e89e",
+    "launch_barrier": "all wave PIDs registered before first wait",
+    "prompt_cleanup": "delete after exit evidence registration",
+    "runtime_handle_cleanup": "release after exit evidence registration",
+    "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions",
+    "dispatch_state": "EXITED",
+    "ledger_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/B-retry-2/ledger/B-retry-2.json",
+    "runtime_profile_requirement": "main-orchestrator",
+    "runtime_profile_available": true,
+    "launch_authorized": false,
+    "blocking_capability_node": "none"
+  },
+  "runtime_profile_requirement": "main-orchestrator",
+  "related_evidence_ids": [],
+  "description": "形成隔离开发基线且不改写 Revision 11",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "execution_contract_ref": "B.json",
+  "execution_contract_sha256": "e04505cbadb927a9e6c157e09981da08ef3a00075e7fcea5539fb40b966e0d8b",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-B"
+  ],
+  "consumed_artifact_ids": [
+    "DL-A1",
+    "ART-K"
+  ],
+  "read_set": [
+    "artifact:A1",
+    "artifact:K"
+  ],
+  "write_set": [
+    "artifact:B"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:B",
+      "mode": "W",
+      "isolation_key": "node:B"
+    }
+  ],
+  "actor_pool": "codex-primary",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance B\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/B-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-3",
+  "executor_route": "lw-terra",
+  "primary_executor": "lw-terra",
+  "primary_wrapper": "run-lw-terra.sh",
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  },
+  "evidence_identity": {
+    "evidence_level": "local-runtime",
+    "source_revision": "sha256:a5e34064d554fe6a11b93f608b23202e737b40eac9dcedc4388c18dc952710be",
+    "artifact_hashes": [
+      "sha256:6d325c6736389b7dde8eb1e5ef0c91e166d4a68578d05324dad3cadf294af9d0",
+      "sha256:c1fbb5b6655ff2f4bb6f90152a8ab6705d77f6d2744744014f99e0d9dafa01a8",
+      "sha256:52f6f4f8ec3e4d4ac4111b455424aa6ac52f00427146defc7eb09b37e22b8bea",
+      "sha256:e70fdecba336c7e42ae5e9a1004e9187fea29c3fe03d90e0d6dd9f77bf42fd0a"
+    ],
+    "environment_identity": "local macOS non-Git merge-candidate-v4 backend with existing Python virtualenv",
+    "runtime_release_id": "n/a",
+    "actor_role": "Luna worker with supervisor acceptance",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-16T07:59:05Z",
+    "acceptance_contract": "B-retry-2 frozen contract validation; 7 passed"
+  }
+}

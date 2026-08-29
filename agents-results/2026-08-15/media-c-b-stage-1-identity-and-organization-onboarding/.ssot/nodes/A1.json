@@ -1,0 +1,101 @@
+{
+  "node_id": "A1",
+  "semantic_key": "media.stage1.source-baseline",
+  "stage": "A",
+  "work_kind": "fact-discovery",
+  "domain_lane": "source-facts",
+  "execution_state": "ACCEPTED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "A"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.source-baseline.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "B",
+    "E11",
+    "GA1",
+    "K",
+    "K1",
+    "K2",
+    "K3",
+    "K4",
+    "K5",
+    "K6"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "none",
+  "related_evidence_ids": [],
+  "description": "后续只消费列明权威且不虚构隔离能力",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "A1.json",
+  "execution_contract_sha256": "c39d760cee3734e867244c8d48aa80af1a1fd2d39ff2c70c3f8a009df3691fd7",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-A1"
+  ],
+  "produced_artifact_ids": [
+    "ART-A1"
+  ],
+  "consumed_artifact_ids": [
+    "ART-A"
+  ],
+  "read_set": [
+    "artifact:A"
+  ],
+  "write_set": [
+    "evidence:A1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:A1",
+      "mode": "W",
+      "isolation_key": "node:A1"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance A1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/A1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-1",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "evidence:A1"
+    ]
+  },
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "audit-and-canonical-hash-baseline-2026-08-15",
+    "artifact_hashes": [
+      "sha256:d5dad457861e413ff3963da568870be907495de50c33486810fa3dbdc0d92f98",
+      "sha256:0f621ee97d66fb3ec4be7b8be7bc306fda4a269f81382ad232afb1187c16ac47",
+      "sha256:a30bdf105e5b2b8367ff19603e19a28ad787e9743fef033e10a270a65d53d5db",
+      "sha256:97000cc86e80993997153e0fb193ee877daea85c5695a60cf1645bf40596d471"
+    ],
+    "environment_identity": "local source files; non-Git project root",
+    "runtime_release_id": "n/a",
+    "actor_role": "main orchestrator read-only",
+    "account_or_tenant": "redacted / not read",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-15T20:37:42+08:00",
+    "acceptance_contract": "Phase-1 source and runner baseline v4"
+  }
+}

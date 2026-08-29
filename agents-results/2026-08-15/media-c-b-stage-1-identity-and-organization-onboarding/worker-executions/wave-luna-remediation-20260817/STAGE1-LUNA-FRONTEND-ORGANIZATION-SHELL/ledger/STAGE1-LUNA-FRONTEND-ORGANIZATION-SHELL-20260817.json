@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "task_id": "STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817",
+  "status": "verified",
+  "attempt_role": "luna",
+  "primary_route": "user-selected-luna",
+  "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "wrapper_sha256": "a88abe5cdbb376cb1d9e37706f202f60c48292c3ed337b1e31c1820720b1742c",
+  "wrapper_contract": {
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "service_tier": "priority",
+    "sandbox": "danger-full-access",
+    "skip_git_repo_check": true,
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-integrated"
+  },
+  "task_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-tasks/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817.txt",
+  "task_sha256": "4a14fe158123eb6afd5eb44efb24d381e4874dbd70f0c29faf8636f2691ae216",
+  "validation_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817.sh",
+  "validation_sha256": "ec956d67b71acf8982e302f5f5cc7f831a39b1397b2df516a400eb5b48829d61",
+  "allowed_write_scope": [
+    "frontend/src/media/OrganizationWorkspaceShellPage.tsx",
+    "worker return JSON",
+    "lane-local runtime evidence",
+    "frontend/node_modules/.tmp"
+  ],
+  "forbidden_shared_scope": [
+    "backend/**",
+    "frontend/scripts/**",
+    "frontend/src/media/mediaWebApi.ts",
+    "SSOT and generated views",
+    "candidate manifests and provenance",
+    "lockfiles and dist outputs"
+  ],
+  "runtime_isolation": {
+    "browser_output": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/evidence",
+    "vite_port": "ephemeral",
+    "browser_context": "one fresh context per scenario"
+  },
+  "registered_at": "2026-08-17T10:32:09Z",
+  "started_at": "2026-08-17T10:32:42Z",
+  "outer_session_id": 5109,
+  "wrapper_pid": 35155,
+  "codex_pid": 35158,
+  "exit_at": "2026-08-17T10:43:12Z",
+  "exit_code": 0,
+  "validation_result": {
+    "status": "passed",
+    "command": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817.sh",
+    "exit_code": 0,
+    "scenario_count": 6,
+    "console_errors": 0,
+    "page_errors": 0,
+    "organization_post_requests": 0
+  },
+  "routing_decision": "run_luna_once",
+  "remaining_escalation_count": 0,
+  "failure_class": "none",
+  "failure_origin": "none",
+  "structured_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL/returns/STAGE1-LUNA-FRONTEND-ORGANIZATION-SHELL-20260817-luna.json",
+  "structured_return_sha256": "e25064ec2f853c72f6947ba2784c66a570d7788c2ed83e90f5e4d0cd753f173d",
+  "actual_changed_paths": [
+    "frontend/src/media/OrganizationWorkspaceShellPage.tsx",
+    "worker return JSON",
+    "six lane-local PNG screenshots",
+    "frontend/node_modules/.tmp/tsconfig.media-u12b.tsbuildinfo"
+  ],
+  "source_hash_after": "714d937979d958f2c649b450860f9b0635e846063e93d8265b710af4412e752d",
+  "frozen_inputs_unchanged": true,
+  "prompt_cleanup_state": "not_applicable_durable_task_file_retained",
+  "runtime_handle_cleanup_state": "completed",
+  "codex_transcript_retention_state": "retained"
+}

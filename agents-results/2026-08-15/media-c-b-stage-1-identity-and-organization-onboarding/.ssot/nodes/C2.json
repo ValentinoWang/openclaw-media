@@ -1,0 +1,68 @@
+{
+  "node_id": "C2",
+  "semantic_key": "media.stage1.pilot-convergence",
+  "stage": "C",
+  "work_kind": "convergence",
+  "domain_lane": "pilot",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "I8"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.pilot-convergence.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "independent acceptance owner",
+  "unlocks": [
+    "CA",
+    "MB1"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "independent-readonly-runner",
+  "related_evidence_ids": [],
+  "description": "接受后解锁自助组织接入",
+  "node_role": "convergence",
+  "execution_actor": "external-system",
+  "execution_contract_ref": "C2.json",
+  "execution_contract_sha256": "4287817d7410ca77708120fd6224b193242ab10b4311bce514ee3709b8695ce5",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "freezes",
+  "deliverable_ids": [
+    "DL-C2"
+  ],
+  "produced_artifact_ids": [
+    "ART-C2"
+  ],
+  "consumed_artifact_ids": [
+    "DL-I8"
+  ],
+  "read_set": [
+    "artifact:I8"
+  ],
+  "write_set": [
+    "evidence:C2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:C2",
+      "mode": "W",
+      "isolation_key": "node:C2"
+    }
+  ],
+  "actor_pool": "external-acceptance",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance C2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/C2-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-11"
+}

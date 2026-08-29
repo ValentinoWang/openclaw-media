@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "task_id": "STAGE1-LUNA-BACKEND-HARDENING-20260817",
+  "attempt_role": "luna",
+  "route_override": {
+    "approved_by": "user",
+    "reason": "User explicitly changed this task back from lw-terra to lw-luna on 2026-08-17."
+  },
+  "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "wrapper_model": "gpt-5.6-luna",
+  "wrapper_reasoning_effort": "max",
+  "wrapper_service_tier": "priority",
+  "sandbox": "danger-full-access",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-integrated",
+  "task_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-tasks/STAGE1-LUNA-BACKEND-HARDENING-20260817.txt",
+  "task_sha256": "7c51c9449405363cae46c5a5a785c66b64931c0570aef79d6e829ee07eab0762",
+  "validation_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-LUNA-BACKEND-HARDENING-20260817.sh",
+  "validation_sha256": "a34ab68b7048edd35ec3710a7bd8a3fb4eb712286ca03dc7679326f6dc29f619",
+  "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-BACKEND-HARDENING/logs/STAGE1-LUNA-BACKEND-HARDENING-20260817-luna.log",
+  "structured_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-luna-remediation-20260817/STAGE1-LUNA-BACKEND-HARDENING/returns/STAGE1-LUNA-BACKEND-HARDENING-20260817-luna.json",
+  "outer_session_id": 45209,
+  "wrapper_pid": 30006,
+  "codex_pid": 30009,
+  "started_at": "2026-08-17T10:26:04Z",
+  "exit_at": "2026-08-17T12:15:11Z",
+  "exit_code": 0,
+  "status": "partial",
+  "failure_class": "scope_conflict",
+  "structured_return_sha256": "dbeafa40a37f3fa3a2bc8066aa98eef47579918135fee0d6ca1b90eecf493f6a",
+  "validation_result": {
+    "status": "partial",
+    "frozen_suite": "60 passed, 8 skipped",
+    "python_compile": "passed",
+    "protected_test_hashes": "passed",
+    "fresh_install_http": "blocked by explicit http_api.py write-scope conflict"
+  },
+  "cancellation_owner": "main-orchestrator",
+  "maximum_escalations": 0,
+  "spawn_agent_fallback": false
+}

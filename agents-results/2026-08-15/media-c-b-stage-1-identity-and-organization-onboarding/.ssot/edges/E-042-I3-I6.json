@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-042-I3-I6",
+  "from": "I3",
+  "to": "I6",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.i3.i6.v5"
+  ],
+  "transferred_input": "可信会话和工作区候选集合",
+  "gate_evidence": "不持久化永久 user_type",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "DL-I3"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "I6 consumes the explicitly produced artifact DL-I3"
+}

@@ -1,0 +1,23 @@
+{
+  "node_id": "DA",
+  "semantic_key": "media.release-static-validation",
+  "stage": "D",
+  "work_kind": "validation",
+  "domain_lane": "release",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": ["C1"],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": ["validation.static-release"],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": ["DB"],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "LW", "wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent", "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access", "sandbox": "danger-full-access", "sandbox_authority": "writable sandbox", "task_argument": "运行静态、构建、合同、迁移和发布清单完整性门禁。", "return_path": "agents-results/2026-08-13/media-production-e2e-closure/worker-returns/DA.json", "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/prompts/DA.txt", "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/worker-logs/DA.log", "prompt_sha256": "capture-before-launch", "launch_barrier": "all wave PIDs registered before first wait", "prompt_cleanup": "delete after exit evidence registration", "runtime_handle_cleanup": "release after exit evidence registration", "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions", "dispatch_state": "BLOCKED"
+  }
+}

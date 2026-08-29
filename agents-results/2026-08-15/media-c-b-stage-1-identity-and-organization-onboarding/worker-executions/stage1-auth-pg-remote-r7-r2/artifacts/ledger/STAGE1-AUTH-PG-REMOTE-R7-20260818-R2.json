@@ -1,0 +1,23 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/stage1-auth-pg-remote-r7-r2/artifacts",
+  "attempts": [],
+  "automatic_executor_switch": false,
+  "automatic_l4_fallback": false,
+  "final_decision": "running",
+  "l3_escalation_limit": 1,
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "ledger_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/stage1-auth-pg-remote-r7-r2/artifacts/ledger/STAGE1-AUTH-PG-REMOTE-R7-20260818-R2.json",
+  "primary_executor": "lw-luna",
+  "primary_retry_limit": 1,
+  "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "schema_version": 2,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-18T06:46:40.530796+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-tasks/STAGE1-AUTH-PG-REMOTE-R7-20260818.txt",
+  "task_id": "STAGE1-AUTH-PG-REMOTE-R7-20260818-R2",
+  "task_sha256": "2cae228f8664fbfb5d61d9e35e977943f933f8d49a16cc9dfb842b55627cbc72",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/stage1-auth-pg-remote-r7/validation/STAGE1-AUTH-PG-REMOTE-R7.sh",
+  "validation_command_sha256": "b8cfdbb37718ce2079e5bd677cbb7f67894c39d16d7f30837a59b710b86fff75",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

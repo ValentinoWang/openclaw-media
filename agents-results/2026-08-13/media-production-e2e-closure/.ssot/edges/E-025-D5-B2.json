@@ -1,0 +1,1 @@
+{"edge_id":"E-025-D5-B2","from":"D5","to":"B2","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["decision.representative-account-binding-input","contract.context-task-e2e"],"transferred_input":"两个代表能力的必填平台、客户账号和精确绑定失败关闭边界","gate_evidence":"D5 v1 已接受"}

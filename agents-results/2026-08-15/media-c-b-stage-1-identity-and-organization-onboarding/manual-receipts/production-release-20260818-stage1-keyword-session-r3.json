@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "receipt_id": "production-release-20260818-stage1-keyword-session-r3",
+  "status": "approved",
+  "observed_at": "2026-08-18T04:02:00+08:00",
+  "approval_authority": "user",
+  "approval_source": "The current task conversation authorizes direct remote code updates without further confirmation",
+  "candidate": {
+    "candidate_id": "media-production-e2e-v4",
+    "candidate_manifest_sha256": "edda28759442676faa91ed6692f1fec8a703c730b8ad176cdc2c317e53f2b612",
+    "frontend_source_identity": "92e0ced44f838fb6abbc8349dee927e3510237fdab90a0181debddab769d1eeb",
+    "backend_source_identity": "0210aa094663a8a1b551b021ec55702050c5d72633db7e2825dfedd634f7a138",
+    "change_since_r2": "All SessionPrincipal fields are explicitly named and the same invariant is locked by a local AST regression test"
+  },
+  "target": {
+    "host": "ubuntu@106.52.146.37",
+    "frontend_release_id": "20260818T-stage1-keyword-session-r3",
+    "backend_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-keyword-session-r3",
+    "official_frontend_entrypoint": "/usr/local/sbin/deploy-openclaw-media-locked",
+    "backend_service": "openclaw-bot-center-api.service"
+  },
+  "approved_scope": [
+    "publish the exact r3 candidate backend into a new managed immutable release",
+    "atomically update the single Media systemd drop-in and restart the backend",
+    "build and publish the frontend through the official locked entrypoint",
+    "verify the remote SessionPrincipal watchdog contract, health, coordination metadata, and hashes"
+  ],
+  "explicit_exclusions": [
+    "production database migration or schema mutation",
+    "database backfill or seed writes",
+    "Feishu, email, account, or other external-system writes",
+    "modification or cleanup of the dirty remote source checkout",
+    "claiming SSOT node ACCEPTED, device acceptance, or real-mail acceptance"
+  ],
+  "evidence_boundary": "This receipt covers a code-only remote release and its runtime guards. It does not change formal SSOT acceptance states or prove external, production-database, mail, Feishu, browser, or device acceptance."
+}

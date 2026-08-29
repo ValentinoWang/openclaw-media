@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-106-C3-CB",
+  "from": "C3",
+  "to": "CB",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c3.cb.v5"
+  ],
+  "transferred_input": "Provision 子候选",
+  "gate_evidence": "新组织 owner 可自助接入，普通成员可首次授权进入且可被安全停用",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-C3"
+  ],
+  "resource_ids": [
+    "candidate:REL-1B"
+  ],
+  "necessity_proof": "CB must retain the immutable candidate:REL-1B identity from C3"
+}

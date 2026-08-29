@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-056-I5-C1",
+  "from": "I5",
+  "to": "C1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.i5.c1.v5"
+  ],
+  "transferred_input": "OrganizationWorkspaceShell",
+  "gate_evidence": "页面不从前端 tenantId 或平台管理员推断权限",
+  "reason_code": "acceptance-dependency",
+  "transferred_artifact_ids": [
+    "DL-I5"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C1 consumes the explicitly produced artifact DL-I5"
+}

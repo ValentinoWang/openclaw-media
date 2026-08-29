@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-057-I6-C1",
+  "from": "I6",
+  "to": "C1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.i6.c1.v5"
+  ],
+  "transferred_input": "服务端授权与审计日志",
+  "gate_evidence": "近期活动与其他私有资料使用同一租户边界",
+  "reason_code": "acceptance-dependency",
+  "transferred_artifact_ids": [
+    "DL-I6"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C1 consumes the explicitly produced artifact DL-I6"
+}

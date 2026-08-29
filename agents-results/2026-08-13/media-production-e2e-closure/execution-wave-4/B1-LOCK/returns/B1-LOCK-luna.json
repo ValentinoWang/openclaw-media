@@ -1,0 +1,72 @@
+{
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "task_id": "B1-LOCK",
+  "attempt_role": "luna",
+  "task_source_sha256": "b51853320063255c3d580e8d28d226e93c9dd023935af5029b46e458b639e84f",
+  "validation_command_file": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-4/commands/B1-LOCK.sh",
+  "validation_command_sha256": "1e380a54f2440ca8fbbccb79e463bd011a1d3dd4c6416fd3830e6b7d4ef77d77",
+  "contract": {
+    "path": "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-AUTH-WEB/acceptance-contract.md",
+    "version": 1,
+    "status": "APPROVED",
+    "test_baseline": "LOCKED",
+    "readiness_mode": "FORMAL",
+    "assumption_ids": "none",
+    "sha256": "cbd1f717653724ca862639f85f98cb82d254383d8b1b9db59b6287cf1c2d7b54",
+    "decision_refs": [
+      "media.no-inference-completion-boundary@1",
+      "media.qa-identity@1"
+    ],
+    "approval_evidence": "User adopted the OP01 recommended strategy on 2026-08-13; D3 records media.qa-identity@1 as ACCEPTED. The contract explicitly states that approved strategy does not mean identities have been created or are currently available.",
+    "protected_test": {
+      "path": "scripts/acceptance/test-mpe2e-auth-web.sh",
+      "sha256": "b52c61bbeaf71ad3db874a5493479d8d0d0ae5a53362cadc2ebe67cc1976c204",
+      "coverage": ["AC-01", "AC-02", "AC-03", "AC-04", "AC-05", "AC-06"],
+      "shell_syntax": "pass"
+    }
+  },
+  "human_acceptance": {
+    "checklist_path": "acceptance/human/MPE2E-AUTH-WEB/checklist.md",
+    "checklist_status": "APPROVED",
+    "checklist_sha256": "8ed5abe505a6c7fe45c3566294e1ee77e197a7a5272e84d4815fd7d4ec24995c",
+    "binding_path": "acceptance/human/MPE2E-AUTH-WEB/binding.md",
+    "binding_status": "ACTIVE",
+    "binding_sha256": "1790949dacd23d60434c6f4c8ae28ece11f1c99ce87b0eff74c3beaa3d5cd1c4",
+    "bound_contract_sha256": "cbd1f717653724ca862639f85f98cb82d254383d8b1b9db59b6287cf1c2d7b54",
+    "bound_checklist_sha256": "8ed5abe505a6c7fe45c3566294e1ee77e197a7a5272e84d4815fd7d4ec24995c"
+  },
+  "preimplementation_red_gate": {
+    "command": "env -u MPE2E_AUTH_WEB_SAFE_METADATA_FILE scripts/acceptance/test-mpe2e-auth-web.sh",
+    "exit_code": 20,
+    "reason": "safe_metadata_file_required",
+    "valid_red": true,
+    "basis": "missing approved security-owner redacted receipt or implementation runtime input; not shell syntax failure or test crash",
+    "stdout_empty": true,
+    "stderr_summary": "B1_AUTH_WEB_PROTECTED_TEST_FAIL code=20 reason=safe_metadata_file_required",
+    "secret_disclosure": "none"
+  },
+  "validation": {
+    "bind_human_replace": "pass",
+    "contract_validator": "pass",
+    "frozen_validation_command": "pass",
+    "frozen_validation_output": "B1_LOCK_VALIDATION_PASS test_sha256=b52c61bbeaf71ad3db874a5493479d8d0d0ae5a53362cadc2ebe67cc1976c204"
+  },
+  "actual_write_scope": [
+    "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-AUTH-WEB/acceptance-contract.md",
+    "acceptance/human/MPE2E-AUTH-WEB/checklist.md",
+    "acceptance/human/MPE2E-AUTH-WEB/binding.md",
+    "scripts/acceptance/test-mpe2e-auth-web.sh",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-4/B1-LOCK/returns/B1-LOCK-luna.json"
+  ],
+  "forbidden_scope_touched": false,
+  "credentials_created_read_or_output": false,
+  "unverified_items": [
+    "C1 real authenticated production browser implementation and execution remain unimplemented.",
+    "No security-owner redacted receipt was available, so the protected gate was intentionally not run green.",
+    "No human acceptance run was performed; the approved checklist contains no run result.",
+    "No production account, database, Feishu object, remote host, release, or SSOT node was modified."
+  ],
+  "stop_condition": "Contract validator passed, protected test produced a valid preimplementation red gate, binding was refreshed, and structured return was written."
+}

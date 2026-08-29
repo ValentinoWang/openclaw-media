@@ -1,0 +1,169 @@
+{
+  "task_id": "STAGE1-TERRA-AUTH-PG-REVIEW-20260817",
+  "executor": {
+    "wrapper": "lw-terra",
+    "model": "gpt-5.6-terra",
+    "reasoning_effort": "medium",
+    "sandbox": "danger-full-access",
+    "approved_by": "user",
+    "override_reason": "The user explicitly changed all future lw-luna work for this task to the corresponding Terra executor on 2026-08-17."
+  },
+  "frozen_input_hashes": {
+    "stage1_administrator_authorization.py": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-integrated/backend/openclaw_app/services/stage1_administrator_authorization.py",
+      "expected_sha256": "872a4cbe8264f773b9cf7291bdff1d2c8426e244352da3c1af738bd0a26c694e",
+      "actual_sha256": "872a4cbe8264f773b9cf7291bdff1d2c8426e244352da3c1af738bd0a26c694e",
+      "matches": true
+    },
+    "stage1_postgres_provisioning.py": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-integrated/backend/openclaw_app/services/stage1_postgres_provisioning.py",
+      "expected_sha256": "4849cdccf8e6a80907022d54d863219f8756047f5aeda82d0d1bcea55b3dded3",
+      "actual_sha256": "4849cdccf8e6a80907022d54d863219f8756047f5aeda82d0d1bcea55b3dded3",
+      "matches": true
+    }
+  },
+  "commands": [
+    {
+      "command": "shasum -a 256 .codex-work/stage1-integrated/backend/openclaw_app/services/stage1_administrator_authorization.py .codex-work/stage1-integrated/backend/openclaw_app/services/stage1_postgres_provisioning.py",
+      "exit_code": 0,
+      "summary": "Both frozen input hashes exactly matched the required SHA-256 values before review."
+    },
+    {
+      "command": "backend/.venv/bin/python -m py_compile backend/openclaw_app/services/stage1_administrator_authorization.py backend/openclaw_app/services/stage1_postgres_provisioning.py",
+      "exit_code": 0,
+      "summary": "Both frozen Python inputs compiled successfully."
+    },
+    {
+      "command": "nl -ba backend/openclaw_app/migrations/canonical/042_stage1_release1b_provision.sql | sed -n '1,520p'",
+      "exit_code": 0,
+      "summary": "Read-only comparison of the adapter SQL with the Stage 1B tables, constraints, state casing, foreign keys, and indexes in migration 042."
+    },
+    {
+      "command": "rg -n -C 4 'if2_idempotency_receipts|target_tenant_id|target_public_tenant_id|operation_id|request_fingerprint' backend/openclaw_app/migrations/canonical",
+      "exit_code": 0,
+      "summary": "Read-only comparison with the canonical idempotency and audit schema introduced before migration 042."
+    },
+    {
+      "command": "rg -n -C 4 'P3|P5|P6|P8' agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/generated-views/30-node-contracts-and-acceptance.md",
+      "exit_code": 0,
+      "summary": "Read-only validation of the findings against the frozen P3, P5, P6, and P8 acceptance requirements."
+    }
+  ],
+  "findings": [
+    {
+      "severity": "critical",
+      "title": "Fresh Stage 1 installations cannot bootstrap the required organization session and owner graph",
+      "evidence": "The authorizer requires an existing active stage1_identity_links row before it can return an administrator context. That table is constrained to the legacy media_product.lark_tenant_bindings authority. AccountAuthRepository also issues Feishu organization credentials only by joining that legacy binding. Migration 042 creates only the new Stage 1 installation/binding tables and explicitly leaves legacy bindings historical. In the direct confirmation branch, ensure_organization_owner inserts only id, primary_user_id, and status; the defaults from migration 028 make that new tenant personal_web/internal rather than an organization_lark/lark tenant.",
+      "impact": "A newly installed organization has neither a route to the organization_lark session required by /confirm nor a valid organization tenant if the fallback creation branch is reached. P3 and the C3 self-service owner flow therefore cannot complete without pre-existing legacy state, contrary to the frozen new-organization contract.",
+      "minimum_fix": "Define one server-owned fresh-install bootstrap path before integration. It must create or validate an organization tenant with organization_lark/lark attributes, establish the owner identity from the trusted installation/admin result, and make the current Stage 1 binding, not legacy lark_tenant_bindings, the authorization source. Do not repair this by treating a default personal tenant or an old Binding as current authority.",
+      "references": [
+        "backend/openclaw_app/services/stage1_administrator_authorization.py:139",
+        "backend/openclaw_app/account/repository.py:87",
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:181",
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:196",
+        "backend/openclaw_app/migrations/canonical/028_tenant_foundation.sql:15",
+        "backend/openclaw_app/migrations/canonical/041_stage1_identity_links.sql:48",
+        "backend/openclaw_app/migrations/canonical/042_stage1_release1b_provision.sql:5",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/generated-views/30-node-contracts-and-acceptance.md:42"
+      ]
+    },
+    {
+      "severity": "critical",
+      "title": "Resource initialization is not current-binding scoped and an old worker can still write after deprovision",
+      "evidence": "resource_target_for_context reads media_product.lark_tenant_bindings by only tenant_id and tenant_key, with no Stage 1 installation, binding_id, or generation predicate. server_cli wires that resolver into one Stage1FeishuProvisioningGateway. The gateway never consumes ResourceBindingContext.credential_ref and performs Feishu calls through its supplied service. Migration 042 contains no per-installation space/parent target. Deprovision changes Stage 1 binding/installation state and clears credential_ref, but an already claimed worker retains its old context and the gateway has no live binding-state or credential check before external calls.",
+      "impact": "A fresh Stage 1 binding has no Stage 1 target to resolve, while a tenant with a legacy record can instead use a stale legacy target. The resulting work is not provably scoped to the current installation/generation. A RUNNING worker can continue external calls after P8 revocation, violating the required binding-scoped resource, durable-resume, and no-write-after-revocation guarantees.",
+      "minimum_fix": "Replace the legacy lookup with a server-owned, per-installation/binding target and credential resolver. Immediately before every external discover/create/readback, resolve and lock the current binding, installation state, generation, target, and revocation status; fail closed when any is absent or changed. The gateway must use binding-scoped credentials and an in-flight revocation must prevent the next external call. A legacy Binding cannot be the fallback authority.",
+      "references": [
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:664",
+        "backend/openclaw_app/server_cli.py:322",
+        "backend/openclaw_app/services/stage1_feishu_provisioning_gateway.py:34",
+        "backend/openclaw_app/services/stage1_feishu_provisioning_gateway.py:48",
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:564",
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:584",
+        "backend/openclaw_app/migrations/canonical/042_stage1_release1b_provision.sql:28",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/generated-views/30-node-contracts-and-acceptance.md:43",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/generated-views/30-node-contracts-and-acceptance.md:46"
+      ]
+    },
+    {
+      "severity": "high",
+      "title": "Administrator authorization is released before confirmation and is not rechecked in the write transaction",
+      "evidence": "_current_identity locks and reads identity/member/installation, then commits and closes before authorize returns. Runtime next calls AdministratorConfirmationService.confirm in a separate transaction. The confirmation store only checks user role/status and tenant primary owner in ensure_organization_owner; it does not re-read the session, active member row, or active stage1_identity_link under the installation write lock.",
+      "impact": "A session, member role, or explicit identity link can be revoked after authorization returns but before owner/Binding creation commits. Confirmation may then succeed with stale authority, breaking the P3 requirement that the session, tenant, owner, Binding, open_id, and installation be consistent at the durable mutation point.",
+      "minimum_fix": "Perform the exact session, tenant, member-role, active identity-link, installation, grant scope/admin/expiry checks and confirmation write in one transaction, or repeat all of those checks under the confirmation transaction's locks immediately before mutation. Include session status and expiry in that durable recheck.",
+      "references": [
+        "backend/openclaw_app/services/stage1_administrator_authorization.py:135",
+        "backend/openclaw_app/services/stage1_administrator_authorization.py:139",
+        "backend/openclaw_app/services/stage1_administrator_authorization.py:217",
+        "backend/openclaw_app/services/stage1_provisioning_runtime.py:73",
+        "backend/openclaw_app/services/stage1_provisioning_runtime.py:84",
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:181",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/generated-views/30-node-contracts-and-acceptance.md:42"
+      ]
+    },
+    {
+      "severity": "high",
+      "title": "The PostgreSQL adapter discards the requested retry deadline and never persists retry progression",
+      "evidence": "ProvisionOrchestrator computes an exponential retry_after and supplies it to mark_run_failed. The adapter does not use that parameter. It always inserts attempt=1, does not increment attempt on the conflict path, returns retry_count=1 for every failed run, and reconstructs retry_after as failed-step updated_at plus two seconds. The existing adapter test only asserts the first two-second case, so it masks rather than exercises a second failure or restart.",
+      "impact": "Repeated failures can retry after two seconds instead of the specified bounded exponential backoff, and a process restart loses the true failure count and retry deadline. This can repeatedly call Feishu after a quota or transient error and does not meet P6's durable checkpoint, retry, and resume semantics.",
+      "minimum_fix": "Use the existing durable step-receipt attempt field to increment and read the failure count, then derive the same bounded retry deadline deterministically from that persisted count and timestamp, or otherwise persist the required deadline without adding migration 043. The adapter must either use retry_after or remove it from the protocol after changing the orchestrator contract consistently.",
+      "references": [
+        "backend/openclaw_app/services/stage1_organization_provisioning.py:714",
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:383",
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:497",
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:508",
+        "backend/tests/test_stage1_postgres_provisioning.py:230",
+        "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/generated-views/30-node-contracts-and-acceptance.md:44"
+      ]
+    },
+    {
+      "severity": "medium",
+      "title": "IF2 idempotency projection accepts a wider service key and silently truncates it",
+      "evidence": "The provisioning service accepts any non-control-character key of length 8 through 160. The canonical IF2 table accepts only [A-Za-z0-9_-] and length 8 through 128. The adapter queries and inserts key[:128], while retaining the untruncated key in the response payload. HTTP currently protects this route with the narrower form, but direct service/repository use can produce a database failure for invalid characters or alias two distinct keys with the same first 128 characters.",
+      "impact": "The adapter is not schema-compatible at its public repository boundary. Non-HTTP callers receive a storage failure rather than an input rejection, and truncated-key aliasing weakens the durable idempotency/audit projection even though the standard HTTP path happens to reject it first.",
+      "minimum_fix": "Validate confirmation and deprovision projection keys to the IF2 regex and 128-character limit before any mutation, remove all key slicing, and add an explicit conflict test for two distinct long-prefix keys. Keep resource-run keys governed by their separate 160-character schema rather than relying on IF2 behavior.",
+      "references": [
+        "backend/openclaw_app/services/stage1_organization_provisioning.py:55",
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:97",
+        "backend/openclaw_app/services/stage1_postgres_provisioning.py:127",
+        "backend/openclaw_app/migrations/canonical/027_media_document_runtime.sql:11",
+        "backend/openclaw_app/adapters/http_api.py:1475"
+      ]
+    }
+  ],
+  "required_tests": [
+    {
+      "test": "Temporary-PostgreSQL fresh-install bootstrap integration test",
+      "location": "backend/tests/test_stage1_postgres_provisioning.py",
+      "coverage": "Apply the canonical 001-042 inventory to an isolated database, process a fresh Stage 1 installation with no legacy lark_tenant_bindings row, and prove the allowed server-owned bootstrap reaches a valid organization_lark tenant, owner, Stage 1 binding, and confirmation receipt. Include the negative case that a personal tenant cannot be bound as an organization."
+    },
+    {
+      "test": "Administrator authorization-to-confirmation revocation race test",
+      "location": "backend/tests/test_stage1_administrator_authorization.py and backend/tests/test_stage1_postgres_provisioning.py",
+      "coverage": "Use two transactions to revoke the session, owner membership, or explicit identity link after authorization reads it and before confirmation writes. Confirmation must fail closed, leave no tenant/Binding/identity/audit partial graph, and expose only sanitized errors."
+    },
+    {
+      "test": "Binding-scoped resource and deprovision fencing test",
+      "location": "backend/tests/test_stage1_postgres_provisioning.py plus a gateway/runtime test",
+      "coverage": "Prove target and credential resolution use the exact installation, binding_id, and generation rather than a legacy lark_tenant_bindings row; simulate deprovision between claimed steps and prove no subsequent external discover/create/readback is called and no ACTIVE result can be persisted."
+    },
+    {
+      "test": "Durable retry/backoff and lease recovery test",
+      "location": "backend/tests/test_stage1_postgres_provisioning.py",
+      "coverage": "Fail the same step at least twice across new repository instances and verify persisted attempt count, bounded exponential retry deadline, lease conflict behavior, and resume from only the durable successful checkpoints."
+    },
+    {
+      "test": "IF2 projection boundary test",
+      "location": "backend/tests/test_stage1_postgres_provisioning.py",
+      "coverage": "Exercise the real IF2 constraint with invalid characters, 129-character keys, and two distinct keys sharing a 128-character prefix. Each must reject before mutation or preserve distinct durable semantics without truncation."
+    }
+  ],
+  "changed_files": [],
+  "unverified_items": [
+    "No real PostgreSQL instance was started or mutated under this zero-write review; SQL compatibility was checked statically against canonical migrations and repository SQL. The listed isolated-database tests remain required before integration.",
+    "No production, Feishu, credentials, network service, release, node acceptance, or physical-device evidence was accessed or claimed."
+  ],
+  "failure_class": "implementation",
+  "proposed_state": "FAILED",
+  "acceptance_self_check": "pass"
+}

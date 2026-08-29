@@ -1,0 +1,117 @@
+{
+  "node_id": "M1",
+  "semantic_key": "media.stage1.no-git-merge-protocol",
+  "stage": "B",
+  "work_kind": "implementation",
+  "domain_lane": "candidate-build",
+  "execution_state": "ACCEPTED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "B",
+    "G1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.stable-decisions",
+      "version": 2
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.no-git-merge-protocol.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "CA",
+    "CB",
+    "I1",
+    "I2",
+    "I9",
+    "MA1",
+    "MB1",
+    "T1"
+  ],
+  "worker_transport": "deterministic-local",
+  "worker_registration": {
+    "executor": "outer orchestrator",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "command": "./tools/rebuild_stage1_candidate --manifest PATH --base development|promotion --output FRESH_DIR --check-twice",
+    "task_argument": "实现无 Git 汇合协议及红绿门禁。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/M1.json",
+    "determinism_key": "stage1-manifest-plus-selected-base-bytes-plus-ordered-patch-bytes",
+    "dispatch_state": "EXITED",
+    "note": "deterministic local execution; zero Codex processes"
+  },
+  "runtime_profile_requirement": "none",
+  "related_evidence_ids": [],
+  "description": "工具、闭合清单 schema、隔离 fixture、32 项冻结测试和一次结构化主线程证据回执",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "M1.json",
+  "execution_contract_sha256": "f752a8c21f4a0858a5cd734d046e9e660c54d5cbfb0841bcc4cef848ab579f09",
+  "side_effect_class": "reversible",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-M1"
+  ],
+  "produced_artifact_ids": [
+    "ART-M1"
+  ],
+  "consumed_artifact_ids": [
+    "ART-B",
+    "DL-G1"
+  ],
+  "read_set": [
+    "artifact:B",
+    "artifact:G1"
+  ],
+  "write_set": [
+    "artifact:M1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:M1",
+      "mode": "W",
+      "isolation_key": "node:M1"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "./tools/rebuild_stage1_candidate --manifest PATH --base development|promotion --output FRESH_DIR --check-twice"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/M1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-4",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "artifact:M1"
+    ]
+  },
+  "evidence_identity": {
+    "evidence_level": "local-runtime",
+    "source_revision": "stage1-no-git-rebuild-v4",
+    "artifact_hashes": [
+      "sha256:4c0cfef4e24625dfb671fe4736a04725432d41a4243d0be1f04d5303135a42a2",
+      "sha256:ad8aa24bf7481da33b26bf05e7dad37dec4ba2e9b4b2dbbf0cd9c73a1a94e7ce",
+      "sha256:11c13d6197b1fa61735f6d81ee8f78e92e38a2dd2ab1d9b48d0498aaded9cc09",
+      "sha256:05b724f6d4b252705a8ae4d6899ec8eae4867ff3b09f4543b12cef5e9269115b",
+      "sha256:dece265db4b42a0ddba574932c2916aaa1efa5604b45f0243cb648e5265c4eb0"
+    ],
+    "environment_identity": "local non-Git project root with existing merge-candidate-v4 Python virtualenv",
+    "runtime_release_id": "n/a",
+    "actor_role": "main orchestrator deterministic local execution",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": true,
+    "observed_at": "2026-08-16T20:28:37+08:00",
+    "acceptance_contract": "M1-remediation-1 frozen validation; 32 passed"
+  }
+}

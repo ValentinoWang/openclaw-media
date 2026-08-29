@@ -1,0 +1,206 @@
+{
+  "task_id": "B2-V3-LOCK",
+  "attempt_role": "luna",
+  "task_source_sha256": "1141bb11608d57c5a456fed0bb1a92e235be5721ca55b744349d6c74b75296b3",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+  "version_tuple": {
+    "plan": 3,
+    "dependency_graph": 3,
+    "interface_freeze": 3,
+    "node_contract": 3,
+    "ssot_schema": 1
+  },
+  "wrapper": {
+    "path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "writable sandbox"
+  },
+  "validation_command_file": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-7/validation/B2-V3-LOCK.sh",
+  "validation_command_sha256": "377c56cf951fa2f23b124a26a11cb38164c3d9447928fa6ddda41c8091a09d5b",
+  "actual_read_scope": [
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-7/tasks/B2-V3-LOCK.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-7/validation/B2-V3-LOCK.sh",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/D5.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/B2.json",
+    "agents-results/2026-08-13/media-production-e2e-closure/ssot-development-paths.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/openproblem.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN/acceptance-contract.md",
+    "acceptance/human/MPE2E-TASK-RUN/checklist.md",
+    "acceptance/human/MPE2E-TASK-RUN/binding.md",
+    "scripts/acceptance/test-mpe2e-task-run.sh",
+    "scripts/check-media-e2e-receipt.mjs",
+    "tests/fixtures/media-e2e-receipt/complete.json",
+    "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/design-acceptance-contract/SKILL.md",
+    "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/design-acceptance-contract/references/acceptance-contract-template.md",
+    "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/design-acceptance-contract/references/human-acceptance-checklist-template.md",
+    "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/design-acceptance-contract/references/human-acceptance-binding-template.md",
+    "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/design-acceptance-contract/scripts/check_acceptance_contract.py",
+    "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py",
+    ".codex-work/c2-main-takeover/backend",
+    ".codex-work/c2-main-takeover/frontend/src/media"
+  ],
+  "actual_write_scope": [
+    "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN-V3/acceptance-contract.md",
+    "acceptance/human/MPE2E-TASK-RUN-V3/checklist.md",
+    "acceptance/human/MPE2E-TASK-RUN-V3/binding.md",
+    "scripts/acceptance/test-mpe2e-task-run-v3.sh",
+    "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN-V3/acceptance/index.md",
+    "acceptance/index.md",
+    "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-7/B2-V3-LOCK/returns/B2-V3-LOCK-luna.json"
+  ],
+  "artifacts": {
+    "v3_contract": {
+      "path": "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN-V3/acceptance-contract.md",
+      "sha256": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+      "version": 3,
+      "status": "APPROVED",
+      "test_baseline": "LOCKED",
+      "readiness_mode": "FORMAL",
+      "assumption_ids": "none"
+    },
+    "v3_human_checklist": {
+      "path": "acceptance/human/MPE2E-TASK-RUN-V3/checklist.md",
+      "sha256": "aafbab44663b5bf42b8a12f33c45194ae11914d8fb590bd3fc988781da7a636f",
+      "status": "已批准",
+      "items": ["H-01", "H-02", "H-03", "H-04", "H-05"],
+      "run_results_written": false
+    },
+    "v3_binding": {
+      "path": "acceptance/human/MPE2E-TASK-RUN-V3/binding.md",
+      "sha256": "fe13d4f2b161d309e14e4bb3e3919e403518c3c796c99ab45c3bea550299059d",
+      "status": "ACTIVE",
+      "contract_sha256_in_binding": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+      "checklist_sha256_in_binding": "aafbab44663b5bf42b8a12f33c45194ae11914d8fb590bd3fc988781da7a636f"
+    },
+    "v3_protected_test": {
+      "path": "scripts/acceptance/test-mpe2e-task-run-v3.sh",
+      "sha256": "dee8b55304a60b4284462310f68f03099369af15071efc2fe5f39dcc8f67b73d",
+      "executable": true,
+      "summary": "独立 V3 保护测试；复用 B3 media_e2e_receipt_v1 检查器，验证两项代表能力的创建前必填、用户/租户/规范化平台/规范化账号/正式关系精确绑定、错误语义、失败关闭、V2 同收据继承、去重、生产来源和敏感字段边界。"
+    },
+    "generated_indexes": [
+      "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN-V3/acceptance/index.md",
+      "acceptance/index.md"
+    ]
+  },
+  "frozen_inputs": {
+    "d5": {
+      "path": "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/D5.json",
+      "sha256": "c6bd807376561c25820938b1839f50b633a7e2f4911f3460fea9a6f5e1a0e12b",
+      "decision_state": "ACCEPTED",
+      "decision_version": 1
+    },
+    "b2": {
+      "path": "agents-results/2026-08-13/media-production-e2e-closure/.ssot/nodes/B2.json",
+      "sha256": "bc03cff59c504da915380b0357550ff34eaa231a37c5cbd103170c1adb6bbf7d",
+      "execution_state": "READY",
+      "readiness_mode": "FORMAL",
+      "assumption_ids": "none"
+    },
+    "reused_b3_checker": {
+      "path": "scripts/check-media-e2e-receipt.mjs",
+      "sha256": "a39884fdd312270ca0d5b623c9fb8d997aa64e607a2f51cf67c312df125dd6da"
+    }
+  },
+  "v2_byte_invariance_proof": [
+    {
+      "path": "agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN/acceptance-contract.md",
+      "expected_sha256": "f2f97099c514b8a9b5570c7626cc5e746ce99394370985000cdddd5094a18bf2",
+      "actual_sha256": "f2f97099c514b8a9b5570c7626cc5e746ce99394370985000cdddd5094a18bf2"
+    },
+    {
+      "path": "acceptance/human/MPE2E-TASK-RUN/checklist.md",
+      "expected_sha256": "45664f75ee37535b3e67242a4c0550735a131f50281d5fca34f0e6d1e095724f",
+      "actual_sha256": "45664f75ee37535b3e67242a4c0550735a131f50281d5fca34f0e6d1e095724f"
+    },
+    {
+      "path": "acceptance/human/MPE2E-TASK-RUN/binding.md",
+      "expected_sha256": "48b84499da08393953eec17fe7afc0fed209ed908e427522254ef20414c2fe9b",
+      "actual_sha256": "48b84499da08393953eec17fe7afc0fed209ed908e427522254ef20414c2fe9b"
+    },
+    {
+      "path": "scripts/acceptance/test-mpe2e-task-run.sh",
+      "expected_sha256": "334d2393059e54980a8434a99d59bef1b1f82d1466549f540aa40e4f5f0e50d0",
+      "actual_sha256": "334d2393059e54980a8434a99d59bef1b1f82d1466549f540aa40e4f5f0e50d0"
+    }
+  ],
+  "commands_and_exit_codes": [
+    {
+      "command": "python3 /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py bind-human agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN-V3 --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent --contract acceptance-contract.md --replace",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py index agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN-V3 --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/design-acceptance-contract/scripts/check_acceptance_contract.py agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN-V3/acceptance-contract.md --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py check agents-results/2026-08-13/media-production-e2e-closure/acceptance-fragments/MPE2E-TASK-RUN-V3 --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent --contract acceptance-contract.md",
+      "exit_code": 0
+    },
+    {
+      "command": "/bin/bash -n scripts/acceptance/test-mpe2e-task-run-v3.sh",
+      "exit_code": 0
+    },
+    {
+      "command": "bash agents-results/2026-08-13/media-production-e2e-closure/execution-wave-7/validation/B2-V3-LOCK.sh",
+      "exit_code": 0,
+      "inner_preimplementation_test_exit_code": 3,
+      "inner_preimplementation_test_evidence": "FAIL: production same-receipt evidence missing: .../acceptance/production/MPE2E-TASK-RUN-V3/receipts-not-present/selfmedia_creation_consultation.json .../acceptance/production/MPE2E-TASK-RUN-V3/receipts-not-present/selfmedia_creation.json"
+    },
+    {
+      "command": "node scripts/check-media-e2e-receipt.mjs tests/fixtures/media-e2e-receipt/complete.json",
+      "exit_code": 0,
+      "meaning": "B3 generic fixture structure check passes"
+    },
+    {
+      "command": "MPE2E_RECEIPT_DIR=<temporary-copy-of-complete-fixture> scripts/acceptance/test-mpe2e-task-run-v3.sh",
+      "exit_code": 1,
+      "meaning": "V3 production same-receipt gate rejects fixed fixture before V3 evidence exists"
+    }
+  ],
+  "valid_red_light_evidence": {
+    "is_valid": true,
+    "command": "MPE2E_RECEIPT_DIR=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/acceptance/production/MPE2E-TASK-RUN-V3/receipts-not-present scripts/acceptance/test-mpe2e-task-run-v3.sh",
+    "test_exit_code": 3,
+    "outer_validation_exit_code": 0,
+    "reason": "两份真实生产同收据不存在；测试以预实现红灯退出，未伪造或拼接收据。"
+  },
+  "forbidden_scope_unchanged": [
+    ".ssot/**、ssot-development-paths.md、openproblem.md、implementation-progress.md 和其他视图源未写入",
+    "MPE2E-TASK-RUN V2 合同、中文清单、绑定和保护测试字节未变",
+    "scripts/check-media-e2e-receipt.mjs 未修改",
+    "既有 fixtures、C1/C2 候选代码、远程主机、数据库、飞书、活动发布、生产任务、生产收据和人工运行结果未写入",
+    "未启动子代理、聊天内协作或其他 Codex worker",
+    "未保存或输出密码、Cookie、令牌、密钥、私人正文或环境变量内容"
+  ],
+  "unverified_items": [
+    "C2 V3 实现尚未完成，当前没有真实生产同收据可供通过保护门禁",
+    "没有创建生产任务、执行尝试、租约、产物、飞书对象或数据库写入",
+    "没有生成真实生产收据，也没有执行人工验收运行结果",
+    "API/前端稳定错误语义和入队前关系校验仍需由 C2 实现并通过后续运行验收证明",
+    "V3 保护测试已锁定，但在两份真实生产收据出现前应保持红灯"
+  ],
+  "shared_resource_impact": {
+    "external_systems_touched": false,
+    "production_data_changed": false,
+    "existing_protected_assets_changed": false,
+    "workers_started": false,
+    "temporary_fixture_copy": "仅在 /tmp 中创建并读取固定 fixture 副本，未写入项目或外部系统。"
+  },
+  "risks": [
+    "V3 合同已锁定但 C2 尚未按新输入和绑定语义实现；实现前不得宣称端到端完成。",
+    "生产收据缺失时保护脚本必须继续保持退出码 3，任何固定样例或模拟数据不得用于解除门禁。",
+    "正式关系数据、当前认证用户公开编号和租户边界需要在后续真实运行中证明同收据一致。"
+  ],
+  "deviations": [
+    "未偏离任务写入范围和冻结验收命令；一次辅助 fixture 清理命令被执行器安全规则拒绝，改用不删除的 /tmp 临时目录完成同一只读负向检查。",
+    "一次辅助提示文件哈希命令修正了遗漏的 B2-V3-LOCK 目录；修正后任务源和验证命令哈希与冻结值一致。"
+  ],
+  "failure_class": "none",
+  "acceptance_self_check": "pass",
+  "proposed_state": "VERIFIED"
+}

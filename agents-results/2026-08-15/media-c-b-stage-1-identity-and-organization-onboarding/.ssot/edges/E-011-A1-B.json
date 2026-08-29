@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-011-A1-B",
+  "from": "A1",
+  "to": "B",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.a1.b.v5"
+  ],
+  "transferred_input": "可复现的来源与能力基线",
+  "gate_evidence": "Revision 11 仅由 canonical 管理；五类运行配置尚未被证明",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-A1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "B consumes the explicitly produced artifact DL-A1"
+}

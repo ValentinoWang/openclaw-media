@@ -1,0 +1,1 @@
+{"edge_id":"E-004-A1-D3","from":"A1","to":"D3","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["decision.qa-identity"],"transferred_input":"当前认证机制和 QA 证据缺口","gate_evidence":"A1 事实台账"}

@@ -1,0 +1,1 @@
+{"edge_id":"E-027-B1-C3","from":"B1","to":"C3","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["contract.authenticated-web","merge.frontend-current-production"],"transferred_input":"认证网页第 2 版冻结合同","gate_evidence":"B1 第 2 版已接受"}

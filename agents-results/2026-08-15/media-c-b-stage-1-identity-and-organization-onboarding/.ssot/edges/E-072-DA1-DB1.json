@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-072-DA1-DB1",
+  "from": "DA1",
+  "to": "DB1",
+  "dependency_type": "hard",
+  "dependency_scope": "global-completeness",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.da1.db1.v5"
+  ],
+  "transferred_input": "Release 1A 静态证据包",
+  "gate_evidence": "全部门禁对同一候选通过",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-DA1"
+  ],
+  "resource_ids": [
+    "candidate:REL-1A"
+  ],
+  "necessity_proof": "DB1 must retain the immutable candidate:REL-1A identity from DA1"
+}

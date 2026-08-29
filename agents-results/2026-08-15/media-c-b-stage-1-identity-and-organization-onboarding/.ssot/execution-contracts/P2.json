@@ -1,0 +1,54 @@
+{
+  "contract_id": "P2",
+  "schema_version": 1,
+  "node_id": "P2",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "work_kind": "implementation",
+  "write_authority": "implementation",
+  "read_set": [
+    "artifact:P1"
+  ],
+  "write_set": [
+    "artifact:P2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:P2",
+      "mode": "W",
+      "isolation_key": "node:P2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance P2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/P2-return.json"
+  ],
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  }
+}

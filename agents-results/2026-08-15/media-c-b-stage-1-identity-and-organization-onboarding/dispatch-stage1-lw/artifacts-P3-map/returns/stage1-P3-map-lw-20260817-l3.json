@@ -1,0 +1,253 @@
+{
+  "schema_version": "stage1-p3-map-return-v1",
+  "task_id": "stage1-P3-map-lw-20260817",
+  "attempt_role": "l3",
+  "project_root": ".",
+  "version_tuple": {
+    "plan": 4,
+    "dag": 4,
+    "interface_freeze": 4,
+    "node_contract": 4,
+    "ssot_schema": 1
+  },
+  "wrapper_path": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "frozen_inputs": {
+    "task_source_sha256": "e78098e51301128296114058a2d7ce6ee0997131ab068a7be44faa081223bfc9",
+    "validation_command_file": "dispatch-stage1-lw/validation/P3-map.sh",
+    "validation_command_sha256": "dc1c21737d1de1a4e6b34887ef8befde1351f5f6c2c7ac9833f9c1228c417f2e",
+    "p3_node_sha256": "f97dfc408ae6786b8915b769b7e1fe120d68a0ae6296d683bd10a8d63bea9629",
+    "p3_acceptance_source_sha256": "dc5c59f78c61a0b53b901720fc51e51cf7c6c31acb3f506343cb0688ea17b072",
+    "p2_node_sha256": "b433f27676817672ea3602fabda6d10641b8c4a053bf6ba385a1d1cd7a55efe9",
+    "mb1_node_sha256": "6a400b450ef85e84021e89d3dd4312b5138a4b25186f93354520f471918e25d4"
+  },
+  "actual_read_scope": [
+    ".ssot/nodes/P3.json",
+    ".ssot/nodes/P2.json",
+    ".ssot/nodes/MB1.json",
+    ".ssot/view-sources/30-acceptance.md",
+    "implementation-progress.md",
+    "backend/openclaw_app/migrations/canonical/003_openclaw_account_billing.sql",
+    "backend/openclaw_app/migrations/canonical/004_openclaw_authentication.sql",
+    "backend/openclaw_app/migrations/canonical/040_stage1_release1a_identity_workspace.sql",
+    "backend/openclaw_app/migrations/canonical/041_stage1_identity_links.sql",
+    "backend/openclaw_app/migrations/canonical/042_stage1_release1b_provision.sql",
+    "backend/openclaw_app/migrations/015_tenant_foundation.sql",
+    "backend/openclaw_app/migrations/016_lark_tenant_binding.sql",
+    "backend/openclaw_app/migrations/canonical/039_stable_identity_relationships.sql",
+    "backend/openclaw_app/services/stage1_provision_models.py",
+    "backend/openclaw_app/services/stage1_member_onboarding.py",
+    "backend/openclaw_app/services/stage1_member_invalidation.py",
+    "backend/openclaw_app/account/registration.py",
+    "backend/openclaw_app/account/registration_repository.py",
+    "backend/openclaw_app/account/repository.py",
+    "backend/openclaw_app/account/identity_link.py",
+    "backend/openclaw_app/account/workspace_resolution.py",
+    "backend/tests/test_stage1_release1b_migration.py",
+    "backend/tests/test_stage1_member_onboarding.py",
+    "backend/tests/test_account_identity_workspace.py",
+    "backend/tests/test_workspace_resolution.py"
+  ],
+  "actual_write_scope": [],
+  "changed_files": [],
+  "command_results": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=backend ./backend/.venv/bin/python -m pytest -q -p no:cacheprovider backend/tests/test_stage1_release1b_migration.py backend/tests/test_stage1_member_onboarding.py backend/tests/test_account_identity_workspace.py backend/tests/test_workspace_resolution.py",
+      "exit_code": 0,
+      "result": "63 passed in 1.54s",
+      "acceptance_command": true
+    },
+    {
+      "command": "sha256sum -a 256 dispatch-stage1-lw/validation/P3-map.sh",
+      "exit_code": 0,
+      "result": "dc1c21737d1de1a4e6b34887ef8befde1351f5f6c2c7ac9833f9c1228c417f2e",
+      "acceptance_command": false
+    }
+  ],
+  "source_map": {
+    "formal_node_state": {
+      "p3_execution_state": "BLOCKED",
+      "hard_dependencies": [
+        "MB1",
+        "P2"
+      ],
+      "map_effect": "none; this is a zero-write analysis only"
+    },
+    "reusable_types_and_repositories": [
+      {
+        "source": "backend/openclaw_app/services/stage1_member_onboarding.py:59-150",
+        "reuse": "ServerFeishuInstallContext and TrustedFeishuAuthorization provide the complete trusted P2 installation identity and administrator open_id boundary."
+      },
+      {
+        "source": "backend/openclaw_app/services/stage1_member_onboarding.py:237-301",
+        "reuse": "MemberOnboardingStore.transaction and its create_user, create_membership, and create_identity methods are sufficient for the owner path when role is owner."
+      },
+      {
+        "source": "backend/openclaw_app/account/registration_repository.py:88-127",
+        "reuse": "AccountRegistrationRepository.create_account is the atomic P3 transaction boundary; it creates the organization tenant and owner membership and also establishes the P3 Binding generation and owner external identity."
+      },
+      {
+        "source": "backend/openclaw_app/services/stage1_provision_models.py:17-29,203-365",
+        "reuse": "Stage1LifecycleState and ProvisionInstallationReceipt/ProvisionStepReceipt are directly persistable P3 confirmation receipts."
+      },
+      {
+        "source": "backend/openclaw_app/account/repository.py:248-267",
+        "reuse": "AccountAuthRepository.write_admin_audit is the P3 audit sink and accepts a Feishu administrator confirmation without additional actor mapping."
+      },
+      {
+        "source": "backend/openclaw_app/account/workspace_resolution.py:88-217",
+        "reuse": "WorkspaceResolutionRow and WorkspaceCandidate validate the owner organization workspace after confirmation."
+      }
+    ],
+    "transaction_boundary": {
+      "status": "already_available",
+      "boundary": "AccountRegistrationService.register delegates to AccountRegistrationRepository.create_account in one canonical database connection scope.",
+      "required_order": [
+        "lock installation identity by tenant_key and installation_id",
+        "create tenant and owner user",
+        "create owner tenant membership",
+        "create Stage1 Binding generation",
+        "create owner tenant_member_identity(binding_id, open_id)",
+        "write immutable administrator audit",
+        "read back all rows before commit"
+      ],
+      "atomicity_assessment": "verified: the existing registration transaction and Release 1B foreign keys make these writes atomic and auditable without a new repository or public contract."
+    },
+    "required_server_derived_inputs": [
+      {
+        "name": "tenant_key",
+        "source": "ServerFeishuInstallContext",
+        "caller_supplied": false
+      },
+      {
+        "name": "installation_id",
+        "source": "ServerFeishuInstallContext",
+        "caller_supplied": false
+      },
+      {
+        "name": "open_id",
+        "source": "TrustedFeishuAuthorization",
+        "caller_supplied": false
+      },
+      {
+        "name": "administrator_confirmation",
+        "source": "existing trusted authorization marker",
+        "caller_supplied": false
+      }
+    ],
+    "uniqueness_constraints": [
+      "openclaw_account.tenants.primary_user_id is unique",
+      "openclaw_account.tenant_members allows one active owner per tenant",
+      "media_product.stage1_installations.installation_public_id is unique",
+      "media_product.stage1_binding_generations has unique installation/generation and tenant/binding pairs",
+      "openclaw_account.tenant_member_identities has unique (binding_id, open_id)",
+      "media_product.stage1_provision_runs has unique (installation_id, idempotency_key)"
+    ],
+    "error_vocabulary": [
+      "member_onboarding_server_context_required",
+      "member_onboarding_untrusted_authorization",
+      "member_onboarding_caller_open_id_forbidden",
+      "member_onboarding_binding_missing",
+      "member_onboarding_binding_ambiguous",
+      "member_onboarding_conflicting_rows",
+      "member_onboarding_cross_tenant_identity",
+      "member_onboarding_concurrent_duplicate",
+      "member_onboarding_storage_unavailable"
+    ],
+    "expected_new_files": [],
+    "minimal_test_matrix": [
+      {
+        "case": "matching trusted administrator confirmation creates tenant, owner, Binding, and identity",
+        "coverage": "existing registration and member-onboarding transaction tests"
+      },
+      {
+        "case": "duplicate confirmation returns the existing identity deterministically",
+        "coverage": "backend/tests/test_stage1_member_onboarding.py"
+      },
+      {
+        "case": "caller-supplied open_id and cross-tenant identity are rejected",
+        "coverage": "backend/tests/test_stage1_member_onboarding.py"
+      },
+      {
+        "case": "inactive Binding and duplicate active Binding fail closed at login/workspace resolution",
+        "coverage": "backend/tests/test_account_identity_workspace.py and backend/tests/test_workspace_resolution.py"
+      },
+      {
+        "case": "Release 1B schema preserves the Binding/open_id unique pair",
+        "coverage": "backend/tests/test_stage1_release1b_migration.py"
+      }
+    ]
+  },
+  "proposed_file_ownership": {
+    "new_files": [],
+    "existing_owner_service": "backend/openclaw_app/services/stage1_member_onboarding.py",
+    "existing_transaction_repository": "backend/openclaw_app/account/registration_repository.py",
+    "existing_audit_repository": "backend/openclaw_app/account/repository.py",
+    "test_ownership": "existing focused Stage 1 identity and workspace tests"
+  },
+  "acceptance_matrix": [
+    {
+      "criterion": "tenant, owner, Binding generation, and owner external identity are one transaction",
+      "map_status": "satisfied by existing registration transaction"
+    },
+    {
+      "criterion": "open_id is server-derived and browser input is rejected",
+      "map_status": "covered by existing MemberOnboardingService validation"
+    },
+    {
+      "criterion": "matching installation and tenant scope are enforced",
+      "map_status": "covered by ServerFeishuInstallContext and existing Binding lookup"
+    },
+    {
+      "criterion": "duplicate and cross-tenant identity claims fail closed",
+      "map_status": "covered by existing focused tests"
+    },
+    {
+      "criterion": "owner confirmation audit is immutable and linked to the confirmation actor",
+      "map_status": "covered by existing admin_audit repository method"
+    },
+    {
+      "criterion": "formal P3 implementation and acceptance",
+      "map_status": "not claimed by this task"
+    }
+  ],
+  "unresolved_conflicts": [],
+  "evidence_identities": {
+    "validation_script_sha256": "dc1c21737d1de1a4e6b34887ef8befde1351f5f6c2c7ac9833f9c1228c417f2e",
+    "release_1b_migration_sha256": "535aecf330d9063892f4eb2cf84d201f64f291c7e59360857ddbc726c0425f4a",
+    "provision_models_sha256": "ec93a8c9abb61d98a7f2175d8342781a47be22d98b0d30bcb62316e0beaf6fa2",
+    "member_onboarding_sha256": "49cd3c7dd73ed8affc8f19e3abc6d2360b61336968d73965d33483819045767b",
+    "registration_repository_sha256": "88b6d7f9be250a79e8b381c63fcfac8cbca4eb312233cdbfe8b98108238c7621",
+    "account_repository_sha256": "d7b4a3247b1b0756eae2928c17b98a5e583c5d6ef94344299eaf9ee7b1f0c2ff",
+    "candidate_backend_source_manifest_sha256": "a5e34064d554fe6a11b93f608b23202e737b40eac9dcedc4388c18dc952710be"
+  },
+  "unverified_items": [
+    "P2 and MB1 remain formally BLOCKED and require their own acceptance before a P3 writer may run.",
+    "No real PostgreSQL migration/readback transaction was executed by this zero-write map.",
+    "No real Feishu administrator authorization, installation event, or external audit receipt was exercised.",
+    "The candidate source manifest has nine pre-existing mismatches outside this attempt; no mismatch is attributed to this zero-write map."
+  ],
+  "deviation_level": "none",
+  "shared_resource_impact": {
+    "project_source_write": false,
+    "test_or_migration_write": false,
+    "ssot_write": false,
+    "preexisting_candidate_manifest_mismatches": [
+      "backend/openclaw_app/account/__init__.py",
+      "backend/openclaw_app/adapters/http_api.py",
+      "backend/openclaw_app/adapters/media_business_context.py",
+      "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+      "backend/openclaw_app/server_cli.py",
+      "backend/openclaw_app/services/media_business/documents.py",
+      "backend/scripts/run_postgres_migrations.py",
+      "backend/tests/test_http_api.py",
+      "backend/tests/test_media_business_http.py"
+    ]
+  },
+  "risks": [
+    "This map is not a P3 implementation, formal dependency acceptance, database readback, Feishu proof, deployment, or production acceptance.",
+    "The current P3 node remains BLOCKED until P2 and MB1 are ACCEPTED."
+  ],
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none"
+}

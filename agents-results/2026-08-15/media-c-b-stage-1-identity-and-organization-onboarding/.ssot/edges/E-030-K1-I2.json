@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-030-K1-I2",
+  "from": "K1",
+  "to": "I2",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.k1.i2.v5"
+  ],
+  "transferred_input": "个人认证决定第 1 版",
+  "gate_evidence": "个人路径不调用飞书且不自动按邮箱或姓名合并身份",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "DL-K1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "I2 consumes the explicitly produced artifact DL-K1"
+}

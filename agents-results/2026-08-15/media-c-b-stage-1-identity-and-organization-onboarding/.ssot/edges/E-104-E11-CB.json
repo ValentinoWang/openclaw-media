@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-104-E11-CB",
+  "from": "E11",
+  "to": "CB",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.e11.cb.v5"
+  ],
+  "transferred_input": "E11 外部门回执",
+  "gate_evidence": "只有 canonical D3A ACCEPTED 才投影为 ACCEPTED",
+  "reason_code": "external-prerequisite",
+  "transferred_artifact_ids": [
+    "DL-E11"
+  ],
+  "resource_ids": [
+    "authority:revision11-d3a"
+  ],
+  "necessity_proof": "CA/CB cannot form a release candidate before the pinned Revision 11 D3A authority is accepted"
+}

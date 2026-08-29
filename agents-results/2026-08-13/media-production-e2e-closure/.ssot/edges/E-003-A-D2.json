@@ -1,0 +1,1 @@
+{"edge_id":"E-003-A-D2","from":"A","to":"D2","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["decision.same-receipt-proof"],"transferred_input":"真实端到端证明要求","gate_evidence":"用户原始请求"}

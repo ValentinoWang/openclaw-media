@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-113-DC1-DA",
+  "from": "DC1",
+  "to": "DA",
+  "dependency_type": "hard",
+  "dependency_scope": "global-completeness",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.dc1.da.v5"
+  ],
+  "transferred_input": "Release 1A 独立结论",
+  "gate_evidence": "全部 1A 完成条件成立",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-DC1"
+  ],
+  "resource_ids": [
+    "candidate:REL-1B"
+  ],
+  "necessity_proof": "DA must retain the immutable candidate:REL-1B identity from DC1"
+}

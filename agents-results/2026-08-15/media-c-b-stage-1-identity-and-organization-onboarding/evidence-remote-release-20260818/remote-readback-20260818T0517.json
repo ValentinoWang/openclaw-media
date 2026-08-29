@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "evidence_id": "EV-REMOTE-READBACK-20260818T0517",
+  "status": "passed_with_scope_note",
+  "observed_at": "2026-08-18T05:17:00+08:00",
+  "host": "ubuntu@106.52.146.37",
+  "candidate": {
+    "backend_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-keyword-session-r3",
+    "frontend_release_id": "20260818T-stage1-keyword-session-r3",
+    "frontend_index_sha256": "6a9d49013b0888c83c6fe557ab96e68ed93bc60c4be03b1d6f7d87a059ea72d"
+  },
+  "runtime_readback": {
+    "backend_process": "/usr/bin/python3 -m openclaw_app.server_cli --settings /home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260818T-stage1-keyword-session-r3/config/settings.yaml --host 127.0.0.1 --port 8787",
+    "backend_pid": 2833354,
+    "backend_listener": "127.0.0.1:8787",
+    "healthz": {"ok": true},
+    "readyz": {"ok": true, "matcher_ready": true, "auth_ready": true, "if2_ready": true},
+    "active_frontend_release": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260818T-stage1-keyword-session-r3"
+  },
+  "scope_note": {
+    "systemd_unit_claim": "not_claimed",
+    "reason": "The historical receipt named openclaw-bot-center-api.service, but that unit is not installed on the current host. Process-level runtime and endpoint readback are healthy.",
+    "database_migration": false,
+    "external_system_writes": false,
+    "ssot_node_acceptance": false
+  }
+}

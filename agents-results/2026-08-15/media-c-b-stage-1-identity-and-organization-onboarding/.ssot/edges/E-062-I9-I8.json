@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-062-I9-I8",
+  "from": "I9",
+  "to": "I8",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.i9.i8.v5"
+  ],
+  "transferred_input": "稳定关闭态与错误合同",
+  "gate_evidence": "统一返回 capability_unavailable_until_writer_migration，且外部写入调用数为零",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-I9"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "I8 consumes the explicitly produced artifact DL-I9"
+}

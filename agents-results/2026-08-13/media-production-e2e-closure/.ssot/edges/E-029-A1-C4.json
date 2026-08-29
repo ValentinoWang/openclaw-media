@@ -1,0 +1,1 @@
+{"edge_id":"E-029-A1-C4","from":"A1","to":"C4","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["merge.backend-current-production"],"transferred_input":"现行生产后端源码基线和发布身份","gate_evidence":"A1 第 4 版生产基线读回"}

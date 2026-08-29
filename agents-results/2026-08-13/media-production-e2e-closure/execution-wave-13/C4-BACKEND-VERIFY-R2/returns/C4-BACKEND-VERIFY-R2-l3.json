@@ -1,0 +1,184 @@
+{
+  "task_id": "C4-BACKEND-VERIFY-R2",
+  "attempt_role": "l3",
+  "proposed_state": "FAILED",
+  "acceptance_self_check": "fail",
+  "failure_class": "verification",
+  "return_path": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-13/C4-BACKEND-VERIFY-R2/returns/C4-BACKEND-VERIFY-R2-l3.json",
+  "validation_command": {
+    "path": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-13/C4-BACKEND-VERIFY-R2/validation/C4-BACKEND-VERIFY-R2.sh",
+    "sha256": "289865ed017d6691c4674127a49a2c450b710c5ad764c366c36277c71aa42c72",
+    "exit_code": 2,
+    "fixed_script_modified": false
+  },
+  "frozen_input_check": {
+    "status": "pass",
+    "task_source_sha256": "c59066630c015b8ccefbff69e99d30f771c98a0d11fb24eac1ac9a8dee5f8229",
+    "ssot_manifest_sha256": "c6aca57fc2676e8a51704bb607c84245a0e55681bd4202270e659a8290ce9782",
+    "b1_node_sha256": "cd561d9e4d8b2184b4932da81fc143ae105bf917fc0e520849b6547ca92fabbc",
+    "b1_readiness_state": "ACCEPTED",
+    "b1_readiness_mode": "FORMAL",
+    "c4_node_sha256": "e8d5102533b0597d7bff0a7d6469262fb48d6efe8e8a8c92b1561cab5f015b21",
+    "c4_readiness_state": "READY",
+    "c4_readiness_mode": "FORMAL",
+    "auth_contract_sha256": "a0feedc825fff609f3cd72cbe7a0705ee0f0276fa18209a7f6192d4393984fdc",
+    "task_contract_sha256": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+    "protected_test_sha256": "dee8b55304a60b4284462310f68f03099369af15071efc2fe5f39dcc8f67b73d",
+    "c2_source_manifest_sha256": "23d4017ba54422ba30f1aceb88ff34b2d0a034470d1bb70b9015e95613abe927",
+    "baseline_manifest_sha256": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+    "candidate_manifest_sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018"
+  },
+  "baseline_manifest": {
+    "path": ".codex-work/production-baseline-20260814T084319Z/backend/.manifest.sha256",
+    "sha256": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+    "line_count": 786,
+    "persistent_count": 550,
+    "transient_count": 236,
+    "invalid_line_count": 0,
+    "persistent_content_check": "pass",
+    "original_manifest_preserved": true
+  },
+  "candidate_manifest": {
+    "path": ".codex-work/merge-candidate-v4/backend/.candidate-source.sha256",
+    "sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+    "managed_entry_count": 562,
+    "content_check": "pass",
+    "provenance_file_sha256": "b85fd9479c24d1f6f8ed1e0bd59381a0f28b324335d224f84a20b06b65b322e8"
+  },
+  "candidate_post_run": {
+    "candidate_root": ".codex-work/merge-candidate-v4/backend",
+    "regular_file_count": 564,
+    "symlink_count": 0,
+    "transient_residue_count": 0,
+    "content_check": "pass"
+  },
+  "temporary_residue_cleanup": {
+    "candidate_root": ".codex-work/merge-candidate-v4/backend",
+    "l3_before_allowed_file_count": 0,
+    "l3_before_allowed_directory_count": 0,
+    "removed_pyc_files": 0,
+    "removed_pyo_files": 0,
+    "removed_ds_store_files": 0,
+    "removed_log_files": 0,
+    "removed_pycache_directories": 0,
+    "removed_pytest_cache_directories": 0,
+    "after_allowed_residue_count": 0,
+    "status": "pass",
+    "prior_luna_cleanup_evidence": {
+      "removed_pycache_directories": 8,
+      "removed_pyc_files": 13,
+      "source": "supplied_luna_failure_evidence"
+    }
+  },
+  "validation_environment": {
+    "script_sha256_unchanged": true,
+    "temporary_dependency_staging": "pass",
+    "staged_packages": [
+      "PyYAML==6.0.3",
+      "requests==2.32.5",
+      "playwright==1.57.0"
+    ],
+    "staging_path": "/tmp/c4-backend-verify-r2-*",
+    "python_compile_to_disposable_prefix": "pass",
+    "pytest_bytecode_disabled": true,
+    "pytest_cache_plugin_disabled": true,
+    "dependency_attempts": [
+      {
+        "staged_packages": ["requests==2.32.5"],
+        "exit_code": 2,
+        "failure": "playwright import missing during pytest collection"
+      },
+      {
+        "staged_packages": ["PyYAML==6.0.3", "requests==2.32.5", "playwright==1.57.0"],
+        "exit_code": 2,
+        "failure": "candidate absolute bot configuration path missing during pytest collection"
+      }
+    ]
+  },
+  "failure": {
+    "stage": "focused_pytest_collection",
+    "validation_command_exit_code": 2,
+    "classification_reason": "After the missing package imports were supplied in a disposable /tmp path, pytest collection reached common.bot_llm_config.py and failed because the candidate requires /home/ubuntu/selfmedia-tools/config/openclaw_bots.json. Creating or mocking that absolute path is outside the authorized write scope, so the fixed command could not reach PostgreSQL or its final receipt gates.",
+    "evidence": [
+      "Initial corrected run exposed ModuleNotFoundError: No module named 'playwright'.",
+      "Final corrected run exposed RuntimeError: OpenClaw Bot LLM configuration missing at /home/ubuntu/selfmedia-tools/config/openclaw_bots.json."
+    ]
+  },
+  "validation_progress": {
+    "frozen_preflight": "pass",
+    "baseline_550_236_split": "pass",
+    "baseline_550_persistent_content_check": "pass",
+    "candidate_562_content_check": "pass",
+    "candidate_static_contract_checks": "pass",
+    "python_compile_to_disposable_pycache_prefix": "pass",
+    "disposable_venv_creation": "pass",
+    "required_package_install": "pass",
+    "runtime_dependency_correction": "partial",
+    "focused_pytest": "failed_during_collection",
+    "postgres_migration_apply": "not_reached",
+    "postgres_integration_tests": "not_reached",
+    "postgres_migration_verify": "not_reached",
+    "fixed_script_production_receipt_gates": "not_reached_after_pytest_failure"
+  },
+  "production_receipt_gates": {
+    "fixed_script_reached": false,
+    "independent_read_only_probe": true,
+    "task_run_v3_expected_exit": 3,
+    "task_run_v3_actual_exit": 3,
+    "auth_web_local_expected_exit": 20,
+    "auth_web_local_actual_exit": 20,
+    "auth_web_production_expected_exit": 20,
+    "auth_web_production_actual_exit": 20,
+    "interpretation": "The three gates remained fail-closed in an independent read-only probe; they do not convert the fixed validation into a pass."
+  },
+  "database_container_cleanup": {
+    "status": "pass",
+    "container_created": false,
+    "matching_containers_after_exit": 0,
+    "matching_tmp_dirs_after_exit": 0,
+    "migration_or_database_data_written": false
+  },
+  "actual_read_write_scope": {
+    "read_scope": [
+      "task source and frozen validation command",
+      "SSOT manifest and B1/C4 node records",
+      "acceptance contracts and protected test guard",
+      "production baseline and backend candidate manifests",
+      "candidate source imports and declared dependency files",
+      "read-only production receipt guards"
+    ],
+    "writes_performed": [
+      "No candidate files were deleted during L3; the authorized cleanup found zero remaining residue after the supplied Luna cleanup.",
+      "Created and removed disposable /tmp/c4-backend-verify-r2-* dependency staging, virtual environments, scratch manifests, and logs.",
+      "Wrote this supervisor-designated structured return file."
+    ],
+    "source_test_migration_contract_manifest_writes": false,
+    "ssot_writes": false,
+    "remote_production_writes": false,
+    "feishu_account_or_private_data_writes": false,
+    "forbidden_scope_touched": false
+  },
+  "unverified_items": [
+    "Focused pytest did not collect successfully because the candidate absolute bot configuration path is unavailable in this bounded environment.",
+    "Authentication, registration, task repository, independent runner, workspace authority migration, PostgreSQL integration, migration apply, and migration verify were not reached by the fixed script.",
+    "No remote production release, restart, database, Feishu, account, or service configuration was touched.",
+    "C4 was not marked ACCEPTED and the candidate was not published."
+  ],
+  "risks": [
+    "The fixed disposable environment still lacks an authority-approved way to provide the candidate's hardcoded bot runtime configuration without an out-of-scope write or test shim.",
+    "Because the fixed command exited 2, this attempt does not establish backend acceptance despite all static, manifest, and fail-closed receipt checks that were reached passing."
+  ],
+  "sensitive_information_boundary": {
+    "status": "pass",
+    "written_values": [
+      "relative paths",
+      "release identifiers",
+      "SHA-256 digests",
+      "public schema or state names",
+      "package names and versions",
+      "exit codes"
+    ],
+    "secrets_cookies_tokens_passwords_private_content_written": false,
+    "remote_data_written": false
+  }
+}

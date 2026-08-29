@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "node_id": "GA1",
+  "status": "completed",
+  "observed_at": "2026-08-16T15:10:35+08:00",
+  "owner": "execution environment owner",
+  "registry": "config/runner-profiles/registry.json",
+  "registry_sha256": "ad3af167b07dd0287ea1f22dd3f90d893d7cffee16aea5082303d7e7b331e0ed",
+  "launcher": "tools/run_runner_profile.py",
+  "launcher_sha256": "30f15c7c9999b9d2100906aaf364e38412adeec60fb7a43263f6de6f363b5bb7",
+  "profiles": [
+    {
+      "profile_id": "implementation-runner",
+      "owner": "main orchestrator",
+      "launcher": "scripts/runner-profiles/run-implementation.sh",
+      "launcher_sha256": "37a7dd10215a5d1fbc8095dd9a36e3ce0b0bad1d37b0725fc550348f43639599"
+    },
+    {
+      "profile_id": "static-validation",
+      "owner": "runtime acceptance owner",
+      "launcher": "scripts/runner-profiles/run-static-validation.sh",
+      "launcher_sha256": "ba6197b2874bf2b6dc98cda0a639e221fb4dfd38545197e03decb8be8eaa1233"
+    },
+    {
+      "profile_id": "external-test",
+      "owner": "runtime acceptance owner",
+      "launcher": "scripts/runner-profiles/run-external-test.sh",
+      "launcher_sha256": "bb1cf4397c19d33d403010166acba372f91e5160ca70b10811c92d09897ed94f"
+    },
+    {
+      "profile_id": "production-release",
+      "owner": "release owner",
+      "launcher": "scripts/runner-profiles/run-production-release.sh",
+      "launcher_sha256": "04500d1908e4e8e59f6012843981efda1d59239de4993ec4760f4d3612d42221"
+    },
+    {
+      "profile_id": "independent-readonly",
+      "owner": "independent acceptance owner",
+      "launcher": "scripts/runner-profiles/run-independent-readonly.sh",
+      "launcher_sha256": "d95f1fdf76013d1e03e818b5bd258be2cef9b116bdbb35d4e5283ac841fcb4b8"
+    }
+  ],
+  "credential_policy": "registry stores environment variable names only; credential values and production approvals are not stored in project files",
+  "initialization_process": "manual bootstrap using direct local file creation; no runner profile or Codex worker was used to create the profiles",
+  "acceptance": "all five profiles have an absolute launcher, named owner, minimum write mode, credential boundary and forbidden capability set",
+  "does_not_prove": "external credentials, a production approval receipt, deployment or production behavior"
+}

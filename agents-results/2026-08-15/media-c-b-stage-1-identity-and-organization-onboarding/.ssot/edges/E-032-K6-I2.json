@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-032-K6-I2",
+  "from": "K6",
+  "to": "I2",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.k6.i2.v5"
+  ],
+  "transferred_input": "个人认证具体决定第 1 版",
+  "gate_evidence": "注册和验证成功均不自动登录；重置密码后撤销全部旧会话和未使用找回令牌；新合同不恢复旧 Media 密码接口，不按邮箱或姓名自动合并身份",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "DL-K6"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "I2 consumes the explicitly produced artifact DL-K6"
+}

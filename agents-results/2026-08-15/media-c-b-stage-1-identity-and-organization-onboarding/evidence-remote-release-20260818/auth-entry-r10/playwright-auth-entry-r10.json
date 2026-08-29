@@ -1,0 +1,227 @@
+{
+  "schemaVersion": "media-auth-entry-remote-playwright-v1",
+  "baseUrl": "http://106.52.146.37/openclaw/media",
+  "results": [
+    {
+      "viewport": "desktop",
+      "route": "/",
+      "status": 200,
+      "innerWidth": 1440,
+      "documentScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "MediaClaw",
+      "inputs": [],
+      "text": "需要登录\n\n此工作台仅展示当前账户的数据。\n\n登录或注册",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "desktop-index.png"
+    },
+    {
+      "viewport": "desktop",
+      "route": "/login",
+      "status": 200,
+      "innerWidth": 1440,
+      "documentScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "选择登录方式 - MediaClaw",
+      "inputs": [
+        "identifier",
+        "password"
+      ],
+      "text": "MC\nMediaClaw\n内容运营工作台\n\n统一入口\n\n选择进入方式\n\n先选择你的工作区身份，再继续完成登录。\n\n工作区身份\n\n你要进入哪类工作区？\n01 / 02\nC\n个人创作者\n使用 MediaClaw 账号进入个人工作区。\n→\nB\n组织成员\n通过组织的 Feishu 授权进入协作工作区。\n→\n\n请选择一个身份继续。",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "desktop-login.png"
+    },
+    {
+      "viewport": "desktop",
+      "route": "/register",
+      "status": 200,
+      "innerWidth": 1440,
+      "documentScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "创建个人账号 - MediaClaw",
+      "inputs": [
+        "username",
+        "email",
+        "password"
+      ],
+      "text": "MC\nMediaClaw\n内容运营工作台\n\n个人账号\n\n创建个人账号\n\n注册只需要用户名、唯一邮箱和密码。\n\nC 个人创作者\n开始使用 MediaClaw\n\n提交后请在 24 小时内完成邮箱验证。注册和验证都不会自动登录。\n\n用户名\n3-64 个字符，以字母或数字开头。\n唯一邮箱\n密码\n至少 12 个字符，允许粘贴和使用密码管理器。\n创建账号\n\n已有账号？返回登录",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "desktop-register.png"
+    },
+    {
+      "viewport": "desktop",
+      "route": "/verify",
+      "status": 200,
+      "innerWidth": 1440,
+      "documentScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "验证邮箱 - MediaClaw",
+      "inputs": [
+        "verify-identifier"
+      ],
+      "text": "MC\nMediaClaw\n内容运营工作台\n\n邮箱验证\n\n完成个人邮箱验证\n\n验证邮箱后返回个人登录入口，不会自动登录。\n\nPENDING_EMAIL_VERIFICATION\n确认邮箱所有权\n\n如果你从验证邮件打开此页，可以直接确认；也可以重发最新验证邮件。\n\n用户名或邮箱\n重发验证邮件\n\n返回个人登录",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "desktop-verify.png"
+    },
+    {
+      "viewport": "desktop",
+      "route": "/recover",
+      "status": 200,
+      "innerWidth": 1440,
+      "documentScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "找回密码 - MediaClaw",
+      "inputs": [
+        "recover-identifier"
+      ],
+      "text": "MC\nMediaClaw\n内容运营工作台\n\n账号恢复\n\n忘记密码\n\n输入用户名或邮箱，我们会用统一提示处理请求。\n\n个人账号\n请求找回邮件\n\n无论账号是否符合条件，页面都不会透露账号是否存在。\n\n用户名或邮箱\n发送找回邮件\n\n返回个人登录",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "desktop-recover.png"
+    },
+    {
+      "viewport": "desktop",
+      "route": "/reset",
+      "status": 200,
+      "innerWidth": 1440,
+      "documentScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "重置密码 - MediaClaw",
+      "inputs": [
+        "reset-password",
+        "reset-confirm-password"
+      ],
+      "text": "MC\nMediaClaw\n内容运营工作台\n\n账号恢复\n\n设置新密码\n\n新密码提交成功后，所有旧会话都会失效。\n\n个人账号\n重置个人账号密码\n\n找回链接只能使用一次，失效后请重新申请找回邮件。\n\n新密码\n至少 12 个字符，允许粘贴和使用密码管理器。\n确认新密码\n保存新密码\n\n重新申请找回邮件",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "desktop-reset.png"
+    },
+    {
+      "viewport": "mobile",
+      "route": "/",
+      "status": 200,
+      "innerWidth": 390,
+      "documentScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "title": "MediaClaw",
+      "inputs": [],
+      "text": "需要登录\n\n此工作台仅展示当前账户的数据。\n\n登录或注册",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "mobile-index.png"
+    },
+    {
+      "viewport": "mobile",
+      "route": "/login",
+      "status": 200,
+      "innerWidth": 390,
+      "documentScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "title": "选择登录方式 - MediaClaw",
+      "inputs": [
+        "identifier",
+        "password"
+      ],
+      "text": "MC\nMediaClaw\n内容运营工作台\n\n统一入口\n\n选择进入方式\n\n先选择你的工作区身份，再继续完成登录。\n\n工作区身份\n\n你要进入哪类工作区？\n01 / 02\nC\n个人创作者\n使用 MediaClaw 账号进入个人工作区。\n→\nB\n组织成员\n通过组织的 Feishu 授权进入协作工作区。\n→\n\n请选择一个身份继续。",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "mobile-login.png"
+    },
+    {
+      "viewport": "mobile",
+      "route": "/register",
+      "status": 200,
+      "innerWidth": 390,
+      "documentScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "title": "创建个人账号 - MediaClaw",
+      "inputs": [
+        "username",
+        "email",
+        "password"
+      ],
+      "text": "MC\nMediaClaw\n内容运营工作台\n\n个人账号\n\n创建个人账号\n\n注册只需要用户名、唯一邮箱和密码。\n\nC 个人创作者\n开始使用 MediaClaw\n\n提交后请在 24 小时内完成邮箱验证。注册和验证都不会自动登录。\n\n用户名\n3-64 个字符，以字母或数字开头。\n唯一邮箱\n密码\n至少 12 个字符，允许粘贴和使用密码管理器。\n创建账号\n\n已有账号？返回登录",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "mobile-register.png"
+    },
+    {
+      "viewport": "mobile",
+      "route": "/verify",
+      "status": 200,
+      "innerWidth": 390,
+      "documentScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "title": "验证邮箱 - MediaClaw",
+      "inputs": [
+        "verify-identifier"
+      ],
+      "text": "MC\nMediaClaw\n内容运营工作台\n\n邮箱验证\n\n完成个人邮箱验证\n\n验证邮箱后返回个人登录入口，不会自动登录。\n\nPENDING_EMAIL_VERIFICATION\n确认邮箱所有权\n\n如果你从验证邮件打开此页，可以直接确认；也可以重发最新验证邮件。\n\n用户名或邮箱\n重发验证邮件\n\n返回个人登录",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "mobile-verify.png"
+    },
+    {
+      "viewport": "mobile",
+      "route": "/recover",
+      "status": 200,
+      "innerWidth": 390,
+      "documentScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "title": "找回密码 - MediaClaw",
+      "inputs": [
+        "recover-identifier"
+      ],
+      "text": "MC\nMediaClaw\n内容运营工作台\n\n账号恢复\n\n忘记密码\n\n输入用户名或邮箱，我们会用统一提示处理请求。\n\n个人账号\n请求找回邮件\n\n无论账号是否符合条件，页面都不会透露账号是否存在。\n\n用户名或邮箱\n发送找回邮件\n\n返回个人登录",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "mobile-recover.png"
+    },
+    {
+      "viewport": "mobile",
+      "route": "/reset",
+      "status": 200,
+      "innerWidth": 390,
+      "documentScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "title": "重置密码 - MediaClaw",
+      "inputs": [
+        "reset-password",
+        "reset-confirm-password"
+      ],
+      "text": "MC\nMediaClaw\n内容运营工作台\n\n账号恢复\n\n设置新密码\n\n新密码提交成功后，所有旧会话都会失效。\n\n个人账号\n重置个人账号密码\n\n找回链接只能使用一次，失效后请重新申请找回邮件。\n\n新密码\n至少 12 个字符，允许粘贴和使用密码管理器。\n确认新密码\n保存新密码\n\n重新申请找回邮件",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedStaticResponses": [],
+      "registrationPolicyRequested": false,
+      "screenshot": "mobile-reset.png"
+    }
+  ],
+  "failed": []
+}

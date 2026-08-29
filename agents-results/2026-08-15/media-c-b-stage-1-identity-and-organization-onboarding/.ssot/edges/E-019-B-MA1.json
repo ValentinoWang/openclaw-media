@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-019-B-MA1",
+  "from": "B",
+  "to": "MA1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.b.ma1.v5"
+  ],
+  "transferred_input": "1A 与 1B 的共享合同身份",
+  "gate_evidence": "不消费 R11，也不把局部决定扩散成全局失效",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "ART-B"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "MA1 consumes the explicitly produced artifact ART-B"
+}

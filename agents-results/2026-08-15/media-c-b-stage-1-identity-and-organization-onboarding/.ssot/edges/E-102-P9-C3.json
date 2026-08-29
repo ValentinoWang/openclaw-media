@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-102-P9-C3",
+  "from": "P9",
+  "to": "C3",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.p9.c3.v5"
+  ],
+  "transferred_input": "即时成员接入服务与回执",
+  "gate_evidence": "唯一外部成员字段是服务端 open_id，数据库唯一约束至少为 (binding_id, open_id)",
+  "reason_code": "acceptance-dependency",
+  "transferred_artifact_ids": [
+    "DL-P9"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C3 consumes the explicitly produced artifact DL-P9"
+}

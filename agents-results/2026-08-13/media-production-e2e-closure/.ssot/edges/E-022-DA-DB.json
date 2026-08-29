@@ -1,0 +1,1 @@
+{"edge_id":"E-022-DA-DB","from":"DA","to":"DB","dependency_type":"hard","dependency_scope":"global-completeness","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["validation.production-e2e"],"transferred_input":"静态与构建门禁通过的候选发布","gate_evidence":"DA 已接受"}

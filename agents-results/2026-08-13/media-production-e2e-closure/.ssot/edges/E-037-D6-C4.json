@@ -1,0 +1,1 @@
+{"edge_id":"E-037-D6-C4","from":"D6","to":"C4","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["contract.material-parsing-coverage-v1","merge.backend-current-production"],"transferred_input":"54 组合冻结矩阵、解析状态和失败关闭规则","gate_evidence":"D6 第 1 版与合同哈希"}

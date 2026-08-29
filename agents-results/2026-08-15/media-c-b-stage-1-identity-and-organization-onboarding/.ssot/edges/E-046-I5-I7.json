@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-046-I5-I7",
+  "from": "I5",
+  "to": "I7",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.i5.i7.v5"
+  ],
+  "transferred_input": "OrganizationWorkspaceShell",
+  "gate_evidence": "页面不从前端 tenantId 或平台管理员推断权限",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-I5"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "I7 consumes the explicitly produced artifact DL-I5"
+}

@@ -1,0 +1,92 @@
+{
+  "task_id": "C2-V3-IMPLEMENT",
+  "node_id": "C2",
+  "attempt_role": "main-thread-takeover",
+  "versions": {
+    "plan": 3,
+    "dag": 3,
+    "interface_freeze": 3,
+    "node_contract": 3,
+    "ssot_schema": 1
+  },
+  "contract": {
+    "task_id": "MPE2E-TASK-RUN-V3",
+    "sha256": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+    "status": "APPROVED",
+    "test_baseline": "LOCKED"
+  },
+  "protected_test": {
+    "path": "scripts/acceptance/test-mpe2e-task-run-v3.sh",
+    "sha256": "dee8b55304a60b4284462310f68f03099369af15071efc2fe5f39dcc8f67b73d",
+    "postimplementation_exit_code": 3,
+    "reason": "two required production receipts are absent"
+  },
+  "candidate": {
+    "path": ".codex-work/c2-main-takeover",
+    "source_manifest": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-8/C2-V3-IMPLEMENT/postimplementation-source.sha256",
+    "source_manifest_sha256": "f36330fc9dd994df878e2d4a37deb3bed8fe02ca32c75464a69c786e1691d337",
+    "source_file_count": 31
+  },
+  "main_thread_repair_files": [
+    ".codex-work/c2-main-takeover/backend/selfmedia/growth/__init__.py",
+    ".codex-work/c2-main-takeover/backend/tests/test_capability_registry.py",
+    ".codex-work/c2-main-takeover/frontend/scripts/qa/checkContextualCapabilityLaunches.ts"
+  ],
+  "implementation_summary": {
+    "postgresql_wiring": "MediaWebTaskService uses PostgresMediaTaskRepository for binding, enqueue, read, cancel, confirmation, attempts, leases and receipts.",
+    "legacy_path_removal": "The frozen gate found no file-task queue, file event/audit store, fcntl lock, ThreadPoolExecutor or Web-process execution path in the active C2 services.",
+    "runner": "The independent media task runner has distinct stable runner and executor identities, claim, start, heartbeat, settlement, failure and expired-lease recovery paths.",
+    "v3_inputs": "The two representative capabilities require platform and customer-owned account, receive the authenticated user public ID from the server session, resolve the four-part formal relationship before enqueue and fail closed with the frozen 422/404/409 errors.",
+    "receipt_projection": "API and UI project settlement stages, missing readbacks, recovery identity and final same-receipt references without credentials or private bodies.",
+    "dependency_boundary": "Capability catalog import now lazily loads selfmedia.growth exports and does not import common.social_runtime or requests; the contextual QA resolves the sibling candidate backend by default."
+  },
+  "verification": [
+    {
+      "command": "python3 -m pytest -q tests/test_capability_registry.py::test_registry_import_does_not_load_growth_runtime_dependencies",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "npm run qa:contextual-capability-launches",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "node_modules/.bin/tsc --noEmit -p tsconfig.media-u12b.json",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=<candidate-cache> npm run build:media",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=<candidate-cache> bash agents-results/2026-08-13/media-production-e2e-closure/execution-wave-8/validation/C2-V3-IMPLEMENT.sh",
+      "exit_code": 0,
+      "result": "34 passed, 2 skipped; 32 migrations applied and verified; 14 PostgreSQL integration tests passed; frontend QA and build passed; production receipt gate remained exit 3"
+    }
+  ],
+  "validation_log": {
+    "path": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-8/C2-V3-IMPLEMENT/logs/C2-V3-IMPLEMENT-main-thread.validation.log",
+    "sha256": "97849f27db4084181b2370c2e9bdcacfb8525b3ed7279b219b99b255e53c9dba"
+  },
+  "sensitive_information_boundary": "No credential, Cookie, token, password, private body, production database write or Feishu write was used or recorded.",
+  "additional_observations": [
+    "The full tests/test_capability_registry.py run has two pre-existing failures because universal_deletion is public while those tests expect maintainer visibility; this is outside the frozen C2 gate and remains unresolved.",
+    "Three broader Media growth consumer tests require the unavailable local OpenClaw Bot LLM configuration and could not be collected in this candidate environment."
+  ],
+  "unverified_items": [
+    "independent acceptance review",
+    "merge into an immutable release candidate",
+    "production migration and deployment",
+    "two real production same-receipt records",
+    "blocking human acceptance items H-01 through H-05"
+  ],
+  "deviation_level": "L1",
+  "deviation_reason": "The main-thread repair changed only package import timing, one implementation-owned regression test and local backend discovery in an existing QA script; acceptance semantics and protected assets did not change.",
+  "proposed_state": "VERIFIED",
+  "failure_class": "none",
+  "acceptance_self_check": "pass",
+  "observed_at": "2026-08-14T09:44:44Z"
+}

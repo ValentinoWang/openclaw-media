@@ -1,0 +1,82 @@
+{
+  "node_id": "DB",
+  "semantic_key": "media.stage1.macro-regression-projection",
+  "stage": "D",
+  "work_kind": "validation",
+  "domain_lane": "macro-projection",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "DA"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.macro-regression-projection.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "DC"
+  ],
+  "worker_transport": "automatic-projection",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "DA"
+    ],
+    "projection_rule": "mirror DA acceptance and verify release identities without new execution",
+    "task_argument": "零写入生成宏观阶段回归汇总。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/projections/DB.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  },
+  "runtime_profile_requirement": "none",
+  "related_evidence_ids": [],
+  "description": "只形成后置汇总，不改变两个发布增量的验收结论",
+  "node_role": "acceptance-gate",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "DB.json",
+  "execution_contract_sha256": "51fa6eea51a41bfd6a9ee060f04b5e67a24a3cae777fea015ce46beeffb4ab04",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-DB"
+  ],
+  "consumed_artifact_ids": [
+    "ART-DA"
+  ],
+  "read_set": [
+    "artifact:DA"
+  ],
+  "write_set": [
+    "evidence:DB"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DB",
+      "mode": "W",
+      "isolation_key": "node:DB"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DB\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DB-return.json"
+  ],
+  "release_slice": "REL-1B",
+  "wave_id": "W-1B-25",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "evidence:DB"
+    ]
+  }
+}

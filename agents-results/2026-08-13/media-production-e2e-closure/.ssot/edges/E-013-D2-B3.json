@@ -1,0 +1,1 @@
+{"edge_id":"E-013-D2-B3","from":"D2","to":"B3","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["guard.e2e-receipt-v1"],"transferred_input":"同收据不可降级语义","gate_evidence":"D2 v1"}

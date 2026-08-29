@@ -1,0 +1,1 @@
+{"edge_id":"E-020-C1-DA","from":"C1","to":"DA","dependency_type":"hard","dependency_scope":"global-completeness","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["validation.static-release"],"transferred_input":"认证 Web 集成输出","gate_evidence":"C1 已接受"}

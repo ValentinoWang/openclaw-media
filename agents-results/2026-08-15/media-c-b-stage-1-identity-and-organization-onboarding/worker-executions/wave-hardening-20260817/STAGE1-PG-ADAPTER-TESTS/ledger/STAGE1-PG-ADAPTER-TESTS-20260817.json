@@ -1,0 +1,169 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "escalate_l3",
+        "effective_failure_class": "transport",
+        "maximum_escalations_remaining": 1,
+        "next_attempt": "l3",
+        "next_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+        "reason": "worker exit code 1"
+      },
+      "classifier_exit_code": 10,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/prompts/STAGE1-PG-ADAPTER-TESTS-20260817-luna.txt)"
+      ],
+      "ended_at": "2026-08-17T09:24:54.723907+00:00",
+      "exit_code": 1,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/logs/STAGE1-PG-ADAPTER-TESTS-20260817-luna.log",
+      "pid": 29664,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/prompts/STAGE1-PG-ADAPTER-TESTS-20260817-luna.txt",
+      "prompt_sha256": "ebe277978db2bdaba03a8f3f29b385084dbd8c0b46f2754651e861549155773e",
+      "started_at": "2026-08-17T09:24:26.739604+00:00",
+      "structured_return": null,
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/returns/STAGE1-PG-ADAPTER-TESTS-20260817-luna.json",
+      "structured_return_state": "missing",
+      "task_sha256": "56acd43ed038d66f84d847f36e1cd53cc4878db4746acb49e2eb87ca519aa155",
+      "timed_out": false,
+      "validation_command_sha256": "1cfa1e3476ed5bd300f0e029b377544b8ca2aea9ea2e0fca4c2449b92f2ff081",
+      "validation_ended_at": "2026-08-17T09:24:55.558703+00:00",
+      "validation_exit_code": 4,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/logs/STAGE1-PG-ADAPTER-TESTS-20260817-luna.validation.log",
+      "validation_pid": 30238,
+      "validation_started_at": "2026-08-17T09:24:54.724076+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    },
+    {
+      "attempt_role": "l3",
+      "classification": {
+        "attempt": "l3",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-l3.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/prompts/STAGE1-PG-ADAPTER-TESTS-20260817-l3.txt)"
+      ],
+      "ended_at": "2026-08-17T09:39:04.032924+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/logs/STAGE1-PG-ADAPTER-TESTS-20260817-l3.log",
+      "pid": 30276,
+      "prior_attempt_index": 0,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/prompts/STAGE1-PG-ADAPTER-TESTS-20260817-l3.txt",
+      "prompt_sha256": "69f45c1a1cd1077173ee64739718ae7cd42dc587e6166ebcfdeafff736ac570c",
+      "started_at": "2026-08-17T09:24:55.653418+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "attempt_role": "l3",
+        "changed_files": [
+          "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-integrated/backend/tests/test_stage1_postgres_provisioning.py",
+          "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/returns/STAGE1-PG-ADAPTER-TESTS-20260817-l3.json"
+        ],
+        "commands": [
+          {
+            "command": "cd /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/stage1-integrated/backend && .venv/bin/python -m pytest -q tests/test_stage1_postgres_provisioning.py",
+            "result": "pass: 6 passed in 0.04s"
+          },
+          {
+            "command": "zsh /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-PG-ADAPTER-TESTS-20260817.sh",
+            "result": "pass: 6 passed in 0.02s"
+          },
+          {
+            "command": "shasum -a 256 agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-PG-ADAPTER-TESTS-20260817.sh",
+            "result": "pass: 1cfa1e3476ed5bd300f0e029b377544b8ca2aea9ea2e0fca4c2449b92f2ff081"
+          }
+        ],
+        "covered_behaviors": [
+          "Successful repository transactions expose the connection-scoped store, then commit and close.",
+          "Failed repository transactions roll back, close, and re-raise the original exception object.",
+          "Confirmation IF2 projection replay reconstructs all receipt fields and preserves the stored request digest.",
+          "A conflicting confirmation digest from the adapter projection reaches AdministratorConfirmationService as admin_confirmation_idempotency_conflict.",
+          "Failed provision-run persistence writes FAILED and NEEDS_ATTENTION state, records the failed step, and reconstructs the retry timestamp without a success transition.",
+          "Deprovision counts durable local session revocations and commits local access closure before the credential gateway returns its external result."
+        ],
+        "failure_class": "none",
+        "proposed_state": "IMPLEMENTED",
+        "risks": [
+          "The frozen pytest command created tests/__pycache__/test_stage1_postgres_provisioning.cpython-311-pytest-9.1.1.pyc; it is a test-runner cache artifact, not a source or existing-test edit.",
+          "The 12 manifest mismatches are outside this task scope and have modification times no later than 2026-08-17T17:12:19+0800, before this test file was created at 2026-08-17T17:32:29+0800."
+        ],
+        "scope_check": {
+          "backend_source_manifest_sha256": "a5e34064d554fe6a11b93f608b23202e737b40eac9dcedc4388c18dc952710be",
+          "candidate_manifest_sha256": "f1ac786573e76aa40a0d69a10aab6dba5bd6a345596242d93f37773b59f45bcb",
+          "forbidden_source_changes_by_attempt": [],
+          "preexisting_unrelated_source_manifest_mismatches": [
+            "openclaw_app/account/__init__.py",
+            "openclaw_app/adapters/http_api.py",
+            "openclaw_app/adapters/media_business_context.py",
+            "openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+            "openclaw_app/router/tag_router.py",
+            "openclaw_app/server_cli.py",
+            "openclaw_app/services/media_business/documents.py",
+            "openclaw_app/services/media_task_runner.py",
+            "openclaw_app/services/media_web_tasks.py",
+            "scripts/run_postgres_migrations.py",
+            "tests/test_http_api.py",
+            "tests/test_media_business_http.py"
+          ]
+        },
+        "task_id": "STAGE1-PG-ADAPTER-TESTS-20260817",
+        "test_result": {
+          "acceptance_command": ".venv/bin/python -m pytest -q tests/test_stage1_postgres_provisioning.py",
+          "status": "pass",
+          "summary": "6 passed"
+        },
+        "unverified_items": [
+          "No live PostgreSQL connection or migration execution was used; all database behavior is covered with deterministic fake connections and results.",
+          "No Feishu, production, remote host, shared database, SSOT acceptance, or release-readiness claim was evaluated.",
+          "The candidate-wide source manifest still has 12 unrelated pre-existing mismatches, so this task does not establish global candidate integrity."
+        ]
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/returns/STAGE1-PG-ADAPTER-TESTS-20260817-l3.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "56acd43ed038d66f84d847f36e1cd53cc4878db4746acb49e2eb87ca519aa155",
+      "timed_out": false,
+      "validation_command_sha256": "1cfa1e3476ed5bd300f0e029b377544b8ca2aea9ea2e0fca4c2449b92f2ff081",
+      "validation_ended_at": "2026-08-17T09:39:04.603745+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-hardening-20260817/STAGE1-PG-ADAPTER-TESTS/logs/STAGE1-PG-ADAPTER-TESTS-20260817-l3.validation.log",
+      "validation_pid": 44995,
+      "validation_started_at": "2026-08-17T09:39:04.034529+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-l3.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-17T09:39:04.643850+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "l3_wrapper_resolved_at": "2026-08-17T09:24:55.652615+00:00",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "resolved_l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-17T09:24:26.738421+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-tasks/STAGE1-PG-ADAPTER-TESTS-20260817.txt",
+  "task_id": "STAGE1-PG-ADAPTER-TESTS-20260817",
+  "task_sha256": "56acd43ed038d66f84d847f36e1cd53cc4878db4746acb49e2eb87ca519aa155",
+  "terminal_state": "IMPLEMENTED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-validation/STAGE1-PG-ADAPTER-TESTS-20260817.sh",
+  "validation_command_sha256": "1cfa1e3476ed5bd300f0e029b377544b8ca2aea9ea2e0fca4c2449b92f2ff081",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

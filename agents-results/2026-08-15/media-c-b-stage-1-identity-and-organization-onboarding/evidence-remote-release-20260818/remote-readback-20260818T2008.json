@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "evidence_id": "EV-REMOTE-READBACK-20260818T2008",
+  "status": "passed_with_scope_note",
+  "observed_at": "2026-08-18T20:08:34+08:00",
+  "host": "ubuntu@106.52.146.37",
+  "worker": "lw-terra",
+  "candidate": {
+    "candidate_manifest_sha256": "334b5133bd8e3cf03716757028bf584d03ff798b4d8dc69eb0de3edc267ed571",
+    "frontend_source_manifest_sha256": "0d8a9aae1b9b178342d39059e5b167f191048e78f7c261ef0d1ee15b4f11066f",
+    "backend_source_manifest_sha256": "24a3e1aaf5b99663926f90f6bcbb3ff23729b2a8d8791da044893137c9872908",
+    "frontend_release_id": "20260818T-stage1-auth-entry-r10",
+    "backend_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9",
+    "release_coordination": "passed",
+    "frontend_index_sha256": "6a9d49013b0888c83c6fe557ab96e68ed93bc60c4be03b1d6f7d87a059ea72d"
+  },
+  "runtime": {
+    "healthz": {"http_status": 200, "ok": true},
+    "readyz": {"http_status": 200, "ok": true, "matcher_ready": true, "auth_ready": true, "if2_ready": true},
+    "public_entry": {"http_status": 200, "index_sha256": "6a9d49013b0888c83c6fe557ab96e68ed93bc60c4be03b1d6f7d87a059ea72d9"},
+    "backend_listener": "127.0.0.1:8787",
+    "backend_process_release": "openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9"
+  },
+  "http_contract": {
+    "login": 200,
+    "media_login_js": 200,
+    "session_without_auth": 401,
+    "empty_register": 400,
+    "empty_login": 400,
+    "empty_recover": 400,
+    "empty_reset": 400,
+    "empty_feishu_status": 400,
+    "oauth_callback_without_query": 400,
+    "retired_media_password_login": 404,
+    "retired_media_password_change": 404
+  },
+  "nginx": {
+    "config_test": "passed",
+    "canonical_sha256": "9e0c8f99770fc9a825b43697b2b779abe53f29b073c83638486c17423fa14128",
+    "loaded_sha256": "9e0c8f99770fc9a825b43697b2b779abe53f29b073c83638486c17423fa14128",
+    "login_route_self_test": "passed"
+  },
+  "watchdog": {
+    "timer_service_result": "success",
+    "status": "healthy",
+    "failure_count": 0,
+    "checks": 70,
+    "repairs": [],
+    "contract_allowlist_includes": "= /media.login.js"
+  },
+  "boundaries": {
+    "remote_code_and_transport_release": true,
+    "production_database_migration_write": false,
+    "feishu_write": false,
+    "email_write": false,
+    "formal_ssot_node_acceptance": false,
+    "real_mail_browser_device_acceptance": false
+  }
+}

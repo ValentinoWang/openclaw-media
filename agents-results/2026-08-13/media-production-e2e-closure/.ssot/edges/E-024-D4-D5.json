@@ -1,0 +1,1 @@
+{"edge_id":"E-024-D4-D5","from":"D4","to":"D5","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["decision.representative-account-binding-input"],"transferred_input":"已接受的两项首发代表能力","gate_evidence":"D4 v2 已接受"}

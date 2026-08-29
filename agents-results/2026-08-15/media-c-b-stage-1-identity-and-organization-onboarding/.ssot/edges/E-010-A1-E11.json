@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-010-A1-E11",
+  "from": "A1",
+  "to": "E11",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.a1.e11.v5"
+  ],
+  "transferred_input": "可复现的来源与能力基线",
+  "gate_evidence": "Revision 11 仅由 canonical 管理；五类运行配置尚未被证明",
+  "reason_code": "external-prerequisite",
+  "transferred_artifact_ids": [
+    "DL-A1"
+  ],
+  "resource_ids": [
+    "authority:revision11-d3a"
+  ],
+  "necessity_proof": "CA/CB cannot form a release candidate before the pinned Revision 11 D3A authority is accepted"
+}

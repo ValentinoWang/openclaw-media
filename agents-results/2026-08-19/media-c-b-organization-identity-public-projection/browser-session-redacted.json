@@ -1,0 +1,20 @@
+{
+  "target": "http://106.52.146.37/openclaw/media/organization-workspace",
+  "browser": "Playwright Chromium (remote, headless)",
+  "unauthenticatedShell": {
+    "pageStatus": 200,
+    "sessionStatus": 401,
+    "forbiddenText": [],
+    "screenshot": "remote-unauthenticated-shell.png"
+  },
+  "authenticatedOrganizationSession": {
+    "status": "not_completed",
+    "reason": "remote QA credentials returned invalid_credentials; no session cookie or credential value was recorded",
+    "noMockSession": true
+  },
+  "security": {
+    "cookieValuesRecorded": false,
+    "sessionPayloadRecorded": false,
+    "backendEnvironmentValuesRecorded": false
+  }
+}

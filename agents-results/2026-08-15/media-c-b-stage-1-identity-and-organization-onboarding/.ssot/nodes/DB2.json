@@ -1,0 +1,67 @@
+{
+  "node_id": "DB2",
+  "semantic_key": "media.stage1.release1b-production",
+  "stage": "D",
+  "work_kind": "validation",
+  "domain_lane": "release-1b",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "DA2"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.release1b-production.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "runtime acceptance owner",
+  "unlocks": [
+    "DC2"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "production-release-runner",
+  "related_evidence_ids": [],
+  "description": "每个外部步骤都有回读、补偿和人工处置状态",
+  "node_role": "acceptance-gate",
+  "execution_actor": "external-system",
+  "execution_contract_ref": "DB2.json",
+  "execution_contract_sha256": "50cae786f5e25d18e2d3923ef0a2fb0a953dafc69c9343fb771cba4c4d12d13a",
+  "side_effect_class": "reversible",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [
+    "DL-DB2"
+  ],
+  "produced_artifact_ids": [
+    "ART-DB2"
+  ],
+  "consumed_artifact_ids": [
+    "DL-DA2"
+  ],
+  "read_set": [
+    "artifact:DA2"
+  ],
+  "write_set": [
+    "evidence:DB2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DB2",
+      "mode": "W",
+      "isolation_key": "node:DB2"
+    }
+  ],
+  "actor_pool": "external-acceptance",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DB2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DB2-return.json"
+  ],
+  "release_slice": "REL-1B",
+  "wave_id": "W-1B-22"
+}

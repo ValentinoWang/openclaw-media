@@ -1,0 +1,1 @@
+{"edge_id":"E-035-A-D6","from":"A","to":"D6","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["decision.material-parsing-coverage"],"transferred_input":"素材任务闭环与不可静默缺字段边界","gate_evidence":"用户本轮明确指令"}

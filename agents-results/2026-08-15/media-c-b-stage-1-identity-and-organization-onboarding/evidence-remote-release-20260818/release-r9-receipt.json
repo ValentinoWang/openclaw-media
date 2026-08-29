@@ -1,0 +1,109 @@
+{
+  "schema_version": 2,
+  "evidence_id": "EV-REMOTE-RELEASE-20260818-R9",
+  "status": "passed",
+  "observed_at": "2026-08-18T18:39:18+08:00",
+  "host": "ubuntu@106.52.146.37",
+  "selected_worker": "lw-terra",
+  "candidate": {
+    "candidate_id": "media-production-e2e-v4-stage1-auth-media-oauth-r9",
+    "candidate_manifest_sha256": "e5ad615528c4eda7b191fbb7cddad3f249e39d61a1a13961f736971108dc05c9",
+    "frontend_source_identity": "92e0ced44f838fb6abbc8349dee927e3510237fdab90a0181debddab769d1eeb",
+    "backend_source_identity": "ddb94f12a849602d091680e8e8227e03b7cfba745dfb655ea2a04739541e6c07",
+    "backend_candidate_source_manifest_sha256": "ddb94f12a849602d091680e8e8227e03b7cfba745dfb655ea2a04739541e6c07"
+  },
+  "remote_release": {
+    "backend_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9",
+    "backend_stage_path": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9",
+    "backend_registry_path": "/home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9",
+    "frontend_release_id": "20260818T-stage1-auth-media-oauth-r9",
+    "frontend_release_path": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260818T-stage1-auth-media-oauth-r9",
+    "active_backend": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9",
+    "active_frontend": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260818T-stage1-auth-media-oauth-r9",
+    "rollback_backend": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260818T-stage1-auth-pg-r8",
+    "rollback_frontend": "/mnt/openclaw-data/openclaw-media-frontend-releases/20260818T-stage1-auth-pg-r8",
+    "backend_service": "openclaw-bot-center-api.service",
+    "backend_service_state": "active",
+    "backend_main_pid": 3685610,
+    "backend_cwd": "/mnt/openclaw-data/openclaw-media-release-stage/openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9",
+    "frontend_index_sha256": "6a9d49013b0888c83c6fe557ab96e68ed93bc60c4be03b1d6f7d87a059ea72d",
+    "backend_manifest_sha256": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+    "frontend_artifact_manifest_sha256": "10ac1912b44063325e14bdd2d1cc470a4962394f562c48c33350c26fbfa85659",
+    "frontend_source_snapshot_manifest_sha256": "0f6a1993fd619dac1cf2e50549130a9f16538d7a4fc2343eedb6b386b4d97253",
+    "frontend_source_to_artifact_sha256": "3b16f03f758ed4b07abcc9608efef402dd296790e78e08bced1ca08edeaee6da",
+    "frontend_backend_coordination": "passed",
+    "official_deployment_guard": "passed",
+    "session_principal_composition_guard": "passed",
+    "healthz": {"ok": true},
+    "readyz": {"ok": true, "matcher_ready": true, "auth_ready": true, "if2_ready": true}
+  },
+  "postgresql": {
+    "database": "openclaw_account",
+    "server_major": 16,
+    "runner_manifest": "openclaw.stage1.postgresql-migration-manifest.v3",
+    "runner_plan": "passed",
+    "runner_apply_mode": "current",
+    "runner_apply_now": [],
+    "runner_verify": "passed",
+    "canonical_ledger_row_count": 39,
+    "stage1_migration_ids": [
+      "cm1-038-customer-owned-account-authorization",
+      "cm1-039-stable-identity-relationships",
+      "cm1-040-stage1-release1a-identity-workspace",
+      "cm1-041-stage1-identity-links",
+      "cm1-042-stage1-release1b-provision",
+      "cm1-043-stage1-multi-tenant-primary-user"
+    ],
+    "stage1_tables_readback": [
+      "openclaw_account.stage1_identity_link_audit",
+      "openclaw_account.stage1_identity_link_intents",
+      "openclaw_account.stage1_identity_links",
+      "openclaw_account.stage1_migration_quarantine",
+      "openclaw_account.stage1_sessions",
+      "media_product.stage1_binding_generations",
+      "media_product.stage1_installations",
+      "media_product.stage1_provision_runs",
+      "media_product.stage1_provision_step_receipts"
+    ],
+    "database_write_boundary": "no new migration rows; idempotent verify/apply only"
+  },
+  "authentication_transport": {
+    "media_feishu_application_id": "cli_a97e4492acb8dbd6",
+    "media_callback": "http://106.52.146.37/openclaw/media/oauth/callback",
+    "media_state_prefix": "m_",
+    "pkce_method": "S256",
+    "pkce_challenge_length": 43,
+    "media_scope": "contact:user.email:readonly",
+    "media_feishu_start_status": 200,
+    "media_legacy_password_paths": {
+      "/openclaw/media/auth/login": {"GET": 404, "POST": 404, "PUT": 404},
+      "/openclaw/media/auth/password": {"GET": 404, "POST": 404, "PUT": 404}
+    },
+    "media_legacy_feishu_status": {"GET": 404, "POST": 404, "PUT": 404},
+    "shared_feishu_status_post": 400,
+    "callback_without_query": 400,
+    "transport_boundary": "^~ /openclaw/media/auth/ prefix returns 404; exact OAuth routes remain above it"
+  },
+  "guards": {
+    "login_surface_watchdog_contract_fixtures": "passed",
+    "login_surface_watchdog_self_test": "passed",
+    "login_surface_watchdog_live": "passed; 70 checks",
+    "nginx_config_test": "passed",
+    "nginx_authority_sha256": "0fd00726595cf649761c049d8c4894d1d3071be8d0e5e517cd44b2784a5d208a",
+    "login_watchdog_contract_sha256": "80ae1f9135900ffe86b3fefa4a39c66e5e79b9f0a23da6ca635927c3490657f9",
+    "login_watchdog_script_sha256": "a2e7826c33d30a322be4c6a3d04e565b293a74dba2b8e141ce15c619279704b0"
+  },
+  "dependencies": {
+    "sub2api_health_status": 200,
+    "sub2api_health_body": {"status": "ok"}
+  },
+  "boundaries": {
+    "remote_code_and_transport_release": true,
+    "production_database_migration_write": false,
+    "feishu_write": false,
+    "email_write": false,
+    "formal_ssot_node_acceptance": false,
+    "real_mail_browser_device_acceptance": false,
+    "production_business_data_acceptance": false
+  }
+}

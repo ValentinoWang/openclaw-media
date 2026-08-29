@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "task_id": "C4-MATERIAL-PARSING-BACKEND",
+  "attempt_role": "luna",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "frozen_input_proof": {
+    "task_source_sha256": "d5f155f47ab08440f80e5e476a1692becb47fe8a22939bead0aec91377e92172",
+    "validation_command_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/validation/C4-MATERIAL-PARSING-BACKEND.sh",
+    "validation_command_sha256": "301e62e40c9dbc68269d5b16395ea8b1dfcf1c042eac835514591a8a30a85bb9",
+    "authoritative_contract_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+    "candidate_contract_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+    "candidate_contract_byte_identical": true
+  },
+  "implementation_modified_files": [
+    ".codex-work/merge-candidate-v4/backend/contracts/material-parsing-coverage-v1.json",
+    ".codex-work/merge-candidate-v4/backend/openclaw_app/services/material_parsing.py",
+    ".codex-work/merge-candidate-v4/backend/openclaw_app/services/media_web_tasks.py",
+    ".codex-work/merge-candidate-v4/backend/openclaw_app/services/capability_input_contracts.py",
+    ".codex-work/merge-candidate-v4/backend/openclaw_app/server_cli.py",
+    ".codex-work/merge-candidate-v4/backend/openclaw_app/contracts/media_web_tasks.openapi.yaml",
+    ".codex-work/merge-candidate-v4/backend/tests/test_material_parsing.py",
+    ".codex-work/merge-candidate-v4/backend/tests/test_media_web_tasks.py"
+  ],
+  "validation": {
+    "command": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/validation/C4-MATERIAL-PARSING-BACKEND.sh",
+    "exit_code": 0,
+    "result": "37 passed in 2.37s; C4 material parsing backend validation passed"
+  },
+  "scope_audit": {
+    "forbidden_scope_touched": false,
+    "frontend_candidate_written": false,
+    "ssot_or_authoritative_contract_written": false,
+    "production_snapshot_written": false,
+    "remote_production_touched": false,
+    "database_feishu_account_or_credentials_touched": false,
+    "publication_directory_or_service_configuration_touched": false,
+    "subagents_or_workers_started": false
+  },
+  "cleanup": {
+    "removed_only_explicit_validation_generated_cache_files": [
+      ".codex-work/merge-candidate-v4/backend/openclaw_app/__pycache__/server_cli.cpython-313.pyc",
+      ".codex-work/merge-candidate-v4/backend/openclaw_app/services/__pycache__/capability_input_contracts.cpython-313.pyc",
+      ".codex-work/merge-candidate-v4/backend/openclaw_app/services/__pycache__/material_parsing.cpython-313.pyc",
+      ".codex-work/merge-candidate-v4/backend/openclaw_app/services/__pycache__/media_web_tasks.cpython-313.pyc",
+      ".codex-work/merge-candidate-v4/backend/tests/__pycache__/test_material_parsing.cpython-313.pyc",
+      ".codex-work/merge-candidate-v4/backend/tests/__pycache__/test_media_web_tasks.cpython-313.pyc"
+    ],
+    "preexisting_cache_files_retained": 2
+  },
+  "structured_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/returns/C4-MATERIAL-PARSING-BACKEND-luna.json",
+  "unverified_items": [
+    "No remote production, device, or live external integration evidence was attempted; this is isolated candidate validation.",
+    "Independent human or release acceptance remains pending; C4 was not marked ACCEPTED.",
+    "The fixed Docker validation command is the acceptance evidence; no separate host pytest result is claimed."
+  ],
+  "risks": [
+    "Candidate-only evidence does not establish production readiness or a production receipt.",
+    "The retained preexisting cache files are outside the implementation source hash scope and were not modified."
+  ],
+  "production_not_touched": "No remote host, production snapshot, database, Feishu, account, credential, publication directory, or service configuration was touched."
+}

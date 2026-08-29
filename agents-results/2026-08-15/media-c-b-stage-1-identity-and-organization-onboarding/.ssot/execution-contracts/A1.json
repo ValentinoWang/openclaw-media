@@ -1,0 +1,28 @@
+{
+  "contract_id": "A1",
+  "schema_version": 1,
+  "node_id": "A1",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "work_kind": "fact-discovery",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:A"
+  ],
+  "write_set": [
+    "evidence:A1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:A1",
+      "mode": "W",
+      "isolation_key": "node:A1"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance A1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/A1-return.json"
+  ]
+}

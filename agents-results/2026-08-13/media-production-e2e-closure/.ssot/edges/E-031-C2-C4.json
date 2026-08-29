@@ -1,0 +1,1 @@
+{"edge_id":"E-031-C2-C4","from":"C2","to":"C4","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["integration.task-runner-receipt","merge.backend-current-production"],"transferred_input":"C2 已接受的后端仓储、执行器和收据实现","gate_evidence":"C2 36 文件候选清单"}

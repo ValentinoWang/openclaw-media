@@ -1,0 +1,115 @@
+{
+  "node_id": "T1",
+  "semantic_key": "media.stage1.acceptance-harness",
+  "stage": "B",
+  "work_kind": "acceptance-design",
+  "domain_lane": "shared-contracts",
+  "execution_state": "VERIFIED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "B",
+    "G1",
+    "M1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.stable-decisions",
+      "version": 2
+    },
+    {
+      "semantic_key": "media.stage1.decision.personal-auth-contract",
+      "version": 1
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.acceptance-harness.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "CA",
+    "CB",
+    "I8",
+    "I9",
+    "P10",
+    "P6",
+    "P9"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [],
+  "description": "Harness 不成为运行时分支或第二事实源",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "T1.json",
+  "execution_contract_sha256": "cb53b922f1a2f46dac4e4c599530343b993a7a43bc24ef7232c4af6a78fded0b",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-T1"
+  ],
+  "produced_artifact_ids": [
+    "ART-T1"
+  ],
+  "consumed_artifact_ids": [
+    "ART-B",
+    "DL-G1",
+    "DL-M1"
+  ],
+  "read_set": [
+    "artifact:B",
+    "artifact:G1",
+    "artifact:M1"
+  ],
+  "write_set": [
+    "artifact:T1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:T1",
+      "mode": "W",
+      "isolation_key": "node:T1"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance T1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-5",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "artifact:T1"
+    ]
+  },
+  "evidence_identity": {
+    "evidence_level": "local-runtime",
+    "source_revision": "stage1-t1-auth-routes-locked-2026-08-17",
+    "artifact_hashes": [
+      "sha256:775ddfa6fcfb5e04a931dfa5e03dfd08891365fc4491c16d8a6e49ede1c58611",
+      "sha256:13219785db38866e00387d4ce09553ef05c34ab21b5c6a4fbf9709f583d73009",
+      "sha256:6fa14dc5655ac77bd1a78bad0a132ff8ed81ac2fca8aafb2d5bb69448086f236",
+      "sha256:80759c80b90339095a255c5c1d6a831e4fbcd74e3e598fcd7a1ec8fe57d64e8d",
+      "sha256:da89e5418b471a255f0dc20e08085f7470f18875aefe1bb57453bca106019fac",
+      "sha256:d149a683ee0ef2825e5151005d0679f0d883e62b5810aeede637a5c87e7e1e6d"
+    ],
+    "environment_identity": "local macOS isolated stage1-t1 root with existing Python virtualenv",
+    "runtime_release_id": "n/a",
+    "actor_role": "main orchestrator deterministic rerun",
+    "account_or_tenant": "local fixtures only",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": true,
+    "observed_at": "2026-08-17T00:01:14+08:00",
+    "acceptance_contract": "共享路由验收合同（T1-AUTH-ROUTES）运行 20260817T031500Z-local-final-f4a5b6；T1 15 passed；路由一致性 GREEN；保护基线 LOCKED；正式接受待完成"
+  }
+}

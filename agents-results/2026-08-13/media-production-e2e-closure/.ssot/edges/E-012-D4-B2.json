@@ -1,0 +1,1 @@
+{"edge_id":"E-012-D4-B2","from":"D4","to":"B2","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["decision.release-capability-samples"],"transferred_input":"代表能力集合","gate_evidence":"D4 v2 已接受"}

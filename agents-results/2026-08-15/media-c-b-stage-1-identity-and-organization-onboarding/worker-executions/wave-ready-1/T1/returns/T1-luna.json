@@ -1,0 +1,167 @@
+{
+  "task_identity": {
+    "task_id": "T1",
+    "node_id": "T1",
+    "direct_parent": "T1 (media.stage1.acceptance-harness)",
+    "versions": {
+      "plan": 4,
+      "dag": 4,
+      "interface_freeze": 4,
+      "node_contract": 4,
+      "ssot_schema": 1
+    },
+    "readiness": "FORMAL",
+    "invalidation_key": "media.stage1.acceptance-harness.v4",
+    "task_source_sha256": "9c198b7d6fef6f05f0bd2df1327fff790a454b38f9b5f13f22f7c3a3425d965e",
+    "validation_command_sha256": "da89e5418b471a255f0dc20e08085f7470f18875aefe1bb57453bca106019fac"
+  },
+  "attempt_identity": {
+    "attempt_role": "luna",
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+    "worker_pid": null,
+    "worker_pid_note": "The supervisor wrapper PID was not exposed after bounded execution; final audit shell PID is recorded separately.",
+    "final_audit_shell_pid": 13662,
+    "validation_exec_session_id": 51953,
+    "focused_harness_exec_session_id": 56654,
+    "completed_at": "2026-08-16T13:16:25Z"
+  },
+  "scopes": {
+    "task_read_scope": [
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/T1.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/B.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/K6.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage1-t1 (read-only except listed write scope)"
+    ],
+    "policy_required_read_only_scope": [
+      "/Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md",
+      "/Users/vsiyo/.codex/skills/design-acceptance-contract/references/acceptance-contract-template.md",
+      "/Users/vsiyo/.codex/skills/design-acceptance-contract/references/human-acceptance-checklist-template.md",
+      "/Users/vsiyo/.codex/skills/design-acceptance-contract/references/human-acceptance-binding-template.md",
+      "/Users/vsiyo/.codex/memories/MEMORY.md",
+      "/Users/vsiyo/.codex/memories/rollout_summaries/2026-08-15T09-09-50-jONG-phase1_cb_identity_organization_ssot_k6_auth_contract.md"
+    ],
+    "write_scope": [
+      "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+      "backend/contracts/stage1_acceptance_contract.json",
+      "backend/tests/test_stage1_acceptance_harness.py",
+      "backend/tests/fixtures/stage1_acceptance/**",
+      "acceptance/human/stage1/binding.md",
+      "acceptance/human/stage1/checklist.md",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-executions/wave-ready-1/T1/returns/T1-luna.json"
+    ],
+    "forbidden_scope_respected": true
+  },
+  "changed_files": [
+    {
+      "path": "backend/openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+      "sha256": "sha256:9af50f273ae7e984b713fd9bce8041fba34f3b9339e79a80bea04c93b2126142"
+    },
+    {
+      "path": "backend/contracts/stage1_acceptance_contract.json",
+      "sha256": "sha256:1fb94ad3f86f4a7f966d7c3156be9a3df89774039af1b56b89b8eefaa2ad26d2"
+    },
+    {
+      "path": "backend/tests/test_stage1_acceptance_harness.py",
+      "sha256": "sha256:2cd43ce0c835a7a140b73a00307985f58db257d6ec7af14df0e3fa8a3dc79097"
+    },
+    {
+      "path": "backend/tests/fixtures/stage1_acceptance/cases.json",
+      "sha256": "sha256:22d7b27340a8745836659b0e3f6de5b31438d00d5c089fac7475b0425253770e"
+    },
+    {
+      "path": "backend/tests/fixtures/stage1_acceptance/evidence.json",
+      "sha256": "sha256:214aa62ab9e14488f995a546b8afe48accbe08f710e6927c7770e3fdb6c234ba"
+    },
+    {
+      "path": "backend/tests/fixtures/stage1_acceptance/manifest.json",
+      "sha256": "sha256:0b3057f70336a18b2ccc13cf718411aef86a44d252b6c13a479355e4a1ac33bb"
+    },
+    {
+      "path": "backend/tests/fixtures/stage1_acceptance/README.md",
+      "sha256": "sha256:cc9bc23d9b9294e2bcc7ad0aa1c1011b7251da81395678dce783b32dff69047f"
+    },
+    {
+      "path": "acceptance/human/stage1/binding.md",
+      "sha256": "sha256:d447cece25cda0126e3a80bd4225a022b388f96aece1ebd12be919d227315040"
+    },
+    {
+      "path": "acceptance/human/stage1/checklist.md",
+      "sha256": "sha256:26574387db5fa5b2347715292afa7a2e1c8720ed6f81c1293ca2680690903648"
+    }
+  ],
+  "commands": [
+    {
+      "command": "bash /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/T1.sh",
+      "result": "pass",
+      "exit_code": 0,
+      "summary": "14 passed"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -q -p no:cacheprovider tests/test_stage1_acceptance_harness.py",
+      "result": "pass",
+      "exit_code": 0,
+      "summary": "7 passed"
+    },
+    {
+      "command": "read-only changed-path, manifest-hash, contract-hash and binding-hash audit",
+      "result": "pass",
+      "exit_code": 0,
+      "summary": "9 owned files, no unexpected paths, hash bindings pass"
+    }
+  ],
+  "candidate_protected_test_hashes": [
+    {
+      "path": "backend/tests/test_stage1_acceptance_harness.py",
+      "sha256": "sha256:2cd43ce0c835a7a140b73a00307985f58db257d6ec7af14df0e3fa8a3dc79097",
+      "status": "CANDIDATE_PENDING_MAIN_ORCHESTRATOR_ACCEPTANCE"
+    },
+    {
+      "path": "backend/tests/fixtures/stage1_acceptance/manifest.json",
+      "sha256": "sha256:0b3057f70336a18b2ccc13cf718411aef86a44d252b6c13a479355e4a1ac33bb",
+      "status": "CANDIDATE_PENDING_MAIN_ORCHESTRATOR_ACCEPTANCE"
+    }
+  ],
+  "evidence_identities": [
+    {"evidence_id": "EV-T1-FIXTURE-AUTH", "evidence_level": "fixture", "mock_or_fixture": true},
+    {"evidence_id": "EV-T1-FIXTURE-TOKENS", "evidence_level": "fixture", "mock_or_fixture": true},
+    {"evidence_id": "EV-T1-FIXTURE-EXTERNAL", "evidence_level": "fixture", "mock_or_fixture": true},
+    {"evidence_id": "EV-T1-FIXTURE-ENUM", "evidence_level": "fixture", "mock_or_fixture": true},
+    {"evidence_id": "EV-T1-FIXTURE-RESET", "evidence_level": "fixture", "mock_or_fixture": true},
+    {"evidence_id": "EV-T1-FIXTURE-RATE", "evidence_level": "fixture", "mock_or_fixture": true},
+    {"evidence_id": "EV-T1-FIXTURE-SESSION", "evidence_level": "fixture", "mock_or_fixture": true},
+    {"evidence_id": "EV-T1-FIXTURE-CSRF", "evidence_level": "fixture", "mock_or_fixture": true},
+    {"evidence_id": "EV-T1-FIXTURE-ORG", "evidence_level": "fixture", "mock_or_fixture": true},
+    {"evidence_id": "EV-T1-FIXTURE-AUTHZ", "evidence_level": "fixture", "mock_or_fixture": true},
+    {"evidence_id": "EV-T1-FIXTURE-LEGACY", "evidence_level": "fixture", "mock_or_fixture": true}
+  ],
+  "external_side_effects": [],
+  "destructive_actions": [],
+  "unverified_items": [
+    "No product runtime behavior was implemented or exercised by T1.",
+    "No real email provider, Feishu organization, network, database or production system was contacted.",
+    "Fixture evidence proves contract and negative-case coverage only; it does not prove runtime, deployment, external-system or production acceptance.",
+    "The contract, checklist and candidate protected-test baseline await main-orchestrator acceptance and are not APPROVED or LOCKED.",
+    "Human checklist execution and real browser/external readback evidence remain for their owning acceptance nodes."
+  ],
+  "deviation": {
+    "status": "none",
+    "note": "Authentication operations were registered inside the existing shared extension so the existing frozen 82-path surface and shared-contract assertions remain unchanged; no second OpenAPI carrier was created."
+  },
+  "shared_resource_impact": {
+    "shared_openapi_carrier": "extended in place",
+    "existing_stage1_paths_preserved": true,
+    "existing_shared_contract_test_modified": false,
+    "product_runtime_modified": false,
+    "other_workers_started": false
+  },
+  "remaining_risks": [
+    "A later implementation must bind the registered operations without adding a second authority or reopening legacy Media password routes.",
+    "Runtime gates must prove real token storage, session rotation, CSRF binding, rate limits, tenant authorization and external readback; fixtures alone cannot prove them.",
+    "Main-orchestrator acceptance is required before treating the candidate contract or protected test baseline as approved or locked."
+  ],
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none"
+}

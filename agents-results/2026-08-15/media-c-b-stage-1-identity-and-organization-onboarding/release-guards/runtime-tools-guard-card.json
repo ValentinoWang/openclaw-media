@@ -1,0 +1,41 @@
+{
+  "schema_version": "harness-guard-card-v1",
+  "guard_id": "OPENCLAW-MEDIA-DEPLOY-RUNTIME-TOOLS-V1",
+  "owner": "OpenClaw Media production release entrypoint",
+  "failure_class": "deployment infrastructure runtime tool resolution",
+  "severity": "blocking",
+  "trigger": "every normal invocation of /usr/local/sbin/deploy-openclaw-media-locked",
+  "scope": {
+    "included": [
+      "managed Node and npm executables used by the source snapshot and isolated frontend build"
+    ],
+    "excluded": [
+      "product source behavior",
+      "database migrations",
+      "external system writes",
+      "historical release policy self-test"
+    ]
+  },
+  "root_cause": "the release contract invokes bare node while sudo secure_path omits the managed NVM Node directory",
+  "source_fix": "the locked deployment entrypoint validates the managed Node directory and makes it authoritative before snapshotting source",
+  "failure_output_contract": [
+    "tool path",
+    "rule=runtime-tools",
+    "reason",
+    "repair guidance"
+  ],
+  "red_proof": {
+    "command": "env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin OPENCLAW_MEDIA_NODE_BIN_DIR=/tmp/openclaw-media-missing-node-bin deploy-openclaw-media-locked --self-test-runtime-tools",
+    "exit_code": 2,
+    "result": "missing managed node is rejected before deployment"
+  },
+  "green_proof": {
+    "command": "env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin deploy-openclaw-media-locked --self-test-runtime-tools",
+    "exit_code": 0,
+    "result": "node v22.22.2 and npm 10.9.7 are resolved from the managed runtime"
+  },
+  "repair_skill": "quality-gate-triage",
+  "repair_path": "restore /home/ubuntu/.nvm/versions/node/v22.22.2/bin or update the managed runtime path after validating both self-test cases",
+  "evidence_level": "remote-runtime",
+  "production_data_touched": false
+}

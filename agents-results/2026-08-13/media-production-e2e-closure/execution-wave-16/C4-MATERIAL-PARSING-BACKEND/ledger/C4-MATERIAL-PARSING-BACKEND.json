@@ -1,0 +1,122 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND",
+  "attempts": [
+    {
+      "attempt_role": "luna",
+      "classification": {
+        "attempt": "luna",
+        "decision": "complete",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/prompts/C4-MATERIAL-PARSING-BACKEND-luna.txt)"
+      ],
+      "ended_at": "2026-08-15T10:19:16.663820+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/logs/C4-MATERIAL-PARSING-BACKEND-luna.log",
+      "pid": 33734,
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/prompts/C4-MATERIAL-PARSING-BACKEND-luna.txt",
+      "prompt_sha256": "6902d71233d31d968857e95d8d244fa78ebb3ccdb69035e58558a92e7cd8a306",
+      "started_at": "2026-08-15T09:54:47.112586+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "attempt_role": "luna",
+        "cleanup": {
+          "preexisting_cache_files_retained": 2,
+          "removed_only_explicit_validation_generated_cache_files": [
+            ".codex-work/merge-candidate-v4/backend/openclaw_app/__pycache__/server_cli.cpython-313.pyc",
+            ".codex-work/merge-candidate-v4/backend/openclaw_app/services/__pycache__/capability_input_contracts.cpython-313.pyc",
+            ".codex-work/merge-candidate-v4/backend/openclaw_app/services/__pycache__/material_parsing.cpython-313.pyc",
+            ".codex-work/merge-candidate-v4/backend/openclaw_app/services/__pycache__/media_web_tasks.cpython-313.pyc",
+            ".codex-work/merge-candidate-v4/backend/tests/__pycache__/test_material_parsing.cpython-313.pyc",
+            ".codex-work/merge-candidate-v4/backend/tests/__pycache__/test_media_web_tasks.cpython-313.pyc"
+          ]
+        },
+        "failure_class": "none",
+        "frozen_input_proof": {
+          "authoritative_contract_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+          "candidate_contract_byte_identical": true,
+          "candidate_contract_sha256": "24452e8b621fa3a797b7efba6c03a48aad86f3436193fbef38794bcf4de54f56",
+          "task_source_sha256": "d5f155f47ab08440f80e5e476a1692becb47fe8a22939bead0aec91377e92172",
+          "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/validation/C4-MATERIAL-PARSING-BACKEND.sh",
+          "validation_command_sha256": "301e62e40c9dbc68269d5b16395ea8b1dfcf1c042eac835514591a8a30a85bb9"
+        },
+        "implementation_modified_files": [
+          ".codex-work/merge-candidate-v4/backend/contracts/material-parsing-coverage-v1.json",
+          ".codex-work/merge-candidate-v4/backend/openclaw_app/services/material_parsing.py",
+          ".codex-work/merge-candidate-v4/backend/openclaw_app/services/media_web_tasks.py",
+          ".codex-work/merge-candidate-v4/backend/openclaw_app/services/capability_input_contracts.py",
+          ".codex-work/merge-candidate-v4/backend/openclaw_app/server_cli.py",
+          ".codex-work/merge-candidate-v4/backend/openclaw_app/contracts/media_web_tasks.openapi.yaml",
+          ".codex-work/merge-candidate-v4/backend/tests/test_material_parsing.py",
+          ".codex-work/merge-candidate-v4/backend/tests/test_media_web_tasks.py"
+        ],
+        "production_not_touched": "No remote host, production snapshot, database, Feishu, account, credential, publication directory, or service configuration was touched.",
+        "proposed_state": "VERIFIED",
+        "risks": [
+          "Candidate-only evidence does not establish production readiness or a production receipt.",
+          "The retained preexisting cache files are outside the implementation source hash scope and were not modified."
+        ],
+        "schema_version": 1,
+        "scope_audit": {
+          "database_feishu_account_or_credentials_touched": false,
+          "forbidden_scope_touched": false,
+          "frontend_candidate_written": false,
+          "production_snapshot_written": false,
+          "publication_directory_or_service_configuration_touched": false,
+          "remote_production_touched": false,
+          "ssot_or_authoritative_contract_written": false,
+          "subagents_or_workers_started": false
+        },
+        "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/returns/C4-MATERIAL-PARSING-BACKEND-luna.json",
+        "task_id": "C4-MATERIAL-PARSING-BACKEND",
+        "unverified_items": [
+          "No remote production, device, or live external integration evidence was attempted; this is isolated candidate validation.",
+          "Independent human or release acceptance remains pending; C4 was not marked ACCEPTED.",
+          "The fixed Docker validation command is the acceptance evidence; no separate host pytest result is claimed."
+        ],
+        "validation": {
+          "command": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/validation/C4-MATERIAL-PARSING-BACKEND.sh",
+          "exit_code": 0,
+          "result": "37 passed in 2.37s; C4 material parsing backend validation passed"
+        }
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/returns/C4-MATERIAL-PARSING-BACKEND-luna.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "d5f155f47ab08440f80e5e476a1692becb47fe8a22939bead0aec91377e92172",
+      "timed_out": false,
+      "validation_command_sha256": "301e62e40c9dbc68269d5b16395ea8b1dfcf1c042eac835514591a8a30a85bb9",
+      "validation_ended_at": "2026-08-15T10:19:19.053534+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/logs/C4-MATERIAL-PARSING-BACKEND-luna.validation.log",
+      "validation_pid": 62630,
+      "validation_started_at": "2026-08-15T10:19:16.684854+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-15T10:19:19.119379+00:00",
+  "final_decision": "complete",
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "luna_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "maximum_escalations": 1,
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent",
+  "schema_version": 1,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-15T09:54:47.111474+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/tasks/C4-MATERIAL-PARSING-BACKEND.md",
+  "task_id": "C4-MATERIAL-PARSING-BACKEND",
+  "task_sha256": "d5f155f47ab08440f80e5e476a1692becb47fe8a22939bead0aec91377e92172",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-16/C4-MATERIAL-PARSING-BACKEND/validation/C4-MATERIAL-PARSING-BACKEND.sh",
+  "validation_command_sha256": "301e62e40c9dbc68269d5b16395ea8b1dfcf1c042eac835514591a8a30a85bb9",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

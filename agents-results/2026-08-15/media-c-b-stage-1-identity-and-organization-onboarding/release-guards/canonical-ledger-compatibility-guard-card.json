@@ -1,0 +1,10 @@
+{
+  "guard_id": "CANONICAL-LEDGER-COMPATIBILITY-V1",
+  "failure_class": "production canonical ledger contains an immutable historical migration row absent from a successor manifest",
+  "trigger": "official PostgreSQL migration runner manifest validation, apply, and verify",
+  "scope": "only exact rows declared by canonicalLedgerCompatibility; active migration inventory and unknown-row rejection remain unchanged",
+  "red_proof": "an undeclared extra row, checksum drift, dependency drift, missing dependency, duplicate declaration, or active-ID shadow is rejected",
+  "green_proof": "the exact cm1-037-affiliate-profile-coverage row is accepted when present, while empty databases execute only active migrations",
+  "repair": "declare the historical row with exact id, checksum, dependencies, source checksum, and reason in both base and successor manifests; never mutate the ledger",
+  "test": ".codex-work/stage1-integrated/backend/tests/test_postgres_migration_canonical_compatibility.py"
+}

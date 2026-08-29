@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-060-I6-I8",
+  "from": "I6",
+  "to": "I8",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.i6.i8.v5"
+  ],
+  "transferred_input": "服务端授权与审计日志",
+  "gate_evidence": "近期活动与其他私有资料使用同一租户边界",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-I6"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "I8 consumes the explicitly produced artifact DL-I6"
+}

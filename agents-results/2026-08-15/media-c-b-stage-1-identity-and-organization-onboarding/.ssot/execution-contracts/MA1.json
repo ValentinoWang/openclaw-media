@@ -1,0 +1,31 @@
+{
+  "contract_id": "MA1",
+  "schema_version": 1,
+  "node_id": "MA1",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "work_kind": "data-change",
+  "write_authority": "implementation",
+  "read_set": [
+    "artifact:B",
+    "artifact:G1",
+    "artifact:K4",
+    "artifact:M1"
+  ],
+  "write_set": [
+    "artifact:MA1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:MA1",
+      "mode": "W",
+      "isolation_key": "node:MA1"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -m pytest -q"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/MA1-return.json"
+  ]
+}

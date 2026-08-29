@@ -1,0 +1,1 @@
+{"edge_id":"E-005-A1-D4","from":"A1","to":"D4","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["decision.release-capability-samples"],"transferred_input":"当前能力与真实执行连接点","gate_evidence":"A1 事实台账"}

@@ -1,0 +1,111 @@
+{
+  "task_id": "C3-FRONTEND-VERIFY-R3",
+  "attempt_role": "l3",
+  "proposed_state": "FAILED",
+  "acceptance_self_check": "fail",
+  "failure_class": "verification",
+  "structured_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C3-FRONTEND-VERIFY-R3/returns/C3-FRONTEND-VERIFY-R3-l3.json",
+  "validation": {
+    "command": "bash /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C3-FRONTEND-VERIFY-R3/validation/C3-FRONTEND-VERIFY-R3.sh",
+    "script": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C3-FRONTEND-VERIFY-R3/validation/C3-FRONTEND-VERIFY-R3.sh",
+    "expected_sha256": "a8c81d0e6e622c0273ec852b677bafe1b47edd3f5d5418c6a573858d640f322a",
+    "observed_sha256": "a8c81d0e6e622c0273ec852b677bafe1b47edd3f5d5418c6a573858d640f322a",
+    "exit_code": 1,
+    "failure_stage": "docker image label inspection before scratch copy and container launch",
+    "error": "template parsing error: template: :1: unexpected backslash in operand",
+    "frozen_supervisor_unchanged": true,
+    "pre_failure_frozen_checks": "passed"
+  },
+  "frozen_inputs": {
+    "ssot_manifest_sha256": "c6aca57fc2676e8a51704bb607c84245a0e55681bd4202270e659a8290ce9782",
+    "b1_node_sha256": "cd561d9e4d8b2184b4932da81fc143ae105bf917fc0e520849b6547ca92fabbc",
+    "b1_execution_state": "ACCEPTED",
+    "c3_node_sha256": "eacf1c368b583ff4f512ec217fad6ed0110613e15107ec22b9842923aa3ec7f3",
+    "c3_execution_state": "READY",
+    "c3_readiness_mode": "FORMAL",
+    "b1_contract_sha256": "a0feedc825fff609f3cd72cbe7a0705ee0f0276fa18209a7f6192d4393984fdc",
+    "production_frontend_manifest_sha256": "7e27523e6fbb3f5297a15917672ad03082e3c7b919cb99fccf9cba738bc80f14",
+    "c2_manifest_sha256": "23d4017ba54422ba30f1aceb88ff34b2d0a034470d1bb70b9015e95613abe927",
+    "image_dockerfile_sha256": "b1b7ea34b23463f79bed155c30e112f440d908baa8eb1c768522b26b3baf952d",
+    "image_build_receipt_sha256": "d8741b8c05a0ee5b36cb4fc8f748eccb3225e535d84180168335f8f1749cae2a"
+  },
+  "candidate_manifests": {
+    "frontend": {
+      "sha256": "17fa19526a96ff2c82df5cd57e162675511a1a9a36718ad186c4d4d619ffa51f",
+      "managed_entry_count": 197,
+      "post_failure_hash_read": "passed",
+      "post_failure_content_check": "passed"
+    },
+    "backend": {
+      "sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+      "managed_entry_count": 562,
+      "post_failure_hash_read": "passed",
+      "post_failure_content_check": "passed"
+    }
+  },
+  "image": {
+    "id": "sha256:edb4dc9c110bb4b0303d7e85d2f3e73e9dd1a777282c10c73fc664c6d6557db3",
+    "architecture": "arm64",
+    "os": "linux",
+    "base_digest": "sha256:824f1a789072e648c62541c2cfa4479c4061a290d5c27766d67dc1dcbc19b321",
+    "frontend_lock_sha256": "f3dd4e9e3671ff2d774938b96bfacf083bdfaad454ee19d8effc9d5b96541dd7"
+  },
+  "network": {
+    "requested_mode": "none",
+    "container_created": false,
+    "network_isolation_executed": false,
+    "reason": "validation stopped before docker run"
+  },
+  "command_exit_codes": {
+    "frozen_validation_script": 1,
+    "post_failure_frozen_hash_rechecks": 0,
+    "post_failure_frontend_manifest_check": 0,
+    "post_failure_backend_manifest_check": 0,
+    "post_failure_frontend_content_check": 0,
+    "post_failure_backend_content_check": 0,
+    "post_failure_image_identity_read": 0,
+    "post_failure_cleanup_checks": 0
+  },
+  "cleanup": {
+    "docker_container": "not-created; runtime name prefix was c3-frontend-verify-r3-<shell-pid>",
+    "docker_container_remaining": false,
+    "matching_tmp_residue_remaining": false,
+    "scratch_directory_created": false,
+    "trap_ran": true
+  },
+  "unverified": [
+    "container Bash version, flock, and python3 checks",
+    "offline npm ci",
+    "media login contract",
+    "contextual capability launch with backend registry",
+    "recent task presentation QA",
+    "TypeScript compilation",
+    "npm run build:media",
+    "container network-none runtime proof",
+    "script post-container candidate content and hash checks",
+    "final validation success sentinel"
+  ],
+  "scope": {
+    "read": [
+      "frozen SSOT manifest and B1/C3 node files under the media-production-e2e-closure bundle",
+      "MPE2E-AUTH-WEB acceptance contract",
+      "production frontend baseline manifest and source tree",
+      "C2 post-repair source manifest",
+      "frontend and backend candidate trees, manifests, and merge provenance",
+      "frozen image Dockerfile, build receipt, and Docker image metadata",
+      "frozen C3 validation script"
+    ],
+    "persistent_write": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C3-FRONTEND-VERIFY-R3/returns/C3-FRONTEND-VERIFY-R3-l3.json",
+    "other_persistent_writes": [],
+    "temporary_write": "none; scratch directory was not created",
+    "candidate_bytes_modified": false,
+    "validation_script_modified": false,
+    "remote_or_production_side_effects": false,
+    "workers_started": false
+  },
+  "risk": "The frozen supervisor reaches Docker label inspection with a backslash-escaped Go-template quote and Docker rejects it. Runtime and frontend acceptance gates did not execute. C3 remains unverified until the authority owner supplies a corrected frozen validation command; no acceptance behavior was weakened.",
+  "sensitive_information_boundary": {
+    "secrets_cookies_tokens_passwords_private_text_written": false,
+    "logs_and_return_contain_only": "paths, hashes, image metadata, exit codes, cleanup state, and the non-sensitive Docker parser error"
+  }
+}

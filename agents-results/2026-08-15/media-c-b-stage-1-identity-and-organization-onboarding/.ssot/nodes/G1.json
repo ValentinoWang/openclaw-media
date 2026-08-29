@@ -1,0 +1,105 @@
+{
+  "node_id": "G1",
+  "semantic_key": "media.stage1.runner-capability-gate",
+  "stage": "A",
+  "work_kind": "foundation",
+  "domain_lane": "execution-governance",
+  "execution_state": "ACCEPTED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "GA1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.runner-capability-gate.v5"
+  ],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "execution environment owner",
+  "unlocks": [
+    "I1",
+    "I2",
+    "I9",
+    "M1",
+    "MA1",
+    "MB1",
+    "T1"
+  ],
+  "worker_transport": "deterministic-local",
+  "worker_registration": {
+    "executor": "outer orchestrator",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "command": "python3 tools/verify_runner_profiles.py --all --fail-closed",
+    "task_argument": "在 GA1 完成后只读验证五类配置。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/G1.json",
+    "determinism_key": "runner-profile-registry-plus-negative-capability-probes",
+    "dispatch_state": "EXITED",
+    "note": "deterministic local execution; zero Codex processes"
+  },
+  "runtime_profile_requirement": "none",
+  "related_evidence_ids": [],
+  "description": "G1 不创建或修复配置；现有 danger-full-access wrapper 不构成隔离证明",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "G1.json",
+  "execution_contract_sha256": "d66494058d858c6e0e8f284973e5c425ef2335fbc8e46ea0ef2818dc3ea880dc",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-G1"
+  ],
+  "produced_artifact_ids": [
+    "ART-G1"
+  ],
+  "consumed_artifact_ids": [
+    "DL-GA1"
+  ],
+  "read_set": [
+    "artifact:GA1"
+  ],
+  "write_set": [
+    "artifact:G1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:G1",
+      "mode": "W",
+      "isolation_key": "node:G1"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 tools/verify_runner_profiles.py --all --fail-closed"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/G1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-3",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "artifact:G1"
+    ]
+  },
+  "evidence_identity": {
+    "evidence_level": "local-runtime",
+    "source_revision": "sha256:ad3af167b07dd0287ea1f22dd3f90d893d7cffee16aea5082303d7e7b331e0ed",
+    "artifact_hashes": [
+      "sha256:30f15c7c9999b9d2100906aaf364e38412adeec60fb7a43263f6de6f363b5bb7",
+      "sha256:a9ee7f1b32c33755eda946df8cc9ed7e6edd181742defd955777766dd52ea8c9"
+    ],
+    "environment_identity": "local runner profile capability probes",
+    "runtime_release_id": "n/a",
+    "actor_role": "outer orchestrator deterministic verification",
+    "account_or_tenant": "local fixtures only",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": true,
+    "observed_at": "2026-08-16T07:36:47.577035+00:00",
+    "acceptance_contract": "五种配置均有真实启动命令、能力边界和失败关闭证据"
+  }
+}

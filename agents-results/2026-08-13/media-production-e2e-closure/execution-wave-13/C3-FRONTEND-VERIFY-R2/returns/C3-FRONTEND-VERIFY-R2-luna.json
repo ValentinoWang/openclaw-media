@@ -1,0 +1,89 @@
+{
+  "task_id": "C3-FRONTEND-VERIFY-R2",
+  "attempt_role": "luna",
+  "proposed_state": "FAILED",
+  "acceptance_self_check": "fail",
+  "failure_class": "verification",
+  "validation": {
+    "script": "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-13/C3-FRONTEND-VERIFY-R2/validation/C3-FRONTEND-VERIFY-R2.sh",
+    "script_sha256": "173d95f6f39f81d18865186eda3429028ff95a62c1e5bfc95d6ebc29aaf11b0d",
+    "exit_code": 1,
+    "container_commands": [
+      {
+        "command": "npm ci --ignore-scripts --no-audit --no-fund",
+        "exit_code": 0
+      },
+      {
+        "command": "npm run qa:media-login-contract",
+        "exit_code": 0
+      },
+      {
+        "command": "npm run qa:contextual-capability-launches",
+        "exit_code": 1,
+        "error": "spawnSync python3 ENOENT"
+      },
+      {
+        "command": "node_modules/.bin/tsc --noEmit -p tsconfig.media-u12b.json",
+        "status": "not_reached"
+      },
+      {
+        "command": "npm run build:media",
+        "status": "not_reached"
+      }
+    ]
+  },
+  "frozen_input_checks": {
+    "ssot_manifest_sha256": "c6aca57fc2676e8a51704bb607c84245a0e55681bd4202270e659a8290ce9782",
+    "b1_sha256": "cd561d9e4d8b2184b4932da81fc143ae105bf917fc0e520849b6547ca92fabbc",
+    "c3_sha256": "eacf1c368b583ff4f512ec217fad6ed0110613e15107ec22b9842923aa3ec7f3",
+    "auth_contract_sha256": "a0feedc825fff609f3cd72cbe7a0705ee0f0276fa18209a7f6192d4393984fdc",
+    "production_baseline_manifest_sha256": "7e27523e6fbb3f5297a15917672ad03082e3c7b919cb99fccf9cba738bc80f14",
+    "c2_manifest_sha256": "23d4017ba54422ba30f1aceb88ff34b2d0a034470d1bb70b9015e95613abe927",
+    "candidate_manifest_sha256": "17fa19526a96ff2c82df5cd57e162675511a1a9a36718ad186c4d4d619ffa51f",
+    "candidate_entry_count": 197,
+    "status": "pre_container_checks_passed; post_build_checks_not_reached"
+  },
+  "image": {
+    "reference": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:824f1a789072e648c62541c2cfa4479c4061a290d5c27766d67dc1dcbc19b321",
+    "os": "linux",
+    "architecture": "arm64",
+    "repo_digest_match": true
+  },
+  "scope": {
+    "read": [
+      ".ssot/manifest.json",
+      ".ssot/nodes/B1.json",
+      ".ssot/nodes/C3.json",
+      "acceptance-fragments/MPE2E-AUTH-WEB/acceptance-contract.md",
+      ".codex-work/production-baseline-20260814T084319Z/frontend/**",
+      ".codex-work/merge-candidate-v4/frontend/**",
+      "execution-wave-10/C2-V3-FINDINGS-REPAIR/baseline/postrepair-source.sha256",
+      "the files named by the frozen source manifests",
+      "the pinned Docker image metadata"
+    ],
+    "persistent_write": [
+      "agents-results/2026-08-13/media-production-e2e-closure/execution-wave-13/C3-FRONTEND-VERIFY-R2/returns/C3-FRONTEND-VERIFY-R2-luna.json"
+    ],
+    "ephemeral_write": [
+      "/tmp/c3-frontend-verify-r2.* candidate copy and container-mounted install",
+      "c3-frontend-verify-r2-* Docker container"
+    ],
+    "candidate_modified": false,
+    "remote_side_effect": false,
+    "forbidden_scope_touched": false
+  },
+  "cleanup": {
+    "temporary_directory": "clean; no /tmp/c3-frontend-verify-r2.* path remained",
+    "docker_container": "clean; no c3-frontend-verify-r2-* container remained",
+    "candidate_manifest_hash_after_failure": "17fa19526a96ff2c82df5cd57e162675511a1a9a36718ad186c4d4d619ffa51f",
+    "candidate_manifest_entries_after_failure": 197
+  },
+  "unverified": [
+    "qa:media-recent-task-presentation",
+    "TypeScript compilation",
+    "full npm run build:media",
+    "the fixed script's final post-build candidate source-manifest recheck"
+  ],
+  "risk": "The pinned image does not provide python3, so the frozen contextual-capability QA command cannot start. No C3 verification or acceptance claim is made.",
+  "sensitive_information_boundary": "No keys, cookies, tokens, passwords, or private user content were read, written, or included in logs or this return."
+}

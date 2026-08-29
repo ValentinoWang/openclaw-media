@@ -1,0 +1,117 @@
+{
+  "node_id": "MA1",
+  "semantic_key": "media.stage1.release1a-migration-owner",
+  "stage": "B",
+  "work_kind": "data-change",
+  "domain_lane": "release-1a-data",
+  "execution_state": "VERIFIED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "B",
+    "G1",
+    "K4",
+    "M1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage1.stable-decisions",
+      "version": 2
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage1.release1a-migration-owner.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "I3",
+    "I6"
+  ],
+  "worker_transport": "deterministic-local",
+  "worker_registration": {
+    "executor": "outer orchestrator",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "command": "bash agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/MA1.sh",
+    "task_argument": "实现并验证 Release 1A 独占迁移。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/deterministic-receipts/MA1-rerun-20260817.json",
+    "determinism_key": "stage1-ma1-source-plus-frozen-validation-command",
+    "dispatch_state": "EXITED",
+    "note": "deterministic local execution; zero Codex processes"
+  },
+  "runtime_profile_requirement": "implementation-runner",
+  "related_evidence_ids": [],
+  "description": "I3 与 I6 只消费 MA1 已接受 schema，不自行创建迁移",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "MA1.json",
+  "execution_contract_sha256": "5d65298965f949ba96684b4a8206aa5443924a52949d781c2457bd52f9ad899b",
+  "side_effect_class": "reversible",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-MA1"
+  ],
+  "produced_artifact_ids": [
+    "ART-MA1"
+  ],
+  "consumed_artifact_ids": [
+    "ART-B",
+    "DL-G1",
+    "DL-K4",
+    "DL-M1"
+  ],
+  "read_set": [
+    "artifact:B",
+    "artifact:G1",
+    "artifact:K4",
+    "artifact:M1"
+  ],
+  "write_set": [
+    "artifact:MA1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:MA1",
+      "mode": "W",
+      "isolation_key": "node:MA1"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -m pytest -q"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/MA1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-5",
+  "main_thread_write_exception": {
+    "reason": "orchestration-only generated evidence or projection write",
+    "approved_by": "SSOT orchestration owner",
+    "write_set": [
+      "artifact:MA1"
+    ]
+  },
+  "evidence_identity": {
+    "evidence_level": "local-runtime",
+    "source_revision": "stage1-ma1-migration-isolated-root-2026-08-17",
+    "artifact_hashes": [
+      "sha256:61e739379c9e81d3d1a5bb7239e3695d1d709e2109eb1fd816b078bacc6da475",
+      "sha256:6dd8c8034b8a3546c56bc53ac3454843f147ac35a3619037fa2d051de1efd5cd",
+      "sha256:1d8dc2dc6516bef8007d4f2903c28495bb29cab7cfb1ca8a38658f8321051de0",
+      "sha256:dc2dea9a677fb77f0db3c8c31f27aff04cefbfeac43e658fc402831510125943",
+      "sha256:8056704a4c314bd0965767d65fe0499f9b90e66820289be1581d8d7f33bcc28a"
+    ],
+    "environment_identity": "local macOS isolated stage1-ma1-migration root with existing Python virtualenv",
+    "runtime_release_id": "n/a",
+    "actor_role": "main orchestrator deterministic local execution",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": true,
+    "observed_at": "2026-08-17T00:47:00+08:00",
+    "acceptance_contract": "MA1 frozen validation receipt EV-MA1-RERUN-20260817; 27 passed, 3 subtests passed"
+  }
+}

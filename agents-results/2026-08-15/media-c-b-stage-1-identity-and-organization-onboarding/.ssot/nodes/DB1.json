@@ -1,0 +1,67 @@
+{
+  "node_id": "DB1",
+  "semantic_key": "media.stage1.release1a-production",
+  "stage": "D",
+  "work_kind": "validation",
+  "domain_lane": "release-1a",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "DA1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage1.release1a-production.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "runtime acceptance owner",
+  "unlocks": [
+    "DC1"
+  ],
+  "worker_transport": null,
+  "worker_registration": null,
+  "runtime_profile_requirement": "production-release-runner",
+  "related_evidence_ids": [],
+  "description": "外部动作只用幂等、回读、补偿和 NEEDS_ATTENTION",
+  "node_role": "acceptance-gate",
+  "execution_actor": "external-system",
+  "execution_contract_ref": "DB1.json",
+  "execution_contract_sha256": "4037c81a479f71735c5a5a3fb2da7643f5c2c5915b37585edb2242bc2011b1c0",
+  "side_effect_class": "reversible",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [
+    "DL-DB1"
+  ],
+  "produced_artifact_ids": [
+    "ART-DB1"
+  ],
+  "consumed_artifact_ids": [
+    "DL-DA1"
+  ],
+  "read_set": [
+    "artifact:DA1"
+  ],
+  "write_set": [
+    "evidence:DB1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DB1",
+      "mode": "W",
+      "isolation_key": "node:DB1"
+    }
+  ],
+  "actor_pool": "external-acceptance",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DB1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DB1-return.json"
+  ],
+  "release_slice": "REL-1A",
+  "wave_id": "W-1A-14"
+}

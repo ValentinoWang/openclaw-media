@@ -1,0 +1,158 @@
+{
+  "task_id": "C4-BACKEND-VERIFY-R3",
+  "attempt_role": "luna",
+  "task_source_sha256": "f36f84626563cea7b3440da3ebef204a502218c73eaa68391b7a55fbc637906e",
+  "proposed_state": "FAILED",
+  "acceptance_self_check": "partial",
+  "failure_class": "verification",
+  "validation_command": {
+    "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C4-BACKEND-VERIFY-R3/validation/C4-BACKEND-VERIFY-R3.sh",
+    "sha256": "bcbe02a26542fff5ebb868d5363c9bda5903ca8cb66aff45308fa96449edeb58",
+    "exit_code": 1
+  },
+  "failure": {
+    "stage": "local Docker image label preflight",
+    "message": "template parsing error: template: :1: unexpected \\\"\\\\\\\" in operand",
+    "cause": "The frozen script passes literal backslashes before the Go-template label quotes on validation lines 102-103. The first malformed label inspection failed before fixture creation, network creation, PostgreSQL startup, or the runner container.",
+    "source_or_candidate_modified": false,
+    "remote_or_production_touched": false
+  },
+  "frozen_input_checks": {
+    "ssot_manifest_sha256": "c6aca57fc2676e8a51704bb607c84245a0e55681bd4202270e659a8290ce9782",
+    "b1_sha256": "cd561d9e4d8b2184b4932da81fc143ae105bf917fc0e520849b6547ca92fabbc",
+    "c4_sha256": "e8d5102533b0597d7bff0a7d6469262fb48d6efe8e8a8c92b1561cab5f015b21",
+    "b1_contract_sha256": "a0feedc825fff609f3cd72cbe7a0705ee0f0276fa18209a7f6192d4393984fdc",
+    "c2_contract_sha256": "35143a0fb22218ebdcf969ee3a137431c37f21f90781db15572909e1dba0ca8b",
+    "c2_protected_test_sha256": "dee8b55304a60b4284462310f68f03099369af15071efc2fe5f39dcc8f67b73d",
+    "production_backend_manifest_sha256": "bca0dac2e657d0d1fd939c87645ad278fb6e9a049ac18429c11e714b5684e49b",
+    "c2_36_file_manifest_sha256": "23d4017ba54422ba30f1aceb88ff34b2d0a034470d1bb70b9015e95613abe927",
+    "candidate_manifest_sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+    "status": "all checks reached before the Docker label preflight failure passed"
+  },
+  "baseline": {
+    "total_entries": 786,
+    "persistent_entries": 550,
+    "transient_entries": 236,
+    "split_check": "pass",
+    "persistent_content_sha256_check": "pass",
+    "manifest_rewritten": false
+  },
+  "candidate": {
+    "candidate_manifest_sha256": "9519c707bb842bea97e46eb770300417467c10fc5f5c8ce6916182e1f7600018",
+    "managed_entry_count": 562,
+    "managed_content_sha256_check": "pass",
+    "symlink_count": 0,
+    "transient_residue": "none",
+    "source_written": false,
+    "tests_run_on_original_candidate": false
+  },
+  "runtime_identity": {
+    "image_id": "sha256:edb4dc9c110bb4b0303d7e85d2f3e73e9dd1a777282c10c73fc664c6d6557db3",
+    "architecture": "arm64",
+    "os": "linux",
+    "base_image_digest": "sha256:824f1a789072e648c62541c2cfa4479c4061a290d5c27766d67dc1dcbc19b321",
+    "frontend_lock_sha256": "f3dd4e9e3671ff2d774938b96bfacf083bdfaad454ee19d8effc9d5b96541dd7",
+    "image_identity_check": "id, architecture, OS, and corrected read-only label metadata matched; frozen label command itself failed on template parsing",
+    "network_name_pattern": "c4-backend-verify-r3-net-<pid>",
+    "network_created": false,
+    "postgres_container_name_pattern": "c4-backend-verify-r3-pg-<pid>",
+    "postgres_container_created": false,
+    "runner_container_name_pattern": "c4-backend-verify-r3-runner-<pid>",
+    "runner_container_created": false,
+    "external_network_access": "not reached; no validation network was created"
+  },
+  "fixture": {
+    "instantiated": false,
+    "planned_bots": ["knowledge"],
+    "planned_profiles": ["knowledge_delegate", "media_creation", "media_analysis", "content_cleaner"],
+    "planned_provider_base_url": "http://127.0.0.1:9",
+    "planned_model": "qa-model",
+    "planned_timeout_seconds": 1,
+    "content_cleaner_enabled": false,
+    "api_key": "fake placeholder only; value omitted",
+    "mount": "/home/ubuntu/selfmedia-tools/config/openclaw_bots.json:ro",
+    "production_config_read": false
+  },
+  "command_exit_codes": {
+    "frozen_script": 1,
+    "baseline_split_and_persistent_check": 0,
+    "c2_manifest_check": 0,
+    "candidate_integrity_check": 0,
+    "image_id_check": 0,
+    "image_architecture_check": 0,
+    "image_os_check": 0,
+    "image_base_label_check": 1,
+    "image_frontend_lock_label_check": null,
+    "python_version_and_import_self_check": null,
+    "py_compile": null,
+    "focused_unit_http_tests": null,
+    "postgres_migration_apply": null,
+    "postgres_focused_tests": null,
+    "postgres_migration_verify": null
+  },
+  "red_light_gates": [
+    {
+      "name": "task-run-v3-production-receipt",
+      "expected_exit_code": 3,
+      "observed_exit_code": null,
+      "status": "not_run"
+    },
+    {
+      "name": "auth-web-local-candidate-receipt",
+      "expected_exit_code": 20,
+      "observed_exit_code": null,
+      "status": "not_run"
+    },
+    {
+      "name": "auth-web-production-receipt",
+      "expected_exit_code": 20,
+      "observed_exit_code": null,
+      "status": "not_run"
+    }
+  ],
+  "cleanup": {
+    "trap_registered": true,
+    "containers_after_exit": [],
+    "networks_after_exit": [],
+    "validation_scratch_directories_after_exit": [],
+    "candidate_copy_created": false,
+    "cleanup_status": "pass; runtime objects and script scratch were not present after exit"
+  },
+  "read_write_scope": {
+    "read_scope": [
+      "frozen SSOT manifest, B1 and C4 node files",
+      "frozen B1 and C2 acceptance contracts",
+      "frozen C2 protected-test guard and C2 36-file manifest contents",
+      "production backend manifest and its 550 persistent file contents",
+      "backend candidate manifest and its 562 managed file contents",
+      "frozen validation script and wave image metadata files",
+      "local Docker image metadata"
+    ],
+    "write_scope": [
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-13/media-production-e2e-closure/execution-wave-14/C4-BACKEND-VERIFY-R3/returns/C4-BACKEND-VERIFY-R3-luna.json",
+      "/tmp/c4-backend-verify-r3.* transient validation area only"
+    ],
+    "candidate_source_written": false,
+    "production_snapshot_written": false,
+    "ssot_contract_or_protected_test_written": false,
+    "remote_host_feishu_account_or_release_written": false
+  },
+  "unverified": [
+    "fixed Python environment version/import self-check",
+    "Python compilation and focused authentication, HTTP, account binding, task, runner, migration, and tenant/owner tests",
+    "PostgreSQL 16 startup, migration apply, database tests, and migration verify",
+    "all three red-light gate exit codes 3, 20, and 20",
+    "actual fixture read-only mount and isolated internal-network enforcement"
+  ],
+  "risks": [
+    "C4 cannot be accepted from this attempt because the frozen validation script fails before runtime evidence is collected.",
+    "The required Docker label preflight must be corrected by the supervisor or an authorized contract update before rerun; no correction was made here."
+  ],
+  "sensitive_information_boundary": {
+    "real_production_config_read": false,
+    "secrets_cookies_tokens_passwords_in_return": false,
+    "private正文_in_return": false,
+    "fixture_is_keyless": true
+  },
+  "node_status_update": "not performed"
+}

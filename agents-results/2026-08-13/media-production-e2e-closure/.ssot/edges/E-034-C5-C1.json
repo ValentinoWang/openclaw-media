@@ -1,0 +1,1 @@
+{"edge_id":"E-034-C5-C1","from":"C5","to":"C1","dependency_type":"hard","dependency_scope":"specific-output","required_state":"ACCEPTED","assumption_ids":[],"invalidation_keys":["candidate.media-production-e2e-v4","integration.authenticated-web"],"transferred_input":"唯一哈希绑定候选","gate_evidence":"C5 已接受"}
