@@ -488,8 +488,6 @@ class ContentOSBridgeMixin:
         target_status = self._extract_labeled_value(message.raw_text, "目标状态") or self._extract_labeled_value(message.raw_text, "to")
         if target_status:
             target_status = re.split(r"\s+", target_status.strip(), maxsplit=1)[0]
-        if not target_status and current_status == "editing":
-            target_status = "final_ready"
         if not target_status:
             return {
                 "project_id": project_id,
@@ -514,9 +512,40 @@ class ContentOSBridgeMixin:
                     "to": target_status,
                     "reply": "项目仍在剪辑中：请先回传并接收本次成片质检结果，再确认标记成片就绪。",
                 }
-            # The accepted terminal review proves the output and its quality check;
-            # this passing acceptance route remains the required human selection.
-            evidence = {"output_video_exists", "output_review_evidence_exists", "human_final_selected"}
+            receipt = message.metadata.get("content_os_acceptance") if isinstance(message.metadata, dict) else None
+            if not isinstance(receipt, dict):
+                return {
+                    "project_id": project_id,
+                    "from": current_status,
+                    "to": target_status,
+                    "reply": "项目暂不标记成片就绪：缺少结构化验收收据，请提供真实成片路径、验收证据和人工确认。",
+                }
+            human_selected = receipt.get("human_final_selected") is True
+            review_evidence = receipt.get("output_review_evidence_exists") is True
+            output_video_path = str(receipt.get("output_video_path") or "").strip()
+            video_path = Path(output_video_path).expanduser() if output_video_path else None
+            video_exists = bool(
+                video_path
+                and video_path.is_absolute()
+                and video_path.is_file()
+                and video_path.stat().st_size > 0
+                and video_path.suffix.lower() in {".mp4", ".mov", ".m4v", ".avi", ".mkv", ".webm"}
+            )
+            evidence = set()
+            if human_selected:
+                evidence.add("human_final_selected")
+            if review_evidence:
+                evidence.add("output_review_evidence_exists")
+            if video_exists:
+                evidence.add("output_video_exists")
+            required_evidence = {"human_final_selected", "output_review_evidence_exists", "output_video_exists"}
+            if evidence != required_evidence:
+                return {
+                    "project_id": project_id,
+                    "from": current_status,
+                    "to": target_status,
+                    "reply": "项目暂不标记成片就绪：结构化收据中的人工确认、复核证据或真实视频文件不完整。",
+                }
         else:
             evidence = set()
         status_reply = self._maybe_advance_content_os_status(

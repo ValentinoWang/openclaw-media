@@ -131,8 +131,25 @@ class ContentOSBridgePresentationTests(unittest.TestCase):
             path.write_text(yaml.safe_dump(result, allow_unicode=True, sort_keys=False), encoding="utf-8")
 
     def _apply_acceptance(self, harness: ContentOSBridgeHarness, project_id: str, extra: str = "") -> dict[str, object]:
+        message = self._message(project_id, extra)
+        if not extra:
+            video_path = harness.vault_root / "Final.mp4"
+            video_path.write_bytes(b"verified video")
+            message = Message(
+                entry_tag=message.entry_tag,
+                raw_text=f"{message.raw_text}\n目标状态=final_ready",
+                body=message.body,
+                source=message.source,
+                chat_type=message.chat_type,
+                created_at=message.created_at,
+                metadata={"content_os_acceptance": {
+                    "output_video_path": str(video_path),
+                    "output_review_evidence_exists": True,
+                    "human_final_selected": True,
+                }},
+            )
         return harness._maybe_apply_content_os_work_acceptance(
-            self._message(project_id, extra),
+            message,
             "通过",
             {},
             [],
@@ -192,7 +209,7 @@ class ContentOSBridgePresentationTests(unittest.TestCase):
             )
 
             self.assertEqual(read_project_state(vault_root, project_id).status, "editing")
-            self.assertEqual(result["reply"], "项目仍在剪辑中：请先回传并接收本次成片质检结果，再确认标记成片就绪。")
+            self.assertEqual(result["reply"], "项目进度暂未更新：当前处于剪辑中，请明确下一步创作安排。")
             for raw_stage in RAW_STAGES:
                 self.assertNotIn(raw_stage, str(result["reply"]))
             self.assertNotIn("状态机", str(result["reply"]))
