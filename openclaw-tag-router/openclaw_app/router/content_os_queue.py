@@ -384,11 +384,14 @@ def accept_mac_result(
 ) -> AcceptedMacResult:
     """Store validated Mac evidence and close its task without altering project stage."""
 
-    task = validate_mac_result(vault_root, result, expected_tenant_id=expected_tenant_id)
     result_root = _queue_root(vault_root, RESULT_DIRECTORY)
     done_root = _queue_root(vault_root, DONE_DIRECTORY)
-    result_path = result_root / f"accepted_{task.task_id.removeprefix('task_')}_{task.task_type}.yaml"
-    done_path = done_root / f"{task.task_id}_{task.task_type}.yaml"
+    task_id = _safe_task_id(str(result.get("task_id") or ""))
+    task_type = str(result.get("task_type") or "").strip()
+    if task_type not in TASK_BACKENDS:
+        raise ContentOSContractError("Mac result 的 task_type 不受支持")
+    result_path = result_root / f"accepted_{task_id.removeprefix('task_')}_{task_type}.yaml"
+    done_path = done_root / f"{task_id}_{task_type}.yaml"
     if result_path.exists() or done_path.exists():
         # A retry after a lost acknowledgement is safe when it is byte-equivalent
         # to the evidence already committed. Changed evidence remains a conflict.
@@ -399,14 +402,18 @@ def accept_mac_result(
             existing = json.loads(json.dumps(stored_source, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
             if incoming == existing:
                 done_payload = _read_yaml(done_path)
+                if expected_tenant_id is not None:
+                    authenticated_tenant_id = _tenant_id(expected_tenant_id, name="authenticated tenant_id")
+                    if _tenant_id(result.get("tenant_id"), name="result tenant_id") != authenticated_tenant_id:
+                        raise ContentOSContractError("Mac result 的 tenant_id 与当前设备租户不一致；结果已拒绝")
                 return AcceptedMacResult(
                     task=ReadyTask(
-                        task_id=task.task_id,
-                        task_type=task.task_type,
-                        project_id=task.project_id,
-                        project_revision=task.project_revision,
-                        change_request_id=task.change_request_id,
-                        editor_backend=task.editor_backend,
+                        task_id=task_id,
+                        task_type=task_type,
+                        project_id=str(done_payload.get("project_id") or ""),
+                        project_revision=_as_revision(done_payload.get("project_revision"), name="done.project_revision"),
+                        change_request_id=str(done_payload.get("change_request_id") or ""),
+                        editor_backend=str(done_payload.get("editor_backend") or ""),
                         path=done_path,
                         payload=done_payload,
                     ),
@@ -414,6 +421,7 @@ def accept_mac_result(
                     done_task_path=done_path,
                 )
         raise ContentOSContractError("这个任务已有已接收的不同结果，不能覆盖原有证据")
+    task = validate_mac_result(vault_root, result, expected_tenant_id=expected_tenant_id)
     accepted_payload = dict(result)
     accepted_payload["accepted_by"] = "cloud_openclaw"
     accepted_payload["accepted_at"] = _now_iso(now)
