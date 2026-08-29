@@ -134,4 +134,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 
 - 生产轮询安装尝试（2026-08-29）：在 `/home/ubuntu/releases/openclaw-media-p1-1511254` 使用已确认租户 `618ff8c4-cc5a-4034-a2c5-226e3ad6cd37` 安装并启用 `selfmedia-account-daily-poll.timer`，调度为 `06:00 Asia/Shanghai`，systemd timer 回读为 `active (waiting)`。首次手动启动 service 失败，日志明确为“仅支持 v1 账号监控表；检测到 v2 CreatorProfile 行，已拒绝写入”，对应错误来自当前 release 的表类型门禁。当前使用的历史 `MEDIA_OS_CREATOR_PROFILES_V2_URL` 不能作为 `FEISHU_ACCOUNT_MONITOR_URL`；必须提供真正包含 `近期作品链接`/`作品链接`/`监控链接` 字段的 v1 监控表后才能产生日报和租户隔离 `account_daily_runs` 产物，故 `BIZ-05`、`CD-13` 仍为“部分修复”，不宣称最终验收通过。
 
+- 生产调度回滚（2026-08-29）：由于上述源表类型不匹配会造成确定性的重复失败，已执行 `systemctl --user disable --now selfmedia-account-daily-poll.timer`，当前 timer 为 `inactive (dead)`，保留 service/timer unit 与失败日志供后续复核；待 v1 监控表 URL 明确后重新启用，不把“unit 已生成”误记为生产运行完成。
+
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。上方 `31/7/11` 与“尚未复验 114 条”均为历史分片快照，不是当前实时总计；当前总计以 `dedup_p1.py --json` 输出的 `153/2/0` 为准。
