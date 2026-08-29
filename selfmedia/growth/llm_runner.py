@@ -241,9 +241,9 @@ class GrowthLLMJsonRunner:
             try:
                 assert bundle is not None
                 bundle.require_ready()
-            except KnowledgeEvidenceContractError:
+            except KnowledgeEvidenceContractError as exc:
                 return _pending_manual(
-                    "知识证据尚未满足本次增长任务条件，请补齐可验证资料后重试。",
+                    f"知识证据尚未满足本次增长任务条件：{exc}。请补齐可验证资料后重试。",
                     task=task,
                     evidence_bundle=bundle,
                 )
