@@ -11,11 +11,13 @@ import json
 import secrets
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from typing import Any, Callable, Iterator, Mapping, Sequence
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from common.canonical_digest import canonical_json as _shared_canonical_json
 
+from ..account.admin_audit import write_admin_audit
 from .stage1_organization_provisioning import (
     AdminConfirmationReceipt,
     AdminConfirmationRepository,
@@ -110,6 +112,12 @@ class _ConnectionStore:
         cursor = self.connection.cursor()
         cursor.execute(sql, tuple(params))
         return cursor
+
+    def _audit_connection(self) -> Any:
+        # write_admin_audit() calls connection.execute(sql, params) directly;
+        # route it through _execute() so the cursor-only connection fallback
+        # above still applies to admin_audit inserts.
+        return SimpleNamespace(execute=self._execute)
 
     @staticmethod
     def _one(result: Any) -> Any:
@@ -773,25 +781,20 @@ class _ConnectionStore:
             # omit it; retain an immutable machine receipt rather than inventing
             # a foreign-key session identity.
             return
-        self._execute(
-            """INSERT INTO openclaw_account.admin_audit
-               (id, actor_user_id, actor_session_id, action, target_user_id,
-                reason, metadata, target_tenant_id, target_public_tenant_id,
-                operation_id, idempotency_key, request_fingerprint)
-               VALUES (%s,%s,%s,'stage1.organization.confirm',%s,%s,%s::jsonb,%s,%s,%s,%s,%s)""",
-            (
-                receipt.confirmation_id,
-                receipt.owner_user_id,
-                session_id,
-                receipt.owner_user_id,
-                "Feishu 管理员确认组织安装",
-                _json({"openId": authorization.open_id, "tenantKey": receipt.tenant_key}),
-                receipt.tenant_id,
-                receipt.tenant_key,
-                _IDEMPOTENCY_OPERATION["confirmation"],
-                projection_key,
-                receipt.request_digest,
-            ),
+        write_admin_audit(
+            self._audit_connection(),
+            audit_id=receipt.confirmation_id,
+            actor_user_id=receipt.owner_user_id,
+            actor_session_id=session_id,
+            action="stage1.organization.confirm",
+            target_user_id=receipt.owner_user_id,
+            reason="Feishu 管理员确认组织安装",
+            metadata=_json({"openId": authorization.open_id, "tenantKey": receipt.tenant_key}),
+            target_tenant_id=receipt.tenant_id,
+            target_public_tenant_id=receipt.tenant_key,
+            operation_id=_IDEMPOTENCY_OPERATION["confirmation"],
+            idempotency_key=projection_key,
+            request_fingerprint=receipt.request_digest,
         )
 
     def save_confirmation(self, receipt: AdminConfirmationReceipt) -> None:
@@ -1270,11 +1273,20 @@ class _ConnectionStore:
     def write_deprovision_audit(self, receipt: DeprovisionReceipt, actor_user_id: UUID) -> None:
         if self.actor_session_id is None:
             return
-        self._execute(
-            """INSERT INTO openclaw_account.admin_audit
-               (id, actor_user_id, actor_session_id, action, target_user_id, reason, metadata, target_tenant_id, target_public_tenant_id, operation_id, idempotency_key, request_fingerprint)
-               VALUES (%s,%s,%s,'stage1.organization.deprovision',%s,%s,%s::jsonb,%s,%s,%s,%s,%s)""",
-            (receipt.receipt_id, actor_user_id, self.actor_session_id, actor_user_id, "停用组织接入并撤销本地访问", _json({"state": receipt.state.value}), receipt.tenant_id, str(receipt.tenant_id), _IDEMPOTENCY_OPERATION["deprovision"], _projection_key(receipt.idempotency_key), receipt.request_digest),
+        write_admin_audit(
+            self._audit_connection(),
+            audit_id=receipt.receipt_id,
+            actor_user_id=actor_user_id,
+            actor_session_id=self.actor_session_id,
+            action="stage1.organization.deprovision",
+            target_user_id=actor_user_id,
+            reason="停用组织接入并撤销本地访问",
+            metadata=_json({"state": receipt.state.value}),
+            target_tenant_id=receipt.tenant_id,
+            target_public_tenant_id=str(receipt.tenant_id),
+            operation_id=_IDEMPOTENCY_OPERATION["deprovision"],
+            idempotency_key=_projection_key(receipt.idempotency_key),
+            request_fingerprint=receipt.request_digest,
         )
 
     def mark_external_credential_revoked(self, receipt_id: UUID) -> DeprovisionReceipt:

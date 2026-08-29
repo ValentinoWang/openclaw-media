@@ -16,6 +16,8 @@ from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import unquote_to_bytes
 from uuid import UUID, uuid4
 
+from ...account.admin_audit import write_admin_audit
+
 SCHEMA_VERSION = "media_web_business_pages_v2"
 DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
@@ -330,13 +332,6 @@ SELECT run.public_id, run.canonical_data, run.created_at, run.updated_at, run.re
  ORDER BY run.updated_at DESC, run.public_id ASC
  LIMIT %s
 """
-
-_AUDIT_INSERT_SQL = """
-INSERT INTO openclaw_account.admin_audit(
-    id, actor_user_id, actor_session_id, action, target_user_id, reason, metadata
-) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
-"""
-
 
 class AdminTenantsService:
     """Expose B12's redacted tenant directory and audited tenant reads."""
@@ -654,15 +649,18 @@ class AdminTenantsService:
     ) -> None:
         if not target_tenant_id:
             raise AdminTenantsInternalError("audit target is missing")
-        connection.execute(
-            _AUDIT_INSERT_SQL,
-            (
-                uuid4(),
-                _uuid(context.actor_user_id),
-                _uuid(context.actor_session_id),
-                action,
-                target_user_id,
-                reason,
-                json.dumps(dict(metadata), ensure_ascii=False, separators=(",", ":")),
-            ),
+        # NOTE: target_tenant_id is validated above but, as in the code this
+        # replaces, is never bound to the admin_audit.target_tenant_id column
+        # -- only target_user_id is. Callers already fold targetTenantId into
+        # `metadata` themselves. Left as-is: a real gap, but a correctness
+        # question independent of this consolidation (see HIGH-26 audit).
+        write_admin_audit(
+            connection,
+            audit_id=uuid4(),
+            actor_user_id=_uuid(context.actor_user_id),
+            actor_session_id=_uuid(context.actor_session_id),
+            action=action,
+            target_user_id=target_user_id,
+            reason=reason,
+            metadata=dict(metadata),
         )

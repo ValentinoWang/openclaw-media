@@ -6,6 +6,7 @@ from typing import Any
 from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
+from ..account.admin_audit import write_admin_audit
 from ..account.database import AccountDatabase
 from ..account.errors import AccountError
 
@@ -171,11 +172,15 @@ class RetailAdminService:
                 """
                 INSERT INTO openclaw_account.admin_audit(
                     id,actor_user_id,actor_session_id,action,reason,metadata
-                ) VALUES (%s,%s,%s,'billing.product_mapping.create',%s,%s::jsonb)
+                ) VALUES (%s,%s,%s,%s,%s,%s::jsonb)
                 """,
                 (
-                    uuid4(), actor, session, audit_reason,
-                    json.dumps({"mappingId": str(mapping_id), "planCode": plan_code, "externalProductId": external_product_id}),
+                    uuid4(), actor, session, "billing.product_mapping.create", audit_reason,
+                    json.dumps(
+                        {"mappingId": str(mapping_id), "planCode": plan_code, "externalProductId": external_product_id},
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
                 ),
             )
             return self._mapping_payload(mapping_id, plan_code, external_product_id, url)
@@ -233,16 +238,15 @@ class RetailAdminService:
                 "UPDATE openclaw_account.wallet_accounts SET available=%s,version=version+1,updated_at=now() WHERE id=%s",
                 (available_after, target[1]),
             )
-            connection.execute(
-                """
-                INSERT INTO openclaw_account.admin_audit(
-                    id,actor_user_id,actor_session_id,action,target_user_id,reason,metadata
-                ) VALUES (%s,%s,%s,'billing.admin_grant',%s,%s,%s::jsonb)
-                """,
-                (
-                    audit_id, actor, session, target[0], audit_reason,
-                    json.dumps({"targetTenantId": str(tenant), "amount": str(grant_amount), "ledgerEntryId": str(ledger_id)}),
-                ),
+            write_admin_audit(
+                connection,
+                audit_id=audit_id,
+                actor_user_id=actor,
+                actor_session_id=session,
+                action="billing.admin_grant",
+                target_user_id=target[0],
+                reason=audit_reason,
+                metadata={"targetTenantId": str(tenant), "amount": str(grant_amount), "ledgerEntryId": str(ledger_id)},
             )
             connection.execute(
                 """

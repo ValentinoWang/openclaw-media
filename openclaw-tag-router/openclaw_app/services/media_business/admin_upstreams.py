@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Any, Protocol
 from uuid import UUID, uuid4
 
+from ...account.admin_audit import write_admin_audit
 from .foundation import IF2_KEY, idempotency_key
 
 
@@ -172,21 +173,15 @@ class PostgresAdminUpstreamsStorage:
         return metadata
 
     def save_audit(self, connection: Any, **record: Any) -> None:
-        connection.execute(
-            """
-            INSERT INTO openclaw_account.admin_audit(
-                id, actor_user_id, actor_session_id, action, target_user_id, reason, metadata
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
-            """,
-            (
-                uuid4(),
-                record["actorUserId"],
-                record["actorSessionId"],
-                record["operation"],
-                record.get("targetUserId"),
-                record["reason"],
-                json.dumps(record["metadata"], ensure_ascii=False, separators=(",", ":")),
-            ),
+        write_admin_audit(
+            connection,
+            audit_id=uuid4(),
+            actor_user_id=record["actorUserId"],
+            actor_session_id=record["actorSessionId"],
+            action=record["operation"],
+            target_user_id=record.get("targetUserId"),
+            reason=record["reason"],
+            metadata=record["metadata"],
         )
 
 

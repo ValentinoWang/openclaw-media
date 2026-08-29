@@ -5,6 +5,8 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
+from .admin_audit import write_admin_audit as _write_admin_audit
+
 
 @dataclass(frozen=True)
 class AccountCredential:
@@ -211,11 +213,13 @@ class AccountAuthRepository:
         reason: str,
         metadata: str,
     ) -> None:
-        connection.execute(
-            """
-            INSERT INTO openclaw_account.admin_audit(
-                id, actor_user_id, actor_session_id, action, target_user_id, reason, metadata
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
-            """,
-            (audit_id, actor_user_id, actor_session_id, action, target_user_id, reason, metadata),
+        _write_admin_audit(
+            connection,
+            audit_id=audit_id,
+            actor_user_id=actor_user_id,
+            actor_session_id=actor_session_id,
+            action=action,
+            target_user_id=target_user_id,
+            reason=reason,
+            metadata=metadata,
         )
