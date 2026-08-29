@@ -74,6 +74,8 @@ CLOSED = {
     "CPC-13": "c024d4f",
     "CPO-N12": "4d3a824",
     "CPO-N18": "0e28196",
+    "SCHED-04": "d47d880",
+    "CPO-N17": "9520b5e",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
