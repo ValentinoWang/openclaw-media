@@ -11,7 +11,6 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
-import base64
 import json
 import os
 import re
@@ -22,6 +21,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import psycopg
 import yaml
@@ -67,6 +67,7 @@ def _required_env_any(*names: str) -> str:
 
 _ENV_ASSIGNMENT = re.compile(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 _ENV_REFERENCE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+_MISSING = object()
 
 
 def _read_env_files(paths: Any) -> dict[str, str]:
@@ -100,6 +101,33 @@ def _resolve_setting(value: Any, environment: Mapping[str, str]) -> str:
     return _ENV_REFERENCE.sub(lambda match: environment.get(match.group(1), ""), raw).strip()
 
 
+def _trusted_https_url(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value.strip() or any(char.isspace() for char in value):
+        raise Stage2ProductionAssemblyError("production_settings_invalid", f"{label} must be a trusted HTTPS URL")
+    normalized = value.strip()
+    try:
+        parsed = urlparse(normalized)
+    except ValueError as exc:
+        raise Stage2ProductionAssemblyError("production_settings_invalid", f"{label} is invalid") from exc
+    host = (parsed.hostname or "").lower().rstrip(".")
+    trusted_host = (
+        host == "feishu.cn"
+        or host.endswith(".feishu.cn")
+        or host == "larksuite.com"
+        or host.endswith(".larksuite.com")
+    )
+    if (
+        parsed.scheme.lower() != "https"
+        or not host
+        or not trusted_host
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.fragment
+    ):
+        raise Stage2ProductionAssemblyError("production_settings_invalid", f"{label} must be a trusted HTTPS URL")
+    return normalized
+
+
 def _connection_factory(dsn: str):
     def connect():
         return psycopg.connect(dsn, autocommit=False)
@@ -108,7 +136,7 @@ def _connection_factory(dsn: str):
 
 
 class _CanonicalReaders:
-    def __init__(self, dsn: str, session_secret: str) -> None:
+    def __init__(self, dsn: str, session_secret: str, web_base_url: str | None = None) -> None:
         self._connect = _connection_factory(dsn)
         if len(session_secret.encode("utf-8")) < 32:
             raise Stage2ProductionAssemblyError(
@@ -116,6 +144,10 @@ class _CanonicalReaders:
                 "OPENCLAW_ACCOUNT_SESSION_SECRET must be at least 32 bytes",
             )
         self._session_secret = session_secret.encode("utf-8")
+        self._web_base_url = _trusted_https_url(
+            web_base_url or os.getenv("STAGE2_FEISHU_WEB_BASE_URL", "https://tcnwueberajc.feishu.cn"),
+            "Feishu web base URL",
+        ).rstrip("/")
 
     @staticmethod
     def _token_hash(token: str) -> bytes:
@@ -209,11 +241,10 @@ class _CanonicalReaders:
             ).fetchone()
         if row is None:
             return None
-        web_base = os.getenv("STAGE2_FEISHU_WEB_BASE_URL", "https://tcnwueberajc.feishu.cn").rstrip("/")
         parent = str(row[5] or "").strip()
         if not parent or not str(row[4] or "").strip():
             return None
-        trusted_url = f"{web_base}/wiki/{parent}"
+        trusted_url = f"{self._web_base_url}/wiki/{parent}"
         return {
             "bindingId": row[0],
             "tenantId": row[1],
@@ -379,34 +410,136 @@ class _FeishuOrganizationAdapter:
     def __init__(self, service: FeishuService, binding_loader: Any | None = None) -> None:
         self.service = service
         self._binding_loader = binding_loader
-        self._lock = threading.RLock()
+        self._lock = getattr(service, "_stage2_binding_lock", None)
+        if self._lock is None:
+            self._lock = threading.RLock()
+            try:
+                setattr(service, "_stage2_binding_lock", self._lock)
+            except Exception:
+                pass
 
-    @contextmanager
-    def _binding_target(self, binding: BindingIdentity):
-        """Route this write to the current non-secret Binding target."""
+    @staticmethod
+    def _record_value(record: Mapping[str, Any], *names: str, default: Any = None) -> Any:
+        for name in names:
+            if name in record:
+                return record[name]
+        return default
 
+    def _resolve_binding(self, binding: BindingIdentity) -> dict[str, str | int]:
+        if not isinstance(binding, BindingIdentity):
+            raise RuntimeError("organization Binding identity is required")
         if not callable(self._binding_loader):
-            yield
-            return
+            raise RuntimeError("server Binding resolver is required for Feishu writes")
         record = self._binding_loader(binding.tenant_id)
         if not isinstance(record, Mapping):
             raise RuntimeError("current Feishu Binding is unavailable")
-        if str(record.get("bindingId", record.get("binding_id", ""))) != binding.binding_id or int(record.get("generation", record.get("bindingGeneration", 0))) != binding.binding_generation:
-            raise RuntimeError("Feishu Binding changed during document write")
-        space_id = str(record.get("spaceId", record.get("space_id", "")) or "").strip()
-        parent = str(record.get("parentNodeToken", record.get("parent_node_token", "")) or "").strip()
-        if not space_id or not parent:
-            raise RuntimeError("Feishu Binding target is incomplete")
-        with self._lock:
-            previous = self.service.knowledge_base_spaces
-            self.service.knowledge_base_spaces = [{"space_id": space_id, "parent_node_token": parent, "pattern": "*"}]
-            try:
-                yield
-            finally:
-                self.service.knowledge_base_spaces = previous
+        tenant_id = str(self._record_value(record, "tenantId", "tenant_id", default="") or "").strip()
+        binding_id = str(self._record_value(record, "bindingId", "binding_id", "id", default="") or "").strip()
+        status = str(self._record_value(record, "status", "bindingStatus", "binding_status", default="") or "").strip().lower()
+        raw_generation = self._record_value(record, "generation", "bindingGeneration", "binding_generation")
+        try:
+            generation = int(raw_generation)
+        except (TypeError, ValueError):
+            generation = 0
+        credential_generation = str(
+            self._record_value(record, "credentialGeneration", "credential_generation", default="") or ""
+        ).strip()
+        space_id = str(
+            self._record_value(
+                record,
+                "spaceId",
+                "space_id",
+                "knowledgeBaseSpaceId",
+                "knowledge_base_space_id",
+                default="",
+            )
+            or ""
+        ).strip()
+        parent_node_token = str(
+            self._record_value(
+                record,
+                "parentNodeToken",
+                "parent_node_token",
+                "knowledgeBaseParentNodeToken",
+                "knowledge_base_parent_node_token",
+                default="",
+            )
+            or ""
+        ).strip()
+        trusted_open_url = _trusted_https_url(
+            self._record_value(record, "trustedOpenUrl", "trusted_open_url", default=""),
+            "Binding trusted open URL",
+        )
+        if (
+            tenant_id != binding.tenant_id
+            or binding_id != binding.binding_id
+            or generation != binding.binding_generation
+            or status != "active"
+            or not credential_generation
+            or not space_id
+            or not parent_node_token
+        ):
+            raise RuntimeError("current Feishu Binding does not match the requested active Binding")
+        return {
+            "tenant_id": tenant_id,
+            "binding_id": binding_id,
+            "generation": generation,
+            "credential_generation": credential_generation,
+            "space_id": space_id,
+            "parent_node_token": parent_node_token,
+            "trusted_open_url": trusted_open_url,
+        }
 
     @staticmethod
-    def _revision(service: FeishuService, document_id: str) -> str:
+    def _restore_attribute(service: FeishuService, name: str, value: Any) -> None:
+        if value is _MISSING:
+            try:
+                delattr(service, name)
+            except AttributeError:
+                pass
+        else:
+            setattr(service, name, value)
+
+    @contextmanager
+    def _binding_target(self, binding: BindingIdentity):
+        """Route the whole external operation to one immutable Binding target."""
+
+        with self._lock:
+            target = self._resolve_binding(binding)
+            previous = {
+                name: getattr(self.service, name, _MISSING)
+                for name in (
+                    "knowledge_base_spaces",
+                    "knowledge_base_space_id",
+                    "knowledge_base_parent_node_token",
+                    "folder_token",
+                )
+            }
+            self.service.knowledge_base_spaces = [
+                {
+                    "space_id": str(target["space_id"]),
+                    "parent_node_token": str(target["parent_node_token"]),
+                    "pattern": "*",
+                }
+            ]
+            self.service.knowledge_base_space_id = str(target["space_id"])
+            self.service.knowledge_base_parent_node_token = str(target["parent_node_token"])
+            # A Binding has no server-authorized folder/container fallback.
+            self.service.folder_token = ""
+            try:
+                yield target
+            finally:
+                for name, value in previous.items():
+                    self._restore_attribute(self.service, name, value)
+
+    def _binding_unchanged(self, binding: BindingIdentity, target: Mapping[str, Any]) -> bool:
+        try:
+            return self._resolve_binding(binding) == dict(target)
+        except Exception:
+            return False
+
+    @staticmethod
+    def _revision(service: FeishuService, document_id: str) -> str | None:
         payload = service._request("GET", f"/docx/v1/documents/{document_id}")
         data = payload.get("data", {}) if isinstance(payload, Mapping) else {}
         document = data.get("document", {}) if isinstance(data, Mapping) else {}
@@ -418,36 +551,63 @@ class _FeishuOrganizationAdapter:
         ):
             if value not in (None, ""):
                 return str(value)
-        return "1"
+        return None
 
     def write(self, request: OrganizationWriteRequest) -> ExternalWriteOutcome:
         title = f"Stage2 {request.title} [{request.idempotency_key}]"
-        with self._binding_target(request.binding):
+        with self._binding_target(request.binding) as target:
             # FeishuService owns the canonical Markdown-to-Docx block renderer.
             # The production copy exposes that implementation as the private
             # method used by its existing document writers.
             blocks = self.service._content_to_docx_blocks(request.body)
             result = self.service.append_entry_blocks(title, blocks)
-        document_id = str(result.get("document_id") or "").strip()
-        remote_ref = str(result.get("doc") or "").strip()
-        if not document_id or not remote_ref:
-            raise RuntimeError("Feishu document creation did not return a document reference")
-        revision = self._revision(self.service, document_id)
-        binding = request.binding
-        return ExternalWriteOutcome("written", remote_ref, revision, binding.tenant_id, binding.binding_id, binding.binding_generation, request.content_digest)
+            if not isinstance(result, Mapping):
+                raise RuntimeError("Feishu document creation returned an invalid result")
+            if str(result.get("space_id") or "").strip() != str(target["space_id"]):
+                raise RuntimeError("Feishu document write returned a different knowledge-base target")
+            document_id = str(result.get("document_id") or "").strip()
+            remote_ref = _trusted_https_url(result.get("doc"), "Feishu document URL")
+            if not document_id or not remote_ref:
+                raise RuntimeError("Feishu document creation did not return a document reference")
+            revision = self._revision(self.service, document_id)
+            if not revision:
+                raise RuntimeError("Feishu document creation did not return a remote revision")
+            binding = request.binding
+            if not self._binding_unchanged(binding, target):
+                return ExternalWriteOutcome(
+                    "failed",
+                    remote_ref,
+                    revision,
+                    binding.tenant_id,
+                    binding.binding_id,
+                    binding.binding_generation,
+                    request.content_digest,
+                    "binding_changed",
+                )
+            return ExternalWriteOutcome("written", remote_ref, revision, binding.tenant_id, binding.binding_id, binding.binding_generation, request.content_digest)
 
     def readback(self, request: OrganizationWriteRequest, write: ExternalWriteOutcome) -> ExternalReadbackOutcome:
-        remote_ref = str(write.remote_ref or "")
-        readback = self.service.read_document_text(remote_ref)
-        if not readback.get("ok") or request.body.strip() not in str(readback.get("text") or ""):
-            raise RuntimeError("Feishu document body readback did not contain the submitted content")
-        reference = self.service.resolve_document_reference(remote_ref)
-        document_id = str(reference.get("document_id") or "").strip()
-        if not document_id:
-            raise RuntimeError("Feishu document readback did not resolve a document id")
-        revision = self._revision(self.service, document_id)
-        binding = request.binding
-        return ExternalReadbackOutcome("confirmed", remote_ref, revision, binding.tenant_id, binding.binding_id, binding.binding_generation, request.content_digest)
+        remote_ref = _trusted_https_url(write.remote_ref, "Feishu document URL")
+        if not write.remote_revision:
+            raise RuntimeError("Feishu document readback requires the written remote revision")
+        with self._binding_target(request.binding) as target:
+            readback = self.service.read_document_text(remote_ref)
+            if not isinstance(readback, Mapping) or not readback.get("ok") or request.body.strip() not in str(readback.get("text") or ""):
+                raise RuntimeError("Feishu document body readback did not contain the submitted content")
+            reported_digest = readback.get("content_digest", readback.get("contentDigest"))
+            if reported_digest not in (None, "") and str(reported_digest) != request.content_digest:
+                raise RuntimeError("Feishu document readback content digest did not match")
+            reference = self.service.resolve_document_reference(remote_ref)
+            document_id = str(reference.get("document_id") or "").strip()
+            if not document_id:
+                raise RuntimeError("Feishu document readback did not resolve a document id")
+            revision = self._revision(self.service, document_id)
+            if not revision or revision != write.remote_revision:
+                raise RuntimeError("Feishu document readback revision did not match the written revision")
+            binding = request.binding
+            if not self._binding_unchanged(binding, target):
+                raise RuntimeError("Feishu Binding changed during document readback")
+            return ExternalReadbackOutcome("confirmed", remote_ref, revision, binding.tenant_id, binding.binding_id, binding.binding_generation, request.content_digest)
 
 
 def _registry() -> CapabilityEffectRegistry:
@@ -471,7 +631,6 @@ def build_production_stage2_gateway(*, settings_path: str, contract_path: str, c
         raise Stage2ProductionAssemblyError("production_contract_invalid", "Stage-2 contract identity is required")
     dsn = _required_env_any("STAGE2_ACCOUNT_DATABASE_URL", "OPENCLAW_ACCOUNT_DATABASE_URL")
     state_db = _required_env_any("STAGE2_STATE_DATABASE_PATH", "OPENCLAW_STAGE2_STATE_DATABASE_PATH")
-    readers = _CanonicalReaders(dsn, _required_env("OPENCLAW_ACCOUNT_SESSION_SECRET"))
     try:
         settings = yaml.safe_load(Path(settings_path).read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
@@ -488,25 +647,13 @@ def build_production_stage2_gateway(*, settings_path: str, contract_path: str, c
     mode = _resolve_setting(feishu_cfg.get("mode", "knowledge_base"), environment).lower()
     app_id = _resolve_setting(feishu_cfg.get("app_id", ""), environment)
     app_secret = _resolve_setting(feishu_cfg.get("app_secret", ""), environment)
-    web_base_url = _resolve_setting(feishu_cfg.get("web_base_url", "https://tcnwueberajc.feishu.cn"), environment)
+    web_base_url = _trusted_https_url(
+        _resolve_setting(feishu_cfg.get("web_base_url", "https://tcnwueberajc.feishu.cn"), environment),
+        "Feishu web base URL",
+    )
     if mode != "knowledge_base" or not app_id or not app_secret:
         raise Stage2ProductionAssemblyError("production_dependency_missing", "Feishu knowledge_base mode and app credentials are required")
-    if not web_base_url.startswith("https://"):
-        raise Stage2ProductionAssemblyError("production_settings_invalid", "Feishu web base URL must use HTTPS")
-    space_id = _resolve_setting(feishu_cfg.get("knowledge_base_space_id", ""), environment)
-    parent_node_token = _resolve_setting(feishu_cfg.get("knowledge_base_parent_node_token", ""), environment)
-    if bool(space_id) != bool(parent_node_token):
-        raise Stage2ProductionAssemblyError("production_dependency_missing", "Feishu knowledge base space and parent are both required")
-    raw_spaces = feishu_cfg.get("knowledge_base_spaces", [])
-    spaces = []
-    if isinstance(raw_spaces, list):
-        for item in raw_spaces:
-            if isinstance(item, Mapping):
-                resolved = {key: _resolve_setting(item.get(key, ""), environment) for key in ("name", "pattern", "space_id", "parent_node_token")}
-                if resolved["space_id"] and resolved["parent_node_token"]:
-                    spaces.append(resolved)
-    if not space_id and not spaces:
-        raise Stage2ProductionAssemblyError("production_dependency_missing", "Feishu knowledge base space is required")
+    readers = _CanonicalReaders(dsn, _required_env("OPENCLAW_ACCOUNT_SESSION_SECRET"), web_base_url)
     service = FeishuService(
         mode,
         _resolve_setting(feishu_cfg.get("local_docs_dir", str(Path(state_db).parent / "feishu_docs")), environment),
@@ -515,11 +662,11 @@ def build_production_stage2_gateway(*, settings_path: str, contract_path: str, c
         app_secret,
         _resolve_setting(feishu_cfg.get("api_base_url", "https://open.feishu.cn/open-apis"), environment),
         web_base_url,
-        _resolve_setting(feishu_cfg.get("folder_token", ""), environment),
-        space_id,
-        parent_node_token,
+        "",
+        "",
+        "",
         _resolve_setting(feishu_cfg.get("knowledge_base_obj_type", "docx"), environment),
-        spaces,
+        [],
     )
     return build_stage2_production_gateway(
         Stage2ProductionDependencies(
