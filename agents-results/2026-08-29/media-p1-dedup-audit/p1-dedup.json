@@ -2,7 +2,7 @@
   "source": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260827/pipeline-full-audit.md",
   "followup": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260828/audit-followup-review.md",
   "progress": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/implementation-progress.md",
-  "main": "2090a73d15e4216b3129d359f0eacbbc5e93c2dc",
+  "main": "9954c94b77f647430f72f324e0168bf05b405a5e",
   "raw_p1": 163,
   "unique_dedup_p1": 155,
   "groups": [
@@ -300,8 +300,10 @@
       "ids": [
         "CR-21"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "5a3c8a2"
+      ]
     },
     {
       "key": "singleton:CR-22",
@@ -324,8 +326,10 @@
       "ids": [
         "CR-25"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "533fc35"
+      ]
     },
     {
       "key": "singleton:CR-20",
