@@ -384,9 +384,41 @@ def accept_mac_result(
 ) -> AcceptedMacResult:
     """Store validated Mac evidence and close its task without altering project stage."""
 
-    task = validate_mac_result(vault_root, result, expected_tenant_id=expected_tenant_id)
     result_root = _queue_root(vault_root, RESULT_DIRECTORY)
     done_root = _queue_root(vault_root, DONE_DIRECTORY)
+    task_id = _safe_task_id(str(result.get("task_id") or ""))
+    done_matches = list(done_root.glob(f"{task_id}_*.yaml")) if task_id else []
+    if len(done_matches) == 1:
+        done_path = done_matches[0]
+        stored_done = _read_yaml(done_path)
+        task_type = str(stored_done.get("task_type") or "").strip()
+        if expected_tenant_id is not None:
+            if _tenant_id(stored_done.get("tenant_id"), name="done tenant_id") != _tenant_id(expected_tenant_id, name="authenticated tenant_id"):
+                raise ContentOSContractError("Mac 任务不属于当前设备租户；结果已拒绝")
+        result_path = result_root / f"accepted_{task_id.removeprefix('task_')}_{task_type}.yaml"
+        if result_path.is_file():
+            stored = _read_yaml(result_path)
+            stored_source = {key: value for key, value in stored.items() if key not in {"accepted_by", "accepted_at"}}
+            incoming = json.loads(json.dumps(result, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+            existing = json.loads(json.dumps(stored_source, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+            if incoming == existing:
+                return AcceptedMacResult(
+                    task=ReadyTask(
+                        task_id=task_id,
+                        task_type=task_type,
+                        project_id=str(stored_done.get("project_id") or ""),
+                        project_revision=_as_revision(stored_done.get("project_revision"), name="done.project_revision"),
+                        change_request_id=str(stored_done.get("change_request_id") or ""),
+                        editor_backend=str(stored_done.get("editor_backend") or ""),
+                        path=done_path,
+                        payload=stored_done,
+                    ),
+                    result_path=result_path,
+                    done_task_path=done_path,
+                )
+        raise ContentOSContractError("这个任务已有已接收的不同结果，不能覆盖原有证据")
+
+    task = validate_mac_result(vault_root, result, expected_tenant_id=expected_tenant_id)
     result_path = result_root / f"accepted_{task.task_id.removeprefix('task_')}_{task.task_type}.yaml"
     done_path = done_root / f"{task.task_id}_{task.task_type}.yaml"
     if result_path.exists() or done_path.exists():
