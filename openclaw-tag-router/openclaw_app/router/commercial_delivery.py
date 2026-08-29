@@ -11,7 +11,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from common.feishu_urls import parse_bitable_url
-from common.social_runtime import feishu_coerce_value
+from common.social_runtime import feishu_coerce_value, feishu_ensure_fields, feishu_ensure_select_options
 
 from .tag_router_common import Message, TaskResult
 from media_vault import require_tenant_id
@@ -971,48 +971,26 @@ class CommercialDeliveryMixin:
         }
 
     def _ensure_commercial_delivery_fields(self, app_token: str, table_id: str) -> None:
-        existing = set(self._commercial_delivery_field_types(app_token, table_id))
-        for name, field_type in COMMERCIAL_DELIVERY_FIELD_SPECS.items():
-            if name in existing:
-                continue
-            self.feishu_service._request(
-                "POST",
-                f"/bitable/v1/apps/{app_token}/tables/{table_id}/fields",
-                json_body={"field_name": name, "type": field_type},
-            )
-            existing.add(name)
+        # on_error="raise" preserves this call site's existing hard-failure
+        # semantics (the prior local implementation had no try/except).
+        feishu_ensure_fields(
+            app_token,
+            table_id,
+            "",
+            COMMERCIAL_DELIVERY_FIELD_SPECS,
+            on_error="raise",
+            request=self.feishu_service._request,
+        )
 
     def _ensure_commercial_delivery_select_options(self, app_token: str, table_id: str, raw_fields: dict[str, Any]) -> None:
-        items = self._commercial_delivery_field_items(app_token, table_id)
-        for name, base_options in COMMERCIAL_DELIVERY_SELECT_OPTIONS.items():
-            item = items.get(name)
-            if not item:
-                continue
-            target_type = COMMERCIAL_DELIVERY_FIELD_SPECS.get(name)
-            options = [str(option).strip() for option in base_options if str(option).strip()]
-            value = raw_fields.get(name)
-            if str(value or "").strip() and str(value).strip() not in options:
-                options.append(str(value).strip())
-            existing = [
-                str(option.get("name") or "").strip()
-                for option in ((item.get("property") or {}).get("options") or [])
-                if str(option.get("name") or "").strip()
-            ]
-            if item.get("type") == target_type and all(option in existing for option in options):
-                continue
-            merged = list(options)
-            for option in existing:
-                if option not in merged:
-                    merged.append(option)
-            self.feishu_service._request(
-                "PUT",
-                f"/bitable/v1/apps/{app_token}/tables/{table_id}/fields/{item.get('field_id')}",
-                json_body={
-                    "field_name": name,
-                    "type": target_type,
-                    "property": {"options": [{"name": option} for option in merged]},
-                },
-            )
+        feishu_ensure_select_options(
+            app_token,
+            table_id,
+            COMMERCIAL_DELIVERY_FIELD_SPECS,
+            COMMERCIAL_DELIVERY_SELECT_OPTIONS,
+            raw_fields,
+            request=self.feishu_service._request,
+        )
 
     @staticmethod
     def _commercial_delivery_dict(value: Any) -> dict[str, Any]:

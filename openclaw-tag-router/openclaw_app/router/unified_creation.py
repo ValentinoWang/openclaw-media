@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from common.feishu_urls import parse_bitable_url
-from common.social_runtime import BITABLE_OPTION_ID_RE, feishu_coerce_value
+from common.social_runtime import feishu_coerce_value, feishu_ensure_fields, feishu_ensure_select_options
 
 from .creation_feishu_writer import RouterCreationFeishuDocumentWriter
 from ..services.utils import now_in_tz
@@ -415,69 +415,24 @@ class UnifiedCreationMixin:
         }
 
     def _ensure_unified_creation_fields(self, app_token: str, table_id: str) -> None:
-        existing = set(self._unified_creation_field_types(app_token, table_id))
-        for name, field_type in UNIFIED_CREATION_FIELD_SPECS.items():
-            if name in existing:
-                continue
-            try:
-                self.feishu_service._request(
-                    "POST",
-                    f"/bitable/v1/apps/{app_token}/tables/{table_id}/fields",
-                    json_body={"field_name": name, "type": field_type},
-                )
-                existing.add(name)
-            except Exception:
-                continue
+        feishu_ensure_fields(
+            app_token,
+            table_id,
+            "",
+            UNIFIED_CREATION_FIELD_SPECS,
+            on_error="ignore",
+            request=self.feishu_service._request,
+        )
 
     def _ensure_unified_creation_select_options(self, app_token: str, table_id: str, raw_fields: dict[str, Any]) -> None:
-        items = self._unified_creation_field_items(app_token, table_id)
-        for name, base_options in UNIFIED_CREATION_SELECT_OPTIONS.items():
-            item = items.get(name)
-            if not item:
-                continue
-            target_type = UNIFIED_CREATION_FIELD_SPECS.get(name)
-            options = [str(option).strip() for option in base_options if str(option).strip()]
-            for option in self._select_options_from_value(raw_fields.get(name)):
-                if option not in options:
-                    options.append(option)
-            existing = [
-                str(option.get("name") or "").strip()
-                for option in ((item.get("property") or {}).get("options") or [])
-                if str(option.get("name") or "").strip()
-            ]
-            if item.get("type") == target_type and all(option in existing for option in options):
-                continue
-            merged = list(options)
-            for option in existing:
-                if option not in merged:
-                    merged.append(option)
-            try:
-                self.feishu_service._request(
-                    "PUT",
-                    f"/bitable/v1/apps/{app_token}/tables/{table_id}/fields/{item.get('field_id')}",
-                    json_body={
-                        "field_name": name,
-                        "type": target_type,
-                        "property": {"options": [{"name": option} for option in merged]},
-                    },
-                )
-            except Exception:
-                continue
-
-    @staticmethod
-    def _select_options_from_value(value: Any) -> list[str]:
-        if value in (None, "", []):
-            return []
-        raw_items = value if isinstance(value, list) else re.split(r"[,，/、;；|]\s*", str(value))
-        result: list[str] = []
-        seen: set[str] = set()
-        for item in raw_items:
-            text = str(item).strip()
-            if not text or BITABLE_OPTION_ID_RE.fullmatch(text) or text in seen:
-                continue
-            seen.add(text)
-            result.append(text)
-        return result
+        feishu_ensure_select_options(
+            app_token,
+            table_id,
+            UNIFIED_CREATION_FIELD_SPECS,
+            UNIFIED_CREATION_SELECT_OPTIONS,
+            raw_fields,
+            request=self.feishu_service._request,
+        )
 
     def _sync_unified_creation_child_doc(self, doc_title: str, record_type: str, content: str) -> dict[str, str]:
         return self._creation_feishu_writer().sync_text_child_doc(doc_title, record_type, content)

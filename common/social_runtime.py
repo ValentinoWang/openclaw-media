@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone, tzinfo as TzInfo
 from pathlib import Path
 from threading import Lock
-from typing import Any, Iterable, Literal
+from typing import Any, Callable, Iterable, Literal
 from urllib.parse import parse_qs, urlparse
 
 import requests
@@ -545,24 +545,140 @@ def feishu_field_types(app_token: str, table_id: str, token: str) -> dict[str, A
     }
 
 
-def feishu_ensure_fields(app_token: str, table_id: str, token: str, specs: dict[str, int] | None = None) -> None:
+def feishu_ensure_fields(
+    app_token: str,
+    table_id: str,
+    token: str,
+    specs: dict[str, int] | None = None,
+    *,
+    on_error: Literal["ignore", "raise"] = "ignore",
+    request: Callable[..., dict[str, Any]] | None = None,
+) -> None:
+    """Create any missing bitable fields from ``specs`` that aren't already present.
+
+    ``on_error`` controls what happens when creating one field fails:
+    ``"ignore"`` (the default, matching every existing caller's behavior)
+    silently moves on to the next field; ``"raise"`` propagates.
+
+    ``request`` is an optional injected transport -- ``request(method, path,
+    *, json_body=None) -> parsed response body`` that already raises on a
+    non-2xx status or a Feishu ``code != 0`` payload (the same convention
+    ``feishu_ensure_select_options`` and ``common/feishu_wiki_docs.py``
+    use). When omitted (the default), this uses the module-level
+    ``requests`` + ``token`` + ``FEISHU_BASE`` path, unchanged from before.
+    """
     specs = specs or FEISHU_FIELD_SPECS
-    existing = {item.get("field_name") for item in feishu_list_fields(app_token, table_id, token)}
+    if request is None:
+        existing = {item.get("field_name") for item in feishu_list_fields(app_token, table_id, token)}
+    else:
+        payload = request("GET", f"/bitable/v1/apps/{app_token}/tables/{table_id}/fields")
+        existing = {item.get("field_name") for item in (payload.get("data") or {}).get("items", [])}
     for name, field_type in specs.items():
         if name in existing:
             continue
-        resp = requests.post(
-            f"{FEISHU_BASE}/bitable/v1/apps/{app_token}/tables/{table_id}/fields",
-            headers=feishu_headers(token),
-            json={"field_name": name, "type": field_type},
-            timeout=10,
-        )
         try:
-            payload = resp.json()
-        except ValueError:
-            payload = {}
-        if resp.status_code < 400 and payload.get("code") == 0:
+            if request is None:
+                resp = requests.post(
+                    f"{FEISHU_BASE}/bitable/v1/apps/{app_token}/tables/{table_id}/fields",
+                    headers=feishu_headers(token),
+                    json={"field_name": name, "type": field_type},
+                    timeout=10,
+                )
+                try:
+                    payload = resp.json()
+                except ValueError:
+                    payload = {}
+                ok = resp.status_code < 400 and payload.get("code") == 0
+            else:
+                request(
+                    "POST",
+                    f"/bitable/v1/apps/{app_token}/tables/{table_id}/fields",
+                    json_body={"field_name": name, "type": field_type},
+                )
+                ok = True
+        except Exception:
+            if on_error == "raise":
+                raise
+            ok = False
+        if ok:
             existing.add(name)
+        elif on_error == "raise":
+            raise RuntimeError(f"创建飞书字段失败：{name}")
+
+
+def feishu_ensure_select_options(
+    app_token: str,
+    table_id: str,
+    specs: dict[str, int],
+    select_options: dict[str, list[str]],
+    raw_fields: dict[str, Any],
+    *,
+    request: Callable[..., dict[str, Any]],
+) -> None:
+    """Merge configured + observed select options onto existing single/multi-select fields.
+
+    For each field name in ``select_options``, merges its configured base
+    options with whatever options are observed in ``raw_fields`` (accepts
+    a list, or a string split on common delimiters, filtering out bitable
+    internal option-ids like ``optXXXXXX``), plus whatever options already
+    exist on the field, then PUTs the union back if anything is missing.
+    Fields not present in the table (per a GET of its fields) are skipped.
+
+    ``request`` follows the same convention as ``feishu_ensure_fields``:
+    ``request(method, path, *, json_body=None) -> parsed response body``,
+    already raising on failure -- there is no ``on_error`` here because
+    every known caller wants hard failure on a write error.
+    """
+    payload = request("GET", f"/bitable/v1/apps/{app_token}/tables/{table_id}/fields")
+    items = {
+        str(item.get("field_name")): item
+        for item in (payload.get("data") or {}).get("items", [])
+        if item.get("field_name")
+    }
+    for name, base_options in select_options.items():
+        item = items.get(name)
+        if not item:
+            continue
+        target_type = specs.get(name)
+        options = [str(option).strip() for option in base_options if str(option).strip()]
+        for option in _feishu_select_options_from_raw_value(raw_fields.get(name)):
+            if option not in options:
+                options.append(option)
+        existing = [
+            str(option.get("name") or "").strip()
+            for option in ((item.get("property") or {}).get("options") or [])
+            if str(option.get("name") or "").strip()
+        ]
+        if item.get("type") == target_type and all(option in existing for option in options):
+            continue
+        merged = list(options)
+        for option in existing:
+            if option not in merged:
+                merged.append(option)
+        request(
+            "PUT",
+            f"/bitable/v1/apps/{app_token}/tables/{table_id}/fields/{item.get('field_id')}",
+            json_body={
+                "field_name": name,
+                "type": target_type,
+                "property": {"options": [{"name": option} for option in merged]},
+            },
+        )
+
+
+def _feishu_select_options_from_raw_value(value: Any) -> list[str]:
+    if value in (None, "", []):
+        return []
+    raw_items = value if isinstance(value, list) else re.split(r"[,，/、;；|]\s*", str(value))
+    result: list[str] = []
+    seen: set[str] = set()
+    for item in raw_items:
+        text = str(item).strip()
+        if not text or BITABLE_OPTION_ID_RE.fullmatch(text) or text in seen:
+            continue
+        seen.add(text)
+        result.append(text)
+    return result
 
 
 def feishu_list_records(
