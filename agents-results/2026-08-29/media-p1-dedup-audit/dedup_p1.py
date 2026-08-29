@@ -54,7 +54,7 @@ CLOSED = {
     "CD-03": "e48fccf", "CD-04": "e48fccf", "CD-05": "e48fccf",
     "CD-06": "e48fccf", "CD-07": "e48fccf", "CD-08": "e48fccf",
     "CD-02": "cedd7e9", "CD-10": "a248d8b", "CD-11": "7fe94e4",
-    "CD-14": "7fe94e4", "CD-16": "0d6e8b8",
+    "CD-14": "7fe94e4", "CD-09": "7226e02", "BIZ-09": "108c662", "CD-16": "0d6e8b8",
     "CD-18": "6a669f2",
     "CD-01": "2ce7b4f", "CD-08": "6a669f2",
     "CD-15": "dd4b3e9",
@@ -112,6 +112,9 @@ CLOSED = {
 PARTIAL = {
     "BIZ-05": "ec8c88c",
     "CD-13": "ec8c88c",
+    # Review-memory fields are preserved, but creation-side consumer budgets
+    # still truncate the feedback payload and require a separate closure.
+    "BIZ-06": "108c662",
 }
 
 def parse_items(text: str):
