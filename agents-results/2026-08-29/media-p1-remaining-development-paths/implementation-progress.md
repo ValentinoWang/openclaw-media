@@ -82,6 +82,8 @@
 - 仓库根目录全量 `pytest` 当前不能作为整体绿灯：跨子项目收集时缺少 `openclaw_media` 安装包、`httpx`、`opentimelineio` 等独立依赖，收集阶段出现 71 个错误；这些错误不归因于本轮 P1 定向改动，后续按子项目依赖矩阵拆开验证。
 - 本地验证环境使用隔离目录 `/tmp/openclaw-media-p1-venv`，未写入仓库依赖文件或全局 Python。
 
+- `RT-02` 已在 `main@557bb1a` 收口：日报 CLI 在没有可消费产物或仅发生跳过时不再静默返回成功，改为报告失败/未完成状态；`tests/test_selfmedia_cli_smoke.py` 与相关日报回归共 `29 passed`，`git diff --check` 通过。该提交只关闭 RT-02 的静默成功缺口，不替代日报生产者、轮询运行证据或其余 RT 条目验收。
+
 - Router 错误响应兼容性在 `main@d0180e9` 完成：`_send_api_error` 对轻量测试/适配器对象缺失 `_correlation_id` 时仍能按 `{ok,error:{code,message,details?}}` 合同返回；`test_api_error_matches_media_web_task_error_schema` 与兼容回归合计 `13 passed`。不改变 maintainer-only 删除能力的安全可见性边界。
 
 - 数据复盘渲染批次在 `main@7226e02` 完成：字符串化 JSON 会先解析为中文字段，内部路径/记录标识不进入正文，表现评级与证据附录后置；`tests/test_data_review_p1_rendering.py tests/test_data_review_structured_rendering.py tests/test_p6_data_flow_closure.py tests/test_review_memory_backflow.py` 结果 `20 passed`。该同一渲染层批次覆盖 BIZ-03、CD-09、CR-07、CPO-K15。
