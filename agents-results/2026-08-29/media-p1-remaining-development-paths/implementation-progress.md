@@ -4,7 +4,7 @@
 
 | 冻结基线 | 当前状态 | 说明 |
 |---|---|---|
-| P1 未修复 148 条 | 已开始逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；截至本次 `main@6f95e92`，历史逐条复验投影仍为 49 条（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；本轮新增提交须按条目重新绑定，不能自动扣减 |
+| P1 未修复 148 条 | 已开始逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；截至本次 `main@72fa092`，历史逐条复验投影仍为 49 条（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；本轮新增提交须按条目重新绑定，不能自动扣减 |
 | 发布切片 | 5 个已建立 | `REL-P1-UX`、`REL-P1-PIPE`、`REL-P1-BIZ`、`REL-P1-PORT`、`REL-P1-QA` 均未组装候选 |
 | 当前就绪交付包 | 14 个 | P1 至 P14 均可继续；本轮已处理用户可见渲染、Router 状态呈现和创作证据合同，尚未完成全部交付包验收 |
 | 已接受发布验收 | 0 个 | C1 至 C5 均等待对应交付包 |
@@ -34,12 +34,14 @@
 - `dfa6a96`：创作交接显式接入多信号合同。
 - `707fdb2`：商业排期闭环测试对齐。
 - `6f95e92`：修复创作候选 payload 合并后语法错误。
+- `72fa092`：保留创作归因并写入交付回执，补齐归因链回归测试。
 
 本轮验证证据：
 
 - `/tmp/openclaw-media-p1-venv/bin/python -m pytest -q tests/test_media_growth_v2.py tests/test_media_model.py tests/test_review_memory_backflow.py selfmedia/ingest/content_flow/tests/test_analyzer_provider_order.py tests/selfmedia/creator_profiles/test_creator_profile_enrichment.py`
 - 结果：`120 passed, 14 subtests passed`（Pydantic 兼容性弃用警告，不影响断言结果）。
 - `python -m py_compile` 与 `git diff --check` 通过。
+- `tests/test_creation_receipt.py tests/test_creation_v1.py tests/test_p0_review_loop.py`：`53 passed`。
 
 补充复验（2026-08-29 后续轮次）：
 

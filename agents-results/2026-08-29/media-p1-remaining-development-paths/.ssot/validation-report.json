@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-28T17:04:51.385043+00:00",
+  "generated_at": "2026-08-29T02:27:18.886970+00:00",
   "generator": {
     "repository": "ValentinoWang/Harness_Engineering",
     "commit": "93d2a2f03770f66094285981b2a6dc26b1a5f0e5",
@@ -45,15 +45,15 @@
   },
   "runtime": {
     "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration",
-    "project_commit": "cffda6e257b483e28b5074eee0e5b7b43b6a9598",
+    "project_commit": "72fa092182814da484125bc6d8f08ecf1819b17d",
     "project_dirty": true,
-    "project_dirty_diff_sha256": "47e388396a66639020f666fdd0f7a076fe69dab7e519d19cba27d6b296bde7e7",
+    "project_dirty_diff_sha256": "767e91980633f4e06f342f2a2c268ee5c050ec5ba3468eb39e25c6dbe9125301",
     "harness_lock_sha256": null
   },
   "bundle": {
     "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths",
-    "sha256": "93c8d00029ee831db5094e95eccdee7f20ffd4e2ea6e82cd1e348f93198ee903",
-    "content_sha256": "93c8d00029ee831db5094e95eccdee7f20ffd4e2ea6e82cd1e348f93198ee903",
+    "sha256": "fc795f9c62f02b5021ccc29769a8ee8c8f0f5cc8b38574a56a3a7922e1f17c62",
+    "content_sha256": "fc795f9c62f02b5021ccc29769a8ee8c8f0f5cc8b38574a56a3a7922e1f17c62",
     "manifest_sha256": "5e5ef50676504d5254e8d34f9753d2545e9dafbb0db14680b57eaeb70ed4d603",
     "manifest_identity_sha256": "5e5ef50676504d5254e8d34f9753d2545e9dafbb0db14680b57eaeb70ed4d603"
   },
@@ -61,21 +61,21 @@
     {
       "id": "runtime-skill-provenance",
       "command": [
-        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/tools/harnessctl.py",
         "doctor",
         "--project",
         "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration",
         "--check-runtime-skills"
       ],
-      "exit_code": 0,
-      "result": "passed",
-      "output": "project: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration\nmode: symlink-local\nsource: /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering\nlinks: 30\nruntime_skill_check: enabled\nWARN Harness source dirty files: 29\ndoctor: ok\n"
+      "exit_code": 2,
+      "result": "failed",
+      "output": "error: missing yaml: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/.harness/manifest.yaml\n"
     },
     {
       "id": "complexity",
       "command": [
-        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_complexity.py",
         "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/planning-compiler.json"
       ],
@@ -86,7 +86,7 @@
     {
       "id": "render",
       "command": [
-        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/render_ssot_views.py",
         "--check",
         "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/manifest.json"
@@ -98,7 +98,7 @@
     {
       "id": "machine-program",
       "command": [
-        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_program.py",
         "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/manifest.json"
       ],
@@ -109,7 +109,7 @@
     {
       "id": "parallelism-analysis",
       "command": [
-        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/analyze_ssot_parallelism.py",
         "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/.ssot/manifest.json"
       ],
@@ -120,7 +120,7 @@
     {
       "id": "structure",
       "command": [
-        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_structure.py",
         "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/ssot-development-paths.md"
       ],
@@ -131,28 +131,13 @@
     {
       "id": "chinese-readability",
       "command": [
-        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_chinese_readability.py",
         "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/ssot-development-paths.md"
       ],
       "exit_code": 0,
       "result": "passed",
       "output": "中文可读性检查通过。\n"
-    },
-    {
-      "id": "archive-check",
-      "command": [
-        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
-        "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/ssot-obsidian-snapshot/scripts/snapshot_ssot.py",
-        "--source",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths",
-        "--project-root",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration",
-        "--check"
-      ],
-      "exit_code": 0,
-      "result": "passed",
-      "output": "{\n  \"status\": \"verified\",\n  \"source\": \"/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths\",\n  \"destination\": \"/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/开发/每日开发/SSOT合集/2026-08-29/openclaw-media/media-p1-remaining-development-paths\",\n  \"project_name\": \"openclaw-media\",\n  \"ssot_name\": \"media-p1-remaining-development-paths\",\n  \"snapshot_date\": \"2026-08-29\",\n  \"main_document\": \"ssot-development-paths.md\",\n  \"file_count\": 1,\n  \"contains_openproblem\": false\n}\n"
     }
   ],
   "parallelism": {
@@ -408,5 +393,5 @@
     "scheduling_model": "event-driven",
     "static_waves_are_authority": false
   },
-  "result": "pass"
+  "result": "fail"
 }
