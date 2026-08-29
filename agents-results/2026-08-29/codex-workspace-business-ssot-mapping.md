@@ -8,7 +8,7 @@
 
 需要特别区分两件事：
 
-1. 当前权威源码仓库是 `production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration` 的 `main`，其工作树干净；本报告提交后本地暂比 `origin/main` 多 1 个文档提交。
+1. 当前权威源码仓库是 `production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration` 的 `main`，其工作树干净；本地 `main` 当前比 `origin/main` 超前 2 个尚未推送的提交：`4a41061`（H00 身份绑定）和 `ada2963`（账号监控 API 合同边界）。
 2. 某个容器里存在 Stage‑2 同名文件，不等于该容器的加固提交已经进入当前 `main`。四个 `stage2-hardening-*` 是独立仓库，提交对象不在当前 `main` 历史中。
 
 ## 时间窗口与权威文档
@@ -39,7 +39,10 @@
 
 ## 当前主线关系
 
-- `integration/main` 当前存在 `stage2_server_context.py`、`stage2_external_document.py`、`stage2_production_factory.py`、`stage2_runtime.py`、`stage2_gateway.py`、`stage2_personal_store.py` 等基础文件，但四个独立加固提交 `d0d399a`、`948b36b`、`ae0b614`、`76f8725` 的提交对象不在该仓库对象库中，因此不能写成“已经合入 main”。
+- 当前 `main` 已包含 `b87bf91`、`a1ab425`、`85f6608`、`4a41061`、`ada2963`；其中 `ada2963` 只提供明确的 `503 monitor_unavailable` 合同边界，尚未接入真实 Feishu H00 adapter，不能视为生产监控已可用。
+- `integration/main` 当前存在 `stage2_server_context.py`、`stage2_external_document.py`、`stage2_production_factory.py`、`stage2_runtime.py`、`stage2_gateway.py`、`stage2_personal_store.py` 等基础文件，但四个独立加固提交 `d0d399a`、`948b36b`、`ae0b614`、`76f8725` 都不是当前 `main` 的祖先提交，因此不能写成“已经合入 main”。
+- `23ba056`、`f533317` 也不是当前 `main` 的祖先提交；`f533317` 与当前账号监控 schema 主题重叠，按 superseded/diff 处理，不整体迁移。
+- 四个 `stage2-hardening-*` 候选仍然不能整体合并；如需提取，必须以当前 `main` 为基线逐文件、逐符号去重后形成原子提交。
 - Stage‑2 SSOT 本身仍要求真实认证会话、真实数据库、真实人工智能任务、真实飞书写入/回读、浏览器/设备和独立终验；2026-08-20 加固证据只达到聚焦测试与浏览器夹具层级。
 - P1 的 2026-08-29 主线进度仍把 `BIZ-05`、`CD-13` 的真实生产账号、近期作品链接和轮询回执列为非空生产证据缺口；容器中的测试或候选提交不能关闭这两项。
 
