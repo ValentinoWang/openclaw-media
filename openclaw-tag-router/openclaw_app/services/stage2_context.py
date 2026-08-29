@@ -16,6 +16,8 @@ from types import MappingProxyType
 from typing import Any, Callable, Protocol
 from uuid import UUID
 
+from media_vault.vault import canonical_tenant_id
+
 
 SCHEMA_VERSION = "stage2.ai_execution_context.v2"
 RECEIPT_SCHEMA_VERSION = "stage2.context_readback_receipt.v1"
@@ -147,14 +149,10 @@ def _identifier(value: Any, label: str, *, maximum: int = 512) -> str:
 
 def _tenant_id(value: Any, label: str = "tenant_id") -> str:
     normalized = _identifier(value, label)
-    try:
-        parsed = UUID(normalized)
-    except (ValueError, AttributeError) as exc:
-        raise Stage2ContextError("invalid_request", f"{label} must be a canonical tenant UUID") from exc
-    canonical = str(parsed)
-    if normalized != canonical:
-        raise Stage2ContextError("invalid_request", f"{label} must be a canonical tenant UUID")
-    return canonical
+    return canonical_tenant_id(
+        normalized,
+        error=lambda: Stage2ContextError("invalid_request", f"{label} must be a canonical tenant UUID"),
+    )
 
 
 def _positive_generation(value: Any, label: str = "binding_generation") -> int:

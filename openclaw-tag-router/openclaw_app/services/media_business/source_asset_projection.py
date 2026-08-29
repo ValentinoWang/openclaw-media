@@ -11,7 +11,6 @@ import hashlib
 import json
 import re
 import unicodedata
-import uuid
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
@@ -19,6 +18,7 @@ from typing import Any, Callable, Literal, Mapping, Protocol, Sequence, TypeAlia
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from media_model.platform_hashtags import resolve_platform_hashtags
+from media_vault.vault import canonical_tenant_id
 
 from ..resource_owner_registry import ResourceOwnerConflict
 
@@ -534,13 +534,10 @@ class SourceAssetProjection:
         tenant_id = str(value or "").strip()
         if not tenant_id:
             raise SourceAssetProjectionError("authenticated tenant context is required")
-        try:
-            canonical_tenant_id = str(uuid.UUID(tenant_id))
-        except ValueError as exc:
-            raise SourceAssetProjectionError("authenticated tenant_id must be a canonical UUID") from exc
-        if canonical_tenant_id != tenant_id:
-            raise SourceAssetProjectionError("authenticated tenant_id must be a canonical UUID")
-        return tenant_id
+        return canonical_tenant_id(
+            tenant_id,
+            error=lambda: SourceAssetProjectionError("authenticated tenant_id must be a canonical UUID"),
+        )
 
     @staticmethod
     def _public_asset_id(value: Any) -> str:

@@ -8,7 +8,7 @@ import secrets
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import quote, unquote, urlparse
 
 
@@ -74,17 +74,37 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
-def require_tenant_id(value: Any) -> str:
+_DEFAULT_TENANT_ID_ERROR_MESSAGE = "tenant_id must be a canonical OpenClaw tenant UUID"
+
+
+def canonical_tenant_id(value: Any, *, error: Callable[[], Exception] | None = None) -> str:
+    """Parse ``value`` as a canonical (lowercase, hyphenated) tenant UUID string.
+
+    Strips surrounding whitespace before parsing, then requires the
+    stripped input to already equal ``str(uuid.UUID(...))`` exactly (same
+    casing, same hyphens, no braces/urn: prefix) -- this is
+    ``require_tenant_id``'s original algorithm, unchanged; only the error
+    raised on failure is now pluggable via ``error`` so other call sites can
+    keep their own exception type instead of ``MediaVaultError``.
+    """
+
+    def _error() -> Exception:
+        return MediaVaultError(_DEFAULT_TENANT_ID_ERROR_MESSAGE) if error is None else error()
+
     if not isinstance(value, str):
-        raise MediaVaultError("tenant_id must be a canonical OpenClaw tenant UUID")
+        raise _error()
     tenant_id = value.strip()
     try:
         canonical = str(uuid.UUID(tenant_id))
     except ValueError as exc:
-        raise MediaVaultError("tenant_id must be a canonical OpenClaw tenant UUID") from exc
+        raise _error() from exc
     if canonical != tenant_id:
-        raise MediaVaultError("tenant_id must be a canonical OpenClaw tenant UUID")
+        raise _error()
     return tenant_id
+
+
+def require_tenant_id(value: Any) -> str:
+    return canonical_tenant_id(value)
 
 
 def make_timestamp_id(prefix: str, *, now: datetime | None = None, token_bytes: int = 3) -> str:

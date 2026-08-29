@@ -12,6 +12,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
+from media_vault.vault import canonical_tenant_id
+
 from .canonical_resource_contracts import CANONICAL_RESOURCE_CONTRACTS, TENANT_PROJECTION_FIELD
 
 
@@ -77,16 +79,10 @@ class CreationRunSummary:
 
 
 def require_tenant_id(value: str) -> str:
-    if not isinstance(value, str):
-        raise ResourceOwnerInvalid("tenant_id must be a canonical OpenClaw tenant UUID")
-    normalized = value.strip()
-    try:
-        canonical = str(uuid.UUID(normalized))
-    except ValueError as exc:
-        raise ResourceOwnerInvalid("tenant_id must be a canonical OpenClaw tenant UUID") from exc
-    if normalized != canonical:
-        raise ResourceOwnerInvalid("tenant_id must be a canonical OpenClaw tenant UUID")
-    return normalized
+    return canonical_tenant_id(
+        value,
+        error=lambda: ResourceOwnerInvalid("tenant_id must be a canonical OpenClaw tenant UUID"),
+    )
 
 
 def _require_resource_identity(resource_type: str, canonical_resource_id: str) -> tuple[str, str]:

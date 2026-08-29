@@ -9,7 +9,8 @@ import time
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any, Mapping, Protocol
-from uuid import UUID
+
+from media_vault.vault import canonical_tenant_id
 
 from .resource_owner_registry import ResourceOwnerNotFound, ResourceOwnerRegistry
 
@@ -406,13 +407,10 @@ class TenantProjectionService:
     @staticmethod
     def _tenant(value: str) -> str:
         tenant_id = str(value or "").strip()
-        try:
-            parsed = UUID(tenant_id)
-        except (ValueError, AttributeError, TypeError) as exc:
-            raise TenantProjectionError("invalid_tenant", "租户身份无效。") from exc
-        if tenant_id != str(parsed):
-            raise TenantProjectionError("invalid_tenant", "租户身份无效。")
-        return tenant_id
+        return canonical_tenant_id(
+            tenant_id,
+            error=lambda: TenantProjectionError("invalid_tenant", "租户身份无效。"),
+        )
 
     @staticmethod
     def _run_id(value: str) -> str:
