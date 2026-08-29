@@ -482,6 +482,7 @@ class ExternalDocumentWriter:
         binding = request.binding
         return (
             write.status.lower() in _SUCCESS_STATES
+            and write.error_code is None
             and bool(write.remote_ref)
             and bool(write.remote_revision)
             and write.tenant_id == binding.tenant_id
@@ -499,6 +500,7 @@ class ExternalDocumentWriter:
         binding = request.binding
         return (
             readback.status.lower() in {"ok", "success", "succeeded", "confirmed", "read"}
+            and readback.error_code is None
             and readback.remote_ref == write.remote_ref
             and readback.remote_revision == write.remote_revision
             and readback.tenant_id == binding.tenant_id
