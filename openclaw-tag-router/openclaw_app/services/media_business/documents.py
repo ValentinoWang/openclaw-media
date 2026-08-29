@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Protocol
 
+from common.canonical_digest import digest_bytes
+
 from .foundation import (
     MediaBusinessError,
     TenantContext,
@@ -213,8 +215,7 @@ def _idempotency_key(value: Any) -> str:
 
 
 def _request_fingerprint(value: Mapping[str, Any]) -> bytes:
-    encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-    return hashlib.sha256(encoded.encode("utf-8")).digest()
+    return digest_bytes(value, allow_nan=True)
 
 
 def _path_fingerprint(operation: str, public_id: str) -> bytes:

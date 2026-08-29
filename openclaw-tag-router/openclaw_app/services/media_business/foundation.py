@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import copy
-import hashlib
 import json
 import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
+
+from common.canonical_digest import digest_hex
 
 
 class MediaBusinessError(Exception):
@@ -160,13 +161,7 @@ def public_projection(value: Any) -> Any:
 
 
 def body_checksum(body: dict[str, Any]) -> str:
-    canonical = json.dumps(
-        body,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    )
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return digest_hex(body, allow_nan=True)
 
 
 _RICH_TEXT_TYPES = {"paragraph", "quote", *(f"heading_{level}" for level in range(1, 10))}

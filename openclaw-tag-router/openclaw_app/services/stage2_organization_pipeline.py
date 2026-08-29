@@ -7,7 +7,6 @@ never obtains credentials or chooses a tenant/Binding on behalf of a caller.
 from __future__ import annotations
 
 import copy
-import hashlib
 import json
 import os
 import re
@@ -18,6 +17,8 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
+
+from common.canonical_digest import prefixed_digest
 
 from openclaw_app.services.stage2_external_document import (
     BindingIdentity,
@@ -74,9 +75,7 @@ def _lookup(value: Any, *names: str, default: Any = None) -> Any:
 
 
 def _digest(value: Any) -> str:
-    return "sha256:" + hashlib.sha256(
-        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
+    return prefixed_digest(value, allow_nan=True)
 
 
 def _content_digest(value: Any) -> str:

@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping, Sequence
 from urllib.parse import urlparse
 
+from common.canonical_digest import prefixed_digest
 from common.model_transport_context import bind_model_transport
 from common.platform_labels import PLATFORM_LABELS as _COMMON_PLATFORM_LABELS
 from common.social_runtime import parse_iso_datetime
@@ -437,13 +438,7 @@ def _task_request_fingerprint(payload: Mapping[str, Any]) -> str:
             "confirmationReceipt",
         )
     }
-    encoded = json.dumps(
-        canonical,
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8")
-    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
+    return prefixed_digest(canonical, allow_nan=True)
 
 
 def _receipt_expiry(clock: Callable[[], float]) -> str:
@@ -452,8 +447,7 @@ def _receipt_expiry(clock: Callable[[], float]) -> str:
 
 def _confirmation_fields_digest(params: Mapping[str, Any]) -> str:
     stable = {key: value for key, value in params.items() if key not in {"action", "confirmation"}}
-    encoded = json.dumps(stable, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
+    return prefixed_digest(stable, allow_nan=True)
 
 
 def _confirmation_receipt_error(capability_id: str) -> str:

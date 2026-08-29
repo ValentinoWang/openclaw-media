@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from dataclasses import dataclass, field, fields, is_dataclass
 from types import MappingProxyType
 from typing import Any, Iterable, Mapping
 from urllib.parse import urlparse
+
+from common.canonical_digest import prefixed_digest
 
 from ..router.tag_capabilities import TAG_CAPABILITIES, TagCapability
 from .capability_input_contracts import CAPABILITY_INPUT_CONTRACTS
@@ -517,8 +518,7 @@ class CapabilityRegistry:
         self._by_id = MappingProxyType(by_id)
         self._by_path = MappingProxyType(by_path)
         self._by_alias = MappingProxyType(by_alias)
-        canonical = json.dumps([_camel_payload(item) for item in self._definitions], ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        self.catalog_version = "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        self.catalog_version = prefixed_digest([_camel_payload(item) for item in self._definitions], allow_nan=True)
 
     @classmethod
     def compile_all(cls) -> "CapabilityRegistry":

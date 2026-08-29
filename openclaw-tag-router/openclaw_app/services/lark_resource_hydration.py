@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
 
+from common.canonical_digest import digest_hex
+
 from .media_business.foundation import body_checksum, validate_body
 
 
@@ -67,7 +69,7 @@ def _wiki_node_token(value: Any) -> str:
 
 
 def _digest(value: Any) -> str:
-    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return digest_hex(value, allow_nan=True)
 
 
 def _text_block(block_id: str, text: str, heading: int | None = None) -> dict[str, Any]:

@@ -18,13 +18,15 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Protocol
 
+from common.canonical_digest import canonical_json as _shared_canonical_json
+
 
 _DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _PERSONAL_ARTIFACT_SCHEMA_VERSION = "stage2.personal_pipeline.v1"
 
 
 def _canonical(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return _shared_canonical_json(value, allow_nan=True)
 
 
 def _is_volatile_sqlite_path(value: str) -> bool:
