@@ -35,6 +35,7 @@
 - `707fdb2`：商业排期闭环测试对齐。
 - `6f95e92`：修复创作候选 payload 合并后语法错误。
 - `72fa092`：保留创作归因并写入交付回执，补齐归因链回归测试。
+- `18b3368`：Router 活动链接注册表优先解析、强制 `table` 参数；创作回执区分 Mac 素材已绑定与未绑定状态。
 
 本轮验证证据：
 
@@ -42,6 +43,8 @@
 - 结果：`120 passed, 14 subtests passed`（Pydantic 兼容性弃用警告，不影响断言结果）。
 - `python -m py_compile` 与 `git diff --check` 通过。
 - `tests/test_creation_receipt.py tests/test_creation_v1.py tests/test_p0_review_loop.py`：`53 passed`。
+- `openclaw-tag-router/tests/test_content_os_bridge_presentation.py tests/test_content_flow_client.py`：`98 passed`。
+- Router 全套：`1515 passed, 24 failed, 39 skipped, 270 warnings, 271 subtests passed`；失败集中在既有删除能力、复盘投影和能力目录合同，未将其计为 P1 完成。
 
 补充复验（2026-08-29 后续轮次）：
 
