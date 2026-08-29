@@ -1,15 +1,11 @@
 from __future__ import annotations
 
 import math
-import re
 from dataclasses import asdict, dataclass
-from pathlib import PurePosixPath
 from typing import Any, Iterable
 
+from .refs import _IDENTITY, is_relative_ref as _ref, issue_ref as _issue_ref
 from .storyboard import EDLEntry, StoryboardEntry
-
-_IDENTITY = re.compile(r"sha256:[0-9a-f]{64}")
-_WINDOWS_ABSOLUTE = re.compile(r"^[a-zA-Z]:[/\\]")
 
 
 @dataclass(frozen=True)
@@ -90,19 +86,8 @@ class HandoffPlan:
         return asdict(self)
 
 
-def _ref(value: object) -> bool:
-    if not isinstance(value, str) or not value or "\\" in value or _WINDOWS_ABSOLUTE.match(value):
-        return False
-    path = PurePosixPath(value)
-    return not path.is_absolute() and ".." not in path.parts
-
-
 def _time(value: object) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
-
-
-def _issue_ref(value: object) -> str | None:
-    return value if _ref(value) else None
 
 
 def plan_handoff(clips: Iterable[HandoffClipDescriptor], storyboard: Iterable[StoryboardEntry], edl: Iterable[EDLEntry], subtitles: Iterable[SubtitleCue] = ()) -> HandoffPlan:

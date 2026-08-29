@@ -5,16 +5,14 @@ import math
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass
-from pathlib import PurePosixPath
 from typing import Any, Iterable
 
 import opentimelineio as otio
 
+from .refs import _IDENTITY, is_relative_ref as _relative_ref, issue_ref as _safe_ref
 from .storyboard import EDLEntry
 
-_IDENTITY = re.compile(r"sha256:[0-9a-f]{64}")
 _VERSION = re.compile(r"[0-9]+(?:\.[0-9]+)*")
-_WINDOWS_ABSOLUTE = re.compile(r"^[a-zA-Z]:[/\\]")
 _KINDS = {"audio", "image", "video"}
 _TIME_RATE = 1_000_000.0
 
@@ -94,19 +92,6 @@ class TimelinePlan:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-
-
-def _relative_ref(value: object) -> bool:
-    if not isinstance(value, str) or not value or "\\" in value or "\x00" in value:
-        return False
-    if _WINDOWS_ABSOLUTE.match(value):
-        return False
-    path = PurePosixPath(value)
-    return not path.is_absolute() and ".." not in path.parts and path.as_posix() == value
-
-
-def _safe_ref(value: object) -> str | None:
-    return value if _relative_ref(value) else None
 
 
 def _finite(value: object) -> bool:

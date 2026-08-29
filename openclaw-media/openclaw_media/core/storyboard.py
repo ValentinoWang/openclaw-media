@@ -3,11 +3,11 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import asdict, dataclass
-from pathlib import PurePosixPath
 from typing import Any, Iterable
 
+from .refs import relative_ref as _relative_ref
+
 _SHA256 = re.compile(r"[0-9a-f]{64}")
-_WINDOWS_ABSOLUTE = re.compile(r"^[a-zA-Z]:[/\\]")
 _KINDS = {"audio", "image", "video"}
 
 
@@ -107,20 +107,6 @@ class _CanonicalMaterial:
     @property
     def identity_ref(self) -> str:
         return f"sha256:{self.material.sha256}"
-
-
-def _relative_ref(value: object) -> str | None:
-    if not isinstance(value, str) or "\\" in value or _WINDOWS_ABSOLUTE.match(value):
-        return None
-    path = PurePosixPath(value)
-    if (
-        path.is_absolute()
-        or not path.parts
-        or any(part in {"", ".", ".."} or "\x00" in part for part in path.parts)
-        or path.as_posix() != value
-    ):
-        return None
-    return value
 
 
 def _label(value: object) -> str | None:

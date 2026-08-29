@@ -3,13 +3,10 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import re
 from dataclasses import asdict, dataclass
-from pathlib import PurePosixPath
 from typing import Any, Iterable
 
-
-_WINDOWS_ABSOLUTE = re.compile(r"^[a-zA-Z]:[/\\]")
+from .refs import is_relative_ref as _ref, issue_ref as _issue_ref
 
 
 @dataclass(frozen=True)
@@ -169,13 +166,6 @@ class SemanticReviewResult:
         return asdict(self)
 
 
-def _ref(value: object) -> bool:
-    if not isinstance(value, str) or not value or "\\" in value or _WINDOWS_ABSOLUTE.match(value):
-        return False
-    path = PurePosixPath(value)
-    return not path.is_absolute() and ".." not in path.parts
-
-
 def _number(value: object, *, minimum: float | None = None, maximum: float | None = None) -> bool:
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
         return False
@@ -186,10 +176,6 @@ def _number(value: object, *, minimum: float | None = None, maximum: float | Non
 def _digest(value: object) -> str:
     encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
-
-
-def _issue_ref(value: object) -> str | None:
-    return value if _ref(value) else None
 
 
 def _ordered_issues(issues: Iterable[ReviewIssue]) -> tuple[ReviewIssue, ...]:

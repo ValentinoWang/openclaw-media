@@ -7,6 +7,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable
 
+from .refs import ref_path as _ref_path
+
 CommandRunner = Callable[[tuple[str, ...]], None]
 
 
@@ -43,8 +45,8 @@ def _default_runner(command: tuple[str, ...]) -> None:
 
 
 def _relative_path(ref: str, *, field: str) -> PurePosixPath:
-    path = PurePosixPath(ref)
-    if path.is_absolute() or not path.parts or any(part in {"", ".", ".."} for part in path.parts):
+    path = _ref_path(ref)
+    if path is None:
         raise ValueError(f"{field} must be a normalized relative reference")
     return path
 

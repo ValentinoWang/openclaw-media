@@ -6,6 +6,7 @@ from pathlib import PurePosixPath
 from typing import Any, Iterable
 
 from .media import AUDIO_EXTENSIONS, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, XMP_EXTENSIONS, MediaFile
+from .refs import ref_path as _ref
 
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _KINDS = {"video": "video", "audio": "audio", "image": "image", "xmp": "sidecar"}
@@ -15,7 +16,6 @@ _EXTENSIONS = {
     "image": IMAGE_EXTENSIONS,
     "xmp": XMP_EXTENSIONS,
 }
-_WINDOWS_ABSOLUTE = re.compile(r"^[a-zA-Z]:[/\\]")
 
 
 @dataclass(frozen=True)
@@ -43,20 +43,6 @@ class OrganizationPlan:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-
-
-def _ref(value: str) -> PurePosixPath | None:
-    if not isinstance(value, str) or "\\" in value or _WINDOWS_ABSOLUTE.match(value):
-        return None
-    path = PurePosixPath(value)
-    if (
-        path.is_absolute()
-        or not path.parts
-        or any(part in {"", ".", ".."} or "\x00" in part for part in path.parts)
-        or path.as_posix() != value
-    ):
-        return None
-    return path
 
 
 def _sort_key(item: object) -> tuple[str, str, str, str, int]:
