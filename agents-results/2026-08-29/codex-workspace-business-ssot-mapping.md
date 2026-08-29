@@ -7,14 +7,14 @@
 - 权威源码：`production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration` 的 `main`。
 - 当前本机 `main` 与 `origin/main` 均为 `bc320f2`，工作树干净。
 - `d0d399a`、`948b36b`、`ae0b614`、`76f8725`、`23ba056`、`f533317` 均不是 `main` 的祖先提交。
-- 部分能力已用新的原子提交进入 `main`：Feishu（`943e874`、`18a616a`、`109e8ff`）、身份（`7ed45ab`）、runtime（`fa33bc2`）、H00 绑定（`4a41061`）和监控 API 边界（`ada2963`）。这不等于原候选提交已合入，也不等于真实生产验收完成。
+- 部分能力已用新的原子提交进入 `main`：Feishu（`943e874`、`18a616a`、`109e8ff`）、身份 transport（`7ed45ab`）、身份 A1/A2（`828111e`、`5bf62d9`）、runtime（`fa33bc2`）、H00 绑定（`4a41061`）和监控 API 边界（`ada2963`）。这不等于原候选提交已合入，也不等于真实生产验收完成。
 - 四个 `stage2-hardening-*` 候选不得整体合并；`persistence` 仍需拆成原子单元后再评估。
 
 ## 容器处置矩阵
 
 | 容器/提交 | SSOT 对应 | 与当前主线的矛盾 | 处置 |
 |---|---|---|---|
-| `stage2-hardening-auth-20260820` / `d0d399a` | Stage-2 S1/T1/S5：请求身份、租户与 Binding 校验 | 原候选把严格 fail-closed 与旧端点兼容逻辑混在一起；直接覆盖会改变旧端点行为。 | 不整体合并。严格 Stage-2 能力已由 `7ed45ab` 提取；候选仅作 diff 来源，真实认证仍未验收。 |
+| `stage2-hardening-auth-20260820` / `d0d399a` | Stage-2 S1/T1/S5：请求身份、租户与 Binding 校验 | 原候选把严格 fail-closed 与旧端点兼容逻辑混在一起；直接覆盖会改变旧端点行为。 | 不整体合并。transport 已由 `7ed45ab` 提取，A1/A2 已由 `828111e`、`5bf62d9` 提取；候选仍作差异来源，真实认证未验收。 |
 | `stage2-hardening-feishu-20260820` / `948b36b` | Stage-2 O2-O5：Binding 目标、写入、写后回读 | 两个源文件与当前主线逐字节一致，diff=0。 | `fully-absorbed`；归档候选分支。 |
 | `stage2-hardening-persistence-20260820` / `ae0b614` | Stage-2 S4/C5/O3：幂等、状态机、成果持久化 | 同时改 HTTP/Gateway/Runtime/Feishu/Store，和其余候选撞入口；SQLite 证据不能冒充真实数据库验收。 | 不整体合并。最后拆为持久化合同、幂等 claim、路径校验三个原子单元。 |
 | `stage2-hardening-runtime-20260820` / `76f8725` | Stage-2 S3/T1/C8/O6：路由、错误码、租户边界 | 旧端点与 Stage-2 错误语义混杂，可能扩大收紧范围。 | 不整体合并。已按 Stage-2 边界提取部分能力至 `fa33bc2`；候选仅作 diff 来源。 |
