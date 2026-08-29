@@ -18,6 +18,7 @@ if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
 from common.social_runtime import load_default_env_files, load_env_file
+from common.platform_links import platform_for_url
 from integrations.feishu.media_writer import SOURCE_ASSET_ATTACHMENT_MAX_BYTES, upsert_entity_record
 from media_model.contract import MediaModelContract
 from media_model.payloads import make_asset_id, normalize_source_url
@@ -476,12 +477,7 @@ def write_deconstruction(
 
 
 def _platform_from_url(url: str) -> str:
-    hostname = (urlparse(url).hostname or "").lower().rstrip(".")
-    if hostname == "douyin.com" or hostname.endswith(".douyin.com") or hostname == "iesdouyin.com" or hostname.endswith(".iesdouyin.com"):
-        return "抖音"
-    if hostname == "xiaohongshu.com" or hostname.endswith(".xiaohongshu.com") or hostname == "xhslink.com" or hostname.endswith(".xhslink.com"):
-        return "小红书"
-    return ""
+    return {"douyin": "抖音", "xiaohongshu": "小红书"}.get(platform_for_url(url), "")
 
 
 def _external_post_id(result: dict[str, Any]) -> str:

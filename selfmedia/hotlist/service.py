@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
+from common.platform_links import platform_for_url
 from selfmedia.business.id_business import load_playwright_cookies
 
 
@@ -339,9 +340,9 @@ def _unwrap_search_href(value: str) -> str:
 def _candidate_from_url(platform: str, value: str) -> SearchCandidate | None:
     url = _unwrap_search_href(value)
     parsed = urlparse(url)
-    host = parsed.netloc.lower().split(":", 1)[0]
+    detected_platform = platform_for_url(url)
     if platform == "抖音":
-        if not (host == "douyin.com" or host.endswith(".douyin.com") or host.endswith(".iesdouyin.com")):
+        if detected_platform != "douyin":
             return None
         match = DOUYIN_PATH_RE.search(parsed.path)
         if not match:
@@ -351,7 +352,7 @@ def _candidate_from_url(platform: str, value: str) -> SearchCandidate | None:
         canonical = f"https://www.douyin.com/{kind}/{content_id}"
         return SearchCandidate(platform=platform, content_id=content_id, url=canonical, discovery_source="brave_web_search")
     if platform == "小红书":
-        if not (host == "xiaohongshu.com" or host.endswith(".xiaohongshu.com")):
+        if detected_platform != "xiaohongshu":
             return None
         match = XHS_PATH_RE.search(parsed.path)
         if not match:

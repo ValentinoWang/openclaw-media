@@ -15,6 +15,8 @@ from urllib.parse import parse_qs, urlparse
 
 import requests
 
+from common.platform_links import platform_for_url
+
 from .standard_fields import (
     STANDARD_ALIAS_MAP,
     STANDARD_FIELD_SPECS,
@@ -221,12 +223,7 @@ def add_url_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def detect_platform(url: str) -> str:
-    lower = (url or "").lower()
-    if "xiaohongshu.com" in lower or "xhslink.com" in lower or "xhslink.cn" in lower:
-        return "xiaohongshu"
-    if "douyin.com" in lower or "iesdouyin.com" in lower:
-        return "douyin"
-    return "unknown"
+    return platform_for_url(url)
 
 
 def health_status(stats: dict[str, Any]) -> str:

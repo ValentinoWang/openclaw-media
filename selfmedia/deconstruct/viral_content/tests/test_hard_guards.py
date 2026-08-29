@@ -504,6 +504,13 @@ def test_source_asset_facts_use_structured_ids_and_url_hosts() -> None:
     assert _platform_from_url("https://example.com/?next=douyin.com") == ""
 
 
+def test_deconstruct_platform_detection_uses_canonical_host_classifier() -> None:
+    assert runner._platform_from_url("https://www.douyin.com/video/7634755") == "抖音"
+    assert modality_dag._platform_from_url("https://www.xiaohongshu.com/explore/698561f") == "小红书"
+    assert runner._platform_from_url("https://example.com/?next=douyin.com") == "未抓取"
+    assert modality_dag._platform_from_url("https://example.com/?next=xiaohongshu.com") == "未抓取"
+
+
 def test_list_like_text_is_written_without_python_brackets() -> None:
     import selfmedia.deconstruct.viral_content.src.feishu_doc_writer as doc_writer
 

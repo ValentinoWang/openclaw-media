@@ -37,6 +37,19 @@ def _platform_for_host(host: str) -> str:
     return "unknown"
 
 
+def platform_for_url(url: str) -> str:
+    """Return the canonical platform key using the URL hostname only."""
+    if not isinstance(url, str) or not url.strip():
+        return "unknown"
+    try:
+        parsed = urlsplit(url.strip())
+    except ValueError:
+        return "unknown"
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname:
+        return "unknown"
+    return _platform_for_host(parsed.hostname.lower().rstrip("."))
+
+
 def _canonical(parsed: Any, *, platform: str, kind: str, content_id: str | None) -> str | None:
     if platform == "douyin" and kind == "post" and content_id:
         prefix = "/note/" if "/note/" in parsed.path else "/video/"
@@ -73,7 +86,7 @@ def classify_post_link(url: str) -> dict[str, str | None]:
         return result
 
     host = parsed.hostname.lower().rstrip(".")
-    platform = _platform_for_host(host)
+    platform = platform_for_url(url)
     if platform == "unknown":
         return result
     result["platform"] = platform
@@ -113,4 +126,4 @@ def classify_post_link(url: str) -> dict[str, str | None]:
     return result
 
 
-__all__ = ["classify_post_link"]
+__all__ = ["classify_post_link", "platform_for_url"]

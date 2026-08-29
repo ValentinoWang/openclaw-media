@@ -43,6 +43,7 @@ from common.social_runtime import (  # noqa: E402
     load_default_env_files,
     load_env_file,
 )
+from common.platform_links import platform_for_url
 from common.bot_llm_config import bot_runtime
 from common.llm_client import generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
@@ -874,8 +875,7 @@ def has_id_business_trigger(text: str) -> bool:
 
 
 def is_profile_url(url: str) -> bool:
-    lower = (url or "").lower()
-    return any(domain in lower for domain in ("xhslink.com", "xiaohongshu.com", "douyin.com", "iesdouyin.com"))
+    return platform_for_url(url) != "unknown"
 
 
 def split_business_urls(urls: list[str]) -> tuple[list[str], list[str]]:

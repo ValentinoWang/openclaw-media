@@ -39,6 +39,7 @@ from .schemas import (
 )
 from .trigger import WorkflowMode, extract_url, require_executable_mode, route_mode
 from common.resource_ownership import require_tenant_id
+from common.platform_links import platform_for_url
 from selfmedia.context import build_media_context
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -128,12 +129,7 @@ def _evidence_parts_for_llm(evidence: Any) -> list[dict[str, Any]]:
 
 
 def _platform_from_url(url: str) -> str:
-    lowered = url.lower()
-    if "douyin" in lowered:
-        return "抖音"
-    if "xiaohongshu" in lowered or "xhs" in lowered:
-        return "小红书"
-    return "未抓取"
+    return {"douyin": "抖音", "xiaohongshu": "小红书"}.get(platform_for_url(url), "未抓取")
 
 
 def _existing_sibling_file(source_path: str, filename: str) -> str:

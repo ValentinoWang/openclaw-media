@@ -20,6 +20,7 @@ from ..media_parts import (
     ensure_real_files,
 )
 from ..storyboard_window import parse_explicit_analysis_time_range
+from common.platform_links import platform_for_url
 from .ocr import build_ocr_evidence
 from .schemas import (
     ASSET_MANIFEST_SCHEMA_VERSION,
@@ -1064,12 +1065,7 @@ def _missing_from_source(value: Any) -> str:
 
 
 def _platform_from_url(url: str) -> str:
-    lowered = url.lower()
-    if "douyin" in lowered:
-        return "抖音"
-    if "xiaohongshu" in lowered or "xhs" in lowered:
-        return "小红书"
-    return "未抓取"
+    return {"douyin": "抖音", "xiaohongshu": "小红书"}.get(platform_for_url(url), "未抓取")
 
 
 def _stats(asset_manifest: dict[str, Any]) -> dict[str, Any]:
