@@ -8,7 +8,6 @@ existing FeishuService for an actual organization document write plus readback.
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import hmac
 import json
@@ -26,6 +25,7 @@ from urllib.parse import urlparse
 import psycopg
 import yaml
 
+from ..account.csrf import CSRF_DOMAIN, derive_csrf_token, token_digest
 from .feishu_service import FeishuService
 from .stage2_context import (
     CapabilityEffect,
@@ -154,12 +154,7 @@ class _CanonicalReaders:
         return hashlib.sha256(token.encode("ascii")).digest()
 
     def _csrf_hash(self, token: str) -> bytes:
-        csrf = hmac.new(
-            self._session_secret,
-            b"openclaw-csrf\0" + token.encode("ascii"),
-            hashlib.sha256,
-        ).digest()
-        return self._token_hash(base64.urlsafe_b64encode(csrf).rstrip(b"=").decode("ascii"))
+        return token_digest(derive_csrf_token(self._session_secret, token, domain=CSRF_DOMAIN))
 
     def session(self, token: str) -> Mapping[str, Any] | None:
         if not isinstance(token, str) or not token.strip():

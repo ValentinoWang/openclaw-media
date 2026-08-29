@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import copy
 import hashlib
 import hmac
@@ -16,6 +15,7 @@ from uuid import UUID, uuid4
 
 import bcrypt
 
+from .csrf import PERSONAL_CSRF_DOMAIN, derive_csrf_token
 from .errors import AccountAuthError, AccountContractError
 from .password_policy import validate_password
 
@@ -930,12 +930,7 @@ class PersonalAuthService:
             return False
 
     def _csrf_token(self, token: str) -> str:
-        digest = hmac.new(
-            self._csrf_secret,
-            b"openclaw-personal-csrf\0" + token.encode("ascii"),
-            hashlib.sha256,
-        ).digest()
-        return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+        return derive_csrf_token(self._csrf_secret, token, domain=PERSONAL_CSRF_DOMAIN)
 
     def _record_mail_failure(
         self,

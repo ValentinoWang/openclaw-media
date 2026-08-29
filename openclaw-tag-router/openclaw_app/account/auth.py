@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import hashlib
 import hmac
 import json
@@ -12,6 +11,7 @@ from uuid import UUID, uuid4
 
 import bcrypt
 
+from .csrf import CSRF_DOMAIN, derive_csrf_token
 from .database import AccountDatabase
 from .errors import AccountAuthError, AccountContractError
 from .repository import AccountAuthRepository, AccountCredential, AccountSessionRow
@@ -66,8 +66,7 @@ class AccountAuthService:
         return hashlib.sha256(token.encode("ascii")).digest()
 
     def csrf_token(self, token: str) -> str:
-        digest = hmac.new(self._csrf_secret, b"openclaw-csrf\0" + token.encode("ascii"), hashlib.sha256).digest()
-        return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+        return derive_csrf_token(self._csrf_secret, token, domain=CSRF_DOMAIN)
 
     def verify_csrf(self, token: str, supplied: str) -> bool:
         if not supplied:
