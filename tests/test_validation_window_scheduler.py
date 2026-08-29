@@ -59,6 +59,10 @@ class ValidationWindowSchedulerTests(unittest.TestCase):
             self.assertEqual([task["window"] for task in first["tasks"]], ["1h", "2h", "24h", "7d"])
             self.assertEqual(first["tasks"][1]["validation_targets"], ["收藏", "完播率"])
             self.assertEqual(first["tasks"][0]["due_at"], (PUBLISHED_AT + timedelta(hours=1)).isoformat())
+            self.assertIn("回复【数据复盘】并附截图", first["tasks"][1]["reminder_text"])
+            self.assertIn("收藏、完播率", first["tasks"][1]["reminder_text"])
+            self.assertIn(PUBLISHED_URL, first["tasks"][1]["reminder_text"])
+            self.assertIn("首小时动作", first["tasks"][0]["reminder_text"])
             self.assertEqual(len(scheduler.due_pending_windows(now=PUBLISHED_AT + timedelta(hours=2))), 2)
 
     def test_missing_confirmation_is_blocked_and_tenant_readback_is_isolated(self) -> None:

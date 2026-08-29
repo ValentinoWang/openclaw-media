@@ -47,6 +47,7 @@ WINDOW_ALIASES = {
     "7天": "7d",
     "七天": "7d",
 }
+WINDOW_LABELS = {"1h": "1 小时", "2h": "2 小时", "24h": "24 小时", "7d": "7 天"}
 
 
 class ValidationWindowScheduleError(ValueError):
@@ -93,6 +94,20 @@ def _as_utc(value: datetime | str) -> datetime:
 
 def _task_due_at(published_at: datetime, window: str) -> str:
     return (published_at + WINDOW_DURATIONS[window]).isoformat()
+
+
+def _reminder_text(*, window: str, published_url: str, metrics: list[str], first_hour_action: str = "") -> str:
+    """Build the user-facing payload emitted when a validation task is due."""
+    label = WINDOW_LABELS.get(window, window)
+    if first_hour_action:
+        request = f"先执行首小时动作：{first_hour_action}。"
+    else:
+        target_text = "、".join(metrics) or "发布表现"
+        request = f"请核对这些指标：{target_text}。"
+    return (
+        f"该作品已到{label}复盘节点：{request}"
+        f"请回复【数据复盘】并附截图；作品链接：{published_url}"
+    )
 
 
 class ValidationWindowScheduler:
@@ -286,6 +301,12 @@ class ValidationWindowScheduler:
                 "attempts": 0,
                 "creation_run_id": creation_run_id,
                 "published_url": published_url,
+                "reminder_text": _reminder_text(
+                    window="1h",
+                    published_url=published_url,
+                    metrics=[],
+                    first_hour_action=first_hour_action,
+                ),
             }
         ]
         for window in ("1h", "2h", "24h", "7d"):
@@ -304,6 +325,11 @@ class ValidationWindowScheduler:
                     "attempts": 0,
                     "creation_run_id": creation_run_id,
                     "published_url": published_url,
+                    "reminder_text": _reminder_text(
+                        window=window,
+                        published_url=published_url,
+                        metrics=list(metrics),
+                    ),
                 }
             )
         return {
