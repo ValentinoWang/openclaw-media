@@ -205,6 +205,9 @@ def test_daily_poll_report_is_chinese_and_redacts_runtime_exceptions(monkeypatch
         report = Path(payload["report_path"]).read_text(encoding="utf-8")
 
     assert payload["errors"] == [{"account_name": "测试账号", "error": "轮询失败，请检查运行日志。"}]
+    assert payload["status"] == "error"
+    assert payload["completion_status"] == "error"
+    assert payload["ok"] is False
     assert "## 轮询失败" in report
     assert "轮询失败，请检查运行日志。" in report
     assert "总互动" in report
@@ -322,3 +325,136 @@ def test_daily_poll_marks_unconfigured_feishu_report_as_unsuccessful(monkeypatch
     assert payload["ok"] is False
     assert payload["record_ids"] == []
     assert payload["feishu"] == "未配置飞书日报表，未写入跨平台记录"
+
+
+def test_daily_poll_empty_table_is_explicitly_unsuccessful_but_writes_dry_run_artifacts(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tempfile import TemporaryDirectory
+
+    with TemporaryDirectory() as directory:
+        monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", directory)
+        with patch.object(selfmedia, "feishu_list_records", return_value=[]), patch.object(
+            selfmedia, "refresh_posts", side_effect=AssertionError("empty table must not poll")
+        ):
+            payload = selfmedia.daily_poll(_daily_poll_args())
+        assert Path(payload["json_path"]).is_file()
+        assert Path(payload["report_path"]).is_file()
+
+    assert payload["ok"] is False
+    assert payload["status"] == "ok_empty"
+    assert payload["completion_status"] == "ok_empty"
+    assert payload["account_count"] == 0
+    assert payload["enabled_account_count"] == 0
+    assert payload["polled_account_count"] == 0
+
+
+def test_daily_poll_all_disabled_accounts_are_explicitly_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tempfile import TemporaryDirectory
+
+    records = [
+        {
+            "record_id": "disabled-account",
+            "fields": {"账号名称": "停用账号", "平台": "抖音", "近期作品链接": "https://example.test/post", "启用": False},
+        }
+    ]
+    with TemporaryDirectory() as directory:
+        monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", directory)
+        with patch.object(selfmedia, "feishu_list_records", return_value=records), patch.object(
+            selfmedia, "refresh_posts", side_effect=AssertionError("disabled accounts must not poll")
+        ):
+            payload = selfmedia.daily_poll(_daily_poll_args())
+
+    assert payload["ok"] is False
+    assert payload["status"] == "ok_empty"
+    assert payload["completion_status"] == "ok_empty"
+    assert payload["account_count"] == 1
+    assert payload["enabled_account_count"] == 0
+    assert payload["polled_account_count"] == 0
+
+
+def test_daily_poll_enabled_account_without_urls_is_an_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tempfile import TemporaryDirectory
+
+    records = [
+        {
+            "record_id": "missing-url-account",
+            "fields": {"账号名称": "缺链接账号", "平台": "抖音", "近期作品链接": "", "启用": True},
+        }
+    ]
+    with TemporaryDirectory() as directory:
+        monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", directory)
+        with patch.object(selfmedia, "feishu_list_records", return_value=records), patch.object(
+            selfmedia, "refresh_posts", side_effect=AssertionError("missing URLs must not poll")
+        ):
+            payload = selfmedia.daily_poll(_daily_poll_args())
+
+    assert payload["ok"] is False
+    assert payload["status"] == "error"
+    assert payload["completion_status"] == "error"
+    assert payload["enabled_account_count"] == 1
+    assert payload["polled_account_count"] == 0
+    assert payload["errors"] == [{"account_name": "缺链接账号", "error": "missing_urls"}]
+
+
+def test_daily_poll_nonempty_success_reports_ok(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tempfile import TemporaryDirectory
+
+    records = [
+        {
+            "record_id": "active-account",
+            "fields": {"账号名称": "正常账号", "平台": "抖音", "近期作品链接": "https://example.test/post", "启用": True},
+        }
+    ]
+    rows = [{"post_id": "post-1", "url": "https://example.test/post", "health_status": "ok", "like_count": 1}]
+    with TemporaryDirectory() as directory:
+        monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", directory)
+        with patch.object(selfmedia, "feishu_list_records", return_value=records), patch.object(
+            selfmedia, "refresh_posts", return_value=rows
+        ):
+            payload = selfmedia.daily_poll(_daily_poll_args())
+
+    assert payload["ok"] is True
+    assert payload["status"] == "ok"
+    assert payload["completion_status"] == "ok"
+    assert payload["enabled_account_count"] == 1
+    assert payload["polled_account_count"] == 1
+
+
+def test_verify_schema_accepts_account_monitor_field_specs(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(selfmedia, "feishu_bitable_refs", lambda url, token=None: ("app", "table", "token"))
+    monkeypatch.setattr(selfmedia, "feishu_field_types", lambda app, table, token: dict(selfmedia.ACCOUNT_MONITOR_FIELD_SPECS))
+
+    result = selfmedia.verify_schema("https://feishu.local/base/app?table=table")
+
+    assert result["ok"] is True
+    assert result["missing_fields"] == []
+    assert result["mismatched_fields"] == []
+
+
+def test_verify_schema_rejects_empty_table_without_records(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(selfmedia, "feishu_bitable_refs", lambda url, token=None: ("app", "empty", "token"))
+    monkeypatch.setattr(selfmedia, "feishu_field_types", lambda app, table, token: {})
+
+    result = selfmedia.verify_schema("https://feishu.local/base/app?table=empty")
+
+    assert result["ok"] is False
+    assert set(result["missing_fields"]) == set(selfmedia.ACCOUNT_MONITOR_FIELD_SPECS)
+
+
+def test_verify_schema_reports_type_mismatch(monkeypatch: pytest.MonkeyPatch) -> None:
+    actual = dict(selfmedia.ACCOUNT_MONITOR_FIELD_SPECS)
+    actual["启用"] = 1
+    monkeypatch.setattr(selfmedia, "feishu_bitable_refs", lambda url, token=None: ("app", "table", "token"))
+    monkeypatch.setattr(selfmedia, "feishu_field_types", lambda app, table, token: actual)
+
+    result = selfmedia.verify_schema("https://feishu.local/base/app?table=table")
+
+    assert result["ok"] is False
+    assert result["mismatched_fields"] == [{"field": "启用", "expected_type": 7, "actual_type": 1}]
+
+
+def test_daily_poll_parser_exposes_schema_verification_flag() -> None:
+    args = selfmedia.build_parser().parse_args(
+        ["daily-poll", "--monitor-url", "https://feishu.local/base/app?table=table", "--tenant-id", TEST_TENANT_ID, "--verify-schema"]
+    )
+
+    assert args.verify_schema is True
