@@ -7,7 +7,7 @@ from typing import Any
 
 import requests
 
-from common.feishu_urls import parse_feishu_document_ref
+from common.feishu_urls import feishu_bitable_url, parse_feishu_document_ref
 from common.social_runtime import (
     FEISHU_BASE,
     feishu_bitable_refs,
@@ -330,7 +330,7 @@ def _bitable_url_from_config(cfg: dict[str, Any]) -> str:
         joiner = "&" if "?" in url else "?"
         return f"{url}{joiner}table={table_id}"
     if app_token and table_id:
-        return f"https://tcnwueberajc.feishu.cn/base/{app_token}?table={table_id}"
+        return feishu_bitable_url(app_token, table_id, base="https://tcnwueberajc.feishu.cn")
     return url
 
 

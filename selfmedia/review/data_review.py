@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
+from common.feishu_urls import feishu_doc_url
 from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import LLMProviderSettings, load_profile_llm_settings
@@ -1463,7 +1464,7 @@ def create_data_review_doc(
     else:
         writer._replace_blocks(document_id, blocks, token)
     append_screenshot_images(document_id, screenshots, token)
-    return f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
+    return feishu_doc_url("docx", document_id, base="https://tcnwueberajc.feishu.cn")
 
 
 def doc_title(analysis: dict[str, Any], reviewed_at: str) -> str:

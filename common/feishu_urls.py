@@ -12,6 +12,7 @@ url-6 / url-7 / url-8 dedup audits.
 
 from __future__ import annotations
 
+import os
 import re
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -132,3 +133,38 @@ def parse_bitable_url(url: str) -> dict[str, str]:
         "wiki_token": wiki_match.group(1) if wiki_match else "",
         "app_token": base_match.group(1) if base_match else "",
     }
+
+
+def _resolve_feishu_doc_base(base: str | None) -> str:
+    """Resolve the web (not open-platform-API) base URL for a Feishu link.
+
+    Order: explicit ``base`` argument, then the ``FEISHU_DOC_BASE_URL``
+    environment variable, then a ``RuntimeError``. Deliberately has no
+    hardcoded fallback -- ``https://open.feishu.cn`` (the API domain, not
+    the docs web domain) used to be the default here and produced dead
+    links; fail fast instead of silently building another broken one.
+    """
+    explicit = str(base or "").strip().rstrip("/")
+    if explicit:
+        return explicit
+    from_env = os.getenv("FEISHU_DOC_BASE_URL", "").strip().rstrip("/")
+    if from_env:
+        return from_env
+    raise RuntimeError(
+        "no Feishu document base URL configured -- pass base= explicitly or "
+        "set the FEISHU_DOC_BASE_URL environment variable "
+        "(e.g. https://your-tenant.feishu.cn)"
+    )
+
+
+def feishu_doc_url(kind: str, token: str, *, base: str | None = None) -> str:
+    """Build a Feishu document web URL, e.g. ``{base}/docx/{token}``."""
+    resolved_base = _resolve_feishu_doc_base(base)
+    path = "wiki" if kind == "wiki" else "docx"
+    return f"{resolved_base}/{path}/{token}"
+
+
+def feishu_bitable_url(app_token: str, table_id: str, *, base: str | None = None) -> str:
+    """Build a Feishu bitable web URL, e.g. ``{base}/base/{app_token}?table={table_id}``."""
+    resolved_base = _resolve_feishu_doc_base(base)
+    return f"{resolved_base}/base/{app_token}?table={table_id}"

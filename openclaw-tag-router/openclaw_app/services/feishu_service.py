@@ -16,7 +16,7 @@ from typing import Any, Callable, Iterator
 
 import requests
 
-from common.feishu_urls import parse_feishu_document_ref
+from common.feishu_urls import feishu_doc_url, parse_feishu_document_ref
 from common.feishu_wiki_docs import (
     find_wiki_child_doc as _shared_find_wiki_child_doc,
     iter_wiki_children as _shared_iter_wiki_children,
@@ -42,7 +42,6 @@ from .utils import ensure_dir
 
 
 DEFAULT_FEISHU_API_BASE = "https://open.feishu.cn/open-apis"
-DEFAULT_FEISHU_DOC_BASE = "https://open.feishu.cn"
 FEISHU_MAPPING_FILE = "doc_mapping.json"
 FEISHU_DOC_WRITE_SLEEP_SEC = sleep_seconds_for_docx_write()
 LARK_CHILD_HYDRATION_REQUEST_BUDGET = 64
@@ -100,7 +99,7 @@ class FeishuService:
         app_id: str = "",
         app_secret: str = "",
         api_base_url: str = DEFAULT_FEISHU_API_BASE,
-        web_base_url: str = DEFAULT_FEISHU_DOC_BASE,
+        web_base_url: str = "",
         folder_token: str = "",
         knowledge_base_space_id: str = "",
         knowledge_base_parent_node_token: str = "",
@@ -113,7 +112,18 @@ class FeishuService:
         self.app_id = _env_or_value(app_id)
         self.app_secret = _env_or_value(app_secret)
         self.api_base_url = api_base_url.rstrip("/") or DEFAULT_FEISHU_API_BASE
-        self.web_base_url = web_base_url.rstrip("/") or DEFAULT_FEISHU_DOC_BASE
+        # https://open.feishu.cn (the open-platform API domain, not the docs
+        # web domain) used to be the hardcoded fallback here and produced
+        # dead document links. Every real caller of this service already
+        # resolves a working tenant web domain before constructing it
+        # (stage2_production_factory.py, sync_lark_resources.py); mirror
+        # that same default rather than leaving web_base_url empty, since
+        # _docx_url/_wiki_url are also used internally (e.g. write-precheck
+        # hash verification) where a nonexistent base must not turn into a
+        # hard failure of otherwise-unrelated work.
+        self.web_base_url = (
+            web_base_url or os.getenv("FEISHU_DOC_BASE_URL", "https://tcnwueberajc.feishu.cn")
+        ).rstrip("/")
         self.folder_token = folder_token.strip()
         self.knowledge_base_space_id = _env_or_value_with_aliases(
             knowledge_base_space_id,
@@ -226,10 +236,10 @@ class FeishuService:
         return f"{space_id}\0{parent_node_token}\0{doc_name}"
 
     def _docx_url(self, document_id: str) -> str:
-        return f"{self.web_base_url}/docx/{document_id}"
+        return feishu_doc_url("docx", document_id, base=self.web_base_url or None)
 
     def _wiki_url(self, node_token: str) -> str:
-        return f"{self.web_base_url}/wiki/{node_token}"
+        return feishu_doc_url("wiki", node_token, base=self.web_base_url or None)
 
     def _extract_node_fields(self, data: dict) -> tuple[str, str, str]:
         raw_node = data.get("data", {}).get("node", {}) if isinstance(data, dict) else {}

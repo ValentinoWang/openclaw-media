@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from common.feishu_urls import parse_feishu_document_ref
+from common.feishu_urls import feishu_doc_url, parse_feishu_document_ref
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from media_vault.vault import MediaVault, utc_now_iso
 
@@ -264,7 +264,7 @@ def _canonical_doc_url(value: str) -> str:
     ref = parse_feishu_document_ref(value, hosts=None)
     if ref is None:
         raise ValueError("只支持飞书 Wiki/Docx 文档链接")
-    return f"https://tcnwueberajc.feishu.cn/{ref['kind']}/{ref['token']}"
+    return feishu_doc_url(ref["kind"], ref["token"], base="https://tcnwueberajc.feishu.cn")
 
 
 def _find_creation_run(

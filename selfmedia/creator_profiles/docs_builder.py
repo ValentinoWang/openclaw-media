@@ -15,6 +15,7 @@ SELFMEDIA_ROOT = Path(__file__).resolve().parents[2]
 if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
+from common.feishu_urls import feishu_doc_url  # noqa: E402
 from common.feishu_wiki_docs import (  # noqa: E402
     create_or_reuse_wiki_doc as _shared_create_or_reuse_wiki_doc,
     requests_adapter,
@@ -277,7 +278,7 @@ def build_creator_docs(
             # the semantic-flip note. Only append fresh blocks into a doc we
             # just created; a reused doc already carries its prior content.
             document_id, node_token, created = create_or_reuse_doc(parent_node_token, title, token)
-            wiki_url = f"https://tcnwueberajc.feishu.cn/wiki/{node_token}"
+            wiki_url = feishu_doc_url("wiki", node_token, base="https://tcnwueberajc.feishu.cn")
             if created:
                 append_doc_blocks(document_id, creator_doc_blocks(creator_ip, rows), token)
         created_docs.append({"博主IP": creator_ip, "document_id": document_id, "wiki_url": wiki_url, "rows": len(rows)})

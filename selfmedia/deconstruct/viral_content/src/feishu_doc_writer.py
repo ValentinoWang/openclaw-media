@@ -17,6 +17,7 @@ from common.feishu_docx_table_limits import (
     sleep_seconds_for_docx_write,
     validate_docx_table_create_shape,
 )
+from common.feishu_urls import feishu_doc_url
 from common.feishu_wiki_docs import (
     create_wiki_doc as _shared_create_wiki_doc,
     find_wiki_child_doc as _shared_find_wiki_child_doc,
@@ -199,10 +200,10 @@ def create_doc(title: str, content: dict[str, Any], folder_token: str | None = N
             content.get("evidence_assets") or [],
         )
     append_evidence_appendix(document_id, content, token)
-    content["feishu_docx_url"] = f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
+    content["feishu_docx_url"] = feishu_doc_url("docx", document_id, base="https://tcnwueberajc.feishu.cn")
     content["feishu_doc_url"] = content["feishu_docx_url"]
     if node_token:
-        content["feishu_wiki_url"] = f"https://tcnwueberajc.feishu.cn/wiki/{node_token}"
+        content["feishu_wiki_url"] = feishu_doc_url("wiki", node_token, base="https://tcnwueberajc.feishu.cn")
         content["feishu_doc_url"] = content["feishu_wiki_url"]
     return document_id
 
@@ -289,7 +290,7 @@ def _deconstruct_index_blocks(child_docs: list[dict[str, Any]], source_records: 
             [
                 _heading3(title),
                 _paragraph(f"分析时间：{_format_node_time(node.get('obj_edit_time') or node.get('node_create_time') or node.get('obj_create_time'))}"),
-                _link_paragraph("子文档", f"https://tcnwueberajc.feishu.cn/wiki/{node_token}" if node_token else "", "打开子文档"),
+                _link_paragraph("子文档", feishu_doc_url("wiki", node_token, base="https://tcnwueberajc.feishu.cn") if node_token else "", "打开子文档"),
                 _paragraph("来源：已关联素材表（见上方链接）" if source_records.get(title) else "来源：待补"),
             ]
         )
@@ -442,7 +443,7 @@ def assert_doc_accessible(document_id: str, token: str | None = None) -> DocRef:
         raise RuntimeError(f"飞书文档不可访问：HTTP {resp.status_code} {payload}")
     document = payload.get("data", {}).get("document") or payload.get("data", {})
     checked_id = document.get("document_id") or document_id
-    url = f"https://tcnwueberajc.feishu.cn/docx/{checked_id}"
+    url = feishu_doc_url("docx", checked_id, base="https://tcnwueberajc.feishu.cn")
     return DocRef(document_id=checked_id, url=url)
 
 

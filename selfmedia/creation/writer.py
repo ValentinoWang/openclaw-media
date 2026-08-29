@@ -15,7 +15,7 @@ from common.feishu_docx_table_limits import (
     sleep_seconds_for_docx_write,
     validate_docx_table_create_shape,
 )
-from common.feishu_urls import parse_feishu_document_ref
+from common.feishu_urls import feishu_doc_url, parse_feishu_document_ref
 from common.feishu_wiki_docs import (
     create_wiki_doc as _shared_create_wiki_doc,
     find_wiki_child_doc as _shared_find_wiki_child_doc,
@@ -105,7 +105,7 @@ def create_creation_doc(
         _append_blocks(document_id, blocks, token)
     else:
         _replace_blocks(document_id, blocks, token)
-    return f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
+    return feishu_doc_url("docx", document_id, base="https://tcnwueberajc.feishu.cn")
 
 
 def create_shooting_execution_doc(
@@ -124,7 +124,7 @@ def create_shooting_execution_doc(
         _append_blocks(document_id, blocks, token)
     else:
         _replace_blocks(document_id, blocks, token)
-    return f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
+    return feishu_doc_url("docx", document_id, base="https://tcnwueberajc.feishu.cn")
 
 
 def rewrite_shooting_execution_doc(
@@ -151,12 +151,12 @@ def rewrite_shooting_execution_doc(
         title = str(node.get("title") or "").strip()
         if str(node.get("obj_type") or "").lower() not in {"docx", "doc"} or not document_id:
             raise ValueError("拍摄执行回洗目标不是飞书 Docx 文档")
-        canonical_url = f"https://tcnwueberajc.feishu.cn/wiki/{target}"
+        canonical_url = feishu_doc_url("wiki", target, base="https://tcnwueberajc.feishu.cn")
     else:
         document_id = target
         payload = _request_feishu_json("GET", f"/docx/v1/documents/{document_id}", token, timeout=20)
         title = str((payload.get("data") or {}).get("document", {}).get("title") or "").strip()
-        canonical_url = f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
+        canonical_url = feishu_doc_url("docx", document_id, base="https://tcnwueberajc.feishu.cn")
     if not title:
         title = f"拍摄执行 - {request.topic} - {request.time_window or request.publish_time or '未定时间'}"
     blocks = _shooting_execution_doc_blocks(title, request, draft, validation, media_context=media_context)
