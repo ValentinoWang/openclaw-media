@@ -55,6 +55,13 @@ assert.match(pageSource, /title="平台覆盖"/);
 assert.match(pageSource, /getAccountMonitor/);
 assert.match(pageSource, /monitor_unavailable/);
 assert.match(pageSource, /账号监控暂不可用/);
+assert.match(pageSource, /data-monitor-editor/);
+assert.match(pageSource, /保存并立即轮询/);
+assert.match(pageSource, /extractHttpUrls/);
+assert.match(pageSource, /updateAccountMonitor/);
+assert.match(pageSource, /pollAccountMonitor/);
+assert.match(pageSource, /链接未通过后端判定/);
+assert.match(pageSource, /未返回作品结果/);
 assert.match(pageSource, /H00 账号监控表/);
 assert.match(pageSource, /https:\/\/tcnwueberajc\.feishu\.cn\/base\/OmjkbgBkwa2JEysEN8uc5PMhnTb\?table=tblc65xqnUjSw9Ah/);
 for (const field of ["账号名称", "近期作品链接", "启用", "最近运行时间", "最近日报摘要"]) {

@@ -27,6 +27,7 @@ import {
 import { useMediaWeb } from "../../MediaWebWorkspace";
 import { loginUrl } from "../../mediaWebApi";
 import { PageHeading } from "../../ui/ordinaryPagePrimitives";
+import { newIdempotencyKey } from "../../ui/ordinaryPagePrimitives";
 import {
   creatorRoleDisplayLabel,
   formatFitScore,
@@ -114,6 +115,8 @@ type AccountMonitorResponse = {
   status: "available" | "unavailable";
   checkedAt: string | null;
   detail: string | null;
+  enabled?: boolean;
+  recentPostUrls?: string[];
 };
 
 type ResourceState<T> =
@@ -457,6 +460,7 @@ function TracksPage() {
             selectedAccountId={selectedAccountId}
             state={accountDetailState}
             monitorState={accountMonitorState}
+            session={session}
             trackState={trackState}
           />
         ) : activeTab === "tracks" ? (
@@ -1158,11 +1162,13 @@ function OwnedAccountInspector({
   selectedAccountId,
   state,
   monitorState,
+  session,
   trackState,
 }: {
   selectedAccountId: string | null;
   state: ResourceState<DetailResponse<OwnedAccountSummary>> | null;
   monitorState: ResourceState<AccountMonitorResponse> | null;
+  session: NonNullable<ReturnType<typeof useMediaWeb>["session"]>;
   trackState: ResourceState<ListResponse<TrackSummary>>;
 }) {
   const account = state?.kind === "ready" ? state.data.item : null;
@@ -1234,7 +1240,7 @@ function OwnedAccountInspector({
               <Field label="台账更新时间" value={formatDate(account.updatedAt)} />
             </InspectorSection>
 
-            <AccountMonitorSection state={monitorState} />
+            <AccountMonitorSection state={monitorState} accountId={account.publicAccountId} session={session} />
           </div>
         ) : (
           <SurfaceState kind="empty" title="详情为空" detail="该账号没有可展示的详情记录。" />
@@ -1258,7 +1264,55 @@ const H00_MONITOR_FIELDS = [
   "最近日报摘要",
 ];
 
-function AccountMonitorSection({ state }: { state: ResourceState<AccountMonitorResponse> | null }) {
+function AccountMonitorSection({
+  state,
+  accountId,
+  session,
+}: {
+  state: ResourceState<AccountMonitorResponse> | null;
+  accountId: string;
+  session: NonNullable<ReturnType<typeof useMediaWeb>["session"]>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [enabled, setEnabled] = useState(true);
+  const [urlText, setUrlText] = useState("");
+  const [actionState, setActionState] = useState<"idle" | "saving" | "polling" | "error">("idle");
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const urls = extractHttpUrls(urlText);
+  const submittedUrls = state?.kind === "ready" ? state.data.recentPostUrls ?? [] : [];
+
+  useEffect(() => {
+    if (state?.kind !== "ready") return;
+    setEnabled(state.data.enabled ?? true);
+    setUrlText((state.data.recentPostUrls ?? []).join("\n"));
+  }, [state]);
+
+  const saveAndPoll = async () => {
+    setActionState("saving");
+    setActionMessage(null);
+    try {
+      const saved = await callBusinessOperation<AccountMonitorResponse>("updateAccountMonitor", {
+        path: { publicAccountId: accountId },
+        body: { recentPostUrls: urls, enabled },
+        csrfToken: session.csrfToken,
+        idempotencyKey: newIdempotencyKey("account-monitor-save"),
+      });
+      setActionState("polling");
+      const polled = await callBusinessOperation<AccountMonitorResponse>("pollAccountMonitor", {
+        path: { publicAccountId: accountId },
+        body: {},
+        csrfToken: session.csrfToken,
+        idempotencyKey: newIdempotencyKey("account-monitor-poll"),
+      });
+      setActionMessage(polled.detail || saved.detail || (polled.status === "available" ? "轮询完成，但未返回作品结果。" : "账号监控暂不可用。"));
+      setActionState("idle");
+      setEditing(false);
+    } catch (error: unknown) {
+      setActionState("error");
+      setActionMessage(toMonitorActionError(error));
+    }
+  };
+
   return (
     <InspectorSection title="账号监控" icon={<RefreshCw size={15} aria-hidden="true" />}>
       {state?.kind === "loading" || state === null ? (
@@ -1280,6 +1334,23 @@ function AccountMonitorSection({ state }: { state: ResourceState<AccountMonitorR
           {state.data.detail ? <p className={styles.mutedCopy}>{state.data.detail}</p> : null}
         </div>
       )}
+      {editing ? (
+        <div className={styles.monitorEditor} data-monitor-editor>
+          <label className={styles.monitorEditorLabel}>
+            <span>近期作品链接</span>
+            <textarea value={urlText} onChange={(event) => setUrlText(event.target.value)} rows={4} placeholder="粘贴作品链接，可混合文本，系统仅提取 HTTP(S) 链接" />
+          </label>
+          <label className={styles.monitorToggle}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />启用账号监控</label>
+          <p className={styles.mutedCopy}>已提取 {urls.length} 条通用链接{submittedUrls.length ? `；上次保存 ${submittedUrls.length} 条` : ""}。</p>
+          <div className={styles.monitorEditorActions}>
+            <button className={styles.primaryAction} type="button" disabled={actionState === "saving" || actionState === "polling"} onClick={() => void saveAndPoll()}>{actionState === "saving" ? "正在保存" : actionState === "polling" ? "正在轮询" : "保存并立即轮询"}</button>
+            <button className={styles.secondaryAction} type="button" disabled={actionState === "saving" || actionState === "polling"} onClick={() => setEditing(false)}>取消</button>
+          </div>
+        </div>
+      ) : (
+        <button className={styles.secondaryAction} type="button" onClick={() => setEditing(true)}>编辑监控</button>
+      )}
+      {actionMessage ? <p className={styles.monitorActionMessage} role="status">{actionMessage}</p> : null}
       <div className={styles.monitorReference} data-monitor-reference>
         <div className={styles.monitorReferenceHeader}>
           <strong>H00 账号监控表</strong>
@@ -1292,6 +1363,21 @@ function AccountMonitorSection({ state }: { state: ResourceState<AccountMonitorR
       </div>
     </InspectorSection>
   );
+}
+
+function extractHttpUrls(value: string): string[] {
+  const matches = value.match(/https?:\/\/[^\s<>"'`]+/gi) ?? [];
+  return Array.from(new Set(matches.map((url) => url.replace(/[),.;!?]+$/, ""))));
+}
+
+function toMonitorActionError(error: unknown): string {
+  if (error instanceof BusinessOperationError && error.status === 400) {
+    return `链接未通过后端判定：${error.message}`;
+  }
+  if (error instanceof BusinessOperationError && error.status === 503 && error.code === "monitor_unavailable") {
+    return "账号监控适配器暂不可用，保存结果未被显示为成功。";
+  }
+  return "账号监控保存或轮询失败，请检查链接后重试。";
 }
 
 function TrackInspector({

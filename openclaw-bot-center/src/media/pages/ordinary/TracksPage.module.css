@@ -869,6 +869,58 @@
   line-height: 1.3;
 }
 
+.monitorEditor {
+  display: grid;
+  gap: 9px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--mg-border);
+}
+
+.monitorEditorLabel {
+  display: grid;
+  gap: 5px;
+  color: var(--mg-ink);
+  font-size: var(--mg-text-xs);
+  font-weight: 650;
+}
+
+.monitorEditorLabel textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  padding: 8px 9px;
+  border: 1px solid var(--mg-border-strong);
+  border-radius: var(--mg-r-xs);
+  color: var(--mg-ink);
+  background: var(--mg-surface);
+  font: inherit;
+  font-size: var(--mg-text-xs);
+  line-height: 1.45;
+}
+
+.monitorToggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--mg-ink);
+  font-size: var(--mg-text-xs);
+}
+
+.monitorEditorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.monitorActionMessage {
+  margin: 8px 0 0;
+  color: var(--mg-ink);
+  font-size: var(--mg-text-2xs);
+  line-height: 1.45;
+}
+
 .longContent {
   overflow-wrap: anywhere;
   white-space: pre-wrap;

@@ -20,6 +20,7 @@ export type GeneratedOperation = {
 
 export const schemaNames = [
   "AccountMonitorResponse",
+  "AccountMonitorUpdateRequest",
   "AccountTrackStrategyResponse",
   "AccountTrackStrategySummary",
   "AdminActionRequest",
@@ -201,6 +202,7 @@ export const schemaNames = [
 
 export const schemaRefs = {
   "AccountMonitorResponse": "#/components/schemas/AccountMonitorResponse",
+  "AccountMonitorUpdateRequest": "#/components/schemas/AccountMonitorUpdateRequest",
   "AccountTrackStrategyResponse": "#/components/schemas/AccountTrackStrategyResponse",
   "AccountTrackStrategySummary": "#/components/schemas/AccountTrackStrategySummary",
   "AdminActionRequest": "#/components/schemas/AdminActionRequest",
@@ -400,6 +402,8 @@ export const operationIdsByPage = {
     "listOwnedAccounts",
     "listTrackRelationships",
     "listTracks",
+    "pollAccountMonitor",
+    "updateAccountMonitor",
     "updateTrackRelationshipStatus"
   ],
   "B03": [
@@ -1407,6 +1411,48 @@ export const operations = {
     "category": "page",
     "existingHandlers": [],
     "method": "GET",
+    "pageContracts": [
+      "B02"
+    ],
+    "path": "/owned-accounts/{publicAccountId}/monitor",
+    "pathParameters": [
+      "publicAccountId"
+    ],
+    "permission": "ordinary-session",
+    "productReadModels": [
+      "owned_media_accounts"
+    ],
+    "queryParameters": [],
+    "runtimeStatus": "new"
+  },
+  "pollAccountMonitor": {
+    "canonicalCapabilityIds": [
+      "account_monitor"
+    ],
+    "category": "page",
+    "existingHandlers": [],
+    "method": "POST",
+    "pageContracts": [
+      "B02"
+    ],
+    "path": "/owned-accounts/{publicAccountId}/monitor/poll",
+    "pathParameters": [
+      "publicAccountId"
+    ],
+    "permission": "ordinary-session",
+    "productReadModels": [
+      "owned_media_accounts"
+    ],
+    "queryParameters": [],
+    "runtimeStatus": "new"
+  },
+  "updateAccountMonitor": {
+    "canonicalCapabilityIds": [
+      "account_monitor"
+    ],
+    "category": "page",
+    "existingHandlers": [],
+    "method": "PUT",
     "pageContracts": [
       "B02"
     ],
