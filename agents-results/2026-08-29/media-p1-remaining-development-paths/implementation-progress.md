@@ -120,5 +120,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - 同一远端的 `/home/ubuntu/selfmedia-tools` 当前处于 `codex/media-semantic-20260819`，HEAD 为 `e0dfbf0`，且工作树存在未跟踪与备份文件；它不是当前 integration `main`，不能直接作为本次 P1 主线发布候选。远端安装前必须先完成独立的干净发布目录、明确租户编号与飞书日报地址，再安装并回读 timer、服务日志和租户隔离产物。
 - 二次并行探测仍未在两台远端发现 `OPENCLAW_MEDIA_DAILY_POLL_TENANT_ID` 或 `FEISHU_ACCOUNT_REPORT_URL` 配置；计数与部分修复状态保持不变，未执行无租户或无日报地址的安装。
 - 安装审计补充：远端旧版 `selfmedia.py` 仍使用 OpenClaw cron agent 方式，未要求租户编号；远端没有 `selfmedia-tools/.venv`，也没有当前主线所需的生产环境文件和 user systemd 持久化验证。直接安装会绕过当前租户隔离合同，因此本轮只记录证据，不在旧脏工作树执行安装。
+- 远端准备进展（2026-08-29）：已将当前 `main` 以独立不可变目录 `/home/ubuntu/releases/openclaw-media-p1-1511254` 传至 `106.52.146.37`，创建该 release 的 `.venv` 并安装 `pydantic`、`python-dotenv`、`requests`；`selfmedia.py --help` 可正常启动。使用临时 systemd 目录和禁用模式预检生成了 tenant-scoped service/timer，确认入口、租户参数和 `Asia/Shanghai` 调度合同正确；未写入生产 user unit、未启动轮询，因此尚未产生 BIZ-05/CD-13 的生产运行证据。
 
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。尚未复验的 114 条不得自动记为已覆盖，部分覆盖条目也不得计入关闭数。
