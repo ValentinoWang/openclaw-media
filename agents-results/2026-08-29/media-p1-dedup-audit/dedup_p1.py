@@ -110,6 +110,7 @@ CLOSED = {
     "CT-D3": "6330d9f",
     "SCHED-07": "8417d6c",
     "CT-E1": "82c53e1",
+    "RT-11": "47eb788",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
