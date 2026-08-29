@@ -45,7 +45,7 @@ CLOSED = {
     # Human-facing receipt implementations already landed on main with
     # focused regression coverage; keep these mappings tied to the actual
     # source commits instead of counting them as open due to stale ledger data.
-    "CR-18": "6330d9f",
+    "CR-18": "88eca87",
     "CR-22": "6330d9f",
     "CR-23": "b849f82",
     "CR-25": "6dbc1ba",
