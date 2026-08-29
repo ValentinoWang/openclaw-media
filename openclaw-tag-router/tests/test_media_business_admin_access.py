@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -22,6 +22,8 @@ SESSION_ID = UUID("00000000-0000-0000-0000-000000000002")
 USER_ID = UUID("00000000-0000-0000-0000-000000000003")
 BATCH_ID = UUID("00000000-0000-0000-0000-000000000004")
 CREATED_BATCH_ID = UUID("00000000-0000-0000-0000-000000000005")
+SECOND_USER_ID = UUID("00000000-0000-0000-0000-000000000006")
+SECOND_BATCH_ID = UUID("00000000-0000-0000-0000-000000000007")
 
 
 class FakeConnection:
@@ -416,3 +418,101 @@ def test_disable_admission_batch_requires_revision_and_reads_back_status():
     )
     assert replay == receipt
     assert storage.mutations == 1
+
+
+class PaginatedStorage(FakeStorage):
+    """Two rows per resource so listing actually issues a nextCursor.
+
+    Regression fixture for B11: `_encode_cursor` payloads (resource + search +
+    createdAt + id) run past the 160-char public-id pattern that
+    `_decode_signed` used to hard-code, so decoding a cursor this service had
+    just issued always raised `AdminAccessInvalidRequest`. See
+    `test_admin_access.py::test_*_cursor_roundtrip_survives_full_length_payload`.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.user_rows = [
+            (USER_ID, "alice", True, 10, 2, "active", self.now, self.now),
+            (
+                SECOND_USER_ID,
+                "bob",
+                True,
+                5,
+                1,
+                "active",
+                self.now,
+                self.now - timedelta(seconds=1),
+            ),
+        ]
+        self.batch_rows = [
+            (BATCH_ID, "spring", "active", 4, 1, self.now, None),
+            (
+                SECOND_BATCH_ID,
+                "winter",
+                "active",
+                6,
+                0,
+                self.now - timedelta(seconds=1),
+                None,
+            ),
+        ]
+
+    def affiliate_users(self, connection, *, search, position, limit):
+        rows = self.user_rows
+        if search:
+            rows = [row for row in rows if search in row[1]]
+        if position is not None:
+            rows = [
+                row
+                for row in rows
+                if row[7] < position.created_at
+                or (row[7] == position.created_at and row[0] > position.object_id)
+            ]
+        return rows[:limit]
+
+    def admission_batches(self, connection, *, position, limit):
+        rows = self.batch_rows
+        if position is not None:
+            rows = [
+                row
+                for row in rows
+                if row[5] < position.created_at
+                or (row[5] == position.created_at and row[0] > position.object_id)
+            ]
+        return rows[:limit]
+
+
+def test_affiliate_users_cursor_roundtrip_survives_full_length_payload():
+    service, storage = make_service(PaginatedStorage())
+    context = admin_context()
+
+    first_page = service.list_admin_affiliate_users(context, page_size=1)
+    assert [item["displayName"] for item in first_page["items"]] == ["alice"]
+    assert first_page["nextCursor"] is not None
+    # The empty-search payload (resource + search + createdAt + id) exceeds
+    # the old 8-160 char public-id pattern that _decode_signed hard-coded;
+    # this length assertion pins down *why* B11 pagination broke.
+    assert len(first_page["nextCursor"]) > 160
+
+    second_page = service.list_admin_affiliate_users(
+        context, cursor=first_page["nextCursor"], page_size=1
+    )
+    assert [item["displayName"] for item in second_page["items"]] == ["bob"]
+    assert second_page["nextCursor"] is None
+
+
+def test_admission_batches_cursor_roundtrip_survives_full_length_payload():
+    service, storage = make_service(PaginatedStorage())
+    context = admin_context()
+
+    first_page = service.list_admin_admission_batches(context, page_size=1)
+    assert [item["name"] for item in first_page["items"]] == ["spring"]
+    assert first_page["nextCursor"] is not None
+    assert len(first_page["nextCursor"]) > 160
+
+    second_page = service.list_admin_admission_batches(
+        context, cursor=first_page["nextCursor"], page_size=1
+    )
+    assert [item["name"] for item in second_page["items"]] == ["winter"]
+    assert second_page["nextCursor"] is None

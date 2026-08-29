@@ -19,6 +19,7 @@ SCHEMA_VERSION = "media_web_business_pages_v2"
 DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
 _PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+_CURSOR_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,512}$")
 _UTC = timezone.utc
 
 
@@ -169,8 +170,8 @@ def _encode_signed(value: dict[str, Any], secret: bytes) -> str:
     return base64.urlsafe_b64encode(body + b"." + signature).decode("ascii").rstrip("=")
 
 
-def _decode_signed(token: str, secret: bytes) -> dict[str, Any]:
-    if not isinstance(token, str) or not _PUBLIC_ID_PATTERN.fullmatch(token):
+def _decode_signed(token: str, secret: bytes, *, pattern: Any = _PUBLIC_ID_PATTERN) -> dict[str, Any]:
+    if not isinstance(token, str) or not pattern.fullmatch(token):
         raise AdminAccessNotFound()
     try:
         padded = token + "=" * (-len(token) % 4)
@@ -905,7 +906,7 @@ class AdminAccessService:
 
     def _cursor(self, token: str, *, resource: str, search: str) -> _CursorPosition:
         try:
-            value = _decode_signed(token, self._cursor_secret)
+            value = _decode_signed(token, self._cursor_secret, pattern=_CURSOR_PATTERN)
         except AdminAccessNotFound as exc:
             raise AdminAccessInvalidRequest("cursor is invalid", field="cursor") from exc
         if value.get("resource") != resource or value.get("search") != search:
