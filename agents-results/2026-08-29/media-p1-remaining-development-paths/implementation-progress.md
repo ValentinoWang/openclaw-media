@@ -122,5 +122,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - 安装审计补充：远端旧版 `selfmedia.py` 仍使用 OpenClaw cron agent 方式，未要求租户编号；远端没有 `selfmedia-tools/.venv`，也没有当前主线所需的生产环境文件和 user systemd 持久化验证。直接安装会绕过当前租户隔离合同，因此本轮只记录证据，不在旧脏工作树执行安装。
 - 远端准备进展（2026-08-29）：已将当前 `main` 以独立不可变目录 `/home/ubuntu/releases/openclaw-media-p1-1511254` 传至 `106.52.146.37`，创建该 release 的 `.venv` 并安装 `pydantic`、`python-dotenv`、`requests`；`selfmedia.py --help` 可正常启动。使用临时 systemd 目录和禁用模式预检生成了 tenant-scoped service/timer，确认入口、租户参数和 `Asia/Shanghai` 调度合同正确；未写入生产 user unit、未启动轮询，因此尚未产生 BIZ-05/CD-13 的生产运行证据。
 - release 基线说明：上述远端 release 的源码基线为传输时的 `main`（`1511254`）；其后本地新增提交仅更新本进度文档和 SSOT 证据，不改变 `runtime/cli/selfmedia.py` 或日报轮询实现。当前环境再次连接远端时返回 `Operation not permitted`，因此暂不能回读该 release 的服务状态或完成生产安装。
+- 本轮复核：对 `106.52.146.37` 的 SSH 连接仍被当前执行环境以 `Operation not permitted` 拒绝，无法执行远端安装或回读；本地 release 入口和依赖仍可做无副作用检查。该阻塞属于执行环境网络权限，不将其误记为代码失败。
 
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。尚未复验的 114 条不得自动记为已覆盖，部分覆盖条目也不得计入关闭数。
