@@ -4,6 +4,7 @@ import {
   type ProductRequestEnvelope,
   type ProductTransport,
 } from './generatedProductContract'
+import { mutationHeaders, MissingCsrfTokenError } from './requestHeaders'
 
 export class MediaProductHttpError extends Error {
   readonly status: number
@@ -66,12 +67,18 @@ export class MediaProductHttpTransport implements ProductTransport {
     const target = `${apiBase}${envelope.path}${query.size ? `?${query.toString()}` : ''}`
     const headers: Record<string, string> = { Accept: 'application/json' }
     if (envelope.body !== undefined) headers['Content-Type'] = 'application/json'
-    if (envelope.idempotencyKey) headers['Idempotency-Key'] = envelope.idempotencyKey
     const isMutation = envelope.method !== 'GET' && envelope.method !== 'HEAD' && envelope.method !== 'OPTIONS'
-    if (envelope.authSource === 'session' && isMutation) {
-      const csrfToken = this.getCsrfToken()
-      if (!csrfToken) throw new MediaProductHttpError(0, 'missing_csrf_token', `${operationId} 需要 CSRF token。`)
-      headers['X-OpenClaw-CSRF'] = csrfToken
+    try {
+      Object.assign(headers, mutationHeaders({
+        csrfToken: this.getCsrfToken(),
+        idempotencyKey: envelope.idempotencyKey,
+        isMutation,
+        authSource: envelope.authSource,
+        context: operationId,
+      }))
+    } catch (error) {
+      if (error instanceof MissingCsrfTokenError) throw new MediaProductHttpError(0, 'missing_csrf_token', error.message)
+      throw error
     }
     if (envelope.authSource === 'device_credential' || envelope.authSource === 'session_or_device_credential') {
       const credential = this.getDeviceCredential()

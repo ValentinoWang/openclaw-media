@@ -24,6 +24,7 @@ import {
 } from './generatedProductContract'
 import { MediaProductHttpTransport } from './mediaProductHttpTransport'
 import { materialParsingServerFailureMessage } from './task-launch/materialParsing'
+import { mutationHeaders as buildMutationHeaders, MissingCsrfTokenError } from './requestHeaders'
 
 export type MediaWebCapability = CapabilityDefinition
 
@@ -519,9 +520,16 @@ export async function loadAdminUpstreamSummary(signal?: AbortSignal): Promise<Ad
 }
 
 function mutationHeaders(session: MediaWebSession, idempotencyKey: string): Record<string, string> {
-  return {
-    'X-OpenClaw-CSRF': session.csrfToken,
-    'Idempotency-Key': idempotencyKey,
+  try {
+    return buildMutationHeaders({
+      csrfToken: session.csrfToken,
+      idempotencyKey,
+      isMutation: true,
+      authSource: 'session',
+    })
+  } catch (error) {
+    if (error instanceof MissingCsrfTokenError) throw new MediaWebApiError(0, 'missing_csrf_token', error.message)
+    throw error
   }
 }
 
