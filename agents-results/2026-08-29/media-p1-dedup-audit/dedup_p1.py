@@ -111,6 +111,7 @@ CLOSED = {
     "SCHED-07": "8417d6c",
     "CT-E1": "82c53e1",
     "RT-11": "47eb788",
+    "CT-C1": "808395f",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
