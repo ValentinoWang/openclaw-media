@@ -11,6 +11,7 @@ import {
 import {
   newIdempotencyKey, PageHeading, type LoadState,
 } from '../../ui/ordinaryPagePrimitives'
+import { usageEventTone } from '../../statusPresentation'
 import styles from './UsageBillingPage.module.css'
 
 type UsageEventKind = 'text' | 'image' | 'credit' | 'compensation'
@@ -328,9 +329,15 @@ function Metric({ label, value, detail, muted = false }: { label: string; value:
   return <div className={muted ? styles.metric + ' ' + styles.mutedMetric : styles.metric}><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>
 }
 
+const usageToneClasses: Record<ReturnType<typeof usageEventTone>, string> = {
+  success: styles.statusSuccess,
+  danger: styles.statusError,
+  neutral: styles.statusNeutral,
+}
+
 function StatusBadge({ value }: { value: string }) {
   const normalized = value.trim().toLowerCase()
-  const tone = ['succeeded', 'success', 'completed'].includes(normalized) ? styles.statusSuccess : ['failed', 'error', 'cancelled'].includes(normalized) ? styles.statusError : styles.statusNeutral
+  const tone = usageToneClasses[usageEventTone(value)]
   const label = ['succeeded', 'success', 'completed'].includes(normalized) ? '已完成' : ['pending', 'processing', 'pending_reconciliation'].includes(normalized) ? '处理中' : ['failed', 'error', 'cancelled'].includes(normalized) ? '失败' : '状态待确认'
   return <span className={styles.statusBadge + ' ' + tone}>{label}</span>
 }

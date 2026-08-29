@@ -30,6 +30,7 @@ import {
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { qualityDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { platformDisplayLabel } from "../../ui/platformRegistry";
+import { reviewQualityTone } from "../../statusPresentation";
 import styles from "./ReviewsPage.module.css";
 
 type TabId = "reviews" | "content" | "account" | "growth";
@@ -739,11 +740,15 @@ function QualityBadge({ value }: { value: string }) {
   return <span className={[styles.qualityBadge, qualityClass(value)].join(" ")}>{qualityLabel(value)}</span>;
 }
 
+const qualityToneClasses: Record<ReturnType<typeof reviewQualityTone>, string> = {
+  verified: styles.qualityVerified,
+  partial: styles.qualityPartial,
+  unverified: styles.qualityUnverified,
+  unavailable: styles.qualityUnavailable,
+};
+
 function qualityClass(value: string): string {
-  if (value === "verified") return styles.qualityVerified;
-  if (value === "partial") return styles.qualityPartial;
-  if (value === "unverified") return styles.qualityUnverified;
-  return styles.qualityUnavailable;
+  return qualityToneClasses[reviewQualityTone(value)];
 }
 
 function qualityLabel(value: string): string {

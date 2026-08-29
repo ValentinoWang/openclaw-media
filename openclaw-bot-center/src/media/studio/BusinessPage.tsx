@@ -17,6 +17,7 @@ import { useMediaWeb } from '../MediaWebWorkspace'
 import { BusinessOperationError, callBusinessOperation } from '../generatedBusinessPagesContract'
 import { PlatformIdentity } from '../ui/PlatformIdentity'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
+import { businessStatusTone } from '../statusPresentation'
 import styles from './BusinessPage.module.css'
 
 type BusinessOpportunity = {
@@ -146,17 +147,11 @@ function ModelCard({ icon, title, detail, tags }: { icon: ReactNode; title: stri
 }
 
 function StatusBadge({ status }: { status: string }) {
-  return <span className={styles.statusBadge} data-tone={statusTone(status)}>{statusLabel(status)}</span>
+  return <span className={styles.statusBadge} data-tone={businessStatusTone(status)}>{statusLabel(status)}</span>
 }
 
 function PanelState({ icon, title, detail, action }: { icon: ReactNode; title: string; detail?: string; action?: ReactNode }) {
   return <div className={styles.panelState}>{icon}<strong>{title}</strong>{detail ? <p>{detail}</p> : null}{action}</div>
-}
-
-function statusTone(status: string): 'success' | 'warning' | 'neutral' {
-  if (['active', 'approved', 'confirmed', 'open', 'in_progress'].includes(status)) return 'success'
-  if (['pending', 'draft', 'needs_review', 'awaiting_confirmation'].includes(status)) return 'warning'
-  return 'neutral'
 }
 
 function statusLabel(status: string): string {

@@ -34,6 +34,7 @@ import { Link } from "react-router-dom";
 import { TaskSettlementDetails, useMediaWeb } from "../../MediaWebWorkspace";
 import type { MediaWebTask } from "../../mediaWebApi";
 import { latestTaskFeed } from "../../recentTaskPresentation";
+import { artifactSyncTone, overviewTaskTone } from "../../statusPresentation";
 import {
   BusinessOperationError,
   callBusinessOperation,
@@ -975,7 +976,7 @@ function ArtifactRowContent({
       </span>
     </span>
     <span className={styles.artifactMeta} data-artifact-meta>
-      <span className={"status-badge is-" + artifactTone(syncStatus)}>{syncStatusDisplayLabel(artifact.syncStatus)}</span>
+      <span className={"status-badge is-" + artifactSyncTone(syncStatus)}>{syncStatusDisplayLabel(artifact.syncStatus)}</span>
       <time dateTime={artifact.updatedAt}>{displayDate(artifact.updatedAt)}</time>
     </span>
   </>;
@@ -1149,13 +1150,6 @@ function dashboardLabel(value: string) {
   return labels[value] ?? "未识别指标";
 }
 
-function artifactTone(status: ArtifactSummary["syncStatus"]): "success" | "warning" | "info" | "neutral" {
-  if (status === "synced" || status === "not_applicable") return "success";
-  if (status === "conflict" || status === "failed") return "warning";
-  if (status === "pending") return "info";
-  return "neutral";
-}
-
 function MetricStrip({
   dashboardState,
 }: {
@@ -1323,7 +1317,7 @@ function AgentPanel({
             <h3>{activeTasks.length ? "当前网页任务" : "最近网页任务"}</h3>
             {currentTask ? (
               <span
-                className={"status-badge is-" + taskTone(currentTask.status)}
+                className={"status-badge is-" + overviewTaskTone(currentTask.status)}
               >
                 {taskStatusLabel(currentTask.status)}
               </span>
@@ -1674,7 +1668,7 @@ function pendingTaskPresentation(
       kind: receipt.kind,
       title: "确认写入达人档案",
       statusLabel: taskStatusLabel(task.status),
-      statusTone: taskTone(task.status),
+      statusTone: overviewTaskTone(task.status),
       impact: "候选档案已生成，等待人工核对后入库",
       detail: `候选回执有效至 ${displayDate(receipt.expiresAt)}。`,
       actionHint: "请在任务工作区核对候选档案。",
@@ -1692,7 +1686,7 @@ function pendingTaskPresentation(
       kind: receipt.kind,
       title: "确认保存赛道关系",
       statusLabel: taskStatusLabel(task.status),
-      statusTone: taskTone(task.status),
+      statusTone: overviewTaskTone(task.status),
       impact: "关系预览已生成，等待人工核对后写入",
       detail: `关系预览有效至 ${displayDate(receipt.expiresAt)}。`,
       actionHint: "请在任务工作区核对关系预览。",
@@ -1708,7 +1702,7 @@ function pendingTaskPresentation(
     kind: requiresConfirmationReceipt(task) ? "confirmation" : "manual",
     title: task.capabilityPath.at(-1) || "待处理任务",
     statusLabel: taskStatusLabel(task.status),
-    statusTone: taskTone(task.status),
+    statusTone: overviewTaskTone(task.status),
     impact: displayText(task.summary),
     detail: "完整输入、来源和结果请在任务工作区核对。",
     actionHint: "请在任务工作区查看完整上下文。",
@@ -1770,14 +1764,6 @@ function isPendingTask(task: MediaTaskSummary, nowMs = Date.now()) {
 
 function taskStatusLabel(status: string) {
   return taskStatusLabels[status] ?? "状态待读取";
-}
-
-function taskTone(status: string): "success" | "warning" | "info" | "neutral" {
-  if (status === "succeeded") return "success";
-  if (status === "failed" || status === "cancelled") return "warning";
-  if (status === "awaiting_confirmation" || status === "pending_manual")
-    return "warning";
-  return status ? "info" : "neutral";
 }
 
 function loadDetail<T>(state: B01LoadState<T>, readyText: string) {

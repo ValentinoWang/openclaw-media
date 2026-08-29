@@ -29,6 +29,7 @@ import {
   qualityDisplayLabel,
   syncStatusDisplayLabel,
 } from "../../ui/ordinaryDataLabels";
+import { publishingStatusStage } from "../../statusPresentation";
 import styles from "./PublishingPage.module.css";
 
 type ReadState<T> =
@@ -333,11 +334,15 @@ function readChecks(item: PublishingPackage): Record<CheckKey, boolean> { return
 function checkValue(item: PublishingPackage, key: CheckKey): boolean { return item.humanChecks.find((check) => check.key === key)?.checked === true; }
 function checkSummary(items: PublishingPackage["humanChecks"]): string { return items.filter((check) => check.checked).length + "/" + checks.length + " 项人工检查"; }
 function statusLabel(status: string): string { return { draft: "草稿", checking: "检查中", ready: "可发布", published: "已记录发布" }[status] ?? "发布状态待确认"; }
+const publishingToneClasses: Record<ReturnType<typeof publishingStatusStage>, string> = {
+  ready: styles.status_ready,
+  published: styles.status_published,
+  checking: styles.status_checking,
+  draft: styles.status_draft,
+};
+
 function statusToneClass(status: string): string {
-  if (status === "ready") return styles.status_ready;
-  if (status === "published") return styles.status_published;
-  if (status === "checking") return styles.status_checking;
-  return styles.status_draft;
+  return publishingToneClasses[publishingStatusStage(status)];
 }
 function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return "未提供";

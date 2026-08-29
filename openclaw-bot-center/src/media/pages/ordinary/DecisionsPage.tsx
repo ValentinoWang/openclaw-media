@@ -25,6 +25,7 @@ import {
 } from "../../ui/ordinaryPagePrimitives";
 import { qualityDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
+import { decisionStatusTone } from "../../statusPresentation";
 import styles from "./DecisionsPage.module.css";
 
 type DecisionStatus = "candidate" | "recommended" | "confirmed" | "rejected";
@@ -713,11 +714,15 @@ function StatusBadge({ status }: { status: DecisionStatus }) {
   return <span className={`${styles.decisionBadge} ${statusToneClass(status)}`}>{decisionLabel(status)}</span>;
 }
 
+const decisionToneClasses: Record<ReturnType<typeof decisionStatusTone>, string> = {
+  success: styles.decisionGood,
+  warning: styles.decisionWarning,
+  info: styles.decisionInfo,
+  neutral: styles.decisionNeutral,
+};
+
 function statusToneClass(status: DecisionStatus): string {
-  if (status === "confirmed") return styles.decisionGood;
-  if (status === "rejected") return styles.decisionWarning;
-  if (status === "recommended") return styles.decisionInfo;
-  return styles.decisionNeutral;
+  return decisionToneClasses[decisionStatusTone(status)];
 }
 
 function decisionLabel(status: string): string {

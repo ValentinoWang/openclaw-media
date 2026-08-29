@@ -13,6 +13,7 @@
 .statusBadge[data-tone='success'] { color: var(--mg-primary-dark); border-color: color-mix(in srgb, var(--mg-primary) 32%, var(--mg-border)); background: var(--mg-primary-soft); }
 .statusBadge[data-tone='warning'] { color: var(--mg-warning); border-color: color-mix(in srgb, var(--mg-warning) 30%, var(--mg-border)); background: var(--mg-warning-soft); }
 .statusBadge[data-tone='info'] { color: var(--mg-blue); border-color: color-mix(in srgb, var(--mg-blue) 30%, var(--mg-border)); background: var(--mg-blue-soft); }
+.statusBadge[data-tone='danger'] { color: var(--mg-danger); border-color: color-mix(in srgb, var(--mg-danger) 30%, var(--mg-border)); background: var(--mg-danger-soft); }
 .primaryButton, .secondaryButton { border: 1px solid var(--mg-border-strong); cursor: pointer; }
 .primaryButton { color: var(--mg-on-primary); border-color: var(--mg-primary-dark); background: var(--mg-primary-dark); }
 .secondaryButton { color: var(--mg-ink); background: var(--mg-surface); }

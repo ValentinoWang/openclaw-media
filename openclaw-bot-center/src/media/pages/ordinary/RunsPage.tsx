@@ -199,6 +199,7 @@ const statusToneClasses: Record<StatusTone, string> = {
   warning: styles.toneWarning,
   info: styles.toneInfo,
   neutral: styles.toneNeutral,
+  danger: styles.toneDanger,
 };
 
 export default function RunsPage() {

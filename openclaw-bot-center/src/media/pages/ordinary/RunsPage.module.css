@@ -605,6 +605,11 @@
   background: var(--mg-bg);
 }
 
+.toneDanger {
+  color: var(--mg-danger);
+  background: var(--mg-danger-soft);
+}
+
 .paginationWrap {
   border-top: 1px solid var(--mg-border);
 }

@@ -37,6 +37,7 @@ import {
   trackStatusDisplayLabel,
 } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
+import { ownedAccountOperationalTone } from "../../statusPresentation";
 import styles from "./TracksPage.module.css";
 
 type TabId = "owned" | "tracks" | "benchmarks";
@@ -733,7 +734,7 @@ function OwnedAccountsTab({
               const accountTracks = account.publicTrackIds
                 .map((trackId) => trackById.get(trackId)?.name)
                 .filter((name): name is string => Boolean(name));
-              const statusTone = operationalStatusTone(account.operationalStatus);
+              const statusTone = ownedAccountOperationalTone(account.operationalStatus);
               return (
               <button
                 key={account.publicAccountId}
@@ -1192,7 +1193,7 @@ function OwnedAccountInspector({
   const accountTracks = account?.publicTrackIds
     .map((trackId) => trackById.get(trackId))
     .filter((track): track is TrackSummary => Boolean(track)) ?? [];
-  const statusTone = operationalStatusTone(account?.operationalStatus ?? null);
+  const statusTone = ownedAccountOperationalTone(account?.operationalStatus ?? null);
 
   return (
     <aside className={styles.inspectorColumn} data-page-inspector>
@@ -1813,13 +1814,6 @@ function hasOperationalStatus(
   status: Exclude<OwnedAccountFilter, "all">,
 ): boolean {
   return normalizedStatus(account.operationalStatus ?? "") === status;
-}
-
-function operationalStatusTone(value: string | null): "success" | "warning" | "neutral" {
-  const status = normalizedStatus(value ?? "");
-  if (status === "active") return "success";
-  if (status === "paused") return "warning";
-  return "neutral";
 }
 
 function operationalStatusTextClass(value: string | null): string {
