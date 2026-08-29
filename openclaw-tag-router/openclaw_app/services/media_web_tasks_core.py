@@ -20,6 +20,7 @@ from typing import Any, Callable, Iterator, Mapping, Sequence
 from urllib.parse import urlparse
 
 from common.model_transport_context import bind_model_transport
+from common.platform_labels import PLATFORM_LABELS as _COMMON_PLATFORM_LABELS
 
 from .capability_registry import CAPABILITY_REGISTRY, CapabilityDefinition, CapabilityRegistryError
 
@@ -105,6 +106,17 @@ MATERIAL_TYPE_ALIASES = {
     "pdf": "pdf",
     "PDF": "pdf",
 }
+# NOTE (H8 dedup): this alias table is deliberately NOT sourced from
+# common/platform_labels.py's merged PLATFORM_ALIASES. That table
+# recognizes many more alias spellings (tiktok, dy, 巨量, xhs, 视频号,
+# b站, 哔哩哔哩, ...) than this module's 9-slug validation surface ever
+# has. MATERIAL_PLATFORM_ALIASES.get(...) returning None here is a load-
+# bearing signal in _validate_source_asset_material_parsing (it means "we
+# could not confirm the platform" and drives the missing_fields /
+# material_parsing_incomplete error path) -- silently widening what this
+# table accepts would silently widen what that validation flow lets
+# through. Only MATERIAL_PLATFORM_LABELS (pure "slug -> Chinese display
+# text", no validation implications) is deduped against common below.
 MATERIAL_PLATFORM_ALIASES = {
     "douyin": "douyin",
     "抖音": "douyin",
@@ -125,17 +137,9 @@ MATERIAL_PLATFORM_ALIASES = {
     "unknown": "unknown",
     "其他或未知平台": "unknown",
 }
-MATERIAL_PLATFORM_LABELS = {
-    "douyin": "抖音",
-    "xiaohongshu": "小红书",
-    "kuaishou": "快手",
-    "bilibili": "哔哩哔哩",
-    "wechat": "微信",
-    "weibo": "微博",
-    "zhihu": "知乎",
-    "web": "普通网页",
-    "unknown": "其他或未知平台",
-}
+# Consolidated into common/platform_labels.py (H8); byte-identical content,
+# reused here rather than duplicated.
+MATERIAL_PLATFORM_LABELS = dict(_COMMON_PLATFORM_LABELS)
 MATERIAL_TYPE_LABELS = {
     "text": "文本",
     "url": "链接",

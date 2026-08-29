@@ -16,6 +16,12 @@ SELFMEDIA_ROOT = Path(
 ).expanduser()
 COOKIE_SCRIPT = SELFMEDIA_ROOT / "integrations/platform_auth/cookies/save_platform_cookie_secret.py"
 PLATFORMS = ("douyin", "xiaohongshu")
+# NOTE (H8 dedup survey): these Chinese strings are cookie-store LOOKUP KEYS
+# passed straight into id_business.load_playwright_cookies() /
+# load_cookie_candidates() below -- not display labels. They are
+# deliberately NOT wired up to common/platform_labels.py: changing the
+# value here changes what key this service looks up in the on-disk cookie
+# store, which would silently stop finding already-saved cookies.
 _PLATFORM_LABELS = {"douyin": "抖音", "xiaohongshu": "小红书"}
 
 

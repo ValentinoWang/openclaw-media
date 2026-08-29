@@ -9,6 +9,7 @@ SELFMEDIA_ROOT = Path(__file__).resolve().parents[2]
 if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
+from common.platform_labels import normalize_platform_zh  # noqa: E402
 from common.social_runtime import feishu_plain_text  # noqa: E402
 
 
@@ -17,13 +18,12 @@ def normalize_text(value: Any) -> str:
 
 
 def normalize_platform(value: Any) -> str:
-    text = normalize_text(value)
-    lowered = text.lower()
-    if lowered in {"xiaohongshu", "xhs", "rednote"}:
-        return "小红书"
-    if lowered in {"douyin", "tiktok"}:
-        return "抖音"
-    return text
+    # Consolidated into common/platform_labels.py (H8). This used to be a
+    # narrower inline alias set (xiaohongshu/xhs/rednote -> 小红书,
+    # douyin/tiktok -> 抖音) that silently disagreed with
+    # creator_profiles/schemas.py's own normalize_platform -- both now read
+    # from the same merged alias table.
+    return normalize_platform_zh(normalize_text(value))
 
 
 def normalize_platform_id(value: Any) -> str:

@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
+from common.platform_labels import normalize_platform_zh
 from common.platform_links import platform_for_url
 from selfmedia.business.id_business import load_playwright_cookies
 
@@ -191,11 +192,13 @@ def _parse_labeled_fields(text: str) -> dict[str, str]:
 
 
 def _normalize_platform(value: str) -> str:
+    # Alias table consolidated into common/platform_labels.py (H8); the
+    # raise branches below (multi-platform vs. unsupported-platform) and the
+    # 2-platform allowlist are unchanged.
     normalized = str(value or "").strip().lower()
-    if normalized in {"抖音", "douyin"}:
-        return "抖音"
-    if normalized in {"小红书", "xiaohongshu", "xhs", "rednote"}:
-        return "小红书"
+    canonical = normalize_platform_zh(normalized)
+    if canonical in {"抖音", "小红书"}:
+        return canonical
     if "/" in normalized or "、" in normalized or "," in normalized or "，" in normalized:
         raise HotlistValidationError("一次只能查询一个平台，请在“抖音”和“小红书”中选择一个。")
     raise HotlistValidationError("平台仅支持“抖音”或“小红书”。")

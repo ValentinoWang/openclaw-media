@@ -20,6 +20,7 @@ import requests
 from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import LLMProviderSettings, load_profile_llm_settings
+from common.platform_labels import PLATFORM_ALIASES as _PLATFORM_ALIASES
 from common.social_runtime import (
     FEISHU_BASE,
     feishu_headers,
@@ -889,22 +890,15 @@ def _merge_daily_poll_evidence(analysis: dict[str, Any], evidence: dict[str, Any
 
 
 def normalize_platform_tags(value: Any) -> list[str]:
-    mapping = {
-        "douyin": "抖音",
-        "dy": "抖音",
-        "抖音": "抖音",
-        "巨量": "抖音",
-        "xhs": "小红书",
-        "xiaohongshu": "小红书",
-        "rednote": "小红书",
-        "小红书": "小红书",
-        "视频号": "视频号",
-        "wechat_channels": "视频号",
-        "wechat channel": "视频号",
-        "b站": "B站",
-        "bilibili": "B站",
-    }
-    return normalize_select_tags(value, default="未知", mapping=mapping, allowed=PLATFORM_VALUES)
+    # Alias table consolidated into common/platform_labels.py (H8). The
+    # PLATFORM_VALUES allowlist below still does its own second-pass
+    # filtering, so any platform the merged table recognizes but this
+    # module's Feishu multi-select field does not accept (there is no
+    # "视频号"/"B站" in media_web_tasks_core's own platform set, for
+    # example) still safely collapses to the "未知" default here.
+    return normalize_select_tags(
+        value, default="未知", mapping=_PLATFORM_ALIASES, allowed=PLATFORM_VALUES
+    )
 
 
 def normalize_media_format_tags(value: Any) -> list[str]:

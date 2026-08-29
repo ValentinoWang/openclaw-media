@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
+from common.platform_labels import PLATFORM_ALIASES, normalize_platform_zh
+
 
 FIELD_ALIASES: dict[str, list[str]] = {
     "标题": ["标题", "原标题", "名称", "活动标题"],
@@ -395,17 +397,10 @@ CONTENT_TYPE_VALUES = {
     "不限",
 }
 
-PLATFORM_ALIASES = {
-    "xhs": "小红书",
-    "xiaohongshu": "小红书",
-    "小红书": "小红书",
-    "douyin": "抖音",
-    "抖音": "抖音",
-    "bilibili": "B站",
-    "b站": "B站",
-    "哔哩哔哩": "B站",
-    "B站": "B站",
-}
+# PLATFORM_ALIASES used to be defined locally here; it is now consolidated
+# in common/platform_labels.py (H8) and re-exported (imported at module top)
+# so any other in-repo importer of field_contract.PLATFORM_ALIASES keeps
+# working unchanged.
 
 CONTENT_TYPE_ALIASES = {
     "image_post": "图文",
@@ -474,9 +469,7 @@ class CanonicalMediaRecord:
 
 
 def normalize_platform(value: Any) -> str:
-    text = normalize_feishu_value(value)
-    compact = text.strip().lower()
-    return PLATFORM_ALIASES.get(compact, text)
+    return normalize_platform_zh(normalize_feishu_value(value))
 
 
 def normalize_content_type(value: Any) -> str:
