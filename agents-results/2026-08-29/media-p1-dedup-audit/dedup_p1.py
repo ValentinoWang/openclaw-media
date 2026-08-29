@@ -112,6 +112,7 @@ CLOSED = {
     "CT-E1": "82c53e1",
     "RT-11": "47eb788",
     "CT-C1": "808395f",
+    "BIZ-06": "1717a45",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
@@ -119,9 +120,6 @@ CLOSED = {
 PARTIAL = {
     "BIZ-05": "ec8c88c",
     "CD-13": "ec8c88c",
-    # Review-memory fields are preserved, but creation-side consumer budgets
-    # still truncate the feedback payload and require a separate closure.
-    "BIZ-06": "108c662",
 }
 
 def parse_items(text: str):
