@@ -15,6 +15,10 @@ SELFMEDIA_ROOT = Path(__file__).resolve().parents[2]
 if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
+from common.feishu_wiki_docs import (  # noqa: E402
+    create_or_reuse_wiki_doc as _shared_create_or_reuse_wiki_doc,
+    requests_adapter,
+)
 from common.social_runtime import (  # noqa: E402
     FEISHU_BASE,
     feishu_bitable_refs,
@@ -45,71 +49,34 @@ def paragraph(text: str) -> dict[str, Any]:
     return {"block_type": 2, "text": {"elements": [{"text_run": {"content": str(text)[:1800]}}]}}
 
 
-def get_wiki_node(node_token: str, token: str) -> dict[str, Any]:
-    resp = requests.get(
-        f"{FEISHU_BASE}/wiki/v2/spaces/get_node",
-        params={"token": node_token},
-        headers=feishu_headers(token),
-        timeout=20,
-    )
-    resp.raise_for_status()
-    payload = resp.json()
-    if payload.get("code") != 0:
-        raise RuntimeError(f"获取知识库节点失败：{payload}")
-    return payload.get("data", {}).get("node") or {}
-
-
-def find_child_doc(space_id: str, parent_node_token: str, title: str, token: str) -> tuple[str, str] | None:
-    page_token = ""
-    while True:
-        params: dict[str, Any] = {"parent_node_token": parent_node_token, "page_size": 50}
-        if page_token:
-            params["page_token"] = page_token
-        resp = requests.get(
-            f"{FEISHU_BASE}/wiki/v2/spaces/{space_id}/nodes",
-            params=params,
-            headers=feishu_headers(token),
-            timeout=20,
-        )
-        resp.raise_for_status()
-        payload = resp.json()
-        if payload.get("code") != 0:
-            raise RuntimeError(f"查询知识库子节点失败：{payload}")
-        data = payload.get("data", {}) or {}
-        for item in data.get("items", []) or []:
-            if str(item.get("title") or "").strip() != title.strip():
-                continue
-            if str(item.get("obj_type") or "").lower() != "docx":
-                continue
-            return str(item.get("obj_token") or ""), str(item.get("node_token") or "")
-        if not data.get("has_more"):
-            break
-        page_token = str(data.get("page_token") or "")
-        if not page_token:
-            break
-    return None
-
-
 def create_or_reuse_doc(parent_node_token: str, title: str, token: str) -> tuple[str, str, bool]:
-    parent = get_wiki_node(parent_node_token, token)
-    space_id = str(parent.get("space_id") or "")
-    if not space_id:
-        raise RuntimeError("目标知识库节点缺少 space_id")
-    existing = find_child_doc(space_id, parent_node_token, title, token)
-    if existing:
-        return existing[0], existing[1], True
-    resp = requests.post(
-        f"{FEISHU_BASE}/wiki/v2/spaces/{space_id}/nodes",
-        headers=feishu_headers(token),
-        json={"obj_type": "docx", "parent_node_token": parent_node_token, "node_type": "origin", "title": title},
-        timeout=20,
-    )
-    resp.raise_for_status()
-    payload = resp.json()
-    if payload.get("code") != 0:
-        raise RuntimeError(f"创建博主档案文档失败：{payload}")
-    node = payload.get("data", {}).get("node") or {}
-    return str(node.get("obj_token") or ""), str(node.get("node_token") or ""), False
+    """Find-or-create the wiki child doc for `title` under `parent_node_token`.
+
+    Returns (document_id, node_token, created).
+
+    !! SEMANTIC FLIP vs. the pre-refactor version of this function !!
+    The third element used to mean "reused" (True = an existing doc was
+    found and reused, False = a new doc was created) -- the OPPOSITE of
+    every other find-or-create implementation in this codebase. It now
+    means "created" (True = new doc, False = reused), matching
+    common.feishu_wiki_docs.WikiDoc.created, which is the single source of
+    truth for this flag's meaning going forward.
+
+    build_creator_docs below was updated in lockstep: it used to skip
+    `append_doc_blocks` when `reused` was True; it now skips
+    `append_doc_blocks` when `created` is False. Same two rows of the truth
+    table, inverted expression. See the migration commit message / task
+    report for how this was checked.
+
+    Also widens the obj_type whitelist from {"docx"} only to {"docx",
+    "doc"} (the shared primitive's default) -- this is a deliberate bug
+    fix: a legacy child node saved with obj_type == "doc" used to be
+    invisible to find_child_doc and would get a duplicate same-title doc
+    created under it every run.
+    """
+    request = requests_adapter(token, feishu_base=FEISHU_BASE, headers_fn=feishu_headers)
+    doc = _shared_create_or_reuse_wiki_doc(parent_node_token, title, request=request)
+    return doc.document_id, doc.node_token, doc.created
 
 
 def append_doc_blocks(document_id: str, blocks: list[dict[str, Any]], token: str) -> None:
@@ -302,12 +269,16 @@ def build_creator_docs(
         if dry_run:
             document_id = ""
             node_token = ""
-            reused = False
+            created = False
             wiki_url = ""
         else:
-            document_id, node_token, reused = create_or_reuse_doc(parent_node_token, title, token)
+            # create_or_reuse_doc's third element means "created" (True = new
+            # doc, False = reused an existing doc) -- see its docstring for
+            # the semantic-flip note. Only append fresh blocks into a doc we
+            # just created; a reused doc already carries its prior content.
+            document_id, node_token, created = create_or_reuse_doc(parent_node_token, title, token)
             wiki_url = f"https://tcnwueberajc.feishu.cn/wiki/{node_token}"
-            if not reused:
+            if created:
                 append_doc_blocks(document_id, creator_doc_blocks(creator_ip, rows), token)
         created_docs.append({"博主IP": creator_ip, "document_id": document_id, "wiki_url": wiki_url, "rows": len(rows)})
         for record in rows:
