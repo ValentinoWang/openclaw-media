@@ -1223,10 +1223,15 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             )
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
-        except Exception:
+        except Exception as exc:
             LOGGER.exception(
                 "HTTP request failed",
-                extra={"method": "GET", "path": self._request_path(), "request_id": self._correlation_id()},
+                extra={
+                    "method": "GET",
+                    "path": self._request_path(),
+                    "request_id": self._correlation_id(),
+                    "error_type": type(exc).__name__,
+                },
             )
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
@@ -1407,10 +1412,15 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             )
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
-        except Exception:
+        except Exception as exc:
             LOGGER.exception(
                 "HTTP request failed",
-                extra={"method": "POST", "path": self._request_path(), "request_id": self._correlation_id()},
+                extra={
+                    "method": "POST",
+                    "path": self._request_path(),
+                    "request_id": self._correlation_id(),
+                    "error_type": type(exc).__name__,
+                },
             )
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
@@ -1437,10 +1447,15 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             self._send_api_error(HTTPStatus(exc.status), exc.code, exc.detail)
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
-        except Exception:
+        except Exception as exc:
             LOGGER.exception(
                 "HTTP request failed",
-                extra={"method": "PUT", "path": self._request_path(), "request_id": self._correlation_id()},
+                extra={
+                    "method": "PUT",
+                    "path": self._request_path(),
+                    "request_id": self._correlation_id(),
+                    "error_type": type(exc).__name__,
+                },
             )
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 
@@ -1457,10 +1472,15 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             self._send_api_error(HTTPStatus(exc.status), exc.code, exc.detail)
         except ValueError:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
-        except Exception:
+        except Exception as exc:
             LOGGER.exception(
                 "HTTP request failed",
-                extra={"method": "DELETE", "path": self._request_path(), "request_id": self._correlation_id()},
+                extra={
+                    "method": "DELETE",
+                    "path": self._request_path(),
+                    "request_id": self._correlation_id(),
+                    "error_type": type(exc).__name__,
+                },
             )
             self._send_api_error(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "服务暂时不可用，请稍后重试。")
 

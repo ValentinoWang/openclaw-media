@@ -86,6 +86,7 @@ class P14BHttpSessionIdentityTests(unittest.TestCase):
         record = capture.records[0]
         self.assertEqual(record.request_id, request_id)
         self.assertEqual(record.path, "/media/api/assets/asset_123456/preview")
+        self.assertEqual(record.error_type, "RuntimeError")
         self.assertNotIn("must-not-log", record.path)
 
 
