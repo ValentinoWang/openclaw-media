@@ -10,6 +10,9 @@ from openclaw_app.router.media_creation import MediaCreationMixin
 from openclaw_app.router.unified_creation import UnifiedCreationMixin
 
 
+TENANT_ID = "00000000-0000-4000-8000-000000000101"
+
+
 class CreationInspirationHarness(UnifiedCreationMixin, MediaCreationMixin):
     def __init__(self) -> None:
         self.synced_fields: dict[str, object] = {}
@@ -33,7 +36,7 @@ class CreationInspirationHarness(UnifiedCreationMixin, MediaCreationMixin):
         return {"doc": "https://example.feishu.cn/wiki/inspiration-doc"}
 
     def _sync_unified_creation_record(self, fields: dict[str, object], *, session_tenant_id: str) -> dict[str, str]:
-        assert session_tenant_id == "101"
+        assert session_tenant_id == TENANT_ID
         self.synced_fields = fields
         return {"record_id": "rec_creation_inspiration_001", "table_url": "https://example.feishu.cn/base/table"}
 
@@ -73,7 +76,7 @@ class CreationInspirationRouteTest(unittest.TestCase):
             source="feishu",
             chat_type="private",
             created_at=datetime(2026, 6, 28, 10, 0, 0),
-            metadata={"tenant_id": "101"},
+            metadata={"tenant_id": TENANT_ID},
         )
 
         with patch(
@@ -82,7 +85,7 @@ class CreationInspirationRouteTest(unittest.TestCase):
         ) as workflow:
             result = harness.handle_拆解(message)
 
-        workflow.assert_called_once_with(message.raw_text, tenant_id="101", write_feishu=True)
+        workflow.assert_called_once_with(message.raw_text, tenant_id=TENANT_ID, write_feishu=True)
         self.assertFalse(result.ok)
         self.assertEqual(result.status, "deconstruct_incomplete")
         self.assertIn("未确认完成", result.reply)
@@ -106,7 +109,7 @@ class CreationInspirationRouteTest(unittest.TestCase):
             source="feishu",
             chat_type="private",
             created_at=datetime(2026, 6, 28, 10, 0, 0),
-            metadata={"tenant_id": "101"},
+            metadata={"tenant_id": TENANT_ID},
         )
 
         with patch(
@@ -115,7 +118,7 @@ class CreationInspirationRouteTest(unittest.TestCase):
         ) as workflow:
             result = harness.handle_拆解(message)
 
-        workflow.assert_called_once_with(message.raw_text, tenant_id="101", write_feishu=True)
+        workflow.assert_called_once_with(message.raw_text, tenant_id=TENANT_ID, write_feishu=True)
         self.assertTrue(result.ok)
         self.assertEqual(result.status, "deconstruct_only")
         self.assertIn("【拆解】处理完成。", result.reply)

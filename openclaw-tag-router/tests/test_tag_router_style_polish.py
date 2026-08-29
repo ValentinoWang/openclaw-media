@@ -22,6 +22,9 @@ from openclaw_app.router.style_polish import STYLE_POLISH_TAGS, StylePolishMixin
 from openclaw_app.router.tag_capabilities import TAG_CAPABILITIES
 
 
+TENANT_ID = "00000000-0000-4000-8000-000000000101"
+
+
 class StylePolishHarness(StylePolishMixin):
     pass
 
@@ -44,7 +47,7 @@ class StylePolishRouterTests(unittest.TestCase):
             source="feishu",
             chat_type="private",
             created_at=datetime.now(),
-            metadata={},
+            metadata={"tenant_id": TENANT_ID},
         )
         payload = {
             "run_id": "style_polish_test",

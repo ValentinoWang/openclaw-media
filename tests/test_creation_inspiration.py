@@ -1,86 +1,68 @@
 from __future__ import annotations
 
-from selfmedia.creation.inspiration import CreationInspirationResult, format_inspiration_text
+import json
+from types import SimpleNamespace
+
+from selfmedia.creation import shooting_execution
+from selfmedia.creation.writer import _shooting_execution_doc_blocks
 
 
-def _valid_inspiration_payload() -> dict[str, object]:
+# The retired ``creation-inspiration`` entrypoint used to own this contract.
+# Keep its protection on the current execution entrypoint instead of retaining
+# a test that imports code removed with that entrypoint.
+def _valid_execution_plan() -> dict[str, object]:
     return {
-        "title": "毕业照路线",
-        "theme": "课题组毕业照",
-        "track": "校园生活",
-        "platform": "小红书",
-        "content_type": "视频",
-        "cleaned_inspiration": "三小时内拍完导师和同学的毕业照，并形成可发布内容。",
-        "material_summary": "导师、约 15 位工科硕士毕业生、清华 SIGS 校园地标。",
-        "source_kind": "生活场景",
-        "signal_type": "成果",
-        "emotion_trigger": "毕业告别",
-        "trigger_sentence": "6月25日下午3点到6点帮课题组拍毕业照",
-        "event_scene": "清华大学深圳国际研究生院校园",
-        "misalignment": "工科硕士理性日常和毕业告别情绪之间的反差",
-        "core_viewpoint": "最后一次并肩出现，要拍出关系和告别。",
-        "reader_problem": "不知道三小时毕业照怎么安排路线和镜头。",
-        "material_stage": "已生成选题",
-        "recreation_direction": "做成毕业季路线图和 60 秒群像视频。",
-        "content_angles": ["导师见证", "三小时路线"],
-        "reuse_angles": ["图文路线", "短视频花絮"],
-        "derivative_topics": ["毕业照打卡路线", "课题组最后一次合影"],
-        "publishable_formats": ["图文", "短视频"],
-        "hook_options": ["三小时拍完课题组毕业照，先别急着找机位。"],
-        "title_options": ["清华SIGS毕业照路线"],
-        "script_outline": ["先保大合影", "再拍小组照", "最后拍抛帽收尾"],
-        "execution_brief": "先拍正式合影，再拍书吧和台阶小组照，最后用开阔地收尾。",
-        "route_map": ["信息大楼", "清芬楼", "银茶书吧", "书吧阶梯", "太阳树", "南国校园全景位"],
-        "shooting_schedule": ["15:00-15:20 正式大合影", "16:00-16:40 书吧小组合照", "17:20-18:00 抛帽和收尾"],
-        "shot_checklist": ["导师全体合影", "全体走来", "小组拍立得", "抛帽收尾"],
-        "storyboard": [
-            {
-                "time": "0-3s",
-                "visual": "信息大楼前，全体同学整理学位帽后看镜头。",
-                "subtitle": "三小时，拍完一次课题组毕业告别。",
-                "sound": "现场环境声起。",
-                "shooting_note": "先拍全体，避免人到后面散掉。",
-            },
-            {
-                "time": "3-10s",
-                "visual": "导师站中间，同学分三排，拍正式合影。",
-                "subtitle": "先把最稳的大合影拿下。",
-                "sound": "快门声。",
-                "shooting_note": "用建筑阴影避开硬光。",
-            },
-        ],
-        "publishing_plan": ["标题突出三小时路线", "封面用全体合影加路线字"],
-        "score": 88,
-        "score_reason": "场景明确，人数和时间明确，适合图文和视频。",
-        "strengths": ["人物关系明确", "场景可拍"],
-        "risks": ["天气和硬光可能影响出片"],
-        "next_actions": ["确认导师到场时间", "提前踩点"],
-        "tags": ["毕业季", "清华SIGS"],
+        "shooting_goal": {"platform": "抖音", "content_type": "视频", "mainline": "先给出结果，再解释路线。"},
+        "route_map": [{"time_slot": "15:00-15:20", "location": "校园入口", "shooting_task": "拍开场群像", "people": "同学", "backup": "改拍手部特写"}],
+        "must_shot_list": [{"priority": "P0", "location": "校园入口", "people": "同学", "action": "整理学位帽", "shot_size": "中景", "reference": "已确认拍摄计划", "usage": "开场", "reshoot_check": "人物和字幕清晰"}],
+        "branch_plans": [{"condition": "下雨", "plan": "改在连廊拍群像", "priority": "P1"}],
+        "storyboard": [{"time": "0-3 秒", "visual": "同学整理学位帽后看向镜头", "caption_or_voice": "三小时，拍完一次毕业告别。", "sound_or_note": "保留现场环境声"}],
+        "onsite_checklist": ["拍完开场立即回看人物和收声"],
+        "publishing_pack": {
+            "title_directions": ["三小时拍完课题组毕业照"],
+            "cover_frame": "全体同学和校园地标同框",
+            "body_copy": "先拍最重要的群像，再完成路线。",
+            "hashtags": ["毕业季"],
+            "bgm_suggestion": "轻快现场音乐",
+            "comment_prompt": "你毕业时最想留下哪个镜头？",
+            "first_hour_action": "发布后置顶提问，并回复前十条有效评论。",
+        },
+        "evidence_appendix": [{"source": "已确认拍摄计划", "source_status": "confirmed", "available_evidence": "用户提供了时间和路线", "usage_reason": "只据此安排镜头", "risk": "天气变化时按分支方案执行"}],
     }
 
 
-def test_creation_inspiration_requires_creator_execution_storyboard_fields() -> None:
-    payload = _valid_inspiration_payload()
-
-    result = CreationInspirationResult.parse_obj(payload).dict()
-
-    assert result["execution_brief"]
-    assert result["route_map"]
-    assert result["shooting_schedule"]
-    assert result["shot_checklist"]
-    assert result["storyboard"]
-    assert result["publishing_plan"]
+def _request() -> SimpleNamespace:
+    return SimpleNamespace(
+        topic="课题组毕业照",
+        time_window="15:00-18:00",
+        publish_time="",
+        platform="抖音",
+        content_type="视频",
+        shooting_goal="完成可发布的毕业群像视频",
+    )
 
 
-def test_creation_inspiration_report_puts_storyboard_before_evidence() -> None:
-    payload = _valid_inspiration_payload()
-    result = CreationInspirationResult.parse_obj(payload).dict()
+def test_creator_execution_requires_a_non_empty_storyboard() -> None:
+    draft = _valid_execution_plan()
 
-    text = format_inspiration_text("【创作-灵感】6月25日下午3点到6点拍毕业照", result)
+    assert shooting_execution.validate_shooting_execution_plan(draft)["ok"] is True
 
-    assert "## 创作者执行稿" in text
-    assert "## 打卡路线图" in text
-    assert "## 分镜脚本" in text
-    assert "| 时间 | 画面 | 字幕/口播 | 声音/拍摄注意 |" in text
-    assert "三小时，拍完一次课题组毕业告别。" in text
-    assert text.index("## 分镜脚本") < text.index("## 证据与边界")
+    draft["storyboard"] = []
+    rejected = shooting_execution.validate_shooting_execution_plan(draft)
+    assert rejected["ok"] is False
+    assert rejected["status"] == "pending_manual"
+    assert rejected["empty_lists"] == ["storyboard"]
+
+
+def test_creator_execution_document_places_storyboard_before_evidence() -> None:
+    draft = _valid_execution_plan()
+    validation = shooting_execution.validate_shooting_execution_plan(draft)
+
+    blocks = _shooting_execution_doc_blocks("拍摄执行", _request(), draft, validation)
+    rendered = json.dumps(blocks, ensure_ascii=False)
+
+    assert validation["ok"] is True
+    assert blocks[1]["heading2"]["elements"][0]["text_run"]["content"] == "分镜脚本"
+    assert blocks[2]["rows"][0] == ["时间", "画面", "字幕/口播", "声音/拍摄注意"]
+    assert "三小时，拍完一次毕业告别。" in rendered
+    assert rendered.index("分镜脚本") < rendered.index("证据附录")

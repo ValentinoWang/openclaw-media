@@ -6,10 +6,13 @@ from openclaw_app.services.content_os_feishu_project_board import FIELD_BINDINGS
 from openclaw_app.services.tenant_execution_context import bind_session_tenant_id
 
 
+TENANT_ID = "00000000-0000-4000-8000-000000000101"
+
+
 class FakeFeishuService:
     def __init__(self) -> None:
         self.fields = {"项目名称"}
-        self.records = [{"record_id": "rec_existing", "fields": {"项目名称": "值-1", "项目ID": "internal_project_a", "租户ID": "101"}}]
+        self.records = [{"record_id": "rec_existing", "fields": {"项目名称": "值-1", "项目ID": "internal_project_a", "租户ID": TENANT_ID}}]
         self.calls: list[tuple[str, str, dict | None, dict | None]] = []
 
     def _request(self, method: str, path: str, *, json_body=None, params=None):
@@ -75,13 +78,13 @@ class ContentOsFeishuProjectBoardClientTests(unittest.TestCase):
         service = FakeFeishuService()
         client = FeishuBitableProjectBoardClient(service, "BazubRWJ7a9SLRsLr4Bc8IvAnCg", tenant_owned_resources=FakeOwnerService())
         fields = visible_fields()
-        with bind_session_tenant_id("101"):
+        with bind_session_tenant_id(TENANT_ID):
             client.upsert_content_os_project("internal_project_a", fields)
         self.assertEqual(len(service.records), 1)
         self.assertEqual(service.records[0]["fields"]["项目名称"], fields["项目名称"])
         self.assertNotIn("当前状态", service.records[0]["fields"])
         next_fields = {**fields, "项目名称": "另一条项目"}
-        with bind_session_tenant_id("101"):
+        with bind_session_tenant_id(TENANT_ID):
             client.upsert_content_os_project("internal_project_b", next_fields)
         self.assertEqual(len(service.records), 2)
         self.assertEqual(service.records[1]["fields"]["项目名称"], "另一条项目")

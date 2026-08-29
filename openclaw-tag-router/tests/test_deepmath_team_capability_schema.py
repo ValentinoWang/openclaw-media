@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import unittest
 
 from openclaw_app.services.deepmath_team_capability_schema import (
@@ -23,6 +23,7 @@ def _user(identity: str) -> list[dict[str, str]]:
 
 
 def _valid_record(identity: str = "fixture-member") -> dict[str, object]:
+    now = datetime.now(timezone.utc)
     return {
         "成员": _user(identity),
         "职责范围": "研究实验与交付协调",
@@ -31,8 +32,8 @@ def _valid_record(identity: str = "fixture-member") -> dict[str, object]:
         "技能证据": "已确认的近期项目记录",
         "未来7天可分配工时": 6,
         "不可用区间": "周末",
-        "负荷确认时间": "2026-08-01T09:00:00+00:00",
-        "负荷有效至": "2026-08-08T09:00:00+00:00",
+        "负荷确认时间": (now - timedelta(hours=1)).isoformat(),
+        "负荷有效至": (now + timedelta(days=1)).isoformat(),
         "记录状态": "有效",
         "维护人": _user("fixture-maintainer"),
     }
@@ -94,9 +95,9 @@ class DeepMathTeamCapabilitySchemaTest(unittest.TestCase):
 
     def test_ineligible_effective_records_are_rejected(self):
         expired = _valid_record()
-        expired["负荷有效至"] = "2026-08-04T11:59:59+00:00"
+        expired["负荷有效至"] = (datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat()
         with self.assertRaisesRegex(ValueError, "future"):
-            validate_records([expired], now=NOW)
+            validate_records([expired])
 
         missing_evidence = _valid_record("fixture-missing-evidence")
         missing_evidence["技能证据"] = ""

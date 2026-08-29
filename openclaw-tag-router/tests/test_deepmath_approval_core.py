@@ -58,7 +58,9 @@ class DeepMathApprovalCoreTests(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
         self.path = Path(self.tempdir.name) / "state" / "approval.sqlite3"
-        self.now = datetime(2026, 8, 4, 12, 0, tzinfo=UTC)
+        # Callback entrypoints use the real clock, so their fixtures must be
+        # relative to test execution rather than a calendar date that expires.
+        self.now = datetime.now(UTC)
 
     def tearDown(self):
         self.tempdir.cleanup()

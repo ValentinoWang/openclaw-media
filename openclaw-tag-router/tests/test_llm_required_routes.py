@@ -5,6 +5,7 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from openclaw_app.models.message import Message
@@ -84,6 +85,10 @@ class SocialHarness(SocialArchiveMixin):
 
     def _conversation_context_prompt(self, _message):
         return ""
+
+    @staticmethod
+    def _load_social_metadata_prompt(_social_root: Path) -> str:
+        return "frozen social metadata contract fixture"
 
 
 def make_message(tag: str, body: str) -> Message:
@@ -194,7 +199,10 @@ class LlmRequiredRoutesTest(unittest.TestCase):
             }
         )
 
-        result = harness._extract_social_metadata_with_llm(make_message("社交", "对象：Jessica\n性别：女\n关系：异性关系"), archive_kind="社交", forced_category="")
+        result = harness._extract_social_metadata_with_llm(
+            make_message("社交", "对象：Jessica\n性别：女\n关系：异性关系"),
+            archive_kind="社交",
+        )
 
         self.assertTrue(result["ok"])
         self.assertEqual(result["person"], "Jessica")
@@ -215,7 +223,10 @@ class LlmRequiredRoutesTest(unittest.TestCase):
             }
         )
 
-        result = harness._extract_social_metadata_with_llm(make_message("社交", "对象：赵紫薇 这张图说明什么"), archive_kind="社交", forced_category="")
+        result = harness._extract_social_metadata_with_llm(
+            make_message("社交", "对象：赵紫薇 这张图说明什么"),
+            archive_kind="社交",
+        )
 
         self.assertTrue(result["ok"])
         self.assertEqual(result["person"], "赵紫薇")
@@ -224,20 +235,19 @@ class LlmRequiredRoutesTest(unittest.TestCase):
 
     def test_social_archive_prefers_downloaded_image_input_over_text_stub(self) -> None:
         harness = SocialHarness({})
-        media_root = Path("/home/ubuntu/.openclaw/media/inbound")
-        media_root.mkdir(parents=True, exist_ok=True)
-        image_path = media_root / "social-route-test.jpg"
-        image_path.write_bytes(b"fake-image")
-        self.addCleanup(lambda: image_path.unlink(missing_ok=True))
-        with tempfile.NamedTemporaryFile("w", suffix=".txt") as text_file:
+        with tempfile.TemporaryDirectory() as directory, tempfile.NamedTemporaryFile("w", suffix=".txt") as text_file:
+            media_root = Path(directory)
+            image_path = media_root / "social-route-test.jpg"
+            image_path.write_bytes(b"fake-image")
             message = make_message("社交", "对象：赵紫薇 这张图说明什么")
             message.metadata = {"downloaded_paths": [str(image_path)]}
 
-            selected = harness._social_person_archive_input_path(message, Path(text_file.name))
+            with patch("openclaw_app.router.social_archive.UPLOADED_MEDIA_ROOTS", [media_root]):
+                selected = harness._social_person_archive_input_path(message, Path(text_file.name))
 
-        self.assertEqual(selected, image_path.resolve())
+            self.assertEqual(selected, image_path.resolve())
 
-    def test_social_archive_reply_summary_uses_latest_material_content(self) -> None:
+    def test_social_archive_reply_summary_never_replays_archived_material(self) -> None:
         harness = SocialHarness({})
         with tempfile.TemporaryDirectory() as tmp_dir:
             archive_path = Path(tmp_dir) / "archive.md"
@@ -265,11 +275,12 @@ class LlmRequiredRoutesTest(unittest.TestCase):
 
             summary = harness._social_archive_reply_summary(
                 message,
-                {"archive_path": str(archive_path), "input_path": "/home/ubuntu/.openclaw/media/inbound/current.jpg"},
+                {"archive_path": str(archive_path), "chat_batch": {"ok": True}},
             )
 
-        self.assertIn("图中主体可见", summary)
+        self.assertIn("已完成聊天材料提取", summary)
         self.assertNotIn("旧内容", summary)
+        self.assertNotIn("图中主体可见", summary)
 
     def test_recreation_depth_tags_are_retired_from_active_registry(self) -> None:
         self.assertNotIn("拆解-再创", TAG_LABELS)
