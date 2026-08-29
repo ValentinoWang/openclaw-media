@@ -71,6 +71,7 @@ def clean_slash_theory_tag(value: str) -> str:
 
 
 ACCOUNT_MONITOR_FIELD_SPECS = {
+    "public_account_id": 1,
     "账号名称": 1,
     "平台": 1,
     "近期作品链接": 1,
@@ -536,6 +537,9 @@ def account_from_record(record: dict[str, Any]) -> dict[str, Any]:
         platform = detect_platform(urls[0])
     return {
         "record_id": record.get("record_id", ""),
+        "public_account_id": str(
+            feishu_first_field(fields, ("public_account_id", "publicAccountId"), default="") or ""
+        ).strip(),
         "account_name": name,
         "platform": platform or "unknown",
         "enabled": account_enabled(fields),
@@ -556,7 +560,32 @@ def account_record_kind(record: dict[str, Any]) -> str:
     return "unknown"
 
 
-def validate_account_monitor_records(records: list[dict[str, Any]]) -> None:
+def _owned_account_binding_exists(tenant_id: str, public_account_id: str) -> bool:
+    """Read the existing owned_media_accounts identity SSOT; never join by display text."""
+    dsn = os.getenv("OPENCLAW_ACCOUNT_DATABASE_URL") or os.getenv("STAGE2_ACCOUNT_DATABASE_URL")
+    if not dsn:
+        raise SystemExit("账号监控绑定校验需要 OPENCLAW_ACCOUNT_DATABASE_URL")
+    try:
+        import psycopg
+
+        with psycopg.connect(dsn, autocommit=True) as connection:
+            row = connection.execute(
+                "SELECT 1 FROM media_product.owned_media_accounts WHERE tenant_id = %s AND public_id = %s",
+                (tenant_id, public_account_id),
+            ).fetchone()
+    except Exception as exc:
+        LOGGER.warning("owned account binding lookup failed", exc_info=True)
+        raise SystemExit("无法校验账号身份绑定，请检查账号数据库连接") from exc
+    return row is not None
+
+
+def validate_account_monitor_records(
+    records: list[dict[str, Any]],
+    *,
+    tenant_id: str | None = None,
+    binding_validator: Any = None,
+    require_binding: bool = False,
+) -> None:
     profile_record_ids = [
         str(record.get("record_id") or "<unknown>")
         for record in records
@@ -583,6 +612,29 @@ def validate_account_monitor_records(records: list[dict[str, Any]]) -> None:
             "daily-poll 账号监控表需要每行显式包含启用字段，已拒绝轮询："
             + "、".join(missing_enabled_record_ids[:3])
         )
+    if require_binding:
+        if not tenant_id:
+            raise SystemExit("账号监控绑定校验需要 tenant_id")
+        validator = binding_validator or _owned_account_binding_exists
+        missing_ids: list[str] = []
+        invalid_ids: list[str] = []
+        for record in records:
+            fields = record.get("fields") or {}
+            public_account_id = str(fields.get("public_account_id") or fields.get("publicAccountId") or "").strip()
+            record_id = str(record.get("record_id") or "<unknown>")
+            if not public_account_id:
+                missing_ids.append(record_id)
+                continue
+            try:
+                exists = bool(validator(tenant_id, public_account_id))
+            except TypeError:
+                exists = bool(validator(public_account_id, tenant_id))
+            if not exists:
+                invalid_ids.append(f"{record_id}({public_account_id})")
+        if missing_ids:
+            raise SystemExit("账号监控表每行必须绑定 public_account_id，已拒绝轮询：" + ",".join(missing_ids[:3]))
+        if invalid_ids:
+            raise SystemExit("账号监控表存在不属于当前租户的 public_account_id，已拒绝轮询：" + ",".join(invalid_ids[:3]))
 
 
 def verify_schema(
@@ -810,7 +862,12 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
 
     schema = require_valid_schema(monitor_url) if getattr(args, "verify_schema", False) else None
     records = list_account_monitor_records(monitor_url, view_id=args.view_id)
-    validate_account_monitor_records(records)
+    require_binding = bool(schema) or any(
+        "public_account_id" in (record.get("fields") or {})
+        or "publicAccountId" in (record.get("fields") or {})
+        for record in records
+    )
+    validate_account_monitor_records(records, tenant_id=tenant_id, require_binding=require_binding)
     accounts = [account_from_record(record) for record in records]
     if args.limit:
         accounts = accounts[: args.limit]

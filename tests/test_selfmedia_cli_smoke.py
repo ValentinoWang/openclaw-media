@@ -430,6 +430,43 @@ def test_verify_schema_accepts_account_monitor_field_specs(monkeypatch: pytest.M
     assert result["mismatched_fields"] == []
 
 
+def test_account_monitor_binding_requires_public_id_and_tenant_owned_record() -> None:
+    record = {
+        "record_id": "rec-bound",
+        "fields": {
+            "public_account_id": "acct_12345678",
+            "账号名称": "展示名可变",
+            "平台": "抖音",
+            "近期作品链接": "https://example.test/post",
+            "启用": True,
+        },
+    }
+    calls: list[tuple[str, str]] = []
+
+    def validator(tenant_id: str, public_account_id: str) -> bool:
+        calls.append((tenant_id, public_account_id))
+        return tenant_id == TEST_TENANT_ID and public_account_id == "acct_12345678"
+
+    selfmedia.validate_account_monitor_records(
+        [record], tenant_id=TEST_TENANT_ID, binding_validator=validator, require_binding=True
+    )
+    assert calls == [(TEST_TENANT_ID, "acct_12345678")]
+
+
+def test_account_monitor_binding_rejects_missing_or_foreign_public_id() -> None:
+    missing = {"record_id": "rec-missing", "fields": {"近期作品链接": "https://example.test/post", "启用": True}}
+    with pytest.raises(SystemExit, match="public_account_id"):
+        selfmedia.validate_account_monitor_records(
+            [missing], tenant_id=TEST_TENANT_ID, binding_validator=lambda *_: True, require_binding=True
+        )
+
+    foreign = {"record_id": "rec-foreign", "fields": {"public_account_id": "acct_foreign", "近期作品链接": "https://example.test/post", "启用": True}}
+    with pytest.raises(SystemExit, match="不属于当前租户"):
+        selfmedia.validate_account_monitor_records(
+            [foreign], tenant_id=TEST_TENANT_ID, binding_validator=lambda *_: False, require_binding=True
+        )
+
+
 def test_verify_schema_rejects_empty_table_without_records(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(selfmedia, "feishu_bitable_refs", lambda url, token=None: ("app", "empty", "token"))
     monkeypatch.setattr(selfmedia, "feishu_field_types", lambda app, table, token: {})
