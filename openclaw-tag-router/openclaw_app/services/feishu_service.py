@@ -16,6 +16,7 @@ from typing import Any, Callable, Iterator
 
 import requests
 
+from common.feishu_urls import parse_feishu_document_ref
 from common.feishu_wiki_docs import (
     find_wiki_child_doc as _shared_find_wiki_child_doc,
     iter_wiki_children as _shared_iter_wiki_children,
@@ -1773,26 +1774,7 @@ class FeishuService:
             return None
 
     def _parse_document_url(self, url: str) -> dict[str, str] | None:
-        parsed = urllib.parse.urlparse(url)
-        host = parsed.netloc.lower()
-        if "feishu.cn" not in host and "larksuite.com" not in host:
-            return None
-        segments = [urllib.parse.unquote(item) for item in parsed.path.split("/") if item]
-        for index, segment in enumerate(segments):
-            normalized = segment.lower()
-            if normalized in {"docx", "doc", "docs", "wiki"} and index + 1 < len(segments):
-                kind = "docx" if normalized in {"docx", "doc", "docs"} else "wiki"
-                token = re.sub(r"[^A-Za-z0-9_-]", "", segments[index + 1])
-                if token:
-                    return {"kind": kind, "token": token}
-        query = urllib.parse.parse_qs(parsed.query)
-        for key, kind in (("docx", "docx"), ("doc_token", "docx"), ("document_id", "docx"), ("wiki", "wiki"), ("wiki_id", "wiki")):
-            values = query.get(key) or []
-            if values:
-                token = re.sub(r"[^A-Za-z0-9_-]", "", values[0])
-                if token:
-                    return {"kind": kind, "token": token}
-        return None
+        return parse_feishu_document_ref(url)
 
     def _resolve_wiki_document(self, node_token: str) -> tuple[str, str]:
         data = self._request("GET", "/wiki/v2/spaces/get_node", params={"token": node_token})

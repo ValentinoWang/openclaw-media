@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
+from common.feishu_urls import parse_feishu_document_ref
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from media_vault.vault import MediaVault, utc_now_iso
 
@@ -258,12 +258,13 @@ def handle_shooting_execution_backwash(
 
 
 def _canonical_doc_url(value: str) -> str:
-    parsed = urlparse(str(value or "").strip())
-    parts = [part for part in parsed.path.split("/") if part]
-    if len(parts) < 2 or parts[-2] not in {"wiki", "docx", "doc", "docs"}:
+    # hosts=None: this call site has never validated the doc URL's host and
+    # isn't being tightened this round for lack of test coverage over real
+    # production doc_link data (see the url-7/FC-10 dedup audit).
+    ref = parse_feishu_document_ref(value, hosts=None)
+    if ref is None:
         raise ValueError("只支持飞书 Wiki/Docx 文档链接")
-    kind = "wiki" if parts[-2] == "wiki" else "docx"
-    return f"https://tcnwueberajc.feishu.cn/{kind}/{parts[-1]}"
+    return f"https://tcnwueberajc.feishu.cn/{ref['kind']}/{ref['token']}"
 
 
 def _find_creation_run(

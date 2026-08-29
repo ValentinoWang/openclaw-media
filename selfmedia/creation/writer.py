@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import re
 import time
-from urllib.parse import urlparse
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +15,7 @@ from common.feishu_docx_table_limits import (
     sleep_seconds_for_docx_write,
     validate_docx_table_create_shape,
 )
+from common.feishu_urls import parse_feishu_document_ref
 from common.feishu_wiki_docs import (
     create_wiki_doc as _shared_create_wiki_doc,
     find_wiki_child_doc as _shared_find_wiki_child_doc,
@@ -138,11 +138,13 @@ def rewrite_shooting_execution_doc(
     """Rewrite an existing shooting document through the canonical renderer."""
     load_default_env_files()
     token = feishu_tenant_access_token()
-    parsed = urlparse(str(doc_url or "").strip())
-    parts = [part for part in parsed.path.split("/") if part]
-    if len(parts) < 2:
+    # hosts=None: this call site has never validated the doc URL's host and
+    # isn't being tightened this round for lack of test coverage over real
+    # production doc_link data (see the url-7/FC-10 dedup audit).
+    ref = parse_feishu_document_ref(doc_url, hosts=None)
+    if ref is None:
         raise ValueError("拍摄执行回洗缺少有效飞书文档链接")
-    kind, target = parts[-2], parts[-1]
+    kind, target = ref["kind"], ref["token"]
     if kind == "wiki":
         node = _get_wiki_node(target, token)
         document_id = str(node.get("obj_token") or "").strip()
@@ -150,13 +152,11 @@ def rewrite_shooting_execution_doc(
         if str(node.get("obj_type") or "").lower() not in {"docx", "doc"} or not document_id:
             raise ValueError("拍摄执行回洗目标不是飞书 Docx 文档")
         canonical_url = f"https://tcnwueberajc.feishu.cn/wiki/{target}"
-    elif kind in {"docx", "doc", "docs"}:
+    else:
         document_id = target
         payload = _request_feishu_json("GET", f"/docx/v1/documents/{document_id}", token, timeout=20)
         title = str((payload.get("data") or {}).get("document", {}).get("title") or "").strip()
         canonical_url = f"https://tcnwueberajc.feishu.cn/docx/{document_id}"
-    else:
-        raise ValueError("拍摄执行回洗只支持飞书 Wiki/Docx 链接")
     if not title:
         title = f"拍摄执行 - {request.topic} - {request.time_window or request.publish_time or '未定时间'}"
     blocks = _shooting_execution_doc_blocks(title, request, draft, validation, media_context=media_context)

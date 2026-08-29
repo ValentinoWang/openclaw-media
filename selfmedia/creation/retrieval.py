@@ -7,6 +7,7 @@ from typing import Any
 
 import requests
 
+from common.feishu_urls import parse_feishu_document_ref
 from common.social_runtime import (
     FEISHU_BASE,
     feishu_bitable_refs,
@@ -343,9 +344,11 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 
 def _extract_docx_token(url: str) -> str:
-    text = str(url or "").strip()
-    if "/docx/" in text:
-        return text.split("/docx/", 1)[1].split("?", 1)[0].split("#", 1)[0].strip("/")
-    if text.startswith("dox") or text.startswith("doc"):
-        return text
-    return ""
+    # hosts=None: this call site has never validated the doc URL's host and
+    # isn't being tightened this round for lack of test coverage over real
+    # production doc_link data (see the url-7/FC-10 dedup audit).
+    # Only accept a "docx" ref (never "wiki") -- this token is passed
+    # straight into the docx raw_content API, so a wiki node token would
+    # be silently wrong rather than merely a missed match.
+    ref = parse_feishu_document_ref(url, hosts=None, allow_bare_token=True)
+    return ref["token"] if ref and ref["kind"] == "docx" else ""

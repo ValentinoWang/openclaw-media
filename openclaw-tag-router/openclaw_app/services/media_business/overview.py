@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Protocol
 
+from common.feishu_urls import DEFAULT_FEISHU_DOC_HOSTS
+
 from .foundation import MediaBusinessError, TenantContext, require_context
 
 
@@ -46,8 +48,8 @@ _TERMINAL_TASK_STATES = frozenset({"succeeded", "cancelled"})
 _RUNNING_TASK_STATES = frozenset({"validating", "retrieving", "generating", "persisting", "rendering", "running"})
 _ATTENTION_TASK_STATES = frozenset({"awaiting_confirmation", "pending_manual", "needs_attention"})
 _CURSOR_SCOPE = {"projects", "artifacts"}
-_FEISHU_DOCUMENT_HOST_SUFFIXES = (".feishu.cn", ".larksuite.com", ".larkoffice.com")
-_FEISHU_DOCUMENT_ROOT_HOSTS = frozenset({"feishu.cn", "larksuite.com", "larkoffice.com"})
+_FEISHU_DOCUMENT_HOST_SUFFIXES = tuple(f".{host}" for host in DEFAULT_FEISHU_DOC_HOSTS)
+_FEISHU_DOCUMENT_ROOT_HOSTS = frozenset(DEFAULT_FEISHU_DOC_HOSTS)
 
 
 class OverviewError(MediaBusinessError):

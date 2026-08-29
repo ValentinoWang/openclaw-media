@@ -5,6 +5,8 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
+from common.feishu_urls import DEFAULT_FEISHU_DOC_HOSTS
+
 from .canonical_resource_contracts import (
     CANONICAL_RESOURCE_CONTRACTS,
     TENANT_PROJECTION_FIELD,
@@ -25,8 +27,8 @@ ProjectionDeleter = Callable[[], None]
 
 
 _DOCX_TOKEN = re.compile(r"[A-Za-z0-9_-]{8,160}\Z")
-_FEISHU_DOC_HOST_SUFFIXES = (".feishu.cn", ".larksuite.com", ".larkoffice.com")
-_FEISHU_DOC_ROOT_HOSTS = frozenset({"feishu.cn", "larksuite.com", "larkoffice.com"})
+_FEISHU_DOC_HOST_SUFFIXES = tuple(f".{host}" for host in DEFAULT_FEISHU_DOC_HOSTS)
+_FEISHU_DOC_ROOT_HOSTS = frozenset(DEFAULT_FEISHU_DOC_HOSTS)
 
 
 class TenantOwnedResourceContractError(RuntimeError):

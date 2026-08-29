@@ -13,10 +13,94 @@ url-6 / url-7 / url-8 dedup audits.
 from __future__ import annotations
 
 import re
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 _WIKI_TOKEN_RE = re.compile(r"/wiki/([A-Za-z0-9]+)")
 _BASE_APP_TOKEN_RE = re.compile(r"/base/([A-Za-z0-9]+)")
+
+# The single source of truth for "is this host a Feishu/Lark document host".
+# tenant_owned_resources.py and media_business/overview.py both import this
+# rather than keeping their own copies.
+DEFAULT_FEISHU_DOC_HOSTS: tuple[str, ...] = ("feishu.cn", "larksuite.com", "larkoffice.com")
+
+_DOC_TOKEN_KIND_SEGMENTS = {"docx": "docx", "doc": "docx", "docs": "docx", "wiki": "wiki"}
+_DOC_TOKEN_QUERY_KEYS = (
+    ("docx", "docx"),
+    ("doc_token", "docx"),
+    ("document_id", "docx"),
+    ("wiki", "wiki"),
+    ("wiki_id", "wiki"),
+)
+_DOC_TOKEN_SANITIZE_RE = re.compile(r"[^A-Za-z0-9_-]")
+_BARE_TOKEN_PREFIXES = ("dox", "doc")
+
+
+def _host_allowed(host: str, hosts: tuple[str, ...] | None) -> bool:
+    """True iff ``host`` equals, or is a dot-suffix subdomain of, one of ``hosts``.
+
+    ``hosts=None`` means "skip the check" (any host, including no host at
+    all, is accepted) -- used by callers that historically never validated
+    a host and aren't being tightened this round for lack of test coverage
+    over real production doc_link data.
+    """
+    if hosts is None:
+        return True
+    host = host.lower()
+    if not host:
+        return False
+    for allowed in hosts:
+        allowed = allowed.lower()
+        if host == allowed or host.endswith("." + allowed):
+            return True
+    return False
+
+
+def parse_feishu_document_ref(
+    url: str,
+    *,
+    allow_bare_token: bool = False,
+    hosts: tuple[str, ...] | None = DEFAULT_FEISHU_DOC_HOSTS,
+) -> dict[str, str] | None:
+    """Pure-parse a Feishu document share URL into ``{"kind", "token"}``.
+
+    ``kind`` is ``"docx"`` (path segment `docx`/`doc`/`docs`, or query key
+    `docx`/`doc_token`/`document_id`) or ``"wiki"`` (path segment `wiki`,
+    or query key `wiki`/`wiki_id`). Scans every path segment (not just the
+    last two) and unquotes each one, then falls back to query keys -- the
+    most complete of the several near-duplicate implementations this was
+    consolidated from (see feishu_service.py's former ``_parse_document_url``).
+
+    Returns ``None`` when nothing matches, the URL has no path/query hit,
+    or (when ``hosts`` is a tuple) the host isn't on the allowlist.
+
+    ``allow_bare_token=True`` additionally accepts a bare token string with
+    no URL structure at all, as long as it starts with ``"dox"`` or
+    ``"doc"`` (retrieval.py's historical passthrough for a raw docx token);
+    default is off since most callers pass an actual URL.
+    """
+    raw = str(url or "").strip()
+    if not raw:
+        return None
+    parsed = urlparse(raw)
+    if _host_allowed(parsed.netloc.lower(), hosts):
+        segments = [unquote(item) for item in parsed.path.split("/") if item]
+        for index, segment in enumerate(segments):
+            normalized = segment.lower()
+            if normalized in _DOC_TOKEN_KIND_SEGMENTS and index + 1 < len(segments):
+                kind = _DOC_TOKEN_KIND_SEGMENTS[normalized]
+                token = _DOC_TOKEN_SANITIZE_RE.sub("", segments[index + 1])
+                if token:
+                    return {"kind": kind, "token": token}
+        query = parse_qs(parsed.query)
+        for key, kind in _DOC_TOKEN_QUERY_KEYS:
+            values = query.get(key) or []
+            if values:
+                token = _DOC_TOKEN_SANITIZE_RE.sub("", values[0])
+                if token:
+                    return {"kind": kind, "token": token}
+    if allow_bare_token and raw.startswith(_BARE_TOKEN_PREFIXES):
+        return {"kind": "docx", "token": raw}
+    return None
 
 
 def parse_bitable_url(url: str) -> dict[str, str]:
