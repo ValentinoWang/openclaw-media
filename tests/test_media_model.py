@@ -385,6 +385,27 @@ class MediaModelTests(unittest.TestCase):
         self.assertEqual(account_payload["account_name"], "清华AI小王")
         self.assertEqual(account_payload["metric_key"], "followers")
 
+    def test_metric_registry_accepts_review_rate_metrics(self) -> None:
+        aliases = {
+            "完播率": "completion_rate",
+            "2s跳出率": "bounce_2s_rate",
+            "5秒完播率": "completion_5s_rate",
+            "互动率": "interaction_rate",
+            "点击率": "ctr",
+            "曝光到观看转化率": "view_conversion_rate",
+            "平均播放时长": "avg_watch_duration",
+        }
+        for raw_name, expected_key in aliases.items():
+            self.assertEqual(normalize_metric_key(raw_name), expected_key)
+
+        snapshot_id = metric_snapshot_idempotency_key(
+            post_id="post_1",
+            review_node="2h",
+            metric_key="完播率",
+            collected_at="2026-08-29T10:00:00+08:00",
+        )
+        self.assertTrue(snapshot_id.startswith("metric:"))
+
     def test_quote_snapshot_schema(self) -> None:
         payload = build_quote_snapshot_payload(
             opportunity_id="opp_1",

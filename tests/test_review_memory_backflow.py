@@ -98,3 +98,41 @@ def test_data_review_evidence_backflows_to_next_creation_context_without_tenant_
     )
     assert other_tenant_context["recent_reviews"] == []
     assert "截图中前两秒曲线陡降" not in other_tenant_context["prompt"]
+
+
+def test_data_review_memory_persists_publish_and_creation_links(tmp_path) -> None:
+    request = DataReviewRequest(
+        platform="抖音",
+        account="跑步小王",
+        publish_url="https://example.test/posts/run-1",
+        creation_record_id="run_review_memory",
+    )
+    analysis = {
+        "conclusion": "保留真实训练冲突，重剪开头。",
+        "performance_level": "值得重剪",
+        "media_format": "video",
+        "media_format_evidence": "截图展示了播放曲线。",
+        "metrics": {"播放量": 12000},
+        "format_specific_metrics": {"完播率": "28%"},
+        "atomic_facts": [{"fact": "完播率为28%", "metric": "完播率", "value": "28%"}],
+        "priority_metrics": [{"metric": "完播率", "value": "28%"}],
+        "trend_curves": {},
+        "metric_interpretation": [],
+        "key_insights": [],
+        "problems": [],
+        "data_quality_notes": [],
+        "content_guidance": ["开头先给出训练冲突"],
+        "publishing_guidance": ["晚间复测"],
+        "next_actions": ["重剪前两秒"],
+    }
+
+    result = record_review_memory(
+        _review_memory_text(request, analysis),
+        tenant_id=TENANT_ID,
+        source="data-review",
+        analysis=analysis,
+        root=tmp_path,
+    )
+
+    assert result["review"]["publish_url"] == request.publish_url
+    assert result["review"]["creation_record_id"] == request.creation_record_id
