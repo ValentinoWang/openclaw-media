@@ -26,6 +26,7 @@ REPOSITORY_ROOT = PLUGIN_ROOT.parent
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(1, str(REPOSITORY_ROOT))
 
+from common.url_text import extract_urls_deep
 from runtime.evidence.agent_results import agent_results_base, agent_results_contract
 from openclaw_app.services.resource_owner_registry import ResourceOwnerRegistry, require_tenant_id
 from openclaw_app.services.tenant_owned_resources import TenantOwnedResourceService
@@ -41,7 +42,6 @@ def agent_result_roots() -> tuple[Path, ...]:
 
 DEFAULT_MEDIA_VAULT_ROOT = Path("/home/ubuntu/selfmedia-tools/data/media_vault")
 RUN_ID_RE = re.compile(r"^run_[A-Za-z0-9_:-]+$")
-URL_RE = re.compile(r"https?://[^\s，。；;、)）>\"']+")
 FEISHU_BASE_DEFAULT = "https://open.feishu.cn/open-apis"
 
 
@@ -260,22 +260,7 @@ def list_records(
 
 
 def extract_urls(value: Any) -> list[str]:
-    result: list[str] = []
-    if isinstance(value, dict):
-        for key in ("link", "url", "text"):
-            result.extend(extract_urls(value.get(key)))
-    elif isinstance(value, list):
-        for item in value:
-            result.extend(extract_urls(item))
-    elif isinstance(value, str):
-        result.extend(match.rstrip(".,，。") for match in URL_RE.findall(value))
-    seen: set[str] = set()
-    unique: list[str] = []
-    for item in result:
-        if item and item not in seen:
-            seen.add(item)
-            unique.append(item)
-    return unique
+    return extract_urls_deep(value)
 
 
 def delete_record(app_token: str, table_id: str, record_id: str, access_token: str) -> None:

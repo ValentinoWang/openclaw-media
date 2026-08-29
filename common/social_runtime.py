@@ -15,6 +15,7 @@ from urllib.parse import parse_qs, urlparse
 
 import requests
 
+from common import url_text as _url_text
 from common.platform_links import platform_for_url
 
 from .standard_fields import (
@@ -216,15 +217,7 @@ def infer_platform_keyword(text: str) -> str:
 
 
 def extract_urls(values: Iterable[str]) -> list[str]:
-    urls: list[str] = []
-    seen: set[str] = set()
-    for value in values:
-        for match in URL_RE.findall(value or ""):
-            url = match.strip().rstrip(".,，。")
-            if url and url not in seen:
-                seen.add(url)
-                urls.append(url)
-    return urls
+    return _url_text.extract_urls_from_values(values)
 
 
 def read_urls_from_args(args: argparse.Namespace) -> list[str]:

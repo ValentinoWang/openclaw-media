@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, ClassVar
 
+from common.url_text import extract_urls as _extract_urls
+
 
 VISIBLE_STATUSES = {"active", "candidate", "published", "reviewed", "ready"}
 VISIBLE_QUALITY_STATUSES = {"cleaned", "verified", "accepted"}
@@ -34,12 +36,7 @@ def clean_mapping(value: Any) -> dict[str, Any]:
 
 
 def extract_urls(text: str) -> tuple[str, ...]:
-    urls: list[str] = []
-    for match in re.finditer(r"https?://[^\s<>\]\)\"'，。；、]+", str(text or "")):
-        url = match.group(0).rstrip(".,;:!?，。；：！？")
-        if url and url not in urls:
-            urls.append(url)
-    return tuple(urls)
+    return _extract_urls(text)
 
 
 @dataclass(frozen=True)
