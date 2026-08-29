@@ -40,16 +40,6 @@ def _analysis_with_stringified_evidence():
 def test_review_rendering_humanizes_nested_json_and_puts_appendix_last():
     analysis = _analysis_with_stringified_evidence()
     report = render_data_review_report({"reviewed_at": "2026-08-29", "analysis": analysis})
-    document = _block_text(
-        data_review_doc_blocks(
-            "数据复盘",
-            DataReviewRequest(platform="抖音", account="小王"),
-            analysis,
-            [],
-            "2026-08-29",
-            "",
-        )
-    )
     blocks = data_review_doc_blocks(
         "数据复盘",
         DataReviewRequest(platform="抖音", account="小王"),
@@ -104,9 +94,20 @@ def test_review_renderer_humanizes_object_arrays_in_guidance_fields():
     )
 
     report = render_data_review_report({"reviewed_at": "2026-08-29", "analysis": analysis})
+    document = _block_text(
+        data_review_doc_blocks(
+            "数据复盘",
+            DataReviewRequest(platform="抖音", account="小王"),
+            analysis,
+            [],
+            "2026-08-29",
+            "",
+        )
+    )
 
     assert "维度：封面；建议：先展示结果" in report
     assert "渠道：抖音；建议：晚八点发布" in report
     assert "动作：重做封面；期限：今天" in report
+    assert "来源：截图；说明：字段可读" in document
     assert "{'维度':" not in report
     assert "{'动作':" not in report
