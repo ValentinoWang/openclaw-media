@@ -54,6 +54,7 @@ from common.social_runtime import (  # noqa: E402
     write_json,
     write_markdown,
 )
+from common.platform_links import classify_post_link  # noqa: E402
 
 SOCIAL_THEORY_TAGS = ("/女性爱", "/性兴趣", "/风控", "/性资源", "/行动")
 BLOCKED_SOCIAL_THEORY_TAGS = ("/风控量表",)
@@ -548,6 +549,24 @@ def account_from_record(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _monitor_platform_key(value: Any) -> str:
+    normalized = str(value or "").strip().lower()
+    return {
+        "抖音": "douyin",
+        "douyin": "douyin",
+        "dy": "douyin",
+        "小红书": "xiaohongshu",
+        "xiaohongshu": "xiaohongshu",
+        "xhs": "xiaohongshu",
+    }.get(normalized, normalized)
+
+
+def _monitor_platform_label(value: Any) -> str:
+    return {"douyin": "抖音", "xiaohongshu": "小红书"}.get(
+        _monitor_platform_key(value), str(value or "未知平台")
+    )
+
+
 def account_record_kind(record: dict[str, Any]) -> str:
     fields = record.get("fields") or {}
     if not isinstance(fields, dict):
@@ -611,6 +630,37 @@ def validate_account_monitor_records(
         raise SystemExit(
             "daily-poll 账号监控表需要每行显式包含启用字段，已拒绝轮询："
             + "、".join(missing_enabled_record_ids[:3])
+        )
+    invalid_link_record_ids: list[str] = []
+    platform_mismatch_messages: list[str] = []
+    for record in records:
+        account = account_from_record(record)
+        expected_platform = _monitor_platform_key(account["platform"])
+        for url in account["urls"]:
+            classified = classify_post_link(url)
+            record_id = str(record.get("record_id") or "<unknown>")
+            if classified["kind"] == "profile":
+                invalid_link_record_ids.append(record_id)
+                break
+            actual_platform = str(classified["platform"] or "unknown")
+            if (
+                actual_platform != "unknown"
+                and expected_platform not in {"", "unknown"}
+                and actual_platform != expected_platform
+            ):
+                platform_mismatch_messages.append(
+                    f"{record_id}（账号为 {_monitor_platform_label(expected_platform)}，链接为 {_monitor_platform_label(actual_platform)}）"
+                )
+                break
+    if invalid_link_record_ids:
+        raise SystemExit(
+            "账号监控表的近期作品链接不能使用账号主页；请填写具体作品页链接："
+            + "、".join(invalid_link_record_ids[:3])
+        )
+    if platform_mismatch_messages:
+        raise SystemExit(
+            "账号监控表存在平台不一致的近期作品链接，已拒绝轮询："
+            + "、".join(platform_mismatch_messages[:3])
         )
     if require_binding:
         if not tenant_id:

@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import urlsplit
 
+from common.platform_links import classify_post_link
+
 from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
 
 
@@ -613,7 +615,9 @@ class TracksService:
     ) -> dict[str, Any]:
         """Validate the tenant-owned account before entering the H00 adapter boundary."""
         self._validate_monitor_input(recent_post_urls, enabled, idempotency_key)
-        self._detail(context, self._ACCOUNT_DETAIL_QUERY, public_account_id, "owned account")
+        account_row = self._detail(context, self._ACCOUNT_DETAIL_QUERY, public_account_id, "owned account")
+        expected_platform = self._account_row(account_row)["platform"]
+        self._validate_monitor_platforms(recent_post_urls, expected_platform)
         raise TrackMonitorUnavailable()
 
     def poll_account_monitor(
@@ -638,10 +642,23 @@ class TracksService:
             parsed = urlsplit(value)
             if parsed.scheme not in {"http", "https"} or not parsed.netloc:
                 raise TrackInvalidRequest("recentPostUrls must contain HTTP(S) URLs", field="recentPostUrls")
+            if classify_post_link(value)["kind"] == "profile":
+                raise TrackInvalidRequest("这是账号主页，需要具体作品页链接", field="recentPostUrls")
         if not isinstance(enabled, bool):
             raise TrackInvalidRequest("enabled must be a boolean", field="enabled")
         if not isinstance(idempotency_key, str) or not idempotency_key:
             raise TrackInvalidRequest("idempotency key is required", field="idempotencyKey")
+
+    @staticmethod
+    def _validate_monitor_platforms(recent_post_urls: list[str], expected_platform: str) -> None:
+        for value in recent_post_urls:
+            classified = classify_post_link(value)
+            actual_platform = str(classified["platform"] or "unknown")
+            if actual_platform != "unknown" and _platform_key(expected_platform) != actual_platform:
+                raise TrackInvalidRequest(
+                    f"作品链接平台与账号平台不一致：账号是 {_platform_label(expected_platform)}，链接是 {_platform_label(actual_platform)}",
+                    field="recentPostUrls",
+                )
 
     def _execute_list(
         self,
@@ -941,6 +958,23 @@ def _requested_public_id(value: Any) -> str:
     if not isinstance(value, str) or _PUBLIC_ID.fullmatch(value) is None:
         raise TrackInvalidRequest("public identifier is invalid", field="publicId")
     return value
+
+
+def _platform_key(value: Any) -> str:
+    normalized = str(value or "").strip().lower()
+    aliases = {
+        "抖音": "douyin",
+        "douyin": "douyin",
+        "dy": "douyin",
+        "小红书": "xiaohongshu",
+        "xiaohongshu": "xiaohongshu",
+        "xhs": "xiaohongshu",
+    }
+    return aliases.get(normalized, normalized)
+
+
+def _platform_label(value: Any) -> str:
+    return {"douyin": "抖音", "xiaohongshu": "小红书"}.get(_platform_key(value), str(value or "未知平台"))
 
 
 def _public_id(value: Any) -> str:

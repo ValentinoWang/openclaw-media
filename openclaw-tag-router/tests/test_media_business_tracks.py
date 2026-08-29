@@ -332,6 +332,18 @@ def test_monitor_mutation_rejects_invalid_urls_before_database_access() -> None:
     assert connection.calls == []
 
 
+def test_monitor_mutation_rejects_profile_url_and_platform_mismatch() -> None:
+    connection = FakeConnection()
+    with pytest.raises(TrackInvalidRequest, match="账号主页"):
+        service(connection).update_account_monitor(
+            context(), ACCOUNT_ID, ["https://www.xiaohongshu.com/user/profile/creator"], True, "profile-key"
+        )
+    with pytest.raises(TrackInvalidRequest, match="平台不一致"):
+        service(connection).update_account_monitor(
+            context(), ACCOUNT_ID, ["https://www.douyin.com/video/1234567890123456789"], True, "platform-key"
+        )
+
+
 def test_owned_account_avatar_and_platform_identifier_are_nullable_but_explicit() -> None:
     row = (
         ACCOUNT_ID,

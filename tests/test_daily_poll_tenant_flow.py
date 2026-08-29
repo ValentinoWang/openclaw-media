@@ -268,6 +268,49 @@ class DailyPollTenantFlowTests(unittest.TestCase):
                     )
                 )
 
+    def test_daily_poll_rejects_profile_links_and_platform_mismatch(self) -> None:
+        profile_record = [{
+            "record_id": "profile-link",
+            "fields": {
+                "账号名称": "主账号",
+                "平台": "抖音",
+                "近期作品链接": "https://www.douyin.com/user/abc",
+                "启用": True,
+            },
+        }]
+        with patch.object(selfmedia, "feishu_list_records", return_value=profile_record):
+            with self.assertRaisesRegex(SystemExit, "不能使用账号主页"):
+                selfmedia.daily_poll(SimpleNamespace(
+                    monitor_url="https://bitable.example.test/monitor",
+                    report_url="",
+                    view_id="",
+                    limit=0,
+                    require_feishu=False,
+                    dry_run=True,
+                    tenant_id=TENANT_ID,
+                ))
+
+        mismatch_record = [{
+            "record_id": "mismatch-link",
+            "fields": {
+                "账号名称": "主账号",
+                "平台": "抖音",
+                "近期作品链接": "https://www.xiaohongshu.com/explore/65abc123456789",
+                "启用": True,
+            },
+        }]
+        with patch.object(selfmedia, "feishu_list_records", return_value=mismatch_record):
+            with self.assertRaisesRegex(SystemExit, "平台不一致"):
+                selfmedia.daily_poll(SimpleNamespace(
+                    monitor_url="https://bitable.example.test/monitor",
+                    report_url="",
+                    view_id="",
+                    limit=0,
+                    require_feishu=False,
+                    dry_run=True,
+                    tenant_id=TENANT_ID,
+                ))
+
     def test_install_cron_uses_current_python_and_script_with_tenant(self) -> None:
         captured: list[list[str]] = []
         with tempfile.TemporaryDirectory() as directory:
