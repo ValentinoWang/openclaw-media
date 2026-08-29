@@ -34,7 +34,12 @@ def test_insight_card_boundary_accepts_explicit_source_fact_disclaimer() -> None
     draft = {
         "selected_inspiration_ids": ["insight_card:被理解感"],
         "usable_material_brief": {
-            "note": "insight-card reference；public_content_only；它不是源视频事实。",
+            "source_mapping": [{
+                "source": "insight_card:被理解感",
+                "reference_type": "insight_card",
+                "evidence_boundary": "public_content_only",
+                "note": "它不是源视频事实。",
+            }],
         },
         "inspiration_reference": {},
         "creator_report": {},

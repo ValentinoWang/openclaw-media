@@ -203,7 +203,7 @@ def build_creation_prompt(
         "11. 必须参考 platform_mechanism_fit 里的 platform_strategy、activity_strategy、creation_reverse_plan 和 validation_targets；平台机制只能约束标题、封面/首屏、发布策略和验证指标，不能决定内容核心；不得声称破解平台真实算法或掌握黑箱权重。\n"
         "12. 先生成 usable_material_brief，再写 script_options。usable_material_brief 必须按“来源 -> 可迁移层 -> 脚本落点”抽取可用素材：账号记忆的人设/禁区/复盘教训；创作灵感的真实场景/触发原话/核心观点；爆款候选只能使用其 multi_signal_contract 的 source_signal_dimensions、shot_adaptation_notes、conflict_notes、open_questions 和 validation。transform_rule 是可迁移结构，risk_boundary 与 do_not_copy 是硬边界；source_refs 只证明合同中的观察，不能补写原素材细节。不得绕回任何非合同的拆解摘要、镜头 compact、文档链接或内部源快照。活动候选的投稿约束/话题/截止或返稿要求；商务候选的品牌边界。script_options 只能吃这个 brief 写稿，不要在脚本正文里展开完整来源映射。\n"
         "13. 完整来源映射必须进入 usable_material_brief.source_mapping、creator_report.evidence_appendix 或 script_options 的机器字段；创作者执行区只出现拍摄、文案、发布和风险动作，不输出检索报告口吻。\n"
-        "14. 每个 script_options 项都必须保留 activity_fit_reason、viral_reference_reason、inspiration_reference_reason 作为机器字段：写清用了哪个候选 id、迁移了哪一层、落到哪个镜头/页面/台词/封面/评论引导；没采用的来源要在 risks_or_missing_info 或 rejected_option_summaries 说明原因。活动只能约束发布/投稿/话题，不得硬改内容核心；爆款只能给结构和节奏，不得给事实；灵感和账号记忆优先决定内容事实与表达边界；洞察卡必须标为 insight-card reference，并在证据附录保留卡片路径/状态和风险边界。\n"
+        "14. 每个 script_options 项都必须保留 activity_fit_reason、viral_reference_reason、inspiration_reference_reason 作为机器字段：写清用了哪个候选 id、迁移了哪一层、落到哪个镜头/页面/台词/封面/评论引导；没采用的来源要在 risks_or_missing_info 或 rejected_option_summaries 说明原因。活动只能约束发布/投稿/话题，不得硬改内容核心；爆款只能给结构和节奏，不得给事实；灵感和账号记忆优先决定内容事实与表达边界；选中的洞察卡必须在 usable_material_brief.source_mapping 或 creator_report.evidence_appendix.inspiration_refs 中以结构化字段 reference_type=insight_card、evidence_boundary=public_content_only 标注，并保留卡片路径/状态和风险边界。\n"
         f"15. 先评估多个方向，只把前 2-5 个完整且可执行的方向放入 script_options；无论是否超过 {CREATION_SCORE_THRESHOLD} 分，都不能省略完整脚本。没有高分方案时，保留评分最高的至少 2 个并在风险中说明原因；其余方向可写入 rejected_option_summaries。\n"
         "16. script_options 初稿后必须输出 editor_pass。它要检查画面、动作、台词、平庸表达和证据链污染，必须把所有可执行修订直接写回 recommended_option_id 指向的 script_options 项；recommended_option_id 与 editor_pass.recommended_option_id 必须相同。推荐方案是唯一可执行定稿，不能只改顶层字段。"
         f"推荐稿的 title、final_copy、hook_3s、voiceover 会被机器校验：不得出现通用套话（{'、'.join(_creation_anti_patterns())}）或“首先/其次/最后”顺序套壳。editor_pass 还要检查封面字、置顶评论、连续排比、感叹号堆叠和脱离账号的热词，并把判断写进 blandness_risks；口播每句尽量不超过 22 个字，允许自然口语和不完整句。"
@@ -883,28 +883,34 @@ def _validate_insight_card_reference_boundary(draft: dict[str, Any]) -> None:
     selected = [item for item in _as_string_list(draft.get("selected_inspiration_ids")) if item.startswith("insight_card:")]
     if not selected:
         return
-    payload_text = json.dumps(
-        {
-            "usable_material_brief": draft.get("usable_material_brief"),
-            "inspiration_reference": draft.get("inspiration_reference"),
-            "creator_report": draft.get("creator_report"),
-            "script_options": [
-                {
-                    "option_id": item.get("option_id"),
-                    "selected_inspiration_ids": item.get("selected_inspiration_ids"),
-                    "inspiration_reference_reason": item.get("inspiration_reference_reason"),
-                }
-                for item in draft.get("script_options", [])
-                if isinstance(item, dict)
-            ],
-            "candidate_match_assessments": (draft.get("candidate_match_assessments") or {}).get("inspiration"),
-        },
-        ensure_ascii=False,
-    )
-    if "insight-card reference" not in payload_text:
-        raise ValueError("selected insight_card inspiration 必须标注为 insight-card reference")
-    if "public_content_only" not in payload_text:
-        raise ValueError("selected insight_card inspiration 必须保留 public_content_only evidence_boundary")
+    structured_refs: dict[str, bool] = {item: False for item in selected}
+    containers = [
+        draft.get("inspiration_reference"),
+        *(draft.get("usable_material_brief", {}).get("source_mapping", [])
+          if isinstance(draft.get("usable_material_brief"), dict)
+          else []),
+        *(draft.get("creator_report", {}).get("evidence_appendix", {}).get("inspiration_refs", [])
+          if isinstance(draft.get("creator_report"), dict)
+          and isinstance(draft.get("creator_report", {}).get("evidence_appendix"), dict)
+          else []),
+    ]
+    for option in draft.get("script_options", []):
+        if isinstance(option, dict):
+            containers.append(option)
+    for item in containers:
+        if not isinstance(item, dict):
+            continue
+        source = str(item.get("source") or item.get("record_id") or item.get("id") or "").strip()
+        if source not in structured_refs:
+            continue
+        reference_type = str(item.get("reference_type") or item.get("source_type") or "").strip().lower()
+        evidence_boundary = str(item.get("evidence_boundary") or item.get("risk_boundary") or "").strip().lower()
+        if reference_type in {"insight_card", "洞察卡"} and evidence_boundary == "public_content_only":
+            structured_refs[source] = True
+    missing = sorted(item for item, present in structured_refs.items() if not present)
+    if missing:
+        raise ValueError(f"selected insight_card inspiration 缺少结构化引用边界：{missing}")
+    payload_text = json.dumps(draft, ensure_ascii=False)
     forbidden = ("私密人物档案", "social 私密", "私人心理判断")
     if any(marker in payload_text for marker in forbidden):
         raise ValueError("selected insight_card inspiration 只能作为公开证据 reference，不能当作私密画像或源视频事实")

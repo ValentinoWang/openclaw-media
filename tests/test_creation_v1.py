@@ -1310,26 +1310,27 @@ class CreationV1Tests(unittest.TestCase):
         )
         payload["inspiration_reference"] = {
             "matched": True,
-            "reference_type": "insight-card reference",
+            "reference_type": "insight_card",
             "evidence_boundary": "public_content_only",
         }
         payload["usable_material_brief"]["source_mapping"][0] = {  # type: ignore[index]
             "source": insight_id,
-            "transfer": "insight-card reference: 被理解感开头句式",
+            "reference_type": "insight_card",
+            "transfer": "被理解感开头句式",
             "placement": "opening_3s/storyboard",
             "evidence_boundary": "public_content_only",
         }
         payload["creator_report"]["evidence_appendix"]["inspiration_refs"] = [  # type: ignore[index]
             {
-                "source_type": "insight-card reference",
+                "source_type": "insight_card",
                 "record_id": insight_id,
                 "adoption_reason": "只作为公开内容洞察参考。",
-                "risk_boundary": "public_content_only",
+                "evidence_boundary": "public_content_only",
             }
         ]
-        payload["candidate_match_assessments"]["inspiration"][0]["selection_reason"] = "insight-card reference，public_content_only，只用于情绪路径参考。"  # type: ignore[index]
+        payload["candidate_match_assessments"]["inspiration"][0]["selection_reason"] = "只用于情绪路径参考，不代表源视频事实。"  # type: ignore[index]
         for option in payload["script_options"]:  # type: ignore[union-attr]
-            option["inspiration_reference_reason"] = "insight-card reference；public_content_only；只参考情绪路径和开头句式。"
+            option["inspiration_reference_reason"] = "只参考情绪路径和开头句式。"
         draft = validate_llm_draft_payload(payload, req, candidate_ids=candidate_ids)
         self.assertEqual(draft["selected_inspiration_ids"], [insight_id])
 
@@ -1339,7 +1340,7 @@ class CreationV1Tests(unittest.TestCase):
                 _script_option("opt_2", score=88, inspiration_id=insight_id),
             ]
         )
-        with self.assertRaisesRegex(ValueError, "insight-card reference"):
+        with self.assertRaisesRegex(ValueError, "结构化引用边界"):
             validate_llm_draft_payload(bad, req, candidate_ids=candidate_ids)
 
     def test_creation_prompt_compacts_evidence_without_detail_json(self) -> None:
