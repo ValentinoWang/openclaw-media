@@ -8,7 +8,7 @@ from selfmedia.creation.llm_generator import (
     validate_llm_draft_payload,
 )
 from selfmedia.creation.field_contract import CanonicalMediaRecord
-from selfmedia.creation.platform_fit import _truncate_nested
+from selfmedia.creation.platform_fit import _truncate_nested, build_platform_mechanism_prompt
 from selfmedia.creation.request_parser import CreationRequest
 from selfmedia.creation.workflow import _record_candidate_payload
 from test_creation_v1 import _multi_option_payload, _script_option
@@ -53,6 +53,36 @@ def test_platform_fit_truncation_reports_omitted_key_count() -> None:
     assert compacted["_truncated_keys"] == 5
     assert "field_29" in compacted
     assert "field_30" not in compacted
+
+
+def test_platform_fit_candidate_compaction_keeps_adaptation_evidence_after_metadata() -> None:
+    candidate = {f"metadata_{index}": index for index in range(35)}
+    candidate.update(
+        {
+            "id": "viral-1",
+            "cover_opening_hook": "先给结果，再展示过程。",
+            "viral_migration": "把冲突迁移到训练前的犹豫。",
+            "reference_shots": [{"shot_id": "shot-1", "framing": "近景"}],
+            "reference_production_summary": "近景展示动作，随后用全景交代环境。",
+        }
+    )
+    request = CreationRequest(platform="抖音", content_type="视频", track="体育", topic="跑步", publish_time="")
+
+    prompt = build_platform_mechanism_prompt(
+        request,
+        activity_candidates=[],
+        viral_candidates=[candidate],
+        inspiration_candidates=[],
+        business_candidates=[],
+        reference_docs=[],
+        media_context={},
+    )
+
+    assert "先给结果，再展示过程。" in prompt
+    assert "把冲突迁移到训练前的犹豫。" in prompt
+    assert '"shot_id": "shot-1"' in prompt
+    assert "近景展示动作，随后用全景交代环境。" in prompt
+    assert '"_truncated_keys"' in prompt
 
 
 def test_scores_are_derived_from_breakdowns_instead_of_model_arithmetic() -> None:

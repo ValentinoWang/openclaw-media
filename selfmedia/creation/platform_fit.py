@@ -28,6 +28,45 @@ FIT_SCHEMA_KEYS = (
     "risks_or_missing_info",
 )
 
+# Keep the fields that explain how a candidate can be adapted ahead of the
+# verbose record metadata.  Candidate records are assembled from several
+# adapters, so relying on insertion order can discard the evidence fields.
+PLATFORM_FIT_CANDIDATE_FIELDS = (
+    "id",
+    "source_record_id",
+    "relation_id",
+    "title",
+    "status",
+    "platform",
+    "content_type",
+    "track",
+    "topic",
+    "tags",
+    "score",
+    "raw_score",
+    "score_scale",
+    "reasons",
+    "source_link",
+    "viral_example_link",
+    "cover_opening_hook",
+    "core_data_summary",
+    "top_comment_insight",
+    "comment_evidence",
+    "target_audience",
+    "pain_or_pleasure_points",
+    "attention_elements",
+    "viral_mechanism",
+    "viral_migration",
+    "creative_upgrade_suggestion",
+    "multi_signal_contract",
+    "usable_material_brief",
+    "reference_shots",
+    "reference_production_summary",
+    "reuse_guardrails",
+    "viral_reuse_assessment",
+    "pacing_notes",
+)
+
 FORBIDDEN_CLAIM_PATTERNS = (
     "破解算法",
     "平台真实权重",
@@ -142,10 +181,10 @@ def build_platform_mechanism_prompt(
         "account_profile": _truncate_nested((media_context or {}).get("account_profile") or {}, 1800),
         "recent_creations": _truncate_nested((media_context or {}).get("recent_creations") or [], 1000),
         "recent_reviews": _truncate_nested((media_context or {}).get("recent_reviews") or [], 1200),
-        "activity_candidates": _truncate_nested(activity_candidates, 1200),
-        "viral_candidates": _truncate_nested(viral_candidates, 1200),
-        "inspiration_candidates": _truncate_nested(inspiration_candidates, 1200),
-        "business_candidates": _truncate_nested(business_candidates, 1000),
+        "activity_candidates": _compact_platform_fit_candidates(activity_candidates, 1200),
+        "viral_candidates": _compact_platform_fit_candidates(viral_candidates, 1200),
+        "inspiration_candidates": _compact_platform_fit_candidates(inspiration_candidates, 1200),
+        "business_candidates": _compact_platform_fit_candidates(business_candidates, 1000),
         "reference_docs": _compact_reference_docs(reference_docs),
     }
     return (
@@ -850,6 +889,25 @@ def _truncate_nested(value: Any, max_chars: int) -> Any:
     if isinstance(value, str):
         return _truncate(value, max_chars)
     return value
+
+
+def _compact_platform_fit_candidates(value: Any, max_chars: int) -> list[dict[str, Any]]:
+    """Preserve adaptation evidence before low-value adapter metadata."""
+    candidates = value if isinstance(value, list) else []
+    compacted: list[dict[str, Any]] = []
+    for raw in candidates[:20]:
+        if not isinstance(raw, dict):
+            continue
+        item: dict[str, Any] = {}
+        for key in PLATFORM_FIT_CANDIDATE_FIELDS:
+            if key not in raw or raw[key] in (None, "", []):
+                continue
+            item[key] = _truncate_nested(raw[key], max_chars)
+        omitted = len([key for key, item_value in raw.items() if item_value not in (None, "", []) and key not in item])
+        if omitted:
+            item["_truncated_keys"] = omitted
+        compacted.append(item)
+    return compacted
 
 
 def _truncate(value: str, max_chars: int) -> str:
