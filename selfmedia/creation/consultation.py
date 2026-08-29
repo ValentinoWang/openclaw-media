@@ -271,7 +271,8 @@ def format_consultation_reply(answer: dict[str, Any]) -> str:
         sentences.append(f"主要依据是{evidence}")
     elif data_gap:
         sentences.append(f"还需要补充{data_gap}")
-    return "\n".join(sentences)
+    # Keep the fallback as one chat-ready paragraph instead of a report-like block.
+    return " ".join(sentences)
 
 
 def _readable_consultation_reply(value: Any) -> str:
