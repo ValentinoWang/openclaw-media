@@ -4,7 +4,7 @@
 
 | 冻结基线 | 当前状态 | 说明 |
 |---|---|---|
-| P1 未修复 148 条 | 已开始逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；截至本次 `main@c6253d8`，历史逐条复验投影仍为 49 条（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；本轮新增提交须按条目重新绑定，不能自动扣减 |
+| P1 未修复 148 条 | 持续逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；截至本次 `main@1e145bd`，历史逐条复验投影仍为 49 条（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；本轮已明确关闭 CPC-16、BIZ-08，但仍须完成其余条目逐项绑定，不能用提交数量自动扣减 |
 | 发布切片 | 5 个已建立 | `REL-P1-UX`、`REL-P1-PIPE`、`REL-P1-BIZ`、`REL-P1-PORT`、`REL-P1-QA` 均未组装候选 |
 | 当前就绪交付包 | 14 个 | P1 至 P14 均可继续；本轮已处理用户可见渲染、Router 状态呈现和创作证据合同，尚未完成全部交付包验收 |
 | 已接受发布验收 | 0 个 | C1 至 C5 均等待对应交付包 |
@@ -39,6 +39,8 @@
 - `89b9940`：增长链拒绝非中文创作者可见文本，避免英文机器腔进入结果。
 - `94c5e70`：补充选题候选英文标题的负例门禁测试。
 - `35bba72`：Content OS 状态推进返回机器可判定布尔结果，业务回执由上层统一渲染。
+- `a9f0942`、`b4b917e`：CPC-16 平台拟合候选改为证据优先压缩，保留镜头、迁移、制作摘要和活动约束，并显式标记省略字段。
+- `1e145bd`：BIZ-08 将日报轮询的互动指标与评论原话写入租户隔离复盘记忆，创作上下文和数据复盘按发布链接消费该证据。
 
 本轮验证证据：
 
@@ -49,6 +51,7 @@
 - `openclaw-tag-router/tests/test_content_os_bridge_presentation.py tests/test_content_flow_client.py`：`98 passed`。
 - `tests/test_media_growth_v2.py openclaw-tag-router/tests/test_content_os_bridge_presentation.py`：`75 passed, 18 subtests passed`。
 - 配置、排期、不可信输入与可移植性定向集合：`26 passed`。
+- CPC-16 与 BIZ-08 合并后定向回归：`tests/test_creation_prompt_evidence_contract.py tests/test_daily_poll_tenant_flow.py tests/test_review_memory_backflow.py tests/test_creation_v1.py`，结果 `65 passed`。
 - Router 全套：`1515 passed, 24 failed, 39 skipped, 270 warnings, 271 subtests passed`；失败集中在既有删除能力、复盘投影和能力目录合同，未将其计为 P1 完成。
 - SSOT bundle validator 在当前 Harness 工作树报告 `runtime-skill-provenance` 缺少项目侧 `.harness/manifest.yaml`；项目已有 `.harness/overlays/project-harness-adapter.yaml`，未擅自伪造 manifest，故该验证层保持未通过。
 
