@@ -77,6 +77,8 @@ CLOSED = {
     "SCHED-04": "d47d880",
     "CPO-N17": "9520b5e",
     "CPO-K10": "0e28196",
+    "CPO-K07": "0e28196",
+    "RT-10": "d044f79",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
