@@ -410,9 +410,12 @@ class ContentOSBridgeMixin:
         if creation_output.get("reply"):
             lines.append("创作内容已同步到项目档案。")
         if project.get("task_path"):
-            lines.append("本地素材匹配任务已创建。")
+            if project.get("local_material_binding") == "bound":
+                lines.append("本地素材匹配任务已创建。Mac 任务已登记。")
+            else:
+                lines.append("本地素材匹配任务已创建。")
         else:
-            lines.append("下一步：如需匹配本地素材，请补充素材位置。")
+            lines.append("Mac 素材未绑定。下一步：如需匹配本地素材，请补充素材位置。")
         return "\n".join(lines)
     def _write_standalone_creation_output(self, message: Message, parsed: dict[str, Any], reply: str) -> dict[str, Any]:
         if not self._content_os_cloud_markdown_enabled():

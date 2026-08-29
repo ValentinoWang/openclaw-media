@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 from typing import Any
 import yaml
+from urllib.parse import parse_qs, urlparse
 
 ROUTER_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = ROUTER_ROOT.parent
@@ -71,6 +72,40 @@ def _load_registry_table_bindings(path: Path) -> tuple[str, dict[str, dict[str, 
     if not base_token or not bindings:
         raise RuntimeError("REGISTRY_INVALID: no current table bindings")
     return base_token, bindings
+
+
+def _resolve_activity_url(settings: dict[str, Any], registry_path: Path, env: dict[str, str]) -> tuple[str, str]:
+    """Resolve the activity Base URL from the authoritative registry first.
+
+    Older settings and environment values remain compatibility fallbacks, but
+    every accepted URL must carry an explicit ``table`` query parameter.
+    """
+    registry_value = ""
+    try:
+        document = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        document = {}
+    tables = document.get("tables") if isinstance(document, dict) else None
+    if isinstance(tables, dict):
+        activity = tables.get("activity")
+        if isinstance(activity, dict):
+            nested = activity.get("env")
+            if isinstance(nested, dict):
+                registry_value = str(nested.get("MEDIA_OS_ACTIVITY_URL") or "").strip()
+            registry_value = registry_value or str(activity.get("url") or "").strip()
+    elif isinstance(tables, list):
+        for table in tables:
+            if isinstance(table, dict) and str(table.get("table_key") or "").strip() == "activity":
+                registry_value = str(table.get("url") or table.get("activity_url") or "").strip()
+                if registry_value:
+                    break
+    candidates = ((registry_value, "registry"),
+                  (str((settings.get("media_os") or {}).get("activity_url") or "").strip(), "settings"),
+                  (str(env.get("MEDIA_OS_ACTIVITY_URL") or "").strip(), "environment"))
+    for value, source in candidates:
+        if value and parse_qs(urlparse(value).query).get("table"):
+            return value, source
+    raise RuntimeError("activity URL must include table query parameter")
 
 
 def _load_env_file(path: Path) -> dict[str, str]:
