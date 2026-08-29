@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from common.social_runtime import feishu_coerce_value
+
 from .tag_router_common import Message, TaskResult
 from media_vault import require_tenant_id
 from selfmedia.business.commercial_loop import CommercialLifecycleError, CommercialLoopLedger
@@ -21,7 +23,6 @@ COMMERCIAL_DELIVERY_DOC_PARENT_NODE_TOKEN_ENV = "MEDIA_OS_COMMERCIAL_DELIVERY_PA
 COMMERCIAL_DELIVERY_TABLE_NAME = "COM01_CommercialDelivery_商单交付"
 MEDIA_ENV_PATH = Path("/home/ubuntu/openclaw-agents/media/.env.local")
 MEDIA_REGISTRY_PATH = Path("/home/ubuntu/openclaw-feishu-reminder/media-bitable-registry.json")
-BITABLE_OPTION_ID_RE = re.compile(r"^opt[A-Za-z0-9]{6,}$")
 COMMERCIAL_DELIVERY_DEFAULT_TEXT = "无特殊要求"
 COMMERCIAL_DELIVERY_DEFAULTABLE_MISSING_FIELDS = {"PR备注", "平台要求", "平台要求 / 禁区", "禁区"}
 
@@ -779,7 +780,7 @@ class CommercialDeliveryMixin:
         self._ensure_commercial_delivery_select_options(app_token, table_id, raw_fields)
         field_types = self._commercial_delivery_field_types(app_token, table_id)
         payload_fields = {
-            name: self._commercial_delivery_coerce_value(value, field_types.get(name))
+            name: feishu_coerce_value(value, field_types.get(name), on_option_id="drop", url_display_max_chars=120)
             for name, value in raw_fields.items()
             if name in field_types and value not in (None, "", [])
         }
@@ -1014,33 +1015,6 @@ class CommercialDeliveryMixin:
                     "property": {"options": [{"name": option} for option in merged]},
                 },
             )
-
-    def _commercial_delivery_coerce_value(self, value: Any, field_type: Any) -> Any:
-        if field_type == 3:
-            text = str(value or "").strip()
-            if BITABLE_OPTION_ID_RE.fullmatch(text):
-                return None
-            return text or None
-        if field_type == 5:
-            if isinstance(value, datetime):
-                return int(value.timestamp() * 1000)
-            return value
-        if field_type == 15:
-            text = self._commercial_delivery_first_url(value)
-            if not text:
-                return None
-            return {"text": text[:120], "link": text}
-        if isinstance(value, (dict, list)):
-            return json.dumps(value, ensure_ascii=False)
-        return str(value or "").strip()
-
-    @staticmethod
-    def _commercial_delivery_first_url(value: Any) -> str:
-        if isinstance(value, dict):
-            return str(value.get("link") or value.get("url") or "").strip()
-        text = str(value or "")
-        match = re.search(r"https?://\S+", text)
-        return match.group(0).rstrip(")，。；;") if match else text.strip()
 
     @staticmethod
     def _commercial_delivery_dict(value: Any) -> dict[str, Any]:

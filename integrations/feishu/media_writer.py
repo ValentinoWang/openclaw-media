@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import mimetypes
-import re
 from pathlib import Path
 from typing import Any
 
 import requests
 
 from common.social_runtime import (
+    BITABLE_OPTION_ID_RE,
     FEISHU_BASE,
     feishu_bitable_refs,
     feishu_coerce_value,
@@ -26,7 +26,6 @@ from media_model.contract import MediaModelContract
 from media_model.payloads import normalize_source_url
 
 
-OPTION_ID_RE = re.compile(r"^opt[A-Za-z0-9]{6,}$")
 SOURCE_ASSET_ATTACHMENT_FIELDS = ("cover_attachment", "video_attachment")
 SOURCE_ASSET_ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024
 TENANT_PROJECTION_FIELD = "租户ID"
@@ -562,7 +561,7 @@ def _reject_option_ids(value: Any, *, field_label: str) -> None:
     if value in (None, "", []):
         return
     if isinstance(value, str):
-        if OPTION_ID_RE.match(value.strip()):
+        if BITABLE_OPTION_ID_RE.match(value.strip()):
             raise MediaModelFeishuWriterError(f"{field_label} contains Feishu option id instead of display value")
         return
     if isinstance(value, list):

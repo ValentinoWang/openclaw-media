@@ -10,7 +10,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Literal
 from urllib.parse import parse_qs, urlparse
 
 import requests
@@ -32,6 +32,11 @@ from .standard_fields import (
 ROOT = Path(__file__).resolve().parents[1]
 CONTENT_INGEST_PATH = ROOT / "selfmedia" / "ingest" / "content_flow"
 URL_RE = re.compile(r"https?://[^\s，。；;、)）>]+")
+# Feishu bitable internal option ids (e.g. "optXXXXXX") — never valid as a
+# display value for a single/multi-select field. Consolidated from three
+# byte-identical copies (integrations/feishu/media_writer.py, and the
+# unified_creation/commercial_delivery routers in openclaw-tag-router).
+BITABLE_OPTION_ID_RE = re.compile(r"^opt[A-Za-z0-9]{6,}$")
 INTERACTION_KEYS = ("like_count", "collect_count", "comment_count", "share_count")
 FEISHU_BASE = os.getenv("FEISHU_API_BASE_URL", "https://open.feishu.cn/open-apis").rstrip("/")
 FEISHU_FIELD_SPECS = {
@@ -596,6 +601,12 @@ def feishu_update_record(
 def _coerce_feishu_date(value: Any) -> int | None:
     if value in (None, ""):
         return None
+    if isinstance(value, datetime):
+        # Respect whatever tzinfo the caller attached (or the system-local
+        # interpretation Python gives a naive datetime) rather than
+        # re-normalizing — this is the one case where the value is already
+        # an unambiguous point in time, no string parsing involved.
+        return int(value.timestamp() * 1000)
     if isinstance(value, (int, float)):
         number = int(value)
         return number if number > 10_000_000_000 else number * 1000
@@ -611,19 +622,72 @@ def _coerce_feishu_date(value: Any) -> int | None:
     return int(dt.timestamp() * 1000)
 
 
-def _coerce_feishu_url(value: Any) -> dict[str, str] | str:
+def feishu_first_url(value: Any) -> str:
+    """Recursively pull the first http(s) URL out of ``value``.
+
+    Handles a bare URL string, a URL embedded in a longer text blob, a dict
+    (checking common link-ish keys first, then falling back to every value),
+    a list/tuple/set of any of the above, and a JSON-encoded string of any
+    of the above. Returns "" when nothing looks like a URL.
+
+    Consolidated from two near-identical copies:
+    openclaw-tag-router's ``router_shared_helpers._first_url_from_value``
+    (dict priority-key walk + JSON-string parsing) and
+    ``commercial_delivery._commercial_delivery_first_url`` (plain regex
+    search). This is also the extraction primitive ``_coerce_feishu_url``
+    uses for field_type 15 payloads.
+    """
+    if value in (None, "", []):
+        return ""
+    if isinstance(value, dict):
+        for key in ("link", "url", "doc", "document_url", "inspiration_doc", "material_doc", "creation_doc"):
+            found = feishu_first_url(value.get(key))
+            if found:
+                return found
+        for item in value.values():
+            found = feishu_first_url(item)
+            if found:
+                return found
+        return ""
+    if isinstance(value, (list, tuple, set)):
+        for item in value:
+            found = feishu_first_url(item)
+            if found:
+                return found
+        return ""
+    text = str(value).strip()
+    if not text:
+        return ""
+    if text[:1] in "{[":
+        try:
+            return feishu_first_url(json.loads(text))
+        except (TypeError, ValueError):
+            pass
+    match = URL_RE.search(text)
+    return match.group(0).rstrip(".,，。") if match else ""
+
+
+def _coerce_feishu_url(value: Any, *, display_max_chars: int | None = None) -> dict[str, str] | str:
     if value in (None, "", []):
         return ""
     if isinstance(value, dict):
         link = str(value.get("link") or value.get("url") or "").strip()
-        text = str(value.get("text") or link or "").strip()
-        if link.startswith(("http://", "https://")):
-            return {"text": text or link, "link": link}
-        return text
-    text = str(value).strip()
-    if text.startswith(("http://", "https://")):
-        return {"text": text, "link": text}
-    return text
+        if not link.startswith(("http://", "https://")):
+            link = feishu_first_url(value)
+        if not link:
+            return str(value.get("text") or "").strip()
+        text = str(value.get("text") or "").strip() or link
+        if display_max_chars is not None:
+            text = text[:display_max_chars]
+        return {"text": text, "link": link}
+    if isinstance(value, str) and value.strip().startswith(("http://", "https://")):
+        link = value.strip()
+    else:
+        link = feishu_first_url(value)
+    if not link:
+        return str(value).strip() if not isinstance(value, (list, tuple, set)) else ""
+    text = link if display_max_chars is None else link[:display_max_chars]
+    return {"text": text, "link": link}
 
 
 def _coerce_feishu_attachments(value: Any) -> list[dict[str, str]]:
@@ -643,7 +707,31 @@ def _coerce_feishu_attachments(value: Any) -> list[dict[str, str]]:
     return attachments
 
 
-def feishu_coerce_value(value: Any, field_type: Any) -> Any:
+def feishu_coerce_value(
+    value: Any,
+    field_type: Any,
+    *,
+    on_option_id: Literal["keep", "drop", "raise"] = "keep",
+    url_display_max_chars: int | None = None,
+) -> Any:
+    """Coerce a business value into the payload shape a Feishu bitable field expects.
+
+    ``on_option_id`` controls what happens when a select-type value (field_type
+    3 or 4) looks like a Feishu-internal option id (``optXXXXXX`` — see
+    ``BITABLE_OPTION_ID_RE``) instead of a real display name:
+      - "keep" (default): pass it through unchanged. Preserves the original
+        behavior of every pre-existing caller of this function.
+      - "drop": silently discard that value (whole value for a single-select,
+        just that item for a multi-select) — used by the two
+        openclaw-tag-router callers that used to do this filtering themselves.
+      - "raise": raise ValueError instead of writing it. Not currently wired
+        up to any caller — integrations/feishu/media_writer.py keeps its own
+        independent ``_reject_option_ids`` outer check instead.
+
+    ``url_display_max_chars`` caps the display text of a field_type 15
+    (hyperlink) payload; the link itself is never truncated. None (default)
+    leaves the display text uncapped.
+    """
     if value is None:
         return ""
     if field_type == 1:
@@ -653,7 +741,12 @@ def feishu_coerce_value(value: Any, field_type: Any) -> Any:
     if field_type == 3:
         if isinstance(value, list):
             value = next((item for item in value if str(item).strip()), "")
-        return str(value).strip()
+        text = str(value).strip()
+        if on_option_id != "keep" and text and BITABLE_OPTION_ID_RE.fullmatch(text):
+            if on_option_id == "raise":
+                raise ValueError(f"feishu single-select value looks like an option id: {text!r}")
+            return None
+        return text
     if field_type == 4:
         if value in (None, "", []):
             return []
@@ -663,6 +756,10 @@ def feishu_coerce_value(value: Any, field_type: Any) -> Any:
         for item in raw_items:
             text = str(item).strip()
             if not text or text in seen:
+                continue
+            if on_option_id != "keep" and BITABLE_OPTION_ID_RE.fullmatch(text):
+                if on_option_id == "raise":
+                    raise ValueError(f"feishu multi-select value looks like an option id: {text!r}")
                 continue
             seen.add(text)
             items.append(text)
@@ -677,7 +774,7 @@ def feishu_coerce_value(value: Any, field_type: Any) -> Any:
     if field_type == 7:
         return feishu_bool(value, default=False)
     if field_type == 15:
-        return _coerce_feishu_url(value)
+        return _coerce_feishu_url(value, display_max_chars=url_display_max_chars)
     if field_type == 17:
         return _coerce_feishu_attachments(value)
     if isinstance(value, (dict, list)):

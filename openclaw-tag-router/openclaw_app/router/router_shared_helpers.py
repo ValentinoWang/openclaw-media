@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from common.social_runtime import feishu_first_url
+
 from .tag_router_common import *
 
 
@@ -17,34 +19,11 @@ class RouterSharedHelpersMixin:
         return str(getattr(self.reminder_service, "bitable_url", "") or "").strip()
 
     def _first_url_from_value(self, value: Any) -> str:
-        if value in (None, "", []):
-            return ""
-        if isinstance(value, dict):
-            for key in ("link", "url", "doc", "document_url", "inspiration_doc", "material_doc", "creation_doc"):
-                found = self._first_url_from_value(value.get(key))
-                if found:
-                    return found
-            for item in value.values():
-                found = self._first_url_from_value(item)
-                if found:
-                    return found
-            return ""
-        if isinstance(value, (list, tuple, set)):
-            for item in value:
-                found = self._first_url_from_value(item)
-                if found:
-                    return found
-            return ""
-        text = str(value).strip()
-        if not text:
-            return ""
-        if text.startswith("{") or text.startswith("["):
-            try:
-                return self._first_url_from_value(json.loads(text))
-            except (TypeError, ValueError, json.JSONDecodeError):
-                pass
-        match = re.search(r"https?://[^\s\"'<>]+", text)
-        return match.group(0).rstrip("，。；;、)") if match else ""
+        """Thin wrapper — the recursive extraction now lives in common.social_runtime
+        (feishu_first_url) so _coerce_feishu_url's field_type-15 handling shares it.
+        Kept as a method because callers outside the coercion path (e.g.
+        _first_doc_link_from_unified_fields) still reach it via self."""
+        return feishu_first_url(value)
 
     def _docx_heading_block(self, level: int, text: str) -> dict[str, Any]:
         normalized_level = min(max(level, 1), 9)

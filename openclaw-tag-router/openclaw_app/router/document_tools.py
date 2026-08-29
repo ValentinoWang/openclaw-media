@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import time
 
+from common.social_runtime import feishu_coerce_value
+
 from ..services.document_edit_contract import (
     DocumentEditContractViolation,
     DocumentEditIntentOperation,
@@ -1569,15 +1571,8 @@ class DocumentToolsMixin:
             if callable(ensure_options):
                 ensure_options(app_token, table_id, fields)
                 field_types = self._commercial_delivery_field_types(app_token, table_id)
-            coerce = getattr(self, "_commercial_delivery_coerce_value", None)
-            if not callable(coerce):
-                return {
-                    "ok": False,
-                    "status": "commercial_delivery_record_sync_failed",
-                    "reply": "商单交付 COM01 同步缺少字段类型转换能力。",
-                }
             payload_fields = {
-                name: coerce(value, field_types.get(name))
+                name: feishu_coerce_value(value, field_types.get(name), on_option_id="drop", url_display_max_chars=120)
                 for name, value in fields.items()
                 if name in field_types and value not in (None, "", [])
             }

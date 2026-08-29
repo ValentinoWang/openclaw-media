@@ -8,6 +8,8 @@ import urllib.parse
 from datetime import datetime
 from typing import Any
 
+from common.social_runtime import BITABLE_OPTION_ID_RE, feishu_coerce_value
+
 from .creation_feishu_writer import RouterCreationFeishuDocumentWriter
 from ..services.utils import now_in_tz
 
@@ -93,7 +95,6 @@ UNIFIED_CREATION_SELECT_OPTIONS: dict[str, list[str]] = {
     "主状态": ["待处理", "处理中", "已完成", "待人工补充", "失败", "已归档", "已发布", "已复盘", "已建档"],
     "复盘状态": ["待复盘", "已复盘", "2小时已复盘", "24小时已复盘", "7天已复盘", "复盘完成", "写入失败"],
 }
-BITABLE_OPTION_ID_RE = re.compile(r"^opt[A-Za-z0-9]{6,}$")
 
 
 class UnifiedCreationMixin:
@@ -127,7 +128,9 @@ class UnifiedCreationMixin:
             writer=lambda projected: projected,
         )
         payload_fields = {
-            feishu_name: self._coerce_unified_creation_value(value, field_types.get(feishu_name))
+            feishu_name: feishu_coerce_value(
+                value, field_types.get(feishu_name), on_option_id="drop", url_display_max_chars=120
+            )
             for name, value in payload_fields.items()
             for feishu_name in [CREATION_RUN_FEISHU_FIELD_NAME_MAP.get(name, name)]
             if feishu_name in field_types and value not in (None, "", [])
@@ -196,7 +199,9 @@ class UnifiedCreationMixin:
             writer=lambda projected: projected,
         )
         payload_fields = {
-            feishu_name: self._coerce_unified_creation_value(value, field_types.get(feishu_name))
+            feishu_name: feishu_coerce_value(
+                value, field_types.get(feishu_name), on_option_id="drop", url_display_max_chars=120
+            )
             for name, value in payload_fields.items()
             for feishu_name in [CREATION_RUN_FEISHU_FIELD_NAME_MAP.get(name, name)]
             if feishu_name in field_types and value not in (None, "", [])
@@ -476,54 +481,6 @@ class UnifiedCreationMixin:
             seen.add(text)
             result.append(text)
         return result
-
-    def _coerce_unified_creation_value(self, value: Any, field_type: Any) -> Any:
-        if value is None:
-            return ""
-        if field_type == 2:
-            try:
-                return float(value)
-            except (TypeError, ValueError):
-                return None
-        if field_type == 3:
-            if isinstance(value, list):
-                value = next((item for item in value if str(item).strip()), "")
-            text = str(value).strip()
-            return text or None
-        if field_type == 4:
-            raw_items = value if isinstance(value, list) else re.split(r"[,，/、;；|]\s*", str(value))
-            items: list[str] = []
-            seen: set[str] = set()
-            for item in raw_items:
-                text = str(item).strip()
-                if not text or BITABLE_OPTION_ID_RE.fullmatch(text) or text in seen:
-                    continue
-                seen.add(text)
-                items.append(text)
-            return items or None
-        if field_type == 5:
-            if isinstance(value, datetime):
-                return int(value.timestamp() * 1000)
-            if isinstance(value, (int, float)):
-                return int(value)
-            text = str(value).strip()
-            if not text:
-                return None
-            try:
-                normalized = text.replace("Z", "+00:00")
-                return int(datetime.fromisoformat(normalized).timestamp() * 1000)
-            except ValueError:
-                return text
-        if field_type == 15:
-            if isinstance(value, dict):
-                return value
-            text = self._first_url_from_value(value)
-            if not text:
-                return None
-            return {"text": text[:120], "link": text}
-        if isinstance(value, (dict, list)):
-            return self._unified_join_lines(value)
-        return str(value)
 
     def _sync_unified_creation_child_doc(self, doc_title: str, record_type: str, content: str) -> dict[str, str]:
         return self._creation_feishu_writer().sync_text_child_doc(doc_title, record_type, content)
