@@ -137,44 +137,48 @@ def generate_platform_mechanism_fit(
         reference_docs=reference_docs,
         media_context=media_context,
     )
-    last_error = ""
-    retries = _env_int("SELFMEDIA_CREATION_PLATFORM_FIT_RETRIES", 1)
-    for attempt in range(retries + 1):
-        message = prompt
-        if last_error:
-            message = (
-                f"{prompt}\n\n"
-                "上一次平台推荐拟合输出没有通过代码校验。\n"
-                f"错误：{last_error}\n"
+    # Retrying (including the "previous output failed validation" prompt
+    # rewrite) is now entirely owned by call_creation_json ->
+    # generate_json_from_parts instead of being duplicated here as a second,
+    # outer retry loop wrapping the first -- previously a validation failure
+    # could be retried once by call_creation_json's own internal retry AND,
+    # on top of that, retried again by this outer loop's `except Exception`,
+    # multiplying worst-case model calls for one logical request. The
+    # `except Exception` -> SemanticPersistenceRequiredError translation
+    # below is unchanged and still deliberately catches everything
+    # (including a terminal ModelTransportError): callers
+    # (selfmedia/creation/workflow.py) specifically catch
+    # SemanticPersistenceRequiredError to fall back to a deterministic
+    # template via fallback_platform_mechanism_fit, so this is an intentional
+    # one-shot graceful-degradation path, not a retry loop.
+    try:
+        result = call_creation_json(
+            prompt,
+            validation_contract=PLATFORM_FIT_VALIDATION_CONTRACT,
+            validation_context={"request": request},
+            max_retries=_env_int("SELFMEDIA_CREATION_PLATFORM_FIT_RETRIES", 1),
+            retry_text=(
+                "上一次平台推荐拟合输出没有通过代码校验。\n错误：{error}\n"
                 "请重新输出完整 JSON object，只修正格式和约束，不要解释。"
-            )
-        try:
-            result = call_creation_json(
-                message,
-                validation_contract=PLATFORM_FIT_VALIDATION_CONTRACT,
-                validation_context={"request": request},
-            )
-            result["generation"] = creation_generation_metadata("platform_mechanism_fit")
-            result["platform_fit_meta"] = _build_platform_fit_meta(
-                request,
-                mechanism_version=str(result.get("platform_mechanism_version") or ""),
-                mechanism_source="llm",
-                baseline_source=str((default_platform_mechanism(request.platform)).get("mechanism_source") or "config"),
-                activity_candidates=activity_candidates,
-                viral_candidates=viral_candidates,
-                inspiration_candidates=inspiration_candidates,
-                business_candidates=business_candidates,
-                reference_docs=reference_docs,
-                media_context=media_context,
-                include_llm=True,
-            )
-            return result
-        except Exception as exc:
-            last_error = str(exc)
-            if attempt >= retries:
-                break
-
-    raise _semantic_persistence_error("platform_mechanism_fit", _failure_reason(last_error), last_error)
+            ),
+        )
+        result["generation"] = creation_generation_metadata("platform_mechanism_fit")
+        result["platform_fit_meta"] = _build_platform_fit_meta(
+            request,
+            mechanism_version=str(result.get("platform_mechanism_version") or ""),
+            mechanism_source="llm",
+            baseline_source=str((default_platform_mechanism(request.platform)).get("mechanism_source") or "config"),
+            activity_candidates=activity_candidates,
+            viral_candidates=viral_candidates,
+            inspiration_candidates=inspiration_candidates,
+            business_candidates=business_candidates,
+            reference_docs=reference_docs,
+            media_context=media_context,
+            include_llm=True,
+        )
+        return result
+    except Exception as exc:
+        raise _semantic_persistence_error("platform_mechanism_fit", _failure_reason(str(exc)), str(exc)) from exc
 
 
 def build_platform_mechanism_prompt(

@@ -122,34 +122,34 @@ def generate_creation_draft(
         candidate_context_limits=candidate_context_limits,
     )
     comment_evidence_by_viral = _comment_evidence_by_viral(viral_candidates)
-    last_error = ""
-    for attempt in range(_env_int("SELFMEDIA_CREATION_LLM_RETRIES", 2) + 1):
-        message = prompt
-        if last_error:
-            message = (
-                f"{prompt}\n\n"
-                "上一次输出没有通过代码校验。\n"
-                f"错误：{last_error}\n"
-                "请重新输出完整 JSON object，只修正格式和约束，不要解释。"
-            )
-        try:
-            draft = call_creation_json(
-                message,
-                validation_contract=CREATION_DRAFT_VALIDATION_CONTRACT,
-                validation_context={
-                    "request": request,
-                    "platform_fit": platform_fit,
-                    "candidate_ids": candidate_ids,
-                    "comment_evidence_by_viral": comment_evidence_by_viral,
-                },
-            )
-            draft["_generation"] = creation_generation_metadata("creation_draft")
-            return draft
-        except ValueError as exc:
-            last_error = str(exc)
-            if attempt >= _env_int("SELFMEDIA_CREATION_LLM_RETRIES", 2):
-                break
-    raise RuntimeError(f"OpenClaw/LLM 创作输出未通过校验：{last_error}")
+    # Retrying (including the "previous output failed validation" prompt
+    # rewrite) and final-failure error text are now entirely owned by
+    # call_creation_json -> generate_json_from_parts. The old local `for`
+    # loop here caught `except ValueError`, but call_creation_json only ever
+    # raises RuntimeError (on exhausted retries) or ModelTransportError (a
+    # terminal transport outcome, never to be retried or masked) -- never a
+    # bare ValueError -- so that except clause never actually matched
+    # anything and this outer loop provided no real extra retries beyond
+    # call_creation_json's own. No exception translation is added here so
+    # ModelTransportError keeps propagating unchanged, exactly as it already
+    # did before this change.
+    draft = call_creation_json(
+        prompt,
+        validation_contract=CREATION_DRAFT_VALIDATION_CONTRACT,
+        validation_context={
+            "request": request,
+            "platform_fit": platform_fit,
+            "candidate_ids": candidate_ids,
+            "comment_evidence_by_viral": comment_evidence_by_viral,
+        },
+        max_retries=_env_int("SELFMEDIA_CREATION_LLM_RETRIES", 2),
+        retry_text=(
+            "上一次输出没有通过代码校验。\n错误：{error}\n"
+            "请重新输出完整 JSON object，只修正格式和约束，不要解释。"
+        ),
+    )
+    draft["_generation"] = creation_generation_metadata("creation_draft")
+    return draft
 
 
 def build_creation_prompt(
@@ -1180,13 +1180,16 @@ def call_creation_json(
     *,
     validation_contract: str,
     validation_context: dict[str, Any] | None = None,
+    max_retries: int = 1,
+    retry_text: str = "上一次输出没有通过 JSON 校验：{error}\n请只返回合法 JSON object，不要 Markdown。",
 ) -> dict[str, Any]:
     settings = load_profile_llm_settings("media_creation")
     return generate_json_from_parts(
         [{"text": message}],
         settings,
-        max_retries=1,
+        max_retries=max_retries,
         error_prefix="Codex Responses 创作输出 JSON 校验失败",
+        retry_text=retry_text,
         instructions=_creation_role_instructions(validation_contract),
         validation_contract=validation_contract,
         validation_context=validation_context,
