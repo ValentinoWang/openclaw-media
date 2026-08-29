@@ -12,6 +12,16 @@
 
 本计划本身通过校验不等同于 P1 已完成。
 
+## 2026-08-29 并行核对补充
+
+CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`：
+
+- CT-A4 相关路由夹具统一使用 canonical tenant UUID，`require_tenant_id` 继续 fail-closed；商业交付、Business Vlog、Style Polish、Creation Inspiration 等定向集合通过。
+- CT-B1 容量/LLM 异常回复仅输出中文可操作信息，内部 `error_code/detail` 保存在 `result.extra`；定向测试通过。
+- CT-B2 商单失败回复仅输出中文失败原因与重试指引，不泄露 `commercial_delivery_failed` 或 `permission readback failed`；定向测试通过。
+
+并行审计确认剩余 28 个未修复组的边界：LP-01/02/03/04/08/09/12/13/14/15/16/18/19 以及 LP-11/LB-12、LP-10/LH-07 所指向的 `photo-content-os/` 不存在于当前 integration 仓；LB/LH 其余条目属于仓外云桥、本地脚本或部署/生产证据边界；CT-A7 属于 destructive 能力产品政策冲突；BIZ-05/CD-13 仍缺真实生产轮询运行证据。上述条目没有在本仓伪造实现或验收关闭。
+
 ## CPC-01 至 CPC-04 复核记录（2026-08-29）
 
 `CPC-01`、`CPC-02` 的配分总分已由代码根据分项重新计算，`CPC-03` 的创作模型档位已提升到 tier B，`CPC-04` 的回洗验收失败已降级返回最后候选稿并标记待人工处理。独立复核证据见 `agents-results/2026-08-29/media-p1-cpc-review/CPC-01-04-review.md`，定向测试结果为 `34 passed`。这 4 条已从“仍缺”转为“已覆盖”，但不改变五个发布切片尚未正式验收的事实。
