@@ -4,7 +4,7 @@
 
 | 冻结基线 | 当前状态 | 说明 |
 |---|---|---|
-| P1 去重后的实时状态 | 原始审计 `163` 条；按 8 组有明确同根因证据的跨域别名保守折叠为 `155` 个独立问题组 | 以当前 `main` 证据映射出 `125` 组已修复、`2` 组部分覆盖、`28` 组未修复；尚未完全关闭为 `30` 个独立问题组（28 未修复 + 2 部分覆盖）。CT-A4/B1/B2 已由 `8b2b83e` 的 canonical tenant/portable route fixtures 收口，三组定向测试分别 `3/9/13 passed`。其余既有闭环、渲染、路由和运行时证据保持不变。`BIZ-05`、`CD-13` 仍只有源码与定向测试提交 `ec8c88c`，缺生产轮询运行证据，故不能计入已修复。机器清单见 `agents-results/2026-08-29/media-p1-dedup-audit/p1-dedup.json`，脚本可由 `dedup_p1.py --json` 重算。该数字替代旧投影，不把提交数直接当作关闭数 |
+| P1 去重后的实时状态 | 原始审计 `163` 条；按 8 组有明确同根因证据的跨域别名保守折叠为 `155` 个独立问题组 | 以 integration `main` 与照片仓库 `/Users/vsiyo/Desktop/照片筛选` 的独立 `main` 证据映射出 `152` 组已修复、`2` 组部分覆盖、`1` 组未修复；尚未完全关闭为 `3` 个独立问题组。照片仓库的 external evidence 仅在其本地 `main` 历史和定向测试均通过时计入，不把跨仓提交冒充 integration 源码。`BIZ-05`、`CD-13` 仍只有源码与定向测试提交 `ec8c88c`，缺生产轮询运行证据；`CT-A7` 仍是 destructive 能力产品政策决策，故不能计入已修复。机器清单见 `agents-results/2026-08-29/media-p1-dedup-audit/p1-dedup.json`，脚本可由 `dedup_p1.py --json` 重算。该数字替代旧投影，不把提交数直接当作关闭数 |
 | 发布切片 | 5 个已建立 | `REL-P1-UX`、`REL-P1-PIPE`、`REL-P1-BIZ`、`REL-P1-PORT`、`REL-P1-QA` 均未组装候选 |
 | 当前就绪交付包 | 14 个 | P1 至 P14 均可继续；本轮已处理用户可见渲染、Router 状态呈现和创作证据合同，尚未完成全部交付包验收 |
 | 已接受发布验收 | 0 个 | C1 至 C5 均等待对应交付包 |
@@ -111,5 +111,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - 并行运行时核对：`LB-10` 已由 `808395f` 使 frozen media contract 在仓内 clean checkout 可解析，`test_cloud_media_task_receiver.py` 相关集合 `4 passed`。`LB-13/LB-14/LH-01` 仍明确属于当前仓不存在的 `photo-content-os/` 脚本边界，未伪造关闭。
 
 - 跨仓源码复核：原审计所指的 `photo-content-os/99_System_OpenClaw` 实际存在于独立仓库 `/Users/vsiyo/Desktop/照片筛选`；其本地 `main@9864824` 已包含 `b1f0376`（creator context）、`d690db0`（bridge contract）、`ae59c09`（模板路径可移植）及既有队列/脚本修复。由于该仓库与 integration 是不同 Git 根，不能把这些提交直接计入 integration 的 `main`；照片仓库 worker 中相对当前 main 的大规模删除分支已拒绝合并。后续将以照片仓库自身 `main`/远端 SHA 和定向测试作为 LP/LH/LB 的独立证据层。
+- 跨仓源码复核更新：照片仓库 `main@9864824` 的 P1 回归集合已实测 `20 passed`（模板、creator context、bridge、平台/slot_map）及 `46 passed`（local prompts、frontmatter/围栏、storyboard、runner、桌面端、queue/cloud markdown）。`dedup_p1.py` 现以 external evidence 映射并校验照片仓库 `main` 历史；因此 LP/LH/LB 相关条目已从 PATH_MISSING 更正为已修复。该计数仍独立于 integration 源码提交，两个仓库不强行合并。
 
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。尚未复验的 114 条不得自动记为已覆盖，部分覆盖条目也不得计入关闭数。

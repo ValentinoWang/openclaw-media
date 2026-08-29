@@ -129,6 +129,22 @@ PARTIAL = {
     "CD-13": "ec8c88c",
 }
 
+# Evidence for the separate Photo Content OS repository. These commits are
+# validated against that repository's local main, never against integration's
+# history, so a cross-repo closure cannot silently masquerade as an integration
+# source change.
+PHOTO_ROOT = Path("/Users/vsiyo/Desktop/照片筛选")
+EXTERNAL_CLOSED = {
+    "LP-01": "b1f0376", "LP-02": "7745002", "LP-03": "7745002", "LP-04": "7745002",
+    "LP-08": "ab39dcd", "LP-09": "ab39dcd", "LP-12": "b9b15c1", "LP-13": "7745002",
+    "LP-14": "76e0fdd", "LP-15": "b9b15c1", "LP-16": "ab39dcd", "LP-18": "b1f0376",
+    "LP-19": "99541ad", "LP-10": "d690db0", "LH-07": "d690db0",
+    "LP-11": "b9b15c1", "LB-12": "b9b15c1", "LB-09": "d690db0", "LB-10": "d690db0",
+    "LB-11": "d690db0", "LB-13": "4494f6a", "LB-14": "4494f6a",
+    "LH-02": "b9b15c1", "LH-04": "76e0fdd", "LH-05": "76e0fdd",
+    "LH-09": "9864824", "LH-10": "9864824",
+}
+
 def parse_items(text: str):
     out = {}
     for block in re.split(r"(?=^#### )", text, flags=re.M):
@@ -160,13 +176,20 @@ def main():
     for v in PARTIAL.values():
         if v not in hist_short:
             raise SystemExit(f"partial evidence commit {v} is absent from current main")
+    photo_hist_short = set()
+    if PHOTO_ROOT.exists() and (PHOTO_ROOT / ".git").exists():
+        photo_hist = subprocess.check_output(["git", "-C", str(PHOTO_ROOT), "log", "--format=%H", "main"], text=True).splitlines()
+        photo_hist_short = {h[:7] for h in photo_hist}
+    for item, v in EXTERNAL_CLOSED.items():
+        if v not in photo_hist_short:
+            raise SystemExit(f"external evidence commit {v} for {item} is absent from photo main")
     records = []
     for key, ids in groups.items():
         present = [items[i] for i in ids if i in items]
         if not present: continue
-        statuses = ["已修复" if x["id"] in CLOSED else ("部分修复" if x["id"] in PARTIAL else x["baseline"]) for x in present]
+        statuses = ["已修复" if x["id"] in CLOSED or x["id"] in EXTERNAL_CLOSED else ("部分修复" if x["id"] in PARTIAL else x["baseline"]) for x in present]
         status = "已修复" if all(x == "已修复" for x in statuses) else ("部分修复" if any(x in {"已修复", "部分修复"} for x in statuses) else "未修复")
-        evidence = sorted({(CLOSED | PARTIAL)[x["id"]] for x in present if x["id"] in (CLOSED | PARTIAL)})
+        evidence = sorted({(CLOSED | PARTIAL | EXTERNAL_CLOSED)[x["id"]] for x in present if x["id"] in (CLOSED | PARTIAL | EXTERNAL_CLOSED)})
         records.append({"key": key, "ids": ids, "status": status, "evidence": evidence})
     result = {"source": str(AUDIT), "followup": str(FOLLOWUP), "progress": str(PROGRESS), "main": git_sha(), "raw_p1": len(items), "unique_dedup_p1": len(records), "groups": records}
     if args.json:
