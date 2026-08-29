@@ -514,14 +514,22 @@ def capture_review_signal(
 ) -> ReviewSignal:
     actual_run_id = run_id or make_timestamp_id("review_signal")
     parsed = parse_media_growth_input(text)
-    loaded_refs = _load_input_artifact_summaries(input_artifact_ids, vault=vault)
     publish_id = parsed.value("作品ID", "发布ID", "publish_id", "post_id", "作品链接", "发布链接", "url")
+    loaded_refs = _merge_artifact_summaries(
+        _load_input_artifact_summaries(input_artifact_ids, vault=vault),
+        _load_owned_post_review_summaries(vault=vault, publish_id=publish_id),
+    )
     single_fact = (
         parsed.value("单一事实", "single_fact", "事实", "结论", "summary", "摘要")
         or parsed.content_text
         or _display_text_from_artifacts(loaded_refs)
     )
     metrics_summary = _review_signal_metrics(parsed.params)
+    for item in loaded_refs:
+        if item.get("artifact_type") != "PublishedPostReviewEvidence":
+            continue
+        for key, value in (item.get("metrics") or {}).items():
+            metrics_summary.setdefault(str(key), str(value))
     signal = ReviewSignal(
         artifact_id=actual_run_id,
         artifact_type="ReviewSignal",
@@ -1403,6 +1411,49 @@ def _load_owned_review_signal_summaries(
         candidates.append((str(payload.get("updated_at") or payload.get("created_at") or ""), uri))
     refs = tuple(uri for _, uri in sorted(candidates, reverse=True)[: max(1, limit)])
     return _load_input_artifact_summaries(refs, vault=vault)
+
+
+def _load_owned_post_review_summaries(
+    *, vault: MediaVault | None, publish_id: str
+) -> tuple[dict[str, Any], ...]:
+    """Load local PublishedPost review evidence without crossing tenant boundaries."""
+    if vault is None or not clean_text(publish_id):
+        return ()
+    post_ref = clean_text(publish_id)
+    review_root = vault.root / "published_posts"
+    if not review_root.is_dir():
+        return ()
+    summaries: list[dict[str, Any]] = []
+    try:
+        paths = tuple(review_root.glob("*/review/*/metrics.json"))
+    except OSError:
+        return ()
+    for path in paths:
+        post_id = path.parents[2].name
+        if post_ref not in {post_id, f"post_{post_ref}"} and post_ref not in path.as_posix():
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        metrics = payload.get("metrics") if isinstance(payload, dict) else {}
+        if not isinstance(metrics, dict):
+            metrics = {}
+        summaries.append(
+            {
+                "artifact_type": "PublishedPostReviewEvidence",
+                "artifact_uri": vault.to_uri(path),
+                "artifact_id": f"{post_id}:{path.parent.name}",
+                "post_id": post_id,
+                "review_node": path.parent.name,
+                "metrics": {
+                    **{str(key): value for key, value in metrics.items()},
+                    **{str(key): value for key, value in (metrics.get("format_specific_metrics") or {}).items()},
+                },
+                "loaded": True,
+            }
+        )
+    return tuple(summaries)
 
 
 def _load_owned_creator_context(
