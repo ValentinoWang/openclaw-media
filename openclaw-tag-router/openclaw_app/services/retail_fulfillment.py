@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 
 from ..account.database import AccountDatabase
 from ..account.errors import AccountError
+from .retail_ledger import post_ledger_entry
 
 
 MONEY_QUANTUM = Decimal("0.00000001")
@@ -276,14 +277,19 @@ class RetailFulfillmentService:
                 "UPDATE openclaw_account.wallet_accounts SET available=%s,version=version+1,updated_at=now() WHERE id=%s",
                 (principal_after, row[2]),
             )
-            connection.execute(
-                """
-                INSERT INTO openclaw_account.ledger_entries(
-                    id,tenant_id,wallet_account_id,entry_type,available_delta,reserved_delta,
-                    available_after,reserved_after,source_type,source_id,idempotency_key
-                ) VALUES (%s,%s,%s,'credit',%s,0,%s,%s,'fulfillment',%s,%s)
-                """,
-                (principal_ledger, row[0], row[2], principal_amount, principal_after, locked[row[2]][1], fulfillment, f"fulfillment:{fulfillment}"),
+            post_ledger_entry(
+                connection,
+                entry_id=principal_ledger,
+                tenant_id=row[0],
+                wallet_account_id=row[2],
+                entry_type="credit",
+                available_delta=principal_amount,
+                reserved_delta=0,
+                available_after=principal_after,
+                reserved_after=locked[row[2]][1],
+                source_type="fulfillment",
+                source_id=fulfillment,
+                idempotency_key=f"fulfillment:{fulfillment}",
             )
             affiliate_amount = Decimal(0)
             if affiliate is not None:
@@ -295,14 +301,19 @@ class RetailFulfillmentService:
                     "UPDATE openclaw_account.wallet_accounts SET available=%s,version=version+1,updated_at=now() WHERE id=%s",
                     (affiliate_after, affiliate[1]),
                 )
-                connection.execute(
-                    """
-                    INSERT INTO openclaw_account.ledger_entries(
-                        id,tenant_id,wallet_account_id,entry_type,available_delta,reserved_delta,
-                        available_after,reserved_after,source_type,source_id,idempotency_key
-                    ) VALUES (%s,%s,%s,'affiliate',%s,0,%s,%s,'fulfillment',%s,%s)
-                    """,
-                    (affiliate_ledger_entry, affiliate[0], affiliate[1], affiliate_amount, affiliate_after, locked[affiliate[1]][1], fulfillment, f"affiliate:{fulfillment}"),
+                post_ledger_entry(
+                    connection,
+                    entry_id=affiliate_ledger_entry,
+                    tenant_id=affiliate[0],
+                    wallet_account_id=affiliate[1],
+                    entry_type="affiliate",
+                    available_delta=affiliate_amount,
+                    reserved_delta=0,
+                    available_after=affiliate_after,
+                    reserved_after=locked[affiliate[1]][1],
+                    source_type="fulfillment",
+                    source_id=fulfillment,
+                    idempotency_key=f"affiliate:{fulfillment}",
                 )
                 connection.execute(
                     "INSERT INTO openclaw_account.affiliate_ledger(id,fulfillment_id,inviter_tenant_id,invitee_tenant_id,wallet_account_id,ledger_entry_id,reward_rate,amount) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
@@ -385,14 +396,19 @@ class RetailFulfillmentService:
             "UPDATE openclaw_account.wallet_accounts SET available=%s,version=version+1,updated_at=now() WHERE id=%s",
             (available_after, wallet),
         )
-        connection.execute(
-            """
-            INSERT INTO openclaw_account.ledger_entries(
-                id,tenant_id,wallet_account_id,entry_type,available_delta,reserved_delta,
-                available_after,reserved_after,source_type,source_id,idempotency_key
-            ) VALUES (%s,%s,%s,'refund',%s,0,%s,%s,'refund_adjustment',%s,%s)
-            """,
-            (uuid4(), tenant, wallet, -amount, available_after, state[1], fulfillment, f"refund:{kind}:{fulfillment}"),
+        post_ledger_entry(
+            connection,
+            entry_id=uuid4(),
+            tenant_id=tenant,
+            wallet_account_id=wallet,
+            entry_type="refund",
+            available_delta=-amount,
+            reserved_delta=0,
+            available_after=available_after,
+            reserved_after=state[1],
+            source_type="refund_adjustment",
+            source_id=fulfillment,
+            idempotency_key=f"refund:{kind}:{fulfillment}",
         )
 
     @staticmethod

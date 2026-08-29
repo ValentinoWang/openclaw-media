@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 
 from ..account.database import AccountDatabase
 from ..account.errors import AccountError
+from .retail_ledger import post_ledger_entry
 
 
 MONEY_QUANTUM = Decimal("0.00000001")
@@ -198,25 +199,19 @@ class RetailBillingService:
                     datetime.now(timezone.utc) + timedelta(seconds=self.hold_ttl_seconds),
                 ),
             )
-            connection.execute(
-                """
-                INSERT INTO openclaw_account.ledger_entries(
-                    id, tenant_id, wallet_account_id, entry_type, available_delta,
-                    reserved_delta, available_after, reserved_after, source_type,
-                    source_id, idempotency_key
-                ) VALUES (%s,%s,%s,'reserve',%s,%s,%s,%s,'model_hold',%s,%s)
-                """,
-                (
-                    ledger_id,
-                    tenant,
-                    wallet[0],
-                    -maximum,
-                    maximum,
-                    available_after,
-                    reserved_after,
-                    hold_id,
-                    f"reserve:{idempotency_key}",
-                ),
+            post_ledger_entry(
+                connection,
+                entry_id=ledger_id,
+                tenant_id=tenant,
+                wallet_account_id=wallet[0],
+                entry_type="reserve",
+                available_delta=-maximum,
+                reserved_delta=maximum,
+                available_after=available_after,
+                reserved_after=reserved_after,
+                source_type="model_hold",
+                source_id=hold_id,
+                idempotency_key=f"reserve:{idempotency_key}",
             )
             connection.execute(
                 """
@@ -285,17 +280,19 @@ class RetailBillingService:
                 "UPDATE openclaw_account.wallet_accounts SET available=%s,reserved=%s,version=version+1,updated_at=now() WHERE id=%s",
                 (available_after, reserved_after, row[4]),
             )
-            connection.execute(
-                """
-                INSERT INTO openclaw_account.ledger_entries(
-                    id,tenant_id,wallet_account_id,entry_type,available_delta,reserved_delta,
-                    available_after,reserved_after,source_type,source_id,idempotency_key
-                ) VALUES (%s,%s,%s,'settle',%s,%s,%s,%s,'model_operation',%s,%s)
-                """,
-                (
-                    uuid4(), row[1], row[4], hold_amount - charge, -hold_amount,
-                    available_after, reserved_after, operation_id, f"settle:{operation_id}",
-                ),
+            post_ledger_entry(
+                connection,
+                entry_id=uuid4(),
+                tenant_id=row[1],
+                wallet_account_id=row[4],
+                entry_type="settle",
+                available_delta=hold_amount - charge,
+                reserved_delta=-hold_amount,
+                available_after=available_after,
+                reserved_after=reserved_after,
+                source_type="model_operation",
+                source_id=operation_id,
+                idempotency_key=f"settle:{operation_id}",
             )
             connection.execute(
                 "UPDATE openclaw_account.fund_holds SET status='captured',updated_at=now() WHERE id=%s",
@@ -375,14 +372,19 @@ class RetailBillingService:
                 "UPDATE openclaw_account.wallet_accounts SET available=%s,reserved=%s,version=version+1,updated_at=now() WHERE id=%s",
                 (available_after, reserved_after, row[3]),
             )
-            connection.execute(
-                """
-                INSERT INTO openclaw_account.ledger_entries(
-                    id,tenant_id,wallet_account_id,entry_type,available_delta,reserved_delta,
-                    available_after,reserved_after,source_type,source_id,idempotency_key
-                ) VALUES (%s,%s,%s,'release',%s,%s,%s,%s,'model_operation',%s,%s)
-                """,
-                (uuid4(), row[1], row[3], amount, -amount, available_after, reserved_after, operation_id, f"release:{operation_id}"),
+            post_ledger_entry(
+                connection,
+                entry_id=uuid4(),
+                tenant_id=row[1],
+                wallet_account_id=row[3],
+                entry_type="release",
+                available_delta=amount,
+                reserved_delta=-amount,
+                available_after=available_after,
+                reserved_after=reserved_after,
+                source_type="model_operation",
+                source_id=operation_id,
+                idempotency_key=f"release:{operation_id}",
             )
             connection.execute("UPDATE openclaw_account.fund_holds SET status='released',updated_at=now() WHERE id=%s", (row[2],))
             connection.execute(

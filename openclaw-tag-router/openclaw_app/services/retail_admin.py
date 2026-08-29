@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from ..account.admin_audit import write_admin_audit
 from ..account.database import AccountDatabase
 from ..account.errors import AccountError
+from .retail_ledger import post_ledger_entry
 
 
 MONEY_QUANTUM = Decimal("0.00000001")
@@ -248,14 +249,25 @@ class RetailAdminService:
                 reason=audit_reason,
                 metadata={"targetTenantId": str(tenant), "amount": str(grant_amount), "ledgerEntryId": str(ledger_id)},
             )
-            connection.execute(
-                """
-                INSERT INTO openclaw_account.ledger_entries(
-                    id,tenant_id,wallet_account_id,entry_type,available_delta,reserved_delta,
-                    available_after,reserved_after,source_type,source_id,idempotency_key
-                ) VALUES (%s,%s,%s,'admin_grant',%s,0,%s,%s,'admin_grant',%s,%s)
-                """,
-                (ledger_id, tenant, target[1], grant_amount, available_after, target[3], audit_id, idempotency_key),
+            post_ledger_entry(
+                connection,
+                entry_id=ledger_id,
+                tenant_id=tenant,
+                wallet_account_id=target[1],
+                entry_type="admin_grant",
+                available_delta=grant_amount,
+                reserved_delta=0,
+                available_after=available_after,
+                reserved_after=target[3],
+                source_type="admin_grant",
+                source_id=audit_id,
+                # No f"{verb}:{id}" prefix here, unlike the other six call
+                # sites: retail_admin.grant()'s replay check (above, in the
+                # `existing = connection.execute(...)` idempotency lookup)
+                # matches the caller-supplied idempotency_key verbatim. Do
+                # not add a prefix -- it would break replay detection for
+                # every grant already recorded with the raw key.
+                idempotency_key=idempotency_key,
             )
             return self._grant_payload(ledger_id, tenant, grant_amount, available_after)
 
