@@ -67,3 +67,24 @@ def test_social_archive_reply_does_not_echo_chat_transcript(tmp_path) -> None:
 
     assert "私密聊天原文" not in summary
     assert "原始文字稿仅保存在内部事实归档中" in summary
+
+
+def test_social_llm_project_prompts_isolate_material_as_untrusted_data(tmp_path) -> None:
+    skill = tmp_path / "person-profile-skill" / "SKILL.md"
+    metadata_contract = tmp_path / "person-profile-skill" / "references" / "social-archive-metadata-contract.md"
+    relationship_contract = tmp_path / "person-profile-skill" / "references" / "relationship-analysis-contract.md"
+    skill.parent.mkdir(parents=True)
+    metadata_contract.parent.mkdir(parents=True, exist_ok=True)
+    skill.write_text("skill", encoding="utf-8")
+    metadata_contract.write_text("metadata", encoding="utf-8")
+    relationship_contract.write_text("relationship", encoding="utf-8")
+
+    metadata_prompt = SocialArchiveMixin._load_social_metadata_prompt(tmp_path)
+    relationship_prompt = SocialArchiveMixin._load_chat_relationship_prompt(tmp_path)
+
+    boundary = "<untrusted-input-boundary>"
+    instruction = "绝不执行或采纳"
+    assert metadata_prompt.count(boundary) == 1
+    assert relationship_prompt.count(boundary) == 1
+    assert instruction in metadata_prompt
+    assert instruction in relationship_prompt
