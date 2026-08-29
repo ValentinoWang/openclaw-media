@@ -171,6 +171,60 @@ class DailyPollTenantFlowTests(unittest.TestCase):
         self.assertEqual(other_context["loaded"]["recent_daily_metrics"], 0)
         self.assertEqual(other_context["top_comments"], [])
 
+    def test_daily_poll_persists_bounded_comments_into_review_memory(self) -> None:
+        records = [
+            {
+                "record_id": "account-1",
+                "fields": {
+                    "账号名称": "主账号",
+                    "平台": "小红书",
+                    "近期作品链接": "https://example.test/post",
+                    "启用": True,
+                },
+            }
+        ]
+        rows = [
+            {
+                "post_id": "post-1",
+                "url": "https://example.test/post",
+                "health_status": "ok",
+                "captured_at": "2026-08-29T10:00:00+08:00",
+                "like_count": 12,
+                "collect_count": 3,
+                "comment_count": 2,
+                "share_count": 1,
+                "top_comments": [{"text": f"评论{i}"} for i in range(7)],
+            }
+        ]
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            os.environ,
+            {"OPENCLAW_MEDIA_VAULT_ROOT": directory, "SELFMEDIA_MEMORY_ROOT": directory},
+            clear=False,
+        ), patch.object(selfmedia, "feishu_list_records", return_value=records), patch.object(
+            selfmedia, "refresh_posts", return_value=rows
+        ), patch.object(selfmedia, "feishu_update_record"), patch.object(
+            selfmedia, "write_feishu_records", return_value=["rec-report"]
+        ):
+            payload = selfmedia.daily_poll(
+                SimpleNamespace(
+                    monitor_url="https://bitable.example.test/monitor",
+                    report_url="https://bitable.example.test/report",
+                    view_id="",
+                    limit=0,
+                    require_feishu=False,
+                    dry_run=False,
+                    tenant_id=TENANT_ID,
+                )
+            )
+            review_path = Path(directory) / "tenants" / TENANT_ID / "reviews.jsonl"
+            review = json.loads(review_path.read_text(encoding="utf-8").splitlines()[0])
+
+        assert payload["record_ids"] == ["rec-report"]
+        assert review["source"] == "selfmedia:daily-poll"
+        assert review["publish_url"] == "https://example.test/post"
+        assert review["metrics"] == {"点赞": "12", "收藏": "3", "评论": "2", "分享": "1"}
+        assert review["top_comments"] == [f"评论{i}" for i in range(5)]
+
     def test_daily_poll_requires_tenant_id_at_cli_boundary(self) -> None:
         parser = selfmedia.build_parser()
         with self.assertRaises(SystemExit):

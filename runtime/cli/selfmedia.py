@@ -656,7 +656,7 @@ def compact_daily_poll_comments(row: dict[str, Any]) -> list[str]:
             text = str(item or "").strip()
             if text:
                 comments.append(text[:240])
-    return list(dict.fromkeys(comments))[:3]
+    return list(dict.fromkeys(comments))[:5]
 
 
 def compact_daily_poll_detail(row: dict[str, Any], score: dict[str, Any]) -> dict[str, Any]:
@@ -791,6 +791,8 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
             summary = account_summary(account, rows)
             summaries.append(summary)
             if not args.dry_run:
+                _record_daily_poll_reviews(account, rows, tenant_id=tenant_id)
+            if not args.dry_run:
                 update_account_monitor_record(
                     monitor_url,
                     account["record_id"],
@@ -889,6 +891,57 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
         ),
         "errors": errors,
     }
+
+
+def _record_daily_poll_reviews(
+    account: dict[str, Any],
+    rows: list[dict[str, Any]],
+    *,
+    tenant_id: str,
+) -> list[str]:
+    """Persist bounded, successful polling evidence into the review memory."""
+    from selfmedia.context import record_review_memory
+
+    recorded: list[str] = []
+    platform = str(account.get("platform") or "").strip()
+    account_name = str(account.get("account_name") or "").strip()
+    for row in rows:
+        if str(row.get("health_status") or "").strip() not in {"ok", "partial"}:
+            continue
+        publish_url = str(row.get("url") or row.get("cleaned_url") or "").strip()
+        if not publish_url:
+            continue
+        metric_labels = (
+            ("点赞", "like_count"),
+            ("收藏", "collect_count"),
+            ("评论", "comment_count"),
+            ("分享", "share_count"),
+        )
+        metrics = [
+            f"{label}={row[key]}"
+            for label, key in metric_labels
+            if row.get(key) is not None
+        ]
+        comments = compact_daily_poll_comments(row)[:5]
+        if not metrics and not comments:
+            continue
+        review_text = (
+            f"【数据复盘】平台={platform} 账号={account_name} 主体=账号每日轮询 "
+            f"发布链接={publish_url} 数据={' '.join(metrics)} "
+            "结论=日报已采集作品互动数据，供后续复盘与创作参考"
+        ).strip()
+        result = record_review_memory(
+            review_text,
+            tenant_id=tenant_id,
+            source="selfmedia:daily-poll",
+            analysis={
+                "top_comments": comments,
+                "data_source": "account_daily_poll",
+                "captured_at": row.get("captured_at") or "",
+            },
+        )
+        recorded.append(str(result.get("review_id") or ""))
+    return recorded
 
 
 def _systemd_calendar(cron: str, *, timezone: str = "") -> str:

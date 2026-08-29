@@ -460,6 +460,9 @@ def _review_prompt_lines(reviews: list[Any]) -> list[str]:
         actions = _review_actions_for_prompt(item)
         if actions:
             parts.append(f"下一步：{'；'.join(actions[:5])}")
+        comments = _review_text_values(item.get("top_comments"), limit=5)
+        if comments:
+            parts.append(f"评论原话：{'；'.join(comments)}")
         content_guidance = _review_text_values(item.get("content_guidance"), limit=4)
         if content_guidance:
             parts.append(f"内容调整：{'；'.join(content_guidance)}")
@@ -762,6 +765,7 @@ def _review_memory_evidence(analysis: dict[str, Any] | None) -> dict[str, Any]:
         "publishing_guidance",
         "effective_patterns",
         "failure_reasons",
+        "top_comments",
     ):
         values = _as_list(analysis.get(key))
         if values:

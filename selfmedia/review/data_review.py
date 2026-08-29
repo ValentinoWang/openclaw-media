@@ -231,6 +231,10 @@ def handle_data_review_command(
         creation_plan=creation_plan,
     )
     normalized = normalize_analysis(analysis, request)
+    normalized = _merge_daily_poll_evidence(
+        normalized,
+        _daily_poll_evidence_for_url(tenant_id, request.publish_url),
+    )
 
     output_dir = vault.root / "data_review_runs"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -785,6 +789,98 @@ def normalize_analysis(raw: dict[str, Any], request: DataReviewRequest) -> dict[
     return analysis
 
 
+def _daily_poll_evidence_for_url(tenant_id: str, publish_url: str) -> dict[str, Any]:
+    """Load the newest tenant-owned daily-poll row for one published URL."""
+    target_url = _canonical_public_url(publish_url)
+    if not target_url:
+        return {}
+    output_dir = MediaVault(tenant_id=tenant_id).root / "account_daily_runs"
+    for path in sorted(output_dir.glob("account_daily_*.json"), reverse=True):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict) or str(payload.get("tenant_id") or "") != tenant_id:
+            continue
+        rows_by_account = payload.get("rows") if isinstance(payload.get("rows"), dict) else {}
+        for rows in rows_by_account.values():
+            for row in rows if isinstance(rows, list) else []:
+                if not isinstance(row, dict):
+                    continue
+                health_status = str(row.get("health_status") or "").strip()
+                if health_status and health_status not in {"ok", "partial"}:
+                    continue
+                row_url = _canonical_public_url(row.get("url") or row.get("cleaned_url"))
+                if row_url != target_url:
+                    continue
+                metrics = {
+                    label: row[key]
+                    for label, key in (
+                        ("点赞", "like_count"),
+                        ("收藏", "collect_count"),
+                        ("评论", "comment_count"),
+                        ("分享", "share_count"),
+                    )
+                    if row.get(key) is not None
+                }
+                comments: list[str] = []
+                for key in ("top_comments", "comments", "hot_comments", "high_like_comments"):
+                    values = row.get(key)
+                    for value in values if isinstance(values, list) else [values]:
+                        if isinstance(value, dict):
+                            value = value.get("text") or value.get("comment") or value.get("content")
+                        text = str(value or "").strip()
+                        if text and text not in comments:
+                            comments.append(text[:240])
+                return {
+                    "metrics": metrics,
+                    "top_comments": comments[:5],
+                    "captured_at": row.get("captured_at") or "",
+                }
+    return {}
+
+
+def _merge_daily_poll_evidence(analysis: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any]:
+    """Supplement screenshot analysis with matching daily-poll evidence."""
+    if not evidence:
+        return analysis
+    merged = dict(analysis)
+    metrics = dict(analysis.get("metrics") or {})
+    added_metrics = []
+    for key, value in (evidence.get("metrics") or {}).items():
+        if key not in metrics:
+            metrics[key] = value
+            added_metrics.append(f"{key}={value}")
+    merged["metrics"] = metrics
+
+    existing_comments = analysis.get("top_comments")
+    existing_comments = existing_comments if isinstance(existing_comments, list) else [existing_comments]
+    daily_comments = evidence.get("top_comments")
+    daily_comments = daily_comments if isinstance(daily_comments, list) else [daily_comments]
+    daily_comments = [str(value or "").strip() for value in daily_comments if str(value or "").strip()]
+    comments = []
+    for value in [*existing_comments, *daily_comments]:
+        text = str(value or "").strip()
+        if text and text not in comments:
+            comments.append(text[:240])
+    if comments:
+        merged["top_comments"] = comments[:5]
+
+    notes = list(analysis.get("data_quality_notes") or [])
+    supplement = []
+    if added_metrics:
+        supplement.append(f"日报自动补充指标：{'；'.join(added_metrics)}")
+    if daily_comments:
+        supplement.append("日报自动补充评论原话，共 %d 条" % len(daily_comments))
+    if evidence.get("captured_at"):
+        supplement.append(f"日报采集时间：{str(evidence['captured_at']).strip()}")
+    for note in supplement:
+        if note not in notes:
+            notes.append(note)
+    merged["data_quality_notes"] = notes
+    return merged
+
+
 def normalize_platform_tags(value: Any) -> list[str]:
     mapping = {
         "douyin": "抖音",
@@ -951,6 +1047,7 @@ def write_data_review_model_v2(
         review_node,
         metrics={
             "metrics": analysis.get("metrics") or {},
+            "top_comments": analysis.get("top_comments") or [],
             "priority_metrics": analysis.get("priority_metrics") or [],
             "atomic_facts": analysis.get("atomic_facts") or [],
             "trend_curves": analysis.get("trend_curves") or {},
@@ -1397,17 +1494,19 @@ def data_review_doc_blocks(
         *_list_blocks(_review_lines(analysis.get("publishing_guidance"))),
         _heading(2, "六、关键数据"),
         *_list_blocks(_review_lines(analysis.get("metrics"))),
-        _heading(2, "七、作品形式专项指标"),
+        _heading(2, "七、评论原话（日报采集）"),
+        *_list_blocks(_review_lines(analysis.get("top_comments"))),
+        _heading(2, "八、作品形式专项指标"),
         *_list_blocks(_review_lines(analysis.get("format_specific_metrics"))),
-        _heading(2, "八、数据解释"),
+        _heading(2, "九、数据解释"),
         *_list_blocks(_review_lines(analysis.get("metric_interpretation") or analysis.get("key_insights"))),
-        _heading(2, "九、问题判断"),
+        _heading(2, "十、问题判断"),
         *_list_blocks(_review_lines(analysis.get("problems"))),
-        _heading(2, "十、关键事实与趋势依据"),
+        _heading(2, "十一、关键事实与趋势依据"),
         *_list_blocks(_review_lines(analysis.get("atomic_facts"))),
         *_list_blocks(_review_lines(analysis.get("priority_metrics"))),
         *_list_blocks(_review_lines(analysis.get("trend_curves"))),
-        _heading(2, "十一、截图与可信度"),
+        _heading(2, "十二、截图与可信度"),
         _paragraph(f"共 {len(screenshots)} 张后台截图，原图作为附件保留。"),
         *_list_blocks(_review_lines(analysis.get("data_quality_notes") or ["截图字段可读"])),
     ]
@@ -1734,6 +1833,7 @@ def render_data_review_report(payload: dict[str, Any]) -> str:
         ("内容调整", analysis.get("content_guidance")),
         ("发布建议", analysis.get("publishing_guidance")),
         ("关键数据", analysis.get("metrics")),
+        ("评论原话（日报采集）", analysis.get("top_comments")),
         ("作品形式专项指标", analysis.get("format_specific_metrics")),
         ("数据解释", analysis.get("metric_interpretation") or analysis.get("key_insights")),
         ("问题判断", analysis.get("problems")),

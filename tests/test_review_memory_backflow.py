@@ -1,11 +1,59 @@
 from __future__ import annotations
 
+import json
+
 from selfmedia.context import build_media_context, record_review_memory
-from selfmedia.review.data_review import DataReviewRequest, _review_memory_text, validate_data_review_analysis
+from selfmedia.review.data_review import (
+    DataReviewRequest,
+    _daily_poll_evidence_for_url,
+    _merge_daily_poll_evidence,
+    _review_memory_text,
+    validate_data_review_analysis,
+)
 
 
 TENANT_ID = "00000000-0000-4000-8000-000000000106"
 OTHER_TENANT_ID = "00000000-0000-4000-8000-000000000206"
+
+
+def test_daily_poll_evidence_merges_by_tenant_owned_publish_url(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", str(tmp_path))
+    daily_root = tmp_path / "tenants" / TENANT_ID / "account_daily_runs"
+    daily_root.mkdir(parents=True)
+    (daily_root / "account_daily_20260829.json").write_text(
+        json.dumps(
+            {
+                "tenant_id": TENANT_ID,
+                "rows": {
+                    "account-1": [
+                        {
+                            "url": "https://example.test/post/?utm_source=share",
+                            "health_status": "ok",
+                            "like_count": 12,
+                            "collect_count": 3,
+                            "comment_count": 2,
+                            "share_count": 1,
+                            "top_comments": [{"text": f"评论{i}"} for i in range(7)],
+                        }
+                    ]
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    evidence = _daily_poll_evidence_for_url(TENANT_ID, "https://EXAMPLE.test/post")
+    assert evidence["metrics"] == {"点赞": 12, "收藏": 3, "评论": 2, "分享": 1}
+    assert evidence["top_comments"] == [f"评论{i}" for i in range(5)]
+    assert _daily_poll_evidence_for_url(OTHER_TENANT_ID, "https://example.test/post") == {}
+
+    merged = _merge_daily_poll_evidence(
+        {"metrics": {"点赞": "截图值"}, "data_quality_notes": []}, evidence
+    )
+    assert merged["metrics"] == {"点赞": "截图值", "收藏": 3, "评论": 2, "分享": 1}
+    assert merged["top_comments"] == [f"评论{i}" for i in range(5)]
+    assert "日报自动补充指标" in merged["data_quality_notes"][0]
 
 
 def test_data_review_evidence_backflows_to_next_creation_context_without_tenant_leakage(tmp_path) -> None:
