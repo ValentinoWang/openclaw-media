@@ -8,7 +8,7 @@
 
 需要特别区分两件事：
 
-1. 当前权威源码仓库是 `production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration` 的 `main`，其工作树干净；本地 `main` 当前比 `origin/main` 超前 2 个尚未推送的提交：`4a41061`（H00 身份绑定）和 `ada2963`（账号监控 API 合同边界）。
+1. 当前权威源码仓库是 `production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration` 的 `main`，其工作树干净；`origin/main` 已同步到 `5c0283b`，包含 `4a41061`（H00 身份绑定）、`ada2963`（账号监控 API 合同边界）和本报告更新。
 2. 某个容器里存在 Stage‑2 同名文件，不等于该容器的加固提交已经进入当前 `main`。四个 `stage2-hardening-*` 是独立仓库，提交对象不在当前 `main` 历史中。
 
 ## 时间窗口与权威文档
@@ -43,6 +43,21 @@
 - `integration/main` 当前存在 `stage2_server_context.py`、`stage2_external_document.py`、`stage2_production_factory.py`、`stage2_runtime.py`、`stage2_gateway.py`、`stage2_personal_store.py` 等基础文件，但四个独立加固提交 `d0d399a`、`948b36b`、`ae0b614`、`76f8725` 都不是当前 `main` 的祖先提交，因此不能写成“已经合入 main”。
 - `23ba056`、`f533317` 也不是当前 `main` 的祖先提交；`f533317` 与当前账号监控 schema 主题重叠，按 superseded/diff 处理，不整体迁移。
 - 四个 `stage2-hardening-*` 候选仍然不能整体合并；如需提取，必须以当前 `main` 为基线逐文件、逐符号去重后形成原子提交。
+
+## 远端候选分支
+
+六个未合入主线的提交已按原提交对象分别推送到远端，仅用于审查和差异提取，不代表接受或发布：
+
+| 提交 | 远端分支 | 处置边界 |
+|---|---|---|
+| `d0d399a` | `candidates/stage2-hardening-auth-d0d399a` | 候选；不可整体合并 |
+| `948b36b` | `candidates/stage2-hardening-feishu-948b36b` | 候选；不可整体合并 |
+| `ae0b614` | `candidates/stage2-hardening-persistence-ae0b614` | 候选；不可整体合并 |
+| `76f8725` | `candidates/stage2-hardening-runtime-76f8725` | 候选；不可整体合并 |
+| `23ba056` | `candidates/mediaclaw-stylekit-content-23ba056` | 仅作 diff 来源，不视为主线实现 |
+| `f533317` | `candidates/mediaclaw-stylekit-monitor-f533317` | 与当前 schema 重叠，按 superseded/diff 处理 |
+
+这些分支没有合并请求或主线发布含义；任何提取都必须以当前 `main` 为基线，拆成原子改动并单独通过定向测试。
 - Stage‑2 SSOT 本身仍要求真实认证会话、真实数据库、真实人工智能任务、真实飞书写入/回读、浏览器/设备和独立终验；2026-08-20 加固证据只达到聚焦测试与浏览器夹具层级。
 - P1 的 2026-08-29 主线进度仍把 `BIZ-05`、`CD-13` 的真实生产账号、近期作品链接和轮询回执列为非空生产证据缺口；容器中的测试或候选提交不能关闭这两项。
 
