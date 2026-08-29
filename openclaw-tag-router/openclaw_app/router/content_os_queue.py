@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import json
 import os
 from pathlib import Path
 import re
@@ -389,7 +390,30 @@ def accept_mac_result(
     result_path = result_root / f"accepted_{task.task_id.removeprefix('task_')}_{task.task_type}.yaml"
     done_path = done_root / f"{task.task_id}_{task.task_type}.yaml"
     if result_path.exists() or done_path.exists():
-        raise ContentOSContractError("这个任务已有已接收的结果，不能重复接收")
+        # A retry after a lost acknowledgement is safe when it is byte-equivalent
+        # to the evidence already committed. Changed evidence remains a conflict.
+        if result_path.is_file() and done_path.is_file():
+            stored = _read_yaml(result_path)
+            stored_source = {key: value for key, value in stored.items() if key not in {"accepted_by", "accepted_at"}}
+            incoming = json.loads(json.dumps(result, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+            existing = json.loads(json.dumps(stored_source, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+            if incoming == existing:
+                done_payload = _read_yaml(done_path)
+                return AcceptedMacResult(
+                    task=ReadyTask(
+                        task_id=task.task_id,
+                        task_type=task.task_type,
+                        project_id=task.project_id,
+                        project_revision=task.project_revision,
+                        change_request_id=task.change_request_id,
+                        editor_backend=task.editor_backend,
+                        path=done_path,
+                        payload=done_payload,
+                    ),
+                    result_path=result_path,
+                    done_task_path=done_path,
+                )
+        raise ContentOSContractError("这个任务已有已接收的不同结果，不能覆盖原有证据")
     accepted_payload = dict(result)
     accepted_payload["accepted_by"] = "cloud_openclaw"
     accepted_payload["accepted_at"] = _now_iso(now)

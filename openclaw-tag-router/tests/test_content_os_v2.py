@@ -476,6 +476,38 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(read_project_state(root, project_id).status, "planned")
             self.assertEqual(self._read_yaml(accepted.done_task_path)["status"], "done")
 
+    def test_same_mac_result_replay_is_idempotent_after_ack_loss(self) -> None:
+        temporary, root, project_id = self._make_vault(status="planned")
+        with temporary:
+            task = create_ready_task(
+                root,
+                project_id,
+                task_type="local_material_match",
+                project_revision=1,
+                change_request_id="",
+                editor_backend="handoff_pack",
+                now=FIXED_NOW,
+            )
+            result = {
+                "spec_version": CONTENT_OS_SPEC_VERSION,
+                "doc_type": "mac_result",
+                "task_id": task.task_id,
+                "task_type": task.task_type,
+                "completed_by": "mac_openclaw",
+                "status": "done",
+                "project_id": project_id,
+                "project_revision": 1,
+                "change_request_id": "",
+                "editor_backend": "handoff_pack",
+                "outputs": {"report": "report.md"},
+            }
+            first = accept_mac_result(root, result, now=FIXED_NOW)
+            replay = accept_mac_result(root, result, now=FIXED_NOW)
+            self.assertEqual(replay.result_path, first.result_path)
+            self.assertEqual(replay.done_task_path, first.done_task_path)
+            with self.assertRaisesRegex(ContentOSContractError, "不同结果"):
+                accept_mac_result(root, {**result, "outputs": {"report": "changed.md"}}, now=FIXED_NOW)
+
     def test_http_result_requires_the_authenticated_tenant_on_task_and_result(self) -> None:
         temporary, root, project_id = self._make_vault(status="planned")
         with temporary:
