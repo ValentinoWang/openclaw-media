@@ -54,6 +54,7 @@ import {
   syncStatusDisplayLabel,
   workspaceModeDisplayLabel,
 } from "../../ui/displayLabels";
+import { getOrganizationDocumentUrl } from "../../ui/organizationDocumentUrl";
 import styles from "./OverviewPage.module.css";
 import CanonicalDocumentRenderer from "./CanonicalDocumentRenderer";
 import type { DocumentBlock, DocumentInlineNode, DocumentRichTextBlock } from "../../documentWorkflow";
@@ -910,6 +911,7 @@ function ArtifactsPanel({
             {state.data.items.map((artifact) => {
               const isSelected = artifact.publicArtifactId === selectedArtifactId;
               const displayName = artifactDisplayName(artifact);
+              const organizationDocumentUrl = getOrganizationDocumentUrl(artifact);
               return (
                 <div className={styles.artifactEntry} role="listitem" key={artifact.publicArtifactId}>
                   <article
@@ -928,7 +930,7 @@ function ArtifactsPanel({
                         <Eye size={13} aria-hidden="true" />
                         {isSelected ? "收起网页内容" : "查看网页内容"}
                       </button>
-                      {getOrganizationDocumentUrl(artifact) ? <a className={styles.documentLink} href={getOrganizationDocumentUrl(artifact)!} target="_blank" rel="noreferrer"><ExternalLink size={13} aria-hidden="true" />打开组织文档</a> : null}
+                      {organizationDocumentUrl ? <a className={styles.documentLink} href={organizationDocumentUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} aria-hidden="true" />打开组织文档</a> : null}
                     </div>
                   </article>
                   {isSelected ? <DocumentPreview artifact={artifact} state={documentState} onRetry={() => setDocumentRetryToken((current) => current + 1)} /> : null}
@@ -1053,32 +1055,6 @@ function documentTitle(blocks: DocumentBlock[], fallbackArtifactType: string): s
 
 function inlineText(nodes: DocumentInlineNode[] | undefined): string {
   return (nodes ?? []).map((node) => node.text).join("").trim();
-}
-
-function getOrganizationDocumentUrl(artifact: Pick<ArtifactSummary, "organizationDocumentUrl" | "larkDocumentUrl">): string | null {
-  const value = artifact.organizationDocumentUrl ?? artifact.larkDocumentUrl;
-  if (typeof value !== "string") return null;
-  try {
-    const parsed = new URL(value.trim());
-    const validHost =
-      parsed.hostname === "feishu.cn" ||
-      parsed.hostname === "larksuite.com" ||
-      parsed.hostname === "larkoffice.com" ||
-      parsed.hostname.endsWith(".feishu.cn") ||
-      parsed.hostname.endsWith(".larksuite.com") ||
-      parsed.hostname.endsWith(".larkoffice.com");
-    const parts = parsed.pathname.split("/").filter(Boolean);
-    if (
-      parsed.protocol !== "https:" ||
-      !validHost ||
-      parts.length !== 2 ||
-      !["wiki", "docx", "doc", "docs"].includes(parts[0].toLowerCase()) ||
-      !/^[A-Za-z0-9_-]{8,160}$/u.test(parts[1])
-    ) return null;
-    return parsed.toString();
-  } catch {
-    return null;
-  }
 }
 
 function CursorPager({

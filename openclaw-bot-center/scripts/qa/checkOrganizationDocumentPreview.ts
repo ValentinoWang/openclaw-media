@@ -18,6 +18,14 @@ const rendererStyles = fs.readFileSync(
   path.join(root, "src/media/pages/ordinary/CanonicalDocumentRenderer.module.css"),
   "utf8",
 );
+const runsPage = fs.readFileSync(
+  path.join(root, "src/media/pages/ordinary/RunsPage.tsx"),
+  "utf8",
+);
+const documentUrlValidator = fs.readFileSync(
+  path.join(root, "src/media/ui/organizationDocumentUrl.ts"),
+  "utf8",
+);
 
 function requirePreview(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -56,10 +64,20 @@ requirePreview(
   "document preview retry must re-request only the selected document body",
 );
 requirePreview(
-  page.includes('parsed.protocol !== "https:"') &&
-    page.includes('parsed.hostname.endsWith(".feishu.cn")') &&
-    page.includes('!["wiki", "docx", "doc", "docs"].includes(parts[0].toLowerCase())'),
-  "organization-document links must remain constrained to HTTPS Feishu document URLs",
+  documentUrlValidator.includes('parsed.protocol !== "https:"') &&
+    documentUrlValidator.includes('"feishu.cn"') &&
+    documentUrlValidator.includes('"larksuite.com"') &&
+    documentUrlValidator.includes('"larkoffice.com"') &&
+    documentUrlValidator.includes('parsed.hostname.endsWith("." + host)') &&
+    documentUrlValidator.includes('!["wiki", "docx", "doc", "docs"].includes(parts[0].toLowerCase())'),
+  "the shared organization-document URL validator must remain constrained to HTTPS Feishu/Lark document URLs",
+);
+requirePreview(
+  page.includes('from "../../ui/organizationDocumentUrl"') &&
+    runsPage.includes('from "../../ui/organizationDocumentUrl"') &&
+    !page.includes("function getOrganizationDocumentUrl(") &&
+    !runsPage.includes("function getOrganizationDocumentUrl("),
+  "both OverviewPage and RunsPage must consume the shared organization-document URL validator rather than defining their own",
 );
 requirePreview(
   page.includes("CanonicalDocumentRenderer") &&

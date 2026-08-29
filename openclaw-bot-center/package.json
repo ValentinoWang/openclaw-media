@@ -42,6 +42,7 @@
     "qa:track-relationship-presentation": "tsx scripts/qa/checkTrackRelationshipPresentation.ts",
     "qa:media-runs-commercial-delivery-release": "tsx scripts/qa/checkCommercialDeliveryRelease.ts",
     "qa:media-organization-document-preview": "tsx scripts/qa/checkOrganizationDocumentPreview.ts",
+    "qa:organization-document-url": "tsx scripts/qa/checkOrganizationDocumentUrl.ts",
     "qa:overview-desktop-interactions": "bash scripts/qa/withChromiumSlot.sh -- tsx scripts/qa/checkOverviewDesktopInteractions.ts",
     "qa:overview-artifact-names-production": "bash scripts/qa/withChromiumSlot.sh -- tsx scripts/qa/checkOverviewArtifactNamesProduction.ts",
     "qa:overview-task-confirmation-contract": "tsx scripts/qa/checkOverviewTaskConfirmationContract.ts",

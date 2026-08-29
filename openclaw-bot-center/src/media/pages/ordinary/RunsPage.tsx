@@ -32,6 +32,7 @@ import {
 import { DISPLAY_LABELS } from "../../ui/displayLabels";
 import { artifactTypeDisplayLabel, bodyAuthorityDisplayLabel, mediaTypeDisplayLabel, qualityDisplayLabel, syncStatusDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
+import { getOrganizationDocumentUrl } from "../../ui/organizationDocumentUrl";
 import styles from "./RunsPage.module.css";
 
 type StatusTone = ReturnType<typeof runStatusTone>;
@@ -739,12 +740,6 @@ function OutputContent({ section }: { section: RunOutputSection }) {
   const empty = section.outputVariants.length === 0 && section.artifactSummaries.length === 0 && section.verificationReports.length === 0;
   if (empty) return <SectionEmpty message="该运行没有已持久化输出。" />;
   return <div className={styles.sectionBody}>{section.outputVariants.length ? <div className={styles.outputGroup}><h4>输出变体</h4>{section.outputVariants.map((item, index) => <TypedMap key={`variant-${index}`} title={`输出变体 ${index + 1}`} value={item} />)}</div> : null}{section.artifactSummaries.length ? <div className={styles.outputGroup}><h4>成果文档</h4>{section.artifactSummaries.map((artifact) => { const documentUrl = getOrganizationDocumentUrl(artifact); return <article className={styles.artifactCard} key={artifact.publicArtifactId}><div><span className={styles.runId}>{artifact.publicArtifactId}</span><strong>{artifactTypeDisplayLabel(artifact.artifactType)}</strong></div><span>修订 {artifact.currentRevision} · {bodyAuthorityDisplayLabel(artifact.bodyAuthority)} · {syncStatusDisplayLabel(artifact.syncStatus)}{documentUrl ? <a className={styles.documentLink} href={documentUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} aria-hidden="true" />打开组织文档</a> : null}</span></article>; })}</div> : null}{section.verificationReports.length ? <div className={styles.outputGroup}><h4>验收报告</h4>{section.verificationReports.map((item, index) => <TypedMap key={`report-${index}`} title={`验收报告 ${index + 1}`} value={item} />)}</div> : null}</div>;
-}
-
-function getOrganizationDocumentUrl(artifact: Pick<ArtifactSummary, "organizationDocumentUrl" | "larkDocumentUrl">): string | null {
-  const value = artifact.organizationDocumentUrl ?? artifact.larkDocumentUrl;
-  if (typeof value !== "string" || !/^https?:\/\//i.test(value.trim())) return null;
-  return value.trim();
 }
 
 function TypedMap({ title, value }: { title: string; value: StringValueMap }) {
