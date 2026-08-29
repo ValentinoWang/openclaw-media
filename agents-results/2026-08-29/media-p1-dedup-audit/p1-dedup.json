@@ -2,7 +2,7 @@
   "source": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260827/pipeline-full-audit.md",
   "followup": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260828/audit-followup-review.md",
   "progress": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/implementation-progress.md",
-  "main": "fc37d2e8fd55a0febb26d1d15e13bf411327f1b6",
+  "main": "3e383fd5ce2acd21d46de63cb11f706aa090cd80",
   "raw_p1": 163,
   "unique_dedup_p1": 155,
   "groups": [
@@ -192,64 +192,80 @@
       "ids": [
         "CR-02"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "fc37d2e"
+      ]
     },
     {
       "key": "singleton:CR-03",
       "ids": [
         "CR-03"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "9660f04"
+      ]
     },
     {
       "key": "singleton:CR-04",
       "ids": [
         "CR-04"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "9660f04"
+      ]
     },
     {
       "key": "singleton:CR-05",
       "ids": [
         "CR-05"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "6dbc1ba"
+      ]
     },
     {
       "key": "singleton:CR-06",
       "ids": [
         "CR-06"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "6330d9f"
+      ]
     },
     {
       "key": "singleton:CR-08",
       "ids": [
         "CR-08"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "7226e02"
+      ]
     },
     {
       "key": "singleton:CR-09",
       "ids": [
         "CR-09"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "7226e02"
+      ]
     },
     {
       "key": "singleton:CR-11",
       "ids": [
         "CR-11"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "9520b5e"
+      ]
     },
     {
       "key": "singleton:CR-14",

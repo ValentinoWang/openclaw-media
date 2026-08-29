@@ -56,6 +56,11 @@ CLOSED = {
     "CR-04": "9660f04",
     "LB-07": "525a10a",
     "LB-08": "9520b5e",
+    "CR-05": "6dbc1ba",
+    "CR-06": "6330d9f",
+    "CR-08": "7226e02",
+    "CR-09": "7226e02",
+    "CR-11": "9520b5e",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
