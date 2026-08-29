@@ -211,6 +211,46 @@ def test_gc_rejects_non_finite_or_negative_age_and_never_uses_cwd(monkeypatch, t
     assert cli.main(["gc", "--apply"], package_version="0.2.0") == 2
 
 
+def test_archive_unexpected_failure_is_sanitized_and_actionable(monkeypatch, tmp_path, capsys):
+    class ExplodingRemote:
+        def archive_list(self):
+            raise RuntimeError("private token at /Users/private/archive.log")
+
+        def close(self):
+            pass
+
+    class FakeClient:
+        pass
+
+    monkeypatch.setattr(cli, "_archive_client", lambda *args: (FakeClient(), ExplodingRemote()))
+    result = cli.main(
+        ["archive", "list", "--base-url", "https://example.invalid", "--agent-dir", str(tmp_path / "agent")],
+        package_version="0.2.0",
+    )
+
+    assert result == 2
+    captured = capsys.readouterr()
+    assert "operation_failed" in captured.err
+    assert "private token" not in captured.err
+    assert "/Users/private" not in captured.err
+
+
+def test_gc_unexpected_failure_is_sanitized_in_json_mode(monkeypatch, tmp_path, capsys):
+    def explode(self, **kwargs):
+        raise RuntimeError("secret filesystem detail")
+
+    monkeypatch.setattr(cli.ArchiveClient, "gc", explode)
+    result = cli.main(
+        ["--json", "gc", "--workspace", str(tmp_path)],
+        package_version="0.2.0",
+    )
+
+    assert result == 2
+    captured = capsys.readouterr()
+    assert json.loads(captured.err) == {"error": {"code": "operation_failed"}}
+    assert "secret filesystem detail" not in captured.err
+
+
 def test_workspace_is_required_before_pair_remote_or_state_side_effect(monkeypatch, tmp_path, capsys):
     class ExplodingRemote:
         def __init__(self, *args, **kwargs):

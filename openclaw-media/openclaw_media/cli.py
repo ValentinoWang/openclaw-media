@@ -343,6 +343,10 @@ def _run_archive_command(opts: argparse.Namespace, *, json_output: bool = False)
     except (DeviceCredentialError, ArchiveClientError, RemoteError) as exc:
         _emit_cli_error(exc, json_output=json_output)
         return 2
+    except Exception as exc:
+        # Keep unexpected local/transport failures actionable without exposing raw traces.
+        _emit_cli_error(exc, json_output=json_output)
+        return 2
 
 
 def _run_gc_command(opts: argparse.Namespace, *, json_output: bool = False) -> int:
@@ -361,6 +365,10 @@ def _run_gc_command(opts: argparse.Namespace, *, json_output: bool = False) -> i
         _json_result(result.gc(dry_run=not opts.apply, min_age_seconds=opts.min_age_seconds))
         return 0
     except (ArchiveClientError, AgentError) as exc:
+        _emit_cli_error(exc, json_output=json_output)
+        return 2
+    except Exception as exc:
+        # GC can fail on local filesystem state; report a stable sanitized CLI error.
         _emit_cli_error(exc, json_output=json_output)
         return 2
 
