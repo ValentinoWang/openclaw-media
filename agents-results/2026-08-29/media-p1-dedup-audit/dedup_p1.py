@@ -40,6 +40,10 @@ CLOSED = {
     "gap1-08": "27bb3cb",
     "BIZ-07": "459389f",
     "CT-A5": "6e80c52",
+    # Canonical tenant fixtures and portable route contracts unblock the
+    # formerly red CT-A4/B1/B2 focused suites without weakening fail-closed
+    # tenant or human-facing error boundaries.
+    "CT-A4": "8b2b83e", "CT-B1": "8b2b83e", "CT-B2": "8b2b83e",
     "SCHED-08": "808395f",
     "CRF-11": "978c60a",
     "CRF-06": "198e0e1", "CT-A8": "8b2b83e",
