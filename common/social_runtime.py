@@ -64,6 +64,38 @@ class RuntimePaths:
     db_path: Path
 
 
+def feishu_app_id_prefix(app_id: str | None = None) -> str:
+    """Return a stable, non-secret display prefix for a Feishu app identity."""
+    value = str(app_id if app_id is not None else os.getenv("FEISHU_APP_ID", "")).strip()
+    if not value:
+        return "未配置"
+    # Feishu app ids normally use ``cli_``. Keep only four characters after
+    # the public marker so logs and poll receipts cannot disclose credentials.
+    if value.startswith("cli_"):
+        return "cli_" + (value[4:8] or "xxxx")
+    return value[:4] + "xxxx"
+
+
+def effective_feishu_app_id() -> str:
+    """Resolve the configured app id after the normal environment loading."""
+    load_default_env_files()
+    return str(os.getenv("FEISHU_APP_ID", "")).strip()
+
+
+def feishu_identity_info() -> dict[str, Any]:
+    """Return safe identity metadata suitable for daily-poll status payloads."""
+    app_id = effective_feishu_app_id()
+    return {
+        "app_id_prefix": feishu_app_id_prefix(app_id),
+        "configured": bool(app_id),
+    }
+
+
+# Explicitly named alias for jobs that need a stable preflight/identity call.
+def feishu_identity_preflight() -> dict[str, Any]:
+    return feishu_identity_info()
+
+
 def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -357,8 +389,7 @@ def slug_time() -> str:
 
 
 def feishu_tenant_access_token() -> str:
-    load_default_env_files()
-    app_id = os.getenv("FEISHU_APP_ID", "")
+    app_id = effective_feishu_app_id()
     app_secret = os.getenv("FEISHU_APP_SECRET", "")
     if not app_id or not app_secret:
         raise RuntimeError("FEISHU_APP_ID / FEISHU_APP_SECRET 未配置")
@@ -370,6 +401,10 @@ def feishu_tenant_access_token() -> str:
     resp.raise_for_status()
     payload = resp.json()
     if payload.get("code") != 0:
+        if str(payload.get("code")) == "91403":
+            raise RuntimeError(
+                f"当前身份 {feishu_app_id_prefix(app_id)} 对该 Base 无权限（不等于表被删）"
+            )
         raise RuntimeError(f"获取飞书 token 失败：{payload}")
     return payload["tenant_access_token"]
 
