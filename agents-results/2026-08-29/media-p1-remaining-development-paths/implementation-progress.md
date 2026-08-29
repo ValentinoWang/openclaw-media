@@ -130,4 +130,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 
 - 远端租户与安装记录复核（2026-08-29）：通过远端 `openclaw_account` 数据库确认当前最近活跃的组织租户为 `618ff8c4-cc5a-4034-a2c5-226e3ad6cd37`（组织名“清华AI小王冲一级的自媒体工作室”，`organization_lark`），且 `media_product.lark_tenant_bindings` 有一条 `active` 绑定。`media_product.lark_tenant_installations` 当前为空，`business_accounts`/`owned_media_accounts` 仅包含账号与飞书来源记录，没有 `FEISHU_ACCOUNT_MONITOR_URL` 或 `FEISHU_ACCOUNT_REPORT_URL` 权威字段。因此租户身份已确认，但监控表地址、日报回写地址和可复用的飞书应用身份仍缺生产配置；继续拒绝无地址安装，`BIZ-05`、`CD-13` 保持“部分修复”。
 
+- 归档 worker 差异扫描（2026-08-29）：按归档快照逐个与当前 integration `main@4e0cccc` 做内容扫描，归档包含 7 个无有效提交的 worker 副本，约 `1.0G`、`59,877` 个文件。内容主要是重复完整源码树、旧的 SSOT/进度投影、`node_modules`、`__pycache__`、`.pytest_cache` 和测试运行缓存；失效的 `.git` 指针不能提供可审计提交。扫描未发现同时具备“明确对应当前 SSOT 节点、独立定向测试、相对 `main` 有明确收益”三项条件的可安全提取原子改动，因此没有从归档回写或覆盖主线。生产最终验收尚未完成前保留归档以便恢复；完成 `BIZ-05`/`CD-13` 运行证据并重新复核后，才删除确认无价值的归档与生成物。
+
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。上方 `31/7/11` 与“尚未复验 114 条”均为历史分片快照，不是当前实时总计；当前总计以 `dedup_p1.py --json` 输出的 `153/2/0` 为准。
