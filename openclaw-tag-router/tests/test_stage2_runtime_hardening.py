@@ -10,6 +10,7 @@ import pytest
 from openclaw_app.services.production_reconciliation_planner import (
     plan_production_reconciliation,
 )
+from openclaw_app.services.production_release_manifest import canonical_manifest_json
 from openclaw_app.services.stage2_main_composition import (
     Stage2ProductionAssemblyError,
     build_main_stage2_app,
@@ -33,8 +34,7 @@ def _manifest_request() -> dict[str, object]:
             "manifest_sha256": previous_digest,
         },
     }
-    canonical = json.dumps(manifest, sort_keys=True, separators=(",", ":"))
-    manifest["manifest_sha256"] = hashlib.sha256(canonical.encode()).hexdigest()
+    manifest["manifest_sha256"] = hashlib.sha256(canonical_manifest_json(manifest).encode("utf-8")).hexdigest()
     previous = {
         "release_id": "openclaw-stage2-" + previous_sha,
         "git_sha": previous_sha,

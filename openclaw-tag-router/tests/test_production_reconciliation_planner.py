@@ -17,6 +17,7 @@ from openclaw_app.services.production_reconciliation_planner import (
     canonical_plan_json,
     plan_production_reconciliation,
 )
+from openclaw_app.services.production_release_manifest import canonical_manifest_json
 
 
 SOURCE_SHA = "a" * 40
@@ -67,8 +68,7 @@ def _manifest_without_digest(
 def _with_manifest_digest(manifest: dict[str, Any]) -> dict[str, Any]:
     result = copy.deepcopy(manifest)
     result.pop("manifest_sha256", None)
-    canonical = json.dumps(result, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
-    result["manifest_sha256"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    result["manifest_sha256"] = hashlib.sha256(canonical_manifest_json(result).encode("utf-8")).hexdigest()
     return result
 
 
