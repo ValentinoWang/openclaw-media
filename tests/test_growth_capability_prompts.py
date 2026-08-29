@@ -2,6 +2,13 @@ from __future__ import annotations
 
 from selfmedia.growth.capability_registry import capability_creator_field_mappings, capability_consumes
 from selfmedia.growth.service import GROWTH_CAPABILITY_PROMPTS
+from selfmedia.growth.llm_runner import GROWTH_JSON_INSTRUCTIONS
+
+
+def test_growth_system_instructions_require_natural_chinese_creator_copy() -> None:
+    assert "所有创作者可见字段必须使用自然、具体的中文" in GROWTH_JSON_INSTRUCTIONS
+    assert "禁止英文句式直译或机器腔" in GROWTH_JSON_INSTRUCTIONS
+    assert "JSON 键名保持既有合同" in GROWTH_JSON_INSTRUCTIONS
 
 
 def test_growth_capability_prompts_require_chinese_creator_copy() -> None:

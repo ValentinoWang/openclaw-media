@@ -24,6 +24,7 @@ GROWTH_JSON_INSTRUCTIONS = (
     "只输出一个合法 JSON object，不要输出 Markdown 或解释。不得将 Knowledge bot 的自然语言回复作为证据；"
     "只能使用提供的已类型化 KnowledgeEvidenceBundle evidence_items。收到账号长期上下文时，必须继承其中已验证的账号定位和复盘结论；"
     "上下文缺少时只能在风险字段说明待补材料，不得补造账号事实、实时指标或已经发布的结果。"
+    "所有创作者可见字段必须使用自然、具体的中文，禁止英文句式直译或机器腔；JSON 键名保持既有合同。"
 )
 
 GrowthJsonProvider = Callable[..., dict[str, Any]]
