@@ -66,6 +66,10 @@ CLOSED = {
     "CR-08": "7226e02",
     "CR-09": "7226e02",
     "CR-11": "9520b5e",
+    "CPC-11": "7209710",
+    "BIZ-11": "7209710",
+    "CPC-12": "9520b5e",
+    "CC-04": "9520b5e",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
