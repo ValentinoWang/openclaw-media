@@ -172,3 +172,5 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - Web 发布进程门禁回读（2026-08-30）：在 106 上以 API 实际 cwd `/home/ubuntu/.openclaw/releases/openclaw-tag-router-media-tenant-20260830-d8aca36/openclaw-tag-router` 运行 `check_openclaw_bot_center_release_process.py`，确认服务 PID、`ExecStart`、settings 路径和 `/proc/<pid>/cwd` 全部绑定同一 release，guard 输出 `release process guard passed`。
 
 - 组织账号监控入口修复（2026-08-30）：组织会话此前被 `/tracks` 的普通工作区路由统一重定向，无法承接账号监控。`main@9917155` 将“账号与赛道”加入组织导航，并仅允许 `organization_lark/lark` 会话访问 `/tracks`；个人、管理员和普通会话的既有边界保持不变。`checkOrganizationWorkspaceShell.ts`、`qa:media-session-contract` 与 `npm run build:media` 全部通过。账号监控的业务归属为组织租户；真实 H00 非空轮询证据仍未生成，BIZ-05/CD-13 状态不变。
+
+- 组织入口前端发布复核（2026-08-30）：本地 `dist-media` 构建与 `main@f38149e` 一致，但 106 上 `/mnt/openclaw-data/openclaw-media-frontend-releases` 及 `/var/www/openclaw/media` 均为 `root:root`，当前 `ubuntu` 会话无写权限且无免密 sudo；上传和原子切换被权限门禁拒绝。生产仍指向旧 release `20260830-d8aca36`，未伪造“已部署”证据；需由受管发布身份执行上传与切换后再回读公网版本。
