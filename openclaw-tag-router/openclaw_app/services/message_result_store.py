@@ -14,6 +14,8 @@ from pathlib import Path
 import secrets
 from typing import Any
 
+from common.social_runtime import parse_iso_datetime
+
 
 DEFAULT_TTL = timedelta(days=7)
 MAX_MESSAGE_ID_LENGTH = 512
@@ -151,13 +153,14 @@ class MessageResultStore:
 
     @staticmethod
     def _parse_datetime(value: Any) -> datetime | None:
+        # Consolidated into common/social_runtime.parse_iso_datetime (H9).
+        # The non-str / blank short-circuit is kept explicit here (rather
+        # than relying on parse_iso_datetime's own str() coercion) so a
+        # non-string value (e.g. an already-parsed datetime) still returns
+        # None exactly as before, instead of being accepted.
         if not isinstance(value, str) or not value.strip():
             return None
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
-            return None
-        return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+        return parse_iso_datetime(value, assume_tz=UTC)
 
     def _now(self) -> datetime:
         value = self.now_factory()

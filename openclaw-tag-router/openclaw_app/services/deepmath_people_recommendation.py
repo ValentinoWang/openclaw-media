@@ -32,6 +32,8 @@ from datetime import date, datetime, timezone
 from numbers import Real
 from typing import Any, Callable, Optional, Protocol, Union
 
+from common.social_runtime import parse_iso_datetime
+
 
 JSONValue = Union[None, bool, int, float, str, list[Any], dict[str, Any]]
 
@@ -174,19 +176,16 @@ def _as_utc(value: datetime) -> datetime:
 
 
 def _parse_datetime(value: Any) -> Optional[datetime]:
-    if isinstance(value, datetime):
-        return _as_utc(value)
-    if isinstance(value, date):
-        return datetime.combine(value, datetime.min.time(), tzinfo=timezone.utc)
-    if not isinstance(value, str) or not value.strip():
+    # Thin wrapper around common/social_runtime.parse_iso_datetime (H9) --
+    # this was the canonical basis that function's core logic was taken
+    # from. The isinstance guard is kept so a value that is none of
+    # datetime/date/str (e.g. a raw int) still returns None exactly as
+    # before, rather than being coerced through str().
+    if not isinstance(value, (datetime, date, str)):
         return None
-    text = value.strip()
-    if text.endswith("Z"):
-        text = f"{text[:-1]}+00:00"
-    try:
-        return _as_utc(datetime.fromisoformat(text))
-    except ValueError:
+    if isinstance(value, str) and not value.strip():
         return None
+    return parse_iso_datetime(value, assume_tz=timezone.utc, convert_to=timezone.utc)
 
 
 def _nonempty(value: Any) -> bool:

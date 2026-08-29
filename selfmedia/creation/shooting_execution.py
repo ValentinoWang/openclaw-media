@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+from common.social_runtime import parse_iso_datetime
 from media_model.payloads import normalize_source_url
 from selfmedia.context import build_media_context_for_request, merge_conversation_context
 from selfmedia.business.schedule import LOCAL_TZ
@@ -550,16 +551,16 @@ def _parse_structured_time_window(value: Any) -> tuple[datetime, datetime] | Non
 
 
 def _parse_iso_datetime(value: Any) -> datetime | None:
-    text = str(value or "").strip()
-    if not text:
-        return None
-    try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=LOCAL_TZ)
-    return parsed.astimezone(LOCAL_TZ)
+    # Consolidated into common/social_runtime.parse_iso_datetime (H9). This
+    # call site historically normalizes EVERY result to +08:00 local time
+    # -- a naive input is assumed local (assume_tz=LOCAL_TZ) and an
+    # already-aware input is still converted (.astimezone(LOCAL_TZ), via
+    # convert_to=LOCAL_TZ) rather than kept in its source offset. Do not
+    # drop convert_to here: it is not merely the naive-input case, it is
+    # exactly what the original code did for both branches. This feeds
+    # _windows_overlap's shooting-window overlap comparison, so a naive
+    # input must keep resolving to +08:00, never UTC.
+    return parse_iso_datetime(value, assume_tz=LOCAL_TZ, convert_to=LOCAL_TZ)
 
 
 def _windows_overlap(left_start: datetime, left_end: datetime, right_start: datetime, right_end: datetime) -> bool:

@@ -21,6 +21,7 @@ from urllib.parse import urlparse
 
 from common.model_transport_context import bind_model_transport
 from common.platform_labels import PLATFORM_LABELS as _COMMON_PLATFORM_LABELS
+from common.social_runtime import parse_iso_datetime
 
 from .capability_registry import CAPABILITY_REGISTRY, CapabilityDefinition, CapabilityRegistryError
 
@@ -412,13 +413,14 @@ def _utc_now() -> str:
 
 
 def _timestamp(value: Any) -> float | None:
-    text = str(value or "").strip()
-    if not text:
-        return None
-    try:
-        return datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp()
-    except ValueError:
-        return None
+    # Consolidated into common/social_runtime.parse_iso_datetime (H9). The
+    # old code called .timestamp() on a possibly-naive datetime.fromisoformat
+    # result directly, which silently used this process's OS-local timezone
+    # for a naive input; this environment (and this service's deployment)
+    # runs with the OS timezone set to UTC, so assume_tz=UTC here is
+    # numerically identical while no longer depending on that OS setting.
+    dt = parse_iso_datetime(value, assume_tz=timezone.utc)
+    return dt.timestamp() if dt is not None else None
 
 
 def _task_request_fingerprint(payload: Mapping[str, Any]) -> str:

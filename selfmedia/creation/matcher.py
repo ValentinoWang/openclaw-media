@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+from common.social_runtime import parse_iso_datetime
+
 from .field_contract import CanonicalMediaRecord, normalize_key, split_tags
 from .request_parser import CreationRequest
 
@@ -529,13 +531,8 @@ def inspiration_quality_score(value: Any) -> int:
 
 
 def _parse_dt(value: str) -> datetime | None:
-    text = str(value or "").strip()
-    if not text:
-        return None
-    try:
-        dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt
+    # Consolidated into common/social_runtime.parse_iso_datetime (H9). A
+    # naive input is assumed UTC; an already tz-aware input is returned
+    # as parsed (NOT forced to UTC) -- this must stay assume_tz-only, no
+    # convert_to, to match the original inline implementation.
+    return parse_iso_datetime(value, assume_tz=timezone.utc)

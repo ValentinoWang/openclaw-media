@@ -8,7 +8,7 @@ import re
 import sqlite3
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone, tzinfo as TzInfo
 from pathlib import Path
 from typing import Any, Iterable, Literal
 from urllib.parse import parse_qs, urlparse
@@ -598,6 +598,67 @@ def feishu_update_record(
         raise RuntimeError(f"更新飞书记录失败：{payload}")
 
 
+def parse_iso_datetime(
+    value: Any,
+    *,
+    assume_tz: TzInfo = timezone.utc,
+    convert_to: TzInfo | None = None,
+) -> datetime | None:
+    """Parse a loosely-ISO datetime (datetime / date / str) into an aware datetime.
+
+    Consolidated (H9) from eight independent, near-identical try/except
+    implementations (selfmedia/creation/matcher.py, shooting_execution.py,
+    selfmedia/business/schedule.py, and four in openclaw-tag-router). Its
+    core string-parsing logic is taken from what the H9 audit identified as
+    the most careful of those eight,
+    openclaw-tag-router's deepmath_people_recommendation._parse_datetime:
+    it only strips a trailing "Z" (``text.endswith("Z")``) rather than
+    blanket ``str.replace("Z", "+00:00")``, which would also mangle a "Z"
+    occurring anywhere else in the string.
+
+    A ``datetime`` input is returned as-is (module unresolved timezone
+    handling below still applies); a ``date`` input is treated as
+    midnight on that date; anything else is coerced with ``str(value)``
+    and parsed via ``datetime.fromisoformat``.
+
+    :param assume_tz: timezone attached to the result when parsing produced
+        a naive datetime (no offset in the source string, or a bare
+        ``date``). Defaults to UTC; callers that have historically assumed
+        naive input means local time (selfmedia/creation/shooting_execution.py,
+        selfmedia/business/schedule.py, both using a fixed +08:00) must pass
+        their own local tzinfo here — silently defaulting everyone to UTC
+        would shift those callers' naive-input results by 8 hours.
+    :param convert_to: when given, the result is additionally converted
+        with ``.astimezone(convert_to)`` — this also applies to an input
+        that already carried its own offset (i.e. it is not limited to the
+        naive/assume_tz case). Several call sites (schedule.py,
+        shooting_execution.py, deepmath_people_recommendation.py) always
+        normalize to one timezone regardless of the source offset; others
+        (matcher.py, codex_maintenance_tasks.py, message_result_store.py)
+        leave an already-aware input's offset untouched, so they must NOT
+        pass this parameter.
+    """
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, date):
+        dt = datetime.combine(value, datetime.min.time())
+    else:
+        text = str(value or "").strip()
+        if not text:
+            return None
+        if text.endswith("Z"):
+            text = f"{text[:-1]}+00:00"
+        try:
+            dt = datetime.fromisoformat(text)
+        except ValueError:
+            return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=assume_tz)
+    if convert_to is not None:
+        dt = dt.astimezone(convert_to)
+    return dt
+
+
 def _coerce_feishu_date(value: Any) -> int | None:
     if value in (None, ""):
         return None
@@ -610,16 +671,8 @@ def _coerce_feishu_date(value: Any) -> int | None:
     if isinstance(value, (int, float)):
         number = int(value)
         return number if number > 10_000_000_000 else number * 1000
-    text = str(value).strip()
-    if not text:
-        return None
-    try:
-        dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return int(dt.timestamp() * 1000)
+    dt = parse_iso_datetime(value, assume_tz=timezone.utc)
+    return int(dt.timestamp() * 1000) if dt is not None else None
 
 
 def feishu_first_url(value: Any) -> str:

@@ -15,6 +15,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from common.social_runtime import parse_iso_datetime
+
 
 SCHEMA_VERSION = 2
 TASK_ID_RE = re.compile(r"^codex_[0-9a-f]{24}$")
@@ -126,14 +128,10 @@ def iso_now() -> str:
 
 
 def parse_timestamp(value: object) -> datetime | None:
-    text = str(value or "").strip()
-    if not text:
-        return None
-    try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    # Consolidated into common/social_runtime.parse_iso_datetime (H9). A
+    # naive input is assumed UTC; an already tz-aware input is returned
+    # as parsed (NOT forced to UTC).
+    return parse_iso_datetime(value, assume_tz=UTC)
 
 
 def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:

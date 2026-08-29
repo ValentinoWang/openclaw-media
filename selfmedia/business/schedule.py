@@ -9,6 +9,8 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+from common.social_runtime import parse_iso_datetime
+
 
 LOCAL_TZ = timezone(timedelta(hours=8))
 _DATE_RE = re.compile(r"(?P<year>20\d{2})[-/.](?P<month>1[0-2]|0?[1-9])[-/.](?P<day>3[01]|[12]\d|0?[1-9])")
@@ -314,16 +316,15 @@ def _snapshot_entries(row: Any) -> list[dict[str, Any]]:
 
 
 def _parse_snapshot_datetime(value: Any) -> datetime | None:
+    # Consolidated into common/social_runtime.parse_iso_datetime (H9). Both
+    # branches (naive and already-aware) always resolve to +08:00 local
+    # time here, same as before -- assume_tz and convert_to are both
+    # LOCAL_TZ. This feeds schedule-expiry comparisons downstream, so a
+    # naive input must keep resolving to +08:00, never UTC.
     text = _text(value)
     if not text:
         return None
-    try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=LOCAL_TZ)
-    return parsed.astimezone(LOCAL_TZ)
+    return parse_iso_datetime(text, assume_tz=LOCAL_TZ, convert_to=LOCAL_TZ)
 
 
 def _text(value: Any) -> str:
