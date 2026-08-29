@@ -61,6 +61,22 @@ def get_wiki_node(node_token: str, *, request: RequestFn) -> dict[str, Any]:
     return node if isinstance(node, dict) else {}
 
 
+def _pick(mapping: Any, *path_variants: tuple[str, ...]) -> str:
+    """Same shape as FeishuService._pick: first non-empty value found by
+    walking each candidate key-path in turn."""
+    for paths in path_variants:
+        current = mapping
+        found = True
+        for key in paths:
+            if not isinstance(current, dict) or key not in current:
+                found = False
+                break
+            current = current[key]
+        if found and current not in (None, ""):
+            return str(current)
+    return ""
+
+
 def resolve_wiki_space_id(
     parent_node_token: str,
     *,
@@ -69,12 +85,17 @@ def resolve_wiki_space_id(
 ) -> str:
     """Resolve the space_id that owns `parent_node_token`.
 
-    Falls back to a configured `knowledge_base_spaces` list (matched on
-    parent_node_token) when the node lookup itself doesn't carry space_id,
-    matching FeishuService._knowledge_space_id_for_parent_node.
+    Checks both `node.space_id` and (matching
+    FeishuService._knowledge_space_id_for_parent_node's extra tolerance for
+    alternate response shapes) a top-level `data.space_id`, then falls back
+    to a configured `knowledge_base_spaces` list (matched on
+    parent_node_token) when neither is present.
     """
-    node = get_wiki_node(parent_node_token, request=request)
-    space_id = str(node.get("space_id") or "").strip()
+    data = request("GET", "/wiki/v2/spaces/get_node", params={"token": parent_node_token})
+    node = data.get("data", {}).get("node", {}) if isinstance(data, dict) else {}
+    if not isinstance(node, dict):
+        node = {}
+    space_id = str(node.get("space_id") or _pick(data, ("data", "space_id"), ("data", "node", "space_id")) or "").strip()
     if space_id:
         return space_id
     for item in knowledge_base_spaces or []:

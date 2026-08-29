@@ -16,6 +16,12 @@ from typing import Any, Callable, Iterator
 
 import requests
 
+from common.feishu_wiki_docs import (
+    find_wiki_child_doc as _shared_find_wiki_child_doc,
+    iter_wiki_children as _shared_iter_wiki_children,
+    resolve_wiki_space_id as _shared_resolve_wiki_space_id,
+)
+
 from .document_edit_contract import (
     DOCUMENT_EDIT_CONTRACT_ID,
     DocumentEditPatchPlan,
@@ -281,6 +287,11 @@ class FeishuService:
         if isinstance(data, dict) and data.get("code") not in {None, 0}:
             raise RuntimeError(f"Feishu API returned code={data.get('code')}, msg={data.get('msg')}, path={path}")
         return data
+
+    def _wiki_docs_request(self, method: str, path: str, *, params: dict | None = None, json: dict | None = None) -> dict:
+        """Adapt self._request's (json_body=, params=) convention to the
+        (params=, json=) convention common.feishu_wiki_docs.RequestFn expects."""
+        return self._request(method, path, params=params, json_body=json)
 
     @contextmanager
     def opc_owner_execution(
@@ -1989,84 +2000,49 @@ class FeishuService:
         raise RuntimeError(f"创建知识库节点失败：{last_error}") from None
 
     def _find_knowledge_child_node(self, space_id: str, parent_node_token: str, title: str) -> tuple[str, str, str] | None:
-        clean_title = self._safe_text_content(title)
-        page_token = ""
-        while True:
-            params = {"parent_node_token": parent_node_token, "page_size": 50}
-            if page_token:
-                params["page_token"] = page_token
-            data = self._request("GET", f"/wiki/v2/spaces/{space_id}/nodes", params=params)
-            payload = data.get("data", {}) if isinstance(data, dict) else {}
-            items = payload.get("items", []) if isinstance(payload, dict) else []
-            for item in items:
-                if not isinstance(item, dict):
-                    continue
-                if str(item.get("title") or "").strip() != clean_title:
-                    continue
-                obj_type = str(item.get("obj_type") or "").lower()
-                if obj_type not in {"docx", "doc"}:
-                    continue
-                document_id = str(item.get("obj_token") or "")
-                node_token = str(item.get("node_token") or "")
-                if document_id and node_token:
-                    return document_id, self._wiki_url(node_token), node_token
-            if not payload.get("has_more"):
-                break
-            page_token = str(payload.get("page_token") or "")
-            if not page_token:
-                break
-        return None
+        """Find a same-title child doc; obj_type in {docx, doc}, first match wins.
+
+        Delegates to common.feishu_wiki_docs.find_wiki_child_doc, which
+        cleans both the query title and each candidate's title via the same
+        rule as self._safe_text_content before comparing (the pre-refactor
+        version only applied that cleaning to the query title, `.strip()`
+        for the candidate side -- this unifies both sides on the stricter
+        rule, per the migration task's explicit direction).
+        """
+        doc = _shared_find_wiki_child_doc(space_id, parent_node_token, title, request=self._wiki_docs_request, pick="first")
+        if doc is None:
+            return None
+        return doc.document_id, self._wiki_url(doc.node_token), doc.node_token
 
     def _knowledge_space_id_for_parent_node(self, parent_node_token: str) -> str:
-        data = self._request("GET", "/wiki/v2/spaces/get_node", params={"token": parent_node_token})
-        node = data.get("data", {}).get("node", {}) if isinstance(data, dict) else {}
-        if not isinstance(node, dict):
-            node = {}
-        space_id = str(node.get("space_id") or self._pick(data, ("data", "space_id"), ("data", "node", "space_id")) or "").strip()
-        if space_id:
-            return space_id
-        for item in self.knowledge_base_spaces:
-            if item.get("parent_node_token") == parent_node_token and item.get("space_id"):
-                return item["space_id"]
-        raise RuntimeError("目标知识库节点缺少 space_id")
+        return _shared_resolve_wiki_space_id(
+            parent_node_token,
+            request=self._wiki_docs_request,
+            knowledge_base_spaces=self.knowledge_base_spaces,
+        )
 
     def list_knowledge_child_nodes(self, parent_node_token: str) -> list[dict[str, str]]:
         self._require_credentials()
         space_id = self._knowledge_space_id_for_parent_node(parent_node_token)
         items: list[dict[str, str]] = []
-        page_token = ""
-        while True:
-            params = {"parent_node_token": parent_node_token, "page_size": 50}
-            if page_token:
-                params["page_token"] = page_token
-            data = self._request("GET", f"/wiki/v2/spaces/{space_id}/nodes", params=params)
-            payload = data.get("data", {}) if isinstance(data, dict) else {}
-            batch = payload.get("items", []) if isinstance(payload, dict) else []
-            for item in batch:
-                if not isinstance(item, dict):
-                    continue
-                obj_type = str(item.get("obj_type") or "").lower()
-                if obj_type not in {"docx", "doc"}:
-                    continue
-                node_token = str(item.get("node_token") or "")
-                obj_token = str(item.get("obj_token") or "")
-                title = str(item.get("title") or "").strip()
-                if not node_token or not obj_token or not title:
-                    continue
-                items.append(
-                    {
-                        "title": title,
-                        "document_id": obj_token,
-                        "node_token": node_token,
-                        "doc_url": self._wiki_url(node_token),
-                        "space_id": space_id,
-                    }
-                )
-            if not payload.get("has_more"):
-                break
-            page_token = str(payload.get("page_token") or "")
-            if not page_token:
-                break
+        for item in _shared_iter_wiki_children(space_id, parent_node_token, request=self._wiki_docs_request):
+            obj_type = str(item.get("obj_type") or "").lower()
+            if obj_type not in {"docx", "doc"}:
+                continue
+            node_token = str(item.get("node_token") or "")
+            obj_token = str(item.get("obj_token") or "")
+            title = str(item.get("title") or "").strip()
+            if not node_token or not obj_token or not title:
+                continue
+            items.append(
+                {
+                    "title": title,
+                    "document_id": obj_token,
+                    "node_token": node_token,
+                    "doc_url": self._wiki_url(node_token),
+                    "space_id": space_id,
+                }
+            )
         return items
 
     def resolve_wiki_node_metadata(self, node_token: str) -> dict[str, str | bool]:
