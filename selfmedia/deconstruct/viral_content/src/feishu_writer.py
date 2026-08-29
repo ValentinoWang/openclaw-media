@@ -18,6 +18,7 @@ if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
 from common.social_runtime import load_default_env_files, load_env_file
+from common.env_paths import load_media_agent_env_files
 from common.platform_links import platform_for_url
 from integrations.feishu.media_writer import SOURCE_ASSET_ATTACHMENT_MAX_BYTES, upsert_entity_record
 from media_model.contract import MediaModelContract
@@ -295,11 +296,9 @@ def write_deconstruction(
     tenant_id: str,
 ) -> str:
     load_default_env_files()
-    media_agent_root = Path(
-        os.getenv("OPENCLAW_MEDIA_AGENT_ROOT")
-        or Path.home() / ".openclaw" / "agents" / "media"
-    ).expanduser()
-    load_env_file(media_agent_root / ".env.local")
+    # Loads both .env and .env.local (previously only .env.local was loaded
+    # here, so a MEDIA_OS_SOURCE_ASSETS_URL kept in .env alone was never read).
+    load_media_agent_env_files()
     source_assets_url = os.getenv("MEDIA_OS_SOURCE_ASSETS_URL", "").strip()
     material_deconstructions_url = os.getenv("MEDIA_OS_MATERIAL_DECONSTRUCTIONS_URL", "").strip()
     if not source_assets_url or not material_deconstructions_url:

@@ -754,8 +754,7 @@ def business_now_iso() -> str:
 
 def load_id_business_env_files() -> None:
     load_default_env_files()
-    for path in (MEDIA_ROOT / ".env", MEDIA_ROOT / ".env.local"):
-        load_env_file(path)
+    load_media_agent_env_files(MEDIA_ROOT)
 
 
 def normalize_label(label: str) -> str:

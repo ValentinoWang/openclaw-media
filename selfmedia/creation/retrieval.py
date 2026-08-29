@@ -16,6 +16,7 @@ from common.social_runtime import (
     load_default_env_files,
     load_env_file,
 )
+from common.env_paths import load_media_agent_env_files
 from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id
 
 from .field_contract import CREATION_SOURCE_TABLE_CONTRACTS
@@ -254,11 +255,15 @@ def load_creation_env_files() -> None:
     load_default_env_files()
     configured_root = os.getenv("OPENCLAW_MEDIA_AGENT_ROOT", "").strip()
     if configured_root:
-        root = Path(configured_root).expanduser()
-        env_files = (root / ".env", root / ".env.local")
-    else:
-        env_override = os.getenv("OPENCLAW_MEDIA_ENV_FILE", "").strip()
-        env_files = (Path(env_override).expanduser(),) if env_override else MEDIA_ENV_FILES
+        # Same env-loading shape as id_business.py/feishu_writer.py once
+        # OPENCLAW_MEDIA_AGENT_ROOT is set explicitly.
+        load_media_agent_env_files(Path(configured_root).expanduser())
+        return
+    # No OPENCLAW_MEDIA_AGENT_ROOT: this module's own fallback chain
+    # (OPENCLAW_MEDIA_ENV_FILE, then ~/openclaw-agents/media) stays as-is --
+    # it is not shared with id_business.py/feishu_writer.py's default.
+    env_override = os.getenv("OPENCLAW_MEDIA_ENV_FILE", "").strip()
+    env_files = (Path(env_override).expanduser(),) if env_override else MEDIA_ENV_FILES
     for path in env_files:
         load_env_file(path)
 
