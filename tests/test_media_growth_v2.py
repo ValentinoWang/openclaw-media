@@ -235,7 +235,8 @@ class MediaGrowthV2Tests(unittest.TestCase):
         )
 
         self.assertEqual(result["status"], "pending_manual")
-        self.assertIn("provider is unavailable", result["reason"])
+        self.assertIn("服务暂不可用", result["reason"])
+        self.assertNotIn("Growth LLM", result["reason"])
         self.assertIn("growth_llm_json_provider", result["blocked_sources"])
 
     def test_growth_llm_runner_done_without_task_fields_is_pending_manual(self) -> None:
@@ -249,7 +250,7 @@ class MediaGrowthV2Tests(unittest.TestCase):
         )
 
         self.assertEqual(result["status"], "pending_manual")
-        self.assertIn("missing required semantic fields", result["reason"])
+        self.assertIn("缺少必填字段", result["reason"])
 
     def test_growth_llm_runner_repairs_incomplete_success_once_with_llm(self) -> None:
         calls: list[str] = []
@@ -274,6 +275,22 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertEqual(result["title"], "修复后的发布包")
         self.assertEqual(len(calls), 2)
         self.assertIn("validation_error", calls[1])
+        self.assertIn("上一版 JSON 字段不完整", calls[1])
+        self.assertNotIn("Mediaclaw", calls[1])
+
+    def test_growth_llm_runner_hides_provider_exception_details(self) -> None:
+        result = GrowthLLMJsonRunner(
+            provider=lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("token=super-secret")),
+            settings=object(),
+        ).run_json(
+            task="external_research_brief",
+            prompt="基于证据生成调研结论。",
+            evidence_bundle=self._ready_knowledge_evidence_bundle(),
+        )
+
+        self.assertEqual(result["status"], "pending_manual")
+        self.assertIn("服务调用失败", result["reason"])
+        self.assertNotIn("super-secret", result["reason"])
 
     def test_growth_llm_runner_normalizes_shapes_without_inventing_semantics(self) -> None:
         payload = {

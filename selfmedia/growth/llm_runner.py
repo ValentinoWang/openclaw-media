@@ -241,9 +241,9 @@ class GrowthLLMJsonRunner:
             try:
                 assert bundle is not None
                 bundle.require_ready()
-            except KnowledgeEvidenceContractError as exc:
+            except KnowledgeEvidenceContractError:
                 return _pending_manual(
-                    str(exc),
+                    "知识证据尚未满足本次增长任务条件，请补齐可验证资料后重试。",
                     task=task,
                     evidence_bundle=bundle,
                 )
@@ -256,7 +256,7 @@ class GrowthLLMJsonRunner:
         )
         if self.provider is None:
             return _pending_manual(
-                "Growth LLM JSON provider is unavailable; semantic artifact was not written",
+                "增长内容生成服务暂不可用，未写入语义产物；请检查服务配置后重试。",
                 task=task,
                 evidence_bundle=bundle,
                 blocked_sources=("growth_llm_json_provider",),
@@ -270,19 +270,19 @@ class GrowthLLMJsonRunner:
                     provider_parts,
                     settings,
                     max_retries=self.max_retries,
-                    error_prefix="Mediaclaw LLM JSON validation failed",
+                    error_prefix="增长内容 JSON 校验失败",
                     instructions=self.instructions,
                 )
-            except Exception as exc:
+            except Exception:
                 return _pending_manual(
-                    f"Growth LLM JSON provider failed: {exc}",
+                    "增长内容生成服务调用失败，未写入语义产物；请稍后重试或人工补充。",
                     task=task,
                     evidence_bundle=bundle,
                     blocked_sources=("growth_llm_json_provider",),
                 )
             if not isinstance(payload, dict):
                 return _pending_manual(
-                    "Growth LLM JSON provider returned a non-object payload",
+                    "增长内容生成服务返回格式无效，未写入语义产物；请人工补充或稍后重试。",
                     task=task,
                     evidence_bundle=bundle,
                     blocked_sources=("growth_llm_json_provider",),
@@ -290,14 +290,14 @@ class GrowthLLMJsonRunner:
             status = str(payload.get("status") or payload.get("runtime_status") or "").strip()
             if not status:
                 return _pending_manual(
-                    "Growth LLM JSON provider returned no status; manual review is required",
+                    "增长内容生成服务未返回处理状态，未写入语义产物；请人工确认后重试。",
                     task=task,
                     evidence_bundle=bundle,
                     blocked_sources=("growth_llm_json_provider",),
                 )
             if status not in GROWTH_LLM_SUCCESS_STATUSES:
                 return _pending_manual(
-                    str(payload.get("reason") or f"Growth LLM returned status={status}"),
+                    "增长内容生成未完成，未写入语义产物；请人工确认输入和服务状态后重试。",
                     task=task,
                     evidence_bundle=bundle,
                     blocked_sources=tuple(payload.get("blocked_sources") or ()),
@@ -363,7 +363,7 @@ def _build_request_parts(
     request_parts.append(
         {
             "text": (
-                "Mediaclaw JSON request:\n"
+                "增长内容 JSON 请求：\n"
                 + json.dumps(request, ensure_ascii=False, sort_keys=True, indent=2)
             )
         }
@@ -374,9 +374,8 @@ def _build_request_parts(
 def _semantic_repair_part(task: str, validation_error: str, payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "text": (
-            "The previous Mediaclaw JSON is incomplete. Return one corrected JSON object only. "
-            "Preserve grounded values, do not invent unsupported facts, use empty arrays/objects only for optional "
-            "fields with no evidence, and include every required field.\n"
+            "上一版 JSON 字段不完整。只返回一个修正后的 JSON object，不要 Markdown 或解释。"
+            "保留已有的可验证内容，不得补造证据外事实；没有证据的可选字段才可使用空数组或空对象；必须补齐全部必填字段。\n"
             + json.dumps(
                 {
                     "task": task,
@@ -419,34 +418,34 @@ def _task_payload_validation_error(task: str, payload: dict[str, Any]) -> str:
         return ""
     missing = [field for field in required_fields if field not in payload]
     if missing:
-        return f"Growth LLM output missing required semantic fields for {task}: {', '.join(missing)}"
+        return f"增长内容结果缺少必填字段（任务 {task}）：{', '.join(missing)}"
     list_fields = TASK_LIST_FIELDS.get(task, ())
     invalid_lists = [field for field in list_fields if not isinstance(payload.get(field), list)]
     if invalid_lists:
-        return f"Growth LLM output has invalid list fields for {task}: {', '.join(invalid_lists)}"
+        return f"增长内容结果的列表字段格式无效（任务 {task}）：{', '.join(invalid_lists)}"
     invalid_text_fields = [field for field in TASK_TEXT_FIELDS.get(task, ()) if not isinstance(payload.get(field), str)]
     if invalid_text_fields:
-        return f"Growth LLM output has invalid text fields for {task}: {', '.join(invalid_text_fields)}"
+        return f"增长内容结果的文本字段格式无效（任务 {task}）：{', '.join(invalid_text_fields)}"
     invalid_text_lists = [
         field
         for field in TASK_TEXT_LIST_FIELDS.get(task, ())
         if any(not isinstance(item, str) for item in payload[field])
     ]
     if invalid_text_lists:
-        return f"Growth LLM output has non-text list items for {task}: {', '.join(invalid_text_lists)}"
+        return f"增长内容结果的列表项必须是文本（任务 {task}）：{', '.join(invalid_text_lists)}"
     non_empty_fields = TASK_REQUIRED_NON_EMPTY_FIELDS.get(task, ())
     empty = [field for field in non_empty_fields if not _has_semantic_value(payload.get(field))]
     if empty:
-        return f"Growth LLM output has empty required semantic fields for {task}: {', '.join(empty)}"
+        return f"增长内容结果的必填字段为空（任务 {task}）：{', '.join(empty)}"
     if task == "commercial_brief" and not isinstance(payload.get("technical_specs"), dict):
-        return "Growth LLM output has invalid technical_specs for commercial_brief"
+        return "增长内容结果的 technical_specs 必须是对象（任务 commercial_brief）"
     mapping_list_fields = {
         "external_research_brief": ("source_evidence",),
         "commercial_brief": ("products", "locations", "deliverables", "source_evidence"),
     }.get(task, ())
     for field in mapping_list_fields:
         if any(not isinstance(item, dict) for item in payload[field]):
-            return f"Growth LLM output field {field} for {task} must contain objects"
+            return f"增长内容结果的 {field} 必须是对象数组（任务 {task}）"
     if task == "creation_decision_brief":
         candidate_error = _decision_candidate_validation_error(payload.get("topic_candidates"))
         if candidate_error:
@@ -502,10 +501,10 @@ def _has_semantic_value(value: Any) -> bool:
 
 def _decision_candidate_validation_error(value: Any) -> str:
     if not isinstance(value, list) or not value:
-        return "Growth LLM output requires at least one topic candidate"
+        return "增长内容结果至少需要一个选题候选"
     for index, candidate in enumerate(value):
         if not isinstance(candidate, dict):
-            return f"Growth LLM topic candidate {index} must be an object"
+            return f"增长内容结果的第 {index + 1} 个选题候选必须是对象"
         text_fields = DECISION_CANDIDATE_REQUIRED_FIELDS[:-1]
         invalid_text = [
             field
@@ -513,14 +512,14 @@ def _decision_candidate_validation_error(value: Any) -> str:
             if not isinstance(candidate.get(field), str) or not candidate[field].strip()
         ]
         if invalid_text:
-            return f"Growth LLM topic candidate {index} has invalid text fields: {', '.join(invalid_text)}"
+            return f"增长内容结果的第 {index + 1} 个选题候选文本字段无效：{', '.join(invalid_text)}"
         missing = [field for field in DECISION_CANDIDATE_REQUIRED_FIELDS if not _has_semantic_value(candidate.get(field))]
         if missing:
-            return f"Growth LLM topic candidate {index} missing required semantic fields: {', '.join(missing)}"
+            return f"增长内容结果的第 {index + 1} 个选题候选缺少必填字段：{', '.join(missing)}"
         if not isinstance(candidate.get("source_refs"), list):
-            return f"Growth LLM topic candidate {index} source_refs must be a list"
+            return f"增长内容结果的第 {index + 1} 个选题候选 source_refs 必须是数组"
         if any(not isinstance(item, str) or not item.strip() for item in candidate["source_refs"]):
-            return f"Growth LLM topic candidate {index} source_refs must contain non-empty strings"
+            return f"增长内容结果的第 {index + 1} 个选题候选 source_refs 必须包含非空文本"
     return ""
 
 
