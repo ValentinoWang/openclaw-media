@@ -105,3 +105,35 @@ def test_budget_reserves_each_available_evidence_dimension_before_profile_markdo
     assert "最近自有作品日报指标" in prompt
     assert "相关历史创作" in prompt
     assert "未沉淀" not in prompt
+
+
+def test_empty_rule_and_comment_values_do_not_consume_budget() -> None:
+    prompt = render_context_for_prompt(
+        {
+            "global_rules": ["", None, "只保留真实评论"],
+            "top_comments": ["", "求训练计划", None],
+            "account_profile": {"identity_summary": "跑步训练账号"},
+        },
+        max_chars=500,
+    )
+
+    assert "只保留真实评论" in prompt
+    assert "求训练计划" in prompt
+    assert "  None" not in prompt
+    assert all(line.strip() for line in prompt.splitlines())
+
+
+def test_tight_budget_keeps_rules_and_review_sections_visible() -> None:
+    prompt = render_context_for_prompt(
+        {
+            "global_rules": ["规则" * 200],
+            "recent_reviews": [_review()],
+            "account_profile": {"markdown": "档案" * 1000},
+        },
+        max_chars=300,
+    )
+
+    assert len(prompt) <= 300
+    assert "生成要求" in prompt
+    assert "媒体 Bot 长期规则摘要" in prompt
+    assert "相关历史复盘" in prompt

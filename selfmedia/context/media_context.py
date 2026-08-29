@@ -116,6 +116,14 @@ _PROMPT_SECTION_MIN_CHARS = {
     "profile_markdown": 0,
 }
 
+# Keep the instruction and evidence headings discoverable even when a caller
+# supplies a budget smaller than the normal per-section minima.
+_PROMPT_SECTION_EMERGENCY_MIN_CHARS = {
+    "instructions": 24,
+    "rules": 18,
+    "reviews": 18,
+}
+
 _PROMPT_SECTION_PRIORITY = {
     "header": 0,
     "instructions": 1,
@@ -274,6 +282,7 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int | None 
             ["生成要求：必须显式继承账号定位和复盘结论；如果没有账号画像，先指出需要补齐的人设/栏目/目标受众。"],
         ),
     ]
+    rules = [_clean_text(item) for item in rules if _clean_text(item)]
     if rules:
         sections.append(("rules", ["- 媒体 Bot 长期规则摘要：", *(f"  {item}" for item in rules[:4])]))
     review_lines = _review_prompt_lines(reviews)
@@ -282,6 +291,7 @@ def render_context_for_prompt(context: dict[str, Any], *, max_chars: int | None 
     hotlist_lines = _hotlist_prompt_lines(hotlist_snapshots)
     if hotlist_lines:
         sections.append(("hotlist", hotlist_lines))
+    top_comments = [_clean_text(item) for item in top_comments if _clean_text(item)]
     if top_comments:
         sections.append(("daily_comments", ["- 最近自有作品高价值评论原话（日报采集）：", *(f"  {item}" for item in top_comments[:6])]))
     profile_lines = _profile_prompt_lines(profile, context=context)
@@ -391,13 +401,27 @@ def _allocate_context_section_budget(sections: list[tuple[str, str]], *, content
     if minimum_size > content_budget:
         allocations: dict[str, int] = {}
         remaining = content_budget
-        for name, text in sorted(sections, key=lambda item: _PROMPT_SECTION_PRIORITY.get(item[0], 99)):
+        ordered_sections = sorted(sections, key=lambda item: _PROMPT_SECTION_PRIORITY.get(item[0], 99))
+        # First reserve a small slice for each critical section. This prevents
+        # a long profile/rules section from hiding the review heading entirely.
+        for name, text in ordered_sections:
+            emergency = min(len(text), _PROMPT_SECTION_EMERGENCY_MIN_CHARS.get(name, 0))
             separator = 1 if allocations else 0
+            if not emergency or remaining <= separator:
+                continue
+            allocation = min(emergency, remaining - separator)
+            allocations[name] = allocation
+            remaining -= allocation + separator
+        for name, text in ordered_sections:
+            if remaining <= 0:
+                break
+            separator = 1 if not allocations.get(name) and allocations else 0
             if remaining <= separator:
                 break
             allocation = min(len(text), minimums[name], remaining - separator)
+            allocation = max(0, allocation - allocations.get(name, 0))
             if allocation:
-                allocations[name] = allocation
+                allocations[name] = allocations.get(name, 0) + allocation
                 remaining -= allocation + separator
         return allocations
 
