@@ -640,8 +640,14 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         if details:
             error["details"] = dict(details)
         response_headers = dict(headers or {})
-        response_headers.setdefault("X-Request-ID", self._correlation_id())
-        self._send_json(status, {"ok": False, "error": error}, headers=response_headers)
+        correlation_id = getattr(self, "_correlation_id", None)
+        if callable(correlation_id):
+            response_headers.setdefault("X-Request-ID", correlation_id())
+        self._send_json(
+            status,
+            {"ok": False, "error": error},
+            headers=response_headers or None,
+        )
 
     def _correlation_id(self) -> str:
         request_id = getattr(self, "_request_id", None)
