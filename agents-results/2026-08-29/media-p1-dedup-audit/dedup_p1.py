@@ -24,7 +24,7 @@ ALIAS_GROUPS = {
 
 # Current-main evidence explicitly recorded by the follow-up/progress ledger.
 CLOSED = {
-    "CR-01": "533fc35", "CR-12": "533fc35", "CR-20": "42250af",
+    "CR-01": "533fc35", "CR-12": "533fc35", "CR-20": "42250af", "BIZ-12": "513a783",
     "CPC-01": "5213a9a", "CPC-02": "5213a9a", "CPC-03": "5213a9a", "CPC-04": "5213a9a",
     "CPC-16": "a9f0942", "BIZ-01": "72fa092", "BIZ-03": "7226e02",
     "BIZ-04": "b26a764",
