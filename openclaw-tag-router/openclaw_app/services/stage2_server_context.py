@@ -60,13 +60,20 @@ _REQUEST_CONTEXT: ContextVar[Mapping[str, Any] | None] = ContextVar(
     "stage2_request_context",
     default=None,
 )
+_MISSING = object()
 
 
-def _value(record: Mapping[str, Any], *names: str, default: Any = None) -> Any:
-    for name in names:
-        if name in record:
-            return record[name]
-    return default
+def _record_value(record: Mapping[str, Any], *names: str, default: Any = _MISSING) -> Any:
+    """Read one server field and reject contradictory aliases."""
+    present = [(name, record[name]) for name in names if name in record]
+    if not present:
+        if default is _MISSING:
+            raise Stage2ServerContextError("server_record_invalid", f"{names[0]} 缺失", status=503)
+        return default
+    first = present[0][1]
+    if any(value != first for _, value in present[1:]):
+        raise Stage2ServerContextError("server_record_invalid", f"{names[0]} 别名值冲突，请修复服务端记录", status=503)
+    return first
 
 
 def _required_text(value: Any, label: str, *, maximum: int = 512) -> str:
@@ -80,11 +87,15 @@ def _required_text(value: Any, label: str, *, maximum: int = 512) -> str:
 
 def _session_token(value: Any) -> str:
     if not isinstance(value, str):
-        raise Stage2ServerContextError("authentication_invalid", "session credential is invalid")
-    normalized = value.strip()
-    if not normalized or len(normalized) > 4096 or any(ord(char) < 32 for char in normalized):
-        raise Stage2ServerContextError("authentication_invalid", "session credential is invalid")
-    return normalized
+        raise Stage2ServerContextError("authentication_invalid", "会话凭据无效，请重新登录")
+    if (
+        not value
+        or len(value) > 4096
+        or value != value.strip()
+        or any(ord(char) < 32 or char.isspace() for char in value)
+    ):
+        raise Stage2ServerContextError("authentication_invalid", "会话凭据不能包含空白，请重新登录")
+    return value
 
 
 def _parse_expiry(value: Any) -> datetime | None:
@@ -101,6 +112,34 @@ def _parse_expiry(value: Any) -> datetime | None:
     return parsed
 
 
+def _request_transport_maps(request: Mapping[str, Any]) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
+    if not isinstance(request, Mapping):
+        raise Stage2ServerContextError("request_context_invalid", "请求上下文必须是对象")
+    headers = request["headers"] if "headers" in request else {}
+    cookies = request["cookies"] if "cookies" in request else {}
+    if not isinstance(headers, Mapping) or not isinstance(cookies, Mapping):
+        raise Stage2ServerContextError("request_context_invalid", "请求头和 Cookie 必须是对象")
+    if any(not isinstance(name, str) for name in headers) or any(not isinstance(name, str) for name in cookies):
+        raise Stage2ServerContextError("request_context_invalid", "请求头和 Cookie 名称必须是文本")
+    return headers, cookies
+
+
+def _transport_value(values: Mapping[str, Any], canonical: str, label: str) -> tuple[bool, Any]:
+    matches = [value for name, value in values.items() if name.casefold() == canonical.casefold()]
+    if len(matches) > 1:
+        raise Stage2ServerContextError("authentication_invalid", f"检测到多个{label}，请只保留一个")
+    return bool(matches), matches[0] if matches else None
+
+
+def _bearer_token(value: Any) -> str:
+    if not isinstance(value, str):
+        raise Stage2ServerContextError("authentication_invalid", "Authorization 请求头无效，请使用 Bearer 会话")
+    scheme, separator, token = value.partition(" ")
+    if not separator or scheme.casefold() != "bearer" or not token or any(char.isspace() for char in token):
+        raise Stage2ServerContextError("authentication_invalid", "Authorization 必须是 Bearer 会话且令牌不得为空白")
+    return _session_token(token)
+
+
 def extract_session_token(request: Mapping[str, Any]) -> str | None:
     """Extract only the transport credential from an injected request view.
 
@@ -109,27 +148,14 @@ def extract_session_token(request: Mapping[str, Any]) -> str | None:
     resulting opaque value is still resolved through ``SessionRecordLoader``.
     """
 
-    if not isinstance(request, Mapping):
-        raise Stage2ServerContextError("request_context_invalid", "request context must be an object")
-    headers = _value(request, "headers", default={})
-    cookies = _value(request, "cookies", default={})
-    if headers is None:
-        headers = {}
-    if cookies is None:
-        cookies = {}
-    if not isinstance(headers, Mapping) or not isinstance(cookies, Mapping):
-        raise Stage2ServerContextError("request_context_invalid", "request headers and cookies must be objects")
-
-    authorization = _value(headers, "Authorization", "authorization")
-    if authorization is not None:
-        if not isinstance(authorization, str):
-            raise Stage2ServerContextError("authentication_invalid", "authorization header is invalid")
-        scheme, separator, token = authorization.partition(" ")
-        if not separator or scheme.lower() != "bearer":
-            raise Stage2ServerContextError("authentication_invalid", "Bearer authorization is required")
-        return _session_token(token)
-    cookie = _value(cookies, "openclaw_session")
-    if cookie is not None:
+    headers, cookies = _request_transport_maps(request)
+    authorization_present, authorization = _transport_value(headers, "authorization", "Authorization 请求头")
+    cookie_present, cookie = _transport_value(cookies, "openclaw_session", "会话 Cookie")
+    if authorization_present and cookie_present:
+        raise Stage2ServerContextError("authentication_invalid", "Authorization 与 Cookie 不能同时提供，请只保留一种凭据")
+    if authorization_present:
+        return _bearer_token(authorization)
+    if cookie_present:
         return _session_token(cookie)
     return None
 
@@ -138,15 +164,7 @@ def extract_session_token(request: Mapping[str, Any]) -> str | None:
 def stage2_request_context(request: Mapping[str, Any]):
     """Bind one transport-owned request view to the current execution context."""
 
-    if not isinstance(request, Mapping):
-        raise Stage2ServerContextError("request_context_invalid", "request context must be an object")
-    headers = _value(request, "headers", default={})
-    cookies = _value(request, "cookies", default={})
-    if not isinstance(headers, Mapping) or not isinstance(cookies, Mapping):
-        raise Stage2ServerContextError(
-            "request_context_invalid",
-            "request headers and cookies must be objects",
-        )
+    headers, cookies = _request_transport_maps(request)
     frozen = MappingProxyType(
         {
             "headers": MappingProxyType(dict(headers)),
@@ -205,17 +223,17 @@ class AuthenticatedSessionProvider:
             raise Stage2ServerContextError("authentication_required", "authenticated session was not found")
         try:
             session = ServerSessionFacts(
-                session_id=_value(record, "session_id", "sessionId", "id"),
-                user_id=_value(record, "user_id", "userId", "actor_id", "actorId"),
-                tenant_id=_value(record, "tenant_id", "tenantId"),
-                tenant_type=_value(record, "tenant_type", "tenantType"),
-                session_status=_value(record, "session_status", "sessionStatus", "status", default="active"),
-                member_status=_value(record, "member_status", "memberStatus", default="active"),
-                member_tenant_id=_value(record, "member_tenant_id", "memberTenantId", default=None),
-                member_role=_value(record, "member_role", "memberRole", "role", default="member"),
-                binding_generation=_value(record, "binding_generation", "bindingGeneration", default=None),
-                tenant_status=_value(record, "tenant_status", "tenantStatus", default="active"),
-                expires_at=_parse_expiry(_value(record, "expires_at", "expiresAt", default=None)),
+                session_id=_record_value(record, "session_id", "sessionId", "id"),
+                user_id=_record_value(record, "user_id", "userId", "actor_id", "actorId"),
+                tenant_id=_record_value(record, "tenant_id", "tenantId"),
+                tenant_type=_record_value(record, "tenant_type", "tenantType"),
+                session_status=_record_value(record, "session_status", "sessionStatus", "status", default="active"),
+                member_status=_record_value(record, "member_status", "memberStatus", default="active"),
+                member_tenant_id=_record_value(record, "member_tenant_id", "memberTenantId", default=None),
+                member_role=_record_value(record, "member_role", "memberRole", "role", default="member"),
+                binding_generation=_record_value(record, "binding_generation", "bindingGeneration", default=None),
+                tenant_status=_record_value(record, "tenant_status", "tenantStatus", default="active"),
+                expires_at=_parse_expiry(_record_value(record, "expires_at", "expiresAt", default=None)),
             )
             session.assert_active(now=self._clock())
         except Stage2ContextError as exc:
@@ -259,19 +277,19 @@ class CurrentBindingProvider:
             raise Stage2ServerContextError("binding_required", "current organization Binding was not found", status=403)
         try:
             identity = OrganizationBinding(
-                binding_id=_value(record, "binding_id", "bindingId", "id"),
-                tenant_id=_value(record, "tenant_id", "tenantId"),
-                generation=_value(record, "generation", "binding_generation", "bindingGeneration"),
-                status=_value(record, "status", "binding_status", "bindingStatus", default="active"),
+                binding_id=_record_value(record, "binding_id", "bindingId", "id"),
+                tenant_id=_record_value(record, "tenant_id", "tenantId"),
+                generation=_record_value(record, "generation", "binding_generation", "bindingGeneration"),
+                status=_record_value(record, "status", "binding_status", "bindingStatus", default="active"),
             )
             identity.assert_matches(session)
             credential_generation = _required_text(
-                _value(record, "credential_generation", "credentialGeneration"),
+                _record_value(record, "credential_generation", "credentialGeneration"),
                 "credential generation",
                 maximum=160,
             )
             trusted_open_url = _required_text(
-                _value(record, "trusted_open_url", "trustedOpenUrl"),
+                _record_value(record, "trusted_open_url", "trustedOpenUrl"),
                 "trusted open URL",
                 maximum=2048,
             )
@@ -318,17 +336,17 @@ class TenantProfileReader:
             raise Stage2ServerContextError("tenant_profile_unavailable", "tenant profile is unavailable", status=503) from exc
         if not isinstance(record, Mapping):
             raise Stage2ServerContextError("tenant_profile_missing", "tenant profile was not found", status=403)
-        tenant_id = _value(record, "tenant_id", "tenantId")
-        tenant_type = _value(record, "tenant_type", "tenantType")
+        tenant_id = _record_value(record, "tenant_id", "tenantId")
+        tenant_type = _record_value(record, "tenant_type", "tenantType")
         if tenant_id != session.tenant_id or tenant_type != session.tenant_type:
             raise Stage2ServerContextError("tenant_profile_mismatch", "tenant profile does not match the session", status=403)
-        fields = _value(record, "fields", "data", "profile", default={})
+        fields = _record_value(record, "fields", "data", "profile", default={})
         if not isinstance(fields, Mapping):
             raise Stage2ServerContextError("tenant_profile_invalid", "tenant profile fields must be an object", status=503)
         return TenantProfile(
             tenant_id=session.tenant_id,
             tenant_type=session.tenant_type,
-            revision=_required_text(_value(record, "revision", "profile_revision", default="1"), "profile revision", maximum=160),
+            revision=_required_text(_record_value(record, "revision", "profile_revision", default="1"), "profile revision", maximum=160),
             fields=fields,
         )
 

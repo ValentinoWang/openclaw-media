@@ -50,9 +50,33 @@ def test_session_token_extraction_accepts_only_injected_transport_credentials() 
     assert extract_session_token({"body": {"tenantId": ORG_TENANT, "session": "attacker"}}) is None
 
 
+@pytest.mark.parametrize(
+    "request",
+    [
+        {"headers": {"Authorization": "Bearer token"}, "cookies": {"openclaw_session": "cookie"}},
+        {"headers": {"Authorization": "Bearer "}},
+        {"cookies": {"openclaw_session": " token"}},
+        {"cookies": {"openclaw_session": "one", "OPENCLAW_SESSION": "two"}},
+    ],
+)
+def test_stage2_transport_rejects_ambiguous_or_blank_credentials(request: dict[str, object]) -> None:
+    with pytest.raises(Stage2ServerContextError) as error:
+        extract_session_token(request)
+    assert error.value.code == "authentication_invalid"
+
+
+def test_stage2_server_alias_conflict_fails_closed() -> None:
+    record = _session_record(PERSONAL_TENANT)
+    record["tenant_id"] = ORG_TENANT
+    provider = AuthenticatedSessionProvider(lambda token: record, lambda: "server-token")
+    with pytest.raises(Stage2ServerContextError) as error:
+        provider.resolve()
+    assert error.value.code == "server_record_invalid"
+
+
 def test_request_token_context_is_scoped_and_nested_values_are_copied() -> None:
     headers = {"Authorization": "Bearer scoped-token"}
-    cookies = {"openclaw_session": "ignored-cookie"}
+    cookies: dict[str, str] = {}
 
     with stage2_request_context({"headers": headers, "cookies": cookies}):
         headers["Authorization"] = "Bearer attacker"

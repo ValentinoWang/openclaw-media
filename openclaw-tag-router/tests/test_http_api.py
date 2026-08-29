@@ -778,6 +778,28 @@ class HttpApiAuthTests(unittest.TestCase):
             self.assertEqual(body["session"]["publicUserId"], str(expected_user))
             self.assertEqual(body["session"]["role"], "ordinary" if role == "user" else "admin")
 
+    def test_legacy_session_cookie_keeps_last_value_precedence(self) -> None:
+        first = self._issue_session_cookie("user-a")
+        second = self._issue_session_cookie("user-b")
+        status, body, _ = self._request(
+            "GET",
+            "/openclaw/media/api/session",
+            cookie=f"{first}; {second}",
+        )
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["session"]["publicUserId"], str(USER_B))
+
+    def test_legacy_session_cookie_keeps_simplecookie_blank_cleanup(self) -> None:
+        cookie = self._issue_session_cookie("user-a")
+        token = cookie.split("=", 1)[1]
+        status, body, _ = self._request(
+            "GET",
+            "/openclaw/media/api/session",
+            cookie=f"openclaw_session= {token} ",
+        )
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["session"]["publicUserId"], str(USER_A))
+
     def test_feishu_start_returns_only_same_browser_authorization_data(self) -> None:
         status, body, _ = self._request("POST", "/auth/feishu/start", {})
         self.assertEqual(status, 200, body)
