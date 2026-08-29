@@ -38,6 +38,7 @@ from selfmedia.creation.shooting_execution import (
     parse_shooting_execution_request,
 )
 from selfmedia.creation.consultation import handle_creation_consultation_command, parse_consultation_request, request_needs_activity_candidates
+from selfmedia.creation.media_model_v2_writeback import _run_id
 from selfmedia.creation.workflow import _deconstruct_activity_example_links, _record_candidate_payload, _run_viral_deconstruct, handle_creation_command
 from selfmedia.creation.writer import _creation_doc_blocks, _find_wiki_child_doc, _shooting_execution_doc_blocks
 from media_vault.vault import MediaVault
@@ -353,6 +354,10 @@ def _blocks_text(blocks: list[dict[str, object]]) -> str:
 
 
 class CreationV1Tests(unittest.TestCase):
+
+    def test_preallocated_run_id_is_not_double_prefixed(self) -> None:
+        self.assertEqual(_run_id("run_preallocated"), "run_preallocated")
+        self.assertEqual(_run_id("preallocated"), "run_preallocated")
     def test_parse_type_as_content_type(self) -> None:
         req = parse_creation_request(
             "【创作>小红书】赛道=职场成长 类型=图文 主体=表达力 发布时间=今晚8点 品牌=某品牌",
@@ -1173,10 +1178,12 @@ class CreationV1Tests(unittest.TestCase):
             draft,
             {"ok": True},
             platform_fit={"platform_mechanism_version": "douyin_test"},
+            creation_record_id="run_doc_creation",
         )
         text = _blocks_text(blocks)
         native_tables = [block for block in blocks if block.get("_openclaw_kind") == "_openclaw_feishu_table"]
         self.assertIn("创作方案总览", text)
+        self.assertIn("创作记录ID：run_doc_creation（数据复盘时请一并填写）", text)
         self.assertIn("这条内容怎么拍", text)
         self.assertEqual(len(native_tables), 2)
         self.assertEqual(native_tables[0]["rows"][0], ["时间", "画面", "字幕/口播", "声音/拍摄注意"])
@@ -1750,6 +1757,7 @@ class CreationV1Tests(unittest.TestCase):
             patch("selfmedia.creation.workflow.create_creation_doc", return_value="https://example.com/doc") as create_doc,
             patch("selfmedia.creation.workflow.record_creation_memory", return_value={"ok": True}),
             patch("selfmedia.creation.workflow.write_creation_model_v2", return_value={"run_id": "run_rec_creation", "decision_trace_count": 0}) as write_v2,
+            patch("selfmedia.creation.workflow.make_timestamp_id", return_value="run_rec_creation"),
         ):
             result = handle_creation_command(
                 "【创作>小红书】赛道=职场 类型=图文 主体=表达力 发布时间=今晚8点",
@@ -1757,7 +1765,8 @@ class CreationV1Tests(unittest.TestCase):
             )
         self.assertTrue(create_doc.called)
         self.assertTrue(write_v2.called)
-        self.assertEqual(write_v2.call_args.kwargs["creation_record_id"], "")
+        self.assertEqual(create_doc.call_args.kwargs["creation_record_id"], "run_rec_creation")
+        self.assertEqual(write_v2.call_args.kwargs["creation_record_id"], "run_rec_creation")
         self.assertEqual(result["media_model_v2"]["run_id"], "run_rec_creation")
         self.assertEqual(result["creation_record_id"], "run_rec_creation")
 

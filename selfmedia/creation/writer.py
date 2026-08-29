@@ -70,11 +70,23 @@ def create_creation_doc(
     businesses: list[RankedRecord] | None = None,
     inspirations: list[RankedRecord] | None = None,
     platform_fit: dict[str, Any] | None = None,
+    creation_record_id: str = "",
 ) -> str:
     load_default_env_files()
     token = feishu_tenant_access_token()
     title = f"{request.content_type} - {request.topic} - {request.publish_time or '未定发布时间'}"
-    blocks = _creation_doc_blocks(title, request, activities, virals, inspirations or [], businesses or [], draft, validation, platform_fit=platform_fit)
+    blocks = _creation_doc_blocks(
+        title,
+        request,
+        activities,
+        virals,
+        inspirations or [],
+        businesses or [],
+        draft,
+        validation,
+        platform_fit=platform_fit,
+        creation_record_id=creation_record_id,
+    )
     document_id, node_token, created = _create_doc(title, token)
     if created:
         _append_blocks(document_id, blocks, token)
@@ -281,12 +293,13 @@ def _creation_doc_blocks(
     validation: dict[str, Any],
     *,
     platform_fit: dict[str, Any] | None = None,
+    creation_record_id: str = "",
 ) -> list[dict[str, Any]]:
     report = _require_creator_report_for_render(draft, request)
     return [
         _heading(title),
         _heading("创作方案总览"),
-        *_creator_overview_blocks(report, request, activities, draft),
+        *_creator_overview_blocks(report, request, activities, draft, creation_record_id=creation_record_id),
         _heading("这条内容怎么拍"),
         *_creator_shooting_blocks(report, draft),
         _heading("这条内容怎么发"),
@@ -464,10 +477,13 @@ def _creator_overview_blocks(
     request: CreationRequest,
     activities: list[RankedRecord],
     draft: dict[str, Any],
+    *,
+    creation_record_id: str = "",
 ) -> list[dict[str, Any]]:
     overview = _section(report, "overview")
     backups = _backup_options(draft)
     lines = [
+        *([f"创作记录ID：{creation_record_id}（数据复盘时请一并填写）"] if creation_record_id else []),
         f"推荐选题：{_text(overview['recommended_topic'])}",
         f"一句话核心：{_text(overview['core_sentence'])}",
         f"内容核心：{_content_core_summary(draft)}",

@@ -205,8 +205,9 @@ def _selected_business_lifecycle_payload(item: RankedRecord, *, run_id: str, evi
 
 
 def _run_id(creation_record_id: str) -> str:
-    if creation_record_id:
-        return f"run_{creation_record_id}"
+    normalized = str(creation_record_id or "").strip()
+    if normalized:
+        return normalized if normalized.startswith("run_") else f"run_{normalized}"
     return make_timestamp_id("run", token_bytes=2)
 
 

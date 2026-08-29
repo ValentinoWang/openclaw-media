@@ -25,6 +25,7 @@ from .schema import ensure_creation_source_schema
 from .writer import create_creation_doc
 from selfmedia.context import build_media_context_for_request, merge_conversation_context, record_creation_memory
 from media_vault import MediaVault, require_tenant_id
+from media_vault.vault import make_timestamp_id
 from selfmedia.deconstruct.viral_content.src.human_insight_writeback import project_id_for_human_insight_scope
 
 
@@ -195,6 +196,9 @@ def handle_creation_command(
     memory_result: dict[str, Any] = {}
     media_model_v2_result: dict[str, Any] = {}
     if not dry_run and not no_write:
+        # Allocate the public attribution key before any document or model write so
+        # every downstream artifact shares one stable CreationRun identity.
+        creation_record_id = make_timestamp_id("run", token_bytes=2)
         doc_link = create_creation_doc(
             request,
             ranked_activities,
@@ -204,6 +208,7 @@ def handle_creation_command(
             businesses=ranked_businesses,
             inspirations=ranked_inspirations,
             platform_fit=platform_fit,
+            creation_record_id=creation_record_id,
         )
         media_model_v2_result = write_creation_model_v2(
             tenant_id=tenant_id,
@@ -315,7 +320,7 @@ def format_creation_reply(
         f"平台规则校验：{'通过' if validation.get('ok') else '未通过'}",
     ]
     if creation_record_id:
-        lines.append("创作档案已关联，可在发布后发起数据复盘。")
+        lines.append(f"创作记录ID：{creation_record_id}（数据复盘时请一并填写）")
     if creator_profile_unavailable:
         lines.append("达人档案暂未加载，不影响当前草稿。")
     return "\n".join(lines)
