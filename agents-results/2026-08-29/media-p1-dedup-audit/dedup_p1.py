@@ -105,6 +105,8 @@ CLOSED = {
     "CPC-21": "6dbc1ba",
     "CPO-N16": "62a265a",
     "CPO-K09": "124418c",
+    "CT-D1": "ce4e205",
+    "CT-D2": "2041472",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
