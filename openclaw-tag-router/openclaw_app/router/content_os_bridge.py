@@ -139,7 +139,7 @@ class ContentOSBridgeMixin:
         inbox_batch_path = self._extract_content_os_inbox_batch_path(raw)
         local_material_binding = "bound" if local_project_path or batch_note_path or inbox_batch_path else "unbound"
 
-        vault_root = Path(os.environ.get("CONTENT_OS_VAULT_ROOT", "/home/ubuntu/obsidian-自媒体"))
+        vault_root = self._content_os_vault_root()
         projects_root = vault_root / "08_内容项目"
         registries_root = vault_root / "90_索引与注册表"
         projects_root.mkdir(parents=True, exist_ok=True)

@@ -356,7 +356,6 @@ def _profile_prompt_lines(profile: dict[str, Any], *, context: dict[str, Any]) -
         creator_profile_error = _clean_text(context.get("creator_profile_error"))
         if creator_profile_error:
             lines.append(f"- 账号档案加载失败：{creator_profile_error}（人设未注入）")
-            lines.append(f"- 达人档案加载失败：{creator_profile_error}（人设未注入）")
         return lines
     lines: list[str] = []
     platform = _clean_text(profile.get("platform") or context.get("platform"))
@@ -370,7 +369,6 @@ def _profile_prompt_lines(profile: dict[str, Any], *, context: dict[str, Any]) -
     creator_profile_error = _clean_text(context.get("creator_profile_error"))
     if creator_profile_error:
         lines.append(f"- 账号档案加载失败：{creator_profile_error}（人设未注入）")
-        lines.append(f"- 达人档案加载失败：{creator_profile_error}（人设未注入）")
     return lines
 
 

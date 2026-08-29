@@ -186,6 +186,7 @@ class MediaContextTests(unittest.TestCase):
             }
         )
         self.assertIn("账号档案加载失败：CreatorProfile 字段契约不可用（人设未注入）", failure_prompt)
+        self.assertEqual(failure_prompt.count("CreatorProfile 字段契约不可用"), 1)
 
 
 if __name__ == "__main__":
