@@ -190,6 +190,26 @@ def load_content_ingest():
     return load_settings, clean_douyin_url, refresh_stats_only
 
 
+def infer_platform_keyword(text: str) -> str:
+    """Infer a platform from Chinese keyword/URL-substring mentions in free text.
+
+    This is distinct from platform_links.platform_for_url: it matches literal
+    keyword mentions ("小红书", "抖音", "B站"...) in arbitrary prose, not URL
+    hostnames. Consolidated from three byte-identical-or-near-identical copies
+    (selfmedia/context/media_context.py, selfmedia/review/data_review.py,
+    selfmedia/creation/consultation.py — the latter had one extra B站 branch,
+    now included here so all three callers gain it).
+    """
+    haystack = str(text or "")
+    if "小红书" in haystack or "xhslink" in haystack:
+        return "小红书"
+    if "抖音" in haystack or "douyin" in haystack:
+        return "抖音"
+    if "B站" in haystack or "哔哩哔哩" in haystack or "bilibili" in haystack.lower():
+        return "B站"
+    return ""
+
+
 def extract_urls(values: Iterable[str]) -> list[str]:
     urls: list[str] = []
     seen: set[str] = set()

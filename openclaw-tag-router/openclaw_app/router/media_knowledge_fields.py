@@ -8,6 +8,7 @@ if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
 from common.knowledge_categories import normalize_knowledge_secondary_categories  # noqa: E402
+from common.platform_links import platform_from_text  # noqa: E402
 from selfmedia.ingest.content_flow.src.semantic_persistence import (  # noqa: E402
     LLM_SEMANTIC_PERSISTENCE_METADATA_KEY,
     analysis_user_field_contract_issue,
@@ -242,22 +243,7 @@ class MediaKnowledgeFieldsMixin:
         return ""
 
     def _knowledge_platform_from_text(self, text: str) -> str:
-        lower = (text or "").lower()
-        if "mp.weixin.qq.com" in lower or "公众号" in lower:
-            return "公众号"
-        if "douyin.com" in lower or "iesdouyin.com" in lower:
-            return "抖音"
-        if "xiaohongshu.com" in lower or "xhslink.com" in lower or "xhslink.cn" in lower:
-            return "小红书"
-        if "tiktok.com" in lower:
-            return "TikTok"
-        if "kuaishou.com" in lower or "gifshow.com" in lower:
-            return "快手"
-        if "bilibili.com" in lower or "b23.tv" in lower:
-            return "B站"
-        if "youtube.com" in lower or "youtu.be" in lower:
-            return "YouTube"
-        return ""
+        return platform_from_text(text)
 
     def _knowledge_body_indicates_image_post(self, body: str) -> bool:
         text = str(body or "")

@@ -13,8 +13,11 @@ XIAOHONGSHU_HOSTS = ("xiaohongshu.com", "xhslink.com", "xhslink.cn")
 
 
 def is_xiaohongshu_url(url: str) -> bool:
-    host = (urlparse((url or "").strip()).hostname or "").lower().rstrip(".")
-    return any(host == domain or host.endswith(f".{domain}") for domain in XIAOHONGSHU_HOSTS)
+    # Local import: common.platform_links imports extract_douyin_id from this
+    # module, so a module-level import here would be circular.
+    from common.platform_links import platform_for_url
+
+    return platform_for_url(url) == "xiaohongshu"
 
 
 def extract_douyin_id(url: str) -> tuple[str, Optional[str]]:
@@ -66,11 +69,18 @@ def extract_xhs_id(url: str) -> Optional[str]:
 
 
 def detect_platform(url: str) -> str:
-    lower = url.lower()
-    if "douyin.com" in lower or "iesdouyin.com" in lower or "aweme" in lower:
+    # Local import: see is_xiaohongshu_url above for why this can't be top-level.
+    from common.platform_links import platform_display_zh
+
+    display = platform_display_zh(url)
+    if display:
+        return display
+    # "aweme" substring fallback: covers short-link/API-form douyin URLs that
+    # don't carry a douyin.com/iesdouyin.com hostname. Kept as an explicit,
+    # narrower fallback rather than folded into the host table, since it's a
+    # substring match and should not widen the anti-forgery host check.
+    if "aweme" in (url or "").lower():
         return "抖音"
-    if is_xiaohongshu_url(url):
-        return "小红书"
     return "未知"
 
 

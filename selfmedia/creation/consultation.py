@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+from common.social_runtime import infer_platform_keyword
 from selfmedia.context import build_media_context, merge_conversation_context
 
 from .adapters import ActivityAdapter, BusinessAdapter, CreationInspirationAdapter, ViralContentAdapter
@@ -332,10 +333,4 @@ def _relevance_score(record: Any, request: ConsultationRequest) -> int:
 
 
 def _infer_platform(text: str) -> str:
-    if "小红书" in text:
-        return "小红书"
-    if "抖音" in text:
-        return "抖音"
-    if "B站" in text or "哔哩哔哩" in text or "bilibili" in text.lower():
-        return "B站"
-    return ""
+    return infer_platform_keyword(text)

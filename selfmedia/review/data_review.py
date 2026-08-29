@@ -24,6 +24,7 @@ from common.social_runtime import (
     FEISHU_BASE,
     feishu_headers,
     feishu_tenant_access_token,
+    infer_platform_keyword,
     load_default_env_files,
 )
 from selfmedia.context import record_review_memory
@@ -326,11 +327,7 @@ def _parse_key_values(body: str) -> dict[str, str]:
 
 
 def _infer_platform(text: str) -> str:
-    if "小红书" in text or "xhslink" in text:
-        return "小红书"
-    if "抖音" in text or "douyin" in text:
-        return "抖音"
-    return ""
+    return infer_platform_keyword(text)
 
 
 def _existing_images(paths: list[str]) -> list[str]:

@@ -19,6 +19,7 @@ from urllib.parse import urljoin, urlparse
 import requests
 
 from common.llm_client import generate_json_from_parts, is_model_capacity_failure, model_capacity_failure_detail
+from common.platform_links import platform_display_zh
 from common.llm_settings import LLMProviderSettings, load_profile_llm_settings
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.knowledge_categories import (
@@ -297,22 +298,7 @@ class ContentFlowClient:
             return ""
 
     def _platform_from_url(self, url: str) -> str:
-        lower = (url or "").lower()
-        if "mp.weixin.qq.com" in lower:
-            return "公众号"
-        if "douyin.com" in lower or "iesdouyin.com" in lower:
-            return "抖音"
-        if "xiaohongshu.com" in lower or "xhslink.com" in lower or "xhslink.cn" in lower:
-            return "小红书"
-        if "tiktok.com" in lower:
-            return "TikTok"
-        if "kuaishou.com" in lower or "gifshow.com" in lower:
-            return "快手"
-        if "bilibili.com" in lower or "b23.tv" in lower:
-            return "B站"
-        if "youtube.com" in lower or "youtu.be" in lower:
-            return "YouTube"
-        return ""
+        return platform_display_zh(url)
 
     @staticmethod
     def _extract_wechat_article_url(text: str) -> str:

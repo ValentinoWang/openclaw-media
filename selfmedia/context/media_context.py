@@ -13,7 +13,7 @@ from typing import Any
 from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id
 from zoneinfo import ZoneInfo
 
-from common.social_runtime import feishu_list_records, feishu_plain_text, load_default_env_files
+from common.social_runtime import feishu_list_records, feishu_plain_text, infer_platform_keyword, load_default_env_files
 from media_model.contract import resolve_media_model_contract_path
 from media_vault.vault import MediaVault
 from selfmedia.business.schedule import schedule_snapshot_path, upcoming_schedule_entries
@@ -1352,11 +1352,7 @@ def _parse_metrics(text: str) -> dict[str, str]:
 
 
 def _infer_platform(text: str) -> str:
-    if "小红书" in text or "xhslink" in text:
-        return "小红书"
-    if "抖音" in text or "douyin" in text:
-        return "抖音"
-    return ""
+    return infer_platform_keyword(text)
 
 
 def _infer_content_type(text: str) -> str:
