@@ -27,6 +27,7 @@ CLOSED = {
     "CR-01": "533fc35", "CR-12": "533fc35", "CR-20": "42250af",
     "CPC-01": "5213a9a", "CPC-02": "5213a9a", "CPC-03": "5213a9a", "CPC-04": "5213a9a",
     "CPC-16": "a9f0942", "BIZ-01": "72fa092", "BIZ-03": "7226e02",
+    "BIZ-04": "b26a764",
     "BIZ-08": "1e145bd", "BIZ-10": "707fdb2", "CD-09": "7226e02",
     "CR-07": "7226e02", "CPO-K15": "7226e02", "CRF-04": "978c60a",
     "RT-01": "b80151d", "RT-02": "dc4a089", "RT-03": "d32afca",
@@ -50,6 +51,11 @@ CLOSED = {
     "CR-23": "b849f82",
     "CR-25": "6dbc1ba",
     "CR-26": "facda23",
+    "CR-02": "fc37d2e",
+    "CR-03": "9660f04",
+    "CR-04": "9660f04",
+    "LB-07": "525a10a",
+    "LB-08": "9520b5e",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
