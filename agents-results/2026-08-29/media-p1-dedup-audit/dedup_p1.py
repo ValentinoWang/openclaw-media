@@ -42,6 +42,14 @@ CLOSED = {
     "CR-14": "ad3f5fd", "CR-16": "be310f8", "CR-17": "be310f8",
     "CR-15": "2bc5e13",
     "CR-21": "5a3c8a2",
+    # Human-facing receipt implementations already landed on main with
+    # focused regression coverage; keep these mappings tied to the actual
+    # source commits instead of counting them as open due to stale ledger data.
+    "CR-18": "6330d9f",
+    "CR-22": "6330d9f",
+    "CR-23": "b849f82",
+    "CR-25": "6dbc1ba",
+    "CR-26": "facda23",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
