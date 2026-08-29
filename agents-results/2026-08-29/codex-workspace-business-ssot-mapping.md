@@ -5,10 +5,10 @@
 ## 当前结论
 
 - 权威源码：`production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration` 的 `main`。
-- 当前本机 `main` 与 `origin/main` 均为 `bc320f2`，工作树干净。
+- 当前本机 `main` 与 `origin/main` 均为 `b0f9816`，工作树干净。
 - `d0d399a`、`948b36b`、`ae0b614`、`76f8725`、`23ba056`、`f533317` 均不是 `main` 的祖先提交。
 - 部分能力已用新的原子提交进入 `main`：Feishu（`943e874`、`18a616a`、`109e8ff`）、身份 transport（`7ed45ab`）、身份 A1/A2（`828111e`、`5bf62d9`）、runtime（`fa33bc2`）、H00 绑定（`4a41061`）和监控 API 边界（`ada2963`）。这不等于原候选提交已合入，也不等于真实生产验收完成。
-- 四个 `stage2-hardening-*` 候选不得整体合并；`persistence` 仍需拆成原子单元后再评估。
+- 四个 `stage2-hardening-*` 候选均不得整体合并；auth 与 persistence 已完成原子提取，runtime 已确认 superseded。
 
 ## 容器处置矩阵
 
@@ -16,8 +16,8 @@
 |---|---|---|---|
 | `stage2-hardening-auth-20260820` / `d0d399a` | Stage-2 S1/T1/S5：请求身份、租户与 Binding 校验 | 原候选把严格 fail-closed 与旧端点兼容逻辑混在一起；直接覆盖会改变旧端点行为。 | 不整体合并。transport 已由 `7ed45ab` 提取，A1/A2 已由 `828111e`、`5bf62d9` 提取；候选仍作差异来源，真实认证未验收。 |
 | `stage2-hardening-feishu-20260820` / `948b36b` | Stage-2 O2-O5：Binding 目标、写入、写后回读 | 两个源文件与当前主线逐字节一致，diff=0。 | `fully-absorbed`；归档候选分支。 |
-| `stage2-hardening-persistence-20260820` / `ae0b614` | Stage-2 S4/C5/O3：幂等、状态机、成果持久化 | 同时改 HTTP/Gateway/Runtime/Feishu/Store，和其余候选撞入口；SQLite 证据不能冒充真实数据库验收。 | 不整体合并。最后拆为持久化合同、幂等 claim、路径校验三个原子单元。 |
-| `stage2-hardening-runtime-20260820` / `76f8725` | Stage-2 S3/T1/C8/O6：路由、错误码、租户边界 | 旧端点与 Stage-2 错误语义混杂，可能扩大收紧范围。 | 不整体合并。已按 Stage-2 边界提取部分能力至 `fa33bc2`；候选仅作 diff 来源。 |
+| `stage2-hardening-persistence-20260820` / `ae0b614` | Stage-2 S4/C5/O3：幂等、状态机、成果持久化 | 同时改 HTTP/Gateway/Runtime/Feishu/Store，和其余候选撞入口；SQLite 证据不能冒充真实数据库验收。 | 不整体合并。已提取 P1 `2514c7c`、P2 `d8763c8`、P3 `b0f9816` 三个原子单元；真实数据库仍未验收。 |
+| `stage2-hardening-runtime-20260820` / `76f8725` | Stage-2 S3/T1/C8/O6：路由、错误码、租户边界 | 旧端点与 Stage-2 错误语义混杂，可能扩大收紧范围。 | `superseded`；收尾 diff 仅格式/注释差异，行为已由主线 `fa33bc2` 覆盖。 |
 | `mediaclaw-stylekit-publish` / `23ba056`、`f533317` | Stage-2 运行工具；P1 Content-OS/账号监控 | `f533317` 已被 `a1ab425`/`85f6608`/`4a41061`/`ada2963` 完整覆盖；`23ba056` 的结构化验收收据要求已由 Content OS 生命周期合同拦截非结构化发布推进。 | 两者均 `superseded`；归档候选分支。样式目录仍不得进入业务主线。 |
 | `production-reconciliation-20260825` | P1/Stage-2 复核承载容器 | 外层 detached 快照、嵌套 `integration/main`、工作容器不是同一 Git 身份。 | 只以嵌套 `integration/main` 归因；外层不作为源码主线。 |
 | `merge-candidate-v4` | 生产 E2E C3/C4、前端候选 | 无 Git 提交证明，且早于后续主线，覆盖会回退行为。 | 只读历史验收/差异证据，不作合并来源。 |
@@ -32,10 +32,10 @@
 
 | 提交 | 分支 | 状态 |
 |---|---|---|
-| `d0d399a` | `candidates/stage2-hardening-auth-d0d399a` | 候选，不整体合并 |
+| `d0d399a` | `archived/candidates/stage2-hardening-auth-d0d399a` | A1/A2 已提取，归档；原候选引用保留供审计 |
 | `948b36b` | `archived/candidates/stage2-hardening-feishu-948b36b` | fully-absorbed，归档 |
-| `ae0b614` | `candidates/stage2-hardening-persistence-ae0b614` | 候选，不整体合并 |
-| `76f8725` | `candidates/stage2-hardening-runtime-76f8725` | 候选，不整体合并 |
+| `ae0b614` | `archived/candidates/stage2-hardening-persistence-ae0b614` | 已拆 P1/P2/P3，归档；原候选引用保留供审计 |
+| `76f8725` | `archived/candidates/stage2-hardening-runtime-76f8725` | superseded，归档；原候选引用保留供审计 |
 | `23ba056` | `archived/candidates/mediaclaw-stylekit-content-23ba056` | superseded，归档 |
 | `f533317` | `archived/candidates/mediaclaw-stylekit-monitor-f533317` | superseded，归档 |
 
