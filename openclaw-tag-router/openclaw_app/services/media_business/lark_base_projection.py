@@ -17,7 +17,6 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Iterable, Mapping
-from urllib.parse import urlparse
 
 from psycopg import sql
 from media_model.platform_hashtags import normalize_platform_hashtags
@@ -66,9 +65,6 @@ _PENDING_BINDING_STATUS = "pending_create"
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _PUBLIC_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
-_FEISHU_DOCUMENT_ROOT_HOSTS = frozenset({"feishu.cn", "larksuite.com", "larkoffice.com"})
-_FEISHU_DOCUMENT_HOST_SUFFIXES = (".feishu.cn", ".larksuite.com", ".larkoffice.com")
-_FEISHU_DOCUMENT_PATH = re.compile(r"^/(wiki|docx)/([A-Za-z0-9_-]{8,160})$")
 _PREVIEW_PATH = "/openclaw/media/api/assets/{public_asset_id}/preview"
 
 
@@ -86,36 +82,6 @@ def _text(value: Any) -> str:
     if isinstance(value, list):
         return ", ".join(_text(item) for item in value if _text(item))
     return str(value).strip()
-
-
-def _review_document_url(value: Any) -> str | None:
-    raw = _text(value)
-    if not raw:
-        return None
-    try:
-        parsed = urlparse(raw)
-        host = str(parsed.hostname or "").lower()
-        port = parsed.port
-    except ValueError:
-        return None
-    if (
-        parsed.scheme != "https"
-        or parsed.username is not None
-        or parsed.password is not None
-    ):
-        return None
-    if port is not None or parsed.query or parsed.fragment or parsed.params:
-        return None
-    if not (
-        host in _FEISHU_DOCUMENT_ROOT_HOSTS
-        or any(host.endswith(suffix) for suffix in _FEISHU_DOCUMENT_HOST_SUFFIXES)
-    ):
-        return None
-    path_match = _FEISHU_DOCUMENT_PATH.fullmatch(parsed.path)
-    if path_match is None:
-        return None
-    document_type, token = path_match.groups()
-    return f"https://{host}/{document_type}/{token}"
 
 
 def _json_safe(value: Any) -> Any:
@@ -591,12 +557,13 @@ class LarkBaseProjection:
         candidate_facts: Mapping[str, Mapping[str, str]] | None = None,
     ) -> dict[str, Any]:
         fields = dict(record.get("fields") or {})
+        if spec.target_table == "review_records":
+            fields.pop("复盘文档链接", None)
         aliases = {name: _alias(fields, candidates) for name, candidates in spec.alias_fields.items()}
         aliases = {key: value for key, value in aliases.items() if value}
         canonical = {
             "source": {
                 "provider": "feishu",
-                "base_table": str(table.get("name") or spec.table_key),
                 "table_id": str(table.get("table_id") or ""),
                 "record_id": str(record.get("record_id") or ""),
             },
@@ -761,6 +728,7 @@ class LarkBaseProjection:
             )
         elif spec.target_table == "review_records":
             human_decision = _alias(fields, ("表现评级",)) or None
+            review_document_id = _alias(fields, ("复盘文档ID",))
             canonical.update(
                 {
                     "public_post_id": _alias(fields, ("发布作品ID",)),
@@ -771,7 +739,7 @@ class LarkBaseProjection:
                     "model_suggestion": _alias(fields, ("关键指标摘要",)) or None,
                     "human_decision": human_decision,
                     "status": "confirmed" if human_decision else "pending",
-                    "document_url": _review_document_url(fields.get("复盘文档链接")),
+                    "review_document_id": review_document_id if _PUBLIC_ID.fullmatch(review_document_id) else None,
                 }
             )
         return canonical
