@@ -14,6 +14,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Iterator, Mapping, Sequence
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
+from common.canonical_digest import canonical_json as _shared_canonical_json
+
 from .stage1_organization_provisioning import (
     AdminConfirmationReceipt,
     AdminConfirmationRepository,
@@ -80,7 +82,7 @@ def _uuid(value: object) -> UUID:
 
 
 def _json(value: object) -> str:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return _shared_canonical_json(value, allow_nan=True)
 
 
 def _organization_name(value: object) -> str:

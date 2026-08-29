@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 from typing import Any
 
+from common.canonical_digest import canonical_json as _shared_canonical_json
 from media_vault.vault import MediaVault, MediaVaultUriError
 
 from .human_insight_cards import (
@@ -550,7 +551,7 @@ def _approval_report(payload: dict[str, Any], uri: str, *, replayed: bool) -> di
 
 
 def _canonical_json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return _shared_canonical_json(value, allow_nan=True)
 
 
 def _source_refs(

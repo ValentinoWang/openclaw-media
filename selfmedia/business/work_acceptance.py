@@ -9,6 +9,8 @@ from typing import Any
 
 from media_vault import MediaVault, require_tenant_id
 
+from common.canonical_digest import canonical_json as _shared_canonical_json
+
 from .commercial_loop import CommercialLoopLedger, has_external_evidence
 
 
@@ -150,7 +152,7 @@ class WorkAcceptanceWriteback:
 
 
 def _canonical_json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return _shared_canonical_json(value, allow_nan=True)
 
 
 def _is_pending_upgrade(existing: dict[str, Any], requested: dict[str, Any]) -> bool:

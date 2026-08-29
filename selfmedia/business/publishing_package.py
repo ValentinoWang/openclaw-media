@@ -16,6 +16,8 @@ from urllib.parse import urlsplit
 
 from media_vault import MediaVault, require_tenant_id
 
+from common.canonical_digest import canonical_json as _shared_canonical_json
+
 from .commercial_loop import has_external_evidence
 
 
@@ -126,7 +128,7 @@ def _external_evidence(value: str) -> bool:
 
 
 def _canonical_json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return _shared_canonical_json(value, allow_nan=True)
 
 
 class PublishingPackageProducer:

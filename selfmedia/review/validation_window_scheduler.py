@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from common.canonical_digest import canonical_json as _shared_canonical_json
 from media_vault import MediaVault, require_tenant_id
 from selfmedia.business.commercial_loop import has_external_evidence
 
@@ -59,7 +60,7 @@ def _utc_now() -> datetime:
 
 
 def _canonical_json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return _shared_canonical_json(value, allow_nan=True)
 
 
 def _schedule_id(creation_run_id: str) -> str:
