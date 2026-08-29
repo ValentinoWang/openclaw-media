@@ -20,6 +20,7 @@ from .extractor import (
     parse_xiaohongshu_profile_text,
 )
 from .schemas import normalize_platform
+from common.platform_links import PLATFORM_DISPLAY_ZH, platform_for_url
 from selfmedia.business.id_business import load_playwright_cookies, profile_capture_block_result
 
 
@@ -32,14 +33,6 @@ CHROMIUM_EXECUTABLE_CANDIDATES = (
     os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE", ""),
     "/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
 )
-PROFILE_HOST_SUFFIXES = {
-    "douyin.com": "抖音",
-    "iesdouyin.com": "抖音",
-    "xiaohongshu.com": "小红书",
-    "xhslink.com": "小红书",
-}
-
-
 def launch_chromium(playwright, *, headless: bool = True):
     for candidate in CHROMIUM_EXECUTABLE_CANDIDATES:
         if not candidate:
@@ -51,11 +44,12 @@ def launch_chromium(playwright, *, headless: bool = True):
 
 
 def infer_profile_platform(url: str) -> str:
-    host = (urllib.parse.urlparse(str(url or "").strip()).hostname or "").lower()
-    for suffix, platform in PROFILE_HOST_SUFFIXES.items():
-        if host == suffix or host.endswith("." + suffix):
-            return platform
-    return ""
+    # Delegates to common.platform_links' anti-forgery hostname matching
+    # (consolidated from a byte-identical PROFILE_HOST_SUFFIXES dict here).
+    # Scoped to douyin/xiaohongshu only, matching platform_for_url's two
+    # recognized platforms -- callers of this function only ever check for
+    # "小红书" or treat any other value (including "") as not-recognized.
+    return PLATFORM_DISPLAY_ZH.get(platform_for_url(url), "")
 
 
 def resolve_xiaohongshu_share_url(url: str) -> str:

@@ -21,9 +21,10 @@ SELFMEDIA_ROOT = Path(
 ).expanduser()
 if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
-MEDIA_ROOT = Path(
-    os.getenv("OPENCLAW_MEDIA_AGENT_ROOT") or Path.home() / ".openclaw" / "agents" / "media"
-).expanduser()
+from common.env_paths import load_media_agent_env_files, media_agent_root  # noqa: E402
+
+# Re-exported: other modules import MEDIA_ROOT from here.
+MEDIA_ROOT = media_agent_root()
 
 from common.social_runtime import (  # noqa: E402
     FEISHU_BASE,
@@ -921,10 +922,14 @@ def detect_platform_cn(text: str, urls: list[str], fields: dict[str, str]) -> st
         if explicit.lower() in {"douyin", "tiktok"} or "抖音" in explicit:
             return "抖音"
         return explicit
-    combined = "\n".join([text, *urls]).lower()
-    if "xhslink.com" in combined or "xiaohongshu.com" in combined or "小红书" in text:
+    # Hostname-anchored URL check (platform_for_url) instead of a raw
+    # substring scan -- a "xiaohongshu.com" substring inside an unrelated
+    # host (e.g. a lookalike domain) no longer counts as a match. The
+    # literal keyword fallback (a platform name typed directly in prose,
+    # with no URL) is unchanged.
+    if any(platform_for_url(url) == "xiaohongshu" for url in urls) or "小红书" in text:
         return "小红书"
-    if "douyin.com" in combined or "iesdouyin.com" in combined or "抖音" in text:
+    if any(platform_for_url(url) == "douyin" for url in urls) or "抖音" in text:
         return "抖音"
     platform = detect_platform(urls[0]) if urls else "unknown"
     return {"xiaohongshu": "小红书", "douyin": "抖音"}.get(platform, "未识别")

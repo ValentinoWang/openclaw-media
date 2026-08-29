@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
+from common.platform_links import platform_display_zh
 from openclaw_app.models.message import Message
 from openclaw_app.router.activity_daily import ActivityDailyMixin
 from openclaw_app.services.obsidian_daily_checklist_service import ObsidianDailyChecklistService
@@ -48,7 +49,11 @@ class FakeContentFlowClient:
 
     @staticmethod
     def _platform_from_url(url: str) -> str:
-        return "小红书" if "xhslink.com" in url or "xiaohongshu.com" in url else ""
+        # Delegates to the production platform-detection module instead of
+        # re-implementing a (narrower, substring-based) copy of it, so this
+        # fixture can't silently drift from what content_flow_client.py's
+        # real _platform_from_url actually recognizes.
+        return platform_display_zh(url)
 
 
 class FakeArchiveService:
