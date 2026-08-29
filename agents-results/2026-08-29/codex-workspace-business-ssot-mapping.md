@@ -20,9 +20,9 @@
 | `stage2-hardening-runtime-20260820` / `76f8725` | Stage-2 S3/T1/C8/O6：路由、错误码、租户边界 | 旧端点与 Stage-2 错误语义混杂，可能扩大收紧范围。 | `superseded`；收尾 diff 仅格式/注释差异，行为已由主线 `fa33bc2` 覆盖。 |
 | `mediaclaw-stylekit-publish` / `23ba056`、`f533317` | Stage-2 运行工具；P1 Content-OS/账号监控 | `f533317` 已被 `a1ab425`/`85f6608`/`4a41061`/`ada2963` 完整覆盖；`23ba056` 的结构化验收收据要求已由 Content OS 生命周期合同拦截非结构化发布推进。 | 两者均 `superseded`；归档候选分支。样式目录仍不得进入业务主线。 |
 | `production-reconciliation-20260825` | P1/Stage-2 复核承载容器 | 外层 detached 快照、嵌套 `integration/main`、工作容器不是同一 Git 身份。 | 只以嵌套 `integration/main` 归因；外层不作为源码主线。 |
-| `merge-candidate-v4` | 生产 E2E C3/C4、前端候选 | 无 Git 提交证明，且早于后续主线，覆盖会回退行为。 | 只读历史验收/差异证据，不作合并来源。 |
-| `production-baseline-20260814T084319Z` | 2026-08-14 发布基线 | 发布身份和当前主线/部署不一致。 | 只证明当时发布，不证明当前状态。 |
-| `reviews-inspector-layout-20260815` | 前端合同、截图和构建检查 | 引用 `master/e027ad10`，与当前 `main` 无当前归因关系。 | 只读历史验收快照。 |
+| `.codex-work/archived/historical-snapshots-20260829/merge-candidate-v4` | 生产 E2E C3/C4、前端候选 | 无 Git 提交证明，且早于后续主线，覆盖会回退行为。 | 只读历史验收/差异证据，不作合并来源；证据索引见 `agents-results/2026-08-29/historical-snapshots-archive.md`。 |
+| `.codex-work/archived/historical-snapshots-20260829/production-baseline-20260814T084319Z` | 2026-08-14 发布基线 | 发布身份和当前主线/部署不一致。 | 只证明当时发布，不证明当前状态。 |
+| `.codex-work/archived/historical-snapshots-20260829/reviews-inspector-layout-20260815` | 前端合同、截图和构建检查 | 引用 `master/e027ad10`，与当前 `main` 无当前归因关系。 | 只读历史验收快照。 |
 | `agents-results` | SSOT、测试和证据记录 | 文档状态不能越级为源码、部署或生产状态。 | 权威文档/证据层，不是代码合并来源。 |
 | `runtime` | PostgreSQL/运行态数据 | 数据文件无源码提交、哈希或变更说明。 | 运行证据层；迁移/清理需单独授权。 |
 
