@@ -467,12 +467,29 @@ class MediaGrowthMixin:
             return None
 
         def provider(parts, settings_arg, **kwargs):
-            user_content = "\n".join(str(part.get("text") or "") for part in parts if isinstance(part, dict))
+            # Pass every part (image/audio included, not just text) through to
+            # _call_profile_provider_json's `parts=` argument so it reaches
+            # generate_json_from_parts unchanged -- previously only text parts
+            # survived this join and any image/audio evidence was silently
+            # dropped before it ever reached the model.
+            typed_parts = [dict(part) for part in parts if isinstance(part, dict)]
+            user_content = "\n".join(str(part.get("text") or "") for part in typed_parts)
+            stage = str(kwargs.get("error_prefix") or "").strip() or "MediaClaw evidence JSON"
             return caller(
                 "media_creation",
                 str(kwargs.get("instructions") or ""),
                 user_content,
-                "MediaClaw evidence JSON",
+                stage,
+                parts=typed_parts,
+                # GrowthLLMJsonRunner.run_json (selfmedia/growth/llm_runner.py)
+                # already owns one retry loop around this provider call. Force
+                # this inner layer to a single attempt so a JSON/schema
+                # validation failure isn't retried twice -- once here, once by
+                # run_json -- which would multiply worst-case model calls.
+                # Capacity-failure backoff (15s/45s) is unaffected: it is
+                # controlled by the "media_creation" profile's own
+                # capacity_max_retries, independently of this max_retries=0.
+                max_retries=0,
             )
 
         return provider

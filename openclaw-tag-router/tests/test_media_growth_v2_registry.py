@@ -42,7 +42,7 @@ class FakeGrowthContentFlowClient:
             },
         }
 
-    def _call_profile_provider_json(self, profile_name: str, prompt: str, user_content: str, stage: str):
+    def _call_profile_provider_json(self, profile_name: str, prompt: str, user_content: str, stage: str, **_kwargs):
         if "commercial_brief" in user_content:
             return {
                 "status": "done",
