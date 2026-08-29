@@ -114,4 +114,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - 跨仓源码复核更新：照片仓库 `main@9864824` 的 P1 回归集合已实测 `20 passed`（模板、creator context、bridge、平台/slot_map）及 `46 passed`（local prompts、frontmatter/围栏、storyboard、runner、桌面端、queue/cloud markdown）。`dedup_p1.py` 现以 external evidence 映射并校验照片仓库 `main` 历史；因此 LP/LH/LB 相关条目已从 PATH_MISSING 更正为已修复。该计数仍独立于 integration 源码提交，两个仓库不强行合并。
 - 并行安全策略复核：`CT-A7` 在 `main@277b028` 已完成 maintainer-only 限制，`openclaw-tag-router/tests/test_capability_registry.py` 为 `24 passed`；剩余仅 BIZ-05/CD-13 的生产轮询运行证据缺口。
 
+- 生产证据核对：对 SSH 别名 `103` 与 `106` 执行只读服务/timer 检查均返回 `No route to host`，未取得生产轮询回执。BIZ-05/CD-13 继续保持 `部分修复`，待远端网络恢复后以实际 timer 状态、日志和租户隔离产物完成验收。
+
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。尚未复验的 114 条不得自动记为已覆盖，部分覆盖条目也不得计入关闭数。
