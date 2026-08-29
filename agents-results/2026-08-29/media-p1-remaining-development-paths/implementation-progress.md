@@ -4,7 +4,7 @@
 
 | 冻结基线 | 当前状态 | 说明 |
 |---|---|---|
-| P1 未修复 148 条 | 持续逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；截至本次 `main@1e145bd`，历史逐条复验投影仍为 49 条（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；本轮已明确关闭 CPC-16、BIZ-08，但仍须完成其余条目逐项绑定，不能用提交数量自动扣减 |
+| P1 未修复 148 条 | 持续逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；此前投影为 49 条已逐条复验（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；基于 `main@00645e2` 本轮新增明确关闭 CPC-16、BIZ-01、BIZ-08、BIZ-10，待下一轮逐条汇总重算，不能用提交数量自动扣减 |
 | 发布切片 | 5 个已建立 | `REL-P1-UX`、`REL-P1-PIPE`、`REL-P1-BIZ`、`REL-P1-PORT`、`REL-P1-QA` 均未组装候选 |
 | 当前就绪交付包 | 14 个 | P1 至 P14 均可继续；本轮已处理用户可见渲染、Router 状态呈现和创作证据合同，尚未完成全部交付包验收 |
 | 已接受发布验收 | 0 个 | C1 至 C5 均等待对应交付包 |
@@ -20,6 +20,8 @@
 | 用户可见渲染面 | 15 | 3 | 3 | 21 |
 | 创作主链 prompt | 8 | 1 | 7 | 16 |
 | 已逐条复验合计 | 31 | 7 | 11 | 49 |
+
+本轮新增关闭记录：BIZ-01（创作回执展示稳定创作记录编号并写入回链）、BIZ-10（首小时动作进入发布包必填校验和验证窗口调度）、BIZ-08（日报互动证据回流）、CPC-16（平台拟合候选证据优先压缩）。BIZ-05 仅记录为部分覆盖：代码具备到期任务消费，但尚无生产轮询运行证据。
 
 本轮进入 `main` 的实现提交：
 
@@ -52,6 +54,7 @@
 - `tests/test_media_growth_v2.py openclaw-tag-router/tests/test_content_os_bridge_presentation.py`：`75 passed, 18 subtests passed`。
 - 配置、排期、不可信输入与可移植性定向集合：`26 passed`。
 - CPC-16 与 BIZ-08 合并后定向回归：`tests/test_creation_prompt_evidence_contract.py tests/test_daily_poll_tenant_flow.py tests/test_review_memory_backflow.py tests/test_creation_v1.py`，结果 `65 passed`。
+- 商业闭环回归：`tests/test_creation_receipt.py tests/test_p0_review_loop.py tests/test_validation_window_scheduler.py tests/test_p1_schedule_closure.py tests/test_commercial_loop.py tests/test_p7b_commercial_closure.py`，结果 `34 passed`。
 - CT-A1 源码合同层复验：仓库现有 `docs/ai-harness/` 下 5 份合同，`media_model/contract.py` 默认解析仓内合同；合同路径、Media Model、Vault 和 Router 边界集合结果 `41 passed`。这只关闭“合同不在源码仓”的根因，不覆盖下述 SSOT runtime provenance 验证失败。
 - Router 全套：`1515 passed, 24 failed, 39 skipped, 270 warnings, 271 subtests passed`；失败集中在既有删除能力、复盘投影和能力目录合同，未将其计为 P1 完成。
 - SSOT bundle validator 在当前 Harness 工作树报告 `runtime-skill-provenance` 缺少项目侧 `.harness/manifest.yaml`；项目已有 `.harness/overlays/project-harness-adapter.yaml`，未擅自伪造 manifest，故该验证层保持未通过。
