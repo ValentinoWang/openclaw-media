@@ -75,7 +75,8 @@ ACCOUNT_MONITOR_FIELD_SPECS = {
     "public_account_id": 1,
     "账号名称": 1,
     "平台": 1,
-    "近期作品链接": 1,
+    # Feishu Bitable v1 represents URL-formatted text fields as type 15.
+    "近期作品链接": 15,
     "启用": 7,
     "最近运行时间": 5,
     "最近状态": 1,

@@ -430,6 +430,17 @@ def test_verify_schema_accepts_account_monitor_field_specs(monkeypatch: pytest.M
     assert result["mismatched_fields"] == []
 
 
+def test_verify_schema_accepts_feishu_url_type_for_recent_post_links(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(selfmedia, "feishu_bitable_refs", lambda url, token=None: ("app", "table", "token"))
+    actual = dict(selfmedia.ACCOUNT_MONITOR_FIELD_SPECS)
+    actual["近期作品链接"] = 15
+    monkeypatch.setattr(selfmedia, "feishu_field_types", lambda app, table, token: actual)
+
+    result = selfmedia.verify_schema("https://feishu.local/base/app?table=table")
+
+    assert result["ok"] is True
+
+
 def test_account_monitor_binding_requires_public_id_and_tenant_owned_record() -> None:
     record = {
         "record_id": "rec-bound",
