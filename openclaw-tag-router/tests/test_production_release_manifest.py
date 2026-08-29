@@ -135,6 +135,20 @@ def test_canonical_json_never_serializes_secret_values(tmp_path: Path) -> None:
     assert marker not in str(raised.value)
 
 
+@pytest.mark.parametrize(
+    "key",
+    ["apiKey", "api_key", "private_key", "privateKey", "cookie", "session_cookie"],
+)
+def test_canonical_json_rejects_all_secret_key_spellings(tmp_path: Path, key: str) -> None:
+    manifest = _manifest(tmp_path)
+    manifest[key] = "SENTINEL_ONLY_NOT_A_CREDENTIAL"
+
+    with pytest.raises(ManifestValidationError) as raised:
+        canonical_manifest_json(manifest)
+
+    assert raised.value.code == "SECRET_DISCLOSURE"
+
+
 def test_valid_manifest_passes_without_mutating_input(tmp_path: Path) -> None:
     manifest = _manifest(tmp_path, previous_release=PREVIOUS_RELEASE)
     before = copy.deepcopy(manifest)

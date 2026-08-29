@@ -18,6 +18,8 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from openclaw_app.services.production_contract_guards import is_secret_key
+
 
 SCHEMA_VERSION = "production-release-manifest.v1"
 
@@ -37,20 +39,6 @@ _ALLOWED_MODES = {"100644", "100755"}
 _SHA40_RE = re.compile(r"^[0-9a-f]{40}$")
 _SHA64_RE = re.compile(r"^[0-9a-f]{64}$")
 _DRIVE_PREFIX_RE = re.compile(r"^[A-Za-z]:")
-_SECRET_KEY_WORDS = {
-    "secret",
-    "secrets",
-    "credential",
-    "credentials",
-    "token",
-    "tokens",
-    "password",
-    "passwords",
-    "passwd",
-    "api_key",
-    "apikey",
-    "private_key",
-}
 _MUTABLE_PREFIXES = ("state", "var", "cache", "logs", "tmp", "uploads")
 _MUTABLE_SUFFIXES = (".db", ".sqlite", ".sqlite3", ".log", ".pid", ".sock", ".lock", ".jsonl")
 _RUNTIME_PREFIXES = ("runtime", "run")
@@ -80,16 +68,6 @@ def _raise(code: str) -> None:
     raise ManifestValidationError(code)
 
 
-def _is_secret_key(key: str) -> bool:
-    normalized = re.sub(r"[^a-z0-9]+", "_", key.casefold()).strip("_")
-    if not normalized:
-        return False
-    parts = set(normalized.split("_"))
-    return bool(parts & _SECRET_KEY_WORDS) or any(
-        marker in normalized for marker in ("secret", "credential", "password", "token")
-    )
-
-
 def _json_copy(value: Any) -> Any:
     """Copy JSON-compatible data while rejecting secret-bearing field names."""
 
@@ -98,7 +76,7 @@ def _json_copy(value: Any) -> Any:
         for key, item in value.items():
             if not isinstance(key, str):
                 _raise("SCHEMA_INVALID")
-            if _is_secret_key(key):
+            if is_secret_key(key):
                 _raise("SECRET_DISCLOSURE")
             copied[key] = _json_copy(item)
         return copied

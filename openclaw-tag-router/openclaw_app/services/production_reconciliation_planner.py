@@ -14,6 +14,8 @@ import re
 from collections.abc import Mapping
 from typing import Any, NoReturn
 
+from openclaw_app.services.production_contract_guards import is_secret_key
+
 
 PLAN_SCHEMA_VERSION = "production-reconciliation-plan.v1"
 MANIFEST_SCHEMA_VERSION = "production-release-manifest.v1"
@@ -23,10 +25,6 @@ _SHA_RE = re.compile(r"[0-9a-f]{40}\Z")
 _DIGEST_RE = re.compile(r"[0-9a-f]{64}\Z")
 _DRIVE_RE = re.compile(r"[A-Za-z]:")
 _GLOB_CHARS = frozenset("*?[]{}")
-_SECRET_KEY_RE = re.compile(
-    r"(?:access[_-]?token|api[_-]?key|credential|cookie|password|passwd|private[_-]?key|secret|token)",
-    re.IGNORECASE,
-)
 _SAFE_SYSTEMD_UNIT_RE = re.compile(r"[A-Za-z0-9_.@:%+-]+\Z")
 _SAFE_SYSTEMD_ACTION_RE = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
 _SAFE_SIGNAL_RE = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
@@ -115,10 +113,6 @@ def _fail(code: str, detail: str = "invalid production reconciliation request") 
     raise PlannerValidationError(code, detail)
 
 
-def _is_secret_key(key: str) -> bool:
-    return bool(_SECRET_KEY_RE.search(key))
-
-
 def _require_mapping(value: object, code: str = "SCHEMA_INVALID") -> Mapping[str, object]:
     if not isinstance(value, Mapping):
         _fail(code)
@@ -135,7 +129,7 @@ def _check_keys(
         if not isinstance(key, str):
             _fail(code)
         if key not in allowed:
-            if _is_secret_key(key):
+            if is_secret_key(key):
                 _fail("SECRET_DISCLOSURE", "secret-bearing fields are not accepted")
             _fail(code)
 
