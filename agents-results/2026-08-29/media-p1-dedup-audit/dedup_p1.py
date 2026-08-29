@@ -35,7 +35,7 @@ CLOSED = {
     "CRF-07": "198e0e1", "CRF-08": "f27e35e", "CRF-09": "198e0e1",
     "CRF-10": "7cd31f3", "CRF-12": "fd6d6cc",
     "CRF-13": "d55bdec", "CPO-N13": "bfc04ca", "LB-07": "52e24bd",
-    "CT-A2": "b960f08", "CT-A9": "52d08be", "gap1-04": "9fb49ef",
+    "CT-A2": "b960f08", "CT-A3": "9520b5e", "CT-A9": "52d08be", "gap1-04": "9fb49ef",
     "gap1-05": "9fb49ef", "gap1-06": "22292a7", "gap1-07": "c8356f7",
     "gap1-08": "27bb3cb",
     "BIZ-07": "459389f",
