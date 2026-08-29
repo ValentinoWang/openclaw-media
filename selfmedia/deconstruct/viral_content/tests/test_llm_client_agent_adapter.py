@@ -33,14 +33,14 @@ def _config(**overrides):
 def test_deconstruction_uses_common_openclaw_json_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, object] = {}
 
-    def fake_generate(parts, settings):
+    def fake_generate(parts, settings, **kwargs):
         captured["parts"] = parts
         captured["settings"] = settings
         return {"ok": True}
 
-    monkeypatch.setattr(llm_client, "common_generate_json_once", fake_generate)
+    monkeypatch.setattr(llm_client, "common_generate_json_from_parts", fake_generate)
 
-    result = llm_client._generate_json_once(
+    result = llm_client.generate_json(
         [{"text": "return json"}],
         _config(
             llm_api_type="openclaw_agent",
@@ -61,13 +61,14 @@ def test_deconstruction_uses_common_openclaw_json_adapter(monkeypatch: pytest.Mo
 
 def test_openclaw_agent_images_use_the_same_common_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[tuple[list[dict], str]] = []
-    monkeypatch.setattr(
-        llm_client,
-        "common_generate_json_once",
-        lambda parts, settings: calls.append((parts, settings.api_type)) or {"ok": True},
-    )
 
-    result = llm_client._generate_json_once(
+    def fake_generate(parts, settings, **kwargs):
+        calls.append((parts, settings.api_type))
+        return {"ok": True}
+
+    monkeypatch.setattr(llm_client, "common_generate_json_from_parts", fake_generate)
+
+    result = llm_client.generate_json(
         [{"text": "return json"}, {"image_data": {"data": "xxx", "mime_type": "image/jpeg"}}],
         _config(
             llm_api_type="openclaw_agent",

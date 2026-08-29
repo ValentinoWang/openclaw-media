@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from pydantic import BaseModel
 
 from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
 from common.llm_settings import LLMProviderSettings
-from common.llm_validation import LLMValidationContract, register_llm_validation_contract, validate_llm_payload
+from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+from common.model_transport_context import ModelTransportError
 
 from .config import ConfigError, ViralDeconstructConfig
 from .schemas import validate_schema
@@ -45,46 +45,32 @@ def generate_json(
 ) -> dict[str, Any]:
     ensure_llm_provider_available(config)
 
-    validation_context = {"schema": schema, "post_validate": post_validate}
-    last_error = ""
-    request_parts = list(parts)
-    for attempt in range(max_retries + 1):
-        try:
-            payload = _generate_json_once(request_parts, config)
-            return validate_llm_payload(
-                payload,
-                DECONSTRUCTION_VALIDATION_CONTRACT,
-                context=validation_context,
-            ).payload
-        except (json.JSONDecodeError, KeyError, ValueError, ConfigError) as exc:
-            last_error = str(exc)
-            if attempt >= max_retries:
-                break
-            request_parts = list(parts) + [
-                {
-                    "text": (
-                        "上一次输出没有通过代码 JSON/schema 校验。"
-                        f"错误：{last_error}\n"
-                        "请只返回合法 JSON，不要 Markdown，不要解释，并补齐所有必填字段。"
-                    )
-                }
-            ]
-    raise RuntimeError(f"LLM 输出 JSON 校验失败：{last_error}")
-
-
-def common_generate_json_once(parts: list[dict[str, Any]], settings: LLMProviderSettings) -> dict[str, Any]:
-    return common_generate_json_from_parts(
-        parts,
-        settings,
-        max_retries=0,
-        validation_contract=DECONSTRUCTION_VALIDATION_CONTRACT,
-    )
-
-
-def _generate_json_once(parts: list[dict[str, Any]], config: ViralDeconstructConfig) -> dict[str, Any]:
+    # Delegate JSON generation, retrying, and schema/post-validation entirely to
+    # the shared common.llm_client.generate_json_from_parts implementation:
+    # - It carries the authoritative `except ModelTransportError: raise` guard
+    #   so a terminal transport failure is never silently retried.
+    # - It applies the same DECONSTRUCTION_VALIDATION_CONTRACT + {"schema":
+    #   schema, "post_validate": post_validate} context this module used to
+    #   apply itself in its own retry loop, so schema/post-validation coverage
+    #   is unchanged.
     try:
-        return common_generate_json_once(parts, _provider_settings(config))
+        return common_generate_json_from_parts(
+            parts,
+            _provider_settings(config),
+            max_retries=max_retries,
+            validation_contract=DECONSTRUCTION_VALIDATION_CONTRACT,
+            validation_context={"schema": schema, "post_validate": post_validate},
+            error_prefix="LLM 输出 JSON 校验失败",
+        )
+    except ModelTransportError:
+        # Terminal transport outcome: callers must see it as-is, never masked
+        # as a retryable ConfigError.
+        raise
     except RuntimeError as exc:
+        # Preserve the historical ConfigError contract for callers
+        # (multi_signal_contract.py, runner.py, evidence/modality_dag.py) that
+        # only expect ConfigError out of this module, without re-entering any
+        # retry loop for the exception being wrapped here.
         raise ConfigError(str(exc)) from exc
 
 

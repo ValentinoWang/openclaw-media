@@ -17,6 +17,8 @@ from selfmedia.deconstruct.viral_content.src.feishu_writer import (
     source_asset_attachment_inputs,
     write_deconstruction,
 )
+import common.llm_client as common_llm_client
+from common.model_transport_context import ModelTransportError
 from selfmedia.deconstruct.viral_content.src.llm_client import generate_json
 from selfmedia.deconstruct.viral_content.src.schemas import (
     DeconstructResult,
@@ -1015,8 +1017,6 @@ def test_reused_feishu_doc_is_rewritten_without_supplement_record(monkeypatch: p
 
 
 def test_llm_invalid_evidence_asset_id_retries_then_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
-    import selfmedia.deconstruct.viral_content.src.llm_client as llm_client
-
     calls = {"count": 0}
 
     def payload(asset_id: str) -> dict[str, object]:
@@ -1040,11 +1040,11 @@ def test_llm_invalid_evidence_asset_id_retries_then_succeeds(monkeypatch: pytest
             **_required_deconstruct_v2_fields(),
         }
 
-    def fake_generate_once(parts, config):
+    def fake_generate_once(parts, config, **_kwargs):
         calls["count"] += 1
         return payload("bad_id" if calls["count"] == 1 else "frame_001")
 
-    monkeypatch.setattr(llm_client, "_generate_json_once", fake_generate_once)
+    monkeypatch.setattr(common_llm_client, "generate_json_once", fake_generate_once)
     config = _test_config()
     result = generate_json(
         [{"text": "prompt"}],
@@ -1056,48 +1056,35 @@ def test_llm_invalid_evidence_asset_id_retries_then_succeeds(monkeypatch: pytest
     assert result["video_storyboard"][0]["evidence_asset_id"] == "frame_001"
 
 
-def test_llm_transport_error_retries_then_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
-    import selfmedia.deconstruct.viral_content.src.llm_client as llm_client
+def test_llm_transport_error_is_not_retried_and_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ModelTransportError is documented as a terminal transport outcome that
+    callers must not hide or auto-retry (common/model_transport_context.py).
+    This used to be asserted backwards: `_generate_json_once` translated every
+    RuntimeError -- ModelTransportError included, since it is a RuntimeError
+    subclass -- into ConfigError, and the outer retry loop then retried that
+    ConfigError like an ordinary JSON/schema validation failure, silently
+    turning a terminal error into a retried one. generate_json() now re-raises
+    ModelTransportError unchanged and does not retry it.
+    """
 
     calls = {"count": 0}
 
-    def valid_payload() -> dict[str, object]:
-        return {
-            "content_summary": "内容总结",
-            "source_summary": "summary",
-            "viral_mechanism": "mechanism",
-            "video_storyboard": [
-                {
-                    "shot_no": 1,
-                    "duration": "1s",
-                    "visual": "画面",
-                    "subtitle": "",
-                    "voiceover": "",
-                    "evidence_asset_id": "frame_001",
-                }
-            ],
-            "image_post_script": [{"page_no": 1, "image_prompt": "图", "evidence_asset_id": "frame_001"}],
-            "avoid_plagiarism_notes": "notes",
-            "production_checklist": ["check"],
-            **_required_deconstruct_v2_fields(),
-        }
-
-    def fake_generate_once(parts, config):
+    def fake_generate_once(parts, config, **_kwargs):
         calls["count"] += 1
-        if calls["count"] == 1:
-            raise ConfigError("Codex Responses SSE watchdog timeout")
-        return valid_payload()
+        raise ModelTransportError("transport_watchdog_timeout", "Codex Responses SSE watchdog timeout")
 
-    monkeypatch.setattr(llm_client, "_generate_json_once", fake_generate_once)
+    monkeypatch.setattr(common_llm_client, "generate_json_once", fake_generate_once)
     config = _test_config()
-    result = generate_json(
-        [{"text": "prompt"}],
-        config,
-        schema=DeconstructResult,
-        post_validate=lambda item: validate_evidence_asset_ids(item, {"frame_001"}),
-    )
-    assert calls["count"] == 2
-    assert result["content_summary"] == "内容总结"
+
+    with pytest.raises(ModelTransportError, match="Codex Responses SSE watchdog timeout"):
+        generate_json(
+            [{"text": "prompt"}],
+            config,
+            schema=DeconstructResult,
+            post_validate=lambda item: validate_evidence_asset_ids(item, {"frame_001"}),
+        )
+
+    assert calls["count"] == 1
 
 
 def test_v2_writer_exposes_only_v2_source_and_payload_args() -> None:
@@ -1323,9 +1310,7 @@ def test_llm_missing_fields_stops_before_doc_and_bitable(monkeypatch: pytest.Mon
 
 
 def test_schema_requires_subtitle_voiceover_fields(monkeypatch: pytest.MonkeyPatch) -> None:
-    import selfmedia.deconstruct.viral_content.src.llm_client as llm_client
-
-    def fake_generate_once(parts, config):
+    def fake_generate_once(parts, config, **_kwargs):
         return {
             "content_summary": "内容总结",
             "source_summary": "summary",
@@ -1343,7 +1328,7 @@ def test_schema_requires_subtitle_voiceover_fields(monkeypatch: pytest.MonkeyPat
             "production_checklist": ["check"],
         }
 
-    monkeypatch.setattr(llm_client, "_generate_json_once", fake_generate_once)
+    monkeypatch.setattr(common_llm_client, "generate_json_once", fake_generate_once)
     config = _test_config()
     with pytest.raises(RuntimeError, match="LLM 输出 JSON 校验失败"):
         generate_json(
