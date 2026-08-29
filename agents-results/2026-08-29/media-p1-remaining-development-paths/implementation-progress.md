@@ -83,6 +83,7 @@
 - 本地验证环境使用隔离目录 `/tmp/openclaw-media-p1-venv`，未写入仓库依赖文件或全局 Python。
 
 - `RT-02` 已在 `main@557bb1a` 收口：日报 CLI 在没有可消费产物或仅发生跳过时不再静默返回成功，改为报告失败/未完成状态；`tests/test_selfmedia_cli_smoke.py` 与相关日报回归共 `29 passed`，`git diff --check` 通过。该提交只关闭 RT-02 的静默成功缺口，不替代日报生产者、轮询运行证据或其余 RT 条目验收。
+- `RT-03` 已完成源码复验：`daily-poll` 解析器默认读取 `FEISHU_REQUIRED`，并在运行时再次通过 `feishu_required_default()` 合并环境配置；`tests/test_selfmedia_cli_smoke.py`、`tests/test_daily_poll_tenant_flow.py` 共 `26 passed`。该条已有实现和测试证据，本次未重复修改代码。
 
 - Router 错误响应兼容性在 `main@d0180e9` 完成：`_send_api_error` 对轻量测试/适配器对象缺失 `_correlation_id` 时仍能按 `{ok,error:{code,message,details?}}` 合同返回；`test_api_error_matches_media_web_task_error_schema` 与兼容回归合计 `13 passed`。不改变 maintainer-only 删除能力的安全可见性边界。
 
