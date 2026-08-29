@@ -79,6 +79,9 @@ CLOSED = {
     "CPO-K10": "0e28196",
     "CPO-K07": "0e28196",
     "RT-10": "d044f79",
+    "CPC-15": "c51fb43",
+    "CPC-17": "c51fb43",
+    "CPC-18": "fc37d2e",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
