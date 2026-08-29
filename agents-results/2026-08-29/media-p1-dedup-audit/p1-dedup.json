@@ -1,0 +1,1289 @@
+{
+  "source": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260827/pipeline-full-audit.md",
+  "followup": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260828/audit-followup-review.md",
+  "progress": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/implementation-progress.md",
+  "main": "3cd8116b998aa5e67f5e83b2138bfa8f40d71af1",
+  "raw_p1": 163,
+  "unique_dedup_p1": 155,
+  "groups": [
+    {
+      "key": "review_draft_attribution",
+      "ids": [
+        "CD-06",
+        "BIZ-04"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "material_feedback_loop",
+      "ids": [
+        "CD-14",
+        "BIZ-09"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "reference_shots_whitelist",
+      "ids": [
+        "CPC-11",
+        "BIZ-11"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "xiaohongshu_carousel_contract",
+      "ids": [
+        "CPC-12",
+        "CC-04"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "business_stale_month_and_price",
+      "ids": [
+        "CPO-K04",
+        "CC-07",
+        "BIZ-17",
+        "CR-26"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "frontmatter_model_contract",
+      "ids": [
+        "LP-11",
+        "LB-12"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "model_tier_split",
+      "ids": [
+        "LP-10",
+        "LH-07"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CD-01",
+      "ids": [
+        "CD-01"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CD-02",
+      "ids": [
+        "CD-02"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CD-05",
+      "ids": [
+        "CD-05"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "e48fccf"
+      ]
+    },
+    {
+      "key": "singleton:CD-07",
+      "ids": [
+        "CD-07"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "e48fccf"
+      ]
+    },
+    {
+      "key": "singleton:CD-08",
+      "ids": [
+        "CD-08"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "e48fccf"
+      ]
+    },
+    {
+      "key": "singleton:CD-10",
+      "ids": [
+        "CD-10"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CD-11",
+      "ids": [
+        "CD-11"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CD-13",
+      "ids": [
+        "CD-13"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CD-15",
+      "ids": [
+        "CD-15"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CD-16",
+      "ids": [
+        "CD-16"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CD-18",
+      "ids": [
+        "CD-18"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-02",
+      "ids": [
+        "CR-02"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-03",
+      "ids": [
+        "CR-03"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-04",
+      "ids": [
+        "CR-04"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-05",
+      "ids": [
+        "CR-05"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-06",
+      "ids": [
+        "CR-06"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-08",
+      "ids": [
+        "CR-08"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-09",
+      "ids": [
+        "CR-09"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-11",
+      "ids": [
+        "CR-11"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-14",
+      "ids": [
+        "CR-14"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-15",
+      "ids": [
+        "CR-15"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-16",
+      "ids": [
+        "CR-16"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-17",
+      "ids": [
+        "CR-17"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-18",
+      "ids": [
+        "CR-18"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-21",
+      "ids": [
+        "CR-21"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-22",
+      "ids": [
+        "CR-22"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-23",
+      "ids": [
+        "CR-23"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-25",
+      "ids": [
+        "CR-25"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CR-20",
+      "ids": [
+        "CR-20"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "42250af"
+      ]
+    },
+    {
+      "key": "singleton:CR-01",
+      "ids": [
+        "CR-01"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "533fc35"
+      ]
+    },
+    {
+      "key": "singleton:CR-12",
+      "ids": [
+        "CR-12"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "533fc35"
+      ]
+    },
+    {
+      "key": "singleton:CPC-01",
+      "ids": [
+        "CPC-01"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "5213a9a"
+      ]
+    },
+    {
+      "key": "singleton:CPC-02",
+      "ids": [
+        "CPC-02"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "5213a9a"
+      ]
+    },
+    {
+      "key": "singleton:CPC-03",
+      "ids": [
+        "CPC-03"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "5213a9a"
+      ]
+    },
+    {
+      "key": "singleton:CPC-04",
+      "ids": [
+        "CPC-04"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "5213a9a"
+      ]
+    },
+    {
+      "key": "singleton:CPC-13",
+      "ids": [
+        "CPC-13"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPC-15",
+      "ids": [
+        "CPC-15"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPC-16",
+      "ids": [
+        "CPC-16"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "a9f0942"
+      ]
+    },
+    {
+      "key": "singleton:CPC-17",
+      "ids": [
+        "CPC-17"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPC-18",
+      "ids": [
+        "CPC-18"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPC-19",
+      "ids": [
+        "CPC-19"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPC-20",
+      "ids": [
+        "CPC-20"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPC-21",
+      "ids": [
+        "CPC-21"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPC-07",
+      "ids": [
+        "CPC-07"
+      ],
+      "status": "部分修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPC-10",
+      "ids": [
+        "CPC-10"
+      ],
+      "status": "部分修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-K01",
+      "ids": [
+        "CPO-K01"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-K02",
+      "ids": [
+        "CPO-K02"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-K03",
+      "ids": [
+        "CPO-K03"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-K05",
+      "ids": [
+        "CPO-K05"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-K07",
+      "ids": [
+        "CPO-K07"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-K09",
+      "ids": [
+        "CPO-K09"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-K10",
+      "ids": [
+        "CPO-K10"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-N01",
+      "ids": [
+        "CPO-N01"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-N03",
+      "ids": [
+        "CPO-N03"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-N07",
+      "ids": [
+        "CPO-N07"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-N08",
+      "ids": [
+        "CPO-N08"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-N12",
+      "ids": [
+        "CPO-N12"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-N13",
+      "ids": [
+        "CPO-N13"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-N16",
+      "ids": [
+        "CPO-N16"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-N17",
+      "ids": [
+        "CPO-N17"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-N18",
+      "ids": [
+        "CPO-N18"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CPO-N19",
+      "ids": [
+        "CPO-N19"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CC-02",
+      "ids": [
+        "CC-02"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CC-03",
+      "ids": [
+        "CC-03"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CC-05",
+      "ids": [
+        "CC-05"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CC-12",
+      "ids": [
+        "CC-12"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:BIZ-05",
+      "ids": [
+        "BIZ-05"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:BIZ-07",
+      "ids": [
+        "BIZ-07"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:BIZ-08",
+      "ids": [
+        "BIZ-08"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "1e145bd"
+      ]
+    },
+    {
+      "key": "singleton:BIZ-12",
+      "ids": [
+        "BIZ-12"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:BIZ-13",
+      "ids": [
+        "BIZ-13"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:BIZ-14",
+      "ids": [
+        "BIZ-14"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:BIZ-15",
+      "ids": [
+        "BIZ-15"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:BIZ-16",
+      "ids": [
+        "BIZ-16"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:BIZ-06",
+      "ids": [
+        "BIZ-06"
+      ],
+      "status": "部分修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:BIZ-10",
+      "ids": [
+        "BIZ-10"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "707fdb2"
+      ]
+    },
+    {
+      "key": "singleton:CRF-04",
+      "ids": [
+        "CRF-04"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "978c60a"
+      ]
+    },
+    {
+      "key": "singleton:CRF-05",
+      "ids": [
+        "CRF-05"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CRF-06",
+      "ids": [
+        "CRF-06"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CRF-07",
+      "ids": [
+        "CRF-07"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CRF-08",
+      "ids": [
+        "CRF-08"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CRF-09",
+      "ids": [
+        "CRF-09"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CRF-11",
+      "ids": [
+        "CRF-11"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CRF-13",
+      "ids": [
+        "CRF-13"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CRF-10",
+      "ids": [
+        "CRF-10"
+      ],
+      "status": "部分修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CRF-12",
+      "ids": [
+        "CRF-12"
+      ],
+      "status": "部分修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-A2",
+      "ids": [
+        "CT-A2"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-A3",
+      "ids": [
+        "CT-A3"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-A4",
+      "ids": [
+        "CT-A4"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-A5",
+      "ids": [
+        "CT-A5"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-A7",
+      "ids": [
+        "CT-A7"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-A8",
+      "ids": [
+        "CT-A8"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-A9",
+      "ids": [
+        "CT-A9"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-B1",
+      "ids": [
+        "CT-B1"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-B2",
+      "ids": [
+        "CT-B2"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-C1",
+      "ids": [
+        "CT-C1"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-D1",
+      "ids": [
+        "CT-D1"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-D2",
+      "ids": [
+        "CT-D2"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-D3",
+      "ids": [
+        "CT-D3"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-E1",
+      "ids": [
+        "CT-E1"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:CT-B4",
+      "ids": [
+        "CT-B4"
+      ],
+      "status": "已修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-01",
+      "ids": [
+        "LP-01"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-02",
+      "ids": [
+        "LP-02"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-03",
+      "ids": [
+        "LP-03"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-04",
+      "ids": [
+        "LP-04"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-08",
+      "ids": [
+        "LP-08"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-09",
+      "ids": [
+        "LP-09"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-12",
+      "ids": [
+        "LP-12"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-13",
+      "ids": [
+        "LP-13"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-14",
+      "ids": [
+        "LP-14"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-15",
+      "ids": [
+        "LP-15"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-16",
+      "ids": [
+        "LP-16"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-18",
+      "ids": [
+        "LP-18"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-19",
+      "ids": [
+        "LP-19"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-05",
+      "ids": [
+        "LP-05"
+      ],
+      "status": "已修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-06",
+      "ids": [
+        "LP-06"
+      ],
+      "status": "已修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LP-07",
+      "ids": [
+        "LP-07"
+      ],
+      "status": "已修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LB-03",
+      "ids": [
+        "LB-03"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LB-06",
+      "ids": [
+        "LB-06"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LB-07",
+      "ids": [
+        "LB-07"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LB-08",
+      "ids": [
+        "LB-08"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LB-09",
+      "ids": [
+        "LB-09"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LB-10",
+      "ids": [
+        "LB-10"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LB-11",
+      "ids": [
+        "LB-11"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LB-13",
+      "ids": [
+        "LB-13"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LB-14",
+      "ids": [
+        "LB-14"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LB-19",
+      "ids": [
+        "LB-19"
+      ],
+      "status": "已修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LH-02",
+      "ids": [
+        "LH-02"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LH-04",
+      "ids": [
+        "LH-04"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LH-05",
+      "ids": [
+        "LH-05"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LH-09",
+      "ids": [
+        "LH-09"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:LH-10",
+      "ids": [
+        "LH-10"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:gap1-04",
+      "ids": [
+        "gap1-04"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:gap1-05",
+      "ids": [
+        "gap1-05"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:gap1-06",
+      "ids": [
+        "gap1-06"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:gap1-07",
+      "ids": [
+        "gap1-07"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:gap1-08",
+      "ids": [
+        "gap1-08"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:RT-03",
+      "ids": [
+        "RT-03"
+      ],
+      "status": "已修复",
+      "evidence": [
+        "d32afca"
+      ]
+    },
+    {
+      "key": "singleton:RT-05",
+      "ids": [
+        "RT-05"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:RT-06",
+      "ids": [
+        "RT-06"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:RT-07",
+      "ids": [
+        "RT-07"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:RT-10",
+      "ids": [
+        "RT-10"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:RT-11",
+      "ids": [
+        "RT-11"
+      ],
+      "status": "部分修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:SCHED-04",
+      "ids": [
+        "SCHED-04"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:SCHED-05",
+      "ids": [
+        "SCHED-05"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:SCHED-06",
+      "ids": [
+        "SCHED-06"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:SCHED-07",
+      "ids": [
+        "SCHED-07"
+      ],
+      "status": "未修复",
+      "evidence": []
+    },
+    {
+      "key": "singleton:SCHED-08",
+      "ids": [
+        "SCHED-08"
+      ],
+      "status": "未修复",
+      "evidence": []
+    }
+  ]
+}
