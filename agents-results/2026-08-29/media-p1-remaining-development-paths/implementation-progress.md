@@ -4,7 +4,7 @@
 
 | 冻结基线 | 当前状态 | 说明 |
 |---|---|---|
-| P1 未修复 148 条 | 持续逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；此前投影为 49 条已逐条复验（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；基于 `main@3ff51c4` 本轮新增明确关闭 CPC-16、BIZ-01、BIZ-08、BIZ-10，评论证据隔离门禁已由 `22292a7` 进入主线；待下一轮逐条汇总重算，不能用提交数量自动扣减 |
+| P1 未修复 148 条 | 持续逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；此前投影为 49 条已逐条复验（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；基于 `main@7226e02` 本轮新增明确关闭 CPC-16、BIZ-01、BIZ-08、BIZ-10 以及数据复盘渲染批次 BIZ-03、CD-09、CR-07、CPO-K15，评论证据隔离门禁已由 `22292a7` 进入主线；待下一轮逐条汇总重算，不能用提交数量自动扣减 |
 | 发布切片 | 5 个已建立 | `REL-P1-UX`、`REL-P1-PIPE`、`REL-P1-BIZ`、`REL-P1-PORT`、`REL-P1-QA` 均未组装候选 |
 | 当前就绪交付包 | 14 个 | P1 至 P14 均可继续；本轮已处理用户可见渲染、Router 状态呈现和创作证据合同，尚未完成全部交付包验收 |
 | 已接受发布验收 | 0 个 | C1 至 C5 均等待对应交付包 |
@@ -75,5 +75,7 @@
 - 本地验证环境使用隔离目录 `/tmp/openclaw-media-p1-venv`，未写入仓库依赖文件或全局 Python。
 
 - Router 错误响应兼容性在 `main@d0180e9` 完成：`_send_api_error` 对轻量测试/适配器对象缺失 `_correlation_id` 时仍能按 `{ok,error:{code,message,details?}}` 合同返回；`test_api_error_matches_media_web_task_error_schema` 与兼容回归合计 `13 passed`。不改变 maintainer-only 删除能力的安全可见性边界。
+
+- 数据复盘渲染批次在 `main@7226e02` 完成：字符串化 JSON 会先解析为中文字段，内部路径/记录标识不进入正文，表现评级与证据附录后置；`tests/test_data_review_p1_rendering.py tests/test_data_review_structured_rendering.py tests/test_p6_data_flow_closure.py tests/test_review_memory_backflow.py` 结果 `20 passed`。该同一渲染层批次覆盖 BIZ-03、CD-09、CR-07、CPO-K15。
 
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。尚未复验的 114 条不得自动记为已覆盖，部分覆盖条目也不得计入关闭数。
