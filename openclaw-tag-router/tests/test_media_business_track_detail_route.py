@@ -48,3 +48,16 @@ def test_account_monitor_identity_resolves_under_owned_account() -> None:
     assert match is not None
     assert match.operation_id == "getAccountMonitor"
     assert match.path_parameters == {"publicAccountId": "account_123456"}
+
+
+def test_account_monitor_mutation_routes_resolve_under_owned_account() -> None:
+    for method, suffix, operation in (
+        ("PUT", "/monitor", "updateAccountMonitor"),
+        ("POST", "/monitor/poll", "pollAccountMonitor"),
+    ):
+        match = resolve_media_business_operation(
+            method, f"{CANONICAL_PREFIX}/owned-accounts/account_123456{suffix}"
+        )
+        assert match is not None
+        assert match.operation_id == operation
+        assert match.path_parameters == {"publicAccountId": "account_123456"}

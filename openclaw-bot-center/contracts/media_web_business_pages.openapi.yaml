@@ -1513,6 +1513,88 @@ paths:
       x-existing-handler: []
       x-product-read-model:
       - account_track_strategies
+  /owned-accounts/{publicAccountId}/monitor:
+    get:
+      operationId: getAccountMonitor
+      summary: Read the account monitor status when a monitor adapter is available.
+      description: The runtime may return 503 when no H00 monitor adapter is configured; it must not synthesize monitor success.
+      security:
+      - cookieAuth: []
+      x-permission: ordinary-session
+      parameters:
+      - $ref: '#/components/parameters/PublicAccountId'
+      responses:
+        '200':
+          description: Monitor status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountMonitorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      operationId: updateAccountMonitor
+      summary: Configure monitoring inputs for an owned account.
+      security:
+      - cookieAuth: []
+      x-permission: ordinary-session
+      parameters:
+      - $ref: '#/components/parameters/PublicAccountId'
+      - $ref: '#/components/parameters/CsrfHeader'
+      - $ref: '#/components/parameters/IdempotencyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountMonitorUpdateRequest'
+      responses:
+        '200':
+          description: Monitor configuration accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountMonitorResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+  /owned-accounts/{publicAccountId}/monitor/poll:
+    post:
+      operationId: pollAccountMonitor
+      summary: Poll an owned account monitor.
+      security:
+      - cookieAuth: []
+      x-permission: ordinary-session
+      parameters:
+      - $ref: '#/components/parameters/PublicAccountId'
+      - $ref: '#/components/parameters/CsrfHeader'
+      - $ref: '#/components/parameters/IdempotencyHeader'
+      responses:
+        '200':
+          description: Monitor poll accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountMonitorResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /assets:
     get:
       operationId: listAssets
@@ -6882,6 +6964,26 @@ components:
       - schemaVersion
       - revision
       - strategy
+    AccountMonitorResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        schemaVersion: { $ref: '#/components/schemas/SchemaVersion' }
+        revision: { type: integer, minimum: 0 }
+        status: { type: string, enum: [available, unavailable] }
+        checkedAt: { type: [string, 'null'], format: date-time }
+        detail: { type: [string, 'null'] }
+      required: [schemaVersion, revision, status, checkedAt, detail]
+    AccountMonitorUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        recentPostUrls:
+          type: array
+          maxItems: 100
+          items: { type: string, format: uri, pattern: '^https?://' }
+        enabled: { type: boolean }
+      required: [recentPostUrls, enabled]
     AssetListResponse:
       type: object
       additionalProperties: false

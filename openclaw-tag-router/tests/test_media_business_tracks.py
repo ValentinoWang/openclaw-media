@@ -13,6 +13,7 @@ from openclaw_app.services.media_business.tracks import (
     TrackInternalError,
     TrackInvalidRequest,
     TrackNotFound,
+    TrackMonitorUnavailable,
     TracksService,
 )
 
@@ -311,6 +312,24 @@ def test_owned_accounts_are_not_creator_profiles_and_strategy_is_explicit() -> N
     strategy = service(FakeConnection()).get_account_track_strategy(context(), ACCOUNT_ID)
     assert strategy["strategy"]["publicAccountId"] == ACCOUNT_ID
     assert strategy["strategy"]["evidenceRefs"][0]["qualityStatus"] == "verified"
+
+
+def test_monitor_mutations_validate_owned_account_then_fail_closed_without_adapter() -> None:
+    connection = FakeConnection()
+    with pytest.raises(TrackMonitorUnavailable):
+        service(connection).update_account_monitor(
+            context(), ACCOUNT_ID, ["https://example.test/post/1"], True, "monitor-key"
+        )
+    with pytest.raises(TrackMonitorUnavailable):
+        service(connection).poll_account_monitor(context(), ACCOUNT_ID, "poll-key")
+    assert len(connection.calls) == 2
+
+
+def test_monitor_mutation_rejects_invalid_urls_before_database_access() -> None:
+    connection = FakeConnection()
+    with pytest.raises(TrackInvalidRequest, match="HTTP"):
+        service(connection).update_account_monitor(context(), ACCOUNT_ID, ["javascript:bad"], True, "key")
+    assert connection.calls == []
 
 
 def test_owned_account_avatar_and_platform_identifier_are_nullable_but_explicit() -> None:

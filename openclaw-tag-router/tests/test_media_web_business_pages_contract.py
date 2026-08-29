@@ -16,7 +16,7 @@ MIGRATION_PATH = CONTRACT_DIR / "media_web_business_pages.migration.yaml"
 
 PAGE_CONTRACTS = {
     "B01": ("ordinary", "/overview", {"getDashboard", "listContentProjects", "listProjectArtifacts", "createProjectSummary", "getDocumentResource"}),
-    "B02": ("ordinary", "/tracks", {"listTracks", "getTrack", "listCreators", "getCreator", "listTrackRelationships", "updateTrackRelationshipStatus", "listOwnedAccounts", "getOwnedAccount", "getAccountTrackStrategy", "getAccountMonitor", "createMediaTask", "getDocumentResource"}),
+    "B02": ("ordinary", "/tracks", {"listTracks", "getTrack", "listCreators", "getCreator", "listTrackRelationships", "updateTrackRelationshipStatus", "listOwnedAccounts", "getOwnedAccount", "getAccountTrackStrategy", "getAccountMonitor", "updateAccountMonitor", "pollAccountMonitor", "createMediaTask", "getDocumentResource"}),
     "B03": ("ordinary", "/assets", {"listAssets", "getAsset", "getAssetPreview", "createMediaTask", "getDocumentResource"}),
     "B04": ("ordinary", "/decisions", {"listDecisions", "getDecision", "listDecisionSignals", "confirmDecision", "createMediaTask", "getDocumentResource"}),
     "B05": ("ordinary", "/runs", {"listRuns", "getRun", "getRunSources", "getRunDecisions", "getRunOutputs", "listBusinessOpportunities", "createMediaTask", "createArtifactRevision", "getDocumentResource"}),

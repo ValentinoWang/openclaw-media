@@ -28,6 +28,8 @@ x-openclaw-pages:
     - getDocumentResource
     - getOwnedAccount
     - getAccountMonitor
+    - pollAccountMonitor
+    - updateAccountMonitor
     - getTrack
     - listCreators
     - listOwnedAccounts
@@ -1474,6 +1476,93 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-page-contracts:
+      - B02
+      x-runtime-status: new
+      x-canonical-capability-id:
+      - account_monitor
+      x-existing-handler: []
+      x-product-read-model:
+      - owned_media_accounts
+    put:
+      operationId: updateAccountMonitor
+      summary: Configure monitoring inputs for an owned account.
+      description: The runtime must return 503 when the H00 monitor adapter is unavailable and must not synthesize success.
+      security:
+      - cookieAuth: []
+      x-permission: ordinary-session
+      parameters:
+      - $ref: '#/components/parameters/PublicAccountId'
+      - $ref: '#/components/parameters/CsrfHeader'
+      - $ref: '#/components/parameters/IdempotencyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountMonitorUpdateRequest'
+      responses:
+        '200':
+          description: Monitor configuration accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountMonitorResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-page-contracts:
+      - B02
+      x-runtime-status: new
+      x-canonical-capability-id:
+      - account_monitor
+      x-existing-handler: []
+      x-product-read-model:
+      - owned_media_accounts
+  /owned-accounts/{publicAccountId}/monitor/poll:
+    post:
+      operationId: pollAccountMonitor
+      summary: Poll an owned account monitor.
+      description: The runtime must return 503 when the H00 monitor adapter is unavailable and must not synthesize success.
+      security:
+      - cookieAuth: []
+      x-permission: ordinary-session
+      parameters:
+      - $ref: '#/components/parameters/PublicAccountId'
+      - $ref: '#/components/parameters/CsrfHeader'
+      - $ref: '#/components/parameters/IdempotencyHeader'
+      responses:
+        '200':
+          description: Monitor poll accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountMonitorResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalError'
         '503':
@@ -6781,6 +6870,22 @@ components:
       - status
       - checkedAt
       - detail
+    AccountMonitorUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        recentPostUrls:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            format: uri
+            pattern: '^https?://'
+        enabled:
+          type: boolean
+      required:
+      - recentPostUrls
+      - enabled
     AssetListResponse:
       type: object
       additionalProperties: false

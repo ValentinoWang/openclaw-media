@@ -315,7 +315,7 @@ def _operation_map(service: str, operation_ids: set[str]) -> dict[str, str]:
 
 _IF2_OPERATION_SERVICE = {
     **_operation_map("overview", {"getDashboard", "listContentProjects", "listProjectArtifacts", "createProjectSummary"}),
-    **_operation_map("tracks", {"listTracks", "getTrack", "listCreators", "getCreator", "listTrackRelationships", "updateTrackRelationshipStatus", "listOwnedAccounts", "getOwnedAccount", "getAccountTrackStrategy", "getAccountMonitor"}),
+    **_operation_map("tracks", {"listTracks", "getTrack", "listCreators", "getCreator", "listTrackRelationships", "updateTrackRelationshipStatus", "listOwnedAccounts", "getOwnedAccount", "getAccountTrackStrategy", "getAccountMonitor", "updateAccountMonitor", "pollAccountMonitor"}),
     **_operation_map("assets", {"listAssets", "getAsset"}),
     **_operation_map("decisions", {"listDecisions", "getDecision", "listDecisionSignals", "confirmDecision"}),
     **_operation_map("runs", {"listRuns", "getRun", "getRunSources", "getRunDecisions", "getRunOutputs", "listBusinessOpportunities", "createArtifactRevision"}),
@@ -1077,6 +1077,17 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         method = getattr(service, method_name, None)
         if method is None or not callable(method):
             raise RuntimeError(f"IF2 service method is missing: {operation}")
+        if operation in {"updateAccountMonitor", "pollAccountMonitor"}:
+            key = self._require_idempotency_key()
+            if key is None:
+                return
+            if not self._bind_mutation_payload(
+                str(context.principal.tenant_id),
+                f"{operation}:{match.path_parameters.get('publicAccountId', '')}",
+                key,
+                body or {},
+            ):
+                return
         result = self._invoke_if2_service(method, context, match, body or {})
         success = sorted(status for status in context.route.allowed_statuses if 200 <= status < 300)
         if not success:

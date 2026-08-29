@@ -603,6 +603,46 @@ class TracksService:
         _requested_public_id(public_account_id)
         raise TrackMonitorUnavailable()
 
+    def update_account_monitor(
+        self,
+        context: TenantContext,
+        public_account_id: str,
+        recent_post_urls: list[str],
+        enabled: bool,
+        idempotency_key: str,
+    ) -> dict[str, Any]:
+        """Validate the tenant-owned account before entering the H00 adapter boundary."""
+        self._validate_monitor_input(recent_post_urls, enabled, idempotency_key)
+        self._detail(context, self._ACCOUNT_DETAIL_QUERY, public_account_id, "owned account")
+        raise TrackMonitorUnavailable()
+
+    def poll_account_monitor(
+        self,
+        context: TenantContext,
+        public_account_id: str,
+        idempotency_key: str,
+    ) -> dict[str, Any]:
+        self._validate_monitor_input([], True, idempotency_key)
+        self._detail(context, self._ACCOUNT_DETAIL_QUERY, public_account_id, "owned account")
+        raise TrackMonitorUnavailable()
+
+    @staticmethod
+    def _validate_monitor_input(
+        recent_post_urls: list[str], enabled: bool, idempotency_key: str
+    ) -> None:
+        if not isinstance(recent_post_urls, list) or len(recent_post_urls) > 100:
+            raise TrackInvalidRequest("recentPostUrls must be an array of at most 100 URLs", field="recentPostUrls")
+        for value in recent_post_urls:
+            if not isinstance(value, str) or not value.strip():
+                raise TrackInvalidRequest("recentPostUrls must contain non-empty strings", field="recentPostUrls")
+            parsed = urlsplit(value)
+            if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                raise TrackInvalidRequest("recentPostUrls must contain HTTP(S) URLs", field="recentPostUrls")
+        if not isinstance(enabled, bool):
+            raise TrackInvalidRequest("enabled must be a boolean", field="enabled")
+        if not isinstance(idempotency_key, str) or not idempotency_key:
+            raise TrackInvalidRequest("idempotency key is required", field="idempotencyKey")
+
     def _execute_list(
         self,
         state_query: str,

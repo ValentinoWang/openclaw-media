@@ -13,7 +13,7 @@ from .media_business_context import If2Route, Permission
 
 CANONICAL_PREFIX = "/openclaw/media/api"
 LEGACY_PREFIX = "/media/api"
-EXPECTED_OPERATION_COUNT = 88
+EXPECTED_OPERATION_COUNT = 90
 DEFAULT_MUTATION_BODY_LIMIT_BYTES = 2 * 1024 * 1024
 UPLOAD_BODY_LIMIT_BYTES = 70 * 1024 * 1024
 EXCLUDED_OPERATION_IDS = frozenset(
@@ -106,6 +106,8 @@ _DECLARED_MEDIA_BUSINESS_ROUTE_BINDINGS = (
     RouteSpec("GET", "/owned-accounts/{publicAccountId}", "getOwnedAccount"),
     RouteSpec("GET", "/owned-accounts/{publicAccountId}/track-strategy", "getAccountTrackStrategy"),
     RouteSpec("GET", "/owned-accounts/{publicAccountId}/monitor", "getAccountMonitor", allowed_statuses=frozenset({200, 401, 403, 404, 500, 503})),
+    RouteSpec("PUT", "/owned-accounts/{publicAccountId}/monitor", "updateAccountMonitor", allowed_statuses=frozenset({200, 400, 401, 403, 404, 409, 500, 503})),
+    RouteSpec("POST", "/owned-accounts/{publicAccountId}/monitor/poll", "pollAccountMonitor", allowed_statuses=frozenset({200, 400, 401, 403, 404, 409, 500, 503})),
     RouteSpec("GET", "/assets", "listAssets"),
     RouteSpec("GET", "/assets/{publicAssetId}", "getAsset"),
     RouteSpec("GET", "/assets/{publicAssetId}/preview", "getAssetPreview"),
