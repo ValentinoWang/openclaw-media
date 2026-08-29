@@ -52,7 +52,7 @@ def test_session_token_extraction_accepts_only_injected_transport_credentials() 
 
 
 @pytest.mark.parametrize(
-    "request",
+    "transport_request",
     [
         {"headers": {"Authorization": "Bearer token"}, "cookies": {"openclaw_session": "cookie"}},
         {"headers": {"Authorization": "Bearer "}},
@@ -61,9 +61,9 @@ def test_session_token_extraction_accepts_only_injected_transport_credentials() 
         {"cookies": {"openclaw_session": "one", "OPENCLAW_SESSION": "two"}},
     ],
 )
-def test_stage2_transport_rejects_ambiguous_or_blank_credentials(request: dict[str, object]) -> None:
+def test_stage2_transport_rejects_ambiguous_or_blank_credentials(transport_request: dict[str, object]) -> None:
     with pytest.raises(Stage2ServerContextError) as error:
-        extract_session_token(request)
+        extract_session_token(transport_request)
     assert error.value.code == "authentication_invalid"
 
 
