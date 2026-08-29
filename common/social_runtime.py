@@ -543,6 +543,7 @@ def feishu_update_record(
     *,
     specs: dict[str, int] | None = None,
     token: str | None = None,
+    write_empty_fields: bool = False,
 ) -> None:
     if not record_id:
         return
@@ -555,7 +556,7 @@ def feishu_update_record(
         if key not in existing:
             continue
         coerced = feishu_coerce_value(value, field_types.get(key))
-        if coerced in (None, []):
+        if coerced is None or (coerced == [] and not write_empty_fields):
             continue
         payload_fields[key] = coerced
     if not payload_fields:

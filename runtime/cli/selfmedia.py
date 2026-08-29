@@ -777,6 +777,7 @@ def update_account_monitor_record(monitor_url: str, record_id: str, fields: dict
             record_id,
             fields,
             specs=ACCOUNT_MONITOR_FIELD_SPECS,
+            write_empty_fields=True,
         )
     except Exception as exc:
         LOGGER.warning("daily-poll could not update account monitor record %s", record_id, exc_info=True)
