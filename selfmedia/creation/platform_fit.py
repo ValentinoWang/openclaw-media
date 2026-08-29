@@ -192,7 +192,7 @@ def build_platform_mechanism_prompt(
         "platform_mechanism_reference": default_platform_mechanism(request.platform),
         "account_profile": _truncate_nested((media_context or {}).get("account_profile") or {}, 1800),
         "recent_creations": _truncate_nested((media_context or {}).get("recent_creations") or [], 1000),
-        "recent_reviews": _truncate_nested((media_context or {}).get("recent_reviews") or [], 1200),
+        "recent_reviews": _compact_review_list((media_context or {}).get("recent_reviews") or [], 1200),
         "activity_candidates": _compact_platform_fit_candidates(activity_candidates, 1200),
         "viral_candidates": _compact_platform_fit_candidates(viral_candidates, 1200),
         "inspiration_candidates": _compact_platform_fit_candidates(inspiration_candidates, 1200),
@@ -901,6 +901,33 @@ def _truncate_nested(value: Any, max_chars: int) -> Any:
     if isinstance(value, str):
         return _truncate(value, max_chars)
     return value
+
+
+_REVIEW_PROMPT_FIELDS = (
+    "review_id", "created_at", "platform", "account", "track", "topic", "title",
+    "summary", "lesson", "performance_level", "metrics", "atomic_facts",
+    "priority_metrics", "key_insights", "metric_interpretation", "problems",
+    "next_actions", "next_step", "content_guidance", "publishing_guidance",
+    "data_quality_notes", "publish_url", "creation_record_id",
+)
+
+
+def _compact_review_list(value: Any, max_chars: int) -> list[dict[str, Any]]:
+    items = value if isinstance(value, list) else []
+    return [_compact_review(item, max_chars) for item in items[:20] if isinstance(item, dict)]
+
+
+def _compact_review(value: dict[str, Any], max_chars: int) -> dict[str, Any]:
+    """Keep review evidence fields ahead of arbitrary adapter metadata."""
+    keys = list(_REVIEW_PROMPT_FIELDS) + [key for key in value if key not in _REVIEW_PROMPT_FIELDS]
+    result: dict[str, Any] = {}
+    for key in keys:
+        if key not in value or value[key] in (None, "", []):
+            continue
+        result[str(key)] = _truncate_nested(value[key], max_chars)
+        if len(result) >= 30:
+            break
+    return result
 
 
 def _compact_platform_fit_candidates(value: Any, max_chars: int) -> list[dict[str, Any]]:

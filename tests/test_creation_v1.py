@@ -561,6 +561,26 @@ class CreationV1Tests(unittest.TestCase):
         self.assertIn("加入自己的录音复盘动作", prompt)
         self.assertNotIn("detail_json", prompt)
 
+    def test_creation_prompt_preserves_structured_review_fields_after_metadata(self) -> None:
+        req = parse_creation_request(
+            "【创作>抖音】类型=视频 赛道=体育 主体=配速训练",
+            now=datetime(2026, 6, 18, 9, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
+        )
+        review = {f"adapter_field_{i}": f"噪声{i}" for i in range(40)}
+        review.update({
+            "priority_metrics": [{"metric": "完播率", "content_action": "删掉中段重复讲解"}],
+            "key_insights": ["前两秒失流最严重"],
+            "next_actions": ["重剪开头后复测"],
+            "performance_level": "值得重剪",
+        })
+        prompt = build_creation_prompt(
+            req, activity_candidates=[], viral_candidates=[], inspiration_candidates=[],
+            business_candidates=[], reference_docs=[], media_context={"recent_reviews": [review]},
+        )
+        self.assertIn("删掉中段重复讲解", prompt)
+        self.assertIn("前两秒失流最严重", prompt)
+        self.assertIn("重剪开头后复测", prompt)
+
         activity = ActivityAdapter().to_record(
             {
                 "record_id": "act1",

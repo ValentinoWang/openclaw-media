@@ -60,6 +60,23 @@ def test_platform_fit_truncation_reports_omitted_key_count() -> None:
     assert "field_30" not in compacted
 
 
+def test_platform_fit_preserves_structured_review_fields_after_metadata() -> None:
+    review = {f"adapter_field_{i}": f"噪声{i}" for i in range(30)}
+    review.update({
+        "priority_metrics": [{"metric": "完播率", "content_action": "删掉中段重复讲解"}],
+        "key_insights": ["前两秒失流最严重"],
+        "next_actions": ["重剪开头后复测"],
+    })
+    request = CreationRequest(platform="抖音", content_type="视频", track="体育", topic="跑步", publish_time="")
+    prompt = build_platform_mechanism_prompt(
+        request, activity_candidates=[], viral_candidates=[], inspiration_candidates=[],
+        business_candidates=[], reference_docs=[], media_context={"recent_reviews": [review]},
+    )
+    assert "删掉中段重复讲解" in prompt
+    assert "前两秒失流最严重" in prompt
+    assert "重剪开头后复测" in prompt
+
+
 def test_platform_fit_candidate_compaction_keeps_adaptation_evidence_after_metadata() -> None:
     candidate = {f"metadata_{index}": index for index in range(35)}
     candidate.update(

@@ -632,7 +632,7 @@ def _compact_creation_prompt_payload(
         "media_context_loaded": _truncate_nested(payload.get("media_context_loaded") or {}, 300),
         "account_profile": _truncate_nested(payload.get("account_profile") or {}, 2500),
         "recent_creations": _truncate_list(payload.get("recent_creations"), 8, 900),
-        "recent_reviews": _truncate_list(payload.get("recent_reviews"), 8, 900),
+        "recent_reviews": _compact_review_list(payload.get("recent_reviews"), 8, 900),
         "activity_memory_candidates": _compact_candidates(payload.get("activity_memory_candidates"), limits["activity"]),
         "viral_memory_candidates": _compact_candidates(payload.get("viral_memory_candidates"), limits["viral"]),
         "inspiration_memory_candidates": _compact_candidates(payload.get("inspiration_memory_candidates"), limits["inspiration"]),
@@ -712,6 +712,33 @@ def _compact_reference_docs(value: Any) -> list[dict[str, str]]:
 def _truncate_list(value: Any, max_items: int, max_text: int) -> list[Any]:
     items = value if isinstance(value, list) else []
     return [_truncate_nested(item, max_text) for item in items[:max_items]]
+
+
+_REVIEW_PROMPT_FIELDS = (
+    "review_id", "created_at", "platform", "account", "track", "topic", "title",
+    "summary", "lesson", "performance_level", "metrics", "atomic_facts",
+    "priority_metrics", "key_insights", "metric_interpretation", "problems",
+    "next_actions", "next_step", "content_guidance", "publishing_guidance",
+    "data_quality_notes", "publish_url", "creation_record_id",
+)
+
+
+def _compact_review_list(value: Any, max_items: int, max_text: int) -> list[dict[str, Any]]:
+    items = value if isinstance(value, list) else []
+    return [_compact_review(item, max_text) for item in items[:max_items] if isinstance(item, dict)]
+
+
+def _compact_review(value: dict[str, Any], max_text: int) -> dict[str, Any]:
+    """Keep review evidence fields ahead of arbitrary adapter metadata."""
+    keys = list(_REVIEW_PROMPT_FIELDS) + [key for key in value if key not in _REVIEW_PROMPT_FIELDS]
+    result: dict[str, Any] = {}
+    for key in keys:
+        if key not in value or value[key] in (None, "", []):
+            continue
+        result[str(key)] = _truncate_nested(value[key], max_text)
+        if len(result) >= 40:
+            break
+    return result
 
 
 def _truncate_nested(value: Any, max_text: int) -> Any:
