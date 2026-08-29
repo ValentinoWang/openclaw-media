@@ -33,7 +33,9 @@ from common.social_runtime import (  # noqa: E402
     count_value,
     detect_platform,
     extract_urls,
+    feishu_bitable_refs,
     feishu_bool,
+    feishu_field_types,
     feishu_first_field,
     feishu_list_records,
     feishu_required_default,
@@ -98,6 +100,7 @@ CREATOR_PROFILE_FIELD_MARKERS = frozenset(
 )
 DAILY_POLL_STATUS_LABELS = {
     "ok": "正常",
+    "ok_empty": "无可轮询账号",
     "partial": "部分成功",
     "missing": "未获取到作品",
     "missing_urls": "缺少作品链接",
@@ -582,6 +585,53 @@ def validate_account_monitor_records(records: list[dict[str, Any]]) -> None:
         )
 
 
+def verify_schema(
+    bitable_url: str,
+    *,
+    specs: dict[str, int] | None = None,
+    token: str | None = None,
+) -> dict[str, Any]:
+    """Verify the account-monitor table fields before reading or writing records."""
+    if not bitable_url.strip():
+        raise ValueError("账号监控表 URL 不能为空")
+    expected = specs or ACCOUNT_MONITOR_FIELD_SPECS
+    app_token, table_id, access_token = feishu_bitable_refs(bitable_url, token)
+    actual = feishu_field_types(app_token, table_id, access_token)
+    missing = [name for name in expected if name not in actual]
+    mismatched = [
+        {"field": name, "expected_type": field_type, "actual_type": actual[name]}
+        for name, field_type in expected.items()
+        if name in actual and actual[name] != field_type
+    ]
+    return {
+        "ok": not missing and not mismatched,
+        "app_token": app_token,
+        "table_id": table_id,
+        "required_fields": len(expected),
+        "actual_fields": len(actual),
+        "missing_fields": missing,
+        "mismatched_fields": mismatched,
+    }
+
+
+def require_valid_schema(monitor_url: str) -> dict[str, Any]:
+    result = verify_schema(monitor_url)
+    if result["ok"]:
+        return result
+    problems: list[str] = []
+    if result["missing_fields"]:
+        problems.append("缺少字段：" + "、".join(result["missing_fields"]))
+    if result["mismatched_fields"]:
+        problems.append(
+            "类型不匹配："
+            + "、".join(
+                f"{item['field']}({item['actual_type']} != {item['expected_type']})"
+                for item in result["mismatched_fields"]
+            )
+        )
+    raise SystemExit("账号监控表 schema 校验失败；" + "；".join(problems))
+
+
 def daily_poll_status_label(status: object) -> str:
     value = str(status or "").strip()
     return DAILY_POLL_STATUS_LABELS.get(value, "状态未知")
@@ -758,6 +808,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
     if require_feishu and not args.dry_run and not report_url:
         raise SystemExit("missing FEISHU_ACCOUNT_REPORT_URL or --report-url when --require-feishu is set")
 
+    schema = require_valid_schema(monitor_url) if getattr(args, "verify_schema", False) else None
     records = list_account_monitor_records(monitor_url, view_id=args.view_id)
     validate_account_monitor_records(records)
     accounts = [account_from_record(record) for record in records]
@@ -831,6 +882,7 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
         "errors": errors,
         "monitor_url": monitor_url,
         "report_url": report_url,
+        "schema": schema,
     })
     write_json(json_path, payload)
     write_markdown(md_path, build_daily_report(accounts, account_rows, summaries, errors))
@@ -869,12 +921,25 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
             raise SystemExit(f"日报飞书写入失败：{user_visible_poll_error(exc)}") from None
 
     feishu_report_skipped = bool(not args.dry_run and feishu_records and not report_url)
+    enabled_account_count = sum(1 for account in accounts if account["enabled"])
+    polled_account_count = len(summaries)
+    successful_summary_count = sum(1 for summary in summaries if summary["overall_status"] == "ok")
+    summary_failure = successful_summary_count < polled_account_count
+    if polled_account_count == 0:
+        status = "ok_empty" if enabled_account_count == 0 and not errors else "error"
+    elif errors or summary_failure or feishu_report_skipped:
+        status = "partial" if successful_summary_count else "error"
+    else:
+        status = "ok"
     return {
-        "ok": not errors and not feishu_report_skipped,
+        "ok": status == "ok",
         "json_path": str(json_path),
         "report_path": str(md_path),
         "account_count": len(accounts),
-        "polled_account_count": len(summaries),
+        "enabled_account_count": enabled_account_count,
+        "polled_account_count": polled_account_count,
+        "status": status,
+        "completion_status": status,
         "record_ids": record_ids,
         "feishu": {
             "已写入": f"已写入 {len(record_ids)} 条飞书记录",
@@ -1041,6 +1106,7 @@ def build_parser() -> argparse.ArgumentParser:
     poll.add_argument("--limit", type=int, default=0)
     poll.add_argument("--require-feishu", action="store_true", default=feishu_required_default())
     poll.add_argument("--dry-run", action="store_true")
+    poll.add_argument("--verify-schema", action="store_true", help="校验账号监控表字段和类型后再轮询。")
     poll.add_argument("--tenant-id", required=True)
 
     shooting = sub.add_parser("shooting-execution", help="Create an executable shooting plan from a concrete creation target.")
