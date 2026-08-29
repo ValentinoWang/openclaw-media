@@ -18,6 +18,8 @@ from uuid import UUID
 
 from media_vault.vault import canonical_tenant_id
 
+from .client_claims import find_reserved_keys
+
 
 SCHEMA_VERSION = "stage2.ai_execution_context.v2"
 RECEIPT_SCHEMA_VERSION = "stage2.context_readback_receipt.v1"
@@ -185,7 +187,11 @@ def _reject_browser_claims(claims: Mapping[str, Any] | None) -> None:
         return
     if not isinstance(claims, Mapping):
         raise Stage2ContextError("invalid_request", "browser claims must be an object")
-    found = sorted(set(claims).intersection(_FORBIDDEN_BROWSER_FIELDS))
+    # recursive=False: only the top-level keys count, matching this
+    # function's original algorithm exactly -- a nested claim value is not
+    # inspected. Do not switch this to the default (recursive=True) without
+    # a deliberate decision to widen what this guard rejects.
+    found = find_reserved_keys(claims, _FORBIDDEN_BROWSER_FIELDS, recursive=False)
     if found:
         raise ContextAuthorityError(found)
 

@@ -25,6 +25,7 @@ from common.platform_labels import PLATFORM_LABELS as _COMMON_PLATFORM_LABELS
 from common.social_runtime import parse_iso_datetime
 
 from .capability_registry import CAPABILITY_REGISTRY, CapabilityDefinition, CapabilityRegistryError
+from .client_claims import find_reserved_keys
 
 
 SCHEMA_VERSION = "media_web_task_v3"
@@ -485,14 +486,10 @@ def _tenant_storage_key(tenant_id: str) -> str:
 
 
 def _contains_reserved_tenant_key(value: Any) -> bool:
-    if isinstance(value, Mapping):
-        return any(
-            str(key) in RESERVED_TENANT_KEYS or _contains_reserved_tenant_key(item)
-            for key, item in value.items()
-        )
-    if isinstance(value, (list, tuple)):
-        return any(_contains_reserved_tenant_key(item) for item in value)
-    return False
+    # recursive=True (the default): matches this function's original
+    # algorithm, which recurses into nested dict values and list/tuple
+    # items, not just top-level keys.
+    return bool(find_reserved_keys(value, RESERVED_TENANT_KEYS))
 
 
 def _safe_filename(value: str) -> str:
