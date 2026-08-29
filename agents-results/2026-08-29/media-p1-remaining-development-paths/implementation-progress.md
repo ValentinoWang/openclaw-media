@@ -110,4 +110,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 
 - 并行运行时核对：`LB-10` 已由 `808395f` 使 frozen media contract 在仓内 clean checkout 可解析，`test_cloud_media_task_receiver.py` 相关集合 `4 passed`。`LB-13/LB-14/LH-01` 仍明确属于当前仓不存在的 `photo-content-os/` 脚本边界，未伪造关闭。
 
+- 跨仓源码复核：原审计所指的 `photo-content-os/99_System_OpenClaw` 实际存在于独立仓库 `/Users/vsiyo/Desktop/照片筛选`；其本地 `main@9864824` 已包含 `b1f0376`（creator context）、`d690db0`（bridge contract）、`ae59c09`（模板路径可移植）及既有队列/脚本修复。由于该仓库与 integration 是不同 Git 根，不能把这些提交直接计入 integration 的 `main`；照片仓库 worker 中相对当前 main 的大规模删除分支已拒绝合并。后续将以照片仓库自身 `main`/远端 SHA 和定向测试作为 LP/LH/LB 的独立证据层。
+
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。尚未复验的 114 条不得自动记为已覆盖，部分覆盖条目也不得计入关闭数。
