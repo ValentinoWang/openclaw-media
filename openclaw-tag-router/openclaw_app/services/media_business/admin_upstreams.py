@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
@@ -10,10 +9,11 @@ from datetime import datetime, timezone
 from typing import Any, Protocol
 from uuid import UUID, uuid4
 
+from .foundation import IF2_KEY, idempotency_key
+
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
 MAX_RECONCILIATION_ROWS = 1000
-_IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 _UTC = timezone.utc
 
 
@@ -642,9 +642,11 @@ class AdminUpstreamsService:
 
     @staticmethod
     def _idempotency_key(value: str) -> str:
-        if not isinstance(value, str) or _IDEMPOTENCY_KEY.fullmatch(value) is None:
-            raise AdminUpstreamsInvalidRequest("Idempotency-Key is invalid")
-        return value
+        return idempotency_key(
+            value,
+            error=lambda: AdminUpstreamsInvalidRequest("Idempotency-Key is invalid"),
+            policy=IF2_KEY,
+        )
 
     @staticmethod
     def _operation_id(value: str) -> UUID:

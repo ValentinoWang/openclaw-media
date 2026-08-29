@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -17,6 +16,7 @@ from enum import Enum
 from typing import Callable, Literal, Mapping, Protocol, Sequence
 from uuid import UUID, uuid4
 
+from .media_business.foundation import IF2_KEY, RESOURCE_RUN_KEY, idempotency_key
 from .stage1_member_onboarding import ServerFeishuInstallContext
 from .stage1_provision_models import Stage1LifecycleState
 
@@ -25,7 +25,6 @@ UTC = timezone.utc
 REQUIRED_ADMIN_SCOPE = "tenant:provision"
 REQUIRED_RESOURCE_KINDS = ("wiki", "parent_node", "app_directory")
 MAX_LEASE_SECONDS = 300
-IF2_IDEMPOTENCY_KEY_RE = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 
 
 class ProvisioningError(RuntimeError):
@@ -55,10 +54,7 @@ def _text(value: object, name: str, maximum: int) -> str:
 
 
 def _projection_key(value: object) -> str:
-    normalized = _text(value, "idempotency_key", 128)
-    if not IF2_IDEMPOTENCY_KEY_RE.fullmatch(normalized):
-        raise ValueError("idempotency_key is invalid")
-    return normalized
+    return idempotency_key(value, error=lambda: ValueError("idempotency_key is invalid"), policy=IF2_KEY)
 
 
 def _resource_run_key(value: object) -> str:
@@ -67,10 +63,7 @@ def _resource_run_key(value: object) -> str:
     The provision tables deliberately allow a wider key contract than the IF2
     projection.  In particular, orchestrator child keys contain a separator.
     """
-    normalized = _text(value, "idempotency_key", 160)
-    if len(normalized) < 8:
-        raise ValueError("idempotency_key is invalid")
-    return normalized
+    return idempotency_key(value, error=lambda: ValueError("idempotency_key is invalid"), policy=RESOURCE_RUN_KEY)
 
 
 def _idempotency_key(value: object) -> str:

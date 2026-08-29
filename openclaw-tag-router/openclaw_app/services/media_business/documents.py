@@ -19,11 +19,13 @@ from typing import Any, Protocol
 from common.canonical_digest import digest_bytes
 
 from .foundation import (
+    IF2_KEY,
     MediaBusinessError,
     TenantContext,
     assert_autosave_state,
     assert_export_state,
     body_checksum,
+    idempotency_key,
     preserve_protected_blocks,
     public_projection,
     require_context,
@@ -32,7 +34,6 @@ from .foundation import (
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
 _PUBLIC_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
-_IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 _CHECKSUM = re.compile(r"^[a-f0-9]{64}$")
 _FORMATS = {"docx", "pdf"}
 
@@ -209,9 +210,11 @@ def _optional_checksum(value: Any, field: str) -> str | None:
 
 
 def _idempotency_key(value: Any) -> str:
-    if not isinstance(value, str) or not _IDEMPOTENCY_KEY.fullmatch(value):
-        raise DocumentInvalidRequest("Idempotency-Key is invalid", field="Idempotency-Key")
-    return value
+    return idempotency_key(
+        value,
+        error=lambda: DocumentInvalidRequest("Idempotency-Key is invalid", field="Idempotency-Key"),
+        policy=IF2_KEY,
+    )
 
 
 def _request_fingerprint(value: Mapping[str, Any]) -> bytes:

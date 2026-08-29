@@ -15,9 +15,9 @@ import yaml
 from ..router.content_os_project_lifecycle import ContentOSContractError
 from ..router.content_os_queue import DONE_DIRECTORY, READY_DIRECTORY, RESULT_DIRECTORY, create_ready_task
 from .device_job_service import DeviceJobService
+from .media_business.foundation import DEVICE_KEY, idempotency_key
 
 
-_IDEMPOTENCY_KEY = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 _TASK_ID = re.compile(r"task_\d{8}_\d{3}\Z")
 _TASK_TYPE = re.compile(r"[A-Za-z0-9_]{1,80}\Z")
 
@@ -375,9 +375,11 @@ class CloudMediaTaskReceiver:
 
     @staticmethod
     def _require_idempotency_key(value: str) -> str:
-        if not isinstance(value, str) or not _IDEMPOTENCY_KEY.fullmatch(value):
-            raise CloudMediaTaskReceiverError("invalid_request", "幂等键无效。", status=HTTPStatus.BAD_REQUEST)
-        return value
+        return idempotency_key(
+            value,
+            error=lambda: CloudMediaTaskReceiverError("invalid_request", "幂等键无效。", status=HTTPStatus.BAD_REQUEST),
+            policy=DEVICE_KEY,
+        )
 
     @staticmethod
     def _task_id(value: Any) -> str:

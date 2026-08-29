@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
-from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
+from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_key, public_projection, require_context
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -24,7 +24,6 @@ DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 SOURCE_VERSION = "b05.runs.v1"
 PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
-IDEMPOTENCY_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 AVAILABLE_SECTIONS = frozenset({"sources", "decisions", "outputs"})
 ARTIFACT_KINDS = frozenset(
     {
@@ -1105,6 +1104,8 @@ def _revision_request(request: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _validate_idempotency_key(value: Any) -> str:
-    if not isinstance(value, str) or IDEMPOTENCY_KEY_PATTERN.fullmatch(value) is None:
-        raise RunsInvalidRequest("Idempotency-Key is invalid", field="Idempotency-Key")
-    return value
+    return idempotency_key(
+        value,
+        error=lambda: RunsInvalidRequest("Idempotency-Key is invalid", field="Idempotency-Key"),
+        policy=IF2_KEY,
+    )

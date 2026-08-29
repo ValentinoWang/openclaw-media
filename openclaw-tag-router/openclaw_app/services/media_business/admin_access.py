@@ -12,13 +12,12 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Protocol
 from uuid import UUID, uuid4
 
-from .foundation import MediaBusinessError
+from .foundation import IF2_KEY, MediaBusinessError, idempotency_key
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
 DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
-_IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 _PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
 _UTC = timezone.utc
 
@@ -882,9 +881,11 @@ class AdminAccessService:
 
     @staticmethod
     def _idempotency_key(value: str) -> str:
-        if not isinstance(value, str) or _IDEMPOTENCY_KEY.fullmatch(value) is None:
-            raise AdminAccessInvalidRequest("Idempotency-Key is invalid", field="idempotencyKey")
-        return value
+        return idempotency_key(
+            value,
+            error=lambda: AdminAccessInvalidRequest("Idempotency-Key is invalid", field="idempotencyKey"),
+            policy=IF2_KEY,
+        )
 
     @staticmethod
     def _expected_revision(value: int) -> int:

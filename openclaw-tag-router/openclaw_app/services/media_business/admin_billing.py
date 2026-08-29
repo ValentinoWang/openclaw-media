@@ -20,13 +20,14 @@ from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
+from .foundation import IF2_KEY, idempotency_key
+
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
 MAX_SUMMARY_ROWS = 200
 MAX_REASON_LENGTH = 500
 MONEY_QUANTUM = Decimal("0.00000001")
 MAX_ADMIN_GRANT = Decimal("100000.00000000")
-_IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 _PUBLIC_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
 _UTC = timezone.utc
 
@@ -245,9 +246,11 @@ def _reason(value: Any) -> str:
 
 
 def _idempotency_key(value: Any) -> str:
-    if not isinstance(value, str) or _IDEMPOTENCY_KEY.fullmatch(value) is None:
-        raise AdminBillingInvalidRequest("Idempotency-Key is invalid", field="Idempotency-Key")
-    return value
+    return idempotency_key(
+        value,
+        error=lambda: AdminBillingInvalidRequest("Idempotency-Key is invalid", field="Idempotency-Key"),
+        policy=IF2_KEY,
+    )
 
 
 def _expected_revision(value: Any) -> int:

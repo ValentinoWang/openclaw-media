@@ -7,7 +7,7 @@ import json
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 from common.canonical_digest import digest_hex
 
@@ -162,6 +162,111 @@ def public_projection(value: Any) -> Any:
 
 def body_checksum(body: dict[str, Any]) -> str:
     return digest_hex(body, allow_nan=True)
+
+
+# --- Idempotency-key format policies (TI-04) -------------------------------
+#
+# Every IF2 write endpoint (documents, admin_access, admin_billing,
+# admin_upstreams, runs, tracks) and the IF2 projection layer in
+# stage1_organization_provisioning.py independently re-implement the exact
+# same 8-128 character alphanumeric+"_-" regex fullmatch, with no stripping
+# or other normalization -- differing only in which exception class and
+# field name they raise. IF2_KEY captures that.
+#
+# The device/Mac transport protocol (device_job_service.py,
+# cloud_media_task_receiver.py) uses the same alphabet but a 1-128 length
+# floor, since a device-generated key can be shorter than IF2's 8-char
+# minimum. DEVICE_KEY captures that.
+#
+# stage1_organization_provisioning._resource_run_key is NOT the same
+# contract, despite validating "an idempotency key": its own docstring says
+# it deliberately does not apply IF2's alphabet, because orchestrator child
+# keys are built as f"{parent_key}:{step}". Reading its actual
+# implementation (_text() + a length check) shows it does not restrict the
+# character set at all beyond rejecting control characters and untrimmed
+# input -- it is not simply "IF2_KEY plus a colon". Imposing an
+# alphanumeric+"_-:" regex here would be a real tightening this pass has no
+# way to verify against whatever resource-run keys already exist in
+# production, so RESOURCE_RUN_KEY reproduces the actual current algorithm
+# (trim-mismatch rejection + control-character rejection + length bounds,
+# no character-class restriction) rather than the narrower shape a name like
+# "allows colon" might suggest.
+
+IDEMPOTENCY_KEY_CHARSET = "A-Za-z0-9_-"
+
+
+@dataclass(frozen=True)
+class IdempotencyKeyPolicy:
+    """A named idempotency-key format contract.
+
+    ``pattern`` set: fullmatch the original (unstripped) value against it --
+    the IF2_KEY / DEVICE_KEY shape, where the alphabet already excludes
+    whitespace and control characters so no separate stripping is needed.
+
+    ``pattern`` is ``None``: fall back to the RESOURCE_RUN_KEY shape --
+    accept any non-control character, but reject the value outright if it
+    is not already trimmed, and enforce ``minimum``/``maximum`` length.
+    """
+
+    pattern: "re.Pattern[str] | None"
+    minimum: int
+    maximum: int
+
+
+IF2_KEY = IdempotencyKeyPolicy(
+    pattern=re.compile(rf"^[{IDEMPOTENCY_KEY_CHARSET}]{{8,128}}$"), minimum=8, maximum=128
+)
+DEVICE_KEY = IdempotencyKeyPolicy(
+    pattern=re.compile(rf"^[{IDEMPOTENCY_KEY_CHARSET}]{{1,128}}$"), minimum=1, maximum=128
+)
+# stage1_organization_provisioning._resource_run_key is NOT IF2_KEY's
+# contract, despite validating "an idempotency key": its own docstring says
+# it deliberately does not apply IF2's alphabet, because orchestrator child
+# keys are built as f"{parent_key}:{step}". Reading its actual
+# implementation (_text() + a length check) shows it does not restrict the
+# character set at all beyond rejecting control characters and untrimmed
+# input -- it is not simply "IF2_KEY plus a colon". Imposing an
+# alphanumeric+"_-:" regex here would be a real tightening this pass has no
+# way to verify against whatever resource-run keys already exist in
+# production, so RESOURCE_RUN_KEY reproduces the actual current algorithm
+# (pattern=None) rather than the narrower shape a name like "allows colon"
+# might suggest.
+RESOURCE_RUN_KEY = IdempotencyKeyPolicy(pattern=None, minimum=8, maximum=160)
+
+
+def idempotency_key(
+    value: Any,
+    *,
+    error: Callable[[], Exception],
+    policy: IdempotencyKeyPolicy = IF2_KEY,
+) -> str:
+    """Validate ``value`` against ``policy`` and return its canonical form.
+
+    Every IF2 write endpoint (documents, admin_access, admin_billing,
+    admin_upstreams, runs, tracks) and the IF2 projection layer in
+    stage1_organization_provisioning.py independently re-implemented this
+    exact 8-128 character alphanumeric+"_-" regex fullmatch with no
+    stripping, differing only in which exception class and field name they
+    raise on failure -- that is IF2_KEY, the default. The device/Mac
+    transport protocol (device_job_service.py, cloud_media_task_receiver.py)
+    uses the same alphabet with a 1-128 length floor since a device-
+    generated key can be shorter than IF2's 8-char minimum -- DEVICE_KEY.
+    """
+    if not isinstance(value, str):
+        raise error()
+    if policy.pattern is not None:
+        if policy.pattern.fullmatch(value) is None:
+            raise error()
+        return value
+    normalized = value.strip()
+    if (
+        value != normalized
+        or not normalized
+        or not (policy.minimum <= len(normalized) <= policy.maximum)
+        or any(ord(character) < 32 for character in normalized)
+    ):
+        raise error()
+    return normalized
 
 
 _RICH_TEXT_TYPES = {"paragraph", "quote", *(f"heading_{level}" for level in range(1, 10))}

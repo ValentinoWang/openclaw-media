@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 
 from common.platform_links import classify_post_link
 
-from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
+from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_key, public_projection, require_context
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -1161,8 +1161,11 @@ def _json_object(value: Any, label: str) -> dict[str, Any]:
 
 
 def _validate_idempotency_key(value: Any) -> None:
-    if not isinstance(value, str) or re.fullmatch(r"[A-Za-z0-9_-]{8,128}", value) is None:
-        raise TrackInvalidRequest("Idempotency-Key is invalid", field="Idempotency-Key")
+    idempotency_key(
+        value,
+        error=lambda: TrackInvalidRequest("Idempotency-Key is invalid", field="Idempotency-Key"),
+        policy=IF2_KEY,
+    )
 
 
 def _commit(connection: Any) -> None:
