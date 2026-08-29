@@ -15,6 +15,7 @@ from openclaw_app.services.stage2_server_context import (
     extract_session_token,
     stage2_request_context,
 )
+from openclaw_app.services.stage2_context import ServerSessionFacts
 
 
 PERSONAL_TENANT = "11111111-1111-4111-8111-111111111111"
@@ -55,6 +56,7 @@ def test_session_token_extraction_accepts_only_injected_transport_credentials() 
     [
         {"headers": {"Authorization": "Bearer token"}, "cookies": {"openclaw_session": "cookie"}},
         {"headers": {"Authorization": "Bearer "}},
+        {"headers": {"Authorization": "Bearer first,second"}},
         {"cookies": {"openclaw_session": " token"}},
         {"cookies": {"openclaw_session": "one", "OPENCLAW_SESSION": "two"}},
     ],
@@ -163,6 +165,39 @@ def test_binding_record_shape_errors_are_service_failures() -> None:
 
     assert error.value.code == "server_record_invalid"
     assert error.value.status == 503
+
+
+def test_provider_entrypoints_reject_inactive_sessions_before_loaders() -> None:
+    session = ServerSessionFacts(
+        session_id="s", user_id="u", tenant_id=ORG_TENANT, tenant_type="organization",
+        member_tenant_id=ORG_TENANT, session_status="revoked", binding_generation=1,
+    )
+    binding_calls: list[str] = []
+    profile_calls: list[str] = []
+    with pytest.raises(Stage2ServerContextError) as binding_error:
+        CurrentBindingProvider(lambda tenant: binding_calls.append(tenant)).resolve(session)
+    with pytest.raises(Stage2ServerContextError) as profile_error:
+        TenantProfileReader(lambda tenant, kind: profile_calls.append(tenant)).read(session)
+    assert binding_error.value.code == "session_invalid"
+    assert profile_error.value.code == "session_invalid"
+    assert binding_calls == []
+    assert profile_calls == []
+
+
+def test_organization_context_resolves_binding_before_profile() -> None:
+    session_record = _session_record(ORG_TENANT, "organization") | {"bindingGeneration": 1}
+    events: list[str] = []
+    session_provider = AuthenticatedSessionProvider(lambda token: session_record, lambda: "org")
+    binding_provider = CurrentBindingProvider(lambda tenant: events.append("binding") or {
+        "bindingId": "binding-1", "tenantId": tenant, "generation": 1,
+        "status": "active", "credentialGeneration": "cred-1",
+        "trustedOpenUrl": "https://feishu.cn/docx/doc-1",
+    })
+    profile_reader = TenantProfileReader(lambda tenant, kind: events.append("profile") or {
+        "tenantId": tenant, "tenantType": kind, "revision": "r1", "fields": {},
+    })
+    ServerStage2ContextProviders(session_provider, binding_provider, profile_reader).organization_context()
+    assert events == ["binding", "profile"]
 
 
 def test_server_context_composition_reads_profile_and_never_accepts_client_identity() -> None:
