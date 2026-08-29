@@ -158,3 +158,4 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - U4/U5（2026-08-29）：`5506fd3` 在 `/tracks` 账号详情监控分区增加最小编辑态，前端只抽取通用 HTTP(S) URL，保存调用 PUT 后立即调用 POST 轮询；主页/平台语义仍由后端判定，503/400/空结果均显示中文失败或“未返回作品结果”，不显示绿色成功。前端定向 QA、TypeScript 编译与 `git diff --check` 通过；生产真实非空轮询证据仍未生成。
 - U4/U5 补强（2026-08-30）：`05eb6cc` 让监控响应返回逐链接的 `platform/kind/content_id/canonical_url` 判定，并在 `/tracks` 详情中展示最近状态、作品数、总互动、错误、日报摘要与链接判定；保存后立即轮询并刷新页面状态，`monitor_unavailable` 时保持只读。两份 OpenAPI 合同同步，Router 定向测试 `41 passed`，前端 TypeScript 与页面静态门禁通过。
 - U6（2026-08-30）：`951f8c2` 将拆解运行器、证据 DAG、飞书写入、增长热榜、商务入口和公共社交运行时统一指向 `common/platform_links.py` 的主机判定；新增伪造查询参数回归测试。链接分类定向测试 `4 passed`，编译和 `git diff --check` 通过；拆解完整测试仍受本机 Python 3.9 无法解析仓库既有 `float | None` 注解阻塞，不归因于本次改动。
+- U3/U4/U5 合同补强（2026-08-30）：`31e28db` 修复前端合同生成与基础门禁中的 `/home/ubuntu` 硬编码，合同源、生成文件和 QA 统计保持同步；`validate:media-business-contract` 与 `qa:media-business-foundation` 通过。`2c6a66c` 允许账号监控专用写回显式清空近期作品链接，其他飞书记录更新仍默认跳过空值；新增回归测试 `3 passed`。
