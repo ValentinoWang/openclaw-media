@@ -148,8 +148,11 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。上方 `31/7/11` 与“尚未复验 114 条”均为历史分片快照，不是当前实时总计；当前总计以 `dedup_p1.py --json` 输出的 `153/2/0` 为准。
 
-- 产品承接补强（2026-08-29）：`/tracks` 自有账号详情新增“账号监控”分区，调用 `GET /owned-accounts/{publicAccountId}/monitor`；`monitor_unavailable` 映射为中文状态并展示 H00 外链和字段说明。新增 `PUT .../monitor` 与 `POST .../monitor/poll` 合同及租户/URL/幂等键输入校验，但当前运行时仍在未接入真实 H00 adapter 时明确返回 `503 monitor_unavailable`，不把页面展示、空表轮询或合同边界写成真实监控可用。
+- 产品承接补强（2026-08-29）：`/tracks` 自有账号详情新增“账号监控”分区，调用 `GET /owned-accounts/{publicAccountId}/monitor`；`monitor_unavailable` 映射为中文状态并展示 H00 外链和字段说明。新增 `PUT .../monitor` 与 `POST .../monitor/poll` 合同及租户/URL/幂等键输入校验。当前主线已接入可选 H00 adapter：未配置或 schema/权限/绑定失败仍明确返回 `503 monitor_unavailable`，不把页面展示或空表轮询写成真实监控成功。
 
 - U1（2026-08-29）：新增 `common/platform_links.py::classify_post_link` 作为链接分类纯函数，统一返回 `platform/kind/content_id/canonical_url`；覆盖抖音、小红书作品页、主页、短链和未知输入，短链不做网络展开。新增表驱动回归 `tests/test_platform_links.py`，`pytest tests/test_platform_links.py -q` 结果 `4 passed`，编译与 `git diff --check` 通过。U1 仅提供共享判定能力，尚未接入录入入口。
 
-- U2（2026-08-29）：将 `classify_post_link` 接入 Router `TracksService._validate_monitor_input` 与 CLI `validate_account_monitor_records`。两条录入路径均拒绝账号主页链接，并在已识别平台与账号平台不一致时 fail-closed；保留未知域名历史夹具的兼容性。Router 定向测试 `openclaw-tag-router/tests/test_media_business_tracks.py` 为 `21 passed`，CLI/链接集合为 `19 passed`，编译与 `git diff --check` 通过。U2 已堵住主页链接数据质量缺口，U3 H00 adapter 尚未接入。
+- U2（2026-08-29）：将 `classify_post_link` 接入 Router `TracksService._validate_monitor_input` 与 CLI `validate_account_monitor_records`。两条录入路径均拒绝账号主页链接，并在已识别平台与账号平台不一致时 fail-closed；保留未知域名历史夹具的兼容性。Router 定向测试 `openclaw-tag-router/tests/test_media_business_tracks.py` 为 `21 passed`，CLI/链接集合为 `19 passed`，编译与 `git diff --check` 通过。U2 已堵住主页链接数据质量缺口。
+
+- U3（2026-08-29）：`5df373a` 将 H00 adapter 注入 `TracksService`，复用 `runtime/cli/selfmedia.py` 的 schema、记录读写、绑定校验和作品轮询；服务启动通过 `FEISHU_ACCOUNT_MONITOR_URL` 可选启用，不新增顶层 service key。H00 的 schema、身份、租户绑定或 CLI 权限失败统一 fail-closed 为 503；更新后按 `enabled` 与 `recentPostUrls` 写后读回核对，并返回账号身份、平台、最近状态、作品数、互动、错误和日报摘要。OpenAPI 两份镜像同步。后端定向测试由代理报告 `39 passed`，本地 `compileall` 与 `git diff --check` 通过；真实 H00 表仍需包含 `public_account_id` 后才能启用。
+- U4/U5（2026-08-29）：`5506fd3` 在 `/tracks` 账号详情监控分区增加最小编辑态，前端只抽取通用 HTTP(S) URL，保存调用 PUT 后立即调用 POST 轮询；主页/平台语义仍由后端判定，503/400/空结果均显示中文失败或“未返回作品结果”，不显示绿色成功。前端定向 QA、TypeScript 编译与 `git diff --check` 通过；生产真实非空轮询证据仍未生成。
