@@ -34,6 +34,8 @@ CLOSED = {
     "RT-13": "8e5b436", "RT-14": "086ab71", "CPO-N21": "f7d4ec3",
     "CD-03": "e48fccf", "CD-04": "e48fccf", "CD-05": "e48fccf",
     "CD-06": "e48fccf", "CD-07": "e48fccf", "CD-08": "e48fccf",
+    "CD-02": "cedd7e9", "CD-10": "a248d8b", "CD-11": "7fe94e4",
+    "CD-14": "7fe94e4", "CD-16": "0d6e8b8",
 }
 
 # Source and focused-test evidence exists, but the acceptance layer still needs
