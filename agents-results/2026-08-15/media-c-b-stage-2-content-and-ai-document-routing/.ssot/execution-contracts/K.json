@@ -1,0 +1,34 @@
+{
+  "contract_id": "K",
+  "schema_version": 1,
+  "node_id": "K",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "work_kind": "decision-acceptance",
+  "write_authority": "authoritative-contract",
+  "read_set": [
+    "artifact:DL-A1"
+  ],
+  "write_set": [
+    "artifact:K"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:K",
+      "mode": "W",
+      "isolation_key": "node:K"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance K\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/K-return.json"
+  ],
+  "worker_transport": "historical-unregistered",
+  "release_slice": "REL-2",
+  "wave_id": "W-2-2",
+  "worker_registration": {
+    "note": "no retroactive worker claim"
+  }
+}

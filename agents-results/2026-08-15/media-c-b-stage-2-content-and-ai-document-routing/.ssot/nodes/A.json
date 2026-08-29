@@ -1,0 +1,85 @@
+{
+  "node_id": "A",
+  "semantic_key": "media.stage2.charter",
+  "stage": "A",
+  "work_kind": "charter",
+  "domain_lane": "governance",
+  "execution_state": "ACCEPTED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage2.charter.v3"
+  ],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "user and planning authority",
+  "unlocks": [
+    "A1"
+  ],
+  "worker_transport": "historical-unregistered",
+  "worker_registration": {
+    "note": "no retroactive worker claim"
+  },
+  "description": "章程、证据目标和完成口径一致",
+  "node_role": "charter",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "A.json",
+  "execution_contract_sha256": "6636a63d6e90530167602355ff55d3637e0fc4fcff0d9ffe49f70d0a4a6028ed",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-A"
+  ],
+  "consumed_artifact_ids": [],
+  "read_set": [
+    "contract:media.stage2.charter"
+  ],
+  "write_set": [
+    "artifact:A"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:A",
+      "mode": "W",
+      "isolation_key": "node:A"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance A\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/A-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-0",
+  "main_thread_write_exception": {
+    "reason": "历史编排节点只生成或投影自身独占的 SSOT 记录；主线程不直接修改业务源码，也不写入其他节点的共享事实。",
+    "approved_by": "user and planning authority",
+    "write_set": [
+      "artifact:A"
+    ]
+  },
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "user-request-stage2-2026-08-15",
+    "artifact_hashes": [
+      "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+      "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5",
+      "sha256:97000cc86e80993997153e0fb193ee877daea85c5695a60cf1645bf40596d471"
+    ],
+    "environment_identity": "current Codex task and three local attachments",
+    "runtime_release_id": "n/a",
+    "actor_role": "user and planning authority",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-15T20:37:42+08:00",
+    "acceptance_contract": "Phase-2 SSOT creation charter v2"
+  }
+}

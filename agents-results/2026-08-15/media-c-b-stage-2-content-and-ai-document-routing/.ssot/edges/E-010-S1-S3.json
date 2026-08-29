@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-010-S1-S3",
+  "from": "S1",
+  "to": "S3",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.s1.s3.v3"
+  ],
+  "transferred_input": "AIExecutionContext 第 2 版",
+  "gate_evidence": "上下文全部由服务端事实生成",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "DL-S1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "S3 consumes the explicitly produced artifact DL-S1"
+}

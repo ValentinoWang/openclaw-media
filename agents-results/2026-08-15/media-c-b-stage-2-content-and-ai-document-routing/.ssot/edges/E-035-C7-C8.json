@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-035-C7-C8",
+  "from": "C7",
+  "to": "C8",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c7.c8.v3"
+  ],
+  "transferred_input": "平台版本和发布包成果",
+  "gate_evidence": "发布包只引用已回读的个人正文版本",
+  "reason_code": "acceptance-dependency",
+  "transferred_artifact_ids": [
+    "DL-C7"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C8 consumes the explicitly produced artifact DL-C7"
+}

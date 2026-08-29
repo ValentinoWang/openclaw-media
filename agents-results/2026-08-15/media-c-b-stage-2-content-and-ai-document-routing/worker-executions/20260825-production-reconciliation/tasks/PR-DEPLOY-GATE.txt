@@ -1,0 +1,18 @@
+任务：PR-DEPLOY-GATE
+角色：只读、零写的不可变发布与回滚门禁审查者。
+版本：Stage-2 PLAN=3, DAG=3, INTERFACE_FREEZE=4, NODE_CONTRACT=4, SSOT_SCHEMA=2。
+
+冻结身份：
+- GitHub main 本地只读克隆：/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825
+- main SHA：5f06780569568ccc3197f0ab16aad74bdf9d1c6f
+- 远端：ubuntu@106.52.146.37
+- 当前运行 release：/home/ubuntu/releases/openclaw-stage2-production-20260819T
+- 当前服务：openclaw-stage2.service
+
+目标：审查 main 现有 deploy/scripts/quality/scripts/qa 与远端 systemd/Nginx/release 目录结构，设计并判断最小可实现的 Production Reconciliation 门禁。要求实现模型为 Git SHA -> 不可变 release 目录 -> release manifest（提交、逐文件哈希、非敏感配置身份、构建命令、前一 release、回滚命令）-> 预检 -> 切换 -> 同轮 health/ready/认证路由回读 -> 观察窗 -> 指针式回滚。明确哪些内容可以现在在源码中实现，哪些必须等部署授权、凭据、真实账号或人工验收。
+
+允许读取：上述 main 克隆；通过 SSH 读取非敏感 deploy 脚本、systemd/Nginx 元数据、目录名、文件哈希和状态码。不得读取 env 值、token、cookie、数据库内容或请求正文。
+唯一允许写入：由 STRUCTURED_RETURN_PATH 指定的 JSON 文件。
+禁止：修改源码、脚本、Git、release、symlink、systemd、Nginx、数据库、流量、飞书、SSOT、Obsidian；禁止 restart/reload/deploy/切流；禁止输出密钥；禁止 spawn_agent 或其他 worker。
+
+返回 JSON 至 STRUCTURED_RETURN_PATH，至少包含：task_id、versions、frozen_identities、actual_read_scope、actual_write_scope、existing_deploy_surfaces、drift_failure_classes、recommended_source_changes、release_manifest_schema、preflight_gates、activation_gates、readback_matrix、rollback_contract、authorization_boundaries、unverified_items、commands、proposed_state、acceptance_self_check、failure_class、failure_origin。成功审查使用 proposed_state=VERIFIED、acceptance_self_check=pass、failure_class=none、failure_origin=none；不得声称 ACCEPTED、已部署或生产就绪。

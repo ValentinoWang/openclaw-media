@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-055-DA-DB",
+  "from": "DA",
+  "to": "DB",
+  "dependency_type": "hard",
+  "dependency_scope": "global-completeness",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.da.db.v3"
+  ],
+  "transferred_input": "静态验收证据包",
+  "gate_evidence": "所有门禁对同一候选通过",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "ART-DA"
+  ],
+  "resource_ids": [
+    "candidate:REL-2"
+  ],
+  "necessity_proof": "DB must retain the immutable candidate:REL-2 identity from DA"
+}

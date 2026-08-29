@@ -1,0 +1,96 @@
+{
+  "task_id": "PR-REL-READBACK-DESIGN",
+  "attempt_role": "primary",
+  "executor": "lw-luna",
+  "structured_return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback/returns/PR-REL-READBACK-DESIGN-primary.json",
+  "versions": {
+    "baseline": "59e2adf",
+    "parent_source_authority": "5f06780569568ccc3197f0ab16aad74bdf9d1c6f",
+    "contract_version": 1,
+    "stage2_plan": 3,
+    "dag": 3,
+    "interface_freeze": 4,
+    "node_contract": 4,
+    "ssot_schema": 2,
+    "task_source_sha256": "7fc237bd8793ba38b07fde1108c3a7391094fb9df3be2d103bde23d918900960",
+    "validation_command_sha256": "deb384348c651d06c9858212f403b7d0c05d71748c77763d9cfac5d3a9e55dbb"
+  },
+  "actual_scopes": {
+    "read": [
+      "design-acceptance-contract skill, templates, and validators",
+      "docs/production-reconciliation/20260825/runtime-observations.md",
+      "docs/production-reconciliation/20260825/deployment-gate.json",
+      "openclaw-tag-router/scripts/qa/check_openclaw_bot_center_release_process.py",
+      ".ssot/manifest.json and generated Stage-2 SSOT view",
+      "frozen validation command and task packet"
+    ],
+    "authorized_source_write_scope": [
+      "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/**",
+      "acceptance/human/PR-REL-READBACK/**",
+      "openclaw-tag-router/tests/test_stage2_release_readback.py"
+    ],
+    "written": [
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback/returns/PR-REL-READBACK-DESIGN-primary.json"
+    ],
+    "forbidden_actions_not_performed": [
+      "production implementation",
+      "remote access or SSH",
+      "production curl or authenticated request",
+      "systemd, pointer, Nginx, database, Feishu, deployment, or SSOT mutation",
+      "secrets or secret-bearing diagnostic output",
+      "worker spawning"
+    ]
+  },
+  "changed_files": [],
+  "commit_sha": null,
+  "protected_test_sha256": null,
+  "commands": [
+    {
+      "command": "git status --short --branch; git rev-parse HEAD; git diff --check",
+      "result": "pass; clean branch codex/pr-rel-readback-design at 59e2adfd34853b6929d9fa69e69585806ac9c83a"
+    },
+    {
+      "command": "sha256sum worker-executions/20260825-production-reconciliation/design-wave/validation/PR-REL-READBACK-DESIGN.sh",
+      "result": "pass; deb384348c651d06c9858212f403b7d0c05d71748c77763d9cfac5d3a9e55dbb"
+    },
+    {
+      "command": "python3 manage_acceptance_artifacts.py check <task-root> --project-root <project-root>",
+      "result": "blocked before execution: required acceptance artifacts were not written because the frozen validator requires an out-of-scope shared project index"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "SCOPE-001",
+      "source": "/Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py:659-664",
+      "finding": "The official split-root checker unconditionally requires <project-root>/acceptance/index.md and rejects it when missing or stale."
+    },
+    {
+      "id": "SCOPE-002",
+      "source": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-readback-design",
+      "finding": "The frozen worktree has no acceptance/index.md at baseline 59e2adf."
+    },
+    {
+      "id": "SCOPE-003",
+      "source": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/validation/PR-REL-READBACK-DESIGN.sh",
+      "finding": "The frozen validation command invokes the checker with this worktree as project root and then requires a clean worktree."
+    }
+  ],
+  "unverified_items": [
+    "Approved version-1 contract was not written.",
+    "Chinese human checklist and active binding were not written.",
+    "Protected red tests and red-proof evidence were not written or executed.",
+    "Official acceptance artifact validators and the frozen end-to-end validation command were not passed.",
+    "No source commit was created."
+  ],
+  "approval_boundary": "No Stage-2 SSOT state, deployment, production, or release acceptance is claimed.",
+  "blockers": [
+    {
+      "code": "SHARED_PROJECT_ACCEPTANCE_INDEX_OUTSIDE_EXCLUSIVE_SCOPE",
+      "detail": "Creating or refreshing acceptance/index.md is required by the official validator but is outside the exclusive write scope and is a shared generated-index write prohibited for this lane."
+    }
+  ],
+  "proposed_state": "BLOCKED",
+  "acceptance_self_check": "partial",
+  "failure_class": "scope-conflict",
+  "failure_origin": "scope"
+}

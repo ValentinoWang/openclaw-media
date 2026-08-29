@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-054-C-DA",
+  "from": "C",
+  "to": "DA",
+  "dependency_type": "hard",
+  "dependency_scope": "global-completeness",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c.da.v3"
+  ],
+  "transferred_input": "哈希绑定的第二阶段候选",
+  "gate_evidence": "只有一个候选，且不包含旧 Writer、双写权威或隐式回退路径",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "ART-C"
+  ],
+  "resource_ids": [
+    "candidate:REL-2"
+  ],
+  "necessity_proof": "DA must retain the immutable candidate:REL-2 identity from C"
+}

@@ -1,0 +1,37 @@
+TASK_ID: PR-REL-READBACK-DESIGN
+ROLE: acceptance designer and protected-test author; do not implement production behavior.
+TRANSPORT: external-codex-exec through /Users/vsiyo/.codex/workers/run-lw-luna.sh.
+PROJECT_ROOT: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-readback-design
+BASELINE: 59e2adf, whose parent source authority is GitHub main 5f06780569568ccc3197f0ab16aad74bdf9d1c6f.
+GOVERNANCE: source-only Production Reconciliation support. It does not change the Stage-2 SSOT state or approve deployment.
+APPROVAL AUTHORITY: the user's supplied 2026-08-25 Production Reconciliation baseline and subsequent "请继续" authorize this exact source-only contract. Record that approval narrowly; do not claim product, deployment, or release acceptance.
+
+Read completely before work:
+- /Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md and its directly required templates/scripts.
+- docs/production-reconciliation/20260825/runtime-observations.md
+- docs/production-reconciliation/20260825/deployment-gate.json
+- openclaw-tag-router/scripts/qa/check_openclaw_bot_center_release_process.py
+
+Objective:
+Design and lock the acceptance contract for a Stage-2 user-systemd readback guard. The future guard must be read-only by default, execute no SSH itself, consume injected command output or an explicit local command runner, and fail closed with stable codes when service state, PID, /proc cwd, ExecStart/module, settings path, port, pointer resolution, release root, manifest identity or selected status codes disagree. It must never print raw environment values, tokens, cookies, authorization headers or full secret-bearing argv. It must understand that direct port /healthz and /readyz are unprefixed while public Nginx Stage-2 health routes may be prefixed.
+
+Exclusive write scope:
+- docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/**
+- acceptance/human/PR-REL-READBACK/**
+- openclaw-tag-router/tests/test_stage2_release_readback.py
+
+Reserved future implementation scope to declare but NOT write:
+- openclaw-tag-router/scripts/qa/check_stage2_release_process.py
+
+Forbidden:
+- production implementation; existing tests or existing Bot Center guard; existing evidence freeze files and SHA256SUMS; remote access; SSH; curl to production; systemd/service/pointer/Nginx/database/Feishu changes; secrets; SSOT/Obsidian edits; spawn_agent or other workers.
+
+Required output:
+1. APPROVED version-1 contract with Test baseline LOCKED and narrow user approval evidence.
+2. Chinese human checklist and active binding; keep deterministic identity/status assertions in protected tests.
+3. Protected tests at the exact test path, RED because the intended guard does not exist. Cover active/running success, inactive service, PID/cwd mismatch, pointer drift, manifest mismatch, wrong port/module/settings, missing properties, status mismatch, public/direct route distinction and redaction.
+4. Red-proof evidence under the fragment acceptance tree and all official acceptance artifact validators.
+5. Commit only the exclusive write scope with message: test(release): lock Stage-2 readback acceptance
+6. Structured JSON return with task_id, versions, actual scopes, changed files, commit_sha, protected_test_sha256, commands, evidence, unverified_items, proposed_state=VERIFIED, acceptance_self_check=pass, failure_class=none, failure_origin=none.
+
+Stop with a structured BLOCKED return for any unfixed authority or scope issue; do not widen into production probing or implementation.

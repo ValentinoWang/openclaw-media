@@ -1,0 +1,26 @@
+You are a zero-write Stage-2 SSOT completion audit worker.
+
+Objective: inspect the authoritative local SSOT bundle at
+agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing and
+the referenced Phase-1 bundle. Compare the 32-node DAG, contracts, current
+formal states, candidate evidence, and remote commit 8d97932. Identify the
+shortest legal path from the current state toward 100%, distinguishing code
+implementation evidence from formal ACCEPTED state and naming every external
+or human acceptance prerequisite that cannot be manufactured.
+
+Read-only scope:
+- The two SSOT bundles and generated/machine views.
+- Remote candidate metadata and focused test evidence.
+
+Forbidden:
+- Do not edit any source, SSOT, generated view, manifest, evidence, or remote
+  repository. Do not fabricate receipts or change node status.
+- Do not access secrets or private user content.
+
+Write only one structured JSON return to:
+agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/current-wave/returns/STAGE2-AUDIT-SSOT.json
+
+The JSON must contain task_id, failure_class, failure_origin, proposed_state
+(VERIFIED or BLOCKED), formal_state, implementation_state, legal_frontier,
+blockers (array), next_actions (array), evidence_paths (array), and unverified
+(array). Use failure_class=none and failure_origin=none if the audit succeeds.

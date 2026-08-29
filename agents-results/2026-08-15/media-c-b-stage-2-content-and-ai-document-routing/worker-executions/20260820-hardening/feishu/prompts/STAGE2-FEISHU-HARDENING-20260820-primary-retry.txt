@@ -1,0 +1,48 @@
+TASK_ID=STAGE2-FEISHU-HARDENING-20260820
+ATTEMPT_ROLE=primary-retry
+PRIMARY_EXECUTOR=lw-luna
+PRIMARY_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+ATTEMPT_EXECUTOR=lw-luna
+ATTEMPT_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+PROJECT_ROOT=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage2-hardening-feishu-20260820
+TASK_SOURCE_SHA256=73214d087587a1e5010ac0545d5a6e4784c9624bb2d1fa642e28a1828a9f1c59
+STRUCTURED_RETURN_PATH=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/feishu/returns/STAGE2-FEISHU-HARDENING-20260820-primary-retry.json
+VALIDATION_COMMAND_FILE=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/feishu/validation.sh
+VALIDATION_COMMAND_SHA256=4051d97407b4b1a696a89f2e4cfbff99d418d7e5bed23f5154ddd6bc8fae92d4
+
+Execute exactly the bounded task below. Preserve its frozen inputs, write scope, forbidden scope, and acceptance commands. Full filesystem access is process capability only and does not expand task authority.
+
+Write one JSON object to STRUCTURED_RETURN_PATH before exit. It must include proposed_state, acceptance_self_check, failure_class, and failure_origin. proposed_state must be IMPLEMENTED, VERIFIED, FAILED, or BLOCKED; acceptance_self_check must be pass, fail, or partial. failure_class must be none, implementation, runtime, verification, transport, architecture-conflict, authority-conflict, interface-freeze, permission, product-decision, or scope-conflict. failure_origin must identify one of: none, environment, app-server, browser, database, test-infrastructure, provider-network, provider-transport, worker-transport, product-behavior, implementation, architecture-complexity, control-plane, test-oracle, authority, scope, or unknown-origin. Use none only for a successful attempt.
+
+This is the next bounded attempt selected by the outer orchestrator. Keep the same primary executor when ATTEMPT_ROLE=primary-retry. For ATTEMPT_ROLE=l3, inherit the exact original write boundary and do not start another worker, invoke L4, or use spawn_agent.
+PRIOR_ATTEMPT_EVIDENCE_JSON=
+{"attempt_executor": "lw-luna", "attempt_role": "primary", "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "classification": {"attempt_executor": "lw-luna", "attempt_role": "primary", "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "decision": "retry_primary", "effective_failure_class": "transport", "effective_failure_origin": "worker-transport", "maximum_primary_retries_remaining": 1, "next_attempt_role": "primary-retry", "next_executor": "lw-luna", "next_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "primary_executor": "lw-luna", "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "reason": "worker-transport failure; retry the same selected primary"}, "exit_code": 124, "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/feishu/logs/STAGE2-FEISHU-HARDENING-20260820-primary.log", "primary_executor": "lw-luna", "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "structured_return": null, "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/feishu/returns/STAGE2-FEISHU-HARDENING-20260820-primary.json", "structured_return_state": "missing", "timed_out": true, "validation_exit_code": 1, "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/feishu/logs/STAGE2-FEISHU-HARDENING-20260820-primary.validation.log"}
+
+BOUNDED_TASK_BEGIN
+Task ID: STAGE2-FEISHU-HARDENING-20260820
+Objective: harden the Stage-2 production Feishu adapter and Binding-scoped document write/readback in the isolated clone at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage2-hardening-feishu-20260820.
+
+Read first:
+- openclaw_app/services/stage2_production_factory.py
+- openclaw_app/services/stage2_external_document.py
+- openclaw_app/services/stage2_organization_pipeline.py
+- tests/test_stage2_production.py
+- tests/test_stage2_external_document.py
+- STAGE2-HANDOFF-20260819.md
+
+Exclusive write scope:
+- openclaw_app/services/stage2_production_factory.py
+- openclaw_app/services/stage2_external_document.py
+- add tests/test_stage2_feishu_hardening.py only if needed
+Do not edit contracts, manifests, SSOT, migrations, unrelated services, or production data. Do not commit or push.
+
+Required review and implementation:
+1. Ensure every organization write is scoped to the server-resolved active Binding id and generation, with no global/default credential, space, parent, or container fallback.
+2. Ensure concurrent writes cannot leak or retain a different knowledge-base target, and Binding changes before/during write fail closed.
+3. Ensure create/write, registration, remote readback, remote revision, trusted HTTPS URL, and content digest are all required before a success/readback_verified result; partial external success must be needs_attention and idempotently recoverable.
+4. Ensure readback and replay do not issue a second external write for the same idempotency key, while a different payload conflicts. Keep injected adapter protocols and existing public APIs stable.
+5. Add focused tests with fake Feishu services/adapters for Binding mismatch, unsafe URL, concurrent target isolation, readback version/content mismatch, idempotent replay, and failure close. Tests must never contact real Feishu.
+6. Run focused tests, full Stage-2 tests, compile, and diff check. Make only minimal source changes justified by a failing or missing guard.
+
+Before exit write one JSON object to STRUCTURED_RETURN_PATH with task_id, proposed_state, acceptance_self_check, failure_class, failure_origin, actual_read_scope, actual_write_scope, changed_files, commands, test_evidence, unverified_items, residual_risks, and explicit_non_claims. Never claim formal SSOT acceptance or live Feishu/device evidence.
+BOUNDED_TASK_END

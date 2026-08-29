@@ -1,0 +1,368 @@
+{
+  "schemaVersion": "stage2.playwright.verify.v1",
+  "verification": "VERIFIED",
+  "formalAcceptance": "NOT_ACCEPTED",
+  "evidenceLevel": "browser-fixture",
+  "environmentIdentity": "stage2-playwright-fixture",
+  "baseUrl": "http://127.0.0.1:42943",
+  "generatedAt": "2026-08-20T04:02:10.380354+00:00",
+  "cases": [
+    {
+      "name": "healthz",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "readyz",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "personal_success",
+      "status": 200,
+      "passed": true,
+      "body": {
+        "ok": true,
+        "receipt": {
+          "schemaVersion": "stage2.runtime_receipt.v1",
+          "operationId": "browser-fixture-personal-85755c614c29",
+          "route": "personal_web/internal",
+          "authorityMode": "personal_web/internal",
+          "workspaceMode": "personal_web",
+          "bodyAuthority": "internal",
+          "tenantId": "11111111-1111-4111-8111-111111111111",
+          "bindingId": null,
+          "bindingGeneration": null,
+          "artifactStatus": "readback_verified",
+          "publishable": false,
+          "readyForPublish": true,
+          "artifact": {
+            "schemaVersion": "stage2.personal_pipeline.v1",
+            "tenantId": "11111111-1111-4111-8111-111111111111",
+            "authorityMode": "personal_web/internal",
+            "artifactRef": "browser-personal-artifact",
+            "contextBundleDigest": "sha256:ee204e1246d500ced5d5c7b2bbb9f356da315a1519999827274eabb23548dfcd",
+            "revisions": [
+              {
+                "revision": 1,
+                "content": {
+                  "title": "Browser personal draft browser-fixture-personal-85755c614c29",
+                  "body": "Browser verification body browser-fixture-personal-85755c614c29",
+                  "format": "markdown"
+                },
+                "contentDigest": "sha256:5e03c684191ce7b3fe0061b7150002640d7726ea97430baf720f033dfaec691c",
+                "baselineRevision": null,
+                "verified": true
+              }
+            ],
+            "currentRevision": 1,
+            "published": false,
+            "replayed": false,
+            "writeReceipt": {
+              "idempotencyKey": "browser-fixture-personal-85755c614c29",
+              "writeStatus": "succeeded",
+              "registrationStatus": "registered",
+              "readbackStatus": "confirmed",
+              "readback": {
+                "status": "confirmed"
+              },
+              "failure": null
+            }
+          },
+          "mirror": null,
+          "contextReceipt": {
+            "bindingGeneration": null,
+            "bindingId": null,
+            "bodyAuthority": "internal",
+            "capabilityId": "stage2_document_writer_fixture",
+            "contextChecksum": "b41f5c6834a6b8b972e20273748c2b839b34b6e18684230b4318dcfcd8a13893",
+            "readbackChecksum": "46a11ca73bffd31e2b91252e65f458d1c88662fa845ffd3c17b8fe7015907c57",
+            "receiptId": "stage2_receipt_46a11ca73bffd31e2b91252e",
+            "schemaVersion": "stage2.context_readback_receipt.v1",
+            "sourceRefs": [
+              [
+                "material-1",
+                "personal_material",
+                "9d0ae800b442ad52ae70bc83482a790381a07720f1049a4c688bf00b89fc57b9"
+              ]
+            ],
+            "tenantId": "11111111-1111-4111-8111-111111111111",
+            "workspaceMode": "personal_web"
+          },
+          "artifactState": {
+            "status": "readback_verified",
+            "publishable": false,
+            "ready_for_publish": true,
+            "error_code": null,
+            "receipt": {
+              "schemaVersion": "stage2.artifact_state.v1",
+              "tenantId": "11111111-1111-4111-8111-111111111111",
+              "authorityMode": "personal_web/internal",
+              "idempotencyKey": "browser-fixture-personal-85755c614c29",
+              "contentDigest": "sha256:5e03c684191ce7b3fe0061b7150002640d7726ea97430baf720f033dfaec691c",
+              "artifactRef": "browser-personal-artifact",
+              "revision": "1",
+              "bindingId": null,
+              "bindingGeneration": null,
+              "remoteRef": null,
+              "remoteRevision": null,
+              "writeStatus": "succeeded",
+              "registrationStatus": "registered",
+              "readbackStatus": "confirmed",
+              "receiptDigest": "sha256:8a89f2116a7d55ae9cb28945a2d00a77a3cbb3e2fde2eb69b714ac1ff05e53fc"
+            },
+            "replayed": false
+          },
+          "error": null,
+          "receiptDigest": "sha256:8096a59ef142dad41e1f08be2d56962414c2e0e91a272925e05d1bff817a26c6",
+          "replayed": false
+        }
+      }
+    },
+    {
+      "name": "personal_idempotent_replay",
+      "status": 200,
+      "passed": true,
+      "body": {
+        "ok": true,
+        "receipt": {
+          "schemaVersion": "stage2.runtime_receipt.v1",
+          "operationId": "browser-fixture-personal-85755c614c29",
+          "route": "personal_web/internal",
+          "authorityMode": "personal_web/internal",
+          "workspaceMode": "personal_web",
+          "bodyAuthority": "internal",
+          "tenantId": "11111111-1111-4111-8111-111111111111",
+          "bindingId": null,
+          "bindingGeneration": null,
+          "artifactStatus": "readback_verified",
+          "publishable": false,
+          "readyForPublish": true,
+          "artifact": {
+            "schemaVersion": "stage2.personal_pipeline.v1",
+            "tenantId": "11111111-1111-4111-8111-111111111111",
+            "authorityMode": "personal_web/internal",
+            "artifactRef": "browser-personal-artifact",
+            "contextBundleDigest": "sha256:ee204e1246d500ced5d5c7b2bbb9f356da315a1519999827274eabb23548dfcd",
+            "revisions": [
+              {
+                "revision": 1,
+                "content": {
+                  "title": "Browser personal draft browser-fixture-personal-85755c614c29",
+                  "body": "Browser verification body browser-fixture-personal-85755c614c29",
+                  "format": "markdown"
+                },
+                "contentDigest": "sha256:5e03c684191ce7b3fe0061b7150002640d7726ea97430baf720f033dfaec691c",
+                "baselineRevision": null,
+                "verified": true
+              }
+            ],
+            "currentRevision": 1,
+            "published": false,
+            "replayed": false,
+            "writeReceipt": {
+              "idempotencyKey": "browser-fixture-personal-85755c614c29",
+              "writeStatus": "succeeded",
+              "registrationStatus": "registered",
+              "readbackStatus": "confirmed",
+              "readback": {
+                "status": "confirmed"
+              },
+              "failure": null
+            }
+          },
+          "mirror": null,
+          "contextReceipt": {
+            "bindingGeneration": null,
+            "bindingId": null,
+            "bodyAuthority": "internal",
+            "capabilityId": "stage2_document_writer_fixture",
+            "contextChecksum": "b41f5c6834a6b8b972e20273748c2b839b34b6e18684230b4318dcfcd8a13893",
+            "readbackChecksum": "46a11ca73bffd31e2b91252e65f458d1c88662fa845ffd3c17b8fe7015907c57",
+            "receiptId": "stage2_receipt_46a11ca73bffd31e2b91252e",
+            "schemaVersion": "stage2.context_readback_receipt.v1",
+            "sourceRefs": [
+              [
+                "material-1",
+                "personal_material",
+                "9d0ae800b442ad52ae70bc83482a790381a07720f1049a4c688bf00b89fc57b9"
+              ]
+            ],
+            "tenantId": "11111111-1111-4111-8111-111111111111",
+            "workspaceMode": "personal_web"
+          },
+          "artifactState": {
+            "status": "readback_verified",
+            "publishable": false,
+            "ready_for_publish": true,
+            "error_code": null,
+            "receipt": {
+              "schemaVersion": "stage2.artifact_state.v1",
+              "tenantId": "11111111-1111-4111-8111-111111111111",
+              "authorityMode": "personal_web/internal",
+              "idempotencyKey": "browser-fixture-personal-85755c614c29",
+              "contentDigest": "sha256:5e03c684191ce7b3fe0061b7150002640d7726ea97430baf720f033dfaec691c",
+              "artifactRef": "browser-personal-artifact",
+              "revision": "1",
+              "bindingId": null,
+              "bindingGeneration": null,
+              "remoteRef": null,
+              "remoteRevision": null,
+              "writeStatus": "succeeded",
+              "registrationStatus": "registered",
+              "readbackStatus": "confirmed",
+              "receiptDigest": "sha256:8a89f2116a7d55ae9cb28945a2d00a77a3cbb3e2fde2eb69b714ac1ff05e53fc"
+            },
+            "replayed": false
+          },
+          "error": null,
+          "receiptDigest": "sha256:8096a59ef142dad41e1f08be2d56962414c2e0e91a272925e05d1bff817a26c6",
+          "replayed": true
+        }
+      },
+      "same_receipt_digest": true,
+      "replayed": true
+    },
+    {
+      "name": "personal_authority_negative",
+      "status": 400,
+      "passed": true,
+      "body": {
+        "ok": false,
+        "error": {
+          "code": "authority_override",
+          "message": "request contains server-owned or unsupported fields"
+        }
+      }
+    },
+    {
+      "name": "organization_success",
+      "status": 200,
+      "passed": true,
+      "body": {
+        "ok": true,
+        "receipt": {
+          "schemaVersion": "stage2.runtime_receipt.v1",
+          "operationId": "browser-fixture-organization-85755c614c29",
+          "route": "organization_lark/lark",
+          "authorityMode": "organization_lark/lark",
+          "workspaceMode": "organization_lark",
+          "bodyAuthority": "lark",
+          "tenantId": "22222222-2222-4222-8222-222222222222",
+          "bindingId": "binding-org",
+          "bindingGeneration": 5,
+          "artifactStatus": "readback_verified",
+          "publishable": false,
+          "readyForPublish": true,
+          "artifact": {
+            "schemaVersion": "stage2.organization_pipeline.v1",
+            "status": "readback_verified",
+            "publishable": false,
+            "editable": false,
+            "tenantId": "22222222-2222-4222-8222-222222222222",
+            "bindingId": "binding-org",
+            "bindingGeneration": 5,
+            "credentialGeneration": "credential-9",
+            "artifactRef": "org-artifact-abbe67ee069ad83596c6872b",
+            "remoteRef": "browser-org-document",
+            "remoteRevision": "1",
+            "contentDigest": "sha256:abbe67ee069ad83596c6872bcdc319d77baf923c984f74824e24b399e10bdef8",
+            "scopeDigest": "sha256:c3a55d5ace59bbbfd162ef069255bbc5b92b6fc7b046552776a22ff8d2875d47",
+            "mirror": {
+              "schemaVersion": "stage2.organization_pipeline.v1",
+              "artifactRef": "org-artifact-abbe67ee069ad83596c6872b",
+              "tenantId": "22222222-2222-4222-8222-222222222222",
+              "bindingId": "binding-org",
+              "bindingGeneration": 5,
+              "remoteRef": "browser-org-document",
+              "remoteRevision": "1",
+              "contentDigest": "sha256:abbe67ee069ad83596c6872bcdc319d77baf923c984f74824e24b399e10bdef8",
+              "trustedOpenUrl": "https://feishu.cn/docx/browser-verification",
+              "editable": false,
+              "readOnly": true,
+              "mirrorDigest": "sha256:cd42fef39a74c95f08d7937dbf5d94859aa3ee528cb29fd70e5e2513f399873f"
+            },
+            "replayed": false
+          },
+          "mirror": {
+            "schemaVersion": "stage2.organization_pipeline.v1",
+            "artifactRef": "org-artifact-abbe67ee069ad83596c6872b",
+            "tenantId": "22222222-2222-4222-8222-222222222222",
+            "bindingId": "binding-org",
+            "bindingGeneration": 5,
+            "remoteRef": "browser-org-document",
+            "remoteRevision": "1",
+            "contentDigest": "sha256:abbe67ee069ad83596c6872bcdc319d77baf923c984f74824e24b399e10bdef8",
+            "trustedOpenUrl": "https://feishu.cn/docx/browser-verification",
+            "editable": false,
+            "readOnly": true,
+            "mirrorDigest": "sha256:cd42fef39a74c95f08d7937dbf5d94859aa3ee528cb29fd70e5e2513f399873f"
+          },
+          "contextReceipt": {
+            "bindingGeneration": 5,
+            "bindingId": "binding-org",
+            "bodyAuthority": "lark",
+            "capabilityId": "stage2_document_writer_fixture",
+            "contextChecksum": "3ef50f9abba38adc407b0475f23145875e67911e2f39dad8c98f2c8d3232f02d",
+            "readbackChecksum": "7c84c9ac84e6f6685738f8c2ffa2d430eebab6507558c32ec1b5f9ae2d8a8a4e",
+            "receiptId": "stage2_receipt_7c84c9ac84e6f6685738f8c2",
+            "schemaVersion": "stage2.context_readback_receipt.v1",
+            "sourceRefs": [
+              [
+                "brand-1",
+                "organization_material",
+                "fade7bb6723f62c6794475142c56b0419d4c81e7f581bbad7d3d2c2c023d9926"
+              ]
+            ],
+            "tenantId": "22222222-2222-4222-8222-222222222222",
+            "workspaceMode": "organization_lark"
+          },
+          "artifactState": {
+            "status": "readback_verified",
+            "publishable": false,
+            "ready_for_publish": true,
+            "error_code": null,
+            "receipt": {
+              "schemaVersion": "stage2.artifact_state.v1",
+              "tenantId": "22222222-2222-4222-8222-222222222222",
+              "authorityMode": "organization_lark/lark",
+              "idempotencyKey": "browser-fixture-organization-85755c614c29",
+              "contentDigest": "sha256:abbe67ee069ad83596c6872bcdc319d77baf923c984f74824e24b399e10bdef8",
+              "artifactRef": "org-artifact-abbe67ee069ad83596c6872b",
+              "revision": "1",
+              "bindingId": "binding-org",
+              "bindingGeneration": 5,
+              "remoteRef": "browser-org-document",
+              "remoteRevision": "1",
+              "writeStatus": "written",
+              "registrationStatus": "registered",
+              "readbackStatus": "confirmed",
+              "receiptDigest": "sha256:4ada25d665584d47c1d5e8e6f89029284b99f60dfef21fa8fc4f1ac10ad5bc07"
+            },
+            "replayed": false
+          },
+          "error": null,
+          "receiptDigest": "sha256:4e83000578468b2e0774c368ee9362b391de896d54ea5322e178f279e88b37f6",
+          "replayed": false
+        }
+      }
+    },
+    {
+      "name": "organization_authority_negative",
+      "status": 400,
+      "passed": true,
+      "body": {
+        "ok": false,
+        "error": {
+          "code": "authority_override",
+          "message": "request contains server-owned or unsupported fields"
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Playwright browser execution verifies HTTP behavior and negative authority cases.",
+    "This receipt is not an SSOT ACCEPTED receipt and does not promote a node.",
+    "Production mode requires STAGE2_PERSONAL_TOKEN and STAGE2_ORGANIZATION_TOKEN."
+  ]
+}

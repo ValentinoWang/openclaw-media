@@ -1,0 +1,31 @@
+TASK_ID: PR-REL-PLANNER-DESIGN-V3
+ROLE: acceptance-design scope remediation only; never implement production behavior.
+PROJECT_ROOT: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-planner-design
+BASELINE: 912bf53cd71147662d88b8846e5548a6e37ad8f9. Its protected test and contract content passed the V2 checks, but its committed human workspace incorrectly used the execution-attempt ID PR-REL-PLANNER-DESIGN-V2 instead of the frozen fragment ID PR-REL-PLANNER.
+APPROVAL: the user's source-only Production Reconciliation authorization is unchanged. This task only repairs that stable scope defect and does not approve implementation, deployment, release or Stage-2 SSOT state.
+
+Read /Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md completely and use its official scripts. Inspect commit 912bf53 and the PR-REL-PLANNER fragment before editing.
+
+Objective: make PR-REL-PLANNER the single acceptance fragment identity everywhere. Move the human checklist/binding to acceptance/human/PR-REL-PLANNER, update contract/checklist/binding/index metadata and hashes, and refresh immutable RED evidence only where its bound identity or hashes require it. Preserve the protected test bytes exactly at SHA-256 b3deaca939d4b6746659c1e0a83e47c923857242f06218f7d95f8a13ac07e898.
+
+Authoritative final-tree scope relative to 59e2adfd34853b6929d9fa69e69585806ac9c83a:
+- docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/**
+- acceptance/human/PR-REL-PLANNER/**
+- openclaw-tag-router/tests/test_production_reconciliation_planner.py
+
+Required cleanup scope:
+- remove acceptance/human/PR-REL-PLANNER-DESIGN-V2/** from the final tree.
+
+Generated validation-only scope:
+- acceptance/index.md may be regenerated, but must remain unstaged and uncommitted.
+
+Forbidden: protected-test edits, production implementation, existing unrelated source/tests/evidence/SHA256SUMS, remote/SSH/deploy/service/pointer/Nginx/database/HTTP/Feishu, secrets, SSOT/Obsidian, other workers or spawn_agent.
+
+Requirements:
+- Contract Task ID must be PR-REL-PLANNER; human checklist and ACTIVE binding paths must use acceptance/human/PR-REL-PLANNER.
+- Run bind-human/index/check and check_acceptance_contract.py, plus the CPython 3.12 RED command. RED must remain caused only by the missing reserved planner module/API.
+- Verify the protected test SHA-256 is unchanged.
+- Commit the scoped correction with exact message: fix(release): align planner acceptance identity
+- Structured return must report the new commit SHA, unchanged protected_test_sha256, actual changed paths, commands/evidence, VERIFIED/pass/none/none. Never claim release ACCEPTED.
+
+Stop with a structured blocker if the protected test changed or final tree contains any path outside the authorized final-tree scope.

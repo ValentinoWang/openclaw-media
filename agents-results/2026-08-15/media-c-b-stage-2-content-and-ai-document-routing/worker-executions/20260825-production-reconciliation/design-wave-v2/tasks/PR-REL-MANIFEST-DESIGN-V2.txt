@@ -1,0 +1,34 @@
+TASK_ID: PR-REL-MANIFEST-DESIGN-V2
+ROLE: acceptance designer and protected-test author; never implement production behavior.
+PROJECT_ROOT: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-manifest-design
+BASELINE: 59e2adfd34853b6929d9fa69e69585806ac9c83a with uncommitted artifacts left by a failed external design transport. Preserve, inspect and repair them; do not assume they are valid.
+APPROVAL: the user's supplied 2026-08-25 Production Reconciliation baseline plus "请继续" approves only this source-only acceptance fragment. It does not approve Stage-2 behavior, deployment, release or SSOT state.
+
+Read /Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md completely and use its templates and validators. Read docs/production-reconciliation/20260825/{deployment-gate.json,source-shas.json}. The V1 lane stopped without a structured return after transport failure. This V2 is a changed task contract that resolves the discovered generated-index conflict and compatible-Python test runner.
+
+Objective: finish an APPROVED v1, LOCKED acceptance fragment and implementation-independent protected tests for a pure production-release manifest schema, canonical serializer and fail-closed validator. Required stable failures: path traversal, absolute path, duplicate file path, unsupported symlink, mutable/secret/runtime content, missing/mismatched digest, malformed mode, dirty or mismatched Git source, manifest digest mismatch, previous-release identity mismatch, unknown schema fields and secret value disclosure. Canonical hashing excludes manifest_sha256 and uses deterministic ASCII JSON.
+
+Authoritative commit scope:
+- docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/**
+- acceptance/human/PR-REL-MANIFEST/**
+- openclaw-tag-router/tests/test_production_release_manifest.py
+
+Generated validation-only scope:
+- acceptance/index.md may be generated so the official split-root checker passes. It must remain unstaged and uncommitted. The main integrator is the sole final owner.
+
+Reserved future implementation, forbidden in this lane:
+- openclaw-tag-router/openclaw_app/services/production_release_manifest.py
+- openclaw-tag-router/openclaw_app/contracts/production-release-manifest.v1.schema.json
+- openclaw-tag-router/scripts/build_production_release_manifest.py
+
+Also forbidden: existing source/tests/evidence/SHA256SUMS, remote/SSH, deployment, services, pointers, Nginx, database, HTTP, Feishu, secrets, SSOT/Obsidian, other workers or spawn_agent.
+
+Requirements:
+- Contract status APPROVED, Test baseline LOCKED, version 1, source-only approval evidence and protected test SHA-256.
+- Chinese approved checklist and ACTIVE binding. Any human item may gate deployment use but not deterministic source implementation.
+- RED proof using: env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=openclaw-tag-router uv run --python 3.12 --with pytest python -m pytest -q openclaw-tag-router/tests/test_production_release_manifest.py. The reason must be the missing intended module/API, not Python incompatibility.
+- Use manage_acceptance_artifacts.py bind-human/index/check and check_acceptance_contract.py. Store immutable red result/evidence under the fragment.
+- Commit only authoritative commit scope with exact message: test(release): lock production manifest acceptance
+- STRUCTURED_RETURN_PATH JSON must include task_id, actual scopes, changed files, commit_sha, protected_test_sha256, commands/evidence, unverified_items, proposed_state=VERIFIED, acceptance_self_check=pass, failure_class=none, failure_origin=none. Never claim release ACCEPTED.
+
+Stop with a structured blocker if the fixed scope is still insufficient. Do not weaken validators or tests.

@@ -1,0 +1,247 @@
+{
+  "task_id": "PR-CANDIDATE-HARDENING",
+  "attempt_role": "primary",
+  "executor": "lw-luna",
+  "versions": {
+    "plan": 3,
+    "dag": 3,
+    "interface_freeze": 4,
+    "node_contract": 4,
+    "ssot_schema": 2
+  },
+  "frozen_identities": {
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "main_clone": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825",
+    "main_sha": "5f06780569568ccc3197f0ab16aad74bdf9d1c6f",
+    "remote": "ubuntu@106.52.146.37",
+    "candidate": "/tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router",
+    "candidate_head": "78120eea04392db2a254968cbe4d8f69f6fd7a84",
+    "candidate_branch": "codex/stage2-handoff-final-20260819",
+    "tracked_diff_sha256": "ed9021a266600014bf1efe287b9dd10a38854059dbd4b2305a58285877c9e7e9",
+    "new_test_sha256": {
+      "tests/test_stage2_feishu_hardening.py": "119e6bd3e33d53465d6b41f1e23904758461ec6ae28a91ec3b5d5d6a466c1eba",
+      "tests/test_stage2_runtime_hardening.py": "e0846a10a3b1f7b20d3057da0189e1a52fdf1e0fb80f889d0e1fe95b9d3ca091"
+    },
+    "task_source_sha256": "711564582513a73f17d0fa562ba541e365ac7b8bbe11cebb1bbe9dd980daac9a",
+    "validation_command_sha256": "c3646d3f15986cb65cd250c428243f6e46d9ba46dc8ede38bc9ad3829a9caa19"
+  },
+  "actual_read_scope": [
+    "The frozen main clone, including current openclaw-tag-router source, tests, and STAGE2-MERGE-RESOLUTION-20260825.md.",
+    "The frozen remote candidate through git status/diff/show-equivalent reads, sed, grep/rg, and sha256sum; only the eight tracked hardening files and two named untracked tests were semantically reviewed.",
+    "Stage-2 SSOT planning/progress, evidence-stage2-hardening-20260820.md, and existing Stage-2 reconciliation evidence under agents-results.",
+    "Project AGENTS.md, develop/Harness/fullstack-ai-harness.md, and .harness/overlays/project-harness-adapter.yaml.",
+    "Provider-independent Codex memory index was used only to confirm the previously recorded evidence boundary; it was not treated as source or acceptance authority."
+  ],
+  "actual_write_scope": [
+    "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/candidate-hardening/returns/PR-CANDIDATE-HARDENING-primary.json"
+  ],
+  "candidate_worktree_observation": {
+    "status": "dirty",
+    "tracked_modified_files": 8,
+    "untracked_named_tests": 2,
+    "other_untracked_status_entries_observed": true,
+    "no_candidate_source_or_server_write_performed": true
+  },
+  "file_dispositions": [
+    {
+      "item": 1,
+      "path": "openclaw_app/adapters/http_api.py",
+      "main_path": "openclaw-tag-router/openclaw_app/adapters/http_api.py",
+      "disposition": "conflicts_with_main",
+      "candidate_symbols": ["_reject_duplicate_json_fields", "OpenClawHttpHandler.do_POST", "OpenClawHttpHandler._handle_stage2"],
+      "candidate_behavior": "Reject duplicate JSON object keys, normalize ValueError responses, and reject a request carrying both Authorization and openclaw_session credentials.",
+      "main_conflict": "The candidate patch targets the old small Stage-2-only handler. Current main keeps a much larger HTTP handler, uses AccountAuthService cookie sessions, CSRF, and HttpAuthorityConfig, and intentionally does not expose /stage2/personal or /stage2/organization.",
+      "replayable_subset": "Reimplement duplicate-key rejection inside current OpenClawHttpHandler._read_json_body and test it at the current route boundary. Do not copy the old handler, old error envelope, or Bearer-over-cookie transport logic.",
+      "invariants": ["No ambiguous JSON body reaches any service", "Current cookie/account/CSRF authority remains canonical", "An eventual Stage-2 route cannot accept a client-selected credential or bypass HttpAuthorityConfig", "No route is enabled before explicit current-main startup composition"],
+      "corresponding_tests": ["New test_stage2_runtime_hardening.py::test_http_rejects_duplicate_json_fields_before_gateway_dispatch is a fixture for the old handler and must be rewritten against _read_json_body/current routing", "Current tests/test_http_api.py auth and CSRF tests"],
+      "minimum_patch_order": 8
+    },
+    {
+      "item": 2,
+      "path": "openclaw_app/services/stage2_external_document.py",
+      "main_path": "openclaw-tag-router/openclaw_app/services/stage2_external_document.py",
+      "disposition": "replay",
+      "candidate_symbols": ["IdempotencyInProgress", "InMemoryWriteReceiptStore.claim", "InMemoryWriteReceiptStore.release", "SQLiteWriteReceiptStore._validate_schema", "SQLiteWriteReceiptStore._initialize", "SQLiteWriteReceiptStore._validate_result", "SQLiteWriteReceiptStore.claim", "SQLiteWriteReceiptStore.release", "ExternalDocumentWriter.write", "ExternalDocumentWriter.resume_readback", "ExternalDocumentWriter._replay_result"],
+      "behavior": "Claim idempotency key plus request fingerprint before an external call, distinguish conflict from in-progress, use a restart-safe file-backed SQLite lease, validate stored receipts strictly, roll back failed transactions, release claims in finally, and resume only readback after a partial external write.",
+      "invariants": ["Same fingerprint replays without a second external write", "Different fingerprint is an explicit conflict", "A written receipt has remote reference and revision but remains non-publishable until registration", "A failed or partial receipt is never publishable and preserves attention data", "Binding identity and content digest remain attached to write and readback"],
+      "corresponding_tests": ["tests/test_stage2_external_document.py::test_exact_replay_is_deterministic_and_does_not_write_twice", "tests/test_stage2_external_document.py::test_partial_write_readback_can_resume_without_second_external_write", "tests/test_stage2_external_document.py::test_conflicting_idempotency_payload_is_rejected", "New test_stage2_feishu_hardening.py::test_idempotent_replay_and_conflicting_payload_do_not_write_again"],
+      "minimum_patch_order": 4,
+      "replay_caveat": "The fixed 300 second lease has no fencing token or renewal proof. Add a multi-process/expired-lease test and decide the product policy for an operation that outlives the lease before claiming durable exactly-once external side effects."
+    },
+    {
+      "item": 3,
+      "path": "openclaw_app/services/stage2_gateway.py",
+      "main_path": "openclaw-tag-router/openclaw_app/services/stage2_gateway.py",
+      "disposition": "replay",
+      "candidate_symbols": ["_reject_duplicate_aliases", "Stage2Gateway.run_personal", "Stage2Gateway.run_organization"],
+      "behavior": "Reject simultaneous snake_case and camelCase aliases for operation/idempotency, confirmation, source, and platform fields before resolving context or invoking runtime.",
+      "invariants": ["A request has one unambiguous value for every alias group", "Server-owned authority fields remain rejected", "No provider, source loader, writer, or adapter is called for an ambiguous request"],
+      "corresponding_tests": ["New test_stage2_runtime_hardening.py::test_gateway_rejects_duplicate_alias_fields", "tests/test_stage2_gateway.py::test_gateway_injects_server_personal_context_and_rejects_client_authority", "Add a table-driven test for every alias group and both routes"],
+      "minimum_patch_order": 2
+    },
+    {
+      "item": 4,
+      "path": "openclaw_app/services/stage2_personal_store.py",
+      "main_path": "openclaw-tag-router/openclaw_app/services/stage2_personal_store.py",
+      "disposition": "replay",
+      "candidate_symbols": ["_is_volatile_sqlite_path", "_secure_path", "_secure_database_file", "SQLitePersonalContentStore._validate_revision", "SQLitePersonalContentStore._validate_artifact", "SQLitePersonalContentStore._validate_failure", "SQLitePersonalContentStore._validate_replay_shape", "SQLitePersonalContentStore.get_artifact", "SQLitePersonalContentStore.create_artifact", "SQLitePersonalContentStore.save_revision", "SQLitePersonalContentStore.record_failure"],
+      "behavior": "Make file-backed SQLite strict and rollback-safe; validate schema, artifact identity, personal_web/internal authority, tenant, digest, contiguous revision history, replay payload, and failure receipt before returning stored state.",
+      "invariants": ["Personal artifacts are tenant-scoped and use personal_web/internal authority", "Stored revisions are contiguous, digest-bound, and never published", "Replay JSON must match the request and fingerprint", "Failure rows are explicit and cannot advertise publishability", "Production composition cannot silently use volatile state; :memory: remains test-only"],
+      "corresponding_tests": ["tests/test_stage2_personal_pipeline.py::test_sqlite_store_rejects_schema_version_with_missing_columns", "tests/test_stage2_personal_pipeline.py::test_sqlite_store_rejects_artifact_json_tenant_drift", "tests/test_stage2_personal_pipeline.py::test_sqlite_store_keeps_idempotency_and_revision_conflicts_after_restart", "tests/test_stage2_personal_pipeline.py::test_sqlite_store_persists_write_readback_and_failure_status"],
+      "minimum_patch_order": 5
+    },
+    {
+      "item": 5,
+      "path": "openclaw_app/services/stage2_production.py",
+      "main_path": "openclaw-tag-router/openclaw_app/services/stage2_production.py",
+      "disposition": "replay",
+      "candidate_symbols": ["SQLiteStage2ReceiptStore._REQUIRED_COLUMNS", "SQLiteStage2ReceiptStore._validate_schema", "SQLiteStage2ReceiptStore._initialize", "SQLiteStage2ReceiptStore._response", "SQLiteStage2ReceiptStore.put", "SQLiteStage2ReceiptStore.release"],
+      "behavior": "Retain main's already-present claim/lease behavior, then add strict table-column validation, rollback-safe initialization and release, file-backed permission failures, and receipt validation that rejects publishable or malformed stored state.",
+      "absorbed_by_main": ["SQLiteStage2ReceiptStore.claim", "SQLiteStage2ReceiptStore._CLAIM_LEASE_SECONDS", "basic schema migration and conflict behavior"],
+      "invariants": ["Receipt storage is durable and not :memory:", "A receipt cannot be publishable before the later registration/readback boundary", "Failed receipts have readyForPublish false", "Schema corruption fails closed rather than being silently repaired", "Claim deletion is transactional"],
+      "corresponding_tests": ["tests/test_stage2_production.py::test_sqlite_runtime_receipts_are_restart_safe_and_conflict_atomically", "tests/test_stage2_production.py::test_sqlite_runtime_receipt_schema_migrates_claim_table_additively", "tests/test_stage2_production.py::test_sqlite_runtime_claim_blocks_duplicate_before_external_writer", "tests/test_stage2_production.py::test_sqlite_runtime_claim_reclaims_expired_same_fingerprint", "Add corrupt publishable-receipt and missing-column negative cases"],
+      "minimum_patch_order": 6
+    },
+    {
+      "item": 6,
+      "path": "openclaw_app/services/stage2_production_factory.py",
+      "main_path": "openclaw-tag-router/openclaw_app/services/stage2_production_factory.py",
+      "disposition": "replay",
+      "candidate_symbols": ["_trusted_https_url", "_CanonicalReaders.__init__", "_CanonicalReaders.binding", "_FeishuOrganizationAdapter._resolve_binding", "_FeishuOrganizationAdapter._binding_target", "_FeishuOrganizationAdapter._binding_unchanged", "_FeishuOrganizationAdapter._revision", "_FeishuOrganizationAdapter.write", "_FeishuOrganizationAdapter.readback", "build_production_stage2_gateway"],
+      "behavior": "Resolve the active Feishu target from the server Binding at operation time, serialize all mutations on the shared FeishuService, restore every changed service attribute, reject static/global folder fallback, validate trusted Feishu/Lark URLs, verify returned target and revision, and revalidate Binding plus body/digest/revision on readback.",
+      "invariants": ["Tenant, Binding id, generation, active status, credential generation, space, and parent remain consistent", "A missing resolver or changed Binding fails closed before or after the external call", "Concurrent tenants cannot observe each other's Feishu target", "Service configuration is restored after success or exception", "Feishu success requires write response, trusted URL, remote revision, body/digest readback, and unchanged Binding"],
+      "corresponding_tests": ["New test_stage2_feishu_hardening.py::test_binding_mismatch_and_missing_resolver_fail_closed_before_write", "New test_stage2_feishu_hardening.py::test_concurrent_binding_targets_are_isolated_and_restored", "New test_stage2_feishu_hardening.py::test_binding_change_during_write_is_attention_and_readback_is_recoverable", "New test_stage2_feishu_hardening.py::test_readback_version_or_content_mismatch_fails_closed", "New test_stage2_feishu_hardening.py::test_missing_remote_revision_and_target_response_are_never_successful"],
+      "minimum_patch_order": 7,
+      "replay_caveat": "Adapt the loader to current main's canonical media_product.stage1_binding_generations/account authority. The candidate host allowlist is broader than an exact tenant URL; add a cross-tenant Feishu-host negative case and bind the returned document identity to the authoritative Binding/readback."
+    },
+    {
+      "item": 7,
+      "path": "openclaw_app/services/stage2_runtime.py",
+      "main_path": "openclaw-tag-router/openclaw_app/services/stage2_runtime.py",
+      "disposition": "replay",
+      "candidate_symbols": ["InMemoryReceiptStore.__init__", "InMemoryReceiptStore.put", "InMemoryReceiptStore.claim", "InMemoryReceiptStore.release", "_stable_source_rows", "Stage2Runtime.run_personal", "Stage2Runtime.run_organization"],
+      "behavior": "Reserve an in-memory operation key before side effects and sort direct source inputs by canonical row JSON so equivalent source permutations produce the same request fingerprint and receipt.",
+      "invariants": ["One shared store permits only one concurrent external write for a key/fingerprint", "Conflicting fingerprints remain explicit conflicts", "Equivalent source-row order does not change the receipt", "Production durability is supplied by SQLiteStage2ReceiptStore rather than the in-memory store"],
+      "corresponding_tests": ["New test_stage2_runtime_hardening.py::test_receipt_replay_is_stable_when_source_rows_are_reordered", "New test_stage2_runtime_hardening.py::test_shared_in_memory_claim_prevents_duplicate_external_writes", "New test_stage2_runtime_hardening.py::test_conflicting_replay_remains_explicit_after_a_stable_receipt", "tests/test_stage2_artifact_state.py::test_concurrent_exact_replay_keeps_one_receipt"],
+      "minimum_patch_order": 3
+    },
+    {
+      "item": 8,
+      "path": "openclaw_app/services/stage2_server_context.py",
+      "main_path": "openclaw-tag-router/openclaw_app/services/stage2_server_context.py",
+      "disposition": "conflicts_with_main",
+      "candidate_symbols": ["_record_value", "_request_transport_maps", "_authorization_value", "_bearer_token", "extract_session_token", "AuthenticatedSessionProvider.resolve", "CurrentBindingProvider.resolve", "TenantProfileReader.read", "TenantSourceReader.list_sources", "ServerStage2ContextProviders.organization_context"],
+      "candidate_behavior": "Reject contradictory server aliases, malformed transport maps, multiple Authorization headers, whitespace-bearing tokens, stale sessions, cross-tenant/profile/source rows, missing or mixed organization Binding identities, and invalid source scopes.",
+      "main_conflict": "The candidate transport layer gives an injected Bearer credential precedence over a cookie. Current main's authenticated HTTP authority is AccountAuthService plus openclaw_session and CSRF; SessionPrincipal/HttpAuthorityConfig must remain the outer authority. The generic candidate loader cannot replace that boundary.",
+      "replayable_subset": "Replay strict record alias checks, active session/profile checks, canonical UUID/workspace/source-kind checks, personal Binding prohibition, organization Binding consistency, and deterministic source normalization behind adapters that consume current main account and Stage-1 Binding facts. Do not copy Bearer selection or let client transport fields create tenant identity.",
+      "invariants": ["Only current-main authenticated account/session authority determines user and tenant", "No contradictory alias is silently selected", "Every source row matches tenant, workspace, allowed kind, and one active Binding where organization mode applies", "Session expiry/member/tenant status closes the operation", "Binding and profile are revalidated before external use"],
+      "corresponding_tests": ["Adapt tests/test_stage2_server_context.py::test_binding_record_shape_errors_are_service_failures and cross-tenant reader cases", "Current tests/test_http_api.py cookie, CSRF, tenant, and session-rotation tests", "Add a negative test proving a Stage-2 request cannot use an Authorization header to bypass the canonical cookie session"],
+      "minimum_patch_order": 1
+    },
+    {
+      "item": 9,
+      "path": "tests/test_stage2_feishu_hardening.py",
+      "main_path": "openclaw-tag-router/tests/test_stage2_feishu_hardening.py",
+      "disposition": "replay",
+      "candidate_behavior": "Fixture-only regression coverage for Binding resolver requirements, trusted URL/target checks, shared-service concurrency and restoration, Binding changes, write/readback mismatch, and external idempotent replay.",
+      "invariants": ["No fake Feishu success is accepted without target/revision/body/readback checks", "A partial external write can resume readback without writing a second document", "The fixture never represents real Feishu or production acceptance"],
+      "corresponding_tests": ["All seven named tests in the candidate file, especially test_concurrent_binding_targets_are_isolated_and_restored and test_binding_change_during_write_is_attention_and_readback_is_recoverable"],
+      "minimum_patch_order": 9,
+      "required_adaptation": "Import the current-main Stage-2 modules after the implementation replay; keep this as focused fixture coverage and add real authenticated Feishu readback as a separate evidence layer."
+    },
+    {
+      "item": 10,
+      "path": "tests/test_stage2_runtime_hardening.py",
+      "main_path": "openclaw-tag-router/tests/test_stage2_runtime_hardening.py",
+      "disposition": "replay",
+      "candidate_behavior": "Six service/runtime hardening assertions are reusable; the two HTTP tests exercise the old candidate make_server and /stage2/personal route.",
+      "replayable_tests": ["test_gateway_rejects_duplicate_alias_fields", "test_receipt_replay_is_stable_when_source_rows_are_reordered", "test_shared_in_memory_claim_prevents_duplicate_external_writes", "test_conflicting_replay_remains_explicit_after_a_stable_receipt"],
+      "discard_or_rewrite_tests": ["test_http_rejects_conflicting_bearer_and_cookie_credentials: rewrite against current-main cookie/CSRF authority", "test_http_rejects_duplicate_json_fields_before_gateway_dispatch: rewrite against current OpenClawHttpHandler._read_json_body and a deliberately wired current-main route"],
+      "invariants": ["Ambiguous aliases do not dispatch", "Equivalent source order replays identically", "Concurrent claims block a second side effect", "Conflicting replay remains a conflict", "HTTP evidence is not claimed until current main route composition exists"],
+      "minimum_patch_order": 9
+    }
+  ],
+  "recommended_replay_order": [
+    "1. Adapt stage2_server_context to AccountAuthService, SessionPrincipal, current tenant authority, and canonical Stage-1 Binding reads; retain strict alias/scope/fail-closed checks but remove old Bearer precedence.",
+    "2. Replay stage2_gateway alias-conflict rejection before context/provider/runtime calls.",
+    "3. Replay stage2_runtime claim/release and stable direct-source canonicalization; keep in-memory behavior test-only.",
+    "4. Replay stage2_external_document durable claim/lease, schema/receipt validation, rollback, and resumable readback.",
+    "5. Replay stage2_personal_store artifact/revision/failure schema and tenant/digest validation.",
+    "6. Replay stage2_production strict durable receipt validation and transactional release on top of main's existing claim/lease implementation.",
+    "7. Replay stage2_production_factory dynamic Binding target, trusted URL, shared lock, target/revision/body readback, and restoration; bind it to current media_product.stage1_binding_generations.",
+    "8. Add a new current-main HTTP/startup composition change in app.py/server_cli.py/http_api.py, then adapt the HTTP hardening tests to cookie/account/CSRF/HttpAuthorityConfig. Do not replace the retained main entrypoints with the candidate handler.",
+    "9. Run focused unit/integration tests, then isolated authenticated external-system tests; keep deployment/readback and formal SSOT acceptance as separate gates."
+  ],
+  "test_implications": {
+    "frozen_validation": {
+      "command_file": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/validation/PR-CANDIDATE-HARDENING.sh",
+      "result": "pass",
+      "exit_code": 0,
+      "checks": ["main HEAD equals frozen SHA", "main worktree is clean", "remote candidate binary diff hash equals frozen SHA"]
+    },
+    "candidate_test_hashes_verified": true,
+    "tests_not_run_in_this_bounded_review": "No candidate pytest or production/external write was run; the allowed review commands and frozen validation script were used only.",
+    "required_next_test_layers": [
+      "Current-main focused Stage-2 unit/integration tests after semantic replay",
+      "Multi-thread and multi-process SQLite claim/lease/restart tests, including lease expiry and transaction rollback",
+      "Authenticated current-main HTTP tests for cookie session, CSRF, authority, tenant isolation, duplicate JSON, and route absence/presence",
+      "Authenticated PostgreSQL and real Feishu write/readback with Binding generation and cross-tenant negative cases",
+      "Separate deployment readback, rollback, device/browser, real AI, and formal SSOT gates"
+    ],
+    "historical_evidence_boundary": "Existing hardening evidence is candidate static/fixture/browser-fixture evidence only: 172 focused tests, 860/860 randomized hash reruns, and seven fixture cases. It does not establish ACCEPTED, production-ready, real AI, authenticated production/device, PostgreSQL, or real Feishu completion."
+  },
+  "conflicts_with_main": [
+    "STAGE2-MERGE-RESOLUTION-20260825 explicitly retains current main openclaw_app/app.py, openclaw_app/adapters/http_api.py, and openclaw_app/server_cli.py.",
+    "Current main has no production startup injection for Stage2Gateway and does not silently enable /stage2/personal or /stage2/organization.",
+    "Current main HTTP authority is AccountAuthService/openclaw_session/CSRF plus HttpAuthorityConfig; candidate old HTTP/server-context code uses an injected Bearer transport contract and cannot be copied as the authority layer.",
+    "Current main's canonical Binding authority is Stage-1 PostgreSQL/account data, including media_product.stage1_binding_generations; candidate generic loaders must be adapters over that authority, not a second tenant or Binding source.",
+    "Current main already sorts server TenantSourceReader rows; runtime stable sorting remains an additional fingerprint guarantee for direct/test inputs, not a reason to replace current source authority."
+  ],
+  "unverified_items": [
+    "No current-main implementation wires Stage-2 routes into the production HTTP handler or server_cli startup.",
+    "No authenticated production session, CSRF, HTTP authority, PostgreSQL, real Feishu, real AI, physical-device, or deployment readback proof was produced by this review.",
+    "Candidate hardening is uncommitted and the two hardening tests are untracked; no commit, push, release, restart, or service/database/Feishu mutation was performed.",
+    "The fixed external claim lease has no fencing/renewal proof for operations longer than the lease.",
+    "The Feishu URL check allows trusted Feishu/Lark hosts but does not independently prove that a returned document URL belongs to the exact tenant Binding; add that negative test and readback identity check.",
+    "The candidate fixture tests use fake services and tenant labels; they are not external-system evidence.",
+    "The formal Stage-2 SSOT remains blocked at 9.4% (3/32), with upstream C1/C3/DC2 and F1/F2/F3 boundaries unresolved."
+  ],
+  "repository_status": {
+    "business_project": {
+      "project_root": "not_a_git_repository",
+      "main_clone": "clean; ## main...origin/main; HEAD 5f06780569568ccc3197f0ab16aad74bdf9d1c6f"
+    },
+    "harness_ssot": {
+      "paths": ["develop/Harness", ".agents/skills", ".harness/overlays/project-harness-adapter.yaml"],
+      "git_status": "no separate .git repository was found under the Harness/skills paths; no Harness file was written",
+      "adapter_observation": "project harness adapter declares no static guards, formatting, screenshot, or integration commands"
+    }
+  },
+  "commands": [
+    {
+      "command": "bash agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/validation/PR-CANDIDATE-HARDENING.sh",
+      "result": "exit 0; frozen main SHA, clean main status, and remote tracked diff hash verified"
+    },
+    {
+      "command": "ssh ubuntu@106.52.146.37 git status/diff/sed/grep/sha256sum on the frozen candidate paths",
+      "result": "candidate HEAD and eight modified files observed; two named tests present; supplied hashes matched; no mutation"
+    },
+    {
+      "command": "sha256sum tests/test_stage2_feishu_hardening.py tests/test_stage2_runtime_hardening.py on the remote candidate",
+      "result": "both supplied test hashes matched"
+    },
+    {
+      "command": "git -C .codex-work/production-reconciliation-20260825 status --short --branch",
+      "result": "## main...origin/main; clean"
+    },
+    {
+      "command": "readlink/stat and Git metadata checks for develop/Harness and .agents/skills",
+      "result": "Harness instructions and adapter were read; no separate Harness Git repository was found"
+    }
+  ],
+  "review_boundary": "This is a verified candidate hardening reconciliation only. It does not claim ACCEPTED, merged, deployed, production-ready, or formal SSOT completion.",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none"
+}

@@ -1,0 +1,39 @@
+TASK_ID: PR-REL-MANIFEST-DESIGN
+ROLE: acceptance designer and protected-test author; do not implement production behavior.
+TRANSPORT: external-codex-exec through /Users/vsiyo/.codex/workers/run-lw-luna.sh.
+PROJECT_ROOT: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-manifest-design
+BASELINE: 59e2adf, whose parent source authority is GitHub main 5f06780569568ccc3197f0ab16aad74bdf9d1c6f.
+GOVERNANCE: source-only Production Reconciliation support. It does not change the Stage-2 SSOT state or approve deployment.
+APPROVAL AUTHORITY: the user's supplied 2026-08-25 Production Reconciliation baseline and subsequent "请继续" authorize this exact source-only contract. Record that approval narrowly; do not claim product, deployment, or release acceptance.
+
+Read completely before work:
+- /Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md and its directly required templates/scripts.
+- docs/production-reconciliation/20260825/deployment-gate.json
+- docs/production-reconciliation/20260825/source-shas.json
+- existing release/hash patterns under openclaw-media and openclaw-tag-router.
+
+Objective:
+Design and lock the acceptance contract for a pure production-release manifest schema, canonical serializer and fail-closed validator. Author protected tests first. The future implementation must bind a clean Git SHA to a target-relative file inventory and reject path traversal, absolute paths, duplicate paths, unsupported symlinks, mutable/secret/runtime content, missing or mismatched digests, malformed modes, source mismatch, manifest digest mismatch and previous-release identity mismatch. Canonical JSON must exclude the digest field while hashing and never contain secret values.
+
+Exclusive write scope:
+- docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/**
+- acceptance/human/PR-REL-MANIFEST/**
+- openclaw-tag-router/tests/test_production_release_manifest.py
+
+Reserved future implementation scope to declare but NOT write:
+- openclaw-tag-router/openclaw_app/services/production_release_manifest.py
+- openclaw-tag-router/openclaw_app/contracts/production-release-manifest.v1.schema.json
+- openclaw-tag-router/scripts/build_production_release_manifest.py
+
+Forbidden:
+- every production implementation file; existing tests; existing evidence freeze files and SHA256SUMS; Git history outside your branch; remote access; SSH; deployment; service, pointer, Nginx, database or Feishu changes; secrets; SSOT/Obsidian edits; spawn_agent or other workers.
+
+Required output:
+1. An APPROVED version-1 acceptance contract with Test baseline LOCKED. Approval evidence must point to the exact user-authorized source-only baseline above.
+2. A Chinese project-level human checklist and active binding. Human judgment may govern operational clarity or final deployment use, but must not duplicate deterministic manifest assertions or block completion of source-only code.
+3. Protected tests at the exact test path. They must be implementation-independent, comprehensive for the listed stable failure classes and RED on baseline because the public implementation does not exist.
+4. A red-proof run under the fragment acceptance tree, with command, failure cause and evidence identity. Run the official acceptance artifact validators.
+5. Commit only the exclusive write scope with message: test(release): lock production manifest acceptance
+6. Write the required structured JSON return to STRUCTURED_RETURN_PATH. Include task_id, versions, actual scopes, changed files, commit_sha, protected_test_sha256, commands, evidence, unverified_items, proposed_state=VERIFIED, acceptance_self_check=pass, failure_class=none, failure_origin=none. Do not claim ACCEPTED release state.
+
+Stop immediately with a structured BLOCKED return for any authority, scope, architecture or product decision not already fixed above. Do not implement around it.

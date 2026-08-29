@@ -1,0 +1,34 @@
+TASK ID: STAGE2-LUNA-CANDIDATE-ASSEMBLY-20260819
+DIRECT PARENT: Phase-2 SSOT F1/F2/F3/C/DA (formal states remain BLOCKED until upstream projections and external acceptance are received)
+CONTRACT VERSIONS: plan=3 dag=3 interface=4 node_contract=4
+PRIMARY: lw-luna via /Users/vsiyo/.codex/workers/run-lw-luna.sh
+
+The code target is the isolated remote worktree:
+  /tmp/openclaw-stage2-integration-luna/openclaw-tag-router
+Remote host is ubuntu@106.52.146.37. The local project root is only the orchestration/evidence root.
+
+Write scope (exclusive): create or change only these two files in that remote worktree:
+  openclaw_app/services/stage2_candidate_assembly.py
+  tests/test_stage2_candidate_assembly.py
+Do not edit any existing tracked file, contract, config, migration, lockfile, generated file, SSOT file, progress ledger, or other test.
+
+Objective: implement the code-side candidate assembly boundary described by the SSOT. It must consume the existing Stage2ReleaseGate result and assemble a deterministic candidate only when all three projections F1/F2/F3 are ACCEPTED for the same candidate identity. This is an implementation boundary, not formal acceptance.
+
+Required behavior:
+1. Accept immutable JSON-shaped upstream projection receipts or a Stage2ReleaseGate result; require F1->C1, F2->C3, F3->DC2 mappings, ACCEPTED states, source digests, acceptance receipts, and one matching candidate identity.
+2. Fail closed with stable errors for missing/blocked projections, candidate mismatch, receipt digest mismatch, duplicate/unknown projection keys, and legacy/double-writer policy violations. Never mutate input, select credentials, call external services, or change SSOT state.
+3. Accept a declared component inventory and reject an assembly containing a legacy writer, deployment-global credential fallback, or dual body authority. Require exactly the two allowed authority modes and a single writer route.
+4. Return a deterministic candidate receipt with candidate id, projection digest, sorted component digests, release policy, ready boolean, and receipt digest. The result must be JSON-shaped and reproducible regardless of input mapping order.
+5. Add tests for blocked upstream, all-accepted positive assembly, candidate identity mismatch, missing acceptance receipt, legacy writer/double authority rejection, component digest determinism, zero-write input preservation, and stable receipt digest. Tests must not contact network, Feishu, databases, credentials, or production paths.
+
+Verification in the remote worktree:
+  PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. /home/ubuntu/selfmedia-tools/openclaw-media/.venv/bin/pytest -q tests/test_stage2_candidate_assembly.py
+  PYTHONDONTWRITEBYTECODE=1 /home/ubuntu/selfmedia-tools/openclaw-media/.venv/bin/python - <<'PY'
+from pathlib import Path
+for name in ("openclaw_app/services/stage2_candidate_assembly.py", "tests/test_stage2_candidate_assembly.py"):
+    compile(Path(name).read_text(encoding="utf-8"), name, "exec")
+print("stage2 candidate assembly in-memory compile passed")
+PY
+  git diff --check
+
+Do not commit or push. Before exit write one JSON object to STRUCTURED_RETURN_PATH with task_id, proposed_state, acceptance_self_check, failure_class, failure_origin, actual_read_scope, actual_write_scope, changed_files, commands, test_evidence, unverified_items, residual_risks, and explicit_non_claims. Use IMPLEMENTED or VERIFIED only if the focused tests pass. Never claim formal SSOT acceptance or production release.

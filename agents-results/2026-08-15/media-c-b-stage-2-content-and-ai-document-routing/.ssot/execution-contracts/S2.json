@@ -1,0 +1,81 @@
+{
+  "contract_id": "S2",
+  "schema_version": 1,
+  "node_id": "S2",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "work_kind": "implementation",
+  "write_authority": "implementation",
+  "read_set": [
+    "artifact:DL-S1"
+  ],
+  "write_set": [
+    "artifact:S2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:S2",
+      "mode": "W",
+      "isolation_key": "node:S2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance S2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/S2-return.json"
+  ],
+  "worker_transport": "external-codex-exec",
+  "release_slice": "REL-2",
+  "wave_id": "W-2-5",
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  },
+  "worker_registration": {
+    "worker_level": "LW",
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "wrapper_entrypoint": "exec codex exec",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "danger-full-access",
+    "sandbox_authority": "writable sandbox",
+    "runtime_profile": "implementation-runner",
+    "runtime_profile_available": false,
+    "launch_authorized": false,
+    "profile_authority": "stage1 G1 accepted capability receipt",
+    "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
+    "task_argument": "实现统一 ContextBuilder 路由和跨租户门禁。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/S2.json",
+    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/S2.txt",
+    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/S2.log",
+    "prompt_sha256": "capture-before-launch",
+    "launch_barrier": "all wave PIDs registered before first wait",
+    "prompt_cleanup": "delete after exit evidence registration",
+    "runtime_handle_cleanup": "release after exit evidence registration",
+    "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions",
+    "dispatch_state": "BLOCKED"
+  }
+}

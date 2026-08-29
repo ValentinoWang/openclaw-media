@@ -1,0 +1,85 @@
+{
+  "task_id": "PR-REL-MANIFEST-DESIGN-V2",
+  "attempt_role": "primary",
+  "executor": "lw-luna",
+  "fragment_id": "PR-REL-MANIFEST",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-manifest-design",
+  "actual_scopes": {
+    "authoritative_committed": [
+      "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/**",
+      "acceptance/human/PR-REL-MANIFEST/**",
+      "openclaw-tag-router/tests/test_production_release_manifest.py"
+    ],
+    "generated_validation_only_uncommitted": [
+      "acceptance/index.md"
+    ],
+    "reserved_future_implementation_untouched": [
+      "openclaw-tag-router/openclaw_app/services/production_release_manifest.py",
+      "openclaw-tag-router/openclaw_app/contracts/production-release-manifest.v1.schema.json",
+      "openclaw-tag-router/scripts/build_production_release_manifest.py"
+    ]
+  },
+  "changed_files": [
+    "acceptance/human/PR-REL-MANIFEST/binding.md",
+    "acceptance/human/PR-REL-MANIFEST/checklist.md",
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance-contract.md",
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/index.md",
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/machine/unit/runs/20260826T000000Z-red-proof-a1b2c3/evidence/protected-tests-red.txt",
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/machine/unit/runs/20260826T000000Z-red-proof-a1b2c3/result.md",
+    "openclaw-tag-router/tests/test_production_release_manifest.py"
+  ],
+  "commit_sha": "bfa10178959e7cbde3bca9be6aa961f65d6343a5",
+  "commit_message": "test(release): lock production manifest acceptance",
+  "contract_status": "APPROVED",
+  "contract_version": 1,
+  "test_baseline": "LOCKED",
+  "human_checklist_status": "APPROVED",
+  "human_binding_status": "ACTIVE",
+  "contract_sha256": "8ffe2adebbf86aad61b0c1396b623a1321a6a97958eb1f327177481024000537",
+  "protected_test_sha256": "dd653b45ebce1d09593f232673506262e7720dff571474fe5f1afc19737e0187",
+  "commands_evidence": [
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/check_acceptance_contract.py docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance-contract.md --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-manifest-design",
+      "result": "pass",
+      "evidence": "OK: acceptance contract"
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py bind-human docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-manifest-design --replace",
+      "result": "pass",
+      "evidence": "ACTIVE binding generated with contract and checklist hashes"
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py index docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-manifest-design",
+      "result": "pass",
+      "evidence": "task acceptance index committed; project acceptance/index.md generated and left uncommitted"
+    },
+    {
+      "command": "env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=openclaw-tag-router uv run --python 3.12 --with pytest python -m pytest -q openclaw-tag-router/tests/test_production_release_manifest.py",
+      "result": "expected_red",
+      "exit_code": 2,
+      "evidence": "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/machine/unit/runs/20260826T000000Z-red-proof-a1b2c3/evidence/protected-tests-red.txt; ModuleNotFoundError for missing intended module/API openclaw_app.services.production_release_manifest, not Python incompatibility"
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py check docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST --project-root /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-manifest-design",
+      "result": "pass",
+      "evidence": "OK: split-root acceptance artifact"
+    },
+    {
+      "command": "bash /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/validation/PR-REL-MANIFEST-DESIGN-V2.sh",
+      "result": "pass",
+      "exit_code": 0,
+      "evidence": "frozen validation script passed; expected protected-test RED was captured"
+    }
+  ],
+  "unverified_items": [
+    "Future production implementation, schema file, and build script",
+    "Deployment, service reload/restart, release pointer, Nginx, database, Feishu, remote/SSH, and secrets",
+    "Authenticated production requests, current-main Stage-2 route composition, activation and rollback rehearsal",
+    "Production/device evidence, real AI/provider evidence, Stage-1 C1/C3/DC2 acceptance, and formal Stage-2 SSOT status",
+    "Human approval to use a future manifest for an actual production release"
+  ],
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none"
+}

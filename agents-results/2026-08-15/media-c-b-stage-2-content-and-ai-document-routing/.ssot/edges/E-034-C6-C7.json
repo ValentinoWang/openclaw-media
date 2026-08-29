@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-034-C6-C7",
+  "from": "C6",
+  "to": "C7",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c6.c7.v3"
+  ],
+  "transferred_input": "Web 编辑界面和修订链",
+  "gate_evidence": "Web 是个人正文的唯一编辑权威",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-C6"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C7 consumes the explicitly produced artifact DL-C6"
+}

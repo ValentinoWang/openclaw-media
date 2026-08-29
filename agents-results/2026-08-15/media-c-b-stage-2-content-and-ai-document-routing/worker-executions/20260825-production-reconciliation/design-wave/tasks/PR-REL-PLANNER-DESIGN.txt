@@ -1,0 +1,38 @@
+TASK_ID: PR-REL-PLANNER-DESIGN
+ROLE: acceptance designer and protected-test author; do not implement production behavior.
+TRANSPORT: external-codex-exec through /Users/vsiyo/.codex/workers/run-lw-luna.sh.
+PROJECT_ROOT: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-planner-design
+BASELINE: 59e2adf, whose parent source authority is GitHub main 5f06780569568ccc3197f0ab16aad74bdf9d1c6f.
+GOVERNANCE: source-only Production Reconciliation support. It does not change the Stage-2 SSOT state or approve deployment.
+APPROVAL AUTHORITY: the user's supplied 2026-08-25 Production Reconciliation baseline and subsequent "请继续" authorize this exact source-only contract. Record that approval narrowly; do not claim product, deployment, or release acceptance.
+
+Read completely before work:
+- /Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md and its directly required templates/scripts.
+- docs/production-reconciliation/20260825/deployment-gate.json
+- docs/production-reconciliation/20260825/source-shas.json
+- runtime/maintenance/deploy/deploy_openclaw_runtime.py only as an existing behavior reference.
+
+Objective:
+Design and lock the acceptance contract for a pure, deterministic Production Reconciliation activation/rollback planner. Default and only current behavior is dry-run plan generation: Git SHA -> immutable release ID/root -> manifest preflight -> expected-current pointer CAS -> planned atomic switch -> optional user-systemd reload/restart steps -> same-round readback -> observation -> rollback plan. It must execute no subprocess, SSH, filesystem mutation, symlink change, service action, Nginx action, database action or HTTP request. It must reject unsafe or broad paths, a release root not bound to the full Git SHA, missing/invalid previous release, stale current pointer identity, candidate/current/previous identity collisions, missing rollback compatibility and secret-bearing plan inputs. Output must be canonical, redacted and idempotent.
+
+Exclusive write scope:
+- docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/**
+- acceptance/human/PR-REL-PLANNER/**
+- openclaw-tag-router/tests/test_production_reconciliation_planner.py
+
+Reserved future implementation scope to declare but NOT write:
+- openclaw-tag-router/openclaw_app/services/production_reconciliation_planner.py
+- openclaw-tag-router/scripts/plan_production_reconciliation.py
+
+Forbidden:
+- production implementation; existing tests; existing evidence freeze files and SHA256SUMS; remote access; subprocess/SSH/deploy/service/pointer/Nginx/database/HTTP/Feishu actions; secrets; SSOT/Obsidian edits; spawn_agent or other workers.
+
+Required output:
+1. APPROVED version-1 contract with Test baseline LOCKED and narrow user approval evidence.
+2. Chinese human checklist and active binding; reserve actual cutover approval/execution for deployment authority.
+3. Protected tests at the exact test path, RED because the intended planner does not exist. Cover canonical output, no execution, exact full-SHA path, path safety, pointer CAS, previous release/rollback validation, identity collisions, missing compatibility, redaction, idempotency and no implicit Nginx/database/external write steps.
+4. Red-proof evidence under the fragment acceptance tree and all official acceptance artifact validators.
+5. Commit only the exclusive write scope with message: test(release): lock reconciliation planner acceptance
+6. Structured JSON return with task_id, versions, actual scopes, changed files, commit_sha, protected_test_sha256, commands, evidence, unverified_items, proposed_state=VERIFIED, acceptance_self_check=pass, failure_class=none, failure_origin=none.
+
+Stop with a structured BLOCKED return for any unfixed authority or scope issue; do not implement or perform a real plan.

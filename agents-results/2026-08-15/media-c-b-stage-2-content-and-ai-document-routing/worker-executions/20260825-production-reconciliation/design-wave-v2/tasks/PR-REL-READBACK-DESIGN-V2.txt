@@ -1,0 +1,26 @@
+TASK_ID: PR-REL-READBACK-DESIGN-V2
+ROLE: acceptance designer and protected-test author; never implement production behavior.
+PROJECT_ROOT: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-readback-design
+BASELINE: 59e2adfd34853b6929d9fa69e69585806ac9c83a, clean. V1 correctly blocked because the project-level generated index was not declared.
+APPROVAL: the user's supplied 2026-08-25 Production Reconciliation baseline plus "请继续" approves only this source-only acceptance fragment.
+
+Read /Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md completely, its templates/validators, docs/production-reconciliation/20260825/{runtime-observations.md,deployment-gate.json}, and openclaw-tag-router/scripts/qa/check_openclaw_bot_center_release_process.py.
+
+Objective: create APPROVED v1, LOCKED acceptance and protected tests for a read-only Stage-2 user-systemd release readback guard. Future behavior consumes injected command/probe output or an explicit local runner; no SSH. Fail closed with stable codes for inactive state, missing/bad PID, PID cwd drift, ExecStart/module mismatch, settings/port mismatch, pointer/release-root drift, manifest identity mismatch, missing properties and HTTP status mismatch. Preserve the direct `/healthz`/`/readyz` versus public `/stage2/healthz`/`/stage2/readyz` distinction. Never reveal environment values, tokens, cookies, Authorization headers or full secret-bearing argv.
+
+Authoritative commit scope:
+- docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/**
+- acceptance/human/PR-REL-READBACK/**
+- openclaw-tag-router/tests/test_stage2_release_readback.py
+
+Generated validation-only scope: acceptance/index.md may be generated but must remain unstaged/uncommitted; main integrator owns the final projection.
+Reserved future implementation and forbidden now: openclaw-tag-router/scripts/qa/check_stage2_release_process.py
+Also forbidden: all existing source/tests/evidence/SHA256SUMS, remote/SSH/curl, systemd/pointer/Nginx/database/Feishu changes, secrets, SSOT/Obsidian, other workers or spawn_agent.
+
+Requirements:
+- APPROVED/LOCKED version 1 contract with protected test hash and narrow approval evidence.
+- Chinese approved checklist and ACTIVE binding; deterministic checks remain automatic.
+- RED proof with CPython 3.12 via uv and failure specifically due to missing intended guard.
+- Official bind/index/check/contract validators and immutable red evidence.
+- Commit exact authoritative scope with message: test(release): lock Stage-2 readback acceptance
+- Structured return: task_id, actual scopes, changed files, commit_sha, protected_test_sha256, commands/evidence, unverified items, VERIFIED/pass/none/none. Never claim production proof.

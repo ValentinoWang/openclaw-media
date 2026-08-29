@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "stage2.integration.evidence.v3",
+  "recordedAt": "2026-08-19T04:10:00+08:00",
+  "formalSsotState": {
+    "acceptedNodes": ["A", "A1", "K"],
+    "acceptedCount": 3,
+    "nodeCount": 32,
+    "completionPercent": 9.4,
+    "readyFrontierWidth": 0,
+    "nonClaim": "Candidate implementation and focused tests do not change BLOCKED nodes to ACCEPTED."
+  },
+  "remoteDelivery": {
+    "repository": "ValentinoWang/openclaw-media",
+    "candidateBranch": "codex/stage2-release-20260818",
+    "candidateCommit": "ed5dc3967dc2cea6447114c42c546725f9386c1d",
+    "parentCommit": "ca21885b3faa49ab8721775a69765e40d73be232",
+    "workingTree": "clean",
+    "pushed": true,
+    "readbackSource": "ubuntu@106.52.146.37:/tmp/openclaw-stage2-release"
+  },
+  "implementation": {
+    "files": [
+      "openclaw-tag-router/openclaw_app/services/stage2_gateway.py",
+      "openclaw-tag-router/openclaw_app/app.py",
+      "openclaw-tag-router/openclaw_app/adapters/http_api.py",
+      "openclaw-tag-router/tests/test_stage2_gateway.py"
+    ],
+    "boundary": "Optional server-owned Stage2Gateway injection with dedicated personal and organization HTTP routes; legacy routes remain unchanged and Stage 2 is disabled without an injected gateway.",
+    "authority": "Session, organization Binding, credential generation, and trusted open URL are injected by server providers; browser authority fields are rejected."
+  },
+  "verification": {
+    "stage2Focused": "104 passed (tests/test_stage2_*.py)",
+    "gatewayFocused": "13 passed (tests/test_stage2_gateway.py and tests/test_stage2_runtime.py)",
+    "backendCompile": "pass (stage2 gateway, app, HTTP adapter, and gateway tests)",
+    "backendDiffCheck": "pass",
+    "remoteBranchReadback": "pass; isolated worktree clean and tracking origin/codex/stage2-release-20260818"
+  },
+  "unverified": [
+    "Stage-1 F1/F2/F3 upstream projections",
+    "production auth/session resolver and tenant-scoped source reader",
+    "deployment and authenticated browser/device readback",
+    "real database and AI task execution",
+    "real Feishu Docx write, edit, and second readback",
+    "independent external release acceptance"
+  ]
+}

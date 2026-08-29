@@ -1,0 +1,159 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/artifacts/manifest",
+  "attempts": [
+    {
+      "attempt_executor": "lw-luna",
+      "attempt_role": "primary",
+      "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+      "classification": {
+        "attempt_executor": "lw-luna",
+        "attempt_role": "primary",
+        "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "decision": "complete",
+        "effective_failure_class": "none",
+        "effective_failure_origin": "none",
+        "primary_executor": "lw-luna",
+        "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/artifacts/manifest/prompts/PR-REL-MANIFEST-DESIGN-V2-primary.txt)"
+      ],
+      "ended_at": "2026-08-25T16:27:42.074605+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/artifacts/manifest/logs/PR-REL-MANIFEST-DESIGN-V2-primary.log",
+      "pid": 7814,
+      "primary_executor": "lw-luna",
+      "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/pr-rel-manifest-design",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/artifacts/manifest/prompts/PR-REL-MANIFEST-DESIGN-V2-primary.txt",
+      "prompt_sha256": "beb2eddf932f359c5a16116e463c453b39e0856a6e478098f55aa39e3d417b25",
+      "started_at": "2026-08-25T16:18:20.851991+00:00",
+      "structured_return": {
+        "acceptance_self_check": "pass",
+        "actual_scopes": {
+          "authoritative_committed": [
+            "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/**",
+            "acceptance/human/PR-REL-MANIFEST/**",
+            "openclaw-tag-router/tests/test_production_release_manifest.py"
+          ],
+          "generated_validation_only_uncommitted": [
+            "acceptance/index.md"
+          ],
+          "reserved_future_implementation_untouched": [
+            "openclaw-tag-router/openclaw_app/services/production_release_manifest.py",
+            "openclaw-tag-router/openclaw_app/contracts/production-release-manifest.v1.schema.json",
+            "openclaw-tag-router/scripts/build_production_release_manifest.py"
+          ]
+        },
+        "attempt_role": "primary",
+        "changed_files": [
+          "acceptance/human/PR-REL-MANIFEST/binding.md",
+          "acceptance/human/PR-REL-MANIFEST/checklist.md",
+          "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance-contract.md",
+          "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/index.md",
+          "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/machine/unit/runs/20260826T000000Z-red-proof-a1b2c3/evidence/protected-tests-red.txt",
+          "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/machine/unit/runs/20260826T000000Z-red-proof-a1b2c3/result.md",
+          "openclaw-tag-router/tests/test_production_release_manifest.py"
+        ],
+        "commands_evidence": [
+          {
+            "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/check_acceptance_contract.py docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance-contract.md --project-root /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/pr-rel-manifest-design",
+            "evidence": "OK: acceptance contract",
+            "result": "pass"
+          },
+          {
+            "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py bind-human docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST --project-root /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/pr-rel-manifest-design --replace",
+            "evidence": "ACTIVE binding generated with contract and checklist hashes",
+            "result": "pass"
+          },
+          {
+            "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py index docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST --project-root /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/pr-rel-manifest-design",
+            "evidence": "task acceptance index committed; project acceptance/index.md generated and left uncommitted",
+            "result": "pass"
+          },
+          {
+            "command": "env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=openclaw-tag-router uv run --python 3.12 --with pytest python -m pytest -q openclaw-tag-router/tests/test_production_release_manifest.py",
+            "evidence": "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/machine/unit/runs/20260826T000000Z-red-proof-a1b2c3/evidence/protected-tests-red.txt; ModuleNotFoundError for missing intended module/API openclaw_app.services.production_release_manifest, not Python incompatibility",
+            "exit_code": 2,
+            "result": "expected_red"
+          },
+          {
+            "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py check docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST --project-root /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/pr-rel-manifest-design",
+            "evidence": "OK: split-root acceptance artifact",
+            "result": "pass"
+          },
+          {
+            "command": "bash /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/validation/PR-REL-MANIFEST-DESIGN-V2.sh",
+            "evidence": "frozen validation script passed; expected protected-test RED was captured",
+            "exit_code": 0,
+            "result": "pass"
+          }
+        ],
+        "commit_message": "test(release): lock production manifest acceptance",
+        "commit_sha": "bfa10178959e7cbde3bca9be6aa961f65d6343a5",
+        "contract_sha256": "8ffe2adebbf86aad61b0c1396b623a1321a6a97958eb1f327177481024000537",
+        "contract_status": "APPROVED",
+        "contract_version": 1,
+        "executor": "lw-luna",
+        "failure_class": "none",
+        "failure_origin": "none",
+        "fragment_id": "PR-REL-MANIFEST",
+        "human_binding_status": "ACTIVE",
+        "human_checklist_status": "APPROVED",
+        "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/pr-rel-manifest-design",
+        "proposed_state": "VERIFIED",
+        "protected_test_sha256": "dd653b45ebce1d09593f232673506262e7720dff571474fe5f1afc19737e0187",
+        "task_id": "PR-REL-MANIFEST-DESIGN-V2",
+        "test_baseline": "LOCKED",
+        "unverified_items": [
+          "Future production implementation, schema file, and build script",
+          "Deployment, service reload/restart, release pointer, Nginx, database, Feishu, remote/SSH, and secrets",
+          "Authenticated production requests, current-main Stage-2 route composition, activation and rollback rehearsal",
+          "Production/device evidence, real AI/provider evidence, Stage-1 C1/C3/DC2 acceptance, and formal Stage-2 SSOT status",
+          "Human approval to use a future manifest for an actual production release"
+        ]
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/artifacts/manifest/returns/PR-REL-MANIFEST-DESIGN-V2-primary.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "a74922a742e44b1ac2b9eb556f9c858bfbd91e7ecb44bbfdf1264dda3a2a071a",
+      "timed_out": false,
+      "validation_command_sha256": "40d3faac3d34ef13768c1b499c3faae150db7c68f89d52ac578c8ab12bc05d6b",
+      "validation_ended_at": "2026-08-25T16:27:42.992155+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/artifacts/manifest/logs/PR-REL-MANIFEST-DESIGN-V2-primary.validation.log",
+      "validation_pid": 14048,
+      "validation_started_at": "2026-08-25T16:27:42.074806+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_executor_switch": false,
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-25T16:27:43.130135+00:00",
+  "final_decision": "complete",
+  "l3_escalation_limit": 1,
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "ledger_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/artifacts/manifest/ledger/PR-REL-MANIFEST-DESIGN-V2.json",
+  "primary_executor": "lw-luna",
+  "primary_retry_limit": 1,
+  "primary_role": "primary",
+  "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/pr-rel-manifest-design",
+  "schema_version": 2,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-25T16:18:20.850768+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/tasks/PR-REL-MANIFEST-DESIGN-V2.txt",
+  "task_id": "PR-REL-MANIFEST-DESIGN-V2",
+  "task_sha256": "a74922a742e44b1ac2b9eb556f9c858bfbd91e7ecb44bbfdf1264dda3a2a071a",
+  "terminal_state": "VERIFIED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/validation/PR-REL-MANIFEST-DESIGN-V2.sh",
+  "validation_command_sha256": "40d3faac3d34ef13768c1b499c3faae150db7c68f89d52ac578c8ab12bc05d6b",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}
