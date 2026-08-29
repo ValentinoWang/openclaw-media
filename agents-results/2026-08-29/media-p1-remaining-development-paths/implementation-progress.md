@@ -140,4 +140,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 
 - 历史飞书应用复核（2026-08-29）：继续检查远端旧配置引用的两个 Base 应用，`BazubRWJ7a9SLRsLr4Bc8IvAnCg` 仅有项目、任务、发布复盘和商务账号表，`GgOewSQVziIEaIkYoZYcs1c7nTh` 仅有爆款内容积累表；两者同样没有可识别为 v1 账号监控表的表。旧生成备份虽保留过“近期作品链接”字段定义，但没有当前可用的 Base/表地址，不能据此伪造 URL。
 
+- 账号作品来源复核（2026-08-29）：远端租户 `618ff8c4-cc5a-4034-a2c5-226e3ad6cd37` 在 `media_product.published_posts` 中没有已发布作品记录；现有 10 条 `media_product.assets` 均为素材源（`source`/`asset`），不是账号发布记录，不能安全转换为 v1 监控表的“近期作品链接”。因此没有自动创建监控表或伪造作品链接，P1 生产验收继续等待真实 v1 监控表及作品数据。
+
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。上方 `31/7/11` 与“尚未复验 114 条”均为历史分片快照，不是当前实时总计；当前总计以 `dedup_p1.py --json` 输出的 `153/2/0` 为准。
