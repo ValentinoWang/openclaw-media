@@ -7,6 +7,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
@@ -37,6 +38,10 @@ DEFAULT_ENV_FILES = [
 CHECKED_FEISHU_RE = re.compile(
     r"^\s*-\s*\[[xX]\]\s*(?P<title>.*?)\s*<!--\s*openclaw:feishu_record=(?P<record>rec[A-Za-z0-9_-]+);sync=todo_complete_v1\s*-->\s*$"
 )
+
+
+def default_command() -> str:
+    return sys.executable
 
 
 @dataclass(frozen=True)
@@ -157,7 +162,8 @@ def main() -> int:
     parser.add_argument("--state", default=str(DEFAULT_STATE_PATH))
     parser.add_argument("--days", type=int, default=14)
     parser.add_argument("--today", default="")
-    parser.add_argument("--command", default="/usr/bin/python3")
+    # Use the interpreter running this entrypoint so virtualenvs and relocated hosts work.
+    parser.add_argument("--command", default=default_command())
     parser.add_argument("--reminder-script", default=str(DEFAULT_REMINDER_SCRIPT))
     parser.add_argument(
         "--env-file",

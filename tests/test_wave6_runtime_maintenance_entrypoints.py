@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -11,9 +12,13 @@ from runtime.maintenance.backfills import (
     backfill_activity_platform_name_multiselect,
 )
 from runtime.maintenance.deploy import sync_openclaw_agent_models
+from runtime.maintenance.sync import daily_todo_checklist_sync
 
 
 class RuntimeMaintenanceEntrypointTests(unittest.TestCase):
+    def test_daily_todo_sync_defaults_to_current_python_interpreter(self) -> None:
+        self.assertEqual(daily_todo_checklist_sync.default_command(), sys.executable)
+
     def test_backfills_fail_with_recovery_guidance_when_reminder_script_is_missing(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             missing_script = Path(directory) / "missing-reminder.py"
