@@ -16,6 +16,12 @@ from common.feishu_docx_table_limits import (
     sleep_seconds_for_docx_write,
     validate_docx_table_create_shape,
 )
+from common.feishu_wiki_docs import (
+    create_wiki_doc as _shared_create_wiki_doc,
+    find_wiki_child_doc as _shared_find_wiki_child_doc,
+    get_wiki_node as _shared_get_wiki_node,
+    requests_adapter,
+)
 from common.social_runtime import (
     FEISHU_BASE,
     feishu_headers,
@@ -159,26 +165,31 @@ def rewrite_shooting_execution_doc(
 
 
 def _create_doc(title: str, token: str) -> tuple[str, str, bool]:
+    """Find-or-create the wiki child doc for `title`.
+
+    Returns (document_id, node_token, created) where created=True means a new
+    doc was just created and created=False means an existing same-title doc
+    was reused -- this is the same meaning as common.feishu_wiki_docs.WikiDoc.created,
+    so callers of _create_doc need no inversion (see _WikiDoc semantics note
+    in common/feishu_wiki_docs.py).
+
+    Preserves the original fallback: if FEISHU_CREATION_DOC_PARENT_NODE_TOKEN
+    (or the built-in default) is unset, or the resolved parent node has no
+    space_id, this falls back to a plain POST /docx/v1/documents create
+    outside any wiki node -- that fallback is intentionally local to this
+    module rather than sunk into the shared primitive.
+    """
     parent_node = os.getenv("FEISHU_CREATION_DOC_PARENT_NODE_TOKEN") or CREATION_TASK_POOL_PARENT_NODE_TOKEN
     if parent_node:
         node = _get_wiki_node(parent_node, token)
         space_id = str(node.get("space_id") or "")
         if space_id:
-            existing = _find_wiki_child_doc(space_id, parent_node, title, token)
+            request = requests_adapter(token, feishu_base=FEISHU_BASE, headers_fn=feishu_headers)
+            existing = _shared_find_wiki_child_doc(space_id, parent_node, title, request=request, pick="last")
             if existing:
-                return existing[0], existing[1], False
-            resp = requests.post(
-                f"{FEISHU_BASE}/wiki/v2/spaces/{space_id}/nodes",
-                headers=feishu_headers(token),
-                json={"obj_type": "docx", "parent_node_token": parent_node, "node_type": "origin", "title": title},
-                timeout=20,
-            )
-            resp.raise_for_status()
-            payload = resp.json()
-            if payload.get("code") != 0:
-                raise RuntimeError(f"创建创作文档失败：{payload}")
-            created = payload.get("data", {}).get("node") or {}
-            return str(created.get("obj_token") or ""), str(created.get("node_token") or ""), True
+                return existing.document_id, existing.node_token, False
+            created_doc = _shared_create_wiki_doc(space_id, parent_node, title, request=request)
+            return created_doc.document_id, created_doc.node_token, True
     body: dict[str, Any] = {"title": title}
     if folder_token := os.getenv("FEISHU_CREATION_DOC_FOLDER_TOKEN") or os.getenv("FEISHU_DOC_FOLDER_TOKEN"):
         body["folder_token"] = folder_token
@@ -191,47 +202,20 @@ def _create_doc(title: str, token: str) -> tuple[str, str, bool]:
 
 
 def _find_wiki_child_doc(space_id: str, parent_node: str, title: str, token: str) -> tuple[str, str] | None:
-    matches: list[tuple[str, str]] = []
-    page_token = ""
-    while True:
-        params = {"parent_node_token": parent_node, "page_size": 50}
-        if page_token:
-            params["page_token"] = page_token
-        resp = requests.get(
-            f"{FEISHU_BASE}/wiki/v2/spaces/{space_id}/nodes",
-            params=params,
-            headers=feishu_headers(token),
-            timeout=20,
-        )
-        resp.raise_for_status()
-        payload = resp.json()
-        if payload.get("code") != 0:
-            raise RuntimeError(f"查询创作文档失败：{payload}")
-        data = payload.get("data") or {}
-        for item in data.get("items") or []:
-            if str(item.get("title") or "").strip() != title:
-                continue
-            if str(item.get("obj_type") or "").lower() not in {"docx", "doc"}:
-                continue
-            document_id = str(item.get("obj_token") or "").strip()
-            node_token = str(item.get("node_token") or "").strip()
-            if document_id and node_token:
-                matches.append((document_id, node_token))
-        if not data.get("has_more"):
-            break
-        page_token = str(data.get("page_token") or "").strip()
-        if not page_token:
-            break
-    return matches[-1] if matches else None
+    """Reuse the *latest* same-title child doc (pick="last") -- see
+    tests/test_creation_v1.py::test_creation_doc_lookup_reuses_latest_same_title_doc,
+    which asserts this module intentionally keeps the "most recent duplicate"
+    semantics rather than tightening to "first" like the other three
+    find-or-create implementations in this codebase.
+    """
+    request = requests_adapter(token, feishu_base=FEISHU_BASE, headers_fn=feishu_headers)
+    doc = _shared_find_wiki_child_doc(space_id, parent_node, title, request=request, pick="last")
+    return (doc.document_id, doc.node_token) if doc is not None else None
 
 
 def _get_wiki_node(node_token: str, token: str) -> dict[str, Any]:
-    resp = requests.get(f"{FEISHU_BASE}/wiki/v2/spaces/get_node", params={"token": node_token}, headers=feishu_headers(token), timeout=15)
-    resp.raise_for_status()
-    payload = resp.json()
-    if payload.get("code") != 0:
-        raise RuntimeError(f"获取知识库父节点失败：{payload}")
-    return payload.get("data", {}).get("node") or {}
+    request = requests_adapter(token, feishu_base=FEISHU_BASE, headers_fn=feishu_headers)
+    return _shared_get_wiki_node(node_token, request=request)
 
 
 def _append_blocks(document_id: str, blocks: list[dict[str, Any]], token: str) -> None:

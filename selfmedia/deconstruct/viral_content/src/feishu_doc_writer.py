@@ -17,6 +17,13 @@ from common.feishu_docx_table_limits import (
     sleep_seconds_for_docx_write,
     validate_docx_table_create_shape,
 )
+from common.feishu_wiki_docs import (
+    create_wiki_doc as _shared_create_wiki_doc,
+    find_wiki_child_doc as _shared_find_wiki_child_doc,
+    iter_wiki_children as _shared_iter_wiki_children,
+    resolve_wiki_space_id as _shared_resolve_wiki_space_id,
+    requests_adapter,
+)
 from common.social_runtime import load_default_env_files
 
 from .config import load_config
@@ -96,66 +103,23 @@ class DocRef:
 
 
 def _get_parent_space(parent_node_token: str, token: str) -> str:
-    resp = requests.get(f"{FEISHU_BASE}/wiki/v2/spaces/get_node", params={"token": parent_node_token}, headers=_headers(token), timeout=10)
-    resp.raise_for_status()
-    payload = resp.json()
-    if payload.get("code") != 0:
-        raise RuntimeError(f"解析父级知识库节点失败：{payload}")
-    return payload["data"]["node"]["space_id"]
+    request = requests_adapter(token, feishu_base=FEISHU_BASE, headers_fn=_headers)
+    return _shared_resolve_wiki_space_id(parent_node_token, request=request)
 
 
 def _find_child_doc(space_id: str, parent_node_token: str, title: str, token: str) -> tuple[str, str] | None:
-    clean_title = (title or "").strip()
-    page_token = ""
-    while True:
-        params = {"parent_node_token": parent_node_token, "page_size": 50}
-        if page_token:
-            params["page_token"] = page_token
-        resp = requests.get(f"{FEISHU_BASE}/wiki/v2/spaces/{space_id}/nodes", params=params, headers=_headers(token), timeout=10)
-        resp.raise_for_status()
-        payload = resp.json()
-        if payload.get("code") != 0:
-            raise RuntimeError(f"查询知识库子文档失败：{payload}")
-        data = payload.get("data", {}) or {}
-        for item in data.get("items", []) or []:
-            if str(item.get("title") or "").strip() != clean_title:
-                continue
-            if str(item.get("obj_type") or "").lower() not in {"docx", "doc"}:
-                continue
-            document_id = str(item.get("obj_token") or "")
-            node_token = str(item.get("node_token") or "")
-            if document_id and node_token:
-                return document_id, node_token
-        if not data.get("has_more"):
-            break
-        page_token = str(data.get("page_token") or "")
-        if not page_token:
-            break
-    return None
+    request = requests_adapter(token, feishu_base=FEISHU_BASE, headers_fn=_headers)
+    doc = _shared_find_wiki_child_doc(space_id, parent_node_token, title or "", request=request, pick="first")
+    return (doc.document_id, doc.node_token) if doc is not None else None
 
 
 def _list_child_docs(space_id: str, parent_node_token: str, token: str) -> list[dict[str, Any]]:
-    items: list[dict[str, Any]] = []
-    page_token = ""
-    while True:
-        params = {"parent_node_token": parent_node_token, "page_size": 50}
-        if page_token:
-            params["page_token"] = page_token
-        resp = requests.get(f"{FEISHU_BASE}/wiki/v2/spaces/{space_id}/nodes", params=params, headers=_headers(token), timeout=10)
-        resp.raise_for_status()
-        payload = resp.json()
-        if payload.get("code") != 0:
-            raise RuntimeError(f"查询知识库子文档失败：{payload}")
-        data = payload.get("data", {}) or {}
-        for item in data.get("items", []) or []:
-            if str(item.get("obj_type") or "").lower() in {"docx", "doc"}:
-                items.append(item)
-        if not data.get("has_more"):
-            break
-        page_token = str(data.get("page_token") or "")
-        if not page_token:
-            break
-    return items
+    request = requests_adapter(token, feishu_base=FEISHU_BASE, headers_fn=_headers)
+    return [
+        item
+        for item in _shared_iter_wiki_children(space_id, parent_node_token, request=request)
+        if str(item.get("obj_type") or "").lower() in {"docx", "doc"}
+    ]
 
 
 def _parent_node_for_doc_kind(config: Any, doc_kind: str) -> str:
@@ -179,19 +143,10 @@ def create_doc(title: str, content: dict[str, Any], folder_token: str | None = N
             document_id, node_token = existing
             reused_existing = True
         else:
-            resp = requests.post(
-                f"{FEISHU_BASE}/wiki/v2/spaces/{space_id}/nodes",
-                headers=_headers(token),
-                json={"obj_type": "docx", "parent_node_token": parent_node, "node_type": "origin", "title": title or "创作交接执行单"},
-                timeout=15,
-            )
-            resp.raise_for_status()
-            payload = resp.json()
-            if payload.get("code") != 0:
-                raise RuntimeError(f"在知识库下创建飞书文档失败：{payload}")
-            node = payload["data"]["node"]
-            document_id = node["obj_token"]
-            node_token = node["node_token"]
+            request = requests_adapter(token, feishu_base=FEISHU_BASE, headers_fn=_headers)
+            created_doc = _shared_create_wiki_doc(space_id, parent_node, title or "创作交接执行单", request=request)
+            document_id = created_doc.document_id
+            node_token = created_doc.node_token
     else:
         folder_token = folder_token or config.feishu_doc_folder_token
         body: dict[str, Any] = {"title": title or "创作交接执行单"}
