@@ -58,6 +58,7 @@
 - CT-A1 源码合同层复验：仓库现有 `docs/ai-harness/` 下 5 份合同，`media_model/contract.py` 默认解析仓内合同；合同路径、Media Model、Vault 和 Router 边界集合结果 `41 passed`。这只关闭“合同不在源码仓”的根因，不覆盖下述 SSOT runtime provenance 验证失败。
 - Router 全套：`1515 passed, 24 failed, 39 skipped, 270 warnings, 271 subtests passed`；失败集中在既有删除能力、复盘投影和能力目录合同，未将其计为 P1 完成。
 - SSOT bundle validator 在当前 Harness 工作树报告 `runtime-skill-provenance` 缺少项目侧 `.harness/manifest.yaml`；项目已有 `.harness/overlays/project-harness-adapter.yaml`，未擅自伪造 manifest，故该验证层保持未通过。
+- 本轮 SSOT 快照已刷新并通过项目级 `--check`（Obsidian 管理文件 1 个）；全局 `--audit-archive` 被集合内既有 AthleteOS 快照的哈希漂移阻塞，未将该外部失败归因于本项目。
 
 补充复验（2026-08-29 后续轮次）：
 
