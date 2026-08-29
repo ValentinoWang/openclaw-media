@@ -44,6 +44,8 @@ CLOSED = {
     # formerly red CT-A4/B1/B2 focused suites without weakening fail-closed
     # tenant or human-facing error boundaries.
     "CT-A4": "8b2b83e", "CT-B1": "8b2b83e", "CT-B2": "8b2b83e",
+    "LB-03": "343424e", "LB-05": "808395f", "LB-06": "7acaf97",
+    "LB-07": "9aa8607",
     "SCHED-08": "808395f",
     "CRF-11": "978c60a",
     "CRF-06": "198e0e1", "CT-A8": "8b2b83e",
