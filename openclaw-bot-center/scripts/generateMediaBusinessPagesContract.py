@@ -11,13 +11,10 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SOURCE = Path(
-    "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/contracts/"
-    "media_web_business_pages.openapi.yaml"
-)
+DEFAULT_SOURCE = ROOT.parent / "openclaw-tag-router/openclaw_app/contracts/media_web_business_pages.openapi.yaml"
 DEFAULT_TARGET = ROOT / "src/media/generatedBusinessPagesContract.ts"
 ACCEPTED_SOURCE_SHA256 = (
-    "97ccd7213e420cb0af8bcb43099eccd318587923874a1a4f2d177c89314fb548"
+    "bbd10d10863ac5cd4886296b16bb7a52d5580e036fdc83c1880157d6a7cbd39c"
 )
 EXPECTED_PAGE_IDS = tuple(f"B{index:02d}" for index in range(1, 15))
 EXPECTED_DOCUMENT_OPERATION_IDS = (
@@ -82,8 +79,8 @@ def collect_page_operations(contract: dict[str, Any]) -> dict[str, list[str]]:
             )
         )
     declared = {operation_id for values in result.values() for operation_id in values}
-    if len(declared) != 72:
-        raise ValueError(f"expected 72 declared page operations, got {len(declared)}")
+    if len(declared) != 75:
+        raise ValueError(f"expected 75 declared page operations, got {len(declared)}")
     return result
 
 
@@ -191,11 +188,11 @@ def collect_operations(
             }
             groups[category].append(operation_id)
 
-    if len(operations) != 87:
-        raise ValueError(f"expected 87 unique operations, got {len(operations)}")
+    if len(operations) != 90:
+        raise ValueError(f"expected 90 unique operations, got {len(operations)}")
     for values in groups.values():
         values.sort()
-    expected_counts = {"page": 71, "shared": 9, "document": 7}
+    expected_counts = {"page": 74, "shared": 9, "document": 7}
     actual_counts = {name: len(values) for name, values in groups.items()}
     if actual_counts != expected_counts:
         raise ValueError(
@@ -234,8 +231,8 @@ def render(source: Path) -> str:
     components = require_mapping(contract.get("components"), "components")
     schemas = require_mapping(components.get("schemas"), "components.schemas")
     schema_names = sorted(schemas)
-    if len(schema_names) != 177:
-        raise ValueError(f"expected 177 schemas, got {len(schema_names)}")
+    if len(schema_names) != 180:
+        raise ValueError(f"expected 180 schemas, got {len(schema_names)}")
 
     page_operations = collect_page_operations(contract)
     operations, groups = collect_operations(contract, page_operations)

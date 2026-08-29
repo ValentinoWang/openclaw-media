@@ -1,7 +1,7 @@
 // Generated from accepted Media Web Business Pages IF2. Do not edit.
 import { addAuditReasonHeader } from "./auditReasonHeader";
 
-export const sourceSha256 = "97ccd7213e420cb0af8bcb43099eccd318587923874a1a4f2d177c89314fb548" as const;
+export const sourceSha256 = "bbd10d10863ac5cd4886296b16bb7a52d5580e036fdc83c1880157d6a7cbd39c" as const;
 
 export type OperationCategory = "page" | "shared" | "document";
 export type GeneratedOperation = {
@@ -19,6 +19,7 @@ export type GeneratedOperation = {
 };
 
 export const schemaNames = [
+  "AccountMonitorLinkResult",
   "AccountMonitorResponse",
   "AccountMonitorUpdateRequest",
   "AccountTrackStrategyResponse",
@@ -201,6 +202,7 @@ export const schemaNames = [
 ] as const;
 
 export const schemaRefs = {
+  "AccountMonitorLinkResult": "#/components/schemas/AccountMonitorLinkResult",
   "AccountMonitorResponse": "#/components/schemas/AccountMonitorResponse",
   "AccountMonitorUpdateRequest": "#/components/schemas/AccountMonitorUpdateRequest",
   "AccountTrackStrategyResponse": "#/components/schemas/AccountTrackStrategyResponse",
@@ -513,6 +515,7 @@ export const pageOperationIds = [
   "createPublishedPost",
   "createReview",
   "disableAdminAdmissionBatch",
+  "getAccountMonitor",
   "getAccountTrackStrategy",
   "getAdminBillingSummary",
   "getAdminDashboard",
@@ -560,6 +563,7 @@ export const pageOperationIds = [
   "listRuns",
   "listTrackRelationships",
   "listTracks",
+  "pollAccountMonitor",
   "reconcileAdminBillingOperation",
   "recoverAdminFulfillment",
   "redeemBillingCode",
@@ -567,6 +571,7 @@ export const pageOperationIds = [
   "revokeAdminUpstreamCredential",
   "revokeAdminUserSessions",
   "rotateAdminUpstreamCredential",
+  "updateAccountMonitor",
   "updateAdminAffiliateUser",
   "updateAdminRegistrationPolicy",
   "updatePublishingChecks",
@@ -971,6 +976,27 @@ export const operations = {
     "productReadModels": [],
     "queryParameters": [],
     "runtimeStatus": "existing_typed"
+  },
+  "getAccountMonitor": {
+    "canonicalCapabilityIds": [
+      "account_monitor"
+    ],
+    "category": "page",
+    "existingHandlers": [],
+    "method": "GET",
+    "pageContracts": [
+      "B02"
+    ],
+    "path": "/owned-accounts/{publicAccountId}/monitor",
+    "pathParameters": [
+      "publicAccountId"
+    ],
+    "permission": "ordinary-session",
+    "productReadModels": [
+      "owned_media_accounts"
+    ],
+    "queryParameters": [],
+    "runtimeStatus": "new"
   },
   "getAccountTrackStrategy": {
     "canonicalCapabilityIds": [
@@ -1394,69 +1420,6 @@ export const operations = {
       "B02"
     ],
     "path": "/owned-accounts/{publicAccountId}",
-    "pathParameters": [
-      "publicAccountId"
-    ],
-    "permission": "ordinary-session",
-    "productReadModels": [
-      "owned_media_accounts"
-    ],
-    "queryParameters": [],
-    "runtimeStatus": "new"
-  },
-  "getAccountMonitor": {
-    "canonicalCapabilityIds": [
-      "account_monitor"
-    ],
-    "category": "page",
-    "existingHandlers": [],
-    "method": "GET",
-    "pageContracts": [
-      "B02"
-    ],
-    "path": "/owned-accounts/{publicAccountId}/monitor",
-    "pathParameters": [
-      "publicAccountId"
-    ],
-    "permission": "ordinary-session",
-    "productReadModels": [
-      "owned_media_accounts"
-    ],
-    "queryParameters": [],
-    "runtimeStatus": "new"
-  },
-  "pollAccountMonitor": {
-    "canonicalCapabilityIds": [
-      "account_monitor"
-    ],
-    "category": "page",
-    "existingHandlers": [],
-    "method": "POST",
-    "pageContracts": [
-      "B02"
-    ],
-    "path": "/owned-accounts/{publicAccountId}/monitor/poll",
-    "pathParameters": [
-      "publicAccountId"
-    ],
-    "permission": "ordinary-session",
-    "productReadModels": [
-      "owned_media_accounts"
-    ],
-    "queryParameters": [],
-    "runtimeStatus": "new"
-  },
-  "updateAccountMonitor": {
-    "canonicalCapabilityIds": [
-      "account_monitor"
-    ],
-    "category": "page",
-    "existingHandlers": [],
-    "method": "PUT",
-    "pageContracts": [
-      "B02"
-    ],
-    "path": "/owned-accounts/{publicAccountId}/monitor",
     "pathParameters": [
       "publicAccountId"
     ],
@@ -2232,6 +2195,27 @@ export const operations = {
     "queryParameters": [],
     "runtimeStatus": "existing_typed"
   },
+  "pollAccountMonitor": {
+    "canonicalCapabilityIds": [
+      "account_monitor"
+    ],
+    "category": "page",
+    "existingHandlers": [],
+    "method": "POST",
+    "pageContracts": [
+      "B02"
+    ],
+    "path": "/owned-accounts/{publicAccountId}/monitor/poll",
+    "pathParameters": [
+      "publicAccountId"
+    ],
+    "permission": "ordinary-session",
+    "productReadModels": [
+      "owned_media_accounts"
+    ],
+    "queryParameters": [],
+    "runtimeStatus": "new"
+  },
   "reconcileAdminBillingOperation": {
     "canonicalCapabilityIds": [],
     "category": "page",
@@ -2365,6 +2349,27 @@ export const operations = {
     ],
     "permission": "ordinary-session",
     "productReadModels": [],
+    "queryParameters": [],
+    "runtimeStatus": "new"
+  },
+  "updateAccountMonitor": {
+    "canonicalCapabilityIds": [
+      "account_monitor"
+    ],
+    "category": "page",
+    "existingHandlers": [],
+    "method": "PUT",
+    "pageContracts": [
+      "B02"
+    ],
+    "path": "/owned-accounts/{publicAccountId}/monitor",
+    "pathParameters": [
+      "publicAccountId"
+    ],
+    "permission": "ordinary-session",
+    "productReadModels": [
+      "owned_media_accounts"
+    ],
     "queryParameters": [],
     "runtimeStatus": "new"
   },

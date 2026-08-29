@@ -18,7 +18,7 @@ import {
 
 const root = path.resolve(import.meta.dirname, "../..");
 const expectedHash =
-  "46244f053d53e4d679f1bae56f583c9e3f9f11a47c5861f8b906b54ee12ab2b0";
+  "bbd10d10863ac5cd4886296b16bb7a52d5580e036fdc83c1880157d6a7cbd39c";
 const generator = path.join(
   root,
   "scripts/generateMediaBusinessPagesContract.py",
@@ -27,10 +27,14 @@ const generatedFile = path.join(
   root,
   "src/media/generatedBusinessPagesContract.ts",
 );
-const sourceFile =
-  "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/contracts/media_web_business_pages.openapi.yaml";
-const resourceFile =
-  "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/contracts/media_web_business_pages.resources.yaml";
+const sourceFile = path.resolve(
+  root,
+  "../openclaw-tag-router/openclaw_app/contracts/media_web_business_pages.openapi.yaml",
+);
+const resourceFile = path.resolve(
+  root,
+  "../openclaw-tag-router/openclaw_app/contracts/media_web_business_pages.resources.yaml",
+);
 
 function requireContract(
   condition: unknown,
@@ -63,7 +67,7 @@ function requireSameSet(
 
 function validateGeneratedContract(): void {
   requireContract(sourceSha256 === expectedHash, "generated source hash drift");
-  requireContract(schemaNames.length === 175, "expected 175 OpenAPI schemas");
+  requireContract(schemaNames.length === 180, "expected 180 OpenAPI schemas");
   requireUnique(schemaNames, "schema names");
   requireSameSet(
     Object.keys(schemaRefs),
@@ -78,11 +82,11 @@ function validateGeneratedContract(): void {
   }
 
   const operationIds = Object.keys(operations);
-  requireContract(operationIds.length === 85, "expected 85 operations");
+  requireContract(operationIds.length === 90, "expected 90 operations");
   requireUnique(operationIds, "operation IDs");
   requireContract(
-    pageOperationIds.length === 69,
-    "expected 69 page operations",
+    pageOperationIds.length === 74,
+    "expected 74 page operations",
   );
   requireContract(
     sharedOperationIds.length === 9,
