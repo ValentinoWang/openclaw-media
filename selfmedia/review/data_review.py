@@ -1166,6 +1166,7 @@ def _write_material_usage_feedback(
         review_node=review_node,
         performance_level=normalize_performance_rating(analysis.get("performance_level")),
         conclusion=conclusion,
+        analysis=analysis,
         review_artifact_uri=review_artifact_uri,
     )
     payloads = load_material_usage_feedback_payloads(
@@ -1196,9 +1197,17 @@ def _material_feedback_summary(
     performance_level: str,
     conclusion: str,
     review_artifact_uri: str,
+    analysis: dict[str, Any] | None = None,
 ) -> str:
+    analysis = analysis or {}
     rating = performance_level or "未评级"
-    return f"复盘节点={review_node}；表现评级={rating}；结论={conclusion}；复盘证据={review_artifact_uri}"
+    details: list[str] = []
+    for label, key in (("关键洞察", "key_insights"), ("下一步", "next_actions")):
+        values = normalize_text_list(analysis.get(key))[:3]
+        if values:
+            details.append(f"{label}={'；'.join(values)}")
+    suffix = "；" + "；".join(details) if details else ""
+    return f"复盘节点={review_node}；表现评级={rating}；结论={conclusion}{suffix}；复盘证据={review_artifact_uri}"
 
 
 def _write_selected_business_deliveries(

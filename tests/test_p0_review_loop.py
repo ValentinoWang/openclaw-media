@@ -286,13 +286,15 @@ class P0ReviewLoopTests(unittest.TestCase):
                 result = data_review.write_data_review_model_v2(
                     tenant_id=TENANT_ID,
                     request=data_review.DataReviewRequest(creation_record_id="run_material_feedback", platform="抖音"),
-                    analysis={"data_window": "2h", "metrics": {}, "priority_metrics": [], "atomic_facts": [], "trend_curves": {}, "conclusion": "完播率偏低，需要压缩中段。", "performance_level": "值得重剪"},
+                    analysis={"data_window": "2h", "metrics": {}, "priority_metrics": [], "atomic_facts": [], "trend_curves": {}, "conclusion": "完播率偏低，需要压缩中段。", "performance_level": "值得重剪", "key_insights": ["前两秒流失集中"], "next_actions": ["重剪开头后复测"]},
                     screenshots=[], reviewed_at="2026-08-28T10:00:00+08:00", doc_link="", source_record_id="run_material_feedback",
                 )
         feedback_payload = next(payload for entity, _url, payload in writes if entity == "MaterialUsage")
         self.assertEqual(result["material_feedback_count"], 1)
         self.assertEqual(feedback_payload["usage_id"], "usage_feedback")
         self.assertIn("完播率偏低", feedback_payload["performance_feedback_summary"])
+        self.assertIn("关键洞察=前两秒流失集中", feedback_payload["performance_feedback_summary"])
+        self.assertIn("下一步=重剪开头后复测", feedback_payload["performance_feedback_summary"])
         self.assertIn("media://review/artifact", feedback_payload["performance_feedback_summary"])
 
     def test_resolve_creation_plan_refuses_ambiguous_title_and_account_match(self) -> None:

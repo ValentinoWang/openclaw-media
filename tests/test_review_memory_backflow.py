@@ -91,6 +91,9 @@ def test_data_review_evidence_backflows_to_next_creation_context_without_tenant_
                 },
             ],
             "key_insights": ["目标跑者会为真实失控画面停留", "中段讲解重复导致完播流失"],
+            "metric_interpretation": ["首屏承诺没有留住目标跑者"],
+            "problems": ["首屏承诺不足"],
+            "data_quality_notes": ["截图可读"],
             "content_guidance": ["首屏用失控画面和配速数字建立冲突"],
             "publishing_guidance": ["重剪后在晚间跑步时段复测"],
             "next_actions": ["重剪前两秒后复测跳出率", "删除重复讲解再观察完播率"],
@@ -127,11 +130,15 @@ def test_data_review_evidence_backflows_to_next_creation_context_without_tenant_
     assert projected["priority_metrics"] == analysis["priority_metrics"]
     assert projected["key_insights"] == analysis["key_insights"]
     assert projected["next_actions"] == analysis["next_actions"]
+    assert projected["metric_interpretation"] == analysis["metric_interpretation"]
+    assert projected["problems"] == analysis["problems"]
+    assert projected["data_quality_notes"] == analysis["data_quality_notes"]
     assert projected["performance_level"] == analysis["performance_level"]
     assert "截图中前两秒曲线陡降" in context["prompt"]
     assert "表现评级：值得重剪" in context["prompt"]
     assert "2秒跳出率=63%（偏高）" in context["prompt"]
     assert "指标意义：首屏承诺没有留住目标跑者" in context["prompt"]
+    assert "问题：首屏承诺不足" in context["prompt"]
     assert "指标内容动作：开头先放配速失控的瞬间；删去中段重复讲解" in context["prompt"]
     assert "下一步：开头先放配速失控的瞬间；删去中段重复讲解；重剪前两秒后复测跳出率" in context["prompt"]
     assert context["prompt"].index("相关历史复盘") < context["prompt"].index("账号定位：")

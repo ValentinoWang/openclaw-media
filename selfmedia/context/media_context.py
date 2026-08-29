@@ -484,6 +484,9 @@ def _review_prompt_lines(reviews: list[Any]) -> list[str]:
         actions = _review_actions_for_prompt(item)
         if actions:
             parts.append(f"下一步：{'；'.join(actions[:5])}")
+        problem_values = _review_text_values(item.get("problems") or item.get("failure_reasons"), limit=4)
+        if problem_values:
+            parts.append(f"问题：{'；'.join(problem_values)}")
         comments = _review_text_values(item.get("top_comments"), limit=5)
         if comments:
             parts.append(f"评论原话：{'；'.join(comments)}")
@@ -784,9 +787,13 @@ def _review_memory_evidence(analysis: dict[str, Any] | None) -> dict[str, Any]:
                 evidence[key] = rows
     for key in (
         "key_insights",
+        "metric_interpretation",
+        "problems",
         "next_actions",
+        "next_step",
         "content_guidance",
         "publishing_guidance",
+        "data_quality_notes",
         "effective_patterns",
         "failure_reasons",
         "top_comments",
@@ -1314,6 +1321,11 @@ def _public_context_row(row: dict[str, Any]) -> dict[str, Any]:
         "priority_metrics",
         "key_insights",
         "next_actions",
+        "next_step",
+        "problem",
+        "problems",
+        "metric_interpretation",
+        "data_quality_notes",
         "content_guidance",
         "publishing_guidance",
         "positioning",
