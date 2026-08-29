@@ -1784,7 +1784,6 @@ print(json.dumps({
         return self._call_postprocess_json(prompt, user_content, "按角色重洗文字稿")
 
     @staticmethod
-    @staticmethod
     def _transcription_final_note_value_missing(value: Any) -> bool:
         return transcription_final_note_value_missing(value)
 
