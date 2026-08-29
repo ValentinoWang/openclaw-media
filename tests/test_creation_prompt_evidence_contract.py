@@ -85,6 +85,28 @@ def test_platform_fit_candidate_compaction_keeps_adaptation_evidence_after_metad
     assert '"_truncated_keys"' in prompt
 
 
+def test_platform_fit_candidate_compaction_keeps_activity_constraints() -> None:
+    request = CreationRequest(platform="抖音", content_type="视频", track="体育", topic="跑步", publish_time="")
+    prompt = build_platform_mechanism_prompt(
+        request,
+        activity_candidates=[
+            {
+                "id": "activity-1",
+                "activity_brief": "投稿需在活动截止前完成，并使用指定话题。",
+                "participation_requirement": "必须提交完整视频和报名信息。",
+            }
+        ],
+        viral_candidates=[],
+        inspiration_candidates=[],
+        business_candidates=[],
+        reference_docs=[],
+        media_context={},
+    )
+
+    assert "投稿需在活动截止前完成，并使用指定话题。" in prompt
+    assert "必须提交完整视频和报名信息。" in prompt
+
+
 def test_scores_are_derived_from_breakdowns_instead_of_model_arithmetic() -> None:
     payload = _multi_option_payload([_script_option(score=91), _script_option("opt_2", score=88)])
     payload["script_options"][0]["score"] = 1

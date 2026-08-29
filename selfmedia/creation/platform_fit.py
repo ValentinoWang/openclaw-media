@@ -65,6 +65,18 @@ PLATFORM_FIT_CANDIDATE_FIELDS = (
     "reuse_guardrails",
     "viral_reuse_assessment",
     "pacing_notes",
+    "activity_level",
+    "activity_reward",
+    "participation_requirement",
+    "direction",
+    "activity_brief",
+    "activity_guidance",
+    "participation_method",
+    "participation_form",
+    "submission_requirement",
+    "brief_link",
+    "submission_link",
+    "activity_doc_link",
 )
 
 FORBIDDEN_CLAIM_PATTERNS = (
