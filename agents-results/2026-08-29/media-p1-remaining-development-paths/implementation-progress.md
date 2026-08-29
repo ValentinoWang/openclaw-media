@@ -4,7 +4,7 @@
 
 | 冻结基线 | 当前状态 | 说明 |
 |---|---|---|
-| P1 未修复 148 条 | 已开始逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；截至本次 `main@d8a62c2`，历史逐条复验投影仍为 49 条（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；本轮新增提交须按条目重新绑定，不能自动扣减 |
+| P1 未修复 148 条 | 已开始逐条复验与产品修复 | `148` 仍是冻结起点，不是当前实时剩余数；截至本次 `main@c6253d8`，历史逐条复验投影仍为 49 条（31 条已覆盖、7 条部分覆盖、11 条仍缺），另有 114 条尚未逐条复验；本轮新增提交须按条目重新绑定，不能自动扣减 |
 | 发布切片 | 5 个已建立 | `REL-P1-UX`、`REL-P1-PIPE`、`REL-P1-BIZ`、`REL-P1-PORT`、`REL-P1-QA` 均未组装候选 |
 | 当前就绪交付包 | 14 个 | P1 至 P14 均可继续；本轮已处理用户可见渲染、Router 状态呈现和创作证据合同，尚未完成全部交付包验收 |
 | 已接受发布验收 | 0 个 | C1 至 C5 均等待对应交付包 |
@@ -49,6 +49,7 @@
 - `openclaw-tag-router/tests/test_content_os_bridge_presentation.py tests/test_content_flow_client.py`：`98 passed`。
 - `tests/test_media_growth_v2.py openclaw-tag-router/tests/test_content_os_bridge_presentation.py`：`75 passed, 18 subtests passed`。
 - Router 全套：`1515 passed, 24 failed, 39 skipped, 270 warnings, 271 subtests passed`；失败集中在既有删除能力、复盘投影和能力目录合同，未将其计为 P1 完成。
+- SSOT bundle validator 在当前 Harness 工作树报告 `runtime-skill-provenance` 缺少项目侧 `.harness/manifest.yaml`；项目已有 `.harness/overlays/project-harness-adapter.yaml`，未擅自伪造 manifest，故该验证层保持未通过。
 
 补充复验（2026-08-29 后续轮次）：
 
