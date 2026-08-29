@@ -284,3 +284,41 @@ def test_daily_poll_feishu_fields_are_compact_and_user_facing(monkeypatch: pytes
     assert "raw_fields" not in serialized
     assert "raw_stats" not in serialized
     assert "/Users/example" not in serialized
+
+
+def test_daily_poll_marks_unconfigured_feishu_report_as_unsuccessful(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tempfile import TemporaryDirectory
+
+    with TemporaryDirectory() as directory:
+        monkeypatch.setenv("OPENCLAW_MEDIA_VAULT_ROOT", directory)
+        with patch.object(
+            selfmedia,
+            "feishu_list_records",
+            return_value=[
+                {
+                    "record_id": "rec_monitor",
+                    "fields": {
+                        "账号名称": "测试账号",
+                        "平台": "抖音",
+                        "近期作品链接": "https://example.test/post",
+                        "启用": True,
+                    },
+                }
+            ],
+        ), patch.object(
+            selfmedia,
+            "refresh_posts",
+            return_value=[
+                {
+                    "post_id": "post-1",
+                    "url": "https://example.test/post",
+                    "health_status": "ok",
+                    "like_count": 1,
+                }
+            ],
+        ), patch.object(selfmedia, "feishu_update_record"):
+            payload = selfmedia.daily_poll(_daily_poll_args(dry_run=False, report_url=""))
+
+    assert payload["ok"] is False
+    assert payload["record_ids"] == []
+    assert payload["feishu"] == "未配置飞书日报表，未写入跨平台记录"

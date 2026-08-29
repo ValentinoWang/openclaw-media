@@ -868,8 +868,9 @@ def daily_poll(args: argparse.Namespace) -> dict[str, Any]:
             LOGGER.warning("daily-poll could not write report records", exc_info=True)
             raise SystemExit(f"日报飞书写入失败：{user_visible_poll_error(exc)}") from None
 
+    feishu_report_skipped = bool(not args.dry_run and feishu_records and not report_url)
     return {
-        "ok": not errors,
+        "ok": not errors and not feishu_report_skipped,
         "json_path": str(json_path),
         "report_path": str(md_path),
         "account_count": len(accounts),
