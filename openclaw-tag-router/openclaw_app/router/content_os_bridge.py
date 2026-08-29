@@ -18,6 +18,12 @@ from .tag_router_common import CONTENT_OS_SCRIPT_GENERATION_MODEL, CONTENT_OS_SC
 
 
 class ContentOSBridgeMixin:
+    @staticmethod
+    def _write_content_os_json_sidecar(path: Path, payload: dict[str, Any]) -> Path:
+        sidecar = path.with_suffix(".json")
+        sidecar.write_text(json.dumps({key: value for key, value in payload.items() if key != "ok"}, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
+        return sidecar
+
     _CONTENT_OS_CREATOR_STAGE_LABELS = {
         "captured": "选题已收录",
         "planned": "创作准备中",
@@ -220,6 +226,7 @@ class ContentOSBridgeMixin:
         }
         for filename, content in files.items():
             self._write_text_if_absent(project_dir / filename, content)
+        self._write_content_os_json_sidecar(project_dir / "04_script.md", result)
 
         transition_project_status(
             vault_root,
@@ -318,6 +325,7 @@ class ContentOSBridgeMixin:
             title="云端创作稿",
             content=script_content,
         )
+        self._write_content_os_json_sidecar(project_dir / "04_script.md", parsed)
         self._upsert_content_os_auto_section(
             project_dir / "09_publish_pack.md",
             frontmatter={
@@ -441,7 +449,6 @@ class ContentOSBridgeMixin:
         source_key = record_id or make_record_id(message.raw_text)
         script_path = scripts_root / f"{created_date}_{self._content_os_slug(source_key, limit=28)}_{self._content_os_slug(title, limit=48)}.md"
         doc_link = str(parsed.get("doc_link") or "")
-        payload = json.dumps({key: value for key, value in parsed.items() if key not in {"ok"}}, ensure_ascii=False, indent=2, default=str)
         frontmatter = {
             "doc_type": "creation_script",
             "source": message.source,
@@ -469,9 +476,9 @@ class ContentOSBridgeMixin:
             ),
             ("原始输入", f"```text\n{message.raw_text[:3000]}\n```"),
             ("生成稿", f"```text\n{(reply or parsed.get('reply') or '未记录')[:8000]}\n```"),
-            ("结构化结果", f"```json\n{payload[:12000]}\n```"),
         ]
         script_path.write_text(ArchiveService.render_markdown(frontmatter, title, sections), encoding="utf-8")
+        self._write_content_os_json_sidecar(script_path, parsed)
         cleanup_generated_file_duplicates(script_path)
         rel_path = f"03_脚本生产/{script_path.name}"
         return {"status": "standalone_written", "script_path": str(script_path), "reply": f"创作稿已写入：{rel_path}"}
@@ -594,6 +601,7 @@ class ContentOSBridgeMixin:
             title="数据复盘",
             content=self._render_content_os_data_review_section(message, parsed, reply),
         )
+        self._write_content_os_json_sidecar(review_path, parsed)
         review_id = str(parsed.get("record_id") or parsed.get("review_id") or f"review_{self._content_os_date(message.created_at)}_{make_record_id(message.raw_text)[:6]}")
         self._append_registry_row(
             vault_root / "90_索引与注册表" / "review_registry.md",

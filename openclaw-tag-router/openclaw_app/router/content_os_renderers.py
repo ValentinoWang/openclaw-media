@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from ..models.message import Message
@@ -102,7 +101,6 @@ class ContentOSRenderersMixin:
         image_script = self._content_os_image_script(draft.get("image_script") or draft.get("carousel") or [])
         publish_actions = self._content_os_publish_actions(publishing_pack)
         next_actions = self._content_os_readable_list(draft.get("next_actions") or [])
-        payload = json.dumps({key: value for key, value in parsed.items() if key not in {"ok"}}, ensure_ascii=False, indent=2, default=str)
         return f"""## 标题
 
 {title or "创作桥未提供标题。"}
@@ -163,9 +161,7 @@ class ContentOSRenderersMixin:
 
 ### 结构化结果
 
-```json
-{payload[:8000]}
-```
+- 结构化结果已写入同目录 JSON 证据文件；本 Markdown 仅保留可执行内容。
 """
     def _render_content_os_publish_pack_section(self, message: Message, parsed: dict[str, Any], reply: str, doc_link: str, record_id: str) -> str:
         draft = parsed.get("draft") if isinstance(parsed.get("draft"), dict) else {}
@@ -218,7 +214,6 @@ class ContentOSRenderersMixin:
         next_actions = self._content_os_readable_list(
             parsed.get("next_actions") or parsed.get("next_steps") or parsed.get("action_items") or []
         )
-        payload = json.dumps({key: value for key, value in parsed.items() if key not in {"ok"}}, ensure_ascii=False, indent=2, default=str)
         return f"""## 复盘结论
 
 ```text
@@ -243,9 +238,7 @@ class ContentOSRenderersMixin:
 
 ### 结构化结果
 
-```json
-{payload[:8000]}
-```
+- 结构化结果已写入同目录 JSON 证据文件；本 Markdown 仅保留复盘结论与下一步。
 """
     def _render_content_os_project_index(
         self,
