@@ -1446,7 +1446,7 @@ function monitorStatusTone(value: string | null | undefined): "success" | "warni
 
 function toMonitorActionError(error: unknown): string {
   if (error instanceof BusinessOperationError && error.status === 400) {
-    return `链接未通过后端判定：${error.message}`;
+    return "链接未通过后端判定：请粘贴具体作品页链接，并确保平台与所选账号一致。";
   }
   if (error instanceof BusinessOperationError && error.status === 503 && error.code === "monitor_unavailable") {
     return "账号监控适配器暂不可用，保存结果未被显示为成功。";
