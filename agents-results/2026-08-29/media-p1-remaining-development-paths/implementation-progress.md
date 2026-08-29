@@ -124,4 +124,6 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - release 基线说明：上述远端 release 的源码基线为传输时的 `main`（`1511254`）；其后本地新增提交仅更新本进度文档和 SSOT 证据，不改变 `runtime/cli/selfmedia.py` 或日报轮询实现。当前环境再次连接远端时返回 `Operation not permitted`，因此暂不能回读该 release 的服务状态或完成生产安装。
 - 本轮复核：对 `106.52.146.37` 的 SSH 连接仍被当前执行环境以 `Operation not permitted` 拒绝，无法执行远端安装或回读；本地 release 入口和依赖仍可做无副作用检查。该阻塞属于执行环境网络权限，不将其误记为代码失败。
 
+- 远端连接恢复后的实时回读（2026-08-29）：`ubuntu@106.52.146.37` 可正常登录，release `/home/ubuntu/releases/openclaw-media-p1-1511254` 存在且包含 `.venv`。但 `OPENCLAW_MEDIA_DAILY_POLL_TENANT_ID`、`FEISHU_APP_ID`、`FEISHU_APP_SECRET`、`FEISHU_ACCOUNT_MONITOR_URL`、`FEISHU_ACCOUNT_REPORT_URL`、`FEISHU_REQUIRED` 均未设置；`selfmedia-account-daily-poll.service`、`selfmedia-account-daily-poll.timer` 均不存在，日报服务日志无记录。该回读证明网络阻塞已解除，但生产配置仍缺失，不能安全安装租户轮询。远端根分区使用率为 `98%`（约 `802M` 可用），安装前还需确认磁盘空间和清理边界。
+
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。上方 `31/7/11` 与“尚未复验 114 条”均为历史分片快照，不是当前实时总计；当前总计以 `dedup_p1.py --json` 输出的 `153/2/0` 为准。
