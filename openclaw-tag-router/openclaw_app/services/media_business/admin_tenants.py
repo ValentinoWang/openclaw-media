@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import base64
-import binascii
 import hashlib
-import hmac
 import json
 import re
 from contextlib import AbstractContextManager
@@ -17,6 +14,7 @@ from urllib.parse import unquote_to_bytes
 from uuid import UUID, uuid4
 
 from ...account.admin_audit import write_admin_audit
+from . import foundation
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
 DEFAULT_PAGE_SIZE = 30
@@ -158,29 +156,11 @@ def _secret(secret: bytes, label: str) -> bytes:
 
 
 def _encode_signed(value: Mapping[str, Any], secret: bytes) -> str:
-    body = json.dumps(dict(value), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    signature = hmac.new(secret, body, hashlib.sha256).digest()[:18]
-    return base64.urlsafe_b64encode(body + b"." + signature).decode("ascii").rstrip("=")
+    return foundation.encode_signed(value, secret)
 
 
 def _decode_signed(value: Any, secret: bytes, *, pattern: Any = PUBLIC_ID_PATTERN) -> dict[str, Any]:
-    if not isinstance(value, str) or pattern.fullmatch(value) is None:
-        raise AdminTenantsNotFound()
-    try:
-        padded = value + "=" * (-len(value) % 4)
-        raw = base64.urlsafe_b64decode(padded.encode("ascii"))
-        body, signature = raw.rsplit(b".", 1)
-        expected = hmac.new(secret, body, hashlib.sha256).digest()[:18]
-        if not hmac.compare_digest(signature, expected):
-            raise AdminTenantsNotFound()
-        decoded = json.loads(body.decode("utf-8"))
-    except AdminTenantsNotFound:
-        raise
-    except (binascii.Error, ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise AdminTenantsNotFound() from exc
-    if not isinstance(decoded, dict):
-        raise AdminTenantsNotFound()
-    return decoded
+    return foundation.decode_signed(value, secret, error=AdminTenantsNotFound, pattern=pattern)
 
 
 def _json_object(value: Any) -> dict[str, Any]:

@@ -1,9 +1,7 @@
 """IF2 adapter for the B11 administrator access page."""
 from __future__ import annotations
 
-import base64
 import hashlib
-import hmac
 import json
 import re
 from contextlib import AbstractContextManager
@@ -13,6 +11,7 @@ from typing import Any, Callable, Protocol
 from uuid import UUID, uuid4
 
 from ...account.admin_audit import write_admin_audit
+from . import foundation
 from .foundation import IF2_KEY, MediaBusinessError, idempotency_key
 
 
@@ -166,27 +165,18 @@ def _request_fingerprint(operation: str, payload: Any) -> str:
 
 
 def _encode_signed(value: dict[str, Any], secret: bytes) -> str:
-    body = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    signature = hmac.new(secret, body, hashlib.sha256).digest()[:18]
-    return base64.urlsafe_b64encode(body + b"." + signature).decode("ascii").rstrip("=")
+    return foundation.encode_signed(value, secret)
 
 
 def _decode_signed(token: str, secret: bytes, *, pattern: Any = _PUBLIC_ID_PATTERN) -> dict[str, Any]:
-    if not isinstance(token, str) or not pattern.fullmatch(token):
-        raise AdminAccessNotFound()
-    try:
-        padded = token + "=" * (-len(token) % 4)
-        raw = base64.urlsafe_b64decode(padded.encode("ascii"))
-        body, signature = raw.rsplit(b".", 1)
-        expected = hmac.new(secret, body, hashlib.sha256).digest()[:18]
-        if not hmac.compare_digest(signature, expected):
-            raise AdminAccessNotFound()
-        value = json.loads(body.decode("utf-8"))
-    except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise AdminAccessNotFound() from exc
-    if not isinstance(value, dict):
-        raise AdminAccessNotFound()
-    return value
+    # NOTE: only the encode/decode algorithm is shared with admin_tenants.py
+    # and admin_billing.py here. `secret` is still whatever admin_access.py's
+    # own (unlabeled) key derivation in __init__ produced -- see
+    # foundation.py's "Signed opaque-token codec" section for why that stays
+    # untouched: converging it onto the labeled derivation the other two
+    # services use would invalidate every public ID this service has ever
+    # issued.
+    return foundation.decode_signed(token, secret, error=AdminAccessNotFound, pattern=pattern)
 
 
 def _encode_public_id(namespace: str, object_id: UUID, secret: bytes) -> str:

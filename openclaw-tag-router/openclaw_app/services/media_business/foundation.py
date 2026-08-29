@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import base64
 import copy
+import hashlib
+import hmac
 import json
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from common.canonical_digest import digest_hex
 
@@ -162,6 +165,75 @@ def public_projection(value: Any) -> Any:
 
 def body_checksum(body: dict[str, Any]) -> str:
     return digest_hex(body, allow_nan=True)
+
+
+# --- Signed opaque-token codec (HIGH-28 c4) ---------------------------------
+#
+# admin_access.py, admin_tenants.py, and admin_billing.py each independently
+# implemented the exact same HMAC-signed opaque-token codec: JSON-encode a
+# mapping with sorted keys and compact separators, HMAC-SHA256 it, keep the
+# first 18 signature bytes, and base64url-encode body + b"." + signature
+# with the trailing "=" padding stripped. admin_tenants.py's version is the
+# most complete of the three -- it is the only one that accepts a `pattern`
+# override, needed for its 8-512 char cursor tokens (longer than an 8-160
+# char public id) -- so this is that implementation, moved here verbatim
+# except for parameterizing the "invalid token" exception via an `error`
+# factory in place of the hard-coded AdminTenantsNotFound.
+#
+# Deliberately NOT consolidated here: how each service derives the HMAC key
+# from its configured secret. admin_tenants.py and admin_billing.py already
+# derive it identically (sha256(label + b":" + secret)) and had already
+# converged on that shared shape independently of this pass; admin_access.py
+# derives its public-id/cursor secrets a different, unlabeled way. Moving
+# admin_access onto the labeled derivation would change every public ID it
+# has ever issued -- a breaking key-rotation change, not a refactor -- so
+# admin_access.py keeps deriving its own secret and only delegates the
+# encode/decode algorithm below.
+
+PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+
+
+def encode_signed(value: Mapping[str, Any], secret: bytes) -> str:
+    body = json.dumps(dict(value), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    signature = hmac.new(secret, body, hashlib.sha256).digest()[:18]
+    return base64.urlsafe_b64encode(body + b"." + signature).decode("ascii").rstrip("=")
+
+
+def decode_signed(
+    token: Any,
+    secret: bytes,
+    *,
+    error: Callable[[], Exception],
+    pattern: "re.Pattern[str]" = PUBLIC_ID_PATTERN,
+) -> dict[str, Any]:
+    """Verify and decode one ``encode_signed()`` token, or raise ``error()``.
+
+    ``error()`` is invoked -- never a caught-and-reraised prior exception --
+    for every failure mode: pattern mismatch, malformed base64, a missing or
+    wrong signature, malformed JSON, or a non-object payload. Callers pass
+    their own not-found/invalid-request exception factory so each service
+    keeps its existing exception type, HTTP status, and field name.
+    """
+    if not isinstance(token, str) or pattern.fullmatch(token) is None:
+        raise error()
+    try:
+        padded = token + "=" * (-len(token) % 4)
+        raw = base64.urlsafe_b64decode(padded.encode("ascii"))
+        body, signature = raw.rsplit(b".", 1)
+    except ValueError as exc:
+        # binascii.Error (malformed base64) is itself a ValueError subclass;
+        # a token with no "." separator raises ValueError from rsplit too.
+        raise error() from exc
+    expected = hmac.new(secret, body, hashlib.sha256).digest()[:18]
+    if not hmac.compare_digest(signature, expected):
+        raise error()
+    try:
+        decoded = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise error() from exc
+    if not isinstance(decoded, dict):
+        raise error()
+    return decoded
 
 
 # --- Idempotency-key format policies (TI-04) -------------------------------
