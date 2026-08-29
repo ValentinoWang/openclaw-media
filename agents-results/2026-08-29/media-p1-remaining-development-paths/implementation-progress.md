@@ -4,7 +4,7 @@
 
 | 冻结基线 | 当前状态 | 说明 |
 |---|---|---|
-| P1 去重后的实时状态 | 原始审计 `163` 条；固定别名规则实际命中 `7` 个跨域同根因组，折叠其中 `8` 条重复后得到 `155` 个独立问题组 | 以 integration `main` 与照片仓库 `/Users/vsiyo/Desktop/照片筛选` 的独立 `main` 证据映射出 `153` 组已修复、`2` 组部分覆盖、`0` 组未修复；尚未完全关闭为 `2` 个独立问题组。`CT-A7` 已由 `277b028` 将 destructive 删除能力强制限制为 maintainer-only，能力目录 public 序列化不再暴露该能力，定向测试 `24 passed`。照片仓库的 external evidence 仅在其本地 `main` 历史和定向测试均通过时计入，不把跨仓提交冒充 integration 源码。`BIZ-05`、`CD-13` 仍只有源码与定向测试提交 `ec8c88c`，缺生产轮询运行证据。机器清单见 `agents-results/2026-08-29/media-p1-dedup-audit/p1-dedup.json`，脚本可由 `dedup_p1.py --json` 重算。该数字替代旧投影，不把提交数直接当作关闭数。另有 `CT-B4`、`LP-05`、`LP-06`、`LP-07`、`LB-19` 五个历史基线已修复组当前没有显式提交映射，不能把该标签当作本轮提交证明 |
+| P1 去重后的实时状态 | 原始审计 `163` 条；固定别名规则实际命中 `7` 个跨域同根因组，折叠其中 `8` 条重复后得到 `155` 个独立问题组 | 以 integration `main` 与照片仓库 `/Users/vsiyo/Desktop/照片筛选` 的独立 `main` 证据映射出 `153` 组已修复、`2` 组部分覆盖、`0` 组未修复；尚未完全关闭为 `2` 个独立问题组。`CT-A7` 已由 `277b028` 将 destructive 删除能力强制限制为 maintainer-only，能力目录 public 序列化不再暴露该能力，定向测试 `24 passed`。照片仓库的 external evidence 仅在其本地 `main` 历史和定向测试均通过时计入，不把跨仓提交冒充 integration 源码。`BIZ-05`、`CD-13` 已有源码、定向测试和远端空表轮询成功证据（提交 `ec8c88c`），但尚缺至少一条真实启用账号的非空生产轮询证据。机器清单见 `agents-results/2026-08-29/media-p1-dedup-audit/p1-dedup.json`，脚本可由 `dedup_p1.py --json` 重算。该数字替代旧投影，不把提交数直接当作关闭数。另有 `CT-B4`、`LP-05`、`LP-06`、`LP-07`、`LB-19` 五个历史基线已修复组当前没有显式提交映射，不能把该标签当作本轮提交证明 |
 | 发布切片 | 5 个已建立 | `REL-P1-UX`、`REL-P1-PIPE`、`REL-P1-BIZ`、`REL-P1-PORT`、`REL-P1-QA` 均未组装候选 |
 | 当前就绪交付包 | 14 个 | P1 至 P14 均可继续；本轮已处理用户可见渲染、Router 状态呈现和创作证据合同，尚未完成全部交付包验收 |
 | 已接受发布验收 | 0 个 | C1 至 C5 均等待对应交付包 |
@@ -39,7 +39,7 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 | 创作主链 prompt | 8 | 1 | 7 | 16 |
 | 已逐条复验合计 | 31 | 7 | 11 | 49 |
 
-本轮新增关闭记录：BIZ-01（创作回执展示稳定创作记录编号并写入回链）、BIZ-10（首小时动作进入发布包必填校验和验证窗口调度）、BIZ-08（日报互动证据回流）、CPC-16（平台拟合候选证据优先压缩）。BIZ-05 与 CD-13 记录为部分覆盖：代码具备到期任务消费与用户提醒，但尚无生产轮询运行证据。
+本轮新增关闭记录：BIZ-01（创作回执展示稳定创作记录编号并写入回链）、BIZ-10（首小时动作进入发布包必填校验和验证窗口调度）、BIZ-08（日报互动证据回流）、CPC-16（平台拟合候选证据优先压缩）。BIZ-05 与 CD-13 记录为部分覆盖：代码和生产 timer 已具备到期任务消费与用户提醒，空表轮询已成功，但尚无真实启用账号的非空生产回执。
 
 补充确认：评论证据升级门禁已由 `22292a7` 进入 `main`（`d191e35` 为等价空提交），要求独立证据与人工复核后才可把评论支持的候选假设升级为事实；对应门禁测试 `4 passed`。
 
@@ -141,7 +141,7 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - 历史飞书应用复核（2026-08-29）：继续检查远端旧配置引用的两个 Base 应用，`BazubRWJ7a9SLRsLr4Bc8IvAnCg` 仅有项目、任务、发布复盘和商务账号表，`GgOewSQVziIEaIkYoZYcs1c7nTh` 仅有爆款内容积累表；两者同样没有可识别为 v1 账号监控表的表。旧生成备份虽保留过“近期作品链接”字段定义，但没有当前可用的 Base/表地址，不能据此伪造 URL。
 
 - 账号作品来源复核（2026-08-29）：远端租户 `618ff8c4-cc5a-4034-a2c5-226e3ad6cd37` 在 `media_product.published_posts` 中没有已发布作品记录；现有 10 条 `media_product.assets` 均为素材源（`source`/`asset`），不是账号发布记录，不能安全转换为 v1 监控表的“近期作品链接”。因此没有自动创建监控表或伪造作品链接，P1 生产验收继续等待真实 v1 监控表及作品数据。
-- 账号监控表建表（2026-08-29）：在远端生产应用对应的主 Base `OmjkbgBkwa2JEysEN8uc5PMhnTb` 中按 `runtime/cli/selfmedia.py` 的 `ACCOUNT_MONITOR_FIELD_SPECS` 创建 `H00_账号监控`，真实 table ID 为 `tblc65xqnUjSw9Ah`。已回读 10 个字段并确认类型/URL 样式：账号名称(text)、平台(text)、近期作品链接(text/url)、启用(checkbox)、最近运行时间(datetime)、最近状态(text)、最近作品数(number)、最近总互动(number)、最近错误(text)、最近日报摘要(text)。使用该 URL 在 release 上执行 `daily-poll --require-feishu --dry-run` 通过，返回 `account_count=0`、`errors=[]`，未写入任何飞书记录。表结构已完成，但因尚无真实账号记录和近期作品链接，未启用生产 timer；`BIZ-05`、`CD-13` 仍缺真实轮询运行证据。
+- 账号监控表建表（2026-08-29）：在远端生产应用对应的主 Base `OmjkbgBkwa2JEysEN8uc5PMhnTb` 中按 `runtime/cli/selfmedia.py` 的 `ACCOUNT_MONITOR_FIELD_SPECS` 创建 `H00_账号监控`，真实 table ID 为 `tblc65xqnUjSw9Ah`。已回读 10 个字段并确认类型/URL 样式：账号名称(text)、平台(text)、近期作品链接(text/url)、启用(checkbox)、最近运行时间(datetime)、最近状态(text)、最近作品数(number)、最近总互动(number)、最近错误(text)、最近日报摘要(text)。使用该 URL 在 release 上执行 `daily-poll --require-feishu --dry-run` 通过，返回 `account_count=0`、`errors=[]`，未写入任何飞书记录。表结构已完成；真实 timer 已安装但表内尚无账号记录和近期作品链接，因此只能进行空表轮询，`BIZ-05`、`CD-13` 仍缺非空真实轮询证据。
 - 生产轮询安装（2026-08-29）：将 `106.52.146.37` 上 `/home/ubuntu/.config/systemd/user/selfmedia-account-daily-poll.service` 的 `--monitor-url` 从旧 v2 `tblBrERiQnWvZFwp` 替换为新建 v1 表 `tblc65xqnUjSw9Ah`，执行 `daemon-reload` 后启用 `selfmedia-account-daily-poll.timer`。回读确认 timer 为 `enabled/active`；手动启动 service 的 `Result=success`、`ExecMainStatus=0`，journal 不再出现 v2 CreatorProfile 拒绝，生成租户隔离产物 `account_daily_20260829100329.json/.md`。本次运行 `account_count=0`、`polled_account_count=0`，因此仅证明安装和空表轮询链路，不足以关闭 `BIZ-05`、`CD-13`；仍需在 H00 表填入真实账号及近期作品链接后再跑一次生产轮询验收。
 
 验证：Python 定向集合分别为 `8 passed`、`44 passed`；Router 定向集合 `13 passed, 4 subtests passed`；前端定向 QA 与 `npm run build:media` 通过。上方 `31/7/11` 与“尚未复验 114 条”均为历史分片快照，不是当前实时总计；当前总计以 `dedup_p1.py --json` 输出的 `153/2/0` 为准。
