@@ -68,6 +68,8 @@
 
 - P13/RT-11 可移植部署修复已确认在 `main` 的 `4899f9f`：月度报价提醒 systemd 模板不再写死 `/home/ubuntu`，部署器注入仓内 `id_business.py` 路径并拒绝未解析占位符；`tests/test_biz16_deploy_runtime.py tests/test_maintenance_portability.py tests/test_runtime_entrypoint_portability.py tests/test_p13_portability.py tests/test_portable_media_paths.py` 结果 `17 passed`。该项为已进入主线的既有提交，不重复计数。
 
+- CR-20 咨询兜底已确认在 `main` 的 `42250af`：空模型回复不再渲染“依据/建议/下一步/缺口”报告分栏，而是输出连贯的中文聊天段落；`tests/test_cr20_consultation_fallback.py tests/test_consultation_fallback.py` 结果 `7 passed`。
+
 - 修复 `selfmedia/creation/workflow.py` 中候选 payload 重复字典起始行后，原 P1 定向集合重新通过：`120 passed, 14 subtests passed`。
 - 仓库根目录全量 `pytest` 当前不能作为整体绿灯：跨子项目收集时缺少 `openclaw_media` 安装包、`httpx`、`opentimelineio` 等独立依赖，收集阶段出现 71 个错误；这些错误不归因于本轮 P1 定向改动，后续按子项目依赖矩阵拆开验证。
 - 本地验证环境使用隔离目录 `/tmp/openclaw-media-p1-venv`，未写入仓库依赖文件或全局 Python。
