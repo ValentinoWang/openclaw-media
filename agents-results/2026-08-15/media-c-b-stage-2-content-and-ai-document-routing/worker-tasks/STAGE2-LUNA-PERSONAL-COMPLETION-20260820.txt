@@ -1,0 +1,18 @@
+TASK ID: STAGE2-LUNA-PERSONAL-COMPLETION-20260820
+
+Work only in the current isolated remote repository on host 106. The baseline is a copy of /tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router including the 2026-08-20 hardening diff. This is candidate implementation, not deployment or formal SSOT acceptance.
+
+Exclusive write scope:
+- openclaw_app/services/stage2_personal_pipeline.py
+- tests/test_stage2_personal_completion.py (new)
+
+Read the existing Stage-2 services and tests. Close concrete remaining code defects against SSOT nodes C1-C7 without changing public behavior gratuitously. Focus on real personal workflow invariants: server-owned personal scope, deterministic research/decision/context receipts, human-confirmation identity, immutable revision chain, optimistic concurrency, verified revision-only export packages, idempotent replay/conflict, tenant isolation, no Binding/Feishu/remote reference leakage, and failure-closed persisted-store behavior already supplied by the baseline. Add high-value negative and concurrent tests in the new test file. Do not invent UI, external publishing, provider calls, database schema changes, or production side effects.
+
+Do not edit SSOT files, manifests, contracts, existing tests, configs, dependencies, migrations, generated files, deployment files, or any other source. Do not commit, push, deploy, restart, or touch credentials. Preserve the candidate's existing dirty changes.
+
+Verification:
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. /home/ubuntu/selfmedia-tools/openclaw-media/.venv/bin/python -m pytest -q tests/test_stage2_personal_pipeline.py tests/test_stage2_personal_completion.py
+PYTHONDONTWRITEBYTECODE=1 /home/ubuntu/selfmedia-tools/openclaw-media/.venv/bin/python -m compileall -q openclaw_app/services/stage2_personal_pipeline.py tests/test_stage2_personal_completion.py
+git diff --check
+
+Return a single final JSON object in stdout containing task_id, proposed_state, acceptance_self_check, failure_class, failure_origin, changed_files, tests, unverified_items, residual_risks, and explicit_non_claims. Use VERIFIED only if all commands pass. Never claim SSOT node acceptance, authenticated browser/device proof, AI provider proof, production deployment, or external publishing.

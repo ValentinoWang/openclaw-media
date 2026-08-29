@@ -1,0 +1,29 @@
+Task: implement provisional Stage-2 organization content/document pipeline covering O1-O5 in an isolated remote worktree.
+
+Execution context:
+- Worker runs locally but target is remote ubuntu@106.52.146.37.
+- Remote worktree: /tmp/openclaw-stage2-organization-luna, created from codex/stage2-integration-20260818.
+- Do not touch remote main, production, browser, database, Feishu, credentials, or external services.
+- SSOT is planning authority only. Do not edit any SSOT, progress ledger, generated view, manifest, acceptance state, or archive.
+
+Exclusive remote write scope (only these files):
+- openclaw-tag-router/openclaw_app/services/stage2_organization_pipeline.py
+- openclaw-tag-router/tests/test_stage2_organization_pipeline.py
+
+Objective:
+Create an injected-adapter organization-only boundary that composes stage2_context.py, stage2_writer_router.py, and stage2_external_document.py. It must be safe to integrate later and must never perform real Feishu/HTTP/database I/O itself.
+
+Required behavior:
+1. Build organization materials and brand constraints only from the authenticated tenant and active Binding generation (O1). Reject personal rows, wrong tenant, inactive/mismatched Binding, and browser authority claims.
+2. Route document writes only through the current organization_lark/lark context and injected external adapter (O2). Require binding identity, preserve remote_ref/remote_revision, and fail closed on partial write.
+3. Register organization artifact-to-remote-document binding with explicit tenant, Binding id/generation, credential generation metadata (non-secret), and idempotency (O3). Never create editable personal Web body.
+4. Produce a read-only Web mirror after verified readback from the same binding/document/revision (O4). Reject wrong digest/revision/binding and untrusted URLs. Expose a `record_remote_edit_and_readback` helper for O5 that proves remote revision changed and mirror follows it; it must not edit remote content itself.
+5. All outputs JSON-shaped, auditable, deterministic except external timestamps supplied by adapter. Standard-library only. Thread-safe in-memory receipts, no global credential fallback.
+
+Tests:
+- Fake adapters only. Cover organization positive path, wrong tenant/Binding, personal leakage, missing remote reference, readback mismatch, registration failure, remote edit + second readback, idempotent replay/conflict, and mirror read-only invariant.
+- Run focused pytest, py_compile/in-memory compile, and git diff --check. Do not modify existing tests or add dependencies.
+
+Before exit, write one structured JSON object to:
+/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/stage2-organization-luna/returns/STAGE2-LUNA-ORGANIZATION-20260818.json
+Include proposed_state, acceptance_self_check, failure_class, failure_origin, changed_files, commands, tests, unverified_items, and explicit_non_claims. Never claim formal SSOT acceptance or production/device evidence.

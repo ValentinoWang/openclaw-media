@@ -1,0 +1,31 @@
+Task ID: STAGE2-LUNA-WRITER-20260818
+Node scope: provisional implementation support for S3/S4 (unique WriterRouter, artifact registration/readback state machine)
+Direct parent: Phase-2 SSOT A/A1/K; formal F2/B/S3/S4 remain BLOCKED until Stage-1 organization projection is ACCEPTED.
+Contract/DAG versions: 3/3/4/4. Do not change SSOT state, acceptance contracts, generated views, progress ledgers, or manifests.
+Executor: lw-luna via /Users/vsiyo/.codex/workers/run-lw-luna.sh; writable sandbox; one bounded external process.
+
+Authoritative read scope:
+- Phase-2 SSOT ssot-development-paths.md and execution-contracts/S3.json,S4.json
+- remote /home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/services/stage1_writer_gate.py if present, and existing document/Feishu writer services
+- remote tests for document resources, creation writers, tenant ownership, and readback.
+
+Exclusive remote write scope:
+- add /home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/services/stage2_writer_router.py
+- add /home/ubuntu/selfmedia-tools/openclaw-tag-router/tests/test_stage2_writer_router.py
+- do not edit any existing tracked file, config, migration, lockfile, generated file, SSOT, or production service.
+
+Required behavior:
+- Expose one WriterRouter boundary that accepts a trusted AI context object, content, capability id, idempotency key, and optional context receipt.
+- Route personal_web/internal only to a supplied personal writer; route organization_lark/lark only to a supplied organization writer using the active Binding. Never accept caller-selected tenant/container/credentials.
+- Enforce read-only capabilities have no writer call; unregistered capability effects fail closed.
+- Normalize writer results, require personal no remote_ref and organization remote_ref, and treat write/readback/registration failure as needs_attention rather than publish success.
+- Provide deterministic idempotent replay and conflict behavior. Make receipt storage keys correct and independent from receipt string parsing.
+- Keep external Feishu/DB adapters as protocols or injected writers; no real external side effects in focused tests.
+
+Tests/commands:
+- Add focused pytest coverage for personal vs organization routing, wrong authority, no-op consultation, readback incomplete, writer failure close, idempotent replay, and conflicting key.
+- Run focused tests with the remote supported environment; if unavailable record exact blocker and run py_compile.
+
+Return JSON path: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/stage2-writer/returns/STAGE2-LUNA-WRITER-20260818-luna.json
+Return fields: task_id, attempt_role=luna, wrapper_path, model, proposed_state, acceptance_self_check, failure_class, failure_origin, actual_read_scope, actual_write_scope, changed_files, commands, test_evidence, unverified_items, residual_risks, explicit_non_claims.
+Stop condition: finish only the declared new files and tests; never claim formal acceptance, production release, or Phase-2 completion.

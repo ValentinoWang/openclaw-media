@@ -1,0 +1,89 @@
+{
+  "node_id": "DA",
+  "semantic_key": "media.stage2.static-release-acceptance",
+  "stage": "D",
+  "work_kind": "validation",
+  "domain_lane": "release",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "C"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage2.product-decisions",
+      "version": 2
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage2.static-release-acceptance.v3"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "DB"
+  ],
+  "worker_transport": "deterministic-local",
+  "worker_registration": {
+    "executor": "outer orchestrator",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "command": "python3 -m pytest -q",
+    "task_argument": "对唯一候选执行静态、合同和清理验收。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/deterministic-receipts/DA.json",
+    "determinism_key": "stage2:DA:v3",
+    "dispatch_state": "BLOCKED",
+    "note": "deterministic local execution; zero Codex processes"
+  },
+  "description": "禁止修改候选、生产数据库和外部系统；失败返回所属节点修复并重建候选",
+  "node_role": "acceptance-gate",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "DA.json",
+  "execution_contract_sha256": "c6c8ca8e934b29a4132051593f3adeb2f76b09e96a0753f68ad23a9f83492322",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-DA"
+  ],
+  "consumed_artifact_ids": [
+    "ART-C"
+  ],
+  "read_set": [
+    "artifact:ART-C"
+  ],
+  "write_set": [
+    "evidence:DA"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DA",
+      "mode": "W",
+      "isolation_key": "node:DA"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "R",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -m pytest -q"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/DA-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-13",
+  "main_thread_write_exception": {
+    "reason": "历史编排节点只生成或投影自身独占的 SSOT 记录；主线程不直接修改业务源码，也不写入其他节点的共享事实。",
+    "approved_by": "user and planning authority",
+    "write_set": [
+      "evidence:DA"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+TASK ID: STAGE2-LUNA-HTTP-COMPLETION-20260820
+
+Work only in the current isolated remote repository on host 106. The baseline is a copy of /tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router including the 2026-08-20 hardening diff. This is candidate implementation, not deployment or formal SSOT acceptance.
+
+Exclusive write scope:
+- openclaw_app/adapters/http_api.py
+- tests/test_stage2_http_completion.py (new)
+
+Audit and close concrete Stage-2 HTTP boundary defects for /stage2/personal and /stage2/organization. Preserve existing transport contract and focus on failure-closed request parsing: content length/body limits, JSON object enforcement, malformed content length, incomplete/trailing JSON, duplicate fields, duplicate/ambiguous credentials, cookie parsing, unsupported content type where appropriate, stable safe errors without leaking exception strings, and correct status mapping for gateway/runtime errors. Health and existing non-Stage-2 routes must not regress. Add handler-level tests using a real loopback ThreadingHTTPServer with fake app only; no browser, database, provider, Feishu, credentials, or production service.
+
+Do not edit SSOT files, manifests, contracts, existing tests, configs, dependencies, migrations, generated files, deployment files, or any other source. Do not commit, push, deploy, restart, or touch credentials. Preserve the candidate's existing dirty changes.
+
+Verification:
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. /home/ubuntu/selfmedia-tools/openclaw-media/.venv/bin/python -m pytest -q tests/test_stage2_gateway.py tests/test_stage2_runtime_hardening.py tests/test_stage2_http_completion.py
+PYTHONDONTWRITEBYTECODE=1 /home/ubuntu/selfmedia-tools/openclaw-media/.venv/bin/python -m compileall -q openclaw_app/adapters/http_api.py tests/test_stage2_http_completion.py
+git diff --check
+
+Return a single final JSON object in stdout containing task_id, proposed_state, acceptance_self_check, failure_class, failure_origin, changed_files, tests, unverified_items, residual_risks, and explicit_non_claims. Use VERIFIED only if all commands pass. Never claim SSOT acceptance, browser/device proof, production deployment, or release.

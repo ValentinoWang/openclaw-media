@@ -1,0 +1,107 @@
+{
+  "task_id": "PR-REL-READBACK-DESIGN-V2",
+  "attempt_role": "primary",
+  "executor": "lw-luna",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-readback-design",
+  "baseline_commit": "59e2adfd34853b6929d9fa69e69585806ac9c83a",
+  "commit_sha": "5b3b628c739c84b8b02f7256c15e2b23ca033bf8",
+  "commit_message": "test(release): lock Stage-2 readback acceptance",
+  "actual_scopes": {
+    "authoritative_committed": [
+      "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/**",
+      "acceptance/human/PR-REL-READBACK/**",
+      "openclaw-tag-router/tests/test_stage2_release_readback.py"
+    ],
+    "generated_validation_only_uncommitted": [
+      "acceptance/index.md"
+    ],
+    "reserved_untouched": [
+      "openclaw-tag-router/scripts/qa/check_stage2_release_process.py"
+    ],
+    "forbidden_untouched": [
+      "remote/SSH/curl",
+      "systemd/pointer/Nginx/database/Feishu",
+      "existing source/tests/evidence/SHA256SUMS",
+      "SSOT/Obsidian"
+    ]
+  },
+  "changed_files": [
+    "acceptance/human/PR-REL-READBACK/binding.md",
+    "acceptance/human/PR-REL-READBACK/checklist.md",
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance-contract.md",
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance/index.md",
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance/machine/unit/runs/20260826T010000Z-uv-cpython312-a1b2c3/evidence/protected-test-red.log",
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance/machine/unit/runs/20260826T010000Z-uv-cpython312-a1b2c3/result.md",
+    "openclaw-tag-router/tests/test_stage2_release_readback.py"
+  ],
+  "contract": {
+    "path": "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance-contract.md",
+    "version": 1,
+    "status": "APPROVED",
+    "test_baseline": "LOCKED",
+    "sha256": "ae12561d38b281fc44a299d4589c0b72a6681109002327c60f7be1cb67ced57c",
+    "approval_evidence": "User-supplied 2026-08-25 Production Reconciliation baseline plus explicit continue instruction; source-only scope only"
+  },
+  "human_acceptance": {
+    "checklist_path": "acceptance/human/PR-REL-READBACK/checklist.md",
+    "checklist_status": "APPROVED",
+    "checklist_sha256": "3e79e6e5f33acf76cfd1a55c64872f3b6f7ae6047e087bff82e3b1eddef644ca",
+    "binding_path": "acceptance/human/PR-REL-READBACK/binding.md",
+    "binding_status": "ACTIVE",
+    "binding_sha256": "a6836b8c3f976e8dec90e828b781e78fb7786f343b72579f829d512e7e3e034d"
+  },
+  "protected_test_sha256": "a70096254718873de191d3cef266d8fa3ae820b26ffcf516649a3fc42d255ace",
+  "red_proof": {
+    "run_id": "20260826T010000Z-uv-cpython312-a1b2c3",
+    "lane": "machine/unit",
+    "status": "FAIL_EXPECTED_RED",
+    "runtime": "CPython 3.12.11 via uv",
+    "test_exit_code": 1,
+    "failure_reason": "INTENDED_GUARD_MISSING: openclaw-tag-router/scripts/qa/check_stage2_release_process.py",
+    "evidence_path": "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance/machine/unit/runs/20260826T010000Z-uv-cpython312-a1b2c3/evidence/protected-test-red.log",
+    "evidence_sha256": "f5a940bcefcdb431804f8233cc14e0f1e59ebd2758cb076c50364c79ed96cf71",
+    "result_path": "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance/machine/unit/runs/20260826T010000Z-uv-cpython312-a1b2c3/result.md",
+    "result_sha256": "6ef7532f71337b40d2b5af82b27c1b8f003c91af17d343d7102814ffae4f240c"
+  },
+  "commands_and_evidence": [
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/check_acceptance_contract.py docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance-contract.md --project-root .",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py bind-human docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK --project-root . --replace",
+      "exit_code": 0,
+      "result": "pass; ACTIVE binding generated"
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py index docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK --project-root .",
+      "exit_code": 0,
+      "result": "pass; task and project indexes generated"
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py check docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK --project-root .",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/validation/PR-REL-READBACK-DESIGN-V2.sh",
+      "exit_code": 0,
+      "result": "pass; final bounded validation accepted expected protected-test red"
+    }
+  ],
+  "unverified_items": [
+    "The reserved production guard was not implemented by this task.",
+    "The protected tests are intentionally red until the future guard exists; no behavior pass is claimed.",
+    "No production, deployment, authenticated business, database, Feishu, device, activation, rollback, current-main, or Stage-1 C1/C3/DC2 proof was performed or claimed.",
+    "The project-level generated acceptance/index.md is intentionally uncommitted and remains the main integrator's projection.",
+    "No remote or live HTTP evidence was collected."
+  ],
+  "validation_command_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/validation/PR-REL-READBACK-DESIGN-V2.sh",
+  "validation_command_sha256": "0d7896397fdc628e369c5c20d1da898a40385af117218185d1a8f9689e021232",
+  "production_proof_claim": false
+}

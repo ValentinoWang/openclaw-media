@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-045-S4-O3",
+  "from": "S4",
+  "to": "O3",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.s4.o3.v3"
+  ],
+  "transferred_input": "ArtifactRecorder 和 ReadbackVerifier",
+  "gate_evidence": "任一必要步骤失败都不得返回发布成功",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-S4"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "O3 consumes the explicitly produced artifact DL-S4"
+}

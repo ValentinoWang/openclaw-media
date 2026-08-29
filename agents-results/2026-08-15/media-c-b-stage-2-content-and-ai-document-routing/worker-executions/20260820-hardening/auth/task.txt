@@ -1,0 +1,23 @@
+Task ID: STAGE2-AUTH-HARDENING-20260820
+Objective: harden the Stage-2 server-owned authentication, Binding, tenant profile, and source reader boundary in the isolated clone at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage2-hardening-auth-20260820.
+
+Read first:
+- openclaw_app/services/stage2_server_context.py
+- openclaw_app/services/stage2_context.py
+- tests/test_stage2_server_context.py
+- STAGE2-HANDOFF-20260819.md
+
+Exclusive write scope:
+- openclaw_app/services/stage2_server_context.py
+- tests/test_stage2_server_context.py
+- add tests/test_stage2_auth_hardening.py only if a separate regression file is needed
+Do not edit contracts, manifests, SSOT, migrations, production services, or other source files. Do not commit or push.
+
+Required review and implementation:
+1. Verify authentication is fail-closed when multiple credentials are supplied, malformed headers/cookies are present, or an authorization token is ambiguous. Do not silently select one conflicting credential.
+2. Verify session facts, member tenant, expiry, status, and active organization Binding generation are server-owned and cannot be overridden by transport payloads.
+3. Verify profile/source readers pass the requested tenant/workspace/source-kind scope to the loader and reject returned rows with cross-tenant, wrong workspace, wrong source kind, personal Binding, or organization Binding mismatch.
+4. Preserve public APIs and stable error codes already covered by tests. Make the smallest maintainable code change. Add focused red/green regression tests for any new behavior, including zero loader calls after invalid input where applicable.
+5. Run focused tests, the full Stage-2 test set, compile, and diff check. Do not contact databases, Feishu, credentials, or production systems.
+
+Before exit write one JSON object to STRUCTURED_RETURN_PATH with task_id, proposed_state, acceptance_self_check, failure_class, failure_origin, actual_read_scope, actual_write_scope, changed_files, commands, test_evidence, unverified_items, residual_risks, and explicit_non_claims. Use IMPLEMENTED or VERIFIED only when tests pass. Never claim formal SSOT acceptance, production acceptance, or external/device evidence.

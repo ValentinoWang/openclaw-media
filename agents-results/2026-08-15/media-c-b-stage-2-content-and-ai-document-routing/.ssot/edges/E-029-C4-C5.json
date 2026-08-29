@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-029-C4-C5",
+  "from": "C4",
+  "to": "C5",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c4.c5.v3"
+  ],
+  "transferred_input": "PersonalContextBuilder 结果",
+  "gate_evidence": "个人任务只使用 personal_web/internal 上下文",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-C4"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C5 consumes the explicitly produced artifact DL-C4"
+}

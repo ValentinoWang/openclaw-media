@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-006-K-B",
+  "from": "K",
+  "to": "B",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.k.b.v3"
+  ],
+  "transferred_input": "已接受决定记录第 2 版",
+  "gate_evidence": "无新的人类拍板问题，不创建 openproblem.md",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "ART-K"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "B consumes the explicitly produced artifact ART-K"
+}

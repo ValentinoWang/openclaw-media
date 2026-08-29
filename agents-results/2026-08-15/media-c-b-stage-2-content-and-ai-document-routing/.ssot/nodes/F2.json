@@ -1,0 +1,79 @@
+{
+  "node_id": "F2",
+  "semantic_key": "media.stage2.gate.stage1-provision",
+  "stage": "A",
+  "work_kind": "validation",
+  "domain_lane": "cross-stage",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "A1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage2.gate.stage1-provision.v3"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "cross-stage projection owner",
+  "unlocks": [
+    "O1",
+    "S3"
+  ],
+  "worker_transport": "automatic-projection",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "stage1:C3"
+    ],
+    "projection_rule": "仅当第一阶段 C3 为 ACCEPTED 且候选身份匹配时投影为 ACCEPTED，否则保持 BLOCKED。",
+    "task_argument": "zero-write 投影第一阶段 C3；不修改上游状态。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/projections/F2.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  },
+  "description": "接受后只解锁组织资料、按 Binding 写入和飞书回读支线",
+  "node_role": "acceptance-gate",
+  "execution_actor": "external-system",
+  "execution_contract_ref": "F2.json",
+  "execution_contract_sha256": "640bebb199947293bc998afc6b57e15d745b8100c22e5abb3a34ae449cda5248",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "consumes",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "DL-F2"
+  ],
+  "consumed_artifact_ids": [
+    "DL-A1"
+  ],
+  "read_set": [
+    "artifact:DL-A1"
+  ],
+  "write_set": [
+    "evidence:F2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:F2",
+      "mode": "W",
+      "isolation_key": "node:F2"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "R",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "actor_pool": "external-acceptance",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance F2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/F2-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-2"
+}

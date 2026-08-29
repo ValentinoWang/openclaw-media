@@ -1,0 +1,456 @@
+{
+  "task_id": "STAGE2-STAGE1-GATE-READBACK-20260825",
+  "versions": {
+    "stage2_frozen": {
+      "plan_version": 3,
+      "dag_version": 3,
+      "interface_freeze_version": 4,
+      "node_contract_version": 4,
+      "ssot_schema_version": 2,
+      "manifest_sha256": "385d28559088bd6a74a63d17b5796d43f554c02993eb97e4f6686b0f8dc526a9"
+    },
+    "stage1_machine_current": {
+      "plan_version": 5,
+      "dag_version": 5,
+      "interface_freeze_version": 4,
+      "node_contract_version": 5,
+      "ssot_schema_version": 2,
+      "manifest_sha256": "98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf"
+    },
+    "stage2_upstream_projection_pins": {
+      "F1": {
+        "source_node": "C1",
+        "source_manifest_sha256": "98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf",
+        "source_node_sha256": "26bf849657405fed887785e52665b97f2a5ae248e0591f7365f8d72e31c5f450",
+        "required_state": "ACCEPTED"
+      },
+      "F2": {
+        "source_node": "C3",
+        "source_manifest_sha256": "98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf",
+        "source_node_sha256": "7b3ebfc4653099da67694396ec3374ff697b8dd50b19fc9575cac31b271488b5",
+        "required_state": "ACCEPTED"
+      },
+      "F3": {
+        "source_node": "DC2",
+        "source_manifest_sha256": "98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf",
+        "source_node_sha256": "e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448",
+        "required_state": "ACCEPTED"
+      }
+    }
+  },
+  "wrapper": {
+    "selected_executor": "lw-luna",
+    "selected_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+    "wrapper_sha256": "a88abe5cdbb376cb1d9e37706f202f60c48292c3ed337b1e31c1820720b1742c",
+    "attempt_role": "primary-retry",
+    "mode": "zero-write-independent-readonly-audit",
+    "prior_attempt": {
+      "exit_code": 1,
+      "failure_class": "transport",
+      "failure_origin": "provider-transport",
+      "provider_status": "503",
+      "structured_return_state": "invalid",
+      "invalid_protocol_fields": true,
+      "retry_decision": "retry_primary"
+    },
+    "remote_audit_executed": false,
+    "remote_audit_basis": "local frozen manifests, node files, implementation progress, and existing release receipts only"
+  },
+  "attempt_role": "primary-retry",
+  "actual_read_scope": {
+    "prior_return": [
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-remote-deployability/returns/STAGE2-STAGE1-GATE-READBACK-20260825.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-remote-deployability/ledger/attempt-1.json"
+    ],
+    "stage2_authority": [
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/nodes/F1.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/nodes/F2.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/nodes/F3.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/implementation-progress.md",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/evidence-stage2-hardening-20260820.md",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/evidence-raw/stage2-completion-wave-20260820/evidence-stage2-playwright-fixture-20260820.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/stage2-integration/evidence-20260819-entry-gateway.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/F1-return.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/F2-return.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/F3-return.json"
+    ],
+    "stage1_authority": [
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/manifest.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/implementation-progress.md",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/C1.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/C3.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/I9.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/DC2.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/I7-I9-lw-luna/returns/I7-I9-lw-luna-luna.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-remote-release-20260818/release-r9-receipt.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-remote-release-20260818/remote-readback-20260818T2008.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/evidence-remote-release-20260818/production-release-20260818-media-feishu-oauth-r11.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/manual-receipts/production-release-20260818-stage1-candidate-4ef6.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/C1-return.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/C3-return.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I9-return.json",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DC2-return.json"
+    ],
+    "project_rules": [
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/develop/Harness/fullstack-ai-harness.md",
+      "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.harness/overlays/project-harness-adapter.yaml",
+      "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/harnesses/fullstack-ai-harness.md",
+      "/Users/vsiyo/.codex/skills/verify-acceptance-release/SKILL.md"
+    ],
+    "non_authoritative_context": [
+      "/Users/vsiyo/.codex/memories/MEMORY.md",
+      "/Users/vsiyo/.codex/memories/rollout_summaries/2026-08-19T17-59-41-3z8J-openclaw_media_stage2_candidate_hardening_formal_blockers.md"
+    ],
+    "scope_note": "No source implementation, remote service, database, external system, Git object, Obsidian snapshot, or unrelated repository content was audited. Existing evidence was read only; historical memory was not treated as current authority."
+  },
+  "actual_write_scope": {
+    "only_allowed_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-remote-deployability/returns/STAGE2-STAGE1-GATE-READBACK-20260825-primary-retry.json",
+    "write_method": "apply_patch",
+    "target_preexisted": false,
+    "other_files_written": false,
+    "remote_or_external_writes": false,
+    "git_mutation": false,
+    "ssot_or_source_mutation": false
+  },
+  "commands": [
+    {
+      "command": "readlink develop/Harness/fullstack-ai-harness.md .harness/overlays/project-harness-adapter.yaml",
+      "purpose": "resolve mandatory Harness SSOT path",
+      "result": "read-only; Harness document resolves outside the business project"
+    },
+    {
+      "command": "sed on Harness documents, project adapter, and verify-acceptance-release skill",
+      "purpose": "read project rules and evidence-layer review protocol",
+      "result": "read-only"
+    },
+    {
+      "command": "jq on the first return, Stage-1/Stage-2 manifests, nodes, and progress ledgers",
+      "purpose": "read frozen/current versions, node states, upstream projection pins, and blocking reasons",
+      "result": "read-only"
+    },
+    {
+      "command": "jq on the selected Stage-1 worker receipt and remote release/readback receipts",
+      "purpose": "read latest recorded evidence boundaries and release identities",
+      "result": "read-only"
+    },
+    {
+      "command": "sha256sum on Stage-1 manifest/C1/C3/DC2, Stage-2 manifest, and selected receipts",
+      "purpose": "recheck frozen projection identity and bind evidence references",
+      "result": "Stage-1 projection source hashes match the Stage-2 pins"
+    },
+    {
+      "command": "test -e on the retry target and Stage-1 C1/C3/I9/DC2 plus Stage-2 F1/F2/F3 return paths",
+      "purpose": "check whether formal return artifacts exist",
+      "result": "retry target and all seven formal return paths were absent before this write"
+    },
+    {
+      "command": "git -C /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering status --short --branch",
+      "purpose": "read Harness SSOT repository status without mutation",
+      "result": "pre-existing dirty files; no changes made by this worker"
+    },
+    {
+      "command": "git status --short --branch in the business project root",
+      "purpose": "read business project Git status without mutation",
+      "result": "the business project root is not a Git repository"
+    },
+    {
+      "command": "Stage-2 tests and health/readiness probes",
+      "purpose": "avoid using lower-layer evidence as Stage-1 acceptance",
+      "result": "not run; existing evidence was not used to satisfy Stage-1 ACCEPTED"
+    },
+    {
+      "command": "apply_patch adding the unique primary-retry return JSON at the declared path",
+      "purpose": "write the protocol-correct bounded audit result",
+      "result": "the only intended workspace write"
+    },
+    {
+      "command": "jq empty and jq field/enumeration checks on the retry return JSON",
+      "purpose": "validate JSON syntax and required protocol fields after write",
+      "result": "passed; JSON syntax, required fields, closed enums, blocked node states, projection dispositions, and zero-write assertions all validated"
+    }
+  ],
+  "stage1_node_states": {
+    "C1": {
+      "node_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/C1.json",
+      "execution_state": "BLOCKED",
+      "decision_state": "NOT_APPLICABLE",
+      "readiness_mode": "FORMAL",
+      "release_slice": "REL-1A",
+      "hard_dependencies": ["I4", "I5", "I6", "I9", "IL1"],
+      "candidate_identity_policy": "freezes",
+      "return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/C1-return.json",
+      "return_exists": false,
+      "progress_reason": "waiting for IL1, I4, I5, I6, and I9 to be formally accepted",
+      "related_evidence": {
+        "evidence_id": "EV-MPE2E-C5-R3-SHARED-LOCAL",
+        "level": "local-runtime",
+        "mock_or_fixture": true,
+        "does_not_prove": "formal identity convergence, deployment, or production acceptance"
+      }
+    },
+    "C3": {
+      "node_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/C3.json",
+      "execution_state": "BLOCKED",
+      "decision_state": "NOT_APPLICABLE",
+      "readiness_mode": "FORMAL",
+      "release_slice": "REL-1B",
+      "hard_dependencies": ["P10", "P7", "P8", "P9"],
+      "candidate_identity_policy": "freezes",
+      "return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/C3-return.json",
+      "return_exists": false,
+      "progress_reason": "waiting for P7, P8, P9, and P10 to be formally accepted",
+      "related_evidence": {
+        "evidence_id": "EV-REMOTE-RELEASE-20260818-R9",
+        "level": "remote-code-transport-and-production-readback",
+        "boundary": "does not prove formal SSOT node acceptance or real Feishu completion"
+      }
+    },
+    "I9": {
+      "node_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/I9.json",
+      "execution_state": "BLOCKED",
+      "decision_state": "NOT_APPLICABLE",
+      "readiness_mode": "FORMAL",
+      "release_slice": "REL-1A",
+      "hard_dependencies": ["B", "G1", "K5", "M1", "T1"],
+      "candidate_identity_policy": "none",
+      "return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/I9-return.json",
+      "return_exists": false,
+      "progress_reason": "waiting for T1 to be formally accepted",
+      "latest_candidate_evidence": {
+        "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/worker-artifacts/I7-I9-lw-luna/returns/I7-I9-lw-luna-luna.json",
+        "sha256": "52dc5b8962b3968094915070fab9c4cbb948a1bdf403594bb9e58c455a8ba9c4",
+        "proposed_state": "VERIFIED",
+        "focused_validation": "29 passed",
+        "acceptance_self_check": "pass",
+        "formal_acceptance_claimed": false,
+        "production_or_deployment_claimed": false
+      }
+    },
+    "DC2": {
+      "node_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/.ssot/nodes/DC2.json",
+      "execution_state": "BLOCKED",
+      "decision_state": "NOT_APPLICABLE",
+      "readiness_mode": "FORMAL",
+      "release_slice": "REL-1B",
+      "hard_dependencies": ["DB2"],
+      "candidate_identity_policy": "must-match",
+      "return_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/validation/DC2-return.json",
+      "return_exists": false,
+      "progress_reason": "waiting for DB2 to be formally accepted",
+      "related_evidence": [
+        {
+          "evidence_id": "EV-REMOTE-RELEASE-20260818-R9",
+          "level": "remote-code-transport-and-production-readback",
+          "boundary": "formal_ssot_node_acceptance=false and production_business_data_acceptance=false"
+        },
+        {
+          "evidence_id": "EV-REMOTE-READBACK-20260818T2008",
+          "level": "remote-readback",
+          "boundary": "formal_ssot_node_acceptance=false and real mail/browser/device acceptance=false"
+        }
+      ]
+    }
+  },
+  "candidate_identity_check": {
+    "stage1_projection_source_identity": {
+      "manifest": {
+        "expected_sha256": "98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf",
+        "actual_sha256": "98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf",
+        "match": true
+      },
+      "C1": {
+        "expected_sha256": "26bf849657405fed887785e52665b97f2a5ae248e0591f7365f8d72e31c5f450",
+        "actual_sha256": "26bf849657405fed887785e52665b97f2a5ae248e0591f7365f8d72e31c5f450",
+        "match": true
+      },
+      "C3": {
+        "expected_sha256": "7b3ebfc4653099da67694396ec3374ff697b8dd50b19fc9575cac31b271488b5",
+        "actual_sha256": "7b3ebfc4653099da67694396ec3374ff697b8dd50b19fc9575cac31b271488b5",
+        "match": true
+      },
+      "DC2": {
+        "expected_sha256": "e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448",
+        "actual_sha256": "e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448",
+        "match": true
+      },
+      "interpretation": "projection source identity is internally consistent; hash consistency does not promote any node state"
+    },
+    "stage1_recorded_release_identities": {
+      "r9": {
+        "evidence_id": "EV-REMOTE-RELEASE-20260818-R9",
+        "frontend_release_id": "20260818T-stage1-auth-media-oauth-r9",
+        "backend_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9",
+        "candidate_manifest_sha256_bound": false,
+        "formal_ssot_node_acceptance": false,
+        "evidence_sha256": "dc7def759cc22c56bc4cbf2f4259c103a6c3c79010ae1d08f327f601e495964b"
+      },
+      "r10_readback": {
+        "evidence_id": "EV-REMOTE-READBACK-20260818T2008",
+        "frontend_release_id": "20260818T-stage1-auth-entry-r10",
+        "backend_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9",
+        "candidate_manifest_sha256": "334b5133bd8e3cf03716757028bf584d03ff798b4d8dc69eb0de3edc267ed571",
+        "formal_ssot_node_acceptance": false,
+        "evidence_sha256": "6649f2db7d97b24ce27a287d070ff41be10db78cbd4ac9b507994ad84a1743d7"
+      },
+      "r11_latest_recorded_frontend": {
+        "recorded_at": "2026-08-18T15:38:07Z",
+        "frontend_release_id": "20260818T-stage1-media-feishu-oauth-r11",
+        "backend_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-auth-media-oauth-r9",
+        "candidate_manifest_sha256_bound": false,
+        "evidence_boundary": "code-only remote release, public route readback, and unauthenticated browser QR generation; no real Feishu authorization or formal Stage-1 acceptance",
+        "evidence_sha256": "2f3dd32cefd5bd56c4819474ecfb308d7ade0b192d2a532815c9f87f7db06445"
+      },
+      "manual_4ef6_candidate": {
+        "candidate_manifest_sha256": "4ef6dd61c916ba9004f6a39667d3555e8f0ab2bc3ef2fbcb5dc6d8da60a965eb",
+        "frontend_release_id": "20260818T-stage1-candidate-4ef6",
+        "backend_release_id": "openclaw-tag-router-media-tenant-20260818T-stage1-candidate-4ef6",
+        "status": "approved",
+        "evidence_boundary": "code-only remote release; no node-level acceptance or external, production-database, mail, Feishu, browser, or device acceptance",
+        "evidence_sha256": "07fd4ed92a738a526bc1510c3a4f192f869da969b268b9ee22b8c3756ae429ad"
+      },
+      "interpretation": "recorded Stage-1 evidence contains multiple release identities and no single current immutable identity covers the required C1/C3/DC2 formal slices"
+    },
+    "stage2_candidate": {
+      "worktree": "/tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router",
+      "branch": "codex/stage2-handoff-final-20260819",
+      "development_baseline": "78120eea04392db2a254968cbe4d8f69f6fd7a84",
+      "binary_diff_digest": "sha256:ed9021a266600014bf1efe287b9dd10a38854059dbd4b2305a58285877c9e7e9",
+      "published_release_id": null,
+      "deployment_recorded": false,
+      "source_evidence_boundary": "isolated candidate hardening and focused/browser-fixture verification only",
+      "hardening_evidence_sha256": "491bb0fcf0a396e266ad49686524417c31a7d691136e5c15b5012dddb56ea431"
+    },
+    "overall": {
+      "projection_source_hashes_match": true,
+      "stage2_candidate_to_stage1_published_identity_match": "UNPROVEN",
+      "reason": "Stage-2 has no recorded published release identity or deployment, while Stage-1 receipts contain separate r9/r10/r11 and manual candidate identities. Projection input hash matching is not a release identity match."
+    }
+  },
+  "stage2_projection_disposition": {
+    "F1": {
+      "source_node": "C1",
+      "required_state": "ACCEPTED",
+      "actual_source_execution_state": "BLOCKED",
+      "source_manifest_hash_match": true,
+      "source_node_hash_match": true,
+      "projection_return_exists": false,
+      "disposition": "BLOCKED_NO_GO",
+      "reason": "C1 is BLOCKED; candidate evidence cannot satisfy the upstream formal acceptance requirement"
+    },
+    "F2": {
+      "source_node": "C3",
+      "required_state": "ACCEPTED",
+      "actual_source_execution_state": "BLOCKED",
+      "source_manifest_hash_match": true,
+      "source_node_hash_match": true,
+      "projection_return_exists": false,
+      "disposition": "BLOCKED_NO_GO",
+      "reason": "C3 is BLOCKED; route/database readback cannot satisfy the upstream formal acceptance requirement"
+    },
+    "F3": {
+      "source_node": "DC2",
+      "required_state": "ACCEPTED",
+      "actual_source_execution_state": "BLOCKED",
+      "source_manifest_hash_match": true,
+      "source_node_hash_match": true,
+      "projection_return_exists": false,
+      "candidate_identity_policy": "must-match",
+      "disposition": "BLOCKED_NO_GO",
+      "reason": "DC2 is BLOCKED and no matching immutable final release identity or independent acceptance exists"
+    },
+    "ready_frontier_width": 0,
+    "formal_state": "BLOCKED",
+    "formal_release_decision": "NO-GO"
+  },
+  "allowed_actions": {
+    "this_worker": [
+      "Read the frozen/current Stage-1 and Stage-2 manifests, selected nodes, progress ledgers, contracts, and existing receipts.",
+      "Recompute and compare local SHA-256 values for the pinned Stage-1 manifest and C1/C3/DC2 node files.",
+      "Inspect existing release identities and report their explicit evidence boundaries without upgrading them.",
+      "Perform a non-mutating cross-stage gate readback and return BLOCKED/NO-GO when required upstream states are not satisfied.",
+      "Write only the protocol-correct return JSON at the declared unique path using apply_patch."
+    ],
+    "remote_technical_audit_if_separately_authorized": [
+      "Read active release IDs, process/cwd, source hashes, and public route status without credentials or business writes.",
+      "Compare remote readback to local receipts while preserving the evidence-level boundary."
+    ]
+  },
+  "forbidden_actions": [
+    "Upload, deploy, restart, reload, cut over, rollback, or mutate any remote release, service, checkout, configuration, or release link.",
+    "Run database migrations, backfills, seeds, account writes, Feishu writes, email writes, credential mutations, or any other external-system write.",
+    "Read, print, store, or transmit credentials, access tokens, private payloads, or sensitive business data.",
+    "Modify Stage-1 or Stage-2 SSOT manifests, node files, progress files, evidence, source, Git history, Obsidian snapshots, or external systems.",
+    "Create or forge missing Stage-1 C1/C3/I9/DC2 or Stage-2 F1/F2/F3 acceptance returns, or reinterpret a VERIFIED candidate receipt as formal acceptance.",
+    "Use Stage-2 focused tests, browser fixtures, health, or readiness as a substitute for Stage-1 C1/C3/DC2 formal acceptance.",
+    "Assemble or publish a unique Stage-2 candidate before F1, F2, and F3 are formally satisfied."
+  ],
+  "findings": [
+    {
+      "severity": "P0",
+      "finding": "All three Stage-2 upstream projection requirements are unsatisfied: Stage-1 C1, C3, and DC2 remain machine-state BLOCKED and their formal return files are absent.",
+      "evidence": "Stage-1 .ssot/nodes/C1.json, C3.json, DC2.json; Stage-1 implementation-progress.md lines 49, 65, 69; Stage-2 upstream_projections; absent validation/F1-return.json, F2-return.json, F3-return.json"
+    },
+    {
+      "severity": "P0",
+      "finding": "The latest recorded Stage-1 release evidence does not establish formal acceptance or real external completion.",
+      "evidence": "production-release-20260818-media-feishu-oauth-r11.json explicitly excludes real Feishu authorization, tenant readback, production database acceptance, and formal Stage-1 acceptance; EV-REMOTE-RELEASE-20260818-R9 and EV-REMOTE-READBACK-20260818T2008 carry the same formal boundary"
+    },
+    {
+      "severity": "P0",
+      "finding": "I9 candidate verification is not I9 formal acceptance.",
+      "evidence": "I7-I9-lw-luna-luna.json reports 29 passed and VERIFIED with acceptance_self_check=pass, but explicitly claims no production, deployment, or formal acceptance; the I9 node remains BLOCKED pending T1"
+    },
+    {
+      "severity": "P1",
+      "finding": "The Stage-2 frozen projection source identity is internally consistent.",
+      "evidence": "Stage-1 manifest, C1, C3, and DC2 SHA-256 values exactly match the Stage-2 manifest pins; this is identity consistency only and does not change node state"
+    },
+    {
+      "severity": "P1",
+      "finding": "No Stage-2 candidate-to-published-Stage-1 identity match is established.",
+      "evidence": "Stage-2 hardening evidence records an isolated branch/worktree and no deployment or release-link change; Stage-1 records contain separate r9/r10/r11 and manual candidate identities, with no single immutable identity spanning the required formal slices"
+    },
+    {
+      "severity": "P1",
+      "finding": "Stage-2 tests, browser fixtures, and health/readiness evidence remain lower-layer evidence and were not used to promote Stage-1 state.",
+      "evidence": "evidence-stage2-hardening-20260820.md states formal acceptance is not accepted and excludes authenticated production, real AI, PostgreSQL, and Feishu proof; Stage-2 implementation-progress.md keeps F1/F2/F3 BLOCKED"
+    },
+    {
+      "severity": "INFO",
+      "finding": "Repository status was read without mutation.",
+      "evidence": "Business project root is not a Git repository; resolved Harness SSOT repository has pre-existing dirty files; this worker did not change either state"
+    }
+  ],
+  "unverified_items": [
+    "Independent formal acceptance of Stage-1 C1, C3, I9, and DC2.",
+    "Existence and validity of the missing Stage-1 node returns and Stage-2 F1/F2/F3 projection returns.",
+    "A single current immutable Stage-1 candidate identity covering the required C1/C3/DC2 release slices.",
+    "Deployment or authenticated production readback of the isolated Stage-2 candidate.",
+    "Authenticated browser/device acceptance, real AI execution, real production database business acceptance, and real Feishu write/edit/readback for Stage-2.",
+    "Remote state after the timestamps recorded in the existing Stage-1 receipts."
+  ],
+  "remaining_risks": [
+    "Promoting Stage-2 from hash consistency or green lower-layer evidence would bypass the declared upstream state gate.",
+    "Existing Stage-1 receipts are time-specific and contain multiple release identities; later remote state may differ from the recorded readback.",
+    "DC2 uses must-match identity semantics, so any future acceptance must bind the final Stage-1 candidate, production readback, evidence time, and independent decision together.",
+    "The Harness SSOT worktree is dirty outside this audit scope and must be handled independently by any future Harness validation."
+  ],
+  "proposed_state": "BLOCKED",
+  "decision": {
+    "stage1_gate_readback": "BLOCKED",
+    "stage2_projection_state": "BLOCKED",
+    "formal_release": "NO-GO",
+    "ready_frontier_width": 0,
+    "next_valid_action": "Complete and independently accept the required Stage-1 nodes, then perform a new zero-write projection readback against the same frozen identities.",
+    "claims_not_made": [
+      "ACCEPTED",
+      "GO",
+      "production-complete",
+      "Stage-2-published"
+    ]
+  },
+  "failure_class": "verification",
+  "failure_origin": "authority",
+  "acceptance_self_check": "pass"
+}

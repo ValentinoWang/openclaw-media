@@ -1,0 +1,29 @@
+Task: implement provisional Stage-2 personal content pipeline covering C1-C7 in an isolated remote worktree.
+
+Execution context:
+- Worker runs locally but target is remote ubuntu@106.52.146.37.
+- Remote worktree: /tmp/openclaw-stage2-personal-luna, created from codex/stage2-integration-20260818.
+- Do not touch remote main, production, browser, database, Feishu, credentials, or external services.
+- SSOT is planning authority only. Do not edit any SSOT, progress ledger, generated view, manifest, acceptance state, or archive.
+
+Exclusive remote write scope (only these files):
+- openclaw-tag-router/openclaw_app/services/stage2_personal_pipeline.py
+- openclaw-tag-router/tests/test_stage2_personal_pipeline.py
+
+Objective:
+Create a dependency-light personal-only orchestration boundary that composes existing stage2_context.py and stage2_writer_router.py without changing them. It is provisional candidate code, not formal acceptance.
+
+Required behavior:
+1. Server facts and source rows are tenant-scoped. Build personal profile/material scope (C1), deterministic research brief with source receipts (C2), human-confirmed decision brief (C3), and a personal context bundle (C4). Reject organization rows, Binding data, browser authority claims, missing confirmation, and cross-tenant sources.
+2. Write personal_web/internal artifacts via injected WriterRouter-compatible writer only; never call Feishu or expose remote_ref (C5). Register revisions with immutable content digest and optimistic baseline checks (C6).
+3. Generate platform version and export/publish package only from an existing verified revision; stale or unverified revisions fail closed (C7). Never mark external platform publishing success.
+4. Every returned value is explicit JSON-shaped, deterministic where possible, idempotent by request key, and preserves audit receipts. Use standard-library only.
+5. Keep state in a thread-safe in-memory store. No hidden global fallback.
+
+Tests:
+- Focused pytest with positive personal path, rejected organization/cross-tenant/Binding input, unconfirmed decision, writer failure, revision conflict/idempotent replay, stale package, and deterministic receipt cases.
+- Run focused pytest, py_compile/in-memory compile, and git diff --check. Do not modify existing tests or add dependencies.
+
+Before exit, write one structured JSON object to:
+/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/stage2-personal-luna/returns/STAGE2-LUNA-PERSONAL-20260818.json
+Include proposed_state, acceptance_self_check, failure_class, failure_origin, changed_files, commands, tests, unverified_items, and explicit_non_claims. Never claim formal SSOT acceptance or production/device evidence.

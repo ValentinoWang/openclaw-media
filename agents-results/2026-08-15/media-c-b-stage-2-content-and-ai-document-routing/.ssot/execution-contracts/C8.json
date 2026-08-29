@@ -1,0 +1,51 @@
+{
+  "contract_id": "C8",
+  "schema_version": 1,
+  "node_id": "C8",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "work_kind": "convergence",
+  "write_authority": "shared-generated",
+  "read_set": [
+    "artifact:DL-C7",
+    "artifact:ART-S",
+    "artifact:DL-T1"
+  ],
+  "write_set": [
+    "artifact:C8"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:C8",
+      "mode": "W",
+      "isolation_key": "node:C8"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "W",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance C8\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/C8-return.json"
+  ],
+  "worker_transport": "automatic-projection",
+  "release_slice": "REL-2",
+  "wave_id": "W-2-10",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "stage2:C7",
+      "stage2:S",
+      "stage2:T1"
+    ],
+    "projection_rule": "只汇合已接受输入并投影节点状态；不启动 Codex 进程、不产生外部副作用。",
+    "task_argument": "汇合个人内容支线并冻结子候选。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/projections/C8.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  }
+}

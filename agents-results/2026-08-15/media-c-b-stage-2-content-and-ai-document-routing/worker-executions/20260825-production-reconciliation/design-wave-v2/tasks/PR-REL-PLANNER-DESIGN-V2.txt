@@ -1,0 +1,28 @@
+TASK_ID: PR-REL-PLANNER-DESIGN-V2
+ROLE: acceptance designer and protected-test author; never implement production behavior.
+PROJECT_ROOT: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-planner-design
+BASELINE: 59e2adfd34853b6929d9fa69e69585806ac9c83a, clean. V1 correctly blocked because the project-level generated index was not declared.
+APPROVAL: the user's supplied 2026-08-25 Production Reconciliation baseline plus "请继续" approves only this source-only acceptance fragment.
+
+Read /Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md completely, its templates/validators, docs/production-reconciliation/20260825/{deployment-gate.json,source-shas.json}, and runtime/maintenance/deploy/deploy_openclaw_runtime.py only as an existing behavior reference.
+
+Objective: create APPROVED v1, LOCKED acceptance and protected tests for a pure deterministic dry-run Production Reconciliation activation/rollback planner: full Git SHA -> immutable release ID/root -> manifest preflight -> expected-current pointer CAS -> planned atomic switch -> optional user-systemd steps -> same-round readback -> observation -> rollback. It must execute no subprocess, SSH, filesystem mutation, symlink, systemd, Nginx, database, HTTP or Feishu action. Reject unsafe/broad paths, a root not bound to the full SHA, invalid/missing previous release, stale current pointer, identity collisions, missing rollback compatibility and secret-bearing input. Output is canonical, redacted and idempotent.
+
+Authoritative commit scope:
+- docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/**
+- acceptance/human/PR-REL-PLANNER/**
+- openclaw-tag-router/tests/test_production_reconciliation_planner.py
+
+Generated validation-only scope: acceptance/index.md may be generated but must remain unstaged/uncommitted; main integrator owns the final projection.
+Reserved future implementation and forbidden now:
+- openclaw-tag-router/openclaw_app/services/production_reconciliation_planner.py
+- openclaw-tag-router/scripts/plan_production_reconciliation.py
+Also forbidden: existing source/tests/evidence/SHA256SUMS, remote/SSH/deploy/service/pointer/Nginx/database/HTTP/Feishu, secrets, SSOT/Obsidian, other workers or spawn_agent.
+
+Requirements:
+- APPROVED/LOCKED v1 contract, Chinese approved checklist, ACTIVE binding and protected test hash.
+- RED proof with CPython 3.12 via uv, failing only because intended module/API is absent.
+- Cover canonical/no-execution behavior, full-SHA path, path safety, pointer CAS, previous/rollback validation, identity collision, compatibility, redaction, idempotency and absence of implicit external steps.
+- Run all official acceptance validators and record immutable red evidence.
+- Commit authoritative scope only with message: test(release): lock reconciliation planner acceptance
+- Structured return with task_id, actual scopes, changed files, commit_sha, protected_test_sha256, commands/evidence, unverified items, VERIFIED/pass/none/none. Never claim deployment or release acceptance.

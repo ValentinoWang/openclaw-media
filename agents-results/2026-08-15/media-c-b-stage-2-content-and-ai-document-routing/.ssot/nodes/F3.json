@@ -1,0 +1,78 @@
+{
+  "node_id": "F3",
+  "semantic_key": "media.stage2.gate.stage1-final",
+  "stage": "A",
+  "work_kind": "validation",
+  "domain_lane": "cross-stage",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "A1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage2.gate.stage1-final.v3"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "independent acceptance owner",
+  "unlocks": [
+    "C"
+  ],
+  "worker_transport": "automatic-projection",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "stage1:DC2"
+    ],
+    "projection_rule": "仅当第一阶段 DC2 为 ACCEPTED 且发布身份匹配时投影为 ACCEPTED，否则保持 BLOCKED。",
+    "task_argument": "zero-write 投影第一阶段 DC2；不修改、不部署。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/projections/F3.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  },
+  "description": "本投影接受前禁止组装第二阶段唯一候选",
+  "node_role": "acceptance-gate",
+  "execution_actor": "external-system",
+  "execution_contract_ref": "F3.json",
+  "execution_contract_sha256": "da594dc42052ac1b4e802608194b33c7dd8e98ba456d267e0023b4efb23774a5",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "DL-F3"
+  ],
+  "consumed_artifact_ids": [
+    "DL-A1"
+  ],
+  "read_set": [
+    "artifact:DL-A1"
+  ],
+  "write_set": [
+    "evidence:F3"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:F3",
+      "mode": "W",
+      "isolation_key": "node:F3"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "R",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "actor_pool": "external-acceptance",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance F3\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/F3-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-2"
+}

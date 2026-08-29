@@ -1,0 +1,67 @@
+{
+  "task_id": "PR-REL-PLANNER-DESIGN",
+  "attempt_role": "primary",
+  "versions": {
+    "contract_version": 1,
+    "baseline_commit": "59e2adf",
+    "parent_source_authority": "5f06780569568ccc3197f0ab16aad74bdf9d1c6f",
+    "task_source_sha256": "7eaf0a4f54452f205287f8fe585763fa00ce5b00959cc2fe78d566555615fd94",
+    "validation_command_sha256": "183179e74b5d7efa29054a728f1f400da024d337af33280b4629ee715c3ef75d"
+  },
+  "approval_evidence": "The supplied 2026-08-25 Production Reconciliation baseline and subsequent continuation authorize only this source-only contract; no product, deployment, release, or Stage-2 SSOT approval is claimed.",
+  "actual_scopes": {
+    "read": [
+      "docs/production-reconciliation/20260825/deployment-gate.json",
+      "docs/production-reconciliation/20260825/source-shas.json",
+      "runtime/maintenance/deploy/deploy_openclaw_runtime.py",
+      "/Users/vsiyo/.codex/skills/design-acceptance-contract/SKILL.md",
+      "/Users/vsiyo/.codex/skills/design-acceptance-contract/references/*",
+      "/Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/*"
+    ],
+    "write_authorized": [
+      "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/**",
+      "acceptance/human/PR-REL-PLANNER/**",
+      "openclaw-tag-router/tests/test_production_reconciliation_planner.py",
+      "STRUCTURED_RETURN_PATH"
+    ],
+    "write_performed": [
+      "STRUCTURED_RETURN_PATH"
+    ],
+    "forbidden_preserved": [
+      "production implementation",
+      "remote access",
+      "subprocess/SSH/deploy/service/pointer/Nginx/database/HTTP/Feishu actions",
+      "secrets",
+      "SSOT/Obsidian edits",
+      "spawn_agent or other workers"
+    ]
+  },
+  "changed_files": [],
+  "commit_sha": null,
+  "protected_test_sha256": null,
+  "commands": [
+    "git status --short --branch",
+    "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/check_acceptance_contract.py <contract> --project-root <project-root> (not run: no authorized contract was created)",
+    "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py check <task-root> --project-root <project-root> (read-only inspection: requires project-root acceptance/index.md)",
+    "python3 -m pytest -q <protected-test> (not run: no authorized protected test was created)"
+  ],
+  "evidence": {
+    "blocker": "The official manage_acceptance_artifacts.py check requires project-root acceptance/index.md even when no human run exists; the explicit exclusive write scope omits that path.",
+    "scope_conflict": {
+      "required_by_validator": "acceptance/index.md",
+      "excluded_by_task_scope": true,
+      "resolution_attempted": "None; no temporary, ignored, symlinked, or uncommitted out-of-scope file was created."
+    },
+    "worktree_status": "clean",
+    "production_behavior_executed": false
+  },
+  "unverified_items": [
+    "Approved contract and protected-test baseline were not created because the validator scope conflict is unresolved.",
+    "Red-proof evidence and official artifact validation cannot be completed without authorization for the required project-level index.",
+    "No commit was created."
+  ],
+  "proposed_state": "BLOCKED",
+  "acceptance_self_check": "partial",
+  "failure_class": "scope-conflict",
+  "failure_origin": "scope"
+}

@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-019-S4-S",
+  "from": "S4",
+  "to": "S",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.s4.s.v3"
+  ],
+  "transferred_input": "ArtifactRecorder 和 ReadbackVerifier",
+  "gate_evidence": "任一必要步骤失败都不得返回发布成功",
+  "reason_code": "acceptance-dependency",
+  "transferred_artifact_ids": [
+    "DL-S4"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "S consumes the explicitly produced artifact DL-S4"
+}

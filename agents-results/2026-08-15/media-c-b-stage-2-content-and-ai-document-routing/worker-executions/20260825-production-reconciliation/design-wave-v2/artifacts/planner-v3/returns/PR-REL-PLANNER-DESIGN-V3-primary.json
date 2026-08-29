@@ -1,0 +1,62 @@
+{
+  "task_id": "PR-REL-PLANNER-DESIGN-V3",
+  "attempt_role": "primary",
+  "executor": "lw-luna",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "commit_sha": "23b0487c8d8a9ddc0785ea68a242d2ad279d61f1",
+  "commit_message": "fix(release): align planner acceptance identity",
+  "protected_test_sha256": "b3deaca939d4b6746659c1e0a83e47c923857242f06218f7d95f8a13ac07e898",
+  "red_evidence_sha256": "4462c06bc70c57c0342d8941b68eca3b5a78506d6159a226cd4eb471e1a2b02f",
+  "contract_sha256": "b3db48de31efcb66970e2d77273e74294d1bfae7f20d8c0ef950dfe42f5526e4",
+  "checklist_sha256": "db9d8942ec223c47351a47463dc3fdcc60ea18861336b2124f6ffde3aaa72800",
+  "binding_sha256": "fd0c9a0dad5bba0447cd9b7ddac239255e45564eb1a600abf7f3229c77168c28",
+  "changed_paths": [
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance-contract.md",
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance/index.md",
+    "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance/machine/unit/runs/20260825T162942Z-cpython312-red-a1b2c3/result.md",
+    "acceptance/human/PR-REL-PLANNER/checklist.md",
+    "acceptance/human/PR-REL-PLANNER/binding.md"
+  ],
+  "removed_paths": [
+    "acceptance/human/PR-REL-PLANNER-DESIGN-V2/checklist.md",
+    "acceptance/human/PR-REL-PLANNER-DESIGN-V2/binding.md"
+  ],
+  "commands": [
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py bind-human docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER --project-root . --replace",
+      "result": "pass"
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py index docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER --project-root .",
+      "result": "pass; task index regenerated; root acceptance/index.md left uncommitted as validation-only output"
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/check_acceptance_contract.py docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance-contract.md --project-root .",
+      "result": "pass"
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py check docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER --project-root .",
+      "result": "pass"
+    },
+    {
+      "command": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave-v2/validation/PR-REL-PLANNER-DESIGN-V3.sh",
+      "result": "pass; exit 0"
+    },
+    {
+      "command": "env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=\"$PWD/openclaw-tag-router\" uv run --python 3.12 --with pytest python -m pytest -q \"$PWD/openclaw-tag-router/tests/test_production_reconciliation_planner.py\"",
+      "result": "expected RED; exit 2; sole cause is ModuleNotFoundError for openclaw_app.services.production_reconciliation_planner"
+    }
+  ],
+  "evidence": {
+    "contract_task_id": "PR-REL-PLANNER",
+    "human_workspace": "acceptance/human/PR-REL-PLANNER",
+    "active_binding": "acceptance/human/PR-REL-PLANNER/binding.md",
+    "protected_test_unchanged": true,
+    "raw_red_evidence_unchanged": true,
+    "out_of_scope_paths": false,
+    "release_acceptance_claimed": false
+  }
+}

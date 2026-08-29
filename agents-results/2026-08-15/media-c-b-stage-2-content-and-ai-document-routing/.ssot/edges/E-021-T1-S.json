@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-021-T1-S",
+  "from": "T1",
+  "to": "S",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.t1.s.v3"
+  ],
+  "transferred_input": "保护测试和验收矩阵",
+  "gate_evidence": "每个稳定失败类都有红绿门禁",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "DL-T1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "S consumes the explicitly produced artifact DL-T1"
+}

@@ -1,0 +1,31 @@
+Task ID: STAGE2-LUNA-CONTRACT-20260818
+Node scope: provisional implementation support for shared T1 contract fixture and read-only API adapter shape; no runtime integration
+Direct parent: Phase-2 SSOT A/A1/K; formal B/T1 remain BLOCKED until F1 is ACCEPTED.
+Contract/DAG versions: 3/3/4/4. Do not change SSOT state, acceptance contracts, generated views, progress ledgers, or manifests.
+Executor: lw-luna via /Users/vsiyo/.codex/workers/run-lw-luna.sh; writable sandbox; one bounded external process.
+
+Authoritative read scope:
+- Phase-2 SSOT ssot-development-paths.md and execution-contracts/B.json,T1.json
+- remote /home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/adapters/http_api.py and existing route registration conventions
+- remote /home/ubuntu/openclaw-bot-center/src/media/mediaWebApi.ts and generated schema conventions.
+
+Exclusive remote write scope:
+- add /home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/contracts/stage2_writer_contract.json
+- add /home/ubuntu/selfmedia-tools/openclaw-tag-router/tests/test_stage2_writer_contract.py
+- add /home/ubuntu/openclaw-bot-center/src/media/stage2WriterContract.ts
+- add /home/ubuntu/openclaw-bot-center/src/media/stage2WriterContract.test.ts only if the existing frontend test runner supports it; otherwise document the command blocker and keep the source contract.
+- do not edit any existing tracked file, config, migration, lockfile, generated file, SSOT, or production service.
+
+Required behavior:
+- Define one versioned JSON contract for trusted context, context receipt, writer request, write result, and fail-closed error codes.
+- Explicitly mark browser authority fields forbidden and distinguish personal_web/internal from organization_lark/lark.
+- Keep the contract implementation-independent and avoid inventing endpoints that are not yet integrated.
+- TypeScript parsing must reject unknown authority overrides and invalid workspace/body pairs at the boundary.
+
+Tests/commands:
+- Validate JSON syntax, run focused backend/frontend type or test checks that do not rebuild or modify shared generated outputs.
+- Record all unavailable runner commands exactly.
+
+Return JSON path: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/stage2-contract/returns/STAGE2-LUNA-CONTRACT-20260818-luna.json
+Return fields: task_id, attempt_role=luna, wrapper_path, model, proposed_state, acceptance_self_check, failure_class, failure_origin, actual_read_scope, actual_write_scope, changed_files, commands, test_evidence, unverified_items, residual_risks, explicit_non_claims.
+Stop condition: finish only the declared new files and tests; never claim formal acceptance, production release, or Phase-2 completion.

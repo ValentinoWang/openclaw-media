@@ -1,0 +1,101 @@
+{
+  "node_id": "A1",
+  "semantic_key": "media.stage2.source-baseline",
+  "stage": "A",
+  "work_kind": "fact-discovery",
+  "domain_lane": "source-facts",
+  "execution_state": "ACCEPTED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "A"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage2.source-baseline.v3"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "F1",
+    "F2",
+    "F3",
+    "K"
+  ],
+  "worker_transport": "historical-unregistered",
+  "worker_registration": {
+    "note": "no retroactive worker claim"
+  },
+  "description": "后续节点只消费列明来源和跨阶段投影",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "A1.json",
+  "execution_contract_sha256": "c4576ebac4db2fa562f4066d15f432028aa7233d802d972e66f6f87bb7e4189e",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-A1"
+  ],
+  "produced_artifact_ids": [
+    "DL-A1"
+  ],
+  "consumed_artifact_ids": [
+    "ART-A"
+  ],
+  "read_set": [
+    "artifact:ART-A"
+  ],
+  "write_set": [
+    "evidence:A1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:A1",
+      "mode": "W",
+      "isolation_key": "node:A1"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance A1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/A1-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-1",
+  "main_thread_write_exception": {
+    "reason": "历史编排节点只生成或投影自身独占的 SSOT 记录；主线程不直接修改业务源码，也不写入其他节点的共享事实。",
+    "approved_by": "user and planning authority",
+    "write_set": [
+      "evidence:A1"
+    ]
+  },
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "audit-stage1-hash-baseline-2026-08-15",
+    "artifact_hashes": [
+      "sha256:d5dad457861e413ff3963da568870be907495de50c33486810fa3dbdc0d92f98",
+      "sha256:97000cc86e80993997153e0fb193ee877daea85c5695a60cf1645bf40596d471",
+      "sha256:558b40b11c399fd6f5d8b9e766562a07e7ecd8968c83df9a07a60496112659e6",
+      "sha256:02c1cac2205c0115e3a3d34883175650238ad9d4f2f4a5ae837143222e45447c",
+      "sha256:98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf",
+      "sha256:76c4b2b2584333f3ceb3f43731ecbb749f75317018ead39f11729dff165f87d9",
+      "sha256:d99c5697e2bb4a1c7853e2d3695852eda11a8726301b2cd6cfc805e87f3a6a28",
+      "sha256:26bf849657405fed887785e52665b97f2a5ae248e0591f7365f8d72e31c5f450",
+      "sha256:7b3ebfc4653099da67694396ec3374ff697b8dd50b19fc9575cac31b271488b5",
+      "sha256:e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448"
+    ],
+    "environment_identity": "local source files; non-Git project root",
+    "runtime_release_id": "n/a",
+    "actor_role": "main orchestrator read-only",
+    "account_or_tenant": "redacted / not read",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-15T20:37:42+08:00",
+    "acceptance_contract": "Phase-2 source baseline and cross-stage handoff v3"
+  }
+}

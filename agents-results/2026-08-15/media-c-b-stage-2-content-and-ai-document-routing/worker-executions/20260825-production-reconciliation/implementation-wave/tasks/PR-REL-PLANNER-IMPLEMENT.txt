@@ -1,0 +1,32 @@
+TASK_ID: PR-REL-PLANNER-IMPLEMENT
+ROLE: acceptance-locked source implementation owner.
+PROJECT_ROOT: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-planner-impl
+DESIGN_BASELINE: 23b0487c8d8a9ddc0785ea68a242d2ad279d61f1
+CONTRACT: docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance-contract.md, APPROVED v1, LOCKED, SHA-256 b3db48de31efcb66970e2d77273e74294d1bfae7f20d8c0ef950dfe42f5526e4
+PROTECTED_TEST: openclaw-tag-router/tests/test_production_reconciliation_planner.py, SHA-256 b3deaca939d4b6746659c1e0a83e47c923857242f06218f7d95f8a13ac07e898
+
+Read the project AGENTS.md, Harness entry/adapter, /Users/vsiyo/.codex/skills/implement-acceptance-locked-change/SKILL.md, /Users/vsiyo/.agents/skills/code-quality/SKILL.md, the complete contract/protected test and adjacent service/script patterns. Do not modify the contract, human acceptance or protected test.
+
+Objective: implement the deterministic pure Production Reconciliation activation/rollback planner and JSON CLI at the reserved paths. Validate the exact v1 request, full-SHA-bound release layout, manifest digest/identity, pointer CAS, previous rollback compatibility, collisions, paths, stable codes and redaction. Return canonical idempotent plans with the exact ordered preflight/steps surface and external_actions=[]; execute no subprocess, filesystem mutation, socket, HTTP, SSH, systemd, Nginx, database or Feishu action.
+
+Exclusive production write scope:
+- openclaw-tag-router/openclaw_app/services/production_reconciliation_planner.py
+- openclaw-tag-router/scripts/plan_production_reconciliation.py
+
+Evidence write scope:
+- docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance/index.md
+- one new directory under docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance/machine/unit/runs/**
+- acceptance/index.md is validation-only and must remain unstaged/uncommitted.
+
+Forbidden: existing contract/human/protected-test/RED-evidence files, unrelated source/tests, dependency/lock files, remote/SSH/deploy/service/pointer/Nginx/database/HTTP/Feishu actions, secrets, SSOT/Obsidian, other workers or spawn_agent.
+
+Workflow and acceptance:
+1. Verify frozen hashes and official acceptance checks.
+2. Implement the smallest maintainable pure planner and CLI without weakening tests or discovering runtime state.
+3. Run the protected test via uv CPython 3.12 until green; run compile/static checks and git diff --check.
+4. Commit production scope only with message: feat(release): implement reconciliation planner
+5. Create a new machine/unit run with source identity commit:<source_commit_sha>, environment local-source-only, runtime uv-cpython-3.12, executor lw-luna; store exact green output, fill PASS result and production gaps, regenerate indexes, and leave root acceptance/index.md uncommitted.
+6. Commit only new run and task index with message: test(release): record planner implementation evidence
+7. Structured return: task_id, source_commit_sha, commit_sha=HEAD, protected_test_sha256, actual paths, commands/evidence/run ID, unverified items, IMPLEMENTED/pass/none/none. Never claim execution, deployment or release acceptance.
+
+Stop BLOCKED on contract/test drift or insufficient scope. Do not change protected tests.

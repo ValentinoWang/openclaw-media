@@ -1,0 +1,51 @@
+{
+  "contract_id": "C",
+  "schema_version": 1,
+  "node_id": "C",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "work_kind": "convergence",
+  "write_authority": "shared-generated",
+  "read_set": [
+    "artifact:DL-C8",
+    "artifact:DL-F3",
+    "artifact:DL-O6"
+  ],
+  "write_set": [
+    "artifact:C"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:C",
+      "mode": "W",
+      "isolation_key": "node:C"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "W",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance C\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/C-return.json"
+  ],
+  "worker_transport": "automatic-projection",
+  "release_slice": "REL-2",
+  "wave_id": "W-2-12",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "stage2:C8",
+      "stage2:F3",
+      "stage2:O6"
+    ],
+    "projection_rule": "只汇合已接受输入并投影节点状态；不启动 Codex 进程、不产生外部副作用。",
+    "task_argument": "汇合第二阶段唯一候选；不部署、不重启。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/projections/C.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-047-O4-O5",
+  "from": "O4",
+  "to": "O5",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.o4.o5.v3"
+  ],
+  "transferred_input": "组织只读镜像和回读收据",
+  "gate_evidence": "未完成回读时不得向用户标记发布成功",
+  "reason_code": "acceptance-dependency",
+  "transferred_artifact_ids": [
+    "DL-O4"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "O5 consumes the explicitly produced artifact DL-O4"
+}

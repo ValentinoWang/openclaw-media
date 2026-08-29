@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "stage2.integration.evidence.v1",
+  "recordedAt": "2026-08-19T01:15:00+08:00",
+  "formalSsotState": {
+    "acceptedNodes": ["A", "A1", "K"],
+    "acceptedCount": 3,
+    "nodeCount": 32,
+    "completionPercent": 9.4,
+    "readyFrontierWidth": 0,
+    "nonClaim": "Candidate code and focused tests do not change BLOCKED nodes to ACCEPTED."
+  },
+  "remoteDelivery": {
+    "repository": "ValentinoWang/openclaw-media",
+    "branch": "main",
+    "commit": "8d979321b207a7d7ab61205c118a3a4a8a793f21",
+    "candidateBranch": "codex/stage2-release-20260818",
+    "candidateCommit": "7f3fac533f9c8ab19908f532ea5ac900894701bb",
+    "base": "origin/main@2cce76f",
+    "workingTree": "clean",
+    "pushed": true
+  },
+  "candidateCoverage": {
+    "crossStageReleaseGate": ["F1", "F2", "F3"],
+    "sharedContextAndEffects": ["B", "S1", "S2", "S5"],
+    "writerAndExternalBoundary": ["S3", "O2"],
+    "artifactState": ["S4"],
+    "personalPipeline": ["C1", "C2", "C3", "C4", "C5", "C6", "C7"],
+    "organizationPipeline": ["O1", "O2", "O3", "O4", "O5"],
+    "contractHarness": ["T1"]
+  },
+  "verification": {
+    "backendFocused": "91 passed in 0.32s (all tests/test_stage2_*.py)",
+    "crossStageReleaseGateFocused": "6 passed (included in backendFocused)",
+    "candidateAssemblyFocused": "13 passed; deterministic candidate assembly, policy rejection, replay-independent receipts, and zero-write input preservation",
+    "backendCompile": "candidate assembly and tests compiled; existing Stage-2 modules compiled in prior candidate evidence",
+    "backendDiffCheck": "pass",
+    "frontendTypecheck": "pass",
+    "frontendOxlint": "0 warnings, 0 errors",
+    "frontendContractQa": "stage2 writer contract QA passed",
+    "fullRepositorySuite": "blocked during collection by pre-existing /home/ubuntu/selfmedia-tools/config/openclaw_bots.json system_guide model/thinking omissions; Stage-2 focused suite remains green"
+  },
+  "workerTransport": {
+    "selectedPrimary": "lw-luna",
+    "tasks": [
+      {
+        "task": "stage2-s4-luna",
+        "attempts": 2,
+        "result": "provider-transport-failed",
+        "lastError": "429 Too Many Requests",
+        "workerAcceptedAsEvidence": false
+      },
+      {
+        "task": "stage2-personal-luna",
+        "attempts": 2,
+        "result": "provider-transport-failed",
+        "lastError": "429 Too Many Requests",
+        "workerAcceptedAsEvidence": false
+      },
+      {
+        "task": "stage2-organization-luna",
+        "attempts": 2,
+        "result": "provider-transport-failed",
+        "lastError": "429 Too Many Requests",
+        "workerAcceptedAsEvidence": false
+      }
+    ],
+    "recovery": "Candidate assembly was independently reviewed, focused-tested, compiled, committed, and pushed; failed runtime-facade worker returns are not claimed as accepted evidence."
+  },
+  "unverified": [
+    "Stage-1 F1/F2/F3 upstream projections",
+    "runtime route integration and deployment",
+    "real browser and database readback",
+    "real AI task execution",
+    "real Feishu Docx write, edit, and second readback",
+    "cross-tenant production negative path",
+    "physical-device and independent release acceptance"
+  ]
+}

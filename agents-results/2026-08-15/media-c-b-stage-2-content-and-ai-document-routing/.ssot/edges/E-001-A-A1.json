@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-001-A-A1",
+  "from": "A",
+  "to": "A1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.a.a1.v3"
+  ],
+  "transferred_input": "第二阶段唯一开发编排边界",
+  "gate_evidence": "只生成第二阶段，不改写第一阶段也不创建第三阶段",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "ART-A"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "A1 consumes the explicitly produced artifact ART-A"
+}
