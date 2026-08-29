@@ -2,7 +2,7 @@
   "source": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260827/pipeline-full-audit.md",
   "followup": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/docs/production-reconciliation/20260828/audit-followup-review.md",
   "progress": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825/.codex-work/p1-implementation-20260828/integration/agents-results/2026-08-29/media-p1-remaining-development-paths/implementation-progress.md",
-  "main": "3e383fd5ce2acd21d46de63cb11f706aa090cd80",
+  "main": "de2206a528dd24b9ca0631fc573d7ed0db9341d0",
   "raw_p1": 163,
   "unique_dedup_p1": 155,
   "groups": [
@@ -54,7 +54,7 @@
         "BIZ-17",
         "CR-26"
       ],
-      "status": "部分修复",
+      "status": "已修复",
       "evidence": [
         "facda23"
       ]
@@ -538,8 +538,10 @@
       "ids": [
         "CPO-K05"
       ],
-      "status": "未修复",
-      "evidence": []
+      "status": "已修复",
+      "evidence": [
+        "197ae56"
+      ]
     },
     {
       "key": "singleton:CPO-K07",

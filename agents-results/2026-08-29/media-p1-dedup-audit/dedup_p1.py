@@ -51,6 +51,8 @@ CLOSED = {
     "CR-23": "b849f82",
     "CR-25": "6dbc1ba",
     "CR-26": "facda23",
+    "CPO-K04": "facda23", "CC-07": "facda23", "BIZ-17": "facda23",
+    "CPO-K05": "197ae56",
     "CR-02": "fc37d2e",
     "CR-03": "9660f04",
     "CR-04": "9660f04",
