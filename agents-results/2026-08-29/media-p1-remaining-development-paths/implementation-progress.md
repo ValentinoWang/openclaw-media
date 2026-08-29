@@ -156,3 +156,5 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 
 - U3（2026-08-29）：`5df373a` 将 H00 adapter 注入 `TracksService`，复用 `runtime/cli/selfmedia.py` 的 schema、记录读写、绑定校验和作品轮询；服务启动通过 `FEISHU_ACCOUNT_MONITOR_URL` 可选启用，不新增顶层 service key。H00 的 schema、身份、租户绑定或 CLI 权限失败统一 fail-closed 为 503；更新后按 `enabled` 与 `recentPostUrls` 写后读回核对，并返回账号身份、平台、最近状态、作品数、互动、错误和日报摘要。OpenAPI 两份镜像同步。后端定向测试由代理报告 `39 passed`，本地 `compileall` 与 `git diff --check` 通过；真实 H00 表仍需包含 `public_account_id` 后才能启用。
 - U4/U5（2026-08-29）：`5506fd3` 在 `/tracks` 账号详情监控分区增加最小编辑态，前端只抽取通用 HTTP(S) URL，保存调用 PUT 后立即调用 POST 轮询；主页/平台语义仍由后端判定，503/400/空结果均显示中文失败或“未返回作品结果”，不显示绿色成功。前端定向 QA、TypeScript 编译与 `git diff --check` 通过；生产真实非空轮询证据仍未生成。
+- U4/U5 补强（2026-08-30）：`05eb6cc` 让监控响应返回逐链接的 `platform/kind/content_id/canonical_url` 判定，并在 `/tracks` 详情中展示最近状态、作品数、总互动、错误、日报摘要与链接判定；保存后立即轮询并刷新页面状态，`monitor_unavailable` 时保持只读。两份 OpenAPI 合同同步，Router 定向测试 `41 passed`，前端 TypeScript 与页面静态门禁通过。
+- U6（2026-08-30）：`951f8c2` 将拆解运行器、证据 DAG、飞书写入、增长热榜、商务入口和公共社交运行时统一指向 `common/platform_links.py` 的主机判定；新增伪造查询参数回归测试。链接分类定向测试 `4 passed`，编译和 `git diff --check` 通过；拆解完整测试仍受本机 Python 3.9 无法解析仓库既有 `float | None` 注解阻塞，不归因于本次改动。
