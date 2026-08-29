@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import base64
-import binascii
 import hashlib
 import hmac
 import json
@@ -16,6 +14,7 @@ from datetime import datetime, timezone
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
+from . import foundation
 from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_key, public_projection, require_context
 
 
@@ -423,25 +422,16 @@ def _public_cursor(secret: bytes, context: TenantContext, scope: str, updated_at
         "updatedAt": _timestamp_text(updated_at, "cursor.updatedAt"),
         "publicId": public_id,
     }
-    raw = _as_json(payload).encode("utf-8")
-    signature = hmac.new(secret, _CURSOR_AAD + raw, hashlib.sha256).digest()
-    return base64.urlsafe_b64encode(raw + b"." + signature).decode("ascii").rstrip("=")
+    return foundation.sign_cursor(payload, key=secret, aad=_CURSOR_AAD)
 
 
 def _decode_cursor(secret: bytes, context: TenantContext, scope: str, token: str) -> _CursorPosition:
-    if not isinstance(token, str) or not token:
-        raise RunsInvalidRequest("cursor is invalid", field="cursor")
-    try:
-        signed = base64.urlsafe_b64decode((token + "=" * (-len(token) % 4)).encode("ascii"))
-        if len(signed) < 33 or signed[-33] != ord("."):
-            raise ValueError("cursor separator is missing")
-        raw, signature = signed[:-33], signed[-32:]
-        expected = hmac.new(secret, _CURSOR_AAD + raw, hashlib.sha256).digest()
-        payload = json.loads(raw.decode("utf-8"))
-    except (ValueError, UnicodeDecodeError, json.JSONDecodeError, binascii.Error) as exc:
-        raise RunsInvalidRequest("cursor is invalid", field="cursor") from exc
-    if not hmac.compare_digest(signature, expected):
-        raise RunsInvalidRequest("cursor is invalid", field="cursor")
+    payload = foundation.verify_cursor(
+        token,
+        key=secret,
+        aad=_CURSOR_AAD,
+        error=lambda: RunsInvalidRequest("cursor is invalid", field="cursor"),
+    )
     if payload.get("v") != _CURSOR_VERSION or payload.get("scope") != scope:
         raise RunsInvalidRequest("cursor is invalid", field="cursor")
     expected_tag = hmac.new(

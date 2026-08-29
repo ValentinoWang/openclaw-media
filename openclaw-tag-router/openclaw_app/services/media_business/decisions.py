@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import hmac
 import json
@@ -15,6 +14,7 @@ from datetime import datetime, timezone
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
+from . import foundation
 from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
 
 
@@ -390,9 +390,7 @@ def _public_cursor(
         "updatedAt": timestamp,
         "publicId": public_id,
     }
-    raw = _as_json(payload).encode()
-    signature = hmac.new(secret, _CURSOR_AAD + raw, hashlib.sha256).digest()
-    return base64.urlsafe_b64encode(raw + b"." + signature).decode().rstrip("=")
+    return foundation.sign_cursor(payload, key=secret, aad=_CURSOR_AAD)
 
 
 def _decode_cursor(
@@ -401,20 +399,12 @@ def _decode_cursor(
     scope: str,
     token: str,
 ) -> _CursorPosition:
-    if not isinstance(token, str) or not token:
-        raise DecisionsInvalidRequest("cursor is invalid")
-    try:
-        padded = token + "=" * (-len(token) % 4)
-        signed = base64.urlsafe_b64decode(padded.encode())
-        if len(signed) < 33 or signed[-33] != ord("."):
-            raise ValueError("cursor separator is missing")
-        raw, signature = signed[:-33], signed[-32:]
-        expected = hmac.new(secret, _CURSOR_AAD + raw, hashlib.sha256).digest()
-        payload = json.loads(raw.decode())
-    except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise DecisionsInvalidRequest("cursor is invalid") from exc
-    if not hmac.compare_digest(signature, expected):
-        raise DecisionsInvalidRequest("cursor is invalid")
+    payload = foundation.verify_cursor(
+        token,
+        key=secret,
+        aad=_CURSOR_AAD,
+        error=lambda: DecisionsInvalidRequest("cursor is invalid"),
+    )
     if payload.get("v") != _CURSOR_VERSION or payload.get("scope") != scope:
         raise DecisionsInvalidRequest("cursor is invalid")
     expected_tag = hmac.new(

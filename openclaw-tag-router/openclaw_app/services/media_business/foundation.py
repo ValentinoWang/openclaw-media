@@ -236,6 +236,79 @@ def decode_signed(
     return decoded
 
 
+# --- Signed cursor codec (HIGH-29 c2) ---------------------------------------
+#
+# decisions.py, runs.py, and reviews.py each independently implemented the
+# same signed-cursor wire format: HMAC-SHA256(key, aad + raw_json_body) as a
+# full 32-byte digest, base64url(raw_json_body + b"." + signature) with
+# padding stripped. This is a DIFFERENT format from the admin_* signed
+# opaque-token codec above (encode_signed/decode_signed): that one truncates
+# its signature to 18 bytes and rsplits on the last b"."; this one keeps the
+# full 32-byte signature and slices the last 33 bytes positionally, so a
+# token from one codec is not decodable by the other. publishing.py's cursor
+# format is a further, incompatible third shape (a two-segment encoding with
+# two separate keys) and is explicitly out of scope here -- per the HIGH-29
+# audit, it belongs to a later, versioned-release pass, not this pure
+# refactor. overview.py and usage_billing.py carry the same c2 shape too but
+# were flagged as "missed implementations" to fold in during that next
+# pass -- also not touched here.
+#
+# `aad` has no default here, deliberately. All of these services share one
+# HMAC secret injected by server_cli.py; today the only thing stopping a
+# cursor issued by one service from being replayed against another is each
+# service's own distinct `_CURSOR_AAD` constant, folded into the signed
+# bytes. Giving `aad` a default would make it easy for a future call site to
+# accidentally drop that isolation. This pass does not rename, share, or
+# otherwise touch any service's `_CURSOR_AAD` value, and does not touch how
+# any of the three derives its `_cursor_secret` (runs.py hashes its input
+# secret with sha256 before use; decisions.py and reviews.py do not -- both
+# left exactly as they were).
+#
+# Also NOT consolidated here: the payload-semantics checks each service's
+# own _decode_cursor performs after calling verify_cursor() -- the
+# {"v", "scope"} version/scope match and the tenantTag re-derivation check
+# that binds a cursor to the tenant that requested it. Those depend on each
+# resource's own cursor payload shape and error type, not the wire codec.
+
+
+def sign_cursor(payload: Mapping[str, Any], *, key: bytes, aad: bytes) -> str:
+    raw = json.dumps(dict(payload), ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    signature = hmac.new(key, aad + raw, hashlib.sha256).digest()
+    return base64.urlsafe_b64encode(raw + b"." + signature).decode("ascii").rstrip("=")
+
+
+def verify_cursor(
+    token: Any,
+    *,
+    key: bytes,
+    aad: bytes,
+    error: Callable[[], Exception],
+) -> dict[str, Any]:
+    """Verify and decode one ``sign_cursor()`` token, or raise ``error()``.
+
+    Only unwraps the wire format (base64url of the JSON body plus a
+    trailing 32-byte HMAC signature) and returns the decoded JSON body --
+    callers remain responsible for validating the payload's own fields
+    (version, scope, tenant binding, ...) exactly as they did before this
+    codec was extracted.
+    """
+    if not isinstance(token, str) or not token:
+        raise error()
+    try:
+        padded = token + "=" * (-len(token) % 4)
+        signed = base64.urlsafe_b64decode(padded.encode("ascii"))
+        if len(signed) < 33 or signed[-33] != ord("."):
+            raise ValueError("cursor separator is missing")
+        raw, signature = signed[:-33], signed[-32:]
+        expected = hmac.new(key, aad + raw, hashlib.sha256).digest()
+        payload = json.loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise error() from exc
+    if not hmac.compare_digest(signature, expected):
+        raise error()
+    return payload
+
+
 # --- Idempotency-key format policies (TI-04) -------------------------------
 #
 # Every IF2 write endpoint (documents, admin_access, admin_billing,

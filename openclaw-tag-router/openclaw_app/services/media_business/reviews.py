@@ -6,8 +6,6 @@ module validates and projects their persisted facts for the Media Web API.
 """
 from __future__ import annotations
 
-import base64
-import binascii
 import hashlib
 import hmac
 import json
@@ -21,6 +19,7 @@ from decimal import Decimal
 from typing import Any, Protocol
 from urllib.parse import urlparse
 
+from . import foundation
 from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
 
 
@@ -249,26 +248,16 @@ def _public_cursor(secret: bytes, context: TenantContext, scope: str, updated_at
         "updatedAt": timestamp,
         "publicId": public_id,
     }
-    raw = _as_json(payload).encode()
-    signature = hmac.new(secret, _CURSOR_AAD + raw, hashlib.sha256).digest()
-    return base64.urlsafe_b64encode(raw + b"." + signature).decode().rstrip("=")
+    return foundation.sign_cursor(payload, key=secret, aad=_CURSOR_AAD)
 
 
 def _decode_cursor(secret: bytes, context: TenantContext, scope: str, token: str) -> _CursorPosition:
-    if not isinstance(token, str) or not token:
-        raise ReviewsInvalidRequest("cursor is invalid")
-    try:
-        padded = token + "=" * (-len(token) % 4)
-        signed = base64.urlsafe_b64decode(padded.encode())
-        if len(signed) < 33 or signed[-33] != ord("."):
-            raise ValueError("cursor signature separator is missing")
-        raw, signature = signed[:-33], signed[-32:]
-        expected = hmac.new(secret, _CURSOR_AAD + raw, hashlib.sha256).digest()
-        payload = json.loads(raw.decode())
-    except (ValueError, UnicodeDecodeError, json.JSONDecodeError, binascii.Error) as exc:
-        raise ReviewsInvalidRequest("cursor is invalid") from exc
-    if not hmac.compare_digest(signature, expected):
-        raise ReviewsInvalidRequest("cursor is invalid")
+    payload = foundation.verify_cursor(
+        token,
+        key=secret,
+        aad=_CURSOR_AAD,
+        error=lambda: ReviewsInvalidRequest("cursor is invalid"),
+    )
     if payload.get("v") != _CURSOR_VERSION or payload.get("scope") != scope:
         raise ReviewsInvalidRequest("cursor is invalid")
     expected_tag = hmac.new(
