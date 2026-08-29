@@ -12,6 +12,8 @@ from openclaw_app.models.message import Message
 from openclaw_app.router.activity_daily import ActivityDailyMixin
 from openclaw_app.services.obsidian_daily_checklist_service import ObsidianDailyChecklistService
 
+from _fakes.services import FakeArchiveService
+
 
 TZ = ZoneInfo("Asia/Shanghai")
 
@@ -54,27 +56,6 @@ class FakeContentFlowClient:
         # fixture can't silently drift from what content_flow_client.py's
         # real _platform_from_url actually recognizes.
         return platform_display_zh(url)
-
-
-class FakeArchiveService:
-    def __init__(self):
-        self.calls: list[dict] = []
-        self.frontmatter_updates: list[dict] = []
-
-    def save_archive(self, message: Message, title: str, sections: list[tuple[str, str]], extra_frontmatter: dict | None = None):
-        self.calls.append(
-            {
-                "message": message,
-                "title": title,
-                "sections": sections,
-                "extra_frontmatter": extra_frontmatter or {},
-            }
-        )
-        return SimpleNamespace(frontmatter={"id": "archive-id"}, local_path="/tmp/archive.md")
-
-    def update_frontmatter(self, path: str, updates: dict):
-        self.frontmatter_updates.append({"path": path, "updates": updates})
-        return SimpleNamespace(frontmatter={"id": "archive-id", **updates}, local_path=path)
 
 
 class FakeReminderService:

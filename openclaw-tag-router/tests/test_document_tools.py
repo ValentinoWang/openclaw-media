@@ -25,26 +25,11 @@ from openclaw_app.services.document_edit_contract import (
 )
 from openclaw_app.services.feishu_service import FeishuService
 
+from _fakes.services import FakeArchiveService
+
 
 class DocumentToolsHarness(DocumentToolsMixin):
     pass
-
-
-class FakeArchiveService:
-    class Entry:
-        local_path = "/tmp/openclaw-document-edit-archive.md"
-        frontmatter = {"id": "document_edit_test"}
-
-    def __init__(self) -> None:
-        self.rows: list[tuple[str, str]] = []
-        self.frontmatter: dict[str, object] = {}
-
-    def save_archive(self, _message: Message, _title: str, rows: list[tuple[str, str]], _extra: dict) -> "FakeArchiveService.Entry":
-        self.rows = rows
-        return self.Entry()
-
-    def update_frontmatter(self, _path: str, data: dict[str, object]) -> None:
-        self.frontmatter.update(data)
 
 
 class FakeContentFlowClient:

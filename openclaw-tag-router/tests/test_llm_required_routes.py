@@ -13,24 +13,10 @@ from openclaw_app.router.activity_daily import ActivityDailyMixin
 from openclaw_app.router.social_archive import SocialArchiveMixin
 from openclaw_app.router.tag_capabilities import TAG_LABELS
 
+from _fakes.services import FakeArchiveService
+
 
 TZ = ZoneInfo("Asia/Shanghai")
-
-
-class FakeArchiveService:
-    def __init__(self):
-        self.calls: list[dict] = []
-
-    def save_archive(self, message, title, sections, extra_frontmatter=None):
-        self.calls.append(
-            {
-                "message": message,
-                "title": title,
-                "sections": sections,
-                "extra_frontmatter": extra_frontmatter or {},
-            }
-        )
-        return SimpleNamespace(frontmatter={"id": "archive-id"}, local_path="/tmp/archive.md")
 
 
 class ForbiddenReminderService:
