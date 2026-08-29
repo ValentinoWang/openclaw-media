@@ -89,6 +89,7 @@
 - `RT-12` 已完成源码复验：`daily-poll` CLI 在解析层要求 `--tenant-id`，并在读取监控表前调用 `require_tenant_id`；日报 JSON/复盘记忆写入租户隔离目录。对应租户边界回归包含在 `tests/test_daily_poll_tenant_flow.py` 集合中。
 - `RT-08` 已完成源码复验：`install-cron` 生成的 service 直接执行当前仓内 Python 与 `runtime/cli/selfmedia.py daily-poll`，不再通过自然语言 agent 消息间接执行每日采集；安装命令回归已覆盖在 `tests/test_daily_poll_tenant_flow.py`。
 - `RT-14` 已完成源码复验：`daily-poll` 与 `install-cron` 现有 CLI/租户/路径/失败分支测试覆盖，`tests/test_selfmedia_cli_smoke.py tests/test_daily_poll_tenant_flow.py` 共 `26 passed`。该证据覆盖入口回归，不代表生产 timer 已部署。
+- `RT-13` 已完成源码复验：`docs/architecture.md`、`runtime/cli/selfmedia.env.example` 与 `selfmedia --help` 均使用仓库相对入口和可配置环境变量，不再出现 `/home/ubuntu/selfmedia-tools` 旧宿主路径；`tests/test_runtime_entrypoint_portability.py` 与日报 CLI 集合通过。
 
 - Router 错误响应兼容性在 `main@d0180e9` 完成：`_send_api_error` 对轻量测试/适配器对象缺失 `_correlation_id` 时仍能按 `{ok,error:{code,message,details?}}` 合同返回；`test_api_error_matches_media_web_task_error_schema` 与兼容回归合计 `13 passed`。不改变 maintainer-only 删除能力的安全可见性边界。
 
