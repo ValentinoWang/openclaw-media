@@ -270,6 +270,24 @@ class MediaGrowthV2Tests(unittest.TestCase):
         self.assertIn("创作者可见文本必须使用中文", result["reason"])
         self.assertIn("display_summary", result["reason"])
 
+    def test_growth_llm_runner_rejects_english_decision_candidate_text(self) -> None:
+        payload = self._decision_payload()
+        payload["topic_candidates"][0]["title"] = "English topic title"
+
+        result = GrowthLLMJsonRunner(
+            provider=lambda *_args, **_kwargs: payload,
+            settings=object(),
+            max_retries=0,
+        ).run_json(
+            task="creation_decision_brief",
+            prompt="基于证据生成选题。",
+            evidence_bundle=self._ready_knowledge_evidence_bundle(),
+        )
+
+        self.assertEqual(result["status"], "pending_manual")
+        self.assertIn("选题候选文本必须使用中文", result["reason"])
+        self.assertIn("title", result["reason"])
+
     def test_growth_llm_runner_repairs_incomplete_success_once_with_llm(self) -> None:
         calls: list[str] = []
 
