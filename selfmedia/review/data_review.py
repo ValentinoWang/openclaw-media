@@ -53,6 +53,7 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".heic"}
 CREATION_PLAN_FIELDS = (
     "title",
     "hook_3s",
+    "storyboard",
     "validation_targets",
     "review_plan",
     "publishing_pack",
@@ -384,12 +385,21 @@ def load_creation_plan(tenant_id: str, creation_record_id: str) -> dict[str, Any
         }
     report = payload.get("creator_report") if isinstance(payload.get("creator_report"), dict) else {}
     overview = report.get("overview") if isinstance(report.get("overview"), dict) else {}
+    options = payload.get("script_options") if isinstance(payload.get("script_options"), list) else []
+    recommended_id = str(payload.get("recommended_option_id") or "").strip()
+    recommended = next(
+        (item for item in options if isinstance(item, dict) and str(item.get("option_id") or "").strip() == recommended_id),
+        {},
+    )
+    if not recommended and len(options) == 1 and isinstance(options[0], dict):
+        recommended = options[0]
     publishing_pack = payload.get("publishing_pack")
     if not isinstance(publishing_pack, dict):
         publishing_pack = report.get("publishing_pack") if isinstance(report.get("publishing_pack"), dict) else {}
     plan = {
         "title": payload.get("title") or overview.get("recommended_topic") or "",
-        "hook_3s": payload.get("hook_3s") or "",
+        "hook_3s": payload.get("hook_3s") or recommended.get("hook_3s") or "",
+        "storyboard": payload.get("storyboard") or recommended.get("storyboard") or [],
         "validation_targets": payload.get("validation_targets") or {},
         "review_plan": payload.get("review_plan") or [],
         "publishing_pack": {
@@ -521,7 +531,7 @@ def analyze_data_screenshots(
         "12. problems、content_guidance、publishing_guidance、next_actions、data_quality_notes 尽量输出对象数组，不要把多个维度挤进一条字符串。\n"
         "13. performance_level 只能是：高价值延续、值得重剪、观察、不建议延续、未评级。\n"
         "14. 不要为了填表重复输出同一批指标；原始可见数据放 metrics，作品形式专项指标放 format_specific_metrics，曲线只放 trend_curves，后续由脚本合并成表格字段。\n"
-        "15. 当创作计划状态为 loaded 时，必须输出 plan_comparison 对象数组，逐条对照标题、前三秒钩子、验证指标、复盘计划和发布动作。每项包含 plan_item、status（已兑现/未兑现/证据不足）、evidence、next_step；若本次数据节点命中 validation_targets，必须额外写 validation_target，值精确为“窗口:指标”（如 2h:收藏），逐项覆盖该窗口指标；没有计划时 plan_comparison 必须为空数组，且不得编造归因。\n"
+        "15. 当创作计划状态为 loaded 时，必须输出 plan_comparison 对象数组，逐条对照标题、前三秒钩子、分镜脚本、验证指标、复盘计划和发布动作。每项包含 plan_item、status（已兑现/未兑现/证据不足）、evidence、next_step；若本次数据节点命中 validation_targets，必须额外写 validation_target，值精确为“窗口:指标”（如 2h:收藏），逐项覆盖该窗口指标；没有计划时 plan_comparison 必须为空数组，且不得编造归因。\n"
         "16. metric_data_quality 只能是 complete、partial 或 screenshot_only；只依据用户提供截图时必须为 screenshot_only，截图存在缺页、不可读或无法核验的指标时必须为 partial。输出字段固定为：platform, account, media_format, media_format_evidence, format_specific_metrics, track, title, publish_time, data_window, metrics, atomic_facts, priority_metrics, trend_curves, metric_interpretation, conclusion, performance_level, key_insights, problems, content_guidance, publishing_guidance, next_actions, data_quality_notes, metric_data_quality, plan_comparison。\n"
     )
     user_payload = {

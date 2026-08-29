@@ -73,6 +73,34 @@ class P0ReviewLoopTests(unittest.TestCase):
         prompt_payload = json.loads(str(captured[0]["text"]).split("输入上下文：", 1)[1])
         self.assertEqual(prompt_payload["creation_plan"], plan)
 
+    def test_load_creation_plan_falls_back_to_recommended_script_option(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            os.environ, {"OPENCLAW_MEDIA_VAULT_ROOT": directory}, clear=False
+        ):
+            vault = MediaVault(tenant_id=TENANT_ID)
+            vault.write_json_artifact(
+                vault.creation_run_dir("run_script_option"),
+                "draft_output.json",
+                {
+                    "recommended_option_id": "option-b",
+                    "script_options": [
+                        {"option_id": "option-a", "hook_3s": "错误方案"},
+                        {
+                            "option_id": "option-b",
+                            "hook_3s": "先展示错误动作，再给纠正结果。",
+                            "storyboard": [{"shot": "近景"}, {"shot": "全景"}],
+                        },
+                    ],
+                },
+                owner_type="CreationRun",
+                owner_id="run_script_option",
+                artifact_type="draft_output",
+            )
+            plan = data_review.load_creation_plan(TENANT_ID, "run_script_option")
+
+        assert plan["plan"]["hook_3s"] == "先展示错误动作，再给纠正结果。"
+        assert plan["plan"]["storyboard"] == [{"shot": "近景"}, {"shot": "全景"}]
+
     def test_review_rendering_prioritizes_actions_without_raw_json(self) -> None:
         analysis = {
             "conclusion": "收藏率偏低，先重写封面。",
