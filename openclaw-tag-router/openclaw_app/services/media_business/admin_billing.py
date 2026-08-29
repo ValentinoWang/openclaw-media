@@ -14,10 +14,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any, Callable, Mapping, Protocol
-from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 from ...account.admin_audit import write_admin_audit
+from ..retail_purchase_url import is_liandong_purchase_url
 from . import foundation
 from .foundation import IF2_KEY, idempotency_key
 
@@ -258,24 +258,7 @@ def _amount(value: Any) -> str:
 
 
 def _purchase_url(value: Any) -> str:
-    if not isinstance(value, str) or value != value.strip() or not 20 <= len(value) <= 2048:
-        raise AdminBillingInvalidRequest("purchaseUrl is invalid", field="purchaseUrl")
-    if any(character.isspace() for character in value):
-        raise AdminBillingInvalidRequest("purchaseUrl is invalid", field="purchaseUrl")
-    parsed = urlsplit(value)
-    try:
-        port = parsed.port
-    except ValueError as exc:
-        raise AdminBillingInvalidRequest("purchaseUrl must be a Liandong HTTPS URL", field="purchaseUrl") from exc
-    host = (parsed.hostname or "").lower().rstrip(".")
-    if (
-        parsed.scheme != "https"
-        or parsed.username is not None
-        or parsed.password is not None
-        or port is not None
-        or parsed.fragment
-        or not (host == "ldxp.cn" or host.endswith(".ldxp.cn"))
-    ):
+    if not is_liandong_purchase_url(value):
         raise AdminBillingInvalidRequest("purchaseUrl must be a Liandong HTTPS URL", field="purchaseUrl")
     return value
 

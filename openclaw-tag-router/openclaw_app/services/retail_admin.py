@@ -3,13 +3,13 @@ from __future__ import annotations
 import json
 from decimal import Decimal, InvalidOperation
 from typing import Any
-from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 from ..account.admin_audit import write_admin_audit
 from ..account.database import AccountDatabase
 from ..account.errors import AccountError
 from .retail_ledger import post_ledger_entry
+from .retail_purchase_url import is_liandong_purchase_url
 
 
 MONEY_QUANTUM = Decimal("0.00000001")
@@ -58,18 +58,7 @@ class RetailAdminService:
 
     @staticmethod
     def _purchase_url(value: str) -> str:
-        if value != value.strip() or not 20 <= len(value) <= 2048 or any(character.isspace() for character in value):
-            raise RetailAdminError("product_mapping_invalid", "购买链接无效。")
-        parsed = urlsplit(value)
-        host = (parsed.hostname or "").lower().rstrip(".")
-        if (
-            parsed.scheme != "https"
-            or parsed.username is not None
-            or parsed.password is not None
-            or parsed.port is not None
-            or parsed.fragment
-            or not (host == "ldxp.cn" or host.endswith(".ldxp.cn"))
-        ):
+        if not is_liandong_purchase_url(value):
             raise RetailAdminError("product_mapping_invalid", "购买链接必须使用链动 HTTPS 地址。")
         return value
 
