@@ -174,3 +174,5 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - 组织账号监控入口修复（2026-08-30）：组织会话此前被 `/tracks` 的普通工作区路由统一重定向，无法承接账号监控。`main@9917155` 将“账号与赛道”加入组织导航，并仅允许 `organization_lark/lark` 会话访问 `/tracks`；个人、管理员和普通会话的既有边界保持不变。`checkOrganizationWorkspaceShell.ts`、`qa:media-session-contract` 与 `npm run build:media` 全部通过。账号监控的业务归属为组织租户；真实 H00 非空轮询证据仍未生成，BIZ-05/CD-13 状态不变。
 
 - 组织入口前端发布复核（2026-08-30）：本地 `dist-media` 构建与 `main@f38149e` 一致，但 106 上 `/mnt/openclaw-data/openclaw-media-frontend-releases` 及 `/var/www/openclaw/media` 均为 `root:root`，当前 `ubuntu` 会话无写权限且无免密 sudo；上传和原子切换被权限门禁拒绝。生产仍指向旧 release `20260830-d8aca36`，未伪造“已部署”证据；需由受管发布身份执行上传与切换后再回读公网版本。
+
+- 组织入口前端发布完成（2026-08-30）：授权 `ubuntu` 加入 `openclaw-deploy` 组后，基于 `main@a1e4db2` 重新运行 `npm run build:media` 全部通过，并上传至不可变目录 `/mnt/openclaw-data/openclaw-media-frontend-releases/20260830-a1e4db2`。`/var/www/openclaw/media` 已原子切换到该目录，HTTP `http://106.52.146.37/openclaw/media/` 返回 `200`，远端 `.release-commit` 与 `a1e4db2` 一致；旧 release 保留可回滚。回读时根分区仅剩约 `371M`（显示 `100%`），记为运维容量风险，未擅自删除其他文件。
