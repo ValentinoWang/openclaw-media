@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
 import time
@@ -11,7 +10,6 @@ import urllib.parse
 from pathlib import Path
 from typing import Any
 
-import requests
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
@@ -31,18 +29,19 @@ from common.resource_ownership import canonical_tenant_owned_resources, require_
 from selfmedia.business.id_business import FEISHU_BASE, load_playwright_cookies  # noqa: E402
 from selfmedia.creator_profiles.docs_builder import DEFAULT_CREATOR_REGISTRY_URL  # noqa: E402
 from selfmedia.creator_profiles.registry_sync import normalize_platform, normalize_platform_id  # noqa: E402
+from selfmedia.creator_profiles.url_resolution import (  # noqa: E402
+    CHROMIUM_EXECUTABLE_CANDIDATES,
+    DOUYIN_BLOCKED_PROFILE_PATHS,
+    DOUYIN_USER_AGENT,
+    douyin_profile_url_from_redirect_url,
+    douyin_search_url,
+    is_douyin_self_profile_url,
+    launch_chromium,
+    resolve_douyin_share_url,
+)
 
 
 OUTPUT_DIR = Path("/home/ubuntu/openclaw-agents/media/generated/creator-anchor-crawl")
-CHROMIUM_EXECUTABLE_CANDIDATES = (
-    os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE", ""),
-    "/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
-)
-DOUYIN_BLOCKED_PROFILE_PATHS = {"/user/self"}
-DOUYIN_USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-)
 
 
 def parse_chinese_count(text: str) -> int | None:
@@ -97,16 +96,6 @@ def non_empty(value: Any) -> bool:
 
 def xhs_search_url(keyword: str) -> str:
     return "https://www.xiaohongshu.com/search_result/?keyword=" + urllib.parse.quote(keyword) + "&type=51"
-
-
-def launch_chromium(playwright, *, headless: bool = True):
-    for candidate in CHROMIUM_EXECUTABLE_CANDIDATES:
-        if not candidate:
-            continue
-        path = Path(candidate)
-        if path.is_file() and os.access(path, os.X_OK):
-            return playwright.chromium.launch(headless=headless, executable_path=str(path))
-    return playwright.chromium.launch(headless=headless)
 
 
 def candidate_profile_links(page) -> list[dict[str, str]]:
@@ -228,51 +217,6 @@ def crawl_xhs_anchor(creator_name: str, platform_id: str) -> dict[str, Any]:
             return {"ok": False, "platform": "小红书", "status": "timeout", "error": str(exc)}
         finally:
             browser.close()
-
-
-def douyin_search_url(keyword: str) -> str:
-    return f"https://www.douyin.com/search/{urllib.parse.quote(keyword)}?type=user"
-
-
-def is_douyin_self_profile_url(url: str) -> bool:
-    parsed = urllib.parse.urlparse(str(url or ""))
-    return parsed.netloc.endswith("douyin.com") and parsed.path.rstrip("/") in DOUYIN_BLOCKED_PROFILE_PATHS
-
-
-def douyin_profile_url_from_redirect_url(url: str) -> str:
-    parsed = urllib.parse.urlparse(str(url or ""))
-    query = urllib.parse.parse_qs(parsed.query)
-    sec_uid = ""
-    if parsed.path.startswith("/share/user/"):
-        sec_uid = parsed.path.rsplit("/", 1)[-1]
-    if not sec_uid:
-        sec_uid = str((query.get("sec_uid") or [""])[0]).strip()
-    if sec_uid:
-        return "https://www.douyin.com/user/" + sec_uid
-    if parsed.netloc.endswith("douyin.com") and parsed.path.startswith("/user/") and not is_douyin_self_profile_url(url):
-        return urllib.parse.urlunparse((parsed.scheme or "https", parsed.netloc, parsed.path, "", "", ""))
-    return ""
-
-
-def resolve_douyin_share_url(url: str) -> str:
-    raw = str(url or "").strip()
-    if not raw:
-        return ""
-    direct = douyin_profile_url_from_redirect_url(raw)
-    if direct:
-        return direct
-    if "v.douyin.com" not in raw and "iesdouyin.com/share/user" not in raw:
-        return ""
-    try:
-        response = requests.get(
-            raw,
-            allow_redirects=True,
-            headers={"User-Agent": DOUYIN_USER_AGENT},
-            timeout=20,
-        )
-    except requests.RequestException:
-        return ""
-    return douyin_profile_url_from_redirect_url(response.url)
 
 
 def douyin_profile_links(page) -> list[dict[str, str]]:
@@ -500,6 +444,18 @@ def crawl_douyin_anchor(creator_name: str, platform_id: str, homepage_hint: str 
                 )
                 if direct_result.get("ok"):
                     return direct_result
+
+            if not str(platform_id or "").strip():
+                # url_resolution.douyin_search_url now tolerates an empty
+                # keyword (it used to raise TypeError on None here); keep
+                # this call site failing the same way it always has instead
+                # of silently searching an empty keyword.
+                return {
+                    "ok": False,
+                    "platform": "抖音",
+                    "status": "missing_platform_id",
+                    "platform_id": platform_id,
+                }
 
             search_url = douyin_search_url(platform_id)
             page.goto(search_url, wait_until="domcontentloaded", timeout=30_000)
