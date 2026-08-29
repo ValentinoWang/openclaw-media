@@ -19,6 +19,14 @@ except ImportError:  # pragma: no cover - the active tag-router already requires
 _YAML_ERROR = getattr(yaml, "YAMLError", ValueError)
 
 if __package__ in {None, ""}:  # Allow the gateway to invoke this file as a thin process.
+    # parents[2] is the openclaw-tag-router package root (needed for the
+    # openclaw_app.* imports below); parents[3] is the repository root,
+    # needed because deepmath_people_recommendation.py (imported transitively
+    # via deepmath_thinking_intake below) imports from common.social_runtime.
+    # Insert the repository root first so the router root -- which owns its
+    # own same-named subpackages -- still takes priority, matching
+    # tests/conftest.py's reverse-priority ordering.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     from openclaw_app.services.deepmath_approval_service import DeepMathApprovalService, DeepMathExecutorRegistry
     from openclaw_app.services.deepmath_approval_store import DeepMathApprovalStore, DeepMathApprovalStoreError

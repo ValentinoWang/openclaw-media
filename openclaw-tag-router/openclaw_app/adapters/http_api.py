@@ -1674,7 +1674,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except AccountError:
             return False
 
-    def _session_id(self) -> str | None:
+    def _legacy_session_cookie(self) -> str | None:
         if self.auth_config is None:
             return None
         try:
@@ -1686,14 +1686,14 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         return token
 
     def _resolved_session(self) -> tuple[str, AccountSession] | None:
-        token = self._session_id()
+        token = self._legacy_session_cookie()
         if not token or self.account_auth is None:
             return None
         session = self.account_auth.resolve_session(token)
         return None if session is None else (token, session)
 
     def _resolved_personal_session(self) -> tuple[str, Any] | None:
-        token = self._session_id()
+        token = self._legacy_session_cookie()
         if not token or self.personal_auth is None:
             return None
         session = self.personal_auth.resolve_session(token)
@@ -1910,7 +1910,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
     def _device_credential(self) -> str | None:
         authorization = self.headers.get("Authorization", "")
         scheme, separator, value = authorization.partition(" ")
-        if separator != " " or scheme != "Bearer" or not value.strip():
+        if separator != " " or scheme.casefold() != "bearer" or not value.strip():
             self._send_api_error(HTTPStatus.UNAUTHORIZED, "invalid_device_credential", "设备凭据无效。")
             return None
         return value.strip()
@@ -2245,7 +2245,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             identifier,
             password,
             source_key=self._client_key(),
-            previous_session_token=self._session_id(),
+            previous_session_token=self._legacy_session_cookie(),
         )
         self._send_json(
             HTTPStatus.OK,
@@ -2393,7 +2393,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         if not isinstance(identifier, str) or not isinstance(password, str):
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请输入用户名和密码。")
             return
-        result = self.account_auth.login(identifier, password, previous_token=self._session_id())
+        result = self.account_auth.login(identifier, password, previous_token=self._legacy_session_cookie())
         self._send_json(
             HTTPStatus.OK,
             {"ok": True},
@@ -2454,7 +2454,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                     tenant_key=identity.tenant_key,
                     open_id=identity.open_id,
                     union_id=identity.union_id,
-                    previous_token=self._session_id(),
+                    previous_token=self._legacy_session_cookie(),
                 )
                 self._send_empty(
                     HTTPStatus.SEE_OTHER,
@@ -2575,7 +2575,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         idempotency_key = self._require_idempotency_key()
         if idempotency_key is None:
             return
-        token = self._session_id()
+        token = self._legacy_session_cookie()
         resolved = self._resolved_session()
         if resolved is not None:
             if not self._require_csrf(resolved[0]):
