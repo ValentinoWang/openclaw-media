@@ -39,3 +39,12 @@ def test_asset_preview_identity_resolves_to_same_origin_route() -> None:
     assert match is not None
     assert match.operation_id == "getAssetPreview"
     assert match.path_parameters == {"publicAssetId": "asset_123456"}
+
+
+def test_account_monitor_identity_resolves_under_owned_account() -> None:
+    match = resolve_media_business_operation(
+        "GET", f"{CANONICAL_PREFIX}/owned-accounts/account_123456/monitor"
+    )
+    assert match is not None
+    assert match.operation_id == "getAccountMonitor"
+    assert match.path_parameters == {"publicAccountId": "account_123456"}

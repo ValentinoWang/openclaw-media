@@ -13,7 +13,7 @@ from .media_business_context import If2Route, Permission
 
 CANONICAL_PREFIX = "/openclaw/media/api"
 LEGACY_PREFIX = "/media/api"
-EXPECTED_OPERATION_COUNT = 87
+EXPECTED_OPERATION_COUNT = 88
 DEFAULT_MUTATION_BODY_LIMIT_BYTES = 2 * 1024 * 1024
 UPLOAD_BODY_LIMIT_BYTES = 70 * 1024 * 1024
 EXCLUDED_OPERATION_IDS = frozenset(
@@ -105,6 +105,7 @@ _DECLARED_MEDIA_BUSINESS_ROUTE_BINDINGS = (
     RouteSpec("GET", "/owned-accounts", "listOwnedAccounts"),
     RouteSpec("GET", "/owned-accounts/{publicAccountId}", "getOwnedAccount"),
     RouteSpec("GET", "/owned-accounts/{publicAccountId}/track-strategy", "getAccountTrackStrategy"),
+    RouteSpec("GET", "/owned-accounts/{publicAccountId}/monitor", "getAccountMonitor", allowed_statuses=frozenset({200, 401, 403, 404, 500, 503})),
     RouteSpec("GET", "/assets", "listAssets"),
     RouteSpec("GET", "/assets/{publicAssetId}", "getAsset"),
     RouteSpec("GET", "/assets/{publicAssetId}/preview", "getAssetPreview"),
@@ -267,7 +268,7 @@ def validate_media_business_route_bindings(
         for route in routes
     ]
     if len(routes) != EXPECTED_OPERATION_COUNT:
-        raise DispatcherContractError(f"IF2 must register exactly 86 routes, found {len(routes)}")
+        raise DispatcherContractError(f"IF2 must register exactly 88 routes, found {len(routes)}")
     if len(set(operation_ids)) != len(operation_ids):
         raise DispatcherContractError("IF2 contains duplicate operationIds")
     if len(set(route_keys)) != len(route_keys):

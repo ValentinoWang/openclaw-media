@@ -284,7 +284,7 @@ def _operation_map(service: str, operation_ids: set[str]) -> dict[str, str]:
 
 _IF2_OPERATION_SERVICE = {
     **_operation_map("overview", {"getDashboard", "listContentProjects", "listProjectArtifacts", "createProjectSummary"}),
-    **_operation_map("tracks", {"listTracks", "getTrack", "listCreators", "getCreator", "listTrackRelationships", "updateTrackRelationshipStatus", "listOwnedAccounts", "getOwnedAccount", "getAccountTrackStrategy"}),
+    **_operation_map("tracks", {"listTracks", "getTrack", "listCreators", "getCreator", "listTrackRelationships", "updateTrackRelationshipStatus", "listOwnedAccounts", "getOwnedAccount", "getAccountTrackStrategy", "getAccountMonitor"}),
     **_operation_map("assets", {"listAssets", "getAsset"}),
     **_operation_map("decisions", {"listDecisions", "getDecision", "listDecisionSignals", "confirmDecision"}),
     **_operation_map("runs", {"listRuns", "getRun", "getRunSources", "getRunDecisions", "getRunOutputs", "listBusinessOpportunities", "createArtifactRevision"}),

@@ -63,6 +63,13 @@ class TrackInternalError(TracksError):
         super().__init__("internal_error", message, status=500)
 
 
+class TrackMonitorUnavailable(TracksError):
+    """The account monitor adapter is not installed in this runtime."""
+
+    def __init__(self, message: str = "account monitor is unavailable") -> None:
+        super().__init__("monitor_unavailable", message, status=503)
+
+
 class DatabaseConnection(Protocol):
     def execute(self, query: str, params: tuple[Any, ...] = ()) -> Any: ...
 
@@ -589,6 +596,12 @@ class TracksService:
                 "strategy": strategy,
             }
         )
+
+    def get_account_monitor(self, context: TenantContext, public_account_id: str) -> dict[str, Any]:
+        """Expose the contract boundary without claiming a Feishu read succeeded."""
+        self._tenant_id(context)
+        _requested_public_id(public_account_id)
+        raise TrackMonitorUnavailable()
 
     def _execute_list(
         self,

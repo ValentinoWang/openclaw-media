@@ -27,6 +27,7 @@ x-openclaw-pages:
     - getCreator
     - getDocumentResource
     - getOwnedAccount
+    - getAccountMonitor
     - getTrack
     - listCreators
     - listOwnedAccounts
@@ -1450,6 +1451,41 @@ paths:
       x-existing-handler: []
       x-product-read-model:
       - account_track_strategies
+  /owned-accounts/{publicAccountId}/monitor:
+    get:
+      operationId: getAccountMonitor
+      summary: Read the account monitor status when a monitor adapter is available.
+      description: The current runtime may return 503 when no Feishu monitor adapter is configured; it must not synthesize monitor success.
+      security:
+      - cookieAuth: []
+      x-permission: ordinary-session
+      parameters:
+      - $ref: '#/components/parameters/PublicAccountId'
+      responses:
+        '200':
+          description: Monitor status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountMonitorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-page-contracts:
+      - B02
+      x-runtime-status: new
+      x-canonical-capability-id:
+      - account_monitor
+      x-existing-handler: []
+      x-product-read-model:
+      - owned_media_accounts
   /assets:
     get:
       operationId: listAssets
@@ -3883,6 +3919,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     InternalError:
       description: Service unavailable without internal details.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServiceUnavailable:
+      description: Required monitor adapter is not configured.
       content:
         application/json:
           schema:
@@ -6710,6 +6752,35 @@ components:
       - schemaVersion
       - revision
       - strategy
+    AccountMonitorResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        schemaVersion:
+          $ref: '#/components/schemas/SchemaVersion'
+        revision:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum:
+          - available
+          - unavailable
+        checkedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        detail:
+          type:
+          - string
+          - 'null'
+      required:
+      - schemaVersion
+      - revision
+      - status
+      - checkedAt
+      - detail
     AssetListResponse:
       type: object
       additionalProperties: false
