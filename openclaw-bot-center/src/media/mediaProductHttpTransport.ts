@@ -23,12 +23,27 @@ export type MediaProductHttpTransportOptions = {
   fetchImpl?: typeof fetch
 }
 
+const publicErrorMessages: Readonly<Record<string, string>> = {
+  authentication_required: '请先登录后再继续操作。',
+  csrf_rejected: '安全校验未通过，请刷新页面后重试。',
+  admin_required: '当前账号没有此操作权限。',
+  forbidden: '当前账号没有此操作权限。',
+  invalid_request: '请求信息不完整或格式不正确，请检查后重试。',
+  resource_not_found: '未找到相关记录。',
+  revision_conflict: '数据已发生变化，请刷新后重试。',
+  idempotency_conflict: '请求已处理或正在处理中，请刷新后查看最新状态。',
+  service_unavailable: '服务暂时不可用，请稍后重试。',
+}
+
 function errorMessage(payload: unknown): { code: string; message: string } {
   if (!payload || typeof payload !== 'object') return { code: 'request_failed', message: '服务请求未完成。' }
   const value = payload as { error?: { code?: unknown; message?: unknown } }
+  const code = typeof value.error?.code === 'string' ? value.error.code : 'request_failed'
+  const serverMessage = typeof value.error?.message === 'string' ? value.error.message : ''
   return {
-    code: typeof value.error?.code === 'string' ? value.error.code : 'request_failed',
-    message: typeof value.error?.message === 'string' ? value.error.message : '服务请求未完成。',
+    code,
+    // Unknown English diagnostics are for logs, never creator-facing UI.
+    message: publicErrorMessages[code] ?? (/[\u3400-\u9fff]/u.test(serverMessage) ? serverMessage : '服务请求未完成。'),
   }
 }
 
