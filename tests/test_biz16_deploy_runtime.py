@@ -26,7 +26,9 @@ def test_monthly_timer_units_are_explicit_and_point_to_remind() -> None:
     service = (source_dir / "openclaw-monthly-quote-reminder.service").read_text(encoding="utf-8")
 
     assert "OnCalendar=*-*-01 00:00:00 Asia/Shanghai" in timer
-    assert "id_business.py remind" in service
+    assert "@ID_BUSINESS_SCRIPT@ remind" in service
+    assert "@ID_BUSINESS_SCRIPT@" in service
+    assert "/home/ubuntu" not in service
     assert "@TENANT_ID@" in service
 
 
@@ -45,6 +47,8 @@ def test_register_monthly_timer_requires_tenant_and_registers_units(monkeypatch:
 
     service = (tmp_path / deploy.MONTHLY_QUOTE_REMINDER_SERVICE).read_text(encoding="utf-8")
     assert TENANT_ID in service
+    assert str(deploy.ID_BUSINESS_SCRIPT) in service
+    assert "@ID_BUSINESS_SCRIPT@" not in service
     assert "--tenant-id " + TENANT_ID in service
     assert result["tenant_id"] == TENANT_ID
     assert commands[-2:] == [

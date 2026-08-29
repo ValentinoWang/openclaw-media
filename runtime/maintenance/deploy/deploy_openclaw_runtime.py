@@ -23,6 +23,7 @@ BOT_CENTER_PUBLISH_DIR = Path(os.getenv("OPENCLAW_BOT_CENTER_PUBLISH_DIR") or "/
 SYNC_MODELS_SCRIPT = REPO_ROOT / "runtime" / "maintenance" / "deploy" / "sync_openclaw_agent_models.py"
 SYNC_BOT_CONFIG_SCRIPT = REPO_ROOT / "runtime" / "maintenance" / "deploy" / "sync_openclaw_bot_config.py"
 SELFMEDIA_CLI = REPO_ROOT / "runtime" / "cli" / "selfmedia.py"
+ID_BUSINESS_SCRIPT = REPO_ROOT / "selfmedia" / "business" / "id_business.py"
 OPENCLAW_QUALITY_ROOT = REPO_ROOT / "scripts/quality"
 OPENCLAW_QA_ROOT = REPO_ROOT / "scripts/qa"
 SINGLE_SOURCE_GUARD = OPENCLAW_QUALITY_ROOT / "check_openclaw_single_source_contract.py"
@@ -256,12 +257,10 @@ def register_monthly_quote_reminder_timer() -> dict[str, str]:
     if missing:
         raise SystemExit(f"missing monthly quote reminder systemd source units: {missing}")
     USER_SYSTEMD_DIR.mkdir(parents=True, exist_ok=True)
-    service_text = service_source.read_text(encoding="utf-8")
-    service_text = service_text.replace("@TENANT_ID@", tenant_id).replace(
-        "/home/ubuntu/selfmedia/business/id_business.py",
-        str(REPO_ROOT / "selfmedia" / "business" / "id_business.py"),
-    )
-    if "@TENANT_ID@" in service_text:
+    service_text = service_source.read_text(encoding="utf-8").replace(
+        "@TENANT_ID@", tenant_id
+    ).replace("@ID_BUSINESS_SCRIPT@", str(ID_BUSINESS_SCRIPT))
+    if "@TENANT_ID@" in service_text or "@ID_BUSINESS_SCRIPT@" in service_text:
         raise SystemExit("monthly quote reminder service template contains unresolved placeholders")
     (USER_SYSTEMD_DIR / MONTHLY_QUOTE_REMINDER_SERVICE).write_text(service_text, encoding="utf-8")
     run(
