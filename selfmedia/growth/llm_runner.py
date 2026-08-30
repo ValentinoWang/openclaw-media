@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable
 
@@ -216,6 +217,14 @@ DECISION_CANDIDATE_REQUIRED_FIELDS = (
 )
 DECISION_CANDIDATE_TEXT_FIELDS = DECISION_CANDIDATE_REQUIRED_FIELDS[:-1]
 CHINESE_OUTPUT_MIN_RATIO = 0.2
+# Mirrors common.llm_client.generate_json_from_parts's own default inter-attempt
+# delay for a non-capacity retry (r6 audit cluster: tight zero-delay retries can
+# hammer a rate-limited/at-capacity provider back-to-back). GrowthLLMJsonRunner
+# cannot call that shared retry loop directly -- its retry is a semantic
+# required-field repair pass over an already-parsed payload via an injected,
+# test-substitutable `provider` callable, not a JSON/schema parse retry -- so
+# it mirrors the same backoff here instead of duplicating a tight loop.
+GROWTH_JSON_RETRY_DELAY_SECONDS = 0.5
 
 
 @dataclass(frozen=True)
@@ -323,6 +332,7 @@ class GrowthLLMJsonRunner:
                     evidence_bundle=bundle,
                     blocked_sources=("growth_llm_json_provider",),
                 )
+            time.sleep(GROWTH_JSON_RETRY_DELAY_SECONDS)
             provider_parts = [*request_parts, _semantic_repair_part(task, validation_error, result)]
         raise AssertionError("unreachable Growth LLM retry state")
 
