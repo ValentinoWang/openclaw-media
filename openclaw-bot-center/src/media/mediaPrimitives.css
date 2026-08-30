@@ -259,6 +259,58 @@
 .mg-empty strong { margin-top: var(--mg-gap-2); color: var(--mg-ink); font-size: var(--mg-text-md); }
 .mg-empty p { max-width: 52ch; margin: 7px 0 0; font-size: var(--mg-text-xs); line-height: var(--mg-lh-snug); }
 
+/* ---- 加载/无权限/为空/出错 状态面板（cluster FE-03，原 20+ 份各页私有组件 -> 1 份）----
+   由 ui/SurfaceState.tsx 消费。六档取值经 [data-state] 切换图标底色；密度经
+   [data-density='compact'] 切换尺寸，供 ArchivesPage/UsageBillingPage 一类内嵌小面板使用。
+   这是一份全局样式表（经 main.tsx 引入，非 CSS Module），共享组件因此不依赖任何一个
+   页面私有的 *.module.css。 */
+.mg-state {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--mg-gap-5);
+  color: var(--mg-muted);
+  text-align: center;
+}
+.mg-state[data-density='compact'] { min-height: 120px; padding: var(--mg-gap-3); gap: 2px; }
+.mg-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--mg-gap-1);
+  border-radius: var(--mg-r-full);
+  background: var(--mg-surface-raised);
+  color: var(--accent-base);
+}
+.mg-state[data-density='compact'] .mg-state-icon { width: 30px; height: 30px; margin-bottom: 2px; }
+.mg-state[data-state='error'] .mg-state-icon { color: var(--mg-danger); background: var(--mg-danger-soft); }
+.mg-state[data-state='permission'] .mg-state-icon,
+.mg-state[data-state='forbidden'] .mg-state-icon { color: var(--mg-warning); background: var(--mg-warning-soft); }
+.mg-state[data-state='notFound'] .mg-state-icon { color: var(--mg-muted); background: var(--mg-surface); }
+.mg-state strong { color: var(--mg-ink); font-size: var(--mg-text-md); }
+.mg-state[data-density='compact'] strong { font-size: var(--mg-text-sm); }
+.mg-state p { max-width: 52ch; margin: 0; font-size: var(--mg-text-xs); line-height: var(--mg-lh-snug); }
+.mg-state-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: var(--mg-gap-1);
+  padding: 7px 14px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--mg-r-full);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  font-size: var(--mg-text-xs);
+  font-weight: 700;
+  text-decoration: none;
+}
+.mg-state-action:hover { border-color: var(--accent-base); }
+
 /* ---- 内容流水线轨道 ---- */
 .mg-pipeline { display: flex; align-items: stretch; gap: 5px; }
 .mg-pipeline-step { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 6px; }
