@@ -318,7 +318,7 @@ def validate_llm_draft_payload(
     draft["positioning_analysis"] = _as_dict(draft.get("positioning_analysis"), default_key="positioning")
     draft["content_core"] = _validate_content_core(draft.get("content_core"))
     draft["topic_strategy"] = _as_dict(draft.get("topic_strategy"), default_key="summary")
-    _require_mapping_keys(draft["topic_strategy"], "topic_strategy", ("target_audience", "pain_point", "content_angle", "single_problem", "self_check"))
+    _require_report_keys(draft["topic_strategy"], "topic_strategy", ("target_audience", "pain_point", "content_angle", "single_problem", "self_check"))
     draft["usable_material_brief"] = _validate_usable_material_brief(draft.get("usable_material_brief"))
     platform_fit = platform_fit or {}
     for key in ("platform_strategy", "activity_strategy", "traffic_hypothesis", "creation_reverse_plan", "validation_targets"):
@@ -987,13 +987,13 @@ def _validate_report_mode(value: Any) -> dict[str, Any]:
 
 def _validate_content_core(value: Any) -> dict[str, Any]:
     data = _as_dict(value, default_key="summary")
-    _require_mapping_keys(data, "content_core", ("content_promise", "viewer_problem", "specific_scene", "memorable_point", "must_show"))
+    _require_report_keys(data, "content_core", ("content_promise", "viewer_problem", "specific_scene", "memorable_point", "must_show"))
     return data
 
 
 def _validate_usable_material_brief(value: Any) -> dict[str, Any]:
     data = _as_dict(value, default_key="execution_brief")
-    _require_mapping_keys(data, "usable_material_brief", ("execution_brief", "source_mapping", "usage_boundaries"))
+    _require_report_keys(data, "usable_material_brief", ("execution_brief", "source_mapping", "usage_boundaries"))
     if not str(data.get("execution_brief") or "").strip():
         raise ValueError("usable_material_brief.execution_brief 不能为空")
     if data.get("source_mapping") in (None, "", [], {}):
@@ -1003,7 +1003,7 @@ def _validate_usable_material_brief(value: Any) -> dict[str, Any]:
 
 def _validate_editor_pass(value: Any, recommended_option_id: str) -> dict[str, Any]:
     data = _as_dict(value, default_key="summary")
-    _require_mapping_keys(data, "editor_pass", ("recommended_option_id", "blandness_risks", "revisions_applied", "final_recommendation_reason"))
+    _require_report_keys(data, "editor_pass", ("recommended_option_id", "blandness_risks", "revisions_applied", "final_recommendation_reason"))
     if str(data.get("recommended_option_id") or "").strip() != recommended_option_id:
         raise ValueError("editor_pass.recommended_option_id 必须等于 recommended_option_id")
     return data
@@ -1092,12 +1092,6 @@ def _validate_comment_evidence_references(
 
 
 def _require_report_keys(data: dict[str, Any], path: str, keys: tuple[str, ...]) -> None:
-    missing = [key for key in keys if key not in data]
-    if missing:
-        raise ValueError(f"{path} 缺少字段：{missing}")
-
-
-def _require_mapping_keys(data: dict[str, Any], path: str, keys: tuple[str, ...]) -> None:
     missing = [key for key in keys if key not in data]
     if missing:
         raise ValueError(f"{path} 缺少字段：{missing}")
