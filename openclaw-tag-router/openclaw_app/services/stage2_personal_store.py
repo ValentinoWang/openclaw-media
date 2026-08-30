@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from common.canonical_digest import canonical_json as _shared_canonical_json
+from openclaw_app.services.stage2_errors import Stage2StoreConflict
 
 
 _DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -61,11 +62,11 @@ class _Replay:
         self.result = result
 
 
-class _StoreConflict(RuntimeError):
-    def __init__(self, code: str, message: str) -> None:
-        self.code = code
-        self.message = message
-        super().__init__(message)
+# Private by naming convention, but stage2_personal_pipeline.py imports it
+# directly -- kept as an alias onto the shared Stage2StoreConflict (see
+# openclaw_app/services/stage2_errors.py) rather than a redefinition of the
+# same class, per exc-6 in the dedup audit.
+_StoreConflict = Stage2StoreConflict
 
 
 class PersonalContentStore(Protocol):

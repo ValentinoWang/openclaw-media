@@ -20,7 +20,12 @@ from typing import Any, Protocol
 
 from common.canonical_digest import prefixed_digest
 
-from openclaw_app.services.stage2_errors import IDEMPOTENCY_CONFLICT, Stage2CodedError
+from openclaw_app.services.stage2_errors import (
+    IDEMPOTENCY_CONFLICT,
+    Stage2CodedError,
+    Stage2StoreConflict,
+    raise_pipeline_error,
+)
 from openclaw_app.services.stage2_external_document import (
     BindingIdentity,
     ExternalDocumentAdapter,
@@ -44,11 +49,13 @@ class IdempotencyConflict(OrganizationPipelineError):
         super().__init__(IDEMPOTENCY_CONFLICT, message)
 
 
-class OrganizationStoreConflict(OrganizationPipelineError):
-    """A durable organization state transition could not be applied safely."""
+class OrganizationStoreConflict(OrganizationPipelineError, Stage2StoreConflict):
+    """A durable organization state transition could not be applied safely.
 
-    def __init__(self, code: str, message: str) -> None:
-        super().__init__(code, message)
+    Keeps the ``OrganizationPipelineError`` base (not just the shared
+    ``Stage2StoreConflict``) so stage2_runtime.py's ``except
+    OrganizationPipelineError`` catch sites keep matching it.
+    """
 
 
 def _text(value: Any, label: str, maximum: int = 512) -> str:
@@ -491,9 +498,11 @@ class OrganizationContentPipeline:
             try:
                 return dict(self._store.save_artifact_and_replay(artifact, replay_key=replay_key, fingerprint=fingerprint))
             except OrganizationStoreConflict as exc:
-                if exc.code == "idempotency_conflict":
-                    raise IdempotencyConflict() from exc
-                raise OrganizationPipelineError(exc.code, exc.message) from exc
+                raise_pipeline_error(
+                    exc,
+                    layer_error=OrganizationPipelineError,
+                    idempotency_conflict=IdempotencyConflict,
+                )
 
     def readback_mirror(
         self,
@@ -541,7 +550,7 @@ class OrganizationContentPipeline:
             try:
                 self._store.update_artifact(updated)
             except OrganizationStoreConflict as exc:
-                raise OrganizationPipelineError(exc.code, exc.message) from exc
+                raise_pipeline_error(exc, layer_error=OrganizationPipelineError)
             return mirror
 
     def record_remote_edit_and_readback(
@@ -578,7 +587,7 @@ class OrganizationContentPipeline:
             try:
                 self._store.update_artifact(updated)
             except OrganizationStoreConflict as exc:
-                raise OrganizationPipelineError(exc.code, exc.message) from exc
+                raise_pipeline_error(exc, layer_error=OrganizationPipelineError)
         return self.readback_mirror(
             artifact_ref,
             tenant_id=tenant_id,

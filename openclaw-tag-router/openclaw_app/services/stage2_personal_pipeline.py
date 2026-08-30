@@ -14,7 +14,12 @@ import threading
 from collections.abc import Iterable, Mapping
 from typing import Any, Protocol
 
-from openclaw_app.services.stage2_errors import IDEMPOTENCY_CONFLICT, REVISION_CONFLICT, Stage2CodedError
+from openclaw_app.services.stage2_errors import (
+    IDEMPOTENCY_CONFLICT,
+    REVISION_CONFLICT,
+    Stage2CodedError,
+    raise_pipeline_error,
+)
 from openclaw_app.services.stage2_personal_store import (
     InMemoryPersonalContentStore,
     PersonalContentStore,
@@ -425,9 +430,11 @@ class PersonalContentPipeline:
                     fingerprint=fingerprint,
                 )
             except _StoreConflict as exc:
-                if exc.code == "idempotency_conflict":
-                    raise IdempotencyConflict() from exc
-                raise PersonalPipelineError(exc.code, exc.message) from exc
+                raise_pipeline_error(
+                    exc,
+                    layer_error=PersonalPipelineError,
+                    idempotency_conflict=IdempotencyConflict,
+                )
             value = copy.deepcopy(dict(stored))
             value["replayed"] = replayed
             return value
@@ -500,11 +507,12 @@ class PersonalContentPipeline:
                     fingerprint=fingerprint,
                 )
             except _StoreConflict as exc:
-                if exc.code == "idempotency_conflict":
-                    raise IdempotencyConflict() from exc
-                if exc.code == "revision_conflict":
-                    raise RevisionConflict() from exc
-                raise PersonalPipelineError(exc.code, exc.message) from exc
+                raise_pipeline_error(
+                    exc,
+                    layer_error=PersonalPipelineError,
+                    idempotency_conflict=IdempotencyConflict,
+                    revision_conflict=RevisionConflict,
+                )
             value = copy.deepcopy(dict(stored))
             value["replayed"] = replayed
             return value
