@@ -6,6 +6,7 @@ from typing import Any, Protocol
 
 from common.env import feishu_reminder_root
 
+from ..content_os_utils import content_os_vault_root as _default_content_os_vault_root
 from ..deletion_discovery import DiscoveryResult
 from ..deletion_plan import DeletionPlan
 
@@ -79,7 +80,7 @@ class DeletionContext:
     media_registry_path: Path = feishu_reminder_root() / "media-bitable-registry.json"
     daily_config_path: Path = feishu_reminder_root() / "config.json"
     knowledge_config_path: Path = feishu_reminder_root() / "knowledge-config.json"
-    content_os_vault_root: Path = Path("/home/ubuntu/obsidian-自媒体")
+    content_os_vault_root: Path = _default_content_os_vault_root()
 
 
 class CapabilityDeletionAdapter(Protocol):

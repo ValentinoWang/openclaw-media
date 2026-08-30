@@ -5,6 +5,7 @@ from pathlib import Path
 
 from media_vault import MediaVault
 
+from .content_os_utils import content_os_vault_root
 from .deletion_adapters import adapters_for
 from .deletion_adapters.base import DeletionContext
 from .deletion_discovery import APPLY_KEYWORDS, discover_target, extract_target_ids
@@ -39,7 +40,7 @@ class DeletionMixin:
             tenant_vault_root,
             *agent_results_roots,
             Path("/home/ubuntu/obsidian-日记"),
-            Path("/home/ubuntu/obsidian-自媒体"),
+            content_os_vault_root(),
             Path("/home/ubuntu/98_Agent任务队列"),
         ]
 

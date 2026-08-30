@@ -13,6 +13,18 @@ from ..services.markdown_frontmatter import read_frontmatter_tolerant
 from ..services.utils import cleanup_generated_file_duplicates, now_in_tz
 
 
+def content_os_vault_root() -> Path:
+    """Resolve the Content OS Obsidian vault root.
+
+    ``CONTENT_OS_VAULT_ROOT`` overrides the default of
+    ``~/obsidian-自媒体``. Module-level (not just a mixin method) so
+    non-mixin callers -- e.g. deletion_adapters/base.py's
+    ``DeletionContext.content_os_vault_root`` default -- can resolve the
+    same portable value without going through a router instance.
+    """
+    return Path(os.environ.get("CONTENT_OS_VAULT_ROOT") or Path.home() / "obsidian-自媒体").expanduser()
+
+
 class ContentOSUtilsMixin:
     @staticmethod
     def _inspiration_requests_content_os_project(raw: str) -> bool:
@@ -170,7 +182,7 @@ class ContentOSUtilsMixin:
 
     @staticmethod
     def _content_os_vault_root() -> Path:
-        return Path(os.environ.get("CONTENT_OS_VAULT_ROOT", "/home/ubuntu/obsidian-自媒体"))
+        return content_os_vault_root()
     @staticmethod
     def _content_os_cloud_markdown_enabled() -> bool:
         value = os.environ.get("CONTENT_OS_CLOUD_MARKDOWN", "").strip().lower()

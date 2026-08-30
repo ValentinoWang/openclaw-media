@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .content_os_utils import content_os_vault_root
 from .tag_router_common import *
 from media_vault import MediaVaultError, require_tenant_id
 
@@ -150,7 +151,7 @@ class MediaCreationMixin:
         record_text: str,
     ) -> str:
         analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
-        vault_root = Path(os.environ.get("CONTENT_OS_VAULT_ROOT", "/home/ubuntu/obsidian-自媒体"))
+        vault_root = content_os_vault_root()
         note_dir = vault_root / "05_素材与爆款库" / "自媒体知识"
         note_dir.mkdir(parents=True, exist_ok=True)
         created_date = message.created_at.strftime("%Y%m%d")

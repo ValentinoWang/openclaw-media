@@ -7,6 +7,7 @@ from typing import Any
 
 import yaml
 
+from ..content_os_utils import content_os_vault_root
 from ..deletion_discovery import DiscoveryResult
 from ..deletion_plan import DeletionEntity, DeletionPlan, is_path_under
 from .base import DeletionContext
@@ -18,7 +19,7 @@ class ContentOSDeletionAdapter:
     labels: tuple[str, ...] = ()
 
     def can_handle(self, discovery: DiscoveryResult) -> bool:
-        root = Path("/home/ubuntu/obsidian-自媒体")
+        root = content_os_vault_root()
         if (root / "08_内容项目" / discovery.target_id).exists():
             return True
         if self._looks_like_task_id(discovery.target_id):
