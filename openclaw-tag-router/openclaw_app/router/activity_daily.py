@@ -10,6 +10,7 @@ from common.activity_links import (
     split_link_fields as _shared_split_link_fields,
 )
 from common.llm_client import is_model_capacity_failure, model_capacity_failure_detail
+from common.ocr_lines import clean_ocr_lines
 
 from .tag_router_common import *
 
@@ -651,7 +652,7 @@ class ActivityDailyMixin:
             )
         except (OSError, subprocess.TimeoutExpired):
             return ""
-        text = self._activity_clean_ocr_text(proc.stdout)
+        text = clean_ocr_lines(proc.stdout)
         if text:
             try:
                 ocr_path.write_text(text + "\n", encoding="utf-8")
@@ -667,18 +668,6 @@ class ActivityDailyMixin:
             return path.read_text(encoding="utf-8").strip()
         except OSError:
             return ""
-
-    @staticmethod
-    def _activity_clean_ocr_text(text: str) -> str:
-        lines: list[str] = []
-        previous = ""
-        for raw_line in (text or "").replace("\f", "\n").splitlines():
-            line = " ".join(raw_line.split()).strip()
-            if not line or line == previous:
-                continue
-            previous = line
-            lines.append(line)
-        return "\n".join(lines).strip()
 
     @staticmethod
     def _activity_render_extracted_value(value: Any) -> str:

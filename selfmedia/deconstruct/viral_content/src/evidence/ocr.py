@@ -6,23 +6,13 @@ import shutil
 import subprocess
 from typing import Any
 
+from common.ocr_lines import clean_ocr_lines as _clean_ocr_text
+
 from .schemas import OcrEvidence
 
 
 def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", "", str(text or "")).lower()
-
-
-def _clean_ocr_text(text: str) -> str:
-    lines: list[str] = []
-    previous = ""
-    for raw in str(text or "").replace("\f", "\n").splitlines():
-        line = " ".join(raw.split()).strip()
-        if not line or line == previous:
-            continue
-        previous = line
-        lines.append(line)
-    return "\n".join(lines).strip()
 
 
 def _image_size(path: str) -> tuple[int, int]:

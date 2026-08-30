@@ -6,6 +6,8 @@ import subprocess
 import time
 from typing import Callable, Optional
 
+from common.ocr_lines import clean_ocr_lines as _clean_ocr_text
+
 from .analyzer import analyze_transcript
 from .config import Settings
 from .downloader import clean_douyin_url, resolve_media
@@ -98,18 +100,6 @@ def _sync_creative_pattern_from_analysis(state: FlowState, analysis: dict) -> di
         "write_mode": str(write.get("mode") or ""),
         "record_id": str(write.get("record_id") or ""),
     }
-
-
-def _clean_ocr_text(text: str) -> str:
-    lines: list[str] = []
-    previous = ""
-    for raw_line in (text or "").replace("\f", "\n").splitlines():
-        line = " ".join(raw_line.split())
-        if not line or line == previous:
-            continue
-        previous = line
-        lines.append(line)
-    return "\n".join(lines).strip()
 
 
 def _extract_image_ocr(image_paths: list[str], ocr_path: str, progress: ProgressFn) -> str:
