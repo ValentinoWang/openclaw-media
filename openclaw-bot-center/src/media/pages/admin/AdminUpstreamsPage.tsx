@@ -44,7 +44,7 @@ type LoadState =
 type ActionState = { kind: 'idle' | 'busy' | 'success' | 'error'; message: string }
 
 const healthLabels: { readonly [key in CredentialHealth]: string } = {
-  healthy: '健康',
+  healthy: '正常',
   degraded: '降级',
   unavailable: '不可用',
   revoked: '已撤销',
