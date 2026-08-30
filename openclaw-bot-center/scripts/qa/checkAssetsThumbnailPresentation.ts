@@ -22,7 +22,7 @@ const checks: Array<[string, boolean]> = [
   ["card fallback distinguishes missing and failed thumbnails", /缩略图暂不可用/.test(page) && /缩略图未提供/.test(page)],
   ["detail keeps previewDescriptor", /detail\.previewDescriptor\.url/.test(page)],
   ["material status has dedicated helper", /export function materialStatusDisplayLabel/.test(labels) && /materialStatusDisplayLabel/.test(page)],
-  ["cards keep evidence quality separate from material status", /<span>\{qualityLabel\(asset\.qualityStatus\)\}<\/span>\s*<span>\{materialStatusLabel\(asset\.materialStatus\)\}<\/span>/.test(page)],
+  ["cards keep evidence quality separate from material status", /<span>\{qualityDisplayLabel\(asset\.qualityStatus\)\}<\/span>\s*<span>\{materialStatusLabel\(asset\.materialStatus\)\}<\/span>/.test(page)],
   ["media aliases include Chinese values", /图片: "图片"/.test(labels) && /视频: "视频"/.test(labels) && /链接: "链接"/.test(labels)],
   ["thumbnail CSS fills the stable media frame", /\.assetMedia img/.test(css) && /object-fit: cover/.test(css)],
   ["missing semantic fields are reported honestly", /<FieldNotRecorded key="tracks" \/>/.test(page) && /平台话题标签/.test(page) && !/<FieldNotRecorded key="tags" \/>/.test(page) && /未记录/.test(page) && !/字段未开放/.test(page)],
