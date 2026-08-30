@@ -1,0 +1,13 @@
+Task: Implement Stage 3 shell and page-level accent/metric treatment DS-18 through DS-22.
+
+Your current working directory is the isolated worktree assigned to this lane. Treat it as the only writable repository root; never cd to or edit the integration worktree or any other worktree.
+SSOT source: /Users/vsiyo/Downloads/loginandworkspacevisualreview (1).html, unified ledger Stage 3 DS-18..DS-22.
+
+Exclusive write scope:
+- openclaw-bot-center/src/media/MediaStudioApp.tsx
+- openclaw-bot-center/src/media/media.css
+- openclaw-bot-center/src/media/mediaStudioTheme.css
+- openclaw-bot-center/src/media/studio/WorkboardPage.tsx and .module.css only if needed for DS-19/22
+Do not edit login files, backend, ordinary/admin page files, shared primitive file, route manifests, package locks, or QA indexes.
+
+Implement shell improvements without changing authorization semantics: when a shell has fewer than three navigation items use a 56px icon sidebar with accessible labels/tooltips; make page headers one primary plus two secondary actions; apply translucent topbar treatment; mount data-accent on each page/shell; and add a workboard metric band using existing Metric plus Stage 2 accent rules. Preserve all routes, workspace mode decisions, keyboard navigation, responsive behavior, and tests. Avoid decorative card nesting and avoid letter-spacing changes for Chinese. Run TypeScript checks and commit one atomic `refactor(ui):` commit. Do not push or merge.

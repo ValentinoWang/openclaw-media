@@ -1,0 +1,8 @@
+Task: Implement Stage 2 shared design primitive enhancements DS-12 through DS-17.
+
+Your current working directory is the isolated worktree assigned to this lane. Treat it as the only writable repository root; never cd to or edit the integration worktree or any other worktree.
+SSOT source: /Users/vsiyo/Downloads/loginandworkspacevisualreview (1).html, unified ledger Stage 2 DS-12..DS-17.
+
+Exclusive write scope: openclaw-bot-center/src/media/mediaPrimitives.css only. Do not edit page files, shell files, login files, manifests, or tests unless a tiny CSS-specific test is unavoidable.
+
+Add robust shared rules: .mg-metric[data-accent], .mg-panel[data-accent], .mg-badge[data-tone] coverage, .mg-tab pill variant, .mg-btn hover elevation/focus-visible, and .mg-state-art illustration slot. Use existing design tokens and responsive/accessibility conventions; no new gradients/orbs, no negative letter-spacing for Chinese, and keep selectors backward compatible. Validate CSS syntax and commit one atomic `refactor(ui):` commit. Do not push or merge.
