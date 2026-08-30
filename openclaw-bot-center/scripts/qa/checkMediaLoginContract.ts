@@ -47,6 +47,7 @@ for (const entryField of ['displayLabel', 'maskedIdentity', 'expiresAt']) {
 }
 
 assert.match(script, /async function loadEntryState\(mode\) \{\s*const run = \+\+entryStateRun\s*setHidden\(`\$\{mode\}-entry-state`, false\)/u)
+assert.match(script, /const selectMode = \(mode,[\s\S]*?void loadEntryState\(mode\)/u)
 assert.match(script, /#personal-entry-fallback[\s\S]*?setHidden\('personal-entry-state', true\)[\s\S]*?setHidden\('personal-password-fallback', false\)/u)
 assert.match(script, /#organization-entry-fallback[\s\S]*?setHidden\('organization-entry-state', true\)[\s\S]*?setHidden\('organization-oauth-fallback', false\)[\s\S]*?startOrganizationAuth\(\)/u)
 
