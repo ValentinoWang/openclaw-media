@@ -830,10 +830,6 @@ class DecisionsService:
     def error_response(error: BaseException) -> dict[str, Any]:
         return _error_response(error)
 
-    @staticmethod
-    def error_status(error: BaseException) -> int:
-        return _error_status(error)
-
     def _validate_confirmation(self, request: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(request, Mapping):
             raise DecisionsInvalidRequest("request must be an object")
@@ -1029,10 +1025,6 @@ def _error_response(error: BaseException) -> dict[str, Any]:
             "field": None,
         }
     }
-
-
-def _error_status(error: BaseException) -> int:
-    return error.status if isinstance(error, DecisionsError) else 500
 
 
 __all__ = [

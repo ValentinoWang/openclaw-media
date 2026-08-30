@@ -14,7 +14,7 @@ from openclaw_app.services.media_business.decisions import (
     DecisionsNotFound,
     DecisionsService,
 )
-from openclaw_app.services.media_business.foundation import TenantContext
+from openclaw_app.services.media_business.foundation import TenantContext, error_status
 
 
 UTC = timezone.utc
@@ -369,7 +369,7 @@ def test_missing_signal_source_fails_closed_and_error_shape_is_if2() -> None:
             "field": None,
         }
     }
-    assert DecisionsService.error_status(error) == 404
+    assert error_status(error) == 404
 
 
 def test_missing_signal_rank_fails_closed() -> None:

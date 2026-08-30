@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from openclaw_app.services.media_business.foundation import TenantContext
+from openclaw_app.services.media_business.foundation import TenantContext, error_status
 from openclaw_app.services.media_business.publishing import (
     PublishingConflict,
     PublishingFieldUnavailable,
@@ -407,7 +407,7 @@ def test_error_shape_and_migration_are_scoped_to_b06():
             "field": "publishedUrl",
         }
     }
-    assert PublishingService.error_status(error) == 400
+    assert error_status(error) == 400
     migration = (
         Path(__file__).parents[1] / "openclaw_app/migrations/014_b06_publishing.sql"
     ).read_text()

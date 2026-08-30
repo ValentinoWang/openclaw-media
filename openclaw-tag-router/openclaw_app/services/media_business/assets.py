@@ -278,10 +278,6 @@ class AssetsService:
             }
         }
 
-    @staticmethod
-    def error_status(error: BaseException) -> int:
-        return error.status if isinstance(error, AssetsError) else 500
-
     def _tenant_id(self, context: TenantContext | None) -> str:
         try:
             checked = require_context(context)

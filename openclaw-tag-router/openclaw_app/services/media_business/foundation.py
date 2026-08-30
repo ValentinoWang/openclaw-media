@@ -164,6 +164,22 @@ class TenantContext:
     audit_reason: str | None = None
 
 
+def error_status(error: BaseException) -> int:
+    """Map any raised error to the HTTP status it should carry.
+
+    Every media_business service used to re-implement this as a static
+    method gated on its own local ``isinstance(error, XxxError)`` check
+    (exc-3 audit). This single implementation duck-types instead of
+    checking ``isinstance(error, MediaBusinessError)`` because four
+    services (admin_upstreams/admin_billing/admin_tenants/admin_overview)
+    still derive their own error classes from RuntimeError, not
+    MediaBusinessError (exc-1 step 4 was deliberately skipped) -- so a
+    class check here would wrongly fall back to 500 for those.
+    """
+    status = getattr(error, "status", None)
+    return status if isinstance(status, int) else 500
+
+
 def require_context(
     context: TenantContext | None,
     target_tenant: str | None = None,

@@ -7,7 +7,7 @@ from uuid import UUID
 
 import pytest
 
-from openclaw_app.services.media_business.foundation import TenantContext
+from openclaw_app.services.media_business.foundation import TenantContext, error_status
 from openclaw_app.services.media_business.invites import (
     InvitesForbidden,
     InvitesInternalError,
@@ -162,7 +162,7 @@ def test_malformed_invitee_row_fails_closed_and_forbidden_context_has_stable_err
 
 def test_error_payload_keeps_if2_code_and_field_shape() -> None:
     error = InvitesInvalidRequest("pageSize is invalid", field="pageSize")
-    assert InvitesService.error_status(error) == 400
+    assert error_status(error) == 400
     assert InvitesService.error_response(error) == {
         "error": {
             "code": "invalid_request",

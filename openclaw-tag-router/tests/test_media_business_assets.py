@@ -20,7 +20,7 @@ from openclaw_app.services.media_business.assets import (
     AssetPreviewService,
     AssetsService,
 )
-from openclaw_app.services.media_business.foundation import TenantContext
+from openclaw_app.services.media_business.foundation import TenantContext, error_status
 
 
 TENANT_A = "00000000-0000-0000-0000-00000000000a"
@@ -577,4 +577,4 @@ def test_error_payload_has_the_if2_error_shape() -> None:
             "field": None,
         }
     }
-    assert AssetsService.error_status(error) == 404
+    assert error_status(error) == 404

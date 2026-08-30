@@ -791,10 +791,6 @@ class OverviewService:
             }
         }
 
-    @staticmethod
-    def error_status(error: BaseException) -> int:
-        return error.status if isinstance(error, OverviewError) else 500
-
     def _scope(self, context: TenantContext | None) -> str:
         try:
             checked = require_context(context)

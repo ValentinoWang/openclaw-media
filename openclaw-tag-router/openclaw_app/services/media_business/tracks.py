@@ -1052,10 +1052,6 @@ class TracksService:
         return {"error": {"code": "internal_error", "message": "track data is unavailable", "field": None}}
 
     @staticmethod
-    def error_status(error: BaseException) -> int:
-        return error.status if isinstance(error, TracksError) else 500
-
-    @staticmethod
     def _tenant_id(context: TenantContext | None) -> str:
         try:
             checked = require_context(context)

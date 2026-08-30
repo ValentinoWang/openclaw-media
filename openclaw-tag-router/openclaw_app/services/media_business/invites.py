@@ -280,10 +280,6 @@ class InvitesService:
             }
         }
 
-    @staticmethod
-    def error_status(error: BaseException) -> int:
-        return error.status if isinstance(error, InvitesError) else 500
-
     def _scope(self, context: TenantContext) -> _Scope:
         try:
             checked = require_context(context)

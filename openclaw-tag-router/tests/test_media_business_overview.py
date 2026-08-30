@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from openclaw_app.services.media_business.foundation import TenantContext
+from openclaw_app.services.media_business.foundation import TenantContext, error_status
 from openclaw_app.services.media_business.overview import (
     OverviewConflict,
     OverviewError,
@@ -609,7 +609,7 @@ def test_create_summary_response_uses_write_readback() -> None:
 
 def test_error_response_is_stable_and_does_not_expose_exception_details() -> None:
     error = OverviewInternalError()
-    assert OverviewService.error_status(error) == 500
+    assert error_status(error) == 500
     assert OverviewService.error_response(error) == {
         "error": {
             "code": "internal_error",
@@ -617,7 +617,7 @@ def test_error_response_is_stable_and_does_not_expose_exception_details() -> Non
             "field": None,
         }
     }
-    assert OverviewService.error_status(RuntimeError("secret path")) == 500
+    assert error_status(RuntimeError("secret path")) == 500
     assert OverviewService.error_response(RuntimeError("secret path")) == {
         "error": {
             "code": "internal_error",

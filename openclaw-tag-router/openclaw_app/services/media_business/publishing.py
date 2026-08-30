@@ -492,10 +492,6 @@ class PublishingService:
             }
         }
 
-    @staticmethod
-    def error_status(error: BaseException) -> int:
-        return error.status if isinstance(error, PublishingError) else 500
-
     def _context(self, context: TenantContext | None) -> TenantContext:
         try:
             return require_context(context)

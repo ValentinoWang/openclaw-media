@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from openclaw_app.services.media_business.foundation import TenantContext
+from openclaw_app.services.media_business.foundation import TenantContext, error_status
 from openclaw_app.services.media_business.tracks import (
     H00AccountMonitorAdapter,
     TrackForbidden,
@@ -509,7 +509,7 @@ def test_error_payload_has_if2_shape() -> None:
             "field": None,
         }
     }
-    assert TracksService.error_status(error) == 404
+    assert error_status(error) == 404
 
 
 def test_migration_is_focused_on_existing_tables_and_b02_indexes() -> None:
