@@ -153,6 +153,26 @@ BUSINESS_RECENT_STATUS_LABELS = {
     "llm_parsed": "已解析",
     "llm_pending_manual": "待人工确认",
 }
+BUSINESS_MONITOR_STATUS_LABELS = {
+    **BUSINESS_RECENT_STATUS_LABELS,
+    "pending": "待确认",
+    "pending_manual": "待人工确认",
+    "collected": "已收集",
+    "done": "已完成",
+    "sent": "已通知",
+    "dry_run": "试运行未发送",
+    "notify_skipped": "未投递",
+    "notify_failed": "投递失败，待重试",
+    "captured": "已获取",
+    "captured_cached": "已获取（缓存）",
+    "capture_failed": "获取失败，待复核",
+    "capture_auth_required": "登录状态失效，待重新获取",
+    "capture_access_restricted": "访问受限，待复核",
+    "empty_screenshot": "截图为空，待复核",
+    "playwright_unavailable": "截图工具不可用，待复核",
+    "manual_screenshot": "已提供人工截图",
+    "missing_url": "缺少主页链接",
+}
 BUSINESS_STATUS_MACHINE_TOKENS = {
     machine: label
     for labels in BUSINESS_STATUS_LABELS.values()
@@ -2836,7 +2856,15 @@ def coerce_for_feishu(fields: dict[str, Any], field_types: dict[str, Any]) -> di
 def merge_standard_business_fields(fields: dict[str, Any]) -> dict[str, Any]:
     normalized = normalize_standard_fields(fields)
     merged = select_fields_for_write(fields, normalized_fields=normalized)
-    for key, workflow in BUSINESS_STATUS_FIELD_WORKFLOWS.items():
+    monitor_status = merged.get("监控状态")
+    if monitor_status not in (None, "", []):
+        raw_status = str(monitor_status).strip()
+        merged["监控状态"] = BUSINESS_MONITOR_STATUS_LABELS.get(raw_status, raw_status)
+    normalized_status_fields = {
+        **BUSINESS_STATUS_FIELD_WORKFLOWS,
+        "反问状态": "creator_confirmation",
+    }
+    for key, workflow in normalized_status_fields.items():
         if key in merged and merged[key] not in (None, "", []):
             merged[key] = business_status_label(workflow, merged[key])
     if merged.get("反问博主通知结果"):
