@@ -21,6 +21,9 @@ import requests
 
 from common import feishu_urls as _feishu_urls
 from common import url_text as _url_text
+# Re-exported on purpose: callers that already import env helpers from
+# common.social_runtime can reach the canonical .env parser (pe-01) here too.
+from common.env import parse_env_file
 from common.platform_links import platform_for_url
 
 from .standard_fields import (
@@ -123,20 +126,14 @@ def local_now_iso(tz_name: str = "Asia/Shanghai") -> str:
 
 
 def load_env_file(path: str | Path, *, override: bool = False) -> None:
-    env_path = Path(path).expanduser()
-    if not env_path.exists() or not env_path.is_file():
-        return
-    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        if key.startswith("export "):
-            key = key[len("export ") :].strip()
-        value = value.strip().strip("'").strip('"')
-        if not key:
-            continue
+    """Load ``KEY=VALUE`` pairs from ``path`` into ``os.environ``.
+
+    Parsing is delegated to :func:`common.env.parse_env_file` (the pe-01
+    canonical reader — matched-pair quote unwrapping, ``export `` prefix,
+    identifier keys, missing file → no-op). By default an existing process
+    environment variable wins; ``override=True`` makes the file win.
+    """
+    for key, value in parse_env_file(path).items():
         if override or key not in os.environ:
             os.environ[key] = value
 

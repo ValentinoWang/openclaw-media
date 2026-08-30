@@ -10,7 +10,67 @@ free, but it works standalone.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
+
+_ENV_KEY_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
+
+def parse_env_file(path: str | Path, *, require: bool = False) -> dict[str, str]:
+    """Parse a ``KEY=VALUE`` env file into a dict, without touching ``os.environ``.
+
+    The canonical .env reader for this repository (dedup audit pe-01, which
+    counted 12+ hand-rolled copies with mutually inconsistent rules).
+    Canonical semantics:
+
+    - ``path`` accepts ``str | Path`` and is ``expanduser``-ed.
+    - A missing (or otherwise unreadable) file returns ``{}``, unless
+      ``require=True``, in which case the underlying ``OSError`` (e.g.
+      ``FileNotFoundError``) propagates — for callers whose env file is a
+      hard requirement.
+    - Blank lines and ``#`` comment lines are skipped; a line-level
+      ``export `` prefix is stripped, so ``export KEY=V`` parses as ``KEY``.
+    - Keys must be shell-style identifiers (``[A-Za-z_][A-Za-z0-9_]*``
+      after stripping surrounding whitespace); other lines are dropped.
+    - Values are whitespace-stripped, then unwrapped exactly ONCE when
+      wrapped in a matched pair of quotes (``X="v"`` / ``X='v'`` → ``v``).
+      An unbalanced quote is preserved verbatim (``X="ab'`` → ``"ab'``) —
+      deliberately NOT the legacy ``.strip("'").strip('"')``, which also
+      ate unpaired quotes.
+    - On a duplicate key, the last assignment wins.
+
+    Two hardened parsers in openclaw-tag-router deliberately do NOT
+    delegate here: ``openclaw_app/adapters/http_api.py``'s
+    ``load_auth_environment`` (an allowlist-enforcing security boundary
+    that must keep rejecting unknown keys) and
+    ``openclaw_app/services/deepmath_runtime_config.py``'s ``_read_env``
+    (a fail-closed required-file contract raising its own domain error).
+    """
+    env_path = Path(path).expanduser()
+    try:
+        raw_text = env_path.read_text(encoding="utf-8")
+    except OSError:
+        if require:
+            raise
+        return {}
+    values: dict[str, str] = {}
+    for raw_line in raw_text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export ") :].lstrip()
+        key, separator, value = line.partition("=")
+        if not separator:
+            continue
+        key = key.strip()
+        if not _ENV_KEY_RE.fullmatch(key):
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        values[key] = value
+    return values
 
 
 def env_bool(name: str, default: bool = False) -> bool:
