@@ -1063,7 +1063,19 @@ def feishu_coerce_value(
     return str(value)
 
 
-def feishu_plain_text(value: Any) -> str:
+def feishu_plain_text(value: Any, *, list_separator: str = "\n", unknown_dict: str = "json") -> str:
+    """Render a Feishu field value as plain text.
+
+    ``list_separator`` joins a list's rendered items (default ``"\\n"``,
+    matching every one of this function's 61 pre-existing call sites).
+
+    ``unknown_dict`` controls what a dict renders as when none of its
+    ``("text", "link", "url", "name", "value")`` keys yields text:
+    ``"json"`` (the default, matching existing behavior) dumps the whole
+    dict as JSON; ``"empty"`` returns ``""`` instead, for callers that
+    would rather drop an unrecognized structured value than surface its
+    raw JSON.
+    """
     if value in (None, "", []):
         return ""
     if isinstance(value, str):
@@ -1072,13 +1084,13 @@ def feishu_plain_text(value: Any) -> str:
         return str(value)
     if isinstance(value, dict):
         for key in ("text", "link", "url", "name", "value"):
-            text = feishu_plain_text(value.get(key))
+            text = feishu_plain_text(value.get(key), list_separator=list_separator, unknown_dict=unknown_dict)
             if text:
                 return text
-        return json_dumps(value)
+        return json_dumps(value) if unknown_dict == "json" else ""
     if isinstance(value, list):
-        parts = [feishu_plain_text(item) for item in value]
-        return "\n".join(part for part in parts if part)
+        parts = [feishu_plain_text(item, list_separator=list_separator, unknown_dict=unknown_dict) for item in value]
+        return list_separator.join(part for part in parts if part)
     return str(value).strip()
 
 
