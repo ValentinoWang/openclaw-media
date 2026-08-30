@@ -116,20 +116,7 @@ def load_creation_agent_settings() -> OpenClawAgentSettings:
 
 def load_content_cleaner_llm_settings() -> ContentCleanerLLMSettings:
     cleaner = profile_config("content_cleaner")
-    provider = profile_provider_runtime("content_cleaner")
-    runtime = profile_runtime("content_cleaner") if provider.api_type == API_TYPE_OPENCLAW_AGENT else None
-    provider_settings = LLMProviderSettings(
-        model=runtime.model if runtime else provider.model,
-        base_url=provider.base_url,
-        api_key=provider.api_key,
-        api_type=provider.api_type,
-        timeout=runtime.timeout if runtime else provider.timeout,
-        thinking=runtime.thinking if runtime else provider.thinking,
-        bin=runtime.bin if runtime else "",
-        agent=runtime.agent if runtime else "",
-        cwd=runtime.cwd if runtime else "",
-        codex_home=runtime.codex_home if runtime else "",
-    )
+    provider_settings = load_profile_llm_settings("content_cleaner")
     return ContentCleanerLLMSettings(
         enabled=bool(cleaner.get("enabled", True)),
         provider=provider_settings,
