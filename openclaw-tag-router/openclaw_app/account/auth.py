@@ -42,15 +42,15 @@ class AccountAuthService:
         database: AccountDatabase,
         *,
         csrf_secret: bytes,
-        session_ttl_seconds: int = 14 * 24 * 60 * 60,
+        session_ttl_seconds: int = 28 * 24 * 60 * 60,
         repository: AccountAuthRepository | None = None,
         now: Callable[[], datetime] | None = None,
         bcrypt_rounds: int = 12,
     ) -> None:
         if len(csrf_secret) < 32:
             raise ValueError("account session secret must be at least 32 bytes")
-        if not 60 <= session_ttl_seconds <= 14 * 24 * 60 * 60:
-            raise ValueError("account session ttl must be between 60 seconds and fourteen days")
+        if not 60 <= session_ttl_seconds <= 28 * 24 * 60 * 60:
+            raise ValueError("account session ttl must be between 60 seconds and twenty-eight days")
         if not 12 <= bcrypt_rounds <= 16:
             raise ValueError("bcrypt rounds must be between 12 and 16")
         self._database = database

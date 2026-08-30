@@ -518,7 +518,7 @@ def load_auth_environment(path: str | Path | None, environment: Mapping[str, str
 @dataclass(frozen=True)
 class AuthConfig:
     session_secret: bytes
-    session_ttl_seconds: int = 14 * 24 * 60 * 60
+    session_ttl_seconds: int = 28 * 24 * 60 * 60
     cookie_path: str = "/openclaw/"
     cookie_secure: bool = True
 
@@ -535,13 +535,13 @@ class AuthConfig:
         session_secret = environment["OPENCLAW_ACCOUNT_SESSION_SECRET"].encode("utf-8")
         if len(session_secret) < 32:
             raise ValueError("auth session secret must be at least 32 bytes")
-        ttl_value = environment.get("OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS", str(14 * 24 * 60 * 60))
+        ttl_value = environment.get("OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS", str(28 * 24 * 60 * 60))
         try:
             session_ttl_seconds = int(ttl_value)
         except ValueError as exc:
             raise ValueError("auth session ttl must be an integer") from exc
-        if not 60 <= session_ttl_seconds <= 14 * 24 * 60 * 60:
-            raise ValueError("auth session ttl must be between 60 seconds and fourteen days")
+        if not 60 <= session_ttl_seconds <= 28 * 24 * 60 * 60:
+            raise ValueError("auth session ttl must be between 60 seconds and twenty-eight days")
         cookie_path = environment.get("OPENCLAW_BOT_CENTER_COOKIE_PATH", "/openclaw/")
         if not cookie_path.startswith("/") or any(character in cookie_path for character in "\r\n;"):
             raise ValueError("auth cookie path is invalid")

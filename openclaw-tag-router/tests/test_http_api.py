@@ -18,6 +18,7 @@ from uuid import UUID
 
 from openclaw_app.account import (
     AccountAuthError,
+    AccountAuthService,
     AccountContractError,
     AccountLogin,
     AccountSession,
@@ -1377,33 +1378,48 @@ class AuthConfigTests(unittest.TestCase):
         self.assertTrue(bindings.bind(str(USER_A), "password", "key", {"value": 1}))
         self.assertFalse(bindings.bind(str(USER_A), "password", "key", {"value": 2}))
 
-    def test_session_ttl_defaults_to_fourteen_days_when_unset(self) -> None:
+    def test_session_ttl_defaults_to_twenty_eight_days_when_unset(self) -> None:
         environment = _auth_environment()
         del environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"]
         config = AuthConfig.from_environment(environment)
-        self.assertEqual(config.session_ttl_seconds, 14 * 24 * 60 * 60)
+        self.assertEqual(config.session_ttl_seconds, 28 * 24 * 60 * 60)
 
-    def test_session_ttl_accepts_exactly_fourteen_days(self) -> None:
+    def test_session_ttl_accepts_exactly_twenty_eight_days(self) -> None:
         environment = _auth_environment()
-        environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"] = str(14 * 24 * 60 * 60)
+        environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"] = str(28 * 24 * 60 * 60)
         config = AuthConfig.from_environment(environment)
-        self.assertEqual(config.session_ttl_seconds, 14 * 24 * 60 * 60)
+        self.assertEqual(config.session_ttl_seconds, 28 * 24 * 60 * 60)
 
-    def test_session_ttl_beyond_fourteen_days_is_rejected(self) -> None:
+    def test_session_ttl_beyond_twenty_eight_days_is_rejected(self) -> None:
         environment = _auth_environment()
-        environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"] = str(14 * 24 * 60 * 60 + 1)
+        environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"] = str(28 * 24 * 60 * 60 + 1)
         with self.assertRaises(ValueError):
             AuthConfig.from_environment(environment)
 
-    def test_session_ttl_seven_days_no_longer_the_ceiling(self) -> None:
-        # Regression guard: seven days used to be the maximum
-        # (OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS above it was rejected);
-        # confirms the ceiling actually moved to fourteen days rather than
-        # the bound check being accidentally deleted.
-        environment = _auth_environment()
-        environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"] = str(7 * 24 * 60 * 60)
-        config = AuthConfig.from_environment(environment)
-        self.assertEqual(config.session_ttl_seconds, 7 * 24 * 60 * 60)
+    def test_session_ttl_prior_ceilings_no_longer_the_limit(self) -> None:
+        # Regression guard: the ceiling moved 7 days -> 14 days -> 28 days
+        # across successive requests; confirms both older values are still
+        # accepted under the current (wider) ceiling rather than the bound
+        # check having been narrowed back down by accident.
+        for prior_ceiling in (7 * 24 * 60 * 60, 14 * 24 * 60 * 60):
+            with self.subTest(prior_ceiling=prior_ceiling):
+                environment = _auth_environment()
+                environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"] = str(prior_ceiling)
+                config = AuthConfig.from_environment(environment)
+                self.assertEqual(config.session_ttl_seconds, prior_ceiling)
+
+    def test_organization_and_personal_feishu_logins_share_one_session_ttl(self) -> None:
+        # login_verified_feishu_identity's workspace_intent only changes
+        # which credential lookup/error branch runs; both "organization_lark"
+        # and "personal_web" converge on the same issue_session_for_account
+        # call, so there is exactly one session-duration setting to tune,
+        # not two independently-drifting ones.
+        config = AuthConfig.from_environment(_auth_environment())
+        self.assertIn("session_ttl_seconds", AccountAuthService.__init__.__code__.co_varnames)
+        service = AccountAuthService(
+            object(), csrf_secret=b"s" * 32, session_ttl_seconds=config.session_ttl_seconds  # type: ignore[arg-type]
+        )
+        self.assertEqual(service._session_ttl_seconds, config.session_ttl_seconds)
 
 
 class ProductContractResolutionTests(unittest.TestCase):

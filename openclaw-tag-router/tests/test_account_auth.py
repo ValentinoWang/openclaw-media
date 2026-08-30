@@ -34,24 +34,27 @@ class AccountAuthSessionTtlValidationTests(unittest.TestCase):
     def _service(self, **kwargs: object) -> AccountAuthService:
         return AccountAuthService(object(), csrf_secret=b"s" * 32, **kwargs)  # type: ignore[arg-type]
 
-    def test_default_session_ttl_is_fourteen_days(self) -> None:
+    def test_default_session_ttl_is_twenty_eight_days(self) -> None:
         service = self._service()
-        self.assertEqual(service._session_ttl_seconds, 14 * 24 * 60 * 60)
+        self.assertEqual(service._session_ttl_seconds, 28 * 24 * 60 * 60)
 
-    def test_fourteen_days_is_accepted(self) -> None:
-        service = self._service(session_ttl_seconds=14 * 24 * 60 * 60)
-        self.assertEqual(service._session_ttl_seconds, 14 * 24 * 60 * 60)
+    def test_twenty_eight_days_is_accepted(self) -> None:
+        service = self._service(session_ttl_seconds=28 * 24 * 60 * 60)
+        self.assertEqual(service._session_ttl_seconds, 28 * 24 * 60 * 60)
 
-    def test_beyond_fourteen_days_is_rejected(self) -> None:
+    def test_beyond_twenty_eight_days_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
-            self._service(session_ttl_seconds=14 * 24 * 60 * 60 + 1)
+            self._service(session_ttl_seconds=28 * 24 * 60 * 60 + 1)
 
-    def test_seven_days_no_longer_rejected_as_the_old_ceiling(self) -> None:
-        # Regression guard: this used to be the maximum (7 * 24 * 60 * 60);
-        # confirms the ceiling actually moved rather than the check being
-        # accidentally deleted.
-        service = self._service(session_ttl_seconds=7 * 24 * 60 * 60)
-        self.assertEqual(service._session_ttl_seconds, 7 * 24 * 60 * 60)
+    def test_seven_and_fourteen_days_no_longer_rejected_as_prior_ceilings(self) -> None:
+        # Regression guard: the ceiling moved 7 days -> 14 days -> 28 days
+        # across successive requests; confirms both older values are still
+        # accepted under the current (wider) ceiling rather than the check
+        # having been narrowed back down by accident.
+        for prior_ceiling in (7 * 24 * 60 * 60, 14 * 24 * 60 * 60):
+            with self.subTest(prior_ceiling=prior_ceiling):
+                service = self._service(session_ttl_seconds=prior_ceiling)
+                self.assertEqual(service._session_ttl_seconds, prior_ceiling)
 
 
 class AccountAuthPostgreSQLTests(unittest.TestCase):
