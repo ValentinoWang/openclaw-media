@@ -7,6 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from common.env import parse_env_file
+
 
 class ReminderService:
     def __init__(
@@ -210,11 +212,7 @@ class ReminderService:
 
     @staticmethod
     def _load_env_file(path: Path, env: dict[str, str]) -> None:
-        if not path.exists():
-            return
-        for raw_line in path.read_text(encoding="utf-8").splitlines():
-            line = raw_line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            env[key.strip()] = value.strip().strip('"').strip("'")
+        # File wins over process env here (dedup pe-01 -- the opposite of
+        # parse_env_file's own caller-default): reminder delivery must use
+        # the reminder.env credentials even over a stale process-env value.
+        env.update(parse_env_file(path))

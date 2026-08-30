@@ -18,6 +18,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 
+from common.env import parse_env_file
 from common.llm_client import generate_json_from_parts, is_model_capacity_failure, model_capacity_failure_detail
 from common.platform_links import platform_display_zh
 from common.llm_settings import LLMProviderSettings, load_profile_llm_settings
@@ -3527,16 +3528,14 @@ print(json.dumps({
 
     @staticmethod
     def _content_flow_env() -> dict[str, str]:
+        # Process env wins over both files (dedup pe-01), and between the
+        # two files .env wins over the secret path -- setdefault preserves
+        # both, since a key already set (by the process, or by the first
+        # file) is left alone.
         env = dict(os.environ)
         for env_path in (CONTENT_FLOW_ROOT / ".env", CONTENT_FLOW_SECRET_ENV_PATH):
-            if not env_path.is_file():
-                continue
-            for raw_line in env_path.read_text(encoding="utf-8").splitlines():
-                line = raw_line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                key, value = line.split("=", 1)
-                env.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+            for key, value in parse_env_file(env_path).items():
+                env.setdefault(key, value)
         return env
 
     @staticmethod

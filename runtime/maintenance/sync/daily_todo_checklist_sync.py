@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from common.env import feishu_reminder_root  # noqa: E402
+from common.env import feishu_reminder_root, parse_env_file  # noqa: E402
 from runtime.maintenance.reminder_runtime import reminder_script_path  # noqa: E402
 
 OPENCLAW_RUNTIME_HOME = Path(os.getenv("OPENCLAW_RUNTIME_HOME") or Path.home() / ".openclaw")
@@ -128,17 +128,13 @@ def sync_candidates(
 
 
 def load_env_files(paths: list[str]) -> dict[str, str]:
+    # File wins over process env here (dedup pe-01 -- the opposite of
+    # parse_env_file's own caller-default), and a later path wins over an
+    # earlier one: each parse_env_file() result is applied in order, so a
+    # later file's assignment overwrites an earlier file's for the same key.
     env = os.environ.copy()
     for raw_path in paths:
-        path = Path(str(raw_path or "").strip()).expanduser()
-        if not path.exists() or not path.is_file():
-            continue
-        for raw_line in path.read_text(encoding="utf-8").splitlines():
-            line = raw_line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            env[key.strip()] = value.strip().strip('"').strip("'")
+        env.update(parse_env_file(str(raw_path or "").strip()))
     return env
 
 
