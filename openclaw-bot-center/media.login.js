@@ -145,6 +145,90 @@ function parseLoginStart(payload) {
 }
 
 let organizationRun = 0
+let entryStateRun = 0
+
+const ENTRY_STATES = new Set(['matched', 'none', 'expired', 'mismatched'])
+
+function setQueryMode(mode) {
+  const url = new URL(window.location.href)
+  if (mode === 'personal' || mode === 'organization') url.searchParams.set('mode', mode)
+  else url.searchParams.delete('mode')
+  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+}
+
+async function fetchEntryState(mode, run) {
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), 5000)
+  try {
+    const response = await fetch(`/openclaw/auth/entry-state?mode=${encodeURIComponent(mode)}`, {
+      credentials: 'same-origin',
+      signal: controller.signal,
+    })
+    const payload = await response.json().catch(() => null)
+    if (run !== entryStateRun) return null
+    if (!response.ok || !payload || payload.schemaVersion !== 'media_auth_entry_state_v1' ||
+      payload.mode !== mode || !ENTRY_STATES.has(payload.state)) return null
+    return payload
+  } catch {
+    return null
+  } finally {
+    window.clearTimeout(timeout)
+  }
+}
+
+function renderEntryState(mode, state, payload = null) {
+  const prefix = `${mode}-entry`
+  const root = document.querySelector(`#${prefix}-state`)
+  if (!root) return
+  root.dataset.state = state
+  root.setAttribute('aria-busy', String(state === 'loading'))
+  const badge = document.querySelector(`#${prefix}-badge`)
+  const labels = {
+    loading: '正在检查',
+    matched: '可直接进入',
+    none: '需要授权',
+    expired: '会话已过期',
+    mismatched: '工作区不匹配',
+    unavailable: '暂时无法确认',
+  }
+  if (badge) badge.textContent = labels[state] || labels.unavailable
+  const visibleView = state === 'unavailable' || state === 'none' || state === 'expired' || state === 'mismatched' ? 'fallback' : state
+  document.querySelectorAll(`#${prefix}-state [data-entry-view]`).forEach((view) => {
+    view.hidden = view.dataset.entryView !== visibleView
+  })
+  if (state === 'matched' && payload?.entry) {
+    setText(`${prefix}-label`, payload.entry.displayLabel || '')
+    setText(`${prefix}-identity`, payload.entry.maskedIdentity || '')
+    const expiry = document.querySelector(`#${prefix}-expires`)
+    if (expiry) {
+      expiry.textContent = payload.entry.expiresAt ? new Date(payload.entry.expiresAt).toLocaleString('zh-CN') : ''
+      expiry.dateTime = payload.entry.expiresAt || ''
+    }
+  }
+  if (state === 'none' || state === 'expired' || state === 'mismatched' || state === 'unavailable') {
+    const message = mode === 'personal'
+      ? state === 'expired' ? '当前个人会话已过期，请使用账号密码登录。' : '当前浏览器没有可用的个人会话，请使用账号密码登录。'
+      : state === 'expired' ? '当前组织会话已过期，请重新使用 Feishu 授权。'
+        : state === 'mismatched' ? '当前会话属于其他工作区，请选择对应的登录方式。'
+          : '当前浏览器没有可用的组织会话，请使用 Feishu 授权。'
+    setText(`${prefix}-fallback-message`, message)
+  }
+}
+
+async function loadEntryState(mode) {
+  const run = ++entryStateRun
+  renderEntryState(mode, 'loading')
+  const payload = await fetchEntryState(mode, run)
+  if (run !== entryStateRun) return
+  const state = payload?.state || 'unavailable'
+  renderEntryState(mode, state, payload)
+  if (mode === 'personal') {
+    setHidden('personal-password-fallback', state !== 'none' && state !== 'expired' && state !== 'mismatched' && state !== 'unavailable')
+  } else {
+    setHidden('organization-oauth-fallback', state === 'matched')
+    if (state !== 'matched') void startOrganizationAuth()
+  }
+}
 
 async function startOrganizationAuth() {
   const run = ++organizationRun
@@ -246,21 +330,24 @@ function initLogin() {
   initPersonalLogin()
 
   const choices = [personalChoice, organizationChoice]
-  const selectMode = (mode, moveFocus = true) => {
+  const selectMode = (mode, moveFocus = true, updateUrl = true) => {
+    if (mode !== 'personal' && mode !== 'organization') return
     const personal = mode === 'personal'
+    if (updateUrl) setQueryMode(mode)
     personalChoice.setAttribute('aria-selected', String(personal))
     organizationChoice.setAttribute('aria-selected', String(!personal))
     personalPanel.hidden = !personal
     organizationPanel.hidden = personal
     if (personal) {
       ++organizationRun
+      setHidden('personal-password-fallback', true)
       setText('choice-status', '已选择个人创作者，请使用平台账号登录。')
       if (moveFocus) document.querySelector('#identifier')?.focus()
     } else {
       setText('choice-status', '已选择组织成员，继续使用 Feishu 完成授权。')
       if (moveFocus) document.querySelector('#organization-back')?.focus()
-      void startOrganizationAuth()
     }
+    void loadEntryState(mode)
   }
 
   choices.forEach((choice, index) => {
@@ -275,8 +362,10 @@ function initLogin() {
   })
   document.querySelector('#personal-back')?.addEventListener('click', () => {
     ++organizationRun
+    ++entryStateRun
     personalPanel.hidden = true
     organizationPanel.hidden = true
+    setQueryMode(null)
     personalChoice.setAttribute('aria-selected', 'false')
     organizationChoice.setAttribute('aria-selected', 'false')
     setText('choice-status', '请选择一个身份继续。')
@@ -284,14 +373,40 @@ function initLogin() {
   })
   document.querySelector('#organization-back')?.addEventListener('click', () => {
     ++organizationRun
+    ++entryStateRun
     personalPanel.hidden = true
     organizationPanel.hidden = true
+    setQueryMode(null)
     personalChoice.setAttribute('aria-selected', 'false')
     organizationChoice.setAttribute('aria-selected', 'false')
     setText('choice-status', '请选择一个身份继续。')
     organizationChoice.focus()
   })
   document.querySelector('#qr-refresh')?.addEventListener('click', () => void startOrganizationAuth())
+  document.querySelector('#personal-entry-fallback')?.addEventListener('click', () => {
+    setHidden('personal-password-fallback', false)
+    document.querySelector('#identifier')?.focus()
+  })
+  document.querySelector('#organization-entry-fallback')?.addEventListener('click', () => {
+    setHidden('organization-oauth-fallback', false)
+    void startOrganizationAuth()
+  })
+  document.querySelector('#personal-entry-continue')?.addEventListener('click', async () => {
+    setBusy(document.querySelector('#personal-entry-continue'), true, '正在进入...', '继续进入')
+    try { window.location.replace(await roleLanding()) } catch { renderEntryState('personal', 'unavailable') }
+    finally { setBusy(document.querySelector('#personal-entry-continue'), false, '正在进入...', '继续进入') }
+  })
+  document.querySelector('#organization-entry-continue')?.addEventListener('click', async () => {
+    setBusy(document.querySelector('#organization-entry-continue'), true, '正在进入...', '继续进入')
+    try { window.location.replace(await roleLanding()) } catch { renderEntryState('organization', 'unavailable') }
+    finally { setBusy(document.querySelector('#organization-entry-continue'), false, '正在进入...', '继续进入') }
+  })
+  window.addEventListener('popstate', () => {
+    const mode = new URLSearchParams(window.location.search).get('mode')
+    if (mode === 'personal' || mode === 'organization') selectMode(mode, false, false)
+  })
+  const initialMode = new URLSearchParams(window.location.search).get('mode')
+  if (initialMode === 'personal' || initialMode === 'organization') selectMode(initialMode, false, false)
 }
 
 function initRegister() {

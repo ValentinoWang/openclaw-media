@@ -112,8 +112,19 @@
   text-decoration: none;
   cursor: pointer;
 }
-.mg-btn:hover { transform: translateY(-2px); }
+.mg-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mg-e2);
+}
 .mg-btn:active { transform: translateY(0); }
+.mg-btn:focus-visible {
+  outline: var(--mg-focus-ring);
+  outline-offset: 2px;
+}
+.mg-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
 /* 填充用 --accent-ink 而不是 --accent-base：
    base 是品牌中间调，白字压上去 studio 3.52 / agent 3.89 / archive 4.45 都不到 AA。
    ink 一档在六个色族上都 ≥ 4.9。 */
@@ -150,6 +161,10 @@
   border-radius: var(--mg-r-lg);
   background: var(--mg-surface);
   box-shadow: var(--mg-e1);
+}
+.mg-metric[data-accent] {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
 }
 .mg-metric:hover { border-color: var(--accent-line); box-shadow: var(--mg-e2); transform: translateY(-2px); }
 .mg-metric-icon {
@@ -206,6 +221,11 @@
   background: var(--mg-surface);
   box-shadow: var(--mg-e2);
 }
+.mg-panel[data-accent] {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.mg-panel[data-accent] .mg-panel-head { border-bottom-color: var(--accent-line); }
 .mg-panel-head {
   display: flex;
   min-height: var(--mg-panel-heading-height);
@@ -238,7 +258,9 @@
   font-weight: 700;
   white-space: nowrap;
 }
+.mg-badge[data-tone='good'],
 .mg-badge[data-tone='success'] { color: var(--mg-primary-dark); border-color: color-mix(in srgb, var(--mg-primary) 32%, var(--mg-border)); background: var(--mg-primary-soft); }
+.mg-badge[data-tone='warn'],
 .mg-badge[data-tone='warning'] { color: var(--mg-warning);      border-color: color-mix(in srgb, var(--mg-warning) 28%, var(--mg-border)); background: var(--mg-warning-soft); }
 .mg-badge[data-tone='danger']  { color: var(--mg-danger);       border-color: color-mix(in srgb, var(--mg-danger) 28%, var(--mg-border));  background: var(--mg-danger-soft); }
 .mg-badge[data-tone='info']    { color: var(--mg-blue);         border-color: color-mix(in srgb, var(--mg-blue) 28%, var(--mg-border));    background: var(--mg-blue-soft); }
@@ -292,6 +314,33 @@
 .mg-state[data-state='permission'] .mg-state-icon,
 .mg-state[data-state='forbidden'] .mg-state-icon { color: var(--mg-warning); background: var(--mg-warning-soft); }
 .mg-state[data-state='notFound'] .mg-state-icon { color: var(--mg-muted); background: var(--mg-surface); }
+.mg-state-art {
+  display: grid;
+  width: min(100%, 180px);
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-items: center;
+  margin-bottom: var(--mg-gap-2);
+  overflow: hidden;
+  padding: var(--mg-gap-2);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--mg-r-md);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
+.mg-state-art > img,
+.mg-state-art > svg {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.mg-state[data-density='compact'] .mg-state-art {
+  width: min(100%, 136px);
+  margin-bottom: var(--mg-gap-1);
+}
 .mg-state strong { color: var(--mg-ink); font-size: var(--mg-text-md); }
 .mg-state[data-density='compact'] strong { font-size: var(--mg-text-sm); }
 .mg-state p { max-width: 52ch; margin: 0; font-size: var(--mg-text-xs); line-height: var(--mg-lh-snug); }
@@ -345,6 +394,27 @@
 .mg-tab[aria-selected='true'] {
   color: var(--mg-primary-dark);
   border-bottom-color: var(--mg-primary);
+}
+.mg-tab[data-variant='pill'],
+.mg-tab.mg-tab-pill {
+  min-height: var(--mg-control-height-sm);
+  margin-right: 0;
+  padding: 0 var(--mg-gap-2);
+  border: 1px solid transparent;
+  border-radius: var(--mg-r-full);
+  background: transparent;
+}
+.mg-tab[data-variant='pill']:hover:not(:disabled),
+.mg-tab.mg-tab-pill:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
+.mg-tab[data-variant='pill'][aria-selected='true'],
+.mg-tab.mg-tab-pill[aria-selected='true'] {
+  border-color: var(--accent-ink);
+  color: var(--mg-surface);
+  background: var(--accent-ink);
 }
 
 /* ---- 搜索框（cluster FE-13，原 7 份 .searchField/.searchBox -> 1 份）----
