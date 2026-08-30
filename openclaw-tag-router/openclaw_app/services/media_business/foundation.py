@@ -824,3 +824,65 @@ def utc_z_text(
     if parsed is None:
         return None
     return parsed.isoformat().replace("+00:00", "Z")
+
+
+# --- Admin-audit idempotency-key lookup (gap1 audit) -------------------------
+#
+# admin_access.py, admin_upstreams.py, and admin_billing.py's Postgres
+# storage classes each independently wrote the same admin_audit
+# idempotency-key SELECT. Canonical is admin_billing's prior copy: the
+# only one (tied with admin_upstreams) whose ORDER BY carries an `id DESC`
+# tiebreak -- admin_access's former copy sorted by `created_at DESC` alone,
+# and since admin_audit.created_at defaults to now(), several rows written
+# in the same transaction can share an identical timestamp, making which
+# row it read back nondeterministic. Folding admin_access onto this shared
+# implementation is a real determinism fix, not just deduplication.
+#
+# Deliberately NOT unified: the three services raise three different
+# exception types at three different HTTP statuses for corrupt metadata
+# (AdminAccessInternalError=500, AdminUpstreamsUnavailable=503,
+# AdminBillingInternalError=500) -- ``on_invalid`` is a zero-argument
+# factory each caller supplies so its own exception type and status survive
+# unchanged. Each storage class keeps its own one-line delegating
+# find_idempotency method; only the query/parsing body moved here.
+
+
+def find_admin_audit_idempotency(
+    connection: Any,
+    actor_user_id: Any,
+    operation: str,
+    key: str,
+    *,
+    on_invalid: Callable[[], Exception],
+) -> dict[str, Any] | None:
+    """Look up a previously-recorded admin_audit row by idempotency key.
+
+    Returns the decoded ``metadata`` mapping, or ``None`` if no matching
+    audit row exists. Raises ``on_invalid()`` if the stored metadata is
+    present but is not valid JSON or does not decode to an object --
+    always a genuine data-corruption case, never a not-found case.
+    """
+    row = connection.execute(
+        """
+        SELECT metadata
+        FROM openclaw_account.admin_audit
+        WHERE actor_user_id = %s
+          AND action = %s
+          AND metadata ->> 'idempotencyKey' = %s
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+        FOR UPDATE
+        """,
+        (actor_user_id, operation, key),
+    ).fetchone()
+    if row is None:
+        return None
+    metadata = row[0]
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except json.JSONDecodeError as exc:
+            raise on_invalid() from exc
+    if not isinstance(metadata, dict):
+        raise on_invalid()
+    return metadata

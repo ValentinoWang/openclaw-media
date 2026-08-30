@@ -148,30 +148,13 @@ class PostgresAdminUpstreamsStorage:
         operation: str,
         key: str,
     ) -> dict[str, Any] | None:
-        row = connection.execute(
-            """
-            SELECT metadata
-            FROM openclaw_account.admin_audit
-            WHERE actor_user_id = %s
-              AND action = %s
-              AND metadata ->> 'idempotencyKey' = %s
-            ORDER BY created_at DESC, id DESC
-            LIMIT 1
-            FOR UPDATE
-            """,
-            (actor_user_id, operation, key),
-        ).fetchone()
-        if row is None:
-            return None
-        metadata = row[0]
-        if isinstance(metadata, str):
-            try:
-                metadata = json.loads(metadata)
-            except json.JSONDecodeError as exc:
-                raise AdminUpstreamsUnavailable("administrator audit metadata is invalid") from exc
-        if not isinstance(metadata, dict):
-            raise AdminUpstreamsUnavailable("administrator audit metadata is invalid")
-        return metadata
+        return foundation.find_admin_audit_idempotency(
+            connection,
+            actor_user_id,
+            operation,
+            key,
+            on_invalid=lambda: AdminUpstreamsUnavailable("administrator audit metadata is invalid"),
+        )
 
     def save_audit(self, connection: Any, **record: Any) -> None:
         write_admin_audit(
