@@ -8,6 +8,7 @@ from typing import Any
 
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.social_runtime import parse_iso_datetime
+from common.text_limits import clean_to_limit as _clean
 from media_model.payloads import normalize_source_url
 from selfmedia.context import build_media_context_for_request, merge_conversation_context
 from selfmedia.business.schedule import LOCAL_TZ
@@ -625,9 +626,3 @@ def _urls(text: str) -> list[str]:
     return re.findall(r"https?://[^\s，。；;）)】]+", text or "")
 
 
-def _clean(value: Any, limit: int) -> str:
-    if isinstance(value, list):
-        text = " ".join(str(item).strip() for item in value if str(item).strip())
-    else:
-        text = str(value or "").strip()
-    return text[:limit]

@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+from common.text_limits import clean_to_limit as _clean_text
 
 from .field_contract import normalize_content_type, normalize_platform, split_tags
 from .llm_generator import call_creation_json
@@ -126,9 +127,3 @@ def _explicit_payload(raw_text: str) -> dict[str, Any]:
     return values
 
 
-def _clean_text(value: Any, limit: int) -> str:
-    if isinstance(value, list):
-        text = " ".join(str(item).strip() for item in value if str(item).strip())
-    else:
-        text = str(value or "").strip()
-    return text[:limit]
