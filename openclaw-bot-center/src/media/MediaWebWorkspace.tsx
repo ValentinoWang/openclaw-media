@@ -53,6 +53,7 @@ import {
   type TaskDraft,
 } from "./task-launch/taskDraft";
 import { secureUuid } from "./secureUuid";
+import { formatDateTime } from "./ui/datetime";
 import { presentCapabilityText } from "./task-launch/fieldPresentation";
 import {
   latestTaskFeed,
@@ -1108,7 +1109,7 @@ function TaskItem({
           </span>
         </div>
         <time>
-          {new Date(task.createdAt).toLocaleString("zh-CN", { hour12: false })}
+          {formatDateTime(task.createdAt)}
         </time>
       </header>
       {isDeletionPreview && ids.length ? (
@@ -1480,10 +1481,7 @@ export function TaskSettlementDetails({
 }
 
 function formatConfirmationExpiry(value: string) {
-  const timestamp = new Date(value);
-  return Number.isNaN(timestamp.getTime())
-    ? "有效期无法读取"
-    : timestamp.toLocaleString("zh-CN", { hour12: false });
+  return formatDateTime(value, { empty: "有效期无法读取", invalid: "有效期无法读取" });
 }
 
 function formatRemainingTime(value: string, nowMs: number) {

@@ -10,7 +10,8 @@ import { BusinessOperationError, callBusinessOperation } from './generatedBusine
 import { loginUrl } from './mediaWebApi'
 import { runStatusLabel, runStatusTone } from './statusPresentation'
 import { PlatformIdentity } from './ui/PlatformIdentity'
-import { mediaTypeDisplayLabel } from './ui/ordinaryDataLabels'
+import { humanStateDisplayLabel, mediaTypeDisplayLabel, qualityDisplayLabel } from './ui/ordinaryDataLabels'
+import { ECHO_INVALID, formatMediumDateTime } from './ui/datetime'
 import styles from './CreationRunDetailPage.module.css'
 
 type SectionName = 'sources' | 'decisions' | 'outputs'
@@ -191,7 +192,7 @@ export default function CreationRunDetailPage() {
       <div className={styles.contentGrid}>
         <section className={styles.editorPanel}>
           <header className={styles.editorHeader}><div><Layers3 size={18} /><span><strong>活稿编辑器</strong><small>{dirtyCount ? `${dirtyCount} 个区块有本地修改` : '与服务器版本一致'}</small></span></div><div><button type="button" disabled={!selected} onClick={toggleLock}>{selected?.locked ? <Lock size={15} /> : <LockOpen size={15} />}{selected?.locked ? '已锁定' : '锁定区块'}</button><button type="button" disabled={!original} onClick={resetSelected}><RefreshCw size={15} />重置区块</button></div></header>
-          {sectionState.status === 'loading' ? <State icon={<LoaderCircle className={styles.spin} size={22} />} title="正在读取脚本与成果" /> : null}
+          {sectionState.status === 'loading' ? <State icon={<LoaderCircle className="spin" size={22} />} title="正在读取脚本与成果" /> : null}
           {sectionState.status === 'error' ? <State icon={<AlertCircle size={22} />} title={sectionState.message} /> : null}
           {sectionState.status === 'ready' && !serverBlocks.length ? <State icon={<FilePenLine size={23} />} title="这条运行还没有可编辑输出" detail="先在任务中心生成并持久化脚本、分镜或发布包。" action={<button type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Sparkles size={16} />继续生成</button>} /> : null}
           {blocks.length ? <div className={styles.editorGrid}>
@@ -226,7 +227,7 @@ export default function CreationRunDetailPage() {
 }
 
 function Brief({ state, run, responseRevision }: { state: LoadState<Sections>; run: Run; responseRevision: number }) {
-  if (state.status === 'loading') return <State icon={<LoaderCircle className={styles.spin} size={21} />} title="正在读取 Brief 与证据" />
+  if (state.status === 'loading') return <State icon={<LoaderCircle className="spin" size={21} />} title="正在读取 Brief 与证据" />
   if (state.status === 'error') return <State icon={<AlertCircle size={21} />} title={state.message} />
   const { sources, decisions } = state.data
   return <div className={styles.briefPanel}><span><MessageSquareText size={17} />项目上下文</span><dl className={styles.metadataList}>
@@ -280,6 +281,13 @@ function kindLabel(kind: EditorKind): string { return editorTabs.find((item) => 
 function slug(value: string): string { return value.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g, '') || 'block' }
 function readSnapshots(key: string): Snapshot[] { try { const value = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(value) ? value.filter((item): item is Snapshot => !!item && typeof item === 'object' && Array.isArray(item.blocks)) : [] } catch { return [] } }
 function readError(error: unknown): string { if (error instanceof BusinessOperationError) { if (error.status === 401 || error.status === 403) return '当前账户无权查看这条运行。'; if (error.status === 404) return '这条创作运行不存在或已不可用。'; return error.message } return error instanceof Error && error.message ? error.message : '创作运行详情加载失败。' }
-function formatDate(value: string): string { const date = new Date(value); return Number.isNaN(date.getTime()) ? value || '暂无' : new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(date) }
-function humanStateLabel(value: string): string { return ({ pending: '待确认', confirmed: '已确认', rejected: '已拒绝' }[value] ?? '状态待确认') }
-function qualityLabel(value: Evidence['qualityStatus']): string { return ({ verified: '已核验', partial: '部分可用', unverified: '待核验', unavailable: '不可用' }[value]) }
+function formatDate(value: string): string { return formatMediumDateTime(value, { empty: '暂无', invalid: ECHO_INVALID }) }
+function humanStateLabel(value: string): string { return humanStateDisplayLabel(value) }
+// This page's evidence-quality wording ("已核验/部分可用/待核验/不可用") differs from the one used
+// on RunsPage/DecisionsPage/ReviewsPage ("已验证/部分验证/未验证/暂不可用" — ordinaryDataLabels'
+// default QUALITY_LABELS). That is a real, already-shipped wording split (cluster LE-05), not a
+// copy/paste bug, so it is kept as an explicit opt-in variant rather than silently switched to
+// the other wording; unifying it is a product-wording decision this change does not make. This
+// also fixes a latent bug: the old version returned `undefined` (rendered as blank) for any value
+// outside the four known ones, instead of a fallback string.
+function qualityLabel(value: Evidence['qualityStatus']): string { return qualityDisplayLabel(value, { variant: 'verification' }) }

@@ -25,6 +25,7 @@ import { loginUrl } from "./mediaWebApi";
 import { useMediaWeb } from "./MediaWebWorkspace";
 import CanonicalDocumentRenderer from "./pages/ordinary/CanonicalDocumentRenderer";
 import { projectStageDisplayLabel, projectStatusDisplayLabel } from "./ui/displayLabels";
+import { formatDateOnly } from "./ui/datetime";
 
 type PersonalProject = {
   publicProjectId: string;
@@ -402,6 +403,5 @@ function mapRequestError<T>(error: unknown, fallback: string): LoadState<T> {
 }
 
 function formatDate(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "时间未记录" : date.toLocaleDateString("zh-CN");
+  return formatDateOnly(value, { empty: "时间未记录", invalid: "时间未记录" });
 }

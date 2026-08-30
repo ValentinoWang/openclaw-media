@@ -5,6 +5,7 @@ import { createMediaJob, createMediaPairCode, loadMediaDevices, loadMediaJobs, l
 import type { Device, LocalAgentJob, PipelineSummary } from "../../generatedProductContract";
 import { PageHeading } from "../../ui/ordinaryPagePrimitives";
 import { pipelineDisplayDescription, pipelineDisplayLabel } from "../../ui/displayLabels";
+import { formatDateTime as sharedFormatDateTime } from "../../ui/datetime";
 import { isCurrentW1Request } from "./w1RequestGuard";
 import styles from "./MediaAgentPage.module.css";
 
@@ -149,7 +150,9 @@ function DevicesTab({ devices, pairLabel, pairCode, setPairLabel, onPair, busy }
 function deviceStateLabel(value: string): string { return value === "online" ? "在线" : value === "offline" ? "离线" : value === "revoked" ? "已停用" : "待连接"; }
 function devicePlatformLabel(value: string): string { return value === "macos" || value === "mac" ? "Mac" : value === "windows" ? "Windows" : value === "linux" ? "Linux" : "其他设备"; }
 function jobStateLabel(value: string): string { return value === "queued" ? "排队中" : value === "leased" ? "已分配" : value === "acknowledged" ? "已确认" : value === "running" ? "运行中" : value === "succeeded" ? "已完成" : value === "blocked" ? "待处理" : value === "failed" ? "失败" : "待处理"; }
-function formatDateTime(value: string | null | undefined): string { return value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "暂无"; }
+// Previously had no NaN guard (an unparseable value rendered the literal string "Invalid Date");
+// delegating to the shared formatter fixes that in passing.
+function formatDateTime(value: string | null | undefined): string { return sharedFormatDateTime(value, { empty: "暂无" }); }
 
 function PanelHeader({ eyebrow, title, count, id }: { eyebrow: string; title: string; count?: string; id?: string }) { return <header className={styles.panelHeader}><div><span className={styles.eyebrow}>{eyebrow}</span><h2 id={id}>{title}</h2></div>{count ? <span className={styles.panelMeta}>{count}</span> : null}</header>; }
 function PageStatus({ title, detail, busy = false, action }: { title: string; detail: string; busy?: boolean; action?: ReactNode }) { return <section className={styles.pageStatus} aria-busy={busy}>{busy ? <LoaderCircle className="spin" size={21} /> : <AlertCircle size={21} />}<div><strong>{title}</strong><span>{detail}</span>{action}</div></section>; }

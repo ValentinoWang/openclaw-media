@@ -40,6 +40,7 @@ import type {
   ArchiveRecord,
 } from "../../generatedProductContract";
 import { PageHeading } from "../../ui/ordinaryPagePrimitives";
+import { formatDateTime } from "../../ui/datetime";
 import styles from "./ArchivesPage.module.css";
 import { isCurrentW1Request } from "./w1RequestGuard";
 
@@ -659,7 +660,7 @@ function DeletionPanel({
               disabled={busy || (Boolean(plan) && !confirmed)}
             >
               {busy ? (
-                <LoaderCircle className={styles.spin} size={16} />
+                <LoaderCircle className="spin" size={16} />
               ) : (
                 <Trash2 size={16} />
               )}
@@ -713,7 +714,7 @@ function Status({
       className={`${styles.stateSurface} ${compact ? styles.compactState : ""}`}
       role={kind === "error" ? "alert" : "status"}
     >
-      <Icon className={kind === "loading" ? styles.spin : ""} size={20} />
+      <Icon className={kind === "loading" ? "spin" : ""} size={20} />
       <strong>{title}</strong>
       <p>{detail}</p>
       {kind === "permission" ? (
@@ -726,10 +727,7 @@ function Status({
   );
 }
 function formatTime(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "时间未提供"
-    : date.toLocaleString("zh-CN", { hour12: false });
+  return formatDateTime(value, { empty: "时间未提供", invalid: "时间未提供" });
 }
 
 function archiveStateLabel(value: string): string {

@@ -9,6 +9,7 @@ import {
 import { copyText } from '../../../lib/clipboard'
 import { EmptyState, PageHeading } from '../../ui/ordinaryPagePrimitives'
 import { inviteStatusDisplayLabel } from '../../ui/ordinaryDataLabels'
+import { ECHO_INVALID, formatDateOnly, formatDateTime as sharedFormatDateTime } from '../../ui/datetime'
 import styles from './InvitesPage.module.css'
 
 type AffiliateProfileResponse = {
@@ -131,14 +132,11 @@ function formatNumber(value: number): string {
 }
 
 function formatDate(value: string | null): string {
-  if (value === null) return '未设置'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('zh-CN')
+  return formatDateOnly(value, { empty: '未设置', invalid: ECHO_INVALID })
 }
 
 function formatDateTime(value: string): string {
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('zh-CN', { hour12: false })
+  return sharedFormatDateTime(value, { empty: ECHO_INVALID, invalid: ECHO_INVALID })
 }
 
 function ResourceStateView({

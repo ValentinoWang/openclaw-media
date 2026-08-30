@@ -56,6 +56,38 @@ const QUALITY_LABELS: Record<string, string> = {
   unavailable: "暂不可用",
 };
 
+// CreationRunDetailPage used a second, differently-worded copy of this same four-value enum
+// ("已核验/部分可用/待核验/不可用" instead of the table above). That is a real, already-shipped
+// wording split (cluster LE-05), not a copy/paste bug -- ReviewsPage/RunsPage/DecisionsPage show
+// one wording, CreationRunDetailPage shows the other, for the same qualityStatus value. Unifying
+// the wording is a product decision, not a dedup one, so both are kept and selected explicitly via
+// qualityDisplayLabel's `variant` option rather than one silently overwriting the other.
+const QUALITY_LABELS_VERIFICATION: Record<string, string> = {
+  verified: "已核验",
+  partial: "部分可用",
+  unverified: "待核验",
+  unavailable: "不可用",
+};
+
+const HUMAN_STATE_LABELS: Record<string, string> = {
+  pending: "待确认",
+  confirmed: "已确认",
+  rejected: "已拒绝",
+};
+
+// Same four values, different fallback behavior across the two pages that had their own copy
+// (cluster LE-14): RunsPage returned a fixed "授权范围待确认" for an unrecognized value, while
+// studio/BusinessPage.tsx's local authorizationLabel echoed the raw value back
+// (`labels[value] ?? (value || '待确认')`), leaking an internal enum into the UI. This table keeps
+// the fixed-fallback behavior (via the shared `label()` helper below), which is the one that
+// upholds this project's "never echo an internal enum to the user" rule.
+const AUTHORIZATION_SCOPE_LABELS: Record<string, string> = {
+  public: "公开合作",
+  private: "定向合作",
+  exclusive: "独家合作",
+  non_exclusive: "非独家合作",
+};
+
 const MEDIA_TYPE_LABELS: Record<string, string> = {
   image: "图片",
   图片: "图片",
@@ -148,8 +180,20 @@ export function inviteStatusDisplayLabel(value: string | null | undefined): stri
   return label(value, INVITE_STATUS_LABELS, "邀请状态待确认");
 }
 
-export function qualityDisplayLabel(value: string | null | undefined): string {
-  return label(value, QUALITY_LABELS, "证据状态待确认");
+export function qualityDisplayLabel(
+  value: string | null | undefined,
+  opts: { variant?: "default" | "verification" } = {},
+): string {
+  const table = opts.variant === "verification" ? QUALITY_LABELS_VERIFICATION : QUALITY_LABELS;
+  return label(value, table, "证据状态待确认");
+}
+
+export function humanStateDisplayLabel(value: string | null | undefined): string {
+  return label(value, HUMAN_STATE_LABELS, "状态待确认");
+}
+
+export function authorizationScopeDisplayLabel(value: string | null | undefined): string {
+  return label(value, AUTHORIZATION_SCOPE_LABELS, "授权范围待确认");
 }
 
 export function mediaTypeDisplayLabel(value: string | null | undefined): string {

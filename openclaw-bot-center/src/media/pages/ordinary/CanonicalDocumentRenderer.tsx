@@ -6,6 +6,8 @@ import type {
   DocumentListBlock,
   DocumentValue,
 } from "../../documentWorkflow";
+import { isPublicId } from "../../identifiers";
+import { ECHO_INVALID, formatDateTime } from "../../ui/datetime";
 import styles from "./CanonicalDocumentRenderer.module.css";
 
 export default function CanonicalDocumentRenderer({ blocks }: { blocks: DocumentBlock[] }) {
@@ -89,7 +91,7 @@ function resourceHref(value: string): string | undefined {
 }
 
 function documentResourceHref(value: string): string | undefined {
-  return /^[A-Za-z0-9_-]{8,160}$/.test(value)
+  return isPublicId(value)
     ? `/openclaw/media/api/document-resources/${encodeURIComponent(value)}`
     : undefined;
 }
@@ -113,6 +115,5 @@ function formatSnapshotValue(value: DocumentValue): string {
 }
 
 function formatTimestamp(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("zh-CN", { hour12: false });
+  return formatDateTime(value, { empty: ECHO_INVALID, invalid: ECHO_INVALID });
 }
