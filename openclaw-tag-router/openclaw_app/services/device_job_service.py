@@ -12,6 +12,16 @@ from .device_job_store import DeviceJobStore
 from .media_device_job_contract import SERVER_API_VERSION, catalog_digest, operation_metadata
 
 
+# Same 1-128 char alphanumeric+"_-" shape as DEVICE_KEY in
+# media_business/foundation.py (r3 canonicalization note: device/Mac
+# transport keys can be shorter than IF2's 8-char floor, so this
+# deliberately keeps its own 1-char floor instead of unifying with
+# IF2_KEY's {8,128}). NOT imported from media_business.foundation: this
+# module is restarted as a standalone process with only the tag-router root
+# on PYTHONPATH (see tests/test_device_job_r1.py's subprocess readback
+# test), and media_business.foundation transitively needs the repository
+# root's `common` package, which that process does not have on its path.
+# The regex text is kept in sync with DEVICE_KEY by hand instead.
 _IDEMPOTENCY_KEY = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 
 
