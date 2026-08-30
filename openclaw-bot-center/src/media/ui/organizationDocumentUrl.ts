@@ -9,6 +9,7 @@
  * link. This module carries the stricter, allow-listed check and is now the
  * single source of truth for both pages.
  */
+import { isPublicId } from "../identifiers";
 
 /** Organization document hosts (and their subdomains) allowed to be linked out to. */
 export const ORGANIZATION_DOCUMENT_HOSTS = [
@@ -36,7 +37,7 @@ export function getOrganizationDocumentUrl(artifact: DocumentLinkedArtifact): st
       !validHost ||
       parts.length !== 2 ||
       !["wiki", "docx", "doc", "docs"].includes(parts[0].toLowerCase()) ||
-      !/^[A-Za-z0-9_-]{8,160}$/u.test(parts[1])
+      !isPublicId(parts[1])
     ) return null;
     return parsed.toString();
   } catch {
