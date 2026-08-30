@@ -37,27 +37,26 @@ TracksError = MediaBusinessError
 
 class TrackInvalidRequest(TracksError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
-class TrackForbidden(TracksError):
+class TrackForbidden(foundation.Forbidden):
     def __init__(self, message: str = "track data is not available for this session") -> None:
-        super().__init__("forbidden", message, status=403)
+        super().__init__(message)
 
 
-class TrackNotFound(TracksError):
-    def __init__(self, message: str = "resource not found") -> None:
-        super().__init__("resource_not_found", message, status=404)
+class TrackNotFound(foundation.NotFound):
+    pass
 
 
-class TrackConflict(TracksError):
+class TrackConflict(foundation.Conflict):
     def __init__(self, message: str = "track relationship revision conflict") -> None:
-        super().__init__("revision_conflict", message, status=409)
+        super().__init__(message)
 
 
-class TrackInternalError(TracksError):
+class TrackInternalError(foundation.InternalError):
     def __init__(self, message: str = "track data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(message)
 
 
 class TrackMonitorUnavailable(TracksError):

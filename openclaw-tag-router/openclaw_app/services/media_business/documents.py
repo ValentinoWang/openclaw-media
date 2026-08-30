@@ -18,6 +18,7 @@ from typing import Any, Protocol
 
 from common.canonical_digest import digest_bytes
 
+from . import foundation
 from .foundation import (
     IF2_KEY,
     MediaBusinessError,
@@ -56,12 +57,12 @@ class DocumentServiceError(MediaBusinessError):
 
 class DocumentInvalidRequest(DocumentServiceError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
 class DocumentNotFound(DocumentServiceError):
     def __init__(self) -> None:
-        super().__init__("resource_not_found", "document resource was not found", status=404)
+        super().__init__(foundation.RESOURCE_NOT_FOUND, "document resource was not found", status=404)
 
 
 class DocumentConflict(DocumentServiceError):
@@ -82,7 +83,7 @@ class UnsupportedDocumentBlock(DocumentServiceError):
 
 class DocumentUnavailable(DocumentServiceError):
     def __init__(self, message: str = "document service is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(foundation.INTERNAL_ERROR, message, status=500)
 
 
 class DatabaseConnection(Protocol):

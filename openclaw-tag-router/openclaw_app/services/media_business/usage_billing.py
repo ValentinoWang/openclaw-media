@@ -34,29 +34,33 @@ _UNITS = {"tokens", "images", "credit"}
 UsageBillingError = MediaBusinessError
 
 
-class UsageBillingForbidden(UsageBillingError):
+class UsageBillingForbidden(foundation.Forbidden):
     def __init__(self, message: str = "billing data is not available for this session") -> None:
-        super().__init__("forbidden", message, status=403)
+        super().__init__(message)
 
 
 class UsageBillingInvalidRequest(UsageBillingError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
-class UsageBillingConflict(UsageBillingError):
+class UsageBillingConflict(foundation.IdempotencyConflict):
+    """Named ``Conflict`` for its 409 status, but its code is the live
+    contract value ``idempotency_conflict`` (see exc-2 audit) -- not the
+    generic ``revision_conflict``."""
+
     def __init__(self, message: str = "idempotency key was reused with a different request") -> None:
-        super().__init__("idempotency_conflict", message, status=409)
+        super().__init__(message)
 
 
-class UsageBillingNotFound(UsageBillingError):
+class UsageBillingNotFound(foundation.NotFound):
     def __init__(self, message: str = "billing account was not found") -> None:
-        super().__init__("resource_not_found", message, status=404)
+        super().__init__(message)
 
 
-class UsageBillingInternalError(UsageBillingError):
+class UsageBillingInternalError(foundation.InternalError):
     def __init__(self, message: str = "billing data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(message)
 
 
 class DatabaseConnection(Protocol):

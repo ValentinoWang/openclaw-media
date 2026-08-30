@@ -42,27 +42,27 @@ class AdminTenantsError(RuntimeError):
 
 class AdminTenantsUnauthorized(AdminTenantsError):
     def __init__(self, message: str = "administrator authentication is required") -> None:
-        super().__init__("authentication_required", message, status=401)
+        super().__init__(foundation.AUTHENTICATION_REQUIRED, message, status=401)
 
 
 class AdminTenantsForbidden(AdminTenantsError):
     def __init__(self, message: str = "administrator permission is required") -> None:
-        super().__init__("forbidden", message, status=403)
+        super().__init__(foundation.FORBIDDEN, message, status=403)
 
 
 class AdminTenantsInvalidRequest(AdminTenantsError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
 class AdminTenantsNotFound(AdminTenantsError):
     def __init__(self, message: str = "resource was not found") -> None:
-        super().__init__("resource_not_found", message, status=404)
+        super().__init__(foundation.RESOURCE_NOT_FOUND, message, status=404)
 
 
 class AdminTenantsInternalError(AdminTenantsError):
     def __init__(self, message: str = "administrator tenant data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(foundation.INTERNAL_ERROR, message, status=500)
 
 
 @dataclass(frozen=True)

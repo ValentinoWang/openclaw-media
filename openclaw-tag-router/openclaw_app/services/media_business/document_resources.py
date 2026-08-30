@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
+from . import foundation
 from .foundation import MediaBusinessError, TenantContext, require_context
 
 
@@ -34,22 +35,22 @@ DocumentResourceError = MediaBusinessError
 
 class DocumentResourceInvalid(DocumentResourceError):
     def __init__(self, message: str = "document resource request is invalid") -> None:
-        super().__init__("invalid_request", message, status=400)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400)
 
 
-class DocumentResourceForbidden(DocumentResourceError):
+class DocumentResourceForbidden(foundation.Forbidden):
     def __init__(self) -> None:
-        super().__init__("forbidden", "document resource is not available for this session", status=403)
+        super().__init__("document resource is not available for this session")
 
 
-class DocumentResourceNotFound(DocumentResourceError):
+class DocumentResourceNotFound(foundation.NotFound):
     def __init__(self) -> None:
-        super().__init__("resource_not_found", "document resource was not found", status=404)
+        super().__init__("document resource was not found")
 
 
-class DocumentResourceUnavailable(DocumentResourceError):
+class DocumentResourceUnavailable(foundation.InternalError):
     def __init__(self) -> None:
-        super().__init__("internal_error", "document resource is unavailable", status=500)
+        super().__init__("document resource is unavailable")
 
 
 class DatabaseConnection(Protocol):

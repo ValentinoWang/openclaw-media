@@ -45,37 +45,40 @@ class AdminBillingError(RuntimeError):
 
 class AdminBillingUnauthorized(AdminBillingError):
     def __init__(self, message: str = "administrator authentication is required") -> None:
-        super().__init__("authentication_required", message, status=401)
+        super().__init__(foundation.AUTHENTICATION_REQUIRED, message, status=401)
 
 
 class AdminBillingForbidden(AdminBillingError):
+    # Code is the live contract value "admin_required", not the generic
+    # "forbidden" every other service uses for this status -- preserve
+    # verbatim (see exc-2 audit divergence #1).
     def __init__(self, message: str = "administrator permission is required") -> None:
         super().__init__("admin_required", message, status=403)
 
 
 class AdminBillingInvalidRequest(AdminBillingError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
 class AdminBillingNotFound(AdminBillingError):
     def __init__(self, message: str = "resource was not found") -> None:
-        super().__init__("resource_not_found", message, status=404)
+        super().__init__(foundation.RESOURCE_NOT_FOUND, message, status=404)
 
 
 class AdminBillingRevisionConflict(AdminBillingError):
     def __init__(self, message: str = "billing revision has changed") -> None:
-        super().__init__("revision_conflict", message, status=409)
+        super().__init__(foundation.REVISION_CONFLICT, message, status=409)
 
 
 class AdminBillingIdempotencyConflict(AdminBillingError):
     def __init__(self, message: str = "idempotency key is bound to another request") -> None:
-        super().__init__("idempotency_conflict", message, status=409)
+        super().__init__(foundation.IDEMPOTENCY_CONFLICT, message, status=409)
 
 
 class AdminBillingInternalError(AdminBillingError):
     def __init__(self, message: str = "administrator billing data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(foundation.INTERNAL_ERROR, message, status=500)
 
 
 @dataclass(frozen=True)

@@ -28,29 +28,87 @@ class MediaBusinessError(Exception):
         super().__init__(message)
 
 
+# --- Error-code literals and semantic base classes (exc-2) ------------------
+#
+# These eight codes were previously re-declared as string literals by every
+# one of the 16 media_business services' own semantic exception subclasses
+# (e.g. `super().__init__("invalid_request", message, status=400, ...)`).
+# They are a frozen wire contract -- asserted in tests/ and rendered by the
+# frontend's publicErrorMessages table -- so this pass only centralizes the
+# literals and the five/nine matching base classes; it does not rename any
+# of them. Four call sites are deliberately NOT normalized onto these codes
+# because they are live, distinct contract values: admin_billing's 403 code
+# "admin_required" (not "forbidden"), documents' 409 code
+# "document_revision_conflict" (frozen by openapi.yaml's errorCodes list,
+# not the generic "revision_conflict"), publishing's "field_unavailable" at
+# status 500 (not the 503 "*_unavailable" codes used elsewhere), and
+# usage_billing's UsageBillingConflict, whose code is "idempotency_conflict"
+# despite the class being named "Conflict".
+
+INVALID_REQUEST = "invalid_request"
+FORBIDDEN = "forbidden"
+RESOURCE_NOT_FOUND = "resource_not_found"
+REVISION_CONFLICT = "revision_conflict"
+IDEMPOTENCY_CONFLICT = "idempotency_conflict"
+UNPROCESSABLE_ENTITY = "unprocessable_entity"
+AUTHENTICATION_REQUIRED = "authentication_required"
+INTERNAL_ERROR = "internal_error"
+
+
 class EmptyState(MediaBusinessError):
     def __init__(self):
         super().__init__("empty", "no records")
 
 
 class NotFound(MediaBusinessError):
-    def __init__(self):
-        super().__init__("resource_not_found", "resource not found")
+    def __init__(self, message: str = "resource not found", *, status: int = 404):
+        super().__init__(RESOURCE_NOT_FOUND, message, status=status)
 
 
 class Forbidden(MediaBusinessError):
-    def __init__(self, message: str = "not permitted"):
-        super().__init__("forbidden", message)
+    def __init__(self, message: str = "not permitted", *, status: int = 403):
+        super().__init__(FORBIDDEN, message, status=status)
 
 
 class Conflict(MediaBusinessError):
-    def __init__(self, message: str = "revision conflict"):
-        super().__init__("revision_conflict", message)
+    def __init__(self, message: str = "revision conflict", *, status: int = 409):
+        super().__init__(REVISION_CONFLICT, message, status=status)
+
+
+class IdempotencyConflict(MediaBusinessError):
+    def __init__(
+        self,
+        message: str = "idempotency key was already used for another request",
+        *,
+        status: int = 409,
+    ):
+        super().__init__(IDEMPOTENCY_CONFLICT, message, status=status)
+
+
+class Unprocessable(MediaBusinessError):
+    def __init__(self, message: str = "unprocessable entity", *, status: int = 422):
+        super().__init__(UNPROCESSABLE_ENTITY, message, status=status)
+
+
+class Unauthorized(MediaBusinessError):
+    def __init__(self, message: str = "authentication is required", *, status: int = 401):
+        super().__init__(AUTHENTICATION_REQUIRED, message, status=status)
+
+
+class InternalError(MediaBusinessError):
+    def __init__(self, message: str = "internal error", *, status: int = 500):
+        super().__init__(INTERNAL_ERROR, message, status=status)
 
 
 class Validation(MediaBusinessError):
-    def __init__(self, message: str = "invalid request", *, code: str = "validation_error"):
-        super().__init__(code, message)
+    def __init__(
+        self,
+        message: str = "invalid request",
+        *,
+        code: str = "validation_error",
+        status: int = 400,
+    ):
+        super().__init__(code, message, status=status)
 
 
 class ProtectedDocumentBlock(MediaBusinessError):

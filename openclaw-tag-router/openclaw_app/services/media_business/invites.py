@@ -32,24 +32,24 @@ _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 InvitesError = MediaBusinessError
 
 
-class InvitesForbidden(InvitesError):
+class InvitesForbidden(foundation.Forbidden):
     def __init__(self, message: str = "invite data is not available for this session") -> None:
-        super().__init__("forbidden", message, status=403)
+        super().__init__(message)
 
 
-class InvitesNotFound(InvitesError):
+class InvitesNotFound(foundation.NotFound):
     def __init__(self, message: str = "invite profile was not found") -> None:
-        super().__init__("resource_not_found", message, status=404)
+        super().__init__(message)
 
 
 class InvitesInvalidRequest(InvitesError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
-class InvitesInternalError(InvitesError):
+class InvitesInternalError(foundation.InternalError):
     def __init__(self, message: str = "invite data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(message)
 
 
 @dataclass(frozen=True)

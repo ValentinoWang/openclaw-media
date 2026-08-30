@@ -43,34 +43,34 @@ _LARK_DOCUMENT_PATH = re.compile(r"^/(wiki|docx)/([A-Za-z0-9_-]{8,160})$")
 ReviewsError = MediaBusinessError
 
 
-class ReviewsForbidden(ReviewsError):
+class ReviewsForbidden(foundation.Forbidden):
     def __init__(self) -> None:
-        super().__init__("forbidden", "review data is not available for this session", status=403)
+        super().__init__("review data is not available for this session")
 
 
-class ReviewsNotFound(ReviewsError):
+class ReviewsNotFound(foundation.NotFound):
     def __init__(self) -> None:
-        super().__init__("resource_not_found", "review resource was not found", status=404)
+        super().__init__("review resource was not found")
 
 
 class ReviewsInvalidRequest(ReviewsError):
     def __init__(self, message: str) -> None:
-        super().__init__("invalid_request", message, status=400)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400)
 
 
-class ReviewsConflict(ReviewsError):
+class ReviewsConflict(foundation.Conflict):
     def __init__(self, message: str = "review revision conflict") -> None:
-        super().__init__("revision_conflict", message, status=409)
+        super().__init__(message)
 
 
-class ReviewsUnprocessable(ReviewsError):
+class ReviewsUnprocessable(foundation.Unprocessable):
     def __init__(self, message: str) -> None:
-        super().__init__("unprocessable_entity", message, status=422)
+        super().__init__(message)
 
 
-class ReviewsInternalError(ReviewsError):
+class ReviewsInternalError(foundation.InternalError):
     def __init__(self, message: str = "review data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(message)
 
 
 class DatabaseConnection(Protocol):

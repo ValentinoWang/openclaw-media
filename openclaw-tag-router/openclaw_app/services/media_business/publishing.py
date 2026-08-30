@@ -48,27 +48,27 @@ PublishingError = MediaBusinessError
 
 class PublishingInvalidRequest(PublishingError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
-class PublishingForbidden(PublishingError):
+class PublishingForbidden(foundation.Forbidden):
     def __init__(self, message: str = "publishing data is not available for this session") -> None:
-        super().__init__("forbidden", message, status=403)
+        super().__init__(message)
 
 
-class PublishingNotFound(PublishingError):
+class PublishingNotFound(foundation.NotFound):
     def __init__(self, message: str = "publishing resource was not found") -> None:
-        super().__init__("resource_not_found", message, status=404)
+        super().__init__(message)
 
 
-class PublishingConflict(PublishingError):
+class PublishingConflict(foundation.Conflict):
     def __init__(self, message: str = "publishing revision conflict") -> None:
-        super().__init__("revision_conflict", message, status=409)
+        super().__init__(message)
 
 
-class PublishingUnprocessable(PublishingError):
+class PublishingUnprocessable(foundation.Unprocessable):
     def __init__(self, message: str) -> None:
-        super().__init__("unprocessable_entity", message, status=422)
+        super().__init__(message)
 
 
 class PublishingFieldUnavailable(PublishingError):
@@ -76,9 +76,9 @@ class PublishingFieldUnavailable(PublishingError):
         super().__init__("field_unavailable", message, status=500)
 
 
-class PublishingInternalError(PublishingError):
+class PublishingInternalError(foundation.InternalError):
     def __init__(self, message: str = "publishing data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(message)
 
 
 class DatabaseConnection(Protocol):

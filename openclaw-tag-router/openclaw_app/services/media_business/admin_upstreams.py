@@ -10,6 +10,7 @@ from typing import Any, Protocol
 from uuid import UUID, uuid4
 
 from ...account.admin_audit import write_admin_audit
+from . import foundation
 from .foundation import IF2_KEY, idempotency_key
 
 
@@ -30,32 +31,32 @@ class AdminUpstreamsError(RuntimeError):
 
 class AdminUpstreamsUnauthorized(AdminUpstreamsError):
     def __init__(self) -> None:
-        super().__init__("authentication_required", "administrator authentication is required", status=401)
+        super().__init__(foundation.AUTHENTICATION_REQUIRED, "administrator authentication is required", status=401)
 
 
 class AdminUpstreamsForbidden(AdminUpstreamsError):
     def __init__(self, message: str = "administrator permission is required") -> None:
-        super().__init__("forbidden", message, status=403)
+        super().__init__(foundation.FORBIDDEN, message, status=403)
 
 
 class AdminUpstreamsNotFound(AdminUpstreamsError):
     def __init__(self) -> None:
-        super().__init__("resource_not_found", "resource was not found", status=404)
+        super().__init__(foundation.RESOURCE_NOT_FOUND, "resource was not found", status=404)
 
 
 class AdminUpstreamsInvalidRequest(AdminUpstreamsError):
     def __init__(self, message: str = "invalid upstream request") -> None:
-        super().__init__("invalid_request", message, status=400)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400)
 
 
 class AdminUpstreamsRevisionConflict(AdminUpstreamsError):
     def __init__(self) -> None:
-        super().__init__("revision_conflict", "resource revision has changed", status=409)
+        super().__init__(foundation.REVISION_CONFLICT, "resource revision has changed", status=409)
 
 
 class AdminUpstreamsIdempotencyConflict(AdminUpstreamsError):
     def __init__(self) -> None:
-        super().__init__("idempotency_conflict", "idempotency key is bound to another request", status=409)
+        super().__init__(foundation.IDEMPOTENCY_CONFLICT, "idempotency key is bound to another request", status=409)
 
 
 class AdminUpstreamsUnavailable(AdminUpstreamsError):

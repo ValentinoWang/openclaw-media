@@ -26,39 +26,39 @@ _UTC = timezone.utc
 AdminAccessError = MediaBusinessError
 
 
-class AdminAccessUnauthorized(AdminAccessError):
+class AdminAccessUnauthorized(foundation.Unauthorized):
     def __init__(self, message: str = "administrator authentication is required") -> None:
-        super().__init__("authentication_required", message, status=401)
+        super().__init__(message)
 
 
-class AdminAccessForbidden(AdminAccessError):
+class AdminAccessForbidden(foundation.Forbidden):
     def __init__(self, message: str = "administrator permission is required") -> None:
-        super().__init__("forbidden", message, status=403)
+        super().__init__(message)
 
 
-class AdminAccessNotFound(AdminAccessError):
+class AdminAccessNotFound(foundation.NotFound):
     def __init__(self, message: str = "resource was not found") -> None:
-        super().__init__("resource_not_found", message, status=404)
+        super().__init__(message)
 
 
 class AdminAccessInvalidRequest(AdminAccessError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
-class AdminAccessRevisionConflict(AdminAccessError):
+class AdminAccessRevisionConflict(foundation.Conflict):
     def __init__(self, message: str = "resource revision has changed") -> None:
-        super().__init__("revision_conflict", message, status=409)
+        super().__init__(message)
 
 
-class AdminAccessIdempotencyConflict(AdminAccessError):
+class AdminAccessIdempotencyConflict(foundation.IdempotencyConflict):
     def __init__(self, message: str = "idempotency key is bound to another request") -> None:
-        super().__init__("idempotency_conflict", message, status=409)
+        super().__init__(message)
 
 
-class AdminAccessInternalError(AdminAccessError):
+class AdminAccessInternalError(foundation.InternalError):
     def __init__(self, message: str = "administrator access data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(message)
 
 
 @dataclass(frozen=True)

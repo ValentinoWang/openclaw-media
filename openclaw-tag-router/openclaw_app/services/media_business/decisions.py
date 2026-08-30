@@ -32,34 +32,34 @@ _CURSOR_AAD = b"media-web-b04-decisions-v1"
 DecisionsError = MediaBusinessError
 
 
-class DecisionsForbidden(DecisionsError):
+class DecisionsForbidden(foundation.Forbidden):
     def __init__(self) -> None:
-        super().__init__("forbidden", "decision data is not available for this session", status=403)
+        super().__init__("decision data is not available for this session")
 
 
-class DecisionsNotFound(DecisionsError):
+class DecisionsNotFound(foundation.NotFound):
     def __init__(self) -> None:
-        super().__init__("resource_not_found", "decision resource was not found", status=404)
+        super().__init__("decision resource was not found")
 
 
 class DecisionsInvalidRequest(DecisionsError):
     def __init__(self, message: str) -> None:
-        super().__init__("invalid_request", message, status=400)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400)
 
 
-class DecisionsConflict(DecisionsError):
+class DecisionsConflict(foundation.Conflict):
     def __init__(self, message: str = "decision revision conflict") -> None:
-        super().__init__("revision_conflict", message, status=409)
+        super().__init__(message)
 
 
-class DecisionsUnprocessable(DecisionsError):
+class DecisionsUnprocessable(foundation.Unprocessable):
     def __init__(self, message: str) -> None:
-        super().__init__("unprocessable_entity", message, status=422)
+        super().__init__(message)
 
 
-class DecisionsInternalError(DecisionsError):
+class DecisionsInternalError(foundation.InternalError):
     def __init__(self, message: str = "decision data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(message)
 
 
 class DatabaseConnection(Protocol):

@@ -42,22 +42,22 @@ AssetsError = MediaBusinessError
 
 class AssetInvalidRequest(AssetsError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
-class AssetForbidden(AssetsError):
+class AssetForbidden(foundation.Forbidden):
     def __init__(self, message: str = "asset data is not available for this session") -> None:
-        super().__init__("forbidden", message, status=403)
+        super().__init__(message)
 
 
-class AssetNotFound(AssetsError):
+class AssetNotFound(foundation.NotFound):
     def __init__(self, message: str = "asset not found") -> None:
-        super().__init__("resource_not_found", message, status=404)
+        super().__init__(message)
 
 
-class AssetInternalError(AssetsError):
+class AssetInternalError(foundation.InternalError):
     def __init__(self, message: str = "asset data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(message)
 
 
 @dataclass(frozen=True)

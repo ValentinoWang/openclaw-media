@@ -48,34 +48,34 @@ _CURSOR_AAD = b"media-web-b05-runs-v1"
 RunsError = MediaBusinessError
 
 
-class RunsForbidden(RunsError):
+class RunsForbidden(foundation.Forbidden):
     def __init__(self) -> None:
-        super().__init__("forbidden", "run data is not available for this session", status=403)
+        super().__init__("run data is not available for this session")
 
 
-class RunsNotFound(RunsError):
+class RunsNotFound(foundation.NotFound):
     def __init__(self) -> None:
-        super().__init__("resource_not_found", "run resource was not found", status=404)
+        super().__init__("run resource was not found")
 
 
 class RunsInvalidRequest(RunsError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
-class RunsConflict(RunsError):
+class RunsConflict(foundation.Conflict):
     def __init__(self, message: str = "revision conflict") -> None:
-        super().__init__("revision_conflict", message, status=409)
+        super().__init__(message)
 
 
 class RunsUnprocessable(RunsError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("unprocessable_entity", message, status=422, field=field)
+        super().__init__(foundation.UNPROCESSABLE_ENTITY, message, status=422, field=field)
 
 
-class RunsInternalError(RunsError):
+class RunsInternalError(foundation.InternalError):
     def __init__(self, message: str = "run data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(message)
 
 
 class DatabaseConnection(Protocol):

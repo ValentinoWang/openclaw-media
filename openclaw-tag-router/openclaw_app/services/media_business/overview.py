@@ -56,19 +56,19 @@ _FEISHU_DOCUMENT_ROOT_HOSTS = frozenset(DEFAULT_FEISHU_DOC_HOSTS)
 OverviewError = MediaBusinessError
 
 
-class OverviewForbidden(OverviewError):
+class OverviewForbidden(foundation.Forbidden):
     def __init__(self, message: str = "overview data is not available for this session") -> None:
-        super().__init__("forbidden", message, status=403)
+        super().__init__(message)
 
 
-class OverviewNotFound(OverviewError):
+class OverviewNotFound(foundation.NotFound):
     def __init__(self, message: str = "overview resource was not found") -> None:
-        super().__init__("resource_not_found", message, status=404)
+        super().__init__(message)
 
 
 class OverviewInvalidRequest(OverviewError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
-        super().__init__("invalid_request", message, status=400, field=field)
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
 class OverviewConflict(OverviewError):
@@ -78,17 +78,17 @@ class OverviewConflict(OverviewError):
         *,
         field: str | None = None,
     ) -> None:
-        super().__init__("revision_conflict", message, status=409, field=field)
+        super().__init__(foundation.REVISION_CONFLICT, message, status=409, field=field)
 
 
-class OverviewIdempotencyConflict(OverviewConflict):
+class OverviewIdempotencyConflict(foundation.IdempotencyConflict):
     def __init__(self, message: str = "idempotency key was already used for another request") -> None:
-        OverviewError.__init__(self, "idempotency_conflict", message, status=409)
+        super().__init__(message)
 
 
-class OverviewInternalError(OverviewError):
+class OverviewInternalError(foundation.InternalError):
     def __init__(self, message: str = "overview data is unavailable") -> None:
-        super().__init__("internal_error", message, status=500)
+        super().__init__(message)
 
 
 class DatabaseConnection(Protocol):
