@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import hashlib
 import ipaddress
 from typing import Any
 from urllib.parse import urlparse
-
-from common.social_runtime import feishu_plain_text as _shared_feishu_plain_text
 
 from .capability_registry import MEDIA_GROWTH_LABEL_CAPABILITIES, get_capability_spec
 from .contracts import (
@@ -14,6 +11,7 @@ from .contracts import (
     VISIBLE_VISIBILITIES,
     utc_now_iso,
 )
+from .public_projection import projection_id as _projection_id, projection_text as _text
 
 
 def is_projection_eligible(payload: dict[str, Any], *, maintainer: bool = False) -> bool:
@@ -27,22 +25,6 @@ def is_projection_eligible(payload: dict[str, Any], *, maintainer: bool = False)
         and bool(payload.get("display_title"))
         and bool(payload.get("display_summary"))
     )
-
-
-def _text(value: Any) -> str:
-    # bool and list/tuple/set are handled here, ahead of the shared
-    # renderer, and recurse through _text (not feishu_plain_text) so a
-    # bool anywhere inside a nested list/tuple/set keeps this
-    # projection's own wording at every depth: feishu_plain_text formats
-    # a bool as "True"/"False" (Python's str()) and only recurses into
-    # list, not tuple/set -- both differ from this projection's
-    # established "true"/"false" and tuple/set-join wording, which is
-    # kept unchanged rather than folded into the shared default.
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, (list, tuple, set)):
-        return " / ".join(item for item in (_text(entry) for entry in value) if item)
-    return _shared_feishu_plain_text(value, list_separator=" / ", unknown_dict="empty")
 
 
 def _number(value: Any) -> float | int | None:
@@ -69,11 +51,6 @@ def _safe_url(value: Any) -> str:
     except ValueError:
         pass
     return text
-
-
-def _projection_id(kind: str, raw_id: Any) -> str:
-    digest = hashlib.sha256(f"{kind}:{_text(raw_id)}".encode("utf-8")).hexdigest()[:16]
-    return f"{kind}_{digest}"
 
 
 def source_asset_public_id(raw_id: Any) -> str:
