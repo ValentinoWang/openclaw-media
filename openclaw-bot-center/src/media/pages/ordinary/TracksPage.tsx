@@ -29,6 +29,8 @@ import { loginUrl } from "../../mediaWebApi";
 import { newIdempotencyKey } from "../../idempotency";
 import { PageHeading } from "../../ui/ordinaryPagePrimitives";
 import { ECHO_INVALID, formatDateTime } from "../../ui/datetime";
+import { Metric } from "../../ui/Metric";
+import { classNames } from "../../ui/classNames";
 import {
   creatorRoleDisplayLabel,
   formatFitScore,
@@ -1144,10 +1146,10 @@ function BenchmarkInspector({
 
             <InspectorSection title="账号指标" icon={<BarChart3 size={15} aria-hidden="true" />}>
               <div className={styles.metricGrid}>
-                <Metric label="粉丝数" value="未记录" />
-                <Metric label="互动质量" value="未记录" />
-                <Metric label="商务契合度" value="未记录" />
-                <Metric label="档案更新" value={formatDate(creator.updatedAt)} />
+                <Metric className={styles.metric} label="粉丝数" value="未记录" />
+                <Metric className={styles.metric} label="互动质量" value="未记录" />
+                <Metric className={styles.metric} label="商务契合度" value="未记录" />
+                <Metric className={styles.metric} label="档案更新" value={formatDate(creator.updatedAt)} />
               </div>
             </InspectorSection>
 
@@ -1541,11 +1543,11 @@ function TrackInspector({
 
             <InspectorSection title="账号布局" icon={<WalletCards size={15} aria-hidden="true" />}>
               <div className={styles.layoutMetrics}>
-                <Metric label="自有账号" value={String(trackAccounts.length)} emphasized />
+                <Metric className={classNames(styles.metric, styles.metricEmphasized)} label="自有账号" value={String(trackAccounts.length)} />
                 <Metric
+                  className={classNames(styles.metric, styles.metricEmphasized)}
                   label="对标账号"
                   value={String(new Set(trackRelationships.map((relationship) => relationship.publicCreatorId)).size)}
-                  emphasized
                 />
               </div>
               <div className={styles.roleBreakdown}>
@@ -1735,23 +1737,6 @@ function InspectorSection({
       <header>{icon}<h3>{title}</h3></header>
       <div className={styles.inspectorSectionBody}>{children}</div>
     </section>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  emphasized = false,
-}: {
-  label: string;
-  value: string;
-  emphasized?: boolean;
-}) {
-  return (
-    <div className={[styles.metric, emphasized ? styles.metricEmphasized : ""].join(" ")}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
   );
 }
 
