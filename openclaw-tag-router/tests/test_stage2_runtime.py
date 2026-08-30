@@ -10,11 +10,6 @@ from openclaw_app.services.stage2_context import (
     OrganizationBinding,
     ServerSessionFacts,
 )
-from openclaw_app.services.stage2_external_document import (
-    BindingIdentity,
-    ExternalReadbackOutcome,
-    ExternalWriteOutcome,
-)
 from openclaw_app.services.stage2_runtime import (
     IdempotencyConflict,
     InMemoryReceiptStore,
@@ -23,128 +18,20 @@ from openclaw_app.services.stage2_runtime import (
 )
 from openclaw_app.services.stage2_personal_pipeline import SQLitePersonalContentStore
 
+from _fixtures.stage2 import (
+    FakeOrganizationAdapter,
+    FakePersonalWriter,
+    organization_binding,
+    organization_session,
+    organization_sources,
+    personal_session,
+    personal_sources,
+)
+
 
 PERSONAL_TENANT = "11111111-1111-4111-8111-111111111111"
 ORG_TENANT = "22222222-2222-4222-8222-222222222222"
 OTHER_TENANT = "33333333-3333-4333-8333-333333333333"
-
-
-def personal_session() -> ServerSessionFacts:
-    return ServerSessionFacts(
-        session_id="session-personal",
-        user_id="user-personal",
-        tenant_id=PERSONAL_TENANT,
-        tenant_type="personal",
-        member_tenant_id=PERSONAL_TENANT,
-    )
-
-
-def organization_session(*, tenant_id: str = ORG_TENANT, generation: int = 5) -> ServerSessionFacts:
-    return ServerSessionFacts(
-        session_id="session-organization",
-        user_id="user-organization",
-        tenant_id=tenant_id,
-        tenant_type="organization",
-        member_tenant_id=tenant_id,
-        binding_generation=generation,
-    )
-
-
-def organization_binding(*, tenant_id: str = ORG_TENANT, binding_id: str = "binding-org", generation: int = 5) -> BindingIdentity:
-    return BindingIdentity(tenant_id, binding_id, generation)
-
-
-def personal_sources(tenant_id: str = PERSONAL_TENANT) -> list[dict[str, object]]:
-    return [
-        {
-            "sourceId": "material-1",
-            "sourceKind": "personal_material",
-            "tenantId": tenant_id,
-            "workspaceMode": "personal_web",
-            "bodyAuthority": "internal",
-            "payload": {"title": "Material"},
-        },
-        {
-            "sourceId": "memory-1",
-            "sourceKind": "research_brief",
-            "tenantId": tenant_id,
-            "workspaceMode": "personal_web",
-            "bodyAuthority": "internal",
-            "payload": {"note": "Remember"},
-        },
-    ]
-
-
-def organization_sources(
-    tenant_id: str = ORG_TENANT,
-    binding_id: str = "binding-org",
-    generation: int = 5,
-) -> list[dict[str, object]]:
-    return [
-        {
-            "sourceId": "brand-1",
-            "sourceKind": "organization_material",
-            "tenantId": tenant_id,
-            "workspaceMode": "organization_lark",
-            "bodyAuthority": "lark",
-            "bindingId": binding_id,
-            "bindingGeneration": generation,
-            "binding": {"tenantId": tenant_id},
-            "payload": {"tone": "direct"},
-        }
-    ]
-
-
-class FakePersonalWriter:
-    def __init__(self, *, status: str = "succeeded", registration_status: str = "registered") -> None:
-        self.status = status
-        self.registration_status = registration_status
-        self.calls = 0
-
-    def write(self, context, content, capability_id, idempotency_key, context_receipt=None):
-        self.calls += 1
-        return {
-            "status": self.status,
-            "artifact_ref": "personal-artifact-1",
-            "remote_ref": None,
-            "registration": {"status": self.registration_status},
-            "readback": {"status": "confirmed" if self.status == "succeeded" else "failed"},
-        }
-
-
-class FakeOrganizationAdapter:
-    def __init__(self, *, write_status: str = "succeeded", readback_status: str = "confirmed") -> None:
-        self.write_status = write_status
-        self.readback_status = readback_status
-        self.write_calls = 0
-        self.readback_calls = 0
-
-    def write(self, request):
-        self.write_calls += 1
-        binding = request.binding
-        return ExternalWriteOutcome(
-            self.write_status,
-            "doc-org-1",
-            "remote-1",
-            binding.tenant_id,
-            binding.binding_id,
-            binding.binding_generation,
-            request.content_digest,
-            None if self.write_status == "succeeded" else "write_failed",
-        )
-
-    def readback(self, request, write):
-        self.readback_calls += 1
-        binding = request.binding
-        return ExternalReadbackOutcome(
-            self.readback_status,
-            write.remote_ref,
-            write.remote_revision,
-            binding.tenant_id,
-            binding.binding_id,
-            binding.binding_generation,
-            request.content_digest,
-        )
 
 
 def make_runtime(*, personal_writer=None, organization_adapter=None, store=None, personal_store=None, clock=None) -> Stage2Runtime:

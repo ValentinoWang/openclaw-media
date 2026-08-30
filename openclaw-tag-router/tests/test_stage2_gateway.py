@@ -11,11 +11,6 @@ from openclaw_app.services.stage2_context import (
     DOCUMENT_WRITER_FIXTURE_ID,
     ServerSessionFacts,
 )
-from openclaw_app.services.stage2_external_document import (
-    BindingIdentity,
-    ExternalReadbackOutcome,
-    ExternalWriteOutcome,
-)
 from openclaw_app.services.stage2_gateway import (
     OrganizationServerContext,
     Stage2Gateway,
@@ -31,112 +26,28 @@ from openclaw_app.services.stage2_server_context import (
     current_request_session_token,
 )
 
+from _fixtures.stage2 import (
+    FakeOrganizationAdapter as _OrganizationAdapter,
+    FakePersonalWriter as _PersonalWriter,
+    organization_binding,
+    organization_session,
+    organization_sources as _organization_sources,
+    personal_session as _personal_session,
+    personal_sources as _personal_sources,
+)
+
 
 PERSONAL_TENANT = "11111111-1111-4111-8111-111111111111"
 ORG_TENANT = "22222222-2222-4222-8222-222222222222"
 
 
-def _personal_session() -> ServerSessionFacts:
-    return ServerSessionFacts(
-        session_id="session-personal",
-        user_id="user-personal",
-        tenant_id=PERSONAL_TENANT,
-        tenant_type="personal",
-        member_tenant_id=PERSONAL_TENANT,
-    )
-
-
 def _organization_context() -> OrganizationServerContext:
-    session = ServerSessionFacts(
-        session_id="session-organization",
-        user_id="user-organization",
-        tenant_id=ORG_TENANT,
-        tenant_type="organization",
-        member_tenant_id=ORG_TENANT,
-        binding_generation=5,
-    )
     return OrganizationServerContext(
-        session=session,
-        binding=BindingIdentity(ORG_TENANT, "binding-org", 5),
+        session=organization_session(),
+        binding=organization_binding(),
         credential_generation="credential-9",
         trusted_open_url="https://feishu.cn/docx/doc-org-1",
     )
-
-
-def _personal_sources() -> list[dict[str, object]]:
-    return [
-        {
-            "sourceId": "material-1",
-            "sourceKind": "personal_material",
-            "tenantId": PERSONAL_TENANT,
-            "workspaceMode": "personal_web",
-            "bodyAuthority": "internal",
-            "payload": {"title": "Material"},
-        }
-    ]
-
-
-def _organization_sources() -> list[dict[str, object]]:
-    return [
-        {
-            "sourceId": "brand-1",
-            "sourceKind": "organization_material",
-            "tenantId": ORG_TENANT,
-            "workspaceMode": "organization_lark",
-            "bodyAuthority": "lark",
-            "bindingId": "binding-org",
-            "bindingGeneration": 5,
-            "binding": {"tenantId": ORG_TENANT},
-            "payload": {"tone": "direct"},
-        }
-    ]
-
-
-class _PersonalWriter:
-    def __init__(self) -> None:
-        self.calls = 0
-
-    def write(self, context, content, capability_id, idempotency_key, context_receipt=None):
-        self.calls += 1
-        return {
-            "status": "succeeded",
-            "artifact_ref": "personal-artifact-1",
-            "remote_ref": None,
-            "registration": {"status": "registered"},
-            "readback": {"status": "confirmed"},
-        }
-
-
-class _OrganizationAdapter:
-    def __init__(self) -> None:
-        self.write_calls = 0
-        self.readback_calls = 0
-
-    def write(self, request):
-        self.write_calls += 1
-        binding = request.binding
-        return ExternalWriteOutcome(
-            "succeeded",
-            "doc-org-1",
-            "1",
-            binding.tenant_id,
-            binding.binding_id,
-            binding.binding_generation,
-            request.content_digest,
-        )
-
-    def readback(self, request, write):
-        self.readback_calls += 1
-        binding = request.binding
-        return ExternalReadbackOutcome(
-            "confirmed",
-            write.remote_ref,
-            write.remote_revision,
-            binding.tenant_id,
-            binding.binding_id,
-            binding.binding_generation,
-            request.content_digest,
-        )
 
 
 def _runtime(writer: _PersonalWriter | None = None, adapter: _OrganizationAdapter | None = None) -> Stage2Runtime:

@@ -18,10 +18,6 @@ from openclaw_app.services.stage2_context import (
     ORGANIZATION_AUTHORITY_MODE,
     PERSONAL_AUTHORITY_MODE,
 )
-from openclaw_app.services.stage2_external_document import (
-    ExternalReadbackOutcome,
-    ExternalWriteOutcome,
-)
 from openclaw_app.services.stage2_gateway import Stage2GatewayError
 from openclaw_app.services.stage2_production import (
     SQLiteStage2ReceiptStore,
@@ -31,6 +27,8 @@ from openclaw_app.services.stage2_production import (
 )
 from openclaw_app.services.stage2_runtime import IdempotencyConflict, IdempotencyInProgress
 
+from _fixtures.stage2 import BlockingPersonalWriter, FakeOrganizationAdapter, FakePersonalWriter
+
 
 PERSONAL_A = "11111111-1111-4111-8111-111111111111"
 PERSONAL_B = "22222222-2222-4222-8222-222222222222"
@@ -38,64 +36,26 @@ ORGANIZATION = "33333333-3333-4333-8333-333333333333"
 CAPABILITY = "stage2_document_writer"
 
 
-class _PersonalWriter:
+def _dynamic_artifact_ref(context, idempotency_key: str) -> str:
+    """Every request in this suite must get a distinct artifact_ref (its
+    idempotency-conflict/multi-tenant assertions rely on that), unlike the
+    runtime/gateway suites' fixed 'personal-artifact-1'."""
+    return f"personal-{context.tenant_id}-{idempotency_key}"
+
+
+class _PersonalWriter(FakePersonalWriter):
     def __init__(self) -> None:
-        self.calls = 0
-
-    def write(self, context, content, capability_id, idempotency_key, context_receipt=None):
-        self.calls += 1
-        return {
-            "status": "succeeded",
-            "artifact_ref": f"personal-{context.tenant_id}-{idempotency_key}",
-            "remote_ref": None,
-            "registration": {"status": "registered"},
-            "readback": {"status": "confirmed"},
-        }
+        super().__init__(artifact_ref=_dynamic_artifact_ref)
 
 
-class _BlockingPersonalWriter(_PersonalWriter):
+class _BlockingPersonalWriter(BlockingPersonalWriter):
     def __init__(self) -> None:
-        super().__init__()
-        self.entered = threading.Event()
-        self.release = threading.Event()
-
-    def write(self, *args, **kwargs):
-        self.entered.set()
-        if not self.release.wait(timeout=3):
-            raise RuntimeError("blocking writer was not released")
-        return super().write(*args, **kwargs)
+        super().__init__(artifact_ref=_dynamic_artifact_ref)
 
 
-class _OrganizationAdapter:
+class _OrganizationAdapter(FakeOrganizationAdapter):
     def __init__(self) -> None:
-        self.write_calls = 0
-        self.readback_calls = 0
-
-    def write(self, request):
-        self.write_calls += 1
-        binding = request.binding
-        return ExternalWriteOutcome(
-            "succeeded",
-            "organization-document-1",
-            "1",
-            binding.tenant_id,
-            binding.binding_id,
-            binding.binding_generation,
-            request.content_digest,
-        )
-
-    def readback(self, request, write):
-        self.readback_calls += 1
-        binding = request.binding
-        return ExternalReadbackOutcome(
-            "confirmed",
-            write.remote_ref,
-            write.remote_revision,
-            binding.tenant_id,
-            binding.binding_id,
-            binding.binding_generation,
-            request.content_digest,
-        )
+        super().__init__(remote_ref="organization-document-1", remote_revision="1")
 
 
 def _registry() -> CapabilityEffectRegistry:
