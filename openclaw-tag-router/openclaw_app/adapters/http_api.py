@@ -117,6 +117,15 @@ _AUTH_ENV_KEYS = frozenset(
     }
 )
 SESSION_COOKIE_NAME = "openclaw_session"
+_ENTRY_STATE_SCHEMA_VERSION = "media_auth_entry_state_v1"
+_ENTRY_STATE_WORKSPACE_MODES = {
+    "personal": "personal_web",
+    "organization": "organization_lark",
+}
+_ENTRY_STATE_FALLBACKS = {
+    "personal": "password",
+    "organization": "feishu_oauth",
+}
 _NUMERIC_VERSION = re.compile(r"(?:0|[1-9][0-9]*)(?:\.(?:0|[1-9][0-9]*))+")
 _R2_OPERATION_IDS = frozenset(
     {
@@ -561,6 +570,15 @@ def _parse_boolean(value: str) -> bool:
     if normalized in {"0", "false", "no"}:
         return False
     raise ValueError("auth cookie secure value must be boolean")
+
+
+def _mask_entry_identity(value: Any) -> str:
+    identity = str(value or "").strip()
+    if "@" in identity:
+        local, domain = identity.split("@", 1)
+        if local and domain:
+            return f"{local[0]}***@{domain}"
+    return f"{identity[0]}***" if identity else "***"
 
 
 class OpenClawHttpHandler(BaseHTTPRequestHandler):
@@ -1306,6 +1324,9 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             return
         if path == "/auth/status":
             self._send_json(HTTPStatus.OK, {"authenticated": self._is_authenticated()})
+            return
+        if path == "/openclaw/auth/entry-state":
+            self._handle_auth_entry_state()
             return
         if path == "/openclaw/media/api/session":
             if self._dispatch_media_business("GET"):
@@ -2413,6 +2434,81 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 "maximumAge": started.maximum_age,
             },
         )
+
+    def _handle_auth_entry_state(self) -> None:
+        query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
+        mode_values = query.get("mode")
+        if (
+            set(query) != {"mode"}
+            or mode_values is None
+            or len(mode_values) != 1
+            or mode_values[0] not in _ENTRY_STATE_WORKSPACE_MODES
+        ):
+            self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请求格式无效。")
+            return
+        mode = mode_values[0]
+
+        def send_state(state: str, session: Any | None = None) -> None:
+            entry = None
+            if state == "matched":
+                if session is None:
+                    raise AccountContractError("account_contract_invalid", "matched entry state is missing a session")
+                identity = getattr(session, "email", None) or getattr(session, "username", None)
+                entry = {
+                    "entryId": "current",
+                    "displayLabel": "当前个人工作区" if mode == "personal" else "当前组织工作区",
+                    "maskedIdentity": _mask_entry_identity(identity),
+                    "expiresAt": session.expires_at.isoformat(),
+                }
+            self._send_json(
+                HTTPStatus.OK,
+                {
+                    "schemaVersion": _ENTRY_STATE_SCHEMA_VERSION,
+                    "mode": mode,
+                    "state": state,
+                    "entry": entry,
+                    "fallback": _ENTRY_STATE_FALLBACKS[mode],
+                },
+            )
+
+        if self.account_auth is None or self.auth_config is None:
+            raise AccountContractError("account_database_unavailable", "登录服务暂时不可用。")
+        inspect_session = getattr(self.account_auth, "inspect_session", None)
+        if not callable(inspect_session):
+            raise AccountContractError("account_database_unavailable", "登录服务暂时不可用。")
+        inspection = inspect_session(self._legacy_session_cookie())
+        if inspection is None:
+            send_state("none")
+            return
+        if inspection.state == "expired":
+            send_state("expired")
+            return
+        if inspection.state != "active":
+            send_state("none")
+            return
+        if self.workspace_resolver is None:
+            raise AccountContractError("account_database_unavailable", "登录服务暂时不可用。")
+
+        session = inspection.session
+        resolution = self.workspace_resolver.resolve(session, tenant_id=session.tenant_id)
+        if resolution.resolution_state == "INVALID_SESSION":
+            if resolution.failure_code in {"internal_error", "account_database_unavailable"}:
+                raise AccountContractError("account_database_unavailable", "登录服务暂时不可用。")
+            send_state("none")
+            return
+        selected = resolution.selected_workspace
+        if (
+            resolution.resolution_state != "RESOLVED"
+            or selected is None
+            or selected.resolution_eligibility != "ELIGIBLE"
+            or selected.tenant_id != session.tenant_id
+        ):
+            send_state("none")
+            return
+        if selected.workspace_mode != _ENTRY_STATE_WORKSPACE_MODES[mode]:
+            send_state("mismatched")
+            return
+        send_state("matched", session)
 
     def _handle_auth_feishu_callback(self) -> None:
         query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)

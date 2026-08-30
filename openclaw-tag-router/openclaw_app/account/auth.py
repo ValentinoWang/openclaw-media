@@ -36,6 +36,12 @@ class AccountLogin:
     session: AccountSession
 
 
+@dataclass(frozen=True)
+class AccountSessionInspection:
+    session: AccountSession
+    state: Literal["active", "expired"]
+
+
 class AccountAuthService:
     def __init__(
         self,
@@ -107,6 +113,51 @@ class AccountAuthService:
             expires_at=row.expires_at,
             is_maintainer=row.is_maintainer,
         )
+
+    def inspect_session(self, token: str | None) -> AccountSessionInspection | None:
+        """Read a session for entry-state without changing persisted auth state."""
+        if not token or not 20 <= len(token) <= 256:
+            return None
+        try:
+            token_hash = self._token_hash(token)
+        except (UnicodeEncodeError, ValueError):
+            return None
+        try:
+            with self._database.connect() as connection:
+                row = connection.execute(
+                    """
+                    SELECT s.id, u.id, t.id, u.username, u.email, u.role, u.status, t.status,
+                           s.status, s.csrf_token_hash, s.expires_at, u.is_maintainer
+                    FROM openclaw_account.sessions AS s
+                    JOIN openclaw_account.users AS u ON u.id = s.user_id
+                    JOIN openclaw_account.tenants AS t ON t.id = s.tenant_id
+                    JOIN openclaw_account.tenant_members AS m
+                      ON m.tenant_id = s.tenant_id AND m.user_id = s.user_id AND m.status = 'active'
+                    WHERE s.session_token_hash = %s
+                    """,
+                    (token_hash,),
+                ).fetchone()
+                if row is None:
+                    return None
+                session_row = AccountSessionRow(*row)
+                session = self._session_from_row(session_row)
+                session_status = str(session_row.session_status).lower()
+                if session_status == "expired" or (session_status == "active" and session.expires_at <= self._now()):
+                    return AccountSessionInspection(session, "expired")
+                if (
+                    session_status != "active"
+                    or str(session_row.user_status).lower() != "active"
+                    or str(session_row.tenant_status).lower() != "active"
+                ):
+                    return None
+                expected_csrf_hash = self._token_hash(self.csrf_token(token))
+                if not hmac.compare_digest(session_row.csrf_token_hash, expected_csrf_hash):
+                    return None
+                return AccountSessionInspection(session, "active")
+        except AccountContractError:
+            raise
+        except Exception as exc:
+            raise AccountContractError("account_database_unavailable", "canonical account database is unavailable") from exc
 
     def issue_session_for_account(
         self,
