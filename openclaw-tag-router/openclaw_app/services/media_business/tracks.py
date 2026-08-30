@@ -1102,16 +1102,7 @@ def _json_bytes(value: Mapping[str, Any]) -> bytes:
 
 
 def _json_object(value: Any, label: str) -> dict[str, Any]:
-    if isinstance(value, dict):
-        return value
-    if isinstance(value, str):
-        try:
-            parsed = json.loads(value)
-        except json.JSONDecodeError as exc:
-            raise TrackInternalError(f"{label} is invalid") from exc
-        if isinstance(parsed, dict):
-            return parsed
-    raise TrackInternalError(f"{label} is invalid")
+    return foundation.json_object(value, label, error=TrackInternalError)
 
 
 def _validate_idempotency_key(value: Any) -> None:

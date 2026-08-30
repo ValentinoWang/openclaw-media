@@ -163,11 +163,7 @@ class DownloadSigner(Protocol):
 
 
 def _json(value: Any) -> dict[str, Any]:
-    if isinstance(value, str):
-        value = json.loads(value)
-    if not isinstance(value, Mapping):
-        raise DocumentUnavailable("stored document JSON is invalid")
-    return dict(value)
+    return foundation.json_object(value, "stored document JSON", error=DocumentUnavailable)
 
 
 def _timestamp(value: Any) -> str:

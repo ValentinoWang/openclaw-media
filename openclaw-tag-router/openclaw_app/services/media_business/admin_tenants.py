@@ -150,14 +150,7 @@ def _revision(*parts: Any) -> int:
 
 
 def _json_object(value: Any) -> dict[str, Any]:
-    if isinstance(value, str):
-        try:
-            value = json.loads(value)
-        except json.JSONDecodeError as exc:
-            raise AdminTenantsInternalError("run canonical data is invalid") from exc
-    if not isinstance(value, Mapping):
-        raise AdminTenantsInternalError("run canonical data is invalid")
-    return dict(value)
+    return foundation.json_object(value, "run canonical data", error=AdminTenantsInternalError)
 
 
 def _text(value: Any) -> str:

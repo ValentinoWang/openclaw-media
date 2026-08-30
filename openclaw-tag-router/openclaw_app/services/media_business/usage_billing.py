@@ -797,11 +797,4 @@ def _range(rows: list[_UsageRow], now: datetime) -> tuple[datetime, datetime]:
 
 
 def _json_object(value: Any, label: str) -> dict[str, Any]:
-    if isinstance(value, str):
-        try:
-            value = json.loads(value)
-        except json.JSONDecodeError as exc:
-            raise UsageBillingInternalError(f"{label} is invalid") from exc
-    if not isinstance(value, dict):
-        raise UsageBillingInternalError(f"{label} is invalid")
-    return value
+    return foundation.json_object(value, label, error=UsageBillingInternalError)
