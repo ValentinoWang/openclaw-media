@@ -886,3 +886,33 @@ def find_admin_audit_idempotency(
     if not isinstance(metadata, dict):
         raise on_invalid()
     return metadata
+
+
+# --- Cursor result normalization (gap1 audit) --------------------------------
+#
+# runs.py, publishing.py, reviews.py, decisions.py, and documents.py (the
+# last for _fetchone only) each independently wrote the same normalization
+# over whatever a fake/real DB cursor's fetchone()/fetchall() -- or a bare
+# list/tuple test stub standing in for one -- returns. Moved verbatim from
+# runs.py, the majority form (5 modules, 52 call sites). NOT the same
+# family as stage1_postgres_provisioning._one/_all or
+# stage1_administrator_authorization._rows, which use a getattr+callable
+# check instead of hasattr and return None/[] rather than falling back to
+# a list/tuple's first element -- those live outside media_business and
+# are explicitly out of scope for this pass.
+
+
+def _fetchone(cursor: Any) -> Any:
+    if hasattr(cursor, "fetchone"):
+        return cursor.fetchone()
+    if isinstance(cursor, (list, tuple)):
+        return cursor[0] if cursor else None
+    return None
+
+
+def _fetchall(cursor: Any) -> list[Any]:
+    if hasattr(cursor, "fetchall"):
+        return list(cursor.fetchall())
+    if isinstance(cursor, (list, tuple)):
+        return list(cursor)
+    return []

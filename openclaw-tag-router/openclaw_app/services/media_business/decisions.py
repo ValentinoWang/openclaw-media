@@ -15,7 +15,7 @@ from typing import Any, Protocol
 from urllib.parse import urlsplit
 
 from . import foundation, sql_pagination
-from .foundation import MediaBusinessError, TenantContext, public_projection
+from .foundation import MediaBusinessError, TenantContext, _fetchall, _fetchone, public_projection
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -76,22 +76,6 @@ class _CursorPosition:
     tenant_tag: str
     updated_at: str
     public_id: str
-
-
-def _fetchone(cursor: Any) -> Any:
-    if hasattr(cursor, "fetchone"):
-        return cursor.fetchone()
-    if isinstance(cursor, (list, tuple)):
-        return cursor[0] if cursor else None
-    return None
-
-
-def _fetchall(cursor: Any) -> list[Any]:
-    if hasattr(cursor, "fetchall"):
-        return list(cursor.fetchall())
-    if isinstance(cursor, (list, tuple)):
-        return list(cursor)
-    return []
 
 
 def _as_json(value: Any) -> str:

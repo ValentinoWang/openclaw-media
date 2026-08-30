@@ -20,7 +20,7 @@ from typing import Any, Protocol
 from urllib.parse import urlparse
 
 from . import foundation
-from .foundation import MediaBusinessError, TenantContext, public_projection
+from .foundation import MediaBusinessError, TenantContext, _fetchall, _fetchone, public_projection
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -138,22 +138,6 @@ def _row_parts(row: Any, label: str) -> tuple[str, int, dict[str, Any], Any]:
     if isinstance(revision, bool) or not isinstance(revision, int) or revision < 1:
         raise ReviewsInternalError(f"{label} revision is invalid")
     return public_id, revision, _json_object(canonical_data, label), updated_at
-
-
-def _fetchone(cursor: Any) -> Any:
-    if hasattr(cursor, "fetchone"):
-        return cursor.fetchone()
-    if isinstance(cursor, (list, tuple)):
-        return cursor[0] if cursor else None
-    return None
-
-
-def _fetchall(cursor: Any) -> list[Any]:
-    if hasattr(cursor, "fetchall"):
-        return list(cursor.fetchall())
-    if isinstance(cursor, (list, tuple)):
-        return list(cursor)
-    return []
 
 
 def _value(data: Mapping[str, Any], *names: str, default: Any = None) -> Any:

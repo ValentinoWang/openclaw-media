@@ -23,6 +23,8 @@ from . import foundation, sql_pagination
 from .foundation import (
     MediaBusinessError,
     TenantContext,
+    _fetchall,
+    _fetchone,
     body_checksum,
     public_projection,
     validate_body,
@@ -105,22 +107,6 @@ class _PackageRow:
     body_authority: str
     artifact_revision: int
     artifact_updated_at: Any
-
-
-def _fetchone(cursor: Any) -> Any:
-    if hasattr(cursor, "fetchone"):
-        return cursor.fetchone()
-    if isinstance(cursor, (list, tuple)):
-        return cursor[0] if cursor else None
-    return None
-
-
-def _fetchall(cursor: Any) -> list[Any]:
-    if hasattr(cursor, "fetchall"):
-        return list(cursor.fetchall())
-    if isinstance(cursor, (list, tuple)):
-        return list(cursor)
-    return []
 
 
 def _json_object(value: Any, label: str) -> dict[str, Any]:

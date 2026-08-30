@@ -23,6 +23,7 @@ from .foundation import (
     IF2_KEY,
     MediaBusinessError,
     TenantContext,
+    _fetchone,
     assert_autosave_state,
     assert_export_state,
     body_checksum,
@@ -159,14 +160,6 @@ class LarkDocumentGateway(Protocol):
 
 class DownloadSigner(Protocol):
     def create_download_url(self, object_ref: str, *, expires_in_seconds: int) -> tuple[str, str]: ...
-
-
-def _fetchone(cursor: Any) -> Any:
-    if hasattr(cursor, "fetchone"):
-        return cursor.fetchone()
-    if isinstance(cursor, (list, tuple)):
-        return cursor[0] if cursor else None
-    return None
 
 
 def _json(value: Any) -> dict[str, Any]:
