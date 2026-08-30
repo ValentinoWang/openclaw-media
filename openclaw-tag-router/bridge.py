@@ -8,6 +8,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# bridge.py already transitively requires the repository root on sys.path
+# (codex_maintenance_tasks imports common.social_runtime), so importing the
+# canonical env loader directly adds no new deployment requirement.
+from common.social_runtime import load_env_file
+
 from openclaw_app.services import codex_maintenance_tasks
 
 
@@ -31,21 +36,6 @@ def _bridge_progress(stage: str, **fields: object) -> None:
     print("[tag-router-bridge] " + " ".join(parts), file=sys.stderr, flush=True)
 
 
-def _load_env_file(path: Path) -> None:
-    if not path.exists():
-        return
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        if not key or key in os.environ:
-            continue
-        value = value.strip().strip('"').strip("'")
-        os.environ[key] = value
-
-
 def _load_default_env() -> None:
     env_file = os.environ.get("OPENCLAW_TAG_ROUTER_ENV_FILE", "").strip()
     candidates = []
@@ -53,7 +43,9 @@ def _load_default_env() -> None:
         candidates.append(Path(env_file))
     candidates.append(Path("/home/ubuntu/.openclaw/openclaw.env"))
     for path in candidates:
-        _load_env_file(path)
+        # Existing process env always wins here (load_env_file's default),
+        # matching the deleted local _load_env_file copy's behavior.
+        load_env_file(path)
 
 
 def _load_payload() -> dict:
