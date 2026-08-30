@@ -22,6 +22,7 @@ import {
   CursorPagination,
   formatDate,
   newIdempotencyKey,
+  useCursorTrail,
 } from "../../ui/ordinaryPagePrimitives";
 import { qualityDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
@@ -103,8 +104,8 @@ export default function DecisionsPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("decisions");
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
-  const [cursorTrail, setCursorTrail] = useState<string[]>([]);
-  const [signalCursorTrail, setSignalCursorTrail] = useState<string[]>([]);
+  const cursorTrail = useCursorTrail();
+  const signalCursorTrail = useCursorTrail();
   const [refreshToken, setRefreshToken] = useState(0);
   const [detailRefreshToken, setDetailRefreshToken] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -119,8 +120,8 @@ export default function DecisionsPage() {
   const [detailState, setDetailState] = useState<
     ResourceState<DecisionResponse> | null
   >(null);
-  const listCursor = cursorTrail.at(-1);
-  const signalCursor = signalCursorTrail.at(-1);
+  const listCursor = cursorTrail.cursor;
+  const signalCursor = signalCursorTrail.cursor;
 
   useEffect(() => {
     if (runtimeState !== "authenticated" || !session) return;
@@ -217,14 +218,14 @@ export default function DecisionsPage() {
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmittedQuery(query.trim());
-    setCursorTrail([]);
+    cursorTrail.reset();
     setSelectedId(null);
   }
 
   function resetSearch() {
     setQuery("");
     setSubmittedQuery("");
-    setCursorTrail([]);
+    cursorTrail.reset();
     setSelectedId(null);
   }
 
@@ -368,12 +369,12 @@ export default function DecisionsPage() {
             <DecisionListPanel
               state={listState}
               selectedId={selectedId}
-              page={cursorTrail.length + 1}
+              page={cursorTrail.page}
               onSelect={selectDecision}
-              onPrevious={() => setCursorTrail((value) => value.slice(0, -1))}
+              onPrevious={cursorTrail.previous}
               onNext={() => {
                 if (listState.status === "ready" && listState.data.nextCursor) {
-                  setCursorTrail((value) => [...value, listState.data.nextCursor as string]);
+                  cursorTrail.next(listState.data.nextCursor);
                 }
               }}
               onRetry={() => setRefreshToken((value) => value + 1)}
@@ -381,11 +382,11 @@ export default function DecisionsPage() {
           ) : (
             <SignalPanel
               state={signalState}
-              page={signalCursorTrail.length + 1}
-              onPrevious={() => setSignalCursorTrail((value) => value.slice(0, -1))}
+              page={signalCursorTrail.page}
+              onPrevious={signalCursorTrail.previous}
               onNext={() => {
                 if (signalState.status === "ready" && signalState.data.nextCursor) {
-                  setSignalCursorTrail((value) => [...value, signalState.data.nextCursor as string]);
+                  signalCursorTrail.next(signalState.data.nextCursor);
                 }
               }}
               onRetry={() => setRefreshToken((value) => value + 1)}

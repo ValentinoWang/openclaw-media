@@ -26,6 +26,7 @@ import {
   CursorPagination,
   formatDate,
   PageHeading,
+  useCursorTrail,
 } from "../../ui/ordinaryPagePrimitives";
 import {
   mediaTypeDisplayLabel,
@@ -145,7 +146,7 @@ function AssetsPage() {
     executeDeletionIntent,
     cancelDeletionIntent,
   } = useMediaWeb();
-  const [cursorTrail, setCursorTrail] = useState<string[]>([]);
+  const cursorTrail = useCursorTrail();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [focusedId, setFocusedId] = useState<string>();
   const [activeTab, setActiveTab] = useState<AssetTabId>("assets");
@@ -158,7 +159,7 @@ function AssetsPage() {
   const [detailRetryToken, setDetailRetryToken] = useState(0);
   const [deletionDialog, setDeletionDialog] = useState<DeletionDialogState | null>(null);
   const deletionAttempt = useRef(0);
-  const cursor = cursorTrail.at(-1);
+  const { cursor } = cursorTrail;
   const authenticated = runtimeState === "authenticated";
   const listState = useAssetProjection(
     cursor,
@@ -335,7 +336,7 @@ function AssetsPage() {
 
   function changeSearch(value: string) {
     setSearch(value);
-    setCursorTrail([]);
+    cursorTrail.reset();
     setFocusedId(undefined);
   }
 
@@ -410,7 +411,8 @@ function AssetsPage() {
                 state={listState}
                 items={visibleItems}
                 pageItems={pageItems}
-                cursorTrail={cursorTrail}
+                canPrevious={cursorTrail.canPrevious}
+                page={cursorTrail.page}
                 focusedId={focusedId}
                 selectedIds={selectedIds}
                 search={search}
@@ -427,12 +429,8 @@ function AssetsPage() {
                 onToggle={toggleAsset}
                 onFocus={(asset) => setFocusedId(asset.publicAssetId)}
                 onRetry={() => setRetryToken((value) => value + 1)}
-                onPrevious={() =>
-                  setCursorTrail((current) => current.slice(0, -1))
-                }
-                onNext={(nextCursor) =>
-                  setCursorTrail((current) => [...current, nextCursor])
-                }
+                onPrevious={cursorTrail.previous}
+                onNext={cursorTrail.next}
               />
             ) : (
               <AssetTabPanel
@@ -469,7 +467,8 @@ function AssetWorkspace({
   state,
   items,
   pageItems,
-  cursorTrail,
+  canPrevious,
+  page,
   focusedId,
   selectedIds,
   search,
@@ -492,7 +491,8 @@ function AssetWorkspace({
   state: AssetListState;
   items: AssetSummary[];
   pageItems: AssetSummary[];
-  cursorTrail: string[];
+  canPrevious: boolean;
+  page: number;
   focusedId?: string;
   selectedIds: string[];
   search: string;
@@ -616,8 +616,8 @@ function AssetWorkspace({
               </div>
             )}
             <CursorPagination
-              page={cursorTrail.length + 1}
-              canPrevious={cursorTrail.length > 0}
+              page={page}
+              canPrevious={canPrevious}
               canNext={!!state.data.nextCursor}
               onPrevious={onPrevious}
               onNext={() => {

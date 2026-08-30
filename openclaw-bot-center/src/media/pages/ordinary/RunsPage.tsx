@@ -28,6 +28,7 @@ import {
   CursorPagination,
   PageHeading,
   formatDate,
+  useCursorTrail,
 } from "../../ui/ordinaryPagePrimitives";
 import { DISPLAY_LABELS } from "../../ui/displayLabels";
 import { artifactTypeDisplayLabel, bodyAuthorityDisplayLabel, mediaTypeDisplayLabel, qualityDisplayLabel, syncStatusDisplayLabel } from "../../ui/ordinaryDataLabels";
@@ -207,12 +208,12 @@ export default function RunsPage() {
   const [activeView, setActiveView] = useState<View>("runs");
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
-  const [cursorTrail, setCursorTrail] = useState<string[]>([]);
+  const cursorTrail = useCursorTrail();
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
   const [runMetadata, setRunMetadata] = useState<Record<string, Pick<RunSummary, "platform" | "contentType" | "trackName">>>({});
   const [reloadToken, setReloadToken] = useState(0);
-  const cursor = cursorTrail.at(-1);
+  const { cursor } = cursorTrail;
   const state = useResource<PageResponse>(
     () => {
       if (!session) {
@@ -276,27 +277,27 @@ export default function RunsPage() {
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (activeView !== "runs") return;
-    setCursorTrail([]);
+    cursorTrail.reset();
     setSelectedRunId(null);
     setSubmittedQuery(query.trim());
   };
 
   const clearSearch = () => {
     setQuery("");
-    setCursorTrail([]);
+    cursorTrail.reset();
     setSelectedRunId(null);
     setSubmittedQuery("");
   };
 
   const switchView = (view: View) => {
     setActiveView(view);
-    setCursorTrail([]);
+    cursorTrail.reset();
     setSelectedRunId(null);
     setSelectedDeliveryId(null);
     if (view !== "runs") setSubmittedQuery("");
   };
 
-  const page = cursorTrail.length + 1;
+  const page = cursorTrail.page;
   const statusItems = useMemo(
     () => summarizeStatuses(runResponse?.items ?? []),
     [runResponse],
@@ -394,16 +395,16 @@ export default function RunsPage() {
             <RunsTable
               response={enrichedRunResponse ?? state.data}
               page={page}
-              cursorTrail={cursorTrail}
+              canPrevious={cursorTrail.canPrevious}
               selectedRunId={selectedRunId}
               submittedQuery={submittedQuery}
               onSelect={setSelectedRunId}
               onClearSearch={clearSearch}
-              onPrevious={() => { setSelectedRunId(null); setCursorTrail((value) => value.slice(0, -1)); }}
+              onPrevious={() => { setSelectedRunId(null); cursorTrail.previous(); }}
               onNext={() => {
                 if (!runResponse?.nextCursor) return;
                 setSelectedRunId(null);
-                setCursorTrail((value) => [...value, runResponse.nextCursor as string]);
+                cursorTrail.next(runResponse.nextCursor);
               }}
             />
           ) : null}
@@ -411,11 +412,11 @@ export default function RunsPage() {
             <BusinessOpportunityTable
               response={state.data}
               page={page}
-              cursorTrail={cursorTrail}
-              onPrevious={() => setCursorTrail((value) => value.slice(0, -1))}
+              canPrevious={cursorTrail.canPrevious}
+              onPrevious={() => cursorTrail.previous()}
               onNext={() => {
                 if (!isOpportunityListResponse(state.data) || !state.data.nextCursor) return;
-                setCursorTrail((value) => [...value, state.data.nextCursor as string]);
+                cursorTrail.next(state.data.nextCursor);
               }}
             />
           ) : null}
@@ -443,7 +444,7 @@ function DisabledFilter({ label }: { label: string }) {
 function RunsTable({
   response,
   page,
-  cursorTrail,
+  canPrevious,
   selectedRunId,
   submittedQuery,
   onSelect,
@@ -453,7 +454,7 @@ function RunsTable({
 }: {
   response: RunListResponse;
   page: number;
-  cursorTrail: readonly string[];
+  canPrevious: boolean;
   selectedRunId: string | null;
   submittedQuery: string;
   onSelect: (runId: string) => void;
@@ -482,7 +483,7 @@ function RunsTable({
         {response.items.length === 0 ? <RunsEmpty searched={!!submittedQuery} onClear={onClearSearch} /> : null}
       </div>
       <div className={styles.paginationWrap}>
-        <CursorPagination page={page} canPrevious={cursorTrail.length > 0} canNext={!!response.nextCursor} onPrevious={onPrevious} onNext={onNext} />
+        <CursorPagination page={page} canPrevious={canPrevious} canNext={!!response.nextCursor} onPrevious={onPrevious} onNext={onNext} />
       </div>
     </section>
   );
@@ -512,13 +513,13 @@ function RunRow({ run, selected, onSelect }: { run: RunSummary; selected: boolea
 function BusinessOpportunityTable({
   response,
   page,
-  cursorTrail,
+  canPrevious,
   onPrevious,
   onNext,
 }: {
   response: BusinessOpportunityListResponse;
   page: number;
-  cursorTrail: readonly string[];
+  canPrevious: boolean;
   onPrevious: () => void;
   onNext: () => void;
 }) {
@@ -551,7 +552,7 @@ function BusinessOpportunityTable({
         {response.items.length === 0 ? <BusinessOpportunityEmpty /> : null}
       </div>
       <div className={styles.paginationWrap}>
-        <CursorPagination page={page} canPrevious={cursorTrail.length > 0} canNext={!!response.nextCursor} onPrevious={onPrevious} onNext={onNext} />
+        <CursorPagination page={page} canPrevious={canPrevious} canNext={!!response.nextCursor} onPrevious={onPrevious} onNext={onNext} />
       </div>
     </section>
   );
