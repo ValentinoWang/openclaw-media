@@ -14,7 +14,8 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useMediaWeb } from '../MediaWebWorkspace'
-import { BusinessOperationError, callBusinessOperation } from '../generatedBusinessPagesContract'
+import { callBusinessOperation } from '../generatedBusinessPagesContract'
+import { isForbiddenError, isNotFoundError } from '../businessErrorPresentation'
 import { PlatformIdentity } from '../ui/PlatformIdentity'
 import { Metric } from '../ui/Metric'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
@@ -181,9 +182,7 @@ function authorizationLabel(value: string): string {
 }
 
 function readError(error: unknown): string {
-  if (error instanceof BusinessOperationError) {
-    if (error.status === 401 || error.status === 403) return '当前账户没有读取商务机会的权限。'
-    if (error.status === 404) return '当前账户还没有商务机会记录。'
-  }
+  if (isForbiddenError(error)) return '当前账户没有读取商务机会的权限。'
+  if (isNotFoundError(error)) return '当前账户还没有商务机会记录。'
   return '商务机会暂时无法读取。'
 }

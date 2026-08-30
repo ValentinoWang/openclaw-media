@@ -20,7 +20,8 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useMediaWeb } from '../MediaWebWorkspace'
-import { BusinessOperationError, callBusinessOperation } from '../generatedBusinessPagesContract'
+import { callBusinessOperation } from '../generatedBusinessPagesContract'
+import { isForbiddenError, isNotFoundError } from '../businessErrorPresentation'
 import { projectStatusDisplayLabel } from '../ui/displayLabels'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
 import { Metric } from '../ui/Metric'
@@ -250,9 +251,7 @@ function PanelState({ icon, title, detail, action }: { icon: ReactNode; title: s
 }
 
 function readError(error: unknown, fallback: string): string {
-  if (error instanceof BusinessOperationError) {
-    if (error.status === 401 || error.status === 403) return '当前账户没有读取这部分数据的权限。'
-    if (error.status === 404) return '当前工作区还没有可读取的数据。'
-  }
+  if (isForbiddenError(error)) return '当前账户没有读取这部分数据的权限。'
+  if (isNotFoundError(error)) return '当前工作区还没有可读取的数据。'
   return fallback
 }

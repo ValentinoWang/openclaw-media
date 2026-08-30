@@ -18,6 +18,7 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from '../../generatedBusinessPagesContract'
+import { isForbiddenError, isNotFoundError } from '../../businessErrorPresentation'
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { runStatusLabel, runStatusTone } from '../../statusPresentation'
 import { Metric } from '../../ui/Metric'
@@ -341,10 +342,10 @@ function useAuditedTenantRuns(permitted: boolean, publicTenantId: string | null,
 }
 
 function toLoadState<T>(error: unknown, subject: string): LoadState<T> {
-  if (error instanceof BusinessOperationError && (error.status === 401 || error.status === 403 || error.code === 'forbidden')) {
+  if (isForbiddenError(error)) {
     return { status: 'forbidden', message: '当前会话没有读取' + subject + '的权限。' }
   }
-  if (error instanceof BusinessOperationError && error.status === 404) {
+  if (isNotFoundError(error)) {
     return { status: 'error', message: '目标租户不存在或不可见。' }
   }
   if (error instanceof BusinessOperationError && error.code === 'invalid_request') {

@@ -19,6 +19,7 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
+import { isForbiddenError, isNotFoundError } from "../../businessErrorPresentation";
 import { newIdempotencyKey } from "../../idempotency";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { formatDate, PageHeading } from "../../ui/ordinaryPagePrimitives";
@@ -354,8 +355,8 @@ function formatValue(value: unknown): string {
 }
 function readError(error: unknown, fallback: string): string {
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401 || error.status === 403) return "当前账户没有访问该发布数据的权限。";
-    if (error.status === 404) return "发布资源不存在或已不可用。";
+    if (isForbiddenError(error)) return "当前账户没有访问该发布数据的权限。";
+    if (isNotFoundError(error)) return "发布资源不存在或已不可用。";
     if (error.status === 409) return "发布包已发生修订变化，请重新读取后再试。";
     return fallback;
   }
