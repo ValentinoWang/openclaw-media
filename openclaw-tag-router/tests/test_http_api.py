@@ -1377,6 +1377,34 @@ class AuthConfigTests(unittest.TestCase):
         self.assertTrue(bindings.bind(str(USER_A), "password", "key", {"value": 1}))
         self.assertFalse(bindings.bind(str(USER_A), "password", "key", {"value": 2}))
 
+    def test_session_ttl_defaults_to_fourteen_days_when_unset(self) -> None:
+        environment = _auth_environment()
+        del environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"]
+        config = AuthConfig.from_environment(environment)
+        self.assertEqual(config.session_ttl_seconds, 14 * 24 * 60 * 60)
+
+    def test_session_ttl_accepts_exactly_fourteen_days(self) -> None:
+        environment = _auth_environment()
+        environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"] = str(14 * 24 * 60 * 60)
+        config = AuthConfig.from_environment(environment)
+        self.assertEqual(config.session_ttl_seconds, 14 * 24 * 60 * 60)
+
+    def test_session_ttl_beyond_fourteen_days_is_rejected(self) -> None:
+        environment = _auth_environment()
+        environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"] = str(14 * 24 * 60 * 60 + 1)
+        with self.assertRaises(ValueError):
+            AuthConfig.from_environment(environment)
+
+    def test_session_ttl_seven_days_no_longer_the_ceiling(self) -> None:
+        # Regression guard: seven days used to be the maximum
+        # (OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS above it was rejected);
+        # confirms the ceiling actually moved to fourteen days rather than
+        # the bound check being accidentally deleted.
+        environment = _auth_environment()
+        environment["OPENCLAW_ACCOUNT_SESSION_TTL_SECONDS"] = str(7 * 24 * 60 * 60)
+        config = AuthConfig.from_environment(environment)
+        self.assertEqual(config.session_ttl_seconds, 7 * 24 * 60 * 60)
+
 
 class ProductContractResolutionTests(unittest.TestCase):
     """Regression coverage for the H11 fix to _http_product_operations().

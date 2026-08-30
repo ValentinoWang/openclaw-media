@@ -26,6 +26,34 @@ ADMIN_TENANT = UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
 FEISHU_MEMBER = UUID("44444444-4444-4444-8444-444444444444")
 
 
+class AccountAuthSessionTtlValidationTests(unittest.TestCase):
+    """Pins the session-ttl bound/default without a real database connection
+    -- the ValueError guards in AccountAuthService.__init__ fire before
+    `database` is touched, so a dummy stand-in is enough."""
+
+    def _service(self, **kwargs: object) -> AccountAuthService:
+        return AccountAuthService(object(), csrf_secret=b"s" * 32, **kwargs)  # type: ignore[arg-type]
+
+    def test_default_session_ttl_is_fourteen_days(self) -> None:
+        service = self._service()
+        self.assertEqual(service._session_ttl_seconds, 14 * 24 * 60 * 60)
+
+    def test_fourteen_days_is_accepted(self) -> None:
+        service = self._service(session_ttl_seconds=14 * 24 * 60 * 60)
+        self.assertEqual(service._session_ttl_seconds, 14 * 24 * 60 * 60)
+
+    def test_beyond_fourteen_days_is_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            self._service(session_ttl_seconds=14 * 24 * 60 * 60 + 1)
+
+    def test_seven_days_no_longer_rejected_as_the_old_ceiling(self) -> None:
+        # Regression guard: this used to be the maximum (7 * 24 * 60 * 60);
+        # confirms the ceiling actually moved rather than the check being
+        # accidentally deleted.
+        service = self._service(session_ttl_seconds=7 * 24 * 60 * 60)
+        self.assertEqual(service._session_ttl_seconds, 7 * 24 * 60 * 60)
+
+
 class AccountAuthPostgreSQLTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
