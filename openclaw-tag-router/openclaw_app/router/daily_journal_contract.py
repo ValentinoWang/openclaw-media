@@ -107,7 +107,7 @@ WEEKLY_DYNAMIC_TOPIC_CLUSTERS: tuple[str, ...] = (
 DAILY_JOURNAL_ARRANGEMENT_PROMPT = """你是 OpenClaw Daily bot 的日记整理器。
 你会收到完整日记原文，以及 Python 仅按标题切出的 template_fields 辅助索引。
 无论用户使用模板还是自由文本，最终 arranged_text 和 sections 都必须由你阅读完整原文后整理生成，不能逐行照抄模板，也不能只返回 Python 切出的字段。
-只根据用户原文整理，不要编造、不要诊断人格、不要给人生建议。
+只根据用户原文整理，不要诊断人格、不要给人生建议。
 整理目标：先写一段适合用户回看的一段式事实整理 arranged_text，不要字段标题，不要项目符号，不要逐项列表；再给系统内部周记使用的 sections，并生成写入本周 Archieve `#YYYYMMDD -> ## 日记` 的 weekly_projection。weekly_projection 是给 Obsidian 周归档看的正常 Markdown 内容来源，只返回短标题和 3-5 句精炼总结，不要写 HTML comment、JSON、字段名、机器标记或模板解释。arranged_text 不是原文缩写，也不是把 template_fields 逐项串成一段；只能基于原文事实重组，按“发生了什么、状态是什么、用户原文里做了什么判断、用户原文里害怕或逃避什么、原文留下的下一步是什么”来整理。不要替用户升华、诊断、给建议、写新的结论或把原因说得比原文更确定。优先合并同类信息，删除流水账、重复表达和模板痕迹；但不能因为内容敏感、口语、性、亲密关系、羞耻、逃避或冲突就删掉关键事实。用户明确写出的判断、恐惧、对象、行动选择和原词，如果是当天事实证据，必须保留或等价转述，不能被泛化成“社交/欲望/关系”这类空泛词。不能改变原意。
 如果原文包含 http:// 或 https:// 链接，arranged_text 和 weekly_projection.summary 必须原样保留具体 URL，不要改写成“链接”“视频链接”“某资料”等泛称。
 返回 JSON：

@@ -77,7 +77,7 @@ GROWTH_CAPABILITY_PROMPTS = {
         "locations、required_brand_mentions、must_cover、narrative_direction、interaction_design、"
         "compliance_restrictions、deliverables、technical_specs、approval_requirements、cleaned_brief、risk_notes、"
         "next_content_actions、source_evidence、display_title、display_summary。只能使用粘贴的需求和已加载素材；"
-        "原文意图明确时可以修正识别噪声，不明确处写入 risk_notes，不得编造事实或宣称医疗诊断功能。"
+        "原文意图明确时可以修正识别噪声，不明确处写入 risk_notes，不得宣称医疗诊断功能。"
         "所有面向创作者显示的文字均使用中文，JSON 键名保持既有合同，不要翻译或新增字段。"
     ),
     "creation_decision_brief": (

@@ -45,10 +45,31 @@ def test_structured_client_does_not_duplicate_data_boundary(monkeypatch) -> None
         return {"ok": True}
 
     monkeypatch.setattr(llm_client, "_generate_json_openclaw_agent", fake_agent)
-    custom = f"角色说明。{llm_client.UNTRUSTED_INPUT_INSTRUCTIONS}"
+    custom = f"角色说明。{llm_client.STRUCTURED_JSON_INPUT_ISOLATION_BOUNDARY}"
     llm_client.generate_json_once([], _config(), instructions=custom)
 
-    assert captured["instructions"].count(llm_client.UNTRUSTED_INPUT_INSTRUCTIONS) == 1
+    assert captured["instructions"].count(llm_client.STRUCTURED_JSON_INPUT_ISOLATION_BOUNDARY) == 1
+    assert captured["instructions"].count(llm_client.EVIDENCE_BOUND_FACT_INSTRUCTIONS) == 1
+
+
+def test_from_parts_path_injects_each_boundary_exactly_once(monkeypatch) -> None:
+    captured: dict[str, str] = {}
+
+    def fake_agent(parts, config, *, instructions):
+        captured["instructions"] = instructions
+        return {"ok": True}
+
+    class _Validated:
+        payload = {"ok": True}
+
+    monkeypatch.setattr(llm_client, "_generate_json_openclaw_agent", fake_agent)
+    monkeypatch.setattr(llm_client, "validate_llm_payload", lambda parsed, contract, context=None: _Validated())
+    llm_client.generate_json_from_parts(
+        [{"text": "payload data"}], _config(), validation_contract="test.contract.v1"
+    )
+
+    assert captured["instructions"].count(llm_client.STRUCTURED_JSON_INPUT_ISOLATION_BOUNDARY) == 1
+    assert captured["instructions"].count(llm_client.EVIDENCE_BOUND_FACT_INSTRUCTIONS) == 1
 
 
 def test_feishu_status_message_is_user_facing_chinese() -> None:
