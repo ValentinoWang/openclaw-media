@@ -29,12 +29,7 @@ _CURSOR_VERSION = 1
 _CURSOR_AAD = b"media-web-b04-decisions-v1"
 
 
-class DecisionsError(MediaBusinessError):
-    status = 500
-
-    def __init__(self, code: str, message: str, *, status: int = 500) -> None:
-        super().__init__(code, message)
-        self.status = status
+DecisionsError = MediaBusinessError
 
 
 class DecisionsForbidden(DecisionsError):

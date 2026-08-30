@@ -17,9 +17,14 @@ from common.canonical_digest import digest_hex
 
 
 class MediaBusinessError(Exception):
-    def __init__(self, code: str, message: str):
+    status = 500
+    field: str | None = None
+
+    def __init__(self, code: str, message: str, *, status: int = 500, field: str | None = None):
         self.code = code
         self.message = message
+        self.status = status
+        self.field = field
         super().__init__(message)
 
 

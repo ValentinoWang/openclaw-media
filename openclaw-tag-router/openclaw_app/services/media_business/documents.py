@@ -39,8 +39,6 @@ _FORMATS = {"docx", "pdf"}
 
 
 class DocumentServiceError(MediaBusinessError):
-    status = 500
-    field: str | None = None
     block_ids: tuple[str, ...] = ()
 
     def __init__(
@@ -52,9 +50,7 @@ class DocumentServiceError(MediaBusinessError):
         field: str | None = None,
         block_ids: tuple[str, ...] = (),
     ) -> None:
-        super().__init__(code, message)
-        self.status = status
-        self.field = field
+        super().__init__(code, message, status=status, field=field)
         self.block_ids = block_ids
 
 

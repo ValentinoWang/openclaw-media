@@ -32,14 +32,7 @@ _HUMAN_STATUSES = {"pending", "confirmed", "rejected"}
 _OPERATIONAL_STATUSES = {"active", "paused", "disabled"}
 
 
-class TracksError(MediaBusinessError):
-    status = 500
-    field: str | None = None
-
-    def __init__(self, code: str, message: str, *, status: int, field: str | None = None) -> None:
-        super().__init__(code, message)
-        self.status = status
-        self.field = field
+TracksError = MediaBusinessError
 
 
 class TrackInvalidRequest(TracksError):

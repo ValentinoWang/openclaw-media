@@ -49,11 +49,16 @@ class Database(Protocol):
 
 
 class AdminOverviewError(RuntimeError):
-    def __init__(self, code: str, detail: str, *, status: int = 503) -> None:
-        super().__init__(detail)
+    def __init__(self, code: str, message: str, *, status: int = 503) -> None:
+        super().__init__(message)
         self.code = code
-        self.detail = detail
+        self.message = message
         self.status = status
+
+    @property
+    def detail(self) -> str:
+        """Backward-compatible alias for ``message`` (see exc-1 audit)."""
+        return self.message
 
 
 class AdminOverviewService:

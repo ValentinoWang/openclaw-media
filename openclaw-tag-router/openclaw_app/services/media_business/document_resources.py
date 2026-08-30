@@ -29,12 +29,7 @@ _SAFE_CONTENT_TYPES = frozenset(
 MAX_RESOURCE_BYTES = 70 * 1024 * 1024
 
 
-class DocumentResourceError(MediaBusinessError):
-    status = 500
-
-    def __init__(self, code: str, message: str, *, status: int) -> None:
-        super().__init__(code, message)
-        self.status = status
+DocumentResourceError = MediaBusinessError
 
 
 class DocumentResourceInvalid(DocumentResourceError):

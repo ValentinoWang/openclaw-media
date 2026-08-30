@@ -29,16 +29,7 @@ _CURSOR_AAD = b"media-web-b09-invitees-v1"
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
-class InvitesError(MediaBusinessError):
-    """Stable B09 service error with the HTTP contract status."""
-
-    status = 500
-    field: str | None = None
-
-    def __init__(self, code: str, message: str, *, status: int, field: str | None = None) -> None:
-        super().__init__(code, message)
-        self.status = status
-        self.field = field
+InvitesError = MediaBusinessError
 
 
 class InvitesForbidden(InvitesError):

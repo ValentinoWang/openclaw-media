@@ -31,14 +31,7 @@ _STATUSES = {"succeeded", "compensated", "pending_reconciliation"}
 _UNITS = {"tokens", "images", "credit"}
 
 
-class UsageBillingError(MediaBusinessError):
-    status = 500
-    field: str | None = None
-
-    def __init__(self, code: str, message: str, *, status: int, field: str | None = None) -> None:
-        super().__init__(code, message)
-        self.status = status
-        self.field = field
+UsageBillingError = MediaBusinessError
 
 
 class UsageBillingForbidden(UsageBillingError):

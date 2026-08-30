@@ -40,12 +40,7 @@ _LARK_DOCUMENT_HOST_SUFFIXES = (".feishu.cn", ".larksuite.com", ".larkoffice.com
 _LARK_DOCUMENT_PATH = re.compile(r"^/(wiki|docx)/([A-Za-z0-9_-]{8,160})$")
 
 
-class ReviewsError(MediaBusinessError):
-    status = 500
-
-    def __init__(self, code: str, message: str, *, status: int = 500) -> None:
-        super().__init__(code, message)
-        self.status = status
+ReviewsError = MediaBusinessError
 
 
 class ReviewsForbidden(ReviewsError):

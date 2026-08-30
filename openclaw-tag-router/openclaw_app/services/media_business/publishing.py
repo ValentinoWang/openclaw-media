@@ -43,21 +43,7 @@ _CURSOR_AAD = b"media-web-b06-publishing-v1"
 _CREATION_PROJECTION_SOURCE = "creation_run_projection.v1"
 
 
-class PublishingError(MediaBusinessError):
-    status = 500
-    field: str | None = None
-
-    def __init__(
-        self,
-        code: str,
-        message: str,
-        *,
-        status: int = 500,
-        field: str | None = None,
-    ) -> None:
-        super().__init__(code, message)
-        self.status = status
-        self.field = field
+PublishingError = MediaBusinessError
 
 
 class PublishingInvalidRequest(PublishingError):

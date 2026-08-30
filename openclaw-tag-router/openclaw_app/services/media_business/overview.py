@@ -53,23 +53,7 @@ _FEISHU_DOCUMENT_HOST_SUFFIXES = tuple(f".{host}" for host in DEFAULT_FEISHU_DOC
 _FEISHU_DOCUMENT_ROOT_HOSTS = frozenset(DEFAULT_FEISHU_DOC_HOSTS)
 
 
-class OverviewError(MediaBusinessError):
-    """Stable business-page error with an HTTP status and optional field."""
-
-    status = 500
-    field: str | None = None
-
-    def __init__(
-        self,
-        code: str,
-        message: str,
-        *,
-        status: int,
-        field: str | None = None,
-    ) -> None:
-        super().__init__(code, message)
-        self.status = status
-        self.field = field
+OverviewError = MediaBusinessError
 
 
 class OverviewForbidden(OverviewError):
@@ -819,7 +803,7 @@ class OverviewService:
             if not tenant_id or not user_id:
                 raise OverviewForbidden()
             return tenant_id
-        except OverviewError:
+        except OverviewForbidden:
             raise
         except (MediaBusinessError, AttributeError, TypeError, ValueError) as exc:
             raise OverviewForbidden() from exc

@@ -45,14 +45,7 @@ _CURSOR_VERSION = 1
 _CURSOR_AAD = b"media-web-b05-runs-v1"
 
 
-class RunsError(MediaBusinessError):
-    status = 500
-    field: str | None = None
-
-    def __init__(self, code: str, message: str, *, status: int = 500, field: str | None = None) -> None:
-        super().__init__(code, message)
-        self.status = status
-        self.field = field
+RunsError = MediaBusinessError
 
 
 class RunsForbidden(RunsError):

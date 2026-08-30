@@ -37,14 +37,7 @@ _SAME_ORIGIN_PREVIEW_URL = re.compile(r"^/openclaw/media/api/assets/[A-Za-z0-9_-
 _QUALITY_STATUSES = {"verified", "partial", "unverified", "unavailable"}
 
 
-class AssetsError(MediaBusinessError):
-    status = 500
-    field: str | None = None
-
-    def __init__(self, code: str, message: str, *, status: int, field: str | None = None) -> None:
-        super().__init__(code, message)
-        self.status = status
-        self.field = field
+AssetsError = MediaBusinessError
 
 
 class AssetInvalidRequest(AssetsError):
