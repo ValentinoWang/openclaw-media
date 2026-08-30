@@ -758,14 +758,19 @@ class WorkspaceResolver:
                 return None, token, "invalid_session"
             if bool(getattr(session, "is_maintainer", False)) and role != "admin":
                 return None, token, "invalid_session"
-            mode = str(getattr(session, "workspace_mode"))
-            authority = str(getattr(session, "body_authority"))
-            if (mode, authority) not in {
-                ("personal_web", "internal"),
-                ("organization_lark", "lark"),
-            }:
-                return None, token, "validation_error"
-            if str(getattr(session, "member_role")) not in {"owner", "member"}:
+            # AccountSession is the authentication record only. Workspace mode and
+            # authority are resolved from current workspace/membership rows below;
+            # older session implementations legitimately do not carry either field.
+            mode = getattr(session, "workspace_mode", None)
+            authority = getattr(session, "body_authority", None)
+            if mode is not None or authority is not None:
+                if (str(mode), str(authority)) not in {
+                    ("personal_web", "internal"),
+                    ("organization_lark", "lark"),
+                }:
+                    return None, token, "validation_error"
+            member_role = getattr(session, "member_role", None)
+            if member_role is not None and str(member_role) not in {"owner", "member"}:
                 return None, token, "validation_error"
         except (AttributeError, TypeError, ValueError, WorkspaceResolutionError):
             return None, token, "invalid_session"
