@@ -510,9 +510,7 @@ class UsageBillingService:
         _require_key(idempotency_key, "Idempotency-Key")
         if self._redemption_service is None:
             raise UsageBillingInternalError("redemption service is unavailable")
-        request_checksum = hashlib.sha256(
-            json.dumps({"code": code}, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
+        request_checksum = hashlib.sha256(foundation.canonical_json_bytes({"code": code})).hexdigest()
         operation = "redeemBillingCode"
         try:
             with self._connection_factory() as connection:
@@ -556,7 +554,7 @@ class UsageBillingService:
                         operation,
                         idempotency_key,
                         request_checksum,
-                        json.dumps(response, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+                        foundation.canonical_json(response),
                     ),
                 )
                 return public_projection(response)
@@ -653,7 +651,7 @@ class UsageBillingService:
             "createdAt": cursor.created_at.isoformat(),
             "publicUsageId": cursor.public_usage_id,
         }
-        raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+        raw = foundation.canonical_json_bytes(payload)
         signature = hmac.new(self._cursor_key, raw, hashlib.sha256).digest()
         return base64.urlsafe_b64encode(raw + b"." + signature).decode().rstrip("=")
 

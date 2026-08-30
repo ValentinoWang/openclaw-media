@@ -114,7 +114,7 @@ def _json_object(value: Any, label: str) -> dict[str, Any]:
 
 
 def _as_json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return foundation.canonical_json(value)
 
 
 def _public_id(value: Any, field: str = "public id") -> str:

@@ -161,8 +161,7 @@ def _tenant_digest(tenant_id: str) -> str:
 
 def _safe_base64_decode(value: str) -> bytes:
     try:
-        padding = "=" * (-len(value) % 4)
-        return base64.urlsafe_b64decode((value + padding).encode("ascii"))
+        return foundation.b64url_decode(value)
     except (UnicodeEncodeError, ValueError, binascii.Error) as exc:
         raise OverviewInvalidRequest("cursor is invalid", field="cursor") from exc
 
@@ -1018,7 +1017,7 @@ class OverviewService:
         }
         if position.project_id is not None:
             payload["projectId"] = position.project_id
-        body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        body = foundation.canonical_json_bytes(payload)
         signature = hmac.new(self._cursor_key, body, hashlib.sha256).digest()
         encode = lambda value: base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
         return f"{encode(body)}.{encode(signature)}"

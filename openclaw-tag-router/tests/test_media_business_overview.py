@@ -335,6 +335,45 @@ def test_project_pagination_is_opaque_tenant_bound_and_capped_at_100() -> None:
         service(connection).list_content_projects(CONTEXT_A, cursor=tampered, page_size=1)
 
 
+def test_cursor_payload_fields_are_pure_ascii() -> None:
+    """canonical_json's ensure_ascii=False only differs from the module's
+    prior bare ensure_ascii=True json.dumps() call when a field contains
+    non-ASCII text -- verify the real cursor payload (scope, a tenant
+    digest, an ISO timestamp, and public ids) never does, rather than
+    assuming it (c6 audit).
+    """
+    from openclaw_app.services.media_business import overview as overview_module
+
+    captured: list[dict[str, Any]] = []
+    original_canonical_json_bytes = overview_module.foundation.canonical_json_bytes
+
+    def spy_canonical_json_bytes(obj: Any) -> bytes:
+        if isinstance(obj, dict) and obj.get("scope") in {"projects", "artifacts"}:
+            captured.append(obj)
+        return original_canonical_json_bytes(obj)
+
+    rows = [project_row("project_abc"), project_row("project_def")]
+    connection = ScriptedConnection(
+        lambda query, _params: Cursor(rows)
+        if "FROM media_product.content_projects" in query
+        else Cursor()
+    )
+    overview_module.foundation.canonical_json_bytes = spy_canonical_json_bytes
+    try:
+        service(connection).list_content_projects(CONTEXT_A, page_size=1)
+    finally:
+        overview_module.foundation.canonical_json_bytes = original_canonical_json_bytes
+
+    assert captured, "cursor payload was never constructed"
+    for payload in captured:
+        for key, value in payload.items():
+            if isinstance(value, str):
+                value.encode("ascii")  # raises UnicodeEncodeError if not pure ASCII
+        assert json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True) == json.dumps(
+            payload, ensure_ascii=True, separators=(",", ":"), sort_keys=True
+        )
+
+
 def test_cross_tenant_project_is_masked_as_not_found_and_context_is_required() -> None:
     connection = ScriptedConnection(lambda _query, _params: Cursor())
     with pytest.raises(OverviewNotFound):

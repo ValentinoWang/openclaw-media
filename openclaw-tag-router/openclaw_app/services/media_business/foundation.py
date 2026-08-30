@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Mapping
 
-from common.canonical_digest import digest_hex
+from common.canonical_digest import canonical_json as _canonical_json
 
 
 class MediaBusinessError(Exception):
@@ -303,8 +303,27 @@ def public_projection(value: Any) -> Any:
     return walk(value)
 
 
+def canonical_json(value: Any) -> str:
+    """Canonical JSON text for cursor/checksum bodies (c6 audit).
+
+    Sorted keys, compact separators, non-ASCII kept literal
+    (``ensure_ascii=False``), NaN/Infinity allowed through rather than
+    rejected (``allow_nan=True``) -- matching what every media_business
+    call site of this shape already did via a bare, unguarded
+    ``json.dumps(value, ensure_ascii=False, sort_keys=True,
+    separators=(",", ":"))`` call. Thin wrapper over
+    ``common.canonical_digest.canonical_json``, whose own default is the
+    stricter ``allow_nan=False``.
+    """
+    return _canonical_json(value, allow_nan=True)
+
+
+def canonical_json_bytes(value: Any) -> bytes:
+    return canonical_json(value).encode("utf-8")
+
+
 def body_checksum(body: dict[str, Any]) -> str:
-    return digest_hex(body, allow_nan=True)
+    return hashlib.sha256(canonical_json_bytes(body)).hexdigest()
 
 
 # --- Signed opaque-token codec (HIGH-28 c4) ---------------------------------
@@ -969,3 +988,26 @@ def page_size(value: Any, *, maximum: int = MAX_PAGE_SIZE, error: Callable[[str]
     if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= maximum:
         raise error(f"pageSize must be between 1 and {maximum}")
     return value
+
+
+# --- base64url encode/decode (c6 audit) --------------------------------------
+#
+# tracks.py, assets.py, and invites.py each independently wrote the same
+# unpadded-base64url codec for cursor/checksum bytes; overview.py's
+# _safe_base64_decode is a fourth spelling that additionally translates
+# straight to a domain exception. This is invites.py's spelling verbatim
+# (assets.py's is character-identical; tracks.py's differs only in
+# `.decode()` vs `.decode("ascii")` and `not re.fullmatch(...)` vs
+# `re.fullmatch(...) is None`, semantically identical either way).
+
+_B64URL_PATTERN = re.compile(r"[A-Za-z0-9_-]+")
+
+
+def b64url_encode(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
+
+
+def b64url_decode(value: str) -> bytes:
+    if not value or _B64URL_PATTERN.fullmatch(value) is None:
+        raise ValueError("invalid base64url")
+    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))

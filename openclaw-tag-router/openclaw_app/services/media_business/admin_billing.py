@@ -186,7 +186,7 @@ def _revision(*parts: Any) -> int:
         elif isinstance(part, UUID):
             encoded.append(str(part))
         else:
-            encoded.append(json.dumps(part, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+            encoded.append(foundation.canonical_json(part))
     digest = hashlib.sha256("|".join(encoded).encode("utf-8")).digest()
     return int.from_bytes(digest[:8], "big") & ((1 << 63) - 1)
 

@@ -1,7 +1,6 @@
 """Tenant-scoped PostgreSQL read model for the B09 invites page."""
 from __future__ import annotations
 
-import base64
 import binascii
 import hashlib
 import hmac
@@ -331,17 +330,15 @@ class InvitesService:
         }
 
     def _encode_cursor(self, cursor: InviteeCursor) -> str:
-        payload = json.dumps(
+        payload = foundation.canonical_json_bytes(
             {
                 "version": 1,
                 "tenantId": str(cursor.tenant_id),
                 "inviterUserId": str(cursor.inviter_user_id),
                 "createdAt": _timestamp_text(cursor.created_at),
                 "inviteeUserId": str(cursor.invitee_user_id),
-            },
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode("utf-8")
+            }
+        )
         nonce = secrets.token_bytes(12)
         encrypted = AESGCM(self._cursor_key).encrypt(
             nonce,
@@ -434,10 +431,8 @@ def _cursor_aad(tenant_id: UUID, user_id: UUID) -> bytes:
 
 
 def _b64_encode(value: bytes) -> str:
-    return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
+    return foundation.b64url_encode(value)
 
 
 def _b64_decode(value: str) -> bytes:
-    if not value or re.fullmatch(r"[A-Za-z0-9_-]+", value) is None:
-        raise ValueError("invalid base64url")
-    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+    return foundation.b64url_decode(value)

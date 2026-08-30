@@ -178,7 +178,7 @@ def _require_public_id(value: Any, field: str) -> str:
 
 
 def _as_json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return foundation.canonical_json(value)
 
 
 def _safe_number(value: Any, field: str) -> int | float:

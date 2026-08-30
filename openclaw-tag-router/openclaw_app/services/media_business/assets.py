@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import hmac
 import json
@@ -877,10 +876,8 @@ def _list_revision(count: int, max_revision: int, latest_updated_at: Any) -> int
 
 
 def _b64_encode(value: bytes) -> str:
-    return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
+    return foundation.b64url_encode(value)
 
 
 def _b64_decode(value: str) -> bytes:
-    if not value or not re.fullmatch(r"[A-Za-z0-9_-]+", value):
-        raise ValueError("invalid base64url")
-    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+    return foundation.b64url_decode(value)

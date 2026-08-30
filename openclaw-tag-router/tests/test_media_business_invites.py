@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Any
@@ -177,3 +178,40 @@ def test_error_payload_keeps_if2_code_and_field_shape() -> None:
             "field": None,
         }
     }
+
+
+def test_cursor_payload_fields_are_pure_ascii() -> None:
+    """canonical_json's ensure_ascii=False only differs from the module's
+    prior bare ensure_ascii=True json.dumps() call when a field contains
+    non-ASCII text -- verify the real cursor payload (built from UUIDs and
+    an ISO timestamp only) never does, rather than assuming it (c6 audit).
+    """
+    from openclaw_app.services.media_business import invites as invites_module
+
+    captured: list[dict[str, Any]] = []
+    original_canonical_json_bytes = invites_module.foundation.canonical_json_bytes
+
+    def spy_canonical_json_bytes(obj: Any) -> bytes:
+        if isinstance(obj, dict) and obj.get("version") == 1:
+            captured.append(obj)
+        return original_canonical_json_bytes(obj)
+
+    rows = [
+        invitee("20000000-0000-0000-0000-000000000001", "First", "registered"),
+        invitee("20000000-0000-0000-0000-000000000002", "Second", "pending"),
+    ]
+    connection = FakeConnection(invitee_rows=rows, cursor_rows=[rows[1]])
+    invites_module.foundation.canonical_json_bytes = spy_canonical_json_bytes
+    try:
+        service(connection).list_invitees(context(), page_size=1)
+    finally:
+        invites_module.foundation.canonical_json_bytes = original_canonical_json_bytes
+
+    assert captured, "cursor payload was never constructed"
+    for payload in captured:
+        for key, value in payload.items():
+            if isinstance(value, str):
+                value.encode("ascii")  # raises UnicodeEncodeError if not pure ASCII
+        assert json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True) == json.dumps(
+            payload, ensure_ascii=True, separators=(",", ":"), sort_keys=True
+        )

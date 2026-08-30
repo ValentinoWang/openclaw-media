@@ -95,7 +95,7 @@ class _CursorPosition:
 
 
 def _as_json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return foundation.canonical_json(value)
 
 
 def _row_values(row: Any, fields: tuple[str, ...], label: str) -> tuple[Any, ...]:
