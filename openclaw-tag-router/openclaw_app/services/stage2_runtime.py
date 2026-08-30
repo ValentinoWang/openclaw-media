@@ -16,6 +16,7 @@ import threading
 from collections.abc import Callable, Iterable, Mapping, MutableMapping
 from dataclasses import asdict, dataclass, is_dataclass
 from datetime import date, datetime, timezone
+from http import HTTPStatus
 from typing import Any, Protocol
 from uuid import UUID
 
@@ -147,6 +148,41 @@ class IdempotencyInProgress(Stage2RuntimeError):
 
     def __init__(self, message: str = "operation is already in progress") -> None:
         super().__init__(IDEMPOTENCY_IN_PROGRESS, message)
+
+
+def runtime_status(code: str) -> HTTPStatus:
+    """Map a Stage2RuntimeError ``code`` to the HTTP status both Stage-2 HTTP
+    adapters (adapters/http_api.py and adapters/stage2_http_api.py) should
+    return for it.
+
+    This is the single canonical code->status table for the ``/stage2``
+    surface. It used to be defined once in adapters/http_api.py and
+    reproduced -- incompletely, as an inline ternary covering only the 409
+    group -- in adapters/stage2_http_api.py, so the two live HTTP entry
+    points disagreed on the status for the same exception. Both adapters now
+    import this instead of keeping their own copy.
+    """
+
+    if code in {IDEMPOTENCY_CONFLICT, IDEMPOTENCY_IN_PROGRESS}:
+        return HTTPStatus.CONFLICT
+    if code in {"invalid_request", "route_mismatch", "generator_invalid"}:
+        return HTTPStatus.BAD_REQUEST
+    if code in {"authentication_required", "authentication_invalid", "session_invalid"}:
+        return HTTPStatus.UNAUTHORIZED
+    if code in {
+        "authority_override",
+        "binding_inactive",
+        "binding_required",
+        "binding_generation_mismatch",
+        "binding_mismatch",
+        "binding_tenant_mismatch",
+        "personal_binding_forbidden",
+        "unregistered_capability",
+    }:
+        return HTTPStatus.FORBIDDEN
+    if code in {"adapter_required", "receipt_store_invalid", "writer_required"}:
+        return HTTPStatus.SERVICE_UNAVAILABLE
+    return HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 @dataclass(frozen=True, slots=True)
@@ -1332,4 +1368,5 @@ __all__ = [
     "Stage2Runtime",
     "Stage2RuntimeError",
     "Stage2RuntimeFacade",
+    "runtime_status",
 ]

@@ -36,20 +36,6 @@ def _reject_duplicate_json_fields(pairs: list[tuple[str, Any]]) -> dict[str, Any
     return payload
 
 
-def _stage2_runtime_status(code: str) -> HTTPStatus:
-    if code in {"idempotency_conflict", "idempotency_in_progress"}:
-        return HTTPStatus.CONFLICT
-    if code in {"invalid_request", "route_mismatch", "generator_invalid"}:
-        return HTTPStatus.BAD_REQUEST
-    if code in {"authentication_required", "authentication_invalid", "session_invalid"}:
-        return HTTPStatus.UNAUTHORIZED
-    if code in {"authority_override", "binding_inactive", "binding_required", "binding_generation_mismatch", "binding_mismatch", "binding_tenant_mismatch", "personal_binding_forbidden", "unregistered_capability"}:
-        return HTTPStatus.FORBIDDEN
-    if code in {"adapter_required", "receipt_store_invalid", "writer_required"}:
-        return HTTPStatus.SERVICE_UNAVAILABLE
-    return HTTPStatus.UNPROCESSABLE_ENTITY
-
-
 def _stage2_authentication_error(exc: Stage2ServerContextError) -> Stage2GatewayError:
     return Stage2GatewayError(exc.code, exc.message, status=exc.status)
 
@@ -74,7 +60,7 @@ from ..services.device_job_errors import DeviceJobError
 from ..services.media_web_tasks import MediaWebTaskError, MediaWebTaskService, TERMINAL_STATES
 from ..services.stage1_writer_gate import WRITER_CLOSED_ERROR_CODE
 from ..services.stage2_gateway import Stage2GatewayError
-from ..services.stage2_runtime import Stage2RuntimeError
+from ..services.stage2_runtime import Stage2RuntimeError, runtime_status as _stage2_runtime_status
 from ..services.stage2_server_context import (
     Stage2ServerContextError,
     extract_session_token,

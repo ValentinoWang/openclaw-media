@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 from ..account import AccountAuthService, AccountError, AccountSession
 from ..services.stage2_gateway import Stage2GatewayError
 from ..services.stage2_main_composition import Stage2ContractIdentity
-from ..services.stage2_runtime import Stage2RuntimeError
+from ..services.stage2_runtime import Stage2RuntimeError, runtime_status
 from ..services.stage2_server_context import stage2_request_context
 
 
@@ -342,11 +342,7 @@ class Stage2HttpHandler(BaseHTTPRequestHandler):
                 Stage2HttpError(exc.code, exc.message, status=int(exc.status))
             )
         except Stage2RuntimeError as exc:
-            status = (
-                HTTPStatus.CONFLICT
-                if exc.code in {"idempotency_conflict", "idempotency_in_progress"}
-                else HTTPStatus.UNPROCESSABLE_ENTITY
-            )
+            status = runtime_status(exc.code)
             self._send_error(Stage2HttpError(exc.code, exc.message, status=int(status)))
         except AccountError as exc:
             self._send_error(Stage2HttpError(exc.code, exc.detail, status=exc.status))
