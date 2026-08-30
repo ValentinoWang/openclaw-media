@@ -43,8 +43,8 @@ class DecisionsNotFound(foundation.NotFound):
 
 
 class DecisionsInvalidRequest(DecisionsError):
-    def __init__(self, message: str) -> None:
-        super().__init__(foundation.INVALID_REQUEST, message, status=400)
+    def __init__(self, message: str, *, field: str | None = None) -> None:
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
 class DecisionsConflict(foundation.Conflict):
@@ -121,9 +121,7 @@ def _request_public_id(value: Any, field: str) -> str:
 
 
 def _page_size(value: Any) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= MAX_PAGE_SIZE:
-        raise DecisionsInvalidRequest(f"pageSize must be between 1 and {MAX_PAGE_SIZE}")
-    return value
+    return foundation.page_size(value, error=lambda m: DecisionsInvalidRequest(m, field="pageSize"))
 
 
 def _search(value: Any) -> str:

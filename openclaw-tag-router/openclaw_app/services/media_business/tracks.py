@@ -1045,9 +1045,7 @@ def _simple_params(tenant_id: str, position: TrackCursor | None, size: int) -> t
 
 
 def _page_size(value: Any) -> int:
-    if type(value) is not int or not 1 <= value <= MAX_PAGE_SIZE:
-        raise TrackInvalidRequest("pageSize must be between 1 and 100", field="pageSize")
-    return value
+    return foundation.page_size(value, error=lambda m: TrackInvalidRequest(m, field="pageSize"))
 
 
 def _search(value: Any) -> str:

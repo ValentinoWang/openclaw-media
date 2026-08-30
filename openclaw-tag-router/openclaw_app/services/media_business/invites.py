@@ -381,12 +381,7 @@ class InvitesService:
 
 
 def _page_size(value: Any) -> int:
-    if type(value) is not int or not 1 <= value <= MAX_PAGE_SIZE:
-        raise InvitesInvalidRequest(
-            f"pageSize must be between 1 and {MAX_PAGE_SIZE}",
-            field="pageSize",
-        )
-    return value
+    return foundation.page_size(value, error=lambda m: InvitesInvalidRequest(m, field="pageSize"))
 
 
 def _require_uuid(value: Any) -> UUID:

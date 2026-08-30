@@ -806,9 +806,7 @@ class OverviewService:
 
     @staticmethod
     def _page_size(page_size: int) -> int:
-        if type(page_size) is not int or not 1 <= page_size <= MAX_PAGE_SIZE:
-            raise OverviewInvalidRequest("page size is invalid", field="pageSize")
-        return page_size
+        return foundation.page_size(page_size, error=lambda m: OverviewInvalidRequest(m, field="pageSize"))
 
     @staticmethod
     def _search(search: str | None) -> str | None:

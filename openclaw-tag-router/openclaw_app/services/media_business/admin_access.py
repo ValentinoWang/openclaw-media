@@ -810,9 +810,7 @@ class AdminAccessService:
 
     @staticmethod
     def _page_size(value: int) -> int:
-        if type(value) is not int or not 1 <= value <= MAX_PAGE_SIZE:
-            raise AdminAccessInvalidRequest("pageSize must be between 1 and 100", field="pageSize")
-        return value
+        return foundation.page_size(value, error=lambda m: AdminAccessInvalidRequest(m, field="pageSize"))
 
     @staticmethod
     def _search(value: str | None) -> str:

@@ -947,3 +947,25 @@ def json_object(value: Any, label: str, *, error: Callable[[str], Exception]) ->
     if not isinstance(value, Mapping):
         raise error(f"{label} is not an object")
     return dict(value)
+
+
+# --- pageSize validation (c1 audit) ------------------------------------------
+#
+# Eleven media_business modules each independently wrote the same pageSize
+# guard: reject anything that isn't a plain int (explicitly rejecting
+# bool, since bool is an int subclass in Python) outside 1..100, using one
+# of two competing type-check spellings (`type(value) is not int` vs
+# `isinstance(value, bool) or not isinstance(value, int)` -- equivalent
+# for bool, but the isinstance form is the one that also correctly
+# rejects other bool-like int subclasses, hence "bool-rejecting isinstance
+# form"). DEFAULT_PAGE_SIZE is a live per-page 20-vs-30 contract and stays
+# per-module; only the validator and the MAX_PAGE_SIZE=100 ceiling (which
+# is identical everywhere) are centralized here.
+
+MAX_PAGE_SIZE = 100
+
+
+def page_size(value: Any, *, maximum: int = MAX_PAGE_SIZE, error: Callable[[str], Exception]) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= maximum:
+        raise error(f"pageSize must be between 1 and {maximum}")
+    return value

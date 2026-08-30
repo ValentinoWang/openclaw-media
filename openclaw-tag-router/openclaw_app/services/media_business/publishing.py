@@ -186,12 +186,7 @@ def _revision(value: Any, *, request: bool = False, field: str = "revision") -> 
 
 
 def _page_size(value: Any) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= MAX_PAGE_SIZE:
-        raise PublishingInvalidRequest(
-            f"pageSize must be between 1 and {MAX_PAGE_SIZE}",
-            field="pageSize",
-        )
-    return value
+    return foundation.page_size(value, error=lambda m: PublishingInvalidRequest(m, field="pageSize"))
 
 
 def _public_response(value: dict[str, Any]) -> dict[str, Any]:

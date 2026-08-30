@@ -184,9 +184,7 @@ def _usage_text(value: Any) -> str:
 
 
 def _page_size(value: Any) -> int:
-    if type(value) is not int or not 1 <= value <= MAX_PAGE_SIZE:
-        raise AdminTenantsInvalidRequest("pageSize must be between 1 and 100", field="pageSize")
-    return value
+    return foundation.page_size(value, error=lambda m: AdminTenantsInvalidRequest(m, field="pageSize"))
 
 
 def _search(value: Any) -> str:

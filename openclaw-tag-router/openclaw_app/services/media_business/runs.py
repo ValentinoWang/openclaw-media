@@ -346,9 +346,7 @@ def _artifact_summary_from_row(row: Any, label: str = "artifact") -> dict[str, A
 
 
 def _page_size(value: Any) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= MAX_PAGE_SIZE:
-        raise RunsInvalidRequest(f"pageSize must be between 1 and {MAX_PAGE_SIZE}", field="pageSize")
-    return value
+    return foundation.page_size(value, error=lambda m: RunsInvalidRequest(m, field="pageSize"))
 
 
 def _search(value: Any) -> str:

@@ -692,9 +692,7 @@ class UsageBillingService:
 
 
 def _page_size(value: int) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= MAX_PAGE_SIZE:
-        raise UsageBillingInvalidRequest("pageSize must be between 1 and 100", field="pageSize")
-    return value
+    return foundation.page_size(value, error=lambda m: UsageBillingInvalidRequest(m, field="pageSize"))
 
 
 def _require_text(value: str, label: str, *, max_length: int | None = None) -> None:

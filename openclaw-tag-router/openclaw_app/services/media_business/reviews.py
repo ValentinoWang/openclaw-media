@@ -54,8 +54,8 @@ class ReviewsNotFound(foundation.NotFound):
 
 
 class ReviewsInvalidRequest(ReviewsError):
-    def __init__(self, message: str) -> None:
-        super().__init__(foundation.INVALID_REQUEST, message, status=400)
+    def __init__(self, message: str, *, field: str | None = None) -> None:
+        super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
 
 
 class ReviewsConflict(foundation.Conflict):
@@ -242,9 +242,7 @@ def _decode_cursor(secret: bytes, context: TenantContext, scope: str, token: str
 
 
 def _page_size(value: int) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= MAX_PAGE_SIZE:
-        raise ReviewsInvalidRequest(f"pageSize must be between 1 and {MAX_PAGE_SIZE}")
-    return value
+    return foundation.page_size(value, error=lambda m: ReviewsInvalidRequest(m, field="pageSize"))
 
 
 def _artifact_summary(
