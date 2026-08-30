@@ -19,6 +19,7 @@ if str(SELFMEDIA_ROOT) not in sys.path:
 
 from common.social_runtime import load_default_env_files, load_env_file
 from common.env_paths import load_media_agent_env_files
+from common.prompt_budget import truncate_text as _shared_truncate_text
 from common.platform_links import platform_for_url
 from integrations.feishu.media_writer import SOURCE_ASSET_ATTACHMENT_MAX_BYTES, upsert_entity_record
 from media_model.contract import MediaModelContract
@@ -72,9 +73,7 @@ def _normalize_text(value: Any) -> str:
 
 def _summary_text(value: Any, limit: int = MAX_BITABLE_SUMMARY_CHARS) -> str:
     text = _normalize_text(value).strip()
-    if len(text) <= limit:
-        return text
-    return text[: limit - 1] + "..."
+    return _shared_truncate_text(text, limit, marker="...", strip=False)
 
 
 def build_attachment_plan(result: dict[str, Any]) -> list[AttachmentItem]:

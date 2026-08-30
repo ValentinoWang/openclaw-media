@@ -4,6 +4,8 @@ import json
 import os
 from typing import Any
 
+from common.prompt_budget import truncate_nested as _shared_truncate_nested, truncate_text as _shared_truncate_text
+
 from . import deconstruction_artifact
 from .adapters import ActivityAdapter, BusinessAdapter, CreationInspirationAdapter, ViralContentAdapter
 from .deconstruction_artifact import DeconstructionArtifactUnavailable, attach_deconstruction_artifact_brief
@@ -763,17 +765,11 @@ def _ranked_public(item: RankedRecord) -> dict[str, Any]:
 
 def _truncate(value: Any, max_chars: int) -> str:
     text = str(value or "").strip()
-    return text if len(text) <= max_chars else text[: max_chars - 12].rstrip() + "..."
+    return _shared_truncate_text(text, max_chars, marker="...", strip=True)
 
 
 def _truncate_nested(value: Any, max_chars: int = 900) -> Any:
-    if isinstance(value, dict):
-        return {str(key): _truncate_nested(item, max_chars=max_chars) for key, item in value.items() if item not in (None, "", [])}
-    if isinstance(value, list):
-        return [_truncate_nested(item, max_chars=max_chars) for item in value[:20]]
-    if isinstance(value, str):
-        return _truncate(value, max_chars)
-    return value
+    return _shared_truncate_nested(value, max_chars, max_keys=None, max_items=20, marker="...", drop_empty=True)
 
 
 def _as_list(value: Any) -> list[str]:

@@ -9,6 +9,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+from common.prompt_budget import truncate_nested as _shared_truncate_nested, truncate_text as _shared_truncate_text
 from common.social_runtime import local_now_iso as _now_iso
 
 from .llm_generator import call_creation_json, creation_generation_metadata
@@ -893,19 +894,7 @@ def _compact_reference_docs(reference_docs: list[dict[str, str]]) -> list[dict[s
 
 
 def _truncate_nested(value: Any, max_chars: int) -> Any:
-    if isinstance(value, dict):
-        result: dict[str, Any] = {}
-        for index, (key, item) in enumerate(value.items()):
-            if index >= 30:
-                result["_truncated_keys"] = len(value) - 30
-                break
-            result[str(key)] = _truncate_nested(item, max_chars)
-        return result
-    if isinstance(value, list):
-        return [_truncate_nested(item, max_chars) for item in value[:20]]
-    if isinstance(value, str):
-        return _truncate(value, max_chars)
-    return value
+    return _shared_truncate_nested(value, max_chars, max_keys=30, max_items=20, marker="...")
 
 
 _REVIEW_PROMPT_FIELDS = (
@@ -956,9 +945,7 @@ def _compact_platform_fit_candidates(value: Any, max_chars: int) -> list[dict[st
 
 def _truncate(value: str, max_chars: int) -> str:
     text = str(value or "").strip()
-    if len(text) <= max_chars:
-        return text
-    return text[: max_chars - 12].rstrip() + "..."
+    return _shared_truncate_text(text, max_chars, marker="...", strip=True)
 
 
 def _as_string_list(value: Any) -> list[str]:

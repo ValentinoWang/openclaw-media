@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from common.prompt_budget import truncate_text as _truncate_text
 from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id
 
 from common.social_runtime import (
@@ -342,13 +343,7 @@ def _context_prompt_max_chars(max_chars: int | None) -> int:
 
 
 def _truncate_context_prompt(text: str, *, max_chars: int) -> str:
-    if max_chars <= 0:
-        return ""
-    if len(text) <= max_chars:
-        return text
-    if max_chars <= len(CONTEXT_TRUNCATION_SUFFIX):
-        return CONTEXT_TRUNCATION_SUFFIX[:max_chars]
-    return text[: max_chars - len(CONTEXT_TRUNCATION_SUFFIX)].rstrip() + CONTEXT_TRUNCATION_SUFFIX
+    return _truncate_text(text, max_chars, marker=CONTEXT_TRUNCATION_SUFFIX, strip=True)
 
 
 def _profile_prompt_lines(profile: dict[str, Any], *, context: dict[str, Any]) -> list[str]:

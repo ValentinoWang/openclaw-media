@@ -9,6 +9,12 @@ from typing import Any
 from common.llm_client import DEFAULT_JSON_RETRY_TEXT, generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import load_profile_llm_settings
+from common.prompt_budget import (
+    truncate_list as _shared_truncate_list,
+    truncate_nested as _shared_truncate_nested,
+    truncate_text as _shared_truncate_text,
+    truncate_to_budget as _shared_truncate_to_budget,
+)
 
 from .platform_validator import validate_platform_draft
 from .request_parser import CreationRequest
@@ -611,13 +617,7 @@ def _nonnegative_int(value: Any) -> int:
 
 
 def _truncate_to_budget(value: str, max_chars: int) -> str:
-    if max_chars <= 0:
-        return ""
-    if len(value) <= max_chars:
-        return value
-    if max_chars <= 12:
-        return value[:max_chars]
-    return _truncate_text(value, max_chars)
+    return _shared_truncate_to_budget(value, max_chars)
 
 
 def _compact_creation_prompt_payload(
@@ -710,8 +710,7 @@ def _compact_reference_docs(value: Any) -> list[dict[str, str]]:
 
 
 def _truncate_list(value: Any, max_items: int, max_text: int) -> list[Any]:
-    items = value if isinstance(value, list) else []
-    return [_truncate_nested(item, max_text) for item in items[:max_items]]
+    return _shared_truncate_list(value, max_items, max_text, max_keys=40, marker="...[truncated]")
 
 
 _REVIEW_PROMPT_FIELDS = (
@@ -742,26 +741,12 @@ def _compact_review(value: dict[str, Any], max_text: int) -> dict[str, Any]:
 
 
 def _truncate_nested(value: Any, max_text: int) -> Any:
-    if isinstance(value, str):
-        return _truncate_text(value, max_text)
-    if isinstance(value, list):
-        return [_truncate_nested(item, max_text) for item in value[:20]]
-    if isinstance(value, dict):
-        result: dict[str, Any] = {}
-        for index, (key, item) in enumerate(value.items()):
-            if index >= 40:
-                result["_truncated_keys"] = len(value) - 40
-                break
-            result[str(key)] = _truncate_nested(item, max_text)
-        return result
-    return value
+    return _shared_truncate_nested(value, max_text, max_keys=40, max_items=20, marker="...[truncated]")
 
 
 def _truncate_text(value: Any, max_chars: int) -> str:
     text = str(value or "").strip()
-    if len(text) <= max_chars:
-        return text
-    return text[: max_chars - 12].rstrip() + "...[truncated]"
+    return _shared_truncate_text(text, max_chars, marker="...[truncated]", strip=True)
 
 
 def _normalize_script_options(
