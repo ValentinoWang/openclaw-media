@@ -480,6 +480,7 @@ function TracksPage() {
             onMonitorStateChange={setAccountMonitorState}
             session={session}
             trackState={trackState}
+            openWorkspace={openWorkspace}
           />
         ) : activeTab === "tracks" ? (
           <TrackInspector
@@ -1183,6 +1184,7 @@ function OwnedAccountInspector({
   onMonitorStateChange,
   session,
   trackState,
+  openWorkspace,
 }: {
   selectedAccountId: string | null;
   state: ResourceState<DetailResponse<OwnedAccountSummary>> | null;
@@ -1190,6 +1192,7 @@ function OwnedAccountInspector({
   onMonitorStateChange: Dispatch<ResourceState<AccountMonitorResponse> | null>;
   session: NonNullable<ReturnType<typeof useMediaWeb>["session"]>;
   trackState: ResourceState<ListResponse<TrackSummary>>;
+  openWorkspace: ReturnType<typeof useMediaWeb>["openWorkspace"];
 }) {
   const account = state?.kind === "ready" ? state.data.item : null;
   const tracks = trackState.kind === "ready" ? trackState.data.items : [];
@@ -1260,7 +1263,14 @@ function OwnedAccountInspector({
               <Field label="台账更新时间" value={formatDate(account.updatedAt)} />
             </InspectorSection>
 
-            <AccountMonitorSection state={monitorState} accountId={account.publicAccountId} session={session} onStateChange={onMonitorStateChange} />
+            <AccountMonitorSection
+              state={monitorState}
+              accountId={account.publicAccountId}
+              session={session}
+              onStateChange={onMonitorStateChange}
+              account={account}
+              openWorkspace={openWorkspace}
+            />
           </div>
         ) : (
           <SurfaceState kind="empty" title="详情为空" detail="该账号没有可展示的详情记录。" />
@@ -1270,30 +1280,20 @@ function OwnedAccountInspector({
   );
 }
 
-const H00_MONITOR_URL = "https://tcnwueberajc.feishu.cn/base/OmjkbgBkwa2JEysEN8uc5PMhnTb?table=tblc65xqnUjSw9Ah";
-const H00_MONITOR_FIELDS = [
-  "账号名称",
-  "平台",
-  "近期作品链接",
-  "启用",
-  "最近运行时间",
-  "最近状态",
-  "最近作品数",
-  "最近总互动",
-  "最近错误",
-  "最近日报摘要",
-];
-
 function AccountMonitorSection({
   state,
   accountId,
   session,
   onStateChange,
+  account,
+  openWorkspace,
 }: {
   state: ResourceState<AccountMonitorResponse> | null;
   accountId: string;
   session: NonNullable<ReturnType<typeof useMediaWeb>["session"]>;
   onStateChange: Dispatch<ResourceState<AccountMonitorResponse> | null>;
+  account: OwnedAccountSummary;
+  openWorkspace: ReturnType<typeof useMediaWeb>["openWorkspace"];
 }) {
   const [editing, setEditing] = useState(false);
   const [enabled, setEnabled] = useState(true);
@@ -1340,7 +1340,7 @@ function AccountMonitorSection({
   return (
     <InspectorSection title="账号监控" icon={<RefreshCw size={15} aria-hidden="true" />}>
       {state?.kind === "loading" || state === null ? (
-        <SurfaceState kind="loading" title="正在读取监控状态" detail="正在确认 H00 账号监控适配器是否可用。" />
+        <SurfaceState kind="loading" title="正在读取监控状态" detail="正在确认账号监控适配器是否可用。" />
       ) : state.kind === "forbidden" ? (
         <SurfaceState kind="forbidden" title="无权查看监控状态" detail={state.message} />
       ) : state.kind === "error" ? (
@@ -1349,7 +1349,27 @@ function AccountMonitorSection({
         <SurfaceState
           kind="error"
           title="账号监控暂不可用"
-          detail={state.data.detail || "当前运行环境未安装或未配置 H00 账号监控适配器；页面不会将其显示为已成功监控。"}
+          detail={state.data.detail || "当前运行环境未安装或未配置账号监控适配器；页面不会将其显示为已成功监控。"}
+          action={
+            <button
+              className={styles.secondaryAction}
+              type="button"
+              data-capability-action="creator_profile_upsert"
+              onClick={() => {
+                openWorkspace({
+                  capabilityId: "creator_profile_upsert",
+                  variantId: "url_candidate",
+                  params: {
+                    profile_url: account.profileUrl ?? "",
+                    account_name: account.accountName,
+                  },
+                });
+              }}
+            >
+              <Sparkles size={15} aria-hidden="true" />
+              用 AI 录入/更新账号资料
+            </button>
+          }
         />
       ) : (
         <div className={styles.monitorContent} data-monitor-state="available">
@@ -1393,16 +1413,6 @@ function AccountMonitorSection({
         <button className={styles.secondaryAction} type="button" onClick={() => setEditing(true)}>编辑监控</button>
       ) : null}
       {actionMessage ? <p className={styles.monitorActionMessage} role="status">{actionMessage}</p> : null}
-      <div className={styles.monitorReference} data-monitor-reference>
-        <div className={styles.monitorReferenceHeader}>
-          <strong>H00 账号监控表</strong>
-          <a href={H00_MONITOR_URL} target="_blank" rel="noreferrer">打开外链</a>
-        </div>
-        <p className={styles.mutedCopy}>外链用于维护账号和近期作品链接；以下字段由轮询任务读写。</p>
-        <div className={styles.monitorFields} aria-label="H00 账号监控字段">
-          {H00_MONITOR_FIELDS.map((field) => <span key={field}>{field}</span>)}
-        </div>
-      </div>
     </InspectorSection>
   );
 }
@@ -1913,7 +1923,7 @@ function toMonitorResourceError(error: unknown): ResourceState<AccountMonitorRes
   if (error instanceof BusinessOperationError && error.status === 503 && error.code === "monitor_unavailable") {
     return {
       kind: "error",
-      message: "当前运行环境未安装或未配置 H00 账号监控适配器；页面不会将其显示为已成功监控。",
+      message: "当前运行环境未安装或未配置账号监控适配器；页面不会将其显示为已成功监控。",
     };
   }
   return { kind: "error", message: "账号监控状态暂时无法读取。请点击“刷新”重新读取。" };
