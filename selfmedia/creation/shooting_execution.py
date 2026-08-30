@@ -21,7 +21,13 @@ from .llm_generator import call_creation_json
 from .media_model_v2_writeback import write_creation_model_v2
 from .request_parser import CreationRequest, extract_source_asset_id
 from .retrieval import load_material_candidate_rows_for_creation
-from .writer import create_shooting_execution_doc
+from .writer import (
+    EVIDENCE_SOURCE_STATUS_LABELS,
+    SHOOTING_PRIORITY_LABELS,
+    create_shooting_execution_doc,
+    evidence_source_status_label,
+    localized_rows,
+)
 
 
 SHOOTING_PATTERN = re.compile(r"^\s*【创作-拍摄执行】")
@@ -33,22 +39,9 @@ SHOOTING_REQUEST_FIELDS = frozenset({
     "time_window", "publish_time", "project", "account", "reference_links", "must_shoot",
     "constraints", "source_asset_id",
 })
-SHOOTING_PRIORITY_LABELS = {
-    "P0": "必拍",
-    "P1": "重要",
-    "P2": "可选",
-    "必拍": "必拍",
-    "重要": "重要",
-    "可选": "可选",
-}
-EVIDENCE_SOURCE_STATUS_LABELS = {
-    "confirmed": "已核验",
-    "manual_description_only": "仅凭文字描述，未看过原片",
-    "pending_manual": "待人工核实",
-    "已核验": "已核验",
-    "仅凭文字描述，未看过原片": "仅凭文字描述，未看过原片",
-    "待人工核实": "待人工核实",
-}
+# SHOOTING_PRIORITY_LABELS / EVIDENCE_SOURCE_STATUS_LABELS: imported from
+# .writer above (dedup cluster LE-01) -- this module used to carry a
+# byte-identical copy of both dicts.
 
 
 def _validate_shooting_request(payload: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
@@ -341,15 +334,15 @@ def generate_shooting_execution_plan(request: ShootingExecutionRequest, *, media
 def localize_shooting_execution_plan_values(draft: dict[str, Any]) -> dict[str, Any]:
     localized = dict(draft)
     if "must_shot_list" in draft:
-        localized["must_shot_list"] = _localized_rows(
+        localized["must_shot_list"] = localized_rows(
             draft.get("must_shot_list"), "priority", SHOOTING_PRIORITY_LABELS, unknown_label="待人工确认"
         )
     if "branch_plans" in draft:
-        localized["branch_plans"] = _localized_rows(
+        localized["branch_plans"] = localized_rows(
             draft.get("branch_plans"), "priority", SHOOTING_PRIORITY_LABELS, unknown_label="待人工确认"
         )
     if "evidence_appendix" in draft:
-        localized["evidence_appendix"] = _localized_rows(
+        localized["evidence_appendix"] = localized_rows(
             draft.get("evidence_appendix"), "source_status", EVIDENCE_SOURCE_STATUS_LABELS, unknown_label="待人工核实"
         )
     return localized
@@ -364,36 +357,16 @@ def creator_facing_deconstruction_evidence(value: Any) -> dict[str, Any]:
         items.append(
             {
                 "参考链接": item.get("source_link") or "",
-                "来源状态": _creator_facing_source_status(item.get("source_status")),
+                "来源状态": evidence_source_status_label(item.get("source_status")),
                 "可参考镜头": item.get("reference_shots") or [],
                 "节奏提示": item.get("pacing_notes") or {},
                 "复用边界": item.get("reuse_guardrails") or {},
             }
         )
     return {
-        "核验状态": _creator_facing_source_status(evidence.get("status")),
+        "核验状态": evidence_source_status_label(evidence.get("status")),
         "可用参考素材": items,
     }
-
-
-def _localized_rows(rows: Any, field: str, labels: dict[str, str], *, unknown_label: str) -> Any:
-    if not isinstance(rows, list):
-        return rows
-    localized: list[Any] = []
-    for row in rows:
-        if not isinstance(row, dict):
-            localized.append(row)
-            continue
-        display_row = dict(row)
-        raw_value = str(row.get(field) or "").strip()
-        display_row[field] = labels.get(raw_value, unknown_label)
-        localized.append(display_row)
-    return localized
-
-
-def _creator_facing_source_status(value: Any) -> str:
-    raw_status = str(value or "").strip()
-    return EVIDENCE_SOURCE_STATUS_LABELS.get(raw_status, "待人工核实")
 
 
 def _bounded_context_json(value: Any, *, max_chars: int = 12000) -> str:

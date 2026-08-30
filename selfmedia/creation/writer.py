@@ -353,13 +353,13 @@ def _shooting_execution_doc_blocks(
         _heading("必拍镜头清单"),
         _table_block(
             ["优先级", "地点", "人物", "动作", "景别", "参考", "用途", "补拍判断"],
-            _display_shooting_priorities(draft.get("must_shot_list")),
+            localized_rows(draft.get("must_shot_list"), "priority", SHOOTING_PRIORITY_LABELS, unknown_label="待人工确认"),
             ["priority", "location", "people", "action", "shot_size", "reference", "usage", "reshoot_check"],
         ),
         _heading("分支方案"),
         _table_block(
             ["触发条件", "执行方案", "优先级"],
-            _display_shooting_priorities(draft.get("branch_plans")),
+            localized_rows(draft.get("branch_plans"), "priority", SHOOTING_PRIORITY_LABELS, unknown_label="待人工确认"),
             ["condition", "plan", "priority"],
         ),
         _heading("现场检查清单"),
@@ -451,7 +451,7 @@ def _shooting_evidence_appendix_blocks(items: Any) -> list[dict[str, Any]]:
             continue
         lines = [
             f"{index}. 来源：{_text(item.get('source'))}",
-            f"来源状态：{_evidence_source_status_label(item.get('source_status'))}",
+            f"来源状态：{evidence_source_status_label(item.get('source_status'))}",
             f"可用证据：{_text(item.get('available_evidence'))}",
             f"采用理由：{_text(item.get('usage_reason'))}",
             f"风险：{_text(item.get('risk'))}",
@@ -466,7 +466,12 @@ def _shooting_plan_field_labels(fields: Any) -> str:
     )
 
 
-def _evidence_source_status_label(value: Any) -> str:
+def evidence_source_status_label(value: Any) -> str:
+    """Localize an evidence-source-status value; unmatched -> "待人工核实".
+
+    Public (dedup cluster LE-01): also imported by .shooting_execution,
+    which had a byte-identical private copy (_creator_facing_source_status).
+    """
     raw_status = _text(value)
     return EVIDENCE_SOURCE_STATUS_LABELS.get(raw_status, "待人工核实")
 
@@ -953,17 +958,29 @@ def _table_block(headers: list[str], rows: Any, keys: list[str]) -> dict[str, An
     return {"_openclaw_kind": NATIVE_TABLE_KIND, "rows": table_rows}
 
 
-def _display_shooting_priorities(rows: Any) -> list[Any]:
-    display_rows: list[Any] = []
-    for row in _as_list(rows):
+def localized_rows(rows: Any, field: str, labels: dict[str, str], *, unknown_label: str) -> Any:
+    """Replace one field's raw value with its localized label, row by row.
+
+    Public (dedup cluster LE-01): generalizes this module's former
+    _display_shooting_priorities (hardcoded to the "priority" field and
+    SHOOTING_PRIORITY_LABELS) to the shape .shooting_execution already
+    needed, and is now the shared implementation for both. Non-list input
+    is returned unchanged; a non-dict row passes through unchanged. Uses
+    _text() (not a bare str()) so a list/dict-valued field compacts to
+    text instead of falling straight to unknown_label or a Python repr.
+    """
+    if not isinstance(rows, list):
+        return rows
+    localized: list[Any] = []
+    for row in rows:
         if not isinstance(row, dict):
-            display_rows.append(row)
+            localized.append(row)
             continue
         display_row = dict(row)
-        raw_priority = _text(row.get("priority"))
-        display_row["priority"] = SHOOTING_PRIORITY_LABELS.get(raw_priority, "待人工确认")
-        display_rows.append(display_row)
-    return display_rows
+        raw_value = _text(row.get(field))
+        display_row[field] = labels.get(raw_value, unknown_label)
+        localized.append(display_row)
+    return localized
 
 
 def _as_list(value: Any) -> list[Any]:
