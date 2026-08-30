@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "wave": "20260825-remote-deployability-primary",
+  "wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "wrapper_sha256": "a88abe5cdbb376cb1d9e37706f202f60c48292c3ed337b1e31c1820720b1742c",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+  "sandbox_authority": "writable sandbox",
+  "started_at": "2026-08-25T10:18:17Z",
+  "ended_at": "2026-08-25T10:25:57Z",
+  "launch_barrier": "all three PIDs registered before first wait",
+  "overlap_proof": "PIDs 6327, 6328, and 6329 shared the same start and end interval",
+  "attempts": [
+    {
+      "task_id": "STAGE2-REMOTE-RELEASE-PROVENANCE-20260825",
+      "pid": 6327,
+      "attempt_role": "primary",
+      "exit_code": 1,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "prompt_sha256": "05d184ddd9920302762a226581a31bbfa25cc1d33b2b7159ac53e1f6cafb1ce9",
+      "log_sha256": "1ac3616b0767af031e2b14ddd45fc304e26514abee384ec3eae8a5ce09da1101",
+      "structured_return_state": "missing",
+      "failure_class": "transport",
+      "failure_origin": "provider-transport",
+      "classification": "retry_primary",
+      "maximum_primary_retries_remaining": 1
+    },
+    {
+      "task_id": "STAGE2-REMOTE-DIVERGENCE-20260825",
+      "pid": 6328,
+      "attempt_role": "primary",
+      "exit_code": 1,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "prompt_sha256": "3c51c50312a00a67d985445ea4a0e49d405e80cd73596df08925d4ccc06bb5f8",
+      "log_sha256": "ec87db5310ad7dee69da86ac14ed96a7b7ee0b489fe95e111f376f6fa2434182",
+      "structured_return_state": "missing",
+      "failure_class": "transport",
+      "failure_origin": "provider-transport",
+      "classification": "retry_primary",
+      "maximum_primary_retries_remaining": 1
+    },
+    {
+      "task_id": "STAGE2-STAGE1-GATE-READBACK-20260825",
+      "pid": 6329,
+      "attempt_role": "primary",
+      "exit_code": 1,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "prompt_sha256": "720af79f6030927c092f8a240d53e31baf2c2a0c38cbc1f17a935f4534724c02",
+      "log_sha256": "ef07b710e601d5767c9444760d7c6652930a11487a2f3361d76497c2ea3cb3ae",
+      "structured_return_state": "invalid",
+      "structured_return_sha256": "6ba1bbaa74bc31b93aed360183a44e342b4f1f17bc84454a1eb767da8b9615da",
+      "invalid_return_reason": "closed-enum failure fields and acceptance_self_check did not match the worker return protocol",
+      "failure_class": "transport",
+      "failure_origin": "provider-transport",
+      "classification": "retry_primary",
+      "maximum_primary_retries_remaining": 1
+    }
+  ],
+  "runtime_handles_released": true,
+  "codex_transcript_retention": "preserved"
+}

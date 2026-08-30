@@ -1,0 +1,173 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback",
+  "attempts": [
+    {
+      "attempt_executor": "lw-luna",
+      "attempt_role": "primary",
+      "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+      "classification": {
+        "attempt_executor": "lw-luna",
+        "attempt_role": "primary",
+        "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "decision": "stop",
+        "effective_failure_class": "scope-conflict",
+        "effective_failure_origin": "scope",
+        "maximum_attempts_remaining": 0,
+        "primary_executor": "lw-luna",
+        "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "reason": "scope-conflict",
+        "terminal_state": "BLOCKED"
+      },
+      "classifier_exit_code": 20,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback/prompts/PR-REL-READBACK-DESIGN-primary.txt)"
+      ],
+      "ended_at": "2026-08-25T15:33:29.382372+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback/logs/PR-REL-READBACK-DESIGN-primary.log",
+      "pid": 78409,
+      "primary_executor": "lw-luna",
+      "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/pr-rel-readback-design",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback/prompts/PR-REL-READBACK-DESIGN-primary.txt",
+      "prompt_sha256": "0cea40655d134174dfa08c08748f5ae09480ba4ffa5d6fa94ce1d86be7d71ddc",
+      "started_at": "2026-08-25T15:27:51.740863+00:00",
+      "structured_return": {
+        "acceptance_self_check": "partial",
+        "actual_scopes": {
+          "authorized_source_write_scope": [
+            "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/**",
+            "acceptance/human/PR-REL-READBACK/**",
+            "openclaw-tag-router/tests/test_stage2_release_readback.py"
+          ],
+          "forbidden_actions_not_performed": [
+            "production implementation",
+            "remote access or SSH",
+            "production curl or authenticated request",
+            "systemd, pointer, Nginx, database, Feishu, deployment, or SSOT mutation",
+            "secrets or secret-bearing diagnostic output",
+            "worker spawning"
+          ],
+          "read": [
+            "design-acceptance-contract skill, templates, and validators",
+            "docs/production-reconciliation/20260825/runtime-observations.md",
+            "docs/production-reconciliation/20260825/deployment-gate.json",
+            "openclaw-tag-router/scripts/qa/check_openclaw_bot_center_release_process.py",
+            ".ssot/manifest.json and generated Stage-2 SSOT view",
+            "frozen validation command and task packet"
+          ],
+          "written": [
+            "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback/returns/PR-REL-READBACK-DESIGN-primary.json"
+          ]
+        },
+        "approval_boundary": "No Stage-2 SSOT state, deployment, production, or release acceptance is claimed.",
+        "attempt_role": "primary",
+        "blockers": [
+          {
+            "code": "SHARED_PROJECT_ACCEPTANCE_INDEX_OUTSIDE_EXCLUSIVE_SCOPE",
+            "detail": "Creating or refreshing acceptance/index.md is required by the official validator but is outside the exclusive write scope and is a shared generated-index write prohibited for this lane."
+          }
+        ],
+        "changed_files": [],
+        "commands": [
+          {
+            "command": "git status --short --branch; git rev-parse HEAD; git diff --check",
+            "result": "pass; clean branch codex/pr-rel-readback-design at 59e2adfd34853b6929d9fa69e69585806ac9c83a"
+          },
+          {
+            "command": "sha256sum worker-executions/20260825-production-reconciliation/design-wave/validation/PR-REL-READBACK-DESIGN.sh",
+            "result": "pass; deb384348c651d06c9858212f403b7d0c05d71748c77763d9cfac5d3a9e55dbb"
+          },
+          {
+            "command": "python3 manage_acceptance_artifacts.py check <task-root> --project-root <project-root>",
+            "result": "blocked before execution: required acceptance artifacts were not written because the frozen validator requires an out-of-scope shared project index"
+          }
+        ],
+        "commit_sha": null,
+        "evidence": [
+          {
+            "finding": "The official split-root checker unconditionally requires <project-root>/acceptance/index.md and rejects it when missing or stale.",
+            "id": "SCOPE-001",
+            "source": "/Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py:659-664"
+          },
+          {
+            "finding": "The frozen worktree has no acceptance/index.md at baseline 59e2adf.",
+            "id": "SCOPE-002",
+            "source": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/pr-rel-readback-design"
+          },
+          {
+            "finding": "The frozen validation command invokes the checker with this worktree as project root and then requires a clean worktree.",
+            "id": "SCOPE-003",
+            "source": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/validation/PR-REL-READBACK-DESIGN.sh"
+          }
+        ],
+        "executor": "lw-luna",
+        "failure_class": "scope-conflict",
+        "failure_origin": "scope",
+        "proposed_state": "BLOCKED",
+        "protected_test_sha256": null,
+        "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback/returns/PR-REL-READBACK-DESIGN-primary.json",
+        "task_id": "PR-REL-READBACK-DESIGN",
+        "unverified_items": [
+          "Approved version-1 contract was not written.",
+          "Chinese human checklist and active binding were not written.",
+          "Protected red tests and red-proof evidence were not written or executed.",
+          "Official acceptance artifact validators and the frozen end-to-end validation command were not passed.",
+          "No source commit was created."
+        ],
+        "versions": {
+          "baseline": "59e2adf",
+          "contract_version": 1,
+          "dag": 3,
+          "interface_freeze": 4,
+          "node_contract": 4,
+          "parent_source_authority": "5f06780569568ccc3197f0ab16aad74bdf9d1c6f",
+          "ssot_schema": 2,
+          "stage2_plan": 3,
+          "task_source_sha256": "7fc237bd8793ba38b07fde1108c3a7391094fb9df3be2d103bde23d918900960",
+          "validation_command_sha256": "deb384348c651d06c9858212f403b7d0c05d71748c77763d9cfac5d3a9e55dbb"
+        }
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback/returns/PR-REL-READBACK-DESIGN-primary.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "7fc237bd8793ba38b07fde1108c3a7391094fb9df3be2d103bde23d918900960",
+      "timed_out": false,
+      "validation_command_sha256": "deb384348c651d06c9858212f403b7d0c05d71748c77763d9cfac5d3a9e55dbb",
+      "validation_ended_at": "2026-08-25T15:33:29.388902+00:00",
+      "validation_exit_code": 1,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback/logs/PR-REL-READBACK-DESIGN-primary.validation.log",
+      "validation_pid": 82996,
+      "validation_started_at": "2026-08-25T15:33:29.382667+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_executor_switch": false,
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-25T15:33:29.442858+00:00",
+  "final_decision": "stop",
+  "l3_escalation_limit": 1,
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "ledger_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/artifacts/readback/ledger/PR-REL-READBACK-DESIGN.json",
+  "primary_executor": "lw-luna",
+  "primary_retry_limit": 1,
+  "primary_role": "primary",
+  "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/pr-rel-readback-design",
+  "schema_version": 2,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-25T15:27:51.738395+00:00",
+  "stop_reason": "scope-conflict",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/tasks/PR-REL-READBACK-DESIGN.txt",
+  "task_id": "PR-REL-READBACK-DESIGN",
+  "task_sha256": "7fc237bd8793ba38b07fde1108c3a7391094fb9df3be2d103bde23d918900960",
+  "terminal_state": "BLOCKED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/design-wave/validation/PR-REL-READBACK-DESIGN.sh",
+  "validation_command_sha256": "deb384348c651d06c9858212f403b7d0c05d71748c77763d9cfac5d3a9e55dbb",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

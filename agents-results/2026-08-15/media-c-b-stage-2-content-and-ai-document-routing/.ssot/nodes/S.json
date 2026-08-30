@@ -1,0 +1,111 @@
+{
+  "node_id": "S",
+  "semantic_key": "media.stage2.shared-convergence",
+  "stage": "C",
+  "work_kind": "convergence",
+  "domain_lane": "shared-contracts",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5",
+    "T1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage2.product-decisions",
+      "version": 4
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage2.shared-convergence.v5"
+  ],
+  "write_authority": "shared-generated",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "C8",
+    "O6"
+  ],
+  "worker_transport": "automatic-projection",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "stage2:S1",
+      "stage2:S2",
+      "stage2:S3",
+      "stage2:S4",
+      "stage2:S5",
+      "stage2:T1"
+    ],
+    "projection_rule": "只汇合已接受输入并投影节点状态；不启动 Codex 进程、不产生外部副作用。",
+    "task_argument": "汇合共享合同和实现；不组装最终候选。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/projections/S.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  },
+  "description": "接受后可独立支持已解锁的个人或组织支线",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "S.json",
+  "execution_contract_sha256": "9cf4e993f4eedc6d477bfdff67fffa0b56108f77480c6cbd4ff79ff70f67d848",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "freezes",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-S"
+  ],
+  "consumed_artifact_ids": [
+    "DL-S1",
+    "DL-S2",
+    "DL-S3",
+    "DL-S4",
+    "DL-S5",
+    "DL-T1"
+  ],
+  "read_set": [
+    "artifact:DL-S1",
+    "artifact:DL-S2",
+    "artifact:DL-S3",
+    "artifact:DL-S4",
+    "artifact:DL-S5",
+    "artifact:DL-T1"
+  ],
+  "write_set": [
+    "artifact:S"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:S",
+      "mode": "W",
+      "isolation_key": "node:S"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "W",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance S\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/S-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-7",
+  "main_thread_write_exception": {
+    "reason": "历史编排节点只生成或投影自身独占的 SSOT 记录；主线程不直接修改业务源码，也不写入其他节点的共享事实。",
+    "approved_by": "user and planning authority",
+    "write_set": [
+      "artifact:S"
+    ]
+  }
+}

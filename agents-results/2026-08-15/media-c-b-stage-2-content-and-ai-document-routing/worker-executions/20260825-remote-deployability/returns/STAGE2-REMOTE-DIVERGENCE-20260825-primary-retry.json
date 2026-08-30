@@ -1,0 +1,370 @@
+{
+  "task_id": "STAGE2-REMOTE-DIVERGENCE-20260825",
+  "attempt_role": "primary-retry",
+  "versions": {
+    "ssot": {
+      "plan": 3,
+      "dag": 3,
+      "interface_freeze": 4,
+      "node_contract": 4,
+      "schema": 2,
+      "manifest": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
+    },
+    "remote": "ubuntu@106.52.146.37",
+    "merge_base": "b638650e084291b4fae816832bdfd41bf2de021b",
+    "candidate": {
+      "path": "/tmp/openclaw-stage2-handoff-final20260819",
+      "branch": "codex/stage2-handoff-final-20260819",
+      "head": "78120eea04392db2a254968cbe4d8f69f6fd7a84"
+    },
+    "live": {
+      "path": "/home/ubuntu/selfmedia-tools",
+      "branch": "codex/media-semantic-20260819",
+      "head": "e0dfbf0eab0c5942ae829a748ac78835cf90872f"
+    }
+  },
+  "wrapper": {
+    "executor": "lw-luna",
+    "script": "run-lw-luna.sh",
+    "model": "gpt-5.6-luna",
+    "provider": "sub2api",
+    "attempt": "unique primary retry"
+  },
+  "actual_read_scope": [
+    "Read the first-attempt log, retry prompt, Phase-2 SSOT manifest, Harness entrypoint and project adapter. The Harness entrypoint symlink resolved to /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/harnesses/fullstack-ai-harness.md.",
+    "Read the relevant local Stage-2 hardening memory and rollout summary only; no credentials, provider payloads, or secret-bearing configuration values were read or printed.",
+    "Read-only SSH inspection of /home/ubuntu/selfmedia-tools: branch, HEAD, base/left/right commit objects, merge base, rev-list counts, commit subjects, tree names, path-family summaries, worktree metadata, status counts, and merge-tree conflict summaries.",
+    "Checked /tmp/openclaw-stage2-handoff-final20260819 and its expected openclaw-tag-router subpath for existence. The checkout path is absent, while a registered Git worktree metadata record still points at that historical path.",
+    "Inspected only path names and import/class/function signatures for Stage-2 source and selected live-only path families; no runtime service, database contents, credential values, or external-system state was read."
+  ],
+  "actual_write_scope": {
+    "allowed_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-remote-deployability/returns/STAGE2-REMOTE-DIVERGENCE-20260825-primary-retry.json",
+    "performed": [
+      "Created this JSON with apply_patch only."
+    ],
+    "remote_writes": [],
+    "other_local_writes": [],
+    "forbidden_operations_performed": []
+  },
+  "commands": [
+    {
+      "command": "sed/rg on the first-attempt log and retry prompt",
+      "result": "Recovered the prior remote path summaries and confirmed the terminal provider-transport 503 occurred after the read-only queries."
+    },
+    {
+      "command": "readlink plus sed on the Harness entrypoint and project adapter",
+      "result": "Read project rules and the resolved Harness SSOT entrypoint; no linked file was edited."
+    },
+    {
+      "command": "ssh ... git rev-parse/show/merge-base/rev-list/log",
+      "result": "Verified all three commit objects, the declared merge base, 17 left-only commits, and 7 right-only commits."
+    },
+    {
+      "command": "ssh ... git status/worktree list and existence checks",
+      "result": "Verified live has 8 untracked entries and no tracked modifications; the candidate checkout path is missing."
+    },
+    {
+      "command": "ssh ... git ls-tree and git diff --name-only/--name-status",
+      "result": "Compared Stage-2 tree presence, path-set overlap, critical path families, and live-only dependency/auth/database/ownership families."
+    },
+    {
+      "command": "ssh ... git merge-tree base left right",
+      "result": "Read-only conflict simulation classified 50 changed-in-both groups, 128 added-in-both groups, and no removed-in-both groups."
+    },
+    {
+      "command": "apply_patch on the single allowed return path",
+      "result": "Wrote only the structured retry return file."
+    }
+  ],
+  "verified_git_identities": {
+    "repo_root": "/home/ubuntu/selfmedia-tools",
+    "base": {
+      "sha": "b638650e084291b4fae816832bdfd41bf2de021b",
+      "type": "commit",
+      "tree": "2c7a76bd30dcc78be7bac95670ee22b47ae2c169",
+      "parent": "9f26dcfbcc81788f3998c52f95d891e1d9dabfa0",
+      "subject": "Generate OpenClaw runtime models from unified config"
+    },
+    "candidate": {
+      "sha": "78120eea04392db2a254968cbe4d8f69f6fd7a84",
+      "type": "commit",
+      "tree": "5ce0f4b76fdcb3dfade601f19c9b534f50d4bada",
+      "parent": "bdb4035ea870642d81874caafc37c46007f2afa9",
+      "subject": "feat(stage2): add production-shaped content routing gateway",
+      "object_resolvable_from_live_repo": true,
+      "checkout_path_exists": false,
+      "registered_worktree_metadata": true
+    },
+    "live": {
+      "sha": "e0dfbf0eab0c5942ae829a748ac78835cf90872f",
+      "type": "commit",
+      "tree": "0de65bdf214d0f8881ceef9c893333f259768d17",
+      "parent": "ee9b33b4e2e19c5804efe83861f0f73322309019",
+      "subject": "chore(media): add pilot defaults and bootstrap tooling",
+      "branch": "codex/media-semantic-20260819",
+      "status": "8 untracked entries; 0 tracked modified entries"
+    },
+    "merge_base_recomputed": "b638650e084291b4fae816832bdfd41bf2de021b"
+  },
+  "left_right_commits": {
+    "declared_base": "b638650e084291b4fae816832bdfd41bf2de021b",
+    "counts": {
+      "candidate_left_only": 17,
+      "live_right_only": 7,
+      "symmetric_rev_list": "17 7"
+    },
+    "candidate_left_only": [
+      {"sha": "2cce76f4025b7940f1cfebc57432a6aae61b2709", "commit_file_count": 409, "subject": "Release OpenClaw Media v1 baseline", "path_summary": "broad OpenClaw app, selfmedia, ingest, deconstruct, runtime, tools, and tests baseline"},
+      {"sha": "ed9f7f0a92a26c10a2aed1f17c8e8e703722652c", "commit_file_count": 6, "subject": "Add provisional stage2 writer boundary", "path_summary": "Stage-2 context/writer boundary and tests"},
+      {"sha": "6f646a66b20d28abec0b67aa53647aa7391b081d", "commit_file_count": 2, "subject": "Add stage2 external document readback boundary", "path_summary": "external document boundary and test"},
+      {"sha": "1a204ba84ebf4002880f6e3c09d017abfd778a2c", "commit_file_count": 2, "subject": "Add stage2 artifact readback state machine", "path_summary": "artifact state machine and test"},
+      {"sha": "0228256058a1d7c0de4986a943de5c96f445ee2f", "commit_file_count": 2, "subject": "Add stage2 personal content pipeline", "path_summary": "personal pipeline and test"},
+      {"sha": "dfec5b7ef5686e2c66bb3ea9edc89a94de84c3da", "commit_file_count": 2, "subject": "Add stage2 organization document pipeline", "path_summary": "organization pipeline and test"},
+      {"sha": "f3199e1d7e235ea947c9c04d78416b2a77ca9c78", "commit_file_count": 6, "subject": "Harden stage2 idempotency and readback recovery", "path_summary": "idempotency/recovery implementation and tests"},
+      {"sha": "6163b562c66d1fbed91de7a7d547712d69127226", "commit_file_count": 1, "subject": "Add stage2 cross-path integration coverage", "path_summary": "cross-path integration test"},
+      {"sha": "8d979321b207a7d7ab61205c118a3a4a8a793f21", "commit_file_count": 2, "subject": "Keep external document writes fail closed", "path_summary": "fail-closed external write behavior and test"},
+      {"sha": "de2bab200a280f2d3eda524ed45a16492bab9f27", "commit_file_count": 2, "subject": "Add fail-closed Stage-2 release gate", "path_summary": "release gate and test"},
+      {"sha": "7f3fac533f9c8ab19908f532ea5ac900894701bb", "commit_file_count": 2, "subject": "Add deterministic Stage-2 candidate assembly", "path_summary": "candidate assembly and test"},
+      {"sha": "ca21885b3faa49ab8721775a69765e40d73be232", "commit_file_count": 2, "subject": "Add Stage-2 runtime composition facade", "path_summary": "runtime composition facade and test"},
+      {"sha": "ed5dc3967dc2cea6447114c42c546725f9386c1d", "commit_file_count": 4, "subject": "Wire Stage-2 gateway into optional HTTP entrypoints", "path_summary": "HTTP entrypoint wiring and tests"},
+      {"sha": "5fa5446af74334f4ab443fe9af5412ca998b4525", "commit_file_count": 4, "subject": "Prepare Stage-2 handoff workspace", "path_summary": "server/handoff workspace and tests"},
+      {"sha": "9e2160c378ae371407c9a43730c02439a1a5e2c1", "commit_file_count": 1, "subject": "Clarify Stage-2 handoff revision identity", "path_summary": "handoff identity document"},
+      {"sha": "bdb4035ea870642d81874caafc37c46007f2afa9", "commit_file_count": 1, "subject": "Point Stage-2 handoff at final workspace", "path_summary": "handoff workspace document"},
+      {"sha": "78120eea04392db2a254968cbe4d8f69f6fd7a84", "commit_file_count": 23, "subject": "feat(stage2): add production-shaped content routing gateway", "path_summary": "gateway, production/server composition, QA script, Stage-2 tests, and handoff identity"}
+    ],
+    "live_right_only": [
+      {"sha": "dface1fb1773ac5b9dad18194738f6ded566d9e7", "commit_file_count": 409, "subject": "Release OpenClaw Media v1 baseline", "path_summary": "parallel broad baseline; its tree is identical to candidate baseline 2cce76f4"},
+      {"sha": "849f82bdafe472651cb5e0cecdd5916480209748", "commit_file_count": 124, "subject": "feat(media-core): add media runtime and storage contracts", "path_summary": "openclaw-media package, media model/vault, provider/device credential boundaries, manifests, and tests"},
+      {"sha": "516a018398a0f19324d5b9e31973cbef70781474", "commit_file_count": 107, "subject": "feat(selfmedia): add governed media workflows", "path_summary": "selfmedia ingest/deconstruct/creation/growth/profile/style workflows, config/lockfiles, and ownership tests"},
+      {"sha": "28cb89dbcbf847756d35e55c6b90ea808b5f2739", "commit_file_count": 430, "subject": "feat(media): add tenant-isolated backend and workers", "path_summary": "account/auth/session, tenant projection, resource ownership, PostgreSQL migrations, Feishu/document services, config, deploy, workers, and tests"},
+      {"sha": "887d07447b0d9b14837a11408b4d65ba2108a891", "commit_file_count": 206, "subject": "feat(bot-center): add MediaClaw frontend and QA contracts", "path_summary": "Bot Center frontend, auth route contract, package manifests, nginx/deploy, QA and media task schemas"},
+      {"sha": "ee9b33b4e2e19c5804efe83861f0f73322309019", "commit_file_count": 2, "subject": "chore(runtime): update maintenance deployment and sync tooling", "path_summary": "runtime maintenance deployment tooling"},
+      {"sha": "e0dfbf0eab0c5942ae829a748ac78835cf90872f", "commit_file_count": 2, "subject": "chore(media): add pilot defaults and bootstrap tooling", "path_summary": "pilot defaults and tenant bootstrap script"}
+    ]
+  },
+  "path_impact": {
+    "base_range_path_sets": {
+      "candidate_left_changed_paths": 381,
+      "live_right_changed_paths": 1032,
+      "shared_paths": 346,
+      "candidate_only_paths": 35,
+      "live_only_paths": 686
+    },
+    "baseline_relation": "2cce76f4 and dface1fb are separate commits with the same parent, same subject, same tree, and zero path diff; the divergence starts after equivalent baseline trees rather than from a content difference in those two baseline commits.",
+    "stage2_tree": {
+      "candidate_stage2_paths": 34,
+      "live_stage2_paths": 6,
+      "candidate_additional_stage2_paths_over_live": 28,
+      "live_retained_stage2_paths": [
+        "openclaw-tag-router/openclaw_app/contracts/stage2_writer_contract.json",
+        "openclaw-tag-router/openclaw_app/services/stage2_context.py",
+        "openclaw-tag-router/openclaw_app/services/stage2_writer_router.py",
+        "openclaw-tag-router/tests/test_stage2_context.py",
+        "openclaw-tag-router/tests/test_stage2_writer_contract.py",
+        "openclaw-tag-router/tests/test_stage2_writer_router.py"
+      ],
+      "candidate_only_stage2_layers": [
+        "artifact_state and personal_store persistence",
+        "contract validation and release gate",
+        "external document adapter/readback",
+        "personal and organization pipelines",
+        "gateway/runtime/production factory/server app",
+        "candidate assembly and Playwright verification",
+        "integration, production, server, and release tests"
+      ]
+    },
+    "live_only_path_families": {
+      "openclaw-tag-router/openclaw_app": 196,
+      "openclaw-tag-router/tests": 106,
+      "openclaw-bot-center/src": 101,
+      "openclaw-bot-center/scripts": 83,
+      "openclaw-media/openclaw_media": 42,
+      "openclaw-media/tests": 41,
+      "openclaw-tag-router/scripts": 18,
+      "selfmedia/growth": 12,
+      "openclaw-tag-router/deploy": 8
+    },
+    "live_only_impacts": [
+      {
+        "commit": "849f82bdafe472651cb5e0cecdd5916480209748",
+        "areas": ["dependencies", "provider/device credential ownership", "storage contracts"],
+        "key_paths": ["openclaw-media/pyproject.toml", "openclaw-media/uv.lock", "openclaw-media/openclaw_media/provider_config.py", "openclaw-media/openclaw_media/device_credentials.py", "media_model/*", "media_vault/*", "common/resource_ownership.py"],
+        "impact": "Stage-2 persistence and writer integration must use or explicitly map these live storage and credential owners; candidate package assumptions cannot replace them. Values in credential files were not read."
+      },
+      {
+        "commit": "516a018398a0f19324d5b9e31973cbef70781474",
+        "areas": ["workflow dependencies", "configuration", "ownership tests"],
+        "key_paths": ["selfmedia/ingest/content_flow/pyproject.toml", "selfmedia/ingest/content_flow/uv.lock", "selfmedia/ingest/content_flow/.env.example", "selfmedia/creation/media_model_v2_writeback.py", "tests/test_media_writer_tenant_ownership.py"],
+        "impact": "The live workflow and ownership contracts are already part of the execution line and must remain compatible with Stage-2 source selection and writeback."
+      },
+      {
+        "commit": "28cb89dbcbf847756d35e55c6b90ea808b5f2739",
+        "areas": ["authentication", "database", "tenant isolation", "resource ownership", "Feishu/document routing", "deployment"],
+        "key_paths": ["openclaw-tag-router/openclaw_app/account/*", "openclaw-tag-router/openclaw_app/migrations/*", "openclaw-tag-router/openclaw_app/services/resource_owner_registry.py", "openclaw-tag-router/openclaw_app/services/tenant_owned_resources.py", "openclaw-tag-router/openclaw_app/services/tenant_projection*.py", "openclaw-tag-router/openclaw_app/services/stage2_context.py", "openclaw-tag-router/openclaw_app/services/stage2_writer_router.py", "openclaw-tag-router/openclaw_app/services/media_business/*", "openclaw-tag-router/config/*", "openclaw-tag-router/deploy/*"],
+        "impact": "This is the dominant integration boundary. It supplies the live authenticated session, tenant/binding, PostgreSQL migration and resource-owner authorities that the candidate server context, pipelines, and external writes must consume without duplicate stores or parallel legacy writers."
+      },
+      {
+        "commit": "887d07447b0d9b14837a11408b4d65ba2108a891",
+        "areas": ["frontend dependencies", "auth route", "deployment", "QA"],
+        "key_paths": ["openclaw-bot-center/src/*", "openclaw-bot-center/contracts/media-auth-route-contract.json", "openclaw-bot-center/package.json", "openclaw-bot-center/package-lock.json", "openclaw-bot-center/deploy/nginx-openclaw-bot-center.conf"],
+        "impact": "A Stage-2 HTTP/UI projection must preserve the live auth route and build/deploy contract; candidate HTTP entrypoint wiring is not a replacement for this frontend boundary."
+      },
+      {
+        "commit": "ee9b33b4e2e19c5804efe83861f0f73322309019",
+        "areas": ["deployment tooling"],
+        "key_paths": ["runtime/maintenance/deploy/deploy_openclaw_runtime.py"],
+        "impact": "Deployment and runtime sync ownership remains live-only and must not be overwritten by candidate handoff scripts."
+      },
+      {
+        "commit": "e0dfbf0eab0c5942ae829a748ac78835cf90872f",
+        "areas": ["pilot configuration", "tenant bootstrap"],
+        "key_paths": ["config/id_business_reply_defaults.json", "scripts/bootstrap_media_pilot_tenant.py"],
+        "impact": "Pilot defaults and bootstrap behavior must be preserved and revalidated against the Stage-2 tenant and resource-owner model."
+      }
+    ],
+    "credential_boundary": "Only credential-related path names were inspected. No secret, token, URI, key, environment value, or database value was read or output."
+  },
+  "conflict_hotspots": {
+    "merge_tree_classification": {
+      "changed_in_both": 50,
+      "added_in_both": 128,
+      "removed_in_both": 0,
+      "classified_total": 178
+    },
+    "dominant_families": {
+      "openclaw-tag-router/openclaw_app": 32,
+      "openclaw-tag-router/config": 3,
+      "openclaw-tag-router/tests": 2,
+      "other_shared_root_families": 13
+    },
+    "representative_paths": [
+      "README.md",
+      "common/bot_llm_config.py",
+      "common/content_cleaner.py",
+      "common/llm_client.py",
+      "common/social_runtime.py",
+      "config/openclaw_bots.json",
+      "openclaw-tag-router/bridge.py",
+      "openclaw-tag-router/index.js",
+      "openclaw-tag-router/config/settings.yaml",
+      "openclaw-tag-router/config/docs_sync.json",
+      "openclaw-tag-router/openclaw_app/adapters/http_api.py",
+      "openclaw-tag-router/openclaw_app/app.py",
+      "openclaw-tag-router/openclaw_app/config/settings.yaml",
+      "openclaw-tag-router/openclaw_app/router/*",
+      "openclaw-tag-router/openclaw_app/server_cli.py",
+      "openclaw-tag-router/openclaw_app/services/archive_service.py",
+      "openclaw-tag-router/openclaw_app/services/content_flow_client.py",
+      "openclaw-tag-router/openclaw_app/services/feishu_service.py",
+      "openclaw-tag-router/openclaw_app/services/utils.py",
+      "media_model/* and media_vault/*",
+      "integrations/feishu/media_writer.py",
+      "runtime/maintenance/deploy/*"
+    ],
+    "interpretation": "The conflict surface is shared application/configuration and duplicate additions, not merely the 28 missing Stage-2 files. A textual merge would require choosing between live auth/tenant/deploy semantics and candidate handoff semantics at shared adapters, routers, settings, writers, models, and generated/test contracts."
+  },
+  "recommended_replay_strategy": {
+    "decision": "NO-GO for direct application to live HEAD",
+    "mechanism": "Explicit semantic and file-level replay from the current live line; do not use a blind merge, blind cherry-pick, or blind format-patch application.",
+    "candidate_history_handling": "Exclude the duplicate baseline commit and handoff-only identity commits as merge inputs. Treat the ordered Stage-2 functional sequence ed9f7f0a -> 6f646a66 -> 1a204ba8 -> 02282560 -> dfec5b7e -> f3199e1d -> 6163b562 -> 8d979321 -> de2bab20 -> 7f3fac53 -> ca21885b -> ed5dc396 -> 78120eea as a specification and review source, preserving dependency order.",
+    "replay_order": [
+      "Map the existing live stage2_context/stage2_writer_router contract to authenticated account/session, tenant/binding, and resource-owner authorities before adding consumers.",
+      "Port contract validation, artifact state, external document readback, personal store, and organization persistence with an explicit live PostgreSQL/media-vault ownership decision; do not introduce an unowned parallel production store.",
+      "Port personal and organization pipelines, idempotency, readback recovery, fail-closed writer behavior, and capability/release gates while preserving live tenant and binding checks.",
+      "Port candidate assembly, runtime/production factory, server context, HTTP entrypoint, and QA only after the live adapter/auth/database contracts are bound.",
+      "Run focused source/static checks, isolated database migration/readback checks, authenticated E2E, deployment readback, and external-system/device evidence as separate gates before any release decision."
+    ],
+    "must_preserve_live_only": [
+      "account/auth/session and workspace resolution",
+      "tenant projection, active binding generation, and resource-owner registry",
+      "PostgreSQL migration/canonical migration authority and media document resource ownership",
+      "openclaw-media provider/device credential storage boundary and lockfiles",
+      "MediaClaw frontend auth route, package/build/deploy and nginx contract",
+      "runtime maintenance deployment/sync tooling and pilot bootstrap/defaults",
+      "the existing live untracked evidence/backup state until an explicitly scoped owner handles it"
+    ],
+    "why_not_format_patch": "A patch export could be used later as a review aid, but the shared path conflict and missing runtime dependencies make raw patch application unsafe and non-authoritative."
+  },
+  "findings": [
+    {
+      "id": "REMOTE-DIVERGENCE",
+      "severity": "high",
+      "finding": "The declared merge base is valid and the histories diverge as 17 candidate-only commits versus 7 live-only commits. The live branch is not a thin descendant of the candidate and has 346 shared changed paths plus 686 live-only paths."
+    },
+    {
+      "id": "STAGE2-INCOMPLETE-LIVE-TREE",
+      "severity": "high",
+      "finding": "Candidate tree has 34 Stage-2 named paths; live tree has only the writer contract, context, writer router, and three corresponding tests. The candidate contributes 28 additional Stage-2 paths including runtime, persistence, gateway, production, server, release, and integration layers."
+    },
+    {
+      "id": "LIVE-AUTH-DB-OWNERSHIP",
+      "severity": "critical",
+      "finding": "live-only 28cb89d supplies account/auth/session, tenant projection, PostgreSQL migrations, resource-owner registry, tenant-owned resources, and media business/document services. Directly applying candidate hardening would bypass or duplicate these authorities unless it is explicitly adapted."
+    },
+    {
+      "id": "LIVE-DEPENDENCY-CONFIG-DEPLOY",
+      "severity": "high",
+      "finding": "live-only commits also own openclaw-media manifests and provider/device credential boundaries, MediaClaw auth/build/deploy, runtime maintenance deployment, and pilot bootstrap defaults. Candidate configuration and deployment assumptions cannot be copied wholesale."
+    },
+    {
+      "id": "CANDIDATE-CHECKOUT-UNAVAILABLE",
+      "severity": "medium",
+      "finding": "The requested candidate checkout path is absent at audit time. Its commit object, branch metadata, and historical worktree registration remain readable from the live repository, but candidate working-tree status and any uncommitted candidate files cannot be verified."
+    },
+    {
+      "id": "HARDENING-NOT-LIVE-PATCH",
+      "severity": "high",
+      "finding": "The 2026-08-20 hardening evidence describes server-derived authority, idempotency, restart-safe state, binding-scoped Feishu isolation, trusted URL/readback checks, and fail-closed behavior for the historical candidate. It is not a ready-to-apply live patch: the candidate checkout is gone and the live HEAD lacks the dependent runtime composition."
+    },
+    {
+      "id": "EVIDENCE-BOUNDARY",
+      "severity": "medium",
+      "finding": "This retry proves Git identity, path divergence, worktree metadata, and read-only merge-tree conflicts only. It does not prove service behavior, database migration/readback, authenticated production behavior, real AI, Feishu, device, release, or rollback readiness."
+    }
+  ],
+  "unverified_items": [
+    "Candidate checkout working-tree status and candidate uncommitted files, because /tmp/openclaw-stage2-handoff-final20260819 is missing.",
+    "Full semantic compatibility of all 686 live-only paths; only aggregate path families and critical path signatures were read.",
+    "Live database schema/data, migration application state, resource-owner rows, tenant bindings, external Feishu state, provider state, and runtime process state.",
+    "Authenticated live HTTP/E2E, real AI, device, release pointer, served-hash, and rollback proof.",
+    "Any actual merge, cherry-pick, format-patch, source edit, deployment, restart, or traffic switch; none was performed by this retry.",
+    "Values inside credential, environment, configuration, or database files; they were intentionally not read or printed."
+  ],
+  "remaining_risks": [
+    "The live checkout has 8 untracked entries: three evidence/managed directories and five .orig/.before backup snapshots. They were not modified or cleaned.",
+    "A future replay could create duplicate SQLite/PostgreSQL or legacy-writer paths unless persistence and ownership are decided before implementation.",
+    "Auth/session/binding generation and tenant-source checks can regress if candidate server context is copied without live adapters.",
+    "Configuration and lockfile incompatibilities can remain hidden until isolated dependency and runtime checks are run.",
+    "Shared router, HTTP, Feishu, model, and deployment conflicts require semantic review; conflict resolution by choosing one side is unsafe.",
+    "The prior candidate verification evidence remains historical and bounded; it cannot be promoted to current live or production proof."
+  ],
+  "proposed_state": {
+    "status": "partial",
+    "decision": "NO-GO",
+    "direct_hardening_application": "blocked_pending_semantic_replay",
+    "formal_acceptance_claim": "not made",
+    "remote_live_head_unchanged": true,
+    "candidate_head_unchanged": true,
+    "next_state": "Keep the current live line and dirty evidence state intact. Start a separately authorized implementation/replay task only after freezing the live contract map and selecting the live persistence/auth/resource-owner integration points."
+  },
+  "git_status": {
+    "business_project_root": "The project root itself is not a Git repository; nested project worktrees were observed in the first-attempt log and were not touched.",
+    "harness_ssot": {
+      "repo": "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core",
+      "branch": "main...origin/main",
+      "preexisting_dirty": true,
+      "observed_categories": ["modified Harness skills and validation scripts", "deleted historical Harness zip artifacts", "modified registry.yaml", "two untracked business-plan-release-qa guard files"],
+      "touched_by_retry": false
+    },
+    "remote_live": {
+      "branch": "codex/media-semantic-20260819",
+      "head": "e0dfbf0eab0c5942ae829a748ac78835cf90872f",
+      "tracked_modifications": 0,
+      "untracked_entries": 8,
+      "touched_by_retry": false
+    }
+  },
+  "failure_class": "none",
+  "failure_origin": "none",
+  "acceptance_self_check": "partial"
+}

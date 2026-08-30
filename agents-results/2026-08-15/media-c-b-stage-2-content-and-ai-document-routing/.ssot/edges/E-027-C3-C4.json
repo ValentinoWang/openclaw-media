@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-027-C3-C4",
+  "from": "C3",
+  "to": "C4",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c3.c4.v5"
+  ],
+  "transferred_input": "个人决策简报成果",
+  "gate_evidence": "模型建议不伪装为用户决定",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-C3"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C4 consumes the explicitly produced artifact DL-C3"
+}

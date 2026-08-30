@@ -1,0 +1,20 @@
+任务：PR-CANDIDATE-HARDENING
+角色：只读、零写的候选 hardening 差异审查者。
+版本：Stage-2 PLAN=3, DAG=3, INTERFACE_FREEZE=4, NODE_CONTRACT=4, SSOT_SCHEMA=2。
+
+冻结身份：
+- GitHub main 本地只读克隆：/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825
+- main SHA：5f06780569568ccc3197f0ab16aad74bdf9d1c6f
+- 远端：ubuntu@106.52.146.37
+- 候选：/tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router
+- 候选 HEAD：78120eea04392db2a254968cbe4d8f69f6fd7a84
+- 候选 tracked binary diff SHA-256：ed9021a266600014bf1efe287b9dd10a38854059dbd4b2305a58285877c9e7e9
+- 新增测试 SHA-256：119e6bd3e33d53465d6b41f1e23904758461ec6ae28a91ec3b5d5d6a466c1eba、e0846a10a3b1f7b20d3057da0189e1a52fdf1e0fb80f889d0e1fe95b9d3ca091
+
+目标：逐文件比较候选工作树的 8 个 tracked hardening 修改和 2 个未跟踪测试与当前 main。判断每一项是：已被 main 等价吸收、仍应重放、与 main 新认证/租户/Binding/HTTP 权威冲突、或应丢弃。对仍应重放的项给出精确文件、符号、行为、不变量、对应测试和最小补丁顺序。重点检查幂等、并发、跨租户、Feishu 写后回读、失败关闭和持久化边界。
+
+允许读取：上述 main 克隆；通过 SSH 对候选执行 git status/diff/show、sed/rg/sha256sum；项目 Stage-2 SSOT 和既有 hardening 证据。
+唯一允许写入：由 STRUCTURED_RETURN_PATH 指定的 JSON 文件。
+禁止：修改任何源码、测试、Git 索引/引用、服务器文件、服务、数据库、飞书、SSOT、Obsidian；禁止 fetch/pull/checkout/reset/commit/push；禁止输出密钥或环境变量值；禁止 spawn_agent 或其他 worker。
+
+返回 JSON 至 STRUCTURED_RETURN_PATH，至少包含：task_id、versions、frozen_identities、actual_read_scope、actual_write_scope、file_dispositions（10 项逐项结论）、recommended_replay_order、test_implications、conflicts_with_main、unverified_items、commands、proposed_state、acceptance_self_check、failure_class、failure_origin。成功审查使用 proposed_state=VERIFIED、acceptance_self_check=pass、failure_class=none、failure_origin=none；不得声称 ACCEPTED 或生产就绪。

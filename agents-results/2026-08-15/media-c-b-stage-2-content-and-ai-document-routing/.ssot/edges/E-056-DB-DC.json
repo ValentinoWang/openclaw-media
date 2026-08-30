@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-056-DB-DC",
+  "from": "DB",
+  "to": "DC",
+  "dependency_type": "hard",
+  "dependency_scope": "global-completeness",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.db.dc.v5"
+  ],
+  "transferred_input": "生产与飞书同收据证据",
+  "gate_evidence": "目标证据达到 physical-device/external-system",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "ART-DB"
+  ],
+  "resource_ids": [
+    "candidate:REL-2"
+  ],
+  "necessity_proof": "DC must retain the immutable candidate:REL-2 identity from DB"
+}

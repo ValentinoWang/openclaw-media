@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-032-S5-C5",
+  "from": "S5",
+  "to": "C5",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.s5.c5.v5"
+  ],
+  "transferred_input": "能力副作用注册表",
+  "gate_evidence": "只读能力不产生文档或远端副作用",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-S5"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C5 consumes the explicitly produced artifact DL-S5"
+}

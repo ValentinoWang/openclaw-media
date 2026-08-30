@@ -1,0 +1,44 @@
+{
+  "contract_id": "DC",
+  "schema_version": 1,
+  "node_id": "DC",
+  "node_role": "release-decision",
+  "execution_actor": "human",
+  "work_kind": "release-decision",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:ART-DB"
+  ],
+  "write_set": [
+    "evidence:DC"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DC",
+      "mode": "W",
+      "isolation_key": "node:DC"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "R",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DC\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/DC-return.json"
+  ],
+  "worker_transport": "external-manual",
+  "release_slice": "REL-2",
+  "wave_id": "W-2-15",
+  "worker_registration": {
+    "executor": "independent acceptance owner",
+    "manual_owner": "independent acceptance owner",
+    "task_argument": "zero-write 独立终验；不得修复、部署或改变状态。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/manual-receipts/DC.json",
+    "dispatch_state": "BLOCKED",
+    "note": "manual prerequisite; zero Codex processes"
+  }
+}

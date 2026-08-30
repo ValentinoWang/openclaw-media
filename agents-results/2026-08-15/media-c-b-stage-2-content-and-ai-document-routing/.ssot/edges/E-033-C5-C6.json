@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-033-C5-C6",
+  "from": "C5",
+  "to": "C6",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c5.c6.v5"
+  ],
+  "transferred_input": "InternalArtifactWriter 和个人成果收据",
+  "gate_evidence": "个人路径不得创建任何全局飞书文档",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-C5"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C6 consumes the explicitly produced artifact DL-C5"
+}

@@ -1,0 +1,1527 @@
+{
+  "planning_compiler_schema_version": 1,
+  "classification": {
+    "applicability": "ssot",
+    "ssot_depth": "L2",
+    "artifact_policy": "create-ssot",
+    "selection_authority": "user",
+    "rationale": "用户明确要求把第二阶段作为持久 SSOT；个人内容、组织飞书正文、共享人工智能路由、入口状态权限和真实外部验收必须在同一候选上协调。",
+    "decision_versions": {
+      "media.stage2.product-decisions": 4
+    }
+  },
+  "external_systems": [
+    "lark",
+    "database",
+    "browser"
+  ],
+  "acceptance_layers": [
+    "static-test",
+    "local-runtime",
+    "external-system",
+    "physical-device"
+  ],
+  "scheduling_model": "static-wave",
+  "scheduling_hints": [],
+  "release_boundary_compiler": {
+    "boundary_required": false,
+    "decision_authority": "user",
+    "rationale": "个人和组织是同一第二阶段 WriterRouter 与候选的一部分，只有共享合同、两条子候选和唯一候选全部汇合后才能独立验收；因此保留一个 REL-2 发布切片并用执行波次表达容量。"
+  },
+  "macro_phases": [
+    {
+      "id": "PHASE-2",
+      "title": "内容生产与人工智能文档分流第二宏观阶段",
+      "release_ids": [
+        "REL-2"
+      ]
+    }
+  ],
+  "release_slices": [
+    {
+      "id": "REL-2",
+      "macro_phase_id": "PHASE-2",
+      "title": "个人内容、组织飞书正文与统一写入路由",
+      "user_value": "个人和组织创作者分别完成自己的正文生产闭环，并在同一候选上证明唯一文档写入权威。",
+      "independent_acceptance": "个人子候选、组织子候选、共享路由和真实外部验收均可在本发布切片内完成。",
+      "independent_failure": "任一支线失败时保持候选未晋升，不改写第一阶段已接受身份和组织接入候选。",
+      "future_phase_required_for_success": false,
+      "development_baseline": "stage2-development-base-v4",
+      "promotion_baseline": "stage1-dc2-accepted-candidate",
+      "release_candidate": "stage2-rel-2-candidate-v4",
+      "acceptance_node_id": "DC",
+      "release_candidate_artifact_id": "candidate:REL-2",
+      "independent_proof_artifact_id": "proof:REL-2",
+      "acceptance_command": "python3 -m pytest -q backend/tests frontend --stage2-acceptance",
+      "node_ids": [
+        "A",
+        "A1",
+        "K",
+        "F1",
+        "F2",
+        "F3",
+        "B",
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "T1",
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "O1",
+        "O2",
+        "O3",
+        "O4",
+        "O5",
+        "O6",
+        "S",
+        "C",
+        "DA",
+        "DB",
+        "DC"
+      ]
+    }
+  ],
+  "waves": [
+    {
+      "id": "W-2-0",
+      "release_id": "REL-2",
+      "node_ids": [
+        "A"
+      ]
+    },
+    {
+      "id": "W-2-1",
+      "release_id": "REL-2",
+      "node_ids": [
+        "A1"
+      ]
+    },
+    {
+      "id": "W-2-10",
+      "release_id": "REL-2",
+      "node_ids": [
+        "C8",
+        "O5"
+      ]
+    },
+    {
+      "id": "W-2-11",
+      "release_id": "REL-2",
+      "node_ids": [
+        "O6"
+      ]
+    },
+    {
+      "id": "W-2-12",
+      "release_id": "REL-2",
+      "node_ids": [
+        "C"
+      ]
+    },
+    {
+      "id": "W-2-13",
+      "release_id": "REL-2",
+      "node_ids": [
+        "DA"
+      ]
+    },
+    {
+      "id": "W-2-14",
+      "release_id": "REL-2",
+      "node_ids": [
+        "DB"
+      ]
+    },
+    {
+      "id": "W-2-15",
+      "release_id": "REL-2",
+      "node_ids": [
+        "DC"
+      ]
+    },
+    {
+      "id": "W-2-2",
+      "release_id": "REL-2",
+      "node_ids": [
+        "K",
+        "F1",
+        "F2",
+        "F3"
+      ]
+    },
+    {
+      "id": "W-2-3",
+      "release_id": "REL-2",
+      "node_ids": [
+        "B"
+      ]
+    },
+    {
+      "id": "W-2-4",
+      "release_id": "REL-2",
+      "node_ids": [
+        "S1",
+        "T1",
+        "C1",
+        "O1"
+      ]
+    },
+    {
+      "id": "W-2-5",
+      "release_id": "REL-2",
+      "node_ids": [
+        "S2",
+        "S3",
+        "C2",
+        "C3"
+      ]
+    },
+    {
+      "id": "W-2-6",
+      "release_id": "REL-2",
+      "node_ids": [
+        "S4",
+        "S5",
+        "C4"
+      ]
+    },
+    {
+      "id": "W-2-7",
+      "release_id": "REL-2",
+      "node_ids": [
+        "C5",
+        "O2",
+        "S"
+      ]
+    },
+    {
+      "id": "W-2-8",
+      "release_id": "REL-2",
+      "node_ids": [
+        "C6",
+        "O3"
+      ]
+    },
+    {
+      "id": "W-2-9",
+      "release_id": "REL-2",
+      "node_ids": [
+        "C7",
+        "O4"
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "A",
+      "goal": "维护第二阶段章程；不修改产品代码。",
+      "dependencies": [],
+      "acceptance": "只生成第二阶段，不改写第一阶段也不创建第三阶段",
+      "owner": "user and planning authority",
+      "kind": "decision",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "orchestrator"
+    },
+    {
+      "id": "A1",
+      "goal": "只读复核输入文件并登记证据。",
+      "dependencies": [
+        "A"
+      ],
+      "acceptance": "第一阶段 C1、C3、DC2 均未接受",
+      "owner": "main orchestrator",
+      "kind": "decision",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "orchestrator"
+    },
+    {
+      "id": "K",
+      "goal": "维护已接受决定记录；不得把推荐重新降级为待决。",
+      "dependencies": [
+        "A1"
+      ],
+      "acceptance": "记录实现事实与正式接受状态的证据分层；组织 Binding、飞书写入和组织成员能力不得因个人路由开放而泄漏",
+      "owner": "user",
+      "kind": "decision",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "orchestrator"
+    },
+    {
+      "id": "F1",
+      "goal": "zero-write 投影第一阶段 C1；不修改上游状态。",
+      "dependencies": [
+        "A1"
+      ],
+      "acceptance": "只有第一阶段 C1 ACCEPTED 且 I9 属于同一候选时才可接受本投影",
+      "owner": "cross-stage projection owner",
+      "kind": "automatic-projection",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "external-system"
+    },
+    {
+      "id": "F2",
+      "goal": "zero-write 投影第一阶段 C3；不修改上游状态。",
+      "dependencies": [
+        "A1"
+      ],
+      "acceptance": "只有第一阶段 C3 ACCEPTED 才可接受本投影",
+      "owner": "cross-stage projection owner",
+      "kind": "automatic-projection",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "external-system"
+    },
+    {
+      "id": "F3",
+      "goal": "zero-write 投影第一阶段 DC2；不修改、不部署。",
+      "dependencies": [
+        "A1"
+      ],
+      "acceptance": "只有第一阶段 DC2 ACCEPTED 才可接受本投影",
+      "owner": "independent acceptance owner",
+      "kind": "automatic-projection",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "external-system"
+    },
+    {
+      "id": "B",
+      "goal": "F1 接受后汇编共享合同；不启动组织外部写入。",
+      "dependencies": [
+        "F1",
+        "K"
+      ],
+      "acceptance": "不接受前端伪造租户、Binding、正文权威或路由授权",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:B:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/B/returns/B-primary.json",
+        "resource_locks": [
+          "node:B"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "S1",
+      "goal": "实现 AIExecutionContext 唯一构建路径。",
+      "dependencies": [
+        "B"
+      ],
+      "acceptance": "上下文全部由服务端事实生成",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:S1:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/S1/returns/S1-primary.json",
+        "resource_locks": [
+          "node:S1"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "S2",
+      "goal": "实现统一 ContextBuilder 路由和跨租户门禁。",
+      "dependencies": [
+        "S1"
+      ],
+      "acceptance": "01_ 近期活动与其他资料使用同等租户边界",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:S2:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/S2/returns/S2-primary.json",
+        "resource_locks": [
+          "node:S2"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "S3",
+      "goal": "编译第二阶段唯一 WriterRouter、关闭态接管和能力副作用合同。",
+      "dependencies": [
+        "F2",
+        "S1"
+      ],
+      "acceptance": "不允许第一阶段或能力实现绕过统一路由自选文档容器",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:S3:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/S3/returns/S3-primary.json",
+        "resource_locks": [
+          "node:S3"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "S4",
+      "goal": "实现成果登记、回读和失败关闭状态机。",
+      "dependencies": [
+        "S3"
+      ],
+      "acceptance": "任一必要步骤失败都不得返回发布成功",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:S4:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/S4/returns/S4-primary.json",
+        "resource_locks": [
+          "node:S4"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "S5",
+      "goal": "实现能力副作用注册和服务端守卫。",
+      "dependencies": [
+        "S1",
+        "S3"
+      ],
+      "acceptance": "只读能力不产生文档或远端副作用",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:S5:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/S5/returns/S5-primary.json",
+        "resource_locks": [
+          "node:S5"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "T1",
+      "goal": "建立共享合同和端到端 Harness；不实现业务支线。",
+      "dependencies": [
+        "B"
+      ],
+      "acceptance": "每个稳定失败类都有红绿门禁",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:T1:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/T1/returns/T1-primary.json",
+        "resource_locks": [
+          "node:T1"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "C1",
+      "goal": "实现个人资料范围和隔离门禁。",
+      "dependencies": [
+        "B",
+        "F1"
+      ],
+      "acceptance": "个人工作区不读取任何组织共享资料",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:C1:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/C1/returns/C1-primary.json",
+        "resource_locks": [
+          "node:C1"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "C2",
+      "goal": "实现个人研究简报和来源门禁。",
+      "dependencies": [
+        "C1"
+      ],
+      "acceptance": "研究结论和来源引用可分离复核",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:C2:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/C2/returns/C2-primary.json",
+        "resource_locks": [
+          "node:C2"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "C3",
+      "goal": "实现个人决策简报和确认收据。",
+      "dependencies": [
+        "C1"
+      ],
+      "acceptance": "模型建议不伪装为用户决定",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:C3:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/C3/returns/C3-primary.json",
+        "resource_locks": [
+          "node:C3"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "C4",
+      "goal": "实现 PersonalContextBuilder 和跨模式负例。",
+      "dependencies": [
+        "C2",
+        "C3",
+        "S2"
+      ],
+      "acceptance": "个人任务只使用 personal_web/internal 上下文",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:C4:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/C4/returns/C4-primary.json",
+        "resource_locks": [
+          "node:C4"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "C5",
+      "goal": "实现个人内部 Writer 并退役个人飞书写入。",
+      "dependencies": [
+        "C4",
+        "S3",
+        "S4",
+        "S5"
+      ],
+      "acceptance": "个人路径不得创建任何全局飞书文档",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:C5:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/C5/returns/C5-primary.json",
+        "resource_locks": [
+          "node:C5"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "C6",
+      "goal": "实现个人 Web 编辑和修订闭环。",
+      "dependencies": [
+        "C5"
+      ],
+      "acceptance": "Web 是个人正文的唯一编辑权威",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:C6:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/C6/returns/C6-primary.json",
+        "resource_locks": [
+          "node:C6"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "C7",
+      "goal": "实现平台版本和发布包生成。",
+      "dependencies": [
+        "C6"
+      ],
+      "acceptance": "发布包只引用已回读的个人正文版本",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:C7:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/C7/returns/C7-primary.json",
+        "resource_locks": [
+          "node:C7"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "C8",
+      "goal": "汇合个人内容支线并冻结子候选。",
+      "dependencies": [
+        "C7",
+        "S",
+        "T1"
+      ],
+      "acceptance": "个人全链在同一候选上可重现",
+      "owner": "main orchestrator",
+      "kind": "automatic-projection",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "orchestrator"
+    },
+    {
+      "id": "O1",
+      "goal": "实现组织资料和品牌约束路由。",
+      "dependencies": [
+        "B",
+        "F2"
+      ],
+      "acceptance": "组织 A 不得读取组织 B 或个人资料",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [],
+      "transaction_models": {},
+      "worker": {
+        "execution_identity": "stage2:O1:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/O1/returns/O1-primary.json",
+        "resource_locks": [
+          "node:O1"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor"
+        ]
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "O2",
+      "goal": "实现按当前 Binding 的 LarkArtifactWriter 并删除全局 Writer 消费。",
+      "dependencies": [
+        "O1",
+        "S2",
+        "S3",
+        "S5"
+      ],
+      "acceptance": "组织 A 不得使用组织 B 或部署级凭据",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [
+        "lark-api"
+      ],
+      "transaction_models": {
+        "lark-api": "saga"
+      },
+      "worker": {
+        "execution_identity": "stage2:O2:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/O2/returns/O2-primary.json",
+        "resource_locks": [
+          "node:O2"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor",
+          "external-side-effect"
+        ],
+        "evidence_contract": "将 O2 的外部动作、回读与同一 Binding 和候选身份绑定。",
+        "recovery_contract": "幂等重试、只补偿本节点拥有的资源，无法确认时进入 NEEDS_ATTENTION。",
+        "external_identity": "isolated-lark-o2"
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "O3",
+      "goal": "实现组织成果和飞书文档幂等绑定。",
+      "dependencies": [
+        "O2",
+        "S4"
+      ],
+      "acceptance": "组织路径不创建可编辑的内部 Web 正文",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [
+        "lark-api"
+      ],
+      "transaction_models": {
+        "lark-api": "saga"
+      },
+      "worker": {
+        "execution_identity": "stage2:O3:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/O3/returns/O3-primary.json",
+        "resource_locks": [
+          "node:O3"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor",
+          "external-side-effect"
+        ],
+        "evidence_contract": "将 O3 的外部动作、回读与同一 Binding 和候选身份绑定。",
+        "recovery_contract": "幂等重试、只补偿本节点拥有的资源，无法确认时进入 NEEDS_ATTENTION。",
+        "external_identity": "isolated-lark-o3"
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "O4",
+      "goal": "实现同 Binding 飞书回读和 Web 只读镜像。",
+      "dependencies": [
+        "O3"
+      ],
+      "acceptance": "未完成回读时不得向用户标记发布成功",
+      "owner": "main orchestrator",
+      "kind": "implementation",
+      "side_effects": [
+        "lark-api"
+      ],
+      "transaction_models": {
+        "lark-api": "saga"
+      },
+      "worker": {
+        "execution_identity": "stage2:O4:primary",
+        "runtime": "implementation-runner",
+        "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/O4/returns/O4-primary.json",
+        "resource_locks": [
+          "node:O4"
+        ]
+      },
+      "escalation": {
+        "reasons": [
+          "multi-executor",
+          "external-side-effect"
+        ],
+        "evidence_contract": "将 O4 的外部动作、回读与同一 Binding 和候选身份绑定。",
+        "recovery_contract": "幂等重试、只补偿本节点拥有的资源，无法确认时进入 NEEDS_ATTENTION。",
+        "external_identity": "isolated-lark-o4"
+      },
+      "execution_actor": "codex",
+      "executor_route": "lw-terra",
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "run-lw-terra.sh",
+      "runtime_profile_requirement": "implementation-runner",
+      "executor_attempt_policy": {
+        "initial_executor": "lw-terra",
+        "initial_wrapper": "run-lw-terra.sh",
+        "retry_executor": "lw-terra",
+        "retry_wrapper": "run-lw-terra.sh",
+        "primary_retry_limit": 1,
+        "l3_executor": "l3",
+        "l3_wrapper": "run-l3.sh",
+        "l3_escalation_limit": 1,
+        "retry_failure_origins": [
+          "environment",
+          "app-server",
+          "browser",
+          "database",
+          "test-infrastructure",
+          "provider-network",
+          "provider-transport",
+          "worker-transport"
+        ],
+        "l3_failure_origins": [
+          "product-behavior",
+          "implementation",
+          "architecture-complexity"
+        ],
+        "automatic_executor_switch": false
+      }
+    },
+    {
+      "id": "O5",
+      "goal": "在隔离组织执行真实飞书编辑和再回读。",
+      "dependencies": [
+        "O4"
+      ],
+      "acceptance": "飞书是组织正文的唯一编辑权威",
+      "owner": "runtime acceptance owner",
+      "kind": "validation",
+      "side_effects": [
+        "lark-api"
+      ],
+      "transaction_models": {
+        "lark-api": "saga"
+      },
+      "escalation": {
+        "reasons": [
+          "external-side-effect"
+        ],
+        "evidence_contract": "将 O5 的外部动作、回读与同一 Binding 和候选身份绑定。",
+        "recovery_contract": "幂等重试、只补偿本节点拥有的资源，无法确认时进入 NEEDS_ATTENTION。",
+        "external_identity": "isolated-lark-o5"
+      },
+      "execution_actor": "human"
+    },
+    {
+      "id": "O6",
+      "goal": "汇合组织文档支线并冻结子候选。",
+      "dependencies": [
+        "O5",
+        "S",
+        "T1"
+      ],
+      "acceptance": "组织全链在同一租户、Binding、文档和候选上闭环",
+      "owner": "main orchestrator",
+      "kind": "automatic-projection",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "orchestrator"
+    },
+    {
+      "id": "S",
+      "goal": "汇合共享合同和实现；不组装最终候选。",
+      "dependencies": [
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "T1"
+      ],
+      "acceptance": "所有文档能力只有一个路由入口",
+      "owner": "main orchestrator",
+      "kind": "automatic-projection",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "orchestrator"
+    },
+    {
+      "id": "C",
+      "goal": "汇合第二阶段唯一候选；不部署、不重启。",
+      "dependencies": [
+        "C8",
+        "F3",
+        "O6"
+      ],
+      "acceptance": "只有一个候选，且不包含旧 Writer、双写权威或隐式回退路径",
+      "owner": "main orchestrator",
+      "kind": "automatic-projection",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "orchestrator"
+    },
+    {
+      "id": "DA",
+      "goal": "对唯一候选执行静态、合同和清理验收。",
+      "dependencies": [
+        "C"
+      ],
+      "acceptance": "所有门禁对同一候选通过",
+      "owner": "main orchestrator",
+      "kind": "validation",
+      "side_effects": [],
+      "transaction_models": {},
+      "execution_actor": "orchestrator"
+    },
+    {
+      "id": "DB",
+      "goal": "在批准窗口执行分层恢复可验证的推广和真实外部系统验收。",
+      "dependencies": [
+        "DA"
+      ],
+      "acceptance": "目标证据达到 physical-device/external-system",
+      "owner": "runtime acceptance owner",
+      "kind": "validation",
+      "side_effects": [
+        "deployment",
+        "lark-api"
+      ],
+      "transaction_models": {
+        "deployment": "immutable-release",
+        "lark-api": "saga"
+      },
+      "escalation": {
+        "reasons": [
+          "external-side-effect",
+          "production-release"
+        ],
+        "evidence_contract": "将 DB 的外部动作、回读与同一 Binding 和候选身份绑定。",
+        "recovery_contract": "代码只切换不可变身份；数据库和飞书分别执行各自恢复或补偿合同。",
+        "external_identity": "isolated-lark-db",
+        "immutable_release_identity": "REL-2-candidate-v5",
+        "promotion_baseline": "stage1-dc2-accepted-candidate"
+      },
+      "execution_actor": "human"
+    },
+    {
+      "id": "DC",
+      "goal": "zero-write 独立终验；不得修复、部署或改变状态。",
+      "dependencies": [
+        "DB"
+      ],
+      "acceptance": "所有第二阶段完成条件成立且无第三阶段能力冒领",
+      "owner": "independent acceptance owner",
+      "kind": "release",
+      "side_effects": [],
+      "transaction_models": {},
+      "escalation": {
+        "reasons": [
+          "production-release"
+        ],
+        "immutable_release_identity": "REL-2-candidate-v5",
+        "promotion_baseline": "stage1-dc2-accepted-candidate",
+        "recovery_contract": "代码只切换不可变身份；数据库和飞书分别执行各自恢复或补偿合同。"
+      },
+      "execution_actor": "human"
+    }
+  ],
+  "artifacts": {
+    "ssot_bundle": true,
+    "generated_views": [
+      "main",
+      "dependency-topology",
+      "execution-governance",
+      "contracts-acceptance",
+      "implementation-progress"
+    ],
+    "worker_ledger": true,
+    "evidence_identity_registry": true,
+    "resource_matrix": true,
+    "runner_registry": true
+  },
+  "complexity_budget": {
+    "authority": "user",
+    "rationale": "一个发布切片、十五个执行波次和节点级外部副作用合同足以表达第二阶段；入口状态与字体工作作为既有节点的合同内容，不额外制造平行节点。",
+    "limits": {
+      "total_nodes": 32,
+      "implementation_nodes_per_release": 18,
+      "codex_worker_nodes": 18,
+      "generated_views": 5
+    },
+    "exception": null
+  },
+  "goal_size_detector": {
+    "split_required": false,
+    "split_strategy": "none"
+  }
+}

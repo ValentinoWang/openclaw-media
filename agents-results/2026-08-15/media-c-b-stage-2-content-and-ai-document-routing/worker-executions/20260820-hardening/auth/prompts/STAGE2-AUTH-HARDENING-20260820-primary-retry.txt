@@ -1,0 +1,45 @@
+TASK_ID=STAGE2-AUTH-HARDENING-20260820
+ATTEMPT_ROLE=primary-retry
+PRIMARY_EXECUTOR=lw-luna
+PRIMARY_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+ATTEMPT_EXECUTOR=lw-luna
+ATTEMPT_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+PROJECT_ROOT=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage2-hardening-auth-20260820
+TASK_SOURCE_SHA256=9a60e3b59826a48498e406abef30ebf28cf3af686fc1ebc8988181cc8cac8ffe
+STRUCTURED_RETURN_PATH=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/auth/returns/STAGE2-AUTH-HARDENING-20260820-primary-retry.json
+VALIDATION_COMMAND_FILE=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/auth/validation.sh
+VALIDATION_COMMAND_SHA256=b42928861dd1d797d7c7d68e7aded263e23870a926525966c6fc6a0ac248a5ac
+
+Execute exactly the bounded task below. Preserve its frozen inputs, write scope, forbidden scope, and acceptance commands. Full filesystem access is process capability only and does not expand task authority.
+
+Write one JSON object to STRUCTURED_RETURN_PATH before exit. It must include proposed_state, acceptance_self_check, failure_class, and failure_origin. proposed_state must be IMPLEMENTED, VERIFIED, FAILED, or BLOCKED; acceptance_self_check must be pass, fail, or partial. failure_class must be none, implementation, runtime, verification, transport, architecture-conflict, authority-conflict, interface-freeze, permission, product-decision, or scope-conflict. failure_origin must identify one of: none, environment, app-server, browser, database, test-infrastructure, provider-network, provider-transport, worker-transport, product-behavior, implementation, architecture-complexity, control-plane, test-oracle, authority, scope, or unknown-origin. Use none only for a successful attempt.
+
+This is the next bounded attempt selected by the outer orchestrator. Keep the same primary executor when ATTEMPT_ROLE=primary-retry. For ATTEMPT_ROLE=l3, inherit the exact original write boundary and do not start another worker, invoke L4, or use spawn_agent.
+PRIOR_ATTEMPT_EVIDENCE_JSON=
+{"attempt_executor": "lw-luna", "attempt_role": "primary", "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "classification": {"attempt_executor": "lw-luna", "attempt_role": "primary", "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "decision": "retry_primary", "effective_failure_class": "transport", "effective_failure_origin": "worker-transport", "maximum_primary_retries_remaining": 1, "next_attempt_role": "primary-retry", "next_executor": "lw-luna", "next_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "primary_executor": "lw-luna", "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "reason": "worker-transport failure; retry the same selected primary"}, "exit_code": 124, "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/auth/logs/STAGE2-AUTH-HARDENING-20260820-primary.log", "primary_executor": "lw-luna", "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "structured_return": null, "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/auth/returns/STAGE2-AUTH-HARDENING-20260820-primary.json", "structured_return_state": "missing", "timed_out": true, "validation_exit_code": 1, "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/auth/logs/STAGE2-AUTH-HARDENING-20260820-primary.validation.log"}
+
+BOUNDED_TASK_BEGIN
+Task ID: STAGE2-AUTH-HARDENING-20260820
+Objective: harden the Stage-2 server-owned authentication, Binding, tenant profile, and source reader boundary in the isolated clone at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage2-hardening-auth-20260820.
+
+Read first:
+- openclaw_app/services/stage2_server_context.py
+- openclaw_app/services/stage2_context.py
+- tests/test_stage2_server_context.py
+- STAGE2-HANDOFF-20260819.md
+
+Exclusive write scope:
+- openclaw_app/services/stage2_server_context.py
+- tests/test_stage2_server_context.py
+- add tests/test_stage2_auth_hardening.py only if a separate regression file is needed
+Do not edit contracts, manifests, SSOT, migrations, production services, or other source files. Do not commit or push.
+
+Required review and implementation:
+1. Verify authentication is fail-closed when multiple credentials are supplied, malformed headers/cookies are present, or an authorization token is ambiguous. Do not silently select one conflicting credential.
+2. Verify session facts, member tenant, expiry, status, and active organization Binding generation are server-owned and cannot be overridden by transport payloads.
+3. Verify profile/source readers pass the requested tenant/workspace/source-kind scope to the loader and reject returned rows with cross-tenant, wrong workspace, wrong source kind, personal Binding, or organization Binding mismatch.
+4. Preserve public APIs and stable error codes already covered by tests. Make the smallest maintainable code change. Add focused red/green regression tests for any new behavior, including zero loader calls after invalid input where applicable.
+5. Run focused tests, the full Stage-2 test set, compile, and diff check. Do not contact databases, Feishu, credentials, or production systems.
+
+Before exit write one JSON object to STRUCTURED_RETURN_PATH with task_id, proposed_state, acceptance_self_check, failure_class, failure_origin, actual_read_scope, actual_write_scope, changed_files, commands, test_evidence, unverified_items, residual_risks, and explicit_non_claims. Use IMPLEMENTED or VERIFIED only when tests pass. Never claim formal SSOT acceptance, production acceptance, or external/device evidence.
+BOUNDED_TASK_END

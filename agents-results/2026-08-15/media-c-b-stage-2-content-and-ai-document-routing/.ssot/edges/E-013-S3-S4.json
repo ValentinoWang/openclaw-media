@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-013-S3-S4",
+  "from": "S3",
+  "to": "S4",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.s3.s4.v5"
+  ],
+  "transferred_input": "WriterRouter 第 2 版",
+  "gate_evidence": "不允许第一阶段或能力实现绕过统一路由自选文档容器",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "DL-S3"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "S4 consumes the explicitly produced artifact DL-S3"
+}

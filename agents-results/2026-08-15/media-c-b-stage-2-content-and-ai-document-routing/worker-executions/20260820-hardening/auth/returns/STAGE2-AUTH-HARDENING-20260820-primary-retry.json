@@ -1,0 +1,71 @@
+{
+  "task_id": "STAGE2-AUTH-HARDENING-20260820",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "partial",
+  "failure_class": "verification",
+  "failure_origin": "environment",
+  "actual_read_scope": [
+    "openclaw-tag-router/openclaw_app/services/stage2_server_context.py",
+    "openclaw-tag-router/openclaw_app/services/stage2_context.py",
+    "openclaw-tag-router/tests/test_stage2_server_context.py",
+    "openclaw-tag-router/STAGE2-HANDOFF-20260819.md",
+    "worker-executions/20260820-hardening/auth/validation.sh"
+  ],
+  "actual_write_scope": [
+    "openclaw-tag-router/openclaw_app/services/stage2_server_context.py",
+    "openclaw-tag-router/tests/test_stage2_server_context.py",
+    "openclaw-tag-router/tests/test_stage2_auth_hardening.py"
+  ],
+  "changed_files": [
+    "openclaw-tag-router/openclaw_app/services/stage2_server_context.py",
+    "openclaw-tag-router/tests/test_stage2_server_context.py",
+    "openclaw-tag-router/tests/test_stage2_auth_hardening.py"
+  ],
+  "commands": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. stage1-integrated/backend/.venv/bin/python -m pytest -q tests/test_stage2_auth_hardening.py tests/test_stage2_server_context.py",
+      "result": "pass: 28 passed"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. stage1-integrated/backend/.venv/bin/python -m pytest -q tests/test_stage2_*.py",
+      "result": "pass: 177 passed"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 stage1-integrated/backend/.venv/bin/python -m compileall -q openclaw_app tests",
+      "result": "pass"
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass"
+    },
+    {
+      "command": "shasum -a 256 validation.sh",
+      "result": "pass: b42928861dd1d797d7c7d68e7aded263e23870a926525966c6fc6a0ac248a5ac"
+    },
+    {
+      "command": "bash worker-executions/20260820-hardening/auth/validation.sh",
+      "result": "fail before tests: /home/ubuntu/selfmedia-tools/openclaw-media/.venv/bin/python does not exist in this environment"
+    }
+  ],
+  "test_evidence": {
+    "focused_auth_and_server_context": "28 passed",
+    "full_stage2": "177 passed",
+    "compileall": "passed",
+    "diff_check": "passed",
+    "frozen_validation_wrapper": "blocked by its hard-coded unavailable interpreter path"
+  },
+  "unverified_items": [
+    "The frozen validation.sh wrapper could not run because its hard-coded Linux interpreter path is unavailable; equivalent focused, full-suite, compile, and diff commands passed with the local Python 3.11 environment.",
+    "No database, Feishu, credential, production, browser, device, deployment, or external acceptance checks were run."
+  ],
+  "residual_risks": [
+    "Formal wrapper-level validation remains environment-unverified despite passing equivalent local commands."
+  ],
+  "explicit_non_claims": [
+    "No formal SSOT acceptance is claimed.",
+    "No production or deployment acceptance is claimed.",
+    "No external or device evidence is claimed.",
+    "No database, Feishu, credential, or production system was contacted.",
+    "No commit or push was performed."
+  ]
+}

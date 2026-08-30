@@ -1,0 +1,44 @@
+{
+  "contract_id": "DB",
+  "schema_version": 1,
+  "node_id": "DB",
+  "node_role": "acceptance-gate",
+  "execution_actor": "human",
+  "work_kind": "validation",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:ART-DA"
+  ],
+  "write_set": [
+    "evidence:DB"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DB",
+      "mode": "W",
+      "isolation_key": "node:DB"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "R",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DB\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/DB-return.json"
+  ],
+  "worker_transport": "external-manual",
+  "release_slice": "REL-2",
+  "wave_id": "W-2-14",
+  "worker_registration": {
+    "executor": "runtime acceptance owner",
+    "manual_owner": "runtime acceptance owner",
+    "task_argument": "在批准窗口执行分层恢复可验证的推广和真实外部系统验收。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/manual-receipts/DB.json",
+    "dispatch_state": "BLOCKED",
+    "note": "manual prerequisite; zero Codex processes"
+  }
+}

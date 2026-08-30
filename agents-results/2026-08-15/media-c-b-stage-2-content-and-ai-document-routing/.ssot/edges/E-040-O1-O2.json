@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-040-O1-O2",
+  "from": "O1",
+  "to": "O2",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.o1.o2.v5"
+  ],
+  "transferred_input": "组织资料和品牌约束收据",
+  "gate_evidence": "组织 A 不得读取组织 B 或个人资料",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-O1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "O2 consumes the explicitly produced artifact DL-O1"
+}

@@ -1,0 +1,132 @@
+{
+  "node_id": "O2",
+  "semantic_key": "media.stage2.organization-lark-writer",
+  "stage": "B",
+  "work_kind": "implementation",
+  "domain_lane": "organization-writer",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "O1",
+    "S2",
+    "S3",
+    "S5"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage2.product-decisions",
+      "version": 4
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage2.organization-lark-writer.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "O3"
+  ],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "LW",
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "wrapper_entrypoint": "exec codex exec",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "danger-full-access",
+    "sandbox_authority": "writable sandbox",
+    "runtime_profile": "implementation-runner",
+    "runtime_profile_available": false,
+    "launch_authorized": false,
+    "profile_authority": "stage1 G1 accepted capability receipt",
+    "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
+    "task_argument": "实现按当前 Binding 的 LarkArtifactWriter 并删除全局 Writer 消费。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/O2.json",
+    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/O2.txt",
+    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/O2.log",
+    "prompt_sha256": "capture-before-launch",
+    "launch_barrier": "all wave PIDs registered before first wait",
+    "prompt_cleanup": "delete after exit evidence registration",
+    "runtime_handle_cleanup": "release after exit evidence registration",
+    "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions",
+    "dispatch_state": "BLOCKED"
+  },
+  "description": "写入收据绑定租户、Binding、凭据世代、远端文档和时间",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "execution_contract_ref": "O2.json",
+  "execution_contract_sha256": "109a6418481e4d8fc0c26bb09118608bc208f9dcf0b211f6fb9dd4a53971d8ce",
+  "side_effect_class": "reversible",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-O2"
+  ],
+  "produced_artifact_ids": [
+    "DL-O2"
+  ],
+  "consumed_artifact_ids": [
+    "DL-O1",
+    "DL-S2",
+    "DL-S3",
+    "DL-S5"
+  ],
+  "read_set": [
+    "artifact:DL-O1",
+    "artifact:DL-S2",
+    "artifact:DL-S3",
+    "artifact:DL-S5"
+  ],
+  "write_set": [
+    "artifact:O2"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:O2",
+      "mode": "W",
+      "isolation_key": "node:O2"
+    }
+  ],
+  "actor_pool": "codex-primary",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance O2\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/O2-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-7",
+  "executor_route": "lw-terra",
+  "primary_executor": "lw-terra",
+  "primary_wrapper": "run-lw-terra.sh",
+  "runtime_profile_requirement": "implementation-runner",
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  }
+}

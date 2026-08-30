@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-025-C1-C3",
+  "from": "C1",
+  "to": "C3",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c1.c3.v5"
+  ],
+  "transferred_input": "个人资料投影与范围合同",
+  "gate_evidence": "个人工作区不读取任何组织共享资料",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-C1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C3 consumes the explicitly produced artifact DL-C1"
+}

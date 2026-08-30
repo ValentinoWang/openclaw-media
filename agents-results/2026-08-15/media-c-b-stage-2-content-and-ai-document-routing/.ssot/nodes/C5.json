@@ -1,0 +1,132 @@
+{
+  "node_id": "C5",
+  "semantic_key": "media.stage2.personal-internal-writer",
+  "stage": "B",
+  "work_kind": "implementation",
+  "domain_lane": "personal-writer",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "C4",
+    "S3",
+    "S4",
+    "S5"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage2.product-decisions",
+      "version": 4
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage2.personal-internal-writer.v5"
+  ],
+  "write_authority": "implementation",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "C6"
+  ],
+  "worker_transport": "external-codex-exec",
+  "worker_registration": {
+    "worker_level": "LW",
+    "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+    "wrapper_entrypoint": "exec codex exec",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "sandbox": "danger-full-access",
+    "sandbox_authority": "writable sandbox",
+    "runtime_profile": "implementation-runner",
+    "runtime_profile_available": false,
+    "launch_authorized": false,
+    "profile_authority": "stage1 G1 accepted capability receipt",
+    "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
+    "task_argument": "实现个人内部 Writer 并退役个人飞书写入。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/C5.json",
+    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/C5.txt",
+    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/C5.log",
+    "prompt_sha256": "capture-before-launch",
+    "launch_barrier": "all wave PIDs registered before first wait",
+    "prompt_cleanup": "delete after exit evidence registration",
+    "runtime_handle_cleanup": "release after exit evidence registration",
+    "codex_transcript_retention": "preserve ~/.codex/sessions and ~/.codex/archived_sessions",
+    "dispatch_state": "BLOCKED"
+  },
+  "description": "成果、正文、运行和来源收据可同收据回读",
+  "node_role": "leaf",
+  "execution_actor": "codex",
+  "execution_contract_ref": "C5.json",
+  "execution_contract_sha256": "eb94de2d82f4c8b97d94d6e7f8699535ebbecab58eb1df11e2867246c3d5189a",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [
+    "DL-C5"
+  ],
+  "produced_artifact_ids": [
+    "DL-C5"
+  ],
+  "consumed_artifact_ids": [
+    "DL-C4",
+    "DL-S3",
+    "DL-S4",
+    "DL-S5"
+  ],
+  "read_set": [
+    "artifact:DL-C4",
+    "artifact:DL-S3",
+    "artifact:DL-S4",
+    "artifact:DL-S5"
+  ],
+  "write_set": [
+    "artifact:C5"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:C5",
+      "mode": "W",
+      "isolation_key": "node:C5"
+    }
+  ],
+  "actor_pool": "codex-primary",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance C5\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/C5-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-7",
+  "executor_route": "lw-terra",
+  "primary_executor": "lw-terra",
+  "primary_wrapper": "run-lw-terra.sh",
+  "runtime_profile_requirement": "implementation-runner",
+  "executor_attempt_policy": {
+    "initial_executor": "lw-terra",
+    "initial_wrapper": "run-lw-terra.sh",
+    "retry_executor": "lw-terra",
+    "retry_wrapper": "run-lw-terra.sh",
+    "primary_retry_limit": 1,
+    "l3_executor": "l3",
+    "l3_wrapper": "run-l3.sh",
+    "l3_escalation_limit": 1,
+    "retry_failure_origins": [
+      "environment",
+      "app-server",
+      "browser",
+      "database",
+      "test-infrastructure",
+      "provider-network",
+      "provider-transport",
+      "worker-transport"
+    ],
+    "l3_failure_origins": [
+      "product-behavior",
+      "implementation",
+      "architecture-complexity"
+    ],
+    "automatic_executor_switch": false
+  }
+}

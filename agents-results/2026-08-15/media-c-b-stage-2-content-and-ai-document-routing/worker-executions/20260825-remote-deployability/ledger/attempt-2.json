@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "wave": "20260825-remote-deployability-primary-retry",
+  "wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "wrapper_sha256": "a88abe5cdbb376cb1d9e37706f202f60c48292c3ed337b1e31c1820720b1742c",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+  "sandbox_authority": "writable sandbox with zero-write task scope except unique return paths",
+  "started_at": "2026-08-25T12:53:07Z",
+  "ended_at": "2026-08-25T13:02:14Z",
+  "launch_barrier": "all three PIDs registered before first wait",
+  "overlap_proof": "PIDs 81644, 81645, and 81646 shared the same start and end interval",
+  "attempts": [
+    {
+      "task_id": "STAGE2-REMOTE-RELEASE-PROVENANCE-20260825",
+      "pid": 81644,
+      "codex_session_identifier": "01a038fb-4a78-76d1-b370-ad096792c725",
+      "attempt_role": "primary-retry",
+      "exit_code": 0,
+      "prompt_sha256": "5f50f42c608e2bfd38ada7f08ad274c1d34f2e6cdd3c12fd9241f97705a0d02d",
+      "log_sha256": "8f2826ede7bde45c054b48355805234f029cddcfac1e4d0fe816c30fb105fb2e",
+      "structured_return_state": "valid-blocked",
+      "structured_return_sha256": "78471577a9fdd55bd88c5702eeb31966ef8bf51967c4fb2052c60fb6a698df67",
+      "proposed_state": "BLOCKED",
+      "failure_class": "verification",
+      "failure_origin": "authority",
+      "acceptance_self_check": "partial",
+      "classification": "stop",
+      "maximum_primary_retries_remaining": 0,
+      "maximum_l3_escalations_remaining": 0,
+      "actual_changed_paths": [
+        "worker-executions/20260825-remote-deployability/returns/STAGE2-REMOTE-RELEASE-PROVENANCE-20260825-primary-retry.json"
+      ],
+      "decision": "NO-GO: active release is healthy but mutable, unbound to an immutable source identity, and contains none of the eight hardening file versions or two new hardening tests"
+    },
+    {
+      "task_id": "STAGE2-REMOTE-DIVERGENCE-20260825",
+      "pid": 81645,
+      "codex_session_identifier": "01a038fb-4a78-7a41-8555-4caacf38ece0",
+      "attempt_role": "primary-retry",
+      "exit_code": 0,
+      "prompt_sha256": "279e40c2c51d9929cf77448325cadcb881e3fe3a3948e4e251c8053108bc8bc5",
+      "log_sha256": "1488c426609b6aae61cb2502c1b8ae5320073acae4c5156648e96375670865c4",
+      "structured_return_state": "invalid",
+      "structured_return_sha256": "382d7e4b107b32321c07632707d137460518d52c13dbeaf630c39e6a0acc52ab",
+      "invalid_return_reason": "proposed_state is an object instead of the closed worker-state enum string",
+      "invalid_evidence_note": "the retry checked /tmp/openclaw-stage2-handoff-final20260819 without the required hyphen, so its candidate-checkout-absent finding is discarded; the release-provenance retry successfully read /tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router",
+      "reported_failure_class": "none",
+      "reported_failure_origin": "none",
+      "failure_class": "verification",
+      "failure_origin": "worker-transport",
+      "acceptance_self_check": "partial",
+      "classification": "stop",
+      "maximum_primary_retries_remaining": 0,
+      "maximum_l3_escalations_remaining": 0,
+      "actual_changed_paths": [
+        "worker-executions/20260825-remote-deployability/returns/STAGE2-REMOTE-DIVERGENCE-20260825-primary-retry.json"
+      ],
+      "decision": "NO-GO evidence retained but return cannot complete the lane: candidate and live diverged by 17 and 7 commits, with live authentication, database, binding, ownership, configuration, HTTP, and deployment contracts requiring semantic replay"
+    },
+    {
+      "task_id": "STAGE2-STAGE1-GATE-READBACK-20260825",
+      "pid": 81646,
+      "codex_session_identifier": "01a038fb-4a77-7070-b0ef-45db18a6db07",
+      "attempt_role": "primary-retry",
+      "exit_code": 0,
+      "prompt_sha256": "0583c26a43840b09b06fe06b3140fa73a67af9a6d2db75cbac6de9ae223f8468",
+      "log_sha256": "c43ad299849bd6a5be794fe10b5bd2ee2ecb56fb5e68eb60622cf2e986742235",
+      "structured_return_state": "valid-blocked",
+      "structured_return_sha256": "8a6bb08ed36c5b62688d4f150db863bbd8fd686f9f9570da9a5efa8972c0f677",
+      "proposed_state": "BLOCKED",
+      "failure_class": "verification",
+      "failure_origin": "authority",
+      "acceptance_self_check": "pass",
+      "classification": "stop",
+      "maximum_primary_retries_remaining": 0,
+      "maximum_l3_escalations_remaining": 0,
+      "actual_changed_paths": [
+        "worker-executions/20260825-remote-deployability/returns/STAGE2-STAGE1-GATE-READBACK-20260825-primary-retry.json"
+      ],
+      "decision": "NO-GO: Stage-1 C1, C3, and DC2 remain BLOCKED, so Stage-2 F1, F2, and F3 remain blocked and the formal ready frontier is zero"
+    }
+  ],
+  "convergence": {
+    "technical_deployability": "NO-GO for direct deployment or direct hardening application",
+    "formal_release": "NO-GO",
+    "production_mutations": false,
+    "remote_service_restarted_or_reloaded": false,
+    "traffic_switched": false,
+    "remote_source_or_database_modified": false,
+    "stage2_ssot_state_changed": false,
+    "next_authorized_work": "advance the Stage-1 accepted frontier; after F1/F2/F3 are satisfied, replay Stage-2 semantically onto a frozen live promotion baseline and build a new immutable release"
+  },
+  "prompt_cleanup_state": "deleted-after-hash-and-exit-registration",
+  "runtime_handles_released": true,
+  "codex_transcript_retention": "preserved"
+}

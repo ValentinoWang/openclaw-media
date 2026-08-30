@@ -1,0 +1,54 @@
+TASK_ID=STAGE2-RUNTIME-HARDENING-20260820
+ATTEMPT_ROLE=primary-retry
+PRIMARY_EXECUTOR=lw-luna
+PRIMARY_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+ATTEMPT_EXECUTOR=lw-luna
+ATTEMPT_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+PROJECT_ROOT=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage2-hardening-runtime-20260820
+TASK_SOURCE_SHA256=51ce973e3a5b40d225cc78335ab9dd2722baa8720531d6ddf7f0063995297075
+STRUCTURED_RETURN_PATH=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/runtime/returns/STAGE2-RUNTIME-HARDENING-20260820-primary-retry.json
+VALIDATION_COMMAND_FILE=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/runtime/validation.sh
+VALIDATION_COMMAND_SHA256=701a5a31e2e12fe91b3278b85716e1de59e59a33b41820390dff2c7a053f137f
+
+Execute exactly the bounded task below. Preserve its frozen inputs, write scope, forbidden scope, and acceptance commands. Full filesystem access is process capability only and does not expand task authority.
+
+Write one JSON object to STRUCTURED_RETURN_PATH before exit. It must include proposed_state, acceptance_self_check, failure_class, and failure_origin. proposed_state must be IMPLEMENTED, VERIFIED, FAILED, or BLOCKED; acceptance_self_check must be pass, fail, or partial. failure_class must be none, implementation, runtime, verification, transport, architecture-conflict, authority-conflict, interface-freeze, permission, product-decision, or scope-conflict. failure_origin must identify one of: none, environment, app-server, browser, database, test-infrastructure, provider-network, provider-transport, worker-transport, product-behavior, implementation, architecture-complexity, control-plane, test-oracle, authority, scope, or unknown-origin. Use none only for a successful attempt.
+
+This is the next bounded attempt selected by the outer orchestrator. Keep the same primary executor when ATTEMPT_ROLE=primary-retry. For ATTEMPT_ROLE=l3, inherit the exact original write boundary and do not start another worker, invoke L4, or use spawn_agent.
+PRIOR_ATTEMPT_EVIDENCE_JSON=
+{"attempt_executor": "lw-luna", "attempt_role": "primary", "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "classification": {"attempt_executor": "lw-luna", "attempt_role": "primary", "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "decision": "retry_primary", "effective_failure_class": "transport", "effective_failure_origin": "worker-transport", "maximum_primary_retries_remaining": 1, "next_attempt_role": "primary-retry", "next_executor": "lw-luna", "next_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "primary_executor": "lw-luna", "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "reason": "worker-transport failure; retry the same selected primary"}, "exit_code": 124, "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/runtime/logs/STAGE2-RUNTIME-HARDENING-20260820-primary.log", "primary_executor": "lw-luna", "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh", "structured_return": null, "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/runtime/returns/STAGE2-RUNTIME-HARDENING-20260820-primary.json", "structured_return_state": "missing", "timed_out": true, "validation_exit_code": 1, "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260820-hardening/runtime/logs/STAGE2-RUNTIME-HARDENING-20260820-primary.validation.log"}
+
+BOUNDED_TASK_BEGIN
+Task ID: STAGE2-RUNTIME-HARDENING-20260820
+Objective: harden Stage-2 runtime, HTTP request composition, and startup integration in the isolated clone at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage2-hardening-runtime-20260820.
+
+Read first:
+- openclaw_app/services/stage2_runtime.py
+- openclaw_app/services/stage2_gateway.py
+- openclaw_app/adapters/http_api.py
+- openclaw_app/server_cli.py
+- openclaw_app/stage2_server_app.py
+- tests/test_stage2_gateway.py
+- tests/test_stage2_runtime.py
+- tests/test_stage2_server_cli.py
+- STAGE2-HANDOFF-20260819.md
+
+Exclusive write scope:
+- openclaw_app/services/stage2_runtime.py
+- openclaw_app/services/stage2_gateway.py
+- openclaw_app/adapters/http_api.py
+- openclaw_app/server_cli.py
+- openclaw_app/stage2_server_app.py
+- add tests/test_stage2_runtime_hardening.py only if needed
+Do not edit contracts, manifests, SSOT, migrations, unrelated services, or production data. Do not commit or push.
+
+Required review and implementation:
+1. Verify trusted session and Binding facts are supplied only by server providers, operation payloads cannot override tenant, capability, route, authority, or source rows, and malformed/unknown input fails closed with stable HTTP errors.
+2. Verify receipt identity is deterministic and tenant/route scoped, idempotent replay is exact, conflicts are explicit, failed write/register/readback states cannot be publishable, and concurrent claims do not duplicate external writes.
+3. Verify the HTTP adapter binds request credentials to the current request, does not leak tokens across threads, and maps Stage2 errors to correct status/body without starting disabled or provisional production runtime.
+4. Verify startup contract validation happens before application import and accepted production runtime still requires an explicit factory. Preserve legacy routes and public APIs.
+5. Add focused red/green tests for any missing behavior, including conflicting bearer/cookie credentials, duplicate request fields, response determinism, and startup fail-closed behavior.
+6. Run focused tests, full Stage-2 tests, compile, and diff check. No external network, database, Feishu, credentials, or production access.
+
+Before exit write one JSON object to STRUCTURED_RETURN_PATH with task_id, proposed_state, acceptance_self_check, failure_class, failure_origin, actual_read_scope, actual_write_scope, changed_files, commands, test_evidence, unverified_items, residual_risks, and explicit_non_claims. Never claim formal SSOT acceptance, production release, or device evidence.
+BOUNDED_TASK_END

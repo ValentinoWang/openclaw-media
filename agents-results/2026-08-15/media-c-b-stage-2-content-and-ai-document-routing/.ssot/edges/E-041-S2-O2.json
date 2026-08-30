@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-041-S2-O2",
+  "from": "S2",
+  "to": "O2",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.s2.o2.v5"
+  ],
+  "transferred_input": "ContextBuilder 路由和来源收据",
+  "gate_evidence": "01_ 近期活动与其他资料使用同等租户边界",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-S2"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "O2 consumes the explicitly produced artifact DL-S2"
+}

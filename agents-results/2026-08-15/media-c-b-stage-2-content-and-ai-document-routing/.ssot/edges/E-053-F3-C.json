@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-053-F3-C",
+  "from": "F3",
+  "to": "C",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.f3.c.v5"
+  ],
+  "transferred_input": "第一阶段必需交付跨阶段收据",
+  "gate_evidence": "只有第一阶段 DC2 ACCEPTED 才可接受本投影",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-F3"
+  ],
+  "resource_ids": [
+    "candidate:REL-2"
+  ],
+  "necessity_proof": "C must retain the immutable candidate:REL-2 identity from F3"
+}

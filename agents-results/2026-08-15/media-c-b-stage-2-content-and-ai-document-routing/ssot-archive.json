@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "artifact_class": "ssot-development",
+  "artifact_date": "2026-08-15",
+  "project_name": "openclaw-media",
+  "ssot_name": "media-c-b-stage-2-content-ai-document-routing",
+  "main_document": "ssot-development-paths.md",
+  "problem_documents": [
+    "openproblem.md"
+  ]
+}

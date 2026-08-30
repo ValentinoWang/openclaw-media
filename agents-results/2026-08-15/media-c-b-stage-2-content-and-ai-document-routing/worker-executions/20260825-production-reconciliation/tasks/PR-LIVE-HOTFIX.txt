@@ -1,0 +1,20 @@
+任务：PR-LIVE-HOTFIX
+角色：只读、零写的运行 release hotfix 审查者。
+版本：Stage-2 PLAN=3, DAG=3, INTERFACE_FREEZE=4, NODE_CONTRACT=4, SSOT_SCHEMA=2。
+
+冻结身份：
+- GitHub main 本地只读克隆：/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825
+- main SHA：5f06780569568ccc3197f0ab16aad74bdf9d1c6f
+- 远端：ubuntu@106.52.146.37
+- 运行 release：/home/ubuntu/releases/openclaw-stage2-production-20260819T
+- writer contract SHA-256：f877a8bd4660b9e66130023f568e2405360da3b921e917cba6fe72bb42347869
+- production factory SHA-256：d87a158cfa417ca2124585c310bc30f68349993e423afc9cb78ecdc8b75a411c
+- systemd 服务：openclaw-stage2.service，当前运行目录为上述 release。
+
+目标：比较运行 release 与当前 main，重点审查两处部署期差异：writer contract 从 provisional/未接线改为 accepted/已接线，以及 production factory 删除 space ID 与 parent token 成对存在的失败关闭检查。判断每处是应正式进入 main 的产品行为、只属于配置/发布证明、还是错误 workaround。进一步说明当前 release 的 /stage2 路由如何接线、它是否绕过 main 的认证/租户/账户权威，以及把功能接回当前 main 所需的最小代码/合同/测试修改。
+
+允许读取：上述 main 克隆；通过 SSH 读取 release 的非敏感源码、systemd 元数据、进程工作目录、Nginx 配置结构和 HTTP 状态码；不得读取任何 env 值、token、cookie、数据库内容或请求正文。
+唯一允许写入：由 STRUCTURED_RETURN_PATH 指定的 JSON 文件。
+禁止：修改任何源码、测试、Git 引用、release、systemd、Nginx、数据库、流量、飞书、SSOT、Obsidian；禁止 restart/reload/deploy；禁止输出密钥；禁止 spawn_agent 或其他 worker。
+
+返回 JSON 至 STRUCTURED_RETURN_PATH，至少包含：task_id、versions、frozen_identities、actual_read_scope、actual_write_scope、hotfix_dispositions、route_wiring_findings、authority_bypass_risks、required_main_changes、required_tests、deployment_claim_boundary、unverified_items、commands、proposed_state、acceptance_self_check、failure_class、failure_origin。成功审查使用 proposed_state=VERIFIED、acceptance_self_check=pass、failure_class=none、failure_origin=none；不得声称 ACCEPTED 或生产就绪。

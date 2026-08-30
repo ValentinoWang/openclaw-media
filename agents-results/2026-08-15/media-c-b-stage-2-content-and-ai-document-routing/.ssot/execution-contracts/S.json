@@ -1,0 +1,57 @@
+{
+  "contract_id": "S",
+  "schema_version": 1,
+  "node_id": "S",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "work_kind": "convergence",
+  "write_authority": "shared-generated",
+  "read_set": [
+    "artifact:DL-S1",
+    "artifact:DL-S2",
+    "artifact:DL-S3",
+    "artifact:DL-S4",
+    "artifact:DL-S5",
+    "artifact:DL-T1"
+  ],
+  "write_set": [
+    "artifact:S"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:S",
+      "mode": "W",
+      "isolation_key": "node:S"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "W",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance S\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/S-return.json"
+  ],
+  "worker_transport": "automatic-projection",
+  "release_slice": "REL-2",
+  "wave_id": "W-2-7",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "stage2:S1",
+      "stage2:S2",
+      "stage2:S3",
+      "stage2:S4",
+      "stage2:S5",
+      "stage2:T1"
+    ],
+    "projection_rule": "只汇合已接受输入并投影节点状态；不启动 Codex 进程、不产生外部副作用。",
+    "task_argument": "汇合共享合同和实现；不组装最终候选。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/projections/S.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  }
+}

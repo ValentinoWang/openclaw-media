@@ -1,0 +1,124 @@
+{
+  "ssot_schema_version": 2,
+  "artifact_class": "ssot-development",
+  "plan_version": 5,
+  "dag_version": 5,
+  "interface_freeze_version": 5,
+  "node_contract_version": 5,
+  "machine_validation_profile": "full",
+  "parallelism_contract_version": 1,
+  "execution_contract_validation": "strict",
+  "main_thread_policy": "orchestration-only",
+  "main_thread_source_write": false,
+  "execution_contracts_dir": "execution-contracts",
+  "planning_compiler": "planning-compiler.json",
+  "actor_pools": {
+    "codex-primary": {
+      "actor": "codex",
+      "capacity": 12
+    },
+    "human-authority": {
+      "actor": "human",
+      "capacity": 4
+    },
+    "external-acceptance": {
+      "actor": "external-system",
+      "capacity": 2
+    },
+    "orchestrator": {
+      "actor": "orchestrator",
+      "capacity": 1
+    }
+  },
+  "executor_policy": {
+    "schema_version": 3,
+    "allowed_primary_executors": {
+      "lw-luna": "run-lw-luna.sh",
+      "lw-terra": "run-lw-terra.sh"
+    },
+    "default_primary_executor": "lw-terra",
+    "default_writable_parallel_executor": "lw-terra",
+    "default_writable_wrapper": "run-lw-terra.sh",
+    "fallback_executor": "l3",
+    "fallback_wrapper": "run-l3.sh",
+    "primary_retry_limit": 1,
+    "l3_escalation_limit": 1
+  },
+  "upstream_projections": [
+    {
+      "projection_node": "F1",
+      "source_bundle": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding",
+      "source_node": "C1",
+      "source_manifest_sha256": "98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf",
+      "source_node_sha256": "26bf849657405fed887785e52665b97f2a5ae248e0591f7365f8d72e31c5f450",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "projection_node": "F2",
+      "source_bundle": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding",
+      "source_node": "C3",
+      "source_manifest_sha256": "98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf",
+      "source_node_sha256": "7b3ebfc4653099da67694396ec3374ff697b8dd50b19fc9575cac31b271488b5",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "projection_node": "F3",
+      "source_bundle": "agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding",
+      "source_node": "DC2",
+      "source_manifest_sha256": "98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf",
+      "source_node_sha256": "e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448",
+      "required_state": "ACCEPTED"
+    }
+  ],
+  "cross_stage_contracts": [
+    {
+      "contract_id": "stage1-writer-fail-closed-to-stage2-writer-router",
+      "decision_node": "K5",
+      "decision_node_sha256": "76c4b2b2584333f3ceb3f43731ecbb749f75317018ead39f11729dff165f87d9",
+      "closure_node": "I9",
+      "closure_node_sha256": "d99c5697e2bb4a1c7853e2d3695852eda11a8726301b2cd6cfc805e87f3a6a28",
+      "closure_required_via_projection": "F1",
+      "organization_route_unlock_projection": "F2",
+      "handoff_target_node": "S3",
+      "closed_error": "capability_unavailable_until_writer_migration",
+      "handoff_rule": "replace the accepted fail-closed state atomically; never enable a parallel legacy writer"
+    }
+  ],
+  "generated_main": "../ssot-development-paths.md",
+  "generated_views": [
+    {
+      "view_id": "main",
+      "source": "view-sources/00-main.md",
+      "source_sha256": "8dd7e230febc0a670d659474fff06ec919fdb5fa827c7b28c1bf33964f946d7e",
+      "output": "../ssot-development-paths.md"
+    },
+    {
+      "view_id": "dependency-topology",
+      "source": "view-sources/10-topology.md",
+      "source_sha256": "990230d8f74f9407a88bcc600665d8ca2207ac3abc0366cc68e0da6838de2f52",
+      "output": "../generated-views/10-dependency-topology.md"
+    },
+    {
+      "view_id": "execution-governance",
+      "source": "view-sources/20-execution.md",
+      "source_sha256": "265f7ff9b836492a524973915d8cb03b490ce082daeeacc309a3a692e1da118c",
+      "output": "../generated-views/20-execution-governance.md"
+    },
+    {
+      "view_id": "contracts-acceptance",
+      "source": "view-sources/30-acceptance.md",
+      "source_sha256": "31c3fbc0df40b23143884d9c76b8a9ab5a0082ac85d3844c6f6cf4e1441e5733",
+      "output": "../generated-views/30-node-contracts-and-acceptance.md"
+    },
+    {
+      "view_id": "implementation-progress",
+      "source": "view-sources/40-progress.md",
+      "source_sha256": "942550d1c2013041bc28c525198dd52af5081e3ab7771e640e86204513bed708",
+      "output": "../implementation-progress.md"
+    }
+  ],
+  "nodes_dir": "nodes",
+  "edges_dir": "edges",
+  "assumptions_dir": "assumptions",
+  "conflicts_dir": "conflicts"
+}

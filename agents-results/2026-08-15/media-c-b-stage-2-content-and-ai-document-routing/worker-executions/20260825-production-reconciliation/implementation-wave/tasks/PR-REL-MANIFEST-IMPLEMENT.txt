@@ -1,0 +1,33 @@
+TASK_ID: PR-REL-MANIFEST-IMPLEMENT
+ROLE: acceptance-locked source implementation owner.
+PROJECT_ROOT: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-manifest-impl
+DESIGN_BASELINE: bfa10178959e7cbde3bca9be6aa961f65d6343a5
+CONTRACT: docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance-contract.md, APPROVED v1, LOCKED, SHA-256 8ffe2adebbf86aad61b0c1396b623a1321a6a97958eb1f327177481024000537
+PROTECTED_TEST: openclaw-tag-router/tests/test_production_release_manifest.py, SHA-256 dd653b45ebce1d09593f232673506262e7720dff571474fe5f1afc19737e0187
+
+Read the project AGENTS.md, Harness entry/adapter, /Users/vsiyo/.codex/skills/implement-acceptance-locked-change/SKILL.md, /Users/vsiyo/.agents/skills/code-quality/SKILL.md, the complete contract, protected test and adjacent service/script patterns. Do not modify the contract, human acceptance or protected test.
+
+Objective: implement every blocking AC for the pure production-release manifest schema, canonical serializer, builder and fail-closed validator. Preserve deterministic ASCII canonical JSON, Git/source cleanliness, path/mode/digest checks, symlink/mutable/secret/runtime rejection, previous-release identity matching, stable non-secret error codes and input immutability.
+
+Exclusive production write scope:
+- openclaw-tag-router/openclaw_app/services/production_release_manifest.py
+- openclaw-tag-router/openclaw_app/contracts/production-release-manifest.v1.schema.json
+- openclaw-tag-router/scripts/build_production_release_manifest.py
+
+Evidence write scope:
+- docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/index.md
+- one new directory under docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/machine/unit/runs/**
+- acceptance/index.md is validation-only and must remain unstaged/uncommitted.
+
+Forbidden: all existing contract/human/protected-test/RED-evidence files, unrelated source/tests, dependency/lock files, remote/SSH, deployment, service, pointer, Nginx, database, HTTP, Feishu, secrets, SSOT/Obsidian, other workers or spawn_agent.
+
+Workflow and acceptance:
+1. Verify the frozen hashes and run official contract/split-root checks. The recorded RED proof already establishes the missing module baseline.
+2. Implement the smallest maintainable public API and CLI/schema artifacts without weakening tests.
+3. Run the protected test with CPython 3.12 via uv until green; run compile/static checks and git diff --check.
+4. Commit production scope only with message: feat(release): implement production manifest tooling
+5. Record source_commit_sha. Create a new machine/unit run with manage_acceptance_artifacts.py new using source identity commit:<source_commit_sha>, environment local-source-only, runtime uv-cpython-3.12, executor lw-luna. Store the exact green command/output in that run evidence and fill result.md with PASS, AC coverage and explicit production/deployment gaps. Regenerate task/project indexes; keep root acceptance/index.md uncommitted.
+6. Commit only the new run and task index with message: test(release): record manifest implementation evidence
+7. Write structured JSON return with task_id, source_commit_sha, commit_sha=HEAD, protected_test_sha256, actual paths, commands/evidence/run ID, unverified items, proposed_state=IMPLEMENTED, acceptance_self_check=pass, failure_class=none, failure_origin=none. Never claim release or production acceptance.
+
+Stop BLOCKED on contract/test drift or insufficient scope. Do not change protected tests.

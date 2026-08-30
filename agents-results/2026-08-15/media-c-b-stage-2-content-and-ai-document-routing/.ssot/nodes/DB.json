@@ -1,0 +1,80 @@
+{
+  "node_id": "DB",
+  "semantic_key": "media.stage2.external-system-acceptance",
+  "stage": "D",
+  "work_kind": "validation",
+  "domain_lane": "release",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "DA"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage2.product-decisions",
+      "version": 4
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage2.external-system-acceptance.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "runtime acceptance owner",
+  "unlocks": [
+    "DC"
+  ],
+  "worker_transport": "external-manual",
+  "worker_registration": {
+    "executor": "runtime acceptance owner",
+    "manual_owner": "runtime acceptance owner",
+    "task_argument": "在批准窗口执行分层恢复可验证的推广和真实外部系统验收。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/manual-receipts/DB.json",
+    "dispatch_state": "BLOCKED",
+    "note": "manual prerequisite; zero Codex processes"
+  },
+  "description": "发布、账号、租户、Binding、成果、设备和时间身份完整",
+  "node_role": "acceptance-gate",
+  "execution_actor": "human",
+  "execution_contract_ref": "DB.json",
+  "execution_contract_sha256": "50eca2f71feb550718bc42c7a1f76ce94931e5ce70a88c53788c98c87ae2eff2",
+  "side_effect_class": "reversible",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-DB"
+  ],
+  "consumed_artifact_ids": [
+    "ART-DA"
+  ],
+  "read_set": [
+    "artifact:ART-DA"
+  ],
+  "write_set": [
+    "evidence:DB"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:DB",
+      "mode": "W",
+      "isolation_key": "node:DB"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "R",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "actor_pool": "human-authority",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance DB\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/DB-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-14"
+}

@@ -1,0 +1,80 @@
+{
+  "node_id": "O5",
+  "semantic_key": "media.stage2.organization-edit-readback",
+  "stage": "B",
+  "work_kind": "validation",
+  "domain_lane": "organization-readback",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "O4"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage2.product-decisions",
+      "version": 4
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage2.organization-edit-readback.v5"
+  ],
+  "write_authority": "evidence-only",
+  "acceptance_authority": "runtime acceptance owner",
+  "unlocks": [
+    "O6"
+  ],
+  "worker_transport": "external-manual",
+  "worker_registration": {
+    "executor": "runtime acceptance owner",
+    "manual_owner": "runtime acceptance owner",
+    "task_argument": "在隔离组织执行真实飞书编辑和再回读。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/manual-receipts/O5.json",
+    "dispatch_state": "BLOCKED",
+    "note": "manual prerequisite; zero Codex processes"
+  },
+  "description": "编辑前后远端版本、Web 镜像和候选身份完整",
+  "node_role": "acceptance-gate",
+  "execution_actor": "human",
+  "execution_contract_ref": "O5.json",
+  "execution_contract_sha256": "c0803173f64d128ed55ff69d20a9444bc7f0cd95f07da5adf9360a5db75f44fe",
+  "side_effect_class": "reversible",
+  "candidate_identity_policy": "must-match",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "DL-O5"
+  ],
+  "consumed_artifact_ids": [
+    "DL-O4"
+  ],
+  "read_set": [
+    "artifact:DL-O4"
+  ],
+  "write_set": [
+    "evidence:O5"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:O5",
+      "mode": "W",
+      "isolation_key": "node:O5"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "R",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "actor_pool": "human-authority",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance O5\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/O5-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-10"
+}

@@ -1,0 +1,34 @@
+TASK ID: STAGE2-LUNA-CONTRACT-VALIDATOR-20260819
+DIRECT PARENT: Phase-2 SSOT B/T1/S1-S5 (formal states remain BLOCKED until upstream projections are accepted)
+CONTRACT VERSIONS: plan=3 dag=3 interface=4 node_contract=4
+PRIMARY: lw-luna via /Users/vsiyo/.codex/workers/run-lw-luna.sh
+
+The code target is the isolated remote worktree:
+  /tmp/openclaw-stage2-harness-luna/openclaw-tag-router
+Remote host is ubuntu@106.52.146.37. The local project root is only the orchestration/evidence root.
+
+Write scope (exclusive): create or change only these two files in that remote worktree:
+  openclaw_app/services/stage2_contract_validator.py
+  tests/test_stage2_contract_validator.py
+Do not edit any existing tracked file, contract JSON, config, migration, lockfile, generated file, SSOT file, progress ledger, or other test.
+
+Objective: implement a fail-closed, dependency-light validator for the Stage-2 shared writer contract. Read the existing stage2_writer_contract.json, stage2_context.py, stage2_writer_router.py, and the SSOT T1/S1-S5 acceptance fragments before coding.
+
+Required behavior:
+1. Load or accept a JSON-shaped contract mapping without mutating it, validate the schema/version, required route modes personal_web/internal and organization_lark/lark, and reject unknown or duplicate route definitions.
+2. Validate capability entries: every document-writing capability declares an allowed authority mode and required readback; read-only capabilities cannot declare document or remote write effects; unregistered or contradictory effects fail closed.
+3. Validate error/status vocabulary and required publishability invariants: no success/publishable path can omit artifact registration or required readback, and no organization route can omit Binding identity requirements.
+4. Produce a deterministic JSON-shaped validation receipt with schema version, contract digest, sorted findings, and valid boolean. Preserve input immutability and never perform I/O beyond an explicitly injected mapping (the default test path should read no files).
+5. Add tests for valid current contract fixture loaded by the test, missing/unknown routes, duplicate capability ids, read-only write effects, missing readback, invalid status vocabulary, input immutability, deterministic digest, and fail-closed results. Do not weaken existing tests or contact external systems.
+
+Verification in the remote worktree:
+  PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. /home/ubuntu/selfmedia-tools/openclaw-media/.venv/bin/pytest -q tests/test_stage2_contract_validator.py
+  PYTHONDONTWRITEBYTECODE=1 /home/ubuntu/selfmedia-tools/openclaw-media/.venv/bin/python - <<'PY'
+from pathlib import Path
+for name in ("openclaw_app/services/stage2_contract_validator.py", "tests/test_stage2_contract_validator.py"):
+    compile(Path(name).read_text(encoding="utf-8"), name, "exec")
+print("stage2 contract validator in-memory compile passed")
+PY
+  git diff --check
+
+Do not commit or push. Before exit write one JSON object to STRUCTURED_RETURN_PATH with task_id, proposed_state, acceptance_self_check, failure_class, failure_origin, actual_read_scope, actual_write_scope, changed_files, commands, test_evidence, unverified_items, residual_risks, and explicit_non_claims. Use IMPLEMENTED or VERIFIED only if the focused tests pass. Never claim formal SSOT acceptance or production release.

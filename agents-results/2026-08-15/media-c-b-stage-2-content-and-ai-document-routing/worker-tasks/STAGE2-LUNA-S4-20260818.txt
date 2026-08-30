@@ -1,0 +1,31 @@
+Task: implement a bounded, provisional Stage-2 artifact registration/readback state machine in the isolated remote worktree.
+
+Execution context:
+- Worker runs in the local project root but target code is remote ubuntu@106.52.146.37.
+- Remote worktree: /tmp/openclaw-stage2-s4-luna, created from codex/stage2-integration-20260818.
+- Do not touch /home/ubuntu/selfmedia-tools/openclaw-tag-router main, production, Feishu, database, credentials, or external services.
+- Phase-2 SSOT is planning authority only. Do not edit any SSOT, progress ledger, generated view, manifest, acceptance state, or archive.
+
+Exclusive remote write scope (only these files):
+- openclaw-tag-router/openclaw_app/services/stage2_artifact_state.py
+- openclaw-tag-router/tests/test_stage2_artifact_state.py
+
+Objective:
+Implement S4 as a dependency-light, in-memory, fail-closed state machine that can later be injected into stage2_writer_router.py. It must support both personal_web/internal and organization_lark/lark outcomes without importing Feishu, HTTP, database, filesystem, or credential clients.
+
+Required behavior:
+1. Typed JSON-shaped request/receipt values include tenant_id, authority_mode, binding_id/generation when organization, idempotency_key, content_digest, remote_ref, artifact_ref, revision, write/registration/readback statuses, and explicit error codes.
+2. Server-owned authority: reject malformed or browser-authority fields; personal records must have no Binding/remote_ref; organization records require active Binding identity.
+3. State transitions are fail closed: write -> registered -> readback_verified -> publishable. Any missing/contradictory step becomes needs_attention and never publishable.
+4. Deterministic idempotency: exact replay returns stored result without duplicating state; same key with a different request fingerprint raises stable IdempotencyConflict. Protect store and transition with a lock.
+5. Preserve remote_ref and artifact_ref on partial external success so later compensation/retry can audit them. No implicit retries or fallback.
+6. Provide adapter-friendly `register(...)`, `verify_readback(...)`, and a single `record(...)` helper with explicit structured mappings.
+
+Tests:
+- Fake in-memory inputs only. Cover personal success, organization Binding requirement, missing registration, readback mismatch, partial write, replay, conflict, and concurrent replay.
+- Run focused pytest, py_compile/in-memory compile, and git diff --check in the remote worktree.
+- Do not weaken or modify existing tests; do not add dependencies, migrations, or runtime wiring.
+
+Before exit, write one JSON return object to:
+/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/stage2-s4-luna/returns/STAGE2-LUNA-S4-20260818.json
+Include proposed_state, acceptance_self_check, failure_class, failure_origin, changed_files, commands, tests, unverified_items, and explicit_non_claims. Use IMPLEMENTED or VERIFIED only when focused tests pass. Never claim formal SSOT acceptance or production evidence.

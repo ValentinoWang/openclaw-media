@@ -1,0 +1,48 @@
+{
+  "contract_id": "F1",
+  "schema_version": 1,
+  "node_id": "F1",
+  "node_role": "acceptance-gate",
+  "execution_actor": "external-system",
+  "work_kind": "validation",
+  "write_authority": "evidence-only",
+  "read_set": [
+    "artifact:DL-A1"
+  ],
+  "write_set": [
+    "evidence:F1"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:F1",
+      "mode": "W",
+      "isolation_key": "node:F1"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "R",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance F1\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/F1-return.json"
+  ],
+  "worker_transport": "automatic-projection",
+  "release_slice": "REL-2",
+  "wave_id": "W-2-2",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "stage1:C1",
+      "stage1:I9"
+    ],
+    "projection_rule": "仅当第一阶段 C1 与同候选 I9 均为 ACCEPTED 时投影为 ACCEPTED，否则保持 BLOCKED。",
+    "task_argument": "zero-write 投影第一阶段 C1；不修改上游状态。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/projections/F1.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  }
+}

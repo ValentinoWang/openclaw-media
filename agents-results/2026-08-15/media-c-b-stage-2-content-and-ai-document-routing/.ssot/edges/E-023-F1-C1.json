@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-023-F1-C1",
+  "from": "F1",
+  "to": "C1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.f1.c1.v5"
+  ],
+  "transferred_input": "身份汇合跨阶段收据",
+  "gate_evidence": "只有第一阶段 C1 ACCEPTED 且 I9 属于同一候选时才可接受本投影",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-F1"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C1 consumes the explicitly produced artifact DL-F1"
+}

@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-048-O5-O6",
+  "from": "O5",
+  "to": "O6",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.o5.o6.v5"
+  ],
+  "transferred_input": "飞书编辑和再回读同收据证据",
+  "gate_evidence": "飞书是组织正文的唯一编辑权威",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-O5"
+  ],
+  "resource_ids": [
+    "candidate:REL-2"
+  ],
+  "necessity_proof": "O6 must retain the immutable candidate:REL-2 identity from O5"
+}

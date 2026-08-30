@@ -1,0 +1,93 @@
+{
+  "task_id": "PR-REL-READBACK-IMPLEMENT",
+  "attempt_role": "primary",
+  "executor": "lw-luna",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/pr-rel-readback-impl",
+  "design_baseline": "5b3b628c739c84b8b02f7256c15e2b23ca033bf8",
+  "source_commit_sha": "e27e98432d46eace2c95c0f7f6034419e44c73ce",
+  "commit_sha": "734bdef1e8d36e2911a8ea65ecf4910081acc726",
+  "commit_messages": [
+    "feat(release): add Stage-2 release readback guard",
+    "test(release): record readback implementation evidence"
+  ],
+  "contract_sha256": "ae12561d38b281fc44a299d4589c0b72a6681109002327c60f7be1cb67ced57c",
+  "protected_test_sha256": "a70096254718873de191d3cef266d8fa3ae820b26ffcf516649a3fc42d255ace",
+  "actual_paths": {
+    "production_committed": [
+      "openclaw-tag-router/scripts/qa/check_stage2_release_process.py"
+    ],
+    "evidence_committed": [
+      "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance/index.md",
+      "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance/machine/unit/runs/20260825T165620Z-uv-cpython312-e27e98/result.md",
+      "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance/machine/unit/runs/20260825T165620Z-uv-cpython312-e27e98/evidence/protected-test-green.log"
+    ],
+    "validation_only_uncommitted": [
+      "acceptance/index.md"
+    ],
+    "forbidden_untouched": [
+      "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance-contract.md",
+      "openclaw-tag-router/tests/test_stage2_release_readback.py",
+      "acceptance/human/PR-REL-READBACK",
+      "openclaw-tag-router/scripts/qa/check_openclaw_bot_center_release_process.py",
+      "remote/SSH/curl/live HTTP",
+      "systemd/pointer/Nginx/database/Feishu/SSOT/Obsidian"
+    ]
+  },
+  "run": {
+    "run_id": "20260825T165620Z-uv-cpython312-e27e98",
+    "lane": "machine/unit",
+    "status": "PASS",
+    "source_identity": "commit:e27e98432d46eace2c95c0f7f6034419e44c73ce",
+    "environment": "local-source-only",
+    "runtime": "uv-cpython-3.12",
+    "executor": "lw-luna",
+    "result_path": "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance/machine/unit/runs/20260825T165620Z-uv-cpython312-e27e98/result.md",
+    "result_sha256": "acc1c539a6b9663ee07bcbe0d3b7760a2f94ff682858e8a87966f9f431eb001a",
+    "green_output_path": "docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance/machine/unit/runs/20260825T165620Z-uv-cpython312-e27e98/evidence/protected-test-green.log",
+    "green_output_sha256": "4cb64dd4f3c3f92594ada07767d7f4b99c9cedfd96b49f8f81574c016b5fa772"
+  },
+  "commands_and_evidence": [
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/check_acceptance_contract.py docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance-contract.md --project-root .",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/design-acceptance-contract/scripts/manage_acceptance_artifacts.py check docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK --project-root .",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=openclaw-tag-router uv run --python 3.12 --with pytest python -m pytest -q openclaw-tag-router/tests/test_stage2_release_readback.py",
+      "exit_code": 0,
+      "result": "13 passed, 7 subtests passed"
+    },
+    {
+      "command": "python3 -m py_compile openclaw-tag-router/scripts/qa/check_stage2_release_process.py",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/implementation-wave/validation/PR-REL-READBACK-IMPLEMENT.sh",
+      "exit_code": 0,
+      "sha256": "7b84cb02d85a6c425feaf041cf0bc8d7daf41392247547c4e4d163786013763a",
+      "result": "pass"
+    }
+  ],
+  "unverified_items": [
+    "No live production readback, deployment activation, release acceptance, rollback, or current production pointer/service state was performed or claimed.",
+    "No authenticated Stage-2 business behavior, real database or Feishu behavior, device behavior, current GitHub main, or Stage-1 C1/C3/DC2 acceptance was performed or claimed.",
+    "The local run proves only the injected evaluator and protected unit/contract behavior; it is not production or device evidence.",
+    "No production environment value, credential, cookie, Authorization value, or secret-bearing argv was read or stored."
+  ],
+  "production_proof_claim": false
+}

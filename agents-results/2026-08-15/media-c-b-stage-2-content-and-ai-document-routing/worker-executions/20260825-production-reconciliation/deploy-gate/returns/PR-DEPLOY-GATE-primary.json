@@ -1,0 +1,602 @@
+{
+  "task_id": "PR-DEPLOY-GATE",
+  "attempt_role": "primary",
+  "executor": "lw-luna",
+  "versions": {
+    "plan": 3,
+    "dag": 3,
+    "interface_freeze": 4,
+    "node_contract": 4,
+    "ssot_schema": 2
+  },
+  "frozen_identities": {
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+    "main_clone": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825",
+    "main_sha": "5f06780569568ccc3197f0ab16aad74bdf9d1c6f",
+    "task_source_sha256": "8a24ada347e5015c66a5e6053cd4164b35ce469314d5b3f068e93f609e21b563",
+    "remote": "ubuntu@106.52.146.37",
+    "current_release": "/home/ubuntu/releases/openclaw-stage2-production-20260819T",
+    "service": "openclaw-stage2.service",
+    "expected_main_pid": 1314975,
+    "validation_command_sha256": "f3abf1280944b1763bdb0441da849823cc4303a2b9bb4f5f12626f7c2f16ecf7"
+  },
+  "actual_read_scope": {
+    "local": [
+      "Frozen main tree, git identity/status, tracked deploy/release/quality/qa paths, source scripts, service templates, Stage-2 runtime and tests",
+      "Merge-resolution and release documentation in the frozen clone",
+      "Selected local source file hashes"
+    ],
+    "remote": [
+      "Non-sensitive systemd user-service metadata, PID, executable, cwd, command-line release paths and state",
+      "Release directory names, permissions, symlink presence, non-secret file names and selected file hashes",
+      "Nginx version, config-file metadata, selected server/listen/location/proxy_pass directives",
+      "Listener metadata and HTTP status codes only for direct and Nginx health/readiness probes"
+    ],
+    "explicitly_not_read": [
+      "Environment-file values",
+      "Tokens, cookies, credentials or secrets",
+      "Database contents or request/response bodies",
+      "Feishu contents or production account data"
+    ],
+    "scope_result": "honored"
+  },
+  "actual_write_scope": {
+    "allowed_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/deploy-gate/returns/PR-DEPLOY-GATE-primary.json",
+    "writes_performed": [
+      "This JSON object only"
+    ],
+    "source_remote_systemd_nginx_release_database_traffic_writes": false
+  },
+  "git_status": {
+    "business_project_root": {
+      "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+      "state": "not_a_git_repository"
+    },
+    "frozen_main_clone": {
+      "state": "clean",
+      "branch_status": "main...origin/main",
+      "head": "5f06780569568ccc3197f0ab16aad74bdf9d1c6f"
+    },
+    "harness_ssot": {
+      "path": "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering",
+      "state": "dirty_observed",
+      "attempt_changed": false,
+      "note": "Existing Harness changes were preserved and not edited by this read-only attempt."
+    }
+  },
+  "existing_deploy_surfaces": [
+    {
+      "path": "runtime/maintenance/deploy/deploy_openclaw_runtime.py",
+      "evidence": "Lines 94-181 use fixed /home/ubuntu paths, rsync --delete to an active plugin, install and enable systemd user timers, build/publish Bot Center, run guards, and optionally restart gateways.",
+      "assessment": "Operational mutating deploy script; no Git-SHA release directory, per-file manifest, atomic release pointer, CAS switch, same-round Stage-2 readback, observation window, or rollback contract. It is out of scope for this attempt."
+    },
+    {
+      "path": "openclaw-tag-router/scripts/qa/check_openclaw_bot_center_release_process.py",
+      "evidence": "Lines 28-103 read systemd MainPID/ActiveState/SubState/ExecStart, /proc command line and cwd, and validate a requested release root.",
+      "assessment": "Reusable service-process readback pattern, but it defaults to openclaw-bot-center-api.service and assumes release_root/config/settings.yaml. It is not a Stage-2 manifest or rollback gate, and the current Stage-2 service uses openclaw_app/config/settings.yaml."
+    },
+    {
+      "path": "openclaw-media/openclaw_media/release.py",
+      "evidence": "Lines 71-107 validate a CLI wheel, wheel SHA-256, catalog digest and dependency SBOM.",
+      "assessment": "Package-specific wheel release metadata; useful canonical hashing style only, not a server release identity or service activation mechanism."
+    },
+    {
+      "path": "openclaw-tag-router/openclaw_app/services/stage2_release_gate.py",
+      "evidence": "Lines 1-5 define a transport-free zero-write gate; lines 118-172 project F1/F2/F3 from C1/C3/DC2 receipts and compute a deterministic receipt digest.",
+      "assessment": "Stage-2 upstream acceptance projection only. It must remain a prerequisite evidence layer and must not be reused as deployment acceptance."
+    },
+    {
+      "path": "openclaw-tag-router/scripts/qa/stage2_playwright_verify.py",
+      "evidence": "Lines 1-7 distinguish deployed and isolated fixture verification; lines 307-315 check healthz/readyz; lines 373-378 emit VERIFIED with formalAcceptance NOT_ACCEPTED; deployed tokens are obtained from environment variables without being printed.",
+      "assessment": "Good focused browser evidence adapter, but fixture mode is not production proof and the current verifier does not establish a manifest-to-service binding or an authorized rollback."
+    },
+    {
+      "path": "openclaw-tag-router/STAGE2-MERGE-RESOLUTION-20260825.md",
+      "evidence": "Lines 37-48 explicitly state that the merge does not enable /stage2/personal or /stage2/organization on the existing production server and that authenticated integration, deployment readback and rollback evidence remain separate obligations.",
+      "assessment": "Current architecture boundary. A production reconciliation gate cannot claim the frozen main is a deployable Stage-2 runtime until the current server CLI/auth authority integration is separately implemented and verified."
+    },
+    {
+      "path": "openclaw-bot-center/deploy/nginx-openclaw-bot-center.conf",
+      "evidence": "Tracked Nginx config covers Bot Center routes; it does not declare the remote openclaw-opc-public-8443 Stage-2 vhost.",
+      "assessment": "Local Nginx source is not the authority for the remote Stage-2 vhost; remote Nginx metadata must be read back under deployment authority."
+    },
+    {
+      "path": "remote:/home/ubuntu/releases/openclaw-stage2-production-20260819T",
+      "evidence": "The active root is a normal 775 directory containing source, tests, evidence, caches, stage2.env, session-material.env and state/stage2.sqlite3. No current symlink was present and no manifest/rollback-named file was found in the release tree.",
+      "assessment": "Current runtime is a mutable handoff directory, not an immutable Git-SHA release. Its source identity and previous-release relationship are not machine-bound."
+    }
+  ],
+  "remote_observed_state": {
+    "systemd": {
+      "load_state": "loaded",
+      "active_state": "active",
+      "sub_state": "running",
+      "main_pid": 1314975,
+      "cwd": "/home/ubuntu/releases/openclaw-stage2-production-20260819T",
+      "executable": "/usr/bin/python3.12",
+      "restart": "on-failure",
+      "timeout_start": "1min 30s",
+      "exec_start_identity": "python3 -m openclaw_app.server_cli --settings <current-release>/openclaw_app/config/settings.yaml --host 127.0.0.1 --port 8892 --stage2-runtime production --stage2-factory openclaw_app.services.stage2_production_factory:build_production_stage2_gateway --stage2-contract <current-release>/openclaw_app/contracts/stage2_writer_contract.json",
+      "exec_start_pre": "not_declared_in_readback",
+      "exec_reload": "not_declared_in_readback",
+      "pointer_binding": "none_observed; WorkingDirectory and ExecStart use the dated directory directly"
+    },
+    "release_roots": {
+      "observed": [
+        "openclaw-stage2-production-20260819T",
+        "selfmedia-334a6bb",
+        "selfmedia-cbf5aa8",
+        "selfmedia-d77426c",
+        "selfmedia-dd67903"
+      ],
+      "root_mode": "775 ubuntu:ubuntu",
+      "current_release_top_level_names": [
+        ".pytest_cache",
+        "STAGE2-HANDOFF-20260819.md",
+        "agents-results",
+        "bridge.py",
+        "config",
+        "evidence",
+        "index.js",
+        "openclaw.plugin.json",
+        "openclaw_app",
+        "package.json",
+        "scripts",
+        "session-material.env",
+        "stage2.env",
+        "state",
+        "tests"
+      ],
+      "manifest_or_rollback_files": [],
+      "current_pointer": "not_observed"
+    },
+    "nginx": {
+      "loaded_vhosts": [
+        "openclaw-bot-center",
+        "openclaw-opc-public-8443",
+        "selfmedia-workstation-cm1",
+        "sub2api-stock"
+      ],
+      "stage2_route": "https://106.52.146.37:8443/stage2/ -> http://127.0.0.1:8892/",
+      "config_test": "not_passed_as_ubuntu: certificate permission denied for the configured fullchain path; privileged operator verification remains required",
+      "live_status_codes": {
+        "http://127.0.0.1:8892/healthz": 200,
+        "http://127.0.0.1:8892/readyz": 200,
+        "https://106.52.146.37:8443/stage2": 308,
+        "https://106.52.146.37:8443/stage2/healthz": 200,
+        "https://106.52.146.37:8443/stage2/readyz": 200
+      },
+      "business_route_probe_note": "GET probes for /stage2/personal and /stage2/organization returned 404; the application contract uses POST, so this is not authenticated business-route evidence."
+    },
+    "selected_file_hash_comparison": [
+      {
+        "logical_path": "package.json",
+        "main_sha256": "2db266f4cc2b5a7bda552f2859e9635a96c7a4517665beb4396f85b50fa924f9",
+        "remote_sha256": "2db266f4cc2b5a7bda552f2859e9635a96c7a4517665beb4396f85b50fa924f9",
+        "result": "match"
+      },
+      {
+        "logical_path": "openclaw_app/config/settings.yaml",
+        "main_sha256": "d5de4f36cf6e7577c91a0864b9f55d2971883b223ee07d95de896ca0403262bb",
+        "remote_sha256": "97cd4c77557c67e8f2b12c13405fdae37daf266eb78b47ba9826579bd971145e",
+        "result": "mismatch"
+      },
+      {
+        "logical_path": "openclaw_app/contracts/stage2_writer_contract.json",
+        "main_sha256": "0e655d8d829674630738b84e9998d26d13adae3c5a01ac52708aa81864006410",
+        "remote_sha256": "f877a8bd4660b9e66130023f568e2405360da3b921e917cba6fe72bb42347869",
+        "result": "mismatch"
+      },
+      {
+        "logical_path": "scripts/qa/stage2_playwright_verify.py",
+        "main_sha256": "88c6c39a9a51331448282289620a7e76fd164f1365f64911c5d2b3b248ee4ac7",
+        "remote_sha256": "546780725e47504c42251f669d9b64d3d33a1a8e42841732c218a75b760a085b",
+        "result": "mismatch"
+      },
+      {
+        "logical_path": "openclaw_app/services/stage2_production_factory.py",
+        "main_sha256": "5e490d803101ebe52b3eb3c880a568c73f473d2a5142709487ddbe336a5c2cf7",
+        "remote_sha256": "d87a158cfa417ca2124585c310bc30f68349993e423afc9cb78ecdc8b75a411c",
+        "result": "mismatch"
+      },
+      {
+        "logical_path": "openclaw_app/adapters/http_api.py",
+        "main_sha256": "e4073a8dbcc58f2e5aca7f09f5ae5da68a4371015fb6258d934fc92c5a0aee91",
+        "remote_sha256": "a6315829eca61fb1f80c79ae1f1c8feb8d40d212d853e5db8773febd532ae92e",
+        "result": "mismatch"
+      },
+      {
+        "logical_path": "openclaw_app/server_cli.py",
+        "main_sha256": "39d4f7179a283a522f01e4b13901ed7a641eb1c5feea17a214bf7b271bda06de",
+        "remote_sha256": "8721f5b864640b7aca07c48a0d0c84913d2adbcfaa997e5f2fa91f5e578d7423",
+        "result": "mismatch"
+      }
+    ]
+  },
+  "drift_failure_classes": [
+    {
+      "id": "SOURCE_IDENTITY_MISMATCH",
+      "trigger": "Target release is not provably built from the requested Git SHA and clean tree.",
+      "current_evidence": "Frozen main is clean at 5f067805..., while the active remote directory has no Git-SHA manifest and selected Stage-2 files mismatch.",
+      "gate_action": "fail closed before staging or switching"
+    },
+    {
+      "id": "MANIFEST_MISSING_OR_INVALID",
+      "trigger": "Manifest is absent, malformed, incomplete, or its canonical digest does not verify.",
+      "current_evidence": "No release/rollback manifest was found in the active release tree.",
+      "gate_action": "fail closed"
+    },
+    {
+      "id": "FILE_HASH_OR_INVENTORY_DRIFT",
+      "trigger": "A declared file, mode, symlink policy, or per-file SHA-256 differs from the manifest.",
+      "current_evidence": "Only selected files were read back; six of seven selected Stage-2 files mismatch the frozen main.",
+      "gate_action": "fail closed and do not promote"
+    },
+    {
+      "id": "MUTABLE_CONTENT_IN_RELEASE",
+      "trigger": "Environment files, database/state, caches, tests, evidence, or writable paths are inside the code release.",
+      "current_evidence": "Active root contains stage2.env, session-material.env, state/stage2.sqlite3, caches, tests and evidence; root mode is 775.",
+      "gate_action": "reject immutable-release claim; separate state and secret paths"
+    },
+    {
+      "id": "SERVICE_RELEASE_BINDING_DRIFT",
+      "trigger": "systemd ExecStart, settings path, cwd, PID or resolved pointer does not bind to the verified manifest.",
+      "current_evidence": "Service is active and cwd is known, but it binds directly to a dated directory with no pointer or manifest.",
+      "gate_action": "fail activation/readback"
+    },
+    {
+      "id": "POINTER_CAS_CONFLICT",
+      "trigger": "The current pointer or previous release changed between preflight and switch.",
+      "current_evidence": "No pointer/CAS protocol exists in the observed deployment surface.",
+      "gate_action": "abort switch and re-run preflight"
+    },
+    {
+      "id": "NGINX_CONFIG_OR_ROUTE_DRIFT",
+      "trigger": "Privileged Nginx config test, TLS identity, host/path routing, or upstream target does not match the manifest.",
+      "current_evidence": "Live health/readiness status codes pass through 8443, but unprivileged nginx -t failed on certificate permission.",
+      "gate_action": "block activation until privileged readback"
+    },
+    {
+      "id": "AUTHENTICATED_READBACK_MISSING",
+      "trigger": "Real personal or organization authentication, tenant authority, idempotent replay, or external readback is absent or mismatched.",
+      "current_evidence": "No credential or database value was read and no authenticated production request was run.",
+      "gate_action": "block production claim and activation"
+    },
+    {
+      "id": "STATE_COMPATIBILITY_UNVERIFIED",
+      "trigger": "State/database schema, migration, backup, restore, or rollback compatibility is not proven.",
+      "current_evidence": "The release contains a mutable SQLite state path, but database contents and migration evidence were out of scope.",
+      "gate_action": "block activation/rollback"
+    },
+    {
+      "id": "OBSERVATION_WINDOW_FAILURE",
+      "trigger": "Post-switch health, readiness, restart stability, error budget, or business smoke fails during the bounded observation window.",
+      "current_evidence": "No switch or observation window was authorized or executed.",
+      "gate_action": "pointer rollback if already switched; otherwise no promotion"
+    }
+  ],
+  "recommended_source_changes": {
+    "implementable_now_without_deploy_authority": [
+      {
+        "change": "Add a pure production-release manifest schema and canonical serializer under runtime/maintenance/deploy or a project contract path.",
+        "scope": "Git SHA, clean-tree assertion, target-relative file inventory, per-file SHA-256/size/mode, non-sensitive config identities, build argv/toolchain identity, previous release identity, service/pointer/route identities, and redacted activation/rollback command templates.",
+        "constraint": "Do not include environment values, tokens, cookies, database contents, request bodies, or credentials."
+      },
+      {
+        "change": "Add a fail-closed manifest validator and local dry-run preflight command with unit tests.",
+        "scope": "Reject path traversal, unexpected symlinks, duplicate paths, mutable-state files, missing hashes, SHA mismatch, source SHA mismatch, manifest digest mismatch, and previous-release/CAS mismatch.",
+        "safe_evidence": "Pure fixtures, temporary local release trees, and the frozen clone only."
+      },
+      {
+        "change": "Add a parameterized Stage-2 service readback guard by adapting check_openclaw_bot_center_release_process.py.",
+        "scope": "Read systemd properties, resolved PID cwd, settings path, executable/module, port, service identity, manifest identity and selected status codes; keep the existing Bot Center guard unchanged.",
+        "constraint": "Read-only by default and never print raw command-line secrets or environment values."
+      },
+      {
+        "change": "Add a dry-run Production Reconciliation plan that emits the exact target paths and commands without executing SSH, symlink, systemd, Nginx, database, or traffic mutations.",
+        "scope": "Source SHA -> staged release name -> manifest -> preflight -> planned pointer switch -> readback -> observation -> rollback plan."
+      },
+      {
+        "change": "Add focused regression tests for manifest tampering, service-path mismatch, stale pointer CAS, mutable-state separation, rollback target absence, and redaction.",
+        "scope": "Stable guard cards with red/green or negative proof, without requiring production credentials."
+      },
+      {
+        "change": "Develop the missing current-server Stage-2 route/startup integration as a separate source change against current auth authority and server_cli.",
+        "scope": "Use the merge-resolution boundary as the contract; do not silently enable routes or treat candidate-only tests as production evidence."
+      }
+    ],
+    "source_can_be_authored_but_execution_must_wait": [
+      "A pointer-based systemd unit/template and an activation/rollback executor can be implemented and tested against local fixtures, but must default to dry-run until deployment authorization exists.",
+      "A deployed Playwright adapter can be extended to accept an operator-provided credential provider and emit redacted personal/organization evidence, but it must not read or persist credentials in this review."
+    ],
+    "must_wait_for_authorization_or_external_evidence": [
+      "Upload or create a remote release directory and manifest.",
+      "Create or atomically replace the active pointer; install or reload systemd units; restart openclaw-stage2.service.",
+      "Change or reload Nginx, repair certificate permissions, or alter traffic routing.",
+      "Read or inject production env values, session tokens, cookies, database DSNs, Feishu credentials, or real account data.",
+      "Run authenticated personal and organization flows, real Feishu write/readback, database migration/restore checks, or production/device browser acceptance.",
+      "Declare the release ACCEPTED, deployed, or production-ready."
+    ],
+    "minimum_source_change_set": [
+      "production-release-manifest.v1 schema plus canonical hash library",
+      "read-only preflight/readback guard with stable failure codes",
+      "dry-run activation and pointer-CAS rollback planner",
+      "Stage-2 service unit adapter and focused negative tests",
+      "separate route/startup integration change before any Stage-2 production activation"
+    ]
+  },
+  "release_manifest_schema": {
+    "schema_id": "production-release-manifest.v1",
+    "canonicalization": "UTF-8 JSON, sorted keys, deterministic separators, no secret values, digest computed over canonical payload excluding the digest field",
+    "required_fields": {
+      "release_id": "stage2-<git_sha>-<build_id>",
+      "source": ["repository_identity", "git_sha", "ref", "clean_tree", "source_tree_digest"],
+      "artifact": ["release_root", "file_policy", "files"],
+      "config_identity": ["path", "sha256", "key_names_or_schema_identity", "value_disclosure=false"],
+      "build": ["argv", "working_directory", "toolchain_identity", "build_inputs"],
+      "target": ["host_alias", "service", "pointer_path", "direct_port", "nginx_route_identity"],
+      "state": ["external_state_paths", "schema_identity", "migration_policy", "rollback_compatibility"],
+      "previous_release": ["release_id", "manifest_sha256", "release_root"],
+      "activation": ["preflight_id", "switch_plan", "readback_plan", "observation_window"],
+      "rollback": ["command_template", "expected_previous_manifest", "preconditions", "post_rollback_readback"],
+      "manifest_sha256": "canonical payload digest"
+    },
+    "file_entry": ["relative_path", "kind", "size_bytes", "sha256", "mode", "symlink_policy"],
+    "excluded_from_release": ["*.env", "state databases", "logs", "caches", "__pycache__", "tests", "evidence", "agents-results", "runtime-generated artifacts"],
+    "immutability_rule": "Materialize once, verify the manifest, make code/config/manifest paths non-writable, retain the directory, and keep state/secrets/logs outside the release root."
+  },
+  "preflight_gates": [
+    {
+      "id": "PF-01-source-authority",
+      "check": "Frozen clone HEAD and porcelain status",
+      "pass_condition": "HEAD equals 5f06780569568ccc3197f0ab16aad74bdf9d1c6f and status is empty",
+      "current_state": "pass",
+      "evidence": "Validation command and direct git readback"
+    },
+    {
+      "id": "PF-02-current-server-integration",
+      "check": "Stage-2 routes and startup composition are present in the selected server entrypoint",
+      "pass_condition": "Current main server_cli/http_api integration has dedicated tests and manifest-bound entrypoint",
+      "current_state": "blocked_by_architecture_boundary",
+      "evidence": "STAGE2-MERGE-RESOLUTION-20260825.md:37-41 says routes are not silently enabled"
+    },
+    {
+      "id": "PF-03-build-and-focused-tests",
+      "check": "Deterministic build, focused Stage-2 tests, compile and diff checks in an isolated clean clone",
+      "pass_condition": "All selected commands pass and their outputs are bound to the candidate SHA",
+      "current_state": "not_run_in_this_read_only_review",
+      "evidence": "Prior candidate fixture evidence is not promoted to current main or production evidence"
+    },
+    {
+      "id": "PF-04-manifest",
+      "check": "Generate and validate the candidate release manifest and complete file hashes",
+      "pass_condition": "Manifest digest, source SHA, file inventory and excluded mutable paths all verify",
+      "current_state": "blocked",
+      "evidence": "No target manifest observed; selected remote files mismatch main"
+    },
+    {
+      "id": "PF-05-state-secret-separation",
+      "check": "Release root contains no env values, database, logs, caches or writable runtime data",
+      "pass_condition": "Only immutable code/config/manifest content is inside release; state/secrets/logs are external and identity-hashed without values",
+      "current_state": "blocked",
+      "evidence": "Current release contains env file names, state/stage2.sqlite3, caches, tests and evidence; mode 775"
+    },
+    {
+      "id": "PF-06-previous-release-cas",
+      "check": "Resolve current pointer and previous manifest under a lock/CAS precondition",
+      "pass_condition": "Pointer resolves to a verified retained release and expected previous manifest is unchanged",
+      "current_state": "blocked",
+      "evidence": "No current pointer or manifest observed"
+    },
+    {
+      "id": "PF-07-systemd-binding",
+      "check": "Read service metadata and confirm the staged service template binds to the candidate manifest",
+      "pass_condition": "ExecStart, settings path, cwd, port and resolved PID identity all match the candidate",
+      "current_state": "partial",
+      "evidence": "Current service is active at the dated directory, but has no pointer/manifest binding"
+    },
+    {
+      "id": "PF-08-nginx",
+      "check": "Privileged nginx -t and route/upstream identity readback",
+      "pass_condition": "Config test passes and the exact TLS host/path routes to the intended direct port",
+      "current_state": "unverified",
+      "evidence": "Live status codes pass; ubuntu-level nginx -t failed on certificate permission"
+    },
+    {
+      "id": "PF-09-state-compatibility",
+      "check": "Database/state schema, backup, migration and rollback compatibility",
+      "pass_condition": "Approved migration rehearsal and restore/readback evidence bound to the release",
+      "current_state": "unverified",
+      "evidence": "Database contents and migration operations were forbidden"
+    },
+    {
+      "id": "PF-10-authorization",
+      "check": "Deployment owner, maintenance window, rollback owner and credential provider are recorded",
+      "pass_condition": "All required authorities are explicit and valid for this release",
+      "current_state": "not_authorized_for_this_attempt",
+      "evidence": "Task explicitly forbids deployment, restart/reload, traffic change and secret reads"
+    }
+  ],
+  "activation_gates": [
+    {
+      "id": "ACT-01-stage",
+      "action": "Copy/build the candidate into a new release directory and verify the complete manifest before service access",
+      "guard": "No existing directory with the same release_id; no mutable state or secret values in the artifact",
+      "current_state": "not_run"
+    },
+    {
+      "id": "ACT-02-cas-switch",
+      "action": "Re-read current pointer and previous manifest, then atomically switch the pointer to the staged release",
+      "guard": "Expected-current manifest matches; otherwise abort without mutation",
+      "current_state": "not_run"
+    },
+    {
+      "id": "ACT-03-service-restart",
+      "action": "Reload the user unit only if its source changed, then restart openclaw-stage2.service through the authorized operator path",
+      "guard": "No restart until ACT-01 and ACT-02 pass; no Nginx reload unless route identity changed",
+      "current_state": "forbidden_and_not_run"
+    },
+    {
+      "id": "ACT-04-same-round-readback",
+      "action": "Read systemd state/PID/cwd/ExecStart, resolved pointer, manifest and selected file hashes, direct health/ready and Nginx health/ready status codes",
+      "guard": "All identities must refer to the same release_id and manifest digest",
+      "current_state": "not_run_for_candidate"
+    },
+    {
+      "id": "ACT-05-authenticated-routes",
+      "action": "Run redacted managed personal and organization browser/API flows, negative tenant/authority checks, replay/idempotency and external readback",
+      "guard": "Real credentials/accounts and actual external systems; fixture evidence is not sufficient",
+      "current_state": "blocked_on_credentials_accounts_and_external_systems"
+    },
+    {
+      "id": "ACT-06-observation",
+      "action": "Observe repeated health/ready, process stability, error/restart counters and bounded business smoke for the declared window",
+      "guard": "Any defined failure triggers rollback or leaves the release unpromoted",
+      "current_state": "not_run"
+    }
+  ],
+  "readback_matrix": [
+    {
+      "layer": "source",
+      "probe": "git SHA, clean status, source tree digest",
+      "expected": "Exact requested SHA and clean tree",
+      "current": "pass for frozen clone"
+    },
+    {
+      "layer": "artifact",
+      "probe": "manifest and every declared file hash",
+      "expected": "One canonical manifest binds all release files",
+      "current": "missing on remote; selected file mismatches"
+    },
+    {
+      "layer": "filesystem",
+      "probe": "release root mode, symlink/pointer resolution, mutable-path exclusion",
+      "expected": "Retained non-writable release and external state/secrets",
+      "current": "dated 775 directory with state/env/cache/test/evidence content; no pointer"
+    },
+    {
+      "layer": "systemd",
+      "probe": "LoadState, ActiveState, SubState, MainPID, ExecStart, settings, cwd",
+      "expected": "Running PID and resolved cwd/settings match manifest release_id",
+      "current": "active/running PID 1314975 and cwd match the dated directory only"
+    },
+    {
+      "layer": "direct_http",
+      "probe": "127.0.0.1:8892 /healthz and /readyz",
+      "expected": "200/200",
+      "current": "200/200"
+    },
+    {
+      "layer": "nginx_http",
+      "probe": "TLS 8443 /stage2/healthz and /stage2/readyz with host/SNI",
+      "expected": "200/200 and declared upstream identity",
+      "current": "200/200; live route observed"
+    },
+    {
+      "layer": "nginx_config",
+      "probe": "Privileged nginx -t and certificate/TLS identity",
+      "expected": "pass",
+      "current": "not verified; ubuntu-level test hit certificate permission denied"
+    },
+    {
+      "layer": "auth_personal",
+      "probe": "Real authenticated personal POST, replay, unauthenticated and authority-negative cases",
+      "expected": "Bounded status/receipt identity and redacted response readback",
+      "current": "not run"
+    },
+    {
+      "layer": "auth_organization",
+      "probe": "Real organization POST, tenant/Binding authority-negative case and external document readback",
+      "expected": "Correct tenant/binding identity, write and readback receipt",
+      "current": "not run"
+    },
+    {
+      "layer": "state",
+      "probe": "Schema/migration/restore and cross-restart idempotency evidence",
+      "expected": "Approved state contract and rollback-compatible migration",
+      "current": "not verified"
+    },
+    {
+      "layer": "observation",
+      "probe": "Repeated status, process stability and business smoke during declared window",
+      "expected": "No gate failure or unexplained restart",
+      "current": "not run"
+    }
+  ],
+  "rollback_contract": {
+    "contract_id": "production-reconciliation-rollback.v1",
+    "pointer_model": "Use a dedicated active pointer such as /home/ubuntu/releases/openclaw-stage2-current that resolves to a retained immutable release directory.",
+    "preconditions": [
+      "Current pointer resolves to the manifest recorded at activation time.",
+      "Previous release manifest exists, is hash-verified and is retained.",
+      "Target release is compatible with the external state/database schema or an approved restore path exists.",
+      "Rollback owner and maintenance authorization are active."
+    ],
+    "command_model": "A parameterized rollback command resolves the expected previous release, performs an atomic pointer swap under CAS, restarts the service through the authorized user systemd path, and runs the same manifest/PID/cwd/health/ready/Nginx readback matrix.",
+    "failure_behavior": "If the expected-current manifest changed, abort without mutation. If switch already happened and post-switch readback or observation fails, swap back to the verified previous pointer and re-run readback. Never delete the failed or previous release as part of rollback.",
+    "state_boundary": "Pointer rollback does not undo database or external Feishu side effects. State migration and external write compatibility must be proven separately; otherwise rollback is blocked or requires an approved restore procedure.",
+    "evidence": "Record candidate manifest, previous manifest, CAS precondition, switch result, rollback result, status-only probes and redacted acceptance receipts without secrets."
+  },
+  "authorization_boundaries": {
+    "source_only": [
+      "Manifest schema/validator, deterministic hashing, dry-run planner, static guards, unit tests and local fixture verification"
+    ],
+    "deployment_owner": [
+      "Remote release directory creation/upload, pointer switch, systemd daemon-reload/restart, release permission hardening and rollback"
+    ],
+    "nginx_owner_or_root": [
+      "Privileged nginx -t, certificate access verification, config reload and any route/traffic change"
+    ],
+    "secret_and_account_owner": [
+      "Ephemeral injection of real managed QA credentials, session material, database connection and Feishu credentials; values must remain outside evidence"
+    ],
+    "database_owner": [
+      "Schema/migration rehearsal, backup/restore, production state compatibility and cross-service idempotency proof"
+    ],
+    "human_acceptance_owner": [
+      "Maintenance window, product acceptance of personal/organization behavior, device/browser acceptance, observation threshold and final release decision"
+    ],
+    "this_attempt": "Read-only review only; no authority was exercised."
+  },
+  "unverified_items": [
+    "Exact Git SHA, complete source tree digest and complete file inventory of the active remote release",
+    "Release manifest schema/digest, previous release identity, current pointer and CAS protection on the remote host",
+    "Build reproducibility of frozen main in the target Linux/Python/toolchain environment",
+    "Current main integration of Stage-2 routes with the existing authenticated server CLI",
+    "Privileged Nginx configuration test, certificate chain and final TLS configuration identity",
+    "Authenticated personal and organization route behavior using real managed accounts",
+    "Real AI provider behavior, database migration/restore, cross-service idempotency and Feishu write/readback",
+    "Post-switch observation window, rollback execution and production/device human acceptance"
+  ],
+  "commands": {
+    "executed_read_only": [
+      "git rev-parse HEAD and git status --short --branch in the frozen clone",
+      "git ls-tree and targeted source/script/config inspection",
+      "sha256 comparison for selected main and remote release files",
+      "ssh systemctl --user show, /proc cwd/executable readback, release directory metadata and selected hashes",
+      "ssh Nginx metadata/directive inspection and status-code-only curl probes",
+      "bash /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/validation/PR-DEPLOY-GATE.sh"
+    ],
+    "frozen_validation": {
+      "command_file": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-production-reconciliation/validation/PR-DEPLOY-GATE.sh",
+      "sha256": "f3abf1280944b1763bdb0441da849823cc4303a2b9bb4f5f12626f7c2f16ecf7",
+      "result": "pass",
+      "scope": "Only frozen local SHA/clean status and remote MainPID/cwd"
+    },
+    "not_executed": [
+      "Any deploy, upload, mkdir in release roots, chmod, symlink swap, systemd daemon-reload/restart, Nginx reload, database migration, traffic switch or rollback",
+      "Any secret/token/cookie/database-content read",
+      "Authenticated production business request or external write",
+      "Current-main test suite that could create artifacts in the read-only scope"
+    ],
+    "proposed_operator_commands_not_run": [
+      "production-reconcile preflight --sha <git_sha> --dry-run",
+      "production-reconcile activate --manifest <manifest> --expected-current <manifest_sha> --execute",
+      "production-reconcile rollback --expected-current <manifest_sha> --target <previous_release_id> --execute"
+    ]
+  },
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none"
+}

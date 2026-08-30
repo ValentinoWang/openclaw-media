@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-046-O3-O4",
+  "from": "O3",
+  "to": "O4",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.o3.o4.v5"
+  ],
+  "transferred_input": "组织成果绑定收据",
+  "gate_evidence": "组织路径不创建可编辑的内部 Web 正文",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-O3"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "O4 consumes the explicitly produced artifact DL-O3"
+}

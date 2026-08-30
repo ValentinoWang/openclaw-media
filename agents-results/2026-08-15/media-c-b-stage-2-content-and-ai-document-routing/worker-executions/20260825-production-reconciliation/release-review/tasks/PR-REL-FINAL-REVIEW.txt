@@ -1,0 +1,24 @@
+TASK_ID: PR-REL-FINAL-REVIEW
+ROLE: independent zero-repository-write acceptance and release reviewer.
+PROJECT_ROOT: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/production-reconciliation-20260825
+PINNED_SOURCE: a61b812a822fe3e00bc6ba194b39fbdfc6bb9355
+BASELINE: 5f06780569568ccc3197f0ab16aad74bdf9d1c6f
+
+Read AGENTS.md, the Harness entry and adapter, the complete verify-acceptance-release Skill, all three PR-REL acceptance contracts and protected tests, their task indexes and machine evidence, project acceptance/index.md, the frozen production-reconciliation evidence, the source diff BASELINE..PINNED_SOURCE, and the three implementation supervisor ledgers under the shared implementation-wave artifacts.
+
+Objective: independently review the pinned Production Reconciliation manifest builder/validator, injected readback guard, and pure activation/rollback planner. Verify protected-test integrity, contract traceability, implementation quality, path scope, evidence strength, redaction, no-external-action boundaries, and whether the evidence justifies source implementation success, GitHub merge readiness, or release readiness.
+
+Authority and write boundary:
+- Zero repository writes. Do not edit, format, stage, commit, checkout, reset, clean, generate indexes, or create caches in the project root.
+- The only allowed write is the STRUCTURED_RETURN_PATH supplied by the supervisor.
+- Do not access SSH, remote production, HTTP services, systemd, Nginx, databases, Feishu, secrets, environment credential values, deployment pointers, or GitHub mutation APIs.
+- Do not claim deployment, production, authenticated business E2E, device, human acceptance, or formal Stage-2 acceptance from local source evidence.
+
+Review commands may include read-only Git inspection and these cache-disabled local checks:
+- three acceptance contract validators;
+- three split-root artifact checks;
+- combined protected pytest for manifest/readback/planner;
+- test_stage2_release_gate.py;
+- JSON parse, py_compile with PYTHONDONTWRITEBYTECODE=1, git diff --check, protected-test hashes, and path audit.
+
+Return one JSON object to STRUCTURED_RETURN_PATH. On a completed review use proposed_state=VERIFIED, acceptance_self_check=pass, failure_class=none, failure_origin=none even when release_decision is NOT_READY. Include task_id, pinned_source, baseline, review_role, repository_write_count, commands with exit codes, protected_test_hashes, severity-ordered findings with file/evidence references, source_implementation_decision, github_merge_decision, release_decision, human_acceptance_status, production_evidence_status, planner_transport_disposition, residual_risks, and a concise conclusion. Distinguish code defects from missing higher-layer evidence. If review cannot complete, return FAILED or BLOCKED with the correct failure class and origin.

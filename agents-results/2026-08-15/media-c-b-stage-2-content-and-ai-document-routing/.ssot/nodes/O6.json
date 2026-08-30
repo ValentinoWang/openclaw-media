@@ -1,0 +1,98 @@
+{
+  "node_id": "O6",
+  "semantic_key": "media.stage2.organization-e2e",
+  "stage": "C",
+  "work_kind": "convergence",
+  "domain_lane": "organization-content",
+  "execution_state": "BLOCKED",
+  "decision_state": "NOT_APPLICABLE",
+  "decision_version": null,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "O5",
+    "S",
+    "T1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [
+    {
+      "semantic_key": "media.stage2.product-decisions",
+      "version": 4
+    }
+  ],
+  "invalidation_keys": [
+    "media.stage2.organization-e2e.v5"
+  ],
+  "write_authority": "shared-generated",
+  "acceptance_authority": "main orchestrator",
+  "unlocks": [
+    "C"
+  ],
+  "worker_transport": "automatic-projection",
+  "worker_registration": {
+    "executor": "SSOT state projector",
+    "source_nodes": [
+      "stage2:O5",
+      "stage2:S",
+      "stage2:T1"
+    ],
+    "projection_rule": "只汇合已接受输入并投影节点状态；不启动 Codex 进程、不产生外部副作用。",
+    "task_argument": "汇合组织文档支线并冻结子候选。",
+    "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/projections/O6.json",
+    "dispatch_state": "BLOCKED",
+    "note": "automatic state projection; zero Codex processes"
+  },
+  "description": "组织候选不冒领第三阶段完整角色和审批能力",
+  "node_role": "convergence",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "O6.json",
+  "execution_contract_sha256": "1ead23f1e733daf0cc732ec135b9a4d1a76217a36fa82a26df5d3bc1c3f77b80",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "freezes",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "DL-O6"
+  ],
+  "consumed_artifact_ids": [
+    "DL-O5",
+    "ART-S",
+    "DL-T1"
+  ],
+  "read_set": [
+    "artifact:DL-O5",
+    "artifact:ART-S",
+    "artifact:DL-T1"
+  ],
+  "write_set": [
+    "artifact:O6"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:O6",
+      "mode": "W",
+      "isolation_key": "node:O6"
+    },
+    {
+      "resource_id": "candidate:REL-2",
+      "mode": "W",
+      "isolation_key": "candidate:REL-2"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance O6\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/O6-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-11",
+  "main_thread_write_exception": {
+    "reason": "历史编排节点只生成或投影自身独占的 SSOT 记录；主线程不直接修改业务源码，也不写入其他节点的共享事实。",
+    "approved_by": "user and planning authority",
+    "write_set": [
+      "artifact:O6"
+    ]
+  }
+}

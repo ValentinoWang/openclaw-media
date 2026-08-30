@@ -1,0 +1,28 @@
+Task ID: STAGE2-PERSISTENCE-HARDENING-20260820
+Objective: harden restart-safe Stage-2 SQLite artifact, writer, receipt, claim, and migration persistence in the isolated clone at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage2-hardening-persistence-20260820.
+
+Read first:
+- openclaw_app/services/stage2_personal_store.py
+- openclaw_app/services/stage2_production.py
+- openclaw_app/services/stage2_artifact_state.py
+- openclaw_app/services/stage2_external_document.py
+- tests/test_stage2_production.py
+- tests/test_stage2_personal_pipeline.py
+- STAGE2-HANDOFF-20260819.md
+
+Exclusive write scope:
+- openclaw_app/services/stage2_personal_store.py
+- openclaw_app/services/stage2_production.py
+- openclaw_app/services/stage2_artifact_state.py
+- openclaw_app/services/stage2_external_document.py
+- add tests/test_stage2_persistence_hardening.py only if needed
+Do not edit contracts, manifests, SSOT, migrations outside the Stage-2 SQLite stores, unrelated services, or production data. Do not commit or push.
+
+Required review and implementation:
+1. Verify file-backed SQLite stores reject volatile memory paths, use restrictive permissions, explicit transactions, schema/version validation, and close connections after every operation.
+2. Verify idempotency claims are atomic across two store instances/processes, same fingerprint replays, different payloads conflict, expired claims recover, and failed writes never become publishable.
+3. Verify artifact/revision reads are tenant-scoped and corrupted or mismatched persisted JSON fails closed rather than leaking or publishing.
+4. Preserve existing public APIs and migration compatibility. Add focused regression tests for any missing boundary, including multi-instance/thread races where deterministic and local.
+5. Run focused tests, full Stage-2 tests, compile, and diff check. No database, Feishu, credential, or production access.
+
+Before exit write one JSON object to STRUCTURED_RETURN_PATH with task_id, proposed_state, acceptance_self_check, failure_class, failure_origin, actual_read_scope, actual_write_scope, changed_files, commands, test_evidence, unverified_items, residual_risks, and explicit_non_claims. Never claim formal SSOT acceptance or production/device evidence.

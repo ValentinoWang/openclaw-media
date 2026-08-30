@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-051-C8-C",
+  "from": "C8",
+  "to": "C",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c8.c.v5"
+  ],
+  "transferred_input": "个人端到端候选",
+  "gate_evidence": "个人全链在同一候选上可重现",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-C8"
+  ],
+  "resource_ids": [
+    "candidate:REL-2"
+  ],
+  "necessity_proof": "C must retain the immutable candidate:REL-2 identity from C8"
+}

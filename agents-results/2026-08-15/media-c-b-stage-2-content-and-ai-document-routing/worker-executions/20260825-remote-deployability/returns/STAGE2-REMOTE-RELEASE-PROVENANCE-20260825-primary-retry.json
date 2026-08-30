@@ -1,0 +1,361 @@
+{
+  "task_id": "STAGE2-REMOTE-RELEASE-PROVENANCE-20260825",
+  "versions": {
+    "plan": 3,
+    "dag": 3,
+    "interface_freeze": 4,
+    "node_contract": 4,
+    "ssot_schema": 2
+  },
+  "wrapper": {
+    "executor": "lw-luna",
+    "model": "gpt-5.6-luna",
+    "path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+    "attempt_role": "primary-retry",
+    "retry_policy": "same-primary-only",
+    "previous_attempt_transport": "provider response transport returned HTTP 503",
+    "alternate_executor_used": false
+  },
+  "attempt_role": "primary-retry",
+  "actual_read_scope": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-remote-deployability/logs/STAGE2-REMOTE-RELEASE-PROVENANCE-20260825.log",
+    "develop/Harness/fullstack-ai-harness.md and .harness/overlays/project-harness-adapter.yaml",
+    "remote host ubuntu@106.52.146.37 hostname, user identity, user-level systemd unit, process metadata, Nginx route configuration, health and readiness status only",
+    "/home/ubuntu/releases/openclaw-stage2-production-20260819T/STAGE2-HANDOFF-20260819.md",
+    "/home/ubuntu/releases/openclaw-stage2-production-20260819T/evidence/evidence-stage2-playwright-https-systemd.json",
+    "target release metadata, permissions, immutable attribute, sibling release directory names, and targeted file hashes",
+    "/tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router Git HEAD, status, diff summary, diff digest, and targeted file hashes",
+    "candidate and release contents were compared by remote SHA-256 only; source bodies, logs, database contents, environment file contents, and credential values were not read or output"
+  ],
+  "actual_write_scope": {
+    "allowed": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-executions/20260825-remote-deployability/returns/STAGE2-REMOTE-RELEASE-PROVENANCE-20260825-primary-retry.json",
+    "method": "apply_patch",
+    "remote_writes": false,
+    "other_local_writes": false
+  },
+  "commands": [
+    {
+      "command": "read first-round release-provenance log",
+      "exit_code": 0,
+      "summary": "Read 3333 lines; the prior worker ended before completion after repeated provider HTTP 503 response transport failures."
+    },
+    {
+      "command": "systemctl --user show openclaw-stage2.service -p Id -p LoadState -p ActiveState -p SubState -p MainPID -p ExecMainStartTimestamp -p FragmentPath -p WorkingDirectory -p Restart",
+      "exit_code": 0,
+      "summary": "Loaded, active, running, enabled user unit; MainPID 1314975; start 2026-08-19 19:20:30 CST; WorkingDirectory is the target release; fragment is /home/ubuntu/.config/systemd/user/openclaw-stage2.service."
+    },
+    {
+      "command": "systemctl --user cat openclaw-stage2.service with Environment lines redacted",
+      "exit_code": 0,
+      "summary": "ExecStart uses /usr/bin/python3 -m openclaw_app.server_cli, target settings/contract paths, 127.0.0.1:8892, production runtime and production factory; EnvironmentFile paths were recorded without reading values."
+    },
+    {
+      "command": "readlink -f /proc/1314975/cwd; readlink -f /proc/1314975/exe; ps -p 1314975 -o pid,lstart,etimes,comm",
+      "exit_code": 0,
+      "summary": "Process cwd is the target release, executable resolves to /usr/bin/python3.12, and process comm is python3 with the same recorded start time."
+    },
+    {
+      "command": "curl status-only checks for http://127.0.0.1:8892/healthz and /readyz",
+      "exit_code": 0,
+      "summary": "Both local endpoints returned HTTP 200 with JSON content type; response bodies were discarded."
+    },
+    {
+      "command": "curl status-only checks through https://106.52.146.37:8443/stage2/healthz and /stage2/readyz",
+      "exit_code": 0,
+      "summary": "Both TLS/Nginx Stage-2 endpoints returned HTTP 200 with JSON content type; response bodies were discarded."
+    },
+    {
+      "command": "sed -n '1,75p' /etc/nginx/sites-enabled/openclaw-opc-public-8443",
+      "exit_code": 0,
+      "summary": "8443 maps /stage2/healthz and /stage2/readyz to 127.0.0.1:8892 and preserves the /stage2 prefix."
+    },
+    {
+      "command": "git -C /tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router rev-parse HEAD; branch; status; diff --stat; git diff | sha256sum",
+      "exit_code": 0,
+      "summary": "Candidate HEAD is 78120eea04392db2a254968cbe4d8f69f6fd7a84; branch codex/stage2-handoff-final-20260819; 8 tracked implementation files modified; 2 hardening tests untracked; tracked diff digest is ed9021a...c9e7e9."
+    },
+    {
+      "command": "sha256sum for the 8 candidate implementation files and 2 candidate hardening tests",
+      "exit_code": 0,
+      "summary": "All 8 implementation files and both new tests exist in the candidate worktree; exact identities are recorded in content_comparison."
+    },
+    {
+      "command": "sha256sum for the same 8 implementation files and 2 tests in the production release",
+      "exit_code": 1,
+      "summary": "All 8 implementation files exist; both hardening test paths are missing. Exact release hashes are recorded in content_comparison."
+    },
+    {
+      "command": "readlink, stat, and lsattr for the target release; targeted release metadata find",
+      "exit_code": 0,
+      "summary": "Target resolves to itself, mode is drwxrwxr-x, owner is ubuntu:ubuntu, immutable i flag is absent, and no release/manifest/build/version metadata was found in the targeted depth; only the handoff document and test_stage2_release_gate.py matched."
+    },
+    {
+      "command": "git metadata readback under /home/ubuntu/releases/openclaw-stage2-production-20260819T",
+      "exit_code": 128,
+      "summary": "The directory inherits /home/ubuntu/.git and top-level /home/ubuntu, has no target .git directory, and has no HEAD commit; it is not an independently commit-addressed release."
+    },
+    {
+      "command": "jq summary of evidence/evidence-stage2-playwright-https-systemd.json",
+      "exit_code": 0,
+      "summary": "schema stage2.playwright.verify.v1, evidenceLevel browser-deployed, baseUrl https://106.52.146.37:8443/stage2, generated 2026-08-19T11:20:55.022115+00:00, verification VERIFIED, 7 cases, formalAcceptance NOT_ACCEPTED; no release hash or PID identity is exposed by the top-level schema."
+    },
+    {
+      "command": "awk with sensitive-line redaction over STAGE2-HANDOFF-20260819.md",
+      "exit_code": 0,
+      "summary": "The document names the candidate branch/worktree and says the candidate is not proof of real external systems or production release; its stated baseline ed5dc396... differs from the current candidate HEAD 78120eea...."
+    }
+  ],
+  "remote_runtime_identity": {
+    "host": "106.52.146.37",
+    "hostname": "VM-0-14-ubuntu",
+    "account": "ubuntu",
+    "requested_service": "openclaw-stage2.service",
+    "unit_scope": "systemd --user",
+    "unit_path": "/home/ubuntu/.config/systemd/user/openclaw-stage2.service",
+    "load_state": "loaded",
+    "active_state": "active",
+    "sub_state": "running",
+    "enabled_state": "enabled",
+    "main_pid": 1314975,
+    "started_at": "Wed 2026-08-19 19:20:30 CST",
+    "working_directory": "/home/ubuntu/releases/openclaw-stage2-production-20260819T",
+    "executable": "/usr/bin/python3.12",
+    "command": "/usr/bin/python3 -m openclaw_app.server_cli --settings /home/ubuntu/releases/openclaw-stage2-production-20260819T/openclaw_app/config/settings.yaml --host 127.0.0.1 --port 8892 --stage2-runtime production --stage2-factory openclaw_app.services.stage2_production_factory:build_production_stage2_gateway --stage2-contract /home/ubuntu/releases/openclaw-stage2-production-20260819T/openclaw_app/contracts/stage2_writer_contract.json",
+    "port_checks": {
+      "8892_healthz": "HTTP 200",
+      "8892_readyz": "HTTP 200",
+      "8443_stage2_healthz": "HTTP 200",
+      "8443_stage2_readyz": "HTTP 200"
+    },
+    "public_route_prefix": "/stage2",
+    "environment_values_read": false
+  },
+  "release_provenance": {
+    "release_root": "/home/ubuntu/releases/openclaw-stage2-production-20260819T",
+    "resolved_release_root": "/home/ubuntu/releases/openclaw-stage2-production-20260819T",
+    "observed_directory": {
+      "mode": "drwxrwxr-x",
+      "owner": "ubuntu:ubuntu",
+      "mtime": "2026-08-19 06:01:12.838995920 +0800",
+      "lsattr": "--------------e-------",
+      "immutable_i_flag": false
+    },
+    "assembly_method_observed": "The user unit points directly to an absolute copied directory. No checkout at a pinned release commit, release manifest, content hash ledger, or immutable readback was evidenced.",
+    "release_git_identity": {
+      "is_inside_work_tree": true,
+      "resolved_git_dir": "/home/ubuntu/.git",
+      "resolved_top_level": "/home/ubuntu",
+      "target_dot_git_present": false,
+      "branch": "master",
+      "head": null,
+      "identity_result": "parent-home repository only; no independent release commit"
+    },
+    "handoff_document": {
+      "path": "/home/ubuntu/releases/openclaw-stage2-production-20260819T/STAGE2-HANDOFF-20260819.md",
+      "claimed_candidate_branch": "codex/stage2-handoff-final-20260819",
+      "claimed_candidate_worktree": "/tmp/openclaw-stage2-handoff-final-20260819/openclaw-tag-router",
+      "document_stated_baseline": "ed5dc3967dc2cea6447114c42c546725f9386c1d",
+      "observed_candidate_head": "78120eea04392db2a254968cbe4d8f69f6fd7a84",
+      "observed_candidate_commit": "2026-08-20T00:36:24+08:00 feat(stage2): add production-shaped content routing gateway",
+      "candidate_worktree_state": "dirty; hardening is uncommitted and the two hardening tests are untracked"
+    },
+    "targeted_metadata": [
+      "STAGE2-HANDOFF-20260819.md",
+      "tests/test_stage2_release_gate.py"
+    ],
+    "release_manifest": "not found in the targeted release metadata scan",
+    "evidence": {
+      "path": "/home/ubuntu/releases/openclaw-stage2-production-20260819T/evidence/evidence-stage2-playwright-https-systemd.json",
+      "schema_version": "stage2.playwright.verify.v1",
+      "evidence_level": "browser-deployed",
+      "verification": "VERIFIED",
+      "formal_acceptance": "NOT_ACCEPTED",
+      "generated_at": "2026-08-19T11:20:55.022115+00:00",
+      "case_count": 7,
+      "release_hash_binding": "not present in the top-level evidence identity fields",
+      "runtime_pid_binding": "not present in the top-level evidence identity fields"
+    },
+    "visible_release_siblings": [
+      "openclaw-stage2-production-20260819T",
+      "selfmedia-334a6bb",
+      "selfmedia-cbf5aa8",
+      "selfmedia-d77426c",
+      "selfmedia-dd67903"
+    ],
+    "production_assembly_decision": "NO-GO",
+    "immutable_release_prerequisites": [
+      "Commit or tag the complete hardening set, including all 8 implementation files and both new tests, with no dirty or untracked source.",
+      "Build a new versioned release directory from that exact commit; do not assemble from a mutable worktree or from the parent home repository.",
+      "Create a non-secret release manifest containing source commit, candidate diff identity, per-file SHA-256 values, configuration identity, build time, and release ID; verify it before activation.",
+      "Run the approved focused tests, compile check, diff check, and release-content comparison against the manifest.",
+      "Set release ownership and read-only permissions, apply the project-approved immutable attribute policy, then read back mode, owner, resolved path, manifest hash, and immutable state.",
+      "Point the user unit to the exact release path and perform a same-run PID, cwd, command, health, readiness, and public-route readback while preserving the prior release."
+    ],
+    "rollback_prerequisites": [
+      "A separately preserved prior Stage-2 release with its own manifest, commit/hash identity, immutable readback, and known-good health/readiness receipt.",
+      "A captured service-unit and route configuration snapshot plus an authorized rollback owner and maintenance window.",
+      "Verified compatibility of the prior release with the existing stage2.sqlite3 state, or a tested recoverable state backup and migration rollback plan.",
+      "A rollback runbook that restores the prior exact path, verifies PID/cwd/command, runs local and public health/readiness checks, and records the result before any recovery claim."
+    ]
+  },
+  "content_comparison": {
+    "candidate_head": "78120eea04392db2a254968cbe4d8f69f6fd7a84",
+    "candidate_tracked_diff_sha256": "ed9021a266600014bf1efe287b9dd10a38854059dbd4b2305a58285877c9e7e9",
+    "all_hardening_files_match_candidate_worktree": false,
+    "deployed_hardening_files": 0,
+    "deployed_new_hardening_tests": 0,
+    "files": [
+      {
+        "path": "openclaw_app/adapters/http_api.py",
+        "kind": "hardening_implementation",
+        "candidate_worktree_sha256": "709ea737ad63f08836a2a58135b1d586fc075bdd70a3f03624293dcfccf8c143",
+        "candidate_head_sha256": "a6315829eca61fb1f80c79ae1f1c8feb8d40d212d853e5db8773febd532ae92e",
+        "release_sha256": "a6315829eca61fb1f80c79ae1f1c8feb8d40d212d853e5db8773febd532ae92e",
+        "release_matches_candidate_worktree": false,
+        "release_matches_candidate_head": true,
+        "deployed": false
+      },
+      {
+        "path": "openclaw_app/services/stage2_external_document.py",
+        "kind": "hardening_implementation",
+        "candidate_worktree_sha256": "181e5c03d5e62abb5f7840d734f7b1fcc33df6c3209428b35cadf9de135e75bb",
+        "candidate_head_sha256": "cc92f624effd6fb01c7b0b5a8f20cbb7f09abfb7377eceecca116e0d6a28ddc5",
+        "release_sha256": "cc92f624effd6fb01c7b0b5a8f20cbb7f09abfb7377eceecca116e0d6a28ddc5",
+        "release_matches_candidate_worktree": false,
+        "release_matches_candidate_head": true,
+        "deployed": false
+      },
+      {
+        "path": "openclaw_app/services/stage2_gateway.py",
+        "kind": "hardening_implementation",
+        "candidate_worktree_sha256": "84b879838cba14f69e4166599827afac950662188eb190e1be706d9377f02fb6",
+        "candidate_head_sha256": "172d47b7a956f2a7ce1764eaf1b6a298c23e58677ba3ae6ba482b9117f11e71f",
+        "release_sha256": "172d47b7a956f2a7ce1764eaf1b6a298c23e58677ba3ae6ba482b9117f11e71f",
+        "release_matches_candidate_worktree": false,
+        "release_matches_candidate_head": true,
+        "deployed": false
+      },
+      {
+        "path": "openclaw_app/services/stage2_personal_store.py",
+        "kind": "hardening_implementation",
+        "candidate_worktree_sha256": "9165dec17d00b4eb4162dc215ac040de1a2ff70af4a93f592ac0f23c9f2e4bb7",
+        "candidate_head_sha256": "9f5ca5e96d1e9e1cd167ff0956ebd70530e6a9235e788ae77c5f7464e82dc42",
+        "release_sha256": "9f5ca5e96d1e9e1cd167ff0956ebd70530e6a9235e788ae77c5f7464e82dc42",
+        "release_matches_candidate_worktree": false,
+        "release_matches_candidate_head": true,
+        "deployed": false
+      },
+      {
+        "path": "openclaw_app/services/stage2_production.py",
+        "kind": "hardening_implementation",
+        "candidate_worktree_sha256": "6f105eee9a539c14fc0eaead313e9a06c385460aa838836302c188a88b1edb8b",
+        "candidate_head_sha256": "d22e6d0618da91948315f62926c9b30ea9e1623041908dc065c9bf21ffac7d36",
+        "release_sha256": "d22e6d0618da91948315f62926c9b30ea9e1623041908dc065c9bf21ffac7d36",
+        "release_matches_candidate_worktree": false,
+        "release_matches_candidate_head": true,
+        "deployed": false
+      },
+      {
+        "path": "openclaw_app/services/stage2_production_factory.py",
+        "kind": "hardening_implementation",
+        "candidate_worktree_sha256": "dd12b5cb1e4b6adeff45be6f3f699afc5cea7d1620868fdf8733af1a92a9f57d",
+        "candidate_head_sha256": "5e490d803101ebe52b3eb3c880a568c73f473d2a5142709487ddbe336a5c2cf7",
+        "release_sha256": "d87a158cfa417ca2124585c310bc30f68349993e423afc9cb78ecdc8b75a411c",
+        "release_matches_candidate_worktree": false,
+        "release_matches_candidate_head": false,
+        "deployed": false
+      },
+      {
+        "path": "openclaw_app/services/stage2_runtime.py",
+        "kind": "hardening_implementation",
+        "candidate_worktree_sha256": "cbb0d056679730249800fb61b20fc9b5fa46f3a6dfc7f01a1f509cf1467d27b8",
+        "candidate_head_sha256": "a217b26fae0078d35c9219c4ed7cd00f22a22744c1bab60d142ce4ea9399e9ca",
+        "release_sha256": "a217b26fae0078d35c9219c4ed7cd00f22a22744c1bab60d142ce4ea9399e9ca",
+        "release_matches_candidate_worktree": false,
+        "release_matches_candidate_head": true,
+        "deployed": false
+      },
+      {
+        "path": "openclaw_app/services/stage2_server_context.py",
+        "kind": "hardening_implementation",
+        "candidate_worktree_sha256": "0cf6b16c25d3887122e62a1a81b48e5ef47c63b9029854f9ba492d63664ee0ea",
+        "candidate_head_sha256": "c7610d9d0fbb874580c02b3bf422dfd1f6c3fafb4067b2521e41834c55240417",
+        "release_sha256": "c7610d9d0fbb874580c02b3bf422dfd1f6c3fafb4067b2521e41834c55240417",
+        "release_matches_candidate_worktree": false,
+        "release_matches_candidate_head": true,
+        "deployed": false
+      },
+      {
+        "path": "tests/test_stage2_feishu_hardening.py",
+        "kind": "new_hardening_test",
+        "candidate_worktree_sha256": "119e6bd3e33d53465d6b41f1e23904758461ec6ae28a91ec3b5d5d6a466c1eba",
+        "candidate_head_sha256": null,
+        "release_sha256": null,
+        "release_status": "missing",
+        "deployed": false
+      },
+      {
+        "path": "tests/test_stage2_runtime_hardening.py",
+        "kind": "new_hardening_test",
+        "candidate_worktree_sha256": "e0846a10a3b1f7b20d3057da0189e1a52fdf1e0fb80f889d0e1fe95b9d3ca091",
+        "candidate_head_sha256": null,
+        "release_sha256": null,
+        "release_status": "missing",
+        "deployed": false
+      }
+    ]
+  },
+  "findings": [
+    {
+      "severity": "P0",
+      "id": "PRODUCTION-RELEASE-PROVENANCE-NO-GO",
+      "decision": "NO-GO",
+      "detail": "The active user unit and health endpoints are real and healthy, but the target directory is a mutable copy without an independent Git HEAD, release manifest, per-file release ledger, or immutable i flag. The active assembly cannot be bound to an authoritative source identity or a recoverable release identity."
+    },
+    {
+      "severity": "P0",
+      "id": "STAGE2-HARDENING-NOT-IN-RELEASE",
+      "decision": "NO-GO",
+      "detail": "All 8 hardening implementation files differ between the candidate worktree and production release, and both new hardening tests are absent from production. The live service therefore cannot be credited with the candidate hardening content."
+    },
+    {
+      "severity": "P1",
+      "id": "CANDIDATE-ID-DIVERGENCE",
+      "decision": "BLOCKED",
+      "detail": "The candidate branch HEAD is 78120eea..., while the worktree carries uncommitted hardening and untracked tests. The handoff document states an older ed5dc396... baseline. There is no single immutable identity for the proposed hardening to promote."
+    },
+    {
+      "severity": "P1",
+      "id": "HISTORICAL-EVIDENCE-NOT-RUNTIME-BINDING",
+      "decision": "BLOCKED",
+      "detail": "The deployed browser evidence is marked verification VERIFIED but formalAcceptance NOT_ACCEPTED, was generated before the current service start, and has no top-level release hash or PID binding. It is not same-run proof of the current assembly."
+    },
+    {
+      "severity": "P1",
+      "id": "ROLLBACK-RELEASE-NOT-OBSERVED",
+      "decision": "BLOCKED",
+      "detail": "The targeted releases sibling listing showed no prior openclaw-stage2 release directory. A rollback target, immutable receipt, and state-compatibility proof were not observed."
+    }
+  ],
+  "unverified_items": [
+    "The exact source commit or tag that produced the active release, including the factory file variant.",
+    "A clean, committed candidate containing all 8 hardening files and both new tests.",
+    "A release manifest and same-run hash binding between the unit, process, served runtime, and source commit.",
+    "Immutable permissions and attribute readback for every release file, not only the current directory attribute.",
+    "A separately preserved and tested prior Stage-2 release suitable for rollback.",
+    "Database/state compatibility and recoverable rollback behavior for stage2.sqlite3.",
+    "Real authenticated production, PostgreSQL, Feishu, AI-provider, device, and external-acceptance evidence; the handoff explicitly says these are not replaced by candidate or browser-fixture evidence."
+  ],
+  "remaining_risks": [
+    "The service can remain healthy while serving older or mixed Stage-2 code because readiness does not identify the release content.",
+    "The mutable release directory and parent-home Git layout allow provenance drift without a release-level audit trail.",
+    "The production process references secret-bearing EnvironmentFile paths; values were intentionally not read, so configuration completeness was not assessed.",
+    "The release contains a writable SQLite state file path and no demonstrated state backup/rollback receipt.",
+    "The current result covers source/provenance and production assembly only and does not change the formal SSOT state."
+  ],
+  "formal_ssot_status": "unchanged; no promotion attempted",
+  "proposed_state": "BLOCKED",
+  "failure_class": "verification",
+  "failure_origin": "authority",
+  "acceptance_self_check": "partial"
+}

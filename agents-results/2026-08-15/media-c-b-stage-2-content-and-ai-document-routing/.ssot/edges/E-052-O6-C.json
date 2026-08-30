@@ -1,0 +1,22 @@
+{
+  "edge_id": "E-052-O6-C",
+  "from": "O6",
+  "to": "C",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.o6.c.v5"
+  ],
+  "transferred_input": "组织端到端候选",
+  "gate_evidence": "组织全链在同一租户、Binding、文档和候选上闭环",
+  "reason_code": "candidate-identity",
+  "transferred_artifact_ids": [
+    "DL-O6"
+  ],
+  "resource_ids": [
+    "candidate:REL-2"
+  ],
+  "necessity_proof": "C must retain the immutable candidate:REL-2 identity from O6"
+}

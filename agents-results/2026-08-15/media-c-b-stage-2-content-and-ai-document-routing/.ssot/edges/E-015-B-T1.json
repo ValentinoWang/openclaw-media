@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-015-B-T1",
+  "from": "B",
+  "to": "T1",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.b.t1.v5"
+  ],
+  "transferred_input": "共享接口冻结身份",
+  "gate_evidence": "不接受前端伪造租户、Binding、正文权威或路由授权",
+  "reason_code": "contract-dependency",
+  "transferred_artifact_ids": [
+    "ART-B"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "T1 consumes the explicitly produced artifact ART-B"
+}

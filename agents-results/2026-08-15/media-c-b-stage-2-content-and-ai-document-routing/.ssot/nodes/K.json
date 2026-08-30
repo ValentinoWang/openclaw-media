@@ -1,0 +1,114 @@
+{
+  "node_id": "K",
+  "semantic_key": "media.stage2.product-decisions",
+  "stage": "A",
+  "work_kind": "decision-acceptance",
+  "domain_lane": "product-contract",
+  "execution_state": "ACCEPTED",
+  "decision_state": "ACCEPTED",
+  "decision_version": 4,
+  "readiness_mode": "FORMAL",
+  "hard_dependencies": [
+    "A1"
+  ],
+  "soft_dependencies": [],
+  "assumption_ids": [],
+  "decision_refs": [],
+  "invalidation_keys": [
+    "media.stage2.product-decisions.v5"
+  ],
+  "write_authority": "authoritative-contract",
+  "acceptance_authority": "user",
+  "unlocks": [
+    "B"
+  ],
+  "worker_transport": "historical-unregistered",
+  "worker_registration": {
+    "note": "no retroactive worker claim"
+  },
+  "description": "全部交付节点引用同一决定版本；实现待执行，不冒领验收",
+  "node_role": "leaf",
+  "execution_actor": "orchestrator",
+  "execution_contract_ref": "K.json",
+  "execution_contract_sha256": "58e05b1b9d11ddbd27176d7c167a3b99efd378686d81cc79830698882877ef01",
+  "side_effect_class": "none",
+  "candidate_identity_policy": "none",
+  "deliverable_ids": [],
+  "produced_artifact_ids": [
+    "ART-K"
+  ],
+  "consumed_artifact_ids": [
+    "DL-A1"
+  ],
+  "read_set": [
+    "artifact:DL-A1"
+  ],
+  "write_set": [
+    "artifact:K"
+  ],
+  "resource_claims": [
+    {
+      "resource_id": "node:K",
+      "mode": "W",
+      "isolation_key": "node:K"
+    }
+  ],
+  "actor_pool": "orchestrator",
+  "acceptance_commands": [
+    "python3 -c 'print(\"acceptance K\")'"
+  ],
+  "evidence_outputs": [
+    "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/K-return.json"
+  ],
+  "release_slice": "REL-2",
+  "wave_id": "W-2-2",
+  "main_thread_write_exception": {
+    "reason": "历史编排节点只生成或投影自身独占的 SSOT 记录；主线程不直接修改业务源码，也不写入其他节点的共享事实。",
+    "approved_by": "user and planning authority",
+    "write_set": [
+      "artifact:K"
+    ]
+  },
+  "evidence_identity": {
+    "evidence_level": "source",
+    "source_revision": "user-approved-three-stage-plan-2026-08-15",
+    "artifact_hashes": [
+      "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+      "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5",
+      "sha256:d5dad457861e413ff3963da568870be907495de50c33486810fa3dbdc0d92f98"
+    ],
+    "environment_identity": "current Codex task and declared input files",
+    "runtime_release_id": "n/a",
+    "actor_role": "user and product decision authority",
+    "account_or_tenant": "n/a",
+    "device_or_browser": "n/a",
+    "mock_or_fixture": false,
+    "observed_at": "2026-08-15T20:37:42+08:00",
+    "acceptance_contract": "Phase-2 product decisions v2"
+  },
+  "decision_record": {
+    "approved_value": {
+      "ai_execution_context": "server session plus Membership plus Binding plus capability identity",
+      "client_authority_boundary": "client-supplied tenant, Binding and body authority are never authorization facts",
+      "personal_body_authority": "personal_web/internal; Web is the only editor authority",
+      "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
+      "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
+      "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+      "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary",
+      "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
+      "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
+      "stage3_exclusions": "full role matrix, approval, seats, procurement, invoices, migration, complex deletion and business analytics",
+      "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate",
+      "session_envelope_boundary": "do not add routeGrants or page permissions to parseMediaSessionEnvelope; keep media_web_business_pages_v2 strict response shape unchanged",
+      "entry_state_authority": "independent read-only entry-state API returns server-projected role, workspaceMode, bodyAuthority, defaultRoute, route grants and action grants",
+      "entry_state_contract": "new API contract must be versioned and strict in OpenAPI/client types; exact path is frozen by B after bounded source discovery, with 401/403/409 semantics and no session envelope change",
+      "route_authorization_axes": "role selects shell; workspaceMode/bodyAuthority select content authority; entry-state route/action grants select visible and executable UI; backend authorization remains final",
+      "ordinary_ia_entrypoint": "MediaStudioApp is the current mounted entry; MediaApp is legacy until an entrypoint census proves otherwise. Do not delete the legacy IA before route ownership and deep-link behavior are recorded.",
+      "font_delivery": "self-host DM Sans as full WOFF2; serve Noto Sans SC through unicode-range slices or a curated common-glyph subset; preload only Latin subset and keep a local fallback chain",
+      "font_weight_policy": "load every used weight including 600; remove 800/850 visual dependence, map Chinese headings to available weights, set Chinese or mixed headings letter-spacing to 0 and reserve negative tracking for pure Latin/numeric display"
+    },
+    "approval_authority": "user",
+    "approval_evidence": "User requested the phase-2 SSOT, explicitly resolved the session-envelope conflict in favor of an independent read-only entry-state API, and accepted the self-hosted font, sliced Chinese subset, and weight/tracking constraints",
+    "approved_at": "2026-08-30T00:00:00+08:00"
+  }
+}

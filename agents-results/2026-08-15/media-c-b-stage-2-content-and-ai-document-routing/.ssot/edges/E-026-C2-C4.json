@@ -1,0 +1,20 @@
+{
+  "edge_id": "E-026-C2-C4",
+  "from": "C2",
+  "to": "C4",
+  "dependency_type": "hard",
+  "dependency_scope": "specific-output",
+  "required_state": "ACCEPTED",
+  "assumption_ids": [],
+  "invalidation_keys": [
+    "edge.c2.c4.v5"
+  ],
+  "transferred_input": "个人研究简报成果",
+  "gate_evidence": "研究结论和来源引用可分离复核",
+  "reason_code": "data-dependency",
+  "transferred_artifact_ids": [
+    "DL-C2"
+  ],
+  "resource_ids": [],
+  "necessity_proof": "C4 consumes the explicitly produced artifact DL-C2"
+}

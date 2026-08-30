@@ -1,0 +1,26 @@
+Task ID: STAGE2-FEISHU-HARDENING-20260820
+Objective: harden the Stage-2 production Feishu adapter and Binding-scoped document write/readback in the isolated clone at /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/stage2-hardening-feishu-20260820.
+
+Read first:
+- openclaw_app/services/stage2_production_factory.py
+- openclaw_app/services/stage2_external_document.py
+- openclaw_app/services/stage2_organization_pipeline.py
+- tests/test_stage2_production.py
+- tests/test_stage2_external_document.py
+- STAGE2-HANDOFF-20260819.md
+
+Exclusive write scope:
+- openclaw_app/services/stage2_production_factory.py
+- openclaw_app/services/stage2_external_document.py
+- add tests/test_stage2_feishu_hardening.py only if needed
+Do not edit contracts, manifests, SSOT, migrations, unrelated services, or production data. Do not commit or push.
+
+Required review and implementation:
+1. Ensure every organization write is scoped to the server-resolved active Binding id and generation, with no global/default credential, space, parent, or container fallback.
+2. Ensure concurrent writes cannot leak or retain a different knowledge-base target, and Binding changes before/during write fail closed.
+3. Ensure create/write, registration, remote readback, remote revision, trusted HTTPS URL, and content digest are all required before a success/readback_verified result; partial external success must be needs_attention and idempotently recoverable.
+4. Ensure readback and replay do not issue a second external write for the same idempotency key, while a different payload conflicts. Keep injected adapter protocols and existing public APIs stable.
+5. Add focused tests with fake Feishu services/adapters for Binding mismatch, unsafe URL, concurrent target isolation, readback version/content mismatch, idempotent replay, and failure close. Tests must never contact real Feishu.
+6. Run focused tests, full Stage-2 tests, compile, and diff check. Make only minimal source changes justified by a failing or missing guard.
+
+Before exit write one JSON object to STRUCTURED_RETURN_PATH with task_id, proposed_state, acceptance_self_check, failure_class, failure_origin, actual_read_scope, actual_write_scope, changed_files, commands, test_evidence, unverified_items, residual_risks, and explicit_non_claims. Never claim formal SSOT acceptance or live Feishu/device evidence.

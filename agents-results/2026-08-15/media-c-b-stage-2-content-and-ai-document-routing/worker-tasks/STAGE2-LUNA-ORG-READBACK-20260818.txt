@@ -1,0 +1,32 @@
+Task: implement a bounded, provisional Stage-2 organization-document external write/readback adapter in the isolated remote worktree.
+
+Execution context:
+- The worker process runs in the local project root, but the code target is the remote host ubuntu@106.52.146.37.
+- Remote worktree: /tmp/openclaw-stage2-org-luna
+- Remote repository branch: codex/stage2-org-readback-luna-20260818
+- The Phase-2 SSOT is planning authority only in this task. Do not edit any SSOT file, progress ledger, generated view, manifest, or acceptance state.
+- Do not touch /home/ubuntu/selfmedia-tools (the dirty main worktree), /home/ubuntu/openclaw-bot-center, production releases, Feishu, a database, credentials, or any external service.
+
+Write boundary on the remote worktree (only these two files may be created or changed):
+- openclaw-tag-router/openclaw_app/services/stage2_external_document.py
+- openclaw-tag-router/tests/test_stage2_external_document.py
+
+Objective:
+Create a small implementation-independent adapter boundary that advances the Stage-2 organization path without performing real external I/O. It must be usable by a later integration owner and must fail closed.
+
+Required behavior:
+1. Define typed, server-owned request/result values for tenant_id, binding_id, binding_generation, idempotency_key, content digest, remote_ref, remote_revision, write status, and readback status. Do not accept browser authority claims or credentials.
+2. Require organization Binding identity (tenant, stable binding id, positive generation) for organization writes. Reject missing, mismatched, inactive, or non-positive Binding identity before calling an adapter.
+3. Expose an injected adapter protocol with write and readback operations. The module must never import Feishu, HTTP, database, filesystem, or credential clients.
+4. Normalize adapter outcomes into a fail-closed result: an external write is publishable only when write success, remote reference, and readback confirmation all match the requested tenant, Binding generation, content digest, and remote revision. Any missing or contradictory readback yields needs_attention and publishable=false while preserving an auditable remote reference when one exists.
+5. Make idempotency deterministic: exact replay returns the stored result without a second adapter write; a conflicting payload with the same idempotency key raises a stable idempotency_conflict error. Protect the in-memory store for concurrent calls.
+6. Keep all returned error codes and status values explicit and JSON-shaped. No silent fallback and no publishable=true path for partial external success.
+
+Tests:
+- Use only fake injected adapters; no network, database, Feishu, credentials, or production paths.
+- Cover success with matching readback, missing Binding, Binding generation mismatch, missing remote reference, readback digest/revision mismatch, partial write needs_attention, idempotent replay, and idempotency conflict.
+- Run the focused pytest command from the remote worktree with the project venv, and run py_compile or an equivalent in-memory compile without leaving pyc residue.
+
+Do not modify existing Stage-2 context/router files in this task. Do not add package dependencies. Do not commit or push; leave the isolated worktree ready for main-thread review.
+
+Before exit, write one structured JSON object to the path supplied by the worker wrapper. Include proposed_state, acceptance_self_check, failure_class, failure_origin, changed_files, tests, and unverified_items. Use IMPLEMENTED or VERIFIED only if the focused tests pass.
