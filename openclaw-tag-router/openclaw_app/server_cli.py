@@ -4,6 +4,8 @@ import argparse
 import os
 from pathlib import Path
 
+from common.env import parse_env_file
+
 from integrations.feishu.lark_document_gateway import (
     build_production_lark_document_gateway,
 )
@@ -67,23 +69,10 @@ from .services.media_business.usage_billing import UsageBillingService
 
 
 def _load_environment_file(path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    if not path.is_file():
-        return values
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith("export "):
-            line = line[7:].lstrip()
-        key, separator, value = line.partition("=")
-        if not separator:
-            continue
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-            value = value[1:-1]
-        values[key.strip()] = value
-    return values
+    # Thin wrapper over the canonical parser (dedup pe-01): this reader's
+    # rules -- matched-pair quote slicing, `export ` prefix, missing file ->
+    # {} -- already matched common.env.parse_env_file byte-for-byte.
+    return parse_env_file(path)
 
 
 def main() -> int:

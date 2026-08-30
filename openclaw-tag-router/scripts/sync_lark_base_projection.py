@@ -27,6 +27,7 @@ for import_root in (REPOSITORY_ROOT, ROUTER_ROOT):
         sys.path.remove(entry)
     sys.path.insert(0, entry)
 
+from common.env import parse_env_file
 from openclaw_app.account import AccountDatabase, AccountDatabaseSettings
 from openclaw_app.services.feishu_service import FeishuService
 from openclaw_app.services.media_business.lark_base_projection import (
@@ -74,23 +75,11 @@ def _load_registry_table_bindings(path: Path) -> tuple[str, dict[str, dict[str, 
 
 
 def _load_env_file(path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    if not path.exists():
-        return values
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith("export "):
-            line = line[7:].lstrip()
-        key, separator, value = line.partition("=")
-        if not separator:
-            continue
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-            value = value[1:-1]
-        values[key.strip()] = value
-    return values
+    # Thin wrapper over the canonical parser (dedup pe-01): this reader's
+    # rules -- matched-pair quote slicing, `export ` prefix, missing file ->
+    # {} -- already matched common.env.parse_env_file byte-for-byte. Kept as
+    # a module-level name: scripts/backfill_asset_thumbnails.py imports it.
+    return parse_env_file(path)
 
 
 def _resolved(value: Any, env: dict[str, str]) -> str:
