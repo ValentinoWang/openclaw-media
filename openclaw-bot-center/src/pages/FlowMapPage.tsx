@@ -7,7 +7,7 @@ import {
   type FlowPresentationSummary,
   type FlowStagePresentationSummary,
 } from '../lib/dashboardPresentation'
-import { botChineseNames, botNames, flowOwnerNames } from '../lib/labels'
+import { botChineseNames, botNames, flowOwnerNames, implementationStatusNames } from '../lib/labels'
 import type { BotId, ContentOsProjectDashboard, DashboardData, Flow } from '../schemas/dashboardSchema'
 
 type FlowMapPageProps = {
@@ -372,7 +372,7 @@ function CapabilityChip({ capability }: { capability: CapabilityPresentationSumm
   return (
     <a href={`#/capabilities/detail/${capability.id}`} className="redesign-flow-capability-chip">
       <strong>{capability.title}</strong>
-      <small>{botChineseNames[capability.primaryBot] ?? botNames[capability.primaryBot]} / {implementationStatusLabel(capability.implementationStatus)}</small>
+      <small>{botChineseNames[capability.primaryBot] ?? botNames[capability.primaryBot]} / {implementationStatusNames[capability.implementationStatus]}</small>
     </a>
   )
 }
@@ -438,15 +438,6 @@ function unique<T>(items: T[]): T[] {
 function readBotParam(searchParams: URLSearchParams, botIds: Set<string>) {
   const bot = searchParams.get('bot')
   return bot && botIds.has(bot) ? bot as BotId : ALL_BOTS
-}
-
-function implementationStatusLabel(status: CapabilityPresentationSummary['implementationStatus']) {
-  const labels: Record<CapabilityPresentationSummary['implementationStatus'], string> = {
-    implemented: '已落地',
-    external: '既有链路',
-    not_implemented: '规划中',
-  }
-  return labels[status]
 }
 
 function visibilityLabel(visibility: FlowPresentationSummary['visibility']) {

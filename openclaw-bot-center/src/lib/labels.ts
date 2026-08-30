@@ -60,3 +60,27 @@ export const flowOwnerNames: Record<Flow['stages'][number]['owner'], string> = {
   mixed: '协同处理',
   storage: '文件 / 产物',
 }
+
+// implementationStatus → Chinese (cluster LE-12). "not_implemented" and "external" already agree
+// everywhere ("规划中" / "既有链路"); "implemented" does not — App.tsx's primary capability list
+// says "可用" (a plain end-user affordance), while the maintainer-facing map pages (business map,
+// capability tree, flow map) say "已落地" (an implementation-status framing). That is a real,
+// already-shipped wording split rather than an accidental copy/paste drift, so both spellings are
+// kept as named exports instead of one silently overwriting the other. Which one is "correct" is a
+// product-wording decision, not a dedup one.
+export const implementationStatusNames: Record<Capability['implementationStatus'], string> = {
+  implemented: '已落地',
+  not_implemented: '规划中',
+  external: '既有链路',
+}
+
+export const implementationStatusNamesPrimary: Record<Capability['implementationStatus'], string> = {
+  ...implementationStatusNames,
+  implemented: '可用',
+}
+
+export const implementationStatusHelp: Record<Capability['implementationStatus'], string> = {
+  implemented: '已实装，可直接发送到对应 Bot 使用。',
+  not_implemented: '规划中。复制模板发送后会收到待人工处理回执，不代表系统故障。',
+  external: '由既有创作、复盘或其他 canonical 链路执行。',
+}

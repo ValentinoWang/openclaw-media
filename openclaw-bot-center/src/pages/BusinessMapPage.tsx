@@ -17,7 +17,7 @@ import {
   type FlowStagePresentationSummary,
   type TaskPresentationRow,
 } from '../lib/dashboardPresentation'
-import { botChineseNames, botNames, taskGroupNames } from '../lib/labels'
+import { botChineseNames, botNames, implementationStatusNames, taskGroupNames } from '../lib/labels'
 import type { BotId, DashboardData } from '../schemas/dashboardSchema'
 
 type BusinessMapPageProps = {
@@ -256,7 +256,7 @@ function CapabilityEntry({ capability }: { capability: CapabilityPresentationSum
     <a
       href={`#/capabilities/detail/${capability.id}`}
       className={`redesign-business-capability-link redesign-status-${capability.implementationStatus}`}
-      title={`${capability.title} · ${implementationStatusLabel(capability.implementationStatus)}`}
+      title={`${capability.title} · ${implementationStatusNames[capability.implementationStatus]}`}
     >
       {capability.label}
     </a>
@@ -275,15 +275,6 @@ function MatchedFlowCard({ flow }: { flow: MatchedFlow }) {
       </span>
     </a>
   )
-}
-
-function implementationStatusLabel(status: CapabilityPresentationSummary['implementationStatus']) {
-  const labels: Record<CapabilityPresentationSummary['implementationStatus'], string> = {
-    implemented: '已落地',
-    external: '既有链路',
-    not_implemented: '规划中',
-  }
-  return labels[status]
 }
 
 function buildBusinessRows(tasks: TaskPresentationRow[], flows: FlowPresentationSummary[]): BusinessTaskRow[] {

@@ -19,7 +19,7 @@ import {
   type FlowPresentationSummary,
   type FlowStagePresentationSummary,
 } from '../lib/dashboardPresentation'
-import { botChineseNames, categoryNames } from '../lib/labels'
+import { botChineseNames, categoryNames, implementationStatusNames } from '../lib/labels'
 import type { BotId, Capability, DashboardData } from '../schemas/dashboardSchema'
 
 type CapabilityTreePageProps = {
@@ -288,7 +288,7 @@ function ClusterNavigator({
                     onClick={() => onSelectCapability(capability.id)}
                   >
                     <span>{capability.title}</span>
-                    <small>{statusLabel(capability.implementationStatus)}</small>
+                    <small>{implementationStatusNames[capability.implementationStatus]}</small>
                   </button>
                 ))}
               </div>
@@ -415,7 +415,7 @@ function CapabilityNavigationCard({
     >
       <span className="redesign-capability-nav-entry-heading">
         <strong>{capability.displayProjection.displayTitle}</strong>
-        <small>{statusLabel(capability.implementationStatus)}</small>
+        <small>{implementationStatusNames[capability.implementationStatus]}</small>
       </span>
       <span className="redesign-capability-nav-entry-summary">{capability.displayProjection.operatorSummary}</span>
       <span className="redesign-capability-nav-entry-meta">
@@ -473,7 +473,7 @@ function CapabilityQuickDetail({
   return (
     <aside className="redesign-capability-nav-detail" aria-label="Selected capability detail">
       <section className="redesign-capability-nav-detail-card">
-        <span className="redesign-kicker">{categoryNames[capability.category]} / {statusLabel(capability.implementationStatus)}</span>
+        <span className="redesign-kicker">{categoryNames[capability.category]} / {implementationStatusNames[capability.implementationStatus]}</span>
         <h2>{capability.displayProjection.displayTitle}</h2>
         <p>{capability.displayProjection.operatorSummary}</p>
         <a href={`#/capabilities/detail/${capability.id}`}>
@@ -559,15 +559,6 @@ function clusterIdForSelection(
     return requestedCluster.id
   }
   return clusterIdForCapability(clusters, botId, capabilityId)
-}
-
-function statusLabel(status: Capability['implementationStatus']) {
-  const labels: Record<Capability['implementationStatus'], string> = {
-    implemented: '已落地',
-    external: '既有链路',
-    not_implemented: '规划中',
-  }
-  return labels[status]
 }
 
 function readBotParam(searchParams: URLSearchParams, botIds: Set<string>) {

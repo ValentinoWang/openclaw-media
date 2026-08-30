@@ -46,7 +46,7 @@ import {
   recommendedExecutionNodeWidth,
   type ExecutionGraphLayout,
 } from './lib/executionGraphLayout'
-import { availabilityNames, botNames, categoryNames, flowOwnerNames, taskGroupNames, typeNames } from './lib/labels'
+import { availabilityNames, botNames, categoryNames, flowOwnerNames, implementationStatusHelp, implementationStatusNamesPrimary, taskGroupNames, typeNames } from './lib/labels'
 import { buildSearch } from './lib/search'
 import BotsBoardPage from './pages/BotsBoardPage'
 import BusinessMapPage from './pages/BusinessMapPage'
@@ -1722,10 +1722,13 @@ function initialViewMode(): ViewMode {
   return search.get('view') === 'maintainer' || hashSearch.get('view') === 'maintainer' ? 'maintainer' : 'normal'
 }
 
-function ImplementationBadge({ status, compact = false }: { status: ImplementationStatus; compact?: boolean }) {
-  const label = compact ? implementationStatusShortLabel(status) : implementationStatusLabel(status)
+function ImplementationBadge({ status, compact: _compact = false }: { status: ImplementationStatus; compact?: boolean }) {
+  // compact previously selected between two word tables with byte-identical Chinese text
+  // (implementationStatusLabel vs implementationStatusShortLabel — cluster LE-12); there was no
+  // actual "short" variant, so both branches now read the same shared table.
+  const label = implementationStatusNamesPrimary[status]
   return (
-    <span className={`implementation-badge ${status}`} title={implementationStatusHelp(status)}>
+    <span className={`implementation-badge ${status}`} title={implementationStatusHelp[status]}>
       {label}
     </span>
   )
@@ -1757,32 +1760,6 @@ function capabilitiesForView(capabilities: Capability[], viewMode: ViewMode) {
   return folded.filter((capability) => capability.entryTree || !treeChildren.has(capability.id))
 }
 
-function implementationStatusLabel(status: ImplementationStatus) {
-  const labels: Record<ImplementationStatus, string> = {
-    implemented: '可用',
-    not_implemented: '规划中',
-    external: '既有链路',
-  }
-  return labels[status]
-}
-
-function implementationStatusShortLabel(status: ImplementationStatus) {
-  const labels: Record<ImplementationStatus, string> = {
-    implemented: '可用',
-    not_implemented: '规划中',
-    external: '既有链路',
-  }
-  return labels[status]
-}
-
-function implementationStatusHelp(status: ImplementationStatus) {
-  const labels: Record<ImplementationStatus, string> = {
-    implemented: '已实装，可直接发送到对应 Bot 使用。',
-    not_implemented: '规划中。复制模板发送后会收到待人工处理回执，不代表系统故障。',
-    external: '由既有创作、复盘或其他 canonical 链路执行。',
-  }
-  return labels[status]
-}
 
 
 function copyTemplateLabel(capability: Capability) {
