@@ -22,7 +22,7 @@ SCHEMA_VERSION = "media_web_business_pages_v2"
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 SOURCE_VERSION = "b05.runs.v1"
-PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+PUBLIC_ID_PATTERN = foundation.PUBLIC_ID_PATTERN
 AVAILABLE_SECTIONS = frozenset({"sources", "decisions", "outputs"})
 ARTIFACT_KINDS = frozenset(
     {
@@ -136,11 +136,9 @@ def _response_revision(value: Any, label: str) -> int:
 
 
 def _public_id(value: Any, label: str, error_type: type[RunsError] = RunsInternalError) -> str:
-    if not isinstance(value, str) or PUBLIC_ID_PATTERN.fullmatch(value) is None:
-        if error_type is RunsInvalidRequest:
-            raise RunsInvalidRequest(f"{label} is invalid", field=label)
-        raise RunsInternalError(f"{label} is invalid")
-    return value
+    if error_type is RunsInvalidRequest:
+        return foundation.public_id(value, label, error_type=lambda m: RunsInvalidRequest(m, field=label))
+    return foundation.public_id(value, label, error_type=RunsInternalError)
 
 
 def _required_text(data: Mapping[str, Any], key: str, label: str) -> str:

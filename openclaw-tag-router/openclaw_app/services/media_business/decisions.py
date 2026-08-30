@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import re
 import secrets
 from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager
@@ -21,7 +20,7 @@ from .foundation import MediaBusinessError, TenantContext, _fetchall, _fetchone,
 SCHEMA_VERSION = "media_web_business_pages_v2"
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
-PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+PUBLIC_ID_PATTERN = foundation.PUBLIC_ID_PATTERN
 SIGNAL_KINDS = {"hotlist", "activity", "research"}
 CANDIDATE_TYPES = {"activity", "material", "deconstruction", "pattern", "business", "creator"}
 DECISION_STATUSES = {"candidate", "recommended", "confirmed", "rejected"}
@@ -109,15 +108,11 @@ def _parse_timestamp(value: Any, field: str) -> str:
 
 
 def _public_id(value: Any, field: str) -> str:
-    if not isinstance(value, str) or not PUBLIC_ID_PATTERN.fullmatch(value):
-        raise DecisionsInternalError(f"{field} is invalid")
-    return value
+    return foundation.public_id(value, field, error_type=DecisionsInternalError)
 
 
 def _request_public_id(value: Any, field: str) -> str:
-    if not isinstance(value, str) or not PUBLIC_ID_PATTERN.fullmatch(value):
-        raise DecisionsInvalidRequest(f"{field} is invalid")
-    return value
+    return foundation.public_id(value, field, error_type=DecisionsInvalidRequest)
 
 
 def _page_size(value: Any) -> int:

@@ -7,7 +7,6 @@ import hashlib
 import hmac
 import ipaddress
 import json
-import re
 import secrets
 from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager
@@ -35,7 +34,7 @@ SCHEMA_VERSION = "media_web_business_pages_v2"
 SOURCE_VERSION = "b06.publishing.v1"
 DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
-PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+PUBLIC_ID_PATTERN = foundation.PUBLIC_ID_PATTERN
 CHECK_KEYS = ("content", "publication")
 PACKAGE_STATUSES = {"draft", "checking", "ready", "published"}
 _CURSOR_VERSION = 1
@@ -118,15 +117,11 @@ def _as_json(value: Any) -> str:
 
 
 def _public_id(value: Any, field: str = "public id") -> str:
-    if not isinstance(value, str) or not PUBLIC_ID_PATTERN.fullmatch(value):
-        raise PublishingInternalError(f"{field} is invalid")
-    return value
+    return foundation.public_id(value, field, error_type=PublishingInternalError)
 
 
 def _request_public_id(value: Any, field: str) -> str:
-    if not isinstance(value, str) or not PUBLIC_ID_PATTERN.fullmatch(value):
-        raise PublishingInvalidRequest(f"{field} is invalid", field=field)
-    return value
+    return foundation.public_id(value, field, error_type=lambda m: PublishingInvalidRequest(m, field=field))
 
 
 def _required_text(data: Mapping[str, Any], key: str, label: str) -> str:

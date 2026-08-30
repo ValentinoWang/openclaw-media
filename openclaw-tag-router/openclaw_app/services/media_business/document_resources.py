@@ -14,7 +14,6 @@ from . import foundation
 from .foundation import MediaBusinessError, TenantContext
 
 
-_PUBLIC_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
 _CHECKSUM = re.compile(r"^[a-f0-9]{64}$")
 _SAFE_CONTENT_TYPES = frozenset(
     {
@@ -137,9 +136,7 @@ class DocumentResourceService:
 
     @staticmethod
     def _public_id(value: Any) -> str:
-        if not isinstance(value, str) or not _PUBLIC_ID.fullmatch(value):
-            raise DocumentResourceInvalid()
-        return value
+        return foundation.public_id(value, "public id", error_type=lambda _message: DocumentResourceInvalid())
 
     @staticmethod
     def _tenant_id(context: TenantContext | None) -> str:

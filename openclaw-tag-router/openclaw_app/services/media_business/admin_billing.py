@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -27,7 +26,7 @@ MAX_SUMMARY_ROWS = 200
 MAX_REASON_LENGTH = 500
 MONEY_QUANTUM = Decimal("0.00000001")
 MAX_ADMIN_GRANT = Decimal("100000.00000000")
-_PUBLIC_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+_PUBLIC_ID = foundation.PUBLIC_ID_PATTERN
 _UTC = timezone.utc
 
 

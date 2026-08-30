@@ -8,7 +8,6 @@ import hmac
 import json
 import math
 import os
-import re
 from uuid import uuid4
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
@@ -25,7 +24,6 @@ from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_
 SCHEMA_VERSION = "media_web_business_pages_v2"
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
-_PUBLIC_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
 _QUALITY_STATUSES = {"verified", "partial", "unverified", "unavailable"}
 _HUMAN_STATUSES = {"pending", "confirmed", "rejected"}
 _OPERATIONAL_STATUSES = {"active", "paused", "disabled"}
@@ -1060,9 +1058,9 @@ def _search_pattern(value: str) -> str:
 
 
 def _requested_public_id(value: Any) -> str:
-    if not isinstance(value, str) or _PUBLIC_ID.fullmatch(value) is None:
-        raise TrackInvalidRequest("public identifier is invalid", field="publicId")
-    return value
+    return foundation.public_id(
+        value, "public identifier", error_type=lambda m: TrackInvalidRequest(m, field="publicId")
+    )
 
 
 def _platform_key(value: Any) -> str:
@@ -1083,9 +1081,7 @@ def _platform_label(value: Any) -> str:
 
 
 def _public_id(value: Any) -> str:
-    if not isinstance(value, str) or _PUBLIC_ID.fullmatch(value) is None:
-        raise TrackInternalError("public identifier is invalid")
-    return value
+    return foundation.public_id(value, "public identifier", error_type=TrackInternalError)
 
 
 def _object(value: Any, label: str) -> dict[str, Any]:

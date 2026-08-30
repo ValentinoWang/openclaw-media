@@ -389,6 +389,46 @@ def body_checksum(body: dict[str, Any]) -> str:
 
 PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
 
+
+# --- public_id validation (TI-03) --------------------------------------------
+#
+# 13+ media_business modules each independently re-compiled this exact
+# regex; most also wrote a matching validator that raises one of two
+# exceptions depending on whether the id came from a request (400) or a
+# database read (500). runs.py's `_public_id(value, label, error_type)`
+# is the most parameterized of them (the others hardcode one exception
+# type per function, needing two functions for the 400-vs-500 split) --
+# this is that shape, generalized.
+
+
+def public_id(value: Any, label: str, error_type: Callable[[str], Exception]) -> str:
+    if not isinstance(value, str) or PUBLIC_ID_PATTERN.fullmatch(value) is None:
+        raise error_type(f"{label} is invalid")
+    return value
+
+
+def prefixed_public_id(
+    value: Any,
+    label: str,
+    prefix: str,
+    error_type: Callable[[str], Exception],
+) -> str:
+    """A public id with a required literal prefix, consuming part of the
+    same 8-160 total-length budget PUBLIC_ID_PATTERN uses (e.g.
+    ``prefix="asset_"`` reproduces source_asset_projection.py's own
+    ``asset_[A-Za-z0-9_-]{2,154}`` pattern exactly: 6-char prefix + 2..154
+    = 8..160 total, same as the unprefixed pattern). NOT used against
+    source_asset_projection.py itself in this pass -- that module's
+    pattern is deliberately left untouched (see TI-03 audit); this
+    exists for the next caller that needs a prefixed variant.
+    """
+    suffix_min, suffix_max = 8 - len(prefix), 160 - len(prefix)
+    pattern = re.compile(rf"^{re.escape(prefix)}[A-Za-z0-9_-]{{{suffix_min},{suffix_max}}}$")
+    if not isinstance(value, str) or pattern.fullmatch(value) is None:
+        raise error_type(f"{label} is invalid")
+    return value
+
+
 SIGNATURE_BYTES = 18
 
 

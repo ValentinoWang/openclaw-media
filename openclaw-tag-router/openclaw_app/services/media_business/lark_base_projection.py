@@ -21,6 +21,8 @@ from typing import Any, Iterable, Mapping
 from psycopg import sql
 from media_model.platform_hashtags import normalize_platform_hashtags
 
+from . import foundation
+
 
 TARGET_TENANT_ID = "618ff8c4-cc5a-4034-a2c5-226e3ad6cd37"
 DEFAULT_REGISTRY_PATH = Path(
@@ -64,7 +66,7 @@ _BINDING_STATUSES = frozenset({"snapshot_only", "readback_verified_current", "ta
 _PENDING_BINDING_STATUS = "pending_create"
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_PUBLIC_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+_PUBLIC_ID = foundation.PUBLIC_ID_PATTERN
 _PREVIEW_PATH = "/openclaw/media/api/assets/{public_asset_id}/preview"
 
 

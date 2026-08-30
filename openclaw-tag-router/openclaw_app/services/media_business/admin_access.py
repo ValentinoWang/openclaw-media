@@ -18,7 +18,7 @@ from .foundation import IF2_KEY, MediaBusinessError, idempotency_key
 SCHEMA_VERSION = "media_web_business_pages_v2"
 DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
-_PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+_PUBLIC_ID_PATTERN = foundation.PUBLIC_ID_PATTERN
 _CURSOR_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,512}$")
 _UTC = timezone.utc
 

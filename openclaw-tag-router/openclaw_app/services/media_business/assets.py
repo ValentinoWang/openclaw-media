@@ -31,7 +31,7 @@ PREVIEW_CACHE_VERSION = "thumbnail-webp-320x180-v1"
 PREVIEW_THUMBNAIL_SIZE = (320, 180)
 PREVIEW_THUMBNAIL_MAX_BYTES = 256 * 1024
 PREVIEW_SOURCE_MAX_PIXELS = 25_000_000
-_PUBLIC_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+_PUBLIC_ID = foundation.PUBLIC_ID_PATTERN
 _SAME_ORIGIN_PREVIEW_URL = re.compile(r"^/openclaw/media/api/assets/[A-Za-z0-9_-]{8,160}/preview$")
 _QUALITY_STATUSES = {"verified", "partial", "unverified", "unavailable"}
 

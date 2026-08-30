@@ -5,7 +5,6 @@ import base64
 import hashlib
 import hmac
 import json
-import re
 import uuid
 import binascii
 from urllib.parse import urlparse
@@ -26,7 +25,7 @@ MAX_PAGE_SIZE = 100
 MAX_SEARCH_LENGTH = 200
 MAX_REASON_BYTES = 4096
 MAX_IDEMPOTENCY_KEY_LENGTH = 200
-PUBLIC_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+PUBLIC_ID = foundation.PUBLIC_ID_PATTERN
 STAGES = ("research", "assets", "decision", "creation", "publishing", "review")
 ARTIFACT_TYPES = frozenset(
     {
