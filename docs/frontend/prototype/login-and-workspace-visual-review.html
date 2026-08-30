@@ -1,0 +1,855 @@
+<title>MediaClaw 界面美化方案</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+  :root {
+    --paper:#f5f7f3; --surface:#fff; --raised:#fff;
+    --ink:#19231f; --ink-soft:#3f4f47; --muted:#68746d; --faint:#8d9992;
+    --line:#dfe6df; --line-soft:#eaefe9;
+    --mint:#1a9b68; --mint-deep:#106044; --mint-soft:#d9f4e6;
+    --lavender:#ebe7ff; --lavender-ink:#5b4bb5;
+    --peach:#ffe7db; --peach-ink:#a75f2c;
+    --blue:#e1efff; --blue-ink:#3177bd;
+    --yellow:#fff0bd; --yellow-ink:#8a6b12;
+    --clay:#b4553f; --clay-soft:#fbe8e2;
+    --sidebar:#173029;
+    --shadow-s:0 2px 6px rgba(30,48,40,.06);
+    --shadow-m:0 12px 30px rgba(30,48,40,.10);
+    --shadow-l:0 24px 62px rgba(30,48,40,.13);
+    --measure:66ch;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#111a16; --surface:#18231e; --raised:#1e2b25;
+      --ink:#e9f3ec; --ink-soft:#c3d3ca; --muted:#93a69c; --faint:#78897f;
+      --line:#2b3a33; --line-soft:#22302a;
+      --mint:#4ec48d; --mint-deep:#8fdcb4; --mint-soft:#1b3d30;
+      --lavender:#2f2b4c; --lavender-ink:#b0a4f0;
+      --peach:#3f2b1f; --peach-ink:#e0a271;
+      --blue:#1c3145; --blue-ink:#8cc2f5;
+      --yellow:#3a3315; --yellow-ink:#dcc069;
+      --clay:#e08e79; --clay-soft:#3a221c;
+      --sidebar:#0d1714;
+      --shadow-s:0 2px 6px rgba(0,0,0,.34);
+      --shadow-m:0 12px 30px rgba(0,0,0,.42);
+      --shadow-l:0 24px 62px rgba(0,0,0,.5);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#111a16; --surface:#18231e; --raised:#1e2b25;
+    --ink:#e9f3ec; --ink-soft:#c3d3ca; --muted:#93a69c; --faint:#78897f;
+    --line:#2b3a33; --line-soft:#22302a;
+    --mint:#4ec48d; --mint-deep:#8fdcb4; --mint-soft:#1b3d30;
+    --lavender:#2f2b4c; --lavender-ink:#b0a4f0;
+    --peach:#3f2b1f; --peach-ink:#e0a271;
+    --blue:#1c3145; --blue-ink:#8cc2f5;
+    --yellow:#3a3315; --yellow-ink:#dcc069;
+    --clay:#e08e79; --clay-soft:#3a221c;
+    --sidebar:#0d1714;
+    --shadow-s:0 2px 6px rgba(0,0,0,.34);
+    --shadow-m:0 12px 30px rgba(0,0,0,.42);
+    --shadow-l:0 24px 62px rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'DM Sans','Noto Sans SC',-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
+    font-size:15px; line-height:1.75; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{width:min(1120px,calc(100% - 44px)); margin:0 auto;}
+  h1,h2,h3,h4,p,ul,ol,figure{margin:0;}
+  a{color:var(--mint-deep);}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em; background:var(--line-soft); border-radius:4px; padding:.12em .38em; color:var(--ink-soft);}
+
+  /* ---------- 页头 ---------- */
+  .masthead{padding:74px 0 40px; border-bottom:1px solid var(--line);}
+  .kicker{display:inline-flex; align-items:center; gap:8px; color:var(--mint-deep); font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;}
+  .kicker i{width:7px;height:7px;border-radius:999px;background:var(--mint);box-shadow:0 0 0 5px color-mix(in srgb,var(--mint) 14%,transparent);}
+  .masthead h1{margin-top:20px; font-size:clamp(38px,5.2vw,62px); line-height:1.06; letter-spacing:-.042em; font-weight:800; text-wrap:balance;}
+  .masthead h1 em{font-style:normal; color:var(--mint);}
+  .masthead .lede{max-width:var(--measure); margin-top:20px; color:var(--muted); font-size:17px; line-height:1.72;}
+  .meta-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:26px;}
+  .meta{display:inline-flex; align-items:center; gap:7px; padding:7px 13px; border:1px solid var(--line); border-radius:999px; background:var(--surface); color:var(--muted); font-size:12px; font-weight:600;}
+  .meta b{color:var(--ink); font-weight:700;}
+
+  /* ---------- 章节 ---------- */
+  section.block{padding:64px 0 8px;}
+  .sec-head{display:flex; align-items:baseline; gap:16px; margin-bottom:8px;}
+  .sec-num{flex:0 0 auto; font-size:12px; font-weight:800; letter-spacing:.08em; color:var(--faint); font-variant-numeric:tabular-nums;}
+  .sec-head h2{font-size:clamp(25px,3vw,36px); line-height:1.18; letter-spacing:-.038em; font-weight:800;}
+  .sec-sub{max-width:var(--measure); margin-top:12px; color:var(--muted); font-size:15px;}
+  .prose{max-width:var(--measure); margin-top:18px; color:var(--ink-soft);}
+  .prose p + p{margin-top:14px;}
+  .prose ul{margin-top:12px; padding-left:20px;}
+  .prose li{margin-top:7px;}
+
+  /* ---------- 诊断卡 ---------- */
+  .finding-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:28px;}
+  .finding{padding:20px 21px; border:1px solid var(--line); border-radius:14px; background:var(--surface); box-shadow:var(--shadow-s);}
+  .finding.crit{background:var(--clay-soft); border-color:color-mix(in srgb,var(--clay) 26%,transparent);}
+  .f-top{display:flex; align-items:center; gap:9px;}
+  .sev{display:inline-grid; place-items:center; min-width:22px; height:22px; padding:0 7px; border-radius:6px; font-size:10px; font-weight:800; letter-spacing:.04em;}
+  .sev.p0{background:var(--clay); color:#fff;}
+  .sev.p1{background:var(--yellow); color:var(--yellow-ink);}
+  .sev.p2{background:var(--line); color:var(--muted);}
+  .finding h4{font-size:15px; font-weight:700; letter-spacing:-.01em;}
+  .finding p{margin-top:9px; color:var(--muted); font-size:13.5px; line-height:1.65;}
+  .measure{display:inline-flex; align-items:baseline; gap:6px; margin-top:12px; padding:5px 10px; border-radius:7px; background:color-mix(in srgb,var(--ink) 6%,transparent); font-family:ui-monospace,Menlo,monospace; font-size:11.5px; color:var(--ink-soft); font-variant-numeric:tabular-nums;}
+
+  /* ---------- 示意图容器 ---------- */
+  figure.demo{margin-top:34px;}
+  .demo-head{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:14px;}
+  .demo-head h3{font-size:19px; font-weight:700; letter-spacing:-.025em;}
+  .demo-head span{color:var(--faint); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;}
+  .ab{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px;}
+  .pane{border:1px solid var(--line); border-radius:15px; background:var(--surface); overflow:hidden; display:flex; flex-direction:column;}
+  .pane-bar{display:flex; align-items:center; gap:9px; padding:11px 15px; border-bottom:1px solid var(--line-soft); font-size:12px; font-weight:700;}
+  .tag{padding:3px 9px; border-radius:999px; font-size:10.5px; font-weight:800; letter-spacing:.05em;}
+  .tag.now{background:var(--clay-soft); color:var(--clay);}
+  .tag.next{background:var(--mint-soft); color:var(--mint-deep);}
+  .pane-bar em{font-style:normal; color:var(--muted); font-weight:500; font-size:11.5px;}
+  .stage{flex:1; padding:16px; background:color-mix(in srgb,var(--paper) 70%,var(--surface)); overflow-x:auto;}
+  figcaption{margin-top:13px; max-width:var(--measure); color:var(--muted); font-size:13px; line-height:1.62;}
+  figcaption b{color:var(--ink);}
+
+  /* ================= MOCK 通用（前缀 m-） ================= */
+  .m{font-size:9px; line-height:1.45; color:var(--ink); --r:7px;}
+  .m *{box-sizing:border-box;}
+  .m-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r);}
+  .m-mark{display:grid; place-items:center; width:19px; height:19px; border-radius:5px; background:linear-gradient(145deg,#9ceac3,#43ba81 74%,#2ba06c); color:#0e281f; font-size:7.5px; font-weight:800;}
+  .m-line{height:5px; border-radius:3px; background:color-mix(in srgb,var(--ink) 12%,transparent);}
+  .m-line.sm{height:4px;}
+  .m-line.lt{background:color-mix(in srgb,var(--ink) 7%,transparent);}
+  .m-btn{display:inline-flex; align-items:center; justify-content:center; padding:6px 12px; border-radius:6px; background:var(--mint); color:#fff; font-size:8.5px; font-weight:700;}
+  .m-btn.ghost{background:transparent; border:1px solid var(--line); color:var(--muted);}
+  .m-btn.wide{width:100%;}
+  .m-input{height:22px; border:1px solid var(--line); border-radius:6px; background:var(--surface);}
+  .m-label{font-size:7.5px; font-weight:700; color:var(--muted);}
+  .m-h{font-weight:800; letter-spacing:-.045em;}
+  .m-dots{display:flex; gap:3px;}
+  .m-dots i{width:4px;height:4px;border-radius:50%;background:#e9bda8;}
+  .m-dots i:nth-child(2){background:#e8d48d;} .m-dots i:nth-child(3){background:#98d1ae;}
+
+  /* ---- 登录：现状 ---- */
+  .m-login-now{display:grid; place-items:start center; min-height:250px; padding:14px 8px;}
+  .m-login-now .shell{width:100%; max-width:290px; padding:15px; display:grid; gap:11px;}
+  .m-login-now .brand{display:flex; align-items:center; gap:7px;}
+  .m-login-now .idgrid{display:grid; grid-template-columns:1fr 1fr; gap:7px;}
+  .m-login-now .idcard{padding:9px; border:1px solid var(--line); border-radius:6px; display:grid; gap:5px; min-height:52px;}
+  .m-login-now .idcard.on{border-color:var(--mint); background:var(--mint-soft);}
+  .fold{position:relative; margin:4px 0 0; border-top:1px dashed var(--clay); }
+  .fold span{position:absolute; top:-7px; right:0; padding:1px 6px; border-radius:4px; background:var(--clay); color:#fff; font-size:7px; font-weight:800; letter-spacing:.04em;}
+  .ghosted{opacity:.42;}
+
+  /* ---- 登录：建议 ---- */
+  .m-login-next{display:grid; grid-template-columns:1.06fr .94fr; min-height:250px; border-radius:9px; overflow:hidden; border:1px solid var(--line);}
+  .m-login-next .story{position:relative; padding:16px 15px; background:linear-gradient(150deg,var(--mint-soft),color-mix(in srgb,var(--lavender) 65%,var(--surface)) 92%); overflow:hidden;}
+  .m-login-next .blob{position:absolute; right:-26%; top:-16%; width:78%; aspect-ratio:1.1; border-radius:48% 52% 43% 57%/46% 43% 57% 54%; background:linear-gradient(135deg,#dcf6e7,#e6e2ff); opacity:.72; transform:rotate(-9deg);}
+  .m-login-next .story-in{position:relative;}
+  .m-login-next .win{margin-top:11px; border-radius:6px; border:1px solid color-mix(in srgb,var(--ink) 9%,transparent); background:var(--surface); box-shadow:var(--shadow-m); overflow:hidden; transform:rotate(-1.6deg);}
+  .m-login-next .win-bar{display:flex; align-items:center; justify-content:space-between; padding:4px 7px; border-bottom:1px solid var(--line-soft);}
+  .m-login-next .win-body{padding:8px; display:grid; gap:6px;}
+  .m-login-next .metrics{display:grid; grid-template-columns:repeat(3,1fr); gap:4px;}
+  .m-login-next .metrics div{padding:5px 4px; border:1px solid var(--line-soft); border-radius:5px; display:grid; gap:2px;}
+  .m-login-next .metrics b{font-size:11px; letter-spacing:-.05em;}
+  .m-login-next .metrics span{font-size:6.5px; color:var(--muted);}
+  .m-login-next .note{position:absolute; right:8px; bottom:11px; display:grid; gap:2px; padding:6px 9px; border-radius:6px; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-m); font-size:7px; line-height:1.4; color:var(--muted); width:118px;}
+  .m-login-next .note b{display:block; color:var(--ink); font-size:7.5px;}
+  .m-login-next .form{padding:16px 15px; background:var(--surface); display:grid; align-content:start; gap:9px;}
+  .m-login-next .seg{display:flex; padding:2.5px; border-radius:999px; background:color-mix(in srgb,var(--ink) 6%,transparent); gap:2px;}
+  .m-login-next .seg span{flex:1; text-align:center; padding:5px 4px; border-radius:999px; font-size:8px; font-weight:700; color:var(--muted);}
+  .m-login-next .seg span.on{background:var(--ink); color:var(--paper);}
+  .m-login-next .trust{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; font-size:6.8px; color:var(--muted);}
+  .m-login-next .trust span{display:inline-flex; gap:3px; align-items:center;}
+  .m-login-next .trust i{width:4px;height:4px;border-radius:50%;background:var(--mint);}
+
+  /* ---- 壳层：现状 ---- */
+  .m-shell{display:grid; grid-template-columns:78px 1fr; min-height:250px; border:1px solid var(--line); border-radius:9px; overflow:hidden;}
+  .m-shell .side{background:var(--sidebar); padding:10px 8px; display:flex; flex-direction:column; gap:8px;}
+  .m-shell .side .b{display:flex; align-items:center; gap:6px; padding-bottom:9px; border-bottom:1px solid rgba(255,255,255,.12);}
+  .m-shell .side .b strong{color:#fff; font-size:8px; font-weight:800;}
+  .m-shell .navi{display:grid; gap:3px;}
+  .m-shell .navi a{display:flex; align-items:center; gap:5px; padding:5px 5px; border-radius:5px; color:rgba(233,246,238,.62); font-size:7px; letter-spacing:-.02em; white-space:nowrap; text-decoration:none;}
+  .m-shell .navi a.on{background:rgba(78,196,141,.2); color:#fff;}
+  .m-shell .navi i{width:8px;height:8px;border-radius:2px;background:currentColor; opacity:.6;}
+  .m-shell .void{flex:1; display:grid; place-items:center; color:rgba(255,255,255,.22); font-size:7px; text-align:center;}
+  .m-shell .main{background:var(--paper); padding:12px; display:flex; flex-direction:column; gap:9px;}
+  .m-shell .crumb{display:flex; gap:5px; font-size:7px; color:var(--muted); padding-bottom:8px; border-bottom:1px solid var(--line);}
+  .m-shell .ph{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+  .m-shell .ph h5{font-size:13px; letter-spacing:-.04em; font-weight:800;}
+  .m-shell .ph .acts{display:flex; gap:4px;}
+  .m-shell .cards{display:grid; grid-template-columns:1fr 1fr; gap:7px;}
+  .m-shell .empty-void{flex:1; display:grid; place-items:center; border-radius:6px; font-size:7.5px; color:var(--clay); background:repeating-linear-gradient(135deg,transparent,transparent 7px,color-mix(in srgb,var(--clay) 7%,transparent) 7px,color-mix(in srgb,var(--clay) 7%,transparent) 14px); border:1px dashed color-mix(in srgb,var(--clay) 35%,transparent);}
+
+  /* ---- 壳层：建议 ---- */
+  .m-shell2{display:grid; grid-template-columns:26px 1fr; min-height:250px; border:1px solid var(--line); border-radius:9px; overflow:hidden;}
+  .m-shell2 .rail{background:var(--sidebar); padding:9px 0; display:flex; flex-direction:column; align-items:center; gap:7px;}
+  .m-shell2 .rail .dot{width:15px;height:15px;border-radius:5px;background:rgba(255,255,255,.1);}
+  .m-shell2 .rail .dot.on{background:linear-gradient(145deg,#9ceac3,#43ba81); }
+  .m-shell2 .rail .sp{flex:1;}
+  .m-shell2 .main{background:var(--paper); padding:11px 12px; display:flex; flex-direction:column; gap:8px;}
+  .m-shell2 .ph{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .m-shell2 .ph h5{font-size:16px; letter-spacing:-.05em; font-weight:800;}
+  .m-shell2 .ph .ek{font-size:6.8px; font-weight:800; letter-spacing:.09em; color:var(--mint-deep); text-transform:uppercase;}
+  .m-shell2 .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:6px;}
+  .m-shell2 .kpi{padding:8px 8px 7px; border-radius:7px; display:grid; gap:2px; position:relative; overflow:hidden;}
+  .m-shell2 .kpi.a{background:var(--mint-soft);} .m-shell2 .kpi.b{background:var(--lavender);}
+  .m-shell2 .kpi.c{background:var(--peach);} .m-shell2 .kpi.d{background:var(--blue);}
+  .m-shell2 .kpi span{font-size:6.5px; color:var(--muted); font-weight:600;}
+  .m-shell2 .kpi b{font-size:15px; letter-spacing:-.06em; line-height:1.1;}
+  .m-shell2 .kpi u{text-decoration:none; font-size:6.5px; font-weight:800;}
+  .m-shell2 .kpi.a u{color:var(--mint-deep);} .m-shell2 .kpi.b u{color:var(--lavender-ink);}
+  .m-shell2 .kpi.c u{color:var(--peach-ink);} .m-shell2 .kpi.d u{color:var(--blue-ink);}
+  .m-shell2 .spark{position:absolute; right:5px; bottom:5px; width:30px; height:13px; opacity:.5;}
+  .m-shell2 .row2{display:grid; grid-template-columns:1.5fr 1fr; gap:7px; flex:1;}
+  .m-shell2 .panel{padding:9px; border-radius:7px; background:var(--surface); border:1px solid var(--line); display:flex; flex-direction:column; gap:6px;}
+  .m-shell2 .panel .pt{display:flex; justify-content:space-between; align-items:center; font-size:8px; font-weight:700;}
+  .m-shell2 .listrow{display:grid; grid-template-columns:12px 1fr auto; gap:6px; align-items:center; padding:5px 0; border-bottom:1px solid var(--line-soft);}
+  .m-shell2 .listrow i{width:12px;height:12px;border-radius:3px;}
+  .m-shell2 .pill{padding:2px 6px; border-radius:999px; font-size:6.2px; font-weight:800;}
+
+  /* ---- 空状态 ---- */
+  .m-empty-now{display:grid; align-content:center; justify-items:center; min-height:170px; padding:16px; text-align:center; gap:7px;}
+  .m-empty-now .ic{width:22px;height:22px;border-radius:6px;background:var(--mint-soft); display:grid; place-items:center; color:var(--mint-deep); font-size:10px;}
+  .m-empty-now h6{font-size:10px; font-weight:700;}
+  .m-empty-now p{font-size:8px; color:var(--muted); max-width:150px;}
+  .m-empty-next{min-height:170px; padding:16px; display:grid; place-items:center;}
+  .m-empty-next .box{width:100%; max-width:250px; padding:16px 15px; border-radius:9px; background:linear-gradient(160deg,var(--mint-soft),color-mix(in srgb,var(--blue) 55%,var(--surface))); border:1px solid color-mix(in srgb,var(--mint) 20%,transparent); display:grid; gap:8px; justify-items:center; text-align:center; position:relative; overflow:hidden;}
+  .m-empty-next .art{width:64px; height:38px; border-radius:5px; background:var(--surface); border:1px solid color-mix(in srgb,var(--ink) 9%,transparent); box-shadow:var(--shadow-s); display:grid; gap:3px; padding:6px; transform:rotate(-2.5deg);}
+  .m-empty-next h6{font-size:11px; font-weight:800; letter-spacing:-.03em;}
+  .m-empty-next p{font-size:8px; color:var(--muted); max-width:180px;}
+  .m-empty-next .cta{display:flex; gap:6px; align-items:center;}
+  .m-empty-next .lnk{font-size:8px; font-weight:700; color:var(--mint-deep);}
+
+  /* ---- 组件对照 ---- */
+  .kit{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:28px;}
+  .kit-item{border:1px solid var(--line); border-radius:13px; background:var(--surface); overflow:hidden; display:flex; flex-direction:column;}
+  .kit-stage{padding:18px 15px; min-height:104px; display:grid; place-items:center; background:color-mix(in srgb,var(--paper) 70%,var(--surface));}
+  .kit-body{padding:13px 15px 15px; border-top:1px solid var(--line-soft);}
+  .kit-body h4{font-size:13px; font-weight:700;}
+  .kit-body p{margin-top:6px; color:var(--muted); font-size:12px; line-height:1.55;}
+  .kit-body code{font-size:10.5px;}
+
+  .chip-row{display:flex; gap:5px; padding:3px; border-radius:999px; background:color-mix(in srgb,var(--ink) 6%,transparent);}
+  .chip-row span{padding:5px 11px; border-radius:999px; font-size:10px; font-weight:700; color:var(--muted);}
+  .chip-row span.on{background:var(--ink); color:var(--paper);}
+  .swatches{display:grid; grid-template-columns:repeat(3,1fr); gap:5px; width:100%;}
+  .swatches div{height:26px; border-radius:6px; display:grid; place-items:center; font-size:9px; font-weight:800;}
+  .lift{display:inline-flex; align-items:center; gap:6px; padding:9px 15px; border-radius:8px; background:var(--mint); color:#fff; font-size:12px; font-weight:700; box-shadow:0 12px 22px color-mix(in srgb,var(--mint) 30%,transparent); transform:translateY(-2px);}
+  .offsetbox{position:relative; width:100px; height:62px;}
+  .offsetbox::after{content:''; position:absolute; right:-7px; bottom:-7px; width:82%; height:80%; border-radius:8px; background:var(--mint-soft);}
+  .offsetbox .fr{position:relative; z-index:1; width:100%; height:100%; border-radius:8px; border:1px solid var(--line); background:var(--surface); box-shadow:var(--shadow-m); display:grid; gap:4px; padding:8px;}
+
+  /* ---------- 采用率 ---------- */
+  .adopt{margin-top:26px; border:1px solid var(--line); border-radius:13px; background:var(--surface); overflow:hidden;}
+  .adopt-row{display:grid; grid-template-columns:minmax(160px,1.15fr) minmax(110px,1.9fr) 50px minmax(150px,1.3fr); gap:16px; align-items:center; padding:13px 18px; border-bottom:1px solid var(--line-soft);}
+  .adopt-row:last-child{border-bottom:0;}
+  .adopt-row.head{background:color-mix(in srgb,var(--paper) 62%,var(--surface)); font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--faint);}
+  .adopt-name{font-size:13.5px; font-weight:700; letter-spacing:-.01em;}
+  .adopt-name small{display:block; margin-top:2px; font-weight:500; color:var(--faint); font-size:11.5px; letter-spacing:0;}
+  .track{height:9px; border-radius:5px; background:color-mix(in srgb,var(--ink) 8%,transparent); overflow:hidden;}
+  .track i{display:block; height:100%; border-radius:5px; background:var(--mint);}
+  .adopt-pct{font-size:13.5px; font-weight:800; font-variant-numeric:tabular-nums; text-align:right;}
+  .adopt-dup{font-size:12.5px; color:var(--muted); line-height:1.5;}
+  .adopt-dup b{color:var(--clay); font-weight:800;}
+  .drift{display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:800;}
+  .drift.big{background:var(--clay-soft); color:var(--clay);}
+  .drift.sm{background:color-mix(in srgb,var(--ink) 7%,transparent); color:var(--muted);}
+
+  /* ---------- 分层清单 ---------- */
+  .layer{display:grid; gap:12px; margin-top:26px;}
+  .layer-item{display:grid; grid-template-columns:auto minmax(0,1fr); gap:18px; padding:19px 21px; border:1px solid var(--line); border-radius:14px; background:var(--surface); box-shadow:var(--shadow-s);}
+  .lbadge{display:inline-grid; place-items:center; width:38px; height:38px; border-radius:10px; font-size:13px; font-weight:800; letter-spacing:-.02em;}
+  .lbadge.l0{background:var(--mint-soft); color:var(--mint-deep);}
+  .lbadge.l1{background:var(--lavender); color:var(--lavender-ink);}
+  .lbadge.l2{background:var(--peach); color:var(--peach-ink);}
+  .lbadge.l3{background:var(--blue); color:var(--blue-ink);}
+  .lbadge.l4{background:color-mix(in srgb,var(--ink) 7%,transparent); color:var(--muted);}
+  .layer-body h4{font-size:15.5px; font-weight:700; letter-spacing:-.02em;}
+  .layer-body p{margin-top:9px; color:var(--ink-soft); font-size:13.5px; line-height:1.68;}
+  .layer-body p.why{margin-top:10px; padding-top:10px; border-top:1px solid var(--line-soft); color:var(--muted); font-size:13px;}
+  @media (max-width:780px){
+    .adopt-row{grid-template-columns:1fr auto; gap:6px 12px;}
+    .adopt-row .track{grid-column:1/-1; order:3;}
+    .adopt-dup{grid-column:1/-1; order:4;}
+    .adopt-row.head{display:none;}
+    .layer-item{grid-template-columns:1fr; gap:12px;}
+  }
+  .sub-h{margin-top:44px; font-size:19px; font-weight:800; letter-spacing:-.03em;}
+  .st{display:inline-block; margin-right:7px; padding:2px 9px; border-radius:999px; font-size:10.5px; font-weight:800; white-space:nowrap;}
+  .st.ok{background:var(--mint-soft); color:var(--mint-deep);}
+  .st.add{background:var(--yellow); color:var(--yellow-ink);}
+  .st.page{background:color-mix(in srgb,var(--ink) 8%,transparent); color:var(--muted);}
+
+  /* ---------- 统一台账 ---------- */
+  .did{display:inline-grid; place-items:center; min-width:26px; height:22px; padding:0 6px; border-radius:6px; background:color-mix(in srgb,var(--ink) 8%,transparent); color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.03em;}
+  .tally{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:26px;}
+  .tally-item{padding:16px 18px; border:1px solid var(--line); border-radius:13px; background:var(--surface); display:grid; gap:3px;}
+  .tally-item b{font-size:29px; font-weight:800; letter-spacing:-.055em; line-height:1;}
+  .tally-item span{color:var(--muted); font-size:12px; line-height:1.45;}
+  .stage-board{display:grid; gap:15px; margin-top:24px;}
+  .stage-card{border:1px solid var(--line); border-radius:15px; background:var(--surface); overflow:hidden; box-shadow:var(--shadow-s);}
+  .stage-top{display:flex; flex-wrap:wrap; align-items:baseline; gap:9px 14px; padding:16px 20px; background:color-mix(in srgb,var(--paper) 58%,var(--surface)); border-bottom:1px solid var(--line-soft);}
+  .stage-tag{padding:4px 11px; border-radius:999px; font-size:11px; font-weight:800; letter-spacing:.03em;}
+  .stage-tag.s0{background:var(--mint-soft); color:var(--mint-deep);}
+  .stage-tag.s1{background:var(--peach); color:var(--peach-ink);}
+  .stage-tag.s2{background:var(--lavender); color:var(--lavender-ink);}
+  .stage-tag.s3{background:var(--blue); color:var(--blue-ink);}
+  .stage-top h4{font-size:17px; font-weight:800; letter-spacing:-.03em;}
+  .stage-top .ms{color:var(--muted); font-size:12.5px;}
+  .stage-note{margin:0; padding:13px 20px; border-bottom:1px solid var(--line-soft); color:var(--ink-soft); font-size:13px; line-height:1.66; background:color-mix(in srgb,var(--paper) 30%,var(--surface));}
+  .wi{display:grid; grid-template-columns:56px minmax(0,1fr) 38px 68px 96px 90px; gap:14px; align-items:center; padding:11px 20px; border-bottom:1px solid var(--line-soft); font-size:13px;}
+  .wi:last-child{border-bottom:0;}
+  .wi.head{font-size:10.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--faint); background:color-mix(in srgb,var(--paper) 40%,var(--surface));}
+  .wi-id{font-family:ui-monospace,Menlo,monospace; font-size:11.5px; font-weight:700; color:var(--faint); font-variant-numeric:tabular-nums;}
+  .wi-name{min-width:0; line-height:1.5;}
+  .wi-scope{color:var(--muted); font-size:12px;}
+  .lchip{display:inline-grid; place-items:center; height:21px; border-radius:6px; font-size:10.5px; font-weight:800;}
+  .lchip.l0{background:var(--mint-soft); color:var(--mint-deep);}
+  .lchip.l1{background:var(--lavender); color:var(--lavender-ink);}
+  .lchip.l2{background:var(--peach); color:var(--peach-ink);}
+  .lchip.l3{background:var(--blue); color:var(--blue-ink);}
+  .lchip.l4{background:color-mix(in srgb,var(--ink) 8%,transparent); color:var(--muted);}
+  .dref{font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--muted); white-space:nowrap;}
+  .ready{padding:3px 9px; border-radius:999px; font-size:10.5px; font-weight:800; text-align:center; white-space:nowrap;}
+  .ready.done{background:var(--mint-soft); color:var(--mint-deep);}
+  .ready.add{background:var(--yellow); color:var(--yellow-ink);}
+  .ready.todo{background:color-mix(in srgb,var(--ink) 7%,transparent); color:var(--muted);}
+  .ready.dep{background:var(--blue); color:var(--blue-ink); font-size:9.5px;}
+  @media (max-width:900px){
+    .tally{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .wi{grid-template-columns:56px minmax(0,1fr) auto; gap:7px 12px; padding:13px 18px;}
+    .wi.head{display:none;}
+    .wi-name{grid-column:2/-1;}
+    .wi .lchip{grid-column:1;} .wi .dref,.wi .wi-scope{grid-column:2;} .wi .ready{grid-column:3; justify-self:end;}
+  }
+
+  /* ---- 落地表 ---- */
+  .tablewrap{margin-top:26px; overflow-x:auto; border:1px solid var(--line); border-radius:13px; background:var(--surface);}
+  table{width:100%; min-width:640px; border-collapse:collapse; font-size:13.5px;}
+  th,td{padding:13px 16px; text-align:left; border-bottom:1px solid var(--line-soft); vertical-align:top;}
+  th{font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--faint); background:color-mix(in srgb,var(--paper) 62%,var(--surface));}
+  tr:last-child td{border-bottom:0;}
+  td code{white-space:nowrap;}
+  .pri{display:inline-block; padding:2px 8px; border-radius:999px; font-size:10.5px; font-weight:800;}
+  .pri.p0{background:var(--clay); color:#fff;}
+  .pri.p1{background:var(--yellow); color:var(--yellow-ink);}
+  .pri.p2{background:var(--line); color:var(--muted);}
+
+  footer{margin-top:70px; padding:30px 0 60px; border-top:1px solid var(--line); color:var(--faint); font-size:12.5px;}
+
+  @media (max-width:940px){
+    .ab,.finding-grid{grid-template-columns:1fr;}
+    .kit{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
+  @media (max-width:620px){
+    .kit{grid-template-columns:1fr;}
+    .m-login-next{grid-template-columns:1fr;}
+    .masthead{padding:48px 0 32px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important;}}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="kicker"><i></i>OpenClaw Media · 前端视觉评审</p>
+    <h1>登录页到工作台<br>怎么<em>变好看</em></h1>
+    <p class="lede">对 <code>/openclaw/media/login</code> 及其后续页面做的一次视觉与信息设计评审。诊断基于本地实测渲染，改造方向对齐 MediaClaw-Web 官网已经跑通的那套视觉语言。下面每一组示意图都是实时 HTML，可以缩放看细节。</p>
+    <div class="meta-row">
+      <span class="meta">评审范围 <b>12 个页面</b></span>
+      <span class="meta">三种登录后壳层 <b>个人 / 组织 / 平台管理</b></span>
+      <span class="meta">参考 <b>ValentinoWang/mediaclaw-web</b></span>
+      <span class="meta">共享原语 <b>28 个 .mg-*</b></span>
+      <span class="meta">平均采用率 <b>约 12%</b></span>
+      <span class="meta">结论 <b>不改代码，仅出方案</b></span>
+    </div>
+  </header>
+
+  <section class="block">
+    <div class="sec-head"><span class="sec-num">01</span><h2>先说方法和一个限制</h2></div>
+    <div class="prose">
+      <p><b>线上站我没能直接打开。</b>这个会话的网络策略把 <code>106.52.146.37</code> 挡在允许列表之外，返回 <code>403 Host not in allowlist</code>。所以我换了等价的做法：直接跑仓库源码——<code>openclaw-bot-center</code> 的 media 构建入口，本地 Vite 起服务，用 Chromium 按 1440×900 实拍，并对关键尺寸做了程序化测量。页面产物和线上是同一套源码，视觉结论可以直接用；只有真实业务数据填充后的密度需要你们再校一眼。</p>
+      <p>覆盖到的：登录页三个状态（选身份 / 个人密码 / 组织扫码）、注册、验证、找回、重置，以及登录后的个人云端工作区、组织工作区、账号与赛道、平台总览、用户与准入、计费运营。</p>
+      <p>参考侧读的是 <code>mediaclaw-web/src/styles.css</code> 全量 270 行，提炼出下面第 3 节那套手法。</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-head"><span class="sec-num">02</span><h2>诊断：问题不在配色，在密度和层级</h2></div>
+    <p class="sec-sub">配色其实是对的——<code>mediaDesignTokens.css</code> 已经把参考站的纸绿体系搬过来了，连 <code>#1a9b68</code> 都一致。真正拉开差距的是三件事：字阶太平、留白失控、颜色资产闲置。</p>
+
+    <div class="finding-grid">
+      <div class="finding crit">
+        <div class="f-top"><span class="did">D1</span><span class="sev p0">P0</span><h4>选完身份，登录按钮掉到折线以下</h4></div>
+        <p>身份选择区选中后不折叠，仍占满原尺寸，把表单整体下推。1440×900 下文档高度从 900 涨到 1031px——用户必须滚动才能看到密码框和登录按钮。这是登录页最贵的一次转化损失。</p>
+        <span class="measure">docHeight 900 → 1031px · viewport 900px</span>
+      </div>
+      <div class="finding crit">
+        <div class="f-top"><span class="did">D2</span><span class="sev p0">P0</span><h4>输入框 646px，提交按钮 60px</h4></div>
+        <p>表单元素的宽度和它的重要性完全倒挂。646px 的输入框远超舒适录入宽度（360–420px），而最该被点的「登录」只有 60px。视线落点被稀释，页面读起来像一张表单草稿。</p>
+        <span class="measure">#identifier 646px · #submit 60px</span>
+      </div>
+      <div class="finding">
+        <div class="f-top"><span class="did">D3</span><span class="sev p1">P1</span><h4>首屏 54% 是空的</h4></div>
+        <p>个人云端工作区里，内容在 418px 处就结束了，视口以下 482px 全是背景色。右侧「云端交付与预览」甚至是一个连空状态都没有的纯白盒子。</p>
+        <span class="measure">内容终点 418px · 空白 482px / 900px</span>
+      </div>
+      <div class="finding">
+        <div class="f-top"><span class="did">D4</span><span class="sev p1">P1</span><h4>252px 深绿侧栏，只装了 1 个导航项</h4></div>
+        <p>个人壳层的侧边栏是整屏视觉最重的色块，却只有「个人云端成果」一条。深色面积和信息量严重不匹配，把用户的注意力吸到了一个什么都没有的地方。</p>
+        <span class="measure">sidebar 252px · navItems 1</span>
+      </div>
+      <div class="finding">
+        <div class="f-top"><span class="did">D5</span><span class="sev p1">P1</span><h4>标题字阶从头到尾是 28px</h4></div>
+        <p>登录页 h1、工作台页标题、卡片标题挤在很窄的字号区间里，字重 700、字距接近 0。参考站同层级是 <code>clamp(42px, 5.1vw, 72px)</code>、字重 800、字距 <code>-.065em</code>——那个紧收的负字距正是它「看起来贵」的主要来源。</p>
+        <span class="measure">现状 28px / 700 / -0.98px</span>
+      </div>
+      <div class="finding">
+        <div class="f-top"><span class="did">D6</span><span class="sev p1">P1</span><h4>六组 accent 定义了，但界面上看不见</h4></div>
+        <p>token 里 studio / campaign / business / desk / agent / archive 六组业务色，加上小红书、抖音、微信、B 站四组平台品牌色，全都躺着没用。整个产品目前只有一个绿色相，页面之间缺少辨识度。</p>
+        <span class="measure">--mg-accent-* × 6 · --mg-brand-* × 4</span>
+      </div>
+      <div class="finding">
+        <div class="f-top"><span class="did">D7</span><span class="sev p2">P2</span><h4>空状态没有出口</h4></div>
+        <p>「暂无云端成果」只给了一个小图标和两行灰字，没有主 CTA。新用户第一次进来看到的就是这个——它应该是引导页，不是通知页。</p>
+      </div>
+      <div class="finding">
+        <div class="f-top"><span class="did">D8</span><span class="sev p2">P2</span><h4>页头操作没有主次</h4></div>
+        <p>「服务端已解析 / 查看任务状态 / 刷新」三个元素视觉权重相同，都是描边小按钮。哪个是主操作、哪个只是状态标识，读不出来。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-head"><span class="sec-num">03</span><h2>参考站真正在做的十件事</h2></div>
+    <p class="sec-sub">把 MediaClaw-Web 的样式拆开，让它「好看」的其实是一组可以逐条搬运的具体手法，不是某个说不清的气质。</p>
+    <p class="sec-sub" style="margin-top:10px"><b>先说一句要紧的：下面十条里，负字距、按钮抬升、药丸、accent 渐变、毛玻璃这五条，<code>mediaPrimitives.css</code> 里已经实现过一遍了。</b>它们没出现在界面上，唯一的原因是没有页面在用那些原语——详见第 6 节。</p>
+    <div class="prose">
+      <ul>
+        <li><b>大字号 + 负字距。</b>显示层 <code>clamp()</code> 到 42–72px，字重 800，<code>letter-spacing: -.065em</code>。中文标题收到 <code>-.04em</code> 左右即可，再紧会粘连。</li>
+        <li><b>彩色卡片家族。</b>mint / lavender / peach / blue / yellow / green 六种淡色底，替代「白底 + 1px 边框」的统一处理。同一屏里靠色相区分卡片语义。</li>
+        <li><b>有机形状垫底。</b><code>border-radius: 48% 52% 43% 57% / 46% 43% 57% 54%</code> 加渐变、旋转 −8°、透明度 .88，垫在主视觉后面。</li>
+        <li><b>产品窗口模型。</b>三个交通灯圆点 + 标题栏 + 轻微旋转（1.6–2.2°）+ 大阴影。把界面截图变成有质感的对象。</li>
+        <li><b>浮动注释卡。</b>绝对定位压在窗口边缘，图标 + 一行加粗结论 + 一行说明，把注意力钉到具体功能上。</li>
+        <li><b>色块位移垫底。</b><code>::after</code> 一块 mint 实色偏移到视觉物右下角，成本极低、效果立竿见影。</li>
+        <li><b>药丸标签页。</b><code>border-radius: 999px</code>，激活态用 ink 底 + paper 字——高对比、不靠边框。</li>
+        <li><b>按钮抬升。</b><code>:hover { transform: translateY(-2px) }</code> 配阴影加深。参考站给所有 <code>.button</code> 都加了，交互手感的一半来自这一行。</li>
+        <li><b>半透明吸顶。</b><code>backdrop-filter: blur(18px)</code> + <code>color-mix</code> 背景，滚动时头部有层次而不遮挡。</li>
+        <li><b>用 color-mix 分层。</b>中间色一律由现有 token 混出来，而不是再硬编码一个新色值。这是它 270 行样式能撑住整站的原因。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-head"><span class="sec-num">04</span><h2>示意图</h2></div>
+    <p class="sec-sub">左边是当前结构的抽象还原，右边是建议。都按真实比例画的，不是意象图。</p>
+
+    <figure class="demo">
+      <div class="demo-head"><h3>登录页</h3><span>media.login.html · media.auth.css</span></div>
+      <div class="ab">
+        <div class="pane">
+          <div class="pane-bar"><span class="tag now">现状</span><em>单列 720px 卡片，选身份后向下顶</em></div>
+          <div class="stage">
+            <div class="m m-login-now">
+              <div class="shell m-card">
+                <div class="brand"><span class="m-mark">MC</span><div><div class="m-line" style="width:44px"></div><div class="m-line sm lt" style="width:60px;margin-top:3px"></div></div></div>
+                <div>
+                  <div class="m-label" style="color:var(--mint-deep)">统一入口</div>
+                  <div class="m-h" style="font-size:14px;margin-top:3px">选择进入方式</div>
+                </div>
+                <div class="idgrid">
+                  <div class="idcard on"><div class="m-line" style="width:32px"></div><div class="m-line sm lt" style="width:100%"></div><div class="m-line sm lt" style="width:70%"></div></div>
+                  <div class="idcard"><div class="m-line" style="width:32px"></div><div class="m-line sm lt" style="width:100%"></div><div class="m-line sm lt" style="width:70%"></div></div>
+                </div>
+                <div class="fold"><span>折线 900px</span></div>
+                <div class="ghosted" style="display:grid;gap:7px;padding-top:8px">
+                  <div class="m-label">用户名或已验证邮箱</div>
+                  <div class="m-input"></div>
+                  <div class="m-label">密码</div>
+                  <div class="m-input"></div>
+                  <div><span class="m-btn" style="padding:6px 9px">登录</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-bar"><span class="tag next">建议</span><em>左叙事右表单，表单列收窄到 400px</em></div>
+          <div class="stage">
+            <div class="m m-login-next">
+              <div class="story">
+                <div class="blob"></div>
+                <div class="story-in">
+                  <div style="display:flex;align-items:center;gap:6px"><span class="m-mark">MC</span><strong style="font-size:9px;letter-spacing:-.03em">MediaClaw</strong></div>
+                  <div class="m-h" style="font-size:15px;line-height:1.14;margin-top:9px">从 Brief 到交付<br>一条内容生产线</div>
+                  <div class="win">
+                    <div class="win-bar"><span class="m-dots"><i></i><i></i><i></i></span><span style="font-size:6px;color:var(--muted)">创作与交付</span></div>
+                    <div class="win-body">
+                      <div class="metrics">
+                        <div><span>本周成片</span><b>24</b></div>
+                        <div><span>待复盘</span><b>6</b></div>
+                        <div><span>在跑任务</span><b>3</b></div>
+                      </div>
+                      <div class="m-line lt" style="width:90%"></div>
+                      <div class="m-line lt" style="width:62%"></div>
+                    </div>
+                  </div>
+                  <div class="trust"><span><i></i>飞书协作</span><span><i></i>本地 Agent</span><span><i></i>账号记忆</span></div>
+                </div>
+                <div class="note"><b>拆解已完成</b><span>12 条对标视频已生成结构摘要</span></div>
+              </div>
+              <div class="form">
+                <div class="m-label" style="color:var(--mint-deep);letter-spacing:.08em">登录</div>
+                <div class="m-h" style="font-size:13px;margin:-2px 0 3px">进入你的工作区</div>
+                <div class="seg"><span class="on">个人创作者</span><span>组织成员</span></div>
+                <div style="display:grid;gap:4px"><div class="m-label">用户名或邮箱</div><div class="m-input"></div></div>
+                <div style="display:grid;gap:4px"><div class="m-label">密码</div><div class="m-input"></div></div>
+                <span class="m-btn wide" style="margin-top:3px">登录</span>
+                <div style="display:flex;justify-content:space-between;font-size:7.5px;color:var(--muted);margin-top:2px"><span>忘记密码？</span><span style="color:var(--mint-deep);font-weight:700">创建账号</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>关键改动：</b>身份选择从两张常驻大卡改成表单顶部的药丸分段控件——它只是个开关，不该占掉半屏。腾出来的横向空间给左侧叙事栏，用有机形状 + 产品窗口 + 浮动注释把「MediaClaw 是什么」讲清楚。表单列收到 400px 以内，主按钮拉通栏。整页回到一屏内，不再有折线问题。</figcaption>
+    </figure>
+
+    <figure class="demo">
+      <div class="demo-head"><h3>登录后工作台</h3><span>MediaApp.tsx · media.css</span></div>
+      <div class="ab">
+        <div class="pane">
+          <div class="pane-bar"><span class="tag now">现状</span><em>重侧栏 + 半屏空白</em></div>
+          <div class="stage">
+            <div class="m m-shell">
+              <div class="side">
+                <div class="b"><span class="m-mark">MC</span><strong>MediaClaw</strong></div>
+                <div class="navi"><a class="on"><i></i>个人云端成果</a></div>
+                <div class="void">252px 深色<br>1 个导航项</div>
+              </div>
+              <div class="main">
+                <div class="crumb"><span>MediaClaw</span><span>/</span><span>个人云端成果</span></div>
+                <div class="ph">
+                  <div><div class="m-label">个人工作区</div><h5>云端成果</h5></div>
+                  <div class="acts"><span class="m-btn ghost">查看任务</span><span class="m-btn ghost">刷新</span></div>
+                </div>
+                <div class="cards">
+                  <div class="m-card" style="padding:8px;display:grid;gap:5px;min-height:52px"><div style="display:flex;justify-content:space-between"><div class="m-line" style="width:40px"></div><span style="font-size:8px">0</span></div><div class="m-line sm lt" style="width:75%"></div></div>
+                  <div class="m-card" style="padding:8px;min-height:52px"><div style="display:flex;justify-content:space-between"><div class="m-line" style="width:46px"></div><span style="font-size:8px">0</span></div></div>
+                </div>
+                <div class="empty-void">视口以下 482px 全空 · 占首屏 54%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-bar"><span class="tag next">建议</span><em>图标轨 + 指标带 + 内容填满</em></div>
+          <div class="stage">
+            <div class="m m-shell2">
+              <div class="rail">
+                <span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="sp"></span><span class="dot"></span>
+              </div>
+              <div class="main">
+                <div class="ph">
+                  <div><div class="ek">个人工作区</div><h5>云端成果</h5></div>
+                  <span class="m-btn">新建任务</span>
+                </div>
+                <div class="kpis">
+                  <div class="kpi a"><span>本周成片</span><b>24</b><u>+6</u>
+                    <svg class="spark" viewBox="0 0 60 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 20 L12 16 L24 18 L36 9 L48 11 L60 4" fill="none" stroke="currentColor" stroke-width="2.4" style="color:var(--mint-deep)"/></svg>
+                  </div>
+                  <div class="kpi b"><span>待复盘</span><b>6</b><u>−2</u></div>
+                  <div class="kpi c"><span>在跑任务</span><b>3</b><u>运行中</u></div>
+                  <div class="kpi d"><span>归档容量</span><b>18G</b><u>+1.2G</u></div>
+                </div>
+                <div class="row2">
+                  <div class="panel">
+                    <div class="pt"><span>最近成果</span><span style="color:var(--muted);font-weight:500;font-size:7px">近 7 天</span></div>
+                    <div class="listrow"><i style="background:var(--peach)"></i><div class="m-line" style="width:70%"></div><span class="pill" style="background:var(--mint-soft);color:var(--mint-deep)">已交付</span></div>
+                    <div class="listrow"><i style="background:var(--blue)"></i><div class="m-line" style="width:56%"></div><span class="pill" style="background:var(--yellow);color:var(--yellow-ink)">待复盘</span></div>
+                    <div class="listrow"><i style="background:var(--lavender)"></i><div class="m-line" style="width:64%"></div><span class="pill" style="background:var(--blue);color:var(--blue-ink)">生成中</span></div>
+                    <div class="listrow" style="border-bottom:0"><i style="background:var(--mint-soft)"></i><div class="m-line" style="width:48%"></div><span class="pill" style="background:var(--mint-soft);color:var(--mint-deep)">已交付</span></div>
+                  </div>
+                  <div class="panel">
+                    <div class="pt"><span>需要处理</span></div>
+                    <div style="padding:7px;border-radius:5px;background:var(--peach);display:grid;gap:3px">
+                      <strong style="font-size:7.5px;color:var(--peach-ink)">2 条待确认</strong>
+                      <div class="m-line sm" style="width:85%;background:color-mix(in srgb,var(--peach-ink) 22%,transparent)"></div>
+                    </div>
+                    <div style="padding:7px;border-radius:5px;background:var(--lavender);display:grid;gap:3px">
+                      <strong style="font-size:7.5px;color:var(--lavender-ink)">赛道周报已就绪</strong>
+                      <div class="m-line sm" style="width:70%;background:color-mix(in srgb,var(--lavender-ink) 22%,transparent)"></div>
+                    </div>
+                    <div style="margin-top:auto;font-size:7px;color:var(--mint-deep);font-weight:700">查看全部 →</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>关键改动：</b>导航项少于 3 条时，侧栏收成 56px 图标轨——深色面积和信息量重新匹配，正文区多出近 200px。页头补一条四格指标带，用四种 accent 底色承担分区识别，右上给一个明确的主按钮。下面用 1.5 : 1 的主从面板把首屏填满，状态一律用彩色 pill 编码，扫一眼就知道哪条要处理。</figcaption>
+    </figure>
+
+    <figure class="demo">
+      <div class="demo-head"><h3>空状态</h3><span>ui/SurfaceState.tsx</span></div>
+      <div class="ab">
+        <div class="pane">
+          <div class="pane-bar"><span class="tag now">现状</span><em>通知语气，没有出口</em></div>
+          <div class="stage">
+            <div class="m m-empty-now">
+              <div class="ic">✓</div>
+              <h6>暂无云端成果</h6>
+              <p>个人云端成果会在服务端可见后显示。</p>
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-bar"><span class="tag next">建议</span><em>引导语气，一个主 CTA</em></div>
+          <div class="stage">
+            <div class="m m-empty-next">
+              <div class="box">
+                <div class="art"><div class="m-line sm lt" style="width:70%"></div><div class="m-line sm lt" style="width:100%"></div><div class="m-line sm" style="width:45%;background:var(--mint)"></div></div>
+                <h6>还没有云端成果</h6>
+                <p>发起一次创作任务，产出的成片和文稿会自动归到这里。</p>
+                <div class="cta"><span class="m-btn">发起创作任务</span><span class="lnk">了解流程</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>关键改动：</b>空状态是新用户看到的第一屏，它的任务是引导而不是通报。淡色渐变底 + 一个微缩产品插画把这块空白变成有意图的区域，文案改成「还没有…，去做…」的句式，并给出唯一的主操作。<b>同时补上缺失态：</b>「云端交付与预览」目前是完全空白的白盒，任何一个数据为空的容器都必须有空状态，不能留白盒。</figcaption>
+    </figure>
+  </section>
+
+  <section class="block">
+    <div class="sec-head"><span class="sec-num">05</span><h2>组件级手法</h2></div>
+    <p class="sec-sub">四个从参考站搬的最小单元。关键是：<b>它们在 <code>mediaPrimitives.css</code> 里都已经有对应的原语了</b>——不需要新建，只需要把视觉规格补进去，再让页面真的用起来。下一节是采用率的实测数字。</p>
+    <div class="kit">
+      <div class="kit-item">
+        <div class="kit-stage"><div class="swatches">
+          <div style="background:var(--mint-soft);color:var(--mint-deep)">studio</div>
+          <div style="background:var(--lavender);color:var(--lavender-ink)">campaign</div>
+          <div style="background:var(--peach);color:var(--peach-ink)">business</div>
+          <div style="background:var(--blue);color:var(--blue-ink)">desk</div>
+          <div style="background:var(--yellow);color:var(--yellow-ink)">agent</div>
+          <div style="background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--muted)">archive</div>
+        </div></div>
+        <div class="kit-body"><h4>彩色卡片家族</h4><p>把「白底 + 边框」换成淡色底。<code>--mg-accent-*</code> 六组 token 就位，容器用 <code>.mg-panel</code> 接 <code>[data-accent]</code>，不新增任何颜色。</p></div>
+      </div>
+      <div class="kit-item">
+        <div class="kit-stage"><div class="chip-row"><span class="on">自有账号</span><span>赛道概览</span><span>对标</span></div></div>
+        <div class="kit-body"><h4>药丸标签页</h4><p>激活态 <code>background: ink; color: paper</code>，圆角 999px。原语 <code>.mg-tab</code> 已存在（FE-13 收敛出来的），改它一处即可。</p></div>
+      </div>
+      <div class="kit-item">
+        <div class="kit-stage"><span class="lift">发起创作任务</span></div>
+        <div class="kit-body"><h4>按钮抬升</h4><p><code>:hover { transform: translateY(-2px) }</code> 加阴影加深。<code>.mg-btn</code> 的 primary / soft / ghost 三态都已备好，加这一行即可。</p></div>
+      </div>
+      <div class="kit-item">
+        <div class="kit-stage"><div class="offsetbox"><div class="fr"><div class="m-dots" style="display:flex;gap:3px"><i style="width:4px;height:4px;border-radius:50%;background:#e9bda8;display:block"></i><i style="width:4px;height:4px;border-radius:50%;background:#e8d48d;display:block"></i><i style="width:4px;height:4px;border-radius:50%;background:#98d1ae;display:block"></i></div><div style="height:4px;border-radius:2px;background:var(--line);width:80%"></div><div style="height:4px;border-radius:2px;background:var(--line);width:55%"></div></div></div></div>
+        <div class="kit-body"><h4>窗口 + 色块位移</h4><p>交通灯圆点做窗口感，<code>::after</code> 垫一块 mint 实色偏移到右下。这一条是登录页专用，没有对应原语，属于第 8 节说的「收敛不掉的残余」。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-head"><span class="sec-num">06</span><h2>原语其实已经有了</h2></div>
+    <p class="sec-sub">这是这次评审最重要的一个发现，也是它改变了我原本那份清单的组织方式。<code>mediaPrimitives.css</code> 里已经躺着 28 个 <code>.mg-*</code> 原语，<code>ui/</code> 下已经有 <code>Metric</code>、<code>SurfaceState</code>、<code>SearchBox</code> 这些收敛过的组件。<b>缺的不是设计系统，是采用率。</b></p>
+    <p class="sec-sub" style="margin-top:10px">这些资产的来历是 <code>docs/frontend/openclaw-media-ui-beautification.md</code>（2026-08-26 那轮，改动 34 个文件）。<b>它的 Layer 0 大获成功，Layer 2 建成即停——两层的采用率相差 150 倍。</b></p>
+    <div class="tally" style="margin-top:20px">
+      <div class="tally-item"><b>3,050</b><span>Layer 0 · <code>--mg-*</code> token<br>在 module.css 的引用数</span></div>
+      <div class="tally-item"><b>20</b><span>Layer 2 · <code>.mg-*</code> 原语类<br>在 tsx 的引用数</span></div>
+      <div class="tally-item"><b>41</b><span>第一代全局类<br>（<code>.page-heading</code> / <code>.primary-button</code>）</span></div>
+    </div>
+    <div class="prose">
+      <p>所以准确的说法不是「各页在重复造轮子」——<b>token 层那一仗已经打赢了</b>：1,171 处字阶迁移、132 处硬编码 hex 归零、WCAG AA 全部达标，这些都实打实落地了。真正停住的是<b>组件与原语这一层</b>：<code>.mg-panel</code>、<code>.mg-hero</code>、<code>.mg-metric</code>、<code>.mg-btn</code>、<code>.mg-badge</code> 建好之后<b>一个页面都没接</b>，页面仍在用第一代全局类加各自的 <code>module.css</code>。</p>
+      <p>下面这张表量的就是这一层的缺口。它也解释了第 2 节那些诊断为什么会存在：不是没设计，是设计没接上。</p>
+    </div>
+
+    <div class="adopt">
+      <div class="adopt-row head"><span>共享资产</span><span>25 个页面中的采用率</span><span style="text-align:right">占比</span><span>页面侧仍在的旧实现</span></div>
+      <div class="adopt-row"><div class="adopt-name">PlatformIdentity<small>平台身份标</small></div><div class="track"><i style="width:36%"></i></div><span class="adopt-pct">36%</span><span class="adopt-dup">—</span></div>
+      <div class="adopt-row"><div class="adopt-name">Metric<small>指标卡 · FE-14 已收敛 7 份副本</small></div><div class="track"><i style="width:28%"></i></div><span class="adopt-pct">28%</span><span class="adopt-dup"><b>11</b> 个 module.css 仍有本地 <code>.metric*</code></span></div>
+      <div class="adopt-row"><div class="adopt-name">SearchBox<small>搜索框 · FE-13</small></div><div class="track"><i style="width:24%"></i></div><span class="adopt-pct">24%</span><span class="adopt-dup">—</span></div>
+      <div class="adopt-row"><div class="adopt-name">.mg-tabs / .mg-tab<small>标签页 · FE-13</small></div><div class="track"><i style="width:16%"></i></div><span class="adopt-pct">16%</span><span class="adopt-dup"><b>14</b> 个 module.css 仍有本地 <code>.tab*</code></span></div>
+      <div class="adopt-row"><div class="adopt-name">SurfaceState / PageGate<small>空态 · 错误态 · 加载态</small></div><div class="track"><i style="width:4%"></i></div><span class="adopt-pct">4%</span><span class="adopt-dup"><b>12</b> 个 module.css 仍有本地 <code>.empty*</code></span></div>
+      <div class="adopt-row"><div class="adopt-name">.mg-panel<small>面板容器</small></div><div class="track"><i style="width:0"></i></div><span class="adopt-pct">0%</span><span class="adopt-dup"><b>13</b> 个 module.css 仍有本地 <code>.panel*</code></span></div>
+      <div class="adopt-row"><div class="adopt-name">.mg-btn 家族<small>primary / soft / ghost 三态齐全</small></div><div class="track"><i style="width:0"></i></div><span class="adopt-pct">0%</span><span class="adopt-dup">—</span></div>
+      <div class="adopt-row"><div class="adopt-name">.mg-metric-grid / -spark<small>指标带 + 迷你走势</small></div><div class="track"><i style="width:0"></i></div><span class="adopt-pct">0%</span><span class="adopt-dup">—</span></div>
+      <div class="adopt-row"><div class="adopt-name">.mg-hero / .mg-eyebrow<small>页头 + 眉标</small></div><div class="track"><i style="width:0"></i></div><span class="adopt-pct">0%</span><span class="adopt-dup"><b>4</b> 个 module.css 仍有本地 <code>.hero*</code></span></div>
+    </div>
+
+    <div class="prose">
+      <p>把这张表和第 4 节的示意图对照着看，会发现我提的每一条视觉改动，<b>都已经有对应的原语在等着被用</b>：指标带就是 <code>.mg-metric-grid</code> + <code>.mg-metric-spark</code>；空状态的主 CTA 就是 <code>.mg-state-action</code>；卡片 tint 就是 <code>.mg-panel</code> 接 <code>[data-accent]</code>；按钮抬升就是 <code>.mg-btn</code>。</p>
+      <p>所以结论反过来了：<b>不需要新建设计系统，需要的是把页面从第一代全局类和各自的 module.css 迁到已经建好的原语上。</b>迁完之后，视觉升级才真的变成「改一处、全站生效」——否则现在改 <code>.mg-btn</code> 等于什么都没改，因为没有一个页面在用它。</p>
+    </div>
+    <h3 class="sub-h">示意图的每个元素，落在哪一层</h3>
+    <p class="sec-sub" style="margin-top:10px">把第 4 节示意图拆成 19 个视觉元素，逐个对回原语。<b>结论是：全部做得出来，其中 10 个用现成原语就够，6 个是给设计系统加规则，只有 3 个是登录页专属。</b></p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>示意图里的元素</th><th>落在哪</th><th>要做什么</th></tr></thead>
+        <tbody>
+          <tr><td>页头眉标（accent 色 · 字距 .11em · 800 · 大写）</td><td><code>.mg-eyebrow</code></td><td><span class="st ok">现成</span> 规格完全一致，直接用</td></tr>
+          <tr><td>页头大标题（800 字重 · 负字距）</td><td><code>.mg-hero h1</code></td><td><span class="st ok">现成</span> 已经是 <code>-.045em</code> / 800——我建议的负字距<b>系统里早就有了</b></td></tr>
+          <tr><td>页头渐变底 + 装饰色斑</td><td><code>.mg-hero</code> + <code>::after</code></td><td><span class="st ok">现成</span> accent-soft 径向渐变 + 300px 圆斑，比我画的还讲究</td></tr>
+          <tr><td>毛玻璃信息卡</td><td><code>.mg-hero-signal</code></td><td><span class="st ok">现成</span> 已带 <code>backdrop-filter: blur(14px)</code></td></tr>
+          <tr><td>四格指标带</td><td><code>.mg-metric-grid</code></td><td><span class="st ok">现成</span> 已经就是 <code>repeat(4, minmax(0,1fr))</code></td></tr>
+          <tr><td>指标卡 hover 抬升</td><td><code>.mg-metric:hover</code></td><td><span class="st ok">现成</span> 已经是 <code>translateY(-2px)</code>——<b>抬升手法系统里也早就有了</b></td></tr>
+          <tr><td>指标卡迷你走势</td><td><code>.mg-metric-spark</code></td><td><span class="st ok">现成</span> 38px 高、通栏出血，位置已留好</td></tr>
+          <tr><td>空状态主 CTA</td><td><code>.mg-state-action</code></td><td><span class="st ok">现成</span> 药丸 + accent-soft 底 + accent-line 边</td></tr>
+          <tr><td>主从面板容器</td><td><code>.mg-panel</code> / <code>-head</code> / <code>-body</code></td><td><span class="st ok">现成</span> 注释里写着「原 12 份 panelHeader → 1 份」</td></tr>
+          <tr><td>登录页表单主按钮</td><td><code>.mg-btn-primary</code></td><td><span class="st ok">现成</span> primary / soft / ghost 三态齐全</td></tr>
+          <tr><td>指标卡 accent 淡色底</td><td><code>.mg-metric</code></td><td><span class="st add">加规则</span> 现在是白底，加一条 <code>[data-accent]</code> 变体</td></tr>
+          <tr><td>彩色状态 pill</td><td><code>.mg-badge</code></td><td><span class="st add">加规则</span> 现在只有中性色，加 <code>data-tone</code> 的 good / warn / info</td></tr>
+          <tr><td>药丸标签页</td><td><code>.mg-tab</code></td><td><span class="st add">加规则</span> 现在是 <code>border-bottom: 2px</code> 下划线，加一个 pill 变体</td></tr>
+          <tr><td>按钮 hover 抬升</td><td><code>.mg-btn</code></td><td><span class="st add">加规则</span> 把 <code>.mg-metric:hover</code> 里已有的那行搬过来</td></tr>
+          <tr><td>空状态微缩插画位</td><td><code>.mg-state</code></td><td><span class="st add">加规则</span> 新增 <code>.mg-state-art</code> 一个位</td></tr>
+          <tr><td>面板 accent 淡色底</td><td><code>.mg-panel</code></td><td><span class="st add">加规则</span> 同指标卡，接 <code>[data-accent]</code></td></tr>
+          <tr><td>侧栏 56px 图标轨</td><td><code>media.css</code> 壳层</td><td><span class="st add">加规则</span> L3，导航项 &lt; 3 时挂 <code>.is-rail</code></td></tr>
+          <tr><td>登录页有机 blob 形状</td><td>—</td><td><span class="st page">页面专属</span> 但 <code>.mg-hero::after</code> 已是同一手法的简化版</td></tr>
+          <tr><td>登录页产品窗口模型</td><td>—</td><td><span class="st page">页面专属</span> SPA 里暂无使用场景，不建议为一个用户建原语</td></tr>
+          <tr><td>登录页浮动注释卡</td><td>—</td><td><span class="st page">页面专属</span> 同上</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>所以第 4 节那些效果<b>不但能做，而且大部分不是「新做」，是「把已经做好的用起来」</b>。第 3 节我从参考站提炼的十条手法里，负字距、按钮抬升、药丸、accent 渐变、毛玻璃这五条，<code>mediaPrimitives.css</code> 里都已经实现过一遍了——它们没出现在界面上，唯一的原因是采用率。</p>
+      <p>剩下 6 条「加规则」全部落在 <code>.mg-*</code> 内部，加完之后每一条都是全站生效。真正下不来的只有登录页那三个装饰元素，而它们本来就该是登录页专属——那是一个营销性质的入口页，和工作台共用装饰语汇反而是错的。</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-head"><span class="sec-num">07</span><h2>两套调色板，已经在漂移<span class="did" style="margin-left:10px;vertical-align:middle">D9</span></h2></div>
+    <p class="sec-sub">登录链路和登录后 SPA 是两套零共享的样式系统：<code>media.auth.css</code> 只被 5 个 auth 页面用 <code>&lt;link&gt;</code> 引，SPA 走 <code>main.tsx</code> 单点导入 token 层。代价已经出现了——同一个角色在两边是两个值。</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>角色</th><th>登录链路 <code>--auth-*</code></th><th>全局 token <code>--mg-*</code></th><th>差异</th></tr></thead>
+        <tbody>
+          <tr><td>品牌绿</td><td><code>#1a9b68</code> ✓</td><td><code>#239b69</code></td><td><span class="drift big">明显</span></td></tr>
+          <tr><td>品牌绿（深）</td><td><code>#10684a</code> ✓</td><td><code>#126344</code></td><td><span class="drift big">明显</span></td></tr>
+          <tr><td>危险色</td><td><code>#b42318</code> ✓</td><td><code>#bd5147</code></td><td><span class="drift big">明显</span></td></tr>
+          <tr><td>页面底色</td><td><code>#f5f7f2</code></td><td><code>#f4f6f1</code></td><td><span class="drift sm">轻微</span></td></tr>
+          <tr><td>主文字</td><td><code>#182420</code></td><td><code>#17241f</code></td><td><span class="drift sm">轻微</span></td></tr>
+          <tr><td>次文字</td><td><code>#67746c</code></td><td><code>#647169</code></td><td><span class="drift sm">轻微</span></td></tr>
+          <tr><td>边框</td><td><code>#dbe3db</code></td><td><code>#dde5de</code></td><td><span class="drift sm">轻微</span></td></tr>
+          <tr><td>强边框</td><td><code>#c6d2c9</code></td><td><code>#cbd7ce</code></td><td><span class="drift sm">轻微</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>12 个 <code>--auth-*</code> 变量里有 11 个在全局 token 里有对应角色，全部轻微到明显地对不上。<b>收敛动作很简单：让 auth 页面也 <code>@import</code> 一次 <code>mediaDesignTokens.css</code>，然后把 <code>--auth-*</code> 全部改写成 <code>var(--mg-*)</code> 的别名。</b>登录页的版式仍然独立（它本来就该独立），但颜色、字阶、圆角、阴影回到同一个事实源。</p>
+      <p><b>裁决：三个角色全部统一到 auth / 官网这组值。</b>不是凭偏好，是把两组候选放进 OKLCH 色度和 WCAG 对比度里量出来的：</p>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>角色</th><th>胜出值</th><th>OKLCH 色度</th><th>白字对比度</th><th>判据</th></tr></thead>
+        <tbody>
+          <tr><td>品牌绿</td><td><code>#1a9b68</code> ✓</td><td>13.1 vs 12.8</td><td>3.54 vs 3.52</td><td>表现力打平（肉眼不可分），取官网在用的值——<b>SPA 迁移视觉零风险</b></td></tr>
+          <tr><td>品牌绿（深）</td><td><code>#10684a</code> ✓</td><td>9.3 vs 9.1</td><td>6.77 vs 7.26</td><td>色度更高，对比 6.77 仍远超 AA（4.5），与 <code>#1a9b68</code> 同源成套</td></tr>
+          <tr><td>危险色</td><td><code>#b42318</code> ✓</td><td><b>18.2 vs 14.2</b></td><td><b>6.57 vs 4.74</b></td><td>差距最大的一组：色度高出 28%，白字对比过 AA 正文级——危险按钮和错误提示的警示力明显更强</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>暗色模式不受影响：暗色 token 本来就是独立定义的一组（<code>--mg-primary: #4ec48d</code>、<code>--mg-danger: #e8877c</code>），这次只改浅色组三个值。落地就是 <code>mediaDesignTokens.css</code> 里三行：<code>--mg-primary: #1a9b68</code>、<code>--mg-primary-dark: #10684a</code>、<code>--mg-danger: #b42318</code>，属于 L0 层，改完立即全站生效；品牌绿两组差异在肉眼阈值以下，唯一能被察觉的变化是危险色变得更醒目——而这正是危险色该有的样子。</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-head"><span class="sec-num">08</span><h2>统一台账</h2></div>
+    <p class="sec-sub">前面出现了三套话术：诊断用 <b>P0–P2</b>（多严重）、落地用 <b>L0–L4</b>（改在哪一层）、示意图用<b>现成 / 加规则 / 页面专属</b>（要做多少）。它们描述的是同一批工作的三个侧面，放在一起会打架。这里收敛成<b>一份台账、一条推进线</b>：22 个工作项，编号 DS-01 到 DS-22，层级和严重度降为属性，「阶段」是唯一的顺序。</p>
+
+    <div class="tally">
+      <div class="tally-item"><b>22</b><span>工作项</span></div>
+      <div class="tally-item"><b>6</b><span>原语已就绪 · 只差采用</span></div>
+      <div class="tally-item"><b>6</b><span>给系统加规则</span></div>
+      <div class="tally-item"><b>1</b><span>已裁决 · 待实施</span></div>
+    </div>
+
+    <div class="stage-board">
+
+      <div class="stage-card">
+        <div class="stage-top">
+          <span class="stage-tag s0">阶段 0</span>
+          <h4>即刻可做</h4>
+          <span class="ms">里程碑：登录页回到一屏内 · 全站字阶与品牌色到位</span>
+        </div>
+        <p class="stage-note">这一阶段有<b>两条互不阻塞的并行线</b>：DS-01/02 走 token 层，改完立即全站生效；DS-03/04/05 走登录链路——因为它和 SPA 是两套零共享的样式系统，<b>既不依赖后面的收敛工作，也不占用它的档期</b>。这也是 P0 明明最急、却排在 L4 最末层的矛盾的解法：它压根不在同一条链上。</p>
+        <div class="wi head"><span>编号</span><span>工作项</span><span>层</span><span>修复</span><span>受益面</span><span>就绪度</span></div>
+        <div class="wi"><span class="wi-id">DS-01</span><span class="wi-name">品牌色三行统一到 auth / 官网组</span><span class="lchip l0">L0</span><span class="dref">D9</span><span class="wi-scope">全站</span><span class="ready done">已裁决</span></div>
+        <div class="wi"><span class="wi-id">DS-02</span><span class="wi-name">字阶补两级 + 字距 token</span><span class="lchip l0">L0</span><span class="dref">D5</span><span class="wi-scope">全站 22 文件</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-03</span><span class="wi-name">登录页身份选择改分段控件、输入框限宽、主按钮通栏</span><span class="lchip l4">L4</span><span class="dref">D1 D2</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-04</span><span class="wi-name">登录页双栏 + 叙事栏</span><span class="lchip l4">L4</span><span class="dref">D1</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-05</span><span class="wi-name"><code>media.auth.css</code> 引入 token 层，<code>--auth-*</code> 改为别名</span><span class="lchip l4">L4</span><span class="dref">D9</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
+      </div>
+
+      <div class="stage-card">
+        <div class="stage-top">
+          <span class="stage-tag s1">阶段 1</span>
+          <h4>采用率补齐</h4>
+          <span class="ms">里程碑：共享资产采用率 12% → 90%+，17,349 行 module.css 显著缩水</span>
+        </div>
+        <p class="stage-note">工作量大头，也是整份台账的枢纽：<b>它决定后面每一次视觉调整是「改一处」还是「改十四处」。</b>这六项的原语全部已存在，做的是迁移不是新建——挂到现有 FE-xx 收敛序列里，别另起编号。</p>
+        <div class="wi head"><span>编号</span><span>工作项</span><span>层</span><span>修复</span><span>受益面</span><span>就绪度</span></div>
+        <div class="wi"><span class="wi-id">DS-06</span><span class="wi-name">空状态 → <code>SurfaceState</code>（4% · 12 个本地 <code>.empty*</code>）</span><span class="lchip l2">L2</span><span class="dref">D7</span><span class="wi-scope">25 页</span><span class="ready done">原语已就绪</span></div>
+        <div class="wi"><span class="wi-id">DS-07</span><span class="wi-name">指标卡 → <code>Metric</code>（28% · 11 个本地 <code>.metric*</code>）</span><span class="lchip l2">L2</span><span class="dref">D3</span><span class="wi-scope">25 页</span><span class="ready done">原语已就绪</span></div>
+        <div class="wi"><span class="wi-id">DS-08</span><span class="wi-name">面板 → <code>.mg-panel</code>（0% · 13 个本地 <code>.panel*</code>）</span><span class="lchip l2">L2</span><span class="dref">—</span><span class="wi-scope">25 页</span><span class="ready done">原语已就绪</span></div>
+        <div class="wi"><span class="wi-id">DS-09</span><span class="wi-name">标签页 → <code>.mg-tabs</code>（16% · 14 个本地 <code>.tab*</code>）</span><span class="lchip l2">L2</span><span class="dref">—</span><span class="wi-scope">25 页</span><span class="ready done">原语已就绪</span></div>
+        <div class="wi"><span class="wi-id">DS-10</span><span class="wi-name">页头 → <code>.mg-hero</code> / <code>.mg-eyebrow</code>（0% · 4 个本地 <code>.hero*</code>）</span><span class="lchip l2">L2</span><span class="dref">D5</span><span class="wi-scope">25 页</span><span class="ready done">原语已就绪</span></div>
+        <div class="wi"><span class="wi-id">DS-11</span><span class="wi-name">按钮 → <code>.mg-btn</code> 家族（0%）</span><span class="lchip l2">L2</span><span class="dref">D8</span><span class="wi-scope">25 页</span><span class="ready done">原语已就绪</span></div>
+      </div>
+
+      <div class="stage-card">
+        <div class="stage-top">
+          <span class="stage-tag s2">阶段 2</span>
+          <h4>视觉升级</h4>
+          <span class="ms">里程碑：第 4 节示意图的视觉效果全站落地</span>
+        </div>
+        <p class="stage-note">阶段 1 做完之后，这六行 CSS 每一行都是全站生效——顺序不能反过来：<b>原语没人用的时候改原语等于没改。</b></p>
+        <div class="wi head"><span>编号</span><span>工作项</span><span>层</span><span>修复</span><span>受益面</span><span>就绪度</span></div>
+        <div class="wi"><span class="wi-id">DS-12</span><span class="wi-name"><code>.mg-metric</code> 接 <code>[data-accent]</code> 淡色底</span><span class="lchip l1">L1</span><span class="dref">D6</span><span class="wi-scope">全站</span><span class="ready add">加规则</span></div>
+        <div class="wi"><span class="wi-id">DS-13</span><span class="wi-name"><code>.mg-panel</code> 接 <code>[data-accent]</code> 淡色底</span><span class="lchip l1">L1</span><span class="dref">D6</span><span class="wi-scope">全站</span><span class="ready add">加规则</span></div>
+        <div class="wi"><span class="wi-id">DS-14</span><span class="wi-name"><code>.mg-badge</code> 加 <code>data-tone</code>（good / warn / info）</span><span class="lchip l1">L1</span><span class="dref">D6</span><span class="wi-scope">全站</span><span class="ready add">加规则</span></div>
+        <div class="wi"><span class="wi-id">DS-15</span><span class="wi-name"><code>.mg-tab</code> 加药丸变体</span><span class="lchip l1">L1</span><span class="dref">—</span><span class="wi-scope">全站</span><span class="ready add">加规则</span></div>
+        <div class="wi"><span class="wi-id">DS-16</span><span class="wi-name"><code>.mg-btn</code> 加 hover 抬升（搬 <code>.mg-metric:hover</code> 那行）</span><span class="lchip l1">L1</span><span class="dref">—</span><span class="wi-scope">全站</span><span class="ready add">加规则</span></div>
+        <div class="wi"><span class="wi-id">DS-17</span><span class="wi-name"><code>.mg-state</code> 新增 <code>.mg-state-art</code> 插画位</span><span class="lchip l1">L1</span><span class="dref">D7</span><span class="wi-scope">全站</span><span class="ready add">加规则</span></div>
+      </div>
+
+      <div class="stage-card">
+        <div class="stage-top">
+          <span class="stage-tag s3">阶段 3</span>
+          <h4>壳层与归属</h4>
+          <span class="ms">里程碑：首屏空白消除 · 页面之间有色彩辨识度</span>
+        </div>
+        <p class="stage-note">壳层改动有构建门禁兜底：<code>build:media</code> 会跑 <code>checkMediaDesignSystemContract.ts</code>，断言 prelude 位置、rail 高度、栏位布局这些不变量，改坏了直接拦下来。</p>
+        <div class="wi head"><span>编号</span><span>工作项</span><span>层</span><span>修复</span><span>受益面</span><span>就绪度</span></div>
+        <div class="wi"><span class="wi-id">DS-18</span><span class="wi-name">侧栏 56px 图标轨（导航项 &lt; 3 时）</span><span class="lchip l3">L3</span><span class="dref">D3 D4</span><span class="wi-scope">全站壳层</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-19</span><span class="wi-name">页头改一主两辅（走 <code>data-page-prelude</code>）</span><span class="lchip l3">L3</span><span class="dref">D8</span><span class="wi-scope">全站壳层</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-20</span><span class="wi-name">topbar 半透明毛玻璃</span><span class="lchip l3">L3</span><span class="dref">—</span><span class="wi-scope">全站壳层</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-21</span><span class="wi-name">各页挂 <code>[data-accent]</code> 归属（一行 attribute）</span><span class="lchip l4">L4</span><span class="dref">D6</span><span class="wi-scope">逐页</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-22</span><span class="wi-name">工作台指标带落地（内容业务定，DOM 与样式全由原语提供）</span><span class="lchip l4">L4</span><span class="dref">D3</span><span class="wi-scope">单页</span><span class="ready dep">依赖 DS-07 · 12</span></div>
+      </div>
+
+    </div>
+
+    <div class="prose">
+      <p><b>三套话术怎么折进来的：</b>「层」变成每行的 <span class="lchip l0" style="display:inline-grid">L?</span> 属性——它回答的是<b>改动的杠杆</b>，不是顺序；「严重度」变成「修复」列的 D 编号回指——它回答的是<b>为谁而改</b>；「现成 / 加规则 / 页面专属」变成「就绪度」列——它回答的是<b>还差多少</b>。三者都不再是排序依据，唯一的顺序是阶段。</p>
+      <p>唯一需要解释的例外是 <b>D1、D2 两条 P0 落在了 L4 页面层</b>。层级越低通常越晚做，但登录链路是独立样式系统，它既不被收敛工作阻塞、也不消耗它的收益——所以它作为并行支线放进阶段 0，而不是被 L4 的位置拖到最后。<b>这正是「层」不能当排期用的原因，也是这份台账存在的理由。</b></p>
+    </div>
+
+  <section class="block">
+    <div class="sec-head"><span class="sec-num">09</span><h2>两件顺带发现的事</h2></div>
+    <div class="prose">
+      <p><b>一、11 页的 ordinary IA 可能已经进不去了。</b><code>mediaRoleIa.ts</code> 里的 <code>ordinaryMediaNav</code> 有 11 项（总览、素材与灵感、选题与决策、创作与交付、发布准备、复盘增长…），但按 <code>mediaWebApi.ts</code> 里的会话 schema，<code>workspaceMode</code> 只有 <code>personal_web</code> 和 <code>organization_lark</code> 两种取值，而 <code>MediaApp.tsx</code> 的 <code>ordinaryRoute()</code> 要求这两个判定同时为假才渲染。也就是说合法会话下这 11 个页面全都会被重定向走。这些页面的样式文件加起来 20 多万字符，如果确实是历史 IA，值得确认一下是否还要跟着这轮改；如果是我读漏了某条服务端下发路径，那更要确认——因为它决定了这轮视觉改造的工作量大头在哪。</p>
+      <p><b>二、字体在弱网下会静默回退。</b>DM Sans 和 Noto Sans SC 走 <code>media="print" onload</code> 的非阻塞加载，这个处理是对的。但我在离线环境实拍时字体全部回退到了系统字重，负字距和 800 字重的效果会跟着丢失。建议 <code>font-family</code> 的回退栈里把 <code>'PingFang SC'</code> 提前，并且不要让视觉效果只依赖 800 这一档字重。</p>
+    </div>
+  </section>
+
+  <footer>
+    评审基于 <code>claude/login-page-design-analysis-v69fwu</code> 分支的仓库源码本地渲染，1440×900 / DPR 2。未改动任何代码。
+  </footer>
+
+</div>
