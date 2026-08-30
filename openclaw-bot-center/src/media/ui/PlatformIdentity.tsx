@@ -4,6 +4,7 @@ import {
   type PlatformInput,
 } from "./platformRegistry";
 import { PlatformBrandIcon } from "./PlatformBrandIcon";
+import { classNames } from "./classNames";
 import styles from "./PlatformBrandIcon.module.css";
 
 export interface PlatformIdentityProps {
@@ -17,10 +18,6 @@ const SIZE_CLASS: Readonly<Record<PlatformIconSize, string>> = {
   md: styles.identityMd,
   lg: styles.identityLg,
 };
-
-function classNames(...values: Array<string | undefined>): string {
-  return values.filter(Boolean).join(" ");
-}
 
 export function PlatformIdentity({
   platform,

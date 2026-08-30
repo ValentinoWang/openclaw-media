@@ -5,6 +5,7 @@ import {
   type PlatformIconSize,
   type PlatformInput,
 } from "./platformRegistry";
+import { classNames } from "./classNames";
 import styles from "./PlatformBrandIcon.module.css";
 
 export interface PlatformBrandIconProps {
@@ -28,10 +29,6 @@ const SIZE_CLASS: Readonly<Record<PlatformIconSize, string>> = {
 
 interface SimpleIconGlyph {
   readonly path: string;
-}
-
-function classNames(...values: Array<string | undefined>): string {
-  return values.filter(Boolean).join(" ");
 }
 
 export function PlatformBrandIcon({
