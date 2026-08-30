@@ -88,6 +88,7 @@ const ordinaryNavigation: readonly NavigationGroup[] = [
     label: '资源与执行',
     items: [
       { path: '/assets', label: '素材库', detail: '原始素材与证据', icon: Images },
+      { path: '/tracks', label: '账号与赛道', detail: '自有账号与监控', icon: Users },
       { path: '/reviews', label: '复盘洞察', detail: '发布数据与账号学习', icon: TrendingUp },
       { path: '/media-agent', label: 'Agent 任务', detail: '本机执行与人工确认', icon: Bot },
       { path: '/archives', label: '云端归档', detail: '成果与历史记录', icon: Archive },
