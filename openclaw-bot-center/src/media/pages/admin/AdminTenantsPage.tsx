@@ -18,10 +18,12 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from '../../generatedBusinessPagesContract'
-import { isForbiddenError, isNotFoundError } from '../../businessErrorPresentation'
+import { isForbiddenError } from '../../businessErrorPresentation'
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { runStatusLabel, runStatusTone } from '../../statusPresentation'
 import { Metric } from '../../ui/Metric'
+import { describeBusinessError } from '../../ui/businessOperationError'
+import type { LoadState } from '../../ui/loadState'
 import { formatDateTime } from '../../ui/datetime'
 import styles from './AdminTenantsPage.module.css'
 
@@ -74,12 +76,8 @@ type AdminTenantRunListResponse = {
   nextCursor: string | null
 }
 
-type LoadState<T> =
-  | { status: 'idle' }
-  | { status: 'loading' }
-  | { status: 'ready'; data: T }
-  | { status: 'forbidden'; message: string }
-  | { status: 'error'; message: string }
+// LoadState<T> comes from ui/loadState.ts (cluster FE-04) -- this page only ever produces
+// idle/loading/ready/permission/error, never the type's empty/notFound branches.
 
 export default function AdminTenantsPage() {
   const { runtimeState, session } = useMediaWeb()
@@ -342,16 +340,18 @@ function useAuditedTenantRuns(permitted: boolean, publicTenantId: string | null,
 }
 
 function toLoadState<T>(error: unknown, subject: string): LoadState<T> {
+  // notFound classifies to this page's plain 'error' branch, not LoadState's 'notFound' --
+  // this page's StateBlock rendering never had a distinct notFound panel, so a bare
+  // classification merge here would silently drop the message (see FE-04 divergences).
   if (isForbiddenError(error)) {
-    return { status: 'forbidden', message: '当前会话没有读取' + subject + '的权限。' }
+    return { status: 'permission', error: '当前会话没有读取' + subject + '的权限。' }
   }
-  if (isNotFoundError(error)) {
-    return { status: 'error', message: '目标租户不存在或不可见。' }
-  }
-  if (error instanceof BusinessOperationError && error.code === 'invalid_request') {
-    return { status: 'error', message: error.message }
-  }
-  return { status: 'error', message: error instanceof Error && error.message ? error.message : subject + '读取失败，请稍后再试。' }
+  const message = describeBusinessError(error, {
+    fallback: error instanceof Error && error.message ? error.message : subject + '读取失败，请稍后再试。',
+    notFound: '目标租户不存在或不可见。',
+    byCode: { invalid_request: error instanceof BusinessOperationError ? error.message : '' },
+  })
+  return { status: 'error', error: message }
 }
 
 function TenantDirectoryPanel({ state, selectedTenantId, search, page, onSelect, onPrevious, onNext }: {
@@ -372,8 +372,8 @@ function TenantDirectoryPanel({ state, selectedTenantId, search, page, onSelect,
       <span className={styles.readOnlyTag}><ShieldCheck size={14} aria-hidden="true" />只读</span>
     </header>
     {state.status === 'loading' ? <StateBlock icon={<LoaderCircle size={21} />} title="正在读取租户目录" detail="服务端正在返回当前管理员可见的摘要。" spinning /> : null}
-    {state.status === 'forbidden' ? <StateBlock icon={<ShieldCheck size={21} />} title="租户目录不可读取" detail={state.message} /> : null}
-    {state.status === 'error' ? <StateBlock icon={<AlertCircle size={21} />} title="租户目录读取失败" detail={state.message} /> : null}
+    {state.status === 'permission' ? <StateBlock icon={<ShieldCheck size={21} />} title="租户目录不可读取" detail={state.error} /> : null}
+    {state.status === 'error' ? <StateBlock icon={<AlertCircle size={21} />} title="租户目录读取失败" detail={state.error} /> : null}
     {state.status === 'idle' ? <StateBlock icon={<TimerReset size={21} />} title="等待会话权限" detail="确认管理员身份后读取目录。" /> : null}
     {state.status === 'ready' && !state.data.items.length ? <EmptyState icon={<FolderOpen size={21} />} title="暂无匹配租户" detail="服务端当前查询范围返回 0 条记录。" /> : null}
     {state.status === 'ready' && state.data.items.length ? <>
@@ -424,8 +424,8 @@ function TenantDetailPanel({ state, selectedTenantId, onRetry }: { state: LoadSt
     {state.status === 'ready' ? <TenantDetailFacts tenant={state.data.tenant} /> : null}
     {state.status === 'loading' ? <StateBlock icon={<LoaderCircle size={21} />} title="正在读取租户详情" detail="本次读取会写入不可变管理员审计。" spinning /> : null}
     {state.status === 'idle' ? <AuditPendingState selected={!!selectedTenantId} subject="租户详情" /> : null}
-    {state.status === 'forbidden' ? <StateBlock icon={<ShieldCheck size={21} />} title="租户详情不可读取" detail={state.message} /> : null}
-    {state.status === 'error' ? <StateBlock icon={<AlertCircle size={21} />} title="租户详情读取失败" detail={state.message} action={onRetry} /> : null}
+    {state.status === 'permission' ? <StateBlock icon={<ShieldCheck size={21} />} title="租户详情不可读取" detail={state.error} /> : null}
+    {state.status === 'error' ? <StateBlock icon={<AlertCircle size={21} />} title="租户详情读取失败" detail={state.error} action={onRetry} /> : null}
   </section>
 }
 
@@ -475,8 +475,8 @@ function TenantRunsPanel({ state, selectedTenantId, page, onPrevious, onNext, on
     </> : null}
     {state.status === 'loading' ? <StateBlock icon={<LoaderCircle size={21} />} title="正在读取租户运行" detail="本次读取会写入不可变管理员审计。" spinning /> : null}
     {state.status === 'idle' ? <AuditPendingState selected={!!selectedTenantId} subject="租户运行" /> : null}
-    {state.status === 'forbidden' ? <StateBlock icon={<ShieldCheck size={21} />} title="租户运行不可读取" detail={state.message} /> : null}
-    {state.status === 'error' ? <StateBlock icon={<AlertCircle size={21} />} title="租户运行读取失败" detail={state.message} action={onRetry} /> : null}
+    {state.status === 'permission' ? <StateBlock icon={<ShieldCheck size={21} />} title="租户运行不可读取" detail={state.error} /> : null}
+    {state.status === 'error' ? <StateBlock icon={<AlertCircle size={21} />} title="租户运行读取失败" detail={state.error} action={onRetry} /> : null}
   </section>
 }
 
