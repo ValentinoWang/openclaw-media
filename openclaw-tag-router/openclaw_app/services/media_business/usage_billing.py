@@ -571,10 +571,6 @@ class UsageBillingService:
             return {"error": {"code": error.code, "message": error.message, "field": error.field}}
         return {"error": {"code": "internal_error", "message": "billing data is unavailable", "field": None}}
 
-    @staticmethod
-    def error_status(error: BaseException) -> int:
-        return error.status if isinstance(error, UsageBillingError) else 500
-
     def _tenant_id(self, context: TenantContext) -> str:
         try:
             checked = require_context(context)

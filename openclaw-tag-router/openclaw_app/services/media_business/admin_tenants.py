@@ -324,10 +324,6 @@ class AdminTenantsService:
             return {"error": {"code": error.code, "message": error.message, "field": error.field}}
         return {"error": {"code": "internal_error", "message": "administrator tenant data is unavailable", "field": None}}
 
-    @staticmethod
-    def error_status(error: BaseException) -> int:
-        return error.status if isinstance(error, AdminTenantsError) else 500
-
     def public_tenant_id(self, tenant_id: UUID | str) -> str:
         return foundation.encode_signed({"namespace": "b12-tenant", "tenantId": str(_uuid(tenant_id))}, self._public_id_secret)
 

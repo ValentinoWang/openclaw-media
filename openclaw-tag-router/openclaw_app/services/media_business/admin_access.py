@@ -454,10 +454,6 @@ class AdminAccessService:
             return {"error": {"code": error.code, "message": error.message, "field": error.field}}
         return {"error": {"code": "internal_error", "message": "administrator access data is unavailable", "field": None}}
 
-    @staticmethod
-    def error_status(error: BaseException) -> int:
-        return error.status if isinstance(error, AdminAccessError) else 500
-
     def public_user_id(self, user_id: UUID) -> str:
         return _encode_public_id("admin-user", _uuid(user_id), self._public_id_secret)
 

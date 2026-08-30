@@ -568,10 +568,6 @@ class RunsService:
             }
         }
 
-    @staticmethod
-    def error_status(error: BaseException) -> int:
-        return error.status if isinstance(error, RunsError) else 500
-
     def list_runs(
         self,
         context: TenantContext | None,

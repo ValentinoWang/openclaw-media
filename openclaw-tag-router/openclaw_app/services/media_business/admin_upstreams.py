@@ -239,10 +239,6 @@ class AdminUpstreamsService:
             return {"error": {"code": error.code, "message": error.message}}
         return {"error": {"code": "internal_error", "message": "upstream service data is unavailable"}}
 
-    @staticmethod
-    def error_status(error: BaseException) -> int:
-        return error.status if isinstance(error, AdminUpstreamsError) else 500
-
     def get_admin_upstreams(self, context: AdminUpstreamsContext | Any) -> dict[str, Any]:
         checked = self._context(context)
         with self._connection_factory() as connection:
