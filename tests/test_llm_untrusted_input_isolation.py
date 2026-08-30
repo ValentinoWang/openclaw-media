@@ -12,6 +12,7 @@ from common.llm_settings import (
     LLMProviderSettings,
 )
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+from _fakes.http import JsonResponse, SseResponse, recording_post
 
 
 TASK_INSTRUCTIONS = "Extract the approved topic and return it as a JSON object."
@@ -63,19 +64,9 @@ def _assert_system_boundary(system_instructions: str) -> None:
 
 
 def test_chat_completions_keeps_untrusted_text_out_of_system_instructions(monkeypatch: pytest.MonkeyPatch) -> None:
-    captured: dict[str, object] = {}
-
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def json(self) -> dict[str, object]:
-            return {"choices": [{"message": {"content": '{"topic":"youth sport"}'}}]}
-
-    def fake_post(url: str, headers: dict[str, str], json: dict[str, object], timeout: int, stream: bool = False) -> Response:
-        captured["url"] = url
-        captured["body"] = json
-        return Response()
+    fake_post = recording_post(
+        JsonResponse({"choices": [{"message": {"content": '{"topic":"youth sport"}'}}]})
+    )
 
     monkeypatch.setattr(llm_client.requests, "post", fake_post)
 
@@ -87,7 +78,7 @@ def test_chat_completions_keeps_untrusted_text_out_of_system_instructions(monkey
     )
 
     assert result == {"topic": "youth sport"}
-    body = captured["body"]
+    body = fake_post.captured["json"]
     assert isinstance(body, dict)
     messages = body["messages"]
     assert isinstance(messages, list)
@@ -106,20 +97,10 @@ def test_chat_completions_keeps_untrusted_text_out_of_system_instructions(monkey
 
 
 def test_codex_responses_keeps_untrusted_text_available_as_user_data(monkeypatch: pytest.MonkeyPatch) -> None:
-    captured: dict[str, object] = {}
-
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            yield 'data: {"type":"response.output_text.delta","delta":"{\\"topic\\":\\"youth sport\\"}"}\n'
-            yield "data: [DONE]\n"
-
-    def fake_post(url: str, headers: dict[str, str], json: dict[str, object], timeout: object, stream: bool = False) -> Response:
-        captured["url"] = url
-        captured["body"] = json
-        return Response()
+    fake_post = recording_post(SseResponse(
+        'data: {"type":"response.output_text.delta","delta":"{\\"topic\\":\\"youth sport\\"}"}\n',
+        "data: [DONE]\n",
+    ))
 
     monkeypatch.setattr(llm_client.requests, "post", fake_post)
 
@@ -131,7 +112,7 @@ def test_codex_responses_keeps_untrusted_text_available_as_user_data(monkeypatch
     )
 
     assert result == {"topic": "youth sport"}
-    body = captured["body"]
+    body = fake_post.captured["json"]
     assert isinstance(body, dict)
     _assert_system_boundary(body["instructions"])
     assert body["input"] == [{"role": "user", "content": [{"type": "input_text", "text": UNTRUSTED_TEXT}]}]

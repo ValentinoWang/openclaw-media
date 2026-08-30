@@ -14,6 +14,7 @@ from common.bot_llm_config import (
 )
 from common import llm_client
 from common.llm_settings import API_TYPE_CODEX_RESPONSES, API_TYPE_OPENCLAW_AGENT, LLMProviderSettings, load_profile_llm_settings
+from _fakes.http import HangingSseResponse, SseResponse, recording_post
 
 
 OPENCLAW_OAUTH_PROFILES = {
@@ -164,21 +165,10 @@ def test_common_json_client_routes_openclaw_agent_through_codex_harness(monkeypa
 
 
 def test_openai_compatible_v1_responses_backend_forces_stream(monkeypatch: pytest.MonkeyPatch) -> None:
-    captured: dict[str, object] = {}
-
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            yield 'data: {"type":"response.output_text.delta","delta":"{\\"ok\\":true}"}\n'
-            yield "data: [DONE]\n"
-
-    def fake_post(url, headers, json, timeout, stream=False):
-        captured["url"] = url
-        captured["body_stream"] = json["stream"]
-        captured["stream"] = stream
-        return Response()
+    fake_post = recording_post(SseResponse(
+        'data: {"type":"response.output_text.delta","delta":"{\\"ok\\":true}"}\n',
+        "data: [DONE]\n",
+    ))
 
     monkeypatch.setattr(llm_client.requests, "post", fake_post)
     config = LLMProviderSettings(
@@ -191,41 +181,29 @@ def test_openai_compatible_v1_responses_backend_forces_stream(monkeypatch: pytes
     )
 
     assert llm_client.generate_json_once([{"text": "return json"}], config) == {"ok": True}
-    assert captured["url"] == "https://example.com/v1/responses"
-    assert captured["body_stream"] is True
-    assert captured["stream"] is True
+    assert fake_post.captured["url"] == "https://example.com/v1/responses"
+    assert fake_post.captured["json"]["stream"] is True
+    assert fake_post.captured["stream"] is True
     with pytest.raises(RuntimeError, match="must end with /v1"):
         llm_client.codex_responses_url("https://chatgpt.com/backend-api/codex")
 
 
 def test_responses_sse_decodes_utf8_bytes_without_response_charset(monkeypatch: pytest.MonkeyPatch) -> None:
-    captured: dict[str, object] = {}
+    response = SseResponse(
+        'data: {"type":"response.output_text.delta","delta":"{\\"title\\":\\"研究方案\\"}"}\n',
+        "data: [DONE]\n",
+        as_bytes=True,
+    )
 
-    class Response:
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            captured["decode_unicode"] = decode_unicode
-            yield 'data: {"type":"response.output_text.delta","delta":"{\\"title\\":\\"研究方案\\"}"}\n'.encode("utf-8")
-            yield b"data: [DONE]\n"
-
-    assert llm_client.collect_responses_sse_text(Response()) == '{"title":"研究方案"}'
-    assert captured["decode_unicode"] is False
+    assert llm_client.collect_responses_sse_text(response) == '{"title":"研究方案"}'
+    assert response.last_decode_unicode is False
 
 
 def test_codex_responses_stream_uses_bounded_idle_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
-    captured: dict[str, object] = {}
-
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            yield 'data: {"type":"response.output_text.delta","delta":"{\\"ok\\":true}"}\n'
-            yield "data: [DONE]\n"
-
-    def fake_post(url, headers, json, timeout, stream=False):
-        captured["timeout"] = timeout
-        captured["stream"] = stream
-        return Response()
+    fake_post = recording_post(SseResponse(
+        'data: {"type":"response.output_text.delta","delta":"{\\"ok\\":true}"}\n',
+        "data: [DONE]\n",
+    ))
 
     monkeypatch.setenv("OPENCLAW_CODEX_RESPONSES_CONNECT_TIMEOUT_SECONDS", "3")
     monkeypatch.setenv("OPENCLAW_CODEX_RESPONSES_READ_TIMEOUT_SECONDS", "7")
@@ -240,21 +218,12 @@ def test_codex_responses_stream_uses_bounded_idle_timeout(monkeypatch: pytest.Mo
     )
 
     assert llm_client.generate_json_once([{"text": "return json"}], config) == {"ok": True}
-    assert captured["stream"] is True
-    assert captured["timeout"] == (3.0, 7.0)
+    assert fake_post.captured["stream"] is True
+    assert fake_post.captured["timeout"] == (3.0, 7.0)
 
 
 def test_codex_responses_stream_read_timeout_is_actionable(monkeypatch: pytest.MonkeyPatch) -> None:
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            raise llm_client.requests.exceptions.ReadTimeout("read timed out")
-            yield
-
-    def fake_post(url, headers, json, timeout, stream=False):
-        return Response()
+    fake_post = recording_post(SseResponse(error=llm_client.requests.exceptions.ReadTimeout("read timed out")))
 
     monkeypatch.setenv("OPENCLAW_CODEX_RESPONSES_READ_TIMEOUT_SECONDS", "5")
     monkeypatch.setattr(llm_client.requests, "post", fake_post)
@@ -272,16 +241,9 @@ def test_codex_responses_stream_read_timeout_is_actionable(monkeypatch: pytest.M
 
 
 def test_codex_responses_stream_wrapped_read_timeout_is_actionable(monkeypatch: pytest.MonkeyPatch) -> None:
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            raise llm_client.requests.exceptions.ConnectionError("HTTPSConnectionPool: Read timed out.")
-            yield
-
-    def fake_post(url, headers, json, timeout, stream=False):
-        return Response()
+    fake_post = recording_post(
+        SseResponse(error=llm_client.requests.exceptions.ConnectionError("HTTPSConnectionPool: Read timed out."))
+    )
 
     monkeypatch.setenv("OPENCLAW_CODEX_RESPONSES_READ_TIMEOUT_SECONDS", "5")
     monkeypatch.setattr(llm_client.requests, "post", fake_post)
@@ -299,17 +261,7 @@ def test_codex_responses_stream_wrapped_read_timeout_is_actionable(monkeypatch: 
 
 
 def test_codex_responses_stream_hard_total_timeout_interrupts_blocking_read(monkeypatch: pytest.MonkeyPatch) -> None:
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            while True:
-                llm_client.time.sleep(1)
-                yield ""
-
-    def fake_post(url, headers, json, timeout, stream=False):
-        return Response()
+    fake_post = recording_post(HangingSseResponse(sleep_call=llm_client.time.sleep))
 
     monkeypatch.setenv("OPENCLAW_CODEX_RESPONSES_READ_TIMEOUT_SECONDS", "5")
     monkeypatch.setenv("OPENCLAW_CODEX_RESPONSES_TOTAL_TIMEOUT_SECONDS", "0.05")
@@ -330,16 +282,10 @@ def test_codex_responses_stream_hard_total_timeout_interrupts_blocking_read(monk
 def test_codex_responses_stream_progress_event_without_output_keeps_running(monkeypatch: pytest.MonkeyPatch) -> None:
     times = iter([0.0, 0.5, 0.6, 1.4, 1.5])
 
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            yield 'data: {"type":"response.in_progress"}\n'
-            yield 'data: {"type":"response.output_text.delta","delta":"{\\"ok\\":true}"}\ndata: [DONE]\n'
-
-    def fake_post(url, headers, json, timeout, stream=False):
-        return Response()
+    fake_post = recording_post(SseResponse(
+        'data: {"type":"response.in_progress"}\n',
+        'data: {"type":"response.output_text.delta","delta":"{\\"ok\\":true}"}\ndata: [DONE]\n',
+    ))
 
     monkeypatch.setenv("OPENCLAW_CODEX_RESPONSES_READ_TIMEOUT_SECONDS", "1")
     monkeypatch.setattr(llm_client.requests, "post", fake_post)
@@ -359,15 +305,7 @@ def test_codex_responses_stream_progress_event_without_output_keeps_running(monk
 def test_codex_responses_stream_heartbeat_without_progress_times_out(monkeypatch: pytest.MonkeyPatch) -> None:
     times = iter([0.0, 2.0])
 
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            yield ": heartbeat\n"
-
-    def fake_post(url, headers, json, timeout, stream=False):
-        return Response()
+    fake_post = recording_post(SseResponse(": heartbeat\n"))
 
     monkeypatch.setenv("OPENCLAW_CODEX_RESPONSES_READ_TIMEOUT_SECONDS", "1")
     monkeypatch.setattr(llm_client.requests, "post", fake_post)
@@ -386,15 +324,7 @@ def test_codex_responses_stream_heartbeat_without_progress_times_out(monkeypatch
 
 
 def test_codex_responses_completed_without_output_is_not_treated_as_running(monkeypatch: pytest.MonkeyPatch) -> None:
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            yield 'data: {"type":"response.completed","response":{"output":[]}}\n'
-
-    def fake_post(url, headers, json, timeout, stream=False):
-        return Response()
+    fake_post = recording_post(SseResponse('data: {"type":"response.completed","response":{"output":[]}}\n'))
     monkeypatch.setattr(llm_client.requests, "post", fake_post)
     config = LLMProviderSettings(
         model="codex/gpt-5.6-terra",

@@ -30,6 +30,7 @@ from selfmedia.deconstruct.viral_content.src.schemas import (
     validate_video_storyboard_granularity,
 )
 from selfmedia.deconstruct.viral_content.src.trigger import WorkflowMode, route_mode
+from _fakes import SseResponse, recording_post
 
 
 def _test_config(**overrides) -> ViralDeconstructConfig:
@@ -1771,22 +1772,10 @@ def test_deconstruct_uses_direct_codex_keyframe_observation(tmp_path, monkeypatc
 def test_codex_responses_adapter_uses_canonical_sse_v1_route(monkeypatch: pytest.MonkeyPatch) -> None:
     import common.llm_client as common_llm_client
 
-    captured: dict[str, object] = {}
-
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False):
-            yield 'data: {"type":"response.output_text.delta","delta":"{\\"ok\\":true}"}\n'
-            yield "data: [DONE]\n"
-
-    def fake_post(url, headers, json, timeout, stream=False):
-        captured["url"] = url
-        captured["json"] = json
-        captured["timeout"] = timeout
-        captured["stream"] = stream
-        return Response()
+    fake_post = recording_post(SseResponse(
+        'data: {"type":"response.output_text.delta","delta":"{\\"ok\\":true}"}\n',
+        "data: [DONE]\n",
+    ))
 
     monkeypatch.setattr(common_llm_client.requests, "post", fake_post)
     config = _test_config(
@@ -1797,12 +1786,12 @@ def test_codex_responses_adapter_uses_canonical_sse_v1_route(monkeypatch: pytest
     )
     result = generate_json([{"text": "return json"}], config)
     assert result == {"ok": True}
-    assert captured["url"] == "https://example.com/v1/responses"
-    assert captured["stream"] is True
-    assert isinstance(captured["timeout"], tuple)
-    assert captured["json"]["stream"] is True
-    assert captured["json"]["store"] is False
-    assert captured["json"]["instructions"]
+    assert fake_post.captured["url"] == "https://example.com/v1/responses"
+    assert fake_post.captured["stream"] is True
+    assert isinstance(fake_post.captured["timeout"], tuple)
+    assert fake_post.captured["json"]["stream"] is True
+    assert fake_post.captured["json"]["store"] is False
+    assert fake_post.captured["json"]["instructions"]
 
 
 def test_viral_deconstruct_config_uses_media_analysis_profile_by_default() -> None:
