@@ -23,28 +23,29 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
+from openclaw_app.services.stage2_errors import (
+    IDEMPOTENCY_CONFLICT,
+    IDEMPOTENCY_IN_PROGRESS,
+    Stage2CodedError,
+)
+
 
 _DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _SUCCESS_STATES = frozenset({"ok", "success", "succeeded", "written", "created"})
 
 
-class ExternalDocumentError(RuntimeError):
+class ExternalDocumentError(Stage2CodedError):
     """Stable fail-closed error raised before an external adapter call."""
-
-    def __init__(self, code: str, message: str) -> None:
-        self.code = code
-        self.message = message
-        super().__init__(message)
 
 
 class IdempotencyConflict(ExternalDocumentError):
-    def __init__(self) -> None:
-        super().__init__("idempotency_conflict", "idempotency key was reused with a different request")
+    def __init__(self, message: str = "idempotency key was reused with a different request") -> None:
+        super().__init__(IDEMPOTENCY_CONFLICT, message)
 
 
 class IdempotencyInProgress(ExternalDocumentError):
-    def __init__(self) -> None:
-        super().__init__("idempotency_in_progress", "external document write is already in progress")
+    def __init__(self, message: str = "external document write is already in progress") -> None:
+        super().__init__(IDEMPOTENCY_IN_PROGRESS, message)
 
 
 def _required_text(value: Any, label: str, maximum: int = 256) -> str:

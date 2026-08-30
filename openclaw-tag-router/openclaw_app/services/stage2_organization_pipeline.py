@@ -20,6 +20,7 @@ from typing import Any, Protocol
 
 from common.canonical_digest import prefixed_digest
 
+from openclaw_app.services.stage2_errors import IDEMPOTENCY_CONFLICT, Stage2CodedError
 from openclaw_app.services.stage2_external_document import (
     BindingIdentity,
     ExternalDocumentAdapter,
@@ -34,16 +35,13 @@ ORGANIZATION_MODE = "organization_lark/lark"
 _DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-class OrganizationPipelineError(RuntimeError):
-    def __init__(self, code: str, message: str) -> None:
-        self.code = code
-        self.message = message
-        super().__init__(message)
+class OrganizationPipelineError(Stage2CodedError):
+    pass
 
 
 class IdempotencyConflict(OrganizationPipelineError):
-    def __init__(self) -> None:
-        super().__init__("idempotency_conflict", "idempotency key was reused with another request")
+    def __init__(self, message: str = "idempotency key was reused with another request") -> None:
+        super().__init__(IDEMPOTENCY_CONFLICT, message)
 
 
 class OrganizationStoreConflict(OrganizationPipelineError):

@@ -14,6 +14,7 @@ import threading
 from collections.abc import Iterable, Mapping
 from typing import Any, Protocol
 
+from openclaw_app.services.stage2_errors import IDEMPOTENCY_CONFLICT, REVISION_CONFLICT, Stage2CodedError
 from openclaw_app.services.stage2_personal_store import (
     InMemoryPersonalContentStore,
     PersonalContentStore,
@@ -41,21 +42,18 @@ _FORBIDDEN_BROWSER_FIELDS = frozenset(
 )
 
 
-class PersonalPipelineError(RuntimeError):
-    def __init__(self, code: str, message: str) -> None:
-        self.code = code
-        self.message = message
-        super().__init__(message)
+class PersonalPipelineError(Stage2CodedError):
+    pass
 
 
 class RevisionConflict(PersonalPipelineError):
-    def __init__(self) -> None:
-        super().__init__("revision_conflict", "baseline revision does not match the current revision")
+    def __init__(self, message: str = "baseline revision does not match the current revision") -> None:
+        super().__init__(REVISION_CONFLICT, message)
 
 
 class IdempotencyConflict(PersonalPipelineError):
-    def __init__(self) -> None:
-        super().__init__("idempotency_conflict", "idempotency key was reused with another request")
+    def __init__(self, message: str = "idempotency key was reused with another request") -> None:
+        super().__init__(IDEMPOTENCY_CONFLICT, message)
 
 
 class PersonalWriter(Protocol):

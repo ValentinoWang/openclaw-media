@@ -16,6 +16,8 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from openclaw_app.services.stage2_errors import IDEMPOTENCY_CONFLICT, Stage2CodedError
+
 
 PERSONAL_MODE = "personal_web/internal"
 ORGANIZATION_MODE = "organization_lark/lark"
@@ -40,16 +42,13 @@ _FORBIDDEN_BROWSER_FIELDS = frozenset(
 )
 
 
-class ArtifactStateError(RuntimeError):
-    def __init__(self, code: str, message: str) -> None:
-        self.code = code
-        self.message = message
-        super().__init__(message)
+class ArtifactStateError(Stage2CodedError):
+    pass
 
 
 class IdempotencyConflict(ArtifactStateError):
-    def __init__(self) -> None:
-        super().__init__("idempotency_conflict", "idempotency key was reused with another request")
+    def __init__(self, message: str = "idempotency key was reused with another request") -> None:
+        super().__init__(IDEMPOTENCY_CONFLICT, message)
 
 
 def _text(value: Any, label: str, maximum: int = 512) -> str:

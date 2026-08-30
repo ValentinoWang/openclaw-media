@@ -25,6 +25,11 @@ from openclaw_app.services.stage2_artifact_state import (
     ArtifactStateMachine,
     ArtifactStateResult,
 )
+from openclaw_app.services.stage2_errors import (
+    IDEMPOTENCY_CONFLICT,
+    IDEMPOTENCY_IN_PROGRESS,
+    Stage2CodedError,
+)
 from openclaw_app.services.stage2_context import (
     AIExecutionContext,
     CapabilityEffectRegistry,
@@ -128,25 +133,20 @@ _MODE_ALIASES = {
 }
 
 
-class Stage2RuntimeError(RuntimeError):
+class Stage2RuntimeError(Stage2CodedError):
     """Fail-closed facade error carrying a stable machine code."""
-
-    def __init__(self, code: str, message: str) -> None:
-        self.code = code
-        self.message = message
-        super().__init__(message)
 
 
 class IdempotencyConflict(Stage2RuntimeError):
-    def __init__(self) -> None:
-        super().__init__("idempotency_conflict", "operation id was reused with another request")
+    def __init__(self, message: str = "operation id was reused with another request") -> None:
+        super().__init__(IDEMPOTENCY_CONFLICT, message)
 
 
 class IdempotencyInProgress(Stage2RuntimeError):
     """Another process has already claimed this operation for execution."""
 
-    def __init__(self) -> None:
-        super().__init__("idempotency_in_progress", "operation is already in progress")
+    def __init__(self, message: str = "operation is already in progress") -> None:
+        super().__init__(IDEMPOTENCY_IN_PROGRESS, message)
 
 
 @dataclass(frozen=True, slots=True)

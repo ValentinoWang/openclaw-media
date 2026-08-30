@@ -16,6 +16,8 @@ from collections.abc import Callable, Mapping, MutableMapping
 from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Protocol
 
+from openclaw_app.services.stage2_errors import IDEMPOTENCY_CONFLICT, Stage2CodedError
+
 
 SCHEMA_VERSION = "stage2.writer.result.v1"
 PERSONAL_ROUTE = ("personal_web", "internal")
@@ -55,18 +57,13 @@ _WRITE_EFFECTS = frozenset({"write", "document", "persist", "destructive"})
 _DISABLED_STATES = frozenset({"disabled", "retired", "not_implemented", "unavailable"})
 
 
-class WriterRouterError(RuntimeError):
+class WriterRouterError(Stage2CodedError):
     """A fail-closed input or idempotency error raised before/around routing."""
-
-    def __init__(self, code: str, message: str) -> None:
-        self.code = code
-        self.message = message
-        super().__init__(message)
 
 
 class IdempotencyConflict(WriterRouterError):
     def __init__(self, message: str = "idempotency key was already used for another request") -> None:
-        super().__init__("idempotency_conflict", message)
+        super().__init__(IDEMPOTENCY_CONFLICT, message)
 
 
 @dataclass(frozen=True)
