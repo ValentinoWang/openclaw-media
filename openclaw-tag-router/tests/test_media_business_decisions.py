@@ -407,3 +407,33 @@ def test_confirmation_rejects_unknown_fields_and_oversized_reason() -> None:
             {"expectedRevision": 1, "decision": "confirmed", "reason": "x" * 2001},
             idempotency_key="confirm-b04-long",
         )
+
+
+def test_idempotency_key_currently_accepts_non_alphanumeric_and_short_values() -> None:
+    """SV-03 regression pin, not an endorsement of the current contract.
+
+    decisions._validate_idempotency_key only requires a non-blank string of
+    at most 200 characters -- unlike runs/tracks/documents/admin_* it does
+    not enforce IF2's ``^[A-Za-z0-9_-]{8,128}$`` charset or length floor, so
+    a key such as "中文键值" (non-ASCII, 4 characters) is accepted here today
+    even though the same key would 400 against the strict endpoints. This
+    test only pins that current behavior; per the SV-03 remediation plan it
+    is deliberately not being tightened in this pass, since there is no way
+    to verify the change against whatever keys are already stored in
+    media_product.b04_idempotency_keys.
+    """
+    connection = FakeConnection()
+    response = service(connection).confirm_decision(
+        CONTEXT_A,
+        "decision_123456",
+        {
+            "expectedRevision": 1,
+            "decision": "confirmed",
+            "reason": "来源证据完整，先验证一个小范围版本。",
+        },
+        idempotency_key="中文键值",
+    )
+
+    assert response["revision"] == 2
+    assert connection.update_count == 1
+    assert connection.commits == 1

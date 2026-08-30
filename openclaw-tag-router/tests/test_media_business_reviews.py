@@ -343,6 +343,69 @@ def test_metric_import_writes_evidenced_snapshot_and_is_idempotent() -> None:
     assert connection.commits == 1
 
 
+def test_idempotency_key_currently_accepts_non_alphanumeric_and_short_values() -> None:
+    """SV-03 regression pin, not an endorsement of the current contract.
+
+    reviews._load_idempotent/_store_idempotent only require a non-blank
+    string of at most 200 characters -- unlike runs/tracks/documents/admin_*
+    they do not enforce IF2's ``^[A-Za-z0-9_-]{8,128}$`` charset or length
+    floor, so a key such as "中文键值" (non-ASCII, 4 characters) is accepted
+    here today even though the same key would 400 against the strict
+    endpoints. This test only pins that current behavior; per the SV-03
+    remediation plan it is deliberately not being tightened in this pass,
+    since there is no way to verify the change against whatever keys are
+    already stored in media_product.b07_idempotency_keys.
+    """
+
+    def handle(query, params):
+        if "SELECT response_json" in query:
+            return Cursor()
+        if "FROM media_product.published_posts" in query:
+            return Cursor(
+                [
+                    (
+                        "post_abc",
+                        1,
+                        {"platform": "douyin", "public_project_id": "project_abc"},
+                        NOW,
+                    )
+                ]
+            )
+        if "INSERT INTO media_product.metric_snapshots" in query:
+            data = json.loads(params[3])
+            return Cursor([(params[1], 1, data, NOW)])
+        if "INSERT INTO media_product.b07_idempotency_keys" in query:
+            return Cursor()
+        return Cursor()
+
+    connection = ScriptedConnection(handle)
+    service = ReviewsService(
+        factory(connection),
+        id_factory=lambda prefix: f"{prefix}_generated",
+        clock=lambda: NOW,
+    )
+    request = {
+        "publicPostId": "post_abc",
+        "reviewWindow": "24h",
+        "sourceType": "manual",
+        "values": {"views": 100},
+        "evidenceRefs": [
+            {
+                "kind": "screenshot",
+                "label": "平台后台",
+                "publicUrl": None,
+                "capturedAt": NOW.isoformat(),
+                "qualityStatus": "verified",
+            }
+        ],
+    }
+
+    receipt = service.create_metric_import(CONTEXT, request, idempotency_key="中文键值")
+
+    assert receipt["ok"] is True
+    assert connection.commits == 1
+
+
 def test_confirm_review_requires_expected_revision() -> None:
     connection = ScriptedConnection(
         lambda query, params: Cursor([review_row(revision=3)])

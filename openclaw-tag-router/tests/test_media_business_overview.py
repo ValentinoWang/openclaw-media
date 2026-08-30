@@ -658,3 +658,72 @@ def test_b01_migration_adds_only_indexes_and_idempotency_ledger() -> None:
     assert "document_artifacts_b01_tenant_project_updated_idx" in migration
     assert "CREATE TABLE IF NOT EXISTS media_product.content_projects" not in migration
     assert "CREATE TABLE IF NOT EXISTS media_product.document_artifacts" not in migration
+
+
+def test_idempotency_key_currently_accepts_non_alphanumeric_values_within_its_own_floor() -> None:
+    """SV-03 regression pin, not an endorsement of the current contract.
+
+    OverviewService._validate_idempotency_key enforces its own 8-200 length
+    band but, unlike runs/tracks/documents/admin_*, never checks the IF2
+    ``^[A-Za-z0-9_-]{8,128}$`` charset -- so an 8-character non-ASCII key
+    such as "中文键值一二三四" is accepted here today even though the same
+    key would 400 against the strict endpoints. This test only pins that
+    current behavior; per the SV-03 remediation plan it is deliberately not
+    being tightened in this pass, since there is no way to verify the change
+    against whatever keys are already stored in
+    media_product.project_summary_idempotency.
+    """
+    stored: dict[str, Any] = {}
+
+    def handle(query: str, params: tuple[Any, ...]) -> Cursor:
+        if "FROM media_product.project_summary_idempotency" in query:
+            if not stored:
+                return Cursor()
+            return Cursor([(stored["fingerprint"], json.dumps(stored["response"]), 200)])
+        if "SELECT project.revision, project.updated_at" in query:
+            return Cursor([(4, NOW)])
+        if "artifact.workspace_mode,\n               artifact.updated_at" in query:
+            return Cursor([("project_summary_generated", 1, "internal", "personal_web", NOW)])
+        if "FROM media_product.content_projects AS project" in query:
+            return Cursor(
+                [
+                    (
+                        "project_abc",
+                        3,
+                        "A project",
+                        "creation",
+                        {"workspace_mode": "personal_web", "status": "active"},
+                        NOW,
+                    )
+                ]
+            )
+        if "media_product.document_artifacts AS artifact" in query:
+            return Cursor()
+        if "INSERT INTO media_product.project_summary_idempotency" in query:
+            stored["fingerprint"] = params[3]
+            stored["response"] = json.loads(params[5])
+            return Cursor()
+        if "UPDATE media_product.content_projects" in query:
+            return Cursor()
+        if "INSERT INTO media_product.document_artifacts" in query:
+            return Cursor()
+        if "INSERT INTO media_product.document_revisions" in query:
+            return Cursor()
+        raise AssertionError(query)
+
+    connection = ScriptedConnection(handle)
+    target = OverviewService(
+        factory(connection),
+        task_reader=task_reader,
+        cursor_secret=b"b01-cursor-secret-0123456789",
+        id_factory=lambda prefix: prefix + "_generated",
+        clock=lambda: NOW,
+    )
+    request = {"expectedRevision": 3, "reason": "refresh"}
+
+    response = target.create_project_summary(
+        CONTEXT_A, "project_abc", request, idempotency_key="中文键值一二三四"
+    )
+
+    assert response["schemaVersion"] == "media_web_business_pages_v2"
+    assert connection.commits == 1
