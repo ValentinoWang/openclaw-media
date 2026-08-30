@@ -6,7 +6,7 @@
   "domain_lane": "product-contract",
   "execution_state": "ACCEPTED",
   "decision_state": "ACCEPTED",
-  "decision_version": 2,
+  "decision_version": 4,
   "readiness_mode": "FORMAL",
   "hard_dependencies": [
     "A1"
@@ -15,7 +15,7 @@
   "assumption_ids": [],
   "decision_refs": [],
   "invalidation_keys": [
-    "media.stage2.product-decisions.v3"
+    "media.stage2.product-decisions.v5"
   ],
   "write_authority": "authoritative-contract",
   "acceptance_authority": "user",
@@ -26,7 +26,7 @@
   "worker_registration": {
     "note": "no retroactive worker claim"
   },
-  "description": "全部交付节点引用同一决定版本",
+  "description": "全部交付节点引用同一决定版本；实现待执行，不冒领验收",
   "node_role": "leaf",
   "execution_actor": "orchestrator",
   "execution_contract_ref": "K.json",
@@ -98,10 +98,17 @@
       "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
       "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
       "stage3_exclusions": "full role matrix, approval, seats, procurement, invoices, migration, complex deletion and business analytics",
-      "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate"
+      "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate",
+      "session_envelope_boundary": "do not add routeGrants or page permissions to parseMediaSessionEnvelope; keep media_web_business_pages_v2 strict response shape unchanged",
+      "entry_state_authority": "independent read-only entry-state API returns server-projected role, workspaceMode, bodyAuthority, defaultRoute, route grants and action grants",
+      "entry_state_contract": "new API contract must be versioned and strict in OpenAPI/client types; exact path is frozen by B after bounded source discovery, with 401/403/409 semantics and no session envelope change",
+      "route_authorization_axes": "role selects shell; workspaceMode/bodyAuthority select content authority; entry-state route/action grants select visible and executable UI; backend authorization remains final",
+      "ordinary_ia_entrypoint": "MediaStudioApp is the current mounted entry; MediaApp is legacy until an entrypoint census proves otherwise. Do not delete the legacy IA before route ownership and deep-link behavior are recorded.",
+      "font_delivery": "self-host DM Sans as full WOFF2; serve Noto Sans SC through unicode-range slices or a curated common-glyph subset; preload only Latin subset and keep a local fallback chain",
+      "font_weight_policy": "load every used weight including 600; remove 800/850 visual dependence, map Chinese headings to available weights, set Chinese or mixed headings letter-spacing to 0 and reserve negative tracking for pure Latin/numeric display"
     },
     "approval_authority": "user",
-    "approval_evidence": "User requested the phase-2 SSOT and supplied the 2026-08-15 structural correction that assigns AI document writing to phase 2",
-    "approved_at": "2026-08-15T20:37:42+08:00"
+    "approval_evidence": "User requested the phase-2 SSOT, explicitly resolved the session-envelope conflict in favor of an independent read-only entry-state API, and accepted the self-hosted font, sliced Chinese subset, and weight/tracking constraints",
+    "approved_at": "2026-08-30T00:00:00+08:00"
   }
 }

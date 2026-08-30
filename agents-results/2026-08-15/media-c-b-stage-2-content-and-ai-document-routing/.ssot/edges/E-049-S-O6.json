@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.s.o6.v3"
+    "edge.s.o6.v5"
   ],
   "transferred_input": "共享路由不可变子候选",
   "gate_evidence": "所有文档能力只有一个路由入口",

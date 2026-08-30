@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.c1.c2.v3"
+    "edge.c1.c2.v5"
   ],
   "transferred_input": "个人资料投影与范围合同",
   "gate_evidence": "个人工作区不读取任何组织共享资料",

@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.s2.o2.v3"
+    "edge.s2.o2.v5"
   ],
   "transferred_input": "ContextBuilder 路由和来源收据",
   "gate_evidence": "01_ 近期活动与其他资料使用同等租户边界",

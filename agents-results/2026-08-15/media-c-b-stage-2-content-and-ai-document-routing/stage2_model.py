@@ -66,9 +66,9 @@ SPECS: dict[str, dict[str, object]] = {
     "K": node(
         "media.stage2.product-decisions", "A", "decision-acceptance", "product-contract", "ACCEPTED",
         "第二阶段产品决定", "个人创作者、组织创作者、产品负责人", "用户确认的三阶段思路与事实审计",
-        "接受服务端上下文、个人 Web 正文、组织飞书正文、第二阶段独占写入路由和失败关闭边界", "已接受决定记录第 2 版",
-        "决定覆盖、C/B 互斥和负例完整性检查", "无新的人类拍板问题，不创建 openproblem.md",
-        "全部交付节点引用同一决定版本", "维护已接受决定记录；不得把推荐重新降级为待决。",
+        "接受服务端上下文、个人 Web 正文、组织飞书正文、第二阶段独占写入路由和失败关闭边界；确认页面权限不进入现有会话信封，改由独立只读入口状态接口承载；确认字体自托管、中文切片和字重收敛策略；确认 11 个顶层导航页加 1 条运行详情深链，共 12 条普通路由条目全部向个人人格开放，并按个人数据作用域与个人正文权威执行。", "已接受决定记录第 4 版",
+        "决定覆盖、合同不变性、C/B 互斥、路由负例和弱网字体验收", "记录实现事实与正式接受状态的证据分层；组织 Binding、飞书写入和组织成员能力不得因个人路由开放而泄漏",
+        "全部交付节点引用同一决定版本；实现待执行，不冒领验收", "维护已接受决定记录；不得把推荐重新降级为待决。",
         write_authority="authoritative-contract", acceptance_authority="user",
     ),
     "F1": node(
@@ -97,16 +97,16 @@ SPECS: dict[str, dict[str, object]] = {
     ),
     "B": node(
         "media.stage2.contract-assembly", "A", "contract-assembly", "shared-contracts", "BLOCKED",
-        "第二阶段共享合同汇编", "产品、前后端和验收负责人", "F1 接受的会话底座和 K 第 2 版决定",
-        "冻结人工智能执行上下文、资料路由、写入路由、成果登记、回读和能力副作用合同", "共享接口冻结身份",
-        "OpenAPI、类型、错误码、状态机和保护测试红灯", "不接受前端伪造租户、Binding 或正文权威",
+        "第二阶段共享合同汇编", "产品、前后端和验收负责人", "F1 接受的会话底座和 K 第 4 版决定",
+        "冻结人工智能执行上下文、资料路由、写入路由、成果登记、回读、能力副作用和独立入口状态接口合同；保持 parseMediaSessionEnvelope 的严格响应结构不变", "共享接口冻结身份",
+        "OpenAPI、类型、错误码、状态机、入口状态独立接口和保护测试红灯", "不接受前端伪造租户、Binding、正文权威或路由授权",
         "C/B 两支只消费同一共享合同", "F1 接受后汇编共享合同；不启动组织外部写入。",
         write_authority="authoritative-contract", consumes_decision=True,
     ),
     "S1": node(
         "media.stage2.ai-execution-context", "B", "contract-compile", "shared-ai", "BLOCKED",
         "服务端人工智能执行上下文", "所有人工智能能力", "B 合同、服务端会话、成员关系、Binding 和能力编号",
-        "生成可信的租户、工作区、正文权威、成员角色、Binding 和能力组合结果", "AIExecutionContext 第 2 版",
+        "生成可信的租户、工作区、正文权威、成员角色、Binding 和能力组合结果；为入口状态投影提供服务端事实", "AIExecutionContext 第 3 版",
         "字段来源、缺失、撤销、伪造和组织 A/B 负例", "上下文全部由服务端事实生成",
         "前端提交的保留字段被稳定拒绝", "实现 AIExecutionContext 唯一构建路径。", consumes_decision=True,
     ),
@@ -140,9 +140,9 @@ SPECS: dict[str, dict[str, object]] = {
     ),
     "T1": node(
         "media.stage2.shared-acceptance-harness", "B", "acceptance-design", "shared-contracts", "BLOCKED",
-        "共享 OpenAPI 与端到端验收 Harness", "开发、QA、安全和发布负责人", "B 冻结合同和 K 第 2 版决定",
-        "维护请求合同、上下文类型、错误码、审计、C/B 正负例和同收据端到端合同", "保护测试和验收矩阵",
-        "合同漂移、前端夹带权威字段、跨租户、错容器、写入和回读失败红灯", "每个稳定失败类都有红绿门禁",
+        "共享 OpenAPI 与端到端验收 Harness", "开发、QA、安全和发布负责人", "B 冻结合同和 K 第 4 版决定",
+        "维护请求合同、上下文类型、入口状态接口、错误码、审计、C/B 正负例、真实会话矩阵和同收据端到端合同", "保护测试和验收矩阵",
+        "合同漂移、会话信封加字段、入口状态越权、前端夹带权威字段、跨租户、错容器、写入回读失败和字体弱网回退红灯", "每个稳定失败类都有红绿门禁",
         "Harness 不成为运行时分支或第二事实源", "建立共享合同和端到端 Harness；不实现业务支线。", consumes_decision=True,
     ),
     "C1": node(
@@ -364,10 +364,11 @@ BATCHES: dict[str, str] = {
 
 
 SSOT_SCHEMA_VERSION = 2
-PLAN_VERSION = 3
-DAG_VERSION = 3
-INTERFACE_FREEZE_VERSION = 4
-NODE_CONTRACT_VERSION = 4
+PRODUCT_DECISION_VERSION = 4
+PLAN_VERSION = 5
+DAG_VERSION = 5
+INTERFACE_FREEZE_VERSION = 5
+NODE_CONTRACT_VERSION = 5
 
 PRIMARY_EXECUTOR_DEFAULT = "lw-terra"
 PRIMARY_EXECUTOR_OVERRIDES: dict[str, str] = {}

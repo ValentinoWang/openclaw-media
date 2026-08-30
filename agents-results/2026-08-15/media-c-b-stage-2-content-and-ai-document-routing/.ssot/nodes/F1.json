@@ -15,7 +15,7 @@
   "assumption_ids": [],
   "decision_refs": [],
   "invalidation_keys": [
-    "media.stage2.gate.stage1-identity.v3"
+    "media.stage2.gate.stage1-identity.v5"
   ],
   "write_authority": "evidence-only",
   "acceptance_authority": "cross-stage projection owner",

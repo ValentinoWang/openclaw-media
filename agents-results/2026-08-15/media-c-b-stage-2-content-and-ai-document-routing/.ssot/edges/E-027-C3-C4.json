@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.c3.c4.v3"
+    "edge.c3.c4.v5"
   ],
   "transferred_input": "个人决策简报成果",
   "gate_evidence": "模型建议不伪装为用户决定",

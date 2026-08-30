@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.o1.o2.v3"
+    "edge.o1.o2.v5"
   ],
   "transferred_input": "组织资料和品牌约束收据",
   "gate_evidence": "组织 A 不得读取组织 B 或个人资料",

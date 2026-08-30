@@ -1,10 +1,10 @@
 {
   "ssot_schema_version": 2,
   "artifact_class": "ssot-development",
-  "plan_version": 3,
-  "dag_version": 3,
-  "interface_freeze_version": 4,
-  "node_contract_version": 4,
+  "plan_version": 5,
+  "dag_version": 5,
+  "interface_freeze_version": 5,
+  "node_contract_version": 5,
   "machine_validation_profile": "full",
   "parallelism_contract_version": 1,
   "execution_contract_validation": "strict",
@@ -89,42 +89,36 @@
     {
       "view_id": "main",
       "source": "view-sources/00-main.md",
-      "source_sha256": "e117b56da2b6e53a1d2e0f07c5e7fdcd4e0fc138a93f165828145f08e2aafd5a",
+      "source_sha256": "8dd7e230febc0a670d659474fff06ec919fdb5fa827c7b28c1bf33964f946d7e",
       "output": "../ssot-development-paths.md"
     },
     {
       "view_id": "dependency-topology",
       "source": "view-sources/10-topology.md",
-      "source_sha256": "43712a5591b78d515278f315635169adac06176dcc7ca4cf05c85d7af977cea2",
+      "source_sha256": "990230d8f74f9407a88bcc600665d8ca2207ac3abc0366cc68e0da6838de2f52",
       "output": "../generated-views/10-dependency-topology.md"
     },
     {
       "view_id": "execution-governance",
       "source": "view-sources/20-execution.md",
-      "source_sha256": "62104ad2141900693766ae0da41fc15aa605bd9a2bbc83a44ae89392f57b4635",
+      "source_sha256": "265f7ff9b836492a524973915d8cb03b490ce082daeeacc309a3a692e1da118c",
       "output": "../generated-views/20-execution-governance.md"
     },
     {
       "view_id": "contracts-acceptance",
       "source": "view-sources/30-acceptance.md",
-      "source_sha256": "eb3a78e31b24baadb23cffbbb05832ff955e1d67970e35dffc863ea5866e1606",
+      "source_sha256": "31c3fbc0df40b23143884d9c76b8a9ab5a0082ac85d3844c6f6cf4e1441e5733",
       "output": "../generated-views/30-node-contracts-and-acceptance.md"
     },
     {
       "view_id": "implementation-progress",
       "source": "view-sources/40-progress.md",
-      "source_sha256": "8c1f01e829a79126a5b317120d915237135ff0a8ad0776dea27f3eae23862147",
+      "source_sha256": "942550d1c2013041bc28c525198dd52af5081e3ab7771e640e86204513bed708",
       "output": "../implementation-progress.md"
     }
   ],
   "nodes_dir": "nodes",
   "edges_dir": "edges",
   "assumptions_dir": "assumptions",
-  "conflicts_dir": "conflicts",
-  "validation_report": {
-    "path": "validation-report.json",
-    "sha256": "0e1ae9914a8c37d4aae9344997cc1131e4262685ca581a960bc281f8afc32bb2",
-    "manifest_identity_sha256": "bc6e69ad12c4e0b449ef38f12f172e4cac63666c169e0e7f20b1bad4d44d56cc",
-    "bundle_content_sha256": "5e6e9155b375dc611203705fdae0bb57455516487ef0378a1001c4e802f8bf50"
-  }
+  "conflicts_dir": "conflicts"
 }

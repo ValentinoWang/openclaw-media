@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.o3.o4.v3"
+    "edge.o3.o4.v5"
   ],
   "transferred_input": "组织成果绑定收据",
   "gate_evidence": "组织路径不创建可编辑的内部 Web 正文",

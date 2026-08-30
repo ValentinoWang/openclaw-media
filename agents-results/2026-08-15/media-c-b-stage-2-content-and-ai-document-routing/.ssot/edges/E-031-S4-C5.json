@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.s4.c5.v3"
+    "edge.s4.c5.v5"
   ],
   "transferred_input": "ArtifactRecorder 和 ReadbackVerifier",
   "gate_evidence": "任一必要步骤失败都不得返回发布成功",

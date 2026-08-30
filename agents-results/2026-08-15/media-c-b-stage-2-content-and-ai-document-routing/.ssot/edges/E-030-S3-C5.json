@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.s3.c5.v3"
+    "edge.s3.c5.v5"
   ],
   "transferred_input": "WriterRouter 第 2 版",
   "gate_evidence": "不允许第一阶段或能力实现绕过统一路由自选文档容器",

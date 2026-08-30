@@ -13,7 +13,7 @@
   "assumption_ids": [],
   "decision_refs": [],
   "invalidation_keys": [
-    "media.stage2.charter.v3"
+    "media.stage2.charter.v5"
   ],
   "write_authority": "authoritative-contract",
   "acceptance_authority": "user and planning authority",

@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.c6.c7.v3"
+    "edge.c6.c7.v5"
   ],
   "transferred_input": "Web 编辑界面和修订链",
   "gate_evidence": "Web 是个人正文的唯一编辑权威",

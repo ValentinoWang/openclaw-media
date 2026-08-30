@@ -5,5 +5,7 @@
   "project_name": "openclaw-media",
   "ssot_name": "media-c-b-stage-2-content-ai-document-routing",
   "main_document": "ssot-development-paths.md",
-  "problem_documents": []
+  "problem_documents": [
+    "openproblem.md"
+  ]
 }

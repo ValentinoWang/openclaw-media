@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.c8.c.v3"
+    "edge.c8.c.v5"
   ],
   "transferred_input": "个人端到端候选",
   "gate_evidence": "个人全链在同一候选上可重现",

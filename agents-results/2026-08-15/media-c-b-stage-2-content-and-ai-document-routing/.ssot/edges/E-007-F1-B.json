@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.f1.b.v3"
+    "edge.f1.b.v5"
   ],
   "transferred_input": "身份汇合跨阶段收据",
   "gate_evidence": "只有第一阶段 C1 ACCEPTED 且 I9 属于同一候选时才可接受本投影",

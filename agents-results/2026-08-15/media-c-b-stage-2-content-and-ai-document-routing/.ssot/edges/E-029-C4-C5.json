@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.c4.c5.v3"
+    "edge.c4.c5.v5"
   ],
   "transferred_input": "PersonalContextBuilder 结果",
   "gate_evidence": "个人任务只使用 personal_web/internal 上下文",

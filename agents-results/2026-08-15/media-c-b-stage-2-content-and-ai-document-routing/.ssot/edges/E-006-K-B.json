@@ -7,10 +7,10 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.k.b.v3"
+    "edge.k.b.v5"
   ],
-  "transferred_input": "已接受决定记录第 2 版",
-  "gate_evidence": "无新的人类拍板问题，不创建 openproblem.md",
+  "transferred_input": "已接受决定记录第 4 版",
+  "gate_evidence": "记录实现事实与正式接受状态的证据分层；组织 Binding、飞书写入和组织成员能力不得因个人路由开放而泄漏",
   "reason_code": "contract-dependency",
   "transferred_artifact_ids": [
     "ART-K"

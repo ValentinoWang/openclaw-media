@@ -7,10 +7,10 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.b.s1.v3"
+    "edge.b.s1.v5"
   ],
   "transferred_input": "共享接口冻结身份",
-  "gate_evidence": "不接受前端伪造租户、Binding 或正文权威",
+  "gate_evidence": "不接受前端伪造租户、Binding、正文权威或路由授权",
   "reason_code": "contract-dependency",
   "transferred_artifact_ids": [
     "ART-B"

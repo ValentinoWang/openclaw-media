@@ -5,7 +5,10 @@
     "ssot_depth": "L2",
     "artifact_policy": "create-ssot",
     "selection_authority": "user",
-    "rationale": "用户明确要求把第二阶段作为持久 SSOT；个人内容、组织飞书正文、共享人工智能路由和真实外部验收必须在同一候选上协调。"
+    "rationale": "用户明确要求把第二阶段作为持久 SSOT；个人内容、组织飞书正文、共享人工智能路由、入口状态权限和真实外部验收必须在同一候选上协调。",
+    "decision_versions": {
+      "media.stage2.product-decisions": 4
+    }
   },
   "external_systems": [
     "lark",
@@ -43,9 +46,9 @@
       "independent_acceptance": "个人子候选、组织子候选、共享路由和真实外部验收均可在本发布切片内完成。",
       "independent_failure": "任一支线失败时保持候选未晋升，不改写第一阶段已接受身份和组织接入候选。",
       "future_phase_required_for_success": false,
-      "development_baseline": "stage2-development-base-v3",
+      "development_baseline": "stage2-development-base-v4",
       "promotion_baseline": "stage1-dc2-accepted-candidate",
-      "release_candidate": "stage2-rel-2-candidate-v3",
+      "release_candidate": "stage2-rel-2-candidate-v4",
       "acceptance_node_id": "DC",
       "release_candidate_artifact_id": "candidate:REL-2",
       "independent_proof_artifact_id": "proof:REL-2",
@@ -247,7 +250,7 @@
       "dependencies": [
         "A1"
       ],
-      "acceptance": "无新的人类拍板问题，不创建 openproblem.md",
+      "acceptance": "记录实现事实与正式接受状态的证据分层；组织 Binding、飞书写入和组织成员能力不得因个人路由开放而泄漏",
       "owner": "user",
       "kind": "decision",
       "side_effects": [],
@@ -300,7 +303,7 @@
         "F1",
         "K"
       ],
-      "acceptance": "不接受前端伪造租户、Binding 或正文权威",
+      "acceptance": "不接受前端伪造租户、Binding、正文权威或路由授权",
       "owner": "main orchestrator",
       "kind": "implementation",
       "side_effects": [],
@@ -1465,7 +1468,7 @@
         "evidence_contract": "将 DB 的外部动作、回读与同一 Binding 和候选身份绑定。",
         "recovery_contract": "代码只切换不可变身份；数据库和飞书分别执行各自恢复或补偿合同。",
         "external_identity": "isolated-lark-db",
-        "immutable_release_identity": "REL-2-candidate-v3",
+        "immutable_release_identity": "REL-2-candidate-v5",
         "promotion_baseline": "stage1-dc2-accepted-candidate"
       },
       "execution_actor": "human"
@@ -1485,7 +1488,7 @@
         "reasons": [
           "production-release"
         ],
-        "immutable_release_identity": "REL-2-candidate-v3",
+        "immutable_release_identity": "REL-2-candidate-v5",
         "promotion_baseline": "stage1-dc2-accepted-candidate",
         "recovery_contract": "代码只切换不可变身份；数据库和飞书分别执行各自恢复或补偿合同。"
       },
@@ -1508,7 +1511,7 @@
   },
   "complexity_budget": {
     "authority": "user",
-    "rationale": "一个发布切片、十五个执行波次和节点级外部副作用合同足以表达第二阶段，不把验证动作额外展开成节点。",
+    "rationale": "一个发布切片、十五个执行波次和节点级外部副作用合同足以表达第二阶段；入口状态与字体工作作为既有节点的合同内容，不额外制造平行节点。",
     "limits": {
       "total_nodes": 32,
       "implementation_nodes_per_release": 18,

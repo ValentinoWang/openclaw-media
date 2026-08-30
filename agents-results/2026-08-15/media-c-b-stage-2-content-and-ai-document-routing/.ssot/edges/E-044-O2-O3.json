@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.o2.o3.v3"
+    "edge.o2.o3.v5"
   ],
   "transferred_input": "LarkArtifactWriter 和远端写入收据",
   "gate_evidence": "组织 A 不得使用组织 B 或部署级凭据",

@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.da.db.v3"
+    "edge.da.db.v5"
   ],
   "transferred_input": "静态验收证据包",
   "gate_evidence": "所有门禁对同一候选通过",

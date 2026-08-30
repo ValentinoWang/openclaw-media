@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.a1.f2.v3"
+    "edge.a1.f2.v5"
   ],
   "transferred_input": "可复现的非 Git 来源基线",
   "gate_evidence": "第一阶段 C1、C3、DC2 均未接受",

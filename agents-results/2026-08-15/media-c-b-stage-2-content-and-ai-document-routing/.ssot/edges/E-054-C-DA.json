@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.c.da.v3"
+    "edge.c.da.v5"
   ],
   "transferred_input": "哈希绑定的第二阶段候选",
   "gate_evidence": "只有一个候选，且不包含旧 Writer、双写权威或隐式回退路径",

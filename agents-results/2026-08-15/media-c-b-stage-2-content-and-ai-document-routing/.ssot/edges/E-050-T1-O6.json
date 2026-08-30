@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.t1.o6.v3"
+    "edge.t1.o6.v5"
   ],
   "transferred_input": "保护测试和验收矩阵",
   "gate_evidence": "每个稳定失败类都有红绿门禁",

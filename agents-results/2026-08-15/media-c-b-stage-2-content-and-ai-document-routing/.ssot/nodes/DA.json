@@ -16,11 +16,11 @@
   "decision_refs": [
     {
       "semantic_key": "media.stage2.product-decisions",
-      "version": 2
+      "version": 4
     }
   ],
   "invalidation_keys": [
-    "media.stage2.static-release-acceptance.v3"
+    "media.stage2.static-release-acceptance.v5"
   ],
   "write_authority": "evidence-only",
   "acceptance_authority": "main orchestrator",
@@ -34,7 +34,7 @@
     "command": "python3 -m pytest -q",
     "task_argument": "对唯一候选执行静态、合同和清理验收。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/deterministic-receipts/DA.json",
-    "determinism_key": "stage2:DA:v3",
+    "determinism_key": "stage2:DA:v5",
     "dispatch_state": "BLOCKED",
     "note": "deterministic local execution; zero Codex processes"
   },
@@ -42,7 +42,7 @@
   "node_role": "acceptance-gate",
   "execution_actor": "orchestrator",
   "execution_contract_ref": "DA.json",
-  "execution_contract_sha256": "c6c8ca8e934b29a4132051593f3adeb2f76b09e96a0753f68ad23a9f83492322",
+  "execution_contract_sha256": "2db094566373f9155168818a7ead149e17a5bcc1f70dc3b6e31fee0e431a8ed4",
   "side_effect_class": "none",
   "candidate_identity_policy": "must-match",
   "deliverable_ids": [],

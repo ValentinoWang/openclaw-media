@@ -39,7 +39,7 @@
     "command": "python3 -m pytest -q",
     "task_argument": "对唯一候选执行静态、合同和清理验收。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/deterministic-receipts/DA.json",
-    "determinism_key": "stage2:DA:v3",
+    "determinism_key": "stage2:DA:v5",
     "dispatch_state": "BLOCKED",
     "note": "deterministic local execution; zero Codex processes"
   }

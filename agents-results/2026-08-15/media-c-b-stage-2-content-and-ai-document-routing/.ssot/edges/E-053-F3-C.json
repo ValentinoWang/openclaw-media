@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.f3.c.v3"
+    "edge.f3.c.v5"
   ],
   "transferred_input": "第一阶段必需交付跨阶段收据",
   "gate_evidence": "只有第一阶段 DC2 ACCEPTED 才可接受本投影",

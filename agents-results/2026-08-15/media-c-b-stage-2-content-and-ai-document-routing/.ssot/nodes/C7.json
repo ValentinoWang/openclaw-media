@@ -16,11 +16,11 @@
   "decision_refs": [
     {
       "semantic_key": "media.stage2.product-decisions",
-      "version": 2
+      "version": 4
     }
   ],
   "invalidation_keys": [
-    "media.stage2.personal-version-export.v3"
+    "media.stage2.personal-version-export.v5"
   ],
   "write_authority": "implementation",
   "acceptance_authority": "main orchestrator",

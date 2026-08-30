@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.o5.o6.v3"
+    "edge.o5.o6.v5"
   ],
   "transferred_input": "飞书编辑和再回读同收据证据",
   "gate_evidence": "飞书是组织正文的唯一编辑权威",

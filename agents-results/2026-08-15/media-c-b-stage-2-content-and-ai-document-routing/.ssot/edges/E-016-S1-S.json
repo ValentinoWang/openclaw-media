@@ -7,9 +7,9 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.s1.s.v3"
+    "edge.s1.s.v5"
   ],
-  "transferred_input": "AIExecutionContext 第 2 版",
+  "transferred_input": "AIExecutionContext 第 3 版",
   "gate_evidence": "上下文全部由服务端事实生成",
   "reason_code": "contract-dependency",
   "transferred_artifact_ids": [

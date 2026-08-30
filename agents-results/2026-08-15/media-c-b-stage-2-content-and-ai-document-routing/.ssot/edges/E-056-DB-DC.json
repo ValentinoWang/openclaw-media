@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.db.dc.v3"
+    "edge.db.dc.v5"
   ],
   "transferred_input": "生产与飞书同收据证据",
   "gate_evidence": "目标证据达到 physical-device/external-system",

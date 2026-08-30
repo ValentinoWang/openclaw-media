@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.c5.c6.v3"
+    "edge.c5.c6.v5"
   ],
   "transferred_input": "InternalArtifactWriter 和个人成果收据",
   "gate_evidence": "个人路径不得创建任何全局飞书文档",

@@ -7,7 +7,7 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.o6.c.v3"
+    "edge.o6.c.v5"
   ],
   "transferred_input": "组织端到端候选",
   "gate_evidence": "组织全链在同一租户、Binding、文档和候选上闭环",
