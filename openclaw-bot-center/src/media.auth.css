@@ -326,6 +326,10 @@ h2 {
   line-height: 1;
 }
 
+.choice-switch-label {
+  display: none;
+}
+
 .identity-choice-button[aria-selected="true"] .choice-arrow {
   color: var(--auth-accent-dark);
 }
