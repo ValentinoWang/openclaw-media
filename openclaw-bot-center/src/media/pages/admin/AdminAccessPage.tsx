@@ -24,6 +24,8 @@ import { mutationFingerprint, useAdminAction, type ActionState } from '../../ui/
 import { PlatformIdentity } from '../../ui/PlatformIdentity'
 import { platformDisplayLabel } from '../../ui/platformRegistry'
 import { Metric } from '../../ui/Metric'
+import { isPublicId } from '../../identifiers'
+import { formatDateTimeMinutes } from '../../ui/datetime'
 import styles from './AdminAccessPage.module.css'
 
 type AccessTab = 'invitations' | 'admission' | 'registration'
@@ -119,7 +121,6 @@ const EMPTY_AFFILIATE_USERS: AffiliateUser[] = []
 const EMPTY_ADMISSION_BATCHES: AdmissionBatch[] = []
 const PAGE_SIZE = 30
 const SCHEMA_VERSION = 'media_web_business_pages_v2'
-const PUBLIC_ID_PATTERN = /^[A-Za-z0-9_-]{8,160}$/
 const CURSOR_PATTERN = /^[A-Za-z0-9_-]{8,1024}$/
 const tabs: Array<{ key: AccessTab; label: string; icon: typeof UsersRound }> = [
   { key: 'invitations', label: '邀请权限', icon: UsersRound },
@@ -863,9 +864,7 @@ function policyLabel(mode: RegistrationPolicyMode): string {
 }
 
 function formatDate(value: string | null): string {
-  if (!value) return '未设置'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '时间不可用' : date.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+  return formatDateTimeMinutes(value, { empty: '未设置', invalid: '时间不可用' })
 }
 
 function parseIntegerInput(value: string): number | null {
@@ -928,7 +927,7 @@ function parseAffiliateUser(value: unknown): AffiliateUser {
   const usedQuota = integerField(object, 'usedQuota')
   if (usedQuota > invitationQuota) throw new Error('服务返回的用户权限计数无效。')
   const publicUserId = stringField(object, 'publicUserId')
-  if (!PUBLIC_ID_PATTERN.test(publicUserId)) throw new Error('服务返回的用户公开编号无效。')
+  if (!isPublicId(publicUserId)) throw new Error('服务返回的用户公开编号无效。')
   return {
     publicUserId,
     displayName: nonEmptyStringField(object, 'displayName'),
@@ -967,7 +966,7 @@ function parseAdmissionBatch(value: unknown): AdmissionBatch {
   const usedCount = integerField(object, 'usedCount')
   if (usedCount > codeCount) throw new Error('服务返回的准入码批次数量无效。')
   const batchId = stringField(object, 'batchId')
-  if (!PUBLIC_ID_PATTERN.test(batchId)) throw new Error('服务返回的批次公开编号无效。')
+  if (!isPublicId(batchId)) throw new Error('服务返回的批次公开编号无效。')
   return {
     batchId,
     name: nonEmptyStringField(object, 'name'),

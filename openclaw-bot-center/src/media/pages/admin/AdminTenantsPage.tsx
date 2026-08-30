@@ -21,6 +21,7 @@ import {
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { runStatusLabel, runStatusTone } from '../../statusPresentation'
 import { Metric } from '../../ui/Metric'
+import { formatDateTime } from '../../ui/datetime'
 import styles from './AdminTenantsPage.module.css'
 
 const PAGE_SIZE = 20
@@ -534,9 +535,7 @@ function formatInteger(value: number) {
 }
 
 function formatDate(value: string | null) {
-  if (!value) return '暂无'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '时间不可读' : date.toLocaleString('zh-CN', { hour12: false })
+  return formatDateTime(value)
 }
 
 function sectionLabel(value: string) {
