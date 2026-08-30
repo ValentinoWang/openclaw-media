@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, root_validator, validator
 
+from ..jsonable import jsonable_model_dict as _jsonable_model_dict
+
 
 ASSET_MANIFEST_SCHEMA_VERSION = "asset_manifest_v1"
 MODALITY_FACTS_SCHEMA_VERSION = "modality_facts_v1"
@@ -207,13 +209,3 @@ def validate_evidence_store(payload: dict[str, Any]) -> dict[str, Any]:
     return _jsonable_model_dict(EvidenceStoreV1.parse_obj(payload))
 
 
-def _jsonable_model_dict(model: BaseModel) -> dict[str, Any]:
-    return _jsonable(model.dict())
-
-
-def _jsonable(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {str(key): _jsonable(item) for key, item in value.items()}
-    if isinstance(value, list):
-        return [_jsonable(item) for item in value]
-    return value
