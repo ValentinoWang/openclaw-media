@@ -24,6 +24,7 @@ from .stage2_context import (
     Stage2ContextError,
     ORGANIZATION_WORKSPACE_MODE,
     PERSONAL_WORKSPACE_MODE,
+    normalized_text,
 )
 from .stage2_gateway import OrganizationServerContext
 
@@ -67,8 +68,18 @@ _MISSING = object()
 _SUPPORTED_WORKSPACE_MODES = frozenset({PERSONAL_WORKSPACE_MODE, ORGANIZATION_WORKSPACE_MODE})
 
 
-def _record_value(record: Mapping[str, Any], *names: str, default: Any = _MISSING) -> Any:
-    """Read one server field and reject contradictory aliases."""
+def record_value(record: Mapping[str, Any], *names: str, default: Any = _MISSING) -> Any:
+    """Read one server-resolved field and reject contradictory aliases.
+
+    Canonical reader for the server-record half of dedup cluster TI-11
+    (Binding/Session rows carrying both a snake_case and camelCase alias
+    for the same field, e.g. ``tenant_id``/``tenantId``). Public so other
+    server-record readers of the same rows -- e.g.
+    ``stage2_production_factory._FeishuOrganizationAdapter`` -- can adopt
+    it instead of a first-alias-wins copy that would silently disagree
+    with this one on a contradictory record; that migration is tracked
+    separately (out of this change's file scope) rather than done here.
+    """
     present = [(name, record[name]) for name in names if name in record]
     if not present:
         if default is _MISSING:
@@ -80,13 +91,20 @@ def _record_value(record: Mapping[str, Any], *names: str, default: Any = _MISSIN
     return first
 
 
+# Internal alias: every call site in this module predates the public export
+# and stays on the private name to keep this change's diff to the export
+# itself; new external callers should import ``record_value``.
+_record_value = record_value
+
+
 def _required_text(value: Any, label: str, *, maximum: int = 512) -> str:
-    if not isinstance(value, str):
-        raise Stage2ServerContextError("server_record_invalid", f"{label} is missing", status=503)
-    normalized = value.strip()
-    if not normalized or len(normalized) > maximum or any(ord(char) < 32 for char in normalized):
-        raise Stage2ServerContextError("server_record_invalid", f"{label} is invalid", status=503)
-    return normalized
+    return normalized_text(
+        value,
+        label,
+        maximum=maximum,
+        not_string_detail=f"{label} is missing",
+        error=lambda msg: Stage2ServerContextError("server_record_invalid", msg, status=503),
+    )
 
 
 def _session_token(value: Any) -> str:
@@ -507,5 +525,6 @@ __all__ = [
     "TenantSourceReader",
     "current_request_session_token",
     "extract_session_token",
+    "record_value",
     "stage2_request_context",
 ]

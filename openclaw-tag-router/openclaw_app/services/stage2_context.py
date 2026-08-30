@@ -138,15 +138,51 @@ def _checksum(value: Any) -> str:
     return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
 
 
-def _identifier(value: Any, label: str, *, maximum: int = 512) -> str:
-    if isinstance(value, UUID):
+def normalized_text(
+    value: Any,
+    label: str,
+    *,
+    maximum: int = 512,
+    error: Callable[[str], Exception],
+    accept_uuid: bool = False,
+    not_string_detail: str | None = None,
+) -> str:
+    """Strip and validate a short text value, raising a caller-chosen error.
+
+    Shared by ``_identifier`` (client-supplied input, dedup cluster TI-12)
+    and ``stage2_server_context._required_text`` (server-resolved records):
+    both reject the same shape -- non-string, empty after stripping,
+    over-``maximum``, or containing a control character (``ord < 32``) --
+    but must raise different exception types with different codes/status,
+    which is why the error is injected rather than fixed here. ``error``
+    receives the detail message and must return (not raise) the exception.
+
+    ``accept_uuid=True`` converts a ``UUID`` instance to its string form
+    before validation, for callers that accept an identifier typed either
+    way; leave it False where a UUID instance signals a malformed record
+    rather than a valid alternate encoding. ``not_string_detail`` overrides
+    the message used when ``value`` is not a string (default:
+    ``"{label} must be a string"``), since some callers report that case as
+    "missing" instead.
+    """
+    if accept_uuid and isinstance(value, UUID):
         value = str(value)
     if not isinstance(value, str):
-        raise Stage2ContextError("invalid_request", f"{label} must be a string")
+        raise error(not_string_detail if not_string_detail is not None else f"{label} must be a string")
     normalized = value.strip()
     if not normalized or len(normalized) > maximum or any(ord(char) < 32 for char in normalized):
-        raise Stage2ContextError("invalid_request", f"{label} is invalid")
+        raise error(f"{label} is invalid")
     return normalized
+
+
+def _identifier(value: Any, label: str, *, maximum: int = 512) -> str:
+    return normalized_text(
+        value,
+        label,
+        maximum=maximum,
+        accept_uuid=True,
+        error=lambda msg: Stage2ContextError("invalid_request", msg),
+    )
 
 
 def _tenant_id(value: Any, label: str = "tenant_id") -> str:
@@ -175,7 +211,17 @@ def _authority_mode(workspace_mode: str, body_authority: str) -> str:
     return f"{workspace_mode}/{body_authority}"
 
 
-def _first(mapping: Mapping[str, Any], *keys: str) -> Any:
+def _first_alias(mapping: Mapping[str, Any], *keys: str) -> Any:
+    """Return the first present alias, by precedence -- no conflict check.
+
+    This normalizes a caller-supplied ``ContextSourceRow`` (dedup cluster
+    TI-11): the raw mapping is client input, not a resolved server record,
+    so an alias collision here is deliberately resolved by precedence
+    rather than rejected. Do not fold this into
+    ``stage2_server_context._record_value``, which reads server-owned
+    Binding/Session records and must fail closed on a contradictory alias
+    pair -- same shape, different trust boundary.
+    """
     for key in keys:
         if key in mapping:
             return mapping[key]
@@ -543,35 +589,35 @@ class ContextSourceRow:
         if not isinstance(raw, Mapping):
             raise ContextSourceError("invalid_source_row", "source row must be an object")
         binding_present = "binding" in raw or "bindingFacts" in raw
-        nested = _first(raw, "binding", "bindingFacts")
+        nested = _first_alias(raw, "binding", "bindingFacts")
         nested_mapping = nested if isinstance(nested, Mapping) else None
         if nested is not None and nested_mapping is None:
             raise ContextSourceError("invalid_source_row", "source Binding must be an object")
-        binding_id = _first(raw, "binding_id", "bindingId")
-        binding_generation = _first(raw, "binding_generation", "bindingGeneration")
-        binding_tenant_id = _first(raw, "binding_tenant_id", "bindingTenantId")
+        binding_id = _first_alias(raw, "binding_id", "bindingId")
+        binding_generation = _first_alias(raw, "binding_generation", "bindingGeneration")
+        binding_tenant_id = _first_alias(raw, "binding_tenant_id", "bindingTenantId")
         if nested_mapping is not None:
-            binding_id = binding_id if binding_id is not None else _first(nested_mapping, "binding_id", "bindingId", "id")
+            binding_id = binding_id if binding_id is not None else _first_alias(nested_mapping, "binding_id", "bindingId", "id")
             binding_generation = (
                 binding_generation
                 if binding_generation is not None
-                else _first(nested_mapping, "binding_generation", "bindingGeneration", "generation")
+                else _first_alias(nested_mapping, "binding_generation", "bindingGeneration", "generation")
             )
             binding_tenant_id = (
                 binding_tenant_id
                 if binding_tenant_id is not None
-                else _first(nested_mapping, "tenant_id", "tenantId")
+                else _first_alias(nested_mapping, "tenant_id", "tenantId")
             )
         return cls(
-            source_id=_first(raw, "source_id", "sourceId", "id"),
-            source_kind=_first(raw, "source_kind", "sourceKind", "kind"),
-            tenant_id=_first(raw, "tenant_id", "tenantId", "owner_tenant_id", "ownerTenantId"),
-            workspace_mode=_first(raw, "workspace_mode", "workspaceMode"),
-            body_authority=_first(raw, "body_authority", "bodyAuthority"),
-            payload=_first(raw, "payload", "data", "fields") or {},
+            source_id=_first_alias(raw, "source_id", "sourceId", "id"),
+            source_kind=_first_alias(raw, "source_kind", "sourceKind", "kind"),
+            tenant_id=_first_alias(raw, "tenant_id", "tenantId", "owner_tenant_id", "ownerTenantId"),
+            workspace_mode=_first_alias(raw, "workspace_mode", "workspaceMode"),
+            body_authority=_first_alias(raw, "body_authority", "bodyAuthority"),
+            payload=_first_alias(raw, "payload", "data", "fields") or {},
             binding_id=binding_id,
             binding_generation=binding_generation,
-            revision=str(_first(raw, "revision", "source_revision", "sourceRevision") or "1"),
+            revision=str(_first_alias(raw, "revision", "source_revision", "sourceRevision") or "1"),
             binding_present=binding_present or binding_id is not None or binding_generation is not None,
             binding_tenant_id=binding_tenant_id,
         )
@@ -903,4 +949,5 @@ __all__ = [
     "Stage2ContextError",
     "TrustedAIExecutionContext",
     "build_ai_execution_context",
+    "normalized_text",
 ]
