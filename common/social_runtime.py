@@ -948,6 +948,24 @@ def feishu_first_url(value: Any) -> str:
     return match.group(0).rstrip(".,，。") if match else ""
 
 
+def feishu_first_url_or_text(value: Any) -> str:
+    """Like :func:`feishu_first_url`, but falls back to ``str(value).strip()``
+    instead of ``""`` when nothing looks like a URL.
+
+    Consolidated from the url-3 dedup audit's second behavior class: a few
+    call sites (router_shared_helpers._extract_first_url,
+    commercial_delivery's first-URL lookup) historically pass a non-URL
+    value straight through to the caller (e.g. using free text as a
+    fallback title/description) rather than returning empty. That's a
+    real behavior split from feishu_first_url's callers, which expect ""
+    on a miss -- so this is a sibling function, not a merged one.
+    """
+    found = feishu_first_url(value)
+    if found:
+        return found
+    return "" if value in (None, "", []) else str(value).strip()
+
+
 def _coerce_feishu_url(value: Any, *, display_max_chars: int | None = None) -> dict[str, str] | str:
     if value in (None, "", []):
         return ""

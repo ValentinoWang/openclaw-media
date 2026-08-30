@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from common.feishu_docx_writer import find_created_block
+from common.feishu_docx_writer import docx_heading_block, docx_text_block, find_created_block
 from common.feishu_urls import feishu_doc_url
 from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
@@ -1530,15 +1530,14 @@ def data_review_doc_blocks(
 
 
 def _heading(level: int, text: str) -> dict[str, Any]:
-    normalized = min(max(level, 1), 9)
-    return {
-        "block_type": normalized + 2,
-        f"heading{normalized}": {"elements": [{"text_run": {"content": str(text or "")[:500]}}]},
-    }
+    """Thin wrapper — block construction now lives in
+    common.feishu_docx_writer (FC-08 dedup audit)."""
+    return docx_heading_block(level, text)
 
 
 def _paragraph(text: str) -> dict[str, Any]:
-    return {"block_type": 2, "text": {"elements": [{"text_run": {"content": str(text or "")[:1800]}}]}}
+    """Thin wrapper — see _heading."""
+    return docx_text_block(text)
 
 
 _REVIEW_LABELS = {

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from common.social_runtime import feishu_first_url
+from common.feishu_docx_writer import docx_heading_block, docx_text_block
+from common.social_runtime import feishu_first_url, feishu_first_url_or_text
 
 from .tag_router_common import *
 
@@ -26,19 +27,15 @@ class RouterSharedHelpersMixin:
         return feishu_first_url(value)
 
     def _docx_heading_block(self, level: int, text: str) -> dict[str, Any]:
-        normalized_level = min(max(level, 1), 9)
-        block_type = normalized_level + 2
-        key = f"heading{normalized_level}"
-        return {
-            "block_type": block_type,
-            key: {"elements": [{"text_run": {"content": str(text or "")[:500]}}]},
-        }
+        """Thin wrapper — block construction now lives in
+        common.feishu_docx_writer (FC-08 dedup audit). Kept as a method:
+        unified_creation.py/selfmedia_cognition.py inject it as a
+        (level, text) heading_factory callable via self._docx_heading_block."""
+        return docx_heading_block(level, text)
 
     def _docx_text_block(self, text: str) -> dict[str, Any]:
-        return {
-            "block_type": 2,
-            "text": {"elements": [{"text_run": {"content": str(text or "")[:1800]}}]},
-        }
+        """Thin wrapper — see _docx_heading_block."""
+        return docx_text_block(text)
 
     def _docx_text_blocks(self, text: str) -> list[dict[str, Any]]:
         lines = [line.strip() for line in str(text or "").splitlines() if line.strip()]
@@ -55,8 +52,11 @@ class RouterSharedHelpersMixin:
         return "\n".join(lines) if lines else "待明确"
 
     def _extract_first_url(self, text: str) -> str:
-        match = re.search(r"https?://[^\s)\]，。；;、]+", text or "")
-        return match.group(0).strip() if match else (text or "").strip()
+        """Thin wrapper — url-3 dedup audit: unlike _first_url_from_value,
+        this falls back to the original text (not "") on a miss, so it
+        shares common.social_runtime.feishu_first_url_or_text rather than
+        feishu_first_url."""
+        return feishu_first_url_or_text(text)
 
     def _extract_labeled_text(self, body: str, label: str) -> str:
         match = re.search(rf"{re.escape(label)}[：:]\s*(.+)", body)

@@ -48,6 +48,72 @@ RequestFn = Callable[..., dict[str, Any]]
 DEFAULT_RETRY_CODES: tuple[str, ...] = ("1770002",)
 
 
+def docx_heading_block(level: int, text: Any, *, limit: int = 500) -> dict[str, Any]:
+    """Build a Feishu docx heading block (heading1..heading9).
+
+    ``level`` is clamped to [1, 9], then mapped via ``block_type = level +
+    2`` -- the formula every FC-08 implementation that supports more than
+    a fixed heading2/heading3 pair already agrees on (data_review.py,
+    router_shared_helpers.py, feishu_service.py were all byte-for-byte
+    identical here before this consolidation). ``text`` is coerced via
+    ``str(text or "")`` and truncated to ``limit`` characters.
+
+    Two of the FC-08 group's five implementations (creation/writer.py,
+    selfmedia's feishu_doc_writer.py) are hardcoded to heading2/heading3
+    only, and one (sync_tag_router_docs_to_feishu.py) caps out at
+    heading4 -- neither is migrated onto this function yet (out of this
+    pass's file scope), so passing level > 4 to those call sites still
+    behaves as before. See the FC-08 dedup audit before wiring them in:
+    that migration is a deliberate, confirmed behavior change (headings
+    that used to render unclamped, or clamped to level 4, will start
+    rendering as heading5-9 / truncating at 500 chars).
+    """
+    normalized_level = min(max(level, 1), 9)
+    block_type = normalized_level + 2
+    key = f"heading{normalized_level}"
+    return {
+        "block_type": block_type,
+        key: {"elements": [{"text_run": {"content": str(text or "")[:limit]}}]},
+    }
+
+
+def docx_text_block(
+    text: Any,
+    *,
+    limit: int = 1800,
+    link: str | None = None,
+    style: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a Feishu docx paragraph (``block_type: 2``) block.
+
+    ``style``, when given, is used as-is for the run's
+    ``text_element_style`` (feishu_service.py's pre-consolidation copy
+    always passed ``{}`` here; pass ``style={}`` to reproduce that).
+    Omitting both ``style`` and ``link`` reproduces the plainer shape the
+    other FC-08 copies (data_review.py, router_shared_helpers.py) used,
+    with no ``text_element_style`` key at all.
+
+    ``link``, when given, is merged into that style dict as
+    ``{"link": {"url": link}}`` -- the single-run building block for
+    selfmedia/deconstruct/viral_content/src/feishu_doc_writer.py's
+    ``_link_paragraph`` (a two-run label+link paragraph), which is not
+    itself migrated onto this function yet -- out of this pass's file
+    scope. See the FC-08 dedup audit divergence on link paragraphs
+    before wiring it in.
+    """
+    text_run: dict[str, Any] = {"content": str(text or "")[:limit]}
+    element_style = dict(style) if style is not None else ({} if link else None)
+    if link:
+        element_style = dict(element_style or {})
+        element_style["link"] = {"url": link}
+    if element_style is not None:
+        text_run["text_element_style"] = element_style
+    return {
+        "block_type": 2,
+        "text": {"elements": [{"text_run": text_run}]},
+    }
+
+
 def extract_block_id(item: Any) -> str:
     if isinstance(item, str):
         return item

@@ -16,6 +16,7 @@ from typing import Any, Callable, Iterator
 
 import requests
 
+from common.feishu_docx_writer import docx_heading_block, docx_text_block
 from common.feishu_urls import feishu_doc_url, parse_feishu_document_ref
 from common.social_runtime import _iter_bitable_records, fetch_tenant_access_token
 from common.feishu_wiki_docs import (
@@ -2810,29 +2811,15 @@ class FeishuService:
 
     @staticmethod
     def _heading_block(level: int, text: str) -> dict[str, Any]:
-        normalized_level = min(max(level, 1), 9)
-        block_type = normalized_level + 2
-        key = f"heading{normalized_level}"
-        return {
-            "block_type": block_type,
-            key: {"elements": [{"text_run": {"content": str(text or "")[:500]}}]},
-        }
+        """Thin wrapper — block construction now lives in
+        common.feishu_docx_writer (FC-08 dedup audit)."""
+        return docx_heading_block(level, text)
 
     @staticmethod
     def _text_block(text: str) -> dict[str, Any]:
-        return {
-            "block_type": 2,
-            "text": {
-                "elements": [
-                    {
-                        "text_run": {
-                            "content": str(text or "")[:1800],
-                            "text_element_style": {},
-                        }
-                    }
-                ]
-            },
-        }
+        """Thin wrapper — see _heading_block. ``style={}`` reproduces this
+        method's pre-consolidation always-present empty text_element_style."""
+        return docx_text_block(text, style={})
 
     def _append_blocks_to_document(self, document_id: str, children: list[dict[str, Any]]) -> None:
         if not children:
