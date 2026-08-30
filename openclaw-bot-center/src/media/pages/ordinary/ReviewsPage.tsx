@@ -142,6 +142,17 @@ const metricWindows = [
   { value: "custom", label: "自定义" },
 ] as const;
 
+// windowLabel (below) used to carry a second, byte-identical copy of these three value/label
+// pairs (cluster LE-17) -- derived from the array above so there is exactly one place that lists
+// them. Note this array (and therefore windowLabel) still only covers 24h/7d/custom: the backend
+// review scheduler (selfmedia/review/validation_window_scheduler.py) also emits 1h/2h windows,
+// which fall through windowLabel's "时间窗口待确认" fallback today. That is a pre-existing
+// frontend/backend value-range gap this cluster surfaces, not something safe to silently paper
+// over here -- see report.
+const metricWindowLabels: Record<string, string> = Object.fromEntries(
+  metricWindows.map((item) => [item.value, item.label]),
+);
+
 const evidenceQualities = [
   { value: "verified", label: "已验证" },
   { value: "partial", label: "部分验证" },
@@ -751,6 +762,11 @@ function qualityClass(value: string): string {
   return qualityToneClasses[reviewQualityTone(value)];
 }
 
+// Left as its own word table rather than delegated to qualityDisplayLabel (cluster LE-05): three
+// of the four words already match the shared table exactly, but "unavailable" reads "不可用" here
+// versus "暂不可用" in ordinaryDataLabels.ts's default table (and evidenceQualities below matches
+// this page, not the shared one). That is a narrow, already-shipped wording split with no clear
+// single source of truth, so it is preserved rather than silently switched -- see report.
 function qualityLabel(value: string): string {
   if (value === "verified") return "已验证";
   if (value === "partial") return "部分验证";
@@ -760,10 +776,7 @@ function qualityLabel(value: string): string {
 }
 
 function windowLabel(value: string): string {
-  if (value === "24h") return "24 小时";
-  if (value === "7d") return "7 天";
-  if (value === "custom") return "自定义";
-  return "时间窗口待确认";
+  return metricWindowLabels[value] ?? "时间窗口待确认";
 }
 
 function metricKeyLabel(value: unknown): string {
