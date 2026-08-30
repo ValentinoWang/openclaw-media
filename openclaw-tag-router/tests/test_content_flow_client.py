@@ -1560,13 +1560,6 @@ class ContentFlowClientCompletionTest(unittest.TestCase):
             self.assertEqual(result["status"], "done")
             self.assertEqual(Path(str(result["transcript_path"])).read_text(encoding="utf-8"), "真实包根导入成功\n")
 
-    def test_parse_json_payload_accepts_fenced_model_reply(self) -> None:
-        payload = ContentFlowClient._parse_json_payload(
-            '整理结果如下：\n```json\n{"title":"体育训练软件定位讨论","summary":"内容整理"}\n```\n后续说明 {非 JSON}'
-        )
-
-        self.assertEqual(payload["title"], "体育训练软件定位讨论")
-
     def test_profile_provider_json_accepts_openclaw_agent_runtime(self) -> None:
         client = ContentFlowClient("")
         runtime = LLMProviderSettings(
@@ -1815,21 +1808,6 @@ class ContentFlowClientCompletionTest(unittest.TestCase):
         errors = validate_transcription_final_note_contract(invalid_note)
 
         self.assertTrue(any("labeled_transcript[0]" in error for error in errors))
-
-    def test_parse_json_payload_prefers_structured_object_among_multiple_objects(self) -> None:
-        payload = ContentFlowClient._parse_json_payload(
-            '{"debug": "ignored"}\n正文：{"title":"体育训练软件定位讨论","pending_questions":[]}'
-        )
-
-        self.assertEqual(payload["title"], "体育训练软件定位讨论")
-
-    def test_parse_json_payload_prefers_todo_intake_object(self) -> None:
-        payload = ContentFlowClient._parse_json_payload(
-            '{"debug": "ignored"}\n正文：{"mode":"structured_checklist","checklist_tree":[{"text":"购买","children":[{"text":"购买杠铃杆","children":[]}]}],"confidence":0.95}'
-        )
-
-        self.assertEqual(payload["mode"], "structured_checklist")
-        self.assertEqual(payload["checklist_tree"][0]["text"], "购买")
 
     def test_activity_clean_preserves_wrapped_douyin_and_submission_form_links(self) -> None:
         client = ContentFlowClient("")

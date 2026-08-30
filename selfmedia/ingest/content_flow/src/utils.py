@@ -105,32 +105,6 @@ def summarize_url(video_url: str, limit: int = 140) -> str:
     return f"{video_url[:limit]}..."
 
 
-def parse_json_payload(text: str) -> Optional[dict]:
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        return None
-
-    try:
-        return json.loads(text[start : end + 1])
-    except json.JSONDecodeError:
-        return None
-
-
-def extract_gemini_text(payload: dict) -> str:
-    try:
-        parts = payload["candidates"][0]["content"]["parts"]
-    except (KeyError, IndexError, TypeError):
-        return ""
-
-    return "".join(part.get("text", "") for part in parts if isinstance(part, dict))
-
-
 def guess_mime_type(file_path: str) -> str:
     mime_type, _ = mimetypes.guess_type(file_path)
     if mime_type:

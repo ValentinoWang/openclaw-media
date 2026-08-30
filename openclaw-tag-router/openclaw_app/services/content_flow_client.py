@@ -2917,58 +2917,6 @@ print(json.dumps({
                 return payload
         return {}
 
-    @staticmethod
-    def _parse_json_payload(text: str) -> dict[str, Any]:
-        value = (text or "").strip()
-        if not value:
-            return {}
-        try:
-            payload = json.loads(value)
-            return payload if isinstance(payload, dict) else {}
-        except ValueError:
-            pass
-
-        decoder = json.JSONDecoder()
-        candidate_payload: dict[str, Any] = {}
-        preferred_keys = {
-            "analysis",
-            "meeting_info",
-            "conclusion_summary",
-            "decision_list",
-            "topic_cards",
-            "pending_decisions",
-            "validation_hypotheses",
-            "risks_and_constraints",
-            "next_meeting",
-            "topical_attachments",
-            "labeled_transcript",
-            "pending_questions",
-            "primary_category",
-            "speaker_notes",
-            "status",
-            "summary",
-            "title",
-            "mode",
-            "items",
-            "checklist_tree",
-            "due_at",
-            "remind_at",
-            "confidence",
-            "missing_fields",
-        }
-        for match in re.finditer(r"\{", value):
-            try:
-                payload, _ = decoder.raw_decode(value[match.start() :])
-            except ValueError:
-                continue
-            if not isinstance(payload, dict):
-                continue
-            if any(key in payload for key in preferred_keys):
-                return payload
-            if not candidate_payload:
-                candidate_payload = payload
-        return candidate_payload
-
     def _call_postprocess_json(
         self,
         prompt: str,
