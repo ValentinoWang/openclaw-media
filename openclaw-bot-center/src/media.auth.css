@@ -334,6 +334,38 @@ h2 {
   color: var(--auth-accent-dark);
 }
 
+.identity-choice:has(.identity-choice-button[aria-selected="true"]) .choice-grid {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.identity-choice:has(.identity-choice-button[aria-selected="true"]) .identity-choice-button {
+  min-height: 56px;
+  align-items: center;
+  padding: 8px 12px;
+}
+
+.identity-choice:has(.identity-choice-button[aria-selected="true"]) .identity-choice-button[aria-selected="true"] {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.identity-choice:has(.identity-choice-button[aria-selected="true"]) .identity-choice-button[aria-selected="false"] {
+  grid-template-columns: minmax(0, 1fr);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--auth-accent-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.identity-choice:has(.identity-choice-button[aria-selected="true"]) .identity-choice-button[aria-selected="false"] .choice-mark,
+.identity-choice:has(.identity-choice-button[aria-selected="true"]) .identity-choice-button[aria-selected="false"] .choice-arrow,
+.identity-choice:has(.identity-choice-button[aria-selected="true"]) .identity-choice-button[aria-selected="false"] .choice-copy span,
+.identity-choice:has(.identity-choice-button[aria-selected="true"]) .identity-choice-button[aria-selected="true"] .choice-arrow {
+  display: none;
+}
+
 .choice-status {
   min-height: 20px;
   margin: 14px 0 0;
@@ -351,7 +383,12 @@ h2 {
   border-top: 1px solid #eaecf0;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .auth-panel[hidden],
+.entry-loading[hidden],
 .pending-guidance[hidden],
 .success-panel[hidden],
 .verify-action[hidden],

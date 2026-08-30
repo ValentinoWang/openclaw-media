@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 const html = readFileSync('media.login.html', 'utf8')
 const script = readFileSync('media.login.js', 'utf8')
-const css = readFileSync('media.auth.css', 'utf8')
+const css = readFileSync('src/media.auth.css', 'utf8')
 if (!html.includes('src="/media.login.js"')) throw new Error('media login module is missing')
 if (/role\s*===\s*['"]user['"]/u.test(script)) {
   throw new Error('media login still reads a retired session field')
