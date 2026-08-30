@@ -1,9 +1,8 @@
-"""Shared low-level helpers for reading back freshly-created Feishu docx blocks.
+"""Shared low-level helpers for building and reading back Feishu docx blocks.
 
-Consolidated from three near-duplicate copies (selfmedia/creation/writer.py,
-openclaw-tag-router/scripts/sync_tag_router_docs_to_feishu.py, and
-selfmedia/deconstruct/viral_content/src/feishu_doc_writer.py) -- see the
-FC-07 dedup audit.
+Consolidated from several near-duplicate copies across selfmedia and
+openclaw-tag-router -- see the FC-07 (block read-back), FC-08 (heading/
+paragraph block construction), and FC-09 (docx image upload) dedup audits.
 
 This is the auxiliary layer only: pure parsing helpers plus the two GET
 primitives, each accepting an injected ``request`` transport so this module
@@ -33,8 +32,14 @@ expand_inline_code_literal_newlines() first; writer.py's does not.
 
 from __future__ import annotations
 
+import mimetypes
 import time
+from pathlib import Path
 from typing import Any, Callable
+
+import requests
+
+from common.social_runtime import FEISHU_BASE
 
 # request(method, path, *, params=None) -> parsed response body. The
 # callable owns transport, auth headers, and turning a non-2xx status / a
@@ -222,3 +227,75 @@ def get_docx_children(
                 raise
             time.sleep(1.0)
     raise last_error or RuntimeError(f"failed to get block children {block_id}")
+
+
+def upload_docx_image(
+    document_id: str,
+    file_path: str,
+    token: str,
+    *,
+    feishu_base: str | None = None,
+    parent_node: str | None = None,
+    error_label: str = "图片",
+) -> str:
+    """Upload a local image file for insertion into a Feishu docx image block.
+
+    POSTs multipart to ``/drive/v1/medias/upload_all`` with
+    ``parent_type=docx_image``. ``parent_node`` should be the specific
+    image block id to attach to when one already exists (falls back to
+    ``document_id`` otherwise) -- the FC-09 dedup audit's two
+    pre-consolidation copies used different parameter names
+    (storyboard_images.py's keyword ``parent_node`` vs. data_review.py's
+    positional ``image_block_id``) for this same "prefer the block id,
+    fall back to the document id" semantics.
+
+    Baseline is storyboard_images.py's ``upload_feishu_doc_image``: this
+    validates the file exists / is a regular file / is non-empty before
+    the request (data_review.py's pre-consolidation copy skipped this,
+    so a missing screenshot path raised a bare ``FileNotFoundError``
+    instead of this readable error -- an intentional behavior
+    improvement per the dedup audit, not an oversight), and on a
+    non-JSON response raises with the HTTP status and a response
+    snippet rather than losing the body to ``resp.raise_for_status()``
+    (which data_review.py's pre-consolidation copy did).
+
+    ``feishu_base`` defaults to ``common.social_runtime.FEISHU_BASE``
+    (i.e. the ``FEISHU_API_BASE_URL`` env var) rather than a hardcoded
+    host -- storyboard_images.py's pre-consolidation copy hardcoded
+    ``https://open.feishu.cn/open-apis`` and relied entirely on its
+    caller passing ``feishu_base=`` to override it; that was a real bug
+    for anything reading a non-default ``FEISHU_API_BASE_URL``.
+
+    ``error_label`` customizes the Chinese noun in this function's error
+    messages (storyboard_images.py said "分镜图", data_review.py said
+    "截图") -- pass your own for another caller.
+    """
+    path = Path(file_path)
+    if not path.exists() or not path.is_file() or path.stat().st_size <= 0:
+        raise RuntimeError(f"{error_label}不存在，不能插入飞书文档：{file_path}")
+    base = (feishu_base or FEISHU_BASE).rstrip("/")
+    mime = mimetypes.guess_type(path.name)[0] or "image/png"
+    with path.open("rb") as handle:
+        resp = requests.post(
+            f"{base}/drive/v1/medias/upload_all",
+            headers={"Authorization": f"Bearer {token}"},
+            data={
+                "file_name": path.name,
+                "parent_type": "docx_image",
+                "parent_node": parent_node or document_id,
+                "size": str(path.stat().st_size),
+                "mime_type": mime,
+            },
+            files={"file": (path.name, handle, mime)},
+            timeout=60,
+        )
+    try:
+        payload = resp.json()
+    except ValueError as exc:
+        raise RuntimeError(f"上传飞书{error_label}失败：HTTP {resp.status_code} {resp.text[:300]}") from exc
+    if resp.status_code >= 400 or payload.get("code") != 0:
+        raise RuntimeError(f"上传飞书{error_label}失败：{payload}")
+    file_token = payload.get("data", {}).get("file_token") or ""
+    if not file_token:
+        raise RuntimeError(f"上传飞书{error_label}未返回 file_token：{payload}")
+    return file_token

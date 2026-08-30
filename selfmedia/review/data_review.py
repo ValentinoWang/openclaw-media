@@ -18,7 +18,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from common.feishu_docx_writer import docx_heading_block, docx_text_block, find_created_block
+from common.feishu_docx_writer import docx_heading_block, docx_text_block, find_created_block, upload_docx_image
 from common.feishu_urls import feishu_doc_url
 from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
@@ -1735,30 +1735,20 @@ def _find_created_block_id(payload: dict[str, Any], block_type: int) -> str:
 
 
 def upload_doc_image(document_id: str, image_block_id: str, file_path: str, token: str) -> str:
-    path = Path(file_path)
-    mime = mimetypes.guess_type(path.name)[0] or "image/png"
-    with path.open("rb") as handle:
-        resp = requests.post(
-            f"{FEISHU_BASE}/drive/v1/medias/upload_all",
-            headers={"Authorization": f"Bearer {token}"},
-            data={
-                "file_name": path.name,
-                "parent_type": "docx_image",
-                "parent_node": image_block_id or document_id,
-                "size": str(path.stat().st_size),
-                "mime_type": mime,
-            },
-            files={"file": (path.name, handle, mime)},
-            timeout=60,
-        )
-    resp.raise_for_status()
-    payload = resp.json()
-    if payload.get("code") != 0:
-        raise RuntimeError(f"上传飞书截图失败：{payload}")
-    file_token = str(payload.get("data", {}).get("file_token") or "")
-    if not file_token:
-        raise RuntimeError(f"上传飞书截图未返回 file_token：{payload}")
-    return file_token
+    """Thin wrapper — upload now lives in common.feishu_docx_writer.upload_docx_image
+    (FC-09 dedup audit). Note this is a behavior improvement, not just a
+    refactor: the shared implementation validates the file exists/is
+    non-empty before uploading (this copy used to let a missing
+    screenshot path raise a bare FileNotFoundError), and preserves the
+    Feishu error payload on a non-JSON response instead of losing it to
+    raise_for_status()."""
+    return upload_docx_image(
+        document_id,
+        file_path,
+        token,
+        parent_node=image_block_id,
+        error_label="截图",
+    )
 
 
 def read_feishu_document_text(url: str) -> str:

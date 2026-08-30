@@ -4,15 +4,17 @@ import json
 import os
 import subprocess
 import sys
-import mimetypes
 from pathlib import Path
 from typing import Any
 
-import requests
+from common.feishu_docx_writer import upload_docx_image
 
 IMAGE2_MODULE = "selfmedia.creation.image_generation"
 IMAGE2_OUTPUT_DIR_ENV = "GPT_IMAGE2_OUTPUT_DIR"
-FEISHU_BASE = "https://open.feishu.cn/open-apis"
+# Pre-consolidation this module hardcoded its own FEISHU_BASE (never read
+# FEISHU_API_BASE_URL) and relied on callers passing feishu_base= to
+# override it -- upload_feishu_doc_image now defaults through
+# common.feishu_docx_writer.upload_docx_image, which reads the env var.
 DEFAULT_STORYBOARD_IMAGE_MAX_IMAGES = int(os.getenv("STORYBOARD_IMAGE_MAX_IMAGES", "12"))
 STORYBOARD_IMAGE_TIMEOUT_SEC = int(os.getenv("STORYBOARD_IMAGE_TIMEOUT_SEC", "60"))
 
@@ -65,35 +67,17 @@ def upload_feishu_doc_image(
     feishu_base: str | None = None,
     parent_node: str | None = None,
 ) -> str:
-    path = Path(file_path)
-    if not path.exists() or not path.is_file() or path.stat().st_size <= 0:
-        raise RuntimeError(f"分镜图不存在，不能插入飞书文档：{file_path}")
-    base = (feishu_base or FEISHU_BASE).rstrip("/")
-    mime = mimetypes.guess_type(path.name)[0] or "image/png"
-    with path.open("rb") as handle:
-        resp = requests.post(
-            f"{base}/drive/v1/medias/upload_all",
-            headers={"Authorization": f"Bearer {token}"},
-            data={
-                "file_name": path.name,
-                "parent_type": "docx_image",
-                "parent_node": parent_node or document_id,
-                "size": str(path.stat().st_size),
-                "mime_type": mime,
-            },
-            files={"file": (path.name, handle, mime)},
-            timeout=60,
-        )
-    try:
-        payload = resp.json()
-    except ValueError as exc:
-        raise RuntimeError(f"上传飞书分镜图失败：HTTP {resp.status_code} {resp.text[:300]}") from exc
-    if resp.status_code >= 400 or payload.get("code") != 0:
-        raise RuntimeError(f"上传飞书分镜图失败：{payload}")
-    file_token = payload.get("data", {}).get("file_token") or ""
-    if not file_token:
-        raise RuntimeError(f"上传飞书分镜图未返回 file_token：{payload}")
-    return file_token
+    """Thin wrapper — upload now lives in common.feishu_docx_writer.upload_docx_image
+    (FC-09 dedup audit). Kept here (name and signature unchanged) since
+    feishu_doc_writer.py imports this by name."""
+    return upload_docx_image(
+        document_id,
+        file_path,
+        token,
+        feishu_base=feishu_base,
+        parent_node=parent_node,
+        error_label="分镜图",
+    )
 
 
 def generate_and_upload_storyboard_images(
