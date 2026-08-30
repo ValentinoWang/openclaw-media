@@ -26,7 +26,7 @@ import { PlatformIdentity } from '../../ui/PlatformIdentity'
 import { platformDisplayLabel } from '../../ui/platformRegistry'
 import { Metric } from '../../ui/Metric'
 import { isPublicId } from '../../identifiers'
-import { formatDateTimeMinutes } from '../../ui/datetime'
+import { formatDateTime, formatDateTimeMinutes } from '../../ui/datetime'
 import styles from './AdminAccessPage.module.css'
 
 type AccessTab = 'invitations' | 'admission' | 'registration'
@@ -314,7 +314,7 @@ function PlatformCookiePanel({ state }: { state: ResourceState<PlatformCookiesRe
         {items.map((item) => <div className={styles.cookieStatusItem} key={item.platform}>
           <PlatformIdentity platform={item.platform} size="sm" />
           <span><i aria-hidden="true" />{platformCookieStatusLabel(item)}</span>
-          <span>{item.updatedAt ? `更新于 ${new Date(item.updatedAt).toLocaleString('zh-CN')}` : '尚未配置'}</span>
+          <span>{item.updatedAt ? `更新于 ${formatDateTime(item.updatedAt)}` : '尚未配置'}</span>
           <code>{item.safeCommand}</code>
           <button type="button" className={styles.secondaryButton} onClick={() => void navigator.clipboard.writeText(item.safeCommand)} title="复制服务器配置命令" aria-label={`复制${platformDisplayLabel(item.platform)}配置命令`}>
             <Copy size={14} aria-hidden="true" />复制命令

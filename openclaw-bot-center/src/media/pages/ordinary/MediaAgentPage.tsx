@@ -95,7 +95,7 @@ function MediaAgentPage() {
     try {
       const response = await createMediaPairCode(session, pairLabel.trim());
       setPairCode(response.pair_code);
-      setNotice(`配对码有效期至 ${new Date(response.expires_at).toLocaleString("zh-CN", { hour12: false })}`);
+      setNotice(`配对码有效期至 ${sharedFormatDateTime(response.expires_at)}`);
     } catch {
       setError("配对码暂时无法创建。请稍后重试。");
     } finally { setBusy(""); }
