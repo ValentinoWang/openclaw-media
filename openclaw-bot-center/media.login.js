@@ -149,11 +149,16 @@ let entryStateRun = 0
 
 const ENTRY_STATES = new Set(['matched', 'none', 'expired', 'mismatched'])
 
-function setQueryMode(mode) {
+function setQueryMode(mode, { replace = false } = {}) {
   const url = new URL(window.location.href)
   if (mode === 'personal' || mode === 'organization') url.searchParams.set('mode', mode)
   else url.searchParams.delete('mode')
-  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+  const nextUrl = `${url.pathname}${url.search}${url.hash}`
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  if (nextUrl === currentUrl) return false
+  const method = replace ? 'replaceState' : 'pushState'
+  window.history[method]({ mode: mode || null }, '', nextUrl)
+  return true
 }
 
 async function fetchEntryState(mode, run) {
@@ -330,10 +335,13 @@ function initLogin() {
   initPersonalLogin()
 
   const choices = [personalChoice, organizationChoice]
-  const selectMode = (mode, moveFocus = true, updateUrl = true) => {
+  let activeMode = null
+  const selectMode = (mode, moveFocus = true, historyMode = 'push') => {
     if (mode !== 'personal' && mode !== 'organization') return
+    if (historyMode) setQueryMode(mode, { replace: historyMode === 'replace' })
+    if (activeMode === mode) return
+    activeMode = mode
     const personal = mode === 'personal'
-    if (updateUrl) setQueryMode(mode)
     personalChoice.setAttribute('aria-selected', String(personal))
     organizationChoice.setAttribute('aria-selected', String(!personal))
     personalPanel.hidden = !personal
@@ -350,36 +358,35 @@ function initLogin() {
     void loadEntryState(mode)
   }
 
+  const resetMode = (historyMode = 'push') => {
+    if (historyMode) setQueryMode(null, { replace: historyMode === 'replace' })
+    if (activeMode === null) return
+    activeMode = null
+    ++organizationRun
+    ++entryStateRun
+    personalPanel.hidden = true
+    organizationPanel.hidden = true
+    personalChoice.setAttribute('aria-selected', 'false')
+    organizationChoice.setAttribute('aria-selected', 'false')
+    setText('choice-status', '请选择一个身份继续。')
+  }
+
   choices.forEach((choice, index) => {
-    choice.addEventListener('click', () => selectMode(choice.dataset.mode, true))
+    choice.addEventListener('click', () => selectMode(choice.dataset.mode, true, 'push'))
     choice.addEventListener('keydown', (event) => {
       if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
       event.preventDefault()
       const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? choices.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + choices.length) % choices.length
       choices[nextIndex].focus()
-      selectMode(choices[nextIndex].dataset.mode, false)
+      selectMode(choices[nextIndex].dataset.mode, false, 'push')
     })
   })
   document.querySelector('#personal-back')?.addEventListener('click', () => {
-    ++organizationRun
-    ++entryStateRun
-    personalPanel.hidden = true
-    organizationPanel.hidden = true
-    setQueryMode(null)
-    personalChoice.setAttribute('aria-selected', 'false')
-    organizationChoice.setAttribute('aria-selected', 'false')
-    setText('choice-status', '请选择一个身份继续。')
+    resetMode('push')
     personalChoice.focus()
   })
   document.querySelector('#organization-back')?.addEventListener('click', () => {
-    ++organizationRun
-    ++entryStateRun
-    personalPanel.hidden = true
-    organizationPanel.hidden = true
-    setQueryMode(null)
-    personalChoice.setAttribute('aria-selected', 'false')
-    organizationChoice.setAttribute('aria-selected', 'false')
-    setText('choice-status', '请选择一个身份继续。')
+    resetMode('push')
     organizationChoice.focus()
   })
   document.querySelector('#qr-refresh')?.addEventListener('click', () => void startOrganizationAuth())
@@ -403,10 +410,15 @@ function initLogin() {
   })
   window.addEventListener('popstate', () => {
     const mode = new URLSearchParams(window.location.search).get('mode')
-    if (mode === 'personal' || mode === 'organization') selectMode(mode, false, false)
+    if (mode === 'personal' || mode === 'organization') selectMode(mode, false, null)
+    else resetMode(null)
   })
   const initialMode = new URLSearchParams(window.location.search).get('mode')
-  if (initialMode === 'personal' || initialMode === 'organization') selectMode(initialMode, false, false)
+  if (initialMode === 'personal' || initialMode === 'organization') selectMode(initialMode, false, 'replace')
+  else {
+    if (initialMode) setQueryMode(null, { replace: true })
+    resetMode(null)
+  }
 }
 
 function initRegister() {
