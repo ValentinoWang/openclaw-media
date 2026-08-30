@@ -12,7 +12,7 @@ from openclaw_app.models.message import Message
 from openclaw_app.router.activity_daily import ActivityDailyMixin
 from openclaw_app.services.obsidian_daily_checklist_service import ObsidianDailyChecklistService
 
-from _fakes.services import FakeArchiveService
+from _fakes.services import FakeArchiveService, FakeReminderService
 
 
 TZ = ZoneInfo("Asia/Shanghai")
@@ -56,53 +56,6 @@ class FakeContentFlowClient:
         # fixture can't silently drift from what content_flow_client.py's
         # real _platform_from_url actually recognizes.
         return platform_display_zh(url)
-
-
-class FakeReminderService:
-    bitable_url = "https://bitable.default"
-    config_paths: dict[str, str] = {}
-
-    def __init__(self):
-        self.calls: list[dict] = []
-
-    def add(
-        self,
-        *,
-        kind: str,
-        title: str,
-        text: str,
-        due_at: datetime | None,
-        remind_at: datetime | None = None,
-        source: str = "",
-        ref_id: str = "",
-        local_path: str = "",
-        extra_fields: dict | None = None,
-        omit_management_fields: bool = False,
-        config_path_key: str | None = None,
-    ) -> dict:
-        self.calls.append(
-            {
-                "kind": kind,
-                "title": title,
-                "text": text,
-                "due_at": due_at,
-                "remind_at": remind_at,
-                "source": source,
-                "ref_id": ref_id,
-                "local_path": local_path,
-                "extra_fields": extra_fields,
-                "omit_management_fields": omit_management_fields,
-                "config_path_key": config_path_key,
-            }
-        )
-        return {
-            "ok": True,
-            "data": {
-                "record_id": "rec-test",
-                "table_url": "https://bitable.test",
-                "calendar": {"ok": True, "event_id": "evt-test", "app_link": "https://calendar.test"},
-            },
-        }
 
 
 class FailingReminderService(FakeReminderService):

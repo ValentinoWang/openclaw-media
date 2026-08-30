@@ -11,32 +11,19 @@ from openclaw_app.router.development import DevelopmentMixin
 from openclaw_app.services.archive_service import ArchiveService
 from openclaw_app.services.obsidian_daily_checklist_service import ObsidianDailyChecklistService
 
+from _fakes.services import FakeReminderService
+
 
 TZ = ZoneInfo("Asia/Shanghai")
-
-
-class FakeReminderService:
-    bitable_url = "https://bitable.default"
-
-    def __init__(self):
-        self.calls: list[dict] = []
-
-    def add(self, **kwargs):
-        self.calls.append(kwargs)
-        return {
-            "ok": True,
-            "data": {
-                "record_id": "rec-dev-task",
-                "table_url": "https://bitable.dev",
-            },
-        }
 
 
 class DevelopmentHarness(DevelopmentMixin):
     def __init__(self, root: Path):
         self.timezone = "Asia/Shanghai"
         self.archive_service = ArchiveService(root / "workspace")
-        self.reminder_service = FakeReminderService()
+        self.reminder_service = FakeReminderService(
+            result={"ok": True, "data": {"record_id": "rec-dev-task", "table_url": "https://bitable.dev"}}
+        )
         self.obsidian_development_checklist_service = ObsidianDailyChecklistService(root / "Archieve", heading_label="开发待办")
 
     def _configured_bitable_url(self, _kind: str) -> str:

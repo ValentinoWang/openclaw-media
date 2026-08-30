@@ -12,6 +12,8 @@ from openclaw_app.router.commercial_delivery import CommercialDeliveryMixin, COM
 from openclaw_app.services.feishu_docx_renderer import NATIVE_TABLE_KIND
 from openclaw_app.services.feishu_service import FeishuService
 
+from _fakes.services import FakeReminderService
+
 
 BITABLE_PREFIX = "/bitable" + "/v1/apps/"
 COMMERCIAL_RECORD_WRITE_CALL = "POST " + BITABLE_PREFIX + "appTest/tables/tblTest/records"
@@ -168,15 +170,6 @@ class FakeOwnerService:
             "document_url": document_url,
             "policy": policy,
         }
-
-
-class FakeReminderService:
-    def __init__(self) -> None:
-        self.calls: list[dict[str, Any]] = []
-
-    def add(self, **kwargs: Any) -> dict[str, Any]:
-        self.calls.append(kwargs)
-        return {"ref_id": kwargs["ref_id"], "due_at": kwargs["due_at"].isoformat()}
 
 
 class CommercialDeliveryHarness(CommercialDeliveryMixin):
