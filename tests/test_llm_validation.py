@@ -237,6 +237,42 @@ def test_generate_json_never_retries_terminal_model_transport_outcome(monkeypatc
     assert calls == 1
 
 
+@pytest.mark.parametrize(
+    ("raw_model", "expected_model"),
+    [
+        ("gpt-x", "gpt-x"),
+        ("openclaw/gpt-x", "gpt-x"),
+        ("a/b/c", "b/c"),
+    ],
+)
+def test_generate_json_once_tenant_transport_strips_provider_prefix(
+    monkeypatch: pytest.MonkeyPatch, raw_model: str, expected_model: str
+) -> None:
+    from common import llm_client
+    from common.model_transport_context import bind_model_transport
+
+    seen_models: list[str] = []
+
+    def fake_codex_responses(parts: Any, config: LLMProviderSettings, *, instructions: str) -> dict[str, Any]:
+        seen_models.append(config.model)
+        return {"ok": True}
+
+    monkeypatch.setattr(llm_client, "_generate_json_codex_responses", fake_codex_responses)
+    settings = LLMProviderSettings(
+        model=raw_model,
+        base_url="https://example.invalid/v1",
+        api_key="test",
+        api_type=API_TYPE_CHAT_COMPLETIONS,
+        timeout=1,
+    )
+
+    with bind_model_transport(object(), required=True):
+        result = llm_client.generate_json_once([{"text": "test"}], settings)
+
+    assert result == {"ok": True}
+    assert seen_models == [expected_model]
+
+
 def test_generate_json_uses_bounded_capacity_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
     from common import llm_client
 

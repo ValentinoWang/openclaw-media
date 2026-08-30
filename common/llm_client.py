@@ -17,7 +17,7 @@ from typing import Any
 
 import requests
 
-from .bot_llm_config import openclaw_subprocess_env
+from .bot_llm_config import display_openclaw_model, openclaw_subprocess_env
 from .llm_settings import (
     API_TYPE_CHAT_COMPLETIONS,
     API_TYPE_CODEX_RESPONSES,
@@ -207,12 +207,9 @@ def generate_json_once(
         # Authenticated Media execution owns the transport decision. Provider
         # base URLs, auth files, direct HTTP credentials and agent subprocesses
         # from a shared profile are intentionally unreachable in this scope.
-        tenant_model = str(config.model).strip()
-        if "/" in tenant_model:
-            tenant_model = tenant_model.split("/", 1)[1]
         return _generate_json_codex_responses(
             parts,
-            replace(config, model=tenant_model, api_type=API_TYPE_CODEX_RESPONSES),
+            replace(config, model=display_openclaw_model(config.model), api_type=API_TYPE_CODEX_RESPONSES),
             instructions=instructions,
         )
     if config.api_type == API_TYPE_OPENCLAW_AGENT:
