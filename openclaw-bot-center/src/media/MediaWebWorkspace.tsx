@@ -53,6 +53,7 @@ import {
   type TaskDraft,
 } from "./task-launch/taskDraft";
 import { secureUuid } from "./secureUuid";
+import { runStatusLabel } from "./statusPresentation";
 import { formatDateTime } from "./ui/datetime";
 import { presentCapabilityText } from "./task-launch/fieldPresentation";
 import {
@@ -676,7 +677,7 @@ export function MediaCommandPanel({ inline = false }: { inline?: boolean }) {
           submittedTask?.result?.reply ||
           "删除未完成，请查看任务结果后重试。"
         : submittedTask
-          ? `${statusText(submittedTask.status)} · ${submittedTask.progress}%`
+          ? `${runStatusLabel(submittedTask.status)} · ${submittedTask.progress}%`
           : "正在等待删除任务状态。";
     return (
       <div
@@ -1105,7 +1106,7 @@ function TaskItem({
             {deletionPreviewStatus ??
               (deletionConfirmationExpired
                 ? "预览已过期"
-                : statusText(task.status))}
+                : runStatusLabel(task.status))}
           </span>
         </div>
         <time>
@@ -1494,22 +1495,7 @@ function formatRemainingTime(value: string, nowMs: number) {
   return `${minutes} 分 ${String(seconds).padStart(2, "0")} 秒`;
 }
 
-export function statusText(status: string): string {
-  return (
-    (
-      {
-        queued: "排队中",
-        validating: "校验中",
-        retrieving: "检索来源",
-        generating: "生成中",
-        persisting: "写入中",
-        rendering: "渲染中",
-        awaiting_confirmation: "等待确认",
-        succeeded: "已完成",
-        pending_manual: "待人工处理",
-        failed: "失败",
-        cancelled: "已取消",
-      } as Record<string, string>
-    )[status] ?? "状态更新中"
-  );
-}
+// LE-07: status label lookup moved to statusPresentation.ts's runStatusLabel
+// (canonical run/task status label map) -- this page's own copy was a subset
+// of the same creation-run lifecycle enum, just with different wording and
+// fallback text (see dedup audit LE-07).

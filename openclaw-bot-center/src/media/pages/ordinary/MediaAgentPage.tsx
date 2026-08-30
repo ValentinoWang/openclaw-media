@@ -149,6 +149,8 @@ function DevicesTab({ devices, pairLabel, pairCode, setPairLabel, onPair, busy }
 
 function deviceStateLabel(value: string): string { return value === "online" ? "在线" : value === "offline" ? "离线" : value === "revoked" ? "已停用" : "待连接"; }
 function devicePlatformLabel(value: string): string { return value === "macos" || value === "mac" ? "Mac" : value === "windows" ? "Windows" : value === "linux" ? "Linux" : "其他设备"; }
+// Device-side job lease state machine (leased/acknowledged/running), independent from
+// statusPresentation.ts's runStatusLabels (creation-run lifecycle) -- see dedup audit LE-07.
 function jobStateLabel(value: string): string { return value === "queued" ? "排队中" : value === "leased" ? "已分配" : value === "acknowledged" ? "已确认" : value === "running" ? "运行中" : value === "succeeded" ? "已完成" : value === "blocked" ? "待处理" : value === "failed" ? "失败" : "待处理"; }
 // Previously had no NaN guard (an unparseable value rendered the literal string "Invalid Date");
 // delegating to the shared formatter fixes that in passing.

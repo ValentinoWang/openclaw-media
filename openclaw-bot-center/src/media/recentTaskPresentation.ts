@@ -71,6 +71,9 @@ const stableErrorMessages: Readonly<Record<string, string>> = {
   account_relationship_conflict: "所选客户账号关系存在冲突。",
 };
 
+// Independent state machine from statusPresentation.ts's runStatusLabels (settlement
+// stages, not creation-run stages) -- keys coincide on a few names but the label wording
+// is deliberately different ("已排队" vs "排队中" etc.), see dedup audit LE-07. Do not merge.
 const settlementStageLabels: Readonly<Record<string, string>> = {
   submitted: "已提交",
   awaiting_confirmation: "等待你确认",

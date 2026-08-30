@@ -153,6 +153,8 @@ function PanelState({ icon, title, detail, action }: { icon: ReactNode; title: s
   return <div className={styles.panelState}>{icon}<strong>{title}</strong>{detail ? <p>{detail}</p> : null}{action}</div>
 }
 
+// Business-opportunity lifecycle state machine, independent from statusPresentation.ts's
+// runStatusLabels (creation-run lifecycle) -- see dedup audit LE-07.
 function statusLabel(status: string): string {
   const labels: Record<string, string> = {
     active: '进行中', approved: '已批准', confirmed: '已确认', open: '开放', in_progress: '推进中',

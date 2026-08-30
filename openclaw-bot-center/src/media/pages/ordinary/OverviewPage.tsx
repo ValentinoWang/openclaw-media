@@ -34,7 +34,7 @@ import { Link } from "react-router-dom";
 import { TaskSettlementDetails, useMediaWeb } from "../../MediaWebWorkspace";
 import type { MediaWebTask } from "../../mediaWebApi";
 import { latestTaskFeed } from "../../recentTaskPresentation";
-import { artifactSyncTone, overviewTaskTone } from "../../statusPresentation";
+import { artifactSyncTone, overviewTaskTone, runStatusLabel } from "../../statusPresentation";
 import {
   BusinessOperationError,
   callBusinessOperation,
@@ -206,20 +206,6 @@ const workflowChain: Array<{ label: string; to: string; icon: LucideIcon }> = [
   { label: "发布准备", to: "/publishing", icon: Send },
   { label: "复盘增长", to: "/reviews", icon: TrendingUp },
 ];
-
-const taskStatusLabels: Record<string, string> = {
-  awaiting_confirmation: "待人工确认",
-  pending_manual: "待人工处理",
-  queued: "排队中",
-  validating: "校验中",
-  retrieving: "读取来源",
-  generating: "生成中",
-  persisting: "写入中",
-  rendering: "渲染中",
-  succeeded: "已完成",
-  failed: "失败",
-  cancelled: "已取消",
-};
 
 function OverviewPage() {
   const {
@@ -1320,7 +1306,7 @@ function AgentPanel({
               <span
                 className={"status-badge is-" + overviewTaskTone(currentTask.status)}
               >
-                {taskStatusLabel(currentTask.status)}
+                {runStatusLabel(currentTask.status)}
               </span>
             ) : null}
           </div>
@@ -1668,7 +1654,7 @@ function pendingTaskPresentation(
     return {
       kind: receipt.kind,
       title: "确认写入达人档案",
-      statusLabel: taskStatusLabel(task.status),
+      statusLabel: runStatusLabel(task.status),
       statusTone: overviewTaskTone(task.status),
       impact: "候选档案已生成，等待人工核对后入库",
       detail: `候选回执有效至 ${displayDate(receipt.expiresAt)}。`,
@@ -1686,7 +1672,7 @@ function pendingTaskPresentation(
     return {
       kind: receipt.kind,
       title: "确认保存赛道关系",
-      statusLabel: taskStatusLabel(task.status),
+      statusLabel: runStatusLabel(task.status),
       statusTone: overviewTaskTone(task.status),
       impact: "关系预览已生成，等待人工核对后写入",
       detail: `关系预览有效至 ${displayDate(receipt.expiresAt)}。`,
@@ -1702,7 +1688,7 @@ function pendingTaskPresentation(
   return {
     kind: requiresConfirmationReceipt(task) ? "confirmation" : "manual",
     title: task.capabilityPath.at(-1) || "待处理任务",
-    statusLabel: taskStatusLabel(task.status),
+    statusLabel: runStatusLabel(task.status),
     statusTone: overviewTaskTone(task.status),
     impact: displayText(task.summary),
     detail: "完整输入、来源和结果请在任务工作区核对。",
@@ -1761,10 +1747,6 @@ function isPendingTask(task: MediaTaskSummary, nowMs = Date.now()) {
   return !task.terminal && (
     task.status === "awaiting_confirmation" || task.status === "pending_manual"
   );
-}
-
-function taskStatusLabel(status: string) {
-  return taskStatusLabels[status] ?? "状态待读取";
 }
 
 function loadDetail<T>(state: B01LoadState<T>, readyText: string) {

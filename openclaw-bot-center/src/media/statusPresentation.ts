@@ -5,6 +5,7 @@ const runStatusLabels: Record<string, string> = {
   generating: '生成中',
   persisting: '写入中',
   rendering: '渲染中',
+  awaiting_confirmation: '等待确认',
   success: '成功',
   succeeded: '已完成',
   completed: '已完成',
