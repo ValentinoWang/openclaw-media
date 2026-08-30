@@ -6,6 +6,7 @@ import os
 import re
 from typing import Any
 
+from common.env import parse_env_file
 from common.feishu_urls import parse_bitable_url
 from common.social_runtime import (
     feishu_coerce_value,
@@ -254,19 +255,7 @@ class UnifiedCreationMixin:
         return UNIFIED_CREATION_TABLE_URL
 
     def _load_creation_runs_url_from_env_file(self) -> str:
-        try:
-            with open(MEDIA_ENV_PATH, "r", encoding="utf-8") as fh:
-                for raw_line in fh:
-                    line = raw_line.strip()
-                    if not line or line.startswith("#") or "=" not in line:
-                        continue
-                    key, value = line.split("=", 1)
-                    if key.strip() != "MEDIA_OS_CREATION_RUNS_URL":
-                        continue
-                    return value.strip().strip("'").strip('"')
-        except OSError:
-            return ""
-        return ""
+        return parse_env_file(MEDIA_ENV_PATH).get("MEDIA_OS_CREATION_RUNS_URL", "")
 
     def _load_creation_runs_url_from_registry(self) -> str:
         try:

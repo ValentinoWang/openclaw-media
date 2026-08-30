@@ -6,9 +6,16 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from common.env import parse_env_file  # noqa: E402
 
 
 # The editable configuration SSOT lives in this repository; the env override
@@ -41,13 +48,7 @@ RUNTIME_SESSION_MAINTENANCE = {
 def canonical_openai_base_url() -> str:
     if not OPENAI_ENV.is_file():
         raise SystemExit(f"missing required OpenAI environment file: {OPENAI_ENV}; set OPENCLAW_OPENAI_ENV")
-    values: dict[str, str] = {}
-    for raw_line in OPENAI_ENV.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, value = line.split("=", 1)
-        values[name.strip()] = value.strip().strip('"').strip("'")
+    values = parse_env_file(OPENAI_ENV)
     base_url = values.get("OPENAI_BASE_URL", "").rstrip("/")
     if not base_url.startswith(("https://", "http://")):
         raise SystemExit(f"OPENAI_BASE_URL must be an absolute URL in {OPENAI_ENV}")

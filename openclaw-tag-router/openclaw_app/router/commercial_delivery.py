@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from common.env import parse_env_file
 from common.feishu_urls import parse_bitable_url
 from common.social_runtime import feishu_coerce_value, feishu_ensure_fields, feishu_ensure_select_options
 
@@ -874,17 +875,7 @@ class CommercialDeliveryMixin:
         raise RuntimeError(f"缺少 {COMMERCIAL_DELIVERY_URL_ENV}，无法写入商单交付多维表")
 
     def _commercial_delivery_url_from_env_file(self) -> str:
-        try:
-            for raw_line in MEDIA_ENV_PATH.read_text(encoding="utf-8").splitlines():
-                line = raw_line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                key, value = line.split("=", 1)
-                if key.strip() == COMMERCIAL_DELIVERY_URL_ENV:
-                    return value.strip().strip("'").strip('"')
-        except OSError:
-            return ""
-        return ""
+        return parse_env_file(MEDIA_ENV_PATH).get(COMMERCIAL_DELIVERY_URL_ENV, "")
 
     def _commercial_delivery_url_from_registry(self) -> str:
         try:
