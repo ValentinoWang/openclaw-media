@@ -22,6 +22,7 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
+import { isForbiddenError, isNotFoundError } from "../../businessErrorPresentation";
 import {
   CursorPagination,
   formatDate,
@@ -1579,7 +1580,7 @@ function useAssetProjection(
       })
       .catch((error: unknown) => {
         if (!active || controller.signal.aborted) return;
-        if (error instanceof BusinessOperationError && (error.status === 401 || error.status === 403)) {
+        if (error instanceof BusinessOperationError && isForbiddenError(error)) {
           setState({ status: "permission", message: "当前账户没有素材读取权限。" });
           return;
         }
@@ -1622,11 +1623,11 @@ function useAssetDetail(
       .catch((error: unknown) => {
         if (!active || controller.signal.aborted) return;
         if (error instanceof BusinessOperationError) {
-          if (error.status === 401 || error.status === 403) {
+          if (isForbiddenError(error)) {
             setState({ status: "permission", message: "当前账户没有素材详情读取权限。" });
             return;
           }
-          if (error.status === 404 || error.code === "resource_not_found") {
+          if (isNotFoundError(error)) {
             setState({ status: "notFound", message: "该素材不存在，或已不再对当前账户可见。" });
             return;
           }

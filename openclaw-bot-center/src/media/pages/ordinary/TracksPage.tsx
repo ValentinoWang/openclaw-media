@@ -24,6 +24,7 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
+import { isForbiddenError } from "../../businessErrorPresentation";
 import { useMediaWeb } from "../../MediaWebWorkspace";
 import { loginUrl } from "../../mediaWebApi";
 import { newIdempotencyKey } from "../../idempotency";
@@ -1923,14 +1924,17 @@ function loadList<T>(
 }
 
 function toResourceError<T>(error: unknown, subject: string): ResourceState<T> {
-  if (error instanceof BusinessOperationError && (error.status === 401 || error.status === 403)) {
+  // Previously checked status only, missing the error.code === "forbidden"/"admin_required" arm
+  // most other pages' equivalent check already carries -- a forbidden response that arrives
+  // without a 401/403 status fell through to the generic error state here (cluster exc-10).
+  if (isForbiddenError(error)) {
     return { kind: "forbidden", message: `${subject}暂无查看权限。请确认当前账户权限后刷新。` };
   }
   return { kind: "error", message: `${subject}暂时无法读取。请点击“刷新”重新读取。` };
 }
 
 function toMonitorResourceError(error: unknown): ResourceState<AccountMonitorResponse> {
-  if (error instanceof BusinessOperationError && (error.status === 401 || error.status === 403)) {
+  if (isForbiddenError(error)) {
     return { kind: "forbidden", message: "账号监控状态暂无查看权限。请确认当前账户权限后刷新。" };
   }
   if (error instanceof BusinessOperationError && error.status === 503 && error.code === "monitor_unavailable") {

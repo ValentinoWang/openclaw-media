@@ -18,12 +18,13 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
+import { isForbiddenError, isNotFoundError } from "../../businessErrorPresentation";
 import {
   CursorPagination,
   formatDate,
-  newIdempotencyKey,
   useCursorTrail,
 } from "../../ui/ordinaryPagePrimitives";
+import { newIdempotencyKey } from "../../idempotency";
 import { qualityDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { decisionStatusTone } from "../../statusPresentation";
@@ -798,10 +799,10 @@ function isDecisionResponse(value: unknown): value is DecisionResponse {
 
 function toResourceError<T>(error: unknown, subject: string): ResourceState<T> {
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401 || error.status === 403 || error.code === "forbidden") {
+    if (isForbiddenError(error)) {
       return { status: "forbidden", message: `当前账户没有权限查看${subject}。` };
     }
-    if (error.status === 404 || error.code === "resource_not_found") {
+    if (isNotFoundError(error)) {
       return { status: "notFound", message: `${subject}不存在或已不可用。` };
     }
     if (error.code === "field_unavailable") {
@@ -816,7 +817,11 @@ function toResourceError<T>(error: unknown, subject: string): ResourceState<T> {
 
 function actionErrorMessage(error: unknown): string {
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401 || error.status === 403) return "当前账户没有确认权限。";
+    // Previously only checked status, missing the error.code === "forbidden"/"admin_required"
+    // arm that toResourceError above already carried -- a forbidden response without a 401/403
+    // status fell through to the generic "确认暂时无法完成" message. Fixed by using the same
+    // classifier as every other check in this file.
+    if (isForbiddenError(error)) return "当前账户没有确认权限。";
     if (error.status === 422) return "确认理由或决定字段不符合要求。";
     return "确认暂时无法完成，请稍后重试。";
   }

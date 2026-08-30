@@ -23,6 +23,7 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
+import { isForbiddenError, isNotFoundError } from "../../businessErrorPresentation";
 import { runStatusLabel, runStatusTone } from "../../statusPresentation";
 import {
   CursorPagination,
@@ -845,8 +846,8 @@ async function readSection(publicRunId: string, section: SectionName): Promise<S
 function toReadError(error: unknown, fallback: string): PageReadError {
   if (error instanceof PageReadError) return error;
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401 || error.status === 403 || error.code === "forbidden") return new PageReadError("forbidden", "当前账户无权查看这部分内容。");
-    if (error.status === 404 || error.code === "resource_not_found") return new PageReadError("notFound", "这条内容不存在或已不可用。");
+    if (isForbiddenError(error)) return new PageReadError("forbidden", "当前账户无权查看这部分内容。");
+    if (isNotFoundError(error)) return new PageReadError("notFound", "这条内容不存在或已不可用。");
     return new PageReadError("error", fallback);
   }
   return new PageReadError("error", fallback);

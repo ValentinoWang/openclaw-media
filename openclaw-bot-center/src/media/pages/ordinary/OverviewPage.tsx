@@ -39,13 +39,14 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
+import { isForbiddenError, isNotFoundError } from "../../businessErrorPresentation";
 import type { CapabilityCatalog } from "../../../schemas/capabilityCatalogSchema";
 import {
   displayNumber,
   formatDate,
-  newIdempotencyKey,
   PageHeading,
 } from "../../ui/ordinaryPagePrimitives";
+import { newIdempotencyKey } from "../../idempotency";
 import {
   actionDisplayLabel,
   artifactTypeDisplayLabel,
@@ -589,10 +590,10 @@ function mapB01Error<T>(error: unknown, fallback: string): B01LoadState<T> {
     if (error.status === 408 || error.status === 504 || error.code === "timeout") {
       return { status: "timeout", message: "运营汇总请求超时，未使用默认值。" };
     }
-    if (error.status === 401 || error.status === 403) {
+    if (isForbiddenError(error)) {
       return { status: "permission", message: "当前账户没有读取运营汇总的权限。" };
     }
-    if (error.status === 404 || error.code === "resource_not_found") {
+    if (isNotFoundError(error)) {
       return { status: "notFound", message: "资源不存在，或已不再对当前账户可见。" };
     }
     return { status: "error", message: fallback };

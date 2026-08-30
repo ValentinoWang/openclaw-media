@@ -21,12 +21,13 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
+import { isForbiddenError, isNotFoundError } from "../../businessErrorPresentation";
 import { loginUrl, type MediaWebSession } from "../../mediaWebApi";
 import {
   formatDate,
-  newIdempotencyKey,
   PageHeading,
 } from "../../ui/ordinaryPagePrimitives";
+import { newIdempotencyKey } from "../../idempotency";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { qualityDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { platformDisplayLabel } from "../../ui/platformRegistry";
@@ -178,10 +179,10 @@ function emptyDataState(status: "idle" | "loading"): B07DataState {
 
 function mapLoadError(error: unknown, resource: string): LoadState<never> {
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401 || error.status === 403) {
+    if (isForbiddenError(error)) {
       return { status: "permission", message: "当前账户没有读取" + resource + "的权限。" };
     }
-    if (error.status === 404 || error.code === "resource_not_found") {
+    if (isNotFoundError(error)) {
       return { status: "error", message: resource + "不存在或已不再可见。" };
     }
     return { status: "error", message: resource + "暂时无法读取。请点击“重新读取”重试。" };
@@ -194,7 +195,7 @@ function mapLoadError(error: unknown, resource: string): LoadState<never> {
 
 function mapActionError(error: unknown): string {
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401 || error.status === 403) return "当前账户没有执行该操作的权限。";
+    if (isForbiddenError(error)) return "当前账户没有执行该操作的权限。";
     if (error.status === 409) return "版本已变化，请重新读取后再提交。";
     return "操作暂时无法完成，请稍后重试。";
   }

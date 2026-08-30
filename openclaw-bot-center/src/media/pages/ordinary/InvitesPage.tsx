@@ -4,8 +4,9 @@ import {
   RefreshCcw, ShieldAlert, ShieldCheck, UserRound, UsersRound,
 } from 'lucide-react'
 import {
-  BusinessOperationError, callBusinessOperation,
+  callBusinessOperation,
 } from '../../generatedBusinessPagesContract'
+import { isForbiddenError } from '../../businessErrorPresentation'
 import { copyText } from '../../../lib/clipboard'
 import { EmptyState, PageHeading } from '../../ui/ordinaryPagePrimitives'
 import { inviteStatusDisplayLabel } from '../../ui/ordinaryDataLabels'
@@ -51,7 +52,7 @@ type CopyState = 'idle' | 'copied' | 'error'
 const INVITEE_PAGE_SIZE = 30
 
 function toResourceError<T>(error: unknown): ResourceState<T> {
-  if (error instanceof BusinessOperationError && (error.status === 401 || error.status === 403 || error.code === 'forbidden')) {
+  if (isForbiddenError(error)) {
     return {
       status: 'forbidden',
     }
