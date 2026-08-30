@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import base64
 import importlib
 import json
-import mimetypes
 import os
 import re
 import sys
@@ -20,7 +18,7 @@ if str(WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(WORKSPACE_ROOT))
 
 from common.env import feishu_reminder_root
-from common.llm_client import generate_json_from_parts
+from common.llm_client import generate_json_from_parts, image_parts_from_paths
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import load_profile_llm_settings
 
@@ -203,17 +201,6 @@ def _attachment_paths_from_metadata(metadata: dict[str, Any]) -> list[str]:
             if isinstance(entry, dict):
                 candidates.extend(str(item) for item in entry.get("downloaded_paths") or [] if str(item or "").strip())
     return _dedupe_paths(candidates)
-
-
-def _image_part(path: str) -> dict[str, Any] | None:
-    file_path = Path(path)
-    if not file_path.is_file() or file_path.suffix.lower() not in IMAGE_SUFFIXES:
-        return None
-    if file_path.stat().st_size > MAX_IMAGE_PART_BYTES:
-        return None
-    mime_type = mimetypes.guess_type(file_path.name)[0] or "image/jpeg"
-    encoded = base64.b64encode(file_path.read_bytes()).decode("ascii")
-    return {"image_data": {"mime_type": mime_type, "data": encoded, "path": str(file_path)}}
 
 
 def _string_list(value: Any) -> list[str]:
@@ -435,10 +422,13 @@ class WardrobeMixin:
 
     def _wardrobe_llm_json(self, prompt: str, image_paths: list[str]) -> dict[str, Any]:
         parts: list[dict[str, Any]] = [{"text": prompt}]
-        for path in image_paths:
-            part = _image_part(path)
-            if part:
-                parts.append(part)
+        parts.extend(
+            image_parts_from_paths(
+                image_paths,
+                allowed_suffixes=IMAGE_SUFFIXES,
+                max_bytes=MAX_IMAGE_PART_BYTES,
+            )
+        )
         return generate_json_from_parts(
             parts,
             load_profile_llm_settings("media_analysis"),

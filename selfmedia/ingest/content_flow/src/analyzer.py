@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-import base64
 import json
-import mimetypes
 import re
 import threading
 import time
-from pathlib import Path
 from typing import Any, Callable, Optional
 
-from common.llm_client import generate_json_from_parts
+from common.llm_client import generate_json_from_parts, image_parts_from_paths
 from common.llm_settings import load_profile_llm_settings
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.knowledge_categories import (
@@ -214,25 +211,7 @@ def _analysis_media_kind(
 
 
 def _attached_image_parts(image_paths: Optional[list[str]]) -> list[dict[str, Any]]:
-    parts: list[dict[str, Any]] = []
-    for raw_path in (image_paths or [])[:12]:
-        try:
-            path = Path(raw_path)
-            if not path.is_file() or path.stat().st_size <= 0:
-                continue
-            mime_type = mimetypes.guess_type(path.name)[0] or "image/jpeg"
-            if not mime_type.startswith("image/"):
-                continue
-            parts.append({
-                "image_data": {
-                    "mime_type": mime_type,
-                    "data": base64.b64encode(path.read_bytes()).decode("ascii"),
-                    "path": str(path),
-                }
-            })
-        except OSError:
-            continue
-    return parts
+    return image_parts_from_paths(image_paths, max_items=12)
 
 
 def _build_analysis_user_content(

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import base64
 import math
-import mimetypes
 import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from common.llm_client import image_part_from_path
 
 from .storyboard_window import parse_explicit_analysis_time_range
 
@@ -37,11 +37,13 @@ class MediaEvidence:
 
 
 def _image_part(path: str) -> dict[str, Any]:
-    p = Path(path)
-    ensure_real_file(str(p), "视觉证据")
-    mime = mimetypes.guess_type(p.name)[0] or "image/jpeg"
-    data = base64.b64encode(p.read_bytes()).decode("ascii")
-    return {"image_data": {"mime_type": mime, "data": data, "path": str(p)}}
+    # dedup(llm-wrapper-02): thin wrapper over the common canonical builder.
+    # ensure_real_file's fail-closed check is deconstruct's own "no real
+    # evidence, no deconstruction" hard guard (see tests/test_hard_guards.py)
+    # and must run before the shared builder's own (weaker) file-existence
+    # check.
+    ensure_real_file(str(path), "视觉证据")
+    return image_part_from_path(path)
 
 
 def _asset_id(prefix: str, index: int) -> str:

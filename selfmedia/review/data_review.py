@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import ast
 import json
 import mimetypes
@@ -21,6 +20,7 @@ import requests
 from common.feishu_docx_writer import docx_heading_block, docx_text_block, find_created_block, upload_docx_image
 from common.feishu_urls import feishu_doc_url
 from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
+from common.llm_client import image_part_from_path
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import LLMProviderSettings, load_profile_llm_settings
 from common.platform_labels import PLATFORM_ALIASES as _PLATFORM_ALIASES
@@ -551,7 +551,7 @@ def analyze_data_screenshots(
     ]
     for index, path in enumerate(screenshots, 1):
         parts.append({"text": f"数据截图 {index}：{path}。请先 OCR 可见字段，再做复盘判断。"})
-        parts.append(_image_part(path))
+        parts.append(image_part_from_path(path))
     config = load_llm_config()
     return generate_validated_review_json(
         parts,
@@ -1912,11 +1912,6 @@ def render_data_review_report(payload: dict[str, Any]) -> str:
         ]
     )
     return "\n".join(lines) + "\n"
-def _image_part(path: str) -> dict[str, Any]:
-    p = Path(path)
-    mime = mimetypes.guess_type(p.name)[0] or "image/jpeg"
-    data = base64.b64encode(p.read_bytes()).decode("ascii")
-    return {"image_data": {"mime_type": mime, "data": data, "path": str(p)}}
 
 
 def load_llm_config() -> dict[str, Any]:

@@ -205,6 +205,29 @@ class DeepMathThinkingIntakeTests(unittest.TestCase):
             self.assertIn("[语音转写]", svc.client.rows[INBOX.name][0]["fields"]["原始内容"])
             self.assertEqual(len(svc.content_flow_client.calls), 1)
 
+    def test_image_attachment_produces_nested_image_data_part(self):
+        # dedup(llm-wrapper-02) regression: this call site used to append a
+        # flat {"image_data": <base64 str>, "mime_type": ...} part, which the
+        # LLM transport channels reject/mishandle. It must be the
+        # {"image_data": {"mime_type", "data", "path"}} shape every channel
+        # expects.
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "idea.png"
+            image.write_bytes(b"\x89PNG\r\n\x1a\ntest-image-bytes")
+            svc = service({"status": "done", "title": "图片思考", "facts": [], "judgments": [], "hypotheses": [], "domains": []})
+            result = svc.ingest(
+                body="",
+                chat_type="private",
+                metadata=metadata("om-image", [{"local_path": str(image), "mime_type": "image/png", "file_name": "idea.png"}]),
+                created_at=self.now,
+            )
+            self.assertEqual(result["status"], "structured")
+            parts = svc.content_flow_client.calls[0][1]["parts"]
+            image_parts = [part for part in parts if "image_data" in part]
+            self.assertEqual(len(image_parts), 1)
+            self.assertIsInstance(image_parts[0]["image_data"], dict)
+            self.assertEqual(image_parts[0]["image_data"]["mime_type"], "image/png")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,7 +7,6 @@ tasks, reminders, messages, or calendar changes belongs to later units.
 
 from __future__ import annotations
 
-import base64
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
@@ -18,6 +17,8 @@ import re
 from typing import Any, Mapping
 
 import requests
+
+from common.llm_client import image_part_from_path
 
 from .deepmath_ceo_thinking_schema import (
     APPROVALS,
@@ -411,7 +412,19 @@ class DeepMathThinkingIntakeService:
                     transcript = Path(str(result["transcript_path"])).read_text(encoding="utf-8").strip()
                     transcripts.append(transcript)
                 elif item["mime_type"].startswith(IMAGE_MIME_PREFIX):
-                    parts.append({"image_data": base64.b64encode(path.read_bytes()).decode("ascii"), "mime_type": item["mime_type"]})
+                    # dedup(llm-wrapper-02): this used to append a flat
+                    # {"image_data": <base64 str>, "mime_type": ...} part,
+                    # which is not the {"image_data": {"mime_type", "data",
+                    # "path"}} shape every LLM transport channel expects --
+                    # it raised in the openclaw_agent channel and would
+                    # AttributeError in the other two. image_part_from_path
+                    # builds the correct nested shape; the mime_type is then
+                    # overridden with the already-resolved item["mime_type"]
+                    # (metadata-provided, or the same extension-based guess
+                    # as a fallback) rather than re-derived from the path.
+                    image_part = image_part_from_path(path)
+                    image_part["image_data"]["mime_type"] = item["mime_type"]
+                    parts.append(image_part)
             if transcripts:
                 transcript_text = "\n\n".join(transcripts)
                 evidence_text = f"{evidence_text}\n\n[语音转写]\n{transcript_text}"

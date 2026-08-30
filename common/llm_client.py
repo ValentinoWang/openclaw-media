@@ -537,6 +537,70 @@ def parse_json_object_text(text: str) -> dict[str, Any]:
     return parsed
 
 
+def image_part_from_path(path: str | Path) -> dict[str, Any]:
+    """Strict single-image part builder: raises if the file is missing.
+
+    dedup(llm-wrapper-02) canonical -- callers that must fail closed on a
+    missing/unreadable image (data_review's review screenshots, the
+    deconstruct evidence chain's ensure_real_file-gated attachments, and
+    deepmath's chat attachments) build on this. Callers that instead want to
+    silently skip unusable paths in a batch should use
+    image_parts_from_paths below.
+    """
+    image_path = Path(path)
+    if not image_path.is_file():
+        raise FileNotFoundError(f"image file not found: {image_path}")
+    mime_type = mimetypes.guess_type(image_path.name)[0] or "image/jpeg"
+    data = base64.b64encode(image_path.read_bytes()).decode("ascii")
+    return {"image_data": {"mime_type": mime_type, "data": data, "path": str(image_path)}}
+
+
+def image_parts_from_paths(
+    paths: list[str] | None,
+    *,
+    max_items: int | None = None,
+    max_bytes: int | None = None,
+    allowed_suffixes: frozenset[str] | set[str] | None = None,
+    skip_unreadable: bool = True,
+) -> list[dict[str, Any]]:
+    """Lenient batch image part builder: filters out unusable paths instead of raising.
+
+    dedup(llm-wrapper-02) canonical batch helper. `max_items`, `max_bytes`
+    and `allowed_suffixes` are opt-in per caller (wardrobe.py passes
+    IMAGE_SUFFIXES + its 8MiB cap; content_flow's analyzer.py passes only
+    max_items=12) because those policies were never shared across the four
+    prior copies. The size<=0 skip and the mime-type-must-start-with-image/
+    skip are unconditional -- both were load-bearing in the previous
+    analyzer.py copy and are safe no-ops for the other callers.
+    """
+    parts: list[dict[str, Any]] = []
+    candidates = list(paths or [])
+    if max_items is not None:
+        candidates = candidates[:max_items]
+    for raw_path in candidates:
+        image_path = Path(raw_path)
+        try:
+            if not image_path.is_file():
+                continue
+            if allowed_suffixes is not None and image_path.suffix.lower() not in allowed_suffixes:
+                continue
+            size = image_path.stat().st_size
+            if size <= 0:
+                continue
+            if max_bytes is not None and size > max_bytes:
+                continue
+            mime_type = mimetypes.guess_type(image_path.name)[0] or "image/jpeg"
+            if not mime_type.startswith("image/"):
+                continue
+            data = base64.b64encode(image_path.read_bytes()).decode("ascii")
+            parts.append({"image_data": {"mime_type": mime_type, "data": data, "path": str(image_path)}})
+        except OSError:
+            if not skip_unreadable:
+                raise
+            continue
+    return parts
+
+
 def audio_part_from_path(path: str | Path) -> dict[str, Any]:
     audio_path = Path(path)
     mime_type = mimetypes.guess_type(str(audio_path))[0] or "application/octet-stream"
