@@ -15,7 +15,7 @@ from typing import Any, Protocol
 from urllib.parse import urlsplit
 
 from . import foundation
-from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_key, public_projection, require_context
+from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_key, public_projection
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -533,10 +533,7 @@ class RunsService:
         return f"{prefix}_{digest}"
 
     def _context(self, context: TenantContext | None) -> TenantContext:
-        try:
-            return require_context(context)
-        except Exception as exc:
-            raise RunsForbidden() from exc
+        return foundation.require_context_branded(context, RunsForbidden)
 
     @staticmethod
     def _safe_projection(response: Mapping[str, Any]) -> dict[str, Any]:

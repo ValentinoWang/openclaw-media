@@ -15,7 +15,7 @@ from typing import Any, Protocol
 from urllib.parse import urlsplit
 
 from . import foundation
-from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
+from .foundation import MediaBusinessError, TenantContext, public_projection
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -548,10 +548,7 @@ class DecisionsService:
         return f"{prefix}_{digest}"
 
     def _context(self, context: TenantContext | None) -> TenantContext:
-        try:
-            return require_context(context)
-        except Exception as exc:
-            raise DecisionsForbidden() from exc
+        return foundation.require_context_branded(context, DecisionsForbidden)
 
     def _now(self) -> str:
         return _timestamp(self._clock(), "clock")

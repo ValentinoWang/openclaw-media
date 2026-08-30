@@ -19,7 +19,7 @@ from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import urlsplit
 
 from . import foundation
-from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
+from .foundation import MediaBusinessError, TenantContext, public_projection
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -279,14 +279,7 @@ class AssetsService:
         }
 
     def _tenant_id(self, context: TenantContext | None) -> str:
-        try:
-            checked = require_context(context)
-        except Exception as exc:
-            raise AssetForbidden() from exc
-        tenant_id = str(checked.tenant_id).strip()
-        if not tenant_id:
-            raise AssetForbidden()
-        return tenant_id
+        return foundation.require_tenant_id(context, forbidden=AssetForbidden)
 
     @staticmethod
     def _state_row(row: Any) -> tuple[int, int, Any]:
@@ -673,14 +666,7 @@ class AssetPreviewService:
 
     @staticmethod
     def _tenant_id(context: TenantContext | None) -> str:
-        try:
-            checked = require_context(context)
-        except Exception as exc:
-            raise AssetForbidden() from exc
-        tenant_id = str(checked.tenant_id).strip()
-        if not tenant_id:
-            raise AssetForbidden()
-        return tenant_id
+        return foundation.require_tenant_id(context, forbidden=AssetForbidden)
 
     def _resolved_base_token(self) -> str:
         if self._base_token:

@@ -20,7 +20,7 @@ from urllib.parse import urlsplit
 from common.platform_links import classify_post_link
 
 from . import foundation
-from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_key, public_projection, require_context
+from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_key, public_projection
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -1053,14 +1053,7 @@ class TracksService:
 
     @staticmethod
     def _tenant_id(context: TenantContext | None) -> str:
-        try:
-            checked = require_context(context)
-        except Exception as exc:
-            raise TrackForbidden() from exc
-        tenant_id = str(checked.tenant_id).strip()
-        if not tenant_id:
-            raise TrackForbidden()
-        return tenant_id
+        return foundation.require_tenant_id(context, forbidden=TrackForbidden)
 
 
 TrackService = TracksService

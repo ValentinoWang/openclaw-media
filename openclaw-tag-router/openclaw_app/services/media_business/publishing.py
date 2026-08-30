@@ -25,7 +25,6 @@ from .foundation import (
     TenantContext,
     body_checksum,
     public_projection,
-    require_context,
     validate_body,
 )
 
@@ -493,10 +492,7 @@ class PublishingService:
         }
 
     def _context(self, context: TenantContext | None) -> TenantContext:
-        try:
-            return require_context(context)
-        except Exception as exc:
-            raise PublishingForbidden() from exc
+        return foundation.require_context_branded(context, PublishingForbidden)
 
     def _now(self) -> datetime:
         value = self._clock()

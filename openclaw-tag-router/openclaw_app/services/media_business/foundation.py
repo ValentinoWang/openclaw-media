@@ -194,6 +194,66 @@ def require_context(
     return context
 
 
+# --- Tenant-id extraction wrapper (exc-4, Shape B) --------------------------
+#
+# tracks.py, assets.py (both AssetsService and AssetPreviewService), and
+# document_resources.py each independently wrapped require_context() with
+# the exact same four lines: call it, catch every exception (bare `except
+# Exception`, swallowing require_context's own Forbidden/NotFound along with
+# anything else) and re-raise the caller's own branded Forbidden, then strip
+# the returned tenant_id and raise the same Forbidden again if it is empty.
+# This is "Shape B" in the exc-4 audit -- distinct from "Shape A" (a plain
+# `return require_context(context)` passthrough used by publishing/reviews/
+# decisions/runs, deliberately left as inline require_context() calls
+# rather than folded in here) and "Shape C" (usage_billing/invites/overview,
+# which carry real additional business logic -- is_admin rejection, UUID
+# coercion, a narrower except-tuple -- and are deliberately left alone).
+
+
+def require_tenant_id(
+    context: "TenantContext | None",
+    *,
+    forbidden: Callable[[], Exception],
+) -> str:
+    """require_context() plus the strip-and-reject-empty postprocessing
+    every Shape B caller repeated. Reproduces the original bare
+    ``except Exception`` swallow exactly, so it still catches
+    require_context's own Forbidden/NotFound (as well as anything else)
+    and reraises the caller's own branded ``forbidden()`` instead.
+    """
+    try:
+        checked = require_context(context)
+    except Exception as exc:
+        raise forbidden() from exc
+    tenant_id = str(checked.tenant_id).strip()
+    if not tenant_id:
+        raise forbidden()
+    return tenant_id
+
+
+def require_context_branded(
+    context: "TenantContext | None",
+    forbidden: Callable[[], Exception],
+) -> "TenantContext":
+    """require_context() with the exception rebranded to the caller's own
+    Forbidden subclass ("Shape A" in the exc-4 audit -- publishing, reviews,
+    decisions, and runs each wrapped `try: return require_context(...)
+    except Exception: raise XxxForbidden()` verbatim).
+
+    Deliberately calls ``forbidden()`` with no arguments so it falls back to
+    its own branded default message rather than foundation's generic
+    "tenant context is required" -- at least one caller's tests assert the
+    branded exception *type* via ``pytest.raises(RunsForbidden)`` (not just
+    status), which a bare `require_context()` call would fail since
+    ``foundation.Forbidden`` is not a subclass of ``RunsForbidden``. This is
+    the explicit message-preservation choice the exc-4 audit asked for.
+    """
+    try:
+        return require_context(context)
+    except Exception as exc:
+        raise forbidden() from exc
+
+
 _FORBIDDEN_PUBLIC_NAMES = {
     "accesstoken",
     "apptoken",

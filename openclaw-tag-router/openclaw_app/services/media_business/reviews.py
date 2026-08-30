@@ -20,7 +20,7 @@ from typing import Any, Protocol
 from urllib.parse import urlparse
 
 from . import foundation
-from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
+from .foundation import MediaBusinessError, TenantContext, public_projection
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -343,10 +343,7 @@ class ReviewsService:
         return f"{prefix}_{digest}"
 
     def _context(self, context: TenantContext) -> TenantContext:
-        try:
-            return require_context(context)
-        except Exception as exc:
-            raise ReviewsForbidden() from exc
+        return foundation.require_context_branded(context, ReviewsForbidden)
 
     def _now(self) -> str:
         return _timestamp(self._clock())

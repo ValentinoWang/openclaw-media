@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from . import foundation
-from .foundation import MediaBusinessError, TenantContext, require_context
+from .foundation import MediaBusinessError, TenantContext
 
 
 _PUBLIC_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
@@ -143,11 +143,4 @@ class DocumentResourceService:
 
     @staticmethod
     def _tenant_id(context: TenantContext | None) -> str:
-        try:
-            checked = require_context(context)
-        except Exception as exc:
-            raise DocumentResourceForbidden() from exc
-        tenant_id = str(checked.tenant_id).strip()
-        if not tenant_id:
-            raise DocumentResourceForbidden()
-        return tenant_id
+        return foundation.require_tenant_id(context, forbidden=DocumentResourceForbidden)
