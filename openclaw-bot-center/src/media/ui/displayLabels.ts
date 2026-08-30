@@ -1,4 +1,28 @@
 import type { PipelineSummary } from "../generatedProductContract";
+// artifactType / bodyAuthority / syncStatus word tables used to be defined here a second time,
+// byte-identical to ordinaryDataLabels.ts (cluster LE-06 / FE-08). The *tables* are now shared
+// from there. The three display functions below intentionally stay local rather than being
+// re-exported: this page (OverviewPage, via displayLabels) and the ordinary pages (via
+// ordinaryDataLabels) show different fallback text for an unrecognized value — "内容来源" vs
+// "内容来源待确认", "同步状态未知" vs "同步状态待确认" — a real, already-shipped divergence in
+// user-visible copy that a blind merge would silently collapse. Unifying that wording is a
+// product decision, not a dedup one; until it's made, both fallback strings are preserved here
+// exactly as they were, and only the duplicated table data is deduped.
+import {
+  ARTIFACT_TYPE_LABELS,
+  BODY_AUTHORITY_LABELS,
+  SYNC_STATUS_LABELS,
+} from "./ordinaryDataLabels";
+
+export function artifactTypeDisplayLabel(value: string): string {
+  return ARTIFACT_TYPE_LABELS[value] || "其他产物";
+}
+export function bodyAuthorityDisplayLabel(value: string): string {
+  return BODY_AUTHORITY_LABELS[value] || "内容来源";
+}
+export function syncStatusDisplayLabel(value: string): string {
+  return SYNC_STATUS_LABELS[value] || "同步状态未知";
+}
 
 export const DISPLAY_LABELS = {
   commercialDeliveryRecord: "商单交付记录",
@@ -14,6 +38,9 @@ const PROJECT_STAGE_LABELS: Record<string, string> = {
   assets: "素材整理",
   decision: "选题决策",
   creation: "内容创作",
+  // creation_ready is workboardPresentation.ts's alias for the same stage (cluster LE-11) —
+  // added here so workboardStageProgress can delegate its label lookup to this table.
+  creation_ready: "内容创作",
   publishing: "发布准备",
   review: "复盘增长",
 };
@@ -28,26 +55,6 @@ const PROJECT_STATUS_LABELS: Record<string, string> = {
 const WORKSPACE_MODE_LABELS: Record<string, string> = {
   personal_web: "个人工作区",
   organization_lark: "机构工作区",
-};
-const ARTIFACT_TYPE_LABELS: Record<string, string> = {
-  research_snapshot: "研究摘要",
-  asset_digest: "素材摘要",
-  decision_brief: "决策简报",
-  creation_document: "创作文档",
-  publishing_package: "发布包",
-  review_report: "复盘报告",
-  project_summary: "项目摘要",
-};
-const BODY_AUTHORITY_LABELS: Record<string, string> = {
-  internal: "网页内容",
-  lark: "机构云文档",
-};
-const SYNC_STATUS_LABELS: Record<string, string> = {
-  not_applicable: "无需同步",
-  pending: "等待同步",
-  synced: "已同步",
-  conflict: "需要处理冲突",
-  failed: "同步失败",
 };
 const ACTION_LABELS: Record<string, string> = {
   view: "查看",
@@ -64,15 +71,6 @@ export function projectStatusDisplayLabel(value: string): string {
 }
 export function workspaceModeDisplayLabel(value: string): string {
   return WORKSPACE_MODE_LABELS[value] || "工作区";
-}
-export function artifactTypeDisplayLabel(value: string): string {
-  return ARTIFACT_TYPE_LABELS[value] || "其他产物";
-}
-export function bodyAuthorityDisplayLabel(value: string): string {
-  return BODY_AUTHORITY_LABELS[value] || "内容来源";
-}
-export function syncStatusDisplayLabel(value: string): string {
-  return SYNC_STATUS_LABELS[value] || "同步状态未知";
 }
 export function actionDisplayLabel(value: string): string {
   return ACTION_LABELS[value] || "可用操作";

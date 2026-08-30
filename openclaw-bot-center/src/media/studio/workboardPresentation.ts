@@ -1,3 +1,5 @@
+import { projectStageDisplayLabel } from '../ui/displayLabels'
+
 export type WorkboardStageProgress = {
   readonly label: string
   readonly progress: number | null
@@ -8,14 +10,23 @@ export type WorkboardTask = {
   readonly terminal: boolean
 }
 
-const stageProgressByStage: Readonly<Record<string, WorkboardStageProgress>> = {
-  research: { label: '研究', progress: 12 },
-  assets: { label: '素材整理', progress: 28 },
-  decision: { label: '选题决策', progress: 46 },
-  creation: { label: '内容创作', progress: 66 },
-  creation_ready: { label: '内容创作', progress: 66 },
-  publishing: { label: '发布准备', progress: 86 },
-  review: { label: '复盘增长', progress: 100 },
+// The research/assets/decision/creation(_ready)/publishing/review project stages (cluster LE-11)
+// used to carry their own copy of the Chinese label here, byte-identical to
+// ui/displayLabels.ts's PROJECT_STAGE_LABELS. Only the progress percentage is genuinely local to
+// this workboard view now; the label is derived from the shared table below. The Content OS
+// stages (captured..published) are a *different* enum (see LE-09/LE-10) and keep their own
+// label+progress pairs unchanged.
+const projectStageProgress: Readonly<Record<string, number>> = {
+  research: 12,
+  assets: 28,
+  decision: 46,
+  creation: 66,
+  creation_ready: 66,
+  publishing: 86,
+  review: 100,
+}
+
+const contentOsStageProgress: Readonly<Record<string, WorkboardStageProgress>> = {
   captured: { label: '已登记', progress: 12 },
   planned: { label: '已规划', progress: 28 },
   edit_ready: { label: '可开始剪辑', progress: 46 },
@@ -30,7 +41,10 @@ const unknownStageProgress: WorkboardStageProgress = {
 }
 
 export function workboardStageProgress(stage: string): WorkboardStageProgress {
-  return stageProgressByStage[stage] ?? unknownStageProgress
+  if (stage in projectStageProgress) {
+    return { label: projectStageDisplayLabel(stage), progress: projectStageProgress[stage] }
+  }
+  return contentOsStageProgress[stage] ?? unknownStageProgress
 }
 
 export function filterWorkboardAttentionTasks<T extends WorkboardTask>(

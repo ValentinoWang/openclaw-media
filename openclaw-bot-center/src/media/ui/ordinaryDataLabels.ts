@@ -84,7 +84,10 @@ const MATERIAL_STATUS_LABELS: Record<string, string> = {
   处理失败: "处理失败",
 };
 
-const ARTIFACT_TYPE_LABELS: Record<string, string> = {
+// Exported: displayLabels.ts shares these tables (cluster LE-06 / FE-08) instead of keeping a
+// second byte-identical copy. Its display functions stay separate because their fallback text
+// for unrecognized values differs from the ones below — see the comment there.
+export const ARTIFACT_TYPE_LABELS: Record<string, string> = {
   research_snapshot: "研究摘要",
   asset_digest: "素材摘要",
   decision_brief: "决策简报",
@@ -94,12 +97,12 @@ const ARTIFACT_TYPE_LABELS: Record<string, string> = {
   project_summary: "项目摘要",
 };
 
-const BODY_AUTHORITY_LABELS: Record<string, string> = {
+export const BODY_AUTHORITY_LABELS: Record<string, string> = {
   internal: "网页内容",
   lark: "机构云文档",
 };
 
-const SYNC_STATUS_LABELS: Record<string, string> = {
+export const SYNC_STATUS_LABELS: Record<string, string> = {
   not_applicable: "无需同步",
   pending: "等待同步",
   synced: "已同步",
