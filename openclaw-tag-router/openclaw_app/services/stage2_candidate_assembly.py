@@ -5,9 +5,10 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import re
 from collections.abc import Mapping, Sequence
 from typing import Any
+
+from common.canonical_digest import normalize_prefixed_digest
 
 from .stage2_artifact_state import ORGANIZATION_MODE, PERSONAL_MODE
 from .stage2_release_gate import (
@@ -23,7 +24,6 @@ from .stage2_release_gate import (
 SCHEMA_VERSION = "stage2.candidate_assembly.v1"
 PROJECTION_ORDER = ("F1", "F2", "F3")
 ALLOWED_AUTHORITY_MODES = frozenset({PERSONAL_MODE, ORGANIZATION_MODE})
-_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _MISSING = object()
 
 
@@ -57,7 +57,7 @@ def _text(value: Any, label: str, code: str, limit: int = 512) -> str:
 
 def _digest(value: Any, label: str, code: str) -> str:
     normalized = _text(value, label, code, 80)
-    if _DIGEST_RE.fullmatch(normalized) is None:
+    if normalize_prefixed_digest(normalized) is None:
         raise CandidateAssemblyError(code, f"{label} must be a sha256 digest")
     return normalized
 

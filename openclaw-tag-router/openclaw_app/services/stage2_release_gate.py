@@ -10,14 +10,14 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import re
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from common.canonical_digest import normalize_prefixed_digest
+
 
 SCHEMA_VERSION = "stage2.release_gate.v1"
-_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 UPSTREAM_PROJECTIONS = {"F1": "C1", "F2": "C3", "F3": "DC2"}
 
 
@@ -41,7 +41,7 @@ def _text(value: Any, label: str, maximum: int = 512) -> str:
 
 def _digest(value: Any, label: str) -> str:
     normalized = _text(value, label, 80)
-    if _DIGEST_RE.fullmatch(normalized) is None:
+    if normalize_prefixed_digest(normalized) is None:
         raise ReleaseGateError("invalid_receipt", f"{label} must be a sha256 digest")
     return normalized
 

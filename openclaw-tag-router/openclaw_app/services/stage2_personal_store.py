@@ -10,7 +10,6 @@ import copy
 import hashlib
 import json
 import os
-import re
 import sqlite3
 import threading
 from contextlib import contextmanager
@@ -18,11 +17,11 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Protocol
 
+from common.canonical_digest import SHA256_PREFIXED_RE
 from common.canonical_digest import canonical_json as _shared_canonical_json
 from openclaw_app.services.stage2_errors import Stage2StoreConflict
 
 
-_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _PERSONAL_ARTIFACT_SCHEMA_VERSION = "stage2.personal_pipeline.v1"
 
 
@@ -343,7 +342,7 @@ class SQLitePersonalContentStore:
             or revision < 1
             or not isinstance(content, Mapping)
             or not isinstance(content_digest, str)
-            or _DIGEST_RE.fullmatch(content_digest) is None
+            or SHA256_PREFIXED_RE.fullmatch(content_digest) is None
             or content_digest
             != "sha256:" + hashlib.sha256(_canonical(content).encode("utf-8")).hexdigest()
             or "verified" in value

@@ -9,7 +9,6 @@ from __future__ import annotations
 import copy
 import json
 import os
-import re
 import sqlite3
 import threading
 from contextlib import contextmanager
@@ -18,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
-from common.canonical_digest import prefixed_digest
+from common.canonical_digest import normalize_prefixed_digest, prefixed_digest
 
 from openclaw_app.services.stage2_errors import (
     IDEMPOTENCY_CONFLICT,
@@ -37,7 +36,6 @@ from openclaw_app.services.stage2_external_document import (
 
 SCHEMA_VERSION = "stage2.organization_pipeline.v1"
 ORGANIZATION_MODE = "organization_lark/lark"
-_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
 class OrganizationPipelineError(Stage2CodedError):
@@ -85,7 +83,7 @@ def _digest(value: Any) -> str:
 
 def _content_digest(value: Any) -> str:
     normalized = _text(value, "content_digest", 80)
-    if _DIGEST_RE.fullmatch(normalized) is None:
+    if normalize_prefixed_digest(normalized) is None:
         raise OrganizationPipelineError("invalid_request", "content_digest must be a sha256 digest")
     return normalized
 

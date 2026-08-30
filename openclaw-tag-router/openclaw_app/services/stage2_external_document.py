@@ -14,7 +14,6 @@ import json
 import math
 import os
 import sqlite3
-import re
 import threading
 import time
 from contextlib import contextmanager
@@ -23,6 +22,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
+from common.canonical_digest import SHA256_PREFIXED_RE, normalize_prefixed_digest
+
 from openclaw_app.services.stage2_errors import (
     IDEMPOTENCY_CONFLICT,
     IDEMPOTENCY_IN_PROGRESS,
@@ -30,7 +31,6 @@ from openclaw_app.services.stage2_errors import (
 )
 
 
-_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _SUCCESS_STATES = frozenset({"ok", "success", "succeeded", "written", "created"})
 
 
@@ -65,7 +65,7 @@ def _positive_generation(value: Any) -> int:
 
 def _digest(value: Any, label: str = "content_digest") -> str:
     normalized = _required_text(value, label, 80)
-    if _DIGEST_RE.fullmatch(normalized) is None:
+    if normalize_prefixed_digest(normalized) is None:
         raise ExternalDocumentError("invalid_request", f"{label} must be a sha256 digest")
     return normalized
 
@@ -380,7 +380,7 @@ class SQLiteWriteReceiptStore:
             or not isinstance(result.idempotency_key, str)
             or not result.idempotency_key.strip()
             or not isinstance(result.content_digest, str)
-            or _DIGEST_RE.fullmatch(result.content_digest) is None
+            or SHA256_PREFIXED_RE.fullmatch(result.content_digest) is None
             or result.remote_ref is not None
             and (not isinstance(result.remote_ref, str) or not result.remote_ref.strip())
             or result.remote_revision is not None

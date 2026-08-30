@@ -10,11 +10,12 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import re
 import threading
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
+
+from common.canonical_digest import normalize_prefixed_digest
 
 from openclaw_app.services.stage2_errors import IDEMPOTENCY_CONFLICT, Stage2CodedError
 
@@ -23,7 +24,6 @@ PERSONAL_MODE = "personal_web/internal"
 ORGANIZATION_MODE = "organization_lark/lark"
 SCHEMA_VERSION = "stage2.artifact_state.v1"
 
-_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _SUCCESS = frozenset({"ok", "success", "succeeded", "written", "registered", "confirmed"})
 _FORBIDDEN_BROWSER_FIELDS = frozenset(
     {
@@ -66,7 +66,7 @@ def _optional_text(value: Any, label: str) -> str | None:
 
 def _digest(value: Any, label: str = "content_digest") -> str:
     normalized = _text(value, label, 80)
-    if _DIGEST_RE.fullmatch(normalized) is None:
+    if normalize_prefixed_digest(normalized) is None:
         raise ArtifactStateError("invalid_request", f"{label} must be a sha256 digest")
     return normalized
 

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from typing import Any
 
 
@@ -48,3 +49,26 @@ def digest_bytes(value: Any, **kwargs: Any) -> bytes:
 def prefixed_digest(value: Any, **kwargs: Any) -> str:
     """``"sha256:" + digest_hex(value, **kwargs)``."""
     return "sha256:" + digest_hex(value, **kwargs)
+
+
+# dedup(r2): shared format for the "sha256:<64 hex>" digest strings produced
+# by prefixed_digest() above and validated at the six Stage-2 fail-closed
+# boundaries (stage2_candidate_assembly / stage2_external_document /
+# stage2_artifact_state / stage2_release_gate / stage2_organization_pipeline
+# / stage2_personal_store). Each of those sites keeps its own exception type
+# and error code -- only the regex literal and the strip/length-guard/
+# fullmatch logic are deduplicated here.
+#
+# Deliberately excludes the *bare* 64-hex form (no "sha256:" prefix) used by
+# production_reconciliation_planner.py / media_archive_service.py /
+# retail_billing.py / production_release_manifest.py -- that is a different
+# wire contract, out of scope for this helper.
+SHA256_PREFIXED_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+
+def normalize_prefixed_digest(value: Any) -> str | None:
+    """Return the trimmed ``sha256:<64 hex>`` string, or ``None`` if invalid."""
+    text = str(value or "").strip()
+    if len(text) > 80:
+        return None
+    return text if SHA256_PREFIXED_RE.fullmatch(text) else None
