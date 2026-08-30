@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import quote, unquote, urlparse
 
+from common.social_runtime import now_iso as utc_now_iso
+
 
 MEDIA_URI_SCHEME = "media"
 MEDIA_VAULT_ROOT_ENV = "OPENCLAW_MEDIA_VAULT_ROOT"
@@ -68,10 +70,6 @@ def resolve_media_vault_root(root: str | Path | None = None) -> Path:
     elif isinstance(configured_root, str) and not configured_root.strip():
         raise MediaVaultError(f"{MEDIA_VAULT_ROOT_ENV} must not be empty")
     return Path(configured_root).expanduser().resolve()
-
-
-def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
 _DEFAULT_TENANT_ID_ERROR_MESSAGE = "tenant_id must be a canonical OpenClaw tenant UUID"

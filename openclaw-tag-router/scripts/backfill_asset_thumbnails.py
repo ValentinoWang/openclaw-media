@@ -17,7 +17,6 @@ import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +31,8 @@ from scripts.sync_lark_base_projection import (
     _load_env_file,
     _load_registry_table_bindings,
 )
+
+from common.social_runtime import now_iso as _now_iso
 
 
 TENANT_ID = "618ff8c4-cc5a-4034-a2c5-226e3ad6cd37"
@@ -370,7 +371,7 @@ def main() -> int:
         status = str(outcome["status"])
         counts[status] = counts.get(status, 0) + 1
     report = {
-        "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "generated_at": _now_iso(),
         "mode": "execute" if args.execute else "dry_run",
         "base_table": binding["table_name"],
         "source_count": len(records),

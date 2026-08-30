@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
+
+from common.social_runtime import now_iso as _now_iso
 
 from .tag_router_common import *
 from media_vault import MediaVault, MediaVaultError, require_tenant_id
@@ -315,7 +316,7 @@ class MediaGrowthMixin:
             "evidence_refs": evidence_refs,
             "source_capability": parsed.value("来源能力", "source_capability") or "track_creator_membership_query",
             "status": parsed.value("状态", "status") or "active",
-            "last_evaluated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "last_evaluated_at": _now_iso(),
             "metrics_snapshot_id": parsed.value("指标快照id", "metrics_snapshot_id"),
         }
         result = repository.upsert_membership(payload)

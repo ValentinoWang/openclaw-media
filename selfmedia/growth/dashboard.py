@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import hashlib
 import ipaddress
-from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse
 
 from .capability_registry import MEDIA_GROWTH_LABEL_CAPABILITIES, get_capability_spec
-from .contracts import VISIBLE_QUALITY_STATUSES, VISIBLE_STATUSES, VISIBLE_VISIBILITIES
+from .contracts import (
+    VISIBLE_QUALITY_STATUSES,
+    VISIBLE_STATUSES,
+    VISIBLE_VISIBILITIES,
+    utc_now_iso,
+)
 
 
 def is_projection_eligible(payload: dict[str, Any], *, maintainer: bool = False) -> bool:
@@ -488,7 +492,7 @@ def build_dashboard_projection(
     publishing_packs = _build_publishing_packs(visible_summaries, artifacts)
     review_signals = _build_review_signals(post_reviews, metric_snapshots)
     next_actions = _build_next_actions()
-    generated_at = generated_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    generated_at = generated_at or utc_now_iso()
     health = dict(source_health or {})
     counts = {
         "accounts": len(accounts),

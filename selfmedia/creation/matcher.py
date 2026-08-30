@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+from common.social_runtime import now_iso as _now_iso
 from common.social_runtime import parse_iso_datetime
 
 from .field_contract import CanonicalMediaRecord, normalize_key, split_tags
@@ -456,7 +457,7 @@ def _topic_tokens(value: str) -> list[str]:
 def activity_reference_time(request: CreationRequest) -> str:
     if request.publish_time:
         return request.publish_time
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    return _now_iso()
 
 
 def publish_time_in_activity_window(reference_time: str, start_time: str | None, end_time: str | None) -> bool:

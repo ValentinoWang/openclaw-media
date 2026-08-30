@@ -3,12 +3,12 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import json
-from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit
 
 from media_vault import MediaVault, require_tenant_id
 
+from common.social_runtime import now_iso as _now
 from media_model.payloads import build_business_opportunity_payload
 
 
@@ -55,11 +55,6 @@ class CommercialLifecycleError(ValueError):
 
 
 LifecycleTransitionError = CommercialLifecycleError
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-
 
 def _request_fingerprint(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()

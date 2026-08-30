@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
+
+from common.social_runtime import now_iso as _now_iso
 
 from .contract import StyleFeedbackRecord, StylePolishResult
 
@@ -10,7 +11,7 @@ def build_feedback_record(result: StylePolishResult, *, selected_version: str = 
     selected = str(selected_version or "").strip()
     return {
         "run_id": result.run_id,
-        "created_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "created_at": _now_iso(),
         "selection_status": "selected" if selected else "unselected",
         "selected_version": selected,
         "note": str(note or "").strip(),

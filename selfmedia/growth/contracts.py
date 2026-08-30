@@ -2,19 +2,15 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from typing import Any, ClassVar
 
+from common.social_runtime import now_iso as utc_now_iso
 from common.url_text import extract_urls as _extract_urls
 
 
 VISIBLE_STATUSES = {"active", "candidate", "published", "reviewed", "ready"}
 VISIBLE_QUALITY_STATUSES = {"cleaned", "verified", "accepted"}
 VISIBLE_VISIBILITIES = {"public", "ops"}
-
-
-def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
 def clean_text(value: Any) -> str:

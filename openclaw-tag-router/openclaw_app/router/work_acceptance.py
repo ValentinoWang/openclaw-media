@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
 from typing import Any
 
+from common.social_runtime import now_iso as _now_iso
 from media_vault import MediaVault, MediaVaultError, require_tenant_id
 from selfmedia.business.work_acceptance import WorkAcceptanceError, WorkAcceptanceWriteback
 
@@ -170,7 +170,7 @@ class WorkAcceptanceMixin:
                 "creation_run_id": creation_run_id,
                 "reply": f"验收结果未写入：未找到创作记录 {creation_run_id}。请确认创作记录ID属于当前租户。",
             }
-        accepted_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        accepted_at = _now_iso()
         artifact = vault.write_json_artifact(
             run_dir,
             "acceptance.json",

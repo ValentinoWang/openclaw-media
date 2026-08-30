@@ -30,6 +30,7 @@ from .contracts import (
     SourceAsset,
     clean_text,
     extract_urls,
+    utc_now_iso,
 )
 from .feishu_summary_sync import sync_growth_summary_artifact
 from .input_parser import parse_media_growth_input
@@ -1108,7 +1109,7 @@ def review_growth_artifact(
         payload = load_growth_artifact_payload(str(path), vault=actual_vault)
         if not _is_media_growth_payload(payload):
             return {"ok": False, "status": "artifact_contract_failed", "reason": "reference is not a Mediaclaw artifact"}
-        now = _utc_now_iso()
+        now = utc_now_iso()
         payload["schema_version"] = payload.get("schema_version") or "media_growth_artifact_v1"
         payload["updated_at"] = now
         payload["reviewed_at"] = now
@@ -2201,12 +2202,6 @@ def _normalize_review_action(action: str) -> str:
         "废弃": "reject",
     }
     return mapping.get(str(action or "").strip().lower(), "")
-
-
-def _utc_now_iso() -> str:
-    from datetime import datetime, timezone
-
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
 class MediaGrowthPendingManual(RuntimeError):

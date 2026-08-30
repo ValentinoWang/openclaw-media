@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
+from common.social_runtime import now_iso as _now_iso
 from media_model.payloads import account_metric_snapshot_idempotency_key
 from media_model.payloads import build_account_metric_snapshot_payload
 
@@ -24,7 +24,7 @@ def build_account_metric_snapshots(
     evidence_uri: str,
     collected_at: str | None = None,
 ) -> list[dict[str, Any]]:
-    collected = collected_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    collected = collected_at or _now_iso()
     payloads: list[dict[str, Any]] = []
     for source_key, (metric_key, raw_metric_name, unit) in METRIC_MAP.items():
         value = extracted_profile.get(source_key)

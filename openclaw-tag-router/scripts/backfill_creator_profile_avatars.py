@@ -8,7 +8,6 @@ import hashlib
 import json
 import sys
 from collections.abc import Callable
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -23,6 +22,7 @@ from common.social_runtime import (  # noqa: E402
     feishu_plain_text,
     feishu_update_record,
     load_default_env_files,
+    now_iso as _now_iso,
 )
 from selfmedia.creator_profiles.extractor import normalize_public_http_url  # noqa: E402
 from selfmedia.creator_profiles.resolver import (  # noqa: E402
@@ -204,7 +204,7 @@ def main() -> int:
         status = str(outcome["status"])
         counts[status] = counts.get(status, 0) + 1
     report = {
-        "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "generated_at": _now_iso(),
         "mode": "execute" if args.execute else "dry_run",
         "selected": len(outcomes),
         "counts": counts,
