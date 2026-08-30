@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from common.env import parse_env_file as _canonical_parse_env_file
 from common.social_runtime import parse_iso_datetime
 
 from .deepmath_runtime_config import DEEPMATH_ENV_FILE_ENV
@@ -228,17 +229,13 @@ def tenant_profile_for_account(account_id: str) -> str:
 
 
 def parse_env_file(path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
-            continue
-        values[key] = value.strip().strip('"').strip("'")
-    return values
+    # Required-file contract preserved (dedup pe-01): this reader has no
+    # exists() guard today, so a missing DeepMath env file raises OSError
+    # straight out of execution_environment() below. require=True keeps
+    # that fail-closed behavior (the same OSError subtype, e.g.
+    # FileNotFoundError, propagates unchanged) instead of quietly
+    # returning {} and falling through to a less specific error.
+    return _canonical_parse_env_file(path, require=True)
 
 
 def execution_environment(state: dict[str, Any], base: dict[str, str] | None = None) -> dict[str, str]:
