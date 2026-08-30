@@ -37,7 +37,7 @@ from common.social_runtime import (
 )
 
 from .matcher import RankedRecord
-from .llm_generator import CREATION_SCORE_THRESHOLD
+from .llm_generator import CREATION_SCORE_THRESHOLD, _validate_creator_report
 from .request_parser import CreationRequest
 
 
@@ -931,48 +931,13 @@ def _section(report: dict[str, Any], key: str) -> Any:
 
 
 def _require_creator_report_for_render(draft: dict[str, Any], request: CreationRequest) -> dict[str, Any]:
+    # SV-01: delegate to the single canonical creator_report contract check in
+    # llm_generator._validate_creator_report -- the two implementations had
+    # drifted into a duplicate (same required sections, same platform/
+    # content_type/first_hour_action checks, same ValueError text) rather than
+    # a deliberately different contract, so this stays a thin wrapper.
     report = draft.get("creator_report")
-    if not isinstance(report, dict):
-        raise ValueError("creator_report 必须是 object")
-    required_sections = {
-        "overview": dict,
-        "opening_3s": dict,
-        "mainline": dict,
-        "storyboard": list,
-        "publishing_pack": dict,
-        "material_checklist": dict,
-        "risk_controls": list,
-        "evidence_appendix": dict,
-    }
-    for section, expected_type in required_sections.items():
-        if not isinstance(report.get(section), expected_type):
-            raise ValueError(f"creator_report.{section} 必须是 {expected_type.__name__}")
-    _require_keys(report["overview"], "creator_report.overview", ("recommended_topic", "core_sentence", "platform", "content_type", "suitable_activity", "strongly_recommend_activity", "biggest_risk"))
-    if str(report["overview"].get("platform") or "").strip() != request.platform:
-        raise ValueError(f"creator_report.overview.platform 必须等于 {request.platform}")
-    if str(report["overview"].get("content_type") or "").strip() != request.content_type:
-        raise ValueError(f"creator_report.overview.content_type 必须等于 {request.content_type}")
-    _require_keys(report["opening_3s"], "creator_report.opening_3s", ("visual_0_0_5", "caption_or_voice_0_5_3", "do_not_open_like_this"))
-    _require_keys(report["mainline"], "creator_report.mainline", ("conflict", "evidence", "emotional_payoff", "audience_resonance"))
-    _require_keys(report["publishing_pack"], "creator_report.publishing_pack", ("title_1", "title_2", "cover_text", "body_copy", "hashtags", "pinned_comment", "comment_prompt", "first_hour_action"))
-    if not str(report["publishing_pack"].get("first_hour_action") or "").strip():
-        raise ValueError("creator_report.publishing_pack.first_hour_action 不能为空")
-    _require_keys(report["material_checklist"], "creator_report.material_checklist", ("must_have", "better_to_have", "can_rescue_without", "must_not_fabricate"))
-    for index, row in enumerate(report["storyboard"], 1):
-        if not isinstance(row, dict):
-            raise ValueError(f"creator_report.storyboard[{index}] 必须是 object")
-        _require_keys(row, f"creator_report.storyboard[{index}]", ("time", "visual", "subtitle", "sound", "shooting_note"))
-    for index, item in enumerate(report["risk_controls"], 1):
-        if not isinstance(item, dict):
-            raise ValueError(f"creator_report.risk_controls[{index}] 必须是 object")
-        _require_keys(item, f"creator_report.risk_controls[{index}]", ("condition", "rewrite_or_action"))
-    return report
-
-
-def _require_keys(data: dict[str, Any], path: str, keys: tuple[str, ...]) -> None:
-    missing = [key for key in keys if key not in data]
-    if missing:
-        raise ValueError(f"{path} 缺少字段：{missing}")
+    return _validate_creator_report(report, request)
 
 
 def _table_block(headers: list[str], rows: Any, keys: list[str]) -> dict[str, Any]:
