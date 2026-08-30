@@ -26,13 +26,19 @@ REPOSITORY_ROOT = PLUGIN_ROOT.parent
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(1, str(REPOSITORY_ROOT))
 
+from common.social_runtime import (
+    ensure_feishu_no_proxy,
+    load_default_env_files,
+    load_env_file,
+    load_openclaw_feishu_account_env,
+)
 from common.url_text import extract_urls_deep
 from runtime.evidence.agent_results import agent_results_base, agent_results_contract
 from openclaw_app.services.resource_owner_registry import ResourceOwnerRegistry, require_tenant_id
 from openclaw_app.services.tenant_owned_resources import TenantOwnedResourceService
 
 
-DEFAULT_MEDIA_ENV_PATH = Path("/home/ubuntu/openclaw-agents/media/.env.local")
+DEFAULT_MEDIA_ENV_PATH = Path.home() / "openclaw-agents" / "media" / ".env.local"
 
 def agent_result_roots() -> tuple[Path, ...]:
     contract = agent_results_contract()
@@ -65,69 +71,14 @@ class RunPlan:
     warnings: list[str] = field(default_factory=list)
 
 
-def load_env_file(path: Path, *, override: bool = False) -> None:
-    if not path.exists() or not path.is_file():
-        return
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        if key.startswith("export "):
-            key = key[len("export ") :].strip()
-        value = value.strip().strip("'").strip('"')
-        if key and (override or key not in os.environ):
-            os.environ[key] = value
-
-
-def load_openclaw_feishu_account_env(account: str = "media", *, override: bool = False) -> None:
-    config_path = Path(os.getenv("OPENCLAW_CONFIG", "/home/ubuntu/.openclaw/openclaw.json")).expanduser()
-    if not config_path.exists():
-        return
-    try:
-        config = json.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, json.JSONDecodeError):
-        return
-    accounts = (((config.get("channels") or {}).get("feishu") or {}).get("accounts") or {})
-    account_config = accounts.get(account) or {}
-    app_id = str(account_config.get("appId") or account_config.get("app_id") or "").strip()
-    app_secret = str(account_config.get("appSecret") or account_config.get("app_secret") or "").strip()
-    if app_id and (override or not os.getenv("FEISHU_APP_ID")):
-        os.environ["FEISHU_APP_ID"] = app_id
-    if app_secret and (override or not os.getenv("FEISHU_APP_SECRET")):
-        os.environ["FEISHU_APP_SECRET"] = app_secret
-
-
 def load_default_env() -> None:
-    selfmedia_root = Path("/home/ubuntu/selfmedia-tools")
-    for path in (
-        selfmedia_root / ".env",
-        selfmedia_root / ".env.local",
-        DEFAULT_MEDIA_ENV_PATH,
-        Path("/home/ubuntu/.openclaw/openclaw-media.env"),
-        Path("/home/ubuntu/openclaw-feishu-reminder/reminder.env"),
-        selfmedia_root / "selfmedia" / "ingest" / "content_flow" / ".env",
-    ):
-        load_env_file(path)
+    load_default_env_files()
     # The Media web service also hosts other Feishu-backed capabilities. Always
     # pin cleanup to the Media app instead of inheriting another app's process env.
     load_openclaw_feishu_account_env(
         os.getenv("SELFMEDIA_OPENCLAW_FEISHU_ACCOUNT", "media"),
         override=True,
     )
-    ensure_feishu_no_proxy()
-
-
-def ensure_feishu_no_proxy() -> None:
-    required = ("open.feishu.cn", "tcnwueberajc.feishu.cn", ".feishu.cn", ".larksuite.com")
-    for env_name in ("NO_PROXY", "no_proxy"):
-        existing = [item.strip() for item in os.getenv(env_name, "").split(",") if item.strip()]
-        merged = list(existing)
-        for item in required:
-            if item not in merged:
-                merged.append(item)
-        os.environ[env_name] = ",".join(merged)
 
 
 def feishu_base() -> str:

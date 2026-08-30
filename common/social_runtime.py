@@ -162,6 +162,11 @@ def load_default_env_files() -> None:
         reminder_env,
         ROOT / "selfmedia" / "ingest" / "content_flow" / ".env",
         ROOT / "integrations" / "platform_auth" / "cookies" / ".env.local",
+        # Consolidated from openclaw-tag-router/scripts/cleanup_creation_runs.py's
+        # former DEFAULT_MEDIA_ENV_PATH -- keep loading this file so cleanup
+        # (and anything else routed through load_default_env_files) doesn't
+        # silently stop picking up MEDIA_OS_* / FEISHU_* overrides kept there.
+        Path.home() / "openclaw-agents" / "media" / ".env.local",
     ):
         load_env_file(path)
     load_openclaw_feishu_account_env()
