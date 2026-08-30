@@ -8,6 +8,7 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from '../../generatedBusinessPagesContract'
+import { isMissingEntitlementError, isUnauthorizedError } from '../../businessErrorPresentation'
 import {
   PageHeading, type LoadState,
 } from '../../ui/ordinaryPagePrimitives'
@@ -527,8 +528,8 @@ async function readBalancePacks(): Promise<BalancePackListResponse> {
 
 function readableError(error: unknown, subject: string) {
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401) return '登录状态已失效，请重新登录后再试。'
-    if (error.status === 403) return '当前账户没有权限查看这部分个人计费信息。'
+    if (isUnauthorizedError(error)) return '登录状态已失效，请重新登录后再试。'
+    if (isMissingEntitlementError(error)) return '当前账户没有权限查看这部分个人计费信息。'
     if (error.status >= 500) return subject + '服务暂时不可用，请稍后再试。'
     return subject + '暂时无法读取，请稍后再试。'
   }

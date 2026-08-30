@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react'
 import { BusinessOperationError, callBusinessOperation } from '../../generatedBusinessPagesContract'
+import { isConflictError, isMissingEntitlementError, isUnauthorizedError } from '../../businessErrorPresentation'
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { mutationFingerprint, useAdminAction, type ActionState } from '../../ui/adminAction'
 import { PlatformIdentity } from '../../ui/PlatformIdentity'
@@ -1092,9 +1093,9 @@ function cursorField(object: Record<string, unknown>, key: string): string | nul
 
 function describeError(error: unknown): string {
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401) return '当前会话已失效，请重新登录。'
-    if (error.status === 403) return '当前会话无权执行此操作。'
-    if (error.status === 409) return error.message || '服务端检测到修订或幂等冲突。'
+    if (isUnauthorizedError(error)) return '当前会话已失效，请重新登录。'
+    if (isMissingEntitlementError(error)) return '当前会话无权执行此操作。'
+    if (isConflictError(error)) return error.message || '服务端检测到修订或幂等冲突。'
     return error.message || '服务端请求失败。'
   }
   if (error instanceof Error) return error.message

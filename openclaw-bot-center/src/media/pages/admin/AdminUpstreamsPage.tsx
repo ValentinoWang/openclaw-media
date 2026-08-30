@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { BusinessOperationError, callBusinessOperation } from '../../generatedBusinessPagesContract'
+import { isConflictError, isMissingEntitlementError, isNotFoundError, isUnauthorizedError } from '../../businessErrorPresentation'
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { newIdempotencyKey } from '../../idempotency'
 import { CANONICAL_UUID_PATTERN } from '../../identifiers'
@@ -100,10 +101,10 @@ function isOperationReference(value: string): boolean {
 
 function publicError(error: unknown, fallback: string): string {
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401) return '当前登录已失效，请重新登录。'
-    if (error.status === 403) return '当前会话没有执行此操作的权限。'
-    if (error.status === 404) return '目标记录不存在或已不可用。'
-    if (error.status === 409) return '数据已发生变化，请刷新后重试。'
+    if (isUnauthorizedError(error)) return '当前登录已失效，请重新登录。'
+    if (isMissingEntitlementError(error)) return '当前会话没有执行此操作的权限。'
+    if (isNotFoundError(error)) return '目标记录不存在或已不可用。'
+    if (isConflictError(error)) return '数据已发生变化，请刷新后重试。'
     if (error.status >= 500) return '上游服务暂不可用，请稍后重试。'
   }
   return fallback

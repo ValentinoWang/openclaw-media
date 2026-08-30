@@ -14,6 +14,7 @@ import {
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
 import { useMediaWeb } from "../../MediaWebWorkspace";
+import { isMissingEntitlementError, isUnauthorizedError } from "../../businessErrorPresentation";
 import { isPublicId } from "../../identifiers";
 import { ECHO_INVALID, formatShortDateTime } from "../../ui/datetime";
 import styles from "./AdminOverviewPage.module.css";
@@ -147,7 +148,7 @@ export default function AdminOverviewPage() {
       })
       .catch((error: unknown) => {
         if (!active || controller.signal.aborted) return;
-        if (error instanceof BusinessOperationError && error.status === 403) {
+        if (isMissingEntitlementError(error)) {
           setDashboardState({
             status: "forbidden",
             message: "当前会话无权查看平台治理数据。",
@@ -483,7 +484,7 @@ function getHealthMessage(
 
 function describeError(error: unknown): string {
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401) return "当前会话已失效，请重新登录。";
+    if (isUnauthorizedError(error)) return "当前会话已失效，请重新登录。";
     if (error.status >= 500) return "平台总览服务暂时不可用，请稍后重试。";
     return error.message || "平台总览请求失败。";
   }

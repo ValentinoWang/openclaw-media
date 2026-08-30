@@ -21,6 +21,7 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from "./generatedBusinessPagesContract";
+import { isMissingEntitlementError, isNotFoundError, isUnauthorizedError } from "./businessErrorPresentation";
 import { loginUrl } from "./mediaWebApi";
 import { useMediaWeb } from "./MediaWebWorkspace";
 import CanonicalDocumentRenderer from "./pages/ordinary/CanonicalDocumentRenderer";
@@ -394,9 +395,9 @@ function stateTitle(status: LoadStatus): string {
 
 function mapRequestError<T>(error: unknown, fallback: string): LoadState<T> {
   if (error instanceof BusinessOperationError) {
-    if (error.status === 401) return { status: "unauthorized", message: "当前会话已失效，请重新登录。" };
-    if (error.status === 403) return { status: "missingEntitlement", message: "当前账户尚未开通个人云端成果访问权限。" };
-    if (error.status === 404) return { status: "notFound", message: "成果不存在，或已不再对当前账户可见。" };
+    if (isUnauthorizedError(error)) return { status: "unauthorized", message: "当前会话已失效，请重新登录。" };
+    if (isMissingEntitlementError(error)) return { status: "missingEntitlement", message: "当前账户尚未开通个人云端成果访问权限。" };
+    if (isNotFoundError(error)) return { status: "notFound", message: "成果不存在，或已不再对当前账户可见。" };
   }
   if (error instanceof DOMException && error.name === "AbortError") return { status: "idle" };
   return { status: "error", message: fallback };
