@@ -18,13 +18,13 @@ if str(SELFMEDIA_ROOT) not in sys.path:
     sys.path.insert(0, str(SELFMEDIA_ROOT))
 
 from common.social_runtime import (  # noqa: E402
-    feishu_ensure_fields,
     feishu_headers,
     feishu_list_records,
     feishu_plain_text,
     feishu_tenant_access_token,
 )
 from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id  # noqa: E402
+from common.standard_fields import ensure_creator_registry_fields  # noqa: E402
 
 from selfmedia.business.id_business import FEISHU_BASE, load_playwright_cookies  # noqa: E402
 from selfmedia.creator_profiles.docs_builder import DEFAULT_CREATOR_REGISTRY_URL  # noqa: E402
@@ -526,18 +526,24 @@ def build_update_payload(fields: dict[str, Any], crawl: dict[str, Any]) -> dict[
     return payload
 
 
-def ensure_registry_fields(url: str, token: str) -> None:
-    from common.social_runtime import feishu_bitable_refs  # noqa: E402
+#: This crawler only ever writes these 5 fields, a strict subset of
+#: docs_builder.py's 12-field CREATOR_REGISTRY_FIELD_SPECS superset --
+#: kept narrow here (rather than ensuring the full superset) so a crawl
+#: against a registry table that hasn't yet been through
+#: docs_builder.build_creator_docs doesn't spuriously create the other
+#: 7 columns. See the FC-11 dedup audit.
+_ANCHOR_REGISTRY_FIELDS = ("主页链接", "账号名称", "作者ID", "粉丝数(k)", "作品数")
 
-    app_token, table_id, token = feishu_bitable_refs(url, token)
-    specs = {
-        "主页链接": standard_field_specs()["主页链接"],
-        "账号名称": standard_field_specs()["账号名称"],
-        "作者ID": standard_field_specs()["作者ID"],
-        "粉丝数(k)": standard_field_specs()["粉丝数(k)"],
-        "作品数": standard_field_specs()["作品数"],
-    }
-    feishu_ensure_fields(app_token, table_id, token, specs)
+
+def ensure_registry_fields(url: str, token: str) -> None:
+    """Thin wrapper — the feishu_bitable_refs -> feishu_ensure_fields
+    skeleton now lives in
+    common.standard_fields.ensure_creator_registry_fields (FC-11 dedup
+    audit; shared with docs_builder.py's field superset). This also
+    fixes a pre-existing bug: this function referenced
+    ``standard_field_specs()`` without ever importing it, so calling it
+    raised a bare NameError."""
+    ensure_creator_registry_fields(url, token, fields=_ANCHOR_REGISTRY_FIELDS)
 
 
 def crawl_registry(

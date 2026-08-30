@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any
 
 
@@ -305,6 +305,108 @@ def standard_field_specs(extra_specs: Mapping[str, int] | None = None) -> dict[s
     if extra_specs:
         specs.update({str(key): int(value) for key, value in extra_specs.items()})
     return specs
+
+
+#: The Feishu field names a creator-registry bitable should have.
+#: Consolidated from docs_builder.py's and anchor_crawler.py's near-
+#: identical ``ensure_registry_fields`` (FC-11 dedup audit): this is the
+#: 12-field superset docs_builder.py used; anchor_crawler.py's own 5-field
+#: subset ("主页链接", "账号名称", "作者ID", "粉丝数(k)", "作品数") is a strict
+#: subset of it. Kept as its own tuple (rather than collapsing both
+#: callers onto this superset) because ensuring all 12 fields from the
+#: crawler path would create 7 extra columns on any registry table that
+#: hasn't already been through docs_builder.build_creator_docs -- see
+#: ensure_creator_registry_fields's ``fields=`` param.
+CREATOR_REGISTRY_FIELD_SPECS: tuple[str, ...] = (
+    "主页链接",
+    "账号名称",
+    "作者ID",
+    "博主IP",
+    "平台ID",
+    "院校背景",
+    "粉丝数(k)",
+    "作品数",
+    "关键词标签",
+    "主状态",
+    "创作者主档链接",
+    "文档链接JSON",
+)
+
+
+def ensure_creator_registry_fields(
+    creator_url: str,
+    token: str,
+    *,
+    fields: Iterable[str] | None = None,
+) -> None:
+    """Ensure the given creator-registry field names exist on the bitable
+    at ``creator_url``, with their standard types.
+
+    ``fields`` defaults to the full :data:`CREATOR_REGISTRY_FIELD_SPECS`
+    superset (docs_builder.py's pre-consolidation behavior); pass a
+    narrower iterable (e.g. anchor_crawler.py's 5-field subset) for a
+    caller that shouldn't spuriously create the other columns on a table
+    it doesn't own the full schema for.
+
+    Field values still come from :func:`standard_field_specs` -- the
+    single source of truth for Feishu field type ids -- this function
+    only owns *which* field names a creator registry keeps present, not
+    their types.
+
+    Note: imports ``feishu_bitable_refs``/``feishu_ensure_fields`` from
+    common.social_runtime lazily, inside the function body. That module
+    imports several names *from* this one at module scope
+    (``standard_field_specs`` et al.), so importing it back here at
+    module scope would be circular -- this mirrors the deferred-import
+    trick anchor_crawler.py's own pre-consolidation copy already used
+    for the identical reason.
+    """
+    from common.social_runtime import feishu_bitable_refs, feishu_ensure_fields
+
+    app_token, table_id, token = feishu_bitable_refs(creator_url, token)
+    all_specs = standard_field_specs()
+    names = tuple(fields) if fields is not None else CREATOR_REGISTRY_FIELD_SPECS
+    specs = {name: all_specs[name] for name in names}
+    feishu_ensure_fields(app_token, table_id, token, specs)
+
+
+def _default_dedupe_normalize(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def dedupe_nonempty(
+    values: Iterable[Any],
+    *,
+    normalize: Callable[[Any], str] = _default_dedupe_normalize,
+) -> list[str]:
+    """Order-preserving de-duplication of non-empty, normalized strings.
+
+    Consolidated from the r10 dedup audit's five byte-identical private
+    copies (media_model/payloads.py, selfmedia/growth/llm_runner.py,
+    selfmedia/deconstruct/viral_content/src/multi_signal_contract.py,
+    openclaw_app/services/knowledge_evidence_exporter.py, selfmedia/
+    growth/knowledge_evidence_contract.py): for each value, normalize it,
+    skip if empty, skip if already seen (checked by membership, so
+    insertion order is preserved). ``normalize`` defaults to
+    ``str(value or "").strip()``, reproducing all five exactly.
+
+    Three near-variant copies in the audit are NOT semantically
+    equivalent to that default and must not be pointed at it without a
+    deliberate ``normalize=`` (or left alone -- consolidating them is out
+    of this pass's scope):
+    creation/platform_fit.py strips ``" #\\t"`` (drops a leading ``#``
+    off a hashtag -- the plain default would start emitting ``"#标签"``
+    instead of ``"标签"``); context/media_context.py routes every value
+    through Feishu rich-text flattening (``_clean_text``) before
+    stripping; evidence/modality_dag.py does no ``str()``/``strip()`` at
+    all, so it preserves non-string refs and treats ``"  "`` as truthy.
+    """
+    result: list[str] = []
+    for value in values:
+        clean = normalize(value)
+        if clean and clean not in result:
+            result.append(clean)
+    return result
 
 
 def normalize_standard_field_name(name: str, alias_map: Mapping[str, str] | None = None) -> str:

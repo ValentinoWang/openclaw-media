@@ -22,8 +22,6 @@ from common.feishu_wiki_docs import (  # noqa: E402
 )
 from common.social_runtime import (  # noqa: E402
     FEISHU_BASE,
-    feishu_bitable_refs,
-    feishu_ensure_fields,
     feishu_headers,
     feishu_list_records,
     feishu_plain_text,
@@ -31,7 +29,7 @@ from common.social_runtime import (  # noqa: E402
     feishu_update_record,
 )
 from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id  # noqa: E402
-from common.standard_fields import standard_field_specs  # noqa: E402
+from common.standard_fields import ensure_creator_registry_fields, standard_field_specs  # noqa: E402
 from selfmedia.creator_profiles.registry_sync import normalize_platform, normalize_platform_id  # noqa: E402
 
 
@@ -184,22 +182,11 @@ def creator_doc_blocks(creator_ip: str, rows: list[dict[str, Any]]) -> list[dict
 
 
 def ensure_registry_fields(creator_url: str, token: str) -> None:
-    app_token, table_id, token = feishu_bitable_refs(creator_url, token)
-    specs = {
-        "主页链接": standard_field_specs()["主页链接"],
-        "账号名称": standard_field_specs()["账号名称"],
-        "作者ID": standard_field_specs()["作者ID"],
-        "博主IP": standard_field_specs()["博主IP"],
-        "平台ID": standard_field_specs()["平台ID"],
-        "院校背景": standard_field_specs()["院校背景"],
-        "粉丝数(k)": standard_field_specs()["粉丝数(k)"],
-        "作品数": standard_field_specs()["作品数"],
-        "关键词标签": standard_field_specs()["关键词标签"],
-        "主状态": standard_field_specs()["主状态"],
-        "创作者主档链接": standard_field_specs()["创作者主档链接"],
-        "文档链接JSON": standard_field_specs()["文档链接JSON"],
-    }
-    feishu_ensure_fields(app_token, table_id, token, specs)
+    """Thin wrapper — the field-name superset and the
+    feishu_bitable_refs -> feishu_ensure_fields skeleton now live in
+    common.standard_fields.ensure_creator_registry_fields (FC-11 dedup
+    audit; shared with anchor_crawler.py's narrower field subset)."""
+    ensure_creator_registry_fields(creator_url, token)
 
 
 def registry_update_specs() -> dict[str, int]:
