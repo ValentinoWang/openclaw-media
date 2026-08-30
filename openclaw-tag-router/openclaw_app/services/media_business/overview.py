@@ -374,7 +374,11 @@ class OverviewService:
             raise ValueError("B01 cursor secret must be at least 16 bytes")
         self._connection_factory = connection_factory
         self._task_reader = task_reader
-        self._cursor_key = hashlib.sha256(bytes(cursor_secret)).digest()
+        # c3/c5: purpose-tagged cursor key, distinct from every other
+        # service's -- previously a bare sha256(cursor_secret) shared
+        # byte-for-byte across services. Deliberately invalidates any
+        # cursor a client is holding across the deploy.
+        self._cursor_key = foundation.derive_namespace_secret(cursor_secret, "overview-cursor")
         self._id_factory = id_factory or (lambda prefix: f"{prefix}_{uuid.uuid4().hex}")
         self._clock = clock
 

@@ -34,6 +34,7 @@ PREVIEW_SOURCE_MAX_PIXELS = 25_000_000
 _PUBLIC_ID = foundation.PUBLIC_ID_PATTERN
 _SAME_ORIGIN_PREVIEW_URL = re.compile(r"^/openclaw/media/api/assets/[A-Za-z0-9_-]{8,160}/preview$")
 _QUALITY_STATUSES = {"verified", "partial", "unverified", "unavailable"}
+_CURSOR_SCOPE = "assets"
 
 
 AssetsError = MediaBusinessError
@@ -156,7 +157,13 @@ class AssetsService:
         if len(cursor_secret) < 16:
             raise ValueError("B03 cursor secret must be at least 16 bytes")
         self._connection_factory = connection_factory
-        self._cursor_key = hashlib.sha256(bytes(cursor_secret)).digest()
+        # c3/c5: purpose-tagged derivation, distinct from tracks' (and every
+        # other service's) cursor key -- previously a bare
+        # sha256(cursor_secret) shared byte-for-byte across services since
+        # server_cli.py wires the same session secret into all of them.
+        # This intentionally invalidates any cursor a client is holding
+        # across the deploy; public ids are untouched.
+        self._cursor_key = foundation.derive_namespace_secret(cursor_secret, "assets-cursor")
 
     def list_assets(
         self,
@@ -306,12 +313,13 @@ class AssetsService:
             {
                 "createdAt": _timestamp_text(cursor.created_at),
                 "publicAssetId": cursor.public_asset_id,
+                "scope": _CURSOR_SCOPE,
             },
             ensure_ascii=False,
             separators=(",", ":"),
             sort_keys=True,
         ).encode("utf-8")
-        signed = hmac.new(self._cursor_key, tenant_id.encode("utf-8") + b"|" + payload, hashlib.sha256).digest()[:18]
+        signed = hmac.new(self._cursor_key, tenant_id.encode("utf-8") + b"|" + payload, hashlib.sha256).digest()
         return f"{_b64_encode(payload)}.{_b64_encode(signed)}"
 
     def _decode_cursor(self, token: str, tenant_id: str) -> AssetCursor:
@@ -325,10 +333,18 @@ class AssetsService:
                 self._cursor_key,
                 tenant_id.encode("utf-8") + b"|" + payload,
                 hashlib.sha256,
-            ).digest()[:18]
+            ).digest()
             if not hmac.compare_digest(signature, expected):
                 raise ValueError("signature mismatch")
             data = json.loads(payload.decode("utf-8"))
+            # c3: assets previously had no scope field at all, relying only
+            # on its payload's field-name shape (createdAt/publicAssetId,
+            # distinct from tracks' publicId/updatedAt) to make a
+            # cross-service cursor swap fail with a KeyError -- a payload-
+            # shape coincidence, not a designed check. Every new cursor now
+            # carries this positive assertion, matching tracks' pattern.
+            if data.get("scope") != _CURSOR_SCOPE:
+                raise ValueError("cursor scope mismatch")
             return AssetCursor(
                 created_at=_timestamp_value(data["createdAt"]),
                 public_asset_id=_public_id(data["publicAssetId"]),

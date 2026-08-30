@@ -273,16 +273,28 @@ def _safe_public_url(value: Any, field: str) -> str:
 
 
 def _cursor_key(secret: bytes) -> bytes:
-    return hashlib.sha256(bytes(secret)).digest()
+    # c3/c5: purpose-tagged derivation, distinct from every other service's
+    # -- previously a bare sha256(secret) shared byte-for-byte across
+    # services. Deliberately invalidates any cursor a client is holding
+    # across the deploy; the caller's own public_id_secret is untouched.
+    return foundation.derive_namespace_secret(secret, "publishing-cursor")
 
 
 def _encode_cursor(secret: bytes, context: TenantContext, updated_at: Any, public_id: str) -> str:
+    # tenantTag now derives from the same _cursor_key(secret) the envelope
+    # signature uses, instead of the raw secret directly -- collapsing the
+    # "signature uses a derived key, tenantTag uses the raw one" split that
+    # existed only because _cursor_key used to be a bare sha256 anyway (so
+    # the two happened to differ only in whether that extra hash step ran).
+    # tenantTag is recomputed fresh on every decode (never compared across
+    # a deploy boundary the way the envelope signature over an
+    # already-issued cursor is), so this carries no compatibility cost.
     payload = _as_json(
         {
             "v": _CURSOR_VERSION,
             "scope": _CURSOR_SCOPE,
             "tenantTag": hmac.new(
-                secret,
+                _cursor_key(secret),
                 (str(context.tenant_id) + "|" + _CURSOR_SCOPE).encode(),
                 hashlib.sha256,
             ).hexdigest()[:32],
@@ -312,7 +324,7 @@ def _decode_cursor(secret: bytes, context: TenantContext, token: str) -> _Cursor
     if payload.get("v") != _CURSOR_VERSION or payload.get("scope") != _CURSOR_SCOPE:
         raise PublishingInvalidRequest("cursor is invalid", field="cursor")
     expected_tag = hmac.new(
-        secret,
+        _cursor_key(secret),
         (str(context.tenant_id) + "|" + _CURSOR_SCOPE).encode(),
         hashlib.sha256,
     ).hexdigest()[:32]

@@ -479,8 +479,18 @@ class RunsService:
         if len(cursor_secret) < 16:
             raise ValueError("B05 cursor secret must be at least 16 bytes")
         self._connection_factory = connection_factory
-        self._cursor_secret = hashlib.sha256(bytes(cursor_secret)).digest()
-        self._public_id_secret = self._cursor_secret
+        # c3/c5: runs previously used ONE key (bare sha256(cursor_secret))
+        # for both cursor signing and public-id signing. Splitting them:
+        # public_id_secret keeps the exact old bare-sha256 value (public
+        # run ids are durable, already issued, must not be invalidated),
+        # while cursor_secret moves to a purpose-tagged derivation distinct
+        # from every other service's -- deliberately invalidating any
+        # cursor a client is holding across the deploy, and, as a real
+        # security fix, splitting the "-cursor" key away from what signs
+        # public ids so a cursor forgery attempt can no longer double as a
+        # public-id forgery attempt.
+        self._public_id_secret = hashlib.sha256(bytes(cursor_secret)).digest()
+        self._cursor_secret = foundation.derive_namespace_secret(cursor_secret, "runs-cursor")
         self._id_factory = id_factory or self._new_public_id
 
     def _new_public_id(self, prefix: str) -> str:

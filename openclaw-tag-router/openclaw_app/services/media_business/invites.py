@@ -153,7 +153,12 @@ class InvitesService:
             raise ValueError("B09 secrets must be at least 16 bytes")
         self._connection_factory = connection_factory
         self._public_id_secret = bytes(public_id_secret)
-        self._cursor_key = hashlib.sha256(bytes(cursor_secret)).digest()
+        # c3/c5: purpose-tagged cursor key, distinct from every other
+        # service's -- previously a bare sha256(cursor_secret) shared
+        # byte-for-byte across services. Deliberately invalidates any
+        # cursor a client is holding across the deploy; public_id_secret
+        # (above) is untouched, so public ids are unaffected.
+        self._cursor_key = foundation.derive_namespace_secret(cursor_secret, "invites-cursor")
 
     def get_affiliate_profile(self, context: TenantContext) -> dict[str, Any]:
         scope = self._scope(context)

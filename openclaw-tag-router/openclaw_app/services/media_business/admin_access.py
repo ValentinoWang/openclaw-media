@@ -420,7 +420,12 @@ class AdminAccessService:
         else:
             raise TypeError("B11 requires an AccountDatabase or connection factory")
         self._public_id_secret = bytes(public_id_secret)
-        self._cursor_secret = hashlib.sha256(bytes(cursor_secret)).digest()
+        # c3/c5: purpose-tagged cursor key, distinct from every other
+        # service's -- previously a bare sha256(cursor_secret) shared
+        # byte-for-byte across services. Deliberately invalidates any
+        # cursor a client is holding across the deploy; public_id_secret
+        # (above) is untouched, so public ids are unaffected.
+        self._cursor_secret = foundation.derive_namespace_secret(cursor_secret, "admin-access-cursor")
         self._storage = storage or PostgresAdminAccessStorage()
         self._registration_service = registration_service
         self._now = now or (lambda: datetime.now(_UTC))

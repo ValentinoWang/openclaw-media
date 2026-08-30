@@ -304,8 +304,16 @@ class ReviewsService:
         if len(cursor_secret) < 16 or len(public_id_secret) < 16:
             raise ValueError("B07 secrets must be at least 16 bytes")
         self._connection_factory = connection_factory
-        self._cursor_secret = bytes(cursor_secret)
+        # c3/c5: public_id_secret keeps the exact old raw-bytes value
+        # (durable public review ids must not be invalidated -- captured
+        # from `public_id_secret` BEFORE cursor_secret's own derivation
+        # below, so the "defaults to cursor_secret" branch above still
+        # defaults to the original, un-derived input). cursor_secret moves
+        # to a purpose-tagged derivation distinct from every other
+        # service's, deliberately invalidating any cursor a client is
+        # holding across the deploy.
         self._public_id_secret = bytes(public_id_secret)
+        self._cursor_secret = foundation.derive_namespace_secret(cursor_secret, "reviews-cursor")
         self._id_factory = id_factory or self._new_public_id
         self._clock = clock or (lambda: datetime.now(timezone.utc))
 

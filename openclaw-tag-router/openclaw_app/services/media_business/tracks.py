@@ -369,7 +369,13 @@ class TracksService:
         if len(cursor_secret) < 16:
             raise ValueError("B02 cursor secret must be at least 16 bytes")
         self._connection_factory = connection_factory
-        self._cursor_key = hashlib.sha256(bytes(cursor_secret)).digest()
+        # c3/c5: purpose-tagged derivation gives tracks a cursor key distinct
+        # from every other service's (previously a bare sha256(cursor_secret)
+        # shared byte-for-byte with assets/invites/overview/usage_billing/
+        # admin_access, since server_cli.py wires the same session secret
+        # into all of them). This intentionally invalidates any cursor a
+        # client is holding across the deploy; public ids are untouched.
+        self._cursor_key = foundation.derive_namespace_secret(cursor_secret, "tracks-cursor")
         self._monitor_adapter = monitor_adapter
 
     def list_tracks(
@@ -848,7 +854,7 @@ class TracksService:
             self._cursor_key,
             tenant_id.encode() + b"|" + payload,
             hashlib.sha256,
-        ).digest()[:18]
+        ).digest()
         return f"{_b64_encode(payload)}.{_b64_encode(signature)}"
 
     def _decode_cursor(self, token: str, tenant_id: str, scope: str) -> TrackCursor:
@@ -862,7 +868,7 @@ class TracksService:
                 self._cursor_key,
                 tenant_id.encode() + b"|" + payload,
                 hashlib.sha256,
-            ).digest()[:18]
+            ).digest()
             if not hmac.compare_digest(signature, expected):
                 raise ValueError("signature mismatch")
             data = json.loads(payload.decode())
