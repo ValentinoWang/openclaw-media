@@ -25,6 +25,8 @@ from urllib.parse import urlparse
 import psycopg
 import yaml
 
+from common.env import parse_env_file
+
 from ..account.csrf import CSRF_DOMAIN, derive_csrf_token, token_digest
 from .feishu_service import FeishuService
 from .stage2_context import (
@@ -65,7 +67,6 @@ def _required_env_any(*names: str) -> str:
     raise Stage2ProductionAssemblyError("production_dependency_missing", f"{joined} is required")
 
 
-_ENV_ASSIGNMENT = re.compile(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 _ENV_REFERENCE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 _MISSING = object()
 
@@ -78,20 +79,14 @@ def _read_env_files(paths: Any) -> dict[str, str]:
         paths = (paths,)
     if not isinstance(paths, (list, tuple)):
         return values
+    # A later path wins over an earlier one for the same key (each file's
+    # parse_env_file() result is applied in order); a missing/unreadable
+    # file is silently skipped (parse_env_file's own require=False default
+    # returns {} for it, a no-op update). Process env wins over every file,
+    # applied once at the end -- the one deliberate divergence this reader
+    # keeps (dedup pe-01).
     for raw_path in paths:
-        path = Path(str(raw_path)).expanduser()
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except OSError:
-            continue
-        for line in lines:
-            match = _ENV_ASSIGNMENT.match(line.strip())
-            if not match:
-                continue
-            value = match.group(2).strip()
-            if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-                value = value[1:-1]
-            values[match.group(1)] = value
+        values.update(parse_env_file(str(raw_path)))
     values.update({key: value for key, value in os.environ.items()})
     return values
 
