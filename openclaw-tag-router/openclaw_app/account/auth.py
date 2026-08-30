@@ -6,7 +6,7 @@ import json
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 from uuid import UUID, uuid4
 
 import bcrypt
@@ -187,7 +187,10 @@ class AccountAuthService:
         open_id: str | None,
         union_id: str | None,
         previous_token: str | None = None,
+        workspace_intent: Literal["personal_web", "organization_lark"] = "personal_web",
     ) -> AccountLogin:
+        if not isinstance(workspace_intent, str) or workspace_intent not in {"personal_web", "organization_lark"}:
+            raise AccountAuthError("feishu_login_invalid_intent", "飞书登录工作区类型无效。", status=400)
         normalized_tenant_key = self._normalize_feishu_identity_value(tenant_key, required=True)
         normalized_open_id = self._normalize_feishu_identity_value(open_id, required=False)
         normalized_union_id = self._normalize_feishu_identity_value(union_id, required=False)
@@ -204,12 +207,21 @@ class AccountAuthService:
                     tenant_key=normalized_tenant_key or "",
                     open_id=normalized_open_id,
                     union_id=normalized_union_id,
+                    workspace_intent=workspace_intent,
                 )
-                if (
-                    credential is None
-                    or credential.user_status != "active"
-                    or credential.tenant_status != "active"
-                ):
+                if credential is None:
+                    if workspace_intent == "organization_lark":
+                        raise AccountAuthError(
+                            "feishu_organization_workspace_unavailable",
+                            "当前飞书身份没有可用的已绑定组织工作区，请联系组织管理员完成成员同步和组织绑定。",
+                            status=403,
+                        )
+                    raise AccountAuthError(
+                        "feishu_account_unlinked",
+                        "该飞书账号尚未绑定 MediaClaw 账户。",
+                        status=403,
+                    )
+                if credential.user_status != "active" or credential.tenant_status != "active":
                     raise AccountAuthError(
                         "feishu_account_unlinked",
                         "该飞书账号尚未绑定 MediaClaw 账户。",

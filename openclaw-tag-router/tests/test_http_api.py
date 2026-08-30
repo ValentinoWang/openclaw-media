@@ -74,6 +74,7 @@ class _FakeAccountAuth:
         self.previous_tokens: list[str | None] = []
         self.database_down = False
         self.admin_revocations: list[tuple[UUID, UUID, str]] = []
+        self.feishu_login_intents: list[str] = []
 
     def csrf_token(self, token: str) -> str:
         return hmac.new(self._secret, token.encode("ascii"), hashlib.sha256).hexdigest()
@@ -113,7 +114,9 @@ class _FakeAccountAuth:
         open_id: str | None,
         union_id: str | None,
         previous_token: str | None = None,
+        workspace_intent: str = "personal_web",
     ) -> AccountLogin:
+        self.feishu_login_intents.append(workspace_intent)
         if (tenant_key, open_id, union_id) != ("tenant-media-a", "open-a", "union-a"):
             raise AccountAuthError(
                 "feishu_account_unlinked",
@@ -273,13 +276,17 @@ class _FakeAccountRegistration:
 class _FakeMediaFeishuLogin:
     def __init__(self) -> None:
         self.start_error: AccountAuthError | None = None
+        self.start_intents: list[str] = []
+        self._workspace_intent = "personal_web"
         self.callback_calls: list[tuple[str, str | None, str | None]] = []
         self.callback_identity = MediaFeishuIdentity("tenant-media-a", "open-a", "union-a")
         self.callback_error: AccountAuthError | None = None
 
-    def start(self) -> MediaFeishuLoginStart:
+    def start(self, *, workspace_intent: str = "personal_web") -> MediaFeishuLoginStart:
         if self.start_error is not None:
             raise self.start_error
+        self.start_intents.append(workspace_intent)
+        self._workspace_intent = workspace_intent
         return MediaFeishuLoginStart(
             authorization_url="https://accounts.feishu.cn/open-apis/authen/v1/authorize?state=test",
             expires_at="2026-08-14T12:05:00+00:00",
@@ -296,7 +303,7 @@ class _FakeMediaFeishuLogin:
         self.callback_calls.append((state, code, error))
         if self.callback_error is not None:
             raise self.callback_error
-        return self.callback_identity
+        return replace(self.callback_identity, workspace_intent=self._workspace_intent)
 
 class _Matcher:
     def __init__(self) -> None:
@@ -810,6 +817,33 @@ class HttpApiAuthTests(unittest.TestCase):
         )
         self.assertNotIn("attemptToken", body)
         self.assertNotIn("bindingToken", body)
+        self.assertEqual(self.media_feishu_login.start_intents, ["personal_web"])
+
+    def test_organization_feishu_start_binds_intent_through_callback(self) -> None:
+        status, body, _ = self._request(
+            "POST", "/auth/feishu/start", {"workspaceIntent": "organization_lark"}
+        )
+        self.assertEqual(status, 200, body)
+        self.assertEqual(self.media_feishu_login.start_intents, ["organization_lark"])
+
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
+        connection.request("GET", "/auth/feishu/callback?state=m_state&code=code")
+        response = connection.getresponse()
+        response.read()
+        self.assertEqual(response.status, 303)
+        connection.close()
+        self.assertEqual(self.account_auth.feishu_login_intents, ["organization_lark"])
+
+    def test_feishu_start_rejects_unknown_workspace_intent(self) -> None:
+        status, body, _ = self._request("POST", "/auth/feishu/start", {"workspaceIntent": "admin"})
+        self.assertEqual(status, 400, body)
+        self.assertEqual(body["error"]["code"], "invalid_request")
+        self.assertEqual(self.media_feishu_login.start_intents, [])
+
+        status, body, _ = self._request("POST", "/auth/feishu/start", {"workspaceIntent": {}})
+        self.assertEqual(status, 400, body)
+        self.assertEqual(body["error"]["code"], "invalid_request")
+        self.assertEqual(self.media_feishu_login.start_intents, [])
 
     def test_feishu_callback_issues_cookie_and_redirects_to_mediaclaw(self) -> None:
         connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
