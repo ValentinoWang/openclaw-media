@@ -14,6 +14,8 @@ import {
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
 import { useMediaWeb } from "../../MediaWebWorkspace";
+import { isPublicId } from "../../identifiers";
+import { ECHO_INVALID, formatShortDateTime } from "../../ui/datetime";
 import styles from "./AdminOverviewPage.module.css";
 
 type ServiceHealthStatus = "healthy" | "degraded" | "unavailable" | "unknown";
@@ -113,7 +115,6 @@ const ACTION_STATUS_LABELS: Record<AdminActionStatus, string> = {
   unknown: "未知",
 };
 
-const PUBLIC_IDENTIFIER_PATTERN = /^[A-Za-z0-9_-]{8,160}$/;
 const ACTION_NAME_PATTERN = /^[a-z][a-z0-9_.-]{2,127}$/;
 
 export default function AdminOverviewPage() {
@@ -573,7 +574,7 @@ function isAdminAction(value: unknown): value is AdminOverview["recentActions"][
     isRecord(value) &&
     hasExactKeys(value, ["publicActionId", "action", "targetType", "reasonSummary", "status", "createdAt"]) &&
     isNonEmptyString(value.publicActionId) &&
-    PUBLIC_IDENTIFIER_PATTERN.test(value.publicActionId) &&
+    isPublicId(value.publicActionId) &&
     isString(value.action) &&
     isNonEmptyString(value.action) &&
     ACTION_NAME_PATTERN.test(value.action) &&
@@ -587,14 +588,7 @@ function isAdminAction(value: unknown): value is AdminOverview["recentActions"][
 }
 
 function formatDateTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  return formatShortDateTime(value, { empty: ECHO_INVALID, invalid: ECHO_INVALID });
 }
 
 function hasExactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {

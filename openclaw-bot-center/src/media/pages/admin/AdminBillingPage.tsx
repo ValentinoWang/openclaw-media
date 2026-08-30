@@ -28,6 +28,8 @@ import {
 } from '../../ui/adminAction'
 import { PageHeading } from '../../ui/ordinaryPagePrimitives'
 import { DISPLAY_LABELS } from '../../ui/displayLabels'
+import { isPublicId, PUBLIC_ID_HTML_PATTERN } from '../../identifiers'
+import { formatDateTime } from '../../ui/datetime'
 import styles from './AdminBillingPage.module.css'
 
 type BillingView = 'plans' | 'mappings' | 'batches' | 'fulfillments' | 'grants'
@@ -342,7 +344,7 @@ export default function AdminBillingPage() {
           autoCapitalize="none"
           spellCheck={false}
           maxLength={160}
-          pattern="[A-Za-z0-9_\-]{8,160}"
+          pattern={PUBLIC_ID_HTML_PATTERN}
           placeholder="输入 opaque 租户编号"
           aria-invalid={!!publicTenantId && !isPublicId(publicTenantId.trim())}
         />
@@ -379,7 +381,7 @@ export default function AdminBillingPage() {
           autoCapitalize="none"
           spellCheck={false}
           maxLength={160}
-          pattern="[A-Za-z0-9_\-]{8,160}"
+          pattern={PUBLIC_ID_HTML_PATTERN}
           placeholder="输入 opaque 履约编号"
           aria-invalid={!!fulfillmentId && !isPublicId(fulfillmentId.trim())}
         />
@@ -704,8 +706,7 @@ function formatMoney(value: unknown): string {
 
 function formatTime(value: unknown): string {
   if (typeof value !== 'string' || !value) return '—'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('zh-CN', { hour12: false })
+  return formatDateTime(value, { invalid: '—' })
 }
 
 function planOptionLabel(plan: BillingPlan): string {
@@ -764,6 +765,3 @@ function buildMutationSpec(mode: OperationMode, values: { planCode: string; exte
   return { operationId: 'refundAdminFulfillment', label: '退款履约', path: { fulfillmentId: values.fulfillmentId.trim() }, body: { reason: auditReason, expectedRevision: revision }, auditReason }
 }
 
-function isPublicId(value: string): boolean {
-  return /^[A-Za-z0-9_-]{8,160}$/.test(value)
-}
