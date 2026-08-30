@@ -42,6 +42,7 @@ from media_model.payloads import (
     metric_data_quality_label,
     normalize_metric_data_quality,
 )
+from media_model import metric_spec
 from media_vault.vault import MediaVault, make_timestamp_id
 
 from .validation_window_scheduler import ValidationWindowScheduler
@@ -1555,22 +1556,6 @@ _REVIEW_LABELS = {
     "top_comments": "评论原话",
     "track": "赛道",
     "key_insights": "关键洞察",
-    "avg_watch_duration": "平均观看时长",
-    "bounce_2s_rate": "2 秒跳出率",
-    "bounce_rate": "跳出率",
-    "comments": "评论",
-    "completion_5s_rate": "5 秒完播率",
-    "completion_rate": "完播率",
-    "ctr": "点击率",
-    "follows": "新增关注",
-    "impressions": "曝光",
-    "interaction_rate": "互动率",
-    "likes": "点赞",
-    "reads": "阅读",
-    "saves": "收藏",
-    "shares": "分享",
-    "view_conversion_rate": "曝光到观看转化",
-    "views": "播放/阅读",
     "fact": "事实",
     "metric": "指标",
     "name": "指标",
@@ -1598,6 +1583,24 @@ _REVIEW_LABELS = {
     "validation_target": "验证指标",
 }
 
+# These metric keys have a media_model.METRIC_REGISTRY display_name that
+# differs from the Chinese wording data_review has always used in already-
+# published review documents (either a genuinely different word choice, or
+# just a missing/extra space) -- e.g. the registry's "views" is "播放" but
+# data_review has always said "播放/阅读". Reconciling the wording itself is
+# a product decision (LE-04 audit); until that happens, these stay pinned
+# to data_review's existing text instead of falling through to the
+# registry, so no already-emitted review document's wording changes.
+_REVIEW_METRIC_OVERRIDES = {
+    "avg_watch_duration": "平均观看时长",
+    "bounce_2s_rate": "2 秒跳出率",
+    "completion_5s_rate": "5 秒完播率",
+    "follows": "新增关注",
+    "shares": "分享",
+    "view_conversion_rate": "曝光到观看转化",
+    "views": "播放/阅读",
+}
+
 _REVIEW_INTERNAL_FIELDS = frozenset(
     {
         "artifact_uri",
@@ -1614,10 +1617,33 @@ _REVIEW_INTERNAL_FIELDS = frozenset(
 )
 
 
-def _review_label(key: Any) -> str:
-    text = str(key or "").strip()
+def _resolve_review_label(text: str) -> str | None:
+    """Look up a document-field or metric label, or return None if unknown.
+
+    The registry (media_model.metric_spec) is consulted only for text with
+    no CJK characters. Registry aliases include Chinese words (e.g. "播放量"
+    for "views"), and a raw dict key or metric-name value that already
+    reads as Chinese is meant to fall through to the caller's own
+    Chinese-passthrough fallback unchanged, exactly as it always did --
+    not get retranslated into the registry's own wording.
+    """
+    if text in _REVIEW_METRIC_OVERRIDES:
+        return _REVIEW_METRIC_OVERRIDES[text]
     if text in _REVIEW_LABELS:
         return _REVIEW_LABELS[text]
+    if any("一" <= char <= "鿿" for char in text):
+        return None
+    try:
+        return metric_spec(text)["display_name"]
+    except MetricRegistryError:
+        return None
+
+
+def _review_label(key: Any) -> str:
+    text = str(key or "").strip()
+    resolved = _resolve_review_label(text)
+    if resolved is not None:
+        return resolved
     if any("\u4e00" <= char <= "\u9fff" for char in text):
         return text
     return "说明"
@@ -1652,7 +1678,7 @@ def _review_value(value: Any, *, depth: int = 0) -> str:
 def _review_field_value(key: Any, value: Any, *, depth: int) -> str:
     """Translate canonical metric names while retaining the value renderer."""
     if str(key or "").strip().lower() in {"metric", "name"} and isinstance(value, str):
-        mapped = _REVIEW_LABELS.get(value.strip().lower())
+        mapped = _resolve_review_label(value.strip().lower())
         if mapped:
             return mapped
     return _review_value(value, depth=depth)
