@@ -7,10 +7,10 @@ import secrets
 import sys
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Literal, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
@@ -24,6 +24,8 @@ USER_INFO_ENDPOINT = "https://open.feishu.cn/open-apis/authen/v1/user_info"
 MEDIA_LOGIN_SCOPE = "contact:user.email:readonly"
 MEDIA_STATE_PREFIX = "m_"
 MEDIA_CALLBACK_PATH = "/openclaw/media/oauth/callback"
+WorkspaceIntent = Literal["personal_web", "organization_lark"]
+_WORKSPACE_INTENTS = frozenset({"personal_web", "organization_lark"})
 
 
 @dataclass(frozen=True)
@@ -40,6 +42,7 @@ class MediaFeishuIdentity:
     union_id: str | None
     user_id: str | None = None
     email: str | None = None
+    workspace_intent: WorkspaceIntent = "personal_web"
 
 
 @dataclass
@@ -47,6 +50,7 @@ class _LoginAttempt:
     state: str
     code_verifier: str
     expires_at: float
+    workspace_intent: WorkspaceIntent
 
 
 def load_media_feishu_identity(path: str | Path) -> tuple[str, str]:
@@ -118,7 +122,9 @@ class MediaFeishuLoginService:
     def redirect_uri(self) -> str:
         return self._redirect_uri
 
-    def start(self) -> MediaFeishuLoginStart:
+    def start(self, *, workspace_intent: WorkspaceIntent = "personal_web") -> MediaFeishuLoginStart:
+        if not isinstance(workspace_intent, str) or workspace_intent not in _WORKSPACE_INTENTS:
+            raise AccountAuthError("feishu_login_invalid_intent", "飞书登录工作区类型无效。", status=400)
         now = self._clock()
         state = MEDIA_STATE_PREFIX + secrets.token_urlsafe(32)
         code_verifier = secrets.token_urlsafe(64)
@@ -129,6 +135,7 @@ class MediaFeishuLoginService:
             state=state,
             code_verifier=code_verifier,
             expires_at=now + self._maximum_age,
+            workspace_intent=workspace_intent,
         )
         with self._lock:
             self._cleanup(now)
@@ -184,7 +191,7 @@ class MediaFeishuLoginService:
                 "MediaClaw 登录请求已过期，请返回登录页重新发起登录。",
                 status=400,
             )
-        return identity
+        return replace(identity, workspace_intent=attempt.workspace_intent)
 
     def _exchange_identity(self, code: str, code_verifier: str) -> MediaFeishuIdentity:
         if not isinstance(code, str) or not 1 <= len(code) <= 2048:

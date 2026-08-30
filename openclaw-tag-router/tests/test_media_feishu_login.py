@@ -70,6 +70,32 @@ class MediaFeishuLoginServiceTests(unittest.TestCase):
         self.assertEqual(started.maximum_age, 300)
 
     @patch("openclaw_app.account.media_feishu_login.urlopen")
+    def test_organization_intent_is_bound_to_the_server_side_oauth_state(self, mocked_urlopen: MagicMock) -> None:
+        mocked_urlopen.side_effect = (
+            self._response({"code": 0, "access_token": "media-access-token"}),
+            self._response(
+                {
+                    "code": 0,
+                    "data": {"tenant_key": "tenant-media-a", "open_id": "open-a"},
+                }
+            ),
+        )
+
+        started = self.service.start(workspace_intent="organization_lark")
+        state = parse_qs(urlsplit(started.authorization_url).query)["state"][0]
+        identity = self.service.complete_callback(state=state, code="authorization-code")
+
+        self.assertEqual(identity.workspace_intent, "organization_lark")
+
+    def test_rejects_unknown_workspace_intent_before_creating_state(self) -> None:
+        with self.assertRaises(AccountAuthError) as raised:
+            self.service.start(workspace_intent="admin")  # type: ignore[arg-type]
+        self.assertEqual(raised.exception.code, "feishu_login_invalid_intent")
+        with self.assertRaises(AccountAuthError) as malformed:
+            self.service.start(workspace_intent={})  # type: ignore[arg-type]
+        self.assertEqual(malformed.exception.code, "feishu_login_invalid_intent")
+
+    @patch("openclaw_app.account.media_feishu_login.urlopen")
     def test_callback_returns_verified_feishu_identity_once_without_email(self, mocked_urlopen: MagicMock) -> None:
         mocked_urlopen.side_effect = (
             self._response({"code": 0, "access_token": "media-access-token"}),
@@ -94,6 +120,7 @@ class MediaFeishuLoginServiceTests(unittest.TestCase):
         self.assertEqual(identity.open_id, "open-a")
         self.assertEqual(identity.union_id, "union-a")
         self.assertIsNone(identity.email)
+        self.assertEqual(identity.workspace_intent, "personal_web")
         with self.assertRaises(AccountAuthError) as replayed:
             self.service.complete_callback(state=state, code="authorization-code")
         self.assertEqual(replayed.exception.code, "feishu_login_invalid_state")

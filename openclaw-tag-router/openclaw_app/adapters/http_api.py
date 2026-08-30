@@ -2389,8 +2389,12 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
     def _handle_auth_feishu_start(self, payload: Mapping[str, Any]) -> None:
         if not self._consume_rate_limit("auth_feishu_start", self._client_key()):
             return
-        if payload:
+        if set(payload) - {"workspaceIntent"}:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "飞书登录请求字段无效。")
+            return
+        workspace_intent = payload.get("workspaceIntent", "personal_web")
+        if not isinstance(workspace_intent, str) or workspace_intent not in {"personal_web", "organization_lark"}:
+            self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "飞书登录工作区类型无效。")
             return
         if self.media_feishu_login is None:
             self._send_api_error(
@@ -2399,7 +2403,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 "飞书登录暂时不可用，请稍后重试。",
             )
             return
-        started = self.media_feishu_login.start()
+        started = self.media_feishu_login.start(workspace_intent=workspace_intent)
         self._send_json(
             HTTPStatus.OK,
             {
@@ -2441,6 +2445,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                     open_id=identity.open_id,
                     union_id=identity.union_id,
                     previous_token=self._legacy_session_cookie(),
+                    workspace_intent=identity.workspace_intent,
                 )
                 self._send_empty(
                     HTTPStatus.SEE_OTHER,

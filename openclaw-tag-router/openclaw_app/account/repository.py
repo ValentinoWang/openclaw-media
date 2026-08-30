@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from .admin_audit import write_admin_audit as _write_admin_audit
@@ -69,7 +69,17 @@ class AccountAuthRepository:
         tenant_key: str,
         open_id: str | None,
         union_id: str | None,
+        workspace_intent: Literal["personal_web", "organization_lark"] = "personal_web",
     ) -> AccountCredential | None:
+        if workspace_intent == "organization_lark":
+            return self._organization_credential_for_feishu_identity(
+                connection,
+                tenant_key=tenant_key,
+                open_id=open_id,
+                union_id=union_id,
+            )
+        if workspace_intent != "personal_web":
+            raise ValueError("unsupported workspace intent")
         rows = connection.execute(
             """
             SELECT u.id, t.id, u.username, u.email, u.password_hash, u.role, u.status, t.status,
@@ -82,6 +92,52 @@ class AccountAuthRepository:
             WHERE i.tenant_key = %(tenant_key)s
               AND i.external_status = 'active'
               AND m.status = 'active'
+              AND (
+                    (CAST(%(open_id)s AS text) IS NOT NULL
+                     AND i.open_id = CAST(%(open_id)s AS text))
+                 OR (CAST(%(union_id)s AS text) IS NOT NULL
+                     AND i.union_id = CAST(%(union_id)s AS text))
+              )
+            LIMIT 2
+            """,
+            {"tenant_key": tenant_key, "open_id": open_id, "union_id": union_id},
+        ).fetchall()
+        return AccountCredential(*rows[0]) if len(rows) == 1 else None
+
+    @staticmethod
+    def _organization_credential_for_feishu_identity(
+        connection: Any,
+        *,
+        tenant_key: str,
+        open_id: str | None,
+        union_id: str | None,
+    ) -> AccountCredential | None:
+        """Return one active, bound organization workspace for a verified identity."""
+        rows = connection.execute(
+            """
+            SELECT u.id, workspace.tenant_id, u.username, u.email, u.password_hash, u.role, u.status,
+                   tenant.status, u.is_maintainer
+            FROM openclaw_account.tenant_member_identities AS i
+            JOIN openclaw_account.tenant_members AS identity_members
+              ON identity_members.tenant_id = i.tenant_id AND identity_members.user_id = i.user_id
+            JOIN openclaw_account.users AS u ON u.id = i.user_id
+            JOIN openclaw_account.workspace_memberships AS membership ON membership.user_id = u.id
+            JOIN openclaw_account.workspaces AS workspace
+              ON workspace.id = membership.workspace_id AND workspace.tenant_id = membership.tenant_id
+            JOIN openclaw_account.tenants AS tenant ON tenant.id = workspace.tenant_id
+            JOIN media_product.lark_tenant_bindings AS binding ON binding.tenant_id = workspace.tenant_id
+            WHERE i.tenant_key = %(tenant_key)s
+              AND i.external_status = 'active'
+              AND identity_members.status = 'active'
+              AND u.status = 'active'
+              AND tenant.status = 'active'
+              AND membership.state = 'ACTIVE'
+              AND workspace.workspace_mode = 'organization_lark'
+              AND workspace.body_authority = 'lark'
+              AND workspace.status = 'ACTIVE'
+              AND workspace.ownership_state = 'PROVEN'
+              AND workspace.visibility_state = 'VISIBLE'
+              AND binding.status = 'active'
               AND (
                     (CAST(%(open_id)s AS text) IS NOT NULL
                      AND i.open_id = CAST(%(open_id)s AS text))
