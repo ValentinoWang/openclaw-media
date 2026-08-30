@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 
 from common.platform_links import classify_post_link
 
-from . import foundation
+from . import foundation, sql_pagination
 from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_key, public_projection
 
 
@@ -234,7 +234,7 @@ class TracksService:
         FROM media_product.tracks AS t
         WHERE t.tenant_id = %s
     """
-    _TRACK_LIST_QUERY = """
+    _TRACK_LIST_QUERY = f"""
         SELECT t.public_id, t.revision, t.canonical_data, parent.public_id,
                t.created_at, t.updated_at
         FROM media_product.tracks AS t
@@ -250,14 +250,7 @@ class TracksService:
             OR t.public_id ILIKE %s ESCAPE '\\'
             OR COALESCE(t.canonical_data::text, '') ILIKE %s ESCAPE '\\'
           )
-          AND (
-            CAST(%s AS timestamptz) IS NULL
-            OR t.updated_at < %s
-            OR (t.updated_at = %s AND t.public_id > %s)
-          )
-        ORDER BY t.updated_at DESC, t.public_id ASC
-        LIMIT %s
-    """
+{sql_pagination.keyset_window("t.", "updated_at", "public_id")}"""
     _TRACK_DETAIL_QUERY = """
         SELECT t.public_id, t.revision, t.canonical_data, parent.public_id,
                t.created_at, t.updated_at
@@ -276,7 +269,7 @@ class TracksService:
         FROM media_product.creator_profiles AS c
         WHERE c.tenant_id = %s
     """
-    _CREATOR_LIST_QUERY = """
+    _CREATOR_LIST_QUERY = f"""
         SELECT c.public_id, c.revision, c.canonical_data, c.created_at, c.updated_at
         FROM media_product.creator_profiles AS c
         WHERE c.tenant_id = %s
@@ -285,14 +278,7 @@ class TracksService:
             OR c.public_id ILIKE %s ESCAPE '\\'
             OR COALESCE(c.canonical_data::text, '') ILIKE %s ESCAPE '\\'
           )
-          AND (
-            CAST(%s AS timestamptz) IS NULL
-            OR c.updated_at < %s
-            OR (c.updated_at = %s AND c.public_id > %s)
-          )
-        ORDER BY c.updated_at DESC, c.public_id ASC
-        LIMIT %s
-    """
+{sql_pagination.keyset_window("c.", "updated_at", "public_id")}"""
     _CREATOR_DETAIL_QUERY = """
         SELECT c.public_id, c.revision, c.canonical_data, c.created_at, c.updated_at
         FROM media_product.creator_profiles AS c
@@ -316,7 +302,7 @@ class TracksService:
              )
         WHERE m.tenant_id = %s
     """
-    _RELATIONSHIP_LIST_QUERY = """
+    _RELATIONSHIP_LIST_QUERY = f"""
         SELECT m.public_id, m.revision, m.canonical_data, m.created_at, m.updated_at,
                t.public_id, c.public_id
         FROM media_product.track_creator_memberships AS m
@@ -333,14 +319,7 @@ class TracksService:
                NULLIF(m.canonical_data->>'public_creator_id', '')
              )
         WHERE m.tenant_id = %s
-          AND (
-            CAST(%s AS timestamptz) IS NULL
-            OR m.updated_at < %s
-            OR (m.updated_at = %s AND m.public_id > %s)
-          )
-        ORDER BY m.updated_at DESC, m.public_id ASC
-        LIMIT %s
-    """
+{sql_pagination.keyset_window("m.", "updated_at", "public_id")}"""
     _RELATIONSHIP_DETAIL_QUERY = """
         SELECT m.public_id, m.revision, m.canonical_data, m.created_at, m.updated_at,
                t.public_id, c.public_id
@@ -365,18 +344,11 @@ class TracksService:
         FROM media_product.owned_media_accounts AS a
         WHERE a.tenant_id = %s
     """
-    _ACCOUNT_LIST_QUERY = """
+    _ACCOUNT_LIST_QUERY = f"""
         SELECT a.public_id, a.revision, a.canonical_data, a.created_at, a.updated_at
         FROM media_product.owned_media_accounts AS a
         WHERE a.tenant_id = %s
-          AND (
-            CAST(%s AS timestamptz) IS NULL
-            OR a.updated_at < %s
-            OR (a.updated_at = %s AND a.public_id > %s)
-          )
-        ORDER BY a.updated_at DESC, a.public_id ASC
-        LIMIT %s
-    """
+{sql_pagination.keyset_window("a.", "updated_at", "public_id")}"""
     _ACCOUNT_DETAIL_QUERY = """
         SELECT a.public_id, a.revision, a.canonical_data, a.created_at, a.updated_at
         FROM media_product.owned_media_accounts AS a
@@ -1061,15 +1033,15 @@ TrackService = TracksService
 
 def _search_params(tenant_id: str, term: str, position: TrackCursor | None, size: int) -> tuple[Any, ...]:
     pattern = _search_pattern(term)
-    if position is None:
-        return tenant_id, term, pattern, pattern, None, None, None, "", size + 1
-    return tenant_id, term, pattern, pattern, position.updated_at, position.updated_at, position.updated_at, position.public_id, size + 1
+    ts = position.updated_at if position is not None else None
+    public_id = position.public_id if position is not None else None
+    return (tenant_id, term, pattern, pattern, *sql_pagination.keyset_params(ts, public_id), size + 1)
 
 
 def _simple_params(tenant_id: str, position: TrackCursor | None, size: int) -> tuple[Any, ...]:
-    if position is None:
-        return tenant_id, None, None, None, "", size + 1
-    return tenant_id, position.updated_at, position.updated_at, position.updated_at, position.public_id, size + 1
+    ts = position.updated_at if position is not None else None
+    public_id = position.public_id if position is not None else None
+    return (tenant_id, *sql_pagination.keyset_params(ts, public_id), size + 1)
 
 
 def _page_size(value: Any) -> int:

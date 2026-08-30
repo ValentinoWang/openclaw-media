@@ -14,7 +14,7 @@ from urllib.parse import unquote_to_bytes
 from uuid import UUID, uuid4
 
 from ...account.admin_audit import write_admin_audit
-from . import foundation
+from . import foundation, sql_pagination
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
 DEFAULT_PAGE_SIZE = 30
@@ -259,19 +259,15 @@ WITH tenant_rows AS (
 )
 """
 
-_TENANT_LIST_QUERY = _TENANT_CTE + """
+_TENANT_LIST_QUERY = _TENANT_CTE + f"""
 SELECT tenant_id, primary_user_id, status, primary_username, user_count,
        run_count, asset_count, archive_count, usage_charge, last_active_at
   FROM tenant_rows
  WHERE (%s = '' OR primary_username ILIKE %s OR status ILIKE %s)
-   AND (
-        CAST(%s AS timestamptz) IS NULL
-        OR last_active_at < %s
-        OR (last_active_at = %s AND tenant_id > %s)
-   )
- ORDER BY last_active_at DESC, tenant_id ASC
- LIMIT %s
-"""
+{sql_pagination.keyset_window(
+    "", "last_active_at", "tenant_id",
+    and_indent="   ", inner_indent="        ", tail_indent=" ", closing_indent="",
+)}"""
 
 _TENANT_DETAIL_QUERY = _TENANT_CTE + """
 SELECT tenant_id, primary_user_id, status, primary_username, user_count,
@@ -286,18 +282,14 @@ SELECT tenant.primary_user_id
  WHERE tenant.id = %s
 """
 
-_RUN_LIST_QUERY = """
+_RUN_LIST_QUERY = f"""
 SELECT run.public_id, run.canonical_data, run.created_at, run.updated_at, run.revision
   FROM media_product.creation_runs AS run
  WHERE run.tenant_id = %s
-   AND (
-        CAST(%s AS timestamptz) IS NULL
-        OR run.updated_at < %s
-        OR (run.updated_at = %s AND run.public_id > %s)
-   )
- ORDER BY run.updated_at DESC, run.public_id ASC
- LIMIT %s
-"""
+{sql_pagination.keyset_window(
+    "run.", "updated_at", "public_id",
+    and_indent="   ", inner_indent="        ", tail_indent=" ", closing_indent="",
+)}"""
 
 class AdminTenantsService:
     """Expose B12's redacted tenant directory and audited tenant reads."""
@@ -348,7 +340,13 @@ class AdminTenantsService:
         position_time = _timestamp(position.updated_at) if position else None
         position_tenant = position.tenant_id if position else None
         pattern = f"%{normalized_search}%"
-        params = (normalized_search, pattern, pattern, position_time, position_time, position_time, position_tenant, size + 1)
+        params = (
+            normalized_search,
+            pattern,
+            pattern,
+            *sql_pagination.keyset_params(position_time, position_tenant, no_position_id=None),
+            size + 1,
+        )
         try:
             with self._connection_factory() as connection:
                 self._ensure_admin_read(checked)
@@ -426,7 +424,11 @@ class AdminTenantsService:
         position = self._decode_run_cursor(cursor, target_id) if cursor else None
         position_time = _timestamp(position.updated_at) if position else None
         position_run = position.public_run_id if position else None
-        params = (target_id, position_time, position_time, position_time, position_run, size + 1)
+        params = (
+            target_id,
+            *sql_pagination.keyset_params(position_time, position_run, no_position_id=None),
+            size + 1,
+        )
         try:
             with self._connection_factory() as connection:
                 target_row = connection.execute(_TENANT_EXISTS_QUERY, (target_id,)).fetchone()

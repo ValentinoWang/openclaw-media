@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 
 from media_vault import MediaVault, MediaVaultError
 
-from . import foundation
+from . import foundation, sql_pagination
 from .foundation import (
     MediaBusinessError,
     TenantContext,
@@ -357,7 +357,7 @@ def _decode_cursor(secret: bytes, context: TenantContext, token: str) -> _Cursor
 class PublishingService:
     """Read and write B06 publishing facts in the authenticated tenant."""
 
-    _PACKAGE_LIST_QUERY = """
+    _PACKAGE_LIST_QUERY = f"""
         SELECT p.public_id AS package_public_id,
                p.revision AS package_revision,
                p.canonical_data AS package_data,
@@ -373,14 +373,7 @@ class PublishingService:
           ON a.tenant_id = p.tenant_id
          AND a.public_id = p.canonical_data->>'public_artifact_id'
         WHERE p.tenant_id = %s
-          AND (
-            CAST(%s AS timestamptz) IS NULL
-            OR p.updated_at < %s
-            OR (p.updated_at = %s AND p.public_id > %s)
-          )
-        ORDER BY p.updated_at DESC, p.public_id ASC
-        LIMIT %s
-    """
+{sql_pagination.keyset_window("p.", "updated_at", "public_id")}"""
     _PACKAGE_DETAIL_QUERY = """
         SELECT p.public_id AS package_public_id,
                p.revision AS package_revision,
@@ -798,17 +791,13 @@ class PublishingService:
         context = self._context(context)
         size = _page_size(page_size)
         position = _decode_cursor(self._cursor_secret, context, cursor) if cursor else None
-        if position is None:
-            params: tuple[Any, ...] = (context.tenant_id, None, None, None, "", size + 1)
-        else:
-            params = (
-                context.tenant_id,
-                position.updated_at,
-                position.updated_at,
-                position.updated_at,
-                position.public_id,
-                size + 1,
-            )
+        ts = position.updated_at if position is not None else None
+        public_id = position.public_id if position is not None else None
+        params: tuple[Any, ...] = (
+            context.tenant_id,
+            *sql_pagination.keyset_params(ts, public_id),
+            size + 1,
+        )
         try:
             with self._connection_factory() as connection:
                 rows = _fetchall(connection.execute(self._PACKAGE_LIST_QUERY, params))

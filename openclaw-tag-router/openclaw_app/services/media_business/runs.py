@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
-from . import foundation
+from . import foundation, sql_pagination
 from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_key, public_projection
 
 
@@ -433,7 +433,7 @@ def _decode_cursor(secret: bytes, context: TenantContext, scope: str, token: str
 class RunsService:
     """Read B05 facts and document revision identity from PostgreSQL only."""
 
-    _RUN_LIST_QUERY = """
+    _RUN_LIST_QUERY = f"""
         SELECT public_id, revision, canonical_data, created_at, updated_at
         FROM media_product.creation_runs
         WHERE tenant_id = %s
@@ -442,14 +442,7 @@ class RunsService:
             OR public_id ILIKE %s ESCAPE '\\'
             OR COALESCE(canonical_data::text, '') ILIKE %s ESCAPE '\\'
           )
-          AND (
-            CAST(%s AS timestamptz) IS NULL
-            OR updated_at < %s
-            OR (updated_at = %s AND public_id > %s)
-          )
-        ORDER BY updated_at DESC, public_id ASC
-        LIMIT %s
-    """
+{sql_pagination.keyset_window("", "updated_at", "public_id")}"""
     _RUN_DETAIL_QUERY = """
         SELECT public_id, revision, canonical_data, created_at, updated_at
         FROM media_product.creation_runs
@@ -492,18 +485,11 @@ class RunsService:
          AND b.public_artifact_id = a.public_id
         WHERE a.tenant_id = %s AND a.public_id = %s
     """
-    _OPPORTUNITY_LIST_QUERY = """
+    _OPPORTUNITY_LIST_QUERY = f"""
         SELECT public_id, revision, canonical_data, updated_at
         FROM media_product.business_opportunities
         WHERE tenant_id = %s
-          AND (
-            CAST(%s AS timestamptz) IS NULL
-            OR updated_at < %s
-            OR (updated_at = %s AND public_id > %s)
-          )
-        ORDER BY updated_at DESC, public_id ASC
-        LIMIT %s
-    """
+{sql_pagination.keyset_window("", "updated_at", "public_id")}"""
     _IDEMPOTENCY_READ_QUERY = """
         SELECT request_checksum, response_json
         FROM media_product.b05_idempotency_keys
@@ -578,20 +564,16 @@ class RunsService:
         search_term = _search(search)
         position = _decode_cursor(self._cursor_secret, context, "runs", cursor) if cursor else None
         pattern = _search_pattern(search_term)
-        if position is None:
-            params = (context.tenant_id, search_term, pattern, pattern, None, None, None, "", size + 1)
-        else:
-            params = (
-                context.tenant_id,
-                search_term,
-                pattern,
-                pattern,
-                position.updated_at,
-                position.updated_at,
-                position.updated_at,
-                position.public_id,
-                size + 1,
-            )
+        ts = position.updated_at if position is not None else None
+        public_id = position.public_id if position is not None else None
+        params = (
+            context.tenant_id,
+            search_term,
+            pattern,
+            pattern,
+            *sql_pagination.keyset_params(ts, public_id),
+            size + 1,
+        )
         try:
             with self._connection_factory() as connection:
                 rows = _fetchall(connection.execute(self._RUN_LIST_QUERY, params))
@@ -700,17 +682,13 @@ class RunsService:
         context = self._context(context)
         size = _page_size(page_size)
         position = _decode_cursor(self._cursor_secret, context, "business-opportunities", cursor) if cursor else None
-        if position is None:
-            params = (context.tenant_id, None, None, None, "", size + 1)
-        else:
-            params = (
-                context.tenant_id,
-                position.updated_at,
-                position.updated_at,
-                position.updated_at,
-                position.public_id,
-                size + 1,
-            )
+        ts = position.updated_at if position is not None else None
+        public_id = position.public_id if position is not None else None
+        params = (
+            context.tenant_id,
+            *sql_pagination.keyset_params(ts, public_id),
+            size + 1,
+        )
         try:
             with self._connection_factory() as connection:
                 rows = _fetchall(connection.execute(self._OPPORTUNITY_LIST_QUERY, params))

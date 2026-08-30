@@ -18,7 +18,7 @@ from threading import BoundedSemaphore, Lock
 from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import urlsplit
 
-from . import foundation
+from . import foundation, sql_pagination
 from .foundation import MediaBusinessError, TenantContext, public_projection
 
 
@@ -91,7 +91,7 @@ class AssetsService:
         WHERE a.tenant_id = %s
     """
 
-    _LIST_QUERY = """
+    _LIST_QUERY = f"""
         SELECT a.public_id,
                a.revision,
                a.canonical_data,
@@ -110,14 +110,7 @@ class AssetsService:
             OR a.public_id ILIKE %s ESCAPE '\\'
             OR COALESCE(a.canonical_data::text, '') ILIKE %s ESCAPE '\\'
           )
-          AND (
-            CAST(%s AS timestamptz) IS NULL
-            OR a.created_at < %s
-            OR (a.created_at = %s AND a.public_id > %s)
-          )
-        ORDER BY a.created_at DESC, a.public_id ASC
-        LIMIT %s
-    """
+{sql_pagination.keyset_window("a.", "created_at", "public_id")}"""
 
     _DETAIL_QUERY = """
         SELECT a.public_id,
@@ -298,17 +291,14 @@ class AssetsService:
         position: AssetCursor | None,
         size: int,
     ) -> tuple[Any, ...]:
-        if position is None:
-            return (tenant_id, search_term, search_pattern, search_pattern, None, None, None, "", size + 1)
+        ts = position.created_at if position is not None else None
+        public_asset_id = position.public_asset_id if position is not None else None
         return (
             tenant_id,
             search_term,
             search_pattern,
             search_pattern,
-            position.created_at,
-            position.created_at,
-            position.created_at,
-            position.public_asset_id,
+            *sql_pagination.keyset_params(ts, public_asset_id),
             size + 1,
         )
 
