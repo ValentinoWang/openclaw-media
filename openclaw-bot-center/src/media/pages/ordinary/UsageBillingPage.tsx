@@ -9,8 +9,11 @@ import {
   callBusinessOperation,
 } from '../../generatedBusinessPagesContract'
 import {
-  newIdempotencyKey, PageHeading, type LoadState,
+  PageHeading, type LoadState,
 } from '../../ui/ordinaryPagePrimitives'
+import { newIdempotencyKey } from '../../idempotency'
+import { formatDateTime as sharedFormatDateTime, formatDateKey as sharedFormatDateKey } from '../../ui/datetime'
+import { Metric } from '../../ui/Metric'
 import { usageEventTone } from '../../statusPresentation'
 import styles from './UsageBillingPage.module.css'
 
@@ -209,10 +212,10 @@ function UsagePanel({ state, daily, onRefresh }: { state: LoadState<UsagePageDat
     <section className={styles.panel}>
       <PanelHeading title="当前用量汇总" detail={rangeDetail} action={<button className={styles.quietButton} type="button" onClick={onRefresh}><RefreshCw size={14} />刷新数据</button>} />
       <div className={styles.metrics}>
-        <Metric label="文本用量" value={formatQuantity(summary.summary.textQuantity)} detail="服务端守恒汇总" />
-        <Metric label="图片用量" value={formatQuantity(summary.summary.imageQuantity)} detail="服务端守恒汇总" />
-        <Metric label="计费金额" value={formatCredit(summary.summary.totalCharge) + ' ' + currencyDisplayLabel(summary.summary.currency)} detail="服务端守恒汇总" />
-        <Metric label="用量事件" value={formatCount(items.length)} detail="服务端事件明细" />
+        <Metric className={styles.metric} label="文本用量" value={formatQuantity(summary.summary.textQuantity)} detail="服务端守恒汇总" />
+        <Metric className={styles.metric} label="图片用量" value={formatQuantity(summary.summary.imageQuantity)} detail="服务端守恒汇总" />
+        <Metric className={styles.metric} label="计费金额" value={formatCredit(summary.summary.totalCharge) + ' ' + currencyDisplayLabel(summary.summary.currency)} detail="服务端守恒汇总" />
+        <Metric className={styles.metric} label="用量事件" value={formatCount(items.length)} detail="服务端事件明细" />
       </div>
     </section>
     <section className={styles.panel}>
@@ -323,10 +326,6 @@ function RedemptionHistory({ events }: { events: UsageEvent[] }) {
 
 function PanelHeading({ title, detail, action, icon }: { title: string; detail?: string; action?: ReactNode; icon?: ReactNode }) {
   return <header className={styles.heading}><div className={styles.headingTitle}>{icon}<div><h2>{title}</h2>{detail ? <p>{detail}</p> : null}</div></div>{action}</header>
-}
-
-function Metric({ label, value, detail, muted = false }: { label: string; value: ReactNode; detail: string; muted?: boolean }) {
-  return <div className={muted ? styles.metric + ' ' + styles.mutedMetric : styles.metric}><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>
 }
 
 const usageToneClasses: Record<ReturnType<typeof usageEventTone>, string> = {
@@ -468,10 +467,10 @@ function fixedToNumber(value: FixedDecimal) {
   const number = Number(fixedToString(value))
   return Number.isFinite(number) ? number : null
 }
-function formatDateTime(value: string | null) { if (!value) return '时间未提供'; const date = new Date(value); return Number.isNaN(date.getTime()) ? '时间未提供' : date.toLocaleString('zh-CN', { hour12: false }) }
+function formatDateTime(value: string | null) { return sharedFormatDateTime(value, { empty: '时间未提供', invalid: '时间未提供' }) }
 function formatDateOnly(value: Date) { return value.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) }
 function localDateKey(value: Date) { return [value.getFullYear(), String(value.getMonth() + 1).padStart(2, '0'), String(value.getDate()).padStart(2, '0')].join('-') }
-function formatDateKey(value: string) { const date = new Date(value + 'T00:00:00'); return Number.isNaN(date.getTime()) ? '日期未提供' : date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) }
+function formatDateKey(value: string) { return sharedFormatDateKey(value, { invalid: '日期未提供' }) }
 
 async function readUsageBundle(): Promise<UsagePageData> {
   try {

@@ -20,6 +20,7 @@ import {
 } from '../../generatedBusinessPagesContract'
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { runStatusLabel, runStatusTone } from '../../statusPresentation'
+import { Metric } from '../../ui/Metric'
 import styles from './AdminTenantsPage.module.css'
 
 const PAGE_SIZE = 20
@@ -429,11 +430,11 @@ function TenantDetailPanel({ state, selectedTenantId, onRetry }: { state: LoadSt
 function TenantDetailFacts({ tenant }: { tenant: AdminTenantSummary }) {
   return <div className={styles.detailBody}>
     <div className={styles.metricGrid}>
-      <Metric label="用户" value={formatInteger(tenant.userCount)} icon={<Building2 size={16} />} />
-      <Metric label="运行" value={formatInteger(tenant.runCount)} icon={<ClipboardList size={16} />} />
-      <Metric label="素材" value={formatInteger(tenant.assetCount)} icon={<FolderOpen size={16} />} />
-      <Metric label="归档" value={formatInteger(tenant.archiveCount)} icon={<FileArchive size={16} />} />
-      <Metric label="用量" value={tenant.usageCharge} icon={<TimerReset size={16} />} />
+      <Metric className={styles.metric} iconClassName={styles.metricIcon} label="用户" value={formatInteger(tenant.userCount)} icon={<Building2 size={16} />} />
+      <Metric className={styles.metric} iconClassName={styles.metricIcon} label="运行" value={formatInteger(tenant.runCount)} icon={<ClipboardList size={16} />} />
+      <Metric className={styles.metric} iconClassName={styles.metricIcon} label="素材" value={formatInteger(tenant.assetCount)} icon={<FolderOpen size={16} />} />
+      <Metric className={styles.metric} iconClassName={styles.metricIcon} label="归档" value={formatInteger(tenant.archiveCount)} icon={<FileArchive size={16} />} />
+      <Metric className={styles.metric} iconClassName={styles.metricIcon} label="用量" value={tenant.usageCharge} icon={<TimerReset size={16} />} />
     </div>
     <dl className={styles.factList}>
       <div><dt>公开租户引用</dt><dd><code>{tenant.publicTenantId}</code></dd></div>
@@ -516,10 +517,6 @@ function AuditPendingState({ selected, subject }: { selected: boolean; subject: 
 
 function EmptyState({ icon, title, detail }: { icon: ReactNode; title: string; detail: string }) {
   return <div className={styles.emptyState}>{icon}<strong>{title}</strong><p>{detail}</p></div>
-}
-
-function Metric({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
-  return <div className={styles.metric}><span className={styles.metricIcon}>{icon}</span><span>{label}</span><strong>{value}</strong></div>
 }
 
 function StatusBadge({ status }: { status: string }) {

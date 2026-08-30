@@ -23,6 +23,7 @@ import { useMediaWeb } from '../../MediaWebWorkspace'
 import { mutationFingerprint, useAdminAction, type ActionState } from '../../ui/adminAction'
 import { PlatformIdentity } from '../../ui/PlatformIdentity'
 import { platformDisplayLabel } from '../../ui/platformRegistry'
+import { Metric } from '../../ui/Metric'
 import styles from './AdminAccessPage.module.css'
 
 type AccessTab = 'invitations' | 'admission' | 'registration'
@@ -599,7 +600,7 @@ function AdmissionSummary({ state, onOpen }: { state: ResourceState<AdmissionBat
   const items = state.status === 'ready' ? state.data.items : []
   const activeCount = items.filter((item) => item.status === 'active').length
   const usedCount = items.reduce((total, item) => total + item.usedCount, 0)
-  return <section className={styles.summaryPanel} aria-labelledby="admission-summary-heading" data-page-terminal-surface="primary"><PanelHeader title="准入码批次（摘要）" id="admission-summary-heading" action={<button className={styles.quietButton} type="button" onClick={onOpen}>查看全部<ChevronRight size={14} /></button>} />{state.status === 'ready' ? <div className={styles.summaryBody}><div className={styles.metricGrid}><Metric label="当前页批次" value={items.length} note="服务端返回" /><Metric label="生效批次" value={activeCount} note="按服务端状态" /><Metric label="已用准入码" value={usedCount} note="当前页汇总" /></div><SummaryTableHint items={items} /></div> : <SummaryState state={state} />}</section>
+  return <section className={styles.summaryPanel} aria-labelledby="admission-summary-heading" data-page-terminal-surface="primary"><PanelHeader title="准入码批次（摘要）" id="admission-summary-heading" action={<button className={styles.quietButton} type="button" onClick={onOpen}>查看全部<ChevronRight size={14} /></button>} />{state.status === 'ready' ? <div className={styles.summaryBody}><div className={styles.metricGrid}><Metric className={styles.metric} label="当前页批次" value={items.length} detail="服务端返回" /><Metric className={styles.metric} label="生效批次" value={activeCount} detail="按服务端状态" /><Metric className={styles.metric} label="已用准入码" value={usedCount} detail="当前页汇总" /></div><SummaryTableHint items={items} /></div> : <SummaryState state={state} />}</section>
 }
 
 function RegistrationSummary({ state, onOpen }: { state: ResourceState<RegistrationPolicy>; onOpen: () => void }) {
@@ -803,10 +804,6 @@ function PanelHeader({ title, count, id, action }: { title: string; count?: numb
 
 function Field({ label, children }: { label: ReactNode; children: ReactNode }) {
   return <label className={styles.field}><span className={styles.fieldLabel}>{label}</span>{children}</label>
-}
-
-function Metric({ label, value, note }: { label: string; value: number; note: string }) {
-  return <div className={styles.metric}><span>{label}</span><strong>{value}</strong><small>{note}</small></div>
 }
 
 function CursorPagination({ depth, hasNext, onPrevious, onNext }: { depth: number; hasNext: boolean; onPrevious: () => void; onNext: () => void }) {

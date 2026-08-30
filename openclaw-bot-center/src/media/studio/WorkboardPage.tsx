@@ -23,6 +23,7 @@ import { useMediaWeb } from '../MediaWebWorkspace'
 import { BusinessOperationError, callBusinessOperation } from '../generatedBusinessPagesContract'
 import { projectStatusDisplayLabel } from '../ui/displayLabels'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
+import { Metric } from '../ui/Metric'
 import styles from './WorkboardPage.module.css'
 import { filterWorkboardAttentionTasks, workboardStageProgress } from './workboardPresentation'
 
@@ -123,10 +124,10 @@ export default function WorkboardPage() {
       </section>
 
       <section className={styles.metricGrid} aria-label="工作区关键指标">
-        <MetricCard tone="mint" icon={<FilePenLine size={18} />} label="内容项目" value={summary?.counts.contentProjects} detail="从 Brief 到发布" />
-        <MetricCard tone="violet" icon={<PenTool size={18} />} label="创作运行" value={summary?.counts.runs} detail="脚本、分镜与交付" />
-        <MetricCard tone="amber" icon={<Images size={18} />} label="素材证据" value={summary?.counts.assets} detail="原始素材与拆解" />
-        <MetricCard tone="blue" icon={<PackageCheck size={18} />} label="已发布作品" value={summary?.counts.publishedPosts} detail="等待持续复盘" />
+        <Metric variant="card" className={styles.metricCard} tone="mint" icon={<FilePenLine size={18} />} label="内容项目" value={summary?.counts.contentProjects} detail="从 Brief 到发布" />
+        <Metric variant="card" className={styles.metricCard} tone="violet" icon={<PenTool size={18} />} label="创作运行" value={summary?.counts.runs} detail="脚本、分镜与交付" />
+        <Metric variant="card" className={styles.metricCard} tone="amber" icon={<Images size={18} />} label="素材证据" value={summary?.counts.assets} detail="原始素材与拆解" />
+        <Metric variant="card" className={styles.metricCard} tone="blue" icon={<PackageCheck size={18} />} label="已发布作品" value={summary?.counts.publishedPosts} detail="等待持续复盘" />
       </section>
 
       <section className={styles.loopGrid} aria-label="高价值业务闭环">
@@ -215,10 +216,6 @@ export default function WorkboardPage() {
       </div>
     </main>
   )
-}
-
-function MetricCard({ tone, icon, label, value, detail }: { tone: 'mint' | 'violet' | 'amber' | 'blue'; icon: ReactNode; label: string; value?: number; detail: string }) {
-  return <article className={styles.metricCard} data-tone={tone}><span>{icon}</span><div><small>{label}</small><strong>{value === undefined ? '—' : value}</strong><p>{detail}</p></div></article>
 }
 
 function LoopCard({ tone, icon, kicker, title, description, steps, to }: { tone: 'studio' | 'campaign' | 'business' | 'desk'; icon: ReactNode; kicker: string; title: string; description: string; steps: string[]; to: string }) {

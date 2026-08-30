@@ -19,6 +19,7 @@ import { useMediaWeb } from '../MediaWebWorkspace'
 import type { MediaWebTask } from '../mediaWebApi'
 import { runStatusLabel, runStatusTone } from '../statusPresentation'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
+import { Metric } from '../ui/Metric'
 import styles from './CampaignsPage.module.css'
 
 const stages = [
@@ -70,10 +71,10 @@ export default function CampaignsPage() {
       </section>
 
       <section className={styles.metricGrid}>
-        <Metric icon={<Clock3 size={18} />} label="进行中" value={active.length} detail="等待生成、审核或交付" />
-        <Metric icon={<AlertCircle size={18} />} label="待人工处理" value={waiting.length} detail="审核、补充与返修" />
-        <Metric icon={<CheckCircle2 size={18} />} label="已完成" value={completed.length} detail="已有可回查交付结果" />
-        <Metric icon={<PackageCheck size={18} />} label="全部商单" value={campaignTasks.length} detail="当前账户任务记录" />
+        <Metric variant="card" className={styles.metric} icon={<Clock3 size={18} />} label="进行中" value={active.length} detail="等待生成、审核或交付" />
+        <Metric variant="card" className={styles.metric} icon={<AlertCircle size={18} />} label="待人工处理" value={waiting.length} detail="审核、补充与返修" />
+        <Metric variant="card" className={styles.metric} icon={<CheckCircle2 size={18} />} label="已完成" value={completed.length} detail="已有可回查交付结果" />
+        <Metric variant="card" className={styles.metric} icon={<PackageCheck size={18} />} label="全部商单" value={campaignTasks.length} detail="当前账户任务记录" />
       </section>
 
       <div className={styles.layout}>
@@ -130,10 +131,6 @@ function CampaignCard({ task, onOpen }: { task: MediaWebTask; onOpen: () => void
       </footer>
     </article>
   )
-}
-
-function Metric({ icon, label, value, detail }: { icon: ReactNode; label: string; value: number; detail: string }) {
-  return <article className={styles.metric}><span>{icon}</span><div><small>{label}</small><strong>{value}</strong><p>{detail}</p></div></article>
 }
 
 function CheckItem({ title, detail }: { title: string; detail: string }) {

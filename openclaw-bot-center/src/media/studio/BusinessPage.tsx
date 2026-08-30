@@ -16,6 +16,7 @@ import { Link } from 'react-router-dom'
 import { useMediaWeb } from '../MediaWebWorkspace'
 import { BusinessOperationError, callBusinessOperation } from '../generatedBusinessPagesContract'
 import { PlatformIdentity } from '../ui/PlatformIdentity'
+import { Metric } from '../ui/Metric'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
 import { businessStatusTone } from '../statusPresentation'
 import styles from './BusinessPage.module.css'
@@ -83,10 +84,10 @@ export default function BusinessPage() {
       </section>
 
       <section className={styles.metricGrid}>
-        <Metric icon={<BriefcaseBusiness size={18} />} label="全部机会" value={opportunities.length} detail="当前账户授权范围" />
-        <Metric icon={<CircleDollarSign size={18} />} label="有效机会" value={active.length} detail="仍在推进或可执行" />
-        <Metric icon={<BadgeDollarSign size={18} />} label="合作品牌" value={brands} detail="按品牌名称去重" />
-        <Metric icon={<ShieldCheck size={18} />} label="平台覆盖" value={platforms} detail="报价与权益分平台" />
+        <Metric variant="card" className={styles.metric} icon={<BriefcaseBusiness size={18} />} label="全部机会" value={opportunities.length} detail="当前账户授权范围" />
+        <Metric variant="card" className={styles.metric} icon={<CircleDollarSign size={18} />} label="有效机会" value={active.length} detail="仍在推进或可执行" />
+        <Metric variant="card" className={styles.metric} icon={<BadgeDollarSign size={18} />} label="合作品牌" value={brands} detail="按品牌名称去重" />
+        <Metric variant="card" className={styles.metric} icon={<ShieldCheck size={18} />} label="平台覆盖" value={platforms} detail="报价与权益分平台" />
       </section>
 
       <div className={styles.layout}>
@@ -136,10 +137,6 @@ function OpportunityCard({ item }: { item: BusinessOpportunity }) {
       <footer><code>{item.publicOpportunityId}</code><Link to="/campaigns">进入履约<ArrowRight size={14} /></Link></footer>
     </article>
   )
-}
-
-function Metric({ icon, label, value, detail }: { icon: ReactNode; label: string; value: number; detail: string }) {
-  return <article className={styles.metric}><span>{icon}</span><div><small>{label}</small><strong>{value}</strong><p>{detail}</p></div></article>
 }
 
 function ModelCard({ icon, title, detail, tags }: { icon: ReactNode; title: string; detail: string; tags: string[] }) {
