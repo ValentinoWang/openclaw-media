@@ -109,7 +109,7 @@ class H00AccountMonitorAdapter:
         record = self._find_record(records, public_account_id)
         if record is None:
             if self._account_metadata is None:
-                raise TrackMonitorUnavailable("无法从账号身份源读取 H00 记录创建信息")
+                raise TrackMonitorUnavailable("无法从账号身份源读取记录创建信息")
             metadata = self._account_metadata(context.tenant_id, public_account_id)
             if not metadata:
                 raise TrackNotFound("owned account monitor not found")
@@ -128,7 +128,7 @@ class H00AccountMonitorAdapter:
                 require=True,
             )
             if len(record_ids) != 1:
-                raise TrackMonitorUnavailable("H00 记录创建未返回唯一 record_id")
+                raise TrackMonitorUnavailable("记录创建未返回唯一 record_id")
         else:
             module.update_account_monitor_record(
                 self._monitor_url,

@@ -785,8 +785,7 @@
   text-align: right;
 }
 
-.monitorContent,
-.monitorReference {
+.monitorContent {
   display: grid;
   min-width: 0;
   gap: 8px;
@@ -824,33 +823,6 @@
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.monitorReference {
-  margin-top: 4px;
-  padding-top: 12px;
-  border-top: 1px solid var(--mg-border);
-}
-
-.monitorReferenceHeader {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.monitorReferenceHeader strong {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: var(--mg-text-xs);
-}
-
-.monitorReferenceHeader a {
-  flex: 0 0 auto;
-  color: var(--mg-primary-dark);
-  font-size: var(--mg-text-2xs);
-  font-weight: 650;
 }
 
 .monitorFields {
