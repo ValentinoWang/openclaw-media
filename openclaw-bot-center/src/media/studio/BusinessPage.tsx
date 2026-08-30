@@ -15,8 +15,8 @@ import {
 import { Link } from 'react-router-dom'
 import { useMediaWeb } from '../MediaWebWorkspace'
 import { callBusinessOperation } from '../generatedBusinessPagesContract'
-import { isForbiddenError, isNotFoundError } from '../businessErrorPresentation'
 import { PlatformIdentity } from '../ui/PlatformIdentity'
+import { describeBusinessError } from '../ui/businessOperationError'
 import { Metric } from '../ui/Metric'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
 import { authorizationScopeDisplayLabel } from '../ui/ordinaryDataLabels'
@@ -184,7 +184,9 @@ function authorizationLabel(value: string): string {
 }
 
 function readError(error: unknown): string {
-  if (isForbiddenError(error)) return '当前账户没有读取商务机会的权限。'
-  if (isNotFoundError(error)) return '当前账户还没有商务机会记录。'
-  return '商务机会暂时无法读取。'
+  return describeBusinessError(error, {
+    fallback: '商务机会暂时无法读取。',
+    forbidden: '当前账户没有读取商务机会的权限。',
+    notFound: '当前账户还没有商务机会记录。',
+  })
 }

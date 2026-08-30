@@ -21,8 +21,8 @@ import {
 import { Link } from 'react-router-dom'
 import { useMediaWeb } from '../MediaWebWorkspace'
 import { callBusinessOperation } from '../generatedBusinessPagesContract'
-import { isForbiddenError, isNotFoundError } from '../businessErrorPresentation'
 import { projectStatusDisplayLabel } from '../ui/displayLabels'
+import { describeBusinessError } from '../ui/businessOperationError'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
 import { Metric } from '../ui/Metric'
 import styles from './WorkboardPage.module.css'
@@ -251,7 +251,9 @@ function PanelState({ icon, title, detail, action }: { icon: ReactNode; title: s
 }
 
 function readError(error: unknown, fallback: string): string {
-  if (isForbiddenError(error)) return '当前账户没有读取这部分数据的权限。'
-  if (isNotFoundError(error)) return '当前工作区还没有可读取的数据。'
-  return fallback
+  return describeBusinessError(error, {
+    fallback,
+    forbidden: '当前账户没有读取这部分数据的权限。',
+    notFound: '当前工作区还没有可读取的数据。',
+  })
 }

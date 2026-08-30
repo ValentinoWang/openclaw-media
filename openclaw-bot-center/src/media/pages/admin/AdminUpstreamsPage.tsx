@@ -14,11 +14,11 @@ import {
   XCircle,
   type LucideIcon,
 } from 'lucide-react'
-import { BusinessOperationError, callBusinessOperation } from '../../generatedBusinessPagesContract'
-import { isConflictError, isMissingEntitlementError, isNotFoundError, isUnauthorizedError } from '../../businessErrorPresentation'
+import { callBusinessOperation } from '../../generatedBusinessPagesContract'
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { newIdempotencyKey } from '../../idempotency'
 import { CANONICAL_UUID_PATTERN } from '../../identifiers'
+import { describeBusinessError } from '../../ui/businessOperationError'
 import { formatTimestampFull } from '../../ui/datetime'
 import styles from './AdminUpstreamsPage.module.css'
 
@@ -100,14 +100,14 @@ function isOperationReference(value: string): boolean {
 }
 
 function publicError(error: unknown, fallback: string): string {
-  if (error instanceof BusinessOperationError) {
-    if (isUnauthorizedError(error)) return '当前登录已失效，请重新登录。'
-    if (isMissingEntitlementError(error)) return '当前会话没有执行此操作的权限。'
-    if (isNotFoundError(error)) return '目标记录不存在或已不可用。'
-    if (isConflictError(error)) return '数据已发生变化，请刷新后重试。'
-    if (error.status >= 500) return '上游服务暂不可用，请稍后重试。'
-  }
-  return fallback
+  return describeBusinessError(error, {
+    fallback,
+    unauthorized: '当前登录已失效，请重新登录。',
+    forbidden: '当前会话没有执行此操作的权限。',
+    notFound: '目标记录不存在或已不可用。',
+    conflict: '数据已发生变化，请刷新后重试。',
+    unavailable: '上游服务暂不可用，请稍后重试。',
+  })
 }
 
 class ContractPayloadError extends Error {

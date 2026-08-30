@@ -4,11 +4,8 @@ import {
   LoaderCircle, ReceiptText, RefreshCw, TicketCheck, WalletCards,
 } from 'lucide-react'
 import { useMediaWeb } from '../../MediaWebWorkspace'
-import {
-  BusinessOperationError,
-  callBusinessOperation,
-} from '../../generatedBusinessPagesContract'
-import { isMissingEntitlementError, isUnauthorizedError } from '../../businessErrorPresentation'
+import { callBusinessOperation } from '../../generatedBusinessPagesContract'
+import { describeBusinessError } from '../../ui/businessOperationError'
 import {
   PageHeading, type LoadState,
 } from '../../ui/ordinaryPagePrimitives'
@@ -527,13 +524,12 @@ async function readBalancePacks(): Promise<BalancePackListResponse> {
 }
 
 function readableError(error: unknown, subject: string) {
-  if (error instanceof BusinessOperationError) {
-    if (isUnauthorizedError(error)) return '登录状态已失效，请重新登录后再试。'
-    if (isMissingEntitlementError(error)) return '当前账户没有权限查看这部分个人计费信息。'
-    if (error.status >= 500) return subject + '服务暂时不可用，请稍后再试。'
-    return subject + '暂时无法读取，请稍后再试。'
-  }
-  return subject + '暂时无法读取，请稍后再试。'
+  return describeBusinessError(error, {
+    fallback: subject + '暂时无法读取，请稍后再试。',
+    unauthorized: '登录状态已失效，请重新登录后再试。',
+    forbidden: '当前账户没有权限查看这部分个人计费信息。',
+    unavailable: subject + '服务暂时不可用，请稍后再试。',
+  })
 }
 
 export default UsageBillingPage

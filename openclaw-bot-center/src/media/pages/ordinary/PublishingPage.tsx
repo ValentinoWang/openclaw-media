@@ -15,13 +15,10 @@ import {
 } from "lucide-react";
 import { useMediaWeb } from "../../MediaWebWorkspace";
 import { loginUrl } from "../../mediaWebApi";
-import {
-  BusinessOperationError,
-  callBusinessOperation,
-} from "../../generatedBusinessPagesContract";
-import { isForbiddenError, isNotFoundError } from "../../businessErrorPresentation";
+import { callBusinessOperation } from "../../generatedBusinessPagesContract";
 import { newIdempotencyKey } from "../../idempotency";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
+import { describeBusinessError } from "../../ui/businessOperationError";
 import { formatDate, PageHeading } from "../../ui/ordinaryPagePrimitives";
 import { platformDisplayLabel } from "../../ui/platformRegistry";
 import {
@@ -354,13 +351,12 @@ function formatValue(value: unknown): string {
   return typeof value === "string" ? value : "未提供";
 }
 function readError(error: unknown, fallback: string): string {
-  if (error instanceof BusinessOperationError) {
-    if (isForbiddenError(error)) return "当前账户没有访问该发布数据的权限。";
-    if (isNotFoundError(error)) return "发布资源不存在或已不可用。";
-    if (error.status === 409) return "发布包已发生修订变化，请重新读取后再试。";
-    return fallback;
-  }
-  return fallback;
+  return describeBusinessError(error, {
+    fallback,
+    forbidden: "当前账户没有访问该发布数据的权限。",
+    notFound: "发布资源不存在或已不可用。",
+    conflict: "发布包已发生修订变化，请重新读取后再试。",
+  });
 }
 
 function contentFieldLabel(key: string, index: number): string {

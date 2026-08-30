@@ -14,8 +14,9 @@ import {
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
 import { useMediaWeb } from "../../MediaWebWorkspace";
-import { isMissingEntitlementError, isUnauthorizedError } from "../../businessErrorPresentation";
+import { isMissingEntitlementError } from "../../businessErrorPresentation";
 import { isPublicId } from "../../identifiers";
+import { describeBusinessError } from "../../ui/businessOperationError";
 import { ECHO_INVALID, formatShortDateTime } from "../../ui/datetime";
 import styles from "./AdminOverviewPage.module.css";
 
@@ -483,13 +484,17 @@ function getHealthMessage(
 }
 
 function describeError(error: unknown): string {
-  if (error instanceof BusinessOperationError) {
-    if (isUnauthorizedError(error)) return "当前会话已失效，请重新登录。";
-    if (error.status >= 500) return "平台总览服务暂时不可用，请稍后重试。";
-    return error.message || "平台总览请求失败。";
-  }
-  if (error instanceof Error && error.message) return error.message;
-  return "平台总览请求失败，请重试。";
+  const fallback =
+    error instanceof BusinessOperationError
+      ? error.message || "平台总览请求失败。"
+      : error instanceof Error && error.message
+        ? error.message
+        : "平台总览请求失败，请重试。";
+  return describeBusinessError(error, {
+    fallback,
+    unauthorized: "当前会话已失效，请重新登录。",
+    unavailable: "平台总览服务暂时不可用，请稍后重试。",
+  });
 }
 
 function parseDashboardResponse(value: unknown): AdminDashboardResponse {

@@ -7,10 +7,10 @@ import {
 import { Link, useParams } from 'react-router-dom'
 import { useMediaWeb } from './MediaWebWorkspace'
 import { BusinessOperationError, callBusinessOperation } from './generatedBusinessPagesContract'
-import { isForbiddenError, isNotFoundError } from './businessErrorPresentation'
 import { loginUrl } from './mediaWebApi'
 import { runStatusLabel, runStatusTone } from './statusPresentation'
 import { PlatformIdentity } from './ui/PlatformIdentity'
+import { describeBusinessError } from './ui/businessOperationError'
 import { humanStateDisplayLabel, mediaTypeDisplayLabel, qualityDisplayLabel } from './ui/ordinaryDataLabels'
 import { ECHO_INVALID, formatMediumDateTime } from './ui/datetime'
 import styles from './CreationRunDetailPage.module.css'
@@ -281,7 +281,18 @@ function blockFieldLabel(value: string): string {
 function kindLabel(kind: EditorKind): string { return editorTabs.find((item) => item.id === kind)?.label ?? '内容区块' }
 function slug(value: string): string { return value.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g, '') || 'block' }
 function readSnapshots(key: string): Snapshot[] { try { const value = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(value) ? value.filter((item): item is Snapshot => !!item && typeof item === 'object' && Array.isArray(item.blocks)) : [] } catch { return [] } }
-function readError(error: unknown): string { if (error instanceof BusinessOperationError) { if (isForbiddenError(error)) return '当前账户无权查看这条运行。'; if (isNotFoundError(error)) return '这条创作运行不存在或已不可用。'; return error.message } return error instanceof Error && error.message ? error.message : '创作运行详情加载失败。' }
+function readError(error: unknown): string {
+  const fallback = error instanceof BusinessOperationError
+    ? error.message
+    : error instanceof Error && error.message
+      ? error.message
+      : '创作运行详情加载失败。'
+  return describeBusinessError(error, {
+    fallback,
+    forbidden: '当前账户无权查看这条运行。',
+    notFound: '这条创作运行不存在或已不可用。',
+  })
+}
 function formatDate(value: string): string { return formatMediumDateTime(value, { empty: '暂无', invalid: ECHO_INVALID }) }
 function humanStateLabel(value: string): string { return humanStateDisplayLabel(value) }
 // This page's evidence-quality wording ("已核验/部分可用/待核验/不可用") differs from the one used

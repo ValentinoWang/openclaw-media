@@ -19,9 +19,9 @@ import {
   X,
 } from 'lucide-react'
 import { BusinessOperationError, callBusinessOperation } from '../../generatedBusinessPagesContract'
-import { isConflictError, isMissingEntitlementError, isUnauthorizedError } from '../../businessErrorPresentation'
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { mutationFingerprint, useAdminAction, type ActionState } from '../../ui/adminAction'
+import { describeBusinessError } from '../../ui/businessOperationError'
 import { PlatformIdentity } from '../../ui/PlatformIdentity'
 import { platformDisplayLabel } from '../../ui/platformRegistry'
 import { Metric } from '../../ui/Metric'
@@ -1092,12 +1092,20 @@ function cursorField(object: Record<string, unknown>, key: string): string | nul
 }
 
 function describeError(error: unknown): string {
-  if (error instanceof BusinessOperationError) {
-    if (isUnauthorizedError(error)) return '当前会话已失效，请重新登录。'
-    if (isMissingEntitlementError(error)) return '当前会话无权执行此操作。'
-    if (isConflictError(error)) return error.message || '服务端检测到修订或幂等冲突。'
-    return error.message || '服务端请求失败。'
-  }
-  if (error instanceof Error) return error.message
-  return '服务端请求失败。'
+  // Both the generic fallback and the conflict branch transparently surface the server's own
+  // message (already guaranteed Chinese-safe by mediaProductHttpTransport's public error
+  // table) with their own fallback text, so those two are computed before dispatch rather
+  // than passed as fixed strings.
+  const fallback =
+    error instanceof BusinessOperationError
+      ? error.message || '服务端请求失败。'
+      : error instanceof Error
+        ? error.message
+        : '服务端请求失败。'
+  return describeBusinessError(error, {
+    fallback,
+    unauthorized: '当前会话已失效，请重新登录。',
+    forbidden: '当前会话无权执行此操作。',
+    conflict: error instanceof BusinessOperationError ? error.message || '服务端检测到修订或幂等冲突。' : '服务端检测到修订或幂等冲突。',
+  })
 }
