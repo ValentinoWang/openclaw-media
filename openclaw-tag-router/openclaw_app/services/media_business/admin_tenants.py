@@ -21,7 +21,7 @@ DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
 MAX_SEARCH_LENGTH = 200
 MAX_REASON_LENGTH = 500
-PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+PUBLIC_ID_PATTERN = foundation.PUBLIC_ID_PATTERN
 CURSOR_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,512}$")
 _CURSOR_RESOURCE_DIRECTORY = "tenant-directory"
 _CURSOR_RESOURCE_RUNS = "tenant-runs"
@@ -147,20 +147,6 @@ def _revision(*parts: Any) -> int:
             encoded.append(json.dumps(part, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
     digest = hashlib.sha256("|".join(encoded).encode("utf-8")).digest()
     return int.from_bytes(digest[:8], "big") & ((1 << 63) - 1)
-
-
-def _secret(secret: bytes, label: str) -> bytes:
-    if not isinstance(secret, bytes) or len(secret) < 16:
-        raise ValueError(f"B12 {label} must be at least 16 bytes")
-    return hashlib.sha256(label.encode("ascii") + b":" + secret).digest()
-
-
-def _encode_signed(value: Mapping[str, Any], secret: bytes) -> str:
-    return foundation.encode_signed(value, secret)
-
-
-def _decode_signed(value: Any, secret: bytes, *, pattern: Any = PUBLIC_ID_PATTERN) -> dict[str, Any]:
-    return foundation.decode_signed(value, secret, error=AdminTenantsNotFound, pattern=pattern)
 
 
 def _json_object(value: Any) -> dict[str, Any]:
@@ -329,8 +315,8 @@ class AdminTenantsService:
             self._connection_factory = database_or_factory
         else:
             raise TypeError("B12 requires an AccountDatabase or connection factory")
-        self._public_id_secret = _secret(public_id_secret, "public-id-secret")
-        self._cursor_secret = _secret(cursor_secret, "cursor-secret")
+        self._public_id_secret = foundation.derive_namespace_secret(public_id_secret, "public-id-secret")
+        self._cursor_secret = foundation.derive_namespace_secret(cursor_secret, "cursor-secret")
 
     @staticmethod
     def error_response(error: BaseException) -> dict[str, Any]:
@@ -343,10 +329,10 @@ class AdminTenantsService:
         return error.status if isinstance(error, AdminTenantsError) else 500
 
     def public_tenant_id(self, tenant_id: UUID | str) -> str:
-        return _encode_signed({"namespace": "b12-tenant", "tenantId": str(_uuid(tenant_id))}, self._public_id_secret)
+        return foundation.encode_signed({"namespace": "b12-tenant", "tenantId": str(_uuid(tenant_id))}, self._public_id_secret)
 
     def decode_public_tenant_id(self, public_tenant_id: str) -> UUID:
-        decoded = _decode_signed(public_tenant_id, self._public_id_secret)
+        decoded = foundation.decode_signed(public_tenant_id, self._public_id_secret, error=AdminTenantsNotFound)
         if decoded.get("namespace") != "b12-tenant":
             raise AdminTenantsNotFound()
         return _uuid(decoded.get("tenantId"), not_found=True)
@@ -573,14 +559,14 @@ class AdminTenantsService:
         }
 
     def _encode_tenant_cursor(self, search: str, position: _TenantCursor) -> str:
-        return _encode_signed(
+        return foundation.encode_signed(
             {"resource": _CURSOR_RESOURCE_DIRECTORY, "search": search, "updatedAt": _timestamp(position.updated_at), "tenantId": str(position.tenant_id)},
             self._cursor_secret,
         )
 
     def _decode_tenant_cursor(self, value: str, search: str) -> _TenantCursor:
         try:
-            decoded = _decode_signed(value, self._cursor_secret, pattern=CURSOR_PATTERN)
+            decoded = foundation.decode_signed(value, self._cursor_secret, error=AdminTenantsNotFound, pattern=CURSOR_PATTERN)
         except AdminTenantsNotFound as exc:
             raise AdminTenantsInvalidRequest("cursor is invalid", field="cursor") from exc
         if decoded.get("resource") != _CURSOR_RESOURCE_DIRECTORY or decoded.get("search") != search:
@@ -595,14 +581,14 @@ class AdminTenantsService:
         return _TenantCursor(updated_at=updated_at, tenant_id=tenant_id)
 
     def _encode_run_cursor(self, target_id: UUID, position: _RunCursor) -> str:
-        return _encode_signed(
+        return foundation.encode_signed(
             {"resource": _CURSOR_RESOURCE_RUNS, "tenantId": str(target_id), "updatedAt": _timestamp(position.updated_at), "publicRunId": position.public_run_id},
             self._cursor_secret,
         )
 
     def _decode_run_cursor(self, value: str, target_id: UUID) -> _RunCursor:
         try:
-            decoded = _decode_signed(value, self._cursor_secret, pattern=CURSOR_PATTERN)
+            decoded = foundation.decode_signed(value, self._cursor_secret, error=AdminTenantsNotFound, pattern=CURSOR_PATTERN)
         except AdminTenantsNotFound as exc:
             raise AdminTenantsInvalidRequest("cursor is invalid", field="cursor") from exc
         if decoded.get("resource") != _CURSOR_RESOURCE_RUNS or decoded.get("tenantId") != str(target_id):

@@ -180,22 +180,38 @@ def body_checksum(body: dict[str, Any]) -> str:
 # except for parameterizing the "invalid token" exception via an `error`
 # factory in place of the hard-coded AdminTenantsNotFound.
 #
-# Deliberately NOT consolidated here: how each service derives the HMAC key
-# from its configured secret. admin_tenants.py and admin_billing.py already
-# derive it identically (sha256(label + b":" + secret)) and had already
-# converged on that shared shape independently of this pass; admin_access.py
-# derives its public-id/cursor secrets a different, unlabeled way. Moving
-# admin_access onto the labeled derivation would change every public ID it
-# has ever issued -- a breaking key-rotation change, not a refactor -- so
-# admin_access.py keeps deriving its own secret and only delegates the
-# encode/decode algorithm below.
+# admin_tenants.py and admin_billing.py already derive their HMAC key from
+# the configured secret identically (sha256(label + b":" + secret)) and had
+# already converged on that shared shape independently of this pass (TI-10);
+# derive_namespace_secret below is that shape, moved verbatim (guard +
+# hashing) from admin_tenants.py's former `_secret` helper -- only the
+# ValueError text lost its hard-coded page prefix ("B12 ...") since the
+# function is now shared. `label` is folded into the digest, so callers must
+# keep passing the exact label text they always have ("public-id-secret",
+# "cursor-secret", ...); changing it would silently invalidate every public
+# ID or cursor already issued under the old label.
+#
+# admin_access.py derives its public-id/cursor secrets a different,
+# unlabeled way (see its own module for that derivation) and is NOT moved
+# onto this shape: doing so would change every public ID it has ever issued
+# -- a breaking key-rotation change, not a refactor -- so admin_access.py
+# keeps deriving its own secret and only delegates the encode/decode
+# algorithm below.
 
 PUBLIC_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
+
+SIGNATURE_BYTES = 18
+
+
+def derive_namespace_secret(secret: bytes, label: str) -> bytes:
+    if not isinstance(secret, bytes) or len(secret) < 16:
+        raise ValueError(f"{label} must be at least 16 bytes")
+    return hashlib.sha256(label.encode("ascii") + b":" + secret).digest()
 
 
 def encode_signed(value: Mapping[str, Any], secret: bytes) -> str:
     body = json.dumps(dict(value), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    signature = hmac.new(secret, body, hashlib.sha256).digest()[:18]
+    signature = hmac.new(secret, body, hashlib.sha256).digest()[:SIGNATURE_BYTES]
     return base64.urlsafe_b64encode(body + b"." + signature).decode("ascii").rstrip("=")
 
 
@@ -224,7 +240,7 @@ def decode_signed(
         # binascii.Error (malformed base64) is itself a ValueError subclass;
         # a token with no "." separator raises ValueError from rsplit too.
         raise error() from exc
-    expected = hmac.new(secret, body, hashlib.sha256).digest()[:18]
+    expected = hmac.new(secret, body, hashlib.sha256).digest()[:SIGNATURE_BYTES]
     if not hmac.compare_digest(signature, expected):
         raise error()
     try:

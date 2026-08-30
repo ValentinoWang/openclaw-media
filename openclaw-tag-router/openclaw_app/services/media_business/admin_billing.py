@@ -142,9 +142,7 @@ def _uuid(value: Any, *, not_found: bool = False) -> UUID:
 
 
 def _secret(secret: bytes, label: str) -> bytes:
-    if not isinstance(secret, bytes) or len(secret) < 16:
-        raise ValueError(f"B13 {label} must be at least 16 bytes")
-    return hashlib.sha256(label.encode("ascii") + b":" + secret).digest()
+    return foundation.derive_namespace_secret(secret, label)
 
 
 def _encode_signed(value: Mapping[str, Any], secret: bytes) -> str:
