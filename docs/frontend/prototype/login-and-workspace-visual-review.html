@@ -327,6 +327,9 @@
     .wi .lchip{grid-column:1;} .wi .dref,.wi .wi-scope{grid-column:2;} .wi .ready{grid-column:3; justify-self:end;}
   }
 
+  .flow{margin-top:16px; padding:16px 18px; border:1px solid var(--line); border-radius:11px; background:color-mix(in srgb,var(--paper) 62%,var(--surface)); overflow-x:auto;}
+  .flow pre{margin:0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; line-height:1.72; color:var(--ink-soft); white-space:pre;}
+
   /* ---- 落地表 ---- */
   .tablewrap{margin-top:26px; overflow-x:auto; border:1px solid var(--line); border-radius:13px; background:var(--surface);}
   table{width:100%; min-width:640px; border-collapse:collapse; font-size:13.5px;}
@@ -515,7 +518,7 @@
           </div>
         </div>
       </div>
-      <figcaption><b>关键改动：</b>身份选择从两张常驻大卡改成表单顶部的药丸分段控件——它只是个开关，不该占掉半屏。腾出来的横向空间给左侧叙事栏，用有机形状 + 产品窗口 + 浮动注释把「MediaClaw 是什么」讲清楚。表单列收到 400px 以内，主按钮拉通栏。整页回到一屏内，不再有折线问题。</figcaption>
+      <figcaption><b>注意：身份选择部分已被第 8 节的 P1 / P2 规格取代</b>——保留两张卡、选中高亮、P2 在下方展开，并把选中后的 P1 压缩为精简态以避开折线；本图其余部分（双栏、叙事栏、表单收窄、主按钮通栏）继续有效。<br><br><b>原说明：</b>身份选择从两张常驻大卡改成表单顶部的药丸分段控件——它只是个开关，不该占掉半屏。腾出来的横向空间给左侧叙事栏，用有机形状 + 产品窗口 + 浮动注释把「MediaClaw 是什么」讲清楚。表单列收到 400px 以内，主按钮拉通栏。整页回到一屏内，不再有折线问题。</figcaption>
     </figure>
 
     <figure class="demo">
@@ -759,7 +762,138 @@
   </section>
 
   <section class="block">
-    <div class="sec-head"><span class="sec-num">08</span><h2>统一台账</h2></div>
+    <div class="sec-head"><span class="sec-num">08</span><h2>登录链路 P1 / P2 规格</h2></div>
+    <p class="sec-sub">这一节是登录链路的完整交互规格：P1 只负责选身份，P2 先查可用会话、有则一键继续、无则回退到原有登录方式，两条分支完全对称。它<b>细化并部分修正</b>了第 4 节的登录页示意图——修正点见下方「与示意图的差异」。</p>
+
+    <h3 class="sub-h">流程</h3>
+    <div class="flow">
+<pre>P1 选择身份
+├─ 个人创作者
+│  └─ P2 查询个人会话
+│     ├─ 有效：显示脱敏账号 → 继续进入
+│     └─ 无效：显示用户名 / 邮箱 + 密码登录
+└─ 组织成员
+   └─ P2 查询组织会话
+      ├─ 有效：显示组织身份 → 继续进入
+      └─ 无效：生成 Feishu 二维码 / 授权按钮</pre>
+    </div>
+    <p class="prose" style="max-width:var(--measure)"><b>P1 绝不因为浏览器有 Cookie 就自动跳转</b>，必须等用户明确点击左卡或右卡后才进入对应 P2。这条要写进验收，否则「有会话就直接进」会悄悄回归。</p>
+
+    <h3 class="sub-h">好消息：骨架已经在了</h3>
+    <div class="prose">
+      <p>现有 <code>media.login.html</code> 已经是 P1 / P2 结构——<code>.identity-choice</code> 带 <code>role="tablist"</code>、两个按钮带 <code>role="tab"</code> 和 <code>aria-controls</code>，两个 <code>.auth-panel</code> 是 <code>role="tabpanel"</code> 且默认 <code>hidden</code>，每个面板都有「返回选择」。<b>一期要加的是「入口状态区」这一层，不是重做导航。</b>二维码目前也还没有提前生成的逻辑，改成延迟生成的成本很低。</p>
+    </div>
+
+    <h3 class="sub-h">与示意图的差异，以及一处硬冲突</h3>
+    <p class="sec-sub" style="margin-top:10px">第 4 节示意图把身份选择收成了表单顶部的<b>药丸分段控件</b>；本规格要求<b>保留两张卡、选中高亮、P2 在下方展开</b>。以规格为准——卡片形态承载得下图标、说明和状态，分段控件承载不下。但这样一来，D1（登录按钮掉折线）就回来了：</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>状态（1440×900 实测）</th><th>P1 占用</th><th>P2 占用</th><th>文档高</th><th>是否出折线</th></tr></thead>
+        <tbody>
+          <tr><td>P1 未选</td><td>286px</td><td>—</td><td>900px</td><td><span class="st ok">一屏内</span></td></tr>
+          <tr><td>个人 · 回退到密码登录</td><td>286px</td><td>470px</td><td>1031px</td><td><span class="st page" style="background:var(--clay-soft);color:var(--clay)">超 131px</span></td></tr>
+          <tr><td>组织 · 回退到 Feishu 授权</td><td>286px</td><td>529px</td><td>1090px</td><td><span class="st page" style="background:var(--clay-soft);color:var(--clay)">超 190px</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p><b>解法：P1 选中后压缩，而不是消失。</b>选中卡收成一行精简态（图标 + 身份名 + 高亮边），另一选项降级为一句「改用组织成员登录」的切换链接。P1 仍在上方、仍高亮、仍可一键切换，完全满足规格，但高度从 286px 降到约 72px，<b>释放 214px</b>：</p>
+      <ul>
+        <li>个人回退态：1031 − 214 = <b>817px</b> ✓ 一屏内</li>
+        <li>组织回退态：1090 − 214 = <b>876px</b> ✓ 一屏内</li>
+        <li>命中有效会话时 P2 只有脱敏账号 + 继续进入，更短，完全无压力</li>
+      </ul>
+      <p>示意图里其余的登录页改动<b>不受影响、继续有效</b>：左叙事右表单的双栏、表单列收窄到 400px 以内、主按钮通栏、以及第 7 节的 token 收敛。</p>
+    </div>
+
+    <h3 class="sub-h">分三期</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>阶段</th><th>内容</th><th>是否需要改认证合同</th></tr></thead>
+        <tbody>
+          <tr><td><b>一期</b><br><span class="st ok" style="margin-top:5px;display:inline-block">建议先做</span></td><td>识别当前浏览器已有的有效 <code>openclaw_session</code>，身份匹配时直接继续</td><td>不新增「记住我」，不需要数据库迁移</td></tr>
+          <tr><td><b>二期</b></td><td>同一用户在个人工作区与组织工作区之间切换；服务端重新解析工作区并轮换会话</td><td>需补充「工作区切换」验收约束</td></tr>
+          <tr><td><b>三期</b></td><td>多个独立账号 / 组织的登录状态列表</td><td>需要新的服务端保存配置、撤销、过期与安全策略</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>当前系统只有一个 HttpOnly <code>openclaw_session</code> Cookie，现行认证合同明确不提供「记住我」。所以<b>一期的「保存状态」只能定义为「当前浏览器已有的有效会话」</b>，不能用 <code>localStorage</code> 假装实现多账号保存——真正的多账号留到认证合同确认后的三期。</p>
+    </div>
+
+    <h3 class="sub-h">一期实现矩阵</h3>
+    <p class="sec-sub" style="margin-top:10px">下面用仓库相对路径，对应你给的那几个绝对路径。</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>层</th><th>文件</th><th>改什么</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="3"><span class="lchip l4" style="display:inline-grid">前端</span></td><td><code>openclaw-bot-center/media.login.html</code></td><td>两个 P2 面板各增加「可用登录状态」区域、继续进入按钮、使用其他账号入口，以及加载 / 失效状态</td></tr>
+          <tr><td><code>openclaw-bot-center/media.login.js</code></td><td>增加 P1 / P2 的 URL 状态，查询入口状态、渲染可用会话、回退到原登录流程；二维码改为延迟生成</td></tr>
+          <tr><td><code>media.auth.css</code> 与 <code>src/media.auth.css</code></td><td>两份保持同步（当前 10,611 字节完全一致）；移动端卡片堆叠，P2 展开后自动聚焦</td></tr>
+          <tr><td rowspan="4"><span class="lchip l3" style="display:inline-grid">后端</span></td><td><code>openclaw_app/adapters/http_api.py</code></td><td>增加只读入口状态接口</td></tr>
+          <tr><td><code>openclaw_app/account/auth.py</code></td><td>复用现有会话解析与过期判断，不新增解析路径</td></tr>
+          <tr><td><code>openclaw_app/account/workspace_resolution.py</code></td><td>判断当前会话是否真的属于所请求的个人或组织工作区</td></tr>
+          <tr><td><code>openclaw_app/account/media_feishu_login.py</code></td><td>一期只保留现有 OAuth 流程，确认没有可用组织会话后才启动</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose" style="max-width:var(--measure)">前端有一条约束要守住：<b>不修改现有 <code>parseMediaSessionEnvelope</code> 的严格响应结构。</b>入口状态走新接口，不往严格的 <code>/openclaw/media/api/session</code> 里塞字段。</p>
+
+    <h3 class="sub-h">接口</h3>
+    <div class="flow">
+<pre>GET /openclaw/auth/entry-state?mode=personal
+GET /openclaw/auth/entry-state?mode=organization</pre>
+    </div>
+    <div class="flow">
+<pre>{
+  "schemaVersion": "media_auth_entry_state_v1",
+  "mode": "personal",
+  "state": "matched",
+  "entry": {
+    "entryId": "current",
+    "displayLabel": "当前个人工作区",
+    "maskedIdentity": "v***@example.com",
+    "expiresAt": "..."
+  },
+  "fallback": "password"
+}</pre>
+    </div>
+    <div class="prose">
+      <p><code>state</code> 至少覆盖 <code>matched</code>、<code>none</code>、<code>expired</code>、<code>mismatched</code>。响应<b>只返回脱敏信息</b>——不返回密码、Feishu Token、原始租户 ID，也不返回任何可直接使用的会话凭据。</p>
+      <p>一期点击「继续进入」时，直接重新读取并校验当前会话后跳转即可。二期 / 三期要切换工作区或选择其他保存项，再增加 <code>POST /openclaw/auth/entry/activate</code>——该接口必须要求同源校验、<code>X-OpenClaw-CSRF</code>、必要时的 <code>Idempotency-Key</code>，并由服务端重新解析工作区和成员关系后轮换 <code>openclaw_session</code>。</p>
+    </div>
+
+    <h3 class="sub-h">安全边界</h3>
+    <div class="prose">
+      <ul>
+        <li>前端传入的 <code>mode</code> <b>只能表达用户意图</b>，不能决定 <code>tenantId</code>、<code>workspaceMode</code> 或 <code>bodyAuthority</code>。</li>
+        <li>个人只能匹配 <code>personal_web / internal</code>。</li>
+        <li>组织只能匹配 <code>organization_lark / lark</code>，且 Feishu binding、成员关系、工作区三者都必须有效。</li>
+        <li>失效、撤销、停用、跨租户状态<b>必须统一回退</b>，不泄露账号是否存在。</li>
+        <li>继续沿用 HttpOnly / Secure / SameSite 与当前会话 TTL，本轮不加「记住我」。</li>
+        <li>不使用 <code>localStorage</code>、<code>sessionStorage</code> 或 <code>document.cookie</code> 保存登录状态。</li>
+        <li>OAuth 的 <code>next</code> 必须由服务端校验并绑定到 OAuth state，不能直接信任回调参数。</li>
+      </ul>
+    </div>
+
+    <h3 class="sub-h">验收</h3>
+    <div class="prose">
+      <ul>
+        <li>P1 点左卡进个人 P2、点右卡进组织 P2；<b>有 Cookie 也不自动跳转</b>。</li>
+        <li>命中有效会话时显示继续进入，且<b>个人不请求 Feishu、组织不立即请求二维码</b>。</li>
+        <li>无会话、过期会话、错模式会话都正确回退到原登录方式。</li>
+        <li>返回、刷新、浏览器前进后退、<code>?mode=…</code> 深链接，状态一致。</li>
+        <li>个人登录成功、组织 OAuth 成功后均正确跳转到安全的 <code>next</code>。</li>
+        <li>重复点击、网络超时、二维码刷新、查询期间会话过期，均不产生错误跳转。</li>
+        <li>桌面端、移动端、纯键盘操作都能完成 P1 → P2。</li>
+        <li>跑 <code>npm run qa:media-login-contract</code>、定向认证 / 工作区测试、<code>npm run build:media</code>，以及 Playwright 的 P1 → P2 流程。</li>
+      </ul>
+      <p><b>证据要分层</b>：静态检查、单元测试、隔离 HTTP、Playwright、真实部署读回各自独立留证，<b>不能用本地测试代替生产验收</b>。这一点尤其要紧——我这轮的截图和量数全部来自本地渲染，线上 <code>106.52.146.37</code> 在本会话不可达（见第 1 节），所以上线前必须补一次真实部署读回。</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-head"><span class="sec-num">09</span><h2>统一台账</h2></div>
     <p class="sec-sub">前面出现了三套话术：诊断用 <b>P0–P2</b>（多严重）、落地用 <b>L0–L4</b>（改在哪一层）、示意图用<b>现成 / 加规则 / 页面专属</b>（要做多少）。它们描述的是同一批工作的三个侧面，放在一起会打架。这里收敛成<b>一份台账、一条推进线</b>：22 个工作项，编号 DS-01 到 DS-22，层级和严重度降为属性，「阶段」是唯一的顺序。</p>
 
     <div class="tally">
@@ -841,7 +975,7 @@
     </div>
 
   <section class="block">
-    <div class="sec-head"><span class="sec-num">09</span><h2>两件顺带发现的事</h2></div>
+    <div class="sec-head"><span class="sec-num">10</span><h2>两件顺带发现的事</h2></div>
     <div class="prose">
       <p><b>一、11 页的 ordinary IA 可能已经进不去了。</b><code>mediaRoleIa.ts</code> 里的 <code>ordinaryMediaNav</code> 有 11 项（总览、素材与灵感、选题与决策、创作与交付、发布准备、复盘增长…），但按 <code>mediaWebApi.ts</code> 里的会话 schema，<code>workspaceMode</code> 只有 <code>personal_web</code> 和 <code>organization_lark</code> 两种取值，而 <code>MediaApp.tsx</code> 的 <code>ordinaryRoute()</code> 要求这两个判定同时为假才渲染。也就是说合法会话下这 11 个页面全都会被重定向走。这些页面的样式文件加起来 20 多万字符，如果确实是历史 IA，值得确认一下是否还要跟着这轮改；如果是我读漏了某条服务端下发路径，那更要确认——因为它决定了这轮视觉改造的工作量大头在哪。</p>
       <p><b>二、字体在弱网下会静默回退。</b>DM Sans 和 Noto Sans SC 走 <code>media="print" onload</code> 的非阻塞加载，这个处理是对的。但我在离线环境实拍时字体全部回退到了系统字重，负字距和 800 字重的效果会跟着丢失。建议 <code>font-family</code> 的回退栈里把 <code>'PingFang SC'</code> 提前，并且不要让视觉效果只依赖 800 这一档字重。</p>
