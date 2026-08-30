@@ -738,7 +738,7 @@ function DeletionDialog({
         <div className={styles.dialogBody}>
           {state.phase === "preparing" ? (
             <div className={styles.dialogStatus} aria-live="polite">
-              <LoaderCircle className={styles.spin} size={20} aria-hidden="true" />
+              <LoaderCircle className="spin" size={20} aria-hidden="true" />
               <div>
                 <strong>正在检查删除影响</strong>
                 <span>检查完成后才能确认删除。</span>
@@ -756,7 +756,7 @@ function DeletionDialog({
           ) : null}
           {state.phase === "deleting" || state.phase === "cancelling" ? (
             <div className={styles.dialogStatus} aria-live="polite">
-              <LoaderCircle className={styles.spin} size={20} aria-hidden="true" />
+              <LoaderCircle className="spin" size={20} aria-hidden="true" />
               <strong>{state.phase === "deleting" ? "正在删除素材" : "正在取消删除"}</strong>
             </div>
           ) : null}
@@ -1014,7 +1014,7 @@ function FilterBar({
         value={qualityFilter}
         options={qualityOptions}
         onChange={onQualityFilter}
-        formatOption={qualityLabel}
+        formatOption={qualityDisplayLabel}
       />
       <label className={styles.filterField}>
         <span>时间</span>
@@ -1165,7 +1165,7 @@ function AssetCard({
           >
             {mediaTypeDisplayLabel(asset.mediaType)}
           </span>
-          <span>{qualityLabel(asset.qualityStatus)}</span>
+          <span>{qualityDisplayLabel(asset.qualityStatus)}</span>
           <span>{materialStatusLabel(asset.materialStatus)}</span>
         </div>
         {asset.platformHashtags.length ? (
@@ -1298,7 +1298,7 @@ function AssetDetailBody({
             evidenceKindDisplayLabel(ref.kind)
           )}
           <small>
-            {qualityLabel(ref.qualityStatus)}
+            {qualityDisplayLabel(ref.qualityStatus)}
             {ref.capturedAt ? ` · ${formatDate(ref.capturedAt)}` : ""}
           </small>
         </span>,
@@ -1319,7 +1319,7 @@ function AssetDetailBody({
     ...(summary.platformHashtags.length
       ? [["平台话题标签", summary.platformHashtags.map(formatPlatformHashtag).join("、")] as [string, ReactNode]]
       : []),
-    ["质量", qualityLabel(summary.qualityStatus)],
+    ["质量", qualityDisplayLabel(summary.qualityStatus)],
     ["素材状态", materialStatusLabel(summary.materialStatus)],
     ["使用次数", String(summary.usageCount)],
     ["修订号", String(detail.revision)],
@@ -1501,7 +1501,7 @@ function ProjectionSurface({
 }) {
   const icon =
     kind === "loading" ? (
-      <LoaderCircle className={styles.spin} size={22} aria-hidden="true" />
+      <LoaderCircle className="spin" size={22} aria-hidden="true" />
     ) : kind === "permission" ? (
       <LogIn size={22} aria-hidden="true" />
     ) : kind === "filtered" || kind === "notFound" ? (
@@ -1650,9 +1650,6 @@ function uniqueValues(values: string[]): string[] {
   );
 }
 
-function qualityLabel(value: string): string {
-  return qualityDisplayLabel(value);
-}
 
 function materialStatusLabel(value: string | null | undefined): string {
   return materialStatusDisplayLabel(value);

@@ -152,9 +152,7 @@
 .errorNotice { border-color: oklch(0.84 0.08 25); }
 .successNotice svg, .errorNotice svg { flex: 0 0 auto; margin-top: 1px; }
 
-.spin { animation: spin 900ms linear infinite; }
 .watermark { margin: 14px 2px 0; color: var(--mg-muted); font-size: var(--mg-text-xs); text-align: right; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 1120px) {
   .page { height: auto; overflow: visible; }

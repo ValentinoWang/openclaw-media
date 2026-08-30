@@ -73,10 +73,6 @@
   outline-offset: 1px;
 }
 
-.is-spinning {
-  animation: admin-overview-spin 850ms linear infinite;
-}
-
 .admin-permission-state,
 .admin-error-state {
   display: flex;
@@ -336,12 +332,6 @@
   text-align: right;
 }
 
-@keyframes admin-overview-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 1120px) {
   .admin-overview-page.fidelity-page,
   .admin-overview-page.fidelity-page:has(> [data-page-prelude]) {
@@ -412,11 +402,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .is-spinning {
-    animation: none;
-  }
-}
 
 .admin-refresh-button,
 .admin-status-action button {

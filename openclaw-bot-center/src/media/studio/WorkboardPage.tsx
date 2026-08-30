@@ -117,7 +117,7 @@ export default function WorkboardPage() {
         </div>
         <div className={styles.heroSignal}>
           <span>今日推进信号</span>
-          {dashboard.status === 'loading' ? <LoaderCircle className={styles.spin} size={22} /> : dashboard.status === 'error' ? <AlertCircle size={22} /> : <strong>{pendingTotal}</strong>}
+          {dashboard.status === 'loading' ? <LoaderCircle className="spin" size={22} /> : dashboard.status === 'error' ? <AlertCircle size={22} /> : <strong>{pendingTotal}</strong>}
           <p>{pendingTotal ? '项内容、审核或发布事项等待处理' : '当前没有显式阻塞，可以开始下一条内容'}</p>
           <small>{summary ? `数据更新于 ${formatDate(summary.generatedAt)}` : '仅显示当前账户真实数据'}</small>
         </div>
@@ -175,7 +175,7 @@ export default function WorkboardPage() {
             <div><span>正在推进</span><h2>内容项目</h2></div>
             <Link to="/overview">高级项目视图<ArrowRight size={15} /></Link>
           </header>
-          {projects.status === 'loading' ? <PanelState icon={<LoaderCircle className={styles.spin} size={20} />} title="正在读取内容项目" /> : null}
+          {projects.status === 'loading' ? <PanelState icon={<LoaderCircle className="spin" size={20} />} title="正在读取内容项目" /> : null}
           {projects.status === 'error' ? <PanelState icon={<AlertCircle size={20} />} title={projects.message} action={<button type="button" onClick={() => setRefreshToken((value) => value + 1)}>重新读取</button>} /> : null}
           {projects.status === 'ready' && projects.data.items.length ? (
             <div className={styles.projectList}>

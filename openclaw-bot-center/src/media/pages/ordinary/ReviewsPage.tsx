@@ -484,7 +484,7 @@ export default function ReviewsPage() {
 function SessionState({ kind, title, detail }: { kind: "loading" | "permission" | "error"; title: string; detail: string }) {
   return (
     <section className={[styles.sessionState, kind === "loading" ? styles.loadingState : ""].join(" ")} role={kind === "error" ? "alert" : "status"} aria-busy={kind === "loading"}>
-      {kind === "loading" ? <LoaderCircle className={styles.spin} size={22} aria-hidden="true" /> : <AlertCircle size={22} aria-hidden="true" />}
+      {kind === "loading" ? <LoaderCircle className="spin" size={22} aria-hidden="true" /> : <AlertCircle size={22} aria-hidden="true" />}
       <strong>{title}</strong>
       <p>{detail}</p>
       {kind === "permission" ? <a className={styles.loginLink} href={loginUrl()}><LogIn size={15} aria-hidden="true" />登录并查看</a> : null}
@@ -718,7 +718,7 @@ function PanelHeader({ icon, title, detail, action }: { icon: ReactNode; title: 
 }
 
 function ResourceState<T>({ state, resource, onRetry }: { state: LoadState<T>; resource: string; onRetry: () => void }) {
-  if (state.status === "loading") return <div className={styles.resourceState} role="status" aria-busy="true"><LoaderCircle className={styles.spin} size={21} aria-hidden="true" /><strong>正在读取{resource}</strong></div>;
+  if (state.status === "loading") return <div className={styles.resourceState} role="status" aria-busy="true"><LoaderCircle className="spin" size={21} aria-hidden="true" /><strong>正在读取{resource}</strong></div>;
   if (state.status === "permission") return <div className={styles.resourceState} role="alert"><AlertCircle size={21} aria-hidden="true" /><strong>{state.message}</strong><a className={styles.loginLink} href={loginUrl()}><LogIn size={15} aria-hidden="true" />重新登录</a></div>;
   if (state.status === "error") return <div className={styles.resourceState} role="alert"><AlertCircle size={21} aria-hidden="true" /><strong>{state.message}</strong><button className={styles.secondaryButton} type="button" onClick={onRetry}><RefreshCw size={15} aria-hidden="true" />重试</button></div>;
   return <div className={styles.resourceState} role="status"><Database size={21} aria-hidden="true" /><strong>等待读取{resource}</strong></div>;
@@ -939,6 +939,6 @@ function FormNotice({ actionState, formError }: { actionState: ActionState; form
 function DialogActions({ onClose, busy, submitLabel, icon }: { onClose: () => void; busy: boolean; submitLabel: string; icon: ReactNode }) {
   return <div className={styles.dialogActions}>
     <button className={styles.secondaryButton} type="button" onClick={onClose} disabled={busy}>取消</button>
-    <button className={styles.primaryButton} type="submit" disabled={busy} aria-busy={busy}>{busy ? <LoaderCircle className={styles.spin} size={15} aria-hidden="true" /> : icon}{busy ? "提交中" : submitLabel}</button>
+    <button className={styles.primaryButton} type="submit" disabled={busy} aria-busy={busy}>{busy ? <LoaderCircle className="spin" size={15} aria-hidden="true" /> : icon}{busy ? "提交中" : submitLabel}</button>
   </div>;
 }

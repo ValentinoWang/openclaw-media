@@ -681,7 +681,7 @@ function StatePanel<T>({
   onRetry: () => void;
 }) {
   if (state.status === "loading") {
-    return <div className={styles.pageState} aria-busy="true"><LoaderCircle className={styles.spin} size={20} /><strong>正在读取{subject}</strong><p>等待服务端返回当前租户数据。</p></div>;
+    return <div className={styles.pageState} aria-busy="true"><LoaderCircle className="spin" size={20} /><strong>正在读取{subject}</strong><p>等待服务端返回当前租户数据。</p></div>;
   }
   if (state.status === "forbidden") {
     return <div className={styles.pageState} role="alert"><ShieldAlert size={20} /><strong>暂无查看权限</strong><p>{state.message}</p></div>;
@@ -708,7 +708,7 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
 }
 
 function PageGate({ title, detail, action, loading = false }: { title: string; detail: string; action?: ReactNode; loading?: boolean }) {
-  return <main className={`fidelity-page ${styles.gate}`}><div className="detail-gate">{loading ? <LoaderCircle className={styles.spin} size={24} /> : <Database size={24} />}<h1>{title}</h1>{detail ? <p>{detail}</p> : null}{action}</div></main>;
+  return <main className={`fidelity-page ${styles.gate}`}><div className="detail-gate">{loading ? <LoaderCircle className="spin" size={24} /> : <Database size={24} />}<h1>{title}</h1>{detail ? <p>{detail}</p> : null}{action}</div></main>;
 }
 
 function StatusBadge({ status }: { status: DecisionStatus }) {

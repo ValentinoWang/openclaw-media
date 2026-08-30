@@ -712,9 +712,6 @@
 .pageState p {
   color: var(--mg-muted);
 }
-.spin {
-  animation: decisionsSpin 900ms linear infinite;
-}
 .gate {
   min-height: 60vh;
 }
@@ -724,11 +721,6 @@
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
   text-align: right;
-}
-@keyframes decisionsSpin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 @media (min-width: 1121px) {
   .page {

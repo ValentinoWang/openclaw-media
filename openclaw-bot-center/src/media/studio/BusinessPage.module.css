@@ -71,7 +71,6 @@
 .panelState strong { margin-top: 11px; color: var(--mg-ink); font-size: var(--mg-text-md); }
 .panelState p { max-width: 52ch; margin: 7px 0 0; font-size: var(--mg-text-sm); line-height: 1.55; }
 .panelState button { margin-top: 15px; border: 1px solid var(--accent-base); color: white; background: var(--accent-base); }
-.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 1120px) { .metricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: 1fr; } }
 @media (max-width: 820px) { .opportunityGrid { grid-template-columns: 1fr; } }
 @media (max-width: 760px) { .hero { grid-template-columns: 1fr; padding: 22px; border-radius: var(--mg-r-lg); } .heroActions { display: grid; grid-template-columns: 1fr; } .primaryButton, .secondaryButton { width: 100%; } .metricGrid { grid-template-columns: 1fr; } .opportunityGrid { padding: 12px; } }

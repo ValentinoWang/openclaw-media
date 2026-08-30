@@ -185,7 +185,7 @@ export default function AdminOverviewPage() {
         >
           <RefreshCw
             size={16}
-            className={requestLoading ? styles["is-spinning"] : undefined}
+            className={requestLoading ? "spin" : undefined}
             aria-hidden="true"
           />
           刷新
@@ -454,7 +454,7 @@ function StatusState({
     >
       <Icon
         size={19}
-        className={spinning ? styles["is-spinning"] : undefined}
+        className={spinning ? "spin" : undefined}
         aria-hidden="true"
       />
       <div className={styles["admin-status-message"]}>{children}</div>

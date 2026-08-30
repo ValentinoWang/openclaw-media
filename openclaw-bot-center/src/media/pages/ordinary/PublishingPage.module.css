@@ -823,16 +823,6 @@
   margin-top: 4px;
 }
 
-.spin {
-  animation: spin 850ms linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 900px) {
   .workspace {
     grid-template-columns: minmax(0, 1.38fr) minmax(280px, 1fr);

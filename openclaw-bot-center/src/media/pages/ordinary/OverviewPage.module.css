@@ -1577,16 +1577,6 @@
   font-size: var(--mg-text-2xs);
 }
 
-.spin {
-  animation: spin 900ms linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 1120px) {
   .overviewGrid {
     grid-template-columns: 1fr;

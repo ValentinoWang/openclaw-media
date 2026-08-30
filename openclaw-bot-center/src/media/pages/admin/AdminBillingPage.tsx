@@ -463,7 +463,7 @@ export default function AdminBillingPage() {
           <div className={styles.formFooter}>
             <span>提交后会保留幂等键，并重新读取管理员计费汇总。</span>
             <button type="submit" className={styles.submitButton} disabled={!submitReady}>
-              {action.busy ? <LoaderCircle className={styles.spin} size={16} /> : mode === 'mapping' ? <Link2 size={16} /> : mode === 'grant' ? <Gift size={16} /> : mode === 'batch' ? <TicketCheck size={16} /> : mode === 'recover' ? <RotateCcw size={16} /> : <Undo2 size={16} />}
+              {action.busy ? <LoaderCircle className="spin" size={16} /> : mode === 'mapping' ? <Link2 size={16} /> : mode === 'grant' ? <Gift size={16} /> : mode === 'batch' ? <TicketCheck size={16} /> : mode === 'recover' ? <RotateCcw size={16} /> : <Undo2 size={16} />}
               {operationButtonLabel(mode)}
             </button>
           </div>
@@ -625,7 +625,7 @@ function MutationReceipt({ receipt }: { receipt: MutationReceipt }) {
   const verified = receipt.phase === 'verified'
   const failed = receipt.phase === 'error'
   const Icon = verified ? CheckCircle2 : failed ? AlertCircle : LoaderCircle
-  return <section className={styles.receipt + (verified ? ' ' + styles.receiptVerified : failed ? ' ' + styles.receiptError : '')} aria-live="polite" role="status"><Icon size={17} className={!verified && !failed ? styles.spin : ''} /><div><strong>{verified ? '已完成并回读' : failed ? '操作需要处理' : receipt.phase === 'reading' ? '正在读取服务端回执' : '写入请求已发送'}</strong><span>{receipt.summary}</span><small>操作：{receipt.operation} · {DISPLAY_LABELS.dataVersion}：{receipt.revision === 0 ? '0' : formatCount(receipt.revision)}</small><code>幂等键：{receipt.idempotencyKey}</code></div></section>
+  return <section className={styles.receipt + (verified ? ' ' + styles.receiptVerified : failed ? ' ' + styles.receiptError : '')} aria-live="polite" role="status"><Icon size={17} className={!verified && !failed ? "spin" : ''} /><div><strong>{verified ? '已完成并回读' : failed ? '操作需要处理' : receipt.phase === 'reading' ? '正在读取服务端回执' : '写入请求已发送'}</strong><span>{receipt.summary}</span><small>操作：{receipt.operation} · {DISPLAY_LABELS.dataVersion}：{receipt.revision === 0 ? '0' : formatCount(receipt.revision)}</small><code>幂等键：{receipt.idempotencyKey}</code></div></section>
 }
 
 function FormField({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
@@ -646,7 +646,7 @@ function StatusBadge({ label, tone }: { label: string; tone: string }) {
 }
 
 function LoadingState() {
-  return <section className={styles.statePanel} aria-busy="true"><LoaderCircle className={styles.spin} size={20} /><div><strong>正在读取计费数据</strong><span>正在确认管理员权限并读取服务端汇总。</span></div></section>
+  return <section className={styles.statePanel} aria-busy="true"><LoaderCircle className="spin" size={20} /><div><strong>正在读取计费数据</strong><span>正在确认管理员权限并读取服务端汇总。</span></div></section>
 }
 
 function PermissionState() {

@@ -847,7 +847,7 @@ function ProjectComposer({
           <input value={reason} onChange={(event) => onReasonChange(event.target.value)} />
         </label>
         <button type="button" onClick={onCreate} disabled={disabled || action.status === "busy"}>
-          <RefreshCw size={14} className={action.status === "busy" ? styles.spin : undefined} />
+          <RefreshCw size={14} className={action.status === "busy" ? "spin" : undefined} />
           {action.status === "busy" ? "提交中" : "生成摘要"}
         </button>
       </div>
@@ -1098,7 +1098,7 @@ function BusinessPanelState<T>({
   if (state.status === "loading") {
     return (
       <div className={styles.panelState + (compact ? " " + styles.compactState : "")} aria-busy="true">
-        <LoaderCircle className={styles.spin} size={18} />
+        <LoaderCircle className="spin" size={18} />
         <span>{loadingText}</span>
       </div>
     );
@@ -1280,7 +1280,7 @@ function AgentPanel({
           {catalog ? (
             <CheckCircle2 size={16} />
           ) : capabilityState.status === "loading" ? (
-            <LoaderCircle className={styles.spin} size={16} />
+            <LoaderCircle className="spin" size={16} />
           ) : (
             <AlertCircle size={16} />
           )}

@@ -505,11 +505,11 @@ function AuditInspector({ selectedTenantId, reason, submittedReason, validationM
 }
 
 function RuntimeState({ icon, title, detail, spinning = false }: { icon: ReactNode; title: string; detail: string; spinning?: boolean }) {
-  return <section className={'section-panel ' + styles.runtimeState} role="status"><span className={spinning ? styles.spinning : undefined}>{icon}</span><strong>{title}</strong><p>{detail}</p></section>
+  return <section className={'section-panel ' + styles.runtimeState} role="status"><span className={spinning ? styles.spinning + ' spin' : undefined}>{icon}</span><strong>{title}</strong><p>{detail}</p></section>
 }
 
 function StateBlock({ icon, title, detail, spinning = false, action }: { icon: ReactNode; title: string; detail: string; spinning?: boolean; action?: () => void }) {
-  return <div className={styles.stateBlock} role={action ? 'alert' : 'status'}><span className={spinning ? styles.spinning : undefined}>{icon}</span><div><strong>{title}</strong><p>{detail}</p>{action ? <button className={styles.inlineAction} type="button" onClick={action}>重新读取</button> : null}</div></div>
+  return <div className={styles.stateBlock} role={action ? 'alert' : 'status'}><span className={spinning ? styles.spinning + ' spin' : undefined}>{icon}</span><div><strong>{title}</strong><p>{detail}</p>{action ? <button className={styles.inlineAction} type="button" onClick={action}>重新读取</button> : null}</div></div>
 }
 
 function AuditPendingState({ selected, subject }: { selected: boolean; subject: string }) {

@@ -281,7 +281,7 @@ export default function AdminUpstreamsPage() {
       <div className={styles.headerActions}>
         <span className={styles.accessPill}><ShieldCheck size={14} />{canMutateCredential ? '维护者权限' : '管理员权限'}</span>
         <button className={styles.refreshButton} type="button" onClick={() => { setAction({ kind: 'idle', message: '' }); void loadPage() }} disabled={!canRead || loadState.status === 'loading'} aria-label="刷新上游服务">
-          <RefreshCw size={15} className={loadState.status === 'loading' ? styles.spin : undefined} />刷新
+          <RefreshCw size={15} className={loadState.status === 'loading' ? "spin" : undefined} />刷新
         </button>
       </div>
     </header>
@@ -419,11 +419,11 @@ function StatusRow({ label, value }: { label: string; value: string }) {
 
 function ActionBanner({ action }: { action: ActionState }) {
   const Icon = action.kind === 'success' ? CheckCircle2 : action.kind === 'error' ? AlertCircle : RefreshCw
-  return <div className={styles.actionBanner + ' ' + actionClass(action.kind)} role="status" aria-live="polite"><Icon size={16} className={action.kind === 'busy' ? styles.spin : undefined} /><span>{action.message}</span></div>
+  return <div className={styles.actionBanner + ' ' + actionClass(action.kind)} role="status" aria-live="polite"><Icon size={16} className={action.kind === 'busy' ? "spin" : undefined} /><span>{action.message}</span></div>
 }
 
 function LoadingState() {
-  return <section className={styles.statePanel} data-page-terminal-surface="primary" aria-busy="true"><span className={styles.stateIcon}><RefreshCw size={22} className={styles.spin} /></span><div><h2>正在读取上游服务</h2><p>汇总状态加载中。</p></div></section>
+  return <section className={styles.statePanel} data-page-terminal-surface="primary" aria-busy="true"><span className={styles.stateIcon}><RefreshCw size={22} className="spin" /></span><div><h2>正在读取上游服务</h2><p>汇总状态加载中。</p></div></section>
 }
 
 function PageState({ icon: Icon, title, message, onRetry }: {

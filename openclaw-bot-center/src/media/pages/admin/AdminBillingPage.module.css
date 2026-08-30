@@ -867,16 +867,6 @@
   color: var(--mg-warning);
 }
 
-.spin {
-  animation: spin 900ms linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 1180px) {
   .headingArea {
     flex-wrap: wrap;

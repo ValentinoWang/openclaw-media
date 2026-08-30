@@ -31,7 +31,7 @@ import {
   useCursorTrail,
 } from "../../ui/ordinaryPagePrimitives";
 import { DISPLAY_LABELS } from "../../ui/displayLabels";
-import { artifactTypeDisplayLabel, bodyAuthorityDisplayLabel, mediaTypeDisplayLabel, qualityDisplayLabel, syncStatusDisplayLabel } from "../../ui/ordinaryDataLabels";
+import { artifactTypeDisplayLabel, authorizationScopeDisplayLabel as sharedAuthorizationScopeDisplayLabel, bodyAuthorityDisplayLabel, humanStateDisplayLabel, mediaTypeDisplayLabel, qualityDisplayLabel, syncStatusDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { getOrganizationDocumentUrl } from "../../ui/organizationDocumentUrl";
 import styles from "./RunsPage.module.css";
@@ -782,7 +782,7 @@ function CommercialDeliveryEmpty({ onCreate }: { onCreate: () => void }) {
 }
 
 function ReadState({ kind, message, onRetry }: { kind: "loading" | "forbidden" | "notFound" | "error" | "partial"; message: string; onRetry?: () => void }) {
-  const icon = kind === "loading" ? <LoaderCircle className={styles.spin} size={21} aria-hidden="true" /> : kind === "forbidden" ? <UserRoundCheck size={21} aria-hidden="true" /> : <AlertCircle size={21} aria-hidden="true" />;
+  const icon = kind === "loading" ? <LoaderCircle className="spin" size={21} aria-hidden="true" /> : kind === "forbidden" ? <UserRoundCheck size={21} aria-hidden="true" /> : <AlertCircle size={21} aria-hidden="true" />;
   return <div className={`${styles.readState} ${kind === "partial" ? styles.partialState : ""}`} data-read-state={kind} aria-busy={kind === "loading"} role={kind === "loading" ? undefined : "alert"}>{icon}<strong>{message}</strong>{onRetry ? <button className={styles.retryButton} type="button" onClick={onRetry}><RefreshCw size={14} />重新读取</button> : null}</div>;
 }
 
@@ -853,7 +853,7 @@ function toReadError(error: unknown, fallback: string): PageReadError {
 }
 
 function humanStateLabel(value: string): string {
-  return ({ pending: "待确认", confirmed: "已确认", rejected: "已拒绝" }[value] ?? "状态待确认");
+  return humanStateDisplayLabel(value);
 }
 
 function isRunListResponse(response: PageResponse): response is RunListResponse {
@@ -884,13 +884,7 @@ function displayStructuredValue(value: string | number | boolean): string {
 }
 
 function authorizationScopeDisplayLabel(value: string): string {
-  const labels: Record<string, string> = {
-    public: "公开合作",
-    private: "定向合作",
-    exclusive: "独家合作",
-    non_exclusive: "非独家合作",
-  };
-  return labels[value] ?? "授权范围待确认";
+  return sharedAuthorizationScopeDisplayLabel(value);
 }
 
 function summarizeStatuses(runs: readonly RunSummary[]) {

@@ -1864,7 +1864,7 @@ function SurfaceState({
       data-state={kind}
     >
       <span className={styles.stateIcon}>
-        <Icon className={kind === "loading" ? styles.spin : ""} size={21} aria-hidden="true" />
+        <Icon className={kind === "loading" ? "spin" : ""} size={21} aria-hidden="true" />
       </span>
       <strong>{title}</strong>
       <p>{detail}</p>

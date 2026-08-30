@@ -668,16 +668,6 @@
   margin-top: 13px;
 }
 
-.spin {
-  animation: spin 0.9s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 1040px) {
   .dashboardGrid {
     grid-template-columns: minmax(0, 1fr) minmax(292px, 320px);

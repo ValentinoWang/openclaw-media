@@ -537,9 +537,6 @@
 .deadlineCard strong { display: block; margin-top: 10px; font-size: var(--mg-text-sm); }
 .deadlineCard p { margin: 6px 0 0; color: var(--mg-muted); font-size: var(--mg-text-sm); line-height: 1.55; }
 
-.spin { animation: spin 1s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
 @media (max-width: 1180px) {
   .metricGrid,
   .loopGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

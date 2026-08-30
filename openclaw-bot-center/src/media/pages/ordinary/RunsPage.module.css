@@ -374,16 +374,6 @@
   }
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.spin {
-  animation: spin 1s linear infinite;
-}
-
 .tableRegion,
 .inspector {
   overflow: hidden;
@@ -1394,8 +1384,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .statusLoading span,
-  .spin {
+  .statusLoading span {
     animation: none;
   }
 }

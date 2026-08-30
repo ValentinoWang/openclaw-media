@@ -342,7 +342,7 @@ function StatusBadge({ value }: { value: string }) {
 }
 
 function ResourceState({ state, label, compact = false }: { state: LoadState<unknown>; label: string; compact?: boolean }) {
-  if (state.status === 'loading') return <div className={compact ? styles.state + ' ' + styles.compactState : styles.state} aria-busy="true"><LoaderCircle className={styles.spin} size={18} /><span>正在读取{label}</span></div>
+  if (state.status === 'loading') return <div className={compact ? styles.state + ' ' + styles.compactState : styles.state} aria-busy="true"><LoaderCircle className="spin" size={18} /><span>正在读取{label}</span></div>
   if (state.status === 'error') return <div className={compact ? styles.state + ' ' + styles.compactState + ' ' + styles.errorState : styles.state + ' ' + styles.errorState} role="alert"><CircleAlert size={18} /><span>{state.message}</span></div>
   return null
 }
@@ -356,7 +356,7 @@ function AccessBoundary() {
 }
 
 function StateIcon({ kind }: { kind: ActionState['kind'] }) {
-  return kind === 'error' ? <CircleAlert size={17} /> : kind === 'busy' ? <LoaderCircle className={styles.spin} size={17} /> : <CheckCircle2 size={17} />
+  return kind === 'error' ? <CircleAlert size={17} /> : kind === 'busy' ? <LoaderCircle className="spin" size={17} /> : <CheckCircle2 size={17} />
 }
 
 function aggregateDaily(rows: UsageEvent[]): DailyPoint[] {

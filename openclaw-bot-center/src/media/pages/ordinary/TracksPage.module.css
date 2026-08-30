@@ -1442,10 +1442,6 @@
   background: var(--mg-primary);
 }
 
-.spin {
-  animation: spin 900ms linear infinite;
-}
-
 .srOnly {
   position: absolute;
   width: 1px;
@@ -1456,12 +1452,6 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 @media (min-width: 1121px) {

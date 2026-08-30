@@ -18,6 +18,7 @@ import { BusinessOperationError, callBusinessOperation } from '../generatedBusin
 import { PlatformIdentity } from '../ui/PlatformIdentity'
 import { Metric } from '../ui/Metric'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
+import { authorizationScopeDisplayLabel } from '../ui/ordinaryDataLabels'
 import { businessStatusTone } from '../statusPresentation'
 import styles from './BusinessPage.module.css'
 
@@ -77,7 +78,7 @@ export default function BusinessPage() {
         </div>
         <div className={styles.heroCard}>
           <span>当前有效机会</span>
-          {state.status === 'loading' ? <LoaderCircle className={styles.spin} size={24} /> : state.status === 'error' ? <AlertCircle size={24} /> : <strong>{active.length}</strong>}
+          {state.status === 'loading' ? <LoaderCircle className="spin" size={24} /> : state.status === 'error' ? <AlertCircle size={24} /> : <strong>{active.length}</strong>}
           <p>{brands ? `覆盖 ${brands} 个品牌、${platforms} 个平台` : '等待登记第一条真实商务机会'}</p>
           <small>不根据项目名猜测报价或授权</small>
         </div>
@@ -96,7 +97,7 @@ export default function BusinessPage() {
             <div><span>商务机会</span><h2>品牌与项目机会</h2></div>
             <button type="button" onClick={() => setRefreshToken((value) => value + 1)}><RefreshCw size={15} />刷新</button>
           </header>
-          {state.status === 'loading' ? <PanelState icon={<LoaderCircle className={styles.spin} size={22} />} title="正在读取商务机会" /> : null}
+          {state.status === 'loading' ? <PanelState icon={<LoaderCircle className="spin" size={22} />} title="正在读取商务机会" /> : null}
           {state.status === 'error' ? <PanelState icon={<AlertCircle size={22} />} title={state.message} action={<button type="button" onClick={() => setRefreshToken((value) => value + 1)}>重新读取</button>} /> : null}
           {state.status === 'ready' && opportunities.length ? <div className={styles.opportunityGrid}>{opportunities.map((item) => <OpportunityCard key={item.publicOpportunityId} item={item} />)}</div> : null}
           {state.status === 'ready' && !opportunities.length ? <PanelState icon={<BriefcaseBusiness size={24} />} title="还没有已授权商务机会" detail="先登记账号身份、当前报价和品牌项目，再进入商单生产与履约。" action={<button type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}>登记机会</button>} /> : null}
@@ -172,9 +173,11 @@ function validityLabel(from: string | null, until: string | null): string {
   return `${from ? formatDate(from) : '不限起始'} — ${until ? formatDate(until) : '不限结束'}`
 }
 
+// Previously echoed the raw enum value (or '待确认') for an unrecognized authorizationScope,
+// leaking an internal value into the UI -- switched to the shared fixed-fallback behavior, which
+// is what this project's readable-fields rule requires everywhere else (cluster LE-14).
 function authorizationLabel(value: string): string {
-  const labels: Record<string, string> = { public: '公开合作', private: '定向合作', exclusive: '独家合作', non_exclusive: '非独家合作' }
-  return labels[value] ?? (value || '待确认')
+  return authorizationScopeDisplayLabel(value)
 }
 
 function readError(error: unknown): string {
