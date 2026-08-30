@@ -176,3 +176,5 @@ CT-A4、CT-B1、CT-B2 已在当前 `main` 复核关闭，证据提交 `8b2b83e`�
 - 组织入口前端发布复核（2026-08-30）：本地 `dist-media` 构建与 `main@f38149e` 一致，但 106 上 `/mnt/openclaw-data/openclaw-media-frontend-releases` 及 `/var/www/openclaw/media` 均为 `root:root`，当前 `ubuntu` 会话无写权限且无免密 sudo；上传和原子切换被权限门禁拒绝。生产仍指向旧 release `20260830-d8aca36`，未伪造“已部署”证据；需由受管发布身份执行上传与切换后再回读公网版本。
 
 - 组织入口前端发布完成（2026-08-30）：授权 `ubuntu` 加入 `openclaw-deploy` 组后，基于 `main@a1e4db2` 重新运行 `npm run build:media` 全部通过，并上传至不可变目录 `/mnt/openclaw-data/openclaw-media-frontend-releases/20260830-a1e4db2`。`/var/www/openclaw/media` 已原子切换到该目录，HTTP `http://106.52.146.37/openclaw/media/` 返回 `200`，远端 `.release-commit` 与 `a1e4db2` 一致；旧 release 保留可回滚。回读时根分区仅剩约 `371M`（显示 `100%`），记为运维容量风险，未擅自删除其他文件。
+
+- 组织 Feishu 授权入口修复（2026-08-30）：前端此前请求 `/openclaw/auth/feishu/start`，该 Nginx 入口不改写路径而后端仅接受 `/auth/feishu/start`，导致生产返回 404 并显示“授权二维码暂不可用”。按单一规范合同将 `media.login.js` 改为调用现有媒体入口 `/openclaw/media/auth/feishu/start`，未新增后端兼容别名；`checkMediaLoginContract.ts` 同时锁定规范路径并拒绝旧路径。`npm run qa:media-login-contract` 与完整 `npm run build:media` 通过。后端授权测试在本机未收集：系统 Python 3.9 缺 `datetime.UTC`，Python 3.13 缺测试依赖；需在远端发布后回读授权入口与 Feishu 回调。

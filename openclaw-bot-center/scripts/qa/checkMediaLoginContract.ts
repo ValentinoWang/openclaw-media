@@ -9,7 +9,8 @@ if (/role\s*===\s*['"]user['"]/u.test(script)) {
 
 assert.match(script, /import QRCode from 'qrcode'/u)
 assert.match(script, /QRCode\.toCanvas\(qrCanvas, started\.authorizationUrl/u)
-assert.match(script, /\/openclaw\/auth\/feishu\/start/u)
+assert.match(script, /\/openclaw\/media\/auth\/feishu\/start/u)
+assert.doesNotMatch(script, /\/openclaw\/auth\/feishu\/start/u)
 assert.doesNotMatch(script, /\/openclaw\/auth\/feishu\/status/u)
 assert.match(script, /credentials:\s*'same-origin'/u)
 assert.match(script, /session\.role === 'admin'/u)
