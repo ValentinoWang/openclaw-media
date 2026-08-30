@@ -20,6 +20,8 @@ from openclaw_app.services.resource_owner_registry import ResourceOwnerConflict,
 from openclaw_app.services.tenant_owned_resources import TenantOwnedResourceService
 from selfmedia.growth import review_public_id, source_asset_public_id
 
+from _fixtures.markdown import write_frontmatter
+
 TENANT_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 TENANT_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
 
@@ -164,20 +166,6 @@ def deletion_message(body: str) -> Message:
         created_at=datetime.now(),
         metadata={"account_id": "media", "tenant_id": TENANT_A},
     )
-
-
-def write_frontmatter(path: Path, frontmatter: dict[str, object], body: str = "") -> None:
-    lines = ["---"]
-    for key, value in frontmatter.items():
-        if isinstance(value, dict):
-            lines.append(f"{key}:")
-            for child_key, child_value in value.items():
-                lines.append(f"  {child_key}: {child_value}")
-        else:
-            lines.append(f"{key}: {value}")
-    lines.extend(["---", body])
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 class Phase2DeletionAdaptersTest(unittest.TestCase):

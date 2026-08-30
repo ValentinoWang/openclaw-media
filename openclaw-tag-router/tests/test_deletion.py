@@ -16,6 +16,8 @@ from openclaw_app.router.deletion_adapters.base import DeletionContext
 from openclaw_app.services.resource_owner_registry import ResourceOwnerConflict, ResourceOwnerRegistry
 from openclaw_app.services.tenant_owned_resources import TenantOwnedResourceService
 
+from _fixtures.markdown import write_frontmatter
+
 
 TENANT_A = "11111111-1111-4111-8111-111111111111"
 TENANT_B = "22222222-2222-4222-8222-222222222222"
@@ -153,20 +155,6 @@ def cleanup_stdout(mode: str = "dry_run") -> str:
         },
         ensure_ascii=False,
     )
-
-
-def write_frontmatter(path: Path, frontmatter: dict[str, object], body: str = "") -> None:
-    lines = ["---"]
-    for key, value in frontmatter.items():
-        if isinstance(value, list):
-            lines.append(f"{key}:")
-            for item in value:
-                lines.append(f"  - {item}")
-        else:
-            lines.append(f"{key}: {value}")
-    lines.extend(["---", body])
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def write_agent_results_contract(directory: Path) -> tuple[Path, Path]:
