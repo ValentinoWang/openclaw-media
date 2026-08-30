@@ -11,6 +11,7 @@
     --blue:#e1efff; --blue-ink:#3177bd;
     --yellow:#fff0bd; --yellow-ink:#8a6b12;
     --clay:#b4553f; --clay-soft:#fbe8e2;
+    --on-accent:#fff;
     --sidebar:#173029;
     --shadow-s:0 2px 6px rgba(30,48,40,.06);
     --shadow-m:0 12px 30px rgba(30,48,40,.10);
@@ -29,6 +30,7 @@
       --blue:#1c3145; --blue-ink:#8cc2f5;
       --yellow:#3a3315; --yellow-ink:#dcc069;
       --clay:#e08e79; --clay-soft:#3a221c;
+      --on-accent:#08211a;
       --sidebar:#0d1714;
       --shadow-s:0 2px 6px rgba(0,0,0,.34);
       --shadow-m:0 12px 30px rgba(0,0,0,.42);
@@ -46,6 +48,7 @@
     --blue:#1c3145; --blue-ink:#8cc2f5;
     --yellow:#3a3315; --yellow-ink:#dcc069;
     --clay:#e08e79; --clay-soft:#3a221c;
+    --on-accent:#08211a;
     --sidebar:#0d1714;
     --shadow-s:0 2px 6px rgba(0,0,0,.34);
     --shadow-m:0 12px 30px rgba(0,0,0,.42);
@@ -123,7 +126,7 @@
   .m-line{height:5px; border-radius:3px; background:color-mix(in srgb,var(--ink) 12%,transparent);}
   .m-line.sm{height:4px;}
   .m-line.lt{background:color-mix(in srgb,var(--ink) 7%,transparent);}
-  .m-btn{display:inline-flex; align-items:center; justify-content:center; padding:6px 12px; border-radius:6px; background:var(--mint); color:#fff; font-size:8.5px; font-weight:700;}
+  .m-btn{display:inline-flex; align-items:center; justify-content:center; padding:6px 12px; border-radius:6px; background:var(--mint); color:var(--on-accent); font-size:8.5px; font-weight:700;}
   .m-btn.ghost{background:transparent; border:1px solid var(--line); color:var(--muted);}
   .m-btn.wide{width:100%;}
   .m-input{height:22px; border:1px solid var(--line); border-radius:6px; background:var(--surface);}
@@ -330,6 +333,51 @@
 
   .flow{margin-top:16px; padding:16px 18px; border:1px solid var(--line); border-radius:11px; background:color-mix(in srgb,var(--paper) 62%,var(--surface)); overflow-x:auto;}
   .flow pre{margin:0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; line-height:1.72; color:var(--ink-soft); white-space:pre;}
+
+  /* ---------- 登录 P1/P2 状态示意 ---------- */
+  .lg-wrap{margin-top:22px; display:grid; gap:13px;}
+  .lg-branch{display:grid; grid-template-columns:74px repeat(3,minmax(0,1fr)); gap:11px; align-items:stretch;}
+  .lg-branch-label{display:grid; align-content:center; justify-items:center; gap:5px; padding:10px 6px; border-radius:11px; text-align:center;}
+  .lg-branch-label.p{background:var(--mint-soft);} .lg-branch-label.o{background:var(--blue);}
+  .lg-branch-label b{font-size:12px; font-weight:800; letter-spacing:-.02em;}
+  .lg-branch-label.p b{color:var(--mint-deep);} .lg-branch-label.o b{color:var(--blue-ink);}
+  .lg-branch-label span{font-size:10px; color:var(--muted); line-height:1.4;}
+  .lg-card{border:1px solid var(--line); border-radius:12px; background:var(--surface); overflow:hidden; display:flex; flex-direction:column;}
+  .lg-top{display:flex; align-items:center; justify-content:space-between; gap:7px; padding:8px 11px; border-bottom:1px solid var(--line-soft); font-size:11px; font-weight:700;}
+  .lg-top .h{font-family:ui-monospace,Menlo,monospace; font-size:9.5px; color:var(--faint); font-weight:700;}
+  .lg-body{flex:1; padding:12px; background:color-mix(in srgb,var(--paper) 66%,var(--surface));}
+  .lg-note{margin-top:9px; color:var(--muted); font-size:12.5px; line-height:1.6; max-width:var(--measure);}
+  /* P1 两态 */
+  .lgp1{display:grid; gap:6px;}
+  .lgp1 .cards{display:grid; grid-template-columns:1fr 1fr; gap:6px;}
+  .lgp1 .c{padding:8px 7px; border:1px solid var(--line); border-radius:6px; background:var(--surface); display:grid; gap:4px; min-height:44px;}
+  .lgp1 .c.on{border-color:var(--mint); background:var(--mint-soft); box-shadow:0 0 0 1.5px color-mix(in srgb,var(--mint) 40%,transparent);}
+  .lgp1 .c.on.o{border-color:var(--blue-ink); background:var(--blue); box-shadow:0 0 0 1.5px color-mix(in srgb,var(--blue-ink) 34%,transparent);}
+  .lgp1 .ic{width:14px;height:14px;border-radius:4px;background:var(--mint);}
+  .lgp1 .ic.o{background:var(--blue-ink);}
+  .lgslim{display:flex; align-items:center; gap:6px; padding:7px 9px; border:1px solid var(--mint); background:var(--mint-soft); border-radius:6px;}
+  .lgslim.o{border-color:var(--blue-ink); background:var(--blue);}
+  .lgslim .ic{width:13px;height:13px;border-radius:4px;background:var(--mint); flex:0 0 auto;}
+  .lgslim.o .ic{background:var(--blue-ink);}
+  .lgslim b{font-size:8.5px; font-weight:800;}
+  .lgslim .sw{margin-left:auto; font-size:7.5px; font-weight:700; color:var(--mint-deep); white-space:nowrap;}
+  .lgslim.o .sw{color:var(--blue-ink);}
+  .lgh{margin:8px 0 5px; font-size:7.5px; font-weight:800; letter-spacing:.07em; color:var(--faint); text-transform:uppercase;}
+  /* P2 三态 */
+  .lgstate{display:grid; gap:5px; padding:9px; border:1px solid var(--line); border-radius:6px; background:var(--surface);}
+  .lgstate.hit{border-color:color-mix(in srgb,var(--mint) 45%,transparent); background:color-mix(in srgb,var(--mint-soft) 55%,var(--surface));}
+  .lgid{display:flex; align-items:center; gap:6px;}
+  .lgid .av{width:17px;height:17px;border-radius:5px;background:linear-gradient(145deg,#9ceac3,#43ba81); flex:0 0 auto;}
+  .lgid .av.o{background:linear-gradient(145deg,#b9d9fb,#4f92d4);}
+  .lgid b{font-size:8.5px; font-weight:800;}
+  .lgid span{display:block; font-size:7px; color:var(--muted); margin-top:1px;}
+  .lgskel{height:9px; border-radius:4px; background:linear-gradient(90deg,color-mix(in srgb,var(--ink) 8%,transparent),color-mix(in srgb,var(--ink) 4%,transparent),color-mix(in srgb,var(--ink) 8%,transparent));}
+  .lgqr{width:52px;height:52px;margin:0 auto;border-radius:5px;background:repeating-conic-gradient(var(--ink) 0% 25%, var(--surface) 0% 50%) 0 0/9px 9px; border:1px solid var(--line);}
+  .lgmuted{font-size:7px; color:var(--muted); text-align:center; line-height:1.45;}
+  .lglink{font-size:7.5px; font-weight:700; color:var(--mint-deep); text-align:center;}
+  .lglink.o{color:var(--blue-ink);}
+  .m-btn.org{background:var(--blue-ink); color:var(--on-accent);}
+  @media (max-width:900px){ .lg-branch{grid-template-columns:1fr;} .lg-branch-label{flex-direction:row; padding:8px 12px;} }
 
   /* ---- 落地表 ---- */
   .tablewrap{margin-top:26px; overflow-x:auto; border:1px solid var(--line); border-radius:13px; background:var(--surface);}
@@ -817,19 +865,194 @@
       <p>示意图里其余的登录页改动<b>不受影响、继续有效</b>：左叙事右表单的双栏、表单列收窄到 400px 以内、主按钮通栏、以及第 7 节的 token 收敛。</p>
     </div>
 
+
+    <h3 class="sub-h">状态示意图</h3>
+    <p class="sec-sub" style="margin-top:10px">六个状态，两条分支各三态。<b>看的时候注意两件事：一是每张图顶部的 P1 都还在、都还高亮、都还能一键切回；二是左右两列的结构完全对称</b>——只有回退态的内容不同（密码表单 vs 二维码），入口状态区的位置、层级、按钮语义完全一致。</p>
+
+    <div class="lg-wrap">
+
+      <div class="lg-branch" style="grid-template-columns:74px minmax(0,1fr)">
+        <div class="lg-branch-label" style="background:color-mix(in srgb,var(--ink) 7%,transparent)"><b style="color:var(--muted)">P1</b><span>入口</span></div>
+        <div class="lg-card">
+          <div class="lg-top"><span>未选身份 · 两卡等权</span><span class="h">286px</span></div>
+          <div class="lg-body">
+            <div class="m lgp1">
+              <div class="m-label" style="color:var(--mint-deep)">统一入口</div>
+              <div class="m-h" style="font-size:11px">你要进入哪类工作区？</div>
+              <div class="cards">
+                <div class="c"><span class="ic"></span><b style="font-size:8px">个人创作者</b><div class="m-line sm lt" style="width:88%"></div></div>
+                <div class="c"><span class="ic o"></span><b style="font-size:8px">组织成员</b><div class="m-line sm lt" style="width:88%"></div></div>
+              </div>
+              <div class="lgmuted" style="text-align:left">请选择一个身份继续 · <b style="color:var(--clay)">有 Cookie 也不自动跳转</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg-branch">
+        <div class="lg-branch-label p"><b>个人</b><span>密码分支</span></div>
+
+        <div class="lg-card">
+          <div class="lg-top"><span>查询中</span><span class="h">P2 · loading</span></div>
+          <div class="lg-body">
+            <div class="m">
+              <div class="lgslim"><span class="ic"></span><b>个人创作者</b><span class="sw">改用组织 ›</span></div>
+              <div class="lgh">可用登录状态</div>
+              <div class="lgstate">
+                <div class="lgskel" style="width:70%"></div>
+                <div class="lgskel" style="width:45%"></div>
+              </div>
+              <div class="lgmuted" style="margin-top:7px">正在检查当前浏览器的登录状态…</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg-card">
+          <div class="lg-top"><span>命中有效会话</span><span class="h">state: matched</span></div>
+          <div class="lg-body">
+            <div class="m">
+              <div class="lgslim"><span class="ic"></span><b>个人创作者</b><span class="sw">改用组织 ›</span></div>
+              <div class="lgh">可用登录状态</div>
+              <div class="lgstate hit">
+                <div class="lgid"><span class="av"></span><div><b>当前个人工作区</b><span>v***@example.com</span></div></div>
+                <div class="lgmuted" style="text-align:left">有效期至 09-27 · 本浏览器</div>
+              </div>
+              <span class="m-btn wide" style="margin-top:7px">继续进入</span>
+              <div class="lglink" style="margin-top:6px">使用其他账号登录</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg-card">
+          <div class="lg-top"><span>无 / 过期 / 错模式</span><span class="h">回退 · password</span></div>
+          <div class="lg-body">
+            <div class="m">
+              <div class="lgslim"><span class="ic"></span><b>个人创作者</b><span class="sw">改用组织 ›</span></div>
+              <div class="lgh">登录</div>
+              <div style="display:grid;gap:4px"><div class="m-label">用户名或邮箱</div><div class="m-input"></div></div>
+              <div style="display:grid;gap:4px;margin-top:6px"><div class="m-label">密码</div><div class="m-input"></div></div>
+              <span class="m-btn wide" style="margin-top:8px">登录</span>
+              <div class="lgmuted" style="margin-top:6px">忘记密码？ · 创建个人账号</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg-branch">
+        <div class="lg-branch-label o"><b>组织</b><span>Feishu 分支</span></div>
+
+        <div class="lg-card">
+          <div class="lg-top"><span>查询中</span><span class="h">P2 · loading</span></div>
+          <div class="lg-body">
+            <div class="m">
+              <div class="lgslim o"><span class="ic"></span><b>组织成员</b><span class="sw">改用个人 ›</span></div>
+              <div class="lgh">可用登录状态</div>
+              <div class="lgstate">
+                <div class="lgskel" style="width:70%"></div>
+                <div class="lgskel" style="width:45%"></div>
+              </div>
+              <div class="lgmuted" style="margin-top:7px"><b style="color:var(--clay)">此时不发起 OAuth</b>，二维码延后生成</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg-card">
+          <div class="lg-top"><span>命中有效会话</span><span class="h">state: matched</span></div>
+          <div class="lg-body">
+            <div class="m">
+              <div class="lgslim o"><span class="ic"></span><b>组织成员</b><span class="sw">改用个人 ›</span></div>
+              <div class="lgh">可用登录状态</div>
+              <div class="lgstate hit" style="border-color:color-mix(in srgb,var(--blue-ink) 40%,transparent); background:color-mix(in srgb,var(--blue) 60%,var(--surface))">
+                <div class="lgid"><span class="av o"></span><div><b>光合内容工作室</b><span>组织负责人 · Feishu</span></div></div>
+                <div class="lgmuted" style="text-align:left">有效期至 09-27 · 本浏览器</div>
+              </div>
+              <span class="m-btn wide org" style="margin-top:7px">继续进入</span>
+              <div class="lglink o" style="margin-top:6px">使用其他组织授权</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg-card">
+          <div class="lg-top"><span>无 / 过期 / 错模式</span><span class="h">回退 · feishu_oauth</span></div>
+          <div class="lg-body">
+            <div class="m">
+              <div class="lgslim o"><span class="ic"></span><b>组织成员</b><span class="sw">改用个人 ›</span></div>
+              <div class="lgh">Feishu 授权</div>
+              <div class="lgqr"></div>
+              <div class="lgmuted" style="margin-top:6px">用 Feishu 扫码完成授权</div>
+              <span class="m-btn wide" style="margin-top:7px;background:transparent;border:1px solid var(--line);color:var(--muted)">在 Feishu 中打开</span>
+              <div class="lgmuted" style="margin-top:5px">刷新授权</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="lg-note"><b>三处细节值得单独说：</b>① 查询中状态里组织分支<b>不发起 OAuth</b>——这是「二维码延迟生成」的可见证据，也是验收里那条「组织不立即请求二维码」要看的东西。② 命中态的「使用其他账号 / 其他组织」在一期只是<b>丢弃当前会话回到回退表单</b>，不是账号切换器；真正的切换要等二期的 <code>activate</code> 接口。③ 三种失效原因（无 / 过期 / 错模式）在界面上<b>收敛成同一个回退态</b>，不区分文案——这是安全边界要求的，避免泄露账号是否存在。</p>
+
     <h3 class="sub-h">分三期</h3>
+    <p class="sec-sub" style="margin-top:10px">分期的依据不是工作量，是<b>认证合同的变更幅度</b>。一期完全不碰合同，二期要补验收约束，三期要新增持久化模型——所以三期之间不是「先做一半再做一半」，而是三道逐级抬高的安全门槛。</p>
+
+    <div class="tally" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+      <div class="tally-item"><b>一期</b><span>不改合同 · 无迁移<br><span style="color:var(--mint-deep);font-weight:700">建议先做</span></span></div>
+      <div class="tally-item"><b>二期</b><span>补验收约束<br>与 DS-25 合流</span></div>
+      <div class="tally-item"><b>三期</b><span>新增持久化模型<br><span style="color:var(--clay);font-weight:700">需安全评审</span></span></div>
+    </div>
+
+    <div class="layer" style="margin-top:16px">
+
+      <div class="layer-item">
+        <div><span class="lbadge l0">一期</span></div>
+        <div class="layer-body">
+          <h4>当前浏览器已有会话 <span class="st ok" style="margin-left:6px">建议先做</span></h4>
+          <p><b>目标：</b>用户在同一浏览器回访时，选完身份即可一键继续，不必重新输密码或重新扫码。上面六张示意图画的就是这一期的全部形态。</p>
+          <p><b>做什么：</b>P1 选中后压缩为精简态（约 72px，保留高亮与一键切换）· P2 顶部增加「可用登录状态」区（加载 / 命中 / 回退三态）· 命中时显示脱敏身份 + 有效期 + 继续进入 + 使用其他账号 · 未命中时回退到现有登录方式且行为与今天完全一致 · 新增只读接口 <code>GET /openclaw/auth/entry-state</code> · 二维码改延迟生成 · P1/P2 状态写入 URL 支持刷新与前进后退。</p>
+          <p><b>明确不做：</b>不新增「记住我」· 不做跨工作区切换（选错身份只能返回 P1 重选）· 不保存多个账号 · 不使用 <code>localStorage</code> / <code>sessionStorage</code> / <code>document.cookie</code>。</p>
+          <p class="why"><b>合同影响：无。</b>走独立只读接口，不动 session schema、不改 <code>parseMediaSessionEnvelope</code>、无数据库迁移。<b>前置：无</b>——可与 DS-01/02 并行，也不被路由裁决 DS-23/25 阻塞（登录链路在 SPA 路由之外）。</p>
+        </div>
+      </div>
+
+      <div class="layer-item">
+        <div><span class="lbadge l3">二期</span></div>
+        <div class="layer-body">
+          <h4>跨工作区切换</h4>
+          <p><b>目标：</b>同一用户在个人工作区与组织工作区之间直接切换，不必登出重来。一期示意图里那个「使用其他账号」，到这一期才真正变成切换器。</p>
+          <p><b>做什么：</b>新增 <code>POST /openclaw/auth/entry/activate</code>，由服务端重新解析工作区与成员关系、通过后轮换 <code>openclaw_session</code> · 要求同源校验 + <code>X-OpenClaw-CSRF</code>，必要时 <code>Idempotency-Key</code> · <code>entry-state</code> 的 <code>mismatched</code> 从「统一回退」升级为「可切换」提示（仅当确认是同一用户的另一工作区时）。</p>
+          <p><b>明确不做：</b>仍不保存多个账号——切换的是<b>同一个用户</b>的两个工作区身份，不是两个账号。</p>
+          <p class="why"><b>合同影响：需补充「工作区切换」验收约束</b>——轮换后旧会话必须失效；新会话的 <code>workspaceMode</code> / <code>bodyAuthority</code> 必须由服务端解析结果决定，绝不能由前端传入的 <code>mode</code> 决定。<b>与 DS-25 合流：</b>如果 <code>routeGrants</code> 最终决定走 session 合同变更，这两件事应该一次做完，<b>只 bump 一次 <code>schemaVersion</code></b>。<b>前置：</b>一期完成 + DS-25 裁决。</p>
+        </div>
+      </div>
+
+      <div class="layer-item">
+        <div><span class="lbadge l4">三期</span></div>
+        <div class="layer-body">
+          <h4>多账号状态列表 <span class="st page" style="margin-left:6px;background:var(--clay-soft);color:var(--clay)">建议押后</span></h4>
+          <p><b>目标：</b>一台设备保存多个独立账号 / 组织的登录状态，像切换 Google 账号那样。</p>
+          <p><b>做什么：</b>服务端新增多会话持久化模型 · 列表展示、撤销单项、整体清除 · 完整的过期与安全策略（单项 TTL、异常登录时全量失效、设备绑定）。</p>
+          <p class="why"><b>合同影响：认证合同实质性变更</b>——新增持久化模型、撤销语义、过期策略，必须先出安全评审再动工。<b>前置：</b>二期完成 + 合同评审通过。<br><b>我的建议是无限期押后，除非有明确业务需求驱动。</b>理由有二：这一期的攻击面在三期里最大（多份长期凭据集中在服务端一处，且撤销链路一旦有漏洞就是批量失守）；而一期其实已经覆盖了绝大多数回访场景——真正需要在同一台设备上频繁切换<b>不同账号</b>的用户占比通常极低，值得先用数据验证需求是否存在，再决定要不要为它扩大攻击面。</p>
+        </div>
+      </div>
+
+    </div>
+
+    <h3 class="sub-h">分期边界：同一个场景，三期分别怎么表现</h3>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>阶段</th><th>内容</th><th>是否需要改认证合同</th></tr></thead>
+        <thead><tr><th>用户场景</th><th>一期</th><th>二期</th><th>三期</th></tr></thead>
         <tbody>
-          <tr><td><b>一期</b><br><span class="st ok" style="margin-top:5px;display:inline-block">建议先做</span></td><td>识别当前浏览器已有的有效 <code>openclaw_session</code>，身份匹配时直接继续</td><td>不新增「记住我」，不需要数据库迁移</td></tr>
-          <tr><td><b>二期</b></td><td>同一用户在个人工作区与组织工作区之间切换；服务端重新解析工作区并轮换会话</td><td>需补充「工作区切换」验收约束</td></tr>
-          <tr><td><b>三期</b></td><td>多个独立账号 / 组织的登录状态列表</td><td>需要新的服务端保存配置、撤销、过期与安全策略</td></tr>
+          <tr><td>同浏览器回访，身份没变</td><td><span class="st ok">一键继续</span></td><td>同左</td><td>同左</td></tr>
+          <tr><td>会话过期</td><td><span class="st ok">回退登录，行为同今天</span></td><td>同左</td><td>同左</td></tr>
+          <tr><td>选了个人，但当前会话是组织</td><td><span class="st add">统一回退到密码登录</span>（不提示会话属于别处）</td><td><span class="st ok">提示可切换，一键换过去</span></td><td>同左</td></tr>
+          <tr><td>想换一个组织进入</td><td><span class="st page">重新走 Feishu 授权</span></td><td><span class="st page">重新走 Feishu 授权</span></td><td><span class="st ok">列表里直接选</span></td></tr>
+          <tr><td>两个独立账号来回切</td><td><span class="st page">每次重新登录</span></td><td><span class="st page">每次重新登录</span></td><td><span class="st ok">列表里直接选</span></td></tr>
+          <tr><td>公共电脑上清除痕迹</td><td>登出即可（只有一个会话）</td><td>登出即可</td><td><span class="st add">需要「清除全部」入口</span></td></tr>
         </tbody>
       </table>
     </div>
     <div class="prose">
-      <p>当前系统只有一个 HttpOnly <code>openclaw_session</code> Cookie，现行认证合同明确不提供「记住我」。所以<b>一期的「保存状态」只能定义为「当前浏览器已有的有效会话」</b>，不能用 <code>localStorage</code> 假装实现多账号保存——真正的多账号留到认证合同确认后的三期。</p>
+      <p>这张表是我建议押后三期的依据：<b>从一期到二期，用户可感知的改善很明确</b>（选错身份不用重来）；<b>从二期到三期，改善只落在最后两行</b>，而这两行恰好是频次最低、又最需要为之新增一整套持久化与撤销机制的场景。</p>
+      <p>当前系统只有一个 HttpOnly <code>openclaw_session</code> Cookie，现行认证合同明确不提供「记住我」。所以<b>一期的「保存状态」只能定义为「当前浏览器已有的有效会话」</b>，不能用 <code>localStorage</code> 假装实现多账号保存——那既绕不过 HttpOnly（前端根本读不到凭据），也会把一份可窃取的身份信息留在客户端。</p>
     </div>
 
     <h3 class="sub-h">一期实现矩阵</h3>
@@ -905,10 +1128,10 @@ GET /openclaw/auth/entry-state?mode=organization</pre>
 
   <section class="block">
     <div class="sec-head"><span class="sec-num">09</span><h2>统一台账</h2></div>
-    <p class="sec-sub">前面出现了三套话术：诊断用 <b>P0–P2</b>（多严重）、落地用 <b>L0–L4</b>（改在哪一层）、示意图用<b>现成 / 加规则 / 页面专属</b>（要做多少）。它们描述的是同一批工作的三个侧面，放在一起会打架。这里收敛成<b>一份台账、一条推进线</b>：28 个工作项，编号 DS-01 到 DS-28，层级和严重度降为属性，「阶段」是唯一的顺序。</p>
+    <p class="sec-sub">前面出现了三套话术：诊断用 <b>P0–P2</b>（多严重）、落地用 <b>L0–L4</b>（改在哪一层）、示意图用<b>现成 / 加规则 / 页面专属</b>（要做多少）。它们描述的是同一批工作的三个侧面，放在一起会打架。这里收敛成<b>一份台账、一条推进线</b>：32 个工作项，编号 DS-01 到 DS-32，层级和严重度降为属性，「阶段」是唯一的顺序。</p>
 
     <div class="tally">
-      <div class="tally-item"><b>28</b><span>工作项</span></div>
+      <div class="tally-item"><b>32</b><span>工作项</span></div>
       <div class="tally-item"><b>6</b><span>原语已就绪 · 只差采用</span></div>
       <div class="tally-item"><b>6</b><span>给系统加规则</span></div>
       <div class="tally-item"><b>1</b><span>待裁决 · 阻断阶段 1/2 估算</span></div>
@@ -924,12 +1147,17 @@ GET /openclaw/auth/entry-state?mode=organization</pre>
         </div>
         <p class="stage-note">这一阶段有三条线，但只有两条真正互不阻塞：DS-01/02 走 token 层，改完立即全站生效；DS-03/04/05 走登录链路——因为它和 SPA 是两套零共享的样式系统，<b>既不依赖后面的收敛工作，也不占用它的档期</b>。这也是 D1/D2 明明最急、却排在 L4 最末层的矛盾的解法：它压根不在同一条链上。</p>
         <p class="stage-note" style="border-top:0"><b>第三条线 DS-23～28 不是并行的，是阶段 1 的前置阻断项。</b>阶段 1 的验收目标是「25 个页面 90%+ 采用率」，但 D10 说明这 25 个页面里至少 11 个 ordinary 页在任何合法会话下都进不去——分母本身没有核实过。DS-23 的可达性矩阵门禁跑完之前，阶段 1 的目标数字不可信；DS-25（<code>routeGrants</code> 载体）决定后端要不要为此改一次会话合同，同样影响阶段 1、2 的工作量估算，需要先拍板再排期。字体项 DS-26～28 不依赖路由裁决，可以独立并行。</p>
+        <p class="stage-note" style="border-top:0">登录链路这条线是 <b>DS-03/04/05 + DS-29～32</b>，合起来正好等于第 8 节的<b>一期</b>范围。它同样不被 DS-23/25 阻塞——登录页在 SPA 路由之外，两者互不相干。二期（跨工作区切换）与三期（多账号列表）不进台账，因为它们各自还有前置裁决未完成，排期没有意义。</p>
         <div class="wi head"><span>编号</span><span>工作项</span><span>层</span><span>修复</span><span>受益面</span><span>就绪度</span></div>
         <div class="wi"><span class="wi-id">DS-01</span><span class="wi-name">品牌色三行统一到 auth / 官网组</span><span class="lchip l0">L0</span><span class="dref">D9</span><span class="wi-scope">全站</span><span class="ready done">已裁决</span></div>
         <div class="wi"><span class="wi-id">DS-02</span><span class="wi-name">字阶顶部补两级（<code>--mg-text-4xl</code>）</span><span class="lchip l0">L0</span><span class="dref">D5</span><span class="wi-scope">全站 22 文件</span><span class="ready todo">待实施</span></div>
-        <div class="wi"><span class="wi-id">DS-03</span><span class="wi-name">登录页身份选择改分段控件、输入框限宽、主按钮通栏</span><span class="lchip l4">L4</span><span class="dref">D1 D2</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-03</span><span class="wi-name">P1 选中后压缩为精简态（约 72px，保留高亮与一键切换）、输入框限宽、主按钮通栏</span><span class="lchip l4">L4</span><span class="dref">D1 D2</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
         <div class="wi"><span class="wi-id">DS-04</span><span class="wi-name">登录页双栏 + 叙事栏</span><span class="lchip l4">L4</span><span class="dref">D1</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
         <div class="wi"><span class="wi-id">DS-05</span><span class="wi-name"><code>media.auth.css</code> 引入 token 层，<code>--auth-*</code> 改为别名</span><span class="lchip l4">L4</span><span class="dref">D9</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-29</span><span class="wi-name">P2 入口状态区：加载 / 命中 / 回退三态，两条分支结构对称（第 8 节六张示意图）</span><span class="lchip l4">L4</span><span class="dref">—</span><span class="wi-scope">auth · 登录一期</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-30</span><span class="wi-name">后端只读接口 <code>GET /openclaw/auth/entry-state?mode=</code>，仅返回脱敏信息，四态 <code>matched/none/expired/mismatched</code></span><span class="lchip sys">契约</span><span class="dref">—</span><span class="wi-scope">后端 · 不动 session schema</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-31</span><span class="wi-name">二维码改延迟生成：确认无可用组织会话后才发起 OAuth</span><span class="lchip l4">L4</span><span class="dref">—</span><span class="wi-scope">auth · 组织分支</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-32</span><span class="wi-name">P1/P2 状态写入 URL（<code>?mode=</code>），支持刷新、前进后退与深链接</span><span class="lchip l4">L4</span><span class="dref">—</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
         <div class="wi"><span class="wi-id">DS-23</span><span class="wi-name">新建路由可达性矩阵门禁：枚举 ordinary / admin × personal_web / organization_lark 四种合法会话，断言每条注册路由至少一种会话可达，非法会话得到 403 而非静默重定向</span><span class="lchip l3">L3</span><span class="dref">D10</span><span class="wi-scope">全站路由 · 阶段 1 分母</span><span class="ready todo">待实施</span></div>
         <div class="wi"><span class="wi-id">DS-24</span><span class="wi-name">退役或转发 <code>MediaApp.tsx</code>，唯一入口收敛到 <code>MediaStudioApp.tsx</code>，避免两套路由继续漂移</span><span class="lchip l3">L3</span><span class="dref">D10</span><span class="wi-scope">全站路由</span><span class="ready todo">待实施</span></div>
         <div class="wi"><span class="wi-id">DS-25</span><span class="wi-name"><code>routeGrants</code> 载体裁决：走 <code>schemaVersion</code> 合同变更，还是仿 <code>entry-state</code> 开独立只读接口——两条路都和第 8 节「不改 <code>parseMediaSessionEnvelope</code>」的约束打交道，方式不同</span><span class="lchip sys">契约</span><span class="dref">D10</span><span class="wi-scope">后端契约 · 阻断估算</span><span class="ready dep">待裁决</span></div>
