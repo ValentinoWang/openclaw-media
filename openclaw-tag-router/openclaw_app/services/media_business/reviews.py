@@ -112,14 +112,7 @@ def _parse_timestamp(value: Any, field: str) -> str:
 
 
 def _json_object(value: Any, label: str) -> dict[str, Any]:
-    if isinstance(value, str):
-        try:
-            value = json.loads(value)
-        except json.JSONDecodeError as exc:
-            raise ReviewsInternalError(f"{label} is not valid JSON") from exc
-    if not isinstance(value, Mapping):
-        raise ReviewsInternalError(f"{label} is not an object")
-    return dict(value)
+    return foundation.json_object(value, label, error=ReviewsInternalError)
 
 
 def _row_parts(row: Any, label: str) -> tuple[str, int, dict[str, Any], Any]:

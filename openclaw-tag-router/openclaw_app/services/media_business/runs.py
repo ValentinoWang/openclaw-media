@@ -109,14 +109,7 @@ def _row_values(row: Any, fields: tuple[str, ...], label: str) -> tuple[Any, ...
 
 
 def _json_object(value: Any, label: str) -> dict[str, Any]:
-    if isinstance(value, str):
-        try:
-            value = json.loads(value)
-        except json.JSONDecodeError as exc:
-            raise RunsInternalError(f"{label} is not valid JSON") from exc
-    if not isinstance(value, Mapping):
-        raise RunsInternalError(f"{label} is not an object")
-    return dict(value)
+    return foundation.json_object(value, label, error=RunsInternalError)
 
 
 def _json_list(value: Any, label: str) -> list[Any]:

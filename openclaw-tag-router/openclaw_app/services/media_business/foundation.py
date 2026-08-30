@@ -916,3 +916,34 @@ def _fetchall(cursor: Any) -> list[Any]:
     if isinstance(cursor, (list, tuple)):
         return list(cursor)
     return []
+
+
+# --- jsonb column -> dict Row mapping (gap1 audit) ---------------------------
+#
+# publishing.py, reviews.py, runs.py, and decisions.py each independently
+# wrote the same jsonb-decode: accept either an already-decoded Mapping or
+# a JSON string, decode it (raising a controlled business error rather
+# than letting json.JSONDecodeError escape uncaught), reject anything that
+# isn't an object, and return a *copy* (dict(value)) so callers mutating
+# the result never alias a cursor row or cached object. Moved verbatim
+# from publishing.py's former _json_object, the majority form (4 modules,
+# 21 call sites). ``error`` is a caller-supplied ``(message) -> Exception``
+# factory so each service keeps its own exception type.
+#
+# tracks.py, usage_billing.py, admin_tenants.py, documents.py, and
+# overview.py have their own, behaviorally-divergent versions of this
+# (uncopied returns, dict-only isinstance checks, missing try/except,
+# hardcoded messages, or an extra indirection) -- deliberately NOT touched
+# here; see the gap1 audit for what would have to change at each of their
+# call sites before it would be safe to converge them too.
+
+
+def json_object(value: Any, label: str, *, error: Callable[[str], Exception]) -> dict[str, Any]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise error(f"{label} is not valid JSON") from exc
+    if not isinstance(value, Mapping):
+        raise error(f"{label} is not an object")
+    return dict(value)

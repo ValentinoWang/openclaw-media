@@ -110,14 +110,7 @@ class _PackageRow:
 
 
 def _json_object(value: Any, label: str) -> dict[str, Any]:
-    if isinstance(value, str):
-        try:
-            value = json.loads(value)
-        except json.JSONDecodeError as exc:
-            raise PublishingInternalError(f"{label} is not valid JSON") from exc
-    if not isinstance(value, Mapping):
-        raise PublishingInternalError(f"{label} is not an object")
-    return dict(value)
+    return foundation.json_object(value, label, error=PublishingInternalError)
 
 
 def _as_json(value: Any) -> str:
