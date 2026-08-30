@@ -29,6 +29,7 @@ def keyset_window(
     inner_indent: str = "            ",
     tail_indent: str = "        ",
     closing_indent: str = "    ",
+    include_tail: bool = True,
 ) -> str:
     """The WHERE-fragment + ORDER BY + LIMIT tail shared by every keyset-
     paginated list query in this package.
@@ -44,15 +45,25 @@ def keyset_window(
     shallower) indentation style than the class-body queries do; pass its
     own indentation there to keep the generated SQL text byte-identical to
     what it replaces rather than forcing a reformat.
+
+    ``include_tail=False`` returns just the ``AND (...)`` fragment (through
+    its closing paren and trailing newline), omitting the ``ORDER
+    BY``/``LIMIT`` tail -- for decisions.py's ``_SIGNAL_LIST_QUERY``, whose
+    first ``UNION ALL`` branch repeats the fragment but only the final
+    branch carries the shared ORDER BY/LIMIT.
     """
     column = f"{alias}{ts_column}"
     tiebreak = f"{alias}{id_column}"
-    return (
+    fragment = (
         f"{and_indent}AND (\n"
         f"{inner_indent}CAST(%s AS timestamptz) IS NULL\n"
         f"{inner_indent}OR {column} < %s\n"
         f"{inner_indent}OR ({column} = %s AND {tiebreak} > %s)\n"
         f"{and_indent})\n"
+    )
+    if not include_tail:
+        return fragment
+    return fragment + (
         f"{tail_indent}ORDER BY {column} DESC, {tiebreak} ASC\n"
         f"{tail_indent}LIMIT %s\n"
         f"{closing_indent}"

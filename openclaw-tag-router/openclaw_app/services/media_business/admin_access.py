@@ -11,7 +11,7 @@ from typing import Any, Callable, Protocol
 from uuid import UUID, uuid4
 
 from ...account.admin_audit import write_admin_audit
-from . import foundation
+from . import foundation, sql_pagination
 from .foundation import IF2_KEY, MediaBusinessError, idempotency_key
 
 
@@ -245,39 +245,33 @@ class PostgresAdminAccessStorage:
         )
 
     def affiliate_users(self, connection: Any, *, search: str, position: _CursorPosition | None, limit: int) -> list[Any]:
+        # Unified onto the same CAST(%s AS timestamptz) IS NULL keyset
+        # shape every other list query in the package uses (gap1 audit) --
+        # this used to be two entirely separate SQL strings (one with no
+        # date filter at all, one with a 2-way OR and no NULL guard) rather
+        # than the standard one-query/3-way-OR shape. Semantically
+        # equivalent: when position is None, keyset_params yields
+        # (None, None, None, "") and CAST(NULL AS timestamptz) IS NULL is
+        # always true, short-circuiting the OR exactly like the old
+        # unfiltered query did; when position is present the first branch
+        # is false and the remaining two reduce to the old 2-way OR.
         pattern = f"%{search}%"
-        if position is None:
-            rows = connection.execute(
-                """
+        ts = position.created_at if position is not None else None
+        object_id = position.object_id if position is not None else None
+        rows = connection.execute(
+            f"""
                 SELECT profile.user_id, account_user.username, profile.signup_enabled,
                        profile.signup_quota, profile.signup_used, account_user.status,
                        profile.updated_at, account_user.created_at
                 FROM openclaw_account.affiliate_profiles AS profile
                 JOIN openclaw_account.users AS account_user ON account_user.id = profile.user_id
                 WHERE (%s = '' OR account_user.username ILIKE %s)
-                ORDER BY account_user.created_at DESC, account_user.id ASC
-                LIMIT %s
-                """,
-                (search, pattern, limit),
-            ).fetchall()
-        else:
-            rows = connection.execute(
-                """
-                SELECT profile.user_id, account_user.username, profile.signup_enabled,
-                       profile.signup_quota, profile.signup_used, account_user.status,
-                       profile.updated_at, account_user.created_at
-                FROM openclaw_account.affiliate_profiles AS profile
-                JOIN openclaw_account.users AS account_user ON account_user.id = profile.user_id
-                WHERE (%s = '' OR account_user.username ILIKE %s)
-                  AND (
-                    account_user.created_at < %s
-                    OR (account_user.created_at = %s AND account_user.id > %s)
-                  )
-                ORDER BY account_user.created_at DESC, account_user.id ASC
-                LIMIT %s
-                """,
-                (search, pattern, position.created_at, position.created_at, position.object_id, limit),
-            ).fetchall()
+{sql_pagination.keyset_window(
+                    "account_user.", "created_at", "id",
+                    and_indent=" " * 18, inner_indent=" " * 20, tail_indent=" " * 16, closing_indent=" " * 16,
+                )}""",
+            (search, pattern, *sql_pagination.keyset_params(ts, object_id), limit),
+        ).fetchall()
         return list(rows)
 
     def affiliate_user(self, connection: Any, user_id: UUID, *, lock: bool) -> Any | None:

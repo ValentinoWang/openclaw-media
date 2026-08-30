@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
-from . import foundation
+from . import foundation, sql_pagination
 from .foundation import MediaBusinessError, TenantContext, public_projection
 
 
@@ -496,27 +496,15 @@ class DecisionsService:
         FROM media_product.decision_traces
         WHERE tenant_id = %s AND public_id = %s
     """
-    _SIGNAL_LIST_QUERY = """
+    _SIGNAL_LIST_QUERY = f"""
         SELECT public_id, revision, canonical_data, created_at, updated_at, 'snapshot' AS source_kind
         FROM media_product.signal_snapshots
         WHERE tenant_id = %s
-          AND (
-            CAST(%s AS timestamptz) IS NULL
-            OR updated_at < %s
-            OR (updated_at = %s AND public_id > %s)
-          )
-        UNION ALL
+{sql_pagination.keyset_window("", "updated_at", "public_id", include_tail=False)}        UNION ALL
         SELECT public_id, revision, canonical_data, created_at, updated_at, 'activity' AS source_kind
         FROM media_product.activities
         WHERE tenant_id = %s
-          AND (
-            CAST(%s AS timestamptz) IS NULL
-            OR updated_at < %s
-            OR (updated_at = %s AND public_id > %s)
-          )
-        ORDER BY updated_at DESC, public_id ASC
-        LIMIT %s
-    """
+{sql_pagination.keyset_window("", "updated_at", "public_id")}"""
 
     def __init__(
         self,
@@ -575,24 +563,17 @@ class DecisionsService:
             """
             params = (context.tenant_id, normalized_search, pattern, pattern, None, size + 1)
         else:
-            query += """
-                AND (
-                    CAST(%s AS timestamptz) IS NULL
-                    OR updated_at < %s
-                    OR (updated_at = %s AND public_id > %s)
-                )
-                ORDER BY updated_at DESC, public_id ASC
-                LIMIT %s
-            """
+            query += f"""
+{sql_pagination.keyset_window(
+                "", "updated_at", "public_id",
+                and_indent=" " * 16, inner_indent=" " * 20, tail_indent=" " * 16, closing_indent=" " * 12,
+            )}"""
             params = (
                 context.tenant_id,
                 normalized_search,
                 pattern,
                 pattern,
-                position.updated_at,
-                position.updated_at,
-                position.updated_at,
-                position.public_id,
+                *sql_pagination.keyset_params(position.updated_at, position.public_id),
                 size + 1,
             )
         try:
@@ -661,17 +642,12 @@ class DecisionsService:
         position = _decode_cursor(self._cursor_secret, context, "decision-signals", cursor) if cursor else None
         timestamp = None if position is None else position.updated_at
         public_id = "" if position is None else position.public_id
+        window = sql_pagination.keyset_params(timestamp, public_id)
         params = (
             context.tenant_id,
-            timestamp,
-            timestamp,
-            timestamp,
-            public_id,
+            *window,
             context.tenant_id,
-            timestamp,
-            timestamp,
-            timestamp,
-            public_id,
+            *window,
             size + 1,
         )
         try:
