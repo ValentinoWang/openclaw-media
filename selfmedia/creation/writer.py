@@ -29,6 +29,7 @@ from common.feishu_wiki_docs import (
     get_wiki_node as _shared_get_wiki_node,
     requests_adapter,
 )
+from common.readable_render import render_value as _shared_render_value
 from common.social_runtime import (
     FEISHU_BASE,
     feishu_headers,
@@ -1126,15 +1127,8 @@ def _validation_summary(validation: dict[str, Any]) -> str:
 
 
 def _compact_text(value: Any) -> str:
-    if value in (None, "", []):
-        return ""
-    if isinstance(value, dict):
-        items = []
-        for key, item in value.items():
-            if item in (None, "", []):
-                continue
-            items.append(f"{key}：{_compact_text(item)}")
-        return "\n".join(items)
-    if isinstance(value, list):
-        return "\n".join(f"- {_compact_text(item)}" for item in value if item not in (None, "", []))
-    return str(value).strip()
+    # bool_labels=None: this projection never special-cased bool (it falls
+    # through to the scalar catch-all, str(value).strip(), i.e. "True"/
+    # "False") -- unlike data_review.py's render_guidance_value, which
+    # renders a bool as "是"/"否".
+    return _shared_render_value(value, dict_sep="\n", list_sep="\n", list_bullet="- ", bool_labels=None, drop_empty=True)

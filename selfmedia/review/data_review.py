@@ -10,6 +10,7 @@ import sys
 import time
 from dataclasses import dataclass, asdict, replace
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -23,6 +24,7 @@ from common.llm_client import generate_json_from_parts as common_generate_json_f
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import LLMProviderSettings, load_profile_llm_settings
 from common.platform_labels import PLATFORM_ALIASES as _PLATFORM_ALIASES
+from common.readable_render import render_value as _render_value
 from common.social_runtime import (
     FEISHU_BASE,
     feishu_headers,
@@ -696,27 +698,13 @@ def normalize_text_list(value: Any) -> list[str]:
     return [rendered] if rendered else []
 
 
-def render_guidance_value(value: Any) -> str:
-    if value is None:
-        return ""
-    if isinstance(value, bool):
-        return "是" if value else "否"
-    if isinstance(value, dict):
-        parts = []
-        for key, item in value.items():
-            rendered = render_guidance_value(item)
-            if rendered:
-                parts.append(f"{guidance_label(key)}：{rendered}")
-        return "；".join(parts)
-    if isinstance(value, list):
-        return "、".join(item for item in (render_guidance_value(item) for item in value) if item)
-    return str(value).strip()
-
-
 def guidance_label(value: Any) -> str:
     label = str(value or "").strip()
     normalized = re.sub(r"[ _-]+", " ", label).lower()
     return GUIDANCE_LABELS.get(normalized, label)
+
+
+render_guidance_value = partial(_render_value, dict_sep="；", list_sep="、", label=guidance_label)
 
 
 def normalize_table_items(value: Any) -> list[Any]:
