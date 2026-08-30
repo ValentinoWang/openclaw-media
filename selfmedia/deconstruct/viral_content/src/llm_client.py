@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from common.llm_client import ensure_llm_provider_available as common_ensure_llm_provider_available
 from common.llm_client import generate_json_from_parts as common_generate_json_from_parts
 from common.llm_settings import LLMProviderSettings
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
@@ -30,10 +31,17 @@ DECONSTRUCTION_VALIDATION_CONTRACT = register_llm_validation_contract(
 
 
 def ensure_llm_provider_available(config: ViralDeconstructConfig) -> None:
-    if not config.api_key:
-        raise ConfigError("缺少可用 LLM Provider：config/openclaw_bots.json 当前 profile provider api_key 未配置")
-    if not config.base_url or not config.model or not config.llm_api_type:
-        raise ConfigError("缺少可用 LLM Provider：config/openclaw_bots.json 当前 profile provider 未完整配置")
+    # dedup(llm-wrapper-05): delegate the actual precheck to the common
+    # implementation (common/llm_client.py:ensure_llm_provider_available),
+    # which is the only version that recognizes tenant model transport and
+    # the openclaw_agent api_type. This wrapper exists solely to preserve the
+    # historical ConfigError contract that runner.py's four fail-fast call
+    # sites and tests/test_hard_guards.py::test_missing_llm_key_fails_fast_before_part1
+    # depend on -- common raises a bare RuntimeError.
+    try:
+        common_ensure_llm_provider_available(_provider_settings(config))
+    except RuntimeError as exc:
+        raise ConfigError(str(exc)) from exc
 
 
 def generate_json(
