@@ -19,6 +19,7 @@ WORKSPACE_ROOT = Path(
 if str(WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(WORKSPACE_ROOT))
 
+from common.env import feishu_reminder_root
 from common.llm_client import generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import load_profile_llm_settings
@@ -32,9 +33,11 @@ from ..services.wardrobe_markdown_renderer import (
 from ..services.wardrobe_weather import WardrobeWeatherError, fetch_wardrobe_weather
 
 
-REMINDER_ROOT = Path(
-    os.getenv("OPENCLAW_REMINDER_ROOT", str(Path.home() / "openclaw-feishu-reminder"))
-).expanduser()
+# Deliberately its own env var (OPENCLAW_REMINDER_ROOT, not
+# OPENCLAW_FEISHU_REMINDER_ROOT) -- operators may configure the wardrobe
+# integration's reminder root independently of feishu_reminder_root()'s
+# default, so only the ~/openclaw-feishu-reminder fallback is shared here.
+REMINDER_ROOT = Path(os.getenv("OPENCLAW_REMINDER_ROOT") or feishu_reminder_root()).expanduser()
 WARDROBE_CONTRACT_PATH = Path(
     os.getenv("OPENCLAW_WARDROBE_CONTRACT_PATH", str(WORKSPACE_ROOT / "docs/ai-harness/wardrobe-model-contract.json"))
 ).expanduser()

@@ -5,11 +5,17 @@ import argparse
 import importlib.util
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
+ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-REMINDER_ROOT = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_ROOT") or Path.home() / "openclaw-feishu-reminder")
+from common.env import feishu_reminder_root  # noqa: E402
+
+REMINDER_ROOT = feishu_reminder_root()
 REMINDER_PATH = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_SCRIPT") or REMINDER_ROOT / "reminder.py")
 ACTIVITY_CONFIG_PATH = Path(os.getenv("OPENCLAW_ACTIVITY_CONFIG_PATH") or REMINDER_ROOT / "wiki-activity-config.json")
 DEFAULT_STATUS = "进行中"

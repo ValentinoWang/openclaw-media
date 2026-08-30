@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
+from common.env import feishu_reminder_root
+
 from ..deletion_discovery import DiscoveryResult
 from ..deletion_plan import DeletionPlan
 
@@ -74,9 +76,9 @@ class DeletionContext:
     tenant_owned_resources: Any = None
     source_asset_projection: Any = None
     account_database: Any = None
-    media_registry_path: Path = Path("/home/ubuntu/openclaw-feishu-reminder/media-bitable-registry.json")
-    daily_config_path: Path = Path("/home/ubuntu/openclaw-feishu-reminder/config.json")
-    knowledge_config_path: Path = Path("/home/ubuntu/openclaw-feishu-reminder/knowledge-config.json")
+    media_registry_path: Path = feishu_reminder_root() / "media-bitable-registry.json"
+    daily_config_path: Path = feishu_reminder_root() / "config.json"
+    knowledge_config_path: Path = feishu_reminder_root() / "knowledge-config.json"
     content_os_vault_root: Path = Path("/home/ubuntu/obsidian-自媒体")
 
 
