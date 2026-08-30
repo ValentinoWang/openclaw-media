@@ -4,7 +4,6 @@ import os
 import tempfile
 import unittest
 import json
-import importlib.util
 import hashlib
 import threading
 from pathlib import Path
@@ -33,25 +32,19 @@ from selfmedia.growth.knowledge_evidence_contract import (
 )
 from selfmedia.growth.llm_runner import GrowthLLMJsonRunner
 
+from _support import load_script_module
+
 
 BACKFILL_SCRIPT = Path(__file__).resolve().parents[1] / "scripts/qa/check_media_growth_visibility_backfill.py"
 DISPLAY_BACKFILL_SCRIPT = Path(__file__).resolve().parents[1] / "scripts/qa/check_media_growth_display_backfill.py"
 
 
-def _load_optional_qa_backfill(path: Path, module_name: str):
-    """Keep external operational-backfill checks out of the owned Growth suite."""
-    if not path.is_file():
-        return None
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        return None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-backfill_module = _load_optional_qa_backfill(BACKFILL_SCRIPT, "check_media_growth_visibility_backfill")
-display_backfill_module = _load_optional_qa_backfill(DISPLAY_BACKFILL_SCRIPT, "check_media_growth_display_backfill")
+backfill_module = load_script_module(
+    "check_media_growth_visibility_backfill", BACKFILL_SCRIPT, optional=True
+)
+display_backfill_module = load_script_module(
+    "check_media_growth_display_backfill", DISPLAY_BACKFILL_SCRIPT, optional=True
+)
 
 
 class MediaGrowthV2Tests(unittest.TestCase):

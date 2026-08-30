@@ -1,20 +1,15 @@
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 
 import pytest
 
+from _support import load_script_module
+
 
 ROOT = Path(__file__).parents[1]
 TOOL_PATH = ROOT / "scripts" / "tenant_shared_balance_migration.py"
-SPEC = importlib.util.spec_from_file_location("tenant_shared_balance_migration", TOOL_PATH)
-assert SPEC is not None and SPEC.loader is not None
-tool = importlib.util.module_from_spec(SPEC)
-import sys
-sys.modules[SPEC.name] = tool
-assert SPEC.loader is not None
-SPEC.loader.exec_module(tool)
+tool = load_script_module("tenant_shared_balance_migration", TOOL_PATH, register=True)
 
 
 CHECKSUM = "a" * 64

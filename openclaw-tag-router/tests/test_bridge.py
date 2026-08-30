@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import importlib.util
 import json
 import os
 import subprocess
@@ -20,14 +19,12 @@ from openclaw_app.router.tag_capabilities import TAG_CAPABILITIES
 from openclaw_app.services.message_result_store import MessageResultStore
 from openclaw_app.services.utils import parse_tag_message, parse_tag_message_with_metadata
 
+from _support import load_script_module
+
 
 def load_bridge_module():
     bridge_path = Path(__file__).resolve().parents[1] / "bridge.py"
-    spec = importlib.util.spec_from_file_location("openclaw_tag_router_bridge", bridge_path)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(module)
-    return module
+    return load_script_module("openclaw_tag_router_bridge", bridge_path)
 
 
 class BridgeProtocolTest(unittest.TestCase):

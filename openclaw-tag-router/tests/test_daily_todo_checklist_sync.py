@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.util
 import sys
 import tempfile
 import unittest
@@ -8,15 +7,12 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
+from _support import load_script_module
+
 
 def load_sync_module():
     path = Path(__file__).resolve().parents[2] / "runtime/maintenance/sync/daily_todo_checklist_sync.py"
-    spec = importlib.util.spec_from_file_location("daily_todo_checklist_sync", path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    assert spec.loader is not None
-    spec.loader.exec_module(module)
-    return module
+    return load_script_module("daily_todo_checklist_sync", path, register=True)
 
 
 class DailyTodoChecklistSyncTest(unittest.TestCase):

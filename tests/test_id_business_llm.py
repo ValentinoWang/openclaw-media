@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 import os
 import sys
@@ -11,12 +10,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from _support import load_script_module
+
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "selfmedia/business/id_business.py"
-SPEC = importlib.util.spec_from_file_location("id_business", SCRIPT_PATH)
-MODULE = importlib.util.module_from_spec(SPEC)
-assert SPEC and SPEC.loader
-SPEC.loader.exec_module(MODULE)
+MODULE = load_script_module("id_business", SCRIPT_PATH)
 
 
 class IdBusinessLlmExtractionTest(unittest.TestCase):

@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 from unittest.mock import patch
 
+from _support import load_script_module
+
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "selfmedia/creation/image_generation.py"
-SPEC = importlib.util.spec_from_file_location("gpt_image2", SCRIPT_PATH)
-MODULE = importlib.util.module_from_spec(SPEC)
-assert SPEC and SPEC.loader
-SPEC.loader.exec_module(MODULE)
+MODULE = load_script_module("gpt_image2", SCRIPT_PATH)
 
 
 def test_gpt_image2_openclaw_run_has_timeout() -> None:

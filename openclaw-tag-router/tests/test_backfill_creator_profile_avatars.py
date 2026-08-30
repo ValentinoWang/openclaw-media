@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
+
+from _support import load_script_module
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "backfill_creator_profile_avatars.py"
-SPEC = importlib.util.spec_from_file_location("backfill_creator_profile_avatars", SCRIPT)
-assert SPEC and SPEC.loader
-backfill = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(backfill)
+backfill = load_script_module("backfill_creator_profile_avatars", SCRIPT)
 
 
 def record(*, avatar: str = "") -> dict:

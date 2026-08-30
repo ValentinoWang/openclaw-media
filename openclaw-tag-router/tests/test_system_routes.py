@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import importlib.util
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -13,6 +12,8 @@ from openclaw_app.router.tag_capabilities import TAG_CAPABILITIES
 from openclaw_app.router.tag_router_common import BOT_CAPABILITY_IDENTITIES
 from openclaw_app.services.capability_matcher import CapabilityMatcherError
 from openclaw_app.services.capability_registry import CAPABILITY_REGISTRY
+
+from _support import load_script_module
 
 
 class SystemRoutesHarness(SystemRoutesMixin):
@@ -388,11 +389,7 @@ class SystemRoutesTest(unittest.TestCase):
 
     def test_generated_capability_docs_cover_bot_labels(self) -> None:
         script_path = Path(__file__).resolve().parents[1] / "scripts" / "generate_bot_capability_docs.py"
-        spec = importlib.util.spec_from_file_location("capability_docs_generator", script_path)
-        self.assertIsNotNone(spec)
-        self.assertIsNotNone(spec.loader)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        module = load_script_module("capability_docs_generator", script_path)
 
         rendered_docs = {
             key: module.render_doc(key, doc_spec, {})

@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 from types import ModuleType
+
+from _support import load_script_module
 
 
 def load_sync_module() -> ModuleType:
     script_path = Path(__file__).resolve().parents[1] / "scripts" / "sync_tag_router_docs_to_feishu.py"
-    spec = importlib.util.spec_from_file_location("sync_tag_router_docs_to_feishu", script_path)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return load_script_module("sync_tag_router_docs_to_feishu", script_path)
 
 
 def test_markdown_to_parts_expands_literal_newlines_in_tag_examples() -> None:

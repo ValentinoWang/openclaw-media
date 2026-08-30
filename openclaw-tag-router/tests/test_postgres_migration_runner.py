@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 import shutil
 import tempfile
@@ -8,14 +7,13 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from _support import load_script_module
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER_PATH = ROOT / "scripts" / "run_postgres_migrations.py"
 MANIFEST_PATH = ROOT / "openclaw_app" / "migrations" / "postgres_manifest.json"
-SPEC = importlib.util.spec_from_file_location("run_postgres_migrations", RUNNER_PATH)
-assert SPEC is not None and SPEC.loader is not None
-runner = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(runner)
+runner = load_script_module("run_postgres_migrations", RUNNER_PATH)
 
 
 EXPECTED_IDS = [

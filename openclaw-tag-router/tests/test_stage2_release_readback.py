@@ -6,12 +6,13 @@ These tests define the injected evaluator boundary and must remain protected.
 
 from __future__ import annotations
 
-import importlib.util
 import json
 from pathlib import Path
 import unittest
 from unittest.mock import patch
 from typing import Any
+
+from _support import load_script_module
 
 
 GUARD_PATH = Path(__file__).resolve().parents[1] / "scripts" / "qa" / "check_stage2_release_process.py"
@@ -95,11 +96,9 @@ def evaluate(observed: dict[str, Any], expected: dict[str, Any]) -> Any:
             "INTENDED_GUARD_MISSING: "
             "openclaw-tag-router/scripts/qa/check_stage2_release_process.py"
         )
-    spec = importlib.util.spec_from_file_location("stage2_release_readback_guard", GUARD_PATH)
-    if spec is None or spec.loader is None:
+    module = load_script_module("stage2_release_readback_guard", GUARD_PATH, optional=True)
+    if module is None:
         raise AssertionError("INTENDED_GUARD_UNLOADABLE: Stage-2 release readback guard")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
     evaluator = getattr(module, "evaluate_readback", None)
     if evaluator is None:
         raise AssertionError("INTENDED_GUARD_INTERFACE_MISSING: evaluate_readback")

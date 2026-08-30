@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-import importlib.util
 from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from _support import load_script_module
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = ROOT / "selfmedia" / "business" / "id_business.py"
-SPEC = importlib.util.spec_from_file_location("biz16_id_business", SCRIPT_PATH)
-MODULE = importlib.util.module_from_spec(SPEC)
-assert SPEC and SPEC.loader
-SPEC.loader.exec_module(MODULE)
+MODULE = load_script_module("biz16_id_business", SCRIPT_PATH)
 
 TENANT_ID = "00000000-0000-4000-8000-000000000101"
 MONTH = date(2026, 8, 1)

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+from _support import load_script_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,11 +14,7 @@ TENANT_ID = "00000000-0000-4000-8000-000000000101"
 
 
 def _load_module(name: str):
-    spec = importlib.util.spec_from_file_location(name, DEPLOY_PATH)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return load_script_module(name, DEPLOY_PATH)
 
 
 def test_monthly_timer_units_are_explicit_and_point_to_remind() -> None:

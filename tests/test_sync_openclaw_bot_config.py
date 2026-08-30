@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 import sys
 from pathlib import Path
 
+from _support import load_script_module
+
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "runtime/maintenance/deploy/sync_openclaw_bot_config.py"
-SPEC = importlib.util.spec_from_file_location("sync_openclaw_bot_config", MODULE_PATH)
-assert SPEC and SPEC.loader
-MODULE = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(MODULE)
+MODULE = load_script_module("sync_openclaw_bot_config", MODULE_PATH)
 
 
 def _payload() -> dict[str, object]:

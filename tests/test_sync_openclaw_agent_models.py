@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 import subprocess
 from pathlib import Path
 
+from _support import load_script_module
+
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "runtime/maintenance/deploy/sync_openclaw_agent_models.py"
-SPEC = importlib.util.spec_from_file_location("sync_openclaw_agent_models", MODULE_PATH)
-assert SPEC and SPEC.loader
-MODULE = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(MODULE)
+MODULE = load_script_module("sync_openclaw_agent_models", MODULE_PATH)
 
 
 def _mock_codex_app_server(monkeypatch) -> None:

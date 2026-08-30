@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import importlib.util
 import os
 import shutil
 import subprocess
@@ -10,6 +9,8 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
+
+from _support import load_script_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,11 +26,7 @@ GENERATED_CLIENTS = (
 
 
 def _load_generator() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("product_client_generator", GENERATOR)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return load_script_module("product_client_generator", GENERATOR)
 
 
 def _client_hashes() -> dict[Path, str]:

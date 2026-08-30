@@ -1,20 +1,17 @@
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 
 import pytest
+
+from _support import load_script_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def _load_module(name: str, relative_path: str):
-    spec = importlib.util.spec_from_file_location(name, ROOT / relative_path)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return load_script_module(name, ROOT / relative_path)
 
 
 def test_deploy_maintenance_paths_are_repo_relative_and_owned_scripts_are_checked(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

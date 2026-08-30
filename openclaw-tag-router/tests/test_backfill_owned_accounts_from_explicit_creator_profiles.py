@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 
 import pytest
+
+from _support import load_script_module
 
 
 SCRIPT = (
@@ -12,10 +13,7 @@ SCRIPT = (
     / "qa"
     / "backfill_owned_accounts_from_explicit_creator_profiles.py"
 )
-SPEC = importlib.util.spec_from_file_location("backfill_owned_accounts", SCRIPT)
-assert SPEC and SPEC.loader
-backfill = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(backfill)
+backfill = load_script_module("backfill_owned_accounts", SCRIPT)
 
 
 def creator_row() -> tuple[object, ...]:

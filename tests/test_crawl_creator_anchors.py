@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
+
+from _support import load_script_module
 
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "selfmedia/creator_profiles/anchor_crawler.py"
-SPEC = importlib.util.spec_from_file_location("crawl_creator_anchors", SCRIPT_PATH)
-MODULE = importlib.util.module_from_spec(SPEC)
-assert SPEC and SPEC.loader
-SPEC.loader.exec_module(MODULE)
+MODULE = load_script_module("crawl_creator_anchors", SCRIPT_PATH)
 
 
 def test_parse_chinese_count():
