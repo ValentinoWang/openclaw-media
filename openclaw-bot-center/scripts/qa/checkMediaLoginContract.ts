@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 const html = readFileSync('media.login.html', 'utf8')
 const script = readFileSync('media.login.js', 'utf8')
+const css = readFileSync('media.auth.css', 'utf8')
 if (!html.includes('src="/media.login.js"')) throw new Error('media login module is missing')
 if (/role\s*===\s*['"]user['"]/u.test(script)) {
   throw new Error('media login still reads a retired session field')
@@ -29,5 +30,24 @@ assert.ok(html.includes('id="qr-canvas"'))
 assert.ok(html.includes('id="password-panel"'))
 assert.match(script, /const response = await postJson\(PERSONAL_ENDPOINTS\.resendVerification/u)
 assert.match(script, /if \(!response\.ok\) \{\s*setText\('verify-message', registrationError\(payload\)\)/u)
+
+for (const mode of ['personal', 'organization']) {
+  assert.match(html, new RegExp(`id="${mode}-entry-state"[^>]*data-mode="${mode}"`), `${mode} entry-state container is missing`)
+  assert.match(html, new RegExp(`id="${mode}-entry-matched"[^>]*data-entry-view="matched"[^>]*hidden`), `${mode} matched entry view is missing or not hidden by default`)
+  assert.match(html, new RegExp(`id="${mode}-entry-fallback-state"[^>]*data-entry-view="fallback"[^>]*hidden`), `${mode} fallback entry view is missing or not hidden by default`)
+}
+assert.match(script, /const ENTRY_STATES = new Set\(\['matched', 'none', 'expired', 'mismatched'\]\)/u)
+assert.match(script, /const visibleView = state === 'unavailable' \|\| state === 'none' \|\| state === 'expired' \|\| state === 'mismatched' \? 'fallback' : state/u)
+assert.match(script, /if \(state === 'matched' && payload\?\.entry\)/u)
+for (const entryField of ['displayLabel', 'maskedIdentity', 'expiresAt']) {
+  assert.match(script, new RegExp(`payload\\.entry\\.${entryField}`), `matched entry rendering must expose ${entryField}`)
+}
+
+assert.match(css, /(?:\.entry-loading\[hidden\]|\[hidden\]\.entry-loading)[^{]*\{[^}]*display\s*:\s*none\b/u)
+
+assert.match(script, /(?:const method = replace \? 'replaceState' : 'pushState'|window\.history\.pushState)/u)
+assert.match(script, /window\.history\[method\]\(\{ mode: mode \|\| null \},\s*'',\s*nextUrl\)/u)
+assert.match(script, /window\.addEventListener\('popstate',\s*\(\) => \{[\s\S]*?selectMode\(mode, false, (?:false|null)\)/u)
+assert.match(script, /window\.addEventListener\('popstate',[\s\S]*?else\s*(?:\{\s*)?resetMode\(null\)/u)
 
 console.log('media login contract QA passed')
