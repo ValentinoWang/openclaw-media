@@ -216,7 +216,8 @@ def build_creation_prompt(
         "16. script_options 初稿后必须输出 editor_pass。它要检查画面、动作、台词、平庸表达和证据链污染，必须把所有可执行修订直接写回 recommended_option_id 指向的 script_options 项；recommended_option_id 与 editor_pass.recommended_option_id 必须相同。推荐方案是唯一可执行定稿，不能只改顶层字段。"
         f"推荐稿的 title、final_copy、hook_3s、voiceover 会被机器校验：不得出现通用套话（{'、'.join(_creation_anti_patterns())}）或“首先/其次/最后”顺序套壳。editor_pass 还要检查封面字、置顶评论、连续排比、感叹号堆叠和脱离账号的热词，并把判断写进 blandness_risks；口播每句尽量不超过 22 个字，允许自然口语和不完整句。"
         "顶层 title/tags/final_copy/image_script/carousel/hook_3s/storyboard/voiceover/subtitles/production_checklist/review_plan/risks_or_missing_info 是旧消费者可选镜像；新输出不要重复完整脚本，如输出必须逐字段等于编辑后的推荐项。\n"
-        "17. 必须输出 candidate_match_assessments：只含 viral 与 inspiration 两个数组（无已选参考也输出空数组），每个已选 id 恰有一项 {id, score_breakdown, selection_reason}。总分由程序对分项求和，不要输出 score；爆款分项为 request_fit(40)、content_value(20)、transferability(25)、evidence_completeness(15)，灵感分项为 request_fit(35)、inspiration_quality(25)、transferability(25)、evidence_and_risk(15)。采用关系不是满分依据。\n"
+        "17. 必须输出 candidate_match_assessments：只含 viral 与 inspiration 两个数组（无已选参考也输出空数组），每个已选 id 恰有一项 {id, score_breakdown, selection_reason}。总分由程序对分项求和，不要输出 score；"
+        f"{_match_limits_prompt_text()}采用关系不是满分依据。\n"
         "18. 输出协议必须是 creator_brief：你不是检索结果报告生成器，而是自媒体创作总编。"
         "creator_report 是给真人创作者看的执行稿，必须先讲拍什么、怎么开头、怎么发；不得在 creator_report 的执行区输出原始 JSON、record_id、评分细节、数据库字段、长链接或重复活动说明。\n"
         "19. creator_report 必须分两层：第一层创作者执行版；第二层证据附录。执行版包含创作方案总览、这条内容怎么拍、这条内容怎么发、素材检查清单、风险控制。证据附录只能放在最后，且必须摘要化展示：只保留来源类型、record_id、采用原因、可迁移层、脚本落点和风险边界；不得粘贴候选原文、长段活动 brief、完整爆款拆解或原始检索结果。\n"
@@ -248,7 +249,7 @@ def build_creation_prompt(
         "topic_strategy 字段必须包含：target_audience, pain_point, content_angle, single_problem, self_check。\n\n"
         "usable_material_brief 字段必须包含：execution_brief, source_mapping, usage_boundaries。\n"
         "editor_pass 字段必须包含：recommended_option_id, blandness_risks, revisions_applied, final_recommendation_reason。\n\n"
-        "candidate_match_assessments 示例结构：{\"viral\":[{\"id\":\"候选id\",\"score_breakdown\":{\"request_fit\":34,\"content_value\":16,\"transferability\":22,\"evidence_completeness\":12},\"selection_reason\":\"可迁移的开头结构\"}],\"inspiration\":[{\"id\":\"候选id\",\"score_breakdown\":{\"request_fit\":30,\"inspiration_quality\":22,\"transferability\":22,\"evidence_and_risk\":12},\"selection_reason\":\"落到起跑前镜头\"}]}。\n\n"
+        f"candidate_match_assessments 示例结构：{_match_breakdown_example_text()}。\n\n"
         "report_mode 由程序注入，不要输出。\n"
         "creator_report 固定结构：{overview, opening_3s, mainline, storyboard, publishing_pack, material_checklist, risk_controls, evidence_appendix}。"
         "overview 包含 recommended_topic, core_sentence, platform, content_type, suitable_activity, strongly_recommend_activity, biggest_risk。"
@@ -432,6 +433,46 @@ MATCH_ASSESSMENT_LIMITS = {
         "evidence_and_risk": 15,
     },
 }
+
+# The prompt used to hand-write MATCH_ASSESSMENT_LIMITS' dimension names and
+# weights twice more (the constraint clause and the example structure) --
+# prompt-c6-score-weights dedup: derive both from the one dict below instead,
+# so a weight (or dimension name) change can no longer go stale in the
+# prompt while staying in sync in the code-side cap check that consumes
+# MATCH_ASSESSMENT_LIMITS.items() (see _normalize_candidate_match_assessments).
+_MATCH_KIND_LABEL = {"viral": "爆款", "inspiration": "灵感"}
+_MATCH_EXAMPLE_SELECTION_REASON = {"viral": "可迁移的开头结构", "inspiration": "落到起跑前镜头"}
+
+
+def _match_limits_prompt_text(limits: dict[str, dict[str, int]] = MATCH_ASSESSMENT_LIMITS) -> str:
+    """Render '爆款分项为 request_fit(40)、...，灵感分项为 ...。' from MATCH_ASSESSMENT_LIMITS."""
+    clauses = [
+        f"{_MATCH_KIND_LABEL[kind]}分项为 " + "、".join(f"{field}({weight})" for field, weight in fields.items())
+        for kind, fields in limits.items()
+    ]
+    return "，".join(clauses) + "。"
+
+
+def _match_breakdown_example(limits: dict[str, int]) -> dict[str, int]:
+    """~85%-of-limit score_breakdown values for a prompt example -- always strictly under each limit."""
+    return {field: max(1, round(weight * 0.85)) for field, weight in limits.items()}
+
+
+def _match_breakdown_example_text(limits: dict[str, dict[str, int]] = MATCH_ASSESSMENT_LIMITS) -> str:
+    """Render the candidate_match_assessments example JSON from MATCH_ASSESSMENT_LIMITS."""
+    example = {
+        kind: [
+            {
+                "id": "候选id",
+                "score_breakdown": _match_breakdown_example(fields),
+                "selection_reason": _MATCH_EXAMPLE_SELECTION_REASON[kind],
+            }
+        ]
+        for kind, fields in limits.items()
+    }
+    return json.dumps(example, ensure_ascii=False, separators=(",", ":"))
+
+
 SCRIPT_OPTION_LIST_FIELDS = (
     "tags",
     "selected_activity_ids",
