@@ -19,6 +19,7 @@ from urllib.parse import urlsplit
 
 from common.platform_links import classify_post_link
 
+from . import foundation
 from .foundation import IF2_KEY, MediaBusinessError, TenantContext, idempotency_key, public_projection, require_context
 
 
@@ -1312,19 +1313,14 @@ def _url(value: Any) -> str:
     return value.strip()
 
 
+def _timestamp_error(label: str, reason: str) -> Exception:
+    if reason == "naive":
+        return TrackInternalError("timestamp must be timezone-aware")
+    return TrackInternalError("timestamp is invalid")
+
+
 def _timestamp_value(value: Any) -> datetime:
-    if isinstance(value, datetime):
-        parsed = value
-    elif isinstance(value, str):
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise TrackInternalError("timestamp is invalid") from exc
-    else:
-        raise TrackInternalError("timestamp is invalid")
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise TrackInternalError("timestamp must be timezone-aware")
-    return parsed.astimezone(timezone.utc)
+    return foundation.coerce_utc(value, "timestamp", error=_timestamp_error, allow_naive=False)
 
 
 def _timestamp_text(value: Any) -> str:

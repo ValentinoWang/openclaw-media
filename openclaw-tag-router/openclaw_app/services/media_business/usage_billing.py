@@ -14,6 +14,7 @@ from typing import Any, Callable, Protocol
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from . import foundation
 from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
 
 
@@ -753,10 +754,18 @@ def _nonnegative_int(value: Any, label: str) -> int:
     return int(parsed)
 
 
+def _timestamp_error(label: str, reason: str) -> Exception:
+    return UsageBillingInternalError(f"{label} is invalid")
+
+
 def _timestamp(value: Any, label: str) -> datetime:
-    if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
-        raise UsageBillingInternalError(f"{label} is invalid")
-    return value.astimezone(timezone.utc)
+    # Unlike its siblings in assets.py/tracks.py/invites.py/runs.py, this one
+    # never accepted an ISO string -- only an already-parsed datetime -- so
+    # that acceptance rule is kept as an explicit guard in front of
+    # coerce_utc rather than folded into it.
+    if not isinstance(value, datetime):
+        raise _timestamp_error(label, "missing")
+    return foundation.coerce_utc(value, label, error=_timestamp_error, allow_naive=False)
 
 
 def _totals(rows: list[_UsageRow]) -> tuple[Decimal, Decimal, Decimal]:

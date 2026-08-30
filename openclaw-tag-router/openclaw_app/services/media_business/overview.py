@@ -16,6 +16,7 @@ from typing import Any, Callable, Mapping, Protocol
 
 from common.feishu_urls import DEFAULT_FEISHU_DOC_HOSTS
 
+from . import foundation
 from .foundation import MediaBusinessError, TenantContext, require_context
 
 
@@ -130,20 +131,12 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _timestamp_error(label: str, reason: str) -> Exception:
+    return OverviewInternalError("overview timestamp is invalid")
+
+
 def _timestamp(value: Any) -> datetime:
-    if isinstance(value, datetime):
-        result = value
-    elif isinstance(value, str):
-        text = value.strip()
-        try:
-            result = datetime.fromisoformat(text.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise OverviewInternalError("overview timestamp is invalid") from exc
-    else:
-        raise OverviewInternalError("overview timestamp is invalid")
-    if result.tzinfo is None:
-        result = result.replace(tzinfo=timezone.utc)
-    return result.astimezone(timezone.utc)
+    return foundation.coerce_utc(value, "overview timestamp", error=_timestamp_error, allow_naive=True)
 
 
 def _timestamp_text(value: Any) -> str:

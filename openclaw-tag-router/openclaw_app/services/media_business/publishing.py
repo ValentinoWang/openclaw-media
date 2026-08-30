@@ -19,6 +19,7 @@ from urllib.parse import urlsplit
 
 from media_vault import MediaVault, MediaVaultError
 
+from . import foundation
 from .foundation import (
     MediaBusinessError,
     TenantContext,
@@ -189,30 +190,26 @@ def _map_list(value: Any, label: str) -> list[dict[str, Any]]:
     return result
 
 
+def _timestamp_error(label: str, reason: str) -> Exception:
+    if reason == "missing":
+        return PublishingInternalError(f"{label} is missing")
+    return PublishingInternalError(f"{label} is invalid")
+
+
 def _timestamp(value: Any, label: str = "timestamp") -> str:
-    if isinstance(value, datetime):
-        parsed = value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
-        return parsed.isoformat()
-    if isinstance(value, str) and value.strip():
-        try:
-            parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise PublishingInternalError(f"{label} is invalid") from exc
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
-        return parsed.isoformat()
-    raise PublishingInternalError(f"{label} is missing")
+    return foundation.coerce_utc(value, label, error=_timestamp_error, allow_naive=True).isoformat()
+
+
+def _request_timestamp_error(field: str, reason: str) -> Exception:
+    if reason == "naive":
+        return PublishingInvalidRequest(f"{field} must include a timezone", field=field)
+    return PublishingInvalidRequest(f"{field} must be an ISO timestamp", field=field)
 
 
 def _request_timestamp(value: Any, field: str) -> tuple[datetime, str]:
     if not isinstance(value, str) or not value.strip():
         raise PublishingInvalidRequest(f"{field} must be an ISO timestamp", field=field)
-    try:
-        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
-    except ValueError as exc:
-        raise PublishingInvalidRequest(f"{field} must be an ISO timestamp", field=field) from exc
-    if parsed.tzinfo is None:
-        raise PublishingInvalidRequest(f"{field} must include a timezone", field=field)
+    parsed = foundation.coerce_utc(value, field, error=_request_timestamp_error, allow_naive=False)
     return parsed, parsed.isoformat()
 
 

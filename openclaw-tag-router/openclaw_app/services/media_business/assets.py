@@ -11,13 +11,14 @@ import re
 import tempfile
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from threading import BoundedSemaphore, Lock
 from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import urlsplit
 
+from . import foundation
 from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
 
 
@@ -893,19 +894,14 @@ def _evidence_ref(value: Any) -> dict[str, Any]:
     }
 
 
+def _timestamp_error(label: str, reason: str) -> Exception:
+    if reason == "naive":
+        return AssetInternalError("asset timestamp must be timezone-aware")
+    return AssetInternalError("asset timestamp is invalid")
+
+
 def _timestamp_value(value: Any) -> datetime:
-    if isinstance(value, datetime):
-        parsed = value
-    elif isinstance(value, str):
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise AssetInternalError("asset timestamp is invalid") from exc
-    else:
-        raise AssetInternalError("asset timestamp is invalid")
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise AssetInternalError("asset timestamp must be timezone-aware")
-    return parsed.astimezone(timezone.utc)
+    return foundation.coerce_utc(value, "asset timestamp", error=_timestamp_error, allow_naive=False)
 
 
 def _timestamp_text(value: Any) -> str:

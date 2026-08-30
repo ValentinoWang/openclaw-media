@@ -10,7 +10,7 @@ import secrets
 from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
@@ -197,24 +197,13 @@ def _nullable_text(data: Mapping[str, Any], key: str, label: str) -> str | None:
 
 
 def _timestamp_value(value: Any, label: str, *, request: bool = False) -> datetime:
-    if isinstance(value, datetime):
-        parsed = value
-    elif isinstance(value, str) and value.strip():
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            if request:
-                raise RunsInvalidRequest(f"{label} is invalid", field=label) from exc
-            raise RunsInternalError(f"{label} is invalid") from exc
-    else:
+    def _error(lbl: str, reason: str) -> Exception:
+        message = f"{lbl} must include a timezone" if reason == "naive" else f"{lbl} is invalid"
         if request:
-            raise RunsInvalidRequest(f"{label} is invalid", field=label)
-        raise RunsInternalError(f"{label} is invalid")
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        if request:
-            raise RunsInvalidRequest(f"{label} must include a timezone", field=label)
-        raise RunsInternalError(f"{label} must include a timezone")
-    return parsed.astimezone(timezone.utc)
+            return RunsInvalidRequest(message, field=lbl)
+        return RunsInternalError(message)
+
+    return foundation.coerce_utc(value, label, error=_error, allow_naive=False)
 
 
 def _timestamp_text(value: Any, label: str = "timestamp") -> str:

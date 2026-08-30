@@ -114,31 +114,26 @@ def _json_object(value: Any, label: str) -> dict[str, Any]:
     return dict(value)
 
 
+def _timestamp_error(label: str, reason: str) -> Exception:
+    if reason == "missing":
+        return DecisionsInternalError(f"{label} is missing")
+    return DecisionsInternalError(f"{label} is invalid")
+
+
 def _timestamp(value: Any, label: str = "timestamp") -> str:
-    if isinstance(value, datetime):
-        current = value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
-        return current.isoformat()
-    if isinstance(value, str) and value.strip():
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise DecisionsInternalError(f"{label} is invalid") from exc
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
-        return parsed.isoformat()
-    raise DecisionsInternalError(f"{label} is missing")
+    return foundation.coerce_utc(value, label, error=_timestamp_error, allow_naive=True).isoformat()
+
+
+def _parse_timestamp_error(field: str, reason: str) -> Exception:
+    if reason == "naive":
+        return DecisionsInvalidRequest(f"{field} must include a timezone")
+    return DecisionsInvalidRequest(f"{field} is invalid")
 
 
 def _parse_timestamp(value: Any, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise DecisionsInvalidRequest(f"{field} is invalid")
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError as exc:
-        raise DecisionsInvalidRequest(f"{field} is invalid") from exc
-    if parsed.tzinfo is None:
-        raise DecisionsInvalidRequest(f"{field} must include a timezone")
-    return parsed.isoformat()
+    return foundation.coerce_utc(value, field, error=_parse_timestamp_error, allow_naive=False).isoformat()
 
 
 def _public_id(value: Any, field: str) -> str:

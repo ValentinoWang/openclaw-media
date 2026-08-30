@@ -9,6 +9,7 @@ import hmac
 import json
 import re
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Mapping
 
@@ -604,3 +605,83 @@ def preserve_protected_blocks(
     if changed:
         raise ProtectedDocumentBlock(changed)
     return proposed
+
+
+# --- UTC timestamp coercion (TF-04, step 1 of 2) ----------------------------
+#
+# runs.py, assets.py, tracks.py, invites.py, usage_billing.py, decisions.py,
+# reviews.py, publishing.py, and overview.py each independently re-implement
+# the same core steps: accept either a datetime or an ISO-8601 string
+# (treating a trailing "Z" as "+00:00"), reject anything else, and either
+# require a timezone or (for the "lenient" callers) silently assume UTC on a
+# naive value, before normalizing the result to UTC. coerce_utc is that core,
+# extracted from runs.py's former _timestamp_value.
+#
+# Every call site keeps its own _timestamp_value / _timestamp /
+# _require_timestamp shell -- same function name, same signature, same
+# exception type(s), same message text, same allow-naive policy -- and only
+# its body now delegates here through an `error(label, reason)` factory it
+# supplies. `reason` is one of:
+#   "missing" -- value is None, an empty/whitespace-only string, or not a
+#                str/datetime at all
+#   "invalid" -- a non-empty string that fails datetime.fromisoformat
+#   "naive"   -- parsed successfully but carries no tzinfo/utcoffset and
+#                allow_naive is False
+# Some callers use one message for every reason (runs.py, assets.py,
+# tracks.py, invites.py, usage_billing.py all use one text for
+# "missing"/"invalid" and a second, distinct text for "naive"); others
+# (decisions.py's and reviews.py's lenient _timestamp) use a third, distinct
+# "missing" message. Preserving each module's own reason-to-message mapping
+# -- not merging them into one shared message -- is the point of this pass;
+# only the parsing/validation mechanics are shared. allow_none exists for
+# callers that treat a bare ``None`` as a valid "not set" value rather than
+# an error.
+#
+# This is step 1 of 2 (TF-04 audit). Output-format unification (the "Z"
+# suffix some callers produce vs the "+00:00" offset datetime.isoformat()
+# naturally produces -- several of these strings are compared byte-for-byte
+# as pagination cursors or revision digests) is explicitly out of scope for
+# this pass and is deliberately not attempted here.
+
+
+def coerce_utc(
+    value: Any,
+    label: str,
+    *,
+    error: Callable[[str, str], Exception],
+    allow_naive: bool = False,
+    allow_none: bool = False,
+) -> datetime | None:
+    """Parse ``value`` into a UTC-normalized ``datetime``, or raise ``error(label, reason)``."""
+    if allow_none and value is None:
+        return None
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str) and value.strip():
+        try:
+            parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise error(label, "invalid") from exc
+    else:
+        raise error(label, "missing")
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        if allow_naive:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        else:
+            raise error(label, "naive")
+    return parsed.astimezone(timezone.utc)
+
+
+def utc_z_text(
+    value: Any,
+    label: str,
+    *,
+    error: Callable[[str, str], Exception],
+    allow_naive: bool = False,
+    allow_none: bool = False,
+) -> str | None:
+    """``coerce_utc`` plus the "Z"-suffixed text form some callers store/return."""
+    parsed = coerce_utc(value, label, error=error, allow_naive=allow_naive, allow_none=allow_none)
+    if parsed is None:
+        return None
+    return parsed.isoformat().replace("+00:00", "Z")

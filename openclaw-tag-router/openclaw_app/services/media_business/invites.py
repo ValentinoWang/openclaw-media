@@ -17,6 +17,7 @@ from uuid import UUID
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from . import foundation
 from .foundation import MediaBusinessError, TenantContext, public_projection, require_context
 
 
@@ -417,19 +418,14 @@ def _public_user_id(user_id: UUID, secret: bytes) -> str:
     return f"user_{digest}"
 
 
+def _require_timestamp_error(label: str, reason: str) -> Exception:
+    if reason == "naive":
+        return InvitesInternalError("stored invite timestamp must be timezone-aware")
+    return InvitesInternalError("stored invite timestamp is invalid")
+
+
 def _require_timestamp(value: Any) -> datetime:
-    if isinstance(value, datetime):
-        parsed = value
-    elif isinstance(value, str):
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise InvitesInternalError("stored invite timestamp is invalid") from exc
-    else:
-        raise InvitesInternalError("stored invite timestamp is invalid")
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise InvitesInternalError("stored invite timestamp must be timezone-aware")
-    return parsed.astimezone(timezone.utc)
+    return foundation.coerce_utc(value, "stored invite timestamp", error=_require_timestamp_error, allow_naive=False)
 
 
 def _timestamp_text(value: Any, *, allow_none: bool = False) -> str | None:

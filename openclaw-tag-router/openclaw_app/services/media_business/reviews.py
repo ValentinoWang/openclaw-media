@@ -94,31 +94,26 @@ class _CursorPosition:
     public_id: str
 
 
+def _timestamp_error(label: str, reason: str) -> Exception:
+    if reason == "missing":
+        return ReviewsInternalError("stored timestamp is missing")
+    return ReviewsInternalError("stored timestamp is invalid")
+
+
 def _timestamp(value: Any) -> str:
-    if isinstance(value, datetime):
-        current = value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
-        return current.isoformat()
-    if isinstance(value, str) and value.strip():
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise ReviewsInternalError("stored timestamp is invalid") from exc
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
-        return parsed.isoformat()
-    raise ReviewsInternalError("stored timestamp is missing")
+    return foundation.coerce_utc(value, "stored timestamp", error=_timestamp_error, allow_naive=True).isoformat()
+
+
+def _parse_timestamp_error(field: str, reason: str) -> Exception:
+    if reason == "naive":
+        return ReviewsInvalidRequest(f"{field} must include a timezone")
+    return ReviewsInvalidRequest(f"{field} must be an ISO timestamp")
 
 
 def _parse_timestamp(value: Any, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ReviewsInvalidRequest(f"{field} must be an ISO timestamp")
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError as exc:
-        raise ReviewsInvalidRequest(f"{field} must be an ISO timestamp") from exc
-    if parsed.tzinfo is None:
-        raise ReviewsInvalidRequest(f"{field} must include a timezone")
-    return parsed.isoformat()
+    return foundation.coerce_utc(value, field, error=_parse_timestamp_error, allow_naive=False).isoformat()
 
 
 def _json_object(value: Any, label: str) -> dict[str, Any]:
