@@ -157,7 +157,7 @@ async function startOrganizationAuth() {
   const context = qrCanvas?.getContext('2d')
   context?.clearRect(0, 0, qrCanvas.width, qrCanvas.height)
   try {
-    const response = await postJson('/openclaw/auth/feishu/start', {})
+    const response = await postJson('/openclaw/media/auth/feishu/start', {})
     const payload = await response.json().catch(() => null)
     const started = response.ok ? parseLoginStart(payload) : null
     if (!started) throw new Error('组织授权暂时不可用。')
