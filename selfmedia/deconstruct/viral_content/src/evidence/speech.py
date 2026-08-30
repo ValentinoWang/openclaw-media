@@ -1,23 +1,16 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 from pathlib import Path
 from typing import Any
 
+from common.file_hash import sha256_file
+
 from .schemas import SpeechEvidence
 
 
 SPEECH_CACHE_FILENAME = "speech_evidence.json"
-
-
-def sha256_file(path: str | Path) -> str:
-    hasher = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            hasher.update(chunk)
-    return hasher.hexdigest()
 
 
 def _read_text(path: str | Path | None) -> str:
