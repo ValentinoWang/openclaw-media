@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import os
 
 from .bot_llm_config import (
     normalize_openclaw_model,
@@ -10,6 +9,7 @@ from .bot_llm_config import (
     profile_runtime,
     provider_runtime,
 )
+from .env import env_bool, env_float, env_int  # noqa: F401 -- re-exported; see common/env.py for the canonical impl
 
 
 API_TYPE_CHAT_COMPLETIONS = "openai_chat_completions"
@@ -55,18 +55,6 @@ def normalize_thinking(value: str, *, default: str = "high") -> str:
     if not thinking:
         return default
     return thinking
-
-
-def env_bool(name: str, default: str = "0") -> bool:
-    return os.getenv(name, default).strip().lower() in {"1", "true", "yes", "on"}
-
-
-def env_float(name: str, default: str) -> float:
-    return float(os.getenv(name, default))
-
-
-def env_int(name: str, default: str) -> int:
-    return int(float(os.getenv(name, default)))
 
 
 def load_profile_llm_settings(profile_name: str) -> LLMProviderSettings:

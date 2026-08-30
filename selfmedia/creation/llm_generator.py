@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from common.env import env_int
 from common.llm_client import DEFAULT_JSON_RETRY_TEXT, generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import load_profile_llm_settings
@@ -148,7 +149,7 @@ def generate_creation_draft(
             "candidate_ids": candidate_ids,
             "comment_evidence_by_viral": comment_evidence_by_viral,
         },
-        max_retries=_env_int("SELFMEDIA_CREATION_LLM_RETRIES", 2),
+        max_retries=env_int("SELFMEDIA_CREATION_LLM_RETRIES", 2),
         retry_text=(
             "上一次输出没有通过代码校验。\n错误：{error}\n"
             "请重新输出完整 JSON object，只修正格式和约束，不要解释。"
@@ -1234,8 +1235,3 @@ def _as_dict(value: Any, *, default_key: str) -> dict[str, Any]:
     return {default_key: text} if text else {}
 
 
-def _env_int(name: str, default: int) -> int:
-    try:
-        return int(os.getenv(name, str(default)))
-    except ValueError:
-        return default
