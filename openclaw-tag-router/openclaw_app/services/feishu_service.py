@@ -17,7 +17,7 @@ from typing import Any, Callable, Iterator
 import requests
 
 from common.feishu_urls import feishu_doc_url, parse_feishu_document_ref
-from common.social_runtime import fetch_tenant_access_token
+from common.social_runtime import _iter_bitable_records, fetch_tenant_access_token
 from common.feishu_wiki_docs import (
     find_wiki_child_doc as _shared_find_wiki_child_doc,
     iter_wiki_children as _shared_iter_wiki_children,
@@ -571,36 +571,18 @@ class FeishuService:
         filter_formula: str = "",
         automatic_fields: bool = False,
     ) -> list[dict[str, Any]]:
-        records: list[dict[str, Any]] = []
-        page_token = ""
-        seen_tokens: set[str] = set()
-        while True:
-            params: dict[str, Any] = {"page_size": max(1, min(page_size, 500))}
-            if automatic_fields:
-                params["automatic_fields"] = "true"
-            if filter_formula:
-                params["filter"] = filter_formula
-            if page_token:
-                params["page_token"] = page_token
-            payload = self._request(
-                "GET",
-                f"/bitable/v1/apps/{app_token}/tables/{table_id}/records",
-                params=params,
-            )
-            data = payload.get("data") if isinstance(payload, dict) else {}
-            if not isinstance(data, dict):
-                raise RuntimeError("Feishu Bitable record list returned invalid data")
-            items = data.get("items") or []
-            if not isinstance(items, list):
-                raise RuntimeError("Feishu Bitable record list returned invalid items")
-            records.extend(item for item in items if isinstance(item, dict))
-            if not data.get("has_more"):
-                return records
-            next_token = str(data.get("page_token") or "").strip()
-            if not next_token or next_token in seen_tokens:
-                raise RuntimeError("Feishu Bitable record pagination did not advance")
-            seen_tokens.add(next_token)
-            page_token = next_token
+        # FC-03: delegates to common.social_runtime._iter_bitable_records,
+        # the shared pagination core. Method kept as-is (protocol contract:
+        # media_business/lark_sync.py's Protocol + hasattr duck-typing +
+        # test fakes all depend on this exact signature).
+        return _iter_bitable_records(
+            self._request,
+            app_token,
+            table_id,
+            page_size=page_size,
+            filter_formula=filter_formula,
+            automatic_fields=automatic_fields,
+        )
 
     def create_docx_with_blocks(self, doc_name: str, children: list[dict[str, Any]]) -> dict[str, str]:
         self._require_credentials()

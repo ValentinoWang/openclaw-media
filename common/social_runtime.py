@@ -513,7 +513,10 @@ def resolve_wiki_bitable(wiki_token: str, token: str) -> str:
     node = payload.get("data", {}).get("node", {})
     if node.get("obj_type") != "bitable":
         raise RuntimeError(f"wiki 节点不是多维表格：{node.get('obj_type')}")
-    return node["obj_token"]
+    obj_token = node.get("obj_token")
+    if not obj_token:
+        raise RuntimeError(f"wiki 节点缺少 obj_token：{node}")
+    return obj_token
 
 
 def parse_feishu_bitable_url(url: str, token: str) -> tuple[str, str]:
@@ -697,6 +700,64 @@ def _feishu_select_options_from_raw_value(value: Any) -> list[str]:
     return result
 
 
+def _iter_bitable_records(
+    request: Callable[..., dict[str, Any]],
+    app_token: str,
+    table_id: str,
+    *,
+    page_size: int = 500,
+    view_id: str = "",
+    filter_formula: str = "",
+    automatic_fields: bool = False,
+) -> list[dict[str, Any]]:
+    """Shared pagination core for a Feishu bitable's ``/records`` list endpoint.
+
+    ``request(method, path, *, params=None) -> dict`` is an injected
+    transport that owns auth/headers and turns a non-2xx status or a
+    Feishu ``code != 0`` payload into a raised exception -- this function
+    only ever calls it with ``"GET"``.
+
+    Consolidated from FC-03's five near-duplicate pagination loops: uses
+    the strictest of the group's loop-termination guards (a ``seen_tokens``
+    cycle check, raising if the next ``page_token`` doesn't advance) plus a
+    ``data``/``items`` shape check, rather than the weaker "silently break
+    on an empty page_token" some copies used -- an under-read now fails
+    loudly instead of returning a truncated record list.
+    """
+    records: list[dict[str, Any]] = []
+    page_token = ""
+    seen_tokens: set[str] = set()
+    while True:
+        params: dict[str, Any] = {"page_size": max(1, min(page_size, 500))}
+        if view_id:
+            params["view_id"] = view_id
+        if automatic_fields:
+            params["automatic_fields"] = "true"
+        if filter_formula:
+            params["filter"] = filter_formula
+        if page_token:
+            params["page_token"] = page_token
+        payload = request(
+            "GET",
+            f"/bitable/v1/apps/{app_token}/tables/{table_id}/records",
+            params=params,
+        )
+        data = payload.get("data") if isinstance(payload, dict) else {}
+        if not isinstance(data, dict):
+            raise RuntimeError("Feishu Bitable record list returned invalid data")
+        items = data.get("items") or []
+        if not isinstance(items, list):
+            raise RuntimeError("Feishu Bitable record list returned invalid items")
+        records.extend(item for item in items if isinstance(item, dict))
+        if not data.get("has_more"):
+            return records
+        next_token = str(data.get("page_token") or "").strip()
+        if not next_token or next_token in seen_tokens:
+            raise RuntimeError("Feishu Bitable record pagination did not advance")
+        seen_tokens.add(next_token)
+        page_token = next_token
+
+
 def feishu_list_records(
     bitable_url: str,
     *,
@@ -709,34 +770,23 @@ def feishu_list_records(
     parsed = urlparse(bitable_url)
     query = parse_qs(parsed.query)
     view_id = view_id or (query.get("view") or [""])[0]
-    records: list[dict[str, Any]] = []
-    page_token = ""
-    while True:
-        params: dict[str, Any] = {"page_size": min(max(page_size, 1), 500)}
-        if view_id:
-            params["view_id"] = view_id
-        if filter_formula:
-            params["filter"] = filter_formula
-        if page_token:
-            params["page_token"] = page_token
-        resp = requests.get(
-            f"{FEISHU_BASE}/bitable/v1/apps/{app_token}/tables/{table_id}/records",
-            params=params,
-            headers=feishu_headers(token),
-            timeout=15,
-        )
+
+    def _request(method: str, path: str, *, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        resp = requests.get(f"{FEISHU_BASE}{path}", params=params, headers=feishu_headers(token), timeout=15)
         resp.raise_for_status()
         payload = resp.json()
         if payload.get("code") != 0:
             raise RuntimeError(f"读取飞书记录失败：{payload}")
-        data = payload.get("data", {})
-        records.extend(data.get("items") or [])
-        if not data.get("has_more"):
-            break
-        page_token = str(data.get("page_token") or "")
-        if not page_token:
-            break
-    return records
+        return payload
+
+    return _iter_bitable_records(
+        _request,
+        app_token,
+        table_id,
+        page_size=page_size,
+        view_id=view_id,
+        filter_formula=filter_formula,
+    )
 
 
 def feishu_update_record(
