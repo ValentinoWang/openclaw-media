@@ -12,7 +12,6 @@ import {
   LogIn,
   Plus,
   RefreshCw,
-  Search,
   Sparkles,
   Target,
   UserRound,
@@ -31,6 +30,7 @@ import { newIdempotencyKey } from "../../idempotency";
 import { PageHeading } from "../../ui/ordinaryPagePrimitives";
 import { ECHO_INVALID, formatDateTime } from "../../ui/datetime";
 import { Metric } from "../../ui/Metric";
+import { SearchBox } from "../../ui/SearchBox";
 import { classNames } from "../../ui/classNames";
 import {
   creatorRoleDisplayLabel,
@@ -1738,33 +1738,6 @@ function InspectorSection({
       <header>{icon}<h3>{title}</h3></header>
       <div className={styles.inspectorSectionBody}>{children}</div>
     </section>
-  );
-}
-
-function SearchBox({
-  label,
-  value,
-  onChange,
-  disabled = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <label className={styles.searchBox}>
-      <Search size={15} aria-hidden="true" />
-      <span className={styles.srOnly}>{label}</span>
-      <input
-        type="search"
-        value={value}
-        placeholder={label}
-        onChange={(event) => onChange(event.target.value)}
-        disabled={disabled}
-        maxLength={160}
-      />
-    </label>
   );
 }
 

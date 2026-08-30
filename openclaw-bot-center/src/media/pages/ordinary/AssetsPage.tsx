@@ -9,7 +9,6 @@ import {
   LogIn,
   Plus,
   RotateCcw,
-  Search,
   SearchX,
   Trash2,
   X,
@@ -36,6 +35,7 @@ import {
 } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { platformDisplayLabel } from "../../ui/platformRegistry";
+import { SearchBox } from "../../ui/SearchBox";
 import type { StructuredPrefill } from "../../task-launch/taskDraft";
 import styles from "./AssetsPage.module.css";
 
@@ -987,16 +987,12 @@ function FilterBar({
 }) {
   return (
     <div className={styles.filterBar}>
-      <label className={[styles.filterField, styles.searchField].join(" ")}>
-        <span className={styles.srOnly}>搜索素材</span>
-        <Search size={16} aria-hidden="true" />
-        <input
-          value={search}
-          onChange={(event) => onSearch(event.target.value)}
-          placeholder="搜索编号、标题或来源"
-          aria-label="搜索编号、标题或来源"
-        />
-      </label>
+      <SearchBox
+        className={[styles.filterField, styles.searchField].join(" ")}
+        value={search}
+        onChange={onSearch}
+        label="搜索编号、标题或来源"
+      />
       <FilterSelect
         label="平台"
         value={platformFilter}

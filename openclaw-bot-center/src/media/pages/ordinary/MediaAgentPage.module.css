@@ -300,33 +300,6 @@
   padding: 11px 12px 0;
 }
 
-.searchField {
-  display: flex;
-  height: 38px;
-  min-width: 0;
-  flex: 1;
-  gap: 7px;
-  padding: 0 10px;
-  border: 1px solid var(--mg-border-strong);
-  border-radius: var(--mg-r-sm);
-  color: var(--mg-muted);
-}
-
-.searchField:focus-within {
-  border-color: var(--mg-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mg-primary) 14%, transparent);
-}
-
-.searchField input {
-  min-width: 0;
-  flex: 1;
-  border: 0;
-  outline: 0;
-  color: var(--mg-ink);
-  background: transparent;
-  font-size: var(--mg-text-xs);
-}
-
 .filterField {
   min-width: 0;
   flex: 0 0 126px;

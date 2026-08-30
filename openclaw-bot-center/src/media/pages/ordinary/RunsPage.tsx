@@ -35,6 +35,7 @@ import { DISPLAY_LABELS } from "../../ui/displayLabels";
 import { artifactTypeDisplayLabel, authorizationScopeDisplayLabel as sharedAuthorizationScopeDisplayLabel, bodyAuthorityDisplayLabel, humanStateDisplayLabel, mediaTypeDisplayLabel, qualityDisplayLabel, syncStatusDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { getOrganizationDocumentUrl } from "../../ui/organizationDocumentUrl";
+import { SearchBox } from "../../ui/SearchBox";
 import styles from "./RunsPage.module.css";
 
 type StatusTone = ReturnType<typeof runStatusTone>;
@@ -324,9 +325,9 @@ export default function RunsPage() {
             </button>
           ) : undefined}
         />
-        <div className={styles.tabs} role="tablist" aria-label="创作与交付视图">
+        <div className="mg-tabs" role="tablist" aria-label="创作与交付视图">
           <button
-            className={`${styles.tab} ${activeView === "runs" ? styles.activeTab : ""}`}
+            className="mg-tab"
             type="button"
             role="tab"
             aria-selected={activeView === "runs"}
@@ -335,7 +336,7 @@ export default function RunsPage() {
             创作运行
           </button>
           <button
-            className={`${styles.tab} ${activeView === "opportunities" ? styles.activeTab : ""}`}
+            className="mg-tab"
             type="button"
             role="tab"
             aria-selected={activeView === "opportunities"}
@@ -344,7 +345,7 @@ export default function RunsPage() {
             商务机会
           </button>
           <button
-            className={`${styles.tab} ${activeView === "deliveries" ? styles.activeTab : ""}`}
+            className="mg-tab"
             type="button"
             role="tab"
             aria-selected={activeView === "deliveries"}
@@ -359,16 +360,13 @@ export default function RunsPage() {
           <StatusStripLoading />
         ) : null}
         <form className={styles.filterBar} onSubmit={submitSearch}>
-          <label className={styles.searchField}>
-            <Search size={16} aria-hidden="true" />
-            <span className="sr-only">搜索创作运行</span>
-            <input
-              value={query}
-              disabled={activeView !== "runs"}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={activeView === "runs" ? "搜索运行标题、入口、状态或公开编号" : activeView === "deliveries" ? "商单交付按任务时间展示" : "商务机会不支持搜索"}
-            />
-          </label>
+          <SearchBox
+            className={styles.searchField}
+            value={query}
+            onChange={setQuery}
+            disabled={activeView !== "runs"}
+            label={activeView === "runs" ? "搜索运行标题、入口、状态或公开编号" : activeView === "deliveries" ? "商单交付按任务时间展示" : "商务机会不支持搜索"}
+          />
           <DisabledFilter label="能力" />
           <DisabledFilter label="当前环节" />
           <DisabledFilter label="状态" />

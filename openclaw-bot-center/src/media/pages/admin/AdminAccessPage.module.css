@@ -307,20 +307,10 @@
 }
 
 .searchField {
-  position: relative;
   min-width: 0;
   flex: 1;
 }
 
-.searchField > svg {
-  position: absolute;
-  top: 50%;
-  left: 11px;
-  color: var(--mg-muted);
-  transform: translateY(-50%);
-}
-
-.searchField input,
 .field input,
 .field select,
 .field textarea,
@@ -334,12 +324,6 @@
   outline: 0;
 }
 
-.searchField input {
-  height: 38px;
-  padding: 0 10px 0 34px;
-}
-
-.searchField input:focus,
 .field input:focus,
 .field select:focus,
 .field textarea:focus,

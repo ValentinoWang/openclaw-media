@@ -25,6 +25,7 @@ import { describeBusinessError } from '../../ui/businessOperationError'
 import { PlatformIdentity } from '../../ui/PlatformIdentity'
 import { platformDisplayLabel } from '../../ui/platformRegistry'
 import { Metric } from '../../ui/Metric'
+import { SearchBox } from '../../ui/SearchBox'
 import { isPublicId } from '../../identifiers'
 import { formatDateTime, formatDateTimeMinutes } from '../../ui/datetime'
 import styles from './AdminAccessPage.module.css'
@@ -405,11 +406,7 @@ function InvitationTab({
     <section className={styles.tablePanel} aria-labelledby="invitation-users-heading">
       <PanelHeader title="邀请权限" count={state.status === 'ready' ? items.length : null} id="invitation-users-heading" />
       <form className={styles.filterBar} onSubmit={(event) => { event.preventDefault(); onSearchSubmit() }}>
-        <label className={styles.searchField}>
-          <Search size={16} aria-hidden="true" />
-          <span className={styles.srOnly}>搜索用户名</span>
-          <input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="搜索用户名" aria-label="搜索用户名" />
-        </label>
+        <SearchBox className={styles.searchField} value={search} onChange={onSearchChange} label="搜索用户名" />
         <button className={styles.secondaryButton} type="submit"><Search size={14} aria-hidden="true" />搜索</button>
         {submittedSearch ? <button className={styles.quietButton} type="button" onClick={() => { onSearchChange(''); onSearchSubmit() }}><X size={14} aria-hidden="true" />清除搜索</button> : null}
       </form>

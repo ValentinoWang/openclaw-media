@@ -311,6 +311,75 @@
 }
 .mg-state-action:hover { border-color: var(--accent-base); }
 
+/* ---- 下划线 Tab 条（cluster FE-13，原 4 份 .tabs/.tab -> 1 份）----
+   度量取 RunsPage.module.css 版（下划线范式里最完整的一份：min-width:max-content 防压缩、
+   overflow-x:auto 可横滚、:hover:not(:disabled) 与 :focus-visible 都有）。选中态用
+   [aria-selected="true"] 属性选择器，不再需要页面各自拼接一个 active 修饰类。
+   UsageBillingPage 的带边框圆角"卡片式"tab 是另一种范式，不属于这组，未加入本原语。 */
+.mg-tabs {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  margin: -4px 0 14px;
+  border-bottom: 1px solid var(--mg-border);
+}
+.mg-tab {
+  min-width: max-content;
+  min-height: 43px;
+  padding: 0 3px;
+  margin-right: 22px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--mg-muted);
+  background: transparent;
+  font-size: var(--mg-text-sm);
+  font-weight: 650;
+  cursor: pointer;
+}
+.mg-tab:hover:not(:disabled) { color: var(--mg-ink); }
+.mg-tab:focus-visible {
+  outline: 3px solid oklch(0.7 0.1 166 / 0.55);
+  outline-offset: 1px;
+}
+.mg-tab:disabled { cursor: not-allowed; opacity: 0.42; }
+.mg-tab[aria-selected='true'] {
+  color: var(--mg-primary-dark);
+  border-bottom-color: var(--mg-primary);
+}
+
+/* ---- 搜索框（cluster FE-13，原 7 份 .searchField/.searchBox -> 1 份）----
+   结构取 TracksPage 版 SearchBox（唯一封装了 srOnly 标签、type="search"、maxLength
+   上限、disabled 的完整实现），由 ui/SearchBox.tsx 消费。聚焦环合并了 MediaAgentPage
+   版的 :focus-within 环与 AdminAccessPage 版 input:focus 环这两种此前各写一份的做法——
+   新结构下边框落在外层 label 上而不是 input 自身，:focus-within 是唯一还讲得通的选择器。 */
+.mg-search {
+  display: flex;
+  min-width: 0;
+  min-height: 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--mg-border-strong);
+  border-radius: var(--mg-r-sm);
+  color: var(--mg-muted);
+  background: var(--mg-bg);
+}
+.mg-search:focus-within {
+  border-color: var(--mg-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mg-primary) 14%, transparent);
+}
+.mg-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: var(--mg-ink);
+  background: transparent;
+  font: inherit;
+  font-size: var(--mg-text-xs);
+}
+.mg-search input::placeholder { color: var(--mg-muted); }
+
 /* ---- 内容流水线轨道 ---- */
 .mg-pipeline { display: flex; align-items: stretch; gap: 5px; }
 .mg-pipeline-step { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 6px; }

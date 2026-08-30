@@ -417,14 +417,14 @@ export default function AdminBillingPage() {
   return <main className={'fidelity-page ' + styles.page}>
     {heading}
     {missingCollections.length ? <div className={styles.partialNotice}><AlertCircle size={16} /><span>服务未返回：{missingCollections.join('、')}。页面已隐藏缺失集合，不使用其他业务数据替代。</span></div> : null}
-    <nav className={styles.tabs} aria-label="计费数据视图" role="tablist" data-page-prelude>
+    <nav className="mg-tabs" aria-label="计费数据视图" role="tablist" data-page-prelude>
       {billingTabs.map((tab) => <button
         type="button"
         key={tab.key}
         role="tab"
         aria-selected={view === tab.key}
         aria-controls={'billing-view-' + tab.key}
-        className={styles.tab + (view === tab.key ? ' ' + styles.tabActive : '')}
+        className="mg-tab"
         onClick={() => setView(tab.key)}
       >{tab.label}</button>)}
     </nav>
@@ -451,8 +451,8 @@ export default function AdminBillingPage() {
           <div className={styles.inspectorTitle}><Link2 size={18} /><div><h2 id="billing-inspector-title">{operationTitle(mode)}</h2><p>{operationDescription(mode)}</p></div></div>
           {action.state.message ? <span className={styles.actionMessage + (action.state.kind === 'error' ? ' ' + styles.actionError : action.state.kind === 'success' ? ' ' + styles.actionSuccess : '')} role="status">{action.state.message}</span> : null}
         </header>
-        <div className={styles.operationTabs} role="tablist" aria-label="计费写入操作">
-          {operationTabs.map((tab) => <button type="button" key={tab.key} role="tab" aria-selected={mode === tab.key} className={styles.operationTab + (mode === tab.key ? ' ' + styles.operationTabActive : '')} onClick={() => changeMode(tab.key)}>{tab.label}</button>)}
+        <div className={styles.operationTabs + ' mg-tabs'} role="tablist" aria-label="计费写入操作">
+          {operationTabs.map((tab) => <button type="button" key={tab.key} role="tab" aria-selected={mode === tab.key} className={styles.operationTab + ' mg-tab'} onClick={() => changeMode(tab.key)}>{tab.label}</button>)}
         </div>
         <form className={styles.form} onSubmit={(event) => void submit(event)}>
           <div className={styles.fields}>{renderOperationFields()}</div>

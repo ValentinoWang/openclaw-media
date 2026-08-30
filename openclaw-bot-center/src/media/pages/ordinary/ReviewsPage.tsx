@@ -417,11 +417,11 @@ export default function ReviewsPage() {
         <section className={styles.workspace} data-page-layout="persistent-rail">
           <div className={styles.primaryColumn} data-page-primary data-primary-flow>
             <SummaryBand state={data.summary} />
-            <nav className={styles.tabs} aria-label="复盘增长视图" role="tablist">
+            <nav className="mg-tabs" aria-label="复盘增长视图" role="tablist">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  className={[styles.tab, activeTab === tab.id ? styles.activeTab : ""].join(" ")}
+                  className="mg-tab"
                   type="button"
                   role="tab"
                   aria-selected={activeTab === tab.id}

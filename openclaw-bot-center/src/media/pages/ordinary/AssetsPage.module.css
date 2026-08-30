@@ -263,22 +263,24 @@
   opacity: 1;
 }
 
+/* .filterField (above) is shared with this page's other (select-based) filters and still
+   supplies a grid layout + bordered/backgrounded `input, select` rule -- both would otherwise
+   leak onto .mg-search's own flex-row input. `display: flex` here reasserts over
+   `.filterField`'s `display: grid` (same-file source order settles the tie, so this doesn't
+   depend on load order against the global mediaPrimitives.css); the `input` override below
+   cancels the border/background/padding `.filterField input` would otherwise add on top of
+   `.mg-search`'s own. `padding-top` keeps this field's baseline aligned with siblings that
+   have a real (non-sr-only) caption line above their control. */
 .searchField {
-  position: relative;
   display: flex;
   align-items: center;
   padding-top: 18px;
 }
 
-.searchField > svg {
-  position: absolute;
-  left: 10px;
-  color: var(--mg-muted);
-  pointer-events: none;
-}
-
 .searchField input {
-  padding-left: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .resetButton {

@@ -17,33 +17,6 @@
   min-height: 38px;
   padding: 0 14px;
 }
-.tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--mg-border);
-  overflow-x: auto;
-}
-.tab {
-  min-width: max-content;
-  min-height: 42px;
-  padding: 0 14px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  color: var(--mg-muted);
-  background: transparent;
-  font-size: var(--mg-text-sm);
-  font-weight: 650;
-  cursor: pointer;
-}
-.tab:hover {
-  color: var(--mg-ink);
-  background: var(--mg-primary-soft);
-}
-.tabActive {
-  color: var(--mg-primary-dark);
-  border-bottom-color: var(--mg-primary);
-}
 .filterBar {
   display: grid;
   grid-template-columns:
@@ -55,27 +28,6 @@
   border: 1px solid var(--mg-border);
   border-radius: var(--mg-radius);
   background: var(--mg-surface);
-}
-.searchField {
-  display: flex;
-  min-width: 0;
-  height: 38px;
-  align-items: center;
-  gap: 7px;
-  padding: 0 10px;
-  border: 1px solid var(--mg-border-strong);
-  border-radius: var(--mg-r-sm);
-  color: var(--mg-muted);
-  background: var(--mg-surface);
-}
-.searchField input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  color: var(--mg-ink);
-  background: transparent;
-  font-size: var(--mg-text-sm);
 }
 .filterSelect {
   position: relative;

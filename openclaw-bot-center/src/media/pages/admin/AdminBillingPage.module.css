@@ -146,40 +146,6 @@
   color: var(--mg-warning);
 }
 
-.tabs {
-  display: flex;
-  gap: 26px;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--mg-border);
-  scrollbar-width: thin;
-  margin-bottom: 14px;
-}
-
-.tab,
-.operationTab {
-  flex: 0 0 auto;
-  min-height: 44px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  padding: 0 2px;
-  color: var(--mg-muted);
-  background: transparent;
-  font-size: var(--mg-text-sm);
-  cursor: pointer;
-}
-
-.tab:hover,
-.operationTab:hover {
-  color: var(--mg-primary-dark);
-}
-
-.tabActive,
-.operationTabActive {
-  border-bottom-color: var(--mg-primary-dark);
-  color: var(--mg-primary-dark);
-  font-weight: 750;
-}
-
 .bodyGrid {
   display: grid;
   width: 100%;
@@ -576,12 +542,13 @@
   color: var(--mg-danger);
 }
 
+/* Nested "计费写入操作" tab set: shares .mg-tabs/.mg-tab's base rule but stays visually
+   smaller/tighter than the page-level nav tabs above -- a deliberate compact variant, not
+   copy-drift, so these two overrides on top of the shared class stay page-local. */
 .operationTabs {
-  display: flex;
   gap: 16px;
-  overflow-x: auto;
+  margin: 0;
   padding: 0 17px;
-  border-bottom: 1px solid var(--mg-border);
 }
 
 .operationTab {
@@ -649,8 +616,6 @@
 .submitButton:focus-visible,
 .retryButton:focus-visible,
 .linkButton:focus-visible,
-.tab:focus-visible,
-.operationTab:focus-visible,
 .rowSelect:focus-visible {
   outline: 3px solid oklch(0.7 0.1 166 / 0.55);
   outline-offset: 1px;
@@ -965,10 +930,6 @@
 
   .metric strong {
     font-size: var(--mg-text-xl);
-  }
-
-  .tabs {
-    gap: 19px;
   }
 
   .panelHeader,

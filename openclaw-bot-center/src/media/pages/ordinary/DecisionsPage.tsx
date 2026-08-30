@@ -27,6 +27,7 @@ import {
 import { newIdempotencyKey } from "../../idempotency";
 import { qualityDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
+import { SearchBox } from "../../ui/SearchBox";
 import { decisionStatusTone } from "../../statusPresentation";
 import styles from "./DecisionsPage.module.css";
 
@@ -331,11 +332,11 @@ export default function DecisionsPage() {
             刷新数据
           </button></div>
         </header>
-        <nav className={styles.tabs} role="tablist" aria-label="选题与决策视图">
+        <nav className="mg-tabs" role="tablist" aria-label="选题与决策视图">
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ""}`}
+              className="mg-tab"
               type="button"
               role="tab"
               aria-selected={activeTab === tab.key}
@@ -346,15 +347,12 @@ export default function DecisionsPage() {
           ))}
         </nav>
         <form className={styles.filterBar} onSubmit={submitSearch}>
-          <label className={styles.searchField}>
-            <Search size={16} aria-hidden="true" />
-            <span className="sr-only">搜索候选选题</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索候选标题、平台或赛道"
-            />
-          </label>
+          <SearchBox
+            className={styles.searchField}
+            value={query}
+            onChange={setQuery}
+            label="搜索候选标题、平台或赛道"
+          />
           <button className={styles.resetButton} type="button" onClick={resetSearch}>
             重置
           </button>

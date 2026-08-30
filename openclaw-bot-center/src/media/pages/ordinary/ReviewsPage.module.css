@@ -155,34 +155,23 @@
   line-height: 1.2;
 }
 
-.tabs {
-  display: flex;
-  gap: 0.1rem;
-  min-width: 0;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--reviews-line);
-}
-
-.tab {
-  min-height: 2.6rem;
-  padding: 0.55rem 0.85rem;
-  border: 0;
-  border-bottom: 3px solid transparent;
-  color: var(--reviews-muted);
-  background: transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  font-size: var(--mg-text-md);
-  font-weight: 760;
-}
-
-.tab:hover {
+/* Base sizing/weight/units converge onto the shared .mg-tabs/.mg-tab (mediaPrimitives.css,
+   RunsPage-based spec: 2px underline, weight 650, px units) -- FE-13 approved normalization.
+   The teal accent stays local: it's this page's own highlight color (--reviews-teal, shared
+   with .primaryButton and every other "active" treatment on this page), not part of that
+   approved normalization, so it's kept here as a small override on the shared class. */
+.page :global(.mg-tab:hover:not(:disabled)) {
   color: var(--reviews-teal);
 }
 
-.activeTab {
+.page :global(.mg-tab[aria-selected='true']) {
   color: var(--reviews-teal);
   border-bottom-color: var(--reviews-teal);
+}
+
+.page :global(.mg-tab:focus-visible) {
+  outline: 2px solid var(--mg-accent-agent-base);
+  outline-offset: 2px;
 }
 
 .tabContent {
@@ -735,7 +724,6 @@
 .iconButton:focus-visible,
 .rowLink:focus-visible,
 .documentLink:focus-visible,
-.tab:focus-visible,
 .loginLink:focus-visible {
   outline: 2px solid var(--mg-accent-agent-base);
   outline-offset: 2px;
@@ -847,10 +835,6 @@
   .layersHeader > button,
   .cursorFooter > button {
     align-self: flex-start;
-  }
-
-  .tab {
-    padding-inline: 0.7rem;
   }
 
   .dialogBackdrop {

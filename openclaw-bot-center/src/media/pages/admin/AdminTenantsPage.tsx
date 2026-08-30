@@ -22,6 +22,7 @@ import { isForbiddenError } from '../../businessErrorPresentation'
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { runStatusLabel, runStatusTone } from '../../statusPresentation'
 import { Metric } from '../../ui/Metric'
+import { SearchBox } from '../../ui/SearchBox'
 import { describeBusinessError } from '../../ui/businessOperationError'
 import type { LoadState } from '../../ui/loadState'
 import { formatDateTime } from '../../ui/datetime'
@@ -169,19 +170,7 @@ export default function AdminTenantsPage() {
     {canRead ? <div className={styles.surface}>
       <section className={'section-panel ' + styles.scopePanel} aria-label="租户目录查询">
         <form className={styles.scopeForm} onSubmit={submitSearch}>
-          <label className={styles.searchField}>
-            <span>租户目录搜索</span>
-            <span className={styles.inputShell}>
-              <Search size={17} aria-hidden="true" />
-              <input
-                value={directorySearch}
-                onChange={(event) => setDirectorySearch(event.target.value)}
-                placeholder="按状态或账号检索"
-                aria-label="租户目录搜索"
-                maxLength={200}
-              />
-            </span>
-          </label>
+          <SearchBox value={directorySearch} onChange={setDirectorySearch} label="按状态或账号检索" maxLength={200} />
           <button className={styles.primaryAction} type="submit" disabled={directoryState.status === 'loading'}>
             <Search size={15} aria-hidden="true" />
             查询目录

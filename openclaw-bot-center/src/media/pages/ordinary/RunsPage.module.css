@@ -58,33 +58,6 @@
   opacity: 0.55;
 }
 
-.tabs {
-  display: flex;
-  gap: 3px;
-  overflow-x: auto;
-  margin: -4px 0 14px;
-  border-bottom: 1px solid var(--mg-border);
-}
-
-.tab {
-  min-width: max-content;
-  min-height: 43px;
-  padding: 0 3px;
-  margin-right: 22px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  color: var(--mg-muted);
-  background: transparent;
-  font-size: var(--mg-text-sm);
-  font-weight: 650;
-  cursor: pointer;
-}
-
-.tab:hover:not(:disabled) {
-  color: var(--mg-ink);
-}
-
-.tab:focus-visible,
 .submitButton:focus-visible,
 .clearButton:focus-visible,
 .retryButton:focus-visible,
@@ -95,16 +68,6 @@
 .detailLink:focus-visible {
   outline: 3px solid oklch(0.7 0.1 166 / 0.55);
   outline-offset: 1px;
-}
-
-.tab:disabled {
-  cursor: not-allowed;
-  opacity: 0.42;
-}
-
-.activeTab {
-  color: var(--mg-primary-dark);
-  border-bottom-color: var(--mg-primary);
 }
 
 .statusStrip {
@@ -200,35 +163,6 @@
   border: 1px solid var(--mg-border);
   border-radius: var(--mg-r-sm);
   background: var(--mg-surface);
-}
-
-.searchField {
-  position: relative;
-  min-width: 0;
-}
-
-.searchField > svg {
-  position: absolute;
-  top: 50%;
-  left: 12px;
-  color: var(--mg-muted);
-  transform: translateY(-50%);
-}
-
-.searchField input {
-  width: 100%;
-  height: 38px;
-  padding: 0 12px 0 37px;
-  border: 1px solid var(--mg-border-strong);
-  border-radius: var(--mg-r-sm);
-  color: var(--mg-ink);
-  background: var(--mg-surface);
-  font-size: var(--mg-text-sm);
-}
-
-.searchField input::placeholder {
-  color: var(--mg-muted);
-  opacity: 1;
 }
 
 .filterSelect {
@@ -1309,14 +1243,6 @@
 }
 
 @media (max-width: 700px) {
-  .tabs {
-    margin-bottom: 11px;
-  }
-
-  .tab {
-    margin-right: 12px;
-  }
-
   .statusStrip {
     grid-template-columns: 1fr;
   }
