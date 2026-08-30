@@ -313,6 +313,7 @@
   .lchip.l2{background:var(--peach); color:var(--peach-ink);}
   .lchip.l3{background:var(--blue); color:var(--blue-ink);}
   .lchip.l4{background:color-mix(in srgb,var(--ink) 8%,transparent); color:var(--muted);}
+  .lchip.sys{background:var(--yellow); color:var(--yellow-ink);}
   .dref{font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--muted); white-space:nowrap;}
   .ready{padding:3px 9px; border-radius:999px; font-size:10.5px; font-weight:800; text-align:center; white-space:nowrap;}
   .ready.done{background:var(--mint-soft); color:var(--mint-deep);}
@@ -378,6 +379,7 @@
       <p><b>线上站我没能直接打开。</b>这个会话的网络策略把 <code>106.52.146.37</code> 挡在允许列表之外，返回 <code>403 Host not in allowlist</code>。所以我换了等价的做法：直接跑仓库源码——<code>openclaw-bot-center</code> 的 media 构建入口，本地 Vite 起服务，用 Chromium 按 1440×900 实拍，并对关键尺寸做了程序化测量。页面产物和线上是同一套源码，视觉结论可以直接用；只有真实业务数据填充后的密度需要你们再校一眼。</p>
       <p>覆盖到的：登录页三个状态（选身份 / 个人密码 / 组织扫码）、注册、验证、找回、重置，以及登录后的个人云端工作区、组织工作区、账号与赛道、平台总览、用户与准入、计费运营。</p>
       <p>参考侧读的是 <code>mediaclaw-web/src/styles.css</code> 全量 270 行，提炼出下面第 3 节那套手法。</p>
+      <p><b>一处勘误：</b>初稿曾把示意图来源标成 <code>MediaApp.tsx</code>；真正挂载的入口是 <code>main.tsx → MediaStudioApp.tsx</code>，<code>MediaApp.tsx</code> 是未被引用的旧壳层。本文的截图和量数用的都是 <code>index.media.html</code> 实际加载的产物，即 <code>MediaStudioApp</code>，结论不受影响——但两个文件都复制了同一处路由判断缺陷，见第 9 节 DS-23/24。</p>
     </div>
   </section>
 
@@ -408,7 +410,7 @@
       </div>
       <div class="finding">
         <div class="f-top"><span class="did">D5</span><span class="sev p1">P1</span><h4>标题字阶从头到尾是 28px</h4></div>
-        <p>登录页 h1、工作台页标题、卡片标题挤在很窄的字号区间里，字重 700、字距接近 0。参考站同层级是 <code>clamp(42px, 5.1vw, 72px)</code>、字重 800、字距 <code>-.065em</code>——那个紧收的负字距正是它「看起来贵」的主要来源。</p>
+        <p>登录页 h1、工作台页标题、卡片标题挤在很窄的字号区间里，字重 700、字距接近 0。参考站同层级是 <code>clamp(42px, 5.1vw, 72px)</code>、字重 800、字距 <code>-.065em</code>——那个紧收的负字距正是它「看起来贵」的主要来源，<b>但参考站那几处标题是拉丁字形；本产品的标题以中文为主，字距应维持 0，靠字号级差和字重做出同等效果</b>（细节见第 9 节 DS-27）。</p>
         <span class="measure">现状 28px / 700 / -0.98px</span>
       </div>
       <div class="finding">
@@ -424,6 +426,15 @@
         <div class="f-top"><span class="did">D8</span><span class="sev p2">P2</span><h4>页头操作没有主次</h4></div>
         <p>「服务端已解析 / 查看任务状态 / 刷新」三个元素视觉权重相同，都是描边小按钮。哪个是主操作、哪个只是状态标识，读不出来。</p>
       </div>
+      <div class="finding crit">
+        <div class="f-top"><span class="did">D10</span><span class="sev p1">P1</span><h4>合法会话下，有页面进不去</h4></div>
+        <p>真正挂载的入口是 <code>MediaStudioApp.tsx</code>（<code>main.tsx</code> 引用它，不是 <code>MediaApp.tsx</code>）。它的 <code>ordinaryRoute()</code> 要求 <code>isPersonal</code>、<code>isOrganization</code>、<code>isAdminShell</code> 三者同时为假才渲染，但 <code>workspaceMode</code> 只有 <code>personal_web</code> / <code>organization_lark</code> 两种取值——11 个 ordinary 页面在任何合法会话下都会被重定向走。管理员 5 页是可达的（<code>isAdminShell ? &lt;AdminOverviewPage/&gt; : …</code>），但旧的 <code>MediaApp.tsx</code> 留在仓库里，复制了同一处三重互斥判断，且它的 admin 路由写法还会被 <code>isPersonal</code> 抢占——两套壳层的路由结论并不一致。</p>
+        <span class="measure">ordinaryMediaNav 11 项 · 实测 0 项可达 · admin 5 页经 MediaStudioApp 可达</span>
+      </div>
+      <div class="finding">
+        <div class="f-top"><span class="did">D11</span><span class="sev p2">P2</span><h4>字体在弱网 / 离线下静默降级</h4></div>
+        <p>DM Sans 与 Noto Sans SC 走 <code>media="print" onload</code> 的非阻塞加载，处理本身没错，但外链字体在弱网或离线环境必然回退——本文实拍时就整页回退到了系统字重，负字距与 800 字重的视觉效果一起消失。<code>--mg-font-sans</code> 的回退栈把 <code>PingFang SC</code> 排在 <code>system-ui</code> 之后，实际很难命中。</p>
+      </div>
     </div>
   </section>
 
@@ -433,7 +444,7 @@
     <p class="sec-sub" style="margin-top:10px"><b>先说一句要紧的：下面十条里，负字距、按钮抬升、药丸、accent 渐变、毛玻璃这五条，<code>mediaPrimitives.css</code> 里已经实现过一遍了。</b>它们没出现在界面上，唯一的原因是没有页面在用那些原语——详见第 6 节。</p>
     <div class="prose">
       <ul>
-        <li><b>大字号 + 负字距。</b>显示层 <code>clamp()</code> 到 42–72px，字重 800，<code>letter-spacing: -.065em</code>。中文标题收到 <code>-.04em</code> 左右即可，再紧会粘连。</li>
+        <li><b>大字号 + 负字距。</b>显示层 <code>clamp()</code> 到 42–72px，字重 800，<code>letter-spacing: -.065em</code>。<b>这是纯拉丁字形的技法，不直接搬到中文</b>——中日韩字形本身方正等宽，收紧字距不是变精致而是变粘连；中文标题的「贵气」应该靠字号级差和字重对比来做，字距维持 <code>0</code>。第 9 节 DS-27 会把这条落到 token 里。</li>
         <li><b>彩色卡片家族。</b>mint / lavender / peach / blue / yellow / green 六种淡色底，替代「白底 + 1px 边框」的统一处理。同一屏里靠色相区分卡片语义。</li>
         <li><b>有机形状垫底。</b><code>border-radius: 48% 52% 43% 57% / 46% 43% 57% 54%</code> 加渐变、旋转 −8°、透明度 .88，垫在主视觉后面。</li>
         <li><b>产品窗口模型。</b>三个交通灯圆点 + 标题栏 + 轻微旋转（1.6–2.2°）+ 大阴影。把界面截图变成有质感的对象。</li>
@@ -522,7 +533,7 @@
     </figure>
 
     <figure class="demo">
-      <div class="demo-head"><h3>登录后工作台</h3><span>MediaApp.tsx · media.css</span></div>
+      <div class="demo-head"><h3>登录后工作台</h3><span>MediaStudioApp.tsx · media.css</span></div>
       <div class="ab">
         <div class="pane">
           <div class="pane-bar"><span class="tag now">现状</span><em>重侧栏 + 半屏空白</em></div>
@@ -696,7 +707,7 @@
         <thead><tr><th>示意图里的元素</th><th>落在哪</th><th>要做什么</th></tr></thead>
         <tbody>
           <tr><td>页头眉标（accent 色 · 字距 .11em · 800 · 大写）</td><td><code>.mg-eyebrow</code></td><td><span class="st ok">现成</span> 规格完全一致，直接用</td></tr>
-          <tr><td>页头大标题（800 字重 · 负字距）</td><td><code>.mg-hero h1</code></td><td><span class="st ok">现成</span> 已经是 <code>-.045em</code> / 800——我建议的负字距<b>系统里早就有了</b></td></tr>
+          <tr><td>页头大标题（800 字重）</td><td><code>.mg-hero h1</code></td><td><span class="st add">加规则</span> 字重 800 可直接用，但现有 <code>letter-spacing: -.045em</code> 是按拉丁字形定的；<code>.mg-hero</code> 渲染的多是中文页题（如「云端成果」），需要随 DS-27 一并改成 <code>0</code>，否则中文标题会跟着收紧变形</td></tr>
           <tr><td>页头渐变底 + 装饰色斑</td><td><code>.mg-hero</code> + <code>::after</code></td><td><span class="st ok">现成</span> accent-soft 径向渐变 + 300px 圆斑，比我画的还讲究</td></tr>
           <tr><td>毛玻璃信息卡</td><td><code>.mg-hero-signal</code></td><td><span class="st ok">现成</span> 已带 <code>backdrop-filter: blur(14px)</code></td></tr>
           <tr><td>四格指标带</td><td><code>.mg-metric-grid</code></td><td><span class="st ok">现成</span> 已经就是 <code>repeat(4, minmax(0,1fr))</code></td></tr>
@@ -719,7 +730,7 @@
       </table>
     </div>
     <div class="prose">
-      <p>所以第 4 节那些效果<b>不但能做，而且大部分不是「新做」，是「把已经做好的用起来」</b>。第 3 节我从参考站提炼的十条手法里，负字距、按钮抬升、药丸、accent 渐变、毛玻璃这五条，<code>mediaPrimitives.css</code> 里都已经实现过一遍了——它们没出现在界面上，唯一的原因是采用率。</p>
+      <p>所以第 4 节那些效果<b>不但能做，而且大部分不是「新做」，是「把已经做好的用起来」</b>。第 3 节我从参考站提炼的十条手法里，按钮抬升、药丸、accent 渐变、毛玻璃这四条，<code>mediaPrimitives.css</code> 里都已经实现过一遍了，唯一原因是没有页面采用；负字距这一条例外——它是拉丁技法，<code>.mg-hero h1</code> 现在把它套在了中文标题上，需要随字体工作项一并修正，不能原样采用。</p>
       <p>剩下 6 条「加规则」全部落在 <code>.mg-*</code> 内部，加完之后每一条都是全站生效。真正下不来的只有登录页那三个装饰元素，而它们本来就该是登录页专属——那是一个营销性质的入口页，和工作台共用装饰语汇反而是错的。</p>
     </div>
   </section>
@@ -894,13 +905,13 @@ GET /openclaw/auth/entry-state?mode=organization</pre>
 
   <section class="block">
     <div class="sec-head"><span class="sec-num">09</span><h2>统一台账</h2></div>
-    <p class="sec-sub">前面出现了三套话术：诊断用 <b>P0–P2</b>（多严重）、落地用 <b>L0–L4</b>（改在哪一层）、示意图用<b>现成 / 加规则 / 页面专属</b>（要做多少）。它们描述的是同一批工作的三个侧面，放在一起会打架。这里收敛成<b>一份台账、一条推进线</b>：22 个工作项，编号 DS-01 到 DS-22，层级和严重度降为属性，「阶段」是唯一的顺序。</p>
+    <p class="sec-sub">前面出现了三套话术：诊断用 <b>P0–P2</b>（多严重）、落地用 <b>L0–L4</b>（改在哪一层）、示意图用<b>现成 / 加规则 / 页面专属</b>（要做多少）。它们描述的是同一批工作的三个侧面，放在一起会打架。这里收敛成<b>一份台账、一条推进线</b>：28 个工作项，编号 DS-01 到 DS-28，层级和严重度降为属性，「阶段」是唯一的顺序。</p>
 
     <div class="tally">
-      <div class="tally-item"><b>22</b><span>工作项</span></div>
+      <div class="tally-item"><b>28</b><span>工作项</span></div>
       <div class="tally-item"><b>6</b><span>原语已就绪 · 只差采用</span></div>
       <div class="tally-item"><b>6</b><span>给系统加规则</span></div>
-      <div class="tally-item"><b>1</b><span>已裁决 · 待实施</span></div>
+      <div class="tally-item"><b>1</b><span>待裁决 · 阻断阶段 1/2 估算</span></div>
     </div>
 
     <div class="stage-board">
@@ -911,13 +922,20 @@ GET /openclaw/auth/entry-state?mode=organization</pre>
           <h4>即刻可做</h4>
           <span class="ms">里程碑：登录页回到一屏内 · 全站字阶与品牌色到位</span>
         </div>
-        <p class="stage-note">这一阶段有<b>两条互不阻塞的并行线</b>：DS-01/02 走 token 层，改完立即全站生效；DS-03/04/05 走登录链路——因为它和 SPA 是两套零共享的样式系统，<b>既不依赖后面的收敛工作，也不占用它的档期</b>。这也是 P0 明明最急、却排在 L4 最末层的矛盾的解法：它压根不在同一条链上。</p>
+        <p class="stage-note">这一阶段有三条线，但只有两条真正互不阻塞：DS-01/02 走 token 层，改完立即全站生效；DS-03/04/05 走登录链路——因为它和 SPA 是两套零共享的样式系统，<b>既不依赖后面的收敛工作，也不占用它的档期</b>。这也是 D1/D2 明明最急、却排在 L4 最末层的矛盾的解法：它压根不在同一条链上。</p>
+        <p class="stage-note" style="border-top:0"><b>第三条线 DS-23～28 不是并行的，是阶段 1 的前置阻断项。</b>阶段 1 的验收目标是「25 个页面 90%+ 采用率」，但 D10 说明这 25 个页面里至少 11 个 ordinary 页在任何合法会话下都进不去——分母本身没有核实过。DS-23 的可达性矩阵门禁跑完之前，阶段 1 的目标数字不可信；DS-25（<code>routeGrants</code> 载体）决定后端要不要为此改一次会话合同，同样影响阶段 1、2 的工作量估算，需要先拍板再排期。字体项 DS-26～28 不依赖路由裁决，可以独立并行。</p>
         <div class="wi head"><span>编号</span><span>工作项</span><span>层</span><span>修复</span><span>受益面</span><span>就绪度</span></div>
         <div class="wi"><span class="wi-id">DS-01</span><span class="wi-name">品牌色三行统一到 auth / 官网组</span><span class="lchip l0">L0</span><span class="dref">D9</span><span class="wi-scope">全站</span><span class="ready done">已裁决</span></div>
-        <div class="wi"><span class="wi-id">DS-02</span><span class="wi-name">字阶补两级 + 字距 token</span><span class="lchip l0">L0</span><span class="dref">D5</span><span class="wi-scope">全站 22 文件</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-02</span><span class="wi-name">字阶顶部补两级（<code>--mg-text-4xl</code>）</span><span class="lchip l0">L0</span><span class="dref">D5</span><span class="wi-scope">全站 22 文件</span><span class="ready todo">待实施</span></div>
         <div class="wi"><span class="wi-id">DS-03</span><span class="wi-name">登录页身份选择改分段控件、输入框限宽、主按钮通栏</span><span class="lchip l4">L4</span><span class="dref">D1 D2</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
         <div class="wi"><span class="wi-id">DS-04</span><span class="wi-name">登录页双栏 + 叙事栏</span><span class="lchip l4">L4</span><span class="dref">D1</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
         <div class="wi"><span class="wi-id">DS-05</span><span class="wi-name"><code>media.auth.css</code> 引入 token 层，<code>--auth-*</code> 改为别名</span><span class="lchip l4">L4</span><span class="dref">D9</span><span class="wi-scope">auth 5 页</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-23</span><span class="wi-name">新建路由可达性矩阵门禁：枚举 ordinary / admin × personal_web / organization_lark 四种合法会话，断言每条注册路由至少一种会话可达，非法会话得到 403 而非静默重定向</span><span class="lchip l3">L3</span><span class="dref">D10</span><span class="wi-scope">全站路由 · 阶段 1 分母</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-24</span><span class="wi-name">退役或转发 <code>MediaApp.tsx</code>，唯一入口收敛到 <code>MediaStudioApp.tsx</code>，避免两套路由继续漂移</span><span class="lchip l3">L3</span><span class="dref">D10</span><span class="wi-scope">全站路由</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-25</span><span class="wi-name"><code>routeGrants</code> 载体裁决：走 <code>schemaVersion</code> 合同变更，还是仿 <code>entry-state</code> 开独立只读接口——两条路都和第 8 节「不改 <code>parseMediaSessionEnvelope</code>」的约束打交道，方式不同</span><span class="lchip sys">契约</span><span class="dref">D10</span><span class="wi-scope">后端契约 · 阻断估算</span><span class="ready dep">待裁决</span></div>
+        <div class="wi"><span class="wi-id">DS-26</span><span class="wi-name">字体自托管：DM Sans 全量 WOFF2 + 中文常用字子集，<code>index.media.html</code> 移除或降级 Google Fonts 为非关键补充，<code>font-display: swap</code></span><span class="lchip l0">L0</span><span class="dref">D11</span><span class="wi-scope">全站字体</span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-27</span><span class="wi-name">字重收敛到 400 / 500 / 600 / 700（现状 Noto 只加载 400/500/700/900，无 600）；中文标题 <code>letter-spacing</code> 归零，负字距仅限确认过的纯拉丁 / 数字展示位</span><span class="lchip l0">L0</span><span class="dref">D11</span><span class="wi-scope">全站 22 文件 · 含 <code>.mg-hero h1</code></span><span class="ready todo">待实施</span></div>
+        <div class="wi"><span class="wi-id">DS-28</span><span class="wi-name">补 Playwright 断网字体用例：拦截 Google Fonts，覆盖桌面 / 移动端，断言无溢出、无截断、无布局跳动</span><span class="lchip sys">工具</span><span class="dref">D11</span><span class="wi-scope">QA 门禁</span><span class="ready todo">待实施</span></div>
       </div>
 
       <div class="stage-card">
@@ -971,14 +989,7 @@ GET /openclaw/auth/entry-state?mode=organization</pre>
 
     <div class="prose">
       <p><b>三套话术怎么折进来的：</b>「层」变成每行的 <span class="lchip l0" style="display:inline-grid">L?</span> 属性——它回答的是<b>改动的杠杆</b>，不是顺序；「严重度」变成「修复」列的 D 编号回指——它回答的是<b>为谁而改</b>；「现成 / 加规则 / 页面专属」变成「就绪度」列——它回答的是<b>还差多少</b>。三者都不再是排序依据，唯一的顺序是阶段。</p>
-      <p>唯一需要解释的例外是 <b>D1、D2 两条 P0 落在了 L4 页面层</b>。层级越低通常越晚做，但登录链路是独立样式系统，它既不被收敛工作阻塞、也不消耗它的收益——所以它作为并行支线放进阶段 0，而不是被 L4 的位置拖到最后。<b>这正是「层」不能当排期用的原因，也是这份台账存在的理由。</b></p>
-    </div>
-
-  <section class="block">
-    <div class="sec-head"><span class="sec-num">10</span><h2>两件顺带发现的事</h2></div>
-    <div class="prose">
-      <p><b>一、11 页的 ordinary IA 可能已经进不去了。</b><code>mediaRoleIa.ts</code> 里的 <code>ordinaryMediaNav</code> 有 11 项（总览、素材与灵感、选题与决策、创作与交付、发布准备、复盘增长…），但按 <code>mediaWebApi.ts</code> 里的会话 schema，<code>workspaceMode</code> 只有 <code>personal_web</code> 和 <code>organization_lark</code> 两种取值，而 <code>MediaApp.tsx</code> 的 <code>ordinaryRoute()</code> 要求这两个判定同时为假才渲染。也就是说合法会话下这 11 个页面全都会被重定向走。这些页面的样式文件加起来 20 多万字符，如果确实是历史 IA，值得确认一下是否还要跟着这轮改；如果是我读漏了某条服务端下发路径，那更要确认——因为它决定了这轮视觉改造的工作量大头在哪。</p>
-      <p><b>二、字体在弱网下会静默回退。</b>DM Sans 和 Noto Sans SC 走 <code>media="print" onload</code> 的非阻塞加载，这个处理是对的。但我在离线环境实拍时字体全部回退到了系统字重，负字距和 800 字重的效果会跟着丢失。建议 <code>font-family</code> 的回退栈里把 <code>'PingFang SC'</code> 提前，并且不要让视觉效果只依赖 800 这一档字重。</p>
+      <p>需要解释的例外有两处。<b>D1、D2 两条 P0 落在了 L4 页面层</b>：层级越低通常越晚做，但登录链路是独立样式系统，它既不被收敛工作阻塞、也不消耗它的收益——所以它作为并行支线放进阶段 0，而不是被 L4 的位置拖到最后。<b>D10 这条 P1 落在了 L3 却排在最前</b>：路由不是视觉问题、层级也不低，但它决定阶段 1「25 页 90%」这个目标本身能不能信——分母不核实，后面所有采用率数字都是空中楼阁，所以它必须最先做，而不是按层级排到 L3 该出现的位置。<b>这正是「层」不能当排期用的原因，也是这份台账存在的理由：层回答杠杆大小，阶段才回答先后顺序，两者是两个维度，不能互相替代。</b></p>
     </div>
   </section>
 
