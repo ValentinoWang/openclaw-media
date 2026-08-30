@@ -35,6 +35,7 @@ from common.feishu_docx_table_limits import (  # noqa: E402
     sleep_seconds_for_docx_write,
     validate_docx_table_create_shape,
 )
+from common.env import parse_env_text  # noqa: E402
 from openclaw_app.services.deepmath_runtime_config import deepmath_env_file  # noqa: E402
 from openclaw_app.services.feishu_docx_renderer import expand_inline_code_literal_newlines  # noqa: E402
 
@@ -58,19 +59,19 @@ REQUEST_RETRIES = int(os.getenv("FEISHU_DOC_SYNC_RETRIES", "8"))
 
 
 def parse_env_file(env_path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
+    # Thin wrapper over common.env.parse_env_text (dedup pe-01): this site's
+    # own two deliberate divergences stay here as a policy layer around the
+    # shared line-parsing rules -- errors="replace" so a stray non-UTF-8 byte
+    # in a synced doc env file can't crash the sync, and dropping the proxy
+    # variables plus any empty value so a proxy can't leak into Feishu calls.
     if not env_path.exists():
-        return values
-    for raw_line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
+        return {}
+    raw_text = env_path.read_text(encoding="utf-8", errors="replace")
+    values: dict[str, str] = {}
+    for key, value in parse_env_text(raw_text).items():
         if key.lower() in {"http_proxy", "https_proxy", "all_proxy", "no_proxy"}:
             continue
-        if key and value:
+        if value:
             values[key] = value
     return values
 

@@ -53,8 +53,23 @@ def parse_env_file(path: str | Path, *, require: bool = False) -> dict[str, str]
         if require:
             raise
         return {}
+    return parse_env_text(raw_text)
+
+
+def parse_env_text(text: str) -> dict[str, str]:
+    """Parse already-decoded ``KEY=VALUE`` text using the canonical line rules.
+
+    :func:`parse_env_file` is `Path.read_text(encoding="utf-8") -> parse_env_text`;
+    split out for the one caller in this repo that must control the *decode*
+    step itself (``openclaw-tag-router/scripts/sync_tag_router_docs_to_feishu.py``
+    reads with ``errors="replace"`` so a stray non-UTF-8 byte in a synced doc
+    env file can't crash the sync) while still sharing every line-parsing rule
+    -- comments, ``export `` prefix, matched-pair quote slicing, identifier-key
+    validation, last-assignment-wins -- with the canonical reader instead of
+    re-deriving them.
+    """
     values: dict[str, str] = {}
-    for raw_line in raw_text.splitlines():
+    for raw_line in text.splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
