@@ -10,6 +10,7 @@ from common.llm_client import DEFAULT_JSON_RETRY_TEXT, generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import load_profile_llm_settings
 from common.prompt_budget import (
+    compact_review_list as _compact_review_list,
     truncate_list as _shared_truncate_list,
     truncate_nested as _shared_truncate_nested,
     truncate_text as _shared_truncate_text,
@@ -712,33 +713,6 @@ def _compact_reference_docs(value: Any) -> list[dict[str, str]]:
 
 def _truncate_list(value: Any, max_items: int, max_text: int) -> list[Any]:
     return _shared_truncate_list(value, max_items, max_text, max_keys=40, marker="...[truncated]")
-
-
-_REVIEW_PROMPT_FIELDS = (
-    "review_id", "created_at", "platform", "account", "track", "topic", "title",
-    "summary", "lesson", "performance_level", "metrics", "atomic_facts",
-    "priority_metrics", "key_insights", "metric_interpretation", "problems",
-    "next_actions", "next_step", "content_guidance", "publishing_guidance",
-    "data_quality_notes", "publish_url", "creation_record_id",
-)
-
-
-def _compact_review_list(value: Any, max_items: int, max_text: int) -> list[dict[str, Any]]:
-    items = value if isinstance(value, list) else []
-    return [_compact_review(item, max_text) for item in items[:max_items] if isinstance(item, dict)]
-
-
-def _compact_review(value: dict[str, Any], max_text: int) -> dict[str, Any]:
-    """Keep review evidence fields ahead of arbitrary adapter metadata."""
-    keys = list(_REVIEW_PROMPT_FIELDS) + [key for key in value if key not in _REVIEW_PROMPT_FIELDS]
-    result: dict[str, Any] = {}
-    for key in keys:
-        if key not in value or value[key] in (None, "", []):
-            continue
-        result[str(key)] = _truncate_nested(value[key], max_text)
-        if len(result) >= 40:
-            break
-    return result
 
 
 def _truncate_nested(value: Any, max_text: int) -> Any:

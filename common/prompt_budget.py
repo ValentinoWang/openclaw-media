@@ -118,6 +118,75 @@ def truncate_list(
     return [truncate_nested(item, max_chars, max_keys=max_keys, marker=marker) for item in items[:max_items]]
 
 
+REVIEW_PROMPT_FIELDS = (
+    "review_id", "created_at", "platform", "account", "track", "topic", "title",
+    "summary", "lesson", "performance_level", "metrics", "atomic_facts",
+    "priority_metrics", "key_insights", "metric_interpretation", "problems",
+    "next_actions", "next_step", "content_guidance", "publishing_guidance",
+    "data_quality_notes", "publish_url", "creation_record_id",
+)
+"""Review-evidence field order for prompt compaction (TC-02).
+
+selfmedia/creation/llm_generator.py and selfmedia/creation/platform_fit.py
+each carried a byte-for-byte identical copy of this tuple, plus their own
+compact_review/compact_review_list pair reordering a review dict so these
+fields sort ahead of arbitrary adapter metadata before truncate_nested runs
+over it. llm_generator.py's version (max_items and max_chars both left to
+the caller) is the one moved here; platform_fit.py's copy (item count
+hardcoded to 20, key cap hardcoded to 30) still needs a caller-side
+migration to the max_items=20, max_keys=30 keywords below to preserve its
+exact behavior -- that edit falls outside this change's file scope and is
+not done here.
+"""
+
+
+def compact_review(
+    value: dict[str, Any],
+    max_chars: int,
+    *,
+    max_keys: int = 40,
+    max_nested_items: int = 20,
+    marker: str = "...[truncated]",
+    fields: tuple[str, ...] = REVIEW_PROMPT_FIELDS,
+) -> dict[str, Any]:
+    """Keep ``fields`` ahead of arbitrary adapter metadata, then ``truncate_nested`` each kept value.
+
+    A key is dropped if its value is missing or empty (``None``, ``""``, or
+    ``[]``); collection stops once ``max_keys`` keys have been kept, same as
+    ``truncate_nested``'s own dict cap (passed through here so a review's
+    top-level field count and a nested dict's field count share one limit
+    by default, matching every existing call site).
+    """
+    keys = list(fields) + [key for key in value if key not in fields]
+    result: dict[str, Any] = {}
+    for key in keys:
+        if key not in value or value[key] in (None, "", []):
+            continue
+        result[str(key)] = truncate_nested(value[key], max_chars, max_keys=max_keys, max_items=max_nested_items, marker=marker)
+        if len(result) >= max_keys:
+            break
+    return result
+
+
+def compact_review_list(
+    value: Any,
+    max_items: int,
+    max_chars: int,
+    *,
+    max_keys: int = 40,
+    max_nested_items: int = 20,
+    marker: str = "...[truncated]",
+    fields: tuple[str, ...] = REVIEW_PROMPT_FIELDS,
+) -> list[dict[str, Any]]:
+    """Cap ``value`` (if a list) at ``max_items`` entries, then ``compact_review`` each dict entry."""
+    items = value if isinstance(value, list) else []
+    return [
+        compact_review(item, max_chars, max_keys=max_keys, max_nested_items=max_nested_items, marker=marker, fields=fields)
+        for item in items[:max_items]
+        if isinstance(item, dict)
+    ]
+
+
 def truncate_to_budget(value: Any, max_chars: int, *, marker: str = "...[truncated]") -> str:
     """``truncate_text`` defaulted to the "...[truncated]" marker, for a single free-text field.
 
