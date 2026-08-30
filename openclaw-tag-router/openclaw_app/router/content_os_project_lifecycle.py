@@ -12,10 +12,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import os
 from pathlib import Path
-import re
 from typing import Any, Iterable
 
 import yaml
+
+from ..services.markdown_frontmatter import read_frontmatter_strict
 
 
 CONTENT_OS_SPEC_VERSION = "content_os_v0.2"
@@ -66,19 +67,7 @@ def project_overview_path(vault_root: Path, project_id: str) -> Path:
 
 
 def _read_frontmatter(path: Path) -> tuple[dict[str, Any], str]:
-    if not path.exists():
-        raise ContentOSContractError(f"项目总览不存在：{path}")
-    text = path.read_text(encoding="utf-8", errors="replace")
-    match = re.match(r"\A---\n(?P<frontmatter>.*?)\n---\n?(?P<body>.*)\Z", text, flags=re.S)
-    if not match:
-        raise ContentOSContractError(f"项目总览缺少 frontmatter：{path}")
-    try:
-        frontmatter = yaml.safe_load(match.group("frontmatter")) or {}
-    except yaml.YAMLError as exc:
-        raise ContentOSContractError(f"项目总览 frontmatter 无法读取：{path}") from exc
-    if not isinstance(frontmatter, dict):
-        raise ContentOSContractError(f"项目总览 frontmatter 必须是对象：{path}")
-    return frontmatter, match.group("body")
+    return read_frontmatter_strict(path, error=ContentOSContractError)
 
 
 def _write_frontmatter(path: Path, frontmatter: dict[str, Any], body: str) -> None:

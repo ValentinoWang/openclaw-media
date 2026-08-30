@@ -8,6 +8,7 @@ import yaml
 
 from ..models.archive_entry import ArchiveEntry
 from ..models.message import Message
+from .markdown_frontmatter import read_frontmatter_tolerant
 from .utils import dump_json, ensure_dir, format_display_time, make_record_id, safe_slug
 
 ARCHIVE_DIR_MAP = {
@@ -66,14 +67,7 @@ class ArchiveService:
     def load_archive(self, path: str | Path) -> ArchiveEntry:
         file_path = Path(path)
         text = file_path.read_text(encoding="utf-8")
-        frontmatter: dict[str, Any] = {}
-        body = text
-        if text.startswith("---\n"):
-            _, _, remainder = text.partition("---\n")
-            frontmatter_text, sep, content = remainder.partition("\n---\n")
-            if sep:
-                frontmatter = yaml.safe_load(frontmatter_text) or {}
-                body = content
+        frontmatter, body = read_frontmatter_tolerant(text)
 
         title = ""
         sections: list[tuple[str, str]] = []

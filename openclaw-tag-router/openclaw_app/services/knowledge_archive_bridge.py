@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import yaml
+from .markdown_frontmatter import read_frontmatter_tolerant
 
 
 DEFAULT_KNOWLEDGE_ARCHIVE_SCRIPT = Path("/home/ubuntu/openclaw-agents/knowledge/scripts/archive_to_obsidian.py")
@@ -119,17 +119,8 @@ def _demote_content_headings(markdown: str) -> str:
 
 
 def _meeting_note_frontmatter(markdown: str) -> dict[str, Any]:
-    if not markdown.startswith("---\n"):
-        return {}
-    _, _, remainder = markdown.partition("---\n")
-    frontmatter_text, sep, _ = remainder.partition("\n---\n")
-    if not sep:
-        return {}
-    try:
-        loaded = yaml.safe_load(frontmatter_text) or {}
-    except yaml.YAMLError:
-        return {}
-    return loaded if isinstance(loaded, dict) else {}
+    frontmatter, _ = read_frontmatter_tolerant(markdown)
+    return frontmatter
 
 
 def _normalize_archive_summary_bullets(value: Any) -> list[str]:

@@ -13,8 +13,7 @@ from pathlib import Path
 import re
 from typing import Any, Protocol
 
-import yaml
-
+from ..services.markdown_frontmatter import read_frontmatter_tolerant
 from .content_os_project_lifecycle import CONTENT_OS_SPEC_VERSION, ContentOSContractError, ProjectState
 from .content_os_projections import build_feishu_project_projection
 
@@ -136,19 +135,10 @@ class FeishuProjectBoardProjectionAdapter:
         return re.sub(r"\s+", " ", text)[:280]
 
     def _evidence_summary(self, path: Path) -> str:
-        if not path.exists():
+        frontmatter, body = read_frontmatter_tolerant(path)
+        if frontmatter.get("spec_version") != CONTENT_OS_SPEC_VERSION:
             return "未记录"
-        text = path.read_text(encoding="utf-8", errors="replace")
-        match = re.match(r"\A---\n(?P<frontmatter>.*?)\n---\n?(?P<body>.*)\Z", text, flags=re.S)
-        if not match:
-            return "未记录"
-        try:
-            frontmatter = yaml.safe_load(match.group("frontmatter")) or {}
-        except yaml.YAMLError:
-            return "未记录"
-        if not isinstance(frontmatter, dict) or frontmatter.get("spec_version") != CONTENT_OS_SPEC_VERSION:
-            return "未记录"
-        body = re.sub(r"```.*?```", " ", match.group("body"), flags=re.S)
+        body = re.sub(r"```.*?```", " ", body, flags=re.S)
         body = re.sub(r"^#{1,6}\s*", "", body, flags=re.M)
         body = re.sub(r"\|", " ", body)
         return self._visible_text(body)

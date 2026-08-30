@@ -9,6 +9,7 @@ from typing import Any
 
 import yaml
 
+from ..services.markdown_frontmatter import read_frontmatter_tolerant
 from ..services.utils import cleanup_generated_file_duplicates, now_in_tz
 
 
@@ -203,17 +204,7 @@ class ContentOSUtilsMixin:
         return (vault_root or self._content_os_vault_root()) / "08_内容项目" / project_id
     @staticmethod
     def _read_markdown_frontmatter(path: Path) -> tuple[dict[str, Any], str]:
-        if not path.exists():
-            return {}, ""
-        text = path.read_text(encoding="utf-8", errors="replace")
-        match = re.match(r"---\n(?P<body>.*?)\n---\n?(?P<rest>.*)\Z", text, flags=re.S)
-        if not match:
-            return {}, text
-        try:
-            data = yaml.safe_load(match.group("body")) or {}
-        except Exception:
-            data = {}
-        return (data if isinstance(data, dict) else {}), match.group("rest")
+        return read_frontmatter_tolerant(path)
     @staticmethod
     def _write_markdown_frontmatter(path: Path, frontmatter: dict[str, Any], body: str) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

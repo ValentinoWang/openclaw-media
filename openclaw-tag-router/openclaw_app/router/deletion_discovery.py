@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
+from ..services.markdown_frontmatter import read_frontmatter_tolerant
 
 
 TARGET_ID_RE = re.compile(
@@ -91,16 +91,7 @@ def tag_from_record_id(value: str) -> str:
 
 def load_archive_candidate(path: Path) -> ArchiveCandidate:
     text = path.read_text(encoding="utf-8", errors="ignore")
-    frontmatter: dict[str, Any] = {}
-    body = text
-    if text.startswith("---\n"):
-        _, _, remainder = text.partition("---\n")
-        frontmatter_text, sep, content = remainder.partition("\n---\n")
-        if sep:
-            loaded = yaml.safe_load(frontmatter_text) or {}
-            if isinstance(loaded, dict):
-                frontmatter = loaded
-            body = content
+    frontmatter, body = read_frontmatter_tolerant(text)
     title = ""
     for line in body.splitlines():
         if line.startswith("# "):
