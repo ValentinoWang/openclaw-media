@@ -86,6 +86,11 @@ DOCUMENT_VALUE_LABELS = {
     "llm_failed": "解析失败",
     "validated": "已验证",
     "validated_with_warnings": "已验证，存在待确认项",
+    # Present in .feishu_writer's parallel multi-signal-status label dict
+    # (dedup cluster LE-02) but missing here; added so this table is a
+    # strict superset before anything merges onto it -- omitting it would
+    # make that status silently fall back to "状态待确认".
+    "deferred_for_creative_handoff": "待创作交接",
     "success": "成功",
     "no_audio": "无音频",
     "asr_failed": "语音识别失败",
@@ -896,15 +901,6 @@ def _link_paragraph(label: str, url: str, link_text: str = "打开链接") -> di
         {"text_run": {"content": f"{label}："}},
         {"text_run": {"content": link_text, "text_element_style": {"link": {"url": url}}}},
     ]}}
-
-
-_DISPLAY_LABELS = {
-    "level": "等级", "overall": "总体判断", "label": "标签", "summary": "摘要",
-    "reason": "依据", "item": "事项", "element": "要素", "required_change": "必要调整",
-    "visual": "画面", "subtitle": "字幕", "voiceover": "口播", "camera_movement": "运镜",
-    "props": "道具", "edit_notes": "剪辑要点", "image_prompt": "图片提示词",
-    "overlay_text": "图上文字", "caption_note": "配文要点",
-}
 
 
 def _value_blocks(value: Any) -> list[dict[str, Any]]:
