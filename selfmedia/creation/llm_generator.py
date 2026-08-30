@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from common.llm_client import generate_json_from_parts
+from common.llm_client import DEFAULT_JSON_RETRY_TEXT, generate_json_from_parts
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.llm_settings import load_profile_llm_settings
 
@@ -1181,7 +1181,14 @@ def call_creation_json(
     validation_contract: str,
     validation_context: dict[str, Any] | None = None,
     max_retries: int = 1,
-    retry_text: str = "上一次输出没有通过 JSON 校验：{error}\n请只返回合法 JSON object，不要 Markdown。",
+    # gap-4/prompt-c1: this was a byte-identical duplicate of
+    # common.llm_client.generate_json_from_parts's own retry_text default;
+    # now sourced from the one shared constant instead of two independently
+    # hardcoded literals. Text unchanged -- still exercised as-is by every
+    # call_creation_json() caller that doesn't override retry_text (backwash.py,
+    # consultation.py, request_inference.py, shooting_execution.py,
+    # platform_fit.py's platform-note path).
+    retry_text: str = DEFAULT_JSON_RETRY_TEXT,
 ) -> dict[str, Any]:
     settings = load_profile_llm_settings("media_creation")
     return generate_json_from_parts(
