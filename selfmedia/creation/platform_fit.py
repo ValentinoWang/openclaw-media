@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
 from common.prompt_budget import truncate_nested as _shared_truncate_nested, truncate_text as _shared_truncate_text
 from common.social_runtime import local_now_iso as _now_iso
+from common.text_list import split_text_list as _shared_split_text_list
 
 from .llm_generator import call_creation_json, creation_generation_metadata
 from .request_parser import CreationRequest
@@ -949,12 +950,19 @@ def _truncate(value: str, max_chars: int) -> str:
 
 
 def _as_string_list(value: Any) -> list[str]:
+    # The list branch stringifies each item before filtering (so e.g. a
+    # raw None item becomes the literal string "None" and is kept, unlike
+    # split_text_list's own list handling, which drops None/""/[] items by
+    # identity before any stringification) -- kept local rather than
+    # delegated, to preserve that. Only the string-splitting branch (byte-
+    # identical to split_text_list's, strip_chars=None so "#" is not
+    # stripped, unlike common.text_list.string_list's default) delegates.
     if value in (None, "", []):
         return []
     if isinstance(value, list):
         return [str(item).strip() for item in value if str(item).strip()]
     if isinstance(value, str):
-        return [item.strip() for item in re.split(r"[\n,，、;；]+", value) if item.strip()]
+        return _shared_split_text_list(value, strip_chars=None)
     return [str(value).strip()] if str(value).strip() else []
 
 
@@ -981,14 +989,7 @@ def _as_list_of_dicts(value: Any) -> list[dict[str, Any]]:
     return result
 
 
-def _as_list(value: Any) -> list[Any]:
-    if value in (None, "", []):
-        return []
-    if isinstance(value, list):
-        return [item for item in value if item not in (None, "", [])]
-    if isinstance(value, str):
-        return [item.strip() for item in re.split(r"[\n,，、;；]+", value) if item.strip()]
-    return [value]
+_as_list = _shared_split_text_list
 
 
 def _text(value: Any) -> str:

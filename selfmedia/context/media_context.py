@@ -12,6 +12,7 @@ from typing import Any
 
 from common.prompt_budget import truncate_text as _truncate_text
 from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id
+from common.text_list import split_text_list as _shared_split_text_list
 
 from common.social_runtime import (
     feishu_list_records,
@@ -1516,6 +1517,13 @@ def _merge_list(profile: dict[str, Any], key: str, values: list[Any], *, max_len
 
 
 def _as_list(value: Any) -> list[str]:
+    # list/tuple items are stringified via _clean_text before filtering
+    # (unlike split_text_list's own list handling, which filters by raw
+    # identity without stringifying), and a non-list/tuple scalar is
+    # stringified and then still run through the same delimiter split --
+    # both kept local rather than delegated, to preserve that. Only the
+    # actual regex split (byte-identical to split_text_list's own,
+    # strip_chars=None) delegates.
     if value in (None, "", []):
         return []
     if isinstance(value, list):
@@ -1525,7 +1533,7 @@ def _as_list(value: Any) -> list[str]:
     text = _clean_text(value)
     if not text:
         return []
-    return [item.strip() for item in re.split(r"[\n,，、;；]+", text) if item.strip()]
+    return _shared_split_text_list(text, strip_chars=None)
 
 
 def _should_load_live_creator_profile(root: str | Path | None) -> bool:

@@ -590,7 +590,7 @@ def _selected_from_ranked(
     *,
     assessment_lookup: dict[str, dict[str, Any]] | None = None,
 ) -> list[RankedRecord]:
-    selected = _as_list(selected_ids)
+    selected = _as_single_item_list(selected_ids)
     if not selected:
         return []
     assessment_lookup = assessment_lookup or {}
@@ -633,7 +633,7 @@ def _selected_from_ranked(
 
 
 def _selected_ranked(records: list[CanonicalMediaRecord], selected_ids: Any, reason: str) -> list[RankedRecord]:
-    selected = _as_list(selected_ids)
+    selected = _as_single_item_list(selected_ids)
     if not selected:
         return []
     lookup: dict[str, CanonicalMediaRecord] = {}
@@ -772,7 +772,11 @@ def _truncate_nested(value: Any, max_chars: int = 900) -> Any:
     return _shared_truncate_nested(value, max_chars, max_keys=None, max_items=20, marker="...", drop_empty=True)
 
 
-def _as_list(value: Any) -> list[str]:
+def _as_single_item_list(value: Any) -> list[str]:
+    """Wrap a scalar as a one-item list; unlike common.text_list.split_text_list
+    and its siblings elsewhere in this codebase, a string is never split on
+    a delimiter -- it is always treated as one whole item. Named
+    distinctly (not _as_list) so it is not mistaken for those."""
     if value in (None, "", []):
         return []
     if isinstance(value, list):
