@@ -9,6 +9,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from common.llm_validation import LLMValidationContract, register_llm_validation_contract
+from common.social_runtime import local_now_iso as _now_iso
 
 from .llm_generator import call_creation_json, creation_generation_metadata
 from .request_parser import CreationRequest
@@ -550,7 +551,7 @@ def _build_platform_fit_meta(
         ),
         "confidence": _confidence_label(evidence_level),
         "evidence_level": evidence_level,
-        "generated_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds"),
+        "generated_at": _now_iso(),
     }
 
 
@@ -1009,10 +1010,6 @@ def _text(value: Any) -> str:
 
 def _now_version_month() -> str:
     return datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y_%m")
-
-
-def _now_iso() -> str:
-    return datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds")
 
 
 def _env_int(name: str, default: int) -> int:

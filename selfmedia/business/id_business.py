@@ -43,6 +43,7 @@ from common.social_runtime import (  # noqa: E402
     feishu_tenant_access_token,
     load_default_env_files,
     load_env_file,
+    local_now_iso,
 )
 from common.platform_links import platform_for_url
 from common.bot_llm_config import bot_runtime
@@ -749,7 +750,7 @@ def print_json(payload: Any) -> None:
 
 
 def business_now_iso() -> str:
-    return datetime.now(LOCAL_TZ).replace(microsecond=0).isoformat()
+    return local_now_iso("Asia/Shanghai")
 
 
 def load_id_business_env_files() -> None:

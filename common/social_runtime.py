@@ -10,10 +10,12 @@ import sys
 import time
 from dataclasses import dataclass
 from datetime import date, datetime, timezone, tzinfo as TzInfo
+from functools import lru_cache
 from pathlib import Path
 from threading import Lock
 from typing import Any, Callable, Iterable, Literal
 from urllib.parse import parse_qs, urlparse
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -109,6 +111,15 @@ def feishu_identity_preflight() -> dict[str, Any]:
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+@lru_cache(maxsize=None)
+def _cached_zoneinfo(tz_name: str) -> ZoneInfo:
+    return ZoneInfo(tz_name)
+
+
+def local_now_iso(tz_name: str = "Asia/Shanghai") -> str:
+    return datetime.now(_cached_zoneinfo(tz_name)).isoformat(timespec="seconds")
 
 
 def load_env_file(path: str | Path, *, override: bool = False) -> None:

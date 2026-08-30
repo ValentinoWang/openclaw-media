@@ -4,11 +4,15 @@ import hashlib
 import json
 import os
 import re
-from datetime import datetime
 from typing import Any
 
 from common.feishu_urls import parse_bitable_url
-from common.social_runtime import feishu_coerce_value, feishu_ensure_fields, feishu_ensure_select_options
+from common.social_runtime import (
+    feishu_coerce_value,
+    feishu_ensure_fields,
+    feishu_ensure_select_options,
+    local_now_iso,
+)
 
 from .creation_feishu_writer import RouterCreationFeishuDocumentWriter
 from ..services.utils import now_in_tz
@@ -462,4 +466,4 @@ class UnifiedCreationMixin:
 
     @staticmethod
     def _unified_now_iso() -> str:
-        return datetime.now().isoformat(timespec="seconds")
+        return local_now_iso("Asia/Shanghai")

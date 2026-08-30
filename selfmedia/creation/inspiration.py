@@ -8,11 +8,11 @@ inspiration result.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field, validator
+
+from common.social_runtime import local_now_iso as _now_iso
 
 
 class CreationInspirationStoryboardRow(BaseModel):
@@ -101,10 +101,6 @@ class CreationInspirationResult(BaseModel):
         except (TypeError, ValueError):
             score = 0
         return max(0, min(100, score))
-
-
-def _now_iso() -> str:
-    return datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds")
 
 
 def _section_lines(value: Any) -> list[str]:

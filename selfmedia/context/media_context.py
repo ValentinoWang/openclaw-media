@@ -11,9 +11,14 @@ from pathlib import Path
 from typing import Any
 
 from common.resource_ownership import canonical_tenant_owned_resources, require_tenant_id
-from zoneinfo import ZoneInfo
 
-from common.social_runtime import feishu_list_records, feishu_plain_text, infer_platform_keyword, load_default_env_files
+from common.social_runtime import (
+    feishu_list_records,
+    feishu_plain_text,
+    infer_platform_keyword,
+    load_default_env_files,
+    local_now_iso as _now_iso,
+)
 from media_model.contract import resolve_media_model_contract_path
 from media_vault.vault import MediaVault
 from selfmedia.business.schedule import schedule_snapshot_path, upcoming_schedule_entries
@@ -1631,7 +1636,3 @@ def _slugify(text: str) -> str:
 def _stable_id(prefix: str, parts: list[Any]) -> str:
     raw = "|".join(_clean_text(part) for part in parts)
     return f"{prefix}:{hashlib.sha1(raw.encode('utf-8')).hexdigest()[:16]}"
-
-
-def _now_iso() -> str:
-    return datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds")

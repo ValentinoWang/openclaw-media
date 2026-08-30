@@ -29,6 +29,7 @@ from common.social_runtime import (
     feishu_tenant_access_token,
     infer_platform_keyword,
     load_default_env_files,
+    local_now_iso,
 )
 from selfmedia.context import record_review_memory
 from selfmedia.context.media_context import build_media_context_for_request, merge_conversation_context
@@ -209,7 +210,7 @@ def handle_data_review_command(
     vault = MediaVault(tenant_id=tenant_id)
     attachments = _existing_images(attachment_paths or [])
     request = parse_data_review_request(raw_text)
-    reviewed_at = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds")
+    reviewed_at = local_now_iso("Asia/Shanghai")
 
     if not attachments:
         return {
