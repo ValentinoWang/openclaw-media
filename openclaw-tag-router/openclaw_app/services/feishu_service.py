@@ -16,6 +16,13 @@ from typing import Any, Callable, Iterator
 
 import requests
 
+from common.feishu_docx_table_limits import (
+    chunk_docx_table_rows,
+    ensure_docx_tables_write_budget,
+    ensure_docx_table_write_budget,
+    sleep_seconds_for_docx_write,
+    validate_docx_table_create_shape,
+)
 from common.feishu_docx_writer import docx_heading_block, docx_text_block
 from common.feishu_urls import feishu_doc_url, parse_feishu_document_ref
 from common.social_runtime import _iter_bitable_records, fetch_tenant_access_token
@@ -33,13 +40,6 @@ from .document_edit_contract import (
     load_document_edit_op_whitelist,
 )
 from .feishu_docx_renderer import FeishuDocxBlockRenderer, NATIVE_TABLE_KIND
-from .feishu_docx_table_limits import (
-    chunk_docx_table_rows,
-    ensure_docx_tables_write_budget,
-    ensure_docx_table_write_budget,
-    sleep_seconds_for_docx_write,
-    validate_docx_table_create_shape,
-)
 from .utils import ensure_dir
 
 

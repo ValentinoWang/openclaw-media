@@ -28,15 +28,15 @@ from common.feishu_docx_writer import (  # noqa: E402
     get_docx_block as _shared_get_docx_block,
     get_docx_children as _shared_get_docx_children,
 )
-from openclaw_app.services.deepmath_runtime_config import deepmath_env_file  # noqa: E402
-from openclaw_app.services.feishu_docx_renderer import expand_inline_code_literal_newlines  # noqa: E402
-from openclaw_app.services.feishu_docx_table_limits import (  # noqa: E402
+from common.feishu_docx_table_limits import (  # noqa: E402
     chunk_docx_table_rows,
     ensure_docx_tables_write_budget,
     ensure_docx_table_write_budget,
     sleep_seconds_for_docx_write,
     validate_docx_table_create_shape,
 )
+from openclaw_app.services.deepmath_runtime_config import deepmath_env_file  # noqa: E402
+from openclaw_app.services.feishu_docx_renderer import expand_inline_code_literal_newlines  # noqa: E402
 
 CONFIG_PATH = PLUGIN_ROOT / "config" / "docs_sync.json"
 DOC_PATH = Path("/home/ubuntu/docs/说明书/OpenClaw 标签功能说明.md")

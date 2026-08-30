@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import unittest
 
-from openclaw_app.services.feishu_docx_renderer import NATIVE_TABLE_KIND
-from openclaw_app.services.feishu_service import FeishuService
-from openclaw_app.services.feishu_docx_table_limits import (
+from common.feishu_docx_table_limits import (
     FeishuDocxTableBudgetError,
     FeishuDocxTableLimitError,
     validate_docx_table_create_shape,
     validate_docx_table_official_shape,
 )
+from openclaw_app.services.feishu_docx_renderer import NATIVE_TABLE_KIND
+from openclaw_app.services.feishu_service import FeishuService
 
 
 class FeishuDocxRendererTest(unittest.TestCase):
