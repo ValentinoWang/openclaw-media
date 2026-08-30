@@ -28,6 +28,7 @@ from common.feishu_docx_writer import (  # noqa: E402
     get_docx_block as _shared_get_docx_block,
     get_docx_children as _shared_get_docx_children,
 )
+from openclaw_app.services.deepmath_runtime_config import deepmath_env_file  # noqa: E402
 from openclaw_app.services.feishu_docx_renderer import expand_inline_code_literal_newlines  # noqa: E402
 from openclaw_app.services.feishu_docx_table_limits import (  # noqa: E402
     chunk_docx_table_rows,
@@ -49,7 +50,6 @@ ENV_FILES = [
     Path("/home/ubuntu/.openclaw/openclaw-media.env"),
     Path("/home/ubuntu/openclaw-feishu-reminder/reminder.env"),
 ]
-DEEPMATH_ENV_FILE = Path("/home/ubuntu/.openclaw-deepmath/openclaw.env")
 WRITE_SLEEP_SEC = sleep_seconds_for_docx_write()
 REQUEST_TIMEOUT_SEC = int(os.getenv("FEISHU_DOC_SYNC_REQUEST_TIMEOUT_SEC", "90"))
 WRITE_TIMEOUT_SEC = int(os.getenv("FEISHU_DOC_SYNC_WRITE_TIMEOUT_SEC", "120"))
@@ -93,10 +93,11 @@ def is_deepmath_config(config: dict[str, Any] | None) -> bool:
 
 
 def deepmath_env_values(config: dict[str, Any]) -> dict[str, str]:
-    configured_path = Path(str(config.get("env_file") or DEEPMATH_ENV_FILE)).expanduser()
-    if configured_path != DEEPMATH_ENV_FILE:
-        raise RuntimeError(f"DeepMath doc sync must use the dedicated env file: {DEEPMATH_ENV_FILE}")
-    return parse_env_file(DEEPMATH_ENV_FILE)
+    canonical_env_file = deepmath_env_file()
+    configured_path = Path(str(config.get("env_file") or canonical_env_file)).expanduser()
+    if configured_path != canonical_env_file:
+        raise RuntimeError(f"DeepMath doc sync must use the dedicated env file: {canonical_env_file}")
+    return parse_env_file(canonical_env_file)
 
 
 def configure_sync_target(config: dict[str, Any]) -> None:

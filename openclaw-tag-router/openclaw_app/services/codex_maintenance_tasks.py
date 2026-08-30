@@ -17,6 +17,9 @@ from typing import Any
 
 from common.social_runtime import parse_iso_datetime
 
+from .deepmath_runtime_config import DEEPMATH_ENV_FILE_ENV
+from .deepmath_runtime_config import deepmath_env_file as _canonical_deepmath_env_file
+
 
 SCHEMA_VERSION = 2
 TASK_ID_RE = re.compile(r"^codex_[0-9a-f]{24}$")
@@ -35,7 +38,6 @@ RESUME_INSTRUCTION = (
 )
 OPENCLAW_BIN_ENV = "OPENCLAW_BIN"
 CODEX_BIN_ENV = "OPENCLAW_CODEX_BIN"
-DEEPMATH_ENV_FILE_ENV = "OPENCLAW_DEEPMATH_ENV_FILE"
 CODEX_WORKING_DIRECTORY_ENV = "OPENCLAW_CODEX_WORKING_DIRECTORY"
 WORKER_HEALTH_MAX_AGE_SECONDS = 15
 DEEPMATH_TENANT_PROFILE = "deepmath"
@@ -85,7 +87,10 @@ def deepmath_env_file() -> Path:
     configured = os.environ.get(DEEPMATH_ENV_FILE_ENV, "").strip()
     if configured:
         return Path(configured).expanduser()
-    return DEEPMATH_ENV_FILE or Path.home() / ".openclaw-deepmath" / "openclaw.env"
+    # DEEPMATH_ENV_FILE is a module-local injection seam (tests patch it
+    # directly); the portable default itself is owned by
+    # deepmath_runtime_config.deepmath_env_file().
+    return DEEPMATH_ENV_FILE or _canonical_deepmath_env_file()
 
 
 def codex_working_directory() -> Path:
