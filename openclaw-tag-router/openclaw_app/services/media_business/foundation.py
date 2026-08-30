@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Mapping
+from uuid import UUID
 
 from common.canonical_digest import canonical_json as _canonical_json
 
@@ -194,7 +195,7 @@ def require_context(
     return context
 
 
-# --- Tenant-id extraction wrapper (exc-4, Shape B) --------------------------
+# --- Tenant-id extraction wrapper (exc-4 Shape B, generalized by TI-02) -----
 #
 # tracks.py, assets.py (both AssetsService and AssetPreviewService), and
 # document_resources.py each independently wrapped require_context() with
@@ -204,30 +205,59 @@ def require_context(
 # the returned tenant_id and raise the same Forbidden again if it is empty.
 # This is "Shape B" in the exc-4 audit -- distinct from "Shape A" (a plain
 # `return require_context(context)` passthrough used by publishing/reviews/
-# decisions/runs, deliberately left as inline require_context() calls
-# rather than folded in here) and "Shape C" (usage_billing/invites/overview,
-# which carry real additional business logic -- is_admin rejection, UUID
-# coercion, a narrower except-tuple -- and are deliberately left alone).
+# decisions/runs, left as inline require_context() calls) and "Shape C"
+# (usage_billing/invites/overview, which carry real additional business
+# logic and were left alone by exc-4).
+#
+# TI-02 folds usage_billing.py's Shape-C _tenant_id in too, via the
+# ``canonical``/``deny_admin`` flags: it additionally rejects an admin
+# session (``deny_admin``) and normalizes the tenant id through
+# ``UUID(...)`` (``canonical``) before returning it. Every exception --
+# including require_context's own Forbidden/NotFound, and even after
+# exc-1 made every service's XxxError family an alias for
+# MediaBusinessError -- becomes ``error()``; that matters because
+# usage_billing's prior copy had a
+#   except UsageBillingError: raise
+#   except Exception as exc: raise UsageBillingForbidden() from exc
+# double-except that, since exc-1, started silently bare-re-raising
+# require_context's raw foundation.Forbidden/NotFound instead of wrapping
+# it (UsageBillingError now matches everything MediaBusinessError does).
+# No test exercised that path, so it shipped unnoticed; tenant_id_of's
+# single bare ``except Exception`` fixes it for every caller by
+# construction, not just usage_billing.
 
 
-def require_tenant_id(
+def tenant_id_of(
     context: "TenantContext | None",
     *,
-    forbidden: Callable[[], Exception],
+    error: Callable[[], Exception],
+    canonical: bool = False,
+    deny_admin: bool = False,
 ) -> str:
-    """require_context() plus the strip-and-reject-empty postprocessing
-    every Shape B caller repeated. Reproduces the original bare
-    ``except Exception`` swallow exactly, so it still catches
-    require_context's own Forbidden/NotFound (as well as anything else)
-    and reraises the caller's own branded ``forbidden()`` instead.
+    """require_context() plus tenant-id extraction and normalization.
+
+    ``deny_admin=True`` additionally rejects an admin session outright
+    (only usage_billing denies tenant-scoped reads to admins).
+    ``canonical=True`` additionally normalizes the tenant id through
+    ``UUID(...)`` instead of the plain strip-and-reject-empty check the
+    other callers use (only usage_billing needs this). Every exception --
+    from require_context, the admin check, or UUID coercion -- becomes
+    ``error()``.
     """
     try:
         checked = require_context(context)
     except Exception as exc:
-        raise forbidden() from exc
+        raise error() from exc
+    if deny_admin and checked.is_admin:
+        raise error()
+    if canonical:
+        try:
+            return str(UUID(checked.tenant_id))
+        except Exception as exc:
+            raise error() from exc
     tenant_id = str(checked.tenant_id).strip()
     if not tenant_id:
-        raise forbidden()
+        raise error()
     return tenant_id
 
 

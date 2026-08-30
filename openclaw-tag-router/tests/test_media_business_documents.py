@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 import pytest
 from openclaw_app.services.media_business.documents import (
     DocumentConflict,
+    DocumentForbidden,
     DocumentNotFound,
     DocumentsService,
     DocumentUnavailable,
@@ -349,6 +350,28 @@ def test_get_body_reads_tenant_scoped_canonical_jsonb_revision() -> None:
     assert response["data"]["revision"]["bodyChecksum"] == body_checksum(BODY)
     with pytest.raises(DocumentNotFound):
         service.get_document_body(context("tenant_0002"), "artifact_0001")
+
+
+def test_missing_context_is_a_branded_document_forbidden() -> None:
+    """TI-02: DocumentsService._tenant used to bare-call require_context()
+    and let its raw foundation.Forbidden escape uncaught -- every other
+    media_business service maps this to its own branded Forbidden
+    subclass. Confirms the fix.
+    """
+    service = DocumentsService(MiniDatabase())
+    with pytest.raises(DocumentForbidden):
+        service.get_document_body(None, "artifact_0001")  # type: ignore[arg-type]
+
+
+def test_tenant_id_is_stripped_before_use() -> None:
+    """TI-02: the prior _tenant() returned context.tenant_id verbatim, with
+    no strip() -- a tenant id with incidental surrounding whitespace would
+    silently mismatch every tenant-scoped row. This is a deliberate
+    tightening: tenant_id_of() strips it first.
+    """
+    service = DocumentsService(MiniDatabase())
+    response = service.get_document_body(context("  tenant_0001  "), "artifact_0001")
+    assert response["data"]["revision"]["body"] == BODY
 
 
 def test_save_draft_creates_one_revision_replays_and_rejects_key_rebinding() -> None:

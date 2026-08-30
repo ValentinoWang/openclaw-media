@@ -570,16 +570,7 @@ class UsageBillingService:
         return {"error": {"code": "internal_error", "message": "billing data is unavailable", "field": None}}
 
     def _tenant_id(self, context: TenantContext) -> str:
-        try:
-            checked = require_context(context)
-            if checked.is_admin:
-                raise UsageBillingForbidden()
-            tenant = UUID(checked.tenant_id)
-        except UsageBillingError:
-            raise
-        except Exception as exc:
-            raise UsageBillingForbidden() from exc
-        return str(tenant)
+        return foundation.tenant_id_of(context, error=UsageBillingForbidden, canonical=True, deny_admin=True)
 
     def _user_id(self, context: TenantContext) -> str:
         try:

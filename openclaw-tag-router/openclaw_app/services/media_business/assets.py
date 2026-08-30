@@ -271,7 +271,7 @@ class AssetsService:
         }
 
     def _tenant_id(self, context: TenantContext | None) -> str:
-        return foundation.require_tenant_id(context, forbidden=AssetForbidden)
+        return foundation.tenant_id_of(context, error=AssetForbidden)
 
     @staticmethod
     def _state_row(row: Any) -> tuple[int, int, Any]:
@@ -655,7 +655,7 @@ class AssetPreviewService:
 
     @staticmethod
     def _tenant_id(context: TenantContext | None) -> str:
-        return foundation.require_tenant_id(context, forbidden=AssetForbidden)
+        return foundation.tenant_id_of(context, error=AssetForbidden)
 
     def _resolved_base_token(self) -> str:
         if self._base_token:

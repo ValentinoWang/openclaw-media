@@ -143,4 +143,4 @@ class DocumentResourceService:
 
     @staticmethod
     def _tenant_id(context: TenantContext | None) -> str:
-        return foundation.require_tenant_id(context, forbidden=DocumentResourceForbidden)
+        return foundation.tenant_id_of(context, error=DocumentResourceForbidden)

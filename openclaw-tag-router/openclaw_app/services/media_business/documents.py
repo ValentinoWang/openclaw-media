@@ -30,7 +30,6 @@ from .foundation import (
     idempotency_key,
     preserve_protected_blocks,
     public_projection,
-    require_context,
     validate_body,
 )
 
@@ -59,6 +58,11 @@ class DocumentServiceError(MediaBusinessError):
 class DocumentInvalidRequest(DocumentServiceError):
     def __init__(self, message: str, *, field: str | None = None) -> None:
         super().__init__(foundation.INVALID_REQUEST, message, status=400, field=field)
+
+
+class DocumentForbidden(DocumentServiceError):
+    def __init__(self, message: str = "document data is not available for this session") -> None:
+        super().__init__(foundation.FORBIDDEN, message, status=403)
 
 
 class DocumentNotFound(DocumentServiceError):
@@ -971,8 +975,7 @@ class DocumentsService:
 
     @staticmethod
     def _tenant(context: TenantContext) -> str:
-        require_context(context)
-        return context.tenant_id
+        return foundation.tenant_id_of(context, error=DocumentForbidden)
 
     @staticmethod
     def _lock(connection: DatabaseConnection, tenant_id: str, artifact_id: str) -> None:
