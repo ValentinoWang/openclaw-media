@@ -1,25 +1,10 @@
 from __future__ import annotations
 
 import unittest
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from openclaw_app.models.message import Message
 from openclaw_app.router.creator_profile_router import CreatorProfilesMixin
 
-
-TZ = ZoneInfo("Asia/Shanghai")
-
-
-def make_message(tag: str, body: str) -> Message:
-    return Message(
-        entry_tag=tag,
-        raw_text=f"【{tag}】{body}",
-        body=body,
-        source="feishu",
-        chat_type="private",
-        created_at=datetime(2026, 5, 29, 13, 30, tzinfo=TZ),
-    )
+from _fakes.messages import make_message
 
 
 class CreatorProfileHarness(CreatorProfilesMixin):

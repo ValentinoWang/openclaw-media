@@ -2,20 +2,16 @@ from __future__ import annotations
 
 import unittest
 import tempfile
-from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
-from zoneinfo import ZoneInfo
 
 from common.platform_links import platform_display_zh
 from openclaw_app.models.message import Message
 from openclaw_app.router.activity_daily import ActivityDailyMixin
 from openclaw_app.services.obsidian_daily_checklist_service import ObsidianDailyChecklistService
 
+from _fakes.messages import make_message
 from _fakes.services import FakeArchiveService, FakeReminderService
-
-
-TZ = ZoneInfo("Asia/Shanghai")
 
 
 class FakeContentFlowClient:
@@ -78,17 +74,6 @@ class DailyHarness(ActivityDailyMixin):
 
     def _configured_bitable_url(self, _kind: str) -> str:
         return "https://bitable.configured"
-
-
-def make_message(tag: str, body: str) -> Message:
-    return Message(
-        entry_tag=tag,
-        raw_text=f"【{tag}】{body}",
-        body=body,
-        source="feishu",
-        chat_type="private",
-        created_at=datetime(2026, 5, 29, 13, 30, tzinfo=TZ),
-    )
 
 
 class ActivityDailyLlmTest(unittest.TestCase):

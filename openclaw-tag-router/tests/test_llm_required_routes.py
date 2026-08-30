@@ -2,21 +2,16 @@ from __future__ import annotations
 
 import tempfile
 import unittest
-from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
-from zoneinfo import ZoneInfo
 
-from openclaw_app.models.message import Message
 from openclaw_app.router.activity_daily import ActivityDailyMixin
 from openclaw_app.router.social_archive import SocialArchiveMixin
 from openclaw_app.router.tag_capabilities import TAG_LABELS
 
+from _fakes.messages import make_message
 from _fakes.services import FakeArchiveService
-
-
-TZ = ZoneInfo("Asia/Shanghai")
 
 
 class ForbiddenReminderService:
@@ -75,17 +70,6 @@ class SocialHarness(SocialArchiveMixin):
     @staticmethod
     def _load_social_metadata_prompt(_social_root: Path) -> str:
         return "frozen social metadata contract fixture"
-
-
-def make_message(tag: str, body: str) -> Message:
-    return Message(
-        entry_tag=tag,
-        raw_text=f"【{tag}】{body}",
-        body=body,
-        source="feishu",
-        chat_type="private",
-        created_at=datetime(2026, 5, 29, 13, 30, tzinfo=TZ),
-    )
 
 
 class LlmRequiredRoutesTest(unittest.TestCase):
