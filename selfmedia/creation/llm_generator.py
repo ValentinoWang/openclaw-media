@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +15,7 @@ from common.prompt_budget import (
     truncate_text as _shared_truncate_text,
     truncate_to_budget as _shared_truncate_to_budget,
 )
+from common.text_list import split_text_list as _shared_split_text_list, string_list as _shared_string_list
 
 from .platform_validator import validate_platform_draft
 from .request_parser import CreationRequest
@@ -1209,23 +1209,8 @@ def _creation_role_instructions(validation_contract: str) -> str:
     )
 
 
-def _as_string_list(value: Any) -> list[str]:
-    result = []
-    for item in _as_list(value):
-        text = str(item or "").strip(" #\t")
-        if text:
-            result.append(text)
-    return result
-
-
-def _as_list(value: Any) -> list[Any]:
-    if value in (None, "", []):
-        return []
-    if isinstance(value, list):
-        return [item for item in value if item not in (None, "", [])]
-    if isinstance(value, str):
-        return [item.strip() for item in re.split(r"[\n,，、;；]+", value) if item.strip()]
-    return [value]
+_as_string_list = _shared_string_list
+_as_list = _shared_split_text_list
 
 
 def _as_dict(value: Any, *, default_key: str) -> dict[str, Any]:
