@@ -222,6 +222,7 @@ function renderEntryState(mode, state, payload = null) {
 
 async function loadEntryState(mode) {
   const run = ++entryStateRun
+  setHidden(`${mode}-entry-state`, false)
   renderEntryState(mode, 'loading')
   const payload = await fetchEntryState(mode, run)
   if (run !== entryStateRun) return
@@ -391,10 +392,12 @@ function initLogin() {
   })
   document.querySelector('#qr-refresh')?.addEventListener('click', () => void startOrganizationAuth())
   document.querySelector('#personal-entry-fallback')?.addEventListener('click', () => {
+    setHidden('personal-entry-state', true)
     setHidden('personal-password-fallback', false)
     document.querySelector('#identifier')?.focus()
   })
   document.querySelector('#organization-entry-fallback')?.addEventListener('click', () => {
+    setHidden('organization-entry-state', true)
     setHidden('organization-oauth-fallback', false)
     void startOrganizationAuth()
   })
