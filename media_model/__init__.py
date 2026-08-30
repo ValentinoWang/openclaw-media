@@ -58,7 +58,6 @@ from .validators import (
     LLM_OUTPUT_SCHEMA,
     LLMIOContractError,
     build_llm_input_payload,
-    platform_validation_report,
     validate_llm_input_payload,
     validate_llm_output_payload,
 )
@@ -108,7 +107,6 @@ __all__ = [
     "normalize_platform_hashtags",
     "normalize_rebate_ratio",
     "normalize_source_url",
-    "platform_validation_report",
     "render_spec_to_creator_doc_blocks",
     "render_spec_to_creator_draft",
     "render_spec_to_task_card_blocks",

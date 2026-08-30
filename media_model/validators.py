@@ -88,14 +88,22 @@ def validate_llm_output_payload(payload: dict[str, Any], request: Any, **_: Any)
     return payload
 
 
-def platform_validation_report(platform: str, content_type: str, draft: dict[str, Any]) -> dict[str, Any]:
-    issues: list[dict[str, str]] = []
-    if not str(draft.get("title") or "").strip():
-        issues.append({"field": "title", "message": "title is required"})
-    tags = draft.get("tags")
-    if not isinstance(tags, list) or not tags:
-        issues.append({"field": "tags", "message": "at least one tag is required"})
-    if str(platform).strip() == "小红书" and str(content_type).strip() == "图文" and not draft.get("image_script"):
-        issues.append({"field": "image_script", "message": "xiaohongshu image_script is required"})
-    ok = not issues
-    return {"ok": ok, "issues": issues, "write_policy": "final_write_allowed" if ok else "pending_manual_only"}
+# Platform-draft field validation (title/tags/platform-specific required
+# fields) used to have a second, weaker implementation here
+# (platform_validation_report: title-non-empty + tags-non-empty + a single
+# xiaohongshu image_script check, no tag-count ranges, no title length cap,
+# no per-platform video-element checks, unknown platforms silently passed).
+# It had zero production callers (media_model/__init__.py only re-exported
+# it, and the sole consumer was a test) while
+# selfmedia.creation.platform_validator.validate_platform_draft is the real
+# authority: 4 production call sites, 5 test files, per-platform tag-count
+# ranges, title length caps, and hook/storyboard/voiceover/subtitle rules.
+# Removed here (dedup audit cluster SV-09) rather than turned into a thin
+# adapter, because media_model has no dependency on selfmedia anywhere in
+# the codebase (selfmedia depends on media_model, never the other way) and
+# importing selfmedia.creation from here would be a layering violation.
+# assert_generation_write_policy below does not consume this function's
+# output -- it takes a plain validation_ok bool -- so callers that need a
+# platform-draft ok/issues verdict should call
+# selfmedia.creation.platform_validator.validate_platform_draft directly
+# and pass its .ok into assert_generation_write_policy.

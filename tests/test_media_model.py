@@ -42,7 +42,6 @@ from media_model import (
     normalize_platform_hashtags,
     normalize_rebate_ratio,
     normalize_source_url,
-    platform_validation_report,
     render_spec_to_creator_doc_blocks,
     render_spec_to_task_card_blocks,
     validate_entrypoint_result,
@@ -297,10 +296,14 @@ class MediaModelTests(unittest.TestCase):
         )
         self.assertEqual(payload["schema"]["evidence_scheme"], "media://")
 
-    def test_platform_validation_failure_is_pending_manual_only(self) -> None:
-        report = platform_validation_report("小红书", "图文", {"title": "", "tags": [], "image_script": []})
-        self.assertFalse(report["ok"])
-        self.assertEqual(report["write_policy"], "pending_manual_only")
+    def test_generation_write_policy_rejects_failed_llm_or_validation(self) -> None:
+        # Platform-draft field validation (title/tags/platform rules) lives in
+        # selfmedia.creation.platform_validator.validate_platform_draft (see
+        # tests/test_creation_platform_tags.py and friends) -- media_model's
+        # own former, weaker copy (platform_validation_report) was removed in
+        # dedup audit cluster SV-09. assert_generation_write_policy itself
+        # only consumes a plain validation_ok bool, which is what remains to
+        # cover here.
         with self.assertRaises(LLMIOContractError):
             assert_generation_write_policy(generation_source="llm", llm_ok=False, validation_ok=True)
         with self.assertRaises(LLMIOContractError):
