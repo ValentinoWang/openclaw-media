@@ -15,6 +15,8 @@ from openclaw_app.router.content_os_renderers import ContentOSRenderersMixin
 from openclaw_app.router.content_os_state import ContentOSStateMixin
 from openclaw_app.router.content_os_utils import ContentOSUtilsMixin
 
+from _fixtures.content_os_vault import make_content_os_vault
+
 
 FIXED_NOW = datetime(2026, 8, 28, 8, 0, tzinfo=timezone.utc)
 RAW_STAGES = ("captured", "planned", "edit_ready", "editing", "final_ready", "published")
@@ -33,52 +35,12 @@ class ContentOSBridgeHarness(ContentOSBridgeMixin, ContentOSStateMixin, ContentO
 
 class ContentOSBridgePresentationTests(unittest.TestCase):
     def _make_vault(self, *, status: str = "editing") -> tuple[tempfile.TemporaryDirectory[str], Path, str]:
-        temporary = tempfile.TemporaryDirectory()
-        vault_root = Path(temporary.name)
-        project_id = "20260828_测试项目"
-        project_dir = vault_root / "08_内容项目" / project_id
-        project_dir.mkdir(parents=True)
-        rules = {
-            "spec_version": CONTENT_OS_SPEC_VERSION,
-            "project_statuses": list(RAW_STAGES),
-            "transitions": {
-                "editing_to_final_ready": {
-                    "from": "editing",
-                    "to": "final_ready",
-                    "allowed_actor": "human",
-                    "required_evidence": ["output_video_exists", "output_review_evidence_exists", "human_final_selected"],
-                },
-                "final_ready_to_published": {
-                    "from": "final_ready",
-                    "to": "published",
-                    "allowed_actor": "human",
-                    "required_evidence": ["human_published_confirmation"],
-                },
-            },
-        }
-        rules_path = vault_root / "00_入口与总览" / "state_transition_rules.yaml"
-        rules_path.parent.mkdir(parents=True)
-        rules_path.write_text(yaml.safe_dump(rules, allow_unicode=True, sort_keys=False), encoding="utf-8")
-        overview = {
-            "spec_version": CONTENT_OS_SPEC_VERSION,
-            "doc_type": "project_overview",
-            "project_id": project_id,
-            "idea_id": "idea_20260828_001",
-            "title": "测试项目",
-            "status": status,
-            "project_revision": 1,
-            "editor_backend": "handoff_pack",
-            "owner": "小李",
-            "next_action": "提交成片质检",
-            "blocked": False,
-            "blocked_reason": "",
-            "updated_at": "2026-08-28T08:00:00+00:00",
-        }
-        (project_dir / "00_项目总览.md").write_text(
-            "---\n" + yaml.safe_dump(overview, allow_unicode=True, sort_keys=False).strip() + "\n---\n\n# 测试项目\n",
-            encoding="utf-8",
+        return make_content_os_vault(
+            status=status,
+            project_id="20260828_测试项目",
+            project_statuses=list(RAW_STAGES),
+            overview_extra={"next_action": "提交成片质检"},
         )
-        return temporary, vault_root, project_id
 
     @staticmethod
     def _message(project_id: str, extra: str = "") -> Message:

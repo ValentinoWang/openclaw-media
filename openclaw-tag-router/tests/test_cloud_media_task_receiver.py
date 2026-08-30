@@ -14,6 +14,7 @@ from types import SimpleNamespace
 
 from openclaw_app.adapters.http_api import make_server
 from openclaw_app.router.content_os_bridge import ContentOSBridgeMixin
+from openclaw_app.router.content_os_project_lifecycle import CONTENT_OS_SPEC_VERSION
 from openclaw_app.router.content_os_queue import create_ready_task
 from openclaw_app.services.cloud_media_task_receiver import (
     CloudMediaTaskReceiver,
@@ -70,7 +71,7 @@ class CloudMediaTaskReceiverTests(unittest.TestCase):
         project_dir.mkdir(parents=True)
         (project_dir / "00_项目总览.md").write_text(
             "---\n"
-            "spec_version: content_os_v0.2\n"
+            f"spec_version: {CONTENT_OS_SPEC_VERSION}\n"
             "doc_type: project_overview\n"
             f"project_id: {self.project_id}\n"
             "idea_id: idea_20260829_cloud_receiver\n"

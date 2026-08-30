@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
-import tempfile
 import unittest
 
 import yaml
@@ -37,6 +36,8 @@ from openclaw_app.router.content_os_queue import (
     enqueue_confirmed_change,
     validate_mac_result,
 )
+
+from _fixtures.content_os_vault import make_content_os_vault
 
 
 FIXED_NOW = datetime(2026, 7, 10, 8, 0, tzinfo=timezone.utc)
@@ -79,70 +80,6 @@ class FakeFeishuProjectBoardClient:
 
 
 class ContentOSV2Test(unittest.TestCase):
-    def _make_vault(self, *, status: str = "captured", backend: str = "handoff_pack") -> tuple[tempfile.TemporaryDirectory[str], Path, str]:
-        temporary = tempfile.TemporaryDirectory()
-        root = Path(temporary.name)
-        project_id = "20260710_测试项目"
-        project_dir = root / "08_内容项目" / project_id
-        project_dir.mkdir(parents=True)
-        rules = {
-            "spec_version": CONTENT_OS_SPEC_VERSION,
-            "project_statuses": ["captured", "planned", "edit_ready", "editing", "final_ready", "published"],
-            "transitions": {
-                "captured_to_planned": {
-                    "from": "captured",
-                    "to": "planned",
-                    "allowed_actor": "cloud_openclaw_or_human",
-                    "required_evidence": ["01_idea_card.md", "02_project_brief.md", "04_script.md"],
-                },
-                "planned_to_edit_ready": {
-                    "from": "planned",
-                    "to": "edit_ready",
-                    "allowed_actor": "cloud_openclaw",
-                    "required_evidence": ["05_storyboard.md", "06_edit_decision_list.json", "result_identity_valid", "selected_editor_backend_result_valid"],
-                },
-                "edit_ready_to_editing": {
-                    "from": "edit_ready",
-                    "to": "editing",
-                    "allowed_actor": "human",
-                    "required_evidence": ["human_confirmed_edit_start", "selected_editor_backend_recorded"],
-                },
-                "editing_to_final_ready": {
-                    "from": "editing",
-                    "to": "final_ready",
-                    "allowed_actor": "human",
-                    "required_evidence": ["output_video_exists", "output_review_evidence_exists", "human_final_selected"],
-                },
-                "final_ready_to_published": {
-                    "from": "final_ready",
-                    "to": "published",
-                    "allowed_actor": "human",
-                    "required_evidence": ["human_published_confirmation"],
-                },
-            },
-        }
-        rules_path = root / "00_入口与总览" / "state_transition_rules.yaml"
-        rules_path.parent.mkdir(parents=True)
-        rules_path.write_text(yaml.safe_dump(rules, allow_unicode=True, sort_keys=False), encoding="utf-8")
-        overview = {
-            "spec_version": CONTENT_OS_SPEC_VERSION,
-            "doc_type": "project_overview",
-            "project_id": project_id,
-            "idea_id": "idea_20260710_001",
-            "title": "测试项目",
-            "status": status,
-            "project_revision": 1,
-            "editor_backend": backend,
-            "owner": "小李",
-            "next_action": "补全素材",
-            "blocked": False,
-            "blocked_reason": "",
-            "updated_at": "2026-07-10T08:00:00+00:00",
-        }
-        content = "---\n" + yaml.safe_dump(overview, allow_unicode=True, sort_keys=False).strip() + "\n---\n\n# 测试项目\n"
-        (project_dir / "00_项目总览.md").write_text(content, encoding="utf-8")
-        return temporary, root, project_id
-
     @staticmethod
     def _write_evidence(root: Path, project_id: str, *names: str) -> None:
         project_dir = root / "08_内容项目" / project_id
@@ -154,7 +91,7 @@ class ContentOSV2Test(unittest.TestCase):
         return yaml.safe_load(path.read_text(encoding="utf-8"))
 
     def test_lifecycle_writes_only_project_overview_and_not_registry(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             registry = root / "90_索引与注册表" / "project_registry.md"
             registry.parent.mkdir(parents=True)
@@ -176,7 +113,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertIn("| planned |", (root / "08_内容项目" / project_id / "00_state_log.md").read_text(encoding="utf-8"))
 
     def test_mac_actor_cannot_advance_project_stage(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             self._write_evidence(root, project_id, "01_idea_card.md", "02_project_brief.md", "04_script.md")
             with self.assertRaisesRegex(ContentOSContractError, "Mac 回传"):
@@ -192,7 +129,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(read_project_state(root, project_id).status, "captured")
 
     def test_publish_requires_recorded_human_confirmation_but_not_post_url(self) -> None:
-        temporary, root, project_id = self._make_vault(status="final_ready")
+        temporary, root, project_id = make_content_os_vault(status="final_ready")
         with temporary:
             with self.assertRaisesRegex(ContentOSContractError, "human_published_confirmation"):
                 transition_project_status(
@@ -223,7 +160,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(state.status, "published")
 
     def test_note_only_change_does_not_change_project_or_create_task(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             request = create_change_request(
                 root,
@@ -243,7 +180,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertFalse((root / "98_Agent任务队列" / "01_cloud_to_mac_ready").exists())
 
     def test_media_bot_project_note_only_collects_then_preserves_all_project_facts(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             harness = ContentOSChangeHarness(root)
             collect = harness.handle_修改(
@@ -282,7 +219,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertFalse((root / "98_Agent任务队列" / "01_cloud_to_mac_ready").exists())
 
     def test_media_bot_bare_change_request_returns_title_based_form(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             harness = ContentOSChangeHarness(root)
             result = harness.handle_修改(
@@ -295,7 +232,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertNotIn(project_id, result.reply)
 
     def test_media_bot_accepts_project_title_without_exposing_project_id(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             harness = ContentOSChangeHarness(root)
             result = harness.handle_修改(
@@ -316,7 +253,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertNotIn(project_id, result.reply)
 
     def test_media_bot_only_enqueues_after_explicit_now_modify(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             harness = ContentOSChangeHarness(root)
             result = harness.handle_修改(
@@ -345,7 +282,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(task["project_revision"], 2)
 
     def test_explicit_feishu_docx_stays_on_generic_document_path(self) -> None:
-        temporary, root, _project_id = self._make_vault()
+        temporary, root, _project_id = make_content_os_vault()
         with temporary:
             harness = GenericDocxPassThroughHarness(root)
             result = harness.handle_修改(
@@ -361,7 +298,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(result.status, "missing_target_document")
 
     def test_confirmed_change_increments_revision_and_uses_selected_backend(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             request = create_change_request(
                 root,
@@ -393,7 +330,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(load_change_request(root, request.change_request_id).status, "executing")
 
     def test_confirmed_change_rejects_task_for_other_backend_without_fallback(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             request = create_change_request(
                 root,
@@ -412,7 +349,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(read_project_state(root, project_id).project_revision, 1)
 
     def test_mac_result_with_wrong_revision_is_rejected_as_stale(self) -> None:
-        temporary, root, project_id = self._make_vault(status="planned")
+        temporary, root, project_id = make_content_os_vault(status="planned")
         with temporary:
             task = create_ready_task(
                 root,
@@ -441,7 +378,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertTrue(task.path.exists())
 
     def test_mac_result_cannot_propose_project_stage_and_accept_preserves_stage(self) -> None:
-        temporary, root, project_id = self._make_vault(status="planned")
+        temporary, root, project_id = make_content_os_vault(status="planned")
         with temporary:
             task = create_ready_task(
                 root,
@@ -477,7 +414,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(self._read_yaml(accepted.done_task_path)["status"], "done")
 
     def test_same_mac_result_replay_is_idempotent_after_ack_loss(self) -> None:
-        temporary, root, project_id = self._make_vault(status="planned")
+        temporary, root, project_id = make_content_os_vault(status="planned")
         with temporary:
             task = create_ready_task(
                 root,
@@ -509,7 +446,7 @@ class ContentOSV2Test(unittest.TestCase):
                 accept_mac_result(root, {**result, "outputs": {"report": "changed.md"}}, now=FIXED_NOW)
 
     def test_http_result_requires_the_authenticated_tenant_on_task_and_result(self) -> None:
-        temporary, root, project_id = self._make_vault(status="planned")
+        temporary, root, project_id = make_content_os_vault(status="planned")
         with temporary:
             task = create_ready_task(
                 root,
@@ -542,7 +479,7 @@ class ContentOSV2Test(unittest.TestCase):
                 validate_mac_result(root, result, expected_tenant_id="tenant_b")
 
     def test_registry_and_feishu_are_derived_projections(self) -> None:
-        temporary, root, project_id = self._make_vault(status="editing", backend="otio_kdenlive")
+        temporary, root, project_id = make_content_os_vault(status="editing", backend="otio_kdenlive")
         with temporary:
             registry_path = write_project_registry_projection(root)
             registry = registry_path.read_text(encoding="utf-8")
@@ -555,7 +492,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(projection["负责人"], "小李")
 
     def test_feishu_adapter_projects_only_chinese_collaborator_fields(self) -> None:
-        temporary, root, project_id = self._make_vault(status="editing", backend="handoff_pack")
+        temporary, root, project_id = make_content_os_vault(status="editing", backend="handoff_pack")
         with temporary:
             project_dir = root / "08_内容项目" / project_id
             (project_dir / "02_project_brief.md").write_text(
@@ -597,7 +534,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(overview_path.read_text(encoding="utf-8"), before)
 
     def test_feishu_projection_translates_system_owner_to_chinese_role(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             overview_path = root / "08_内容项目" / project_id / "00_项目总览.md"
             frontmatter, body = overview_path.read_text(encoding="utf-8").split("---", 2)[1:]
@@ -614,7 +551,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertEqual(projection["负责人"], "云端协作")
 
     def test_feishu_adapter_hides_permission_error_and_never_exposes_raw_details(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             adapter = FeishuProjectBoardProjectionAdapter(FakeFeishuProjectBoardClient(PermissionError("403 raw secret")))
 
@@ -627,7 +564,7 @@ class ContentOSV2Test(unittest.TestCase):
             self.assertNotIn(project_id, result["reply"])
 
     def test_revision_activation_requires_human_confirmation(self) -> None:
-        temporary, root, project_id = self._make_vault()
+        temporary, root, project_id = make_content_os_vault()
         with temporary:
             with self.assertRaisesRegex(ContentOSContractError, "人工确认"):
                 activate_confirmed_revision(
