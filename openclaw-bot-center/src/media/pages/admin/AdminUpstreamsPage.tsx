@@ -16,11 +16,12 @@ import {
 } from 'lucide-react'
 import { BusinessOperationError, callBusinessOperation } from '../../generatedBusinessPagesContract'
 import { useMediaWeb } from '../../MediaWebWorkspace'
-import { secureUuid } from '../../secureUuid'
+import { newIdempotencyKey } from '../../idempotency'
+import { CANONICAL_UUID_PATTERN } from '../../identifiers'
+import { formatTimestampFull } from '../../ui/datetime'
 import styles from './AdminUpstreamsPage.module.css'
 
 const SCHEMA_VERSION = 'media_web_business_pages_v2'
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 type CredentialHealth = 'healthy' | 'degraded' | 'unavailable' | 'revoked' | 'unknown'
 type Summary = {
@@ -94,7 +95,7 @@ function parseReceipt(value: unknown): MutationReceipt | null {
 }
 
 function isOperationReference(value: string): boolean {
-  return UUID_PATTERN.test(value.trim())
+  return CANONICAL_UUID_PATTERN.test(value.trim())
 }
 
 function publicError(error: unknown, fallback: string): string {
@@ -119,14 +120,7 @@ function count(value: number): string {
   return value.toLocaleString('zh-CN')
 }
 
-function timestamp(value: string | null, full = false): string {
-  if (!value) return full ? '暂无同步记录' : '暂无'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return full ? '暂无同步记录' : '暂无'
-  return new Intl.DateTimeFormat('zh-CN', full
-    ? { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }
-    : { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(date)
-}
+const timestamp = formatTimestampFull
 
 function healthClass(value: CredentialHealth): string {
   if (value === 'healthy') return styles.statusHealthy
@@ -209,7 +203,7 @@ export default function AdminUpstreamsPage() {
 
   function keyFor(fingerprint: string): string {
     if (mutationKey.current.fingerprint !== fingerprint) {
-      mutationKey.current = { fingerprint, value: 'b14-' + secureUuid() }
+      mutationKey.current = { fingerprint, value: newIdempotencyKey('b14') }
     }
     return mutationKey.current.value
   }

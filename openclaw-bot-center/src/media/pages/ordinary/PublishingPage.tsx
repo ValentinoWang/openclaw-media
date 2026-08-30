@@ -19,7 +19,7 @@ import {
   BusinessOperationError,
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
-import { secureUuid } from "../../secureUuid";
+import { newIdempotencyKey } from "../../idempotency";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { formatDate, PageHeading } from "../../ui/ordinaryPagePrimitives";
 import { platformDisplayLabel } from "../../ui/platformRegistry";
@@ -258,7 +258,7 @@ function PackageDetail({ package: item, session, onUpdate, onNotice }: { package
         path: { publicPackageId: item.publicPackageId },
         body: { expectedRevision: item.revision, checks: checks.map(({ key }) => ({ key, checked: draft[key], status: draft[key] ? "complete" : "pending" })), reason: reason.trim() },
         csrfToken: session.csrfToken,
-        idempotencyKey: "publishing-checks-" + secureUuid(),
+        idempotencyKey: newIdempotencyKey("publishing-checks"),
       });
       setCheckState({ status: "ready", data: response });
       setReason("");
@@ -290,7 +290,7 @@ function PackageDetail({ package: item, session, onUpdate, onNotice }: { package
       const created = await callBusinessOperation<ReceiptResponse>("createPublishedPost", {
         body: { publicPackageId: item.publicPackageId, expectedRevision: item.revision, platform: item.platform, publishedUrl: url.trim(), publishedAt: date.toISOString() },
         csrfToken: session.csrfToken,
-        idempotencyKey: "published-post-" + secureUuid(),
+        idempotencyKey: newIdempotencyKey("published-post"),
       });
       const post = await callBusinessOperation<ReceiptResponse>("getPublishedPost", { path: { publicPostId: created.publishedPost.publicPostId } });
       const packageReadback = await callBusinessOperation<PackageResponse>("getPublishingPackage", { path: { publicPackageId: item.publicPackageId } });

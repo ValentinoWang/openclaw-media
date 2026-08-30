@@ -26,8 +26,9 @@ import {
 } from "../../generatedBusinessPagesContract";
 import { useMediaWeb } from "../../MediaWebWorkspace";
 import { loginUrl } from "../../mediaWebApi";
+import { newIdempotencyKey } from "../../idempotency";
 import { PageHeading } from "../../ui/ordinaryPagePrimitives";
-import { newIdempotencyKey } from "../../ui/ordinaryPagePrimitives";
+import { ECHO_INVALID, formatDateTime } from "../../ui/datetime";
 import {
   creatorRoleDisplayLabel,
   formatFitScore,
@@ -1957,9 +1958,7 @@ function toMonitorResourceError(error: unknown): ResourceState<AccountMonitorRes
 }
 
 function formatDate(value: string | null): string {
-  if (!value) return "未提供";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("zh-CN", { hour12: false });
+  return formatDateTime(value, { empty: "未提供", invalid: ECHO_INVALID });
 }
 
 function formatRelativeTime(value: string | null): string {

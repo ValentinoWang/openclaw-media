@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { secureUuid } from '../secureUuid'
+import { newIdempotencyKey } from '../idempotency'
+import { canonicalUuid } from '../identifiers'
+
+export { newIdempotencyKey, canonicalUuid }
 
 export type ActionState = { kind: 'idle' | 'busy' | 'success' | 'error'; message: string }
 export type LoadState<T> = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; data: T }
@@ -30,10 +33,8 @@ export function useAdminAction(onComplete: () => void) {
   return { state, busy: state.kind === 'busy', run }
 }
 
-export function newIdempotencyKey(scope: string) { return `${scope}-${secureUuid()}` }
 export function mutationFingerprint(path: string, method: string, payload: Record<string, unknown>) { return JSON.stringify([method, path, payload]) }
 export function positiveId(value: string) { return /^[1-9][0-9]*$/.test(value) }
-export const canonicalUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 export function nonNegativeInteger(value: string) { return /^(0|[1-9][0-9]*)$/.test(value) }
 export function positiveMoney(value: string) { return /^(?:0\.(?:0{0,7}[1-9][0-9]{0,7})|[1-9][0-9]{0,5}(?:\.[0-9]{1,8})?)$/.test(value) && Number(value) <= 100000 }
 export function liandongPurchaseUrl(value?: string) { try { const url = new URL(value || ''); const host = url.hostname.toLowerCase().replace(/\.$/, ''); return url.protocol === 'https:' && !url.port && !url.username && !url.password && !url.hash && (host === 'ldxp.cn' || host.endsWith('.ldxp.cn')) } catch { return false } }

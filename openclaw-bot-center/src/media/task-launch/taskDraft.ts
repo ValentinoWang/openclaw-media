@@ -13,6 +13,9 @@ import {
   confirmationReceiptProblemMessage,
 } from "../confirmationReceiptExpiry";
 import { materialParsingIssues } from "./materialParsing";
+import { newTaskIdempotencyKey } from "../idempotency";
+
+export { newTaskIdempotencyKey };
 
 export type DraftPhase =
   | "idle"
@@ -708,8 +711,3 @@ function refreshRequestIdentity(
   };
 }
 
-export function newTaskIdempotencyKey(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return `web_${[...bytes].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
-}

@@ -19,7 +19,7 @@ import {
   type MediaWebSession,
   type Stage1ProvisionRun,
 } from './mediaWebApi'
-import { secureUuid } from './secureUuid'
+import { newIdempotencyKey } from './idempotency'
 
 type OrganizationConnection = 'connected' | 'pending' | 'disabled' | 'revoked' | 'attention'
 type OrganizationMediaWebSession = Extract<MediaWebSession, { workspaceMode: 'organization_lark' }>
@@ -132,7 +132,7 @@ function OrganizationWorkspaceContent({
   const idempotencyKeyFor = (action: 'confirm' | 'start' | 'retry' | 'deprovision') => {
     const existing = idempotencyKeys.current.get(action)
     if (existing) return existing
-    const key = `stage1-${action}-${secureUuid()}`
+    const key = newIdempotencyKey(`stage1-${action}`)
     idempotencyKeys.current.set(action, key)
     return key
   }

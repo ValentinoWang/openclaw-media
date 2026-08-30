@@ -2,7 +2,7 @@ import { capabilityCatalogSchema, type CapabilityCatalog, type CapabilityDefinit
 import { capabilityMatchResponseSchema, type CapabilityMatchResponse } from '../schemas/capabilityMatchSchema'
 import { mediaWebTaskCreateRequestSchema, mediaWebTaskErrorSchema, mediaWebTaskSchema, mediaWebUploadSchema, type MediaWebTask as GeneratedMediaWebTask, type MediaWebTaskCreateRequest, type MediaWebUpload } from '../schemas/mediaWebTaskSchema'
 import { z } from 'zod'
-import { secureUuid } from './secureUuid'
+import { newIdempotencyKey } from './idempotency'
 import { stableTaskErrorMessage } from './recentTaskPresentation'
 import {
   MediaProductClient,
@@ -330,7 +330,7 @@ export function loadMediaJobDetail(
 export function createMediaJob(
   session: MediaWebSession,
   request: JobCreateRequest,
-  idempotencyKey = `media-job-${secureUuid()}`,
+  idempotencyKey = newIdempotencyKey('media-job'),
 ): Promise<JobCreateResponse> {
   return w1Client(session).job_create(request, { idempotencyKey })
 }
@@ -338,7 +338,7 @@ export function createMediaJob(
 export function createMediaPairCode(
   session: MediaWebSession,
   deviceLabel: string,
-  idempotencyKey = `pair-code-${secureUuid()}`,
+  idempotencyKey = newIdempotencyKey('pair-code'),
 ): Promise<PairCodeCreateResponse> {
   return w1Client(session).pair_code_create({ device_label: deviceLabel, expires_in_seconds: 600 }, { idempotencyKey })
 }
@@ -555,7 +555,7 @@ export async function changeInitialPassword(
 export async function logoutMediaSession(session: MediaWebSession): Promise<{ ok: true }> {
   return request<{ ok: true }>('/openclaw/auth/logout', {
     method: 'POST',
-    headers: mutationHeaders(session, `logout-${secureUuid()}`),
+    headers: mutationHeaders(session, newIdempotencyKey('logout')),
     body: '{}',
   })
 }
@@ -645,7 +645,7 @@ function fileAsBase64(file: File): Promise<string> {
 export async function uploadMediaFile(session: MediaWebSession, file: File): Promise<MediaWebUpload> {
   let idempotencyKey = uploadIdempotencyKeys.get(file)
   if (!idempotencyKey) {
-    idempotencyKey = `upload-${secureUuid()}`
+    idempotencyKey = newIdempotencyKey('upload')
     uploadIdempotencyKeys.set(file, idempotencyKey)
   }
   const response = await request<unknown>('/uploads', {

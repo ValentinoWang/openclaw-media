@@ -3,7 +3,7 @@ import {
   type BusinessOperationRequest,
   type DocumentOperationId,
 } from "./generatedBusinessPagesContract";
-import { secureUuid } from "./secureUuid";
+import { newIdempotencyKey } from "./idempotency";
 
 export const IF2_DOCUMENT_OPERATIONS = [
   "createDocumentExport",
@@ -127,7 +127,7 @@ export function createIf2DocumentApi(caller: DocumentBusinessCaller = defaultCal
       const identity = JSON.stringify([publicArtifactId, base.revision, base.bodyChecksum, base.remoteDocumentVersion, body]);
       if (identity !== draftIdentity) {
         draftIdentity = identity;
-        draftIdempotencyKey = `document-draft-${secureUuid()}`;
+        draftIdempotencyKey = newIdempotencyKey("document-draft");
       }
       if (!draftIdempotencyKey) throw new DocumentWorkflowInvariantError("草稿幂等标识未生成。");
       return caller<DocumentRevisionResponse>("saveDocumentDraft", {
