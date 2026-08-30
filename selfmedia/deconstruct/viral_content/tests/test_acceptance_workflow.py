@@ -9,6 +9,8 @@ from selfmedia.deconstruct.viral_content.src import cli, media_parts, runner
 from selfmedia.deconstruct.viral_content.src.evidence import modality_dag
 from selfmedia.deconstruct.viral_content.src.feishu_doc_writer import DocRef
 
+from _fixtures import multi_signal_contract_payload as _multi_signal_contract_payload
+
 
 def _docx_table_response(body: dict[str, object], rows: int = 2, cols: int = 5) -> dict[str, object]:
     children = body.get("children")
@@ -109,54 +111,6 @@ def _deconstruct_payload(asset_id: str = "frame_001") -> dict[str, object]:
         "attention_elements": ["红光暗房", "近景自拍", "关系问题"],
         "viral_migration": "迁移关系留白结构，替换人物身份、场景和文案。",
         "creative_upgrade_suggestion": "把暧昧提问升级成观众审判局，让评论区承担第二叙事层。",
-    }
-
-
-def _multi_signal_contract_payload(asset_id: str = "frame_001") -> dict[str, object]:
-    return {
-        "contract_version": "multi_signal_contract.v1",
-        "evidence_manifest_refs": [asset_id],
-        "source_signal_dimensions": [
-            {
-                "dimension_id": "visual",
-                "status": "available",
-                "source_refs": [asset_id],
-                "observations": ["画面以强视觉钩子开场"],
-                "summary": "视觉维度可迁移的是首屏冲突和近景停留。",
-                "reusable_signal": "用自己的主体和场景重建首屏停留。",
-                "transform_rule": "保留开头强钩子结构，替换人物、场景、文案和视觉组合。",
-                "risk_boundary": "不能复用原画面组合、原句或真实人物身份。",
-                "confidence": 0.8,
-                "insufficient_evidence": [],
-                "conflict_notes": [],
-            }
-        ],
-        "shot_adaptation_notes": [
-            {
-                "note_id": "shot_note_001",
-                "source_refs": [asset_id],
-                "source_dimension_ids": ["visual"],
-                "learnable_pattern": "用自己的主体和场景重建首屏停留。",
-                "adaptation_rule": "保留开头强钩子结构，替换人物、场景、文案和视觉组合。",
-                "do_not_copy": ["不能复用原画面组合、原句或真实人物身份。"],
-                "confidence": 0.8,
-            }
-        ],
-        "evidence_store_summary": {"schema_version": "evidence_store_summary_v1"},
-        "aggregation_report": {
-            "dimension_count": 1,
-            "available_dimensions": ["visual"],
-            "insufficient_dimensions": [],
-            "failed_dimensions": [],
-            "source_ref_failures": [],
-        },
-        "conflict_notes": [],
-        "open_questions": [],
-        "validation": {
-            "source_refs_status": "validated",
-            "multi_signal_contract_status": "validated",
-            "warnings": [],
-        },
     }
 
 

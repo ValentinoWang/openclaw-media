@@ -31,6 +31,7 @@ from selfmedia.deconstruct.viral_content.src.schemas import (
 )
 from selfmedia.deconstruct.viral_content.src.trigger import WorkflowMode, route_mode
 from _fakes import SseResponse, recording_post
+from _fixtures import multi_signal_contract_payload as _multi_signal_contract_payload
 
 
 def _test_config(**overrides) -> ViralDeconstructConfig:
@@ -122,54 +123,6 @@ def _minimal_evidence_dag(asset_id: str = "frame_001") -> dict[str, object]:
             "missing_evidence_report": [],
         },
         "evidence_dag_artifact_paths": {},
-    }
-
-
-def _multi_signal_contract_payload(asset_id: str = "frame_001") -> dict[str, object]:
-    return {
-        "contract_version": "multi_signal_contract.v1",
-        "evidence_manifest_refs": [asset_id],
-        "source_signal_dimensions": [
-            {
-                "dimension_id": "visual",
-                "status": "available",
-                "source_refs": [asset_id],
-                "observations": ["画面以强视觉钩子开场"],
-                "summary": "视觉维度可迁移的是首屏冲突和近景停留。",
-                "reusable_signal": "用自己的主体和场景重建首屏停留。",
-                "transform_rule": "保留开头强钩子结构，替换人物、场景、文案和视觉组合。",
-                "risk_boundary": "不能复用原画面组合、原句或真实人物身份。",
-                "confidence": 0.8,
-                "insufficient_evidence": [],
-                "conflict_notes": [],
-            }
-        ],
-        "shot_adaptation_notes": [
-            {
-                "note_id": "shot_note_001",
-                "source_refs": [asset_id],
-                "source_dimension_ids": ["visual"],
-                "learnable_pattern": "用自己的主体和场景重建首屏停留。",
-                "adaptation_rule": "保留开头强钩子结构，替换人物、场景、文案和视觉组合。",
-                "do_not_copy": ["不能复用原画面组合、原句或真实人物身份。"],
-                "confidence": 0.8,
-            }
-        ],
-        "evidence_store_summary": {"schema_version": "evidence_store_summary_v1"},
-        "aggregation_report": {
-            "dimension_count": 1,
-            "available_dimensions": ["visual"],
-            "insufficient_dimensions": [],
-            "failed_dimensions": [],
-            "source_ref_failures": [],
-        },
-        "conflict_notes": [],
-        "open_questions": [],
-        "validation": {
-            "source_refs_status": "validated",
-            "multi_signal_contract_status": "validated",
-            "warnings": [],
-        },
     }
 
 
