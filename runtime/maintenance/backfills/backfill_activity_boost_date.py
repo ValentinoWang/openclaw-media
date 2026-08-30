@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
-import os
 import re
 import sys
 from datetime import datetime, timedelta
@@ -22,34 +20,23 @@ from common.activity_links import (  # noqa: E402
     normalize_link_items,
     split_link_fields,
 )
-from common.env import feishu_reminder_root  # noqa: E402
+from runtime.maintenance.reminder_runtime import (  # noqa: E402
+    activity_config_path,
+    daily_config_path,
+    load_json,
+    load_reminder_module,
+    reminder_script_path,
+)
 
 
-REMINDER_ROOT = feishu_reminder_root()
-REMINDER_PATH = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_SCRIPT") or REMINDER_ROOT / "reminder.py")
-ACTIVITY_CONFIG_PATH = Path(os.getenv("OPENCLAW_ACTIVITY_CONFIG_PATH") or REMINDER_ROOT / "wiki-activity-config.json")
-DAILY_CONFIG_PATH = Path(os.getenv("OPENCLAW_DAILY_CONFIG_PATH") or REMINDER_ROOT / "config.json")
+REMINDER_PATH = reminder_script_path()
+ACTIVITY_CONFIG_PATH = activity_config_path()
+DAILY_CONFIG_PATH = daily_config_path()
 TIMEZONE = "Asia/Shanghai"
 
 
 def load_reminder() -> Any:
-    if not REMINDER_PATH.is_file():
-        raise SystemExit(
-            f"missing required reminder script: {REMINDER_PATH}; "
-            "set OPENCLAW_FEISHU_REMINDER_SCRIPT or OPENCLAW_FEISHU_REMINDER_ROOT"
-        )
-    spec = importlib.util.spec_from_file_location("openclaw_feishu_reminder_backfill", REMINDER_PATH)
-    if not spec or not spec.loader:
-        raise RuntimeError(f"cannot import {REMINDER_PATH}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def load_json(path: Path, *, env_name: str) -> dict[str, Any]:
-    if not path.is_file():
-        raise SystemExit(f"missing required JSON config: {path}; set {env_name}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    return load_reminder_module(REMINDER_PATH, "openclaw_feishu_reminder_backfill")
 
 
 # canonical_link_url / normalize_link_items / link_field_name /

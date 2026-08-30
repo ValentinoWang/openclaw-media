@@ -19,6 +19,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from common.env import feishu_reminder_root  # noqa: E402
+from runtime.maintenance.reminder_runtime import reminder_script_path  # noqa: E402
 
 OPENCLAW_RUNTIME_HOME = Path(os.getenv("OPENCLAW_RUNTIME_HOME") or Path.home() / ".openclaw")
 DEFAULT_ARCHIVE_ROOT = Path(os.getenv("OPENCLAW_DAILY_TODO_ARCHIVE_ROOT") or Path.home() / "obsidian-日记/Archieve")
@@ -29,9 +30,7 @@ DEFAULT_STATE_PATH = Path(
     os.getenv("OPENCLAW_DAILY_TODO_SYNC_STATE") or REPO_ROOT / "data/daily_todo_sync_state.json"
 )
 DEFAULT_REMINDER_ROOT = feishu_reminder_root()
-DEFAULT_REMINDER_SCRIPT = Path(
-    os.getenv("OPENCLAW_FEISHU_REMINDER_SCRIPT") or DEFAULT_REMINDER_ROOT / "reminder.py"
-)
+DEFAULT_REMINDER_SCRIPT = reminder_script_path()
 DEFAULT_ENV_FILES = [
     str(OPENCLAW_RUNTIME_HOME / "openclaw-feishu-env.conf"),
     str(DEFAULT_REMINDER_ROOT / "reminder.env"),

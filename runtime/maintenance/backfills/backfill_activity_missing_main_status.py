@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -13,26 +11,19 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from common.env import feishu_reminder_root  # noqa: E402
+from runtime.maintenance.reminder_runtime import (  # noqa: E402
+    activity_config_path,
+    load_reminder_module,
+    reminder_script_path,
+)
 
-REMINDER_ROOT = feishu_reminder_root()
-REMINDER_PATH = Path(os.getenv("OPENCLAW_FEISHU_REMINDER_SCRIPT") or REMINDER_ROOT / "reminder.py")
-ACTIVITY_CONFIG_PATH = Path(os.getenv("OPENCLAW_ACTIVITY_CONFIG_PATH") or REMINDER_ROOT / "wiki-activity-config.json")
+REMINDER_PATH = reminder_script_path()
+ACTIVITY_CONFIG_PATH = activity_config_path()
 DEFAULT_STATUS = "进行中"
 
 
 def load_reminder() -> Any:
-    if not REMINDER_PATH.is_file():
-        raise SystemExit(
-            f"missing required reminder script: {REMINDER_PATH}; "
-            "set OPENCLAW_FEISHU_REMINDER_SCRIPT or OPENCLAW_FEISHU_REMINDER_ROOT"
-        )
-    spec = importlib.util.spec_from_file_location("openclaw_feishu_reminder_status_backfill", REMINDER_PATH)
-    if not spec or not spec.loader:
-        raise RuntimeError(f"cannot import {REMINDER_PATH}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return load_reminder_module(REMINDER_PATH, "openclaw_feishu_reminder_status_backfill")
 
 
 def load_activity_config() -> dict[str, str]:
