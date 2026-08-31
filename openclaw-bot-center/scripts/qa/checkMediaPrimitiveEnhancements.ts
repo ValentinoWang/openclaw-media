@@ -102,6 +102,35 @@ function assertMetricConsumersUseCanonicalTones(): void {
   }
 }
 
+function assertHeroActionContracts(): void {
+  const violations: string[] = []
+  for (const fileName of findTsxFiles(resolve(projectRoot, 'src/media'))) {
+    const sourceText = readFileSync(fileName, 'utf8')
+    const source = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+    const visit = (node: ts.Node) => {
+      if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+        const opening = ts.isJsxElement(node) ? node.openingElement : node
+        const classText = opening.attributes.properties
+          .filter((property): property is ts.JsxAttribute => ts.isJsxAttribute(property) && property.name.text === 'className')
+          .flatMap((property) => jsxAttributeStaticStringValues(property))
+          .join(' ')
+        if (classText.split(/\s+/).includes('mg-hero-actions')) {
+          const end = ts.isJsxElement(node) ? node.getEnd() : node.getEnd()
+          const block = sourceText.slice(node.getStart(source), end)
+          const primaryCount = (block.match(/mg-btn-primary/g) ?? []).length
+          const secondaryCount = (block.match(/mg-btn-secondary/g) ?? []).length
+          if (primaryCount !== 1 || secondaryCount > 2) {
+            violations.push(`${fileName}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1} primary=${primaryCount} secondary=${secondaryCount}`)
+          }
+        }
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(source)
+  }
+  if (violations.length) throw new Error(`media hero action contract failed: ${violations.join(', ')}`)
+}
+
 function runProjectCheck(): void {
   const primitiveCss = readFileSync(resolve(projectRoot, 'src/media/mediaPrimitives.css'), 'utf8')
   assertFoundationClean(primitiveCss, 'src/media/mediaPrimitives.css')
@@ -119,6 +148,7 @@ function runProjectCheck(): void {
   for (const tone of ['good', 'warn', 'info']) requireRule(`[data-tone='${tone}']`)
   for (const selector of ['.mg-badge', ".mg-tab[data-variant='pill']", '.mg-btn:hover', '.mg-state-art', 'prefers-reduced-motion']) requireRule(selector)
   assertMetricConsumersUseCanonicalTones()
+  assertHeroActionContracts()
   console.log('media primitive enhancement QA passed: accents, tones, tabs, button hover, state art, reduced motion')
 }
 
