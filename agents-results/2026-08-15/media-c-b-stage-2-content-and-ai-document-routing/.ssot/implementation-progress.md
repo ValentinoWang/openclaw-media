@@ -50,7 +50,7 @@
 | C1-C5 | 已落地个人资料、研究简报、决策简报、个人上下文和个人内部成果写入流程。 | 源码/聚焦测试观察；不等同正式节点接受 |
 | O1-O4 | 已落地组织资料、按 Binding 写入、成果绑定、飞书回读和网页只读镜像流程。 | 源码/聚焦测试观察；不等同正式节点接受 |
 | storage-topology | 三分叉存储：PostgreSQL canonical 迁移 37 个（其中包括 owned_media_accounts、tracks、publishing_packages）；SQLitePersonalContentStore 持久化个人成果；account_memory 为文件系统 JSON，位于 ~/.openclaw/media_vault/account_memory/<account_id>/。因此存在两道 join 断点，而不是 SQLite 与 Postgres 的单一断点。 | 源码/聚焦测试观察；不等同正式节点接受 |
-| frontend-scope | 当前生产入口是 src/media/main.tsx -> MediaStudioApp.tsx；旧 MediaApp.tsx 已由 ea98ca3b 从源码删除。studioOrdinaryRoutes 与 studioTrackRoutes 由统一策略消费，个人/组织/管理员路由授权由严格会话 routeGrants 和 MediaStudioRoutePolicy 共同约束。 | 源码/聚焦测试观察；不等同正式节点接受 |
+| frontend-scope | 当前生产入口是 src/media/main.tsx -> MediaStudioApp.tsx；旧 MediaApp.tsx 已由 ea98ca3b 从源码删除。当前机器源清点为 mediaPageStructureManifest 24 面；studioOrdinaryRoutes 为 14 条（/today、/studio、/campaigns、/business、/desk、/overview、/assets、/decisions、/publishing、/reviews、/media-agent、/archives、/usage-billing、/invites），另有 studioTrackRoutes。两组机器路由全量向个人人格开放，个人/组织/管理员路由授权由统一策略、严格会话 routeGrants 和 MediaStudioRoutePolicy 共同约束。 | 源码/聚焦测试观察；不等同正式节点接受 |
 | entry-state | 登录入口状态已落地为 GET /openclaw/auth/entry-state?mode=，响应 media_auth_entry_state_v1，覆盖 matched、none、expired、mismatched 四态并有测试；它与工作台路由授权是两个不同合同。 | 源码/聚焦测试观察；不等同正式节点接受 |
 | route-grants | 当前 main 的 media_web_business_pages_v2 严格 schema 已包含 routeGrants，并由服务端生成、客户端校验和路由矩阵消费；这已是源码事实，但与早期‘不得增加 routeGrants’的已接受决定存在待处理合同冲突，不能提升正式节点状态。 | 源码/聚焦测试观察；不等同正式节点接受 |
 | font-scope | DS-02/DS-26 已在 main 落地：mediaDesignTokens.css 定义 --mg-text-4xl，mediaFonts.css 和本地 WOFF2 提供 DM Sans/Noto Sans SC，Google Fonts 依赖有门禁；仍需按实际部署弱网证据验收。 | 源码/聚焦测试观察；不等同正式节点接受 |
@@ -78,7 +78,7 @@
 
 ## 下一步唯一动作
 
-继续在第一阶段权威 `/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md` 下推进其合法就绪前沿。第一阶段 C1 正式接受后，先零写入同步 F1，才能打开共享合同和个人支线；C3 接受后同步 F2，才能打开第二阶段唯一写入路由和组织支线；DC2 接受后同步 F3，但仍须等待 C8、O6 和 S 才能组装第二阶段唯一候选。11 个顶层导航页加 1 条运行详情深链，共 12 条普通路由条目已决定全部向个人人格开放；后续只需按个人数据作用域、动作权限和组织能力隔离实现，记录见 `openproblem.md`。
+继续在第一阶段权威 `/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-1-identity-and-organization-onboarding/ssot-development-paths.md` 下推进其合法就绪前沿。第一阶段 C1 正式接受后，先零写入同步 F1，才能打开共享合同和个人支线；C3 接受后同步 F2，才能打开第二阶段唯一写入路由和组织支线；DC2 接受后同步 F3，但仍须等待 C8、O6 和 S 才能组装第二阶段唯一候选。当前机器源的 `studioOrdinaryRoutes + studioTrackRoutes` 已决定全部向个人人格开放；后续只需按个人会话、租户、所有者作用域、动作权限和组织能力隔离实现，记录见 `openproblem.md`。
 
 ## 第三阶段边界
 

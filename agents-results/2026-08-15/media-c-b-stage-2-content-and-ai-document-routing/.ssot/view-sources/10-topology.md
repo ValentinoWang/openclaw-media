@@ -35,7 +35,7 @@
 
 | Revision | Deviation level | Reason | Changed versions | Affected nodes | Invalidated acceptance/evidence | Nodes to rerun | Approving authority | Timestamp |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 7 | L2 | 接受 11 个顶层导航页加 1 条运行详情深链，共 12 条普通路由条目全部向个人人格开放，并冻结个人作用域与组织能力隔离边界 | PLAN_VERSION 5; DAG_VERSION 5; INTERFACE_FREEZE_VERSION 5; NODE_CONTRACT_VERSION 5; PRODUCT_DECISION_VERSION 4 | A/A1/K/F1/F2/F3/B-S5/C1-C8/O1-O6/S/C/DA/DB/DC | 旧候选分支与测试数量引用；机器源进度视图漂移；会话授权与视觉资源边界待补充 | 重建全部机器分片、执行合同、规划编译记录和生成视图并复验；保留正式节点门禁和普通 IA 产品问题 | main orchestrator under user-requested cross-stage synchronization | 2026-08-30 |
+| 7 | L2 | 接受 studioOrdinaryRoutes + studioTrackRoutes 两组机器路由全量向个人人格开放，并冻结个人会话、租户、所有者作用域与组织能力隔离边界 | PLAN_VERSION 5; DAG_VERSION 5; INTERFACE_FREEZE_VERSION 5; NODE_CONTRACT_VERSION 5; PRODUCT_DECISION_VERSION 4 | A/A1/K/F1/F2/F3/B-S5/C1-C8/O1-O6/S/C/DA/DB/DC | 旧候选分支与测试数量引用；机器源进度视图漂移；会话授权与视觉资源边界待补充 | 重建全部机器分片、执行合同、规划编译记录和生成视图并复验；保留正式节点门禁和普通 IA 产品问题 | main orchestrator under user-requested cross-stage synchronization | 2026-08-30 |
 
 ## 不确定性路由
 
@@ -46,7 +46,7 @@
 | 第一阶段 C1、C3、DC2 未接受 | execution-blocker | F1、F2、F3 跨阶段投影 | stage1 acceptance owners | 按三条投影局部阻塞 | 上游节点 ACCEPTED 及候选哈希 |
 | 真实个人、飞书组织和验收账号 | execution-blocker | O5/DB 受控身份台账 | runtime acceptance owner | 只阻塞真实外部动作及下游 | 同收据外部系统证据 |
 | 现有能力清单与生产源码位置 | discoverable-fact | B/S5 实现前有界查找 | contract owner | 不改变已接受产品决定 | 源码、OpenAPI 和注册表读回 |
-| 第二阶段产品选择 | none | K 第 4 版决定记录与第一阶段已接受决定；11 个顶层导航页加 1 条运行详情深链，共 12 条普通路由条目全部向个人人格开放 | user | 不重复拥有第一阶段决定；路由动作仍需按个人作用域实现 | K ACCEPTED / route allowlist ACCEPTED |
+| 第二阶段产品选择 | none | K 决定记录与第一阶段已接受决定；studioOrdinaryRoutes + studioTrackRoutes 两组机器路由全量向个人人格开放 | user | 不重复拥有第一阶段决定；路由动作仍需按个人会话、租户、所有者作用域实现 | K ACCEPTED / route allowlist ACCEPTED |
 
 ## ASCII 拓扑图
 

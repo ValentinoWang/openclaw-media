@@ -133,7 +133,7 @@ IMPLEMENTATION_OBSERVATIONS = {
     "C1-C5": "已落地个人资料、研究简报、决策简报、个人上下文和个人内部成果写入流程。",
     "O1-O4": "已落地组织资料、按 Binding 写入、成果绑定、飞书回读和网页只读镜像流程。",
     "storage-topology": "三分叉存储：PostgreSQL canonical 迁移 37 个（其中包括 owned_media_accounts、tracks、publishing_packages）；SQLitePersonalContentStore 持久化个人成果；account_memory 为文件系统 JSON，位于 ~/.openclaw/media_vault/account_memory/<account_id>/。因此存在两道 join 断点，而不是 SQLite 与 Postgres 的单一断点。",
-    "frontend-scope": "当前生产入口是 src/media/main.tsx -> MediaStudioApp.tsx；旧 MediaApp.tsx 已由 ea98ca3b 从源码删除。studioOrdinaryRoutes 与 studioTrackRoutes 由统一策略消费，个人/组织/管理员路由授权由严格会话 routeGrants 和 MediaStudioRoutePolicy 共同约束。",
+    "frontend-scope": "当前生产入口是 src/media/main.tsx -> MediaStudioApp.tsx；旧 MediaApp.tsx 已由 ea98ca3b 从源码删除。当前机器源清点为 mediaPageStructureManifest 24 面；studioOrdinaryRoutes 为 14 条（/today、/studio、/campaigns、/business、/desk、/overview、/assets、/decisions、/publishing、/reviews、/media-agent、/archives、/usage-billing、/invites），另有 studioTrackRoutes。两组机器路由全量向个人人格开放，个人/组织/管理员路由授权由统一策略、严格会话 routeGrants 和 MediaStudioRoutePolicy 共同约束。",
     "entry-state": "登录入口状态已落地为 GET /openclaw/auth/entry-state?mode=，响应 media_auth_entry_state_v1，覆盖 matched、none、expired、mismatched 四态并有测试；它与工作台路由授权是两个不同合同。",
     "route-grants": "当前 main 的 media_web_business_pages_v2 严格 schema 已包含 routeGrants，并由服务端生成、客户端校验和路由矩阵消费；这已是源码事实，但与早期‘不得增加 routeGrants’的已接受决定存在待处理合同冲突，不能提升正式节点状态。",
     "font-scope": "DS-02/DS-26 已在 main 落地：mediaDesignTokens.css 定义 --mg-text-4xl，mediaFonts.css 和本地 WOFF2 提供 DM Sans/Noto Sans SC，Google Fonts 依赖有门禁；仍需按实际部署弱网证据验收。",
@@ -822,7 +822,7 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 9. 会话解析函数（`parseMediaSessionEnvelope`）的严格响应结构保持不变；会话版本（`media_web_business_pages_v2`）中不得增加页面授权字段（`routeGrants`）或其他新键。
 10. 页面权限改由独立只读入口状态接口返回。接口必须有独立版本、严格响应结构和 OpenAPI/客户端类型；建议逻辑接口为入口状态地址（`GET /api/media/entry-state`），若源码已有等价入口则沿用一个既有路径并在 B 节点冻结，不能形成双入口。
 11. 页面授权按三个维度分开：角色字段（`role`）决定管理员或普通壳层，工作区模式字段（`workspaceMode`）与正文权威字段（`bodyAuthority`）决定正文来源，入口状态返回页面和动作授权；服务端对每个业务动作继续做最终校验。
-12. 当前生产入口文件（`src/media/main.tsx`）挂载媒体工作台应用（`MediaStudioApp.tsx`）；旧媒体应用（`MediaApp.tsx`）只有在入口清点证明无生产引用后才可退役。11 个顶层导航页加 1 条运行详情深链（`/runs/:runId`）共 12 条普通路由条目，全部向个人人格开放；查询和动作按个人数据作用域执行，个人正文只写个人网页内部成果，组织绑定（Binding）、飞书写入和组织成员能力继续隔离。
+12. 当前生产入口文件（`src/media/main.tsx`）挂载媒体工作台应用（`MediaStudioApp.tsx`）；旧媒体应用（`MediaApp.tsx`）已由 `ea98ca3b` 从源码删除。机器路由清单（`studioOrdinaryRoutes`）当前 14 条，另有轨道路由清单（`studioTrackRoutes`）、个人/组织/管理员路由及运行详情深链；两组机器路由全量向个人人格开放，查询和动作按个人会话、租户、所有者作用域执行，个人正文只写个人网页内部成果，组织绑定（Binding）、飞书写入和组织成员能力继续隔离。
 13. 字体自托管是境内部署主路径：拉丁字体（DM Sans）全量自托管，中文字体（Noto Sans SC）使用字符范围切片规则（`unicode-range`）或常用字子集，只预载拉丁子集；加载清单必须包含实际使用的 600 字重，清理 800/850 视觉依赖。
 14. 中文标题及无法分段的中西混排标题默认使用字距属性（`letter-spacing: 0`）；负字距只允许用于纯拉丁或数字展示位。统一回退栈把苹方字体（PingFang SC）提前，并覆盖认证页与工作台。
 
@@ -839,7 +839,7 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 1. **先做入口与合同清点（B）**：在当前生产入口、旧入口、服务端路由和 OpenAPI 中查找已有入口状态实现；确认媒体工作台应用（`MediaStudioApp`）的挂载路径、旧媒体应用（`MediaApp`）的实际引用、普通信息架构（IA）的真实数量，并把结果登记为来源证据。若没有可复用的接口，冻结一个入口状态接口（`entry-state`）的路径和版本。
 2. **实现独立入口状态投影（B、S1）**：服务端从认证会话、角色字段（`role`）、工作区模式字段（`workspaceMode`）、正文权威字段（`bodyAuthority`）和能力注册表计算默认入口（`defaultRoute`）、页面授权和动作授权；响应严格校验，未认证返回 401，已认证但无权返回 403，版本过期或候选不一致返回稳定的冲突状态。任何客户端提交的租户、组织绑定、正文权威或角色都不能成为授权依据。
 3. **统一路由注册表与入口（C6、C8、T1）**：用一个注册表生成导航、路由、默认入口和授权判断；媒体工作台应用（`MediaStudioApp`）作为唯一生产入口，旧媒体应用（`MediaApp`）只保留明确的退役转发或在确认无引用后删除。无权深链显示稳定的无权状态，不静默跳到另一个业务页面；页面内动作也必须按入口状态与服务端结果双重收敛。
-4. **落实普通信息架构（IA）个人开放决定（K、C6、T1）**：11 个顶层导航页加 1 条运行详情深链（`/runs/:runId`）共 12 条普通路由条目，全部向个人人格开放，默认入口为个人概览。统一注册表必须为每条路由声明个人可见性和动作；查询、创建、编辑、发布、复盘、归档、计费与邀请均按个人会话作用域校验。任何组织绑定（Binding）、飞书写入或组织成员动作在个人人格下稳定拒绝，不得静默切换人格。代码中 11 个导航页与 12 条路由条目的计数差异属于入口清点，不再阻塞产品决定。
+4. **落实普通信息架构（IA）个人开放决定（K、C6、T1）**：`studioOrdinaryRoutes + studioTrackRoutes` 两组机器路由全量向个人人格开放，默认入口为个人概览；当前 `studioOrdinaryRoutes` 为 14 条，具体清单以 `mediaStudioRoutePolicy.ts` 为准。统一注册表必须为每条路由声明个人可见性和动作；查询、创建、编辑、发布、复盘、归档、计费与邀请均按个人会话、租户、所有者作用域校验。任何组织绑定（Binding）、飞书写入或组织成员动作在个人人格下稳定拒绝，不得静默切换人格。
 5. **建立字体资源管线（C6、T1、DA）**：在前端资源目录生成并校验拉丁字体（DM Sans）和中文字体（Noto Sans SC）的 WOFF2 文件、切片或常用字子集，统一设计令牌样式表（`mediaDesignTokens.css`）与认证样式表（`media.auth.css`）的回退栈；加载 400/500/600/700 等实际使用字重，清理 800/850 依赖，中文标题字距为 0。只预载拉丁子集，中文切片按需加载。
 6. **按真实会话和弱网验收（T1、C8、DA、DB、DC）**：覆盖普通/管理员 × 个人/组织四种合法会话，以及未认证、失效、非法信封、缺失入口状态和越权深链。浏览器拦截谷歌字体服务（Google Fonts）后分别验证字体可用与不可用两种状态，检查桌面和移动端没有溢出、截断或明显跳动。模拟会话、单纯导航文字和单次字体下载都不能替代真实合同证据。
 
@@ -913,12 +913,12 @@ def topology_view() -> str:
         ["第一阶段 C1、C3、DC2 未接受", "execution-blocker", "F1、F2、F3 跨阶段投影", "stage1 acceptance owners", "按三条投影局部阻塞", "上游节点 ACCEPTED 及候选哈希"],
         ["真实个人、飞书组织和验收账号", "execution-blocker", "O5/DB 受控身份台账", "runtime acceptance owner", "只阻塞真实外部动作及下游", "同收据外部系统证据"],
         ["现有能力清单与生产源码位置", "discoverable-fact", "B/S5 实现前有界查找", "contract owner", "不改变已接受产品决定", "源码、OpenAPI 和注册表读回"],
-        ["第二阶段产品选择", "none", "K 第 4 版决定记录与第一阶段已接受决定；11 个顶层导航页加 1 条运行详情深链，共 12 条普通路由条目全部向个人人格开放", "user", "不重复拥有第一阶段决定；路由动作仍需按个人作用域实现", "K ACCEPTED / route allowlist ACCEPTED"],
+        ["第二阶段产品选择", "none", "K 决定记录与第一阶段已接受决定；studioOrdinaryRoutes + studioTrackRoutes 两组机器路由全量向个人人格开放", "user", "不重复拥有第一阶段决定；路由动作仍需按个人会话、租户、所有者作用域实现", "K ACCEPTED / route allowlist ACCEPTED"],
     ]
     revision_rows = [[
         7,
         "L2",
-        "接受 11 个顶层导航页加 1 条运行详情深链，共 12 条普通路由条目全部向个人人格开放，并冻结个人作用域与组织能力隔离边界",
+        "接受 studioOrdinaryRoutes + studioTrackRoutes 两组机器路由全量向个人人格开放，并冻结个人会话、租户、所有者作用域与组织能力隔离边界",
         "PLAN_VERSION 5; DAG_VERSION 5; INTERFACE_FREEZE_VERSION 5; NODE_CONTRACT_VERSION 5; PRODUCT_DECISION_VERSION 4",
         "A/A1/K/F1/F2/F3/B-S5/C1-C8/O1-O6/S/C/DA/DB/DC",
         "旧候选分支与测试数量引用；机器源进度视图漂移；会话授权与视觉资源边界待补充",
@@ -1299,7 +1299,7 @@ def progress_view() -> str:
         "## 波前指标",
         table(["Metric", "Value", "Basis"], metrics),
         "## 下一步唯一动作",
-        f"继续在第一阶段权威 `{STAGE1_MAIN}` 下推进其合法就绪前沿。第一阶段 C1 正式接受后，先零写入同步 F1，才能打开共享合同和个人支线；C3 接受后同步 F2，才能打开第二阶段唯一写入路由和组织支线；DC2 接受后同步 F3，但仍须等待 C8、O6 和 S 才能组装第二阶段唯一候选。11 个顶层导航页加 1 条运行详情深链，共 12 条普通路由条目已决定全部向个人人格开放；后续只需按个人数据作用域、动作权限和组织能力隔离实现，记录见 `openproblem.md`。",
+        f"继续在第一阶段权威 `{STAGE1_MAIN}` 下推进其合法就绪前沿。第一阶段 C1 正式接受后，先零写入同步 F1，才能打开共享合同和个人支线；C3 接受后同步 F2，才能打开第二阶段唯一写入路由和组织支线；DC2 接受后同步 F3，但仍须等待 C8、O6 和 S 才能组装第二阶段唯一候选。当前机器源的 `studioOrdinaryRoutes + studioTrackRoutes` 已决定全部向个人人格开放；后续只需按个人会话、租户、所有者作用域、动作权限和组织能力隔离实现，记录见 `openproblem.md`。",
         "## 第三阶段边界",
         "第二阶段 DC 接受只证明个人内容闭环、组织飞书正文闭环和 C/B 人工智能文档分流完成。完整组织角色、审核、席位、采购、发票、迁移、复杂删除和经营分析继续属于未来第三阶段，不得计入本阶段节点或完成度。",
     ])
