@@ -92,6 +92,17 @@ class DocumentUnavailable(DocumentServiceError):
         super().__init__(foundation.INTERNAL_ERROR, message, status=500)
 
 
+class LarkSaveOutcomeUnknown(DocumentServiceError):
+    """The remote write may have committed; callers must reconcile by key."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "lark_save_outcome_unknown",
+            "飞书文档保存结果暂未确认，请使用相同幂等键重试以完成核对。",
+            status=500,
+        )
+
+
 class DatabaseConnection(Protocol):
     def execute(self, query: str, params: tuple[Any, ...] = ()) -> Any: ...
 
@@ -655,9 +666,7 @@ class DocumentsService:
             )
             raise
         except Exception as exc:
-            raise DocumentUnavailable(
-                "Lark save outcome is unknown and requires reconciliation"
-            ) from exc
+            raise LarkSaveOutcomeUnknown() from exc
         return self._finalize_lark_save(
             context,
             artifact_id,

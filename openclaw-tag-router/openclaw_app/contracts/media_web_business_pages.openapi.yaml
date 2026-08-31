@@ -285,6 +285,7 @@ x-openclaw-document-contract:
   - document_revision_conflict
   - unsupported_document_block
   - lark_table_shape_unsupported
+  - lark_save_outcome_unknown
 x-openclaw-canonical-capabilities:
 - capabilityId: vlog_inspiration_capture
   status: external

@@ -11,6 +11,7 @@ from openclaw_app.services.media_business.documents import (
     DocumentNotFound,
     DocumentsService,
     DocumentUnavailable,
+    LarkSaveOutcomeUnknown,
     LarkBlockSnapshot,
     LarkRevisionSnapshot,
     UnsupportedDocumentBlock,
@@ -461,10 +462,13 @@ def test_lark_unknown_outcome_stays_running_and_same_key_reconciles() -> None:
     service = DocumentsService(database, lark_gateway=gateway)
     request = draft_request(changed, remote_version="remote_version_0001")
 
-    with pytest.raises(DocumentUnavailable, match="requires reconciliation"):
+    with pytest.raises(LarkSaveOutcomeUnknown) as caught:
         service.save_document_draft(
             context(), "artifact_0001", request, idempotency_key="lark_save_key_02"
         )
+    assert caught.value.code == "lark_save_outcome_unknown"
+    assert caught.value.status == 500
+    assert "相同幂等键" in caught.value.message
     batch = next(iter(database.batches.values()))
     assert batch["state"] == "running"
     assert database.artifacts[("tenant_0001", "artifact_0001")][5] == 1
