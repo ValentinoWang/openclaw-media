@@ -125,7 +125,7 @@
   color: var(--loop-accent);
   font-size: var(--mg-text-sm);
   font-weight: 700;
-  letter-spacing: .11em;
+  letter-spacing: 0;
 }
 
 .loopCard header > svg {

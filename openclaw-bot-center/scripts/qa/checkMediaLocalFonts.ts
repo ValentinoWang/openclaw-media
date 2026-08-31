@@ -46,8 +46,21 @@ function assertLocalFontSources(css: string, root: string): void {
 
 function assertNoGoogleFontDependency(files: Iterable<string>): void {
   for (const file of files) {
-    assert.doesNotMatch(readFileSync(file, 'utf8'), forbiddenFontHosts, `Google Fonts dependency remains in ${file}`)
+    assert.equal(hasGoogleFontDependency(readFileSync(file, 'utf8')), false, `Google Fonts dependency remains in ${file}`)
   }
+}
+
+export function hasGoogleFontDependency(sourceText: string): boolean {
+  forbiddenFontHosts.lastIndex = 0
+  return forbiddenFontHosts.test(sourceText)
+}
+
+function sourceTextFiles(root: string): string[] {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = join(root, entry.name)
+    if (entry.isDirectory()) return sourceTextFiles(entryPath)
+    return /\.(?:css|html|js|ts|tsx)$/u.test(entry.name) ? [entryPath] : []
+  })
 }
 
 function releaseTextFiles(root: string): string[] {
@@ -71,11 +84,17 @@ assert.ok(existsSync(join(fontDirectory, 'README.md')), 'font provenance note is
 assert.ok(existsSync(join(fontDirectory, 'OFL-1.1.txt')), 'font license text is missing')
 
 assertNoGoogleFontDependency([
-  fontCssPath,
-  tokenCssPath,
+  ...sourceTextFiles(mediaRoot),
+  join(projectRoot, 'media.login.js'),
+  join(projectRoot, 'media.auth.css'),
   join(projectRoot, 'src/media.auth.css'),
   ...htmlPaths.map((path) => join(projectRoot, path)),
 ])
+
+if (process.argv.includes('--self-test')) {
+  assert.equal(hasGoogleFontDependency('body{src:url(https://fonts.googleapis.com/css2?family=DM+Sans)}'), true, 'Google Fonts negative fixture was accepted')
+  assert.equal(hasGoogleFontDependency('body{src:url(./fonts/dm-sans.woff2)}'), false, 'local font fixture was rejected')
+}
 
 if (process.argv.includes('--build')) {
   const releaseRoot = join(projectRoot, 'dist-media')
@@ -88,4 +107,4 @@ if (process.argv.includes('--build')) {
   assertNoGoogleFontDependency(releaseTextFiles(releaseRoot))
 }
 
-console.log(`media local font ${process.argv.includes('--build') ? 'build ' : ''}QA passed`)
+console.log(`media local font ${process.argv.includes('--build') ? 'build ' : ''}${process.argv.includes('--self-test') ? 'self-test ' : ''}QA passed`)

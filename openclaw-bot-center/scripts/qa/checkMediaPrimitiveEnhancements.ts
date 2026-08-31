@@ -11,6 +11,7 @@ const eyebrowRulePattern = /\.mg-eyebrow[^{}]*\{([^{}]*)\}/gi
 const letterSpacingPattern = /\bletter-spacing\s*:\s*([^;}]+)/i
 const zeroLetterSpacingPattern = /^-?(?:0+\.?0*|\.0+)(?:[a-z%]+)?(?:\s*!important)?$/i
 const allowedFontWeights = new Set(['400', '500', '600', '700'])
+const allowedTrackingValues = new Set(['var(--mg-track-tight)', 'var(--mg-track-normal)', 'var(--mg-track-wide)'])
 const legacyMetricTones = ['mint', 'violet', 'amber', 'blue'] as const
 type LegacyMetricTone = (typeof legacyMetricTones)[number]
 
@@ -100,12 +101,22 @@ function findCssFiles(directory: string): readonly string[] {
 }
 
 export function findUnsupportedFontWeights(sourceText: string): readonly string[] {
-  return [...sourceText.matchAll(/\bfont-weight\s*:\s*(\d+)\s*;/giu)]
-    .map((match) => match[1])
-    .filter((weight) => !allowedFontWeights.has(weight))
+  const withoutFontFaces = sourceText.replace(/@font-face\s*\{[^}]*\}/giu, '')
+  return [...withoutFontFaces.matchAll(/\bfont-weight\s*:\s*([^;}]+)/giu)]
+    .map((match) => match[1].trim())
+    .filter((value) => {
+      const canonical = value.match(/^(400|500|600|700)(?:\s*!important)?$/iu)
+      return !canonical || !allowedFontWeights.has(canonical[1])
+    })
 }
 
-function assertMediaFontWeightsAreCanonical(): void {
+export function findUnsupportedLetterSpacing(sourceText: string): readonly string[] {
+  return [...sourceText.matchAll(/\bletter-spacing\s*:\s*([^;}]+)/giu)]
+    .map((match) => match[1].trim())
+    .filter((value) => !isZeroLetterSpacing(value) && !allowedTrackingValues.has(value))
+}
+
+function assertMediaTypographyIsCanonical(): void {
   const files = [
     ...findCssFiles(resolve(projectRoot, 'src/media')),
     resolve(projectRoot, 'src/media.auth.css'),
@@ -113,7 +124,11 @@ function assertMediaFontWeightsAreCanonical(): void {
   ]
   const violations = files.flatMap((fileName) => {
     const relativeName = fileName.slice(projectRoot.length + 1)
-    return findUnsupportedFontWeights(readFileSync(fileName, 'utf8')).map((weight) => `${relativeName}: font-weight ${weight}`)
+    const source = readFileSync(fileName, 'utf8')
+    return [
+      ...findUnsupportedFontWeights(source).map((weight) => `${relativeName}: font-weight ${weight}`),
+      ...findUnsupportedLetterSpacing(source).map((spacing) => `${relativeName}: letter-spacing ${spacing}`),
+    ]
   })
   if (violations.length) throw new Error(`media typography contract failed: ${violations.join(', ')}`)
 }
@@ -176,7 +191,8 @@ function runProjectCheck(): void {
   for (const selector of ['.mg-badge', ".mg-tab[data-variant='pill']", '.mg-btn:hover', '.mg-state-art', 'prefers-reduced-motion']) requireRule(selector)
   assertMetricConsumersUseCanonicalTones()
   assertHeroActionContracts()
-  assertMediaFontWeightsAreCanonical()
+  for (const token of ['tight', 'normal', 'wide']) requireRule(`--mg-track-${token}: 0;`)
+  assertMediaTypographyIsCanonical()
   console.log('media primitive enhancement QA passed: accents, tones, tabs, button hover, state art, reduced motion')
 }
 
@@ -226,11 +242,21 @@ function runSelfTest(): void {
     throw new Error('media primitive enhancement self-test failed: unrelated text was rejected')
   }
 
-  if (findUnsupportedFontWeights('.title { font-weight: 850; }').join(',') !== '850') {
-    throw new Error('media primitive enhancement self-test failed: unsupported font weight was accepted')
+  for (const value of ['850', '850 !important', '850.0', 'var(--weight)', 'bolder']) {
+    if (findUnsupportedFontWeights(`.title { font-weight: ${value}; }`).join(',') !== value) {
+      throw new Error(`media primitive enhancement self-test failed: unsupported font weight ${value} was accepted`)
+    }
   }
   if (findUnsupportedFontWeights('@font-face { font-weight: 100 900; } .title { font-weight: 700; }').length) {
     throw new Error('media primitive enhancement self-test failed: variable range or canonical font weight was rejected')
+  }
+  for (const value of ['.11em', '1px', 'var(--other-track)']) {
+    if (findUnsupportedLetterSpacing(`.title { letter-spacing: ${value}; }`).join(',') !== value) {
+      throw new Error(`media primitive enhancement self-test failed: unsupported letter spacing ${value} was accepted`)
+    }
+  }
+  if (findUnsupportedLetterSpacing('.a { letter-spacing: 0 !important; } .b { letter-spacing: var(--mg-track-wide); }').length) {
+    throw new Error('media primitive enhancement self-test failed: canonical letter spacing was rejected')
   }
 
   console.log('media primitive enhancement self-test passed: good CSS and canonical Metric tones accepted; gradients, hero pseudo-elements, nonzero eyebrow tracking, and legacy Metric tones rejected')

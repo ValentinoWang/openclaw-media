@@ -325,7 +325,7 @@ p { text-wrap: pretty; }
 .capability-subgroups-inner { margin-left: 10px; padding-left: 10px; }
 .capability-object { display: grid; gap: 5px; }
 .capability-object-actions { margin-left: 14px; padding-left: 12px; border-left: 1px solid var(--mg-border); }
-.level-mark { display: none; min-width: 24px; margin-right: 7px; align-items: center; justify-content: center; color: var(--mg-primary-dark); font-size: var(--mg-text-2xs); font-weight: 700; letter-spacing: 0.03em; vertical-align: middle; }
+.level-mark { display: none; min-width: 24px; margin-right: 7px; align-items: center; justify-content: center; color: var(--mg-primary-dark); font-size: var(--mg-text-2xs); font-weight: 700; letter-spacing: 0; vertical-align: middle; }
 .capability-option { position: relative; display: flex; min-width: 0; min-height: 48px; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid var(--capability-edge, var(--mg-border)); border-left: 3px solid var(--capability-accent, var(--mg-border-strong)); border-radius: var(--mg-r-sm); color: var(--mg-ink); background: var(--mg-surface); text-align: left; cursor: pointer; }
 .capability-option > span { min-width: 0; flex: 1; }
 .capability-option strong, .capability-option small { display: block; }
@@ -1426,7 +1426,7 @@ p { text-wrap: pretty; }
 .help-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 28px; background: rgb(24 37 31 / 24%); }
 .help-dialog { width: min(680px, calc(100vw - 56px)); max-height: min(760px, calc(100dvh - 56px)); overflow: auto; border: 1px solid var(--mg-border-strong); border-radius: var(--mg-r-md); background: var(--mg-surface); box-shadow: var(--mg-e4); }
 .help-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 22px 24px 18px; border-bottom: 1px solid var(--mg-border); }
-.help-dialog-header span { color: var(--mg-primary-dark); font-size: var(--mg-text-xs); font-weight: 700; letter-spacing: 0.04em; }
+.help-dialog-header span { color: var(--mg-primary-dark); font-size: var(--mg-text-xs); font-weight: 700; letter-spacing: 0; }
 .help-dialog-header h1 { margin: 6px 0 0; color: var(--mg-ink); font-size: var(--mg-text-xl); }
 .help-markdown { padding: 22px 24px 28px; color: var(--mg-ink); }
 .help-markdown .help-lead { margin: 0 0 22px; color: var(--mg-muted); font-size: var(--mg-text-md); line-height: 1.75; }
