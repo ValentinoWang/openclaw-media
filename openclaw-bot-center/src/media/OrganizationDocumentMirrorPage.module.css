@@ -5,7 +5,7 @@
 .kicker { display: inline-flex; align-items: center; gap: 6px; color: var(--mg-muted, #68746d); font-size: 12px; font-weight: 700; }
 .meta { display: flex; flex-wrap: wrap; gap: 16px; padding: 14px 0; color: var(--mg-muted, #68746d); font-size: 12px; border-bottom: 1px solid var(--mg-line-soft, #eaefe9); }
 .meta b { color: var(--mg-ink, #19231f); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.mirrorBadge { display: inline-flex; align-items: center; gap: 6px; margin: 18px 0 6px; padding: 5px 10px; border-radius: 999px; background: #e1efff; color: #3177bd; font-size: 11px; font-weight: 800; }
+.mirrorBadge { display: inline-flex; align-items: center; gap: 6px; margin: 18px 0 6px; padding: 5px 10px; border-radius: 999px; background: #e1efff; color: #3177bd; font-size: 11px; font-weight: 700; }
 .binding h2 { margin: 0 0 14px; font-size: 16px; }
 .binding dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 0; }
 .binding dl div { padding: 12px 14px; background: var(--mg-paper, #f5f7f3); border: 1px solid var(--mg-line-soft, #eaefe9); border-radius: 8px; }

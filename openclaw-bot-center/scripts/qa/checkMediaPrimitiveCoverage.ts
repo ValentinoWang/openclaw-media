@@ -5,7 +5,7 @@ const report = inspectProject()
 
 function validateSummaryShape() {
   const failures: string[] = []
-  if (report.surfaces !== 25 || report.results.length !== report.surfaces) failures.push(`summary surfaces/results mismatch: ${report.surfaces}/${report.results.length}`)
+  if (report.surfaces !== 26 || report.results.length !== report.surfaces) failures.push(`summary surfaces/results mismatch: ${report.surfaces}/${report.results.length}`)
   if (new Set(report.results.map((result) => result.id)).size !== report.results.length) failures.push('summary contains duplicate surface IDs')
   for (const primitive of PRIMITIVES) {
     const summary = report.primitives[primitive]

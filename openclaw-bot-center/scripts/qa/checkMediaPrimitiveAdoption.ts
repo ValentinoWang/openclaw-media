@@ -276,7 +276,7 @@ function inspectTsx(fileName: string, text: string): { markers: Markers; errors:
 }
 
 function validateManifest(specs: readonly SurfaceSpec[]) {
-  if (specs.length !== 25) throw new Error(`media primitive adoption failed: surfaces must equal 25, found ${specs.length}`)
+  if (specs.length !== 26) throw new Error(`media primitive adoption failed: surfaces must equal 26, found ${specs.length}`)
   if (new Set(specs.map((surface) => surface.id)).size !== specs.length) throw new Error('media primitive adoption failed: duplicate surface ID')
   for (const surface of specs) {
     if (!surface.eligible.length) throw new Error(`media primitive adoption failed: ${surface.id} has no primitive eligibility`)
@@ -530,7 +530,7 @@ function expectAccepted(label: string, specs: readonly SurfaceSpec[], texts: Rea
 
 function fixtures() {
   const asPage = (body: string, imports = '') => `${imports}\nexport default function Fixture() { return (${body}) }`
-  const specs: SurfaceSpec[] = Array.from({ length: 25 }, (_, index) => ({
+  const specs: SurfaceSpec[] = Array.from({ length: 26 }, (_, index) => ({
     id: `fixture-${index}`,
     source: `fixture-${index}.tsx`,
     family: index === 0 ? 'admin' : 'ordinary',
@@ -600,7 +600,7 @@ export function runSelfTest() {
     ? { ...spec, id: 'workspace-router', source: 'WorkspaceShellPage.tsx', ownership: 'router' as const, accent: 'studio' as const, eligible: ['state'] as const }
     : spec)
   const routerTexts = new Map(texts)
-  routerTexts.delete('fixture-23')
+  routerTexts.delete('fixture-25')
   routerTexts.set('workspace-router', asPage('<main data-page-ownership="router" data-accent={accent}><SharedState /></main>', "import { ResourceStateView as SharedState } from './ui/SurfaceState'"))
   expectAccepted('workspace router marker', routerSpecs, routerTexts)
   const routerOwnershipDrift = new Map(routerTexts)
