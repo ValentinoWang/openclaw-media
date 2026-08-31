@@ -417,7 +417,7 @@ def main() -> int:
         ),
         "admin_upstreams": AdminUpstreamsService(account_database, upstream_gateway=tenant_model_gateway),
         "admin_platform_cookies": AdminPlatformCookiesService(),
-        "documents": DocumentsService(account_database.connect, lark_gateway=lark_gateway),
+        "documents": DocumentsService(account_database.connect, lark_gateway=lark_gateway, cursor_secret=secret),
     }
     app.router.publishing_service = media_business_services["publishing"]
     tenant_model_gateway.prepare()

@@ -24,6 +24,7 @@ from .foundation import (
     MediaBusinessError,
     TenantContext,
     _fetchone,
+    _fetchall,
     assert_autosave_state,
     assert_export_state,
     body_checksum,
@@ -262,6 +263,20 @@ def prepare_export(
 
 
 class DocumentsService:
+    _SYNC_BATCHES_QUERY = """
+        SELECT batch.id, batch.public_sync_id, batch.public_artifact_id,
+               batch.revision, batch.operation, batch.state,
+               batch.remote_document_version, batch.body_checksum,
+               batch.block_count, batch.protected_block_count,
+               batch.created_at, batch.updated_at, batch.completed_at,
+               batch.error_code, batch.error_detail
+          FROM media_product.sync_batches AS batch
+         WHERE batch.tenant_id = %s
+           AND batch.public_artifact_id = %s
+           AND (%s::timestamptz IS NULL OR (batch.created_at, batch.id) < (%s::timestamptz, %s))
+         ORDER BY batch.created_at DESC, batch.id DESC
+         LIMIT %s
+    """
     _ARTIFACT_QUERY = """
         SELECT a.public_id, a.public_project_id, a.artifact_kind, a.workspace_mode,
                a.body_authority, a.current_revision, a.updated_at
@@ -358,10 +373,96 @@ class DocumentsService:
         *,
         lark_gateway: LarkDocumentGateway | None = None,
         download_signer: DownloadSigner | None = None,
+        cursor_secret: bytes = b"",
     ) -> None:
         self._connection_factory = connection_factory
         self._lark_gateway = lark_gateway
         self._download_signer = download_signer
+        self._cursor_secret = cursor_secret or secrets.token_bytes(32)
+        if len(self._cursor_secret) < 16:
+            raise ValueError("documents cursor secret must be at least 16 bytes")
+        self._cursor_secret = foundation.derive_namespace_secret(self._cursor_secret, "documents-sync-batches-cursor")
+
+    def list_sync_batches(
+        self,
+        context: TenantContext,
+        public_artifact_id: str,
+        *,
+        cursor: str | None = None,
+        page_size: int = 20,
+    ) -> dict[str, Any]:
+        tenant_id = self._tenant(context)
+        artifact_id = _public_id(public_artifact_id, "publicArtifactId")
+        if type(page_size) is not int or not 1 <= page_size <= 100:
+            raise DocumentInvalidRequest("pageSize is invalid", field="pageSize")
+        position: dict[str, Any] | None = None
+        if cursor:
+            position = foundation.verify_cursor(
+                cursor,
+                key=self._cursor_secret,
+                aad=b"documents-sync-batches",
+                error=lambda: DocumentInvalidRequest("cursor is invalid", field="cursor"),
+            )
+            if (
+                position.get("v") != 1
+                or position.get("scope") != "sync-batches"
+                or position.get("tenant") != tenant_id
+                or position.get("artifact") != artifact_id
+                or not isinstance(position.get("createdAt"), str)
+                or not isinstance(position.get("id"), int)
+            ):
+                raise DocumentInvalidRequest("cursor is invalid", field="cursor")
+        created_at = position.get("createdAt") if position else None
+        batch_id = position.get("id") if position else None
+        with self._connection_factory() as connection:
+            self._artifact(connection, tenant_id, artifact_id)
+            rows = _fetchall(connection.execute(
+                self._SYNC_BATCHES_QUERY,
+                (tenant_id, artifact_id, created_at, created_at, batch_id, page_size + 1),
+            ))
+        has_more = len(rows) > page_size
+        rows = rows[:page_size]
+        items = [self._sync_batch_record(row) for row in rows]
+        next_cursor = None
+        if has_more and rows:
+            row = rows[-1]
+            next_cursor = foundation.sign_cursor(
+                {
+                    "v": 1,
+                    "scope": "sync-batches",
+                    "tenant": tenant_id,
+                    "artifact": artifact_id,
+                    "createdAt": _timestamp(row[10]),
+                    "id": int(row[0]),
+                },
+                key=self._cursor_secret,
+                aad=b"documents-sync-batches",
+            )
+        return public_projection({
+            "schemaVersion": SCHEMA_VERSION,
+            "revision": max((int(row[3]) for row in rows), default=0),
+            "items": items,
+            "nextCursor": next_cursor,
+        })
+
+    @staticmethod
+    def _sync_batch_record(row: Any) -> dict[str, Any]:
+        return {
+            "publicSyncId": row[1],
+            "publicArtifactId": row[2],
+            "revision": int(row[3]),
+            "operation": row[4],
+            "state": row[5],
+            "remoteDocumentVersion": row[6],
+            "bodyChecksum": row[7],
+            "blockCount": row[8],
+            "protectedBlockCount": row[9],
+            "createdAt": _timestamp(row[10]),
+            "updatedAt": _timestamp(row[11]),
+            "completedAt": None if row[12] is None else _timestamp(row[12]),
+            "errorCode": row[13],
+            "errorDetail": _json(row[14]),
+        }
 
     def get_document_body(self, context: TenantContext, public_artifact_id: str) -> dict[str, Any]:
         tenant_id = self._tenant(context)

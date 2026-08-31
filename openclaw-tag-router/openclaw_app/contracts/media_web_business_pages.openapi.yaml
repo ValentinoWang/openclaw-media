@@ -68,6 +68,7 @@ x-openclaw-pages:
     - getRunSources
     - listBusinessOpportunities
     - listRuns
+    - listArtifactSyncBatches
   B06:
     role: ordinary
     route: /publishing
@@ -2094,6 +2095,36 @@ paths:
       x-product-read-model:
       - document_artifacts
       - document_revisions
+
+  /artifacts/{publicArtifactId}/sync-batches:
+    get:
+      operationId: listArtifactSyncBatches
+      summary: List synchronization batches for an artifact.
+      security:
+      - cookieAuth: []
+      x-permission: ordinary-session
+      parameters:
+      - $ref: '#/components/parameters/PublicArtifactId'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncBatchListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-runtime-status: new
+      x-product-read-model:
+      - sync_batches
   /publishing/packages:
     get:
       operationId: listPublishingPackages
@@ -6822,6 +6853,102 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ArtifactSummary'
+        nextCursor:
+          type:
+          - string
+          - 'null'
+      required:
+      - schemaVersion
+      - revision
+      - items
+      - nextCursor
+    SyncBatch:
+      type: object
+      additionalProperties: false
+      properties:
+        publicSyncId:
+          $ref: '#/components/schemas/PublicId'
+        publicArtifactId:
+          $ref: '#/components/schemas/PublicId'
+        revision:
+          type: integer
+          minimum: 1
+        operation:
+          type: string
+          enum:
+          - read
+          - save
+        state:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - conflict
+        remoteDocumentVersion:
+          type:
+          - string
+          - 'null'
+        bodyChecksum:
+          type:
+          - string
+          - 'null'
+          pattern: ^[a-f0-9]{64}$
+        blockCount:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        protectedBlockCount:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+        completedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        errorCode:
+          type:
+          - string
+          - 'null'
+        errorDetail:
+          type: object
+          additionalProperties: true
+      required:
+      - publicSyncId
+      - publicArtifactId
+      - revision
+      - operation
+      - state
+      - remoteDocumentVersion
+      - bodyChecksum
+      - blockCount
+      - protectedBlockCount
+      - createdAt
+      - updatedAt
+      - completedAt
+      - errorCode
+      - errorDetail
+    SyncBatchListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        schemaVersion:
+          $ref: '#/components/schemas/SchemaVersion'
+        revision:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncBatch'
         nextCursor:
           type:
           - string

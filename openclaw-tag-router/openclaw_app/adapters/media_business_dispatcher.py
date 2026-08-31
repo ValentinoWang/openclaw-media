@@ -13,7 +13,7 @@ from .media_business_context import If2Route, Permission
 
 CANONICAL_PREFIX = "/openclaw/media/api"
 LEGACY_PREFIX = "/media/api"
-EXPECTED_OPERATION_COUNT = 90
+EXPECTED_OPERATION_COUNT = 91
 DEFAULT_MUTATION_BODY_LIMIT_BYTES = 2 * 1024 * 1024
 UPLOAD_BODY_LIMIT_BYTES = 70 * 1024 * 1024
 EXCLUDED_OPERATION_IDS = frozenset(
@@ -123,6 +123,7 @@ _DECLARED_MEDIA_BUSINESS_ROUTE_BINDINGS = (
     RouteSpec("GET", "/runs/{publicRunId}/outputs", "getRunOutputs"),
     RouteSpec("GET", "/business-opportunities", "listBusinessOpportunities"),
     RouteSpec("POST", "/artifacts/{publicArtifactId}/revisions", "createArtifactRevision"),
+    RouteSpec("GET", "/artifacts/{publicArtifactId}/sync-batches", "listArtifactSyncBatches"),
     RouteSpec("GET", "/publishing/packages", "listPublishingPackages"),
     RouteSpec("GET", "/publishing/packages/{publicPackageId}", "getPublishingPackage"),
     RouteSpec("PUT", "/publishing/packages/{publicPackageId}/checks", "updatePublishingChecks"),

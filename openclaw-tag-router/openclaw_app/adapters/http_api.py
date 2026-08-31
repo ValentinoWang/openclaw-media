@@ -330,7 +330,7 @@ _IF2_OPERATION_SERVICE = {
     **_operation_map("admin_billing", {"getAdminBillingSummary", "createAdminProductMapping", "createAdminBillingGrant", "createAdminRedemptionBatch", "recoverAdminFulfillment", "refundAdminFulfillment"}),
     **_operation_map("admin_upstreams", {"getAdminUpstreams", "reconcileAdminBillingOperation", "rotateAdminUpstreamCredential", "revokeAdminUpstreamCredential"}),
     **_operation_map("admin_platform_cookies", {"getAdminPlatformCookies"}),
-    **_operation_map("documents", {"getDocumentBody", "saveDocumentDraft", "getDocumentRevision", "createDocumentExport", "getDocumentExport", "getDocumentExportDownload"}),
+    **_operation_map("documents", {"getDocumentBody", "saveDocumentDraft", "getDocumentRevision", "createDocumentExport", "getDocumentExport", "getDocumentExportDownload", "listArtifactSyncBatches"}),
 }
 _IF2_METHOD_OVERRIDES = {"getAdminDashboard": "dashboard"}
 _IF2_SPECIAL_OPERATIONS = {
