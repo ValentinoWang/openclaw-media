@@ -477,6 +477,7 @@ class RunsService:
         *,
         cursor_secret: bytes,
         id_factory: Callable[[str], str] | None = None,
+        revision_executor: Callable[..., Any] | None = None,
     ) -> None:
         if len(cursor_secret) < 16:
             raise ValueError("B05 cursor secret must be at least 16 bytes")
@@ -494,6 +495,11 @@ class RunsService:
         self._public_id_secret = hashlib.sha256(bytes(cursor_secret)).digest()
         self._cursor_secret = foundation.derive_namespace_secret(cursor_secret, "runs-cursor")
         self._id_factory = id_factory or self._new_public_id
+        self._revision_executor = revision_executor
+
+    def set_revision_executor(self, executor: Callable[..., Any] | None) -> None:
+        """Attach the worker hook after service construction (used by server wiring)."""
+        self._revision_executor = executor
 
     def _new_public_id(self, prefix: str) -> str:
         digest = hmac.new(
@@ -820,6 +826,17 @@ class RunsService:
                 response = {"schemaVersion": SCHEMA_VERSION, "revision": next_revision, "item": item}
                 self._store_idempotent(connection, context, "createArtifactRevision", idempotency_key, request_payload, response)
                 self._commit(connection)
+                executor = self._revision_executor
+                if executor is not None:
+                    # The revision is committed before handing it to the worker;
+                    # a worker crash can therefore safely retry the same claim.
+                    try:
+                        executor(context, target_artifact_id, next_revision, normalized["instruction"])
+                    except Exception:
+                        # Execution state is persisted by the executor. The HTTP
+                        # contract remains the accepted generating revision even
+                        # when a best-effort in-process hook cannot start.
+                        pass
                 return self._safe_projection(response)
             except RunsError:
                 raise
