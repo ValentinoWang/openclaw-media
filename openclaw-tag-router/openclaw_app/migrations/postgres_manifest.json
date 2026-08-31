@@ -524,6 +524,16 @@
       "dependsOn": [
         "cm1-036-tenant-shared-balance"
       ]
+    },
+    {
+      "id": "cm1-038-candidate-topics",
+      "source": "openclaw_app/migrations/canonical/038_candidate_topics.sql",
+      "sourceSha256": "e3c6c200693d3ebab3adaed0a39e5184134ec46ca3d83079df258d3500974f12",
+      "ledgerChecksum": "e3c6c200693d3ebab3adaed0a39e5184134ec46ca3d83079df258d3500974f12",
+      "order": 330,
+      "dependsOn": [
+        "cm1-037-affiliate-profile-coverage"
+      ]
     }
   ],
   "excludedMigrations": [
