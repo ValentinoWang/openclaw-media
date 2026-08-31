@@ -281,6 +281,11 @@ async function startOrganizationAuth() {
     setHidden('qr-placeholder', false)
     setText('qr-placeholder', '正在生成授权二维码')
     setText('qr-status', '正在连接 Feishu 授权服务...')
+    const qrStatus = document.querySelector('#qr-status')
+    if (qrStatus) {
+      delete qrStatus.dataset.errorCode
+      delete qrStatus.dataset.errorStatus
+    }
     const qrCanvas = document.querySelector('#qr-canvas')
     const context = qrCanvas?.getContext('2d')
     context?.clearRect(0, 0, qrCanvas.width, qrCanvas.height)
@@ -309,6 +314,10 @@ async function startOrganizationAuth() {
       if (run !== organizationRun) return
       setText('qr-placeholder', '授权二维码暂不可用')
       const timedOut = caught instanceof Error && (caught.name === 'AbortError' || caught.message === 'auth_request_timeout')
+      if (qrStatus && caught instanceof AuthRequestError) {
+        qrStatus.dataset.errorCode = caught.code
+        qrStatus.dataset.errorStatus = String(caught.status)
+      }
       setText('qr-status', timedOut ? '组织授权服务暂时不可用，请稍后重试。' : caught instanceof Error ? caught.message : '组织授权暂时不可用。')
       setHidden('qr-refresh', false)
     } finally {

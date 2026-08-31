@@ -97,6 +97,7 @@ async function installNetwork(page: Page, telemetry: Telemetry, entryHandler: En
   await page.route('**/openclaw/media/auth/feishu/start', async (route) => {
     telemetry.feishuRequests += 1
     assert.equal(route.request().method(), 'POST', 'Feishu authorization must be a POST request')
+    assert.deepEqual(route.request().postDataJSON(), { workspaceIntent: 'organization_lark' }, 'Feishu authorization must preserve the organization workspace intent')
     await fulfillJson(route, {
       ok: true,
       authorizationUrl: 'https://accounts.feishu.cn/open-apis/authen/v1/authorize?visual-runtime=1',
@@ -454,6 +455,35 @@ async function runOrganizationReselectionFence(browser: Browser, origin: string)
   }
 }
 
+async function runOrganizationErrorFidelity(browser: Browser, origin: string): Promise<void> {
+  const { context, page, telemetry } = await newLoginPage(browser, viewports[0], async (route, mode) => fulfillJson(route, entryPayload(mode, 'none')))
+  await page.unroute('**/openclaw/media/auth/feishu/start')
+  await page.route('**/openclaw/media/auth/feishu/start', async (route) => {
+    telemetry.feishuRequests += 1
+    assert.deepEqual(route.request().postDataJSON(), { workspaceIntent: 'organization_lark' })
+    await fulfillJson(route, { error: { code: 'feishu_provider_unavailable', message: '组织授权上游正在维护。' } }, 503)
+  })
+  try {
+    await page.goto(`${origin}${mediaRoot}/login?mode=organization`, { waitUntil: 'domcontentloaded' })
+    await expectState(page, 'organization', 'none')
+    const status = page.locator('#qr-status')
+    await page.waitForFunction(() => document.querySelector<HTMLElement>('#qr-status')?.dataset.errorStatus === '503')
+    assert.equal(telemetry.consoleErrors.length, 1, 'organization 503 must emit exactly one browser resource error')
+    assert.match(telemetry.consoleErrors[0] ?? '', /503 \(Service Unavailable\)/u)
+    telemetry.consoleErrors.length = 0
+    await assertNoRuntimeErrors(telemetry, 'organization error fidelity')
+    await assert.doesNotReject(async () => {
+      await status.waitFor({ state: 'visible' })
+      assert.equal(await status.textContent(), '组织授权上游正在维护。')
+      assert.equal(await status.getAttribute('data-error-code'), 'feishu_provider_unavailable')
+      assert.equal(await status.getAttribute('data-error-status'), '503')
+    })
+    await page.locator('#qr-refresh').waitFor({ state: 'visible' })
+  } finally {
+    await context.close()
+  }
+}
+
 async function runAuthPageSmoke(browser: Browser, origin: string, viewport: Viewport): Promise<void> {
   const pages = [
     { path: 'register', heading: '创建个人账号', form: '#register-form' },
@@ -535,6 +565,7 @@ try {
   await runStaleEntryFence(browser, origin)
   await runEntryTimeout(browser, origin)
   await runOrganizationReselectionFence(browser, origin)
+  await runOrganizationErrorFidelity(browser, origin)
   console.log(JSON.stringify({ ok: true, outputRoot, viewports, authPageSmoke: 8 }, null, 2))
 } finally {
   await browser.close()

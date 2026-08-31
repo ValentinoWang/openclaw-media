@@ -77,6 +77,10 @@ function assertOrganizationAuthorizationErrors(script: string): void {
   assert.match(script, /errorCode\(payload\) \|\| fallbackCode/u)
   assert.match(script, /errorMessage\(payload\) \|\|/u)
   assert.match(script, /new AuthRequestError\([\s\S]*?response\.status/u)
+  assert.match(organization, /caught instanceof AuthRequestError/u)
+  assert.match(organization, /dataset\.errorCode = caught\.code/u)
+  assert.match(organization, /dataset\.errorStatus = String\(caught\.status\)/u)
+  assert.match(organization, /caught instanceof Error \? caught\.message/u)
 }
 
 function assertAuthTokenBuildWiring(css: string, viteConfig: string): void {
@@ -124,6 +128,13 @@ function runSelfTest(html: string, tokenCss: string, script: string, css: string
     () => assertOrganizationAuthorizationErrors(missingErrorStatus),
     /status/u,
     'self-test must reject dropping the Feishu response status',
+  )
+
+  const missingErrorMessage = script.replace('caught instanceof Error ? caught.message', "caught instanceof Error ? '组织授权暂时不可用。'")
+  assert.throws(
+    () => assertOrganizationAuthorizationErrors(missingErrorMessage),
+    /caught\.message/u,
+    'self-test must reject dropping the Feishu response message',
   )
 
   const missingTokenAlias = viteConfig.replace("'/mediaDesignTokens.css':", "'/missing-mediaDesignTokens.css':")
