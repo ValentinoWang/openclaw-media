@@ -32,6 +32,7 @@ from .foundation import (
     public_projection,
     validate_body,
 )
+from .trusted_resources import trusted_organization_resource
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
 _PUBLIC_ID = foundation.PUBLIC_ID_PATTERN
@@ -1221,6 +1222,11 @@ class DocumentsService:
 
     @staticmethod
     def _artifact_record(row: Any) -> dict[str, Any]:
+        _ = trusted_organization_resource(
+            None,
+            expires_at=None,
+            retired=False,
+        )
         return {"publicArtifactId": row[0], "publicProjectId": row[1], "artifactKind": row[2],
                 "workspaceMode": row[3], "bodyAuthority": row[4], "currentRevision": row[5],
                 "updatedAt": _timestamp(row[6])}

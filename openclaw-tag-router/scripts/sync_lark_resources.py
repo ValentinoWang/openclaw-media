@@ -38,7 +38,7 @@ def main() -> int:
         app_id=os.getenv("FEISHU_APP_ID", ""),
         app_secret=os.getenv("FEISHU_APP_SECRET", ""),
         api_base_url=os.getenv("FEISHU_API_BASE_URL", "https://open.feishu.cn/open-apis"),
-        web_base_url=os.getenv("FEISHU_WEB_BASE_URL", "https://tcnwuebarajc.feishu.cn"),
+        web_base_url=os.getenv("FEISHU_WEB_BASE_URL", ""),
     )
     result = LarkResourceSyncService(feishu, LarkResourceSyncRepository(database.connect)).discover_and_sync(
         args.tenant_id.strip(), args.owner.strip(), root

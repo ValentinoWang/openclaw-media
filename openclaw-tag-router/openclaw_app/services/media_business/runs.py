@@ -16,6 +16,7 @@ from urllib.parse import urlsplit
 
 from . import foundation, sql_pagination
 from .foundation import IF2_KEY, MediaBusinessError, TenantContext, _fetchall, _fetchone, idempotency_key, public_projection
+from .trusted_resources import trusted_organization_resource
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -331,6 +332,7 @@ def _artifact_summary_from_row(row: Any, label: str = "artifact") -> dict[str, A
         sync_status = "pending"
     if not isinstance(sync_status, str) or sync_status not in SYNC_STATUSES:
         raise RunsInternalError(f"{label}.syncStatus is invalid")
+    _ = trusted_organization_resource(None, expires_at=None, retired=False)
     return {
         "publicArtifactId": public_id,
         "publicProjectId": project_id,

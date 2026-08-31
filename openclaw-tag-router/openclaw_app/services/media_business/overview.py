@@ -7,16 +7,15 @@ import hmac
 import json
 import uuid
 import binascii
-from urllib.parse import urlparse
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Protocol
 
-from common.feishu_urls import DEFAULT_FEISHU_DOC_HOSTS
 
 from . import foundation
 from .foundation import MediaBusinessError, TenantContext, require_context
+from .trusted_resources import TrustedOrganizationResourceError, trusted_organization_resource
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -48,8 +47,6 @@ _TERMINAL_TASK_STATES = frozenset({"succeeded", "cancelled"})
 _RUNNING_TASK_STATES = frozenset({"validating", "retrieving", "generating", "persisting", "rendering", "running"})
 _ATTENTION_TASK_STATES = frozenset({"awaiting_confirmation", "pending_manual", "needs_attention"})
 _CURSOR_SCOPE = {"projects", "artifacts"}
-_FEISHU_DOCUMENT_HOST_SUFFIXES = tuple(f".{host}" for host in DEFAULT_FEISHU_DOC_HOSTS)
-_FEISHU_DOCUMENT_ROOT_HOSTS = frozenset(DEFAULT_FEISHU_DOC_HOSTS)
 
 
 OverviewError = MediaBusinessError
@@ -505,12 +502,13 @@ class OverviewService:
                 )
             )
         revision = max((_require_int(row[3], "project revision is invalid") for row in visible_rows), default=0)
-        return {
+        projection = {
             "schemaVersion": SCHEMA_VERSION,
             "revision": revision,
             "items": items,
             "nextCursor": next_cursor,
         }
+        return projection
 
     def list_project_artifacts(
         self,
@@ -571,12 +569,13 @@ class OverviewService:
                     public_id=items[-1]["publicArtifactId"],
                 )
             )
-        return {
+        projection = {
             "schemaVersion": SCHEMA_VERSION,
             "revision": project_revision,
             "items": items,
             "nextCursor": next_cursor,
         }
+        return projection
 
     def create_project_summary(
         self,
@@ -785,13 +784,14 @@ class OverviewService:
                     "field": error.field,
                 }
             }
-        return {
+        projection = {
             "error": {
                 "code": "internal_error",
                 "message": "overview data is unavailable",
                 "field": None,
             }
         }
+        return projection
 
     def _scope(self, context: TenantContext | None) -> str:
         try:
@@ -964,15 +964,28 @@ class OverviewService:
             sync_status = "pending"
         if sync_status not in SYNC_STATUSES:
             raise OverviewInternalError("artifact sync status is invalid")
-        organization_document_url = self._organization_document_url(document_url, body_authority)
+        try:
+            trusted_organization_document = self._organization_document_url(
+                document_url,
+                body_authority,
+                expires_at=document_url_expires_at,
+                retired=revision_state == "archived",
+            )
+        except TrustedOrganizationResourceError as exc:
+            raise OverviewInternalError("organization document URL is not trusted") from exc
+        organization_document_url = (
+            trusted_organization_document.get("url")
+            if isinstance(trusted_organization_document, Mapping)
+            else None
+        )
         actions = ["view"]
-        if organization_document_url is not None:
+        if trusted_organization_document is not None:
             actions.append("open_organization_document")
         if artifact_type != "publishing_package":
             actions.append("regenerate")
         if sync_status in {"conflict", "failed"}:
             actions.append("resolve_sync")
-        return {
+        projection = {
             "publicArtifactId": public_id,
             "publicProjectId": project_id,
             "artifactType": artifact_type,
@@ -985,22 +998,24 @@ class OverviewService:
             "organizationDocumentUrlExpiresAt": _timestamp_text(document_url_expires_at) if organization_document_url and document_url_expires_at is not None else None,
             "allowedActions": actions,
         }
+        if trusted_organization_document is not None:
+            projection["trustedOrganizationResource"] = trusted_organization_document
+        return projection
 
     @staticmethod
-    def _organization_document_url(value: Any, body_authority: str) -> str | None:
-        if body_authority != "lark" or not isinstance(value, str) or not value.strip():
+    def _organization_document_url(
+        value: Any,
+        body_authority: str,
+        *,
+        expires_at: Any = None,
+        retired: bool = False,
+    ) -> dict[str, Any] | None:
+        if body_authority != "lark" or value in (None, ""):
             return None
-        parsed = urlparse(value.strip())
-        host = (parsed.hostname or "").lower()
-        parts = [part for part in parsed.path.split("/") if part]
-        trusted_host = host in _FEISHU_DOCUMENT_ROOT_HOSTS or any(
-            host.endswith(suffix) for suffix in _FEISHU_DOCUMENT_HOST_SUFFIXES
-        )
-        if parsed.scheme != "https" or not trusted_host:
-            raise OverviewInternalError("organization document URL host is invalid")
-        if len(parts) != 2 or parts[0].lower() not in {"wiki", "docx", "doc", "docs"} or PUBLIC_ID.fullmatch(parts[1]) is None:
-            raise OverviewInternalError("organization document URL shape is invalid")
-        return value.strip()
+        try:
+            return trusted_organization_resource(value, expires_at=expires_at, retired=retired)
+        except TrustedOrganizationResourceError as exc:
+            raise OverviewInternalError("organization document URL is not trusted") from exc
 
     def _new_public_id(self, prefix: str) -> str:
         value = self._id_factory(prefix)

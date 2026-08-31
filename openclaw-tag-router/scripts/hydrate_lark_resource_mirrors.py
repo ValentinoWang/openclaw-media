@@ -10,6 +10,10 @@ from __future__ import annotations
 import sys
 
 
+def hydrate(*_args, **_kwargs):
+    raise RuntimeError("retired: use scripts/hydrate_lark_resources.py for canonical Lark hydration")
+
+
 def main() -> int:
     print(
         "retired: use scripts/hydrate_lark_resources.py for canonical Lark hydration",

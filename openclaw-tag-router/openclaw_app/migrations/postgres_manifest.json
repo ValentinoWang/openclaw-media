@@ -534,6 +534,16 @@
       "dependsOn": [
         "cm1-037-affiliate-profile-coverage"
       ]
+    },
+    {
+      "id": "cm1-039-media-document-workspace-authority",
+      "source": "openclaw_app/migrations/canonical/039_media_document_workspace_authority.sql",
+      "sourceSha256": "75406fe41b882704a687c22097630483d9e5117c25788b38af0d11622fdb4467",
+      "ledgerChecksum": "75406fe41b882704a687c22097630483d9e5117c25788b38af0d11622fdb4467",
+      "order": 340,
+      "dependsOn": [
+        "cm1-038-candidate-topics"
+      ]
     }
   ],
   "excludedMigrations": [

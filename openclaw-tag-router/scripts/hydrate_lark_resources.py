@@ -21,7 +21,7 @@ def main() -> int:
         local_docs_dir=os.getenv("OPENCLAW_DOCX_SNAPSHOT_DIR", "/tmp/openclaw-lark-hydration"),
         app_id=os.getenv("FEISHU_APP_ID", ""), app_secret=os.getenv("FEISHU_APP_SECRET", ""),
         api_base_url=os.getenv("FEISHU_API_BASE_URL", "https://open.feishu.cn/open-apis"),
-        web_base_url="https://tcnwueberajc.feishu.cn",
+        web_base_url=os.getenv("FEISHU_WEB_BASE_URL", ""),
     )
     result = LarkResourceHydrationService(feishu, LarkResourceHydrationRepository(database.connect)).hydrate(args.tenant_id.strip(), args.owner.strip())
     print(json.dumps(result.__dict__, ensure_ascii=False, default=list))

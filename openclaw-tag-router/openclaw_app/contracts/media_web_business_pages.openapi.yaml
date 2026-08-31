@@ -7,7 +7,7 @@ info:
     in place; W1 surfaces are excluded.
 servers:
 - url: /openclaw/media/api
-x-openclaw-interface-freeze-version: 3
+x-openclaw-interface-freeze-version: 5
 x-openclaw-pages:
   B01:
     role: ordinary
@@ -7784,6 +7784,8 @@ components:
           $ref: '#/components/schemas/DocumentBodyV1'
       required:
       - expectedRevision
+
+
       - expectedBodyChecksum
       - expectedRemoteDocumentVersion
       - body
@@ -8247,3 +8249,23 @@ components:
       required:
       - reason
       - expectedRevision
+
+x-openclaw-workspace-contract:
+  selector: openclaw_account.tenants.workspace_mode
+  selectorSource: verified_session
+  roleInferenceAllowed: false
+  urlInferenceAllowed: false
+  tenantNameInferenceAllowed: false
+  modes:
+    personal_web:
+      editorMode: web_edit
+      bodyAuthority: internal
+      webBodyRead: allowed
+      webDraftSave: allowed
+      larkFields: forbidden
+    organization_lark:
+      editorMode: lark_edit
+      bodyAuthority: lark
+      webBodyRead: allowed_read_only
+      webDraftSave: forbidden
+      webDraftSaveError: organization_web_save_forbidden

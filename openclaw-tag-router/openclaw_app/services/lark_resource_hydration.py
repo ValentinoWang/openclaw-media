@@ -6,11 +6,14 @@ import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlparse
-
 from common.canonical_digest import digest_hex
 
 from .media_business.foundation import body_checksum, validate_body
+from .media_business.trusted_resources import (
+    TrustedOrganizationResourceError,
+    feishu_wiki_url,
+    trusted_organization_resource,
+)
 
 
 class LarkResourceHydrationError(RuntimeError):
@@ -59,13 +62,13 @@ class HydrationResult:
 
 
 def _wiki_node_token(value: Any) -> str:
-    if not isinstance(value, str):
+    try:
+        resource = trusted_organization_resource(value, None)
+    except TrustedOrganizationResourceError:
         return ""
-    parsed = urlparse(value.strip())
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+    if resource is None or resource["resourceType"] != "wiki":
         return ""
-    parts = [part for part in parsed.path.split("/") if part]
-    return parts[1] if len(parts) == 2 and parts[0] == "wiki" else ""
+    return str(resource["url"]).rsplit("/", 1)[-1]
 
 
 def _digest(value: Any) -> str:
@@ -87,7 +90,22 @@ def _flatten_docx_blocks(blocks: Any) -> list[dict[str, Any]]:
     return result
 
 
-def _docx_payload(target: HydrationTarget, snapshot: Mapping[str, Any] | None, fallback_text: str) -> HydrationPayload:
+def _hydration_source_url(target: HydrationTarget, web_base_url: str) -> str:
+    try:
+        return feishu_wiki_url(web_base_url, target.node_token)
+    except TrustedOrganizationResourceError as exc:
+        raise LarkResourceHydrationError(
+            "Lark hydration requires a valid configured Feishu web base and node token"
+        ) from exc
+
+
+def _docx_payload(
+    target: HydrationTarget,
+    snapshot: Mapping[str, Any] | None,
+    fallback_text: str,
+    *,
+    web_base_url: str,
+) -> HydrationPayload:
     blocks = [_text_block(f"lark_{target.public_artifact_id}_title", target.title, heading=1)]
     mappings = [(blocks[0]["id"], f"docx:{target.obj_token}:root", _digest(blocks[0]))]
     used_remote = {mappings[0][1]}
@@ -113,10 +131,19 @@ def _docx_payload(target: HydrationTarget, snapshot: Mapping[str, Any] | None, f
             mappings.append((block["id"], f"docx:{target.obj_token}:line:{index}", _digest(block)))
             if len(blocks) >= 5000:
                 break
-    return HydrationPayload(validate_body({"schemaVersion": "media.document.body.v1", "blocks": blocks}), tuple(mappings), f"https://tcnwueberajc.feishu.cn/wiki/{target.node_token}")
+    return HydrationPayload(
+        validate_body({"schemaVersion": "media.document.body.v1", "blocks": blocks}),
+        tuple(mappings),
+        _hydration_source_url(target, web_base_url),
+    )
 
 
-def _bitable_payload(target: HydrationTarget, tables: list[Mapping[str, Any]]) -> HydrationPayload:
+def _bitable_payload(
+    target: HydrationTarget,
+    tables: list[Mapping[str, Any]],
+    *,
+    web_base_url: str,
+) -> HydrationPayload:
     blocks: list[dict[str, Any]] = []
     mappings: list[tuple[str, str, str]] = []
     def add(block: dict[str, Any], remote_id: str) -> None:
@@ -135,7 +162,11 @@ def _bitable_payload(target: HydrationTarget, tables: list[Mapping[str, Any]]) -
             record_id = str(record.get("record_id") or record.get("recordId") or row_index)
             block = _text_block(f"lark_{target.public_artifact_id}_{table_index}_{row_index}", json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
             add(block, f"bitable:{target.obj_token}:table:{table_id}:record:{record_id}")
-    return HydrationPayload(validate_body({"schemaVersion": "media.document.body.v1", "blocks": blocks}), tuple(mappings), f"https://tcnwueberajc.feishu.cn/wiki/{target.node_token}")
+    return HydrationPayload(
+        validate_body({"schemaVersion": "media.document.body.v1", "blocks": blocks}),
+        tuple(mappings),
+        _hydration_source_url(target, web_base_url),
+    )
 
 
 class LarkResourceHydrationRepository:
@@ -189,8 +220,17 @@ class LarkResourceHydrationRepository:
 
 
 class LarkResourceHydrationService:
-    def __init__(self, feishu_service: Any, repository: LarkResourceHydrationRepository) -> None:
+    def __init__(
+        self,
+        feishu_service: Any,
+        repository: LarkResourceHydrationRepository,
+        *,
+        web_base_url: str | None = None,
+    ) -> None:
         self._feishu, self._repository = feishu_service, repository
+        self._web_base_url = str(
+            web_base_url if web_base_url is not None else getattr(feishu_service, "web_base_url", "")
+        ).strip()
 
     def _bitable_tables(self, target: HydrationTarget) -> list[dict[str, Any]]:
         tables, page_token = [], ""
@@ -211,11 +251,20 @@ class LarkResourceHydrationService:
 
     def _payload(self, target: HydrationTarget) -> HydrationPayload:
         if target.obj_type == "bitable":
-            return _bitable_payload(target, self._bitable_tables(target))
+            return _bitable_payload(
+                target,
+                self._bitable_tables(target),
+                web_base_url=self._web_base_url,
+            )
         tree = self._feishu.hydrate_docx_child_tree(target.obj_token)
         if not isinstance(tree, list):
             raise LarkResourceHydrationError("Lark document child hydration returned invalid blocks")
-        return _docx_payload(target, {"root_blocks": tree}, "")
+        return _docx_payload(
+            target,
+            {"root_blocks": tree},
+            "",
+            web_base_url=self._web_base_url,
+        )
 
     def _resolved_target(self, target: HydrationTarget) -> HydrationTarget:
         if target.obj_token and target.obj_type:

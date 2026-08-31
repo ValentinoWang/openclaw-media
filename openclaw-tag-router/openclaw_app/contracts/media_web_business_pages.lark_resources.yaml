@@ -1,0 +1,151 @@
+schemaVersion: media_web_lark_resources_ifv5
+interfaceFreezeVersion: 5
+workspaceMode: organization_lark
+editorMode: lark_edit
+bindingIdentity: publicArtifactId
+titleLookupAllowed: false
+sourceEvidence:
+  artifactDecision: openproblem.md#OP03
+  runtimeBindingTable: media_product.lark_document_bindings
+  previewTable: media_document.lark_read_mirrors
+  bitableRegistry: /home/ubuntu/openclaw-feishu-reminder/media-bitable-registry.json
+mirrorContract:
+  expectedCount: 27
+  schemaVersion: media.document.body.v1
+  bodyStore: media_document.lark_read_mirrors.body_json
+  cWebBodyStore: media_document.revision_bodies.body_json
+  copyIntoCWebBodyStore: false
+  updateMode: remote_version_and_checksum_then_atomic_replace
+  failureMode: retain_last_confirmed_and_mark_stale_or_conflict
+  protectedBlocks: preserve
+artifacts:
+  - ordinal: 1
+    publicArtifactId: artifact_lark_03f35ed5de0b70f6f3df64ebe64112104497cdcb
+    resourceType: docx
+    expectedTitle: 剪辑执行 - 上海灵瑙科技 2026 WAIC 第一视角展会探秘体验 - 成片 130-150 秒，不少于 120 秒
+  - ordinal: 2
+    publicArtifactId: artifact_lark_11ed45c4bd6c401dd6baa33badf9a31f1579ba65
+    resourceType: docx
+    expectedTitle: 创作-再创｜清华毕业轻量再创卡｜6e46
+  - ordinal: 3
+    publicArtifactId: artifact_lark_214f3e9849a99e68e386929010bc9157fbabe76c
+    resourceType: docx
+    expectedTitle: 再创作｜待明确目标场景账号选题内容改编｜da38
+  - ordinal: 4
+    publicArtifactId: artifact_lark_385f4f4294a6353a99ae727d98166ac71a192273
+    resourceType: docx
+    expectedTitle: 视频 - 体育生与清华AI硕士逛WAIC的双主角任务型Vlog - 未定发布时间
+  - ordinal: 5
+    publicArtifactId: artifact_lark_3b53ea73f7aea09d71314b8b9ae0c006e3ebb04d
+    resourceType: docx
+    expectedTitle: 拍摄执行 - AWE2026 学而思学习机沉浸式探展：AI时代未来学生还需要学习吗 - 45-60秒成片；现场半天采集
+  - ordinal: 6
+    publicArtifactId: artifact_lark_3bb20ac8ca3d2bc369e8cf97f26a8423fbf727d2
+    resourceType: docx
+    expectedTitle: 拍摄执行 - 上海灵瑙科技 2026 WAIC 第一视角展会探秘体验 - 成片 130-150 秒，不少于 120 秒
+  - ordinal: 7
+    publicArtifactId: artifact_lark_49049a5557b940cbe87ff10a7ce70ee02902c792
+    resourceType: docx
+    expectedTitle: 再创作｜清华校运会转场开头｜21d3
+  - ordinal: 8
+    publicArtifactId: artifact_lark_65ec38890860bfd774c1465bba3986a7136a3f66
+    resourceType: docx
+    expectedTitle: 拍摄执行 - 导师课题组毕业照 - 抽象拆解与3小时执行单
+  - ordinal: 9
+    publicArtifactId: artifact_lark_73f032ee898a5028264e58aff4b527fbf0276b27
+    resourceType: docx
+    expectedTitle: 拆解-再创｜代码视频工具盘点爆款拆解｜c67e
+  - ordinal: 10
+    publicArtifactId: artifact_lark_84e4df3e53c8d71938de10232aab3536a57aa1cb
+    resourceType: docx
+    expectedTitle: 拆解-再创｜夸张滤镜反差颜值钩子｜4978｜20260701001341
+  - ordinal: 11
+    publicArtifactId: artifact_lark_8791c4aa68615256658e4cf2e543a5cdc5a088da
+    resourceType: docx
+    expectedTitle: 创作-灵感｜重穿比赛服的感觉｜47bf
+  - ordinal: 12
+    publicArtifactId: artifact_lark_9360a1473173f92c2bdbd48faace7c3d9d98f8f8
+    resourceType: docx
+    expectedTitle: 创作-灵感｜重穿赛服的瞬间｜0b6c
+  - ordinal: 13
+    publicArtifactId: artifact_lark_9a359ba798beacac45267d3102c013c75f164cbd
+    resourceType: docx
+    expectedTitle: 创作-再创｜清华毕业典礼再创｜2c83
+  - ordinal: 14
+    publicArtifactId: artifact_lark_9f4d69044ac7ad74078c4b6cb4e8a10c0b846eff
+    resourceType: docx
+    expectedTitle: Media OS B端机构接入与交付说明
+  - ordinal: 15
+    publicArtifactId: artifact_lark_b05342b8be17dfeacf01843b435376102989787f
+    resourceType: docx
+    expectedTitle: 创作-灵感｜回校参赛校园记忆｜49db
+  - ordinal: 16
+    publicArtifactId: artifact_lark_b970dcc6643083ee699fce6912fb628125b133e6
+    resourceType: docx
+    expectedTitle: 拆解-再创｜怪诞滤镜反差情绪梗拆解｜4978
+  - ordinal: 17
+    publicArtifactId: artifact_lark_c4cfddee0d3a00e67d916cddcb5a8a895522ff0d
+    resourceType: docx
+    expectedTitle: 素材创作｜平台抖音类型图文账号主账号发布时间今晚8｜23d8
+  - ordinal: 18
+    publicArtifactId: artifact_lark_c84bd9d3d1053a39f77753f9fade746cab93c655
+    resourceType: docx
+    expectedTitle: 视频 - 第一视角体验清华毕业典礼 - 未定发布时间
+  - ordinal: 19
+    publicArtifactId: artifact_lark_cfa62f3a9754fb1d3a8b2eb14eaf2acb38d62754
+    resourceType: docx
+    expectedTitle: 拆解-再创｜夸张滤镜反差颜值钩子｜4978｜20260701002137
+  - ordinal: 20
+    publicArtifactId: artifact_lark_dae960ed45d33d5ed15749ea099cf1ddf0e24982
+    resourceType: docx
+    expectedTitle: 创作-灵感｜跑出10秒80的激动｜d339
+  - ordinal: 21
+    publicArtifactId: artifact_lark_e9ad327d1d42d23455f5d70ad3875df6dadb3b42
+    resourceType: docx
+    expectedTitle: 创作-灵感｜重穿旧战袍｜b53c
+  - ordinal: 22
+    publicArtifactId: artifact_lark_ed60b075f14d029ae645c0712c7f76a5ba750082
+    resourceType: docx
+    expectedTitle: 素材创作｜平台抖音类型图文账号主账号发布时间今晚8｜02cc
+  - ordinal: 23
+    publicArtifactId: artifact_lark_f43f2fbb27325cc363ee093b8275194fe888bee9
+    resourceType: docx
+    expectedTitle: 拆解-再创｜校园运动会奖牌高光图文拆解｜5961
+  - ordinal: 24
+    publicArtifactId: artifact_lark_fcc79e30ca309a421bab0265f515917213455b21
+    resourceType: docx
+    expectedTitle: 创作-灵感｜带相机硬闯四百米｜c441
+  - ordinal: 25
+    publicArtifactId: artifact_lark_fd6ea9667f9333e4449479d30bbcf9966b8eb2c5
+    resourceType: docx
+    expectedTitle: 图文 - Kimi K3发布与WAIC现场观察 - 未定发布时间
+  - ordinal: 26
+    publicArtifactId: media_pilot_onboarding_doc
+    resourceType: docx
+    expectedTitle: Media OS B端机构接入与交付说明
+  - ordinal: 27
+    publicArtifactId: artifact_lark_d226e8518cf5b81229aaf3b1dde665b36847da92
+    resourceType: bitable
+    expectedTitle: 创作灵感表
+bitableContract:
+  activeTables:
+    - 02A_SourceAssets_素材源
+    - 02B_MaterialDeconstructions_素材拆解
+    - 02C_CreativePatterns_创作模式
+    - 03_CreationRuns_创作运行
+    - 04_PostReviews_发布复盘
+    - 05A_BusinessAccounts_商务账号
+    - 05B_BusinessOpportunities_商务机会
+    - 06_CreatorProfiles_达人账号档案
+    - 07_TrackRegistry_赛道注册表
+    - R01_MaterialUsage_素材使用记录
+    - R02_DecisionTrace_决策轨迹
+    - R03_TrackCreatorMembership_赛道博主关系
+    - H01_MetricSnapshot_作品指标快照
+    - H02_AccountMetricSnapshot_账号指标快照
+    - H03_GrowthSummary_增长摘要
+  forbiddenRuntimeTables:
+    - 03_创作任务总表__退役归档_勿写入
+    - 05_BusinessAccounts_商务账号
+  auxiliaryReadOnlyTables:
+    - 01_近期活动
