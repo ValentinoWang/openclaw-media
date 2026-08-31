@@ -109,6 +109,6 @@
     },
     "approval_authority": "user",
     "approval_evidence": "User requested the phase-2 SSOT, explicitly resolved the session-envelope conflict in favor of an independent read-only entry-state API, and accepted the self-hosted font, sliced Chinese subset, and weight/tracking constraints",
-    "approved_at": "2026-08-30T00:00:00+08:00"
+    "approved_at": "2026-08-31T23:15:51+08:00"
   }
 }

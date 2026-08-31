@@ -54,6 +54,7 @@ def artifact_identity(node_id: str) -> str:
 
 BUNDLE = Path(__file__).resolve().parent
 PROJECT_ROOT = BUNDLE.parents[2]
+SOURCE_ROOT = PROJECT_ROOT.parents[1]
 REL_BUNDLE = BUNDLE.relative_to(PROJECT_ROOT).as_posix()
 MACHINE = BUNDLE / ".ssot"
 NODES_DIR = MACHINE / "nodes"
@@ -71,7 +72,7 @@ PRIMARY_WRAPPER_PATHS = {
 L3_WRAPPER = "/Users/vsiyo/.codex/workers/run-l3.sh"
 PROJECT_ROOT_TEXT = str(PROJECT_ROOT)
 CODEX_EXEC = (
-    "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' "
+    f"codex exec -C '{PROJECT_ROOT}' "
     "--skip-git-repo-check --sandbox danger-full-access"
 )
 
@@ -92,7 +93,7 @@ LATEST_REVIEW = (
     "/Users/vsiyo/.codex/attachments/7ebe320f-6551-4294-8d1c-2b452a9b6b2b/"
     "pasted-text.txt"
 )
-STAGE1_BUNDLE = PROJECT_ROOT / (
+STAGE1_BUNDLE = SOURCE_ROOT / (
     "agents-results/2026-08-15/"
     "media-c-b-stage-1-identity-and-organization-onboarding"
 )
@@ -120,8 +121,8 @@ HASHES = {
     "stage1_dc2": "e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448",
 }
 OBSERVED_AT = "2026-08-15T20:37:42+08:00"
-CURRENT_FACT_OBSERVED_AT = "2026-08-30T00:00:00+08:00"
-CURRENT_MAIN_SHA = "2c6a66c4889e90dc375a84b63891e23474953a85"
+CURRENT_FACT_OBSERVED_AT = "2026-08-31T23:15:51+08:00"
+CURRENT_MAIN_SHA = "b267f730ad184991305ffbcdddf39f292ca6f3c5"
 CURRENT_STAGE2_ORIGIN_COMMIT = "0228256058a1d7c0de4986a943de5c96f445ee2f"
 CURRENT_STAGE2_SERVICE_COUNT = 16
 CURRENT_STAGE2_TEST_COUNT = 19
@@ -132,8 +133,11 @@ IMPLEMENTATION_OBSERVATIONS = {
     "C1-C5": "已落地个人资料、研究简报、决策简报、个人上下文和个人内部成果写入流程。",
     "O1-O4": "已落地组织资料、按 Binding 写入、成果绑定、飞书回读和网页只读镜像流程。",
     "storage-topology": "三分叉存储：PostgreSQL canonical 迁移 37 个（其中包括 owned_media_accounts、tracks、publishing_packages）；SQLitePersonalContentStore 持久化个人成果；account_memory 为文件系统 JSON，位于 ~/.openclaw/media_vault/account_memory/<account_id>/。因此存在两道 join 断点，而不是 SQLite 与 Postgres 的单一断点。",
-    "frontend-scope": "前端不是单页：src/media/main.tsx 当前挂载 MediaStudioApp.tsx；旧 MediaApp.tsx 仍保留 ordinaryRoute()，代码中是 11 个顶层导航页加 1 条运行详情深链（/runs/:runId），共 12 条普通路由条目。产品决定这 12 条路由条目全部向个人人格开放，但必须按个人数据作用域和个人正文权威执行；组织 Binding、飞书写入和组织成员能力保持隔离。",
-    "font-scope": "index.media.html 与 src/media.verify.html 仍从 Google Fonts 非阻塞加载；mediaDesignTokens.css 的 PingFang SC 回退顺序偏后，认证样式存在独立字体栈和 850 字重依赖。自托管应作为境内部署主路径：DM Sans 全量 WOFF2，Noto Sans SC 采用 unicode-range 切片或常用字子集，只预载拉丁子集，并让中文标题字距默认为 0。",
+    "frontend-scope": "当前生产入口是 src/media/main.tsx -> MediaStudioApp.tsx；旧 MediaApp.tsx 已由 ea98ca3b 从源码删除。studioOrdinaryRoutes 与 studioTrackRoutes 由统一策略消费，个人/组织/管理员路由授权由严格会话 routeGrants 和 MediaStudioRoutePolicy 共同约束。",
+    "entry-state": "登录入口状态已落地为 GET /openclaw/auth/entry-state?mode=，响应 media_auth_entry_state_v1，覆盖 matched、none、expired、mismatched 四态并有测试；它与工作台路由授权是两个不同合同。",
+    "route-grants": "当前 main 的 media_web_business_pages_v2 严格 schema 已包含 routeGrants，并由服务端生成、客户端校验和路由矩阵消费；这已是源码事实，但与早期‘不得增加 routeGrants’的已接受决定存在待处理合同冲突，不能提升正式节点状态。",
+    "font-scope": "DS-02/DS-26 已在 main 落地：mediaDesignTokens.css 定义 --mg-text-4xl，mediaFonts.css 和本地 WOFF2 提供 DM Sans/Noto Sans SC，Google Fonts 依赖有门禁；仍需按实际部署弱网证据验收。",
+    "frontend-retirement": "MediaApp.tsx 已删除且 main.tsx 无旧壳 import；该设计债务不再是当前待办。",
     "C6-C7": "当前源码观察未形成网页端个人正文修订和平台版本/发布包完整正式验收。",
     "O5": "当前只有注入式/测试形态，未形成真实飞书编辑后再回读的外部验收。",
     "C8/O6/S/C/DA/DB/DC": "属于汇合、候选、发布或独立验收节点，当前未形成正式接受结果。",
@@ -1301,6 +1305,29 @@ def progress_view() -> str:
     ])
 
 
+def acceptance_execution_view() -> str:
+    rows = [
+        ["登录入口状态", "npm run qa:media-login-visual-runtime", "运行时 PNG 与四态矩阵", "自动化 + 人工读图", "回退态需确认不超过一屏"],
+        ["普通路由矩阵", "npm run qa:media-route-matrix", "统一路由注册表与越权负例", "自动化", "导航重定向与数据/动作 403 必须分层"],
+        ["共享视觉原语", "npm run qa:media-primitive-adoption", "24 面结构清单与原语使用", "自动化", "采用率不等同本地样式完全删除"],
+        ["入口状态合同", "pytest openclaw-tag-router/tests/test_auth_entry_state.py", "entry-state 四态响应与错误语义", "自动化", "与工作台 route grants 合同分开验收"],
+        ["Stage-1 工作台运行时", "npm run qa:media-stage1-workspace-runtime", "认证浏览器运行时截图", "自动化 + 人工读图", "不等同真实部署读回"],
+        ["视觉构建门禁", "npm run build:media", "构建与视觉/结构 QA 门禁", "自动化", "记录已知基线失败，不提升 SSOT 节点状态"],
+        ["全量回归", "pytest openclaw-tag-router/tests/ --ignore=tests/test_sync_lark_base_projection.py", "全量测试与基线分类", "自动化", "已知失败必须与新回归分开"],
+    ]
+    return "\n\n".join([
+        "# 第二阶段验收执行",
+        "## 自动化验收映射",
+        table(["验收区域", "命令", "证据", "判读方式", "缺口/边界"], rows),
+        "## 证据分层",
+        "运行时门禁与截图只形成 source/local-runtime 证据，不能替代真实组织扫码、飞书编辑后再回读、28 天会话持久化部署读回或独立外部验收。",
+        "## 人工验收保留项",
+        "1. 真实组织扫码与部署读回。\n2. 飞书编辑后再回读。\n3. 登录回退态折线确认。\n4. 28 天会话持久化真实部署读回。",
+        "## 当前合同提醒",
+        "routeGrants 已进入当前源码的严格会话 schema，但早期产品决定曾明确禁止向会话信封增加该字段；该冲突需在 B 节点重新裁决，不能由静态门禁自动视为已接受。",
+    ])
+
+
 def source_notes() -> str:
     return f"""
 # 第二阶段来源笔记
@@ -1498,7 +1525,7 @@ def planning_compiler() -> dict[str, object]:
         "nodes": [_planning_node(node_id, NODES[node_id]) for node_id in NODES],
         "artifacts": {
             "ssot_bundle": True,
-            "generated_views": ["main", "dependency-topology", "execution-governance", "contracts-acceptance", "implementation-progress"],
+            "generated_views": ["main", "dependency-topology", "execution-governance", "contracts-acceptance", "implementation-progress", "acceptance-execution"],
             "worker_ledger": worker_count > 0,
             "evidence_identity_registry": True,
             "resource_matrix": worker_count >= 2,
@@ -1511,7 +1538,7 @@ def planning_compiler() -> dict[str, object]:
                 "total_nodes": len(NODES),
                 "implementation_nodes_per_release": max(implementation_counts.values()),
                 "codex_worker_nodes": worker_count,
-                "generated_views": 5,
+                "generated_views": 6,
             },
             "exception": None,
         },
@@ -1640,6 +1667,7 @@ def build() -> None:
         ("execution-governance", "20-execution.md", "../generated-views/20-execution-governance.md", execution_view()),
         ("contracts-acceptance", "30-acceptance.md", "../generated-views/30-node-contracts-and-acceptance.md", acceptance_view()),
         ("implementation-progress", "40-progress.md", "../implementation-progress.md", progress_view()),
+        ("acceptance-execution", "40-acceptance-execution.md", "../generated-views/40-acceptance-execution.md", acceptance_execution_view()),
     ]
     generated_views = []
     for view_id, source_name, output, content in views:
@@ -1692,7 +1720,7 @@ def build() -> None:
         "upstream_projections": [
             {
                 "projection_node": projection_node,
-                "source_bundle": STAGE1_BUNDLE.relative_to(PROJECT_ROOT).as_posix(),
+                "source_bundle": STAGE1_BUNDLE.relative_to(SOURCE_ROOT).as_posix(),
                 "source_node": source_node,
                 "source_manifest_sha256": HASHES["stage1_manifest"],
                 "source_node_sha256": HASHES[f"stage1_{source_node.lower()}"],

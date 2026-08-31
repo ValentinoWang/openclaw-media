@@ -1502,7 +1502,8 @@
       "dependency-topology",
       "execution-governance",
       "contracts-acceptance",
-      "implementation-progress"
+      "implementation-progress",
+      "acceptance-execution"
     ],
     "worker_ledger": true,
     "evidence_identity_registry": true,
@@ -1516,7 +1517,7 @@
       "total_nodes": 32,
       "implementation_nodes_per_release": 18,
       "codex_worker_nodes": 18,
-      "generated_views": 5
+      "generated_views": 6
     },
     "exception": null
   },

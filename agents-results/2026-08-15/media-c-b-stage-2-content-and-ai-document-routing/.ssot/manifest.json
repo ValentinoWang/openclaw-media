@@ -89,7 +89,7 @@
     {
       "view_id": "main",
       "source": "view-sources/00-main.md",
-      "source_sha256": "8dd7e230febc0a670d659474fff06ec919fdb5fa827c7b28c1bf33964f946d7e",
+      "source_sha256": "6f4f2e73ea533bc93ec0ad20236e0f1352b5a319e0805d067ab1cd03df6f9907",
       "output": "../ssot-development-paths.md"
     },
     {
@@ -101,7 +101,7 @@
     {
       "view_id": "execution-governance",
       "source": "view-sources/20-execution.md",
-      "source_sha256": "265f7ff9b836492a524973915d8cb03b490ce082daeeacc309a3a692e1da118c",
+      "source_sha256": "07218376dc98559014ab2bfa7a066d0606f84f5fd388297dd2bacc83cbdbec81",
       "output": "../generated-views/20-execution-governance.md"
     },
     {
@@ -113,12 +113,24 @@
     {
       "view_id": "implementation-progress",
       "source": "view-sources/40-progress.md",
-      "source_sha256": "942550d1c2013041bc28c525198dd52af5081e3ab7771e640e86204513bed708",
+      "source_sha256": "e5b8a73e45e273b7ec78e7d51698c5272bf86cba366e52fd6775fe9541740ae3",
       "output": "../implementation-progress.md"
+    },
+    {
+      "view_id": "acceptance-execution",
+      "source": "view-sources/40-acceptance-execution.md",
+      "source_sha256": "ac06cdd9ecc7253100cec488f17643a7cd50548cb9373a838daa4a6266bad139",
+      "output": "../generated-views/40-acceptance-execution.md"
     }
   ],
   "nodes_dir": "nodes",
   "edges_dir": "edges",
   "assumptions_dir": "assumptions",
-  "conflicts_dir": "conflicts"
+  "conflicts_dir": "conflicts",
+  "validation_report": {
+    "path": "validation-report.json",
+    "sha256": "059146afa2004d5599425d88ee3a714497f797138a662fc9c7da523599800be8",
+    "manifest_identity_sha256": "edb07acb26fc36fc5a431a497940b1778f751e7236484fc7dad736072c76f4dd",
+    "bundle_content_sha256": "0bba5964dc9e51f5c3d08ef19618df925e78df7e1bbfef92eeb4c796d990f9ee"
+  }
 }

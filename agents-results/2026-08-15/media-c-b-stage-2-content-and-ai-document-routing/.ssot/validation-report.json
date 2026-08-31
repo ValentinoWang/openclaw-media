@@ -1,42 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-25T13:07:20.828811+00:00",
+  "generated_at": "2026-08-31T16:01:43.444956+00:00",
   "generator": {
     "repository": "ValentinoWang/Harness_Engineering",
-    "commit": "93d2a2f03770f66094285981b2a6dc26b1a5f0e5",
-    "dirty": true,
-    "dirty_files": [
-      "Core/skills/business-plan-commercial-story/SKILL.md",
-      "Core/skills/business-plan-facts-evidence/SKILL.md",
-      "Core/skills/business-plan-facts-evidence/scripts/test_validate_business_plan_sources.py",
-      "Core/skills/business-plan-facts-evidence/scripts/validate_business_plan_sources.py",
-      "Core/skills/business-plan-release-qa/SKILL.md",
-      "Core/skills/business-plan-release-qa/scripts/check_external_visible_copy.py",
-      "Core/skills/business-plan-release-qa/tests/test_check_external_visible_copy.py",
-      "Core/skills/business-plan/SKILL.md",
-      "Core/skills/codex-explicit-worker-orchestration/SKILL.md",
-      "Core/skills/design-acceptance-contract/SKILL.md",
-      "Core/skills/report-to-ssot-development-paths/SKILL.md",
-      "Core/skills/report-to-ssot-development-paths/references/node-escalation-contract.md",
-      "Core/skills/report-to-ssot-development-paths/references/release-slicing-contract.md",
-      "Core/skills/report-to-ssot-development-paths/scripts/analyze_ssot_parallelism.py",
-      "Core/skills/report-to-ssot-development-paths/scripts/check_ssot_program.py",
-      "Core/skills/report-to-ssot-development-paths/scripts/check_ssot_structure.py",
-      "Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_bundle.py",
-      "Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_complexity.py",
-      "Core/skills/report-to-ssot-development-paths/tests/fixtures/complexity/bank-migration-l3.json",
-      "Core/skills/report-to-ssot-development-paths/tests/fixtures/complexity/login-organization-l2.json",
-      "Core/skills/report-to-ssot-development-paths/tests/test_schema_v2_regressions.py",
-      "Core/skills/report-to-ssot-development-paths/tests/test_ssot_complexity.py",
-      "Projects/Athlete-OS_repo/harnesses/fullstack-ai-harness-kit-20260529.zip",
-      "Projects/Athlete-OS_repo/harnesses/fullstack-ai-harness-kit.zip",
-      "Projects/Athlete-OS_repo/skills/ai-harness-maintenance/SKILL.md",
-      "Projects/Athlete-OS_repo/skills/athlete-os-acceptance-e2e-adapter/SKILL.md",
-      "Projects/Athlete-OS_repo/skills/athlete-os-frontend-modification/SKILL.md",
-      "Projects/Athlete-OS_repo/skills/athlete-os-frontend-modification/references/frontend-ia-route-shell.md",
-      "registry.yaml"
-    ],
-    "dirty_diff_sha256": "a00c796916deacc91f2ca46aeb9a5ee79a4181f870f4d5781213fa8d8c0071c7",
+    "commit": "928556ced521716e82ddc331b0e83921bb67bb3c",
+    "dirty": false,
+    "dirty_files": [],
+    "dirty_diff_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
     "skill_path": "Core/skills/report-to-ssot-development-paths",
     "skill_realpath": "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths",
     "skill_sha256": "653cd9fbbb3afaeff289cb34978b3449440f2de4fe91149eeaeaa70c9e0888da",
@@ -44,52 +14,52 @@
     "validation_contract": "strict-schema-v2-release-v1"
   },
   "runtime": {
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
-    "project_commit": "",
-    "project_dirty": false,
-    "project_dirty_diff_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend",
+    "project_commit": "b267f730ad184991305ffbcdddf39f292ca6f3c5",
+    "project_dirty": true,
+    "project_dirty_diff_sha256": "6d6d022cdd1be9cffa30cf7dbe68cc635e4966eefc42543c089ca51e2be3cbb8",
     "harness_lock_sha256": null
   },
   "bundle": {
-    "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",
-    "sha256": "5e6e9155b375dc611203705fdae0bb57455516487ef0378a1001c4e802f8bf50",
-    "content_sha256": "5e6e9155b375dc611203705fdae0bb57455516487ef0378a1001c4e802f8bf50",
-    "manifest_sha256": "bc6e69ad12c4e0b449ef38f12f172e4cac63666c169e0e7f20b1bad4d44d56cc",
-    "manifest_identity_sha256": "bc6e69ad12c4e0b449ef38f12f172e4cac63666c169e0e7f20b1bad4d44d56cc"
+    "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",
+    "sha256": "0bba5964dc9e51f5c3d08ef19618df925e78df7e1bbfef92eeb4c796d990f9ee",
+    "content_sha256": "0bba5964dc9e51f5c3d08ef19618df925e78df7e1bbfef92eeb4c796d990f9ee",
+    "manifest_sha256": "edb07acb26fc36fc5a431a497940b1778f751e7236484fc7dad736072c76f4dd",
+    "manifest_identity_sha256": "edb07acb26fc36fc5a431a497940b1778f751e7236484fc7dad736072c76f4dd"
   },
   "checks": [
     {
       "id": "runtime-skill-provenance",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/tools/harnessctl.py",
         "doctor",
         "--project",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend",
         "--check-runtime-skills"
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "project: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent\nmode: symlink-local\nsource: /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering\nlinks: 30\nruntime_skill_check: enabled\nWARN Harness source dirty files: 29\ndoctor: ok\n"
+      "output": "project: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend\nmode: symlink-local\nsource: /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering\nlinks: 31\nruntime_skill_check: enabled\ndoctor: ok\n"
     },
     {
       "id": "complexity",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_complexity.py",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/planning-compiler.json"
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/planning-compiler.json"
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "SSOT complexity check passed: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/planning-compiler.json (depth=L2, releases=1, nodes=32, workers=18)\n"
+      "output": "SSOT complexity check passed: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/planning-compiler.json (depth=L2, releases=1, nodes=32, workers=18)\n"
     },
     {
       "id": "render",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/render_ssot_views.py",
         "--check",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
       ],
       "exit_code": 0,
       "result": "passed",
@@ -98,31 +68,31 @@
     {
       "id": "machine-program",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_program.py",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "SSOT program check passed: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json (nodes=32, formal_ready=0, conditional_ready=0)\n"
+      "output": "SSOT program check passed: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json (nodes=32, formal_ready=0, conditional_ready=0)\n"
     },
     {
       "id": "parallelism-analysis",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/analyze_ssot_parallelism.py",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "{\n  \"actor_pools\": {\n    \"codex-primary\": {\n      \"actor\": \"codex\",\n      \"capacity\": 12\n    },\n    \"external-acceptance\": {\n      \"actor\": \"external-system\",\n      \"capacity\": 2\n    },\n    \"human-authority\": {\n      \"actor\": \"human\",\n      \"capacity\": 4\n    },\n    \"orchestrator\": {\n      \"actor\": \"orchestrator\",\n      \"capacity\": 1\n    }\n  },\n  \"critical_path_edges\": 15,\n  \"current_ready_nodes\": [],\n  \"current_ready_width\": 0,\n  \"frontier_transitions\": [\n    {\n      \"accepted_node\": \"A\",\n      \"unlocks\": [\n        \"A1\"\n      ],\n      \"waits_for\": []\n    },\n    {\n      \"accepted_node\": \"A1\",\n      \"unlocks\": [\n        \"F1\",\n        \"F2\",\n        \"F3\",\n        \"K\"\n      ],\n      \"waits_for\": [\n        \"A\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F1\",\n      \"unlocks\": [\n        \"B\",\n        \"C1\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F2\",\n      \"unlocks\": [\n        \"O1\",\n        \"S3\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F3\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K\",\n      \"unlocks\": [\n        \"B\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"B\",\n      \"unlocks\": [\n        \"C1\",\n        \"O1\",\n        \"S1\",\n        \"T1\"\n      ],\n      \"waits_for\": [\n        \"F1\",\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C1\",\n      \"unlocks\": [\n        \"C2\",\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"F1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C2\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"C1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C3\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"C1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O1\",\n      \"unlocks\": [\n        \"O2\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"F2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S1\",\n      \"unlocks\": [\n        \"S\",\n        \"S2\",\n        \"S3\",\n        \"S5\"\n      ],\n      \"waits_for\": [\n        \"B\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S2\",\n      \"unlocks\": [\n        \"C4\",\n        \"O2\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C4\",\n      \"unlocks\": [\n        \"C5\"\n      ],\n      \"waits_for\": [\n        \"C2\",\n        \"C3\",\n        \"S2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S3\",\n      \"unlocks\": [\n        \"C5\",\n        \"O2\",\n        \"S\",\n        \"S4\",\n        \"S5\"\n      ],\n      \"waits_for\": [\n        \"F2\",\n        \"S1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S4\",\n      \"unlocks\": [\n        \"C5\",\n        \"O3\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S5\",\n      \"unlocks\": [\n        \"C5\",\n        \"O2\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S1\",\n        \"S3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C5\",\n      \"unlocks\": [\n        \"C6\"\n      ],\n      \"waits_for\": [\n        \"C4\",\n        \"S3\",\n        \"S4\",\n        \"S5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C6\",\n      \"unlocks\": [\n        \"C7\"\n      ],\n      \"waits_for\": [\n        \"C5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C7\",\n      \"unlocks\": [\n        \"C8\"\n      ],\n      \"waits_for\": [\n        \"C6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O2\",\n      \"unlocks\": [\n        \"O3\"\n      ],\n      \"waits_for\": [\n        \"O1\",\n        \"S2\",\n        \"S3\",\n        \"S5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O3\",\n      \"unlocks\": [\n        \"O4\"\n      ],\n      \"waits_for\": [\n        \"O2\",\n        \"S4\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O4\",\n      \"unlocks\": [\n        \"O5\"\n      ],\n      \"waits_for\": [\n        \"O3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O5\",\n      \"unlocks\": [\n        \"O6\"\n      ],\n      \"waits_for\": [\n        \"O4\"\n      ]\n    },\n    {\n      \"accepted_node\": \"T1\",\n      \"unlocks\": [\n        \"C8\",\n        \"O6\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"B\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S\",\n      \"unlocks\": [\n        \"C8\",\n        \"O6\"\n      ],\n      \"waits_for\": [\n        \"S1\",\n        \"S2\",\n        \"S3\",\n        \"S4\",\n        \"S5\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C8\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"C7\",\n        \"S\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O6\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"O5\",\n        \"S\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C\",\n      \"unlocks\": [\n        \"DA\"\n      ],\n      \"waits_for\": [\n        \"C8\",\n        \"F3\",\n        \"O6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DA\",\n      \"unlocks\": [\n        \"DB\"\n      ],\n      \"waits_for\": [\n        \"C\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DB\",\n      \"unlocks\": [\n        \"DC\"\n      ],\n      \"waits_for\": [\n        \"DA\"\n      ]\n    }\n  ],\n  \"manifest\": \"/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json\",\n  \"maximum_antichain_width\": 8,\n  \"parallelism_contract_activation_error\": null,\n  \"parallelism_contract_active\": true,\n  \"resource_verified_antichain_width\": null,\n  \"resource_verified_width\": 0,\n  \"scheduling_model\": \"event-driven\",\n  \"static_waves_are_authority\": false\n}\n"
+      "output": "{\n  \"actor_pools\": {\n    \"codex-primary\": {\n      \"actor\": \"codex\",\n      \"capacity\": 12\n    },\n    \"external-acceptance\": {\n      \"actor\": \"external-system\",\n      \"capacity\": 2\n    },\n    \"human-authority\": {\n      \"actor\": \"human\",\n      \"capacity\": 4\n    },\n    \"orchestrator\": {\n      \"actor\": \"orchestrator\",\n      \"capacity\": 1\n    }\n  },\n  \"critical_path_edges\": 15,\n  \"current_ready_nodes\": [],\n  \"current_ready_width\": 0,\n  \"frontier_transitions\": [\n    {\n      \"accepted_node\": \"A\",\n      \"unlocks\": [\n        \"A1\"\n      ],\n      \"waits_for\": []\n    },\n    {\n      \"accepted_node\": \"A1\",\n      \"unlocks\": [\n        \"F1\",\n        \"F2\",\n        \"F3\",\n        \"K\"\n      ],\n      \"waits_for\": [\n        \"A\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F1\",\n      \"unlocks\": [\n        \"B\",\n        \"C1\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F2\",\n      \"unlocks\": [\n        \"O1\",\n        \"S3\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F3\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K\",\n      \"unlocks\": [\n        \"B\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"B\",\n      \"unlocks\": [\n        \"C1\",\n        \"O1\",\n        \"S1\",\n        \"T1\"\n      ],\n      \"waits_for\": [\n        \"F1\",\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C1\",\n      \"unlocks\": [\n        \"C2\",\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"F1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C2\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"C1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C3\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"C1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O1\",\n      \"unlocks\": [\n        \"O2\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"F2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S1\",\n      \"unlocks\": [\n        \"S\",\n        \"S2\",\n        \"S3\",\n        \"S5\"\n      ],\n      \"waits_for\": [\n        \"B\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S2\",\n      \"unlocks\": [\n        \"C4\",\n        \"O2\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C4\",\n      \"unlocks\": [\n        \"C5\"\n      ],\n      \"waits_for\": [\n        \"C2\",\n        \"C3\",\n        \"S2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S3\",\n      \"unlocks\": [\n        \"C5\",\n        \"O2\",\n        \"S\",\n        \"S4\",\n        \"S5\"\n      ],\n      \"waits_for\": [\n        \"F2\",\n        \"S1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S4\",\n      \"unlocks\": [\n        \"C5\",\n        \"O3\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S5\",\n      \"unlocks\": [\n        \"C5\",\n        \"O2\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S1\",\n        \"S3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C5\",\n      \"unlocks\": [\n        \"C6\"\n      ],\n      \"waits_for\": [\n        \"C4\",\n        \"S3\",\n        \"S4\",\n        \"S5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C6\",\n      \"unlocks\": [\n        \"C7\"\n      ],\n      \"waits_for\": [\n        \"C5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C7\",\n      \"unlocks\": [\n        \"C8\"\n      ],\n      \"waits_for\": [\n        \"C6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O2\",\n      \"unlocks\": [\n        \"O3\"\n      ],\n      \"waits_for\": [\n        \"O1\",\n        \"S2\",\n        \"S3\",\n        \"S5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O3\",\n      \"unlocks\": [\n        \"O4\"\n      ],\n      \"waits_for\": [\n        \"O2\",\n        \"S4\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O4\",\n      \"unlocks\": [\n        \"O5\"\n      ],\n      \"waits_for\": [\n        \"O3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O5\",\n      \"unlocks\": [\n        \"O6\"\n      ],\n      \"waits_for\": [\n        \"O4\"\n      ]\n    },\n    {\n      \"accepted_node\": \"T1\",\n      \"unlocks\": [\n        \"C8\",\n        \"O6\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"B\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S\",\n      \"unlocks\": [\n        \"C8\",\n        \"O6\"\n      ],\n      \"waits_for\": [\n        \"S1\",\n        \"S2\",\n        \"S3\",\n        \"S4\",\n        \"S5\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C8\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"C7\",\n        \"S\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O6\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"O5\",\n        \"S\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C\",\n      \"unlocks\": [\n        \"DA\"\n      ],\n      \"waits_for\": [\n        \"C8\",\n        \"F3\",\n        \"O6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DA\",\n      \"unlocks\": [\n        \"DB\"\n      ],\n      \"waits_for\": [\n        \"C\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DB\",\n      \"unlocks\": [\n        \"DC\"\n      ],\n      \"waits_for\": [\n        \"DA\"\n      ]\n    }\n  ],\n  \"manifest\": \"/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json\",\n  \"maximum_antichain_width\": 8,\n  \"parallelism_contract_activation_error\": null,\n  \"parallelism_contract_active\": true,\n  \"resource_verified_antichain_width\": null,\n  \"resource_verified_width\": 0,\n  \"scheduling_model\": \"event-driven\",\n  \"static_waves_are_authority\": false\n}\n"
     },
     {
       "id": "structure",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_structure.py",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md"
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md"
       ],
       "exit_code": 0,
       "result": "passed",
@@ -131,9 +101,10 @@
     {
       "id": "chinese-readability",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_chinese_readability.py",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md"
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/openproblem.md"
       ],
       "exit_code": 0,
       "result": "passed",
@@ -142,17 +113,17 @@
     {
       "id": "archive-check",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/ssot-obsidian-snapshot/scripts/snapshot_ssot.py",
         "--source",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",
         "--project-root",
-        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
+        "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend",
         "--check"
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "{\n  \"status\": \"verified\",\n  \"source\": \"/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing\",\n  \"destination\": \"/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/开发/每日开发/SSOT合集/2026-08-15/openclaw-media/media-c-b-stage-2-content-ai-document-routing\",\n  \"project_name\": \"openclaw-media\",\n  \"ssot_name\": \"media-c-b-stage-2-content-ai-document-routing\",\n  \"snapshot_date\": \"2026-08-15\",\n  \"main_document\": \"ssot-development-paths.md\",\n  \"file_count\": 1,\n  \"contains_openproblem\": false\n}\n"
+      "output": "{\n  \"status\": \"verified\",\n  \"source\": \"/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing\",\n  \"destination\": \"/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/开发/每日开发/SSOT合集/2026-08-15/openclaw-media/media-c-b-stage-2-content-ai-document-routing\",\n  \"project_name\": \"openclaw-media\",\n  \"ssot_name\": \"media-c-b-stage-2-content-ai-document-routing\",\n  \"snapshot_date\": \"2026-08-15\",\n  \"main_document\": \"ssot-development-paths.md\",\n  \"file_count\": 2,\n  \"contains_openproblem\": true\n}\n"
     }
   ],
   "parallelism": {
@@ -506,7 +477,7 @@
         ]
       }
     ],
-    "manifest": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json",
+    "manifest": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json",
     "maximum_antichain_width": 8,
     "parallelism_contract_activation_error": null,
     "parallelism_contract_active": true,
