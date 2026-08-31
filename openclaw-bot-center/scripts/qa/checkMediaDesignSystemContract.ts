@@ -1,29 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import { CANONICAL_PERSISTENT_RAIL_PAGES } from "./mediaPageStructureManifest";
 
 const projectRoot = path.resolve(import.meta.dirname, "../..");
 const mediaRoot = path.join(projectRoot, "src/media");
 const pagesRoot = path.join(mediaRoot, "pages");
 const mediaStyles = fs.readFileSync(path.join(mediaRoot, "media.css"), "utf8");
 
-const canonicalRailPages = [
-  "admin/AdminAccessPage.tsx",
-  "admin/AdminBillingPage.tsx",
-  "admin/AdminOverviewPage.tsx",
-  "admin/AdminTenantsPage.tsx",
-  "admin/AdminUpstreamsPage.tsx",
-  "ordinary/ArchivesPage.tsx",
-  "ordinary/AssetsPage.tsx",
-  "ordinary/DecisionsPage.tsx",
-  "ordinary/InvitesPage.tsx",
-  "ordinary/MediaAgentPage.tsx",
-  "ordinary/OverviewPage.tsx",
-  "ordinary/ReviewsPage.tsx",
-  "ordinary/RunsPage.tsx",
-  "ordinary/TracksPage.tsx",
-  "ordinary/UsageBillingPage.tsx",
-].sort();
+const canonicalRailPages = [...CANONICAL_PERSISTENT_RAIL_PAGES].sort();
 
 function requireContract(
   condition: unknown,
@@ -509,11 +494,16 @@ const publishingStyles = fs.readFileSync(
   "utf8",
 );
 requireContract(
-  publishingSource.includes("<EmptyWorkspace onRefresh={refresh} />") &&
-    publishingSource.includes("data-empty-workspace") &&
+  publishingSource.includes("body = <PublishingWorkspace") &&
+    publishingSource.includes("function PublishingWorkspace") &&
+    (publishingSource.match(/data-empty-workspace/g)?.length ?? 0) === 1 &&
+    publishingSource.includes("? <EmptyPackageList onRefresh={onRefresh} />") &&
+    publishingSource.includes(": <PackageList items={listData.items}") &&
+    publishingSource.includes("? <EmptyPackageDetail />") &&
+    publishingSource.includes(": <Detail state={detail}") &&
     publishingSource.includes("0 条当前账户记录") &&
     publishingSource.includes("等待选择发布包"),
-  "publishing empty data must preserve the list and detail workspace skeleton",
+  "publishing must preserve one shared workspace rail with empty list and detail branches",
 );
 requireContract(
   /\.workspace \{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*3fr\)\s+minmax\(360px,\s*2fr\)/.test(

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import {
   Archive,
   ArrowLeft,
@@ -12,6 +12,7 @@ import {
   Database,
   Gauge,
   Images,
+  Lightbulb,
   LayoutDashboard,
   LogIn,
   LogOut,
@@ -20,6 +21,7 @@ import {
   PenTool,
   Plus,
   Search,
+  Send,
   Server,
   Settings,
   ShieldCheck,
@@ -34,7 +36,7 @@ import {
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import CreationRunDetailPage from './CreationRunDetailPage'
 import { MediaWebProvider, useMediaWeb } from './MediaWebWorkspace'
-import { loginUrl, logoutMediaSession } from './mediaWebApi'
+import { loginUrl, logoutMediaSession, type MediaWebSession } from './mediaWebApi'
 import AdminAccessPage from './pages/admin/AdminAccessPage'
 import AdminBillingPage from './pages/admin/AdminBillingPage'
 import AdminOverviewPage from './pages/admin/AdminOverviewPage'
@@ -58,7 +60,12 @@ import WorkboardPage from './studio/WorkboardPage'
 import OrganizationWorkspaceShellPage from './OrganizationWorkspaceShellPage'
 import PersonalWorkspaceShellPage from './PersonalWorkspaceShellPage'
 import WorkspaceShellPage from './WorkspaceShellPage'
-
+import {
+  resolveStudioRouteOutcome,
+  resolveStudioRoutePolicy,
+  type StudioRoutePolicy,
+  type StudioShell,
+} from './mediaStudioRoutePolicy'
 
 type NavigationItem = {
   path: string
@@ -73,6 +80,8 @@ type NavigationGroup = {
   items: readonly NavigationItem[]
 }
 
+type StudioAccent = 'studio' | 'campaign' | 'business' | 'desk' | 'agent' | 'archive'
+
 const ordinaryNavigation: readonly NavigationGroup[] = [
   {
     label: '核心工作区',
@@ -82,6 +91,7 @@ const ordinaryNavigation: readonly NavigationGroup[] = [
       { path: '/campaigns', label: 'Campaigns', detail: '活动与商单履约', icon: BriefcaseBusiness },
       { path: '/business', label: 'Business', detail: '报价、档期与商机', icon: CircleDollarSign },
       { path: '/desk', label: 'Desk', detail: '情报、拆解与增长', icon: Sparkles },
+      { path: '/overview', label: '概览', detail: '项目状态与下一步', icon: LayoutDashboard },
     ],
   },
   {
@@ -89,6 +99,8 @@ const ordinaryNavigation: readonly NavigationGroup[] = [
     items: [
       { path: '/assets', label: '素材库', detail: '原始素材与证据', icon: Images },
       { path: '/tracks', label: '账号与赛道', detail: '自有账号与监控', icon: Users },
+      { path: '/decisions', label: '选题与决策', detail: '证据、候选与人工状态', icon: Lightbulb },
+      { path: '/publishing', label: '发布交付', detail: '发布准备与渠道交付', icon: Send },
       { path: '/reviews', label: '复盘洞察', detail: '发布数据与账号学习', icon: TrendingUp },
       { path: '/media-agent', label: 'Agent 任务', detail: '本机执行与人工确认', icon: Bot },
       { path: '/archives', label: '云端归档', detail: '成果与历史记录', icon: Archive },
@@ -117,6 +129,7 @@ const adminNavigation: readonly NavigationGroup[] = [
 ]
 
 const personalNavigation: readonly NavigationGroup[] = [
+  ...ordinaryNavigation,
   { label: '个人工作区', items: [{ path: '/workspace', label: '个人云端成果', icon: Cloud }] },
 ]
 
@@ -190,61 +203,90 @@ function ProductShell() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [selectedSearchIndex, setSelectedSearchIndex] = useState(0)
   const { resolved: theme, toggle: toggleTheme } = useThemePreference()
   const [query, setQuery] = useState('')
   const location = useLocation()
   const navigate = useNavigate()
 
-  const isAdmin = session?.role === 'admin'
-  const isPersonal = session?.workspaceMode === 'personal_web'
-  const isOrganization = session?.workspaceMode === 'organization_lark' && session.bodyAuthority === 'lark'
-  const isAdminShell = isAdmin && !isOrganization
-  const navigation = isPersonal
-    ? personalNavigation
-    : isOrganization
-      ? organizationNavigation
-      : isAdminShell
-        ? adminNavigation
-        : ordinaryNavigation
+  const authenticatedSession = requireAuthenticatedSession(session)
+  const routePolicy = resolveStudioRoutePolicy(authenticatedSession)
+  const isAdminShell = routePolicy.shell === 'admin'
+  const isPersonal = routePolicy.shell === 'personal'
+  const isOrganization = routePolicy.shell === 'organization'
+  const navigationByShell: Record<StudioShell, readonly NavigationGroup[]> = {
+    admin: adminNavigation,
+    personal: personalNavigation,
+    organization: organizationNavigation,
+  }
+  const navigation = navigationByShell[routePolicy.shell]
   const flatNavigation = useMemo(() => navigation.flatMap((group) => group.items), [navigation])
+  const visibleNavigationItemCount = flatNavigation.length
+  const isCompactNavigation = visibleNavigationItemCount < 3 && routePolicy.navigationMode === 'compact'
   const current = currentNavigationItem(location.pathname, flatNavigation)
   const CurrentIcon = current?.icon ?? LayoutDashboard
-  const defaultRoute = isPersonal
-    ? '/workspace'
-    : isOrganization
-      ? '/organization-workspace'
-      : isAdminShell
-        ? '/admin/overview'
-        : '/today'
+  const defaultRoute = routePolicy.defaultRoute
   const activeTasks = tasks.filter((task) => !task.terminal)
   const searchMatches = query.trim()
     ? flatNavigation.filter((item) => `${item.label} ${item.detail ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 6)
     : []
+  const selectedSearchMatch = searchMatches[selectedSearchIndex]
+  const shellAccent = studioAccentForPath(location.pathname)
 
   useEffect(() => {
     setMenuOpen(false)
     setAccountOpen(false)
     setSearchOpen(false)
     setQuery('')
+    setSelectedSearchIndex(0)
   }, [location.pathname])
 
   function submitSearch(event: FormEvent) {
     event.preventDefault()
-    if (searchMatches[0]) navigate(searchMatches[0].path)
+    selectSearchMatch(selectedSearchIndex)
+  }
+
+  function selectSearchMatch(index: number) {
+    const match = searchMatches[index]
+    if (!match) return
+    setSearchOpen(false)
+    navigate(match.path)
+  }
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      setSearchOpen(false)
+      setSelectedSearchIndex(0)
+      return
+    }
+    if (!searchMatches.length) return
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      setSearchOpen(true)
+      setSelectedSearchIndex((current) => {
+        const offset = event.key === 'ArrowDown' ? 1 : -1
+        return (current + offset + searchMatches.length) % searchMatches.length
+      })
+      return
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      selectSearchMatch(selectedSearchIndex)
+    }
   }
 
   return (
-    <div className={`media-shell studio-shell ${isAdminShell ? 'is-admin-shell' : isPersonal ? 'is-personal-shell' : isOrganization ? 'is-organization-shell' : 'is-ordinary-shell'}`}>
-      <aside className={`media-sidebar studio-sidebar ${menuOpen ? 'is-open' : ''}`}>
-        <div className="studio-brand">
+    <div className={`media-shell studio-shell ${isAdminShell ? 'is-admin-shell' : isPersonal ? 'is-personal-shell' : isOrganization ? 'is-organization-shell' : 'is-ordinary-shell'} ${isCompactNavigation ? 'is-compact-navigation' : ''}`} data-accent={shellAccent}>
+      <aside id="studio-mobile-navigation" className={`media-sidebar studio-sidebar ${menuOpen ? 'is-open' : ''}`}>
+        <NavLink className="studio-brand" to={defaultRoute} aria-label="MediaClaw 工作台" title="MediaClaw 工作台">
           <div className="studio-brand-mark">MC</div>
           <div className="studio-brand-copy">
             <strong>MediaClaw</strong>
             <span>{isAdminShell ? '平台治理控制台' : isPersonal ? '个人内容资产' : isOrganization ? '组织协作工作区' : 'AI 内容生产工作台'}</span>
           </div>
-        </div>
+        </NavLink>
 
-        {!isAdminShell && !isPersonal && !isOrganization ? (
+        {!isAdminShell && !isOrganization ? (
           <div className="studio-workspace-card">
             <span>当前工作区</span>
             <strong>Creator Studio</strong>
@@ -263,6 +305,8 @@ function ProductShell() {
                     <NavLink
                       key={item.path}
                       to={item.path}
+                      aria-label={item.detail ? `${item.label}：${item.detail}` : item.label}
+                      title={item.label}
                       className={({ isActive }) => isActive || navigationAliasActive(location.pathname, item.path) ? 'studio-nav-link active' : 'studio-nav-link'}
                     >
                       <span className="studio-nav-icon"><Icon size={18} /></span>
@@ -283,36 +327,36 @@ function ProductShell() {
             <strong>{isAdminShell ? '平台管理员' : session?.organizationName || 'MediaClaw 团队'}</strong>
             <span>{isOrganization ? session?.memberRole === 'owner' ? '组织负责人' : '组织成员' : isPersonal ? '个人工作区' : '内容生产成员'}</span>
           </div>
-          <button className="studio-account-button" type="button" aria-label="账户菜单" aria-expanded={accountOpen} onClick={() => setAccountOpen((value) => !value)}>
+          <button className="studio-account-button" type="button" aria-label="账户菜单" title="账户菜单" aria-haspopup="menu" aria-controls="studio-account-popover" aria-expanded={accountOpen} onClick={() => setAccountOpen((value) => !value)}>
             <Settings size={17} /><ChevronDown size={14} />
           </button>
           {accountOpen ? (
-            <div className="studio-account-popover" role="menu">
+            <div id="studio-account-popover" className="studio-account-popover" role="menu">
               <button type="button" role="menuitem" onClick={() => session && void logout(session)}><LogOut size={15} />退出登录</button>
             </div>
           ) : null}
         </div>
       </aside>
 
-      {menuOpen ? <button className="sidebar-scrim" aria-label="关闭导航" onClick={() => setMenuOpen(false)} /> : null}
+      {menuOpen ? <button className="sidebar-scrim" type="button" aria-label="关闭导航" onClick={() => setMenuOpen(false)} /> : null}
 
       <div className="media-workspace studio-workspace">
         <header className="media-topbar studio-topbar">
-          <button className="icon-button menu-button" type="button" aria-label="打开导航" onClick={() => setMenuOpen((value) => !value)}>
+          <button className="icon-button menu-button" type="button" aria-label={menuOpen ? '关闭导航' : '打开导航'} aria-expanded={menuOpen} aria-controls="studio-mobile-navigation" onClick={() => setMenuOpen((value) => !value)}>
             {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
           <div className="studio-breadcrumb"><CurrentIcon size={17} /><span>MediaClaw</span><b>/</b><strong>{current?.label ?? '工作台'}</strong></div>
-          {!isPersonal && !isOrganization ? (
+          {!isOrganization ? (
             <div className="studio-topbar-actions">
               <div className="studio-search-wrap">
                 <form className="studio-search topbar-search" role="search" onSubmit={submitSearch}>
                   <Search size={17} />
-                  <input aria-label="搜索工作区" value={query} onFocus={() => setSearchOpen(true)} onChange={(event) => { setQuery(event.target.value); setSearchOpen(true) }} placeholder="搜索 Studio、商单或素材…" />
+                  <input aria-label="搜索工作区" aria-haspopup="listbox" aria-controls="studio-search-results" aria-expanded={searchOpen && Boolean(query.trim())} aria-autocomplete="list" aria-activedescendant={searchOpen && selectedSearchMatch ? `studio-search-option-${selectedSearchIndex}` : undefined} value={query} onFocus={() => setSearchOpen(true)} onKeyDown={handleSearchKeyDown} onChange={(event) => { setQuery(event.target.value); setSelectedSearchIndex(0); setSearchOpen(true) }} placeholder="搜索 Studio、商单或素材…" />
                   <kbd>⌘K</kbd>
                 </form>
                 {searchOpen && query.trim() ? (
-                  <div className="studio-search-results" role="listbox">
-                    {searchMatches.length ? searchMatches.map((item) => { const Icon = item.icon; return <button type="button" key={item.path} onClick={() => navigate(item.path)}><Icon size={16} /><span><strong>{item.label}</strong><small>{item.detail}</small></span></button> }) : <p>没有匹配的工作区</p>}
+                  <div id="studio-search-results" className="studio-search-results" role="listbox" aria-label="工作区搜索结果">
+                    {searchMatches.length ? searchMatches.map((item, index) => { const Icon = item.icon; return <button id={`studio-search-option-${index}`} type="button" role="option" aria-selected={selectedSearchIndex === index} key={item.path} onMouseMove={() => setSelectedSearchIndex(index)} onClick={() => selectSearchMatch(index)}><Icon size={16} aria-hidden="true" /><span><strong>{item.label}</strong><small>{item.detail}</small></span></button> }) : <p>没有匹配的工作区</p>}
                   </div>
                 ) : null}
               </div>
@@ -321,7 +365,7 @@ function ProductShell() {
                 title={theme === 'dark' ? '切换到浅色主题' : '切换到暗色主题'}
                 onClick={toggleTheme}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button>
               <button className="studio-command-button topbar-command" type="button" aria-label="新建任务" onClick={() => openWorkspace()}><Command size={17} /><span>任务中心</span>{activeTasks.length ? <b>{activeTasks.length}</b> : null}</button>
-              {!isAdminShell ? <button className="studio-primary-button" type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Plus size={17} /><span>新建内容项目</span></button> : null}
+              {!isAdminShell ? <button className="studio-primary-button" type="button" aria-label="新建内容项目" title="新建内容项目" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Plus size={17} /><span>新建内容项目</span></button> : null}
             </div>
           ) : null}
         </header>
@@ -329,32 +373,32 @@ function ProductShell() {
         <div className="media-content studio-content">
           <Routes>
             <Route path="/" element={<Navigate to={defaultRoute} replace />} />
-            <Route path="/today" element={ordinaryRoute(<WorkboardPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/studio" element={ordinaryRoute(<RunsPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/runs" element={<Navigate to="/studio" replace />} />
-            <Route path="/runs/:runId" element={ordinaryRoute(<CreationRunDetailPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/studio/:runId" element={ordinaryRoute(<CreationRunDetailPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/campaigns" element={ordinaryRoute(<CampaignsPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/business" element={ordinaryRoute(<BusinessPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/desk" element={ordinaryRoute(<DeskPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/overview" element={ordinaryRoute(<OverviewPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/tracks" element={isOrganization ? <TracksPage /> : ordinaryRoute(<TracksPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/assets" element={ordinaryRoute(<AssetsPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/decisions" element={ordinaryRoute(<DecisionsPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/publishing" element={ordinaryRoute(<PublishingPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/reviews" element={ordinaryRoute(<ReviewsPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/media-agent" element={ordinaryRoute(<MediaAgentPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/archives" element={ordinaryRoute(<ArchivesPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/usage-billing" element={ordinaryRoute(<UsageBillingPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/invites" element={ordinaryRoute(<InvitesPage />, isPersonal, isOrganization, isAdminShell, defaultRoute)} />
-            <Route path="/workspace" element={<WorkspaceShellPage />} />
-            <Route path="/workspace/preview/:artifactId" element={isPersonal ? <PersonalWorkspaceShellPage /> : <Navigate to="/workspace" replace />} />
-            <Route path="/organization-workspace" element={isOrganization ? <OrganizationWorkspaceShellPage /> : <Navigate to={defaultRoute} replace />} />
-            <Route path="/admin/overview" element={isAdminShell ? <AdminOverviewPage /> : <Navigate to={defaultRoute} replace />} />
-            <Route path="/admin/access" element={isAdminShell ? <AdminAccessPage /> : <Navigate to={defaultRoute} replace />} />
-            <Route path="/admin/tenants" element={isAdminShell ? <AdminTenantsPage /> : <Navigate to={defaultRoute} replace />} />
-            <Route path="/admin/billing" element={isAdminShell ? <AdminBillingPage /> : <Navigate to={defaultRoute} replace />} />
-            <Route path="/admin/upstreams" element={isAdminShell ? <AdminUpstreamsPage /> : <Navigate to={defaultRoute} replace />} />
+            <Route path="/today" element={ordinaryRoute('/today', <WorkboardPage />, routePolicy)} />
+            <Route path="/studio" element={ordinaryRoute('/studio', <RunsPage />, routePolicy)} />
+            <Route path="/runs" element={studioAliasRoute(routePolicy)} />
+            <Route path="/runs/:runId" element={ordinaryRoute('/runs/:runId', <CreationRunDetailPage />, routePolicy)} />
+            <Route path="/studio/:runId" element={ordinaryRoute('/studio/:runId', <CreationRunDetailPage />, routePolicy)} />
+            <Route path="/campaigns" element={ordinaryRoute('/campaigns', <CampaignsPage />, routePolicy)} />
+            <Route path="/business" element={ordinaryRoute('/business', <BusinessPage />, routePolicy)} />
+            <Route path="/desk" element={ordinaryRoute('/desk', <DeskPage />, routePolicy)} />
+            <Route path="/overview" element={ordinaryRoute('/overview', <OverviewPage />, routePolicy)} />
+            <Route path="/tracks" element={tracksRoute(<TracksPage />, routePolicy)} />
+            <Route path="/assets" element={ordinaryRoute('/assets', <AssetsPage />, routePolicy)} />
+            <Route path="/decisions" element={ordinaryRoute('/decisions', <DecisionsPage />, routePolicy)} />
+            <Route path="/publishing" element={ordinaryRoute('/publishing', <PublishingPage />, routePolicy)} />
+            <Route path="/reviews" element={ordinaryRoute('/reviews', <ReviewsPage />, routePolicy)} />
+            <Route path="/media-agent" element={ordinaryRoute('/media-agent', <MediaAgentPage />, routePolicy)} />
+            <Route path="/archives" element={ordinaryRoute('/archives', <ArchivesPage />, routePolicy)} />
+            <Route path="/usage-billing" element={ordinaryRoute('/usage-billing', <UsageBillingPage />, routePolicy)} />
+            <Route path="/invites" element={ordinaryRoute('/invites', <InvitesPage />, routePolicy)} />
+            <Route path="/workspace" element={personalRoute('/workspace', <WorkspaceShellPage />, routePolicy)} />
+            <Route path="/workspace/preview/:artifactId" element={personalRoute('/workspace/preview/:artifactId', <PersonalWorkspaceShellPage />, routePolicy)} />
+            <Route path="/organization-workspace" element={organizationRoute(<OrganizationWorkspaceShellPage />, routePolicy)} />
+            <Route path="/admin/overview" element={adminRoute('/admin/overview', <AdminOverviewPage />, routePolicy)} />
+            <Route path="/admin/access" element={adminRoute('/admin/access', <AdminAccessPage />, routePolicy)} />
+            <Route path="/admin/tenants" element={adminRoute('/admin/tenants', <AdminTenantsPage />, routePolicy)} />
+            <Route path="/admin/billing" element={adminRoute('/admin/billing', <AdminBillingPage />, routePolicy)} />
+            <Route path="/admin/upstreams" element={adminRoute('/admin/upstreams', <AdminUpstreamsPage />, routePolicy)} />
             <Route path="*" element={<Navigate to={defaultRoute} replace />} />
           </Routes>
         </div>
@@ -363,17 +407,51 @@ function ProductShell() {
   )
 }
 
-function ordinaryRoute(element: ReactNode, isPersonal: boolean, isOrganization: boolean, isAdminShell: boolean, defaultRoute: string) {
-  return isPersonal || isOrganization || isAdminShell ? <Navigate to={defaultRoute} replace /> : element
+function ordinaryRoute(pathname: string, element: ReactNode, policy: StudioRoutePolicy) {
+  return guardedRoute(pathname, element, policy)
+}
+
+function tracksRoute(element: ReactNode, policy: StudioRoutePolicy) {
+  return guardedRoute('/tracks', element, policy)
+}
+
+function personalRoute(pathname: string, element: ReactNode, policy: StudioRoutePolicy) {
+  return guardedRoute(pathname, element, policy)
+}
+
+function organizationRoute(element: ReactNode, policy: StudioRoutePolicy) {
+  return guardedRoute('/organization-workspace', element, policy)
+}
+
+function studioAliasRoute(policy: StudioRoutePolicy) {
+  return guardedRoute('/runs', null, policy)
+}
+
+function adminRoute(pathname: string, element: ReactNode, policy: StudioRoutePolicy) {
+  return guardedRoute(pathname, element, policy)
+}
+
+function guardedRoute(pathname: string, element: ReactNode, policy: StudioRoutePolicy) {
+  const outcome = resolveStudioRouteOutcome(policy, pathname)
+  return outcome.kind === 'render' ? element : <Navigate to={outcome.target} replace />
 }
 
 function currentNavigationItem(pathname: string, items: readonly NavigationItem[]): NavigationItem | undefined {
-  if (pathname.startsWith('/runs/')) return items.find((item) => item.path === '/studio')
+  if (pathname === '/runs' || pathname.startsWith('/runs/')) return items.find((item) => item.path === '/studio')
   return items.find((item) => pathname === item.path || pathname.startsWith(`${item.path}/`)) ?? items[0]
 }
 
 function navigationAliasActive(pathname: string, itemPath: string): boolean {
-  return itemPath === '/studio' && pathname.startsWith('/runs/')
+  return itemPath === '/studio' && (pathname === '/runs' || pathname.startsWith('/runs/'))
+}
+
+function studioAccentForPath(pathname: string): StudioAccent {
+  if (pathname === '/campaigns' || pathname === '/decisions' || pathname === '/publishing' || pathname === '/invites' || pathname === '/organization-workspace' || pathname === '/admin/access') return 'campaign'
+  if (pathname === '/business' || pathname === '/usage-billing' || pathname === '/admin/billing') return 'business'
+  if (pathname === '/desk' || pathname === '/reviews' || pathname === '/tracks' || pathname === '/admin/overview') return 'desk'
+  if (pathname === '/media-agent' || pathname === '/admin/upstreams') return 'agent'
+  if (pathname === '/archives') return 'archive'
+  return 'studio'
 }
 
 function LoadingState() {
@@ -387,4 +465,9 @@ function StandaloneState({ icon, title, detail, action }: { icon: ReactNode; tit
 async function logout(session: Parameters<typeof logoutMediaSession>[0]) {
   await logoutMediaSession(session)
   window.location.assign('/openclaw/media/login')
+}
+
+function requireAuthenticatedSession(session: MediaWebSession | null): MediaWebSession {
+  if (!session) throw new Error('Media Studio rendered without an authenticated session')
+  return session
 }
