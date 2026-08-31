@@ -32,6 +32,7 @@ PAGE_CONTRACTS = {
 }
 
 SHARED_OPERATION_IDS = {
+    "getAuthEntryState",
     "getMediaSession",
     "listMediaCapabilities",
     "matchMediaCapability",
@@ -124,6 +125,7 @@ EXISTING_EXTENDED_OPERATION_IDS = {
 }
 
 EXISTING_TYPED_OPERATION_IDS = {
+    "getAuthEntryState",
     "getMediaSession", "listMediaCapabilities", "matchMediaCapability", "createMediaUpload",
     "listMediaTasks", "createMediaTask", "getMediaTask", "listMediaTaskEvents",
     "cancelMediaTask", "confirmMediaTask", "getBillingBalance", "listBillingBalancePacks",
@@ -297,6 +299,7 @@ def test_existing_routes_are_extended_without_synonym_paths() -> None:
     assert operations["listBillingUsage"][:2] == ("/billing/usage", "get")
     assert operations["getAffiliateProfile"][:2] == ("/account/affiliate", "get")
     assert operations["listInvitees"][:2] == ("/account/invitees", "get")
+    assert operations["getAuthEntryState"][:2] == ("/openclaw/auth/entry-state", "get")
     assert "/admin/overview" not in _load(OPENAPI_PATH)["paths"]
     assert "/publication-receipts" not in _load(OPENAPI_PATH)["paths"]
     assert {
@@ -325,11 +328,20 @@ def test_permissions_mutation_headers_and_error_contract_are_machine_checkable()
     assert matrix["admin"]["defaultResponse"] == "redacted_aggregate"
 
     for operation_id, (path, method, operation) in operations.items():
-        assert operation["security"] == [{"cookieAuth": []}], operation_id
+        if operation_id == "getAuthEntryState":
+            assert operation["security"] == [], operation_id
+        else:
+            assert operation["security"] == [{"cookieAuth": []}], operation_id
         responses = set(operation["responses"])
-        assert {"401", "403", "500"} <= responses, operation_id
+        if operation_id == "getAuthEntryState":
+            assert {"400", "500"} <= responses, operation_id
+        else:
+            assert {"401", "403", "500"} <= responses, operation_id
         permission = operation["x-permission"]
-        assert permission.startswith("admin") if path.startswith("/admin/") else permission.startswith(("ordinary", "shared"))
+        if operation_id == "getAuthEntryState":
+            assert permission == "public-entry"
+        else:
+            assert permission.startswith("admin") if path.startswith("/admin/") else permission.startswith(("ordinary", "shared"))
         if method == "get":
             continue
         refs = {
@@ -361,6 +373,28 @@ def test_every_internal_reference_resolves_and_response_fields_are_safe() -> Non
                 continue
             properties = set((value.get("properties") or {}).keys())
             assert not properties & FORBIDDEN_RESPONSE_PROPERTIES, (schema_name, properties)
+
+
+def test_auth_entry_state_contract_freezes_version_modes_and_four_states() -> None:
+    document = _load(OPENAPI_PATH)
+    operation = _operations(document)["getAuthEntryState"][2]
+    assert operation["parameters"] == [{"$ref": "#/components/parameters/AuthEntryMode"}]
+    assert document["components"]["parameters"]["AuthEntryMode"] == {
+        "name": "mode",
+        "in": "query",
+        "required": True,
+        "schema": {"type": "string", "enum": ["personal", "organization"]},
+    }
+    response_schema = document["components"]["schemas"]["AuthEntryStateResponse"]
+    assert response_schema["properties"]["schemaVersion"]["const"] == "media_auth_entry_state_v1"
+    assert set(response_schema["properties"]["state"]["enum"]) == {
+        "matched", "none", "expired", "mismatched"
+    }
+    assert response_schema["properties"]["entry"]["oneOf"] == [
+        {"$ref": "#/components/schemas/AuthEntryStateEntry"},
+        {"type": "null"},
+    ]
+    assert set(response_schema["properties"]["fallback"]["enum"]) == {"password", "feishu_oauth"}
 
 
 def test_path_parameters_match_literal_path_variables() -> None:

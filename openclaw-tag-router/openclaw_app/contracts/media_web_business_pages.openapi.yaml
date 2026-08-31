@@ -593,6 +593,28 @@ x-openclaw-canonical-capabilities:
   - decision_traces
   conclusion: reuse_generic_media_branch
 paths:
+  /openclaw/auth/entry-state:
+    get:
+      operationId: getAuthEntryState
+      summary: Read the current browser authentication entry state.
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/AuthEntryMode'
+      responses:
+        '200':
+          description: Entry state projection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthEntryStateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-page-contracts:
+      - shared
+      x-permission: public-entry
+      x-runtime-status: existing_typed
   /session:
     get:
       operationId: getMediaSession
@@ -3769,6 +3791,15 @@ components:
       in: cookie
       name: openclaw_session
   parameters:
+    AuthEntryMode:
+      name: mode
+      in: query
+      required: true
+      schema:
+        type: string
+        enum:
+        - personal
+        - organization
     CsrfHeader:
       name: X-OpenClaw-CSRF
       in: header
@@ -4031,6 +4062,59 @@ components:
     Timestamp:
       type: string
       format: date-time
+    AuthEntryStateEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        entryId:
+          type: string
+          const: current
+        displayLabel:
+          type: string
+        maskedIdentity:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+      - entryId
+      - displayLabel
+      - maskedIdentity
+      - expiresAt
+    AuthEntryStateResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        schemaVersion:
+          type: string
+          const: media_auth_entry_state_v1
+        mode:
+          type: string
+          enum:
+          - personal
+          - organization
+        state:
+          type: string
+          enum:
+          - matched
+          - none
+          - expired
+          - mismatched
+        entry:
+          oneOf:
+          - $ref: '#/components/schemas/AuthEntryStateEntry'
+          - type: 'null'
+        fallback:
+          type: string
+          enum:
+          - password
+          - feishu_oauth
+      required:
+      - schemaVersion
+      - mode
+      - state
+      - entry
+      - fallback
     NullableTimestamp:
       type:
       - string
