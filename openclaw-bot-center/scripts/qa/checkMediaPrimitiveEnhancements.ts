@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, extname, resolve } from 'node:path'
 import postcss, { type Declaration } from 'postcss'
 import ts from 'typescript'
 import { CANONICAL_MEDIA_PAGE_SURFACES, type HeroActionsContract } from './mediaPageStructureManifest'
@@ -84,7 +84,19 @@ function staticStringValues(expression: ts.Expression | undefined, bindings: Sta
     const value = bindings.get(expression.text)
     return value ? staticStringValues(value, bindings, new Set(seen).add(expression.text)) : []
   }
-  if (ts.isArrayLiteralExpression(expression)) return expression.elements.flatMap((item) => ts.isSpreadElement(item) ? [] : staticStringValues(item, bindings, seen))
+  if (ts.isArrayLiteralExpression(expression)) return expression.elements.flatMap((item) => ts.isSpreadElement(item) ? staticStringValues(item.expression, bindings, seen) : staticStringValues(item, bindings, seen))
+  if (ts.isObjectLiteralExpression(expression)) {
+    return expression.properties.flatMap((property) => {
+      if (ts.isSpreadAssignment(property)) return staticStringValues(property.expression, bindings, seen)
+      if (!ts.isPropertyAssignment(property)) return []
+      const key = ts.isIdentifier(property.name) || ts.isStringLiteral(property.name) ? property.name.text : undefined
+      const value = staticStringValues(property.initializer, bindings, seen)
+      return key && value.length ? value : []
+    })
+  }
+  if (ts.isCallExpression(expression) && ts.isIdentifier(expression.expression) && /^(?:cx|clsx|classNames|makeClasses)$/u.test(expression.expression.text)) {
+    return expression.arguments.flatMap((argument) => staticStringValues(argument, bindings, seen))
+  }
   if (ts.isCallExpression(expression) && ts.isPropertyAccessExpression(expression.expression) && expression.expression.name.text === 'join') {
     return staticStringValues(expression.expression.expression, bindings, seen)
   }
@@ -334,29 +346,92 @@ function classTokens(node: ts.JsxOpeningLikeElement, bindings: StaticBindings): 
     .flatMap((value) => value.split(/\s+/).filter(Boolean))
 }
 
-export function findHeroActionContractViolations(sourceText: string, contract: HeroActionsContract, fileName = 'fixture.tsx'): readonly string[] {
+type ComponentResolver = (name: string, fromFile: string) => ts.SourceFile | undefined
+
+function componentDefinitions(source: ts.SourceFile): ReadonlyMap<string, ts.Node> {
+  const definitions = new Map<string, ts.Node>()
+  const visit = (node: ts.Node) => {
+    if (ts.isFunctionDeclaration(node) && node.name) definitions.set(node.name.text, node)
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer && (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer))) definitions.set(node.name.text, node.initializer)
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return definitions
+}
+
+function resolveImportedComponent(source: ts.SourceFile, name: string, fromFile: string): ts.SourceFile | undefined {
+  for (const statement of source.statements) {
+    if (!ts.isImportDeclaration(statement) || !statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier)) continue
+    const clause = statement.importClause
+    if (!clause) continue
+    const imported = clause.name?.text === name || clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.some((element) => (element.name.text === name || element.propertyName?.text === name))
+    if (!imported) continue
+    const raw = statement.moduleSpecifier.text
+    if (!raw.startsWith('.')) continue
+    const base = resolve(dirname(fromFile), raw)
+    for (const candidate of [base, `${base}.tsx`, `${base}.ts`, resolve(base, 'index.tsx'), resolve(base, 'index.ts')]) {
+      try { return ts.createSourceFile(candidate, readFileSync(candidate, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX) } catch { /* unresolved import */ }
+    }
+  }
+  return undefined
+}
+
+export function findHeroActionContractViolations(sourceText: string, contract: HeroActionsContract, fileName = 'fixture.tsx', importedSources = new Map<string, string>()): readonly string[] {
   const source = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const bindings = collectBindings(source)
+  const bindingCache = new Map<ts.SourceFile, StaticBindings>([[source, bindings]])
+  const bindingsFor = (file: ts.SourceFile) => {
+    const existing = bindingCache.get(file)
+    if (existing) return existing
+    const next = collectBindings(file)
+    bindingCache.set(file, next)
+    return next
+  }
+  const resolvedSources = new Map<string, ts.SourceFile>()
+  for (const [name, text] of importedSources) resolvedSources.set(name, ts.createSourceFile(name, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX))
   const regions: Array<{ line: number; primary: number; secondary: number }> = []
+  const componentNodes = new Set<ts.Node>()
+  const inspectComponent = (name: string, file: ts.SourceFile, depth: number, count: (node: ts.Node, file: ts.SourceFile) => void) => {
+    if (depth > 8) return
+    const imported = resolvedSources.get(name) ?? resolveImportedComponent(file, name, file.fileName)
+    if (imported) {
+      const importedDefinition = componentDefinitions(imported).get(name) ?? componentDefinitions(imported).get('default')
+      if (importedDefinition && !componentNodes.has(importedDefinition)) {
+        componentNodes.add(importedDefinition)
+        if (ts.isFunctionLike(importedDefinition) && importedDefinition.body) count(importedDefinition.body, imported)
+      }
+      return
+    }
+    const defs = componentDefinitions(file)
+    const definition = defs.get(name)
+    if (definition && !componentNodes.has(definition)) {
+      componentNodes.add(definition)
+      if (ts.isFunctionLike(definition)) {
+        if (definition.body) count(definition.body, file)
+      }
+    }
+  }
   const visit = (node: ts.Node) => {
     if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
       const opening = ts.isJsxElement(node) ? node.openingElement : node
       if (classTokens(opening, bindings).includes('mg-hero-actions')) {
         let primary = 0
         let secondary = 0
-        const count = (child: ts.Node) => {
+        const count = (child: ts.Node, currentFile: ts.SourceFile = source) => {
           if ((ts.isJsxOpeningElement(child) || ts.isJsxSelfClosingElement(child)) && child !== opening) {
-            const tokens = classTokens(child, bindings)
+            const tokens = classTokens(child, bindingsFor(currentFile))
             if (tokens.includes('mg-btn-primary')) primary += 1
             if (tokens.includes('mg-btn-soft') || tokens.includes('mg-btn-ghost')) secondary += 1
+            const childName = ts.isIdentifier(child.tagName) ? child.tagName.text : undefined
+            if (childName && /^[A-Z]/u.test(childName)) inspectComponent(childName, currentFile, 1, count)
           }
           if (ts.isJsxExpression(child) && child.expression && ts.isIdentifier(child.expression)) {
-            const bound = bindings.get(child.expression.text)
-            if (bound) count(bound)
+            const bound = bindingsFor(currentFile).get(child.expression.text)
+            if (bound) count(bound, currentFile)
           }
-          ts.forEachChild(child, count)
+          ts.forEachChild(child, (nested) => count(nested, currentFile))
         }
-        count(node)
+        count(node, source)
         regions.push({ line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1, primary, secondary })
       }
     }
@@ -371,11 +446,23 @@ export function findHeroActionContractViolations(sourceText: string, contract: H
 }
 
 function assertHeroActionContracts(): void {
+  const seenSources = new Set<string>()
   const violations = CANONICAL_MEDIA_PAGE_SURFACES.flatMap((surface) => {
+    const bindingViolations: string[] = []
+    if (seenSources.has(surface.source)) bindingViolations.push(`${surface.id}: duplicate manifest source ${surface.source}`)
+    seenSources.add(surface.source)
     if (!surface.heroActions) return [`${surface.id}: hero action contract is missing`]
     if (surface.heroActions.mode === 'exempt' && !surface.heroActions.reason.trim()) return [`${surface.id}: hero action exemption reason is empty`]
     const fileName = resolve(projectRoot, 'src/media', surface.source)
-    return findHeroActionContractViolations(readFileSync(fileName, 'utf8'), surface.heroActions, surface.source)
+    if (!fileName.endsWith('.tsx')) bindingViolations.push(`${surface.id}: manifest source must be TSX`)
+    let sourceText: string
+    try {
+      sourceText = readFileSync(fileName, 'utf8')
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [...bindingViolations, `${surface.id}: manifest source is missing: ${surface.source}`]
+      throw error
+    }
+    return [...bindingViolations, ...findHeroActionContractViolations(sourceText, surface.heroActions, surface.source)]
   })
   if (violations.length) throw new Error(`media hero action contract failed: ${violations.join(', ')}`)
 }
@@ -498,10 +585,17 @@ function runSelfTest(): void {
     'const Page = () => <div><button className="mg-btn mg-btn-primary">Go</button></div>',
     'const Page = () => <div className="mg-hero-actions"><button className="mg-btn mg-btn-primary">A</button><button className="mg-btn mg-btn-primary">B</button></div>',
     'const Page = () => <div className="mg-hero-actions"><button className="mg-btn mg-btn-primary">A</button><button className="mg-btn mg-btn-ghost">1</button><button className="mg-btn mg-btn-soft">2</button><button className="mg-btn mg-btn-ghost">3</button></div>',
-    'const classes = makeClasses("mg-hero-actions"); const Page = () => <div className={classes}><button className="mg-btn mg-btn-primary">A</button></div>',
+    'const classes = makeClasses("mg-hero-actions"); const Page = () => <div className={classes}><button className="mg-btn mg-btn-primary">A</button><button className="mg-btn mg-btn-primary">B</button></div>',
+    'const MorePrimary = () => <button className={cx("mg-btn", "mg-btn-primary")}>P</button>; const Page = () => <div className="mg-hero-actions"><button className="mg-btn mg-btn-primary">A</button><MorePrimary /></div>',
+    'const MoreActions = () => <><button className="mg-btn mg-btn-soft">S1</button><button className="mg-btn mg-btn-ghost">S2</button><button className="mg-btn mg-btn-ghost">S3</button></>; const Page = () => <div className="mg-hero-actions"><button className="mg-btn mg-btn-primary">A</button><MoreActions /></div>',
   ]
-  for (const fixture of invalidHeroes) {
-    if (!findHeroActionContractViolations(fixture, requiredHero).length) throw new Error('media primitive enhancement self-test failed: invalid hero action fixture was accepted')
+  for (const [index, fixture] of invalidHeroes.entries()) {
+    if (!findHeroActionContractViolations(fixture, requiredHero).length) throw new Error(`media primitive enhancement self-test failed: invalid hero fixture ${index} was accepted`)
+  }
+  const importedHero = 'import { MorePrimary } from "./MorePrimary"; const Page = () => <div className="mg-hero-actions"><button className="mg-btn mg-btn-primary">A</button><MorePrimary /></div>'
+  const importedSources = new Map([['MorePrimary', 'export const MorePrimary = () => <button className={makeClasses("mg-btn", "mg-btn-primary")}>P</button>']])
+  if (!findHeroActionContractViolations(importedHero, requiredHero, 'fixture.tsx', importedSources).length) {
+    throw new Error('media primitive enhancement self-test failed: imported primary component bypassed the hero action contract')
   }
 
   console.log('media primitive enhancement self-test passed: good CSS and canonical Metric tones accepted; gradients, hero pseudo-elements, nonzero eyebrow tracking, and legacy Metric tones rejected')
