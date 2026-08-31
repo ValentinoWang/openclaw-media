@@ -108,6 +108,7 @@ a {
 .entry-state { margin: 0 0 20px; border: 1px solid var(--auth-border); border-radius: 7px; background: #fbfdfb; padding: 16px; }
 .entry-state[data-state='matched'] { border-color: #b8dfc9; background: #f4fbf6; }
 .entry-state[data-state='expired'], .entry-state[data-state='mismatched'], .entry-state[data-state='unavailable'] { border-color: #ead9c9; background: #fffaf5; }
+.entry-state[data-state='none'], .entry-state[data-state='expired'], .entry-state[data-state='mismatched'], .entry-state[data-state='unavailable'] { margin-bottom: 10px; padding: 10px; }
 .entry-state-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
 .entry-state-kicker { color: var(--auth-subtle); font-size: 10px; font-weight: 700; letter-spacing: 0; text-transform: uppercase; }
 .entry-state h3 { margin: 4px 0 0; font-size: 15px; }
@@ -126,6 +127,7 @@ a {
 .entry-expiry { margin: 12px 0; color: var(--auth-muted); font-size: 11px; }
 .entry-fallback strong { font-size: 13px; }
 .entry-fallback p { margin: 5px 0 0; color: var(--auth-muted); font-size: 12px; line-height: 1.5; }
+.entry-state[data-state='none'] .entry-fallback, .entry-state[data-state='expired'] .entry-fallback, .entry-state[data-state='mismatched'] .entry-fallback, .entry-state[data-state='unavailable'] .entry-fallback { margin-top: 8px; }
 .entry-continue { display: block; width: 100%; }
 .entry-fallback-button { margin-top: 10px; border: 0; background: transparent; color: var(--auth-accent-dark); cursor: pointer; font-size: 12px; font-weight: 700; padding: 0; text-decoration: underline; }
 .auth-form { max-width: 380px; }
@@ -631,8 +633,8 @@ h2 {
 
 .qr-shell {
   display: grid;
-  width: 224px;
-  height: 224px;
+  width: 176px;
+  height: 176px;
   margin: 4px auto 16px;
   place-items: center;
   border: 1px solid var(--auth-border);
@@ -641,8 +643,8 @@ h2 {
 
 #qr-canvas {
   display: block;
-  width: 200px;
-  height: 200px;
+  width: 160px;
+  height: 160px;
 }
 
 .qr-placeholder {
@@ -681,7 +683,7 @@ h2 {
   body[data-auth-page='login'] .auth-panel { padding: 14px 36px 18px; }
   body[data-auth-page='login'] .back-button { margin-bottom: 4px; }
   body[data-auth-page='login'] .panel-heading { margin-bottom: 8px; }
-  body[data-auth-page='login'] .entry-state { margin-bottom: 8px; padding: 10px; }
+  body[data-auth-page='login'] .entry-state { margin-bottom: 4px; padding: 8px; }
   body[data-auth-page='login'] .entry-view { margin-top: 6px; }
   body[data-auth-page='login'] .auth-form { gap: 10px; }
   body[data-auth-page='login'] .field { gap: 5px; }
@@ -764,7 +766,7 @@ h2 {
   }
 
   body[data-auth-page='login'] .entry-state {
-    margin-bottom: 6px;
+    margin-bottom: 2px;
     padding: 8px;
   }
 

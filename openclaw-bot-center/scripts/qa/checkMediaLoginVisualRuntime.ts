@@ -197,11 +197,11 @@ async function assertAuthLayout(page: Page, viewport: Viewport, label: string, i
 
 async function assertFallbackFitsViewport(page: Page, viewport: Viewport, mode: EntryMode, state: EntryState): Promise<void> {
   const selector = fallbackSelectors[mode]
-  const scrollHeight = await page.evaluate((fallbackSelector) => {
+  const scrollHeight = await page.evaluate(({ fallbackSelector, requireVisible }) => {
     const fallback = document.querySelector<HTMLElement>(fallbackSelector)
-    if (!fallback || fallback.hidden) throw new Error(`fallback is not visible: ${fallbackSelector}`)
+    if (requireVisible && (!fallback || fallback.hidden)) throw new Error(`fallback is not visible: ${fallbackSelector}`)
     return document.documentElement.scrollHeight
-  }, selector)
+  }, { fallbackSelector: selector, requireVisible: state !== 'matched' })
   assert.ok(
     scrollHeight <= viewport.height + 1,
     `${viewport.label} ${mode} ${state}: fallback scrollHeight ${scrollHeight} exceeds viewport ${viewport.height}`,
@@ -306,7 +306,7 @@ async function runEntryStateMatrix(browser: Browser, origin: string, viewport: V
         } else {
           assert.equal(telemetry.feishuRequests, 0, `${viewport.label}: matched organization must not request Feishu`)
         }
-        if (fallback) await assertFallbackFitsViewport(page, viewport, mode, state)
+        await assertFallbackFitsViewport(page, viewport, mode, state)
         await assertAuthLayout(page, viewport, `${viewport.label} ${mode} ${state}`)
         if ((state === 'matched' || state === 'expired') && mode === 'organization') await screenshot(page, `login-${mode}-${state}-${viewport.label}`)
         await assertNoRuntimeErrors(telemetry, `${viewport.label} ${mode} ${state}`)
