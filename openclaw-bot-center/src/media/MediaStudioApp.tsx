@@ -211,6 +211,7 @@ function ProductShell() {
 
   const authenticatedSession = requireAuthenticatedSession(session)
   const routePolicy = resolveStudioRoutePolicy(authenticatedSession)
+  const sessionScope = JSON.stringify([authenticatedSession.publicUserId, authenticatedSession.tenantId, authenticatedSession.csrfToken])
   const isAdminShell = routePolicy.shell === 'admin'
   const isPersonal = routePolicy.shell === 'personal'
   const isOrganization = routePolicy.shell === 'organization'
@@ -371,7 +372,7 @@ function ProductShell() {
         </header>
 
         <div className="media-content studio-content">
-          <Routes>
+          <Routes key={sessionScope}>
             <Route path="/" element={<Navigate to={defaultRoute} replace />} />
             <Route path="/today" element={ordinaryRoute('/today', <WorkboardPage />, routePolicy)} />
             <Route path="/studio" element={ordinaryRoute('/studio', <RunsPage />, routePolicy)} />

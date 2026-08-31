@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { AlertCircle, CheckCircle2, ChevronRight, LoaderCircle, Plus, RefreshCw, ShieldCheck } from "lucide-react";
 import { useMediaWeb } from "../../MediaWebWorkspace";
 import { createMediaJob, createMediaPairCode, loadMediaDevices, loadMediaJobs, loadMediaPipelines, loginUrl, type MediaWebSession } from "../../mediaWebApi";
@@ -14,6 +14,11 @@ type Tab = "pipelines" | "run" | "devices";
 type DataState = "loading" | "permission" | "error" | "empty" | "ready";
 type PageData = { pipelines: PipelineSummary[]; devices: Device[]; jobs: LocalAgentJob[] };
 const EMPTY_DATA: PageData = { pipelines: [], devices: [], jobs: [] };
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: "devices", label: "设备与客户端" },
+  { id: "run", label: "本地运行" },
+  { id: "pipelines", label: "流程目录" },
+];
 
 function MediaAgentPage() {
   const { runtimeState, session } = useMediaWeb();
@@ -123,13 +128,13 @@ function MediaAgentPage() {
     <SurfaceState kind="empty" title="暂无本端协作数据" detail="请先安装并启动 Mac 客户端，或完成设备配对。" />
     {notice ? <div className={styles.notice} role="status"><CheckCircle2 size={15} />{notice}</div> : null}
     {error ? <div className={styles.actionError} role="alert"><AlertCircle size={15} />{error}</div> : null}
-    <nav className={styles.tabBar} data-component="mg-tabs" aria-label="Media Agent 功能标签" role="tablist"><TabButton id="media-agent-tab-devices" controls="media-agent-panel-devices" active onClick={() => setTab("devices")}>设备与客户端</TabButton></nav>
+    <nav className={styles.tabBar} data-component="mg-tabs" aria-label="Media Agent 功能标签" role="tablist"><TabButton tab="devices" active onClick={() => setTab("devices")}>设备与客户端</TabButton></nav>
     <TabPanel id="media-agent-panel-devices" labelledBy="media-agent-tab-devices"><DevicesTab devices={data.devices} pairLabel={pairLabel} pairCode={pairCode} setPairLabel={setPairLabel} onPair={() => void requestPairCode()} busy={busy === "pair"} /></TabPanel>
   </PageFrame>;
 
   return <PageFrame>
     <section className={`mg-panel ${styles.modeBar}`} data-component="mg-panel" aria-label="Media Agent 工作区"><div><span className={styles.modeMarker} aria-hidden="true" /><strong>本端协作控制面</strong><span className={styles.modeHint}>只展示远端租户状态，不读取本地路径或媒体字节。</span></div><span className={styles.catalogVersion}>{data.pipelines.length} 个流程 · {data.devices.length} 台设备</span></section>
-    <nav className={styles.tabBar} data-component="mg-tabs" aria-label="Media Agent 功能标签" role="tablist"><TabButton id="media-agent-tab-devices" controls="media-agent-panel-devices" active={tab === "devices"} onClick={() => setTab("devices")}>设备与客户端</TabButton><TabButton id="media-agent-tab-run" controls="media-agent-panel-run" active={tab === "run"} onClick={() => setTab("run")}>本地运行</TabButton><TabButton id="media-agent-tab-pipelines" controls="media-agent-panel-pipelines" active={tab === "pipelines"} onClick={() => setTab("pipelines")}>流程目录</TabButton></nav>
+    <nav className={styles.tabBar} data-component="mg-tabs" aria-label="Media Agent 功能标签" role="tablist" onKeyDown={(event) => handleTabKeyDown(event, tab, setTab)}>{TABS.map((item) => <TabButton key={item.id} tab={item.id} active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</TabButton>)}</nav>
     {notice ? <div className={styles.notice} role="status"><CheckCircle2 size={15} />{notice}</div> : null}
     {error ? <div className={styles.actionError} role="alert"><AlertCircle size={15} />{error}</div> : null}
     {tab === "pipelines" ? <TabPanel id="media-agent-panel-pipelines" labelledBy="media-agent-tab-pipelines"><PipelineTab pipelines={data.pipelines} /></TabPanel> : null}
@@ -150,7 +155,21 @@ function PageFrame({ children }: { children: ReactNode }) {
     </section>
   </main>;
 }
-function TabButton({ id, controls, active, onClick, children }: { id: string; controls: string; active: boolean; onClick: () => void; children: ReactNode }) { return <button id={id} className="mg-tab" data-component="mg-tab" type="button" role="tab" aria-selected={active} aria-controls={controls} onClick={onClick}>{children}</button>; }
+function TabButton({ tab, active, onClick, children }: { tab: Tab; active: boolean; onClick: () => void; children: ReactNode }) { return <button id={`media-agent-tab-${tab}`} className="mg-tab" data-component="mg-tab" type="button" role="tab" tabIndex={active ? 0 : -1} aria-selected={active} aria-controls={`media-agent-panel-${tab}`} onClick={onClick}>{children}</button>; }
+
+function handleTabKeyDown(event: KeyboardEvent<HTMLElement>, activeTab: Tab, setTab: (tab: Tab) => void) {
+  const currentIndex = TABS.findIndex((item) => item.id === activeTab);
+  const nextIndex = event.key === "ArrowRight"
+    ? (currentIndex + 1) % TABS.length
+    : event.key === "ArrowLeft"
+      ? (currentIndex + TABS.length - 1) % TABS.length
+      : event.key === "Home" ? 0 : event.key === "End" ? TABS.length - 1 : -1;
+  if (nextIndex < 0) return;
+  event.preventDefault();
+  const nextTab = TABS[nextIndex];
+  setTab(nextTab.id);
+  requestAnimationFrame(() => document.getElementById(`media-agent-tab-${nextTab.id}`)?.focus());
+}
 
 function TabPanel({ id, labelledBy, children }: { id: string; labelledBy: string; children: ReactNode }) { return <section id={id} className={styles.tabPanel} role="tabpanel" aria-labelledby={labelledBy}>{children}</section>; }
 
