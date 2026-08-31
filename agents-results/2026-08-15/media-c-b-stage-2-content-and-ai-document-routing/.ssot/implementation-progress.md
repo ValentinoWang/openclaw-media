@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-本 SSOT 已完成第 6 版事实刷新。正式完成度仍为 9.4%（3/32）：A、A1、K 已接受，其余 29 个节点仍为 BLOCKED。源码实现观察已更新：当前主线（`main`）为 `b267f730ad184991305ffbcdddf39f292ca6f3c5`，Stage-2 起始提交为 `0228256058a1d7c0de4986a943de5c96f445ee2f`，包含 16 个第二阶段服务文件、19 个测试文件和 167 个测试函数；候选分支 `codex/stage2-release-20260818` 已不存在。相关提交与聚焦测试只能作为源码/静态测试证据，不能提升节点状态。第一阶段 C1、C3、DC2 尚未接受，因此本阶段当前没有合法正式就绪节点。生产认证会话解析、入口状态接口、租户资料读取、认证浏览器/设备、真实人工智能任务、真实飞书写后回读和独立外部验收仍未证明。
+本 SSOT 已完成第 7 版事实刷新。正式完成度仍为 9.4%（3/32）：A、A1、K 已接受，其余 29 个节点仍为 BLOCKED。源码实现观察已更新：当前主线（`main`）为 `b267f730ad184991305ffbcdddf39f292ca6f3c5`，Stage-2 起始提交为 `0228256058a1d7c0de4986a943de5c96f445ee2f`，包含 16 个第二阶段服务文件、19 个测试文件和 167 个测试函数；候选分支 `codex/stage2-release-20260818` 已不存在。相关提交与聚焦测试只能作为源码/静态测试证据，不能提升节点状态。第一阶段 C1、C3、DC2 尚未接受，因此本阶段当前没有合法正式就绪节点。生产认证会话解析、入口状态接口、租户资料读取、认证浏览器/设备、真实人工智能任务、真实飞书写后回读和独立外部验收仍未证明。
 
 ## 状态台账
 
@@ -53,6 +53,7 @@
 | frontend-scope | 当前生产入口是 src/media/main.tsx -> MediaStudioApp.tsx；旧 MediaApp.tsx 已由 ea98ca3b 从源码删除。当前机器源清点为 mediaPageStructureManifest 24 面；studioOrdinaryRoutes 为 14 条（/today、/studio、/campaigns、/business、/desk、/overview、/assets、/decisions、/publishing、/reviews、/media-agent、/archives、/usage-billing、/invites），另有 studioTrackRoutes。两组机器路由全量向个人人格开放，个人/组织/管理员路由授权由统一策略、严格会话 routeGrants 和 MediaStudioRoutePolicy 共同约束。 | 源码/聚焦测试观察；不等同正式节点接受 |
 | entry-state | 登录入口状态已落地为 GET /openclaw/auth/entry-state?mode=，响应 media_auth_entry_state_v1，覆盖 matched、none、expired、mismatched 四态并有测试；它与工作台路由授权是两个不同合同。 | 源码/聚焦测试观察；不等同正式节点接受 |
 | route-grants | 当前 main 的 media_web_business_pages_v2 严格 schema 已包含 routeGrants，并由服务端生成、客户端校验和路由矩阵消费；这已是源码事实，但与早期‘不得增加 routeGrants’的已接受决定存在待处理合同冲突，不能提升正式节点状态。 | 源码/聚焦测试观察；不等同正式节点接受 |
+| interaction-prototypes | C6 与组织镜像交互原型、验收判读材料和实施入口均固定在 commit ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5：docs/frontend/prototype/ 下的四份交付文档是设计基线/静态文档，不等同节点接受。 | 源码/聚焦测试观察；不等同正式节点接受 |
 | font-scope | DS-02/DS-26 已在 main 落地：mediaDesignTokens.css 定义 --mg-text-4xl，mediaFonts.css 和本地 WOFF2 提供 DM Sans/Noto Sans SC，Google Fonts 依赖有门禁；仍需按实际部署弱网证据验收。 | 源码/聚焦测试观察；不等同正式节点接受 |
 | frontend-retirement | MediaApp.tsx 已删除且 main.tsx 无旧壳 import；该设计债务不再是当前待办。 | 源码/聚焦测试观察；不等同正式节点接受 |
 | C6-C7 | 当前源码观察未形成网页端个人正文修订和平台版本/发布包完整正式验收。 | 源码/聚焦测试观察；不等同正式节点接受 |

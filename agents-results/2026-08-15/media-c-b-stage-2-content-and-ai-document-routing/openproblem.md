@@ -2,24 +2,36 @@
 
 ## 已裁决：个人开放范围
 
-用户已确认：两组机器路由（普通路由清单 `studioOrdinaryRoutes` 与轨道路由清单 `studioTrackRoutes`）全量向个人人格开放。普通机器路由当前为 14 条：`/today`、`/studio`、`/campaigns`、`/business`、`/desk`、`/overview`、`/assets`、`/decisions`、`/publishing`、`/reviews`、`/media-agent`、`/archives`、`/usage-billing`、`/invites`；另有 `/tracks`、个人/组织/管理员路由和运行详情深链（`/runs/:runId`、`/studio/:runId`）。清单以源码 `mediaStudioRoutePolicy.ts` 为准，避免维护过时的页面副本。
+用户已确认：普通页面路由清单（`studioOrdinaryRoutes`）和轨道路由清单（`studioTrackRoutes`）全量向个人人格开放。当前普通页面共有 14 条；完整页面地址、运行详情深链和源码定位统一列在下方工程映射表，避免在本文件维护会过时的页面副本。
 
 开放页面不等于开放组织能力。所有个人查询、创建、编辑、发布、复盘、归档、计费和邀请动作必须由服务端按当前个人会话、租户和所有者作用域过滤；个人正文只能写入个人网页内部成果（`personal_web/internal`）。组织绑定（Binding）、飞书文档写入、组织资料和组织成员能力继续只属于组织人格，个人人格调用时必须稳定拒绝，不得回退到部署级凭据或静默切换人格。
 
-默认入口由当前机器策略决定（个人工作台为 `/today`）；已开放深链进入对应个人页面。会话失效或动作越权必须显示稳定的未认证/无权状态，不能用其他业务页面伪装成功。
+个人默认入口由当前机器策略决定；已开放深链进入对应个人页面。会话失效或动作越权必须显示稳定的未认证或无权状态，不能用其他业务页面伪装成功。
 
 ## 已落地但需分开命名的接口
 
-登录前会话检查已落地：接口地址（`GET /openclaw/auth/entry-state?mode=`）和响应版本（`media_auth_entry_state_v1`）覆盖匹配（`matched`）、无匹配（`none`）、已失效（`expired`）、不一致（`mismatched`）四态，并已有脱敏和测试。该接口只表达“登录入口状态”。
+登录前会话检查已落地：入口状态接口（`GET /openclaw/auth/entry-state?mode=`）和响应版本（`media_auth_entry_state_v1`）覆盖匹配状态（`matched`）、无匹配状态（`none`）、已失效状态（`expired`）和不一致状态（`mismatched`）四态，并已有脱敏和测试。该接口只表达“登录入口状态”。
 
-角色、工作区模式、正文权威、可见路由和动作授权由工作台路由授权投影承载；当前 main 已在 `media_web_business_pages_v2` 严格 schema 中落地 `routeGrants`，并由服务端生成、客户端校验和路由矩阵消费。这是源码事实，但与早期“会话信封不得增加页面授权字段”的已接受决定存在待处理合同冲突，不能提升正式节点状态；两者不得混为一个未经版本化的接口。
+角色、工作区模式、正文权威、可见路由和动作授权由工作台路由授权投影承载；当前主线分支（`main`）已在严格会话结构（`media_web_business_pages_v2`）中落地页面授权字段（`routeGrants`），并由服务端生成、客户端校验和路由矩阵消费。这是源码事实，但与早期“会话信封不得增加页面授权字段”的已接受决定存在待处理合同冲突，不能提升正式节点状态；两者不得混为一个未经版本化的接口。
 
 ## 非法路由语义
 
-导航层可以按当前工作区策略将合法会话误入不属于当前壳层的入口收敛到默认入口，避免空白壳层；数据和动作层仍必须稳定拒绝跨租户、跨所有者、缺失授权或组织能力调用（403 或等价无权状态），不得以重定向掩盖拒绝。该两层语义由 `checkMediaStudioRouteMatrix.ts` 及服务端动作授权共同验证。
+导航层可以按当前工作区策略将合法会话误入不属于当前壳层的入口收敛到默认入口，避免空白壳层；数据和动作层仍必须稳定拒绝跨租户、跨所有者、缺失授权或组织能力调用（无权状态码为 `403` 或等价状态），不得以重定向掩盖拒绝。该两层语义由路由矩阵检查脚本（`checkMediaStudioRouteMatrix.ts`）及服务端动作授权共同验证。
 
 ## 验收边界
 
-- 源码实现、聚焦测试、视觉图像（PNG）和人工智能读图只能证明来源级/本地运行时（`source/local-runtime`）证据，不能提升正式节点状态。
+- 源码实现、聚焦测试、视觉图像（PNG）和人工智能读图只能证明来源级或本地运行时证据（`source/local-runtime`），不能提升正式节点状态。
 - 必须保留真实组织扫码与部署读回、飞书编辑后再回读、登录回退态折线确认、28 天会话持久化部署读回四项人工验收。
-- 页面布局断言（`assertAuthLayout`）当前只保护初始 P1，登录回退态仍可能超过一屏；这属于自动化缺口，不得被误报为完整通过。
+- 登录页面布局断言（`assertAuthLayout`）当前只保护初始 P1，登录回退态仍可能超过一屏；这属于自动化缺口，不得被误报为完整通过。
+
+## 工程映射表
+
+| 中文对象 | 代码标识或地址 | 用途 |
+| --- | --- | --- |
+| 普通页面路由清单 | `studioOrdinaryRoutes` | 当前包含 14 条个人开放页面地址：`/today`、`/studio`、`/campaigns`、`/business`、`/desk`、`/overview`、`/assets`、`/decisions`、`/publishing`、`/reviews`、`/media-agent`、`/archives`、`/usage-billing`、`/invites`。 |
+| 轨道路由清单 | `studioTrackRoutes` | 包含轨道页面地址（`/tracks`）。 |
+| 运行详情深链 | `/runs/:runId`、`/studio/:runId` | 进入对应运行详情；仍需按个人会话和所有者作用域授权。 |
+| 路由策略文件 | `mediaStudioRoutePolicy.ts` | 是普通页面清单和默认入口的源码权威。 |
+| 登录入口状态接口 | `GET /openclaw/auth/entry-state?mode=` | 只表达登录前的入口状态，不承担工作台页面授权。 |
+| 工作台会话结构 | `media_web_business_pages_v2` | 当前包含页面授权字段（`routeGrants`），其与已接受决定的冲突仍由 B 节点裁决。 |
+| 路由矩阵检查脚本 | `checkMediaStudioRouteMatrix.ts` | 验证导航收敛与数据、动作层拒绝语义分层。 |

@@ -127,6 +127,82 @@ CURRENT_STAGE2_ORIGIN_COMMIT = "0228256058a1d7c0de4986a943de5c96f445ee2f"
 CURRENT_STAGE2_SERVICE_COUNT = 16
 CURRENT_STAGE2_TEST_COUNT = 19
 CURRENT_STAGE2_TEST_FUNCTION_COUNT = 167
+ACCEPTANCE_EXECUTION_SOURCE_COMMIT = "759af4c659c6d6a85fd8eac7cd4d2d345d3cf235"
+ACCEPTANCE_EXECUTION_SOURCE_RECORDED_AT = "2026-08-31T19:09:24+08:00"
+ACCEPTANCE_DELIVERY_DOCUMENT_COMMIT = "ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5"
+ACCEPTANCE_DELIVERY_DOCUMENTS = [
+    ["C6 交互验收基线", "docs/frontend/prototype/personal-document-editor.html", "个人正文编辑器 8 态交互规格"],
+    ["组织镜像交互验收基线", "docs/frontend/prototype/organization-document-mirror.html", "组织只读镜像与同步控制台 8 态交互规格"],
+    ["验收判读材料", "docs/frontend/prototype/stage2-acceptance-execution.html", "7 个自动化区域的历史执行摘要与 4 项人工保留项"],
+    ["实施入口", "docs/frontend/prototype/stage2-dev-brief.md", "第二阶段 C/B 实施顺序、范围和门禁"],
+]
+ACCEPTANCE_EXECUTION_RECORDS = [
+    ["登录入口状态", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：四态矩阵与 19 张运行时截图", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
+    ["普通路由矩阵", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：4 类会话全路径矩阵与合成漂移负例", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
+    ["共享视觉原语", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：原语采用门禁与自测通过", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
+    ["入口状态合同", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：matched、none、expired、mismatched 与越权负例", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
+    ["Stage-1 工作台运行时", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：双视口、路由和外部字体请求检查", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
+    ["视觉构建门禁", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：15/15 门禁、两次 tsc 与 Vite 构建通过", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
+    ["全量回归", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS WITH BASELINE：1638 passed，26 failed 与基线一致", "26 条；原文只保留数量与逐字节一致结论，未保留逐项失败名，不能据此声明当前 HEAD 同样通过", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
+]
+HUMAN_ACCEPTANCE_FRAGMENTS = {
+    "O1": {
+        "task_id": "ST2-HUM-ORG-SCAN",
+        "contract_path": f"{REL_BUNDLE}/acceptance-fragments/ST2-HUM-ORG-SCAN/acceptance-contract.md",
+        "contract_version": 1,
+        "contract_status": "DRAFT",
+        "test_baseline": "PLANNED",
+        "approval_evidence": "本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。",
+        "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
+        "assumption_ids": [],
+        "invalidation_keys": ["media.stage2.organization-source-scope.v5", "media.stage2.organization-source-scope.manual-org-scan"],
+        "human_binding_path": "acceptance/human/ST2-HUM-ORG-SCAN/binding.md",
+        "selected_run_ids": [],
+        "result_hashes": [],
+    },
+    "O5": {
+        "task_id": "ST2-HUM-LARK-READBACK",
+        "contract_path": f"{REL_BUNDLE}/acceptance-fragments/ST2-HUM-LARK-READBACK/acceptance-contract.md",
+        "contract_version": 1,
+        "contract_status": "DRAFT",
+        "test_baseline": "PLANNED",
+        "approval_evidence": "本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。",
+        "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
+        "assumption_ids": [],
+        "invalidation_keys": ["media.stage2.organization-edit-readback.v5", "media.stage2.organization-edit-readback.manual-lark-readback"],
+        "human_binding_path": "acceptance/human/ST2-HUM-LARK-READBACK/binding.md",
+        "selected_run_ids": [],
+        "result_hashes": [],
+    },
+    "K": {
+        "task_id": "ST2-HUM-LOGIN-FOLD",
+        "contract_path": f"{REL_BUNDLE}/acceptance-fragments/ST2-HUM-LOGIN-FOLD/acceptance-contract.md",
+        "contract_version": 1,
+        "contract_status": "DRAFT",
+        "test_baseline": "PLANNED",
+        "approval_evidence": "本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。",
+        "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
+        "assumption_ids": [],
+        "invalidation_keys": ["media.stage2.product-decisions.v5", "media.stage2.product-decisions.login-fold-assert-auth-layout"],
+        "human_binding_path": "acceptance/human/ST2-HUM-LOGIN-FOLD/binding.md",
+        "selected_run_ids": [],
+        "result_hashes": [],
+    },
+    "DB": {
+        "task_id": "ST2-HUM-SESSION-28D",
+        "contract_path": f"{REL_BUNDLE}/acceptance-fragments/ST2-HUM-SESSION-28D/acceptance-contract.md",
+        "contract_version": 1,
+        "contract_status": "DRAFT",
+        "test_baseline": "PLANNED",
+        "approval_evidence": "本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。",
+        "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
+        "assumption_ids": [],
+        "invalidation_keys": ["media.stage2.external-system-acceptance.v5", "media.stage2.external-system-acceptance.session-28d-readback"],
+        "human_binding_path": "acceptance/human/ST2-HUM-SESSION-28D/binding.md",
+        "selected_run_ids": [],
+        "result_hashes": [],
+    },
+}
 IMPLEMENTATION_OBSERVATIONS = {
     "source-baseline": f"当前 main 为 {CURRENT_MAIN_SHA}；Stage-2 起始提交为 {CURRENT_STAGE2_ORIGIN_COMMIT}。候选分支 codex/stage2-release-20260818 已不存在。",
     "S1-S5/T1": f"已落地上下文、资料路由、唯一写入路由、成果登记/回读和能力副作用合同；主线有 {CURRENT_STAGE2_SERVICE_COUNT} 个 stage2 服务文件，Stage-2 聚焦测试为 {CURRENT_STAGE2_TEST_COUNT} 个文件、{CURRENT_STAGE2_TEST_FUNCTION_COUNT} 个测试函数。",
@@ -136,6 +212,7 @@ IMPLEMENTATION_OBSERVATIONS = {
     "frontend-scope": "当前生产入口是 src/media/main.tsx -> MediaStudioApp.tsx；旧 MediaApp.tsx 已由 ea98ca3b 从源码删除。当前机器源清点为 mediaPageStructureManifest 24 面；studioOrdinaryRoutes 为 14 条（/today、/studio、/campaigns、/business、/desk、/overview、/assets、/decisions、/publishing、/reviews、/media-agent、/archives、/usage-billing、/invites），另有 studioTrackRoutes。两组机器路由全量向个人人格开放，个人/组织/管理员路由授权由统一策略、严格会话 routeGrants 和 MediaStudioRoutePolicy 共同约束。",
     "entry-state": "登录入口状态已落地为 GET /openclaw/auth/entry-state?mode=，响应 media_auth_entry_state_v1，覆盖 matched、none、expired、mismatched 四态并有测试；它与工作台路由授权是两个不同合同。",
     "route-grants": "当前 main 的 media_web_business_pages_v2 严格 schema 已包含 routeGrants，并由服务端生成、客户端校验和路由矩阵消费；这已是源码事实，但与早期‘不得增加 routeGrants’的已接受决定存在待处理合同冲突，不能提升正式节点状态。",
+    "interaction-prototypes": f"C6 与组织镜像交互原型、验收判读材料和实施入口均固定在 commit {ACCEPTANCE_DELIVERY_DOCUMENT_COMMIT}：docs/frontend/prototype/ 下的四份交付文档是设计基线/静态文档，不等同节点接受。",
     "font-scope": "DS-02/DS-26 已在 main 落地：mediaDesignTokens.css 定义 --mg-text-4xl，mediaFonts.css 和本地 WOFF2 提供 DM Sans/Noto Sans SC，Google Fonts 依赖有门禁；仍需按实际部署弱网证据验收。",
     "frontend-retirement": "MediaApp.tsx 已删除且 main.tsx 无旧壳 import；该设计债务不再是当前待办。",
     "C6-C7": "当前源码观察未形成网页端个人正文修订和平台版本/发布包完整正式验收。",
@@ -597,6 +674,8 @@ for node_id, item in SPECS.items():
             "approval_evidence": "User requested the phase-2 SSOT, explicitly resolved the session-envelope conflict in favor of an independent read-only entry-state API, and accepted the self-hosted font, sliced Chinese subset, and weight/tracking constraints",
             "approved_at": CURRENT_FACT_OBSERVED_AT,
         }
+    if node_id in HUMAN_ACCEPTANCE_FRAGMENTS:
+        node["acceptance_fragments"] = [HUMAN_ACCEPTANCE_FRAGMENTS[node_id]]
     NODES[node_id] = node
 
 for node_id, node in NODES.items():
@@ -822,7 +901,7 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 9. 会话解析函数（`parseMediaSessionEnvelope`）的严格响应结构保持不变；会话版本（`media_web_business_pages_v2`）中不得增加页面授权字段（`routeGrants`）或其他新键。
 10. 页面权限改由独立只读入口状态接口返回。接口必须有独立版本、严格响应结构和 OpenAPI/客户端类型；建议逻辑接口为入口状态地址（`GET /api/media/entry-state`），若源码已有等价入口则沿用一个既有路径并在 B 节点冻结，不能形成双入口。
 11. 页面授权按三个维度分开：角色字段（`role`）决定管理员或普通壳层，工作区模式字段（`workspaceMode`）与正文权威字段（`bodyAuthority`）决定正文来源，入口状态返回页面和动作授权；服务端对每个业务动作继续做最终校验。
-12. 当前生产入口文件（`src/media/main.tsx`）挂载媒体工作台应用（`MediaStudioApp.tsx`）；旧媒体应用（`MediaApp.tsx`）已由 `ea98ca3b` 从源码删除。机器路由清单（`studioOrdinaryRoutes`）当前 14 条，另有轨道路由清单（`studioTrackRoutes`）、个人/组织/管理员路由及运行详情深链；两组机器路由全量向个人人格开放，查询和动作按个人会话、租户、所有者作用域执行，个人正文只写个人网页内部成果，组织绑定（Binding）、飞书写入和组织成员能力继续隔离。
+12. 当前生产入口文件（`src/media/main.tsx`）挂载媒体工作台应用（`MediaStudioApp.tsx`）；旧媒体应用（`MediaApp.tsx`）已由源码清理提交（`ea98ca3b`）删除。机器路由清单（`studioOrdinaryRoutes`）当前 14 条，另有轨道路由清单（`studioTrackRoutes`）、个人/组织/管理员路由及运行详情深链；两组机器路由全量向个人人格开放，查询和动作按个人会话、租户、所有者作用域执行，个人正文只写个人网页内部成果，组织绑定（Binding）、飞书写入和组织成员能力继续隔离。
 13. 字体自托管是境内部署主路径：拉丁字体（DM Sans）全量自托管，中文字体（Noto Sans SC）使用字符范围切片规则（`unicode-range`）或常用字子集，只预载拉丁子集；加载清单必须包含实际使用的 600 字重，清理 800/850 视觉依赖。
 14. 中文标题及无法分段的中西混排标题默认使用字距属性（`letter-spacing: 0`）；负字距只允许用于纯拉丁或数字展示位。统一回退栈把苹方字体（PingFang SC）提前，并覆盖认证页与工作台。
 
@@ -839,7 +918,7 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 1. **先做入口与合同清点（B）**：在当前生产入口、旧入口、服务端路由和 OpenAPI 中查找已有入口状态实现；确认媒体工作台应用（`MediaStudioApp`）的挂载路径、旧媒体应用（`MediaApp`）的实际引用、普通信息架构（IA）的真实数量，并把结果登记为来源证据。若没有可复用的接口，冻结一个入口状态接口（`entry-state`）的路径和版本。
 2. **实现独立入口状态投影（B、S1）**：服务端从认证会话、角色字段（`role`）、工作区模式字段（`workspaceMode`）、正文权威字段（`bodyAuthority`）和能力注册表计算默认入口（`defaultRoute`）、页面授权和动作授权；响应严格校验，未认证返回 401，已认证但无权返回 403，版本过期或候选不一致返回稳定的冲突状态。任何客户端提交的租户、组织绑定、正文权威或角色都不能成为授权依据。
 3. **统一路由注册表与入口（C6、C8、T1）**：用一个注册表生成导航、路由、默认入口和授权判断；媒体工作台应用（`MediaStudioApp`）作为唯一生产入口，旧媒体应用（`MediaApp`）只保留明确的退役转发或在确认无引用后删除。无权深链显示稳定的无权状态，不静默跳到另一个业务页面；页面内动作也必须按入口状态与服务端结果双重收敛。
-4. **落实普通信息架构（IA）个人开放决定（K、C6、T1）**：`studioOrdinaryRoutes + studioTrackRoutes` 两组机器路由全量向个人人格开放，默认入口为个人概览；当前 `studioOrdinaryRoutes` 为 14 条，具体清单以 `mediaStudioRoutePolicy.ts` 为准。统一注册表必须为每条路由声明个人可见性和动作；查询、创建、编辑、发布、复盘、归档、计费与邀请均按个人会话、租户、所有者作用域校验。任何组织绑定（Binding）、飞书写入或组织成员动作在个人人格下稳定拒绝，不得静默切换人格。
+4. **落实普通信息架构（IA）个人开放决定（K、C6、T1）**：普通路由清单（`studioOrdinaryRoutes`）与轨道路由清单（`studioTrackRoutes`）全量向个人人格开放，默认入口为个人概览；当前普通路由清单为 14 条，具体清单以路由策略文件（`mediaStudioRoutePolicy.ts`）为准。统一注册表必须为每条路由声明个人可见性和动作；查询、创建、编辑、发布、复盘、归档、计费与邀请均按个人会话、租户、所有者作用域校验。任何组织绑定（Binding）、飞书写入或组织成员动作在个人人格下稳定拒绝，不得静默切换人格。
 5. **建立字体资源管线（C6、T1、DA）**：在前端资源目录生成并校验拉丁字体（DM Sans）和中文字体（Noto Sans SC）的 WOFF2 文件、切片或常用字子集，统一设计令牌样式表（`mediaDesignTokens.css`）与认证样式表（`media.auth.css`）的回退栈；加载 400/500/600/700 等实际使用字重，清理 800/850 依赖，中文标题字距为 0。只预载拉丁子集，中文切片按需加载。
 6. **按真实会话和弱网验收（T1、C8、DA、DB、DC）**：覆盖普通/管理员 × 个人/组织四种合法会话，以及未认证、失效、非法信封、缺失入口状态和越权深链。浏览器拦截谷歌字体服务（Google Fonts）后分别验证字体可用与不可用两种状态，检查桌面和移动端没有溢出、截断或明显跳动。模拟会话、单纯导航文字和单次字体下载都不能替代真实合同证据。
 
@@ -880,6 +959,48 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 - 执行治理文件（`generated-views/20-execution-governance.md`）：最小交付、最大安全并行宽度、外部执行器、资源冲突和全权限护栏。
 - 验收合同文件（`generated-views/30-node-contracts-and-acceptance.md`）：节点合同、正式验收矩阵、门禁抽象、证据身份与清除清单。
 - 实施进度文件（`implementation-progress.md`）：正式状态、空就绪前沿、阻塞原因与下一步。
+"""
+
+
+def openproblem_view() -> str:
+    return """
+# 第二阶段开放范围与待决合同
+
+## 已裁决：个人开放范围
+
+用户已确认：普通页面路由清单（`studioOrdinaryRoutes`）和轨道路由清单（`studioTrackRoutes`）全量向个人人格开放。当前普通页面共有 14 条；完整页面地址、运行详情深链和源码定位统一列在下方工程映射表，避免在本文件维护会过时的页面副本。
+
+开放页面不等于开放组织能力。所有个人查询、创建、编辑、发布、复盘、归档、计费和邀请动作必须由服务端按当前个人会话、租户和所有者作用域过滤；个人正文只能写入个人网页内部成果（`personal_web/internal`）。组织绑定（Binding）、飞书文档写入、组织资料和组织成员能力继续只属于组织人格，个人人格调用时必须稳定拒绝，不得回退到部署级凭据或静默切换人格。
+
+个人默认入口由当前机器策略决定；已开放深链进入对应个人页面。会话失效或动作越权必须显示稳定的未认证或无权状态，不能用其他业务页面伪装成功。
+
+## 已落地但需分开命名的接口
+
+登录前会话检查已落地：入口状态接口（`GET /openclaw/auth/entry-state?mode=`）和响应版本（`media_auth_entry_state_v1`）覆盖匹配状态（`matched`）、无匹配状态（`none`）、已失效状态（`expired`）和不一致状态（`mismatched`）四态，并已有脱敏和测试。该接口只表达“登录入口状态”。
+
+角色、工作区模式、正文权威、可见路由和动作授权由工作台路由授权投影承载；当前主线分支（`main`）已在严格会话结构（`media_web_business_pages_v2`）中落地页面授权字段（`routeGrants`），并由服务端生成、客户端校验和路由矩阵消费。这是源码事实，但与早期“会话信封不得增加页面授权字段”的已接受决定存在待处理合同冲突，不能提升正式节点状态；两者不得混为一个未经版本化的接口。
+
+## 非法路由语义
+
+导航层可以按当前工作区策略将合法会话误入不属于当前壳层的入口收敛到默认入口，避免空白壳层；数据和动作层仍必须稳定拒绝跨租户、跨所有者、缺失授权或组织能力调用（无权状态码为 `403` 或等价状态），不得以重定向掩盖拒绝。该两层语义由路由矩阵检查脚本（`checkMediaStudioRouteMatrix.ts`）及服务端动作授权共同验证。
+
+## 验收边界
+
+- 源码实现、聚焦测试、视觉图像（PNG）和人工智能读图只能证明来源级或本地运行时证据（`source/local-runtime`），不能提升正式节点状态。
+- 必须保留真实组织扫码与部署读回、飞书编辑后再回读、登录回退态折线确认、28 天会话持久化部署读回四项人工验收。
+- 登录页面布局断言（`assertAuthLayout`）当前只保护初始 P1，登录回退态仍可能超过一屏；这属于自动化缺口，不得被误报为完整通过。
+
+## 工程映射表
+
+| 中文对象 | 代码标识或地址 | 用途 |
+| --- | --- | --- |
+| 普通页面路由清单 | `studioOrdinaryRoutes` | 当前包含 14 条个人开放页面地址：`/today`、`/studio`、`/campaigns`、`/business`、`/desk`、`/overview`、`/assets`、`/decisions`、`/publishing`、`/reviews`、`/media-agent`、`/archives`、`/usage-billing`、`/invites`。 |
+| 轨道路由清单 | `studioTrackRoutes` | 包含轨道页面地址（`/tracks`）。 |
+| 运行详情深链 | `/runs/:runId`、`/studio/:runId` | 进入对应运行详情；仍需按个人会话和所有者作用域授权。 |
+| 路由策略文件 | `mediaStudioRoutePolicy.ts` | 是普通页面清单和默认入口的源码权威。 |
+| 登录入口状态接口 | `GET /openclaw/auth/entry-state?mode=` | 只表达登录前的入口状态，不承担工作台页面授权。 |
+| 工作台会话结构 | `media_web_business_pages_v2` | 当前包含页面授权字段（`routeGrants`），其与已接受决定的冲突仍由 B 节点裁决。 |
+| 路由矩阵检查脚本 | `checkMediaStudioRouteMatrix.ts` | 验证导航收敛与数据、动作层拒绝语义分层。 |
 """
 
 
@@ -1288,7 +1409,7 @@ def progress_view() -> str:
     return "\n\n".join([
         "# 第二阶段实施进度",
         "## 当前结论",
-        f"本 SSOT 已完成第 6 版事实刷新。正式完成度仍为 9.4%（3/32）：A、A1、K 已接受，其余 29 个节点仍为 BLOCKED。源码实现观察已更新：当前主线（`main`）为 `{CURRENT_MAIN_SHA}`，Stage-2 起始提交为 `{CURRENT_STAGE2_ORIGIN_COMMIT}`，包含 {CURRENT_STAGE2_SERVICE_COUNT} 个第二阶段服务文件、{CURRENT_STAGE2_TEST_COUNT} 个测试文件和 {CURRENT_STAGE2_TEST_FUNCTION_COUNT} 个测试函数；候选分支 `codex/stage2-release-20260818` 已不存在。相关提交与聚焦测试只能作为源码/静态测试证据，不能提升节点状态。第一阶段 C1、C3、DC2 尚未接受，因此本阶段当前没有合法正式就绪节点。生产认证会话解析、入口状态接口、租户资料读取、认证浏览器/设备、真实人工智能任务、真实飞书写后回读和独立外部验收仍未证明。",
+        f"本 SSOT 已完成第 7 版事实刷新。正式完成度仍为 9.4%（3/32）：A、A1、K 已接受，其余 29 个节点仍为 BLOCKED。源码实现观察已更新：当前主线（`main`）为 `{CURRENT_MAIN_SHA}`，Stage-2 起始提交为 `{CURRENT_STAGE2_ORIGIN_COMMIT}`，包含 {CURRENT_STAGE2_SERVICE_COUNT} 个第二阶段服务文件、{CURRENT_STAGE2_TEST_COUNT} 个测试文件和 {CURRENT_STAGE2_TEST_FUNCTION_COUNT} 个测试函数；候选分支 `codex/stage2-release-20260818` 已不存在。相关提交与聚焦测试只能作为源码/静态测试证据，不能提升节点状态。第一阶段 C1、C3、DC2 尚未接受，因此本阶段当前没有合法正式就绪节点。生产认证会话解析、入口状态接口、租户资料读取、认证浏览器/设备、真实人工智能任务、真实飞书写后回读和独立外部验收仍未证明。",
         "## 状态台账",
         table(["Task ID", "Stage", "Versions", "State", "Attempt", "Owner", "Guard ID", "Blocking reason", "Evidence", "Unlocks"], state_rows),
         "## 实际实现台账（源码观察）",
@@ -1315,14 +1436,21 @@ def acceptance_execution_view() -> str:
         ["视觉构建门禁", "npm run build:media", "构建与视觉/结构 QA 门禁", "自动化", "记录已知基线失败，不提升 SSOT 节点状态"],
         ["全量回归", "pytest openclaw-tag-router/tests/ --ignore=tests/test_sync_lark_base_projection.py", "全量测试与基线分类", "自动化", "已知失败必须与新回归分开"],
     ]
+    baseline_rows = [[title, f"`{path}`", f"`{ACCEPTANCE_DELIVERY_DOCUMENT_COMMIT}`", use, "设计基线/静态文档；不等同节点接受"] for title, path, use in ACCEPTANCE_DELIVERY_DOCUMENTS]
+    execution_rows = [[area, recorded_at, f"`{ACCEPTANCE_EXECUTION_SOURCE_COMMIT}`", result, baseline, f"`{evidence}`"] for area, recorded_at, result, baseline, evidence in ACCEPTANCE_EXECUTION_RECORDS]
     return "\n\n".join([
         "# 第二阶段验收执行",
         "## 自动化验收映射",
         table(["验收区域", "命令", "证据", "判读方式", "缺口/边界"], rows),
+        "## 验收基线与判读材料",
+        table(["材料", "路径", "提交", "用途", "证据边界"], baseline_rows),
+        "## 记录的最近执行",
+        f"以下是验收判读材料已记录的历史执行，而非当前工作树的重跑。源代码身份为 `{ACCEPTANCE_EXECUTION_SOURCE_COMMIT}`；文档记录提交时间为 `{ACCEPTANCE_EXECUTION_SOURCE_RECORDED_AT}`。原始材料没有保存每条命令的精确开始时间或完整测试日志，因此空缺明确保留，后续当前 HEAD 重跑必须另建带 source identity 的执行证据。",
+        table(["验收区域", "执行日期", "源码提交", "结果", "已知基线失败清单", "证据路径"], execution_rows),
         "## 证据分层",
         "运行时门禁与截图只形成 source/local-runtime 证据，不能替代真实组织扫码、飞书编辑后再回读、28 天会话持久化部署读回或独立外部验收。",
         "## 人工验收保留项",
-        "1. 真实组织扫码与部署读回。\n2. 飞书编辑后再回读。\n3. 登录回退态折线确认。\n4. 28 天会话持久化真实部署读回。",
+        "1. [`ST2-HUM-ORG-SCAN`](../../../acceptance/human/ST2-HUM-ORG-SCAN/checklist.md)：真实组织扫码、组织壳层与错误工作区恢复；绑定 O1。\n2. [`ST2-HUM-LARK-READBACK`](../../../acceptance/human/ST2-HUM-LARK-READBACK/checklist.md)：飞书编辑后再回读；绑定 O5。\n3. [`ST2-HUM-LOGIN-FOLD`](../../../acceptance/human/ST2-HUM-LOGIN-FOLD/checklist.md)：登录回退态折线确认；绑定 K，并跟踪 `assertAuthLayout` 缺口。\n4. [`ST2-HUM-SESSION-28D`](../../../acceptance/human/ST2-HUM-SESSION-28D/checklist.md)：28 天会话持久化真实部署读回；绑定 DB。\n\n四项工作区均为 `PREPARING`：没有 machine-green handoff，也没有人工签署结果；不得修改 checklist 记录一次执行。",
         "## 当前合同提醒",
         "routeGrants 已进入当前源码的严格会话 schema，但早期产品决定曾明确禁止向会话信封增加该字段；该冲突需在 B 节点重新裁决，不能由静态门禁自动视为已接受。",
     ])
@@ -1751,6 +1879,7 @@ def build() -> None:
     }
     write_json(MACHINE / "manifest.json", manifest)
     write_text(BUNDLE / "source-notes.md", source_notes())
+    write_text(BUNDLE / "openproblem.md", openproblem_view())
     write_json(
         BUNDLE / "ssot-archive.json",
         {

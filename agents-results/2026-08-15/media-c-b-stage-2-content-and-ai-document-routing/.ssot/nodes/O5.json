@@ -76,5 +76,29 @@
     "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/validation/O5-return.json"
   ],
   "release_slice": "REL-2",
-  "wave_id": "W-2-10"
+  "wave_id": "W-2-10",
+  "acceptance_fragments": [
+    {
+      "task_id": "ST2-HUM-LARK-READBACK",
+      "contract_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/acceptance-fragments/ST2-HUM-LARK-READBACK/acceptance-contract.md",
+      "contract_version": 1,
+      "contract_status": "DRAFT",
+      "test_baseline": "PLANNED",
+      "approval_evidence": "本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。",
+      "decision_refs": [
+        {
+          "semantic_key": "media.stage2.product-decisions",
+          "version": 4
+        }
+      ],
+      "assumption_ids": [],
+      "invalidation_keys": [
+        "media.stage2.organization-edit-readback.v5",
+        "media.stage2.organization-edit-readback.manual-lark-readback"
+      ],
+      "human_binding_path": "acceptance/human/ST2-HUM-LARK-READBACK/binding.md",
+      "selected_run_ids": [],
+      "result_hashes": []
+    }
+  ]
 }
