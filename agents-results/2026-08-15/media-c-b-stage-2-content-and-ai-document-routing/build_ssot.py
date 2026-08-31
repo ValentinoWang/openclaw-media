@@ -122,7 +122,15 @@ HASHES = {
 }
 OBSERVED_AT = "2026-08-15T20:37:42+08:00"
 CURRENT_FACT_OBSERVED_AT = "2026-08-31T23:15:51+08:00"
-CURRENT_MAIN_SHA = "b267f730ad184991305ffbcdddf39f292ca6f3c5"
+DECISION_V5_OBSERVED_AT = "2026-09-01T14:20:00+08:00"
+CURRENT_MAIN_SHA = "091cb18e59882e38f06840db9401eec3b22695ef"
+# Acceptance runs are recorded with the exact commit they executed against;
+# a later main does not re-date them.
+ACCEPTANCE_RUN_COMMIT = "759af4c659c6d6a85fd8eac7cd4d2d345d3cf235"
+ACCEPTANCE_RUN_OBSERVED_AT = "2026-08-31"
+ACCEPTANCE_BASELINE_PASSED = 1638
+ACCEPTANCE_BASELINE_FAILED = 26
+PROTOTYPE_COMMIT = "ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5"
 CURRENT_STAGE2_ORIGIN_COMMIT = "0228256058a1d7c0de4986a943de5c96f445ee2f"
 CURRENT_STAGE2_SERVICE_COUNT = 16
 CURRENT_STAGE2_TEST_COUNT = 19
@@ -135,7 +143,8 @@ IMPLEMENTATION_OBSERVATIONS = {
     "storage-topology": "三分叉存储：PostgreSQL canonical 迁移 37 个（其中包括 owned_media_accounts、tracks、publishing_packages）；SQLitePersonalContentStore 持久化个人成果；account_memory 为文件系统 JSON，位于 ~/.openclaw/media_vault/account_memory/<account_id>/。因此存在两道 join 断点，而不是 SQLite 与 Postgres 的单一断点。",
     "frontend-scope": "当前生产入口是 src/media/main.tsx -> MediaStudioApp.tsx；旧 MediaApp.tsx 已由 ea98ca3b 从源码删除。当前机器源清点为 mediaPageStructureManifest 24 面；studioOrdinaryRoutes 为 14 条（/today、/studio、/campaigns、/business、/desk、/overview、/assets、/decisions、/publishing、/reviews、/media-agent、/archives、/usage-billing、/invites），另有 studioTrackRoutes。两组机器路由全量向个人人格开放，个人/组织/管理员路由授权由统一策略、严格会话 routeGrants 和 MediaStudioRoutePolicy 共同约束。",
     "entry-state": "登录入口状态已落地为 GET /openclaw/auth/entry-state?mode=，响应 media_auth_entry_state_v1，覆盖 matched、none、expired、mismatched 四态并有测试；它与工作台路由授权是两个不同合同。",
-    "route-grants": "当前 main 的 media_web_business_pages_v2 严格 schema 已包含 routeGrants，并由服务端生成、客户端校验和路由矩阵消费；这已是源码事实，但与早期‘不得增加 routeGrants’的已接受决定存在待处理合同冲突，不能提升正式节点状态。",
+    "route-grants": "冲突已由用户在 K 第 5 版裁决：routeGrants 保留在会话信封，正名为路由清单漂移检测而非授权投影。源码事实：服务端生成，mediaWebApi.ts 用 zod 严格校验，并在 superRefine 中与按 role/workspaceMode 独立推导的 exactRouteGrants 逐项按序比对，不一致即判会话解析失败；客户端从不提交该字段。由此产生两条待办：一是 schemaVersion 仍为 media_web_business_pages_v2 却已新增 required 字段，必须升到 v3 并由 B 节点重签冻结身份；二是路由清单目前有三份人工维护副本（mediaStudioRoutePolicy.ts 的 studioOrdinaryRoutes 加 studioTrackRoutes、mediaWebApi.ts 的 exactRouteGrants 16 条、服务端生成器），应收敛为一份生成源。",
+    "interaction-prototypes": f"C6 与组织支线的交互规格已有可交互原型并进入主线 docs/frontend/prototype/（提交 {PROTOTYPE_COMMIT}）：个人正文编辑与修订 personal-document-editor.html 覆盖 8 态，组织正文同步与回读 organization-document-mirror.html 覆盖 8 态；字段与状态机取自 documentWorkflow.ts、document_edit_contract.py 和 documents.py 的同步批次状态机。原型是 C6 与 O2-O5 的交互验收基线，不是实现证据。",
     "font-scope": "DS-02/DS-26 已在 main 落地：mediaDesignTokens.css 定义 --mg-text-4xl，mediaFonts.css 和本地 WOFF2 提供 DM Sans/Noto Sans SC，Google Fonts 依赖有门禁；仍需按实际部署弱网证据验收。",
     "frontend-retirement": "MediaApp.tsx 已删除且 main.tsx 无旧壳 import；该设计债务不再是当前待办。",
     "C6-C7": "当前源码观察未形成网页端个人正文修订和平台版本/发布包完整正式验收。",
@@ -585,17 +594,24 @@ for node_id, item in SPECS.items():
                 "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
                 "stage3_exclusions": "full role matrix, approval, seats, procurement, invoices, migration, complex deletion and business analytics",
                 "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate",
-                "session_envelope_boundary": "do not add routeGrants or page permissions to parseMediaSessionEnvelope; keep media_web_business_pages_v2 strict response shape unchanged",
-                "entry_state_authority": "independent read-only entry-state API returns server-projected role, workspaceMode, bodyAuthority, defaultRoute, route grants and action grants",
-                "entry_state_contract": "new API contract must be versioned and strict in OpenAPI/client types; exact path is frozen by B after bounded source discovery, with 401/403/409 semantics and no session envelope change",
-                "route_authorization_axes": "role selects shell; workspaceMode/bodyAuthority select content authority; entry-state route/action grants select visible and executable UI; backend authorization remains final",
+                "session_envelope_boundary": "v5 supersedes the v4 ban: routeGrants stays inside the session envelope as a route-list drift detector, not an authorization projection. It must be server-generated, never client-submitted, and the client must keep cross-checking it against independently derived expectations so any server/client route-list divergence fails the session closed. Adding this required field obliges a version bump to media_web_business_pages_v3; B re-freezes the interface identity at v3.",
+                "entry_state_authority": "the shipped entry-state API carries login entry status only (mode, matched/none/expired/mismatched, masked entry, fallback). It is a pre-login probe and must never carry role, body authority, route grants or action grants, because that would leak authorization facts to an unauthenticated caller.",
+                "entry_state_contract": "login entry status and workspace route authorization are two separately versioned contracts and must not share one endpoint or one name. Both must be published in OpenAPI and client types; the entry-state OpenAPI publication is an open debt recorded against B/T1.",
+                "route_authorization_axes": "role selects shell; workspaceMode/bodyAuthority select content authority; session routeGrants plus MediaStudioRoutePolicy select visible UI, with the client re-deriving the expected grant list; backend authorization on every data read and action remains final and is never replaced by route visibility",
+                "illegal_route_semantics": "navigation level may collapse a legal session that lands in the wrong shell to that shell's default route; data and action level must keep refusing cross-tenant, cross-owner, missing-grant or organization-capability calls with 403 or an equivalent no-permission state, and a redirect must never stand in for a refusal",
+                "route_list_authority": "the route list is delegated to the machine source mediaStudioRoutePolicy.ts (studioOrdinaryRoutes plus studioTrackRoutes); the SSOT points at that source instead of copying it, and the remaining hand-maintained duplicates are recorded as debt to be collapsed into one generated source",
                 "ordinary_ia_entrypoint": "MediaStudioApp is the current mounted entry; MediaApp is legacy until an entrypoint census proves otherwise. Do not delete the legacy IA before route ownership and deep-link behavior are recorded.",
                 "font_delivery": "self-host DM Sans as full WOFF2; serve Noto Sans SC through unicode-range slices or a curated common-glyph subset; preload only Latin subset and keep a local fallback chain",
                 "font_weight_policy": "load every used weight including 600; remove 800/850 visual dependence, map Chinese headings to available weights, set Chinese or mixed headings letter-spacing to 0 and reserve negative tracking for pure Latin/numeric display",
             },
             "approval_authority": "user",
-            "approval_evidence": "User requested the phase-2 SSOT, explicitly resolved the session-envelope conflict in favor of an independent read-only entry-state API, and accepted the self-hosted font, sliced Chinese subset, and weight/tracking constraints",
-            "approved_at": CURRENT_FACT_OBSERVED_AT,
+            "approval_evidence": "v4: user requested the phase-2 SSOT and accepted the self-hosted font, sliced Chinese subset, and weight/tracking constraints. v5: after source verification showed the shipped entry-state carries login status only and routeGrants is cross-checked against a client-derived list, the user adjudicated three items — keep routeGrants in the session envelope and bump to v3, delegate the route list to mediaStudioRoutePolicy.ts, and split illegal-route semantics into a navigation layer that may redirect and a data/action layer that must refuse.",
+            "approved_at": DECISION_V5_OBSERVED_AT,
+            "supersedes": {
+                "version": 4,
+                "retired_invariant": "session_envelope_boundary v4 forbade routeGrants in the session envelope and required an independent entry-state API to carry page authorization",
+                "reason": "the independent entry-state API was built as a pre-login probe and cannot carry authorization facts; routeGrants as implemented is a fail-closed drift detector rather than the authorization channel v4 assumed",
+            },
         }
     NODES[node_id] = node
 
@@ -819,18 +835,28 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 6. 写入、成果登记和必要回读共同组成成功条件；外部部分成功必须进入可审计、可幂等续接的待处置状态。
 7. 候选不保留长期双权威、旧新写入器双路径、旧写入器入口、隐式回退或部署级全局飞书凭据备用路径。租户白名单、发布门、紧急停止、只读降级和外部写入停止开关可以保留，但不能改变唯一数据与授权权威。
 8. 第一阶段身份汇合节点（`C1`）只解锁共享合同和个人支线；组织接入汇合节点（`C3`）解锁组织支线和第二阶段唯一写入路由；第一阶段发布增量 1B 终验节点（`DC2`）接受前不得组装第二阶段唯一候选。
-9. 会话解析函数（`parseMediaSessionEnvelope`）的严格响应结构保持不变；会话版本（`media_web_business_pages_v2`）中不得增加页面授权字段（`routeGrants`）或其他新键。
-10. 页面权限改由独立只读入口状态接口返回。接口必须有独立版本、严格响应结构和 OpenAPI/客户端类型；建议逻辑接口为入口状态地址（`GET /api/media/entry-state`），若源码已有等价入口则沿用一个既有路径并在 B 节点冻结，不能形成双入口。
-11. 页面授权按三个维度分开：角色字段（`role`）决定管理员或普通壳层，工作区模式字段（`workspaceMode`）与正文权威字段（`bodyAuthority`）决定正文来源，入口状态返回页面和动作授权；服务端对每个业务动作继续做最终校验。
+9. 路由清单字段（`routeGrants`）保留在会话信封内，定位是**路由清单漂移检测**，不是授权投影。它必须由服务端生成、前端永不提交，且客户端必须继续把它与自己按角色和工作区模式独立推导的期望清单逐项比对，一旦服务端与客户端清单发生漂移就让会话解析失败关闭。因为这是一个新增的必填字段，会话版本必须从 `media_web_business_pages_v2` 升到 `media_web_business_pages_v3`，并由 B 节点按新版本重签接口冻结身份。本条第 5 版取代第 4 版「不得向会话信封增加该字段」的相反规定。
+10. 登录入口状态与工作台路由授权是两个不同合同，不得共用一个接口或一个名字。已落地的登录入口状态接口（`GET /openclaw/auth/entry-state?mode=`，响应 `media_auth_entry_state_v1`）只回答「本浏览器有没有可用会话」，返回四态、脱敏入口和回退方式；它是**登录前**探针，永远不得携带角色、正文权威、可见路由或动作授权，否则等于向未认证调用者泄露授权事实。该接口尚未写入开放接口描述（OpenAPI），这是记在 B 与 T1 名下的欠账。
+11. 页面授权按三个维度分开：角色字段（`role`）决定管理员或普通壳层，工作区模式字段（`workspaceMode`）与正文权威字段（`bodyAuthority`）决定正文来源，会话内的路由清单字段（`routeGrants`）配合路由策略（`MediaStudioRoutePolicy`）决定可见界面。路由可见性永远不能代替授权：服务端对每一次数据读取和每一个业务动作继续做最终校验。
+11.1 非法路由分两层：导航层允许把误入非本壳层的合法会话收敛到该壳层默认入口，避免空白壳层；数据层与动作层必须对跨租户、跨所有者、缺失授权和组织能力调用稳定拒绝（403 或等价无权状态），不得用重定向掩盖拒绝。
+11.2 路由清单以机器源（`mediaStudioRoutePolicy.ts` 的 `studioOrdinaryRoutes` 与 `studioTrackRoutes`）为准，本文档只指向不复印。当前仍有三份人工维护的路由副本，收敛为一份生成源是已登记的待办。
 12. 当前生产入口文件（`src/media/main.tsx`）挂载媒体工作台应用（`MediaStudioApp.tsx`）；旧媒体应用（`MediaApp.tsx`）已由 `ea98ca3b` 从源码删除。机器路由清单（`studioOrdinaryRoutes`）当前 14 条，另有轨道路由清单（`studioTrackRoutes`）、个人/组织/管理员路由及运行详情深链；两组机器路由全量向个人人格开放，查询和动作按个人会话、租户、所有者作用域执行，个人正文只写个人网页内部成果，组织绑定（Binding）、飞书写入和组织成员能力继续隔离。
 13. 字体自托管是境内部署主路径：拉丁字体（DM Sans）全量自托管，中文字体（Noto Sans SC）使用字符范围切片规则（`unicode-range`）或常用字子集，只预载拉丁子集；加载清单必须包含实际使用的 600 字重，清理 800/850 视觉依赖。
 14. 中文标题及无法分段的中西混排标题默认使用字距属性（`letter-spacing: 0`）；负字距只允许用于纯拉丁或数字展示位。统一回退栈把苹方字体（PingFang SC）提前，并覆盖认证页与工作台。
 
-这些决定构成第二阶段第 4 版范围。本阶段不重复拥有第一阶段五项已经接受的决定；其中，第一阶段资源解析边界和旧写入器关闭态仍由第一阶段独占。第一阶段写入边界决定节点（`K5`）规定关闭边界，旧写入器失败关闭节点（`I9`）负责实现该边界；第二阶段统一写入路由仍须等待组织接入投影正式接受，决定已接受不等于上游实现已完成。
+这些决定构成第二阶段第 5 版范围。本阶段不重复拥有第一阶段五项已经接受的决定；其中，第一阶段资源解析边界和旧写入器关闭态仍由第一阶段独占。第一阶段写入边界决定节点（`K5`）规定关闭边界，旧写入器失败关闭节点（`I9`）负责实现该边界；第二阶段统一写入路由仍须等待组织接入投影正式接受，决定已接受不等于上游实现已完成。
 
 ## 3.1 本轮裁决的结果
 
-本轮有一处合同冲突已经裁决：页面授权不进入现有会话信封，采用独立入口状态接口。这样保留会话解析函数（`parseMediaSessionEnvelope`）的严格兼容边界，同时允许服务端按实时角色、工作区和页面策略下发可见路由。这个接口仍是新的公共合同，必须经历 OpenAPI、服务端投影、客户端类型和合同测试的完整同步；“不改会话合同”不等于“不做接口合同工作”。
+第 4 版曾裁决「页面授权不进入现有会话信封，改用独立入口状态接口」。源码核验推翻了这条裁决赖以成立的前提，因此第 5 版改判。
+
+核验到的事实有三条。第一，真正落地的入口状态接口是**登录前**探针，只返回四态、脱敏入口和回退方式，它装不下角色和路由授权，硬装等于向未认证调用者泄露授权事实。第二，落地的路由清单字段（`routeGrants`）不是授权通道：客户端在 `mediaWebApi.ts` 里按角色和工作区模式独立推导出期望清单，再与服务端下发值逐项按序比对，不一致就让会话解析失败——它携带的信息量为零，真实作用是**服务端与客户端路由清单漂移的失败关闭检测**。第三，前端从不提交该字段。
+
+因此第 5 版的判断是：这个字段值得保留，因为它挡住的正是本 SSOT 自己要防的那一类漂移——「导航可见但深链拒绝」。它被误判为授权投影，是命名和文档的问题，不是设计的问题。迁走它要付出同样的合同变更代价，却换不来任何安全收益。
+
+保留不等于免账。新增必填字段必须把会话版本从 `media_web_business_pages_v2` 升到 `media_web_business_pages_v3`，并由 B 节点按新版本重签冻结身份——在同一个版本名下改变必填结构，是对已冻结合同身份的破坏，这一条无论保留还是迁走都要付。同时登记两笔欠账：登录入口状态接口尚未写入开放接口描述（OpenAPI）；路由清单目前有三份人工维护副本，应收敛为一份生成源。
+
+本轮另外两项裁决：非法路由分层（导航层可收敛、数据与动作层必须拒绝），路由清单委托机器源（`mediaStudioRoutePolicy.ts`）。三项裁决共同构成决定第 5 版。
 
 字体问题也已从“离线优化”提升为部署主路径修复。境内部署不能依赖谷歌字体服务（Google Fonts）的可达性；拉丁字体（DM Sans）体积小，直接全量自托管。中文字体（Noto Sans SC）不得把完整中文字体粗暴打包，应生成字符范围切片规则（`unicode-range`）或常用字子集，并且只预载拉丁子集。当前字体清单没有 600，后续若使用 600 必须同步补齐；认证页中的 850 和工作台对 800 的依赖必须移除。
 
@@ -898,8 +924,8 @@ def topology_view() -> str:
         ["第二阶段决定与编排", ".ssot/manifest.json 及 nodes/edges", "decision/orchestration", "机器校验", "是", "A-DC", "check_ssot_program.py"],
         ["第一阶段 C1/C3/DC2 正式状态", str(STAGE1_MANIFEST), "decision/orchestration", "按哈希读取上游节点", "否；只同步投影", "F1-F3", "上游 ACCEPTED 回执"],
         ["当前产品和源码事实", AUDIT, "runtime-evidence", "来源路径和事实审计", "否", "A1/S2/O2", "文件哈希与实现时源码读回"],
-        ["三阶段拆分与第二阶段边界", ATTACHMENT, "domain-contract", "用户附件和本次指令", "已汇编到 K", "K", "决定记录第 4 版"],
-        ["两个发布增量与写入所有权修正", STRUCTURE_REVIEW, "domain-contract", "用户提供的结构修正", "已汇编到 K 与 F2/S3", "K/F2/S3", "决定记录第 4 版与上游投影"],
+        ["三阶段拆分与第二阶段边界", ATTACHMENT, "domain-contract", "用户附件和本次指令", "已汇编到 K", "K", "决定记录第 5 版"],
+        ["两个发布增量与写入所有权修正", STRUCTURE_REVIEW, "domain-contract", "用户提供的结构修正", "已汇编到 K 与 F2/S3", "K/F2/S3", "决定记录第 5 版与上游投影"],
         ["第一阶段第 4 版结构复核", LATEST_REVIEW, "research/hypothesis", "校验值与逐项合同映射", "已同步上游哈希、I9 关闭态和五类运行配置", "A1/F1/S3/DA/DC", "机器源与跨阶段负例"],
         ["第一阶段旧写入器关闭合同", str(STAGE1_I9), "decision/orchestration", "按哈希读取上游节点", "否；只通过 F1 投影消费", "F1/S3", "I9 与 C1 同候选 ACCEPTED 回执"],
         ["人工智能上下文与写入合同", "待 B/S1/S3 在真实源码仓冻结的唯一合同", "domain-contract", "OpenAPI、类型和保护测试", "是", "B/S1/S3/T1", "合同生成与漂移门禁"],
@@ -1100,7 +1126,7 @@ def execution_view() -> str:
             "发现任何上游写入、状态伪造或哈希漂移",
         ],
         [
-            "G-PHASE2", "K 第 4 版决定、第一阶段 G1 运行配置回执与 M1 汇合协议", str(PROJECT_ROOT / ".codex-work"),
+            "G-PHASE2", "K 第 5 版决定、第一阶段 G1 运行配置回执与 M1 汇合协议", str(PROJECT_ROOT / ".codex-work"),
             "第一阶段候选、活动发布、其他 agents-results、未授权租户、飞书真实组织",
             "隔离数据库、隔离个人成果和节点声明的测试资源", "仅节点合同列明的实现和测试",
             "禁止跨租户迁移、复杂删除和生产切换", "秘密用引用或受控输入；不得进入 argv、日志或截图",
@@ -1109,7 +1135,7 @@ def execution_view() -> str:
             "越界写入、跨租户、错正文权威、凭据泄漏或候选身份变化",
         ],
         [
-            "G-FEISHU", "当前会话的活跃组织 Binding、F2 投影与 K 第 4 版正文决定",
+            "G-FEISHU", "当前会话的活跃组织 Binding、F2 投影与 K 第 5 版正文决定",
             "隔离候选、节点证据目录和获批飞书测试文档", "其他组织、全局凭据、个人正文、生产未批准资源",
             "批准的隔离飞书组织、Wiki 空间和父节点", "仅 O2/O5 合同允许的创建、编辑和回读",
             "禁止复杂删除、搬迁或影响非测试资源", "按 Binding 解析密钥引用；明文不得进入 argv、日志或证据",
@@ -1288,7 +1314,7 @@ def progress_view() -> str:
     return "\n\n".join([
         "# 第二阶段实施进度",
         "## 当前结论",
-        f"本 SSOT 已完成第 6 版事实刷新。正式完成度仍为 9.4%（3/32）：A、A1、K 已接受，其余 29 个节点仍为 BLOCKED。源码实现观察已更新：当前主线（`main`）为 `{CURRENT_MAIN_SHA}`，Stage-2 起始提交为 `{CURRENT_STAGE2_ORIGIN_COMMIT}`，包含 {CURRENT_STAGE2_SERVICE_COUNT} 个第二阶段服务文件、{CURRENT_STAGE2_TEST_COUNT} 个测试文件和 {CURRENT_STAGE2_TEST_FUNCTION_COUNT} 个测试函数；候选分支 `codex/stage2-release-20260818` 已不存在。相关提交与聚焦测试只能作为源码/静态测试证据，不能提升节点状态。第一阶段 C1、C3、DC2 尚未接受，因此本阶段当前没有合法正式就绪节点。生产认证会话解析、入口状态接口、租户资料读取、认证浏览器/设备、真实人工智能任务、真实飞书写后回读和独立外部验收仍未证明。",
+        f"本 SSOT 已完成第 7 版事实刷新，产品决定同步升到第 5 版（`routeGrants` 载体、非法路由分层、路由清单委托机器源三项裁决）。正式完成度仍为 9.4%（3/32）：A、A1、K 已接受，其余 29 个节点仍为 BLOCKED；裁决只关闭合同冲突，不提升任何节点状态。源码实现观察已更新：当前主线（`main`）为 `{CURRENT_MAIN_SHA}`，Stage-2 起始提交为 `{CURRENT_STAGE2_ORIGIN_COMMIT}`，包含 {CURRENT_STAGE2_SERVICE_COUNT} 个第二阶段服务文件、{CURRENT_STAGE2_TEST_COUNT} 个测试文件和 {CURRENT_STAGE2_TEST_FUNCTION_COUNT} 个测试函数；候选分支 `codex/stage2-release-20260818` 已不存在。相关提交与聚焦测试只能作为源码/静态测试证据，不能提升节点状态。第一阶段 C1、C3、DC2 尚未接受，因此本阶段当前没有合法正式就绪节点。生产认证会话解析、入口状态接口、租户资料读取、认证浏览器/设备、真实人工智能任务、真实飞书写后回读和独立外部验收仍未证明。",
         "## 状态台账",
         table(["Task ID", "Stage", "Versions", "State", "Attempt", "Owner", "Guard ID", "Blocking reason", "Evidence", "Unlocks"], state_rows),
         "## 实际实现台账（源码观察）",
@@ -1315,16 +1341,55 @@ def acceptance_execution_view() -> str:
         ["视觉构建门禁", "npm run build:media", "构建与视觉/结构 QA 门禁", "自动化", "记录已知基线失败，不提升 SSOT 节点状态"],
         ["全量回归", "pytest openclaw-tag-router/tests/ --ignore=tests/test_sync_lark_base_projection.py", "全量测试与基线分类", "自动化", "已知失败必须与新回归分开"],
     ]
+    execution_rows = [
+        ["登录入口状态", "qa:media-login-visual-runtime", "通过", "19 张截图；拦截 Google Fonts、1440x900 与 390x844 双视口、无横向溢出、P1 一屏断言；P1 阶段 entry 请求数为 0"],
+        ["普通路由矩阵", "qa:media-route-matrix", "通过", "4 类会话全路径矩阵；未映射的新 Route 直接红灯；带合成漂移自测"],
+        ["共享视觉原语", "qa:media-primitive-adoption", "通过", "含 -self-test；合成漂移必须被拒"],
+        ["入口状态合同", "pytest tests/test_auth_entry_state.py", "通过", "四态、越权参数、不触发写入式会话解析"],
+        ["Stage-1 工作台运行时", "qa:media-stage1-workspace-runtime", "通过", "真实页面加模拟接口、双视口、外部字体请求计数、路由不漂移"],
+        ["视觉构建门禁", "npm run build:media", "通过", "15 个门禁全过；类型检查两轮加 vite 构建全绿"],
+        ["全量回归", "pytest tests/ --ignore=tests/test_sync_lark_base_projection.py", "通过（对齐基线）", f"{ACCEPTANCE_BASELINE_PASSED} 通过，{ACCEPTANCE_BASELINE_FAILED} 失败且逐字节等于已知基线集合"],
+    ]
+    ai_rows = [
+        ["登录六状态对照示意图", "运行时门禁产出 PNG 逐张对照设计示意图", "已执行", "发现 1 处门禁未覆盖的回归：登录回退态超出一屏（个人 1076px 超 176px，组织 1135px 超 235px）"],
+        ["C 端与组织侧交互对照原型", "实现页面截图逐状态对照两份交互原型", "待实现后执行", "原型已交付并经 16 态乘 4 视口验证；实现落地前无判读对象"],
+    ]
+    material_rows = [
+        ["个人正文编辑与修订原型", "docs/frontend/prototype/personal-document-editor.html", "C6 交互验收基线", "8 态；字段取自 documentWorkflow.ts 与 document_edit_contract.py"],
+        ["组织正文同步与回读原型", "docs/frontend/prototype/organization-document-mirror.html", "O2-O5 交互验收基线", "8 态；同步批次状态机取自 documents.py"],
+        ["验收执行判读材料", "docs/frontend/prototype/stage2-acceptance-execution.html", "本视图的执行来源", "13 条主张的归属、命令与实跑结果"],
+        ["开发任务书", "docs/frontend/prototype/stage2-dev-brief.md", "执行入口，非治理权威", "节点合同与验收口径仍以本 SSOT 为准"],
+    ]
+    human_rows = [
+        ["真实组织扫码与部署读回", "ST2-HUM-ORG-SCAN", "O1/O2 与部署身份", "是", "当前预期失败：workspaceIntent 静默默认值未改"],
+        ["飞书编辑后再回读", "ST2-HUM-LARK-READBACK", "O5 本体", "是", "组织支线唯一无法用模拟顶替的一环"],
+        ["登录回退态折线确认", "ST2-HUM-LOGIN-FOLD", "T1 门禁缺口", "是", "临时项；assertAuthLayout 扩到六态后退役"],
+        ["28 天会话真实部署读回", "ST2-HUM-SESSION-28D", "DB 部署读回", "是", "跨真实时钟与真实浏览器会话存储"],
+    ]
     return "\n\n".join([
         "# 第二阶段验收执行",
-        "## 自动化验收映射",
+        "本视图按机器先行、人工最后的顺序排列：先是能自动跑的，再是人工智能读图判读的，最后才是必须人到场的四件。四项人工验收的执行清单不在本视图内，位于项目级人工验收工作区，本视图只登记指针。",
+        "## 一、自动化验收映射",
         table(["验收区域", "命令", "证据", "判读方式", "缺口/边界"], rows),
-        "## 证据分层",
-        "运行时门禁与截图只形成 source/local-runtime 证据，不能替代真实组织扫码、飞书编辑后再回读、28 天会话持久化部署读回或独立外部验收。",
-        "## 人工验收保留项",
-        "1. 真实组织扫码与部署读回。\n2. 飞书编辑后再回读。\n3. 登录回退态折线确认。\n4. 28 天会话持久化真实部署读回。",
-        "## 当前合同提醒",
-        "routeGrants 已进入当前源码的严格会话 schema，但早期产品决定曾明确禁止向会话信封增加该字段；该冲突需在 B 节点重新裁决，不能由静态门禁自动视为已接受。",
+        "## 二、自动化执行记录",
+        f"下列结果记录于 {ACCEPTANCE_RUN_OBSERVED_AT}，执行提交为 `{ACCEPTANCE_RUN_COMMIT}` 的隔离工作树；当前主线已推进到 `{CURRENT_MAIN_SHA}`，主线前进不自动延续这些结果的有效期。全量回归的 {ACCEPTANCE_BASELINE_FAILED} 条已知基线失败集合已三次验证逐字节稳定，是判定「红灯」的基准：只有超出该集合的失败才算新回归。",
+        table(["验收区域", "命令", "结果", "覆盖与说明"], execution_rows),
+        "## 三、人工智能读图判读",
+        table(["判读对象", "方法", "状态", "结论"], ai_rows),
+        "人工智能读图是独立证据类型，负责命令行断言覆盖不到的版式与状态整体性问题；它与运行时门禁同属 source/local-runtime 证据，不得单独提升节点状态。",
+        "## 四、验收基线与判读材料",
+        f"以下文档已进入主线（提交 `{PROTOTYPE_COMMIT}`），本视图只登记路径与用途，不复制其内容。",
+        table(["材料", "路径", "用途", "边界"], material_rows),
+        "## 五、证据分层",
+        "运行时门禁、截图和人工智能读图只形成 source/local-runtime 证据，不能替代真实组织扫码、飞书编辑后再回读、28 天会话持久化部署读回或独立外部验收。源码已存在不等于节点已接受。",
+        "## 六、人工验收保留项",
+        "这四件自动化确实做不了，全部因为要接真实外部系统——真实飞书租户、真实组织成员身份、跨天的真实时钟。执行步骤、点哪里、预期观察和结果记录规则写在项目级人工验收工作区 `acceptance/human/<task-id>/checklist.md`，签署结果写入该任务的 `runs/<run-id>/result.md`，不得改写清单来记录执行结果。",
+        table(["人工验收项", "任务编号", "归属", "阻塞发布", "当前状态"], human_rows),
+        "四份清单当前均为草稿，须由用户本人批准后才能进入阻塞判定；不得自我批准，也不得把沉默当作批准。",
+        "## 七、自动化缺口",
+        "布局断言 `assertAuthLayout` 目前只对初始 P1 断言一屏，登录回退态完全不设防。把断言扩展到全部六个状态，是人工验收项 ST2-HUM-LOGIN-FOLD 转为自动并退役的前提。另有两笔接口欠账挡住 C6 与组织侧界面：不支持块错误未把 `block_ids` 送到客户端；飞书写入结果未知的情形以通用 500 返回，前端无法区分并渲染对账出口。",
+        "## 八、当前合同提醒",
+        "`routeGrants` 载体冲突已由 K 第 5 版裁决关闭：字段保留在会话信封内，定位为路由清单漂移检测。由此产生的合同动作是会话版本必须从 `media_web_business_pages_v2` 升到 `media_web_business_pages_v3` 并由 B 节点重签冻结身份；升版完成前，该字段仍不得被静态门禁当作已接受合同。登录入口状态接口尚未写入开放接口描述（OpenAPI），记在 B 与 T1 名下。",
     ])
 
 
