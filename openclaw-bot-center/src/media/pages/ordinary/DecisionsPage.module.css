@@ -23,6 +23,23 @@
   flex: 0 0 auto;
   white-space: nowrap;
 }
+.tabs {
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+.tab {
+  min-width: max-content;
+  white-space: nowrap;
+}
+.metrics {
+  margin-bottom: 12px;
+}
+.metric {
+  min-height: 86px;
+}
+.metric > strong {
+  font-size: 1.45rem;
+}
 .filterBar {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) auto auto;
@@ -90,6 +107,18 @@
 }
 .tablePanel {
   min-height: 548px;
+}
+.panelHeader,
+.inspectorHeader,
+.tracePanel > header,
+.flowHeader {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--mg-border);
 }
 .panelHeader > div {
   display: flex;

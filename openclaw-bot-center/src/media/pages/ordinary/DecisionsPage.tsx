@@ -304,7 +304,7 @@ export default function DecisionsPage() {
         title="登录后查看选题与决策"
         detail="当前页面只展示所属账户的决策与来源信号。"
         kind="permission"
-        action={<a className="mg-btn mg-btn-primary" data-component="mg-btn" href={loginUrl()}>登录</a>}
+        action={<a className="mg-btn" data-component="mg-btn" href={loginUrl()}>登录</a>}
       />
     );
   }
@@ -325,9 +325,9 @@ export default function DecisionsPage() {
             <h1>选题与决策</h1>
             <p>候选选题、来源信号和人工确认都来自当前租户的业务记录。</p>
           </div>
-          <div className="mg-hero-actions">
+          <div className="page-heading-actions">
             <button
-              className={`mg-btn mg-btn-primary ${styles.primaryAction}`}
+              className={`mg-btn ${styles.primaryAction}`}
               data-component="mg-btn"
               type="button"
               onClick={() => setRefreshToken((value) => value + 1)}
@@ -338,11 +338,11 @@ export default function DecisionsPage() {
             </button>
           </div>
         </header>
-        <nav className="mg-tabs" data-component="mg-tabs" role="tablist" aria-label="选题与决策视图">
+        <nav className={`mg-tabs mg-tabs--pill ${styles.tabs}`} data-component="mg-tabs" role="tablist" aria-label="选题与决策视图">
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              className="mg-tab"
+              className={`mg-tab ${styles.tab}`}
               data-component="mg-tab"
               data-variant="pill"
               type="button"
@@ -363,15 +363,16 @@ export default function DecisionsPage() {
             onChange={setQuery}
             label="搜索候选标题、平台或赛道"
           />
-          <button className={`mg-btn mg-btn-ghost ${styles.resetButton}`} data-component="mg-btn" type="button" onClick={resetSearch}>
+          <button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" onClick={resetSearch}>
             重置
           </button>
-          <button className="mg-btn mg-btn-primary" data-component="mg-btn" type="submit">
+          <button className="mg-btn" data-component="mg-btn" type="submit">
             <Search size={15} aria-hidden="true" />
             搜索
           </button>
         </form>
       </div>
+      <DecisionMetrics listState={listState} signalState={signalState} />
       <div className={styles.workspace} data-page-layout="persistent-rail">
         <div className={styles.candidatePanel} data-page-primary data-primary-flow>
           {activeTab === "decisions" ? (
@@ -416,6 +417,43 @@ export default function DecisionsPage() {
   );
 }
 
+function DecisionMetrics({
+  listState,
+  signalState,
+}: {
+  listState: ResourceState<DecisionListResponse>;
+  signalState: ResourceState<DecisionSignalListResponse>;
+}) {
+  const decisions = listState.status === "ready" ? listState.data.items : null;
+  const signals = signalState.status === "ready" ? signalState.data.items : null;
+  const pending = decisions?.filter((item) => isPendingDecision(item.decisionStatus)).length;
+  return (
+    <section className={`mg-metric-grid ${styles.metrics}`} data-component="mg-metric-grid" aria-label="选题与决策指标">
+      <Metric label="候选选题" value={decisions ? String(decisions.length) : "—"} accent="teal" />
+      <Metric label="待人工确认" value={pending === undefined ? "—" : String(pending)} accent="amber" />
+      <Metric label="来源信号" value={signals ? String(signals.length) : "—"} accent="blue" />
+      <Metric label="列表修订" value={listState.status === "ready" ? String(listState.data.revision) : "—"} accent="rose" />
+    </section>
+  );
+}
+
+function Metric({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent: "teal" | "amber" | "blue" | "rose";
+}) {
+  return (
+    <div className={`mg-metric ${styles.metric}`} data-component="mg-metric" data-accent={accent}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
 function DecisionListPanel({
   state,
   selectedId,
@@ -442,7 +480,7 @@ function DecisionListPanel({
       role="tabpanel"
       aria-labelledby="decisions-tab"
     >
-      <header className={`mg-panel-head ${styles.panelHeader}`} data-component="mg-panel-head">
+      <header className={`mg-panel-heading ${styles.panelHeader}`} data-component="mg-panel-heading">
         <div>
           <h2>候选选题</h2>
           <span>{state.status === "ready" ? `${state.data.items.length} 条` : ""}</span>
@@ -540,7 +578,7 @@ function SignalPanel({
       role="tabpanel"
       aria-labelledby="signals-tab"
     >
-      <header className="mg-panel-head" data-component="mg-panel-head">
+      <header className="mg-panel-heading" data-component="mg-panel-heading">
         <div><h2>来源信号</h2><p>热榜快照与活动记录保留来源链接、采集时间和质量状态。</p></div>
         <span>{state.status === "ready" ? `修订 ${state.data.revision}` : ""}</span>
       </header>
@@ -609,7 +647,7 @@ function DecisionInspector({
   return (
     <div className={styles.inspectorColumn} data-page-inspector>
       <aside className={`mg-panel ${styles.inspector}`} data-component="mg-panel" data-page-terminal-surface="inspector">
-        <header className={`mg-panel-head ${styles.inspectorHeader}`} data-component="mg-panel-head">
+        <header className={`mg-panel-heading ${styles.inspectorHeader}`} data-component="mg-panel-heading">
           <Lightbulb size={17} aria-hidden="true" />
           <h2>决策检查器</h2>
         </header>
@@ -651,7 +689,7 @@ function DecisionInspector({
                   />
                   <div className={styles.actionButtons}>
                     <button
-                      className={`mg-btn mg-btn-primary ${styles.confirmButton}`}
+                      className={`mg-btn ${styles.confirmButton}`}
                       data-component="mg-btn"
                       type="button"
                       disabled={!reason.trim() || actionState.status === "submitting"}
