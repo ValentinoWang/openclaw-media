@@ -25,6 +25,58 @@ class RevisionStore(Protocol):
     def fail_revision(self, context: Any, artifact_id: str, revision: int, error_code: str, message: str) -> Any: ...
 
 
+class PostgresDocumentRevisionStore:
+    """Minimal PostgreSQL adapter used by the process-local web worker."""
+
+    def __init__(self, connection_factory: Callable[[], Any]) -> None:
+        self._connection_factory = connection_factory
+
+    def claim_generating_revision(self, context: Any, artifact_id: str, revision: int) -> Mapping[str, Any] | None:
+        with self._connection_factory() as connection:
+            row = connection.execute(
+                """SELECT a.body_authority, r.state
+                     FROM media_product.document_artifacts a
+                     JOIN media_product.document_revisions r ON r.tenant_id=a.tenant_id
+                       AND r.public_artifact_id=a.public_id AND r.revision=%s
+                    WHERE a.tenant_id=%s AND a.public_id=%s AND r.state='generating'
+                    FOR UPDATE""", (revision, context.tenant_id, artifact_id)
+            ).fetchone()
+            if row is None:
+                return None
+            return {"bodyAuthority": row[0], "documentId": artifact_id}
+
+    def complete_revision(self, context: Any, artifact_id: str, revision: int, body: Mapping[str, Any], receipt: Mapping[str, Any]) -> None:
+        import json
+        with self._connection_factory() as connection:
+            checksum = str(receipt["bodyChecksum"])
+            connection.execute(
+                """INSERT INTO media_document.revision_bodies
+                   (tenant_id,public_artifact_id,revision,schema_version,body_json,body_checksum)
+                   VALUES (%s,%s,%s,'media.document.body.v1',%s::jsonb,%s)
+                   ON CONFLICT (tenant_id,public_artifact_id,revision) DO NOTHING""",
+                (context.tenant_id, artifact_id, revision, json.dumps(body, ensure_ascii=False), checksum),
+            )
+            connection.execute(
+                """UPDATE media_product.document_revisions SET state='ready', body_checksum=%s, updated_at=now()
+                   WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s AND state='generating'""",
+                (checksum, context.tenant_id, artifact_id, revision),
+            )
+            commit = getattr(connection, "commit", None)
+            if callable(commit):
+                commit()
+
+    def fail_revision(self, context: Any, artifact_id: str, revision: int, error_code: str, message: str) -> None:
+        with self._connection_factory() as connection:
+            connection.execute(
+                """UPDATE media_product.document_revisions SET state='failed', updated_at=now()
+                   WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s AND state='generating'""",
+                (context.tenant_id, artifact_id, revision),
+            )
+            commit = getattr(connection, "commit", None)
+            if callable(commit):
+                commit()
+
+
 class DocumentEditExecutionError(RuntimeError):
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)

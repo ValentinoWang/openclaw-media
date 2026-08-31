@@ -24,6 +24,7 @@ from .app import OpenClawApp
 from .services.capability_matcher import CapabilityMatcher
 from .services.device_job_service import DeviceJobService
 from .services.device_job_store import DeviceJobStore
+from .services.document_edit_executor import DocumentEditExecutor, PostgresDocumentRevisionStore
 from .services.media_archive_service import MediaArchiveService
 from .services.media_archive_store import MediaArchiveStore
 from .services.media_task_repository import PostgresMediaTaskRepository
@@ -387,12 +388,17 @@ def main() -> int:
             binding_validator=monitor_binding_validator,
             account_metadata=monitor_account_metadata,
         )
+    documents_service = DocumentsService(account_database.connect, lark_gateway=lark_gateway, cursor_secret=secret)
+    revision_executor = DocumentEditExecutor(
+        PostgresDocumentRevisionStore(account_database.connect),
+        documents_service,
+    )
     media_business_services = {
         "overview": OverviewService(account_database.connect, task_reader=media_web_tasks, cursor_secret=secret),
         "tracks": TracksService(account_database.connect, cursor_secret=secret, monitor_adapter=monitor_adapter),
         "assets": assets_service,
         "decisions": DecisionsService(account_database.connect, cursor_secret=secret, public_id_secret=secret),
-        "runs": RunsService(account_database.connect, cursor_secret=secret),
+        "runs": RunsService(account_database.connect, cursor_secret=secret, revision_executor=revision_executor.execute),
         "publishing": PublishingService(account_database.connect, cursor_secret=secret, public_id_secret=secret),
         "reviews": ReviewsService(account_database.connect, cursor_secret=secret, public_id_secret=secret),
         "usage_billing": UsageBillingService(
@@ -417,7 +423,7 @@ def main() -> int:
         ),
         "admin_upstreams": AdminUpstreamsService(account_database, upstream_gateway=tenant_model_gateway),
         "admin_platform_cookies": AdminPlatformCookiesService(),
-        "documents": DocumentsService(account_database.connect, lark_gateway=lark_gateway, cursor_secret=secret),
+        "documents": documents_service,
     }
     app.router.publishing_service = media_business_services["publishing"]
     tenant_model_gateway.prepare()

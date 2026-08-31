@@ -70,11 +70,12 @@ def factory_for(connection: FakeConnection):
     return factory
 
 
-def service_for(connection: FakeConnection, *, id_factory=None) -> RunsService:
+def service_for(connection: FakeConnection, *, id_factory=None, revision_executor=None) -> RunsService:
     return RunsService(
         factory_for(connection),
         cursor_secret=b"b05-test-cursor-secret",
         id_factory=id_factory,
+        revision_executor=revision_executor,
     )
 
 
@@ -390,6 +391,29 @@ def test_revision_idempotency_replays_the_same_readback() -> None:
     assert first["item"]["currentRevision"] == 2
     assert first_connection.commits == 1
     assert len(second_connection.calls) == 1
+
+
+def test_regenerate_revision_invokes_configured_executor_once_after_commit() -> None:
+    calls = []
+    connection = FakeConnection(
+        [None, artifact_row(revision=1), None, None, artifact_row(revision=2), None]
+    )
+    service = service_for(
+        connection,
+        revision_executor=lambda context, artifact_id, revision, instruction: calls.append(
+            (context.tenant_id, artifact_id, revision, instruction)
+        ),
+    )
+
+    response = service.create_artifact_revision(
+        context_for(), ARTIFACT_ID,
+        {"expectedRevision": 1, "instruction": "Rewrite intro", "mode": "regenerate"},
+        idempotency_key="b05-hook-key-1234",
+    )
+
+    assert response["item"]["currentRevision"] == 2
+    assert connection.commits == 1
+    assert calls == [(TENANT_A, ARTIFACT_ID, 2, "Rewrite intro")]
 
 
 def test_save_as_creates_a_new_artifact_identity_and_starts_at_revision_one() -> None:
