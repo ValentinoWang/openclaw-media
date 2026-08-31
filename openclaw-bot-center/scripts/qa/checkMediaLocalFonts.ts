@@ -8,7 +8,7 @@ const fontCssPath = join(mediaRoot, 'mediaFonts.css')
 const fontDirectory = join(mediaRoot, 'fonts')
 const tokenCssPath = join(mediaRoot, 'mediaDesignTokens.css')
 const viteConfigPath = join(projectRoot, 'vite.media.config.ts')
-const forbiddenFontHosts = /https?:\/\/fonts\.(?:googleapis|gstatic)\.com/iu
+const forbiddenFontHosts = /(?:https?:)?\/\/fonts\.(?:googleapis|gstatic)\.com/iu
 
 const htmlPaths = [
   'index.media.html',
@@ -52,7 +52,17 @@ function assertNoGoogleFontDependency(files: Iterable<string>): void {
 
 export function hasGoogleFontDependency(sourceText: string): boolean {
   forbiddenFontHosts.lastIndex = 0
-  return forbiddenFontHosts.test(sourceText)
+  return forbiddenFontHosts.test(decodeCssEscapes(sourceText))
+}
+
+function decodeCssEscapes(value: string): string {
+  return value.replace(/\\([0-9a-f]{1,6})(?:\r\n|[\t\n\f\r ])?|\\([^\r\n\f0-9a-f])/giu, (_, hex: string | undefined, escaped: string | undefined) => {
+    if (hex) {
+      const codePoint = Number.parseInt(hex, 16)
+      return codePoint === 0 || codePoint > 0x10ffff ? '\uFFFD' : String.fromCodePoint(codePoint)
+    }
+    return escaped ?? ''
+  })
 }
 
 function sourceTextFiles(root: string): string[] {
@@ -93,6 +103,9 @@ assertNoGoogleFontDependency([
 
 if (process.argv.includes('--self-test')) {
   assert.equal(hasGoogleFontDependency('body{src:url(https://fonts.googleapis.com/css2?family=DM+Sans)}'), true, 'Google Fonts negative fixture was accepted')
+  assert.equal(hasGoogleFontDependency('@font-face{src:url(//fonts.gstatic.com/s/dmsans.woff2)}'), true, 'protocol-relative Google Fonts fixture was accepted')
+  assert.equal(hasGoogleFontDependency(String.raw`@\66 ont-face{src:url(\/\/fonts\2e gstatic\2e com/s/dmsans.woff2)}`), true, 'escaped Google Fonts fixture was accepted')
+  assert.equal(hasGoogleFontDependency(String.raw`@font-face{src:url(https\3a \/\/fonts\2e googleapis\2e com/css2)}`), true, 'escaped Google Fonts URL fixture was accepted')
   assert.equal(hasGoogleFontDependency('body{src:url(./fonts/dm-sans.woff2)}'), false, 'local font fixture was rejected')
 }
 

@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
+import postcss, { type Declaration } from 'postcss'
 import ts from 'typescript'
 import { CANONICAL_MEDIA_PAGE_SURFACES, type HeroActionsContract } from './mediaPageStructureManifest'
 
@@ -13,6 +14,7 @@ const letterSpacingPattern = /\bletter-spacing\s*:\s*([^;}]+)/i
 const zeroLetterSpacingPattern = /^-?(?:0+\.?0*|\.0+)(?:[a-z%]+)?(?:\s*!important)?$/i
 const allowedFontWeights = new Set(['400', '500', '600', '700'])
 const allowedTrackingValues = new Set(['var(--mg-track-tight)', 'var(--mg-track-normal)', 'var(--mg-track-wide)'])
+const trackingTokens = [...allowedTrackingValues].map((value) => value.slice(4, -1))
 const legacyMetricTones = ['mint', 'violet', 'amber', 'blue'] as const
 type LegacyMetricTone = (typeof legacyMetricTones)[number]
 
@@ -24,6 +26,28 @@ type MetricToneViolation = {
 
 function isZeroLetterSpacing(value: string): boolean {
   return zeroLetterSpacingPattern.test(value.trim())
+}
+
+function decodeCssEscapes(value: string): string {
+  return value.replace(/\\([0-9a-f]{1,6})(?:\r\n|[\t\n\f\r ])?|\\([^\r\n\f0-9a-f])/giu, (_, hex: string | undefined, escaped: string | undefined) => {
+    if (hex) {
+      const codePoint = Number.parseInt(hex, 16)
+      return codePoint === 0 || codePoint > 0x10ffff ? '\uFFFD' : String.fromCodePoint(codePoint)
+    }
+    return escaped ?? ''
+  })
+}
+
+function normalizedProperty(declaration: Declaration): string {
+  return decodeCssEscapes(declaration.prop).toLowerCase()
+}
+
+function parseCss(sourceText: string): postcss.Root {
+  return postcss.parse(sourceText, { from: undefined })
+}
+
+function declarationValue(declaration: Declaration): string {
+  return `${declaration.value.trim()}${declaration.important ? ' !important' : ''}`
 }
 
 function findFoundationViolations(primitiveCss: string): FoundationViolation[] {
@@ -120,19 +144,142 @@ function findCssFiles(directory: string): readonly string[] {
 }
 
 export function findUnsupportedFontWeights(sourceText: string): readonly string[] {
-  const withoutFontFaces = sourceText.replace(/@font-face\s*\{[^}]*\}/giu, '')
-  return [...withoutFontFaces.matchAll(/\bfont-weight\s*:\s*([^;}]+)/giu)]
-    .map((match) => match[1].trim())
-    .filter((value) => {
-      const canonical = value.match(/^(400|500|600|700)(?:\s*!important)?$/iu)
-      return !canonical || !allowedFontWeights.has(canonical[1])
-    })
+  const violations: string[] = []
+  parseCss(sourceText).walkDecls((declaration) => {
+    if (normalizedProperty(declaration) !== 'font-weight') return
+    const parent = declaration.parent
+    if (parent?.type === 'atrule' && decodeCssEscapes(parent.name).toLowerCase() === 'font-face') return
+    const value = declaration.value.trim()
+    if (!allowedFontWeights.has(value)) violations.push(declarationValue(declaration))
+  })
+  return violations
 }
 
 export function findUnsupportedLetterSpacing(sourceText: string): readonly string[] {
-  return [...sourceText.matchAll(/\bletter-spacing\s*:\s*([^;}]+)/giu)]
-    .map((match) => match[1].trim())
-    .filter((value) => !isZeroLetterSpacing(value) && !allowedTrackingValues.has(value))
+  const violations: string[] = []
+  parseCss(sourceText).walkDecls((declaration) => {
+    if (normalizedProperty(declaration) !== 'letter-spacing') return
+    const value = declaration.value.trim()
+    if (!isZeroLetterSpacing(value) && !allowedTrackingValues.has(value)) violations.push(declarationValue(declaration))
+  })
+  return violations
+}
+
+function splitCssValue(value: string): readonly string[] {
+  const tokens: string[] = []
+  let token = ''
+  let quote = ''
+  let depth = 0
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index]!
+    if (quote) {
+      token += character
+      if (character === quote && value[index - 1] !== '\\') quote = ''
+    } else if (character === '"' || character === "'") {
+      quote = character
+      token += character
+    } else if (character === '(') {
+      depth += 1
+      token += character
+    } else if (character === ')') {
+      depth -= 1
+      token += character
+    } else if (/\s/u.test(character) && depth === 0) {
+      if (token) tokens.push(token)
+      token = ''
+    } else {
+      token += character
+    }
+  }
+  if (token) tokens.push(token)
+  return tokens
+}
+
+export function findUnsupportedFontShorthands(sourceText: string): readonly string[] {
+  const violations: string[] = []
+  parseCss(sourceText).walkDecls((declaration) => {
+    if (normalizedProperty(declaration) !== 'font') return
+    const value = declaration.value.trim()
+    if (/^(?:inherit|initial|revert(?:-layer)?|unset)$/iu.test(value)) return
+    const tokens = splitCssValue(value)
+    const explicitWeight = tokens.find((token) => /^(?:[1-9]\d{0,3}|bold|bolder|lighter)$/iu.test(token))
+    if (explicitWeight && !allowedFontWeights.has(explicitWeight)) violations.push(declarationValue(declaration))
+  })
+  return violations
+}
+
+function staticStyleValue(expression: ts.Expression | undefined, bindings: StaticBindings): string | undefined {
+  if (!expression) return undefined
+  if (ts.isNumericLiteral(expression) || ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) return expression.text
+  if (ts.isParenthesizedExpression(expression)) return staticStyleValue(expression.expression, bindings)
+  if (ts.isIdentifier(expression)) {
+    const bound = bindings.get(expression.text)
+    return bound ? staticStyleValue(bound, bindings) : undefined
+  }
+  return undefined
+}
+
+export function findInlineTypographyViolations(sourceText: string, fileName = 'fixture.tsx'): readonly string[] {
+  const source = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const bindings = collectBindings(source)
+  const violations: string[] = []
+  const inspectObject = (object: ts.ObjectLiteralExpression, seen = new Set<ts.ObjectLiteralExpression>()) => {
+    if (seen.has(object)) return
+    seen.add(object)
+    for (const property of object.properties) {
+      if (ts.isSpreadAssignment(property) && ts.isIdentifier(property.expression)) {
+        const bound = bindings.get(property.expression.text)
+        if (bound && ts.isObjectLiteralExpression(bound)) inspectObject(bound, seen)
+        continue
+      }
+      if (!ts.isPropertyAssignment(property)) continue
+      const name = ts.isIdentifier(property.name) || ts.isStringLiteral(property.name) || ts.isNumericLiteral(property.name) ? property.name.text : undefined
+      if (name !== 'fontWeight' && name !== 'letterSpacing') continue
+      const value = staticStyleValue(property.initializer, bindings)
+      const valid = name === 'fontWeight'
+        ? value !== undefined && allowedFontWeights.has(value)
+        : value !== undefined && (isZeroLetterSpacing(value) || allowedTrackingValues.has(value))
+      if (!valid) violations.push(`${fileName}:${source.getLineAndCharacterOfPosition(property.getStart(source)).line + 1} ${name}=${value ?? '<dynamic>'}`)
+    }
+  }
+  const visit = (node: ts.Node) => {
+    if (ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && node.name.text === 'style' && node.initializer && ts.isJsxExpression(node.initializer)) {
+      const expression = node.initializer.expression
+      if (expression && ts.isObjectLiteralExpression(expression)) inspectObject(expression)
+      if (expression && ts.isIdentifier(expression)) {
+        const bound = bindings.get(expression.text)
+        if (bound && ts.isObjectLiteralExpression(bound)) inspectObject(bound)
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return violations
+}
+
+export function findTypographyTokenViolations(sourceText: string): readonly string[] {
+  const definitions = new Map<string, string[]>()
+  for (const token of [...trackingTokens, '--mg-text-4xl']) definitions.set(token, [])
+  parseCss(sourceText).walkDecls((declaration) => {
+    const property = normalizedProperty(declaration)
+    if (definitions.has(property)) definitions.get(property)!.push(declaration.value.trim())
+  })
+  const violations: string[] = []
+  for (const token of trackingTokens) {
+    const values = definitions.get(token)!
+    if (values.length !== 1 || !isZeroLetterSpacing(values[0] ?? '')) violations.push(`${token} must have exactly one zero definition`)
+  }
+  const displayValues = definitions.get('--mg-text-4xl')!
+  if (displayValues.length !== 1) {
+    violations.push('--mg-text-4xl must have exactly one definition')
+  } else {
+    const match = displayValues[0]!.match(/^clamp\(\s*([\d.]+)(px|rem)\s*,[\s\S]*,\s*([\d.]+)(px|rem)\s*\)$/iu)
+    const toPixels = (amount: string, unit: string) => Number(amount) * (unit.toLowerCase() === 'rem' ? 16 : 1)
+    if (!match || toPixels(match[1]!, match[2]!) !== 42 || toPixels(match[3]!, match[4]!) !== 72) {
+      violations.push('--mg-text-4xl must use clamp with a 42px minimum and 72px maximum')
+    }
+  }
+  return violations
 }
 
 function assertMediaTypographyIsCanonical(): void {
@@ -146,10 +293,17 @@ function assertMediaTypographyIsCanonical(): void {
     const source = readFileSync(fileName, 'utf8')
     return [
       ...findUnsupportedFontWeights(source).map((weight) => `${relativeName}: font-weight ${weight}`),
+      ...findUnsupportedFontShorthands(source).map((font) => `${relativeName}: font ${font}`),
       ...findUnsupportedLetterSpacing(source).map((spacing) => `${relativeName}: letter-spacing ${spacing}`),
     ]
   })
   if (violations.length) throw new Error(`media typography contract failed: ${violations.join(', ')}`)
+
+  const inlineViolations = findTsxFiles(resolve(projectRoot, 'src/media')).flatMap((fileName) => {
+    const relativeName = fileName.slice(projectRoot.length + 1)
+    return findInlineTypographyViolations(readFileSync(fileName, 'utf8'), relativeName)
+  })
+  if (inlineViolations.length) throw new Error(`media inline typography contract failed: ${inlineViolations.join(', ')}`)
 }
 
 function assertMetricConsumersUseCanonicalTones(): void {
@@ -244,7 +398,8 @@ function runProjectCheck(): void {
   for (const selector of ['.mg-badge', ".mg-tab[data-variant='pill']", '.mg-btn:hover', '.mg-state-art', 'prefers-reduced-motion']) requireRule(selector)
   assertMetricConsumersUseCanonicalTones()
   assertHeroActionContracts()
-  for (const token of ['tight', 'normal', 'wide']) requireRule(`--mg-track-${token}: 0;`)
+  const tokenViolations = findTypographyTokenViolations(readFileSync(resolve(projectRoot, 'src/media/mediaDesignTokens.css'), 'utf8'))
+  if (tokenViolations.length) throw new Error(`media typography token contract failed: ${tokenViolations.join(', ')}`)
   assertMediaTypographyIsCanonical()
   console.log('media primitive enhancement QA passed: accents, tones, tabs, button hover, state art, reduced motion')
 }
@@ -303,6 +458,15 @@ function runSelfTest(): void {
   if (findUnsupportedFontWeights('@font-face { font-weight: 100 900; } .title { font-weight: 700; }').length) {
     throw new Error('media primitive enhancement self-test failed: variable range or canonical font weight was rejected')
   }
+  if (!findUnsupportedFontWeights(String.raw`.title { font\2d weight: 850; }`).length) {
+    throw new Error('media primitive enhancement self-test failed: escaped font-weight was accepted')
+  }
+  if (!findUnsupportedFontShorthands('.title { font: italic 850 1rem/1.4 sans-serif; }').length) {
+    throw new Error('media primitive enhancement self-test failed: unsupported font shorthand was accepted')
+  }
+  if (findUnsupportedFontShorthands('.a { font: inherit; } .b { font: italic 700 1rem/1.4 sans-serif; } .c { font: 0.75rem/1.5 monospace; }').length) {
+    throw new Error('media primitive enhancement self-test failed: canonical font shorthand was rejected')
+  }
   for (const value of ['.11em', '1px', 'var(--other-track)']) {
     if (findUnsupportedLetterSpacing(`.title { letter-spacing: ${value}; }`).join(',') !== value) {
       throw new Error(`media primitive enhancement self-test failed: unsupported letter spacing ${value} was accepted`)
@@ -311,6 +475,21 @@ function runSelfTest(): void {
   if (findUnsupportedLetterSpacing('.a { letter-spacing: 0 !important; } .b { letter-spacing: var(--mg-track-wide); }').length) {
     throw new Error('media primitive enhancement self-test failed: canonical letter spacing was rejected')
   }
+  if (!findUnsupportedLetterSpacing(String.raw`.title { letter\2d spacing: .11em; }`).length) {
+    throw new Error('media primitive enhancement self-test failed: escaped letter-spacing was accepted')
+  }
+  const validTokens = ':root { --mg-track-tight: 0; --mg-track-normal: 0px; --mg-track-wide: 0; --mg-text-4xl: clamp(42px, 5vw, 72px); }'
+  if (findTypographyTokenViolations(validTokens).length) throw new Error('media primitive enhancement self-test failed: valid typography tokens were rejected')
+  for (const fixture of [
+    ':root { --mg-track-tight: 0; --mg-track-tight: 0; --mg-track-normal: 0; --mg-track-wide: 0; --mg-text-4xl: clamp(42px, 5vw, 72px); }',
+    ':root { --mg-track-tight: 0; --mg-track-normal: 1px; --mg-track-wide: 0; --mg-text-4xl: clamp(42px, 5vw, 72px); }',
+    ':root { --mg-track-tight: 0; --mg-track-normal: 0; --mg-track-wide: 0; --mg-text-4xl: clamp(41px, 5vw, 73px); }',
+  ]) if (!findTypographyTokenViolations(fixture).length) throw new Error('media primitive enhancement self-test failed: invalid typography token fixture was accepted')
+
+  const inlineFixture = `const Page = () => <div style={{ fontWeight: 850, letterSpacing: '.1em' }} />`
+  if (findInlineTypographyViolations(inlineFixture).length !== 2) throw new Error('media primitive enhancement self-test failed: invalid inline typography was accepted')
+  const inlineGood = `const weight = 700; const styles = { fontWeight: weight, letterSpacing: 0 }; const Page = () => <div style={styles} />`
+  if (findInlineTypographyViolations(inlineGood).length) throw new Error('media primitive enhancement self-test failed: canonical inline typography was rejected')
 
   const requiredHero: HeroActionsContract = { mode: 'required' }
   const validHero = `const primary = ['mg-btn', 'mg-btn-primary'].join(' '); const Page = () => <div className={['mg-hero-actions', styles.actions].join(' ')}><button className={primary}>Go</button><button className="mg-btn mg-btn-ghost">More</button></div>`
