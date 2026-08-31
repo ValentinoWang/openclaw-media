@@ -1,0 +1,17 @@
+Task: Close Admin Overview presentation and cross-field response-integrity defects found during the page review.
+
+Project root: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center
+Exclusive write scope:
+- src/media/pages/admin/AdminOverviewPage.tsx
+- scripts/qa/checkMediaPageRestorationStructure.ts
+
+Forbidden: CSS, API contracts/backend, other source/tests/evidence, package.json, git index/refs/commits, network/remotes, deployment.
+
+Requirements:
+1. Render every accepted `targetType` through an explicit stable Chinese display-label map instead of exposing the machine enum. Unknown values must continue to fail the response parser.
+2. Fail closed when the top-level response revision differs from `summary.revision`.
+3. Fail closed when `auditSummary24h.failedCount > actionCount` or when its `from` timestamp is after `to`.
+4. Preserve exact-key parsing, public-id safety, status/health labels, permissions, abort behavior, shared primitives, and service-provided facts. Do not invent or infer audit counts.
+5. Extend the existing structure QA with executable negative fixtures for revision mismatch, impossible failed counts, reversed windows, and raw target-enum presentation, plus a legal green fixture. Keep the guard scoped to Admin Overview.
+
+Return changed files, red/green proof, commands/results, remaining risks, and IMPLEMENTED only when owned gates pass.

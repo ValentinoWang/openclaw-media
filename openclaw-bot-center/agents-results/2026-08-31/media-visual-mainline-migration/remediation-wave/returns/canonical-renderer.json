@@ -1,0 +1,46 @@
+{
+  "task_id": "canonical-renderer-remediation",
+  "commands": [
+    {
+      "command": "git diff --check -- src/media/pages/ordinary/CanonicalDocumentRenderer.tsx src/media/pages/ordinary/CanonicalDocumentRenderer.module.css",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "command": "npx tsc -b tsconfig.media-u12b.json",
+      "status": "passed",
+      "exit_code": 0
+    }
+  ],
+  "changed_files": [
+    "src/media/pages/ordinary/CanonicalDocumentRenderer.tsx",
+    "agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/canonical-renderer.json"
+  ],
+  "findings_fixed": [
+    {
+      "reference": "unreadable-image-state-primitive",
+      "resolution": "Added the global mg-state class to the unreadable-image placeholder while retaining data-component, data-state, data-tone, public resource ID, and content checksum metadata."
+    },
+    {
+      "reference": "supported-panel-accents",
+      "resolution": "Mapped document attachments to the supported studio accent and protected data snapshots to the supported archive accent."
+    }
+  ],
+  "unverified_items": [
+    "Authenticated browser, responsive layout, assistive-technology, and runtime rendering behavior were not exercised.",
+    "Document URL, checksum, field ordering, and content preservation were checked by scoped source inspection and TypeScript compilation, not by dedicated end-to-end execution."
+  ],
+  "failure_class": "none",
+  "failure_origin": "none",
+  "acceptance_self_check": {
+    "status": "pass",
+    "checks": [
+      "The unreadable-image root carries mg-state and retains its required data attributes and resource metadata.",
+      "Attachment and protected snapshot accents are studio and archive, both declared by the six-accent contract.",
+      "No CSS edit was needed; the existing CanonicalDocumentRenderer module styles were preserved.",
+      "git diff --check passed.",
+      "npx tsc -b tsconfig.media-u12b.json passed."
+    ]
+  },
+  "proposed_state": "IMPLEMENTED"
+}

@@ -1,0 +1,21 @@
+{
+  "task_id": "review-page-admin-tenants",
+  "decision": "PASS",
+  "scoped_diff_sha256": "df5b30e0b9f1e9e0018d79a48a6c1aeff549df67930fc21636f07d69ebabb979",
+  "findings": [],
+  "checks": [
+    {
+      "name": "git diff --check",
+      "result": "pass",
+      "scope": "owned paths"
+    },
+    {
+      "name": "behavior and contract review",
+      "result": "pass",
+      "detail": "Preserves admin gating, directory/detail/run loading branches, cursor pagination, audit reason validation, identifiers, error mapping, and retry behavior; applies governance ownership, studio accent, prelude, and shared primitives."
+    }
+  ],
+  "residual_risks": [
+    "No browser, visual, integration, or release proof was run; responsive behavior is limited to static CSS review."
+  ]
+}

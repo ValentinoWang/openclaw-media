@@ -1,0 +1,59 @@
+{
+  "task_id": "admin-billing-remediation",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": {
+    "status": "pass",
+    "checks": [
+      "SummaryMetrics remains a semantic section using the shared Metric and mg-metric-grid primitives.",
+      "The metric band is outside the shared mg-hero secondary column and has width: 100% with min-width: 0.",
+      "The existing billing data, actions, mutation flow, and loading/permission/error states are preserved.",
+      "git diff --check passed for the owned source files.",
+      "npx tsc -b tsconfig.media-u12b.json passed."
+    ]
+  },
+  "failure_class": "responsive-layout",
+  "failure_origin": "AdminBillingPage.module.css applied min-width: 520px to the metric band while the shared mg-hero secondary grid track was capped at 250-330px.",
+  "commands": [
+    {
+      "command": "git diff --check -- src/media/pages/admin/AdminBillingPage.tsx src/media/pages/admin/AdminBillingPage.module.css",
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "command": "npx tsc -b tsconfig.media-u12b.json",
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 /Users/vsiyo/.codex/skills/web-figma-development/scripts/preflight.py --project /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center",
+      "status": "blocked",
+      "exit_code": 2,
+      "detail": "Figma MCP tool was not available; preflight reported figma_mcp_not_available."
+    }
+  ],
+  "changed_files": [
+    "src/media/pages/admin/AdminBillingPage.tsx",
+    "src/media/pages/admin/AdminBillingPage.module.css",
+    "agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/admin-billing.json"
+  ],
+  "finding_fixed": [
+    {
+      "path": "src/media/pages/admin/AdminBillingPage.tsx:400-411",
+      "change": "Kept the title and refresh action in mg-hero, and moved SummaryMetrics into the page-prelude as a full-width sibling region."
+    },
+    {
+      "path": "src/media/pages/admin/AdminBillingPage.module.css:12-57",
+      "change": "Added a minmax-constrained page prelude and removed the 520px metric minimum; the metric band now fills its own responsive region with min-width: 0."
+    }
+  ],
+  "responsive_reasoning": [
+    "At 1440px and 1280px, the metric section is no longer constrained by the mg-hero 250-330px secondary track, so the shared four-column mg-metric-grid can give each card a stable readable width.",
+    "At 1024px, the shared primitive changes the metric grid to two minmax(0, 1fr) columns at max-width 1120px, avoiding four compressed cards.",
+    "At 390px, the shared primitive changes to one column at max-width 760px; width: 100% and min-width: 0 prevent horizontal growth while preserving each metric's label, value, icon, and detail."
+  ],
+  "unverified_items": [
+    "Authenticated browser geometry, screenshots, console output, and interaction verification at 1440px, 1280px, 1024px, and 390px were not run in this bounded lane.",
+    "Figma node-level synchronization and visual audit were not run because the required MCP tool was unavailable.",
+    "Release, deployment, and production readback were not run."
+  ]
+}

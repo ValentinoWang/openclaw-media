@@ -1,0 +1,14 @@
+{
+  "task_id": "component-canonical-renderer",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "common_page_contract_sha256": "2cdf6bfd456c83cf5e02b1b5b578133cfab6a93146beb08968f003afd793851a",
+  "validation_command": "git diff --check -- openclaw-bot-center/src/media/pages/ordinary/CanonicalDocumentRenderer.tsx openclaw-bot-center/src/media/pages/ordinary/CanonicalDocumentRenderer.module.css",
+  "validation_exit_code": 0,
+  "changed_paths": [
+    "openclaw-bot-center/src/media/pages/ordinary/CanonicalDocumentRenderer.tsx",
+    "openclaw-bot-center/src/media/pages/ordinary/CanonicalDocumentRenderer.module.css"
+  ]
+}

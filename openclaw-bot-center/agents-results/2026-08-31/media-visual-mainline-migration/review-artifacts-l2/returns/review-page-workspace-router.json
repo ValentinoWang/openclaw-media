@@ -1,0 +1,39 @@
+{
+  "task_id": "review-page-workspace-router",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "1f41c885bf671ee1acafc5b9f802407cab8c79cab8dcc217be759883bed09d9a",
+  "findings": [
+    {
+      "severity": "error",
+      "path": "openclaw-bot-center/src/media/WorkspaceShellPage.tsx",
+      "line": 11,
+      "title": "Unauthorized fallback gains an unintended login action",
+      "detail": "The previous no-session branch rendered only the authorization status and detail. Passing kind=\"permission\" without an explicit action to SurfaceState activates that primitive's default loginUrl() CTA (\"登录并查看\"), adding navigation behavior outside a behavior-preserving state migration. Suppress the default action explicitly or use a primitive variant whose semantics preserve the original no-action state."
+    }
+  ],
+  "checks": [
+    {
+      "name": "scoped diff SHA-256",
+      "command": "git diff --no-ext-diff 84382576a4045a99aea1abb6df848ba95f0bb3d9 -- openclaw-bot-center/src/media/WorkspaceShellPage.tsx | shasum -a 256",
+      "result": "PASS: 1f41c885bf671ee1acafc5b9f802407cab8c79cab8dcc217be759883bed09d9a"
+    },
+    {
+      "name": "narrow acceptance check",
+      "command": "git diff --check -- openclaw-bot-center/src/media/WorkspaceShellPage.tsx",
+      "result": "PASS"
+    },
+    {
+      "name": "frozen path scope",
+      "command": "git diff --no-ext-diff --name-only 84382576a4045a99aea1abb6df848ba95f0bb3d9 -- openclaw-bot-center/src/media/WorkspaceShellPage.tsx",
+      "result": "PASS: only openclaw-bot-center/src/media/WorkspaceShellPage.tsx"
+    },
+    {
+      "name": "static behavior and semantics review",
+      "result": "FAIL: authority dispatch and state text are preserved, attribution/accent branches and responsive primitive styles are coherent, but the permission primitive adds a login CTA absent from the baseline"
+    }
+  ],
+  "residual_risks": [
+    "Static review did not provide browser, runtime, or release proof.",
+    "The error primitive changes the prior role=status announcement to role=alert; this is semantically reasonable for an error state but was not verified with assistive technology."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-artifacts/page-overview",
+  "attempts": [],
+  "automatic_executor_switch": false,
+  "automatic_l4_fallback": false,
+  "final_decision": "running",
+  "l3_escalation_limit": 1,
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "ledger_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-artifacts/page-overview/ledger/page-overview.json",
+  "primary_executor": "lw-luna",
+  "primary_retry_limit": 1,
+  "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend",
+  "schema_version": 2,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-30T20:07:44.346180+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-overview.md",
+  "task_id": "page-overview",
+  "task_sha256": "9905c5f0120553bbf647ab1561c6ab06a26ea1e538f87f6d76c75f1c501167f8",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/validate-page-overview.sh",
+  "validation_command_sha256": "a9e03caf4bcf4d9ddf59226a3a7965ca726d44a31e3eaaa176d610ba84578462",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

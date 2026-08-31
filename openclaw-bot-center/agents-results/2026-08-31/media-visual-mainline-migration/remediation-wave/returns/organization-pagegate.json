@@ -1,0 +1,101 @@
+{
+  "task_id": "organization-pagegate-remediation",
+  "commands": [
+    {
+      "command": "git diff --check -- src/media/OrganizationWorkspaceShellPage.tsx src/media/ui/SurfaceState.tsx",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "command": "npx tsc -b tsconfig.media-u12b.json",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "command": "npx tsx scripts/qa/checkOrganizationWorkspaceShell.ts",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "command": "npx tsx scripts/qa/checkMediaPrimitiveAdoption.ts",
+      "status": "failed",
+      "exit_code": 1,
+      "scope": "out-of-scope repository baseline",
+      "detail": "The guard reports ordinary-run-detail missing mg-tabs; that source file is outside this lane's exclusive write scope and was not changed."
+    }
+  ],
+  "changed_files": [
+    "src/media/OrganizationWorkspaceShellPage.tsx",
+    "src/media/ui/SurfaceState.tsx",
+    "agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/organization-pagegate.json"
+  ],
+  "finding_fixed": {
+    "reference": "review-page-organization-workspace",
+    "path": "src/media/OrganizationWorkspaceShellPage.tsx",
+    "resolution": "OrganizationShellState now delegates the page-level loading, unauthorized, and invalid gate to shared PageGate instead of nesting SurfaceState inside a bare main."
+  },
+  "DOM_contract": {
+    "route_root": {
+      "element": "main",
+      "class_name": "fidelity-page organization-workspace-page",
+      "attributes": {
+        "data-workspace-mode": "organization_lark",
+        "data-page-ownership": "organization",
+        "data-accent": "campaign",
+        "data-page-state": "loading | unauthorized | invalid"
+      }
+    },
+    "gate_prelude": {
+      "element": "div",
+      "class_name": "detail-gate organization-shell-state is-${status}",
+      "attributes": {
+        "data-component": "mg-state",
+        "data-page-prelude": true,
+        "role": "status",
+        "aria-busy": "true only for loading"
+      }
+    },
+    "states": [
+      {
+        "status": "loading",
+        "title": "正在确认组织工作区",
+        "detail": "正在确认组织工作区",
+        "loading": true,
+        "action": null
+      },
+      {
+        "status": "unauthorized",
+        "title": "组织工作区暂不可用",
+        "detail": "当前会话未获授权，组织资源不会被展示。",
+        "loading": false,
+        "action": null
+      },
+      {
+        "status": "invalid",
+        "title": "组织工作区暂不可用",
+        "detail": "当前服务端会话不是组织工作区，已停止组织资源展示。",
+        "loading": false,
+        "action": null
+      }
+    ],
+    "cta": "none"
+  },
+  "unverified_items": [
+    "No authenticated browser, screenshot, assistive-technology, or release/deployment proof was run.",
+    "The repository-wide media primitive adoption check remains unresolved for the out-of-scope ordinary-run-detail mg-tabs baseline."
+  ],
+  "failure_class": "none",
+  "failure_origin": "none",
+  "acceptance_self_check": {
+    "status": "pass",
+    "checks": [
+      "All three OrganizationShellState branches and their existing messages remain present.",
+      "OrganizationShellState has no inline SurfaceState and uses shared PageGate with loading mapped only to the loading branch.",
+      "PageGate rootProps and gateProps are optional; callers that omit them retain the prior rendered structure.",
+      "The organization route root retains its class, workspace mode, ownership, accent, and page-state attribution.",
+      "The gate retains organization-shell-state styling, role/status semantics, an identifiable page prelude, and no CTA.",
+      "git diff --check and npx tsc -b tsconfig.media-u12b.json passed."
+    ]
+  },
+  "proposed_state": "IMPLEMENTED"
+}

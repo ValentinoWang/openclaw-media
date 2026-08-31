@@ -1,0 +1,23 @@
+{
+  "task_id": "review-page-publishing",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "59aa9e7e729c614cfbf5bbee589327f258741b232bed2e86883bcaec73317f63",
+  "findings": [
+    {
+      "severity": "medium",
+      "path": "openclaw-bot-center/src/media/pages/ordinary/PublishingPage.tsx",
+      "line": 226,
+      "title": "Interactive package rows lose button semantics",
+      "detail": "Each clickable button inside the package list is assigned role=\"listitem\". This overrides the native button role for assistive technology, so the row is exposed as a list item rather than an actionable button. Remove the explicit role from the button (or use a separate listitem wrapper) while retaining keyboard activation and selected-state exposure."
+    }
+  ],
+  "checks": [
+    "Task spec and implementation return reviewed",
+    "Owned TSX/CSS and directly relevant media primitives reviewed",
+    "git diff --check -- openclaw-bot-center/src/media/pages/ordinary/PublishingPage.tsx openclaw-bot-center/src/media/pages/ordinary/PublishingPage.module.css: pass"
+  ],
+  "residual_risks": [
+    "Static review does not provide browser, responsive, runtime, or release proof.",
+    "The campaign accent is declared on the page root and inherited by shared primitives; panel-level accent rendering depends on the existing primitive selector behavior."
+  ]
+}

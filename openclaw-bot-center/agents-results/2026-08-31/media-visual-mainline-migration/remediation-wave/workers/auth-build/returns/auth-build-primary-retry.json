@@ -1,0 +1,59 @@
+{
+  "task_id": "auth-build",
+  "attempt_role": "primary-retry",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "changed_files": [
+    "media.login.html",
+    "media.register.html",
+    "media.verify.html",
+    "media.recover.html",
+    "media.reset.html",
+    "src/media.verify.html",
+    "src/media.recover.html",
+    "src/media.reset.html",
+    "media.auth.css",
+    "src/media.auth.css",
+    "src/media/mediaDesignTokens.css",
+    "media.login.js",
+    "vite.media.config.ts",
+    "scripts/qa/checkMediaLoginContract.ts",
+    "agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/guard-cards/auth-static-css-build.md"
+  ],
+  "acceptance_checks": [
+    {
+      "command": "bash agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/auth-build.validation.sh",
+      "result": "pass; exit 0"
+    },
+    {
+      "command": "npm run qa:media-login-contract",
+      "result": "pass"
+    },
+    {
+      "command": "npx tsx scripts/qa/checkMediaLoginContract.ts --self-test",
+      "result": "pass; rejects unmarked auth CSS, wrong DS-01 token, unbounded postJson, and missing Feishu deduplication"
+    },
+    {
+      "command": "npx oxlint media.login.js scripts/qa/checkMediaLoginContract.ts vite.media.config.ts",
+      "result": "pass"
+    },
+    {
+      "command": "node --check media.login.js",
+      "result": "pass"
+    },
+    {
+      "command": "git diff --check -- owned auth files",
+      "result": "pass"
+    },
+    {
+      "command": "cmp -s media.auth.css src/media.auth.css",
+      "result": "pass; byte-identical"
+    }
+  ],
+  "implementation_summary": "Auth stylesheet links now use vite-ignore across all aliases; the root-relative token import is served by copied root CSS while auth CSS is removed as a Rollup input; approved DS-01 values, shared bounded requests, stable timeout handling, Feishu authorization busy/deduplication, stale fencing, reusable alias checks, and negative self-tests are enforced.",
+  "remaining_risks": [
+    "Full build:media, browser flow, authenticated E2E, deployment, and generated dist-media readback were intentionally not run under the bounded lane contract."
+  ]
+}

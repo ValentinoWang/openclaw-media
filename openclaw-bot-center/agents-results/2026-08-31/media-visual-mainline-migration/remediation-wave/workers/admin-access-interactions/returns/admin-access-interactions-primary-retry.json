@@ -1,0 +1,49 @@
+{
+  "task_id": "admin-access-interactions",
+  "attempt_role": "primary-retry",
+  "executor": "lw-luna",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "changed_files": [
+    "src/media/pages/admin/AdminAccessPage.tsx",
+    "scripts/qa/checkMediaAdminAccessContract.ts"
+  ],
+  "implementation": [
+    "Admin Access copies only item.safeCommand through the shared copyText helper.",
+    "Copy success and rejection update accessible role=status aria-live feedback; the click handler does not leak a rejected promise.",
+    "The primary three-tab interface uses roving tabIndex, ArrowLeft/ArrowRight/Home/End focus and selection movement, and keyed tab/tabpanel ARIA bindings.",
+    "Admin permission and CSRF gates, mutation bodies, pagination, cookie-status read-only behavior, and shared primitives were preserved."
+  ],
+  "red_green_proof": {
+    "green": "qa:media-admin-access-contract: PASS IF2 operations=8 plaintextCodes=0 selfTest=green redFixtures=4",
+    "red_fixtures": [
+      "direct clipboard bypass",
+      "missing copy failure handling",
+      "missing roving tab order",
+      "missing roving keyboard semantics"
+    ]
+  },
+  "commands_results": [
+    {
+      "command": "bash agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/admin-access-interactions.validation.sh",
+      "exit_code": 0,
+      "result": "PASS; contract QA, self-test, oxlint, and git diff --check all passed"
+    },
+    {
+      "command": "shasum -a 256 agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/admin-access-interactions.task.txt",
+      "exit_code": 0,
+      "result": "1b257f97dbf2c0e3a5ad0cf9d6e9bef015afd18290d4b0be388edd74a2764b61"
+    },
+    {
+      "command": "shasum -a 256 agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/admin-access-interactions.validation.sh",
+      "exit_code": 0,
+      "result": "9e150211c277ab6467bedc350ae4855ac12e1abf64f9e7c0c3fefc9639f9e0f0"
+    }
+  ],
+  "remaining_risks": [
+    "No browser or OS clipboard E2E was run in this bounded lane; the shared helper and AST contract are covered, but real permission-denied clipboard behavior remains runtime evidence."
+  ],
+  "scope_note": "Only the two task-owned files were considered; unrelated dirty worktree changes were preserved."
+}

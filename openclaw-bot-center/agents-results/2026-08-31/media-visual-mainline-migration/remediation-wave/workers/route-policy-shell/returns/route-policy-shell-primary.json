@@ -1,0 +1,38 @@
+{
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "changed_files": [
+    "src/media/mediaStudioRoutePolicy.ts",
+    "src/media/MediaStudioApp.tsx",
+    "src/media/WorkspaceShellPage.tsx",
+    "scripts/qa/checkMediaStudioRouteMatrix.ts",
+    "scripts/qa/checkMediaStudioShellContract.ts"
+  ],
+  "validated_scope": [
+    "src/media/mediaStudioTheme.css"
+  ],
+  "commands": [
+    {
+      "command": "bash agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/route-policy-shell.validation.sh",
+      "result": "pass",
+      "detail": "Shared route policy matrix, shell contract, scoped oxlint, and git diff check passed."
+    },
+    {
+      "command": "npx tsc -b tsconfig.media-u12b.json --pretty false",
+      "result": "pass",
+      "detail": "Media TypeScript build passed."
+    }
+  ],
+  "implementation": [
+    "Extracted pure session shell/default-route and pathname outcome policy into mediaStudioRoutePolicy.ts.",
+    "MediaStudioApp consumes the imported policy; route QA invokes the same production policy and outcome functions.",
+    "Personal and admin shell outcomes are explicit full navigation; organization is the only compact outcome, with the item-count threshold retained.",
+    "Workspace fallback action is required and explicitly null at every call site, preventing SurfaceState permission defaults from adding login."
+  ],
+  "remaining_risks": [
+    "No browser interaction or rendered responsive/authenticated runtime proof was run in this bounded lane.",
+    "Oxlint reports two existing react/only-export-components warnings for exported navigation constants; no lint errors occurred."
+  ]
+}

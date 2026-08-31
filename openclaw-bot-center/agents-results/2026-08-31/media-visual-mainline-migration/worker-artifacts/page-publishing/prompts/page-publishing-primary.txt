@@ -1,0 +1,28 @@
+TASK_ID=page-publishing
+ATTEMPT_ROLE=primary
+PRIMARY_EXECUTOR=lw-luna
+PRIMARY_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+ATTEMPT_EXECUTOR=lw-luna
+ATTEMPT_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+PROJECT_ROOT=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend
+TASK_SOURCE_SHA256=a878ce7dc84910daee97760dcfcd28c4cb437e94a35900c5d6c3d15e098d83e1
+STRUCTURED_RETURN_PATH=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-artifacts/page-publishing/returns/page-publishing-primary.json
+VALIDATION_COMMAND_FILE=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/validate-page-publishing.sh
+VALIDATION_COMMAND_SHA256=a9c204f1737b7c3059b0984964ea3781c718e21135b29a582cea90c2d3cbba24
+
+Execute exactly the bounded task below. Preserve its frozen inputs, write scope, forbidden scope, and acceptance commands. Full filesystem access is process capability only and does not expand task authority.
+
+Write one JSON object to STRUCTURED_RETURN_PATH before exit. It must include proposed_state, acceptance_self_check, failure_class, and failure_origin. proposed_state must be IMPLEMENTED, VERIFIED, FAILED, or BLOCKED; acceptance_self_check must be pass, fail, or partial. failure_class must be none, implementation, runtime, verification, transport, architecture-conflict, authority-conflict, interface-freeze, permission, product-decision, or scope-conflict. failure_origin must identify one of: none, environment, app-server, browser, database, test-infrastructure, provider-network, provider-transport, worker-transport, product-behavior, implementation, architecture-complexity, control-plane, test-oracle, authority, scope, or unknown-origin. Use none only for a successful attempt.
+
+BOUNDED_TASK_BEGIN
+TASK_ID=page-publishing
+Read the common page contract and verify SHA-256 `2cdf6bfd456c83cf5e02b1b5b578133cfab6a93146beb08968f003afd793851a` before editing.
+
+Migrate PublishingPage to DS-06..DS-11 shared primitives while preserving permission/login behavior, publishing-preparation logic, task actions, and errors. Root ownership is `personal`; accent is `campaign`.
+
+Exclusive write scope:
+- `openclaw-bot-center/src/media/pages/ordinary/PublishingPage.tsx`
+- `openclaw-bot-center/src/media/pages/ordinary/PublishingPage.module.css`
+
+Acceptance command: `git diff --check -- openclaw-bot-center/src/media/pages/ordinary/PublishingPage.tsx openclaw-bot-center/src/media/pages/ordinary/PublishingPage.module.css`.
+BOUNDED_TASK_END

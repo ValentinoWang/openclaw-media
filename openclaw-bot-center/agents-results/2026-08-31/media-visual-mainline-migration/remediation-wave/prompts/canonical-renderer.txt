@@ -1,0 +1,10 @@
+TASK_ID=canonical-renderer-remediation
+
+Work in the existing dirty worktree. Preserve concurrent changes. Edit only the exclusive scope. Do not perform any git state operation. Use apply_patch.
+
+Exclusive write scope:
+- src/media/pages/ordinary/CanonicalDocumentRenderer.tsx
+- src/media/pages/ordinary/CanonicalDocumentRenderer.module.css only if strictly needed
+- agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/canonical-renderer.json
+
+Fix the accepted review findings: the unreadable image placeholder must actually consume the .mg-state primitive while retaining data-component/state/tone and resource metadata; attachment and protected snapshot panels must use supported accent identities from studio,campaign,business,desk,agent,archive instead of blue/amber. Choose semantically appropriate supported accents and do not change document behavior, URLs, checksums, or content. Run git diff --check for owned source and npx tsc -b tsconfig.media-u12b.json. Write the required JSON return with changed_files, commands/exit codes, findings_fixed, unverified_items, failure_class/origin, acceptance_self_check, proposed_state.

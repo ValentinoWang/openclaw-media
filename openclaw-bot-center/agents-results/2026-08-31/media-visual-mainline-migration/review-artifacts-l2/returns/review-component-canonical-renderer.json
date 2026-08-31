@@ -1,0 +1,52 @@
+{
+  "task_id": "review-component-canonical-renderer",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "5b42d15db9c713cc46eedbf9f04f3b8533091cb9661a992898ecf43b11b82d88",
+  "findings": [
+    {
+      "severity": "high",
+      "path": "openclaw-bot-center/src/media/pages/ordinary/CanonicalDocumentRenderer.tsx",
+      "line": 57,
+      "title": "Unreadable-image branch does not activate the shared state primitive",
+      "detail": "The placeholder declares data-component=\"mg-state\" and renders mg-state-art, but its root class list omits the required global mg-state class. data-component is not a styling hook in mediaPrimitives.css, so the branch does not receive the canonical state layout or state semantics; data-tone=\"warn\" is likewise not consumed by the primitive. This is an invalid shared-primitive use even though the private resourcePlaceholder class supplies a partial local appearance."
+    },
+    {
+      "severity": "high",
+      "path": "openclaw-bot-center/src/media/pages/ordinary/CanonicalDocumentRenderer.tsx",
+      "line": 61,
+      "title": "Panel accents use unsupported ownership values",
+      "detail": "The attachment uses data-accent=\"blue\" and the protected snapshot at line 64 uses data-accent=\"amber\", but mediaDesignTokens.css defines accent ownership only for studio, campaign, business, desk, agent, and archive. Because .mg-panel[data-accent] still matches these unsupported values, both panels consume inherited --accent-* variables instead of the declared blue/amber intent, misattributing their visual emphasis and source-authority presentation."
+    }
+  ],
+  "checks": [
+    {
+      "name": "scoped_diff_identity",
+      "status": "PASS",
+      "detail": "git diff BASELINE over OWNED_PATHS hashed to 5b42d15db9c713cc46eedbf9f04f3b8533091cb9661a992898ecf43b11b82d88."
+    },
+    {
+      "name": "git_diff_check",
+      "status": "PASS",
+      "detail": "git diff --check -- OWNED_PATHS exited 0 with no output."
+    },
+    {
+      "name": "behavior_and_document_semantics_static_review",
+      "status": "PASS",
+      "detail": "Document block ordering, field ordering, resource URLs, checksums, link behavior, table semantics, heading semantics, and snapshot source metadata remain present in the scoped diff."
+    },
+    {
+      "name": "embedded_ownership_review",
+      "status": "PASS",
+      "detail": "No route ownership or page prelude was added in the owned component."
+    },
+    {
+      "name": "shared_primitive_semantic_fit",
+      "status": "FAIL",
+      "detail": "The unreadable-image state omits the mg-state class and the added panel accent values are not defined by the shared accent contract."
+    }
+  ],
+  "residual_risks": [
+    "This was a zero-write static lane review; no browser, responsive rendering, runtime, deployment, or release proof was performed or inferred.",
+    "Out-of-scope repository paths were not inspected under the review read boundary; scope assessment is limited to the declared implementation return and the frozen owned-path diff."
+  ]
+}

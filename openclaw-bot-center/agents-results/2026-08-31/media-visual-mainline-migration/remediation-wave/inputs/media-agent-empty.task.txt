@@ -1,0 +1,18 @@
+Task: Root-fix the Media Agent empty-state regression while preserving first-device pairing.
+
+Project root: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center
+Exclusive write scope:
+- src/media/pages/ordinary/MediaAgentPage.tsx
+- scripts/qa/checkMediaAgentTabOrder.ts
+
+Forbidden: CSS, other pages/tests/evidence, package.json, git index/refs/commits, network/remotes, deployment.
+
+Requirements:
+1. Read review-artifacts-l2/returns/review-page-media-agent.json, the current source, and the existing QA before editing.
+2. When the aggregate Media Agent state is empty, do not render the pipeline catalog, local-run controls, jobs panel, or their selectable tabs.
+3. Preserve the first-device onboarding path: the empty branch must still render the device/client pairing UI and allow generating a pairing code for an authenticated session.
+4. Keep the ready-state tab order devices, run, pipelines; preserve the existing tab/tabpanel ARIA bindings and online-device-only run selection.
+5. Extend the QA with a stable negative/self-test fixture proving that an empty branch which leaves pipeline/run controls reachable is rejected, while an empty branch with the pairing surface remains legal. Use syntax-aware or structural checks that cannot pass from comments or unrelated strings.
+6. Preserve permission, error, loading, ownership, accent, and shared primitive behavior.
+
+Return changed files, red/green proof, commands/results, remaining risks, and IMPLEMENTED only when owned checks pass.

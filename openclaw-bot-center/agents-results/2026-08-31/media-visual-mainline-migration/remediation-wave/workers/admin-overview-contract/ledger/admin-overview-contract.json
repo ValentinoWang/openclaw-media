@@ -1,0 +1,126 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/admin-overview-contract",
+  "attempts": [
+    {
+      "attempt_executor": "lw-luna",
+      "attempt_role": "primary",
+      "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+      "classification": {
+        "attempt_executor": "lw-luna",
+        "attempt_role": "primary",
+        "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "decision": "stop",
+        "effective_failure_class": "scope-conflict",
+        "effective_failure_origin": "scope",
+        "maximum_attempts_remaining": 0,
+        "primary_executor": "lw-luna",
+        "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "reason": "scope-conflict",
+        "terminal_state": "BLOCKED"
+      },
+      "classifier_exit_code": 20,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/admin-overview-contract/prompts/admin-overview-contract-primary.txt)"
+      ],
+      "ended_at": "2026-08-31T06:39:58.597747+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/admin-overview-contract/logs/admin-overview-contract-primary.log",
+      "pid": 5484,
+      "primary_executor": "lw-luna",
+      "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/admin-overview-contract/prompts/admin-overview-contract-primary.txt",
+      "prompt_sha256": "151fed4719309f07fb20884f7649e4e9855d67fa869f72e95d4c58cf7db665c1",
+      "started_at": "2026-08-31T06:30:17.835045+00:00",
+      "structured_return": {
+        "acceptance_checks": [
+          {
+            "command": "bash agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/admin-overview-contract.validation.sh",
+            "result": "exit 1; self-test passed, real-source phase found three unrelated PublishingPage.tsx persistent-rail violations"
+          },
+          {
+            "command": "npx oxlint src/media/pages/admin/AdminOverviewPage.tsx scripts/qa/checkMediaPageRestorationStructure.ts",
+            "result": "pass; exit 0"
+          },
+          {
+            "command": "npx tsc --noEmit -p tsconfig.media-u12b.json --pretty false",
+            "result": "pass; exit 0"
+          },
+          {
+            "command": "git diff --check -- src/media/pages/admin/AdminOverviewPage.tsx scripts/qa/checkMediaPageRestorationStructure.ts",
+            "result": "pass; exit 0"
+          }
+        ],
+        "acceptance_self_check": "partial",
+        "attempt_role": "primary",
+        "changed_files": [
+          "src/media/pages/admin/AdminOverviewPage.tsx",
+          "scripts/qa/checkMediaPageRestorationStructure.ts"
+        ],
+        "failure_class": "scope-conflict",
+        "failure_origin": "scope",
+        "implementation_summary": "Admin Overview now maps every accepted targetType to a stable Chinese label, rejects response-summary revision drift, impossible audit counts, and reversed audit windows, and keeps unknown targetType values parser-invalid. The structure QA adds an Admin Overview-only guard with legal and negative fixtures for all four defects.",
+        "proposed_state": "IMPLEMENTED",
+        "red_green_proof": {
+          "green": [
+            "Legal Admin Overview fixture: pass",
+            "npx tsx scripts/qa/checkMediaPageRestorationStructure.ts --self-test: B-GATE self-test: PASS"
+          ],
+          "red": [
+            "Revision mismatch fixture: detected",
+            "Impossible failed-count fixture: detected",
+            "Reversed audit-window fixture: detected",
+            "Raw target-enum presentation fixture: detected"
+          ]
+        },
+        "remaining_risks": [
+          "The frozen repository-wide structure command cannot reach exit 0 until the separately dirty PublishingPage.tsx is repaired; that file is outside this task write scope.",
+          "No browser, deployment, or production readback was authorized for this bounded lane."
+        ],
+        "task_id": "admin-overview-contract",
+        "task_source_sha256": "4cadde03e47ddc919629678535566d24b4214f36022ea749aaf026c3f8d27446",
+        "validation_command_sha256": "79dd52fe6e39e5ff9d519f2bd72ba01e6bd8b7a85334d9f4c6c22cdc112ae584"
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/admin-overview-contract/returns/admin-overview-contract-primary.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "4cadde03e47ddc919629678535566d24b4214f36022ea749aaf026c3f8d27446",
+      "timed_out": false,
+      "validation_command_sha256": "79dd52fe6e39e5ff9d519f2bd72ba01e6bd8b7a85334d9f4c6c22cdc112ae584",
+      "validation_ended_at": "2026-08-31T06:39:59.154718+00:00",
+      "validation_exit_code": 1,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/admin-overview-contract/logs/admin-overview-contract-primary.validation.log",
+      "validation_pid": 14834,
+      "validation_started_at": "2026-08-31T06:39:58.597926+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-luna.sh"
+    }
+  ],
+  "automatic_executor_switch": false,
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-31T06:39:59.198277+00:00",
+  "final_decision": "stop",
+  "l3_escalation_limit": 1,
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "ledger_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/admin-overview-contract/ledger/admin-overview-contract.json",
+  "primary_executor": "lw-luna",
+  "primary_retry_limit": 1,
+  "primary_role": "primary",
+  "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center",
+  "schema_version": 2,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-31T06:30:17.833941+00:00",
+  "stop_reason": "scope-conflict",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/admin-overview-contract.task.txt",
+  "task_id": "admin-overview-contract",
+  "task_sha256": "4cadde03e47ddc919629678535566d24b4214f36022ea749aaf026c3f8d27446",
+  "terminal_state": "BLOCKED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/admin-overview-contract.validation.sh",
+  "validation_command_sha256": "79dd52fe6e39e5ff9d519f2bd72ba01e6bd8b7a85334d9f4c6c22cdc112ae584",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

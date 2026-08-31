@@ -1,0 +1,23 @@
+{
+  "task_id": "review-page-admin-upstreams",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "e4a74b535540d6033b04caa1c2333efc3716e3d1d3b4baf57e757d9e6f79ed8a",
+  "findings": [
+    {
+      "severity": "medium",
+      "path": "openclaw-bot-center/src/media/pages/admin/AdminUpstreamsPage.tsx",
+      "line": 358,
+      "title": "Decorative status icons are exposed to assistive technology",
+      "detail": "The health status ShieldCheck icon has no aria-hidden attribute, and the same omission occurs for the decorative ReceiptText icon in the reconciliation heading and the ActionBanner status icon (lines 368 and 419). The surrounding text and status semantics already convey the meaning, so these icons should be hidden from the accessibility tree to avoid redundant announcements."
+    }
+  ],
+  "checks": [
+    "git diff --check -- openclaw-bot-center/src/media/pages/admin/AdminUpstreamsPage.tsx openclaw-bot-center/src/media/pages/admin/AdminUpstreamsPage.module.css: pass",
+    "scoped diff SHA-256: matches supplied e4a74b535540d6033b04caa1c2333efc3716e3d1d3b4baf57e757d9e6f79ed8a",
+    "Static review: required loading, permission, error, ready, mutation confirmation, audit reason, idempotency, refresh, and error branches preserved",
+    "Static review: data-page-prelude, data-page-layout, governance ownership, agent accent, and shared Metric/SurfaceState/mg-panel/mg-btn/mg-badge primitives present"
+  ],
+  "residual_risks": [
+    "No browser, responsive screenshot, or release/deployment proof was run; this review is static only."
+  ]
+}

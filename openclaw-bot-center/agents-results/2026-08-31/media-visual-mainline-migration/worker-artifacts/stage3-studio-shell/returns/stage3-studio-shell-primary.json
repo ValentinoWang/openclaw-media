@@ -1,0 +1,22 @@
+{
+  "task_id": "stage3-studio-shell",
+  "attempt_role": "primary",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "changed_files": [
+    "openclaw-bot-center/src/media/MediaStudioApp.tsx",
+    "openclaw-bot-center/src/media/mediaStudioTheme.css",
+    "openclaw-bot-center/scripts/qa/checkMediaStudioShellContract.ts"
+  ],
+  "acceptance_command": "pass",
+  "focused_lint": "pass_with_existing_fast_refresh_warning",
+  "supplemental_media_typecheck": "fail_with_existing_out_of_scope_page_errors",
+  "notes": [
+    "Compact navigation is derived from the resolved flattened item count and uses an exact 56px desktop rail/workspace offset below three destinations.",
+    "Compact links retain DOM text and add explicit aria-label/title names; the brand is a route link and the account menu has explicit menu semantics.",
+    "The required route matrix, shell contract, git diff whitespace check, and negative tracking check passed.",
+    "The supplemental no-emit media typecheck reports pre-existing errors in forbidden page files, including RunsPage.tsx and CampaignsPage.tsx; no page files were changed."
+  ]
+}

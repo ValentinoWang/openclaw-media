@@ -1,0 +1,22 @@
+{
+  "task_id": "review-page-personal-workspace",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "ae4676ed37007bd6fb4cc91640df14700eb9ceecd388ec1ddd11f1ca6dc4c183",
+  "findings": [
+    {
+      "severity": "high",
+      "path": "openclaw-bot-center/src/media/PersonalWorkspaceShellPage.tsx",
+      "line": 249,
+      "title": "Metric card primitive receives an incompatible icon shape",
+      "detail": "Metric variant=\"card\" already wraps the supplied icon in an outer span and its shared .mg-metric grid expects the direct child icon to carry the grid-area styling. Passing a nested span with .mg-metric-icon makes that class non-direct, so the icon/body grid areas do not apply as intended; the Metric body wrapper also lacks the shared .mg-metric-body class. Both metric cards therefore have broken shared-primitive layout semantics."
+    }
+  ],
+  "checks": [
+    "PASS: git diff --check -- openclaw-bot-center/src/media/PersonalWorkspaceShellPage.tsx",
+    "PASS: reviewed task spec, implementation return, owned source, shared Metric/SurfaceState primitives, and relevant design tokens/styles",
+    "NOT RUN: browser or release verification (not authorized by this review scope)"
+  ],
+  "residual_risks": [
+    "Static review cannot establish responsive rendering or runtime API behavior; those remain unverified independently of the blocking metric primitive defect."
+  ]
+}

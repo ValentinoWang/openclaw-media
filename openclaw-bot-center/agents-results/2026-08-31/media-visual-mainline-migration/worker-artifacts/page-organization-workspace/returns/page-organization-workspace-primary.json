@@ -1,0 +1,20 @@
+{
+  "task_id": "page-organization-workspace",
+  "attempt_role": "primary",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "common_page_contract_sha256": "2cdf6bfd456c83cf5e02b1b5b578133cfab6a93146beb08968f003afd793851a",
+  "validation_command": "git diff --check -- openclaw-bot-center/src/media/OrganizationWorkspaceShellPage.tsx",
+  "validation_result": "pass",
+  "additional_checks": {
+    "lane_validation_script": "pass",
+    "organization_workspace_qa": "pass",
+    "media_typescript_check": "target file clean; unrelated diagnostics remain in AdminAccessPage.tsx and CampaignsPage.tsx"
+  },
+  "notes": [
+    "Migrated the organization workspace page to the shared Metric, SurfaceState, and media primitive classes while preserving organization authority, read-only behavior, and provision lifecycle branches.",
+    "Restored the connection-state tone helper required by the shared badge and metric presentation."
+  ]
+}

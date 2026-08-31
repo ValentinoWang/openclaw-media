@@ -1,0 +1,17 @@
+Task: Close Admin Access clipboard and tab interaction defects found during the page review.
+
+Project root: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center
+Exclusive write scope:
+- src/media/pages/admin/AdminAccessPage.tsx
+- scripts/qa/checkMediaAdminAccessContract.ts
+
+Forbidden: CSS, other source/tests/evidence, package.json, git index/refs/commits, network/remotes, deployment.
+
+Requirements:
+1. Replace direct `navigator.clipboard.writeText` use with the existing verified shared clipboard helper. Preserve the safe-command-only boundary and never expose or copy credential material.
+2. Show deterministic accessible success/failure feedback for copying a platform safe command. A rejected clipboard operation must not become an unhandled promise rejection.
+3. Complete the ARIA tab interaction: inactive tabs are removed from the sequential tab order; Left/Right/Home/End move focus and selection across the three tabs; ids, aria-controls, and active tabpanel bindings remain valid.
+4. Preserve admin permission/CSRF boundaries, mutation bodies, pagination, cookie-status read-only behavior, and shared primitives.
+5. Extend the syntax-aware admin access QA with red/green or self-test coverage for direct clipboard bypass, missing copy failure handling, and missing roving keyboard tab semantics. Do not rely on comments or unrelated substrings.
+
+Return changed files, red/green proof, commands/results, remaining risks, and IMPLEMENTED only when owned gates pass.

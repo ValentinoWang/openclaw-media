@@ -1,0 +1,28 @@
+TASK_ID=page-run-detail
+ATTEMPT_ROLE=primary
+PRIMARY_EXECUTOR=lw-luna
+PRIMARY_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+ATTEMPT_EXECUTOR=lw-luna
+ATTEMPT_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+PROJECT_ROOT=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend
+TASK_SOURCE_SHA256=527fc393f71d8e45b646c2b74f6f25fa489ca8ffc669e53632d6bf1cd115505a
+STRUCTURED_RETURN_PATH=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-artifacts/page-run-detail/returns/page-run-detail-primary.json
+VALIDATION_COMMAND_FILE=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/validate-page-run-detail.sh
+VALIDATION_COMMAND_SHA256=666f529ce8a61ba4cd1450e9a6c30851e26c18e50605a523eec3f46af8a67f66
+
+Execute exactly the bounded task below. Preserve its frozen inputs, write scope, forbidden scope, and acceptance commands. Full filesystem access is process capability only and does not expand task authority.
+
+Write one JSON object to STRUCTURED_RETURN_PATH before exit. It must include proposed_state, acceptance_self_check, failure_class, and failure_origin. proposed_state must be IMPLEMENTED, VERIFIED, FAILED, or BLOCKED; acceptance_self_check must be pass, fail, or partial. failure_class must be none, implementation, runtime, verification, transport, architecture-conflict, authority-conflict, interface-freeze, permission, product-decision, or scope-conflict. failure_origin must identify one of: none, environment, app-server, browser, database, test-infrastructure, provider-network, provider-transport, worker-transport, product-behavior, implementation, architecture-complexity, control-plane, test-oracle, authority, scope, or unknown-origin. Use none only for a successful attempt.
+
+BOUNDED_TASK_BEGIN
+TASK_ID=page-run-detail
+Read the common page contract and verify SHA-256 `2cdf6bfd456c83cf5e02b1b5b578133cfab6a93146beb08968f003afd793851a` before editing.
+
+Migrate CreationRunDetailPage to DS-06..DS-11 shared primitives while preserving run identifier validation, metadata, status, export/delivery actions, and error behavior. Root ownership is `personal`; accent is `studio`. Attribute Gate and DetailLoading branches.
+
+Exclusive write scope:
+- `openclaw-bot-center/src/media/CreationRunDetailPage.tsx`
+- `openclaw-bot-center/src/media/CreationRunDetailPage.module.css`
+
+Acceptance command: `git diff --check -- openclaw-bot-center/src/media/CreationRunDetailPage.tsx openclaw-bot-center/src/media/CreationRunDetailPage.module.css`.
+BOUNDED_TASK_END

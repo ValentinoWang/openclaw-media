@@ -1,0 +1,49 @@
+{
+  "task_id": "admin-overview-contract",
+  "attempt_role": "primary",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "partial",
+  "failure_class": "scope-conflict",
+  "failure_origin": "scope",
+  "changed_files": [
+    "src/media/pages/admin/AdminOverviewPage.tsx",
+    "scripts/qa/checkMediaPageRestorationStructure.ts"
+  ],
+  "red_green_proof": {
+    "green": [
+      "Legal Admin Overview fixture: pass",
+      "npx tsx scripts/qa/checkMediaPageRestorationStructure.ts --self-test: B-GATE self-test: PASS"
+    ],
+    "red": [
+      "Revision mismatch fixture: detected",
+      "Impossible failed-count fixture: detected",
+      "Reversed audit-window fixture: detected",
+      "Raw target-enum presentation fixture: detected"
+    ]
+  },
+  "acceptance_checks": [
+    {
+      "command": "bash agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/admin-overview-contract.validation.sh",
+      "result": "exit 1; self-test passed, real-source phase found three unrelated PublishingPage.tsx persistent-rail violations"
+    },
+    {
+      "command": "npx oxlint src/media/pages/admin/AdminOverviewPage.tsx scripts/qa/checkMediaPageRestorationStructure.ts",
+      "result": "pass; exit 0"
+    },
+    {
+      "command": "npx tsc --noEmit -p tsconfig.media-u12b.json --pretty false",
+      "result": "pass; exit 0"
+    },
+    {
+      "command": "git diff --check -- src/media/pages/admin/AdminOverviewPage.tsx scripts/qa/checkMediaPageRestorationStructure.ts",
+      "result": "pass; exit 0"
+    }
+  ],
+  "implementation_summary": "Admin Overview now maps every accepted targetType to a stable Chinese label, rejects response-summary revision drift, impossible audit counts, and reversed audit windows, and keeps unknown targetType values parser-invalid. The structure QA adds an Admin Overview-only guard with legal and negative fixtures for all four defects.",
+  "remaining_risks": [
+    "The frozen repository-wide structure command cannot reach exit 0 until the separately dirty PublishingPage.tsx is repaired; that file is outside this task write scope.",
+    "No browser, deployment, or production readback was authorized for this bounded lane."
+  ],
+  "task_source_sha256": "4cadde03e47ddc919629678535566d24b4214f36022ea749aaf026c3f8d27446",
+  "validation_command_sha256": "79dd52fe6e39e5ff9d519f2bd72ba01e6bd8b7a85334d9f4c6c22cdc112ae584"
+}

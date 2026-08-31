@@ -1,0 +1,102 @@
+{
+  "artifact_dir": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/adoption-guard",
+  "attempts": [
+    {
+      "attempt_executor": "lw-terra",
+      "attempt_role": "primary",
+      "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+      "classification": {
+        "attempt_executor": "lw-terra",
+        "attempt_role": "primary",
+        "attempt_wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+        "decision": "complete",
+        "effective_failure_class": "none",
+        "effective_failure_origin": "none",
+        "primary_executor": "lw-terra",
+        "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+        "reason": "worker return and acceptance command completed"
+      },
+      "classifier_exit_code": 0,
+      "codex_session_identifier": "unavailable-from-wrapper-transport",
+      "command": [
+        "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+        "$(< /Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/adoption-guard/prompts/adoption-guard-primary.txt)"
+      ],
+      "ended_at": "2026-08-31T06:22:39.812442+00:00",
+      "exit_code": 0,
+      "frozen_input_drift": [],
+      "log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/adoption-guard/logs/adoption-guard-primary.log",
+      "pid": 84950,
+      "primary_executor": "lw-terra",
+      "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+      "prior_attempt_index": null,
+      "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center",
+      "prompt_cleanup_state": "deleted",
+      "prompt_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/adoption-guard/prompts/adoption-guard-primary.txt",
+      "prompt_sha256": "f7d20d00ca8965cf4840bf1a7a21542b550525a794e1c5e2377fab8877918383",
+      "started_at": "2026-08-31T06:10:48.594051+00:00",
+      "structured_return": {
+        "acceptance_evidence": [
+          "bash agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/adoption-guard.validation.sh: PASS",
+          "Adoption self-test: PASS, including unused-helper red case and referenced-helper green case",
+          "npx tsx scripts/qa/checkMediaPrimitiveAdoption.ts: PASS, 24 surfaces; all eligible primitives at 100.0%",
+          "npx tsx scripts/qa/checkMediaPrimitiveCoverage.ts: PASS",
+          "npx oxlint scripts/qa/checkMediaPrimitiveAdoption.ts scripts/qa/checkMediaPrimitiveCoverage.ts: PASS",
+          "git diff --check -- owned files: PASS"
+        ],
+        "acceptance_self_check": "pass",
+        "changed_files": [
+          "scripts/qa/checkMediaPrimitiveAdoption.ts",
+          "scripts/qa/checkMediaPrimitiveCoverage.ts"
+        ],
+        "failure_class": "none",
+        "failure_origin": "none",
+        "implementation": [
+          "Primitive markers are collected only from the default-export render root and locally reachable component/function bindings.",
+          "Unused declarations, comments, strings, and dead helpers no longer contribute adoption; unresolved render-like helpers fail closed.",
+          "Inline map/render callbacks and known dynamic icon/list components remain supported, preserving the fixed 24-surface manifest and existing route-root, ownership, accent, prelude, eligibility, threshold, and family checks.",
+          "Coverage independently recomputes per-primitive summary counts, percentages, eligibility partitions, family consumers, and 90% thresholds."
+        ],
+        "proposed_state": "IMPLEMENTED",
+        "remaining_risks": [
+          "No browser, authenticated runtime, deployment, or release-readback evidence was authorized for this bounded lane.",
+          "The worktree contains unrelated pre-existing dirty changes that were preserved."
+        ]
+      },
+      "structured_return_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/adoption-guard/returns/adoption-guard-primary.json",
+      "structured_return_state": "loaded",
+      "task_sha256": "bfbcd0a25b2c3e14c278f954774aba1178e4c1796c4986fcbd8fd57549ae19b5",
+      "timed_out": false,
+      "validation_command_sha256": "088bfc692fc88a00c9c04b0814a1bb514cb7fa7ea40e4d090216afb05dd87389",
+      "validation_ended_at": "2026-08-31T06:22:41.119957+00:00",
+      "validation_exit_code": 0,
+      "validation_log_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/adoption-guard/logs/adoption-guard-primary.validation.log",
+      "validation_pid": 98115,
+      "validation_started_at": "2026-08-31T06:22:39.812658+00:00",
+      "validation_timed_out": false,
+      "wrapper_path": "/Users/vsiyo/.codex/workers/run-lw-terra.sh"
+    }
+  ],
+  "automatic_executor_switch": false,
+  "automatic_l4_fallback": false,
+  "ended_at": "2026-08-31T06:22:41.166621+00:00",
+  "final_decision": "complete",
+  "l3_escalation_limit": 1,
+  "l3_wrapper": "/Users/vsiyo/.codex/workers/run-l3.sh",
+  "ledger_path": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/workers/adoption-guard/ledger/adoption-guard.json",
+  "primary_executor": "lw-terra",
+  "primary_retry_limit": 1,
+  "primary_role": "primary",
+  "primary_wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
+  "project_root": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center",
+  "schema_version": 2,
+  "spawn_agent_fallback": false,
+  "started_at": "2026-08-31T06:10:48.592624+00:00",
+  "task_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/adoption-guard.task.txt",
+  "task_id": "adoption-guard",
+  "task_sha256": "bfbcd0a25b2c3e14c278f954774aba1178e4c1796c4986fcbd8fd57549ae19b5",
+  "terminal_state": "IMPLEMENTED",
+  "validation_command_file": "/Users/vsiyo/Desktop/\u521b\u4e1a\u9879\u76ee/\u81ea\u5a92\u4f53\u521b\u4f5cAgent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/adoption-guard.validation.sh",
+  "validation_command_sha256": "088bfc692fc88a00c9c04b0814a1bb514cb7fa7ea40e4d090216afb05dd87389",
+  "validation_execution_mode": "prelaunch-bytes-via-stdin"
+}

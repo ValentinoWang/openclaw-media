@@ -1,0 +1,14 @@
+TASK_ID=personal-metric-router-remediation
+
+Preserve all concurrent changes in this dirty worktree. Edit only the exclusive scope. Do not perform git state operations. Use apply_patch.
+
+Exclusive write scope:
+- src/media/ui/Metric.tsx
+- src/media/PersonalWorkspaceShellPage.tsx
+- src/media/WorkspaceShellPage.tsx
+- agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/personal-metric-router.json
+
+Fix two accepted findings without changing business behavior:
+1. For Metric variant=card, the canonical DOM must put .mg-metric-icon on the direct icon wrapper and .mg-metric-body on the direct body wrapper. Make the shared component own those wrappers and update PersonalWorkspaceShellPage callers so they pass the icon itself, avoiding nested wrappers. Preserve panel variant shape and className compatibility.
+2. WorkspaceShellPage's no-session permission SurfaceState must pass action={null}, suppressing the primitive's default login CTA and preserving the prior no-action fallback. Other permission callers must retain defaults.
+Run git diff --check on owned source and npx tsc -b tsconfig.media-u12b.json. Write structured JSON return with commands, changed_files, findings_fixed, unverified_items, failure_class/origin, acceptance_self_check, proposed_state.

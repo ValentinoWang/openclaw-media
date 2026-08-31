@@ -1,0 +1,15 @@
+{
+  "task_id": "review-foundation-primitives",
+  "decision": "PASS",
+  "scoped_diff_sha256": "49304e2a88db2eb5bbd67b049b88b7653e48cd45f10b86c20f84f746a2270af1",
+  "findings": [],
+  "checks": [
+    "Frozen scoped diff SHA-256 matched the declared value.",
+    "Scoped diff contains only three zero-valued tracking tokens and four replacements of negative letter spacing in the two owned files.",
+    "Eight-level type scale, six named accent families, automatic and explicit dark themes, accent-aware metric and panel backgrounds, good/warn/info badge tones, pill tabs, button hover lift, reduced-motion fallback, and stable state-art slot remain present.",
+    "git diff --check and the task-scoped negative letter-spacing guard passed with exit code 0."
+  ],
+  "residual_risks": [
+    "This was a static, frozen-lane review only; no browser, visual-regression, integration, deployment, or release proof was produced."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "task_id": "foundation-primitives",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "validation_command": "git diff --check -- openclaw-bot-center/src/media/mediaDesignTokens.css openclaw-bot-center/src/media/mediaPrimitives.css && ! rg -n 'letter-spacing:\\s*-' openclaw-bot-center/src/media/mediaDesignTokens.css openclaw-bot-center/src/media/mediaPrimitives.css",
+  "validation_exit_code": 0,
+  "changed_paths": [
+    "openclaw-bot-center/src/media/mediaDesignTokens.css",
+    "openclaw-bot-center/src/media/mediaPrimitives.css"
+  ],
+  "verified_items": [
+    "DS-02: preserved the current eight-level type scale, added zero-valued reusable tracking tokens, and removed negative primitive letter spacing",
+    "DS-12: accent-aware metric background already present",
+    "DS-13: accent-aware panel background already present",
+    "DS-14: good, warn, and info badge tones already present",
+    "DS-15: pill tab variant already present",
+    "DS-16: button hover lift and reduced-motion fallback already present",
+    "DS-17: stable state-art slot already present",
+    "preserved all six named accent families and dark theme"
+  ]
+}

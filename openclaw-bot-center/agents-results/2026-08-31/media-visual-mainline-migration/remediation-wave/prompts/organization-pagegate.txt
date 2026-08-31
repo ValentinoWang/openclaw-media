@@ -1,0 +1,10 @@
+TASK_ID=organization-pagegate-remediation
+
+Preserve all concurrent changes in this dirty worktree. Edit only the exclusive scope. Do not perform git state operations. Use apply_patch.
+
+Exclusive write scope:
+- src/media/OrganizationWorkspaceShellPage.tsx
+- src/media/ui/SurfaceState.tsx
+- agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/organization-pagegate.json
+
+Fix the accepted organization shell review finding. OrganizationShellState is a page-level loading/unauthorized/invalid gate and must use the shared PageGate contract, not an inline SurfaceState inside a bare main. Preserve all three state branches/messages, no unintended CTA, route-root class and data-workspace-mode/data-page-ownership/data-accent/data-page-state attribution, and existing organization shell styling. If PageGate lacks a narrow route-root metadata hook, extend it generically and type-safely without changing existing callers' rendered behavior. Ensure the gate prelude is semantically identifiable where needed. Compare HEAD behavior if useful. Run git diff --check on owned source and npx tsc -b tsconfig.media-u12b.json. Write structured JSON return with commands, changed_files, finding_fixed, DOM_contract, unverified_items, failure_class/origin, acceptance_self_check, proposed_state.

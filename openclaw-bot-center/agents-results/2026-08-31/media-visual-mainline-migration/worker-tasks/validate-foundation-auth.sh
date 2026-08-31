@@ -1,0 +1,1 @@
+git diff --check -- openclaw-bot-center/src/media.auth.css openclaw-bot-center/media.auth.css openclaw-bot-center/vite.media.config.ts openclaw-bot-center/deploy/nginx-openclaw-bot-center.conf openclaw-bot-center/contracts/media-auth-route-contract.json

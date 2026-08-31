@@ -1,0 +1,9 @@
+TASK_ID=admin-upstreams-remediation
+
+Preserve the dirty worktree and concurrent changes. Edit only the exclusive scope. No git state operations. Use apply_patch.
+
+Exclusive write scope:
+- src/media/pages/admin/AdminUpstreamsPage.tsx
+- agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/admin-upstreams.json
+
+Fix the accessibility review: the decorative ShieldCheck health icon, ReceiptText reconciliation-heading icon, and ActionBanner status icon are redundantly exposed. Add aria-hidden to exactly the decorative Lucide instances while preserving meaningful labels and all behavior. Inspect all three locations rather than blindly replacing imports. Run git diff --check on the source and npx tsc -b tsconfig.media-u12b.json. Write the structured JSON return with commands, changed_files, finding_fixed, unverified_items, failure_class/origin, acceptance_self_check, proposed_state.

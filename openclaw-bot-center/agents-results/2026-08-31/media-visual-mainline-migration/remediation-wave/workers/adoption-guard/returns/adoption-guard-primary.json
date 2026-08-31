@@ -1,0 +1,28 @@
+{
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "changed_files": [
+    "scripts/qa/checkMediaPrimitiveAdoption.ts",
+    "scripts/qa/checkMediaPrimitiveCoverage.ts"
+  ],
+  "implementation": [
+    "Primitive markers are collected only from the default-export render root and locally reachable component/function bindings.",
+    "Unused declarations, comments, strings, and dead helpers no longer contribute adoption; unresolved render-like helpers fail closed.",
+    "Inline map/render callbacks and known dynamic icon/list components remain supported, preserving the fixed 24-surface manifest and existing route-root, ownership, accent, prelude, eligibility, threshold, and family checks.",
+    "Coverage independently recomputes per-primitive summary counts, percentages, eligibility partitions, family consumers, and 90% thresholds."
+  ],
+  "acceptance_evidence": [
+    "bash agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/adoption-guard.validation.sh: PASS",
+    "Adoption self-test: PASS, including unused-helper red case and referenced-helper green case",
+    "npx tsx scripts/qa/checkMediaPrimitiveAdoption.ts: PASS, 24 surfaces; all eligible primitives at 100.0%",
+    "npx tsx scripts/qa/checkMediaPrimitiveCoverage.ts: PASS",
+    "npx oxlint scripts/qa/checkMediaPrimitiveAdoption.ts scripts/qa/checkMediaPrimitiveCoverage.ts: PASS",
+    "git diff --check -- owned files: PASS"
+  ],
+  "remaining_risks": [
+    "No browser, authenticated runtime, deployment, or release-readback evidence was authorized for this bounded lane.",
+    "The worktree contains unrelated pre-existing dirty changes that were preserved."
+  ]
+}

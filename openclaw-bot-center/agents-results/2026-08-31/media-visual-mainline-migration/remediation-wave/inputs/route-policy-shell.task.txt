@@ -1,0 +1,23 @@
+Task: Root-fix Stage 3 route-oracle drift and the final shell review findings.
+
+Project root: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center
+Exclusive write scope:
+- src/media/mediaStudioRoutePolicy.ts (new pure production module; choose a nearby conventional name if required)
+- src/media/MediaStudioApp.tsx
+- src/media/WorkspaceShellPage.tsx
+- src/media/mediaStudioTheme.css
+- scripts/qa/checkMediaStudioRouteMatrix.ts
+- scripts/qa/checkMediaStudioShellContract.ts
+
+Forbidden: package.json, workspace runtime/deletion fixtures, other pages/tests/evidence, git index/refs/commits, network/remotes, deployment.
+
+Requirements:
+1. Extract the pure session-to-shell/default-route and pathname outcome policy from production source into one importable production module. MediaStudioApp must consume it; route matrix QA must import and invoke the same production functions rather than duplicate policy.
+2. Preserve static wiring assertions for BrowserRouter basename, Navigate replace, parameter routes, and component renderer identity.
+3. Cover admin, personal, organization, and invalid session fixtures across root, legacy ordinary paths, tracks, run aliases/details, workspace/preview, organization workspace, admin routes, and wildcard fallback.
+4. Fix Stage 3 review findings: personal shell must not be converted to the compact rail when the ledger's compact rule is fewer than three destinations but personal UX requires the full personal shell; encode the actual allowed shell outcomes in a fail-closed shell guard rather than a weak substring check.
+5. WorkspaceShellPage unauthorized fallback must not gain an unintended login action through SurfaceState defaults. Make the action semantics explicit without widening the public session contract.
+6. Preserve mobile menu aria state, search listbox roles, ownership/accent/prelude markers, and no-gradient/no-orb constraints.
+7. Add negative/self-test coverage for a synthetic drift between imported policy and expected matrix when practical.
+
+Return changed files, commands/results, remaining risks, and IMPLEMENTED only when route/shell static gates plus TypeScript pass.

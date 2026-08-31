@@ -1,0 +1,32 @@
+{
+  "task_id": "review-page-archives",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "fad6e992afd270f2d91a37f0d5bfcabbd79340e45caf7908c240218afb0bd158",
+  "findings": [
+    {
+      "severity": "medium",
+      "path": "openclaw-bot-center/src/media/pages/ordinary/ArchivesPage.tsx",
+      "line": 476,
+      "title": "Records panel aria-labelledby target is missing",
+      "detail": "The records section declares aria-labelledby=\"archive-records-title\", but PanelHeader renders an h2 without that id. Assistive technology cannot resolve the panel's accessible name. Add the id to the corresponding heading or remove the dangling reference."
+    },
+    {
+      "severity": "medium",
+      "path": "openclaw-bot-center/src/media/pages/ordinary/ArchivesPage.tsx",
+      "line": 538,
+      "title": "Archive detail aria-labelledby target is missing",
+      "detail": "The detail section declares aria-labelledby=\"archive-detail-title\", but PanelHeader renders an h2 without that id. This is another dangling accessible-name reference and should be corrected in the owned implementation."
+    }
+  ],
+  "checks": [
+    "PASS: scoped diff SHA-256 matches fad6e992afd270f2d91a37f0d5bfcabbd79340e45caf7908c240218afb0bd158",
+    "PASS: git diff --check -- openclaw-bot-center/src/media/pages/ordinary/ArchivesPage.tsx openclaw-bot-center/src/media/pages/ordinary/ArchivesPage.module.css",
+    "PASS: runtime checking and unauthenticated ArchiveStateShell branches are attributed data-accent=archive and data-page-ownership=personal",
+    "PASS: archive list/detail, delete-plan, confirmation, delete, readback verification, receipt, cursor-independent refresh, and empty/error/permission states remain present",
+    "PASS: shared mg-hero, mg-panel, mg-panel-head, mg-metric-grid/mg-metric, mg-badge, mg-btn, and SurfaceState primitives are used"
+  ],
+  "residual_risks": [
+    "Static review does not establish browser, responsive, or release proof.",
+    "The narrow acceptance command was run; no repository-wide tests were run per review scope."
+  ]
+}

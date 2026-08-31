@@ -1,0 +1,27 @@
+{
+  "task_id": "review-page-invites",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "b92c58ea8ac2e39c9b4edf5c300d4d16e2c149dd341d8df81f513c7649ea0a80",
+  "findings": [
+    {
+      "severity": "high",
+      "path": "openclaw-bot-center/src/media/pages/ordinary/InvitesPage.tsx",
+      "line": 97,
+      "title": "Pagination is disabled and loading behavior changed",
+      "detail": "useInvitees now loops through up to 100 listInvitees requests and always returns nextCursor: null at line 110. The existing UI still renders pagination controls and the previous implementation exposed the server's nextCursor, so pages after the first can no longer be reached. This also turns a later-page failure into a whole-resource error and can issue many unexpected requests, violating behavior preservation."
+    }
+  ],
+  "checks": [
+    {
+      "command": "git diff --check -- openclaw-bot-center/src/media/pages/ordinary/InvitesPage.tsx openclaw-bot-center/src/media/pages/ordinary/InvitesPage.module.css",
+      "result": "pass"
+    },
+    {
+      "check": "static review of ownership/accent/prelude markers, state branches, shared Metric/SurfaceState/mg primitives, accessibility attributes, responsive CSS, and scoped paths",
+      "result": "completed; no additional blocking issue identified"
+    }
+  ],
+  "residual_risks": [
+    "No browser, runtime, authenticated E2E, or release proof was run; this is a static frozen-lane review only."
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "task_id": "publishing-remediation",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "commands": [
+    {
+      "command": "git diff --check -- src/media/pages/ordinary/PublishingPage.tsx src/media/pages/ordinary/PublishingPage.module.css",
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "command": "npx tsc -b tsconfig.media-u12b.json",
+      "status": "pass",
+      "exit_code": 0
+    }
+  ],
+  "changed_files": [
+    "src/media/pages/ordinary/PublishingPage.tsx",
+    "agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/publishing.json"
+  ],
+  "finding_fixed": {
+    "path": "src/media/pages/ordinary/PublishingPage.tsx",
+    "change": "Wrapped each package row in a role=listitem element and removed the role override from the native button. Existing aria-current selection exposure, click selection handler, button keyboard activation, row classes, and publishing behavior remain unchanged."
+  },
+  "unverified_items": [
+    "Authenticated browser and assistive-technology runtime behavior was not exercised.",
+    "Package selection and publish flow were preserved by scoped source review and TypeScript compilation, not by a dedicated end-to-end run.",
+    "Responsive screenshot, release, and deployment verification were not run."
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "changed_files": [
+    "src/media/pages/ordinary/TracksPage.tsx",
+    "src/media/pages/ordinary/PublishingPage.tsx",
+    "src/media/pages/ordinary/InvitesPage.tsx"
+  ],
+  "behavior_rationale": "Restored each list loader to one explicit cursor-scoped request. Tracks forwards the supplied query unchanged, Publishing requests the initial page with pageSize 30, and Invites forwards its cursor plus page size. Each response, including nextCursor, is preserved for existing paging behavior; AbortSignal and existing state/error mapping remain unchanged.",
+  "preflight": {
+    "head": "84382576a4045a99aea1abb6df848ba95f0bb3d9",
+    "review_returns_read": [
+      "agents-results/2026-08-31/media-visual-mainline-migration/review-artifacts-l2/returns/review-page-tracks.json",
+      "agents-results/2026-08-31/media-visual-mainline-migration/review-artifacts-l2/returns/review-page-publishing.json",
+      "agents-results/2026-08-31/media-visual-mainline-migration/review-artifacts-l2/returns/review-page-invites.json"
+    ]
+  },
+  "commands": [
+    {
+      "command": "bash agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/pagination-regression.validation.sh",
+      "result": "pass",
+      "detail": "track relationship presentation, ordinary presentation contract, oxlint, and scoped git diff check passed"
+    },
+    {
+      "command": "rg -n 'for (let page = 0; page < 100|readAll|nextCursor: null' src/media/pages/ordinary/TracksPage.tsx src/media/pages/ordinary/PublishingPage.tsx src/media/pages/ordinary/InvitesPage.tsx",
+      "result": "pass",
+      "detail": "No automatic pagination loop or forced cursor erasure remains"
+    },
+    {
+      "command": "sha256sum agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/pagination-regression.task.txt agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/pagination-regression.validation.sh",
+      "result": "pass",
+      "detail": "Frozen task and validation hashes match the packet"
+    }
+  ],
+  "remaining_risks": [
+    "No browser, authenticated runtime, deployment, or release-readback evidence was run; this lane used the required focused presentation and static checks only.",
+    "The worktree contains unrelated pre-existing dirty changes that were preserved."
+  ]
+}

@@ -1,0 +1,39 @@
+Task: Root-fix the Stage 0 auth stylesheet Vite build failure.
+
+Project root: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center
+Branch: codex/frontend-visual-review-mainline-20260831
+Baseline: existing dirty worktree; preserve every unrelated change.
+
+Failure class: Vite/PostCSS follows @import url("/mediaDesignTokens.css") from src/media.auth.css as a local absolute filesystem path and fails with ENOENT /mediaDesignTokens.css.
+
+Exclusive write scope:
+- media.login.html
+- media.register.html
+- media.verify.html
+- media.recover.html
+- media.reset.html
+- src/media.verify.html
+- src/media.recover.html
+- src/media.reset.html
+- media.auth.css
+- src/media.auth.css
+- src/media/mediaDesignTokens.css
+- media.login.js
+- vite.media.config.ts
+- scripts/qa/checkMediaLoginContract.ts
+- one new guard card under agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/guard-cards/auth-static-css-build.md
+
+Forbidden: package.json, all other source/tests/evidence, git index/refs/commits, network/remotes, deployment, dist-media commit content, node_modules.
+
+Requirements:
+1. Add Vite's documented vite-ignore marker to every fixed auth stylesheet link that is a Rollup input or deployed alias, so the root-relative runtime URL is preserved instead of bundled.
+2. Keep src/media.auth.css and media.auth.css byte-identical.
+3. Keep the token @import root-relative for deployed auth pages and keep vite.media.config.ts copying both auth CSS and token CSS to dist-media root.
+4. Strengthen checkMediaLoginContract.ts with a reusable check over every auth HTML alias and a negative self-test that proves the old unignored link is rejected. Add --self-test if needed; do not use a page-name-only substring assertion.
+5. Guard card must state stable failure class, include/exclude scope, red proof, green proof, failure message, repair command, and enforcement point.
+6. Do not weaken login/session security assertions.
+7. Implement the findings in final-review/returns/stage-0.md: set the exact approved DS-01 values --mg-primary #1a9b68, --mg-primary-dark #10684a, and --mg-danger #b42318; give shared postJson/session reads a bounded AbortController timeout with stable user-facing failure behavior and no erroneous navigation; prevent concurrent duplicate Feishu authorization starts from fallback/refresh actions while preserving stale-result fencing.
+8. Extend the guard so exact DS-01 values, shared bounded requests, and organization authorization busy/deduplication are enforced. Prefer executable negative fixtures over one broad regex that can be satisfied elsewhere in the file.
+9. Run only narrow owned-file checks. Do not run the full build:media while sibling writers may be active.
+
+Return changed files, narrow commands/results, remaining risks, and IMPLEMENTED only when the owned checks pass.

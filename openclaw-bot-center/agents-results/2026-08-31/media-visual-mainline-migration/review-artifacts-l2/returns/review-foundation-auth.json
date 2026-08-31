@@ -1,0 +1,23 @@
+{
+  "task_id": "review-foundation-auth",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "5e804d62911799ac093e45d70b78e8d66c2ca5838aa240c97311523d09750f88",
+  "findings": [
+    {
+      "severity": "high",
+      "path": "openclaw-bot-center/media.auth.css",
+      "line": 1,
+      "title": "Deployed stylesheet imports tokens from an unavailable relative path",
+      "detail": "The root stylesheet is exposed as /media.auth.css by the Nginx exact route, so @import url(\"./src/media/mediaDesignTokens.css\") resolves relative to that URL (under /openclaw/media/ in the browser) rather than the contract and Nginx asset /mediaDesignTokens.css. The auth page therefore cannot load the required token stylesheet in the deployed/static-root environment, leaving --mg-* and --auth-* variables unresolved and breaking the auth presentation."
+    }
+  ],
+  "checks": [
+    "git diff --check -- scoped owned paths: pass",
+    "auth CSS synchronization after removing the first import line: pass",
+    "contract JSON and Nginx static asset route inspection: pass",
+    "No browser or release proof claimed; build command not run because review is limited to the task's narrow acceptance check"
+  ],
+  "residual_risks": [
+    "Static review does not establish runtime behavior across browser base paths or deployment filesystem contents."
+  ]
+}

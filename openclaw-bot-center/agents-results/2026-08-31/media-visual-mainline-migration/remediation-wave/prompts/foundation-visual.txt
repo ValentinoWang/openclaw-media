@@ -1,0 +1,19 @@
+TASK_ID=foundation-visual-remediation
+
+You are an independent writable frontend remediation worker in the existing dirty worktree. Preserve every concurrent change and edit only the declared files. Do not stage, commit, checkout, reset, push, fetch, deploy, or edit lockfiles. Use apply_patch for edits.
+
+Objective: root-cause three reviewed design-foundation failures without changing login behavior.
+
+Exclusive write scope:
+- media.auth.css
+- src/media/mediaPrimitives.css
+- scripts/qa/checkMediaPrimitiveEnhancements.ts
+- agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/foundation-visual.json
+
+Required changes:
+1. The root deployed media.auth.css is served as /media.auth.css. Make its token import resolve to the existing published /mediaDesignTokens.css asset; do not change src/media.auth.css unless it is inside this scope (it is not).
+2. In mediaPrimitives.css remove the hero radial/linear gradient, the circular pseudo-element decoration, every remaining gradient in this shared primitive sheet, and the nonzero .mg-eyebrow letter-spacing. Keep layout, accents, contrast, and state behavior intact with solid token-backed colors.
+3. Harden checkMediaPrimitiveEnhancements.ts as a fail-closed design-system guard. It must retain the existing positive checks and reject the stable failure class in mediaPrimitives.css: gradient functions, the decorative .mg-hero pseudo-element, and nonzero .mg-eyebrow letter spacing. Add a deterministic --self-test using in-memory good/bad CSS; do not write fixtures.
+4. Run focused checks: npx tsx scripts/qa/checkMediaPrimitiveEnhancements.ts; npx tsx scripts/qa/checkMediaPrimitiveEnhancements.ts --self-test; git diff --check -- the three owned files.
+
+Write the JSON return path with task_id, changed_files, commands with exit codes, findings_fixed, unverified_items, failure_class, failure_origin, acceptance_self_check, proposed_state. proposed_state may be VERIFIED only if all focused checks pass.

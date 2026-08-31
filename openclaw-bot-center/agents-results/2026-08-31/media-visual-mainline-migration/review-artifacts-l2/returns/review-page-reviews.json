@@ -1,0 +1,23 @@
+{
+  "task_id": "review-page-reviews",
+  "decision": "PASS",
+  "scoped_diff_sha256": "c262ed01255ca0f2984a1e145dd57cd94ac7a691d37e23ffbc2b6769fc267e4e",
+  "findings": [],
+  "checks": [
+    {
+      "command": "git diff --check -- openclaw-bot-center/src/media/pages/ordinary/ReviewsPage.tsx openclaw-bot-center/src/media/pages/ordinary/ReviewsPage.module.css",
+      "result": "pass"
+    },
+    {
+      "check": "scoped diff SHA-256",
+      "result": "pass"
+    },
+    {
+      "check": "static review of required state branches, shared primitives, attribution, accessibility, responsive rules, and scope",
+      "result": "pass"
+    }
+  ],
+  "residual_risks": [
+    "Static review does not provide browser, runtime, or release proof."
+  ]
+}

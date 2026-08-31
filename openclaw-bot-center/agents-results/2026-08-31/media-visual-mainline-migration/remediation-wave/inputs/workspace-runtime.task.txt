@@ -1,0 +1,16 @@
+Task: Repair the Stage 1 workspace runtime fixture and expand responsive coverage.
+
+Project root: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center
+Exclusive write scope: scripts/qa/checkStage1WorkspaceRuntime.ts only.
+Forbidden: all production source, package.json, other tests/evidence, git index/refs/commits, network/remotes, deployment.
+
+Requirements:
+1. The personal and organization workspace fixtures represent ordinary users, not admin users, so role-first production routing reaches the intended shells.
+2. Exercise exactly four viewports: 1440x1000, 1280x900, 1024x768, and 390x844 for personal, organization-active, and organization-disabled.
+3. Keep console-error, page-error, document/component overflow, read-only/no-write, and renderer/workspace identity assertions.
+4. Use deterministic unique labels for all 12 scenarios and do not overwrite screenshot evidence.
+5. Do not add internal bindingState or installationState fields to the public session fixture.
+6. Do not weaken route or visible-content assertions to make the fixture pass.
+7. Run static owned-file checks only; coordinator will run the Chromium matrix after routing writers converge.
+
+Return changed files, narrow checks, remaining risks, and IMPLEMENTED only when the owned checks pass.

@@ -1,0 +1,10 @@
+TASK_ID=publishing-remediation
+
+Preserve concurrent dirty-worktree changes. Edit only the exclusive scope; no git state operations. Use apply_patch.
+
+Exclusive write scope:
+- src/media/pages/ordinary/PublishingPage.tsx
+- src/media/pages/ordinary/PublishingPage.module.css only if needed
+- agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/publishing.json
+
+Fix the package-row accessibility regression. Interactive rows must retain native button semantics; do not assign role=listitem to a button. Also keep valid list semantics, selected state, keyboard activation, and existing layout. Use a wrapper listitem if needed rather than leaving an invalid role=list child structure. Preserve package selection and publish behavior. Run git diff --check and npx tsc -b tsconfig.media-u12b.json. Write structured JSON return with commands, changed_files, finding_fixed, unverified_items, failure_class/origin, acceptance_self_check, proposed_state.

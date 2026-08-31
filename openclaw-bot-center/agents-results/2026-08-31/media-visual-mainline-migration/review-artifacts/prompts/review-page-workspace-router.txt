@@ -1,0 +1,13 @@
+TASK_ID=review-page-workspace-router
+AUTHORITY=zero-write independent review
+PROJECT_ROOT=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend
+BASELINE=84382576a4045a99aea1abb6df848ba95f0bb3d9
+TASK_SPEC=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-workspace-router.md
+IMPLEMENTATION_RETURNS=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-artifacts/page-workspace-router/returns
+OWNED_PATHS= openclaw-bot-center/src/media/WorkspaceShellPage.tsx
+SCOPED_DIFF_SHA256=1f41c885bf671ee1acafc5b9f802407cab8c79cab8dcc217be759883bed09d9a
+STRUCTURED_RETURN_PATH=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/review-artifacts/returns/review-page-workspace-router.json
+
+Review only this frozen implementation lane. Do not edit, create, delete, format, stage, or commit source, tests, contracts, evidence, or git state; the sole authorized write is STRUCTURED_RETURN_PATH. Read the task spec, current diff against BASELINE, current shared primitives, and relevant callers/types. Check behavior preservation, all loading/empty/permission/not-found/error branches, shared-primitive semantic fit, ownership/accent/prelude attribution, accessibility, responsive risks, and out-of-scope changes. Run git diff --check for OWNED_PATHS and any narrow read-only checks that do not mutate build artifacts. Do not claim browser or release proof from static review.
+
+Write exactly one JSON object to STRUCTURED_RETURN_PATH with: task_id, decision (PASS or FAIL), scoped_diff_sha256, findings (array of objects with severity, path, line, title, detail), checks (array), and residual_risks (array). A warning that does not violate the task may remain residual risk; any behavior regression, missing required state/attribute, invalid primitive use, or scope violation is FAIL.

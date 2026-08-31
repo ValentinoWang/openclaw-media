@@ -1,0 +1,15 @@
+{
+  "task_id": "page-admin-billing",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "contract_sha256": "2cdf6bfd456c83cf5e02b1b5b578133cfab6a93146beb08968f003afd793851a",
+  "validation_command_sha256": "7297b4e1f1e2107f9fa2771e2b9bddaadb09ceac0d31b2fdcd8c8735232c8543",
+  "acceptance_command": "git diff --check -- openclaw-bot-center/src/media/pages/admin/AdminBillingPage.tsx openclaw-bot-center/src/media/pages/admin/AdminBillingPage.module.css",
+  "changed_files": [
+    "openclaw-bot-center/src/media/pages/admin/AdminBillingPage.tsx",
+    "openclaw-bot-center/src/media/pages/admin/AdminBillingPage.module.css"
+  ],
+  "summary": "Migrated billing page surfaces, metrics, badges, buttons, states, and route attribution to the shared media design primitives while preserving billing behavior."
+}

@@ -1,0 +1,10 @@
+TASK_ID=admin-billing-remediation
+
+Work in the existing dirty worktree and preserve concurrent changes. Edit only the exclusive scope; no git state operations. Use apply_patch.
+
+Exclusive write scope:
+- src/media/pages/admin/AdminBillingPage.tsx
+- src/media/pages/admin/AdminBillingPage.module.css
+- agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/admin-billing.json
+
+Root-cause the reviewed desktop overflow: a metric band with min-width 520px currently sits in the shared mg-hero secondary column capped near 330px. Restructure or restyle so metrics have a semantically appropriate, stable responsive region at 1440,1280,1024,390 widths, with no overflow/collision and without shrinking four metrics into unreadable controls. Preserve all billing data/actions/states and shared primitive adoption. Run git diff --check on owned source and npx tsc -b tsconfig.media-u12b.json. Write JSON return with changed_files, commands/exit codes, finding_fixed, responsive_reasoning, unverified_items, failure_class/origin, acceptance_self_check, proposed_state.

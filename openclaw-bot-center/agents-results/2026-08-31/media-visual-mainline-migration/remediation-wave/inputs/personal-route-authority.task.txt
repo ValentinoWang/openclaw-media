@@ -1,0 +1,27 @@
+Task: Reconcile the production route policy with the accepted Stage-2 personal-route authority and eliminate the false-green route matrix.
+
+Project root: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center
+Exclusive write scope:
+- src/media/mediaStudioRoutePolicy.ts
+- src/media/MediaStudioApp.tsx
+- scripts/qa/checkMediaStudioRouteMatrix.ts
+- agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/guard-cards/personal-route-authority.md
+
+Forbidden: other production source/tests/evidence, package.json, git index/refs/commits, network/remotes, deployment.
+
+Authoritative read-only sources:
+- /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/openproblem.md
+- /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/implementation-progress.md
+- /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/build_ssot.py
+- agents-results/2026-08-31/media-visual-mainline-migration/review-artifacts-l2/returns/review-foundation-route-matrix.json
+
+Requirements:
+1. Treat the accepted product decision as authoritative: the 11 top-level ordinary pages `/overview`, `/tracks`, `/assets`, `/decisions`, `/runs`, `/publishing`, `/reviews`, `/media-agent`, `/archives`, `/usage-billing`, `/invites`, plus `/runs/:runId`, are open to `ordinary + personal_web/internal`. Default personal landing is `/overview`.
+2. Preserve the newer Studio pages and current Studio navigation for personal sessions; add a discoverable personal workspace entry. Do not make `/today`, `/studio`, `/campaigns`, `/business`, or `/desk` less reachable than before this migration.
+3. Personal sessions render ordinary page implementations and run detail implementations. `/runs` may canonically redirect to `/studio`, but must never redirect to `/workspace`; `/runs/:runId` and `/studio/:runId` must render the run detail.
+4. Keep `/workspace` and `/workspace/preview/:artifactId` personal-only. Keep organization Binding/Lark/member capabilities isolated: organization sessions may render only their organization workspace and the explicitly shared `/tracks` route. Admin sessions remain admin-first and admin-only.
+5. Production app and QA must consume the same pure policy functions. Strengthen the route matrix so a synthetic policy that redirects personal ordinary routes to `/workspace` fails. Do not encode an expected matrix that merely repeats the current implementation.
+6. Preserve full personal navigation, compact organization navigation, BrowserRouter basename, Navigate replace semantics, renderer identities, invalid-session fail-closed behavior, and shell accessibility fixes.
+7. Add a guard card documenting the stable authority-drift failure class, exact include/exclude scope, red proof, green proof, failure output, repair command, and enforcement point.
+
+Return changed files, authority citations, red/green proof, commands/results, remaining risks, and IMPLEMENTED only when route matrix plus TypeScript pass.

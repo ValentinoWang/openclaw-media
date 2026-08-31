@@ -1,0 +1,10 @@
+TASK_ID=archives-remediation
+
+Preserve all concurrent dirty-worktree changes. Edit only the exclusive scope; no git state operations. Use apply_patch.
+
+Exclusive write scope:
+- src/media/pages/ordinary/ArchivesPage.tsx
+- src/media/pages/ordinary/ArchivesPage.module.css only if strictly needed
+- agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/archives.json
+
+Fix both dangling accessible-name references: archive-records-title and archive-detail-title must resolve to the corresponding visible panel headings. Use the existing PanelHeader API or minimally extend its local API if needed. Preserve archive loading, pagination, selection, restoration, deletion, metadata, and layout behavior. Run git diff --check and npx tsc -b tsconfig.media-u12b.json. Write structured JSON return with commands, changed_files, findings_fixed, unverified_items, failure_class/origin, acceptance_self_check, proposed_state.

@@ -1,0 +1,17 @@
+Task: Remove Stage 2 consumer-only legacy metric tone aliases and strengthen the enhancement guard.
+
+Project root: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center
+Exclusive write scope:
+- src/media/studio/WorkboardPage.tsx
+- src/media/studio/WorkboardPage.module.css
+- scripts/qa/checkMediaPrimitiveEnhancements.ts
+
+Forbidden: primitive/token source, other pages/tests/evidence, package.json, git index/refs/commits, network/remotes, deployment.
+
+Requirements:
+1. Replace Workboard Metric tone values mint/violet/amber/blue and local remapping selectors with the canonical accent-aware primitive vocabulary already provided by Metric/mediaPrimitives.
+2. Preserve distinct semantic/accent presentation for the four metrics without defining one-off local aliases.
+3. Strengthen enhancement --self-test so forbidden legacy tone literals in real Metric consumers fail, while unrelated string/comment text does not create false positives.
+4. Preserve no gradients, no decorative orbs, zero letter-spacing, and reduced-motion behavior.
+
+Return changed files, self-test evidence, remaining risks, and IMPLEMENTED only when owned gates pass.

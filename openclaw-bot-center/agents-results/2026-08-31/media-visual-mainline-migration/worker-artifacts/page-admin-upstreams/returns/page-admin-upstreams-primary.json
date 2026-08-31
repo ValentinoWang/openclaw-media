@@ -1,0 +1,30 @@
+{
+  "task_id": "page-admin-upstreams",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "changed_files": [
+    "openclaw-bot-center/src/media/pages/admin/AdminUpstreamsPage.tsx",
+    "openclaw-bot-center/src/media/pages/admin/AdminUpstreamsPage.module.css"
+  ],
+  "checks": {
+    "common_page_contract_sha256": {
+      "expected": "2cdf6bfd456c83cf5e02b1b5b578133cfab6a93146beb08968f003afd793851a",
+      "actual": "2cdf6bfd456c83cf5e02b1b5b578133cfab6a93146beb08968f003afd793851a",
+      "status": "pass"
+    },
+    "validation_command_sha256": {
+      "expected": "db0478956501b68d2621af75ab57164f6f996ac34acb4b51abac0b636c13c3d8",
+      "actual": "db0478956501b68d2621af75ab57164f6f996ac34acb4b51abac0b636c13c3d8",
+      "status": "pass"
+    },
+    "acceptance_command": "pass",
+    "target_oxlint": "pass",
+    "media_typescript_project": "blocked by pre-existing errors outside the owned files"
+  },
+  "notes": [
+    "Migrated shared Metric, SurfaceState, mg-panel, mg-eyebrow, mg-btn, and mg-badge usage while preserving upstream reads, health rendering, audit reasons, confirmations, idempotency, refresh, and error messages.",
+    "The media TypeScript check reported unrelated existing errors in OrganizationWorkspaceShellPage.tsx, AdminAccessPage.tsx, and PersonalWorkspaceShellPage.tsx; no error referenced the owned files."
+  ]
+}

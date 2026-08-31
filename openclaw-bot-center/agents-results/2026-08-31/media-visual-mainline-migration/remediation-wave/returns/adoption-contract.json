@@ -1,0 +1,84 @@
+{
+  "task_id": "adoption-contract-remediation",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "changed_files": [
+    "scripts/qa/checkMediaPrimitiveAdoption.ts",
+    "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/foundation-route-matrix.md",
+    "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-invites.md",
+    "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-tracks.md",
+    "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-media-agent.md",
+    "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/stage3-studio-shell.md",
+    "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/adoption-guard.md",
+    "agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/adoption-contract.json"
+  ],
+  "guard_root_cause": {
+    "metadata": "The previous AST visitor merged ownership and accent values from unrelated main elements, so split route roots could satisfy each check independently.",
+    "prelude": "The previous visitor accepted any data-page-prelude marker in the file, including a marker outside the route-root subtree."
+  },
+  "contract_updates": [
+    {
+      "file": "scripts/qa/checkMediaPrimitiveAdoption.ts",
+      "update": "Each JSX main is validated as an individual route root; ownership and accent must match on that same root, and prelude evidence is resolved only from the root subtree or locally referenced JSX bindings. Self-test covers missing, malformed, split-main, unrelated-prelude, and same-root cases."
+    },
+    {
+      "file": "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/foundation-route-matrix.md",
+      "update": "Personal ordinary legacy routes may intentionally redirect to /workspace and are not individually reachable requirements."
+    },
+    {
+      "file": "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-invites.md",
+      "update": "Cursor-following completion of the intended Invites read is deliberate behavior, not a pagination regression."
+    },
+    {
+      "file": "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-tracks.md",
+      "update": "Cursor-following completion of the intended Tracks read is deliberate behavior, not a pagination regression."
+    },
+    {
+      "file": "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-media-agent.md",
+      "update": "The Media Agent empty state intentionally retains the device-pairing entry."
+    },
+    {
+      "file": "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/stage3-studio-shell.md",
+      "update": "Compact navigation remains count-derived for fewer than three resolved destinations; it is not replaced by a route-family exception."
+    },
+    {
+      "file": "agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/adoption-guard.md",
+      "update": "Primitive thresholds use each primitive's real eligible semantic denominator, preserve the closed 24-surface manifest, and do not require meaningless tabs, metrics, or state widgets."
+    }
+  ],
+  "adoption_summary": {
+    "surfaces": 24,
+    "eligible": {
+      "mg-panel": { "adopted": 24, "denominator": 24, "percentage": 1 },
+      "mg-btn": { "adopted": 22, "denominator": 22, "percentage": 1 },
+      "mg-tabs": { "adopted": 11, "denominator": 11, "percentage": 1 },
+      "mg-metric-grid": { "adopted": 14, "denominator": 14, "percentage": 1 },
+      "mg-hero": { "adopted": 22, "denominator": 22, "percentage": 1 },
+      "state": { "adopted": 23, "denominator": 23, "percentage": 1 }
+    },
+    "violations": []
+  },
+  "commands": [
+    {
+      "command": "npx tsx scripts/qa/checkMediaPrimitiveAdoption.ts --self-test",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "npx tsx scripts/qa/checkMediaPrimitiveAdoption.ts --json",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "git diff --check -- scripts/qa/checkMediaPrimitiveAdoption.ts agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/foundation-route-matrix.md agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-invites.md agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-tracks.md agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-media-agent.md agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/stage3-studio-shell.md agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/adoption-guard.md agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/adoption-contract.json",
+      "exit_code": 0,
+      "result": "pass"
+    }
+  ],
+  "unverified_items": [
+    "No browser, authenticated E2E, runtime accessibility, deployment, or release evidence was run; those layers are outside this static contract lane.",
+    "No unrelated dirty-worktree changes were inspected or altered."
+  ]
+}

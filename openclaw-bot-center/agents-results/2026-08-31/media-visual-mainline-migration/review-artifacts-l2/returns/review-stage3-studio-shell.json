@@ -1,0 +1,52 @@
+{
+  "task_id": "review-stage3-studio-shell",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "8a08c9a42b840388a6f78e875fa4eff96cd241b864b2ed907ccc2829b957e922",
+  "findings": [
+    {
+      "severity": "high",
+      "path": "openclaw-bot-center/src/media/MediaStudioApp.tsx",
+      "line": 229,
+      "title": "Personal shell is incorrectly converted to the compact rail",
+      "detail": "isCompactNavigation is true for every resolved navigation with fewer than three items. personalNavigation contains exactly one item at lines 119-121, so the personal shell receives is-compact-navigation and the 56px desktop rail even though the task explicitly requires personal and admin shells to remain full width and identifies the current organization navigation as the qualifying case. The compact decision must remain count-derived while the resolved personal navigation/state must produce the required full-width result."
+    },
+    {
+      "severity": "medium",
+      "path": "openclaw-bot-center/scripts/qa/checkMediaStudioShellContract.ts",
+      "line": 31,
+      "title": "Shell contract guard does not fail closed on the required shell outcomes",
+      "detail": "The guard checks only that the generic item-count expression and compact class marker exist. It has no fixture or structural assertion proving that organization is compact while personal and admin remain full width, so it passes with the personal-shell regression above. This leaves a required state branch outside the promised fail-closed coverage."
+    }
+  ],
+  "checks": [
+    {
+      "name": "scoped diff SHA-256",
+      "result": "pass",
+      "detail": "Matched 8a08c9a42b840388a6f78e875fa4eff96cd241b864b2ed907ccc2829b957e922."
+    },
+    {
+      "name": "owned-path scope",
+      "result": "pass",
+      "detail": "Baseline diff for the frozen lane contains only the three declared owned paths."
+    },
+    {
+      "name": "task acceptance command",
+      "result": "pass",
+      "detail": "git diff --check, route-matrix guard, shell-contract guard, and negative letter-spacing check exited successfully."
+    },
+    {
+      "name": "static accessibility and responsive review",
+      "result": "pass_with_limitation",
+      "detail": "Compact destinations retain DOM labels, aria-label/title, native link keyboard reachability, Lucide icons, active styling, account menu semantics, and desktop-only label hiding; mobile drawer rules restore full width. No browser interaction was run."
+    },
+    {
+      "name": "theme contract review",
+      "result": "pass",
+      "detail": "Topbar fallback precedes color-mix, both backdrop-filter variants exist, tracking uses zero-valued tokens, and reduced-motion rules disable shell animations and transform transitions without layout declarations."
+    }
+  ],
+  "residual_risks": [
+    "This is static independent review only; no browser, rendered responsive, runtime authentication, or release proof was produced.",
+    "Native title tooltips and the compact account popover were not interaction-tested for clipping, focus flow, or viewport placement."
+  ]
+}

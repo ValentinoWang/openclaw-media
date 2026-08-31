@@ -1,0 +1,22 @@
+{
+  "task_id": "page-admin-tenants",
+  "attempt_role": "primary",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "acceptance_command": "git diff --check -- openclaw-bot-center/src/media/pages/admin/AdminTenantsPage.tsx openclaw-bot-center/src/media/pages/admin/AdminTenantsPage.module.css",
+  "acceptance_result": "pass",
+  "validation_command": "bash openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/validate-page-admin-tenants.sh",
+  "validation_result": "pass",
+  "changed_files": [
+    "openclaw-bot-center/src/media/pages/admin/AdminTenantsPage.tsx",
+    "openclaw-bot-center/src/media/pages/admin/AdminTenantsPage.module.css"
+  ],
+  "checks": {
+    "common_contract_sha256": "2cdf6bfd456c83cf5e02b1b5b578133cfab6a93146beb08968f003afd793851a",
+    "validation_command_sha256": "ddfbc959a3e68eedb1a4d4bc561606a82ad6323849abccc5143ae04adfc728f4",
+    "target_oxlint": "pass",
+    "media_typescript_no_emit": "blocked by unrelated existing errors outside task scope"
+  }
+}

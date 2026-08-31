@@ -1,0 +1,35 @@
+{
+  "task_id": "foundation-visual-remediation",
+  "changed_files": [
+    "media.auth.css",
+    "src/media/mediaPrimitives.css",
+    "scripts/qa/checkMediaPrimitiveEnhancements.ts",
+    "agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/foundation-visual.json"
+  ],
+  "commands": [
+    {
+      "command": "npx tsx scripts/qa/checkMediaPrimitiveEnhancements.ts",
+      "exit_code": 0
+    },
+    {
+      "command": "npx tsx scripts/qa/checkMediaPrimitiveEnhancements.ts --self-test",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check -- media.auth.css src/media/mediaPrimitives.css scripts/qa/checkMediaPrimitiveEnhancements.ts",
+      "exit_code": 0
+    }
+  ],
+  "findings_fixed": [
+    "The deployed root auth stylesheet now imports the published /mediaDesignTokens.css asset.",
+    "The shared primitive sheet now uses solid token-backed hero and current-pipeline colors, has no hero circular pseudo-element or gradient functions, and uses zero eyebrow letter spacing.",
+    "The primitive enhancement QA retains its positive checks and fail-closed rejects gradients, .mg-hero pseudo-elements, and nonzero .mg-eyebrow letter spacing with deterministic in-memory good/bad self-tests."
+  ],
+  "unverified_items": [
+    "No browser visual regression, deployed asset readback, or login-flow exercise was performed."
+  ],
+  "failure_class": "none",
+  "failure_origin": "none",
+  "acceptance_self_check": "pass",
+  "proposed_state": "VERIFIED"
+}

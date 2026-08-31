@@ -1,0 +1,50 @@
+{
+  "task_id": "personal-metric-router-remediation",
+  "changed_files": [
+    "src/media/ui/Metric.tsx",
+    "src/media/PersonalWorkspaceShellPage.tsx",
+    "src/media/WorkspaceShellPage.tsx",
+    "agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/personal-metric-router.json"
+  ],
+  "commands": [
+    {
+      "command": "git diff --check -- src/media/ui/Metric.tsx src/media/PersonalWorkspaceShellPage.tsx src/media/WorkspaceShellPage.tsx",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "command": "npx tsc -b tsconfig.media-u12b.json",
+      "exit_code": 0,
+      "result": "passed"
+    }
+  ],
+  "findings_fixed": [
+    {
+      "finding": "personal Metric card DOM contract",
+      "status": "fixed",
+      "detail": "Metric variant=card now owns direct .mg-metric-icon and .mg-metric-body wrappers; Personal callers pass the icon node itself, so no nested primitive wrapper remains."
+    },
+    {
+      "finding": "workspace router no-session action regression",
+      "status": "fixed",
+      "detail": "The no-session permission fallback passes action={null}, suppressing SurfaceState's default login CTA while leaving other permission callers unchanged."
+    }
+  ],
+  "unverified_items": [
+    "Browser, responsive, assistive-technology, runtime API, deployment, and release verification were not run in this source-level remediation lane.",
+    "Concurrent changes outside the declared exclusive scope were not revalidated by this lane."
+  ],
+  "failure_class": "shared-media-primitive-contract-and-permission-default-regression",
+  "failure_origin": "The visual mainline migration connected Personal metric callers to shared Metric markup without matching the card wrapper contract, and routed the no-session state through a permission primitive whose default CTA changed prior behavior.",
+  "acceptance_self_check": {
+    "card_icon_wrapper_is_direct_and_classified": true,
+    "card_body_wrapper_is_direct_and_classified": true,
+    "personal_callers_pass_bare_icons": true,
+    "panel_variant_shape_preserved": true,
+    "class_name_compatibility_preserved": true,
+    "no_session_permission_action_is_null": true,
+    "other_permission_defaults_preserved": true,
+    "required_checks_passed": true
+  },
+  "proposed_state": "IMPLEMENTED"
+}

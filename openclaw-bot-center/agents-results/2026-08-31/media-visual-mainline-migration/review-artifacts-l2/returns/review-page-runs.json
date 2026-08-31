@@ -1,0 +1,16 @@
+{
+  "task_id": "review-page-runs",
+  "decision": "PASS",
+  "scoped_diff_sha256": "160521cb1987c58c2d3f1892cb679661a55cea86e2545bebb63a6847cf1b5acd",
+  "findings": [],
+  "checks": [
+    "Scoped diff SHA-256 matches supplied SCOPED_DIFF_SHA256.",
+    "git diff --check -- openclaw-bot-center/src/media/pages/ordinary/RunsPage.tsx openclaw-bot-center/src/media/pages/ordinary/RunsPage.module.css: PASS",
+    "Static review: run, opportunity, and delivery views retain search, cursor pagination, selection, task actions, route aliases, and status branches.",
+    "Static review: shared Metric card DOM is matched by owned factCard selectors; SurfaceState and abort-aware useResource contracts are used compatibly.",
+    "Static review: root ownership=personal, accent=studio, and data-page-prelude attribution are present."
+  ],
+  "residual_risks": [
+    "No browser, runtime, or release proof was performed; this is an independent static review only."
+  ]
+}

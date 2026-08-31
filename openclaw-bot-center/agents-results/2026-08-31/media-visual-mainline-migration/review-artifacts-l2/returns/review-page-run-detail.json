@@ -1,0 +1,21 @@
+{
+  "task_id": "review-page-run-detail",
+  "decision": "PASS",
+  "scoped_diff_sha256": "92114f4c94726819ba7d87952c68952ad65635a245434de3d985d8cb22670322",
+  "findings": [],
+  "checks": [
+    {
+      "name": "git diff --check",
+      "result": "pass",
+      "scope": "CreationRunDetailPage.tsx, CreationRunDetailPage.module.css"
+    },
+    {
+      "name": "static contract review",
+      "result": "pass",
+      "detail": "Run validation, metadata, status, export/delivery actions, error behavior, loading/permission/error/empty branches, Metric/SurfaceState usage, ownership and studio accent attribution preserved."
+    }
+  ],
+  "residual_risks": [
+    "No browser, runtime, or release proof was performed; this is a static frozen-lane review only."
+  ]
+}

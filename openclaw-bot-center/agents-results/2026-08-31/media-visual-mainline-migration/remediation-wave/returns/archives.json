@@ -1,0 +1,46 @@
+{
+  "task_id": "archives-remediation",
+  "commands": [
+    {
+      "command": "git diff --check",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "command": "npx tsc -b tsconfig.media-u12b.json",
+      "status": "passed",
+      "exit_code": 0
+    }
+  ],
+  "changed_files": [
+    "src/media/pages/ordinary/ArchivesPage.tsx",
+    "agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/archives.json"
+  ],
+  "findings_fixed": [
+    {
+      "reference": "archive-records-title",
+      "resolution": "Passed the existing reference to PanelHeader so the visible archive records h2 receives this id."
+    },
+    {
+      "reference": "archive-detail-title",
+      "resolution": "Passed the existing reference to PanelHeader so the visible archive detail h2 receives this id."
+    }
+  ],
+  "unverified_items": [
+    "Authenticated browser and assistive-technology runtime behavior was not exercised.",
+    "Archive loading, pagination, selection, restoration, deletion, metadata, and layout were preserved by scoped code review and TypeScript compilation, not by dedicated end-to-end execution."
+  ],
+  "failure_class": "none",
+  "failure_origin": "none",
+  "acceptance_self_check": {
+    "status": "pass",
+    "checks": [
+      "archive-records-title resolves to the visible h2 rendered by PanelHeader.",
+      "archive-detail-title resolves to the visible h2 rendered by PanelHeader.",
+      "No CSS edit was made by this remediation; pre-existing ArchivesPage.module.css worktree changes were preserved.",
+      "git diff --check passed.",
+      "npx tsc -b tsconfig.media-u12b.json passed."
+    ]
+  },
+  "proposed_state": "IMPLEMENTED"
+}

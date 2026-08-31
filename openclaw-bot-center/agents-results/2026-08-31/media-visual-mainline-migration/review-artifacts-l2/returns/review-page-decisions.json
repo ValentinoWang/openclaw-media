@@ -1,0 +1,31 @@
+{
+  "task_id": "review-page-decisions",
+  "decision": "PASS",
+  "scoped_diff_sha256": "5c775a777ab1e9e80d2aa23f65a6a4cb8c167b8b9b550b8e6009ac0017a5a68b",
+  "findings": [],
+  "checks": [
+    {
+      "name": "task_spec_and_return_read",
+      "status": "pass"
+    },
+    {
+      "name": "shared_primitives_and_attribution",
+      "status": "pass",
+      "detail": "Uses mg-hero, mg-tabs/mg-tab pill, mg-panel, mg-btn, mg-badge, SurfaceState, and retains campaign accent, personal ownership, prelude, primary-flow, and terminal-surface markers."
+    },
+    {
+      "name": "state_and_action_preservation",
+      "status": "pass",
+      "detail": "Loading, forbidden, not-found, unavailable, error, empty, detail, pagination, search, retry, confirm/reject, and conflict-refresh branches remain present."
+    },
+    {
+      "name": "git_diff_check",
+      "status": "pass",
+      "command": "git diff --check -- openclaw-bot-center/src/media/pages/ordinary/DecisionsPage.tsx openclaw-bot-center/src/media/pages/ordinary/DecisionsPage.module.css"
+    }
+  ],
+  "residual_risks": [
+    "Tabs use role=tab and aria-selected but are not wired with aria-controls and explicit tabpanel roles; this is baseline behavior and was not worsened by the migration.",
+    "Static review does not provide browser, responsive, runtime, or release proof."
+  ]
+}

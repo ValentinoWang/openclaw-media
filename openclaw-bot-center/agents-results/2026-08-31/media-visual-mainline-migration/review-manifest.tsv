@@ -1,0 +1,30 @@
+component-canonical-renderer	src/media/pages/ordinary/CanonicalDocumentRenderer.tsx src/media/pages/ordinary/CanonicalDocumentRenderer.module.css
+foundation-auth	src/media.auth.css media.auth.css vite.media.config.ts deploy/nginx-openclaw-bot-center.conf contracts/media-auth-route-contract.json
+foundation-primitives	src/media/mediaDesignTokens.css src/media/mediaPrimitives.css
+foundation-route-matrix	src/media/MediaStudioApp.tsx scripts/qa/checkMediaStudioRouteMatrix.ts
+page-admin-access	src/media/pages/admin/AdminAccessPage.tsx src/media/pages/admin/AdminAccessPage.module.css
+page-admin-billing	src/media/pages/admin/AdminBillingPage.tsx src/media/pages/admin/AdminBillingPage.module.css
+page-admin-overview	src/media/pages/admin/AdminOverviewPage.tsx src/media/pages/admin/AdminOverviewPage.module.css
+page-admin-tenants	src/media/pages/admin/AdminTenantsPage.tsx src/media/pages/admin/AdminTenantsPage.module.css
+page-admin-upstreams	src/media/pages/admin/AdminUpstreamsPage.tsx src/media/pages/admin/AdminUpstreamsPage.module.css
+page-archives	src/media/pages/ordinary/ArchivesPage.tsx src/media/pages/ordinary/ArchivesPage.module.css
+page-assets	src/media/pages/ordinary/AssetsPage.tsx src/media/pages/ordinary/AssetsPage.module.css
+page-decisions	src/media/pages/ordinary/DecisionsPage.tsx src/media/pages/ordinary/DecisionsPage.module.css
+page-invites	src/media/pages/ordinary/InvitesPage.tsx src/media/pages/ordinary/InvitesPage.module.css
+page-media-agent	src/media/pages/ordinary/MediaAgentPage.tsx src/media/pages/ordinary/MediaAgentPage.module.css
+page-organization-workspace	src/media/OrganizationWorkspaceShellPage.tsx
+page-overview	src/media/pages/ordinary/OverviewPage.tsx src/media/pages/ordinary/OverviewPage.module.css
+page-personal-workspace	src/media/PersonalWorkspaceShellPage.tsx
+page-publishing	src/media/pages/ordinary/PublishingPage.tsx src/media/pages/ordinary/PublishingPage.module.css
+page-reviews	src/media/pages/ordinary/ReviewsPage.tsx src/media/pages/ordinary/ReviewsPage.module.css
+page-run-detail	src/media/CreationRunDetailPage.tsx src/media/CreationRunDetailPage.module.css
+page-runs	src/media/pages/ordinary/RunsPage.tsx src/media/pages/ordinary/RunsPage.module.css
+page-studio-business	src/media/studio/BusinessPage.tsx src/media/studio/BusinessPage.module.css
+page-studio-campaigns	src/media/studio/CampaignsPage.tsx src/media/studio/CampaignsPage.module.css
+page-studio-desk	src/media/studio/DeskPage.tsx src/media/studio/DeskPage.module.css
+page-studio-workboard	src/media/studio/WorkboardPage.tsx src/media/studio/WorkboardPage.module.css
+page-tracks	src/media/pages/ordinary/TracksPage.tsx src/media/pages/ordinary/TracksPage.module.css
+page-usage-billing	src/media/pages/ordinary/UsageBillingPage.tsx src/media/pages/ordinary/UsageBillingPage.module.css
+page-workspace-router	src/media/WorkspaceShellPage.tsx
+stage3-studio-shell	src/media/MediaStudioApp.tsx src/media/mediaStudioTheme.css scripts/qa/checkMediaStudioShellContract.ts
+adoption-guard	scripts/qa/checkMediaPrimitiveAdoption.ts scripts/qa/checkMediaPrimitiveCoverage.ts scripts/qa/checkMediaPrimitiveEnhancements.ts package.json

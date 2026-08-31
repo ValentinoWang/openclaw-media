@@ -1,0 +1,10 @@
+# Keep review plans, task definitions, ledgers, and return documents under Git.
+# Runtime logs and visual captures are reproducible evidence, not source records.
+**/*.log
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.webp
+**/*.gif
+**/*.mp4
+**/*.mov

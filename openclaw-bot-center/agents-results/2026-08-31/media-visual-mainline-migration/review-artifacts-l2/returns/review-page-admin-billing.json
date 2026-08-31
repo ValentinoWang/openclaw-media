@@ -1,0 +1,44 @@
+{
+  "task_id": "review-page-admin-billing",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "c7eb0528e944c091802034864b294d53d09999c124e02f9f193a53b8578ff571",
+  "findings": [
+    {
+      "severity": "high",
+      "path": "openclaw-bot-center/src/media/pages/admin/AdminBillingPage.tsx",
+      "line": 403,
+      "title": "Billing metrics overflow the shared hero column on desktop",
+      "detail": "The migrated header places headingArea, which contains metricBand, in the second column of .mg-hero. The shared primitive caps that column at 330px, while AdminBillingPage.module.css keeps metricBand at min-width: 520px above the 1180px media query. Consequently the four-card metric band cannot fit its assigned hero column on ordinary desktop widths and will overflow or collide with the hero boundary. This is a responsive regression and an invalid semantic/layout fit for the selected shared primitive."
+    }
+  ],
+  "checks": [
+    {
+      "name": "scoped_diff_sha256",
+      "result": "PASS",
+      "detail": "git diff from baseline over OWNED_PATHS hashes to c7eb0528e944c091802034864b294d53d09999c124e02f9f193a53b8578ff571."
+    },
+    {
+      "name": "git_diff_check",
+      "result": "PASS",
+      "detail": "git diff --check completed with no output for OWNED_PATHS."
+    },
+    {
+      "name": "static_behavior_and_state_review",
+      "result": "PASS",
+      "detail": "Billing reads, adjustments, audit reasons, tabs, table collections, money formatting, receipts, retry behavior, and permission/loading/error/empty branches remain represented; mutation readiness now also fails closed without an admin CSRF token."
+    },
+    {
+      "name": "ownership_accent_prelude_review",
+      "result": "PASS",
+      "detail": "All page roots declare governance ownership and business accent, and data-page-prelude is confined to the heading wrapper."
+    },
+    {
+      "name": "browser_or_release_proof",
+      "result": "NOT_RUN",
+      "detail": "Not claimed or run under the zero-write static-review authority."
+    }
+  ],
+  "residual_risks": [
+    "No browser rendering or viewport interaction was performed, so additional visual or keyboard issues may remain beyond the statically proven desktop hero overflow."
+  ]
+}

@@ -1,0 +1,18 @@
+Task: Repair Stage 1 pagination behavior regressions introduced during primitive migration review fixes.
+
+Project root: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center
+Exclusive write scope:
+- src/media/pages/ordinary/TracksPage.tsx
+- src/media/pages/ordinary/PublishingPage.tsx
+- src/media/pages/ordinary/InvitesPage.tsx
+
+Forbidden: CSS, other pages/tests/evidence, package.json, git index/refs/commits, network/remotes, deployment.
+
+Requirements:
+1. Read the Stage 1 final-review return and HEAD baseline for these three files before editing.
+2. Restore each page's intended explicit cursor semantics. Do not automatically fetch up to 100 pages, erase nextCursor, or make existing next/previous controls unreachable.
+3. Preserve AbortSignal use, resource state/error mapping, current-page behavior, and the primitive markup changes already present.
+4. Avoid a new shared abstraction unless it removes proven duplicated complexity without changing contracts.
+5. Do not weaken any QA. Run focused presentation/static checks only.
+
+Return changed files, behavior rationale, commands/results, remaining risks, and IMPLEMENTED only when owned checks pass.

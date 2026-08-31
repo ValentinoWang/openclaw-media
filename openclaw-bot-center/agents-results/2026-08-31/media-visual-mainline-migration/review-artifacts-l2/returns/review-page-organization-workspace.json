@@ -1,0 +1,31 @@
+{
+  "task_id": "review-page-organization-workspace",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "8d84f68626d43f84af94f9c12f56526aedd4231aaa15d9868d8d6e52b83fea4e",
+  "findings": [
+    {
+      "severity": "high",
+      "path": "openclaw-bot-center/src/media/OrganizationWorkspaceShellPage.tsx",
+      "line": 303,
+      "title": "Uses inline SurfaceState for a page-level gate",
+      "detail": "OrganizationShellState now renders SurfaceState inside a bare main. The shared helper explicitly defines SurfaceState as an inline panel and PageGate as the page-level counterpart for OrganizationWorkspaceShellPage shell states. This changes the route-level loading, unauthorized, and invalid-state structure and leaves the existing organization-shell-state page styling/selectors mismatched with the new nested DOM; use the page-level gate contract while preserving the three state branches."
+    }
+  ],
+  "checks": [
+    {
+      "command": "git diff --check -- openclaw-bot-center/src/media/OrganizationWorkspaceShellPage.tsx",
+      "result": "pass"
+    },
+    {
+      "check": "scoped diff hash",
+      "result": "pass"
+    },
+    {
+      "check": "static review only",
+      "result": "pass; no browser or release proof claimed"
+    }
+  ],
+  "residual_risks": [
+    "Content-state operation guards, organization/Lark authority checks, ownership and campaign accent attributes, and responsive primitive breakpoints were reviewed statically; runtime behavior was not executed."
+  ]
+}

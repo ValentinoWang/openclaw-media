@@ -1,0 +1,24 @@
+TASK_ID=adoption-contract-remediation
+
+Preserve every concurrent change in the dirty worktree. Edit only the exclusive scope. No git state operations. Use apply_patch.
+
+Exclusive write scope:
+- scripts/qa/checkMediaPrimitiveAdoption.ts
+- agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/foundation-route-matrix.md
+- agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-invites.md
+- agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-tracks.md
+- agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/page-media-agent.md
+- agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/stage3-studio-shell.md
+- agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/adoption-guard.md
+- agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/adoption-contract.json
+
+Authoritative decisions:
+- Personal ordinary legacy routes intentionally redirect to /workspace; they are not required to remain individually reachable.
+- Tracks and Invites automatically follow response cursors to complete the intended read; this is deliberate, not a pagination regression.
+- Media Agent's empty state intentionally retains the device-pairing entry.
+- Compact navigation for fewer than three destinations remains intended.
+- Primitive adoption is measured against each primitive's real eligible semantic denominator. Do not require meaningless tabs/metrics/state widgets on pages lacking those semantics. Every eligible surface must adopt the primitive and the reported eligible adoption must be at least 90%; retain the closed 24-surface manifest and honest counts.
+
+Guard root fix: inspect JSX with the TypeScript AST and ensure data-page-ownership and data-accent occur on the same route-root <main>, not assembled across unrelated main elements. Every identified route-root main in a surface must carry both attributes; renderer-only remains exempt as a non-route. Prelude evidence must belong to a route root's subtree, not an unrelated element. Extend --self-test with a synthetic split-main case that is rejected and a same-root case that passes.
+
+Update the six stale task specs so future review matches the decisions above; do not rewrite unrelated history. Run npx tsx scripts/qa/checkMediaPrimitiveAdoption.ts --self-test; npx tsx scripts/qa/checkMediaPrimitiveAdoption.ts --json; git diff --check on owned files. Write structured JSON return with commands, changed_files, guard_root_cause, contract_updates, unverified_items, failure_class/origin, acceptance_self_check, proposed_state.

@@ -1,0 +1,28 @@
+TASK_ID=page-admin-access
+ATTEMPT_ROLE=primary
+PRIMARY_EXECUTOR=lw-luna
+PRIMARY_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+ATTEMPT_EXECUTOR=lw-luna
+ATTEMPT_WRAPPER=/Users/vsiyo/.codex/workers/run-lw-luna.sh
+PROJECT_ROOT=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend
+TASK_SOURCE_SHA256=22d445b6c0409da435cd539d333caca1c86c69e7b055b0b3f6e2fc4940c6d785
+STRUCTURED_RETURN_PATH=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-artifacts/page-admin-access/returns/page-admin-access-primary.json
+VALIDATION_COMMAND_FILE=/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center/agents-results/2026-08-31/media-visual-mainline-migration/worker-tasks/validate-page-admin-access.sh
+VALIDATION_COMMAND_SHA256=09dcd8b9e552b2eaed21f49085104f96e1774885992f446b9e38df08b7b191f9
+
+Execute exactly the bounded task below. Preserve its frozen inputs, write scope, forbidden scope, and acceptance commands. Full filesystem access is process capability only and does not expand task authority.
+
+Write one JSON object to STRUCTURED_RETURN_PATH before exit. It must include proposed_state, acceptance_self_check, failure_class, and failure_origin. proposed_state must be IMPLEMENTED, VERIFIED, FAILED, or BLOCKED; acceptance_self_check must be pass, fail, or partial. failure_class must be none, implementation, runtime, verification, transport, architecture-conflict, authority-conflict, interface-freeze, permission, product-decision, or scope-conflict. failure_origin must identify one of: none, environment, app-server, browser, database, test-infrastructure, provider-network, provider-transport, worker-transport, product-behavior, implementation, architecture-complexity, control-plane, test-oracle, authority, scope, or unknown-origin. Use none only for a successful attempt.
+
+BOUNDED_TASK_BEGIN
+TASK_ID=page-admin-access
+Read the common page contract and verify SHA-256 `2cdf6bfd456c83cf5e02b1b5b578133cfab6a93146beb08968f003afd793851a` before editing.
+
+Migrate AdminAccessPage to DS-06..DS-11 shared primitives while preserving admission, suspension, role, audit reason, pagination, and error contracts. Root ownership is `governance`; accent is `campaign`.
+
+Exclusive write scope:
+- `openclaw-bot-center/src/media/pages/admin/AdminAccessPage.tsx`
+- `openclaw-bot-center/src/media/pages/admin/AdminAccessPage.module.css`
+
+Acceptance command: `git diff --check -- openclaw-bot-center/src/media/pages/admin/AdminAccessPage.tsx openclaw-bot-center/src/media/pages/admin/AdminAccessPage.module.css`.
+BOUNDED_TASK_END

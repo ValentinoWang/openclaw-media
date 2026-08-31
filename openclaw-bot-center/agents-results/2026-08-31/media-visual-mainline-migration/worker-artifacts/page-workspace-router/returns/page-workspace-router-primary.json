@@ -1,0 +1,14 @@
+{
+  "task_id": "page-workspace-router",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "changed_files": [
+    "openclaw-bot-center/src/media/WorkspaceShellPage.tsx"
+  ],
+  "acceptance_command": "git diff --check -- openclaw-bot-center/src/media/WorkspaceShellPage.tsx",
+  "acceptance_result": "pass",
+  "common_page_contract_sha256": "2cdf6bfd456c83cf5e02b1b5b578133cfab6a93146beb08968f003afd793851a",
+  "validation_command_sha256": "ba46dfd0e0277f2d58bf3b0d580c08d829a49a9fe1ffa2def0a4b694f8ce84db"
+}

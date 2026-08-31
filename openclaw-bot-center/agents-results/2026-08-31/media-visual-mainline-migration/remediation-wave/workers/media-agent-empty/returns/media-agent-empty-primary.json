@@ -1,0 +1,32 @@
+{
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "changed_files": [
+    "src/media/pages/ordinary/MediaAgentPage.tsx",
+    "scripts/qa/checkMediaAgentTabOrder.ts"
+  ],
+  "red_green_proof": {
+    "red": "--self-test fixture with RunTab reachable from state === empty was rejected by the AST guard",
+    "green": "--self-test fixture with empty SurfaceState plus device pairing surface was accepted; comments were not used as evidence"
+  },
+  "commands": [
+    {
+      "command": "bash agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/inputs/media-agent-empty.validation.sh",
+      "result": "pass; tab-order, empty-state self-test, oxlint, and diff check succeeded"
+    },
+    {
+      "command": "npx tsc -p tsconfig.media-u12b.json --noEmit --pretty false",
+      "result": "pass"
+    },
+    {
+      "command": "npx oxlint src/media/pages/ordinary/MediaAgentPage.tsx scripts/qa/checkMediaAgentTabOrder.ts",
+      "result": "exit 0; existing exhaustive-deps warning at MediaAgentPage.tsx:75"
+    }
+  ],
+  "remaining_risks": [
+    "No browser, authenticated API, device pairing, deployment, or production evidence was run in this static lane.",
+    "The worktree contains unrelated dirty changes that were not inspected or altered."
+  ]
+}

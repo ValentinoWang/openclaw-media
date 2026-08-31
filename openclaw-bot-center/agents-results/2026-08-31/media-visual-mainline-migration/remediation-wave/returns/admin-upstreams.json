@@ -1,0 +1,47 @@
+{
+  "task_id": "admin-upstreams-remediation",
+  "proposed_state": "VERIFIED",
+  "acceptance_self_check": "pass",
+  "failure_class": "none",
+  "failure_origin": "none",
+  "commands": [
+    {
+      "command": "git diff --check -- src/media/pages/admin/AdminUpstreamsPage.tsx",
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "command": "npx tsc -b tsconfig.media-u12b.json",
+      "status": "pass",
+      "exit_code": 0
+    }
+  ],
+  "changed_files": [
+    "src/media/pages/admin/AdminUpstreamsPage.tsx",
+    "agents-results/2026-08-31/media-visual-mainline-migration/remediation-wave/returns/admin-upstreams.json"
+  ],
+  "finding_fixed": [
+    {
+      "path": "src/media/pages/admin/AdminUpstreamsPage.tsx",
+      "line": 358,
+      "icon": "ShieldCheck",
+      "change": "Added aria-hidden=\"true\" to the decorative health icon."
+    },
+    {
+      "path": "src/media/pages/admin/AdminUpstreamsPage.tsx",
+      "line": 368,
+      "icon": "ReceiptText",
+      "change": "Added aria-hidden=\"true\" to the decorative reconciliation-heading icon."
+    },
+    {
+      "path": "src/media/pages/admin/AdminUpstreamsPage.tsx",
+      "line": 419,
+      "icon": "ActionBanner status icon",
+      "change": "Added aria-hidden=\"true\" to the decorative dynamic status icon."
+    }
+  ],
+  "unverified_items": [
+    "Browser and responsive screenshot verification was not run.",
+    "Release and deployment proof was not run."
+  ]
+}

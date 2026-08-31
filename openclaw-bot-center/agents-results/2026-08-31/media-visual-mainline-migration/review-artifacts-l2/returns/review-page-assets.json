@@ -1,0 +1,25 @@
+{
+  "task_id": "review-page-assets",
+  "decision": "PASS",
+  "scoped_diff_sha256": "45a1e20633b905d1ddbc5bfba79d384a21784f203771ec5eff8e2da24a976230",
+  "findings": [],
+  "checks": [
+    {
+      "command": "git diff --check -- openclaw-bot-center/src/media/pages/ordinary/AssetsPage.tsx openclaw-bot-center/src/media/pages/ordinary/AssetsPage.module.css",
+      "result": "pass"
+    },
+    {
+      "check": "owned-path scope",
+      "result": "pass",
+      "detail": "Baseline diff contains only the two declared owned paths."
+    },
+    {
+      "check": "static implementation review",
+      "result": "pass",
+      "detail": "Required state branches, shared primitive semantics, attribution, accessibility labels, thumbnail fallback, cursor pagination, deletion lifecycle, and responsive layout branches are present."
+    }
+  ],
+  "residual_risks": [
+    "No browser, runtime, integration, or release proof was performed; this is a static lane review only."
+  ]
+}

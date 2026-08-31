@@ -1,0 +1,11 @@
+{
+  "task_id": "foundation-auth",
+  "proposed_state": "IMPLEMENTED",
+  "acceptance_self_check": "partial",
+  "failure_class": "verification",
+  "failure_origin": "test-infrastructure",
+  "acceptance_command": "pass",
+  "contract_json_parse": "pass",
+  "build_verification": "blocked: npm run build:media could not run because tsx and local node_modules are absent; the sibling Vite fallback could not resolve dependencies",
+  "write_scope_check": "pass: only the five authorized project files were modified; no commit was created"
+}

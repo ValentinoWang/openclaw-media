@@ -1,0 +1,20 @@
+Task: Make primitive adoption evidence reflect reachable rendered JSX, not unused helper code.
+
+Project root: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/openclaw-mainline-frontend/openclaw-bot-center
+Exclusive write scope:
+- scripts/qa/checkMediaPrimitiveAdoption.ts
+- scripts/qa/checkMediaPrimitiveCoverage.ts
+
+Forbidden: page/component source, package.json, other tests/evidence, git index/refs/commits, network/remotes, deployment.
+
+Known red proof: replacing admin-access's real mg-tabs consumer with legacy-tabs and appending an unused function returning <div className="mg-tabs" /> currently reports mg-tabs adopted with no violation.
+
+Requirements:
+1. Continue using TypeScript AST and the fixed 24 canonical routed-surface manifest.
+2. Count primitive adoption only when the marker is reachable from the surface's default-export render tree through locally resolvable component/function calls. Unreferenced helpers, comments, strings, and dead declarations must not count.
+3. Fail closed on unresolved local render helpers that could own required markers; do not guess from raw file substrings.
+4. Preserve per-primitive eligibility, >=90 percent thresholds, admin/ordinary true-consumer requirements, ownership/accent/prelude checks, duplicate IDs, missing files, and malformed TSX rejection.
+5. Add the exact unused-helper false-green as a --self-test red case, plus a legal referenced-helper green case.
+6. Keep coverage script independent enough to validate the adoption summary and thresholds.
+
+Return changed files, self-test evidence, remaining risks, and IMPLEMENTED only when owned gates pass.

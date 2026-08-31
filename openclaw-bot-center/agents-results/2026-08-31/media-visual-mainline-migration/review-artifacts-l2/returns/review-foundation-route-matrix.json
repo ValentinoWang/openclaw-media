@@ -1,0 +1,42 @@
+{
+  "task_id": "review-foundation-route-matrix",
+  "decision": "FAIL",
+  "scoped_diff_sha256": "156f6cb0a0f03e84ee1a7d920d6f653b47695af0d25094c9134e1e78eb912d2f",
+  "findings": [
+    {
+      "severity": "blocker",
+      "path": "openclaw-bot-center/src/media/MediaStudioApp.tsx",
+      "line": 148,
+      "title": "Personal navigation drops the ordinary Studio navigation",
+      "detail": "The personal policy exposes only /workspace via personalNavigation. The task requires an ordinary personal_web/internal session to retain the current Studio/ordinary navigation and add a discoverable personal workspace entry, so /today, Studio, and the legacy ordinary routes are not discoverable from this shell."
+    },
+    {
+      "severity": "blocker",
+      "path": "openclaw-bot-center/src/media/MediaStudioApp.tsx",
+      "line": 382,
+      "title": "Ordinary routes are unreachable for personal sessions",
+      "detail": "ordinaryRoute ignores its element and always redirects to policy.defaultRoute. Consequently a personal session cannot render /today, /studio, or any of the ordinary route implementations, violating the explicit reachability requirement and the requirement to preserve current component implementations."
+    },
+    {
+      "severity": "major",
+      "path": "openclaw-bot-center/scripts/qa/checkMediaStudioRouteMatrix.ts",
+      "line": 218,
+      "title": "QA matrix codifies the wrong personal ordinary-route behavior",
+      "detail": "The fixture loop expects every ordinary route to redirect for every shell, including ordinary personal workspace. This lets the narrow QA pass while validating the regression above instead of failing closed on the required personal render behavior."
+    }
+  ],
+  "checks": [
+    {
+      "name": "git diff --check (owned paths)",
+      "result": "pass"
+    },
+    {
+      "name": "npx tsx scripts/qa/checkMediaStudioRouteMatrix.ts",
+      "result": "pass",
+      "detail": "Static guards and four fixtures pass, but the assertions are contract-incomplete as noted in findings."
+    }
+  ],
+  "residual_risks": [
+    "No browser, authenticated E2E, deployment, or release evidence was run; this is a static review only."
+  ]
+}
