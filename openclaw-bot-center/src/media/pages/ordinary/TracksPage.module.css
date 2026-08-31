@@ -267,7 +267,7 @@
   background: transparent;
   font: inherit;
   font-size: var(--mg-text-xs);
-  font-weight: 650;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -422,7 +422,7 @@
   border: 1px solid transparent;
   border-radius: var(--mg-r-md);
   font-size: var(--mg-text-2xs);
-  font-weight: 680;
+  font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -664,7 +664,7 @@
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
   font-size: var(--mg-text-sm);
-  font-weight: 720;
+  font-weight: 700;
 }
 
 .identityCopy {
@@ -784,7 +784,7 @@
   gap: 5px;
   color: var(--mg-ink);
   font-size: var(--mg-text-xs);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .monitorEditorLabel textarea {
@@ -1057,7 +1057,7 @@
   background: var(--mg-surface);
   font: inherit;
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
 }
@@ -1193,7 +1193,7 @@
   background: transparent;
   font: inherit;
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 

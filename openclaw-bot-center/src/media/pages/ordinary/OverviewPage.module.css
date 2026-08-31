@@ -206,7 +206,7 @@
   margin: 0;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .dashboardDetailGrid {
@@ -970,7 +970,7 @@
   gap: 4px;
   color: var(--accent-ink);
   font-size: var(--mg-text-xs);
-  font-weight: 650;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -1029,14 +1029,14 @@
   color: var(--mg-muted);
   background: color-mix(in srgb, var(--mg-bg) 68%, var(--mg-surface));
   font-size: var(--mg-text-xs);
-  font-weight: 650;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .runTable tbody th {
   color: var(--mg-ink);
   font-size: var(--mg-text-sm);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .runTable tbody td {
@@ -1449,7 +1449,7 @@
   border: 1px solid var(--mg-border-strong);
   border-radius: var(--mg-r-sm);
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 

@@ -384,7 +384,7 @@
   color: var(--mg-muted);
   background: color-mix(in srgb, var(--mg-bg) 70%, var(--mg-surface));
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .catalogTable thead th:first-child {
@@ -657,7 +657,7 @@
 .inspectorFacts dd {
   margin: 3px 0 0;
   color: var(--mg-ink);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .inspectorSection {
@@ -957,7 +957,7 @@
   overflow-wrap: anywhere;
   color: var(--mg-primary-dark);
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .errorBox {

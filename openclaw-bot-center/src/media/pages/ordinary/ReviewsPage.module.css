@@ -48,7 +48,7 @@
   cursor: pointer;
   white-space: nowrap;
   font-size: var(--mg-text-sm);
-  font-weight: 780;
+  font-weight: 800;
   line-height: 1.1;
 }
 
@@ -282,7 +282,7 @@
 
 .table tbody th {
   color: var(--reviews-ink);
-  font-weight: 760;
+  font-weight: 800;
 }
 
 .table tbody tr:last-child th,
@@ -345,7 +345,7 @@
   overflow: hidden;
   color: var(--reviews-muted);
   font-size: var(--mg-text-xs);
-  font-weight: 650;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -378,7 +378,7 @@
   padding: 0.18rem 0.35rem;
   border-radius: 0.25rem;
   font-size: var(--mg-text-xs);
-  font-weight: 760;
+  font-weight: 800;
   white-space: nowrap;
 }
 
@@ -534,7 +534,7 @@
 .factList dt {
   color: var(--reviews-muted);
   font-size: var(--mg-text-xs);
-  font-weight: 780;
+  font-weight: 800;
 }
 
 .factList dd {
@@ -611,7 +611,7 @@
   min-width: 0;
   color: var(--reviews-ink);
   font-size: var(--mg-text-sm);
-  font-weight: 780;
+  font-weight: 800;
 }
 
 .input,

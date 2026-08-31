@@ -74,7 +74,7 @@
   gap: 7px;
   border-radius: var(--mg-r-sm);
   font-size: var(--mg-text-sm);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .primaryAction {
@@ -199,7 +199,7 @@
   gap: 5px;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .filterField input,
@@ -481,7 +481,7 @@
 
 .cardMeta > span:first-child {
   color: var(--mg-primary-dark);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .cardIdentityMeta {
@@ -983,7 +983,7 @@
   padding: 0 13px;
   border-radius: var(--mg-r-sm);
   font-size: var(--mg-text-xs);
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 

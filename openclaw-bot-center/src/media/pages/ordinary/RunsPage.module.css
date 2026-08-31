@@ -197,7 +197,7 @@
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
   font-size: var(--mg-text-xs);
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -368,7 +368,7 @@
   color: var(--mg-muted);
   background: oklch(0.985 0.003 175);
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -420,7 +420,7 @@
 
 .table tbody th {
   min-width: 0;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .runButton {
@@ -454,7 +454,7 @@
   gap: 5px;
   color: var(--mg-primary-dark);
   font-size: var(--mg-text-2xs);
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .runId svg {
@@ -490,7 +490,7 @@
   padding: 3px 6px;
   border-radius: var(--mg-r-xs);
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -660,7 +660,7 @@
   margin: 0 0 4px;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .factCard strong {
@@ -685,7 +685,7 @@
 .extraFacts summary {
   color: var(--mg-primary-dark);
   font-size: var(--mg-text-xs);
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -730,7 +730,7 @@
   color: var(--mg-primary-dark);
   border-color: var(--mg-primary);
   background: var(--mg-primary-soft);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .mutedCopy {
@@ -795,7 +795,7 @@
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -885,7 +885,7 @@
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
   font-size: var(--mg-text-xs);
-  font-weight: 650;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -1002,7 +1002,7 @@
 .sectionMeta strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .typedMap,
@@ -1158,7 +1158,7 @@
   overflow-wrap: anywhere;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .table th,

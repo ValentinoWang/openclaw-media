@@ -39,7 +39,7 @@
   background: linear-gradient(145deg, #95e4bd, #45b982);
   box-shadow: var(--mg-e3);
   font-size: var(--mg-text-sm);
-  font-weight: 850;
+  font-weight: 800;
   letter-spacing: var(--mg-track-tight);
 }
 
@@ -59,7 +59,7 @@
   color: white;
   background: color-mix(in srgb, var(--mg-surface) 5%, transparent);
 }
-.studio-workspace-card > span { color: rgba(234,246,238,.45); font-size: var(--mg-text-2xs); font-weight: 720; letter-spacing: var(--mg-track-wide); }
+.studio-workspace-card > span { color: rgba(234,246,238,.45); font-size: var(--mg-text-2xs); font-weight: 700; letter-spacing: var(--mg-track-wide); }
 .studio-workspace-card > strong { font-size: var(--mg-text-sm); }
 .studio-workspace-card > small { display: flex; align-items: center; gap: 6px; color: rgba(234,246,238,.58); font-size: var(--mg-text-2xs); }
 .studio-workspace-card i {
@@ -91,7 +91,7 @@
   margin: 12px 10px 6px;
   color: rgba(234,246,238,.38);
   font-size: var(--mg-text-2xs);
-  font-weight: 780;
+  font-weight: 800;
   letter-spacing: var(--mg-track-wide);
   text-transform: uppercase;
 }
@@ -119,8 +119,8 @@
 .studio-nav-icon { display: grid; width: 25px; height: 25px; place-items: center; color: rgba(158,222,188,.8); }
 .studio-nav-copy { min-width: 0; }
 .studio-nav-copy strong, .studio-nav-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.studio-nav-copy strong { font-size: var(--mg-text-sm); font-weight: 670; }
-.studio-nav-copy small { margin-top: 2px; color: rgba(234,246,238,.4); font-size: var(--mg-text-2xs); font-weight: 520; }
+.studio-nav-copy strong { font-size: var(--mg-text-sm); font-weight: 700; }
+.studio-nav-copy small { margin-top: 2px; color: rgba(234,246,238,.4); font-size: var(--mg-text-2xs); font-weight: 500; }
 .studio-nav-link.active .studio-nav-copy small { color: rgba(236,250,242,.62); }
 .studio-nav-link > b { min-width: 20px; padding: 2px 6px; border-radius: var(--mg-r-full); color: #133329; background: #a4dfbf; font-size: var(--mg-text-2xs); text-align: center; }
 
@@ -265,7 +265,7 @@
   padding: 0 12px;
   border-radius: var(--mg-r-md);
   font-size: var(--mg-text-xs);
-  font-weight: 750;
+  font-weight: 700;
   cursor: pointer;
 }
 .studio-command-button { border: 1px solid var(--mg-border-strong); color: var(--mg-ink); background: var(--mg-surface); }

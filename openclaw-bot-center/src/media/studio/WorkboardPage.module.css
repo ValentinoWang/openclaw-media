@@ -124,7 +124,7 @@
 .loopCard header small {
   color: var(--loop-accent);
   font-size: var(--mg-text-sm);
-  font-weight: 850;
+  font-weight: 800;
   letter-spacing: .11em;
 }
 
@@ -226,7 +226,7 @@
   gap: 4px;
   margin-left: auto;
   color: var(--mg-primary-dark);
-  font-weight: 750;
+  font-weight: 700;
   text-decoration: none;
 }
 
@@ -266,7 +266,7 @@
   gap: 7px;
   color: var(--mg-warning);
   font-size: var(--mg-text-sm);
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .deadlineCard strong { display: block; margin-top: 10px; font-size: var(--mg-text-sm); }

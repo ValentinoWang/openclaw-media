@@ -12,16 +12,16 @@
 .opportunityGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; }
 .opportunityCard { min-width: 0; padding: 17px; border-bottom: 1px solid var(--mg-border); background: transparent; }
 .opportunityCard header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.opportunityCard header > div > span { display: block; color: var(--accent-base); font-size: var(--mg-text-sm); font-weight: 760; }
+.opportunityCard header > div > span { display: block; color: var(--accent-base); font-size: var(--mg-text-sm); font-weight: 800; }
 .opportunityCard h3 { margin: 6px 0 0; font-size: var(--mg-text-md); line-height: 1.4; }
 .opportunityCard dl { display: grid; gap: 0; margin: 14px 0 0; }
 .opportunityCard dl > div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--mg-border); }
 .opportunityCard dl > div:last-child { border-bottom: 0; }
 .opportunityCard dt { color: var(--mg-muted); font-size: var(--mg-text-sm); }
-.opportunityCard dd { min-width: 0; margin: 0; font-size: var(--mg-text-sm); font-weight: 650; overflow-wrap: anywhere; }
+.opportunityCard dd { min-width: 0; margin: 0; font-size: var(--mg-text-sm); font-weight: 600; overflow-wrap: anywhere; }
 .opportunityCard footer { display: flex; align-items: center; gap: 10px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--mg-border); }
 .opportunityCard code { min-width: 0; overflow: hidden; color: var(--mg-muted); font-size: var(--mg-text-sm); text-overflow: ellipsis; white-space: nowrap; }
-.opportunityCard footer a { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 4px; margin-left: auto; color: var(--accent-ink); font-size: var(--mg-text-sm); font-weight: 750; text-decoration: none; }
+.opportunityCard footer a { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 4px; margin-left: auto; color: var(--accent-ink); font-size: var(--mg-text-sm); font-weight: 700; text-decoration: none; }
 .modelStack { display: grid; justify-items: center; gap: 7px; padding: 16px; }
 .modelCard { display: grid; width: 100%; grid-template-columns: 38px minmax(0, 1fr); gap: 11px; padding: 14px; border-bottom: 1px solid var(--mg-border); background: transparent; }
 .modelCard > span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: var(--mg-r-md); color: var(--accent-base); background: var(--accent-soft); }

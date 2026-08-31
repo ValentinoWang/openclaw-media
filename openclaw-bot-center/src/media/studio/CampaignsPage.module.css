@@ -21,7 +21,7 @@
 .campaignCard { padding: 17px; border-bottom: 1px solid var(--mg-border); background: transparent; }
 .campaignCard header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .campaignIdentity { min-width: 0; }
-.campaignIdentity > span { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-base); font-size: var(--mg-text-sm); font-weight: 750; }
+.campaignIdentity > span { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-base); font-size: var(--mg-text-sm); font-weight: 700; }
 .campaignIdentity h3 { margin: 8px 0 4px; font-size: var(--mg-text-md); line-height: 1.45; }
 .campaignIdentity code { color: var(--mg-muted); font-size: var(--mg-text-sm); }
 .progressRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; margin: 15px 0 13px; }

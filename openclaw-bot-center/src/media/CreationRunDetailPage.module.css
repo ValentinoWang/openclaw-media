@@ -56,7 +56,7 @@
 .canvasFooter { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; color: var(--mg-muted); font-size: var(--mg-text-sm); }
 .diffCard { margin-top: 16px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--mg-danger) 30%, var(--mg-border)); border-radius: var(--mg-r-md); background: var(--mg-danger-soft); }
 .diffCard header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-bottom: 1px solid color-mix(in srgb, var(--mg-danger) 30%, var(--mg-border)); }
-.diffCard header span { display: flex; align-items: center; gap: 6px; color: var(--mg-danger); font-size: var(--mg-text-sm); font-weight: 750; }
+.diffCard header span { display: flex; align-items: center; gap: 6px; color: var(--mg-danger); font-size: var(--mg-text-sm); font-weight: 700; }
 .diffCard header small { color: var(--mg-muted); font-size: var(--mg-text-sm); }
 .diffCard > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .diffCard article { min-width: 0; padding: 12px; }
@@ -72,7 +72,7 @@
 .metadataList { margin: 0; }
 .briefPanel dl > div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--mg-border); }
 .briefPanel dt { color: var(--mg-muted); font-size: var(--mg-text-sm); }
-.briefPanel dd { margin: 0; font-size: var(--mg-text-sm); font-weight: 650; overflow-wrap: anywhere; }
+.briefPanel dd { margin: 0; font-size: var(--mg-text-sm); font-weight: 600; overflow-wrap: anywhere; }
 .briefPanel section { display: grid; gap: 7px; }
 .briefPanel section header { display: flex; align-items: center; justify-content: space-between; }
 .briefPanel section header strong { font-size: var(--mg-text-sm); }

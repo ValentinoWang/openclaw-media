@@ -14,7 +14,7 @@
 .moduleCard[data-tone='growth'] { --accent: var(--mg-accent-studio-base); --soft: var(--mg-accent-studio-soft); }
 .moduleCard header { display: flex; align-items: center; gap: 9px; }
 .moduleCard header span { display: grid; width: 40px; height: 40px; place-items: center; border-radius: var(--mg-r-md); color: var(--accent); background: var(--soft); }
-.moduleCard header small { color: var(--accent); font-size: var(--mg-text-sm); font-weight: 850; letter-spacing: .11em; }
+.moduleCard header small { color: var(--accent); font-size: var(--mg-text-sm); font-weight: 800; letter-spacing: .11em; }
 .moduleCard h2 { margin: 18px 0 8px; font-size: var(--mg-text-lg); line-height: 1.35; }
 .moduleCard p { margin: 0; color: var(--mg-muted); font-size: var(--mg-text-sm); line-height: 1.65; }
 .moduleCard button { align-self: flex-start; min-height: 34px; margin-top: auto; padding: 0 10px; border-color: color-mix(in srgb, var(--accent) 28%, var(--mg-border)); color: var(--accent); background: var(--mg-surface); }
