@@ -17,7 +17,7 @@ const viewports = [
 ] as const
 
 type Viewport = (typeof viewports)[number]
-type EntryState = 'matched' | 'none' | 'expired' | 'mismatched'
+type EntryState = 'matched' | 'none' | 'expired' | 'mismatched' | 'unavailable'
 type EntryMode = 'personal' | 'organization'
 type Telemetry = {
   consoleErrors: string[]
@@ -75,6 +75,10 @@ function sessionPayload(): Record<string, unknown> {
       workspaceMode: 'personal_web',
       editorMode: 'web_edit',
       bodyAuthority: 'internal',
+      organizationName: null,
+      organizationConnection: 'not_applicable',
+      installationConnection: 'not_applicable',
+      routeGrants: ['/today', '/studio', '/campaigns', '/business', '/desk', '/overview', '/assets', '/tracks', '/decisions', '/publishing', '/reviews', '/media-agent', '/archives', '/usage-billing', '/invites', '/workspace'],
     },
   }
 }
@@ -147,6 +151,22 @@ async function assertAuthLayout(page: Page, viewport: Viewport, label: string, i
       const center = document.elementFromPoint(Math.max(1, rect.left + rect.width / 2), Math.max(1, rect.top + rect.height / 2))
       if (center && !element.contains(center) && !(element.id && center.closest(`#${CSS.escape(element.id)}`))) {
         throw new Error(`interactive control is obscured: ${element.id || element.tagName}`)
+      }
+    }
+    const qrShell = document.querySelector<HTMLElement>('.qr-shell')
+    const qrCanvas = document.querySelector<HTMLElement>('#qr-canvas')
+    if (qrShell && qrCanvas && getComputedStyle(qrShell).display !== 'none') {
+      const shellRect = qrShell.getBoundingClientRect()
+      const canvasRect = qrCanvas.getBoundingClientRect()
+      if (canvasRect.left < shellRect.left - 1 || canvasRect.right > shellRect.right + 1 || canvasRect.top < shellRect.top - 1 || canvasRect.bottom > shellRect.bottom + 1) {
+        throw new Error('QR canvas exceeds its shell')
+      }
+      const verticalBlocks = [qrShell, document.querySelector<HTMLElement>('#qr-status'), document.querySelector<HTMLElement>('#mobile-authorize'), document.querySelector<HTMLElement>('.security-note')]
+        .filter((element): element is HTMLElement => Boolean(element && getComputedStyle(element).display !== 'none' && !element.hidden))
+      for (let index = 0; index < verticalBlocks.length - 1; index += 1) {
+        const current = verticalBlocks[index].getBoundingClientRect()
+        const next = verticalBlocks[index + 1].getBoundingClientRect()
+        if (current.bottom > next.top + 1) throw new Error(`${verticalBlocks[index].id || verticalBlocks[index].className} overlaps ${verticalBlocks[index + 1].id || verticalBlocks[index + 1].className}`)
       }
     }
     const identityChoices = [...document.querySelectorAll<HTMLElement>('.identity-choice-button')]
@@ -269,7 +289,7 @@ async function runIdentityChoiceOverlapNegativeProof(browser: Browser, origin: s
 
 async function runEntryStateMatrix(browser: Browser, origin: string, viewport: Viewport): Promise<void> {
   for (const mode of ['personal', 'organization'] as const) {
-    for (const state of ['matched', 'none', 'expired', 'mismatched'] as const) {
+    for (const state of ['matched', 'none', 'expired', 'mismatched', 'unavailable'] as const) {
       const { context, page, telemetry } = await newLoginPage(browser, viewport, async (route, requestedMode) => fulfillJson(route, entryPayload(requestedMode, state)))
       try {
         await page.goto(`${origin}${mediaRoot}/login?mode=${mode}`, { waitUntil: 'domcontentloaded' })
@@ -285,9 +305,7 @@ async function runEntryStateMatrix(browser: Browser, origin: string, viewport: V
         } else {
           assert.equal(telemetry.feishuRequests, 0, `${viewport.label}: matched organization must not request Feishu`)
         }
-        if (viewport.label === '390x844' && fallback) {
-          await assertFallbackFitsViewport(page, viewport, mode, state)
-        }
+        if (fallback) await assertFallbackFitsViewport(page, viewport, mode, state)
         await assertAuthLayout(page, viewport, `${viewport.label} ${mode} ${state}`)
         if ((state === 'matched' || state === 'expired') && mode === 'organization') await screenshot(page, `login-${mode}-${state}-${viewport.label}`)
         await assertNoRuntimeErrors(telemetry, `${viewport.label} ${mode} ${state}`)
@@ -307,6 +325,8 @@ async function runFallbackAndKeyboard(browser: Browser, origin: string, viewport
     await page.locator('#personal-entry-state').waitFor({ state: 'hidden' })
     await page.locator('#personal-password-fallback').waitFor({ state: 'visible' })
     await page.getByLabel('用户名或已验证邮箱').waitFor({ state: 'visible' })
+    await assertFallbackFitsViewport(page, viewport, 'personal', 'matched')
+    await assertAuthLayout(page, viewport, `${viewport.label} personal manual fallback`)
 
     await page.goto(`${origin}${mediaRoot}/login?mode=organization`, { waitUntil: 'domcontentloaded' })
     await expectState(page, 'organization', 'matched')
@@ -314,6 +334,8 @@ async function runFallbackAndKeyboard(browser: Browser, origin: string, viewport
     await page.locator('#organization-entry-state').waitFor({ state: 'hidden' })
     await page.locator('#mobile-authorize').waitFor({ state: 'visible' })
     assert.equal(telemetry.feishuRequests, 1, `${viewport.label}: organization fallback must request one QR code`)
+    await assertFallbackFitsViewport(page, viewport, 'organization', 'matched')
+    await assertAuthLayout(page, viewport, `${viewport.label} organization manual fallback`)
 
     await page.goto(`${origin}${mediaRoot}/login`, { waitUntil: 'domcontentloaded' })
     const personal = page.getByRole('tab', { name: /个人创作者/ })

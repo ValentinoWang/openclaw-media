@@ -297,6 +297,8 @@ async function startOrganizationAuth() {
         errorCorrectionLevel: 'M',
         color: { dark: '#20242c', light: '#ffffff' },
       })
+      qrCanvas.style.removeProperty('width')
+      qrCanvas.style.removeProperty('height')
       if (run !== organizationRun) return
       setHidden('qr-placeholder', true)
       const mobileAuthorize = document.querySelector('#mobile-authorize')
