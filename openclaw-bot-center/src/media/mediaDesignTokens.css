@@ -28,6 +28,11 @@
   --mg-text-2xl: 1.75rem;    /* 28px  页面标题 */
   --mg-text-3xl: clamp(2rem, 2.6vw, 2.75rem); /* 32–44px Hero */
 
+  /* ---- 字距（中文标题默认不收紧）---- */
+  --mg-track-tight: 0;
+  --mg-track-normal: 0;
+  --mg-track-wide: 0;
+
   --mg-lh-tight: 1.25;
   --mg-lh-snug:  1.45;
   --mg-lh-base:  1.65;
@@ -78,8 +83,8 @@
   --mg-border:        #dde5de;
   --mg-border-strong: #cbd7ce;
 
-  --mg-primary:       #239b69;
-  --mg-primary-dark:  #126344;
+  --mg-primary:       #1a9b68;
+  --mg-primary-dark:  #10684a;
   --mg-primary-soft:  #dff4e8;
   /* 压在 primary / primary-dark 上的字色：暗色模式下 primary 会变亮，白字会糊 */
   --mg-on-primary:    #ffffff;
@@ -88,7 +93,7 @@
   --mg-blue-soft:     #e8f1fb;
   --mg-warning:       #a96d18;
   --mg-warning-soft:  #fff0d2;
-  --mg-danger:        #bd5147;
+  --mg-danger:        #b42318;
   --mg-danger-soft:   #fde9e6;
 
   --mg-sidebar:       #173029;

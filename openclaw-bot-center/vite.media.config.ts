@@ -6,6 +6,11 @@ import { copyFileSync, existsSync, renameSync } from 'node:fs'
 export default defineConfig({
   base: '/openclaw/media/',
   publicDir: false,
+  resolve: {
+    alias: {
+      '/mediaDesignTokens.css': resolve(__dirname, 'src/media/mediaDesignTokens.css'),
+    },
+  },
   plugins: [
     react(),
     {
@@ -36,6 +41,9 @@ export default defineConfig({
         if (existsSync(authScriptSource)) copyFileSync(authScriptSource, resolve(__dirname, 'dist-media/media.login.js'))
         const authCssSource = resolve(__dirname, 'src/media.auth.css')
         if (existsSync(authCssSource)) copyFileSync(authCssSource, resolve(__dirname, 'dist-media/media.auth.css'))
+        const tokenCssSource = resolve(__dirname, 'src/media/mediaDesignTokens.css')
+        if (!existsSync(tokenCssSource)) throw new Error('missing mediaDesignTokens.css source')
+        copyFileSync(tokenCssSource, resolve(__dirname, 'dist-media/mediaDesignTokens.css'))
       },
     },
   ],
@@ -47,7 +55,6 @@ export default defineConfig({
         index: resolve(__dirname, 'index.media.html'),
         login: resolve(__dirname, 'media.login.html'),
         'media.login': resolve(__dirname, 'media.login.js'),
-        'media.auth': resolve(__dirname, 'src/media.auth.css'),
         register: resolve(__dirname, 'media.register.html'),
         verify: resolve(__dirname, 'src/media.verify.html'),
         recover: resolve(__dirname, 'src/media.recover.html'),

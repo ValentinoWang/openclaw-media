@@ -55,8 +55,20 @@ function setBusy(button, busy, busyLabel, idleLabel) {
   button.textContent = busy ? busyLabel : idleLabel
 }
 
+const AUTH_REQUEST_TIMEOUT_MS = 5000
+
+async function fetchWithTimeout(path, options = {}) {
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), AUTH_REQUEST_TIMEOUT_MS)
+  try {
+    return await fetch(path, { ...options, signal: controller.signal })
+  } finally {
+    window.clearTimeout(timeout)
+  }
+}
+
 async function postJson(path, body) {
-  return fetch(path, {
+  return fetchWithTimeout(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin',
@@ -124,7 +136,7 @@ function parseMediaSessionEnvelope(payload) {
 }
 
 async function roleLanding() {
-  const response = await fetch(SESSION_ENDPOINT, { credentials: 'same-origin' })
+  const response = await fetchWithTimeout(SESSION_ENDPOINT, { credentials: 'same-origin' })
   const session = parseMediaSessionEnvelope(await response.json().catch(() => null))
   if (!response.ok || !session) throw new Error('session_not_ready')
   if (session.role === 'admin') return `${MEDIA_ROOT}/admin/overview`
@@ -146,6 +158,7 @@ function parseLoginStart(payload) {
 
 let organizationRun = 0
 let entryStateRun = 0
+let organizationAuthInFlight = null
 
 const ENTRY_STATES = new Set(['matched', 'none', 'expired', 'mismatched'])
 
@@ -162,12 +175,9 @@ function setQueryMode(mode, { replace = false } = {}) {
 }
 
 async function fetchEntryState(mode, run) {
-  const controller = new AbortController()
-  const timeout = window.setTimeout(() => controller.abort(), 5000)
   try {
-    const response = await fetch(`/openclaw/auth/entry-state?mode=${encodeURIComponent(mode)}`, {
+    const response = await fetchWithTimeout(`/openclaw/auth/entry-state?mode=${encodeURIComponent(mode)}`, {
       credentials: 'same-origin',
-      signal: controller.signal,
     })
     const payload = await response.json().catch(() => null)
     if (run !== entryStateRun) return null
@@ -176,8 +186,6 @@ async function fetchEntryState(mode, run) {
     return payload
   } catch {
     return null
-  } finally {
-    window.clearTimeout(timeout)
   }
 }
 
@@ -236,40 +244,63 @@ async function loadEntryState(mode) {
   }
 }
 
-async function startOrganizationAuth() {
-  const run = ++organizationRun
-  setHidden('qr-refresh', true)
-  setHidden('mobile-authorize', true)
-  setHidden('qr-placeholder', false)
-  setText('qr-placeholder', '正在生成授权二维码')
-  setText('qr-status', '正在连接 Feishu 授权服务...')
-  const qrCanvas = document.querySelector('#qr-canvas')
-  const context = qrCanvas?.getContext('2d')
-  context?.clearRect(0, 0, qrCanvas.width, qrCanvas.height)
-  try {
-    const response = await postJson('/openclaw/media/auth/feishu/start', { workspaceIntent: 'organization_lark' })
-    const payload = await response.json().catch(() => null)
-    const started = response.ok ? parseLoginStart(payload) : null
-    if (!started) throw new Error('组织授权暂时不可用。')
-    if (run !== organizationRun) return
-    await QRCode.toCanvas(qrCanvas, started.authorizationUrl, {
-      width: 200,
-      margin: 1,
-      errorCorrectionLevel: 'M',
-      color: { dark: '#20242c', light: '#ffffff' },
-    })
-    if (run !== organizationRun) return
-    setHidden('qr-placeholder', true)
-    const mobileAuthorize = document.querySelector('#mobile-authorize')
-    if (mobileAuthorize) mobileAuthorize.href = started.authorizationUrl
-    setHidden('mobile-authorize', false)
-    setText('qr-status', '请使用 Feishu 扫码，或点击按钮在当前设备完成授权。')
-  } catch (caught) {
-    if (run !== organizationRun) return
-    setText('qr-placeholder', '授权二维码暂不可用')
-    setText('qr-status', caught instanceof Error ? caught.message : '组织授权暂时不可用。')
-    setHidden('qr-refresh', false)
+function setOrganizationAuthBusy(busy) {
+  const refresh = document.querySelector('#qr-refresh')
+  if (refresh) {
+    refresh.disabled = busy
+    refresh.setAttribute('aria-busy', String(busy))
   }
+  const fallback = document.querySelector('#organization-entry-fallback')
+  if (fallback) fallback.disabled = busy
+}
+
+async function startOrganizationAuth() {
+  if (organizationAuthInFlight) return organizationAuthInFlight
+  const run = ++organizationRun
+  const task = (async () => {
+    setOrganizationAuthBusy(true)
+    setHidden('qr-refresh', true)
+    setHidden('mobile-authorize', true)
+    setHidden('qr-placeholder', false)
+    setText('qr-placeholder', '正在生成授权二维码')
+    setText('qr-status', '正在连接 Feishu 授权服务...')
+    const qrCanvas = document.querySelector('#qr-canvas')
+    const context = qrCanvas?.getContext('2d')
+    context?.clearRect(0, 0, qrCanvas.width, qrCanvas.height)
+    try {
+      const response = await postJson('/openclaw/media/auth/feishu/start', { workspaceIntent: 'organization_lark' })
+      const payload = await response.json().catch(() => null)
+      const started = response.ok ? parseLoginStart(payload) : null
+      if (!started) throw new Error('组织授权暂时不可用。')
+      if (run !== organizationRun) return
+      await QRCode.toCanvas(qrCanvas, started.authorizationUrl, {
+        width: 200,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#20242c', light: '#ffffff' },
+      })
+      if (run !== organizationRun) return
+      setHidden('qr-placeholder', true)
+      const mobileAuthorize = document.querySelector('#mobile-authorize')
+      if (mobileAuthorize) mobileAuthorize.href = started.authorizationUrl
+      setHidden('mobile-authorize', false)
+      setText('qr-status', '请使用 Feishu 扫码，或点击按钮在当前设备完成授权。')
+    } catch (caught) {
+      if (run !== organizationRun) return
+      setText('qr-placeholder', '授权二维码暂不可用')
+      const timedOut = caught instanceof Error && (caught.name === 'AbortError' || caught.message === 'auth_request_timeout')
+      setText('qr-status', timedOut ? '组织授权服务暂时不可用，请稍后重试。' : caught instanceof Error ? caught.message : '组织授权暂时不可用。')
+      setHidden('qr-refresh', false)
+    } finally {
+      if (run === organizationRun) setOrganizationAuthBusy(false)
+    }
+  })()
+  organizationAuthInFlight = task
+  void task.then(
+    () => { if (organizationAuthInFlight === task) organizationAuthInFlight = null },
+    () => { if (organizationAuthInFlight === task) organizationAuthInFlight = null },
+  )
+  return task
 }
 
 function credentialError(payload) {
@@ -349,6 +380,7 @@ function initLogin() {
     organizationPanel.hidden = personal
     if (personal) {
       ++organizationRun
+      organizationAuthInFlight = null
       setHidden('personal-password-fallback', true)
       setText('choice-status', '已选择个人创作者，请使用平台账号登录。')
       if (moveFocus) document.querySelector('#identifier')?.focus()
@@ -364,6 +396,7 @@ function initLogin() {
     if (activeMode === null) return
     activeMode = null
     ++organizationRun
+    organizationAuthInFlight = null
     ++entryStateRun
     personalPanel.hidden = true
     organizationPanel.hidden = true
@@ -392,11 +425,13 @@ function initLogin() {
   })
   document.querySelector('#qr-refresh')?.addEventListener('click', () => void startOrganizationAuth())
   document.querySelector('#personal-entry-fallback')?.addEventListener('click', () => {
+    ++entryStateRun
     setHidden('personal-entry-state', true)
     setHidden('personal-password-fallback', false)
     document.querySelector('#identifier')?.focus()
   })
   document.querySelector('#organization-entry-fallback')?.addEventListener('click', () => {
+    ++entryStateRun
     setHidden('organization-entry-state', true)
     setHidden('organization-oauth-fallback', false)
     void startOrganizationAuth()

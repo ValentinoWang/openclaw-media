@@ -8,7 +8,8 @@
   ],
   "staticAssets": [
     "/media.login.js",
-    "/media.auth.css"
+    "/media.auth.css",
+    "/mediaDesignTokens.css"
   ],
   "retiredRoutes": [
     "/openclaw/media/auth/registration-policy"

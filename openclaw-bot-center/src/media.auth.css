@@ -1,19 +1,21 @@
+@import url("/mediaDesignTokens.css");
+
 :root {
   color-scheme: light;
-  font-family: 'Noto Sans SC', Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
-  --auth-ink: #182420;
-  --auth-muted: #67746c;
-  --auth-subtle: #93a09a;
-  --auth-border: #dbe3db;
-  --auth-border-strong: #c6d2c9;
-  --auth-surface: #ffffff;
-  --auth-background: #f5f7f2;
-  --auth-accent: #1a9b68;
-  --auth-accent-dark: #10684a;
-  --auth-teal: #146c72;
-  --auth-danger: #b42318;
-  --auth-success: #16704a;
-  --auth-ease: cubic-bezier(.33, 1, .48, 1);
+  font-family: var(--mg-font-sans);
+  --auth-ink: var(--mg-ink);
+  --auth-muted: var(--mg-muted);
+  --auth-subtle: color-mix(in srgb, var(--mg-muted) 62%, white);
+  --auth-border: var(--mg-border);
+  --auth-border-strong: var(--mg-border-strong);
+  --auth-surface: var(--mg-surface);
+  --auth-background: var(--mg-bg);
+  --auth-accent: var(--mg-primary);
+  --auth-accent-dark: var(--mg-primary-dark);
+  --auth-teal: var(--mg-blue);
+  --auth-danger: var(--mg-danger);
+  --auth-success: var(--mg-primary-dark);
+  --auth-ease: var(--mg-ease);
 }
 
 * {
@@ -83,7 +85,7 @@ a {
 .auth-story .brand { color: #f5fbf7; }
 .auth-story .brand-detail { color: #b8d2c5; }
 .story-content { margin-top: 56px; }
-.story-kicker { color: #9ceac3; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.story-kicker { color: #9ceac3; font-size: 11px; font-weight: 800; letter-spacing: 0; }
 .story-content h2 { margin: 12px 0; font-size: 30px; line-height: 1.25; }
 .story-content h2 em { color: #9ceac3; font-style: normal; }
 .story-copy { color: #c5d9cf; font-size: 13px; line-height: 1.7; }
@@ -107,7 +109,7 @@ a {
 .entry-state[data-state='matched'] { border-color: #b8dfc9; background: #f4fbf6; }
 .entry-state[data-state='expired'], .entry-state[data-state='mismatched'], .entry-state[data-state='unavailable'] { border-color: #ead9c9; background: #fffaf5; }
 .entry-state-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
-.entry-state-kicker { color: var(--auth-subtle); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.entry-state-kicker { color: var(--auth-subtle); font-size: 10px; font-weight: 800; letter-spacing: 0; text-transform: uppercase; }
 .entry-state h3 { margin: 4px 0 0; font-size: 15px; }
 .entry-state-badge { color: var(--auth-muted); font-size: 11px; font-weight: 750; white-space: nowrap; }
 .entry-view { margin-top: 14px; }
@@ -157,7 +159,7 @@ a {
   color: #0e281f;
   font-size: 13px;
   font-weight: 850;
-  letter-spacing: -.03em;
+  letter-spacing: 0;
 }
 
 .brand-name,
@@ -182,7 +184,7 @@ a {
   color: var(--auth-accent-dark);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -414,7 +416,7 @@ h2 {
   color: var(--auth-accent-dark);
   font-size: 11px;
   font-weight: 850;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
 }
 
 .organization-label {
@@ -697,6 +699,10 @@ h2 {
   }
 
   .choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-choice:has(.identity-choice-button[aria-selected="true"]) .choice-grid {
     grid-template-columns: 1fr;
   }
 
