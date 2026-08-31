@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import threading
+import uuid
 from collections.abc import Mapping
 from typing import Any, Callable, Protocol
 
@@ -31,18 +32,48 @@ class PostgresDocumentRevisionStore:
     def __init__(self, connection_factory: Callable[[], Any]) -> None:
         self._connection_factory = connection_factory
 
+    @staticmethod
+    def _operation(artifact_id: str, revision: int) -> str:
+        return f"documentEdit:{artifact_id}:{revision}"
+
+    @staticmethod
+    def _fingerprint(artifact_id: str, revision: int) -> bytes:
+        import hashlib
+        return hashlib.sha256(f"{artifact_id}:{revision}".encode("utf-8")).digest()
+
     def claim_generating_revision(self, context: Any, artifact_id: str, revision: int) -> Mapping[str, Any] | None:
         with self._connection_factory() as connection:
+            owner = uuid.uuid4()
+            fingerprint = self._fingerprint(artifact_id, revision)
+            connection.execute(
+                """INSERT INTO openclaw_account.if2_idempotency_receipts
+                   (scope_kind,scope_id,operation_id,idempotency_key,path_fingerprint,request_fingerprint,state,lease_owner,lease_expires_at)
+                   VALUES ('tenant',%s,%s,%s,%s,%s,'reserved',%s,now()+interval '10 minutes')
+                   ON CONFLICT (scope_kind,scope_id,operation_id,idempotency_key) DO UPDATE
+                     SET lease_owner=EXCLUDED.lease_owner, lease_expires_at=EXCLUDED.lease_expires_at
+                   WHERE openclaw_account.if2_idempotency_receipts.state='reserved'
+                     AND openclaw_account.if2_idempotency_receipts.lease_expires_at < now()""",
+                (context.tenant_id, self._operation(artifact_id, revision), f"revision-{revision}", fingerprint, fingerprint, owner),
+            )
+            receipt = connection.execute(
+                """SELECT state, lease_owner FROM openclaw_account.if2_idempotency_receipts
+                   WHERE scope_kind='tenant' AND scope_id=%s AND operation_id=%s AND idempotency_key=%s""",
+                (context.tenant_id, self._operation(artifact_id, revision), f"revision-{revision}"),
+            ).fetchone()
+            if receipt is None or receipt[0] != "reserved" or str(receipt[1]) != str(owner):
+                return None
             row = connection.execute(
-                """SELECT a.body_authority, r.state
-                     FROM media_product.document_artifacts a
-                     JOIN media_product.document_revisions r ON r.tenant_id=a.tenant_id
-                       AND r.public_artifact_id=a.public_id AND r.revision=%s
-                    WHERE a.tenant_id=%s AND a.public_id=%s AND r.state='generating'
-                    FOR UPDATE""", (revision, context.tenant_id, artifact_id)
+                """SELECT a.body_authority FROM media_product.document_artifacts a
+                   JOIN media_product.document_revisions r ON r.tenant_id=a.tenant_id
+                    AND r.public_artifact_id=a.public_id AND r.revision=%s
+                  WHERE a.tenant_id=%s AND a.public_id=%s AND r.state='generating'""",
+                (revision, context.tenant_id, artifact_id),
             ).fetchone()
             if row is None:
                 return None
+            commit = getattr(connection, "commit", None)
+            if callable(commit):
+                commit()
             return {"bodyAuthority": row[0], "documentId": artifact_id}
 
     def complete_revision(self, context: Any, artifact_id: str, revision: int, body: Mapping[str, Any], receipt: Mapping[str, Any]) -> None:
@@ -61,6 +92,12 @@ class PostgresDocumentRevisionStore:
                    WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s AND state='generating'""",
                 (checksum, context.tenant_id, artifact_id, revision),
             )
+            connection.execute(
+                """UPDATE openclaw_account.if2_idempotency_receipts SET state='completed', response_status=200,
+                      response_json=%s::jsonb, completed_at=now(), lease_owner=NULL, lease_expires_at=NULL
+                   WHERE scope_kind='tenant' AND scope_id=%s AND operation_id=%s AND idempotency_key=%s AND state='reserved'""",
+                (json.dumps(dict(receipt), ensure_ascii=False), context.tenant_id, self._operation(artifact_id, revision), f"revision-{revision}"),
+            )
             commit = getattr(connection, "commit", None)
             if callable(commit):
                 commit()
@@ -72,9 +109,34 @@ class PostgresDocumentRevisionStore:
                    WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s AND state='generating'""",
                 (context.tenant_id, artifact_id, revision),
             )
+            receipt = {"ok": False, "status": "failed", "revision": revision, "errorCode": error_code, "errorMessage": message}
+            connection.execute(
+                """UPDATE openclaw_account.if2_idempotency_receipts SET state='failed', response_status=500,
+                      response_json=%s::jsonb, completed_at=now(), lease_owner=NULL, lease_expires_at=NULL
+                   WHERE scope_kind='tenant' AND scope_id=%s AND operation_id=%s AND idempotency_key=%s AND state='reserved'""",
+                (json.dumps(receipt, ensure_ascii=False), context.tenant_id, self._operation(artifact_id, revision), f"revision-{revision}"),
+            )
             commit = getattr(connection, "commit", None)
             if callable(commit):
                 commit()
+
+    def get_revision_receipt(self, context: Any, artifact_id: str, revision: int) -> Mapping[str, Any] | None:
+        with self._connection_factory() as connection:
+            row = connection.execute(
+                """SELECT response_json FROM openclaw_account.if2_idempotency_receipts
+                   WHERE scope_kind='tenant' AND scope_id=%s AND operation_id=%s AND idempotency_key=%s
+                     AND state IN ('completed','failed')""",
+                (context.tenant_id, self._operation(artifact_id, revision), f"revision-{revision}"),
+            ).fetchone()
+        if row is None:
+            return None
+        payload = row[0]
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except json.JSONDecodeError:
+                return None
+        return dict(payload) if isinstance(payload, Mapping) else None
 
 
 class DocumentEditExecutionError(RuntimeError):
