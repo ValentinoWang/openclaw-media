@@ -60,6 +60,12 @@ for (const [session, expectedShell, expectedMode] of shellFixtures) {
   assert.equal(policy.navigationMode === 'compact', policy.shell === 'organization', 'compact mode escaped its allowed shell')
 }
 requireContract(workspaceSource.includes('data-page-ownership="router" data-accent={accent}'), 'workspace fallback ownership/accent markers drifted')
+requireRejected(
+  workspaceSource.replace('data-page-ownership="router"', 'data-page-ownership="personal"'),
+  (source) => source.includes('data-page-ownership="router" data-accent={accent}'),
+  'workspace fallback ownership changed from router to a page owner',
+  'restore data-page-ownership="router" on WorkspaceFallback',
+)
 requireContract(workspaceSource.includes('action: null'), 'workspace fallback action contract is not explicitly null')
 requireContract((workspaceSource.match(/<WorkspaceFallback/g) ?? []).length === 3, 'workspace fallback call count drifted')
 requireContract((workspaceSource.match(/action=\{null\}/g) ?? []).length === 3, 'workspace fallback calls must explicitly suppress SurfaceState actions')
