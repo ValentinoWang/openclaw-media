@@ -433,7 +433,9 @@ function adminRoute(pathname: string, element: ReactNode, policy: StudioRoutePol
 
 function guardedRoute(pathname: string, element: ReactNode, policy: StudioRoutePolicy) {
   const outcome = resolveStudioRouteOutcome(policy, pathname)
-  return outcome.kind === 'render' ? element : <Navigate to={outcome.target} replace />
+  if (outcome.kind === 'render') return element
+  if (outcome.kind === 'forbidden') return <StandaloneState icon={<ShieldCheck size={25} />} title="无权访问此页面" detail="当前会话未获服务端授予该路由权限。" />
+  return <Navigate to={outcome.target} replace />
 }
 
 function currentNavigationItem(pathname: string, items: readonly NavigationItem[]): NavigationItem | undefined {

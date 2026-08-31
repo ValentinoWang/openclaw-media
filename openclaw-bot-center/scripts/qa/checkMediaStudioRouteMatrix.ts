@@ -58,11 +58,11 @@ requireInOrder(
   policySource,
   [
     "if (session.role === 'admin')",
-    "policyForShell('admin', '/admin/overview')",
+    "policyForShell('admin', '/admin/overview', session.routeGrants)",
     "if (session.workspaceMode === 'personal_web' && session.bodyAuthority === 'internal')",
-    "policyForShell('personal', '/overview')",
+    "policyForShell('personal', '/overview', session.routeGrants)",
     "if (session.workspaceMode === 'organization_lark' && session.bodyAuthority === 'lark')",
-    "policyForShell('organization', '/organization-workspace')",
+    "policyForShell('organization', '/organization-workspace', session.routeGrants)",
     "throw new Error('Unsupported media session authority shape')",
   ],
   'route policy must be role-first and fail closed',
@@ -140,23 +140,23 @@ const expectedDefaultRoutes = {
 const fixtures: readonly [string, SessionFixture, StudioRoutePolicy][] = [
   [
     'admin with personal workspace',
-    { role: 'admin', workspaceMode: 'personal_web', bodyAuthority: 'internal' },
-    { shell: 'admin', defaultRoute: '/admin/overview', navigationPaths: expectedNavigationPaths.admin, navigationMode: 'full' },
+    { role: 'admin', workspaceMode: 'personal_web', bodyAuthority: 'internal', routeGrants: expectedNavigationPaths.admin },
+    { shell: 'admin', defaultRoute: '/admin/overview', navigationPaths: expectedNavigationPaths.admin, routeGrants: expectedNavigationPaths.admin, navigationMode: 'full' },
   ],
   [
     'admin with organization workspace',
-    { role: 'admin', workspaceMode: 'organization_lark', bodyAuthority: 'lark' },
-    { shell: 'admin', defaultRoute: '/admin/overview', navigationPaths: expectedNavigationPaths.admin, navigationMode: 'full' },
+    { role: 'admin', workspaceMode: 'organization_lark', bodyAuthority: 'lark', routeGrants: expectedNavigationPaths.admin },
+    { shell: 'admin', defaultRoute: '/admin/overview', navigationPaths: expectedNavigationPaths.admin, routeGrants: expectedNavigationPaths.admin, navigationMode: 'full' },
   ],
   [
     'ordinary personal workspace',
-    { role: 'ordinary', workspaceMode: 'personal_web', bodyAuthority: 'internal' },
-    { shell: 'personal', defaultRoute: '/overview', navigationPaths: expectedNavigationPaths.personal, navigationMode: 'full' },
+    { role: 'ordinary', workspaceMode: 'personal_web', bodyAuthority: 'internal', routeGrants: expectedNavigationPaths.personal },
+    { shell: 'personal', defaultRoute: '/overview', navigationPaths: expectedNavigationPaths.personal, routeGrants: expectedNavigationPaths.personal, navigationMode: 'full' },
   ],
   [
     'ordinary organization workspace',
-    { role: 'ordinary', workspaceMode: 'organization_lark', bodyAuthority: 'lark' },
-    { shell: 'organization', defaultRoute: '/organization-workspace', navigationPaths: expectedNavigationPaths.organization, navigationMode: 'compact' },
+    { role: 'ordinary', workspaceMode: 'organization_lark', bodyAuthority: 'lark', routeGrants: expectedNavigationPaths.organization },
+    { shell: 'organization', defaultRoute: '/organization-workspace', navigationPaths: expectedNavigationPaths.organization, routeGrants: expectedNavigationPaths.organization, navigationMode: 'compact' },
   ],
 ]
 
@@ -177,12 +177,17 @@ const allMatrixPaths = [
 
 function acceptedOutcome(shell: StudioRoutePolicy['shell'], pathname: string): ReturnType<typeof resolveStudioRouteOutcome> {
   const defaultRoute = expectedDefaultRoutes[shell]
+  if (pathname === '/runs' || /^\/(?:runs|studio)\/[^/]+$/.test(pathname)) {
+    if (shell === 'personal' && pathname === '/runs') return { kind: 'redirect', target: '/studio' }
+    if (shell === 'personal' && /^\/(?:runs|studio)\/[^/]+$/.test(pathname)) return { kind: 'render' }
+    return { kind: 'redirect', target: defaultRoute }
+  }
   if (shell === 'admin' && studioAdminRoutes.includes(pathname as (typeof studioAdminRoutes)[number])) return { kind: 'render' }
   if (shell === 'organization' && (pathname === '/organization-workspace' || pathname === '/tracks')) return { kind: 'render' }
   if (shell === 'personal' && (pathname === '/workspace' || pathname === '/workspace/preview/artifact-1')) return { kind: 'render' }
   if (shell === 'personal' && pathname === '/runs') return { kind: 'redirect', target: '/studio' }
   if (shell === 'personal' && (studioOrdinaryRoutes.includes(pathname as (typeof studioOrdinaryRoutes)[number]) || pathname === '/tracks' || /^\/(?:runs|studio)\/[^/]+$/.test(pathname))) return { kind: 'render' }
-  return { kind: 'redirect', target: defaultRoute }
+  return { kind: 'forbidden' }
 }
 
 type OutcomeResolver = (policy: StudioRoutePolicy, pathname: string) => ReturnType<typeof resolveStudioRouteOutcome>
@@ -195,7 +200,7 @@ function assertRouteMatrix(policy: StudioRoutePolicy, resolver: OutcomeResolver 
 
 function finalPathname(policy: StudioRoutePolicy, pathname: string): string {
   const outcome = resolveStudioRouteOutcome(policy, pathname)
-  return outcome.kind === 'render' ? pathname : outcome.target
+  return outcome.kind === 'render' ? pathname : outcome.kind === 'forbidden' ? '__forbidden__' : outcome.target
 }
 
 type CriticalRouteFixture = {
@@ -209,37 +214,37 @@ type CriticalRouteFixture = {
 const criticalRouteFixtures: readonly CriticalRouteFixture[] = [
   {
     label: 'personal legacy Studio alias',
-    session: { role: 'ordinary', workspaceMode: 'personal_web', bodyAuthority: 'internal' },
+    session: { role: 'ordinary', workspaceMode: 'personal_web', bodyAuthority: 'internal', routeGrants: expectedNavigationPaths.personal },
     pathname: '/runs',
     finalPathname: '/studio',
     routeMarker: '<Route path="/studio" element={ordinaryRoute(\'/studio\', <RunsPage />, routePolicy)} />',
   },
   {
     label: 'personal artifact preview',
-    session: { role: 'ordinary', workspaceMode: 'personal_web', bodyAuthority: 'internal' },
+    session: { role: 'ordinary', workspaceMode: 'personal_web', bodyAuthority: 'internal', routeGrants: expectedNavigationPaths.personal },
     pathname: '/workspace/preview/artifact-1',
     finalPathname: '/workspace/preview/artifact-1',
     routeMarker: '<Route path="/workspace/preview/:artifactId" element={personalRoute(\'/workspace/preview/:artifactId\', <PersonalWorkspaceShellPage />, routePolicy)} />',
   },
   {
     label: 'organization excludes personal workspace',
-    session: { role: 'ordinary', workspaceMode: 'organization_lark', bodyAuthority: 'lark' },
+    session: { role: 'ordinary', workspaceMode: 'organization_lark', bodyAuthority: 'lark', routeGrants: expectedNavigationPaths.organization },
     pathname: '/workspace',
-    finalPathname: '/organization-workspace',
+    finalPathname: '__forbidden__',
     routeMarker: '<Route path="/organization-workspace" element={organizationRoute(<OrganizationWorkspaceShellPage />, routePolicy)} />',
   },
   {
     label: 'organization Tracks remains reachable',
-    session: { role: 'ordinary', workspaceMode: 'organization_lark', bodyAuthority: 'lark' },
+    session: { role: 'ordinary', workspaceMode: 'organization_lark', bodyAuthority: 'lark', routeGrants: expectedNavigationPaths.organization },
     pathname: '/tracks',
     finalPathname: '/tracks',
     routeMarker: '<Route path="/tracks" element={tracksRoute(<TracksPage />, routePolicy)} />',
   },
   {
     label: 'admin excludes ordinary Studio',
-    session: { role: 'admin', workspaceMode: 'personal_web', bodyAuthority: 'internal' },
+    session: { role: 'admin', workspaceMode: 'personal_web', bodyAuthority: 'internal', routeGrants: expectedNavigationPaths.admin },
     pathname: '/studio',
-    finalPathname: '/admin/overview',
+    finalPathname: '__forbidden__',
     routeMarker: '<Route path="/admin/overview" element={adminRoute(\'/admin/overview\', <AdminOverviewPage />, routePolicy)} />',
   },
 ]
@@ -263,8 +268,8 @@ for (const [label, session, expected] of fixtures) {
 
 const invalidFixtures: readonly unknown[] = [
   null,
-  { role: 'ordinary', workspaceMode: 'personal_web', bodyAuthority: 'lark' },
-  { role: 'viewer', workspaceMode: 'personal_web', bodyAuthority: 'internal' },
+  { role: 'ordinary', workspaceMode: 'personal_web', bodyAuthority: 'lark', routeGrants: expectedNavigationPaths.personal },
+  { role: 'viewer', workspaceMode: 'personal_web', bodyAuthority: 'internal', routeGrants: expectedNavigationPaths.personal },
 ]
 for (const [index, invalid] of invalidFixtures.entries()) {
   assert.throws(() => resolveStudioRoutePolicy(invalid as SessionFixture), /Unsupported media session authority shape/, `invalid fixture ${index + 1} was accepted`)

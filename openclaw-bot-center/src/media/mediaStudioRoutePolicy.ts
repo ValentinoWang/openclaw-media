@@ -4,7 +4,7 @@ export type StudioShell = 'admin' | 'personal' | 'organization'
 export type StudioDefaultRoute = '/admin/overview' | '/overview' | '/organization-workspace'
 export type StudioRouteRedirectTarget = StudioDefaultRoute | '/studio'
 export type StudioNavigationMode = 'full' | 'compact'
-export type StudioSessionAuthority = Pick<MediaWebSession, 'role' | 'workspaceMode' | 'bodyAuthority'>
+export type StudioSessionAuthority = Pick<MediaWebSession, 'role' | 'workspaceMode' | 'bodyAuthority' | 'routeGrants'>
 
 export const studioAdminRoutes = [
   '/admin/overview',
@@ -70,16 +70,18 @@ export type StudioRoutePolicy = {
   shell: StudioShell
   defaultRoute: StudioDefaultRoute
   navigationPaths: readonly string[]
+  routeGrants: readonly string[]
   navigationMode: StudioNavigationMode
 }
 
-export type StudioRouteOutcome = { kind: 'render' } | { kind: 'redirect'; target: StudioRouteRedirectTarget }
+export type StudioRouteOutcome = { kind: 'render' } | { kind: 'redirect'; target: StudioRouteRedirectTarget } | { kind: 'forbidden' }
 
-function policyForShell(shell: StudioShell, defaultRoute: StudioDefaultRoute): StudioRoutePolicy {
+function policyForShell(shell: StudioShell, defaultRoute: StudioDefaultRoute, routeGrants: readonly string[]): StudioRoutePolicy {
   return {
     shell,
     defaultRoute,
     navigationPaths: studioNavigationPaths[shell],
+    routeGrants,
     navigationMode: studioShellNavigationModes[shell],
   }
 }
@@ -87,17 +89,19 @@ function policyForShell(shell: StudioShell, defaultRoute: StudioDefaultRoute): S
 export function resolveStudioRoutePolicy(session: StudioSessionAuthority): StudioRoutePolicy {
   if (!session || typeof session !== 'object') throw new Error('Unsupported media session authority shape')
   if (session.role !== 'ordinary' && session.role !== 'admin') throw new Error('Unsupported media session authority shape')
-  if (session.role === 'admin') return policyForShell('admin', '/admin/overview')
+  if (session.role === 'admin') return policyForShell('admin', '/admin/overview', session.routeGrants)
   if (session.workspaceMode === 'personal_web' && session.bodyAuthority === 'internal') {
-    return policyForShell('personal', '/overview')
+    return policyForShell('personal', '/overview', session.routeGrants)
   }
   if (session.workspaceMode === 'organization_lark' && session.bodyAuthority === 'lark') {
-    return policyForShell('organization', '/organization-workspace')
+    return policyForShell('organization', '/organization-workspace', session.routeGrants)
   }
   throw new Error('Unsupported media session authority shape')
 }
 
 export function resolveStudioRouteOutcome(policy: StudioRoutePolicy, pathname: string): StudioRouteOutcome {
+  const grant = policy.routeGrants.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+  if (!grant && pathname !== '/runs' && !/^\/runs\/[^/]+$/.test(pathname) && !/^\/studio\/[^/]+$/.test(pathname)) return { kind: 'forbidden' }
   if (pathname === '/runs') {
     return policy.shell === 'personal' ? { kind: 'redirect', target: '/studio' } : { kind: 'redirect', target: policy.defaultRoute }
   }

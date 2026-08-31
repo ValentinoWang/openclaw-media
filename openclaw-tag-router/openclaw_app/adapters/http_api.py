@@ -3247,6 +3247,15 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             raise RequestContextError("session principal role is invalid")
         binding_state, installation_state = self._binding_projection(context)
         is_personal = context.principal.workspace_mode == "personal_web"
+        route_grants = (
+            ["/admin/overview", "/admin/access", "/admin/tenants", "/admin/billing", "/admin/upstreams"]
+            if role == "admin"
+            else [
+                "/today", "/studio", "/campaigns", "/business", "/desk", "/overview", "/assets",
+                "/tracks", "/decisions", "/publishing", "/reviews", "/media-agent", "/archives",
+                "/usage-billing", "/invites", "/workspace", "/organization-workspace",
+            ]
+        )
         if is_personal:
             organization_name = None
         else:
@@ -3280,6 +3289,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                     "maintainer": context.principal.is_maintainer,
                     "csrfToken": context.csrf.response_token,
                     "expiresAt": context.principal.expires_at.isoformat(),
+                    "routeGrants": route_grants,
                     "schemaVersion": "media_web_business_pages_v2",
                 },
             },

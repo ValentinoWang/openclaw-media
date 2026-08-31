@@ -39,6 +39,7 @@ const mediaWebSessionBaseSchema = z.object({
   maintainer: z.boolean(),
   csrfToken: z.string(),
   expiresAt: z.string().datetime({ offset: true }),
+  routeGrants: z.array(z.string().regex(/^\/[a-z0-9/_:-]*$/)).min(1),
   schemaVersion: z.literal('media_web_business_pages_v2'),
 }).strict()
 
