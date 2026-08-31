@@ -6,6 +6,8 @@ import {
   type DocumentBusinessCaller,
 } from "../../src/media/documentWorkflow";
 import {
+  BusinessOperationError,
+  callBusinessOperation,
   documentOperationIds,
   operations,
 } from "../../src/media/generatedBusinessPagesContract";
@@ -47,6 +49,32 @@ async function main(): Promise<void> {
       signal: undefined,
     },
   }]);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    error: {
+      code: "unsupported_document_block",
+      message: "部分正文未通过校验。",
+      details: { blockIds: ["blk_protected_1"] },
+    },
+  }), { status: 422, statusText: "Unprocessable Entity" });
+  try {
+    await assert.rejects(
+      callBusinessOperation("saveDocumentDraft", {
+        path: { publicArtifactId: "artifact_sync_1" },
+        body: {},
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof BusinessOperationError);
+        assert.equal(error.status, 422);
+        assert.equal(error.code, "unsupported_document_block");
+        assert.deepEqual(error.details, { blockIds: ["blk_protected_1"] });
+        return true;
+      },
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 }
 
 void main();

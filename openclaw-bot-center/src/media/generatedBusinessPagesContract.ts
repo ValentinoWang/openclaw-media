@@ -2518,16 +2518,19 @@ export type BusinessOperationRequest = {
 export class BusinessOperationError extends Error {
   readonly status: number;
   readonly code: string;
+  readonly details?: Readonly<Record<string, unknown>>;
 
   constructor(
     status: number,
     code: string,
     message: string,
+    details?: Readonly<Record<string, unknown>>,
   ) {
     super(message);
     this.name = "BusinessOperationError";
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -2588,11 +2591,14 @@ export async function callBusinessOperation<T>(
   const payload = response.status === 204 ? undefined : await response.json().catch(() => undefined);
   if (!response.ok) {
     const detail = payload && typeof payload === "object" && "error" in payload
-      ? (payload as { error?: { code?: unknown; message?: unknown } }).error
+      ? (payload as { error?: { code?: unknown; message?: unknown; details?: unknown } }).error
       : undefined;
     const code = typeof detail?.code === "string" ? detail.code : `http_${response.status}`;
     const message = typeof detail?.message === "string" ? detail.message : response.statusText || "Request failed";
-    throw new BusinessOperationError(response.status, code, message);
+    const details = detail?.details && typeof detail.details === "object" && !Array.isArray(detail.details)
+      ? detail.details as Readonly<Record<string, unknown>>
+      : undefined;
+    throw new BusinessOperationError(response.status, code, message, details);
   }
   return payload as T;
 }
