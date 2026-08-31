@@ -809,8 +809,16 @@ class HttpApiAuthTests(unittest.TestCase):
         self.assertEqual(status, 200, body)
         self.assertEqual(body["session"]["publicUserId"], str(USER_A))
 
-    def test_feishu_start_returns_only_same_browser_authorization_data(self) -> None:
+    def test_feishu_start_requires_explicit_workspace_intent(self) -> None:
         status, body, _ = self._request("POST", "/auth/feishu/start", {})
+        self.assertEqual(status, 400, body)
+        self.assertEqual(body["error"]["code"], "invalid_request")
+        self.assertEqual(self.media_feishu_login.start_intents, [])
+
+    def test_personal_feishu_start_returns_only_same_browser_authorization_data(self) -> None:
+        status, body, _ = self._request(
+            "POST", "/auth/feishu/start", {"workspaceIntent": "personal_web"}
+        )
         self.assertEqual(status, 200, body)
         self.assertEqual(
             set(body),

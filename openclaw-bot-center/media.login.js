@@ -90,6 +90,23 @@ function errorMessage(payload) {
   return typeof error.message === 'string' && error.message.trim() ? error.message.trim() : null
 }
 
+class AuthRequestError extends Error {
+  constructor(code, status, message) {
+    super(message)
+    this.name = 'AuthRequestError'
+    this.code = code
+    this.status = status
+  }
+}
+
+function organizationAuthResponseError(response, payload, fallbackCode = `http_${response.status}`) {
+  return new AuthRequestError(
+    errorCode(payload) || fallbackCode,
+    response.status,
+    errorMessage(payload) || '组织授权暂时不可用，请稍后重试。',
+  )
+}
+
 function registrationError(payload) {
   const code = errorCode(payload)
   if (code === 'duplicate_username') return '这个用户名已被使用，请更换后重试。'
@@ -270,8 +287,9 @@ async function startOrganizationAuth() {
     try {
       const response = await postJson('/openclaw/media/auth/feishu/start', { workspaceIntent: 'organization_lark' })
       const payload = await response.json().catch(() => null)
-      const started = response.ok ? parseLoginStart(payload) : null
-      if (!started) throw new Error('组织授权暂时不可用。')
+      if (!response.ok) throw organizationAuthResponseError(response, payload)
+      const started = parseLoginStart(payload)
+      if (!started) throw organizationAuthResponseError(response, payload, 'invalid_response')
       if (run !== organizationRun) return
       await QRCode.toCanvas(qrCanvas, started.authorizationUrl, {
         width: 200,

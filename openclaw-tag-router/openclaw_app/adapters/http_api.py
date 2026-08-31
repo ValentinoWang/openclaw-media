@@ -2413,7 +2413,9 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         if set(payload) - {"workspaceIntent"}:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "飞书登录请求字段无效。")
             return
-        workspace_intent = payload.get("workspaceIntent", "personal_web")
+        # The workspace is an explicit security boundary. Missing intent must
+        # not silently select the personal workspace.
+        workspace_intent = payload.get("workspaceIntent")
         if not isinstance(workspace_intent, str) or workspace_intent not in {"personal_web", "organization_lark"}:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "飞书登录工作区类型无效。")
             return

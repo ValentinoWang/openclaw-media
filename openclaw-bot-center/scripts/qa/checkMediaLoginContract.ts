@@ -68,6 +68,17 @@ function assertOrganizationAuthorizationLock(script: string): void {
   assert.match(script, /organization-entry-fallback[\s\S]*?disabled = busy/u)
 }
 
+function assertOrganizationAuthorizationErrors(script: string): void {
+  const organization = functionSection(script, 'async function startOrganizationAuth', 'function credentialError')
+  assert.match(script, /class AuthRequestError extends Error/u)
+  assert.match(script, /this\.code = code/u)
+  assert.match(script, /this\.status = status/u)
+  assert.match(organization, /if \(!response\.ok\) throw organizationAuthResponseError\(response, payload\)/u)
+  assert.match(script, /errorCode\(payload\) \|\| fallbackCode/u)
+  assert.match(script, /errorMessage\(payload\) \|\|/u)
+  assert.match(script, /new AuthRequestError\([\s\S]*?response\.status/u)
+}
+
 function assertAuthTokenBuildWiring(css: string, viteConfig: string): void {
   assert.match(css, /^@import url\("\/mediaDesignTokens\.css"\);/u)
   assert.match(
@@ -106,6 +117,13 @@ function runSelfTest(html: string, tokenCss: string, script: string, css: string
     () => assertOrganizationAuthorizationLock(missingDedup),
     /organizationAuthInFlight/u,
     'self-test must reject missing authorization deduplication',
+  )
+
+  const missingErrorStatus = script.replace('this.status = status', 'this.status = 0')
+  assert.throws(
+    () => assertOrganizationAuthorizationErrors(missingErrorStatus),
+    /status/u,
+    'self-test must reject dropping the Feishu response status',
   )
 
   const missingTokenAlias = viteConfig.replace("'/mediaDesignTokens.css':", "'/missing-mediaDesignTokens.css':")
@@ -177,6 +195,7 @@ assert.match(script, /window\.addEventListener\('popstate',[\s\S]*?else\s*(?:\{\
 
 assertBoundedRequests(script)
 assertOrganizationAuthorizationLock(script)
+assertOrganizationAuthorizationErrors(script)
 if (process.argv.includes('--self-test')) runSelfTest(html, tokenCss, script, css, viteConfig)
 
 console.log('media login contract QA passed')

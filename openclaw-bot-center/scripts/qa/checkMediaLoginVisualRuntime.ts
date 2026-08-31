@@ -29,6 +29,11 @@ type Telemetry = {
 
 type EntryHandler = (route: Route, mode: EntryMode, requestIndex: number) => Promise<void>
 
+const fallbackSelectors: Record<EntryMode, string> = {
+  personal: '#personal-password-fallback',
+  organization: '#organization-oauth-fallback',
+}
+
 const authPages = new Map<string, string>([
   [`${mediaRoot}/login`, 'media.login.html'],
   [`${mediaRoot}/register`, 'media.register.html'],
@@ -169,6 +174,19 @@ async function assertAuthLayout(page: Page, viewport: Viewport, label: string, i
   assert.equal(layout.viewportWidth, viewport.width, `${label}: viewport width drifted`)
 }
 
+async function assertFallbackFitsViewport(page: Page, viewport: Viewport, mode: EntryMode, state: EntryState): Promise<void> {
+  const selector = fallbackSelectors[mode]
+  const scrollHeight = await page.evaluate((fallbackSelector) => {
+    const fallback = document.querySelector<HTMLElement>(fallbackSelector)
+    if (!fallback || fallback.hidden) throw new Error(`fallback is not visible: ${fallbackSelector}`)
+    return document.documentElement.scrollHeight
+  }, selector)
+  assert.ok(
+    scrollHeight <= viewport.height + 1,
+    `${viewport.label} ${mode} ${state}: fallback scrollHeight ${scrollHeight} exceeds viewport ${viewport.height}`,
+  )
+}
+
 async function screenshot(page: Page, name: string): Promise<string> {
   const path = join(outputRoot, `${name}.png`)
   await page.screenshot({ path, fullPage: true, animations: 'disabled' })
@@ -266,6 +284,9 @@ async function runEntryStateMatrix(browser: Browser, origin: string, viewport: V
           assert.equal(telemetry.feishuRequests, 1, `${viewport.label}: organization ${state} must request one QR code`)
         } else {
           assert.equal(telemetry.feishuRequests, 0, `${viewport.label}: matched organization must not request Feishu`)
+        }
+        if (viewport.label === '390x844' && fallback) {
+          await assertFallbackFitsViewport(page, viewport, mode, state)
         }
         await assertAuthLayout(page, viewport, `${viewport.label} ${mode} ${state}`)
         if ((state === 'matched' || state === 'expired') && mode === 'organization') await screenshot(page, `login-${mode}-${state}-${viewport.label}`)
