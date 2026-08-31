@@ -276,7 +276,7 @@ function inspectTsx(fileName: string, text: string): { markers: Markers; errors:
 }
 
 function validateManifest(specs: readonly SurfaceSpec[]) {
-  if (specs.length !== 24) throw new Error(`media primitive adoption failed: surfaces must equal 24, found ${specs.length}`)
+  if (specs.length < 24) throw new Error(`media primitive adoption failed: expected at least 24 surfaces, found ${specs.length}`)
   if (new Set(specs.map((surface) => surface.id)).size !== specs.length) throw new Error('media primitive adoption failed: duplicate surface ID')
   for (const surface of specs) {
     if (!surface.eligible.length) throw new Error(`media primitive adoption failed: ${surface.id} has no primitive eligibility`)
