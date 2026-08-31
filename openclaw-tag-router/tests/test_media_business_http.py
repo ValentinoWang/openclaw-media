@@ -18,6 +18,7 @@ from openclaw_app.adapters.media_business_dispatcher import (
     MEDIA_BUSINESS_ROUTE_BINDINGS,
     MediaBusinessDispatcher,
 )
+from openclaw_app.services.media_business.documents import UnsupportedDocumentBlock
 
 
 USER_ID = UUID("11111111-1111-4111-8111-111111111111")
@@ -512,6 +513,24 @@ class MediaBusinessHttpTests(unittest.TestCase):
         status, _ = self._request("GET", "/openclaw/media/api/dashboard", token="user-token")
         self.assertEqual(status, 200)
         self.assertEqual(contexts[0].principal.session_token_hash, hashlib.sha256(b"user-token").digest())
+
+    def test_document_block_error_exposes_block_ids_in_422_details(self) -> None:
+        def reject_document(_match: Any, _request: Any) -> None:
+            raise UnsupportedDocumentBlock({"blk_protected_2", "blk_protected_1"})
+
+        dispatcher = MediaBusinessDispatcher(
+            {route.operation_id: reject_document for route in MEDIA_BUSINESS_ROUTE_BINDINGS}
+        )
+        self._restart_server(HttpAuthorityConfig("http://127.0.0.1"), dispatcher=dispatcher)
+        status, body = self._request(
+            "PUT",
+            "/openclaw/media/api/documents/aaaaaaaaaaaaaaaa/draft",
+            body={"body": {"blocks": []}},
+            token="user-token",
+            headers=self._mutation_headers("user-token"),
+        )
+        self.assertEqual(status, 422)
+        self.assertEqual(body["error"]["details"]["blockIds"], ["blk_protected_1", "blk_protected_2"])
 
 
 if __name__ == "__main__":

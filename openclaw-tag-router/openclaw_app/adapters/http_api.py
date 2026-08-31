@@ -744,7 +744,16 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             self._send_api_error(status, code, message)
         except MediaBusinessError as exc:
             status = int(getattr(exc, "status", 400))
-            self._send_api_error(HTTPStatus(status), exc.code, getattr(exc, "message", str(exc)))
+            details = None
+            block_ids = getattr(exc, "block_ids", ())
+            if status == HTTPStatus.UNPROCESSABLE_ENTITY and block_ids:
+                details = {"blockIds": list(block_ids)}
+            self._send_api_error(
+                HTTPStatus(status),
+                exc.code,
+                getattr(exc, "message", str(exc)),
+                details=details,
+            )
         except MediaWebTaskError as exc:
             self._send_api_error(
                 HTTPStatus(exc.status),

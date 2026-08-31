@@ -4693,6 +4693,14 @@ components:
           type:
           - string
           - 'null'
+        details:
+          type: object
+          additionalProperties: false
+          properties:
+            blockIds:
+              type: array
+              items:
+                type: string
       required:
       - code
       - message

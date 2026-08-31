@@ -478,6 +478,14 @@ def test_if2_document_operations_are_typed_and_page_bounded() -> None:
     )
 
 
+def test_document_mutation_errors_declare_optional_block_ids_details() -> None:
+    document = _load(OPENAPI_PATH)
+    details = document["components"]["schemas"]["ErrorDetail"]["properties"]["details"]
+    assert details["additionalProperties"] is False
+    assert details["properties"]["blockIds"] == {"type": "array", "items": {"type": "string"}}
+    assert "details" not in details.get("required", [])
+
+
 def test_if2_canonical_body_and_single_authority_contract_are_frozen() -> None:
     document = _load(OPENAPI_PATH)
     contract = document["x-openclaw-document-contract"]
