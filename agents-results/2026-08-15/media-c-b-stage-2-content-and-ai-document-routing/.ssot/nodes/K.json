@@ -6,7 +6,7 @@
   "domain_lane": "product-contract",
   "execution_state": "ACCEPTED",
   "decision_state": "ACCEPTED",
-  "decision_version": 4,
+  "decision_version": 5,
   "readiness_mode": "FORMAL",
   "hard_dependencies": [
     "A1"
@@ -99,17 +99,24 @@
       "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
       "stage3_exclusions": "full role matrix, approval, seats, procurement, invoices, migration, complex deletion and business analytics",
       "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate",
-      "session_envelope_boundary": "do not add routeGrants or page permissions to parseMediaSessionEnvelope; keep media_web_business_pages_v2 strict response shape unchanged",
-      "entry_state_authority": "independent read-only entry-state API returns server-projected role, workspaceMode, bodyAuthority, defaultRoute, route grants and action grants",
-      "entry_state_contract": "new API contract must be versioned and strict in OpenAPI/client types; exact path is frozen by B after bounded source discovery, with 401/403/409 semantics and no session envelope change",
-      "route_authorization_axes": "role selects shell; workspaceMode/bodyAuthority select content authority; entry-state route/action grants select visible and executable UI; backend authorization remains final",
+      "session_envelope_boundary": "v5 supersedes the v4 ban: routeGrants stays inside the session envelope as a route-list drift detector, not an authorization projection. It is server-generated, never client-submitted, and the client cross-checks it against independently derived expectations so route-list divergence fails the session closed. This required field requires a version bump to media_web_business_pages_v3 and B re-freezes the interface identity at v3.",
+      "entry_state_authority": "the shipped entry-state API carries login entry status only: mode, matched/none/expired/mismatched, masked entry, and fallback. It is a pre-login probe and must never carry role, body authority, route grants, or action grants.",
+      "entry_state_contract": "login entry status and workspace route authorization are two separately versioned contracts and must not share one endpoint or one name. Both are published in OpenAPI and client types; entry-state OpenAPI publication remains a B/T1 delivery item.",
+      "route_authorization_axes": "role selects shell; workspaceMode/bodyAuthority select content authority; session routeGrants plus MediaStudioRoutePolicy select visible UI, while backend authorization on every read and action remains final.",
+      "illegal_route_semantics": "navigation may collapse a legal session in the wrong shell to that shell's default route; data and action calls must refuse cross-tenant, cross-owner, missing-grant, or organization-capability requests with 403 or an equivalent no-permission state.",
+      "route_list_authority": "the route list is delegated to mediaStudioRoutePolicy.ts. The remaining hand-maintained duplicates are debt to be collapsed into one generated source.",
       "ordinary_ia_entrypoint": "MediaStudioApp is the current mounted entry; MediaApp is legacy until an entrypoint census proves otherwise. Do not delete the legacy IA before route ownership and deep-link behavior are recorded.",
       "font_delivery": "self-host DM Sans as full WOFF2; serve Noto Sans SC through unicode-range slices or a curated common-glyph subset; preload only Latin subset and keep a local fallback chain",
       "font_weight_policy": "load every used weight including 600; remove 800/850 visual dependence, map Chinese headings to available weights, set Chinese or mixed headings letter-spacing to 0 and reserve negative tracking for pure Latin/numeric display"
     },
     "approval_authority": "user",
-    "approval_evidence": "User requested the phase-2 SSOT, explicitly resolved the session-envelope conflict in favor of an independent read-only entry-state API, and accepted the self-hosted font, sliced Chinese subset, and weight/tracking constraints",
-    "approved_at": "2026-08-31T23:15:51+08:00"
+    "approval_evidence": "v4 accepted self-hosted fonts, Chinese subsets, and weight/tracking constraints. v5 supersedes the session-envelope ban after source verification: routeGrants is a fail-closed drift detector, entry-state is a pre-login probe, and illegal-route behavior is split between navigation convergence and data/action refusal.",
+    "approved_at": "2026-09-01T14:20:00+08:00",
+    "supersedes": {
+      "version": 4,
+      "retired_invariant": "session_envelope_boundary v4 forbade routeGrants in the session envelope and put page authorization in entry-state",
+      "reason": "entry-state is pre-login and cannot safely expose authorization facts; routeGrants is independently cross-checked rather than trusted as authority"
+    }
   },
   "acceptance_fragments": [
     {
@@ -122,7 +129,7 @@
       "decision_refs": [
         {
           "semantic_key": "media.stage2.product-decisions",
-          "version": 4
+          "version": 5
         }
       ],
       "assumption_ids": [],

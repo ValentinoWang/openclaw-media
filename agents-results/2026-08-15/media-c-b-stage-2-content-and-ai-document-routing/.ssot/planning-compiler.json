@@ -7,7 +7,7 @@
     "selection_authority": "user",
     "rationale": "用户明确要求把第二阶段作为持久 SSOT；个人内容、组织飞书正文、共享人工智能路由、入口状态权限和真实外部验收必须在同一候选上协调。",
     "decision_versions": {
-      "media.stage2.product-decisions": 4
+      "media.stage2.product-decisions": 5
     }
   },
   "external_systems": [
@@ -46,9 +46,9 @@
       "independent_acceptance": "个人子候选、组织子候选、共享路由和真实外部验收均可在本发布切片内完成。",
       "independent_failure": "任一支线失败时保持候选未晋升，不改写第一阶段已接受身份和组织接入候选。",
       "future_phase_required_for_success": false,
-      "development_baseline": "stage2-development-base-v4",
+      "development_baseline": "stage2-development-base-v5",
       "promotion_baseline": "stage1-dc2-accepted-candidate",
-      "release_candidate": "stage2-rel-2-candidate-v4",
+      "release_candidate": "stage2-rel-2-candidate-v5",
       "acceptance_node_id": "DC",
       "release_candidate_artifact_id": "candidate:REL-2",
       "independent_proof_artifact_id": "proof:REL-2",

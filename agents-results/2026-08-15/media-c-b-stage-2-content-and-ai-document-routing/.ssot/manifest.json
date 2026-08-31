@@ -89,37 +89,37 @@
     {
       "view_id": "main",
       "source": "view-sources/00-main.md",
-      "source_sha256": "18c0f12b0c64193a0c98d37c01cb88397e1555ab75589467fc11d9e2a774c118",
+      "source_sha256": "17fead47bbad7c22175220cd974500c1ca09b2209fbe912c230f7d2022c2b614",
       "output": "../ssot-development-paths.md"
     },
     {
       "view_id": "dependency-topology",
       "source": "view-sources/10-topology.md",
-      "source_sha256": "9b7515f07658b22daf92c853b76bb58b599feb0d2d951ae1f8d51e6c0480b37b",
+      "source_sha256": "4726df09c58a248e7f6bb998991554817592ea67988025f61d5460d95f783eb6",
       "output": "../generated-views/10-dependency-topology.md"
     },
     {
       "view_id": "execution-governance",
       "source": "view-sources/20-execution.md",
-      "source_sha256": "81eba44ef2bae86afa179de1ca3fd989d2cba722d1765b1dd486060c7c1a1572",
+      "source_sha256": "4b96dd38248d1d5063a9e832903cf1c60890a14d0946aaecea4a25d2d1235881",
       "output": "../generated-views/20-execution-governance.md"
     },
     {
       "view_id": "contracts-acceptance",
       "source": "view-sources/30-acceptance.md",
-      "source_sha256": "31c3fbc0df40b23143884d9c76b8a9ab5a0082ac85d3844c6f6cf4e1441e5733",
+      "source_sha256": "e2e8fb26d108110a22009aca2e83452f91d249704b5491f87065378cb06304f6",
       "output": "../generated-views/30-node-contracts-and-acceptance.md"
     },
     {
       "view_id": "implementation-progress",
       "source": "view-sources/40-progress.md",
-      "source_sha256": "448497c8d298f4416174821ad09c739142fda079ca2f0dd2821432dbc1171fcf",
+      "source_sha256": "bb0cb3b945a33b8c26e10ae0d9b89f2bcd9b2ef9196a79047b9e0691bf2383aa",
       "output": "../implementation-progress.md"
     },
     {
       "view_id": "acceptance-execution",
       "source": "view-sources/40-acceptance-execution.md",
-      "source_sha256": "6d7728d927ed1a2d101496038679359c4accec5bc7ccbfb3c2a47075c7629c07",
+      "source_sha256": "bd36b81efdcf591ce4d0dac2cd9c55be26c30f8a4d7e54dc3f76fbe9f2d0d918",
       "output": "../generated-views/40-acceptance-execution.md"
     }
   ],
@@ -129,8 +129,8 @@
   "conflicts_dir": "conflicts",
   "validation_report": {
     "path": "validation-report.json",
-    "sha256": "de1a0ee63cbed795d45b7416142bd0474877803ad37d7e7267bf4356dd950add",
-    "manifest_identity_sha256": "ad094c6d555f47bbd455a63ee50b6b2ea0a80a03277196c4d3411409c7d8b942",
-    "bundle_content_sha256": "a941081ff48673f9c4472a85cb18de2ea7d7174d66a8609f3526a668967216a9"
+    "sha256": "fe8dbad4c518c8df8c70ba0b24e6cadc6cc1bc64dae809adbb28baec63a98253",
+    "manifest_identity_sha256": "26370e08ca42c2fc03edc387876156359689ee7e7ed5429a1458649102131bcf",
+    "bundle_content_sha256": "ad66b73914206c2dc24acd6f056d023d6128281ceb87509c26061878384b8f30"
   }
 }

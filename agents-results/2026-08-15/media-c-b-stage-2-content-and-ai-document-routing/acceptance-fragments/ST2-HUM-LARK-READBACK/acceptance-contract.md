@@ -10,7 +10,7 @@
 - SSOT node: O5
 - SSOT path: agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md
 - Readiness mode: FORMAL
-- Decision refs: media.stage2.product-decisions@4
+- Decision refs: media.stage2.product-decisions@5
 - Assumption IDs: none
 - Invalidation keys: media.stage2.organization-edit-readback.v5, media.stage2.organization-edit-readback.manual-lark-readback
 - Baseline identity: ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5; docs/frontend/prototype/stage2-acceptance-execution.html

@@ -17,7 +17,7 @@
   "decision_refs": [
     {
       "semantic_key": "media.stage2.product-decisions",
-      "version": 4
+      "version": 5
     }
   ],
   "invalidation_keys": [
@@ -134,7 +134,7 @@
       "decision_refs": [
         {
           "semantic_key": "media.stage2.product-decisions",
-          "version": 4
+          "version": 5
         }
       ],
       "assumption_ids": [],

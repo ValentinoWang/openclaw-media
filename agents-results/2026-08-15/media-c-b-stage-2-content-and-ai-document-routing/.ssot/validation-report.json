@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-31T22:34:57.697385+00:00",
+  "generated_at": "2026-08-31T23:06:08.586141+00:00",
   "generator": {
     "repository": "ValentinoWang/Harness_Engineering",
     "commit": "480c64bc92ecab178f202daead187acd9656cd1d",
@@ -14,17 +14,17 @@
   },
   "runtime": {
     "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/mediaclaw-stylekit-publish",
-    "project_commit": "fd484f62047c05754dcbc03cf7a2fee2199c73c4",
+    "project_commit": "17bab0cfdc9de5116d391c94222a56bc2b84f266",
     "project_dirty": true,
-    "project_dirty_diff_sha256": "8967d868479d77bf5b785b27b801f58e84128aab3215b28c487372078b0b4058",
+    "project_dirty_diff_sha256": "479f36a685ab29fa98f76e20a5a960c656bfd5f6f5ab23069db954bfdfd38826",
     "harness_lock_sha256": null
   },
   "bundle": {
     "path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/mediaclaw-stylekit-publish/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",
-    "sha256": "a941081ff48673f9c4472a85cb18de2ea7d7174d66a8609f3526a668967216a9",
-    "content_sha256": "a941081ff48673f9c4472a85cb18de2ea7d7174d66a8609f3526a668967216a9",
-    "manifest_sha256": "ad094c6d555f47bbd455a63ee50b6b2ea0a80a03277196c4d3411409c7d8b942",
-    "manifest_identity_sha256": "ad094c6d555f47bbd455a63ee50b6b2ea0a80a03277196c4d3411409c7d8b942"
+    "sha256": "ad66b73914206c2dc24acd6f056d023d6128281ceb87509c26061878384b8f30",
+    "content_sha256": "ad66b73914206c2dc24acd6f056d023d6128281ceb87509c26061878384b8f30",
+    "manifest_sha256": "26370e08ca42c2fc03edc387876156359689ee7e7ed5429a1458649102131bcf",
+    "manifest_identity_sha256": "26370e08ca42c2fc03edc387876156359689ee7e7ed5429a1458649102131bcf"
   },
   "checks": [
     {
