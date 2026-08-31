@@ -90,7 +90,10 @@ class DocumentEditExecutor:
             "applied": [op.operation_id or op.block.block_id for op in plan.operations],
             "appliedCount": len(plan.operations),
             "manualActions": [item.to_mapping() for item in plan.manual_actions],
-            "protectedSkipped": [item.block_id for item in plan.manual_actions if item.block_id],
+            # A Lark write must surface protected remote blocks in the sync
+            # receipt; internal revisions keep those blocks untouched and
+            # expose any targeted skips through manualActions only.
+            "protectedSkipped": [item.block_id for item in plan.manual_actions if item.block_id] if authority == "lark" else [],
             "bodyChecksum": body_checksum(updated),
         }
         if authority == "lark":
@@ -134,7 +137,7 @@ class DocumentEditExecutor:
                 protected.append(item)
             else:
                 blocks.append(item)
-        return DocumentEditWorkingCopy.from_patch_source({"ok": True, "url": str(claimed.get("url", "")), "document_id": str(claimed.get("documentId", artifact_id)),
+        return DocumentEditWorkingCopy.from_patch_source({"ok": True, "url": str(claimed.get("url") or f"internal://artifacts/{artifact_id}"), "document_id": str(claimed.get("documentId", artifact_id)),
             "source_hash": str(claimed.get("sourceHash", body_checksum(body))), "revision_token": str(claimed.get("revisionToken", f"revision:{revision}")),
             "snapshot_path": str(claimed.get("snapshotPath", "executor")), "patchable_blocks": blocks, "protected_blocks": protected})
 
