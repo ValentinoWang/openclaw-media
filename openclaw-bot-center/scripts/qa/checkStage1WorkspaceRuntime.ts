@@ -48,7 +48,7 @@ function sessionFor(scenario: WorkspaceScenario) {
       workspaceMode: "personal_web" as const,
       editorMode: "web_edit" as const,
       bodyAuthority: "internal" as const,
-      routeGrants: ["/overview", "/workspace"],
+      routeGrants: ["/today", "/studio", "/campaigns", "/business", "/desk", "/overview", "/assets", "/tracks", "/decisions", "/publishing", "/reviews", "/media-agent", "/archives", "/usage-billing", "/invites", "/workspace"],
     };
   }
   const organizationConnection: OrganizationConnection = scenario === "organization-active" ? "connected" : "disabled";
