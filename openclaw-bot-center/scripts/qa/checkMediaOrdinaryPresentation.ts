@@ -32,7 +32,7 @@ for (const retiredSource of [
   assert.equal(existsSync(retiredSource), false, `${retiredSource} is a retired duplicate; use pages/ordinary and ui/displayLabels instead`)
 }
 
-assert.equal(ordinaryPages.length, 11, 'ordinary Media page scope changed; update this presentation gate deliberately')
+assert.equal(ordinaryPages.length, 12, 'ordinary Media page scope changed; update this presentation gate deliberately')
 
 const presentationFiles = [
   ...ordinaryPages.map((name) => resolve(ordinaryDirectory, name)),
