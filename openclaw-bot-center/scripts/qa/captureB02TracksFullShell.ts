@@ -104,7 +104,7 @@ async function assertMediaShell(
   pageErrors: string[],
 ) {
   try {
-    await assertCount(page.locator(".media-shell"), 1, "the real MediaApp shell");
+    await assertCount(page.locator(".media-shell"), 1, "the real MediaStudioApp shell");
   } catch (error) {
     const diagnostic = await page.evaluate(() => ({
       rootHtml: document.getElementById("root")?.innerHTML.slice(0, 4000) ?? "",
@@ -560,7 +560,7 @@ async function capture(
     await assertMediaShell(page, consoleErrors, pageErrors);
     await assertVisible(
       page.getByRole("navigation", { name: "主导航" }),
-      "the real MediaApp navigation",
+      "the real MediaStudioApp navigation",
     );
     await assertVisible(
       page.getByRole("link", { name: "账号与赛道", exact: true }),
@@ -846,7 +846,7 @@ async function main() {
     sourceServer: pageUrl,
     serverMode: externalTargetUrl ? "external-target" : "local-vite",
     harness:
-      "index.media.html -> src/media/main.tsx -> MediaApp -> ProductShell -> Routes -> TracksPage",
+      "index.media.html -> src/media/main.tsx -> MediaStudioApp -> ProductShell -> Routes -> TracksPage",
     fixtureMode: "browser routes only; generated callBusinessOperation paths; no product writes",
     browserSemaphore: 4,
     viewports,
@@ -861,7 +861,7 @@ async function main() {
   writeFileSync(
     join(runDir, "verification.txt"),
     [
-      "B02 real MediaApp full-shell evidence",
+      "B02 real MediaStudioApp full-shell evidence",
       "versionTuple=" + tuple,
       "node=B02",
       "browserSemaphore=4",

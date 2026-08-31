@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { secureUuid } from '../../src/media/secureUuid'
 
 const mediaSources = [
-  'src/media/MediaApp.tsx',
+  'src/media/MediaStudioApp.tsx',
   'src/media/MediaWebWorkspace.tsx',
   'src/media/mediaWebApi.ts',
   'src/media/secureUuid.ts',

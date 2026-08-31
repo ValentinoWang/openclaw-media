@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 
 const page = readFileSync(resolve('src/media/OrganizationWorkspaceShellPage.tsx'), 'utf8')
 const workspace = readFileSync(resolve('src/media/WorkspaceShellPage.tsx'), 'utf8')
-const app = readFileSync(resolve('src/media/MediaApp.tsx'), 'utf8')
+const app = readFileSync(resolve('src/media/MediaStudioApp.tsx'), 'utf8')
 const styles = readFileSync(resolve('src/media/media.css'), 'utf8')
 
 assert.match(page, /workspaceMode !== 'organization_lark' \|\| session\.bodyAuthority !== 'lark'/, 'organization shell must require the server organization session')
@@ -45,13 +45,13 @@ assert.match(workspace, /PersonalWorkspaceShellPage/, 'personal workspace branch
 assert.match(workspace, /OrganizationWorkspaceShellPage/, 'workspace shell must dispatch the organization branch')
 assert.doesNotMatch(workspace, /tenantId/, 'shared workspace shell must not display a client tenant identifier')
 
-assert.match(app, /const isOrganization = session\?\.workspaceMode === 'organization_lark' && session\.bodyAuthority === 'lark'/, 'MediaApp must use the server workspace authority for organization routing')
-assert.match(app, /const organizationMediaNav/, 'organization shell must have a dedicated read-only navigation')
-assert.match(app, /organizationMediaNav = \[[\s\S]*path: '\/tracks', label: '账号与赛道'/, 'organization navigation must expose the account and track page')
-assert.match(app, /path="\/organization-workspace"/, 'organization shell route is missing')
-assert.match(app, /path="\/tracks" element=\{isOrganization \? <TracksPage \/> : ordinaryRoute\(<TracksPage \/>\)\}/, 'organization members must be able to open the account and track page')
-assert.match(app, /isOrganization\s*\?\s*<OrganizationGlobalToolbar\s*\/>/, 'organization mode must not render the ordinary task toolbar')
-assert.match(app, /isOrganization\s*\?\s*<Navigate to="\/organization-workspace" replace \/>/, 'ordinary and admin routes must return to the organization shell')
+assert.match(app, /const isOrganization = routePolicy\.shell === 'organization'/, 'MediaStudioApp must use the resolved organization shell policy')
+assert.match(app, /const organizationNavigation/, 'organization shell must have a dedicated read-only navigation')
+assert.match(app, /organizationNavigation = \[[\s\S]*path: '\/tracks', label: '账号与赛道'/, 'organization navigation must expose the account and track page')
+assert.match(app, /<Route path="\/organization-workspace" element=\{organizationRoute\(<OrganizationWorkspaceShellPage \/>, routePolicy\)\}/, 'organization shell route is missing')
+assert.match(app, /<Route path="\/tracks" element=\{tracksRoute\(<TracksPage \/>, routePolicy\)\}/, 'organization members must be able to open the account and track page')
+assert.match(app, /!isOrganization \?\s*\(/, 'organization mode must not render the ordinary task toolbar')
+assert.match(app, /const navigationByShell: Record<StudioShell, readonly NavigationGroup\[]>/, 'navigation must derive from the resolved shell policy')
 
 assert.match(styles, /\.organization-shell-grid\s*\{[\s\S]*?min-width: 0/, 'organization shell grid must prevent narrow-content overflow')
 assert.match(styles, /\.organization-shell-facts[^\n]*overflow-wrap: anywhere/, 'organization shell facts must wrap long server values')

@@ -5,7 +5,7 @@ import path from "node:path";
 const root = path.resolve(import.meta.dirname, "../..");
 const personal = readFileSync(path.join(root, "src/media/PersonalWorkspaceShellPage.tsx"), "utf8");
 const workspace = readFileSync(path.join(root, "src/media/WorkspaceShellPage.tsx"), "utf8");
-const app = readFileSync(path.join(root, "src/media/MediaApp.tsx"), "utf8");
+const app = readFileSync(path.join(root, "src/media/MediaStudioApp.tsx"), "utf8");
 const styles = readFileSync(path.join(root, "src/media/media.css"), "utf8");
 
 function requireText(source: string, token: string, message: string): void {
@@ -18,9 +18,9 @@ requireText(personal, 'callBusinessOperation<PersonalProjectResponse>("listConte
 requireText(personal, 'callBusinessOperation<PersonalArtifactResponse>("listProjectArtifacts"', "personal shell must read server project artifacts");
 requireText(personal, 'callBusinessOperation<PersonalDocumentResponse>("getDocumentBody"', "personal shell must provide a cloud document preview read");
 requireText(personal, 'to={`/workspace/preview/${artifact.publicArtifactId}`}', "personal artifacts must expose a cloud preview entry");
-requireText(app, 'const isPersonal = session?.workspaceMode === \'personal_web\'', "MediaApp must branch on the server-resolved personal session");
+requireText(app, "const isPersonal = routePolicy.shell === 'personal'", "MediaStudioApp must branch on the resolved personal shell policy");
 requireText(app, 'path: \'/workspace\', label: \'个人云端成果\'', "personal navigation must be declared explicitly");
-requireText(app, 'element={isPersonal ? <PersonalWorkspaceShellPage /> : <Navigate to="/workspace" replace />}', "preview routing must be personal-session guarded");
+requireText(app, '<Route path="/workspace/preview/:artifactId" element={personalRoute(\'/workspace/preview/:artifactId\', <PersonalWorkspaceShellPage />, routePolicy)} />', "preview routing must be personal-session guarded");
 requireText(workspace, 'return <PersonalWorkspaceShellPage />', "shared workspace route must delegate personal sessions to the personal shell");
 requireText(personal, 'className="topbar-command personal-task-status-command"', "personal shell must retain a read-only task-status affordance for the shared shell regression fixture");
 requireText(personal, 'className="task-drawer personal-task-status-drawer"', "personal task status must use a read-only drawer surface");

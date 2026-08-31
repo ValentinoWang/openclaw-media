@@ -360,8 +360,8 @@ const workspaceSource = fs.readFileSync(
   path.join(mediaRoot, "MediaWebWorkspace.tsx"),
   "utf8",
 );
-const mediaAppSource = fs.readFileSync(
-  path.join(mediaRoot, "MediaApp.tsx"),
+const mediaStudioSource = fs.readFileSync(
+  path.join(mediaRoot, "MediaStudioApp.tsx"),
   "utf8",
 );
 const runDetailSource = fs.readFileSync(
@@ -430,7 +430,7 @@ requireContract(
   "task launch entry points must open the contextual side workspace",
 );
 requireContract(
-  !mediaAppSource.includes('path="/task-workspace"') &&
+  !mediaStudioSource.includes('path="/task-workspace"') &&
     /\.task-drawer \{[^}]*width:\s*min\(500px,\s*100%\)/.test(mediaStyles) &&
     workspaceSource.includes("<TaskWorkspaceDrawer />"),
   "task workspace must remain a contextual 500px drawer without a fullscreen route",

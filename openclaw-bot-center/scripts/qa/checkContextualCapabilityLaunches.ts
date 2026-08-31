@@ -10,14 +10,14 @@ type RegistryCapability = {
   fields: Array<{ key: string }>;
 };
 
-const mediaApp = readFileSync("src/media/MediaApp.tsx", "utf8");
+const mediaStudioApp = readFileSync("src/media/MediaStudioApp.tsx", "utf8");
 const mediaWorkspace = readFileSync("src/media/MediaWebWorkspace.tsx", "utf8");
 const assets = readFileSync("src/media/pages/ordinary/AssetsPage.tsx", "utf8");
 const tracks = readFileSync("src/media/pages/ordinary/TracksPage.tsx", "utf8");
 const runs = readFileSync("src/media/pages/ordinary/RunsPage.tsx", "utf8");
-const routedOrdinaryModules = [...mediaApp.matchAll(/from ['"]\.\/pages\/ordinary\/([^'"]+)['"]/g)]
+const routedOrdinaryModules = [...mediaStudioApp.matchAll(/from ['"]\.\/pages\/ordinary\/([^'"]+)['"]/g)]
   .map((match) => match[1]);
-assert.ok(routedOrdinaryModules.length > 0, "MediaApp must declare routed ordinary-page modules");
+assert.ok(routedOrdinaryModules.length > 0, "MediaStudioApp must declare routed ordinary-page modules");
 for (const requiredModule of ["AssetsPage", "TracksPage", "RunsPage"]) {
   assert.ok(routedOrdinaryModules.includes(requiredModule), `${requiredModule} must remain in the routed-page scan scope`);
 }

@@ -76,7 +76,7 @@ for (const retiredCopy of [
   assert.doesNotMatch(overviewSource, new RegExp(retiredCopy), `OverviewPage must not restore contract copy: ${retiredCopy}`)
 }
 
-const ordinaryHelpSource = readFileSync(resolve('src/media/MediaApp.tsx'), 'utf8')
+const ordinaryHelpSource = readFileSync(resolve('src/media/MediaStudioApp.tsx'), 'utf8')
 assert.doesNotMatch(
   ordinaryHelpSource,
   /接口|事实|回读|投影/,

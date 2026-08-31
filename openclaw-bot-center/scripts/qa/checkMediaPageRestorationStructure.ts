@@ -9,13 +9,13 @@ type PageContract = {
 };
 
 type SourceFixture = {
-  mediaApp: string;
+  mediaStudioApp: string;
   mediaWebWorkspace: string;
   mediaRoleIa: string;
   pages: Map<string, string>;
 };
 
-const MEDIA_APP_FILE = "src/media/MediaApp.tsx";
+const MEDIA_STUDIO_APP_FILE = "src/media/MediaStudioApp.tsx";
 const MEDIA_WEB_WORKSPACE_FILE = "src/media/MediaWebWorkspace.tsx";
 const MEDIA_ROLE_IA_FILE = "src/media/mediaRoleIa.ts";
 const ADMIN_OVERVIEW_PAGE_FILE = "src/media/pages/admin/AdminOverviewPage.tsx";
@@ -148,16 +148,16 @@ function findMissingPageViolations(fixture: SourceFixture): string[] {
   );
 }
 
-function findMediaAppViolations(fixture: SourceFixture): string[] {
+function findMediaStudioAppViolations(fixture: SourceFixture): string[] {
   const violations: string[] = [];
   for (const page of PAGE_COMPONENTS) {
     const escapedImportPath = page.importPath.replace(/\./g, "\\.");
     const directDefaultImport = new RegExp(
       `\\bimport\\s+${page.owner}\\s+from\\s+['"]${escapedImportPath}['"]`,
     );
-    if (!directDefaultImport.test(fixture.mediaApp)) {
+    if (!directDefaultImport.test(fixture.mediaStudioApp)) {
       violations.push(
-        "MediaApp.tsx missing direct default import for " + page.owner,
+        "MediaStudioApp.tsx missing direct default import for " + page.owner,
       );
     }
 
@@ -165,9 +165,9 @@ function findMediaAppViolations(fixture: SourceFixture): string[] {
       `^\\s*(?:(?:export)\\s+(?:default\\s+)?)?(?:function|class|const|let|var)\\s+${page.owner}\\b`,
       "m",
     );
-    if (inlineDefinition.test(fixture.mediaApp)) {
+    if (inlineDefinition.test(fixture.mediaStudioApp)) {
       violations.push(
-        "MediaApp.tsx first-level page owner defined inline: " + page.owner,
+        "MediaStudioApp.tsx first-level page owner defined inline: " + page.owner,
       );
     }
   }
@@ -376,7 +376,7 @@ function findRetiredLabelViolation(fixture: SourceFixture): string[] {
 function inspectFixture(fixture: SourceFixture): string[] {
   return [
     ...findMissingPageViolations(fixture),
-    ...findMediaAppViolations(fixture),
+    ...findMediaStudioAppViolations(fixture),
     ...findPageSubstitutionViolations(fixture),
     ...findAdminOverviewViolation(fixture),
     ...findAdminOverviewResponseIntegrityViolations(fixture),
@@ -422,7 +422,7 @@ if (ACTION_TARGET_TYPES.has(value.targetType as AdminActionTargetType)) return;
     );
   }
   return {
-    mediaApp: PAGE_COMPONENTS.map(
+    mediaStudioApp: PAGE_COMPONENTS.map(
       (page) => "import " + page.owner + ' from "' + page.importPath + '"',
     ).join("\n"),
     mediaWebWorkspace:
@@ -472,7 +472,7 @@ function runSelfTests(): void {
   );
 
   const missingImport = makeGreenFixture();
-  missingImport.mediaApp = missingImport.mediaApp
+  missingImport.mediaStudioApp = missingImport.mediaStudioApp
     .split("\n")
     .filter((line) => !line.includes("import OverviewPage "))
     .join("\n");
@@ -483,7 +483,7 @@ function runSelfTests(): void {
   );
 
   const inlinePage = makeGreenFixture();
-  inlinePage.mediaApp += "\nfunction OverviewPage() { return null }\n";
+  inlinePage.mediaStudioApp += "\nfunction OverviewPage() { return null }\n";
   assertHasViolation(
     inspectFixture(inlinePage),
     "first-level page owner defined inline: OverviewPage",
@@ -661,7 +661,7 @@ function loadRealFixture(repoRoot: string): SourceFixture {
     }
   }
   return {
-    mediaApp: readIfPresent(repoRoot, MEDIA_APP_FILE),
+    mediaStudioApp: readIfPresent(repoRoot, MEDIA_STUDIO_APP_FILE),
     mediaWebWorkspace: readIfPresent(repoRoot, MEDIA_WEB_WORKSPACE_FILE),
     mediaRoleIa: readIfPresent(repoRoot, MEDIA_ROLE_IA_FILE),
     pages,
