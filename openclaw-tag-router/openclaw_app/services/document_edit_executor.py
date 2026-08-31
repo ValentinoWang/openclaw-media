@@ -63,7 +63,7 @@ class PostgresDocumentRevisionStore:
             if receipt is None or receipt[0] != "reserved" or str(receipt[1]) != str(owner):
                 return None
             row = connection.execute(
-                """SELECT a.body_authority FROM media_product.document_artifacts a
+                """SELECT a.body_authority, r.base_revision FROM media_product.document_artifacts a
                    JOIN media_product.document_revisions r ON r.tenant_id=a.tenant_id
                     AND r.public_artifact_id=a.public_id AND r.revision=%s
                   WHERE a.tenant_id=%s AND a.public_id=%s AND r.state='generating'""",
@@ -74,7 +74,7 @@ class PostgresDocumentRevisionStore:
             commit = getattr(connection, "commit", None)
             if callable(commit):
                 commit()
-            return {"bodyAuthority": row[0], "documentId": artifact_id}
+            return {"bodyAuthority": row[0], "baseRevision": row[1], "documentId": artifact_id}
 
     def complete_revision(self, context: Any, artifact_id: str, revision: int, body: Mapping[str, Any], receipt: Mapping[str, Any]) -> None:
         import json
@@ -183,7 +183,10 @@ class DocumentEditExecutor:
         authority = str(claimed.get("bodyAuthority") or claimed.get("body_authority") or "internal")
         if authority not in {"internal", "lark"}:
             raise ValueError("unsupported body authority")
-        body_response = self._documents.get_document_body(context, artifact_id)
+        base_revision = claimed.get("baseRevision")
+        if isinstance(base_revision, bool) or not isinstance(base_revision, int) or base_revision < 1:
+            raise DocumentEditExecutionError("document_edit_base_revision_missing", "document edit source revision is unavailable")
+        body_response = self._documents.get_document_revision(context, artifact_id, base_revision)
         data = body_response.get("data", body_response) if isinstance(body_response, Mapping) else {}
         current = data.get("revision", data) if isinstance(data, Mapping) else {}
         body = current.get("body") if isinstance(current, Mapping) else None

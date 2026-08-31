@@ -24,7 +24,7 @@ class Store:
         if not self.claimed:
             return None
         self.claimed = False
-        return {"bodyAuthority": self.authority, "documentId": "doc-1"}
+        return {"bodyAuthority": self.authority, "baseRevision": 1, "documentId": "doc-1"}
 
     def complete_revision(self, context, artifact_id, revision, body, receipt):
         self.completed.append((artifact_id, revision, body, receipt))
@@ -37,7 +37,7 @@ class Documents:
     def __init__(self):
         self.writes = []
 
-    def get_document_body(self, context, artifact_id):
+    def get_document_revision(self, context, artifact_id, revision):
         return {"data": {"revision": {"body": deepcopy(BODY)}}}
 
     def save_generated_revision(self, context, artifact_id, revision, body, receipt):
