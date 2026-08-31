@@ -34,6 +34,7 @@ const adminSession = {
   bodyAuthority: "internal" as const,
   role: "admin" as const,
   maintainer: true,
+  routeGrants: ["/admin/overview", "/admin/access", "/admin/tenants", "/admin/billing", "/admin/upstreams"],
   csrfToken: "admin-billing-visual-runtime-csrf",
   expiresAt: "2099-01-01T00:00:00+00:00",
   schemaVersion: "media_web_business_pages_v2" as const,
@@ -442,7 +443,7 @@ async function runViewport(origin: string, viewport: Viewport): Promise<RuntimeR
       requests.includes("GET /admin/billing/summary"),
       `${label}: billing summary was not requested`,
     );
-    assert.ok(fontRequests.length > 0, `${label}: Google Fonts fallback was not exercised`);
+    assert.equal(fontRequests.length, 0, `${label}: external Google Fonts request observed`);
     return { label, viewport, requests, fontRequests, screenshot, layout };
   } finally {
     await browser.close();

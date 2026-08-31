@@ -48,6 +48,7 @@ function sessionFor(scenario: WorkspaceScenario) {
       workspaceMode: "personal_web" as const,
       editorMode: "web_edit" as const,
       bodyAuthority: "internal" as const,
+      routeGrants: ["/overview", "/workspace"],
     };
   }
   const organizationConnection: OrganizationConnection = scenario === "organization-active" ? "connected" : "disabled";
@@ -60,6 +61,7 @@ function sessionFor(scenario: WorkspaceScenario) {
     workspaceMode: "organization_lark" as const,
     editorMode: "lark_edit" as const,
     bodyAuthority: "lark" as const,
+    routeGrants: ["/organization-workspace", "/tracks"],
   };
 }
 
@@ -271,7 +273,7 @@ async function runScenario(origin: string, scenario: WorkspaceScenario, viewport
     assert.equal(methods.some((entry) => !entry.startsWith("GET ")), false, `${label}: external write request observed: ${methods.join(", ")}`);
     assert.ok(methods.includes("GET /capabilities"), `${label}: ordinary shell did not load capabilities`);
     assert.ok(methods.includes("GET /tasks"), `${label}: ordinary shell did not load tasks`);
-    assert.ok(externalFontRequests.length > 0, `${label}: weak-network font fallback was not exercised`);
+    assert.equal(externalFontRequests.length, 0, `${label}: external Google Fonts request observed`);
     return { label, viewport, requests: methods };
   } finally {
     await browser.close();
