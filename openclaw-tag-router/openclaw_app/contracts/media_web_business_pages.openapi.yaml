@@ -2103,6 +2103,8 @@ paths:
       security:
       - cookieAuth: []
       x-permission: ordinary-session
+      x-page-contracts:
+      - B05
       parameters:
       - $ref: '#/components/parameters/PublicArtifactId'
       - $ref: '#/components/parameters/Cursor'

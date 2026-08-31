@@ -1,7 +1,7 @@
 // Generated from accepted Media Web Business Pages IF2. Do not edit.
 import { addAuditReasonHeader } from "./auditReasonHeader";
 
-export const sourceSha256 = "aa9d094c0c6ce483b238edc510b919f3ef3a149bbeced939f398534b526b8cb8" as const;
+export const sourceSha256 = "84cfcce346b941b6423e5c629d08c1ec3ffe09f0270f5ac8aae767fb2bf16a7a" as const;
 
 export type OperationCategory = "page" | "shared" | "document";
 export type GeneratedOperation = {
@@ -56,6 +56,8 @@ export const schemaNames = [
   "AssetResponse",
   "AssetSummaryV2",
   "AuditSummary",
+  "AuthEntryStateEntry",
+  "AuthEntryStateResponse",
   "BalancePack",
   "BalancePackListResponse",
   "BillingBalance",
@@ -183,6 +185,8 @@ export const schemaNames = [
   "StageCount",
   "StringList",
   "StringValueMap",
+  "SyncBatch",
+  "SyncBatchListResponse",
   "TaskResult",
   "TaskSummary",
   "Timestamp",
@@ -239,6 +243,8 @@ export const schemaRefs = {
   "AssetResponse": "#/components/schemas/AssetResponse",
   "AssetSummaryV2": "#/components/schemas/AssetSummaryV2",
   "AuditSummary": "#/components/schemas/AuditSummary",
+  "AuthEntryStateEntry": "#/components/schemas/AuthEntryStateEntry",
+  "AuthEntryStateResponse": "#/components/schemas/AuthEntryStateResponse",
   "BalancePack": "#/components/schemas/BalancePack",
   "BalancePackListResponse": "#/components/schemas/BalancePackListResponse",
   "BillingBalance": "#/components/schemas/BillingBalance",
@@ -366,6 +372,8 @@ export const schemaRefs = {
   "StageCount": "#/components/schemas/StageCount",
   "StringList": "#/components/schemas/StringList",
   "StringValueMap": "#/components/schemas/StringValueMap",
+  "SyncBatch": "#/components/schemas/SyncBatch",
+  "SyncBatchListResponse": "#/components/schemas/SyncBatchListResponse",
   "TaskResult": "#/components/schemas/TaskResult",
   "TaskSummary": "#/components/schemas/TaskSummary",
   "Timestamp": "#/components/schemas/Timestamp",
@@ -431,6 +439,7 @@ export const operationIdsByPage = {
     "getRunDecisions",
     "getRunOutputs",
     "getRunSources",
+    "listArtifactSyncBatches",
     "listBusinessOpportunities",
     "listRuns"
   ],
@@ -582,6 +591,7 @@ export const sharedOperationIds = [
   "cancelMediaTask",
   "confirmMediaTask",
   "createMediaUpload",
+  "getAuthEntryState",
   "getMediaSession",
   "getMediaTask",
   "listMediaCapabilities",
@@ -597,6 +607,7 @@ export const documentOperationIds = [
   "getDocumentExportDownload",
   "getDocumentResource",
   "getDocumentRevision",
+  "listArtifactSyncBatches",
   "saveDocumentDraft"
 ] as const;
 
@@ -1176,6 +1187,23 @@ export const operations = {
     "queryParameters": [],
     "runtimeStatus": "new"
   },
+  "getAuthEntryState": {
+    "canonicalCapabilityIds": [],
+    "category": "shared",
+    "existingHandlers": [],
+    "method": "GET",
+    "pageContracts": [
+      "shared"
+    ],
+    "path": "/openclaw/auth/entry-state",
+    "pathParameters": [],
+    "permission": "public-entry",
+    "productReadModels": [],
+    "queryParameters": [
+      "mode"
+    ],
+    "runtimeStatus": "existing_typed"
+  },
   "getBillingBalance": {
     "canonicalCapabilityIds": [],
     "category": "page",
@@ -1707,6 +1735,28 @@ export const operations = {
       "cursor",
       "pageSize",
       "search"
+    ],
+    "runtimeStatus": "new"
+  },
+  "listArtifactSyncBatches": {
+    "canonicalCapabilityIds": [],
+    "category": "document",
+    "existingHandlers": [],
+    "method": "GET",
+    "pageContracts": [
+      "B05"
+    ],
+    "path": "/artifacts/{publicArtifactId}/sync-batches",
+    "pathParameters": [
+      "publicArtifactId"
+    ],
+    "permission": "ordinary-session",
+    "productReadModels": [
+      "sync_batches"
+    ],
+    "queryParameters": [
+      "cursor",
+      "pageSize"
     ],
     "runtimeStatus": "new"
   },

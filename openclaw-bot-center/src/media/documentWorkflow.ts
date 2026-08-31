@@ -11,6 +11,7 @@ export const IF2_DOCUMENT_OPERATIONS = [
   "getDocumentExport",
   "getDocumentExportDownload",
   "getDocumentRevision",
+  "listArtifactSyncBatches",
   "saveDocumentDraft",
 ] as const satisfies readonly DocumentOperationId[];
 
@@ -100,6 +101,30 @@ export type DocumentExportRecord = {
 export type DocumentExportResponse = { schemaVersion: string; data: DocumentExportRecord; revision: number };
 export type DocumentExportDownload = { publicExportId: string; format: DocumentExportFormat; downloadUrl: string; expiresAt: string; contentChecksum: string };
 export type DocumentExportDownloadResponse = { schemaVersion: string; data: DocumentExportDownload; revision: number };
+export type DocumentSyncBatchState = "queued" | "running" | "succeeded" | "failed" | "conflict";
+export type DocumentSyncBatchOperation = "read" | "save";
+export type DocumentSyncBatch = {
+  publicSyncId: string;
+  publicArtifactId: string;
+  revision: number;
+  operation: DocumentSyncBatchOperation;
+  state: DocumentSyncBatchState;
+  remoteDocumentVersion: string | null;
+  bodyChecksum: string | null;
+  blockCount: number | null;
+  protectedBlockCount: number | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  errorCode: string | null;
+  errorDetail: Record<string, unknown>;
+};
+export type DocumentSyncBatchListResponse = {
+  schemaVersion: string;
+  revision: number;
+  items: DocumentSyncBatch[];
+  nextCursor: string | null;
+};
 
 export const DOCUMENT_EXPORT_TEMPLATE_VERSION = "media.document.export.v1" as const;
 export const DOCUMENT_EXPORT_RENDERER_VERSION = "media.document.renderer.v1" as const;
@@ -113,6 +138,7 @@ export type If2DocumentApi = {
   createExport: (publicArtifactId: string, revision: number, format: DocumentExportFormat, session: DocumentSession, signal?: AbortSignal) => Promise<DocumentExportResponse>;
   getExport: (publicExportId: string, signal?: AbortSignal) => Promise<DocumentExportResponse>;
   getExportDownload: (publicExportId: string, signal?: AbortSignal) => Promise<DocumentExportDownloadResponse>;
+  listSyncBatches: (publicArtifactId: string, cursor?: string, pageSize?: number, signal?: AbortSignal) => Promise<DocumentSyncBatchListResponse>;
 };
 
 function defaultCaller<T>(operationId: DocumentOperationId, request: BusinessOperationRequest = {}): Promise<T> {
@@ -155,6 +181,11 @@ export function createIf2DocumentApi(caller: DocumentBusinessCaller = defaultCal
     }),
     getExport: (publicExportId, signal) => caller<DocumentExportResponse>("getDocumentExport", { path: { publicExportId }, signal }),
     getExportDownload: (publicExportId, signal) => caller<DocumentExportDownloadResponse>("getDocumentExportDownload", { path: { publicExportId }, signal }),
+    listSyncBatches: (publicArtifactId, cursor, pageSize, signal) => caller<DocumentSyncBatchListResponse>("listArtifactSyncBatches", {
+      path: { publicArtifactId },
+      query: { cursor, pageSize },
+      signal,
+    }),
   };
 }
 

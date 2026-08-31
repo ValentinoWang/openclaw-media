@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = ROOT.parent / "openclaw-tag-router/openclaw_app/contracts/media_web_business_pages.openapi.yaml"
 DEFAULT_TARGET = ROOT / "src/media/generatedBusinessPagesContract.ts"
 ACCEPTED_SOURCE_SHA256 = (
-    "aa9d094c0c6ce483b238edc510b919f3ef3a149bbeced939f398534b526b8cb8"
+    "84cfcce346b941b6423e5c629d08c1ec3ffe09f0270f5ac8aae767fb2bf16a7a"
 )
 EXPECTED_PAGE_IDS = tuple(f"B{index:02d}" for index in range(1, 15))
 EXPECTED_DOCUMENT_OPERATION_IDS = (
@@ -24,6 +24,7 @@ EXPECTED_DOCUMENT_OPERATION_IDS = (
     "getDocumentExport",
     "getDocumentExportDownload",
     "getDocumentRevision",
+    "listArtifactSyncBatches",
     "saveDocumentDraft",
 )
 MEDIA_SESSION_REQUIRED = {
@@ -64,8 +65,8 @@ def load_contract(source: Path) -> tuple[dict[str, Any], bytes]:
     contract = require_mapping(document, "OpenAPI document")
     if contract.get("openapi") != "3.1.0":
         raise ValueError("accepted OpenAPI must use version 3.1.0")
-    if contract.get("x-openclaw-interface-freeze-version") != 3:
-        raise ValueError("accepted OpenAPI must use interface freeze version 3")
+    if contract.get("x-openclaw-interface-freeze-version") != 5:
+        raise ValueError("accepted OpenAPI must use interface freeze version 5")
     return contract, raw
 
 
@@ -103,8 +104,8 @@ def collect_page_operations(contract: dict[str, Any]) -> dict[str, list[str]]:
             )
         )
     declared = {operation_id for values in result.values() for operation_id in values}
-    if len(declared) != 75:
-        raise ValueError(f"expected 75 declared page operations, got {len(declared)}")
+    if len(declared) != 76:
+        raise ValueError(f"expected 76 declared page operations, got {len(declared)}")
     return result
 
 
@@ -212,11 +213,11 @@ def collect_operations(
             }
             groups[category].append(operation_id)
 
-    if len(operations) != 90:
-        raise ValueError(f"expected 90 unique operations, got {len(operations)}")
+    if len(operations) != 92:
+        raise ValueError(f"expected 92 unique operations, got {len(operations)}")
     for values in groups.values():
         values.sort()
-    expected_counts = {"page": 74, "shared": 9, "document": 7}
+    expected_counts = {"page": 74, "shared": 10, "document": 8}
     actual_counts = {name: len(values) for name, values in groups.items()}
     if actual_counts != expected_counts:
         raise ValueError(
@@ -237,7 +238,7 @@ def collect_operations(
     declared_document_ids = declared_page_ids.intersection(document_ids)
     if declared_page_ids != set(groups["page"]).union(declared_document_ids):
         raise ValueError("x-openclaw-pages contains an invalid non-page operation")
-    if declared_document_ids != {"getDocumentResource"}:
+    if declared_document_ids != {"getDocumentResource", "listArtifactSyncBatches"}:
         raise ValueError("declared document page-operation set drifted")
     for operation_id in declared_page_ids:
         expected_pages = sorted(
@@ -255,8 +256,8 @@ def render(source: Path) -> str:
     components = require_mapping(contract.get("components"), "components")
     schemas = require_mapping(components.get("schemas"), "components.schemas")
     schema_names = sorted(schemas)
-    if len(schema_names) != 180:
-        raise ValueError(f"expected 180 schemas, got {len(schema_names)}")
+    if len(schema_names) != 184:
+        raise ValueError(f"expected 184 schemas, got {len(schema_names)}")
 
     page_operations = collect_page_operations(contract)
     operations, groups = collect_operations(contract, page_operations)
