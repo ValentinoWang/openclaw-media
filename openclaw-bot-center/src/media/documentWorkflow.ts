@@ -66,6 +66,8 @@ export type DocumentArtifactRecord = {
   bodyAuthority: DocumentBodyAuthority;
   currentRevision: number;
   updatedAt: string;
+  organizationDocumentUrl?: string | null;
+  larkDocumentUrl?: string | null;
 };
 export type DocumentRevisionRecord = {
   publicArtifactId: string;

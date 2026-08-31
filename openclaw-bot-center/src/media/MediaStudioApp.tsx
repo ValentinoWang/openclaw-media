@@ -58,6 +58,7 @@ import TracksPage from './pages/ordinary/TracksPage'
 import UsageBillingPage from './pages/ordinary/UsageBillingPage'
 import WorkboardPage from './studio/WorkboardPage'
 import OrganizationWorkspaceShellPage from './OrganizationWorkspaceShellPage'
+import OrganizationDocumentMirrorPage from './OrganizationDocumentMirrorPage'
 import PersonalWorkspaceShellPage from './PersonalWorkspaceShellPage'
 import DocumentEditorPage from './pages/ordinary/DocumentEditorPage'
 import WorkspaceShellPage from './WorkspaceShellPage'
@@ -397,6 +398,7 @@ function ProductShell() {
             <Route path="/workspace/preview/:artifactId" element={personalRoute('/workspace/preview/:artifactId', <PersonalWorkspaceShellPage />, routePolicy)} />
             <Route path="/workspace/edit/:artifactId" element={personalRoute('/workspace/edit/:artifactId', <DocumentEditorPage />, routePolicy)} />
             <Route path="/organization-workspace" element={organizationRoute(<OrganizationWorkspaceShellPage />, routePolicy)} />
+            <Route path="/organization-workspace/document/:artifactId" element={organizationRoute(<OrganizationDocumentMirrorPage />, routePolicy)} />
             <Route path="/admin/overview" element={adminRoute('/admin/overview', <AdminOverviewPage />, routePolicy)} />
             <Route path="/admin/access" element={adminRoute('/admin/access', <AdminAccessPage />, routePolicy)} />
             <Route path="/admin/tenants" element={adminRoute('/admin/tenants', <AdminTenantsPage />, routePolicy)} />

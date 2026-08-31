@@ -106,7 +106,9 @@ export function resolveStudioRouteOutcome(policy: StudioRoutePolicy, pathname: s
       ? '/workspace'
       : /^\/workspace\/edit\/[^/]+$/.test(pathname)
         ? '/workspace'
-        : pathname
+      : /^\/organization-workspace\/document\/[^/]+$/.test(pathname)
+        ? '/organization-workspace'
+      : pathname
   const grant = policy.routeGrants.includes(grantPath)
   if (!grant) return { kind: 'forbidden' }
   if (pathname === '/runs') {
@@ -130,6 +132,9 @@ export function resolveStudioRouteOutcome(policy: StudioRoutePolicy, pathname: s
     return policy.shell === 'personal' ? { kind: 'render' } : { kind: 'forbidden' }
   }
   if (pathname === '/organization-workspace') {
+    return policy.shell === 'organization' ? { kind: 'render' } : { kind: 'forbidden' }
+  }
+  if (/^\/organization-workspace\/document\/[^/]+$/.test(pathname)) {
     return policy.shell === 'organization' ? { kind: 'render' } : { kind: 'forbidden' }
   }
   return { kind: 'forbidden' }
