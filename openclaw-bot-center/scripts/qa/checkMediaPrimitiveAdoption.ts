@@ -294,16 +294,46 @@ function routeComponent(initializer: ts.JsxAttributeValue | undefined): string |
 function collectProductionRoutes(sourceText: string): { routes: readonly ProductionRoute[]; imports: ReadonlyMap<string, ImportedBinding>; errors: readonly string[] } {
   const source = ts.createSourceFile('src/media/MediaStudioApp.tsx', sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const routes: ProductionRoute[] = []
-  const visit = (node: ts.Node) => {
-    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && ts.isIdentifier(node.tagName) && node.tagName.text === 'Route') {
-      const path = jsxStringAttribute(node, 'path')
-      if (path === undefined) routes.push({ path: '<missing>' })
-      else routes.push({ path, component: routeComponent(jsxAttribute(node, 'element')?.initializer) })
+  const bindings = collectLocalBindings(source)
+  const root = defaultRenderBinding(source, bindings)
+  const errors = (source as ts.SourceFile & { parseDiagnostics: readonly ts.Diagnostic[] }).parseDiagnostics.map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, ' '))
+  if (!root) errors.push('default export render root is unresolved')
+  const pending: ts.Node[] = root ? [root] : []
+  const seenNodes = new Set<ts.Node>()
+  const collectRoutes = (node: ts.Node) => {
+    const visit = (current: ts.Node) => {
+      if ((ts.isJsxOpeningElement(current) || ts.isJsxSelfClosingElement(current)) && ts.isIdentifier(current.tagName) && current.tagName.text === 'Route') {
+        const path = jsxStringAttribute(current, 'path')
+        if (path === undefined) routes.push({ path: '<missing>' })
+        else routes.push({ path, component: routeComponent(jsxAttribute(current, 'element')?.initializer) })
+      }
+      ts.forEachChild(current, visit)
     }
-    ts.forEachChild(node, visit)
+    visit(node)
   }
-  visit(source)
-  return { routes, imports: collectImportedBindings(source), errors: (source as ts.SourceFile & { parseDiagnostics: readonly ts.Diagnostic[] }).parseDiagnostics.map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')) }
+  while (pending.length) {
+    const renderNode = pending.shift()!
+    if (seenNodes.has(renderNode)) continue
+    seenNodes.add(renderNode)
+    const visit = (node: ts.Node) => {
+      if (node !== renderNode && isFunctionLike(node) && !isInlineRenderCallback(node)) return
+      if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+        const tag = ts.isIdentifier(node.tagName) ? node.tagName.text : undefined
+        if (tag === 'Routes') collectRoutes(ts.isJsxOpeningElement(node) && ts.isJsxElement(node.parent) ? node.parent : node)
+        if (tag && bindings.has(tag) && isRenderBinding(bindings.get(tag)!)) pending.push(bindings.get(tag)!)
+      }
+      if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+        const binding = bindings.get(node.expression.text)
+        if (binding && isRenderBinding(binding)) pending.push(binding)
+      }
+      ts.forEachChild(node, visit)
+    }
+    if (isFunctionLike(renderNode)) {
+      if (renderNode.body) visit(renderNode.body)
+    } else visit(renderNode)
+  }
+  if (!routes.length) errors.push('reachable production <Routes> registry is unresolved')
+  return { routes, imports: collectImportedBindings(source), errors }
 }
 
 export function validateProductionRouteBindings(sourceText: string, specs: readonly SurfaceSpec[] = surfaces): readonly string[] {
@@ -465,7 +495,7 @@ function fixtures() {
 function routeFixture(extraRoute = '', omittedPath?: string) {
   const imports = surfaces.filter((surface) => surface.route).map((surface) => `import ${surface.route!.component} from '${surface.route!.importModule}'`).join('\n')
   const routes = surfaces.filter((surface) => surface.route).flatMap((surface) => surface.route!.paths.map((path) => `<Route path="${path}" element={ordinaryRoute('${path}', <${surface.route!.component} />, routePolicy)} />`)).filter((route) => !omittedPath || !route.includes(`path="${omittedPath}"`))
-  return `${imports}\n<Routes><Route path="/" element={<Navigate to="/today" />} />${routes.join('')}<Route path="/runs" element={studioAliasRoute(routePolicy)} /><Route path="*" element={<Navigate to="/today" />} />${extraRoute}</Routes>`
+  return `${imports}\nexport default function Fixture() { return (<Routes><Route path="/" element={<Navigate to="/today" />} />${routes.join('')}<Route path="/runs" element={studioAliasRoute(routePolicy)} />${extraRoute}<Route path="*" element={<Navigate to="/today" />} /></Routes>) }`
 }
 
 export function runSelfTest() {
@@ -516,6 +546,8 @@ export function runSelfTest() {
   if (validateProductionRouteBindings(routeFixture()).length) throw new Error('self-test failed: matching production route registry was rejected')
   if (!validateProductionRouteBindings(routeFixture('<Route path="/new-surface" element={<NewPage />} />')).length) throw new Error('self-test failed: unmapped production route was accepted')
   if (!validateProductionRouteBindings(routeFixture('', '/today')).length) throw new Error('self-test failed: manifest route absent from registry was accepted')
+  const deadRouteFixture = `${routeFixture('', '/today')}\nfunction DeadRouteFixture() { return <Routes><Route path="/today" element={<WorkboardPage />} /></Routes> }`
+  if (!validateProductionRouteBindings(deadRouteFixture).some((failure) => failure.includes('manifest route /today is absent'))) throw new Error('self-test failed: dead route fixture forged production reachability')
   console.log('media primitive adoption self-test passed: marker, helper reachability, provenance, and bidirectional route-drift red cases rejected; aliases and matching route registry accepted')
 }
 
