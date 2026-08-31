@@ -73,6 +73,10 @@ const revisionStateLabel: Record<DocumentRevisionRecord["state"], string> = {
   conflict: "需要处理冲突",
   archived: "已归档",
 };
+const bodyAuthorityLabel: Record<DocumentRevisionRecord["bodyAuthority"], string> = {
+  internal: "个人正文",
+  lark: "受保护正文",
+};
 
 function cloneBody(body: DocumentBody): DocumentBody {
   return JSON.parse(JSON.stringify(body)) as DocumentBody;
@@ -120,6 +124,10 @@ function technicalReference(error: unknown): string {
   return /^[a-z0-9][a-z0-9_.:-]{0,95}$/i.test(code)
     ? code
     : "document_request_failed";
+}
+function TechnicalReference({ code }: { code: string | null }) {
+  if (!code) return null;
+  return <p className={styles.technicalReference}>技术参考码：{code}</p>;
 }
 function blockIdsFrom(error: unknown): string[] {
   if (!error || typeof error !== "object") return [];
@@ -502,7 +510,7 @@ export default function DocumentEditorPage() {
             </button>
           }
         />
-        {technicalCode ? <p className={styles.technicalReference}>技术参考码：{technicalCode}</p> : null}
+        <TechnicalReference code={technicalCode} />
       </main>
     );
   return (
@@ -518,9 +526,7 @@ export default function DocumentEditorPage() {
           <h1>正文编辑</h1>
           <p className="mg-hero-lead">
             当前版本 {versionLabel(revision.revision)} ·{" "}
-            {revision.bodyAuthority === "internal"
-              ? "个人正文"
-              : "受保护正文"}
+            {bodyAuthorityLabel[revision.bodyAuthority]}
           </p>
         </div>
         <div className={`${styles.actions} mg-hero-actions`}>
@@ -557,9 +563,16 @@ export default function DocumentEditorPage() {
           <strong>这篇正文已在别处更新</strong>
           <span>{message}</span>
           <div>
+            <button
+              className="mg-btn mg-btn-ghost"
+              disabled
+              title="服务端尚未提供可用于逐段对比的冲突差异。"
+            >
+              逐段对比并合并
+            </button>
             <button className="mg-btn mg-btn-primary" onClick={downloadLocalCopy}>
               <Download size={15} />
-              导出本地副本
+              保留为本地副本
             </button>
             <button
               className="mg-btn mg-btn-soft"
@@ -569,6 +582,9 @@ export default function DocumentEditorPage() {
               放弃本地修改并载入最新正文
             </button>
           </div>
+          <small>
+            服务端尚未提供可对比的冲突差异，因此暂不能逐段合并；本地改动可先保留为副本，或放弃后载入最新正文。
+          </small>
         </section>
       ) : null}
       {saveState === "offline" ? (
@@ -612,7 +628,7 @@ export default function DocumentEditorPage() {
           </div>
         </section>
       ) : null}
-      {technicalCode ? <p className={styles.technicalReference}>技术参考码：{technicalCode}</p> : null}
+      <TechnicalReference code={technicalCode} />
       <div className={styles.layout}>
         <section
           className={`${styles.canvas} mg-panel`}
