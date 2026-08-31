@@ -1,9 +1,11 @@
+@import url("./mediaFonts.css");
+
 /* =========================================================================
    MediaClaw 设计令牌 —— 唯一真源
 
    必须在 media.css / mediaPrimitives.css / mediaStudioTheme.css 之前导入。
    收敛目标：
-     - 89 种散装字号  -> 8 级字阶（最小 12px，正文 14px）
+     - 89 种散装字号  -> 9 级字阶（最小 12px，正文 14px）
      - 132 个硬编码色 -> 语义色 + 6 组业务 accent
      - 36 种圆角      -> 6 级
      - 49 种阴影      -> 4 级
@@ -14,8 +16,7 @@
    media.css 里，因为 checkMediaDesignSystemContract.ts 对那三行做字面量断言。
    ========================================================================= */
 
-/* 字体经 index.media.html 的非阻塞 <link> 装载（media=print onload 切换），
-   避免外链样式表在弱网 / 离线环境阻塞首屏。 */
+/* 字体由同目录的 mediaFonts.css 提供，本地 WOFF2 可在弱网和离线时使用。 */
 
 :root {
   /* ---- 字阶（root = 16px）---- */
@@ -27,6 +28,7 @@
   --mg-text-xl:  1.375rem;   /* 22px  面板标题 */
   --mg-text-2xl: 1.75rem;    /* 28px  页面标题 */
   --mg-text-3xl: clamp(2rem, 2.6vw, 2.75rem); /* 32–44px Hero */
+  --mg-text-4xl: clamp(2.625rem, 5.1vw, 4.5rem); /* 42–72px Display */
 
   /* ---- 字距（中文标题默认不收紧）---- */
   --mg-track-tight: 0;

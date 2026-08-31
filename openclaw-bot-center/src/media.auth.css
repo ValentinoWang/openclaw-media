@@ -691,7 +691,8 @@ h2 {
   }
 
   .auth-header {
-    padding-top: 24px;
+    padding-top: 16px;
+    padding-bottom: 16px;
   }
 
   h1 {
@@ -708,6 +709,79 @@ h2 {
 
   .identity-choice-button {
     min-height: 104px;
+  }
+
+  body[data-auth-page='login'] .identity-choice {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  body[data-auth-page='login'] .identity-choice:has(.identity-choice-button[aria-selected='true']) .section-heading {
+    margin-bottom: 8px;
+  }
+
+  body[data-auth-page='login'] .identity-choice:has(.identity-choice-button[aria-selected='true']) .choice-status {
+    margin-top: 8px;
+  }
+
+  body[data-auth-page='login'] .auth-panel {
+    padding-top: 16px;
+    padding-bottom: 20px;
+  }
+
+  body[data-auth-page='login'] .panel-heading {
+    margin-bottom: 12px;
+  }
+
+  body[data-auth-page='login'] .back-button {
+    margin-bottom: 10px;
+  }
+
+  body[data-auth-page='login'] .panel-label {
+    margin-bottom: 6px;
+  }
+
+  body[data-auth-page='login'] .entry-state {
+    margin-bottom: 12px;
+    padding: 12px;
+  }
+
+  body[data-auth-page='login'] .entry-view {
+    margin-top: 10px;
+  }
+
+  body[data-auth-page='login'] .auth-form {
+    gap: 10px;
+  }
+
+  body[data-auth-page='login'] .field {
+    gap: 5px;
+  }
+
+  body[data-auth-page='login'] .field input {
+    min-height: 40px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  body[data-auth-page='login'] .auth-links {
+    margin-top: 10px;
+  }
+
+  body[data-auth-page='login'] .qr-shell {
+    width: 176px;
+    height: 176px;
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  body[data-auth-page='login'] #qr-canvas {
+    width: 152px;
+    height: 152px;
+  }
+
+  body[data-auth-page='login'] .security-note {
+    margin-top: 10px;
   }
 
   .section-heading {

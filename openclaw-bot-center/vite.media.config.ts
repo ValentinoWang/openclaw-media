@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
-import { copyFileSync, existsSync, renameSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, renameSync } from 'node:fs'
 
 export default defineConfig({
   base: '/openclaw/media/',
@@ -44,6 +44,11 @@ export default defineConfig({
         const tokenCssSource = resolve(__dirname, 'src/media/mediaDesignTokens.css')
         if (!existsSync(tokenCssSource)) throw new Error('missing mediaDesignTokens.css source')
         copyFileSync(tokenCssSource, resolve(__dirname, 'dist-media/mediaDesignTokens.css'))
+        const fontCssSource = resolve(__dirname, 'src/media/mediaFonts.css')
+        const fontDirectory = resolve(__dirname, 'src/media/fonts')
+        if (!existsSync(fontCssSource) || !existsSync(fontDirectory)) throw new Error('missing local media font source')
+        copyFileSync(fontCssSource, resolve(__dirname, 'dist-media/mediaFonts.css'))
+        cpSync(fontDirectory, resolve(__dirname, 'dist-media/fonts'), { recursive: true })
       },
     },
   ],
