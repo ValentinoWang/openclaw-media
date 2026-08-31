@@ -40,6 +40,12 @@ const session = {
   },
 } as const;
 
+assert.deepEqual(
+  session.session.routeGrants,
+  studioPersonalNavigationPaths,
+  "deletion-intent lifecycle session fixture routeGrants must exactly match personal session authority",
+);
+
 const project = {
   publicProjectId: projectId,
   title: "个人交付项目",
