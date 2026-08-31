@@ -77,6 +77,54 @@ function apiPath(url: string): string {
   return new URL(url).pathname.replace(apiRoot, "") || "/";
 }
 
+async function assertWorkspaceDispatch(
+  page: Page,
+  scenario: WorkspaceScenario,
+  label: string,
+  methods: string[],
+  consoleErrors: string[],
+): Promise<void> {
+  const expected = scenario === "personal"
+    ? { ownership: "personal", mode: "personal_web" }
+    : { ownership: "organization", mode: "organization_lark" };
+  await page.waitForFunction(({ ownership, mode }) => {
+    const expectedRoot = document.querySelector(
+      `[data-page-ownership="${ownership}"][data-workspace-mode="${mode}"]`,
+    );
+    const terminalHeading = [...document.querySelectorAll("h1")].some((heading) =>
+      ["工作台暂时不可用", "无权访问此页面"].includes(heading.textContent?.trim() ?? ""),
+    );
+    return Boolean(expectedRoot || terminalHeading);
+  }, expected, { timeout: 10_000 });
+
+  const diagnostics = await page.evaluate(() => ({
+    headings: [...document.querySelectorAll("h1")].map((heading) => heading.textContent?.trim()).filter(Boolean),
+    markers: [...document.querySelectorAll<HTMLElement>("[data-page-ownership]")].map((element) => ({
+      ownership: element.dataset.pageOwnership ?? null,
+      workspaceMode: element.dataset.workspaceMode ?? null,
+    })),
+  }));
+  const expectedRoot = page.locator(
+    `[data-page-ownership="${expected.ownership}"][data-workspace-mode="${expected.mode}"]`,
+  );
+  if (await expectedRoot.count() !== 1) {
+    const screenshotPath = join(outputRoot, `${label}-workspace-dispatch-failure.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    assert.fail(
+      `${label}: session did not dispatch to the ${expected.ownership} workspace; ` +
+        `verify exact routeGrants and WorkspaceShell ownership markers. ` +
+        `url=${page.url()} headings=${JSON.stringify(diagnostics.headings)} ` +
+        `markers=${JSON.stringify(diagnostics.markers)} requests=${JSON.stringify(methods)} ` +
+        `consoleErrors=${JSON.stringify(consoleErrors)} screenshot=${screenshotPath}`,
+    );
+  }
+  assert.equal(
+    await page.locator('[data-page-ownership="router"]').count(),
+    0,
+    `${label}: authenticated workspace stopped at the WorkspaceShell fallback marker`,
+  );
+}
+
 function assertNoComponentOverflow(page: Page, label: string): Promise<void> {
   return page.evaluate((scenarioLabel) => {
     const documentWidth = document.documentElement.scrollWidth;
@@ -220,6 +268,7 @@ async function runScenario(origin: string, scenario: WorkspaceScenario, viewport
     const path = scenario === "personal" ? `${mediaBase}/workspace` : `${mediaBase}/organization-workspace`;
     await page.goto(`${origin}${path}`, { waitUntil: "domcontentloaded" });
     assert.equal(new URL(page.url()).pathname, path, `${label}: workspace route drifted`);
+    await assertWorkspaceDispatch(page, scenario, label, methods, consoleErrors);
     if (scenario === "personal") {
       await page.getByRole("heading", { name: "云端成果", exact: true }).waitFor({ timeout: 10_000 });
       await page.getByText("第一阶段云端交付验证项目", { exact: true }).waitFor({ timeout: 10_000 });

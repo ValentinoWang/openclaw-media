@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { chromium, type Page, type Route } from "playwright";
 import { createServer } from "vite";
 import react from "@vitejs/plugin-react";
+import { studioPersonalNavigationPaths } from "../../src/media/mediaStudioRoutePolicy";
 
 const mediaBase = "/openclaw/media";
 const apiRoot = mediaBase + "/api";
@@ -17,6 +18,30 @@ const externalOrigin =
 const targetId = "asset_item_qa_delete_recovery_0001";
 const planDigest = `sha256:${"a".repeat(64)}`;
 const catalogVersion = `sha256:${"b".repeat(64)}`;
+const personalRouteGrants = [
+  "/today",
+  "/studio",
+  "/campaigns",
+  "/business",
+  "/desk",
+  "/overview",
+  "/assets",
+  "/tracks",
+  "/decisions",
+  "/publishing",
+  "/reviews",
+  "/media-agent",
+  "/archives",
+  "/usage-billing",
+  "/invites",
+  "/workspace",
+] as const;
+
+assert.deepEqual(
+  personalRouteGrants,
+  studioPersonalNavigationPaths,
+  "deletion-recovery session fixture routeGrants must exactly match personal session authority",
+);
 
 const field = (key: string, label: string, options: string[] = []) => ({
   key,
@@ -204,7 +229,7 @@ async function installApi(page: Page) {
           installationConnection: "not_applicable",
           role: "ordinary",
           maintainer: false,
-          routeGrants: ["/today", "/studio", "/overview", "/workspace"],
+          routeGrants: [...personalRouteGrants],
           csrfToken: "task-delete-qa-csrf",
           expiresAt: "2026-08-10T00:00:00+00:00",
           schemaVersion: "media_web_business_pages_v2",
