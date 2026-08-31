@@ -8,7 +8,7 @@ export type MediaSurfaceSpec = {
   id: string
   source: string
   family: MediaSurfaceFamily
-  ownership?: 'governance' | 'personal' | 'organization'
+  ownership?: 'governance' | 'personal' | 'organization' | 'router'
   accent?: 'studio' | 'campaign' | 'business' | 'desk' | 'agent' | 'archive'
   eligible: readonly MediaPrimitive[]
   exemption?: string
@@ -51,13 +51,13 @@ export const CANONICAL_MEDIA_PAGE_SURFACES: readonly MediaSurfaceSpec[] = [
   { id: 'studio-desk', source: 'studio/DeskPage.tsx', family: 'studio', ownership: 'personal', accent: 'desk', eligible: primitives('mg-panel', 'mg-btn', 'mg-hero'), exemption: 'static research entry has no metric collection or load-state branch', heroActions: requiredHeroActions, route: { component: 'DeskPage', importModule: './studio/DeskPage', paths: ['/desk'] } },
   { id: 'studio-workboard', source: 'studio/WorkboardPage.tsx', family: 'studio', ownership: 'personal', accent: 'studio', eligible: primitives('mg-panel', 'mg-btn', 'mg-metric-grid', 'mg-hero', 'state'), heroActions: requiredHeroActions, route: { component: 'WorkboardPage', importModule: './studio/WorkboardPage', paths: ['/today'] } },
   { id: 'organization-workspace', source: 'OrganizationWorkspaceShellPage.tsx', family: 'organization', ownership: 'organization', accent: 'campaign', eligible: primitives('mg-panel', 'mg-btn', 'mg-metric-grid', 'mg-hero', 'state'), exemption: 'organization shell has no switchable view', heroActions: exemptHeroActions('organization provisioning controls are scoped to the workspace panel; hero has status only'), route: { component: 'OrganizationWorkspaceShellPage', importModule: './OrganizationWorkspaceShellPage', paths: ['/organization-workspace'] } },
-  { id: 'workspace-router', source: 'WorkspaceShellPage.tsx', family: 'ordinary', ownership: 'personal', accent: 'studio', eligible: primitives('state'), exemption: 'workspace dispatcher delegates authenticated rendering and owns only fail-closed states', heroActions: exemptHeroActions('workspace dispatcher has no hero action region'), route: { component: 'WorkspaceShellPage', importModule: './WorkspaceShellPage', paths: ['/workspace'] } },
+  { id: 'workspace-router', source: 'WorkspaceShellPage.tsx', family: 'ordinary', ownership: 'router', accent: 'studio', eligible: primitives('state'), exemption: 'workspace dispatcher delegates authenticated rendering and owns only fail-closed states', heroActions: exemptHeroActions('workspace dispatcher has no hero action region'), route: { component: 'WorkspaceShellPage', importModule: './WorkspaceShellPage', paths: ['/workspace'] } },
 ]
 
 export const CANONICAL_ROUTE_EXEMPTIONS = [
-  { path: '/', reason: 'redirect route has no page renderer' },
+  { path: '/', reason: 'redirect route has no page renderer', component: 'Navigate', importModule: 'react-router-dom' },
   { path: '/runs', reason: 'legacy route alias has no page renderer' },
-  { path: '*', reason: 'fallback redirect has no page renderer' },
+  { path: '*', reason: 'fallback redirect has no page renderer', component: 'Navigate', importModule: 'react-router-dom' },
 ] as const
 
 export const CANONICAL_RENDERER_EXEMPTIONS = [

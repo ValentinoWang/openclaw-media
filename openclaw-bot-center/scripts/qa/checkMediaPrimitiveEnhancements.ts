@@ -97,7 +97,7 @@ function staticStringValues(expression: ts.Expression | undefined, bindings: Sta
       return key && value.length ? value : []
     })
   }
-  if (ts.isCallExpression(expression) && ts.isIdentifier(expression.expression) && /^(?:cx|clsx|classNames|makeClasses)$/u.test(expression.expression.text)) {
+  if (ts.isCallExpression(expression) && ts.isIdentifier(expression.expression) && isClassNameHelper(expression.expression.text, bindings)) {
     return expression.arguments.flatMap((argument) => staticStringValues(argument, bindings, seen))
   }
   if (ts.isCallExpression(expression) && ts.isPropertyAccessExpression(expression.expression) && expression.expression.name.text === 'join') {
@@ -111,6 +111,14 @@ function staticStringValues(expression: ts.Expression | undefined, bindings: Sta
     return [expression.head.text, ...expression.templateSpans.flatMap((span) => [...staticStringValues(span.expression, bindings, seen), span.literal.text])]
   }
   return []
+}
+
+const classNameHelpers = new Set(['cx', 'clsx', 'classNames', 'makeClasses'])
+
+function isClassNameHelper(name: string, bindings: StaticBindings): boolean {
+  if (classNameHelpers.has(name)) return true
+  const binding = bindings.get(name)
+  return Boolean(binding && ts.isIdentifier(binding) && classNameHelpers.has(binding.text))
 }
 
 function jsxAttributeStaticStringValues(attribute: ts.JsxAttribute, bindings: StaticBindings = new Map()): readonly string[] {
@@ -336,6 +344,10 @@ function collectBindings(source: ts.SourceFile): StaticBindings {
   const bindings = new Map<string, ts.Expression>()
   const visit = (node: ts.Node) => {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) bindings.set(node.name.text, node.initializer)
+    if (ts.isImportSpecifier(node)) {
+      const importedName = node.propertyName?.text ?? node.name.text
+      if (classNameHelpers.has(importedName)) bindings.set(node.name.text, ts.factory.createIdentifier(importedName))
+    }
     ts.forEachChild(node, visit)
   }
   visit(source)
@@ -349,7 +361,7 @@ function classTokens(node: ts.JsxOpeningLikeElement, bindings: StaticBindings): 
     .flatMap((value) => value.split(/\s+/).filter(Boolean))
 }
 
-type ComponentResolver = (name: string, fromFile: string) => ts.SourceFile | undefined
+type ResolvedComponent = { source: ts.SourceFile; exportedName: string }
 
 function componentDefinitions(source: ts.SourceFile): ReadonlyMap<string, ts.Node> {
   const definitions = new Map<string, ts.Node>()
@@ -362,18 +374,22 @@ function componentDefinitions(source: ts.SourceFile): ReadonlyMap<string, ts.Nod
   return definitions
 }
 
-function resolveImportedComponent(source: ts.SourceFile, name: string, fromFile: string): ts.SourceFile | undefined {
+function resolveImportedComponent(source: ts.SourceFile, name: string, fromFile: string): ResolvedComponent | undefined {
   for (const statement of source.statements) {
     if (!ts.isImportDeclaration(statement) || !statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier)) continue
     const clause = statement.importClause
     if (!clause) continue
-    const imported = clause.name?.text === name || clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.some((element) => (element.name.text === name || element.propertyName?.text === name))
-    if (!imported) continue
+    const defaultImport = clause.name?.text === name
+    const namedImport = clause.namedBindings && ts.isNamedImports(clause.namedBindings)
+      ? clause.namedBindings.elements.find((element) => element.name.text === name)
+      : undefined
+    if (!defaultImport && !namedImport) continue
+    const exportedName = defaultImport ? 'default' : namedImport!.propertyName?.text ?? namedImport!.name.text
     const raw = statement.moduleSpecifier.text
     if (!raw.startsWith('.')) continue
     const base = resolve(dirname(fromFile), raw)
     for (const candidate of [base, `${base}.tsx`, `${base}.ts`, resolve(base, 'index.tsx'), resolve(base, 'index.ts')]) {
-      try { return ts.createSourceFile(candidate, readFileSync(candidate, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX) } catch { /* unresolved import */ }
+      try { return { source: ts.createSourceFile(candidate, readFileSync(candidate, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX), exportedName } } catch { /* unresolved import */ }
     }
   }
   return undefined
@@ -396,12 +412,13 @@ export function findHeroActionContractViolations(sourceText: string, contract: H
   const componentNodes = new Set<ts.Node>()
   const inspectComponent = (name: string, file: ts.SourceFile, depth: number, count: (node: ts.Node, file: ts.SourceFile) => void) => {
     if (depth > 8) return
-    const imported = resolvedSources.get(name) ?? resolveImportedComponent(file, name, file.fileName)
+    const injected = resolvedSources.get(name)
+    const imported = injected ? { source: injected, exportedName: name } : resolveImportedComponent(file, name, file.fileName)
     if (imported) {
-      const importedDefinition = componentDefinitions(imported).get(name) ?? componentDefinitions(imported).get('default')
+      const importedDefinition = componentDefinitions(imported.source).get(imported.exportedName) ?? componentDefinitions(imported.source).get(name)
       if (importedDefinition && !componentNodes.has(importedDefinition)) {
         componentNodes.add(importedDefinition)
-        if (ts.isFunctionLike(importedDefinition) && importedDefinition.body) count(importedDefinition.body, imported)
+        if (ts.isFunctionLike(importedDefinition) && importedDefinition.body) count(importedDefinition.body, imported.source)
       }
       return
     }
@@ -465,7 +482,7 @@ function assertHeroActionContracts(): void {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [...bindingViolations, `${surface.id}: manifest source is missing: ${surface.source}`]
       throw error
     }
-    return [...bindingViolations, ...findHeroActionContractViolations(sourceText, surface.heroActions, surface.source)]
+    return [...bindingViolations, ...findHeroActionContractViolations(sourceText, surface.heroActions, fileName)]
   })
   if (violations.length) throw new Error(`media hero action contract failed: ${violations.join(', ')}`)
 }

@@ -15,7 +15,7 @@ export const PRIMITIVES = MEDIA_PRIMITIVES
 export type Primitive = MediaPrimitive
 export type SurfaceSpec = MediaSurfaceSpec
 
-type RouteRoot = { ownership?: string; accent?: string; hasPrelude: boolean }
+type RouteRoot = { ownership?: string; accent?: string; accentExpression?: string; hasPrelude: boolean }
 type Markers = Record<Primitive, boolean> & { prelude: boolean; routeRoots: readonly RouteRoot[] }
 export type PrimitiveSummary = { eligible: number; adopted: number; percentage: number; exempt: readonly string[] }
 export type AdoptionReport = {
@@ -70,6 +70,13 @@ function jsxAttribute(node: ts.JsxOpeningElement | ts.JsxSelfClosingElement, nam
 function jsxStringAttribute(node: ts.JsxOpeningElement | ts.JsxSelfClosingElement, name: string): string | undefined {
   const initializer = jsxAttribute(node, name)?.initializer
   return initializer && ts.isStringLiteral(initializer) ? initializer.text : undefined
+}
+
+function jsxExpressionIdentifierAttribute(node: ts.JsxOpeningElement | ts.JsxSelfClosingElement, name: string): string | undefined {
+  const initializer = jsxAttribute(node, name)?.initializer
+  return initializer && ts.isJsxExpression(initializer) && initializer.expression && ts.isIdentifier(initializer.expression)
+    ? initializer.expression.text
+    : undefined
 }
 
 function collectLocalBindings(source: ts.SourceFile): ReadonlyMap<string, ts.Node> {
@@ -245,6 +252,7 @@ function inspectTsx(fileName: string, text: string): { markers: Markers; errors:
           routeRoots.push({
             ownership: jsxStringAttribute(node, 'data-page-ownership'),
             accent: jsxStringAttribute(node, 'data-accent'),
+            accentExpression: jsxExpressionIdentifierAttribute(node, 'data-accent'),
             hasPrelude: hasPreludeInSubtree(element, bindings),
           })
         }
@@ -391,6 +399,8 @@ export function validateProductionRouteBindings(sourceText: string, specs: reado
       if (route.component !== exemption.component) failures.push(`route exemption ${route.path} renders ${route.component ?? 'no component'} instead of ${exemption.component}`)
       const binding = imports.get(exemption.component)
       if (!exemption.importModule || !binding || binding.moduleSpecifier !== exemption.importModule) failures.push(`route exemption ${route.path} component ${exemption.component} must import from ${exemption.importModule ?? '<missing module>'}`)
+    } else if (exemption && route.component !== undefined) {
+      failures.push(`route exemption ${route.path} must not render component ${route.component}`)
     }
   }
   for (const [path, surface] of paths) if (!seenProductionPaths.has(path)) failures.push(`${surface.id}: manifest route ${path} is absent from production route registry`)
@@ -408,6 +418,14 @@ export function inspectSurfaceSources(specs: readonly SurfaceSpec[], texts: Read
     const missing = errors.map((error) => `parse:${error}`)
     if (surface.family === 'shared') {
       if (markers.routeRoots.some((routeRoot) => routeRoot.ownership !== undefined || routeRoot.accent !== undefined) || markers.prelude) missing.push('shared renderer must not declare route-root markers')
+    } else if (surface.id === 'workspace-router') {
+      if (!markers.routeRoots.length) missing.push('route root <main>')
+      for (const [index, routeRoot] of markers.routeRoots.entries()) {
+        const label = `route root <main>#${index + 1}`
+        if (routeRoot.ownership !== 'router') missing.push(`${label} data-page-ownership=router`)
+        if (routeRoot.accentExpression !== 'accent' || routeRoot.accent !== undefined) missing.push(`${label} data-accent={accent}`)
+        if (routeRoot.hasPrelude) missing.push(`${label} must not declare data-page-prelude`)
+      }
     } else {
       if (!markers.routeRoots.length) missing.push('route root <main>')
       for (const [index, routeRoot] of markers.routeRoots.entries()) {
@@ -495,7 +513,7 @@ function fixtures() {
 function routeFixture(extraRoute = '', omittedPath?: string) {
   const imports = surfaces.filter((surface) => surface.route).map((surface) => `import ${surface.route!.component} from '${surface.route!.importModule}'`).join('\n')
   const routes = surfaces.filter((surface) => surface.route).flatMap((surface) => surface.route!.paths.map((path) => `<Route path="${path}" element={ordinaryRoute('${path}', <${surface.route!.component} />, routePolicy)} />`)).filter((route) => !omittedPath || !route.includes(`path="${omittedPath}"`))
-  return `${imports}\nexport default function Fixture() { return (<Routes><Route path="/" element={<Navigate to="/today" />} />${routes.join('')}<Route path="/runs" element={studioAliasRoute(routePolicy)} />${extraRoute}<Route path="*" element={<Navigate to="/today" />} /></Routes>) }`
+  return `import { Navigate } from 'react-router-dom'\n${imports}\nexport default function Fixture() { return (<Routes><Route path="/" element={<Navigate to="/today" />} />${routes.join('')}<Route path="/runs" element={studioAliasRoute(routePolicy)} />${extraRoute}<Route path="*" element={<Navigate to="/today" />} /></Routes>) }`
 }
 
 export function runSelfTest() {
@@ -543,8 +561,25 @@ export function runSelfTest() {
   const localInlineHint = new Map(texts)
   localInlineHint.set('fixture-0', asPage('<main data-page-ownership="governance" data-accent="studio"><section data-page-prelude className="mg-hero" /><section className="mg-panel" /><button className="mg-btn" /><nav className="mg-tabs" /><SharedMetric /><SharedState /><span className={styles.emptyHint}>Optional field absent</span></main>', "import { Metric as SharedMetric } from './ui/Metric'\nimport { SurfaceState as SharedState } from './ui/SurfaceState'"))
   expectAccepted('local inline empty hint is not a resource surface', specs, localInlineHint)
+  const routerSpecs = specs.map((spec, index) => index === specs.length - 1
+    ? { ...spec, id: 'workspace-router', source: 'WorkspaceShellPage.tsx', ownership: 'router' as const, accent: 'studio' as const, eligible: ['state'] as const }
+    : spec)
+  const routerTexts = new Map(texts)
+  routerTexts.delete('fixture-23')
+  routerTexts.set('workspace-router', asPage('<main data-page-ownership="router" data-accent={accent}><SharedState /></main>', "import { ResourceStateView as SharedState } from './ui/SurfaceState'"))
+  expectAccepted('workspace router marker', routerSpecs, routerTexts)
+  const routerOwnershipDrift = new Map(routerTexts)
+  routerOwnershipDrift.set('workspace-router', asPage('<main data-page-ownership="personal" data-accent={accent}><SharedState /></main>', "import { ResourceStateView as SharedState } from './ui/SurfaceState'"))
+  expectRejected('workspace router ownership drift', routerSpecs, routerOwnershipDrift)
+  const routerAccentDrift = new Map(routerTexts)
+  routerAccentDrift.set('workspace-router', asPage('<main data-page-ownership="router" data-accent="studio"><SharedState /></main>', "import { ResourceStateView as SharedState } from './ui/SurfaceState'"))
+  expectRejected('workspace router accent drift', routerSpecs, routerAccentDrift)
+  const routerPreludeDrift = new Map(routerTexts)
+  routerPreludeDrift.set('workspace-router', asPage('<main data-page-ownership="router" data-accent={accent}><div data-page-prelude /><SharedState /></main>', "import { ResourceStateView as SharedState } from './ui/SurfaceState'"))
+  expectRejected('workspace router prelude drift', routerSpecs, routerPreludeDrift)
   if (validateProductionRouteBindings(routeFixture()).length) throw new Error('self-test failed: matching production route registry was rejected')
   if (!validateProductionRouteBindings(routeFixture('<Route path="/new-surface" element={<NewPage />} />')).length) throw new Error('self-test failed: unmapped production route was accepted')
+  if (!validateProductionRouteBindings(routeFixture().replace('<Route path="/runs" element={studioAliasRoute(routePolicy)} />', '<Route path="/runs" element={<WorkboardPage />} />')).some((failure) => failure.includes('route exemption /runs must not render component WorkboardPage'))) throw new Error('self-test failed: route exemption accepted an arbitrary renderer')
   if (!validateProductionRouteBindings(routeFixture('', '/today')).length) throw new Error('self-test failed: manifest route absent from registry was accepted')
   const deadRouteFixture = `${routeFixture('', '/today')}\nfunction DeadRouteFixture() { return <Routes><Route path="/today" element={<WorkboardPage />} /></Routes> }`
   if (!validateProductionRouteBindings(deadRouteFixture).some((failure) => failure.includes('manifest route /today is absent'))) throw new Error('self-test failed: dead route fixture forged production reachability')
