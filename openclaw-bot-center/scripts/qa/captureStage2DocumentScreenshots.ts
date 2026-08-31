@@ -16,7 +16,7 @@ import { expect } from "playwright/test";
 import { createServer as createViteServer, type ViteDevServer } from "vite";
 
 const TASK_ID = "STAGE2-SCREENSHOT-QA";
-const SOURCE_IDENTITY = "main 06a83bfa58368a12a464e16085c86bd1ce510e12";
+const SOURCE_IDENTITY = process.env.STAGE2_DOCUMENT_SOURCE_IDENTITY ?? "workspace";
 const mediaBase = "/openclaw/media";
 const apiRoot = `${mediaBase}/api`;
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -428,6 +428,37 @@ function revisionResponse(
   };
 }
 
+function syncBatchesResponse(mock: MockState) {
+  const state = mock.state as BState;
+  const itemByState: Record<Exclude<BState, "aiResultProgress">, Record<string, unknown>> = {
+    synced: { state: "succeeded", operation: "read", remoteDocumentVersion: "v14", errorCode: null, errorDetail: {} },
+    running: { state: "running", operation: "save", remoteDocumentVersion: null, errorCode: null, errorDetail: {} },
+    unknown: { state: "running", operation: "save", remoteDocumentVersion: null, errorCode: "lark_save_outcome_unknown", errorDetail: {} },
+    conflict: { state: "conflict", operation: "save", remoteDocumentVersion: "v15", errorCode: "document_remote_version_conflict", errorDetail: {} },
+    unsupported: { state: "failed", operation: "save", remoteDocumentVersion: null, errorCode: "unsupported_document_block", errorDetail: { blockIds: ["blk_b_table"] } },
+    stale: { state: "succeeded", operation: "read", remoteDocumentVersion: "v15", errorCode: null, errorDetail: {} },
+    partialApplication: { state: "succeeded", operation: "save", remoteDocumentVersion: "v14", errorCode: null, errorDetail: { applied: ["blk_b_intro"], manualActions: ["blk_b_snapshot"], protectedSkipped: ["blk_b_snapshot"] } },
+  };
+  const selected = itemByState[state === "aiResultProgress" ? "synced" : state];
+  return {
+    schemaVersion: "media.document.sync-batches.v1",
+    revision: 15,
+    items: [{
+      publicSyncId: `stage2-sync-${state}`,
+      publicArtifactId: mock.artifactId,
+      revision: state === "synced" ? 14 : 15,
+      bodyChecksum: "sha256:" + "b".repeat(64),
+      blockCount: organizationBody.blocks.length,
+      protectedBlockCount: 1,
+      createdAt: "2026-09-01T11:25:00+08:00",
+      updatedAt: "2026-09-01T11:26:00+08:00",
+      completedAt: state === "running" || state === "unknown" ? null : "2026-09-01T11:26:00+08:00",
+      ...selected,
+    }],
+    nextCursor: null,
+  };
+}
+
 function operationIdFor(path: string, method: string): string | null {
   if (method === "GET" && path === "/session") return "getMediaSession";
   if (method === "GET" && path === "/capabilities") return "listMediaCapabilities";
@@ -543,27 +574,7 @@ async function installApi(page: Page, mock: MockState): Promise<void> {
       return;
     }
     if (method === "GET" && path === `/artifacts/${mock.artifactId}/sync-batches`) {
-      await fulfillJson(route, {
-        schemaVersion: "media.document.sync-batches.v1",
-        revision: 1,
-        items: [{
-          publicSyncId: "stage2-sync-succeeded",
-          publicArtifactId: mock.artifactId,
-          revision: 14,
-          operation: "read",
-          state: "succeeded",
-          remoteDocumentVersion: "v14",
-          bodyChecksum: "sha256:" + "b".repeat(64),
-          blockCount: organizationBody.blocks.length,
-          protectedBlockCount: 1,
-          createdAt: "2026-09-01T11:25:00+08:00",
-          updatedAt: "2026-09-01T11:26:00+08:00",
-          completedAt: "2026-09-01T11:26:00+08:00",
-          errorCode: null,
-          errorDetail: {},
-        }],
-        nextCursor: null,
-      });
+      await fulfillJson(route, syncBatchesResponse(mock));
       return;
     }
     if (method === "PUT" && path === `/documents/${mock.artifactId}/draft`) {
@@ -578,6 +589,18 @@ async function installApi(page: Page, mock: MockState): Promise<void> {
           ok: false,
           error: { code: "document_revision_conflict", message: "远端正文已有更新，请先重新读取。" },
         }, 409);
+        return;
+      }
+      if (mock.side === "C" && mock.state === "unsupported") {
+        record.status = 422;
+        await fulfillJson(route, {
+          ok: false,
+          error: {
+            code: "unsupported_document_block",
+            message: "部分正文结构暂不能保存。",
+            details: { blockIds: ["blk_c_table"] },
+          },
+        }, 422);
         return;
       }
       if (mock.side === "C" && mock.state === "saving") {
@@ -658,14 +681,14 @@ async function driveCState(
   const additional: ScreenshotRecord[] = [];
 
   if (state === "clean") {
-    const anchor = root.getByText(/修订 7\s*·\s*可用/u).first();
+    const anchor = root.getByText(/当前版本\s+v7\s+·\s+个人正文/u).first();
     await expect(anchor).toBeVisible();
-    return { root, anchor, anchorDetail: "当前修订显示为可用，个人正文已加载。", additional };
+    return { root, anchor, anchorDetail: "当前版本和个人正文权威已加载。", additional };
   }
   if (state === "personalDocument") {
-    const anchor = root.getByText("个人内部正文", { exact: false }).first();
+    const anchor = root.getByText("个人正文编辑与修订", { exact: true }).first();
     await expect(anchor).toBeVisible();
-    return { root, anchor, anchorDetail: "个人工作区正文权威为内部正文。", additional };
+    return { root, anchor, anchorDetail: "个人工作区呈现正文编辑与修订入口。", additional };
   }
   if (state === "dirty") {
     await editor.fill(changedText);
@@ -675,11 +698,20 @@ async function driveCState(
   if (state === "conflict") {
     await editor.fill(changedText);
     await saveDraftAndWait(page, mock.artifactId);
-    const anchor = root.getByRole("alert").filter({ hasText: "发现远端修订冲突" });
+    const anchor = root.getByRole("alert").filter({ hasText: "这篇正文已在别处更新" });
     await expect(anchor).toBeVisible();
-    await expect(root.getByRole("button", { name: "合并（一期暂不可用）", exact: true })).toBeDisabled();
-    await expect(root.getByRole("button", { name: "放弃本地修改", exact: true })).toBeVisible();
-    return { root, anchor, anchorDetail: "409 冲突横幅和三个处置出口可见，合并入口按当前产品状态置灰。", additional };
+    await expect(root.getByRole("button", { name: "逐段对比并合并", exact: true })).toBeDisabled();
+    await expect(root.getByRole("button", { name: "放弃本地修改并载入最新正文", exact: true })).toBeVisible();
+    return { root, anchor, anchorDetail: "409 冲突横幅和三个处置出口可见，逐段对比入口按当前产品状态置灰。", additional };
+  }
+  if (state === "unsupported") {
+    await editor.fill(changedText);
+    await saveDraftAndWait(page, mock.artifactId);
+    const anchor = root.getByRole("alert").filter({ hasText: "部分正文未通过校验" });
+    await expect(anchor).toBeVisible();
+    await expect(root.getByRole("button", { name: "跳到第一个问题块", exact: true })).toBeVisible();
+    await expect(root.locator('[data-editor-block-id="blk_c_table"]')).toHaveClass(/invalid/u);
+    return { root, anchor, anchorDetail: "422 响应的块标识被投影为高亮和仅保存其余正文出口。", additional };
   }
   if (state === "saving") {
     await editor.fill(changedText);
@@ -743,12 +775,21 @@ async function driveCState(
 
 async function driveBState(page: Page, state: BState): Promise<{ root: Locator; anchor: Locator; anchorDetail: string }> {
   const root = await waitForBPage(page);
-  if (state !== "synced") throw new Error(`B pending state was accidentally sent to runtime: ${state}`);
-  const anchor = root.getByText("镜像版本", { exact: false }).first();
+  if (state === "aiResultProgress") throw new Error("B AI result requires the T5 execution receipt and must not be mocked as a completed runtime state");
+  const syncState = state === "partialApplication" ? "partial" : state;
+  await expect(root).toHaveAttribute("data-document-sync-state", syncState);
+  await expect(root.locator(`[data-sync-pipeline="${syncState}"]`)).toBeVisible();
+  const anchor = syncState === "synced"
+    ? root.getByText("镜像版本", { exact: false }).first()
+    : root.locator(`[data-sync-state="${syncState}"]`).first();
   await expect(anchor).toBeVisible();
   await expect(root.getByText("飞书", { exact: true }).first()).toBeVisible();
   await expect(root.getByText("回读正文", { exact: true })).toBeVisible();
-  return { root, anchor, anchorDetail: "组织镜像页展示只读标识、飞书正文权威和镜像版本。" };
+  if (syncState === "running") await expect(root.locator('[data-sync-step-state="running"]')).toBeVisible();
+  if (syncState === "unknown") await expect(root.locator('button[data-sync-action="reconcile"]')).toBeVisible();
+  if (syncState === "unsupported") await expect(root.locator('[data-block-id="blk_b_table"][data-document-state="unsupported"]')).toBeVisible();
+  if (syncState === "partial") await expect(root.getByText("需要人工处理", { exact: true })).toBeVisible();
+  return { root, anchor, anchorDetail: `组织镜像页展示 ${syncState} 的服务端同步批次投影、四步链路与只读正文。` };
 }
 
 async function assertNoHorizontalOverflow(page: Page): Promise<{ ok: boolean; detail: string }> {
@@ -866,8 +907,8 @@ function statePath(side: Side, state: State, viewport: Viewport): string {
 }
 
 function expectedConsoleErrors(mock: MockState, errors: string[]): string[] {
-  if (mock.side === "C" && mock.state === "conflict") {
-    return errors.filter((message) => /status of 409\b/u.test(message));
+  if (mock.side === "C" && (mock.state === "conflict" || mock.state === "unsupported")) {
+    return errors.filter((message) => /status of (?:409|422)\b/u.test(message));
   }
   if (mock.side === "C" && mock.state === "offlineRetry") {
     return errors.filter((message) => /ERR_INTERNET_DISCONNECTED/u.test(message));
@@ -950,8 +991,8 @@ function pendingContract(side: Side, state: State): PendingContract {
 
 function pendingEntries(): ManifestEntry[] {
   const entries: ManifestEntry[] = [];
-  const pendingC: CState[] = ["unsupported"];
-  const pendingB: BState[] = ["running", "unknown", "conflict", "unsupported", "stale", "aiResultProgress", "partialApplication"];
+  const pendingC: CState[] = [];
+  const pendingB: BState[] = ["aiResultProgress"];
   for (const viewport of viewports) {
     for (const state of pendingC) {
       entries.push({
@@ -1159,8 +1200,8 @@ async function main(): Promise<void> {
   const browser = await chromium.launch({ headless: true });
   const entries: ManifestEntry[] = [];
   try {
-    const runtimeC: CState[] = ["clean", "dirty", "conflict", "saving", "aiResultProgress", "offlineRetry", "personalDocument"];
-    const runtimeB: BState[] = ["synced"];
+    const runtimeC: CState[] = ["clean", "dirty", "conflict", "unsupported", "saving", "aiResultProgress", "offlineRetry", "personalDocument"];
+    const runtimeB: BState[] = ["synced", "running", "unknown", "conflict", "unsupported", "stale", "partialApplication"];
     for (const viewport of viewports) {
       for (const state of runtimeC) entries.push(await captureRuntimeState(browser, "C", state, viewport, baseUrl));
       for (const state of runtimeB) entries.push(await captureRuntimeState(browser, "B", state, viewport, baseUrl));

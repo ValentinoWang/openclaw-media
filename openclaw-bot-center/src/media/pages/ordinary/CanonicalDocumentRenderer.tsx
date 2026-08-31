@@ -10,12 +10,13 @@ import { isPublicId } from "../../identifiers";
 import { ECHO_INVALID, formatDateTime } from "../../ui/datetime";
 import styles from "./CanonicalDocumentRenderer.module.css";
 
-export default function CanonicalDocumentRenderer({ blocks }: { blocks: DocumentBlock[] }) {
-  return <div className={styles.documentBody}>{blocks.map((block) => <DocumentBlockView block={block} key={block.id} />)}</div>;
+export default function CanonicalDocumentRenderer({ blocks, highlightedBlockIds = [] }: { blocks: DocumentBlock[]; highlightedBlockIds?: readonly string[] }) {
+  const highlighted = new Set(highlightedBlockIds);
+  return <div className={styles.documentBody}>{blocks.map((block) => <DocumentBlockView block={block} highlighted={highlighted.has(block.id)} key={block.id} />)}</div>;
 }
 
-function DocumentBlockView({ block }: { block: DocumentBlock }) {
-  return <div data-block-id={block.id} data-block-type={block.type}>{renderDocumentBlock(block)}</div>;
+function DocumentBlockView({ block, highlighted }: { block: DocumentBlock; highlighted: boolean }) {
+  return <div data-block-id={block.id} data-block-type={block.type} data-document-state={highlighted ? "unsupported" : undefined}>{highlighted ? <span className={styles.blockFlag}>需要处理</span> : null}{renderDocumentBlock(block)}</div>;
 }
 
 function renderDocumentBlock(block: DocumentBlock): ReactNode {

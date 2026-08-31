@@ -12,6 +12,24 @@
   min-width: 0;
 }
 
+.documentBody > [data-document-state="unsupported"] {
+  padding: 9px 11px;
+  border: 1px solid var(--mg-warning);
+  border-radius: var(--mg-r-xs);
+  background: var(--mg-warning-soft);
+}
+
+.blockFlag {
+  display: inline-flex;
+  margin: 0 0 6px;
+  padding: 2px 7px;
+  border-radius: var(--mg-r-xs);
+  color: var(--mg-warning-dark, #8f591a);
+  background: var(--mg-warning);
+  font-size: var(--mg-text-2xs);
+  font-weight: 700;
+}
+
 .richText,
 .documentHeading {
   min-width: 0;
