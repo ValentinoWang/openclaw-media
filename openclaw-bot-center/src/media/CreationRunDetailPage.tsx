@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  AlertCircle, ArrowLeft, Bot, CheckCircle2, FileCheck2, FilePenLine, Film,
-  History, Layers3, LoaderCircle, Lock, LockOpen, MessageSquareText, PackageCheck,
+  ArrowLeft, Bot, CheckCircle2, FileCheck2, FilePenLine, Film,
+  History, Layers3, Lock, LockOpen, MessageSquareText, PackageCheck,
   RefreshCw, RotateCcw, Save, Send, Sparkles, Target,
 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
@@ -13,6 +13,8 @@ import { PlatformIdentity } from './ui/PlatformIdentity'
 import { describeBusinessError } from './ui/businessOperationError'
 import { humanStateDisplayLabel, mediaTypeDisplayLabel, qualityDisplayLabel } from './ui/ordinaryDataLabels'
 import { ECHO_INVALID, formatMediumDateTime } from './ui/datetime'
+import { Metric } from './ui/Metric'
+import { SurfaceState } from './ui/SurfaceState'
 import styles from './CreationRunDetailPage.module.css'
 
 type SectionName = 'sources' | 'decisions' | 'outputs'
@@ -133,9 +135,9 @@ export default function CreationRunDetailPage() {
     setSelectedId(visibleBlocks[0]?.id ?? null)
   }, [activeKind, selected, visibleBlocks])
 
-  if (runtimeState === 'checking' || runState.status === 'loading') return <Loading />
-  if (runtimeState === 'unauthenticated') return <Gate icon={<FilePenLine size={24} />} title="登录后进入 Studio" detail="当前创作运行只对所属账户开放。" action={<a className="primary-button" href={loginUrl()}>登录</a>} />
-  if (runtimeState === 'unavailable' || runState.status === 'error') return <Gate icon={<AlertCircle size={24} />} title="Studio 暂时不可用" detail={runState.status === 'error' ? runState.message : '任务服务尚未连接。'} />
+  if (runtimeState === 'checking' || runState.status === 'loading') return <DetailLoading />
+  if (runtimeState === 'unauthenticated') return <Gate kind="permission" title="登录后进入 Studio" detail="当前创作运行只对所属账户开放。" action={<a className="mg-btn mg-btn-primary" data-component="mg-btn" href={loginUrl()}>登录</a>} />
+  if (runtimeState === 'unavailable' || runState.status === 'error') return <Gate kind="error" title="Studio 暂时不可用" detail={runState.status === 'error' ? runState.message : '任务服务尚未连接。'} />
   const run = runState.data.run
 
   function updateText(text: string) {
@@ -173,53 +175,53 @@ export default function CreationRunDetailPage() {
   }
 
   return (
-    <main className={styles.page} data-run-detail-layout="compact">
+    <main className={`fidelity-page ${styles.page}`} data-run-detail-layout="compact" data-page-ownership="personal" data-accent="studio">
       <section className={styles.prelude} data-page-prelude>
         <Link className={styles.backLink} to="/studio"><ArrowLeft size={16} />返回 Studio</Link>
-        <div className={styles.headingRow}>
-          <div className={styles.titleBlock}><span>CREATIVE PROJECT · {run.entrypoint || '创作运行'}</span><h1>{run.title}</h1><p>在同一份活稿里维护脚本、分镜、拍摄执行和发布包；浏览器草稿不会伪装成服务端版本。</p></div>
+        <header className={`${styles.headingRow} mg-hero`} data-component="mg-hero">
+          <div className={styles.titleBlock}><span className="mg-eyebrow">CREATIVE PROJECT · {run.entrypoint || '创作运行'}</span><h1>{run.title}</h1><p className="mg-hero-lead">在同一份活稿里维护脚本、分镜、拍摄执行和发布包；浏览器草稿不会伪装成服务端版本。</p></div>
           <div className={styles.headingActions}>
-            <span className={styles.statusBadge} data-tone={runStatusTone(run.status)}><i />{runStatusLabel(run.status)}</span>
-            <button className={styles.secondaryButton} type="button" disabled={!serverBlocks.length} onClick={() => { setBlocks(serverBlocks); setSelectedId(serverBlocks[0]?.id ?? null) }}><RotateCcw size={16} />恢复服务器版本</button>
-            <button className={styles.primaryButton} type="button" disabled={!blocks.length} onClick={saveDraft}><Save size={16} />保存草稿{dirtyCount ? <b>{dirtyCount}</b> : null}</button>
+            <span className={`mg-badge ${styles.statusBadge}`} data-component="mg-badge" data-tone={statusBadgeTone(runStatusTone(run.status))}><i />{runStatusLabel(run.status)}</span>
+            <button className={`${styles.secondaryButton} mg-btn mg-btn-ghost`} data-component="mg-btn" type="button" disabled={!serverBlocks.length} onClick={() => { setBlocks(serverBlocks); setSelectedId(serverBlocks[0]?.id ?? null) }}><RotateCcw size={16} />恢复服务器版本</button>
+            <button className={`${styles.primaryButton} mg-btn mg-btn-primary`} data-component="mg-btn" type="button" disabled={!blocks.length} onClick={saveDraft}><Save size={16} />保存草稿{dirtyCount ? <b>{dirtyCount}</b> : null}</button>
           </div>
-        </div>
+        </header>
       </section>
 
-      <section className={styles.summaryBand} aria-label="运行摘要">
+      <section className={`${styles.summaryBand} mg-panel`} data-component="mg-panel" data-accent="studio" aria-label="运行摘要">
         {runSummaryItems(run).map((item) => <Summary key={item.label} icon={item.icon} label={item.label} value={item.value} />)}
       </section>
 
       <div className={styles.contentGrid}>
-        <section className={styles.editorPanel}>
-          <header className={styles.editorHeader}><div><Layers3 size={18} /><span><strong>活稿编辑器</strong><small>{dirtyCount ? `${dirtyCount} 个区块有本地修改` : '与服务器版本一致'}</small></span></div><div><button type="button" disabled={!selected} onClick={toggleLock}>{selected?.locked ? <Lock size={15} /> : <LockOpen size={15} />}{selected?.locked ? '已锁定' : '锁定区块'}</button><button type="button" disabled={!original} onClick={resetSelected}><RefreshCw size={15} />重置区块</button></div></header>
-          {sectionState.status === 'loading' ? <State icon={<LoaderCircle className="spin" size={22} />} title="正在读取脚本与成果" /> : null}
-          {sectionState.status === 'error' ? <State icon={<AlertCircle size={22} />} title={sectionState.message} /> : null}
-          {sectionState.status === 'ready' && !serverBlocks.length ? <State icon={<FilePenLine size={23} />} title="这条运行还没有可编辑输出" detail="先在任务中心生成并持久化脚本、分镜或发布包。" action={<button type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Sparkles size={16} />继续生成</button>} /> : null}
+        <section className={`${styles.editorPanel} mg-panel`} data-component="mg-panel">
+          <header className={styles.editorHeader}><div><Layers3 size={18} /><span><strong>活稿编辑器</strong><small>{dirtyCount ? `${dirtyCount} 个区块有本地修改` : '与服务器版本一致'}</small></span></div><div><button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" disabled={!selected} onClick={toggleLock}>{selected?.locked ? <Lock size={15} /> : <LockOpen size={15} />}{selected?.locked ? '已锁定' : '锁定区块'}</button><button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" disabled={!original} onClick={resetSelected}><RefreshCw size={15} />重置区块</button></div></header>
+          {sectionState.status === 'loading' ? <SurfaceState kind="loading" title="正在读取脚本与成果" detail="正在读取这条运行的可编辑内容。" density="compact" /> : null}
+          {sectionState.status === 'error' ? <SurfaceState kind="error" title="脚本与成果读取失败" detail={sectionState.message} density="compact" /> : null}
+          {sectionState.status === 'ready' && !serverBlocks.length ? <SurfaceState kind="empty" title="这条运行还没有可编辑输出" detail="先在任务中心生成并持久化脚本、分镜或发布包。" density="compact" action={<button className="mg-btn mg-btn-primary" data-component="mg-btn" type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Sparkles size={16} />继续生成</button>} /> : null}
           {blocks.length ? <div className={styles.editorGrid}>
             <aside className={styles.outline}>
-              <div className={styles.editorTabs} role="tablist" aria-label="创作产物类型">{editorTabs.map(({ id, label, icon: Icon }) => <button type="button" role="tab" aria-selected={activeKind === id} className={activeKind === id ? styles.activeTab : undefined} key={id} onClick={() => setActiveKind(id)}><Icon size={16} /><span>{label}</span><b>{blocks.filter((block) => block.kind === id).length}</b></button>)}</div>
-              <div className={styles.blockList}>{visibleBlocks.length ? visibleBlocks.map((block, index) => <button type="button" className={block.id === selected?.id ? styles.selectedBlock : undefined} key={block.id} onClick={() => setSelectedId(block.id)}><span>{index + 1}</span><div><strong>{block.label}</strong><small>{block.text.slice(0, 42) || '空区块'}</small></div>{block.locked ? <Lock size={13} /> : null}</button>) : <p>当前类型暂无区块。</p>}</div>
+              <div className={styles.editorTabs} role="tablist" aria-label="创作产物类型">{editorTabs.map(({ id, label, icon: Icon }) => <button type="button" role="tab" id={`${id}-editor-tab`} aria-controls="editor-block-panel" aria-selected={activeKind === id} className={activeKind === id ? styles.activeTab : undefined} key={id} onClick={() => setActiveKind(id)}><Icon size={16} /><span>{label}</span><b>{blocks.filter((block) => block.kind === id).length}</b></button>)}</div>
+              <div className={styles.blockList} id="editor-block-panel" role="tabpanel" aria-labelledby={`${activeKind}-editor-tab`}>{visibleBlocks.length ? visibleBlocks.map((block, index) => <button type="button" className={block.id === selected?.id ? styles.selectedBlock : undefined} key={block.id} onClick={() => setSelectedId(block.id)}><span>{index + 1}</span><div><strong>{block.label}</strong><small>{block.text.slice(0, 42) || '空区块'}</small></div>{block.locked ? <Lock size={13} /> : null}</button>) : <p>当前类型暂无区块。</p>}</div>
             </aside>
             <div className={styles.canvas}>{selected ? <>
               <div className={styles.canvasMeta}><span>{kindLabel(selected.kind)}</span><strong>{selected.label}</strong><small>{selected.locked ? '人工锁定；编辑或 AI 修改前需解锁' : '可直接编辑，保存后形成浏览器草稿版本'}</small></div>
               <textarea aria-label={`编辑 ${selected.label}`} value={selected.text} readOnly={selected.locked} onChange={(event) => updateText(event.target.value)} />
               <div className={styles.canvasFooter}><span>{selected.text.length} 字符</span><span>来源字段：{blockFieldLabel(selected.sourceKey)}</span></div>
               {original && original.text !== selected.text ? <section className={styles.diffCard} aria-label="修改差异"><header><span><History size={16} />当前区块差异</span><small>服务端原文 → 浏览器草稿</small></header><div><article><strong>修改前</strong><p>{original.text}</p></article><article><strong>修改后</strong><p>{selected.text}</p></article></div></section> : null}
-            </> : <State icon={<FilePenLine size={22} />} title="选择一个区块开始编辑" />}</div>
+            </> : <SurfaceState kind="empty" title="选择一个区块开始编辑" detail="从左侧选择一个可编辑区块。" density="compact" />}</div>
           </div> : null}
         </section>
 
-        <aside className={styles.inspectorPanel}>
-          <div className={styles.inspectorTabs} role="tablist" aria-label="Studio 辅助面板">
-            <button type="button" role="tab" aria-selected={inspectorTab === 'brief'} className={inspectorTab === 'brief' ? styles.activeInspectorTab : undefined} onClick={() => setInspectorTab('brief')}><MessageSquareText size={15} />Brief</button>
-            <button type="button" role="tab" aria-selected={inspectorTab === 'agent'} className={inspectorTab === 'agent' ? styles.activeInspectorTab : undefined} onClick={() => setInspectorTab('agent')}><Bot size={15} />Agent</button>
-            <button type="button" role="tab" aria-selected={inspectorTab === 'versions'} className={inspectorTab === 'versions' ? styles.activeInspectorTab : undefined} onClick={() => setInspectorTab('versions')}><History size={15} />版本</button>
+        <aside className={`${styles.inspectorPanel} mg-panel`} data-component="mg-panel">
+          <div className={`${styles.inspectorTabs} mg-tabs`} role="tablist" aria-label="Studio 辅助面板">
+            <button type="button" role="tab" id="brief-inspector-tab" aria-controls="inspector-tabpanel" aria-selected={inspectorTab === 'brief'} className="mg-tab" data-variant="pill" onClick={() => setInspectorTab('brief')}><MessageSquareText size={15} />Brief</button>
+            <button type="button" role="tab" id="agent-inspector-tab" aria-controls="inspector-tabpanel" aria-selected={inspectorTab === 'agent'} className="mg-tab" data-variant="pill" onClick={() => setInspectorTab('agent')}><Bot size={15} />Agent</button>
+            <button type="button" role="tab" id="versions-inspector-tab" aria-controls="inspector-tabpanel" aria-selected={inspectorTab === 'versions'} className="mg-tab" data-variant="pill" onClick={() => setInspectorTab('versions')}><History size={15} />版本</button>
           </div>
-          <div className={styles.inspectorBody}>
+          <div className={styles.inspectorBody} id="inspector-tabpanel" role="tabpanel" aria-labelledby={`${inspectorTab}-inspector-tab`}>
             {inspectorTab === 'brief' ? <Brief state={sectionState} run={run} responseRevision={runState.data.revision} /> : null}
-            {inspectorTab === 'agent' ? <div className={styles.agentPanel}><span><Sparkles size={17} />局部修改请求</span><h2>{selected?.label ?? '先选择一个区块'}</h2><p>只把当前区块交给 Agent，不要求整篇重写。</p><label><span>希望怎么改</span><textarea value={instruction} onChange={(event) => setInstruction(event.target.value)} placeholder="例如：保留卖点，只把开头改成第一人称现场感。" /></label><button type="button" disabled={!selected} onClick={() => void sendPatchRequest()}><Send size={16} />复制请求并打开 Agent</button>{notice ? <div className={styles.notice}>{notice}</div> : null}<div className={styles.agentRule}><Lock size={16} /><span><strong>修改边界</strong><small>锁定区块不进入改写；本轮只提交选中区块的 Patch。</small></span></div></div> : null}
-            {inspectorTab === 'versions' ? <div className={styles.versionPanel}><span><History size={17} />浏览器草稿版本</span><p>这些版本只保存在当前浏览器。</p>{versions.length ? <div>{versions.map((snapshot) => <button type="button" key={snapshot.id} onClick={() => { setBlocks(snapshot.blocks.map((block) => ({ ...block }))); setSelectedId(snapshot.blocks[0]?.id ?? null); setNotice(`已恢复 ${snapshot.label}。`) }}><span><strong>{snapshot.label}</strong><small>{formatDate(snapshot.createdAt)} · {snapshot.blocks.length} 个区块</small></span><RefreshCw size={14} /></button>)}</div> : <State icon={<History size={21} />} title="还没有浏览器草稿" detail="修改后点击保存草稿即可创建版本。" />}</div> : null}
+            {inspectorTab === 'agent' ? <div className={styles.agentPanel}><span><Sparkles size={17} />局部修改请求</span><h2>{selected?.label ?? '先选择一个区块'}</h2><p>只把当前区块交给 Agent，不要求整篇重写。</p><label><span>希望怎么改</span><textarea value={instruction} onChange={(event) => setInstruction(event.target.value)} placeholder="例如：保留卖点，只把开头改成第一人称现场感。" /></label><button className="mg-btn mg-btn-primary" data-component="mg-btn" type="button" disabled={!selected} onClick={() => void sendPatchRequest()}><Send size={16} />复制请求并打开 Agent</button>{notice ? <div className={styles.notice}>{notice}</div> : null}<div className={styles.agentRule}><Lock size={16} /><span><strong>修改边界</strong><small>锁定区块不进入改写；本轮只提交选中区块的 Patch。</small></span></div></div> : null}
+            {inspectorTab === 'versions' ? <div className={styles.versionPanel}><span><History size={17} />浏览器草稿版本</span><p>这些版本只保存在当前浏览器。</p>{versions.length ? <div>{versions.map((snapshot) => <button type="button" key={snapshot.id} onClick={() => { setBlocks(snapshot.blocks.map((block) => ({ ...block }))); setSelectedId(snapshot.blocks[0]?.id ?? null); setNotice(`已恢复 ${snapshot.label}。`) }}><span><strong>{snapshot.label}</strong><small>{formatDate(snapshot.createdAt)} · {snapshot.blocks.length} 个区块</small></span><RefreshCw size={14} /></button>)}</div> : <SurfaceState kind="empty" title="还没有浏览器草稿" detail="修改后点击保存草稿即可创建版本。" density="compact" />}</div> : null}
           </div>
         </aside>
       </div>
@@ -228,8 +230,8 @@ export default function CreationRunDetailPage() {
 }
 
 function Brief({ state, run, responseRevision }: { state: LoadState<Sections>; run: Run; responseRevision: number }) {
-  if (state.status === 'loading') return <State icon={<LoaderCircle className="spin" size={21} />} title="正在读取 Brief 与证据" />
-  if (state.status === 'error') return <State icon={<AlertCircle size={21} />} title={state.message} />
+  if (state.status === 'loading') return <SurfaceState kind="loading" title="正在读取 Brief 与证据" detail="正在读取当前运行的项目上下文。" density="compact" />
+  if (state.status === 'error') return <SurfaceState kind="error" title="Brief 与证据读取失败" detail={state.message} density="compact" />
   const { sources, decisions } = state.data
   return <div className={styles.briefPanel}><span><MessageSquareText size={17} />项目上下文</span><dl className={styles.metadataList}>
     <MetadataItem label="关联项目" value={run.publicProjectId || '未关联项目'} />
@@ -248,10 +250,13 @@ function Brief({ state, run, responseRevision }: { state: LoadState<Sections>; r
 function MetadataItem({ label, value }: { label: string; value: ReactNode }) {
   return <div><dt>{label}</dt><dd>{value}</dd></div>
 }
-function Summary({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) { return <div className={styles.summaryItem}>{icon}<div><span>{label}</span><strong>{value}</strong></div></div> }
-function State({ icon, title, detail, action }: { icon: ReactNode; title: string; detail?: string; action?: ReactNode }) { return <div className={styles.editorState}>{icon}<strong>{title}</strong>{detail ? <p>{detail}</p> : null}{action}</div> }
-function Loading() { return <main className="detail-loading" aria-busy="true"><LoaderCircle className="spin" size={23} /><span>正在打开 Studio</span></main> }
-function Gate({ icon, title, detail, action }: { icon: ReactNode; title: string; detail: string; action?: ReactNode }) { return <main><Link className="back-link" to="/studio"><ArrowLeft size={16} />返回 Studio</Link><div className="detail-gate">{icon}<h1>{title}</h1><p>{detail}</p>{action}</div></main> }
+function Summary({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) { return <Metric className={styles.summaryItem} variant="panel" icon={icon} iconClassName={styles.summaryIcon} label={label} value={value} /> }
+function Gate({ kind, title, detail, action }: { kind: 'permission' | 'error'; title: string; detail: string; action?: ReactNode }) {
+  return <main className={`fidelity-page ${styles.page}`} data-page-ownership="personal" data-accent="studio"><div data-page-prelude><Link className={styles.backLink} to="/studio"><ArrowLeft size={16} />返回 Studio</Link><div className="detail-gate"><SurfaceState kind={kind} title={title} detail={detail} action={action} /></div></div></main>
+}
+function DetailLoading() {
+  return <main className={`fidelity-page ${styles.page}`} data-page-ownership="personal" data-accent="studio"><div data-page-prelude><div className="detail-loading"><SurfaceState kind="loading" title="正在打开 Studio" detail="正在确认创作运行的可见状态。" /></div></div></main>
+}
 
 function buildBlocks(variants: ValueMap[]): Block[] {
   const blocks: Block[] = []
@@ -281,6 +286,11 @@ function blockFieldLabel(value: string): string {
 function kindLabel(kind: EditorKind): string { return editorTabs.find((item) => item.id === kind)?.label ?? '内容区块' }
 function slug(value: string): string { return value.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g, '') || 'block' }
 function readSnapshots(key: string): Snapshot[] { try { const value = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(value) ? value.filter((item): item is Snapshot => !!item && typeof item === 'object' && Array.isArray(item.blocks)) : [] } catch { return [] } }
+function statusBadgeTone(tone: ReturnType<typeof runStatusTone>): 'good' | 'warn' | 'info' | 'danger' | 'neutral' {
+  if (tone === 'success') return 'good'
+  if (tone === 'warning') return 'warn'
+  return tone
+}
 function readError(error: unknown): string {
   const fallback = error instanceof BusinessOperationError
     ? error.message

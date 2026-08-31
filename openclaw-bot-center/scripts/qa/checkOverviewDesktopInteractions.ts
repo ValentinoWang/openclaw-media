@@ -178,7 +178,7 @@ try {
   requireCondition(previewPlacement.expanded === "true", "selected artifact preview action must expose aria-expanded=true");
   requireCondition(previewPlacement.previewLabel === "文档正文预览", "selected artifact preview must immediately follow its artifact row");
   requireCondition(Math.abs(previewPlacement.previewTop - previewPlacement.itemBottom) <= 1, "artifact preview must open directly below the selected artifact row");
-  requireCondition(previewPlacement.previewTop < previewPlacement.viewportHeight, "artifact preview must begin inside the current viewport after the action is clicked");
+  requireCondition(previewPlacement.previewTop < previewPlacement.viewportHeight, `artifact preview must begin inside the current viewport after the action is clicked: ${JSON.stringify(previewPlacement)}`);
   const organizationDocumentLink = artifactButton.locator("xpath=ancestor::article").getByRole("link", { name: "打开组织文档" });
   await organizationDocumentLink.waitFor({ state: "visible" });
   const desktopLayout = await artifactRow.evaluate((button) => {
@@ -197,6 +197,8 @@ try {
     return {
       itemBackground: getComputedStyle(item).backgroundColor,
       itemHeight: itemRect.height,
+      itemWidth: itemRect.width,
+      gridColumns: getComputedStyle(item).gridTemplateColumns,
       itemRight: itemRect.right,
       identityRight: identityRect.right,
       metaLeft: metaRect.left,
@@ -205,6 +207,9 @@ try {
       buttonTop: buttonRect.top,
       linkTop: linkRect.top,
       linkRight: linkRect.right,
+      buttonHeight: buttonRect.height,
+      linkHeight: linkRect.height,
+      linkColor: getComputedStyle(externalLink).color,
       linkBorderWidths: [
         getComputedStyle(externalLink).borderTopWidth,
         getComputedStyle(externalLink).borderRightWidth,
@@ -217,19 +222,52 @@ try {
   requireCondition(desktopLayout.identityRight <= desktopLayout.metaLeft + 0.5, "artifact identity and sync metadata must occupy separate desktop columns");
   requireCondition(desktopLayout.metaRight <= desktopLayout.actionsLeft + 0.5, "artifact actions must follow the sync metadata column");
   requireCondition(Math.abs(desktopLayout.buttonTop - desktopLayout.linkTop) <= 1, "artifact actions must align in one desktop action group");
-  requireCondition(desktopLayout.itemHeight <= 100, `artifact row must stay compact on desktop, received ${desktopLayout.itemHeight}px`);
+  if (outputDir) {
+    await mkdir(outputDir, { recursive: true });
+    await page.getByRole("list", { name: "项目产物列表" }).screenshot({ path: path.join(outputDir, "artifact-layout-1440.png") });
+  }
+  requireCondition(desktopLayout.itemHeight <= 100, `artifact row must stay compact on desktop: ${JSON.stringify(desktopLayout)}`);
   requireCondition(new Set(desktopLayout.linkBorderWidths).size === 1, "organization document action must use a complete button border rather than a vertical divider");
+  requireCondition(desktopLayout.linkColor === "rgb(255, 255, 255)", `organization document action must retain readable primary-button text: ${JSON.stringify(desktopLayout)}`);
   requireCondition(desktopLayout.itemBackground !== "rgba(0, 0, 0, 0)", "selected artifact background must cover the complete record, including the external action");
   requireCondition(desktopLayout.linkRight <= desktopLayout.itemRight + 0.5, "organization document action must remain inside the artifact record");
   requireCondition(await page.getByText("查看 · 打开机构云文档 · 重新生成", { exact: true }).count() === 0, "artifact row must not repeat actionable commands as passive text");
-  if (outputDir) {
-    await mkdir(outputDir, { recursive: true });
-    await page.getByRole("list", { name: "项目产物列表" }).screenshot({ path: path.join(outputDir, "artifact-layout-desktop.png") });
-  }
   await preview.getByRole("heading", { name: "网页正文 artifact_overview_beta", level: 1 }).waitFor({ timeout: 10_000 });
   await artifactButton.focus();
   await page.keyboard.press("Enter");
   await preview.waitFor({ state: "hidden", timeout: 10_000 });
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await artifactRow.scrollIntoViewIfNeeded();
+  const tabletLayout = await artifactRow.evaluate((button) => {
+    const item = button.closest<HTMLElement>("article");
+    const actions = item?.querySelector<HTMLElement>("[data-artifact-actions]") ?? null;
+    const externalLink = actions?.querySelector<HTMLElement>('a[href*="feishu.cn"]') ?? null;
+    const hero = document.querySelector<HTMLElement>("[data-page-prelude] .mg-hero");
+    if (!item || !actions || !externalLink || !hero) return null;
+    const itemRect = item.getBoundingClientRect();
+    const actionsRect = actions.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    const linkRect = externalLink.getBoundingClientRect();
+    const heroRect = hero.getBoundingClientRect();
+    return {
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: document.documentElement.clientWidth,
+      itemLeft: itemRect.left,
+      itemRight: itemRect.right,
+      actionsTop: actionsRect.top,
+      buttonRight: buttonRect.right,
+      linkRight: linkRect.right,
+      heroHeight: heroRect.height,
+    };
+  });
+  requireCondition(tabletLayout, "tablet Overview artifact layout did not render");
+  requireCondition(tabletLayout.documentWidth <= tabletLayout.viewportWidth + 1, `tablet Overview must not horizontally overflow: ${JSON.stringify(tabletLayout)}`);
+  requireCondition(tabletLayout.itemLeft >= -0.5 && tabletLayout.itemRight <= tabletLayout.viewportWidth + 0.5, "tablet artifact record must stay inside its viewport");
+  requireCondition(tabletLayout.buttonRight <= tabletLayout.itemRight + 0.5 && tabletLayout.linkRight <= tabletLayout.itemRight + 0.5, "tablet artifact actions must stay inside their record");
+  requireCondition(tabletLayout.heroHeight <= 140, `tablet hero must remain compact: ${JSON.stringify(tabletLayout)}`);
+  if (outputDir) {
+    await page.getByRole("list", { name: "项目产物列表" }).screenshot({ path: path.join(outputDir, "artifact-layout-1024.png") });
+  }
   await page.setViewportSize({ width: 390, height: 844 });
   await artifactRow.scrollIntoViewIfNeeded();
   const mobileLayout = await artifactRow.evaluate((button) => {
@@ -265,6 +303,13 @@ try {
   requireCondition(mobileLayout.metaBottom <= mobileLayout.actionsTop + 0.5, "mobile artifact actions must follow the metadata block");
   requireCondition(mobileLayout.buttonLeft >= mobileLayout.itemLeft - 0.5 && mobileLayout.buttonRight <= mobileLayout.itemRight + 0.5, "preview action must stay within the mobile artifact record");
   requireCondition(mobileLayout.linkLeft >= mobileLayout.itemLeft - 0.5 && mobileLayout.linkRight <= mobileLayout.itemRight + 0.5, "organization document action must stay within the mobile artifact record");
+  const mobileHero = await page.locator("[data-page-prelude] .mg-hero").evaluate((hero) => ({
+    height: hero.getBoundingClientRect().height,
+    documentWidth: document.documentElement.scrollWidth,
+    viewportWidth: document.documentElement.clientWidth,
+  }));
+  requireCondition(mobileHero.documentWidth <= mobileHero.viewportWidth + 1, `mobile Overview must not horizontally overflow: ${JSON.stringify(mobileHero)}`);
+  requireCondition(mobileHero.height <= 140, `mobile hero must remain compact: ${JSON.stringify(mobileHero)}`);
   const mobileTitleLayout = await artifactRow.evaluate((button) => {
     const item = button.closest<HTMLElement>("article");
     const identity = item?.querySelector<HTMLElement>("[data-artifact-identity]") ?? null;

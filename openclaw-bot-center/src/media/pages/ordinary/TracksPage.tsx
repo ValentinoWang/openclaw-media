@@ -8,7 +8,6 @@ import {
   ExternalLink,
   FlaskConical,
   ImageOff,
-  LoaderCircle,
   LogIn,
   Plus,
   RefreshCw,
@@ -31,6 +30,7 @@ import { PageHeading } from "../../ui/ordinaryPagePrimitives";
 import { ECHO_INVALID, formatDateTime } from "../../ui/datetime";
 import { Metric } from "../../ui/Metric";
 import { SearchBox } from "../../ui/SearchBox";
+import { SurfaceState } from "../../ui/SurfaceState";
 import { classNames } from "../../ui/classNames";
 import {
   creatorRoleDisplayLabel,
@@ -41,6 +41,7 @@ import {
   trackStatusDisplayLabel,
 } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
+import { resolvePlatform } from "../../ui/platformRegistry";
 import { ownedAccountOperationalTone } from "../../statusPresentation";
 import styles from "./TracksPage.module.css";
 
@@ -212,30 +213,34 @@ function TracksPage() {
     loadList<TrackSummary>(
       "listTracks",
       "赛道列表",
-      { cursor: undefined, pageSize: 20, search: trackSearch || undefined },
+      { pageSize: 20, search: trackSearch || undefined },
       controller.signal,
       setTrackState,
+      (track) => track.publicTrackId,
     );
     loadList<CreatorSummary>(
       "listCreators",
       "博主档案",
-      { cursor: undefined, pageSize: 20, search: creatorSearch || undefined },
+      { pageSize: 20, search: creatorSearch || undefined },
       controller.signal,
       setCreatorState,
+      (creator) => creator.publicCreatorId,
     );
     loadList<TrackRelationship>(
       "listTrackRelationships",
       "账号归属",
-      { cursor: undefined, pageSize: 20 },
+      { pageSize: 20 },
       controller.signal,
       setRelationshipState,
+      (relationship) => relationship.publicRelationshipId,
     );
     loadList<OwnedAccountSummary>(
       "listOwnedAccounts",
       "自有账号",
-      { cursor: undefined, pageSize: 20 },
+      { pageSize: 20 },
       controller.signal,
       setAccountState,
+      (account) => account.publicAccountId,
     );
 
     return () => controller.abort();
@@ -319,7 +324,12 @@ function TracksPage() {
 
   if (runtimeState === "checking") {
     return (
-      <main className={["fidelity-page", styles.page].join(" ")} data-page-state="loading">
+      <main
+        className={["fidelity-page", styles.page].join(" ")}
+        data-accent="desk"
+        data-page-ownership="personal"
+        data-page-state="loading"
+      >
         <SurfaceState kind="loading" title="正在确认访问权限" detail="页面数据将在身份确认后读取。" />
       </main>
     );
@@ -327,13 +337,18 @@ function TracksPage() {
 
   if (runtimeState === "unauthenticated" || !session) {
     return (
-      <main className={["fidelity-page", styles.page].join(" ")} data-page-state="forbidden">
+      <main
+        className={["fidelity-page", styles.page].join(" ")}
+        data-accent="desk"
+        data-page-ownership="personal"
+        data-page-state="forbidden"
+      >
         <SurfaceState
           kind="forbidden"
           title="需要登录才能查看"
           detail="此页面只展示当前账户可读的赛道账号和运营资料。"
           action={
-            <a className={styles.loginLink} href={loginUrl()}>
+            <a className={["mg-btn", "mg-btn-primary", styles.loginLink].join(" ")} data-component="mg-btn" href={loginUrl()}>
               <LogIn size={15} aria-hidden="true" />
               登录并查看
             </a>
@@ -345,7 +360,12 @@ function TracksPage() {
 
   if (runtimeState === "unavailable") {
     return (
-      <main className={["fidelity-page", styles.page].join(" ")} data-page-state="error">
+      <main
+        className={["fidelity-page", styles.page].join(" ")}
+        data-accent="desk"
+        data-page-ownership="personal"
+        data-page-state="error"
+      >
         <SurfaceState
           kind="error"
           title="暂时无法读取页面数据"
@@ -371,15 +391,21 @@ function TracksPage() {
     });
 
   return (
-    <main className={["fidelity-page", styles.page].join(" ")} data-page-state={pageState}>
-      <div className={styles.headingRow} data-page-prelude>
+    <main
+      className={["fidelity-page", styles.page].join(" ")}
+      data-accent="desk"
+      data-page-ownership="personal"
+      data-page-state={pageState}
+    >
+      <div className={["mg-hero", styles.headingRow].join(" ")} data-component="mg-hero" data-page-prelude>
         <PageHeading
           title="账号与赛道"
           description="管理自有账号、了解赛道运营情况，并持续跟踪值得研究的对标账号。"
         />
         <div className={`page-heading-actions ${styles.headingActions}`}>
           <button
-            className={styles.secondaryAction}
+            className={["mg-btn", "mg-btn-ghost", styles.secondaryAction].join(" ")}
+            data-component="mg-btn"
             type="button"
             onClick={() => setRefreshToken((value) => value + 1)}
             title="刷新账号与赛道数据"
@@ -389,7 +415,8 @@ function TracksPage() {
           </button>
           {primaryActionAvailable ? (
             <button
-              className={styles.primaryAction}
+              className={["mg-btn", "mg-btn-primary", styles.primaryAction].join(" ")}
+              data-component="mg-btn"
               type="button"
               title="从公开主页添加对标账号候选"
               data-capability-action="creator_profile_upsert"
@@ -407,16 +434,15 @@ function TracksPage() {
         </div>
       </div>
 
-      <nav className={styles.tabList} aria-label="账号与赛道视图" role="tablist">
+      <nav className={["mg-tabs", styles.tabList].join(" ")} data-component="mg-tabs" aria-label="账号与赛道视图" role="tablist">
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            className={[
-              styles.tabButton,
-              activeTab === tab.id ? styles.tabButtonActive : "",
-            ].join(" ")}
+            className={["mg-tab", styles.tabButton].join(" ")}
+            data-component="mg-tab"
             type="button"
             role="tab"
+            id={tab.id + "-tab"}
             aria-selected={activeTab === tab.id}
             aria-controls={tab.id + "-tabpanel"}
             onClick={() => setActiveTab(tab.id)}
@@ -581,6 +607,7 @@ function TracksOverviewTab({
       id="tracks-tabpanel"
       role="tabpanel"
       aria-label="赛道概览"
+      aria-labelledby="tracks-tab"
       data-page-terminal-surface="primary"
     >
       <DataPanel title="赛道概览" detail={`${visibleTracks.length} 个赛道`} icon={<Target size={17} aria-hidden="true" />}>
@@ -714,6 +741,7 @@ function OwnedAccountsTab({
       id="owned-tabpanel"
       role="tabpanel"
       aria-label="自有账号"
+      aria-labelledby="owned-tab"
       data-page-terminal-surface="primary"
     >
       <DataPanel title="自有账号" detail={`${visibleAccounts.length} 个账号`} icon={<WalletCards size={17} aria-hidden="true" />}>
@@ -901,6 +929,7 @@ function BenchmarkAccountsTab({
       id="benchmarks-tabpanel"
       role="tabpanel"
       aria-label="对标账号"
+      aria-labelledby="benchmarks-tab"
       data-page-terminal-surface="primary"
     >
       <DataPanel
@@ -1055,7 +1084,7 @@ function BenchmarkInspector({
 
   return (
     <aside className={styles.inspectorColumn} data-page-inspector>
-      <section className={styles.inspectorPanel} data-page-terminal-surface="inspector" aria-label="对标账号详情">
+      <section className={["mg-panel", styles.inspectorPanel].join(" ")} data-component="mg-panel" data-page-terminal-surface="inspector" aria-label="对标账号详情">
         <PanelHeader title="对标账号详情" detail={selectedCreatorId ? "公开资料与判断" : "未选择"} icon={<UserRound size={17} aria-hidden="true" />} />
         {!selectedCreatorId ? (
           <SurfaceState kind="empty" title="选择一个对标账号" detail="从左侧列表选择后查看内容画像、资料凭证和赛道关系。" />
@@ -1147,7 +1176,7 @@ function BenchmarkInspector({
             </InspectorSection>
 
             <InspectorSection title="账号指标" icon={<BarChart3 size={15} aria-hidden="true" />}>
-              <div className={styles.metricGrid}>
+              <div className={["mg-metric-grid", styles.metricGrid].join(" ")} data-component="mg-metric-grid">
                 <Metric className={styles.metric} label="粉丝数" value="未记录" />
                 <Metric className={styles.metric} label="互动质量" value="未记录" />
                 <Metric className={styles.metric} label="商务契合度" value="未记录" />
@@ -1157,7 +1186,8 @@ function BenchmarkInspector({
 
             <div className={styles.inspectorActions}>
               <button
-                className={styles.primaryAction}
+                className={["mg-btn", "mg-btn-primary", styles.primaryAction].join(" ")}
+                data-component="mg-btn"
                 type="button"
                 data-capability-action="creator_profile_upsert"
                 disabled={!creator.profileUrl}
@@ -1204,7 +1234,7 @@ function OwnedAccountInspector({
 
   return (
     <aside className={styles.inspectorColumn} data-page-inspector>
-      <section className={styles.inspectorPanel} data-page-terminal-surface="inspector" aria-label="账号详情" data-page-account-detail>
+      <section className={["mg-panel", styles.inspectorPanel].join(" ")} data-component="mg-panel" data-page-terminal-surface="inspector" aria-label="账号详情" data-page-account-detail>
         <PanelHeader title="账号详情" detail={selectedAccountId ? "自有账号台账" : "未选择"} icon={<WalletCards size={16} aria-hidden="true" />} />
         {!selectedAccountId ? (
           <SurfaceState kind="empty" title="选择一个自有账号" detail="从左侧列表选择后查看账号身份、责任人、运营定位和数据状态。" />
@@ -1352,7 +1382,8 @@ function AccountMonitorSection({
           detail={state.data.detail || "当前运行环境未安装或未配置账号监控适配器；页面不会将其显示为已成功监控。"}
           action={
             <button
-              className={styles.secondaryAction}
+              className={["mg-btn", "mg-btn-ghost", styles.secondaryAction].join(" ")}
+              data-component="mg-btn"
               type="button"
               data-capability-action="creator_profile_upsert"
               onClick={() => {
@@ -1405,12 +1436,12 @@ function AccountMonitorSection({
           <label className={styles.monitorToggle}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />启用账号监控</label>
           <p className={styles.mutedCopy}>已提取 {urls.length} 条通用链接{submittedUrls.length ? `；上次保存 ${submittedUrls.length} 条` : ""}。</p>
           <div className={styles.monitorEditorActions}>
-            <button className={styles.primaryAction} type="button" disabled={actionState === "saving" || actionState === "polling"} onClick={() => void saveAndPoll()}>{actionState === "saving" ? "正在保存" : actionState === "polling" ? "正在轮询" : "保存并立即轮询"}</button>
-            <button className={styles.secondaryAction} type="button" disabled={actionState === "saving" || actionState === "polling"} onClick={() => setEditing(false)}>取消</button>
+            <button className={["mg-btn", "mg-btn-primary", styles.primaryAction].join(" ")} data-component="mg-btn" type="button" disabled={actionState === "saving" || actionState === "polling"} onClick={() => void saveAndPoll()}>{actionState === "saving" ? "正在保存" : actionState === "polling" ? "正在轮询" : "保存并立即轮询"}</button>
+            <button className={["mg-btn", "mg-btn-ghost", styles.secondaryAction].join(" ")} data-component="mg-btn" type="button" disabled={actionState === "saving" || actionState === "polling"} onClick={() => setEditing(false)}>取消</button>
           </div>
         </div>
       ) : canEdit ? (
-        <button className={styles.secondaryAction} type="button" onClick={() => setEditing(true)}>编辑监控</button>
+        <button className={["mg-btn", "mg-btn-ghost", styles.secondaryAction].join(" ")} data-component="mg-btn" type="button" onClick={() => setEditing(true)}>编辑监控</button>
       ) : null}
       {actionMessage ? <p className={styles.monitorActionMessage} role="status">{actionMessage}</p> : null}
     </InspectorSection>
@@ -1427,7 +1458,7 @@ function formatMetric(value: number | null | undefined): string {
 }
 
 function monitorLinkLabel(result: { platform: string; kind: string; content_id: string | null }): string {
-  const platform = result.platform === "douyin" ? "抖音" : result.platform === "xiaohongshu" ? "小红书" : "未知平台";
+  const platform = resolvePlatform(result.platform).label;
   if (result.kind === "post") return `${platform}作品${result.content_id ? ` ${result.content_id}` : ""}`;
   if (result.kind === "profile") return "这是账号主页";
   if (result.kind === "short") return `${platform}短链，待轮询确认`;
@@ -1520,7 +1551,7 @@ function TrackInspector({
 
   return (
     <aside className={styles.inspectorColumn} data-page-inspector>
-      <section className={styles.inspectorPanel} data-page-terminal-surface="inspector" aria-label="赛道详情">
+      <section className={["mg-panel", styles.inspectorPanel].join(" ")} data-component="mg-panel" data-page-terminal-surface="inspector" aria-label="赛道详情">
         <PanelHeader title="赛道详情" detail={selectedTrackId ? "定位与账号布局" : "未选择"} icon={<Target size={17} aria-hidden="true" />} />
         {!selectedTrackId ? (
           <SurfaceState kind="empty" title="选择一个赛道" detail="从左侧列表选择后查看赛道定位、账号布局和平台覆盖。" />
@@ -1553,7 +1584,7 @@ function TrackInspector({
             </InspectorSection>
 
             <InspectorSection title="账号布局" icon={<WalletCards size={15} aria-hidden="true" />}>
-              <div className={styles.layoutMetrics}>
+              <div className={["mg-metric-grid", styles.layoutMetrics].join(" ")} data-component="mg-metric-grid">
                 <Metric className={classNames(styles.metric, styles.metricEmphasized)} label="自有账号" value={String(trackAccounts.length)} />
                 <Metric
                   className={classNames(styles.metric, styles.metricEmphasized)}
@@ -1614,7 +1645,8 @@ function TrackInspector({
 
             <div className={styles.inspectorActions}>
               <button
-                className={styles.primaryAction}
+                className={["mg-btn", "mg-btn-primary", styles.primaryAction].join(" ")}
+                data-component="mg-btn"
                 type="button"
                 data-capability-action="external_research_brief"
                 onClick={() => onResearch(track)}
@@ -1642,7 +1674,7 @@ function DataPanel({
   children: ReactNode;
 }) {
   return (
-    <section className={styles.panel}>
+    <section className={["mg-panel", styles.panel].join(" ")} data-component="mg-panel">
       <PanelHeader title={title} detail={detail} icon={icon} />
       <div className={styles.panelBody}>{children}</div>
     </section>
@@ -1659,7 +1691,7 @@ function PanelHeader({
   icon: ReactNode;
 }) {
   return (
-    <header className={styles.panelHeader}>
+    <header className="mg-panel-head" data-component="mg-panel-head">
       <div className={styles.panelTitle}>
         <span className={styles.panelIcon}>{icon}</span>
         <h2>{title}</h2>
@@ -1681,14 +1713,13 @@ function SegmentedFilter<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div className={styles.filterTabs} role="tablist" aria-label={label}>
+    <div className={["mg-tabs", styles.filterTabs].join(" ")} data-component="mg-tabs" role="tablist" aria-label={label}>
       {options.map((option) => (
         <button
           key={option.id}
-          className={[
-            styles.filterTab,
-            value === option.id ? styles.filterTabActive : "",
-          ].join(" ")}
+          className={["mg-tab", styles.filterTab].join(" ")}
+          data-component="mg-tab"
+          data-variant="pill"
           type="button"
           role="tab"
           aria-selected={value === option.id}
@@ -1727,8 +1758,13 @@ function StatusBadge({
     neutral: styles.statusBadgeNeutral,
     accent: styles.statusBadgeAccent,
   }[tone];
+  const sharedTone = tone === "neutral" ? undefined : tone;
   return (
-    <span className={[styles.statusBadge, toneClass].join(" ")}>
+    <span
+      className={["mg-badge", styles.statusBadge, toneClass].join(" ")}
+      data-component="mg-badge"
+      data-tone={sharedTone}
+    >
       {children}
     </span>
   );
@@ -1813,35 +1849,6 @@ function benchmarkStatusDisplayLabel(value: string): string {
   return "关注状态待确认";
 }
 
-function SurfaceState({
-  kind,
-  title,
-  detail,
-  action,
-}: {
-  kind: "loading" | "forbidden" | "error" | "empty";
-  title: string;
-  detail: string;
-  action?: ReactNode;
-}) {
-  const Icon = kind === "loading" ? LoaderCircle : kind === "empty" ? Database : AlertCircle;
-  return (
-    <div
-      className={styles.surfaceState}
-      role="status"
-      aria-busy={kind === "loading"}
-      data-state={kind}
-    >
-      <span className={styles.stateIcon}>
-        <Icon className={kind === "loading" ? "spin" : ""} size={21} aria-hidden="true" />
-      </span>
-      <strong>{title}</strong>
-      <p>{detail}</p>
-      {action}
-    </div>
-  );
-}
-
 function Field({
   label,
   value,
@@ -1887,10 +1894,12 @@ function ProjectionDegradationNotice({
         </ul>
         <span>已成功返回的资源仍保留在当前页面。</span>
       </div>
-      <button type="button" onClick={onRetry}>刷新并重新读取</button>
+      <button className={["mg-btn", "mg-btn-ghost"].join(" ")} data-component="mg-btn" type="button" onClick={onRetry}>刷新并重新读取</button>
     </div>
   );
 }
+
+const MAX_LIST_PAGES = 100;
 
 function loadList<T>(
   operation: "listTracks" | "listCreators" | "listTrackRelationships" | "listOwnedAccounts",
@@ -1898,12 +1907,52 @@ function loadList<T>(
   query: Record<string, unknown>,
   signal: AbortSignal,
   setter: Dispatch<ResourceState<ListResponse<T>>>,
+  publicId: (item: T) => string,
 ) {
-  callBusinessOperation<ListResponse<T>>(operation, { query, signal })
+  loadAllListPages(operation, subject, query, signal, publicId)
     .then((data) => setter({ kind: "ready", data }))
     .catch((error: unknown) => {
       if (!signal.aborted) setter(toResourceError(error, subject));
     });
+}
+
+async function loadAllListPages<T>(
+  operation: "listTracks" | "listCreators" | "listTrackRelationships" | "listOwnedAccounts",
+  subject: string,
+  query: Record<string, unknown>,
+  signal: AbortSignal,
+  publicId: (item: T) => string,
+): Promise<ListResponse<T>> {
+  const itemsByPublicId = new Map<string, T>();
+  const seenCursors = new Set<string>();
+  let cursor: string | undefined;
+
+  for (let pageIndex = 0; pageIndex < MAX_LIST_PAGES; pageIndex += 1) {
+    const page = await callBusinessOperation<ListResponse<T>>(operation, {
+      query: { ...query, cursor },
+      signal,
+    });
+    for (const item of page.items) {
+      const id = publicId(item);
+      if (!id) {
+        throw new Error(`${subject}返回了缺少公共标识的记录，已停止读取。`);
+      }
+      if (!itemsByPublicId.has(id)) itemsByPublicId.set(id, item);
+    }
+
+    const nextCursor: unknown = page.nextCursor;
+    if (nextCursor === null) return { ...page, items: Array.from(itemsByPublicId.values()) };
+    if (typeof nextCursor !== "string" || !nextCursor.trim()) {
+      throw new Error(`${subject}返回了空分页游标，已停止读取。`);
+    }
+    if (seenCursors.has(nextCursor)) {
+      throw new Error(`${subject}分页游标重复，已停止读取。`);
+    }
+    seenCursors.add(nextCursor);
+    cursor = nextCursor;
+  }
+
+  throw new Error(`${subject}分页超过 ${MAX_LIST_PAGES} 页上限，已停止读取。`);
 }
 
 function toResourceError<T>(error: unknown, subject: string): ResourceState<T> {

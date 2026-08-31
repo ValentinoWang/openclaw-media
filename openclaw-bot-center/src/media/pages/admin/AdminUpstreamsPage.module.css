@@ -20,21 +20,9 @@
 }
 
 .titleBlock,
-.metricCopy,
 .healthCopy,
-.actionTitle > div,
-.stateCopy {
+.actionTitle > div {
   min-width: 0;
-}
-
-.kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--mg-primary-dark);
-  font-size: var(--mg-text-xs);
-  font-weight: 750;
-  letter-spacing: 0;
 }
 
 .titleBlock h1 {
@@ -47,8 +35,7 @@
 
 .titleBlock p,
 .healthCopy p,
-.pendingBlock p,
-.statePanel p {
+.pendingBlock p {
   margin: 0;
   color: var(--mg-muted);
   font-size: var(--mg-text-xs);
@@ -65,46 +52,12 @@
   gap: 8px;
 }
 
-.accessPill,
 .refreshButton,
 .primaryButton,
 .secondaryButton,
 .dangerButton,
 .retryButton {
-  display: inline-flex;
-  min-height: var(--mg-control-height-sm, 36px);
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border-radius: var(--mg-r-sm);
-  font-size: var(--mg-text-sm);
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-.accessPill {
-  border: 1px solid var(--mg-border);
-  padding: 0 10px;
-  color: var(--mg-muted);
-  background: var(--mg-surface);
-}
-
-.refreshButton,
-.secondaryButton,
-.retryButton {
-  border: 1px solid var(--mg-border-strong);
-  padding: 0 12px;
-  color: var(--mg-ink);
-  background: var(--mg-surface);
-  cursor: pointer;
-}
-
-.refreshButton:hover:not(:disabled),
-.secondaryButton:hover:not(:disabled),
-.retryButton:hover:not(:disabled) {
-  border-color: var(--mg-primary);
-  color: var(--mg-primary-dark);
-  background: var(--mg-primary-soft);
+  min-width: 0;
 }
 
 .refreshButton:disabled,
@@ -135,11 +88,15 @@
 }
 
 .metric {
-  display: flex;
+  display: grid;
   min-width: 0;
   min-height: 64px;
-  align-items: flex-start;
-  gap: 10px;
+  grid-template-areas: 'icon label' 'icon value';
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-rows: minmax(0, auto) minmax(0, auto);
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 3px;
   padding: 12px 13px;
   border-right: 1px solid var(--mg-border);
 }
@@ -181,25 +138,26 @@
   background: var(--mg-primary-soft);
 }
 
-.metricCopy {
-  display: grid;
-  gap: 3px;
+.metric > span:first-child {
+  grid-area: icon;
 }
 
-.metricLabel,
-.metricValue,
+.metric > span:nth-child(2),
+.metric > strong,
 .revisionBadge,
 .statusRow strong {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.metricLabel {
+.metric > span:nth-child(2) {
+  grid-area: label;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
 }
 
-.metricValue {
+.metric > strong {
+  grid-area: value;
   color: var(--mg-ink);
   font-size: var(--mg-text-lg);
   line-height: 1.08;
@@ -248,12 +206,8 @@
 }
 
 .primarySurface,
-.actionPanel,
-.statePanel {
+.actionPanel {
   min-width: 0;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-md);
-  background: var(--mg-surface);
 }
 
 .primarySurface {
@@ -261,35 +215,6 @@
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-}
-
-.panelHeader,
-.actionHeader {
-  display: flex;
-  min-width: 0;
-  min-height: 58px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--mg-border);
-}
-
-.eyebrow {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-2xs);
-  font-weight: 750;
-}
-
-.panelHeader h2,
-.actionTitle h2 {
-  min-width: 0;
-  margin: 0;
-  color: var(--mg-ink);
-  font-size: var(--mg-text-lg);
-  line-height: 1.2;
 }
 
 .revisionBadge {
@@ -402,7 +327,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--mg-primary-dark);
+  color: var(--accent-ink);
 }
 
 .blockHeading h3 {
@@ -522,27 +447,11 @@
   opacity: 0.72;
 }
 
-.primaryButton,
-.dangerButton {
-  border: 1px solid transparent;
-  padding: 0 13px;
-  color: white;
-  cursor: pointer;
-}
-
-.primaryButton {
-  border-color: var(--mg-primary-dark);
-  background: var(--mg-primary-dark);
-}
-
-.primaryButton:hover:not(:disabled) {
-  border-color: var(--mg-primary);
-  background: var(--mg-primary);
-}
-
 .dangerButton {
   border-color: var(--mg-danger);
+  color: #fff;
   background: var(--mg-danger);
+  cursor: pointer;
 }
 
 .dangerButton:hover:not(:disabled) {
@@ -633,35 +542,10 @@
 
 .statePanel {
   display: flex;
-  min-height: 210px;
-  flex: 1 1 auto;
-  align-items: center;
-  justify-content: center;
-  gap: 13px;
-  padding: 26px;
-  color: var(--mg-muted);
-}
-
-.stateIcon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--mg-r-sm);
-  color: var(--mg-primary-dark);
-  background: var(--mg-primary-soft);
-}
-
-.statePanel h2 {
-  margin: 0;
-  color: var(--mg-ink);
-  font-size: var(--mg-text-lg);
-}
-
-.stateCopy {
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .retryButton {
@@ -695,11 +579,6 @@
   .headerActions {
     align-items: stretch;
     justify-content: flex-start;
-  }
-
-  .accessPill,
-  .refreshButton {
-    min-height: var(--mg-control-height-md, 44px);
   }
 
   .metricBand {
@@ -746,11 +625,6 @@
     padding-right: 0;
   }
 
-  .panelHeader,
-  .actionHeader {
-    padding-inline: 13px;
-  }
-
   .primaryBody {
     padding: 14px;
   }
@@ -761,14 +635,12 @@
 
   .statePanel {
     min-height: 260px;
-    justify-content: flex-start;
-    padding: 22px 16px;
   }
 }
 
 @media (max-width: 420px) {
   .metric {
-    gap: 7px;
+    column-gap: 7px;
     padding: 10px 8px;
   }
 
@@ -780,7 +652,7 @@
     height: 26px;
   }
 
-  .metricValue {
+  .metric > strong {
     font-size: var(--mg-text-lg);
   }
 

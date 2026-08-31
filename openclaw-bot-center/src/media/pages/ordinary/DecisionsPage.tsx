@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
-  AlertCircle,
   Check,
   CircleDot,
   Database,
   ExternalLink,
   Lightbulb,
-  LoaderCircle,
   RefreshCw,
   Search,
-  ShieldAlert,
-  XCircle,
 } from "lucide-react";
 import { useMediaWeb } from "../../MediaWebWorkspace";
 import { loginUrl } from "../../mediaWebApi";
@@ -28,6 +24,7 @@ import { newIdempotencyKey } from "../../idempotency";
 import { qualityDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { SearchBox } from "../../ui/SearchBox";
+import { SurfaceState } from "../../ui/SurfaceState";
 import { decisionStatusTone } from "../../statusPresentation";
 import styles from "./DecisionsPage.module.css";
 
@@ -306,7 +303,8 @@ export default function DecisionsPage() {
       <PageGate
         title="登录后查看选题与决策"
         detail="当前页面只展示所属账户的决策与来源信号。"
-        action={<a className="primary-button" href={loginUrl()}>登录</a>}
+        kind="permission"
+        action={<a className="mg-btn mg-btn-primary" data-component="mg-btn" href={loginUrl()}>登录</a>}
       />
     );
   }
@@ -315,30 +313,42 @@ export default function DecisionsPage() {
   }
 
   return (
-    <main className={`fidelity-page ${styles.page}`}>
-      <div data-page-prelude>
-        <header className={`page-heading ${styles.heading}`}>
+    <main
+      className={`fidelity-page ${styles.page}`}
+      data-accent="campaign"
+      data-page-ownership="personal"
+    >
+      <div className={styles.prelude} data-page-prelude>
+        <header className={`page-heading mg-hero ${styles.heading}`} data-component="mg-hero">
           <div>
+            <span className="mg-eyebrow" data-component="mg-eyebrow">内容运营</span>
             <h1>选题与决策</h1>
             <p>候选选题、来源信号和人工确认都来自当前租户的业务记录。</p>
           </div>
-          <div className="page-heading-actions"><button
-            className={`primary-button ${styles.primaryAction}`}
-            type="button"
-            onClick={() => setRefreshToken((value) => value + 1)}
-            title="重新读取决策数据"
-          >
-            <RefreshCw size={16} aria-hidden="true" />
-            刷新数据
-          </button></div>
+          <div className="page-heading-actions">
+            <button
+              className={`mg-btn mg-btn-primary ${styles.primaryAction}`}
+              data-component="mg-btn"
+              type="button"
+              onClick={() => setRefreshToken((value) => value + 1)}
+              title="重新读取决策数据"
+            >
+              <RefreshCw size={16} aria-hidden="true" />
+              刷新数据
+            </button>
+          </div>
         </header>
-        <nav className="mg-tabs" role="tablist" aria-label="选题与决策视图">
+        <nav className="mg-tabs" data-component="mg-tabs" role="tablist" aria-label="选题与决策视图">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               className="mg-tab"
+              data-component="mg-tab"
+              data-variant="pill"
               type="button"
               role="tab"
+              id={`${tab.key}-tab`}
+              aria-controls={`${tab.key}-tabpanel`}
               aria-selected={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
             >
@@ -346,17 +356,17 @@ export default function DecisionsPage() {
             </button>
           ))}
         </nav>
-        <form className={styles.filterBar} onSubmit={submitSearch}>
+        <form className={`mg-panel ${styles.filterBar}`} data-component="mg-panel" onSubmit={submitSearch}>
           <SearchBox
             className={styles.searchField}
             value={query}
             onChange={setQuery}
             label="搜索候选标题、平台或赛道"
           />
-          <button className={styles.resetButton} type="button" onClick={resetSearch}>
+          <button className={`mg-btn mg-btn-ghost ${styles.resetButton}`} data-component="mg-btn" type="button" onClick={resetSearch}>
             重置
           </button>
-          <button className="primary-button" type="submit">
+          <button className="mg-btn mg-btn-primary" data-component="mg-btn" type="submit">
             <Search size={15} aria-hidden="true" />
             搜索
           </button>
@@ -424,8 +434,15 @@ function DecisionListPanel({
   onRetry: () => void;
 }) {
   return (
-    <section className={`section-panel ${styles.tablePanel}`} data-page-terminal-surface="primary">
-      <header className={styles.panelHeader}>
+    <section
+      className={`mg-panel ${styles.tablePanel}`}
+      data-component="mg-panel"
+      data-page-terminal-surface="primary"
+      id="decisions-tabpanel"
+      role="tabpanel"
+      aria-labelledby="decisions-tab"
+    >
+      <header className={`mg-panel-head ${styles.panelHeader}`} data-component="mg-panel-head">
         <div>
           <h2>候选选题</h2>
           <span>{state.status === "ready" ? `${state.data.items.length} 条` : ""}</span>
@@ -484,20 +501,9 @@ function DecisionRow({
 }) {
   const select = () => onSelect(item.publicDecisionId);
   return (
-    <tr
-      className={selected ? styles.rowSelected : ""}
-      aria-selected={selected}
-      tabIndex={0}
-      onClick={select}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          select();
-        }
-      }}
-    >
+    <tr className={selected ? styles.rowSelected : ""}>
       <th scope="row">
-        <button className={styles.decisionButton} type="button" onClick={(event) => { event.stopPropagation(); select(); }} aria-label={`查看候选选题 ${item.candidateTitle}`}>
+        <button className={styles.decisionButton} type="button" aria-current={selected ? "true" : undefined} onClick={select} aria-label={`查看候选选题 ${item.candidateTitle}`}>
           <span className={styles.decisionId}><CircleDot size={10} aria-hidden="true" /><span title={item.publicDecisionId}>{item.publicDecisionId}</span></span>
           <strong>{item.candidateTitle}</strong>
         </button>
@@ -526,8 +532,15 @@ function SignalPanel({
   onRetry: () => void;
 }) {
   return (
-    <section className={`section-panel ${styles.tracePanel}`} data-page-terminal-surface="primary">
-      <header>
+    <section
+      className={`mg-panel ${styles.tracePanel}`}
+      data-component="mg-panel"
+      data-page-terminal-surface="primary"
+      id="signals-tabpanel"
+      role="tabpanel"
+      aria-labelledby="signals-tab"
+    >
+      <header className="mg-panel-head" data-component="mg-panel-head">
         <div><h2>来源信号</h2><p>热榜快照与活动记录保留来源链接、采集时间和质量状态。</p></div>
         <span>{state.status === "ready" ? `修订 ${state.data.revision}` : ""}</span>
       </header>
@@ -595,8 +608,8 @@ function DecisionInspector({
   const pending = detail ? isPendingDecision(detail.decisionStatus) : false;
   return (
     <div className={styles.inspectorColumn} data-page-inspector>
-      <aside className={`section-panel ${styles.inspector}`} data-page-terminal-surface="inspector">
-        <header className={styles.inspectorHeader}>
+      <aside className={`mg-panel ${styles.inspector}`} data-component="mg-panel" data-page-terminal-surface="inspector">
+        <header className={`mg-panel-head ${styles.inspectorHeader}`} data-component="mg-panel-head">
           <Lightbulb size={17} aria-hidden="true" />
           <h2>决策检查器</h2>
         </header>
@@ -638,7 +651,8 @@ function DecisionInspector({
                   />
                   <div className={styles.actionButtons}>
                     <button
-                      className={`primary-button ${styles.confirmButton}`}
+                      className={`mg-btn mg-btn-primary ${styles.confirmButton}`}
+                      data-component="mg-btn"
                       type="button"
                       disabled={!reason.trim() || actionState.status === "submitting"}
                       onClick={() => onConfirm("confirmed")}
@@ -646,7 +660,8 @@ function DecisionInspector({
                       <Check size={15} aria-hidden="true" />确认选题
                     </button>
                     <button
-                      className={styles.rejectButton}
+                      className={`mg-btn mg-btn-ghost ${styles.rejectButton}`}
+                      data-component="mg-btn"
                       type="button"
                       disabled={!reason.trim() || actionState.status === "submitting"}
                       onClick={() => onConfirm("rejected")}
@@ -680,49 +695,36 @@ function StatePanel<T>({
   onRetry: () => void;
 }) {
   if (state.status === "loading") {
-    return <div className={styles.pageState} aria-busy="true"><LoaderCircle className="spin" size={20} /><strong>正在读取{subject}</strong><p>等待服务端返回当前租户数据。</p></div>;
+    return <SurfaceState kind="loading" title={`正在读取${subject}`} detail="等待服务端返回当前租户数据。" />;
   }
   if (state.status === "forbidden") {
-    return <div className={styles.pageState} role="alert"><ShieldAlert size={20} /><strong>暂无查看权限</strong><p>{state.message}</p></div>;
+    return <SurfaceState kind="forbidden" title="暂无查看权限" detail={state.message} />;
   }
   if (state.status === "notFound") {
-    return <div className={styles.pageState} role="alert"><XCircle size={20} /><strong>记录不存在</strong><p>{state.message}</p></div>;
+    return <SurfaceState kind="notFound" title="记录不存在" detail={state.message} />;
   }
   if (state.status === "unavailable") {
-    return <div className={styles.pageState} role="alert"><Database size={20} /><strong>字段暂不可用</strong><p>{state.message}</p></div>;
+    return <SurfaceState kind="error" title="字段暂不可用" detail={state.message} />;
   }
   if (state.status !== "error") return null;
-  return (
-    <div className={styles.pageState} role="alert">
-      <AlertCircle size={20} />
-      <strong>{subject}读取失败</strong>
-      <p>{state.message}</p>
-      <button className={styles.retryButton} type="button" onClick={onRetry}><RefreshCw size={14} aria-hidden="true" />重试</button>
-    </div>
-  );
+  return <SurfaceState
+    kind="error"
+    title={`${subject}读取失败`}
+    detail={state.message}
+    action={<button className={`mg-btn mg-btn-ghost ${styles.retryButton}`} data-component="mg-btn" type="button" onClick={onRetry}><RefreshCw size={14} aria-hidden="true" />重试</button>}
+  />;
 }
 
 function EmptyState({ title, detail }: { title: string; detail: string }) {
-  return <div className={styles.emptyState}><AlertCircle size={20} /><strong>{title}</strong><p>{detail}</p></div>;
+  return <SurfaceState kind="empty" title={title} detail={detail} />;
 }
 
-function PageGate({ title, detail, action, loading = false }: { title: string; detail: string; action?: ReactNode; loading?: boolean }) {
-  return <main className={`fidelity-page ${styles.gate}`}><div className="detail-gate">{loading ? <LoaderCircle className="spin" size={24} /> : <Database size={24} />}<h1>{title}</h1>{detail ? <p>{detail}</p> : null}{action}</div></main>;
+function PageGate({ title, detail, action, loading = false, kind = "error" }: { title: string; detail: string; action?: ReactNode; loading?: boolean; kind?: "permission" | "error" }) {
+  return <main className={`fidelity-page ${styles.gate}`} data-accent="campaign" data-page-ownership="personal"><SurfaceState kind={loading ? "loading" : kind} title={title} detail={detail} action={action} /></main>;
 }
 
 function StatusBadge({ status }: { status: DecisionStatus }) {
-  return <span className={`${styles.decisionBadge} ${statusToneClass(status)}`}>{decisionLabel(status)}</span>;
-}
-
-const decisionToneClasses: Record<ReturnType<typeof decisionStatusTone>, string> = {
-  success: styles.decisionGood,
-  warning: styles.decisionWarning,
-  info: styles.decisionInfo,
-  neutral: styles.decisionNeutral,
-};
-
-function statusToneClass(status: DecisionStatus): string {
-  return decisionToneClasses[decisionStatusTone(status)];
+  return <span className="mg-badge" data-component="mg-badge" data-tone={decisionStatusTone(status)}>{decisionLabel(status)}</span>;
 }
 
 function decisionLabel(status: string): string {

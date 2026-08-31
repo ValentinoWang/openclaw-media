@@ -8,25 +8,18 @@
   overflow: hidden;
 }
 
-.pageNotice {
+.page > [data-page-prelude] {
+  flex: 0 0 auto;
+}
+
+.page > :global(.mg-state) {
   flex: 1 1 auto;
   min-height: 180px;
-  align-items: center;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-md);
-  background: var(--mg-surface);
-}
-
-.pageNoticeNeutral {
-  color: var(--mg-muted);
-}
-
-.pageNoticeDanger {
-  color: var(--mg-danger);
-  background: var(--mg-danger-soft);
 }
 
 .tabs {
+  width: fit-content;
+  max-width: 100%;
   margin-bottom: 16px;
 }
 
@@ -36,19 +29,11 @@
   max-width: 100%;
   flex: 0 0 auto;
   margin-bottom: 14px;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-md);
-  background: var(--mg-surface);
 }
 
 .cookieHeader {
-  display: flex;
   min-width: 0;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 13px 14px;
-  border-bottom: 1px solid var(--mg-border);
 }
 
 .cookieTitle {
@@ -61,12 +46,6 @@
 
 .cookieTitle > div {
   min-width: 0;
-}
-
-.cookieTitle h2 {
-  margin: 0;
-  color: var(--mg-ink);
-  font-size: var(--mg-text-md);
 }
 
 .cookieTitle p {
@@ -237,9 +216,6 @@
 .actionPanel,
 .inspector {
   min-width: 0;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-md);
-  background: var(--mg-surface);
 }
 
 .summaryPanel,
@@ -256,18 +232,12 @@
   overflow: hidden;
 }
 
-.tablePanel > .pageState {
+.tablePanel > :global(.mg-state) {
   flex: 1 1 auto;
 }
 
 .panelHeader {
-  display: flex;
-  min-height: 52px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 14px;
-  border-bottom: 1px solid var(--mg-border);
+  /* The count stays aligned with the title while the shared header owns its surface chrome. */
 }
 
 .panelHeader > div {
@@ -277,25 +247,10 @@
   gap: 8px;
 }
 
-.panelHeader h2,
-.actionHeader h2,
 .sectionLead h2 {
   margin: 0;
   font-size: var(--mg-text-md);
   line-height: 1.35;
-}
-
-.panelHeader > div > span {
-  display: grid;
-  min-width: 22px;
-  height: 22px;
-  place-items: center;
-  padding: 0 6px;
-  border-radius: var(--mg-r-md);
-  color: var(--mg-muted);
-  background: var(--mg-bg);
-  font-size: var(--mg-text-xs);
-  font-variant-numeric: tabular-nums;
 }
 
 .filterBar {
@@ -332,14 +287,7 @@
   box-shadow: 0 0 0 3px oklch(0.72 0.08 166 / 0.22);
 }
 
-.secondaryButton,
-.quietButton,
-.cancelButton,
-.primaryButton,
-.iconButton,
-.clearFieldButton,
-.pagination button,
-.segmented button {
+.clearFieldButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -348,36 +296,8 @@
   cursor: pointer;
 }
 
-.secondaryButton {
-  min-height: 38px;
-  padding: 0 13px;
-  border: 1px solid var(--mg-border-strong);
-  color: var(--mg-primary-dark);
-  background: var(--mg-surface);
-  font-size: var(--mg-text-xs);
-  font-weight: 650;
-}
-
-.secondaryButton:hover,
-.cancelButton:hover,
-.pagination button:hover:not(:disabled) {
-  border-color: var(--mg-primary);
-  background: var(--mg-primary-soft);
-}
-
 .quietButton {
-  min-height: 32px;
-  padding: 0 6px;
-  border: 0;
-  color: var(--mg-primary-dark);
-  background: transparent;
-  font-size: var(--mg-text-xs);
-  font-weight: 650;
   white-space: nowrap;
-}
-
-.quietButton:hover {
-  background: var(--mg-primary-soft);
 }
 
 .tableScroll {
@@ -587,15 +507,7 @@
 }
 
 .statusPill {
-  display: inline-flex;
   max-width: 100%;
-  min-height: 22px;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 7px;
-  border-radius: var(--mg-r-md);
-  font-size: var(--mg-text-2xs);
-  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -607,35 +519,10 @@
   background: currentColor;
 }
 
-.statusSuccess {
-  color: oklch(0.37 0.09 155);
-  background: var(--mg-primary-soft);
-}
-.statusWarning {
-  color: oklch(0.42 0.1 60);
-  background: var(--mg-warning-soft);
-}
-.statusMuted {
-  color: var(--mg-muted);
-  background: var(--mg-bg);
-}
-.statusDanger {
-  color: var(--mg-danger);
-  background: var(--mg-danger-soft);
-}
-
 .iconButton {
   width: 30px;
   height: 30px;
   padding: 0;
-  border: 0;
-  color: var(--mg-muted);
-  background: transparent;
-}
-
-.iconButton:hover {
-  color: var(--mg-primary-dark);
-  background: var(--mg-primary-soft);
 }
 
 .pagination {
@@ -660,63 +547,11 @@
   width: 30px;
   height: 30px;
   padding: 0;
-  border: 1px solid var(--mg-border-strong);
-  color: var(--mg-primary-dark);
-  background: var(--mg-surface);
 }
 
 .pagination button:disabled {
-  color: var(--mg-muted);
-  background: var(--mg-bg);
   cursor: not-allowed;
   opacity: 0.55;
-}
-
-.emptyState,
-.pageState {
-  display: flex;
-  min-height: 250px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 28px;
-  color: var(--mg-muted);
-  text-align: center;
-}
-
-.emptyState svg,
-.pageState > svg {
-  color: var(--mg-primary-dark);
-}
-
-.emptyState strong,
-.pageState strong {
-  max-width: 50ch;
-  color: var(--mg-ink);
-  font-size: var(--mg-text-sm);
-  overflow-wrap: anywhere;
-}
-
-.emptyState span,
-.pageState span {
-  max-width: 52ch;
-  font-size: var(--mg-text-xs);
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-.pageState[role="alert"] > svg,
-.summaryState[role="alert"] > svg {
-  color: var(--mg-danger);
-}
-
-.loadingBar {
-  width: 78px;
-  height: 4px;
-  border-radius: var(--mg-r-xs);
-  background: var(--mg-primary-soft);
-  box-shadow: inset 34px 0 0 var(--mg-primary);
 }
 
 .inspector {
@@ -728,50 +563,23 @@
 }
 
 .inspectorEmpty {
-  display: flex;
   min-height: 420px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 24px;
-  color: var(--mg-muted);
-  text-align: center;
+  padding: 0;
 }
 
-.inspectorEmpty svg {
-  color: var(--mg-primary-dark);
-}
-
-.inspectorEmpty strong {
-  color: var(--mg-ink);
-  font-size: var(--mg-text-sm);
-}
-
-.inspectorEmpty span {
-  max-width: 30ch;
-  font-size: var(--mg-text-xs);
-  line-height: 1.5;
+.inspectorEmpty > :global(.mg-state) {
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .inspectorHeader,
 .actionHeader {
-  display: flex;
-  min-height: 55px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 9px 13px;
-  border-bottom: 1px solid var(--mg-border);
+  min-width: 0;
 }
 
 .inspectorHeader {
   flex: 0 0 auto;
-}
-
-.inspectorHeader h2 {
-  margin: 0;
-  font-size: var(--mg-text-md);
 }
 
 .inspectorHeader span,
@@ -1063,29 +871,16 @@
 }
 
 .cancelButton {
+  width: auto;
   min-height: 38px;
   padding: 0 11px;
-  border: 1px solid var(--mg-border-strong);
-  color: var(--mg-ink);
-  background: var(--mg-surface);
   font-size: var(--mg-text-xs);
 }
 
 .primaryButton {
-  min-height: 38px;
-  padding: 0 13px;
-  border: 0;
-  color: var(--mg-on-primary);
-  background: var(--mg-primary-dark);
-  font-size: var(--mg-text-xs);
-  font-weight: 650;
+  width: auto;
 }
 
-.primaryButton:hover:not(:disabled) {
-  background: oklch(0.35 0.105 166);
-}
-
-.primaryButton:disabled,
 .secondaryButton:disabled {
   cursor: not-allowed;
   opacity: 0.5;
@@ -1215,22 +1010,6 @@
   margin-bottom: 1px;
 }
 
-.summaryState {
-  display: flex;
-  flex: 1 1 auto;
-  min-height: 96px;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 16px;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-xs);
-  line-height: 1.45;
-  text-align: center;
-  overflow: auto;
-  overflow-wrap: anywhere;
-}
-
 .factList {
   display: grid;
   gap: 0;
@@ -1301,28 +1080,8 @@
 }
 
 .segmented {
-  display: flex;
-  gap: 3px;
-  padding: 10px 13px 0;
-  border-bottom: 1px solid var(--mg-border);
-}
-
-.segmented button {
-  min-height: 34px;
-  padding: 0 10px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  color: var(--mg-muted);
-  background: transparent;
-  font-size: var(--mg-text-xs);
-  font-weight: 650;
-}
-
-.segmented button:hover,
-.segmentActive {
-  color: var(--mg-primary-dark) !important;
-  border-bottom-color: var(--mg-primary) !important;
-  background: var(--mg-primary-soft) !important;
+  margin: 0;
+  padding: 0 13px;
 }
 
 .actionForm,
@@ -1539,6 +1298,11 @@
 
   .inspectorEmpty {
     min-height: auto;
+  }
+
+  .inspectorEmpty > :global(.mg-state) {
+    min-height: 220px;
+    flex: 0 0 auto;
   }
 
   .inspectorBody {

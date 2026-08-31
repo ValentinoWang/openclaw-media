@@ -14,7 +14,6 @@ import {
   FileText,
   Hash,
   LoaderCircle,
-  LogIn,
   Monitor,
   RefreshCw,
   ShieldAlert,
@@ -30,7 +29,6 @@ import {
   deleteArchive,
   loadArchiveDetail,
   loadArchiveList,
-  loginUrl,
   planArchiveDelete,
   readbackArchive,
   type MediaWebApiError,
@@ -39,8 +37,8 @@ import type {
   ArchiveDeletePlanResponse,
   ArchiveRecord,
 } from "../../generatedProductContract";
-import { PageHeading } from "../../ui/ordinaryPagePrimitives";
 import { formatDateTime } from "../../ui/datetime";
+import { SurfaceState } from "../../ui/SurfaceState";
 import styles from "./ArchivesPage.module.css";
 import { isCurrentW1Request } from "./w1RequestGuard";
 
@@ -341,35 +339,40 @@ function ArchivesPage() {
 
   if (runtimeState === "checking")
     return (
-      <Status
-        kind="loading"
-        title="正在读取归档"
-        detail="正在确认身份并读取真实归档记录。"
-      />
+      <ArchiveStateShell>
+        <SurfaceState
+          kind="loading"
+          title="正在读取归档"
+          detail="正在确认身份并读取真实归档记录。"
+        />
+      </ArchiveStateShell>
     );
   if (runtimeState === "unauthenticated" || !session)
     return (
-      <Status
-        kind="permission"
-        title="登录后查看归档"
-        detail="页面不会在无权限状态下读取归档内容。"
-      />
+      <ArchiveStateShell>
+        <SurfaceState
+          kind="permission"
+          title="登录后查看归档"
+          detail="页面不会在无权限状态下读取归档内容。"
+        />
+      </ArchiveStateShell>
     );
   const records =
     state === "ready" ? (
       <div
         className={styles.tableViewport}
+        role="region"
         tabIndex={0}
         aria-label="归档记录列表"
       >
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>归档记录</th>
-              <th>来源运行</th>
-              <th>云端字节</th>
-              <th>状态</th>
-              <th>更新时间</th>
+              <th scope="col">归档记录</th>
+              <th scope="col">来源运行</th>
+              <th scope="col">云端字节</th>
+              <th scope="col">状态</th>
+              <th scope="col">更新时间</th>
             </tr>
           </thead>
           <tbody>
@@ -381,18 +384,29 @@ function ArchivesPage() {
                     ? styles.selectedRow
                     : undefined
                 }
-                onClick={() => {
-                  selectArchive(archive.archive_id);
-                }}
               >
                 <td>
-                  <button type="button" className={styles.rowButton}>
+                  <button
+                    type="button"
+                    className={styles.rowButton}
+                    aria-current={archive.archive_id === selectedId ? "true" : undefined}
+                    aria-label={`查看归档记录 ${archive.archive_id}`}
+                    onClick={() => selectArchive(archive.archive_id)}
+                  >
                     {archive.archive_id}
                   </button>
                 </td>
                 <td>{archive.run_id}</td>
                 <td>{archive.cloud_bytes}</td>
-                <td>{archiveStateLabel(archive.state)}</td>
+                <td>
+                  <span
+                    className="mg-badge"
+                    data-component="mg-badge"
+                    data-tone={archiveStateTone(archive.state)}
+                  >
+                    {archiveStateLabel(archive.state)}
+                  </span>
+                </td>
                 <td>{formatTime(archive.updated_at)}</td>
               </tr>
             ))}
@@ -400,45 +414,59 @@ function ArchivesPage() {
         </table>
       </div>
     ) : state === "loading" ? (
-      <Status
+      <SurfaceState
         kind="loading"
         title="正在读取真实归档"
         detail="记录区等待服务端返回，不使用静态记录填充。"
       />
     ) : state === "permission" ? (
-      <Status
+      <SurfaceState
         kind="permission"
         title="没有归档读取权限"
         detail={error || "当前账户不能读取归档。"}
       />
     ) : state === "error" ? (
-      <Status
+      <SurfaceState
         kind="error"
         title="归档读取失败"
         detail={error}
         action={
-          <button type="button" onClick={() => void refresh()}>
+          <button
+            className={`mg-btn mg-btn-ghost ${styles.retryButton}`}
+            data-component="mg-btn"
+            type="button"
+            onClick={() => void refresh()}
+          >
             <RefreshCw size={14} />
             重试
           </button>
         }
       />
     ) : (
-      <Status
+      <SurfaceState
         kind="empty"
         title="暂无归档记录"
         detail="服务端没有返回归档；记录区保持真实空态。"
-        compact
+        density="compact"
       />
     );
 
   return (
-    <main className={`fidelity-page ${styles.page}`}>
-      <div data-page-prelude>
-        <PageHeading
-          title="云端归档"
-          description="查看用户明确选择后提交的轻量产物、描述符和验证收据。"
-        />
+    <main
+      className={`fidelity-page ${styles.page}`}
+      data-accent="archive"
+      data-page-ownership="personal"
+    >
+      <div className={styles.prelude} data-page-prelude>
+        <header className="page-heading mg-hero" data-component="mg-hero">
+          <div>
+            <span className="mg-eyebrow" data-component="mg-eyebrow">内容归档</span>
+            <h1>云端归档</h1>
+            <p className="mg-hero-lead">
+              查看用户明确选择后提交的轻量产物、描述符和验证收据。
+            </p>
+          </div>
+        </header>
       </div>
       <section
         className={styles.workspace}
@@ -447,12 +475,14 @@ function ArchivesPage() {
       >
         <div className={styles.mainColumn} data-page-primary>
           <section
-            className={styles.recordsPanel}
+            className={`mg-panel ${styles.recordsPanel}`}
+            data-component="mg-panel"
             aria-labelledby="archive-records-title"
             data-page-terminal-surface="primary"
           >
             <PanelHeader
               icon={Archive}
+              id="archive-records-title"
               title="归档记录"
               detail="仅展示服务端返回的小产物和本地媒体描述符。"
             />
@@ -484,21 +514,23 @@ function ArchivesPage() {
 }
 function PanelHeader({
   icon: Icon,
+  id,
   title,
   detail,
 }: {
   icon: LucideIcon;
+  id?: string;
   title: string;
   detail: string;
 }) {
   return (
-    <header className={styles.panelHeader}>
+    <header className="mg-panel-head" data-component="mg-panel-head">
       <div className={styles.panelHeading}>
         <span className={styles.panelIcon}>
           <Icon size={17} />
         </span>
         <div>
-          <h2>{title}</h2>
+          <h2 id={id}>{title}</h2>
           <p>{detail}</p>
         </div>
       </div>
@@ -508,11 +540,13 @@ function PanelHeader({
 function ArchiveDetail({ archive }: { archive: ArchiveRecord | null }) {
   return (
     <section
-      className={styles.inspectorPanel}
+      className={`mg-panel ${styles.inspectorPanel}`}
+      data-component="mg-panel"
       aria-labelledby="archive-detail-title"
     >
       <PanelHeader
         icon={FileText}
+        id="archive-detail-title"
         title="归档详情"
         detail="小产物可审阅；媒体本身始终仅在本地。"
       />
@@ -524,16 +558,28 @@ function ArchiveDetail({ archive }: { archive: ArchiveRecord | null }) {
         <div className={styles.archiveContent}>
           {archive ? (
             <>
-              <dl className={styles.receiptFacts}>
-                <div>
+              <dl
+                className={`${styles.receiptFacts} mg-metric-grid`}
+                data-component="mg-metric-grid"
+              >
+                <div
+                  className="mg-metric"
+                  data-component="mg-metric"
+                >
                   <dt>来源运行</dt>
                   <dd>{archive.run_id}</dd>
                 </div>
-                <div>
+                <div
+                  className="mg-metric"
+                  data-component="mg-metric"
+                >
                   <dt>处理流程</dt>
                   <dd>{archive.pipeline_id ? "已登记处理流程" : "未提供"}</dd>
                 </div>
-                <div>
+                <div
+                  className="mg-metric"
+                  data-component="mg-metric"
+                >
                   <dt>媒体云端字节</dt>
                   <dd>{archive.media_cloud_bytes}</dd>
                 </div>
@@ -554,11 +600,11 @@ function ArchiveDetail({ archive }: { archive: ArchiveRecord | null }) {
               </ul>
             </>
           ) : (
-            <Status
+            <SurfaceState
               kind="empty"
               title="选择归档记录"
               detail="服务端无记录时保持真实空态；本地媒体边界仍持续可见。"
-              compact
+              density="compact"
             />
           )}
         </div>
@@ -616,11 +662,15 @@ function DeletionPanel({
 }) {
   return (
     <section
-      className={styles.dangerPanel}
+      className={`mg-panel ${styles.dangerPanel}`}
+      data-component="mg-panel"
       aria-labelledby="delete-archive-title"
       data-page-terminal-surface="inspector"
     >
-      <header className={styles.dangerHeader}>
+      <header
+        className={`mg-panel-head ${styles.dangerHeader}`}
+        data-component="mg-panel-head"
+      >
         <ShieldAlert size={17} />
         <div>
           <h2 id="delete-archive-title">删除云端归档</h2>
@@ -654,7 +704,8 @@ function DeletionPanel({
               </div>
             ) : null}
             <button
-              className={styles.dangerButton}
+              className={`mg-btn mg-btn-ghost ${styles.dangerButton}`}
+              data-component="mg-btn"
               type="button"
               onClick={plan ? onDelete : onPlan}
               disabled={busy || (Boolean(plan) && !confirmed)}
@@ -688,42 +739,16 @@ function DeletionPanel({
     </section>
   );
 }
-function Status({
-  kind,
-  title,
-  detail,
-  action,
-  compact = false,
-}: {
-  kind: "loading" | "permission" | "error" | "empty";
-  title: string;
-  detail: string;
-  action?: ReactNode;
-  compact?: boolean;
-}) {
-  const Icon =
-    kind === "loading"
-      ? LoaderCircle
-      : kind === "permission"
-        ? LogIn
-        : kind === "empty"
-          ? CheckCircle2
-          : AlertCircle;
+
+function ArchiveStateShell({ children }: { children: ReactNode }) {
   return (
-    <div
-      className={`${styles.stateSurface} ${compact ? styles.compactState : ""}`}
-      role={kind === "error" ? "alert" : "status"}
+    <main
+      className={`fidelity-page ${styles.page}`}
+      data-accent="archive"
+      data-page-ownership="personal"
     >
-      <Icon className={kind === "loading" ? "spin" : ""} size={20} />
-      <strong>{title}</strong>
-      <p>{detail}</p>
-      {kind === "permission" ? (
-        <a className={styles.loginLink} href={loginUrl()}>
-          登录并查看
-        </a>
-      ) : null}
-      {action}
-    </div>
+      <div data-page-prelude>{children}</div>
+    </main>
   );
 }
 function formatTime(value: string): string {
@@ -732,6 +757,13 @@ function formatTime(value: string): string {
 
 function archiveStateLabel(value: string): string {
   return ({ active: "可用", deleting: "正在删除", delete_failed: "删除失败" }[value] ?? "状态待确认");
+}
+
+function archiveStateTone(value: string): "good" | "warn" | "danger" | "info" {
+  if (value === "active") return "good";
+  if (value === "deleting") return "warn";
+  if (value === "delete_failed") return "danger";
+  return "info";
 }
 
 function archiveArtifactModeLabel(value: string): string {

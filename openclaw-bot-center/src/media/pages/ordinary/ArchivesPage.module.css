@@ -7,6 +7,15 @@
   overflow: hidden;
 }
 
+.prelude {
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.prelude :global(.mg-eyebrow) {
+  margin-bottom: 5px;
+}
+
 .panelState {
   flex: 0 0 auto;
   padding: 4px 8px;
@@ -121,12 +130,12 @@
 }
 
 .selectedRow {
-  background: color-mix(in srgb, var(--mg-primary) 7%, var(--mg-surface));
+  background: color-mix(in srgb, var(--accent-base) 9%, var(--mg-surface));
 }
 .rowButton {
   padding: 0;
   border: 0;
-  color: var(--mg-primary-dark);
+  color: var(--accent-ink);
   background: transparent;
   font: inherit;
   text-align: left;
@@ -177,9 +186,6 @@
 .dangerPanel {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-md);
-  background: var(--mg-surface);
 }
 
 .recordsPanel,
@@ -204,17 +210,6 @@
   height: auto;
 }
 
-.panelHeader {
-  display: flex;
-  min-height: 48px;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--mg-border);
-}
-
 .panelHeading {
   display: flex;
   min-width: 0;
@@ -233,18 +228,17 @@
   flex: 0 0 30px;
   place-items: center;
   border-radius: var(--mg-r-sm);
-  color: var(--mg-primary-dark);
-  background: var(--mg-primary-soft);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
 }
 
-.panelHeader h2,
+.panelHeading h2,
 .dangerHeader h2 {
   margin: 0;
   color: var(--mg-ink);
-  font-size: var(--mg-text-md);
 }
 
-.panelHeader p,
+.panelHeading p,
 .dangerHeader p {
   margin: 4px 0 0;
   overflow-wrap: anywhere;
@@ -469,11 +463,15 @@
 }
 
 .dangerHeader {
-  display: flex;
-  min-height: 48px;
-  align-items: center;
   padding: 6px 12px;
-  border-bottom: 1px solid oklch(0.9 0.05 25);
+  justify-content: flex-start;
+  gap: 9px;
+  border-bottom-color: oklch(0.9 0.05 25);
+}
+
+.dangerHeader > svg {
+  flex: 0 0 auto;
+  color: var(--mg-danger);
 }
 
 .dangerHeader > div {
@@ -568,11 +566,18 @@
   background: transparent;
   font-size: var(--mg-text-xs);
   font-weight: 650;
-  cursor: not-allowed;
+  cursor: pointer;
 }
 
 .dangerButton:disabled {
   opacity: 0.66;
+  cursor: not-allowed;
+}
+
+.dangerButton:hover:not(:disabled) {
+  border-color: var(--mg-danger);
+  color: var(--mg-danger);
+  background: var(--mg-danger-soft);
 }
 
 .dangerNote {
@@ -586,15 +591,31 @@
 }
 
 .receiptFacts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
   margin: 0;
 }
 
 .receiptFacts > div {
   display: grid;
+  min-height: 0;
+  align-content: center;
   grid-template-columns: minmax(105px, 0.42fr) minmax(0, 1fr);
   gap: 12px;
   padding: 3px 0;
+  border: 0;
   border-bottom: 1px solid var(--mg-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  grid-template-areas: none;
+}
+
+.receiptFacts > div:global(.mg-metric):hover {
+  box-shadow: none;
+  transform: none;
 }
 
 .receiptFacts > div:last-child {
@@ -644,77 +665,15 @@
   background: var(--mg-primary-soft);
 }
 
-.stateSurface {
-  display: grid;
-  min-height: 330px;
-  place-items: center;
-  align-content: center;
-  gap: 7px;
-  padding: 30px 24px;
-  color: var(--mg-muted);
-  text-align: center;
-}
-
-.stateSurface.compactState {
-  min-height: 172px;
-  padding: 23px 17px;
-}
-
 /* Empty archive states should keep the panel rhythm instead of filling the viewport. */
-.recordsPanel > .stateSurface.compactState {
+.recordsPanel > :global(.mg-state[data-density='compact']) {
   min-height: 190px;
 }
 
-.stateIcon {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border-radius: 50%;
-  color: var(--mg-muted);
-  background: var(--mg-bg);
-}
-
-.stateSurface strong {
-  max-width: 34ch;
-  overflow-wrap: anywhere;
-  color: var(--mg-ink);
-  font-size: var(--mg-text-sm);
-}
-
-.stateSurface p {
-  max-width: 48ch;
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: var(--mg-text-xs);
-  line-height: 1.55;
-}
-
-.stateSurface.compactState strong {
-  font-size: var(--mg-text-xs);
-}
-
-.stateSurface.compactState p {
-  max-width: 42ch;
-  font-size: var(--mg-text-2xs);
-}
-
-.loginLink,
 .retryButton {
   min-height: 34px;
   margin-top: 3px;
   padding: 0 10px;
-  border: 1px solid var(--mg-border-strong);
-  color: var(--mg-primary-dark);
-  background: var(--mg-surface);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.loginLink:hover,
-.retryButton:hover {
-  border-color: var(--mg-primary);
-  background: var(--mg-primary-soft);
 }
 
 @media (max-width: 1120px) {

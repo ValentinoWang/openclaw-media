@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import {
-  ArrowUpRight, BarChart3, CheckCircle2, CircleAlert, CreditCard,
+  ArrowUpRight, CheckCircle2, CircleAlert, CreditCard,
   LoaderCircle, ReceiptText, RefreshCw, TicketCheck, WalletCards,
 } from 'lucide-react'
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { callBusinessOperation } from '../../generatedBusinessPagesContract'
 import { describeBusinessError } from '../../ui/businessOperationError'
-import {
-  PageHeading, type LoadState,
-} from '../../ui/ordinaryPagePrimitives'
+import { ResourceStateView, SurfaceState } from '../../ui/SurfaceState'
+import type { LoadState } from '../../ui/loadState'
 import { newIdempotencyKey } from '../../idempotency'
 import { formatDateTime as sharedFormatDateTime, formatDateKey as sharedFormatDateKey } from '../../ui/datetime'
 import { Metric } from '../../ui/Metric'
@@ -140,21 +139,17 @@ function UsageBillingPage() {
   }
 
   const refreshData = () => setRefresh((value) => value + 1)
-  const pageAction = canRead ? <button className="primary-button" type="button" onClick={openRedemption}><TicketCheck size={16} />兑换卡密</button> : null
+  const pageAction = canRead ? <button className="mg-btn mg-btn-primary" data-component="mg-btn" type="button" onClick={openRedemption}><TicketCheck size={16} />兑换卡密</button> : null
 
-  return <main className={'fidelity-page ' + styles.page}>
-    {!canRead ? <>
-      <PageHeading title="用量与余额" description="查看当前账户的模型用量、余额和兑换入口。" />
-      <AccessBoundary />
-    </> : <>
-      <div data-page-prelude>
-        <PageHeading title="用量与余额" description="查看当前账户的模型用量、余额和兑换入口。" action={pageAction} />
-        <nav className={styles.tabs} role="tablist" aria-label="用量与余额分区">
-          <TabButton id="redemptions" active={tab === 'redemptions'} label="兑换入口" onSelect={() => setTab('redemptions')} />
-          <TabButton id="usage" active={tab === 'usage'} label="模型用量" onSelect={() => setTab('usage')} />
-        </nav>
-      </div>
-      <div className={styles.workspace} data-page-layout="persistent-rail">
+  return <main className={'fidelity-page ' + styles.page} data-page-ownership="personal" data-accent="business" data-page-state={canRead ? 'ready' : 'permission'}>
+    <div data-page-prelude>
+      <PageHeader action={pageAction} />
+      {canRead ? <nav className={'mg-tabs ' + styles.tabs} data-component="mg-tabs" role="tablist" aria-label="用量与余额分区">
+        <TabButton id="redemptions" active={tab === 'redemptions'} label="兑换入口" onSelect={() => setTab('redemptions')} />
+        <TabButton id="usage" active={tab === 'usage'} label="模型用量" onSelect={() => setTab('usage')} />
+      </nav> : null}
+    </div>
+    {!canRead ? <AccessBoundary /> : <div className={styles.workspace} data-page-layout="persistent-rail">
       <div className={styles.primaryColumn} data-page-primary data-primary-flow>
         <div className={styles.tabContent}>
           {tab === 'usage' ? <UsagePanel state={usage} daily={daily} onRefresh={refreshData} /> : null}
@@ -174,8 +169,19 @@ function UsageBillingPage() {
         <PurchasePanel state={balancePacks} />
         <ReceiptPanel receipt={receipt} events={usage.status === 'ready' ? usage.data.items : []} balanceStatus={balance.status} onOpen={openRedemption} />
       </aside>
-    </div></>}
+    </div>}
   </main>
+}
+
+function PageHeader({ action }: { action: ReactNode }) {
+  return <header className="page-heading mg-hero" data-component="mg-hero">
+    <div>
+      <span className="mg-eyebrow" data-component="mg-eyebrow">个人计费</span>
+      <h1>用量与余额</h1>
+      <p>查看当前账户的模型用量、余额和兑换入口。</p>
+    </div>
+    {action ? <div className="page-heading-actions">{action}</div> : null}
+  </header>
 }
 
 function usePermissionLoad<T>(allowed: boolean, loader: () => Promise<T>, refresh: number): LoadState<T> {
@@ -187,28 +193,28 @@ function usePermissionLoad<T>(allowed: boolean, loader: () => Promise<T>, refres
     }
     let active = true
     setState({ status: 'loading' })
-    loader().then((data) => { if (active) setState({ status: 'ready', data }) }).catch(() => { if (active) setState({ status: 'error', message: '这部分信息暂时无法读取，请稍后重试。' }) })
+    loader().then((data) => { if (active) setState({ status: 'ready', data }) }).catch(() => { if (active) setState({ status: 'error', error: '这部分信息暂时无法读取，请稍后重试。' }) })
     return () => { active = false }
   }, [allowed, loader, refresh])
   return state
 }
 
 function TabButton({ id, active, label, onSelect }: { id: TabId; active: boolean; label: string; onSelect: () => void }) {
-  return <button id={id + '-tab'} className={active ? styles.tab + ' ' + styles.activeTab : styles.tab} type="button" role="tab" aria-selected={active} aria-controls={id + '-panel'} onClick={onSelect}>{label}</button>
+  return <button id={id + '-tab'} className={'mg-tab ' + styles.tab} data-component="mg-tab" data-variant="pill" type="button" role="tab" aria-selected={active} aria-controls={id + '-panel'} onClick={onSelect}>{label}</button>
 }
 
 function UsagePanel({ state, daily, onRefresh }: { state: LoadState<UsagePageData>; daily: DailyPoint[]; onRefresh: () => void }) {
-  if (state.status !== 'ready') return <section className={styles.panel} id="usage-panel" role="tabpanel" aria-labelledby="usage-tab" data-page-terminal-surface="primary">
+  if (state.status !== 'ready') return <section className="mg-panel" data-component="mg-panel" id="usage-panel" role="tabpanel" aria-labelledby="usage-tab" data-page-terminal-surface="primary">
     <PanelHeading title="文本与图片用量" detail="服务端守恒汇总和不可变事件明细" />
-    <ResourceState state={state} label="用量与守恒汇总" />
+    <ResourceStateView state={state} subject="用量与守恒汇总" render={() => null} />
   </section>
   const { items, summary } = state.data
   const range = getRange(items)
   const summaryRange = formatDateTime(summary.summary.from) + ' - ' + formatDateTime(summary.summary.to)
   const rangeDetail = range ? '明细范围 ' + range : '服务端范围 ' + summaryRange
   return <div className={styles.stack} id="usage-panel" role="tabpanel" aria-labelledby="usage-tab">
-    <section className={styles.panel}>
-      <PanelHeading title="当前用量汇总" detail={rangeDetail} action={<button className={styles.quietButton} type="button" onClick={onRefresh}><RefreshCw size={14} />刷新数据</button>} />
+    <section className="mg-panel" data-component="mg-panel">
+      <PanelHeading title="当前用量汇总" detail={rangeDetail} action={<button className={'mg-btn mg-btn-ghost ' + styles.quietButton} data-component="mg-btn" type="button" onClick={onRefresh}><RefreshCw size={14} />刷新数据</button>} />
       <div className={styles.metrics}>
         <Metric className={styles.metric} label="文本用量" value={formatQuantity(summary.summary.textQuantity)} detail="服务端守恒汇总" />
         <Metric className={styles.metric} label="图片用量" value={formatQuantity(summary.summary.imageQuantity)} detail="服务端守恒汇总" />
@@ -216,13 +222,13 @@ function UsagePanel({ state, daily, onRefresh }: { state: LoadState<UsagePageDat
         <Metric className={styles.metric} label="用量事件" value={formatCount(items.length)} detail="服务端事件明细" />
       </div>
     </section>
-    <section className={styles.panel}>
+    <section className="mg-panel" data-component="mg-panel">
       <PanelHeading title="每日用量趋势" detail="由不可变事件的 createdAt 按本地日期归并，金额保留定点精度" />
-      {daily.length ? <DailyTrend points={daily} /> : <EmptyState icon={<BarChart3 size={20} />} title="暂无可绘制的每日趋势" detail="返回明细没有可识别的时间字段。" />}
+      {daily.length ? <DailyTrend points={daily} /> : <SurfaceState kind="empty" title="暂无可绘制的每日趋势" detail="返回明细没有可识别的时间字段。" />}
     </section>
-    <section className={styles.panel} data-page-terminal-surface="primary">
+    <section className="mg-panel" data-component="mg-panel" data-page-terminal-surface="primary">
       <PanelHeading title="不可变用量事件" detail="每行来自服务端 immutable usage event，包含文本、图片、补偿和额度事件" />
-      {items.length ? <UsageTable rows={items} /> : <EmptyState icon={<ReceiptText size={20} />} title="暂无用量事件" detail="当前账户没有可展示的服务端不可变事件。" />}
+      {items.length ? <UsageTable rows={items} /> : <SurfaceState kind="empty" title="暂无用量事件" detail="当前账户没有可展示的服务端不可变事件。" />}
     </section>
   </div>
 }
@@ -257,14 +263,14 @@ function UsageTable({ rows }: { rows: UsageEvent[] }) {
 
 function RedemptionPanel({ code, inputRef, action, receipt, balanceStatus, onCodeChange, onSubmit }: { code: string; inputRef: RefObject<HTMLInputElement | null>; action: ActionState; receipt: MutationReceipt | null; balanceStatus: LoadState<unknown>['status']; onCodeChange: (value: string) => void; onSubmit: () => void }) {
   return <div className={styles.stack} id="redemptions-panel" role="tabpanel" aria-labelledby="redemptions-tab">
-    <section className={styles.panel} data-page-terminal-surface="primary">
+    <section className="mg-panel" data-component="mg-panel" data-page-terminal-surface="primary">
       <PanelHeading title="兑换卡密" detail="兑换成功后会自动更新余额和用量" />
       <form className={styles.redemptionForm} onSubmit={(event) => { event.preventDefault(); onSubmit() }}>
         <label className={styles.field}><span>卡密</span><input ref={inputRef} type="password" value={code} onChange={(event) => onCodeChange(event.target.value)} autoComplete="one-time-code" autoCapitalize="none" spellCheck={false} placeholder="输入卡密" /></label>
-        <button className="primary-button" type="submit" disabled={!code.trim() || action.kind === 'busy'} aria-busy={action.kind === 'busy'}><TicketCheck size={16} />{action.kind === 'busy' ? '正在兑换' : '兑换卡密'}</button>
+        <button className="mg-btn mg-btn-primary" data-component="mg-btn" type="submit" disabled={!code.trim() || action.kind === 'busy'} aria-busy={action.kind === 'busy'}><TicketCheck size={16} />{action.kind === 'busy' ? '正在兑换' : '兑换卡密'}</button>
       </form>
       {action.kind !== 'idle' ? <div className={action.kind === 'error' ? styles.errorNotice : styles.successNotice} role="status"><StateIcon kind={action.kind} /><span>{action.message}</span></div> : null}
-      {receipt ? <ReceiptDetails receipt={receipt} balanceStatus={balanceStatus} /> : <EmptyState icon={<ReceiptText size={20} />} title="历史兑换记录暂未提供" detail="完成兑换后，本页会保留本次兑换结果。" />}
+      {receipt ? <ReceiptDetails receipt={receipt} balanceStatus={balanceStatus} /> : <SurfaceState kind="empty" title="历史兑换记录暂未提供" detail="完成兑换后，本页会保留本次兑换结果。" />}
     </section>
   </div>
 }
@@ -279,16 +285,16 @@ function ReceiptDetails({ receipt, balanceStatus }: { receipt: MutationReceipt; 
 }
 
 function BalancePanel({ state }: { state: LoadState<BillingBalanceResponse> }) {
-  return <section className={styles.railPanel}>
+  return <section className="mg-panel" data-component="mg-panel">
     <PanelHeading title="当前余额" detail="当前租户可用余额" icon={<WalletCards size={17} />} />
-    {state.status !== 'ready' ? <ResourceState state={state} label="账户余额" compact /> : <div className={styles.balance}><strong>{formatCredit(state.data.balance.available)} {currencyDisplayLabel(state.data.balance.currency)}</strong><dl className={styles.facts}><div><dt>可用余额</dt><dd>{formatCredit(state.data.balance.available)} {currencyDisplayLabel(state.data.balance.currency)}</dd></div><div><dt>余额最后变动</dt><dd>{formatDateTime(state.data.balance.asOf)}</dd></div></dl><p className={styles.balanceNote}>该时间表示余额最近一次发生变动，不是页面刷新时间。</p></div>}
+    {state.status !== 'ready' ? <ResourceStateView state={state} subject="账户余额" density="compact" render={() => null} /> : <div className={styles.balance}><strong>{formatCredit(state.data.balance.available)} {currencyDisplayLabel(state.data.balance.currency)}</strong><dl className={styles.facts}><div><dt>可用余额</dt><dd>{formatCredit(state.data.balance.available)} {currencyDisplayLabel(state.data.balance.currency)}</dd></div><div><dt>余额最后变动</dt><dd>{formatDateTime(state.data.balance.asOf)}</dd></div></dl><p className={styles.balanceNote}>该时间表示余额最近一次发生变动，不是页面刷新时间。</p></div>}
   </section>
 }
 
 function PurchasePanel({ state }: { state: LoadState<BalancePackListResponse> }) {
-  return <section className={styles.railPanel}>
+  return <section className="mg-panel" data-component="mg-panel">
     <PanelHeading title="可选额度包" detail={state.status === 'ready' ? '服务端可购买额度包' : '链动小铺购买入口'} icon={<CreditCard size={17} />} />
-    {state.status !== 'ready' ? <ResourceState state={state} label="额度包" compact /> : state.data.items.length ? <div className={styles.purchaseList} role="region" tabIndex={0} aria-label="服务端额度包">{state.data.items.map((balancePack) => <PurchaseListItem balancePack={balancePack} key={balancePack.balancePackCode} />)}</div> : <EmptyState icon={<CreditCard size={18} />} title="暂无可用额度包" detail="额度包目录没有返回可展示的服务端记录。" compact />}
+    {state.status !== 'ready' ? <ResourceStateView state={state} subject="额度包" density="compact" render={() => null} /> : state.data.items.length ? <div className={styles.purchaseList} role="region" tabIndex={0} aria-label="服务端额度包">{state.data.items.map((balancePack) => <PurchaseListItem balancePack={balancePack} key={balancePack.balancePackCode} />)}</div> : <SurfaceState kind="empty" title="暂无可用额度包" detail="额度包目录没有返回可展示的服务端记录。" density="compact" />}
   </section>
 }
 
@@ -312,9 +318,9 @@ function chainStorePurchaseUrl(balancePack: BalancePack): string | null {
 
 function ReceiptPanel({ receipt, events, balanceStatus, onOpen }: { receipt: MutationReceipt | null; events: UsageEvent[]; balanceStatus: LoadState<unknown>['status']; onOpen: () => void }) {
   const redemptionEvents = events.filter((event) => event.kind === 'credit' || event.kind === 'compensation').slice(-5).reverse()
-  return <section className={styles.railPanel} data-page-terminal-surface="inspector">
-    <PanelHeading title="最近兑换记录" detail={receipt ? '显示本次会话最新兑换结果' : redemptionEvents.length ? '显示已记录的额度变动' : '等待额度变动记录'} icon={<ReceiptText size={17} />} action={<button className={styles.textButton} type="button" onClick={onOpen}>打开兑换页 <ArrowUpRight size={13} /></button>} />
-    {receipt ? <ReceiptDetails receipt={receipt} balanceStatus={balanceStatus} /> : redemptionEvents.length ? <RedemptionHistory events={redemptionEvents} /> : <EmptyState icon={<ReceiptText size={18} />} title="暂无历史记录" detail="服务端用量明细没有返回额度兑换事件。" compact />}
+  return <section className="mg-panel" data-component="mg-panel" data-page-terminal-surface="inspector">
+    <PanelHeading title="最近兑换记录" detail={receipt ? '显示本次会话最新兑换结果' : redemptionEvents.length ? '显示已记录的额度变动' : '等待额度变动记录'} icon={<ReceiptText size={17} />} action={<button className={'mg-btn mg-btn-ghost ' + styles.textButton} data-component="mg-btn" type="button" onClick={onOpen}>打开兑换页 <ArrowUpRight size={13} /></button>} />
+    {receipt ? <ReceiptDetails receipt={receipt} balanceStatus={balanceStatus} /> : redemptionEvents.length ? <RedemptionHistory events={redemptionEvents} /> : <SurfaceState kind="empty" title="暂无历史记录" detail="服务端用量明细没有返回额度兑换事件。" density="compact" />}
   </section>
 }
 
@@ -323,34 +329,19 @@ function RedemptionHistory({ events }: { events: UsageEvent[] }) {
 }
 
 function PanelHeading({ title, detail, action, icon }: { title: string; detail?: string; action?: ReactNode; icon?: ReactNode }) {
-  return <header className={styles.heading}><div className={styles.headingTitle}>{icon}<div><h2>{title}</h2>{detail ? <p>{detail}</p> : null}</div></div>{action}</header>
-}
-
-const usageToneClasses: Record<ReturnType<typeof usageEventTone>, string> = {
-  success: styles.statusSuccess,
-  danger: styles.statusError,
-  neutral: styles.statusNeutral,
+  return <header className="mg-panel-head" data-component="mg-panel-head"><div className={styles.headingTitle}>{icon}<div><h2>{title}</h2>{detail ? <p>{detail}</p> : null}</div></div>{action}</header>
 }
 
 function StatusBadge({ value }: { value: string }) {
   const normalized = value.trim().toLowerCase()
-  const tone = usageToneClasses[usageEventTone(value)]
+  const tone = usageEventTone(value)
   const label = ['succeeded', 'success', 'completed'].includes(normalized) ? '已完成' : ['pending', 'processing', 'pending_reconciliation'].includes(normalized) ? '处理中' : ['failed', 'error', 'cancelled'].includes(normalized) ? '失败' : '状态待确认'
-  return <span className={styles.statusBadge + ' ' + tone}>{label}</span>
-}
-
-function ResourceState({ state, label, compact = false }: { state: LoadState<unknown>; label: string; compact?: boolean }) {
-  if (state.status === 'loading') return <div className={compact ? styles.state + ' ' + styles.compactState : styles.state} aria-busy="true"><LoaderCircle className="spin" size={18} /><span>正在读取{label}</span></div>
-  if (state.status === 'error') return <div className={compact ? styles.state + ' ' + styles.compactState + ' ' + styles.errorState : styles.state + ' ' + styles.errorState} role="alert"><CircleAlert size={18} /><span>{state.message}</span></div>
-  return null
-}
-
-function EmptyState({ icon, title, detail, compact = false }: { icon: ReactNode; title: string; detail: string; compact?: boolean }) {
-  return <div className={compact ? styles.empty + ' ' + styles.compactEmpty : styles.empty}>{icon}<div><strong>{title}</strong><p>{detail}</p></div></div>
+  const sharedTone = tone === 'success' ? 'success' : tone === 'danger' ? 'danger' : undefined
+  return <span className="mg-badge" data-component="mg-badge" data-tone={sharedTone}>{label}</span>
 }
 
 function AccessBoundary() {
-  return <section className={styles.access}><CircleAlert size={22} /><div><h2>无法加载账户计费页面</h2><p>当前页面只允许普通使用者查看所属租户的用量、余额、套餐和兑换回执。身份服务返回后才会读取任何账户数据。</p></div></section>
+  return <SurfaceState kind="permission" title="无法加载账户计费页面" detail="当前页面只允许普通使用者查看所属租户的用量、余额、套餐和兑换回执。身份服务返回后才会读取任何账户数据。" action={null} />
 }
 
 function StateIcon({ kind }: { kind: ActionState['kind'] }) {

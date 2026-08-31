@@ -1,16 +1,17 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import {
-  CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, Copy, Link2, LoaderCircle,
-  RefreshCcw, ShieldAlert, ShieldCheck, UserRound, UsersRound,
+  CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, Copy, Link2,
+  RefreshCcw, ShieldCheck, UserRound, UsersRound,
 } from 'lucide-react'
 import {
   callBusinessOperation,
 } from '../../generatedBusinessPagesContract'
 import { isForbiddenError } from '../../businessErrorPresentation'
 import { copyText } from '../../../lib/clipboard'
-import { EmptyState, PageHeading } from '../../ui/ordinaryPagePrimitives'
 import { inviteStatusDisplayLabel } from '../../ui/ordinaryDataLabels'
 import { ECHO_INVALID, formatDateOnly, formatDateTime as sharedFormatDateTime } from '../../ui/datetime'
+import { Metric } from '../../ui/Metric'
+import { SurfaceState } from '../../ui/SurfaceState'
 import styles from './InvitesPage.module.css'
 
 type AffiliateProfileResponse = {
@@ -151,12 +152,13 @@ function ResourceStateView({
 }) {
   if (state.status === 'loading') {
     return (
-      <div className={styles.panelState} data-resource-state="loading" aria-busy="true">
-        <LoaderCircle className={styles.stateIcon} size={20} aria-hidden="true" />
-        <div className={styles.stateCopy}>
-          <strong className={styles.stateTitle}>正在读取{subject}</strong>
-          <span>等待服务端返回当前租户数据。</span>
-        </div>
+      <div className={styles.panelState} data-component="mg-state" data-resource-state="loading" aria-busy="true">
+        <SurfaceState
+          kind="loading"
+          title={'正在读取' + subject}
+          detail="等待服务端返回当前租户数据。"
+          density="compact"
+        />
       </div>
     )
   }
@@ -168,20 +170,22 @@ function ResourceStateView({
   return (
     <div
       className={styles.panelState}
+      data-component="mg-state"
       data-resource-state={forbidden ? 'forbidden' : 'error'}
       role="alert"
     >
-      {forbidden ? <ShieldAlert className={styles.stateIcon} size={20} aria-hidden="true" /> : <CircleAlert className={styles.stateIcon} size={20} aria-hidden="true" />}
-      <div className={styles.stateCopy}>
-        <strong className={styles.stateTitle}>{forbidden ? '暂无查看权限' : '邀请数据读取失败'}</strong>
-        <span>{message}</span>
-      </div>
-      {!forbidden ? (
-        <button className={styles.retryButton} type="button" onClick={onRetry}>
-          <RefreshCcw size={15} aria-hidden="true" />
-          重新读取
-        </button>
-      ) : null}
+      <SurfaceState
+        kind={forbidden ? 'forbidden' : 'error'}
+        title={forbidden ? '暂无查看权限' : '邀请数据读取失败'}
+        detail={message}
+        density="compact"
+        action={!forbidden ? (
+          <button className={'mg-btn mg-btn-ghost ' + styles.retryButton} type="button" onClick={onRetry}>
+            <RefreshCcw size={15} aria-hidden="true" />
+            重新读取
+          </button>
+        ) : undefined}
+      />
     </div>
   )
 }
@@ -199,27 +203,20 @@ function FactCard({
   detail: string
   tone?: 'neutral' | 'success' | 'warning'
 }) {
-  const toneClass = {
-    neutral: styles.factIcon,
-    success: styles.factIconSuccess,
-    warning: styles.factIconWarning,
-  }[tone]
-
-  return (
-    <article className={styles.factCard}>
-      <span className={toneClass}>{icon}</span>
-      <div className={styles.factCopy}>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        <small>{detail}</small>
-      </div>
-    </article>
-  )
+  return <Metric
+    variant="card"
+    className={'mg-metric ' + styles.factCard}
+    icon={icon}
+    label={label}
+    value={value}
+    detail={detail}
+    tone={tone}
+  />
 }
 
 function SummaryFacts({ profile }: { profile: AffiliateProfileResponse['profile'] }) {
   return (
-    <section className={styles.summaryGrid} aria-label="邀请摘要">
+    <section className={'mg-metric-grid ' + styles.summaryGrid} data-component="mg-metric-grid" aria-label="邀请摘要">
       <FactCard
         icon={<Link2 size={21} aria-hidden="true" />}
         label="邀请权限"
@@ -274,7 +271,11 @@ function InviteeTable({ items }: { items: Invitee[] }) {
                     </span>
                   </div>
                 </th>
-                <td><span className={styles.statusPill}>{inviteStatusDisplayLabel(item.status)}</span></td>
+                <td>
+                  <span className={'mg-badge ' + styles.statusPill} data-component="mg-badge" data-tone={inviteStatusTone(item.status)}>
+                    {inviteStatusDisplayLabel(item.status)}
+                  </span>
+                </td>
                 <td>{formatDateTime(item.joinedAt)}</td>
                 <td><code className={styles.publicId} title={item.publicUserId}>{item.publicUserId}</code></td>
               </tr>
@@ -305,11 +306,11 @@ function InvitePagination({
     <nav className={styles.pagination} aria-label="邀请记录分页">
       <span>当前页 {rowCount} 条</span>
       <div className={styles.paginationControls}>
-        <button type="button" aria-label="上一页" disabled={!hasPrevious} onClick={onPrevious}>
+        <button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" aria-label="上一页" disabled={!hasPrevious} onClick={onPrevious}>
           <ChevronLeft size={17} aria-hidden="true" />
         </button>
         <strong>第 {page} 页</strong>
-        <button type="button" aria-label="下一页" disabled={!hasNext} onClick={onNext}>
+        <button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" aria-label="下一页" disabled={!hasNext} onClick={onNext}>
           <ChevronRight size={17} aria-hidden="true" />
         </button>
       </div>
@@ -361,12 +362,15 @@ function InvitesPage() {
   }
 
   return (
-    <main className={'fidelity-page ' + styles.page} data-page-state={rootState}>
+    <main className={'fidelity-page ' + styles.page} data-page-ownership="personal" data-accent="campaign" data-page-state={rootState}>
       <div data-page-prelude>
-        <PageHeading
-          title="邀请中心"
-          description="查看当前账户的邀请码、额度、到期和被邀请用户。"
-        />
+        <header className={'page-heading mg-hero ' + styles.pageHeading} data-component="mg-hero">
+          <div>
+            <span className="mg-eyebrow" data-component="mg-eyebrow">成员访问</span>
+            <h1>邀请中心</h1>
+            <p>查看当前账户的邀请码、额度、到期和被邀请用户。</p>
+          </div>
+        </header>
         {rootState === 'partial' ? (
           <div className={styles.partialNotice} role="alert" data-page-partial>
             <CircleAlert size={15} aria-hidden="true" />
@@ -375,13 +379,13 @@ function InvitesPage() {
               <ul>{unavailableResources.map((resource) => <li key={resource.label}>{resource.state.status === 'forbidden' ? '当前账户没有权限查看' + resource.label + '。' : resource.label + '暂时无法读取。请点击“重新读取”重试。'}</li>)}</ul>
               <span>已成功返回的邀请数据仍保留在当前页面。</span>
             </div>
-            <button className={styles.retryButton} type="button" onClick={retry}>重新读取</button>
+            <button className={'mg-btn mg-btn-ghost ' + styles.retryButton} data-component="mg-btn" type="button" onClick={retry}>重新读取</button>
           </div>
         ) : null}
         {summary.status === 'ready' ? (
           <SummaryFacts profile={summary.data.profile} />
         ) : (
-          <section className={styles.summaryState} aria-label="邀请摘要">
+          <section className={'mg-panel ' + styles.summaryState} data-component="mg-panel" aria-label="邀请摘要">
             <ResourceStateView state={summary} subject="邀请档案" onRetry={retry} />
           </section>
         )}
@@ -389,8 +393,8 @@ function InvitesPage() {
 
       <div className={styles.bodyGrid} data-page-layout="persistent-rail">
         <div className={styles.mainColumn} data-page-primary data-primary-flow role="region" aria-label="邀请记录列表" tabIndex={0}>
-          <section className={styles.recordsPanel} aria-labelledby="invite-records-title" data-page-terminal-surface="primary">
-            <header className={styles.panelHeader}>
+          <section className={'mg-panel ' + styles.recordsPanel} data-component="mg-panel" aria-labelledby="invite-records-title" data-page-terminal-surface="primary">
+            <header className={'mg-panel-head ' + styles.panelHeader} data-component="mg-panel-head">
               <div>
                 <h2 id="invite-records-title">邀请记录</h2>
                 <p>当前用户的直接邀请关系。</p>
@@ -412,16 +416,16 @@ function InvitesPage() {
                 />
               </>
             ) : (
-              <div className={styles.emptyState} data-resource-state="empty">
-                <EmptyState title="当前还没有被邀请用户" />
+              <div className={styles.emptyState} data-component="mg-state" data-resource-state="empty">
+                <SurfaceState kind="empty" title="当前还没有被邀请用户" detail="服务端尚未返回可展示的邀请记录。" density="compact" />
               </div>
             )}
           </section>
         </div>
 
         <aside className={styles.rail} aria-label="邀请详情" data-page-inspector>
-          <section className={styles.inspectorPanel} aria-labelledby="current-invite-title">
-            <header className={styles.panelHeader}>
+          <section className={'mg-panel ' + styles.inspectorPanel} data-component="mg-panel" aria-labelledby="current-invite-title">
+            <header className={'mg-panel-head ' + styles.panelHeader} data-component="mg-panel-head">
               <div>
                 <h2 id="current-invite-title">当前邀请码</h2>
                 <p>邀请码与邀请档案由服务端返回。</p>
@@ -435,7 +439,8 @@ function InvitesPage() {
                 <div className={styles.linkValue}>
                   <code>{summary.data.profile.affiliateCode}</code>
                   <button
-                    className={styles.iconAction}
+                    className={'mg-btn mg-btn-ghost ' + styles.iconAction}
+                    data-component="mg-btn"
                     type="button"
                     aria-label="复制邀请码"
                     title="复制邀请码"
@@ -468,7 +473,7 @@ function InvitesPage() {
             )}
           </section>
 
-          <section className={styles.rulesPanel} aria-labelledby="invite-notes-title" data-page-terminal-surface="inspector">
+          <section className={'mg-panel ' + styles.rulesPanel} data-component="mg-panel" aria-labelledby="invite-notes-title" data-page-terminal-surface="inspector">
             <h2 id="invite-notes-title">说明</h2>
             <ul>
               <li>邀请凭证可分享至社交平台、邮件或私信。</li>
@@ -480,6 +485,13 @@ function InvitesPage() {
       </div>
     </main>
   )
+}
+
+function inviteStatusTone(status: string): 'good' | 'warn' | 'info' | undefined {
+  if (status === 'accepted') return 'good'
+  if (status === 'pending') return 'warn'
+  if (status === 'expired' || status === 'revoked') return 'info'
+  return undefined
 }
 
 export default InvitesPage

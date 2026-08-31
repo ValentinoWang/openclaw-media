@@ -27,8 +27,8 @@ export function Metric({ label, value, detail, icon, iconClassName, tone, classN
   if (variant === 'card') {
     return (
       <article className={className} data-tone={tone}>
-        {icon !== undefined ? <span>{icon}</span> : null}
-        <div>
+        {icon !== undefined ? <span className="mg-metric-icon">{icon}</span> : null}
+        <div className="mg-metric-body">
           <small>{label}</small>
           <strong>{displayValue}</strong>
           {detail !== undefined ? <p>{detail}</p> : null}

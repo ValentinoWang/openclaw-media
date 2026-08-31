@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertCircle,
-  Database,
   FileText,
   ImageOff,
   Lightbulb,
   LoaderCircle,
-  LogIn,
   Plus,
   RotateCcw,
-  SearchX,
   Trash2,
   X,
 } from "lucide-react";
@@ -36,6 +33,7 @@ import {
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { platformDisplayLabel } from "../../ui/platformRegistry";
 import { SearchBox } from "../../ui/SearchBox";
+import { SurfaceState } from "../../ui/SurfaceState";
 import type { StructuredPrefill } from "../../task-launch/taskDraft";
 import styles from "./AssetsPage.module.css";
 
@@ -143,6 +141,7 @@ function AssetsPage() {
   const {
     openWorkspace,
     runtimeState,
+    session,
     prepareDeletionIntent,
     executeDeletionIntent,
     cancelDeletionIntent,
@@ -160,13 +159,23 @@ function AssetsPage() {
   const [detailRetryToken, setDetailRetryToken] = useState(0);
   const [deletionDialog, setDeletionDialog] = useState<DeletionDialogState | null>(null);
   const deletionAttempt = useRef(0);
+  const sessionIdentity = [
+    runtimeState,
+    session?.publicUserId ?? "",
+    session?.tenantId ?? "",
+    session?.workspaceMode ?? "",
+    session?.bodyAuthority ?? "",
+  ].join(":");
+  const sessionIdentityRef = useRef(sessionIdentity);
+  sessionIdentityRef.current = sessionIdentity;
   const { cursor } = cursorTrail;
-  const authenticated = runtimeState === "authenticated";
+  const authenticated = runtimeState === "authenticated" && session !== null;
   const listState = useAssetProjection(
     cursor,
     search,
     authenticated,
     retryToken,
+    sessionIdentity,
   );
   const pageItems = useMemo(
     () => (listState.status === "ready" ? listState.data.items : []),
@@ -201,12 +210,20 @@ function AssetsPage() {
     focusedId,
     authenticated,
     detailRetryToken,
+    sessionIdentity,
   );
 
   useEffect(() => {
     setSelectedIds([]);
     setFocusedId(undefined);
   }, [cursor, retryToken, search]);
+
+  useEffect(() => {
+    ++deletionAttempt.current;
+    setSelectedIds([]);
+    setFocusedId(undefined);
+    setDeletionDialog(null);
+  }, [sessionIdentity]);
 
   useEffect(() => {
     if (
@@ -233,6 +250,7 @@ function AssetsPage() {
   async function requestDeletion(ids: string[]) {
     const uniqueIds = [...new Set(ids)].filter(Boolean);
     if (!uniqueIds.length || !authenticated) return;
+    const requestIdentity = sessionIdentityRef.current;
     const targetLabels = uniqueIds.map((id) => {
       const asset = pageItems.find((item) => item.publicAssetId === id);
       return asset ? `${asset.title}（${id}）` : id;
@@ -248,9 +266,12 @@ function AssetsPage() {
     try {
       const intent = await prepareDeletionIntent(uniqueIds);
       if (attempt !== deletionAttempt.current) {
-        await cancelDeletionIntent(intent.taskId);
+        if (requestIdentity === sessionIdentityRef.current) {
+          await cancelDeletionIntent(intent.taskId);
+        }
         return;
       }
+      if (requestIdentity !== sessionIdentityRef.current) return;
       setDeletionDialog({
         phase: "ready",
         targetIds: uniqueIds,
@@ -259,7 +280,10 @@ function AssetsPage() {
         message: "",
       });
     } catch {
-      if (attempt !== deletionAttempt.current) return;
+      if (
+        attempt !== deletionAttempt.current ||
+        requestIdentity !== sessionIdentityRef.current
+      ) return;
       setDeletionDialog({
         phase: "error",
         targetIds: uniqueIds,
@@ -273,6 +297,7 @@ function AssetsPage() {
   async function closeDeletionDialog() {
     const current = deletionDialog;
     if (!current || current.phase === "deleting" || current.phase === "cancelling") return;
+    const requestIdentity = sessionIdentityRef.current;
     ++deletionAttempt.current;
     if (!current.intent) {
       setDeletionDialog(null);
@@ -281,8 +306,10 @@ function AssetsPage() {
     setDeletionDialog({ ...current, phase: "cancelling", message: "" });
     try {
       await cancelDeletionIntent(current.intent.taskId);
+      if (requestIdentity !== sessionIdentityRef.current) return;
       setDeletionDialog(null);
     } catch {
+      if (requestIdentity !== sessionIdentityRef.current) return;
       setDeletionDialog({
         ...current,
         phase: "error",
@@ -294,11 +321,13 @@ function AssetsPage() {
   async function retryDeletion() {
     const current = deletionDialog;
     if (!current) return;
+    const requestIdentity = sessionIdentityRef.current;
     if (current.intent) {
       setDeletionDialog({ ...current, phase: "cancelling", message: "" });
       try {
         await cancelDeletionIntent(current.intent.taskId);
       } catch {
+        if (requestIdentity !== sessionIdentityRef.current) return;
         setDeletionDialog({
           ...current,
           phase: "error",
@@ -307,12 +336,14 @@ function AssetsPage() {
         return;
       }
     }
+    if (requestIdentity !== sessionIdentityRef.current) return;
     await requestDeletion(current.targetIds);
   }
 
   async function confirmDeletion() {
     const current = deletionDialog;
     if (!current?.intent || current.phase !== "ready") return;
+    const requestIdentity = sessionIdentityRef.current;
     const expiresAt = Date.parse(current.intent.expiresAt);
     if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
       await retryDeletion();
@@ -321,12 +352,14 @@ function AssetsPage() {
     setDeletionDialog({ ...current, phase: "deleting", message: "" });
     try {
       await executeDeletionIntent(current.intent.taskId);
+      if (requestIdentity !== sessionIdentityRef.current) return;
       ++deletionAttempt.current;
       setDeletionDialog(null);
       setSelectedIds([]);
       setFocusedId(undefined);
       setRetryToken((value) => value + 1);
     } catch {
+      if (requestIdentity !== sessionIdentityRef.current) return;
       setDeletionDialog({
         ...current,
         phase: "error",
@@ -350,15 +383,23 @@ function AssetsPage() {
   }
 
   return (
-    <main className={["fidelity-page", styles.page].join(" ")}>
+    <main
+      className={["fidelity-page", styles.page].join(" ")}
+      data-accent="studio"
+      data-page-ownership="personal"
+    >
       <div data-page-prelude>
-        <div className={styles.headingRow}>
-          <PageHeading
-            title="素材与灵感"
-            description="从灵感、来源和拆解证据进入选题与创作。"
-          />
+        <div className={`mg-hero ${styles.headingRow}`} data-component="mg-hero">
+          <div className={styles.headingCopy}>
+            <span className="mg-eyebrow" data-component="mg-eyebrow">内容运营</span>
+            <PageHeading
+              title="素材与灵感"
+              description="从灵感、来源和拆解证据进入选题与创作。"
+            />
+          </div>
           <div className="page-heading-actions"><button
-            className={styles.primaryAction}
+            className={`mg-btn mg-btn-primary ${styles.primaryAction}`}
+            data-component="mg-btn"
             type="button"
             disabled={!authenticated}
             onClick={() => openCapability({
@@ -373,18 +414,18 @@ function AssetsPage() {
         </div>
 
         <nav
-          className={styles.tabList}
+          className={`mg-tabs ${styles.tabList}`}
+          data-component="mg-tabs"
           aria-label="素材工作区视图"
+          role="tablist"
           tabIndex={0}
         >
           {tabs.map((tab) => (
             <button
               key={tab.id}
               id={tab.id + "-tab"}
-              className={[
-                styles.tabButton,
-                activeTab === tab.id ? styles.tabButtonActive : "",
-              ].join(" ")}
+              className={`mg-tab ${styles.tabButton}`}
+              data-component="mg-tab"
               type="button"
               role="tab"
               aria-selected={activeTab === tab.id}
@@ -523,111 +564,112 @@ function AssetWorkspace({
 
   return (
     <section
-      className={styles.mainPanel}
+      className={`mg-panel ${styles.mainPanel}`}
+      data-component="mg-panel"
       id="assets-tabpanel"
       role="tabpanel"
       aria-labelledby="assets-tab"
-        aria-label="灵感与素材主列表"
-        data-page-terminal-surface="primary"
+      aria-label="灵感与素材主列表"
+      data-page-terminal-surface="primary"
       data-assets-tab-panel="assets"
-      >
-        <FilterBar
-          search={search}
-          platformFilter={platformFilter}
-          trackFilter={trackFilter}
-          qualityFilter={qualityFilter}
-          dateFilter={dateFilter}
-          platformOptions={platformOptions}
-          trackOptions={trackOptions}
-          qualityOptions={qualityOptions}
-          onSearch={onSearch}
-          onPlatformFilter={onPlatformFilter}
-          onTrackFilter={onTrackFilter}
-          onQualityFilter={onQualityFilter}
-          onDateFilter={onDateFilter}
-          onReset={onReset}
-        />
-        <div className={styles.filterNote}>
-          <AlertCircle size={14} aria-hidden="true" />
-          <span>
-            搜索会在素材库中进行；平台、赛道、质量和时间筛选作用于当前已读取页。
-          </span>
-        </div>
+    >
+      <FilterBar
+        search={search}
+        platformFilter={platformFilter}
+        trackFilter={trackFilter}
+        qualityFilter={qualityFilter}
+        dateFilter={dateFilter}
+        platformOptions={platformOptions}
+        trackOptions={trackOptions}
+        qualityOptions={qualityOptions}
+        onSearch={onSearch}
+        onPlatformFilter={onPlatformFilter}
+        onTrackFilter={onTrackFilter}
+        onQualityFilter={onQualityFilter}
+        onDateFilter={onDateFilter}
+        onReset={onReset}
+      />
+      <div className={styles.filterNote}>
+        <AlertCircle size={14} aria-hidden="true" />
+        <span>
+          搜索会在素材库中进行；平台、赛道、质量和时间筛选作用于当前已读取页。
+        </span>
+      </div>
 
-        {state.status === "waiting" ? (
-          <ProjectionSurface
-            kind="loading"
-            title="正在确认访问权限"
-            detail="页面数据将在身份确认后读取。"
-          />
-        ) : state.status === "loading" ? (
-          <ProjectionSurface
-            kind="loading"
-            title="正在读取素材"
-            detail="只读取当前账户租户可见的素材摘要。"
-          />
-        ) : state.status === "permission" ? (
-          <ProjectionSurface
-            kind="permission"
-            title="需要登录才能查看"
-            detail="素材页面只展示当前账户有权查看的素材。"
-          />
-        ) : state.status === "error" ? (
-          <ProjectionSurface
-            kind="error"
-            title="暂时无法读取素材"
-            detail={state.message}
-            onRetry={onRetry}
-          />
-        ) : (
-          <>
-            {pageItems.length === 0 ? (
-              <ProjectionSurface
-                kind="empty"
-                title={search ? "没有匹配的素材" : "当前账户没有可查看的素材"}
-                detail={
-                  search
-                    ? "没有找到匹配的素材；调整搜索词后重新读取。"
-                    : "暂时没有素材记录；页面不会用样例封面或相邻业务数据填充。"
-                }
-              />
-            ) : items.length === 0 ? (
-              <ProjectionSurface
-                kind="filtered"
-                title="没有符合当前筛选的素材"
-                detail="调整筛选条件后，页面会继续显示当前已读取的素材。"
-              />
-            ) : (
-              <div
-                className={styles.assetGrid}
-                role="list"
-                aria-label="素材网格"
-                tabIndex={0}
-              >
-                {items.map((asset) => (
-                  <AssetCard
-                    key={asset.publicAssetId}
-                    asset={asset}
-                    focused={focusedId === asset.publicAssetId}
-                    selected={selectedIds.includes(asset.publicAssetId)}
-                    onFocus={onFocus}
-                    onToggle={onToggle}
-                  />
-                ))}
-              </div>
-            )}
-            <CursorPagination
-              page={page}
-              canPrevious={canPrevious}
-              canNext={!!state.data.nextCursor}
-              onPrevious={onPrevious}
-              onNext={() => {
-                if (state.data.nextCursor) onNext(state.data.nextCursor);
-              }}
+      {state.status === "waiting" ? (
+        <ProjectionSurface
+          kind="loading"
+          title="正在确认访问权限"
+          detail="页面数据将在身份确认后读取。"
+        />
+      ) : state.status === "loading" ? (
+        <ProjectionSurface
+          kind="loading"
+          title="正在读取素材"
+          detail="只读取当前账户租户可见的素材摘要。"
+        />
+      ) : state.status === "permission" ? (
+        <ProjectionSurface
+          kind="permission"
+          title="需要登录才能查看"
+          detail="素材页面只展示当前账户有权查看的素材。"
+        />
+      ) : state.status === "error" ? (
+        <ProjectionSurface
+          kind="error"
+          title="暂时无法读取素材"
+          detail={state.message}
+          onRetry={onRetry}
+        />
+      ) : (
+        <>
+          {pageItems.length === 0 ? (
+            <ProjectionSurface
+              kind="empty"
+              title={search ? "没有匹配的素材" : "当前账户没有可查看的素材"}
+              detail={
+                search
+                  ? "没有找到匹配的素材；调整搜索词后重新读取。"
+                  : "暂时没有素材记录；页面不会用样例封面或相邻业务数据填充。"
+              }
             />
-          </>
-        )}
-      </section>
+          ) : items.length === 0 ? (
+            <ProjectionSurface
+              kind="empty"
+              title="没有符合当前筛选的素材"
+              detail="调整筛选条件后，页面会继续显示当前已读取的素材。"
+            />
+          ) : (
+            <div
+              className={styles.assetGrid}
+              role="list"
+              aria-label="素材网格"
+              tabIndex={0}
+            >
+              {items.map((asset) => (
+                <AssetCard
+                  key={asset.publicAssetId}
+                  asset={asset}
+                  focused={focusedId === asset.publicAssetId}
+                  selected={selectedIds.includes(asset.publicAssetId)}
+                  onFocus={onFocus}
+                  onToggle={onToggle}
+                />
+              ))}
+            </div>
+          )}
+          <CursorPagination
+            page={page}
+            canPrevious={canPrevious}
+            canNext={!!state.data.nextCursor}
+            onPrevious={onPrevious}
+            onNext={() => {
+              if (state.data.nextCursor) onNext(state.data.nextCursor);
+            }}
+          />
+        </>
+      )}
+    </section>
   );
 }
 
@@ -656,7 +698,8 @@ function SelectionSummary({
 
   return (
     <section
-      className={styles.selectionBar}
+      className={`mg-panel ${styles.selectionBar}`}
+      data-component="mg-panel"
       aria-label="素材选择状态"
       data-page-selection-summary
     >
@@ -678,7 +721,8 @@ function SelectionSummary({
       </div>
       <div className={styles.selectionActions}>
         <button
-          className={styles.quietAction}
+          className={`mg-btn mg-btn-ghost ${styles.quietAction}`}
+          data-component="mg-btn"
           type="button"
           disabled={!selectedIds.length}
           onClick={onClearSelection}
@@ -687,7 +731,8 @@ function SelectionSummary({
           清除选择
         </button>
         <button
-          className={styles.dangerAction}
+          className={`mg-btn mg-btn-ghost ${styles.dangerAction}`}
+          data-component="mg-btn"
           type="button"
           disabled={!selectedIds.length}
           onClick={() => onRequestDeletion(selectedIds)}
@@ -767,13 +812,14 @@ function DeletionDialog({
         </div>
         <footer className={styles.dialogActions}>
           {state.phase === "error" ? (
-            <button className={styles.dialogSecondary} type="button" onClick={onRetry}>
+            <button className={`mg-btn mg-btn-ghost ${styles.dialogSecondary}`} data-component="mg-btn" type="button" onClick={onRetry}>
               <RotateCcw size={15} aria-hidden="true" />
               重新检查
             </button>
           ) : null}
           <button
-            className={styles.dialogSecondary}
+            className={`mg-btn mg-btn-ghost ${styles.dialogSecondary}`}
+            data-component="mg-btn"
             type="button"
             disabled={busy}
             autoFocus={state.phase === "ready"}
@@ -782,7 +828,8 @@ function DeletionDialog({
             取消
           </button>
           <button
-            className={styles.dialogDanger}
+            className={`mg-btn mg-btn-ghost ${styles.dialogDanger}`}
+            data-component="mg-btn"
             type="button"
             disabled={state.phase !== "ready"}
             onClick={onConfirm}
@@ -910,7 +957,8 @@ function AssetTabPanel({
 
   return (
     <section
-      className={styles.tabPanel}
+      className={`mg-panel ${styles.tabPanel}`}
+      data-component="mg-panel"
       id={tab + "-tabpanel"}
       role="tabpanel"
       aria-labelledby={tab + "-tab"}
@@ -918,7 +966,7 @@ function AssetTabPanel({
       data-page-terminal-surface="primary"
       data-assets-tab-panel={tab}
     >
-      <header className={styles.tabPanelHeader}>
+      <header className={`mg-panel-head ${styles.tabPanelHeader}`} data-component="mg-panel-head">
         <div>
           <h2>{meta.label}</h2>
           <p>{caption}</p>
@@ -931,13 +979,11 @@ function AssetTabPanel({
 
 function TabSelectionSurface({ label }: { label: string }) {
   return (
-    <div className={styles.tabPanelEmpty} role="status">
-      <span className={styles.surfaceIcon}>
-        <Database size={22} aria-hidden="true" />
-      </span>
-      <strong>选择素材后查看{label}</strong>
-      <p>当前视图只展示素材详情中的关联记录。</p>
-    </div>
+    <SurfaceState
+      kind="empty"
+      title={`选择素材后查看${label}`}
+      detail="当前视图只展示素材详情中的关联记录。"
+    />
   );
 }
 
@@ -1026,7 +1072,8 @@ function FilterBar({
         </select>
       </label>
       <button
-        className={styles.resetButton}
+        className={`mg-btn mg-btn-ghost ${styles.resetButton}`}
+        data-component="mg-btn"
         type="button"
         disabled={
           !search &&
@@ -1208,17 +1255,19 @@ function AssetInspector({
   return (
     <div className={styles.inspectorColumn} data-page-inspector>
       <aside
-        className={styles.inspector}
+        className={`mg-panel ${styles.inspector}`}
+        data-component="mg-panel"
         aria-label="素材详情"
         data-page-terminal-surface="inspector"
       >
-        <header className={styles.inspectorHeader}>
+        <header className={`mg-panel-head ${styles.inspectorHeader}`} data-component="mg-panel-head">
           <div>
             <h2>素材详情</h2>
             <span>{asset ? "当前选择" : "未选择素材"}</span>
           </div>
           <button
-            className={styles.closeButton}
+            className={`mg-btn mg-btn-ghost ${styles.closeButton}`}
+            data-component="mg-btn"
             type="button"
             onClick={onClose}
             aria-label="关闭素材详情"
@@ -1227,11 +1276,11 @@ function AssetInspector({
           </button>
         </header>
         {!asset ? (
-          <div className={styles.inspectorEmpty}>
-            <Database size={22} aria-hidden="true" />
-            <strong>选择一个素材</strong>
-            <p>选择后读取详情、预览、证据和关联记录。</p>
-          </div>
+          <SurfaceState
+            kind="empty"
+            title="选择一个素材"
+            detail="选择后读取详情、预览、证据和关联记录。"
+          />
         ) : state.status === "waiting" || state.status === "loading" ? (
           <InspectorSurface
             kind="loading"
@@ -1369,7 +1418,7 @@ function AssetDetailBody({
       </InspectorSection>
       <section className={styles.actionSection} aria-label="素材动作">
         <div className={styles.actionGrid}>
-          <button type="button" onClick={() => onOpenCapability({
+          <button className="mg-btn mg-btn-soft" data-component="mg-btn" type="button" onClick={() => onOpenCapability({
             capabilityId: "creation_decision_brief",
             variantId: "default",
             params: {
@@ -1379,7 +1428,7 @@ function AssetDetailBody({
             <Lightbulb size={14} aria-hidden="true" />
             生成选题
           </button>
-          <button type="button" onClick={() => onOpenCapability({
+          <button className="mg-btn mg-btn-soft" data-component="mg-btn" type="button" onClick={() => onOpenCapability({
             capabilityId: "viral_deconstruction",
             variantId: "default",
             params: { field_c29fd750ad50: sourceUrl },
@@ -1390,7 +1439,7 @@ function AssetDetailBody({
             <FileText size={14} aria-hidden="true" />
             内容拆解
           </button>
-          <button type="button" onClick={() => onOpenCapability({
+          <button className="mg-btn mg-btn-soft" data-component="mg-btn" type="button" onClick={() => onOpenCapability({
             capabilityId: "selfmedia_creation",
             variantId: "default",
             params: { source_asset_id: summary.publicAssetId },
@@ -1408,7 +1457,7 @@ function AssetDetailBody({
         <p>
           删除前会检查当前影响；确认后永久删除素材及其相关页面记录，本地媒体文件不会被页面隐式删除。
         </p>
-        <button type="button" onClick={() => onRequestDeletion([summary.publicAssetId])}>
+        <button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" onClick={() => onRequestDeletion([summary.publicAssetId])}>
           <Trash2 size={15} aria-hidden="true" />
           删除素材
         </button>
@@ -1491,40 +1540,21 @@ function ProjectionSurface({
   detail,
   onRetry,
 }: {
-  kind: "loading" | "permission" | "error" | "empty" | "filtered" | "notFound";
+  kind: "loading" | "permission" | "error" | "empty" | "notFound";
   title: string;
   detail: string;
   onRetry?: () => void;
 }) {
-  const icon =
-    kind === "loading" ? (
-      <LoaderCircle className="spin" size={22} aria-hidden="true" />
-    ) : kind === "permission" ? (
-      <LogIn size={22} aria-hidden="true" />
-    ) : kind === "filtered" || kind === "notFound" ? (
-      <SearchX size={22} aria-hidden="true" />
-    ) : kind === "empty" ? (
-      <Database size={22} aria-hidden="true" />
-    ) : (
-      <AlertCircle size={22} aria-hidden="true" />
-    );
-  return (
-    <section
-      className={styles.projectionSurface}
-      role="status"
-      aria-busy={kind === "loading"}
-    >
-      <span className={styles.surfaceIcon}>{icon}</span>
-      <strong>{title}</strong>
-      <p>{detail}</p>
-      {kind === "error" && onRetry ? (
-        <button className={styles.surfaceRetry} type="button" onClick={onRetry}>
+  const action =
+    kind === "permission"
+      ? null
+      : kind === "error" && onRetry ? (
+        <button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" onClick={onRetry}>
           <RotateCcw size={14} aria-hidden="true" />
           重新读取
         </button>
-      ) : null}
-    </section>
-  );
+      ) : undefined;
+  return <SurfaceState kind={kind} title={title} detail={detail} action={action} />;
 }
 
 function InspectorSurface({
@@ -1551,6 +1581,7 @@ function useAssetProjection(
   search: string,
   enabled: boolean,
   retryToken: number,
+  sessionIdentity: string,
 ): AssetListState {
   const [state, setState] = useState<AssetListState>({
     status: "waiting",
@@ -1589,7 +1620,7 @@ function useAssetProjection(
       active = false;
       controller.abort();
     };
-  }, [cursor, enabled, retryToken, search]);
+  }, [cursor, enabled, retryToken, search, sessionIdentity]);
   return state;
 }
 
@@ -1597,6 +1628,7 @@ function useAssetDetail(
   publicAssetId: string | undefined,
   enabled: boolean,
   retryToken: number,
+  sessionIdentity: string,
 ): LoadState<AssetResponse> {
   const [state, setState] = useState<LoadState<AssetResponse>>({
     status: "waiting",
@@ -1637,7 +1669,7 @@ function useAssetDetail(
       active = false;
       controller.abort();
     };
-  }, [enabled, publicAssetId, retryToken]);
+  }, [enabled, publicAssetId, retryToken, sessionIdentity]);
   return state;
 }
 

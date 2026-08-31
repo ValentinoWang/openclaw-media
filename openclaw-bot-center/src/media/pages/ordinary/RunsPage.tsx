@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
-  AlertCircle,
   ArrowRight,
   BriefcaseBusiness,
   CircleDot,
@@ -9,7 +8,7 @@ import {
   FileOutput,
   Layers3,
   ListFilter,
-  LoaderCircle,
+  LogIn,
   Plus,
   RefreshCw,
   Search,
@@ -18,24 +17,26 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TaskSettlementDetails, useMediaWeb } from "../../MediaWebWorkspace";
-import type { MediaWebTask } from "../../mediaWebApi";
+import { loginUrl, type MediaWebTask } from "../../mediaWebApi";
 import {
   BusinessOperationError,
   callBusinessOperation,
 } from "../../generatedBusinessPagesContract";
-import { isForbiddenError, isNotFoundError } from "../../businessErrorPresentation";
+import { isForbiddenError, isNotFoundError, isUnauthorizedError } from "../../businessErrorPresentation";
 import { runStatusLabel, runStatusTone } from "../../statusPresentation";
 import {
   CursorPagination,
-  PageHeading,
   formatDate,
   useCursorTrail,
 } from "../../ui/ordinaryPagePrimitives";
 import { DISPLAY_LABELS } from "../../ui/displayLabels";
 import { artifactTypeDisplayLabel, authorizationScopeDisplayLabel as sharedAuthorizationScopeDisplayLabel, bodyAuthorityDisplayLabel, humanStateDisplayLabel, mediaTypeDisplayLabel, qualityDisplayLabel, syncStatusDisplayLabel } from "../../ui/ordinaryDataLabels";
+import { Metric } from "../../ui/Metric";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { getOrganizationDocumentUrl } from "../../ui/organizationDocumentUrl";
 import { SearchBox } from "../../ui/SearchBox";
+import { SurfaceState } from "../../ui/SurfaceState";
+import { useResource, type LoadState } from "../../ui/loadState";
 import styles from "./RunsPage.module.css";
 
 type StatusTone = ReturnType<typeof runStatusTone>;
@@ -178,7 +179,7 @@ type CommercialDeliveryListResponse = {
 
 type PageResponse = RunListResponse | BusinessOpportunityListResponse | CommercialDeliveryListResponse;
 
-type PageReadErrorKind = "forbidden" | "notFound" | "error";
+type PageReadErrorKind = "unauthenticated" | "forbidden" | "notFound" | "error";
 
 class PageReadError extends Error {
   readonly kind: PageReadErrorKind;
@@ -189,11 +190,6 @@ class PageReadError extends Error {
     this.kind = kind;
   }
 }
-
-type ResourceState<T> =
-  | { readonly status: "loading" }
-  | { readonly status: "ready"; readonly data: T }
-  | { readonly status: "error"; readonly error: PageReadError };
 
 const PAGE_SIZE = 30;
 
@@ -213,46 +209,24 @@ export default function RunsPage() {
   const cursorTrail = useCursorTrail();
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
-  const [runMetadata, setRunMetadata] = useState<Record<string, Pick<RunSummary, "platform" | "contentType" | "trackName">>>({});
   const [reloadToken, setReloadToken] = useState(0);
   const { cursor } = cursorTrail;
-  const state = useResource<PageResponse>(
-    () => {
+  const state = useResource<PageResponse, PageReadError>(
+    (signal) => {
       if (!session) {
-        return Promise.reject(new PageReadError("forbidden", "当前账户无权查看这部分内容。"));
+        return Promise.reject(new PageReadError("unauthenticated", "请先登录后查看这部分内容。"));
       }
-      if (activeView === "runs") return readRuns(session, cursor, submittedQuery);
-      if (activeView === "opportunities") return readBusinessOpportunities(session, cursor);
+      if (activeView === "runs") return readRuns(session, cursor, submittedQuery, signal);
+      if (activeView === "opportunities") return readBusinessOpportunities(session, cursor, signal);
       return Promise.resolve(readCommercialDeliveries(tasks));
     },
+    (error) => toLoadState(error, "读取内容暂时不可用。"),
     [activeView, cursor, reloadToken, session, submittedQuery, tasks],
   );
   const runResponse = state.status === "ready" && activeView === "runs" && isRunListResponse(state.data)
     ? state.data
     : null;
-  useEffect(() => {
-    if (!runResponse) return;
-    let cancelled = false;
-    void Promise.all(runResponse.items.map(async (run) => {
-      try {
-        const detail = await readRun(run.publicRunId);
-        return [run.publicRunId, {
-          platform: detail.run.platform ?? null,
-          contentType: detail.run.contentType ?? null,
-          trackName: detail.run.trackName ?? null,
-        }] as const;
-      } catch {
-        return [run.publicRunId, { platform: null, contentType: null, trackName: null }] as const;
-      }
-    })).then((entries) => {
-      if (!cancelled) setRunMetadata(Object.fromEntries(entries));
-    });
-    return () => { cancelled = true; };
-  }, [runResponse]);
-  const enrichedRunResponse = runResponse
-    ? { ...runResponse, items: runResponse.items.map((run) => ({ ...run, ...runMetadata[run.publicRunId] })) }
-    : null;
-  const selectedRun = enrichedRunResponse?.items.find((run) => run.publicRunId === selectedRunId) ?? null;
+  const selectedRun = runResponse?.items.find((run) => run.publicRunId === selectedRunId) ?? null;
   const deliveryResponse = state.status === "ready" && activeView === "deliveries" && isDeliveryListResponse(state.data)
     ? state.data
     : null;
@@ -306,25 +280,36 @@ export default function RunsPage() {
   );
 
   return (
-    <main className={`runs-page fidelity-page ${styles.page}`}>
+    <main
+      className={`runs-page fidelity-page ${styles.page}`}
+      data-accent="studio"
+      data-page-ownership="personal"
+      data-page-state={state.status}
+    >
       <div className={styles.prelude} data-page-prelude>
-        <PageHeading
-          title="创作与交付"
-          description="集中查看真实创作运行、来源、决定、输出与已授权商务机会。"
-          action={activeView === "deliveries" ? (
-            <button
-              className={`primary-button ${styles.primaryAction}`}
-              type="button"
-              disabled={runtimeState !== "authenticated"}
-              onClick={() => openWorkspace(activeView === "deliveries"
-                ? { capabilityId: "commercial_delivery_draft", variantId: "default" }
-                : { capabilityId: "selfmedia_creation", variantId: "default" })}
-            >
-              <Plus size={16} />
-              新建商单
-            </button>
-          ) : undefined}
-        />
+        <header className={`page-heading mg-hero ${styles.pageHeading}`} data-component="mg-hero">
+          <div>
+            <span className="mg-eyebrow" data-component="mg-eyebrow">创作工作台</span>
+            <h1>创作与交付</h1>
+            <p className="mg-hero-lead">集中查看真实创作运行、来源、决定、输出与已授权商务机会。</p>
+          </div>
+          {activeView === "deliveries" ? (
+            <div className="mg-hero-actions">
+              <button
+                className={`mg-btn mg-btn-primary ${styles.primaryAction}`}
+                data-component="mg-btn"
+                type="button"
+                disabled={runtimeState !== "authenticated"}
+                onClick={() => openWorkspace(activeView === "deliveries"
+                  ? { capabilityId: "commercial_delivery_draft", variantId: "default" }
+                  : { capabilityId: "selfmedia_creation", variantId: "default" })}
+              >
+                <Plus size={16} />
+                新建商单
+              </button>
+            </div>
+          ) : null}
+        </header>
         <div className="mg-tabs" role="tablist" aria-label="创作与交付视图">
           <button
             className="mg-tab"
@@ -359,7 +344,7 @@ export default function RunsPage() {
         ) : activeView === "runs" && state.status === "loading" ? (
           <StatusStripLoading />
         ) : null}
-        <form className={styles.filterBar} onSubmit={submitSearch}>
+        <form className={`${styles.filterBar} mg-panel`} data-component="mg-panel" onSubmit={submitSearch}>
           <SearchBox
             className={styles.searchField}
             value={query}
@@ -372,27 +357,30 @@ export default function RunsPage() {
           <DisabledFilter label="状态" />
           <DisabledFilter label="本机关联" />
           {submittedQuery && activeView === "runs" ? (
-            <button className={styles.clearButton} type="button" onClick={clearSearch}>
+            <button className={`mg-btn mg-btn-ghost ${styles.clearButton}`} data-component="mg-btn" type="button" onClick={clearSearch}>
               <X size={15} />清除搜索
             </button>
           ) : null}
-          <button className={styles.resetButton} type="button" disabled={activeView !== "runs" || !submittedQuery} onClick={clearSearch}>
+          <button className={`mg-btn mg-btn-ghost ${styles.resetButton}`} data-component="mg-btn" type="button" disabled={activeView !== "runs" || !submittedQuery} onClick={clearSearch}>
             <RefreshCw size={14} />重置
           </button>
-          <button className={styles.submitButton} type="submit" disabled={activeView !== "runs"}>
+          <button className={`mg-btn mg-btn-primary ${styles.submitButton}`} data-component="mg-btn" type="submit" disabled={activeView !== "runs"}>
             <Search size={15} />搜索
           </button>
         </form>
       </div>
       <div className={styles.workspace} data-page-layout="persistent-rail">
         <div className={styles.mainColumn} data-page-primary>
-          {state.status === "loading" ? (
-            <ReadState kind="loading" message={activeView === "runs" ? "正在读取创作运行" : activeView === "deliveries" ? "正在读取商单交付" : "正在读取商务机会"} />
+          {state.status !== "ready" ? (
+            <ResourceStateSurface
+              state={state}
+              subject={activeView === "runs" ? "创作运行" : activeView === "deliveries" ? "商单交付" : "商务机会"}
+              onRetry={() => setReloadToken((value) => value + 1)}
+            />
           ) : null}
-          {state.status === "error" ? <ReadState kind={state.error.kind} message={state.error.message} onRetry={() => setReloadToken((value) => value + 1)} /> : null}
           {state.status === "ready" && activeView === "runs" && isRunListResponse(state.data) ? (
             <RunsTable
-              response={enrichedRunResponse ?? state.data}
+              response={runResponse ?? state.data}
               page={page}
               canPrevious={cursorTrail.canPrevious}
               selectedRunId={selectedRunId}
@@ -462,8 +450,8 @@ function RunsTable({
   onNext: () => void;
 }) {
   return (
-    <section className={styles.tableRegion} aria-labelledby="runs-table-title" data-page-terminal-surface="primary">
-      <header className={styles.tableHeader}>
+    <section className={`${styles.tableRegion} mg-panel`} aria-labelledby="runs-table-title" data-component="mg-panel" data-page-terminal-surface="primary">
+      <header className={`${styles.tableHeader} mg-panel-head`} data-component="mg-panel-head">
         <div><h2 id="runs-table-title">创作运行</h2><span>{response.items.length} 条当前页记录</span></div>
         <span>每页最多 {PAGE_SIZE} 条</span>
       </header>
@@ -523,8 +511,8 @@ function BusinessOpportunityTable({
   onNext: () => void;
 }) {
   return (
-    <section className={styles.tableRegion} aria-labelledby="opportunities-table-title" data-page-terminal-surface="primary">
-      <header className={styles.tableHeader}>
+    <section className={`${styles.tableRegion} mg-panel`} aria-labelledby="opportunities-table-title" data-component="mg-panel" data-page-terminal-surface="primary">
+      <header className={`${styles.tableHeader} mg-panel-head`} data-component="mg-panel-head">
         <div><h2 id="opportunities-table-title">已授权商务机会</h2><span>{response.items.length} 条当前页记录</span></div>
         <span>仅显示当前租户授权对象</span>
       </header>
@@ -569,8 +557,8 @@ function CommercialDeliveryTable({
   onCreate: () => void;
 }) {
   return (
-    <section className={styles.tableRegion} aria-labelledby="deliveries-table-title" data-page-terminal-surface="primary">
-      <header className={styles.tableHeader}>
+    <section className={`${styles.tableRegion} mg-panel`} aria-labelledby="deliveries-table-title" data-component="mg-panel" data-page-terminal-surface="primary">
+      <header className={`${styles.tableHeader} mg-panel-head`} data-component="mg-panel-head">
         <div><h2 id="deliveries-table-title">商单交付</h2><span>{response.items.length} 条最近任务</span></div>
         <span>已登记商单交付能力</span>
       </header>
@@ -608,24 +596,24 @@ function CommercialDeliveryTable({
 function CommercialDeliveryInspector({ task }: { task: MediaWebTask }) {
   const params = Object.entries(task.params);
   return (
-    <aside className={styles.inspector} aria-label="商单交付详情" data-page-terminal-surface="inspector">
-      <header className={styles.inspectorHeader}>
+    <aside className={`${styles.inspector} mg-panel`} aria-label="商单交付详情" data-component="mg-panel" data-page-terminal-surface="inspector">
+      <header className={`${styles.inspectorHeader} mg-panel-head`} data-component="mg-panel-head">
         <div className={styles.inspectorHeading}><span>商单交付详情</span><h2>{task.summary || "未命名商单交付"}</h2><code>{task.taskId}</code></div>
       </header>
       <div className={styles.inspectorBody} role="region" aria-label="商单交付详情内容" tabIndex={0}>
-        <div className={styles.inspectorFacts}><div className={styles.factGrid}>
-          <div className={styles.factCard}><FileCheck2 size={16} aria-hidden="true" /><div><h3>状态</h3><p><StatusPill status={task.status} /></p></div></div>
-          <div className={styles.factCard}><CircleDot size={16} aria-hidden="true" /><div><h3>进度</h3><p>{task.progress}%</p></div></div>
-          <div className={styles.factCard}><BriefcaseBusiness size={16} aria-hidden="true" /><div><h3>能力</h3><p>商单交付</p></div></div>
-          <div className={styles.factCard}><FileOutput size={16} aria-hidden="true" /><div><h3>更新时间</h3><p>{formatDate(task.updatedAt)}</p></div></div>
+        <div className={styles.inspectorFacts}><div className={`${styles.factGrid} mg-metric-grid`} data-component="mg-metric-grid">
+          <MetricFact icon={<FileCheck2 size={16} aria-hidden="true" />} label="状态" value={<StatusPill status={task.status} />} />
+          <MetricFact icon={<CircleDot size={16} aria-hidden="true" />} label="进度" value={`${task.progress}%`} />
+          <MetricFact icon={<BriefcaseBusiness size={16} aria-hidden="true" />} label="能力" value="商单交付" />
+          <MetricFact icon={<FileOutput size={16} aria-hidden="true" />} label="更新时间" value={formatDate(task.updatedAt)} />
         </div></div>
-        <section className={styles.deliveryResult} aria-labelledby="delivery-result-title">
-          <header><h3 id="delivery-result-title">交付结果</h3><span>{task.result?.status ? runStatusLabel(task.result.status) : "尚未生成"}</span></header>
+        <section className={`${styles.deliveryResult} mg-panel`} aria-labelledby="delivery-result-title" data-component="mg-panel">
+          <header className="mg-panel-head" data-component="mg-panel-head"><h3 id="delivery-result-title">交付结果</h3><span>{task.result?.status ? runStatusLabel(task.result.status) : "尚未生成"}</span></header>
           {task.result?.reply ? <p>{task.result.reply}</p> : <SectionEmpty message={`任务完成后，交付文档与${DISPLAY_LABELS.commercialDeliveryRecord}会显示在这里。`} />}
           <DeliveryLinks task={task} />
         </section>
         <TaskSettlementDetails task={task} />
-        {params.length ? <section className={styles.deliveryResult} aria-labelledby="delivery-input-title"><header><h3 id="delivery-input-title">任务输入</h3><span>{params.length} 项</span></header><dl className={styles.deliveryParams}>{params.map(([key, value], index) => <div key={key}><dt>{`任务参数 ${index + 1}`}</dt><dd>{formatTaskValue(value)}</dd></div>)}</dl></section> : null}
+        {params.length ? <section className={`${styles.deliveryResult} mg-panel`} aria-labelledby="delivery-input-title" data-component="mg-panel"><header className="mg-panel-head" data-component="mg-panel-head"><h3 id="delivery-input-title">任务输入</h3><span>{params.length} 项</span></header><dl className={styles.deliveryParams}>{params.map(([key, value], index) => <div key={key}><dt>{`任务参数 ${index + 1}`}</dt><dd>{formatTaskValue(value)}</dd></div>)}</dl></section> : null}
       </div>
     </aside>
   );
@@ -634,14 +622,18 @@ function CommercialDeliveryInspector({ task }: { task: MediaWebTask }) {
 function DeliveryLinks({ task, compact = false }: { task: MediaWebTask; compact?: boolean }) {
   const links = task.result?.links ?? [];
   if (!links.length) return <span className={styles.mutedCopy}>尚无交付链接</span>;
-  return <div className={`${styles.deliveryLinks} ${compact ? styles.deliveryLinksCompact : ""}`}>{links.map((link) => <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}><ExternalLink size={13} />{link.label}</a>)}</div>;
+  return <div className={`${styles.deliveryLinks} ${compact ? styles.deliveryLinksCompact : ""}`}>{links.map((link) => <a className="mg-btn mg-btn-ghost" data-component="mg-btn" key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}><ExternalLink size={13} />{link.label}</a>)}</div>;
 }
 
 function RunInspector({ run }: { run: RunSummary }) {
   const [activeSection, setActiveSection] = useState<SectionName | null>(run.availableSections[0] ?? null);
   const [detailReloadToken, setDetailReloadToken] = useState(0);
   const [sectionReloadToken, setSectionReloadToken] = useState(0);
-  const detailState = useResource<RunResponse>(() => readRun(run.publicRunId), [run.publicRunId, detailReloadToken]);
+  const detailState = useResource<RunResponse, PageReadError>(
+    (signal) => readRun(run.publicRunId, signal),
+    (error) => toLoadState(error, "运行详情暂时无法读取。"),
+    [run.publicRunId, detailReloadToken],
+  );
   const detailRun = detailState.status === "ready" ? detailState.data.run : null;
 
   useEffect(() => {
@@ -649,23 +641,23 @@ function RunInspector({ run }: { run: RunSummary }) {
     setActiveSection((current) => current && available.includes(current) ? current : (available[0] ?? null));
   }, [detailRun, run.availableSections]);
 
-  const sectionState = useResource<SectionResponse | null>(
-    () => {
+  const sectionState = useResource<SectionResponse | null, PageReadError>(
+    (signal) => {
       if (!detailRun || !activeSection) return Promise.resolve(null);
-      return readSection(detailRun.publicRunId, activeSection);
+      return readSection(detailRun.publicRunId, activeSection, signal);
     },
+    (error) => toLoadState(error, "运行分区暂时无法读取。"),
     [activeSection, detailRun?.publicRunId, detailRun?.revision, sectionReloadToken],
   );
 
   return (
-    <aside className={styles.inspector} aria-label="运行详情预览" data-page-terminal-surface="inspector">
-      <header className={styles.inspectorHeader}>
+    <aside className={`${styles.inspector} mg-panel`} aria-label="运行详情预览" data-component="mg-panel" data-page-terminal-surface="inspector">
+      <header className={`${styles.inspectorHeader} mg-panel-head`} data-component="mg-panel-head">
         <div className={styles.inspectorHeading}><span>运行详情</span><h2>{run.title}</h2><code>{run.publicRunId}</code></div>
-        <Link className={styles.closeButton} to={`/runs/${encodeURIComponent(run.publicRunId)}`} aria-label="打开运行详情"><ExternalLink size={17} /></Link>
+        <Link className={`mg-btn mg-btn-ghost ${styles.closeButton}`} data-component="mg-btn" to={`/runs/${encodeURIComponent(run.publicRunId)}`} aria-label="打开运行详情"><ExternalLink size={17} /></Link>
       </header>
       <div className={styles.inspectorBody} role="region" aria-label="运行详情内容" tabIndex={0}>
-        {detailState.status === "loading" ? <ReadState kind="loading" message="正在读取运行详情" /> : null}
-        {detailState.status === "error" ? <ReadState kind={detailState.error.kind} message={detailState.error.message} onRetry={() => setDetailReloadToken((value) => value + 1)} /> : null}
+        {detailState.status !== "ready" ? <ResourceStateSurface state={detailState} subject="运行详情" onRetry={() => setDetailReloadToken((value) => value + 1)} /> : null}
         {detailState.status === "ready" ? (
           <>
             <RunFacts run={detailState.data.run} />
@@ -697,7 +689,19 @@ function RunFacts({ run }: { run: RunSummary }) {
     ["创建时间", formatDate(run.createdAt)],
     ["更新时间", formatDate(run.updatedAt)],
   ] as const;
-  return <div className={styles.inspectorFacts}><div className={styles.factGrid}>{facts.map(([label, value]) => <div className={styles.factCard} key={label}><FileCheck2 size={16} aria-hidden="true" /><div><h3>{label}</h3><p>{value}</p></div></div>)}</div></div>;
+  return <div className={styles.inspectorFacts}><div className={`${styles.factGrid} mg-metric-grid`} data-component="mg-metric-grid">{facts.map(([label, value]) => <MetricFact icon={<FileCheck2 size={16} aria-hidden="true" />} label={label} value={value} key={label} />)}</div></div>;
+}
+
+function MetricFact({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+}) {
+  return <Metric variant="card" className={styles.factCard} icon={icon} label={label} value={value} />;
 }
 
 function displayMetadata(value: string | null | undefined): string {
@@ -710,13 +714,13 @@ function PlatformValue({ platform }: { platform: string | null | undefined }) {
 }
 
 function SectionPicker({ availableSections, activeSection, onSelect }: { availableSections: readonly SectionName[]; activeSection: SectionName | null; onSelect: (section: SectionName) => void }) {
-  return <section className={styles.sectionPicker} aria-labelledby="run-section-title"><h3 id="run-section-title">运行分区</h3>{availableSections.length ? <div role="tablist" aria-label="运行分区"><button className={`${styles.sectionTab} ${activeSection === "sources" ? styles.sectionTabActive : ""}`} type="button" role="tab" aria-selected={activeSection === "sources"} onClick={() => onSelect("sources")} disabled={!availableSections.includes("sources")}><Layers3 size={14} />来源</button><button className={`${styles.sectionTab} ${activeSection === "decisions" ? styles.sectionTabActive : ""}`} type="button" role="tab" aria-selected={activeSection === "decisions"} onClick={() => onSelect("decisions")} disabled={!availableSections.includes("decisions")}><UserRoundCheck size={14} />决定</button><button className={`${styles.sectionTab} ${activeSection === "outputs" ? styles.sectionTabActive : ""}`} type="button" role="tab" aria-selected={activeSection === "outputs"} onClick={() => onSelect("outputs")} disabled={!availableSections.includes("outputs")}><FileOutput size={14} />输出</button></div> : <p className={styles.mutedCopy}>当前运行没有可用分区。</p>}</section>;
+  return <section className={styles.sectionPicker} aria-labelledby="run-section-title"><h3 id="run-section-title">运行分区</h3>{availableSections.length ? <div className={`${styles.sectionTabs} mg-tabs`} data-component="mg-tabs" role="tablist" aria-label="运行分区"><button className="mg-tab mg-tab-pill" data-component="mg-tab" data-variant="pill" type="button" role="tab" aria-selected={activeSection === "sources"} onClick={() => onSelect("sources")} disabled={!availableSections.includes("sources")}><Layers3 size={14} />来源</button><button className="mg-tab mg-tab-pill" data-component="mg-tab" data-variant="pill" type="button" role="tab" aria-selected={activeSection === "decisions"} onClick={() => onSelect("decisions")} disabled={!availableSections.includes("decisions")}><UserRoundCheck size={14} />决定</button><button className="mg-tab mg-tab-pill" data-component="mg-tab" data-variant="pill" type="button" role="tab" aria-selected={activeSection === "outputs"} onClick={() => onSelect("outputs")} disabled={!availableSections.includes("outputs")}><FileOutput size={14} />输出</button></div> : <p className={styles.mutedCopy}>当前运行没有可用分区。</p>}</section>;
 }
 
-function SectionResult({ state, activeSection, onRetry }: { state: ResourceState<SectionResponse | null>; activeSection: SectionName | null; onRetry: () => void }) {
+function SectionResult({ state, activeSection, onRetry }: { state: LoadState<SectionResponse | null, PageReadError>; activeSection: SectionName | null; onRetry: () => void }) {
   if (!activeSection) return <section className={styles.sectionResult}><SectionEmpty message="当前运行没有可用分区。" /></section>;
   const sectionUnavailable = state.status === "ready" && state.data !== null && state.data.revision === 0;
-  return <section className={styles.sectionResult}><header><h3>{sectionLabel(activeSection)}</h3><span>{state.status === "ready" && state.data ? `修订 ${state.data.revision}` : "合同化读取"}</span></header>{state.status === "loading" ? <ReadState kind="loading" message={`正在读取${sectionLabel(activeSection)}`} /> : null}{state.status === "error" ? <ReadState kind={state.error.kind} message={state.error.message} onRetry={onRetry} /> : null}{sectionUnavailable ? <ReadState kind="partial" message="该分区尚未持久化，当前字段暂不可用。" onRetry={onRetry} /> : null}{state.status === "ready" && state.data && !sectionUnavailable ? <SectionContent response={state.data} activeSection={activeSection} /> : null}{state.status === "ready" && !state.data ? <SectionEmpty message="该分区暂无已持久化内容。" /> : null}</section>;
+  return <section className={`${styles.sectionResult} mg-panel`} data-component="mg-panel"><header className="mg-panel-head" data-component="mg-panel-head"><h3>{sectionLabel(activeSection)}</h3><span>{state.status === "ready" && state.data ? `修订 ${state.data.revision}` : "合同化读取"}</span></header>{state.status !== "ready" ? <ResourceStateSurface state={state} subject={sectionLabel(activeSection)} onRetry={onRetry} /> : null}{sectionUnavailable ? <div className={styles.partialState} data-component="mg-state" data-resource-state="partial"><SurfaceState kind="empty" title="该分区尚未持久化" detail="当前字段暂不可用。" density="compact" action={<button className={`mg-btn mg-btn-ghost ${styles.retryButton}`} data-component="mg-btn" type="button" onClick={onRetry}><RefreshCw size={14} />重新读取</button>} /></div> : null}{state.status === "ready" && state.data && !sectionUnavailable ? <SectionContent response={state.data} activeSection={activeSection} /> : null}{state.status === "ready" && !state.data ? <SectionEmpty message="该分区暂无已持久化内容。" /> : null}</section>;
 }
 
 function SectionContent({ response, activeSection }: { response: SectionResponse; activeSection: SectionName }) {
@@ -759,7 +763,7 @@ function isValueArray(value: Value): value is readonly (string | number | boolea
 }
 
 function SectionEmpty({ message }: { message: string }) {
-  return <div className={styles.sectionEmpty}><ListFilter size={18} aria-hidden="true" /><span>{message}</span></div>;
+  return <SurfaceState kind="empty" title="暂无已持久化内容" detail={message} density="compact" />;
 }
 
 function InspectorEmpty({ view }: { view: View }) {
@@ -769,20 +773,44 @@ function InspectorEmpty({ view }: { view: View }) {
 }
 
 function RunsEmpty({ searched, onClear }: { searched: boolean; onClear: () => void }) {
-  return <section className={styles.emptyState}><AlertCircle size={22} aria-hidden="true" /><h2>{searched ? "没有匹配的创作运行" : "当前账户还没有创作运行"}</h2><p>{searched ? "当前结果里没有符合搜索条件的运行。" : "任务创建并持久化后会显示在这里。"}</p>{searched ? <button className={styles.clearButton} type="button" onClick={onClear}><X size={15} />清除搜索</button> : null}</section>;
+  return <SurfaceState kind="empty" title={searched ? "没有匹配的创作运行" : "当前账户还没有创作运行"} detail={searched ? "当前结果里没有符合搜索条件的运行。" : "任务创建并持久化后会显示在这里。"} action={searched ? <button className={`mg-btn mg-btn-ghost ${styles.clearButton}`} data-component="mg-btn" type="button" onClick={onClear}><X size={15} />清除搜索</button> : undefined} />;
 }
 
 function BusinessOpportunityEmpty() {
-  return <section className={styles.emptyState}><BriefcaseBusiness size={22} aria-hidden="true" /><h2>当前没有已授权商务机会</h2><p>列表为空表示当前租户没有可展示的授权商务对象。</p></section>;
+  return <SurfaceState kind="empty" title="当前没有已授权商务机会" detail="列表为空表示当前租户没有可展示的授权商务对象。" />;
 }
 
 function CommercialDeliveryEmpty({ onCreate }: { onCreate: () => void }) {
-  return <section className={styles.emptyState}><FileOutput size={22} aria-hidden="true" /><h2>当前还没有商单交付</h2><p>通过商单交付能力创建任务后，交付初稿、飞书文档与{DISPLAY_LABELS.commercialDeliveryRecord}会在这里集中展示。</p><button className={styles.submitButton} type="button" onClick={onCreate}><Plus size={15} />新建商单</button></section>;
+  return <SurfaceState kind="empty" title="当前还没有商单交付" detail={`通过商单交付能力创建任务后，交付初稿、飞书文档与${DISPLAY_LABELS.commercialDeliveryRecord}会在这里集中展示。`} action={<button className={`mg-btn mg-btn-primary ${styles.submitButton}`} data-component="mg-btn" type="button" onClick={onCreate}><Plus size={15} />新建商单</button>} />;
 }
 
-function ReadState({ kind, message, onRetry }: { kind: "loading" | "forbidden" | "notFound" | "error" | "partial"; message: string; onRetry?: () => void }) {
-  const icon = kind === "loading" ? <LoaderCircle className="spin" size={21} aria-hidden="true" /> : kind === "forbidden" ? <UserRoundCheck size={21} aria-hidden="true" /> : <AlertCircle size={21} aria-hidden="true" />;
-  return <div className={`${styles.readState} ${kind === "partial" ? styles.partialState : ""}`} data-read-state={kind} aria-busy={kind === "loading"} role={kind === "loading" ? undefined : "alert"}>{icon}<strong>{message}</strong>{onRetry ? <button className={styles.retryButton} type="button" onClick={onRetry}><RefreshCw size={14} />重新读取</button> : null}</div>;
+function ResourceStateSurface<T>({
+  state,
+  subject,
+  onRetry,
+}: {
+  state: LoadState<T, PageReadError>;
+  subject: string;
+  onRetry: () => void;
+}) {
+  if (state.status === "idle" || state.status === "ready") return null;
+  if (state.status === "loading") {
+    return <SurfaceState kind="loading" title={`正在读取${subject}`} detail={`正在读取当前账户可见的${subject}。`} />;
+  }
+  if (state.status === "permission") {
+    const unauthenticated = state.error.kind === "unauthenticated";
+    const action = unauthenticated
+      ? <a className="mg-btn mg-btn-primary" data-component="mg-btn" href={loginUrl()}><LogIn size={15} aria-hidden="true" />登录并查看</a>
+      : <button className={`mg-btn mg-btn-ghost ${styles.retryButton}`} type="button" onClick={onRetry}><RefreshCw size={14} />重新读取</button>;
+    return <SurfaceState kind="permission" title={unauthenticated ? `登录后查看${subject}` : "暂无查看权限"} detail={state.error.message} action={action} />;
+  }
+  if (state.status === "notFound") {
+    return <SurfaceState kind="notFound" title="记录不存在" detail={state.error.message} action={<button className={`mg-btn mg-btn-ghost ${styles.retryButton}`} type="button" onClick={onRetry}><RefreshCw size={14} />重新读取</button>} />;
+  }
+  if (state.status === "empty") {
+    return <SurfaceState kind="empty" title={`${subject}暂无记录`} detail="当前账户没有可展示的持久化内容。" />;
+  }
+  return <SurfaceState kind="error" title={`${subject}读取失败`} detail={state.error.message} action={<button className={`mg-btn mg-btn-ghost ${styles.retryButton}`} type="button" onClick={onRetry}><RefreshCw size={14} />重新读取</button>} />;
 }
 
 function StatusStrip({ items, itemCount }: { items: Array<{ label: string; count: number; tone: StatusTone }>; itemCount: number }) {
@@ -798,29 +826,21 @@ function StatusPill({ status }: { status: string }) {
   return <span className={`${styles.statusPill} ${statusToneClasses[tone]}`}>{runStatusLabel(status)}</span>;
 }
 
-function useResource<T>(loader: () => Promise<T>, dependencies: readonly unknown[]): ResourceState<T> {
-  const [state, setState] = useState<ResourceState<T>>({ status: "loading" });
-  useEffect(() => {
-    let active = true;
-    setState({ status: "loading" });
-    loader().then((data) => {
-      if (active) setState({ status: "ready", data });
-    }).catch((error: unknown) => {
-      if (active) setState({ status: "error", error: toReadError(error, "读取内容暂时不可用。") });
-    });
-    return () => { active = false; };
-  }, dependencies);
-  return state;
+function toLoadState<T>(error: unknown, fallback: string): LoadState<T, PageReadError> {
+  const pageError = toReadError(error, fallback);
+  if (pageError.kind === "unauthenticated" || pageError.kind === "forbidden") return { status: "permission", error: pageError };
+  if (pageError.kind === "notFound") return { status: "notFound", error: pageError };
+  return { status: "error", error: pageError };
 }
 
-async function readRuns(session: unknown, cursor: string | undefined, search: string): Promise<RunListResponse> {
-  if (!session) throw new PageReadError("forbidden", "当前账户无权查看这部分内容。");
-  return callBusinessOperation<RunListResponse>("listRuns", { query: { cursor, pageSize: PAGE_SIZE, search } });
+async function readRuns(session: unknown, cursor: string | undefined, search: string, signal?: AbortSignal): Promise<RunListResponse> {
+  if (!session) throw new PageReadError("unauthenticated", "请先登录后查看这部分内容。");
+  return callBusinessOperation<RunListResponse>("listRuns", { query: { cursor, pageSize: PAGE_SIZE, search }, signal });
 }
 
-async function readBusinessOpportunities(session: unknown, cursor: string | undefined): Promise<BusinessOpportunityListResponse> {
-  if (!session) throw new PageReadError("forbidden", "当前账户无权查看这部分内容。");
-  return callBusinessOperation<BusinessOpportunityListResponse>("listBusinessOpportunities", { query: { cursor, pageSize: PAGE_SIZE } });
+async function readBusinessOpportunities(session: unknown, cursor: string | undefined, signal?: AbortSignal): Promise<BusinessOpportunityListResponse> {
+  if (!session) throw new PageReadError("unauthenticated", "请先登录后查看这部分内容。");
+  return callBusinessOperation<BusinessOpportunityListResponse>("listBusinessOpportunities", { query: { cursor, pageSize: PAGE_SIZE }, signal });
 }
 
 function readCommercialDeliveries(tasks: readonly MediaWebTask[]): CommercialDeliveryListResponse {
@@ -831,19 +851,20 @@ function readCommercialDeliveries(tasks: readonly MediaWebTask[]): CommercialDel
   };
 }
 
-async function readRun(publicRunId: string): Promise<RunResponse> {
-  return callBusinessOperation<RunResponse>("getRun", { path: { publicRunId } });
+async function readRun(publicRunId: string, signal?: AbortSignal): Promise<RunResponse> {
+  return callBusinessOperation<RunResponse>("getRun", { path: { publicRunId }, signal });
 }
 
-async function readSection(publicRunId: string, section: SectionName): Promise<SectionResponse> {
-  if (section === "sources") return callBusinessOperation<Extract<SectionResponse, { readonly section: RunSourceSection }>>("getRunSources", { path: { publicRunId } });
-  if (section === "decisions") return callBusinessOperation<Extract<SectionResponse, { readonly section: RunDecisionSection }>>("getRunDecisions", { path: { publicRunId } });
-  return callBusinessOperation<Extract<SectionResponse, { readonly section: RunOutputSection }>>("getRunOutputs", { path: { publicRunId } });
+async function readSection(publicRunId: string, section: SectionName, signal?: AbortSignal): Promise<SectionResponse> {
+  if (section === "sources") return callBusinessOperation<Extract<SectionResponse, { readonly section: RunSourceSection }>>("getRunSources", { path: { publicRunId }, signal });
+  if (section === "decisions") return callBusinessOperation<Extract<SectionResponse, { readonly section: RunDecisionSection }>>("getRunDecisions", { path: { publicRunId }, signal });
+  return callBusinessOperation<Extract<SectionResponse, { readonly section: RunOutputSection }>>("getRunOutputs", { path: { publicRunId }, signal });
 }
 
 function toReadError(error: unknown, fallback: string): PageReadError {
   if (error instanceof PageReadError) return error;
   if (error instanceof BusinessOperationError) {
+    if (isUnauthorizedError(error)) return new PageReadError("unauthenticated", "请先登录后查看这部分内容。");
     if (isForbiddenError(error)) return new PageReadError("forbidden", "当前账户无权查看这部分内容。");
     if (isNotFoundError(error)) return new PageReadError("notFound", "这条内容不存在或已不可用。");
     return new PageReadError("error", fallback);

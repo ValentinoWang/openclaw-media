@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import { FileText } from "lucide-react";
+import { FileImage, FileText } from "lucide-react";
 import type {
   DocumentBlock,
   DocumentInlineNode,
@@ -42,24 +42,26 @@ function renderDocumentBlock(block: DocumentBlock): ReactNode {
       return <div className={styles.codeWrap}><span className={styles.codeLanguage}>{block.attrs.language ?? "纯文本"}</span><pre className={styles.codeBlock} data-language={block.attrs.language ?? undefined}><code>{block.text}</code></pre></div>;
     case "divider":
       return <hr className={styles.divider} />;
-    case "callout":
-      return <aside className={styles.callout} data-tone={block.attrs.semanticTone}><strong>{calloutLabel(block.attrs.semanticTone)}</strong><p className={styles.richText}>{renderInlineRuns(block.content)}</p></aside>;
+    case "callout": {
+      const tone = sharedTone(block.attrs.semanticTone);
+      return <aside className={`${styles.callout} mg-panel`} data-component="mg-panel" data-tone={tone}><span className="mg-badge" data-component="mg-badge" data-tone={tone}>{calloutLabel(block.attrs.semanticTone)}</span><p className={styles.richText}>{renderInlineRuns(block.content)}</p></aside>;
+    }
     case "table": {
       const headerRows = block.rows.slice(0, block.attrs.headerRowCount);
       const bodyRows = block.rows.slice(block.attrs.headerRowCount);
       const renderRow = (row: (typeof block.rows)[number], header: boolean) => <tr key={row.id}>{row.cells.map((cell) => header ? <th key={cell.id} scope="col">{renderInlineRuns(cell.content)}</th> : <td key={cell.id}>{renderInlineRuns(cell.content)}</td>)}</tr>;
-      return <div className={styles.tableWrap}><table className={styles.documentTable}>{headerRows.length ? <thead>{headerRows.map((row) => renderRow(row, true))}</thead> : null}<tbody>{bodyRows.map((row) => renderRow(row, false))}</tbody></table></div>;
+      return <div className={`${styles.tableWrap} mg-panel`} data-component="mg-panel"><table className={styles.documentTable}>{headerRows.length ? <thead>{headerRows.map((row) => renderRow(row, true))}</thead> : null}<tbody>{bodyRows.map((row) => renderRow(row, false))}</tbody></table></div>;
     }
     case "image": {
       const src = documentResourceHref(block.attrs.publicResourceId);
-      return <figure className={styles.imageFigure} data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}>{src ? <img className={styles.documentImage} src={src} alt={block.attrs.altText} width={block.attrs.width} height={block.attrs.height} loading="lazy" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum} /> : <div className={styles.resourcePlaceholder} data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}>图片暂不可读取</div>}<figcaption><span>{block.attrs.altText || "图片"}</span><small>{block.attrs.width} x {block.attrs.height}</small></figcaption></figure>;
+      return <figure className={styles.imageFigure} data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}>{src ? <img className={styles.documentImage} src={src} alt={block.attrs.altText} width={block.attrs.width} height={block.attrs.height} loading="lazy" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum} /> : <div className={`${styles.resourcePlaceholder} mg-state`} data-component="mg-state" data-state="empty" data-tone="warn" role="status" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}><span className="mg-state-art" data-state-art="empty" aria-hidden="true"><FileImage size={18} /></span><span>图片暂不可读取</span></div>}<figcaption><span>{block.attrs.altText || "图片"}</span><small>{block.attrs.width} x {block.attrs.height}</small></figcaption></figure>;
     }
     case "attachment": {
       const href = documentResourceHref(block.attrs.publicResourceId);
-      return <div className={styles.attachment} data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}><FileText size={17} aria-hidden="true" /><div><strong>{block.attrs.fileName}</strong><span>{resourceTypeLabel(block.attrs.contentType)}</span></div>{href ? <a href={href} target="_blank" rel="noreferrer" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}>打开附件</a> : null}</div>;
+      return <div className={`${styles.attachment} mg-panel`} data-component="mg-panel" data-accent="studio" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}><FileText size={17} aria-hidden="true" /><div><strong>{block.attrs.fileName}</strong><span>{resourceTypeLabel(block.attrs.contentType)}</span></div>{href ? <a href={href} target="_blank" rel="noreferrer" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}>打开附件</a> : null}</div>;
     }
     case "data_snapshot":
-      return <aside className={styles.snapshot} data-protected="true"><strong>受保护数据快照</strong><dl>{Object.entries(block.attrs.displayFields).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{formatSnapshotValue(value)}</dd></div>)}</dl><small>{block.attrs.semanticPurpose} · 对象 {block.attrs.publicObjectId} · 来源修订 {block.attrs.sourceRevision} · {formatTimestamp(block.attrs.capturedAt)}</small></aside>;
+      return <aside className={`${styles.snapshot} mg-panel`} data-component="mg-panel" data-accent="archive" data-protected="true"><span className="mg-badge" data-component="mg-badge" data-tone="info">受保护数据快照</span><dl>{Object.entries(block.attrs.displayFields).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{formatSnapshotValue(value)}</dd></div>)}</dl><small>{block.attrs.semanticPurpose} · 对象 {block.attrs.publicObjectId} · 来源修订 {block.attrs.sourceRevision} · {formatTimestamp(block.attrs.capturedAt)}</small></aside>;
   }
 }
 
@@ -105,6 +107,16 @@ function resourceTypeLabel(contentType: string): string {
 
 function calloutLabel(tone: "info" | "success" | "warning" | "danger"): string {
   return { info: "提示", success: "成功", warning: "注意", danger: "风险" }[tone];
+}
+
+function sharedTone(tone: "info" | "success" | "warning" | "danger"): "info" | "good" | "warn" | "danger" {
+  const tones: Record<typeof tone, "info" | "good" | "warn" | "danger"> = {
+    info: "info",
+    success: "good",
+    warning: "warn",
+    danger: "danger",
+  };
+  return tones[tone];
 }
 
 function formatSnapshotValue(value: DocumentValue): string {

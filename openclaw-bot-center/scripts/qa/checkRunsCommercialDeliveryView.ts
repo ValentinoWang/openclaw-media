@@ -29,7 +29,7 @@ function validateCommercialDeliveryView(source: string): void {
     "commercial delivery tasks are not read from the live tenant task state",
   );
   requireGate(
-    /openWorkspace\(\{ capabilityId: "commercial_delivery_draft" \}\)/u.test(source),
+    /openWorkspace\(\{\s*capabilityId:\s*"commercial_delivery_draft",\s*variantId:\s*"default"\s*\}\)/u.test(source),
     "new commercial delivery does not preselect the canonical capability",
   );
   requireGate(

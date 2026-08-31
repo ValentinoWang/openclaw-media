@@ -1,5 +1,4 @@
 import {
-  AlertCircle,
   BarChart3,
   CheckCircle2,
   Database,
@@ -15,7 +14,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useMediaWeb } from "../../MediaWebWorkspace";
 import {
   BusinessOperationError,
@@ -25,12 +24,13 @@ import { isForbiddenError, isNotFoundError } from "../../businessErrorPresentati
 import { loginUrl, type MediaWebSession } from "../../mediaWebApi";
 import {
   formatDate,
-  PageHeading,
 } from "../../ui/ordinaryPagePrimitives";
 import { newIdempotencyKey } from "../../idempotency";
+import { Metric } from "../../ui/Metric";
 import { PlatformIdentity } from "../../ui/PlatformIdentity";
 import { qualityDisplayLabel } from "../../ui/ordinaryDataLabels";
 import { platformDisplayLabel } from "../../ui/platformRegistry";
+import { SurfaceState } from "../../ui/SurfaceState";
 import { reviewQualityTone } from "../../statusPresentation";
 import styles from "./ReviewsPage.module.css";
 
@@ -130,6 +130,12 @@ type ActionState =
   | { status: "busy" }
   | { status: "error"; message: string };
 
+const primaryButtonClass = ["mg-btn", "mg-btn-primary", styles.primaryButton].join(" ");
+const secondaryButtonClass = ["mg-btn", "mg-btn-ghost", styles.secondaryButton].join(" ");
+const iconButtonClass = ["mg-btn", "mg-btn-ghost", styles.iconButton].join(" ");
+const panelClass = ["mg-panel", styles.panel].join(" ");
+const panelHeaderClass = ["mg-panel-head", styles.panelHeader].join(" ");
+
 const tabs: Array<{ id: TabId; label: string }> = [
   { id: "reviews", label: "发布复盘" },
   { id: "content", label: "作品指标" },
@@ -224,7 +230,23 @@ function useB07Data(
     }
     const controller = new AbortController();
     let active = true;
-    setData(emptyDataState("loading"));
+    // Keep loaded pages visible while a cursor request is in flight. The cursor
+    // response below is merged into the existing collection instead of replacing it.
+    const isPaging = reviewCursor !== undefined || contentCursor !== undefined || accountCursor !== undefined;
+    if (!isPaging) setData(emptyDataState("loading"));
+
+    const mergeItems = <T extends { publicReviewId?: string; publicSnapshotId?: string }>(current: T[], next: T[]) => {
+      const byId = new Map<string, T>();
+      for (const item of current) {
+        const id = item.publicReviewId ?? item.publicSnapshotId;
+        if (id) byId.set(id, item);
+      }
+      for (const item of next) {
+        const id = item.publicReviewId ?? item.publicSnapshotId;
+        if (id) byId.set(id, item);
+      }
+      return Array.from(byId.values());
+    };
 
     void callBusinessOperation<ReviewSummaryResponse>("getReviewsSummary", {
       signal: controller.signal,
@@ -243,7 +265,10 @@ function useB07Data(
       signal: controller.signal,
     })
       .then((value) => {
-        if (active) setData((current) => ({ ...current, reviews: { status: "ready", data: value } }));
+        if (active) setData((current) => {
+          if (!isPaging || current.reviews.status !== "ready") return { ...current, reviews: { status: "ready", data: value } };
+          return { ...current, reviews: { status: "ready", data: { ...value, nextCursor: reviewCursor === undefined ? current.reviews.data.nextCursor : value.nextCursor, items: mergeItems(current.reviews.data.items, value.items) } } };
+        });
       })
       .catch((error: unknown) => {
         if (active && !controller.signal.aborted) {
@@ -256,7 +281,10 @@ function useB07Data(
       signal: controller.signal,
     })
       .then((value) => {
-        if (active) setData((current) => ({ ...current, content: { status: "ready", data: value } }));
+        if (active) setData((current) => {
+          if (!isPaging || current.content.status !== "ready") return { ...current, content: { status: "ready", data: value } };
+          return { ...current, content: { status: "ready", data: { ...value, nextCursor: contentCursor === undefined ? current.content.data.nextCursor : value.nextCursor, items: mergeItems(current.content.data.items, value.items) } } };
+        });
       })
       .catch((error: unknown) => {
         if (active && !controller.signal.aborted) {
@@ -269,7 +297,10 @@ function useB07Data(
       signal: controller.signal,
     })
       .then((value) => {
-        if (active) setData((current) => ({ ...current, account: { status: "ready", data: value } }));
+        if (active) setData((current) => {
+          if (!isPaging || current.account.status !== "ready") return { ...current, account: { status: "ready", data: value } };
+          return { ...current, account: { status: "ready", data: { ...value, nextCursor: accountCursor === undefined ? current.account.data.nextCursor : value.nextCursor, items: mergeItems(current.account.data.items, value.items) } } };
+        });
       })
       .catch((error: unknown) => {
         if (active && !controller.signal.aborted) {
@@ -386,26 +417,32 @@ export default function ReviewsPage() {
   }
 
   return (
-    <main className={["fidelity-page", styles.page].join(" ")}>
+    <main
+      className={["fidelity-page", styles.page].join(" ")}
+      data-page-ownership="personal"
+      data-accent="desk"
+      data-page-state={runtimeState}
+    >
       <div data-page-prelude>
-        <PageHeading
-          title="复盘增长"
-          description="发布后的数据、证据质量和报告版本在同一工作区内闭环。"
-          action={
-            authenticated ? (
-              <div className={styles.headingActions}>
-                <button className={styles.secondaryButton} type="button" onClick={refreshPage} title="重新读取复盘数据">
-                  <RefreshCw size={16} aria-hidden="true" />
-                  刷新
-                </button>
-                <button className={styles.primaryButton} type="button" onClick={() => openDialog("review")}>
-                  <Plus size={16} aria-hidden="true" />
-                  新建数据复盘
-                </button>
-              </div>
-            ) : null
-          }
-        />
+        <header className={["page-heading", "mg-hero", styles.pageHeading].join(" ")} data-component="mg-hero">
+          <div>
+            <span className="mg-eyebrow" data-component="mg-eyebrow">增长与证据</span>
+            <h1>复盘增长</h1>
+            <p className="mg-hero-lead">发布后的数据、证据质量和报告版本在同一工作区内闭环。</p>
+          </div>
+          {authenticated ? (
+            <div className={["mg-hero-actions", styles.headingActions].join(" ")}>
+              <button className={secondaryButtonClass} data-component="mg-btn" type="button" onClick={refreshPage} title="重新读取复盘数据">
+                <RefreshCw size={16} aria-hidden="true" />
+                刷新
+              </button>
+              <button className={primaryButtonClass} data-component="mg-btn" type="button" onClick={() => openDialog("review")}>
+                <Plus size={16} aria-hidden="true" />
+                新建数据复盘
+              </button>
+            </div>
+          ) : null}
+        </header>
       </div>
       {runtimeState === "checking" ? (
         <SessionState kind="loading" title="正在确认访问权限" detail="页面数据将在身份确认后读取。" />
@@ -417,11 +454,13 @@ export default function ReviewsPage() {
         <section className={styles.workspace} data-page-layout="persistent-rail">
           <div className={styles.primaryColumn} data-page-primary data-primary-flow>
             <SummaryBand state={data.summary} />
-            <nav className="mg-tabs" aria-label="复盘增长视图" role="tablist">
+            <nav className="mg-tabs" data-component="mg-tabs" aria-label="复盘增长视图" role="tablist">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   className="mg-tab"
+                  data-component="mg-tab"
+                  id={tab.id + "-tab"}
                   type="button"
                   role="tab"
                   aria-selected={activeTab === tab.id}
@@ -494,15 +533,12 @@ export default function ReviewsPage() {
 }
 
 function SessionState({ kind, title, detail }: { kind: "loading" | "permission" | "error"; title: string; detail: string }) {
-  return (
-    <section className={[styles.sessionState, kind === "loading" ? styles.loadingState : ""].join(" ")} role={kind === "error" ? "alert" : "status"} aria-busy={kind === "loading"}>
-      {kind === "loading" ? <LoaderCircle className="spin" size={22} aria-hidden="true" /> : <AlertCircle size={22} aria-hidden="true" />}
-      <strong>{title}</strong>
-      <p>{detail}</p>
-      {kind === "permission" ? <a className={styles.loginLink} href={loginUrl()}><LogIn size={15} aria-hidden="true" />登录并查看</a> : null}
-      {kind === "error" ? <button className={styles.secondaryButton} type="button" onClick={() => window.location.reload()}><RefreshCw size={15} aria-hidden="true" />重新加载</button> : null}
-    </section>
-  );
+  return <SurfaceState
+    kind={kind}
+    title={title}
+    detail={detail}
+    action={kind === "error" ? <button className={secondaryButtonClass} data-component="mg-btn" type="button" onClick={() => window.location.reload()}><RefreshCw size={15} aria-hidden="true" />重新加载</button> : undefined}
+  />;
 }
 
 function SummaryBand({ state }: { state: LoadState<ReviewSummaryResponse> }) {
@@ -515,8 +551,8 @@ function SummaryBand({ state }: { state: LoadState<ReviewSummaryResponse> }) {
     { label: "证据覆盖", value: summary ? formatCoverage(summary.evidenceCoverage) : stateValue(state), detail: summary ? dateValue(summary.generatedAt) : "读取状态" },
   ];
   return (
-    <section className={styles.summaryBand} aria-label="复盘摘要" aria-busy={state.status === "loading"}>
-      {metrics.map((metric) => <div className={styles.summaryMetric} key={metric.label}><span>{metric.label}</span><strong>{metric.value}</strong><small>{metric.detail}</small></div>)}
+    <section className={["mg-metric-grid", styles.summaryBand].join(" ")} data-component="mg-metric-grid" aria-label="复盘摘要" aria-busy={state.status === "loading"}>
+      {metrics.map((metric) => <Metric variant="panel" className={styles.summaryMetric} key={metric.label} label={metric.label} value={metric.value} detail={metric.detail} />)}
     </section>
   );
 }
@@ -546,7 +582,7 @@ function ReviewsView({
   onRetry: () => void;
 }) {
   return (
-    <section className={styles.panel} id="reviews-tabpanel" role="tabpanel" aria-label="发布复盘" data-page-terminal-surface="primary">
+    <section className={panelClass} data-component="mg-panel" id="reviews-tabpanel" role="tabpanel" aria-labelledby="reviews-tab" data-page-terminal-surface="primary">
       <PanelHeader
         icon={<FileCheck2 size={19} aria-hidden="true" />}
         title="发布复盘"
@@ -594,7 +630,7 @@ function ReviewsView({
                     <td className={styles.longValue}>{valueOrUnknown(item.modelSuggestion, "未生成")}</td>
                     <td className={styles.longValue}>{valueOrUnknown(item.humanDecision, "未确认")}</td>
                     <td>{formatCount(item.revision)}</td>
-                    <td><button className={styles.iconButton} type="button" onClick={() => onSelectReview(item.publicReviewId)} disabled={item.humanDecision !== null || item.status === "confirmed"} title={item.humanDecision !== null || item.status === "confirmed" ? "已确认" : "选择后确认"} aria-label={item.humanDecision !== null || item.status === "confirmed" ? "已确认" : "选择后确认"}><CheckCircle2 size={16} aria-hidden="true" /></button></td>
+                    <td><button className={iconButtonClass} data-component="mg-btn" type="button" onClick={() => onSelectReview(item.publicReviewId)} disabled={item.humanDecision !== null || item.status === "confirmed"} title={item.humanDecision !== null || item.status === "confirmed" ? "已确认" : "选择后确认"} aria-label={item.humanDecision !== null || item.status === "confirmed" ? "已确认" : "选择后确认"}><ReviewStatusIcon status={item.status} confirmed={item.humanDecision !== null} /></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -625,10 +661,10 @@ function MetricView({
   onRetry: () => void;
 }) {
   return (
-    <section className={styles.panel} id={id} role="tabpanel" aria-label={title} data-page-terminal-surface="primary">
-      <PanelHeader icon={icon} title={title} detail={state.status === "ready" ? recordCountLabel(state.data.items.length) : "读取状态"} action={onImport ? <button className={styles.secondaryButton} type="button" onClick={onImport}><Upload size={15} aria-hidden="true" />导入指标</button> : null} />
+    <section className={panelClass} data-component="mg-panel" id={id} role="tabpanel" aria-labelledby={id.replace("-tabpanel", "-tab")} data-page-terminal-surface="primary">
+      <PanelHeader icon={icon} title={title} detail={state.status === "ready" ? recordCountLabel(state.data.items.length) : "读取状态"} action={onImport ? <button className={secondaryButtonClass} data-component="mg-btn" type="button" onClick={onImport}><Upload size={15} aria-hidden="true" />导入指标</button> : null} />
       {state.status !== "ready" ? <ResourceState state={state} resource={title} onRetry={onRetry} /> : state.data.items.length === 0 ? (
-        <EmptyState title={title + "暂无记录"} detail="只有带有时间窗口和证据质量的真实快照会显示在这里。" action={onImport ? <button className={styles.primaryButton} type="button" onClick={onImport}><Upload size={15} aria-hidden="true" />导入第一条指标</button> : null} />
+        <EmptyState title={title + "暂无记录"} detail="只有带有时间窗口和证据质量的真实快照会显示在这里。" action={onImport ? <button className={primaryButtonClass} data-component="mg-btn" type="button" onClick={onImport}><Upload size={15} aria-hidden="true" />导入第一条指标</button> : null} />
       ) : (
         <>
           <MetricTable items={state.data.items} />
@@ -641,16 +677,16 @@ function MetricView({
 
 function GrowthView({ summary, onRetry }: { summary: LoadState<ReviewSummaryResponse>; onRetry: () => void }) {
   return (
-    <section className={styles.panel} id="growth-tabpanel" role="tabpanel" aria-label="增长摘要" data-page-terminal-surface="primary">
+    <section className={panelClass} data-component="mg-panel" id="growth-tabpanel" role="tabpanel" aria-labelledby="growth-tab" data-page-terminal-surface="primary">
       <PanelHeader icon={<BarChart3 size={19} aria-hidden="true" />} title="增长摘要" detail="仅呈现已汇总的数据" />
       {summary.status !== "ready" ? <ResourceState state={summary} resource="增长摘要" onRetry={onRetry} /> : (
         <>
           <div className={styles.growthGrid}>
-            <SummaryValue label="复盘报告" value={formatCount(summary.data.summary.reviewCount)} />
-            <SummaryValue label="24 小时待补" value={formatCount(summary.data.summary.pending24h)} />
-            <SummaryValue label="7 天待补" value={formatCount(summary.data.summary.pending7d)} />
-            <SummaryValue label="已确认" value={formatCount(summary.data.summary.confirmedCount)} />
-            <SummaryValue label="证据覆盖" value={formatCoverage(summary.data.summary.evidenceCoverage)} />
+            <Metric variant="panel" className={styles.growthMetric} label="复盘报告" value={formatCount(summary.data.summary.reviewCount)} />
+            <Metric variant="panel" className={styles.growthMetric} label="24 小时待补" value={formatCount(summary.data.summary.pending24h)} />
+            <Metric variant="panel" className={styles.growthMetric} label="7 天待补" value={formatCount(summary.data.summary.pending7d)} />
+            <Metric variant="panel" className={styles.growthMetric} label="已确认" value={formatCount(summary.data.summary.confirmedCount)} />
+            <Metric variant="panel" className={styles.growthMetric} label="证据覆盖" value={formatCoverage(summary.data.summary.evidenceCoverage)} />
           </div>
         </>
       )}
@@ -660,7 +696,7 @@ function GrowthView({ summary, onRetry }: { summary: LoadState<ReviewSummaryResp
 
 function ReviewInspector({ selectedReview, canConfirm, onConfirm }: { selectedReview: ReviewItem | null; canConfirm: boolean; onConfirm: () => void }) {
   return (
-    <aside className={[styles.panel, styles.inspector].join(" ")} aria-label="复盘检查器" data-page-inspector data-page-terminal-surface="inspector">
+    <aside className={[panelClass, styles.inspector].join(" ")} data-component="mg-panel" aria-label="复盘检查器" data-page-inspector data-page-terminal-surface="inspector">
       <PanelHeader
         icon={<FileCheck2 size={19} aria-hidden="true" />}
         title="复盘检查器"
@@ -675,10 +711,6 @@ function ReviewInspector({ selectedReview, canConfirm, onConfirm }: { selectedRe
   );
 }
 
-function SummaryValue({ label, value }: { label: string; value: string }) {
-  return <div className={styles.growthMetric}><span>{label}</span><strong>{value}</strong></div>;
-}
-
 function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: () => void }) {
   return (
     <section className={styles.layers} aria-label="复盘分层">
@@ -687,7 +719,7 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
           <h2>{reviewPostTitle(review)}</h2>
           <p><span className={styles.postId}>{review.publicPostId}</span> · 报告 {review.publicReviewId} · 数据版本 {formatCount(review.revision)}</p>
         </div>
-        {onConfirm ? <button className={styles.primaryButton} type="button" onClick={onConfirm} disabled={review.humanDecision !== null || review.status === "confirmed"}><CheckCircle2 size={15} aria-hidden="true" />{review.humanDecision === null ? "确认人工决策" : "已完成确认"}</button> : null}
+        {onConfirm ? <button className={primaryButtonClass} data-component="mg-btn" type="button" onClick={onConfirm} disabled={review.humanDecision !== null || review.status === "confirmed"}><CheckCircle2 size={15} aria-hidden="true" />{review.humanDecision === null ? "确认人工决策" : "已完成确认"}</button> : null}
       </div>
       <div className={styles.layerGrid}>
         <LayerPanel icon={<Database size={17} aria-hidden="true" />} title="数据层" caption="由指标快照提供">
@@ -726,30 +758,35 @@ function MetricTable({ items }: { items: MetricSnapshot[] }) {
 }
 
 function PanelHeader({ icon, title, detail, action }: { icon: ReactNode; title: string; detail: string; action?: ReactNode }) {
-  return <header className={styles.panelHeader}><div className={styles.panelTitle}><span className={styles.panelIcon}>{icon}</span><div><h2>{title}</h2><p>{detail}</p></div></div>{action}</header>;
+  return <header className={panelHeaderClass} data-component="mg-panel-head"><div className={styles.panelTitle}><span className={styles.panelIcon}>{icon}</span><div><h2>{title}</h2><p>{detail}</p></div></div>{action}</header>;
 }
 
 function ResourceState<T>({ state, resource, onRetry }: { state: LoadState<T>; resource: string; onRetry: () => void }) {
-  if (state.status === "loading") return <div className={styles.resourceState} role="status" aria-busy="true"><LoaderCircle className="spin" size={21} aria-hidden="true" /><strong>正在读取{resource}</strong></div>;
-  if (state.status === "permission") return <div className={styles.resourceState} role="alert"><AlertCircle size={21} aria-hidden="true" /><strong>{state.message}</strong><a className={styles.loginLink} href={loginUrl()}><LogIn size={15} aria-hidden="true" />重新登录</a></div>;
-  if (state.status === "error") return <div className={styles.resourceState} role="alert"><AlertCircle size={21} aria-hidden="true" /><strong>{state.message}</strong><button className={styles.secondaryButton} type="button" onClick={onRetry}><RefreshCw size={15} aria-hidden="true" />重试</button></div>;
-  return <div className={styles.resourceState} role="status"><Database size={21} aria-hidden="true" /><strong>等待读取{resource}</strong></div>;
+  if (state.status === "loading") return <SurfaceState kind="loading" title={`正在读取${resource}`} detail="等待服务端返回当前账户数据。" />;
+  if (state.status === "permission") return <SurfaceState kind="permission" title="暂无查看权限" detail={state.message} action={<a className={secondaryButtonClass} data-component="mg-btn" href={loginUrl()}><LogIn size={15} aria-hidden="true" />重新登录</a>} />;
+  if (state.status === "error") return <SurfaceState kind="error" title={`${resource}读取失败`} detail={state.message} action={<button className={secondaryButtonClass} data-component="mg-btn" type="button" onClick={onRetry}><RefreshCw size={15} aria-hidden="true" />重试</button>} />;
+  return <SurfaceState kind="empty" title={`等待读取${resource}`} detail="" />;
 }
 
 function EmptyState({ title, detail, action }: { title: string; detail: string; action?: ReactNode }) {
-  return <div className={styles.emptyState} role="status"><AlertCircle size={21} aria-hidden="true" /><strong>{title}</strong><p>{detail}</p>{action}</div>;
+  return <SurfaceState kind="empty" title={title} detail={detail} action={action} />;
 }
 
 function CursorFooter({ cursor, onNext }: { cursor: string | null; onNext: () => void }) {
-  return cursor ? <div className={styles.cursorFooter}><span>还有更多记录</span><button className={styles.secondaryButton} type="button" onClick={onNext}><RefreshCw size={15} aria-hidden="true" />继续读取</button></div> : null;
+  return cursor ? <div className={styles.cursorFooter}><span>还有更多记录</span><button className={secondaryButtonClass} data-component="mg-btn" type="button" onClick={onNext}><RefreshCw size={15} aria-hidden="true" />继续读取</button></div> : null;
 }
 
 function WindowMark({ label, value }: { label: string; value: string | null }) {
-  return <span className={value ? styles.windowKnown : styles.windowMissing}>{label}: {value ? "已采集" : "未采集"}</span>;
+  return <span className={["mg-badge", value ? styles.windowKnown : styles.windowMissing].join(" ")} data-component="mg-badge" data-tone={value ? "good" : "warn"}>{label}: {value ? "已采集" : "未采集"}</span>;
 }
 
 function QualityBadge({ value }: { value: string }) {
-  return <span className={[styles.qualityBadge, qualityClass(value)].join(" ")}>{qualityLabel(value)}</span>;
+  return <span className={["mg-badge", qualityClass(value)].join(" ")} data-component="mg-badge" data-tone={qualityTone(value)}>{qualityLabel(value)}</span>;
+}
+
+function ReviewStatusIcon({ status, confirmed }: { status: string; confirmed: boolean }) {
+  const isConfirmed = confirmed || status.trim().toLowerCase() === "confirmed";
+  return isConfirmed ? <CheckCircle2 size={16} aria-hidden="true" /> : <FileCheck2 size={16} aria-hidden="true" />;
 }
 
 const qualityToneClasses: Record<ReturnType<typeof reviewQualityTone>, string> = {
@@ -761,6 +798,14 @@ const qualityToneClasses: Record<ReturnType<typeof reviewQualityTone>, string> =
 
 function qualityClass(value: string): string {
   return qualityToneClasses[reviewQualityTone(value)];
+}
+
+function qualityTone(value: string): "good" | "warn" | "danger" | "info" {
+  const normalized = reviewQualityTone(value);
+  if (normalized === "verified") return "good";
+  if (normalized === "partial") return "warn";
+  if (normalized === "unverified") return "danger";
+  return "info";
 }
 
 // Left as its own word table rather than delegated to qualityDisplayLabel (cluster LE-05): three
@@ -934,9 +979,48 @@ function ConfirmDialog({ review, actionState, onClose, onSubmit }: { review: Rev
 }
 
 function DialogFrame({ title, onClose, busy, children }: { title: string; onClose: () => void; busy: boolean; children: ReactNode }) {
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  const busyRef = useRef(busy);
+  onCloseRef.current = onClose;
+  busyRef.current = busy;
+
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !busyRef.current) {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key === "Tab") {
+        const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusable || focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, []);
+
   return <div className={styles.dialogBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section className={styles.dialog} role="dialog" aria-modal="true" aria-label={title} onMouseDown={(event) => event.stopPropagation()}>
-      <header className={styles.dialogHeader}><h2>{title}</h2><button className={styles.iconButton} type="button" onClick={onClose} disabled={busy} title="关闭" aria-label="关闭"><X size={17} aria-hidden="true" /></button></header>
+    <section ref={dialogRef} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="reviews-dialog-title" onMouseDown={(event) => event.stopPropagation()}>
+      <header className={styles.dialogHeader}><h2 id="reviews-dialog-title">{title}</h2><button ref={closeButtonRef} className={iconButtonClass} data-component="mg-btn" type="button" onClick={onClose} disabled={busy} title="关闭" aria-label="关闭"><X size={17} aria-hidden="true" /></button></header>
       {children}
     </section>
   </div>;
@@ -952,7 +1036,7 @@ function FormNotice({ actionState, formError }: { actionState: ActionState; form
 
 function DialogActions({ onClose, busy, submitLabel, icon }: { onClose: () => void; busy: boolean; submitLabel: string; icon: ReactNode }) {
   return <div className={styles.dialogActions}>
-    <button className={styles.secondaryButton} type="button" onClick={onClose} disabled={busy}>取消</button>
-    <button className={styles.primaryButton} type="submit" disabled={busy} aria-busy={busy}>{busy ? <LoaderCircle className="spin" size={15} aria-hidden="true" /> : icon}{busy ? "提交中" : submitLabel}</button>
+    <button className={secondaryButtonClass} data-component="mg-btn" type="button" onClick={onClose} disabled={busy}>取消</button>
+    <button className={primaryButtonClass} data-component="mg-btn" type="submit" disabled={busy} aria-busy={busy}>{busy ? <LoaderCircle className="spin" size={15} aria-hidden="true" /> : icon}{busy ? "提交中" : submitLabel}</button>
   </div>;
 }

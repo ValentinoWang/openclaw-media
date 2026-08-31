@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo } from 'react'
 import {
   AlertCircle,
   ArrowRight,
@@ -20,6 +20,7 @@ import type { MediaWebTask } from '../mediaWebApi'
 import { runStatusLabel, runStatusTone } from '../statusPresentation'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
 import { Metric } from '../ui/Metric'
+import { SurfaceState } from '../ui/SurfaceState'
 import styles from './CampaignsPage.module.css'
 
 const stages = [
@@ -41,18 +42,18 @@ export default function CampaignsPage() {
   const completed = campaignTasks.filter((task) => task.terminal && task.status === 'succeeded')
 
   return (
-    <main className={styles.page} data-accent="campaign">
-      <section className={styles.hero}>
+    <main className="mg-page" data-accent="campaign" data-page-ownership="personal">
+      <section className={`mg-hero ${styles.hero}`} data-page-prelude>
         <div>
-          <span><Sparkles size={15} />CAMPAIGN DELIVERY</span>
+          <span className="mg-eyebrow"><Sparkles size={15} />CAMPAIGN DELIVERY</span>
           <h1>活动与商单，从 Brief 一路交付</h1>
-          <p>把品牌要求、活动信息、脚本、分镜、返修意见和最终发布包维护在同一个履约项目里。</p>
-          <div className={styles.heroActions}>
-            <button className={styles.primaryButton} type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><Plus size={17} />新建商单项目</button>
-            <Link className={styles.secondaryButton} to="/business"><BriefcaseBusiness size={17} />查看商务机会</Link>
+          <p className="mg-hero-lead">把品牌要求、活动信息、脚本、分镜、返修意见和最终发布包维护在同一个履约项目里。</p>
+          <div className="mg-hero-actions">
+            <button className="mg-btn mg-btn-primary" type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><Plus size={17} />新建商单项目</button>
+            <Link className="mg-btn mg-btn-soft" to="/business"><BriefcaseBusiness size={17} />查看商务机会</Link>
           </div>
         </div>
-        <div className={styles.heroCard}>
+        <div className={`mg-hero-signal ${styles.heroCard}`}>
           <span>当前履约</span>
           <strong>{active.length}</strong>
           <p>{waiting.length ? `${waiting.length} 个项目等待审核或补充` : '没有待人工确认的交付任务'}</p>
@@ -65,7 +66,7 @@ export default function CampaignsPage() {
           <article key={label}>
             <span><Icon size={18} /></span>
             <div><strong>{label}</strong><small>{detail}</small></div>
-            {index < stages.length - 1 ? <ArrowRight size={15} /> : null}
+            {index < stages.length - 1 ? <ArrowRight size={15} aria-hidden="true" /> : null}
           </article>
         ))}
       </section>
@@ -78,24 +79,24 @@ export default function CampaignsPage() {
       </section>
 
       <div className={styles.layout}>
-        <section className={styles.listPanel}>
-          <header className={styles.panelHeader}><div><span>交付项目</span><h2>最近商单</h2></div><button type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><Plus size={15} />新建</button></header>
+        <section className="mg-panel">
+          <header className="mg-panel-head"><div><span>交付项目</span><h2>最近商单</h2></div><button className="mg-btn mg-btn-soft" type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><Plus size={15} />新建</button></header>
           {campaignTasks.length ? (
             <div className={styles.campaignList}>
               {campaignTasks.map((task) => <CampaignCard key={task.taskId} task={task} onOpen={() => openWorkspace()} />)}
             </div>
           ) : (
-            <EmptyState
-              icon={<BriefcaseBusiness size={24} />}
+            <SurfaceState
+              kind="empty"
               title="还没有商单交付项目"
               detail="导入品牌或活动 Brief 后，系统会生成可编辑初稿、分镜和交付文档。"
-              action={<button type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}>创建第一个商单</button>}
+              action={<button className="mg-btn mg-btn-primary" type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}>创建第一个商单</button>}
             />
           )}
         </section>
 
-        <aside className={styles.inspector}>
-          <header className={styles.panelHeader}><div><span>履约标准</span><h2>一份商单必须闭合什么</h2></div></header>
+        <aside className="mg-panel">
+          <header className="mg-panel-head"><div><span>履约标准</span><h2>一份商单必须闭合什么</h2></div></header>
           <div className={styles.checkList}>
             <CheckItem title="原始 Brief 可回查" detail="品牌、产品、平台、交付时间和禁区不靠模型猜测。" />
             <CheckItem title="脚本和分镜可以继续改" detail="人工修改优先，返修产生新版本，不覆盖已确认稿。" />
@@ -119,7 +120,7 @@ function CampaignCard({ task, onOpen }: { task: MediaWebTask; onOpen: () => void
     <article className={styles.campaignCard}>
       <header>
         <div className={styles.campaignIdentity}><span><CircleDot size={10} />商单交付</span><h3>{task.summary || '未命名商单项目'}</h3><code>{task.taskId}</code></div>
-        <span className={styles.statusBadge} data-tone={tone}>{runStatusLabel(task.status)}</span>
+        <span className="mg-badge" data-tone={tone}>{runStatusLabel(task.status)}</span>
       </header>
       <div className={styles.progressRow}><div><span style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>
       <footer>
@@ -135,8 +136,4 @@ function CampaignCard({ task, onOpen }: { task: MediaWebTask; onOpen: () => void
 
 function CheckItem({ title, detail }: { title: string; detail: string }) {
   return <div className={styles.checkItem}><CheckCircle2 size={18} /><div><strong>{title}</strong><p>{detail}</p></div></div>
-}
-
-function EmptyState({ icon, title, detail, action }: { icon: ReactNode; title: string; detail: string; action: ReactNode }) {
-  return <div className={styles.emptyState}>{icon}<strong>{title}</strong><p>{detail}</p>{action}</div>
 }

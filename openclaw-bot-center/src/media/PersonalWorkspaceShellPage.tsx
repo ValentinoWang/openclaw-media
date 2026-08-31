@@ -1,14 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
-  AlertCircle,
   ArrowLeft,
   CheckCircle2,
   Cloud,
   Eye,
   FileText,
   FolderOpen,
-  LoaderCircle,
-  LockKeyhole,
   LogIn,
   MessageSquareText,
   RefreshCw,
@@ -27,6 +24,8 @@ import { useMediaWeb } from "./MediaWebWorkspace";
 import CanonicalDocumentRenderer from "./pages/ordinary/CanonicalDocumentRenderer";
 import { projectStageDisplayLabel, projectStatusDisplayLabel } from "./ui/displayLabels";
 import { formatDateOnly } from "./ui/datetime";
+import { Metric } from "./ui/Metric";
+import { SurfaceState, type SurfaceStateKind } from "./ui/SurfaceState";
 
 type PersonalProject = {
   publicProjectId: string;
@@ -200,30 +199,30 @@ export default function PersonalWorkspaceShellPage() {
   }, [artifactId, personalSession, refreshToken, runtimeState]);
 
   if (runtimeState === "checking") {
-    return <PersonalPageState status="loading" message="正在确认个人工作区" />;
+    return <PersonalShellState><PersonalPageState status="loading" message="正在确认个人工作区" /></PersonalShellState>;
   }
   if (runtimeState === "unauthenticated" || !session) {
-    return <PersonalPageState status="unauthorized" message="当前会话无权访问个人云端成果。" />;
+    return <PersonalShellState><PersonalPageState status="unauthorized" message="当前会话无权访问个人云端成果。" /></PersonalShellState>;
   }
   if (runtimeState === "unavailable") {
-    return <PersonalPageState status="error" message="身份服务暂时不可用，个人成果不会使用默认数据。" onRefresh={refresh} />;
+    return <PersonalShellState><PersonalPageState status="error" message="身份服务暂时不可用，个人成果不会使用默认数据。" onRefresh={refresh} /></PersonalShellState>;
   }
   if (!personalSession) {
-    return <PersonalPageState status="unauthorized" message="当前服务端会话不是个人工作区。" />;
+    return <PersonalShellState><PersonalPageState status="unauthorized" message="当前服务端会话不是个人工作区。" /></PersonalShellState>;
   }
 
   return (
-    <main className="personal-workspace-page" data-workspace-mode="personal_web">
-      <header className="page-heading personal-page-heading">
+    <main className="personal-workspace-page" data-workspace-mode="personal_web" data-page-ownership="personal" data-accent="studio">
+      <header className="page-heading personal-page-heading mg-hero" data-page-prelude>
         <div>
-          <span className="eyebrow">个人工作区</span>
+          <span className="eyebrow mg-eyebrow">个人工作区</span>
           <h1>{artifactId ? "云端成果预览" : "云端成果"}</h1>
-          <p>个人成果只从服务端解析的云端内部成果读取，第一阶段不开放内容生产或组织资源操作。</p>
+          <p className="mg-hero-lead">个人成果只从服务端解析的云端内部成果读取，第一阶段不开放内容生产或组织资源操作。</p>
         </div>
         <div className="personal-page-actions">
-          <span className="page-heading-status"><ShieldCheck size={16} />服务端已解析</span>
+          <span className="page-heading-status mg-badge" data-tone="good"><ShieldCheck size={16} />服务端已解析</span>
           <button
-            className="topbar-command personal-task-status-command"
+            className="personal-task-status-command mg-btn mg-btn-soft"
             type="button"
             aria-haspopup="dialog"
             aria-expanded={taskStatusOpen}
@@ -232,7 +231,7 @@ export default function PersonalWorkspaceShellPage() {
             <MessageSquareText size={15} aria-hidden="true" />
             <span>查看任务状态</span>
           </button>
-          <button className="quiet-button personal-refresh-button" type="button" onClick={refresh} disabled={projects.status === "loading"}>
+          <button className="quiet-button personal-refresh-button mg-btn mg-btn-ghost" type="button" onClick={refresh} disabled={projects.status === "loading"}>
             <RefreshCw size={15} aria-hidden="true" />刷新
           </button>
         </div>
@@ -241,11 +240,32 @@ export default function PersonalWorkspaceShellPage() {
       {artifactId ? (
         <PersonalPreviewState artifactId={artifactId} state={preview} onRefresh={refresh} />
       ) : (
-        <section className="personal-workspace-grid" aria-label="个人云端成果入口">
-          <section className="section-panel personal-project-panel" aria-labelledby="personal-projects-title">
-            <div className="section-heading">
+        <>
+          <section className="personal-workspace-metrics mg-metric-grid" aria-label="个人云端成果指标">
+            <Metric
+              variant="card"
+              className="mg-metric personal-workspace-metric"
+              tone="accent"
+              icon={<FolderOpen size={18} aria-hidden="true" />}
+              label="云端项目"
+              value={projects.status === "ready" ? projects.data.length : "—"}
+              detail={projects.status === "ready" ? "服务端已读取" : "等待服务端读取"}
+            />
+            <Metric
+              variant="card"
+              className="mg-metric personal-workspace-metric"
+              tone="accent"
+              icon={<Cloud size={18} aria-hidden="true" />}
+              label="可预览成果"
+              value={artifacts.status === "ready" ? artifacts.data.length : "—"}
+              detail={artifacts.status === "ready" ? "当前项目范围" : "选择项目后读取"}
+            />
+          </section>
+          <section className="personal-workspace-grid" aria-label="个人云端成果入口">
+          <section className="section-panel personal-project-panel mg-panel" aria-labelledby="personal-projects-title">
+            <div className="section-heading mg-panel-head">
               <div><FolderOpen size={17} aria-hidden="true" /><h2 id="personal-projects-title">我的云端成果</h2></div>
-              <span>{projects.status === "ready" ? projects.data.length : 0}</span>
+              <span className="mg-badge" data-tone="accent">{projects.status === "ready" ? projects.data.length : 0}</span>
             </div>
             <PersonalListState state={projects} emptyMessage={EMPTY_STATE_MESSAGE} onRefresh={refresh} />
             {projects.status === "ready" ? (
@@ -267,10 +287,10 @@ export default function PersonalWorkspaceShellPage() {
             ) : null}
           </section>
 
-          <section className="section-panel personal-artifact-panel" aria-labelledby="personal-artifacts-title">
-            <div className="section-heading">
+          <section className="section-panel personal-artifact-panel mg-panel" aria-labelledby="personal-artifacts-title">
+            <div className="section-heading mg-panel-head">
               <div><Cloud size={17} aria-hidden="true" /><h2 id="personal-artifacts-title">云端交付与预览</h2></div>
-              <span>{artifacts.status === "ready" ? artifacts.data.length : 0}</span>
+              <span className="mg-badge" data-tone="accent">{artifacts.status === "ready" ? artifacts.data.length : 0}</span>
             </div>
             {!selectedProjectId && projects.status === "ready" ? (
               <PersonalPageState status="empty" message="选择一个云端项目后查看成果。" />
@@ -283,7 +303,7 @@ export default function PersonalWorkspaceShellPage() {
                   <article className="personal-artifact-item" role="listitem" key={artifact.publicArtifactId}>
                     <div className="personal-artifact-icon" aria-hidden="true"><FileText size={17} /></div>
                     <div className="personal-artifact-copy"><strong>{artifact.displayName?.trim() || "未命名成果"}</strong><span>修订 {artifact.currentRevision} · {formatDate(artifact.updatedAt)}</span></div>
-                    <Link className="personal-preview-link" to={`/workspace/preview/${artifact.publicArtifactId}`}>
+                    <Link className="personal-preview-link mg-btn mg-btn-ghost" to={`/workspace/preview/${artifact.publicArtifactId}`}>
                       <Eye size={15} aria-hidden="true" />查看云端预览
                     </Link>
                   </article>
@@ -291,7 +311,8 @@ export default function PersonalWorkspaceShellPage() {
               </div>
             ) : null}
           </section>
-        </section>
+          </section>
+        </>
       )}
 
       {taskStatusOpen ? <PersonalTaskStatusDrawer onClose={() => setTaskStatusOpen(false)} /> : null}
@@ -334,10 +355,10 @@ function PersonalPreviewState({
   if (state.status === "ready") {
     const blocks = state.data.data.revision.body.blocks;
     return (
-      <section className="section-panel personal-preview-panel" aria-label="云端成果预览">
+      <section className="section-panel personal-preview-panel mg-panel" aria-label="云端成果预览">
         <header className="personal-preview-header">
-          <div><span className="eyebrow">云端只读预览</span><h2>{state.data.data.artifact.artifactKind || "个人成果"}</h2></div>
-          <Link className="quiet-button personal-back-link" to="/workspace"><ArrowLeft size={15} aria-hidden="true" />返回成果列表</Link>
+          <div><span className="eyebrow mg-eyebrow">云端只读预览</span><h2>{state.data.data.artifact.artifactKind || "个人成果"}</h2></div>
+          <Link className="quiet-button personal-back-link mg-btn mg-btn-ghost" to="/workspace"><ArrowLeft size={15} aria-hidden="true" />返回成果列表</Link>
         </header>
         {blocks.length ? <CanonicalDocumentRenderer blocks={blocks} /> : <PersonalPageState status="empty" message="当前修订没有可展示的正文。" />}
         <small className="personal-preview-id">成果标识：{artifactId}</small>
@@ -372,14 +393,23 @@ function PersonalPageState({
 }) {
   const isLoading = status === "loading";
   const isUnauthorized = status === "unauthorized";
-  const isMissingEntitlement = status === "missingEntitlement";
-  const isError = status === "error" || status === "notFound";
+  const action = isUnauthorized ? (
+    <a className="mg-state-action mg-btn mg-btn-primary" href={loginUrl()}>
+      <LogIn size={15} aria-hidden="true" />重新登录
+    </a>
+  ) : onRefresh && !isLoading ? (
+    <button className="mg-state-action mg-btn mg-btn-ghost" type="button" onClick={onRefresh}>
+      <RefreshCw size={15} aria-hidden="true" />重新读取
+    </button>
+  ) : undefined;
+  return <SurfaceState kind={stateKind(status)} title={stateTitle(status)} detail={message || "个人云端成果暂时为空。"} action={action} />;
+}
+
+function PersonalShellState({ children }: { children: ReactNode }) {
   return (
-    <div className={`personal-state is-${status}`} role="status" aria-busy={isLoading}>
-      {isLoading ? <LoaderCircle className="spin" size={22} aria-hidden="true" /> : isUnauthorized ? <LockKeyhole size={22} aria-hidden="true" /> : isMissingEntitlement ? <ShieldCheck size={22} aria-hidden="true" /> : isError ? <AlertCircle size={22} aria-hidden="true" /> : <CheckCircle2 size={22} aria-hidden="true" />}
-      <div><strong>{stateTitle(status)}</strong><span>{message || "个人云端成果暂时为空。"}</span></div>
-      {isUnauthorized ? <a className="primary-button" href={loginUrl()}><LogIn size={15} aria-hidden="true" />重新登录</a> : onRefresh && !isLoading ? <button className="quiet-button" type="button" onClick={onRefresh}><RefreshCw size={15} aria-hidden="true" />重新读取</button> : null}
-    </div>
+    <main className="personal-workspace-page" data-workspace-mode="personal_web" data-page-ownership="personal" data-accent="studio">
+      <div data-page-prelude>{children}</div>
+    </main>
   );
 }
 
@@ -391,6 +421,15 @@ function stateTitle(status: LoadStatus): string {
   if (status === "notFound") return "成果暂不可见";
   if (status === "error") return "云端成果暂不可读取";
   return "等待云端成果";
+}
+
+function stateKind(status: LoadStatus): SurfaceStateKind {
+  if (status === "loading") return "loading";
+  if (status === "unauthorized") return "permission";
+  if (status === "missingEntitlement") return "forbidden";
+  if (status === "notFound") return "notFound";
+  if (status === "empty" || status === "idle") return "empty";
+  return "error";
 }
 
 function mapRequestError<T>(error: unknown, fallback: string): LoadState<T> {

@@ -1,14 +1,16 @@
 import {
   AlertCircle,
-  CheckCircle2,
+  Activity,
+  Building2,
   Clock3,
-  LoaderCircle,
   RefreshCw,
   ShieldCheck,
+  UserRound,
+  UserRoundPlus,
   WalletCards,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import {
   BusinessOperationError,
   callBusinessOperation,
@@ -16,8 +18,10 @@ import {
 import { useMediaWeb } from "../../MediaWebWorkspace";
 import { isMissingEntitlementError } from "../../businessErrorPresentation";
 import { isPublicId } from "../../identifiers";
+import { Metric } from "../../ui/Metric";
 import { describeBusinessError } from "../../ui/businessOperationError";
 import { ECHO_INVALID, formatShortDateTime } from "../../ui/datetime";
+import { SurfaceState } from "../../ui/SurfaceState";
 import styles from "./AdminOverviewPage.module.css";
 
 type ServiceHealthStatus = "healthy" | "degraded" | "unavailable" | "unknown";
@@ -106,6 +110,16 @@ const ACTION_TARGET_TYPES = new Set<AdminActionTargetType>([
   "unknown",
 ]);
 
+const ACTION_TARGET_TYPE_LABELS: Record<AdminActionTargetType, string> = {
+  platform: "平台",
+  user: "用户",
+  tenant: "租户",
+  billing: "计费",
+  admission: "准入",
+  session: "会话",
+  unknown: "未知",
+};
+
 const ACTION_STATUS_LABELS: Record<AdminActionStatus, string> = {
   succeeded: "成功",
   failed: "失败",
@@ -170,15 +184,25 @@ export default function AdminOverviewPage() {
   const requestLoading = permitted && dashboardState.status === "loading";
 
   return (
-    <main className={`fidelity-page ${styles["admin-overview-page"]}`}>
-      <header className={styles["admin-overview-header"]}>
+    <main
+      className={`fidelity-page ${styles["admin-overview-page"]}`}
+      data-accent="desk"
+      data-page-ownership="governance"
+    >
+      <header
+        className={`mg-hero ${styles["admin-overview-header"]}`}
+        data-component="mg-hero"
+        data-page-prelude
+      >
         <div>
-          <p className={styles["admin-eyebrow"]}>平台治理控制台</p>
+          <span className="mg-eyebrow" data-component="mg-eyebrow">
+            平台治理控制台
+          </span>
           <h1>平台总览</h1>
           <p>治理租户准入、资源边界、计费与上游服务。</p>
         </div>
         <button
-          className={styles["admin-refresh-button"]}
+          className="mg-btn mg-btn-ghost"
           type="button"
           onClick={retry}
           disabled={!permitted || requestLoading}
@@ -195,48 +219,60 @@ export default function AdminOverviewPage() {
       </header>
 
       {runtimeState === "checking" ? (
-        <StatusState icon={LoaderCircle} tone="neutral" spinning>
-          正在确认平台权限…
-        </StatusState>
+        <SurfaceState
+          kind="loading"
+          title="正在确认平台权限"
+          detail="平台治理数据将在身份确认后读取。"
+        />
       ) : null}
       {runtimeState === "unauthenticated" ? (
-        <StatusState icon={ShieldCheck} tone="neutral">
-          当前会话未登录，平台治理数据不会加载。
-        </StatusState>
+        <SurfaceState
+          kind="permission"
+          title="当前会话未登录"
+          detail="当前会话未登录，平台治理数据不会加载。"
+          action={null}
+        />
       ) : null}
       {runtimeState === "unavailable" ? (
-        <StatusState icon={AlertCircle} tone="danger">
-          当前会话服务不可用，平台治理数据不会加载。
-        </StatusState>
+        <SurfaceState
+          kind="error"
+          title="平台总览服务不可用"
+          detail="当前会话服务不可用，平台治理数据不会加载。"
+        />
       ) : null}
       {runtimeState === "authenticated" && !permitted ? (
-        <StatusState icon={ShieldCheck} tone="neutral">
-          当前会话无权查看平台治理数据。
-        </StatusState>
+        <SurfaceState
+          kind="forbidden"
+          title="暂无查看权限"
+          detail="当前会话无权查看平台治理数据。"
+        />
       ) : null}
       {permitted && dashboardState.status === "loading" ? (
-        <StatusState icon={LoaderCircle} tone="neutral" spinning>
-          正在读取平台治理数据…
-        </StatusState>
+        <SurfaceState
+          kind="loading"
+          title="正在读取平台治理数据"
+          detail="正在读取当前账户可见的平台治理数据。"
+        />
       ) : null}
       {permitted && dashboardState.status === "forbidden" ? (
-        <StatusState icon={ShieldCheck} tone="danger">
-          {dashboardState.message}
-        </StatusState>
+        <SurfaceState
+          kind="forbidden"
+          title="暂无查看权限"
+          detail={dashboardState.message}
+        />
       ) : null}
       {permitted && dashboardState.status === "error" ? (
-        <StatusState
-          icon={AlertCircle}
-          tone="danger"
+        <SurfaceState
+          kind="error"
+          title="平台总览读取失败"
+          detail={dashboardState.message}
           action={
-            <button type="button" onClick={retry}>
+            <button className="mg-state-action" type="button" onClick={retry}>
               <RefreshCw size={14} aria-hidden="true" />
               重试
             </button>
           }
-        >
-          <span>{dashboardState.message}</span>
-        </StatusState>
+        />
       ) : null}
 
       {dashboard ? <DashboardContent data={dashboard} /> : null}
@@ -248,25 +284,29 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
   const { summary } = data;
   const healthMessage = getHealthMessage(summary.serviceHealth);
   const metrics = [
-    { label: "活跃租户", value: summary.counts.tenants },
-    { label: "已注册用户", value: summary.counts.users },
-    { label: "待处理准入", value: summary.counts.pendingAdmission },
-    { label: "异常运行", value: summary.counts.abnormalRuns },
+    { label: "活跃租户", value: summary.counts.tenants, icon: Building2 },
+    { label: "已注册用户", value: summary.counts.users, icon: UserRound },
+    { label: "待处理准入", value: summary.counts.pendingAdmission, icon: UserRoundPlus },
+    { label: "异常运行", value: summary.counts.abnormalRuns, icon: Activity },
   ];
 
   return (
     <>
       <section
-        className={styles["admin-metric-grid"]}
+        className={`mg-metric-grid ${styles["admin-metric-grid"]}`}
         aria-label="平台指标"
-        data-page-prelude
+        data-component="mg-metric-grid"
       >
-        {metrics.map((metric) => (
-          <article className={styles["admin-metric"]} key={metric.label}>
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-            <small>平台聚合读数</small>
-          </article>
+        {metrics.map(({ icon: Icon, ...metric }) => (
+          <Metric
+            variant="card"
+            className={`mg-metric ${styles["admin-metric"]}`}
+            icon={<Icon size={17} aria-hidden="true" />}
+            label={metric.label}
+            value={metric.value}
+            detail="平台聚合读数"
+            key={metric.label}
+          />
         ))}
       </section>
       <div
@@ -275,7 +315,8 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
       >
         <div className={styles["admin-primary-column"]} data-page-primary>
           <section
-            className={`${styles["admin-panel"]} ${styles["admin-governance-panel"]}`}
+            className={`mg-panel ${styles["admin-panel"]} ${styles["admin-governance-panel"]}`}
+            data-component="mg-panel"
           >
             <PanelHeading
               title="治理待办"
@@ -294,12 +335,18 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
                 ))}
               </div>
             ) : (
-              <EmptyState>暂无治理待办。</EmptyState>
+              <SurfaceState
+                kind="empty"
+                title="暂无治理待办。"
+                detail=""
+                density="compact"
+              />
             )}
           </section>
           <section
-            className={`${styles["admin-panel"]} ${styles["admin-operations-panel"]}`}
+            className={`mg-panel ${styles["admin-panel"]} ${styles["admin-operations-panel"]}`}
             data-page-terminal-surface="primary"
+            data-component="mg-panel"
           >
             <PanelHeading
               title="最近管理操作"
@@ -323,9 +370,10 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
                       <span>{action.reasonSummary}</span>
                     </div>
                     <div className={styles["admin-action-meta"]}>
-                      <span>{action.targetType}</span>
+                      <span>{ACTION_TARGET_TYPE_LABELS[action.targetType]}</span>
                       <span
-                        className={`${styles["admin-action-status"]} ${styles[`is-${action.status}`]}`}
+                        className={`mg-badge ${styles["admin-action-status"]}`}
+                        data-tone={actionStatusTone(action.status)}
                       >
                         {ACTION_STATUS_LABELS[action.status]}
                       </span>
@@ -337,13 +385,19 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
                 ))}
               </div>
             ) : (
-              <EmptyState>近 24 小时没有可展示的管理操作。</EmptyState>
+              <SurfaceState
+                kind="empty"
+                title="近 24 小时没有可展示的管理操作。"
+                detail=""
+                density="compact"
+              />
             )}
           </section>
         </div>
         <aside className={styles["admin-side-column"]} data-page-inspector>
           <section
-            className={`${styles["admin-panel"]} ${styles["admin-boundary-panel"]}`}
+            className={`mg-panel ${styles["admin-panel"]} ${styles["admin-boundary-panel"]}`}
+            data-component="mg-panel"
           >
             <PanelHeading title="平台边界" icon={ShieldCheck} />
             <ul>
@@ -353,7 +407,8 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
             </ul>
           </section>
           <section
-            className={`${styles["admin-panel"]} ${styles["admin-services-panel"]}`}
+            className={`mg-panel ${styles["admin-panel"]} ${styles["admin-services-panel"]}`}
+            data-component="mg-panel"
           >
             <PanelHeading
               title="服务健康"
@@ -369,7 +424,8 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
                   <div key={service.service}>
                     <span>{service.service}</span>
                     <span
-                      className={`${styles["admin-service-status"]} ${styles[`is-${service.status}`]}`}
+                      className={`mg-badge ${styles["admin-service-status"]}`}
+                      data-tone={healthStatusTone(service.status)}
                       title={`检查时间：${formatDateTime(service.checkedAt)}`}
                     >
                       {HEALTH_LABELS[service.status]}
@@ -378,12 +434,18 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
                 ))}
               </div>
             ) : (
-              <EmptyState>服务健康读数未返回。</EmptyState>
+              <SurfaceState
+                kind="empty"
+                title="服务健康读数未返回。"
+                detail=""
+                density="compact"
+              />
             )}
           </section>
           <section
-            className={`${styles["admin-panel"]} ${styles["admin-audit-panel"]}`}
+            className={`mg-panel ${styles["admin-panel"]} ${styles["admin-audit-panel"]}`}
             data-page-terminal-surface="inspector"
+            data-component="mg-panel"
           >
             <PanelHeading
               title="审计事实（近 24 小时）"
@@ -426,51 +488,16 @@ function PanelHeading({
   icon: LucideIcon;
 }) {
   return (
-    <div className={styles["admin-panel-heading"]}>
+    <header
+      className={`mg-panel-head ${styles["admin-panel-heading"]}`}
+      data-component="mg-panel-head"
+    >
       <div>
         <h2>{title}</h2>
         {detail ? <p>{detail}</p> : null}
       </div>
       <Icon size={18} aria-hidden="true" />
-    </div>
-  );
-}
-
-function StatusState({
-  icon: Icon,
-  tone,
-  spinning = false,
-  action,
-  children,
-}: {
-  icon: LucideIcon;
-  tone: "neutral" | "danger";
-  spinning?: boolean;
-  action?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section
-      className={`${styles["admin-status-state"]} ${styles[`is-${tone}`]}`}
-      role="status"
-    >
-      <Icon
-        size={19}
-        className={spinning ? "spin" : undefined}
-        aria-hidden="true"
-      />
-      <div className={styles["admin-status-message"]}>{children}</div>
-      {action ? <div className={styles["admin-status-action"]}>{action}</div> : null}
-    </section>
-  );
-}
-
-function EmptyState({ children }: { children: ReactNode }) {
-  return (
-    <div className={styles["admin-empty-state"]} role="status">
-      <CheckCircle2 size={18} aria-hidden="true" />
-      <span>{children}</span>
-    </div>
+    </header>
   );
 }
 
@@ -481,6 +508,22 @@ function getHealthMessage(
   if (!services.length) return "未返回服务健康读数。";
   if (!incidents.length) return "全部服务已返回正常读数。";
   return `${incidents.length} 项服务读数需要关注，页面保留已返回事实。`;
+}
+
+type BadgeTone = "success" | "warning" | "danger";
+
+function actionStatusTone(status: AdminActionStatus): BadgeTone | undefined {
+  if (status === "succeeded" || status === "recorded") return "success";
+  if (status === "failed") return "danger";
+  if (status === "degraded") return "warning";
+  return undefined;
+}
+
+function healthStatusTone(status: ServiceHealthStatus): BadgeTone | undefined {
+  if (status === "healthy") return "success";
+  if (status === "degraded") return "warning";
+  if (status === "unavailable") return "danger";
+  return undefined;
 }
 
 function describeError(error: unknown): string {
@@ -539,6 +582,12 @@ function parseDashboardResponse(value: unknown): AdminDashboardResponse {
     !isDateTimeString(audit.to)
   ) {
     throw new Error("平台总览返回的数据不完整。");
+  }
+  if (
+    audit.failedCount > audit.actionCount ||
+    Date.parse(audit.from) > Date.parse(audit.to)
+  ) {
+    throw new Error("平台总览返回的审计事实不一致。");
   }
   return value as AdminDashboardResponse;
 }

@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { CANONICAL_PERSISTENT_RAIL_SOURCE_FILES } from "./mediaPageStructureManifest";
 
 type PageContract = {
   owner: string;
@@ -26,15 +27,7 @@ const ORDINARY_NAV_GROUP_LABELS = [
   "本机协作",
   "账户",
 ] as const;
-const PERSISTENT_RAIL_PAGE_FILES = [
-  "src/media/pages/ordinary/OverviewPage.tsx",
-  "src/media/pages/ordinary/TracksPage.tsx",
-  "src/media/pages/ordinary/AssetsPage.tsx",
-  "src/media/pages/ordinary/RunsPage.tsx",
-  "src/media/pages/ordinary/PublishingPage.tsx",
-  "src/media/pages/ordinary/DecisionsPage.tsx",
-  ADMIN_OVERVIEW_PAGE_FILE,
-] as const;
+const PERSISTENT_RAIL_PAGE_FILES = CANONICAL_PERSISTENT_RAIL_SOURCE_FILES;
 
 const PAGE_COMPONENTS: readonly PageContract[] = [
   {
@@ -139,6 +132,15 @@ const FORBIDDEN_PAGE_SUBSTITUTIONS = [
 
 const ADMIN_OVERVIEW_DASHBOARD_DELEGATION =
   /<AdminPage\b[^>]*\binitialModule\s*=\s*(?:"dashboard"|'dashboard'|\{\s*["']dashboard["']\s*\})[^>]*\/?>/;
+const ADMIN_OVERVIEW_TARGET_TYPES = [
+  "platform",
+  "user",
+  "tenant",
+  "billing",
+  "admission",
+  "session",
+  "unknown",
+] as const;
 
 function findMissingPageViolations(fixture: SourceFixture): string[] {
   return PAGE_COMPONENTS.filter((page) => !fixture.pages.has(page.file)).map(
@@ -212,6 +214,60 @@ function findAdminOverviewViolation(fixture: SourceFixture): string[] {
       violations.push(
         `AdminOverviewPage.tsx missing stable blocked-state structure: ${token}`,
       );
+  }
+  return violations;
+}
+
+function findAdminOverviewResponseIntegrityViolations(
+  fixture: SourceFixture,
+): string[] {
+  const source = fixture.pages.get(ADMIN_OVERVIEW_PAGE_FILE);
+  if (source === undefined) return [];
+  const violations: string[] = [];
+  const labelMap = source.match(
+    /const\s+ACTION_TARGET_TYPE_LABELS\s*:\s*Record<AdminActionTargetType,\s*string>\s*=\s*\{([\s\S]*?)\};/,
+  );
+  if (labelMap === null) {
+    violations.push(
+      "AdminOverviewPage.tsx missing explicit targetType display-label map",
+    );
+  } else {
+    for (const targetType of ADMIN_OVERVIEW_TARGET_TYPES) {
+      if (!new RegExp(`\\b${targetType}:\\s*["'][^"']+["']`).test(labelMap[1])) {
+        violations.push(
+          `AdminOverviewPage.tsx targetType display-label map missing ${targetType}`,
+        );
+      }
+    }
+  }
+  if (/\{\s*action\.targetType\s*\}/.test(source)) {
+    violations.push(
+      "AdminOverviewPage.tsx exposes raw targetType enum in the action row",
+    );
+  }
+  if (!/ACTION_TARGET_TYPE_LABELS\s*\[\s*action\.targetType\s*\]/.test(source)) {
+    violations.push(
+      "AdminOverviewPage.tsx does not render targetType through its display-label map",
+    );
+  }
+  if (!/audit\.failedCount\s*>\s*audit\.actionCount/.test(source)) {
+    violations.push(
+      "AdminOverviewPage.tsx does not reject impossible audit failed counts",
+    );
+  }
+  if (
+    !/Date\.parse\s*\(\s*audit\.from\s*\)\s*>\s*Date\.parse\s*\(\s*audit\.to\s*\)/.test(
+      source,
+    )
+  ) {
+    violations.push(
+      "AdminOverviewPage.tsx does not reject reversed audit windows",
+    );
+  }
+  if (!/ACTION_TARGET_TYPES\.has\s*\(\s*value\.targetType/.test(source)) {
+    violations.push(
+      "AdminOverviewPage.tsx no longer rejects unknown targetType values",
+    );
   }
   return violations;
 }
@@ -323,6 +379,7 @@ function inspectFixture(fixture: SourceFixture): string[] {
     ...findMediaAppViolations(fixture),
     ...findPageSubstitutionViolations(fixture),
     ...findAdminOverviewViolation(fixture),
+    ...findAdminOverviewResponseIntegrityViolations(fixture),
     ...findAdminBootstrapViolation(fixture),
     ...findPersistentRailViolations(fixture),
     ...findCssModuleUsageViolations(fixture),
@@ -344,7 +401,20 @@ function makeGreenFixture(): SourceFixture {
       : "";
     const admin =
       page.file === ADMIN_OVERVIEW_PAGE_FILE
-        ? '<div className="admin-primary-column admin-side-column">审计事实（近 24 小时）</div>'
+        ? `
+const ACTION_TARGET_TYPE_LABELS: Record<AdminActionTargetType, string> = {
+  platform: "平台",
+  user: "用户",
+  tenant: "租户",
+  billing: "计费",
+  admission: "准入",
+  session: "会话",
+  unknown: "未知",
+};
+if (audit.failedCount > audit.actionCount || Date.parse(audit.from) > Date.parse(audit.to)) throw new Error("invalid audit facts");
+if (ACTION_TARGET_TYPES.has(value.targetType as AdminActionTargetType)) return;
+<div className="admin-primary-column admin-side-column">审计事实（近 24 小时）</div>
+<span>{ACTION_TARGET_TYPE_LABELS[action.targetType]}</span>`
         : "";
     pages.set(
       page.file,
@@ -462,6 +532,51 @@ function runSelfTests(): void {
     inspectFixture(adminDelegation),
     "AdminOverviewPage.tsx delegates to AdminPage",
     "admin delegation",
+  );
+
+  const impossibleFailedCount = makeGreenFixture();
+  impossibleFailedCount.pages.set(
+    ADMIN_OVERVIEW_PAGE_FILE,
+    impossibleFailedCount.pages
+      .get(ADMIN_OVERVIEW_PAGE_FILE)!
+      .replace("audit.failedCount > audit.actionCount", "audit.failedCount < audit.actionCount"),
+  );
+  assertHasViolation(
+    inspectFixture(impossibleFailedCount),
+    "does not reject impossible audit failed counts",
+    "admin overview impossible failed count",
+  );
+
+  const reversedAuditWindow = makeGreenFixture();
+  reversedAuditWindow.pages.set(
+    ADMIN_OVERVIEW_PAGE_FILE,
+    reversedAuditWindow.pages
+      .get(ADMIN_OVERVIEW_PAGE_FILE)!
+      .replace(
+        "Date.parse(audit.from) > Date.parse(audit.to)",
+        "Date.parse(audit.from) < Date.parse(audit.to)",
+      ),
+  );
+  assertHasViolation(
+    inspectFixture(reversedAuditWindow),
+    "does not reject reversed audit windows",
+    "admin overview reversed audit window",
+  );
+
+  const rawTargetEnum = makeGreenFixture();
+  rawTargetEnum.pages.set(
+    ADMIN_OVERVIEW_PAGE_FILE,
+    rawTargetEnum.pages
+      .get(ADMIN_OVERVIEW_PAGE_FILE)!
+      .replace(
+        "ACTION_TARGET_TYPE_LABELS[action.targetType]",
+        "action.targetType",
+      ),
+  );
+  assertHasViolation(
+    inspectFixture(rawTargetEnum),
+    "exposes raw targetType enum",
+    "admin overview raw target enum presentation",
   );
 
   const sideEffectCssModule = makeGreenFixture();

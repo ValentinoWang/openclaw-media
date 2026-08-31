@@ -352,11 +352,24 @@ async function capture(
   const page = await context.newPage();
   const api = await installApi(page);
   try {
-    await page.goto(`${origin}${mediaBase}/overview`, {
+    await page.goto(`${origin}${mediaBase}/workspace`, {
       waitUntil: "domcontentloaded",
     });
     await page.locator(".media-shell").waitFor();
-    const launchButton = page.locator(".topbar-command");
+    assert.equal(
+      await page.locator(".media-shell.is-personal-shell").count(),
+      1,
+      `${label} must render the personal workspace shell`,
+    );
+    assert.equal(
+      new URL(page.url()).pathname,
+      `${mediaBase}/workspace`,
+      `${label} must remain bound to the personal workspace path`,
+    );
+    const launchButton = page.getByRole("button", {
+      name: "新建任务",
+      exact: true,
+    });
     await launchButton.waitFor({ state: "visible" });
     await launchButton.click();
     const drawer = page.getByRole("complementary", {

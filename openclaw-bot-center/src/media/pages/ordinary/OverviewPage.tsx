@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertCircle,
   ArrowUpRight,
@@ -44,9 +44,10 @@ import type { CapabilityCatalog } from "../../../schemas/capabilityCatalogSchema
 import {
   displayNumber,
   formatDate,
-  PageHeading,
 } from "../../ui/ordinaryPagePrimitives";
 import { newIdempotencyKey } from "../../idempotency";
+import { Metric } from "../../ui/Metric";
+import { SurfaceState } from "../../ui/SurfaceState";
 import {
   actionDisplayLabel,
   artifactTypeDisplayLabel,
@@ -357,12 +358,19 @@ function OverviewPage() {
   });
 
   return (
-    <main className={"overview-page fidelity-page " + styles.page}>
+    <main
+      className={"overview-page fidelity-page " + styles.page}
+      data-page-ownership="personal"
+      data-accent="studio"
+    >
       <div data-page-prelude>
-        <PageHeading
-          title="运营总览"
-          description="查看当前租户的内容项目、产物进度与待处理事项。"
-        />
+        <header className="page-heading mg-hero" data-component="mg-hero">
+          <div>
+            <span className="mg-eyebrow" data-component="mg-eyebrow">个人运营</span>
+            <h1>运营总览</h1>
+            <p className="mg-hero-lead">查看当前租户的内容项目、产物进度与待处理事项。</p>
+          </div>
+        </header>
         <MetricStrip dashboardState={dashboardState} />
         {partial ? (
           <div className={styles.partialBanner} role="alert" data-page-partial>
@@ -372,7 +380,7 @@ function OverviewPage() {
               <ul>{unavailableResources.map((resource) => <li key={resource.label}>{resource.label}：{resource.message}</li>)}</ul>
               <span>已成功返回的数据仍保留在当前页面。</span>
             </div>
-            <button type="button" onClick={() => setRefreshToken((current) => current + 1)}>重新读取</button>
+            <button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" onClick={() => setRefreshToken((current) => current + 1)}>重新读取</button>
           </div>
         ) : null}
       </div>
@@ -589,7 +597,7 @@ function mapB01Error<T>(error: unknown, fallback: string): B01LoadState<T> {
 
 function DashboardPanel({ state }: { state: B01LoadState<DashboardResponse> }) {
   return (
-    <section className={"section-panel " + styles.panel + " " + styles.dashboardPanel}>
+    <section className={"section-panel mg-panel " + styles.panel + " " + styles.dashboardPanel} data-component="mg-panel">
       <PanelHeading
         icon={Layers3}
         title="租户概览"
@@ -723,7 +731,7 @@ function ProjectsPanel({
       ? state.data.items.find((item) => item.publicProjectId === selectedProjectId) ?? null
       : null;
   return (
-    <section className={"section-panel " + styles.panel + " " + styles.projectsPanel}>
+    <section className={"section-panel mg-panel " + styles.panel + " " + styles.projectsPanel} data-component="mg-panel">
       <PanelHeading
         icon={FolderKanban}
         title="内容项目"
@@ -833,7 +841,7 @@ function ProjectComposer({
           <span>生成原因</span>
           <input value={reason} onChange={(event) => onReasonChange(event.target.value)} />
         </label>
-        <button type="button" onClick={onCreate} disabled={disabled || action.status === "busy"}>
+        <button className="mg-btn mg-btn-primary" data-component="mg-btn" type="button" onClick={onCreate} disabled={disabled || action.status === "busy"}>
           <RefreshCw size={14} className={action.status === "busy" ? "spin" : undefined} />
           {action.status === "busy" ? "提交中" : "生成摘要"}
         </button>
@@ -865,6 +873,7 @@ function ArtifactsPanel({
   canPrevious: boolean;
 }) {
   const [documentRetryToken, setDocumentRetryToken] = useState(0);
+  const previewRef = useRef<HTMLElement | null>(null);
   const selectedArtifact =
     state.status === "ready"
       ? state.data.items.find((item) => item.publicArtifactId === selectedArtifactId) ?? null
@@ -873,15 +882,18 @@ function ArtifactsPanel({
     selectedArtifact?.publicArtifactId ?? null,
     documentRetryToken,
   );
+  useLayoutEffect(() => {
+    if (selectedArtifactId) previewRef.current?.scrollIntoView({ block: "nearest" });
+  }, [selectedArtifactId]);
   return (
-    <section className={"section-panel " + styles.panel + " " + styles.artifactsPanel}>
+    <section className={"section-panel mg-panel " + styles.panel + " " + styles.artifactsPanel} data-component="mg-panel">
       <PanelHeading
         icon={FileText}
         title="项目产物"
         count={state.status === "ready" && selectedProject ? state.data.items.length : undefined}
         detail={selectedProject ? `当前项目：${selectedProject.title}` : "选择内容项目后读取产物。"}
         action={
-          <Link className={styles.panelLink} to="/runs">
+            <Link className={styles.panelLink + " mg-btn mg-btn-ghost"} data-component="mg-btn" to="/runs">
             查看运行
             <ArrowUpRight size={14} />
           </Link>
@@ -909,7 +921,8 @@ function ArtifactsPanel({
                     <div className={styles.artifactActions} data-artifact-actions>
                       <button
                         type="button"
-                        className={styles.previewButton}
+                        className={styles.previewButton + " mg-btn mg-btn-ghost"}
+                        data-component="mg-btn"
                         data-artifact-row={artifact.publicArtifactId}
                         onClick={() => onSelectArtifact(isSelected ? null : artifact.publicArtifactId)}
                         aria-expanded={isSelected}
@@ -918,10 +931,10 @@ function ArtifactsPanel({
                         <Eye size={13} aria-hidden="true" />
                         {isSelected ? "收起网页内容" : "查看网页内容"}
                       </button>
-                      {organizationDocumentUrl ? <a className={styles.documentLink} href={organizationDocumentUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} aria-hidden="true" />打开组织文档</a> : null}
+                      {organizationDocumentUrl ? <a className={styles.documentLink + " mg-btn mg-btn-primary"} data-component="mg-btn" href={organizationDocumentUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} aria-hidden="true" />打开组织文档</a> : null}
                     </div>
                   </article>
-                  {isSelected ? <DocumentPreview artifact={artifact} state={documentState} onRetry={() => setDocumentRetryToken((current) => current + 1)} /> : null}
+                  {isSelected ? <DocumentPreview previewRef={previewRef} artifact={artifact} state={documentState} onRetry={() => setDocumentRetryToken((current) => current + 1)} /> : null}
                 </div>
               );
             })}
@@ -946,6 +959,7 @@ function ArtifactRowContent({
 }) {
   const ArtifactIcon = artifactIcon(artifact.artifactType);
   const syncStatus = artifact.syncStatus;
+  const syncTone = artifactSyncTone(syncStatus);
   const allowedActions = artifact.allowedActions.map(actionDisplayLabel);
   return <>
     <span className={styles.artifactIdentity} data-artifact-identity>
@@ -963,7 +977,7 @@ function ArtifactRowContent({
       </span>
     </span>
     <span className={styles.artifactMeta} data-artifact-meta>
-      <span className={"status-badge is-" + artifactSyncTone(syncStatus)}>{syncStatusDisplayLabel(artifact.syncStatus)}</span>
+      <span className={"mg-badge status-badge is-" + syncTone} data-component="mg-badge" data-tone={syncTone}>{syncStatusDisplayLabel(artifact.syncStatus)}</span>
       <time dateTime={artifact.updatedAt}>{displayDate(artifact.updatedAt)}</time>
     </span>
   </>;
@@ -984,10 +998,12 @@ function DocumentPreview({
   artifact,
   state,
   onRetry,
+  previewRef,
 }: {
   artifact: ArtifactSummary;
   state: B01LoadState<DocumentBodyResponse>;
   onRetry: () => void;
+  previewRef: { current: HTMLElement | null };
 }) {
   const documentUrl = getOrganizationDocumentUrl(artifact);
   const title =
@@ -995,14 +1011,14 @@ function DocumentPreview({
       ? documentTitle(state.data.data.revision.body.blocks, artifact.artifactType)
       : artifactTypeDisplayLabel(artifact.artifactType);
   return (
-    <section className={styles.documentPreview} aria-label="文档正文预览">
+    <section ref={previewRef} className={styles.documentPreview} aria-label="文档正文预览">
       <header className={styles.documentPreviewHeader}>
         <div>
           <span>网页正文预览</span>
           <h3>{title}</h3>
         </div>
         {documentUrl ? (
-          <a className={styles.documentLink} href={documentUrl} target="_blank" rel="noreferrer">
+          <a className={styles.documentLink + " mg-btn mg-btn-ghost"} data-component="mg-btn" href={documentUrl} target="_blank" rel="noreferrer">
             <ExternalLink size={14} aria-hidden="true" />打开组织文档
           </a>
         ) : null}
@@ -1032,7 +1048,7 @@ function DocumentPreviewUnavailable({
       : state.status === "timeout"
         ? "网页正文读取超时，文档列表仍可继续使用。"
         : "网页正文暂时不可读取，文档列表仍可继续使用。";
-  return <div className={styles.documentUnavailable} role="status"><FileText size={18} aria-hidden="true" /><div><strong>网页正文暂不可读取</strong><span>{detail}</span></div><button type="button" onClick={onRetry}><RefreshCw size={14} aria-hidden="true" />重新读取</button></div>;
+  return <div className={styles.documentUnavailable} role="status"><FileText size={18} aria-hidden="true" /><div><strong>网页正文暂不可读取</strong><span>{detail}</span></div><button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" onClick={onRetry}><RefreshCw size={14} aria-hidden="true" />重新读取</button></div>;
 }
 
 function documentTitle(blocks: DocumentBlock[], fallbackArtifactType: string): string {
@@ -1061,11 +1077,11 @@ function CursorPager({
   if (!canPrevious && !canNext) return null;
   return (
     <nav className={styles.cursorPager} aria-label={pageLabel + "分页"}>
-      <button type="button" onClick={onPrevious} disabled={!canPrevious} aria-label="上一页">
+      <button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" onClick={onPrevious} disabled={!canPrevious} aria-label="上一页">
         <ChevronLeft size={15} />
         上一页
       </button>
-      <button type="button" onClick={onNext} disabled={!canNext} aria-label="下一页">
+      <button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" onClick={onNext} disabled={!canNext} aria-label="下一页">
         下一页
         <ChevronRight size={15} />
       </button>
@@ -1083,28 +1099,16 @@ function BusinessPanelState<T>({
   compact?: boolean;
 }) {
   if (state.status === "loading") {
-    return (
-      <div className={styles.panelState + (compact ? " " + styles.compactState : "")} aria-busy="true">
-        <LoaderCircle className="spin" size={18} />
-        <span>{loadingText}</span>
-      </div>
-    );
+    return <SurfaceState kind="loading" title={loadingText} detail="等待服务端返回当前租户数据。" density={compact ? "compact" : "normal"} />;
   }
   if (state.status === "ready") return null;
-  return (
-    <div
-      className={
-        styles.panelState +
-        " " +
-        styles.errorState +
-        (compact ? " " + styles.compactState : "")
-      }
-      role="alert"
-    >
-      <ShieldAlert size={18} />
-      <span>{state.message}</span>
-    </div>
-  );
+  if (state.status === "permission") {
+    return <SurfaceState kind="permission" title="暂无查看权限" detail={state.message} action={null} density={compact ? "compact" : "normal"} />;
+  }
+  if (state.status === "notFound") {
+    return <SurfaceState kind="notFound" title="资源不存在" detail={state.message} density={compact ? "compact" : "normal"} />;
+  }
+  return <SurfaceState kind="error" title={state.status === "timeout" ? "读取超时" : "暂时无法读取"} detail={state.message} density={compact ? "compact" : "normal"} />;
 }
 
 function isEmptyDashboard(summary: DashboardSummary) {
@@ -1144,57 +1148,44 @@ function MetricStrip({
 }) {
   const summary = dashboardState.status === "ready" ? dashboardState.data.summary : null;
   return (
-    <section className={styles.metricStrip} aria-label="账户指标">
-      <MetricCard
-        icon={FolderKanban}
+    <section className={styles.metricStrip + " mg-metric-grid"} data-component="mg-metric-grid" aria-label="账户指标">
+      <Metric
+        variant="panel"
+        className={styles.metricCard + " mg-metric"}
+        iconClassName={styles.metricIcon + " mg-metric-icon"}
+        icon={<FolderKanban size={18} aria-hidden="true" />}
         label="内容项目"
         value={summary ? displayNumber(summary.counts.contentProjects) : "—"}
         detail={loadDetail(dashboardState, "当前租户")}
       />
-      <MetricCard
-        icon={PackageCheck}
+      <Metric
+        variant="panel"
+        className={styles.metricCard + " mg-metric"}
+        iconClassName={styles.metricIcon + " mg-metric-icon"}
+        icon={<PackageCheck size={18} aria-hidden="true" />}
         label="创作运行"
         value={summary ? displayNumber(summary.counts.runs) : "—"}
         detail={loadDetail(dashboardState, "标准汇总")}
       />
-      <MetricCard
-        icon={Target}
+      <Metric
+        variant="panel"
+        className={styles.metricCard + " mg-metric"}
+        iconClassName={styles.metricIcon + " mg-metric-icon"}
+        icon={<Target size={18} aria-hidden="true" />}
         label="待决策"
         value={summary ? displayNumber(summary.pendingDecisions) : "—"}
         detail={loadDetail(dashboardState, "当前租户")}
       />
-      <MetricCard
-        icon={Send}
+      <Metric
+        variant="panel"
+        className={styles.metricCard + " mg-metric"}
+        iconClassName={styles.metricIcon + " mg-metric-icon"}
+        icon={<Send size={18} aria-hidden="true" />}
         label="待发布"
         value={summary ? displayNumber(summary.pendingPublishing) : "—"}
         detail={loadDetail(dashboardState, "当前租户")}
       />
     </section>
-  );
-}
-
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  detail,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: ReactNode;
-  detail: string;
-}) {
-  return (
-    <div className={styles.metricCard}>
-      <span className={styles.metricIcon}>
-        <Icon size={18} />
-      </span>
-      <div className={styles.metricCopy}>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        <small>{detail}</small>
-      </div>
-    </div>
   );
 }
 
@@ -1212,7 +1203,7 @@ function PanelHeading({
   action?: ReactNode;
 }) {
   return (
-    <header className={styles.panelHeading}>
+    <header className="mg-panel-head" data-component="mg-panel-head">
       <div className={styles.headingCopy}>
         <div className={styles.headingTitle}>
           <Icon size={17} />
@@ -1251,7 +1242,8 @@ function AgentPanel({
     : 0;
   return (
     <section
-      className={"section-panel " + styles.panel + " " + styles.agentPanel}
+      className={"section-panel mg-panel " + styles.panel + " " + styles.agentPanel}
+      data-component="mg-panel"
     >
       <PanelHeading
         icon={Bot}
@@ -1304,7 +1296,9 @@ function AgentPanel({
             <h3>{activeTasks.length ? "当前网页任务" : "最近网页任务"}</h3>
             {currentTask ? (
               <span
-                className={"status-badge is-" + overviewTaskTone(currentTask.status)}
+                className={"mg-badge status-badge is-" + overviewTaskTone(currentTask.status)}
+                data-component="mg-badge"
+                data-tone={overviewTaskTone(currentTask.status)}
               >
                 {runStatusLabel(currentTask.status)}
               </span>
@@ -1387,7 +1381,8 @@ function AgentPanel({
 function WorkflowPanel() {
   return (
     <section
-      className={"section-panel " + styles.panel + " " + styles.workflowPanel}
+      className={"section-panel mg-panel " + styles.panel + " " + styles.workflowPanel}
+      data-component="mg-panel"
     >
       <PanelHeading
         icon={TrendingUp}
@@ -1443,7 +1438,8 @@ function PendingPanel({
   const actionableTasks = tasks.filter((task) => isPendingTask(task, nowMs));
   return (
     <section
-      className={"section-panel " + styles.panel + " " + styles.pendingPanel}
+      className={"section-panel mg-panel " + styles.panel + " " + styles.pendingPanel}
+      data-component="mg-panel"
       data-page-terminal-surface="inspector"
     >
       <PanelHeading
@@ -1546,7 +1542,7 @@ function PendingTask({
       <div className={styles.pendingCopy}>
         <div className={styles.pendingTitle}>
           <strong title={presentation.title}>{presentation.title}</strong>
-          <span className={"status-badge is-" + presentation.statusTone}>
+          <span className={"mg-badge status-badge is-" + presentation.statusTone} data-component="mg-badge" data-tone={presentation.statusTone}>
             {presentation.statusLabel}
           </span>
         </div>
@@ -1572,9 +1568,10 @@ function PendingTask({
             type="button"
             className={
               requiresConfirmation
-                ? styles.reviewTaskButton
-                : styles.openTaskButton
+                ? "mg-btn mg-btn-ghost " + styles.reviewTaskButton
+                : "mg-btn mg-btn-soft " + styles.openTaskButton
             }
+            data-component="mg-btn"
             onClick={openTaskReview}
           >
             {requiresConfirmation ? "查看影响并确认" : "打开任务工作区"}
@@ -1583,7 +1580,8 @@ function PendingTask({
           {presentation.deletionState === "active" ? (
             <button
               type="button"
-              className={styles.cancelTaskButton}
+              className={"mg-btn mg-btn-ghost " + styles.cancelTaskButton}
+              data-component="mg-btn"
               disabled={action !== "idle"}
               onClick={() => void cancelDeletion()}
             >
@@ -1721,15 +1719,7 @@ function PanelEmpty({
   detail: string;
   compact?: boolean;
 }) {
-  return (
-    <div
-      className={styles.panelEmpty + (compact ? " " + styles.compactEmpty : "")}
-    >
-      <CircleDashed size={18} />
-      <strong>{title}</strong>
-      <span>{detail}</span>
-    </div>
-  );
+  return <SurfaceState kind="empty" title={title} detail={detail} density={compact ? "compact" : "normal"} />;
 }
 
 function isPendingTask(task: MediaTaskSummary, nowMs = Date.now()) {

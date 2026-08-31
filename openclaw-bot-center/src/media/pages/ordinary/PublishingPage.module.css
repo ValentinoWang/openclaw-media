@@ -12,30 +12,22 @@
   flex: 0 0 auto;
 }
 
-.primaryAction,
-.secondaryButton,
-.iconButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border-radius: var(--mg-r-sm);
-  font: inherit;
-  font-size: var(--mg-text-sm);
-  font-weight: 650;
-  cursor: pointer;
+.prelude {
+  min-width: 0;
+  flex: 0 0 auto;
+  margin-bottom: 14px;
+}
+
+.prelude :global(.page-heading) {
+  margin-bottom: 0;
+}
+
+.prelude :global(.mg-eyebrow) {
+  margin-bottom: 5px;
 }
 
 .primaryAction {
   min-height: 38px;
-  padding: 0 13px;
-  border: 0;
-  color: var(--mg-on-primary);
-  background: var(--mg-primary-dark);
-}
-
-.primaryAction:hover:not(:disabled) {
-  background: var(--mg-primary);
 }
 
 .primaryAction:disabled,
@@ -48,8 +40,6 @@
 }
 
 .primaryAction:focus-visible,
-.secondaryButton:focus-visible,
-.iconButton:focus-visible,
 .packageRow:focus-visible,
 .checkRow:focus-within,
 .field input:focus-visible,
@@ -61,25 +51,14 @@
 .secondaryButton {
   min-height: 34px;
   padding: 0 11px;
-  border: 1px solid var(--mg-border-strong);
-  color: var(--mg-primary-dark);
-  background: var(--mg-surface);
-  text-decoration: none;
-}
-
-.secondaryButton:hover:not(:disabled) {
-  border-color: var(--mg-primary);
-  background: var(--mg-primary-soft);
 }
 
 .iconButton {
   width: 32px;
   height: 32px;
+  min-height: 32px;
   flex: 0 0 auto;
   padding: 0;
-  border: 1px solid var(--mg-border-strong);
-  color: var(--mg-primary-dark);
-  background: var(--mg-surface);
 }
 
 .boundaryNotice,
@@ -159,69 +138,20 @@
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-sm);
-  background: var(--mg-surface);
 }
 
-.emptyList {
-  display: flex;
-  min-height: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 24px;
-  color: var(--mg-muted);
-  text-align: center;
-}
-
-.emptyList strong {
-  color: var(--mg-ink);
-  font-size: var(--mg-text-sm);
-}
-
-.emptyList p,
-.emptyDetailSection > p {
-  margin: 0;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-xs);
-  line-height: 1.5;
-}
-
-.emptyDetailPill {
-  flex: 0 0 auto;
-  padding: 3px 7px;
-  border-radius: var(--mg-r-xs);
-  color: var(--mg-muted);
-  background: var(--mg-bg);
-  font-size: var(--mg-text-2xs);
-  font-weight: 700;
-}
-
-.emptyDetailSection {
+.page > :global(.mg-state),
+.detailPanel > :global(.mg-state) {
   min-width: 0;
-  padding: 15px 16px 17px;
-  border-bottom: 1px solid var(--mg-border);
-}
-
-.emptyDetailSection:last-child {
-  border-bottom: 0;
+  flex: 1 1 auto;
 }
 
 .panelHeader,
 .detailHeader {
-  display: flex;
   min-width: 0;
   min-height: 58px;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   padding: 9px 13px;
-  border-bottom: 1px solid var(--mg-border);
 }
 
 .panelHeading,
@@ -677,11 +607,9 @@
 }
 
 .receiptPanel {
-  min-width: 0;
   margin-top: 14px;
   padding: 12px;
-  border: 1px solid var(--mg-primary);
-  border-radius: var(--mg-r-sm);
+  border-color: var(--mg-primary);
   background: var(--mg-primary-soft);
 }
 
@@ -777,50 +705,6 @@
 
 .reviewWindowNote small {
   overflow-wrap: anywhere;
-}
-
-.statePanel {
-  display: flex;
-  min-width: 0;
-  min-height: 180px;
-  flex: 1 1 auto;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 28px;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-sm);
-  color: var(--mg-muted);
-  background: var(--mg-surface);
-  text-align: center;
-}
-
-.statePanel strong {
-  color: var(--mg-ink);
-  font-size: var(--mg-text-md);
-}
-
-.statePanel p {
-  max-width: 58ch;
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: var(--mg-text-xs);
-  line-height: 1.55;
-}
-
-.stateIcon {
-  color: var(--mg-primary-dark);
-}
-
-.stateError .stateIcon,
-.stateError strong {
-  color: var(--mg-danger);
-}
-
-.statePanel .primaryAction,
-.statePanel .secondaryButton {
-  margin-top: 4px;
 }
 
 @media (max-width: 900px) {

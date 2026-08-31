@@ -7,6 +7,11 @@
   overflow: hidden;
 }
 
+.prelude {
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
 .pageRail {
   display: grid;
   min-width: 0;
@@ -31,10 +36,7 @@
   gap: 10px;
   padding: 14px;
   overflow: auto;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-sm);
   color: var(--mg-primary-dark);
-  background: var(--mg-surface);
 }
 
 .boundaryPanel > div {
@@ -62,38 +64,21 @@
   gap: 14px;
   margin-bottom: 12px;
   padding: 0 14px;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-sm);
-  background: var(--mg-surface);
 }
 
 .tabBar {
+  composes: mg-tabs from global;
   display: flex;
   flex: 0 0 auto;
-  flex-wrap: wrap;
-  gap: 6px;
   margin-bottom: 12px;
-  padding: 4px;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-sm);
-  background: var(--mg-surface);
 }
 
-.tabButton {
-  min-height: 32px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: var(--mg-r-xs);
-  color: var(--mg-muted);
-  background: transparent;
-  font-size: var(--mg-text-xs);
-  cursor: pointer;
-}
-
-.tabButton:hover,
-.tabButtonActive {
-  color: var(--mg-primary-dark);
-  background: var(--mg-primary-soft);
+.tabPanel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
 }
 
 .notice,
@@ -167,17 +152,14 @@
 }
 
 .modeBar > div,
-.panelHeader,
 .catalogToolbar,
 .metric,
-.inspectorHeader,
 .taskHeader,
 .taskTitle,
 .taskMeta,
 .progressMeta,
 .confirmationBox > div,
-.taskActions,
-.pageStatus {
+.taskActions {
   display: flex;
   align-items: center;
 }
@@ -245,9 +227,6 @@
 .taskPanel {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-sm);
-  background: var(--mg-surface);
 }
 
 .catalogPanel {
@@ -257,29 +236,15 @@
 }
 
 .panelHeader {
-  min-height: 54px;
   flex: 0 0 auto;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 0 15px;
-  border-bottom: 1px solid var(--mg-border);
 }
 
-.panelHeader > div,
+.panelHeaderContent,
 .inspectorHeader > div {
   min-width: 0;
 }
 
-.eyebrow {
-  display: block;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-2xs);
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.panelHeader h2,
+.panelHeaderContent h2,
 .inspectorHeader h2 {
   min-width: 0;
   margin: 3px 0 0;
@@ -532,7 +497,6 @@
 }
 
 .effectPill,
-.statusPill,
 .required {
   display: inline-flex;
   max-width: 100%;
@@ -561,7 +525,7 @@
 }
 
 .statusPill {
-  padding: 3px 6px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -577,6 +541,9 @@
 .statusError {
   color: var(--mg-danger);
   background: var(--mg-danger-soft);
+}
+.statusInfo {
+  background: var(--mg-blue);
 }
 .statusDisabled,
 .statusNeutral {
@@ -618,12 +585,7 @@
 }
 
 .inspectorHeader {
-  min-height: 65px;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 15px 12px;
-  border-bottom: 1px solid var(--mg-border);
 }
 
 .inspectorHeader h2 {
@@ -787,33 +749,6 @@
   padding: 2px 4px;
   color: var(--mg-primary-dark);
   background: var(--mg-primary-soft);
-}
-
-.inspectorEmpty,
-.emptyState {
-  display: flex;
-  min-height: 150px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 22px;
-  color: var(--mg-muted);
-  text-align: center;
-}
-
-.inspectorEmpty strong,
-.emptyState strong {
-  color: var(--mg-ink);
-  font-size: var(--mg-text-sm);
-}
-
-.inspectorEmpty span,
-.emptyState span {
-  max-width: 34ch;
-  overflow-wrap: anywhere;
-  font-size: var(--mg-text-xs);
-  line-height: 1.5;
 }
 
 .taskPanel {
@@ -1014,8 +949,7 @@
   margin-top: 5px;
 }
 
-.resultBox a,
-.pageStatus a {
+.resultBox a {
   display: inline-flex;
   min-width: 0;
   align-items: center;
@@ -1054,43 +988,6 @@
 .cancelButton {
   margin-top: 9px;
   color: var(--mg-muted);
-}
-
-.pageStatus {
-  min-height: 156px;
-  justify-content: center;
-  gap: 11px;
-  padding: 25px;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-sm);
-  color: var(--mg-primary-dark);
-  background: var(--mg-surface);
-}
-
-.pageStatus > div {
-  min-width: 0;
-}
-
-.pageStatus strong,
-.pageStatus span {
-  display: block;
-}
-
-.pageStatus strong {
-  color: var(--mg-ink);
-  font-size: var(--mg-text-sm);
-}
-
-.pageStatus span {
-  margin-top: 4px;
-  overflow-wrap: anywhere;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-xs);
-  line-height: 1.5;
-}
-
-.pageStatus a {
-  margin-top: 8px;
 }
 
 @media (max-width: 1120px) {

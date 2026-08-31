@@ -111,8 +111,20 @@ function apiPath(route: Route): string {
   return new URL(route.request().url()).pathname.slice(apiRoot.length);
 }
 
-async function assertPersonalReadonlyShell(page: Page, sourceRoute: string) {
+async function assertPersonalOrdinaryRoute(
+  page: Page,
+  sourceRoute: string,
+  expectedPathname: string,
+  heading: string,
+) {
   await page.goto(sourceRoute, { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: heading, exact: true }).waitFor();
+  assert.equal(new URL(page.url()).pathname, `${mediaBase}${expectedPathname}`);
+  assert.equal(await page.getByRole("heading", { name: "云端成果", exact: true }).count(), 0);
+}
+
+async function assertPersonalReadonlyShell(page: Page, workspaceRoute: string) {
+  await page.goto(workspaceRoute, { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "云端成果", exact: true }).waitFor();
   await page.getByText("个人交付项目", { exact: true }).waitFor();
   await page.getByText("阶段一云端成果", { exact: true }).waitFor();
@@ -196,7 +208,19 @@ await page.route(`**${apiRoot}/**`, async (route) => {
 
 try {
   await mkdir(outputDir, { recursive: true });
-  await assertPersonalReadonlyShell(page, `${origin}${mediaBase}/assets`);
+  await assertPersonalOrdinaryRoute(
+    page,
+    `${origin}${mediaBase}/assets`,
+    "/assets",
+    "素材与灵感",
+  );
+  await assertPersonalOrdinaryRoute(
+    page,
+    `${origin}${mediaBase}/overview`,
+    "/overview",
+    "运营总览",
+  );
+  await assertPersonalReadonlyShell(page, `${origin}${mediaBase}/workspace`);
 
   const taskButton = page.getByRole("button", { name: "查看任务状态", exact: true });
   await taskButton.click();
@@ -212,7 +236,13 @@ try {
   await page.screenshot({ path: join(outputDir, "personal-readonly-desktop.png"), fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await assertPersonalReadonlyShell(page, `${origin}${mediaBase}/overview`);
+  await assertPersonalOrdinaryRoute(
+    page,
+    `${origin}${mediaBase}/overview`,
+    "/overview",
+    "运营总览",
+  );
+  await assertPersonalReadonlyShell(page, `${origin}${mediaBase}/workspace`);
   const geometry = await page.evaluate(() => ({
     document: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     body: document.body.scrollWidth - document.body.clientWidth,
@@ -228,7 +258,6 @@ try {
   assert.ok(requests.includes("GET /content-projects"));
   assert.ok(requests.includes(`GET /content-projects/${projectId}/artifacts`));
   assert.ok(requests.includes(`GET /documents/${artifactId}/body`));
-  assert.equal(requests.some((value) => value === "GET /assets"), false);
   assert.equal(requests.some((value) => value.startsWith("POST /tasks")), false);
   console.log("Stage 1 personal read-only deletion boundary QA passed");
 } finally {

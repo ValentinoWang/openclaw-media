@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import {
   AlertCircle,
   CheckCircle2,
@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   Users,
   XCircle,
-  type LucideIcon,
 } from 'lucide-react'
 import { callBusinessOperation } from '../../generatedBusinessPagesContract'
 import { useMediaWeb } from '../../MediaWebWorkspace'
@@ -20,6 +19,8 @@ import { newIdempotencyKey } from '../../idempotency'
 import { CANONICAL_UUID_PATTERN } from '../../identifiers'
 import { describeBusinessError } from '../../ui/businessOperationError'
 import { formatTimestampFull } from '../../ui/datetime'
+import { Metric } from '../../ui/Metric'
+import { SurfaceState } from '../../ui/SurfaceState'
 import styles from './AdminUpstreamsPage.module.css'
 
 const SCHEMA_VERSION = 'media_web_business_pages_v2'
@@ -148,7 +149,7 @@ function actionClass(value: ActionState['kind']): string {
 export default function AdminUpstreamsPage() {
   const { runtimeState, session } = useMediaWeb()
   const canRead = runtimeState === 'authenticated' && session?.role === 'admin'
-  const canMutateCredential = canRead
+  const canMutateCredential = canRead && !!session?.csrfToken
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' })
   const [action, setAction] = useState<ActionState>({ kind: 'idle', message: '' })
   const [operationReference, setOperationReference] = useState('')
@@ -160,7 +161,7 @@ export default function AdminUpstreamsPage() {
   const mutationKey = useRef({ fingerprint: '', value: '' })
   const data = loadState.status === 'ready' ? loadState.data : null
   const busy = action.kind === 'busy'
-  const reconciliationReady = !!data && canRead && isOperationReference(operationReference) &&
+  const reconciliationReady = !!data && canRead && !!session?.csrfToken && isOperationReference(operationReference) &&
     reconciliationReason.trim().length > 0 && !busy
   const credentialReady = !!data && canMutateCredential && credentialReason.trim().length > 0 && !busy
 
@@ -215,7 +216,7 @@ export default function AdminUpstreamsPage() {
 
   async function reconcile(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
-    if (!session || !data || !reconciliationReady) return
+    if (!session || !data || !canRead || !session.csrfToken || !reconciliationReady) return
     const reason = reconciliationReason.trim()
     const target = operationReference.trim()
     const fingerprint = 'reconcile:' + target + ':' + data.revision + ':' + reason
@@ -245,7 +246,7 @@ export default function AdminUpstreamsPage() {
   }
 
   async function credentialMutation(kind: 'rotate' | 'revoke'): Promise<void> {
-    if (!session || !data || !credentialReady || (kind === 'revoke' && !revokeConfirmed)) return
+    if (!session || !data || !canRead || !session.csrfToken || !credentialReady || (kind === 'revoke' && !revokeConfirmed)) return
     const reason = credentialReason.trim()
     const operation = kind === 'rotate' ? 'rotateAdminUpstreamCredential' : 'revokeAdminUpstreamCredential'
     const fingerprint = kind + ':' + data.revision + ':' + reason
@@ -272,23 +273,28 @@ export default function AdminUpstreamsPage() {
     }
   }
 
-  return <main className={'fidelity-page ' + styles.page}>
+  return <main className={'fidelity-page ' + styles.page} data-accent="agent" data-page-ownership="governance">
     <header className={styles.pageHeader}>
       <div className={styles.titleBlock}>
-        <div className={styles.kicker}><Server size={15} /> 管理 / 上游服务</div>
+        <div className="mg-eyebrow"><Server size={15} aria-hidden="true" /> 管理 / 上游服务</div>
         <h1>上游服务</h1>
         <p>凭证健康、账户汇总与对账状态</p>
       </div>
       <div className={styles.headerActions}>
-        <span className={styles.accessPill}><ShieldCheck size={14} />{canMutateCredential ? '维护者权限' : '管理员权限'}</span>
-        <button className={styles.refreshButton} type="button" onClick={() => { setAction({ kind: 'idle', message: '' }); void loadPage() }} disabled={!canRead || loadState.status === 'loading'} aria-label="刷新上游服务">
-          <RefreshCw size={15} className={loadState.status === 'loading' ? "spin" : undefined} />刷新
+        <span className="mg-badge"><ShieldCheck size={14} aria-hidden="true" />{canMutateCredential ? '维护者权限' : '管理员权限'}</span>
+        <button className={'mg-btn mg-btn-ghost ' + styles.refreshButton} type="button" onClick={() => { setAction({ kind: 'idle', message: '' }); void loadPage() }} disabled={!canRead || loadState.status === 'loading'} aria-label="刷新上游服务">
+          <RefreshCw size={15} className={loadState.status === 'loading' ? "spin" : undefined} aria-hidden="true" />刷新
         </button>
       </div>
     </header>
-    {runtimeState === 'checking' ? <LoadingState /> : null}
-    {runtimeState !== 'checking' && loadState.status === 'permission' ? <PageState icon={ShieldAlert} title="无法读取上游服务" message={loadState.message} /> : null}
-    {runtimeState !== 'checking' && loadState.status === 'error' ? <PageState icon={AlertCircle} title="上游服务暂不可用" message={loadState.message} onRetry={() => { setAction({ kind: 'idle', message: '' }); void loadPage() }} /> : null}
+    {runtimeState === 'checking' ? <StateSurface><SurfaceState kind="loading" title="正在读取上游服务" detail="汇总状态加载中。" /></StateSurface> : null}
+    {runtimeState !== 'checking' && loadState.status === 'permission' ? <StateSurface><SurfaceState kind="forbidden" title="无法读取上游服务" detail={loadState.message} /></StateSurface> : null}
+    {runtimeState !== 'checking' && loadState.status === 'error' ? <StateSurface><SurfaceState
+      kind="error"
+      title="上游服务暂不可用"
+      detail={loadState.message}
+      action={<button className={'mg-btn mg-btn-ghost ' + styles.retryButton} type="button" onClick={() => { setAction({ kind: 'idle', message: '' }); void loadPage() }}><RefreshCw size={15} aria-hidden="true" />重试</button>}
+    /></StateSurface> : null}
     {loadState.status === 'ready' ? <ReadyView
       data={loadState.data}
       canRead={canRead}
@@ -342,14 +348,14 @@ function ReadyView({
     <section className={styles.prelude} data-page-prelude><MetricBand summary={summary} /></section>
     <div className={styles.dashboardGrid} data-page-layout="persistent-rail">
       <div className={styles.primaryColumn} data-page-primary data-primary-flow>
-        <section className={styles.primarySurface} data-page-terminal-surface="primary" aria-labelledby="upstream-health-title">
-          <header className={styles.panelHeader}>
-            <div><span className={styles.eyebrow}>聚合读模型</span><h2 id="upstream-health-title">凭证健康</h2></div>
-            <span className={styles.revisionBadge}>修订 {data.revision}</span>
+        <section className={'mg-panel ' + styles.primarySurface} data-page-terminal-surface="primary" aria-labelledby="upstream-health-title">
+          <header className="mg-panel-head">
+            <div><span className="mg-eyebrow">聚合读模型</span><h2 id="upstream-health-title">凭证健康</h2></div>
+            <span className={'mg-badge ' + styles.revisionBadge}>修订 {data.revision}</span>
           </header>
           <div className={styles.primaryBody}>
             <div className={styles.healthHero}>
-              <span className={styles.healthGlyph + ' ' + healthClass(summary.credentialHealth)}><ShieldCheck size={23} /></span>
+              <span className={styles.healthGlyph + ' ' + healthClass(summary.credentialHealth)}><ShieldCheck size={23} aria-hidden="true" /></span>
               <div className={styles.healthCopy}><strong>{healthLabels[summary.credentialHealth]}</strong><p>{healthDescription(summary.credentialHealth)}</p></div>
             </div>
             <div className={styles.statusList}>
@@ -359,7 +365,7 @@ function ReadyView({
               <StatusRow label="最近同步" value={timestamp(summary.lastSyncedAt, true)} />
             </div>
             <div className={styles.pendingBlock}>
-              <div className={styles.blockHeading}><ReceiptText size={17} /><h3>对账状态</h3></div>
+              <div className={styles.blockHeading}><ReceiptText size={17} aria-hidden="true" /><h3>对账状态</h3></div>
               <strong className={styles.pendingValue}>{summary.pendingReconciliationCount === 0 ? '当前无待对账调用' : count(summary.pendingReconciliationCount) + ' 项待处理'}</strong>
               <p>{summary.pendingReconciliationCount === 0 ? '汇总已回读。' : '请从右侧提交具体操作参考。'}</p>
             </div>
@@ -368,21 +374,21 @@ function ReadyView({
       </div>
       <aside className={styles.inspector} data-page-inspector data-page-terminal-surface="inspector" aria-label="上游服务操作">
         <div className={styles.inspectorScroll} tabIndex={0} aria-label="上游服务操作面板">
-          <section className={styles.actionPanel} aria-labelledby="reconcile-title">
-            <header className={styles.actionHeader}><div className={styles.actionTitle}><ReceiptText size={17} /><div><h2 id="reconcile-title">重新对账</h2><span>当前修订 {data.revision}</span></div></div></header>
+          <section className={'mg-panel ' + styles.actionPanel} aria-labelledby="reconcile-title">
+            <header className="mg-panel-head"><div className={styles.actionTitle}><ReceiptText size={17} aria-hidden="true" /><div><h2 id="reconcile-title">重新对账</h2><span>当前修订 {data.revision}</span></div></div></header>
             <form className={styles.actionForm} onSubmit={onReconcile}>
               <label className={styles.field}><span className={styles.fieldLabel}>操作参考</span><input className={styles.input} value={operationReference} onChange={(event) => onOperationReferenceChange(event.target.value)} placeholder="输入 UUID" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={36} aria-invalid={operationReference.length > 0 && !isOperationReference(operationReference)} disabled={!canRead || busy} /></label>
               <label className={styles.field}><span className={styles.fieldLabel}>原因</span><textarea className={styles.textarea} value={reconciliationReason} onChange={(event) => onReconciliationReasonChange(event.target.value)} placeholder="填写操作原因" maxLength={500} rows={3} disabled={!canRead || busy} /></label>
-              <button className={styles.primaryButton} type="submit" disabled={!reconciliationReady}><ReceiptText size={16} />重新对账</button>
+              <button className={'mg-btn mg-btn-primary ' + styles.primaryButton} type="submit" disabled={!reconciliationReady}><ReceiptText size={16} aria-hidden="true" />重新对账</button>
             </form>
           </section>
-          <section className={styles.actionPanel} aria-labelledby="credential-title">
-            <header className={styles.actionHeader}><div className={styles.actionTitle}><KeyRound size={17} /><div><h2 id="credential-title">凭证操作</h2><span>{canMutateCredential ? '可执行维护操作' : '仅可读取汇总'}</span></div></div></header>
+          <section className={'mg-panel ' + styles.actionPanel} aria-labelledby="credential-title">
+            <header className="mg-panel-head"><div className={styles.actionTitle}><KeyRound size={17} aria-hidden="true" /><div><h2 id="credential-title">凭证操作</h2><span>{canMutateCredential ? '可执行维护操作' : '仅可读取汇总'}</span></div></div></header>
             <div className={styles.actionForm}>
               <label className={styles.field}><span className={styles.fieldLabel}>原因</span><textarea className={styles.textarea} value={credentialReason} onChange={(event) => onCredentialReasonChange(event.target.value)} placeholder="填写操作原因" maxLength={500} rows={3} disabled={!canMutateCredential || busy} /></label>
               <div className={styles.buttonRow}>
-                <button className={styles.secondaryButton} type="button" onClick={onRotate} disabled={!credentialReady}><RotateCw size={16} />轮换凭证</button>
-                <button className={styles.dangerButton} type="button" onClick={onRevoke} disabled={!credentialReady || !revokeConfirmed}><XCircle size={16} />撤销凭证</button>
+                <button className={'mg-btn mg-btn-ghost ' + styles.secondaryButton} type="button" onClick={onRotate} disabled={!credentialReady}><RotateCw size={16} aria-hidden="true" />轮换凭证</button>
+                <button className={'mg-btn ' + styles.dangerButton} type="button" onClick={onRevoke} disabled={!credentialReady || !revokeConfirmed}><XCircle size={16} aria-hidden="true" />撤销凭证</button>
               </div>
               <label className={styles.confirmRow}><input type="checkbox" checked={revokeConfirmed} onChange={(event) => onRevokeConfirmedChange(event.target.checked)} disabled={!canMutateCredential || busy} /><span>确认撤销当前凭证</span></label>
               {!canMutateCredential ? <div className={styles.permissionNote}><ShieldAlert size={15} /><span>当前会话可读取汇总，但不能变更凭证。</span></div> : null}
@@ -397,21 +403,11 @@ function ReadyView({
 
 function MetricBand({ summary }: { summary: Summary }) {
   return <section className={styles.metricBand} aria-label="上游状态摘要">
-    <MetricCard icon={Users} tone="success" label="可用账户" value={count(summary.availableAccountCount)} />
-    <MetricCard icon={XCircle} tone="danger" label="异常账户" value={count(summary.unhealthyAccountCount)} />
-    <MetricCard icon={ReceiptText} tone="warning" label="待对账调用" value={count(summary.pendingReconciliationCount)} />
-    <MetricCard icon={Clock3} tone="info" label="最近同步" value={timestamp(summary.lastSyncedAt)} />
+    <Metric variant="panel" className={styles.metric} iconClassName={styles.metricIconSuccess} label="可用账户" value={count(summary.availableAccountCount)} icon={<Users size={18} aria-hidden="true" />} />
+    <Metric variant="panel" className={styles.metric} iconClassName={styles.metricIconDanger} label="异常账户" value={count(summary.unhealthyAccountCount)} icon={<XCircle size={18} aria-hidden="true" />} />
+    <Metric variant="panel" className={styles.metric} iconClassName={styles.metricIconWarning} label="待对账调用" value={count(summary.pendingReconciliationCount)} icon={<ReceiptText size={18} aria-hidden="true" />} />
+    <Metric variant="panel" className={styles.metric} iconClassName={styles.metricIconInfo} label="最近同步" value={timestamp(summary.lastSyncedAt)} icon={<Clock3 size={18} aria-hidden="true" />} />
   </section>
-}
-
-function MetricCard({ icon: Icon, tone, label, value }: {
-  icon: LucideIcon
-  tone: 'success' | 'danger' | 'warning' | 'info'
-  label: string
-  value: string
-}) {
-  const className = styles['metricIcon' + tone[0].toUpperCase() + tone.slice(1)]
-  return <article className={styles.metric}><span className={className}><Icon size={18} /></span><div className={styles.metricCopy}><span className={styles.metricLabel}>{label}</span><strong className={styles.metricValue}>{value}</strong></div></article>
 }
 
 function StatusRow({ label, value }: { label: string; value: string }) {
@@ -420,18 +416,9 @@ function StatusRow({ label, value }: { label: string; value: string }) {
 
 function ActionBanner({ action }: { action: ActionState }) {
   const Icon = action.kind === 'success' ? CheckCircle2 : action.kind === 'error' ? AlertCircle : RefreshCw
-  return <div className={styles.actionBanner + ' ' + actionClass(action.kind)} role="status" aria-live="polite"><Icon size={16} className={action.kind === 'busy' ? "spin" : undefined} /><span>{action.message}</span></div>
+  return <div className={styles.actionBanner + ' ' + actionClass(action.kind)} role="status" aria-live="polite"><Icon size={16} className={action.kind === 'busy' ? "spin" : undefined} aria-hidden="true" /><span>{action.message}</span></div>
 }
 
-function LoadingState() {
-  return <section className={styles.statePanel} data-page-terminal-surface="primary" aria-busy="true"><span className={styles.stateIcon}><RefreshCw size={22} className="spin" /></span><div><h2>正在读取上游服务</h2><p>汇总状态加载中。</p></div></section>
-}
-
-function PageState({ icon: Icon, title, message, onRetry }: {
-  icon: LucideIcon
-  title: string
-  message: string
-  onRetry?: () => void
-}) {
-  return <section className={styles.statePanel} data-page-terminal-surface="primary"><span className={styles.stateIcon}><Icon size={22} /></span><div className={styles.stateCopy}><h2>{title}</h2><p>{message}</p>{onRetry ? <button className={styles.retryButton} type="button" onClick={onRetry}><RefreshCw size={15} />重试</button> : null}</div></section>
+function StateSurface({ children }: { children: ReactNode }) {
+  return <section className={'mg-panel ' + styles.statePanel} data-page-terminal-surface="primary">{children}</section>
 }

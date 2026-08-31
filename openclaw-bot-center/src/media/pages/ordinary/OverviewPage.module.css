@@ -1,73 +1,88 @@
 .metricStrip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 18px;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-sm);
-  background: var(--mg-surface);
 }
 
 .metricCard {
   display: grid;
   min-width: 0;
+  grid-template-areas: "icon label" "icon value" "icon detail";
   grid-template-columns: 34px minmax(0, 1fr);
-  gap: 11px;
+  grid-template-rows: auto auto auto;
+  gap: 4px 11px;
   align-items: center;
   padding: 17px 18px;
-  border-right: 1px solid var(--mg-border);
 }
 
-.metricCard:last-child {
-  border-right: 0;
+.metricCard > span:first-child {
+  grid-area: icon;
 }
 
-.metricIcon {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border: 1px solid var(--mg-border-strong);
-  border-radius: 50%;
-  color: var(--mg-primary-dark);
-  background: var(--mg-primary-soft);
-}
-
-.metricCopy {
+.metricCard > span:nth-child(2) {
+  grid-area: label;
   min-width: 0;
-}
-
-.metricCopy > span,
-.metricCopy > strong,
-.metricCopy > small {
-  display: block;
-}
-
-.metricCopy > span,
-.metricCopy > small {
   overflow: hidden;
   color: var(--mg-muted);
+  font-size: var(--mg-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.metricCopy > span {
-  font-size: var(--mg-text-xs);
-}
-
-.metricCopy > strong {
-  margin: 4px 0 2px;
+.metricCard > strong {
+  grid-area: value;
+  display: block;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
   font-size: var(--mg-text-xl);
   line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
-.metricCopy > small {
+.metricCard > small {
+  grid-area: detail;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metricCard > .metricIcon:global(.mg-metric-icon) {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--accent-line);
+  border-radius: 50%;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
 }
 
 .page {
   width: 100%;
   min-width: 0;
+}
+
+/* Keep this operational prelude compact so the workspace stays in view. */
+.page > [data-page-prelude] :global(.mg-hero) {
+  padding: 18px 20px;
+  border-radius: var(--mg-r-lg);
+  box-shadow: var(--mg-e2);
+}
+
+.page > [data-page-prelude] :global(.mg-hero h1) {
+  margin: 0 0 6px;
+  font-size: var(--mg-text-xl);
+  line-height: 1.25;
+}
+
+.page > [data-page-prelude] :global(.mg-hero-lead) {
+  font-size: var(--mg-text-sm);
+  line-height: 1.5;
 }
 
 .partialBanner {
@@ -108,15 +123,10 @@
 
 .partialBanner button {
   flex: 0 0 auto;
+  width: auto;
   min-height: 28px;
   padding: 0 8px;
-  border: 1px solid var(--mg-warning);
-  border-radius: var(--mg-r-xs);
-  color: var(--mg-warning);
-  background: var(--mg-surface);
-  font: inherit;
   font-size: var(--mg-text-2xs);
-  cursor: pointer;
 }
 
 .overviewGrid {
@@ -441,6 +451,12 @@
   -webkit-line-clamp: 2;
 }
 
+.artifactCopy [data-artifact-detail] {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .projectItemCopy span,
 .artifactCopy span,
 .projectItemCopy small,
@@ -514,20 +530,11 @@
 
 .composerControls button,
 .cursorPager button {
-  display: inline-flex;
+  width: auto;
   min-height: 32px;
-  align-items: center;
-  justify-content: center;
   gap: 5px;
   padding: 0 9px;
-  border: 1px solid var(--mg-primary-dark);
-  border-radius: var(--mg-r-sm);
-  color: var(--mg-on-primary);
-  background: var(--mg-primary-dark);
-  font: inherit;
   font-size: var(--mg-text-2xs);
-  font-weight: 650;
-  cursor: pointer;
 }
 
 .composerControls button:disabled,
@@ -560,19 +567,13 @@
   border-top: 1px solid var(--mg-border);
 }
 
-.cursorPager button {
-  color: var(--mg-primary-dark);
-  border-color: var(--mg-border-strong);
-  background: var(--mg-surface);
-}
-
 .artifactItem {
   display: grid;
   min-width: 0;
   grid-template-columns: minmax(150px, 1fr) minmax(175px, 0.6fr) auto;
   gap: 24px;
   align-items: center;
-  padding: 14px 16px;
+  padding: 12px 16px;
   background: var(--mg-surface);
 }
 
@@ -622,59 +623,45 @@
   height: 32px;
 }
 
+.artifactActions > :global(.mg-btn) {
+  min-height: 32px;
+}
+
 .documentLink {
   display: inline-flex;
+  width: auto;
   align-items: center;
   gap: 4px;
-  color: var(--mg-primary-dark);
   font-size: var(--mg-text-2xs);
   line-height: 1.2;
   white-space: nowrap;
 }
 
 .documentLink:hover {
-  color: var(--mg-primary);
+  color: var(--accent-ink);
 }
 
 .previewButton {
-  display: inline-flex;
+  width: auto;
   min-height: 32px;
-  align-items: center;
-  justify-content: center;
   gap: 4px;
   padding: 0 10px;
-  border: 1px solid var(--mg-border-strong);
-  border-radius: var(--mg-r-xs);
-  color: var(--mg-primary-dark);
-  background: var(--mg-surface);
-  font: inherit;
   font-size: var(--mg-text-2xs);
   line-height: 1.2;
-  cursor: pointer;
   white-space: nowrap;
 }
 
 .previewButton:hover {
-  border-color: var(--mg-primary);
-  color: var(--mg-primary);
+  color: var(--accent-ink);
 }
 
 .artifactActions > .documentLink {
   justify-content: center;
   padding: 0 10px;
-  border: 1px solid var(--mg-primary-dark);
-  border-radius: var(--mg-r-xs);
-  color: var(--mg-on-primary);
-  background: var(--mg-primary-dark);
-  font-size: var(--mg-text-2xs);
-  font-weight: 650;
-  text-decoration: none;
 }
 
-.artifactActions > .documentLink:hover {
-  border-color: var(--mg-primary);
-  color: var(--mg-on-primary);
-  background: var(--mg-primary);
+.artifactActions > .documentLink:global(.mg-btn-primary) {
+  color: #fff;
 }
 
 .documentPreview {
@@ -746,24 +733,16 @@
 }
 
 .documentUnavailable button {
-  display: inline-flex;
+  width: auto;
   min-height: 27px;
-  align-items: center;
   gap: 4px;
   padding: 0 8px;
-  border: 1px solid var(--mg-border-strong);
-  border-radius: var(--mg-r-xs);
-  color: var(--mg-primary-dark);
-  background: var(--mg-surface);
-  font: inherit;
   font-size: var(--mg-text-2xs);
   white-space: nowrap;
-  cursor: pointer;
 }
 
 .documentUnavailable button:hover {
-  border-color: var(--mg-primary);
-  color: var(--mg-primary);
+  color: var(--accent-ink);
 }
 
 .documentBody {
@@ -922,10 +901,7 @@
     flex-direction: column;
   }
 
-  .runsPanel > .panelState,
-  .runsPanel > .panelEmpty,
-  .pendingPanel > .panelState,
-  .pendingPanel > .panelEmpty,
+  .pendingPanel > :global(.mg-state),
   .pendingList {
     min-width: 0;
     min-height: 0;
@@ -937,17 +913,6 @@
     flex: 0 0 auto;
     overflow: visible;
   }
-}
-
-.panelHeading {
-  display: flex;
-  min-width: 0;
-  min-height: 58px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--mg-border);
 }
 
 .headingCopy {
@@ -998,11 +963,12 @@
 
 .panelLink {
   display: inline-flex;
+  width: auto;
   min-height: 34px;
   flex: 0 0 auto;
   align-items: center;
   gap: 4px;
-  color: var(--mg-primary-dark);
+  color: var(--accent-ink);
   font-size: var(--mg-text-xs);
   font-weight: 650;
   text-decoration: none;
@@ -1523,60 +1489,6 @@
   line-height: 1.4;
 }
 
-.panelState,
-.panelEmpty {
-  display: flex;
-  min-width: 0;
-  min-height: 180px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 22px 16px;
-  color: var(--mg-muted);
-  text-align: center;
-}
-
-.panelState {
-  flex-direction: row;
-  min-height: 160px;
-  font-size: var(--mg-text-xs);
-}
-
-.panelState > svg {
-  flex: 0 0 auto;
-}
-
-.errorState {
-  color: var(--mg-danger);
-}
-
-.panelEmpty > strong {
-  color: var(--mg-ink);
-  font-size: var(--mg-text-xs);
-}
-
-.panelEmpty > span {
-  max-width: 35ch;
-  font-size: var(--mg-text-2xs);
-  line-height: 1.45;
-}
-
-.compactState,
-.compactEmpty {
-  min-height: 72px;
-  padding: 10px;
-  font-size: var(--mg-text-2xs);
-}
-
-.compactEmpty > strong {
-  font-size: var(--mg-text-xs);
-}
-
-.compactEmpty > span {
-  font-size: var(--mg-text-2xs);
-}
-
 @media (max-width: 1120px) {
   .overviewGrid {
     grid-template-columns: 1fr;
@@ -1593,16 +1505,25 @@
 }
 
 @media (max-width: 760px) {
-  .metricStrip {
+  .metricStrip:global(.mg-metric-grid) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
-  .metricCard:nth-child(2) {
-    border-right: 0;
+  .metricStrip :global(.mg-metric) {
+    grid-template-columns: 34px minmax(0, 1fr);
+    grid-template-areas: "icon label" "icon value" "icon detail";
+    grid-template-rows: auto auto auto;
+    gap: 4px 11px;
+    padding: 14px 12px;
   }
 
-  .metricCard:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--mg-border);
+  .partialBanner :global(.mg-btn),
+  .artifactActions :global(.mg-btn),
+  .documentUnavailable :global(.mg-btn),
+  .cursorPager :global(.mg-btn),
+  .panelLink:global(.mg-btn) {
+    width: auto;
   }
 
   .sideColumn {
@@ -1643,6 +1564,17 @@
 }
 
 @media (max-width: 520px) {
+  .metricCard > .metricIcon:global(.mg-metric-icon) {
+    width: 28px;
+    height: 28px;
+  }
+
+  .metricStrip :global(.mg-metric) {
+    grid-template-columns: 29px minmax(0, 1fr);
+    gap: 4px 8px;
+    padding: 14px 12px;
+  }
+
   .pendingItem {
     grid-template-columns: 26px minmax(0, 1fr);
   }
@@ -1689,16 +1621,7 @@
     padding: 14px 12px;
   }
 
-  .metricIcon {
-    width: 28px;
-    height: 28px;
-  }
-
-  .metricCopy > strong {
-    font-size: var(--mg-text-xl);
-  }
-
-  .panelHeading {
+  .page :global(.mg-panel-head) {
     align-items: flex-start;
     flex-direction: column;
     padding: 12px 14px;

@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import {
-  AlertCircle,
   Check,
   CheckCircle2,
   ChevronLeft,
@@ -26,8 +25,10 @@ import { PlatformIdentity } from '../../ui/PlatformIdentity'
 import { platformDisplayLabel } from '../../ui/platformRegistry'
 import { Metric } from '../../ui/Metric'
 import { SearchBox } from '../../ui/SearchBox'
+import { SurfaceState } from '../../ui/SurfaceState'
 import { isPublicId } from '../../identifiers'
 import { formatDateTime, formatDateTimeMinutes } from '../../ui/datetime'
+import { copyText } from '../../../lib/clipboard'
 import styles from './AdminAccessPage.module.css'
 
 type AccessTab = 'invitations' | 'admission' | 'registration'
@@ -119,6 +120,11 @@ type PlatformCookiesResponse = {
   platforms: PlatformCookieStatus[]
 }
 
+type CopyState = {
+  platform: PlatformCookieStatus['platform']
+  status: 'success' | 'error'
+} | null
+
 const EMPTY_AFFILIATE_USERS: AffiliateUser[] = []
 const EMPTY_ADMISSION_BATCHES: AdmissionBatch[] = []
 const PAGE_SIZE = 30
@@ -142,6 +148,7 @@ export default function AdminAccessPage() {
   const [submittedSearch, setSubmittedSearch] = useState('')
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null)
+  const tabRefs = useRef<Record<AccessTab, HTMLButtonElement | null>>({ invitations: null, admission: null, registration: null })
 
   const userCursor = userCursorStack[userCursorStack.length - 1] ?? null
   const batchCursor = batchCursorStack[batchCursorStack.length - 1] ?? null
@@ -200,6 +207,20 @@ export default function AdminAccessPage() {
     if (next !== 'admission') setSelectedBatchId(null)
   }
 
+  function moveTab(event: KeyboardEvent<HTMLButtonElement>, current: AccessTab) {
+    const currentIndex = tabs.findIndex((tab) => tab.key === current)
+    let nextIndex: number | null = null
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = tabs.length - 1
+    if (nextIndex === null) return
+    event.preventDefault()
+    const next = tabs[nextIndex].key
+    selectTab(next)
+    tabRefs.current[next]?.focus()
+  }
+
   function submitSearch() {
     setSubmittedSearch(search.trim())
     setUserCursorStack([null])
@@ -228,52 +249,56 @@ export default function AdminAccessPage() {
     }
   }
 
-  const tabNavigation = <div className={['detail-tabs', styles.tabs].join(' ')} role="tablist" aria-label="用户与准入功能">
-    {tabs.map(({ key, label, icon: Icon }) => <button key={key} type="button" role="tab" aria-selected={activeTab === key} className={activeTab === key ? 'active' : ''} onClick={() => selectTab(key)}><Icon size={15} />{label}</button>)}
+  const tabNavigation = <div className={['mg-tabs', styles.tabs].join(' ')} data-component="mg-tabs" role="tablist" aria-label="用户与准入功能">
+    {tabs.map(({ key, label, icon: Icon }) => <button key={key} id={`${key}-tab`} type="button" role="tab" aria-selected={activeTab === key} aria-controls={`${key}-tabpanel`} tabIndex={activeTab === key ? 0 : -1} ref={(element) => { tabRefs.current[key] = element }} className="mg-tab" data-component="mg-tab" onClick={() => selectTab(key)} onKeyDown={(event) => moveTab(event, key)}><Icon size={15} />{label}</button>)}
   </div>
 
-  return <main className={['fidelity-page', styles.page].join(' ')}>
-    <header className="page-heading">
+  return <main className={['fidelity-page', styles.page].join(' ')} data-accent="campaign" data-page-ownership="governance">
+    <header className="page-heading mg-hero" data-component="mg-hero" data-page-prelude>
       <div>
         <h1>用户与准入</h1>
-        <p>管理邀请权限、准入批次和注册策略。</p>
+        <p className="mg-hero-lead">管理邀请权限、准入批次和注册策略。</p>
       </div>
-      <button className={styles.secondaryButton} type="button" onClick={() => setRefreshToken((value) => value + 1)} disabled={!permitted || usersState.status === 'loading' || batchesState.status === 'loading' || policyState.status === 'loading' || cookieState.status === 'loading'} title="刷新用户与准入数据">
+      <button className={['mg-btn', 'mg-btn-ghost', styles.secondaryButton].join(' ')} data-component="mg-btn" type="button" onClick={() => setRefreshToken((value) => value + 1)} disabled={!permitted || usersState.status === 'loading' || batchesState.status === 'loading' || policyState.status === 'loading' || cookieState.status === 'loading'} title="刷新用户与准入数据">
         <RefreshCw size={15} aria-hidden="true" />刷新
       </button>
     </header>
     {!permitted ? <AccessGate runtimeState={runtimeState as RuntimeState} /> : <>
-      <div data-page-prelude>{tabNavigation}</div>
+      <div>{tabNavigation}</div>
       <PlatformCookiePanel state={cookieState} />
-      {activeTab === 'invitations' ? <div className={styles.accessLayout} data-page-layout="persistent-rail">
-        <div className={styles.mainColumn} data-page-primary data-primary-flow>
-          <InvitationTab
-            state={usersState}
-            admissionState={batchesState}
-            policyState={policyState}
-            search={search}
-            submittedSearch={submittedSearch}
-            selectedUserId={selectedUserId}
-            cursorDepth={userCursorStack.length}
-            onSearchChange={setSearch}
-            onSearchSubmit={submitSearch}
-            onSelectUser={setSelectedUserId}
-            onPreviousPage={previousUserPage}
-            onNextPage={nextUserPage}
-            onOpenAdmission={() => selectTab('admission')}
-            onOpenRegistration={() => selectTab('registration')}
+      <div hidden={activeTab !== 'invitations'}>
+        <div className={styles.accessLayout} data-page-layout="persistent-rail">
+          <div className={styles.mainColumn} data-page-primary data-primary-flow>
+            <InvitationTab
+              hidden={activeTab !== 'invitations'}
+              state={usersState}
+              admissionState={batchesState}
+              policyState={policyState}
+              search={search}
+              submittedSearch={submittedSearch}
+              selectedUserId={selectedUserId}
+              cursorDepth={userCursorStack.length}
+              onSearchChange={setSearch}
+              onSearchSubmit={submitSearch}
+              onSelectUser={setSelectedUserId}
+              onPreviousPage={previousUserPage}
+              onNextPage={nextUserPage}
+              onOpenAdmission={() => selectTab('admission')}
+              onOpenRegistration={() => selectTab('registration')}
+            />
+          </div>
+          <InvitationInspector
+            user={selectedUser}
+            expectedRevision={usersState.status === 'ready' ? usersState.data.revision : 0}
+            canMutate={canMutate}
+            readback={readbackUsers}
+            onClear={() => setSelectedUserId(null)}
+            onMutationComplete={onMutationComplete}
           />
         </div>
-        <InvitationInspector
-          user={selectedUser}
-          expectedRevision={usersState.status === 'ready' ? usersState.data.revision : 0}
-          canMutate={canMutate}
-          readback={readbackUsers}
-          onClear={() => setSelectedUserId(null)}
-          onMutationComplete={onMutationComplete}
-        />
-      </div> : null}
-      {activeTab === 'admission' ? <AdmissionTab
+      </div>
+      <AdmissionTab
+        hidden={activeTab !== 'admission'}
         state={batchesState}
         selectedBatchId={selectedBatchId}
         expectedRevision={batchesState.status === 'ready' ? batchesState.data.revision : 0}
@@ -285,17 +310,28 @@ export default function AdminAccessPage() {
         onPreviousPage={previousBatchPage}
         onNextPage={nextBatchPage}
         onMutationComplete={onMutationComplete}
-      /> : null}
-      {activeTab === 'registration' ? <RegistrationTab state={policyState} canMutate={canMutate} onMutationComplete={onMutationComplete} /> : null}
+      />
+      <RegistrationTab hidden={activeTab !== 'registration'} state={policyState} canMutate={canMutate} onMutationComplete={onMutationComplete} />
     </>}
   </main>
 }
 
 function PlatformCookiePanel({ state }: { state: ResourceState<PlatformCookiesResponse> }) {
+  const [copyState, setCopyState] = useState<CopyState>(null)
   const items = state.status === 'ready' ? state.data.platforms : []
   const allValid = items.length > 0 && items.every((item) => item.validationStatus === 'valid')
-  return <section className={styles.cookiePanel} aria-labelledby="platform-cookie-heading" data-admin-cookie-panel>
-    <header className={styles.cookieHeader}>
+
+  async function copySafeCommand(item: PlatformCookieStatus) {
+    try {
+      await copyText(item.safeCommand)
+      setCopyState({ platform: item.platform, status: 'success' })
+    } catch {
+      setCopyState({ platform: item.platform, status: 'error' })
+    }
+  }
+
+  return <section className={['mg-panel', styles.cookiePanel].join(' ')} aria-labelledby="platform-cookie-heading" data-component="mg-panel" data-admin-cookie-panel>
+    <header className={['mg-panel-head', styles.cookieHeader].join(' ')} data-component="mg-panel-head">
       <div className={styles.cookieTitle}>
         <ShieldCheck size={17} aria-hidden="true" />
         <div>
@@ -317,9 +353,10 @@ function PlatformCookiePanel({ state }: { state: ResourceState<PlatformCookiesRe
           <span><i aria-hidden="true" />{platformCookieStatusLabel(item)}</span>
           <span>{item.updatedAt ? `更新于 ${formatDateTime(item.updatedAt)}` : '尚未配置'}</span>
           <code>{item.safeCommand}</code>
-          <button type="button" className={styles.secondaryButton} onClick={() => void navigator.clipboard.writeText(item.safeCommand)} title="复制服务器配置命令" aria-label={`复制${platformDisplayLabel(item.platform)}配置命令`}>
+          <button type="button" className={['mg-btn', 'mg-btn-ghost', styles.secondaryButton].join(' ')} data-component="mg-btn" onClick={() => void copySafeCommand(item)} title="复制服务器配置命令" aria-label={`复制${platformDisplayLabel(item.platform)}配置命令`} aria-describedby={copyState?.platform === item.platform ? `${item.platform}-copy-feedback` : undefined}>
             <Copy size={14} aria-hidden="true" />复制命令
           </button>
+          {copyState?.platform === item.platform ? <p id={`${item.platform}-copy-feedback`} role="status" aria-live="polite">{copyState.status === 'success' ? `已复制${platformDisplayLabel(item.platform)}安全配置命令。` : `复制${platformDisplayLabel(item.platform)}安全配置命令失败，请手动复制上方命令。`}</p> : null}
         </div>)}
       </div>
       <div className={styles.cookieContract}>
@@ -369,6 +406,7 @@ function useAdminResource<T>(
 }
 
 type InvitationTabProps = {
+  hidden: boolean
   state: ResourceState<AffiliateUsersPage>
   admissionState: ResourceState<AdmissionBatchesPage>
   policyState: ResourceState<RegistrationPolicy>
@@ -386,6 +424,7 @@ type InvitationTabProps = {
 }
 
 function InvitationTab({
+  hidden,
   state,
   admissionState,
   policyState,
@@ -402,13 +441,13 @@ function InvitationTab({
   onOpenRegistration,
 }: InvitationTabProps) {
   const items = state.status === 'ready' ? state.data.items : []
-  return <section className={styles.tabContent} aria-label="邀请权限">
-    <section className={styles.tablePanel} aria-labelledby="invitation-users-heading">
+  return <section hidden={hidden} className={styles.tabContent} aria-label="邀请权限" id="invitations-tabpanel" role="tabpanel" aria-labelledby="invitations-tab">
+    <section className={['mg-panel', styles.tablePanel].join(' ')} aria-labelledby="invitation-users-heading" data-component="mg-panel">
       <PanelHeader title="邀请权限" count={state.status === 'ready' ? items.length : null} id="invitation-users-heading" />
       <form className={styles.filterBar} onSubmit={(event) => { event.preventDefault(); onSearchSubmit() }}>
         <SearchBox className={styles.searchField} value={search} onChange={onSearchChange} label="搜索用户名" />
-        <button className={styles.secondaryButton} type="submit"><Search size={14} aria-hidden="true" />搜索</button>
-        {submittedSearch ? <button className={styles.quietButton} type="button" onClick={() => { onSearchChange(''); onSearchSubmit() }}><X size={14} aria-hidden="true" />清除搜索</button> : null}
+        <button className={['mg-btn', 'mg-btn-ghost', styles.secondaryButton].join(' ')} data-component="mg-btn" type="submit"><Search size={14} aria-hidden="true" />搜索</button>
+        {submittedSearch ? <button className={['mg-btn', 'mg-btn-ghost', styles.quietButton].join(' ')} data-component="mg-btn" type="button" onClick={() => { onSearchChange(''); onSearchSubmit() }}><X size={14} aria-hidden="true" />清除搜索</button> : null}
       </form>
       {state.status === 'ready' ? <>
         <UserTable items={items} selectedUserId={selectedUserId} onSelect={onSelectUser} />
@@ -423,7 +462,7 @@ function InvitationTab({
 }
 
 function UserTable({ items, selectedUserId, onSelect }: { items: AffiliateUser[]; selectedUserId: string | null; onSelect: (value: string) => void }) {
-  if (!items.length) return <EmptyState icon={<UsersRound size={21} />} title="暂无匹配的用户" detail="服务端没有返回符合当前搜索条件的记录。" />
+  if (!items.length) return <EmptyState title="暂无匹配的用户" detail="服务端没有返回符合当前搜索条件的记录。" />
   return <div className={styles.tableScroll} role="region" tabIndex={0} aria-label="用户邀请权限表"><table className={styles.userTable}>
     <colgroup><col className={styles.userColumn} /><col className={styles.permissionColumn} /><col className={styles.switchColumn} /><col className={styles.numberColumn} /><col className={styles.numberColumn} /><col className={styles.statusColumn} /><col className={styles.actionColumn} /></colgroup>
     <thead><tr><th scope="col">用户</th><th scope="col">邀请权限</th><th scope="col">开关</th><th scope="col">配额</th><th scope="col">已用</th><th scope="col">账户状态</th><th scope="col"><span className={styles.srOnly}>操作</span></th></tr></thead>
@@ -437,7 +476,7 @@ function UserTable({ items, selectedUserId, onSelect }: { items: AffiliateUser[]
         <td className={styles.numericCell}>{user.invitationQuota}</td>
         <td className={styles.numericCell}>{user.usedQuota}</td>
         <td><StatusPill label={status.label} tone={status.tone} /></td>
-        <td><button className={styles.iconButton} type="button" title="编辑邀请权限" aria-label={'编辑 ' + user.displayName + ' 的邀请权限'} onClick={() => onSelect(user.publicUserId)}><PencilLine size={15} /></button></td>
+        <td><button className={['mg-btn', 'mg-btn-ghost', styles.iconButton].join(' ')} data-component="mg-btn" type="button" title="编辑邀请权限" aria-label={'编辑 ' + user.displayName + ' 的邀请权限'} onClick={() => onSelect(user.publicUserId)}><PencilLine size={15} /></button></td>
       </tr>
     })}</tbody>
   </table></div>
@@ -487,7 +526,7 @@ function InvitationInspector({
     setRevokeConfirmation('')
   }, [signature, user])
 
-  if (!user) return <aside className={[styles.inspector, styles.inspectorEmpty].join(' ')} aria-label="邀请权限检查器" data-page-inspector data-page-terminal-surface="inspector"><UserRound size={25} /><strong>选择用户查看邀请权限</strong><span>选择一条服务端记录后，这里会显示可编辑字段和审计确认。</span></aside>
+  if (!user) return <aside className={['mg-panel', styles.inspector, styles.inspectorEmpty].join(' ')} aria-label="邀请权限检查器" data-component="mg-panel" data-page-inspector data-page-terminal-surface="inspector"><SurfaceState kind="empty" title="选择用户查看邀请权限" detail="选择一条服务端记录后，这里会显示可编辑字段和审计确认。" /></aside>
 
   const currentUser = user
   const numericQuota = parseIntegerInput(quota)
@@ -566,13 +605,13 @@ function InvitationInspector({
     setConfirmation('')
   }
 
-  return <aside className={styles.inspector} aria-labelledby="invitation-inspector-heading" data-page-inspector data-page-terminal-surface="inspector">
-    <header className={styles.inspectorHeader}><div><h2 id="invitation-inspector-heading">编辑邀请权限</h2><span>服务端修订号：{expectedRevision}</span></div><button className={styles.iconButton} type="button" title="清除选择" aria-label="清除选择" onClick={onClear}><X size={17} /></button></header>
+  return <aside className={['mg-panel', styles.inspector].join(' ')} aria-labelledby="invitation-inspector-heading" data-component="mg-panel" data-page-inspector data-page-terminal-surface="inspector">
+    <header className={['mg-panel-head', styles.inspectorHeader].join(' ')} data-component="mg-panel-head"><div><h2 id="invitation-inspector-heading">编辑邀请权限</h2><span>服务端修订号：{expectedRevision}</span></div><button className={['mg-btn', 'mg-btn-ghost', styles.iconButton].join(' ')} data-component="mg-btn" type="button" title="清除选择" aria-label="清除选择" onClick={onClear}><X size={17} /></button></header>
     <div className={styles.inspectorBody}>
       <div className={styles.inspectorIdentity}><span className={styles.identityIcon}><UserRound size={21} /></span><div><strong>{user.displayName}</strong><small title={user.publicUserId}>{user.publicUserId}</small></div><StatusPill label={status.label} tone={status.tone} /></div>
       <form className={styles.inspectorForm} onSubmit={(event) => void submitUpdate(event)}>
         <Field label="邀请权限"><select value={enabled ? 'enabled' : 'disabled'} onChange={(event) => setEnabled(event.target.value === 'enabled')}><option value="enabled">可邀请</option><option value="disabled">禁止邀请</option></select></Field>
-        <Field label="开关"><label className={styles.switchField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} /><span className={styles.switchTrack} aria-hidden="true"><span /></span><span>{enabled ? '开启' : '关闭'}</span></label></Field>
+        <Field label="开关"><span className={styles.switchField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} /><span className={styles.switchTrack} aria-hidden="true"><span /></span><span>{enabled ? '开启' : '关闭'}</span></span></Field>
         <Field label="配额上限"><input type="number" min="0" max="1000000" step="1" value={quota} onChange={(event) => setQuota(event.target.value)} aria-describedby="quota-help" /></Field>
         <p id="quota-help" className={styles.fieldHint}>已用 {user.usedQuota} 个。</p>
         {!quotaValid ? <p className={styles.fieldError} role="alert">配额必须是整数，且不能低于已用名额。</p> : null}
@@ -580,7 +619,7 @@ function InvitationInspector({
         <Field label={<span>审计原因 <b className={styles.required}>*</b></span>}><textarea value={reason} maxLength={500} onChange={(event) => setReason(event.target.value)} placeholder="说明本次权限变更的原因" rows={4} /><small className={styles.characterCount}>{reason.length}/500</small></Field>
         <div className={styles.confirmationBox}><div className={styles.confirmationHeading}><KeyRound size={15} /><strong>确认权限变更</strong></div><p>请输入用户名称以确认当前操作。</p><input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} placeholder={'请输入“' + user.displayName + '”以确认'} aria-label="输入用户名称确认变更" />{confirmation && !confirmationValid ? <small className={styles.fieldError}>输入内容与当前用户名不一致。</small> : null}</div>
         {updateAction.state.kind === 'success' ? <ReadbackMessage /> : null}
-        <div className={styles.formActions}><button className={styles.cancelButton} type="button" onClick={resetDraft}>取消编辑</button><button className={styles.primaryButton} type="submit" disabled={!updateReady}>{updateAction.busy ? '正在保存' : '应用变更'}</button></div>
+        <div className={styles.formActions}><button className={['mg-btn', 'mg-btn-ghost', styles.cancelButton].join(' ')} data-component="mg-btn" type="button" onClick={resetDraft}>取消编辑</button><button className={['mg-btn', 'mg-btn-primary', styles.primaryButton].join(' ')} data-component="mg-btn" type="submit" disabled={!updateReady}>{updateAction.busy ? '正在保存' : '应用变更'}</button></div>
         <ActionMessage state={updateAction.state} />
       </form>
       <form className={[styles.inspectorForm, styles.dangerAction].join(' ')} onSubmit={(event) => void submitRevoke(event)}>
@@ -588,7 +627,7 @@ function InvitationInspector({
         <Field label={<span>审计原因 <b className={styles.required}>*</b></span>}><textarea value={revokeReason} maxLength={500} onChange={(event) => setRevokeReason(event.target.value)} placeholder="说明本次会话撤销的原因" rows={3} /><small className={styles.characterCount}>{revokeReason.length}/500</small></Field>
         <div className={styles.confirmationBox}><div className={styles.confirmationHeading}><KeyRound size={15} /><strong>确认会话撤销</strong></div><p>请输入用户名称以确认当前操作。</p><input value={revokeConfirmation} onChange={(event) => setRevokeConfirmation(event.target.value)} placeholder={'请输入“' + user.displayName + '”以确认'} aria-label="输入用户名称确认会话撤销" />{revokeConfirmation && !revokeConfirmationValid ? <small className={styles.fieldError}>输入内容与当前用户名不一致。</small> : null}</div>
         {revokeAction.state.kind === 'success' ? <ReadbackMessage /> : null}
-        <button className={styles.dangerButton} type="submit" disabled={!revokeReady}>{revokeAction.busy ? '正在撤销' : '撤销全部会话'}</button>
+        <button className={['mg-btn', styles.dangerButton].join(' ')} data-component="mg-btn" type="submit" disabled={!revokeReady}>{revokeAction.busy ? '正在撤销' : '撤销全部会话'}</button>
         <ActionMessage state={revokeAction.state} />
       </form>
     </div>
@@ -599,11 +638,11 @@ function AdmissionSummary({ state, onOpen }: { state: ResourceState<AdmissionBat
   const items = state.status === 'ready' ? state.data.items : []
   const activeCount = items.filter((item) => item.status === 'active').length
   const usedCount = items.reduce((total, item) => total + item.usedCount, 0)
-  return <section className={styles.summaryPanel} aria-labelledby="admission-summary-heading" data-page-terminal-surface="primary"><PanelHeader title="准入码批次（摘要）" id="admission-summary-heading" action={<button className={styles.quietButton} type="button" onClick={onOpen}>查看全部<ChevronRight size={14} /></button>} />{state.status === 'ready' ? <div className={styles.summaryBody}><div className={styles.metricGrid}><Metric className={styles.metric} label="当前页批次" value={items.length} detail="服务端返回" /><Metric className={styles.metric} label="生效批次" value={activeCount} detail="按服务端状态" /><Metric className={styles.metric} label="已用准入码" value={usedCount} detail="当前页汇总" /></div><SummaryTableHint items={items} /></div> : <SummaryState state={state} />}</section>
+  return <section className={['mg-panel', styles.summaryPanel].join(' ')} aria-labelledby="admission-summary-heading" data-component="mg-panel" data-page-terminal-surface="primary"><PanelHeader title="准入码批次（摘要）" id="admission-summary-heading" action={<button className={['mg-btn', 'mg-btn-ghost', styles.quietButton].join(' ')} data-component="mg-btn" type="button" onClick={onOpen}>查看全部<ChevronRight size={14} /></button>} />{state.status === 'ready' ? <div className={styles.summaryBody}><div className={styles.metricGrid}><Metric className={styles.metric} label="当前页批次" value={items.length} detail="服务端返回" /><Metric className={styles.metric} label="生效批次" value={activeCount} detail="按服务端状态" /><Metric className={styles.metric} label="已用准入码" value={usedCount} detail="当前页汇总" /></div><SummaryTableHint items={items} /></div> : <SummaryState state={state} />}</section>
 }
 
 function RegistrationSummary({ state, onOpen }: { state: ResourceState<RegistrationPolicy>; onOpen: () => void }) {
-  return <section className={styles.summaryPanel} aria-labelledby="registration-summary-heading" data-page-terminal-surface="primary"><PanelHeader title="当前注册策略（摘要）" id="registration-summary-heading" action={<button className={styles.quietButton} type="button" onClick={onOpen}>查看详情<ChevronRight size={14} /></button>} />{state.status === 'ready' ? <div className={styles.summaryBody}><dl className={styles.factList}><div><dt>注册模式</dt><dd>{policyLabel(state.data.policy.mode)}</dd></div><div><dt>服务端状态</dt><dd><StatusPill label="已读取" tone="success" /></dd></div><div><dt>更新时间</dt><dd>{formatDate(state.data.policy.updatedAt)}</dd></div></dl></div> : <SummaryState state={state} />}</section>
+  return <section className={['mg-panel', styles.summaryPanel].join(' ')} aria-labelledby="registration-summary-heading" data-component="mg-panel" data-page-terminal-surface="primary"><PanelHeader title="当前注册策略（摘要）" id="registration-summary-heading" action={<button className={['mg-btn', 'mg-btn-ghost', styles.quietButton].join(' ')} data-component="mg-btn" type="button" onClick={onOpen}>查看详情<ChevronRight size={14} /></button>} />{state.status === 'ready' ? <div className={styles.summaryBody}><dl className={styles.factList}><div><dt>注册模式</dt><dd>{policyLabel(state.data.policy.mode)}</dd></div><div><dt>服务端状态</dt><dd><StatusPill label="已读取" tone="success" /></dd></div><div><dt>更新时间</dt><dd>{formatDate(state.data.policy.updatedAt)}</dd></div></dl></div> : <SummaryState state={state} />}</section>
 }
 
 function SummaryTableHint({ items }: { items: AdmissionBatch[] }) {
@@ -613,6 +652,7 @@ function SummaryTableHint({ items }: { items: AdmissionBatch[] }) {
 }
 
 function AdmissionTab({
+  hidden,
   state,
   selectedBatchId,
   expectedRevision,
@@ -625,6 +665,7 @@ function AdmissionTab({
   onNextPage,
   onMutationComplete,
 }: {
+  hidden: boolean
   state: ResourceState<AdmissionBatchesPage>
   selectedBatchId: string | null
   expectedRevision: number
@@ -639,18 +680,18 @@ function AdmissionTab({
 }) {
   const items = state.status === 'ready' ? state.data.items : []
   const selected = items.find((item) => item.batchId === selectedBatchId) ?? null
-  return <section className={styles.tabContent} aria-label="准入码">
+  return <section hidden={hidden} className={styles.tabContent} aria-label="准入码" id="admission-tabpanel" role="tabpanel" aria-labelledby="admission-tab">
     <div className={styles.sectionLead}><div><h2>准入码批次</h2><p>批次库存和状态来自服务端。</p></div><StatusPill label="管理员视图" tone="success" /></div>
-    <section className={styles.tablePanel} aria-labelledby="admission-table-heading"><PanelHeader title="批次库存" count={state.status === 'ready' ? items.length : null} id="admission-table-heading" />{state.status === 'ready' ? <><BatchTable items={items} selectedBatchId={selectedBatchId} onSelect={onSelectBatch} /><CursorPagination depth={cursorDepth} hasNext={state.data.nextCursor !== null} onPrevious={onPreviousPage} onNext={onNextPage} /></> : <PageState state={state} emptyTitle="暂无准入码批次" />}</section>
+    <section className={['mg-panel', styles.tablePanel].join(' ')} aria-labelledby="admission-table-heading" data-component="mg-panel"><PanelHeader title="批次库存" count={state.status === 'ready' ? items.length : null} id="admission-table-heading" />{state.status === 'ready' ? <><BatchTable items={items} selectedBatchId={selectedBatchId} onSelect={onSelectBatch} /><CursorPagination depth={cursorDepth} hasNext={state.data.nextCursor !== null} onPrevious={onPreviousPage} onNext={onNextPage} /></> : <PageState state={state} emptyTitle="暂无准入码批次" />}</section>
     <AdmissionActions selected={selected} expectedRevision={expectedRevision} canMutate={canMutate} readback={readback} readbackLatest={readbackLatest} onMutationComplete={onMutationComplete} />
   </section>
 }
 
 function BatchTable({ items, selectedBatchId, onSelect }: { items: AdmissionBatch[]; selectedBatchId: string | null; onSelect: (value: string) => void }) {
-  if (!items.length) return <EmptyState icon={<TicketCheck size={21} />} title="暂无准入码批次" detail="服务端还没有返回批次记录。" />
+  if (!items.length) return <EmptyState title="暂无准入码批次" detail="服务端还没有返回批次记录。" />
   return <div className={styles.tableScroll} role="region" tabIndex={0} aria-label="准入码批次表"><table className={styles.batchTable}><colgroup><col className={styles.batchNameColumn} /><col className={styles.batchCreatedColumn} /><col className={styles.batchNumberColumn} /><col className={styles.batchNumberColumn} /><col className={styles.batchStatusColumn} /><col className={styles.batchDisabledColumn} /><col className={styles.actionColumn} /></colgroup><thead><tr><th scope="col">批次名称</th><th scope="col">创建时间</th><th className={styles.numericCell} scope="col">配额</th><th className={styles.numericCell} scope="col">已用</th><th scope="col">状态</th><th scope="col">到期</th><th className={styles.actionCell} scope="col"><span className={styles.srOnly}>操作</span></th></tr></thead><tbody>{items.map((batch) => {
     const selected = batch.batchId === selectedBatchId
-    return <tr key={batch.batchId} className={selected ? styles.selectedRow : undefined} aria-selected={selected}><td><button className={styles.batchSelect} type="button" aria-pressed={selected} onClick={() => onSelect(batch.batchId)}><span className={[styles.checkbox, selected ? styles.checkboxSelected : ''].join(' ')} aria-hidden="true">{selected ? <Check size={13} /> : null}</span><span><strong title={batch.name}>{batch.name}</strong><small title={batch.batchId}>{batch.batchId}</small></span></button></td><td>{formatDate(batch.createdAt)}</td><td className={styles.numericCell}>{batch.codeCount}</td><td className={styles.numericCell}>{batch.usedCount}</td><td><StatusPill label={batchStatusLabel(batch.status)} tone={batch.status === 'active' ? 'success' : 'muted'} /></td><td>{formatDate(batch.expiresAt)}</td><td className={styles.actionCell}><button className={styles.iconButton} type="button" title="选择批次操作" aria-label={'选择 ' + batch.name + ' 进行操作'} onClick={() => onSelect(batch.batchId)}><EllipsisVertical size={16} /></button></td></tr>
+    return <tr key={batch.batchId} className={selected ? styles.selectedRow : undefined} aria-selected={selected}><td><button className={styles.batchSelect} type="button" aria-pressed={selected} onClick={() => onSelect(batch.batchId)}><span className={[styles.checkbox, selected ? styles.checkboxSelected : ''].join(' ')} aria-hidden="true">{selected ? <Check size={13} /> : null}</span><span><strong title={batch.name}>{batch.name}</strong><small title={batch.batchId}>{batch.batchId}</small></span></button></td><td>{formatDate(batch.createdAt)}</td><td className={styles.numericCell}>{batch.codeCount}</td><td className={styles.numericCell}>{batch.usedCount}</td><td><StatusPill label={batchStatusLabel(batch.status)} tone={batch.status === 'active' ? 'success' : 'muted'} /></td><td>{formatDate(batch.expiresAt)}</td><td className={styles.actionCell}><button className={['mg-btn', 'mg-btn-ghost', styles.iconButton].join(' ')} data-component="mg-btn" type="button" title="选择批次操作" aria-label={'选择 ' + batch.name + ' 进行操作'} onClick={() => onSelect(batch.batchId)}><EllipsisVertical size={16} /></button></td></tr>
   })}</tbody></table></div>
 }
 
@@ -742,14 +783,14 @@ function AdmissionActions({
     setDisableConfirmation('')
   }
 
-  return <section className={styles.actionPanel} aria-labelledby="admission-action-heading">
-    <div className={styles.actionHeader}><div><h2 id="admission-action-heading">批次操作</h2><p>写入需要审计原因、确认和服务端回读。</p></div><ActionMessage state={action.state} /></div>
-    <div className={styles.segmented} role="tablist" aria-label="准入码批次操作"><button type="button" role="tab" aria-selected={mode === 'issue'} className={mode === 'issue' ? styles.segmentActive : ''} onClick={() => changeMode('issue')}>签发批次</button><button type="button" role="tab" aria-selected={mode === 'disable'} className={mode === 'disable' ? styles.segmentActive : ''} onClick={() => changeMode('disable')}>禁用批次</button></div>
-    <form className={styles.actionForm} onSubmit={(event) => void submit(event)}>{mode === 'issue' ? <><div className={styles.actionFields}><Field label="批次名称"><input value={name} maxLength={120} onChange={(event) => setName(event.target.value)} placeholder="例如：合作伙伴试用批次" /></Field><Field label="签发数量"><input type="number" min="1" max="1000" step="1" value={count} onChange={(event) => setCount(event.target.value)} /></Field></div><Field label={<span>审计原因 <b className={styles.required}>*</b></span>}><textarea value={createReason} maxLength={500} onChange={(event) => setCreateReason(event.target.value)} placeholder="说明为什么要签发这批准入码" rows={3} /><small className={styles.characterCount}>{createReason.length}/500</small></Field><label className={styles.confirmCheck}><input type="checkbox" checked={createConfirmation} onChange={(event) => setCreateConfirmation(event.target.checked)} /><span>我确认创建该准入码批次。</span></label></> : <><div className={styles.selectedTarget}>{selected ? <><span className={styles.identityIcon}><TicketCheck size={19} /></span><div><strong title={selected.name}>{selected.name}</strong><small>{selected.batchId}</small></div><StatusPill label={batchStatusLabel(selected.status)} tone={selected.status === 'active' ? 'success' : 'muted'} /></> : <span>请先选择批次。</span>}</div>{selected ? <Field label={<span>输入批次名称确认 <b className={styles.required}>*</b></span>}><input value={disableConfirmation} onChange={(event) => setDisableConfirmation(event.target.value)} placeholder={'请输入“' + selected.name + '”以确认'} /></Field> : null}<Field label={<span>审计原因 <b className={styles.required}>*</b></span>}><textarea value={disableReason} maxLength={500} onChange={(event) => setDisableReason(event.target.value)} placeholder="说明为什么要禁用这批准入码" rows={3} /><small className={styles.characterCount}>{disableReason.length}/500</small></Field></>}{action.state.kind === 'success' ? <ReadbackMessage /> : null}<button className={styles.primaryButton} type="submit" disabled={mode === 'issue' ? !createReady : !disableReady}>{action.busy ? '正在提交' : mode === 'issue' ? '生成批次' : '禁用批次'}</button></form>
+  return <section className={['mg-panel', styles.actionPanel].join(' ')} aria-labelledby="admission-action-heading" data-component="mg-panel">
+    <header className={['mg-panel-head', styles.actionHeader].join(' ')} data-component="mg-panel-head"><div><h2 id="admission-action-heading">批次操作</h2><p>写入需要审计原因、确认和服务端回读。</p></div><ActionMessage state={action.state} /></header>
+    <div className={['mg-tabs', styles.segmented].join(' ')} data-component="mg-tabs" role="tablist" aria-label="准入码批次操作"><button type="button" role="tab" aria-selected={mode === 'issue'} className="mg-tab" data-component="mg-tab" onClick={() => changeMode('issue')}>签发批次</button><button type="button" role="tab" aria-selected={mode === 'disable'} className="mg-tab" data-component="mg-tab" onClick={() => changeMode('disable')}>禁用批次</button></div>
+    <form className={styles.actionForm} onSubmit={(event) => void submit(event)}>{mode === 'issue' ? <><div className={styles.actionFields}><Field label="批次名称"><input value={name} maxLength={120} onChange={(event) => setName(event.target.value)} placeholder="例如：合作伙伴试用批次" /></Field><Field label="签发数量"><input type="number" min="1" max="1000" step="1" value={count} onChange={(event) => setCount(event.target.value)} /></Field></div><Field label={<span>审计原因 <b className={styles.required}>*</b></span>}><textarea value={createReason} maxLength={500} onChange={(event) => setCreateReason(event.target.value)} placeholder="说明为什么要签发这批准入码" rows={3} /><small className={styles.characterCount}>{createReason.length}/500</small></Field><label className={styles.confirmCheck}><input type="checkbox" checked={createConfirmation} onChange={(event) => setCreateConfirmation(event.target.checked)} /><span>我确认创建该准入码批次。</span></label></> : <><div className={styles.selectedTarget}>{selected ? <><span className={styles.identityIcon}><TicketCheck size={19} /></span><div><strong title={selected.name}>{selected.name}</strong><small>{selected.batchId}</small></div><StatusPill label={batchStatusLabel(selected.status)} tone={selected.status === 'active' ? 'success' : 'muted'} /></> : <span>请先选择批次。</span>}</div>{selected ? <Field label={<span>输入批次名称确认 <b className={styles.required}>*</b></span>}><input value={disableConfirmation} onChange={(event) => setDisableConfirmation(event.target.value)} placeholder={'请输入“' + selected.name + '”以确认'} /></Field> : null}<Field label={<span>审计原因 <b className={styles.required}>*</b></span>}><textarea value={disableReason} maxLength={500} onChange={(event) => setDisableReason(event.target.value)} placeholder="说明为什么要禁用这批准入码" rows={3} /><small className={styles.characterCount}>{disableReason.length}/500</small></Field></>}{action.state.kind === 'success' ? <ReadbackMessage /> : null}<button className={['mg-btn', 'mg-btn-primary', styles.primaryButton].join(' ')} data-component="mg-btn" type="submit" disabled={mode === 'issue' ? !createReady : !disableReady}>{action.busy ? '正在提交' : mode === 'issue' ? '生成批次' : '禁用批次'}</button></form>
   </section>
 }
 
-function RegistrationTab({ state, canMutate, onMutationComplete }: { state: ResourceState<RegistrationPolicy>; canMutate: boolean; onMutationComplete: () => void }) {
+function RegistrationTab({ hidden, state, canMutate, onMutationComplete }: { hidden: boolean; state: ResourceState<RegistrationPolicy>; canMutate: boolean; onMutationComplete: () => void }) {
   const { session } = useMediaWeb()
   const [mode, setMode] = useState<RegistrationPolicyMode>('invite_only')
   const [reason, setReason] = useState('')
@@ -787,18 +828,18 @@ function RegistrationTab({ state, canMutate, onMutationComplete }: { state: Reso
     }
   }
 
-  return <section className={styles.tabContent} aria-label="注册策略"><div className={styles.policyLayout}><section className={styles.policyPanel} aria-labelledby="registration-policy-heading"><PanelHeader title="当前注册策略" id="registration-policy-heading" />{state.status === 'ready' ? <div className={styles.policyBody}><div className={styles.currentPolicy}><span className={styles.identityIcon}><ShieldCheck size={20} /></span><div><span>服务端当前模式</span><strong>{policyLabel(state.data.policy.mode)}</strong></div><StatusPill label="已读取" tone="success" /></div><dl className={styles.factList}><div><dt>策略修订</dt><dd>{state.data.policy.revision}</dd></div><div><dt>更新时间</dt><dd>{formatDate(state.data.policy.updatedAt)}</dd></div></dl></div> : <PageState state={state} emptyTitle="暂无注册策略" />}</section><section className={styles.policyPanel} aria-labelledby="registration-edit-heading"><PanelHeader title="更新注册策略" id="registration-edit-heading" />{state.status === 'ready' ? <form className={styles.policyForm} onSubmit={(event) => void submit(event)}><Field label="注册模式"><select value={mode} onChange={(event) => setMode(event.target.value as RegistrationPolicyMode)}><option value="open">开放注册</option><option value="invite_only">仅邀请注册</option><option value="closed">关闭注册</option></select></Field><p className={styles.fieldHint}>当前值来自服务端策略读取。</p><Field label={<span>审计原因 <b className={styles.required}>*</b></span>}><textarea value={reason} maxLength={500} onChange={(event) => setReason(event.target.value)} placeholder="说明为什么要调整注册策略" rows={5} /><small className={styles.characterCount}>{reason.length}/500</small></Field><label className={styles.confirmCheck}><input type="checkbox" checked={confirmation} onChange={(event) => setConfirmation(event.target.checked)} /><span>我确认将更新当前注册策略。</span></label>{action.state.kind === 'success' ? <ReadbackMessage /> : null}<button className={styles.primaryButton} type="submit" disabled={!canMutate || !reason.trim() || !confirmation || action.busy}>{action.busy ? '正在保存' : '保存注册策略'}</button><ActionMessage state={action.state} /></form> : null}</section></div></section>
+  return <section hidden={hidden} className={styles.tabContent} aria-label="注册策略" id="registration-tabpanel" role="tabpanel" aria-labelledby="registration-tab"><div className={styles.policyLayout}><section className={['mg-panel', styles.policyPanel].join(' ')} aria-labelledby="registration-policy-heading" data-component="mg-panel"><PanelHeader title="当前注册策略" id="registration-policy-heading" />{state.status === 'ready' ? <div className={styles.policyBody}><div className={styles.currentPolicy}><span className={styles.identityIcon}><ShieldCheck size={20} /></span><div><span>服务端当前模式</span><strong>{policyLabel(state.data.policy.mode)}</strong></div><StatusPill label="已读取" tone="success" /></div><dl className={styles.factList}><div><dt>策略修订</dt><dd>{state.data.policy.revision}</dd></div><div><dt>更新时间</dt><dd>{formatDate(state.data.policy.updatedAt)}</dd></div></dl></div> : <PageState state={state} emptyTitle="暂无注册策略" />}</section><section className={['mg-panel', styles.policyPanel].join(' ')} aria-labelledby="registration-edit-heading" data-component="mg-panel"><PanelHeader title="更新注册策略" id="registration-edit-heading" />{state.status === 'ready' ? <form className={styles.policyForm} onSubmit={(event) => void submit(event)}><Field label="注册模式"><select value={mode} onChange={(event) => setMode(event.target.value as RegistrationPolicyMode)}><option value="open">开放注册</option><option value="invite_only">仅邀请注册</option><option value="closed">关闭注册</option></select></Field><p className={styles.fieldHint}>当前值来自服务端策略读取。</p><Field label={<span>审计原因 <b className={styles.required}>*</b></span>}><textarea value={reason} maxLength={500} onChange={(event) => setReason(event.target.value)} placeholder="说明为什么要调整注册策略" rows={5} /><small className={styles.characterCount}>{reason.length}/500</small></Field><label className={styles.confirmCheck}><input type="checkbox" checked={confirmation} onChange={(event) => setConfirmation(event.target.checked)} /><span>我确认将更新当前注册策略。</span></label>{action.state.kind === 'success' ? <ReadbackMessage /> : null}<button className={['mg-btn', 'mg-btn-primary', styles.primaryButton].join(' ')} data-component="mg-btn" type="submit" disabled={!canMutate || !reason.trim() || !confirmation || action.busy}>{action.busy ? '正在保存' : '保存注册策略'}</button><ActionMessage state={action.state} /></form> : null}</section></div></section>
 }
 
 function AccessGate({ runtimeState }: { runtimeState: RuntimeState }) {
-  if (runtimeState === 'checking') return <div className={[styles.pageState, styles.pageNotice, styles.pageNoticeNeutral].join(' ')} aria-busy="true"><span className={styles.loadingBar} /><strong>正在确认管理员权限</strong><span>业务数据尚未加载。</span></div>
-  if (runtimeState === 'unauthenticated') return <div className={[styles.pageState, styles.pageNotice, styles.pageNoticeNeutral].join(' ')}><ShieldCheck size={22} /><strong>当前会话未登录</strong><span>业务数据不会加载。</span></div>
-  if (runtimeState === 'unavailable') return <div className={[styles.pageState, styles.pageNotice, styles.pageNoticeDanger].join(' ')} role="alert"><AlertCircle size={22} /><strong>会话服务不可用</strong><span>业务数据不会加载。</span></div>
-  return <div className={[styles.pageState, styles.pageNotice, styles.pageNoticeNeutral].join(' ')}><ShieldCheck size={22} /><strong>当前会话无权访问</strong><span>管理员业务数据不会加载。</span></div>
+  if (runtimeState === 'checking') return <SurfaceState kind="loading" title="正在确认管理员权限" detail="业务数据尚未加载。" />
+  if (runtimeState === 'unauthenticated') return <SurfaceState kind="permission" title="当前会话未登录" detail="业务数据不会加载。" action={null} />
+  if (runtimeState === 'unavailable') return <SurfaceState kind="error" title="会话服务不可用" detail="业务数据不会加载。" />
+  return <SurfaceState kind="forbidden" title="当前会话无权访问" detail="管理员业务数据不会加载。" />
 }
 
 function PanelHeader({ title, count, id, action }: { title: string; count?: number | null; id: string; action?: ReactNode }) {
-  return <header className={styles.panelHeader}><div><h2 id={id}>{title}</h2>{count !== undefined && count !== null ? <span>{count}</span> : null}</div>{action}</header>
+  return <header className={['mg-panel-head', styles.panelHeader].join(' ')} data-component="mg-panel-head"><div><h2 id={id}>{title}</h2>{count !== undefined && count !== null ? <span className="mg-badge" data-component="mg-badge" data-tone="neutral">{count}</span> : null}</div>{action}</header>
 }
 
 function Field({ label, children }: { label: ReactNode; children: ReactNode }) {
@@ -806,12 +847,12 @@ function Field({ label, children }: { label: ReactNode; children: ReactNode }) {
 }
 
 function CursorPagination({ depth, hasNext, onPrevious, onNext }: { depth: number; hasNext: boolean; onPrevious: () => void; onNext: () => void }) {
-  return <nav className={styles.pagination} aria-label="游标分页"><span>{depth > 1 ? '第 ' + depth + ' 页' : '第 1 页'}</span><button type="button" title="上一页" aria-label="上一页" disabled={depth <= 1} onClick={onPrevious}><ChevronLeft size={15} /></button><button type="button" title="下一页" aria-label="下一页" disabled={!hasNext} onClick={onNext}><ChevronRight size={15} /></button></nav>
+  return <nav className={styles.pagination} aria-label="游标分页"><span>{depth > 1 ? '第 ' + depth + ' 页' : '第 1 页'}</span><button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" title="上一页" aria-label="上一页" disabled={depth <= 1} onClick={onPrevious}><ChevronLeft size={15} /></button><button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" title="下一页" aria-label="下一页" disabled={!hasNext} onClick={onNext}><ChevronRight size={15} /></button></nav>
 }
 
 function StatusPill({ label, tone }: { label: string; tone: StatusTone }) {
-  const toneClass = tone === 'success' ? styles.statusSuccess : tone === 'warning' ? styles.statusWarning : tone === 'danger' ? styles.statusDanger : styles.statusMuted
-  return <span className={[styles.statusPill, toneClass].join(' ')}><span aria-hidden="true" />{label}</span>
+  const sharedTone = tone === 'success' ? 'success' : tone === 'warning' ? 'warning' : tone === 'danger' ? 'danger' : 'neutral'
+  return <span className={['mg-badge', styles.statusPill].join(' ')} data-component="mg-badge" data-tone={sharedTone}><span aria-hidden="true" />{label}</span>
 }
 
 function ReadbackMessage() {
@@ -825,20 +866,20 @@ function ActionMessage({ state }: { state: ActionState }) {
 }
 
 function SummaryState({ state }: { state: ResourceState<unknown> }) {
-  if (state.status === 'loading') return <div className={styles.summaryState} aria-busy="true">正在读取摘要</div>
-  if (state.status === 'error') return <div className={styles.summaryState} role="alert"><AlertCircle size={16} /><span>{state.message}</span></div>
-  return <div className={styles.summaryState}>暂无数据。</div>
+  if (state.status === 'loading') return <SurfaceState kind="loading" title="正在读取摘要" detail="当前摘要来自服务端读取。" density="compact" />
+  if (state.status === 'error') return <SurfaceState kind="error" title="摘要读取失败" detail={state.message} density="compact" />
+  return <SurfaceState kind={state.status === 'idle' ? 'loading' : 'empty'} title={state.status === 'idle' ? '等待摘要读取' : '暂无数据'} detail={state.status === 'idle' ? '当前摘要尚未加载。' : '服务端没有返回可展示的摘要。'} density="compact" />
 }
 
 function PageState({ state, emptyTitle }: { state: ResourceState<unknown>; emptyTitle: string }) {
-  if (state.status === 'loading') return <div className={styles.pageState} aria-busy="true"><span className={styles.loadingBar} /><strong>正在读取</strong><span>页面只展示服务端返回的数据。</span></div>
-  if (state.status === 'error') return <div className={styles.pageState} role="alert"><AlertCircle size={22} /><strong>{state.message}</strong><span>当前数据未加载。</span></div>
-  if (state.status === 'idle') return <div className={styles.pageState}><ShieldCheck size={22} /><strong>等待管理员权限</strong><span>业务数据不会加载。</span></div>
-  return <EmptyState icon={<AlertCircle size={21} />} title={emptyTitle} detail="服务端没有返回可展示的记录。" />
+  if (state.status === 'loading') return <SurfaceState kind="loading" title="正在读取" detail="页面只展示服务端返回的数据。" />
+  if (state.status === 'error') return <SurfaceState kind="error" title="读取失败" detail={state.message} />
+  if (state.status === 'idle') return <SurfaceState kind="loading" title="等待管理员权限" detail="业务数据尚未加载。" />
+  return <EmptyState title={emptyTitle} detail="服务端没有返回可展示的记录。" />
 }
 
-function EmptyState({ icon, title, detail }: { icon: ReactNode; title: string; detail: string }) {
-  return <div className={styles.emptyState}>{icon}<strong>{title}</strong><span>{detail}</span></div>
+function EmptyState({ title, detail }: { title: string; detail: string }) {
+  return <SurfaceState kind="empty" title={title} detail={detail} />
 }
 
 function affiliateStatus(status: string): { label: string; tone: StatusTone } {

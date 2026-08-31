@@ -47,7 +47,7 @@ assert.match(platformIconSource, /<path d=\{icon\.path\} fill="currentColor" \/>
 assert.doesNotMatch(ordinaryLabelsSource, /PLATFORM_LABELS|platformDisplayLabel/)
 
 assert.match(runDetailSource, /<h1>\{run\.title\}<\/h1>/)
-assert.match(runDetailSource, /<section className=\{styles\.summaryBand\} aria-label="运行摘要">/)
+assert.match(runDetailSource, /<section className=\{[^>]*summaryBand[^>]*mg-panel[^>]*\}[^>]*aria-label="运行摘要">/)
 for (const label of ['运行状态', '创作入口', '发布平台', '内容形态']) {
   assert.match(runDetailSource, new RegExp(`label: '${label}'`))
 }
@@ -74,11 +74,11 @@ for (const [label, expression] of [
   assert.ok(runsSource.includes(`["${label}", ${expression}]`))
 }
 for (const field of ['platform', 'contentType', 'trackName']) {
-  assert.ok(runsSource.includes(`detail.run.${field}`))
+  assert.ok(runsSource.includes(`run.${field}`))
 }
 
 assert.match(reviewsSource, /postTitle:\s*string \| null;/)
-assert.match(reviewsSource, /documentUrl:\s*string \| null;/)
+assert.ok(reviewsSource.includes('documentUrl: string | null;'))
 assert.match(reviewsSource, /ExternalLink/)
 const reviewRowCell = reviewsSource.match(/<th scope="row">([\s\S]*?)<\/th>/)?.[1]
 assert.ok(reviewRowCell, 'ReviewsPage review title cell is missing')

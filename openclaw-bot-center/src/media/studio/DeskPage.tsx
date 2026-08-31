@@ -60,18 +60,18 @@ const deskModules = [
 export default function DeskPage() {
   const { openWorkspace } = useMediaWeb()
   return (
-    <main className={styles.page} data-accent="desk">
-      <section className={styles.hero}>
+    <main className="mg-page" data-accent="desk" data-page-ownership="personal">
+      <section className="mg-hero" data-page-prelude>
         <div>
-          <span><Sparkles size={15} />CONTENT INTELLIGENCE DESK</span>
+          <span className="mg-eyebrow"><Sparkles size={15} />CONTENT INTELLIGENCE DESK</span>
           <h1>从公开证据，到下一条真正能拍的内容</h1>
-          <p>监控、拆解、选题和复盘不是四个孤立工具，而是持续为 Studio 提供真实输入的一条研究生产线。</p>
-          <div className={styles.heroActions}>
-            <button className={styles.primaryButton} type="button" onClick={() => openWorkspace()}><Bot size={17} />开始一次研究任务</button>
-            <Link className={styles.secondaryButton} to="/assets"><Images size={17} />查看素材证据</Link>
+          <p className="mg-hero-lead">监控、拆解、选题和复盘不是四个孤立工具，而是持续为 Studio 提供真实输入的一条研究生产线。</p>
+          <div className="mg-hero-actions">
+            <button className="mg-btn mg-btn-primary" type="button" onClick={() => openWorkspace()}><Bot size={17} />开始一次研究任务</button>
+            <Link className="mg-btn mg-btn-soft" to="/assets"><Images size={17} />查看素材证据</Link>
           </div>
         </div>
-        <div className={styles.signalCard}>
+        <div className={`mg-hero-signal ${styles.signalCard}`}>
           <span>Desk 的交付标准</span>
           <strong>可回查</strong>
           <p>每个建议都能回到来源、素材、指标或人工确认，不把推测包装成事实。</p>
@@ -94,14 +94,14 @@ export default function DeskPage() {
             <header><span><Icon size={21} /></span><small>{kicker}</small></header>
             <h2>{title}</h2>
             <p>{description}</p>
-            <button type="button" onClick={() => openWorkspace({ capabilityId, variantId: 'default' })}>{action}<ArrowRight size={15} /></button>
+            <button className="mg-btn mg-btn-ghost" type="button" onClick={() => openWorkspace({ capabilityId, variantId: 'default' })}>{action}<ArrowRight size={15} /></button>
           </article>
         ))}
       </section>
 
       <div className={styles.layout}>
-        <section className={styles.insightPanel}>
-          <header><div><span>研究原则</span><h2>什么才算可以进入创作的结论</h2></div></header>
+        <section className="mg-panel">
+          <header className="mg-panel-head"><div><span>研究原则</span><h2>什么才算可以进入创作的结论</h2></div></header>
           <div className={styles.principleGrid}>
             <Principle icon={<FileSearch size={19} />} title="来源真实" detail="原作品、发布时间、互动数据与媒体文件能够重新回查。" />
             <Principle icon={<MessageCircle size={19} />} title="需求有原话" detail="评论需求和用户痛点保留上下文，不只留下模型摘要。" />
@@ -110,8 +110,8 @@ export default function DeskPage() {
           </div>
         </section>
 
-        <aside className={styles.linkPanel}>
-          <header><div><span>现有工作区</span><h2>继续深入</h2></div></header>
+        <aside className={`mg-panel ${styles.linkPanel}`}>
+          <header className="mg-panel-head"><div><span>现有工作区</span><h2>继续深入</h2></div></header>
           <nav>
             <DeskLink to="/assets" icon={<Images size={18} />} title="素材与证据" detail="查看来源、拆解和原始附件" />
             <DeskLink to="/decisions" icon={<Lightbulb size={18} />} title="选题与决策" detail="核对证据、候选与人工状态" />

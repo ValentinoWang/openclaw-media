@@ -188,71 +188,14 @@
   flex-direction: column;
 }
 
-.tabContent > .panel > .emptyState,
-.tabContent > .panel > .resourceState,
+.tabContent > .panel > :global(.mg-state),
 .tabContent > .panel > .tableWrap,
 .tabContent > .panel > .growthGrid {
   flex: 1 1 auto;
 }
 
-.sessionState,
-.resourceState,
-.emptyState {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 0.55rem;
-  min-height: 12rem;
-  padding: 1.5rem;
-  border: 1px solid var(--reviews-line);
-  border-radius: 0.5rem;
-  background: var(--reviews-surface);
-  text-align: center;
-}
-
-.sessionState {
-  margin-top: 0.2rem;
-}
-
-.sessionState svg,
-.resourceState > svg,
-.emptyState > svg {
+.page :global(.mg-state-icon) {
   color: var(--reviews-teal);
-}
-
-.sessionState strong,
-.resourceState strong,
-.emptyState strong {
-  max-width: 44rem;
-  font-size: var(--mg-text-lg);
-  line-height: 1.35;
-}
-
-.sessionState p,
-.emptyState p {
-  max-width: 44rem;
-  margin: 0;
-  color: var(--reviews-muted);
-  font-size: var(--mg-text-sm);
-  line-height: 1.55;
-}
-
-.loadingState {
-  min-height: 10rem;
-}
-
-.loginLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--reviews-teal);
-  font-size: var(--mg-text-sm);
-  font-weight: 780;
-  text-decoration: none;
-}
-
-.loginLink:hover {
-  text-decoration: underline;
 }
 
 .panel {
@@ -449,20 +392,6 @@
   background: var(--reviews-soft);
 }
 
-.qualityBadge {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  max-width: 100%;
-  padding: 0.2rem 0.38rem;
-  border: 1px solid transparent;
-  border-radius: 0.3rem;
-  font-size: var(--mg-text-xs);
-  font-weight: 800;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
 .qualityVerified {
   color: var(--reviews-teal);
   background: var(--reviews-teal-soft);
@@ -554,10 +483,7 @@
 
 .layerPanel {
   min-width: 0;
-  padding: 0.7rem;
-  border: 1px solid var(--reviews-line);
-  border-radius: 0.4rem;
-  background: var(--reviews-surface);
+  padding: 0.25rem 0;
 }
 
 .layerHeader {
@@ -667,18 +593,6 @@
   overflow-wrap: anywhere;
 }
 
-.resourceState {
-  border: 0;
-  border-radius: 0;
-  min-height: 13rem;
-}
-
-.emptyState {
-  border: 0;
-  border-radius: 0;
-  min-height: 13rem;
-}
-
 .form {
   display: grid;
   gap: 0.75rem;
@@ -723,8 +637,7 @@
 .secondaryButton:focus-visible,
 .iconButton:focus-visible,
 .rowLink:focus-visible,
-.documentLink:focus-visible,
-.loginLink:focus-visible {
+.documentLink:focus-visible {
   outline: 2px solid var(--mg-accent-agent-base);
   outline-offset: 2px;
 }

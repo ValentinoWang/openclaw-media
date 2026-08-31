@@ -9,11 +9,16 @@
 }
 
 .headingRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 18px;
+  min-width: 0;
   margin-bottom: 14px;
+  padding: 18px 20px;
+  border-radius: var(--mg-r-lg);
+  background: var(--mg-surface);
+  box-shadow: var(--mg-e2);
+}
+
+.headingRow::after {
+  display: none;
 }
 
 .headingRow :global(.page-heading) {
@@ -22,7 +27,7 @@
 }
 
 .headingRow :global(.page-heading h1) {
-  margin-bottom: 7px;
+  margin: 0 0 6px;
   font-size: var(--mg-text-xl);
   line-height: 1.25;
 }
@@ -31,28 +36,11 @@
   max-width: 70ch;
   margin-bottom: 0;
   font-size: var(--mg-text-sm);
-  line-height: 1.55;
-}
-
-.primaryAction,
-.secondaryAction,
-.loginLink {
-  display: inline-flex;
-  min-height: 38px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border-radius: var(--mg-r-sm);
-  font-size: var(--mg-text-sm);
-  font-weight: 650;
-  text-decoration: none;
+  line-height: 1.5;
 }
 
 .primaryAction,
 .secondaryAction {
-  box-sizing: border-box;
-  height: 38px;
-  line-height: 1;
   white-space: nowrap;
 }
 
@@ -65,53 +53,22 @@
 
 .primaryAction {
   align-self: start;
-  padding: 0 14px;
-  border: 1px solid var(--mg-primary-dark);
-  color: var(--mg-on-primary);
-  background: var(--mg-primary-dark);
-  cursor: pointer;
-}
-
-.primaryAction:hover {
-  background: var(--mg-primary);
 }
 
 .primaryAction:disabled {
-  border-color: var(--mg-border-strong);
-  color: var(--mg-muted);
-  background: var(--mg-surface);
   cursor: not-allowed;
   opacity: 0.72;
 }
 
 .secondaryAction {
-  border: 1px solid var(--mg-border-strong);
-  color: var(--mg-ink);
-  background: var(--mg-surface);
-  cursor: pointer;
-}
-
-.secondaryAction {
   align-self: start;
-  padding: 0 12px;
-}
-
-.secondaryAction:hover:not(:disabled) {
-  border-color: var(--mg-primary);
-  color: var(--mg-primary-dark);
 }
 
 .secondaryAction:disabled {
-  color: var(--mg-muted);
   cursor: not-allowed;
   opacity: 0.68;
 }
 
-.primaryAction:focus-visible,
-.secondaryAction:focus-visible,
-.loginLink:focus-visible,
-.tabButton:focus-visible,
-.filterTab:focus-visible,
 .contextFilter button:focus-visible,
 .overviewItem:focus-visible,
 .accountListItem:focus-visible,
@@ -123,36 +80,19 @@
 }
 
 .tabList {
-  display: flex;
-  min-height: 44px;
-  align-items: stretch;
-  gap: 26px;
+  gap: 6px;
+  flex-wrap: nowrap;
+  margin: 0;
   overflow-x: auto;
-  border-bottom: 1px solid var(--mg-border);
+}
+
+.tabList :global(.mg-tab) {
+  margin-right: 0;
 }
 
 .tabButton {
-  position: relative;
   flex: 0 0 auto;
-  min-height: 44px;
-  padding: 0 2px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  color: var(--mg-muted);
-  background: transparent;
-  font-size: var(--mg-text-sm);
-  font-weight: 600;
   white-space: nowrap;
-  cursor: pointer;
-}
-
-.tabButton:hover {
-  color: var(--mg-ink);
-}
-
-.tabButtonActive {
-  color: var(--mg-primary-dark);
-  border-bottom-color: var(--mg-primary-dark);
 }
 
 .partialBanner {
@@ -247,20 +187,7 @@
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-sm);
-  background: var(--mg-surface);
   overflow: hidden;
-}
-
-.panelHeader {
-  display: flex;
-  min-height: 50px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 14px;
-  border-bottom: 1px solid var(--mg-border);
 }
 
 .panelTitle {
@@ -270,7 +197,7 @@
   gap: 8px;
 }
 
-.panelIcon {
+.panelTitle .panelIcon {
   display: grid;
   flex: 0 0 auto;
   width: 22px;
@@ -318,6 +245,7 @@
   grid-auto-columns: minmax(86px, auto);
   grid-auto-flow: column;
   gap: 3px;
+  margin: 0;
   padding: 3px;
   border: 1px solid var(--mg-border);
   border-radius: var(--mg-r-sm);
@@ -331,6 +259,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  margin-right: 0;
   padding: 0 9px;
   border: 1px solid transparent;
   border-radius: var(--mg-r-xs);
@@ -348,7 +277,7 @@
   background: var(--mg-surface);
 }
 
-.filterTabActive {
+.filterTab[aria-selected="true"] {
   border-color: var(--mg-border-strong);
   color: var(--mg-primary-dark);
   background: var(--mg-surface);
@@ -365,7 +294,7 @@
   text-align: center;
 }
 
-.filterTabActive .filterCount {
+.filterTab[aria-selected="true"] .filterCount {
   color: var(--mg-primary-dark);
   background: var(--mg-primary-soft);
 }
@@ -791,7 +720,7 @@
   gap: 8px;
 }
 
-.monitorContent :global(.surface-state) {
+.monitorContent :global(.mg-state) {
   min-height: 0;
   padding: 12px 0;
 }
@@ -1336,54 +1265,8 @@
   min-width: 112px;
 }
 
-.surfaceState {
-  display: flex;
-  min-width: 0;
-  min-height: 180px;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 22px;
-  color: var(--mg-muted);
-  text-align: center;
-}
-
-.surfaceState strong {
-  color: var(--mg-ink);
-  font-size: var(--mg-text-sm);
-  line-height: 1.4;
-}
-
-.surfaceState p {
-  max-width: 38ch;
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: var(--mg-text-xs);
-  line-height: 1.55;
-}
-
-.stateIcon {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border: 1px solid var(--mg-border-strong);
-  border-radius: var(--mg-r-sm);
-  color: var(--mg-primary-dark);
-  background: var(--mg-bg);
-}
-
 .loginLink {
   margin-top: 10px;
-  padding: 0 13px;
-  color: var(--mg-on-primary);
-  background: var(--mg-primary-dark);
-}
-
-.loginLink:hover {
-  background: var(--mg-primary);
 }
 
 @media (min-width: 1121px) {
@@ -1429,6 +1312,11 @@
 }
 
 @media (max-width: 700px) {
+  .headingActions :global(.mg-btn) {
+    width: 100%;
+    min-width: 0;
+  }
+
   .headingRow {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -1480,10 +1368,6 @@
 
   .profileHeader {
     grid-column: auto;
-  }
-
-  .surfaceState {
-    min-height: 230px;
   }
 
   .trackInspectorHeader {

@@ -17,7 +17,7 @@
 // into page-chrome duty would need an opt-out prop on every other caller.
 import type { LucideIcon } from "lucide-react";
 import { AlertCircle, Database, LoaderCircle, LogIn, SearchX, ShieldAlert } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { loginUrl } from "../mediaWebApi";
 import type { LoadState } from "./loadState";
 
@@ -81,20 +81,43 @@ export function SurfaceState({
  * panel, for a shell page that occupies the whole route (DecisionsPage's `PageGate`;
  * PersonalWorkspaceShellPage/OrganizationWorkspaceShellPage's shell states).
  */
+type PageGateDataAttributes = {
+  [attribute: `data-${string}`]: string | boolean | undefined;
+};
+
+type PageGateRootProps = Pick<ComponentPropsWithoutRef<"main">, "className"> & PageGateDataAttributes;
+
+type PageGateGateProps = Pick<ComponentPropsWithoutRef<"div">, "className" | "role" | "aria-busy"> & PageGateDataAttributes;
+
 export function PageGate({
   title,
   detail,
   action,
   loading = false,
+  "data-component": dataComponent,
+  rootProps,
+  gateProps,
 }: {
   title: string;
   detail?: string;
   action?: ReactNode;
   loading?: boolean;
+  /** Optional semantic marker for the gate region; omitted callers keep the original DOM. */
+  "data-component"?: "mg-state";
+  /** Optional route-root class/data metadata; omitted callers keep the original root DOM. */
+  rootProps?: PageGateRootProps;
+  /** Optional gate-region class/ARIA/data metadata, including a page-prelude marker. */
+  gateProps?: PageGateGateProps;
 }) {
+  const { className: rootClassName, ...rootAttributes } = rootProps ?? {};
+  const { className: gateClassName, ...gateAttributes } = gateProps ?? {};
   return (
-    <main className="fidelity-page">
-      <div className="detail-gate">
+    <main className={rootClassName ? `fidelity-page ${rootClassName}` : "fidelity-page"} {...rootAttributes}>
+      <div
+        className={gateClassName ? `detail-gate ${gateClassName}` : "detail-gate"}
+        {...gateAttributes}
+        data-component={dataComponent ?? gateAttributes["data-component"]}
+      >
         {loading ? <LoaderCircle className="spin" size={24} aria-hidden="true" /> : <Database size={24} aria-hidden="true" />}
         <h1>{title}</h1>
         {detail ? <p>{detail}</p> : null}

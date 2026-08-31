@@ -223,8 +223,7 @@
   opacity: 0.82;
 }
 
-.readState,
-.emptyState {
+.readState {
   display: flex;
   min-height: 250px;
   flex-direction: column;
@@ -251,8 +250,7 @@
   color: var(--mg-danger);
 }
 
-.readState strong,
-.emptyState h2 {
+.readState strong {
   margin: 0;
   color: var(--mg-ink);
   font-size: var(--mg-text-md);
@@ -260,18 +258,6 @@
 
 .readState .retryButton {
   margin-top: 3px;
-}
-
-.emptyState > svg {
-  color: var(--mg-muted);
-}
-
-.emptyState p {
-  max-width: 46ch;
-  margin: 0 0 7px;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-xs);
-  line-height: 1.55;
 }
 
 .statusLoading {
@@ -425,7 +411,7 @@
   border-bottom: 0;
 }
 
-.tableScroll > .emptyState {
+.tableScroll > :global(.mg-state) {
   min-height: 0;
   flex: 1;
   border: 0;
@@ -658,7 +644,8 @@
   background: var(--mg-surface);
 }
 
-.factCard > svg {
+.factCard > span {
+  display: inline-flex;
   flex: 0 0 auto;
   margin-top: 1px;
   color: var(--mg-primary-dark);
@@ -668,14 +655,16 @@
   min-width: 0;
 }
 
-.factCard h3 {
+.factCard small {
+  display: block;
   margin: 0 0 4px;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
   font-weight: 650;
 }
 
-.factCard p {
+.factCard strong {
+  display: block;
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--mg-ink);
@@ -1161,23 +1150,6 @@
 
 .documentLink:hover {
   color: var(--mg-primary);
-}
-
-.sectionEmpty {
-  display: flex;
-  min-height: 116px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 20px;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-xs);
-  text-align: center;
-}
-
-.sectionEmpty svg {
-  flex: 0 0 auto;
-  color: var(--mg-primary-dark);
 }
 
 .inlineId {

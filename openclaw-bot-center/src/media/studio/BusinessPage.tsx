@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   AlertCircle,
   ArrowRight,
@@ -16,7 +16,9 @@ import { Link } from 'react-router-dom'
 import { useMediaWeb } from '../MediaWebWorkspace'
 import { callBusinessOperation } from '../generatedBusinessPagesContract'
 import { PlatformIdentity } from '../ui/PlatformIdentity'
-import { describeBusinessError } from '../ui/businessOperationError'
+import { describeBusinessError, toResourceState } from '../ui/businessOperationError'
+import { useResource, type LoadState } from '../ui/loadState'
+import { SurfaceState } from '../ui/SurfaceState'
 import { Metric } from '../ui/Metric'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
 import { authorizationScopeDisplayLabel } from '../ui/ordinaryDataLabels'
@@ -41,45 +43,38 @@ type OpportunityResponse = {
   nextCursor: string | null
 }
 
-type LoadState =
-  | { status: 'loading' }
-  | { status: 'ready'; data: OpportunityResponse }
-  | { status: 'error'; message: string }
-
 export default function BusinessPage() {
   const { openWorkspace } = useMediaWeb()
-  const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [refreshToken, setRefreshToken] = useState(0)
-
-  useEffect(() => {
-    let active = true
-    setState({ status: 'loading' })
-    callBusinessOperation<OpportunityResponse>('listBusinessOpportunities', { query: { pageSize: 50 } })
-      .then((data) => { if (active) setState({ status: 'ready', data }) })
-      .catch((error: unknown) => { if (active) setState({ status: 'error', message: readError(error) }) })
-    return () => { active = false }
-  }, [refreshToken])
+  const state = useResource<OpportunityResponse>(
+    (signal) => callBusinessOperation<OpportunityResponse>('listBusinessOpportunities', {
+      query: { pageSize: 50 },
+      signal,
+    }),
+    toOpportunityState,
+    [refreshToken],
+  )
 
   const opportunities = state.status === 'ready' ? state.data.items : []
-  const active = useMemo(() => opportunities.filter((item) => !['completed', 'closed', 'rejected', 'expired'].includes(item.status)), [opportunities])
-  const brands = useMemo(() => new Set(opportunities.map((item) => item.brand).filter(Boolean)).size, [opportunities])
-  const platforms = useMemo(() => new Set(opportunities.map((item) => item.platform).filter(Boolean)).size, [opportunities])
+  const active = opportunities.filter((item) => !['completed', 'closed', 'rejected', 'expired'].includes(item.status))
+  const brands = new Set(opportunities.map((item) => item.brand).filter(Boolean)).size
+  const platforms = new Set(opportunities.map((item) => item.platform).filter(Boolean)).size
 
   return (
-    <main className={styles.page} data-accent="business">
-      <section className={styles.hero}>
+    <main className="mg-page" data-accent="business" data-page-ownership="personal">
+      <section className={`mg-hero ${styles.hero}`} data-page-prelude>
         <div>
-          <span><Sparkles size={15} />CREATOR BUSINESS OS</span>
+          <span className="mg-eyebrow"><Sparkles size={15} />CREATOR BUSINESS OS</span>
           <h1>把报价、档期、权益和商机放在一张经营地图里</h1>
-          <p>账号级报价与项目级商务事实分开管理，后续脚本、交付与复购仍然关联同一个机会。</p>
-          <div className={styles.heroActions}>
-            <button className={styles.primaryButton} type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><Plus size={17} />登记商务机会</button>
-            <Link className={styles.secondaryButton} to="/tracks"><Users size={17} />查看达人与账号</Link>
+          <p className="mg-hero-lead">账号级报价与项目级商务事实分开管理，后续脚本、交付与复购仍然关联同一个机会。</p>
+          <div className="mg-hero-actions">
+            <button className="mg-btn mg-btn-primary" type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><Plus size={17} />登记商务机会</button>
+            <Link className="mg-btn mg-btn-soft" to="/tracks"><Users size={17} />查看达人与账号</Link>
           </div>
         </div>
-        <div className={styles.heroCard}>
+        <div className={`mg-hero-signal ${styles.heroCard}`}>
           <span>当前有效机会</span>
-          {state.status === 'loading' ? <LoaderCircle className="spin" size={24} /> : state.status === 'error' ? <AlertCircle size={24} /> : <strong>{active.length}</strong>}
+          {state.status === 'loading' || state.status === 'idle' ? <LoaderCircle className="spin" size={24} /> : state.status !== 'ready' ? <AlertCircle size={24} /> : <strong>{active.length}</strong>}
           <p>{brands ? `覆盖 ${brands} 个品牌、${platforms} 个平台` : '等待登记第一条真实商务机会'}</p>
           <small>不根据项目名猜测报价或授权</small>
         </div>
@@ -93,19 +88,16 @@ export default function BusinessPage() {
       </section>
 
       <div className={styles.layout}>
-        <section className={styles.listPanel}>
-          <header className={styles.panelHeader}>
+        <section className="mg-panel">
+          <header className="mg-panel-head">
             <div><span>商务机会</span><h2>品牌与项目机会</h2></div>
-            <button type="button" onClick={() => setRefreshToken((value) => value + 1)}><RefreshCw size={15} />刷新</button>
+            <button className="mg-btn mg-btn-soft" type="button" onClick={() => setRefreshToken((value) => value + 1)}><RefreshCw size={15} />刷新</button>
           </header>
-          {state.status === 'loading' ? <PanelState icon={<LoaderCircle className="spin" size={22} />} title="正在读取商务机会" /> : null}
-          {state.status === 'error' ? <PanelState icon={<AlertCircle size={22} />} title={state.message} action={<button type="button" onClick={() => setRefreshToken((value) => value + 1)}>重新读取</button>} /> : null}
-          {state.status === 'ready' && opportunities.length ? <div className={styles.opportunityGrid}>{opportunities.map((item) => <OpportunityCard key={item.publicOpportunityId} item={item} />)}</div> : null}
-          {state.status === 'ready' && !opportunities.length ? <PanelState icon={<BriefcaseBusiness size={24} />} title="还没有已授权商务机会" detail="先登记账号身份、当前报价和品牌项目，再进入商单生产与履约。" action={<button type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}>登记机会</button>} /> : null}
+          <OpportunityCollection state={state} onRetry={() => setRefreshToken((value) => value + 1)} onRegister={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })} />
         </section>
 
-        <aside className={styles.inspector}>
-          <header className={styles.panelHeader}><div><span>经营模型</span><h2>账号事实与项目事实分层</h2></div></header>
+        <aside className="mg-panel">
+          <header className="mg-panel-head"><div><span>经营模型</span><h2>账号事实与项目事实分层</h2></div></header>
           <div className={styles.modelStack}>
             <ModelCard icon={<Users size={18} />} title="达人账号档案" detail="平台身份、人设、公开表达边界和账号指标。" tags={['Creator Profile', '账号证据']} />
             <ArrowRight className={styles.modelArrow} size={18} />
@@ -146,11 +138,47 @@ function ModelCard({ icon, title, detail, tags }: { icon: ReactNode; title: stri
 }
 
 function StatusBadge({ status }: { status: string }) {
-  return <span className={styles.statusBadge} data-tone={businessStatusTone(status)}>{statusLabel(status)}</span>
+  return <span className="mg-badge" data-tone={businessStatusTone(status)}>{statusLabel(status)}</span>
 }
 
-function PanelState({ icon, title, detail, action }: { icon: ReactNode; title: string; detail?: string; action?: ReactNode }) {
-  return <div className={styles.panelState}>{icon}<strong>{title}</strong>{detail ? <p>{detail}</p> : null}{action}</div>
+function OpportunityCollection({
+  state,
+  onRetry,
+  onRegister,
+}: {
+  state: LoadState<OpportunityResponse>
+  onRetry: () => void
+  onRegister: () => void
+}) {
+  if (state.status === 'ready') {
+    return state.data.items.length ? (
+      <div className={styles.opportunityGrid}>{state.data.items.map((item) => <OpportunityCard key={item.publicOpportunityId} item={item} />)}</div>
+    ) : (
+      <SurfaceState
+        kind="empty"
+        title="还没有已授权商务机会"
+        detail="先登记账号身份、当前报价和品牌项目，再进入商单生产与履约。"
+        action={<button className="mg-btn mg-btn-primary" type="button" onClick={onRegister}>登记机会</button>}
+      />
+    )
+  }
+
+  if (state.status === 'loading') {
+    return <SurfaceState kind="loading" title="正在读取商务机会" detail="正在读取当前账户可见的商务机会。" />
+  }
+  if (state.status === 'permission') {
+    return <SurfaceState kind="permission" title="暂无查看权限" detail={state.error} />
+  }
+  if (state.status === 'notFound') {
+    return <SurfaceState kind="notFound" title="记录不存在" detail={state.error} action={<button className="mg-btn mg-btn-primary" type="button" onClick={onRetry}>重新读取</button>} />
+  }
+  if (state.status === 'error') {
+    return <SurfaceState kind="error" title="商务机会读取失败" detail={state.error} action={<button className="mg-btn mg-btn-primary" type="button" onClick={onRetry}>重新读取</button>} />
+  }
+  if (state.status === 'empty') {
+    return <SurfaceState kind="empty" title="还没有已授权商务机会" detail="先登记账号身份、当前报价和品牌项目，再进入商单生产与履约。" action={<button className="mg-btn mg-btn-primary" type="button" onClick={onRegister}>登记机会</button>} />
+  }
+  return null
 }
 
 // Business-opportunity lifecycle state machine, independent from statusPresentation.ts's
@@ -189,4 +217,9 @@ function readError(error: unknown): string {
     forbidden: '当前账户没有读取商务机会的权限。',
     notFound: '当前账户还没有商务机会记录。',
   })
+}
+
+function toOpportunityState(error: unknown): LoadState<OpportunityResponse> {
+  const message = readError(error)
+  return toResourceState(error, '商务机会', { forbidden: message, notFound: message, error: message })
 }

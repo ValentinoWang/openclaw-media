@@ -3,7 +3,6 @@ import {
   CheckCircle2,
   Cloud,
   FolderOpen,
-  KeyRound,
   ShieldAlert,
   ShieldCheck,
   RotateCcw,
@@ -20,6 +19,8 @@ import {
   type Stage1ProvisionRun,
 } from './mediaWebApi'
 import { newIdempotencyKey } from './idempotency'
+import { Metric } from './ui/Metric'
+import { PageGate } from './ui/SurfaceState'
 
 type OrganizationConnection = 'connected' | 'pending' | 'disabled' | 'revoked' | 'attention'
 type OrganizationMediaWebSession = Extract<MediaWebSession, { workspaceMode: 'organization_lark' }>
@@ -163,25 +164,66 @@ function OrganizationWorkspaceContent({
 
   return (
     <main
-      className="organization-workspace-page"
+      className="organization-workspace-page mg-page"
       data-organization-connection={connection.state}
       data-workspace-mode="organization_lark"
+      data-page-ownership="organization"
+      data-accent="campaign"
     >
-      <header className="page-heading organization-page-heading">
+      <header className="organization-page-heading mg-hero" data-component="mg-hero" data-page-prelude>
         <div>
-          <span className="eyebrow">组织工作区</span>
+          <span className="eyebrow mg-eyebrow">组织工作区</span>
           <h1>组织资源工作台</h1>
-          <p>飞书组织、成员角色和组织连接状态均以当前服务端会话为准。</p>
+          <p className="mg-hero-lead">飞书组织、成员角色和组织连接状态均以当前服务端会话为准。</p>
         </div>
-        <span className={`organization-shell-status is-${connection.tone}`} data-organization-connection-label={connection.label}>
+        <span className={`organization-shell-status mg-badge is-${connection.tone}`} data-component="mg-badge" data-tone={organizationConnectionTone(connection.state)} data-organization-connection-label={connection.label}>
           {connection.state === 'connected' ? <CheckCircle2 size={16} aria-hidden="true" /> : <ShieldAlert size={16} aria-hidden="true" />}
           {connection.label}
         </span>
       </header>
 
+      <section className="organization-workspace-metrics mg-metric-grid" data-component="mg-metric-grid" aria-label="组织工作区指标">
+        <Metric
+          variant="card"
+          className="mg-metric organization-workspace-metric"
+          tone="accent"
+          icon={<span className="mg-metric-icon"><Users size={18} aria-hidden="true" /></span>}
+          label="组织身份"
+          value="已匹配"
+          detail={session.organizationName}
+        />
+        <Metric
+          variant="card"
+          className="mg-metric organization-workspace-metric"
+          tone="accent"
+          icon={<span className="mg-metric-icon"><Users size={18} aria-hidden="true" /></span>}
+          label="成员角色"
+          value={session.memberRole === 'owner' ? '负责人' : '成员'}
+          detail={memberRoleLabels[session.memberRole]}
+        />
+        <Metric
+          variant="card"
+          className="mg-metric organization-workspace-metric"
+          tone={organizationConnectionTone(connection.state)}
+          icon={connection.state === 'connected' ? <span className="mg-metric-icon"><CheckCircle2 size={18} aria-hidden="true" /></span> : <span className="mg-metric-icon"><ShieldAlert size={18} aria-hidden="true" /></span>}
+          label="连接状态"
+          value={connection.label}
+          detail={connection.installation}
+        />
+        <Metric
+          variant="card"
+          className="mg-metric organization-workspace-metric"
+          tone="info"
+          icon={<span className="mg-metric-icon"><ShieldCheck size={18} aria-hidden="true" /></span>}
+          label="资源权限"
+          value="只读"
+          detail="正文权威：飞书资源"
+        />
+      </section>
+
       <section className="organization-shell-grid" aria-label="组织工作区状态和资源入口">
-        <article className="section-panel organization-shell-card">
-          <div className="section-heading">
+        <article className="section-panel organization-shell-card mg-panel" data-component="mg-panel" data-accent="campaign">
+          <div className="section-heading mg-panel-head">
             <div><Users size={17} aria-hidden="true" /><h2>当前组织状态</h2></div>
           </div>
           <dl className="organization-shell-facts">
@@ -189,33 +231,33 @@ function OrganizationWorkspaceContent({
             <div><dt>工作区</dt><dd>组织工作区</dd></div>
             <div><dt>成员角色</dt><dd>{memberRoleLabels[session.memberRole]}</dd></div>
             <div><dt>正文权威</dt><dd>飞书只读资源</dd></div>
-            <div><dt>组织连接状态</dt><dd><span className={`organization-shell-inline-status is-${connection.tone}`}>{connection.label}</span></dd></div>
+            <div><dt>组织连接状态</dt><dd><span className={`organization-shell-inline-status mg-badge is-${connection.tone}`} data-component="mg-badge" data-tone={organizationConnectionTone(connection.state)}>{connection.label}</span></dd></div>
             <div><dt>安装状态</dt><dd>{connection.installation}</dd></div>
           </dl>
-          <div className={`organization-shell-notice is-${connection.tone}`} role="status">
+          <div className={`organization-shell-notice is-${connection.tone}`} data-tone={organizationConnectionTone(connection.state)} role="status">
             {connection.state === 'connected' ? <ShieldCheck size={16} aria-hidden="true" /> : <AlertCircle size={16} aria-hidden="true" />}
             <span>{connection.message}</span>
           </div>
         </article>
 
-        <article className="section-panel organization-shell-card">
-          <div className="section-heading">
+        <article className="section-panel organization-shell-card mg-panel" data-component="mg-panel" data-accent="campaign">
+          <div className="section-heading mg-panel-head">
             <div><Cloud size={17} aria-hidden="true" /><h2>组织资源入口</h2></div>
           </div>
           <div className="organization-shell-resource-state" role="status">
-            <FolderOpen size={30} aria-hidden="true" />
+            <div className="organization-resource-art mg-state-art" data-art="resource" aria-hidden="true"><FolderOpen size={24} /></div>
             <h3>只读资源由服务端投影</h3>
             <p>{connection.state === 'connected' ? '当前壳只保留组织资源的只读入口，资源详情将在服务端授权后显示。' : '组织连接尚未达到可用状态，资源入口保持关闭并等待安装恢复。'}</p>
-            <span className="organization-shell-readonly-label">只读入口</span>
+            <span className="organization-shell-readonly-label mg-badge" data-component="mg-badge" data-tone="info">只读入口</span>
           </div>
           {canOperate ? <div className="organization-provision-actions" aria-label="组织接入操作">
-            {!provisionRun && connection.state !== 'connected' ? <button type="button" className="button button-primary" disabled={busyAction !== null} onClick={() => void execute('confirm')}>
+            {!provisionRun && connection.state !== 'connected' ? <button type="button" className="button mg-btn mg-btn-primary" disabled={busyAction !== null} onClick={() => void execute('confirm')}>
               <ShieldCheck size={15} aria-hidden="true" />{busyAction === 'confirm' ? '确认中...' : '确认组织安装'}
             </button> : null}
-            {(!provisionRun || provisionRun.status === 'FAILED') && connection.state !== 'revoked' ? <button type="button" className="button button-secondary" disabled={busyAction !== null} onClick={() => void execute(provisionRun ? 'retry' : 'start')}>
+            {(!provisionRun || provisionRun.status === 'FAILED') && connection.state !== 'revoked' ? <button type="button" className="button mg-btn mg-btn-ghost" disabled={busyAction !== null} onClick={() => void execute(provisionRun ? 'retry' : 'start')}>
               <RotateCcw size={15} aria-hidden="true" />{busyAction === 'start' || busyAction === 'retry' ? '处理中...' : provisionRun ? '重试接入' : '初始化组织资源'}
             </button> : null}
-            {connection.state === 'connected' || provisionRun?.status === 'SUCCEEDED' ? <button type="button" className="button button-secondary" disabled={busyAction !== null} onClick={() => void execute('deprovision')}>
+            {connection.state === 'connected' || provisionRun?.status === 'SUCCEEDED' ? <button type="button" className="button mg-btn mg-btn-ghost" disabled={busyAction !== null} onClick={() => void execute('deprovision')}>
               <ShieldAlert size={15} aria-hidden="true" />{busyAction === 'deprovision' ? '停用中...' : '停用组织接入'}
             </button> : null}
           </div> : null}
@@ -245,6 +287,12 @@ function normalizeOrganizationConnection(value: Exclude<MediaWebSession['organiz
   return 'attention'
 }
 
+function organizationConnectionTone(state: OrganizationConnection): 'good' | 'warn' | 'info' {
+  if (state === 'connected') return 'good'
+  if (state === 'pending') return 'info'
+  return 'warn'
+}
+
 function OrganizationShellState({
   status,
   message,
@@ -252,13 +300,26 @@ function OrganizationShellState({
   status: 'loading' | 'unauthorized' | 'invalid'
   message: string
 }) {
-  const Icon = status === 'loading' ? KeyRound : status === 'unauthorized' ? ShieldAlert : AlertCircle
   return (
-    <main className="organization-workspace-page">
-      <div className={`organization-shell-state is-${status}`} role="status" aria-busy={status === 'loading'}>
-        <Icon size={22} aria-hidden="true" />
-        <div><strong>{status === 'loading' ? '正在确认组织工作区' : '组织工作区暂不可用'}</strong><span>{message}</span></div>
-      </div>
-    </main>
+    <PageGate
+      title={status === 'loading' ? '正在确认组织工作区' : '组织工作区暂不可用'}
+      detail={message}
+      action={null}
+      loading={status === 'loading'}
+      data-component="mg-state"
+      rootProps={{
+        className: 'organization-workspace-page',
+        'data-workspace-mode': 'organization_lark',
+        'data-page-ownership': 'organization',
+        'data-accent': 'campaign',
+        'data-page-state': status,
+      }}
+      gateProps={{
+        className: `organization-shell-state is-${status}`,
+        'data-page-prelude': true,
+        role: 'status',
+        'aria-busy': status === 'loading',
+      }}
+    />
   )
 }

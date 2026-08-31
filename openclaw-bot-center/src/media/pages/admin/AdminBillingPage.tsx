@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import {
   AlertCircle,
   CheckCircle2,
@@ -26,7 +26,8 @@ import {
   positiveMoney,
   useAdminAction,
 } from '../../ui/adminAction'
-import { PageHeading } from '../../ui/ordinaryPagePrimitives'
+import { Metric } from '../../ui/Metric'
+import { SurfaceState } from '../../ui/SurfaceState'
 import { DISPLAY_LABELS } from '../../ui/displayLabels'
 import { isPublicId, PUBLIC_ID_HTML_PATTERN } from '../../identifiers'
 import { formatDateTime } from '../../ui/datetime'
@@ -128,6 +129,11 @@ const operationTabs: Array<{ key: OperationMode; label: string }> = [
   { key: 'refund', label: '退款履约' },
 ]
 
+const billingTabId = (key: BillingView) => 'admin-billing-data-tab-' + key
+const billingPanelId = (key: BillingView) => 'admin-billing-data-panel-' + key
+const operationTabId = (key: OperationMode) => 'admin-billing-operation-tab-' + key
+const operationPanelId = (key: OperationMode) => 'admin-billing-operation-panel-' + key
+
 const collectionLabels: Array<{ key: CollectionKey; label: string }> = [
   { key: 'plans', label: '套餐' },
   { key: 'productMappings', label: '商品映射' },
@@ -153,6 +159,7 @@ export default function AdminBillingPage() {
   const [receipt, setReceipt] = useState<MutationReceipt | null>(null)
 
   const allowed = runtimeState === 'authenticated' && session?.role === 'admin'
+  const canMutate = allowed && !!session?.csrfToken
   const summary = useBillingSummary(allowed, refresh)
   const data = summary.status === 'ready' ? summary.data : null
   const summaryData = data?.summary ?? null
@@ -211,24 +218,24 @@ export default function AdminBillingPage() {
 
   const action = useAdminAction(() => setRefresh((current) => current + 1))
   const currentRevision = data?.revision ?? null
-  const mappingReady = !!session
+  const mappingReady = canMutate
     && !!planCode
     && !!externalProductId.trim()
     && liandongPurchaseUrl(purchaseUrl.trim())
     && !!reason.trim()
     && confirmed
-  const grantReady = !!session
+  const grantReady = canMutate
     && isPublicId(publicTenantId.trim())
     && positiveMoney(amount.trim())
     && !!reason.trim()
     && confirmed
-  const batchReady = !!session
+  const batchReady = canMutate
     && !!planCode
     && positiveId(count.trim())
     && Number(count) <= 1000
     && !!reason.trim()
     && confirmed
-  const fulfillmentReady = !!session
+  const fulfillmentReady = canMutate
     && isPublicId(fulfillmentId.trim())
     && currentRevision !== null
     && !!reason.trim()
@@ -247,6 +254,14 @@ export default function AdminBillingPage() {
     setConfirmed(false)
   }
 
+  function handleBillingTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    handleTabKeyDown(event, billingTabs, view, setView, billingTabId)
+  }
+
+  function handleOperationTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    handleTabKeyDown(event, operationTabs, mode, changeMode, operationTabId)
+  }
+
   function selectPlan(nextPlanCode: string) {
     setPlanCode(nextPlanCode)
     setMode('mapping')
@@ -261,7 +276,7 @@ export default function AdminBillingPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!allowed || !session || !submitReady || currentRevision === null) return
+    if (!canMutate || !session || !submitReady || currentRevision === null) return
     const spec = buildMutationSpec(mode, {
       planCode,
       externalProductId,
@@ -395,66 +410,82 @@ export default function AdminBillingPage() {
     </>
   }
 
-  const heading = <PageHeading
-    title="计费运营"
-    description="管理零售套餐、商品映射、卡密履约和管理员赠款。"
-    action={summary.status === 'ready' && data ? <div className={styles.headingArea}>
-      <SummaryMetrics summary={summaryData} loading={false} />
+  const heading = <header className="page-heading mg-hero" data-component="mg-hero">
+    <div>
+      <h1>计费运营</h1>
+      <p className="mg-hero-lead">管理零售套餐、商品映射、卡密履约和管理员赠款。</p>
+    </div>
+    {summary.status === 'ready' && data ? <div className={styles.headingArea}>
       <div className={styles.headingActions}>
-        <button type="button" className={styles.headingAction} onClick={() => setRefresh((current) => current + 1)}><RefreshCw size={15} />刷新</button>
+        <button type="button" className={styles.headingAction + ' mg-btn mg-btn-ghost'} onClick={() => setRefresh((current) => current + 1)}><RefreshCw size={15} />刷新</button>
       </div>
     </div> : null}
-  />
+  </header>
+  const pagePrelude = <div className={styles.pagePrelude} data-page-prelude>{heading}{summary.status === 'ready' && data ? <SummaryMetrics summary={summaryData} loading={false} /> : null}</div>
 
-  if (runtimeState === 'checking') return <main className={'fidelity-page ' + styles.page}>{heading}<LoadingState /></main>
-  if (!allowed) return <main className={'fidelity-page ' + styles.page}>{heading}<PermissionState /></main>
-  if (summary.status === 'loading') return <main className={'fidelity-page ' + styles.page}>{heading}<LoadingState /></main>
+  if (runtimeState === 'checking') return <main className={'fidelity-page ' + styles.page} data-accent="business" data-page-ownership="governance">{pagePrelude}<LoadingState /></main>
+  if (!allowed) return <main className={'fidelity-page ' + styles.page} data-accent="business" data-page-ownership="governance">{pagePrelude}<PermissionState /></main>
+  if (summary.status === 'loading') return <main className={'fidelity-page ' + styles.page} data-accent="business" data-page-ownership="governance">{pagePrelude}<LoadingState /></main>
   if (summary.status === 'error') {
-    return <main className={'fidelity-page ' + styles.page}>{heading}{summary.error.status === 403 ? <ForbiddenState /> : <ErrorState error={summary.error} onRetry={() => setRefresh((current) => current + 1)} />}</main>
+    return <main className={'fidelity-page ' + styles.page} data-accent="business" data-page-ownership="governance">{pagePrelude}{summary.error.status === 403 ? <ForbiddenState /> : <ErrorState error={summary.error} onRetry={() => setRefresh((current) => current + 1)} />}</main>
   }
-  if (summary.status !== 'ready' || !data || !summaryData) return <main className={'fidelity-page ' + styles.page}>{heading}<ErrorState error={{ status: 502, code: 'invalid_response', message: '服务没有返回可读的计费汇总。' }} onRetry={() => setRefresh((current) => current + 1)} /></main>
+  if (summary.status !== 'ready' || !data || !summaryData) return <main className={'fidelity-page ' + styles.page} data-accent="business" data-page-ownership="governance">{pagePrelude}<ErrorState error={{ status: 502, code: 'invalid_response', message: '服务没有返回可读的计费汇总。' }} onRetry={() => setRefresh((current) => current + 1)} /></main>
 
-  return <main className={'fidelity-page ' + styles.page}>
-    {heading}
+  return <main className={'fidelity-page ' + styles.page} data-accent="business" data-page-ownership="governance">
+    {pagePrelude}
     {missingCollections.length ? <div className={styles.partialNotice}><AlertCircle size={16} /><span>服务未返回：{missingCollections.join('、')}。页面已隐藏缺失集合，不使用其他业务数据替代。</span></div> : null}
-    <nav className="mg-tabs" aria-label="计费数据视图" role="tablist" data-page-prelude>
+    <nav className="mg-tabs" aria-label="计费数据视图" role="tablist">
       {billingTabs.map((tab) => <button
         type="button"
         key={tab.key}
+        id={billingTabId(tab.key)}
         role="tab"
         aria-selected={view === tab.key}
-        aria-controls={'billing-view-' + tab.key}
+        aria-controls={billingPanelId(tab.key)}
+        tabIndex={view === tab.key ? 0 : -1}
         className="mg-tab"
         onClick={() => setView(tab.key)}
+        onKeyDown={handleBillingTabKeyDown}
       >{tab.label}</button>)}
     </nav>
     <div className={styles.bodyGrid} data-page-layout="persistent-rail">
       <div className={styles.mainColumn} data-page-primary data-primary-flow>
-        <section className={styles.tablePanel} id={'billing-view-' + view} role="tabpanel" aria-label={billingTabs.find((tab) => tab.key === view)?.label}>
-          <header className={styles.panelHeader}>
-            <div><span className={styles.eyebrow}>服务端汇总</span><h2>{billingTabs.find((tab) => tab.key === view)?.label}</h2></div>
+        {billingTabs.map((tab) => view === tab.key ? <section key={tab.key} className={styles.tablePanel + ' mg-panel'} id={billingPanelId(tab.key)} role="tabpanel" aria-labelledby={billingTabId(tab.key)}>
+          <header className="mg-panel-head">
+            <div><span className={styles.eyebrow}>服务端汇总</span><h2>{tab.label}</h2></div>
             <span className={styles.resultCount}>{viewCollection === null ? '—' : viewCollection.length + ' 条'}</span>
           </header>
-          {view === 'plans' ? <PlanTable available={planCollection !== null} items={plans} mappings={mappings} selectedPlanCode={planCode} onSelectPlan={selectPlan} /> : null}
-          {view === 'mappings' ? <MappingTable available={mappingCollection !== null} items={mappings} /> : null}
-          {view === 'batches' ? <BatchTable available={batchCollection !== null} items={batches} /> : null}
-          {view === 'fulfillments' ? <FulfillmentTable available={fulfillmentCollection !== null} items={fulfillments} onPrepare={prepareFulfillment} /> : null}
-          {view === 'grants' ? <GrantTable available={grantCollection !== null} items={grants} /> : null}
-        </section>
+          {tab.key === 'plans' ? <PlanTable available={planCollection !== null} items={plans} mappings={mappings} selectedPlanCode={planCode} onSelectPlan={selectPlan} /> : null}
+          {tab.key === 'mappings' ? <MappingTable available={mappingCollection !== null} items={mappings} /> : null}
+          {tab.key === 'batches' ? <BatchTable available={batchCollection !== null} items={batches} /> : null}
+          {tab.key === 'fulfillments' ? <FulfillmentTable available={fulfillmentCollection !== null} items={fulfillments} onPrepare={prepareFulfillment} /> : null}
+          {tab.key === 'grants' ? <GrantTable available={grantCollection !== null} items={grants} /> : null}
+        </section> : <section key={tab.key} id={billingPanelId(tab.key)} role="tabpanel" aria-labelledby={billingTabId(tab.key)} hidden />)}
         <div className={styles.bottomGrid}>
           <BatchSummary available={batchCollection !== null} items={batches} onViewAll={() => setView('batches')} />
           <GrantSummary available={grantCollection !== null} items={grants} onViewAll={() => setView('grants')} />
         </div>
       </div>
-      <aside className={styles.inspector} aria-labelledby="billing-inspector-title" data-page-inspector data-page-terminal-surface="inspector">
-        <header className={styles.inspectorHeader}>
+      <aside className={styles.inspector + ' mg-panel'} aria-labelledby="billing-inspector-title" data-page-inspector data-page-terminal-surface="inspector">
+        <header className={styles.inspectorHeader + ' mg-panel-head'}>
           <div className={styles.inspectorTitle}><Link2 size={18} /><div><h2 id="billing-inspector-title">{operationTitle(mode)}</h2><p>{operationDescription(mode)}</p></div></div>
           {action.state.message ? <span className={styles.actionMessage + (action.state.kind === 'error' ? ' ' + styles.actionError : action.state.kind === 'success' ? ' ' + styles.actionSuccess : '')} role="status">{action.state.message}</span> : null}
         </header>
         <div className={styles.operationTabs + ' mg-tabs'} role="tablist" aria-label="计费写入操作">
-          {operationTabs.map((tab) => <button type="button" key={tab.key} role="tab" aria-selected={mode === tab.key} className={styles.operationTab + ' mg-tab'} onClick={() => changeMode(tab.key)}>{tab.label}</button>)}
+          {operationTabs.map((tab) => <button
+            type="button"
+            key={tab.key}
+            id={operationTabId(tab.key)}
+            role="tab"
+            aria-selected={mode === tab.key}
+            aria-controls={operationPanelId(tab.key)}
+            tabIndex={mode === tab.key ? 0 : -1}
+            className={styles.operationTab + ' mg-tab'}
+            onClick={() => changeMode(tab.key)}
+            onKeyDown={handleOperationTabKeyDown}
+          >{tab.label}</button>)}
         </div>
-        <form className={styles.form} onSubmit={(event) => void submit(event)}>
+        {operationTabs.map((tab) => mode === tab.key ? <form key={tab.key} className={styles.form} id={operationPanelId(tab.key)} role="tabpanel" aria-labelledby={operationTabId(tab.key)} onSubmit={(event) => void submit(event)}>
           <div className={styles.fields}>{renderOperationFields()}</div>
           <label className={styles.confirmation}>
             <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
@@ -462,16 +493,39 @@ export default function AdminBillingPage() {
           </label>
           <div className={styles.formFooter}>
             <span>提交后会保留幂等键，并重新读取管理员计费汇总。</span>
-            <button type="submit" className={styles.submitButton} disabled={!submitReady}>
+            <button type="submit" className={styles.submitButton + ' mg-btn mg-btn-primary'} disabled={!submitReady}>
               {action.busy ? <LoaderCircle className="spin" size={16} /> : mode === 'mapping' ? <Link2 size={16} /> : mode === 'grant' ? <Gift size={16} /> : mode === 'batch' ? <TicketCheck size={16} /> : mode === 'recover' ? <RotateCcw size={16} /> : <Undo2 size={16} />}
               {operationButtonLabel(mode)}
             </button>
           </div>
-        </form>
+        </form> : <div key={tab.key} id={operationPanelId(tab.key)} role="tabpanel" aria-labelledby={operationTabId(tab.key)} hidden />)}
         {receipt ? <MutationReceipt receipt={receipt} /> : null}
       </aside>
     </div>
   </main>
+}
+
+function handleTabKeyDown<Key extends string>(
+  event: KeyboardEvent<HTMLButtonElement>,
+  tabs: ReadonlyArray<{ key: Key }>,
+  activeKey: Key,
+  activate: (key: Key) => void,
+  tabId: (key: Key) => string,
+) {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Home' && event.key !== 'End') return
+  const currentIndex = tabs.findIndex((tab) => tab.key === activeKey)
+  if (currentIndex < 0) return
+  event.preventDefault()
+  const nextIndex = event.key === 'Home'
+    ? 0
+    : event.key === 'End'
+      ? tabs.length - 1
+      : event.key === 'ArrowRight'
+        ? (currentIndex + 1) % tabs.length
+        : (currentIndex - 1 + tabs.length) % tabs.length
+  const nextKey = tabs[nextIndex].key
+  activate(nextKey)
+  document.getElementById(tabId(nextKey))?.focus()
 }
 
 function useBillingSummary(allowed: boolean, refresh: number): BillingLoadState {
@@ -549,7 +603,7 @@ function SummaryMetrics({ summary, loading }: { summary: BillingSummary | null; 
     { label: '卡密批次', detail: '当前读取', icon: TicketCheck, value: metricCount(summary, 'redemptionBatches', loading) },
     { label: '管理员赠款', detail: '当前读取', icon: Gift, value: metricCount(summary, 'grants', loading) },
   ]
-  return <section className={styles.metricBand} aria-label="计费摘要指标">{metrics.map(({ label, detail, icon: Icon, value }) => <div className={styles.metric} key={label}><Icon size={17} /><div><span>{label}</span><strong>{value}</strong><small>{detail}</small></div></div>)}</section>
+  return <section className={styles.metricBand + ' mg-metric-grid'} aria-label="计费摘要指标">{metrics.map(({ label, detail, icon: Icon, value }) => <Metric variant="card" className={styles.metric + ' mg-metric'} key={label} label={label} value={value} detail={detail} icon={<Icon size={17} aria-hidden="true" />} />)}</section>
 }
 
 function PlanTable({ available, items, mappings, selectedPlanCode, onSelectPlan }: { available: boolean; items: BillingPlan[]; mappings: BillingRecord[]; selectedPlanCode: string; onSelectPlan: (planCode: string) => void }) {
@@ -585,7 +639,7 @@ function FulfillmentTable({ available, items, onPrepare }: { available: boolean;
   if (!items.length) return <EmptyState title="暂无兑换记录" />
   return <TableViewport minWidth="1020px"><table className={styles.table}><thead><tr><th>履约编号</th><th>目标租户</th><th>套餐</th><th className={styles.numericCell}>到账额度</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>{items.map((item, index) => {
     const id = readString(item, 'fulfillmentId')
-    return <tr key={id || index}><th scope="row" className={styles.longCell}>{id || '—'}</th><td className={styles.longCell}>{readString(item, 'publicTenantId') || '—'}</td><td>{readString(item, 'planCode') || '—'}</td><td className={styles.numericCell}>{formatDecimal(item.creditedAmount, 8)}</td><td><StatusBadge {...recordStatus(item)} /></td><td>{formatTime(item.createdAt)}</td><td><div className={styles.rowActions}><button type="button" className={styles.iconButton} title="选择恢复履约" aria-label="选择恢复履约" onClick={() => onPrepare('recover', id)} disabled={!id}><RotateCcw size={14} /></button><button type="button" className={styles.iconButton} title="选择退款履约" aria-label="选择退款履约" onClick={() => onPrepare('refund', id)} disabled={!id}><Undo2 size={14} /></button></div></td></tr>
+    return <tr key={id || index}><th scope="row" className={styles.longCell}>{id || '—'}</th><td className={styles.longCell}>{readString(item, 'publicTenantId') || '—'}</td><td>{readString(item, 'planCode') || '—'}</td><td className={styles.numericCell}>{formatDecimal(item.creditedAmount, 8)}</td><td><StatusBadge {...recordStatus(item)} /></td><td>{formatTime(item.createdAt)}</td><td><div className={styles.rowActions}><button type="button" className={styles.iconButton + ' mg-btn mg-btn-ghost'} title="选择恢复履约" aria-label="选择恢复履约" onClick={() => onPrepare('recover', id)} disabled={!id}><RotateCcw size={14} /></button><button type="button" className={styles.iconButton + ' mg-btn mg-btn-ghost'} title="选择退款履约" aria-label="选择退款履约" onClick={() => onPrepare('refund', id)} disabled={!id}><Undo2 size={14} /></button></div></td></tr>
   })}</tbody></table></TableViewport>
 }
 
@@ -602,11 +656,11 @@ function BatchSummary({ available, items, onViewAll }: { available: boolean; ite
     ['已兑换', sumNumeric(items, 'redeemedCount')],
     ['待兑换', remainingCodes(items)],
   ]
-  return <section className={styles.bottomPanel} data-page-terminal-surface="primary"><PanelHeader icon={<TicketCheck size={17} />} title="卡密批次履约" actionLabel="查看全部批次" onAction={onViewAll} />{!available ? <CollectionUnavailable title="卡密批次" /> : !items.length ? <EmptyState title="暂无卡密批次" /> : <><div className={styles.compactMetrics}>{stats.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div><MiniBatchTable items={items.slice(0, 4)} /></>}</section>
+  return <section className={styles.bottomPanel + ' mg-panel'} data-page-terminal-surface="primary"><PanelHeader icon={<TicketCheck size={17} />} title="卡密批次履约" actionLabel="查看全部批次" onAction={onViewAll} />{!available ? <CollectionUnavailable title="卡密批次" /> : !items.length ? <EmptyState title="暂无卡密批次" /> : <><div className={styles.compactMetrics}>{stats.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div><MiniBatchTable items={items.slice(0, 4)} /></>}</section>
 }
 
 function GrantSummary({ available, items, onViewAll }: { available: boolean; items: BillingRecord[]; onViewAll: () => void }) {
-  return <section className={styles.bottomPanel} data-page-terminal-surface="primary"><PanelHeader icon={<Gift size={17} />} title="管理员赠款" actionLabel="查看全部赠款" onAction={onViewAll} />{!available ? <CollectionUnavailable title="管理员赠款" /> : !items.length ? <EmptyState title="暂无管理员赠款" /> : <MiniGrantTable items={items.slice(0, 5)} />}</section>
+  return <section className={styles.bottomPanel + ' mg-panel'} data-page-terminal-surface="primary"><PanelHeader icon={<Gift size={17} />} title="管理员赠款" actionLabel="查看全部赠款" onAction={onViewAll} />{!available ? <CollectionUnavailable title="管理员赠款" /> : !items.length ? <EmptyState title="暂无管理员赠款" /> : <MiniGrantTable items={items.slice(0, 5)} />}</section>
 }
 
 function MiniBatchTable({ items }: { items: RedemptionBatchSummary[] }) {
@@ -618,7 +672,7 @@ function MiniGrantTable({ items }: { items: BillingRecord[] }) {
 }
 
 function PanelHeader({ icon, title, actionLabel, onAction }: { icon: ReactNode; title: string; actionLabel: string; onAction: () => void }) {
-  return <header className={styles.panelHeader}><div className={styles.panelTitle}><span className={styles.panelIcon}>{icon}</span><h2>{title}</h2></div><button type="button" className={styles.linkButton} onClick={onAction}>{actionLabel}<ChevronRight size={15} /></button></header>
+  return <header className="mg-panel-head"><div className={styles.panelTitle}><span className={styles.panelIcon}>{icon}</span><h2>{title}</h2></div><button type="button" className={styles.linkButton + ' mg-btn mg-btn-ghost'} onClick={onAction}>{actionLabel}<ChevronRight size={15} /></button></header>
 }
 
 function MutationReceipt({ receipt }: { receipt: MutationReceipt }) {
@@ -641,32 +695,31 @@ function TableViewport({ children, minWidth }: { children: ReactNode; minWidth: 
 }
 
 function StatusBadge({ label, tone }: { label: string; tone: string }) {
-  const className = tone === 'success' ? styles.statusSuccess : tone === 'warning' ? styles.statusWarning : tone === 'danger' ? styles.statusDanger : tone === 'info' ? styles.statusInfo : styles.statusNeutral
-  return <span className={styles.statusBadge + ' ' + className}><span aria-hidden="true" />{label}</span>
+  return <span className={styles.statusBadge + ' mg-badge'} data-tone={tone}><span aria-hidden="true" />{label}</span>
 }
 
 function LoadingState() {
-  return <section className={styles.statePanel} aria-busy="true"><LoaderCircle className="spin" size={20} /><div><strong>正在读取计费数据</strong><span>正在确认管理员权限并读取服务端汇总。</span></div></section>
+  return <SurfaceState kind="loading" title="正在读取计费数据" detail="正在确认管理员权限并读取服务端汇总。" />
 }
 
 function PermissionState() {
-  return <section className={styles.statePanel}><ShieldCheck size={20} /><div><strong>当前会话无权查看计费运营</strong><span>只有管理员会话可以读取或写入这里的计费数据。</span></div></section>
+  return <SurfaceState kind="permission" title="当前会话无权查看计费运营" detail="只有管理员会话可以读取或写入这里的计费数据。" action={null} />
 }
 
 function ForbiddenState() {
-  return <section className={styles.statePanel + ' ' + styles.stateError}><ShieldCheck size={20} /><div><strong>服务端拒绝了计费运营访问</strong><span>当前会话没有服务端管理员权限。</span></div></section>
+  return <SurfaceState kind="forbidden" title="服务端拒绝了计费运营访问" detail="当前会话没有服务端管理员权限。" />
 }
 
 function ErrorState({ error, onRetry }: { error: BillingRequestError; onRetry: () => void }) {
-  return <section className={styles.statePanel + ' ' + styles.stateError}><AlertCircle size={20} /><div><strong>计费数据暂时不可用</strong><span>{error.message || '服务没有返回可读的错误信息。'}</span><button type="button" className={styles.retryButton} onClick={onRetry}><RefreshCw size={15} />重试</button></div></section>
+  return <SurfaceState kind="error" title="计费数据暂时不可用" detail={error.message || '服务没有返回可读的错误信息。'} action={<button type="button" className="mg-btn mg-btn-ghost" onClick={onRetry}><RefreshCw size={15} />重试</button>} />
 }
 
 function EmptyState({ title }: { title: string }) {
-  return <div className={styles.emptyState}><AlertCircle size={18} /><strong>{title}</strong></div>
+  return <SurfaceState kind="empty" title={title} detail="" density="compact" />
 }
 
 function CollectionUnavailable({ title }: { title: string }) {
-  return <div className={styles.emptyState + ' ' + styles.unavailableState}><AlertCircle size={18} /><strong>服务未返回{title}集合</strong></div>
+  return <SurfaceState kind="empty" title={'服务未返回' + title + '集合'} detail="" density="compact" />
 }
 
 function PurchaseLink({ value }: { value: unknown }) {
@@ -764,4 +817,3 @@ function buildMutationSpec(mode: OperationMode, values: { planCode: string; exte
   if (mode === 'recover') return { operationId: 'recoverAdminFulfillment', label: '恢复履约', path: { fulfillmentId: values.fulfillmentId.trim() }, body: { reason: auditReason, expectedRevision: revision }, auditReason }
   return { operationId: 'refundAdminFulfillment', label: '退款履约', path: { fulfillmentId: values.fulfillmentId.trim() }, body: { reason: auditReason, expectedRevision: revision }, auditReason }
 }
-

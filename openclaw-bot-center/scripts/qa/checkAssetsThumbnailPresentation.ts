@@ -30,6 +30,11 @@ const checks: Array<[string, boolean]> = [
   ["deletion preparation sends only selected target IDs", /prepareDeletionIntent\(uniqueIds\)/.test(page) && !/variantId: "preview"/.test(page) && !/action: "预览删除"/.test(page)],
   ["the full deletion flow bypasses AI capability selection", /workspacePrefillAction\(catalog, prefill\)/.test(workspace) && /prefill\.capabilityId === 'universal_deletion' \? 'prefillReview' : 'prefill'/.test(workspacePrefill) && !/prefill\.capabilityId === 'universal_deletion'\s*&&\s*prefill\.variantId === 'preview'/s.test(workspacePrefill)],
   ["deletion review states that it is non-destructive", /生成删除预览/.test(review) && /不会删除素材或关联记录/.test(review)],
+  ["asset session boundary excludes refresh-only expiry", /session\?\.bodyAuthority \?\? "",\s*\]\.join\(":"\)/s.test(page) && !/session\?\.expiresAt/.test(page)],
+  ["asset session boundary clears selection focus and deletion dialog", /useEffect\(\(\) => \{\s*\+\+deletionAttempt\.current;\s*setSelectedIds\(\[\]\);\s*setFocusedId\(undefined\);\s*setDeletionDialog\(null\);\s*\}, \[sessionIdentity\]\);/s.test(page)],
+  ["asset list and detail reload on session boundary", /useAssetProjection\([\s\S]*?sessionIdentity,\s*\)/.test(page) && /useAssetDetail\([\s\S]*?sessionIdentity,\s*\)/.test(page) && /\[cursor, enabled, retryToken, search, sessionIdentity\]/.test(page) && /\[enabled, publicAssetId, retryToken, sessionIdentity\]/.test(page)],
+  ["asset detail commands use button primitives", /<button className="mg-btn mg-btn-soft" data-component="mg-btn" type="button" onClick=\{\(\) => onOpenCapability\(/.test(page) && /<button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" onClick=\{\(\) => onRequestDeletion/.test(page)],
+  ["deletion dialog commands use button primitives but its scrim is not a command", /className=\{styles\.dialogScrim\}\s*type="button"/.test(page) && !/className=\{`mg-btn \$\{styles\.dialogScrim\}`\}/.test(page) && /className=\{`mg-btn mg-btn-ghost \$\{styles\.dialogSecondary\}`\}/.test(page) && /className=\{`mg-btn mg-btn-ghost \$\{styles\.dialogDanger\}`\}/.test(page)],
 ];
 
 const failures = checks.filter(([, passed]) => !passed).map(([name]) => name);

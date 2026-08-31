@@ -355,7 +355,7 @@ assert.match(uploadBody, /schemaVersion:\s*['"]3['"]/);
 assert.match(uploadBody, /filename:/);
 assert.match(uploadBody, /contentBase64:/);
 assert.match(uploadBody, /idempotencyKey:/);
-assert.doesNotMatch(uploadBody, /mimeType:/);
+assert.match(uploadBody, /mimeType:\s*file\.type/);
 assert.match(apiSource, /mediaWebUploadSchema\.parse\(response\)/);
 
 const serverFailure = materialParsingServerFailureMessage(

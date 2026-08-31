@@ -5,7 +5,6 @@ import {
   Bot,
   BriefcaseBusiness,
   CalendarClock,
-  CheckCircle2,
   CircleDollarSign,
   Clock3,
   FilePenLine,
@@ -15,7 +14,6 @@ import {
   PenTool,
   Plus,
   Sparkles,
-  Target,
   TrendingUp,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -23,6 +21,7 @@ import { useMediaWeb } from '../MediaWebWorkspace'
 import { callBusinessOperation } from '../generatedBusinessPagesContract'
 import { projectStatusDisplayLabel } from '../ui/displayLabels'
 import { describeBusinessError } from '../ui/businessOperationError'
+import { SurfaceState } from '../ui/SurfaceState'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
 import { Metric } from '../ui/Metric'
 import styles from './WorkboardPage.module.css'
@@ -104,19 +103,19 @@ export default function WorkboardPage() {
   const activeTasks = useMemo(() => tasks.filter((task) => !task.terminal).slice(0, 4), [tasks])
 
   return (
-    <main className={styles.page} data-accent="studio">
-      <section className={styles.hero}>
-        <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}><Sparkles size={15} />CREATOR PRODUCTION DESK</span>
-          <h1>今天把内容推进到<em>可交付</em></h1>
-          <p>从活动和商单 Brief 出发，持续维护可编辑脚本、分镜、拍摄单、返修版本与发布包。</p>
-          <div className={styles.heroActions}>
-            <button className={styles.primaryAction} type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Plus size={17} />新建内容项目</button>
-            <button className={styles.secondaryAction} type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><BriefcaseBusiness size={17} />导入商单 Brief</button>
-            <button className={styles.ghostAction} type="button" onClick={() => openWorkspace()}><Bot size={17} />打开 Agent 任务</button>
+    <main className="mg-page" data-accent="studio" data-page-ownership="personal">
+      <section className="mg-hero" data-page-prelude>
+        <div>
+          <span className="mg-eyebrow"><Sparkles size={15} />CREATOR PRODUCTION DESK</span>
+          <h1 className={styles.heroTitle}>今天把内容推进到<em>可交付</em></h1>
+          <p className="mg-hero-lead">从活动和商单 Brief 出发，持续维护可编辑脚本、分镜、拍摄单、返修版本与发布包。</p>
+          <div className="mg-hero-actions">
+            <button className="mg-btn mg-btn-primary" type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Plus size={17} />新建内容项目</button>
+            <button className="mg-btn mg-btn-soft" type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><BriefcaseBusiness size={17} />导入商单 Brief</button>
+            <button className="mg-btn mg-btn-ghost" type="button" onClick={() => openWorkspace()}><Bot size={17} />打开 Agent 任务</button>
           </div>
         </div>
-        <div className={styles.heroSignal}>
+        <div className="mg-hero-signal">
           <span>今日推进信号</span>
           {dashboard.status === 'loading' ? <LoaderCircle className="spin" size={22} /> : dashboard.status === 'error' ? <AlertCircle size={22} /> : <strong>{pendingTotal}</strong>}
           <p>{pendingTotal ? '项内容、审核或发布事项等待处理' : '当前没有显式阻塞，可以开始下一条内容'}</p>
@@ -125,10 +124,10 @@ export default function WorkboardPage() {
       </section>
 
       <section className={styles.metricGrid} aria-label="工作区关键指标">
-        <Metric variant="card" className={styles.metricCard} tone="mint" icon={<FilePenLine size={18} />} label="内容项目" value={summary?.counts.contentProjects} detail="从 Brief 到发布" />
-        <Metric variant="card" className={styles.metricCard} tone="violet" icon={<PenTool size={18} />} label="创作运行" value={summary?.counts.runs} detail="脚本、分镜与交付" />
-        <Metric variant="card" className={styles.metricCard} tone="amber" icon={<Images size={18} />} label="素材证据" value={summary?.counts.assets} detail="原始素材与拆解" />
-        <Metric variant="card" className={styles.metricCard} tone="blue" icon={<PackageCheck size={18} />} label="已发布作品" value={summary?.counts.publishedPosts} detail="等待持续复盘" />
+        <div data-accent="studio"><Metric variant="card" className={styles.metricCard} tone="accent" icon={<FilePenLine size={18} />} label="内容项目" value={summary?.counts.contentProjects} detail="从 Brief 到发布" /></div>
+        <div data-accent="campaign"><Metric variant="card" className={styles.metricCard} tone="accent" icon={<PenTool size={18} />} label="创作运行" value={summary?.counts.runs} detail="脚本、分镜与交付" /></div>
+        <div data-accent="business"><Metric variant="card" className={styles.metricCard} tone="accent" icon={<Images size={18} />} label="素材证据" value={summary?.counts.assets} detail="原始素材与拆解" /></div>
+        <div data-accent="desk"><Metric variant="card" className={styles.metricCard} tone="accent" icon={<PackageCheck size={18} />} label="已发布作品" value={summary?.counts.publishedPosts} detail="等待持续复盘" /></div>
       </section>
 
       <section className={styles.loopGrid} aria-label="高价值业务闭环">
@@ -171,25 +170,25 @@ export default function WorkboardPage() {
       </section>
 
       <div className={styles.workspaceGrid}>
-        <section className={styles.projectPanel}>
-          <header className={styles.sectionHeader}>
+        <section className="mg-panel">
+          <header className="mg-panel-head">
             <div><span>正在推进</span><h2>内容项目</h2></div>
-            <Link to="/overview">高级项目视图<ArrowRight size={15} /></Link>
+            <Link className="mg-btn mg-btn-ghost" to="/overview">高级项目视图<ArrowRight size={15} /></Link>
           </header>
-          {projects.status === 'loading' ? <PanelState icon={<LoaderCircle className="spin" size={20} />} title="正在读取内容项目" /> : null}
-          {projects.status === 'error' ? <PanelState icon={<AlertCircle size={20} />} title={projects.message} action={<button type="button" onClick={() => setRefreshToken((value) => value + 1)}>重新读取</button>} /> : null}
+          {projects.status === 'loading' ? <SurfaceState kind="loading" title="正在读取内容项目" detail="正在读取当前账户可见的内容项目。" /> : null}
+          {projects.status === 'error' ? <SurfaceState kind="error" title={projects.message} detail="请重新读取内容项目，或稍后再试。" action={<button className="mg-btn mg-btn-ghost" type="button" onClick={() => setRefreshToken((value) => value + 1)}>重新读取</button>} /> : null}
           {projects.status === 'ready' && projects.data.items.length ? (
             <div className={styles.projectList}>
               {projects.data.items.slice(0, 5).map((project) => <ProjectCard key={project.publicProjectId} project={project} />)}
             </div>
           ) : null}
-          {projects.status === 'ready' && !projects.data.items.length ? <PanelState icon={<Target size={20} />} title="还没有内容项目" detail="从活动、商单、灵感或素材开始创建第一条可交付内容。" action={<button type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}>创建项目</button>} /> : null}
+          {projects.status === 'ready' && !projects.data.items.length ? <SurfaceState kind="empty" title="还没有内容项目" detail="从活动、商单、灵感或素材开始创建第一条可交付内容。" action={<button className="mg-btn mg-btn-primary" type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}>创建项目</button>} /> : null}
         </section>
 
-        <aside className={styles.actionPanel}>
-          <header className={styles.sectionHeader}>
+        <aside className="mg-panel">
+          <header className="mg-panel-head">
             <div><span>行动收件箱</span><h2>需要你处理</h2></div>
-            <button type="button" onClick={() => openWorkspace()}>全部任务</button>
+            <button className="mg-btn mg-btn-ghost" type="button" onClick={() => openWorkspace()}>全部任务</button>
           </header>
           <div className={styles.actionList}>
             {attentionTasks.length ? attentionTasks.map((task) => (
@@ -205,7 +204,7 @@ export default function WorkboardPage() {
                 <ArrowRight size={15} />
               </button>
             )) : (
-              <div className={styles.actionEmpty}><CheckCircle2 size={22} /><strong>当前没有待处理任务</strong><span>可以创建下一条内容，或进入 Desk 研究新的方向。</span></div>
+              <SurfaceState kind="empty" title="当前没有待处理任务" detail="可以创建下一条内容，或进入 Desk 研究新的方向。" />
             )}
           </div>
           <div className={styles.deadlineCard}>
@@ -236,7 +235,7 @@ function ProjectCard({ project }: { project: ContentProjectSummary }) {
   return (
     <article className={styles.projectCard}>
       <div className={styles.projectTopline}>
-        <span>{stage.label}</span>
+        <span className="mg-badge" data-tone="accent">{stage.label}</span>
         <small>{projectStatusDisplayLabel(project.status)}{stage.progress === null ? ' · 进度待确认' : null}</small>
       </div>
       <h3>{project.title}</h3>
@@ -244,10 +243,6 @@ function ProjectCard({ project }: { project: ContentProjectSummary }) {
       <footer><span>{artifactCount} 个当前产物</span><span>更新于 {formatDate(project.updatedAt)}</span><Link to="/studio">打开 Studio<ArrowRight size={14} /></Link></footer>
     </article>
   )
-}
-
-function PanelState({ icon, title, detail, action }: { icon: ReactNode; title: string; detail?: string; action?: ReactNode }) {
-  return <div className={styles.panelState}>{icon}<strong>{title}</strong>{detail ? <span>{detail}</span> : null}{action}</div>
 }
 
 function readError(error: unknown, fallback: string): string {
