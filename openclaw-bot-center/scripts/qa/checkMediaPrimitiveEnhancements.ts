@@ -90,6 +90,9 @@ function staticStringValues(expression: ts.Expression | undefined, bindings: Sta
       if (ts.isSpreadAssignment(property)) return staticStringValues(property.expression, bindings, seen)
       if (!ts.isPropertyAssignment(property)) return []
       const key = ts.isIdentifier(property.name) || ts.isStringLiteral(property.name) ? property.name.text : undefined
+      if (key && (property.initializer.kind === ts.SyntaxKind.TrueKeyword || property.initializer.kind === ts.SyntaxKind.FalseKeyword)) {
+        return property.initializer.kind === ts.SyntaxKind.TrueKeyword ? [key] : []
+      }
       const value = staticStringValues(property.initializer, bindings, seen)
       return key && value.length ? value : []
     })
@@ -581,6 +584,9 @@ function runSelfTest(): void {
   const requiredHero: HeroActionsContract = { mode: 'required' }
   const validHero = `const primary = ['mg-btn', 'mg-btn-primary'].join(' '); const Page = () => <div className={['mg-hero-actions', styles.actions].join(' ')}><button className={primary}>Go</button><button className="mg-btn mg-btn-ghost">More</button></div>`
   if (findHeroActionContractViolations(validHero, requiredHero).length) throw new Error('media primitive enhancement self-test failed: valid hero action region was rejected')
+  const exemptHero: HeroActionsContract = { mode: 'exempt', reason: 'fixture has no hero action region' }
+  if (findHeroActionContractViolations('const Page = () => <div className="mg-hero"><h1>Read only</h1></div>', exemptHero).length) throw new Error('media primitive enhancement self-test failed: manifest exempt hero was rejected')
+  if (!findHeroActionContractViolations(validHero, exemptHero).length) throw new Error('media primitive enhancement self-test failed: manifest exempt hero binding was bypassed')
   const invalidHeroes = [
     'const Page = () => <div><button className="mg-btn mg-btn-primary">Go</button></div>',
     'const Page = () => <div className="mg-hero-actions"><button className="mg-btn mg-btn-primary">A</button><button className="mg-btn mg-btn-primary">B</button></div>',
