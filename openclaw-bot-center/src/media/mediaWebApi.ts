@@ -62,10 +62,29 @@ const mediaWebSessionWithWorkspaceSchema = z.discriminatedUnion('workspaceMode',
   }).strict(),
 ])
 
+const exactRouteGrants = {
+  admin: ['/admin/overview', '/admin/access', '/admin/tenants', '/admin/billing', '/admin/upstreams'],
+  personal: ['/today', '/studio', '/campaigns', '/business', '/desk', '/overview', '/assets', '/tracks', '/decisions', '/publishing', '/reviews', '/media-agent', '/archives', '/usage-billing', '/invites', '/workspace'],
+  organization: ['/organization-workspace', '/tracks'],
+} as const
+
+function hasExactRouteGrants(actual: readonly string[], expected: readonly string[]) {
+  return actual.length === expected.length && actual.every((path, index) => path === expected[index])
+}
+
 const mediaWebSessionSchema = mediaWebSessionWithWorkspaceSchema.refine(
   (session) => !session.maintainer || session.role === 'admin',
   { message: 'maintainer authority requires an admin session' },
-)
+).superRefine((session, context) => {
+  const expected = session.role === 'admin'
+    ? exactRouteGrants.admin
+    : session.workspaceMode === 'personal_web'
+      ? exactRouteGrants.personal
+      : exactRouteGrants.organization
+  if (!hasExactRouteGrants(session.routeGrants, expected)) {
+    context.addIssue({ code: 'custom', path: ['routeGrants'], message: 'route grants do not match session authority' })
+  }
+})
 
 const mediaWebSessionResponseSchema = z.object({
   schemaVersion: z.literal('media_web_business_pages_v2'),

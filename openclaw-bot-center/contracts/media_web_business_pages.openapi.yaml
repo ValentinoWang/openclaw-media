@@ -6461,23 +6461,83 @@ components:
         publicUserId:
           type: string
           pattern: ^[A-Za-z0-9_-]{8,160}$
+        tenantId:
+          type: string
+          format: uuid
+        workspaceMode:
+          type: string
+          enum:
+          - personal_web
+          - organization_lark
+        editorMode:
+          type: string
+          enum:
+          - web_edit
+          - lark_edit
+        bodyAuthority:
+          type: string
+          enum:
+          - internal
+          - lark
+        organizationName:
+          type:
+          - string
+          - 'null'
+          minLength: 1
+          maxLength: 120
+        memberRole:
+          type: string
+          enum:
+          - owner
+          - member
+        organizationConnection:
+          type: string
+          enum: &mediaConnectionStates
+          - not_applicable
+          - connected
+          - pending
+          - disabled
+          - revoked
+          - attention
+        installationConnection:
+          type: string
+          enum: *mediaConnectionStates
         role:
           type: string
           enum:
           - ordinary
           - admin
+        maintainer:
+          type: boolean
         csrfToken:
           type: string
         expiresAt:
           type: string
           format: date-time
+        routeGrants:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            pattern: ^/[a-z0-9/_:-]*$
         schemaVersion:
           $ref: '#/components/schemas/SchemaVersion'
       required:
       - publicUserId
+      - tenantId
+      - workspaceMode
+      - editorMode
+      - bodyAuthority
+      - organizationName
+      - memberRole
+      - organizationConnection
+      - installationConnection
       - role
+      - maintainer
       - csrfToken
       - expiresAt
+      - routeGrants
       - schemaVersion
     CapabilitySummary:
       type: object

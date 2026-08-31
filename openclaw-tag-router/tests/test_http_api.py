@@ -76,6 +76,7 @@ class _FakeAccountAuth:
         self.database_down = False
         self.admin_revocations: list[tuple[UUID, UUID, str]] = []
         self.feishu_login_intents: list[str] = []
+        self.session_authorities: dict[UUID, tuple[str, str]] = {}
 
     def csrf_token(self, token: str) -> str:
         return hmac.new(self._secret, token.encode("ascii"), hashlib.sha256).hexdigest()
@@ -154,7 +155,12 @@ class _FakeAccountAuth:
         session = self.sessions.get(token or "")
         if session is None or session.expires_at <= datetime.now(timezone.utc):
             return None
-        return replace(session, role=self.roles[session.user_id])
+        resolved = replace(session, role=self.roles[session.user_id])
+        authority = self.session_authorities.get(session.user_id)
+        if authority is not None:
+            object.__setattr__(resolved, "workspace_mode", authority[0])
+            object.__setattr__(resolved, "body_authority", authority[1])
+        return resolved
 
     def revoke_session(self, token: str | None) -> None:
         self.sessions.pop(token or "", None)
@@ -786,6 +792,29 @@ class HttpApiAuthTests(unittest.TestCase):
             self.assertEqual(status, 200, body)
             self.assertEqual(body["session"]["publicUserId"], str(expected_user))
             self.assertEqual(body["session"]["role"], "ordinary" if role == "user" else "admin")
+
+    def test_media_session_route_grants_are_bound_to_exact_authority(self) -> None:
+        personal_cookie = self._issue_session_cookie("user-a")
+        status, body, _ = self._request("GET", "/openclaw/media/api/session", cookie=personal_cookie)
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["session"]["routeGrants"], [
+            "/today", "/studio", "/campaigns", "/business", "/desk", "/overview", "/assets",
+            "/tracks", "/decisions", "/publishing", "/reviews", "/media-agent", "/archives",
+            "/usage-billing", "/invites", "/workspace",
+        ])
+
+        admin_cookie = self._issue_session_cookie("admin")
+        status, body, _ = self._request("GET", "/openclaw/media/api/session", cookie=admin_cookie)
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["session"]["routeGrants"], [
+            "/admin/overview", "/admin/access", "/admin/tenants", "/admin/billing", "/admin/upstreams",
+        ])
+
+        organization_cookie = self._issue_session_cookie("user-b")
+        self.account_auth.session_authorities[USER_B] = ("organization_lark", "lark")
+        status, body, _ = self._request("GET", "/openclaw/media/api/session", cookie=organization_cookie)
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["session"]["routeGrants"], ["/organization-workspace", "/tracks"])
 
     def test_legacy_session_cookie_keeps_last_value_precedence(self) -> None:
         first = self._issue_session_cookie("user-a")

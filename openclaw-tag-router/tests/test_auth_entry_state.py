@@ -285,6 +285,7 @@ class AuthEntryStateHttpTests(unittest.TestCase):
             "maintainer",
             "csrfToken",
             "expiresAt",
+            "routeGrants",
             "schemaVersion",
         })
         self.assertEqual(body["session"]["workspaceMode"], "personal_web")

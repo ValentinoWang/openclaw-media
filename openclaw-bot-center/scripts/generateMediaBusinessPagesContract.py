@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = ROOT.parent / "openclaw-tag-router/openclaw_app/contracts/media_web_business_pages.openapi.yaml"
 DEFAULT_TARGET = ROOT / "src/media/generatedBusinessPagesContract.ts"
 ACCEPTED_SOURCE_SHA256 = (
-    "bbd10d10863ac5cd4886296b16bb7a52d5580e036fdc83c1880157d6a7cbd39c"
+    "aa9d094c0c6ce483b238edc510b919f3ef3a149bbeced939f398534b526b8cb8"
 )
 EXPECTED_PAGE_IDS = tuple(f"B{index:02d}" for index in range(1, 15))
 EXPECTED_DOCUMENT_OPERATION_IDS = (
@@ -26,6 +26,11 @@ EXPECTED_DOCUMENT_OPERATION_IDS = (
     "getDocumentRevision",
     "saveDocumentDraft",
 )
+MEDIA_SESSION_REQUIRED = {
+    "publicUserId", "tenantId", "workspaceMode", "editorMode", "bodyAuthority",
+    "organizationName", "memberRole", "organizationConnection", "installationConnection",
+    "role", "maintainer", "csrfToken", "expiresAt", "routeGrants", "schemaVersion",
+}
 HTTP_METHODS = {"delete", "get", "head", "options", "patch", "post", "put", "trace"}
 
 
@@ -62,6 +67,25 @@ def load_contract(source: Path) -> tuple[dict[str, Any], bytes]:
     if contract.get("x-openclaw-interface-freeze-version") != 3:
         raise ValueError("accepted OpenAPI must use interface freeze version 3")
     return contract, raw
+
+
+def validate_media_session_mirror(source: Path) -> None:
+    source_contract = yaml.safe_load(source.read_bytes())
+    mirror_path = ROOT / "contracts/media_web_business_pages.openapi.yaml"
+    mirror_contract = yaml.safe_load(mirror_path.read_bytes())
+    source_schemas = require_mapping(require_mapping(source_contract.get("components"), "source components").get("schemas"), "source schemas")
+    mirror_schemas = require_mapping(require_mapping(mirror_contract.get("components"), "mirror components").get("schemas"), "mirror schemas")
+    for schema_name in ("MediaSession", "MediaSessionResponse"):
+        if source_schemas.get(schema_name) != mirror_schemas.get(schema_name):
+            raise ValueError(f"frontend {schema_name} schema drifted from the server authority")
+    session = require_mapping(source_schemas.get("MediaSession"), "MediaSession")
+    properties = require_mapping(session.get("properties"), "MediaSession.properties")
+    required = set(require_string_list(session.get("required"), "MediaSession.required"))
+    if set(properties) != MEDIA_SESSION_REQUIRED or required != MEDIA_SESSION_REQUIRED:
+        raise ValueError("MediaSession properties and required fields must match the exact runtime projection")
+    route_grants = require_mapping(properties.get("routeGrants"), "MediaSession.routeGrants")
+    if route_grants.get("minItems") != 1 or route_grants.get("uniqueItems") is not True:
+        raise ValueError("MediaSession.routeGrants must be non-empty and unique")
 
 
 def collect_page_operations(contract: dict[str, Any]) -> dict[str, list[str]]:
@@ -398,6 +422,7 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
+        validate_media_session_mirror(args.source)
         content = render(args.source)
     except (OSError, ValueError, yaml.YAMLError) as error:
         print(str(error), file=__import__("sys").stderr)

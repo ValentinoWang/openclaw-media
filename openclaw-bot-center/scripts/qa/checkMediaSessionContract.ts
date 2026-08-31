@@ -28,6 +28,7 @@ try {
     installationConnection: 'connected' as const,
     role: 'ordinary' as const,
     maintainer: false,
+    routeGrants: ['/organization-workspace', '/tracks'],
     csrfToken: 'csrf-session-contract',
     expiresAt: '2026-08-08T00:00:00+00:00',
     schemaVersion: 'media_web_business_pages_v2' as const,
@@ -49,6 +50,7 @@ try {
     bodyAuthority: 'internal' as const,
     organizationConnection: 'not_applicable' as const,
     installationConnection: 'not_applicable' as const,
+    routeGrants: ['/today', '/studio', '/campaigns', '/business', '/desk', '/overview', '/assets', '/tracks', '/decisions', '/publishing', '/reviews', '/media-agent', '/archives', '/usage-billing', '/invites', '/workspace'],
   }
   assert.deepEqual(
     await loadFixture({
@@ -117,6 +119,21 @@ try {
       schemaVersion: 'media_web_business_pages_v2',
       revision: 1,
       session: { ...personalSession, installationConnection: undefined },
+    },
+    {
+      schemaVersion: 'media_web_business_pages_v2',
+      revision: 1,
+      session: { ...personalSession, routeGrants: [...personalSession.routeGrants, '/organization-workspace'] },
+    },
+    {
+      schemaVersion: 'media_web_business_pages_v2',
+      revision: 1,
+      session: { ...personalSession, routeGrants: [] },
+    },
+    {
+      schemaVersion: 'media_web_business_pages_v2',
+      revision: 1,
+      session: { ...personalSession, routeGrants: [...personalSession.routeGrants, '/workspace'] },
     },
   ]
 

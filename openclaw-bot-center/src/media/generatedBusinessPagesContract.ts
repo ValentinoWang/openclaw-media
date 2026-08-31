@@ -1,7 +1,7 @@
 // Generated from accepted Media Web Business Pages IF2. Do not edit.
 import { addAuditReasonHeader } from "./auditReasonHeader";
 
-export const sourceSha256 = "bbd10d10863ac5cd4886296b16bb7a52d5580e036fdc83c1880157d6a7cbd39c" as const;
+export const sourceSha256 = "aa9d094c0c6ce483b238edc510b919f3ef3a149bbeced939f398534b526b8cb8" as const;
 
 export type OperationCategory = "page" | "shared" | "document";
 export type GeneratedOperation = {

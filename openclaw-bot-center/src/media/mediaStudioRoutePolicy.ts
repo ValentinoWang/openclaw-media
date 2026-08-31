@@ -100,30 +100,35 @@ export function resolveStudioRoutePolicy(session: StudioSessionAuthority): Studi
 }
 
 export function resolveStudioRouteOutcome(policy: StudioRoutePolicy, pathname: string): StudioRouteOutcome {
-  const grant = policy.routeGrants.some((path) => pathname === path || pathname.startsWith(`${path}/`))
-  if (!grant && pathname !== '/runs' && !/^\/runs\/[^/]+$/.test(pathname) && !/^\/studio\/[^/]+$/.test(pathname)) return { kind: 'forbidden' }
+  const grantPath = pathname === '/runs' || /^\/(?:runs|studio)\/[^/]+$/.test(pathname)
+    ? '/studio'
+    : /^\/workspace\/preview\/[^/]+$/.test(pathname)
+      ? '/workspace'
+      : pathname
+  const grant = policy.routeGrants.includes(grantPath)
+  if (!grant) return { kind: 'forbidden' }
   if (pathname === '/runs') {
-    return policy.shell === 'personal' ? { kind: 'redirect', target: '/studio' } : { kind: 'redirect', target: policy.defaultRoute }
+    return policy.shell === 'personal' ? { kind: 'redirect', target: '/studio' } : { kind: 'forbidden' }
   }
   if (/^\/runs\/[^/]+$/.test(pathname) || /^\/studio\/[^/]+$/.test(pathname)) {
-    return policy.shell === 'personal' ? { kind: 'render' } : { kind: 'redirect', target: policy.defaultRoute }
+    return policy.shell === 'personal' ? { kind: 'render' } : { kind: 'forbidden' }
   }
   if (studioAdminRoutes.includes(pathname as (typeof studioAdminRoutes)[number])) {
-    return policy.shell === 'admin' ? { kind: 'render' } : { kind: 'redirect', target: policy.defaultRoute }
+    return policy.shell === 'admin' ? { kind: 'render' } : { kind: 'forbidden' }
   }
   if (pathname === '/tracks') {
     return policy.shell === 'personal' || policy.shell === 'organization'
       ? { kind: 'render' }
-      : { kind: 'redirect', target: policy.defaultRoute }
+      : { kind: 'forbidden' }
   }
   if (studioOrdinaryRoutes.includes(pathname as (typeof studioOrdinaryRoutes)[number])) {
-    return policy.shell === 'personal' ? { kind: 'render' } : { kind: 'redirect', target: policy.defaultRoute }
+    return policy.shell === 'personal' ? { kind: 'render' } : { kind: 'forbidden' }
   }
   if (pathname === '/workspace' || /^\/workspace\/preview\/[^/]+$/.test(pathname)) {
-    return policy.shell === 'personal' ? { kind: 'render' } : { kind: 'redirect', target: policy.defaultRoute }
+    return policy.shell === 'personal' ? { kind: 'render' } : { kind: 'forbidden' }
   }
   if (pathname === '/organization-workspace') {
-    return policy.shell === 'organization' ? { kind: 'render' } : { kind: 'redirect', target: policy.defaultRoute }
+    return policy.shell === 'organization' ? { kind: 'render' } : { kind: 'forbidden' }
   }
-  return { kind: 'redirect', target: policy.defaultRoute }
+  return { kind: 'forbidden' }
 }

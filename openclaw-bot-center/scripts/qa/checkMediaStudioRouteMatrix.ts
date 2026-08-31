@@ -180,7 +180,7 @@ function acceptedOutcome(shell: StudioRoutePolicy['shell'], pathname: string): R
   if (pathname === '/runs' || /^\/(?:runs|studio)\/[^/]+$/.test(pathname)) {
     if (shell === 'personal' && pathname === '/runs') return { kind: 'redirect', target: '/studio' }
     if (shell === 'personal' && /^\/(?:runs|studio)\/[^/]+$/.test(pathname)) return { kind: 'render' }
-    return { kind: 'redirect', target: defaultRoute }
+    return { kind: 'forbidden' }
   }
   if (shell === 'admin' && studioAdminRoutes.includes(pathname as (typeof studioAdminRoutes)[number])) return { kind: 'render' }
   if (shell === 'organization' && (pathname === '/organization-workspace' || pathname === '/tracks')) return { kind: 'render' }
@@ -287,5 +287,28 @@ assert.throws(
   /personal .* has the wrong accepted outcome/,
   'route matrix accepted a synthetic personal ordinary-route redirect to /workspace',
 )
+
+for (const pathname of ['/studio', '/runs', '/runs/example', '/studio/example'] as const) {
+  const missingStudioGrant = { ...personalPolicy, routeGrants: personalPolicy.routeGrants.filter((path) => path !== '/studio') }
+  assert.deepEqual(
+    resolveStudioRouteOutcome(missingStudioGrant, pathname),
+    { kind: 'forbidden' },
+    `${pathname} bypassed the canonical /studio grant`,
+  )
+}
+
+for (const [shell, pathname] of [
+  ['personal', '/admin/overview'],
+  ['organization', '/studio'],
+  ['admin', '/organization-workspace'],
+] as const) {
+  const base = fixtures.find(([, , policy]) => policy.shell === shell)![2]
+  const overGranted = { ...base, routeGrants: [...base.routeGrants, pathname] }
+  assert.deepEqual(
+    resolveStudioRouteOutcome(overGranted, pathname),
+    { kind: 'forbidden' },
+    `${shell} shell accepted a route from another authority despite an over-broad grant`,
+  )
+}
 
 console.log('Media Studio route matrix QA passed: accepted personal/organization/admin authority, shared policy wiring, renderer identities, and synthetic /workspace drift rejection')

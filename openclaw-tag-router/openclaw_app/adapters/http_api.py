@@ -3247,15 +3247,20 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             raise RequestContextError("session principal role is invalid")
         binding_state, installation_state = self._binding_projection(context)
         is_personal = context.principal.workspace_mode == "personal_web"
-        route_grants = (
-            ["/admin/overview", "/admin/access", "/admin/tenants", "/admin/billing", "/admin/upstreams"]
-            if role == "admin"
-            else [
+        if role == "admin":
+            route_grants = [
+                "/admin/overview", "/admin/access", "/admin/tenants", "/admin/billing", "/admin/upstreams"
+            ]
+        elif context.principal.workspace_mode == "personal_web" and context.principal.body_authority == "internal":
+            route_grants = [
                 "/today", "/studio", "/campaigns", "/business", "/desk", "/overview", "/assets",
                 "/tracks", "/decisions", "/publishing", "/reviews", "/media-agent", "/archives",
-                "/usage-billing", "/invites", "/workspace", "/organization-workspace",
+                "/usage-billing", "/invites", "/workspace",
             ]
-        )
+        elif context.principal.workspace_mode == "organization_lark" and context.principal.body_authority == "lark":
+            route_grants = ["/organization-workspace", "/tracks"]
+        else:
+            raise RequestContextError("session workspace authority is invalid")
         if is_personal:
             organization_name = None
         else:
