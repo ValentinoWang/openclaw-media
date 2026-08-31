@@ -178,7 +178,7 @@ export default function PublishingPage() {
     <div className={styles.prelude} data-page-prelude>
       <header className="page-heading mg-hero" data-component="mg-hero">
         <div><span className="mg-eyebrow" data-component="mg-eyebrow">内容运营</span><h1>发布准备</h1><p>核对发布内容包、完成人工检查，并记录已经由人工发布的公开链接。</p></div>
-        {runtimeState === "authenticated" ? <div className="page-heading-actions"><button className={primaryButtonClass} type="button" onClick={refresh} title="重新读取发布包"><RefreshCw size={15} aria-hidden="true" />刷新发布包</button></div> : null}
+        {runtimeState === "authenticated" ? <div className="page-heading-actions mg-hero-actions"><button className={primaryButtonClass} type="button" onClick={refresh} title="重新读取发布包"><RefreshCw size={15} aria-hidden="true" />刷新发布包</button></div> : null}
       </header>
     </div>
     <Boundary />

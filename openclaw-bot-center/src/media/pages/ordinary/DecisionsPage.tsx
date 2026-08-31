@@ -325,7 +325,7 @@ export default function DecisionsPage() {
             <h1>选题与决策</h1>
             <p>候选选题、来源信号和人工确认都来自当前租户的业务记录。</p>
           </div>
-          <div className="page-heading-actions">
+          <div className="mg-hero-actions">
             <button
               className={`mg-btn mg-btn-primary ${styles.primaryAction}`}
               data-component="mg-btn"

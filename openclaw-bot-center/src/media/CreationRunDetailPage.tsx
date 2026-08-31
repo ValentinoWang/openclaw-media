@@ -180,7 +180,7 @@ export default function CreationRunDetailPage() {
         <Link className={styles.backLink} to="/studio"><ArrowLeft size={16} />返回 Studio</Link>
         <header className={`${styles.headingRow} mg-hero`} data-component="mg-hero">
           <div className={styles.titleBlock}><span className="mg-eyebrow">CREATIVE PROJECT · {run.entrypoint || '创作运行'}</span><h1>{run.title}</h1><p className="mg-hero-lead">在同一份活稿里维护脚本、分镜、拍摄执行和发布包；浏览器草稿不会伪装成服务端版本。</p></div>
-          <div className={styles.headingActions}>
+          <div className={`${styles.headingActions} mg-hero-actions`}>
             <span className={`mg-badge ${styles.statusBadge}`} data-component="mg-badge" data-tone={statusBadgeTone(runStatusTone(run.status))}><i />{runStatusLabel(run.status)}</span>
             <button className={`${styles.secondaryButton} mg-btn mg-btn-ghost`} data-component="mg-btn" type="button" disabled={!serverBlocks.length} onClick={() => { setBlocks(serverBlocks); setSelectedId(serverBlocks[0]?.id ?? null) }}><RotateCcw size={16} />恢复服务器版本</button>
             <button className={`${styles.primaryButton} mg-btn mg-btn-primary`} data-component="mg-btn" type="button" disabled={!blocks.length} onClick={saveDraft}><Save size={16} />保存草稿{dirtyCount ? <b>{dirtyCount}</b> : null}</button>

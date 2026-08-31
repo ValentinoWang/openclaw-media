@@ -397,7 +397,7 @@ function AssetsPage() {
               description="从灵感、来源和拆解证据进入选题与创作。"
             />
           </div>
-          <div className="page-heading-actions"><button
+          <div className="page-heading-actions mg-hero-actions"><button
             className={`mg-btn mg-btn-primary ${styles.primaryAction}`}
             data-component="mg-btn"
             type="button"

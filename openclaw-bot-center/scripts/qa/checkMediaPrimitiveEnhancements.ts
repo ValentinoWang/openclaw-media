@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import ts from 'typescript'
+import { CANONICAL_MEDIA_PAGE_SURFACES, type HeroActionsContract } from './mediaPageStructureManifest'
 
 const projectRoot = resolve(import.meta.dirname, '../..')
 type FoundationViolation = 'gradient functions' | 'decorative .mg-hero pseudo-element' | 'nonzero .mg-eyebrow letter spacing'
@@ -48,18 +49,36 @@ function assertFoundationClean(primitiveCss: string, sourceName: string): void {
   }
 }
 
-function staticStringValues(expression: ts.Expression | undefined): readonly string[] {
+type StaticBindings = ReadonlyMap<string, ts.Expression>
+
+function staticStringValues(expression: ts.Expression | undefined, bindings: StaticBindings = new Map(), seen = new Set<string>()): readonly string[] {
   if (!expression) return []
   if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) return [expression.text]
-  if (ts.isParenthesizedExpression(expression)) return staticStringValues(expression.expression)
+  if (ts.isParenthesizedExpression(expression)) return staticStringValues(expression.expression, bindings, seen)
+  if (ts.isIdentifier(expression)) {
+    if (seen.has(expression.text)) return []
+    const value = bindings.get(expression.text)
+    return value ? staticStringValues(value, bindings, new Set(seen).add(expression.text)) : []
+  }
+  if (ts.isArrayLiteralExpression(expression)) return expression.elements.flatMap((item) => ts.isSpreadElement(item) ? [] : staticStringValues(item, bindings, seen))
+  if (ts.isCallExpression(expression) && ts.isPropertyAccessExpression(expression.expression) && expression.expression.name.text === 'join') {
+    return staticStringValues(expression.expression.expression, bindings, seen)
+  }
+  if (ts.isConditionalExpression(expression)) return [...staticStringValues(expression.whenTrue, bindings, seen), ...staticStringValues(expression.whenFalse, bindings, seen)]
+  if (ts.isBinaryExpression(expression) && expression.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+    return [...staticStringValues(expression.left, bindings, seen), ...staticStringValues(expression.right, bindings, seen)]
+  }
+  if (ts.isTemplateExpression(expression)) {
+    return [expression.head.text, ...expression.templateSpans.flatMap((span) => [...staticStringValues(span.expression, bindings, seen), span.literal.text])]
+  }
   return []
 }
 
-function jsxAttributeStaticStringValues(attribute: ts.JsxAttribute): readonly string[] {
+function jsxAttributeStaticStringValues(attribute: ts.JsxAttribute, bindings: StaticBindings = new Map()): readonly string[] {
   const initializer = attribute.initializer
   if (!initializer) return []
   if (ts.isStringLiteral(initializer)) return [initializer.text]
-  if (ts.isJsxExpression(initializer)) return staticStringValues(initializer.expression)
+  if (ts.isJsxExpression(initializer)) return staticStringValues(initializer.expression, bindings)
   return []
 }
 
@@ -144,32 +163,66 @@ function assertMetricConsumersUseCanonicalTones(): void {
   }
 }
 
-function assertHeroActionContracts(): void {
-  const violations: string[] = []
-  for (const fileName of findTsxFiles(resolve(projectRoot, 'src/media'))) {
-    const sourceText = readFileSync(fileName, 'utf8')
-    const source = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
-    const visit = (node: ts.Node) => {
-      if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
-        const opening = ts.isJsxElement(node) ? node.openingElement : node
-        const classText = opening.attributes.properties
-          .filter((property): property is ts.JsxAttribute => ts.isJsxAttribute(property) && property.name.text === 'className')
-          .flatMap((property) => jsxAttributeStaticStringValues(property))
-          .join(' ')
-        if (classText.split(/\s+/).includes('mg-hero-actions')) {
-          const end = ts.isJsxElement(node) ? node.getEnd() : node.getEnd()
-          const block = sourceText.slice(node.getStart(source), end)
-          const primaryCount = (block.match(/mg-btn-primary/g) ?? []).length
-          const secondaryCount = (block.match(/mg-btn-secondary/g) ?? []).length
-          if (primaryCount !== 1 || secondaryCount > 2) {
-            violations.push(`${fileName}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1} primary=${primaryCount} secondary=${secondaryCount}`)
-          }
-        }
-      }
-      ts.forEachChild(node, visit)
-    }
-    visit(source)
+function collectBindings(source: ts.SourceFile): StaticBindings {
+  const bindings = new Map<string, ts.Expression>()
+  const visit = (node: ts.Node) => {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) bindings.set(node.name.text, node.initializer)
+    ts.forEachChild(node, visit)
   }
+  visit(source)
+  return bindings
+}
+
+function classTokens(node: ts.JsxOpeningLikeElement, bindings: StaticBindings): readonly string[] {
+  return node.attributes.properties
+    .filter((property): property is ts.JsxAttribute => ts.isJsxAttribute(property) && property.name.text === 'className')
+    .flatMap((property) => jsxAttributeStaticStringValues(property, bindings))
+    .flatMap((value) => value.split(/\s+/).filter(Boolean))
+}
+
+export function findHeroActionContractViolations(sourceText: string, contract: HeroActionsContract, fileName = 'fixture.tsx'): readonly string[] {
+  const source = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const bindings = collectBindings(source)
+  const regions: Array<{ line: number; primary: number; secondary: number }> = []
+  const visit = (node: ts.Node) => {
+    if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const opening = ts.isJsxElement(node) ? node.openingElement : node
+      if (classTokens(opening, bindings).includes('mg-hero-actions')) {
+        let primary = 0
+        let secondary = 0
+        const count = (child: ts.Node) => {
+          if ((ts.isJsxOpeningElement(child) || ts.isJsxSelfClosingElement(child)) && child !== opening) {
+            const tokens = classTokens(child, bindings)
+            if (tokens.includes('mg-btn-primary')) primary += 1
+            if (tokens.includes('mg-btn-soft') || tokens.includes('mg-btn-ghost')) secondary += 1
+          }
+          if (ts.isJsxExpression(child) && child.expression && ts.isIdentifier(child.expression)) {
+            const bound = bindings.get(child.expression.text)
+            if (bound) count(bound)
+          }
+          ts.forEachChild(child, count)
+        }
+        count(node)
+        regions.push({ line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1, primary, secondary })
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  const violations: string[] = []
+  if (contract.mode === 'required' && regions.length !== 1) violations.push(`${fileName}: expected exactly one mg-hero-actions region, found ${regions.length}`)
+  if (contract.mode === 'exempt' && regions.length !== 0) violations.push(`${fileName}: exempt surface contains ${regions.length} mg-hero-actions region(s)`)
+  for (const region of regions) if (region.primary !== 1 || region.secondary > 2) violations.push(`${fileName}:${region.line} primary=${region.primary} secondary=${region.secondary}`)
+  return violations
+}
+
+function assertHeroActionContracts(): void {
+  const violations = CANONICAL_MEDIA_PAGE_SURFACES.flatMap((surface) => {
+    if (!surface.heroActions) return [`${surface.id}: hero action contract is missing`]
+    if (surface.heroActions.mode === 'exempt' && !surface.heroActions.reason.trim()) return [`${surface.id}: hero action exemption reason is empty`]
+    const fileName = resolve(projectRoot, 'src/media', surface.source)
+    return findHeroActionContractViolations(readFileSync(fileName, 'utf8'), surface.heroActions, surface.source)
+  })
   if (violations.length) throw new Error(`media hero action contract failed: ${violations.join(', ')}`)
 }
 
@@ -257,6 +310,19 @@ function runSelfTest(): void {
   }
   if (findUnsupportedLetterSpacing('.a { letter-spacing: 0 !important; } .b { letter-spacing: var(--mg-track-wide); }').length) {
     throw new Error('media primitive enhancement self-test failed: canonical letter spacing was rejected')
+  }
+
+  const requiredHero: HeroActionsContract = { mode: 'required' }
+  const validHero = `const primary = ['mg-btn', 'mg-btn-primary'].join(' '); const Page = () => <div className={['mg-hero-actions', styles.actions].join(' ')}><button className={primary}>Go</button><button className="mg-btn mg-btn-ghost">More</button></div>`
+  if (findHeroActionContractViolations(validHero, requiredHero).length) throw new Error('media primitive enhancement self-test failed: valid hero action region was rejected')
+  const invalidHeroes = [
+    'const Page = () => <div><button className="mg-btn mg-btn-primary">Go</button></div>',
+    'const Page = () => <div className="mg-hero-actions"><button className="mg-btn mg-btn-primary">A</button><button className="mg-btn mg-btn-primary">B</button></div>',
+    'const Page = () => <div className="mg-hero-actions"><button className="mg-btn mg-btn-primary">A</button><button className="mg-btn mg-btn-ghost">1</button><button className="mg-btn mg-btn-soft">2</button><button className="mg-btn mg-btn-ghost">3</button></div>',
+    'const classes = makeClasses("mg-hero-actions"); const Page = () => <div className={classes}><button className="mg-btn mg-btn-primary">A</button></div>',
+  ]
+  for (const fixture of invalidHeroes) {
+    if (!findHeroActionContractViolations(fixture, requiredHero).length) throw new Error('media primitive enhancement self-test failed: invalid hero action fixture was accepted')
   }
 
   console.log('media primitive enhancement self-test passed: good CSS and canonical Metric tones accepted; gradients, hero pseudo-elements, nonzero eyebrow tracking, and legacy Metric tones rejected')

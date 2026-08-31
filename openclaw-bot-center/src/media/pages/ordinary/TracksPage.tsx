@@ -402,7 +402,7 @@ function TracksPage() {
           title="账号与赛道"
           description="管理自有账号、了解赛道运营情况，并持续跟踪值得研究的对标账号。"
         />
-        <div className={`page-heading-actions ${styles.headingActions}`}>
+        <div className={`page-heading-actions mg-hero-actions ${styles.headingActions}`}>
           <button
             className={["mg-btn", "mg-btn-ghost", styles.secondaryAction].join(" ")}
             data-component="mg-btn"

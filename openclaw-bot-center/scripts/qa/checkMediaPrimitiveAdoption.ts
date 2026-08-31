@@ -465,7 +465,7 @@ function fixtures() {
 function routeFixture(extraRoute = '', omittedPath?: string) {
   const imports = surfaces.filter((surface) => surface.route).map((surface) => `import ${surface.route!.component} from '${surface.route!.importModule}'`).join('\n')
   const routes = surfaces.filter((surface) => surface.route).flatMap((surface) => surface.route!.paths.map((path) => `<Route path="${path}" element={ordinaryRoute('${path}', <${surface.route!.component} />, routePolicy)} />`)).filter((route) => !omittedPath || !route.includes(`path="${omittedPath}"`))
-  return `${imports}\nimport WorkspaceShellPage from './WorkspaceShellPage'\n<Routes><Route path="/" element={<Navigate to="/today" />} />${routes.join('')}<Route path="/runs" element={studioAliasRoute(routePolicy)} /><Route path="/workspace" element={personalRoute('/workspace', <WorkspaceShellPage />, routePolicy)} /><Route path="*" element={<Navigate to="/today" />} />${extraRoute}</Routes>`
+  return `${imports}\n<Routes><Route path="/" element={<Navigate to="/today" />} />${routes.join('')}<Route path="/runs" element={studioAliasRoute(routePolicy)} /><Route path="*" element={<Navigate to="/today" />} />${extraRoute}</Routes>`
 }
 
 export function runSelfTest() {

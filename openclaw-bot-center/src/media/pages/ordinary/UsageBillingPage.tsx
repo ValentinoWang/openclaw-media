@@ -139,7 +139,7 @@ function UsageBillingPage() {
   }
 
   const refreshData = () => setRefresh((value) => value + 1)
-  const pageAction = canRead ? <button className="mg-btn mg-btn-primary" data-component="mg-btn" type="button" onClick={openRedemption}><TicketCheck size={16} />兑换卡密</button> : null
+  const pageAction = canRead ? <div className="page-heading-actions mg-hero-actions"><button className="mg-btn mg-btn-primary" data-component="mg-btn" type="button" onClick={openRedemption}><TicketCheck size={16} />兑换卡密</button></div> : null
 
   return <main className={'fidelity-page ' + styles.page} data-page-ownership="personal" data-accent="business" data-page-state={canRead ? 'ready' : 'permission'}>
     <div data-page-prelude>
@@ -180,7 +180,7 @@ function PageHeader({ action }: { action: ReactNode }) {
       <h1>用量与余额</h1>
       <p>查看当前账户的模型用量、余额和兑换入口。</p>
     </div>
-    {action ? <div className="page-heading-actions">{action}</div> : null}
+    {action}
   </header>
 }
 
