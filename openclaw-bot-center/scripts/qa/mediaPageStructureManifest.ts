@@ -56,7 +56,7 @@ export const CANONICAL_MEDIA_PAGE_SURFACES: readonly MediaSurfaceSpec[] = [
 
 export const CANONICAL_ROUTE_EXEMPTIONS = [
   { path: '/', reason: 'redirect route has no page renderer', component: 'Navigate', importModule: 'react-router-dom' },
-  { path: '/runs', reason: 'legacy route alias has no page renderer' },
+  { path: '/runs', reason: 'legacy route alias has no page renderer', helper: 'studioAliasRoute' },
   { path: '*', reason: 'fallback redirect has no page renderer', component: 'Navigate', importModule: 'react-router-dom' },
 ] as const
 

@@ -284,8 +284,8 @@ function validateManifest(specs: readonly SurfaceSpec[]) {
   }
 }
 
-type ProductionRoute = { path: string; component?: string }
-type RouteExemption = { path: string; reason: string; component?: string; importModule?: string }
+type ProductionRoute = { path: string; component?: string; helper?: string }
+type RouteExemption = { path: string; reason: string; component?: string; importModule?: string; helper?: string }
 
 function routeComponent(initializer: ts.JsxAttributeValue | undefined): string | undefined {
   if (!initializer || !ts.isJsxExpression(initializer) || !initializer.expression) return undefined
@@ -296,6 +296,25 @@ function routeComponent(initializer: ts.JsxAttributeValue | undefined): string |
     else ts.forEachChild(node, visit)
   }
   visit(initializer.expression)
+  return component
+}
+
+function routeHelper(initializer: ts.JsxAttributeValue | undefined): string | undefined {
+  if (!initializer || !ts.isJsxExpression(initializer) || !initializer.expression || !ts.isCallExpression(initializer.expression)) return undefined
+  return ts.isIdentifier(initializer.expression.expression) ? initializer.expression.expression.text : undefined
+}
+
+function helperRenderedComponent(helper: string | undefined, bindings: ReadonlyMap<string, ts.Node>): string | undefined {
+  if (!helper) return undefined
+  const binding = bindings.get(helper)
+  if (!binding) return undefined
+  let component: string | undefined
+  const visit = (node: ts.Node) => {
+    if (component) return
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && ts.isIdentifier(node.tagName) && /^[A-Z]/.test(node.tagName.text)) component = node.tagName.text
+    else ts.forEachChild(node, visit)
+  }
+  visit(binding)
   return component
 }
 
@@ -313,7 +332,11 @@ function collectProductionRoutes(sourceText: string): { routes: readonly Product
       if ((ts.isJsxOpeningElement(current) || ts.isJsxSelfClosingElement(current)) && ts.isIdentifier(current.tagName) && current.tagName.text === 'Route') {
         const path = jsxStringAttribute(current, 'path')
         if (path === undefined) routes.push({ path: '<missing>' })
-        else routes.push({ path, component: routeComponent(jsxAttribute(current, 'element')?.initializer) })
+        else {
+          const initializer = jsxAttribute(current, 'element')?.initializer
+          const helper = routeHelper(initializer)
+          routes.push({ path, helper, component: routeComponent(initializer) ?? (path === '/runs' ? helperRenderedComponent(helper, bindings) : undefined) })
+        }
       }
       ts.forEachChild(current, visit)
     }
@@ -402,6 +425,7 @@ export function validateProductionRouteBindings(sourceText: string, specs: reado
     } else if (exemption && route.component !== undefined) {
       failures.push(`route exemption ${route.path} must not render component ${route.component}`)
     }
+    if (exemption?.helper && route.helper !== exemption.helper) failures.push(`route exemption ${route.path} must use helper ${exemption.helper}`)
   }
   for (const [path, surface] of paths) if (!seenProductionPaths.has(path)) failures.push(`${surface.id}: manifest route ${path} is absent from production route registry`)
   for (const exemption of CANONICAL_ROUTE_EXEMPTIONS) if (!seenProductionPaths.has(exemption.path)) failures.push(`route exemption ${exemption.path} is absent from production route registry`)
@@ -513,7 +537,7 @@ function fixtures() {
 function routeFixture(extraRoute = '', omittedPath?: string) {
   const imports = surfaces.filter((surface) => surface.route).map((surface) => `import ${surface.route!.component} from '${surface.route!.importModule}'`).join('\n')
   const routes = surfaces.filter((surface) => surface.route).flatMap((surface) => surface.route!.paths.map((path) => `<Route path="${path}" element={ordinaryRoute('${path}', <${surface.route!.component} />, routePolicy)} />`)).filter((route) => !omittedPath || !route.includes(`path="${omittedPath}"`))
-  return `import { Navigate } from 'react-router-dom'\n${imports}\nexport default function Fixture() { return (<Routes><Route path="/" element={<Navigate to="/today" />} />${routes.join('')}<Route path="/runs" element={studioAliasRoute(routePolicy)} />${extraRoute}<Route path="*" element={<Navigate to="/today" />} /></Routes>) }`
+  return `import { Navigate } from 'react-router-dom'\n${imports}\nfunction studioAliasRoute(routePolicy) { return guardedRoute('/runs', null, routePolicy) }\nexport default function Fixture() { return (<Routes><Route path="/" element={<Navigate to="/today" />} />${routes.join('')}<Route path="/runs" element={studioAliasRoute(routePolicy)} />${extraRoute}<Route path="*" element={<Navigate to="/today" />} /></Routes>) }`
 }
 
 export function runSelfTest() {
@@ -580,6 +604,7 @@ export function runSelfTest() {
   if (validateProductionRouteBindings(routeFixture()).length) throw new Error('self-test failed: matching production route registry was rejected')
   if (!validateProductionRouteBindings(routeFixture('<Route path="/new-surface" element={<NewPage />} />')).length) throw new Error('self-test failed: unmapped production route was accepted')
   if (!validateProductionRouteBindings(routeFixture().replace('<Route path="/runs" element={studioAliasRoute(routePolicy)} />', '<Route path="/runs" element={<WorkboardPage />} />')).some((failure) => failure.includes('route exemption /runs must not render component WorkboardPage'))) throw new Error('self-test failed: route exemption accepted an arbitrary renderer')
+  if (!validateProductionRouteBindings(routeFixture().replace("guardedRoute('/runs', null, routePolicy)", "guardedRoute('/runs', <WorkboardPage />, routePolicy)")).some((failure) => failure.includes('route exemption /runs must not render component WorkboardPage'))) throw new Error('self-test failed: route exemption helper hid an arbitrary renderer')
   if (!validateProductionRouteBindings(routeFixture('', '/today')).length) throw new Error('self-test failed: manifest route absent from registry was accepted')
   const deadRouteFixture = `${routeFixture('', '/today')}\nfunction DeadRouteFixture() { return <Routes><Route path="/today" element={<WorkboardPage />} /></Routes> }`
   if (!validateProductionRouteBindings(deadRouteFixture).some((failure) => failure.includes('manifest route /today is absent'))) throw new Error('self-test failed: dead route fixture forged production reachability')
