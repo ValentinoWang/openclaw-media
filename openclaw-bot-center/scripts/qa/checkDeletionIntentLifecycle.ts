@@ -32,6 +32,7 @@ const session = {
     installationConnection: "not_applicable",
     role: "ordinary",
     maintainer: false,
+    routeGrants: ["/overview", "/assets", "/workspace"],
     csrfToken: "personal-readonly-csrf",
     expiresAt: "2099-01-01T00:00:00Z",
     schemaVersion: "media_web_business_pages_v2",

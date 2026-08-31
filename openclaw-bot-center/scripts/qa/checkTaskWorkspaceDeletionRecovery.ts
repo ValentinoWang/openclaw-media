@@ -204,6 +204,7 @@ async function installApi(page: Page) {
           installationConnection: "not_applicable",
           role: "ordinary",
           maintainer: false,
+          routeGrants: ["/today", "/studio", "/overview", "/workspace"],
           csrfToken: "task-delete-qa-csrf",
           expiresAt: "2026-08-10T00:00:00+00:00",
           schemaVersion: "media_web_business_pages_v2",
