@@ -47,7 +47,7 @@
 .blockList > p { padding: 18px 8px; color: var(--mg-muted); font-size: var(--mg-text-sm); }
 .canvas { min-width: 0; padding: 18px; }
 .canvasMeta { display: grid; gap: 4px; margin-bottom: 12px; }
-.canvasMeta > span { color: var(--mg-primary-dark); font-size: var(--mg-text-sm); font-weight: 800; }
+.canvasMeta > span { color: var(--mg-primary-dark); font-size: var(--mg-text-sm); font-weight: 700; }
 .canvasMeta > strong { font-size: var(--mg-text-lg); }
 .canvasMeta > small { color: var(--mg-muted); font-size: var(--mg-text-sm); }
 .canvas > textarea { width: 100%; min-height: 280px; resize: vertical; padding: 18px; border: 1px solid var(--mg-border); border-radius: var(--mg-r-md); outline: 0; color: var(--mg-ink); background: var(--mg-bg); font: inherit; font-size: var(--mg-text-md); line-height: 1.85; }
@@ -67,7 +67,7 @@
 .inspectorTabs button { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; gap: 5px; margin: 0; padding: 0 8px; }
 .inspectorBody { padding: 15px; }
 .briefPanel, .agentPanel, .versionPanel { display: grid; gap: 14px; }
-.briefPanel > span, .agentPanel > span, .versionPanel > span { display: flex; align-items: center; gap: 7px; color: var(--mg-primary-dark); font-size: var(--mg-text-sm); font-weight: 800; }
+.briefPanel > span, .agentPanel > span, .versionPanel > span { display: flex; align-items: center; gap: 7px; color: var(--mg-primary-dark); font-size: var(--mg-text-sm); font-weight: 700; }
 .briefPanel dl { margin: 0; }
 .metadataList { margin: 0; }
 .briefPanel dl > div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--mg-border); }

@@ -10,6 +10,7 @@ const heroPseudoElementPattern = /\.mg-hero[^{}]*::?(?:before|after)\b[^{}]*\{/i
 const eyebrowRulePattern = /\.mg-eyebrow[^{}]*\{([^{}]*)\}/gi
 const letterSpacingPattern = /\bletter-spacing\s*:\s*([^;}]+)/i
 const zeroLetterSpacingPattern = /^-?(?:0+\.?0*|\.0+)(?:[a-z%]+)?(?:\s*!important)?$/i
+const allowedFontWeights = new Set(['400', '500', '600', '700'])
 const legacyMetricTones = ['mint', 'violet', 'amber', 'blue'] as const
 type LegacyMetricTone = (typeof legacyMetricTones)[number]
 
@@ -91,6 +92,32 @@ function findTsxFiles(directory: string): readonly string[] {
   })
 }
 
+function findCssFiles(directory: string): readonly string[] {
+  return readdirSync(directory).flatMap((entry) => {
+    const path = resolve(directory, entry)
+    return statSync(path).isDirectory() ? findCssFiles(path) : path.endsWith('.css') ? [path] : []
+  })
+}
+
+export function findUnsupportedFontWeights(sourceText: string): readonly string[] {
+  return [...sourceText.matchAll(/\bfont-weight\s*:\s*(\d+)\s*;/giu)]
+    .map((match) => match[1])
+    .filter((weight) => !allowedFontWeights.has(weight))
+}
+
+function assertMediaFontWeightsAreCanonical(): void {
+  const files = [
+    ...findCssFiles(resolve(projectRoot, 'src/media')),
+    resolve(projectRoot, 'src/media.auth.css'),
+    resolve(projectRoot, 'media.auth.css'),
+  ]
+  const violations = files.flatMap((fileName) => {
+    const relativeName = fileName.slice(projectRoot.length + 1)
+    return findUnsupportedFontWeights(readFileSync(fileName, 'utf8')).map((weight) => `${relativeName}: font-weight ${weight}`)
+  })
+  if (violations.length) throw new Error(`media typography contract failed: ${violations.join(', ')}`)
+}
+
 function assertMetricConsumersUseCanonicalTones(): void {
   const violations = findTsxFiles(resolve(projectRoot, 'src/media')).flatMap((fileName) => {
     const relativeName = fileName.slice(projectRoot.length + 1)
@@ -149,6 +176,7 @@ function runProjectCheck(): void {
   for (const selector of ['.mg-badge', ".mg-tab[data-variant='pill']", '.mg-btn:hover', '.mg-state-art', 'prefers-reduced-motion']) requireRule(selector)
   assertMetricConsumersUseCanonicalTones()
   assertHeroActionContracts()
+  assertMediaFontWeightsAreCanonical()
   console.log('media primitive enhancement QA passed: accents, tones, tabs, button hover, state art, reduced motion')
 }
 
@@ -196,6 +224,13 @@ function runSelfTest(): void {
   `
   if (findLegacyMetricToneViolations(unrelatedTextFixture).length) {
     throw new Error('media primitive enhancement self-test failed: unrelated text was rejected')
+  }
+
+  if (findUnsupportedFontWeights('.title { font-weight: 850; }').join(',') !== '850') {
+    throw new Error('media primitive enhancement self-test failed: unsupported font weight was accepted')
+  }
+  if (findUnsupportedFontWeights('@font-face { font-weight: 100 900; } .title { font-weight: 700; }').length) {
+    throw new Error('media primitive enhancement self-test failed: variable range or canonical font weight was rejected')
   }
 
   console.log('media primitive enhancement self-test passed: good CSS and canonical Metric tones accepted; gradients, hero pseudo-elements, nonzero eyebrow tracking, and legacy Metric tones rejected')

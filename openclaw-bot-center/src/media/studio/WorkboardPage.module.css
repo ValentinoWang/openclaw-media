@@ -124,7 +124,7 @@
 .loopCard header small {
   color: var(--loop-accent);
   font-size: var(--mg-text-sm);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: .11em;
 }
 

@@ -48,7 +48,7 @@
   cursor: pointer;
   white-space: nowrap;
   font-size: var(--mg-text-sm);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.1;
 }
 
@@ -276,13 +276,13 @@
   color: var(--reviews-muted);
   background: var(--reviews-soft);
   font-size: var(--mg-text-xs);
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .table tbody th {
   color: var(--reviews-ink);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .table tbody tr:last-child th,
@@ -309,7 +309,7 @@
   width: fit-content;
   max-width: 100%;
   color: var(--reviews-teal);
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: none;
 }
 
@@ -378,7 +378,7 @@
   padding: 0.18rem 0.35rem;
   border-radius: 0.25rem;
   font-size: var(--mg-text-xs);
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -534,7 +534,7 @@
 .factList dt {
   color: var(--reviews-muted);
   font-size: var(--mg-text-xs);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .factList dd {
@@ -611,7 +611,7 @@
   min-width: 0;
   color: var(--reviews-ink);
   font-size: var(--mg-text-sm);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .input,

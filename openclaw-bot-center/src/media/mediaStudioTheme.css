@@ -39,7 +39,7 @@
   background: linear-gradient(145deg, #95e4bd, #45b982);
   box-shadow: var(--mg-e3);
   font-size: var(--mg-text-sm);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: var(--mg-track-tight);
 }
 
@@ -91,7 +91,7 @@
   margin: 12px 10px 6px;
   color: rgba(234,246,238,.38);
   font-size: var(--mg-text-2xs);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: var(--mg-track-wide);
   text-transform: uppercase;
 }
@@ -134,7 +134,7 @@
   border-top: 1px solid color-mix(in srgb, var(--mg-surface) 10%, transparent);
 }
 .studio-return-link { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 7px; color: #a5e0c0; font-size: var(--mg-text-2xs); text-decoration: none; }
-.studio-avatar { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: var(--mg-sidebar); background: #dff5e8; font-size: var(--mg-text-2xs); font-weight: 800; }
+.studio-avatar { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: var(--mg-sidebar); background: #dff5e8; font-size: var(--mg-text-2xs); font-weight: 700; }
 .studio-account-copy { min-width: 0; }
 .studio-account-copy strong, .studio-account-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .studio-account-copy strong { color: white; font-size: var(--mg-text-xs); }
