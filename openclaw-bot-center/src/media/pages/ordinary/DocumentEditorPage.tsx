@@ -17,6 +17,7 @@ import {
   type DocumentBlock,
   type DocumentBody,
   type DocumentDataSnapshotBlock,
+  type DocumentEditExecutionReceipt,
   type DocumentExportFormat,
   type DocumentInlineNode,
   type DocumentMark,
@@ -42,6 +43,35 @@ type SelectedTextRange = TextRange & { blockId: string };
 type ArtifactRevisionResponse = {
   item?: { currentRevision?: number };
 };
+type SavePhase = "write" | "receipt" | "readback";
+type AiStatus = "idle" | "generating" | "ready" | "failed" | "timedOut";
+class SaveReadbackVerificationError extends Error {
+  readonly savedRevision: DocumentRevisionRecord;
+  readonly referenceCode: string | null;
+
+  constructor(
+    savedRevision: DocumentRevisionRecord,
+    message: string,
+    referenceCode: string | null = null,
+  ) {
+    super(message);
+    this.name = "SaveReadbackVerificationError";
+    this.savedRevision = savedRevision;
+    this.referenceCode = referenceCode;
+  }
+}
+type RevisionHistoryEntry = {
+  revision: number;
+  state: DocumentRevisionRecord["state"];
+  source: "manual" | "ai";
+  confirmation: "readback" | "aiReceipt";
+};
+
+const AI_POLL_INTERVAL_MS = 1000;
+const AI_POLL_MAX_ATTEMPTS = 30;
+const MAX_OBSERVED_REVISIONS = 6;
+const PERSONAL_DOCUMENT_AI_FEATURE_ENABLED =
+  import.meta.env.VITE_MEDIA_PERSONAL_DOCUMENT_AI_ENABLED !== "false";
 const MARKS: readonly MarkName[] = [
   "bold",
   "italic",
@@ -416,6 +446,153 @@ function TechnicalReference({ code }: { code: string | null }) {
   if (!code) return null;
   return <p className={styles.technicalReference}>技术参考码：{code}</p>;
 }
+function safeTechnicalCode(value: unknown): string | null {
+  if (
+    typeof value !== "string" ||
+    !/^[a-z0-9][a-z0-9_.:-]{0,95}$/i.test(value) ||
+    /^http_\d{3}$/i.test(value)
+  )
+    return null;
+  return value;
+}
+function projectExecutionReceipt(
+  value: unknown,
+): DocumentEditExecutionReceipt | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const candidate = value as Partial<DocumentEditExecutionReceipt>;
+  if (
+    (candidate.status !== "ready" && candidate.status !== "failed") ||
+    !Array.isArray(candidate.applied) ||
+    !Array.isArray(candidate.manualActions) ||
+    !Array.isArray(candidate.protectedSkipped) ||
+    typeof candidate.appliedCount !== "number" ||
+    !Number.isSafeInteger(candidate.appliedCount) ||
+    candidate.appliedCount < 0
+  )
+    return null;
+  if (
+    candidate.applied.some(
+      (item) =>
+        !item ||
+        typeof item !== "object" ||
+        ((item as { operation?: unknown }).operation !== "replace_text" &&
+          (item as { operation?: unknown }).operation !== "insert_table_row"),
+    ) ||
+    candidate.manualActions.some(
+      (item) =>
+        !item ||
+        typeof item !== "object" ||
+        typeof (item as { reason?: unknown }).reason !== "string",
+    ) ||
+    candidate.protectedSkipped.some((item) => typeof item !== "string")
+  )
+    return null;
+  return {
+    status: candidate.status,
+    applied: candidate.applied.map((item) => ({
+      operation: item.operation,
+      ...(typeof item.blockId === "string" ? { blockId: item.blockId } : {}),
+    })),
+    appliedCount: candidate.appliedCount,
+    manualActions: candidate.manualActions.map((item) => ({
+      reason: item.reason,
+      ...(typeof item.blockId === "string" ? { blockId: item.blockId } : {}),
+    })),
+    protectedSkipped: [...candidate.protectedSkipped],
+    ...(safeTechnicalCode(candidate.errorCode)
+      ? { errorCode: safeTechnicalCode(candidate.errorCode)! }
+      : {}),
+  };
+}
+function historyEntryFor(
+  revision: DocumentRevisionRecord,
+  confirmation: RevisionHistoryEntry["confirmation"],
+): RevisionHistoryEntry {
+  return {
+    revision: revision.revision,
+    state: revision.state,
+    source: projectExecutionReceipt(revision.executionReceipt) ? "ai" : "manual",
+    confirmation,
+  };
+}
+function recordObservedRevision(
+  entries: readonly RevisionHistoryEntry[],
+  entry: RevisionHistoryEntry,
+): RevisionHistoryEntry[] {
+  return [
+    entry,
+    ...entries.filter((candidate) => candidate.revision !== entry.revision),
+  ]
+    .sort((left, right) => right.revision - left.revision)
+    .slice(0, MAX_OBSERVED_REVISIONS);
+}
+function savePhaseState(phase: SavePhase, current: SavePhase): "complete" | "active" | "pending" {
+  const order: readonly SavePhase[] = ["write", "receipt", "readback"];
+  const comparison = order.indexOf(phase) - order.indexOf(current);
+  return comparison < 0 ? "complete" : comparison === 0 ? "active" : "pending";
+}
+function savePhaseLabel(phase: SavePhase): string {
+  if (phase === "write") return "写入正文";
+  if (phase === "receipt") return "登记保存回执";
+  return "读回正文并核对版本";
+}
+function matchesSavedDraftReadback(
+  artifactId: string,
+  saved: DocumentRevisionRecord,
+  readback: DocumentRevisionRecord,
+): boolean {
+  return (
+    saved.publicArtifactId === artifactId &&
+    readback.publicArtifactId === artifactId &&
+    readback.revision === saved.revision &&
+    readback.bodyChecksum === saved.bodyChecksum &&
+    JSON.stringify(readback.body) === JSON.stringify(saved.body)
+  );
+}
+function waitForNextPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+function receiptItemLabel(
+  category: "applied" | "manual" | "protected",
+  index: number,
+): string {
+  if (category === "applied") return `已应用内容 ${index + 1}`;
+  if (category === "manual") return `需人工处理内容 ${index + 1}`;
+  return `受保护内容 ${index + 1}`;
+}
+function AiReceiptSummary({ receipt }: { receipt: DocumentEditExecutionReceipt }) {
+  const groups: ReadonlyArray<{
+    category: "applied" | "manual" | "protected";
+    label: string;
+    count: number;
+  }> = [
+    { category: "applied", label: "已应用", count: receipt.appliedCount },
+    { category: "manual", label: "需要人工处理", count: receipt.manualActions.length },
+    { category: "protected", label: "受保护未改动", count: receipt.protectedSkipped.length },
+  ];
+  return (
+    <section className={styles.aiReceipt} aria-label="AI 改稿执行回执">
+      <h3>改稿结果解读</h3>
+      <p>以下仅展示系统确认的处理结果，不展示内部块标识。</p>
+      <dl>
+        {groups.map((group) => (
+          <div key={group.category}>
+            <dt>{group.label}</dt>
+            <dd>
+              {group.count > 0
+                ? Array.from({ length: group.count }, (_, index) =>
+                    receiptItemLabel(group.category, index),
+                  ).join("、")
+                : "无"}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
 function blockIdsFrom(error: unknown): string[] {
   if (!error || typeof error !== "object") return [];
   const details = (error as { details?: unknown }).details;
@@ -491,6 +668,7 @@ export default function DocumentEditorPage() {
   const [revision, setRevision] = useState<DocumentRevisionRecord | null>(null);
   const [body, setBody] = useState<DocumentBody | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("clean");
+  const [savePhase, setSavePhase] = useState<SavePhase>("write");
   const [message, setMessage] = useState("正在读取正文");
   const [technicalCode, setTechnicalCode] = useState<string | null>(null);
   const [invalidBlocks, setInvalidBlocks] = useState<string[]>([]);
@@ -502,9 +680,14 @@ export default function DocumentEditorPage() {
   const [aiInstruction, setAiInstruction] = useState("");
   const [aiRevision, setAiRevision] =
     useState<DocumentRevisionRecord | null>(null);
-  const [aiStatus, setAiStatus] = useState<
-    "idle" | "generating" | "ready" | "failed"
-  >("idle");
+  const [aiReceipt, setAiReceipt] =
+    useState<DocumentEditExecutionReceipt | null>(null);
+  const [aiTargetRevision, setAiTargetRevision] = useState<number | null>(null);
+  const [aiTechnicalCode, setAiTechnicalCode] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<AiStatus>("idle");
+  const [revisionHistory, setRevisionHistory] = useState<RevisionHistoryEntry[]>([]);
+  const [pendingSaveReadback, setPendingSaveReadback] =
+    useState<DocumentRevisionRecord | null>(null);
 
   const load = useCallback(async () => {
     if (!artifactId) return;
@@ -515,9 +698,16 @@ export default function DocumentEditorPage() {
       const response = await api.getBody(artifactId);
       setRevision(response.data.revision);
       setBody(cloneBody(response.data.revision.body));
+      setRevisionHistory((current) =>
+        recordObservedRevision(
+          current,
+          historyEntryFor(response.data.revision, "readback"),
+        ),
+      );
       setInvalidBlocks([]);
       setSelectedBlock(null);
       setSelectedRange(null);
+      setPendingSaveReadback(null);
       setSaveState("clean");
       setMessage("已读取最新正文");
     } catch (error) {
@@ -614,19 +804,79 @@ export default function DocumentEditorPage() {
     setSaveState("dirty");
     setTechnicalCode(null);
   }
+  async function readAiRevision(revisionNumber: number) {
+    if (!artifactId) return;
+    setAiStatus("generating");
+    setAiTechnicalCode(null);
+    try {
+      for (let attempt = 0; attempt < AI_POLL_MAX_ATTEMPTS; attempt += 1) {
+        const current = await api.getRevision(artifactId, revisionNumber);
+        const nextRevision = current.data;
+        if (
+          nextRevision.publicArtifactId !== artifactId ||
+          !Number.isSafeInteger(nextRevision.revision) ||
+          nextRevision.revision !== revisionNumber
+        )
+          throw new Error("改稿结果与当前正文不匹配。");
+        const receipt = projectExecutionReceipt(nextRevision.executionReceipt);
+        setAiRevision(nextRevision);
+        setAiReceipt(receipt);
+        if (nextRevision.state === "ready") {
+          if (!receipt || receipt.status !== "ready") {
+            setAiStatus("failed");
+            setMessage("改稿结果缺少可确认的执行回执，暂不可采用。请重新读取后再试。");
+            setAiTechnicalCode(safeTechnicalCode(receipt?.errorCode));
+            return;
+          }
+          setRevisionHistory((entries) =>
+            recordObservedRevision(entries, historyEntryFor(nextRevision, "aiReceipt")),
+          );
+          setAiStatus("ready");
+          setMessage("AI 改稿修订已就绪。已读回执行回执，可查看结果后载入。");
+          return;
+        }
+        if (nextRevision.state === "failed") {
+          setAiStatus("failed");
+          setMessage("AI 改稿未能生成可采用的修订。请稍后重新发起。");
+          setAiTechnicalCode(safeTechnicalCode(receipt?.errorCode));
+          return;
+        }
+        if (nextRevision.state !== "generating") {
+          setAiStatus("failed");
+          setMessage("改稿结果暂不可采用。请重新读取正文后再试。");
+          setAiTechnicalCode(safeTechnicalCode(receipt?.errorCode));
+          return;
+        }
+        if (attempt + 1 < AI_POLL_MAX_ATTEMPTS) {
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, AI_POLL_INTERVAL_MS);
+          });
+        }
+      }
+      setAiStatus("timedOut");
+      setMessage("改稿仍在生成，本次读取已结束。可重新读取结果，不会重复发起改稿。");
+    } catch (error) {
+      setAiStatus("failed");
+      setMessage(editorFailureMessage(error, "改稿结果暂时不可读取，请稍后重试。"));
+      setAiTechnicalCode(technicalReference(error));
+    }
+  }
   async function createAiRevision() {
     if (
       !artifactId ||
       !revision ||
       !session ||
       !aiInstruction.trim() ||
-      aiStatus === "generating"
+      aiStatus === "generating" ||
+      !PERSONAL_DOCUMENT_AI_FEATURE_ENABLED
     )
       return;
     setAiStatus("generating");
     setAiRevision(null);
+    setAiReceipt(null);
+    setAiTargetRevision(null);
     setMessage("已提交改稿请求，正在生成新的修订。");
-    setTechnicalCode(null);
+    setAiTechnicalCode(null);
     try {
       const created = await callBusinessOperation<ArtifactRevisionResponse>(
         "createArtifactRevision",
@@ -648,37 +898,22 @@ export default function DocumentEditorPage() {
         revisionNumber < 1
       )
         throw new Error("改稿修订未返回可读取的版本号。");
-
-      for (let attempt = 0; attempt < 30; attempt += 1) {
-        const current = await api.getRevision(artifactId, revisionNumber);
-        setAiRevision(current.data);
-        if (current.data.state === "ready") {
-          setAiStatus("ready");
-          setMessage("AI 改稿已生成，可载入后继续审阅和保存。");
-          return;
-        }
-        if (
-          current.data.state === "failed" ||
-          current.data.state === "conflict" ||
-          current.data.state === "archived"
-        ) {
-          setAiStatus("failed");
-          setMessage("AI 改稿未能生成可采用的修订。");
-          return;
-        }
-        await new Promise<void>((resolve) => {
-          window.setTimeout(resolve, 1000);
-        });
-      }
-      setMessage("AI 改稿仍在生成，请稍后重新读取页面查看结果。");
+      setAiTargetRevision(revisionNumber);
+      await readAiRevision(revisionNumber);
     } catch (error) {
       setAiStatus("failed");
       setMessage(editorFailureMessage(error, "改稿请求失败，请稍后重试。"));
-      setTechnicalCode(technicalReference(error));
+      setAiTechnicalCode(technicalReference(error));
     }
   }
   function adoptAiRevision() {
-    if (!aiRevision || aiRevision.state !== "ready") return;
+    if (
+      !aiRevision ||
+      aiRevision.state !== "ready" ||
+      !aiReceipt ||
+      aiReceipt.status !== "ready"
+    )
+      return;
     setRevision(aiRevision);
     setBody(cloneBody(aiRevision.body));
     setSelectedBlock(null);
@@ -689,11 +924,58 @@ export default function DocumentEditorPage() {
     setSaveState("dirty");
     setTechnicalCode(null);
   }
+  async function readSavedDraft(saved: DocumentRevisionRecord) {
+    if (!artifactId) return;
+    setSaveState("saving");
+    setSavePhase("readback");
+    setMessage("保存回执已确认，正在读回正文并核对版本");
+    setTechnicalCode(null);
+    setPendingSaveReadback(saved);
+    try {
+      const readback = await api.getRevision(artifactId, saved.revision);
+      if (!matchesSavedDraftReadback(artifactId, saved, readback.data)) {
+        throw new SaveReadbackVerificationError(
+          saved,
+          "保存回执已确认，但读回正文与保存回执不一致。请重新读取正文，不会重复写入。",
+        );
+      }
+      setRevision(readback.data);
+      setBody(cloneBody(readback.data.body));
+      setRevisionHistory((current) =>
+        recordObservedRevision(current, historyEntryFor(readback.data, "readback")),
+      );
+      setInvalidBlocks([]);
+      setPendingSaveReadback(null);
+      setSaveState("saved");
+      setMessage("已保存，正文已读回并核对版本");
+    } catch (error) {
+      const failure =
+        error instanceof SaveReadbackVerificationError
+          ? error
+          : new SaveReadbackVerificationError(
+              saved,
+              "保存回执已确认，但读回正文失败。请重新读取正文，不会重复写入。",
+              technicalReference(error),
+            );
+      setPendingSaveReadback(failure.savedRevision);
+      setMessage(failure.message);
+      setTechnicalCode(failure.referenceCode);
+      setSaveState("error");
+    }
+  }
   async function save(onlyValid = false) {
-    if (!artifactId || !body || !revision || !session || saveState === "saving")
+    if (
+      !artifactId ||
+      !body ||
+      !revision ||
+      !session ||
+      saveState === "saving" ||
+      pendingSaveReadback
+    )
       return;
     setSaveState("saving");
-    setMessage("保存中：校验正文");
+    setSavePhase("write");
+    setMessage("保存中：正在写入正文");
     setTechnicalCode(null);
     const nextBody =
       onlyValid && invalidBlocks.length
@@ -705,15 +987,14 @@ export default function DocumentEditorPage() {
           }
         : body;
     try {
-      setMessage("保存中：写入修订链");
       const response = await api.saveDraft(artifactId, nextBody, revision, {
         csrfToken: session.csrfToken,
       });
-      setRevision(response.data);
-      setBody(cloneBody(response.data.body));
-      setInvalidBlocks([]);
-      setSaveState("saved");
-      setMessage("已保存，修订链已更新");
+      setPendingSaveReadback(response.data);
+      setSavePhase("receipt");
+      setMessage("保存中：正在登记本次保存回执");
+      await waitForNextPaint();
+      await readSavedDraft(response.data);
     } catch (error) {
       const status = (error as { status?: number }).status;
       const blockIds = status === 422 ? blockIdsFrom(error) : [];
@@ -828,12 +1109,18 @@ export default function DocumentEditorPage() {
           textOf(selectedRichTextBlock).length,
         )
       : null;
+  const aiDockEnabled = PERSONAL_DOCUMENT_AI_FEATURE_ENABLED;
+  const observedRevisions = revisionHistory.length
+    ? revisionHistory
+    : [historyEntryFor(revision, "readback")];
   return (
     <main
       className={styles.page}
       data-page-ownership="personal"
       data-accent="studio"
       data-document-editor="true"
+      data-ai-feature-flag={aiDockEnabled ? "on" : "off"}
+      data-ai-state={aiDockEnabled ? aiStatus : "off"}
     >
       <header className="mg-hero" data-page-prelude>
         <div>
@@ -854,7 +1141,11 @@ export default function DocumentEditorPage() {
           </button>
           <button
             className="mg-btn mg-btn-primary"
-            disabled={saveState === "saving" || saveState === "conflict"}
+            disabled={
+              saveState === "saving" ||
+              saveState === "conflict" ||
+              pendingSaveReadback !== null
+            }
             onClick={() => void save()}
           >
             <Save size={16} />
@@ -866,10 +1157,12 @@ export default function DocumentEditorPage() {
         <section className={`${styles.banner} ${styles.writing}`} role="status">
           <strong>保存中</strong>
           <span>{message}</span>
-          <ol>
-            <li>校验正文</li>
-            <li>写入修订链</li>
-            <li>记录证据账本</li>
+          <ol className={styles.saveSteps} aria-label="保存进度">
+            {(["write", "receipt", "readback"] as const).map((phase) => (
+              <li key={phase} data-save-step-state={savePhaseState(phase, savePhase)}>
+                {savePhaseLabel(phase)}
+              </li>
+            ))}
           </ol>
         </section>
       ) : null}
@@ -915,8 +1208,15 @@ export default function DocumentEditorPage() {
         <section className={`${styles.banner} ${styles.validation}`} role="alert">
           <strong>本次操作未完成</strong>
           <span>{message}</span>
-          <button className="mg-btn mg-btn-soft" onClick={() => void save()}>
-            重试保存
+          <button
+            className="mg-btn mg-btn-soft"
+            onClick={() =>
+              void (pendingSaveReadback
+                ? readSavedDraft(pendingSaveReadback)
+                : save())
+            }
+          >
+            {pendingSaveReadback ? "重新读取正文" : "重试保存"}
           </button>
         </section>
       ) : null}
@@ -1042,47 +1342,71 @@ export default function DocumentEditorPage() {
           </div>
         </section>
         <aside className={`${styles.side} mg-panel`}>
-          <div className={styles.ai}>
-            <Sparkles size={17} />
-            <strong>AI 改稿</strong>
-            <textarea
-              aria-label="改稿要求"
-              value={aiInstruction}
-              onChange={(event) => setAiInstruction(event.target.value)}
-              placeholder="说明需要改善的表达、结构或语气"
-              rows={3}
-            />
-            <button
-              className="mg-btn mg-btn-soft"
-              disabled={!aiInstruction.trim() || aiStatus === "generating"}
-              onClick={() => void createAiRevision()}
+          {aiDockEnabled ? (
+            <section
+              className={styles.ai}
+              data-ai-feature-flag="on"
+              data-ai-state={aiStatus}
+              aria-busy={aiStatus === "generating"}
             >
-              {aiStatus === "generating" ? "正在生成" : "生成改稿修订"}
-            </button>
-            {aiStatus !== "idle" ? (
-              <span>
-                {aiStatus === "generating"
-                  ? "服务端正在生成，页面会持续读取结果。"
-                  : aiStatus === "ready"
-                    ? "改稿修订已就绪。"
-                    : "改稿未生成可采用结果。"}
-              </span>
-            ) : null}
-            {aiRevision ? (
-              <div className={styles.aiResult}>
-                <b>{revisionStateLabel[aiRevision.state]}</b>
-                <small>修订 {versionLabel(aiRevision.revision)}</small>
-                {aiRevision.state === "ready" ? (
+              <Sparkles size={17} />
+              <strong>AI 改稿</strong>
+              <textarea
+                aria-label="改稿要求"
+                value={aiInstruction}
+                onChange={(event) => setAiInstruction(event.target.value)}
+                placeholder="说明需要改善的表达、结构或语气"
+                rows={3}
+                disabled={aiStatus === "generating"}
+              />
+              <button
+                className="mg-btn mg-btn-soft"
+                disabled={!aiInstruction.trim() || aiStatus === "generating"}
+                onClick={() => void createAiRevision()}
+              >
+                {aiStatus === "generating" ? "正在生成" : "生成改稿修订"}
+              </button>
+              {aiStatus === "generating" ? (
+                <p className={styles.aiMessage} role="status">
+                  服务端正在生成，页面会持续读取结果。
+                </p>
+              ) : null}
+              {aiStatus === "timedOut" && aiTargetRevision !== null ? (
+                <div className={styles.aiTimeout} role="alert">
+                  <p>本次读取超时，但改稿请求仍可能在服务端继续执行。</p>
+                  <button
+                    className="mg-btn mg-btn-soft"
+                    onClick={() => void readAiRevision(aiTargetRevision)}
+                  >
+                    重新读取改稿结果
+                  </button>
+                </div>
+              ) : null}
+              {aiStatus === "failed" ? (
+                <div className={styles.aiFailure} role="alert">
+                  <p>{message}</p>
+                  <TechnicalReference code={aiTechnicalCode} />
+                </div>
+              ) : null}
+              {aiStatus === "ready" && aiRevision && aiReceipt ? (
+                <div className={styles.aiResult} data-ai-result="ready">
+                  <div>
+                    <b>改稿修订已就绪。</b>
+                    <small>
+                      {revisionStateLabel[aiRevision.state]} · 修订 {versionLabel(aiRevision.revision)}
+                    </small>
+                  </div>
+                  <AiReceiptSummary receipt={aiReceipt} />
                   <button
                     className="mg-btn mg-btn-primary"
                     onClick={adoptAiRevision}
                   >
                     载入此修订
                   </button>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
           <h2>证据账本</h2>
           <dl>
             <div>
@@ -1099,12 +1423,22 @@ export default function DocumentEditorPage() {
             </div>
           </dl>
           <h2>修订链</h2>
-          <p className={styles.revision}>
-            修订 {versionLabel(revision.revision)} ·{" "}
-            {revisionStateLabel[revision.state]}
-            <br />
-            <small>基于 {versionLabel(revision.baseRevision)}</small>
+          <p className={styles.revisionNote}>
+            仅显示本页已读取或产生的最近修订，不代表服务端完整修订历史。
           </p>
+          <ol className={styles.revisionList} aria-label="本页已确认的修订">
+            {observedRevisions.map((entry) => (
+              <li key={entry.revision}>
+                <div>
+                  <b>{entry.source === "ai" ? "AI 改稿" : "手动保存"}</b>
+                  <span>{versionLabel(entry.revision)}</span>
+                </div>
+                <small>
+                  {revisionStateLabel[entry.state]} · {entry.confirmation === "aiReceipt" ? "执行回执已读回" : "正文已读回"}
+                </small>
+              </li>
+            ))}
+          </ol>
           <div className={styles.export}>
             <h2>导出</h2>
             <button

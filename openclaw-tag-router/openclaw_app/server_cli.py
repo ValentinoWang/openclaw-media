@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import threading
 from pathlib import Path
+from collections.abc import Mapping
 
 from common.env import parse_env_file
 
@@ -67,6 +70,79 @@ from .services.media_business.source_asset_projection import (
 )
 from .services.media_business.tracks import H00AccountMonitorAdapter, TracksService
 from .services.media_business.usage_billing import UsageBillingService
+
+
+def _document_edit_generator(content_flow_client):
+    """Build the production model adapter for bounded document patch plans."""
+    def generate(instruction, working):
+        if not isinstance(instruction, str) or not instruction.strip():
+            raise ValueError("document edit instruction is unavailable")
+        prompt = (
+            "Return one JSON object only. Plan an edit against the supplied working copy. "
+            "The only executable edits are exact replace_terms or replace_text operations. "
+            "Never target protected blocks, tables, attachments, embeds, or rich-text blocks; "
+            "express those requests as manual_actions. Do not return Markdown, prose, or a full document."
+        )
+        user_content = json.dumps(
+            {
+                "instruction": instruction.strip(),
+                "workingCopySummary": working.summary(),
+                "workingCopy": working.to_mapping(),
+            },
+            ensure_ascii=False,
+        )
+        result = content_flow_client._call_postprocess_json(
+            prompt, user_content, "文档改稿", max_retries=1
+        )
+        if not isinstance(result, Mapping):
+            raise ValueError("document edit generator returned an invalid plan")
+        return _bounded_document_edit_plan(dict(result), working)
+
+    return generate
+
+
+def _bounded_document_edit_plan(result, working):
+    """Keep model output at the typed patch boundary before the executor sees it."""
+    manual = list(result.get("manual_actions") or [])
+    protected = {block.block_id for block in working.blocks if block.protected}
+    if result.get("intent_operations") or result.get("intent_ops"):
+        intents = result.get("intent_operations") or result.get("intent_ops")
+        executable = []
+        for item in intents if isinstance(intents, list) else []:
+            if isinstance(item, Mapping) and item.get("op") == "replace_terms":
+                executable.append(dict(item))
+            else:
+                manual.append({"reason": "unsupported_generated_operation", "instructions": "Review this requested edit manually."})
+        return {"intent_operations": executable, "manual_actions": manual}
+    operations = []
+    for item in result.get("operations", []) if isinstance(result.get("operations"), list) else []:
+        if not isinstance(item, Mapping):
+            manual.append({"reason": "invalid_generated_operation", "instructions": "Review this requested edit manually."})
+            continue
+        target = str(item.get("block_id") or item.get("target_block_id") or "")
+        if item.get("op") == "replace_text" and target not in protected:
+            operations.append(dict(item))
+        else:
+            manual.append({"reason": "protected_or_unsupported_generated_operation", "instructions": "Review this requested edit manually.", "block_id": target})
+    return {
+        "source": working.patch_source(),
+        "block_refs": working.block_map(),
+        "operations": operations,
+        "manual_actions": manual,
+    }
+
+
+def _start_document_edit_recovery(executor, interval_seconds: int) -> None:
+    def recover_forever() -> None:
+        while True:
+            try:
+                executor.recover_pending(limit=10)
+            except Exception:
+                pass
+            threading.Event().wait(interval_seconds)
+
+    executor.recover_pending(limit=10)
+    threading.Thread(target=recover_forever, name="document-edit-recovery", daemon=True).start()
 
 
 def _load_environment_file(path: Path) -> dict[str, str]:
@@ -389,16 +465,18 @@ def main() -> int:
             account_metadata=monitor_account_metadata,
         )
     documents_service = DocumentsService(account_database.connect, lark_gateway=lark_gateway, cursor_secret=secret)
+    revision_store = PostgresDocumentRevisionStore(account_database.connect)
     revision_executor = DocumentEditExecutor(
-        PostgresDocumentRevisionStore(account_database.connect),
+        revision_store,
         documents_service,
+        generator=_document_edit_generator(app.router.content_flow_client),
     )
     media_business_services = {
         "overview": OverviewService(account_database.connect, task_reader=media_web_tasks, cursor_secret=secret),
         "tracks": TracksService(account_database.connect, cursor_secret=secret, monitor_adapter=monitor_adapter),
         "assets": assets_service,
         "decisions": DecisionsService(account_database.connect, cursor_secret=secret, public_id_secret=secret),
-        "runs": RunsService(account_database.connect, cursor_secret=secret, revision_executor=revision_executor.execute),
+        "runs": RunsService(account_database.connect, cursor_secret=secret, revision_enqueuer=revision_store.enqueue_job),
         "publishing": PublishingService(account_database.connect, cursor_secret=secret, public_id_secret=secret),
         "reviews": ReviewsService(account_database.connect, cursor_secret=secret, public_id_secret=secret),
         "usage_billing": UsageBillingService(
@@ -426,6 +504,7 @@ def main() -> int:
         "documents": documents_service,
     }
     app.router.publishing_service = media_business_services["publishing"]
+    _start_document_edit_recovery(revision_executor, 60)
     tenant_model_gateway.prepare()
     server = make_server(
         args.host,

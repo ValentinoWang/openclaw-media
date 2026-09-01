@@ -26,6 +26,7 @@ RUN_ID = "run_123456"
 PROJECT_ID = "project_1234"
 ARTIFACT_ID = "artifact_1234"
 BASE_TIME = datetime(2026, 8, 5, 1, 0, tzinfo=UTC)
+_DEFAULT_REVISION_ENQUEUER = object()
 
 
 class FakeResult:
@@ -70,12 +71,19 @@ def factory_for(connection: FakeConnection):
     return factory
 
 
-def service_for(connection: FakeConnection, *, id_factory=None, revision_executor=None) -> RunsService:
+def service_for(
+    connection: FakeConnection,
+    *,
+    id_factory=None,
+    revision_enqueuer=_DEFAULT_REVISION_ENQUEUER,
+) -> RunsService:
+    if revision_enqueuer is _DEFAULT_REVISION_ENQUEUER:
+        revision_enqueuer = lambda *_args: None
     return RunsService(
         factory_for(connection),
         cursor_secret=b"b05-test-cursor-secret",
         id_factory=id_factory,
-        revision_executor=revision_executor,
+        revision_enqueuer=revision_enqueuer,
     )
 
 
@@ -393,15 +401,15 @@ def test_revision_idempotency_replays_the_same_readback() -> None:
     assert len(second_connection.calls) == 1
 
 
-def test_regenerate_revision_invokes_configured_executor_once_after_commit() -> None:
+def test_regenerate_revision_enqueues_durable_job_before_commit() -> None:
     calls = []
     connection = FakeConnection(
         [None, artifact_row(revision=1), None, None, artifact_row(revision=2), None]
     )
     service = service_for(
         connection,
-        revision_executor=lambda context, artifact_id, revision, instruction: calls.append(
-            (context.tenant_id, artifact_id, revision, instruction)
+        revision_enqueuer=lambda connection, context, artifact_id, revision, instruction: calls.append(
+            (connection, context.tenant_id, artifact_id, revision, instruction)
         ),
     )
 
@@ -413,7 +421,21 @@ def test_regenerate_revision_invokes_configured_executor_once_after_commit() -> 
 
     assert response["item"]["currentRevision"] == 2
     assert connection.commits == 1
-    assert calls == [(TENANT_A, ARTIFACT_ID, 2, "Rewrite intro")]
+    assert calls == [(connection, TENANT_A, ARTIFACT_ID, 2, "Rewrite intro")]
+
+
+def test_regenerate_revision_fails_closed_without_a_durable_queue() -> None:
+    connection = FakeConnection([None, artifact_row(revision=1), None])
+
+    with pytest.raises(RunsInternalError, match="document edit queue is unavailable"):
+        service_for(connection, revision_enqueuer=None).create_artifact_revision(
+            context_for(),
+            ARTIFACT_ID,
+            {"expectedRevision": 1, "instruction": "Rewrite intro", "mode": "regenerate"},
+            idempotency_key="b05-no-queue-1234",
+        )
+
+    assert connection.commits == 0
 
 
 def test_save_as_creates_a_new_artifact_identity_and_starts_at_revision_one() -> None:

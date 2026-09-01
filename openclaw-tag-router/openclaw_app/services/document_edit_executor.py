@@ -18,12 +18,17 @@ from .document_edit_contract import (
     DocumentEditWorkingCopy,
 )
 from .media_business.foundation import body_checksum
+from .media_business.foundation import TenantContext
 
 
 class RevisionStore(Protocol):
+    def enqueue_job(self, connection: Any, context: Any, artifact_id: str, revision: int, instruction: str) -> None: ...
     def claim_generating_revision(self, context: Any, artifact_id: str, revision: int) -> Mapping[str, Any] | None: ...
+    def persist_generated_plan(self, context: Any, artifact_id: str, revision: int, plan: Mapping[str, Any]) -> Mapping[str, Any]: ...
     def complete_revision(self, context: Any, artifact_id: str, revision: int, body: Mapping[str, Any], receipt: Mapping[str, Any]) -> Any: ...
+    def complete_lark_revision(self, context: Any, artifact_id: str, revision: int, receipt: Mapping[str, Any]) -> Any: ...
     def fail_revision(self, context: Any, artifact_id: str, revision: int, error_code: str, message: str) -> Any: ...
+    def recover_pending(self, limit: int = 10) -> list[Mapping[str, Any]]: ...
 
 
 class PostgresDocumentRevisionStore:
@@ -40,6 +45,15 @@ class PostgresDocumentRevisionStore:
     def _fingerprint(artifact_id: str, revision: int) -> bytes:
         import hashlib
         return hashlib.sha256(f"{artifact_id}:{revision}".encode("utf-8")).digest()
+
+    def enqueue_job(self, connection: Any, context: Any, artifact_id: str, revision: int, instruction: str) -> None:
+        connection.execute(
+            """INSERT INTO media_product.document_edit_jobs
+                   (tenant_id, public_artifact_id, revision, actor_public_id, instruction)
+                 VALUES (%s,%s,%s,%s,%s)
+                 ON CONFLICT (tenant_id, public_artifact_id, revision) DO NOTHING""",
+            (context.tenant_id, artifact_id, revision, context.user_public_id, instruction),
+        )
 
     def claim_generating_revision(self, context: Any, artifact_id: str, revision: int) -> Mapping[str, Any] | None:
         with self._connection_factory() as connection:
@@ -63,18 +77,67 @@ class PostgresDocumentRevisionStore:
             if receipt is None or receipt[0] != "reserved" or str(receipt[1]) != str(owner):
                 return None
             row = connection.execute(
-                """SELECT a.body_authority, r.base_revision FROM media_product.document_artifacts a
-                   JOIN media_product.document_revisions r ON r.tenant_id=a.tenant_id
-                    AND r.public_artifact_id=a.public_id AND r.revision=%s
-                  WHERE a.tenant_id=%s AND a.public_id=%s AND r.state='generating'""",
-                (revision, context.tenant_id, artifact_id),
+                """SELECT a.body_authority, r.base_revision, r.state, r.body_checksum,
+                          job.instruction, job.generated_plan
+                     FROM media_product.document_edit_jobs AS job
+                     JOIN media_product.document_artifacts AS a
+                       ON a.tenant_id=job.tenant_id AND a.public_id=job.public_artifact_id
+                     JOIN media_product.document_revisions AS r
+                       ON r.tenant_id=job.tenant_id
+                      AND r.public_artifact_id=job.public_artifact_id
+                      AND r.revision=job.revision
+                    WHERE job.tenant_id=%s AND job.public_artifact_id=%s
+                      AND job.revision=%s AND job.state IN ('pending','running')
+                      AND r.state IN ('generating','ready')
+                    FOR UPDATE""",
+                (context.tenant_id, artifact_id, revision),
             ).fetchone()
             if row is None:
                 return None
+            connection.execute(
+                """UPDATE media_product.document_edit_jobs
+                      SET state='running', started_at=COALESCE(started_at, now())
+                    WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s
+                      AND state IN ('pending','running')""",
+                (context.tenant_id, artifact_id, revision),
+            )
             commit = getattr(connection, "commit", None)
             if callable(commit):
                 commit()
-            return {"bodyAuthority": row[0], "baseRevision": row[1], "documentId": artifact_id}
+            plan = row[5]
+            if isinstance(plan, str):
+                plan = json.loads(plan)
+            return {
+                "bodyAuthority": row[0], "baseRevision": row[1], "revisionState": row[2],
+                "bodyChecksum": row[3], "instruction": row[4], "generatedPlan": plan,
+                "documentId": artifact_id,
+            }
+
+    def persist_generated_plan(self, context: Any, artifact_id: str, revision: int, plan: Mapping[str, Any]) -> Mapping[str, Any]:
+        with self._connection_factory() as connection:
+            connection.execute(
+                """UPDATE media_product.document_edit_jobs
+                      SET generated_plan=COALESCE(generated_plan, %s::jsonb)
+                    WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s
+                      AND state='running'""",
+                (json.dumps(dict(plan), ensure_ascii=False), context.tenant_id, artifact_id, revision),
+            )
+            row = connection.execute(
+                """SELECT generated_plan FROM media_product.document_edit_jobs
+                    WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s""",
+                (context.tenant_id, artifact_id, revision),
+            ).fetchone()
+            if row is None or row[0] is None:
+                raise DocumentEditExecutionError("document_edit_plan_persist_failed", "document edit plan persistence failed")
+            persisted = row[0]
+            if isinstance(persisted, str):
+                persisted = json.loads(persisted)
+            if not isinstance(persisted, Mapping):
+                raise DocumentEditExecutionError("document_edit_plan_persist_failed", "document edit plan persistence failed")
+            commit = getattr(connection, "commit", None)
+            if callable(commit):
+                commit()
+            return dict(persisted)
 
     def complete_revision(self, context: Any, artifact_id: str, revision: int, body: Mapping[str, Any], receipt: Mapping[str, Any]) -> None:
         import json
@@ -93,10 +156,42 @@ class PostgresDocumentRevisionStore:
                 (checksum, context.tenant_id, artifact_id, revision),
             )
             connection.execute(
+                """UPDATE media_product.document_edit_jobs
+                      SET state='succeeded', execution_receipt=%s::jsonb, completed_at=now()
+                    WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s AND state='running'""",
+                (json.dumps(dict(receipt), ensure_ascii=False), context.tenant_id, artifact_id, revision),
+            )
+            connection.execute(
                 """UPDATE openclaw_account.if2_idempotency_receipts SET state='completed', response_status=200,
                       response_json=%s::jsonb, completed_at=now(), lease_owner=NULL, lease_expires_at=NULL
                    WHERE scope_kind='tenant' AND scope_id=%s AND operation_id=%s AND idempotency_key=%s AND state='reserved'""",
                 (json.dumps(dict(receipt), ensure_ascii=False), context.tenant_id, self._operation(artifact_id, revision), f"revision-{revision}"),
+            )
+            commit = getattr(connection, "commit", None)
+            if callable(commit):
+                commit()
+
+    def complete_lark_revision(self, context: Any, artifact_id: str, revision: int, receipt: Mapping[str, Any]) -> None:
+        with self._connection_factory() as connection:
+            row = connection.execute(
+                """SELECT state FROM media_product.document_revisions
+                     WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s
+                     FOR UPDATE""",
+                (context.tenant_id, artifact_id, revision),
+            ).fetchone()
+            if row is None or row[0] != "ready":
+                raise DocumentEditExecutionError("document_edit_lark_not_confirmed", "Lark revision is not confirmed ready")
+            connection.execute(
+                """UPDATE media_product.document_edit_jobs
+                      SET state='succeeded', execution_receipt=%s::jsonb, completed_at=now()
+                    WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s AND state='running'""",
+                (json.dumps(dict(receipt), ensure_ascii=False), context.tenant_id, artifact_id, revision),
+            )
+            connection.execute(
+                """UPDATE openclaw_account.if2_idempotency_receipts SET state='completed', response_status=200,
+                      response_json=%s::jsonb, completed_at=now(), lease_owner=NULL, lease_expires_at=NULL
+                   WHERE scope_kind='tenant' AND scope_id=%s AND operation_id=%s AND idempotency_key=%s AND state='reserved'""",
+                (json.dumps({"ok": True, "status": "ready", "revision": revision, "receipt": dict(receipt)}, ensure_ascii=False), context.tenant_id, self._operation(artifact_id, revision), f"revision-{revision}"),
             )
             commit = getattr(connection, "commit", None)
             if callable(commit):
@@ -108,6 +203,12 @@ class PostgresDocumentRevisionStore:
                 """UPDATE media_product.document_revisions SET state='failed', updated_at=now()
                    WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s AND state='generating'""",
                 (context.tenant_id, artifact_id, revision),
+            )
+            connection.execute(
+                """UPDATE media_product.document_edit_jobs
+                      SET state='failed', execution_receipt=%s::jsonb, completed_at=now()
+                    WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s AND state='running'""",
+                (json.dumps({"status": "failed", "errorCode": error_code, "errorMessage": message}, ensure_ascii=False), context.tenant_id, artifact_id, revision),
             )
             receipt = {"ok": False, "status": "failed", "revision": revision, "errorCode": error_code, "errorMessage": message}
             connection.execute(
@@ -137,6 +238,23 @@ class PostgresDocumentRevisionStore:
             except json.JSONDecodeError:
                 return None
         return dict(payload) if isinstance(payload, Mapping) else None
+
+    def recover_pending(self, limit: int = 10) -> list[Mapping[str, Any]]:
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError("document edit recovery limit is invalid")
+        with self._connection_factory() as connection:
+            rows = connection.execute(
+                """SELECT tenant_id, actor_public_id, public_artifact_id, revision, instruction
+                     FROM media_product.document_edit_jobs
+                    WHERE state IN ('pending','running')
+                    ORDER BY created_at, id
+                    LIMIT %s""",
+                (limit,),
+            ).fetchall()
+        return [
+            {"tenantId": row[0], "userPublicId": row[1], "artifactId": row[2], "revision": row[3], "instruction": row[4]}
+            for row in rows
+        ]
 
 
 class DocumentEditExecutionError(RuntimeError):
@@ -186,6 +304,10 @@ class DocumentEditExecutor:
         base_revision = claimed.get("baseRevision")
         if isinstance(base_revision, bool) or not isinstance(base_revision, int) or base_revision < 1:
             raise DocumentEditExecutionError("document_edit_base_revision_missing", "document edit source revision is unavailable")
+        if claimed.get("revisionState") == "ready":
+            receipt = self._receipt_for_ready_retry(context, artifact_id, revision, claimed)
+            self._store.complete_lark_revision(context, artifact_id, revision, receipt)
+            return {"ok": True, "status": "ready", "revision": revision, "receipt": receipt}
         body_response = self._documents.get_document_revision(context, artifact_id, base_revision)
         data = body_response.get("data", body_response) if isinstance(body_response, Mapping) else {}
         current = data.get("revision", data) if isinstance(data, Mapping) else {}
@@ -193,11 +315,27 @@ class DocumentEditExecutor:
         if not isinstance(body, Mapping):
             raise ValueError("document body is unavailable")
         working = self._working_copy(body, artifact_id, revision, claimed)
-        payload = self._generate(instruction, working)
+        stored_plan = claimed.get("generatedPlan") or claimed.get("generated_plan")
+        payload = stored_plan if isinstance(stored_plan, Mapping) else self._generate(instruction if instruction is not None else claimed.get("instruction"), working)
+        if any(
+            isinstance(item, Mapping) and item.get("op") == "insert_table_row"
+            for item in payload.get("operations", []) if isinstance(payload.get("operations"), list)
+        ):
+            raise DocumentEditExecutionError(
+                "document_edit_table_row_unavailable",
+                "insert_table_row is not available in the document edit executor",
+            )
         if "intent_operations" in payload or "intent_ops" in payload:
             plan = DocumentEditPatchPlan.from_intent_mapping(payload, working_copy=working, executable_op_whitelist={"replace_text"})
         else:
-            plan = DocumentEditPatchPlan.from_mapping(payload, executable_op_whitelist={"replace_text", "insert_table_row"})
+            plan = DocumentEditPatchPlan.from_mapping(payload, executable_op_whitelist={"replace_text"})
+        if not isinstance(stored_plan, Mapping):
+            persisted = getattr(self._store, "persist_generated_plan", None)
+            if callable(persisted):
+                plan = DocumentEditPatchPlan.from_mapping(
+                    persisted(context, artifact_id, revision, plan.to_mapping()),
+                    executable_op_whitelist={"replace_text"},
+                )
         if any(operation.op == "insert_table_row" for operation in plan.operations):
             raise DocumentEditExecutionError(
                 "document_edit_table_row_unavailable",
@@ -226,7 +364,12 @@ class DocumentEditExecutor:
             if not callable(writer):
                 raise DocumentEditExecutionError("lark_writer_unavailable", "lark generated revision writer is unavailable")
             writer(context, artifact_id, revision, updated, receipt)
-        self._store.complete_revision(context, artifact_id, revision, updated, receipt)
+            complete_lark = getattr(self._store, "complete_lark_revision", None)
+            if not callable(complete_lark):
+                raise DocumentEditExecutionError("document_edit_lark_completion_unavailable", "Lark completion store is unavailable")
+            complete_lark(context, artifact_id, revision, receipt)
+        else:
+            self._store.complete_revision(context, artifact_id, revision, updated, receipt)
         return {"ok": True, "status": "ready", "revision": revision, "receipt": receipt}
 
     def _generate(self, instruction: Any, working: DocumentEditWorkingCopy) -> Mapping[str, Any]:
@@ -287,3 +430,32 @@ class DocumentEditExecutor:
         if isinstance(result, Mapping):
             return dict(result)
         return {"ok": False, "status": "failed", "errorCode": "revision_not_claimable", "revision": revision}
+
+    def recover_pending(self, limit: int = 10) -> list[dict[str, Any]]:
+        recover = getattr(self._store, "recover_pending", None)
+        if not callable(recover):
+            return []
+        results: list[dict[str, Any]] = []
+        for item in recover(limit):
+            if not isinstance(item, Mapping):
+                continue
+            try:
+                context = TenantContext(str(item["tenantId"]), str(item["userPublicId"]))
+                results.append(self.execute(context, str(item["artifactId"]), int(item["revision"]), item.get("instruction")))
+            except Exception:
+                continue
+        return results
+
+    @staticmethod
+    def _receipt_for_ready_retry(context: Any, artifact_id: str, revision: int, claimed: Mapping[str, Any]) -> dict[str, Any]:
+        return {
+            "contractId": "openclaw.document_edit.executor_receipt.v1",
+            "status": "ready",
+            "revision": revision,
+            "bodyAuthority": "lark",
+            "applied": [],
+            "appliedCount": 0,
+            "manualActions": [],
+            "protectedSkipped": [],
+            "bodyChecksum": str(claimed.get("bodyChecksum") or ""),
+        }

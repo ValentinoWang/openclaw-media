@@ -18,7 +18,7 @@ import {
 
 const root = path.resolve(import.meta.dirname, "../..");
 const expectedHash =
-  "1a7ae61b841276ffe103abcbdf65fda97a36425160daf9c765b508c629ee3593";
+  "3c31e78dec2dff4b19fbd227385de3e5d276cb0349c2dab25e87e383622b5147";
 const generator = path.join(
   root,
   "scripts/generateMediaBusinessPagesContract.py",

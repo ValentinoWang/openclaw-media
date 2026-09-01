@@ -82,6 +82,7 @@
     "media_product.content_projects",
     "media_product.document_artifacts",
     "media_product.document_revisions",
+    "media_product.document_edit_jobs",
     "media_product.owned_media_accounts",
     "media_product.account_track_strategies",
     "media_product.signal_snapshots",
@@ -543,6 +544,16 @@
       "order": 340,
       "dependsOn": [
         "cm1-038-candidate-topics"
+      ]
+    },
+    {
+      "id": "cm1-040-document-edit-jobs",
+      "source": "openclaw_app/migrations/canonical/040_document_edit_jobs.sql",
+      "sourceSha256": "71874a4da2a3ebc3bf6aa8b453b705a1e27624de074307e20653abe4d0db0928",
+      "ledgerChecksum": "71874a4da2a3ebc3bf6aa8b453b705a1e27624de074307e20653abe4d0db0928",
+      "order": 350,
+      "dependsOn": [
+        "cm1-039-media-document-workspace-authority"
       ]
     }
   ],

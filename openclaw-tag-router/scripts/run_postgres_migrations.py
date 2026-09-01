@@ -163,8 +163,8 @@ def validate_manifest(manifest: Mapping[str, Any]) -> None:
 
     entries = manifest.get("migrations")
     excluded = manifest.get("excludedMigrations")
-    if not isinstance(entries, list) or len(entries) != 32:
-        raise ManifestError("migrations must contain the exact 32-entry C-M1 inventory")
+    if not isinstance(entries, list) or len(entries) != 35:
+        raise ManifestError("migrations must contain the exact 35-entry C-M1 inventory")
     if not isinstance(excluded, list) or len(excluded) != 7:
         raise ManifestError("excludedMigrations must contain the exact seven excluded sources")
 

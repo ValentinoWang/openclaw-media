@@ -7,144 +7,7 @@ info:
     in place; W1 surfaces are excluded.
 servers:
 - url: /openclaw/media/api
-x-openclaw-stage1-provisioning:
-  controlPlaneBasePath: /openclaw/media/api/organization/provision
-  schemaVersion: media.stage1.provision.v1
-  routes:
-  - method: GET
-    path: /runs/{provisionRunId}
-    operation: readProvisionStatus
-  - method: POST
-    path: /confirm
-    operation: confirmOrganizationInstallation
-  - method: POST
-    path: /start
-    operation: startOrganizationProvision
-  - method: POST
-    path: /deprovision
-    operation: deprovisionOrganization
-  identityFields:
-  - tenantId
-  - installationId
-  - openId
-  - bindingId
-  browserIdentityFields: forbidden
-  documentWriteAuthority: disabled_in_stage1
-x-openclaw-interface-freeze-version: 4
-x-openclaw-media-stage1-shared-v1:
-  contractVersion: media-stage1-shared-v1
-  interfaceFreezeVersion: 4
-  authority:
-    mediaWebCarrier: media_web_business_pages.openapi.yaml
-    uniqueCarrierGlob: media_web_business_pages*.openapi.yaml
-    noSecondOpenApiDocument: true
-  identity:
-    sessionPrincipal: '#/components/schemas/SessionPrincipalV2'
-    persistedPermanentUserType: false
-    identityLinking: explicit_user_confirmation_only
-    automaticMerge: forbidden
-    authorizationSources:
-    - server_session
-    - tenant_membership
-    - active_binding
-  workspace:
-    resolutionResult: '#/components/schemas/WorkspaceResolutionResult'
-    candidateSchemas:
-    - '#/components/schemas/WorkspaceCandidatePersonal'
-    - '#/components/schemas/WorkspaceCandidateOrganization'
-    authorization: server_only
-  organization:
-    identityLinkReceipt: '#/components/schemas/UserLarkIdentityLinkReceipt'
-    membership: '#/components/schemas/TenantMembership'
-    binding: '#/components/schemas/Binding'
-    bindingGeneration: '#/components/schemas/BindingGeneration'
-  provision:
-    installationReceipt: '#/components/schemas/ProvisionInstallationReceipt'
-    runReceipt: '#/components/schemas/ProvisionRunReceipt'
-    stepReceipt: '#/components/schemas/ProvisionStepReceipt'
-    stateVocabulary:
-      installation:
-      - RECEIVED
-      - VERIFIED
-      - REJECTED
-      - REVOKED
-      - NEEDS_ATTENTION
-      run:
-      - QUEUED
-      - RUNNING
-      - COMPLETED
-      - FAILED
-      - NEEDS_ATTENTION
-      - CANCELLED
-      step:
-      - PENDING
-      - RUNNING
-      - SUCCEEDED
-      - FAILED
-      - SKIPPED
-      - NEEDS_ATTENTION
-      - COMPENSATING
-      - COMPENSATED
-  errors:
-    response: '#/components/schemas/MediaStage1ErrorResponse'
-    code: '#/components/schemas/MediaStage1ErrorCode'
-    closed: true
-  evidence:
-    identity: '#/components/schemas/EvidenceIdentity'
-    levels:
-    - source
-    - fixture
-    - local-runtime
-    - external-system
-    - production
-  security:
-    session:
-      type: opaque_server_session
-      serverStateRequired: true
-      absoluteLifetime: 8h
-      absoluteLifetimeSeconds: 28800
-      rememberMe: false
-      rotationTriggers:
-      - login_success
-      - privilege_change
-      - password_reset
-      tokenEntropyBits: 256
-      cookie:
-        name: openclaw_session
-        secure: true
-        httpOnly: true
-        sameSite: Lax
-    csrf:
-      headerName: X-OpenClaw-CSRF
-      requiredForMutations: true
-      binding: session
-      rotatesWithSession: true
-    rateLimit:
-      dimensions:
-      - source
-      - account
-      enforceAllDimensions: true
-      defaults:
-        login:
-          windowSeconds: 60
-          maxRequestsBySource: 10
-          maxRequestsByAccount: 5
-        verification_resend:
-          windowSeconds: 3600
-          maxRequestsBySource: 5
-          maxRequestsByAccount: 3
-        password_recovery:
-          windowSeconds: 3600
-          maxRequestsBySource: 5
-          maxRequestsByAccount: 3
-      defaultBounds:
-        maxWindowSeconds: 86400
-        maxRequestsPerDimension: 100
-      runtimeOverrides:
-        policy: stricter_only
-        maxRequests: decrease_only
-        windowSeconds: decrease_only
-        dimensions: cannot_remove
+x-openclaw-interface-freeze-version: 5
 x-openclaw-pages:
   B01:
     role: ordinary
@@ -160,6 +23,7 @@ x-openclaw-pages:
     route: /tracks
     operationIds:
     - createMediaTask
+    - getAccountMonitor
     - getAccountTrackStrategy
     - getCreator
     - getDocumentResource
@@ -169,6 +33,9 @@ x-openclaw-pages:
     - listOwnedAccounts
     - listTrackRelationships
     - listTracks
+    - pollAccountMonitor
+    - updateAccountMonitor
+    - updateTrackRelationshipStatus
   B03:
     role: ordinary
     route: /assets
@@ -199,6 +66,7 @@ x-openclaw-pages:
     - getRunDecisions
     - getRunOutputs
     - getRunSources
+    - listArtifactSyncBatches
     - listBusinessOpportunities
     - listRuns
   B06:
@@ -418,6 +286,7 @@ x-openclaw-document-contract:
   - document_revision_conflict
   - unsupported_document_block
   - lark_table_shape_unsupported
+  - lark_save_outcome_unknown
 x-openclaw-canonical-capabilities:
 - capabilityId: vlog_inspiration_capture
   status: external
@@ -546,6 +415,7 @@ x-openclaw-canonical-capabilities:
   - handle_media_growth
   operationIds:
   - listTrackRelationships
+  - updateTrackRelationshipStatus
   - createMediaTask
   productReadModels:
   - track_creator_memberships
@@ -725,6 +595,28 @@ x-openclaw-canonical-capabilities:
   - decision_traces
   conclusion: reuse_generic_media_branch
 paths:
+  /openclaw/auth/entry-state:
+    get:
+      operationId: getAuthEntryState
+      summary: Read the current browser authentication entry state.
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/AuthEntryMode'
+      responses:
+        '200':
+          description: Entry state projection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthEntryStateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-page-contracts:
+      - shared
+      x-permission: public-entry
+      x-runtime-status: existing_typed
   /session:
     get:
       operationId: getMediaSession
@@ -1418,6 +1310,78 @@ paths:
       - handle_media_growth
       x-product-read-model:
       - track_creator_memberships
+  /track-relationships/{publicRelationshipId}:
+    put:
+      operationId: updateTrackRelationshipStatus
+      summary: Update an explicit track-creator relationship management status.
+      security:
+      - cookieAuth: []
+      x-permission: ordinary-session
+      parameters:
+      - $ref: '#/components/parameters/PublicRelationshipId'
+      - $ref: '#/components/parameters/CsrfHeader'
+      - $ref: '#/components/parameters/IdempotencyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                expectedRevision:
+                  type: integer
+                  minimum: 1
+                status:
+                  type: string
+                  enum:
+                  - candidate
+                  - active
+                  - rejected
+              required:
+              - expectedRevision
+              - status
+      responses:
+        '200':
+          description: Updated relationship.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  schemaVersion:
+                    $ref: '#/components/schemas/SchemaVersion'
+                  revision:
+                    type: integer
+                    minimum: 1
+                  item:
+                    $ref: '#/components/schemas/TrackRelationship'
+                required:
+                - schemaVersion
+                - revision
+                - item
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-page-contracts:
+      - B02
+      x-runtime-status: new
+      x-canonical-capability-id:
+      - track_creator_membership_query
+      x-existing-handler:
+      - handle_media_growth
+      x-product-read-model:
+      - track_creator_memberships
   /owned-accounts:
     get:
       operationId: listOwnedAccounts
@@ -1517,7 +1481,7 @@ paths:
     get:
       operationId: getAccountMonitor
       summary: Read the account monitor status when a monitor adapter is available.
-      description: The runtime may return 503 when no H00 monitor adapter is configured; it must not synthesize monitor success.
+      description: The current runtime may return 503 when no Feishu monitor adapter is configured; it must not synthesize monitor success.
       security:
       - cookieAuth: []
       x-permission: ordinary-session
@@ -1540,9 +1504,18 @@ paths:
           $ref: '#/components/responses/InternalError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+      x-page-contracts:
+      - B02
+      x-runtime-status: new
+      x-canonical-capability-id:
+      - account_monitor
+      x-existing-handler: []
+      x-product-read-model:
+      - owned_media_accounts
     put:
       operationId: updateAccountMonitor
       summary: Configure monitoring inputs for an owned account.
+      description: The runtime must return 503 when the H00 monitor adapter is unavailable and must not synthesize success.
       security:
       - cookieAuth: []
       x-permission: ordinary-session
@@ -1563,17 +1536,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccountMonitorResponse'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '500': { $ref: '#/components/responses/InternalError' }
-        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-page-contracts:
+      - B02
+      x-runtime-status: new
+      x-canonical-capability-id:
+      - account_monitor
+      x-existing-handler: []
+      x-product-read-model:
+      - owned_media_accounts
   /owned-accounts/{publicAccountId}/monitor/poll:
     post:
       operationId: pollAccountMonitor
       summary: Poll an owned account monitor.
+      description: The runtime must return 503 when the H00 monitor adapter is unavailable and must not synthesize success.
       security:
       - cookieAuth: []
       x-permission: ordinary-session
@@ -1588,13 +1577,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccountMonitorResponse'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '500': { $ref: '#/components/responses/InternalError' }
-        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-page-contracts:
+      - B02
+      x-runtime-status: new
+      x-canonical-capability-id:
+      - account_monitor
+      x-existing-handler: []
+      x-product-read-model:
+      - owned_media_accounts
   /assets:
     get:
       operationId: listAssets
@@ -2091,6 +2095,38 @@ paths:
       x-product-read-model:
       - document_artifacts
       - document_revisions
+
+  /artifacts/{publicArtifactId}/sync-batches:
+    get:
+      operationId: listArtifactSyncBatches
+      summary: List synchronization batches for an artifact.
+      security:
+      - cookieAuth: []
+      x-permission: ordinary-session
+      x-page-contracts:
+      - B05
+      parameters:
+      - $ref: '#/components/parameters/PublicArtifactId'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncBatchListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-runtime-status: new
+      x-product-read-model:
+      - sync_batches
   /publishing/packages:
     get:
       operationId: listPublishingPackages
@@ -3789,6 +3825,15 @@ components:
       in: cookie
       name: openclaw_session
   parameters:
+    AuthEntryMode:
+      name: mode
+      in: query
+      required: true
+      schema:
+        type: string
+        enum:
+        - personal
+        - organization
     CsrfHeader:
       name: X-OpenClaw-CSRF
       in: header
@@ -3872,6 +3917,13 @@ components:
         pattern: ^[A-Za-z0-9_-]{8,160}$
     PublicCreatorId:
       name: publicCreatorId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9_-]{8,160}$
+    PublicRelationshipId:
+      name: publicRelationshipId
       in: path
       required: true
       schema:
@@ -4025,6 +4077,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+    ServiceUnavailable:
+      description: Required monitor adapter is not configured.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
   schemas:
     SchemaVersion:
       type: string
@@ -4038,6 +4096,59 @@ components:
     Timestamp:
       type: string
       format: date-time
+    AuthEntryStateEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        entryId:
+          type: string
+          const: current
+        displayLabel:
+          type: string
+        maskedIdentity:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+      - entryId
+      - displayLabel
+      - maskedIdentity
+      - expiresAt
+    AuthEntryStateResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        schemaVersion:
+          type: string
+          const: media_auth_entry_state_v1
+        mode:
+          type: string
+          enum:
+          - personal
+          - organization
+        state:
+          type: string
+          enum:
+          - matched
+          - none
+          - expired
+          - mismatched
+        entry:
+          oneOf:
+          - $ref: '#/components/schemas/AuthEntryStateEntry'
+          - type: 'null'
+        fallback:
+          type: string
+          enum:
+          - password
+          - feishu_oauth
+      required:
+      - schemaVersion
+      - mode
+      - state
+      - entry
+      - fallback
     NullableTimestamp:
       type:
       - string
@@ -4079,42 +4190,6 @@ components:
       enum:
       - internal
       - lark
-    EditorMode:
-      type: string
-      enum:
-      - web_edit
-      - lark_edit
-    DocumentPreviewStatus:
-      type: string
-      enum:
-      - not_applicable
-      - pending
-      - synced
-      - stale
-      - conflict
-      - failed
-    LarkResourceType:
-      type: string
-      enum:
-      - wiki
-      - docx
-      - bitable
-    TrustedOrganizationResource:
-      type: object
-      additionalProperties: false
-      properties:
-        resourceType:
-          $ref: '#/components/schemas/LarkResourceType'
-        url:
-          type: string
-          format: uri
-          pattern: '^https://(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+feishu\.cn/(?:wiki|docx|base)/[A-Za-z0-9_-]{8,160}$'
-        expiresAt:
-          $ref: '#/components/schemas/NullableTimestamp'
-      required:
-      - resourceType
-      - url
-      - expiresAt
     DocumentRevisionState:
       type: string
       enum:
@@ -4588,14 +4663,6 @@ components:
           - organization_lark
         bodyAuthority:
           $ref: '#/components/schemas/DocumentBodyAuthority'
-        editorMode:
-          $ref: '#/components/schemas/EditorMode'
-        previewStatus:
-          $ref: '#/components/schemas/DocumentPreviewStatus'
-        trustedOrganizationResource:
-          oneOf:
-          - $ref: '#/components/schemas/TrustedOrganizationResource'
-          - type: 'null'
         currentRevision:
           type: integer
           minimum: 0
@@ -4607,39 +4674,8 @@ components:
       - artifactKind
       - workspaceMode
       - bodyAuthority
-      - editorMode
-      - previewStatus
-      - trustedOrganizationResource
       - currentRevision
       - updatedAt
-      oneOf:
-      - properties:
-          workspaceMode:
-            const: personal_web
-          bodyAuthority:
-            const: internal
-          editorMode:
-            const: web_edit
-          previewStatus:
-            const: not_applicable
-          trustedOrganizationResource:
-            type: 'null'
-      - properties:
-          workspaceMode:
-            const: organization_lark
-          bodyAuthority:
-            const: lark
-          editorMode:
-            const: lark_edit
-          previewStatus:
-            enum:
-            - pending
-            - synced
-            - stale
-            - conflict
-            - failed
-          trustedOrganizationResource:
-            $ref: '#/components/schemas/TrustedOrganizationResource'
     DocumentRevisionRecord:
       type: object
       additionalProperties: false
@@ -4664,6 +4700,10 @@ components:
           type: string
           pattern: ^[a-f0-9]{64}$
         remoteDocumentVersion:
+          type:
+          - string
+          - 'null'
+        baseRemoteDocumentVersion:
           type:
           - string
           - 'null'
@@ -4834,6 +4874,14 @@ components:
           type:
           - string
           - 'null'
+        details:
+          type: object
+          additionalProperties: false
+          properties:
+            blockIds:
+              type: array
+              items:
+                type: string
       required:
       - code
       - message
@@ -5049,6 +5097,11 @@ components:
           pattern: ^[A-Za-z0-9_-]{8,160}$
         artifactType:
           $ref: '#/components/schemas/DocumentArtifactKind'
+        displayName:
+          type:
+          - string
+          - 'null'
+          description: Canonical artifact title from the bound Feishu resource or current revision heading.
         bodyAuthority:
           $ref: '#/components/schemas/DocumentBodyAuthority'
         currentRevision:
@@ -5082,6 +5135,7 @@ components:
       - publicArtifactId
       - publicProjectId
       - artifactType
+      - displayName
       - bodyAuthority
       - currentRevision
       - syncStatus
@@ -5179,6 +5233,9 @@ components:
         publicRelationshipId:
           type: string
           pattern: ^[A-Za-z0-9_-]{8,160}$
+        revision:
+          type: integer
+          minimum: 1
         publicTrackId:
           type: string
           pattern: ^[A-Za-z0-9_-]{8,160}$
@@ -5200,6 +5257,7 @@ components:
           format: date-time
       required:
       - publicRelationshipId
+      - revision
       - publicTrackId
       - publicCreatorId
       - role
@@ -6075,49 +6133,6 @@ components:
         publicUserId:
           type: string
           pattern: ^[A-Za-z0-9_-]{8,160}$
-        tenantId:
-          type: string
-          format: uuid
-        workspaceMode:
-          type: string
-          enum:
-          - personal_web
-          - organization_lark
-        editorMode:
-          type: string
-          enum:
-          - web_edit
-          - lark_edit
-        bodyAuthority:
-          type: string
-          enum:
-          - internal
-          - lark
-        memberRole:
-          type: string
-          enum:
-          - owner
-          - member
-        maintainer:
-          type: boolean
-        bindingState:
-          type: string
-          enum:
-          - NOT_APPLICABLE
-          - PENDING
-          - ACTIVE
-          - DISABLED
-          - REVOKED
-          - NEEDS_ATTENTION
-        installationState:
-          type: string
-          enum:
-          - NOT_APPLICABLE
-          - PENDING
-          - ACTIVE
-          - DISABLED
-          - REVOKED
-          - NEEDS_ATTENTION
         displayName:
           type: string
         status:
@@ -6127,14 +6142,6 @@ components:
           format: date-time
       required:
       - publicUserId
-      - tenantId
-      - workspaceMode
-      - editorMode
-      - bodyAuthority
-      - memberRole
-      - maintainer
-      - bindingState
-      - installationState
       - displayName
       - status
       - joinedAt
@@ -6916,6 +6923,103 @@ components:
       - revision
       - items
       - nextCursor
+    SyncBatch:
+      type: object
+      additionalProperties: false
+      properties:
+        publicSyncId:
+          $ref: '#/components/schemas/PublicId'
+        publicArtifactId:
+          $ref: '#/components/schemas/PublicId'
+        revision:
+          type: integer
+          minimum: 1
+        operation:
+          type: string
+          enum:
+          - read
+          - save
+        state:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - conflict
+        remoteDocumentVersion:
+          type:
+          - string
+          - 'null'
+        bodyChecksum:
+          type:
+          - string
+          - 'null'
+          pattern: ^[a-f0-9]{64}$
+        blockCount:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        protectedBlockCount:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+        completedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        errorCode:
+          type:
+          - string
+          - 'null'
+        errorDetail:
+          type: object
+          additionalProperties: true
+      required:
+      - publicSyncId
+      - publicArtifactId
+      - revision
+      - operation
+      - state
+      - remoteDocumentVersion
+      - baseRemoteDocumentVersion
+      - bodyChecksum
+      - blockCount
+      - protectedBlockCount
+      - createdAt
+      - updatedAt
+      - completedAt
+      - errorCode
+      - errorDetail
+    SyncBatchListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        schemaVersion:
+          $ref: '#/components/schemas/SchemaVersion'
+        revision:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncBatch'
+        nextCursor:
+          type:
+          - string
+          - 'null'
+      required:
+      - schemaVersion
+      - revision
+      - items
+      - nextCursor
     ArtifactResponse:
       type: object
       additionalProperties: false
@@ -7083,23 +7187,79 @@ components:
       type: object
       additionalProperties: false
       properties:
-        schemaVersion: { $ref: '#/components/schemas/SchemaVersion' }
-        revision: { type: integer, minimum: 0 }
-        status: { type: string, enum: [available, unavailable] }
-        publicAccountId: { type: string }
-        accountName: { type: string }
-        platform: { type: string }
-        checkedAt: { type: [string, 'null'], format: date-time }
-        detail: { type: [string, 'null'] }
-        enabled: { type: boolean }
-        recentPostUrls: { type: array, items: { type: string, format: uri } }
-        recentPostLinkResults: { type: array, items: { $ref: '#/components/schemas/AccountMonitorLinkResult' } }
-        recentStatus: { type: [string, 'null'] }
-        recentPostCount: { type: [integer, 'null'] }
-        recentTotalInteractions: { type: [integer, 'null'] }
-        recentError: { type: [string, 'null'] }
-        recentReportSummary: { type: [string, 'null'] }
-      required: [schemaVersion, revision, status, publicAccountId, accountName, platform, checkedAt, detail, enabled, recentPostUrls, recentPostLinkResults, recentStatus, recentPostCount, recentTotalInteractions, recentError, recentReportSummary]
+        schemaVersion:
+          $ref: '#/components/schemas/SchemaVersion'
+        revision:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum:
+          - available
+          - unavailable
+        publicAccountId:
+          type: string
+        accountName:
+          type: string
+        platform:
+          type: string
+        checkedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        detail:
+          type:
+          - string
+          - 'null'
+        enabled:
+          type: boolean
+        recentPostUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+        recentPostLinkResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountMonitorLinkResult'
+        recentStatus:
+          type:
+          - string
+          - 'null'
+        recentPostCount:
+          type:
+          - integer
+          - 'null'
+        recentTotalInteractions:
+          type:
+          - integer
+          - 'null'
+        recentError:
+          type:
+          - string
+          - 'null'
+        recentReportSummary:
+          type:
+          - string
+          - 'null'
+      required:
+      - schemaVersion
+      - revision
+      - status
+      - publicAccountId
+      - accountName
+      - platform
+      - checkedAt
+      - detail
+      - enabled
+      - recentPostUrls
+      - recentPostLinkResults
+      - recentStatus
+      - recentPostCount
+      - recentTotalInteractions
+      - recentError
+      - recentReportSummary
     AccountMonitorUpdateRequest:
       type: object
       additionalProperties: false
@@ -7107,18 +7267,35 @@ components:
         recentPostUrls:
           type: array
           maxItems: 100
-          items: { type: string, format: uri, pattern: '^https?://' }
-        enabled: { type: boolean }
-      required: [recentPostUrls, enabled]
+          items:
+            type: string
+            format: uri
+            pattern: '^https?://'
+        enabled:
+          type: boolean
+      required:
+      - recentPostUrls
+      - enabled
     AccountMonitorLinkResult:
       type: object
       additionalProperties: false
       properties:
-        url: { type: string, format: uri }
-        platform: { type: string }
-        kind: { type: string, enum: [post, profile, short, unknown] }
-        content_id: { type: [string, 'null'] }
-        canonical_url: { type: [string, 'null'] }
+        url:
+          type: string
+          format: uri
+        platform:
+          type: string
+        kind:
+          type: string
+          enum: [post, profile, short, unknown]
+        content_id:
+          type:
+          - string
+          - 'null'
+        canonical_url:
+          type:
+          - string
+          - 'null'
       required: [url, platform, kind, content_id, canonical_url]
     AssetListResponse:
       type: object
@@ -7889,6 +8066,8 @@ components:
           $ref: '#/components/schemas/DocumentBodyV1'
       required:
       - expectedRevision
+
+
       - expectedBodyChecksum
       - expectedRemoteDocumentVersion
       - body
@@ -8352,741 +8531,23 @@ components:
       required:
       - reason
       - expectedRevision
-    EvidenceIdentity:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        evidenceId:
-          type: string
-          pattern: ^EV-[A-Z0-9_-]{3,96}$
-        evidenceLevel:
-          type: string
-          enum:
-          - source
-          - fixture
-          - local-runtime
-          - external-system
-          - production
-        sourceRevision:
-          type: string
-          minLength: 1
-        artifactHashes:
-          type: array
-          minItems: 1
-          items:
-            type: string
-            pattern: '^sha256:[a-f0-9]{64}$'
-        environmentIdentity:
-          type: string
-          minLength: 1
-        actorRole:
-          type: string
-          minLength: 1
-        accountOrTenant:
-          type:
-          - string
-          - 'null'
-        deviceOrBrowser:
-          type:
-          - string
-          - 'null'
-        mockOrFixture:
-          type: boolean
-        observedAt:
-          $ref: '#/components/schemas/Timestamp'
-        releaseId:
-          type:
-          - string
-          - 'null'
-      required:
-      - schemaVersion
-      - evidenceId
-      - evidenceLevel
-      - sourceRevision
-      - artifactHashes
-      - environmentIdentity
-      - actorRole
-      - accountOrTenant
-      - deviceOrBrowser
-      - mockOrFixture
-      - observedAt
-      - releaseId
-    SessionPrincipalV2:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        principalId:
-          $ref: '#/components/schemas/PublicId'
-        userId:
-          $ref: '#/components/schemas/PublicId'
-        accountStatus:
-          type: string
-          enum:
-          - PENDING_EMAIL_VERIFICATION
-          - ACTIVE
-          - SUSPENDED
-        workspaceIntent:
-          type: string
-          enum:
-          - personal_web
-          - organization_lark
-        personalWorkspaceId:
-          oneOf:
-          - $ref: '#/components/schemas/PublicId'
-          - type: 'null'
-        tenantMembershipIds:
-          type: array
-          items:
-            $ref: '#/components/schemas/PublicId'
-        activeBindingIds:
-          type: array
-          items:
-            $ref: '#/components/schemas/PublicId'
-        identityLinkReceiptIds:
-          type: array
-          items:
-            $ref: '#/components/schemas/PublicId'
-        authenticatedAt:
-          $ref: '#/components/schemas/Timestamp'
-        sessionIssuedAt:
-          $ref: '#/components/schemas/Timestamp'
-        sessionExpiresAt:
-          $ref: '#/components/schemas/Timestamp'
-      required:
-      - schemaVersion
-      - principalId
-      - userId
-      - accountStatus
-      - workspaceIntent
-      - personalWorkspaceId
-      - tenantMembershipIds
-      - activeBindingIds
-      - identityLinkReceiptIds
-      - authenticatedAt
-      - sessionIssuedAt
-      - sessionExpiresAt
-    WorkspaceCandidatePersonal:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        workspaceId:
-          $ref: '#/components/schemas/PublicId'
-        workspaceMode:
-          type: string
-          const: personal_web
-        bodyAuthority:
-          type: string
-          const: internal
-        membershipRole:
-          type: string
-          const: owner
-        membershipState:
-          type: string
-          const: ACTIVE
-        bindingState:
-          type: string
-          const: NOT_APPLICABLE
-      required:
-      - schemaVersion
-      - workspaceId
-      - workspaceMode
-      - bodyAuthority
-      - membershipRole
-      - membershipState
-      - bindingState
-    WorkspaceCandidateOrganization:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        workspaceId:
-          $ref: '#/components/schemas/PublicId'
-        workspaceMode:
-          type: string
-          const: organization_lark
-        bodyAuthority:
-          type: string
-          const: lark
-        membership:
-          $ref: '#/components/schemas/TenantMembership'
-        binding:
-          $ref: '#/components/schemas/Binding'
-        resolutionEligibility:
-          type: string
-          enum:
-          - ELIGIBLE
-          - SUSPENDED
-          - REVOKED
-      required:
-      - schemaVersion
-      - workspaceId
-      - workspaceMode
-      - bodyAuthority
-      - membership
-      - binding
-      - resolutionEligibility
-    WorkspaceResolutionResult:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        principal:
-          $ref: '#/components/schemas/SessionPrincipalV2'
-        workspaceIntent:
-          type: string
-          enum:
-          - personal_web
-          - organization_lark
-        candidates:
-          type: array
-          items:
-            oneOf:
-            - $ref: '#/components/schemas/WorkspaceCandidatePersonal'
-            - $ref: '#/components/schemas/WorkspaceCandidateOrganization'
-        resolutionState:
-          type: string
-          enum:
-          - RESOLVED
-          - REQUIRES_SELECTION
-          - NO_ELIGIBLE_WORKSPACE
-          - INVALID_SESSION
-        selectedWorkspaceId:
-          oneOf:
-          - $ref: '#/components/schemas/PublicId'
-          - type: 'null'
-        selectedWorkspaceMode:
-          type:
-          - string
-          - 'null'
-          enum:
-          - personal_web
-          - organization_lark
-          - null
-        failureCode:
-          oneOf:
-          - $ref: '#/components/schemas/MediaStage1ErrorCode'
-          - type: 'null'
-      required:
-      - schemaVersion
-      - principal
-      - workspaceIntent
-      - candidates
-      - resolutionState
-      - selectedWorkspaceId
-      - selectedWorkspaceMode
-      - failureCode
-    UserLarkIdentityLinkReceipt:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        receiptId:
-          $ref: '#/components/schemas/PublicId'
-        userId:
-          $ref: '#/components/schemas/PublicId'
-        tenantKey:
-          type: string
-          minLength: 1
-        openId:
-          type: string
-          minLength: 1
-        bindingId:
-          $ref: '#/components/schemas/PublicId'
-        linkMethod:
-          type: string
-          const: explicit_user_confirmation
-        automaticMerge:
-          type: boolean
-          const: false
-        status:
-          type: string
-          enum:
-          - PENDING
-          - ACTIVE
-          - REVOKED
-        createdAt:
-          $ref: '#/components/schemas/Timestamp'
-        confirmedAt:
-          oneOf:
-          - $ref: '#/components/schemas/Timestamp'
-          - type: 'null'
-        evidence:
-          $ref: '#/components/schemas/EvidenceIdentity'
-      required:
-      - schemaVersion
-      - receiptId
-      - userId
-      - tenantKey
-      - openId
-      - bindingId
-      - linkMethod
-      - automaticMerge
-      - status
-      - createdAt
-      - confirmedAt
-      - evidence
-    TenantMembership:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        membershipId:
-          $ref: '#/components/schemas/PublicId'
-        tenantId:
-          $ref: '#/components/schemas/PublicId'
-        userId:
-          $ref: '#/components/schemas/PublicId'
-        identityLinkReceiptId:
-          $ref: '#/components/schemas/PublicId'
-        bindingId:
-          $ref: '#/components/schemas/PublicId'
-        role:
-          type: string
-          enum:
-          - owner
-          - admin
-          - member
-        status:
-          type: string
-          enum:
-          - PENDING
-          - ACTIVE
-          - SUSPENDED
-          - REVOKED
-        createdAt:
-          $ref: '#/components/schemas/Timestamp'
-        updatedAt:
-          $ref: '#/components/schemas/Timestamp'
-      required:
-      - schemaVersion
-      - membershipId
-      - tenantId
-      - userId
-      - identityLinkReceiptId
-      - bindingId
-      - role
-      - status
-      - createdAt
-      - updatedAt
-    BindingGeneration:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        bindingGenerationId:
-          $ref: '#/components/schemas/PublicId'
-        bindingId:
-          $ref: '#/components/schemas/PublicId'
-        generation:
-          type: integer
-          minimum: 1
-        state:
-          type: string
-          enum:
-          - PENDING
-          - ACTIVE
-          - ROTATING
-          - REVOKED
-          - SUPERSEDED
-          - FAILED
-        createdAt:
-          $ref: '#/components/schemas/Timestamp'
-        updatedAt:
-          $ref: '#/components/schemas/Timestamp'
-      required:
-      - schemaVersion
-      - bindingGenerationId
-      - bindingId
-      - generation
-      - state
-      - createdAt
-      - updatedAt
-    Binding:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        bindingId:
-          $ref: '#/components/schemas/PublicId'
-        tenantId:
-          $ref: '#/components/schemas/PublicId'
-        provider:
-          type: string
-          const: lark
-        installationId:
-          $ref: '#/components/schemas/PublicId'
-        state:
-          type: string
-          enum:
-          - PENDING
-          - ACTIVE
-          - SUSPENDED
-          - REVOKING
-          - REVOKED
-          - NEEDS_ATTENTION
-        currentGeneration:
-          $ref: '#/components/schemas/BindingGeneration'
-        createdAt:
-          $ref: '#/components/schemas/Timestamp'
-        updatedAt:
-          $ref: '#/components/schemas/Timestamp'
-      required:
-      - schemaVersion
-      - bindingId
-      - tenantId
-      - provider
-      - installationId
-      - state
-      - currentGeneration
-      - createdAt
-      - updatedAt
-    ProvisionInstallationReceipt:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        installationReceiptId:
-          $ref: '#/components/schemas/PublicId'
-        installationEventId:
-          type: string
-          minLength: 1
-        provider:
-          type: string
-          const: lark
-        bindingId:
-          oneOf:
-          - $ref: '#/components/schemas/PublicId'
-          - type: 'null'
-        state:
-          type: string
-          enum:
-          - RECEIVED
-          - VERIFIED
-          - REJECTED
-          - REVOKED
-          - NEEDS_ATTENTION
-        observedAt:
-          $ref: '#/components/schemas/Timestamp'
-        evidence:
-          $ref: '#/components/schemas/EvidenceIdentity'
-      required:
-      - schemaVersion
-      - installationReceiptId
-      - installationEventId
-      - provider
-      - bindingId
-      - state
-      - observedAt
-      - evidence
-    ProvisionRunReceipt:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        runId:
-          $ref: '#/components/schemas/PublicId'
-        installationReceiptId:
-          $ref: '#/components/schemas/PublicId'
-        bindingId:
-          $ref: '#/components/schemas/PublicId'
-        state:
-          type: string
-          enum:
-          - QUEUED
-          - RUNNING
-          - COMPLETED
-          - FAILED
-          - NEEDS_ATTENTION
-          - CANCELLED
-        startedAt:
-          oneOf:
-          - $ref: '#/components/schemas/Timestamp'
-          - type: 'null'
-        finishedAt:
-          oneOf:
-          - $ref: '#/components/schemas/Timestamp'
-          - type: 'null'
-        evidence:
-          $ref: '#/components/schemas/EvidenceIdentity'
-      required:
-      - schemaVersion
-      - runId
-      - installationReceiptId
-      - bindingId
-      - state
-      - startedAt
-      - finishedAt
-      - evidence
-    ProvisionStepReceipt:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        stepId:
-          $ref: '#/components/schemas/PublicId'
-        runId:
-          $ref: '#/components/schemas/PublicId'
-        stepKey:
-          type: string
-          pattern: '^[a-z][a-z0-9_.-]{0,95}$'
-        attempt:
-          type: integer
-          minimum: 1
-        state:
-          type: string
-          enum:
-          - PENDING
-          - RUNNING
-          - SUCCEEDED
-          - FAILED
-          - SKIPPED
-          - NEEDS_ATTENTION
-          - COMPENSATING
-          - COMPENSATED
-        observedAt:
-          $ref: '#/components/schemas/Timestamp'
-        evidence:
-          $ref: '#/components/schemas/EvidenceIdentity'
-      required:
-      - schemaVersion
-      - stepId
-      - runId
-      - stepKey
-      - attempt
-      - state
-      - observedAt
-      - evidence
-    MediaStage1ErrorCode:
-      type: string
-      enum:
-      - authentication_required
-      - invalid_credentials
-      - invalid_session
-      - csrf_required
-      - csrf_invalid
-      - rate_limited
-      - workspace_selection_required
-      - workspace_not_found
-      - workspace_access_denied
-      - identity_link_required
-      - identity_link_conflict
-      - membership_inactive
-      - binding_unavailable
-      - binding_generation_stale
-      - provision_state_conflict
-      - provision_needs_attention
-      - capability_unavailable_until_writer_migration
-      - validation_error
-      - conflict
-      - not_found
-      - forbidden
-      - internal_error
-    MediaStage1ErrorDetail:
-      type: object
-      additionalProperties: false
-      properties:
-        code:
-          $ref: '#/components/schemas/MediaStage1ErrorCode'
-        message:
-          type: string
-          minLength: 1
-        field:
-          type:
-          - string
-          - 'null'
-        requestId:
-          type: string
-          minLength: 1
-        retryable:
-          type: boolean
-      required:
-      - code
-      - message
-      - field
-      - requestId
-      - retryable
-    MediaStage1ErrorResponse:
-      type: object
-      additionalProperties: false
-      properties:
-        schemaVersion:
-          type: string
-          const: media-stage1-shared-v1
-        error:
-          $ref: '#/components/schemas/MediaStage1ErrorDetail'
-      required:
-      - schemaVersion
-      - error
-    MediaStage1RateLimitRule:
-      type: object
-      additionalProperties: false
-      properties:
-        windowSeconds:
-          type: integer
-          minimum: 1
-          maximum: 86400
-        maxRequestsBySource:
-          type: integer
-          minimum: 1
-          maximum: 100
-        maxRequestsByAccount:
-          type: integer
-          minimum: 1
-          maximum: 100
-      required:
-      - windowSeconds
-      - maxRequestsBySource
-      - maxRequestsByAccount
-    MediaStage1SecurityConfiguration:
-      type: object
-      additionalProperties: false
-      properties:
-        session:
-          type: object
-          additionalProperties: false
-          required:
-          - type
-          - absoluteLifetimeSeconds
-          - rememberMe
-          - rotationTriggers
-          - tokenEntropyBits
-          - cookie
-          properties:
-            type:
-              type: string
-              const: opaque_server_session
-            absoluteLifetimeSeconds:
-              type: integer
-              const: 28800
-            rememberMe:
-              type: boolean
-              const: false
-            rotationTriggers:
-              type: array
-              minItems: 3
-              items:
-                type: string
-                enum:
-                - login_success
-                - privilege_change
-                - password_reset
-            tokenEntropyBits:
-              type: integer
-              minimum: 256
-            cookie:
-              type: object
-              additionalProperties: false
-              required:
-              - secure
-              - httpOnly
-              - sameSite
-              properties:
-                secure:
-                  type: boolean
-                  const: true
-                httpOnly:
-                  type: boolean
-                  const: true
-                sameSite:
-                  type: string
-                  const: Lax
-        csrf:
-          type: object
-          additionalProperties: false
-          required:
-          - requiredForMutations
-          - binding
-          - rotatesWithSession
-          properties:
-            requiredForMutations:
-              type: boolean
-              const: true
-            binding:
-              type: string
-              const: session
-            rotatesWithSession:
-              type: boolean
-              const: true
-        rateLimit:
-          type: object
-          additionalProperties: false
-          required:
-          - dimensions
-          - defaults
-          - runtimeOverrides
-          properties:
-            dimensions:
-              type: array
-              minItems: 2
-              uniqueItems: true
-              items:
-                type: string
-                enum:
-                - source
-                - account
-            defaults:
-              type: object
-              additionalProperties: false
-              required:
-              - login
-              - verification_resend
-              - password_recovery
-              properties:
-                login:
-                  $ref: '#/components/schemas/MediaStage1RateLimitRule'
-                verification_resend:
-                  $ref: '#/components/schemas/MediaStage1RateLimitRule'
-                password_recovery:
-                  $ref: '#/components/schemas/MediaStage1RateLimitRule'
-            runtimeOverrides:
-              type: object
-              additionalProperties: false
-              required:
-              - policy
-              - maxRequests
-              - windowSeconds
-              - dimensions
-              properties:
-                policy:
-                  type: string
-                  const: stricter_only
-                maxRequests:
-                  type: string
-                  const: decrease_only
-                windowSeconds:
-                  type: string
-                  const: decrease_only
-                dimensions:
-                  type: string
-                  const: cannot_remove
-      required:
-      - session
-      - csrf
-      - rateLimit
+
+x-openclaw-workspace-contract:
+  selector: openclaw_account.tenants.workspace_mode
+  selectorSource: verified_session
+  roleInferenceAllowed: false
+  urlInferenceAllowed: false
+  tenantNameInferenceAllowed: false
+  modes:
+    personal_web:
+      editorMode: web_edit
+      bodyAuthority: internal
+      webBodyRead: allowed
+      webDraftSave: allowed
+      larkFields: forbidden
+    organization_lark:
+      editorMode: lark_edit
+      bodyAuthority: lark
+      webBodyRead: allowed_read_only
+      webDraftSave: forbidden
+      webDraftSaveError: organization_web_save_forbidden

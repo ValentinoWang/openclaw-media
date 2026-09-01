@@ -266,7 +266,8 @@ class DocumentsService:
     _SYNC_BATCHES_QUERY = """
         SELECT batch.id, batch.public_sync_id, batch.public_artifact_id,
                batch.revision, batch.operation, batch.state,
-               batch.remote_document_version, batch.body_checksum,
+               batch.remote_document_version, batch.base_remote_document_version,
+               batch.body_checksum,
                batch.block_count, batch.protected_block_count,
                batch.created_at, batch.updated_at, batch.completed_at,
                batch.error_code, batch.error_detail
@@ -432,7 +433,7 @@ class DocumentsService:
                     "scope": "sync-batches",
                     "tenant": tenant_id,
                     "artifact": artifact_id,
-                    "createdAt": _timestamp(row[10]),
+                    "createdAt": _timestamp(row[11]),
                     "id": int(row[0]),
                 },
                 key=self._cursor_secret,
@@ -454,14 +455,15 @@ class DocumentsService:
             "operation": row[4],
             "state": row[5],
             "remoteDocumentVersion": row[6],
-            "bodyChecksum": row[7],
-            "blockCount": row[8],
-            "protectedBlockCount": row[9],
-            "createdAt": _timestamp(row[10]),
-            "updatedAt": _timestamp(row[11]),
-            "completedAt": None if row[12] is None else _timestamp(row[12]),
-            "errorCode": row[13],
-            "errorDetail": _json(row[14]),
+            "baseRemoteDocumentVersion": row[7],
+            "bodyChecksum": row[8],
+            "blockCount": row[9],
+            "protectedBlockCount": row[10],
+            "createdAt": _timestamp(row[11]),
+            "updatedAt": _timestamp(row[12]),
+            "completedAt": None if row[13] is None else _timestamp(row[13]),
+            "errorCode": row[14],
+            "errorDetail": _json(row[15]),
         }
 
     def get_document_body(self, context: TenantContext, public_artifact_id: str) -> dict[str, Any]:
@@ -602,6 +604,207 @@ class DocumentsService:
             if replay != response:
                 raise DocumentUnavailable("draft write readback failed")
             return response
+
+    def save_generated_revision(
+        self,
+        context: TenantContext,
+        public_artifact_id: str,
+        revision: int,
+        body: Mapping[str, Any],
+        receipt: Mapping[str, Any],
+    ) -> None:
+        """Write a generated Lark revision and promote it only after readback.
+
+        The executor owns its idempotency receipt. This method owns only the
+        remote mutation and the Lark authority records, so it never inserts a
+        ``media_document.revision_bodies`` row for an organization document.
+        """
+        tenant_id = self._tenant(context)
+        artifact_id = _public_id(public_artifact_id, "publicArtifactId")
+        target = _positive_revision(revision)
+        generated = validate_body(dict(body))
+        checksum = body_checksum(generated)
+        if receipt.get("bodyChecksum") != checksum:
+            raise DocumentConflict("generated receipt checksum does not match its body")
+        prepared = self._prepare_generated_lark_save(
+            context, artifact_id, target, generated, checksum
+        )
+        if prepared is None:
+            return
+        assert self._lark_gateway is not None
+        try:
+            remote = (
+                self._lark_gateway.reconcile_save(
+                    tenant_id, artifact_id, prepared.public_sync_id,
+                    prepared.base_remote_document_version,
+                )
+                if prepared.reconcile
+                else self._lark_gateway.save_draft(
+                    tenant_id, artifact_id, prepared.body,
+                    prepared.base_remote_document_version,
+                    prepared.public_sync_id,
+                )
+            )
+            readback = self._lark_gateway.read_revision(
+                tenant_id, artifact_id, remote.remote_document_version
+            )
+        except UnsupportedDocumentBlock:
+            self._finish_generated_lark_failure(context, artifact_id, prepared, "failed", "unsupported_document_block")
+            raise
+        except DocumentConflict:
+            self._finish_generated_lark_failure(context, artifact_id, prepared, "conflict", "remote_document_conflict")
+            raise
+        except Exception as exc:
+            raise LarkSaveOutcomeUnknown() from exc
+        self._finalize_generated_lark_save(
+            context, artifact_id, prepared, generated, checksum, readback
+        )
+
+    def _prepare_generated_lark_save(
+        self,
+        context: TenantContext,
+        artifact_id: str,
+        revision: int,
+        body: dict[str, Any],
+        checksum: str,
+    ) -> _PreparedLarkSave | None:
+        if self._lark_gateway is None:
+            raise DocumentUnavailable("lark document connector is unavailable")
+        key = f"revision-{revision}"
+        with self._connection_factory() as connection:
+            self._lock(connection, context.tenant_id, artifact_id)
+            artifact = self._artifact(connection, context.tenant_id, artifact_id, for_update=True)
+            if artifact[4] != "lark":
+                raise DocumentConflict("generated Lark saves require Lark document authority")
+            row = _fetchone(connection.execute(
+                """SELECT state, base_revision FROM media_product.document_revisions
+                     WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s
+                     FOR UPDATE""",
+                (context.tenant_id, artifact_id, revision),
+            ))
+            if row is None:
+                raise DocumentNotFound()
+            if row[0] == "ready":
+                return None
+            if row[0] != "generating" or not isinstance(row[1], int) or row[1] < 1:
+                raise DocumentConflict("generated Lark revision is not claimable")
+            if artifact[5] != revision:
+                raise DocumentConflict("generated Lark revision is not the artifact current revision")
+            baseline = self._lark_snapshot(
+                connection, context.tenant_id, artifact_id, row[1], current_revision=artifact[5]
+            )
+            existing = _fetchone(connection.execute(
+                """SELECT public_sync_id, revision, state, request_checksum, base_remote_document_version
+                     FROM media_product.sync_batches
+                    WHERE tenant_id=%s AND operation='save' AND idempotency_key=%s
+                    FOR UPDATE""",
+                (context.tenant_id, key),
+            ))
+            if existing is not None:
+                if existing[1] != revision or existing[3] != checksum or existing[4] != baseline.remote_document_version:
+                    raise DocumentConflict("generated Lark save idempotency record differs")
+                if existing[2] == "succeeded":
+                    return None
+                if existing[2] in {"failed", "conflict"}:
+                    raise DocumentConflict("generated Lark save already reached a terminal failure")
+                return _PreparedLarkSave(str(existing[0]), revision, row[1], baseline.remote_document_version, body, True)
+            sync_id = "sync_" + secrets.token_urlsafe(18).replace("-", "_")
+            connection.execute(
+                """INSERT INTO media_product.sync_batches
+                   (tenant_id, public_sync_id, state, public_artifact_id, revision,
+                    operation, idempotency_key, request_checksum, base_remote_document_version)
+                 VALUES (%s,%s,'running',%s,%s,'save',%s,%s,%s)""",
+                (context.tenant_id, sync_id, artifact_id, revision, key, checksum, baseline.remote_document_version),
+            )
+            return _PreparedLarkSave(sync_id, revision, row[1], baseline.remote_document_version, body, False)
+
+    def _finalize_generated_lark_save(
+        self,
+        context: TenantContext,
+        artifact_id: str,
+        prepared: _PreparedLarkSave,
+        expected_body: dict[str, Any],
+        expected_checksum: str,
+        readback: LarkRevisionSnapshot,
+    ) -> None:
+        body = validate_body(readback.body)
+        blocks = self._normalized_blocks(readback.blocks)
+        if body != expected_body or body_checksum(body) != expected_checksum:
+            raise DocumentConflict("Lark generated revision readback differs from the planned body")
+        if not readback.remote_document_version.strip() or {str(block["id"]) for block in body["blocks"]} != {block.public_block_id for block in blocks}:
+            raise DocumentConflict("Lark generated revision readback mapping is invalid")
+        with self._connection_factory() as connection:
+            self._lock(connection, context.tenant_id, artifact_id)
+            artifact = self._artifact(connection, context.tenant_id, artifact_id, for_update=True)
+            if artifact[5] != prepared.revision:
+                raise DocumentConflict("generated Lark artifact revision changed before finalization")
+            baseline = self._lark_snapshot(connection, context.tenant_id, artifact_id, prepared.prior_revision, current_revision=artifact[5])
+            if baseline.remote_document_version != prepared.base_remote_document_version:
+                raise DocumentConflict("generated Lark baseline changed before finalization")
+            batch = _fetchone(connection.execute(
+                """SELECT state, request_checksum, base_remote_document_version
+                     FROM media_product.sync_batches
+                    WHERE tenant_id=%s AND public_sync_id=%s FOR UPDATE""",
+                (context.tenant_id, prepared.public_sync_id),
+            ))
+            if batch is None or batch[0] != "running" or batch[1] != expected_checksum or batch[2] != prepared.base_remote_document_version:
+                raise DocumentConflict("generated Lark sync batch changed before finalization")
+            revision = _fetchone(connection.execute(
+                """SELECT state FROM media_product.document_revisions
+                     WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s FOR UPDATE""",
+                (context.tenant_id, artifact_id, prepared.revision),
+            ))
+            if revision is None or revision[0] != "generating":
+                raise DocumentConflict("generated Lark revision changed before finalization")
+            for block in blocks:
+                connection.execute(
+                    """INSERT INTO media_product.lark_document_block_mappings
+                       (tenant_id, public_sync_id, public_block_id, remote_block_id,
+                        block_checksum, is_protected, protection_reason)
+                     VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+                    (context.tenant_id, prepared.public_sync_id, block.public_block_id,
+                     block.remote_block_id, block.block_checksum, block.is_protected,
+                     block.protection_reason),
+                )
+            connection.execute(
+                """UPDATE media_product.document_revisions
+                      SET state='ready', body_checksum=%s, updated_at=now()
+                    WHERE tenant_id=%s AND public_artifact_id=%s AND revision=%s AND state='generating'""",
+                (expected_checksum, context.tenant_id, artifact_id, prepared.revision),
+            )
+            connection.execute(
+                """UPDATE media_product.sync_batches
+                      SET state='succeeded', remote_document_version=%s, body_checksum=%s,
+                          block_count=%s, protected_block_count=%s, completed_at=now(), updated_at=now()
+                    WHERE tenant_id=%s AND public_sync_id=%s AND state='running'""",
+                (readback.remote_document_version, expected_checksum, len(blocks),
+                 sum(block.is_protected for block in blocks), context.tenant_id, prepared.public_sync_id),
+            )
+            connection.execute(
+                """INSERT INTO media_product.lark_document_bindings
+                   (tenant_id, public_artifact_id, public_sync_id)
+                 VALUES (%s,%s,%s)
+                 ON CONFLICT (tenant_id, public_artifact_id) DO UPDATE
+                   SET public_sync_id=EXCLUDED.public_sync_id, updated_at=now()""",
+                (context.tenant_id, artifact_id, prepared.public_sync_id),
+            )
+
+    def _finish_generated_lark_failure(
+        self,
+        context: TenantContext,
+        artifact_id: str,
+        prepared: _PreparedLarkSave,
+        state: str,
+        error_code: str,
+    ) -> None:
+        with self._connection_factory() as connection:
+            self._lock(connection, context.tenant_id, artifact_id)
+            connection.execute(
+                """UPDATE media_product.sync_batches
+                      SET state=%s, error_code=%s, completed_at=now(), updated_at=now()
+                    WHERE tenant_id=%s AND public_sync_id=%s AND state='running'""",
+                (state, error_code, context.tenant_id, prepared.public_sync_id),
+            )
 
     def _prepare_lark_save(
         self,

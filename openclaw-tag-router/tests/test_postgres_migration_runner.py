@@ -49,6 +49,9 @@ EXPECTED_IDS = [
     "cm1-035-document-resource-filename-check",
     "cm1-036-tenant-shared-balance",
     "cm1-037-affiliate-profile-coverage",
+    "cm1-038-candidate-topics",
+    "cm1-039-media-document-workspace-authority",
+    "cm1-040-document-edit-jobs",
 ]
 
 
@@ -74,11 +77,11 @@ class ManifestTests(unittest.TestCase):
 
     def test_exact_closed_inventory_and_order(self) -> None:
         self.assertEqual([entry["id"] for entry in runner.ordered_migrations(self.manifest)], EXPECTED_IDS)
-        self.assertEqual(len(self.manifest["migrations"]), 32)
+        self.assertEqual(len(self.manifest["migrations"]), 35)
         self.assertEqual(len(self.manifest["excludedMigrations"]), 7)
         self.assertEqual(
             len(self.manifest["migrations"]) + len(self.manifest["excludedMigrations"]),
-            39,
+            42,
         )
         runner.validate_source_tree(ROOT, self.manifest)
 

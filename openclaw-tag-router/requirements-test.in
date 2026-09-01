@@ -1,0 +1,12 @@
+# Direct third-party imports used by openclaw-tag-router source and tests.
+# Regenerate requirements-test.txt whenever this input changes:
+# uv pip compile --python 3.12 --generate-hashes --output-file requirements-test.txt requirements-test.in
+bcrypt==5.0.0
+cryptography==50.0.0
+jsonschema==4.26.0
+Pillow==12.3.0
+playwright==1.62.0
+psycopg[binary]==3.3.5
+pytest==9.1.1
+PyYAML==6.0.3
+requests==2.34.2

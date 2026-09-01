@@ -781,6 +781,24 @@ class HttpApiAuthTests(unittest.TestCase):
             headers["Idempotency-Key"] = key
         return headers
 
+    def test_sync_batch_route_dispatches_to_documents_service_with_pagination(self) -> None:
+        calls = []
+
+        class Documents:
+            def list_sync_batches(self, context, public_artifact_id, *, cursor=None, page_size=20):
+                calls.append((context.tenant_id, public_artifact_id, cursor, page_size))
+                return {"schemaVersion": "media_web_business_pages_v2", "revision": 2, "items": [], "nextCursor": None}
+
+        self.server.RequestHandlerClass.media_business_services["documents"] = Documents()
+        cookie = self._issue_session_cookie("user-a")
+        status, body, _ = self._request(
+            "GET",
+            "/openclaw/media/api/artifacts/artifact_1234/sync-batches?cursor=opaque&pageSize=1",
+            cookie=cookie,
+        )
+        self.assertEqual(status, 200, body)
+        self.assertEqual(calls, [(str(TENANT_A), "artifact_1234", "opaque", 1)])
+
     def test_a_b_and_admin_test_sessions_have_distinct_uuid_tenants(self) -> None:
         for username, expected_user, expected_tenant, role in (
             ("user-a", USER_A, TENANT_A, "user"),

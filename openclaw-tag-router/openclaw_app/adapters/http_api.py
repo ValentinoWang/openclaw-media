@@ -332,7 +332,10 @@ _IF2_OPERATION_SERVICE = {
     **_operation_map("admin_platform_cookies", {"getAdminPlatformCookies"}),
     **_operation_map("documents", {"getDocumentBody", "saveDocumentDraft", "getDocumentRevision", "createDocumentExport", "getDocumentExport", "getDocumentExportDownload", "listArtifactSyncBatches"}),
 }
-_IF2_METHOD_OVERRIDES = {"getAdminDashboard": "dashboard"}
+_IF2_METHOD_OVERRIDES = {
+    "getAdminDashboard": "dashboard",
+    "listArtifactSyncBatches": "list_sync_batches",
+}
 _IF2_SPECIAL_OPERATIONS = {
     "getMediaSession", "listMediaCapabilities", "matchMediaCapability", "createMediaUpload",
     "listMediaTasks", "createMediaTask", "getMediaTask", "listMediaTaskEvents",

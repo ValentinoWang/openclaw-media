@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = ROOT.parent / "openclaw-tag-router/openclaw_app/contracts/media_web_business_pages.openapi.yaml"
 DEFAULT_TARGET = ROOT / "src/media/generatedBusinessPagesContract.ts"
 ACCEPTED_SOURCE_SHA256 = (
-    "1a7ae61b841276ffe103abcbdf65fda97a36425160daf9c765b508c629ee3593"
+    "3c31e78dec2dff4b19fbd227385de3e5d276cb0349c2dab25e87e383622b5147"
 )
 EXPECTED_PAGE_IDS = tuple(f"B{index:02d}" for index in range(1, 15))
 EXPECTED_DOCUMENT_OPERATION_IDS = (

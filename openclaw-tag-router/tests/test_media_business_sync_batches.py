@@ -27,8 +27,8 @@ class _Db:
     def __init__(self):
         self.rows = {
             TENANT_A: [
-                (1, "sync_queued", ARTIFACT, 2, "read", "queued", None, None, None, None, NOW, NOW, None, None, {}),
-                (2, "sync_failed", ARTIFACT, 2, "save", "failed", "v1", None, None, None, NOW, NOW, NOW, "remote_error", {"detail": "timeout"}),
+                (1, "sync_queued", ARTIFACT, 2, "read", "queued", None, None, None, None, None, NOW, NOW, None, None, {}),
+                (2, "sync_failed", ARTIFACT, 2, "save", "failed", "v1", "v0", None, None, None, NOW, NOW, NOW, "remote_error", {"detail": "timeout"}),
             ]
         }
 
@@ -54,6 +54,7 @@ def test_sync_batches_project_camel_case_state_and_error_fields():
     result = service.list_sync_batches(TenantContext(TENANT_A, "user"), ARTIFACT, page_size=10)
     assert [item["state"] for item in result["items"]] == ["queued", "failed"]
     assert result["items"][1]["remoteDocumentVersion"] == "v1"
+    assert result["items"][1]["baseRemoteDocumentVersion"] == "v0"
     assert result["items"][1]["completedAt"] == NOW.isoformat()
     assert result["items"][1]["errorCode"] == "remote_error"
     assert result["items"][1]["errorDetail"] == {"detail": "timeout"}

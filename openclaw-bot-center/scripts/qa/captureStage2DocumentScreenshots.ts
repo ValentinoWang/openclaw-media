@@ -485,6 +485,16 @@ function organizationReadyExecutionReceipt() {
   };
 }
 
+function personalReadyExecutionReceipt() {
+  return {
+    status: "ready" as const,
+    applied: [{ operation: "replace_text" as const, blockId: "blk_c_intro" }],
+    appliedCount: 1,
+    manualActions: [{ reason: "needs_review", blockId: "blk_c_table" }],
+    protectedSkipped: ["blk_c_snapshot"],
+  };
+}
+
 function bodyResponse(mock: MockState) {
   const isPersonal = mock.workspaceMode === "personal_web";
   const artifactId = mock.artifactId;
@@ -492,10 +502,9 @@ function bodyResponse(mock: MockState) {
   const revision = isPersonal
     ? documentRevision(artifactId, "internal", body, 7, null)
     : documentRevision(artifactId, "lark", body, 14, "v14");
-  const executionReceipt =
-    mock.side === "B" && mock.state === "aiResultProgress"
-      ? organizationReadyExecutionReceipt()
-      : undefined;
+  const executionReceipt = mock.side === "B" && mock.state === "aiResultProgress"
+    ? organizationReadyExecutionReceipt()
+    : undefined;
   return {
     schemaVersion: "media_web_business_pages_v2",
     revision: revision.revision,
@@ -524,8 +533,8 @@ function revisionResponse(
     isPersonal ? 8 : 15,
     isPersonal ? null : "v15",
   );
-  const receipt = !isPersonal && state === "ready"
-    ? organizationReadyExecutionReceipt()
+  const receipt = state === "ready"
+    ? isPersonal ? personalReadyExecutionReceipt() : organizationReadyExecutionReceipt()
     : undefined;
   return {
     schemaVersion: "media_web_business_pages_v2",
@@ -593,6 +602,7 @@ type MockState = {
   requests: ApiObservation[];
   unhandled: ApiObservation[];
   aiRevisionReads: number;
+  savedDraft: ReturnType<typeof documentRevision> | null;
   offline: boolean;
   releaseSaving: (() => void) | null;
   savingGate: Promise<void> | null;
@@ -617,6 +627,7 @@ function createMockState(side: Side, state: State): MockState {
     requests: [],
     unhandled: [],
     aiRevisionReads: 0,
+    savedDraft: null,
     offline: false,
     releaseSaving,
     savingGate,
@@ -678,6 +689,15 @@ async function installApi(page: Page, mock: MockState): Promise<void> {
       return;
     }
     if (method === "GET" && new RegExp(`^/documents/${mock.artifactId}/revisions/\\d+$`, "u").test(path)) {
+      const requestedRevision = Number(path.split("/").at(-1));
+      if (mock.savedDraft?.revision === requestedRevision) {
+        await fulfillJson(route, {
+          schemaVersion: "media.document.revision.v1",
+          revision: mock.savedDraft.revision,
+          data: mock.savedDraft,
+        });
+        return;
+      }
       mock.aiRevisionReads += 1;
       await fulfillJson(route, revisionResponse(mock, mock.artifactId, mock.aiRevisionReads === 1 ? "generating" : "ready"));
       return;
@@ -719,6 +739,7 @@ async function installApi(page: Page, mock: MockState): Promise<void> {
       const posted = request.postDataJSON() as { body?: unknown } | null;
       const savedBody = posted?.body && typeof posted.body === "object" ? posted.body : personalBody;
       const savedRevision = documentRevision(mock.artifactId, "internal", savedBody as typeof personalBody, 8, null);
+      mock.savedDraft = savedRevision;
       await fulfillJson(route, {
         schemaVersion: "media.document.revision.v1",
         revision: 8,
@@ -834,13 +855,22 @@ async function driveCState(
       const url = new URL(response.url());
       return response.request().method() === "PUT" && url.pathname === `${apiRoot}/documents/${mock.artifactId}/draft`;
     }, { timeout: 10_000 });
+    const readback = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return response.request().method() === "GET" && url.pathname === `${apiRoot}/documents/${mock.artifactId}/revisions/8`;
+    }, { timeout: 10_000 });
     await page.getByRole("button", { name: "保存", exact: true }).click();
     const anchor = root.getByRole("status").filter({ hasText: "保存中" });
     await expect(anchor).toBeVisible();
-    await expect(anchor.getByText("校验正文", { exact: true })).toBeVisible();
+    await expect(anchor.getByText("写入正文", { exact: true })).toBeVisible();
+    await expect(anchor.getByText("登记保存回执", { exact: true })).toBeVisible();
+    await expect(anchor.getByText("读回正文并核对版本", { exact: true })).toBeVisible();
+    await expect(anchor.locator('[data-save-step-state="active"]')).toHaveText("写入正文");
     additional.push(await saveScreenshot(page, primaryPath));
     mock.releaseSaving?.();
     await response;
+    await readback;
+    await expect(root.getByRole("button", { name: "保存", exact: true })).toBeEnabled();
     return { root, anchor, anchorDetail: "保存中横幅在写入响应返回前可见，并列出三步写入流程。", additional };
   }
   if (state === "offlineRetry") {
@@ -865,14 +895,20 @@ async function driveCState(
       const url = new URL(candidate.url());
       return candidate.request().method() === "PUT" && url.pathname === `${apiRoot}/documents/${mock.artifactId}/draft`;
     }, { timeout: 10_000 });
+    const readback = page.waitForResponse((candidate) => {
+      const url = new URL(candidate.url());
+      return candidate.request().method() === "GET" && url.pathname === `${apiRoot}/documents/${mock.artifactId}/revisions/8`;
+    }, { timeout: 10_000 });
     await root.getByRole("button", { name: "重试保存", exact: true }).click();
     await response;
+    await readback;
     await expect(anchor).toBeHidden();
     await expect(editor).toHaveValue(changedText);
     await expect(root.getByRole("button", { name: "保存", exact: true })).toBeEnabled();
     return { root, anchor, anchorDetail: "断网横幅保留草稿并提供恢复后的重试按钮。", additional };
   }
   if (state === "aiResultProgress") {
+    await expect(root).toHaveAttribute("data-ai-feature-flag", "on");
     const request = page.getByRole("textbox", { name: "改稿要求", exact: true });
     await request.fill("把正文开头改得更清楚");
     await page.getByRole("button", { name: "生成改稿修订", exact: true }).click();
@@ -882,6 +918,10 @@ async function driveCState(
     additional.push(await saveScreenshot(page, progressPath));
     const resultAnchor = root.getByText("改稿修订已就绪。", { exact: true });
     await expect(resultAnchor).toBeVisible({ timeout: 15_000 });
+    await expect(root.getByRole("heading", { name: "改稿结果解读", exact: true })).toBeVisible();
+    for (const label of ["已应用", "需要人工处理", "受保护未改动"]) {
+      await expect(root.getByText(label, { exact: true })).toBeVisible();
+    }
     await expect(root.getByRole("button", { name: "载入此修订", exact: true })).toBeVisible();
     return { root, anchor: resultAnchor, anchorDetail: "同一浏览器流程先观察 AI 生成中，再等待可采用修订结果。", additional };
   }

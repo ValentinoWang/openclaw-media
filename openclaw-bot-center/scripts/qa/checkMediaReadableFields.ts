@@ -15,6 +15,7 @@ const platformIdentitySource = readFileSync(resolve('src/media/ui/PlatformIdenti
 const documentEditorSource = readFileSync(resolve('src/media/pages/ordinary/DocumentEditorPage.tsx'), 'utf8')
 const documentEditorStyles = readFileSync(resolve('src/media/pages/ordinary/DocumentEditorPage.module.css'), 'utf8')
 const documentWorkflowSource = readFileSync(resolve('src/media/documentWorkflow.ts'), 'utf8')
+const stage2DocumentScreenshotSource = readFileSync(resolve('scripts/qa/captureStage2DocumentScreenshots.ts'), 'utf8')
 
 assert.doesNotMatch(decisionsSource, /<small>\{item\.publicDecisionId\}<\/small>/)
 assert.doesNotMatch(decisionsSource, /detail\?\.publicDecisionId\s*\?\?\s*summary\?\.publicDecisionId/)
@@ -112,6 +113,26 @@ assert.ok(documentEditorSource.includes('createArtifactRevision'), 'DocumentEdit
 for (const apiMethod of ['api.getBody(', 'api.saveDraft(', 'api.getRevision(', 'api.createExport(', 'api.getExportDownload(']) {
   assert.ok(documentEditorSource.includes(apiMethod), `DocumentEditorPage lost API method ${apiMethod}`)
 }
+for (const label of ['写入正文', '登记保存回执', '读回正文并核对版本']) {
+  assert.ok(documentEditorSource.includes(label), `DocumentEditorPage is missing save-readback label: ${label}`)
+}
+assert.match(documentEditorSource, /const PERSONAL_DOCUMENT_AI_FEATURE_ENABLED\s*=\s*import\.meta\.env\.VITE_MEDIA_PERSONAL_DOCUMENT_AI_ENABLED !== "false"/)
+assert.match(documentEditorSource, /api\.getRevision\(artifactId, saved\.revision\)/)
+assert.match(documentEditorSource, /readback\.revision === saved\.revision/)
+assert.match(documentEditorSource, /readback\.bodyChecksum === saved\.bodyChecksum/)
+assert.match(documentEditorSource, /JSON\.stringify\(readback\.body\) === JSON\.stringify\(saved\.body\)/)
+assert.match(documentEditorSource, /setPendingSaveReadback\(response\.data\)/)
+assert.match(documentEditorSource, /pendingSaveReadback \? "重新读取正文" : "重试保存"/)
+assert.match(documentEditorSource, /SaveReadbackVerificationError/)
+assert.match(documentEditorSource, /aiStatus === "timedOut"/)
+assert.match(documentEditorSource, /重新读取改稿结果/)
+for (const label of ['已应用', '需要人工处理', '受保护未改动']) {
+  assert.ok(documentEditorSource.includes(label), `DocumentEditorPage is missing AI receipt label: ${label}`)
+}
+assert.match(documentEditorSource, /不代表服务端完整修订历史/)
+assert.match(stage2DocumentScreenshotSource, /savedDraft: ReturnType<typeof documentRevision> \| null/)
+assert.match(stage2DocumentScreenshotSource, /mock\.savedDraft = savedRevision/)
+assert.match(stage2DocumentScreenshotSource, /mock\.savedDraft\?\.revision === requestedRevision/)
 assert.match(documentEditorSource, /\/workspace\/preview\/\$\{artifactId\}/)
 assert.match(documentEditorStyles, /\.toolbar button:disabled/)
 

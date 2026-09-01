@@ -29,6 +29,9 @@ class Store:
     def complete_revision(self, context, artifact_id, revision, body, receipt):
         self.completed.append((artifact_id, revision, body, receipt))
 
+    def complete_lark_revision(self, context, artifact_id, revision, receipt):
+        self.completed.append((artifact_id, revision, None, receipt))
+
     def fail_revision(self, context, artifact_id, revision, error_code, message):
         self.failed.append((artifact_id, revision, error_code, message))
 
@@ -112,6 +115,31 @@ def test_lark_revision_uses_lark_writer_and_protected_match_becomes_manual_actio
     assert result["status"] == "ready"
     assert len(documents.writes) == 1
     assert result["receipt"]["manualActions"]
+    assert store.completed[0][2] is None
+
+
+def test_durable_generated_plan_is_reused_without_a_second_generator_call():
+    class DurableStore(Store):
+        def __init__(self):
+            super().__init__()
+            self.persisted = None
+
+        def persist_generated_plan(self, _context, _artifact, _revision, plan):
+            self.persisted = plan
+            return plan
+
+    store, documents = DurableStore(), Documents()
+    store.authority = "internal"
+    generator_calls = []
+    executor = DocumentEditExecutor(
+        store,
+        documents,
+        generator=lambda _instruction, _working: generator_calls.append(1) or _instruction(),
+    )
+    first = executor.execute(_context(), "artifact-1", 2, _instruction())
+    assert first["status"] == "ready"
+    assert len(generator_calls) == 0
+    assert store.persisted is not None
 
 
 def test_internal_table_row_plan_fails_closed_before_completion():

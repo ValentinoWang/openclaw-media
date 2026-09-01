@@ -4703,6 +4703,10 @@ components:
           type:
           - string
           - 'null'
+        baseRemoteDocumentVersion:
+          type:
+          - string
+          - 'null'
         body:
           $ref: '#/components/schemas/DocumentBodyV1'
         createdAt:
@@ -6985,6 +6989,7 @@ components:
       - operation
       - state
       - remoteDocumentVersion
+      - baseRemoteDocumentVersion
       - bodyChecksum
       - blockCount
       - protectedBlockCount
