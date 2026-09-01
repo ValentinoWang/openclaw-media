@@ -18,6 +18,7 @@ import {
   type DocumentBody,
   type DocumentDataSnapshotBlock,
   type DocumentExportFormat,
+  type DocumentInlineNode,
   type DocumentMark,
   type DocumentRevisionRecord,
   type DocumentRichTextBlock,
@@ -33,6 +34,11 @@ import styles from "./DocumentEditorPage.module.css";
 type SaveState =
   "clean" | "dirty" | "saving" | "saved" | "conflict" | "offline" | "error";
 type MarkName = Exclude<DocumentMark, { type: "link" }>;
+type EditorEditableBlock =
+  | DocumentRichTextBlock
+  | Extract<DocumentBlock, { type: "code_block" }>;
+type TextRange = { start: number; end: number };
+type SelectedTextRange = TextRange & { blockId: string };
 type ArtifactRevisionResponse = {
   item?: { currentRevision?: number };
 };
@@ -43,6 +49,13 @@ const MARKS: readonly MarkName[] = [
   "strike",
   "inline_code",
 ];
+const markLabel: Record<MarkName, string> = {
+  bold: "粗体",
+  italic: "斜体",
+  underline: "下划线",
+  strike: "删除线",
+  inline_code: "代码",
+};
 const blockLabel: Record<DocumentBlock["type"], string> = {
   paragraph: "段落",
   quote: "引用",
@@ -82,6 +95,69 @@ const exportFormatLabel: Record<DocumentExportFormat, string> = {
   pdf: "PDF",
   docx: "Word 文档",
 };
+const snapshotWireValueLabel: Record<string, string> = {
+  ...blockLabel,
+  ...revisionStateLabel,
+  ...bodyAuthorityLabel,
+  ...exportFormatLabel,
+  general: "通用表格",
+  storyboard: "分镜表",
+  publishing_checklist: "发布清单",
+  metric_snapshot: "指标快照",
+  evidence_index: "证据索引",
+  personal_web: "个人工作区",
+  organization_lark: "组织工作区",
+  queued: "排队中",
+  rendering: "正在处理",
+  succeeded: "已完成",
+  running: "处理中",
+  pending: "等待处理",
+  unknown: "待对账",
+  partial: "部分完成",
+  unavailable: "不可用",
+  info: "提示",
+  success: "成功",
+  warning: "注意",
+  danger: "风险",
+  bold: "粗体",
+  italic: "斜体",
+  underline: "下划线",
+  strike: "删除线",
+  inline_code: "行内代码",
+  link: "链接",
+  write: "写入",
+  owner: "组织负责人",
+  member: "组织成员",
+  unsupported: "结构不支持",
+  empty: "暂无数据",
+  "application/pdf": "PDF 文档",
+  "text/plain": "文本文件",
+};
+const snapshotEnumFields = new Set([
+  "authority",
+  "body_authority",
+  "bodyAuthority",
+  "workspace_mode",
+  "workspaceMode",
+  "state",
+  "status",
+  "revision_state",
+  "revisionState",
+  "export_state",
+  "exportState",
+  "semantic_purpose",
+  "semanticPurpose",
+  "block_type",
+  "blockType",
+  "type",
+  "kind",
+  "tone",
+  "semantic_tone",
+  "semanticTone",
+  "format",
+  "export_format",
+  "exportFormat",
+]);
 
 function cloneBody(body: DocumentBody): DocumentBody {
   return JSON.parse(JSON.stringify(body)) as DocumentBody;
@@ -92,17 +168,24 @@ function textOf(block: DocumentBlock): string {
     ? block.content.map((run) => run.text).join("")
     : "";
 }
-function marksOf(block: DocumentBlock | undefined): DocumentMark[] {
-  return block && "content" in block ? (block.content[0]?.marks ?? []) : [];
-}
 function isMark(value: DocumentMark, mark: MarkName): boolean {
   return value === mark;
+}
+function isRichTextBlock(block: DocumentBlock): block is DocumentRichTextBlock {
+  return (
+    block.type === "paragraph" ||
+    block.type === "quote" ||
+    /^heading_[1-9]$/.test(block.type)
+  );
+}
+function isEditorEditableBlock(block: DocumentBlock): block is EditorEditableBlock {
+  return isSafelyEditableBlock(block) || isRichTextBlock(block);
 }
 function isLinkableBlock(
   block: DocumentBlock | undefined,
 ): block is DocumentRichTextBlock {
   return Boolean(
-    block && isSafelyEditableBlock(block) && block.type !== "code_block",
+    block && isEditorEditableBlock(block) && block.type !== "code_block",
   );
 }
 function isProtectedSnapshot(
@@ -112,6 +195,200 @@ function isProtectedSnapshot(
 }
 function versionLabel(value: number | null): string {
   return value === null ? "初始正文" : `v${value}`;
+}
+function normalizeTextRange(range: TextRange, textLength: number): TextRange | null {
+  if (
+    !Number.isFinite(range.start) ||
+    !Number.isFinite(range.end) ||
+    textLength < 1
+  )
+    return null;
+  const lower = Math.max(0, Math.min(textLength, Math.trunc(Math.min(range.start, range.end))));
+  const upper = Math.max(0, Math.min(textLength, Math.trunc(Math.max(range.start, range.end))));
+  return upper > lower ? { start: lower, end: upper } : null;
+}
+function isMarkActiveInRange(
+  runs: DocumentInlineNode[],
+  range: TextRange,
+  mark: MarkName,
+): boolean {
+  const normalized = normalizeTextRange(
+    range,
+    runs.reduce((length, run) => length + run.text.length, 0),
+  );
+  if (!normalized) return false;
+  let offset = 0;
+  let hasText = false;
+  let everyRunHasMark = true;
+  for (const run of runs) {
+    const runStart = offset;
+    const runEnd = runStart + run.text.length;
+    offset = runEnd;
+    if (
+      run.text.length === 0 ||
+      runEnd <= normalized.start ||
+      runStart >= normalized.end
+    )
+      continue;
+    hasText = true;
+    if (!run.marks.some((value) => isMark(value, mark))) everyRunHasMark = false;
+  }
+  return hasText && everyRunHasMark;
+}
+function transformInlineRange(
+  runs: DocumentInlineNode[],
+  range: TextRange,
+  transformMarks: (marks: DocumentMark[]) => DocumentMark[],
+): DocumentInlineNode[] {
+  const textLength = runs.reduce((length, run) => length + run.text.length, 0);
+  const normalized = normalizeTextRange(range, textLength);
+  if (!normalized) return runs;
+
+  // Split only at the selected boundaries so untouched runs and their marks survive.
+  const nextRuns: DocumentInlineNode[] = [];
+  let offset = 0;
+  for (const run of runs) {
+    const runStart = offset;
+    const runEnd = runStart + run.text.length;
+    offset = runEnd;
+    if (run.text.length === 0) {
+      nextRuns.push({ ...run, marks: [...run.marks] });
+      continue;
+    }
+    const selectedStart = Math.max(runStart, normalized.start);
+    const selectedEnd = Math.min(runEnd, normalized.end);
+    if (selectedStart >= selectedEnd) {
+      nextRuns.push({ ...run, marks: [...run.marks] });
+      continue;
+    }
+    const localStart = selectedStart - runStart;
+    const localEnd = selectedEnd - runStart;
+    if (localStart > 0) {
+      nextRuns.push({
+        ...run,
+        text: run.text.slice(0, localStart),
+        marks: [...run.marks],
+      });
+    }
+    nextRuns.push({
+      ...run,
+      text: run.text.slice(localStart, localEnd),
+      marks: transformMarks([...run.marks]),
+    });
+    if (localEnd < run.text.length) {
+      nextRuns.push({
+        ...run,
+        text: run.text.slice(localEnd),
+        marks: [...run.marks],
+      });
+    }
+  }
+  return nextRuns;
+}
+function toggleMarkInRange(
+  runs: DocumentInlineNode[],
+  range: TextRange,
+  mark: MarkName,
+): DocumentInlineNode[] {
+  const remove = isMarkActiveInRange(runs, range, mark);
+  return transformInlineRange(runs, range, (marks) => {
+    if (remove) return marks.filter((value) => !isMark(value, mark));
+    return marks.some((value) => isMark(value, mark))
+      ? marks
+      : [...marks, mark];
+  });
+}
+function applyLinkToRange(
+  runs: DocumentInlineNode[],
+  range: TextRange,
+  href: string,
+): DocumentInlineNode[] {
+  const link = { type: "link" as const, href, title: null };
+  return transformInlineRange(runs, range, (marks) => [
+    ...marks.filter((value) => !(typeof value === "object" && value.type === "link")),
+    link,
+  ]);
+}
+function sliceInlineRuns(
+  runs: DocumentInlineNode[],
+  start: number,
+  end: number,
+): DocumentInlineNode[] {
+  const result: DocumentInlineNode[] = [];
+  let offset = 0;
+  for (const run of runs) {
+    const runStart = offset;
+    const runEnd = runStart + run.text.length;
+    offset = runEnd;
+    if (run.text.length === 0) {
+      if (runStart >= start && runStart < end)
+        result.push({ ...run, marks: [...run.marks] });
+      continue;
+    }
+    const sliceStart = Math.max(runStart, start);
+    const sliceEnd = Math.min(runEnd, end);
+    if (sliceStart < sliceEnd) {
+      result.push({
+        ...run,
+        text: run.text.slice(sliceStart - runStart, sliceEnd - runStart),
+        marks: [...run.marks],
+      });
+    }
+  }
+  return result;
+}
+function marksAtPosition(runs: DocumentInlineNode[], position: number): DocumentMark[] {
+  let offset = 0;
+  let fallback: DocumentMark[] = [];
+  for (const run of runs) {
+    if (run.text.length === 0) continue;
+    const end = offset + run.text.length;
+    if (position <= end) return [...run.marks];
+    fallback = [...run.marks];
+    offset = end;
+  }
+  return fallback;
+}
+function replaceInlineText(
+  runs: DocumentInlineNode[],
+  nextText: string,
+): DocumentInlineNode[] {
+  const previousText = runs.map((run) => run.text).join("");
+  if (previousText === nextText) return runs;
+  let prefixLength = 0;
+  while (
+    prefixLength < previousText.length &&
+    prefixLength < nextText.length &&
+    previousText[prefixLength] === nextText[prefixLength]
+  )
+    prefixLength += 1;
+  let suffixLength = 0;
+  while (
+    suffixLength < previousText.length - prefixLength &&
+    suffixLength < nextText.length - prefixLength &&
+    previousText[previousText.length - suffixLength - 1] ===
+      nextText[nextText.length - suffixLength - 1]
+  )
+    suffixLength += 1;
+  const previousEnd = previousText.length - suffixLength;
+  const nextEnd = nextText.length - suffixLength;
+  const insertedText = nextText.slice(prefixLength, nextEnd);
+  const nextRuns = [
+    ...sliceInlineRuns(runs, 0, prefixLength),
+    ...(insertedText
+      ? [
+          {
+            type: "text" as const,
+            text: insertedText,
+            marks: marksAtPosition(runs, prefixLength),
+          },
+        ]
+      : []),
+    ...sliceInlineRuns(runs, previousEnd, previousText.length),
+  ];
+  return nextRuns.length
+    ? nextRuns
+    : [{ type: "text", text: "", marks: marksAtPosition(runs, prefixLength) }];
 }
 function editorFailureMessage(error: unknown, fallback: string): string {
   const failure = classifyDocumentFailure(error);
@@ -163,11 +440,25 @@ function scrollToBlock(blockId: string): void {
     target?.focus({ preventScroll: true });
   });
 }
-function formatSnapshotValue(value: DocumentValue): string {
-  if (Array.isArray(value)) return value.map(String).join("、");
+function formatSnapshotValue(fieldName: string, value: DocumentValue): string {
+  if (Array.isArray(value))
+    return value.map((item) => formatSnapshotScalar(fieldName, item)).join("、");
   if (value === null) return "未提供";
   if (typeof value === "boolean") return value ? "是" : "否";
-  return String(value);
+  return formatSnapshotScalar(fieldName, value);
+}
+function formatSnapshotScalar(
+  fieldName: string,
+  value: string | number | boolean,
+): string {
+  if (typeof value !== "string") return String(value);
+  if (/^image\//i.test(value)) return "图片";
+  return (
+    snapshotWireValueLabel[value] ??
+    (snapshotEnumFields.has(fieldName) || /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/u.test(value)
+      ? "待确认"
+      : value)
+  );
 }
 function ProtectedSnapshot({ block }: { block: DocumentDataSnapshotBlock }) {
   return (
@@ -177,10 +468,10 @@ function ProtectedSnapshot({ block }: { block: DocumentDataSnapshotBlock }) {
         <span>不可编辑</span>
       </div>
       <dl>
-        {Object.entries(block.attrs.displayFields).map(([, value], index) => (
+        {Object.entries(block.attrs.displayFields).map(([fieldName, value], index) => (
           <div key={index}>
             <dt>数据项 {index + 1}</dt>
-            <dd>{formatSnapshotValue(value)}</dd>
+            <dd>{formatSnapshotValue(fieldName, value)}</dd>
           </div>
         ))}
       </dl>
@@ -204,6 +495,8 @@ export default function DocumentEditorPage() {
   const [technicalCode, setTechnicalCode] = useState<string | null>(null);
   const [invalidBlocks, setInvalidBlocks] = useState<string[]>([]);
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
+  const [selectedRange, setSelectedRange] =
+    useState<SelectedTextRange | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportUrl, setExportUrl] = useState<string | null>(null);
   const [aiInstruction, setAiInstruction] = useState("");
@@ -223,6 +516,8 @@ export default function DocumentEditorPage() {
       setRevision(response.data.revision);
       setBody(cloneBody(response.data.revision.body));
       setInvalidBlocks([]);
+      setSelectedBlock(null);
+      setSelectedRange(null);
       setSaveState("clean");
       setMessage("已读取最新正文");
     } catch (error) {
@@ -235,21 +530,26 @@ export default function DocumentEditorPage() {
     void load();
   }, [load]);
 
+  function captureSelection(blockId: string, target: HTMLTextAreaElement): void {
+    setSelectedBlock(blockId);
+    setSelectedRange({
+      blockId,
+      start: target.selectionStart,
+      end: target.selectionEnd,
+    });
+  }
   function updateBlock(blockId: string, text: string) {
     setBody((current) => {
       if (!current) return current;
       return {
         ...current,
         blocks: current.blocks.map((block) => {
-          if (block.id !== blockId || !isSafelyEditableBlock(block))
+          if (block.id !== blockId || !isEditorEditableBlock(block))
             return block;
           if (block.type === "code_block") return { ...block, text };
-          const previous = block.content[0];
           return {
             ...block,
-            content: [
-              { type: "text" as const, text, marks: previous?.marks ?? [] },
-            ],
+            content: replaceInlineText(block.content, text),
           };
         }),
       };
@@ -259,31 +559,26 @@ export default function DocumentEditorPage() {
     setTechnicalCode(null);
   }
   function toggleMark(mark: MarkName) {
-    if (!selectedBlock) return;
+    const range = selectedRange;
+    const selected = body?.blocks.find((block) => block.id === selectedBlock);
+    if (
+      !range ||
+      range.blockId !== selectedBlock ||
+      !isLinkableBlock(selected) ||
+      !normalizeTextRange(range, textOf(selected).length)
+    )
+      return;
     setBody((current) => {
       if (!current) return current;
       return {
         ...current,
         blocks: current.blocks.map((block) => {
-          if (
-            block.id !== selectedBlock ||
-            !("content" in block) ||
-            !isSafelyEditableBlock(block)
-          )
+          if (block.id !== range.blockId || !isLinkableBlock(block))
             return block;
-          const run = block.content[0] ?? {
-            type: "text" as const,
-            text: "",
-            marks: [],
-          };
-          const active = run.marks.some((value) => isMark(value, mark));
-          const marks = active
-            ? run.marks.filter((value) => !isMark(value, mark))
-            : [...run.marks, mark];
           return {
             ...block,
-            content: [{ ...run, marks }],
-          } as DocumentRichTextBlock;
+            content: toggleMarkInRange(block.content, range, mark),
+          };
         }),
       };
     });
@@ -291,8 +586,15 @@ export default function DocumentEditorPage() {
     setTechnicalCode(null);
   }
   function addLink() {
+    const range = selectedRange;
     const selected = body?.blocks.find((block) => block.id === selectedBlock);
-    if (!isLinkableBlock(selected)) return;
+    if (
+      !range ||
+      range.blockId !== selectedBlock ||
+      !isLinkableBlock(selected) ||
+      !normalizeTextRange(range, textOf(selected).length)
+    )
+      return;
     const href = window.prompt("链接地址");
     if (!href) return;
     setBody(
@@ -300,21 +602,10 @@ export default function DocumentEditorPage() {
         current && {
           ...current,
           blocks: current.blocks.map((block) =>
-            block.id === selectedBlock && "content" in block
+            block.id === range.blockId && isLinkableBlock(block)
               ? {
                   ...block,
-                  content: [
-                    {
-                      ...(block.content[0] ?? {
-                        type: "text" as const,
-                        text: "",
-                      }),
-                      marks: [
-                        ...(block.content[0]?.marks ?? []),
-                        { type: "link" as const, href, title: null },
-                      ],
-                    },
-                  ],
+                  content: applyLinkToRange(block.content, range, href),
                 }
               : block,
           ),
@@ -390,6 +681,8 @@ export default function DocumentEditorPage() {
     if (!aiRevision || aiRevision.state !== "ready") return;
     setRevision(aiRevision);
     setBody(cloneBody(aiRevision.body));
+    setSelectedBlock(null);
+    setSelectedRange(null);
     setAiStatus("idle");
     setAiInstruction("");
     setMessage("已载入 AI 修订。保存后会成为当前正文。");
@@ -522,6 +815,19 @@ export default function DocumentEditorPage() {
         <TechnicalReference code={technicalCode} />
       </main>
     );
+  const selectedBlockRecord = body.blocks.find(
+    (block) => block.id === selectedBlock,
+  );
+  const selectedRichTextBlock = isLinkableBlock(selectedBlockRecord)
+    ? selectedBlockRecord
+    : null;
+  const selectedTextRange =
+    selectedRichTextBlock && selectedRange?.blockId === selectedRichTextBlock.id
+      ? normalizeTextRange(
+          selectedRange,
+          textOf(selectedRichTextBlock).length,
+        )
+      : null;
   return (
     <main
       className={styles.page}
@@ -649,31 +955,32 @@ export default function DocumentEditorPage() {
                 key={mark}
                 type="button"
                 aria-pressed={
-                  selectedBlock
-                    ? marksOf(
-                        body.blocks.find((b) => b.id === selectedBlock)!,
-                      ).some((value) => isMark(value, mark))
+                  selectedRichTextBlock && selectedTextRange
+                    ? isMarkActiveInRange(
+                        selectedRichTextBlock.content,
+                        selectedTextRange,
+                        mark,
+                      )
                     : false
+                }
+                disabled={!selectedRichTextBlock || !selectedTextRange}
+                title={
+                  selectedRichTextBlock && selectedTextRange
+                    ? markLabel[mark]
+                    : "请先选择正文片段"
                 }
                 onClick={() => toggleMark(mark)}
               >
-                {mark === "inline_code"
-                  ? "代码"
-                  : mark === "bold"
-                    ? "粗体"
-                    : mark === "italic"
-                      ? "斜体"
-                      : mark === "underline"
-                        ? "下划线"
-                        : "删除线"}
+                {markLabel[mark]}
               </button>
             ))}
             <button
               type="button"
-              disabled={
-                !isLinkableBlock(
-                  body.blocks.find((block) => block.id === selectedBlock),
-                )
+              disabled={!selectedRichTextBlock || !selectedTextRange}
+              title={
+                selectedRichTextBlock && selectedTextRange
+                  ? "链接"
+                  : "请先选择正文片段"
               }
               onClick={addLink}
             >
@@ -695,9 +1002,13 @@ export default function DocumentEditorPage() {
                 }
                 data-editor-block-id={block.id}
                 tabIndex={-1}
-                onClick={() => setSelectedBlock(block.id)}
+                onClick={(event) => {
+                  setSelectedBlock(block.id);
+                  if (!(event.target instanceof HTMLTextAreaElement))
+                    setSelectedRange(null);
+                }}
               >
-                {isSafelyEditableBlock(block) ? (
+                {isEditorEditableBlock(block) ? (
                   <>
                     <label htmlFor={`block-${block.id}`}>
                       {blockLabel[block.type]}
@@ -705,10 +1016,16 @@ export default function DocumentEditorPage() {
                     <textarea
                       id={`block-${block.id}`}
                       value={textOf(block)}
-                      onChange={(event) =>
-                        updateBlock(block.id, event.target.value)
+                      onChange={(event) => {
+                        captureSelection(block.id, event.currentTarget);
+                        updateBlock(block.id, event.currentTarget.value);
+                      }}
+                      onFocus={(event) =>
+                        captureSelection(block.id, event.currentTarget)
                       }
-                      onFocus={() => setSelectedBlock(block.id)}
+                      onSelect={(event) =>
+                        captureSelection(block.id, event.currentTarget)
+                      }
                       rows={Math.max(
                         2,
                         Math.min(8, textOf(block).split("\n").length + 1),

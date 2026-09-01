@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
 const decisionsSource = readFileSync(resolve('src/media/pages/ordinary/DecisionsPage.tsx'), 'utf8')
 const runDetailSource = readFileSync(resolve('src/media/CreationRunDetailPage.tsx'), 'utf8')
@@ -12,6 +13,8 @@ const registrySource = readFileSync(resolve('src/media/ui/platformRegistry.ts'),
 const platformIconSource = readFileSync(resolve('src/media/ui/PlatformBrandIcon.tsx'), 'utf8')
 const platformIdentitySource = readFileSync(resolve('src/media/ui/PlatformIdentity.tsx'), 'utf8')
 const documentEditorSource = readFileSync(resolve('src/media/pages/ordinary/DocumentEditorPage.tsx'), 'utf8')
+const documentEditorStyles = readFileSync(resolve('src/media/pages/ordinary/DocumentEditorPage.module.css'), 'utf8')
+const documentWorkflowSource = readFileSync(resolve('src/media/documentWorkflow.ts'), 'utf8')
 
 assert.doesNotMatch(decisionsSource, /<small>\{item\.publicDecisionId\}<\/small>/)
 assert.doesNotMatch(decisionsSource, /detail\?\.publicDecisionId\s*\?\?\s*summary\?\.publicDecisionId/)
@@ -53,8 +56,114 @@ assert.match(documentEditorSource, /const bodyAuthorityLabel: Record<DocumentRev
 assert.match(documentEditorSource, /\{bodyAuthorityLabel\[revision\.bodyAuthority\]\}/)
 assert.doesNotMatch(documentEditorSource, /block\.type\.replace\(/)
 assert.doesNotMatch(documentEditorSource, /\{(?:aiRevision|revision)\.state\}/)
+assert.doesNotMatch(documentEditorSource, />\{block\.type\}</)
+assert.doesNotMatch(documentEditorSource, /<dt>\{fieldName\}<\/dt>/)
+assert.match(documentEditorSource, /snapshotWireValueLabel/)
+for (const label of [
+  'queued: "排队中"',
+  'rendering: "正在处理"',
+  'succeeded: "已完成"',
+  'running: "处理中"',
+  'pending: "等待处理"',
+  'unknown: "待对账"',
+  'partial: "部分完成"',
+  'unavailable: "不可用"',
+  'inline_code: "行内代码"',
+  'link: "链接"',
+]) {
+  assert.ok(documentEditorSource.includes(label), `editor is missing wire label ${label}`)
+}
 assert.equal((documentEditorSource.match(/技术参考码：/g) ?? []).length, 1)
 assert.match(documentEditorSource, /<TechnicalReference code=\{technicalCode\} \/>/)
+const marksDeclaration = documentEditorSource.match(/const MARKS: readonly MarkName\[\] = \[([\s\S]*?)\];/)?.[1]
+assert.ok(marksDeclaration, 'DocumentEditorPage contract marks declaration is missing')
+assert.deepEqual(
+  [...marksDeclaration.matchAll(/"([^"]+)"/g)].map((match) => match[1]),
+  ['bold', 'italic', 'underline', 'strike', 'inline_code'],
+  'the editor must keep exactly the five string marks; link remains the sixth object mark',
+)
+assert.match(documentEditorSource, /type: "link" as const/)
+assert.match(documentEditorSource, /function isRichTextBlock\(/)
+assert.match(documentEditorSource, /return isSafelyEditableBlock\(block\) \|\| isRichTextBlock\(block\)/)
+assert.match(documentEditorSource, /function replaceInlineText\(/)
+assert.match(documentEditorSource, /content: replaceInlineText\(block\.content, text\)/)
+assert.match(documentEditorSource, /function toggleMarkInRange\(/)
+assert.match(documentEditorSource, /content: toggleMarkInRange\(block\.content, range, mark\)/)
+assert.match(documentEditorSource, /function applyLinkToRange\(/)
+assert.match(documentEditorSource, /content: applyLinkToRange\(block\.content, range, href\)/)
+assert.doesNotMatch(documentEditorSource, /block\.content\[0\]/)
+assert.match(documentEditorSource, /const \[selectedRange, setSelectedRange\]/)
+assert.match(documentEditorSource, /selectionStart/)
+assert.match(documentEditorSource, /selectionEnd/)
+assert.match(documentEditorSource, /disabled=\{!selectedRichTextBlock \|\| !selectedTextRange\}/)
+assert.match(documentEditorSource, /const blockIds = status === 422 \? blockIdsFrom\(error\) : \[\]/)
+assert.match(documentEditorSource, /status === 409 \|\| classifyDocumentFailure\(error\)\.kind === "conflict"/)
+assert.match(documentEditorSource, /isProtectedSnapshot\(block\)/)
+for (const operationId of [
+  'getDocumentBody',
+  'getDocumentRevision',
+  'saveDocumentDraft',
+  'createDocumentExport',
+  'getDocumentExportDownload',
+]) {
+  assert.ok(documentWorkflowSource.includes(operationId), `document workflow lost operation ID ${operationId}`)
+}
+assert.ok(documentEditorSource.includes('createArtifactRevision'), 'DocumentEditorPage lost operation ID createArtifactRevision')
+for (const apiMethod of ['api.getBody(', 'api.saveDraft(', 'api.getRevision(', 'api.createExport(', 'api.getExportDownload(']) {
+  assert.ok(documentEditorSource.includes(apiMethod), `DocumentEditorPage lost API method ${apiMethod}`)
+}
+assert.match(documentEditorSource, /\/workspace\/preview\/\$\{artifactId\}/)
+assert.match(documentEditorStyles, /\.toolbar button:disabled/)
+
+const helperStart = documentEditorSource.indexOf('function isMark(')
+const helperEnd = documentEditorSource.indexOf('function editorFailureMessage(')
+assert.ok(helperStart >= 0 && helperEnd > helperStart, 'editor inline transform helpers are missing')
+const helperSource = documentEditorSource.slice(helperStart, helperEnd)
+const helperModule = { exports: {} as Record<string, unknown> }
+const helperProgram = transpileModule(
+  `${helperSource}
+module.exports = { replaceInlineText, toggleMarkInRange, applyLinkToRange }`,
+  { compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 } },
+).outputText
+new Function('module', 'exports', helperProgram)(helperModule, helperModule.exports)
+type TestRun = { type: 'text'; text: string; marks: unknown[] }
+const transforms = helperModule.exports as unknown as {
+  replaceInlineText: (runs: TestRun[], text: string) => TestRun[]
+  toggleMarkInRange: (runs: TestRun[], range: { start: number; end: number }, mark: string) => TestRun[]
+  applyLinkToRange: (runs: TestRun[], range: { start: number; end: number }, href: string) => TestRun[]
+}
+const multiRun: TestRun[] = [
+  { type: 'text', text: 'alpha', marks: ['bold'] },
+  { type: 'text', text: ' beta', marks: ['italic'] },
+  { type: 'text', text: ' gamma', marks: [{ type: 'link', href: 'https://old.example', title: null }] },
+]
+const inlineText = (runs: TestRun[]): string => runs.map((run) => run.text).join('')
+const marked = transforms.toggleMarkInRange(multiRun, { start: 2, end: 8 }, 'underline')
+assert.equal(inlineText(marked), inlineText(multiRun), 'marking a range must preserve all run text')
+assert.deepEqual(marked.map((run) => run.text), ['al', 'pha', ' be', 'ta', ' gamma'])
+assert.deepEqual(marked.map((run) => run.marks), [
+  ['bold'],
+  ['bold', 'underline'],
+  ['italic', 'underline'],
+  ['italic'],
+  [{ type: 'link', href: 'https://old.example', title: null }],
+])
+const linked = transforms.applyLinkToRange(multiRun, { start: 11, end: 13 }, 'https://new.example')
+assert.equal(inlineText(linked), inlineText(multiRun), 'linking a range must preserve all run text')
+assert.deepEqual(linked.map((run) => run.text), ['alpha', ' beta', ' ', 'ga', 'mma'])
+assert.deepEqual(linked[2]?.marks, [{ type: 'link', href: 'https://old.example', title: null }])
+assert.deepEqual(linked[3]?.marks, [{ type: 'link', href: 'https://new.example', title: null }])
+assert.deepEqual(linked[4]?.marks, [{ type: 'link', href: 'https://old.example', title: null }])
+const edited = transforms.replaceInlineText(multiRun, 'alXpha beta gamma')
+assert.equal(inlineText(edited), 'alXpha beta gamma', 'text editing must preserve the flattened value')
+assert.deepEqual(edited.map((run) => run.text), ['al', 'X', 'pha', ' beta', ' gamma'])
+assert.deepEqual(edited.map((run) => run.marks), [
+  ['bold'],
+  ['bold'],
+  ['bold'],
+  ['italic'],
+  [{ type: 'link', href: 'https://old.example', title: null }],
+])
 const conflictBanner = documentEditorSource.match(/\{saveState === "conflict" \? \([\s\S]*?\) : null\}/)?.[0]
 assert.ok(conflictBanner, 'DocumentEditorPage conflict banner is missing')
 assert.match(conflictBanner, /逐段对比并合并/)

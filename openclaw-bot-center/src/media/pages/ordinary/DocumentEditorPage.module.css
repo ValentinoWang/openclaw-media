@@ -8,6 +8,8 @@
 .toolbar { display:flex; flex-wrap:wrap; gap:5px; padding-bottom:14px; margin-bottom:12px; border-bottom:1px solid var(--mg-border); }
 .toolbar button { display:inline-flex; align-items:center; gap:5px; min-height:32px; padding:5px 9px; border:1px solid var(--mg-border); border-radius:var(--mg-r-xs); background:var(--mg-surface); color:var(--mg-muted); font-size:12px; font-weight:600; cursor:pointer; }
 .toolbar button:hover, .toolbar button[aria-pressed="true"] { border-color:var(--mg-primary); color:var(--mg-primary-dark); background:var(--mg-primary-soft); }
+.toolbar button:disabled { opacity:.45; cursor:not-allowed; }
+.toolbar button:disabled:hover { border-color:var(--mg-border); color:var(--mg-muted); background:var(--mg-surface); }
 .blocks { display:grid; gap:10px; }
 .blocks article { position:relative; padding:11px 12px; border:1px solid transparent; border-radius:var(--mg-r-sm); }
 .blocks article:hover, .blocks article:focus-within { border-color:var(--mg-border); background:var(--mg-surface-subtle); }
