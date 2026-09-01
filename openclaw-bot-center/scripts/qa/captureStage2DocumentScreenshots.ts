@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import { inflateSync } from "node:zlib";
 import { isAbsolute, resolve, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,7 +23,7 @@ const mediaBase = "/openclaw/media";
 const apiRoot = `${mediaBase}/api`;
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const repositoryRoot = resolve(projectRoot, "..");
-const outputDir = process.env.STAGE2_DOCUMENT_SCREENSHOT_DIR ?? "/tmp/openclaw-stage2-document-screenshots";
+let outputDir = process.env.STAGE2_DOCUMENT_SCREENSHOT_DIR ?? "/tmp/openclaw-stage2-document-screenshots";
 const externalBaseUrl = process.env.STAGE2_DOCUMENT_BASE_URL?.replace(/\/$/u, "");
 const reviewIdentity = process.env.STAGE2_DOCUMENT_REVIEW_IDENTITY?.trim() || null;
 const execFile = promisify(execFileCallback);
@@ -1827,6 +1827,8 @@ async function main(): Promise<void> {
   const sourceIdentity = resolveSourceIdentity(sourceGitSha, sourceWorktreeDirtyPaths);
   const prototypeBaselines = await readPrototypeBaselines();
   await mkdir(outputDir, { recursive: true });
+  // Canonicalize /tmp-style aliases so in-repository artifacts stay portable.
+  outputDir = await realpath(outputDir);
   const started = externalBaseUrl ? null : await startLocalServer();
   const baseUrl = externalBaseUrl ?? started!.baseUrl;
   const localServer = started?.server ?? null;
@@ -1936,6 +1938,7 @@ export async function runSelfTest(): Promise<void> {
   );
   const durableArtifact = resolve(repositoryRoot, "acceptance/release/runs/example/screenshots/C-clean-desktop-1440x900.png");
   assert.equal(recordArtifactPath(durableArtifact), "acceptance/release/runs/example/screenshots/C-clean-desktop-1440x900.png");
+  assert.equal(isAbsolute(recordArtifactPath(durableArtifact)), false, "durable artifact paths must be repository-relative");
   assert.equal(resolveRecordedArtifactPath(recordArtifactPath(durableArtifact)), durableArtifact);
   assert.equal(recordArtifactPath("/tmp/stage2-self-test.png"), "/tmp/stage2-self-test.png");
   assert.deepEqual(derivePendingStates(["rendered", "missing"] as const, new Set(["rendered"])), ["missing"]);
