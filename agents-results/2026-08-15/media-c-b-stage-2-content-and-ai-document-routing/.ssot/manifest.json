@@ -71,10 +71,10 @@
     ]
   },
   "source_repository_identity": {
-    "repository_commit": "ca17317f2a559eb033f9667a4d8ad6389010d190",
-    "revision_base_commit": "ca17317f2a559eb033f9667a4d8ad6389010d190",
-    "dirty": true,
-    "dirty_diff_sha256": "681d4b776ff15a47af5504a552ca1a5ef733e424b3b41c6619b4ff64b90e0951",
+    "repository_commit": "1cfe2e7894c201cfffa590e9bc3846e69baa30f1",
+    "revision_base_commit": "1cfe2e7894c201cfffa590e9bc3846e69baa30f1",
+    "dirty": false,
+    "dirty_diff_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
     "purpose": "source provenance and rollback identity; consumer-surface digests only scope invalidation",
     "historical_observation_commit": "007a7f906af4e23a6a4fa5d041da4cb0641646c2",
     "stage2_origin_commit": "0228256058a1d7c0de4986a943de5c96f445ee2f"
@@ -3236,11 +3236,5 @@
   "nodes_dir": "nodes",
   "edges_dir": "edges",
   "assumptions_dir": "assumptions",
-  "conflicts_dir": "conflicts",
-  "validation_report": {
-    "path": "validation-report.json",
-    "sha256": "7c6a595c151611a24457befcbf9f0a2e0930ee75c284fe0163cea54c0c8e6a39",
-    "manifest_identity_sha256": "eda0269faa16f782b64e7b089b777710b9e9764af47b416e6677e4db8d1ae1aa",
-    "bundle_content_sha256": "2cfa81dcd0f90783af1181eacf416ab2ec6e4c7d1e308b743551408c207f58d9"
-  }
+  "conflicts_dir": "conflicts"
 }
