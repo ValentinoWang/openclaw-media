@@ -466,11 +466,21 @@ function documentRevision(
     revision,
     baseRevision: revision > 1 ? revision - 1 : null,
     state: "ready" as const,
-    bodyChecksum: `sha256:${createHash("sha256").update(JSON.stringify(body)).digest("hex")}`,
+    bodyChecksum: createHash("sha256").update(JSON.stringify(body)).digest("hex"),
     remoteDocumentVersion,
     body: clone(body),
     createdAt: "2026-09-01T11:20:00+08:00",
     updatedAt: "2026-09-01T11:26:00+08:00",
+  };
+}
+
+function organizationReadyExecutionReceipt() {
+  return {
+    status: "ready" as const,
+    applied: [{ operation: "replace_text" as const, blockId: "blk_b_intro" }],
+    appliedCount: 1,
+    manualActions: [{ reason: "protected_block", blockId: "blk_b_snapshot" }],
+    protectedSkipped: ["blk_b_snapshot"],
   };
 }
 
@@ -481,12 +491,16 @@ function bodyResponse(mock: MockState) {
   const revision = isPersonal
     ? documentRevision(artifactId, "internal", body, 7, null)
     : documentRevision(artifactId, "lark", body, 14, "v14");
+  const executionReceipt =
+    mock.side === "B" && mock.state === "aiResultProgress"
+      ? organizationReadyExecutionReceipt()
+      : undefined;
   return {
-    schemaVersion: "media.document.body.v1",
+    schemaVersion: "media_web_business_pages_v2",
     revision: revision.revision,
     data: {
       artifact: documentArtifact(artifactId, isPersonal ? "personal_web" : "organization_lark", isPersonal ? "internal" : "lark"),
-      revision,
+      revision: executionReceipt ? { ...revision, executionReceipt } : revision,
     },
   };
 }
@@ -510,15 +524,10 @@ function revisionResponse(
     isPersonal ? null : "v15",
   );
   const receipt = !isPersonal && state === "ready"
-    ? {
-        applied: [{ operation: "replace_text", blockId: "blk_b_intro" }],
-        appliedCount: 1,
-        manualActions: [{ reason: "protected_block", blockId: "blk_b_snapshot" }],
-        protectedSkipped: [{ blockId: "blk_b_snapshot" }],
-      }
+    ? organizationReadyExecutionReceipt()
     : undefined;
   return {
-    schemaVersion: "media.document.revision.v1",
+    schemaVersion: "media_web_business_pages_v2",
     revision: revision.revision,
     data: { ...revision, state, ...(receipt ? { executionReceipt: receipt } : {}) },
   };
@@ -537,13 +546,13 @@ function syncBatchesResponse(mock: MockState) {
   };
   const selected = itemByState[state === "aiResultProgress" ? "synced" : state];
   return {
-    schemaVersion: "media.document.sync-batches.v1",
+    schemaVersion: "media_web_business_pages_v2",
     revision: 15,
     items: [{
       publicSyncId: `stage2-sync-${state}`,
       publicArtifactId: mock.artifactId,
       revision: state === "synced" ? 14 : 15,
-      bodyChecksum: "sha256:" + "b".repeat(64),
+      bodyChecksum: "b".repeat(64),
       blockCount: organizationBody.blocks.length,
       protectedBlockCount: 1,
       createdAt: "2026-09-01T11:25:00+08:00",
@@ -886,6 +895,8 @@ async function driveBState(
   const root = await waitForBPage(page);
   const additional: ScreenshotRecord[] = [];
   if (state === "aiResultProgress") {
+    await expect(root).toHaveAttribute("data-ai-feature-flag", "on");
+    await expect(root).toHaveAttribute("data-ai-execution-receipt", "available");
     const request = root.getByRole("textbox", { name: "改稿要求", exact: true });
     await request.fill("把正文开头改得更清楚");
     await root.getByRole("button", { name: "生成改稿修订", exact: true }).click();
@@ -906,6 +917,8 @@ async function driveBState(
     return { root, anchor: resultAnchor, anchorDetail: "同一浏览器流程先观察组织 AI 生成中，再验证服务端修订回读、执行回执和只读预览。", additional };
   }
   const syncState = state === "partialApplication" ? "partial" : state;
+  await expect(root).toHaveAttribute("data-ai-feature-flag", "off");
+  await expect(root.locator('[data-ai-feature-flag="on"]')).toHaveCount(0);
   await expect(root).toHaveAttribute("data-document-sync-state", syncState);
   await expect(root.locator(`[data-sync-pipeline="${syncState}"]`)).toBeVisible();
   const anchor = syncState === "synced"

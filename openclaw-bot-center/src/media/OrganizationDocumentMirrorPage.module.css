@@ -54,9 +54,12 @@
 @keyframes ai-spin { to { transform: rotate(360deg); } }
 .syncBanner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 1px solid var(--mg-line, #dfe6df); border-radius: 8px; }
 .syncBanner > div { display: flex; min-width: 0; gap: 10px; }
+.syncBanner > div > svg { flex: 0 0 auto; margin-top: 2px; }
+.syncBanner button { flex: 0 0 auto; }
 .syncBanner strong { color: var(--mg-ink, #19231f); font-size: 14px; }
 .syncBanner p, .syncBanner small { display: block; margin: 3px 0 0; color: var(--mg-muted, #68746d); line-height: 1.5; }
 .syncBanner small { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+.syncSynced { background: #edf8ef; border-color: #a8d4b1; }
 .syncRunning, .syncStale { background: #fff9e8; border-color: #ead08b; }
 .syncUnknown, .syncConflict, .syncUnsupported { background: #fff0f0; border-color: #e6adad; }
 .syncPartial, .syncUnavailable { background: #f2f6ff; border-color: #bbcee9; }
@@ -72,10 +75,12 @@
 .pipeline li[data-sync-step-state='attention'] > span { border-color: #c27e26; background: #fff2ce; color: #8f591a; }
 .pipeline li[data-sync-step-state='attention'] strong { color: #8f591a; }
 .batchList { display: grid; gap: 0; padding: 0; margin: 16px 0; list-style: none; border-top: 1px solid var(--mg-line-soft, #eaefe9); }
-.batchList li { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(260px, 1.4fr); gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--mg-line-soft, #eaefe9); }
+.batchList li { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(260px, 1.4fr); gap: 16px; min-width: 0; padding: 14px 0; border-bottom: 1px solid var(--mg-line-soft, #eaefe9); }
+.batchList li > div { min-width: 0; }
 .batchList strong, .batchList span { display: block; }
 .batchList span { margin-top: 4px; color: var(--mg-muted, #68746d); font-size: 12px; }
 .batchList dl, .receipt { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 0; }
+.batchList dl { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .batchList dl div, .receipt div { min-width: 0; }
 .batchList dt, .receipt dt { color: var(--mg-muted, #68746d); font-size: 11px; }
 .batchList dd, .receipt dd { margin: 3px 0 0; overflow-wrap: anywhere; font-size: 12px; font-weight: 700; }
