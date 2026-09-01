@@ -3,7 +3,7 @@ import { execFile as execFileCallback } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { inflateSync } from "node:zlib";
-import { isAbsolute, resolve, dirname, join } from "node:path";
+import { isAbsolute, resolve, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import react from "@vitejs/plugin-react";
@@ -1173,16 +1173,27 @@ async function saveScreenshot(page: Page, path: string): Promise<ScreenshotRecor
   assert.ok(inspected.uniqueColors >= 5, `screenshot appears blank: ${path}`);
   assert.ok(inspected.nonTransparentPixels > 0, `screenshot has no visible pixels: ${path}`);
   return {
-    path,
+    path: recordArtifactPath(path),
     sha256: createHash("sha256").update(data).digest("hex"),
     bytes: data.length,
     ...inspected,
   };
 }
 
+function recordArtifactPath(path: string): string {
+  const projectRelativePath = relative(projectRoot, path);
+  return projectRelativePath === "" || projectRelativePath === ".." || projectRelativePath.startsWith("../") || isAbsolute(projectRelativePath)
+    ? path
+    : projectRelativePath;
+}
+
+function resolveRecordedArtifactPath(path: string): string {
+  return isAbsolute(path) ? path : resolve(projectRoot, path);
+}
+
 async function screenshotRecordMatchesMetadata(record: ScreenshotRecord, expectedViewport: Viewport): Promise<boolean> {
   try {
-    const data = await readFile(record.path);
+    const data = await readFile(resolveRecordedArtifactPath(record.path));
     const inspected = inspectPng(data);
     return data.length === record.bytes &&
       createHash("sha256").update(data).digest("hex") === record.sha256 &&
@@ -1852,7 +1863,7 @@ async function main(): Promise<void> {
       acceptanceExecution: "docs/frontend/prototype/stage2-acceptance-execution.html",
     },
     baseUrl,
-    outputDirectory: outputDir,
+    outputDirectory: recordArtifactPath(outputDir),
     viewports,
     sourceGitSha,
     sourceWorktreeClean: sourceWorktreeDirtyPaths.length === 0,
@@ -1923,6 +1934,10 @@ export async function runSelfTest(): Promise<void> {
       { name: "mobile-390x844", width: 390, height: 844 },
     ],
   );
+  const durableArtifact = resolve(projectRoot, "acceptance/release/runs/example/screenshots/C-clean-desktop-1440x900.png");
+  assert.equal(recordArtifactPath(durableArtifact), "acceptance/release/runs/example/screenshots/C-clean-desktop-1440x900.png");
+  assert.equal(resolveRecordedArtifactPath(recordArtifactPath(durableArtifact)), durableArtifact);
+  assert.equal(recordArtifactPath("/tmp/stage2-self-test.png"), "/tmp/stage2-self-test.png");
   assert.deepEqual(derivePendingStates(["rendered", "missing"] as const, new Set(["rendered"])), ["missing"]);
   assert.deepEqual(pendingC, []);
   assert.deepEqual(pendingB, []);
