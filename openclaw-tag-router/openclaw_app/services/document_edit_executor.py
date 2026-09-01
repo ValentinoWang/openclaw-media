@@ -198,6 +198,11 @@ class DocumentEditExecutor:
             plan = DocumentEditPatchPlan.from_intent_mapping(payload, working_copy=working, executable_op_whitelist={"replace_text"})
         else:
             plan = DocumentEditPatchPlan.from_mapping(payload, executable_op_whitelist={"replace_text", "insert_table_row"})
+        if any(operation.op == "insert_table_row" for operation in plan.operations):
+            raise DocumentEditExecutionError(
+                "document_edit_table_row_unavailable",
+                "insert_table_row is not available in the document edit executor",
+            )
         updated = self._apply(body, plan)
         receipt = {
             "contractId": "openclaw.document_edit.executor_receipt.v1",
