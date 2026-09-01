@@ -28,6 +28,72 @@
   "worker_transport": "historical-unregistered",
   "release_slice": "REL-2",
   "wave_id": "W-2-0",
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "decision_shard_freeze": null,
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract",
+      "attachment",
+      "structure_review",
+      "latest_review"
+    ],
+    "source_hashes": {
+      "node_contract": "822312bdaf4509835e89133a899283de62020eae771e3e0581ccc26dfbea803c",
+      "attachment": "a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+      "structure_review": "3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5",
+      "latest_review": "97000cc86e80993997153e0fb193ee877daea85c5695a60cf1645bf40596d471"
+    },
+    "digest": "sha256:80e3b4f8cddaf22a0fe5dcddc634307f9ee89c418fb8369ddf87647b8be87c6b",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.charter.phase-boundary",
+      "file-summary.charter.scope"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.charter",
+      "inputs": "用户指令、三阶段编排文本和第一阶段 SSOT",
+      "processing": "冻结个人内容闭环、C/B 人工智能上下文和文档路由范围",
+      "task": "维护第二阶段章程；不修改产品代码。",
+      "output": "第二阶段唯一开发编排边界",
+      "tests": "阶段边界、候选身份和排除项检查",
+      "acceptance": "只生成第二阶段，不改写第一阶段也不创建第三阶段",
+      "definition_of_done": "章程、证据目标和完成口径一致",
+      "write_authority": "authoritative-contract",
+      "acceptance_authority": "user and planning authority",
+      "invalidation_keys": [
+        "consumer.charter.phase-boundary",
+        "file-summary.charter.scope"
+      ],
+      "upstream_contract_inputs": {},
+      "incoming_transfer_digests": {},
+      "consumed_decision_shards": {}
+    },
+    "digest": "sha256:e7a5fbe90a0da6448a4ab0c82e221b30dc3f9030ad0b5665361372030ec37c97"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
+  "blockers": [],
   "worker_registration": {
     "note": "no retroactive worker claim"
   }

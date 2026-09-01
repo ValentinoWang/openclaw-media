@@ -28,6 +28,108 @@
   "worker_transport": "external-codex-exec",
   "release_slice": "REL-2",
   "wave_id": "W-2-5",
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "artifact-closure"
+    ],
+    "shards": {
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      }
+    },
+    "digest": "sha256:9f09ff9be8f6e5c7c980ba3da766a3609a61ed0aa1c9e91afd2c56f9660ece5c",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "64b1357eabcabb446873c212e44d5e55d432a9bcf6f47d358db08fad9a9c3d16"
+    },
+    "digest": "sha256:338b6a61c8b9af80ab93c4faf0297b429738c90840e8feeba43f7d48dac18fd5",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.personal-research.source-citations",
+      "consumer.personal-research.tenant-scope",
+      "file-summary.personal-research-brief"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.personal-research-brief",
+      "inputs": "C1 个人资料和账号范围",
+      "processing": "将素材、拆解、账号记忆和来源引用汇编为可回读研究简报",
+      "task": "实现个人研究简报和来源门禁。",
+      "output": "个人研究简报成果",
+      "tests": "来源引用、缺失素材、重复来源、租户边界和确定性重建测试",
+      "acceptance": "研究结论和来源引用可分离复核",
+      "definition_of_done": "简报只写个人成果范围并屏蔽组织资料",
+      "write_authority": "implementation",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.personal-research.source-citations",
+        "consumer.personal-research.tenant-scope",
+        "file-summary.personal-research-brief"
+      ],
+      "upstream_contract_inputs": {
+        "C1": {
+          "semantic_key": "media.stage2.personal-source-scope",
+          "inputs": "F1 个人工作区、B 合同、个人素材、账号、复盘和记忆",
+          "processing": "建立个人专属资料范围、来源收据和缺失处置",
+          "output": "个人资料投影与范围合同",
+          "tests": "个人正例、空资料、他人、组织资料和删除后刷新负例",
+          "acceptance": "个人工作区不读取任何组织共享资料",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        }
+      },
+      "incoming_transfer_digests": {
+        "C1": "sha256:d5c82b6e9e2215919510f6dbaec440362e662cd9be3032466c8281d4ccd65bb8"
+      },
+      "consumed_decision_shards": {
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        }
+      }
+    },
+    "digest": "sha256:806d549c60949e24068bb9ed2fe7c9b0b9104ffd2bcb38530e09c96f11bdf5a9"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "C1",
+      "required_state": "ACCEPTED"
+    }
+  ],
   "executor_attempt_policy": {
     "initial_executor": "lw-terra",
     "initial_wrapper": "run-lw-terra.sh",
@@ -58,8 +160,8 @@
     "worker_level": "LW",
     "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
     "wrapper_entrypoint": "exec codex exec",
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
-    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "project_root": "/private/tmp/openclaw-media-live",
+    "invocation": "codex exec -C '/private/tmp/openclaw-media-live' --skip-git-repo-check --sandbox danger-full-access",
     "sandbox": "danger-full-access",
     "sandbox_authority": "writable sandbox",
     "runtime_profile": "implementation-runner",
@@ -69,8 +171,8 @@
     "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
     "task_argument": "实现个人研究简报和来源门禁。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/C2.json",
-    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/C2.txt",
-    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/C2.log",
+    "prompt_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/C2.txt",
+    "log_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/C2.log",
     "prompt_sha256": "capture-before-launch",
     "launch_barrier": "all wave PIDs registered before first wait",
     "prompt_cleanup": "delete after exit evidence registration",

@@ -20,8 +20,102 @@
     }
   ],
   "invalidation_keys": [
-    "media.stage2.organization-readback.v5"
+    "consumer.organization-readback.binding-version",
+    "consumer.organization-readback.mirror",
+    "file-summary.organization-readback",
+    "consumer.o4.surface.sha256-15fcf0579c4c43d2f119123f5b9a1603118b78d66aab1b03444ca486af496b10"
   ],
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "artifact-closure"
+    ],
+    "shards": {
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      }
+    },
+    "digest": "sha256:9f09ff9be8f6e5c7c980ba3da766a3609a61ed0aa1c9e91afd2c56f9660ece5c",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "dbe9af14702b3afbd55aa0ace0b1b59de3c38559f2db6da5e3934f8140ced393"
+    },
+    "digest": "sha256:ebfc63348ab46f70952ebcf723d3ef1c1c15cd88d08c615855ed6a2405fe9880",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.organization-readback.binding-version",
+      "consumer.organization-readback.mirror",
+      "file-summary.organization-readback"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.organization-readback",
+      "inputs": "O3 成果绑定、远端版本和 S4 回读合同",
+      "processing": "从同一 Binding 回读飞书正文、版本和修改时间，追加只读镜像并验证可信打开链接",
+      "task": "实现同 Binding 飞书回读和 Web 只读镜像。",
+      "output": "组织只读镜像和回读收据",
+      "tests": "错 Binding、错文档、空正文、超时、版本倒退、不可信链接和部分成功测试",
+      "acceptance": "未完成回读时不得向用户标记发布成功",
+      "definition_of_done": "Web 预览只消费飞书回读镜像，不编辑组织正文",
+      "write_authority": "implementation",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.organization-readback.binding-version",
+        "consumer.organization-readback.mirror",
+        "file-summary.organization-readback"
+      ],
+      "upstream_contract_inputs": {
+        "O3": {
+          "semantic_key": "media.stage2.organization-artifact-binding",
+          "inputs": "O2 远端写入收据和 S4 成果登记状态机",
+          "processing": "创建 organization_lark/lark 文档成果、飞书绑定、同步批次和可信打开动作",
+          "output": "组织成果绑定收据",
+          "tests": "重放、重复远端文档、错租户、错 Binding、登记失败和内部 Web 正文零写入测试",
+          "acceptance": "组织路径不创建可编辑的内部 Web 正文",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        }
+      },
+      "incoming_transfer_digests": {
+        "O3": "sha256:ccacd2456bfe3cd5a218bc222b957eb259bc46a3b203291ae9eda149762c5e2a"
+      },
+      "consumed_decision_shards": {
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        }
+      }
+    },
+    "digest": "sha256:15fcf0579c4c43d2f119123f5b9a1603118b78d66aab1b03444ca486af496b10"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
   "write_authority": "implementation",
   "acceptance_authority": "main orchestrator",
   "unlocks": [
@@ -32,8 +126,8 @@
     "worker_level": "LW",
     "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
     "wrapper_entrypoint": "exec codex exec",
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
-    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "project_root": "/private/tmp/openclaw-media-live",
+    "invocation": "codex exec -C '/private/tmp/openclaw-media-live' --skip-git-repo-check --sandbox danger-full-access",
     "sandbox": "danger-full-access",
     "sandbox_authority": "writable sandbox",
     "runtime_profile": "implementation-runner",
@@ -43,8 +137,8 @@
     "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
     "task_argument": "实现同 Binding 飞书回读和 Web 只读镜像。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/O4.json",
-    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/O4.txt",
-    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/O4.log",
+    "prompt_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/O4.txt",
+    "log_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/O4.log",
     "prompt_sha256": "capture-before-launch",
     "launch_barrier": "all wave PIDs registered before first wait",
     "prompt_cleanup": "delete after exit evidence registration",
@@ -56,7 +150,7 @@
   "node_role": "leaf",
   "execution_actor": "codex",
   "execution_contract_ref": "O4.json",
-  "execution_contract_sha256": "e0c3b4eb78c669052b4d4c165f03be5eddb9ffaf70f7fbab32eebef3884f4855",
+  "execution_contract_sha256": "817e4439d7eee6ddbaa11d7e612181bd437376ba5e3a6d93cbac3872c221b107",
   "side_effect_class": "reversible",
   "candidate_identity_policy": "none",
   "deliverable_ids": [
@@ -119,5 +213,21 @@
       "architecture-complexity"
     ],
     "automatic_executor_switch": false
+  },
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "O3",
+      "required_state": "ACCEPTED"
+    }
+  ],
+  "contract_identity": {
+    "contract_id": "O4",
+    "path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/execution-contracts/O4.json",
+    "sha256": "817e4439d7eee6ddbaa11d7e612181bd437376ba5e3a6d93cbac3872c221b107"
   }
 }

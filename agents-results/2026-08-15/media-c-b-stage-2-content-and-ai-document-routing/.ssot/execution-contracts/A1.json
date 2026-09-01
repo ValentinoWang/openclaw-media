@@ -28,6 +28,91 @@
   "worker_transport": "historical-unregistered",
   "release_slice": "REL-2",
   "wave_id": "W-2-1",
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "decision_shard_freeze": null,
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract",
+      "audit",
+      "latest_review",
+      "stage1_manifest",
+      "stage1_c1",
+      "stage1_c3",
+      "stage1_dc2"
+    ],
+    "source_hashes": {
+      "node_contract": "9e6ec93613f5c7efbd5e457c2a87f136703efc5eb8e2249b3de684b1300b4a57",
+      "audit": "d5dad457861e413ff3963da568870be907495de50c33486810fa3dbdc0d92f98",
+      "latest_review": "97000cc86e80993997153e0fb193ee877daea85c5695a60cf1645bf40596d471",
+      "stage1_manifest": "98baf1460664fedad729aeccd3f384d05c297c464ed689964caf628f1681f2cf",
+      "stage1_c1": "26bf849657405fed887785e52665b97f2a5ae248e0591f7365f8d72e31c5f450",
+      "stage1_c3": "7b3ebfc4653099da67694396ec3374ff697b8dd50b19fc9575cac31b271488b5",
+      "stage1_dc2": "e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448"
+    },
+    "digest": "sha256:bc90e115f8ca16f80888f6a864629634280d03f06969a5efa200e78696d913df",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.source-baseline.upstream-state",
+      "file-summary.source-baseline.inputs"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.source-baseline",
+      "inputs": "事实审计、三阶段编排文本、第一阶段机器源和进度",
+      "processing": "复算校验值，核对已验收底座、未完成断点和三个跨阶段门禁",
+      "task": "只读复核输入文件并登记证据。",
+      "output": "可复现的非 Git 来源基线",
+      "tests": "输入文件校验值复算与权威路径存在性",
+      "acceptance": "第一阶段 C1、C3、DC2 均未接受",
+      "definition_of_done": "后续节点只消费列明来源和跨阶段投影",
+      "write_authority": "evidence-only",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.source-baseline.upstream-state",
+        "file-summary.source-baseline.inputs"
+      ],
+      "upstream_contract_inputs": {
+        "A": {
+          "semantic_key": "media.stage2.charter",
+          "inputs": "用户指令、三阶段编排文本和第一阶段 SSOT",
+          "processing": "冻结个人内容闭环、C/B 人工智能上下文和文档路由范围",
+          "output": "第二阶段唯一开发编排边界",
+          "tests": "阶段边界、候选身份和排除项检查",
+          "acceptance": "只生成第二阶段，不改写第一阶段也不创建第三阶段",
+          "write_authority": "authoritative-contract",
+          "acceptance_authority": "user and planning authority"
+        }
+      },
+      "incoming_transfer_digests": {
+        "A": "sha256:e00a77ccc6d3cc0d904da118f80575fb58e778f582fbcb6521038fe2e3343bcd"
+      },
+      "consumed_decision_shards": {}
+    },
+    "digest": "sha256:5623b60110971d15fc742c737ec4b9c63f73214d8bcaeee7e4c5d88a8286bb91"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
+  "blockers": [],
   "worker_registration": {
     "note": "no retroactive worker claim"
   }

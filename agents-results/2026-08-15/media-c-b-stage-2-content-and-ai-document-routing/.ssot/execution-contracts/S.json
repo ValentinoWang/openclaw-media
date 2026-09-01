@@ -38,6 +38,242 @@
   "worker_transport": "automatic-projection",
   "release_slice": "REL-2",
   "wave_id": "W-2-7",
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "session-authority",
+      "entry-state",
+      "writer-authority",
+      "artifact-closure",
+      "delivery-boundary"
+    ],
+    "shards": {
+      "session-authority": {
+        "ai_execution_context": "server session plus Membership plus Binding plus capability identity",
+        "client_authority_boundary": "client-supplied tenant, Binding and body authority are never authorization facts",
+        "session_envelope_boundary": "v5 supersedes the v4 ban: routeGrants stays inside the session envelope as a route-list drift detector, not an authorization projection. It is server-generated, never client-submitted, and the client cross-checks it against independently derived expectations so route-list divergence fails the session closed. This required field requires a version bump to media_web_business_pages_v3 and B re-freezes the interface identity at v3.",
+        "route_authorization_axes": "role selects shell; workspaceMode/bodyAuthority select content authority; session routeGrants plus MediaStudioRoutePolicy select visible UI, while backend authorization on every read and action remains final.",
+        "illegal_route_semantics": "navigation may collapse a legal session in the wrong shell to that shell's default route; data and action calls must refuse cross-tenant, cross-owner, missing-grant, or organization-capability requests with 403 or an equivalent no-permission state.",
+        "route_list_authority": "the route list is delegated to mediaStudioRoutePolicy.ts. The remaining hand-maintained duplicates are debt to be collapsed into one generated source.",
+        "ordinary_ia_entrypoint": "MediaStudioApp is the current mounted entry; MediaApp is legacy until an entrypoint census proves otherwise. Do not delete the legacy IA before route ownership and deep-link behavior are recorded."
+      },
+      "entry-state": {
+        "entry_state_authority": "the shipped entry-state API carries login entry status only: mode, matched/none/expired/mismatched, masked entry, and fallback. It is a pre-login probe and must never carry role, body authority, route grants, or action grants.",
+        "entry_state_contract": "login entry status and workspace route authorization are two separately versioned contracts and must not share one endpoint or one name. Both are published in OpenAPI and client types; entry-state OpenAPI publication remains a B/T1 delivery item."
+      },
+      "writer-authority": {
+        "personal_body_authority": "personal_web/internal; Web is the only editor authority",
+        "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
+        "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
+        "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
+        "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
+        "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate"
+      },
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      },
+      "delivery-boundary": {
+        "font_delivery": "self-host DM Sans as full WOFF2; serve Noto Sans SC through unicode-range slices or a curated common-glyph subset; preload only Latin subset and keep a local fallback chain",
+        "font_weight_policy": "load every used weight including 600; remove 800/850 visual dependence, map Chinese headings to available weights, set Chinese or mixed headings letter-spacing to 0 and reserve negative tracking for pure Latin/numeric display",
+        "stage3_exclusions": "full role matrix, approval, seats, procurement, invoices, migration, complex deletion and business analytics"
+      }
+    },
+    "digest": "sha256:1c1065d9541da99524fadf19a28b9c6ee3efe8916d50ca71a6b5a05b16bc832d",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "08e3f26febaff2d9659373f301618cd79f82124ce8a79723e4888b0aeee88cc5"
+    },
+    "digest": "sha256:981dd7c96c00d9fa40d5dda1759132cd778bf1c48b3d637a8e4f98640c485a0b",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.shared-e2e.contract-inputs",
+      "file-summary.shared-e2e-receipt"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.shared-convergence",
+      "inputs": "S1 到 S5 和 T1 的已接受输出",
+      "processing": "核对上下文、资料、写入、成果、回读、能力目录和 OpenAPI 的唯一组合同",
+      "task": "汇合共享合同和实现；不组装最终候选。",
+      "output": "共享路由不可变子候选",
+      "tests": "合同生成、能力矩阵、错容器、失败状态、跨租户和禁止旧 Writer 检查",
+      "acceptance": "所有文档能力只有一个路由入口",
+      "definition_of_done": "接受后可独立支持已解锁的个人或组织支线",
+      "write_authority": "shared-generated",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.shared-e2e.contract-inputs",
+        "file-summary.shared-e2e-receipt"
+      ],
+      "upstream_contract_inputs": {
+        "S1": {
+          "semantic_key": "media.stage2.ai-execution-context",
+          "inputs": "B 合同、服务端会话、成员关系、Binding 和能力编号",
+          "processing": "生成可信的租户、工作区、正文权威、成员角色、Binding 和能力组合结果；为入口状态投影提供服务端事实",
+          "output": "AIExecutionContext 第 3 版",
+          "tests": "字段来源、缺失、撤销、伪造和组织 A/B 负例",
+          "acceptance": "上下文全部由服务端事实生成",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "S2": {
+          "semantic_key": "media.stage2.context-routing",
+          "inputs": "S1 执行上下文、租户资料和资料所有者登记",
+          "processing": "按个人或组织工作区选择可用资料，关闭近期活动全表读取等跨租户断点",
+          "output": "ContextBuilder 路由和来源收据",
+          "tests": "个人/组织正例、资料所有者、跨租户、缺失和重复资料负例",
+          "acceptance": "01_ 近期活动与其他资料使用同等租户边界",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "S3": {
+          "semantic_key": "media.stage2.writer-routing",
+          "inputs": "F2 接受的阶段边界、S1 执行上下文、B 正文权威合同和第一阶段 I9 失败关闭回执",
+          "processing": "从第一阶段统一能力不可用状态原子切换到唯一服务端路由；个人文档写入内部 Web 成果，组织文档写入活跃 Binding 的飞书 Docx",
+          "output": "WriterRouter 第 2 版",
+          "tests": "能力矩阵、关闭态接管、正反路由、第一阶段 I7 零人工智能写入、只读能力零副作用和缺失 Binding 负例",
+          "acceptance": "不允许第一阶段或能力实现绕过统一路由自选文档容器",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "S4": {
+          "semantic_key": "media.stage2.artifact-record-readback",
+          "inputs": "S3 写入结果、文档成果模型、修订和飞书镜像合同",
+          "processing": "用幂等收据登记容器、正文权威、远端绑定、修订或回读版本，部分成功进入待处置",
+          "output": "ArtifactRecorder 和 ReadbackVerifier",
+          "tests": "写入失败、登记失败、回读失败、重放、并发和版本冲突测试",
+          "acceptance": "任一必要步骤失败都不得返回发布成功",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "S5": {
+          "semantic_key": "media.stage2.capability-side-effects",
+          "inputs": "现有能力注册表、S1 执行上下文和 S3 写入合同",
+          "processing": "为每个能力声明可读资料、是否产生文档、允许容器和必需回读，由服务端强制",
+          "output": "能力副作用注册表",
+          "tests": "公开/运维/维护能力、只读咨询、写文档、未登记和越权负例",
+          "acceptance": "只读能力不产生文档或远端副作用",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "T1": {
+          "semantic_key": "media.stage2.shared-acceptance-harness",
+          "inputs": "B 冻结合同和 K 第 5 版决定",
+          "processing": "维护请求合同、上下文类型、入口状态接口、错误码、审计、C/B 正负例、真实会话矩阵和同收据端到端合同",
+          "output": "保护测试和验收矩阵",
+          "tests": "合同漂移、会话信封加字段、入口状态越权、前端夹带权威字段、跨租户、错容器、写入回读失败和字体弱网回退红灯",
+          "acceptance": "每个稳定失败类都有红绿门禁",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        }
+      },
+      "incoming_transfer_digests": {
+        "S1": "sha256:eafdb806defa83a169c11046d6f391f96418905e0ed62ccc71b409813a21597d",
+        "S2": "sha256:39db5004f4d0be343646879e854ab1ba7e198afeed62c9c5447fe3999fd18f56",
+        "S3": "sha256:a0956d3797393e3cab7aeec9ae5c43f1695fa3beb70ef068d34a2fe7a145445c",
+        "S4": "sha256:7f555e50d758b4a322d556cdc03333c364c9980141c1f26fdc4e3570753e103f",
+        "S5": "sha256:380caa3b04678004e9bebec63547b4a1c415e5b9445a2259a7587a34ce7c555e",
+        "T1": "sha256:bde66d8e47f8be7fd098b7fc616b6675621778de2d94bc9c1af309526b5d5ce9"
+      },
+      "consumed_decision_shards": {
+        "session-authority": {
+          "ai_execution_context": "server session plus Membership plus Binding plus capability identity",
+          "client_authority_boundary": "client-supplied tenant, Binding and body authority are never authorization facts",
+          "session_envelope_boundary": "v5 supersedes the v4 ban: routeGrants stays inside the session envelope as a route-list drift detector, not an authorization projection. It is server-generated, never client-submitted, and the client cross-checks it against independently derived expectations so route-list divergence fails the session closed. This required field requires a version bump to media_web_business_pages_v3 and B re-freezes the interface identity at v3.",
+          "route_authorization_axes": "role selects shell; workspaceMode/bodyAuthority select content authority; session routeGrants plus MediaStudioRoutePolicy select visible UI, while backend authorization on every read and action remains final.",
+          "illegal_route_semantics": "navigation may collapse a legal session in the wrong shell to that shell's default route; data and action calls must refuse cross-tenant, cross-owner, missing-grant, or organization-capability requests with 403 or an equivalent no-permission state.",
+          "route_list_authority": "the route list is delegated to mediaStudioRoutePolicy.ts. The remaining hand-maintained duplicates are debt to be collapsed into one generated source.",
+          "ordinary_ia_entrypoint": "MediaStudioApp is the current mounted entry; MediaApp is legacy until an entrypoint census proves otherwise. Do not delete the legacy IA before route ownership and deep-link behavior are recorded."
+        },
+        "entry-state": {
+          "entry_state_authority": "the shipped entry-state API carries login entry status only: mode, matched/none/expired/mismatched, masked entry, and fallback. It is a pre-login probe and must never carry role, body authority, route grants, or action grants.",
+          "entry_state_contract": "login entry status and workspace route authorization are two separately versioned contracts and must not share one endpoint or one name. Both are published in OpenAPI and client types; entry-state OpenAPI publication remains a B/T1 delivery item."
+        },
+        "writer-authority": {
+          "personal_body_authority": "personal_web/internal; Web is the only editor authority",
+          "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
+          "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
+          "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
+          "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
+          "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate"
+        },
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        },
+        "delivery-boundary": {
+          "font_delivery": "self-host DM Sans as full WOFF2; serve Noto Sans SC through unicode-range slices or a curated common-glyph subset; preload only Latin subset and keep a local fallback chain",
+          "font_weight_policy": "load every used weight including 600; remove 800/850 visual dependence, map Chinese headings to available weights, set Chinese or mixed headings letter-spacing to 0 and reserve negative tracking for pure Latin/numeric display",
+          "stage3_exclusions": "full role matrix, approval, seats, procurement, invoices, migration, complex deletion and business analytics"
+        }
+      }
+    },
+    "digest": "sha256:48a7f274337716424294011e21f778e11d54e1d3e3ba0f11bd5a116542fca69a"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S1",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S2",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S3",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S4",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S5",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "T1",
+      "required_state": "ACCEPTED"
+    }
+  ],
   "worker_registration": {
     "executor": "SSOT state projector",
     "source_nodes": [

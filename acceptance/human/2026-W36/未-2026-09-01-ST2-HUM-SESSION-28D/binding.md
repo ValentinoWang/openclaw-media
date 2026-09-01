@@ -5,10 +5,10 @@
 - SSOT path: agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md
 - SSOT node: DB
 - Acceptance contract: agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/acceptance-fragments/ST2-HUM-SESSION-28D/acceptance-contract.md
-- Contract version: 1
-- Contract SHA-256: 9b38b80f8ccd97903156a51a0738c74b42227bc2189f388bd889df5c251d7b83
+- Contract version: 2
+- Contract SHA-256: 45dea7b9c2be3f8b0031a6f6f8f2c18edb6243553354c71a5f40fb3b34f12840
 - Human checklist: acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/checklist.md
-- Checklist SHA-256: 8325c3a566ec0a2b1984a35b914a37113fb9d516d748a58326004daa89e22db3
+- Checklist SHA-256: ac9ea9b5f857e1c499293395463e8a6b17e3eb5003d29f38979e3eebbf843588
 
 ## Item bindings
 

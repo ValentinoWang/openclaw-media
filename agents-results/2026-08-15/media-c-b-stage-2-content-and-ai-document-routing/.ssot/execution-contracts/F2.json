@@ -33,6 +33,81 @@
   "worker_transport": "automatic-projection",
   "release_slice": "REL-2",
   "wave_id": "W-2-2",
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "decision_shard_freeze": null,
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract",
+      "stage1_c3"
+    ],
+    "source_hashes": {
+      "node_contract": "cd7253d06bcbf79c57ed00f875fc243263c113de58ec9c7eefbe7687253584d6",
+      "stage1_c3": "7b3ebfc4653099da67694396ec3374ff697b8dd50b19fc9575cac31b271488b5"
+    },
+    "digest": "sha256:c42c2002acfddefb4e6478fd5769381131088400dc8db3c455522fd952e4a321",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.stage1-provision.binding-projection",
+      "file-summary.stage1-c3-receipt"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.gate.stage1-provision",
+      "inputs": "第一阶段 C3 状态、Binding 合同和候选身份",
+      "processing": "零写入核对 C3 的正式状态和当前会话解析活跃组织绑定的能力",
+      "task": "zero-write 投影第一阶段 C3；不修改上游状态。",
+      "output": "组织开通跨阶段收据",
+      "tests": "上游机器源、Binding 回执和候选哈希核对",
+      "acceptance": "只有第一阶段 C3 ACCEPTED 才可接受本投影",
+      "definition_of_done": "接受后只解锁组织资料、按 Binding 写入和飞书回读支线",
+      "write_authority": "evidence-only",
+      "acceptance_authority": "cross-stage projection owner",
+      "invalidation_keys": [
+        "consumer.stage1-provision.binding-projection",
+        "file-summary.stage1-c3-receipt"
+      ],
+      "upstream_contract_inputs": {
+        "A1": {
+          "semantic_key": "media.stage2.source-baseline",
+          "inputs": "事实审计、三阶段编排文本、第一阶段机器源和进度",
+          "processing": "复算校验值，核对已验收底座、未完成断点和三个跨阶段门禁",
+          "output": "可复现的非 Git 来源基线",
+          "tests": "输入文件校验值复算与权威路径存在性",
+          "acceptance": "第一阶段 C1、C3、DC2 均未接受",
+          "write_authority": "evidence-only",
+          "acceptance_authority": "main orchestrator"
+        }
+      },
+      "incoming_transfer_digests": {
+        "A1": "sha256:9c70c40a41990e409fe8d2d7f0cff16d3df1197e580a18dd896315809677c12e"
+      },
+      "consumed_decision_shards": {}
+    },
+    "digest": "sha256:17e6980acb85fa779306a8a0a68981ca8d6ebb51de1cc8fae689fabd01947d52"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
+  "blockers": [],
   "worker_registration": {
     "executor": "SSOT state projector",
     "source_nodes": [

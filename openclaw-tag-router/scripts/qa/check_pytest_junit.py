@@ -41,22 +41,55 @@ def skipped_test_ids(report_path: Path) -> list[str]:
         class_name = testcase.attrib.get("classname", "")
         skipped.append(f"{class_name}::{name}" if class_name else name)
 
-    for suite in (element for element in root.iter() if _local_name(element.tag) == "testsuite"):
-        suite_cases = [element for element in suite.iter() if _local_name(element.tag) == "testcase"]
-        declared_tests = _declared_count(suite, "tests")
-        declared_skipped = _declared_count(suite, "skipped")
+    def validate_counts(element: ET.Element, label: str, suite_cases: list[ET.Element]) -> None:
+        declared_tests = _declared_count(element, "tests")
+        declared_skipped = _declared_count(element, "skipped")
         actual_skipped = sum(
             any(_local_name(child.tag) == "skipped" for child in testcase)
             for testcase in suite_cases
         )
-        if declared_tests is not None and declared_tests != len(suite_cases):
+        # Pytest 9 includes successful unittest/pytest subtests in the declared
+        # total but does not serialize each successful subtest as a testcase.
+        if declared_tests is not None and declared_tests < len(suite_cases):
             raise ValueError(
-                f"JUnit suite test count mismatch: declared {declared_tests}, found {len(suite_cases)}"
+                f"JUnit {label} test count mismatch: "
+                f"declared {declared_tests}, materialized {len(suite_cases)}"
             )
         if declared_skipped is not None and declared_skipped != actual_skipped:
             raise ValueError(
-                f"JUnit suite skip count mismatch: declared {declared_skipped}, found {actual_skipped}"
+                f"JUnit {label} skip count mismatch: "
+                f"declared {declared_skipped}, found {actual_skipped}"
             )
+
+    for suite in (element for element in root.iter() if _local_name(element.tag) == "testsuite"):
+        suite_cases = [element for element in suite.iter() if _local_name(element.tag) == "testcase"]
+        validate_counts(suite, "suite", suite_cases)
+
+    if _local_name(root.tag) == "testsuites":
+        direct_suites = [child for child in root if _local_name(child.tag) == "testsuite"]
+        declared_suite_tests = [_declared_count(suite, "tests") for suite in direct_suites]
+        root_tests = _declared_count(root, "tests")
+        if (
+            root_tests is not None
+            and all(value is not None for value in declared_suite_tests)
+            and root_tests != sum(value for value in declared_suite_tests if value is not None)
+        ):
+            raise ValueError(
+                "JUnit root test count mismatch: "
+                f"declared {root_tests}, child suites {sum(declared_suite_tests)}"
+            )
+        declared_suite_skipped = [_declared_count(suite, "skipped") for suite in direct_suites]
+        root_skipped = _declared_count(root, "skipped")
+        if (
+            root_skipped is not None
+            and all(value is not None for value in declared_suite_skipped)
+            and root_skipped != sum(value for value in declared_suite_skipped if value is not None)
+        ):
+            raise ValueError(
+                "JUnit root skip count mismatch: "
+                f"declared {root_skipped}, child suites {sum(declared_suite_skipped)}"
+            )
+        validate_counts(root, "root", testcases)
     return skipped
 
 

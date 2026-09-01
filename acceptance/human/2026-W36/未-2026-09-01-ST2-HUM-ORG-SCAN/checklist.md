@@ -3,11 +3,11 @@
 - 任务编号：ST2-HUM-ORG-SCAN
 - 人工验收绑定：acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/binding.md
 - 验收合同：agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/acceptance-fragments/ST2-HUM-ORG-SCAN/acceptance-contract.md
-- 合同版本：1
+- 合同版本：2
 - 清单状态：草稿
 - 所需人工角色：组织成员验收负责人
 - 清单负责人：运行时验收负责人
-- 批准证据：本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。
+- 批准证据：本轮用户指令批准 L2 治理修订，但未批准执行人工验收、发布或节点接受。
 - 执行结果：acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/runs/<run-id>/result.md
 
 本清单只判断真实组织成员的扫码、组织壳层和错误深链恢复是否可理解。路由注册、授权、会话字段和接口错误码由自动化验收负责；本清单不要求修改部署、账户或 Binding。

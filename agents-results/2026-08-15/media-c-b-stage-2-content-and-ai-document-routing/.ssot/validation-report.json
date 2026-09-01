@@ -1,30 +1,38 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-01T09:43:44.910266+00:00",
+  "generated_at": "2026-09-01T18:22:14.908831+00:00",
   "generator": {
     "repository": "ValentinoWang/Harness_Engineering",
-    "commit": "86d7c2cc7bdb0ed6f6628c8ad40250119ccb84a2",
-    "dirty": false,
-    "dirty_files": [],
-    "dirty_diff_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "commit": "a8d9266e99045cf0da407c00ba3d96b1491ac47d",
+    "dirty": true,
+    "dirty_files": [
+      ".agents/skills/design-reference-context",
+      ".agents/skills/runtime-visual-verification",
+      ".agents/skills/visual-collaboration-contract",
+      ".agents/skills/visual-direction-exploration",
+      "agents-results/2026-09-01/manual-acceptance-log-v0-1/.ssot/manifest.json",
+      "agents-results/2026-09-01/manual-acceptance-log-v0-1/.ssot/view-sources/00-main.md",
+      "agents-results/2026-09-01/manual-acceptance-log-v0-1/ssot-development-paths.md"
+    ],
+    "dirty_diff_sha256": "1d08f8375d8fe087a49c96b8bf83f49584e0c84a897a2151cf0a3ffe74f5dd70",
     "skill_path": "Core/skills/report-to-ssot-development-paths",
     "skill_realpath": "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths",
     "skill_sha256": "1e7c129ec9cb19ee5d925ee0a1c8b78da53cb18bb0e7ab8c16734c417c852e4a",
-    "checker_bundle_sha256": "f668a0b01d6811176f3cd6efab858a36ed5f50e804c7d75c5999991f788dcfab"
+    "checker_bundle_sha256": "97d4f3e8038163f6549772098bbde562072914699b596aaac9bcdbc7c5a0da48"
   },
   "runtime": {
-    "project_root": "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901",
-    "project_commit": "dba33b95e9ca124f22166ca4e34ee6ba27316e31",
+    "project_root": "/private/tmp/openclaw-media-live",
+    "project_commit": "ca17317f2a559eb033f9667a4d8ad6389010d190",
     "project_dirty": true,
-    "project_dirty_diff_sha256": "166d92aa007bfebeb40cac8f02237ead6ce43d5879afa9e085b15f5f479c11da",
-    "harness_lock_sha256": null
+    "project_dirty_diff_sha256": "f84baae16447c3e808a83001f806a0da92bf0025c52497e2db606c017891ad93",
+    "harness_lock_sha256": "fc4e2e34f3476f25238d1dfbc2ef842d711176395303c5a1f09b83d60ffe9708"
   },
   "bundle": {
-    "path": "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",
-    "sha256": "9c887fb800ea013856067eb00179592652c7a698c72bdc4a5b5ddcbba684f5e0",
-    "content_sha256": "9c887fb800ea013856067eb00179592652c7a698c72bdc4a5b5ddcbba684f5e0",
-    "manifest_sha256": "f13b2a01d66d1315c37ee99a67dbcbab4c4f163fc4aa9f0aca95d84cb7a53d19",
-    "manifest_identity_sha256": "f13b2a01d66d1315c37ee99a67dbcbab4c4f163fc4aa9f0aca95d84cb7a53d19"
+    "path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",
+    "sha256": "2cfa81dcd0f90783af1181eacf416ab2ec6e4c7d1e308b743551408c207f58d9",
+    "content_sha256": "2cfa81dcd0f90783af1181eacf416ab2ec6e4c7d1e308b743551408c207f58d9",
+    "manifest_sha256": "eda0269faa16f782b64e7b089b777710b9e9764af47b416e6677e4db8d1ae1aa",
+    "manifest_identity_sha256": "eda0269faa16f782b64e7b089b777710b9e9764af47b416e6677e4db8d1ae1aa"
   },
   "checks": [
     {
@@ -34,23 +42,23 @@
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/tools/harnessctl.py",
         "doctor",
         "--project",
-        "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901",
+        "/private/tmp/openclaw-media-live",
         "--check-runtime-skills"
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "project: /Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901\nmode: symlink-local\nsource: /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering\nlinks: 41\nruntime_skill_check: enabled\ndoctor: ok\n"
+      "output": "project: /private/tmp/openclaw-media-live\nmode: symlink-local\nsource: /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering\nlinks: 41\nruntime_skill_check: enabled\nWARN Harness source dirty files: 7\ndoctor: ok\n"
     },
     {
       "id": "complexity",
       "command": [
         "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_complexity.py",
-        "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/planning-compiler.json"
+        "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/planning-compiler.json"
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "SSOT complexity check passed: /Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/planning-compiler.json (depth=L2, releases=1, nodes=32, workers=18)\n"
+      "output": "SSOT complexity check passed: /private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/planning-compiler.json (depth=L2, releases=1, nodes=32, workers=18)\n"
     },
     {
       "id": "render",
@@ -58,7 +66,7 @@
         "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/render_ssot_views.py",
         "--check",
-        "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
+        "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
       ],
       "exit_code": 0,
       "result": "passed",
@@ -69,29 +77,29 @@
       "command": [
         "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_program.py",
-        "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
+        "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "SSOT program check passed: /Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json (nodes=32, formal_ready=0, conditional_ready=0)\n"
+      "output": "SSOT program check passed: /private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json (nodes=32, formal_ready=0, conditional_ready=0)\n"
     },
     {
       "id": "parallelism-analysis",
       "command": [
         "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/analyze_ssot_parallelism.py",
-        "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
+        "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "{\n  \"actor_pools\": {\n    \"codex-primary\": {\n      \"actor\": \"codex\",\n      \"capacity\": 12\n    },\n    \"external-acceptance\": {\n      \"actor\": \"external-system\",\n      \"capacity\": 2\n    },\n    \"human-authority\": {\n      \"actor\": \"human\",\n      \"capacity\": 4\n    },\n    \"orchestrator\": {\n      \"actor\": \"orchestrator\",\n      \"capacity\": 1\n    }\n  },\n  \"critical_path_edges\": 15,\n  \"current_ready_nodes\": [],\n  \"current_ready_width\": 0,\n  \"frontier_transitions\": [\n    {\n      \"accepted_node\": \"A\",\n      \"unlocks\": [\n        \"A1\"\n      ],\n      \"waits_for\": []\n    },\n    {\n      \"accepted_node\": \"A1\",\n      \"unlocks\": [\n        \"F1\",\n        \"F2\",\n        \"F3\",\n        \"K\"\n      ],\n      \"waits_for\": [\n        \"A\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F1\",\n      \"unlocks\": [\n        \"B\",\n        \"C1\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F2\",\n      \"unlocks\": [\n        \"O1\",\n        \"S3\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F3\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K\",\n      \"unlocks\": [\n        \"B\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"B\",\n      \"unlocks\": [\n        \"C1\",\n        \"O1\",\n        \"S1\",\n        \"T1\"\n      ],\n      \"waits_for\": [\n        \"F1\",\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C1\",\n      \"unlocks\": [\n        \"C2\",\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"F1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C2\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"C1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C3\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"C1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O1\",\n      \"unlocks\": [\n        \"O2\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"F2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S1\",\n      \"unlocks\": [\n        \"S\",\n        \"S2\",\n        \"S3\",\n        \"S5\"\n      ],\n      \"waits_for\": [\n        \"B\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S2\",\n      \"unlocks\": [\n        \"C4\",\n        \"O2\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C4\",\n      \"unlocks\": [\n        \"C5\"\n      ],\n      \"waits_for\": [\n        \"C2\",\n        \"C3\",\n        \"S2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S3\",\n      \"unlocks\": [\n        \"C5\",\n        \"O2\",\n        \"S\",\n        \"S4\",\n        \"S5\"\n      ],\n      \"waits_for\": [\n        \"F2\",\n        \"S1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S4\",\n      \"unlocks\": [\n        \"C5\",\n        \"O3\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S5\",\n      \"unlocks\": [\n        \"C5\",\n        \"O2\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S1\",\n        \"S3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C5\",\n      \"unlocks\": [\n        \"C6\"\n      ],\n      \"waits_for\": [\n        \"C4\",\n        \"S3\",\n        \"S4\",\n        \"S5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C6\",\n      \"unlocks\": [\n        \"C7\"\n      ],\n      \"waits_for\": [\n        \"C5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C7\",\n      \"unlocks\": [\n        \"C8\"\n      ],\n      \"waits_for\": [\n        \"C6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O2\",\n      \"unlocks\": [\n        \"O3\"\n      ],\n      \"waits_for\": [\n        \"O1\",\n        \"S2\",\n        \"S3\",\n        \"S5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O3\",\n      \"unlocks\": [\n        \"O4\"\n      ],\n      \"waits_for\": [\n        \"O2\",\n        \"S4\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O4\",\n      \"unlocks\": [\n        \"O5\"\n      ],\n      \"waits_for\": [\n        \"O3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O5\",\n      \"unlocks\": [\n        \"O6\"\n      ],\n      \"waits_for\": [\n        \"O4\"\n      ]\n    },\n    {\n      \"accepted_node\": \"T1\",\n      \"unlocks\": [\n        \"C8\",\n        \"O6\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"B\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S\",\n      \"unlocks\": [\n        \"C8\",\n        \"O6\"\n      ],\n      \"waits_for\": [\n        \"S1\",\n        \"S2\",\n        \"S3\",\n        \"S4\",\n        \"S5\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C8\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"C7\",\n        \"S\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O6\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"O5\",\n        \"S\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C\",\n      \"unlocks\": [\n        \"DA\"\n      ],\n      \"waits_for\": [\n        \"C8\",\n        \"F3\",\n        \"O6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DA\",\n      \"unlocks\": [\n        \"DB\"\n      ],\n      \"waits_for\": [\n        \"C\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DB\",\n      \"unlocks\": [\n        \"DC\"\n      ],\n      \"waits_for\": [\n        \"DA\"\n      ]\n    }\n  ],\n  \"manifest\": \"/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json\",\n  \"maximum_antichain_width\": 8,\n  \"resource_verified_width\": 0,\n  \"scheduling_model\": \"event-driven\",\n  \"static_waves_are_authority\": false\n}\n"
+      "output": "{\n  \"actor_pools\": {\n    \"codex-primary\": {\n      \"actor\": \"codex\",\n      \"capacity\": 12\n    },\n    \"external-acceptance\": {\n      \"actor\": \"external-system\",\n      \"capacity\": 2\n    },\n    \"human-authority\": {\n      \"actor\": \"human\",\n      \"capacity\": 4\n    },\n    \"orchestrator\": {\n      \"actor\": \"orchestrator\",\n      \"capacity\": 1\n    }\n  },\n  \"critical_path_edges\": 15,\n  \"current_ready_nodes\": [],\n  \"current_ready_width\": 0,\n  \"frontier_transitions\": [\n    {\n      \"accepted_node\": \"A\",\n      \"unlocks\": [\n        \"A1\"\n      ],\n      \"waits_for\": []\n    },\n    {\n      \"accepted_node\": \"A1\",\n      \"unlocks\": [\n        \"F1\",\n        \"F2\",\n        \"F3\",\n        \"K\"\n      ],\n      \"waits_for\": [\n        \"A\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F1\",\n      \"unlocks\": [\n        \"B\",\n        \"C1\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F2\",\n      \"unlocks\": [\n        \"O1\",\n        \"S3\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"F3\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"K\",\n      \"unlocks\": [\n        \"B\"\n      ],\n      \"waits_for\": [\n        \"A1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"B\",\n      \"unlocks\": [\n        \"C1\",\n        \"O1\",\n        \"S1\",\n        \"T1\"\n      ],\n      \"waits_for\": [\n        \"F1\",\n        \"K\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C1\",\n      \"unlocks\": [\n        \"C2\",\n        \"C3\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"F1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C2\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"C1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C3\",\n      \"unlocks\": [\n        \"C4\"\n      ],\n      \"waits_for\": [\n        \"C1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O1\",\n      \"unlocks\": [\n        \"O2\"\n      ],\n      \"waits_for\": [\n        \"B\",\n        \"F2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S1\",\n      \"unlocks\": [\n        \"S\",\n        \"S2\",\n        \"S3\",\n        \"S5\"\n      ],\n      \"waits_for\": [\n        \"B\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S2\",\n      \"unlocks\": [\n        \"C4\",\n        \"O2\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C4\",\n      \"unlocks\": [\n        \"C5\"\n      ],\n      \"waits_for\": [\n        \"C2\",\n        \"C3\",\n        \"S2\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S3\",\n      \"unlocks\": [\n        \"C5\",\n        \"O2\",\n        \"S\",\n        \"S4\",\n        \"S5\"\n      ],\n      \"waits_for\": [\n        \"F2\",\n        \"S1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S4\",\n      \"unlocks\": [\n        \"C5\",\n        \"O3\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S5\",\n      \"unlocks\": [\n        \"C5\",\n        \"O2\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"S1\",\n        \"S3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C5\",\n      \"unlocks\": [\n        \"C6\"\n      ],\n      \"waits_for\": [\n        \"C4\",\n        \"S3\",\n        \"S4\",\n        \"S5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C6\",\n      \"unlocks\": [\n        \"C7\"\n      ],\n      \"waits_for\": [\n        \"C5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C7\",\n      \"unlocks\": [\n        \"C8\"\n      ],\n      \"waits_for\": [\n        \"C6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O2\",\n      \"unlocks\": [\n        \"O3\"\n      ],\n      \"waits_for\": [\n        \"O1\",\n        \"S2\",\n        \"S3\",\n        \"S5\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O3\",\n      \"unlocks\": [\n        \"O4\"\n      ],\n      \"waits_for\": [\n        \"O2\",\n        \"S4\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O4\",\n      \"unlocks\": [\n        \"O5\"\n      ],\n      \"waits_for\": [\n        \"O3\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O5\",\n      \"unlocks\": [\n        \"O6\"\n      ],\n      \"waits_for\": [\n        \"O4\"\n      ]\n    },\n    {\n      \"accepted_node\": \"T1\",\n      \"unlocks\": [\n        \"C8\",\n        \"O6\",\n        \"S\"\n      ],\n      \"waits_for\": [\n        \"B\"\n      ]\n    },\n    {\n      \"accepted_node\": \"S\",\n      \"unlocks\": [\n        \"C8\",\n        \"O6\"\n      ],\n      \"waits_for\": [\n        \"S1\",\n        \"S2\",\n        \"S3\",\n        \"S4\",\n        \"S5\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C8\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"C7\",\n        \"S\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"O6\",\n      \"unlocks\": [\n        \"C\"\n      ],\n      \"waits_for\": [\n        \"O5\",\n        \"S\",\n        \"T1\"\n      ]\n    },\n    {\n      \"accepted_node\": \"C\",\n      \"unlocks\": [\n        \"DA\"\n      ],\n      \"waits_for\": [\n        \"C8\",\n        \"F3\",\n        \"O6\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DA\",\n      \"unlocks\": [\n        \"DB\"\n      ],\n      \"waits_for\": [\n        \"C\"\n      ]\n    },\n    {\n      \"accepted_node\": \"DB\",\n      \"unlocks\": [\n        \"DC\"\n      ],\n      \"waits_for\": [\n        \"DA\"\n      ]\n    }\n  ],\n  \"manifest\": \"/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json\",\n  \"maximum_antichain_width\": 8,\n  \"resource_verified_width\": 0,\n  \"scheduling_model\": \"event-driven\",\n  \"static_waves_are_authority\": false\n}\n"
     },
     {
       "id": "structure",
       "command": [
         "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_structure.py",
-        "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md"
+        "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md"
       ],
       "exit_code": 0,
       "result": "passed",
@@ -102,8 +110,8 @@
       "command": [
         "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_chinese_readability.py",
-        "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md",
-        "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/openproblem.md"
+        "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md",
+        "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/openproblem.md"
       ],
       "exit_code": 0,
       "result": "passed",
@@ -115,25 +123,14 @@
         "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/ssot-obsidian-snapshot/scripts/snapshot_ssot.py",
         "--source",
-        "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",
+        "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",
         "--project-root",
-        "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901",
+        "/private/tmp/openclaw-media-live",
         "--check"
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "{\n  \"status\": \"verified\",\n  \"source\": \"/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing\",\n  \"destination\": \"/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/开发/每日开发/SSOT合集/2026-08-15/openclaw-media/media-c-b-stage-2-content-ai-document-routing\",\n  \"project_name\": \"openclaw-media\",\n  \"ssot_name\": \"media-c-b-stage-2-content-ai-document-routing\",\n  \"snapshot_date\": \"2026-08-15\",\n  \"main_document\": \"ssot-development-paths.md\",\n  \"file_count\": 2,\n  \"contains_openproblem\": true\n}\n"
-    },
-    {
-      "id": "strict-provenance",
-      "command": [
-        "git",
-        "status",
-        "--short"
-      ],
-      "exit_code": 0,
-      "result": "passed",
-      "output": "protected Harness inputs are clean"
+      "output": "{\n  \"status\": \"verified\",\n  \"source\": \"/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing\",\n  \"destination\": \"/Users/vsiyo/Library/Mobile Documents/iCloud~md~obsidian/Documents/日记/开发/每日开发/SSOT合集/2026-08-15/openclaw-media/media-c-b-stage-2-content-ai-document-routing\",\n  \"project_name\": \"openclaw-media\",\n  \"ssot_name\": \"media-c-b-stage-2-content-ai-document-routing\",\n  \"snapshot_date\": \"2026-08-15\",\n  \"main_document\": \"ssot-development-paths.md\",\n  \"file_count\": 2,\n  \"contains_openproblem\": true\n}\n"
     }
   ],
   "parallelism": {
@@ -487,7 +484,7 @@
         ]
       }
     ],
-    "manifest": "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json",
+    "manifest": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json",
     "maximum_antichain_width": 8,
     "resource_verified_width": 0,
     "scheduling_model": "event-driven",

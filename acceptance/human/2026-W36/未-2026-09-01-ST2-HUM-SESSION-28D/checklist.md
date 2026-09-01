@@ -3,11 +3,11 @@
 - 任务编号：ST2-HUM-SESSION-28D
 - 人工验收绑定：acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/binding.md
 - 验收合同：agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/acceptance-fragments/ST2-HUM-SESSION-28D/acceptance-contract.md
-- 合同版本：1
+- 合同版本：2
 - 清单状态：草稿
 - 所需人工角色：运行时验收负责人
 - 清单负责人：运行时验收负责人
-- 批准证据：本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。
+- 批准证据：本轮用户指令批准 L2 治理修订，但未批准执行人工验收、发布或节点接受。
 - 执行结果：acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/runs/<run-id>/result.md
 
 本清单只判断真实部署、真实浏览器和跨日真实时钟下的会话持续性。配置值、环境变量回退和上限由自动化测试负责；本清单不允许编辑 Cookie、数据库或系统时钟。

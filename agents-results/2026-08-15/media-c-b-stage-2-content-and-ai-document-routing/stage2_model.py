@@ -370,6 +370,181 @@ DAG_VERSION = 5
 INTERFACE_FREEZE_VERSION = 5
 NODE_CONTRACT_VERSION = 5
 
+# Invalidation is scoped to the consumer surface that can become stale.  Do
+# not use the plan/version axis as a proxy: an unrelated revision must not
+# invalidate every downstream acceptance fragment.
+INVALIDATION_KEYS_BY_NODE: dict[str, tuple[str, ...]] = {
+    "A": ("consumer.charter.phase-boundary", "file-summary.charter.scope"),
+    "A1": ("consumer.source-baseline.upstream-state", "file-summary.source-baseline.inputs"),
+    "K": (
+        "consumer.product-decisions.session-envelope.route-grants",
+        "consumer.product-decisions.entry-state.contract",
+        "consumer.product-decisions.writer-authority",
+        "file-summary.product-decisions.accepted-shards",
+    ),
+    "F1": ("consumer.stage1-identity.projection", "file-summary.stage1-c1-i9-receipt"),
+    "F2": ("consumer.stage1-provision.binding-projection", "file-summary.stage1-c3-receipt"),
+    "F3": ("consumer.stage1-final.candidate-identity", "file-summary.stage1-dc2-receipt"),
+    "B": ("consumer.shared-contracts.openapi-and-types", "consumer.shared-contracts.error-state", "file-summary.shared-contract-freeze"),
+    "S1": ("consumer.ai-context.server-fields", "consumer.ai-context.membership-binding", "file-summary.ai-execution-context"),
+    "S2": ("consumer.context-routing.tenant-scope", "consumer.context-routing.source-owner", "file-summary.context-routing"),
+    "S3": ("consumer.writer-routing.authority", "consumer.writer-routing.fail-closed-cutover", "file-summary.writer-router"),
+    "S4": ("consumer.artifact-record.readback-state", "consumer.artifact-record.idempotency", "file-summary.artifact-recorder"),
+    "S5": ("consumer.capability-side-effects.registry", "consumer.capability-side-effects.read-write", "file-summary.capability-registry"),
+    "T1": ("consumer.acceptance-harness.protected-contracts", "consumer.acceptance-harness.negative-cases", "file-summary.acceptance-matrix"),
+    "C1": ("consumer.personal-scope.tenant-owner", "consumer.personal-scope.source-receipts", "file-summary.personal-source-scope"),
+    "C2": ("consumer.personal-research.source-citations", "consumer.personal-research.tenant-scope", "file-summary.personal-research-brief"),
+    "C3": ("consumer.personal-decision.manual-confirmation", "consumer.personal-decision.platform-constraints", "file-summary.personal-decision-brief"),
+    "C4": ("consumer.personal-context.body-authority", "consumer.personal-context.source-set", "file-summary.personal-context-builder"),
+    "C5": ("consumer.personal-writer.internal-artifact", "consumer.personal-writer.feishu-zero-write", "file-summary.personal-internal-writer"),
+    "C6": ("consumer.personal-editor.revision-baseline", "consumer.personal-editor.conflict-state", "file-summary.personal-web-revision"),
+    "C7": ("consumer.personal-publish.revision-input", "consumer.personal-publish.platform-fields", "file-summary.personal-version-export"),
+    "C8": ("consumer.personal-e2e.candidate-inputs", "file-summary.personal-e2e-receipt"),
+    "O1": ("consumer.organization-scope.binding", "consumer.organization-scope.tenant-materials", "file-summary.organization-source-scope"),
+    "O2": ("consumer.organization-writer.binding-credentials", "consumer.organization-writer.parent-node", "file-summary.organization-lark-writer"),
+    "O3": ("consumer.organization-artifact.remote-binding", "consumer.organization-artifact.idempotency", "file-summary.organization-artifact-binding"),
+    "O4": ("consumer.organization-readback.binding-version", "consumer.organization-readback.mirror", "file-summary.organization-readback"),
+    "O5": ("consumer.organization-edit-readback.lark-document", "consumer.organization-edit-readback.remote-version", "file-summary.organization-edit-readback"),
+    "O6": ("consumer.organization-e2e.candidate-inputs", "file-summary.organization-e2e-receipt"),
+    "S": ("consumer.shared-e2e.contract-inputs", "file-summary.shared-e2e-receipt"),
+    "C": ("consumer.release-candidate.identity", "consumer.release-candidate.patch-set", "file-summary.release-candidate"),
+    "DA": ("consumer.static-acceptance.candidate-files", "consumer.static-acceptance.test-baseline", "file-summary.static-acceptance"),
+    "DB": (
+        "consumer.external-acceptance.release-identity",
+        "consumer.external-acceptance.database-schema",
+        "consumer.external-acceptance.personal-content-store",
+        "consumer.external-acceptance.organization-binding",
+        "consumer.external-acceptance.lark-document-readback",
+        "consumer.external-acceptance.browser-session",
+        "consumer.external-acceptance.recovery-contract",
+        "file-summary.external-system-acceptance.evidence-receipt",
+    ),
+    "DC": ("consumer.release-decision.acceptance-evidence", "consumer.release-decision.scope-boundary", "file-summary.independent-release-decision"),
+}
+
+# Edge keys describe the transferred input and target consumer.  The builder
+# supplies a deterministic file-summary key for any edge not listed here.
+INVALIDATION_KEYS_BY_EDGE: dict[tuple[str, str], tuple[str, ...]] = {
+    ("DA", "DB"): (
+        "consumer.external-acceptance.static-candidate-files",
+        "file-summary.static-acceptance-to-external-acceptance",
+    ),
+    ("DB", "DC"): (
+        "consumer.release-decision.external-evidence-receipt",
+        "file-summary.external-acceptance-to-release-decision",
+    ),
+}
+
+# K's accepted decision is frozen as independently addressable shards.  A
+# consumer may bind the shards it uses without treating the whole decision
+# record as one invalidation unit.
+DECISION_SHARD_FREEZE: dict[str, object] = {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": PRODUCT_DECISION_VERSION,
+    "freeze_state": "FROZEN",
+    "shards": {
+        "session-authority": (
+            "ai_execution_context",
+            "client_authority_boundary",
+            "session_envelope_boundary",
+            "route_authorization_axes",
+            "illegal_route_semantics",
+            "route_list_authority",
+            "ordinary_ia_entrypoint",
+        ),
+        "entry-state": ("entry_state_authority", "entry_state_contract"),
+        "writer-authority": (
+            "personal_body_authority",
+            "organization_body_authority",
+            "writer_routing",
+            "capability_side_effects",
+            "cutover_policy",
+            "cross_stage_gates",
+        ),
+        "artifact-closure": ("artifact_closure", "tenant_data_scope"),
+        "delivery-boundary": ("font_delivery", "font_weight_policy", "stage3_exclusions"),
+    },
+}
+
+# Every decision consumer declares the exact K shards it reads.  Convergence
+# and release gates intentionally bind the union they verify; leaf nodes bind
+# only their own behavior surface.
+DECISION_SHARDS_BY_NODE: dict[str, tuple[str, ...]] = {
+    "K": ("session-authority", "entry-state", "writer-authority", "artifact-closure", "delivery-boundary"),
+    "B": ("session-authority", "entry-state", "writer-authority", "artifact-closure", "delivery-boundary"),
+    "S1": ("session-authority", "entry-state"),
+    "S2": ("artifact-closure",),
+    "S3": ("writer-authority",),
+    "S4": ("artifact-closure",),
+    "S5": ("writer-authority", "artifact-closure"),
+    "T1": ("session-authority", "entry-state", "writer-authority", "artifact-closure", "delivery-boundary"),
+    "C1": ("artifact-closure",),
+    "C2": ("artifact-closure",),
+    "C3": ("artifact-closure",),
+    "C4": ("writer-authority", "artifact-closure"),
+    "C5": ("writer-authority", "artifact-closure"),
+    "C6": ("writer-authority",),
+    "C7": ("writer-authority", "artifact-closure"),
+    "C8": ("writer-authority", "artifact-closure", "delivery-boundary"),
+    "O1": ("artifact-closure",),
+    "O2": ("writer-authority", "artifact-closure"),
+    "O3": ("artifact-closure",),
+    "O4": ("artifact-closure",),
+    "O5": ("artifact-closure",),
+    "O6": ("writer-authority", "artifact-closure", "delivery-boundary"),
+    "S": ("session-authority", "entry-state", "writer-authority", "artifact-closure", "delivery-boundary"),
+    "C": ("session-authority", "entry-state", "writer-authority", "artifact-closure", "delivery-boundary"),
+    "DA": ("session-authority", "entry-state", "writer-authority", "artifact-closure", "delivery-boundary"),
+    "DB": ("session-authority", "entry-state", "writer-authority", "artifact-closure", "delivery-boundary"),
+    "DC": ("session-authority", "entry-state", "writer-authority", "artifact-closure", "delivery-boundary"),
+}
+
+EVIDENCE_INVALIDATION_POLICY: dict[str, object] = {
+    "invalidated_state": "INVALIDATED",
+    "reusable_states": ["VERIFIED", "ACCEPTED"],
+    "silent_reactivation": "forbidden",
+    "reuse_requires": [
+        "matching-consumer-surface-digest",
+        "matching-verification-source-digest",
+        "matching-protected-test-digest",
+        "non-invalidated-evidence-state",
+    ],
+    "reactivation_requires": [
+        "new-evidence-identity",
+        "fresh-scoped-review",
+        "explicit-acceptance-authority-transition",
+    ],
+}
+
+# Every node is bound to its own contract content.  Nodes with pre-existing
+# source evidence also bind the immutable upstream files listed here.
+VERIFICATION_SOURCE_KEYS_BY_NODE: dict[str, tuple[str, ...]] = {
+    node_id: ("node_contract",)
+    for node_id in SPECS
+}
+VERIFICATION_SOURCE_KEYS_BY_NODE.update({
+    "A": ("node_contract", "attachment", "structure_review", "latest_review"),
+    "A1": ("node_contract", "audit", "latest_review", "stage1_manifest", "stage1_c1", "stage1_c3", "stage1_dc2"),
+    "K": ("node_contract", "audit", "attachment", "structure_review", "latest_review"),
+    "F1": ("node_contract", "stage1_c1", "stage1_i9"),
+    "F2": ("node_contract", "stage1_c3"),
+    "F3": ("node_contract", "stage1_dc2"),
+    "DB": ("node_contract", "audit", "latest_review", "stage1_manifest", "stage1_dc2"),
+    "DC": ("node_contract", "latest_review", "stage1_manifest", "stage1_dc2"),
+})
+
+# This is the machine-readable result of the protected contract suite.  It is
+# deliberately part of the identity input so a changed execution outcome
+# cannot reuse an old acceptance identity silently.  The observation is
+# refreshed only after actually running the command.
+PROTECTED_TEST_EXECUTION_RESULT: dict[str, object] = {
+    "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "summary": "13 passed: protected contract suite",
+}
+
 PRIMARY_EXECUTOR_DEFAULT = "lw-terra"
 PRIMARY_EXECUTOR_OVERRIDES: dict[str, str] = {}
 PRIMARY_EXECUTOR_OPTIONS = {
@@ -470,6 +645,42 @@ CANDIDATE_IDENTITY_POLICY_OVERRIDES: dict[str, str] = {
     "DA": "must-match",
     "DB": "must-match",
     "DC": "must-match",
+}
+
+# Human acceptance is reserved for observations that cannot be established by
+# deterministic or machine-runtime checks.  The login-fold item remains
+# traceable, but is explicitly demoted to the machine lane.
+HUMAN_ACCEPTANCE_POLICY: dict[str, object] = {
+    "blocking_budget": 3,
+    "blocking_task_ids": ["O1", "O5", "DB"],
+    "demoted_machine_testable_task_ids": ["K"],
+    "demotion_reason": "K login-fold layout is machine-testable; keep human readout advisory and non-blocking.",
+}
+
+# AI review can report scoped findings, but it must not write or promote the
+# candidate.  A repaired finding gets one independent, finding-scoped rereview.
+AI_REVIEW_POLICY: dict[str, object] = {
+    "mode": "single-independent-zero-write-with-scoped-rereview",
+    "independent_lane_count": 1,
+    "write_authority": "zero-write",
+    "finding_rereview": {
+        "max_per_finding": 1,
+        "scope": "finding-only",
+        "write_authority": "implementation-owner",
+    },
+    "parallel_dual_lanes": False,
+    "acceptance_effect": "advisory-findings-only; cannot accept-or-promote",
+    "frozen_input": {
+        "identity_field": "consumer_surface_digest",
+        "required": True,
+        "mutation_after_freeze": "invalidate-review",
+    },
+    "run_requirements": {
+        "reviewer_identity": "required-and-independent-from-implementation-owner",
+        "wrapper_identity": "required",
+        "report_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/review-lanes/<node>/<run-id>/result.json",
+        "terminal_verdict": ["PASS", "FAIL", "BLOCKED"],
+    },
 }
 
 RELEASE_SLICE_BY_NODE: dict[str, str] = {node_id: "REL-2" for node_id in SPECS}

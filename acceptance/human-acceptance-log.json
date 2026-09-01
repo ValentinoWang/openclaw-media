@@ -1,9 +1,7 @@
 {
-  "blocking_entries": [],
-  "generated_at": null,
-  "non_blocking_entries": [
+  "blocking_entries": [
     {
-      "blocking": false,
+      "blocking": true,
       "checklist_path": "acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-SESSION-28D/checklist.md",
       "estimated_minutes": null,
       "handoff_path": null,
@@ -20,7 +18,7 @@
       "workspace": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D"
     },
     {
-      "blocking": false,
+      "blocking": true,
       "checklist_path": "acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-ORG-SCAN/checklist.md",
       "estimated_minutes": null,
       "handoff_path": null,
@@ -37,6 +35,26 @@
       "workspace": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN"
     },
     {
+      "blocking": true,
+      "checklist_path": "acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-LARK-READBACK/checklist.md",
+      "estimated_minutes": null,
+      "handoff_path": null,
+      "invalidation_keys": [],
+      "latest_run": null,
+      "loop_name": "ST2-HUM-LARK-READBACK",
+      "ready_at": null,
+      "release_slice": null,
+      "required_role": null,
+      "scope_hints": [],
+      "status": "PREPARING",
+      "summary": "人工验收工作区已建立，尚未完成机器验收递交。",
+      "task_id": "ST2-HUM-LARK-READBACK",
+      "workspace": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK"
+    }
+  ],
+  "generated_at": null,
+  "non_blocking_entries": [
+    {
       "blocking": false,
       "checklist_path": "acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md",
       "estimated_minutes": null,
@@ -52,23 +70,6 @@
       "summary": "人工验收工作区已建立，尚未完成机器验收递交。",
       "task_id": "ST2-HUM-LOGIN-FOLD",
       "workspace": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD"
-    },
-    {
-      "blocking": false,
-      "checklist_path": "acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-LARK-READBACK/checklist.md",
-      "estimated_minutes": null,
-      "handoff_path": null,
-      "invalidation_keys": [],
-      "latest_run": null,
-      "loop_name": "ST2-HUM-LARK-READBACK",
-      "ready_at": null,
-      "release_slice": null,
-      "required_role": null,
-      "scope_hints": [],
-      "status": "PREPARING",
-      "summary": "人工验收工作区已建立，尚未完成机器验收递交。",
-      "task_id": "ST2-HUM-LARK-READBACK",
-      "workspace": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK"
     },
     {
       "blocking": false,
@@ -123,5 +124,5 @@
     }
   ],
   "schema_version": 1,
-  "source_facts_sha256": "bea91085a4f15739e27f1469e0663aadd85afae0ed9472d491ba59824eb6c2f9"
+  "source_facts_sha256": "225ef9ae27820e58fcd423f79284b653c4f0d2919c1ad7c2555cce494366ce4f"
 }

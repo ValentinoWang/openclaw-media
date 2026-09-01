@@ -7,8 +7,44 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.o2.o3.v5"
+    "consumer.o3.input.o2",
+    "file-summary.edge.o2-o3",
+    "consumer.o3.input.o2.sha256-d6bfea872c44c8ee1f41be18f2769ffe7377fff1d97e041e508a5e4bbab0b9f0"
   ],
+  "transferred_output_contract": {
+    "algorithm": "sha256",
+    "contract": {
+      "artifact_id": "DL-O2",
+      "producer_content_digest": "sha256:476b5d31978c4ad2614a16e4587f20a2102af0565b4f9fe6e040f1b80aa41f54",
+      "producer_evidence_digest": "sha256:92fd139f5f6fbf38f6ef5073ad910fc9f33ab9ba22ad58d20bdcd798df7b56b7",
+      "producer_evidence_identity": {
+        "source_evidence": {
+          "evidence_level": "source",
+          "source_revision": "user-approved-three-stage-plan-2026-08-15",
+          "artifact_hashes": [
+            "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+            "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5",
+            "sha256:d5dad457861e413ff3963da568870be907495de50c33486810fa3dbdc0d92f98"
+          ],
+          "environment_identity": "current Codex task and declared input files",
+          "runtime_release_id": "n/a",
+          "actor_role": "user and product decision authority",
+          "account_or_tenant": "n/a",
+          "device_or_browser": "n/a",
+          "mock_or_fixture": false,
+          "observed_at": "2026-08-15T20:37:42+08:00",
+          "acceptance_contract": "Phase-2 product decisions v2"
+        }
+      },
+      "source_semantic_key": "media.stage2.organization-lark-writer",
+      "source_output": "LarkArtifactWriter 和远端写入收据",
+      "source_acceptance_predicate": "组织 A 不得使用组织 B 或部署级凭据",
+      "required_state": "ACCEPTED",
+      "dependency_scope": "specific-output",
+      "target_input_key": "O3.input.O2"
+    },
+    "digest": "sha256:d6bfea872c44c8ee1f41be18f2769ffe7377fff1d97e041e508a5e4bbab0b9f0"
+  },
   "transferred_input": "LarkArtifactWriter 和远端写入收据",
   "gate_evidence": "组织 A 不得使用组织 B 或部署级凭据",
   "reason_code": "data-dependency",

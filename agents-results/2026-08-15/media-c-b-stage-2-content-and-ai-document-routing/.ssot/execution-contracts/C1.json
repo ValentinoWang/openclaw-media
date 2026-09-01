@@ -29,6 +29,124 @@
   "worker_transport": "external-codex-exec",
   "release_slice": "REL-2",
   "wave_id": "W-2-4",
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "artifact-closure"
+    ],
+    "shards": {
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      }
+    },
+    "digest": "sha256:9f09ff9be8f6e5c7c980ba3da766a3609a61ed0aa1c9e91afd2c56f9660ece5c",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "b92923c1389cbb178d7664c5b81532e5990fb870b2909a19cbc286b5dfdd3cdc"
+    },
+    "digest": "sha256:d69db4da17280d324bb7307ca91b069448c336df8d9e7990a4b8bbf2f64e2bf5",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.personal-scope.tenant-owner",
+      "consumer.personal-scope.source-receipts",
+      "file-summary.personal-source-scope"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.personal-source-scope",
+      "inputs": "F1 个人工作区、B 合同、个人素材、账号、复盘和记忆",
+      "processing": "建立个人专属资料范围、来源收据和缺失处置",
+      "task": "实现个人资料范围和隔离门禁。",
+      "output": "个人资料投影与范围合同",
+      "tests": "个人正例、空资料、他人、组织资料和删除后刷新负例",
+      "acceptance": "个人工作区不读取任何组织共享资料",
+      "definition_of_done": "所有资料可回读租户和来源归属",
+      "write_authority": "implementation",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.personal-scope.tenant-owner",
+        "consumer.personal-scope.source-receipts",
+        "file-summary.personal-source-scope"
+      ],
+      "upstream_contract_inputs": {
+        "B": {
+          "semantic_key": "media.stage2.contract-assembly",
+          "inputs": "F1 接受的会话底座和 K 第 5 版决定",
+          "processing": "冻结人工智能执行上下文、资料路由、写入路由、成果登记、回读、能力副作用、会话合同 v3 和登录入口状态接口合同；routeGrants 必须维持服务端生成与客户端独立推导后逐项比对的失败关闭语义",
+          "output": "共享接口冻结身份",
+          "tests": "OpenAPI、类型、错误码、状态机、入口状态独立接口和保护测试红灯",
+          "acceptance": "不接受前端伪造租户、Binding、正文权威或路由授权",
+          "write_authority": "authoritative-contract",
+          "acceptance_authority": "main orchestrator"
+        },
+        "F1": {
+          "semantic_key": "media.stage2.gate.stage1-identity",
+          "inputs": "第一阶段 C1 机器状态、候选身份和 I9 旧写入器关闭回执",
+          "processing": "零写入核对 C1 的正式状态、会话、个人工作区、授权负例和人工智能文档能力失败关闭身份",
+          "output": "身份汇合跨阶段收据",
+          "tests": "上游机器源、主视图、进度、I9 回执和候选哈希核对",
+          "acceptance": "只有第一阶段 C1 ACCEPTED 且 I9 属于同一候选时才可接受本投影",
+          "write_authority": "evidence-only",
+          "acceptance_authority": "cross-stage projection owner"
+        }
+      },
+      "incoming_transfer_digests": {
+        "B": "sha256:1e4c31ed17b0d3796eeff21658d6229bec193764da524235a345b33c3aa00452",
+        "F1": "sha256:1c7abac43019511ecdd278cbf4aa99a74b9670ae62a05fc8c2b8387957a2b3d8"
+      },
+      "consumed_decision_shards": {
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        }
+      }
+    },
+    "digest": "sha256:538930350b606e04f8786f008442ccc2c50e8f95decd7b047b0f23d210a6366c"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "B",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "F1",
+      "required_state": "ACCEPTED"
+    }
+  ],
   "executor_attempt_policy": {
     "initial_executor": "lw-terra",
     "initial_wrapper": "run-lw-terra.sh",
@@ -59,8 +177,8 @@
     "worker_level": "LW",
     "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
     "wrapper_entrypoint": "exec codex exec",
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
-    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "project_root": "/private/tmp/openclaw-media-live",
+    "invocation": "codex exec -C '/private/tmp/openclaw-media-live' --skip-git-repo-check --sandbox danger-full-access",
     "sandbox": "danger-full-access",
     "sandbox_authority": "writable sandbox",
     "runtime_profile": "implementation-runner",
@@ -70,8 +188,8 @@
     "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
     "task_argument": "实现个人资料范围和隔离门禁。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/C1.json",
-    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/C1.txt",
-    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/C1.log",
+    "prompt_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/C1.txt",
+    "log_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/C1.log",
     "prompt_sha256": "capture-before-launch",
     "launch_barrier": "all wave PIDs registered before first wait",
     "prompt_cleanup": "delete after exit evidence registration",
