@@ -33,3 +33,9 @@ The initial five `nohup` launches (PIDs 61595-61599) all exited immediately with
 | organization-mirror | 63505 | stopped after 30 minutes with no return and 0-byte log | transport-stalled; no review conclusion |
 
 The three stalled lanes exhausted their one allowed retry and were terminated with `SIGTERM`. They must not be represented as passed review or retried under a different executor.
+
+## Post-Push Cleanup
+
+- After `7a8cd37e` was read back from both `github/main` and 106 `origin/main`, the five temporary review prompt files were moved from `/tmp/openclaw-stage2-release-prompts-dba33b95/` to the system Trash.
+- The isolated Python 3.13 Router test environment, including its 218 MB virtual environment, was moved from `/tmp/openclaw-stage2-router-py313.dba33b95.AfMfzK/` to the system Trash.
+- The original temporary paths were checked absent. Codex session transcripts and Codex memories were retained.
