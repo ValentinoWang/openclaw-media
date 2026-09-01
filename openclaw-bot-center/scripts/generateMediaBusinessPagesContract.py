@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = ROOT.parent / "openclaw-tag-router/openclaw_app/contracts/media_web_business_pages.openapi.yaml"
 DEFAULT_TARGET = ROOT / "src/media/generatedBusinessPagesContract.ts"
 ACCEPTED_SOURCE_SHA256 = (
-    "84cfcce346b941b6423e5c629d08c1ec3ffe09f0270f5ac8aae767fb2bf16a7a"
+    "1a7ae61b841276ffe103abcbdf65fda97a36425160daf9c765b508c629ee3593"
 )
 EXPECTED_PAGE_IDS = tuple(f"B{index:02d}" for index in range(1, 15))
 EXPECTED_DOCUMENT_OPERATION_IDS = (
@@ -28,7 +28,7 @@ EXPECTED_DOCUMENT_OPERATION_IDS = (
     "saveDocumentDraft",
 )
 MEDIA_SESSION_REQUIRED = {
-    "publicUserId", "tenantId", "workspaceMode", "editorMode", "bodyAuthority",
+    "publicUserId", "workspaceMode", "editorMode", "bodyAuthority",
     "organizationName", "memberRole", "organizationConnection", "installationConnection",
     "role", "maintainer", "csrfToken", "expiresAt", "routeGrants", "schemaVersion",
 }
@@ -256,8 +256,8 @@ def render(source: Path) -> str:
     components = require_mapping(contract.get("components"), "components")
     schemas = require_mapping(components.get("schemas"), "components.schemas")
     schema_names = sorted(schemas)
-    if len(schema_names) != 184:
-        raise ValueError(f"expected 184 schemas, got {len(schema_names)}")
+    if len(schema_names) != 187:
+        raise ValueError(f"expected 187 schemas, got {len(schema_names)}")
 
     page_operations = collect_page_operations(contract)
     operations, groups = collect_operations(contract, page_operations)

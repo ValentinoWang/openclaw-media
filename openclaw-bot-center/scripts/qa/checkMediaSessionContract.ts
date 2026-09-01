@@ -18,7 +18,6 @@ async function loadFixture(payload: unknown) {
 try {
   const session = {
     publicUserId: '11111111-1111-4111-8111-111111111111',
-    tenantId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     organizationName: '测试飞书组织',
     workspaceMode: 'organization_lark' as const,
     editorMode: 'lark_edit' as const,
@@ -83,7 +82,7 @@ try {
     {
       schemaVersion: 'media_web_business_pages_v2',
       revision: 1,
-      session: { ...session, tenantId: undefined },
+      session: { ...session, tenantId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
     },
     {
       schemaVersion: 'media_web_business_pages_v2',

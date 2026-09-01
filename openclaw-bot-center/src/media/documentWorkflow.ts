@@ -70,6 +70,14 @@ export type DocumentArtifactRecord = {
   organizationDocumentUrl?: string | null;
   larkDocumentUrl?: string | null;
 };
+export type DocumentEditExecutionReceipt = {
+  status: "ready" | "failed";
+  applied: Array<{ operation: "replace_text" | "insert_table_row"; blockId?: string }>;
+  appliedCount: number;
+  manualActions: Array<{ reason: string; blockId?: string }>;
+  protectedSkipped: string[];
+  errorCode?: string;
+};
 export type DocumentRevisionRecord = {
   publicArtifactId: string;
   artifactKind: DocumentArtifactKind;
@@ -82,6 +90,7 @@ export type DocumentRevisionRecord = {
   body: DocumentBody;
   createdAt: string;
   updatedAt: string;
+  executionReceipt?: DocumentEditExecutionReceipt;
 };
 export type DocumentBodyResponse = { schemaVersion: string; data: { artifact: DocumentArtifactRecord; revision: DocumentRevisionRecord }; revision: number };
 export type DocumentRevisionResponse = { schemaVersion: string; data: DocumentRevisionRecord; revision: number };

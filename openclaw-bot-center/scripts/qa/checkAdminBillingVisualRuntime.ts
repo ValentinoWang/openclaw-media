@@ -24,7 +24,6 @@ const viewports = [
 
 const adminSession = {
   publicUserId: "11111111-1111-4111-8111-111111111111",
-  tenantId: "22222222-2222-4222-8222-222222222222",
   organizationName: null,
   memberRole: "owner" as const,
   organizationConnection: "not_applicable" as const,

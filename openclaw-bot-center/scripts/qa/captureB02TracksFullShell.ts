@@ -339,7 +339,6 @@ async function installFixtures(page: Page, scenario: ScenarioName) {
         revision: 1,
         session: {
           publicUserId: "22222222-2222-4222-8222-222222222222",
-          tenantId: "33333333-3333-4333-8333-333333333333",
           organizationName: null,
           workspaceMode: "personal_web",
           editorMode: "web_edit",

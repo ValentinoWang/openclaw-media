@@ -40,6 +40,9 @@ EXCLUDED_OPERATION_IDS = frozenset(
         "archive_readback",
     }
 )
+# Shared authentication entry routes live outside the IF2 media API prefix and
+# are handled directly by the HTTP adapter rather than the business dispatcher.
+NON_IF2_OPERATION_IDS = frozenset({"getAuthEntryState"})
 
 
 class DispatcherContractError(RuntimeError):
@@ -191,6 +194,8 @@ def _contract_route_bindings() -> tuple[RouteSpec, ...]:
         for method in ("get", "post", "put"):
             operation = path_item.get(method)
             if operation is None:
+                continue
+            if operation.get("operationId") in NON_IF2_OPERATION_IDS:
                 continue
             request_schema = None
             request_body = operation.get("requestBody") or {}

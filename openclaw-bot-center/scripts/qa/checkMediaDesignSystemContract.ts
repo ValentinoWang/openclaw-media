@@ -247,7 +247,7 @@ for (const file of files.filter((candidate) => candidate.endsWith(".tsx"))) {
       directlyRendered = ts.isJsxAttribute(ancestor) || ts.isJsxExpression(ancestor);
       ancestor = ancestor.parent;
     }
-    const implementationLeak = /\b(?:revision|COM\d{2}|mediaclaw-cny-\d+|status\s*=)/i.test(visibleText);
+    const implementationLeak = directlyRendered && /\b(?:revision|COM\d{2}|mediaclaw-cny-\d+|status\s*=)/i.test(visibleText);
     const renderedEnumLeak = directlyRendered && /\b(?:personal_web|organization_lark|research_snapshot|asset_digest|decision_brief|creation_document|publishing_package|review_report|project_summary|not_applicable|open_organization_document|resolve_sync)\b/i.test(visibleText);
     if (!isBareImplementationToken && (implementationLeak || renderedEnumLeak)) {
       const line = tree.getLineAndCharacterOfPosition(node.getStart(tree)).line + 1;

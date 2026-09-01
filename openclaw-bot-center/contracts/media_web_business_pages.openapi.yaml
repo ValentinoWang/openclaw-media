@@ -883,7 +883,7 @@ paths:
       summary: Create a canonical Media task.
       security:
       - cookieAuth: []
-      x-permission: ordinary-session
+      x-permission: shared-session
       parameters:
       - $ref: '#/components/parameters/CsrfHeader'
       - $ref: '#/components/parameters/IdempotencyHeader'
@@ -4673,6 +4673,8 @@ components:
           $ref: '#/components/schemas/Timestamp'
         updatedAt:
           $ref: '#/components/schemas/Timestamp'
+        executionReceipt:
+          $ref: '#/components/schemas/DocumentEditExecutionReceipt'
       required:
       - publicArtifactId
       - artifactKind
@@ -4685,6 +4687,63 @@ components:
       - body
       - createdAt
       - updatedAt
+    DocumentEditReceiptAppliedOperation:
+      type: object
+      additionalProperties: false
+      properties:
+        operation:
+          type: string
+          enum:
+          - replace_text
+          - insert_table_row
+        blockId:
+          $ref: '#/components/schemas/PublicId'
+      required:
+      - operation
+    DocumentEditReceiptManualAction:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          pattern: ^[A-Za-z0-9_.:-]{1,96}$
+        blockId:
+          $ref: '#/components/schemas/PublicId'
+      required:
+      - reason
+    DocumentEditExecutionReceipt:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum:
+          - ready
+          - failed
+        applied:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentEditReceiptAppliedOperation'
+        appliedCount:
+          type: integer
+          minimum: 0
+        manualActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentEditReceiptManualAction'
+        protectedSkipped:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicId'
+        errorCode:
+          type: string
+          pattern: ^[a-z][a-z0-9_.:-]{0,95}$
+      required:
+      - status
+      - applied
+      - appliedCount
+      - manualActions
+      - protectedSkipped
     DocumentBodyRecord:
       type: object
       additionalProperties: false
@@ -6461,9 +6520,6 @@ components:
         publicUserId:
           type: string
           pattern: ^[A-Za-z0-9_-]{8,160}$
-        tenantId:
-          type: string
-          format: uuid
         workspaceMode:
           type: string
           enum:
@@ -6525,7 +6581,6 @@ components:
           $ref: '#/components/schemas/SchemaVersion'
       required:
       - publicUserId
-      - tenantId
       - workspaceMode
       - editorMode
       - bodyAuthority

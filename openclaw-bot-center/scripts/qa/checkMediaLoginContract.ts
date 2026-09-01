@@ -168,9 +168,10 @@ assert.doesNotMatch(script, /\/openclaw\/auth\/feishu\/start/u)
 assert.doesNotMatch(script, /\/openclaw\/auth\/feishu\/status/u)
 assert.match(script, /credentials:\s*'same-origin'/u)
 assert.match(script, /session\.role === 'admin'/u)
-for (const requiredField of ['tenantId', 'workspaceMode', 'editorMode', 'bodyAuthority', 'memberRole', 'maintainer']) {
+for (const requiredField of ['publicUserId', 'organizationName', 'workspaceMode', 'editorMode', 'bodyAuthority', 'memberRole', 'organizationConnection', 'installationConnection', 'role', 'maintainer', 'csrfToken', 'expiresAt', 'routeGrants']) {
   assert.match(script, new RegExp(`session\\.${requiredField}|${requiredField}`), `login session parser must require ${requiredField}`)
 }
+assert.doesNotMatch(script, /\btenantId\b/u, 'login session parser must not require a retired tenant identifier')
 assert.doesNotMatch(script, /localStorage|sessionStorage|document\.cookie/u)
 assert.ok(html.includes('id="qr-canvas"'))
 assert.ok(html.includes('id="password-panel"'))

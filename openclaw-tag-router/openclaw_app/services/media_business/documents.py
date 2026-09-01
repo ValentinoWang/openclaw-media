@@ -975,7 +975,10 @@ class DocumentsService:
         with self._connection_factory() as connection:
             artifact = self._artifact(connection, tenant_id, artifact_id)
             row = self._revision(connection, tenant_id, artifact_id, number, artifact)
-        return self._revision_response(row)
+            execution_receipt = self._execution_receipt(
+                connection, tenant_id, artifact_id, number
+            )
+        return self._revision_response(row, execution_receipt=execution_receipt)
 
     def create_document_export(
         self,
@@ -1354,8 +1357,102 @@ class DocumentsService:
         return public_projection({"schemaVersion": SCHEMA_VERSION, "revision": revision[2],
                                   "data": {"artifact": self._artifact_record(artifact), "revision": record}})
 
-    def _revision_response(self, revision: Any) -> dict[str, Any]:
+    def _execution_receipt(
+        self,
+        connection: DatabaseConnection,
+        tenant_id: str,
+        artifact_id: str,
+        revision: int,
+    ) -> dict[str, Any] | None:
+        row = _fetchone(
+            connection.execute(
+                """SELECT response_json FROM openclaw_account.if2_idempotency_receipts
+                   WHERE scope_kind='tenant' AND scope_id=%s
+                     AND operation_id=%s AND idempotency_key=%s
+                     AND state IN ('completed','failed')""",
+                (
+                    tenant_id,
+                    f"documentEdit:{artifact_id}:{revision}",
+                    f"revision-{revision}",
+                ),
+            )
+        )
+        if row is None:
+            return None
+        payload = row[0]
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except json.JSONDecodeError:
+                return None
+        if not isinstance(payload, Mapping):
+            return None
+        source = payload.get("receipt")
+        if not isinstance(source, Mapping):
+            source = payload
+        status = source.get("status")
+        if status not in {"ready", "failed"}:
+            return None
+
+        applied: list[dict[str, str]] = []
+        for item in source.get("applied", []):
+            if not isinstance(item, Mapping):
+                continue
+            operation = item.get("operation")
+            block_id = item.get("blockId")
+            if operation not in {"replace_text", "insert_table_row"}:
+                continue
+            record = {"operation": operation}
+            if isinstance(block_id, str) and _PUBLIC_ID.fullmatch(block_id):
+                record["blockId"] = block_id
+            applied.append(record)
+
+        manual_actions: list[dict[str, str]] = []
+        for item in source.get("manualActions", []):
+            if not isinstance(item, Mapping):
+                continue
+            reason = item.get("reason")
+            if not isinstance(reason, str) or not re.fullmatch(
+                r"[A-Za-z0-9_.:-]{1,96}", reason
+            ):
+                reason = "manual_review_required"
+            record = {"reason": reason}
+            block_id = item.get("blockId", item.get("block_id"))
+            if isinstance(block_id, str) and _PUBLIC_ID.fullmatch(block_id):
+                record["blockId"] = block_id
+            manual_actions.append(record)
+
+        protected_skipped = [
+            item
+            for item in source.get("protectedSkipped", [])
+            if isinstance(item, str) and _PUBLIC_ID.fullmatch(item)
+        ]
+        raw_count = source.get("appliedCount")
+        applied_count = (
+            raw_count
+            if isinstance(raw_count, int) and not isinstance(raw_count, bool) and raw_count >= 0
+            else len(applied)
+        )
+        receipt: dict[str, Any] = {
+            "status": status,
+            "applied": applied,
+            "appliedCount": applied_count,
+            "manualActions": manual_actions,
+            "protectedSkipped": protected_skipped,
+        }
+        error_code = source.get("errorCode")
+        if isinstance(error_code, str) and re.fullmatch(
+            r"[a-z][a-z0-9_.:-]{0,95}", error_code
+        ):
+            receipt["errorCode"] = error_code
+        return receipt
+
+    def _revision_response(
+        self, revision: Any, *, execution_receipt: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         record = self._revision_record(revision)
+        if execution_receipt is not None:
+            record["executionReceipt"] = execution_receipt
         return public_projection({"schemaVersion": SCHEMA_VERSION, "revision": revision[2], "data": record})
 
     @staticmethod

@@ -213,7 +213,7 @@ function ProductShell() {
 
   const authenticatedSession = requireAuthenticatedSession(session)
   const routePolicy = resolveStudioRoutePolicy(authenticatedSession)
-  const sessionScope = JSON.stringify([authenticatedSession.publicUserId, authenticatedSession.tenantId, authenticatedSession.csrfToken])
+  const sessionScope = JSON.stringify([authenticatedSession.publicUserId, authenticatedSession.workspaceMode, authenticatedSession.bodyAuthority, authenticatedSession.role, authenticatedSession.csrfToken])
   const isAdminShell = routePolicy.shell === 'admin'
   const isPersonal = routePolicy.shell === 'personal'
   const isOrganization = routePolicy.shell === 'organization'

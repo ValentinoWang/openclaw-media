@@ -129,7 +129,6 @@ const organizationArtifactId = "stage2b-organization-document";
 
 const personalSession = {
   publicUserId: "11111111-1111-4111-8111-111111111111",
-  tenantId: "22222222-2222-4222-8222-222222222222",
   organizationName: null,
   memberRole: "owner" as const,
   organizationConnection: "not_applicable" as const,
@@ -164,7 +163,6 @@ const personalSession = {
 
 const organizationSession = {
   publicUserId: "33333333-3333-4333-8333-333333333333",
-  tenantId: "44444444-4444-4444-8444-444444444444",
   organizationName: "光合内容工作室",
   memberRole: "member" as const,
   organizationConnection: "connected" as const,
@@ -421,10 +419,18 @@ function revisionResponse(
     side === "C" ? 8 : 15,
     side === "C" ? null : "v15",
   );
+  const receipt = side === "B" && state === "ready"
+    ? {
+        applied: [{ operation: "replace_text", blockId: "blk_b_intro" }],
+        appliedCount: 1,
+        manualActions: [{ reason: "protected_block", blockId: "blk_b_snapshot" }],
+        protectedSkipped: [{ blockId: "blk_b_snapshot" }],
+      }
+    : undefined;
   return {
     schemaVersion: "media.document.revision.v1",
     revision: revision.revision,
-    data: { ...revision, state },
+    data: { ...revision, state, ...(receipt ? { executionReceipt: receipt } : {}) },
   };
 }
 
@@ -563,12 +569,12 @@ async function installApi(page: Page, mock: MockState): Promise<void> {
     if (method === "POST" && path === `/artifacts/${mock.artifactId}/revisions`) {
       await fulfillJson(route, {
         schemaVersion: "media.document.revision.v1",
-        revision: 8,
-        item: { currentRevision: 8 },
+        revision: mock.side === "C" ? 8 : 15,
+        item: { currentRevision: mock.side === "C" ? 8 : 15 },
       });
       return;
     }
-    if (method === "GET" && path === `/documents/${mock.artifactId}/revisions/8`) {
+    if (method === "GET" && new RegExp(`^/documents/${mock.artifactId}/revisions/\\d+$`, "u").test(path)) {
       mock.aiRevisionReads += 1;
       await fulfillJson(route, revisionResponse(mock.side, mock.artifactId, mock.aiRevisionReads === 1 ? "generating" : "ready"));
       return;
@@ -773,9 +779,34 @@ async function driveCState(
   throw new Error(`Unsupported C capture state reached driveCState: ${state}`);
 }
 
-async function driveBState(page: Page, state: BState): Promise<{ root: Locator; anchor: Locator; anchorDetail: string }> {
+async function driveBState(
+  page: Page,
+  mock: MockState,
+  state: BState,
+  primaryPath: string,
+): Promise<{ root: Locator; anchor: Locator; anchorDetail: string; additional: ScreenshotRecord[] }> {
   const root = await waitForBPage(page);
-  if (state === "aiResultProgress") throw new Error("B AI result requires the T5 execution receipt and must not be mocked as a completed runtime state");
+  const additional: ScreenshotRecord[] = [];
+  if (state === "aiResultProgress") {
+    const request = root.getByRole("textbox", { name: "改稿要求", exact: true });
+    await request.fill("把正文开头改得更清楚");
+    await root.getByRole("button", { name: "生成改稿修订", exact: true }).click();
+    const progressAnchor = root.getByRole("button", { name: "正在生成", exact: true });
+    await expect(progressAnchor).toBeVisible();
+    const progressPath = resolve(outputDir, `B-aiResultProgress-${(page.viewportSize() ?? { width: 0 }).width === 390 ? "mobile" : "desktop"}-progress.png`);
+    additional.push(await saveScreenshot(page, progressPath));
+    const resultAnchor = root.getByText("改稿修订已就绪。", { exact: true });
+    await expect(resultAnchor).toBeVisible({ timeout: 15_000 });
+    await expect(root).toHaveAttribute("data-ai-state", "ready");
+    await expect(root.getByText("已应用", { exact: true })).toBeVisible();
+    await expect(root.getByText("需要人工处理", { exact: true })).toBeVisible();
+    await expect(root.getByText("受保护未改动", { exact: true })).toBeVisible();
+    const load = root.getByRole("button", { name: "载入此修订", exact: true });
+    await expect(load).toBeVisible();
+    await load.click();
+    await expect(root.getByText("已载入改稿修订", { exact: false })).toBeVisible();
+    return { root, anchor: resultAnchor, anchorDetail: "同一浏览器流程先观察组织 AI 生成中，再验证服务端修订回读、执行回执和只读预览。", additional };
+  }
   const syncState = state === "partialApplication" ? "partial" : state;
   await expect(root).toHaveAttribute("data-document-sync-state", syncState);
   await expect(root.locator(`[data-sync-pipeline="${syncState}"]`)).toBeVisible();
@@ -789,7 +820,7 @@ async function driveBState(page: Page, state: BState): Promise<{ root: Locator; 
   if (syncState === "unknown") await expect(root.locator('button[data-sync-action="reconcile"]')).toBeVisible();
   if (syncState === "unsupported") await expect(root.locator('[data-block-id="blk_b_table"][data-document-state="unsupported"]')).toBeVisible();
   if (syncState === "partial") await expect(root.getByText("需要人工处理", { exact: true })).toBeVisible();
-  return { root, anchor, anchorDetail: `组织镜像页展示 ${syncState} 的服务端同步批次投影、四步链路与只读正文。` };
+  return { root, anchor, anchorDetail: `组织镜像页展示 ${syncState} 的服务端同步批次投影、四步链路与只读正文。`, additional };
 }
 
 async function assertNoHorizontalOverflow(page: Page): Promise<{ ok: boolean; detail: string }> {
@@ -992,7 +1023,7 @@ function pendingContract(side: Side, state: State): PendingContract {
 function pendingEntries(): ManifestEntry[] {
   const entries: ManifestEntry[] = [];
   const pendingC: CState[] = [];
-  const pendingB: BState[] = ["aiResultProgress"];
+  const pendingB: BState[] = [];
   for (const viewport of viewports) {
     for (const state of pendingC) {
       entries.push({
@@ -1077,10 +1108,11 @@ async function captureRuntimeState(
       anchorDetail = driven.anchorDetail;
       additionalScreenshots.push(...driven.additional);
     } else {
-      const driven = await driveBState(page, state as BState);
+      const driven = await driveBState(page, mock, state as BState, primaryPath);
       root = driven.root;
       anchor = driven.anchor;
       anchorDetail = driven.anchorDetail;
+      additionalScreenshots.push(...driven.additional);
     }
     checks.push({ name: "pageTitle", ok: true, detail: (await root.getByRole("heading", { level: 1 }).first().textContent())?.trim() ?? "" });
     checks.push({ name: "stateAnchor", ok: true, detail: anchorDetail });
@@ -1201,7 +1233,7 @@ async function main(): Promise<void> {
   const entries: ManifestEntry[] = [];
   try {
     const runtimeC: CState[] = ["clean", "dirty", "conflict", "unsupported", "saving", "aiResultProgress", "offlineRetry", "personalDocument"];
-    const runtimeB: BState[] = ["synced", "running", "unknown", "conflict", "unsupported", "stale", "partialApplication"];
+    const runtimeB: BState[] = ["synced", "running", "unknown", "conflict", "unsupported", "stale", "aiResultProgress", "partialApplication"];
     for (const viewport of viewports) {
       for (const state of runtimeC) entries.push(await captureRuntimeState(browser, "C", state, viewport, baseUrl));
       for (const state of runtimeB) entries.push(await captureRuntimeState(browser, "B", state, viewport, baseUrl));

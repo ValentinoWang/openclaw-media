@@ -1,22 +1,32 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-31T23:06:08.586141+00:00",
+  "generated_at": "2026-09-01T04:56:25.265586+00:00",
   "generator": {
     "repository": "ValentinoWang/Harness_Engineering",
-    "commit": "480c64bc92ecab178f202daead187acd9656cd1d",
-    "dirty": false,
-    "dirty_files": [],
-    "dirty_diff_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "commit": "c76bbad0d1eba8a189273d0dfc3315a7a21cbebb",
+    "dirty": true,
+    "dirty_files": [
+      "Core/skills/design-reference-context/SKILL.md",
+      "Core/skills/design-reference-context/agents/openai.yaml",
+      "Core/skills/design-reference-context/assets/schemas/design-reference-registry.schema.json",
+      "Core/skills/design-reference-context/assets/schemas/visual-dna.schema.json",
+      "Core/skills/visual-direction-exploration/SKILL.md",
+      "Core/skills/visual-direction-exploration/agents/openai.yaml",
+      "Core/skills/visual-direction-exploration/assets/schemas/candidate-set.schema.json",
+      "Core/skills/visual-direction-exploration/assets/schemas/visual-selection.schema.json",
+      "Harness_Product_Aware_Frontend_Design_Development_Spec_v0.3.0.md"
+    ],
+    "dirty_diff_sha256": "cea7864e0a3a88a674346b041e8c110fc50aa1a0248337d64c21b615f72deffa",
     "skill_path": "Core/skills/report-to-ssot-development-paths",
     "skill_realpath": "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths",
-    "skill_sha256": "23d9638a5bd3fae1638480a1c170eac691ab6975678d752f8bd4cdf40c536d41",
-    "checker_bundle_sha256": "445169fcc852a421939689f4d3dcdd187da088c52eb21d18a8e2966905183f02"
+    "skill_sha256": "1e7c129ec9cb19ee5d925ee0a1c8b78da53cb18bb0e7ab8c16734c417c852e4a",
+    "checker_bundle_sha256": "f668a0b01d6811176f3cd6efab858a36ed5f50e804c7d75c5999991f788dcfab"
   },
   "runtime": {
     "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/mediaclaw-stylekit-publish",
-    "project_commit": "17bab0cfdc9de5116d391c94222a56bc2b84f266",
+    "project_commit": "28205c0c38c8622a2453c34312b1bf5fd55a9b3a",
     "project_dirty": true,
-    "project_dirty_diff_sha256": "479f36a685ab29fa98f76e20a5a960c656bfd5f6f5ab23069db954bfdfd38826",
+    "project_dirty_diff_sha256": "276f2b5a579fa49a06bef2c5b49dc404883ffc76febaf71956c803de66bc861f",
     "harness_lock_sha256": null
   },
   "bundle": {
@@ -39,7 +49,7 @@
       ],
       "exit_code": 0,
       "result": "passed",
-      "output": "project: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/mediaclaw-stylekit-publish\nmode: symlink-local\nsource: /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering\nlinks: 34\nruntime_skill_check: enabled\ndoctor: ok\n"
+      "output": "project: /Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/mediaclaw-stylekit-publish\nmode: symlink-local\nsource: /Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering\nlinks: 37\nruntime_skill_check: enabled\nWARN Harness source dirty files: 3\ndoctor: ok\n"
     },
     {
       "id": "complexity",

@@ -18,7 +18,7 @@ import {
 
 const root = path.resolve(import.meta.dirname, "../..");
 const expectedHash =
-  "aa9d094c0c6ce483b238edc510b919f3ef3a149bbeced939f398534b526b8cb8";
+  "1a7ae61b841276ffe103abcbdf65fda97a36425160daf9c765b508c629ee3593";
 const generator = path.join(
   root,
   "scripts/generateMediaBusinessPagesContract.py",
@@ -67,7 +67,7 @@ function requireSameSet(
 
 function validateGeneratedContract(): void {
   requireContract(sourceSha256 === expectedHash, "generated source hash drift");
-  requireContract(schemaNames.length === 180, "expected 180 OpenAPI schemas");
+  requireContract(schemaNames.length === 187, "expected 187 OpenAPI schemas");
   requireUnique(schemaNames, "schema names");
   requireSameSet(
     Object.keys(schemaRefs),
@@ -82,19 +82,19 @@ function validateGeneratedContract(): void {
   }
 
   const operationIds = Object.keys(operations);
-  requireContract(operationIds.length === 90, "expected 90 operations");
+  requireContract(operationIds.length === 92, "expected 92 operations");
   requireUnique(operationIds, "operation IDs");
   requireContract(
     pageOperationIds.length === 74,
     "expected 74 page operations",
   );
   requireContract(
-    sharedOperationIds.length === 9,
-    "expected 9 shared operations",
+    sharedOperationIds.length === 10,
+    "expected 10 shared operations",
   );
   requireContract(
-    documentOperationIds.length === 7,
-    "expected 7 document operations",
+    documentOperationIds.length === 8,
+    "expected 8 document operations",
   );
   requireSameSet(
     operationIds,
@@ -134,7 +134,7 @@ function validateGeneratedContract(): void {
   );
   requireSameSet(
     declaredDocumentOperations,
-    ["getDocumentResource"],
+    ["getDocumentResource", "listArtifactSyncBatches"],
     "declared document page-operation set",
   );
 

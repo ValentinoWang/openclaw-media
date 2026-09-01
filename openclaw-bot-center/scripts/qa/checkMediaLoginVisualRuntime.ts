@@ -65,7 +65,6 @@ function sessionPayload(): Record<string, unknown> {
     revision: 1,
     session: {
       publicUserId: '11111111-1111-4111-8111-111111111111',
-      tenantId: '22222222-2222-4222-8222-222222222222',
       role: 'ordinary',
       memberRole: 'member',
       maintainer: false,

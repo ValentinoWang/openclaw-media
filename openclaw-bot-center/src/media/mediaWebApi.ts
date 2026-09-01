@@ -30,7 +30,6 @@ export type MediaWebCapability = CapabilityDefinition
 
 const mediaWebSessionBaseSchema = z.object({
   publicUserId: z.string().uuid(),
-  tenantId: z.string().uuid(),
   organizationName: z.string().min(1).max(120).nullable(),
   memberRole: z.enum(['owner', 'member']),
   organizationConnection: z.enum(['not_applicable', 'connected', 'pending', 'disabled', 'revoked', 'attention']),

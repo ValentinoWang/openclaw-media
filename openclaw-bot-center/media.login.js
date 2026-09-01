@@ -135,19 +135,33 @@ function parseMediaSessionEnvelope(payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null
   if (Object.keys(payload).length !== 3 || payload.schemaVersion !== 'media_web_business_pages_v2' || !Number.isInteger(payload.revision) || payload.revision < 1) return null
   const session = payload.session
-  if (!session || typeof session !== 'object' || Array.isArray(session) || Object.keys(session).length !== 11) return null
+  const fields = [
+    'publicUserId', 'organizationName', 'workspaceMode', 'editorMode', 'bodyAuthority',
+    'memberRole', 'organizationConnection', 'installationConnection', 'role', 'maintainer',
+    'csrfToken', 'expiresAt', 'routeGrants', 'schemaVersion',
+  ]
+  if (!session || typeof session !== 'object' || Array.isArray(session) ||
+    Object.keys(session).length !== fields.length || !fields.every((field) => Object.hasOwn(session, field))) return null
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  const connectionStates = ['not_applicable', 'connected', 'pending', 'disabled', 'revoked', 'attention']
+  const organizationConnectionStates = ['connected', 'pending', 'disabled', 'revoked', 'attention']
+  const validRouteGrant = /^\/[a-z0-9/_:-]*$/
   if (typeof session.publicUserId !== 'string' || !uuid.test(session.publicUserId) ||
-    typeof session.tenantId !== 'string' || !uuid.test(session.tenantId) ||
     (session.role !== 'ordinary' && session.role !== 'admin') ||
     (session.memberRole !== 'owner' && session.memberRole !== 'member') ||
     typeof session.maintainer !== 'boolean' || (session.maintainer && session.role !== 'admin') ||
     typeof session.csrfToken !== 'string' || typeof session.expiresAt !== 'string' ||
-    Number.isNaN(Date.parse(session.expiresAt)) || session.schemaVersion !== 'media_web_business_pages_v2') return null
+    Number.isNaN(Date.parse(session.expiresAt)) || session.schemaVersion !== 'media_web_business_pages_v2' ||
+    !connectionStates.includes(session.organizationConnection) || !connectionStates.includes(session.installationConnection) ||
+    !Array.isArray(session.routeGrants) || session.routeGrants.length === 0 ||
+    new Set(session.routeGrants).size !== session.routeGrants.length || !session.routeGrants.every((route) => typeof route === 'string' && validRouteGrant.test(route))) return null
   const personal = session.workspaceMode === 'personal_web' &&
-    session.editorMode === 'web_edit' && session.bodyAuthority === 'internal'
+    session.editorMode === 'web_edit' && session.bodyAuthority === 'internal' &&
+    session.organizationName === null && session.organizationConnection === 'not_applicable' && session.installationConnection === 'not_applicable'
   const organization = session.workspaceMode === 'organization_lark' &&
-    session.editorMode === 'lark_edit' && session.bodyAuthority === 'lark'
+    session.editorMode === 'lark_edit' && session.bodyAuthority === 'lark' &&
+    typeof session.organizationName === 'string' && session.organizationName.length >= 1 && session.organizationName.length <= 120 &&
+    organizationConnectionStates.includes(session.organizationConnection) && organizationConnectionStates.includes(session.installationConnection)
   if (!personal && !organization) return null
   return session
 }

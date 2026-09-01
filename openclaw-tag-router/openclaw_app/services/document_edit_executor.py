@@ -204,7 +204,10 @@ class DocumentEditExecutor:
             "status": "ready",
             "revision": revision,
             "bodyAuthority": authority,
-            "applied": [op.operation_id or op.block.block_id for op in plan.operations],
+            "applied": [
+                {"operation": op.op, "blockId": op.block.block_id}
+                for op in plan.operations
+            ],
             "appliedCount": len(plan.operations),
             "manualActions": [item.to_mapping() for item in plan.manual_actions],
             # A Lark write must surface protected remote blocks in the sync

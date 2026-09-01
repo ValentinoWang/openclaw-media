@@ -60,6 +60,9 @@ def test_internal_revision_applies_exact_replace_and_reports_protected_skip():
     assert result["status"] == "ready"
     assert store.completed[0][2]["blocks"][0]["content"][0]["text"] == "new term"
     assert result["receipt"]["appliedCount"] == 1
+    assert result["receipt"]["applied"] == [
+        {"operation": "replace_text", "blockId": "p1"}
+    ]
     assert result["receipt"]["protectedSkipped"] == []
 
 

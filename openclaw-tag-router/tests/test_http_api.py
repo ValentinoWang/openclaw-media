@@ -927,7 +927,9 @@ class HttpApiAuthTests(unittest.TestCase):
             "飞书登录暂时不可用，请稍后重试。",
             status=503,
         )
-        status, body, _ = self._request("POST", "/auth/feishu/start", {})
+        status, body, _ = self._request(
+            "POST", "/auth/feishu/start", {"workspaceIntent": "personal_web"}
+        )
         self.assertEqual(status, 503, body)
         self.assertEqual(body["error"]["code"], "feishu_login_unavailable")
 
@@ -1005,7 +1007,7 @@ class HttpApiAuthTests(unittest.TestCase):
         self.assertEqual(status, 401)
 
     def test_deletion_preview_http_contract_and_idempotent_replay(self) -> None:
-        cookie = self._issue_session_cookie()
+        cookie = self._issue_session_cookie("admin")
         idempotency_key = "delete-preview-http-contract-0001"
         payload = {
             "schemaVersion": "3",
@@ -1269,6 +1271,7 @@ class HttpApiAuthTests(unittest.TestCase):
         status, session, _ = self._request("GET", "/openclaw/media/api/session", cookie=cookie)
         self.assertEqual(status, 200, session)
         self.assertEqual(session["session"]["publicUserId"], str(USER_B))
+        self.assertNotIn("tenantId", session["session"])
 
     def test_register_maps_frontend_b_and_c_tenant_fields(self) -> None:
         cases = (

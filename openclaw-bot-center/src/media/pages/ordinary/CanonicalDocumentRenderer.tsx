@@ -2,13 +2,155 @@ import { Fragment, type ReactNode } from "react";
 import { FileImage, FileText } from "lucide-react";
 import type {
   DocumentBlock,
+  DocumentDataSnapshotBlock,
   DocumentInlineNode,
   DocumentListBlock,
+  DocumentTableBlock,
   DocumentValue,
 } from "../../documentWorkflow";
 import { isPublicId } from "../../identifiers";
 import { ECHO_INVALID, formatDateTime } from "../../ui/datetime";
 import styles from "./CanonicalDocumentRenderer.module.css";
+
+type DocumentSemanticPurpose =
+  | DocumentTableBlock["attrs"]["semanticPurpose"]
+  | DocumentDataSnapshotBlock["attrs"]["semanticPurpose"];
+
+const DOCUMENT_BLOCK_LABELS: Record<DocumentBlock["type"], string> = {
+  paragraph: "段落",
+  quote: "引用",
+  heading_1: "一级标题",
+  heading_2: "二级标题",
+  heading_3: "三级标题",
+  heading_4: "四级标题",
+  heading_5: "五级标题",
+  heading_6: "六级标题",
+  heading_7: "七级标题",
+  heading_8: "八级标题",
+  heading_9: "九级标题",
+  bullet_list: "无序列表",
+  ordered_list: "有序列表",
+  todo_item: "待办事项",
+  code_block: "代码块",
+  divider: "分隔线",
+  callout: "提示块",
+  image: "图片",
+  attachment: "附件",
+  table: "表格",
+  data_snapshot: "数据快照",
+};
+
+const DOCUMENT_SEMANTIC_PURPOSE_LABELS: Record<DocumentSemanticPurpose, string> = {
+  general: "通用表格",
+  storyboard: "分镜表",
+  publishing_checklist: "发布清单",
+  metric_snapshot: "指标快照",
+  evidence_index: "证据索引",
+};
+
+const DOCUMENT_WIRE_VALUE_LABELS: Record<string, string> = {
+  ...DOCUMENT_BLOCK_LABELS,
+  ...DOCUMENT_SEMANTIC_PURPOSE_LABELS,
+  internal: "网页端",
+  lark: "飞书",
+  personal_web: "个人工作区",
+  organization_lark: "组织工作区",
+  draft: "草稿",
+  generating: "正在生成",
+  ready: "可用",
+  failed: "处理失败",
+  conflict: "需要处理冲突",
+  archived: "已归档",
+  queued: "排队中",
+  rendering: "正在处理",
+  succeeded: "已完成",
+  running: "处理中",
+  pending: "等待处理",
+  unknown: "待对账",
+  stale: "待回读",
+  partial: "部分完成",
+  unavailable: "不可用",
+  docx: "Word 文档",
+  pdf: "PDF 文档",
+  info: "提示",
+  success: "成功",
+  warning: "注意",
+  danger: "风险",
+  bold: "加粗",
+  italic: "斜体",
+  underline: "下划线",
+  strike: "删除线",
+  inline_code: "行内代码",
+  link: "链接",
+  read: "回读",
+  write: "写入",
+  owner: "组织负责人",
+  member: "组织成员",
+  unsupported: "结构不支持",
+  empty: "暂无数据",
+  "application/pdf": "PDF 文档",
+  "text/plain": "文本文件",
+};
+
+const SNAPSHOT_FIELD_LABELS: Record<string, string> = {
+  sample_count: "实测样本",
+  water_loss_rate: "失水率",
+  post_application_water_loss_rate: "涂抹后失水率",
+  test_duration: "测试时长",
+  test_duration_days: "测试时长",
+  environment_humidity: "环境湿度",
+  humidity_percent: "环境湿度",
+  cooperation_amount: "合作金额",
+  schedule_days: "排期天数",
+  delivery_count: "交付条数",
+  public_object_id: "对象",
+  publicObjectId: "对象",
+  source_revision: "来源修订",
+  sourceRevision: "来源修订",
+  captured_at: "采集时间",
+  capturedAt: "采集时间",
+  semantic_purpose: "数据用途",
+  semanticPurpose: "数据用途",
+  body_authority: "正文权威",
+  bodyAuthority: "正文权威",
+  workspace_mode: "工作区",
+  workspaceMode: "工作区",
+  revision_state: "修订状态",
+  revisionState: "修订状态",
+  export_state: "导出状态",
+  exportState: "导出状态",
+  content_type: "内容类型",
+  contentType: "内容类型",
+};
+
+const SNAPSHOT_ENUM_FIELDS = new Set([
+  "authority",
+  "body_authority",
+  "bodyAuthority",
+  "workspace_mode",
+  "workspaceMode",
+  "state",
+  "status",
+  "revision_state",
+  "revisionState",
+  "export_state",
+  "exportState",
+  "semantic_purpose",
+  "semanticPurpose",
+  "block_type",
+  "blockType",
+  "type",
+  "kind",
+  "tone",
+  "semantic_tone",
+  "semanticTone",
+  "format",
+  "export_format",
+  "exportFormat",
+  "operation",
+  "sync_status",
+  "syncStatus",
+]);
 
 export default function CanonicalDocumentRenderer({ blocks, highlightedBlockIds = [] }: { blocks: DocumentBlock[]; highlightedBlockIds?: readonly string[] }) {
   const highlighted = new Set(highlightedBlockIds);
@@ -40,7 +182,7 @@ function renderDocumentBlock(block: DocumentBlock): ReactNode {
     case "todo_item":
       return <label className={styles.todo}><input type="checkbox" checked={block.attrs.checked} readOnly /><span className={block.attrs.checked ? styles.todoChecked : ""}>{renderInlineRuns(block.content)}</span></label>;
     case "code_block":
-      return <div className={styles.codeWrap}><span className={styles.codeLanguage}>{block.attrs.language ?? "纯文本"}</span><pre className={styles.codeBlock} data-language={block.attrs.language ?? undefined}><code>{block.text}</code></pre></div>;
+      return <div className={styles.codeWrap}><span className={styles.codeLanguage}>{codeLanguageLabel(block.attrs.language)}</span><pre className={styles.codeBlock} data-language={block.attrs.language ?? undefined}><code>{block.text}</code></pre></div>;
     case "divider":
       return <hr className={styles.divider} />;
     case "callout": {
@@ -62,7 +204,7 @@ function renderDocumentBlock(block: DocumentBlock): ReactNode {
       return <div className={`${styles.attachment} mg-panel`} data-component="mg-panel" data-accent="studio" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}><FileText size={17} aria-hidden="true" /><div><strong>{block.attrs.fileName}</strong><span>{resourceTypeLabel(block.attrs.contentType)}</span></div>{href ? <a href={href} target="_blank" rel="noreferrer" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}>打开附件</a> : null}</div>;
     }
     case "data_snapshot":
-      return <aside className={`${styles.snapshot} mg-panel`} data-component="mg-panel" data-accent="archive" data-protected="true"><span className="mg-badge" data-component="mg-badge" data-tone="info">受保护数据快照</span><dl>{Object.entries(block.attrs.displayFields).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{formatSnapshotValue(value)}</dd></div>)}</dl><small>{block.attrs.semanticPurpose} · 对象 {block.attrs.publicObjectId} · 来源修订 {block.attrs.sourceRevision} · {formatTimestamp(block.attrs.capturedAt)}</small></aside>;
+      return <aside className={`${styles.snapshot} mg-panel`} data-component="mg-panel" data-accent="archive" data-protected="true"><span className="mg-badge" data-component="mg-badge" data-tone="info">受保护数据快照</span><dl>{Object.entries(block.attrs.displayFields).map(([key, value]) => <div key={key}><dt>{snapshotFieldLabel(key)}</dt><dd>{formatSnapshotValue(key, value)}</dd></div>)}</dl><small>{semanticPurposeLabel(block.attrs.semanticPurpose)} · 对象 {block.attrs.publicObjectId} · 来源修订 {block.attrs.sourceRevision} · {formatTimestamp(block.attrs.capturedAt)}</small></aside>;
   }
 }
 
@@ -120,11 +262,36 @@ function sharedTone(tone: "info" | "success" | "warning" | "danger"): "info" | "
   return tones[tone];
 }
 
-function formatSnapshotValue(value: DocumentValue): string {
-  if (Array.isArray(value)) return value.map((item) => String(item)).join("、");
+function semanticPurposeLabel(value: DocumentSemanticPurpose): string {
+  return DOCUMENT_SEMANTIC_PURPOSE_LABELS[value] ?? "数据用途待确认";
+}
+
+function codeLanguageLabel(value: string | null): string {
+  if (value === null) return "纯文本";
+  return DOCUMENT_WIRE_VALUE_LABELS[value]
+    ?? (isSnakeCaseIdentifier(value) ? "代码语言待确认" : value);
+}
+
+function snapshotFieldLabel(value: string): string {
+  const label = SNAPSHOT_FIELD_LABELS[value] ?? DOCUMENT_WIRE_VALUE_LABELS[value];
+  return label ?? "数据项";
+}
+
+function formatSnapshotValue(fieldName: string, value: DocumentValue): string {
+  if (Array.isArray(value)) return value.map((item) => formatSnapshotScalar(fieldName, item)).join("、");
   if (value === null) return "未提供";
   if (typeof value === "boolean") return value ? "是" : "否";
-  return String(value);
+  return formatSnapshotScalar(fieldName, value);
+}
+
+function formatSnapshotScalar(fieldName: string, value: string | number | boolean): string {
+  if (typeof value !== "string") return String(value);
+  return DOCUMENT_WIRE_VALUE_LABELS[value]
+    ?? (SNAPSHOT_ENUM_FIELDS.has(fieldName) || isSnakeCaseIdentifier(value) ? "待确认" : value);
+}
+
+function isSnakeCaseIdentifier(value: string): boolean {
+  return /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/u.test(value);
 }
 
 function formatTimestamp(value: string): string {

@@ -19,7 +19,7 @@ PAGE_CONTRACTS = {
     "B02": ("ordinary", "/tracks", {"listTracks", "getTrack", "listCreators", "getCreator", "listTrackRelationships", "updateTrackRelationshipStatus", "listOwnedAccounts", "getOwnedAccount", "getAccountTrackStrategy", "getAccountMonitor", "updateAccountMonitor", "pollAccountMonitor", "createMediaTask", "getDocumentResource"}),
     "B03": ("ordinary", "/assets", {"listAssets", "getAsset", "getAssetPreview", "createMediaTask", "getDocumentResource"}),
     "B04": ("ordinary", "/decisions", {"listDecisions", "getDecision", "listDecisionSignals", "confirmDecision", "createMediaTask", "getDocumentResource"}),
-    "B05": ("ordinary", "/runs", {"listRuns", "getRun", "getRunSources", "getRunDecisions", "getRunOutputs", "listBusinessOpportunities", "createMediaTask", "createArtifactRevision", "getDocumentResource"}),
+    "B05": ("ordinary", "/runs", {"listRuns", "getRun", "getRunSources", "getRunDecisions", "getRunOutputs", "listBusinessOpportunities", "createMediaTask", "createArtifactRevision", "getDocumentResource", "listArtifactSyncBatches"}),
     "B06": ("ordinary", "/publishing", {"listPublishingPackages", "getPublishingPackage", "getPublishedPost", "updatePublishingChecks", "createPublishedPost", "getResourceDocxLink", "createMediaTask", "getDocumentResource"}),
     "B07": ("ordinary", "/reviews", {"listReviews", "getReviewsSummary", "listContentMetrics", "listAccountMetrics", "createMetricImport", "createReview", "confirmReview", "createMediaTask", "getDocumentResource"}),
     "B08": ("ordinary", "/usage-billing", {"getBillingBalance", "listBillingBalancePacks", "listBillingUsage", "getBillingUsageSummary", "redeemBillingCode"}),
@@ -272,7 +272,7 @@ def test_openapi_freezes_all_pages_and_operations_once() -> None:
     assert document["openapi"] == "3.1.0"
     assert document["info"]["version"] == "2.0.0"
     assert document["servers"] == [{"url": "/openclaw/media/api"}]
-    assert document["x-openclaw-interface-freeze-version"] == 3
+    assert document["x-openclaw-interface-freeze-version"] == 5
     assert document["components"]["schemas"]["SchemaVersion"]["const"] == "media_web_business_pages_v2"
 
     pages = document["x-openclaw-pages"]

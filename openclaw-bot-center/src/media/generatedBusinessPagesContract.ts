@@ -1,7 +1,7 @@
 // Generated from accepted Media Web Business Pages IF2. Do not edit.
 import { addAuditReasonHeader } from "./auditReasonHeader";
 
-export const sourceSha256 = "84cfcce346b941b6423e5c629d08c1ec3ffe09f0270f5ac8aae767fb2bf16a7a" as const;
+export const sourceSha256 = "1a7ae61b841276ffe103abcbdf65fda97a36425160daf9c765b508c629ee3593" as const;
 
 export type OperationCategory = "page" | "shared" | "document";
 export type GeneratedOperation = {
@@ -115,6 +115,9 @@ export const schemaNames = [
   "DocumentCodeBlock",
   "DocumentDataSnapshotBlock",
   "DocumentDividerBlock",
+  "DocumentEditExecutionReceipt",
+  "DocumentEditReceiptAppliedOperation",
+  "DocumentEditReceiptManualAction",
   "DocumentExportDownload",
   "DocumentExportDownloadResponse",
   "DocumentExportFormat",
@@ -302,6 +305,9 @@ export const schemaRefs = {
   "DocumentCodeBlock": "#/components/schemas/DocumentCodeBlock",
   "DocumentDataSnapshotBlock": "#/components/schemas/DocumentDataSnapshotBlock",
   "DocumentDividerBlock": "#/components/schemas/DocumentDividerBlock",
+  "DocumentEditExecutionReceipt": "#/components/schemas/DocumentEditExecutionReceipt",
+  "DocumentEditReceiptAppliedOperation": "#/components/schemas/DocumentEditReceiptAppliedOperation",
+  "DocumentEditReceiptManualAction": "#/components/schemas/DocumentEditReceiptManualAction",
   "DocumentExportDownload": "#/components/schemas/DocumentExportDownload",
   "DocumentExportDownloadResponse": "#/components/schemas/DocumentExportDownloadResponse",
   "DocumentExportFormat": "#/components/schemas/DocumentExportFormat",
@@ -860,7 +866,7 @@ export const operations = {
     ],
     "path": "/tasks",
     "pathParameters": [],
-    "permission": "ordinary-session",
+    "permission": "shared-session",
     "productReadModels": [
       "account_metric_snapshots",
       "account_track_strategies",

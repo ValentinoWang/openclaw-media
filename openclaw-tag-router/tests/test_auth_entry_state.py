@@ -273,7 +273,6 @@ class AuthEntryStateHttpTests(unittest.TestCase):
         self.assertEqual(set(body), {"schemaVersion", "revision", "session"})
         self.assertEqual(set(body["session"]), {
             "publicUserId",
-            "tenantId",
             "workspaceMode",
             "editorMode",
             "bodyAuthority",

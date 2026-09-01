@@ -159,13 +159,14 @@ function AssetsPage() {
   const [detailRetryToken, setDetailRetryToken] = useState(0);
   const [deletionDialog, setDeletionDialog] = useState<DeletionDialogState | null>(null);
   const deletionAttempt = useRef(0);
-  const sessionIdentity = [
+  const sessionIdentity = JSON.stringify([
     runtimeState,
     session?.publicUserId ?? "",
-    session?.tenantId ?? "",
     session?.workspaceMode ?? "",
     session?.bodyAuthority ?? "",
-  ].join(":");
+    session?.role ?? "",
+    session?.csrfToken ?? "",
+  ]);
   const sessionIdentityRef = useRef(sessionIdentity);
   sessionIdentityRef.current = sessionIdentity;
   const { cursor } = cursorTrail;

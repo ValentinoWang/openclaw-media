@@ -17,6 +17,7 @@ import {
   type DocumentBlock,
   type DocumentBody,
   type DocumentDataSnapshotBlock,
+  type DocumentExportFormat,
   type DocumentMark,
   type DocumentRevisionRecord,
   type DocumentRichTextBlock,
@@ -77,6 +78,10 @@ const bodyAuthorityLabel: Record<DocumentRevisionRecord["bodyAuthority"], string
   internal: "个人正文",
   lark: "受保护正文",
 };
+const exportFormatLabel: Record<DocumentExportFormat, string> = {
+  pdf: "PDF",
+  docx: "Word 文档",
+};
 
 function cloneBody(body: DocumentBody): DocumentBody {
   return JSON.parse(JSON.stringify(body)) as DocumentBody;
@@ -119,11 +124,16 @@ function editorFailureMessage(error: unknown, fallback: string): string {
   if (failure.kind === "permission") return "当前会话没有执行此操作的权限。";
   return fallback;
 }
-function technicalReference(error: unknown): string {
-  const code = classifyDocumentFailure(error).code;
-  return /^[a-z0-9][a-z0-9_.:-]{0,95}$/i.test(code)
-    ? code
-    : "document_request_failed";
+function technicalReference(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const candidate = (error as { code?: unknown }).code;
+  if (
+    typeof candidate !== "string" ||
+    !/^[a-z0-9][a-z0-9_.:-]{0,95}$/i.test(candidate) ||
+    /^http_\d{3}$/i.test(candidate)
+  )
+    return null;
+  return candidate;
 }
 function TechnicalReference({ code }: { code: string | null }) {
   if (!code) return null;
@@ -369,8 +379,7 @@ export default function DocumentEditorPage() {
           window.setTimeout(resolve, 1000);
         });
       }
-      setAiStatus("failed");
-      setMessage("AI 改稿仍在生成，可稍后重新读取结果。");
+      setMessage("AI 改稿仍在生成，请稍后重新读取页面查看结果。");
     } catch (error) {
       setAiStatus("failed");
       setMessage(editorFailureMessage(error, "改稿请求失败，请稍后重试。"));
@@ -449,7 +458,7 @@ export default function DocumentEditorPage() {
     setMessage("已导出本地副本。本次保存未覆盖其他位置的正文。");
     setTechnicalCode(null);
   }
-  async function exportDocument(format: "pdf" | "docx") {
+  async function exportDocument(format: DocumentExportFormat) {
     if (
       !artifactId ||
       !revision ||
@@ -472,7 +481,7 @@ export default function DocumentEditorPage() {
       if (ready.state !== "ready") throw new Error("导出未完成");
       const download = await api.getExportDownload(ready.publicExportId);
       setExportUrl(download.data.downloadUrl);
-      setMessage(`${format.toUpperCase()} 导出已就绪`);
+      setMessage(`${exportFormatLabel[format]} 导出已就绪`);
     } catch (error) {
       setMessage(editorFailureMessage(error, "导出失败，请稍后重试。"));
       setTechnicalCode(technicalReference(error));
@@ -795,7 +804,7 @@ export default function DocumentEditorPage() {
               onClick={() => void exportDocument("docx")}
             >
               <Download size={15} />
-              DOCX
+              Word 文档
             </button>
             {exportUrl ? (
               <a href={exportUrl} target="_blank" rel="noreferrer">

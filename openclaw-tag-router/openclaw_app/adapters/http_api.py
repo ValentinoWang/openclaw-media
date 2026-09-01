@@ -3287,7 +3287,6 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 "revision": 1,
                 "session": {
                     "publicUserId": context.principal.user_public_id,
-                    "tenantId": str(context.principal.tenant_id),
                     "workspaceMode": context.principal.workspace_mode,
                     "editorMode": "web_edit" if is_personal else "lark_edit",
                     "bodyAuthority": context.principal.body_authority,

@@ -121,6 +121,9 @@ class MiniDatabase:
         if "SELECT path_fingerprint, request_fingerprint, state" in sql:
             row = self.receipts.get((params[0], "saveDocumentDraft", params[1]))
             return Cursor((row[0], row[1], row[3]) if row else None)
+        if "SELECT response_json FROM openclaw_account.if2_idempotency_receipts" in sql:
+            row = self.receipts.get((params[0], params[1], params[2]))
+            return Cursor((row[2],) if row else None)
         if "FROM openclaw_account.if2_idempotency_receipts" in sql and sql.startswith("SELECT"):
             row = self.receipts.get((params[0], params[1], params[2]))
             return Cursor(row)
@@ -373,6 +376,44 @@ def test_tenant_id_is_stripped_before_use() -> None:
     service = DocumentsService(MiniDatabase())
     response = service.get_document_body(context("  tenant_0001  "), "artifact_0001")
     assert response["data"]["revision"]["body"] == BODY
+
+
+def test_revision_projects_only_the_safe_executor_receipt() -> None:
+    database = MiniDatabase(state="ready")
+    database.receipts[("tenant_0001", "documentEdit:artifact_0001:1", "revision-1")] = (
+        "path",
+        "request",
+        {
+            "status": "ready",
+            "applied": [
+                {"operation": "replace_text", "blockId": "blk_body_0001"},
+                {"operation": "unexpected_internal_operation", "blockId": "blk_body_0001"},
+            ],
+            "appliedCount": 2,
+            "manualActions": [
+                {
+                    "reason": "protected_block",
+                    "block_id": "blk_body_0001",
+                    "instructions": "internal text must not be public",
+                }
+            ],
+            "protectedSkipped": ["blk_body_0001", "not a public block id"],
+            "errorMessage": "internal details must not be public",
+        },
+        "completed",
+    )
+
+    response = DocumentsService(database).get_document_revision(
+        context(), "artifact_0001", 1
+    )
+
+    assert response["data"]["executionReceipt"] == {
+        "status": "ready",
+        "applied": [{"operation": "replace_text", "blockId": "blk_body_0001"}],
+        "appliedCount": 2,
+        "manualActions": [{"reason": "protected_block", "blockId": "blk_body_0001"}],
+        "protectedSkipped": ["blk_body_0001"],
+    }
 
 
 def test_save_draft_creates_one_revision_replays_and_rejects_key_rebinding() -> None:
