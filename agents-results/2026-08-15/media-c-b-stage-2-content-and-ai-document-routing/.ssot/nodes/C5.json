@@ -23,8 +23,152 @@
     }
   ],
   "invalidation_keys": [
-    "media.stage2.personal-internal-writer.v5"
+    "consumer.personal-writer.internal-artifact",
+    "consumer.personal-writer.feishu-zero-write",
+    "file-summary.personal-internal-writer",
+    "consumer.c5.surface.sha256-113d570b6fb23efc58d98ffab89f9344a474f39f05bdddaa90be34247f51756f"
   ],
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "writer-authority",
+      "artifact-closure"
+    ],
+    "shards": {
+      "writer-authority": {
+        "personal_body_authority": "personal_web/internal; Web is the only editor authority",
+        "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
+        "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
+        "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
+        "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
+        "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate"
+      },
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      }
+    },
+    "digest": "sha256:737af6a879272b7131f44e9844b4d1fe44684fbf70ed6b9f18484986d002c3ff",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "b3352c51f0ac1a2966724c035055b85d9a49a434de557a245d2fd3e3ad5c1de1"
+    },
+    "digest": "sha256:80e48b7fa6f448e36fa8ef83e4bfd08f121f0fa6479685e8759904925a3678c4",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.personal-writer.internal-artifact",
+      "consumer.personal-writer.feishu-zero-write",
+      "file-summary.personal-internal-writer"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.personal-internal-writer",
+      "inputs": "C4 个人上下文、S3 写入路由、S4 成果登记和 S5 副作用合同",
+      "processing": "创建 personal_web/internal 文档成果、首个正文修订和人工智能运行收据",
+      "task": "实现个人内部 Writer 并退役个人飞书写入。",
+      "output": "InternalArtifactWriter 和个人成果收据",
+      "tests": "幂等、重放、写入失败、登记失败、错容器和全局飞书零写入测试",
+      "acceptance": "个人路径不得创建任何全局飞书文档",
+      "definition_of_done": "成果、正文、运行和来源收据可同收据回读",
+      "write_authority": "implementation",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.personal-writer.internal-artifact",
+        "consumer.personal-writer.feishu-zero-write",
+        "file-summary.personal-internal-writer"
+      ],
+      "upstream_contract_inputs": {
+        "C4": {
+          "semantic_key": "media.stage2.personal-context-builder",
+          "inputs": "S2 资料路由、C2 研究简报和 C3 决策简报",
+          "processing": "组合个人资料、研究、决策、账号和平台约束，不带入组织 Binding 或品牌共享资料",
+          "output": "PersonalContextBuilder 结果",
+          "tests": "上下文完整性、来源身份、租户隔离、伪造正文权威和重放测试",
+          "acceptance": "个人任务只使用 personal_web/internal 上下文",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "S3": {
+          "semantic_key": "media.stage2.writer-routing",
+          "inputs": "F2 接受的阶段边界、S1 执行上下文、B 正文权威合同和第一阶段 I9 失败关闭回执",
+          "processing": "从第一阶段统一能力不可用状态原子切换到唯一服务端路由；个人文档写入内部 Web 成果，组织文档写入活跃 Binding 的飞书 Docx",
+          "output": "WriterRouter 第 2 版",
+          "tests": "能力矩阵、关闭态接管、正反路由、第一阶段 I7 零人工智能写入、只读能力零副作用和缺失 Binding 负例",
+          "acceptance": "不允许第一阶段或能力实现绕过统一路由自选文档容器",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "S4": {
+          "semantic_key": "media.stage2.artifact-record-readback",
+          "inputs": "S3 写入结果、文档成果模型、修订和飞书镜像合同",
+          "processing": "用幂等收据登记容器、正文权威、远端绑定、修订或回读版本，部分成功进入待处置",
+          "output": "ArtifactRecorder 和 ReadbackVerifier",
+          "tests": "写入失败、登记失败、回读失败、重放、并发和版本冲突测试",
+          "acceptance": "任一必要步骤失败都不得返回发布成功",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "S5": {
+          "semantic_key": "media.stage2.capability-side-effects",
+          "inputs": "现有能力注册表、S1 执行上下文和 S3 写入合同",
+          "processing": "为每个能力声明可读资料、是否产生文档、允许容器和必需回读，由服务端强制",
+          "output": "能力副作用注册表",
+          "tests": "公开/运维/维护能力、只读咨询、写文档、未登记和越权负例",
+          "acceptance": "只读能力不产生文档或远端副作用",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        }
+      },
+      "incoming_transfer_digests": {
+        "C4": "sha256:d279a6382e1461320c581923cd7a9c026894a9808acd35955d803f3b91eb7a58",
+        "S3": "sha256:8c976f3f89d5632618405ace77a7c4dd8c0bd89ff8e6ec9d519cb52f6254581c",
+        "S4": "sha256:787f7fceb8ad44e8c9113e674a95a7b78d751c8ee2fcf22b42891eb9124f3a62",
+        "S5": "sha256:adf29ff87dee1009ea5de08ce3a3c7e1dd6714b8c1643cf7ad281261f0c5aead"
+      },
+      "consumed_decision_shards": {
+        "writer-authority": {
+          "personal_body_authority": "personal_web/internal; Web is the only editor authority",
+          "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
+          "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
+          "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
+          "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
+          "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate"
+        },
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        }
+      }
+    },
+    "digest": "sha256:113d570b6fb23efc58d98ffab89f9344a474f39f05bdddaa90be34247f51756f"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
   "write_authority": "implementation",
   "acceptance_authority": "main orchestrator",
   "unlocks": [
@@ -35,8 +179,8 @@
     "worker_level": "LW",
     "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
     "wrapper_entrypoint": "exec codex exec",
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
-    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "project_root": "/private/tmp/openclaw-media-live",
+    "invocation": "codex exec -C '/private/tmp/openclaw-media-live' --skip-git-repo-check --sandbox danger-full-access",
     "sandbox": "danger-full-access",
     "sandbox_authority": "writable sandbox",
     "runtime_profile": "implementation-runner",
@@ -46,8 +190,8 @@
     "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
     "task_argument": "实现个人内部 Writer 并退役个人飞书写入。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/C5.json",
-    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/C5.txt",
-    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/C5.log",
+    "prompt_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/C5.txt",
+    "log_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/C5.log",
     "prompt_sha256": "capture-before-launch",
     "launch_barrier": "all wave PIDs registered before first wait",
     "prompt_cleanup": "delete after exit evidence registration",
@@ -59,7 +203,7 @@
   "node_role": "leaf",
   "execution_actor": "codex",
   "execution_contract_ref": "C5.json",
-  "execution_contract_sha256": "eb94de2d82f4c8b97d94d6e7f8699535ebbecab58eb1df11e2867246c3d5189a",
+  "execution_contract_sha256": "614d9ad4994b4a296f574c2861f36d1ca9f2471452e5b7c127f596bac21ec1c3",
   "side_effect_class": "none",
   "candidate_identity_policy": "none",
   "deliverable_ids": [
@@ -128,5 +272,36 @@
       "architecture-complexity"
     ],
     "automatic_executor_switch": false
+  },
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "C4",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S3",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S4",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S5",
+      "required_state": "ACCEPTED"
+    }
+  ],
+  "contract_identity": {
+    "contract_id": "C5",
+    "path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/execution-contracts/C5.json",
+    "sha256": "614d9ad4994b4a296f574c2861f36d1ca9f2471452e5b7c127f596bac21ec1c3"
   }
 }

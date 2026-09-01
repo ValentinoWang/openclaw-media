@@ -14,7 +14,7 @@
 
 The generated progress ledger records implementation and execution evidence against source SHA `007a7f906af4e23a6a4fa5d041da4cb0641646c2`, not the frozen review SHA. A separate regeneration record uses `d3555ccb58ff616eee66e3f057a5990ac4455d02`. These are evidence-identity mismatches, not alternate identities for this review.
 
-Reviewed authority paths include `build_ssot.py`, `.ssot/nodes/*.json`, `.ssot/generated-views/10-dependency-topology.md`, `.ssot/generated-views/30-node-contracts-and-acceptance.md`, `implementation-progress.md`, `generated-views/40-acceptance-execution.md`, the four ST2 acceptance fragments and human workspaces, `acceptance/human-acceptance-log.json`, and `docs/frontend/prototype/stage2-dev-brief.md`.
+Reviewed authority paths include `build_ssot.py`, `.ssot/nodes/*.json`, `generated-views/10-dependency-topology.md`, `generated-views/30-node-contracts-and-acceptance.md`, `implementation-progress.md`, `generated-views/40-acceptance-execution.md`, the four ST2 acceptance fragments and human workspaces, `acceptance/human-acceptance-log.json`, and `docs/frontend/prototype/stage2-dev-brief.md`.
 
 ## Formal node/dependency table
 
@@ -100,7 +100,7 @@ There is no legal independent formal acceptance frontier after the terminal base
 
 ## Severity-first findings
 
-1. **CRITICAL - F-DAG-001: all three cross-stage projections are blocked.** Stage-1 C1, C3, and DC2 remain `BLOCKED`; F1 also requires same-candidate I9. `build_ssot.py` requires the projection conditions and dependency edges, so no later Stage-2 node can lawfully advance from the current inputs. Evidence: Stage-1 `implementation-progress.md:43-72`, Stage-2 `.ssot/nodes/F1.json`, `F2.json`, `F3.json`, and `.ssot/generated-views/10-dependency-topology.md:7-9,48-107`.
+1. **CRITICAL - F-DAG-001: all three cross-stage projections are blocked.** Stage-1 C1, C3, and DC2 remain `BLOCKED`; F1 also requires same-candidate I9. `build_ssot.py` requires the projection conditions and dependency edges, so no later Stage-2 node can lawfully advance from the current inputs. Evidence: Stage-1 `implementation-progress.md:43-72`, Stage-2 `.ssot/nodes/F1.json`, `F2.json`, `F3.json`, and `generated-views/10-dependency-topology.md:7-9,48-107`.
 
 2. **HIGH - F-HUM-001: all four required human lanes are unfinished.** Every ST2 contract is `DRAFT` with a `PLANNED` test baseline; every binding and checklist is draft; every H-01 is blocking; no handoff or signed result exists. The acceptance log's empty blocking partition is contradicted by the binding-level blocking declarations and cannot be used as clearance.
 

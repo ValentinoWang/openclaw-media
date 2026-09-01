@@ -16,6 +16,20 @@ jobs:
   router-and-contract:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: openclaw_router_test_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d openclaw_router_test_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,14 +42,17 @@ jobs:
       - name: Install Router test dependencies
         run: |
           python -m pip install --disable-pip-version-check --upgrade pip
-          python -m pip install \
-            pytest pytest-asyncio pyyaml requests bcrypt 'psycopg[binary]' openai python-dotenv \
-            beautifulsoup4 lxml feedparser httpx cryptography pillow openpyxl python-docx markdown
+          python -m pip install --require-hashes \
+            -r openclaw-tag-router/requirements-test.txt
+          python -c 'from playwright.sync_api import sync_playwright; print("Playwright import: OK")'
 
       - name: Verify Planner 1.1 amendment and frozen test
         run: |
           test ! -e openclaw-tag-router/openclaw_app/services/production_reconciliation_planner_legacy.py
-          ! grep -q '_legacy' openclaw-tag-router/openclaw_app/services/production_reconciliation_planner.py
+          if grep -q '_legacy' openclaw-tag-router/openclaw_app/services/production_reconciliation_planner.py; then
+            printf 'legacy marker found in production reconciliation planner\n' >&2
+            exit 1
+          fi
           python - <<'PY'
           from pathlib import Path
           import hashlib
@@ -75,8 +92,18 @@ jobs:
       - name: Run complete Router suite
         working-directory: openclaw-tag-router
         env:
-          PYTHONPATH: .
-        run: python -m pytest -q tests
+          ROUTER_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/openclaw_router_test_ci
+          ROUTER_PYTEST_REPORT_DIR: ${{ runner.temp }}/router-pytest-report
+        run: ROUTER_TEST_PYTHON="$(command -v python)" scripts/qa/run_router_pytest.sh
+
+      - name: Upload Router pytest evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: router-pytest-report
+          path: ${{ runner.temp }}/router-pytest-report
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Compile and diff hygiene
         run: |

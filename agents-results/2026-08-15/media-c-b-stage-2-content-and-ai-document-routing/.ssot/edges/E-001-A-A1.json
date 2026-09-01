@@ -7,8 +7,42 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.a.a1.v5"
+    "consumer.a1.input.a",
+    "file-summary.edge.a-a1",
+    "consumer.a1.input.a.sha256-e00a77ccc6d3cc0d904da118f80575fb58e778f582fbcb6521038fe2e3343bcd"
   ],
+  "transferred_output_contract": {
+    "algorithm": "sha256",
+    "contract": {
+      "artifact_id": "ART-A",
+      "producer_content_digest": "sha256:6e8528d8677e800f47ff41a2ca28370dedd694f144262311f447fbb35fe3f3c3",
+      "producer_evidence_digest": "sha256:8fd7eba3d904cd3de6f6ccc614a4fdaa65d64e82acd745aef51cce230d28670a",
+      "producer_evidence_identity": {
+        "evidence_level": "source",
+        "source_revision": "user-request-stage2-2026-08-15",
+        "artifact_hashes": [
+          "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+          "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5",
+          "sha256:97000cc86e80993997153e0fb193ee877daea85c5695a60cf1645bf40596d471"
+        ],
+        "environment_identity": "current Codex task and three local attachments",
+        "runtime_release_id": "n/a",
+        "actor_role": "user and planning authority",
+        "account_or_tenant": "n/a",
+        "device_or_browser": "n/a",
+        "mock_or_fixture": false,
+        "observed_at": "2026-08-15T20:37:42+08:00",
+        "acceptance_contract": "Phase-2 SSOT creation charter v2"
+      },
+      "source_semantic_key": "media.stage2.charter",
+      "source_output": "第二阶段唯一开发编排边界",
+      "source_acceptance_predicate": "只生成第二阶段，不改写第一阶段也不创建第三阶段",
+      "required_state": "ACCEPTED",
+      "dependency_scope": "specific-output",
+      "target_input_key": "A1.input.A"
+    },
+    "digest": "sha256:e00a77ccc6d3cc0d904da118f80575fb58e778f582fbcb6521038fe2e3343bcd"
+  },
   "transferred_input": "第二阶段唯一开发编排边界",
   "gate_evidence": "只生成第二阶段，不改写第一阶段也不创建第三阶段",
   "reason_code": "data-dependency",

@@ -30,6 +30,157 @@
   "worker_transport": "external-codex-exec",
   "release_slice": "REL-2",
   "wave_id": "W-2-6",
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "writer-authority",
+      "artifact-closure"
+    ],
+    "shards": {
+      "writer-authority": {
+        "personal_body_authority": "personal_web/internal; Web is the only editor authority",
+        "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
+        "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
+        "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
+        "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
+        "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate"
+      },
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      }
+    },
+    "digest": "sha256:737af6a879272b7131f44e9844b4d1fe44684fbf70ed6b9f18484986d002c3ff",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "96f4da5f900a6f31520b5fb627e09484084e4c31c4006310f67fd2c9895e5ca0"
+    },
+    "digest": "sha256:ebfc1c4d1bd493254263b38c93756fd7e255227c8e54159176d5c33dbbe59436",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.personal-context.body-authority",
+      "consumer.personal-context.source-set",
+      "file-summary.personal-context-builder"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.personal-context-builder",
+      "inputs": "S2 资料路由、C2 研究简报和 C3 决策简报",
+      "processing": "组合个人资料、研究、决策、账号和平台约束，不带入组织 Binding 或品牌共享资料",
+      "task": "实现 PersonalContextBuilder 和跨模式负例。",
+      "output": "PersonalContextBuilder 结果",
+      "tests": "上下文完整性、来源身份、租户隔离、伪造正文权威和重放测试",
+      "acceptance": "个人任务只使用 personal_web/internal 上下文",
+      "definition_of_done": "服务端上下文收据可复现且不含组织秘密",
+      "write_authority": "implementation",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.personal-context.body-authority",
+        "consumer.personal-context.source-set",
+        "file-summary.personal-context-builder"
+      ],
+      "upstream_contract_inputs": {
+        "C2": {
+          "semantic_key": "media.stage2.personal-research-brief",
+          "inputs": "C1 个人资料和账号范围",
+          "processing": "将素材、拆解、账号记忆和来源引用汇编为可回读研究简报",
+          "output": "个人研究简报成果",
+          "tests": "来源引用、缺失素材、重复来源、租户边界和确定性重建测试",
+          "acceptance": "研究结论和来源引用可分离复核",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "C3": {
+          "semantic_key": "media.stage2.personal-decision-brief",
+          "inputs": "C1 个人资料、用户选择和平台约束",
+          "processing": "保存选题、目标、取舍、风险和人工确认记录",
+          "output": "个人决策简报成果",
+          "tests": "没有人工选择、过期约束、重放、租户隔离和风险字段测试",
+          "acceptance": "模型建议不伪装为用户决定",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "S2": {
+          "semantic_key": "media.stage2.context-routing",
+          "inputs": "S1 执行上下文、租户资料和资料所有者登记",
+          "processing": "按个人或组织工作区选择可用资料，关闭近期活动全表读取等跨租户断点",
+          "output": "ContextBuilder 路由和来源收据",
+          "tests": "个人/组织正例、资料所有者、跨租户、缺失和重复资料负例",
+          "acceptance": "01_ 近期活动与其他资料使用同等租户边界",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        }
+      },
+      "incoming_transfer_digests": {
+        "C2": "sha256:d77c4765b131be379138a534532245181c40e7fc5abf7c95b8aa066a5edcd926",
+        "C3": "sha256:b934c1f8b9f09579f4b621b310278654edf8ec85c96d50c38ad1855009c1760f",
+        "S2": "sha256:69222d7098810305712679483a43510594ebf6a3efce7a8aef0c035651a1b95f"
+      },
+      "consumed_decision_shards": {
+        "writer-authority": {
+          "personal_body_authority": "personal_web/internal; Web is the only editor authority",
+          "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
+          "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
+          "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
+          "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
+          "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate"
+        },
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        }
+      }
+    },
+    "digest": "sha256:d1e0eb105ba201c28f980328f0371988adf84706a37a134fb8f885ab4d21aab2"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "C2",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "C3",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S2",
+      "required_state": "ACCEPTED"
+    }
+  ],
   "executor_attempt_policy": {
     "initial_executor": "lw-terra",
     "initial_wrapper": "run-lw-terra.sh",
@@ -60,8 +211,8 @@
     "worker_level": "LW",
     "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
     "wrapper_entrypoint": "exec codex exec",
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
-    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "project_root": "/private/tmp/openclaw-media-live",
+    "invocation": "codex exec -C '/private/tmp/openclaw-media-live' --skip-git-repo-check --sandbox danger-full-access",
     "sandbox": "danger-full-access",
     "sandbox_authority": "writable sandbox",
     "runtime_profile": "implementation-runner",
@@ -71,8 +222,8 @@
     "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
     "task_argument": "实现 PersonalContextBuilder 和跨模式负例。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/C4.json",
-    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/C4.txt",
-    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/C4.log",
+    "prompt_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/C4.txt",
+    "log_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/C4.log",
     "prompt_sha256": "capture-before-launch",
     "launch_barrier": "all wave PIDs registered before first wait",
     "prompt_cleanup": "delete after exit evidence registration",

@@ -5,13 +5,13 @@
 - SSOT path: agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md
 - SSOT node: K
 - Acceptance contract: agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/acceptance-fragments/ST2-HUM-LOGIN-FOLD/acceptance-contract.md
-- Contract version: 1
-- Contract SHA-256: 02c456ad09784ad06d50938b9d509ab450bfd28ee883bbace801c70303aa9ba3
+- Contract version: 2
+- Contract SHA-256: faa42a2960a19ea169328cb26db0527e0dc201148e93fe56a1b79a55b0a4976f
 - Human checklist: acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md
-- Checklist SHA-256: c119261f9e949eb0671649dd40f530e0dd4c4156992d7c91caa2fb1807e71277
+- Checklist SHA-256: 810678b6da56ab3300e294e48206db2bc5f806994186333d6d9f62336f1a6e24
 
 ## Item bindings
 
 | Item | Required role | Blocking |
 | --- | --- | --- |
-| H-01 | 产品体验验收负责人 | Yes |
+| H-01 | 产品体验验收负责人 | No |

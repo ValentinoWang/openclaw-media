@@ -7,8 +7,44 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.s.c8.v5"
+    "consumer.c8.input.s",
+    "file-summary.edge.s-c8",
+    "consumer.c8.input.s.sha256-90a1e259bf931c87f4c7e062689328b102f469a5d0ecffcd5d725ffef90cc0c6"
   ],
+  "transferred_output_contract": {
+    "algorithm": "sha256",
+    "contract": {
+      "artifact_id": "ART-S",
+      "producer_content_digest": "sha256:b4c4e6e538703db6e392d274fc35d0769f4cdee2b9c9a0151cde2edacec0cdf1",
+      "producer_evidence_digest": "sha256:92fd139f5f6fbf38f6ef5073ad910fc9f33ab9ba22ad58d20bdcd798df7b56b7",
+      "producer_evidence_identity": {
+        "source_evidence": {
+          "evidence_level": "source",
+          "source_revision": "user-approved-three-stage-plan-2026-08-15",
+          "artifact_hashes": [
+            "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+            "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5",
+            "sha256:d5dad457861e413ff3963da568870be907495de50c33486810fa3dbdc0d92f98"
+          ],
+          "environment_identity": "current Codex task and declared input files",
+          "runtime_release_id": "n/a",
+          "actor_role": "user and product decision authority",
+          "account_or_tenant": "n/a",
+          "device_or_browser": "n/a",
+          "mock_or_fixture": false,
+          "observed_at": "2026-08-15T20:37:42+08:00",
+          "acceptance_contract": "Phase-2 product decisions v2"
+        }
+      },
+      "source_semantic_key": "media.stage2.shared-convergence",
+      "source_output": "共享路由不可变子候选",
+      "source_acceptance_predicate": "所有文档能力只有一个路由入口",
+      "required_state": "ACCEPTED",
+      "dependency_scope": "specific-output",
+      "target_input_key": "C8.input.S"
+    },
+    "digest": "sha256:90a1e259bf931c87f4c7e062689328b102f469a5d0ecffcd5d725ffef90cc0c6"
+  },
   "transferred_input": "共享路由不可变子候选",
   "gate_evidence": "所有文档能力只有一个路由入口",
   "reason_code": "candidate-identity",

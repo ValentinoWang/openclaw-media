@@ -21,8 +21,113 @@
     }
   ],
   "invalidation_keys": [
-    "media.stage2.organization-source-scope.v5"
+    "consumer.organization-scope.binding",
+    "consumer.organization-scope.tenant-materials",
+    "file-summary.organization-source-scope",
+    "consumer.o1.surface.sha256-13400a377bd9e4ac2f9eca29b2bbaab0bf980f8c925c20b9ac554a6f7c75910a"
   ],
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "artifact-closure"
+    ],
+    "shards": {
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      }
+    },
+    "digest": "sha256:9f09ff9be8f6e5c7c980ba3da766a3609a61ed0aa1c9e91afd2c56f9660ece5c",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "95befb6eb1c9956a3a02fa1710bb703678a800386db29faa035446e4884e1b55"
+    },
+    "digest": "sha256:ec96f4a5c3d9e5f1ddf63a7ed3f35745d638a1a192a2d1322f8e86cdd6eea679",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.organization-scope.binding",
+      "consumer.organization-scope.tenant-materials",
+      "file-summary.organization-source-scope"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.organization-source-scope",
+      "inputs": "F2 活跃组织绑定、B 合同、组织素材、活动、商务和品牌资料",
+      "processing": "按当前组织限定资料、品牌规则、组织账号和可用成员上下文",
+      "task": "实现组织资料和品牌约束路由。",
+      "output": "组织资料和品牌约束收据",
+      "tests": "组织 A/B、个人资料、撤销 Binding、来源所有者和近期活动隔离测试",
+      "acceptance": "组织 A 不得读取组织 B 或个人资料",
+      "definition_of_done": "资料收据可回读当前组织和活跃 Binding",
+      "write_authority": "implementation",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.organization-scope.binding",
+        "consumer.organization-scope.tenant-materials",
+        "file-summary.organization-source-scope"
+      ],
+      "upstream_contract_inputs": {
+        "B": {
+          "semantic_key": "media.stage2.contract-assembly",
+          "inputs": "F1 接受的会话底座和 K 第 5 版决定",
+          "processing": "冻结人工智能执行上下文、资料路由、写入路由、成果登记、回读、能力副作用、会话合同 v3 和登录入口状态接口合同；routeGrants 必须维持服务端生成与客户端独立推导后逐项比对的失败关闭语义",
+          "output": "共享接口冻结身份",
+          "tests": "OpenAPI、类型、错误码、状态机、入口状态独立接口和保护测试红灯",
+          "acceptance": "不接受前端伪造租户、Binding、正文权威或路由授权",
+          "write_authority": "authoritative-contract",
+          "acceptance_authority": "main orchestrator"
+        },
+        "F2": {
+          "semantic_key": "media.stage2.gate.stage1-provision",
+          "inputs": "第一阶段 C3 状态、Binding 合同和候选身份",
+          "processing": "零写入核对 C3 的正式状态和当前会话解析活跃组织绑定的能力",
+          "output": "组织开通跨阶段收据",
+          "tests": "上游机器源、Binding 回执和候选哈希核对",
+          "acceptance": "只有第一阶段 C3 ACCEPTED 才可接受本投影",
+          "write_authority": "evidence-only",
+          "acceptance_authority": "cross-stage projection owner"
+        }
+      },
+      "incoming_transfer_digests": {
+        "B": "sha256:6c62b30970a23a907919aecc963686bcf0ff50fb17a66d5147f4e297c3ffe89f",
+        "F2": "sha256:9c7ce961bbafa723406d37a9e36fb441832efc8a1585d2cb2b138ae471356166"
+      },
+      "consumed_decision_shards": {
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        }
+      }
+    },
+    "digest": "sha256:13400a377bd9e4ac2f9eca29b2bbaab0bf980f8c925c20b9ac554a6f7c75910a"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
   "write_authority": "implementation",
   "acceptance_authority": "main orchestrator",
   "unlocks": [
@@ -33,8 +138,8 @@
     "worker_level": "LW",
     "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
     "wrapper_entrypoint": "exec codex exec",
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
-    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "project_root": "/private/tmp/openclaw-media-live",
+    "invocation": "codex exec -C '/private/tmp/openclaw-media-live' --skip-git-repo-check --sandbox danger-full-access",
     "sandbox": "danger-full-access",
     "sandbox_authority": "writable sandbox",
     "runtime_profile": "implementation-runner",
@@ -44,8 +149,8 @@
     "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
     "task_argument": "实现组织资料和品牌约束路由。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/O1.json",
-    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/O1.txt",
-    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/O1.log",
+    "prompt_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/O1.txt",
+    "log_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/O1.log",
     "prompt_sha256": "capture-before-launch",
     "launch_barrier": "all wave PIDs registered before first wait",
     "prompt_cleanup": "delete after exit evidence registration",
@@ -57,7 +162,7 @@
   "node_role": "leaf",
   "execution_actor": "codex",
   "execution_contract_ref": "O1.json",
-  "execution_contract_sha256": "d51bb331a90d1fbce256596f0c636a625b92ad5cca90bedec966b56f100dd9a7",
+  "execution_contract_sha256": "c4e22398dbe8ebf299645eeb74052540e5b7e4c2ed57b44f7030908190ed6431",
   "side_effect_class": "none",
   "candidate_identity_policy": "none",
   "deliverable_ids": [
@@ -127,10 +232,10 @@
     {
       "task_id": "ST2-HUM-ORG-SCAN",
       "contract_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/acceptance-fragments/ST2-HUM-ORG-SCAN/acceptance-contract.md",
-      "contract_version": 1,
+      "contract_version": 2,
       "contract_status": "DRAFT",
       "test_baseline": "PLANNED",
-      "approval_evidence": "本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。",
+      "approval_evidence": "本轮用户指令批准 L2 治理修订，但未批准执行人工验收、发布或节点接受。",
       "decision_refs": [
         {
           "semantic_key": "media.stage2.product-decisions",
@@ -138,13 +243,44 @@
         }
       ],
       "assumption_ids": [],
-      "invalidation_keys": [
-        "media.stage2.organization-source-scope.v5",
-        "media.stage2.organization-source-scope.manual-org-scan"
+      "owner_invalidation_keys": [
+        "consumer.organization-scope.binding",
+        "consumer.organization-scope.tenant-materials"
       ],
+      "local_invalidation_keys": [
+        "file-summary.acceptance.org-scan"
+      ],
+      "human_workspace_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN",
       "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/binding.md",
       "selected_run_ids": [],
-      "result_hashes": []
+      "result_hashes": [],
+      "invalidation_keys": [
+        "consumer.organization-scope.binding",
+        "consumer.organization-scope.tenant-materials",
+        "file-summary.acceptance.org-scan"
+      ]
     }
-  ]
+  ],
+  "acceptance_lane": {
+    "lane": "human",
+    "blocking": true,
+    "budget": 3
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "B",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "F2",
+      "required_state": "ACCEPTED"
+    }
+  ],
+  "contract_identity": {
+    "contract_id": "O1",
+    "path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/execution-contracts/O1.json",
+    "sha256": "c4e22398dbe8ebf299645eeb74052540e5b7e4c2ed57b44f7030908190ed6431"
+  }
 }

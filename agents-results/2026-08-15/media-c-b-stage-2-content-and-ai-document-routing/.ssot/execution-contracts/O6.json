@@ -35,6 +35,166 @@
   "worker_transport": "automatic-projection",
   "release_slice": "REL-2",
   "wave_id": "W-2-11",
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "writer-authority",
+      "artifact-closure",
+      "delivery-boundary"
+    ],
+    "shards": {
+      "writer-authority": {
+        "personal_body_authority": "personal_web/internal; Web is the only editor authority",
+        "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
+        "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
+        "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
+        "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
+        "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate"
+      },
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      },
+      "delivery-boundary": {
+        "font_delivery": "self-host DM Sans as full WOFF2; serve Noto Sans SC through unicode-range slices or a curated common-glyph subset; preload only Latin subset and keep a local fallback chain",
+        "font_weight_policy": "load every used weight including 600; remove 800/850 visual dependence, map Chinese headings to available weights, set Chinese or mixed headings letter-spacing to 0 and reserve negative tracking for pure Latin/numeric display",
+        "stage3_exclusions": "full role matrix, approval, seats, procurement, invoices, migration, complex deletion and business analytics"
+      }
+    },
+    "digest": "sha256:630777a32f63f945354f23ae8918b019829c07522141e2053a293bc506511a38",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "4cea169b749235986d2371719c470fd81e8886a3c256c3baca5f01b910300e5a"
+    },
+    "digest": "sha256:4b0bc8851783413899121cfddf2ecb98c8f5623895a212224fed7988c35bd54e",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.organization-e2e.candidate-inputs",
+      "file-summary.organization-e2e-receipt"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.organization-e2e",
+      "inputs": "O1 到 O5、S 共享汇合和 T1 验收合同",
+      "processing": "汇合组织资料、人工智能创作、当前 Binding 写入、成果绑定、Web 回读、飞书编辑和再回读",
+      "task": "汇合组织文档支线并冻结子候选。",
+      "output": "组织端到端候选",
+      "tests": "联合合同、真实飞书、数据库、跨组织、错凭据、错容器和失败关闭测试",
+      "acceptance": "组织全链在同一租户、Binding、文档和候选上闭环",
+      "definition_of_done": "组织候选不冒领第三阶段完整角色和审批能力",
+      "write_authority": "shared-generated",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.organization-e2e.candidate-inputs",
+        "file-summary.organization-e2e-receipt"
+      ],
+      "upstream_contract_inputs": {
+        "O5": {
+          "semantic_key": "media.stage2.organization-edit-readback",
+          "inputs": "O4 首次回读成果、可信飞书打开动作和隔离验收身份",
+          "processing": "在飞书修改同一文档，再次回读并证明 Web 镜像跟随远端新版本",
+          "output": "飞书编辑和再回读同收据证据",
+          "tests": "真实 Docx 编辑、版本变化、Web 只读、错账号、错组织和编辑冲突测试",
+          "acceptance": "飞书是组织正文的唯一编辑权威",
+          "write_authority": "evidence-only",
+          "acceptance_authority": "runtime acceptance owner"
+        },
+        "S": {
+          "semantic_key": "media.stage2.shared-convergence",
+          "inputs": "S1 到 S5 和 T1 的已接受输出",
+          "processing": "核对上下文、资料、写入、成果、回读、能力目录和 OpenAPI 的唯一组合同",
+          "output": "共享路由不可变子候选",
+          "tests": "合同生成、能力矩阵、错容器、失败状态、跨租户和禁止旧 Writer 检查",
+          "acceptance": "所有文档能力只有一个路由入口",
+          "write_authority": "shared-generated",
+          "acceptance_authority": "main orchestrator"
+        },
+        "T1": {
+          "semantic_key": "media.stage2.shared-acceptance-harness",
+          "inputs": "B 冻结合同和 K 第 5 版决定",
+          "processing": "维护请求合同、上下文类型、入口状态接口、错误码、审计、C/B 正负例、真实会话矩阵和同收据端到端合同",
+          "output": "保护测试和验收矩阵",
+          "tests": "合同漂移、会话信封加字段、入口状态越权、前端夹带权威字段、跨租户、错容器、写入回读失败和字体弱网回退红灯",
+          "acceptance": "每个稳定失败类都有红绿门禁",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        }
+      },
+      "incoming_transfer_digests": {
+        "O5": "sha256:023c4a282cbc0378c88a3e38cecc6b55eecab7ceee7f653e871a423be55e5ba8",
+        "S": "sha256:54b74e09ffa773fa88c094fbfa06fc3f3f7a1d3153fc42186a49b4da86acc976",
+        "T1": "sha256:097b5b4f406deb571d26a80bc70be023e13a55052fc7668013ad03b9aa316318"
+      },
+      "consumed_decision_shards": {
+        "writer-authority": {
+          "personal_body_authority": "personal_web/internal; Web is the only editor authority",
+          "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
+          "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
+          "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
+          "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
+          "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate"
+        },
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        },
+        "delivery-boundary": {
+          "font_delivery": "self-host DM Sans as full WOFF2; serve Noto Sans SC through unicode-range slices or a curated common-glyph subset; preload only Latin subset and keep a local fallback chain",
+          "font_weight_policy": "load every used weight including 600; remove 800/850 visual dependence, map Chinese headings to available weights, set Chinese or mixed headings letter-spacing to 0 and reserve negative tracking for pure Latin/numeric display",
+          "stage3_exclusions": "full role matrix, approval, seats, procurement, invoices, migration, complex deletion and business analytics"
+        }
+      }
+    },
+    "digest": "sha256:f58c8e26e200ce906ee31a680a45696505685250a9934c06cdeffdecfb23bad9"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "O5",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "T1",
+      "required_state": "ACCEPTED"
+    }
+  ],
   "worker_registration": {
     "executor": "SSOT state projector",
     "source_nodes": [

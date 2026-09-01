@@ -21,8 +21,113 @@
     }
   ],
   "invalidation_keys": [
-    "media.stage2.organization-artifact-binding.v5"
+    "consumer.organization-artifact.remote-binding",
+    "consumer.organization-artifact.idempotency",
+    "file-summary.organization-artifact-binding",
+    "consumer.o3.surface.sha256-e7948fd59ef2d20e812024eb1aed59d9f12016cf00bb4a3ea1b95a365c6496a2"
   ],
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "artifact-closure"
+    ],
+    "shards": {
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      }
+    },
+    "digest": "sha256:9f09ff9be8f6e5c7c980ba3da766a3609a61ed0aa1c9e91afd2c56f9660ece5c",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "53e8e89e0952900a09441340b30a1e85087aa17d975c47f5ad38944a0fa3387f"
+    },
+    "digest": "sha256:b10eb03eb5062471ee4e4c716eea95cf304880f5570b1f4a040abab5e464eeb1",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.organization-artifact.remote-binding",
+      "consumer.organization-artifact.idempotency",
+      "file-summary.organization-artifact-binding"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.organization-artifact-binding",
+      "inputs": "O2 远端写入收据和 S4 成果登记状态机",
+      "processing": "创建 organization_lark/lark 文档成果、飞书绑定、同步批次和可信打开动作",
+      "task": "实现组织成果和飞书文档幂等绑定。",
+      "output": "组织成果绑定收据",
+      "tests": "重放、重复远端文档、错租户、错 Binding、登记失败和内部 Web 正文零写入测试",
+      "acceptance": "组织路径不创建可编辑的内部 Web 正文",
+      "definition_of_done": "成果、Binding、远端文档和写入收据一一对应",
+      "write_authority": "implementation",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.organization-artifact.remote-binding",
+        "consumer.organization-artifact.idempotency",
+        "file-summary.organization-artifact-binding"
+      ],
+      "upstream_contract_inputs": {
+        "O2": {
+          "semantic_key": "media.stage2.organization-lark-writer",
+          "inputs": "O1 组织资料、S2 资料路由、S3 写入路由、S5 副作用合同和当前活跃 Binding",
+          "processing": "使用当前组织的应用凭据世代、Wiki 空间和父节点创建飞书 Docx",
+          "output": "LarkArtifactWriter 和远端写入收据",
+          "tests": "组织 A/B 凭据、父节点、撤销、轮换、配额、重试和全局凭据零调用测试",
+          "acceptance": "组织 A 不得使用组织 B 或部署级凭据",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        },
+        "S4": {
+          "semantic_key": "media.stage2.artifact-record-readback",
+          "inputs": "S3 写入结果、文档成果模型、修订和飞书镜像合同",
+          "processing": "用幂等收据登记容器、正文权威、远端绑定、修订或回读版本，部分成功进入待处置",
+          "output": "ArtifactRecorder 和 ReadbackVerifier",
+          "tests": "写入失败、登记失败、回读失败、重放、并发和版本冲突测试",
+          "acceptance": "任一必要步骤失败都不得返回发布成功",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        }
+      },
+      "incoming_transfer_digests": {
+        "O2": "sha256:d6bfea872c44c8ee1f41be18f2769ffe7377fff1d97e041e508a5e4bbab0b9f0",
+        "S4": "sha256:a6dcc9fa8882f89232431e788739f99514980df5a01bde3539565695e00cd160"
+      },
+      "consumed_decision_shards": {
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        }
+      }
+    },
+    "digest": "sha256:e7948fd59ef2d20e812024eb1aed59d9f12016cf00bb4a3ea1b95a365c6496a2"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
   "write_authority": "implementation",
   "acceptance_authority": "main orchestrator",
   "unlocks": [
@@ -33,8 +138,8 @@
     "worker_level": "LW",
     "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
     "wrapper_entrypoint": "exec codex exec",
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
-    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "project_root": "/private/tmp/openclaw-media-live",
+    "invocation": "codex exec -C '/private/tmp/openclaw-media-live' --skip-git-repo-check --sandbox danger-full-access",
     "sandbox": "danger-full-access",
     "sandbox_authority": "writable sandbox",
     "runtime_profile": "implementation-runner",
@@ -44,8 +149,8 @@
     "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
     "task_argument": "实现组织成果和飞书文档幂等绑定。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/O3.json",
-    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/O3.txt",
-    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/O3.log",
+    "prompt_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/O3.txt",
+    "log_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/O3.log",
     "prompt_sha256": "capture-before-launch",
     "launch_barrier": "all wave PIDs registered before first wait",
     "prompt_cleanup": "delete after exit evidence registration",
@@ -57,7 +162,7 @@
   "node_role": "leaf",
   "execution_actor": "codex",
   "execution_contract_ref": "O3.json",
-  "execution_contract_sha256": "4591cce62d74e71d1d67a03ff665c7bcc6c360bacdb19601310166cb6a6e0b39",
+  "execution_contract_sha256": "28dace10da7e856236bca531e34608d95ed8614050e0541386ebbd0cf6d94bda",
   "side_effect_class": "reversible",
   "candidate_identity_policy": "none",
   "deliverable_ids": [
@@ -122,5 +227,26 @@
       "architecture-complexity"
     ],
     "automatic_executor_switch": false
+  },
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "O2",
+      "required_state": "ACCEPTED"
+    },
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S4",
+      "required_state": "ACCEPTED"
+    }
+  ],
+  "contract_identity": {
+    "contract_id": "O3",
+    "path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/execution-contracts/O3.json",
+    "sha256": "28dace10da7e856236bca531e34608d95ed8614050e0541386ebbd0cf6d94bda"
   }
 }

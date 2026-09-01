@@ -7,8 +7,42 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.k.b.v5"
+    "consumer.b.input.k",
+    "file-summary.edge.k-b",
+    "consumer.b.input.k.sha256-34744485ab3f8ec610a20ecfa9369ac81073e39e1b9187b4e7781b479724a69f"
   ],
+  "transferred_output_contract": {
+    "algorithm": "sha256",
+    "contract": {
+      "artifact_id": "ART-K",
+      "producer_content_digest": "sha256:10f9551f5fa444caa5f0ae4cac17a02b07637abb334b9c2d9429e9eae5cf3a02",
+      "producer_evidence_digest": "sha256:982cff6dea44173f2433e0d4c98a6f55aa7307c631d92cb096c84bab67f5f1c3",
+      "producer_evidence_identity": {
+        "evidence_level": "source",
+        "source_revision": "user-approved-three-stage-plan-2026-08-15",
+        "artifact_hashes": [
+          "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+          "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5",
+          "sha256:d5dad457861e413ff3963da568870be907495de50c33486810fa3dbdc0d92f98"
+        ],
+        "environment_identity": "current Codex task and declared input files",
+        "runtime_release_id": "n/a",
+        "actor_role": "user and product decision authority",
+        "account_or_tenant": "n/a",
+        "device_or_browser": "n/a",
+        "mock_or_fixture": false,
+        "observed_at": "2026-08-15T20:37:42+08:00",
+        "acceptance_contract": "Phase-2 product decisions v2"
+      },
+      "source_semantic_key": "media.stage2.product-decisions",
+      "source_output": "已接受决定记录第 5 版",
+      "source_acceptance_predicate": "记录实现事实与正式接受状态的证据分层；组织 Binding、飞书写入和组织成员能力不得因个人路由开放而泄漏",
+      "required_state": "ACCEPTED",
+      "dependency_scope": "specific-output",
+      "target_input_key": "B.input.K"
+    },
+    "digest": "sha256:34744485ab3f8ec610a20ecfa9369ac81073e39e1b9187b4e7781b479724a69f"
+  },
   "transferred_input": "已接受决定记录第 5 版",
   "gate_evidence": "记录实现事实与正式接受状态的证据分层；组织 Binding、飞书写入和组织成员能力不得因个人路由开放而泄漏",
   "reason_code": "contract-dependency",

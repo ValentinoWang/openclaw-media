@@ -24,7 +24,36 @@ mkdir -p "$report_dir"
 
 test_database_name="$(
   "$test_python" -c \
-    'import sys; from psycopg.conninfo import conninfo_to_dict; print(conninfo_to_dict(sys.argv[1]).get("dbname", ""))' \
+    '
+import ipaddress
+import sys
+from psycopg.conninfo import conninfo_to_dict
+
+info = conninfo_to_dict(sys.argv[1])
+
+def values(key):
+    raw = info.get(key) or ""
+    return [part.strip().strip("[]") for part in raw.replace(" ", ",").split(",") if part.strip()]
+
+for key in ("host", "hostaddr"):
+    for value in values(key):
+        if value == "localhost" or value.startswith("/") and key == "host":
+            continue
+        try:
+            is_loopback = ipaddress.ip_address(value).is_loopback
+        except ValueError:
+            is_loopback = False
+        if not is_loopback:
+            print(f"Refusing non-local test database {key}: {value}", file=sys.stderr)
+            raise SystemExit(2)
+
+for value in values("port"):
+    if not value.isdigit() or not 1 <= int(value) <= 65535:
+        print(f"Refusing invalid test database port: {value}", file=sys.stderr)
+        raise SystemExit(2)
+
+print(info.get("dbname", ""))
+' \
     "$test_database_url"
 )"
 case "$test_database_name" in
@@ -69,11 +98,16 @@ set +e
   cd "$router_root"
   PYTHONDONTWRITEBYTECODE=1 "$test_python" -m pytest tests/ --junitxml="$junit_report"
 ) 2>&1 | tee "$report_dir/pytest-output.txt"
-pytest_status=${PIPESTATUS[0]}
+pipeline_status=("${PIPESTATUS[@]}")
+pytest_status=${pipeline_status[0]}
+tee_status=${pipeline_status[1]}
 "$test_python" "$router_root/scripts/qa/check_pytest_junit.py" "$junit_report"
 skip_guard_status=$?
 set -e
 
+if [[ "$pytest_status" -eq 0 && "$tee_status" -ne 0 ]]; then
+  pytest_status="$tee_status"
+fi
 if [[ "$pytest_status" -eq 0 && "$skip_guard_status" -ne 0 ]]; then
   pytest_status="$skip_guard_status"
 fi
@@ -84,6 +118,7 @@ fi
   printf 'python_version\t%s\n' "$python_version"
   printf 'test_database_name\t%s\n' "$test_database_name"
   printf 'command\t%s\n' "$command_text"
+  printf 'tee_exit_code\t%s\n' "$tee_status"
   printf 'skip_guard_exit_code\t%s\n' "$skip_guard_status"
   printf 'pytest_exit_code\t%s\n' "$pytest_status"
 } > "$report_dir/run-metadata.tsv"

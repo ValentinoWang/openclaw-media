@@ -1,18 +1,19 @@
 # Acceptance Contract: ST2-HUM-LOGIN-FOLD
 
 - Task ID: ST2-HUM-LOGIN-FOLD
-- Contract version: 1
+- Contract version: 2
 - Contract status: DRAFT
 - Test baseline: PLANNED
 - Acceptance owner: product decision authority
-- Approval evidence: 本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。
+- Approval evidence: 本轮用户指令批准 L2 治理修订，但未批准执行人工验收、发布或节点接受。
 - Request source: 2026-09-01 用户对第二阶段 40 验收视图与人工验收工作区的明确指令
 - SSOT node: K
 - SSOT path: agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md
 - Readiness mode: FORMAL
 - Decision refs: media.stage2.product-decisions@5
 - Assumption IDs: none
-- Invalidation keys: media.stage2.product-decisions.v5, media.stage2.product-decisions.login-fold-assert-auth-layout
+- Invalidation keys: consumer.product-decisions.session-envelope.route-grants, consumer.product-decisions.entry-state.contract, file-summary.acceptance.login-fold
+- Acceptance lane: machine-testable, non-blocking human spot-check
 - Baseline identity: ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5; docs/frontend/prototype/stage2-acceptance-execution.html
 - Human acceptance workspace: acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD
 - UI Change declaration: none
@@ -23,11 +24,11 @@
 
 ## Problem
 
-验收材料记录 `assertAuthLayout` 只覆盖初始 P1；回退到密码登录的页面曾超过一屏，自动门禁未能覆盖该状态。
+历史验收材料记录回退态曾超过一屏；该稳定失败类现在归 `assertAuthLayout` 浏览器门禁阻断，人工观察只保留为体验抽查。
 
 ## Expected outcome
 
-回退态中登录主动作无需页面滚动即可见；该临时人工项在自动断言扩展并通过后才能退役。
+回退态中登录主动作无需页面滚动即可见；自动门禁决定是否阻断，人工抽查只记录体验发现并且不能代签节点接受。
 
 ## Non-goals
 
@@ -71,7 +72,7 @@ Then 不滚动页面即可看到并理解登录主动作
 
 | ID | Summary | Checklist path | Required role | Blocking |
 | --- | --- | --- | --- | --- |
-| H-01 | 个人创作者能在回退态无需滚动看到登录主动作；在自动化覆盖前保留为临时人工项。 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md#h-01 | 产品体验验收负责人 | Yes |
+| H-01 | 个人创作者能在回退态无需滚动看到登录主动作；作为机器门禁后的非阻断体验抽查。 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md#h-01 | 产品体验验收负责人 | No |
 
 ## Protected acceptance tests
 
@@ -84,7 +85,7 @@ Then 不滚动页面即可看到并理解登录主动作
 | Requirement | Verification | Evidence target | Mode | Blocking |
 | --- | --- | --- | --- | --- |
 | AC-01 | qa:media-login-visual-runtime | 40 验收视图的自动化映射 | Automatic | Yes |
-| H-01 | 1440x900 回退态人工观察 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md#h-01 | Human | Yes |
+| H-01 | 1440x900 回退态人工观察 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md#h-01 | Human | No |
 
 ## Exploratory testing
 
@@ -92,8 +93,8 @@ Then 不滚动页面即可看到并理解登录主动作
 
 ## Production monitoring and rollback
 
-本项不修改运行时。失败时阻止该人工项签署并要求先补齐 `assertAuthLayout` 全状态自动断言。
+本项不修改运行时。人工抽查失败形成非阻断 finding；只有 `assertAuthLayout` 机器门禁失败才能阻断对应交付。
 
 ## Risks and open decisions
 
-自动化缺口未关闭前，本项保留；自动门禁扩展通过后应废止本合同并保留历史运行结果不改写。
+人工抽查不得覆盖机器门禁，不得把 PASS 或 FAIL 直接提升为节点接受或发布决定。

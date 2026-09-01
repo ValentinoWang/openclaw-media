@@ -1,18 +1,18 @@
 # Acceptance Contract: ST2-HUM-SESSION-28D
 
 - Task ID: ST2-HUM-SESSION-28D
-- Contract version: 1
+- Contract version: 2
 - Contract status: DRAFT
 - Test baseline: PLANNED
 - Acceptance owner: runtime acceptance owner
-- Approval evidence: 本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。
+- Approval evidence: 本轮用户指令批准 L2 治理修订，但未批准执行人工验收、发布或节点接受。
 - Request source: 2026-09-01 用户对第二阶段 40 验收视图与人工验收工作区的明确指令
 - SSOT node: DB
 - SSOT path: agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md
 - Readiness mode: FORMAL
 - Decision refs: media.stage2.product-decisions@5
 - Assumption IDs: none
-- Invalidation keys: media.stage2.external-system-acceptance.v5, media.stage2.external-system-acceptance.session-28d-readback
+- Invalidation keys: consumer.external-acceptance.release-identity, consumer.external-acceptance.browser-session, consumer.external-acceptance.recovery-contract, file-summary.acceptance.session-28d
 - Baseline identity: ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5; docs/frontend/prototype/stage2-acceptance-execution.html
 - Human acceptance workspace: acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D
 - UI Change declaration: none

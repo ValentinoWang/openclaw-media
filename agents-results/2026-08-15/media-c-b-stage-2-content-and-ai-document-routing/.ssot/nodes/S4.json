@@ -20,8 +20,102 @@
     }
   ],
   "invalidation_keys": [
-    "media.stage2.artifact-record-readback.v5"
+    "consumer.artifact-record.readback-state",
+    "consumer.artifact-record.idempotency",
+    "file-summary.artifact-recorder",
+    "consumer.s4.surface.sha256-d6d5cae4c212ba463bc27c16437f9bbb12dea6a0eb9b7aa1dd573b1e6af2e78b"
   ],
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "artifact-closure"
+    ],
+    "shards": {
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      }
+    },
+    "digest": "sha256:9f09ff9be8f6e5c7c980ba3da766a3609a61ed0aa1c9e91afd2c56f9660ece5c",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "ee2ebee603b023338389234c93f0cdb0cd2debc987057f1c584c9fbbc48ffbb4"
+    },
+    "digest": "sha256:33d72c4e6c636a0880cb4e8a94333a2cdd6d3dc51ad2356ff69660e9edf8da68",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.artifact-record.readback-state",
+      "consumer.artifact-record.idempotency",
+      "file-summary.artifact-recorder"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.artifact-record-readback",
+      "inputs": "S3 写入结果、文档成果模型、修订和飞书镜像合同",
+      "processing": "用幂等收据登记容器、正文权威、远端绑定、修订或回读版本，部分成功进入待处置",
+      "task": "实现成果登记、回读和失败关闭状态机。",
+      "output": "ArtifactRecorder 和 ReadbackVerifier",
+      "tests": "写入失败、登记失败、回读失败、重放、并发和版本冲突测试",
+      "acceptance": "任一必要步骤失败都不得返回发布成功",
+      "definition_of_done": "部分外部成功有可幂等续接和审计收据",
+      "write_authority": "implementation",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.artifact-record.readback-state",
+        "consumer.artifact-record.idempotency",
+        "file-summary.artifact-recorder"
+      ],
+      "upstream_contract_inputs": {
+        "S3": {
+          "semantic_key": "media.stage2.writer-routing",
+          "inputs": "F2 接受的阶段边界、S1 执行上下文、B 正文权威合同和第一阶段 I9 失败关闭回执",
+          "processing": "从第一阶段统一能力不可用状态原子切换到唯一服务端路由；个人文档写入内部 Web 成果，组织文档写入活跃 Binding 的飞书 Docx",
+          "output": "WriterRouter 第 2 版",
+          "tests": "能力矩阵、关闭态接管、正反路由、第一阶段 I7 零人工智能写入、只读能力零副作用和缺失 Binding 负例",
+          "acceptance": "不允许第一阶段或能力实现绕过统一路由自选文档容器",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        }
+      },
+      "incoming_transfer_digests": {
+        "S3": "sha256:0c00fe1e2a615f67a2f844190b74cd346f755781e87ce823105cc0cdf611b34d"
+      },
+      "consumed_decision_shards": {
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        }
+      }
+    },
+    "digest": "sha256:d6d5cae4c212ba463bc27c16437f9bbb12dea6a0eb9b7aa1dd573b1e6af2e78b"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
   "write_authority": "implementation",
   "acceptance_authority": "main orchestrator",
   "unlocks": [
@@ -34,8 +128,8 @@
     "worker_level": "LW",
     "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
     "wrapper_entrypoint": "exec codex exec",
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
-    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "project_root": "/private/tmp/openclaw-media-live",
+    "invocation": "codex exec -C '/private/tmp/openclaw-media-live' --skip-git-repo-check --sandbox danger-full-access",
     "sandbox": "danger-full-access",
     "sandbox_authority": "writable sandbox",
     "runtime_profile": "implementation-runner",
@@ -45,8 +139,8 @@
     "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
     "task_argument": "实现成果登记、回读和失败关闭状态机。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/S4.json",
-    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/S4.txt",
-    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/S4.log",
+    "prompt_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/S4.txt",
+    "log_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/S4.log",
     "prompt_sha256": "capture-before-launch",
     "launch_barrier": "all wave PIDs registered before first wait",
     "prompt_cleanup": "delete after exit evidence registration",
@@ -58,7 +152,7 @@
   "node_role": "leaf",
   "execution_actor": "codex",
   "execution_contract_ref": "S4.json",
-  "execution_contract_sha256": "64a6018ec0e2855ea964d84000aadb5129d9273698e95bd6bb3061e08be13c39",
+  "execution_contract_sha256": "dfa93b1e7bad918713e26eb2b3016caa81ef7d400417bee84957467cf0c73933",
   "side_effect_class": "none",
   "candidate_identity_policy": "none",
   "deliverable_ids": [
@@ -121,5 +215,21 @@
       "architecture-complexity"
     ],
     "automatic_executor_switch": false
+  },
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S3",
+      "required_state": "ACCEPTED"
+    }
+  ],
+  "contract_identity": {
+    "contract_id": "S4",
+    "path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/execution-contracts/S4.json",
+    "sha256": "dfa93b1e7bad918713e26eb2b3016caa81ef7d400417bee84957467cf0c73933"
   }
 }

@@ -7,8 +7,44 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.o3.o4.v5"
+    "consumer.o4.input.o3",
+    "file-summary.edge.o3-o4",
+    "consumer.o4.input.o3.sha256-ccacd2456bfe3cd5a218bc222b957eb259bc46a3b203291ae9eda149762c5e2a"
   ],
+  "transferred_output_contract": {
+    "algorithm": "sha256",
+    "contract": {
+      "artifact_id": "DL-O3",
+      "producer_content_digest": "sha256:14d28bc34d8a99d3e9f8d6bcf8ec1799cf8aca4c7cbcc7629c0b2c4321b4f2d0",
+      "producer_evidence_digest": "sha256:92fd139f5f6fbf38f6ef5073ad910fc9f33ab9ba22ad58d20bdcd798df7b56b7",
+      "producer_evidence_identity": {
+        "source_evidence": {
+          "evidence_level": "source",
+          "source_revision": "user-approved-three-stage-plan-2026-08-15",
+          "artifact_hashes": [
+            "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+            "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5",
+            "sha256:d5dad457861e413ff3963da568870be907495de50c33486810fa3dbdc0d92f98"
+          ],
+          "environment_identity": "current Codex task and declared input files",
+          "runtime_release_id": "n/a",
+          "actor_role": "user and product decision authority",
+          "account_or_tenant": "n/a",
+          "device_or_browser": "n/a",
+          "mock_or_fixture": false,
+          "observed_at": "2026-08-15T20:37:42+08:00",
+          "acceptance_contract": "Phase-2 product decisions v2"
+        }
+      },
+      "source_semantic_key": "media.stage2.organization-artifact-binding",
+      "source_output": "组织成果绑定收据",
+      "source_acceptance_predicate": "组织路径不创建可编辑的内部 Web 正文",
+      "required_state": "ACCEPTED",
+      "dependency_scope": "specific-output",
+      "target_input_key": "O4.input.O3"
+    },
+    "digest": "sha256:ccacd2456bfe3cd5a218bc222b957eb259bc46a3b203291ae9eda149762c5e2a"
+  },
   "transferred_input": "组织成果绑定收据",
   "gate_evidence": "组织路径不创建可编辑的内部 Web 正文",
   "reason_code": "data-dependency",

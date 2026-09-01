@@ -28,6 +28,29 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 - **路由清单漂移检测（`routeGrants`）**：会话信封内由服务端生成的清单；客户端按角色和工作区模式独立推导期望值并逐项交叉核验，不一致即让会话解析失败。它不是授权投影，客户端也从不提交该字段。
 - **路由授权**：角色、工作区模式、正文权威、路由策略与后端逐请求校验共同决定页面、数据和动作边界；导航收敛不能代替数据或动作拒绝。
 
+### 资料检索路线（S2）
+
+资料上下文只允许沿以下四条租户级路线读取。每条路线都先通过正典租户资源函数（`canonical_tenant_owned_resources()`）按当前租户列出资料所有者注册，再用正典编号精确查询投影并要求恰好一条回读；显示名称或未经资料所有者校验的全表结果不能成为上下文事实。
+
+| 路线 | 真实来源表 | 资料实体 | canonical ID 字段 |
+| --- | --- | --- | --- |
+| 02A_SourceAssets | 02A_SourceAssets_素材源 | SourceAsset | asset_id |
+| 02B_MaterialDeconstructions | 02B_MaterialDeconstructions_素材拆解 | MaterialDeconstruction | deconstruction_id |
+| 02C_CreativePatterns | 02C_CreativePatterns_创作模式 | CreativePattern | pattern_id |
+| 05B_BusinessOpportunities | 05B_BusinessOpportunities_商务机会 | BusinessOpportunity | opportunity_id |
+
+近期活动表（`01_近期活动`）仍是未关闭的危险例外：现有检索程序（`retrieval.py`）使用配置地址全表读取，缺少同等的资料所有者过滤，必须在 S2 上下文接受前关闭。创作者账号档案（`06_CreatorProfiles_达人账号档案`）只作为账号上下文来源，不是第五条通用资料路线。
+
+### 三类真实档案（Growth source）
+
+源码已有且可持久化的真实档案只有以下三类；它们有明确的数据结构和来源追踪，不等同于尚未完成的发布包或网页正文。
+
+| 档案类型 | canonical capability | 字段语义 |
+| --- | --- | --- |
+| ExternalResearchBrief | external_research_brief | 研究问题、媒体目标、受众相关性、内容机会、可用与不可用角度、source_evidence、风险和下一步动作 |
+| CommercialBrief | commercial_brief | 产品、平台、内容形式与时长、地点、品牌必提项、交付物、合规/技术/审批约束、清理后的 Brief、来源证据和风险 |
+| DecisionBrief | creation_decision_brief | 选题候选、决策目标、推荐的下一能力、风险与缺失信息；模型建议不得冒充人工决定 |
+
 本阶段交付两条互斥但共享合同的产品闭环：
 
 1. 个人创作者从个人资料、研究简报和决策简报进入人工智能创作，把正文写入个人内部成果，在网页端编辑和保存修订，再生成平台版本与发布包。
@@ -35,7 +58,7 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 3. 两条路径共享同一套服务端上下文、资料路由、写入路由、成果登记、回读状态机和能力副作用目录，但不能共享正文容器或编辑权威。
 4. 写入、成果登记或必要回读任一步失败，都不能向用户标记发布成功。
 
-正式验收口径仍以独立终验节点（`DC`）为准；当前状态必须拆成两层理解：源码层已经存在第二阶段实现，正式 SSOT 节点层仍只有 A、A1、K 三项接受。当前主线（`main`）观察到提交编号（`007a7f906af4e23a6a4fa5d041da4cb0641646c2`），第二阶段（Stage-2）起始提交为提交编号（`0228256058a1d7c0de4986a943de5c96f445ee2f`），包含 17 个第二阶段服务文件、20 个第二阶段测试文件和 169 个测试函数；这只证明源码与聚焦测试资产存在，不证明部署、认证浏览器/设备、真实人工智能服务或真实飞书写入后回读。只有独立终验节点（`DC`）正式接受，才可以宣布本阶段完成。
+正式验收口径仍以独立终验节点（`DC`）为准；当前状态必须拆成两层理解：源码层已经存在第二阶段实现，正式 SSOT 节点层仍只有 A、A1、K 三项接受。当前主线（`main`）观察到提交编号（`ca17317f2a559eb033f9667a4d8ad6389010d190`），第二阶段（Stage-2）起始提交为提交编号（`0228256058a1d7c0de4986a943de5c96f445ee2f`），包含 17 个第二阶段服务文件、20 个第二阶段测试文件和 169 个测试函数；这只证明源码与聚焦测试资产存在，不证明部署、认证浏览器/设备、真实人工智能服务或真实飞书写入后回读。只有独立终验节点（`DC`）正式接受，才可以宣布本阶段完成。
 
 ## 2. 用户与可见行为
 
@@ -108,6 +131,16 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 当前第一阶段的身份汇合节点（`C1`）、组织接入汇合节点（`C3`）和发布增量 1B 终验节点（`DC2`）均为阻塞状态，因此第二阶段的三项跨阶段投影（`F1`、`F2`、`F3`）也全部阻塞，第二阶段当前没有合法正式就绪节点。该状态表示正式门禁尚未满足；它不再声称“没有代码”，而是明确区分源码实现观察与节点正式接受。
 
 发布恢复采用三层合同：代码只原子切换不可变发布身份；数据库使用前向迁移和明确恢复步骤；飞书写入、登记和回读使用幂等步骤、补偿与待人工处置状态。不得把飞书动作描述成可以与代码和数据库一起原子回滚。
+
+```mermaid
+flowchart LR
+  Accepted["已接受的范围与决定"] --> Upstream["第一阶段三项投影"]
+  Upstream --> Delivery["第二阶段实现与验收"]
+  classDef accepted fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+  classDef blocked fill:#fff3e0,stroke:#ef6c00,color:#7f3700;
+  class Accepted accepted;
+  class Upstream,Delivery blocked;
+```
 
 ## 6. 实际实现标注
 

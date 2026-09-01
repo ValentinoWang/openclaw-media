@@ -20,8 +20,102 @@
     }
   ],
   "invalidation_keys": [
-    "media.stage2.context-routing.v5"
+    "consumer.context-routing.tenant-scope",
+    "consumer.context-routing.source-owner",
+    "file-summary.context-routing",
+    "consumer.s2.surface.sha256-feae255c0d42313fda5926d578a07ff7c96f5281333ffaa0e4160995b38206cc"
   ],
+  "decision_shard_freeze": {
+    "schema_version": 1,
+    "semantic_key": "media.stage2.product-decisions",
+    "version": 5,
+    "freeze_state": "FROZEN",
+    "shard_ids": [
+      "artifact-closure"
+    ],
+    "shards": {
+      "artifact-closure": {
+        "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+        "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+      }
+    },
+    "digest": "sha256:9f09ff9be8f6e5c7c980ba3da766a3609a61ed0aa1c9e91afd2c56f9660ece5c",
+    "source_digest": "sha256:d8130601ebd5312e4ede916bd06e4900997381e0c02536f8764a2d9a71676c08"
+  },
+  "verification_source_digest": {
+    "algorithm": "sha256",
+    "source_keys": [
+      "node_contract"
+    ],
+    "source_hashes": {
+      "node_contract": "f00ccdecffdb22b5f40d0ed13db2d0d83a79fb1223a5eb20073a23d3b577dfcf"
+    },
+    "digest": "sha256:f1399d2d257de052dd2315e2ac96cee59d28b777955b50980bd7da554aeadf59",
+    "verification_state": "DECLARED_NOT_ACCEPTED"
+  },
+  "consumer_surface_digest": {
+    "algorithm": "sha256",
+    "keys": [
+      "consumer.context-routing.tenant-scope",
+      "consumer.context-routing.source-owner",
+      "file-summary.context-routing"
+    ],
+    "surface": {
+      "semantic_key": "media.stage2.context-routing",
+      "inputs": "S1 执行上下文、租户资料和资料所有者登记",
+      "processing": "按个人或组织工作区选择可用资料，关闭近期活动全表读取等跨租户断点",
+      "task": "实现统一 ContextBuilder 路由和跨租户门禁。",
+      "output": "ContextBuilder 路由和来源收据",
+      "tests": "个人/组织正例、资料所有者、跨租户、缺失和重复资料负例",
+      "acceptance": "01_ 近期活动与其他资料使用同等租户边界",
+      "definition_of_done": "每个上下文项都可回读来源和租户归属",
+      "write_authority": "implementation",
+      "acceptance_authority": "main orchestrator",
+      "invalidation_keys": [
+        "consumer.context-routing.tenant-scope",
+        "consumer.context-routing.source-owner",
+        "file-summary.context-routing"
+      ],
+      "upstream_contract_inputs": {
+        "S1": {
+          "semantic_key": "media.stage2.ai-execution-context",
+          "inputs": "B 合同、服务端会话、成员关系、Binding 和能力编号",
+          "processing": "生成可信的租户、工作区、正文权威、成员角色、Binding 和能力组合结果；为入口状态投影提供服务端事实",
+          "output": "AIExecutionContext 第 3 版",
+          "tests": "字段来源、缺失、撤销、伪造和组织 A/B 负例",
+          "acceptance": "上下文全部由服务端事实生成",
+          "write_authority": "implementation",
+          "acceptance_authority": "main orchestrator"
+        }
+      },
+      "incoming_transfer_digests": {
+        "S1": "sha256:e36349c369f6605a68eb6ec7bc0b1c4e3751a6e3f09d5982b98dabb826c0ba6a"
+      },
+      "consumed_decision_shards": {
+        "artifact-closure": {
+          "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+          "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary"
+        }
+      }
+    },
+    "digest": "sha256:feae255c0d42313fda5926d578a07ff7c96f5281333ffaa0e4160995b38206cc"
+  },
+  "protected_test_identity": {
+    "algorithm": "sha256",
+    "files": {
+      "tests/test_stage2_acceptance_policy.py": "4992c51663c9bf65fd610db09ecb8a2b35d4139482f5ff08aca6225e6af0f133",
+      "tests/test_stage2_ssot_view.py": "335565d81a5d418944837b221ec82ef78df72ca4539a3e86573db1880b640af5"
+    },
+    "execution_result": {
+      "command": "python -m pytest -q tests/test_stage2_acceptance_policy.py tests/test_stage2_ssot_view.py",
+      "exit_code": 0,
+      "status": "PASS",
+      "summary": "13 passed: protected contract suite"
+    },
+    "execution_result_digest": "sha256:86c06a57dbfe10cfb7bc479071165f0e70a7f46ca4e28310e2f2e368c7fe2256",
+    "digest": "sha256:a7b0fcb8723d4eb2d8c6f86a636169f8ff072e8a4fd53f5defd6adfa5357831c",
+    "mutation_policy": "invalidate-and-rerun; never skip"
+  },
   "write_authority": "implementation",
   "acceptance_authority": "main orchestrator",
   "unlocks": [
@@ -34,8 +128,8 @@
     "worker_level": "LW",
     "wrapper": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
     "wrapper_entrypoint": "exec codex exec",
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
-    "invocation": "codex exec -C '/Users/vsiyo/Desktop/创业项目/自媒体创作Agent' --skip-git-repo-check --sandbox danger-full-access",
+    "project_root": "/private/tmp/openclaw-media-live",
+    "invocation": "codex exec -C '/private/tmp/openclaw-media-live' --skip-git-repo-check --sandbox danger-full-access",
     "sandbox": "danger-full-access",
     "sandbox_authority": "writable sandbox",
     "runtime_profile": "implementation-runner",
@@ -45,8 +139,8 @@
     "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
     "task_argument": "实现统一 ContextBuilder 路由和跨租户门禁。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-returns/S2.json",
-    "prompt_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/S2.txt",
-    "log_path": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/S2.log",
+    "prompt_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/prompts/S2.txt",
+    "log_path": "/private/tmp/openclaw-media-live/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/worker-logs/S2.log",
     "prompt_sha256": "capture-before-launch",
     "launch_barrier": "all wave PIDs registered before first wait",
     "prompt_cleanup": "delete after exit evidence registration",
@@ -58,7 +152,7 @@
   "node_role": "leaf",
   "execution_actor": "codex",
   "execution_contract_ref": "S2.json",
-  "execution_contract_sha256": "33da57daa89f39a14ba1955fa798569cf4789c61d013dba7af0b97ebfcf6800b",
+  "execution_contract_sha256": "52289cd2ca6e1ea4e8c4e8a2252d44c292e0cd151082d8753b9aaac2f4a26b1c",
   "side_effect_class": "none",
   "candidate_identity_policy": "none",
   "deliverable_ids": [
@@ -121,5 +215,21 @@
       "architecture-complexity"
     ],
     "automatic_executor_switch": false
+  },
+  "acceptance_lane": {
+    "lane": "none",
+    "blocking": false
+  },
+  "blockers": [
+    {
+      "class": "missing-upstream-acceptance",
+      "source_node": "S1",
+      "required_state": "ACCEPTED"
+    }
+  ],
+  "contract_identity": {
+    "contract_id": "S2",
+    "path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/execution-contracts/S2.json",
+    "sha256": "52289cd2ca6e1ea4e8c4e8a2252d44c292e0cd151082d8753b9aaac2f4a26b1c"
   }
 }

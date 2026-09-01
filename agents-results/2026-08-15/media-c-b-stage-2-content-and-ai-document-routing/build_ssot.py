@@ -7,23 +7,32 @@ import hashlib
 import json
 import math
 import re
+import subprocess
 from collections import defaultdict
 from pathlib import Path
 
 from stage2_model import (
     BATCHES,
     CANDIDATE_IDENTITY_POLICY_OVERRIDES,
+    AI_REVIEW_POLICY,
+    DECISION_SHARD_FREEZE,
+    DECISION_SHARDS_BY_NODE,
     DETERMINISTIC_COMMANDS,
     DAG_VERSION,
     EDGES,
     EXECUTION_ACTOR_OVERRIDES,
+    EVIDENCE_INVALIDATION_POLICY,
     INTERFACE_FREEZE_VERSION,
+    HUMAN_ACCEPTANCE_POLICY,
+    INVALIDATION_KEYS_BY_EDGE,
+    INVALIDATION_KEYS_BY_NODE,
     NODE_CONTRACT_VERSION,
     NODE_ROLE_OVERRIDES,
     PLAN_VERSION,
     PRODUCT_DECISION_VERSION,
     PRIMARY_EXECUTOR_DEFAULT,
     PRIMARY_EXECUTOR_OPTIONS,
+    PROTECTED_TEST_EXECUTION_RESULT,
     PROJECTION_RULES,
     PROJECTION_SOURCE_NODES,
     RELEASE_SLICE_BY_NODE,
@@ -31,6 +40,7 @@ from stage2_model import (
     SPECS,
     SSOT_SCHEMA_VERSION,
     TRANSPORT_OVERRIDES,
+    VERIFICATION_SOURCE_KEYS_BY_NODE,
     WAVE_BY_NODE,
     selected_primary_executor,
     selected_primary_wrapper,
@@ -54,31 +64,10 @@ def artifact_identity(node_id: str) -> str:
 
 BUNDLE = Path(__file__).resolve().parent
 PROJECT_ROOT = BUNDLE.parents[2]
-# Stage-1 is part of this repository in the current checkout.  Keep a
-# compatibility fallback for older archives that stored the upstream bundle
-# beside the project root, but prefer the project-owned authority whenever it
-# exists so generation works from any clone/worktree location.  The canonical
-# desktop path is retained when available so generated provenance remains
-# stable after a worktree is moved to a temporary location.
-_CANONICAL_PROJECT_ROOT = Path("/Users/vsiyo/Desktop/创业项目/自媒体创作Agent")
-_SOURCE_ROOT_CANDIDATES = (
-    _CANONICAL_PROJECT_ROOT,
-    PROJECT_ROOT,
-    PROJECT_ROOT.parents[1],
-)
-SOURCE_ROOT = next(
-    (
-        candidate
-        for candidate in _SOURCE_ROOT_CANDIDATES
-        if (candidate / "agents-results").is_dir()
-    ),
-    PROJECT_ROOT,
-)
-DISPLAY_PROJECT_ROOT = (
-    _CANONICAL_PROJECT_ROOT
-    if (_CANONICAL_PROJECT_ROOT / "agents-results").is_dir()
-    else PROJECT_ROOT
-)
+# Stage-1 is part of this repository. Keep all generated paths relative to the
+# active checkout so a candidate can be replayed from a clone or worktree.
+SOURCE_ROOT = PROJECT_ROOT
+DISPLAY_PROJECT_ROOT = PROJECT_ROOT
 REL_BUNDLE = BUNDLE.relative_to(PROJECT_ROOT).as_posix()
 DISPLAY_BUNDLE = DISPLAY_PROJECT_ROOT / REL_BUNDLE
 MACHINE = BUNDLE / ".ssot"
@@ -89,6 +78,11 @@ CONFLICTS_DIR = MACHINE / "conflicts"
 EXECUTION_CONTRACTS_DIR = MACHINE / "execution-contracts"
 VIEW_SOURCES = MACHINE / "view-sources"
 GENERATED_VIEWS = BUNDLE / "generated-views"
+EVIDENCE_STATE_LEDGER = MACHINE / "evidence-state-ledger.json"
+PROTECTED_TEST_PATHS = (
+    "tests/test_stage2_acceptance_policy.py",
+    "tests/test_stage2_ssot_view.py",
+)
 
 PRIMARY_WRAPPER_PATHS = {
     "lw-luna": "/Users/vsiyo/.codex/workers/run-lw-luna.sh",
@@ -146,8 +140,9 @@ HASHES = {
     "stage1_dc2": "e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448",
 }
 OBSERVED_AT = "2026-08-15T20:37:42+08:00"
-CURRENT_FACT_OBSERVED_AT = "2026-09-01T16:55:00+08:00"
-CURRENT_MAIN_SHA = "007a7f906af4e23a6a4fa5d041da4cb0641646c2"
+CURRENT_FACT_OBSERVED_AT = "2026-09-02T00:58:00+08:00"
+CURRENT_MAIN_SHA = "ca17317f2a559eb033f9667a4d8ad6389010d190"
+HISTORICAL_SOURCE_OBSERVATION_COMMIT = "007a7f906af4e23a6a4fa5d041da4cb0641646c2"
 DECISION_V5_OBSERVED_AT = "2026-09-01T15:20:00+08:00"
 CURRENT_STAGE2_ORIGIN_COMMIT = "0228256058a1d7c0de4986a943de5c96f445ee2f"
 CURRENT_STAGE2_SERVICE_COUNT = 17
@@ -171,17 +166,41 @@ ACCEPTANCE_EXECUTION_RECORDS = [
     ["视觉构建门禁", CURRENT_FACT_OBSERVED_AT, "PASS：完整前端构建、TypeScript、Vite 和配置的 QA 门禁通过", "仅 Vite 大 chunk 体积建议，非失败", "agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt"],
     ["全量回归", CURRENT_FACT_OBSERVED_AT, "PASS WITH BASELINE：1683 passed，40 skipped，32 failed", "32 项均在父提交 `37e58dc3` 的 42 项失败集合中；本轮额外修复了 10 项过期迁移清单断言", "agents-results/2026-09-01/stage2-document-edit-validation/verification.md"],
 ]
+PRODUCT_DECISION_VALUES = {
+    "ai_execution_context": "server session plus Membership plus Binding plus capability identity",
+    "client_authority_boundary": "client-supplied tenant, Binding and body authority are never authorization facts",
+    "personal_body_authority": "personal_web/internal; Web is the only editor authority",
+    "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
+    "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
+    "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
+    "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary",
+    "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
+    "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
+    "stage3_exclusions": "full role matrix, approval, seats, procurement, invoices, migration, complex deletion and business analytics",
+    "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate",
+    "session_envelope_boundary": "v5 supersedes the v4 ban: routeGrants stays inside the session envelope as a route-list drift detector, not an authorization projection. It is server-generated, never client-submitted, and the client cross-checks it against independently derived expectations so route-list divergence fails the session closed. This required field requires a version bump to media_web_business_pages_v3 and B re-freezes the interface identity at v3.",
+    "entry_state_authority": "the shipped entry-state API carries login entry status only: mode, matched/none/expired/mismatched, masked entry, and fallback. It is a pre-login probe and must never carry role, body authority, route grants, or action grants.",
+    "entry_state_contract": "login entry status and workspace route authorization are two separately versioned contracts and must not share one endpoint or one name. Both are published in OpenAPI and client types; entry-state OpenAPI publication remains a B/T1 delivery item.",
+    "route_authorization_axes": "role selects shell; workspaceMode/bodyAuthority select content authority; session routeGrants plus MediaStudioRoutePolicy select visible UI, while backend authorization on every read and action remains final.",
+    "illegal_route_semantics": "navigation may collapse a legal session in the wrong shell to that shell's default route; data and action calls must refuse cross-tenant, cross-owner, missing-grant, or organization-capability requests with 403 or an equivalent no-permission state.",
+    "route_list_authority": "the route list is delegated to mediaStudioRoutePolicy.ts. The remaining hand-maintained duplicates are debt to be collapsed into one generated source.",
+    "ordinary_ia_entrypoint": "MediaStudioApp is the current mounted entry; MediaApp is legacy until an entrypoint census proves otherwise. Do not delete the legacy IA before route ownership and deep-link behavior are recorded.",
+    "font_delivery": "self-host DM Sans as full WOFF2; serve Noto Sans SC through unicode-range slices or a curated common-glyph subset; preload only Latin subset and keep a local fallback chain",
+    "font_weight_policy": "load every used weight including 600; remove 800/850 visual dependence, map Chinese headings to available weights, set Chinese or mixed headings letter-spacing to 0 and reserve negative tracking for pure Latin/numeric display",
+}
 HUMAN_ACCEPTANCE_FRAGMENTS = {
     "O1": {
         "task_id": "ST2-HUM-ORG-SCAN",
         "contract_path": f"{REL_BUNDLE}/acceptance-fragments/ST2-HUM-ORG-SCAN/acceptance-contract.md",
-        "contract_version": 1,
+        "contract_version": 2,
         "contract_status": "DRAFT",
         "test_baseline": "PLANNED",
-        "approval_evidence": "本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。",
+        "approval_evidence": "本轮用户指令批准 L2 治理修订，但未批准执行人工验收、发布或节点接受。",
         "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
         "assumption_ids": [],
-        "invalidation_keys": ["media.stage2.organization-source-scope.v5", "media.stage2.organization-source-scope.manual-org-scan"],
+        "owner_invalidation_keys": ["consumer.organization-scope.binding", "consumer.organization-scope.tenant-materials"],
+        "local_invalidation_keys": ["file-summary.acceptance.org-scan"],
+        "human_workspace_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN",
         "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/binding.md",
         "selected_run_ids": [],
         "result_hashes": [],
@@ -189,13 +208,15 @@ HUMAN_ACCEPTANCE_FRAGMENTS = {
     "O5": {
         "task_id": "ST2-HUM-LARK-READBACK",
         "contract_path": f"{REL_BUNDLE}/acceptance-fragments/ST2-HUM-LARK-READBACK/acceptance-contract.md",
-        "contract_version": 1,
+        "contract_version": 2,
         "contract_status": "DRAFT",
         "test_baseline": "PLANNED",
-        "approval_evidence": "本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。",
+        "approval_evidence": "本轮用户指令批准 L2 治理修订，但未批准执行人工验收、发布或节点接受。",
         "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
         "assumption_ids": [],
-        "invalidation_keys": ["media.stage2.organization-edit-readback.v5", "media.stage2.organization-edit-readback.manual-lark-readback"],
+        "owner_invalidation_keys": ["consumer.organization-edit-readback.lark-document", "consumer.organization-edit-readback.remote-version"],
+        "local_invalidation_keys": ["file-summary.acceptance.lark-readback"],
+        "human_workspace_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK",
         "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/binding.md",
         "selected_run_ids": [],
         "result_hashes": [],
@@ -203,13 +224,15 @@ HUMAN_ACCEPTANCE_FRAGMENTS = {
     "K": {
         "task_id": "ST2-HUM-LOGIN-FOLD",
         "contract_path": f"{REL_BUNDLE}/acceptance-fragments/ST2-HUM-LOGIN-FOLD/acceptance-contract.md",
-        "contract_version": 1,
+        "contract_version": 2,
         "contract_status": "DRAFT",
         "test_baseline": "PLANNED",
-        "approval_evidence": "本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。",
+        "approval_evidence": "本轮用户指令批准 L2 治理修订，但未批准执行人工验收、发布或节点接受。",
         "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
         "assumption_ids": [],
-        "invalidation_keys": ["media.stage2.product-decisions.v5", "media.stage2.product-decisions.login-fold-assert-auth-layout"],
+        "owner_invalidation_keys": ["consumer.product-decisions.session-envelope.route-grants", "consumer.product-decisions.entry-state.contract"],
+        "local_invalidation_keys": ["file-summary.acceptance.login-fold"],
+        "human_workspace_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD",
         "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/binding.md",
         "selected_run_ids": [],
         "result_hashes": [],
@@ -217,20 +240,94 @@ HUMAN_ACCEPTANCE_FRAGMENTS = {
     "DB": {
         "task_id": "ST2-HUM-SESSION-28D",
         "contract_path": f"{REL_BUNDLE}/acceptance-fragments/ST2-HUM-SESSION-28D/acceptance-contract.md",
-        "contract_version": 1,
+        "contract_version": 2,
         "contract_status": "DRAFT",
         "test_baseline": "PLANNED",
-        "approval_evidence": "本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。",
+        "approval_evidence": "本轮用户指令批准 L2 治理修订，但未批准执行人工验收、发布或节点接受。",
         "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
         "assumption_ids": [],
-        "invalidation_keys": ["media.stage2.external-system-acceptance.v5", "media.stage2.external-system-acceptance.session-28d-readback"],
+        "owner_invalidation_keys": ["consumer.external-acceptance.release-identity", "consumer.external-acceptance.browser-session", "consumer.external-acceptance.recovery-contract"],
+        "local_invalidation_keys": ["file-summary.acceptance.session-28d"],
+        "human_workspace_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D",
         "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/binding.md",
         "selected_run_ids": [],
         "result_hashes": [],
     },
 }
+for _fragment in HUMAN_ACCEPTANCE_FRAGMENTS.values():
+    _fragment["invalidation_keys"] = [
+        *_fragment["owner_invalidation_keys"],
+        *_fragment["local_invalidation_keys"],
+    ]
+HUMAN_ACCEPTANCE_FRAGMENTS["K"].update(
+    {
+        "acceptance_lane": "machine",
+        "blocking": False,
+        "machine_testable": True,
+    }
+)
+
+
+def acceptance_lane_for(node_id: str) -> dict[str, object]:
+    """Return the immutable acceptance lane metadata for a node."""
+
+    blocking_ids = set(str(item) for item in HUMAN_ACCEPTANCE_POLICY["blocking_task_ids"])
+    demoted_ids = set(str(item) for item in HUMAN_ACCEPTANCE_POLICY["demoted_machine_testable_task_ids"])
+    if node_id in blocking_ids:
+        return {
+            "lane": "human",
+            "blocking": True,
+            "budget": int(HUMAN_ACCEPTANCE_POLICY["blocking_budget"]),
+        }
+    if node_id in demoted_ids:
+        return {
+            "lane": "machine",
+            "blocking": False,
+            "demoted_from": "human",
+            "reason": str(HUMAN_ACCEPTANCE_POLICY["demotion_reason"]),
+        }
+    return {"lane": "none", "blocking": False}
+
+
+def human_acceptance_task_lane_map() -> dict[str, bool]:
+    """Map declared human acceptance task IDs to their release-blocking lane."""
+
+    return {
+        str(fragment["task_id"]): bool(acceptance_lane_for(node_id)["blocking"])
+        for node_id, fragment in HUMAN_ACCEPTANCE_FRAGMENTS.items()
+        if node_id in set(str(item) for item in HUMAN_ACCEPTANCE_POLICY["blocking_task_ids"])
+        or node_id in set(str(item) for item in HUMAN_ACCEPTANCE_POLICY["demoted_machine_testable_task_ids"])
+    }
+
+
+def validate_acceptance_policy() -> None:
+    """Fail closed when human or AI review lanes exceed their contract."""
+
+    blocking_ids = list(HUMAN_ACCEPTANCE_POLICY["blocking_task_ids"])
+    demoted_ids = list(HUMAN_ACCEPTANCE_POLICY["demoted_machine_testable_task_ids"])
+    budget = int(HUMAN_ACCEPTANCE_POLICY["blocking_budget"])
+    if len(blocking_ids) != budget:
+        raise RuntimeError("human acceptance blocking budget must be filled exactly")
+    if set(blocking_ids) & set(demoted_ids):
+        raise RuntimeError("human acceptance lane overlap")
+    if int(AI_REVIEW_POLICY["independent_lane_count"]) != 1:
+        raise RuntimeError("AI review must use one independent lane")
+    rereview = AI_REVIEW_POLICY["finding_rereview"]
+    if int(rereview["max_per_finding"]) != 1 or rereview["scope"] != "finding-only":
+        raise RuntimeError("AI review rereview must be one scoped pass per finding")
+    if AI_REVIEW_POLICY["write_authority"] != "zero-write":
+        raise RuntimeError("AI review lane must be zero-write")
+    if blocking_ids != ["O1", "O5", "DB"] or demoted_ids != ["K"]:
+        raise RuntimeError("human acceptance lane assignment drift")
+    expected_task_lanes = {
+        HUMAN_ACCEPTANCE_FRAGMENTS[node_id]["task_id"]: node_id in blocking_ids
+        for node_id in [*blocking_ids, *demoted_ids]
+    }
+    if human_acceptance_task_lane_map() != expected_task_lanes:
+        raise RuntimeError("human acceptance task lane mapping drift")
+
 IMPLEMENTATION_OBSERVATIONS = {
-    "source-baseline": f"当前 main 为 {CURRENT_MAIN_SHA}；Stage-2 起始提交为 {CURRENT_STAGE2_ORIGIN_COMMIT}。候选分支 codex/stage2-release-20260818 已不存在。",
+    "source-baseline": f"本次修订基于 main {CURRENT_MAIN_SHA}；历史事实观察提交为 {HISTORICAL_SOURCE_OBSERVATION_COMMIT}；Stage-2 起始提交为 {CURRENT_STAGE2_ORIGIN_COMMIT}。候选分支 codex/stage2-release-20260818 已不存在。",
     "S1-S5/T1": f"已落地上下文、资料路由、唯一写入路由、成果登记/回读和能力副作用合同；主线有 {CURRENT_STAGE2_SERVICE_COUNT} 个 stage2 服务文件，Stage-2 聚焦测试为 {CURRENT_STAGE2_TEST_COUNT} 个文件、{CURRENT_STAGE2_TEST_FUNCTION_COUNT} 个测试函数。",
     "C1-C5": "已落地个人资料、研究简报、决策简报、个人上下文和个人内部成果写入流程。",
     "O1-O4": "已落地组织资料、按 Binding 写入、成果绑定、飞书回读和网页只读镜像流程。",
@@ -252,11 +349,465 @@ UPSTREAM_PROJECTIONS = {
     "F3": "DC2",
 }
 
+CONTENT_CONTEXT_CONTRACT = {
+    "schema_version": 1,
+    "retrieval_routes": [
+        {
+            "route_id": "02A_SourceAssets",
+            "source_table": "02A_SourceAssets_素材源",
+            "entity_type": "SourceAsset",
+            "canonical_id_field": "asset_id",
+        },
+        {
+            "route_id": "02B_MaterialDeconstructions",
+            "source_table": "02B_MaterialDeconstructions_素材拆解",
+            "entity_type": "MaterialDeconstruction",
+            "canonical_id_field": "deconstruction_id",
+        },
+        {
+            "route_id": "02C_CreativePatterns",
+            "source_table": "02C_CreativePatterns_创作模式",
+            "entity_type": "CreativePattern",
+            "canonical_id_field": "pattern_id",
+        },
+        {
+            "route_id": "05B_BusinessOpportunities",
+            "source_table": "05B_BusinessOpportunities_商务机会",
+            "entity_type": "BusinessOpportunity",
+            "canonical_id_field": "opportunity_id",
+        },
+    ],
+    "retrieval_rules": {
+        "owner_registry": "canonical_tenant_owned_resources",
+        "lookup": "current-tenant owner registration plus exact canonical ID",
+        "cardinality": "exactly-one",
+    },
+    "caveats": {
+        "unsafe_configured_url_full_table_exception": {
+            "source": "01_近期活动",
+            "current_behavior": "retrieval.py configured URL full-table read without equivalent owner filter",
+            "required_state_before_s2_acceptance": "closed",
+        },
+        "account_context_only": {
+            "source": "06_CreatorProfiles_达人账号档案",
+            "general_retrieval_route": False,
+        },
+    },
+    "dossier_types": [
+        {
+            "dossier_type": "ExternalResearchBrief",
+            "canonical_capability_id": "external_research_brief",
+            "field_semantics": "研究问题、媒体目标、受众相关性、内容机会、可用与不可用角度、source_evidence、风险和下一步动作",
+        },
+        {
+            "dossier_type": "CommercialBrief",
+            "canonical_capability_id": "commercial_brief",
+            "field_semantics": "产品、平台、内容形式与时长、地点、品牌必提项、交付物、合规/技术/审批约束、清理后的 Brief、来源证据和风险",
+        },
+        {
+            "dossier_type": "DecisionBrief",
+            "canonical_capability_id": "creation_decision_brief",
+            "field_semantics": "选题候选、决策目标、推荐的下一能力、风险与缺失信息；模型建议不得冒充人工决定",
+        },
+    ],
+}
+
+
+def _verification_source_keys(node_id: str) -> tuple[str, ...]:
+    """Return the immutable source-hash inputs bound to a node's evidence."""
+
+    return VERIFICATION_SOURCE_KEYS_BY_NODE.get(node_id, ())
+
+
+def _verification_source_digest(node_id: str) -> dict[str, object]:
+    source_keys = _verification_source_keys(node_id)
+    source_hashes: dict[str, str] = {}
+    for key in source_keys:
+        if key != "node_contract":
+            source_hashes[key] = HASHES[key]
+            continue
+        contract_fields = (
+            "semantic_key", "stage", "work_kind", "domain_lane", "inputs",
+            "processing", "output", "tests", "acceptance", "dod", "task",
+            "write_authority", "acceptance_authority",
+        )
+        contract = {field: SPECS[node_id][field] for field in contract_fields}
+        source_hashes[key] = hashlib.sha256(
+            json.dumps(contract, sort_keys=True, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+    payload = json.dumps(source_hashes, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    digest = hashlib.sha256(payload).hexdigest()
+    return {
+        "algorithm": "sha256",
+        "source_keys": list(source_keys),
+        "source_hashes": source_hashes,
+        "digest": f"sha256:{digest}",
+        "verification_state": "DECLARED_NOT_ACCEPTED" if source_keys else "NOT_BOUND",
+    }
+
+
+def _decision_shard_values(node_id: str) -> dict[str, dict[str, str]]:
+    """Return only the accepted decision values consumed by one node."""
+
+    return {
+        shard_id: {
+            field: PRODUCT_DECISION_VALUES[field]
+            for field in DECISION_SHARD_FREEZE["shards"][shard_id]
+        }
+        for shard_id in DECISION_SHARDS_BY_NODE[node_id]
+    }
+
+
+def _decision_shard_freeze(node_id: str, consumes_decision: bool) -> dict[str, object] | None:
+    if node_id != "K" and not consumes_decision:
+        return None
+    shard_ids = list(DECISION_SHARDS_BY_NODE[node_id])
+    shard_payload = _decision_shard_values(node_id)
+    payload = json.dumps(
+        {
+            "semantic_key": DECISION_SHARD_FREEZE["semantic_key"],
+            "shards": shard_payload,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return {
+        "schema_version": int(DECISION_SHARD_FREEZE["schema_version"]),
+        "semantic_key": str(DECISION_SHARD_FREEZE["semantic_key"]),
+        "version": int(DECISION_SHARD_FREEZE["version"]),
+        "freeze_state": str(DECISION_SHARD_FREEZE["freeze_state"]),
+        "shard_ids": shard_ids,
+        "shards": shard_payload,
+        "digest": f"sha256:{hashlib.sha256(payload).hexdigest()}",
+        "source_digest": _verification_source_digest("K")["digest"],
+    }
+
+
+def _node_invalidation_keys(node_id: str, item: dict[str, object]) -> list[str]:
+    configured = INVALIDATION_KEYS_BY_NODE.get(node_id)
+    if configured is not None:
+        return list(configured)
+    semantic = str(item["semantic_key"])
+    return [f"consumer.{semantic}.contract", f"file-summary.{node_id.lower()}"]
+
+
+def _edge_invalidation_keys(source: str, target: str) -> list[str]:
+    configured = INVALIDATION_KEYS_BY_EDGE.get((source, target))
+    if configured is not None:
+        return list(configured)
+    return [
+        f"consumer.{target.lower()}.input.{source.lower()}",
+        f"file-summary.edge.{source.lower()}-{target.lower()}",
+    ]
+
+
+def _consumer_surface_digest(node_id: str, item: dict[str, object]) -> dict[str, object]:
+    keys = _node_invalidation_keys(node_id, item)
+    upstream_contract_inputs = {
+        source: {
+            "semantic_key": str(SPECS[source]["semantic_key"]),
+            "inputs": str(SPECS[source]["inputs"]),
+            "processing": str(SPECS[source]["processing"]),
+            "output": str(SPECS[source]["output"]),
+            "tests": str(SPECS[source]["tests"]),
+            "acceptance": str(SPECS[source]["acceptance"]),
+            "write_authority": str(SPECS[source]["write_authority"]),
+            "acceptance_authority": str(SPECS[source]["acceptance_authority"]),
+        }
+        for source in sorted(incoming[node_id])
+    }
+    consumed_decision_shards = (
+        _decision_shard_values(node_id)
+        if bool(item["consumes_decision"]) or node_id == "K"
+        else {}
+    )
+    incoming_transfer_digests = {
+        source: _transferred_output_contract(
+            source,
+            node_id,
+            next(scope for edge_source, edge_target, scope in EDGES if edge_source == source and edge_target == node_id),
+        )["digest"]
+        for source in sorted(incoming[node_id])
+    }
+    surface = {
+        "semantic_key": str(item["semantic_key"]),
+        "inputs": str(item["inputs"]),
+        "processing": str(item["processing"]),
+        "task": str(item["task"]),
+        "output": str(item["output"]),
+        "tests": str(item["tests"]),
+        "acceptance": str(item["acceptance"]),
+        "definition_of_done": str(item["dod"]),
+        "write_authority": str(item["write_authority"]),
+        "acceptance_authority": str(item["acceptance_authority"]),
+        "invalidation_keys": keys,
+        "upstream_contract_inputs": upstream_contract_inputs,
+        "incoming_transfer_digests": incoming_transfer_digests,
+        "consumed_decision_shards": consumed_decision_shards,
+    }
+    payload = json.dumps(surface, sort_keys=True, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+    return {
+        "algorithm": "sha256",
+        "keys": keys,
+        "surface": surface,
+        "digest": f"sha256:{hashlib.sha256(payload).hexdigest()}",
+    }
+
+
+def _transferred_output_contract(source: str, target: str, scope: str) -> dict[str, object]:
+    """Describe the exact output contract transferred across one edge."""
+
+    producer_fields = (
+        "semantic_key", "stage", "work_kind", "domain_lane", "inputs",
+        "processing", "output", "tests", "acceptance", "dod",
+        "write_authority", "acceptance_authority",
+    )
+    producer_content = {field: SPECS[source][field] for field in producer_fields}
+    producer_content_digest = "sha256:" + hashlib.sha256(
+        json.dumps(producer_content, sort_keys=True, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    producer_node = NODES.get(source, {})
+    producer_evidence_identity = producer_node.get("evidence_identity") or {
+        "source_evidence": evidence_identity(source),
+    }
+    producer_evidence_digest = "sha256:" + hashlib.sha256(
+        json.dumps(producer_evidence_identity, sort_keys=True, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    payload: dict[str, object] = {
+        "artifact_id": artifact_identity(source),
+        "producer_content_digest": producer_content_digest,
+        "producer_evidence_digest": producer_evidence_digest,
+        "producer_evidence_identity": producer_evidence_identity,
+        "source_semantic_key": str(SPECS[source]["semantic_key"]),
+        "source_output": str(SPECS[source]["output"]),
+        "source_acceptance_predicate": str(SPECS[source]["acceptance"]),
+        "required_state": "ACCEPTED",
+        "dependency_scope": scope,
+        "target_input_key": f"{target}.input.{source}",
+    }
+    encoded = json.dumps(payload, sort_keys=True, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+    return {
+        "algorithm": "sha256",
+        "contract": payload,
+        "digest": f"sha256:{hashlib.sha256(encoded).hexdigest()}",
+    }
+
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     digest.update(path.read_bytes())
     return digest.hexdigest()
+
+
+def source_repository_identity(root: Path = PROJECT_ROOT) -> dict[str, object]:
+    """Capture replayable Git identity without persisting checkout paths."""
+
+    def git(*args: str) -> str:
+        result = subprocess.run(
+            ["git", "-C", str(root), *args],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        return result.stdout.rstrip("\n")
+
+    head = git("rev-parse", "HEAD")
+    bundle_rel = BUNDLE.relative_to(root).as_posix()
+    generated_identity_paths = {
+        f"{bundle_rel}/.ssot/manifest.json",
+        f"{bundle_rel}/.ssot/validation-report.json",
+    }
+    raw_status = git("status", "--short", "--untracked-files=all")
+    status_lines = []
+    for line in raw_status.splitlines():
+        payload = line[3:].strip() if len(line) >= 3 else ""
+        paths = [part.strip() for part in payload.split(" -> ") if part.strip()]
+        if paths and all(path not in generated_identity_paths for path in paths):
+            status_lines.append(line)
+    status = "\n".join(status_lines)
+    diff = git(
+        "diff", "--binary", "HEAD", "--",
+        ".",
+        f":(exclude){bundle_rel}/.ssot/manifest.json",
+        f":(exclude){bundle_rel}/.ssot/validation-report.json",
+    )
+    dirty_payload = (status + "\n" + diff).encode("utf-8")
+    return {
+        "repository_commit": head or None,
+        "revision_base_commit": head or None,
+        "dirty": bool(status),
+        "dirty_diff_sha256": hashlib.sha256(dirty_payload).hexdigest(),
+        "purpose": "source provenance and rollback identity; consumer-surface digests only scope invalidation",
+    }
+
+
+def protected_test_identity() -> dict[str, object]:
+    files: dict[str, str] = {}
+    for relative in PROTECTED_TEST_PATHS:
+        path = PROJECT_ROOT / relative
+        if not path.is_file():
+            raise RuntimeError(f"protected test missing: {relative}")
+        files[relative] = sha256(path)
+    execution_result = dict(PROTECTED_TEST_EXECUTION_RESULT)
+    if not execution_result.get("command") or "exit_code" not in execution_result or not execution_result.get("status"):
+        raise RuntimeError("protected test execution result is incomplete")
+    execution_result_digest = "sha256:" + hashlib.sha256(
+        json.dumps(execution_result, sort_keys=True, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    payload = json.dumps(
+        {"files": files, "execution_result": execution_result, "execution_result_digest": execution_result_digest},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return {
+        "algorithm": "sha256",
+        "files": files,
+        "execution_result": execution_result,
+        "execution_result_digest": execution_result_digest,
+        "digest": f"sha256:{hashlib.sha256(payload).hexdigest()}",
+        "mutation_policy": "invalidate-and-rerun; never skip",
+    }
+
+
+def evidence_can_reuse(
+    evidence_state: str,
+    *,
+    consumer_surface_matches: bool,
+    verification_source_matches: bool,
+    protected_test_matches: bool,
+) -> bool:
+    """Return whether an existing evidence identity may be reused unchanged."""
+
+    return (
+        evidence_state in {"VERIFIED", "ACCEPTED"}
+        and consumer_surface_matches
+        and verification_source_matches
+        and protected_test_matches
+    )
+
+
+def load_evidence_state_ledger() -> dict[str, object]:
+    """Load the acceptance-owned ledger that deterministic rebuilds never rewrite."""
+
+    if not EVIDENCE_STATE_LEDGER.is_file():
+        raise RuntimeError(f"evidence-state ledger missing: {EVIDENCE_STATE_LEDGER}")
+    payload = json.loads(EVIDENCE_STATE_LEDGER.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise RuntimeError("evidence-state ledger must be a JSON object")
+    return payload
+
+
+def current_evidence_record(node_id: str, ledger: dict[str, object] | None = None) -> dict[str, object] | None:
+    payload = ledger or load_evidence_state_ledger()
+    entries = payload.get("entries", {})
+    if not isinstance(entries, dict) or node_id not in entries:
+        return None
+    node_entry = entries[node_id]
+    if not isinstance(node_entry, dict):
+        raise RuntimeError(f"invalid evidence ledger entry for {node_id}")
+    history = node_entry.get("history", [])
+    if not isinstance(history, list) or not history:
+        return None
+    record = history[-1]
+    if not isinstance(record, dict):
+        raise RuntimeError(f"invalid current evidence event for {node_id}")
+    return record
+
+
+def evidence_record_can_reuse(record: dict[str, object], node: dict[str, object]) -> bool:
+    return evidence_can_reuse(
+        str(record.get("to_state", "MISSING")),
+        consumer_surface_matches=record.get("consumer_surface_digest") == node["consumer_surface_digest"]["digest"],
+        verification_source_matches=record.get("verification_source_digest") == node["verification_source_digest"]["digest"],
+        protected_test_matches=record.get("protected_test_digest") == node["protected_test_identity"]["digest"],
+    )
+
+
+def validate_evidence_state_ledger(ledger: dict[str, object] | None = None) -> None:
+    payload = ledger or load_evidence_state_ledger()
+    if payload.get("schema_version") != 1:
+        raise RuntimeError("unsupported evidence-state ledger schema")
+    if payload.get("mutation_authority") != "acceptance-authority-only":
+        raise RuntimeError("evidence-state ledger mutation authority drift")
+    entries = payload.get("entries")
+    if not isinstance(entries, dict):
+        raise RuntimeError("evidence-state ledger entries must be an object")
+
+    seen_event_ids: set[str] = set()
+    for node_id, node_entry in entries.items():
+        if node_id not in NODES or not isinstance(node_entry, dict):
+            raise RuntimeError(f"unknown or invalid evidence ledger node: {node_id}")
+        if set(node_entry) != {"history"}:
+            raise RuntimeError(f"evidence ledger node fields are not append-only history: {node_id}")
+        history = node_entry.get("history")
+        if not isinstance(history, list) or not history:
+            raise RuntimeError(f"evidence ledger history missing for {node_id}")
+        previous: dict[str, object] | None = None
+        invalidated_evidence_ids: set[str] = set()
+        for expected_seq, record in enumerate(history, 1):
+            if not isinstance(record, dict):
+                raise RuntimeError(f"invalid evidence history record for {node_id}")
+            event_id = str(record.get("event_id", ""))
+            evidence_id = str(record.get("evidence_id", ""))
+            if not event_id or event_id in seen_event_ids or not evidence_id:
+                raise RuntimeError(f"duplicate or missing evidence event identity: {event_id}")
+            seen_event_ids.add(event_id)
+            if record.get("seq") != expected_seq:
+                raise RuntimeError(f"evidence event sequence drift for {event_id}")
+            expected_from = "NONE" if previous is None else previous.get("to_state")
+            expected_prev_digest = None if previous is None else previous.get("event_digest")
+            if record.get("from_state") != expected_from or record.get("prev_event_digest") != expected_prev_digest:
+                raise RuntimeError(f"evidence event chain drift for {event_id}")
+            digest_payload = {key: value for key, value in record.items() if key != "event_digest"}
+            expected_digest = "sha256:" + hashlib.sha256(
+                json.dumps(digest_payload, sort_keys=True, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+            ).hexdigest()
+            if record.get("event_digest") != expected_digest:
+                raise RuntimeError(f"evidence event digest drift for {event_id}")
+            to_state = record.get("to_state")
+            if to_state not in {"VERIFIED", "ACCEPTED", "INVALIDATED"}:
+                raise RuntimeError(f"unsupported evidence state for {event_id}: {to_state}")
+            if to_state == "INVALIDATED":
+                # An invalidation is an append-only tombstone for the current
+                # evidence identity. It may not mint a replacement identity.
+                if (
+                    previous is None
+                    or evidence_id != previous.get("evidence_id")
+                    or record.get("supersedes") != previous.get("evidence_id")
+                    or evidence_id in invalidated_evidence_ids
+                ):
+                    raise RuntimeError(f"invalid evidence invalidation transition: {event_id}")
+                invalidated_evidence_ids.add(evidence_id)
+            elif evidence_id in invalidated_evidence_ids:
+                # Do not allow an intermediate VERIFIED event to bypass the
+                # reactivation checks on a later ACCEPTED event.
+                raise RuntimeError(f"invalidated evidence identity reused: {event_id}")
+            if to_state == "ACCEPTED":
+                review = record.get("scoped_review")
+                transition = record.get("authority_transition")
+                if not isinstance(review, dict) or review.get("verdict") != "PASS":
+                    raise RuntimeError(f"accepted evidence lacks scoped PASS review: {evidence_id}")
+                if not isinstance(transition, dict) or transition.get("to") != "ACCEPTED" or not transition.get("authority"):
+                    raise RuntimeError(f"accepted evidence lacks authority transition: {evidence_id}")
+                if invalidated_evidence_ids:
+                    if evidence_id in invalidated_evidence_ids or record.get("supersedes") != (previous or {}).get("evidence_id"):
+                        raise RuntimeError(f"reactivation requires a new evidence identity: {event_id}")
+            previous = record
+
+    accepted_nodes = {
+        node_id for node_id, node in NODES.items() if node["execution_state"] == "ACCEPTED"
+    }
+    if set(entries) != accepted_nodes:
+        raise RuntimeError(
+            f"evidence-state ledger accepted-node mismatch: expected={sorted(accepted_nodes)}, actual={sorted(entries)}"
+        )
+    for node_id in sorted(accepted_nodes):
+        record = current_evidence_record(node_id, payload)
+        if record is None or record.get("to_state") != "ACCEPTED":
+            raise RuntimeError(f"accepted node has no current accepted evidence: {node_id}")
+        if not evidence_record_can_reuse(record, NODES[node_id]):
+            raise RuntimeError(f"accepted evidence identity is stale or invalidated: {node_id}")
 
 
 def write_text(path: Path, text: str) -> None:
@@ -621,7 +1172,11 @@ for node_id, item in SPECS.items():
         "soft_dependencies": [],
         "assumption_ids": [],
         "decision_refs": decision_refs,
-        "invalidation_keys": [f"{item['semantic_key']}.v{PLAN_VERSION}"],
+        "invalidation_keys": _node_invalidation_keys(node_id, item),
+        "decision_shard_freeze": _decision_shard_freeze(node_id, bool(item["consumes_decision"])),
+        "verification_source_digest": _verification_source_digest(node_id),
+        "consumer_surface_digest": _consumer_surface_digest(node_id, item),
+        "protected_test_identity": protected_test_identity(),
         "write_authority": item["write_authority"],
         "acceptance_authority": item["acceptance_authority"],
         "unlocks": sorted(outgoing[node_id]),
@@ -676,28 +1231,7 @@ for node_id, item in SPECS.items():
         node["evidence_identity"] = evidence_identity(node_id)
     if node_id == "K":
         node["decision_record"] = {
-            "approved_value": {
-                "ai_execution_context": "server session plus Membership plus Binding plus capability identity",
-                "client_authority_boundary": "client-supplied tenant, Binding and body authority are never authorization facts",
-                "personal_body_authority": "personal_web/internal; Web is the only editor authority",
-                "organization_body_authority": "organization_lark/lark; Feishu Docx is the only editor authority",
-                "writer_routing": "phase 1 I9 first closes every legacy AI document entry and API; phase 2 then atomically replaces that fail-closed state with the one WriterRouter",
-                "artifact_closure": "write, artifact registration and required readback must all succeed before publish success",
-                "tenant_data_scope": "all context sources, including 01 recent activity, use the same tenant boundary",
-                "capability_side_effects": "server registry declares read sets and document side effects; read-only capabilities write nothing",
-                "cutover_policy": "no long-lived dual authority, dual writers, legacy writer path, implicit fallback or global Feishu credential fallback; authority-preserving allowlists, release gates, kill switches and external-write stops are allowed",
-                "stage3_exclusions": "full role matrix, approval, seats, procurement, invoices, migration, complex deletion and business analytics",
-                "cross_stage_gates": "stage1 C1 unlocks shared/personal work, C3 unlocks organization work and the exclusive WriterRouter, DC2 gates the unique phase2 candidate",
-                "session_envelope_boundary": "v5 supersedes the v4 ban: routeGrants stays inside the session envelope as a route-list drift detector, not an authorization projection. It is server-generated, never client-submitted, and the client cross-checks it against independently derived expectations so route-list divergence fails the session closed. This required field requires a version bump to media_web_business_pages_v3 and B re-freezes the interface identity at v3.",
-                "entry_state_authority": "the shipped entry-state API carries login entry status only: mode, matched/none/expired/mismatched, masked entry, and fallback. It is a pre-login probe and must never carry role, body authority, route grants, or action grants.",
-                "entry_state_contract": "login entry status and workspace route authorization are two separately versioned contracts and must not share one endpoint or one name. Both are published in OpenAPI and client types; entry-state OpenAPI publication remains a B/T1 delivery item.",
-                "route_authorization_axes": "role selects shell; workspaceMode/bodyAuthority select content authority; session routeGrants plus MediaStudioRoutePolicy select visible UI, while backend authorization on every read and action remains final.",
-                "illegal_route_semantics": "navigation may collapse a legal session in the wrong shell to that shell's default route; data and action calls must refuse cross-tenant, cross-owner, missing-grant, or organization-capability requests with 403 or an equivalent no-permission state.",
-                "route_list_authority": "the route list is delegated to mediaStudioRoutePolicy.ts. The remaining hand-maintained duplicates are debt to be collapsed into one generated source.",
-                "ordinary_ia_entrypoint": "MediaStudioApp is the current mounted entry; MediaApp is legacy until an entrypoint census proves otherwise. Do not delete the legacy IA before route ownership and deep-link behavior are recorded.",
-                "font_delivery": "self-host DM Sans as full WOFF2; serve Noto Sans SC through unicode-range slices or a curated common-glyph subset; preload only Latin subset and keep a local fallback chain",
-                "font_weight_policy": "load every used weight including 600; remove 800/850 visual dependence, map Chinese headings to available weights, set Chinese or mixed headings letter-spacing to 0 and reserve negative tracking for pure Latin/numeric display",
-            },
+            "approved_value": dict(PRODUCT_DECISION_VALUES),
             "approval_authority": "user",
             "approval_evidence": "v4 accepted self-hosted fonts, Chinese subsets, and weight/tracking constraints. v5 supersedes the session-envelope ban after source verification: routeGrants is a fail-closed drift detector, entry-state is a pre-login probe, and illegal-route behavior is split between navigation convergence and data/action refusal.",
             "approved_at": DECISION_V5_OBSERVED_AT,
@@ -709,9 +1243,12 @@ for node_id, item in SPECS.items():
         }
     if node_id in HUMAN_ACCEPTANCE_FRAGMENTS:
         node["acceptance_fragments"] = [HUMAN_ACCEPTANCE_FRAGMENTS[node_id]]
+    node["acceptance_lane"] = acceptance_lane_for(node_id)
     NODES[node_id] = node
 
 for node_id, node in NODES.items():
+    surface_digest = str(node["consumer_surface_digest"]["digest"]).removeprefix("sha256:")
+    node["invalidation_keys"].append(f"consumer.{node_id.lower()}.surface.sha256-{surface_digest}")
     node["consumed_artifact_ids"] = [artifact_identity(source) for source in sorted(incoming[node_id])]
 
 
@@ -735,6 +1272,7 @@ for index, (source, target, scope) in enumerate(EDGES, 1):
         reason_code = "data-dependency"
         resource_ids = []
     transferred = [artifact_identity(source)]
+    transferred_contract = _transferred_output_contract(source, target, scope)
     EDGE_RECORDS.append(
         {
             "edge_id": edge_id,
@@ -744,7 +1282,8 @@ for index, (source, target, scope) in enumerate(EDGES, 1):
             "dependency_scope": scope,
             "required_state": "ACCEPTED",
             "assumption_ids": [],
-            "invalidation_keys": [f"edge.{source.lower()}.{target.lower()}.v{PLAN_VERSION}"],
+            "invalidation_keys": _edge_invalidation_keys(source, target),
+            "transferred_output_contract": transferred_contract,
             "transferred_input": str(SPECS[source]["output"]),
             "gate_evidence": str(SPECS[source]["acceptance"]),
             "reason_code": reason_code,
@@ -756,6 +1295,12 @@ for index, (source, target, scope) in enumerate(EDGES, 1):
                 else f"{target} must retain the immutable {resource_ids[0]} identity from {source}"
             ),
         }
+    )
+
+for edge in EDGE_RECORDS:
+    transfer_digest = str(edge["transferred_output_contract"]["digest"]).replace(":", "-")
+    edge["invalidation_keys"].append(
+        f"consumer.{str(edge['to']).lower()}.input.{str(edge['from']).lower()}.{transfer_digest}"
     )
 
 
@@ -873,6 +1418,35 @@ def current_evidence_row(node_id: str) -> list[object]:
     ]
 
 
+def content_context_view() -> str:
+    route_rows = [
+        [
+            route["route_id"],
+            route["source_table"],
+            route["entity_type"],
+            route["canonical_id_field"],
+        ]
+        for route in CONTENT_CONTEXT_CONTRACT["retrieval_routes"]
+    ]
+    dossier_rows = [
+        [
+            dossier["dossier_type"],
+            dossier["canonical_capability_id"],
+            dossier["field_semantics"],
+        ]
+        for dossier in CONTENT_CONTEXT_CONTRACT["dossier_types"]
+    ]
+    return "\n\n".join([
+        "### 资料检索路线（S2）",
+        "资料上下文只允许沿以下四条租户级路线读取。每条路线都先通过正典租户资源函数（`canonical_tenant_owned_resources()`）按当前租户列出资料所有者注册，再用正典编号精确查询投影并要求恰好一条回读；显示名称或未经资料所有者校验的全表结果不能成为上下文事实。",
+        table(["路线", "真实来源表", "资料实体", "canonical ID 字段"], route_rows),
+        "近期活动表（`01_近期活动`）仍是未关闭的危险例外：现有检索程序（`retrieval.py`）使用配置地址全表读取，缺少同等的资料所有者过滤，必须在 S2 上下文接受前关闭。创作者账号档案（`06_CreatorProfiles_达人账号档案`）只作为账号上下文来源，不是第五条通用资料路线。",
+        "### 三类真实档案（Growth source）",
+        "源码已有且可持久化的真实档案只有以下三类；它们有明确的数据结构和来源追踪，不等同于尚未完成的发布包或网页正文。",
+        table(["档案类型", "canonical capability", "字段语义"], dossier_rows),
+    ])
+
+
 def main_view() -> str:
     return f"""---
 ARTIFACT_CLASS: ssot-development
@@ -903,6 +1477,8 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 - **入口状态（`entry-state`）**：登录前只读探针，返回匹配、无匹配、已失效或不一致四态、脱敏入口和回退方式。它不能泄露角色、正文权威、可见路由或动作授权。
 - **路由清单漂移检测（`routeGrants`）**：会话信封内由服务端生成的清单；客户端按角色和工作区模式独立推导期望值并逐项交叉核验，不一致即让会话解析失败。它不是授权投影，客户端也从不提交该字段。
 - **路由授权**：角色、工作区模式、正文权威、路由策略与后端逐请求校验共同决定页面、数据和动作边界；导航收敛不能代替数据或动作拒绝。
+
+{content_context_view()}
 
 本阶段交付两条互斥但共享合同的产品闭环：
 
@@ -985,6 +1561,16 @@ SSOT_MACHINE_SOURCE: .ssot/manifest.json
 
 发布恢复采用三层合同：代码只原子切换不可变发布身份；数据库使用前向迁移和明确恢复步骤；飞书写入、登记和回读使用幂等步骤、补偿与待人工处置状态。不得把飞书动作描述成可以与代码和数据库一起原子回滚。
 
+```mermaid
+flowchart LR
+  Accepted["已接受的范围与决定"] --> Upstream["第一阶段三项投影"]
+  Upstream --> Delivery["第二阶段实现与验收"]
+  classDef accepted fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+  classDef blocked fill:#fff3e0,stroke:#ef6c00,color:#7f3700;
+  class Accepted accepted;
+  class Upstream,Delivery blocked;
+```
+
 ## 6. 实际实现标注
 
 当前主线已经落地共享人工智能上下文、资料路由、唯一写入路由、成果登记与回读、个人内容流程、组织按绑定写入与飞书回读等第二阶段源码。个人网页端正文修订、平台版本/发布包完整流程，以及真实飞书编辑后再回读和最终汇合验收，当前文档标记为未完成或未形成正式证据。详细节点映射见实施进度文件（`implementation-progress.md`）的“实际实现台账（源码观察）”。
@@ -1031,9 +1617,9 @@ def openproblem_view() -> str:
 ## 验收边界
 
 - 源码实现、聚焦测试、视觉图像（PNG）和人工智能读图只能证明来源级或本地运行时证据（`source/local-runtime`），不能提升正式节点状态。
-- 必须保留真实组织扫码与部署读回、飞书编辑后再回读、登录回退态折线确认、28 天会话持久化部署读回四项人工验收。
-- 登录页面布局断言（`assertAuthLayout`）当前只保护初始 P1，登录回退态仍可能超过一屏；这属于自动化缺口，不得被误报为完整通过。
-- 四项人工验收均有项目级合同、清单和哈希绑定，当前为草稿；签署结果写入各自的执行结果目录（`runs/<run-id>/result.md`），不得修改清单记录执行结果。
+- 人类阻断预算固定为 3/3：真实组织扫码与部署读回、飞书编辑后再回读、28 天会话持久化部署读回。它们只能由指定人工角色签署，人工智能不得代签。
+- 登录回退态折线由登录布局断言（`assertAuthLayout`）及其浏览器门禁负责阻断；人工读图只作非阻断抽查。机器门禁未通过时，相关交付节点仍保持阻断，不能用人工观察覆盖。
+- 三项阻断人工验收与一项非阻断抽查均保留项目级合同、清单和哈希绑定，当前为草稿；签署结果写入各自的执行结果目录（`runs/<run-id>/result.md`），不得修改清单记录执行结果。
 
 ## 工程映射表
 
@@ -1127,6 +1713,8 @@ def topology_view() -> str:
         "# 第二阶段权威与依赖拓扑",
         "## 输入一致性",
         table(["Promised behavior", "Input location", "Owning model/field", "API or workflow entry", "Permission/state authority", "Conclusion", "Action", "Blocking decision node"], input_rows),
+        "## 资料检索与档案类型定义",
+        "资料检索固定为四路：素材源（`02A_SourceAssets`）、素材拆解（`02B_MaterialDeconstructions`）、创作模式（`02C_CreativePatterns`）和商务机会（`05B_BusinessOpportunities`）；每一路都按当前租户、资料所有者和正典编号过滤。近期活动（`01_近期活动`）仅作为配置 URL 的全表读取例外，必须在上下文验收前关闭；创作者资料（`06_CreatorProfiles`）只提供账号上下文，不是正文资料路由。系统输出的真实档案只有三类：外部研究简报（`ExternalResearchBrief` / `external_research_brief`）、商务简报（`CommercialBrief` / `commercial_brief`）和创作决策简报（`DecisionBrief` / `creation_decision_brief`）。",
         "## 权威登记",
         table(["Claim/domain", "Declared authority path", "Authority layer", "Lookup method", "Change required", "Owning node", "Validation"], authority_rows),
         "生成的 Markdown 只是读取视图，不是第二套编排权威。第一阶段状态必须先在其机器节点中正式迁移，本文件的 F1-F3 才能同步；本包只读取第一阶段 K5 决定和 I9 关闭合同，不重复拥有或改写它们。",
@@ -1496,6 +2084,14 @@ def acceptance_execution_view() -> str:
     ]
     baseline_rows = [[title, f"`{path}`", f"`{ACCEPTANCE_DELIVERY_DOCUMENT_COMMIT}`", use, "设计基线/静态文档；不等同节点接受"] for title, path, use in ACCEPTANCE_DELIVERY_DOCUMENTS]
     execution_rows = [[area, recorded_at, f"`{ACCEPTANCE_EXECUTION_SOURCE_COMMIT}`", result, baseline, f"`{evidence}`"] for area, recorded_at, result, baseline, evidence in ACCEPTANCE_EXECUTION_RECORDS]
+    blocking_lines = [
+        f"{index}. `{HUMAN_ACCEPTANCE_FRAGMENTS[node_id]['task_id']}`：绑定 {node_id}。"
+        for index, node_id in enumerate(HUMAN_ACCEPTANCE_POLICY["blocking_task_ids"], 1)
+    ]
+    demoted_lines = [
+        f"- `{HUMAN_ACCEPTANCE_FRAGMENTS[node_id]['task_id']}`：绑定 {node_id}；改由机器验收，人工读图仅作非阻断参考。"
+        for node_id in HUMAN_ACCEPTANCE_POLICY["demoted_machine_testable_task_ids"]
+    ]
     return "\n\n".join([
         "# 第二阶段验收执行",
         "## 自动化验收映射",
@@ -1508,7 +2104,9 @@ def acceptance_execution_view() -> str:
         "## 证据分层",
         "运行时门禁与截图只形成 source/local-runtime 证据，不能替代真实组织扫码、飞书编辑后再回读、28 天会话持久化部署读回或独立外部验收。",
         "## 人工验收保留项",
-        "1. [`ST2-HUM-ORG-SCAN`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/checklist.md)：真实组织扫码、组织壳层与错误工作区恢复；绑定 O1。\n2. [`ST2-HUM-LARK-READBACK`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/checklist.md)：飞书编辑后再回读；绑定 O5。\n3. [`ST2-HUM-LOGIN-FOLD`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md)：登录回退态折线确认；绑定 K，并跟踪 `assertAuthLayout` 缺口。\n4. [`ST2-HUM-SESSION-28D`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/checklist.md)：28 天会话持久化真实部署读回；绑定 DB。\n\n四项工作区均为 `PREPARING`：没有 machine-green handoff，也没有人工签署结果；不得修改 checklist 记录一次执行。",
+        f"人类阻断预算：{len(HUMAN_ACCEPTANCE_POLICY['blocking_task_ids'])}/{HUMAN_ACCEPTANCE_POLICY['blocking_budget']}。\n" + "\n".join(blocking_lines) + "\n\n降级为机器可测试（不占用人类阻断预算）：\n" + "\n".join(demoted_lines) + "\n\n上述工作区均为 `PREPARING`：没有 machine-green handoff，也没有人工签署结果；不得修改 checklist 记录一次执行。",
+        "## AI review lane policy",
+        "AI review 使用单一独立 zero-write lane；每个 scoped finding 最多允许一次 finding-only rereview。AI 只能提交结构化发现，不能写入候选、代替实现者修复、接受节点或晋升发布；修复由实现责任方完成后再触发该发现的独立复核。",
         "## 当前合同提醒",
         "K 第 5 版已裁决：routeGrants 保留为会话内路由清单漂移检测，而非授权投影。B 仍须把会话合同重签为 `media_web_business_pages_v3`，收敛三份人工维护的清单为一份生成源，并让登录入口状态接口同步进入 OpenAPI 与客户端类型；这些实施债务尚未因裁决或历史门禁而接受。",
     ])
@@ -1595,6 +2193,34 @@ def _planning_worker(node_id: str, node: dict[str, object]) -> dict[str, object]
     }
 
 
+def _blocker_records(node_id: str, node: dict[str, object]) -> list[dict[str, object]]:
+    if node["execution_state"] != "BLOCKED":
+        return []
+    records = [
+        {
+            "class": "missing-upstream-acceptance",
+            "source_node": dependency,
+            "required_state": "ACCEPTED",
+        }
+        for dependency in node["hard_dependencies"]
+        if NODES[dependency]["execution_state"] != "ACCEPTED"
+    ]
+    if node_id == "O5":
+        records.extend([
+            {"class": "missing-feishu-write-readback", "acceptance_task": "ST2-HUM-LARK-READBACK"},
+            {"class": "missing-human-acceptance", "acceptance_task": "ST2-HUM-LARK-READBACK"},
+        ])
+    elif node_id == "DB":
+        records.extend([
+            {"class": "missing-authenticated-browser-device-proof", "acceptance_task": "ST2-HUM-SESSION-28D"},
+            {"class": "missing-deployment-release-evidence", "acceptance_task": "ST2-HUM-SESSION-28D"},
+            {"class": "missing-human-acceptance", "acceptance_task": "ST2-HUM-SESSION-28D"},
+        ])
+    elif node_id == "DC":
+        records.append({"class": "missing-independent-final-acceptance", "source_node": "DB"})
+    return records
+
+
 def _planning_node(node_id: str, node: dict[str, object]) -> dict[str, object]:
     item = SPECS[node_id]
     kind = _planning_kind(node_id, node)
@@ -1607,6 +2233,12 @@ def _planning_node(node_id: str, node: dict[str, object]) -> dict[str, object]:
     }
     record: dict[str, object] = {
         "id": node_id,
+        "execution_state": node["execution_state"],
+        "evidence_state": (
+            current_evidence_record(node_id).get("to_state")
+            if node["execution_state"] == "ACCEPTED" and current_evidence_record(node_id) is not None
+            else "NONE"
+        ),
         "goal": str(item["task"]),
         "dependencies": sorted(str(dep) for dep in node["hard_dependencies"]),
         "acceptance": str(item["acceptance"]),
@@ -1614,6 +2246,13 @@ def _planning_node(node_id: str, node: dict[str, object]) -> dict[str, object]:
         "kind": kind,
         "side_effects": side_effects,
         "transaction_models": {domain: transaction_models[domain] for domain in side_effects},
+        "acceptance_lane": node["acceptance_lane"],
+        "blockers": _blocker_records(node_id, node),
+        "contract_identity": node.get("contract_identity", {"status": "pending-build"}),
+        "verification_source_digest": node["verification_source_digest"],
+        "consumer_surface_digest": node["consumer_surface_digest"],
+        "decision_shard_freeze": node["decision_shard_freeze"],
+        "protected_test_identity": node["protected_test_identity"],
     }
     worker = _planning_worker(node_id, node)
     reasons: list[str] = []
@@ -1667,6 +2306,10 @@ def planning_compiler() -> dict[str, object]:
         )
         for release_id, node_ids in release_nodes.items()
     }
+    execution_state_counts = {
+        state: sum(1 for node in NODES.values() if node["execution_state"] == state)
+        for state in sorted({str(node["execution_state"]) for node in NODES.values()})
+    }
     return {
         "planning_compiler_schema_version": 1,
         "classification": {
@@ -1679,6 +2322,10 @@ def planning_compiler() -> dict[str, object]:
         },
         "external_systems": ["lark", "database", "browser"],
         "acceptance_layers": ["static-test", "local-runtime", "external-system", "physical-device"],
+        "acceptance_policy": {
+            "human": HUMAN_ACCEPTANCE_POLICY,
+            "ai_review": AI_REVIEW_POLICY,
+        },
         "scheduling_model": "static-wave",
         "scheduling_hints": [],
         "release_boundary_compiler": {
@@ -1709,6 +2356,9 @@ def planning_compiler() -> dict[str, object]:
             for wave_id, node_ids in sorted(wave_nodes.items())
         ],
         "nodes": [_planning_node(node_id, NODES[node_id]) for node_id in NODES],
+        "execution_state_counts": execution_state_counts,
+        "accepted_node_ids": sorted(node_id for node_id, node in NODES.items() if node["execution_state"] == "ACCEPTED"),
+        "blocked_node_ids": sorted(node_id for node_id, node in NODES.items() if node["execution_state"] == "BLOCKED"),
         "artifacts": {
             "ssot_bundle": True,
             "generated_views": ["main", "dependency-topology", "execution-governance", "contracts-acceptance", "implementation-progress", "acceptance-execution"],
@@ -1753,6 +2403,12 @@ def write_execution_contracts() -> None:
             "worker_transport": node["worker_transport"],
             "release_slice": node["release_slice"],
             "wave_id": node["wave_id"],
+            "acceptance_lane": node["acceptance_lane"],
+            "decision_shard_freeze": node["decision_shard_freeze"],
+            "verification_source_digest": node["verification_source_digest"],
+            "consumer_surface_digest": node["consumer_surface_digest"],
+            "protected_test_identity": node["protected_test_identity"],
+            "blockers": node["blockers"],
         }
         if node.get("executor_attempt_policy") is not None:
             payload["executor_attempt_policy"] = node["executor_attempt_policy"]
@@ -1761,16 +2417,157 @@ def write_execution_contracts() -> None:
         path = EXECUTION_CONTRACTS_DIR / f"{node_id}.json"
         write_json(path, payload)
         node["execution_contract_sha256"] = sha256(path)
+        node["contract_identity"] = {
+            "contract_id": node_id,
+            "path": f"{REL_BUNDLE}/.ssot/execution-contracts/{node_id}.json",
+            "sha256": node["execution_contract_sha256"],
+        }
 
 
 def validate_model() -> None:
     node_ids = set(SPECS)
+    invalidation_key_re = re.compile(r"^(consumer|file-summary)\.[a-z0-9][a-z0-9._-]*$")
+    route_identities = {
+        (
+            str(route["route_id"]),
+            str(route["source_table"]),
+            str(route["entity_type"]),
+            str(route["canonical_id_field"]),
+        )
+        for route in CONTENT_CONTEXT_CONTRACT["retrieval_routes"]
+    }
+    expected_route_identities = {
+        ("02A_SourceAssets", "02A_SourceAssets_素材源", "SourceAsset", "asset_id"),
+        ("02B_MaterialDeconstructions", "02B_MaterialDeconstructions_素材拆解", "MaterialDeconstruction", "deconstruction_id"),
+        ("02C_CreativePatterns", "02C_CreativePatterns_创作模式", "CreativePattern", "pattern_id"),
+        ("05B_BusinessOpportunities", "05B_BusinessOpportunities_商务机会", "BusinessOpportunity", "opportunity_id"),
+    }
+    if route_identities != expected_route_identities:
+        raise RuntimeError("content context retrieval route registry mismatch")
+    dossier_identities = {
+        (str(dossier["dossier_type"]), str(dossier["canonical_capability_id"]))
+        for dossier in CONTENT_CONTEXT_CONTRACT["dossier_types"]
+    }
+    if dossier_identities != {
+        ("ExternalResearchBrief", "external_research_brief"),
+        ("CommercialBrief", "commercial_brief"),
+        ("DecisionBrief", "creation_decision_brief"),
+    }:
+        raise RuntimeError("content context dossier registry mismatch")
+    caveats = CONTENT_CONTEXT_CONTRACT["caveats"]
+    if caveats["unsafe_configured_url_full_table_exception"]["source"] != "01_近期活动":
+        raise RuntimeError("unsafe configured-URL retrieval caveat missing")
+    if caveats["account_context_only"] != {
+        "source": "06_CreatorProfiles_达人账号档案",
+        "general_retrieval_route": False,
+    }:
+        raise RuntimeError("creator profile account-context boundary missing")
     if len({str(item["semantic_key"]) for item in SPECS.values()}) != len(SPECS):
         raise RuntimeError("duplicate semantic key")
     if any(source not in node_ids or target not in node_ids for source, target, _ in EDGES):
         raise RuntimeError("edge references unknown node")
     if len({(source, target) for source, target, _ in EDGES}) != len(EDGES):
         raise RuntimeError("duplicate edge")
+    if set(INVALIDATION_KEYS_BY_NODE) != node_ids:
+        missing = sorted(node_ids - set(INVALIDATION_KEYS_BY_NODE))
+        extra = sorted(set(INVALIDATION_KEYS_BY_NODE) - node_ids)
+        raise RuntimeError(f"invalidation node registry mismatch: missing={missing}, extra={extra}")
+    if set(VERIFICATION_SOURCE_KEYS_BY_NODE) != node_ids:
+        missing = sorted(node_ids - set(VERIFICATION_SOURCE_KEYS_BY_NODE))
+        extra = sorted(set(VERIFICATION_SOURCE_KEYS_BY_NODE) - node_ids)
+        raise RuntimeError(f"verification source registry mismatch: missing={missing}, extra={extra}")
+    if any(not keys for keys in VERIFICATION_SOURCE_KEYS_BY_NODE.values()):
+        raise RuntimeError("every node must bind at least one verification source")
+    if set(INVALIDATION_KEYS_BY_EDGE) - {(source, target) for source, target, _ in EDGES}:
+        raise RuntimeError("invalidation edge registry references an unknown edge")
+    decision_consumers = {"K"} | {
+        node_id for node_id, spec in SPECS.items() if bool(spec["consumes_decision"])
+    }
+    if set(DECISION_SHARDS_BY_NODE) != decision_consumers:
+        missing = sorted(decision_consumers - set(DECISION_SHARDS_BY_NODE))
+        extra = sorted(set(DECISION_SHARDS_BY_NODE) - decision_consumers)
+        raise RuntimeError(f"decision shard consumer registry mismatch: missing={missing}, extra={extra}")
+    known_shards = set(str(shard_id) for shard_id in DECISION_SHARD_FREEZE["shards"])
+    if any(not shard_ids or set(shard_ids) - known_shards for shard_ids in DECISION_SHARDS_BY_NODE.values()):
+        raise RuntimeError("decision shard consumer references missing or empty shards")
+    if all(
+        set(shard_ids) == known_shards
+        for node_id, shard_ids in DECISION_SHARDS_BY_NODE.items()
+        if node_id != "K"
+    ):
+        raise RuntimeError("decision shard registry did not narrow any downstream consumer")
+    all_invalidation_keys = [
+        key
+        for node in NODES.values()
+        for key in node["invalidation_keys"]
+    ] + [
+        key
+        for edge in EDGE_RECORDS
+        for key in edge["invalidation_keys"]
+    ]
+    if any(not invalidation_key_re.fullmatch(str(key)) for key in all_invalidation_keys):
+        raise RuntimeError("invalidation keys must be explicit consumer/file-summary keys")
+    if any(re.search(r"\.v[0-9]+$", str(key)) for key in all_invalidation_keys):
+        raise RuntimeError("coarse version-family invalidation key")
+    required_db_keys = {
+        "consumer.external-acceptance.release-identity",
+        "consumer.external-acceptance.database-schema",
+        "consumer.external-acceptance.personal-content-store",
+        "consumer.external-acceptance.organization-binding",
+        "consumer.external-acceptance.lark-document-readback",
+        "consumer.external-acceptance.browser-session",
+        "consumer.external-acceptance.recovery-contract",
+        "file-summary.external-system-acceptance.evidence-receipt",
+    }
+    if not required_db_keys.issubset(set(NODES["DB"]["invalidation_keys"])):
+        raise RuntimeError("DB external acceptance invalidation coverage is incomplete")
+    if DECISION_SHARD_FREEZE["freeze_state"] != "FROZEN" or int(DECISION_SHARD_FREEZE["version"]) != PRODUCT_DECISION_VERSION:
+        raise RuntimeError("decision shard freeze must bind the accepted product decision")
+    declared_decision_fields = {
+        field
+        for fields in DECISION_SHARD_FREEZE["shards"].values()
+        for field in fields
+    }
+    if declared_decision_fields != set(PRODUCT_DECISION_VALUES):
+        missing = sorted(set(PRODUCT_DECISION_VALUES) - declared_decision_fields)
+        extra = sorted(declared_decision_fields - set(PRODUCT_DECISION_VALUES))
+        raise RuntimeError(f"decision shard partition mismatch: missing={missing}, extra={extra}")
+    for node_id, node in NODES.items():
+        digest = node["verification_source_digest"]
+        expected_verification_state = "DECLARED_NOT_ACCEPTED" if _verification_source_keys(node_id) else "NOT_BOUND"
+        if not isinstance(digest, dict) or digest.get("verification_state") != expected_verification_state:
+            raise RuntimeError(f"missing fail-closed verification source digest for {node_id}")
+        if node_id == "K" or SPECS[node_id]["consumes_decision"]:
+            freeze = node["decision_shard_freeze"]
+            if not isinstance(freeze, dict) or freeze.get("freeze_state") != "FROZEN":
+                raise RuntimeError(f"decision shard freeze missing for {node_id}")
+            expected_shard_ids = list(DECISION_SHARDS_BY_NODE[node_id])
+            if freeze.get("shard_ids") != expected_shard_ids:
+                raise RuntimeError(f"decision shard set drift for {node_id}")
+            expected_shards = _decision_shard_values(node_id)
+            if freeze.get("shards") != expected_shards:
+                raise RuntimeError(f"decision shard field drift for {node_id}")
+            if node["consumer_surface_digest"]["surface"]["consumed_decision_shards"] != expected_shards:
+                raise RuntimeError(f"consumer surface shard drift for {node_id}")
+        elif node["decision_shard_freeze"] is not None:
+            raise RuntimeError(f"unexpected decision shard metadata for {node_id}")
+    for owner_node_id, fragment in HUMAN_ACCEPTANCE_FRAGMENTS.items():
+        owner_keys = list(fragment["owner_invalidation_keys"])
+        local_keys = list(fragment["local_invalidation_keys"])
+        if not set(owner_keys).issubset(set(INVALIDATION_KEYS_BY_NODE[owner_node_id])):
+            raise RuntimeError(f"acceptance fragment owner invalidation drift for {owner_node_id}")
+        if any(not key.startswith("file-summary.acceptance.") for key in local_keys):
+            raise RuntimeError(f"acceptance fragment local invalidation drift for {owner_node_id}")
+        if fragment["invalidation_keys"] != [*owner_keys, *local_keys]:
+            raise RuntimeError(f"acceptance fragment invalidation composition drift for {owner_node_id}")
+    if evidence_can_reuse(
+        "INVALIDATED",
+        consumer_surface_matches=True,
+        verification_source_matches=True,
+        protected_test_matches=True,
+    ):
+        raise RuntimeError("INVALIDATED evidence must not silently reactivate")
+    validate_evidence_state_ledger()
     missing_batches = sorted(set(numeric_nodes()) - set(BATCHES))
     if missing_batches:
         raise RuntimeError(f"numeric nodes missing delivery batches: {missing_batches}")
@@ -1824,6 +2621,7 @@ def validate_model() -> None:
 
 def build() -> None:
     verify_source_hashes()
+    validate_acceptance_policy()
     validate_model()
     for directory in (
         NODES_DIR,
@@ -1836,6 +2634,9 @@ def build() -> None:
     ):
         directory.mkdir(parents=True, exist_ok=True)
     clear_machine_fragments()
+
+    for node_id, node in NODES.items():
+        node["blockers"] = _blocker_records(node_id, node)
 
     # Contracts are written first so every node shard can bind the exact
     # content hash without a circular manifest dependency.
@@ -1861,8 +2662,6 @@ def build() -> None:
         write_text(source_path, content)
         output_path = (MACHINE / output).resolve()
         write_text(output_path, content)
-        if view_id == "implementation-progress":
-            write_text(MACHINE / "implementation-progress.md", content)
         generated_views.append(
             {
                 "view_id": view_id,
@@ -1882,10 +2681,54 @@ def build() -> None:
         "machine_validation_profile": "full",
         "parallelism_contract_version": 1,
         "execution_contract_validation": "strict",
+        "content_context_contract": CONTENT_CONTEXT_CONTRACT,
+        "source_repository_identity": {
+            **source_repository_identity(),
+            "historical_observation_commit": HISTORICAL_SOURCE_OBSERVATION_COMMIT,
+            "stage2_origin_commit": CURRENT_STAGE2_ORIGIN_COMMIT,
+        },
+        "protected_test_identity": protected_test_identity(),
+        "evidence_state_ledger": {
+            "path": "evidence-state-ledger.json",
+            "sha256": sha256(EVIDENCE_STATE_LEDGER),
+            "generation_policy": "acceptance-owned; deterministic builder reads and validates but never rewrites",
+        },
+        "decision_shard_freeze": {
+            **_decision_shard_freeze("K", True),
+            "field_registry": {
+                str(shard_id): list(fields)
+                for shard_id, fields in DECISION_SHARD_FREEZE["shards"].items()
+            },
+            "shards": _decision_shard_values("K"),
+        },
+        "decision_shard_consumers": {
+            node_id: list(shard_ids)
+            for node_id, shard_ids in DECISION_SHARDS_BY_NODE.items()
+        },
+        "verification_source_digests": {
+            node_id: node["verification_source_digest"] for node_id, node in NODES.items()
+        },
+        "consumer_surface_digests": {
+            node_id: node["consumer_surface_digest"] for node_id, node in NODES.items()
+        },
+        "identity_registry": {
+            node_id: {
+                "contract_identity": node["contract_identity"],
+                "verification_source_digest": node["verification_source_digest"]["digest"],
+                "consumer_surface_digest": node["consumer_surface_digest"]["digest"],
+                "protected_test_digest": node["protected_test_identity"]["digest"],
+            }
+            for node_id, node in NODES.items()
+        },
         "main_thread_policy": "orchestration-only",
         "main_thread_source_write": False,
         "execution_contracts_dir": "execution-contracts",
         "planning_compiler": "planning-compiler.json",
+        "acceptance_policy": {
+            "human": HUMAN_ACCEPTANCE_POLICY,
+            "ai_review": AI_REVIEW_POLICY,
+            "evidence_invalidation": EVIDENCE_INVALIDATION_POLICY,
+        },
         "actor_pools": {
             "codex-primary": {"actor": "codex", "capacity": 12},
             "human-authority": {"actor": "human", "capacity": 4},

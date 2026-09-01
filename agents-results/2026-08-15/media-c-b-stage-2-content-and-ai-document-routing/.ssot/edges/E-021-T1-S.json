@@ -7,8 +7,44 @@
   "required_state": "ACCEPTED",
   "assumption_ids": [],
   "invalidation_keys": [
-    "edge.t1.s.v5"
+    "consumer.s.input.t1",
+    "file-summary.edge.t1-s",
+    "consumer.s.input.t1.sha256-bde66d8e47f8be7fd098b7fc616b6675621778de2d94bc9c1af309526b5d5ce9"
   ],
+  "transferred_output_contract": {
+    "algorithm": "sha256",
+    "contract": {
+      "artifact_id": "DL-T1",
+      "producer_content_digest": "sha256:79130563a5dd53a6368740a2288a1680d0297da4897af8e844eb89406cca8d0d",
+      "producer_evidence_digest": "sha256:92fd139f5f6fbf38f6ef5073ad910fc9f33ab9ba22ad58d20bdcd798df7b56b7",
+      "producer_evidence_identity": {
+        "source_evidence": {
+          "evidence_level": "source",
+          "source_revision": "user-approved-three-stage-plan-2026-08-15",
+          "artifact_hashes": [
+            "sha256:a293eb32e09589ae2e60fd07362f20ce296b70725f55ad9368c6bc63e673f8b8",
+            "sha256:3ffc4363c735a1ca2bed7b393e48516b4aa9a5494b1f9b30f952e8eff65ab6f5",
+            "sha256:d5dad457861e413ff3963da568870be907495de50c33486810fa3dbdc0d92f98"
+          ],
+          "environment_identity": "current Codex task and declared input files",
+          "runtime_release_id": "n/a",
+          "actor_role": "user and product decision authority",
+          "account_or_tenant": "n/a",
+          "device_or_browser": "n/a",
+          "mock_or_fixture": false,
+          "observed_at": "2026-08-15T20:37:42+08:00",
+          "acceptance_contract": "Phase-2 product decisions v2"
+        }
+      },
+      "source_semantic_key": "media.stage2.shared-acceptance-harness",
+      "source_output": "保护测试和验收矩阵",
+      "source_acceptance_predicate": "每个稳定失败类都有红绿门禁",
+      "required_state": "ACCEPTED",
+      "dependency_scope": "specific-output",
+      "target_input_key": "S.input.T1"
+    },
+    "digest": "sha256:bde66d8e47f8be7fd098b7fc616b6675621778de2d94bc9c1af309526b5d5ce9"
+  },
   "transferred_input": "保护测试和验收矩阵",
   "gate_evidence": "每个稳定失败类都有红绿门禁",
   "reason_code": "contract-dependency",

@@ -23,17 +23,17 @@
 
 ## 记录的最近执行
 
-以下是当前源码重跑记录，源代码身份为 `007a7f906af4e23a6a4fa5d041da4cb0641646c2`，记录时间为 `2026-09-01T16:55:00+08:00`。每条记录均指向本包外的可复现输出；完整 Router 回归的历史基线差异单列，不能把 `PASS WITH BASELINE` 误写为全绿。
+以下是当前源码重跑记录，源代码身份为 `ca17317f2a559eb033f9667a4d8ad6389010d190`，记录时间为 `2026-09-02T00:58:00+08:00`。每条记录均指向本包外的可复现输出；完整 Router 回归的历史基线差异单列，不能把 `PASS WITH BASELINE` 误写为全绿。
 
 | 验收区域 | 执行日期 | 源码提交 | 结果 | 已知基线失败清单 | 证据路径 |
 | --- | --- | --- | --- | --- | --- |
-| 登录入口状态 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS：`build:media` 中的登录视觉运行时四态检查通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
-| 普通路由矩阵 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS：`build:media` 中的路由矩阵与合成漂移负例通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
-| 共享视觉原语 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS：`build:media` 中的原语采用及自测通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
-| 入口状态合同 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS WITH BASELINE：`test_auth_entry_state.py` 8 项通过 | 完整 Router 套件尚有 32 项历史失败；均为父提交 42 项失败集合的子集 | `agents-results/2026-09-01/stage2-document-edit-validation/router-full-pytest-output.txt` |
-| Stage-1 工作台运行时 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS：`build:media` 中的双视口、路由和外部字体请求检查通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
-| 视觉构建门禁 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS：完整前端构建、TypeScript、Vite 和配置的 QA 门禁通过 | 仅 Vite 大 chunk 体积建议，非失败 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
-| 全量回归 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS WITH BASELINE：1683 passed，40 skipped，32 failed | 32 项均在父提交 `37e58dc3` 的 42 项失败集合中；本轮额外修复了 10 项过期迁移清单断言 | `agents-results/2026-09-01/stage2-document-edit-validation/verification.md` |
+| 登录入口状态 | 2026-09-02T00:58:00+08:00 | `ca17317f2a559eb033f9667a4d8ad6389010d190` | PASS：`build:media` 中的登录视觉运行时四态检查通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
+| 普通路由矩阵 | 2026-09-02T00:58:00+08:00 | `ca17317f2a559eb033f9667a4d8ad6389010d190` | PASS：`build:media` 中的路由矩阵与合成漂移负例通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
+| 共享视觉原语 | 2026-09-02T00:58:00+08:00 | `ca17317f2a559eb033f9667a4d8ad6389010d190` | PASS：`build:media` 中的原语采用及自测通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
+| 入口状态合同 | 2026-09-02T00:58:00+08:00 | `ca17317f2a559eb033f9667a4d8ad6389010d190` | PASS WITH BASELINE：`test_auth_entry_state.py` 8 项通过 | 完整 Router 套件尚有 32 项历史失败；均为父提交 42 项失败集合的子集 | `agents-results/2026-09-01/stage2-document-edit-validation/router-full-pytest-output.txt` |
+| Stage-1 工作台运行时 | 2026-09-02T00:58:00+08:00 | `ca17317f2a559eb033f9667a4d8ad6389010d190` | PASS：`build:media` 中的双视口、路由和外部字体请求检查通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
+| 视觉构建门禁 | 2026-09-02T00:58:00+08:00 | `ca17317f2a559eb033f9667a4d8ad6389010d190` | PASS：完整前端构建、TypeScript、Vite 和配置的 QA 门禁通过 | 仅 Vite 大 chunk 体积建议，非失败 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
+| 全量回归 | 2026-09-02T00:58:00+08:00 | `ca17317f2a559eb033f9667a4d8ad6389010d190` | PASS WITH BASELINE：1683 passed，40 skipped，32 failed | 32 项均在父提交 `37e58dc3` 的 42 项失败集合中；本轮额外修复了 10 项过期迁移清单断言 | `agents-results/2026-09-01/stage2-document-edit-validation/verification.md` |
 
 ## 证据分层
 
@@ -41,12 +41,19 @@
 
 ## 人工验收保留项
 
-1. [`ST2-HUM-ORG-SCAN`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/checklist.md)：真实组织扫码、组织壳层与错误工作区恢复；绑定 O1。
-2. [`ST2-HUM-LARK-READBACK`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/checklist.md)：飞书编辑后再回读；绑定 O5。
-3. [`ST2-HUM-LOGIN-FOLD`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md)：登录回退态折线确认；绑定 K，并跟踪 `assertAuthLayout` 缺口。
-4. [`ST2-HUM-SESSION-28D`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/checklist.md)：28 天会话持久化真实部署读回；绑定 DB。
+人类阻断预算：3/3。
+1. `ST2-HUM-ORG-SCAN`：绑定 O1。
+2. `ST2-HUM-LARK-READBACK`：绑定 O5。
+3. `ST2-HUM-SESSION-28D`：绑定 DB。
 
-四项工作区均为 `PREPARING`：没有 machine-green handoff，也没有人工签署结果；不得修改 checklist 记录一次执行。
+降级为机器可测试（不占用人类阻断预算）：
+- `ST2-HUM-LOGIN-FOLD`：绑定 K；改由机器验收，人工读图仅作非阻断参考。
+
+上述工作区均为 `PREPARING`：没有 machine-green handoff，也没有人工签署结果；不得修改 checklist 记录一次执行。
+
+## AI review lane policy
+
+AI review 使用单一独立 zero-write lane；每个 scoped finding 最多允许一次 finding-only rereview。AI 只能提交结构化发现，不能写入候选、代替实现者修复、接受节点或晋升发布；修复由实现责任方完成后再触发该发现的独立复核。
 
 ## 当前合同提醒
 
