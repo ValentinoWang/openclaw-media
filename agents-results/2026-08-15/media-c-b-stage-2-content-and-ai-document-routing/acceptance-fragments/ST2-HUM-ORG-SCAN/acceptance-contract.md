@@ -14,7 +14,8 @@
 - Assumption IDs: none
 - Invalidation keys: media.stage2.organization-source-scope.v5, media.stage2.organization-source-scope.manual-org-scan
 - Baseline identity: ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5; docs/frontend/prototype/stage2-acceptance-execution.html
-- Human acceptance workspace: acceptance/human/ST2-HUM-ORG-SCAN
+- Human acceptance workspace: acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN
+- UI Change declaration: none
 
 ## User and scenario
 
@@ -70,7 +71,7 @@ Then 产品在入口状态查询结束后显示组织工作区，并保持组织
 
 | ID | Summary | Checklist path | Required role | Blocking |
 | --- | --- | --- | --- | --- |
-| H-01 | 真实组织成员能完成扫码进入，并确认组织壳层和错误深链恢复可理解且不泄漏个人成果。 | acceptance/human/ST2-HUM-ORG-SCAN/checklist.md#h-01 | 组织成员验收负责人 | Yes |
+| H-01 | 真实组织成员能完成扫码进入，并确认组织壳层和错误深链恢复可理解且不泄漏个人成果。 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/checklist.md#h-01 | 组织成员验收负责人 | Yes |
 
 ## Protected acceptance tests
 
@@ -83,7 +84,7 @@ Then 产品在入口状态查询结束后显示组织工作区，并保持组织
 | Requirement | Verification | Evidence target | Mode | Blocking |
 | --- | --- | --- | --- | --- |
 | AC-01 | 既有路由与入口状态合同门禁 | 40 验收视图的自动化映射 | Automatic | Yes |
-| H-01 | 真实组织扫码闭环 | acceptance/human/ST2-HUM-ORG-SCAN/checklist.md#h-01 | Human | Yes |
+| H-01 | 真实组织扫码闭环 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/checklist.md#h-01 | Human | Yes |
 
 ## Exploratory testing
 

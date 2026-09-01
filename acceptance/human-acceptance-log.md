@@ -3,7 +3,7 @@
 本文件由验收事实确定性生成，禁止手工修改。人工验收集中在机器开发完成后的独立末端阶段；入队不会打断中间开发。
 
 - 事实时间：-
-- 来源事实 SHA-256：de876f0bd1fc2cdce9f52e92a849fb7d1d16b32a13f7ec632594264b77367cd0
+- 来源事实 SHA-256：bea91085a4f15739e27f1469e0663aadd85afae0ed9472d491ba59824eb6c2f9
 - 生成命令：`manage_acceptance_artifacts.py log --project-root <project-root>`
 
 ## 阻塞发布项
@@ -62,13 +62,13 @@
 
 | 时间 | 任务 | 业务闭环 | 角色 | 分钟 | 清单 | 最新记录 |
 | --- | --- | --- | --- | ---: | --- | --- |
-| - | ST2-HUM-SESSION-28D | ST2-HUM-SESSION-28D | - | - | acceptance/human/ST2-HUM-SESSION-28D/checklist.md | - |
-| - | ST2-HUM-ORG-SCAN | ST2-HUM-ORG-SCAN | - | - | acceptance/human/ST2-HUM-ORG-SCAN/checklist.md | - |
-| - | ST2-HUM-LOGIN-FOLD | ST2-HUM-LOGIN-FOLD | - | - | acceptance/human/ST2-HUM-LOGIN-FOLD/checklist.md | - |
-| - | ST2-HUM-LARK-READBACK | ST2-HUM-LARK-READBACK | - | - | acceptance/human/ST2-HUM-LARK-READBACK/checklist.md | - |
-| - | PR-REL-READBACK | PR-REL-READBACK | - | - | acceptance/human/PR-REL-READBACK/checklist.md | - |
-| - | PR-REL-PLANNER | PR-REL-PLANNER | - | - | acceptance/human/PR-REL-PLANNER/checklist.md | - |
-| - | PR-REL-MANIFEST | PR-REL-MANIFEST | - | - | acceptance/human/PR-REL-MANIFEST/checklist.md | - |
+| - | ST2-HUM-SESSION-28D | ST2-HUM-SESSION-28D | - | - | acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-SESSION-28D/checklist.md | - |
+| - | ST2-HUM-ORG-SCAN | ST2-HUM-ORG-SCAN | - | - | acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-ORG-SCAN/checklist.md | - |
+| - | ST2-HUM-LOGIN-FOLD | ST2-HUM-LOGIN-FOLD | - | - | acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md | - |
+| - | ST2-HUM-LARK-READBACK | ST2-HUM-LARK-READBACK | - | - | acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-LARK-READBACK/checklist.md | - |
+| - | PR-REL-READBACK | PR-REL-READBACK | - | - | acceptance/human/2026-W35/未-2026-08-25-PR-REL-READBACK/checklist.md | - |
+| - | PR-REL-PLANNER | PR-REL-PLANNER | - | - | acceptance/human/2026-W35/未-2026-08-25-PR-REL-PLANNER/checklist.md | - |
+| - | PR-REL-MANIFEST | PR-REL-MANIFEST | - | - | acceptance/human/2026-W35/未-2026-08-25-PR-REL-MANIFEST/checklist.md | - |
 
 ### 已通过
 

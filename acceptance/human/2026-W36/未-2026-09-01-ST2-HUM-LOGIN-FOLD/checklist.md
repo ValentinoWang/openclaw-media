@@ -1,14 +1,14 @@
 # 人工验收清单：ST2-HUM-LOGIN-FOLD
 
 - 任务编号：ST2-HUM-LOGIN-FOLD
-- 人工验收绑定：acceptance/human/ST2-HUM-LOGIN-FOLD/binding.md
+- 人工验收绑定：acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/binding.md
 - 验收合同：agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/acceptance-fragments/ST2-HUM-LOGIN-FOLD/acceptance-contract.md
 - 合同版本：1
 - 清单状态：草稿
 - 所需人工角色：产品体验验收负责人
 - 清单负责人：产品决策权威指定的验收负责人
 - 批准证据：本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。
-- 执行结果：acceptance/human/ST2-HUM-LOGIN-FOLD/runs/<run-id>/result.md
+- 执行结果：acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/runs/<run-id>/result.md
 
 本清单只覆盖 `assertAuthLayout` 尚未覆盖的个人登录回退态折线体验。布局尺寸、溢出和请求计数仍以自动化门禁为准；本项在自动断言覆盖全部状态后退役。
 
@@ -31,4 +31,4 @@
 - 判断标准：验收人无需隐藏指导即可指出主动作并完成视觉上的下一步判断。
 - 预计时长：5 分钟。
 - 是否阻塞发布：是
-- 结果记录规则：将签署后的观察和结论写入新的 `acceptance/human/ST2-HUM-LOGIN-FOLD/runs/<run-id>/result.md`；不得通过修改本清单记录执行结果。
+- 结果记录规则：将签署后的观察和结论写入新的 `acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/runs/<run-id>/result.md`；不得通过修改本清单记录执行结果。

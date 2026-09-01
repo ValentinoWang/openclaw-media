@@ -41,10 +41,10 @@
 
 ## 人工验收保留项
 
-1. [`ST2-HUM-ORG-SCAN`](../../../acceptance/human/ST2-HUM-ORG-SCAN/checklist.md)：真实组织扫码、组织壳层与错误工作区恢复；绑定 O1。
-2. [`ST2-HUM-LARK-READBACK`](../../../acceptance/human/ST2-HUM-LARK-READBACK/checklist.md)：飞书编辑后再回读；绑定 O5。
-3. [`ST2-HUM-LOGIN-FOLD`](../../../acceptance/human/ST2-HUM-LOGIN-FOLD/checklist.md)：登录回退态折线确认；绑定 K，并跟踪 `assertAuthLayout` 缺口。
-4. [`ST2-HUM-SESSION-28D`](../../../acceptance/human/ST2-HUM-SESSION-28D/checklist.md)：28 天会话持久化真实部署读回；绑定 DB。
+1. [`ST2-HUM-ORG-SCAN`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/checklist.md)：真实组织扫码、组织壳层与错误工作区恢复；绑定 O1。
+2. [`ST2-HUM-LARK-READBACK`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/checklist.md)：飞书编辑后再回读；绑定 O5。
+3. [`ST2-HUM-LOGIN-FOLD`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md)：登录回退态折线确认；绑定 K，并跟踪 `assertAuthLayout` 缺口。
+4. [`ST2-HUM-SESSION-28D`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/checklist.md)：28 天会话持久化真实部署读回；绑定 DB。
 
 四项工作区均为 `PREPARING`：没有 machine-green handoff，也没有人工签署结果；不得修改 checklist 记录一次执行。
 

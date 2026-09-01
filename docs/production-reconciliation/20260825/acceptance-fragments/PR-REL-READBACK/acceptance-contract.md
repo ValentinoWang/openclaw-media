@@ -14,7 +14,8 @@
 - Assumption IDs: none
 - Invalidation keys: pr-rel-readback.contract, pr-rel-readback.probe-schema, pr-rel-readback.release-identity, pr-rel-readback.route-semantics, pr-rel-readback.protected-test
 - Baseline identity: commit 59e2adfd34853b6929d9fa69e69585806ac9c83a, clean; 2026-08-25 redacted runtime observation and source-only deployment gate
-- Human acceptance workspace: acceptance/human/PR-REL-READBACK
+- Human acceptance workspace: acceptance/human/2026-W35/2026-08-25-PR-REL-READBACK
+- UI Change declaration: none
 
 ## User and scenario
 
@@ -167,8 +168,8 @@ database, or external services.
 
 | ID | Summary | Checklist path | Required role | Blocking |
 | --- | --- | --- | --- | --- |
-| H-01 | 人工确认读回摘要能够区分 direct-port 与 public-route 的健康/就绪语义，并能据此理解发布结论。 | acceptance/human/PR-REL-READBACK/checklist.md#h-01 | 生产发布验收负责人 | Yes |
-| H-02 | 人工确认验收材料只呈现安全摘要且流程保持只读，不把本地红证据或 fixture 证据误称为生产证明。 | acceptance/human/PR-REL-READBACK/checklist.md#h-02 | 生产发布验收负责人 | Yes |
+| H-01 | 人工确认读回摘要能够区分 direct-port 与 public-route 的健康/就绪语义，并能据此理解发布结论。 | acceptance/human/2026-W35/2026-08-25-PR-REL-READBACK/checklist.md#h-01 | 生产发布验收负责人 | Yes |
+| H-02 | 人工确认验收材料只呈现安全摘要且流程保持只读，不把本地红证据或 fixture 证据误称为生产证明。 | acceptance/human/2026-W35/2026-08-25-PR-REL-READBACK/checklist.md#h-02 | 生产发布验收负责人 | Yes |
 
 ## Protected acceptance tests
 
@@ -193,8 +194,8 @@ database, or external services.
 | AC-11 | Protected unit/contract test | openclaw-tag-router/tests/test_stage2_release_readback.py::test_keeps_direct_and_public_routes_distinct | Automatic | Yes |
 | AC-12 | Protected security/unit test | openclaw-tag-router/tests/test_stage2_release_readback.py::test_redacts_sensitive_observation_material | Automatic | Yes |
 | AC-13 | Protected unit/contract test | openclaw-tag-router/tests/test_stage2_release_readback.py::test_evaluator_uses_injected_observation_only | Automatic | Yes |
-| H-01 | Scripted human product review | acceptance/human/PR-REL-READBACK/checklist.md#h-01 | Human | Yes |
-| H-02 | Scripted human boundary review | acceptance/human/PR-REL-READBACK/checklist.md#h-02 | Human | Yes |
+| H-01 | Scripted human product review | acceptance/human/2026-W35/2026-08-25-PR-REL-READBACK/checklist.md#h-01 | Human | Yes |
+| H-02 | Scripted human boundary review | acceptance/human/2026-W35/2026-08-25-PR-REL-READBACK/checklist.md#h-02 | Human | Yes |
 
 ## Exploratory testing
 

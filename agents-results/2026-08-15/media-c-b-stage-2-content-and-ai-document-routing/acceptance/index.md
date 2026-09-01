@@ -1,6 +1,6 @@
-# Project Human Acceptance Index
+# Task Acceptance Evidence Index
 
-This generated project-level index covers human acceptance runs grouped by task ID. Signed results remain authoritative; the binary workspace prefix is a validated projection.
+This generated index covers non-human evidence in this task artifact root. It locates evidence but does not define acceptance behavior.
 
 | Run ID | Task ID | Lane | Status | Contract version | Source identity | Runtime identity | Result SHA-256 | Result path |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

@@ -146,8 +146,8 @@ HASHES = {
     "stage1_dc2": "e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448",
 }
 OBSERVED_AT = "2026-08-15T20:37:42+08:00"
-CURRENT_FACT_OBSERVED_AT = "2026-09-01T15:20:00+08:00"
-CURRENT_MAIN_SHA = "672b16329268829c9f06c13b2bc6d74b0f8a4fe7"
+CURRENT_FACT_OBSERVED_AT = "2026-09-01T14:39:38+08:00"
+CURRENT_MAIN_SHA = "535f84658564bdab00b10449282faccd4e4162c4"
 DECISION_V5_OBSERVED_AT = "2026-09-01T15:20:00+08:00"
 CURRENT_STAGE2_ORIGIN_COMMIT = "0228256058a1d7c0de4986a943de5c96f445ee2f"
 CURRENT_STAGE2_SERVICE_COUNT = 16
@@ -182,7 +182,7 @@ HUMAN_ACCEPTANCE_FRAGMENTS = {
         "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
         "assumption_ids": [],
         "invalidation_keys": ["media.stage2.organization-source-scope.v5", "media.stage2.organization-source-scope.manual-org-scan"],
-        "human_binding_path": "acceptance/human/ST2-HUM-ORG-SCAN/binding.md",
+        "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/binding.md",
         "selected_run_ids": [],
         "result_hashes": [],
     },
@@ -196,7 +196,7 @@ HUMAN_ACCEPTANCE_FRAGMENTS = {
         "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
         "assumption_ids": [],
         "invalidation_keys": ["media.stage2.organization-edit-readback.v5", "media.stage2.organization-edit-readback.manual-lark-readback"],
-        "human_binding_path": "acceptance/human/ST2-HUM-LARK-READBACK/binding.md",
+        "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/binding.md",
         "selected_run_ids": [],
         "result_hashes": [],
     },
@@ -210,7 +210,7 @@ HUMAN_ACCEPTANCE_FRAGMENTS = {
         "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
         "assumption_ids": [],
         "invalidation_keys": ["media.stage2.product-decisions.v5", "media.stage2.product-decisions.login-fold-assert-auth-layout"],
-        "human_binding_path": "acceptance/human/ST2-HUM-LOGIN-FOLD/binding.md",
+        "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/binding.md",
         "selected_run_ids": [],
         "result_hashes": [],
     },
@@ -224,7 +224,7 @@ HUMAN_ACCEPTANCE_FRAGMENTS = {
         "decision_refs": [{"semantic_key": "media.stage2.product-decisions", "version": PRODUCT_DECISION_VERSION}],
         "assumption_ids": [],
         "invalidation_keys": ["media.stage2.external-system-acceptance.v5", "media.stage2.external-system-acceptance.session-28d-readback"],
-        "human_binding_path": "acceptance/human/ST2-HUM-SESSION-28D/binding.md",
+        "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/binding.md",
         "selected_run_ids": [],
         "result_hashes": [],
     },
@@ -1508,7 +1508,7 @@ def acceptance_execution_view() -> str:
         "## 证据分层",
         "运行时门禁与截图只形成 source/local-runtime 证据，不能替代真实组织扫码、飞书编辑后再回读、28 天会话持久化部署读回或独立外部验收。",
         "## 人工验收保留项",
-        "1. [`ST2-HUM-ORG-SCAN`](../../../acceptance/human/ST2-HUM-ORG-SCAN/checklist.md)：真实组织扫码、组织壳层与错误工作区恢复；绑定 O1。\n2. [`ST2-HUM-LARK-READBACK`](../../../acceptance/human/ST2-HUM-LARK-READBACK/checklist.md)：飞书编辑后再回读；绑定 O5。\n3. [`ST2-HUM-LOGIN-FOLD`](../../../acceptance/human/ST2-HUM-LOGIN-FOLD/checklist.md)：登录回退态折线确认；绑定 K，并跟踪 `assertAuthLayout` 缺口。\n4. [`ST2-HUM-SESSION-28D`](../../../acceptance/human/ST2-HUM-SESSION-28D/checklist.md)：28 天会话持久化真实部署读回；绑定 DB。\n\n四项工作区均为 `PREPARING`：没有 machine-green handoff，也没有人工签署结果；不得修改 checklist 记录一次执行。",
+        "1. [`ST2-HUM-ORG-SCAN`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/checklist.md)：真实组织扫码、组织壳层与错误工作区恢复；绑定 O1。\n2. [`ST2-HUM-LARK-READBACK`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/checklist.md)：飞书编辑后再回读；绑定 O5。\n3. [`ST2-HUM-LOGIN-FOLD`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md)：登录回退态折线确认；绑定 K，并跟踪 `assertAuthLayout` 缺口。\n4. [`ST2-HUM-SESSION-28D`](../../../acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/checklist.md)：28 天会话持久化真实部署读回；绑定 DB。\n\n四项工作区均为 `PREPARING`：没有 machine-green handoff，也没有人工签署结果；不得修改 checklist 记录一次执行。",
         "## 当前合同提醒",
         "K 第 5 版已裁决：routeGrants 保留为会话内路由清单漂移检测，而非授权投影。B 仍须把会话合同重签为 `media_web_business_pages_v3`，收敛三份人工维护的清单为一份生成源，并让登录入口状态接口同步进入 OpenAPI 与客户端类型；这些实施债务尚未因裁决或历史门禁而接受。",
     ])

@@ -14,7 +14,8 @@
 - Assumption IDs: none
 - Invalidation keys: media.stage2.organization-edit-readback.v5, media.stage2.organization-edit-readback.manual-lark-readback
 - Baseline identity: ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5; docs/frontend/prototype/stage2-acceptance-execution.html
-- Human acceptance workspace: acceptance/human/ST2-HUM-LARK-READBACK
+- Human acceptance workspace: acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK
+- UI Change declaration: none
 
 ## User and scenario
 
@@ -70,7 +71,7 @@ Then 镜像读回新的远端版本和修改时间，并保持只读
 
 | ID | Summary | Checklist path | Required role | Blocking |
 | --- | --- | --- | --- | --- |
-| H-01 | 真实飞书编辑后的 Web 镜像读回具备可理解的版本更新和只读边界。 | acceptance/human/ST2-HUM-LARK-READBACK/checklist.md#h-01 | 组织成员验收负责人 | Yes |
+| H-01 | 真实飞书编辑后的 Web 镜像读回具备可理解的版本更新和只读边界。 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/checklist.md#h-01 | 组织成员验收负责人 | Yes |
 
 ## Protected acceptance tests
 
@@ -83,7 +84,7 @@ Then 镜像读回新的远端版本和修改时间，并保持只读
 | Requirement | Verification | Evidence target | Mode | Blocking |
 | --- | --- | --- | --- | --- |
 | AC-01 | 既有保存、批次和读回合同测试 | 40 验收视图的自动化映射 | Automatic | Yes |
-| H-01 | 真实飞书编辑和 Web 读回闭环 | acceptance/human/ST2-HUM-LARK-READBACK/checklist.md#h-01 | Human | Yes |
+| H-01 | 真实飞书编辑和 Web 读回闭环 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/checklist.md#h-01 | Human | Yes |
 
 ## Exploratory testing
 

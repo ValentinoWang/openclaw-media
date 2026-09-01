@@ -137,7 +137,7 @@
         "media.stage2.product-decisions.v5",
         "media.stage2.product-decisions.login-fold-assert-auth-layout"
       ],
-      "human_binding_path": "acceptance/human/ST2-HUM-LOGIN-FOLD/binding.md",
+      "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/binding.md",
       "selected_run_ids": [],
       "result_hashes": []
     }

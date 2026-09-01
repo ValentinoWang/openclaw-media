@@ -96,7 +96,7 @@
         "media.stage2.external-system-acceptance.v5",
         "media.stage2.external-system-acceptance.session-28d-readback"
       ],
-      "human_binding_path": "acceptance/human/ST2-HUM-SESSION-28D/binding.md",
+      "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/binding.md",
       "selected_run_ids": [],
       "result_hashes": []
     }

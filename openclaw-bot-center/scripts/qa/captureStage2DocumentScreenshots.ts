@@ -101,6 +101,7 @@ type ManifestEntry = {
   checks: CheckRecord[];
   api: ApiObservation[];
   requestFailures: string[];
+  expectedRequestFailures?: string[];
   consoleErrors: string[];
   expectedConsoleErrors?: string[];
   pageErrors: string[];
@@ -1071,6 +1072,46 @@ function expectedConsoleErrors(mock: MockState, errors: string[]): string[] {
   return [];
 }
 
+function expectedRequestFailures(mock: MockState, failures: string[]): string[] {
+  const expected: string[] = [];
+  const offlineDraftFailure = `PUT ${apiRoot}/documents/${mock.artifactId}/draft net::ERR_INTERNET_DISCONNECTED`;
+  const organizationReadPaths = new Set([
+    `${apiRoot}/documents/${mock.artifactId}/body`,
+    `${apiRoot}/artifacts/${mock.artifactId}/sync-batches`,
+  ]);
+
+  for (const failure of failures) {
+    if (expected.includes(failure)) continue;
+    if (mock.side === "C" && mock.state === "offlineRetry" && failure === offlineDraftFailure) {
+      expected.push(failure);
+      continue;
+    }
+    const readMatch = /^GET (\S+) net::ERR_ABORTED$/u.exec(failure);
+    const fullReadPath = readMatch?.[1];
+    const relativeReadPath = fullReadPath?.startsWith(apiRoot) ? fullReadPath.slice(apiRoot.length) : undefined;
+    if (
+      mock.workspaceMode === "organization_lark" &&
+      readMatch !== null &&
+      organizationReadPaths.has(readMatch[1]!) &&
+      relativeReadPath !== undefined &&
+      mock.requests.some((request) => request.method === "GET" && request.path === relativeReadPath && request.status === 200)
+    ) {
+      expected.push(failure);
+    }
+  }
+  return expected;
+}
+
+function unexpectedRequestFailures(mock: MockState, failures: string[]): string[] {
+  const expected = [...expectedRequestFailures(mock, failures)];
+  return failures.filter((failure) => {
+    const index = expected.indexOf(failure);
+    if (index < 0) return true;
+    expected.splice(index, 1);
+    return false;
+  });
+}
+
 function pendingContract(side: Side, state: State): PendingContract {
   if (side === "C" && state === "organizationDocument") {
     return {
@@ -1421,12 +1462,14 @@ async function captureRuntimeState(
       detail: JSON.stringify(screenshotRecords.map((item) => ({ path: item.path, bytes: item.bytes, width: item.width, height: item.height, uniqueColors: item.uniqueColors }))),
     });
     assert.ok(screenshotRecords.every((item) => item.uniqueColors >= 5 && item.nonTransparentPixels > 0), `${side}/${state}/${viewport.name}: blank screenshot`);
+    const allowedRequestFailures = expectedRequestFailures(mock, diagnostics.requestFailures);
+    const unexpectedRequestFailureList = unexpectedRequestFailures(mock, diagnostics.requestFailures);
     checks.push({
-      name: "noRequestFailures",
-      ok: diagnostics.requestFailures.length === 0,
-      detail: diagnostics.requestFailures.join("\n") || "none",
+      name: "noUnexpectedRequestFailures",
+      ok: unexpectedRequestFailureList.length === 0,
+      detail: unexpectedRequestFailureList.join("\n") || "none",
     });
-    assert.deepEqual(diagnostics.requestFailures, [], `${side}/${state}/${viewport.name}: request failures`);
+    assert.deepEqual(unexpectedRequestFailureList, [], `${side}/${state}/${viewport.name}: request failures`);
     const allowedConsoleErrors = expectedConsoleErrors(mock, diagnostics.consoleErrors);
     const unexpectedConsoleErrors = diagnostics.consoleErrors.filter((message) => !allowedConsoleErrors.includes(message));
     checks.push({ name: "noUnexpectedConsoleErrors", ok: unexpectedConsoleErrors.length === 0, detail: unexpectedConsoleErrors.join("\n") || "none" });
@@ -1447,7 +1490,8 @@ async function captureRuntimeState(
       screenshots: screenshotRecords,
       checks,
       api: mock.requests,
-      requestFailures: diagnostics.requestFailures,
+      requestFailures: unexpectedRequestFailureList,
+      expectedRequestFailures: allowedRequestFailures,
       consoleErrors: diagnostics.consoleErrors,
       expectedConsoleErrors: allowedConsoleErrors,
       pageErrors: diagnostics.pageErrors,
@@ -1645,6 +1689,23 @@ export async function runSelfTest(): Promise<void> {
   const organizationBodyResponse = bodyResponse(organizationMock);
   assert.equal(organizationBodyResponse.data.artifact.workspaceMode, "organization_lark");
   assert.equal(organizationBodyResponse.data.artifact.bodyAuthority, "lark");
+
+  const offlineMock = createMockState("C", "offlineRetry");
+  const offlineFailure = `PUT ${apiRoot}/documents/${offlineMock.artifactId}/draft net::ERR_INTERNET_DISCONNECTED`;
+  assert.deepEqual(expectedRequestFailures(offlineMock, [offlineFailure, "GET /unexpected net::ERR_FAILED"]), [offlineFailure]);
+  assert.deepEqual(unexpectedRequestFailures(offlineMock, [offlineFailure, "GET /unexpected net::ERR_FAILED"]), ["GET /unexpected net::ERR_FAILED"]);
+
+  const organizationRetryMock = createMockState("B", "synced");
+  organizationRetryMock.requests.push({
+    method: "GET",
+    path: `/documents/${organizationRetryMock.artifactId}/body`,
+    operationId: "getDocumentBody",
+    status: 200,
+    mockedAtBrowserBoundary: true,
+  });
+  const abortedRead = `GET ${apiRoot}/documents/${organizationRetryMock.artifactId}/body net::ERR_ABORTED`;
+  assert.deepEqual(expectedRequestFailures(organizationRetryMock, [abortedRead]), [abortedRead]);
+  assert.deepEqual(unexpectedRequestFailures(organizationRetryMock, [abortedRead]), []);
 
   const green = await validateManifestEvidence(
     [selfTestEntry()],

@@ -4,7 +4,7 @@
   "non_blocking_entries": [
     {
       "blocking": false,
-      "checklist_path": "acceptance/human/ST2-HUM-SESSION-28D/checklist.md",
+      "checklist_path": "acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-SESSION-28D/checklist.md",
       "estimated_minutes": null,
       "handoff_path": null,
       "invalidation_keys": [],
@@ -16,11 +16,12 @@
       "scope_hints": [],
       "status": "PREPARING",
       "summary": "人工验收工作区已建立，尚未完成机器验收递交。",
-      "task_id": "ST2-HUM-SESSION-28D"
+      "task_id": "ST2-HUM-SESSION-28D",
+      "workspace": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D"
     },
     {
       "blocking": false,
-      "checklist_path": "acceptance/human/ST2-HUM-ORG-SCAN/checklist.md",
+      "checklist_path": "acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-ORG-SCAN/checklist.md",
       "estimated_minutes": null,
       "handoff_path": null,
       "invalidation_keys": [],
@@ -32,11 +33,12 @@
       "scope_hints": [],
       "status": "PREPARING",
       "summary": "人工验收工作区已建立，尚未完成机器验收递交。",
-      "task_id": "ST2-HUM-ORG-SCAN"
+      "task_id": "ST2-HUM-ORG-SCAN",
+      "workspace": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN"
     },
     {
       "blocking": false,
-      "checklist_path": "acceptance/human/ST2-HUM-LOGIN-FOLD/checklist.md",
+      "checklist_path": "acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md",
       "estimated_minutes": null,
       "handoff_path": null,
       "invalidation_keys": [],
@@ -48,11 +50,12 @@
       "scope_hints": [],
       "status": "PREPARING",
       "summary": "人工验收工作区已建立，尚未完成机器验收递交。",
-      "task_id": "ST2-HUM-LOGIN-FOLD"
+      "task_id": "ST2-HUM-LOGIN-FOLD",
+      "workspace": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD"
     },
     {
       "blocking": false,
-      "checklist_path": "acceptance/human/ST2-HUM-LARK-READBACK/checklist.md",
+      "checklist_path": "acceptance/human/2026-W36/未-2026-09-01-ST2-HUM-LARK-READBACK/checklist.md",
       "estimated_minutes": null,
       "handoff_path": null,
       "invalidation_keys": [],
@@ -64,11 +67,12 @@
       "scope_hints": [],
       "status": "PREPARING",
       "summary": "人工验收工作区已建立，尚未完成机器验收递交。",
-      "task_id": "ST2-HUM-LARK-READBACK"
+      "task_id": "ST2-HUM-LARK-READBACK",
+      "workspace": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK"
     },
     {
       "blocking": false,
-      "checklist_path": "acceptance/human/PR-REL-READBACK/checklist.md",
+      "checklist_path": "acceptance/human/2026-W35/未-2026-08-25-PR-REL-READBACK/checklist.md",
       "estimated_minutes": null,
       "handoff_path": null,
       "invalidation_keys": [],
@@ -80,11 +84,12 @@
       "scope_hints": [],
       "status": "PREPARING",
       "summary": "人工验收工作区已建立，尚未完成机器验收递交。",
-      "task_id": "PR-REL-READBACK"
+      "task_id": "PR-REL-READBACK",
+      "workspace": "acceptance/human/2026-W35/2026-08-25-PR-REL-READBACK"
     },
     {
       "blocking": false,
-      "checklist_path": "acceptance/human/PR-REL-PLANNER/checklist.md",
+      "checklist_path": "acceptance/human/2026-W35/未-2026-08-25-PR-REL-PLANNER/checklist.md",
       "estimated_minutes": null,
       "handoff_path": null,
       "invalidation_keys": [],
@@ -96,11 +101,12 @@
       "scope_hints": [],
       "status": "PREPARING",
       "summary": "人工验收工作区已建立，尚未完成机器验收递交。",
-      "task_id": "PR-REL-PLANNER"
+      "task_id": "PR-REL-PLANNER",
+      "workspace": "acceptance/human/2026-W35/2026-08-25-PR-REL-PLANNER"
     },
     {
       "blocking": false,
-      "checklist_path": "acceptance/human/PR-REL-MANIFEST/checklist.md",
+      "checklist_path": "acceptance/human/2026-W35/未-2026-08-25-PR-REL-MANIFEST/checklist.md",
       "estimated_minutes": null,
       "handoff_path": null,
       "invalidation_keys": [],
@@ -112,9 +118,10 @@
       "scope_hints": [],
       "status": "PREPARING",
       "summary": "人工验收工作区已建立，尚未完成机器验收递交。",
-      "task_id": "PR-REL-MANIFEST"
+      "task_id": "PR-REL-MANIFEST",
+      "workspace": "acceptance/human/2026-W35/2026-08-25-PR-REL-MANIFEST"
     }
   ],
   "schema_version": 1,
-  "source_facts_sha256": "de876f0bd1fc2cdce9f52e92a849fb7d1d16b32a13f7ec632594264b77367cd0"
+  "source_facts_sha256": "bea91085a4f15739e27f1469e0663aadd85afae0ed9472d491ba59824eb6c2f9"
 }

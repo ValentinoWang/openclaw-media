@@ -1,14 +1,14 @@
 # 人工验收清单：ST2-HUM-LARK-READBACK
 
 - 任务编号：ST2-HUM-LARK-READBACK
-- 人工验收绑定：acceptance/human/ST2-HUM-LARK-READBACK/binding.md
+- 人工验收绑定：acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/binding.md
 - 验收合同：agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/acceptance-fragments/ST2-HUM-LARK-READBACK/acceptance-contract.md
 - 合同版本：1
 - 清单状态：草稿
 - 所需人工角色：组织成员验收负责人
 - 清单负责人：运行时验收负责人
 - 批准证据：本轮用户指令仅授权建立可审计草案，未批准执行、发布或节点接受。
-- 执行结果：acceptance/human/ST2-HUM-LARK-READBACK/runs/<run-id>/result.md
+- 执行结果：acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/runs/<run-id>/result.md
 
 本清单只判断真实飞书编辑后的 Web 镜像读回和只读边界。批次、幂等、映射、授权和错误码由自动化测试负责；本清单不允许用 mock 代替真实远端版本。
 
@@ -31,4 +31,4 @@
 - 判断标准：验收人能从可见信息确认本次飞书保存被镜像读回，并清楚区分组织正文的唯一编辑权威。
 - 预计时长：15 分钟。
 - 是否阻塞发布：是
-- 结果记录规则：将签署后的观察和结论写入新的 `acceptance/human/ST2-HUM-LARK-READBACK/runs/<run-id>/result.md`；不得通过修改本清单记录执行结果。
+- 结果记录规则：将签署后的观察和结论写入新的 `acceptance/human/2026-W36/2026-09-01-ST2-HUM-LARK-READBACK/runs/<run-id>/result.md`；不得通过修改本清单记录执行结果。

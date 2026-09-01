@@ -6,9 +6,9 @@
 - SSOT node: K
 - Acceptance contract: agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/acceptance-fragments/ST2-HUM-LOGIN-FOLD/acceptance-contract.md
 - Contract version: 1
-- Contract SHA-256: 536a5f5f59e58ce897a364cb8c152f2d38e9cb54570f8b8d141eaaebf74bd7d1
-- Human checklist: acceptance/human/ST2-HUM-LOGIN-FOLD/checklist.md
-- Checklist SHA-256: 1eb0110f2a300e5e41f10ecf6e0cc2fd72a6d0a0562e453fc07dbac891f17d1d
+- Contract SHA-256: 02c456ad09784ad06d50938b9d509ab450bfd28ee883bbace801c70303aa9ba3
+- Human checklist: acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md
+- Checklist SHA-256: c119261f9e949eb0671649dd40f530e0dd4c4156992d7c91caa2fb1807e71277
 
 ## Item bindings
 

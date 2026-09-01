@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-01T05:32:08.270063+00:00",
+  "generated_at": "2026-09-01T07:08:47.222549+00:00",
   "generator": {
     "repository": "ValentinoWang/Harness_Engineering",
     "commit": "86d7c2cc7bdb0ed6f6628c8ad40250119ccb84a2",
@@ -14,23 +14,23 @@
   },
   "runtime": {
     "project_root": "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901",
-    "project_commit": "672b16329268829c9f06c13b2bc6d74b0f8a4fe7",
+    "project_commit": "535f84658564bdab00b10449282faccd4e4162c4",
     "project_dirty": true,
-    "project_dirty_diff_sha256": "d771c94f3b0f3f4a107b09160b8968af360ee80a4e9c6fab859cb3d3f325562f",
+    "project_dirty_diff_sha256": "e884ee0453a71ed50175fd17076d72587a1023c1605ebeceb6ef8d6feb280703",
     "harness_lock_sha256": null
   },
   "bundle": {
     "path": "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",
-    "sha256": "283a89c5b81fe341a7e23dfd83a03a911541a9af2225d436f76aa7a73a04bec8",
-    "content_sha256": "283a89c5b81fe341a7e23dfd83a03a911541a9af2225d436f76aa7a73a04bec8",
-    "manifest_sha256": "700eb038dc5fe660ee4fba786dcd321b5761f9c939ca6305582748bf32afede6",
-    "manifest_identity_sha256": "700eb038dc5fe660ee4fba786dcd321b5761f9c939ca6305582748bf32afede6"
+    "sha256": "f544669eae0a42f6ecd8ffbc0f2c3ff61f506241e6756006984a5d2d2e878d6b",
+    "content_sha256": "f544669eae0a42f6ecd8ffbc0f2c3ff61f506241e6756006984a5d2d2e878d6b",
+    "manifest_sha256": "fbcda7c7e05310169d20f8e155cc4e228383e11d35e72e290cb1df68d8112776",
+    "manifest_identity_sha256": "fbcda7c7e05310169d20f8e155cc4e228383e11d35e72e290cb1df68d8112776"
   },
   "checks": [
     {
       "id": "runtime-skill-provenance",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/tools/harnessctl.py",
         "doctor",
         "--project",
@@ -44,7 +44,7 @@
     {
       "id": "complexity",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/validate_ssot_complexity.py",
         "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/planning-compiler.json"
       ],
@@ -55,7 +55,7 @@
     {
       "id": "render",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/render_ssot_views.py",
         "--check",
         "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
@@ -67,7 +67,7 @@
     {
       "id": "machine-program",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_program.py",
         "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
       ],
@@ -78,7 +78,7 @@
     {
       "id": "parallelism-analysis",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/analyze_ssot_parallelism.py",
         "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/.ssot/manifest.json"
       ],
@@ -89,7 +89,7 @@
     {
       "id": "structure",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_ssot_structure.py",
         "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md"
       ],
@@ -100,7 +100,7 @@
     {
       "id": "chinese-readability",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/report-to-ssot-development-paths/scripts/check_chinese_readability.py",
         "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/ssot-development-paths.md",
         "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/openproblem.md"
@@ -112,7 +112,7 @@
     {
       "id": "archive-check",
       "command": [
-        "/opt/homebrew/opt/python@3.13/bin/python3.13",
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
         "/Users/vsiyo/Desktop/Opensource_Tool/Harness_Engineering/Core/skills/ssot-obsidian-snapshot/scripts/snapshot_ssot.py",
         "--source",
         "/Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing",

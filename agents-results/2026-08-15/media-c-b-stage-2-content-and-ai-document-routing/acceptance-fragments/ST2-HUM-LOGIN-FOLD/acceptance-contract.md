@@ -14,7 +14,8 @@
 - Assumption IDs: none
 - Invalidation keys: media.stage2.product-decisions.v5, media.stage2.product-decisions.login-fold-assert-auth-layout
 - Baseline identity: ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5; docs/frontend/prototype/stage2-acceptance-execution.html
-- Human acceptance workspace: acceptance/human/ST2-HUM-LOGIN-FOLD
+- Human acceptance workspace: acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD
+- UI Change declaration: none
 
 ## User and scenario
 
@@ -70,7 +71,7 @@ Then 不滚动页面即可看到并理解登录主动作
 
 | ID | Summary | Checklist path | Required role | Blocking |
 | --- | --- | --- | --- | --- |
-| H-01 | 个人创作者能在回退态无需滚动看到登录主动作；在自动化覆盖前保留为临时人工项。 | acceptance/human/ST2-HUM-LOGIN-FOLD/checklist.md#h-01 | 产品体验验收负责人 | Yes |
+| H-01 | 个人创作者能在回退态无需滚动看到登录主动作；在自动化覆盖前保留为临时人工项。 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md#h-01 | 产品体验验收负责人 | Yes |
 
 ## Protected acceptance tests
 
@@ -83,7 +84,7 @@ Then 不滚动页面即可看到并理解登录主动作
 | Requirement | Verification | Evidence target | Mode | Blocking |
 | --- | --- | --- | --- | --- |
 | AC-01 | qa:media-login-visual-runtime | 40 验收视图的自动化映射 | Automatic | Yes |
-| H-01 | 1440x900 回退态人工观察 | acceptance/human/ST2-HUM-LOGIN-FOLD/checklist.md#h-01 | Human | Yes |
+| H-01 | 1440x900 回退态人工观察 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-LOGIN-FOLD/checklist.md#h-01 | Human | Yes |
 
 ## Exploratory testing
 

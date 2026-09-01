@@ -142,7 +142,7 @@
         "media.stage2.organization-source-scope.v5",
         "media.stage2.organization-source-scope.manual-org-scan"
       ],
-      "human_binding_path": "acceptance/human/ST2-HUM-ORG-SCAN/binding.md",
+      "human_binding_path": "acceptance/human/2026-W36/2026-09-01-ST2-HUM-ORG-SCAN/binding.md",
       "selected_run_ids": [],
       "result_hashes": []
     }

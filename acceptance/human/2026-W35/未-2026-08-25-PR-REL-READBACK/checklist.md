@@ -1,14 +1,14 @@
 # 人工验收清单：PR-REL-READBACK
 
 - 任务编号：PR-REL-READBACK
-- 人工验收绑定：acceptance/human/PR-REL-READBACK/binding.md
+- 人工验收绑定：acceptance/human/2026-W35/2026-08-25-PR-REL-READBACK/binding.md
 - 验收合同：docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-READBACK/acceptance-contract.md
 - 合同版本：1
 - 清单状态：已批准
 - 所需人工角色：生产发布验收负责人
 - 清单负责人：用户指定的生产协调验收负责人
 - 批准证据：用户提供的 2026-08-25 Production Reconciliation 基线与本任务中的“请继续”，仅批准本源代码验收片段
-- 执行结果：acceptance/human/PR-REL-READBACK/runs/<run-id>/result.md
+- 执行结果：acceptance/human/2026-W35/2026-08-25-PR-REL-READBACK/runs/<run-id>/result.md
 
 本清单只判断产品含义、理解成本和证据边界；稳定错误码、字段校验、路由状态和脱敏规则由自动化验收负责。本清单不要求访问生产主机，不要求发送请求，也不把本地 fixture 或红证据当作生产通过证明。
 
@@ -23,7 +23,7 @@
   3. 在不查看实现代码的情况下，口头说明何时可以判定“读回通过”，何时必须阻塞发布。
 - 预期观察：摘要明确标识两类路由表面；不会把 direct-port 的前缀路径 404 自动解释为 public-route 失败，也不会把单个成功探针扩大为整次发布通过；人工能够指出任一阻塞项。
 - 是否阻塞发布：是
-- 结果记录规则：将签署后的观察、理解分歧和结论写入新的 `acceptance/human/PR-REL-READBACK/runs/<run-id>/result.md`；不得修改本清单来记录执行结果。
+- 结果记录规则：将签署后的观察、理解分歧和结论写入新的 `acceptance/human/2026-W35/2026-08-25-PR-REL-READBACK/runs/<run-id>/result.md`；不得修改本清单来记录执行结果。
 
 ## H-02
 
@@ -36,4 +36,4 @@
   3. 判断文档是否明确写出本地红证据、fixture 证据和生产证明之间的边界。
 - 预期观察：摘要只显示稳定代码和安全的检查标识；不存在真实或合成敏感值的回显，不存在完整含密 argv；材料明确说明本次工作没有生产验收证明，也没有运行时变更。
 - 是否阻塞发布：是
-- 结果记录规则：将签署后的观察、发现和结论写入新的 `acceptance/human/PR-REL-READBACK/runs/<run-id>/result.md`；不得修改本清单来记录执行结果。
+- 结果记录规则：将签署后的观察、发现和结论写入新的 `acceptance/human/2026-W35/2026-08-25-PR-REL-READBACK/runs/<run-id>/result.md`；不得修改本清单来记录执行结果。

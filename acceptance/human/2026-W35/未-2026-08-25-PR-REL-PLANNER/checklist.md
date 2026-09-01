@@ -1,14 +1,14 @@
 # 人工验收清单：PR-REL-PLANNER
 
 - 任务编号：PR-REL-PLANNER
-- 人工验收绑定：acceptance/human/PR-REL-PLANNER/binding.md
+- 人工验收绑定：acceptance/human/2026-W35/2026-08-25-PR-REL-PLANNER/binding.md
 - 验收合同：docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-PLANNER/acceptance-contract.md
 - 合同版本：1
 - 清单状态：已批准
 - 所需人工角色：生产协调负责人
 - 清单负责人：用户授权的 2026-08-25 Production Reconciliation 负责人
 - 批准证据：用户提供的 `BASELINE=59e2adfd34853b6929d9fa69e69585806ac9c83a`、`TASK_SOURCE_SHA256=a639ea7ae4b95fe6b2689fcbb5357d3851bd83a9e70f31d36b18bcad4fbb62a` 与后续“请继续”授权；该证据仅批准 source-only 验收设计，不批准产品、部署、发布或生产接受。
-- 执行结果：acceptance/human/PR-REL-PLANNER/runs/<run-id>/result.md
+- 执行结果：acceptance/human/2026-W35/2026-08-25-PR-REL-PLANNER/runs/<run-id>/result.md
 
 本清单只判断边界理解、计划可读性和后续交接质量，不重复自动化测试已经负责的 SHA、路径、manifest、指针 CAS、回滚兼容、规范化 JSON、幂等或无外部动作断言。人工结论不能覆盖机器门禁，也不能把 source-only 设计或红证据解释为部署、发布或生产接受。
 
@@ -23,7 +23,7 @@
   3. 判断合同、中文清单和结构化返回是否明确写出不能宣称部署、release 或 production acceptance。
 - 预期观察：人员能准确指出本任务只锁定纯 dry-run planner 的输入、输出、失败边界和保护测试；能指出部署、服务、指针、Nginx、数据库、HTTP、Feishu、真实回读、激活、回滚和人工发布批准均未被本任务证明；不会把红证据当作生产绿证据。
 - 是否阻塞发布：否；本项只记录后续发布使用前的边界理解，不阻塞 source-only 设计交付。
-- 结果记录规则：将人工说明、观察、结论和签名身份写入新的 `acceptance/human/PR-REL-PLANNER/runs/<run-id>/result.md`；不得修改本清单来记录某次执行结果。
+- 结果记录规则：将人工说明、观察、结论和签名身份写入新的 `acceptance/human/2026-W35/2026-08-25-PR-REL-PLANNER/runs/<run-id>/result.md`；不得修改本清单来记录某次执行结果。
 
 ## H-02
 
@@ -36,7 +36,7 @@
   3. 说明为什么输出中的 planned-only、空 external_actions 和无命令字段不能作为执行回执。
 - 预期观察：人员能完整复述顺序，能识别 stale pointer、缺失 previous release、rollback 不兼容和 identity collision 是阻断条件，能说明任何服务、指针、HTTP 或数据库动作都需要另行授权和独立证据。
 - 是否阻塞发布：否；本项是交接可读性记录，不是生产批准。
-- 结果记录规则：将人工说明、观察、结论和签名身份写入新的 `acceptance/human/PR-REL-PLANNER/runs/<run-id>/result.md`；不得修改本清单来记录某次执行结果。
+- 结果记录规则：将人工说明、观察、结论和签名身份写入新的 `acceptance/human/2026-W35/2026-08-25-PR-REL-PLANNER/runs/<run-id>/result.md`；不得修改本清单来记录某次执行结果。
 
 ## H-03
 
@@ -49,4 +49,4 @@
   3. 说明修改 release ID、path policy、manifest compatibility、CAS、rollback、redaction 或外部动作边界时需要新的验收决定。
 - 预期观察：人员能准确识别 `openclaw_app/services/production_reconciliation_planner.py`、`openclaw-tag-router/scripts/plan_production_reconciliation.py`、`openclaw-tag-router/tests/test_production_reconciliation_planner.py` 和证据目录；能说明 source-only contract 不等于实现完成、部署完成或 release acceptance；能指出保护测试不得修改、删除、跳过或削弱。
 - 是否阻塞发布：否；本项只为后续实现和发布评审提供清晰交接，不阻塞 source-only 设计交付。
-- 结果记录规则：将人工说明、观察、结论和签名身份写入新的 `acceptance/human/PR-REL-PLANNER/runs/<run-id>/result.md`；不得修改本清单来记录某次执行结果。
+- 结果记录规则：将人工说明、观察、结论和签名身份写入新的 `acceptance/human/2026-W35/2026-08-25-PR-REL-PLANNER/runs/<run-id>/result.md`；不得修改本清单来记录某次执行结果。

@@ -14,7 +14,8 @@
 - Assumption IDs: none
 - Invalidation keys: pr-rel-manifest.contract, production-reconciliation-20260825.source-shas, production-reconciliation-20260825.deployment-gate, production-release-manifest-v1
 - Baseline identity: branch `codex/pr-rel-manifest-design`, commit `59e2adfd34853b6929d9fa69e69585806ac9c83a`, parent source authority GitHub main `5f06780569568ccc3197f0ab16aad74bdf9d1c6f`
-- Human acceptance workspace: acceptance/human/PR-REL-MANIFEST
+- Human acceptance workspace: acceptance/human/2026-W35/2026-08-25-PR-REL-MANIFEST
+- UI Change declaration: none
 
 ## User and scenario
 
@@ -253,8 +254,8 @@ manifest assertions.
 
 | ID | Summary | Checklist path | Required role | Blocking |
 | --- | --- | --- | --- | --- |
-| H-01 | The source-only boundary and remaining release blockers are understandable to an operator. | acceptance/human/PR-REL-MANIFEST/checklist.md#h-01 | Production reconciliation owner | No |
-| H-02 | The future implementation scope and handoff evidence are clear without inferring extra deployment authority. | acceptance/human/PR-REL-MANIFEST/checklist.md#h-02 | Production reconciliation owner | No |
+| H-01 | The source-only boundary and remaining release blockers are understandable to an operator. | acceptance/human/2026-W35/2026-08-25-PR-REL-MANIFEST/checklist.md#h-01 | Production reconciliation owner | No |
+| H-02 | The future implementation scope and handoff evidence are clear without inferring extra deployment authority. | acceptance/human/2026-W35/2026-08-25-PR-REL-MANIFEST/checklist.md#h-02 | Production reconciliation owner | No |
 
 ## Protected acceptance tests
 
@@ -287,8 +288,8 @@ manifest assertions.
 | AC-19 | Protected error-code and secret-output tests | openclaw-tag-router/tests/test_production_release_manifest.py | Automatic | Yes |
 | AC-20 | Red-proof run under the fragment acceptance tree | docs/production-reconciliation/20260825/acceptance-fragments/PR-REL-MANIFEST/acceptance/machine/unit/runs/<run-id>/result.md | Automatic | Yes |
 | AC-21 | Contract, reserved-scope declaration, clean-tree check, and user return | acceptance-contract.md and structured return | Automatic | Yes |
-| H-01 | Project-level Chinese human checklist | acceptance/human/PR-REL-MANIFEST/checklist.md#h-01 | Human | No |
-| H-02 | Project-level Chinese human checklist | acceptance/human/PR-REL-MANIFEST/checklist.md#h-02 | Human | No |
+| H-01 | Project-level Chinese human checklist | acceptance/human/2026-W35/2026-08-25-PR-REL-MANIFEST/checklist.md#h-01 | Human | No |
+| H-02 | Project-level Chinese human checklist | acceptance/human/2026-W35/2026-08-25-PR-REL-MANIFEST/checklist.md#h-02 | Human | No |
 
 ## Exploratory testing
 

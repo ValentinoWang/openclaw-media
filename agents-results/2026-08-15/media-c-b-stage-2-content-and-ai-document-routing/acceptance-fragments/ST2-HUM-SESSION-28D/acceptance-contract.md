@@ -14,7 +14,8 @@
 - Assumption IDs: none
 - Invalidation keys: media.stage2.external-system-acceptance.v5, media.stage2.external-system-acceptance.session-28d-readback
 - Baseline identity: ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5; docs/frontend/prototype/stage2-acceptance-execution.html
-- Human acceptance workspace: acceptance/human/ST2-HUM-SESSION-28D
+- Human acceptance workspace: acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D
+- UI Change declaration: none
 
 ## User and scenario
 
@@ -70,7 +71,7 @@ Then 产品无需再次登录，并可由授权读回确认 28 天会话持续�
 
 | ID | Summary | Checklist path | Required role | Blocking |
 | --- | --- | --- | --- | --- |
-| H-01 | 真实部署、真实时钟与真实浏览器会话能够共同证明 28 天持续性。 | acceptance/human/ST2-HUM-SESSION-28D/checklist.md#h-01 | 运行时验收负责人 | Yes |
+| H-01 | 真实部署、真实时钟与真实浏览器会话能够共同证明 28 天持续性。 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/checklist.md#h-01 | 运行时验收负责人 | Yes |
 
 ## Protected acceptance tests
 
@@ -83,7 +84,7 @@ Then 产品无需再次登录，并可由授权读回确认 28 天会话持续�
 | Requirement | Verification | Evidence target | Mode | Blocking |
 | --- | --- | --- | --- |
 | AC-01 | 既有会话配置与回归测试 | 40 验收视图的自动化映射 | Automatic | Yes |
-| H-01 | 跨日真实部署读回 | acceptance/human/ST2-HUM-SESSION-28D/checklist.md#h-01 | Human | Yes |
+| H-01 | 跨日真实部署读回 | acceptance/human/2026-W36/2026-09-01-ST2-HUM-SESSION-28D/checklist.md#h-01 | Human | Yes |
 
 ## Exploratory testing
 
