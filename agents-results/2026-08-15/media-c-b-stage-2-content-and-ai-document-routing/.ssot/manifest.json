@@ -89,19 +89,19 @@
     {
       "view_id": "main",
       "source": "view-sources/00-main.md",
-      "source_sha256": "17fead47bbad7c22175220cd974500c1ca09b2209fbe912c230f7d2022c2b614",
+      "source_sha256": "dd40c432e982d50453971aeec4a26140b3ef6e7e9c10d1e507aa9c1632feb8be",
       "output": "../ssot-development-paths.md"
     },
     {
       "view_id": "dependency-topology",
       "source": "view-sources/10-topology.md",
-      "source_sha256": "4726df09c58a248e7f6bb998991554817592ea67988025f61d5460d95f783eb6",
+      "source_sha256": "b702593c06ca0450604054a368027046fbed081b3af5117384b66e43b7f57658",
       "output": "../generated-views/10-dependency-topology.md"
     },
     {
       "view_id": "execution-governance",
       "source": "view-sources/20-execution.md",
-      "source_sha256": "4b96dd38248d1d5063a9e832903cf1c60890a14d0946aaecea4a25d2d1235881",
+      "source_sha256": "502d4c3cb4ec94e6bfcdb4cbc6ab1e3b5ee555208ecdd70e64ddd044b0845468",
       "output": "../generated-views/20-execution-governance.md"
     },
     {
@@ -113,7 +113,7 @@
     {
       "view_id": "implementation-progress",
       "source": "view-sources/40-progress.md",
-      "source_sha256": "bb0cb3b945a33b8c26e10ae0d9b89f2bcd9b2ef9196a79047b9e0691bf2383aa",
+      "source_sha256": "6703411ca16c9db091b03f81629c247407663b517e5a99808791950a476f6375",
       "output": "../implementation-progress.md"
     },
     {
@@ -129,8 +129,8 @@
   "conflicts_dir": "conflicts",
   "validation_report": {
     "path": "validation-report.json",
-    "sha256": "e357cd96d8b603529f2d0c680d9d2c55cffd0eef1696b33ea494932982407dbd",
-    "manifest_identity_sha256": "26370e08ca42c2fc03edc387876156359689ee7e7ed5429a1458649102131bcf",
-    "bundle_content_sha256": "ad66b73914206c2dc24acd6f056d023d6128281ceb87509c26061878384b8f30"
+    "sha256": "4072598a06c4fa16d266a9053693a1013e7d951bf85ec13adde986b4a8404205",
+    "manifest_identity_sha256": "700eb038dc5fe660ee4fba786dcd321b5761f9c939ca6305582748bf32afede6",
+    "bundle_content_sha256": "283a89c5b81fe341a7e23dfd83a03a911541a9af2225d436f76aa7a73a04bec8"
   }
 }

@@ -111,7 +111,7 @@
     },
     "approval_authority": "user",
     "approval_evidence": "v4 accepted self-hosted fonts, Chinese subsets, and weight/tracking constraints. v5 supersedes the session-envelope ban after source verification: routeGrants is a fail-closed drift detector, entry-state is a pre-login probe, and illegal-route behavior is split between navigation convergence and data/action refusal.",
-    "approved_at": "2026-09-01T14:20:00+08:00",
+    "approved_at": "2026-09-01T15:20:00+08:00",
     "supersedes": {
       "version": 4,
       "retired_invariant": "session_envelope_boundary v4 forbade routeGrants in the session envelope and put page authorization in entry-state",

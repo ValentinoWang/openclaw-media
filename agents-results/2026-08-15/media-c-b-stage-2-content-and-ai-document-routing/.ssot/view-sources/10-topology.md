@@ -36,7 +36,7 @@
 | Revision | Deviation level | Reason | Changed versions | Affected nodes | Invalidated acceptance/evidence | Nodes to rerun | Approving authority | Timestamp |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 7 | L2 | 接受 studioOrdinaryRoutes + studioTrackRoutes 两组机器路由全量向个人人格开放，并冻结个人会话、租户、所有者作用域与组织能力隔离边界 | PLAN_VERSION 5; DAG_VERSION 5; INTERFACE_FREEZE_VERSION 5; NODE_CONTRACT_VERSION 5; PRODUCT_DECISION_VERSION 4 | A/A1/K/F1/F2/F3/B-S5/C1-C8/O1-O6/S/C/DA/DB/DC | 旧候选分支与测试数量引用；机器源进度视图漂移；会话授权与视觉资源边界待补充 | 重建全部机器分片、执行合同、规划编译记录和生成视图并复验；保留正式节点门禁和普通 IA 产品问题 | main orchestrator under user-requested cross-stage synchronization | 2026-08-30 |
-| 8 | L2 | 依据已核验源码裁决 routeGrants 保留为会话内漂移检测，登录入口状态保持预登录探针，并登记历史执行、交互基线与人工验收工作区 | PRODUCT_DECISION_VERSION 5；PLAN/DAG/INTERFACE_FREEZE/NODE_CONTRACT 版本轴保持 5 | K/B/S1/T1/C6/O1/O5/DB/DA/DC | 第 4 版会话载体与入口授权表述失效；历史执行仅绑定既有源码提交，不能外推到当前 HEAD | 重建全部机器分片、执行合同、规划编译记录和生成视图；B 重签会话 v3，收敛路由清单生成源并补齐登录探针 OpenAPI/客户端类型 | user-approved K v5 adjudication | 2026-09-01T14:20:00+08:00 |
+| 8 | L2 | 依据已核验源码裁决 routeGrants 保留为会话内漂移检测，登录入口状态保持预登录探针，并登记历史执行、交互基线与人工验收工作区 | PRODUCT_DECISION_VERSION 5；PLAN/DAG/INTERFACE_FREEZE/NODE_CONTRACT 版本轴保持 5 | K/B/S1/T1/C6/O1/O5/DB/DA/DC | 第 4 版会话载体与入口授权表述失效；历史执行仅绑定既有源码提交，不能外推到当前 HEAD | 重建全部机器分片、执行合同、规划编译记录和生成视图；B 重签会话 v3，收敛路由清单生成源并补齐登录探针 OpenAPI/客户端类型 | user-approved K v5 adjudication | 2026-09-01T15:20:00+08:00 |
 
 ## 不确定性路由
 

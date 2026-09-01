@@ -54,8 +54,33 @@ def artifact_identity(node_id: str) -> str:
 
 BUNDLE = Path(__file__).resolve().parent
 PROJECT_ROOT = BUNDLE.parents[2]
-SOURCE_ROOT = PROJECT_ROOT.parents[1]
+# Stage-1 is part of this repository in the current checkout.  Keep a
+# compatibility fallback for older archives that stored the upstream bundle
+# beside the project root, but prefer the project-owned authority whenever it
+# exists so generation works from any clone/worktree location.  The canonical
+# desktop path is retained when available so generated provenance remains
+# stable after a worktree is moved to a temporary location.
+_CANONICAL_PROJECT_ROOT = Path("/Users/vsiyo/Desktop/创业项目/自媒体创作Agent")
+_SOURCE_ROOT_CANDIDATES = (
+    _CANONICAL_PROJECT_ROOT,
+    PROJECT_ROOT,
+    PROJECT_ROOT.parents[1],
+)
+SOURCE_ROOT = next(
+    (
+        candidate
+        for candidate in _SOURCE_ROOT_CANDIDATES
+        if (candidate / "agents-results").is_dir()
+    ),
+    PROJECT_ROOT,
+)
+DISPLAY_PROJECT_ROOT = (
+    _CANONICAL_PROJECT_ROOT
+    if (_CANONICAL_PROJECT_ROOT / "agents-results").is_dir()
+    else PROJECT_ROOT
+)
 REL_BUNDLE = BUNDLE.relative_to(PROJECT_ROOT).as_posix()
+DISPLAY_BUNDLE = DISPLAY_PROJECT_ROOT / REL_BUNDLE
 MACHINE = BUNDLE / ".ssot"
 NODES_DIR = MACHINE / "nodes"
 EDGES_DIR = MACHINE / "edges"
@@ -70,9 +95,9 @@ PRIMARY_WRAPPER_PATHS = {
     "lw-terra": "/Users/vsiyo/.codex/workers/run-lw-terra.sh",
 }
 L3_WRAPPER = "/Users/vsiyo/.codex/workers/run-l3.sh"
-PROJECT_ROOT_TEXT = str(PROJECT_ROOT)
+PROJECT_ROOT_TEXT = str(DISPLAY_PROJECT_ROOT)
 CODEX_EXEC = (
-    f"codex exec -C '{PROJECT_ROOT}' "
+    f"codex exec -C '{PROJECT_ROOT_TEXT}' "
     "--skip-git-repo-check --sandbox danger-full-access"
 )
 
@@ -121,9 +146,9 @@ HASHES = {
     "stage1_dc2": "e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448",
 }
 OBSERVED_AT = "2026-08-15T20:37:42+08:00"
-CURRENT_FACT_OBSERVED_AT = "2026-09-01T14:20:00+08:00"
-CURRENT_MAIN_SHA = "17bab0cfdc9de5116d391c94222a56bc2b84f266"
-DECISION_V5_OBSERVED_AT = "2026-09-01T14:20:00+08:00"
+CURRENT_FACT_OBSERVED_AT = "2026-09-01T15:20:00+08:00"
+CURRENT_MAIN_SHA = "672b16329268829c9f06c13b2bc6d74b0f8a4fe7"
+DECISION_V5_OBSERVED_AT = "2026-09-01T15:20:00+08:00"
 CURRENT_STAGE2_ORIGIN_COMMIT = "0228256058a1d7c0de4986a943de5c96f445ee2f"
 CURRENT_STAGE2_SERVICE_COUNT = 16
 CURRENT_STAGE2_TEST_COUNT = 19
@@ -331,8 +356,8 @@ def worker_registration(
         "merge_protocol_authority": "stage1 M1 accepted deterministic patch protocol",
         "task_argument": task,
         "return_path": f"{REL_BUNDLE}/worker-returns/{node_id}.json",
-        "prompt_path": str(BUNDLE / "prompts" / f"{node_id}.txt"),
-        "log_path": str(BUNDLE / "worker-logs" / f"{node_id}.log"),
+        "prompt_path": str(DISPLAY_BUNDLE / "prompts" / f"{node_id}.txt"),
+        "log_path": str(DISPLAY_BUNDLE / "worker-logs" / f"{node_id}.log"),
         "prompt_sha256": "capture-before-launch",
         "launch_barrier": "all wave PIDs registered before first wait",
         "prompt_cleanup": "delete after exit evidence registration",
@@ -740,14 +765,14 @@ def numeric_nodes() -> list[str]:
 
 def write_region(node_id: str) -> str:
     if node_id == "A1":
-        return str(BUNDLE / "source-notes.md")
+        return str(DISPLAY_BUNDLE / "source-notes.md")
     if node_id in {"F1", "F2", "F3"}:
-        return str(BUNDLE / "worker-returns" / f"{node_id}.json")
+        return str(DISPLAY_BUNDLE / "worker-returns" / f"{node_id}.json")
     if node_id in {"O5", "DB", "DC"}:
-        return str(BUNDLE / "evidence" / node_id)
+        return str(DISPLAY_BUNDLE / "evidence" / node_id)
     if node_id in {"C8", "O6"}:
-        return str(BUNDLE / "worker-returns" / f"{node_id}.json")
-    return str(PROJECT_ROOT / ".codex-work" / f"stage2-{node_id.lower()}")
+        return str(DISPLAY_BUNDLE / "worker-returns" / f"{node_id}.json")
+    return str(DISPLAY_PROJECT_ROOT / ".codex-work" / f"stage2-{node_id.lower()}")
 
 
 DELIVERABLES = [
@@ -1241,20 +1266,20 @@ def execution_view() -> str:
 
     guard_rows = [
         [
-            "G-DOC", "用户明确授权创建第二阶段 SSOT", str(BUNDLE),
+            "G-DOC", "用户明确授权创建第二阶段 SSOT", str(DISPLAY_BUNDLE),
             "其他 agents-results、第一阶段包、项目代码、远程系统", "none", "none", "none",
             "不得读取凭据", "十二项输入文件 SHA-256 已登记", "重跑生成器并恢复上次通过校验的视图",
             "只允许本 bundle 新增文件", "render/check/snapshot 哈希读回", "任何来源哈希或生成视图漂移",
         ],
         [
-            "G-UPSTREAM", "第一阶段 C1/C3/DC2 正式节点合同", str(BUNDLE / "worker-returns"),
+            "G-UPSTREAM", "第一阶段 C1/C3/DC2 正式节点合同", str(DISPLAY_BUNDLE / "worker-returns"),
             "第一阶段机器节点、第一阶段候选、项目源码、生产和飞书资源", "第一阶段机器源只读入口", "none",
             "none", "不读取明文凭据", "第一阶段 manifest、节点状态和候选哈希复算",
             "无修复；状态不成立时保持 BLOCKED", "仅新增零写入投影回执", "上游节点与候选身份读回",
             "发现任何上游写入、状态伪造或哈希漂移",
         ],
         [
-            "G-PHASE2", "K 第 5 版决定、第一阶段 G1 运行配置回执与 M1 汇合协议", str(PROJECT_ROOT / ".codex-work"),
+            "G-PHASE2", "K 第 5 版决定、第一阶段 G1 运行配置回执与 M1 汇合协议", str(DISPLAY_PROJECT_ROOT / ".codex-work"),
             "第一阶段候选、活动发布、其他 agents-results、未授权租户、飞书真实组织",
             "隔离数据库、隔离个人成果和节点声明的测试资源", "仅节点合同列明的实现和测试",
             "禁止跨租户迁移、复杂删除和生产切换", "秘密用引用或受控输入；不得进入 argv、日志或截图",
@@ -1282,7 +1307,7 @@ def execution_view() -> str:
             "任何强制负例失败、外部读回缺失、旧 Writer 存活或观察期告警",
         ],
         [
-            "G-ZERO", "独立终验职责分离", str(BUNDLE / "evidence" / "DC"),
+            "G-ZERO", "独立终验职责分离", str(DISPLAY_BUNDLE / "evidence" / "DC"),
             "源码、候选、数据库、远程服务、飞书资源和节点状态源", "生产和飞书只读入口", "none", "none",
             "不读取明文凭据；只用验收身份", "读取 DB 接受的证据身份", "无修复；失败返回 owning node",
             "仅新增独立证据结论", "哈希、发布、账号、租户、Binding、成果、设备和时间读回",

@@ -30,7 +30,7 @@
   "worker_transport": "deterministic-local",
   "worker_registration": {
     "executor": "outer orchestrator",
-    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent/.codex-work/mediaclaw-stylekit-publish",
+    "project_root": "/Users/vsiyo/Desktop/创业项目/自媒体创作Agent",
     "command": "python3 -m pytest -q",
     "task_argument": "对唯一候选执行静态、合同和清理验收。",
     "return_path": "agents-results/2026-08-15/media-c-b-stage-2-content-and-ai-document-routing/deterministic-receipts/DA.json",
@@ -42,7 +42,7 @@
   "node_role": "acceptance-gate",
   "execution_actor": "orchestrator",
   "execution_contract_ref": "DA.json",
-  "execution_contract_sha256": "d55a38369d7c8d2d6308b3291ea3d0d8a8ad51ed4ee3ba241ce3fb0285be8c06",
+  "execution_contract_sha256": "2db094566373f9155168818a7ead149e17a5bcc1f70dc3b6e31fee0e431a8ed4",
   "side_effect_class": "none",
   "candidate_identity_policy": "must-match",
   "deliverable_ids": [],
