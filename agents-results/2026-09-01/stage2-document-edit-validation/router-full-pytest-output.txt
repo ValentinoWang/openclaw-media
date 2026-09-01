@@ -1,0 +1,1685 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/openclaw-tag-router
+collected 1753 items
+
+tests/test_account_auth.py ....ssssssss                                  [  0%]
+tests/test_account_contract.py ....                                      [  0%]
+tests/test_account_registration.py sssssssss                             [  1%]
+tests/test_account_registration_http_postgres.py ss                      [  1%]
+tests/test_account_repository.py ...                                     [  1%]
+tests/test_activity_daily_llm.py ................................        [  3%]
+tests/test_activity_daily_structure.py .                                 [  3%]
+tests/test_admin_platform_cookies.py ..                                  [  3%]
+tests/test_app_guidance_continuation.py ...........                      [  4%]
+tests/test_audit_reason_header.py .............                          [  5%]
+tests/test_auth_entry_state.py ........                                  [  5%]
+tests/test_avatar_cookie_contract.py ......                              [  5%]
+tests/test_backfill_asset_thumbnails.py ...                              [  6%]
+tests/test_backfill_creator_profile_avatars.py ....                      [  6%]
+tests/test_backfill_owned_accounts_from_explicit_creator_profiles.py ... [  6%]
+.                                                                        [  6%]
+tests/test_bridge.py ..........................                          [  7%]
+tests/test_business_vlog_reply.py ...                                    [  8%]
+tests/test_candidate_topic_migration.py ........                         [  8%]
+tests/test_capability_matcher.py ..................                      [  9%]
+tests/test_capability_registry.py ........................               [ 11%]
+tests/test_check_openclaw_bot_center_release_process.py .....            [ 11%]
+tests/test_cleanup_creation_runs.py ...                                  [ 11%]
+tests/test_cloud_media_task_receiver.py ....                             [ 11%]
+tests/test_codex_maintenance_worker.py ................                  [ 12%]
+tests/test_commercial_delivery.py .............                          [ 13%]
+tests/test_commercial_delivery_reply.py ..                               [ 13%]
+tests/test_content_flow_client.py ...................................... [ 15%]
+....................................................                     [ 18%]
+tests/test_content_os_bridge_presentation.py ......                      [ 18%]
+tests/test_content_os_feishu_project_board_client.py ...                 [ 19%]
+tests/test_content_os_v2.py ....................                         [ 20%]
+tests/test_creation_feishu_writer.py .                                   [ 20%]
+tests/test_creator_profiles.py ....................                      [ 21%]
+tests/test_csrf_derivation_invariant.py ...                              [ 21%]
+tests/test_d2_document_projection_source_identity.py ..F                 [ 21%]
+tests/test_daily_journal_scheduler.py ....                               [ 22%]
+tests/test_daily_obsidian_checklist.py ...........                       [ 22%]
+tests/test_daily_todo_checklist_sync.py ...                              [ 22%]
+tests/test_deepmath_approval_clock_contract.py ..                        [ 22%]
+tests/test_deepmath_approval_core.py ................                    [ 23%]
+tests/test_deepmath_ceo_thinking_schema.py ......                        [ 24%]
+tests/test_deepmath_people_recommendation.py .....................       [ 25%]
+tests/test_deepmath_people_runtime.py ..                                 [ 25%]
+tests/test_deepmath_resources.py ..............                          [ 26%]
+tests/test_deepmath_tasks_executor.py .........                          [ 26%]
+tests/test_deepmath_team_capability_schema.py .......                    [ 27%]
+tests/test_deepmath_thinking_intake.py ........                          [ 27%]
+tests/test_deletion.py ...............                                   [ 28%]
+tests/test_deletion_phase2_adapters.py .................                 [ 29%]
+tests/test_development_traceability.py .                                 [ 29%]
+tests/test_device_job_r1.py .......................                      [ 30%]
+tests/test_docs_sync_rendering.py ..                                     [ 30%]
+tests/test_document_edit_contract.py .................                   [ 31%]
+tests/test_document_edit_executor.py ......                              [ 32%]
+tests/test_document_resources.py ..                                      [ 32%]
+tests/test_document_tools.py .....................................F...   [ 34%]
+tests/test_feishu_attachment_preview.py ...                              [ 34%]
+tests/test_feishu_docx_renderer.py ...............                       [ 35%]
+tests/test_guidance_plan.py .....                                        [ 36%]
+tests/test_hotlist_memory_bridge.py ..                                   [ 36%]
+tests/test_http_api.py .........................................         [ 38%]
+tests/test_idempotency_key_policies.py ........                          [ 38%]
+tests/test_inspiration_weekly_archive.py ...                             [ 39%]
+tests/test_knowledge_delegate.py .......                                 [ 39%]
+tests/test_lark_base_projection.py ............FFFFFFFFFFFFF............ [ 41%]
+                                                                         [ 41%]
+tests/test_lark_document_gateway.py .............                        [ 42%]
+tests/test_lark_resource_hydration.py ......FFF...                       [ 43%]
+tests/test_lark_resource_sync.py ...                                     [ 43%]
+tests/test_lark_todo_projection.py ..                                    [ 43%]
+tests/test_llm_required_routes.py .........                              [ 43%]
+tests/test_media_archive_r2.py ...............                           [ 44%]
+tests/test_media_asset_route_authority_guard.py ....                     [ 44%]
+tests/test_media_business_admin_access.py .........                      [ 45%]
+tests/test_media_business_admin_billing.py ........                      [ 45%]
+tests/test_media_business_admin_overview.py ...........                  [ 46%]
+tests/test_media_business_admin_tenants.py ......                        [ 46%]
+tests/test_media_business_admin_upstreams.py .......                     [ 47%]
+tests/test_media_business_assets.py ..................                   [ 48%]
+tests/test_media_business_cursor_rekey.py ...............                [ 49%]
+tests/test_media_business_decisions.py ............                      [ 49%]
+tests/test_media_business_documents.py ............                      [ 50%]
+tests/test_media_business_foundation.py ...........................      [ 52%]
+tests/test_media_business_http.py ..............                       [ 52%]
+tests/test_media_business_invites.py ........                            [ 53%]
+tests/test_media_business_overview.py ......................             [ 54%]
+tests/test_media_business_publishing.py ...........                      [ 55%]
+tests/test_media_business_reviews.py .....................               [ 56%]
+tests/test_media_business_runs.py ......................                 [ 57%]
+tests/test_media_business_sync_batches.py ...                            [ 57%]
+tests/test_media_business_track_detail_route.py ....                     [ 58%]
+tests/test_media_business_tracks.py .........................            [ 59%]
+tests/test_media_business_usage_billing.py ........                      [ 59%]
+tests/test_media_creation_inspiration.py .FF                             [ 60%]
+tests/test_media_document_workspace_authority_migration.py .s            [ 60%]
+tests/test_media_feishu_login.py ............                            [ 60%]
+tests/test_media_growth_v2_registry.py .........................         [ 62%]
+tests/test_media_lark_sync.py ...                                        [ 62%]
+tests/test_media_mirror_isolation_source_gate.py ....                    [ 62%]
+tests/test_media_resource_url_trust_contract.py ............             [ 63%]
+tests/test_media_run_metadata_contract.py ......                         [ 63%]
+tests/test_media_subprocess_watchdog.py ...                              [ 63%]
+tests/test_media_web_business_pages_contract.py ...............          [ 64%]
+tests/test_media_web_task_compat.py .............                        [ 65%]
+tests/test_media_web_tasks.py ......................F................... [ 67%]
+.........FFF..F..................................FF..                    [ 70%]
+tests/test_message_result_store.py ....                                  [ 71%]
+tests/test_p14b_http_session_identity.py ..                              [ 71%]
+tests/test_p1_content_os_bridge_presentation.py F...                     [ 71%]
+tests/test_p2_audit_guards.py ....                                       [ 71%]
+tests/test_postgres_migration_runner.py ...............                  [ 72%]
+tests/test_production_reconciliation_contract_boundary.py .              [ 72%]
+tests/test_production_reconciliation_planner.py ........................ [ 74%]
+....................                                                     [ 75%]
+tests/test_production_reconciliation_regressions.py ...                  [ 75%]
+tests/test_production_release_manifest.py .............................. [ 77%]
+......                                                                   [ 77%]
+tests/test_reconcile_media_vault_assets.py ........                      [ 77%]
+tests/test_reminder_service.py ..                                        [ 77%]
+tests/test_resource_access.py ...                                        [ 78%]
+tests/test_resource_owner_registry.py .....................              [ 79%]
+tests/test_retail_admin_postgres.py ssss                                 [ 79%]
+tests/test_retail_batch_cli.py .                                         [ 79%]
+tests/test_retail_billing_postgres.py ssssss                             [ 79%]
+tests/test_retail_fulfillment_postgres.py sssssss                        [ 80%]
+tests/test_retail_plan_catalog_postgres.py sss                           [ 80%]
+tests/test_router_pytest_environment.py ..                               [ 80%]
+tests/test_selfmedia_cognition.py ..                                     [ 80%]
+tests/test_social_archive_cr18.py ..                                     [ 80%]
+tests/test_social_archive_presentation.py .                              [ 80%]
+tests/test_social_archive_reply_summary.py ..                            [ 81%]
+tests/test_source_asset_projection.py ............                       [ 81%]
+tests/test_stage2_artifact_state.py .........                            [ 82%]
+tests/test_stage2_candidate_assembly.py .............                    [ 83%]
+tests/test_stage2_context.py ...................                         [ 84%]
+tests/test_stage2_contract_validator.py .............                    [ 84%]
+tests/test_stage2_external_document.py ..........                        [ 85%]
+tests/test_stage2_feishu_hardening.py ......F...                         [ 85%]
+tests/test_stage2_gateway.py ......                                      [ 86%]
+tests/test_stage2_http_status_parity.py .......                          [ 86%]
+tests/test_stage2_main_integration.py .....                              [ 86%]
+tests/test_stage2_organization_pipeline.py .........                     [ 87%]
+tests/test_stage2_personal_pipeline.py ...............                   [ 88%]
+tests/test_stage2_pipeline_integration.py ..                             [ 88%]
+tests/test_stage2_production.py ..........                               [ 89%]
+tests/test_stage2_release_gate.py ......                                 [ 89%]
+tests/test_stage2_release_readback.py .............                      [ 90%]
+tests/test_stage2_runtime.py ..........                                  [ 90%]
+tests/test_stage2_runtime_hardening.py ..                                [ 90%]
+tests/test_stage2_server_context.py ...............                      [ 91%]
+tests/test_stage2_writer_contract.py ......                              [ 92%]
+tests/test_stage2_writer_router.py ............                          [ 92%]
+tests/test_stock_usage_reconciliation.py ..                              [ 92%]
+tests/test_sync_lark_base_projection_script.py ..                        [ 92%]
+tests/test_system_routes.py ...................                          [ 94%]
+tests/test_tag_router_style_polish.py ....                               [ 94%]
+tests/test_tenant_model_transport.py ........                            [ 94%]
+tests/test_tenant_owned_resources.py .....                               [ 94%]
+tests/test_tenant_projection_http.py ......                              [ 95%]
+tests/test_tenant_projection_service.py .......                          [ 95%]
+tests/test_tenant_projection_vault.py ....                               [ 95%]
+tests/test_tenant_shared_balance_migration_tool.py ......                [ 96%]
+tests/test_track_router.py .....                                         [ 96%]
+tests/test_transcription_attachment_queue.py ..                          [ 96%]
+tests/test_transcription_capability_contract.py ...                      [ 96%]
+tests/test_transcription_text.py .........                               [ 97%]
+tests/test_transcription_worker.py ......                                [ 97%]
+tests/test_upstream_gateway_credentials.py ....                          [ 97%]
+tests/test_wardrobe_router.py ............                               [ 98%]
+tests/test_wave7_crf11_material_parsing.py ....                          [ 98%]
+tests/test_wave7_security_capability_visibility.py .                     [ 98%]
+tests/test_wave7_social_archive_ct_a8.py ..F                             [ 99%]
+tests/test_wave8_config_portability.py ...                               [ 99%]
+tests/test_wave8b_subprocess_group.py ....                               [ 99%]
+tests/test_weekly_self_model.py ......                                   [ 99%]
+tests/test_work_acceptance_writeback.py ..                               [ 99%]
+tests/test_workspace_resolution.py .                                     [100%]
+
+=================================== FAILURES ===================================
+_______ test_source_startup_and_migration_keep_document_projection_owned _______
+
+    def test_source_startup_and_migration_keep_document_projection_owned() -> None:
+        root = Path(__file__).resolve().parents[1]
+        startup = (root / "openclaw_app/server_cli.py").read_text(encoding="utf-8")
+        http_adapter = (root / "openclaw_app/adapters/http_api.py").read_text(encoding="utf-8")
+        migration = (root / "openclaw_app/migrations/027_media_document_runtime.sql").read_text(
+            encoding="utf-8"
+        )
+
+        assert "build_production_lark_document_gateway" in startup
+>       assert "DocumentsService(account_database.connect, lark_gateway=lark_gateway)" in startup
+E       assert 'DocumentsService(account_database.connect, lark_gateway=lark_gateway)' in 'from __future__ import annotations\n\nimport argparse\nimport json\nimport os\nimport threading\nfrom pathlib import ...:{args.port}", flush=True)\n    server.serve_forever()\n\n\nif __name__ == "__main__":\n    raise SystemExit(main())\n'
+
+tests/test_d2_document_projection_source_identity.py:41: AssertionError
+_ DocumentToolsTest.test_shooting_execution_backwash_failure_does_not_expose_traceback _
+
+self = <test_document_tools.DocumentToolsTest testMethod=test_shooting_execution_backwash_failure_does_not_expose_traceback>
+
+    def test_shooting_execution_backwash_failure_does_not_expose_traceback(self) -> None:
+        service = SafeFeishuService()
+        harness = HandleDocumentEditHarness(service)
+>       with patch(
+            "selfmedia.creation.backwash.handle_shooting_execution_backwash",
+            side_effect=RuntimeError(
+                "Traceback: CreationRun mapping failed log_id=secret "
+                "troubleshooter=https://example.test"
+            ),
+        ), patch(
+            "openclaw_app.router.document_tools.current_session_tenant_id",
+            return_value="101",
+        ):
+
+tests/test_document_tools.py:833:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'selfmedia.creation.backwash'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'selfmedia' has no attribute 'creation'
+
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: AttributeError
+_ test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e-https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e] _
+
+value = 'https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e'
+expected = 'https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e'
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e-https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e] _
+
+value = 'https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e'
+expected = 'https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e'
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e-None] _
+
+value = 'http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e'
+expected = None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e-None] _
+
+value = 'https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e'
+expected = None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e-None] _
+
+value = 'https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e'
+expected = None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e-None] _
+
+value = 'https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e'
+expected = None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base-None] _
+
+value = 'https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base'
+expected = None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section-None] _
+
+value = 'https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section'
+expected = None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/wiki/short-None] _
+
+value = 'https://tenant.feishu.cn/wiki/short', expected = None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra-None] _
+
+value = 'https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra'
+expected = None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e-https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e] _
+
+value = 'https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e'
+expected = 'https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e'
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_ test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e-None] _
+
+value = 'https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e'
+expected = None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+___ test_post_review_projection_only_projects_safe_document_links[None-None] ___
+
+value = None, expected = None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section", None),
+            ("https://tenant.feishu.cn/wiki/short", None),
+            ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra", None),
+            ("https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
+            ("https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e", None),
+            (None, None),
+        ],
+    )
+    def test_post_review_projection_only_projects_safe_document_links(value, expected):
+        canonical = LarkBaseProjection._canonical_data(
+            _spec("review_records"),
+            {"table_id": "reviews"},
+            {
+                "record_id": "review-record",
+                "fields": {
+                    "发布作品ID": "post_example",
+                    "复盘文档链接": value,
+                },
+            },
+        )
+
+>       assert canonical["document_url"] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'document_url'
+
+tests/test_lark_base_projection.py:422: KeyError
+_____ test_docx_payload_uses_actual_remote_block_mapping_and_read_fallback _____
+
+    def test_docx_payload_uses_actual_remote_block_mapping_and_read_fallback():
+>       payload = _docx_payload(_target(), {"root_blocks": [{"block_id": "remote-heading", "block_type": 3, "text": "小节"}, {"block_id": "remote-p", "block_type": 2, "text": "正文"}]}, "fallback")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: _docx_payload() missing 1 required keyword-only argument: 'web_base_url'
+
+tests/test_lark_resource_hydration.py:150: TypeError
+__________________ test_bitable_payload_maps_every_body_block __________________
+
+    def test_bitable_payload_maps_every_body_block():
+>       payload = _bitable_payload(_target("bitable"), [{"table_id": "tbl", "name": "任务", "records": [{"record_id": "rec", "fields": {"名称": "A"}}]}])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: _bitable_payload() missing 1 required keyword-only argument: 'web_base_url'
+
+tests/test_lark_resource_hydration.py:158: TypeError
+______________________ test_second_hydration_is_unchanged ______________________
+
+    def test_second_hydration_is_unchanged():
+        service = LarkResourceHydrationService(FakeFeishu(), FakeRepository())
+>       assert (service.hydrate("tenant").inserted, service.hydrate("tenant").unchanged) == (1, 1)
+E       assert (0, 0) == (1, 1)
+E
+E         At index 0 diff: 0 != 1
+E         Use -v to get more diff
+
+tests/test_lark_resource_hydration.py:190: AssertionError
+_ MediaBusinessHttpTests.test_media_session_matches_the_frozen_if2_response (token='user-token') _
+
+self = <test_media_business_http.MediaBusinessHttpTests testMethod=test_media_session_matches_the_frozen_if2_response>
+
+    def test_media_session_matches_the_frozen_if2_response(self) -> None:
+        # The frozen v2 session now carries the Stage-1 workspace facts the
+        # Media Web frontend schema requires (workspaceMode/editorMode/...).
+        for token, expected_user_id, expected_tenant_id, expected_role in (
+            ("user-token", USER_ID, TENANT_ID, "ordinary"),
+            ("admin-token", ADMIN_ID, ADMIN_TENANT_ID, "admin"),
+        ):
+            with self.subTest(token=token):
+                status, body = self._request(
+                    "GET", "/openclaw/media/api/session", token=token
+                )
+                self.assertEqual(status, 200, body)
+>               self.assertEqual(
+                    body,
+                    {
+                        "schemaVersion": "media_web_business_pages_v2",
+                        "revision": 1,
+                        "session": {
+                            "publicUserId": str(expected_user_id),
+                            "tenantId": str(expected_tenant_id),
+                            "workspaceMode": "personal_web",
+                            "editorMode": "web_edit",
+                            "bodyAuthority": "internal",
+                            "organizationName": None,
+                            "memberRole": "owner",
+                            "organizationConnection": "not_applicable",
+                            "installationConnection": "not_applicable",
+                            "role": expected_role,
+                            "maintainer": False,
+                            "csrfToken": f"csrf-{token}",
+                            "expiresAt": self.auth.sessions[token].expires_at.isoformat(),
+                            "schemaVersion": "media_web_business_pages_v2",
+                        },
+                    },
+                )
+E               AssertionError: {'sch[123 chars]1', 'workspaceMode': 'personal_web', 'editorMo[571 chars]v2'}} != {'sch[123 chars]1', 'tenantId': 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaa[400 chars]v2'}}
+E               Diff is 1486 characters long. Set self.maxDiff to None to see it.
+
+tests/test_media_business_http.py:291: AssertionError
+_ MediaBusinessHttpTests.test_media_session_matches_the_frozen_if2_response (token='admin-token') _
+
+self = <test_media_business_http.MediaBusinessHttpTests testMethod=test_media_session_matches_the_frozen_if2_response>
+
+    def test_media_session_matches_the_frozen_if2_response(self) -> None:
+        # The frozen v2 session now carries the Stage-1 workspace facts the
+        # Media Web frontend schema requires (workspaceMode/editorMode/...).
+        for token, expected_user_id, expected_tenant_id, expected_role in (
+            ("user-token", USER_ID, TENANT_ID, "ordinary"),
+            ("admin-token", ADMIN_ID, ADMIN_TENANT_ID, "admin"),
+        ):
+            with self.subTest(token=token):
+                status, body = self._request(
+                    "GET", "/openclaw/media/api/session", token=token
+                )
+                self.assertEqual(status, 200, body)
+>               self.assertEqual(
+                    body,
+                    {
+                        "schemaVersion": "media_web_business_pages_v2",
+                        "revision": 1,
+                        "session": {
+                            "publicUserId": str(expected_user_id),
+                            "tenantId": str(expected_tenant_id),
+                            "workspaceMode": "personal_web",
+                            "editorMode": "web_edit",
+                            "bodyAuthority": "internal",
+                            "organizationName": None,
+                            "memberRole": "owner",
+                            "organizationConnection": "not_applicable",
+                            "installationConnection": "not_applicable",
+                            "role": expected_role,
+                            "maintainer": False,
+                            "csrfToken": f"csrf-{token}",
+                            "expiresAt": self.auth.sessions[token].expires_at.isoformat(),
+                            "schemaVersion": "media_web_business_pages_v2",
+                        },
+                    },
+                )
+E               AssertionError: {'sch[123 chars]2', 'workspaceMode': 'personal_web', 'editorMo[455 chars]v2'}} != {'sch[123 chars]2', 'tenantId': 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbb[398 chars]v2'}}
+E               Diff is 1029 characters long. Set self.maxDiff to None to see it.
+
+tests/test_media_business_http.py:291: AssertionError
+_ CreationInspirationRouteTest.test_deconstruct_route_rejects_empty_success_without_landing_artifacts _
+
+self = <test_media_creation_inspiration.CreationInspirationRouteTest testMethod=test_deconstruct_route_rejects_empty_success_without_landing_artifacts>
+
+    def test_deconstruct_route_rejects_empty_success_without_landing_artifacts(self) -> None:
+        harness = CreationInspirationHarness()
+        inner = {
+            "mode": "deconstruct_only",
+            "deconstruct": {"content_summary": "只有摘要，没有落地文档"},
+        }
+        message = Message(
+            entry_tag="拆解",
+            raw_text="【拆解】https://example.com/video 重点看开头钩子",
+            body="https://example.com/video 重点看开头钩子",
+            source="feishu",
+            chat_type="private",
+            created_at=datetime(2026, 6, 28, 10, 0, 0),
+            metadata={"tenant_id": TENANT_ID},
+        )
+
+>       with patch(
+            "selfmedia.deconstruct.viral_content.src.runner.run_workflow",
+            return_value=inner,
+        ) as workflow:
+
+tests/test_media_creation_inspiration.py:82:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'selfmedia.deconstruct.viral_content.src.runner'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'selfmedia.deconstruct.viral_content.src' has no attribute 'runner'
+
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: AttributeError
+_ CreationInspirationRouteTest.test_deconstruct_route_reports_completed_only_with_doc_and_record _
+
+self = <test_media_creation_inspiration.CreationInspirationRouteTest testMethod=test_deconstruct_route_reports_completed_only_with_doc_and_record>
+
+    def test_deconstruct_route_reports_completed_only_with_doc_and_record(self) -> None:
+        harness = CreationInspirationHarness()
+        inner = {
+            "mode": "deconstruct_only",
+            "deconstruct": {
+                "content_summary": "毕业季蓝袍黄领翻拍结构",
+                "deconstruct_doc_url": "https://example.feishu.cn/wiki/deconstruct-doc",
+            },
+            "feishu_record_id": "rec_deconstruct_001",
+        }
+        message = Message(
+            entry_tag="拆解",
+            raw_text="【拆解】https://example.com/video 重点看转场",
+            body="https://example.com/video 重点看转场",
+            source="feishu",
+            chat_type="private",
+            created_at=datetime(2026, 6, 28, 10, 0, 0),
+            metadata={"tenant_id": TENANT_ID},
+        )
+
+>       with patch(
+            "selfmedia.deconstruct.viral_content.src.runner.run_workflow",
+            return_value=inner,
+        ) as workflow:
+
+tests/test_media_creation_inspiration.py:115:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'selfmedia.deconstruct.viral_content.src.runner'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'selfmedia.deconstruct.viral_content.src' has no attribute 'runner'
+
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: AttributeError
+_____ test_maintainer_catalog_and_task_authorization_share_one_tenant_gate _____
+
+tmp_path = PosixPath('/private/var/folders/w0/td0lhml95j374vr26ypgjzfh0000gn/T/pytest-of-vsiyo/pytest-8/test_maintainer_catalog_and_ta0')
+
+    def test_maintainer_catalog_and_task_authorization_share_one_tenant_gate(tmp_path: Path) -> None:
+        service = MediaWebTaskService(FakeApp(), root=tmp_path)
+        capability_id = "document_edit"
+        capability = CAPABILITY_REGISTRY.get(capability_id)
+        assert capability is not None
+        variant_id = capability.variants[0].variant_id
+        params = valid_params(capability_id, variant_id)
+        payload = request(
+            capability_id,
+            variant_id=variant_id,
+            params=params,
+            idempotency_key="idempotency_maintainer_document_edit",
+        )
+        try:
+            public_ids = {item["capabilityId"] for item in service.capability_catalog()["capabilities"]}
+            maintainer_ids = {item["capabilityId"] for item in service.capability_catalog(is_maintainer=True)["capabilities"]}
+            assert capability_id not in public_ids
+            assert capability_id in maintainer_ids
+>           assert "universal_deletion" in public_ids
+E           AssertionError: assert 'universal_deletion' in {'account_track_strategy', 'activity_archive', 'commercial_brief', 'commercial_delivery_draft', 'creation_checklist_lookup', 'creation_decision_brief', ...}
+
+tests/test_media_web_tasks.py:436: AssertionError
+________ test_deletion_preview_is_safe_and_apply_requires_confirmation _________
+
+tmp_path = PosixPath('/private/var/folders/w0/td0lhml95j374vr26ypgjzfh0000gn/T/pytest-of-vsiyo/pytest-8/test_deletion_preview_is_safe_0')
+
+    def test_deletion_preview_is_safe_and_apply_requires_confirmation(tmp_path: Path) -> None:
+        class RejectingModelGateway:
+            def __init__(self) -> None:
+                self.prepare_calls = 0
+                self.bind_calls = 0
+                self.task_call_checks = 0
+
+            def prepare(self) -> None:
+                self.prepare_calls += 1
+                raise AssertionError("local deletion must not prepare model credentials")
+
+            @contextmanager
+            def bind(self, tenant_id: str, task_id: str, request_root: str):
+                self.bind_calls += 1
+                raise AssertionError("local deletion must not bind a model transport")
+                yield
+
+            def task_calls(self, tenant_id: str, task_id: str) -> list[dict[str, object]]:
+                self.task_call_checks += 1
+                raise AssertionError("local deletion has no model calls to settle")
+
+        gateway = RejectingModelGateway()
+        preview_app = FakeApp(TaskResult(
+            ok=True,
+            status="deletion_dry_run",
+            reply="删除预览：将删除 1 条素材",
+            task_id="",
+            extra={"deletion": [{
+                "target_id": "asset_0123456789abcdef",
+                "capability_id": "source_asset",
+                "entities": [{"kind": "bitable_record", "target": "rec_1", "status": "planned"}],
+            }]},
+        ))
+        refreshes: list[str] = []
+        preview_service = MediaWebTaskService(
+            preview_app,
+            root=tmp_path / "preview",
+            projection_refresher=lambda tenant_id: refreshes.append(tenant_id),
+            tenant_model_gateway=gateway,
+        )
+        try:
+            catalog = preview_service.capability_catalog()["capabilities"]
+>           deletion = next(item for item in catalog if item["capabilityId"] == "universal_deletion")
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           StopIteration
+
+tests/test_media_web_tasks.py:794: StopIteration
+_____ test_deletion_preview_is_logically_idempotent_across_transport_keys ______
+
+tmp_path = PosixPath('/private/var/folders/w0/td0lhml95j374vr26ypgjzfh0000gn/T/pytest-of-vsiyo/pytest-8/test_deletion_preview_is_logic0')
+
+    def test_deletion_preview_is_logically_idempotent_across_transport_keys(tmp_path: Path) -> None:
+        service = MediaWebTaskService(FakeApp(), root=tmp_path, start_worker=False)
+        try:
+>           first, created = service.create_task(request(
+                "universal_deletion",
+                variant_id="preview",
+                params={"id": "asset_bbbbbbbbbbbbbbbb、asset_aaaaaaaaaaaaaaaa"},
+                idempotency_key="idempotency_delete_preview_reload_1",
+            ), tenant_id=TENANT_A)
+
+tests/test_media_web_tasks.py:844:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+openclaw_app/services/media_web_tasks.py:63: in create_task
+    return super().create_task(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <openclaw_app.services.media_web_tasks.MediaWebTaskService object at 0x10f6c7b50>
+payload = {'schemaVersion': '3', 'capabilityId': 'universal_deletion', 'variantId': 'preview', 'params': {'id': 'asset_bbbbbbbbbbbbbbbb、asset_aaaaaaaaaaaaaaaa'}, ...}
+tenant_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', is_maintainer = False
+
+    def create_task(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        tenant_id: str,
+        is_maintainer: bool = False,
+        user_public_id: str | None = None,
+        workspace_mode: str | None = None,
+        role: str | None = None,
+    ) -> tuple[dict[str, Any], bool]:
+        # The IF2 surface forwards the acting principal; task storage remains
+        # tenant-scoped, so the identity kwargs are accepted for attribution
+        # without changing the tenant-level authorization model.
+        del user_public_id, workspace_mode, role
+        tenant_id = _require_tenant_id(tenant_id)
+        expected_keys = {"schemaVersion", "capabilityId", "variantId", "params", "uploadIds", "idempotencyKey", "catalogVersion", "initiation", "confirmationReceipt"}
+        if set(payload) != expected_keys or payload.get("schemaVersion") != "3" or _contains_reserved_tenant_key(payload):
+            raise MediaWebTaskError("invalid_request", "任务请求不符合结构化契约。")
+        capability_id, variant_id = str(payload.get("capabilityId") or "").strip(), str(payload.get("variantId") or "").strip()
+        capability = self._registry.get(capability_id)
+        if capability is None or not capability.enabled or not set(capability.bots) & {"Media bot", "任意 Bot"} or capability.visibility not in ({"public", "ops", "maintainer"} if is_maintainer else {"public", "ops"}):
+>           raise MediaWebTaskError("capability_not_found", "未找到可用的 Media 能力。")
+E           openclaw_app.services.media_web_tasks_core.MediaWebTaskError: 未找到可用的 Media 能力。
+
+openclaw_app/services/media_web_tasks_core.py:646: MediaWebTaskError
+_________ test_task_reservation_is_idempotent_across_service_instances _________
+
+tmp_path = PosixPath('/private/var/folders/w0/td0lhml95j374vr26ypgjzfh0000gn/T/pytest-of-vsiyo/pytest-8/test_task_reservation_is_idemp0')
+
+    def test_task_reservation_is_idempotent_across_service_instances(tmp_path: Path) -> None:
+        first_service = MediaWebTaskService(FakeApp(), root=tmp_path, start_worker=False)
+        second_service = MediaWebTaskService(FakeApp(), root=tmp_path, start_worker=False)
+        barrier = threading.Barrier(2)
+        idempotency_key = "cross_process_reservation_0001"
+
+        def delay_second_lookup(service: MediaWebTaskService) -> None:
+            original = service._find_by_idempotency
+            calls = 0
+
+            def synchronized(tenant_id: str, key: str):
+                nonlocal calls
+                calls += 1
+                if key == idempotency_key and calls == 2:
+                    try:
+                        barrier.wait(timeout=0.25)
+                    except threading.BrokenBarrierError:
+                        pass
+                return original(tenant_id, key)
+
+            service._find_by_idempotency = synchronized  # type: ignore[method-assign]
+
+        delay_second_lookup(first_service)
+        delay_second_lookup(second_service)
+        payload = request(
+            "universal_deletion",
+            variant_id="preview",
+            params={"id": "asset_0123456789abcdef"},
+            idempotency_key=idempotency_key,
+        )
+        try:
+            with ThreadPoolExecutor(max_workers=2) as executor:
+>               results = list(executor.map(
+                    lambda service: service.create_task(payload, tenant_id=TENANT_A),
+                    (first_service, second_service),
+                ))
+
+tests/test_media_web_tasks.py:904:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/_base.py:619: in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/_base.py:317: in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/thread.py:59: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_media_web_tasks.py:905: in <lambda>
+    lambda service: service.create_task(payload, tenant_id=TENANT_A),
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+openclaw_app/services/media_web_tasks.py:63: in create_task
+    return super().create_task(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <openclaw_app.services.media_web_tasks.MediaWebTaskService object at 0x10f6c6350>
+payload = {'schemaVersion': '3', 'capabilityId': 'universal_deletion', 'variantId': 'preview', 'params': {'id': 'asset_0123456789abcdef'}, ...}
+tenant_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', is_maintainer = False
+
+    def create_task(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        tenant_id: str,
+        is_maintainer: bool = False,
+        user_public_id: str | None = None,
+        workspace_mode: str | None = None,
+        role: str | None = None,
+    ) -> tuple[dict[str, Any], bool]:
+        # The IF2 surface forwards the acting principal; task storage remains
+        # tenant-scoped, so the identity kwargs are accepted for attribution
+        # without changing the tenant-level authorization model.
+        del user_public_id, workspace_mode, role
+        tenant_id = _require_tenant_id(tenant_id)
+        expected_keys = {"schemaVersion", "capabilityId", "variantId", "params", "uploadIds", "idempotencyKey", "catalogVersion", "initiation", "confirmationReceipt"}
+        if set(payload) != expected_keys or payload.get("schemaVersion") != "3" or _contains_reserved_tenant_key(payload):
+            raise MediaWebTaskError("invalid_request", "任务请求不符合结构化契约。")
+        capability_id, variant_id = str(payload.get("capabilityId") or "").strip(), str(payload.get("variantId") or "").strip()
+        capability = self._registry.get(capability_id)
+        if capability is None or not capability.enabled or not set(capability.bots) & {"Media bot", "任意 Bot"} or capability.visibility not in ({"public", "ops", "maintainer"} if is_maintainer else {"public", "ops"}):
+>           raise MediaWebTaskError("capability_not_found", "未找到可用的 Media 能力。")
+E           openclaw_app.services.media_web_tasks_core.MediaWebTaskError: 未找到可用的 Media 能力。
+
+openclaw_app/services/media_web_tasks_core.py:646: MediaWebTaskError
+_________ test_delete_confirm_requires_and_reserves_successful_preview _________
+
+tmp_path = PosixPath('/private/var/folders/w0/td0lhml95j374vr26ypgjzfh0000gn/T/pytest-of-vsiyo/pytest-8/test_delete_confirm_requires_a0')
+
+    def test_delete_confirm_requires_and_reserves_successful_preview(tmp_path: Path) -> None:
+        service = MediaWebTaskService(FakeApp(), root=tmp_path, start_worker=False)
+        try:
+            with pytest.raises(MediaWebTaskError) as missing_preview:
+                service.create_task(request(
+                    "universal_deletion",
+                    variant_id="confirm",
+                    params={"id": "asset_0123456789abcdef", "action": "确认删除"},
+                    idempotency_key="idempotency_delete_confirm_missing",
+                ), tenant_id=TENANT_A)
+>           assert missing_preview.value.code == "deletion_preview_required"
+E           AssertionError: assert 'capability_not_found' == 'deletion_preview_required'
+E
+E             - deletion_preview_required
+E             + capability_not_found
+
+tests/test_media_web_tasks.py:977: AssertionError
+_ test_confirmation_receipt_binds_exact_preview_not_latest_or_equivalent_task __
+
+tmp_path = PosixPath('/private/var/folders/w0/td0lhml95j374vr26ypgjzfh0000gn/T/pytest-of-vsiyo/pytest-8/test_confirmation_receipt_bind0')
+
+    def test_confirmation_receipt_binds_exact_preview_not_latest_or_equivalent_task(tmp_path: Path) -> None:
+        service = MediaWebTaskService(FakeApp(), root=tmp_path, start_worker=False)
+        params = {"id": "asset_0123456789abcdef", "action": "确认删除"}
+
+        def preview(digest: str, expires_at: str = "2099-01-01T00:00:00Z") -> tuple[str, dict]:
+            return seed_confirmation_preview(
+                service,
+                capability_id="universal_deletion",
+                variant_id="preview",
+                params={"id": "asset_0123456789abcdef"},
+                kind="deletion_preview",
+                receipt_fields={
+                    "targetIds": ["asset_0123456789abcdef"],
+                    "targetCount": 1,
+                    "entityCount": 1,
+                    "planDigest": digest,
+                    "expiresAt": expires_at,
+                },
+            )
+
+        try:
+            first_id, receipt = preview("sha256:" + "a" * 64)
+            second_id, _ = preview("sha256:" + "b" * 64)
+>           created, is_new = service.create_task(
+                request("universal_deletion", variant_id="confirm", params=params, idempotency_key="receipt_confirm_first_0001", confirmation_receipt=receipt),
+                tenant_id=TENANT_A,
+            )
+
+tests/test_media_web_tasks.py:1665:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+openclaw_app/services/media_web_tasks.py:63: in create_task
+    return super().create_task(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <openclaw_app.services.media_web_tasks.MediaWebTaskService object at 0x110c48150>
+payload = {'schemaVersion': '3', 'capabilityId': 'universal_deletion', 'variantId': 'confirm', 'params': {'id': 'asset_0123456789abcdef', 'action': '确认删除'}, ...}
+tenant_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', is_maintainer = False
+
+    def create_task(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        tenant_id: str,
+        is_maintainer: bool = False,
+        user_public_id: str | None = None,
+        workspace_mode: str | None = None,
+        role: str | None = None,
+    ) -> tuple[dict[str, Any], bool]:
+        # The IF2 surface forwards the acting principal; task storage remains
+        # tenant-scoped, so the identity kwargs are accepted for attribution
+        # without changing the tenant-level authorization model.
+        del user_public_id, workspace_mode, role
+        tenant_id = _require_tenant_id(tenant_id)
+        expected_keys = {"schemaVersion", "capabilityId", "variantId", "params", "uploadIds", "idempotencyKey", "catalogVersion", "initiation", "confirmationReceipt"}
+        if set(payload) != expected_keys or payload.get("schemaVersion") != "3" or _contains_reserved_tenant_key(payload):
+            raise MediaWebTaskError("invalid_request", "任务请求不符合结构化契约。")
+        capability_id, variant_id = str(payload.get("capabilityId") or "").strip(), str(payload.get("variantId") or "").strip()
+        capability = self._registry.get(capability_id)
+        if capability is None or not capability.enabled or not set(capability.bots) & {"Media bot", "任意 Bot"} or capability.visibility not in ({"public", "ops", "maintainer"} if is_maintainer else {"public", "ops"}):
+>           raise MediaWebTaskError("capability_not_found", "未找到可用的 Media 能力。")
+E           openclaw_app.services.media_web_tasks_core.MediaWebTaskError: 未找到可用的 Media 能力。
+
+openclaw_app/services/media_web_tasks_core.py:646: MediaWebTaskError
+_____ test_expired_deletion_confirmation_can_be_rejected_but_not_approved ______
+
+tmp_path = PosixPath('/private/var/folders/w0/td0lhml95j374vr26ypgjzfh0000gn/T/pytest-of-vsiyo/pytest-8/test_expired_deletion_confirma0')
+
+    def test_expired_deletion_confirmation_can_be_rejected_but_not_approved(tmp_path: Path) -> None:
+        now = [1_000.0]
+
+        def create_confirmation(root: Path, suffix: str) -> tuple[MediaWebTaskService, dict]:
+            service = MediaWebTaskService(
+                FakeApp(),
+                root=root,
+                clock=lambda: now[0],
+                start_worker=False,
+            )
+            _, receipt = seed_confirmation_preview(
+                service,
+                capability_id="universal_deletion",
+                variant_id="preview",
+                params={"id": "asset_0123456789abcdef"},
+                kind="deletion_preview",
+                receipt_fields={
+                    "targetIds": ["asset_0123456789abcdef"],
+                    "targetCount": 1,
+                    "entityCount": 1,
+                    "planDigest": "sha256:" + suffix * 64,
+                    "expiresAt": datetime.fromtimestamp(1_100, timezone.utc).isoformat(),
+                },
+            )
+            confirmation, _ = service.create_task(
+                request(
+                    "universal_deletion",
+                    variant_id="confirm",
+                    params={"id": "asset_0123456789abcdef", "action": "确认删除"},
+                    idempotency_key=f"expired_confirmation_{suffix}",
+                    confirmation_receipt=receipt,
+                ),
+                tenant_id=TENANT_A,
+            )
+            return service, confirmation
+
+>       rejecting_service, reject_task = create_confirmation(tmp_path / "reject", "a")
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_media_web_tasks.py:1740:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_media_web_tasks.py:1728: in create_confirmation
+    confirmation, _ = service.create_task(
+openclaw_app/services/media_web_tasks.py:63: in create_task
+    return super().create_task(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <openclaw_app.services.media_web_tasks.MediaWebTaskService object at 0x10f6c5e50>
+payload = {'schemaVersion': '3', 'capabilityId': 'universal_deletion', 'variantId': 'confirm', 'params': {'id': 'asset_0123456789abcdef', 'action': '确认删除'}, ...}
+tenant_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', is_maintainer = False
+
+    def create_task(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        tenant_id: str,
+        is_maintainer: bool = False,
+        user_public_id: str | None = None,
+        workspace_mode: str | None = None,
+        role: str | None = None,
+    ) -> tuple[dict[str, Any], bool]:
+        # The IF2 surface forwards the acting principal; task storage remains
+        # tenant-scoped, so the identity kwargs are accepted for attribution
+        # without changing the tenant-level authorization model.
+        del user_public_id, workspace_mode, role
+        tenant_id = _require_tenant_id(tenant_id)
+        expected_keys = {"schemaVersion", "capabilityId", "variantId", "params", "uploadIds", "idempotencyKey", "catalogVersion", "initiation", "confirmationReceipt"}
+        if set(payload) != expected_keys or payload.get("schemaVersion") != "3" or _contains_reserved_tenant_key(payload):
+            raise MediaWebTaskError("invalid_request", "任务请求不符合结构化契约。")
+        capability_id, variant_id = str(payload.get("capabilityId") or "").strip(), str(payload.get("variantId") or "").strip()
+        capability = self._registry.get(capability_id)
+        if capability is None or not capability.enabled or not set(capability.bots) & {"Media bot", "任意 Bot"} or capability.visibility not in ({"public", "ops", "maintainer"} if is_maintainer else {"public", "ops"}):
+>           raise MediaWebTaskError("capability_not_found", "未找到可用的 Media 能力。")
+E           openclaw_app.services.media_web_tasks_core.MediaWebTaskError: 未找到可用的 Media 能力。
+
+openclaw_app/services/media_web_tasks_core.py:646: MediaWebTaskError
+_ ContentOSBridgePresentationTests.test_creation_script_renders_execution_fields_before_traceability_appendix _
+
+self = <test_p1_content_os_bridge_presentation.ContentOSBridgePresentationTests testMethod=test_creation_script_renders_execution_fields_before_traceability_appendix>
+
+    def test_creation_script_renders_execution_fields_before_traceability_appendix(self) -> None:
+        document = RendererHarness()._render_content_os_creation_script_section(
+            self._message(),
+            self._parsed(),
+            "生成说明仅用于追溯。",
+            "https://example.feishu.cn/docx/internal",
+            "creation_internal_001",
+        )
+
+        expected = (
+            "主标题：毕业典礼第一视角",
+            "候选标题：把清华毕业典礼拍成一条片",
+            "完整成稿：我终于站到了毕业典礼现场。",
+            "3 秒钩子：第一眼看到这个画面，我愣住了。",
+            "口播：我原以为只是旁观，结果成了故事里的人。",
+            "礼堂门打开",
+            "毕业帽特写",
+            "发布后首小时回复前三十条评论",
+            "确认封面后由发布负责人发布",
+        )
+        for value in expected:
+            self.assertIn(value, document)
+
+        headings = (
+            "## 标题",
+            "## 标题候选",
+            "## 成稿",
+            "## 3 秒钩子",
+            "## 口播",
+            "## 镜头脚本",
+            "## 图文脚本",
+            "## 发布动作",
+            "## 下一步",
+            "## 追溯附录",
+        )
+        positions = [document.index(heading) for heading in headings]
+        self.assertEqual(positions, sorted(positions))
+        appendix_start = document.index("## 追溯附录")
+        for metadata in ("creation_internal_001", "https://example.feishu.cn/docx/internal", "internal_only"):
+>           self.assertGreater(document.index(metadata), appendix_start)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^
+E           ValueError: substring not found
+
+tests/test_p1_content_os_bridge_presentation.py:103: ValueError
+_______ test_readback_version_or_content_mismatch_fails_closed[revision] _______
+
+mismatch = 'revision'
+
+    @pytest.mark.parametrize("mismatch", ["revision", "content"])
+    def test_readback_version_or_content_mismatch_fails_closed(mismatch: str) -> None:
+        service = FakeFeishuService()
+        binding = _binding()
+        records = {TENANT_A: _record(binding)}
+        writer = ExternalDocumentWriter()
+        adapter = _adapter(service, records)
+        if mismatch == "revision":
+            service.revision = "rev-1"
+            original_request = _request(binding, "revision-mismatch")
+            service.revision = "rev-2"
+        else:
+            original_request = _request(binding, "content-mismatch")
+            service.readback_text = "different content"
+
+        result = writer.write(original_request, adapter)
+
+>       assert result.status == "needs_attention"
+E       AssertionError: assert 'written' == 'needs_attention'
+E
+E         - needs_attention
+E         + written
+
+tests/test_stage2_feishu_hardening.py:222: AssertionError
+_______ test_server_startup_uses_the_single_production_document_gateway ________
+
+    def test_server_startup_uses_the_single_production_document_gateway() -> None:
+        server_cli = (
+            Path(__file__).resolve().parents[1] / "openclaw_app" / "server_cli.py"
+        ).read_text(encoding="utf-8")
+
+        assert "from integrations.feishu.lark_document_gateway import" in server_cli
+        assert "lark_gateway = build_production_lark_document_gateway(" in server_cli
+>       assert "DocumentsService(account_database.connect, lark_gateway=lark_gateway)" in server_cli
+E       assert 'DocumentsService(account_database.connect, lark_gateway=lark_gateway)' in 'from __future__ import annotations\n\nimport argparse\nimport json\nimport os\nimport threading\nfrom pathlib import ...:{args.port}", flush=True)\n    server.serve_forever()\n\n\nif __name__ == "__main__":\n    raise SystemExit(main())\n'
+
+tests/test_wave7_social_archive_ct_a8.py:97: AssertionError
+=============================== warnings summary ===============================
+tests/test_device_job_r1.py: 86 warnings
+tests/test_media_archive_r2.py: 74 warnings
+  /Users/vsiyo/.Trash/mediaclaw-stylekit-publish-20260901/openclaw-tag-router/openclaw_app/services/media_device_job_contract.py:81: DeprecationWarning: jsonschema.RefResolver is deprecated as of v4.18.0, in favor of the https://github.com/python-jsonschema/referencing library, which provides more compliant referencing behavior as well as more flexible APIs for customization. A future release will remove RefResolver. Please file a feature request (on referencing) if you are missing an API for the kind of customization you need.
+    from jsonschema import Draft202012Validator, RefResolver
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_d2_document_projection_source_identity.py::test_source_startup_and_migration_keep_document_projection_owned
+FAILED tests/test_document_tools.py::DocumentToolsTest::test_shooting_execution_backwash_failure_does_not_expose_traceback
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e-https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e-https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[http://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e-None]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn.evil.example/wiki/UkSMwA36fiZuBdkk63ncnm84n0e-None]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://user@tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e-None]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn:443/wiki/UkSMwA36fiZuBdkk63ncnm84n0e-None]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e?from=base-None]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e#section-None]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/wiki/short-None]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e/extra-None]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e-https://tenant.larkoffice.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[https://tenant.feishu.cn/drive/UkSMwA36fiZuBdkk63ncnm84n0e-None]
+FAILED tests/test_lark_base_projection.py::test_post_review_projection_only_projects_safe_document_links[None-None]
+FAILED tests/test_lark_resource_hydration.py::test_docx_payload_uses_actual_remote_block_mapping_and_read_fallback
+FAILED tests/test_lark_resource_hydration.py::test_bitable_payload_maps_every_body_block
+FAILED tests/test_lark_resource_hydration.py::test_second_hydration_is_unchanged
+SUBFAILED(token='user-token') tests/test_media_business_http.py::MediaBusinessHttpTests::test_media_session_matches_the_frozen_if2_response
+SUBFAILED(token='admin-token') tests/test_media_business_http.py::MediaBusinessHttpTests::test_media_session_matches_the_frozen_if2_response
+FAILED tests/test_media_creation_inspiration.py::CreationInspirationRouteTest::test_deconstruct_route_rejects_empty_success_without_landing_artifacts
+FAILED tests/test_media_creation_inspiration.py::CreationInspirationRouteTest::test_deconstruct_route_reports_completed_only_with_doc_and_record
+FAILED tests/test_media_web_tasks.py::test_maintainer_catalog_and_task_authorization_share_one_tenant_gate
+FAILED tests/test_media_web_tasks.py::test_deletion_preview_is_safe_and_apply_requires_confirmation
+FAILED tests/test_media_web_tasks.py::test_deletion_preview_is_logically_idempotent_across_transport_keys
+FAILED tests/test_media_web_tasks.py::test_task_reservation_is_idempotent_across_service_instances
+FAILED tests/test_media_web_tasks.py::test_delete_confirm_requires_and_reserves_successful_preview
+FAILED tests/test_media_web_tasks.py::test_confirmation_receipt_binds_exact_preview_not_latest_or_equivalent_task
+FAILED tests/test_media_web_tasks.py::test_expired_deletion_confirmation_can_be_rejected_but_not_approved
+FAILED tests/test_p1_content_os_bridge_presentation.py::ContentOSBridgePresentationTests::test_creation_script_renders_execution_fields_before_traceability_appendix
+FAILED tests/test_stage2_feishu_hardening.py::test_readback_version_or_content_mismatch_fails_closed[revision]
+FAILED tests/test_wave7_social_archive_ct_a8.py::test_server_startup_uses_the_single_production_document_gateway
+===== 32 failed, 1683 passed, 40 skipped, 160 warnings in 66.12s (0:01:06) =====

@@ -1,0 +1,3 @@
+source_sha	007a7f906af4e23a6a4fa5d041da4cb0641646c2
+command	python -m pytest tests/ --ignore=tests/test_sync_lark_base_projection.py
+exit_code	1

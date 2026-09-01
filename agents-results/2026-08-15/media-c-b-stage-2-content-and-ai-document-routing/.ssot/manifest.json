@@ -89,7 +89,7 @@
     {
       "view_id": "main",
       "source": "view-sources/00-main.md",
-      "source_sha256": "eab53340eed03cb02b5c7f088100b3b1620ea45c8336e4a4d4ab2fde2fb70ab8",
+      "source_sha256": "3c822200163a174204789560f0f5713fc6c29479734e507b379323e75b50ea4e",
       "output": "../ssot-development-paths.md"
     },
     {
@@ -113,13 +113,13 @@
     {
       "view_id": "implementation-progress",
       "source": "view-sources/40-progress.md",
-      "source_sha256": "386f07312ba974191fc79d699e00765db53cc198f68700f54831d23cffa804b3",
+      "source_sha256": "82c05a2d739714ab90a09cd2ca221e29aa9d51c09541ca915c1cd1b1f12c3f30",
       "output": "../implementation-progress.md"
     },
     {
       "view_id": "acceptance-execution",
       "source": "view-sources/40-acceptance-execution.md",
-      "source_sha256": "7c8e51834cb73bdec119921a48dddb805b26ba8ff79080d57883005be16dc1a9",
+      "source_sha256": "d31cf3b7ba5f11e3e1fd06784da96dce804dd23acf934ddd96b0f1a9c1221f3a",
       "output": "../generated-views/40-acceptance-execution.md"
     }
   ],
@@ -129,8 +129,8 @@
   "conflicts_dir": "conflicts",
   "validation_report": {
     "path": "validation-report.json",
-    "sha256": "bf87216ef664bb124a83abde8c463033029d07f0f2b1a9efabd9e6686538e54e",
-    "manifest_identity_sha256": "fbcda7c7e05310169d20f8e155cc4e228383e11d35e72e290cb1df68d8112776",
-    "bundle_content_sha256": "f544669eae0a42f6ecd8ffbc0f2c3ff61f506241e6756006984a5d2d2e878d6b"
+    "sha256": "a38b9318b1dacc45e1ce99bb9dc83109ea27c8df3d1ed01b4ad052afecc71e89",
+    "manifest_identity_sha256": "f13b2a01d66d1315c37ee99a67dbcbab4c4f163fc4aa9f0aca95d84cb7a53d19",
+    "bundle_content_sha256": "9c887fb800ea013856067eb00179592652c7a698c72bdc4a5b5ddcbba684f5e0"
   }
 }

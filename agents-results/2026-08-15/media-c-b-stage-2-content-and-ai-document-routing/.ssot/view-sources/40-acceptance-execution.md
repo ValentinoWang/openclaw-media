@@ -23,17 +23,17 @@
 
 ## 记录的最近执行
 
-以下是验收判读材料已记录的历史执行，而非当前工作树的重跑。源代码身份为 `759af4c659c6d6a85fd8eac7cd4d2d345d3cf235`；文档记录提交时间为 `2026-08-31T19:09:24+08:00`。原始材料没有保存每条命令的精确开始时间或完整测试日志，因此空缺明确保留，后续当前 HEAD 重跑必须另建带 source identity 的执行证据。
+以下是当前源码重跑记录，源代码身份为 `007a7f906af4e23a6a4fa5d041da4cb0641646c2`，记录时间为 `2026-09-01T16:55:00+08:00`。每条记录均指向本包外的可复现输出；完整 Router 回归的历史基线差异单列，不能把 `PASS WITH BASELINE` 误写为全绿。
 
 | 验收区域 | 执行日期 | 源码提交 | 结果 | 已知基线失败清单 | 证据路径 |
 | --- | --- | --- | --- | --- | --- |
-| 登录入口状态 | 源文档未记录精确开始时间；最晚于记录提交时间 | `759af4c659c6d6a85fd8eac7cd4d2d345d3cf235` | PASS：四态矩阵与 19 张运行时截图 | 无 | `docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）` |
-| 普通路由矩阵 | 源文档未记录精确开始时间；最晚于记录提交时间 | `759af4c659c6d6a85fd8eac7cd4d2d345d3cf235` | PASS：4 类会话全路径矩阵与合成漂移负例 | 无 | `docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）` |
-| 共享视觉原语 | 源文档未记录精确开始时间；最晚于记录提交时间 | `759af4c659c6d6a85fd8eac7cd4d2d345d3cf235` | PASS：原语采用门禁与自测通过 | 无 | `docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）` |
-| 入口状态合同 | 源文档未记录精确开始时间；最晚于记录提交时间 | `759af4c659c6d6a85fd8eac7cd4d2d345d3cf235` | PASS：matched、none、expired、mismatched 与越权负例 | 无 | `docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）` |
-| Stage-1 工作台运行时 | 源文档未记录精确开始时间；最晚于记录提交时间 | `759af4c659c6d6a85fd8eac7cd4d2d345d3cf235` | PASS：双视口、路由和外部字体请求检查 | 无 | `docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）` |
-| 视觉构建门禁 | 源文档未记录精确开始时间；最晚于记录提交时间 | `759af4c659c6d6a85fd8eac7cd4d2d345d3cf235` | PASS：15/15 门禁、两次 tsc 与 Vite 构建通过 | 无 | `docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）` |
-| 全量回归 | 源文档未记录精确开始时间；最晚于记录提交时间 | `759af4c659c6d6a85fd8eac7cd4d2d345d3cf235` | PASS WITH BASELINE：1638 passed，26 failed 与基线一致 | 26 条；原文只保留数量与逐字节一致结论，未保留逐项失败名，不能据此声明当前 HEAD 同样通过 | `docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）` |
+| 登录入口状态 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS：`build:media` 中的登录视觉运行时四态检查通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
+| 普通路由矩阵 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS：`build:media` 中的路由矩阵与合成漂移负例通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
+| 共享视觉原语 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS：`build:media` 中的原语采用及自测通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
+| 入口状态合同 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS WITH BASELINE：`test_auth_entry_state.py` 8 项通过 | 完整 Router 套件尚有 32 项历史失败；均为父提交 42 项失败集合的子集 | `agents-results/2026-09-01/stage2-document-edit-validation/router-full-pytest-output.txt` |
+| Stage-1 工作台运行时 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS：`build:media` 中的双视口、路由和外部字体请求检查通过 | 无 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
+| 视觉构建门禁 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS：完整前端构建、TypeScript、Vite 和配置的 QA 门禁通过 | 仅 Vite 大 chunk 体积建议，非失败 | `agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt` |
+| 全量回归 | 2026-09-01T16:55:00+08:00 | `007a7f906af4e23a6a4fa5d041da4cb0641646c2` | PASS WITH BASELINE：1683 passed，40 skipped，32 failed | 32 项均在父提交 `37e58dc3` 的 42 项失败集合中；本轮额外修复了 10 项过期迁移清单断言 | `agents-results/2026-09-01/stage2-document-edit-validation/verification.md` |
 
 ## 证据分层
 

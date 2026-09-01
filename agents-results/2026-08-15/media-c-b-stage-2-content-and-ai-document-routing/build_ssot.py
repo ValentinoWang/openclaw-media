@@ -146,15 +146,15 @@ HASHES = {
     "stage1_dc2": "e8160365df3008a9c7124abe419255821890aa9e57f997a220cb77b99d38b448",
 }
 OBSERVED_AT = "2026-08-15T20:37:42+08:00"
-CURRENT_FACT_OBSERVED_AT = "2026-09-01T14:39:38+08:00"
-CURRENT_MAIN_SHA = "535f84658564bdab00b10449282faccd4e4162c4"
+CURRENT_FACT_OBSERVED_AT = "2026-09-01T16:55:00+08:00"
+CURRENT_MAIN_SHA = "007a7f906af4e23a6a4fa5d041da4cb0641646c2"
 DECISION_V5_OBSERVED_AT = "2026-09-01T15:20:00+08:00"
 CURRENT_STAGE2_ORIGIN_COMMIT = "0228256058a1d7c0de4986a943de5c96f445ee2f"
-CURRENT_STAGE2_SERVICE_COUNT = 16
-CURRENT_STAGE2_TEST_COUNT = 19
-CURRENT_STAGE2_TEST_FUNCTION_COUNT = 167
-ACCEPTANCE_EXECUTION_SOURCE_COMMIT = "759af4c659c6d6a85fd8eac7cd4d2d345d3cf235"
-ACCEPTANCE_EXECUTION_SOURCE_RECORDED_AT = "2026-08-31T19:09:24+08:00"
+CURRENT_STAGE2_SERVICE_COUNT = 17
+CURRENT_STAGE2_TEST_COUNT = 20
+CURRENT_STAGE2_TEST_FUNCTION_COUNT = 169
+ACCEPTANCE_EXECUTION_SOURCE_COMMIT = CURRENT_MAIN_SHA
+ACCEPTANCE_EXECUTION_SOURCE_RECORDED_AT = CURRENT_FACT_OBSERVED_AT
 ACCEPTANCE_DELIVERY_DOCUMENT_COMMIT = "ade7c05cfe775aa3f9d3d1456eb02ae23dfbf9c5"
 ACCEPTANCE_DELIVERY_DOCUMENTS = [
     ["C6 交互验收基线", "docs/frontend/prototype/personal-document-editor.html", "个人正文编辑器 8 态交互规格"],
@@ -163,13 +163,13 @@ ACCEPTANCE_DELIVERY_DOCUMENTS = [
     ["实施入口", "docs/frontend/prototype/stage2-dev-brief.md", "第二阶段 C/B 实施顺序、范围和门禁"],
 ]
 ACCEPTANCE_EXECUTION_RECORDS = [
-    ["登录入口状态", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：四态矩阵与 19 张运行时截图", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
-    ["普通路由矩阵", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：4 类会话全路径矩阵与合成漂移负例", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
-    ["共享视觉原语", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：原语采用门禁与自测通过", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
-    ["入口状态合同", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：matched、none、expired、mismatched 与越权负例", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
-    ["Stage-1 工作台运行时", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：双视口、路由和外部字体请求检查", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
-    ["视觉构建门禁", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS：15/15 门禁、两次 tsc 与 Vite 构建通过", "无", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
-    ["全量回归", "源文档未记录精确开始时间；最晚于记录提交时间", "PASS WITH BASELINE：1638 passed，26 failed 与基线一致", "26 条；原文只保留数量与逐字节一致结论，未保留逐项失败名，不能据此声明当前 HEAD 同样通过", "docs/frontend/prototype/stage2-acceptance-execution.html（第 04 节）"],
+    ["登录入口状态", CURRENT_FACT_OBSERVED_AT, "PASS：`build:media` 中的登录视觉运行时四态检查通过", "无", "agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt"],
+    ["普通路由矩阵", CURRENT_FACT_OBSERVED_AT, "PASS：`build:media` 中的路由矩阵与合成漂移负例通过", "无", "agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt"],
+    ["共享视觉原语", CURRENT_FACT_OBSERVED_AT, "PASS：`build:media` 中的原语采用及自测通过", "无", "agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt"],
+    ["入口状态合同", CURRENT_FACT_OBSERVED_AT, "PASS WITH BASELINE：`test_auth_entry_state.py` 8 项通过", "完整 Router 套件尚有 32 项历史失败；均为父提交 42 项失败集合的子集", "agents-results/2026-09-01/stage2-document-edit-validation/router-full-pytest-output.txt"],
+    ["Stage-1 工作台运行时", CURRENT_FACT_OBSERVED_AT, "PASS：`build:media` 中的双视口、路由和外部字体请求检查通过", "无", "agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt"],
+    ["视觉构建门禁", CURRENT_FACT_OBSERVED_AT, "PASS：完整前端构建、TypeScript、Vite 和配置的 QA 门禁通过", "仅 Vite 大 chunk 体积建议，非失败", "agents-results/2026-09-01/stage2-document-edit-validation/media-build-output.txt"],
+    ["全量回归", CURRENT_FACT_OBSERVED_AT, "PASS WITH BASELINE：1683 passed，40 skipped，32 failed", "32 项均在父提交 `37e58dc3` 的 42 项失败集合中；本轮额外修复了 10 项过期迁移清单断言", "agents-results/2026-09-01/stage2-document-edit-validation/verification.md"],
 ]
 HUMAN_ACCEPTANCE_FRAGMENTS = {
     "O1": {
@@ -234,15 +234,15 @@ IMPLEMENTATION_OBSERVATIONS = {
     "S1-S5/T1": f"已落地上下文、资料路由、唯一写入路由、成果登记/回读和能力副作用合同；主线有 {CURRENT_STAGE2_SERVICE_COUNT} 个 stage2 服务文件，Stage-2 聚焦测试为 {CURRENT_STAGE2_TEST_COUNT} 个文件、{CURRENT_STAGE2_TEST_FUNCTION_COUNT} 个测试函数。",
     "C1-C5": "已落地个人资料、研究简报、决策简报、个人上下文和个人内部成果写入流程。",
     "O1-O4": "已落地组织资料、按 Binding 写入、成果绑定、飞书回读和网页只读镜像流程。",
-    "storage-topology": "三分叉存储：PostgreSQL canonical 迁移 37 个（其中包括 owned_media_accounts、tracks、publishing_packages）；SQLitePersonalContentStore 持久化个人成果；account_memory 为文件系统 JSON，位于 ~/.openclaw/media_vault/account_memory/<account_id>/。因此存在两道 join 断点，而不是 SQLite 与 Postgres 的单一断点。",
+    "storage-topology": "三分叉存储：PostgreSQL closed manifest 当前有 35 个 canonical 迁移，最新为 cm1-040-document-edit-jobs；SQLitePersonalContentStore 持久化个人成果；account_memory 为文件系统 JSON，位于 ~/.openclaw/media_vault/account_memory/<account_id>/。因此存在两道 join 断点，而不是 SQLite 与 Postgres 的单一断点。",
     "frontend-scope": "当前生产入口是 src/media/main.tsx -> MediaStudioApp.tsx；旧 MediaApp.tsx 已由 ea98ca3b 从源码删除。当前机器源清点为 mediaPageStructureManifest 24 面；studioOrdinaryRoutes 为 14 条（/today、/studio、/campaigns、/business、/desk、/overview、/assets、/decisions、/publishing、/reviews、/media-agent、/archives、/usage-billing、/invites），另有 studioTrackRoutes。两组机器路由全量向个人人格开放，个人/组织/管理员路由授权由统一策略、严格会话 routeGrants 和 MediaStudioRoutePolicy 共同约束。",
     "entry-state": "登录入口状态已落地为 GET /openclaw/auth/entry-state?mode=，响应 media_auth_entry_state_v1，覆盖 matched、none、expired、mismatched 四态并有测试；它与工作台路由授权是两个不同合同。",
     "route-grants": "冲突已由用户在 K 第 5 版裁决：routeGrants 保留在会话信封，正名为路由清单漂移检测而非授权投影。服务端生成该字段，客户端用 zod 严格校验，并在 superRefine 中与按 role/workspaceMode 独立推导的期望清单逐项按序比对；不一致即让会话解析失败，客户端从不提交该字段。会话合同必须从 media_web_business_pages_v2 升到 v3，并将当前三份人工维护的路由副本收敛为一份生成源。",
     "interaction-prototypes": f"C6 与组织镜像交互原型、验收判读材料和实施入口均固定在 commit {ACCEPTANCE_DELIVERY_DOCUMENT_COMMIT}：docs/frontend/prototype/ 下的四份交付文档是设计基线/静态文档，不等同节点接受。",
     "font-scope": "DS-02/DS-26 已在 main 落地：mediaDesignTokens.css 定义 --mg-text-4xl，mediaFonts.css 和本地 WOFF2 提供 DM Sans/Noto Sans SC，Google Fonts 依赖有门禁；仍需按实际部署弱网证据验收。",
     "frontend-retirement": "MediaApp.tsx 已删除且 main.tsx 无旧壳 import；该设计债务不再是当前待办。",
-    "C6-C7": "当前源码观察未形成网页端个人正文修订和平台版本/发布包完整正式验收。",
-    "O5": "当前只有注入式/测试形态，未形成真实飞书编辑后再回读的外部验收。",
+    "C6-C7": "C6 源码已形成保存回执后正文读回核对、AI 修订回执和有限历史呈现；C7 的平台版本/发布包完整正式验收仍未形成。",
+    "O5": "当前已形成持久化任务、Lark 写后读回和失败关闭的注入式/测试形态，未形成真实飞书编辑后再回读的外部验收。",
     "C8/O6/S/C/DA/DB/DC": "属于汇合、候选、发布或独立验收节点，当前未形成正式接受结果。",
 }
 VERSIONS = f"{PLAN_VERSION}/{DAG_VERSION}/{INTERFACE_FREEZE_VERSION}/{NODE_CONTRACT_VERSION}"
@@ -1467,7 +1467,7 @@ def progress_view() -> str:
     return "\n\n".join([
         "# 第二阶段实施进度",
         "## 当前结论",
-        f"本 SSOT 已完成第 8 版事实刷新。正式完成度仍为 9.4%（3/32）：A、A1、K 已接受，其余 29 个节点仍为 BLOCKED。源码实现观察基线为主线（`main`）`{CURRENT_MAIN_SHA}`，Stage-2 起始提交为 `{CURRENT_STAGE2_ORIGIN_COMMIT}`，包含 {CURRENT_STAGE2_SERVICE_COUNT} 个第二阶段服务文件、{CURRENT_STAGE2_TEST_COUNT} 个测试文件和 {CURRENT_STAGE2_TEST_FUNCTION_COUNT} 个测试函数；候选分支 `codex/stage2-release-20260818` 已不存在。第 5 版已澄清 `routeGrants` 是会话内漂移检测、登录入口状态是预登录探针；历史执行证据另绑定 `{ACCEPTANCE_EXECUTION_SOURCE_COMMIT}`，不能外推为当前 HEAD 通过。相关提交与聚焦测试只能作为源码/静态测试证据，不能提升节点状态。第一阶段 C1、C3、DC2 尚未接受，因此本阶段当前没有合法正式就绪节点。生产认证会话解析、租户资料读取、认证浏览器/设备、真实人工智能任务、真实飞书写后回读和独立外部验收仍未证明。",
+        f"本 SSOT 已完成第 9 版事实刷新。正式完成度仍为 9.4%（3/32）：A、A1、K 已接受，其余 29 个节点仍为 BLOCKED。源码实现观察基线为主线（`main`）`{CURRENT_MAIN_SHA}`，Stage-2 起始提交为 `{CURRENT_STAGE2_ORIGIN_COMMIT}`，包含 {CURRENT_STAGE2_SERVICE_COUNT} 个第二阶段服务文件、{CURRENT_STAGE2_TEST_COUNT} 个测试文件和 {CURRENT_STAGE2_TEST_FUNCTION_COUNT} 个测试函数；候选分支 `codex/stage2-release-20260818` 已不存在。第 5 版已澄清 `routeGrants` 是会话内漂移检测、登录入口状态是预登录探针；本轮执行证据绑定 `{ACCEPTANCE_EXECUTION_SOURCE_COMMIT}`，包含当前源码身份、完整日志和截图 manifest。相关提交与聚焦测试只能作为源码/静态测试证据，不能提升节点状态。第一阶段 C1、C3、DC2 尚未接受，因此本阶段当前没有合法正式就绪节点。生产认证会话解析、租户资料读取、认证浏览器/设备、真实人工智能任务、真实飞书写后回读和独立外部验收仍未证明。",
         "## 状态台账",
         table(["Task ID", "Stage", "Versions", "State", "Attempt", "Owner", "Guard ID", "Blocking reason", "Evidence", "Unlocks"], state_rows),
         "## 实际实现台账（源码观察）",
@@ -1503,7 +1503,7 @@ def acceptance_execution_view() -> str:
         "## 验收基线与判读材料",
         table(["材料", "路径", "提交", "用途", "证据边界"], baseline_rows),
         "## 记录的最近执行",
-        f"以下是验收判读材料已记录的历史执行，而非当前工作树的重跑。源代码身份为 `{ACCEPTANCE_EXECUTION_SOURCE_COMMIT}`；文档记录提交时间为 `{ACCEPTANCE_EXECUTION_SOURCE_RECORDED_AT}`。原始材料没有保存每条命令的精确开始时间或完整测试日志，因此空缺明确保留，后续当前 HEAD 重跑必须另建带 source identity 的执行证据。",
+        f"以下是当前源码重跑记录，源代码身份为 `{ACCEPTANCE_EXECUTION_SOURCE_COMMIT}`，记录时间为 `{ACCEPTANCE_EXECUTION_SOURCE_RECORDED_AT}`。每条记录均指向本包外的可复现输出；完整 Router 回归的历史基线差异单列，不能把 `PASS WITH BASELINE` 误写为全绿。",
         table(["验收区域", "执行日期", "源码提交", "结果", "已知基线失败清单", "证据路径"], execution_rows),
         "## 证据分层",
         "运行时门禁与截图只形成 source/local-runtime 证据，不能替代真实组织扫码、飞书编辑后再回读、28 天会话持久化部署读回或独立外部验收。",
