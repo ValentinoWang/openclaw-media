@@ -72,7 +72,7 @@ def skipped_test_ids(report_path: Path) -> list[str]:
         if (
             root_tests is not None
             and all(value is not None for value in declared_suite_tests)
-            and root_tests < sum(value for value in declared_suite_tests if value is not None)
+            and root_tests != sum(value for value in declared_suite_tests if value is not None)
         ):
             raise ValueError(
                 "JUnit root test count mismatch: "
