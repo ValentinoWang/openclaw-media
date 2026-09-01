@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { execFile as execFileCallback } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { inflateSync } from "node:zlib";
 import { isAbsolute, resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import react from "@vitejs/plugin-react";
 import {
   chromium,
@@ -22,14 +24,18 @@ const apiRoot = `${mediaBase}/api`;
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const outputDir = process.env.STAGE2_DOCUMENT_SCREENSHOT_DIR ?? "/tmp/openclaw-stage2-document-screenshots";
 const externalBaseUrl = process.env.STAGE2_DOCUMENT_BASE_URL?.replace(/\/$/u, "");
+const reviewIdentity = process.env.STAGE2_DOCUMENT_REVIEW_IDENTITY?.trim() || "REVIEW_IDENTITY_PLACEHOLDER";
+const execFile = promisify(execFileCallback);
 
 if (!isAbsolute(outputDir)) {
   throw new Error(`STAGE2_DOCUMENT_SCREENSHOT_DIR must be absolute: ${outputDir}`);
 }
 
 const viewports = [
-  { name: "desktop", width: 1440, height: 900, isMobile: false },
-  { name: "mobile", width: 390, height: 844, isMobile: true },
+  { name: "desktop-1440x900", width: 1440, height: 900, isMobile: false },
+  { name: "desktop-1280x800", width: 1280, height: 800, isMobile: false },
+  { name: "tablet-1024x768", width: 1024, height: 768, isMobile: false },
+  { name: "mobile-390x844", width: 390, height: 844, isMobile: true },
 ] as const;
 
 type CState =
@@ -40,7 +46,7 @@ type CState =
   | "saving"
   | "aiResultProgress"
   | "offlineRetry"
-  | "personalDocument";
+  | "organizationDocument";
 type BState =
   | "synced"
   | "running"
@@ -91,6 +97,7 @@ type ManifestEntry = {
   viewport: { name: string; width: number; height: number; isMobile: boolean };
   file: string | null;
   additionalFiles?: string[];
+  screenshots: ScreenshotRecord[];
   checks: CheckRecord[];
   api: ApiObservation[];
   requestFailures: string[];
@@ -111,7 +118,13 @@ type Manifest = {
   baseUrl: string;
   outputDirectory: string;
   viewports: typeof viewports;
+  sourceGitSha: string | null;
+  browserIdentity: { name: string; version: string } | null;
+  captureTimestamp: string;
+  reviewIdentity: string;
   entries: ManifestEntry[];
+  matrixCompleteness: MatrixCompleteness;
+  validationFailures: string[];
   summary: {
     requiredCStates: number;
     requiredBStates: number;
@@ -122,6 +135,81 @@ type Manifest = {
   };
   ok: boolean;
 };
+
+type MatrixCompleteness = {
+  expectedCells: number;
+  observedEntries: number;
+  observedCells: number;
+  completeCells: number;
+  missingCells: number;
+  duplicateCells: number;
+  unexpectedCells: number;
+  pendingCells: number;
+  failedCells: number;
+  missingScreenshotCells: number;
+  requestFailureCells: number;
+  unexpectedConsoleErrorCells: number;
+  pageErrorCells: number;
+  failedCheckCells: number;
+};
+
+type MatrixValidation = {
+  ok: boolean;
+  failures: string[];
+  completeness: MatrixCompleteness;
+};
+
+type ScreenshotExists = (path: string) => Promise<boolean>;
+
+function derivePendingStates<T extends string>(required: readonly T[], rendered: ReadonlySet<T>): T[] {
+  return required.filter((state) => !rendered.has(state));
+}
+
+const requiredCStates: readonly CState[] = [
+  "clean",
+  "dirty",
+  "conflict",
+  "unsupported",
+  "saving",
+  "aiResultProgress",
+  "offlineRetry",
+  "organizationDocument",
+];
+const requiredBStates: readonly BState[] = [
+  "synced",
+  "running",
+  "unknown",
+  "conflict",
+  "unsupported",
+  "stale",
+  "aiResultProgress",
+  "partialApplication",
+];
+
+const renderedCStates = new Set<CState>([
+  "clean",
+  "dirty",
+  "conflict",
+  "unsupported",
+  "saving",
+  "aiResultProgress",
+  "offlineRetry",
+  "organizationDocument",
+]);
+const renderedBStates = new Set<BState>([
+  "synced",
+  "running",
+  "unknown",
+  "conflict",
+  "unsupported",
+  "stale",
+  "aiResultProgress",
+  "partialApplication",
+]);
+const pendingC = derivePendingStates(requiredCStates, renderedCStates);
+const pendingB = derivePendingStates(requiredBStates, renderedBStates);
+const runtimeC = requiredCStates.filter((state) => renderedCStates.has(state));
+const runtimeB = requiredBStates.filter((state) => renderedBStates.has(state));
 
 const personalArtifactId = "stage2c-personal-document";
 const cleanArtifactId = "stage2c-clean-document";
@@ -386,8 +474,9 @@ function documentRevision(
   };
 }
 
-function bodyResponse(side: Side, artifactId: string) {
-  const isPersonal = side === "C";
+function bodyResponse(mock: MockState) {
+  const isPersonal = mock.workspaceMode === "personal_web";
+  const artifactId = mock.artifactId;
   const body = isPersonal ? personalBody : organizationBody;
   const revision = isPersonal
     ? documentRevision(artifactId, "internal", body, 7, null)
@@ -403,23 +492,24 @@ function bodyResponse(side: Side, artifactId: string) {
 }
 
 function revisionResponse(
-  side: Side,
+  mock: MockState,
   artifactId: string,
   state: "generating" | "ready",
 ) {
-  const body = side === "C" ? clone(personalBody) : clone(organizationBody);
-  if (side === "C" && state === "ready") {
+  const isPersonal = mock.workspaceMode === "personal_web";
+  const body = isPersonal ? clone(personalBody) : clone(organizationBody);
+  if (isPersonal && state === "ready") {
     const first = body.blocks.find((block) => block.id === "blk_c_intro");
     if (first && "content" in first && first.content?.[0]) first.content[0].text = "AI 改稿结果已回到个人正文，等待你确认采用。";
   }
   const revision = documentRevision(
     artifactId,
-    side === "C" ? "internal" : "lark",
+    isPersonal ? "internal" : "lark",
     body,
-    side === "C" ? 8 : 15,
-    side === "C" ? null : "v15",
+    isPersonal ? 8 : 15,
+    isPersonal ? null : "v15",
   );
-  const receipt = side === "B" && state === "ready"
+  const receipt = !isPersonal && state === "ready"
     ? {
         applied: [{ operation: "replace_text", blockId: "blk_b_intro" }],
         appliedCount: 1,
@@ -435,7 +525,7 @@ function revisionResponse(
 }
 
 function syncBatchesResponse(mock: MockState) {
-  const state = mock.state as BState;
+  const state: BState = mock.state === "organizationDocument" ? "synced" : mock.state as BState;
   const itemByState: Record<Exclude<BState, "aiResultProgress">, Record<string, unknown>> = {
     synced: { state: "succeeded", operation: "read", remoteDocumentVersion: "v14", errorCode: null, errorDetail: {} },
     running: { state: "running", operation: "save", remoteDocumentVersion: null, errorCode: null, errorDetail: {} },
@@ -488,6 +578,7 @@ async function fulfillJson(route: Route, payload: unknown, status = 200): Promis
 type MockState = {
   side: Side;
   state: State;
+  workspaceMode: "personal_web" | "organization_lark";
   artifactId: string;
   requests: ApiObservation[];
   unhandled: ApiObservation[];
@@ -498,6 +589,7 @@ type MockState = {
 };
 
 function createMockState(side: Side, state: State): MockState {
+  const organizationCapture = side === "B" || (side === "C" && state === "organizationDocument");
   let releaseSaving: (() => void) | null = null;
   let savingGate: Promise<void> | null = null;
   if (side === "C" && state === "saving") {
@@ -508,9 +600,10 @@ function createMockState(side: Side, state: State): MockState {
   return {
     side,
     state,
-    artifactId: side === "C"
-      ? state === "personalDocument" ? personalArtifactId : cleanArtifactId
-      : organizationArtifactId,
+    workspaceMode: organizationCapture ? "organization_lark" : "personal_web",
+    artifactId: organizationCapture
+      ? organizationArtifactId
+      : state === "clean" ? cleanArtifactId : personalArtifactId,
     requests: [],
     unhandled: [],
     aiRevisionReads: 0,
@@ -540,7 +633,7 @@ async function installApi(page: Page, mock: MockState): Promise<void> {
       await fulfillJson(route, {
         schemaVersion: "media_web_business_pages_v2",
         revision: 1,
-        session: mock.side === "C" ? personalSession : organizationSession,
+        session: mock.workspaceMode === "personal_web" ? personalSession : organizationSession,
       });
       return;
     }
@@ -563,20 +656,20 @@ async function installApi(page: Page, mock: MockState): Promise<void> {
       return;
     }
     if (method === "GET" && path === `/documents/${mock.artifactId}/body`) {
-      await fulfillJson(route, bodyResponse(mock.side, mock.artifactId));
+      await fulfillJson(route, bodyResponse(mock));
       return;
     }
     if (method === "POST" && path === `/artifacts/${mock.artifactId}/revisions`) {
       await fulfillJson(route, {
         schemaVersion: "media.document.revision.v1",
-        revision: mock.side === "C" ? 8 : 15,
-        item: { currentRevision: mock.side === "C" ? 8 : 15 },
+        revision: mock.workspaceMode === "personal_web" ? 8 : 15,
+        item: { currentRevision: mock.workspaceMode === "personal_web" ? 8 : 15 },
       });
       return;
     }
     if (method === "GET" && new RegExp(`^/documents/${mock.artifactId}/revisions/\\d+$`, "u").test(path)) {
       mock.aiRevisionReads += 1;
-      await fulfillJson(route, revisionResponse(mock.side, mock.artifactId, mock.aiRevisionReads === 1 ? "generating" : "ready"));
+      await fulfillJson(route, revisionResponse(mock, mock.artifactId, mock.aiRevisionReads === 1 ? "generating" : "ready"));
       return;
     }
     if (method === "GET" && path === `/artifacts/${mock.artifactId}/sync-batches`) {
@@ -589,7 +682,7 @@ async function installApi(page: Page, mock: MockState): Promise<void> {
         await route.abort("internetdisconnected");
         return;
       }
-      if (mock.side === "C" && mock.state === "conflict") {
+      if (mock.workspaceMode === "personal_web" && mock.state === "conflict") {
         record.status = 409;
         await fulfillJson(route, {
           ok: false,
@@ -597,7 +690,7 @@ async function installApi(page: Page, mock: MockState): Promise<void> {
         }, 409);
         return;
       }
-      if (mock.side === "C" && mock.state === "unsupported") {
+      if (mock.workspaceMode === "personal_web" && mock.state === "unsupported") {
         record.status = 422;
         await fulfillJson(route, {
           ok: false,
@@ -609,7 +702,7 @@ async function installApi(page: Page, mock: MockState): Promise<void> {
         }, 422);
         return;
       }
-      if (mock.side === "C" && mock.state === "saving") {
+      if (mock.workspaceMode === "personal_web" && mock.state === "saving") {
         assert(mock.savingGate, "saving state did not initialize a response gate");
         await mock.savingGate;
       }
@@ -681,6 +774,17 @@ async function driveCState(
   state: CState,
   primaryPath: string,
 ): Promise<{ root: Locator; anchor: Locator; anchorDetail: string; additional: ScreenshotRecord[] }> {
+  if (state === "organizationDocument") {
+    const root = await waitForBPage(page);
+    await expect(root).toHaveAttribute("data-page-ownership", "organization");
+    await expect(root).toHaveAttribute("data-workspace-mode", "organization_lark");
+    await expect(root).toHaveAttribute("data-document-sync-state", "synced");
+    const anchor = root.getByText("只读镜像", { exact: true }).first();
+    await expect(anchor).toBeVisible();
+    await expect(root.getByRole("link", { name: "在飞书中打开", exact: true })).toBeVisible();
+    await expect(root.locator('[contenteditable="true"]')).toHaveCount(0);
+    return { root, anchor, anchorDetail: "个人原型的组织状态已切换到组织只读镜像路由。", additional: [] };
+  }
   const root = await waitForCPage(page);
   const editor = page.getByLabel("段落", { exact: true }).first();
   const changedText = "这是一处已在编辑区产生的待保存修改。";
@@ -690,11 +794,6 @@ async function driveCState(
     const anchor = root.getByText(/当前版本\s+v7\s+·\s+个人正文/u).first();
     await expect(anchor).toBeVisible();
     return { root, anchor, anchorDetail: "当前版本和个人正文权威已加载。", additional };
-  }
-  if (state === "personalDocument") {
-    const anchor = root.getByText("个人正文编辑与修订", { exact: true }).first();
-    await expect(anchor).toBeVisible();
-    return { root, anchor, anchorDetail: "个人工作区呈现正文编辑与修订入口。", additional };
   }
   if (state === "dirty") {
     await editor.fill(changedText);
@@ -769,7 +868,7 @@ async function driveCState(
     await page.getByRole("button", { name: "生成改稿修订", exact: true }).click();
     const progressAnchor = page.getByRole("button", { name: "正在生成", exact: true });
     await expect(progressAnchor).toBeVisible();
-    const progressPath = resolve(outputDir, `C-aiResultProgress-${(page.viewportSize() ?? { width: 0 }).width === 390 ? "mobile" : "desktop"}-progress.png`);
+    const progressPath = resolve(outputDir, `C-aiResultProgress-${viewportName(page)}-progress.png`);
     additional.push(await saveScreenshot(page, progressPath));
     const resultAnchor = root.getByText("改稿修订已就绪。", { exact: true });
     await expect(resultAnchor).toBeVisible({ timeout: 15_000 });
@@ -783,7 +882,6 @@ async function driveBState(
   page: Page,
   mock: MockState,
   state: BState,
-  primaryPath: string,
 ): Promise<{ root: Locator; anchor: Locator; anchorDetail: string; additional: ScreenshotRecord[] }> {
   const root = await waitForBPage(page);
   const additional: ScreenshotRecord[] = [];
@@ -793,7 +891,7 @@ async function driveBState(
     await root.getByRole("button", { name: "生成改稿修订", exact: true }).click();
     const progressAnchor = root.getByRole("button", { name: "正在生成", exact: true });
     await expect(progressAnchor).toBeVisible();
-    const progressPath = resolve(outputDir, `B-aiResultProgress-${(page.viewportSize() ?? { width: 0 }).width === 390 ? "mobile" : "desktop"}-progress.png`);
+    const progressPath = resolve(outputDir, `B-aiResultProgress-${viewportName(page)}-progress.png`);
     additional.push(await saveScreenshot(page, progressPath));
     const resultAnchor = root.getByText("改稿修订已就绪。", { exact: true });
     await expect(resultAnchor).toBeVisible({ timeout: 15_000 });
@@ -937,6 +1035,19 @@ function statePath(side: Side, state: State, viewport: Viewport): string {
   return resolve(outputDir, `${side}-${state}-${viewport.name}.png`);
 }
 
+function routePathFor(mock: MockState): string {
+  return mock.workspaceMode === "personal_web"
+    ? `${mediaBase}/workspace/edit/${mock.artifactId}`
+    : `${mediaBase}/organization-workspace/document/${mock.artifactId}`;
+}
+
+function viewportName(page: Page): string {
+  const size = page.viewportSize();
+  const viewport = viewports.find((candidate) => candidate.width === size?.width && candidate.height === size?.height);
+  assert.ok(viewport, `unsupported screenshot viewport: ${size ? `${size.width}x${size.height}` : "unknown"}`);
+  return viewport.name;
+}
+
 function expectedConsoleErrors(mock: MockState, errors: string[]): string[] {
   if (mock.side === "C" && (mock.state === "conflict" || mock.state === "unsupported")) {
     return errors.filter((message) => /status of (?:409|422)\b/u.test(message));
@@ -948,6 +1059,22 @@ function expectedConsoleErrors(mock: MockState, errors: string[]): string[] {
 }
 
 function pendingContract(side: Side, state: State): PendingContract {
+  if (side === "C" && state === "organizationDocument") {
+    return {
+      reason: "个人原型的组织只读状态尚未接入组织镜像路由，不能用个人编辑页代替。",
+      selectorContract: {
+        root: 'main[data-read-only-mirror="true"][data-workspace-mode="organization_lark"]',
+        mirrorBadge: 'main[data-read-only-mirror="true"] .mg-badge',
+        organizationLink: 'main[data-read-only-mirror="true"] a.mg-btn',
+      },
+      responseContract: {
+        operationId: "getDocumentBody",
+        method: "GET",
+        path: "/documents/{publicArtifactId}/body",
+        artifact: { workspaceMode: "organization_lark", bodyAuthority: "lark" },
+      },
+    };
+  }
   if (side === "C" && state === "unsupported") {
     return {
       reason: "当前 DocumentEditorPage 会识别 unsupported_document_block，但 BusinessOperationError 丢弃 error.details.blockIds，因此 invalidBlocks 永远为空，422 横幅不能被真实页面渲染。",
@@ -1022,49 +1149,192 @@ function pendingContract(side: Side, state: State): PendingContract {
 
 function pendingEntries(): ManifestEntry[] {
   const entries: ManifestEntry[] = [];
-  const pendingC: CState[] = [];
-  const pendingB: BState[] = [];
   for (const viewport of viewports) {
     for (const state of pendingC) {
+      const contract = pendingContract("C", state);
       entries.push({
         side: "C",
         state,
         status: "pendingIntegration",
         viewport,
         file: null,
+        screenshots: [],
         checks: [
-          { name: "pendingIntegration", ok: false, detail: pendingContract("C", state).reason },
-          { name: "selectorContract", ok: false, detail: JSON.stringify(pendingContract("C", state).selectorContract) },
-          { name: "responseContract", ok: false, detail: JSON.stringify(pendingContract("C", state).responseContract) },
+          { name: "pendingIntegration", ok: false, detail: contract.reason },
+          { name: "selectorContract", ok: false, detail: JSON.stringify(contract.selectorContract) },
+          { name: "responseContract", ok: false, detail: JSON.stringify(contract.responseContract) },
         ],
         api: [],
         requestFailures: [],
         consoleErrors: [],
         pageErrors: [],
-        pendingIntegration: pendingContract("C", state),
+        pendingIntegration: contract,
       });
     }
     for (const state of pendingB) {
+      const contract = pendingContract("B", state);
       entries.push({
         side: "B",
         state,
         status: "pendingIntegration",
         viewport,
         file: null,
+        screenshots: [],
         checks: [
-          { name: "pendingIntegration", ok: false, detail: pendingContract("B", state).reason },
-          { name: "selectorContract", ok: false, detail: JSON.stringify(pendingContract("B", state).selectorContract) },
-          { name: "responseContract", ok: false, detail: JSON.stringify(pendingContract("B", state).responseContract) },
+          { name: "pendingIntegration", ok: false, detail: contract.reason },
+          { name: "selectorContract", ok: false, detail: JSON.stringify(contract.selectorContract) },
+          { name: "responseContract", ok: false, detail: JSON.stringify(contract.responseContract) },
         ],
         api: [],
         requestFailures: [],
         consoleErrors: [],
         pageErrors: [],
-        pendingIntegration: pendingContract("B", state),
+        pendingIntegration: contract,
       });
     }
   }
   return entries;
+}
+
+function matrixKey(side: Side, state: State, viewportNameValue: string): string {
+  return `${side}/${state}/${viewportNameValue}`;
+}
+
+function entryKey(entry: ManifestEntry): string {
+  return matrixKey(entry.side, entry.state, entry.viewport.name);
+}
+
+function unexpectedConsoleErrors(entry: ManifestEntry): string[] {
+  const expected = [...(entry.expectedConsoleErrors ?? [])];
+  return entry.consoleErrors.filter((message) => {
+    const index = expected.indexOf(message);
+    if (index < 0) return true;
+    expected.splice(index, 1);
+    return false;
+  });
+}
+
+function listedScreenshotPaths(entry: ManifestEntry): string[] {
+  return [entry.file, ...(entry.additionalFiles ?? [])].filter((path): path is string => path !== null);
+}
+
+async function hasScreenshotEvidence(
+  entry: ManifestEntry,
+  expectedViewport: Viewport | undefined,
+  screenshotExists: ScreenshotExists,
+): Promise<boolean> {
+  const screenshots = entry.screenshots;
+  const listedPaths = listedScreenshotPaths(entry);
+  if (
+    !expectedViewport ||
+    entry.viewport.name !== expectedViewport.name ||
+    entry.viewport.width !== expectedViewport.width ||
+    entry.viewport.height !== expectedViewport.height ||
+    entry.viewport.isMobile !== expectedViewport.isMobile ||
+    !entry.file ||
+    screenshots.length === 0
+  ) return false;
+  if (listedPaths.length !== screenshots.length) return false;
+  if (new Set(listedPaths).size !== listedPaths.length) return false;
+  if (screenshots.some((screenshot, index) => screenshot.path !== listedPaths[index] || !isAbsolute(screenshot.path))) return false;
+  if (screenshots.some((screenshot) => screenshot.width !== expectedViewport.width || screenshot.height < expectedViewport.height)) return false;
+  if (screenshots.some((screenshot) => screenshot.bytes <= 0 || screenshot.uniqueColors < 5 || screenshot.nonTransparentPixels <= 0)) return false;
+  const filesExist = await Promise.all(screenshots.map((screenshot) => screenshotExists(screenshot.path)));
+  return filesExist.every(Boolean);
+}
+
+export async function validateManifestEvidence(
+  entries: readonly ManifestEntry[],
+  cStates: readonly CState[] = requiredCStates,
+  bStates: readonly BState[] = requiredBStates,
+  viewportDefinitions: readonly Viewport[] = viewports,
+  options: { screenshotExists?: ScreenshotExists } = {},
+): Promise<MatrixValidation> {
+  const expectedKeys = new Set<string>();
+  for (const viewport of viewportDefinitions) {
+    for (const state of cStates) expectedKeys.add(matrixKey("C", state, viewport.name));
+    for (const state of bStates) expectedKeys.add(matrixKey("B", state, viewport.name));
+  }
+  const entriesByKey = new Map<string, ManifestEntry[]>();
+  for (const entry of entries) {
+    const key = entryKey(entry);
+    const existing = entriesByKey.get(key) ?? [];
+    existing.push(entry);
+    entriesByKey.set(key, existing);
+  }
+  const expectedViewportByName = new Map<string, Viewport>(viewportDefinitions.map((viewport) => [viewport.name, viewport]));
+  const screenshotExists = options.screenshotExists ?? (async (path: string) => {
+    try {
+      return (await stat(path)).isFile();
+    } catch {
+      return false;
+    }
+  });
+  const screenshotValidity = new Map<ManifestEntry, boolean>();
+  await Promise.all(entries.map(async (entry) => {
+    screenshotValidity.set(entry, await hasScreenshotEvidence(entry, expectedViewportByName.get(entry.viewport.name), screenshotExists));
+  }));
+  const failures: string[] = [];
+  const missingKeys = [...expectedKeys].filter((key) => !entriesByKey.has(key));
+  const duplicateKeys = [...expectedKeys].filter((key) => (entriesByKey.get(key)?.length ?? 0) > 1);
+  const unexpectedKeys = [...entriesByKey.keys()].filter((key) => !expectedKeys.has(key));
+  for (const key of missingKeys) failures.push(`missing matrix cell: ${key}`);
+  for (const key of duplicateKeys) failures.push(`duplicate matrix cell: ${key}`);
+  for (const key of unexpectedKeys) failures.push(`unexpected matrix cell: ${key}`);
+
+  const pendingKeys: string[] = [];
+  const failedKeys: string[] = [];
+  const missingScreenshotKeys: string[] = [];
+  const requestFailureKeys: string[] = [];
+  const unexpectedConsoleErrorKeys: string[] = [];
+  const pageErrorKeys: string[] = [];
+  const failedCheckKeys: string[] = [];
+  const completeKeys: string[] = [];
+  for (const key of expectedKeys) {
+    const cellEntries = entriesByKey.get(key) ?? [];
+    if (cellEntries.some((entry) => entry.status === "pendingIntegration")) pendingKeys.push(key);
+    if (cellEntries.some((entry) => entry.status === "failed")) failedKeys.push(key);
+    if (cellEntries.some((entry) => !screenshotValidity.get(entry))) missingScreenshotKeys.push(key);
+    if (cellEntries.some((entry) => entry.requestFailures.length > 0)) requestFailureKeys.push(key);
+    if (cellEntries.some((entry) => unexpectedConsoleErrors(entry).length > 0)) unexpectedConsoleErrorKeys.push(key);
+    if (cellEntries.some((entry) => entry.pageErrors.length > 0)) pageErrorKeys.push(key);
+    if (cellEntries.some((entry) => entry.checks.some((check) => !check.ok))) failedCheckKeys.push(key);
+    const onlyEntry = cellEntries.length === 1 ? cellEntries[0] : undefined;
+    if (
+      onlyEntry &&
+      onlyEntry.status === "captured" &&
+      screenshotValidity.get(onlyEntry) === true &&
+      onlyEntry.requestFailures.length === 0 &&
+      unexpectedConsoleErrors(onlyEntry).length === 0 &&
+      onlyEntry.pageErrors.length === 0 &&
+      onlyEntry.checks.every((check) => check.ok)
+    ) completeKeys.push(key);
+  }
+  for (const key of pendingKeys) failures.push(`pending matrix cell: ${key}`);
+  for (const key of failedKeys) failures.push(`failed matrix cell: ${key}`);
+  for (const key of missingScreenshotKeys) failures.push(`missing screenshot evidence: ${key}`);
+  for (const key of requestFailureKeys) failures.push(`request failure in matrix cell: ${key}`);
+  for (const key of unexpectedConsoleErrorKeys) failures.push(`unexpected console error in matrix cell: ${key}`);
+  for (const key of pageErrorKeys) failures.push(`page error in matrix cell: ${key}`);
+  for (const key of failedCheckKeys) failures.push(`failed selector/state check: ${key}`);
+
+  const completeness: MatrixCompleteness = {
+    expectedCells: expectedKeys.size,
+    observedEntries: entries.length,
+    observedCells: [...expectedKeys].filter((key) => entriesByKey.has(key)).length,
+    completeCells: completeKeys.length,
+    missingCells: missingKeys.length,
+    duplicateCells: duplicateKeys.length,
+    unexpectedCells: unexpectedKeys.length,
+    pendingCells: pendingKeys.length,
+    failedCells: failedKeys.length,
+    missingScreenshotCells: missingScreenshotKeys.length,
+    requestFailureCells: requestFailureKeys.length,
+    unexpectedConsoleErrorCells: unexpectedConsoleErrorKeys.length,
+    pageErrorCells: pageErrorKeys.length,
+    failedCheckCells: failedCheckKeys.length,
+  };
+  return { ok: failures.length === 0, failures, completeness };
 }
 
 async function captureRuntimeState(
@@ -1086,33 +1356,36 @@ async function captureRuntimeState(
   const checks: CheckRecord[] = [];
   const primaryPath = statePath(side, state, viewport);
   const additionalScreenshots: ScreenshotRecord[] = [];
+  let screenshotRecords: ScreenshotRecord[] = [];
   try {
     await page.route(/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//u, async (route) => {
       await route.fulfill({ status: 200, contentType: "text/css", body: "" });
     });
     await installApi(page, mock);
-    const routePath = side === "C"
-      ? `${mediaBase}/workspace/edit/${mock.artifactId}`
-      : `${mediaBase}/organization-workspace/document/${mock.artifactId}`;
+    const routePath = routePathFor(mock);
     await page.goto(new URL(routePath, baseUrl).toString(), { waitUntil: "domcontentloaded" });
     assert.equal(new URL(page.url()).pathname, routePath, `${side}/${state}/${viewport.name}: route drifted`);
     checks.push({ name: "route", ok: true, detail: new URL(page.url()).pathname });
 
     let root: Locator;
-    let anchor: Locator;
     let anchorDetail: string;
     if (side === "C") {
       const driven = await driveCState(page, mock, state as CState, primaryPath);
       root = driven.root;
-      anchor = driven.anchor;
       anchorDetail = driven.anchorDetail;
       additionalScreenshots.push(...driven.additional);
     } else {
-      const driven = await driveBState(page, mock, state as BState, primaryPath);
+      const driven = await driveBState(page, mock, state as BState);
       root = driven.root;
-      anchor = driven.anchor;
       anchorDetail = driven.anchorDetail;
       additionalScreenshots.push(...driven.additional);
+    }
+    if (mock.workspaceMode === "organization_lark") {
+      await expect(root).toHaveAttribute("data-workspace-mode", "organization_lark");
+      checks.push({ name: "workspaceRouteState", ok: true, detail: "organization_lark" });
+    } else {
+      await expect(root).toHaveAttribute("data-document-editor", "true");
+      checks.push({ name: "workspaceRouteState", ok: true, detail: "personal_web" });
     }
     checks.push({ name: "pageTitle", ok: true, detail: (await root.getByRole("heading", { level: 1 }).first().textContent())?.trim() ?? "" });
     checks.push({ name: "stateAnchor", ok: true, detail: anchorDetail });
@@ -1128,13 +1401,19 @@ async function captureRuntimeState(
       assert.ok(additionalScreenshots.length > 0, `${side}/${state}/${viewport.name}: state did not capture its primary screenshot`);
       primaryScreenshot = additionalScreenshots[0]!;
     }
-    const screenshotRecords = [primaryScreenshot, ...additionalScreenshots.filter((item) => item.path !== primaryScreenshot.path)];
+    screenshotRecords = [primaryScreenshot, ...additionalScreenshots.filter((item) => item.path !== primaryScreenshot.path)];
     checks.push({
       name: "screenshotNonBlank",
       ok: screenshotRecords.every((item) => item.uniqueColors >= 5 && item.nonTransparentPixels > 0),
       detail: JSON.stringify(screenshotRecords.map((item) => ({ path: item.path, bytes: item.bytes, width: item.width, height: item.height, uniqueColors: item.uniqueColors }))),
     });
     assert.ok(screenshotRecords.every((item) => item.uniqueColors >= 5 && item.nonTransparentPixels > 0), `${side}/${state}/${viewport.name}: blank screenshot`);
+    checks.push({
+      name: "noRequestFailures",
+      ok: diagnostics.requestFailures.length === 0,
+      detail: diagnostics.requestFailures.join("\n") || "none",
+    });
+    assert.deepEqual(diagnostics.requestFailures, [], `${side}/${state}/${viewport.name}: request failures`);
     const allowedConsoleErrors = expectedConsoleErrors(mock, diagnostics.consoleErrors);
     const unexpectedConsoleErrors = diagnostics.consoleErrors.filter((message) => !allowedConsoleErrors.includes(message));
     checks.push({ name: "noUnexpectedConsoleErrors", ok: unexpectedConsoleErrors.length === 0, detail: unexpectedConsoleErrors.join("\n") || "none" });
@@ -1152,6 +1431,7 @@ async function captureRuntimeState(
       viewport,
       file: primaryScreenshot.path,
       additionalFiles: screenshotRecords.slice(1).map((item) => item.path),
+      screenshots: screenshotRecords,
       checks,
       api: mock.requests,
       requestFailures: diagnostics.requestFailures,
@@ -1165,7 +1445,9 @@ async function captureRuntimeState(
       state,
       status: "failed",
       viewport,
-      file: null,
+      file: screenshotRecords[0]?.path ?? null,
+      additionalFiles: screenshotRecords.slice(1).map((item) => item.path),
+      screenshots: screenshotRecords,
       checks: [
         ...checks,
         { name: "runtimeCapture", ok: false, detail: error instanceof Error ? error.message : String(error) },
@@ -1224,16 +1506,27 @@ async function stopLocalServer(server: ViteDevServer | null): Promise<void> {
   if (server) await server.close();
 }
 
+async function readSourceGitSha(): Promise<string | null> {
+  try {
+    const { stdout } = await execFile("git", ["rev-parse", "HEAD"], { cwd: projectRoot });
+    const sha = stdout.trim();
+    return /^[0-9a-f]{40}$/iu.test(sha) ? sha : null;
+  } catch {
+    return null;
+  }
+}
+
 async function main(): Promise<void> {
+  const captureTimestamp = new Date().toISOString();
+  const sourceGitSha = await readSourceGitSha();
   await mkdir(outputDir, { recursive: true });
   const started = externalBaseUrl ? null : await startLocalServer();
   const baseUrl = externalBaseUrl ?? started!.baseUrl;
   const localServer = started?.server ?? null;
   const browser = await chromium.launch({ headless: true });
+  const browserIdentity = { name: browser.browserType().name(), version: browser.version() };
   const entries: ManifestEntry[] = [];
   try {
-    const runtimeC: CState[] = ["clean", "dirty", "conflict", "unsupported", "saving", "aiResultProgress", "offlineRetry", "personalDocument"];
-    const runtimeB: BState[] = ["synced", "running", "unknown", "conflict", "unsupported", "stale", "aiResultProgress", "partialApplication"];
     for (const viewport of viewports) {
       for (const state of runtimeC) entries.push(await captureRuntimeState(browser, "C", state, viewport, baseUrl));
       for (const state of runtimeB) entries.push(await captureRuntimeState(browser, "B", state, viewport, baseUrl));
@@ -1243,7 +1536,13 @@ async function main(): Promise<void> {
     await browser.close();
     await stopLocalServer(localServer);
   }
-  const screenshotFiles = entries.reduce((count, entry) => count + (entry.file ? 1 : 0) + (entry.additionalFiles?.length ?? 0), 0);
+  const validation = await validateManifestEvidence(entries);
+  const validationFailures = [
+    ...validation.failures,
+    ...(sourceGitSha ? [] : ["source git SHA unavailable"]),
+    ...(browserIdentity.name && browserIdentity.version ? [] : ["browser identity unavailable"]),
+  ];
+  const screenshotFiles = entries.reduce((count, entry) => count + entry.screenshots.length, 0);
   const capturedEntries = entries.filter((entry) => entry.status === "captured").length;
   const pendingIntegrationEntries = entries.filter((entry) => entry.status === "pendingIntegration").length;
   const failedEntries = entries.filter((entry) => entry.status === "failed").length;
@@ -1257,25 +1556,122 @@ async function main(): Promise<void> {
     baseUrl,
     outputDirectory: outputDir,
     viewports,
+    sourceGitSha,
+    browserIdentity,
+    captureTimestamp,
+    reviewIdentity,
     entries,
+    matrixCompleteness: validation.completeness,
+    validationFailures,
     summary: {
-      requiredCStates: 8,
-      requiredBStates: 8,
+      requiredCStates: requiredCStates.length,
+      requiredBStates: requiredBStates.length,
       capturedEntries,
       pendingIntegrationEntries,
       failedEntries,
       screenshotFiles,
     },
-    ok: pendingIntegrationEntries === 0 && failedEntries === 0,
+    ok: validationFailures.length === 0,
   };
   const manifestPath = resolve(outputDir, "manifest.json");
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   console.log(`Stage2 document screenshot manifest: ${manifestPath}`);
-  console.log(`Captured ${capturedEntries} viewport entries and ${screenshotFiles} screenshots; pendingIntegration=${pendingIntegrationEntries}; failed=${failedEntries}`);
+  console.log(`Observed ${validation.completeness.observedCells}/${validation.completeness.expectedCells} matrix cells; complete=${validation.completeness.completeCells}; screenshots=${screenshotFiles}; pending=${pendingIntegrationEntries}; failed=${failedEntries}`);
   if (!manifest.ok) process.exitCode = 1;
 }
 
-main().catch(async (error) => {
-  console.error(error instanceof Error ? error.stack ?? error.message : String(error));
-  process.exitCode = 1;
-});
+function selfTestEntry(overrides: Partial<ManifestEntry> = {}): ManifestEntry {
+  const viewport = viewports[0];
+  const screenshot: ScreenshotRecord = {
+    path: "/tmp/stage2-self-test.png",
+    sha256: "0".repeat(64),
+    bytes: 100,
+    width: viewport.width,
+    height: viewport.height,
+    uniqueColors: 5,
+    nonTransparentPixels: 1,
+  };
+  return {
+    side: "C",
+    state: "clean",
+    status: "captured",
+    viewport,
+    file: screenshot.path,
+    additionalFiles: [],
+    screenshots: [screenshot],
+    checks: [
+      { name: "route", ok: true, detail: "ok" },
+      { name: "stateAnchor", ok: true, detail: "ok" },
+    ],
+    api: [],
+    requestFailures: [],
+    consoleErrors: [],
+    pageErrors: [],
+    ...overrides,
+  };
+}
+
+export async function runSelfTest(): Promise<void> {
+  assert.deepEqual(
+    viewports.map(({ name, width, height }) => ({ name, width, height })),
+    [
+      { name: "desktop-1440x900", width: 1440, height: 900 },
+      { name: "desktop-1280x800", width: 1280, height: 800 },
+      { name: "tablet-1024x768", width: 1024, height: 768 },
+      { name: "mobile-390x844", width: 390, height: 844 },
+    ],
+  );
+  assert.deepEqual(derivePendingStates(["rendered", "missing"] as const, new Set(["rendered"])), ["missing"]);
+  assert.deepEqual(pendingC, []);
+  assert.deepEqual(pendingB, []);
+
+  const organizationMock = createMockState("C", "organizationDocument");
+  assert.equal(organizationMock.workspaceMode, "organization_lark");
+  assert.equal(organizationMock.artifactId, organizationArtifactId);
+  assert.equal(routePathFor(organizationMock), `${mediaBase}/organization-workspace/document/${organizationArtifactId}`);
+  const organizationBodyResponse = bodyResponse(organizationMock);
+  assert.equal(organizationBodyResponse.data.artifact.workspaceMode, "organization_lark");
+  assert.equal(organizationBodyResponse.data.artifact.bodyAuthority, "lark");
+
+  const green = await validateManifestEvidence(
+    [selfTestEntry()],
+    ["clean"],
+    [],
+    [viewports[0]],
+    { screenshotExists: async () => true },
+  );
+  assert.equal(green.ok, true, `self-test green fixture failed: ${green.failures.join("; ")}`);
+
+  const expectRejected = async (name: string, entry: ManifestEntry, expectedFailure: string, screenshotExists = true) => {
+    const result = await validateManifestEvidence(
+      [entry],
+      ["clean"],
+      [],
+      [viewports[0]],
+      { screenshotExists: async () => screenshotExists },
+    );
+    assert.equal(result.ok, false, `${name} fixture unexpectedly passed`);
+    assert.ok(result.failures.some((failure) => failure.includes(expectedFailure)), `${name} fixture did not report ${expectedFailure}: ${result.failures.join("; ")}`);
+  };
+  await expectRejected("missing screenshot", selfTestEntry({ file: null, screenshots: [], additionalFiles: [] }), "missing screenshot evidence");
+  await expectRejected("request failure", selfTestEntry({ requestFailures: ["GET /openclaw/media/api/example net::ERR_FAILED"] }), "request failure in matrix cell");
+  await expectRejected("unexpected console error", selfTestEntry({ consoleErrors: ["unexpected console error"] }), "unexpected console error in matrix cell");
+  await expectRejected("page error", selfTestEntry({ pageErrors: ["unexpected page error"] }), "page error in matrix cell");
+  await expectRejected("failed selector check", selfTestEntry({ checks: [{ name: "stateAnchor", ok: false, detail: "missing" }] }), "failed selector/state check");
+  await expectRejected("failed status", selfTestEntry({ status: "failed", file: null, screenshots: [], additionalFiles: [] }), "failed matrix cell");
+  await expectRejected("pending status", selfTestEntry({ status: "pendingIntegration", file: null, screenshots: [], additionalFiles: [] }), "pending matrix cell");
+  await expectRejected("filesystem screenshot missing", selfTestEntry(), "missing screenshot evidence", false);
+  const missingCell = await validateManifestEvidence([], ["clean"], [], [viewports[0]], { screenshotExists: async () => true });
+  assert.equal(missingCell.ok, false);
+  assert.ok(missingCell.failures.includes("missing matrix cell: C/clean/desktop-1440x900"));
+  console.log("Stage2 document screenshot harness self-test: PASS");
+}
+
+const isDirectExecution = process.argv[1] !== undefined && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
+if (isDirectExecution) {
+  const operation = process.argv.includes("--self-test") ? runSelfTest() : main();
+  operation.catch((error: unknown) => {
+    console.error(error instanceof Error ? error.stack ?? error.message : String(error));
+    process.exitCode = 1;
+  });
+}

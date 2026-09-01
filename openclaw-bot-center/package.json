@@ -38,6 +38,8 @@
     "qa:media-stage1-workspace-runtime": "STAGE1_WORKSPACE_RUNTIME_QA_OUTPUT=/tmp/openclaw-stage1-workspace-runtime bash scripts/qa/withChromiumSlot.sh -- tsx scripts/qa/checkStage1WorkspaceRuntime.ts",
     "qa:media-tracks-pagination-contract": "tsx scripts/qa/checkTracksPaginationContract.ts",
     "qa:media-role-screens": "bash scripts/qa/withChromiumSlot.sh -- tsx scripts/qa/captureMediaRolePages.ts",
+    "qa:media-stage2-document-screenshots": "bash scripts/qa/withChromiumSlot.sh -- tsx scripts/qa/captureStage2DocumentScreenshots.ts",
+    "qa:media-stage2-document-screenshots-self-test": "tsx scripts/qa/captureStage2DocumentScreenshots.ts --self-test",
     "qa:media-web": "bash scripts/qa/withChromiumSlot.sh -- tsx scripts/qa/checkMediaWebChannel.ts",
     "qa:media-registration": "tsx scripts/qa/checkMediaRegistrationPage.ts",
     "qa:media-session-contract": "tsx scripts/qa/checkMediaSessionContract.ts",
