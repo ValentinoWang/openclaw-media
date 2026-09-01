@@ -22,6 +22,7 @@ const suppliedSourceIdentity = process.env.STAGE2_DOCUMENT_SOURCE_IDENTITY?.trim
 const mediaBase = "/openclaw/media";
 const apiRoot = `${mediaBase}/api`;
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const repositoryRoot = resolve(projectRoot, "..");
 const outputDir = process.env.STAGE2_DOCUMENT_SCREENSHOT_DIR ?? "/tmp/openclaw-stage2-document-screenshots";
 const externalBaseUrl = process.env.STAGE2_DOCUMENT_BASE_URL?.replace(/\/$/u, "");
 const reviewIdentity = process.env.STAGE2_DOCUMENT_REVIEW_IDENTITY?.trim() || null;
@@ -1181,14 +1182,14 @@ async function saveScreenshot(page: Page, path: string): Promise<ScreenshotRecor
 }
 
 function recordArtifactPath(path: string): string {
-  const projectRelativePath = relative(projectRoot, path);
-  return projectRelativePath === "" || projectRelativePath === ".." || projectRelativePath.startsWith("../") || isAbsolute(projectRelativePath)
+  const repositoryRelativePath = relative(repositoryRoot, path);
+  return repositoryRelativePath === "" || repositoryRelativePath === ".." || repositoryRelativePath.startsWith("../") || isAbsolute(repositoryRelativePath)
     ? path
-    : projectRelativePath;
+    : repositoryRelativePath;
 }
 
 function resolveRecordedArtifactPath(path: string): string {
-  return isAbsolute(path) ? path : resolve(projectRoot, path);
+  return isAbsolute(path) ? path : resolve(repositoryRoot, path);
 }
 
 async function screenshotRecordMatchesMetadata(record: ScreenshotRecord, expectedViewport: Viewport): Promise<boolean> {
@@ -1805,7 +1806,6 @@ async function readSourceWorktreeDirtyPaths(): Promise<string[]> {
 }
 
 async function readPrototypeBaselines(): Promise<Record<Side, PrototypeBaseline>> {
-  const repositoryRoot = resolve(projectRoot, "..");
   const readBaseline = async (side: Side): Promise<PrototypeBaseline> => {
     const path = resolve(repositoryRoot, prototypeDocuments[side]);
     const data = await readFile(path);
@@ -1934,7 +1934,7 @@ export async function runSelfTest(): Promise<void> {
       { name: "mobile-390x844", width: 390, height: 844 },
     ],
   );
-  const durableArtifact = resolve(projectRoot, "acceptance/release/runs/example/screenshots/C-clean-desktop-1440x900.png");
+  const durableArtifact = resolve(repositoryRoot, "acceptance/release/runs/example/screenshots/C-clean-desktop-1440x900.png");
   assert.equal(recordArtifactPath(durableArtifact), "acceptance/release/runs/example/screenshots/C-clean-desktop-1440x900.png");
   assert.equal(resolveRecordedArtifactPath(recordArtifactPath(durableArtifact)), durableArtifact);
   assert.equal(recordArtifactPath("/tmp/stage2-self-test.png"), "/tmp/stage2-self-test.png");
