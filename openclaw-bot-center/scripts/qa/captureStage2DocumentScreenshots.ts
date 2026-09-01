@@ -18,13 +18,13 @@ import { expect } from "playwright/test";
 import { createServer as createViteServer, type ViteDevServer } from "vite";
 
 const TASK_ID = "STAGE2-SCREENSHOT-QA";
-const SOURCE_IDENTITY = process.env.STAGE2_DOCUMENT_SOURCE_IDENTITY ?? "workspace";
+const suppliedSourceIdentity = process.env.STAGE2_DOCUMENT_SOURCE_IDENTITY?.trim() || null;
 const mediaBase = "/openclaw/media";
 const apiRoot = `${mediaBase}/api`;
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const outputDir = process.env.STAGE2_DOCUMENT_SCREENSHOT_DIR ?? "/tmp/openclaw-stage2-document-screenshots";
 const externalBaseUrl = process.env.STAGE2_DOCUMENT_BASE_URL?.replace(/\/$/u, "");
-const reviewIdentity = process.env.STAGE2_DOCUMENT_REVIEW_IDENTITY?.trim() || "REVIEW_IDENTITY_PLACEHOLDER";
+const reviewIdentity = process.env.STAGE2_DOCUMENT_REVIEW_IDENTITY?.trim() || null;
 const execFile = promisify(execFileCallback);
 
 if (!isAbsolute(outputDir)) {
@@ -84,6 +84,20 @@ type ScreenshotRecord = {
   nonTransparentPixels: number;
 };
 
+type EvidenceBoundary = "browser-boundary-mock";
+
+type PrototypeComparison = {
+  prototypeDocument: string;
+  prototypeState: string;
+  disposition: "aligned-state-contract" | "intentional-scope-difference" | "cross-surface-route";
+  note: string;
+};
+
+type PrototypeBaseline = {
+  path: string;
+  sha256: string;
+};
+
 type PendingContract = {
   reason: string;
   selectorContract: Record<string, unknown>;
@@ -94,6 +108,8 @@ type ManifestEntry = {
   side: Side;
   state: State;
   status: "captured" | "pendingIntegration" | "failed";
+  evidenceBoundary: EvidenceBoundary;
+  prototypeComparison: PrototypeComparison;
   viewport: { name: string; width: number; height: number; isMobile: boolean };
   file: string | null;
   additionalFiles?: string[];
@@ -112,6 +128,8 @@ type ManifestEntry = {
 type Manifest = {
   taskId: string;
   sourceIdentity: string;
+  captureRunId: string;
+  evidenceBoundary: EvidenceBoundary;
   authority: {
     devBrief: string;
     acceptanceExecution: string;
@@ -120,9 +138,11 @@ type Manifest = {
   outputDirectory: string;
   viewports: typeof viewports;
   sourceGitSha: string | null;
+  sourceWorktreeClean: boolean;
   browserIdentity: { name: string; version: string } | null;
   captureTimestamp: string;
-  reviewIdentity: string;
+  reviewIdentity: string | null;
+  prototypeBaselines: Record<Side, PrototypeBaseline>;
   entries: ManifestEntry[];
   matrixCompleteness: MatrixCompleteness;
   validationFailures: string[];
@@ -161,6 +181,11 @@ type MatrixValidation = {
 };
 
 type ScreenshotExists = (path: string) => Promise<boolean>;
+type ScreenshotRecordMatches = (record: ScreenshotRecord, expectedViewport: Viewport) => Promise<boolean>;
+type ManifestValidationOptions = {
+  screenshotExists?: ScreenshotExists;
+  screenshotRecordMatches?: ScreenshotRecordMatches;
+};
 
 function derivePendingStates<T extends string>(required: readonly T[], rendered: ReadonlySet<T>): T[] {
   return required.filter((state) => !rendered.has(state));
@@ -186,6 +211,76 @@ const requiredBStates: readonly BState[] = [
   "aiResultProgress",
   "partialApplication",
 ];
+
+const evidenceBoundary: EvidenceBoundary = "browser-boundary-mock";
+const prototypeDocuments: Record<Side, string> = {
+  C: "docs/frontend/prototype/personal-document-editor.html",
+  B: "docs/frontend/prototype/organization-document-mirror.html",
+};
+
+function prototypeComparisonFor(side: Side, state: State): PrototypeComparison {
+  if (side === "C") {
+    const cState = state as CState;
+    const prototypeStateByRuntimeState: Record<CState, string> = {
+      clean: "clean",
+      dirty: "dirty",
+      conflict: "conflict",
+      unsupported: "unsupported",
+      saving: "saving",
+      aiResultProgress: "plan",
+      offlineRetry: "offline",
+      organizationDocument: "org",
+    };
+    if (cState === "aiResultProgress") {
+      return {
+        prototypeDocument: prototypeDocuments.C,
+        prototypeState: prototypeStateByRuntimeState[cState],
+        disposition: "intentional-scope-difference",
+        note: "The brief permits result interpretation after generation instead of a pre-execution plan confirmation.",
+      };
+    }
+    if (cState === "organizationDocument") {
+      return {
+        prototypeDocument: prototypeDocuments.C,
+        prototypeState: prototypeStateByRuntimeState[cState],
+        disposition: "cross-surface-route",
+        note: "The personal-surface trigger is verified by the organization read-only mirror route, not by duplicating that state in the editor.",
+      };
+    }
+    return {
+      prototypeDocument: prototypeDocuments.C,
+      prototypeState: prototypeStateByRuntimeState[cState],
+      disposition: "aligned-state-contract",
+      note: "The runtime state uses the same interaction contract as the prototype state.",
+    };
+  }
+
+  const bState = state as BState;
+  const prototypeStateByRuntimeState: Record<BState, string> = {
+    synced: "ok",
+    running: "run",
+    unknown: "unknown",
+    conflict: "conflict",
+    unsupported: "unsupported",
+    stale: "stale",
+    aiResultProgress: "plan",
+    partialApplication: "partial",
+  };
+  if (bState === "aiResultProgress") {
+    return {
+      prototypeDocument: prototypeDocuments.B,
+      prototypeState: prototypeStateByRuntimeState[bState],
+      disposition: "intentional-scope-difference",
+      note: "The brief permits result interpretation after generation instead of a pre-execution plan confirmation.",
+    };
+  }
+  return {
+    prototypeDocument: prototypeDocuments.B,
+    prototypeState: prototypeStateByRuntimeState[bState],
+    disposition: "aligned-state-contract",
+    note: "The runtime state uses the same interaction contract as the prototype state.",
+  };
+}
 
 const renderedCStates = new Set<CState>([
   "clean",
@@ -1085,6 +1180,23 @@ async function saveScreenshot(page: Page, path: string): Promise<ScreenshotRecor
   };
 }
 
+async function screenshotRecordMatchesMetadata(record: ScreenshotRecord, expectedViewport: Viewport): Promise<boolean> {
+  try {
+    const data = await readFile(record.path);
+    const inspected = inspectPng(data);
+    return data.length === record.bytes &&
+      createHash("sha256").update(data).digest("hex") === record.sha256 &&
+      inspected.width === record.width &&
+      inspected.height === record.height &&
+      inspected.uniqueColors === record.uniqueColors &&
+      inspected.nonTransparentPixels === record.nonTransparentPixels &&
+      record.width === expectedViewport.width &&
+      record.height >= expectedViewport.height;
+  } catch {
+    return false;
+  }
+}
+
 function statePath(side: Side, state: State, viewport: Viewport): string {
   return resolve(outputDir, `${side}-${state}-${viewport.name}.png`);
 }
@@ -1250,6 +1362,8 @@ function pendingEntries(): ManifestEntry[] {
         side: "C",
         state,
         status: "pendingIntegration",
+        evidenceBoundary,
+        prototypeComparison: prototypeComparisonFor("C", state),
         viewport,
         file: null,
         screenshots: [],
@@ -1271,6 +1385,8 @@ function pendingEntries(): ManifestEntry[] {
         side: "B",
         state,
         status: "pendingIntegration",
+        evidenceBoundary,
+        prototypeComparison: prototypeComparisonFor("B", state),
         viewport,
         file: null,
         screenshots: [],
@@ -1316,6 +1432,7 @@ async function hasScreenshotEvidence(
   entry: ManifestEntry,
   expectedViewport: Viewport | undefined,
   screenshotExists: ScreenshotExists,
+  screenshotRecordMatches: ScreenshotRecordMatches,
 ): Promise<boolean> {
   const screenshots = entry.screenshots;
   const listedPaths = listedScreenshotPaths(entry);
@@ -1334,7 +1451,9 @@ async function hasScreenshotEvidence(
   if (screenshots.some((screenshot) => screenshot.width !== expectedViewport.width || screenshot.height < expectedViewport.height)) return false;
   if (screenshots.some((screenshot) => screenshot.bytes <= 0 || screenshot.uniqueColors < 5 || screenshot.nonTransparentPixels <= 0)) return false;
   const filesExist = await Promise.all(screenshots.map((screenshot) => screenshotExists(screenshot.path)));
-  return filesExist.every(Boolean);
+  if (!filesExist.every(Boolean)) return false;
+  const metadataMatches = await Promise.all(screenshots.map((screenshot) => screenshotRecordMatches(screenshot, expectedViewport)));
+  return metadataMatches.every(Boolean);
 }
 
 export async function validateManifestEvidence(
@@ -1342,7 +1461,7 @@ export async function validateManifestEvidence(
   cStates: readonly CState[] = requiredCStates,
   bStates: readonly BState[] = requiredBStates,
   viewportDefinitions: readonly Viewport[] = viewports,
-  options: { screenshotExists?: ScreenshotExists } = {},
+  options: ManifestValidationOptions = {},
 ): Promise<MatrixValidation> {
   const expectedKeys = new Set<string>();
   for (const viewport of viewportDefinitions) {
@@ -1364,9 +1483,15 @@ export async function validateManifestEvidence(
       return false;
     }
   });
+  const screenshotRecordMatches = options.screenshotRecordMatches ?? screenshotRecordMatchesMetadata;
   const screenshotValidity = new Map<ManifestEntry, boolean>();
   await Promise.all(entries.map(async (entry) => {
-    screenshotValidity.set(entry, await hasScreenshotEvidence(entry, expectedViewportByName.get(entry.viewport.name), screenshotExists));
+    screenshotValidity.set(entry, await hasScreenshotEvidence(
+      entry,
+      expectedViewportByName.get(entry.viewport.name),
+      screenshotExists,
+      screenshotRecordMatches,
+    ));
   }));
   const failures: string[] = [];
   const missingKeys = [...expectedKeys].filter((key) => !entriesByKey.has(key));
@@ -1375,6 +1500,20 @@ export async function validateManifestEvidence(
   for (const key of missingKeys) failures.push(`missing matrix cell: ${key}`);
   for (const key of duplicateKeys) failures.push(`duplicate matrix cell: ${key}`);
   for (const key of unexpectedKeys) failures.push(`unexpected matrix cell: ${key}`);
+  for (const entry of entries) {
+    if (entry.evidenceBoundary !== evidenceBoundary) {
+      failures.push(`unexpected evidence boundary: ${entryKey(entry)}`);
+    }
+    const expectedPrototype = prototypeComparisonFor(entry.side, entry.state);
+    if (
+      entry.prototypeComparison.prototypeDocument !== expectedPrototype.prototypeDocument ||
+      entry.prototypeComparison.prototypeState !== expectedPrototype.prototypeState ||
+      entry.prototypeComparison.disposition !== expectedPrototype.disposition ||
+      entry.prototypeComparison.note !== expectedPrototype.note
+    ) {
+      failures.push(`prototype comparison mapping drift: ${entryKey(entry)}`);
+    }
+  }
 
   const pendingKeys: string[] = [];
   const failedKeys: string[] = [];
@@ -1524,6 +1663,8 @@ async function captureRuntimeState(
       side,
       state,
       status: "captured",
+      evidenceBoundary,
+      prototypeComparison: prototypeComparisonFor(side, state),
       viewport,
       file: primaryScreenshot.path,
       additionalFiles: screenshotRecords.slice(1).map((item) => item.path),
@@ -1541,6 +1682,8 @@ async function captureRuntimeState(
       side,
       state,
       status: "failed",
+      evidenceBoundary,
+      prototypeComparison: prototypeComparisonFor(side, state),
       viewport,
       file: screenshotRecords[0]?.path ?? null,
       additionalFiles: screenshotRecords.slice(1).map((item) => item.path),
@@ -1613,9 +1756,65 @@ async function readSourceGitSha(): Promise<string | null> {
   }
 }
 
+function resolveSourceIdentity(
+  sourceGitSha: string | null,
+  sourceWorktreeDirtyPaths: readonly string[],
+): { sourceIdentity: string; failure: string | null } {
+  if (!sourceGitSha) {
+    return {
+      sourceIdentity: suppliedSourceIdentity ?? "unavailable",
+      failure: "source git SHA unavailable",
+    };
+  }
+  if (suppliedSourceIdentity && suppliedSourceIdentity !== sourceGitSha) {
+    return {
+      sourceIdentity: suppliedSourceIdentity,
+      failure: `supplied source identity does not match HEAD: ${suppliedSourceIdentity} != ${sourceGitSha}`,
+    };
+  }
+  if (sourceWorktreeDirtyPaths.length > 0) {
+    return {
+      sourceIdentity: sourceGitSha,
+      failure: `source worktree is dirty: ${sourceWorktreeDirtyPaths.join(", ")}`,
+    };
+  }
+  return { sourceIdentity: sourceGitSha, failure: null };
+}
+
+async function readSourceWorktreeDirtyPaths(): Promise<string[]> {
+  try {
+    const { stdout } = await execFile("git", ["status", "--porcelain", "--", "."], { cwd: projectRoot });
+    return stdout
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => line.slice(3));
+  } catch {
+    return ["git status unavailable"];
+  }
+}
+
+async function readPrototypeBaselines(): Promise<Record<Side, PrototypeBaseline>> {
+  const repositoryRoot = resolve(projectRoot, "..");
+  const readBaseline = async (side: Side): Promise<PrototypeBaseline> => {
+    const path = resolve(repositoryRoot, prototypeDocuments[side]);
+    const data = await readFile(path);
+    return {
+      path: prototypeDocuments[side],
+      sha256: createHash("sha256").update(data).digest("hex"),
+    };
+  };
+  return {
+    C: await readBaseline("C"),
+    B: await readBaseline("B"),
+  };
+}
+
 async function main(): Promise<void> {
   const captureTimestamp = new Date().toISOString();
   const sourceGitSha = await readSourceGitSha();
+  const sourceWorktreeDirtyPaths = await readSourceWorktreeDirtyPaths();
+  const sourceIdentity = resolveSourceIdentity(sourceGitSha, sourceWorktreeDirtyPaths);
+  const prototypeBaselines = await readPrototypeBaselines();
   await mkdir(outputDir, { recursive: true });
   const started = externalBaseUrl ? null : await startLocalServer();
   const baseUrl = externalBaseUrl ?? started!.baseUrl;
@@ -1636,7 +1835,7 @@ async function main(): Promise<void> {
   const validation = await validateManifestEvidence(entries);
   const validationFailures = [
     ...validation.failures,
-    ...(sourceGitSha ? [] : ["source git SHA unavailable"]),
+    ...(sourceIdentity.failure ? [sourceIdentity.failure] : []),
     ...(browserIdentity.name && browserIdentity.version ? [] : ["browser identity unavailable"]),
   ];
   const screenshotFiles = entries.reduce((count, entry) => count + entry.screenshots.length, 0);
@@ -1645,7 +1844,9 @@ async function main(): Promise<void> {
   const failedEntries = entries.filter((entry) => entry.status === "failed").length;
   const manifest: Manifest = {
     taskId: TASK_ID,
-    sourceIdentity: SOURCE_IDENTITY,
+    sourceIdentity: sourceIdentity.sourceIdentity,
+    captureRunId: `${TASK_ID}:${sourceGitSha ?? "unavailable"}:${captureTimestamp}`,
+    evidenceBoundary,
     authority: {
       devBrief: "docs/frontend/prototype/stage2-dev-brief.md",
       acceptanceExecution: "docs/frontend/prototype/stage2-acceptance-execution.html",
@@ -1654,9 +1855,11 @@ async function main(): Promise<void> {
     outputDirectory: outputDir,
     viewports,
     sourceGitSha,
+    sourceWorktreeClean: sourceWorktreeDirtyPaths.length === 0,
     browserIdentity,
     captureTimestamp,
     reviewIdentity,
+    prototypeBaselines,
     entries,
     matrixCompleteness: validation.completeness,
     validationFailures,
@@ -1692,6 +1895,8 @@ function selfTestEntry(overrides: Partial<ManifestEntry> = {}): ManifestEntry {
     side: "C",
     state: "clean",
     status: "captured",
+    evidenceBoundary,
+    prototypeComparison: prototypeComparisonFor("C", "clean"),
     viewport,
     file: screenshot.path,
     additionalFiles: [],
@@ -1721,6 +1926,17 @@ export async function runSelfTest(): Promise<void> {
   assert.deepEqual(derivePendingStates(["rendered", "missing"] as const, new Set(["rendered"])), ["missing"]);
   assert.deepEqual(pendingC, []);
   assert.deepEqual(pendingB, []);
+  assert.match(
+    resolveSourceIdentity("a".repeat(40), ["scripts/qa/captureStage2DocumentScreenshots.ts"]).failure ?? "",
+    /source worktree is dirty/u,
+  );
+  assert.deepEqual(prototypeComparisonFor("C", "organizationDocument"), {
+    prototypeDocument: prototypeDocuments.C,
+    prototypeState: "org",
+    disposition: "cross-surface-route",
+    note: "The personal-surface trigger is verified by the organization read-only mirror route, not by duplicating that state in the editor.",
+  });
+  assert.equal(prototypeComparisonFor("B", "aiResultProgress").prototypeState, "plan");
 
   const organizationMock = createMockState("C", "organizationDocument");
   assert.equal(organizationMock.workspaceMode, "organization_lark");
@@ -1752,17 +1968,26 @@ export async function runSelfTest(): Promise<void> {
     ["clean"],
     [],
     [viewports[0]],
-    { screenshotExists: async () => true },
+    { screenshotExists: async () => true, screenshotRecordMatches: async () => true },
   );
   assert.equal(green.ok, true, `self-test green fixture failed: ${green.failures.join("; ")}`);
 
-  const expectRejected = async (name: string, entry: ManifestEntry, expectedFailure: string, screenshotExists = true) => {
+  const expectRejected = async (
+    name: string,
+    entry: ManifestEntry,
+    expectedFailure: string,
+    screenshotExists = true,
+    screenshotRecordMatches = true,
+  ) => {
     const result = await validateManifestEvidence(
       [entry],
       ["clean"],
       [],
       [viewports[0]],
-      { screenshotExists: async () => screenshotExists },
+      {
+        screenshotExists: async () => screenshotExists,
+        screenshotRecordMatches: async () => screenshotRecordMatches,
+      },
     );
     assert.equal(result.ok, false, `${name} fixture unexpectedly passed`);
     assert.ok(result.failures.some((failure) => failure.includes(expectedFailure)), `${name} fixture did not report ${expectedFailure}: ${result.failures.join("; ")}`);
@@ -1775,7 +2000,16 @@ export async function runSelfTest(): Promise<void> {
   await expectRejected("failed status", selfTestEntry({ status: "failed", file: null, screenshots: [], additionalFiles: [] }), "failed matrix cell");
   await expectRejected("pending status", selfTestEntry({ status: "pendingIntegration", file: null, screenshots: [], additionalFiles: [] }), "pending matrix cell");
   await expectRejected("filesystem screenshot missing", selfTestEntry(), "missing screenshot evidence", false);
-  const missingCell = await validateManifestEvidence([], ["clean"], [], [viewports[0]], { screenshotExists: async () => true });
+  await expectRejected("screenshot metadata mismatch", selfTestEntry(), "missing screenshot evidence", true, false);
+  await expectRejected(
+    "prototype mapping drift",
+    selfTestEntry({ prototypeComparison: { ...prototypeComparisonFor("C", "clean"), prototypeState: "wrong" } }),
+    "prototype comparison mapping drift",
+  );
+  const missingCell = await validateManifestEvidence([], ["clean"], [], [viewports[0]], {
+    screenshotExists: async () => true,
+    screenshotRecordMatches: async () => true,
+  });
   assert.equal(missingCell.ok, false);
   assert.ok(missingCell.failures.includes("missing matrix cell: C/clean/desktop-1440x900"));
   console.log("Stage2 document screenshot harness self-test: PASS");
