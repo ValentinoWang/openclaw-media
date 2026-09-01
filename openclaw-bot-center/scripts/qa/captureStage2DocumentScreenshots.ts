@@ -1459,10 +1459,10 @@ async function hasScreenshotEvidence(
   ) return false;
   if (listedPaths.length !== screenshots.length) return false;
   if (new Set(listedPaths).size !== listedPaths.length) return false;
-  if (screenshots.some((screenshot, index) => screenshot.path !== listedPaths[index] || !isAbsolute(screenshot.path))) return false;
+  if (screenshots.some((screenshot, index) => screenshot.path !== listedPaths[index])) return false;
   if (screenshots.some((screenshot) => screenshot.width !== expectedViewport.width || screenshot.height < expectedViewport.height)) return false;
   if (screenshots.some((screenshot) => screenshot.bytes <= 0 || screenshot.uniqueColors < 5 || screenshot.nonTransparentPixels <= 0)) return false;
-  const filesExist = await Promise.all(screenshots.map((screenshot) => screenshotExists(screenshot.path)));
+  const filesExist = await Promise.all(screenshots.map((screenshot) => screenshotExists(resolveRecordedArtifactPath(screenshot.path))));
   if (!filesExist.every(Boolean)) return false;
   const metadataMatches = await Promise.all(screenshots.map((screenshot) => screenshotRecordMatches(screenshot, expectedViewport)));
   return metadataMatches.every(Boolean);
@@ -1986,6 +1986,19 @@ export async function runSelfTest(): Promise<void> {
     { screenshotExists: async () => true, screenshotRecordMatches: async () => true },
   );
   assert.equal(green.ok, true, `self-test green fixture failed: ${green.failures.join("; ")}`);
+  const portableScreenshot = "acceptance/release/runs/example/screenshots/C-clean-desktop-1440x900.png";
+  const portableEntry = selfTestEntry({
+    file: portableScreenshot,
+    screenshots: [{ ...selfTestEntry().screenshots[0]!, path: portableScreenshot }],
+  });
+  const portableGreen = await validateManifestEvidence(
+    [portableEntry],
+    ["clean"],
+    [],
+    [viewports[0]],
+    { screenshotExists: async (path) => path === resolveRecordedArtifactPath(portableScreenshot), screenshotRecordMatches: async () => true },
+  );
+  assert.equal(portableGreen.ok, true, `portable screenshot fixture failed: ${portableGreen.failures.join("; ")}`);
 
   const expectRejected = async (
     name: string,
