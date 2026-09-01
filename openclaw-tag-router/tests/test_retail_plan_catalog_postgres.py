@@ -9,11 +9,33 @@ from openclaw_app.account.database import AccountDatabase, AccountDatabaseSettin
 
 DATABASE_URL = os.getenv("OPENCLAW_U8_TEST_DATABASE_URL", "")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="OPENCLAW_U8_TEST_DATABASE_URL is required")
+ADMIN = "82000000-0000-4000-8000-000000000001"
+ADMIN_TENANT = "82000000-0000-4000-8000-000000000002"
 
 
 @pytest.fixture()
 def database() -> AccountDatabase:
-    return AccountDatabase(AccountDatabaseSettings(DATABASE_URL))
+    database = AccountDatabase(AccountDatabaseSettings(DATABASE_URL))
+    with database.connect() as connection:
+        connection.execute(
+            "TRUNCATE openclaw_account.product_mappings,openclaw_account.tenants,"
+            "openclaw_account.users CASCADE"
+        )
+        connection.execute(
+            "INSERT INTO openclaw_account.users(id,username,password_hash,role,display_name) "
+            "VALUES (%s,'u8-admin',%s,'admin','U8 Admin')",
+            (ADMIN, "x" * 60),
+        )
+        connection.execute(
+            "INSERT INTO openclaw_account.tenants(id,primary_user_id) VALUES (%s,%s)",
+            (ADMIN_TENANT, ADMIN),
+        )
+        connection.execute(
+            "INSERT INTO openclaw_account.tenant_members(tenant_id,user_id,role,status) "
+            "VALUES (%s,%s,'owner','active')",
+            (ADMIN_TENANT, ADMIN),
+        )
+    return database
 
 
 def test_catalog_is_exactly_six_equal_value_active_plans(database: AccountDatabase) -> None:
@@ -52,9 +74,9 @@ def test_product_mapping_target_is_immutable_and_one_active_per_plan(database: A
     with database.connect() as connection:
         connection.execute(
             "INSERT INTO openclaw_account.product_mappings(id,external_provider,external_product_id,plan_id,purchase_url,idempotency_key,created_by_user_id) "
-            "SELECT '81000000-0000-4000-8000-000000000001','liandong','test-product-1',id,'https://www.ldxp.cn/goods/test-1','mapping-test-1'," 
-            "(SELECT id FROM openclaw_account.users WHERE role='admin' ORDER BY created_at LIMIT 1) "
-            "FROM openclaw_account.plans WHERE code='mediaclaw-cny-1'"
+            "SELECT '81000000-0000-4000-8000-000000000001','liandong','test-product-1',id,'https://www.ldxp.cn/goods/test-1','mapping-test-1',%s "
+            "FROM openclaw_account.plans WHERE code='mediaclaw-cny-1'",
+            (ADMIN,),
         )
 
     with pytest.raises(Exception) as rewritten:
@@ -70,8 +92,8 @@ def test_product_mapping_target_is_immutable_and_one_active_per_plan(database: A
         with database.connect() as connection:
             connection.execute(
                 "INSERT INTO openclaw_account.product_mappings(id,external_provider,external_product_id,plan_id,purchase_url,idempotency_key,created_by_user_id) "
-                "SELECT '81000000-0000-4000-8000-000000000002','liandong','test-product-2',id,'https://www.ldxp.cn/goods/test-2','mapping-test-2'," 
-                "(SELECT id FROM openclaw_account.users WHERE role='admin' ORDER BY created_at LIMIT 1) "
-                "FROM openclaw_account.plans WHERE code='mediaclaw-cny-1'"
+                "SELECT '81000000-0000-4000-8000-000000000002','liandong','test-product-2',id,'https://www.ldxp.cn/goods/test-2','mapping-test-2',%s "
+                "FROM openclaw_account.plans WHERE code='mediaclaw-cny-1'",
+                (ADMIN,),
             )
     assert getattr(duplicated.value, "sqlstate", None) == "23505"

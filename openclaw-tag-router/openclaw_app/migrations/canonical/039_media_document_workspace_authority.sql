@@ -1,5 +1,3 @@
-BEGIN;
-
 DO $$
 BEGIN
     IF EXISTS (
@@ -138,5 +136,3 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
-COMMIT;

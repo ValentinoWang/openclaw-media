@@ -481,6 +481,17 @@ def _require_tenant_id(value: str) -> str:
     return canonical
 
 
+def _require_actor_public_id(value: str | None) -> str:
+    actor_public_id = str(value or "").strip()
+    try:
+        canonical = str(uuid.UUID(actor_public_id))
+    except ValueError as exc:
+        raise MediaWebTaskError("invalid_actor", "任务发起人身份无效。") from exc
+    if canonical != actor_public_id:
+        raise MediaWebTaskError("invalid_actor", "任务发起人身份无效。")
+    return canonical
+
+
 def _tenant_storage_key(tenant_id: str) -> str:
     return hashlib.sha256(_require_tenant_id(tenant_id).encode("utf-8")).hexdigest()
 
@@ -632,10 +643,7 @@ class MediaWebTaskService:
         workspace_mode: str | None = None,
         role: str | None = None,
     ) -> tuple[dict[str, Any], bool]:
-        # The IF2 surface forwards the acting principal; task storage remains
-        # tenant-scoped, so the identity kwargs are accepted for attribution
-        # without changing the tenant-level authorization model.
-        del user_public_id, workspace_mode, role
+        del workspace_mode, role
         tenant_id = _require_tenant_id(tenant_id)
         expected_keys = {"schemaVersion", "capabilityId", "variantId", "params", "uploadIds", "idempotencyKey", "catalogVersion", "initiation", "confirmationReceipt"}
         if set(payload) != expected_keys or payload.get("schemaVersion") != "3" or _contains_reserved_tenant_key(payload):
@@ -659,6 +667,12 @@ class MediaWebTaskService:
                 str(issues[0]["message"]),
                 details={"issues": list(issues)},
             )
+        requires_model_transport = _requires_model_transport(capability_id, variant_id)
+        actor_public_id = (
+            _require_actor_public_id(user_public_id)
+            if self._tenant_model_gateway is not None and requires_model_transport
+            else str(user_public_id or "").strip()
+        )
         upload_ids = payload.get("uploadIds") or []
         if not isinstance(upload_ids, list) or len(upload_ids) > MAX_UPLOADS_PER_TASK:
             raise MediaWebTaskError("invalid_request", "上传文件引用无效。")
@@ -706,7 +720,7 @@ class MediaWebTaskService:
                 raise MediaWebTaskError(preview_error, "确认所需预览不存在、已过期或不匹配。")
             if preview is not None and preview.get("confirmation_task_id"):
                 return self._project(self._load_task(str(preview["confirmation_task_id"]), tenant_id=tenant_id)), False
-        if self._tenant_model_gateway is not None and _requires_model_transport(capability_id, variant_id):
+        if self._tenant_model_gateway is not None and requires_model_transport:
             try:
                 self._tenant_model_gateway.prepare()
             except Exception as exc:
@@ -729,7 +743,7 @@ class MediaWebTaskService:
                     return self._project(self._load_task(str(preview["confirmation_task_id"]), tenant_id=tenant_id)), False
                 now, task_id = _utc_now(), f"mwt_{uuid.uuid4().hex}"
                 confirmation_required = self._invocation_requires_confirmation(capability, variant_id)
-                task = {"schema_version": SCHEMA_VERSION, "task_id": task_id, "tenant_id": tenant_id, "idempotency_key": idempotency_key, "request_fingerprint": request_fingerprint, "model_request_root": f"mreq_{uuid.uuid4().hex}", "invocation": {"capability_id": capability.capability_id, "variant_id": variant_id, "params": params, "upload_ids": upload_ids, "initiation": payload["initiation"], "catalog_version": self._registry.catalog_version, "confirmation_receipt": confirmation_receipt}, "capability_path": list(capability.hierarchy.path_names), "capability_label": capability.display_name, "authorization": {"is_maintainer": bool(is_maintainer)}, "summary": self._registry.summary(capability_id, params), "status": "awaiting_confirmation" if confirmation_required else "queued", "progress": 0, "confirmation": {"state": "required" if confirmation_required else "not_required", "required": confirmation_required, "note": "", "decided_at": ""}, "result": None, "error": None, "cancel_requested": False, "created_at": now, "updated_at": now, "event_cursor": 0}
+                task = {"schema_version": SCHEMA_VERSION, "task_id": task_id, "tenant_id": tenant_id, "actor_public_id": actor_public_id, "idempotency_key": idempotency_key, "request_fingerprint": request_fingerprint, "model_request_root": f"mreq_{uuid.uuid4().hex}", "invocation": {"capability_id": capability.capability_id, "variant_id": variant_id, "params": params, "upload_ids": upload_ids, "initiation": payload["initiation"], "catalog_version": self._registry.catalog_version, "confirmation_receipt": confirmation_receipt}, "capability_path": list(capability.hierarchy.path_names), "capability_label": capability.display_name, "authorization": {"is_maintainer": bool(is_maintainer)}, "summary": self._registry.summary(capability_id, params), "status": "awaiting_confirmation" if confirmation_required else "queued", "progress": 0, "confirmation": {"state": "required" if confirmation_required else "not_required", "required": confirmation_required, "note": "", "decided_at": ""}, "result": None, "error": None, "cancel_requested": False, "created_at": now, "updated_at": now, "event_cursor": 0}
                 if preview is not None:
                     ref_key = {"universal_deletion": "deletion_preview_ref", "creator_profile_upsert": "creator_profile_candidate_ref", "track_creator_membership_query": "track_creator_membership_preview_ref"}[capability_id]
                     task[ref_key] = preview["task_id"]
@@ -1254,6 +1268,7 @@ class MediaWebTaskService:
                     raise MediaWebTaskError("invalid_task_state", "任务缺少模型调用引用。")
                 model_scope = self._tenant_model_gateway.bind(
                     tenant_id,
+                    str(task.get("actor_public_id") or ""),
                     task_id,
                     model_request_root,
                 )

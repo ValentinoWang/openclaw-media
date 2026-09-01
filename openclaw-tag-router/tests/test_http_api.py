@@ -8,6 +8,7 @@ import os
 import threading
 import tempfile
 import unittest
+from unittest.mock import patch
 from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -30,6 +31,12 @@ from openclaw_app.account import (
     MediaFeishuLoginStart,
     RegistrationResult,
 )
+from openclaw_app.account.workspace_resolution import (
+    InMemoryWorkspaceResolutionRepository,
+    WorkspaceResolutionResult,
+    WorkspaceResolutionRow,
+    WorkspaceResolver,
+)
 from openclaw_app.adapters.http_api import (
     AuthConfig,
     HttpAuthorityConfig,
@@ -41,6 +48,7 @@ from openclaw_app.adapters.http_api import (
 from openclaw_app.services.capability_registry import CAPABILITY_REGISTRY
 from openclaw_app.services.guidance_plan import GuidancePlanService
 from openclaw_app.services.media_web_tasks import MediaWebTaskService
+from openclaw_app.services.tenant_model_transport import TenantModelTransportError
 
 
 USER_A = UUID("11111111-1111-4111-8111-111111111111")
@@ -346,11 +354,14 @@ class _Gateway:
     def __init__(self) -> None:
         self.rotations = 0
         self.revocations = 0
-        self.bindings: list[tuple[str, str, str]] = []
+        self.bindings: list[tuple[str, str, str, str]] = []
+        self.binding_error: Exception | None = None
 
     @contextmanager
-    def bind(self, tenant_id: str, task_id: str, request_root: str):
-        self.bindings.append((tenant_id, task_id, request_root))
+    def bind(self, tenant_id: str, actor_user_id: str, task_id: str, request_root: str):
+        if self.binding_error is not None:
+            raise self.binding_error
+        self.bindings.append((tenant_id, actor_user_id, task_id, request_root))
         yield
 
     @staticmethod
@@ -997,6 +1008,23 @@ class HttpApiAuthTests(unittest.TestCase):
 
     def test_csrf_same_origin_and_logout_revoke_are_enforced(self) -> None:
         cookie = self._issue_session_cookie()
+        self.server.RequestHandlerClass.workspace_resolver = WorkspaceResolver(
+            self.account_auth,
+            InMemoryWorkspaceResolutionRepository(
+                [
+                    WorkspaceResolutionRow(
+                        workspace_id=UUID("aaaaaaaa-aaaa-4aaa-8aaa-000000000001"),
+                        tenant_id=TENANT_A,
+                        workspace_mode="personal_web",
+                        body_authority="internal",
+                        membership_role="owner",
+                        membership_state="ACTIVE",
+                        owner_user_id=USER_A,
+                        user_id=USER_A,
+                    )
+                ]
+            ),
+        )
         payload = {
             "query": "录入博主",
             "currentBot": "media",
@@ -1009,13 +1037,19 @@ class HttpApiAuthTests(unittest.TestCase):
         )
         self.assertEqual(status, 403)
         self.assertEqual(body["error"]["code"], "csrf_rejected")
-        status, body, _ = self._request(
-            "POST", "/openclaw/media/api/capability-match", payload, cookie=cookie,
-            headers=self._csrf_headers(cookie, key="match-auth-test"),
-        )
+        with patch.object(
+            self.account_auth,
+            "resolve_session",
+            wraps=self.account_auth.resolve_session,
+        ) as resolve_session:
+            status, body, _ = self._request(
+                "POST", "/openclaw/media/api/capability-match", payload, cookie=cookie,
+                headers=self._csrf_headers(cookie, key="match-auth-test"),
+            )
         self.assertEqual(status, 200, body)
+        self.assertEqual(resolve_session.call_count, 1)
         scope = "capability-match-" + hashlib.sha256(b"match-auth-test").hexdigest()[:32]
-        self.assertEqual(self.gateway.bindings, [(str(TENANT_A), scope, scope)])
+        self.assertEqual(self.gateway.bindings, [(str(TENANT_A), str(USER_A), scope, scope)])
         status, _, _ = self._request(
             "POST", "/auth/logout", {}, cookie=cookie,
             headers=self._csrf_headers(cookie, key="logout-auth-test"),
@@ -1023,6 +1057,66 @@ class HttpApiAuthTests(unittest.TestCase):
         self.assertEqual(status, 200)
         status, _, _ = self._request("GET", "/openclaw/media/api/session", cookie=cookie)
         self.assertEqual(status, 401)
+
+    def test_if2_workspace_resolution_failure_does_not_fall_back_to_the_session(self) -> None:
+        cookie = self._issue_session_cookie()
+        token = cookie.split("=", 1)[1]
+
+        class BrokenResolver:
+            seen_session: AccountSession | None = None
+            seen_token: str | None = None
+
+            def resolve(self, session, *, authenticated_token=None):
+                self.seen_session = session
+                self.seen_token = authenticated_token
+                return WorkspaceResolutionResult(
+                    principal=None,
+                    workspace_intent=None,
+                    candidates=(),
+                    resolution_state="INVALID_SESSION",
+                    failure_code="internal_error",
+                )
+
+        resolver = BrokenResolver()
+        self.server.RequestHandlerClass.workspace_resolver = resolver  # type: ignore[assignment]
+        with patch.object(
+            self.account_auth,
+            "resolve_session",
+            wraps=self.account_auth.resolve_session,
+        ) as resolve_session:
+            status, body, _ = self._request(
+                "GET",
+                "/openclaw/media/api/session",
+                cookie=cookie,
+            )
+        self.assertEqual(status, 503, body)
+        self.assertEqual(body["error"]["code"], "account_database_unavailable")
+        self.assertEqual(resolve_session.call_count, 1)
+        self.assertIsNotNone(resolver.seen_session)
+        self.assertEqual(resolver.seen_session.session_id, self.account_auth.sessions[token].session_id)
+        self.assertEqual(resolver.seen_token, token)
+
+    def test_capability_match_preserves_billing_actor_forbidden_as_403(self) -> None:
+        cookie = self._issue_session_cookie()
+        self.gateway.binding_error = TenantModelTransportError(
+            "billing_actor_forbidden",
+            "模型请求发起人不属于当前租户。",
+            status=403,
+        )
+        status, body, _ = self._request(
+            "POST",
+            "/openclaw/media/api/capability-match",
+            {
+                "query": "录入博主",
+                "currentBot": "media",
+                "catalogVersion": CAPABILITY_REGISTRY.catalog_version,
+                "idempotencyKey": "match-actor-forbidden",
+            },
+            cookie=cookie,
+            headers=self._csrf_headers(cookie, key="match-actor-forbidden"),
+        )
+        self.assertEqual(status, 403, body)
+        self.assertEqual(body["error"]["code"], "billing_actor_forbidden")
 
     def test_deletion_preview_http_contract_and_idempotent_replay(self) -> None:
         cookie = self._issue_session_cookie("admin")

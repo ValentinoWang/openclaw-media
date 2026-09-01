@@ -80,8 +80,8 @@ class AccountAuthPostgreSQLTests(unittest.TestCase):
             ):
                 password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12)).decode()
                 connection.execute(
-                    "INSERT INTO openclaw_account.users(id, username, email, password_hash, role) VALUES (%s, %s, %s, %s, %s)",
-                    (user_id, username, f"{username}@example.com", password_hash, role),
+                    "INSERT INTO openclaw_account.users(id, username, email, password_hash, role, display_name) VALUES (%s, %s, %s, %s, %s, %s)",
+                    (user_id, username, f"{username}@example.com", password_hash, role, username),
                 )
                 connection.execute(
                     "INSERT INTO openclaw_account.tenants(id, primary_user_id) VALUES (%s, %s)",
@@ -120,8 +120,8 @@ class AccountAuthPostgreSQLTests(unittest.TestCase):
         with psycopg.connect(self.database_url) as connection:
             password_hash = bcrypt.hashpw(b"no-password-login", bcrypt.gensalt(rounds=12)).decode()
             connection.execute(
-                "INSERT INTO openclaw_account.users(id, username, email, password_hash, role) "
-                "VALUES (%s, 'feishu-member', NULL, %s, 'user')",
+                "INSERT INTO openclaw_account.users(id, username, email, password_hash, role, display_name) "
+                "VALUES (%s, 'feishu-member', NULL, %s, 'user', 'Feishu Member')",
                 (FEISHU_MEMBER, password_hash),
             )
             connection.execute(
@@ -140,6 +140,52 @@ class AccountAuthPostgreSQLTests(unittest.TestCase):
             tenant_key="tenant-media-a",
             open_id="open-from-independent-media-app",
             union_id="union-a",
+        )
+        session = self.auth.resolve_session(login.token)
+        self.assertIsNotNone(session)
+        self.assertEqual(session.user_id, FEISHU_MEMBER)
+        self.assertEqual(session.tenant_id, TENANT_A)
+
+    def test_organization_feishu_login_reads_the_canonical_tenant_membership(self) -> None:
+        with psycopg.connect(self.database_url) as connection:
+            connection.execute(
+                "UPDATE openclaw_account.tenants SET tenant_type='organization', "
+                "workspace_mode='organization_lark', body_authority='lark', "
+                "organization_name='Organization A' WHERE id=%s",
+                (TENANT_A,),
+            )
+            password_hash = bcrypt.hashpw(b"no-password-login", bcrypt.gensalt(rounds=12)).decode()
+            connection.execute(
+                "INSERT INTO openclaw_account.users(id, username, email, password_hash, role, display_name) "
+                "VALUES (%s, 'organization-member', NULL, %s, 'user', 'Organization Member')",
+                (FEISHU_MEMBER, password_hash),
+            )
+            connection.execute(
+                "INSERT INTO openclaw_account.tenant_members(tenant_id, user_id, role, status) "
+                "VALUES (%s, %s, 'member', 'active')",
+                (TENANT_A, FEISHU_MEMBER),
+            )
+            connection.execute(
+                "INSERT INTO openclaw_account.tenant_member_identities("
+                "tenant_id, user_id, tenant_key, open_id, union_id, external_user_id, display_name"
+                ") VALUES (%s, %s, 'tenant-organization-a', 'open-org-a', 'union-org-a', "
+                "'external-org-a', 'Organization Member')",
+                (TENANT_A, FEISHU_MEMBER),
+            )
+            connection.execute(
+                "INSERT INTO media_product.lark_tenant_bindings("
+                "tenant_id, tenant_key, installation_public_id, app_id, app_secret_ref, "
+                "space_id, parent_node_token, status) "
+                "VALUES (%s, 'tenant-organization-a', 'installation-org-a', 'app-org-a', "
+                "'secret://org-a', 'space-org-a', 'parent-org-a', 'active')",
+                (TENANT_A,),
+            )
+
+        login = self.auth.login_verified_feishu_identity(
+            tenant_key="tenant-organization-a",
+            open_id="open-org-a",
+            union_id="union-org-a",
+            workspace_intent="organization_lark",
         )
         session = self.auth.resolve_session(login.token)
         self.assertIsNotNone(session)

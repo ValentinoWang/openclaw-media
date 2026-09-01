@@ -481,32 +481,31 @@ class PostgresWorkspaceResolutionRepository:
     """Reads current state directly; the migration candidate table is not cached."""
 
     _SQL = """
-        SELECT workspace.id,
-               workspace.tenant_id,
-               workspace.workspace_mode,
-               workspace.body_authority,
-               workspace.status,
-               workspace.ownership_state,
-               workspace.visibility_state,
-               workspace.owner_user_id,
+        SELECT tenant.id,
+               tenant.id,
+               tenant.workspace_mode,
+               tenant.body_authority,
+               tenant.status,
+               'PROVEN',
+               'VISIBLE',
+               tenant.primary_user_id,
                membership.user_id,
                membership.role,
-               membership.state,
+               membership.status,
                binding.id,
                binding.status
-        FROM openclaw_account.workspaces AS workspace
-        JOIN openclaw_account.workspace_memberships AS membership
-          ON membership.workspace_id = workspace.id
-         AND membership.tenant_id = workspace.tenant_id
+        FROM openclaw_account.tenants AS tenant
+        JOIN openclaw_account.tenant_members AS membership
+          ON membership.tenant_id = tenant.id
          AND membership.user_id = %s
         LEFT JOIN media_product.lark_tenant_bindings AS binding
-          ON binding.tenant_id = workspace.tenant_id
-         AND workspace.workspace_mode = 'organization_lark'
-        ORDER BY CASE workspace.workspace_mode
+          ON binding.tenant_id = tenant.id
+         AND tenant.workspace_mode = 'organization_lark'
+        ORDER BY CASE tenant.workspace_mode
                    WHEN 'personal_web' THEN 0
                    ELSE 1
                  END,
-                 workspace.id,
+                 tenant.id,
                  binding.id
     """
 
@@ -624,6 +623,7 @@ class WorkspaceResolver:
         self,
         token_or_session: str | AccountSession | None,
         *,
+        authenticated_token: str | None = None,
         tenant_id: UUID | str | None = None,
         selected_tenant_id: UUID | str | None = None,
         requested_tenant_id: UUID | str | None = None,
@@ -632,6 +632,10 @@ class WorkspaceResolver:
         session, token, invalid = self._authenticated_session(token_or_session)
         if invalid is not None or session is None:
             return self._invalid_result(invalid or "invalid_session")
+        if authenticated_token is not None:
+            if isinstance(token_or_session, str) or not authenticated_token:
+                return self._invalid_result("validation_error")
+            token = authenticated_token
 
         requested, selection_error = self._requested_tenant(
             tenant_id,

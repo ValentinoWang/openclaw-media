@@ -53,13 +53,13 @@ class FakeConnection:
             return FakeCursor([self.image_event] if self.image_event else [])
         if "INSERT INTO openclaw_account.usage_events" in query:
             self.image_event = (
-                str(params[1]),
+                str(params[2]),
                 "image",
-                str(params[3]),
-                params[2],
+                str(params[4]),
+                params[3],
                 "images",
-                params[4],
-                str(params[5]),
+                params[5],
+                str(params[6]),
                 datetime(2026, 8, 5, 2, 0, tzinfo=timezone.utc),
             )
             return FakeCursor([self.image_event])
@@ -260,7 +260,9 @@ def test_image_usage_event_is_immutable_and_source_idempotent() -> None:
     assert first == replay
     assert first["item"]["kind"] == "image"
     assert first["item"]["charge"] == "2.50000000"
-    assert len([query for query, _ in connection.queries if "INSERT INTO openclaw_account.usage_events" in query]) == 1
+    inserts = [item for item in connection.queries if "INSERT INTO openclaw_account.usage_events" in item[0]]
+    assert len(inserts) == 1
+    assert inserts[0][1][:3] == (TENANT, USER, "usage_image_02")
     with pytest.raises(UsageBillingConflict):
         billing.record_image_usage_event(
             CONTEXT,

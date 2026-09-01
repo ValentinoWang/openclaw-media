@@ -115,28 +115,21 @@ class AccountAuthRepository:
         """Return one active, bound organization workspace for a verified identity."""
         rows = connection.execute(
             """
-            SELECT u.id, workspace.tenant_id, u.username, u.email, u.password_hash, u.role, u.status,
+            SELECT u.id, tenant.id, u.username, u.email, u.password_hash, u.role, u.status,
                    tenant.status, u.is_maintainer
             FROM openclaw_account.tenant_member_identities AS i
             JOIN openclaw_account.tenant_members AS identity_members
               ON identity_members.tenant_id = i.tenant_id AND identity_members.user_id = i.user_id
             JOIN openclaw_account.users AS u ON u.id = i.user_id
-            JOIN openclaw_account.workspace_memberships AS membership ON membership.user_id = u.id
-            JOIN openclaw_account.workspaces AS workspace
-              ON workspace.id = membership.workspace_id AND workspace.tenant_id = membership.tenant_id
-            JOIN openclaw_account.tenants AS tenant ON tenant.id = workspace.tenant_id
-            JOIN media_product.lark_tenant_bindings AS binding ON binding.tenant_id = workspace.tenant_id
+            JOIN openclaw_account.tenants AS tenant ON tenant.id = identity_members.tenant_id
+            JOIN media_product.lark_tenant_bindings AS binding ON binding.tenant_id = tenant.id
             WHERE i.tenant_key = %(tenant_key)s
               AND i.external_status = 'active'
               AND identity_members.status = 'active'
               AND u.status = 'active'
               AND tenant.status = 'active'
-              AND membership.state = 'ACTIVE'
-              AND workspace.workspace_mode = 'organization_lark'
-              AND workspace.body_authority = 'lark'
-              AND workspace.status = 'ACTIVE'
-              AND workspace.ownership_state = 'PROVEN'
-              AND workspace.visibility_state = 'VISIBLE'
+              AND tenant.workspace_mode = 'organization_lark'
+              AND tenant.body_authority = 'lark'
               AND binding.status = 'active'
               AND (
                     (CAST(%(open_id)s AS text) IS NOT NULL

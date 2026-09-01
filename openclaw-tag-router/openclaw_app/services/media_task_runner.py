@@ -255,7 +255,10 @@ class MediaTaskRunner:
                 if not model_request_root:
                     raise MediaTaskRunnerError("invalid_task_state", "任务缺少模型调用引用。")
                 model_scope = self.tenant_model_gateway.bind(
-                    task["tenant_id"], task["task_id"], model_request_root
+                    task["tenant_id"],
+                    task["actor_public_id"],
+                    task["task_id"],
+                    model_request_root,
                 )
             else:
                 model_scope = bind_model_transport(

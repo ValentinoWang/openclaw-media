@@ -33,15 +33,20 @@ def service(tmp_path) -> RetailFulfillmentService:
             "openclaw_account.affiliate_edges,openclaw_account.affiliate_profiles,openclaw_account.tenants,openclaw_account.users CASCADE"
         )
         connection.execute(
-            "INSERT INTO openclaw_account.users(id,username,password_hash,role) VALUES (%s,%s,%s,'admin')",
-            (ADMIN, "u7-admin", "x" * 60),
+            "INSERT INTO openclaw_account.users(id,username,password_hash,role,display_name) VALUES (%s,%s,%s,'admin',%s)",
+            (ADMIN, "u7-admin", "x" * 60, "U7 Admin"),
         )
         for label, (user, tenant, wallet) in USERS.items():
             connection.execute(
-                "INSERT INTO openclaw_account.users(id,username,password_hash,role) VALUES (%s,%s,%s,'user')",
-                (user, f"u7-{label.lower()}", "x" * 60),
+                "INSERT INTO openclaw_account.users(id,username,password_hash,role,display_name) VALUES (%s,%s,%s,'user',%s)",
+                (user, f"u7-{label.lower()}", "x" * 60, f"U7 {label}"),
             )
             connection.execute("INSERT INTO openclaw_account.tenants(id,primary_user_id) VALUES (%s,%s)", (tenant, user))
+            connection.execute(
+                "INSERT INTO openclaw_account.tenant_members(tenant_id,user_id,role,status) "
+                "VALUES (%s,%s,'owner','active')",
+                (tenant, user),
+            )
             connection.execute("INSERT INTO openclaw_account.wallet_accounts(id,tenant_id) VALUES (%s,%s)", (wallet, tenant))
         connection.execute(
             "INSERT INTO openclaw_account.product_mappings("

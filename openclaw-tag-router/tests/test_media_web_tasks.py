@@ -30,6 +30,7 @@ from scripts.migrate_media_web_tasks_to_tenants import migrate
 TENANT_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 TENANT_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
 TENANT_C = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+USER_A = "11111111-1111-4111-8111-111111111111"
 
 
 def tenant_dir(root: Path, category: str, tenant_id: str = TENANT_A) -> Path:
@@ -215,8 +216,9 @@ def test_media_web_execution_binds_tenant_model_transport(tmp_path: Path) -> Non
             return None
 
         @contextmanager
-        def bind(self, tenant_id: str, task_id: str, request_root: str):
+        def bind(self, tenant_id: str, actor_user_id: str, task_id: str, request_root: str):
             assert tenant_id == TENANT_A
+            assert actor_user_id == USER_A
             assert task_id.startswith("mwt_")
             assert request_root.startswith("mreq_")
             with bind_model_transport(transport):
@@ -231,11 +233,35 @@ def test_media_web_execution_binds_tenant_model_transport(tmp_path: Path) -> Non
         task, created = service.create_task(
             request(idempotency_key="tenant_transport_scope_0001"),
             tenant_id=TENANT_A,
+            user_public_id=USER_A,
         )
         terminal = wait_terminal(service, task["taskId"])
         assert created is True
         assert terminal["status"] == "succeeded"
         assert len(app.calls) == 1
+    finally:
+        service.close()
+
+
+def test_media_web_model_task_rejects_missing_actor_before_queueing(tmp_path: Path) -> None:
+    class Gateway:
+        def __init__(self) -> None:
+            self.prepare_calls = 0
+
+        def prepare(self) -> None:
+            self.prepare_calls += 1
+
+    gateway = Gateway()
+    service = MediaWebTaskService(FakeApp(), root=tmp_path, tenant_model_gateway=gateway)
+    try:
+        with pytest.raises(MediaWebTaskError) as raised:
+            service.create_task(
+                request(idempotency_key="tenant_transport_missing_actor_0001"),
+                tenant_id=TENANT_A,
+            )
+        assert raised.value.code == "invalid_actor"
+        assert gateway.prepare_calls == 0
+        assert list(tenant_dir(tmp_path, "tasks").glob("*.json")) == []
     finally:
         service.close()
 
@@ -270,7 +296,7 @@ def test_unknown_model_settlement_cannot_be_reported_as_success(tmp_path: Path) 
             return None
 
         @contextmanager
-        def bind(self, tenant_id: str, task_id: str, request_root: str):
+        def bind(self, tenant_id: str, actor_user_id: str, task_id: str, request_root: str):
             with bind_model_transport(transport):
                 yield
             self.execution_finished = True
@@ -285,6 +311,7 @@ def test_unknown_model_settlement_cannot_be_reported_as_success(tmp_path: Path) 
         task, _ = service.create_task(
             request(idempotency_key="unknown_settlement_0001"),
             tenant_id=TENANT_A,
+            user_public_id=USER_A,
         )
         terminal = wait_terminal(service, task["taskId"])
         assert terminal["status"] == "pending_manual"
@@ -305,7 +332,7 @@ def test_wrapped_model_error_still_uses_ledger_settlement_state(tmp_path: Path) 
             return None
 
         @contextmanager
-        def bind(self, tenant_id: str, task_id: str, request_root: str):
+        def bind(self, tenant_id: str, actor_user_id: str, task_id: str, request_root: str):
             with bind_model_transport(transport):
                 yield
 
@@ -317,6 +344,7 @@ def test_wrapped_model_error_still_uses_ledger_settlement_state(tmp_path: Path) 
         task, _ = service.create_task(
             request(idempotency_key="wrapped_unknown_settlement_0001"),
             tenant_id=TENANT_A,
+            user_public_id=USER_A,
         )
         terminal = wait_terminal(service, task["taskId"])
         assert terminal["status"] == "pending_manual"
@@ -433,7 +461,8 @@ def test_maintainer_catalog_and_task_authorization_share_one_tenant_gate(tmp_pat
         maintainer_ids = {item["capabilityId"] for item in service.capability_catalog(is_maintainer=True)["capabilities"]}
         assert capability_id not in public_ids
         assert capability_id in maintainer_ids
-        assert "universal_deletion" in public_ids
+        assert "universal_deletion" not in public_ids
+        assert "universal_deletion" in maintainer_ids
         with pytest.raises(MediaWebTaskError) as denied:
             service.create_task(payload, tenant_id=TENANT_A)
         assert denied.value.code == "capability_not_found"
@@ -761,7 +790,7 @@ def test_deletion_preview_is_safe_and_apply_requires_confirmation(tmp_path: Path
             raise AssertionError("local deletion must not prepare model credentials")
 
         @contextmanager
-        def bind(self, tenant_id: str, task_id: str, request_root: str):
+        def bind(self, tenant_id: str, actor_user_id: str, task_id: str, request_root: str):
             self.bind_calls += 1
             raise AssertionError("local deletion must not bind a model transport")
             yield
@@ -790,7 +819,7 @@ def test_deletion_preview_is_safe_and_apply_requires_confirmation(tmp_path: Path
         tenant_model_gateway=gateway,
     )
     try:
-        catalog = preview_service.capability_catalog()["capabilities"]
+        catalog = preview_service.capability_catalog(is_maintainer=True)["capabilities"]
         deletion = next(item for item in catalog if item["capabilityId"] == "universal_deletion")
         assert deletion["requiresConfirmation"] is True
         preview, _ = preview_service.create_task(request(
@@ -798,7 +827,7 @@ def test_deletion_preview_is_safe_and_apply_requires_confirmation(tmp_path: Path
             variant_id="preview",
             params={"id": "asset_0123456789abcdef"},
             idempotency_key="idempotency_delete_preview_0001",
-        ), tenant_id=TENANT_A)
+        ), tenant_id=TENANT_A, is_maintainer=True)
         assert preview["status"] == "queued"
         terminal = wait_terminal(preview_service, preview["taskId"])
         assert terminal["result"]["status"] == "completed"
@@ -812,7 +841,7 @@ def test_deletion_preview_is_safe_and_apply_requires_confirmation(tmp_path: Path
             params={"id": "asset_0123456789abcdef", "action": "确认删除"},
             idempotency_key="idempotency_delete_apply_0001",
             confirmation_receipt=preview_receipt,
-        ), tenant_id=TENANT_A)
+        ), tenant_id=TENANT_A, is_maintainer=True)
         assert apply_task["status"] == "awaiting_confirmation"
         assert len(preview_app.calls) == 1
         preview_service.confirm_task(apply_task["taskId"], {"decision": "approve", "note": ""}, tenant_id=TENANT_A)
@@ -826,7 +855,7 @@ def test_deletion_preview_is_safe_and_apply_requires_confirmation(tmp_path: Path
             params={"id": "asset_0123456789abcdef", "action": "确认删除"},
             idempotency_key="idempotency_delete_apply_repeat",
             confirmation_receipt=preview_receipt,
-        ), tenant_id=TENANT_A)
+        ), tenant_id=TENANT_A, is_maintainer=True)
         assert created_again is False
         assert repeated["taskId"] == apply_task["taskId"]
         preview_service.confirm_task(apply_task["taskId"], {"decision": "approve", "note": ""}, tenant_id=TENANT_A)
@@ -846,19 +875,19 @@ def test_deletion_preview_is_logically_idempotent_across_transport_keys(tmp_path
             variant_id="preview",
             params={"id": "asset_bbbbbbbbbbbbbbbb、asset_aaaaaaaaaaaaaaaa"},
             idempotency_key="idempotency_delete_preview_reload_1",
-        ), tenant_id=TENANT_A)
+        ), tenant_id=TENANT_A, is_maintainer=True)
         repeated, created_again = service.create_task(request(
             "universal_deletion",
             variant_id="preview",
             params={"id": "asset_aaaaaaaaaaaaaaaa,asset_bbbbbbbbbbbbbbbb"},
             idempotency_key="idempotency_delete_preview_reload_2",
-        ), tenant_id=TENANT_A)
+        ), tenant_id=TENANT_A, is_maintainer=True)
         changed, changed_created = service.create_task(request(
             "universal_deletion",
             variant_id="preview",
             params={"id": "asset_cccccccccccccccc"},
             idempotency_key="idempotency_delete_preview_reload_3",
-        ), tenant_id=TENANT_A)
+        ), tenant_id=TENANT_A, is_maintainer=True)
 
         assert created is True
         assert created_again is False
@@ -902,7 +931,9 @@ def test_task_reservation_is_idempotent_across_service_instances(tmp_path: Path)
     try:
         with ThreadPoolExecutor(max_workers=2) as executor:
             results = list(executor.map(
-                lambda service: service.create_task(payload, tenant_id=TENANT_A),
+                lambda service: service.create_task(
+                    payload, tenant_id=TENANT_A, is_maintainer=True
+                ),
                 (first_service, second_service),
             ))
         assert sorted(created for _, created in results) == [False, True]
@@ -973,7 +1004,7 @@ def test_delete_confirm_requires_and_reserves_successful_preview(tmp_path: Path)
                 variant_id="confirm",
                 params={"id": "asset_0123456789abcdef", "action": "确认删除"},
                 idempotency_key="idempotency_delete_confirm_missing",
-            ), tenant_id=TENANT_A)
+            ), tenant_id=TENANT_A, is_maintainer=True)
         assert missing_preview.value.code == "deletion_preview_required"
 
         preview, _ = service.create_task(request(
@@ -981,7 +1012,7 @@ def test_delete_confirm_requires_and_reserves_successful_preview(tmp_path: Path)
             variant_id="preview",
             params={"id": "asset_0123456789abcdef"},
             idempotency_key="idempotency_delete_confirm_preview",
-        ), tenant_id=TENANT_A)
+        ), tenant_id=TENANT_A, is_maintainer=True)
         stored = service._load_task(preview["taskId"], tenant_id=TENANT_A)
         stored["status"] = "succeeded"
         stored["progress"] = 100
@@ -1009,14 +1040,14 @@ def test_delete_confirm_requires_and_reserves_successful_preview(tmp_path: Path)
             params={"id": "asset_0123456789abcdef", "action": "确认删除"},
             idempotency_key="idempotency_delete_confirm_first",
             confirmation_receipt=preview_receipt,
-        ), tenant_id=TENANT_A)
+        ), tenant_id=TENANT_A, is_maintainer=True)
         repeated, created_again = service.create_task(request(
             "universal_deletion",
             variant_id="confirm",
             params={"id": "asset_0123456789abcdef", "action": "确认删除"},
             idempotency_key="idempotency_delete_confirm_second",
             confirmation_receipt=preview_receipt,
-        ), tenant_id=TENANT_A)
+        ), tenant_id=TENANT_A, is_maintainer=True)
 
         assert created is True
         assert created_again is False
@@ -1029,7 +1060,7 @@ def test_delete_confirm_requires_and_reserves_successful_preview(tmp_path: Path)
                 params={"id": "asset_0123456789abcdef", "action": "确认删除"},
                 idempotency_key="idempotency_delete_confirm_tenant_b",
                 confirmation_receipt=preview_receipt,
-            ), tenant_id=TENANT_B)
+            ), tenant_id=TENANT_B, is_maintainer=True)
         assert cross_tenant.value.code == "deletion_preview_required"
 
         service.confirm_task(confirm["taskId"], {"decision": "reject", "note": "取消"}, tenant_id=TENANT_A)
@@ -1038,7 +1069,7 @@ def test_delete_confirm_requires_and_reserves_successful_preview(tmp_path: Path)
             variant_id="preview",
             params={"id": "asset_0123456789abcdef"},
             idempotency_key="idempotency_delete_preview_after_reject",
-        ), tenant_id=TENANT_A)
+        ), tenant_id=TENANT_A, is_maintainer=True)
         assert replacement_created is True
         assert replacement["taskId"] != preview["taskId"]
     finally:
@@ -1665,10 +1696,12 @@ def test_confirmation_receipt_binds_exact_preview_not_latest_or_equivalent_task(
         created, is_new = service.create_task(
             request("universal_deletion", variant_id="confirm", params=params, idempotency_key="receipt_confirm_first_0001", confirmation_receipt=receipt),
             tenant_id=TENANT_A,
+            is_maintainer=True,
         )
         repeated, repeated_new = service.create_task(
             request("universal_deletion", variant_id="confirm", params=params, idempotency_key="receipt_confirm_second_0001", confirmation_receipt=receipt),
             tenant_id=TENANT_A,
+            is_maintainer=True,
         )
         assert is_new is True and repeated_new is False
         assert repeated["taskId"] == created["taskId"]
@@ -1684,6 +1717,7 @@ def test_confirmation_receipt_binds_exact_preview_not_latest_or_equivalent_task(
                 service.create_task(
                     request("universal_deletion", variant_id="confirm", params=params, idempotency_key=f"receipt_invalid_{uuid.uuid4().hex}", confirmation_receipt=invalid_receipt),
                     tenant_id=TENANT_A,
+                    is_maintainer=True,
                 )
             assert rejected.value.code == "deletion_preview_required"
 
@@ -1695,7 +1729,7 @@ def test_confirmation_receipt_binds_exact_preview_not_latest_or_equivalent_task(
                 params=params,
                 idempotency_key="receipt_expired_0001",
                 confirmation_receipt=expired,
-            ), tenant_id=TENANT_A)
+            ), tenant_id=TENANT_A, is_maintainer=True)
         assert expired_error.value.code == "deletion_preview_required"
     finally:
         service.close()
@@ -1734,6 +1768,7 @@ def test_expired_deletion_confirmation_can_be_rejected_but_not_approved(tmp_path
                 confirmation_receipt=receipt,
             ),
             tenant_id=TENANT_A,
+            is_maintainer=True,
         )
         return service, confirmation
 

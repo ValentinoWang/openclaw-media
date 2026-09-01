@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from datetime import datetime
 from pathlib import Path
 
@@ -94,4 +95,16 @@ def test_server_startup_uses_the_single_production_document_gateway() -> None:
 
     assert "from integrations.feishu.lark_document_gateway import" in server_cli
     assert "lark_gateway = build_production_lark_document_gateway(" in server_cli
-    assert "DocumentsService(account_database.connect, lark_gateway=lark_gateway)" in server_cli
+    tree = ast.parse(server_cli)
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "DocumentsService"
+    ]
+    assert any(
+        any(keyword.arg == "lark_gateway" for keyword in call.keywords)
+        and any(keyword.arg == "cursor_secret" for keyword in call.keywords)
+        for call in calls
+    )

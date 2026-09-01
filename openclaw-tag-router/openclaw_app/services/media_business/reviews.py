@@ -17,10 +17,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Protocol
-from urllib.parse import urlparse
 
 from . import foundation
 from .foundation import MediaBusinessError, TenantContext, _fetchall, _fetchone, public_projection
+from .trusted_resources import public_lark_document_url
 
 
 SCHEMA_VERSION = "media_web_business_pages_v2"
@@ -35,9 +35,6 @@ EVIDENCE_QUALITY = {"verified", "partial", "unverified", "unavailable"}
 _QUALITY_RANK = {"verified": 0, "partial": 1, "unverified": 2, "unavailable": 3}
 _CURSOR_VERSION = 1
 _CURSOR_AAD = b"media-web-b07-reviews-v1"
-_LARK_DOCUMENT_ROOT_HOSTS = frozenset({"feishu.cn", "larksuite.com", "larkoffice.com"})
-_LARK_DOCUMENT_HOST_SUFFIXES = (".feishu.cn", ".larksuite.com", ".larkoffice.com")
-_LARK_DOCUMENT_PATH = re.compile(r"^/(wiki|docx)/([A-Za-z0-9_-]{8,160})$")
 
 
 ReviewsError = MediaBusinessError
@@ -141,34 +138,7 @@ def _value(data: Mapping[str, Any], *names: str, default: Any = None) -> Any:
 
 
 def _public_lark_document_url(value: Any) -> str | None:
-    if not isinstance(value, str) or not value.strip():
-        return None
-    try:
-        parsed = urlparse(value.strip())
-        host = str(parsed.hostname or "").lower()
-        port = parsed.port
-    except ValueError:
-        return None
-    if (
-        parsed.scheme != "https"
-        or parsed.username is not None
-        or parsed.password is not None
-        or port is not None
-        or parsed.query
-        or parsed.fragment
-        or parsed.params
-    ):
-        return None
-    if not (
-        host in _LARK_DOCUMENT_ROOT_HOSTS
-        or any(host.endswith(suffix) for suffix in _LARK_DOCUMENT_HOST_SUFFIXES)
-    ):
-        return None
-    path_match = _LARK_DOCUMENT_PATH.fullmatch(parsed.path)
-    if path_match is None:
-        return None
-    document_type, token = path_match.groups()
-    return f"https://{host}/{document_type}/{token}"
+    return public_lark_document_url(value)
 
 
 def _require_public_id(value: Any, field: str) -> str:

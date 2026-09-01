@@ -16,7 +16,7 @@ from openclaw_app.account import (
     AccountDatabaseSettings,
     AccountRegistrationService,
 )
-from openclaw_app.adapters.http_api import AuthConfig, make_server
+from openclaw_app.adapters.http_api import AuthConfig, HttpAuthorityConfig, make_server
 
 
 ADMIN = UUID("33333333-3333-4333-8333-333333333333")
@@ -47,12 +47,17 @@ class AccountRegistrationHttpPostgreSQLTests(unittest.TestCase):
             )
             password_hash = bcrypt.hashpw(b"password-for-admin", bcrypt.gensalt(rounds=12)).decode()
             connection.execute(
-                "INSERT INTO openclaw_account.users(id, username, email, password_hash, role) "
-                "VALUES (%s, 'admin', 'admin@example.com', %s, 'admin')",
+                "INSERT INTO openclaw_account.users(id, username, email, password_hash, role, display_name) "
+                "VALUES (%s, 'admin', 'admin@example.com', %s, 'admin', 'Admin')",
                 (ADMIN, password_hash),
             )
             connection.execute(
                 "INSERT INTO openclaw_account.tenants(id, primary_user_id) VALUES (%s, %s)",
+                (ADMIN_TENANT, ADMIN),
+            )
+            connection.execute(
+                "INSERT INTO openclaw_account.tenant_members(tenant_id, user_id, role, status) "
+                "VALUES (%s, %s, 'owner', 'active')",
                 (ADMIN_TENANT, ADMIN),
             )
             connection.execute(
@@ -81,6 +86,7 @@ class AccountRegistrationHttpPostgreSQLTests(unittest.TestCase):
             0,
             None,
             auth_config=config,
+            authority_config=HttpAuthorityConfig(public_origin="http://127.0.0.1"),
             account_auth=self.auth,
             account_registration=self.registration,
         )
@@ -167,9 +173,10 @@ class AccountRegistrationHttpPostgreSQLTests(unittest.TestCase):
 
         status, session, _ = self._request("GET", "/media/api/session", cookie=user_cookie)
         self.assertEqual(status, 200, session)
-        self.assertEqual(session["userId"], user_id)
+        self.assertEqual(session["session"]["publicUserId"], user_id)
+        self.assertNotIn("tenantId", session["session"])
         status, profile, _ = self._request(
-            "GET", "/media/api/account/affiliate", cookie=user_cookie
+            "GET", "/openclaw/media/api/account/affiliate", cookie=user_cookie
         )
         self.assertEqual(status, 200, profile)
         self.assertEqual(profile["userId"], user_id)

@@ -99,8 +99,10 @@ class ContentOSBridgePresentationTests(unittest.TestCase):
         positions = [document.index(heading) for heading in headings]
         self.assertEqual(positions, sorted(positions))
         appendix_start = document.index("## 追溯附录")
-        for metadata in ("creation_internal_001", "https://example.feishu.cn/docx/internal", "internal_only"):
+        for metadata in ("creation_internal_001", "https://example.feishu.cn/docx/internal"):
             self.assertGreater(document.index(metadata), appendix_start)
+        self.assertNotIn("internal_only", document)
+        self.assertIn("结构化结果已写入同目录 JSON 证据文件", document)
 
         publish_document = RendererHarness()._render_content_os_publish_pack_section(
             self._message(),

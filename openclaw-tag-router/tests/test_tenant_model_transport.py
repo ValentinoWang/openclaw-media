@@ -9,7 +9,7 @@ from uuid import UUID
 import requests
 
 from common.model_transport_context import bind_model_transport, current_model_transport
-from openclaw_app.services.retail_billing import OperationReservation, Usage
+from openclaw_app.services.retail_billing import OperationReservation, RetailBillingError, Usage
 from openclaw_app.services.tenant_model_transport import (
     TenantModelGateway,
     TenantModelTransportError,
@@ -20,6 +20,8 @@ from openclaw_app.services.upstream_gateway_credentials import UpstreamCredentia
 
 TENANT_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 TENANT_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+USER_A = "11111111-1111-4111-8111-111111111111"
+USER_B = "22222222-2222-4222-8222-222222222222"
 OPERATION = UUID("60000000-0000-4000-8000-000000000010")
 REQUEST_REF = UUID("60000000-0000-4000-8000-000000000011")
 
@@ -85,6 +87,7 @@ class TenantModelTransportTests(TestCase):
     def _transport(self, tenant_id: str) -> TenantRequestModelTransport:
         return TenantRequestModelTransport(
             tenant_id=tenant_id,
+            actor_user_id=USER_A if tenant_id == TENANT_A else USER_B,
             task_id=f"task-{tenant_id}",
             request_root=f"mreq-{tenant_id}",
             api_key="platform-secret",
@@ -116,6 +119,7 @@ class TenantModelTransportTests(TestCase):
                 },
             )
         self.assertEqual([item["tenant_id"] for item in self.billing.reservations], [TENANT_A, TENANT_B])
+        self.assertEqual([item["actor_user_id"] for item in self.billing.reservations], [USER_A, USER_B])
         self.assertTrue(all(call.kwargs["headers"]["Authorization"] == "Bearer platform-secret" for call in post.call_args_list))
         self.assertTrue(all(call.kwargs["json"]["max_output_tokens"] == 2048 for call in post.call_args_list))
         self.assertEqual(self.billing.settlements[0][1], Usage(100, 40, 10))
@@ -172,12 +176,27 @@ class TenantModelTransportTests(TestCase):
             gateway.task_calls("101", "task-retired-tenant")
         self.assertEqual(raised.exception.code, "invalid_tenant")
 
+    def test_billing_authorization_status_is_preserved_for_the_http_boundary(self) -> None:
+        def reject(**_kwargs):
+            raise RetailBillingError("billing_actor_forbidden", "actor is no longer active")
+
+        self.billing.reserve = reject  # type: ignore[method-assign]
+        call = self._transport(TENANT_A).begin_call("/responses")
+        with self.assertRaises(TenantModelTransportError) as raised:
+            call.post(
+                "/responses",
+                json_body={"model": "gpt-5.6-sol", "input": "test"},
+                timeout=5,
+            )
+        self.assertEqual(raised.exception.code, "billing_actor_forbidden")
+        self.assertEqual(raised.exception.status, 403)
+
     def test_revoked_credential_fails_before_creating_hold(self) -> None:
         gateway = TenantModelGateway(  # type: ignore[arg-type]
             _RevokedCredential(), self.billing, None, sub2api_base_url="https://sub2api.test"
         )
         with self.assertRaises(UpstreamCredentialError):
-            with gateway.bind(TENANT_A, "task-a", "request-root-a"):
+            with gateway.bind(TENANT_A, USER_A, "task-a", "request-root-a"):
                 self.fail("revoked credential must not bind a model transport")
         self.assertEqual(self.billing.reservations, [])
 

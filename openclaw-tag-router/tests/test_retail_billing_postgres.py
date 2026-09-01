@@ -18,6 +18,7 @@ TENANT_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 TENANT_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
 USER_A = "11111111-1111-4111-8111-111111111111"
 USER_B = "22222222-2222-4222-8222-222222222222"
+USER_C = "33333333-3333-4333-8333-333333333333"
 WALLET_A = "30000000-0000-4000-8000-000000000001"
 WALLET_B = "30000000-0000-4000-8000-000000000002"
 PRICE_A = "60000000-0000-4000-8000-000000000001"
@@ -39,17 +40,32 @@ def billing() -> RetailBillingService:
             (USER_B, TENANT_B, WALLET_B, "b"),
         ):
             connection.execute(
-                "INSERT INTO openclaw_account.users(id,username,password_hash,role) VALUES (%s,%s,%s,'user')",
-                (user, f"u6-{suffix}", "x" * 60),
+                "INSERT INTO openclaw_account.users(id,username,password_hash,role,display_name) VALUES (%s,%s,%s,'user',%s)",
+                (user, f"u6-{suffix}", "x" * 60, f"U6 {suffix.upper()}"),
             )
             connection.execute(
                 "INSERT INTO openclaw_account.tenants(id,primary_user_id) VALUES (%s,%s)",
                 (tenant, user),
             )
             connection.execute(
+                "INSERT INTO openclaw_account.tenant_members(tenant_id,user_id,role,status) "
+                "VALUES (%s,%s,'owner','active')",
+                (tenant, user),
+            )
+            connection.execute(
                 "INSERT INTO openclaw_account.wallet_accounts(id,tenant_id,available) VALUES (%s,%s,10)",
                 (wallet, tenant),
             )
+        connection.execute(
+            "INSERT INTO openclaw_account.users(id,username,password_hash,role,display_name) "
+            "VALUES (%s,'u6-c',%s,'user','U6 C')",
+            (USER_C, "x" * 60),
+        )
+        connection.execute(
+            "INSERT INTO openclaw_account.tenant_members(tenant_id,user_id,role,status) "
+            "VALUES (%s,%s,'member','active')",
+            (TENANT_A, USER_C),
+        )
         connection.execute(
             """
             INSERT INTO openclaw_account.model_price_versions(
@@ -65,6 +81,7 @@ def billing() -> RetailBillingService:
 def reserve(service: RetailBillingService, tenant: str, key: str, fingerprint: str | None = None):
     return service.reserve(
         tenant_id=tenant,
+        actor_user_id=USER_A if tenant == TENANT_A else USER_B,
         scope="media-task",
         idempotency_key=key,
         request_fingerprint=fingerprint or hashlib.sha256(key.encode("utf-8")).hexdigest(),
@@ -104,8 +121,47 @@ def test_actual_cached_usage_settles_hold_and_append_only_ledger(billing: Retail
         usage = connection.execute(
             "SELECT input_tokens,cached_input_tokens,output_tokens,amount FROM openclaw_account.usage_charges"
         ).fetchone()
+        actor_user_id = connection.execute(
+            "SELECT actor_user_id::text FROM openclaw_account.model_operations WHERE id=%s",
+            (operation.operation_id,),
+        ).fetchone()[0]
     assert [row[0] for row in entries] == ["reserve", "settle"]
     assert usage == (100, 40, 10, Decimal("0.00020800"))
+    assert actor_user_id == USER_A
+
+
+def test_cross_tenant_actor_is_rejected_without_billing_side_effects(
+    billing: RetailBillingService,
+) -> None:
+    with pytest.raises(RetailBillingError) as raised:
+        billing.reserve(
+            tenant_id=TENANT_A,
+            actor_user_id=USER_B,
+            scope="media-task",
+            idempotency_key="cross-tenant-actor",
+            request_fingerprint=hashlib.sha256(b"cross-tenant-actor").hexdigest(),
+            model="gpt-5.6-sol",
+            correlation_key="correlation-cross-tenant-actor",
+            max_input_tokens=1000,
+            max_output_tokens=100,
+        )
+    assert raised.value.code == "billing_actor_forbidden"
+    assert raised.value.status == 403
+    assert billing.balance(TENANT_A) == {
+        "available": "10.00000000",
+        "reserved": "0E-8",
+        "currency": "credit",
+    }
+    with billing.database.connect() as connection:
+        counts = connection.execute(
+            """
+            SELECT
+                (SELECT count(*) FROM openclaw_account.model_operations),
+                (SELECT count(*) FROM openclaw_account.fund_holds),
+                (SELECT count(*) FROM openclaw_account.ledger_entries)
+            """
+        ).fetchone()
+    assert counts == (0, 0, 0)
 
 
 def test_insufficient_balance_and_idempotency_fail_closed(billing: RetailBillingService) -> None:
@@ -124,6 +180,35 @@ def test_insufficient_balance_and_idempotency_fail_closed(billing: RetailBilling
     with pytest.raises(RetailBillingError) as replay:
         reserve(billing, TENANT_A, "bound-key")
     assert replay.value.code == "usage_reconciliation_pending"
+
+
+def test_existing_operation_rejects_a_different_active_actor_without_state_disclosure(
+    billing: RetailBillingService,
+) -> None:
+    reserve(billing, TENANT_A, "actor-bound-key")
+    with pytest.raises(RetailBillingError) as raised:
+        billing.reserve(
+            tenant_id=TENANT_A,
+            actor_user_id=USER_C,
+            scope="media-task",
+            idempotency_key="actor-bound-key",
+            request_fingerprint=hashlib.sha256(b"actor-bound-key").hexdigest(),
+            model="gpt-5.6-sol",
+            correlation_key="correlation-actor-bound-key",
+            max_input_tokens=1000,
+            max_output_tokens=100,
+        )
+    assert raised.value.code == "idempotency_conflict"
+    with billing.database.connect() as connection:
+        counts = connection.execute(
+            """
+            SELECT
+                (SELECT count(*) FROM openclaw_account.model_operations),
+                (SELECT count(*) FROM openclaw_account.fund_holds),
+                (SELECT count(*) FROM openclaw_account.ledger_entries)
+            """
+        ).fetchone()
+    assert counts == (1, 1, 1)
 
 
 def test_same_key_concurrency_creates_exactly_one_operation(billing: RetailBillingService) -> None:

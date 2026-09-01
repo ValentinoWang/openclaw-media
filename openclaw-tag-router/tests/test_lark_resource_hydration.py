@@ -16,6 +16,9 @@ from openclaw_app.services.lark_resource_hydration import (
 )
 
 
+WEB_BASE_URL = "https://example.feishu.cn"
+
+
 def _feishu_service() -> FeishuService:
     return FeishuService(mode="knowledge_base", local_docs_dir=str(Path("/tmp") / "lark-hydration-tests"))
 
@@ -143,19 +146,19 @@ def test_document_writes_are_never_retried_for_99991400(monkeypatch, method: str
 
 
 def _target(obj_type="docx"):
-    return HydrationTarget("tenant", "artifact_lark_123", 1, "actor", {"nodeToken": "node", "objToken": "object", "objType": obj_type, "title": "标题"})
+    return HydrationTarget("tenant", "artifact_lark_123", 1, "actor", {"nodeToken": "node_token_123", "objToken": "object", "objType": obj_type, "title": "标题"})
 
 
 def test_docx_payload_uses_actual_remote_block_mapping_and_read_fallback():
-    payload = _docx_payload(_target(), {"root_blocks": [{"block_id": "remote-heading", "block_type": 3, "text": "小节"}, {"block_id": "remote-p", "block_type": 2, "text": "正文"}]}, "fallback")
+    payload = _docx_payload(_target(), {"root_blocks": [{"block_id": "remote-heading", "block_type": 3, "text": "小节"}, {"block_id": "remote-p", "block_type": 2, "text": "正文"}]}, "fallback", web_base_url=WEB_BASE_URL)
     assert payload.body["schemaVersion"] == "media.document.body.v1"
     assert [mapping[1] for mapping in payload.mappings] == ["docx:object:root", "remote-heading", "remote-p"]
-    fallback = _docx_payload(_target(), None, "第一行\n第二行")
+    fallback = _docx_payload(_target(), None, "第一行\n第二行", web_base_url=WEB_BASE_URL)
     assert [mapping[1] for mapping in fallback.mappings][-2:] == ["docx:object:line:1", "docx:object:line:2"]
 
 
 def test_bitable_payload_maps_every_body_block():
-    payload = _bitable_payload(_target("bitable"), [{"table_id": "tbl", "name": "任务", "records": [{"record_id": "rec", "fields": {"名称": "A"}}]}])
+    payload = _bitable_payload(_target("bitable"), [{"table_id": "tbl", "name": "任务", "records": [{"record_id": "rec", "fields": {"名称": "A"}}]}], web_base_url=WEB_BASE_URL)
     assert len(payload.body["blocks"]) == len(payload.mappings) == 3
     assert payload.mappings[-1][1] == "bitable:object:table:tbl:record:rec"
 
@@ -186,7 +189,7 @@ class FakeFeishu:
 
 
 def test_second_hydration_is_unchanged():
-    service = LarkResourceHydrationService(FakeFeishu(), FakeRepository())
+    service = LarkResourceHydrationService(FakeFeishu(), FakeRepository(), web_base_url=WEB_BASE_URL)
     assert (service.hydrate("tenant").inserted, service.hydrate("tenant").unchanged) == (1, 1)
 
 
@@ -198,7 +201,7 @@ def test_wiki_node_token_requires_exact_wiki_document_url():
 
 def test_missing_resource_identity_is_resolved_from_wiki_node():
     unresolved = HydrationTarget("tenant", "onboarding_doc", 1, "actor", {"nodeToken": "node"})
-    resolved = LarkResourceHydrationService(FakeFeishu(), FakeRepository())._resolved_target(unresolved)
+    resolved = LarkResourceHydrationService(FakeFeishu(), FakeRepository(), web_base_url=WEB_BASE_URL)._resolved_target(unresolved)
     assert resolved.obj_token == "resolved-object"
     assert resolved.obj_type == "docx"
     assert resolved.lark_resource["spaceId"] == "space"

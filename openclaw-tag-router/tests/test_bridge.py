@@ -175,14 +175,29 @@ class BridgeProtocolTest(unittest.TestCase):
         }
 
         with tempfile.TemporaryDirectory() as directory:
-            with patch.dict(os.environ, {"OPENCLAW_CODEX_TASK_ROOT": directory}, clear=False):
-                bridge.codex_maintenance_tasks.write_worker_health(Path(directory), pid=os.getpid())
+            root = Path(directory)
+            task_root = root / "tasks"
+            codex_home = root / "codex-home"
+            codex_home.mkdir()
+            (codex_home / "config.toml").write_text(
+                'model_provider = "test-provider"\n',
+                encoding="utf-8",
+            )
+            with patch.dict(
+                os.environ,
+                {
+                    "OPENCLAW_CODEX_TASK_ROOT": str(task_root),
+                    "CODEX_HOME": str(codex_home),
+                },
+                clear=False,
+            ):
+                bridge.codex_maintenance_tasks.write_worker_health(task_root, pid=os.getpid())
                 first = bridge._delegate_to_codex_maintenance("【codex】修复长任务", payload=payload)
                 second = bridge._delegate_to_codex_maintenance("【codex】修复长任务", payload=payload)
 
             self.assertEqual(first["status"], "codex_maintenance_queued")
             self.assertEqual(first["task_id"], second["task_id"])
-            task_dir = Path(directory) / first["task_id"]
+            task_dir = task_root / first["task_id"]
             state_text = (task_dir / "state.json").read_text(encoding="utf-8")
             state = json.loads(state_text)
             self.assertEqual(state["schemaVersion"], 2)
@@ -504,7 +519,22 @@ class BridgeProtocolTest(unittest.TestCase):
             },
         }
         with tempfile.TemporaryDirectory() as directory:
-            with patch.dict(os.environ, {"OPENCLAW_CODEX_TASK_ROOT": directory}, clear=False):
+            root = Path(directory)
+            task_root = root / "tasks"
+            codex_home = root / "codex-home"
+            codex_home.mkdir()
+            (codex_home / "config.toml").write_text(
+                'model_provider = "test-provider"\n',
+                encoding="utf-8",
+            )
+            with patch.dict(
+                os.environ,
+                {
+                    "OPENCLAW_CODEX_TASK_ROOT": str(task_root),
+                    "CODEX_HOME": str(codex_home),
+                },
+                clear=False,
+            ):
                 result = bridge._delegate_to_codex_maintenance("【codex】修复", payload=payload)
 
         self.assertTrue(result["ok"])

@@ -65,12 +65,17 @@ class AccountRegistrationPostgreSQLTests(unittest.TestCase):
             )
             password_hash = bcrypt.hashpw(b"password-for-admin", bcrypt.gensalt(rounds=12)).decode()
             connection.execute(
-                "INSERT INTO openclaw_account.users(id, username, email, password_hash, role) "
-                "VALUES (%s, 'admin', 'admin@example.com', %s, 'admin')",
+                "INSERT INTO openclaw_account.users(id, username, email, password_hash, role, display_name) "
+                "VALUES (%s, 'admin', 'admin@example.com', %s, 'admin', 'Admin')",
                 (ADMIN, password_hash),
             )
             connection.execute(
                 "INSERT INTO openclaw_account.tenants(id, primary_user_id) VALUES (%s, %s)",
+                (ADMIN_TENANT, ADMIN),
+            )
+            connection.execute(
+                "INSERT INTO openclaw_account.tenant_members(tenant_id, user_id, role, status) "
+                "VALUES (%s, %s, 'owner', 'active')",
                 (ADMIN_TENANT, ADMIN),
             )
             connection.execute(

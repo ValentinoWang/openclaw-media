@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 from integrations.feishu.lark_document_gateway import ProductionLarkDocumentGateway
@@ -38,7 +39,19 @@ def test_source_startup_and_migration_keep_document_projection_owned() -> None:
     )
 
     assert "build_production_lark_document_gateway" in startup
-    assert "DocumentsService(account_database.connect, lark_gateway=lark_gateway)" in startup
+    startup_tree = ast.parse(startup)
+    document_calls = [
+        node
+        for node in ast.walk(startup_tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "DocumentsService"
+    ]
+    assert any(
+        any(keyword.arg == "lark_gateway" for keyword in call.keywords)
+        and any(keyword.arg == "cursor_secret" for keyword in call.keywords)
+        for call in document_calls
+    )
     assert "getDocumentBody" in http_adapter
     assert "saveDocumentDraft" in http_adapter
     assert "sync_batches_save_idempotency_uq" in migration

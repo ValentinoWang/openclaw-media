@@ -279,9 +279,9 @@ class MediaBusinessHttpTests(unittest.TestCase):
     def test_media_session_matches_the_frozen_if2_response(self) -> None:
         # The frozen v2 session now carries the Stage-1 workspace facts the
         # Media Web frontend schema requires (workspaceMode/editorMode/...).
-        for token, expected_user_id, expected_tenant_id, expected_role in (
-            ("user-token", USER_ID, TENANT_ID, "ordinary"),
-            ("admin-token", ADMIN_ID, ADMIN_TENANT_ID, "admin"),
+        for token, expected_user_id, expected_role in (
+            ("user-token", USER_ID, "ordinary"),
+            ("admin-token", ADMIN_ID, "admin"),
         ):
             with self.subTest(token=token):
                 status, body = self._request(
@@ -295,7 +295,6 @@ class MediaBusinessHttpTests(unittest.TestCase):
                         "revision": 1,
                         "session": {
                             "publicUserId": str(expected_user_id),
-                            "tenantId": str(expected_tenant_id),
                             "workspaceMode": "personal_web",
                             "editorMode": "web_edit",
                             "bodyAuthority": "internal",
@@ -305,6 +304,34 @@ class MediaBusinessHttpTests(unittest.TestCase):
                             "installationConnection": "not_applicable",
                             "role": expected_role,
                             "maintainer": False,
+                            "routeGrants": (
+                                [
+                                    "/admin/overview",
+                                    "/admin/access",
+                                    "/admin/tenants",
+                                    "/admin/billing",
+                                    "/admin/upstreams",
+                                ]
+                                if expected_role == "admin"
+                                else [
+                                    "/today",
+                                    "/studio",
+                                    "/campaigns",
+                                    "/business",
+                                    "/desk",
+                                    "/overview",
+                                    "/assets",
+                                    "/tracks",
+                                    "/decisions",
+                                    "/publishing",
+                                    "/reviews",
+                                    "/media-agent",
+                                    "/archives",
+                                    "/usage-billing",
+                                    "/invites",
+                                    "/workspace",
+                                ]
+                            ),
                             "csrfToken": f"csrf-{token}",
                             "expiresAt": self.auth.sessions[token].expires_at.isoformat(),
                             "schemaVersion": "media_web_business_pages_v2",

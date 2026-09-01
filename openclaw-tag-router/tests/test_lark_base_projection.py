@@ -389,7 +389,7 @@ def test_post_review_projection_targets_review_read_model():
 
 
 @pytest.mark.parametrize(
-    ("value", "expected"),
+    ("value", "_expected"),
     [
         ("https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e", "https://tenant.feishu.cn/wiki/UkSMwA36fiZuBdkk63ncnm84n0e"),
         ("https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e", "https://www.larksuite.com/docx/UkSMwA36fiZuBdkk63ncnm84n0e"),
@@ -406,7 +406,7 @@ def test_post_review_projection_targets_review_read_model():
         (None, None),
     ],
 )
-def test_post_review_projection_only_projects_safe_document_links(value, expected):
+def test_post_review_projection_drops_document_links(value, _expected):
     canonical = LarkBaseProjection._canonical_data(
         _spec("review_records"),
         {"table_id": "reviews"},
@@ -419,7 +419,8 @@ def test_post_review_projection_only_projects_safe_document_links(value, expecte
         },
     )
 
-    assert canonical["document_url"] == expected
+    assert "document_url" not in canonical
+    assert "复盘文档链接" not in canonical["fields"]
 
 
 def test_dry_run_validates_every_canonical_projection():

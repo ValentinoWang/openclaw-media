@@ -17,12 +17,13 @@ def load_sync_module():
 
 class DailyTodoChecklistSyncTest(unittest.TestCase):
     def test_defaults_are_repo_or_user_relative_and_dry_run_needs_no_reminder_script(self) -> None:
-        sync = load_sync_module()
-        self.assertTrue(str(sync.DEFAULT_STATE_PATH).endswith("data/daily_todo_sync_state.json"))
-        self.assertNotIn("/home/ubuntu", str(sync.DEFAULT_ARCHIVE_ROOT))
-        self.assertTrue(str(sync.DEFAULT_REMINDER_SCRIPT).endswith("openclaw-feishu-reminder/reminder.py"))
-        self.assertIn(str(sync.DEFAULT_REMINDER_ROOT / "reminder.env"), sync.DEFAULT_ENV_FILES)
         with tempfile.TemporaryDirectory() as tmp:
+            with patch.dict("os.environ", {"HOME": tmp}):
+                sync = load_sync_module()
+            self.assertTrue(str(sync.DEFAULT_STATE_PATH).endswith("data/daily_todo_sync_state.json"))
+            self.assertEqual(sync.DEFAULT_ARCHIVE_ROOT, Path(tmp) / "obsidian-日记/Archieve")
+            self.assertTrue(str(sync.DEFAULT_REMINDER_SCRIPT).endswith("openclaw-feishu-reminder/reminder.py"))
+            self.assertIn(str(sync.DEFAULT_REMINDER_ROOT / "reminder.env"), sync.DEFAULT_ENV_FILES)
             root = Path(tmp) / "weekly"
             root.mkdir()
             state = Path(tmp) / "state.json"

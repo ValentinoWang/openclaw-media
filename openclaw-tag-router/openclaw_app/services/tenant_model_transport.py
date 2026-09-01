@@ -17,7 +17,9 @@ from .upstream_gateway_credentials import PlatformCredentialService
 
 
 class TenantModelTransportError(ModelTransportError):
-    pass
+    def __init__(self, code: str, message: str, *, status: int | None = None) -> None:
+        super().__init__(code, message)
+        self.status = status
 
 
 def _canonical_tenant_id(value: str) -> str:
@@ -70,6 +72,7 @@ class _TenantModelCall:
         try:
             reservation = self._transport.billing.reserve(
                 tenant_id=self._transport.tenant_id,
+                actor_user_id=self._transport.actor_user_id,
                 scope=self._transport.task_id,
                 idempotency_key=self.request_id,
                 request_fingerprint=fingerprint,
@@ -79,7 +82,7 @@ class _TenantModelCall:
                 max_output_tokens=int(bounded_body[token_field]),
             )
         except RetailBillingError as exc:
-            raise TenantModelTransportError(exc.code, exc.detail) from exc
+            raise TenantModelTransportError(exc.code, exc.detail, status=exc.status) from exc
         self._operation_id = reservation.operation_id
         try:
             response = requests.post(
@@ -139,7 +142,7 @@ class _TenantModelCall:
             if exc.code in {"invalid_usage", "usage_reconciliation_pending"}:
                 self._mark_unknown(response)
                 return
-            raise TenantModelTransportError(exc.code, exc.detail) from exc
+            raise TenantModelTransportError(exc.code, exc.detail, status=exc.status) from exc
         self._terminal = True
 
     def uncertain(self, response: requests.Response | None = None) -> None:
@@ -152,7 +155,7 @@ class _TenantModelCall:
         try:
             self._transport.billing.release(self._operation_id, error_code=error_code)
         except RetailBillingError as exc:
-            raise TenantModelTransportError(exc.code, exc.detail) from exc
+            raise TenantModelTransportError(exc.code, exc.detail, status=exc.status) from exc
         self._terminal = True
 
     def _mark_unknown(self, response: requests.Response | None) -> None:
@@ -164,7 +167,7 @@ class _TenantModelCall:
                 upstream_request_id=self._upstream_request_id(response),
             )
         except RetailBillingError as exc:
-            raise TenantModelTransportError(exc.code, exc.detail) from exc
+            raise TenantModelTransportError(exc.code, exc.detail, status=exc.status) from exc
         self._terminal = True
 
     @staticmethod
@@ -184,6 +187,7 @@ class TenantRequestModelTransport:
         self,
         *,
         tenant_id: str,
+        actor_user_id: str,
         task_id: str,
         request_root: str,
         api_key: str,
@@ -193,6 +197,7 @@ class TenantRequestModelTransport:
         max_output_tokens: int,
     ) -> None:
         self.tenant_id = _canonical_tenant_id(tenant_id)
+        self.actor_user_id = _canonical_tenant_id(actor_user_id)
         self.task_id = task_id
         self.request_root = request_root
         self.api_key = api_key
@@ -290,9 +295,16 @@ class TenantModelGateway:
         }
 
     @contextmanager
-    def bind(self, tenant_id: str, task_id: str, request_root: str) -> Iterator[None]:
+    def bind(
+        self,
+        tenant_id: str,
+        actor_user_id: str,
+        task_id: str,
+        request_root: str,
+    ) -> Iterator[None]:
         transport = TenantRequestModelTransport(
             tenant_id=_canonical_tenant_id(tenant_id),
+            actor_user_id=_canonical_tenant_id(actor_user_id),
             task_id=task_id,
             request_root=request_root,
             api_key=self.credential_service.resolve(),

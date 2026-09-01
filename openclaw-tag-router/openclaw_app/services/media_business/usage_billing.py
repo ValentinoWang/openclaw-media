@@ -200,6 +200,7 @@ class UsageBillingService:
     _IMAGE_USAGE_INSERT = """
         INSERT INTO openclaw_account.usage_events(
             tenant_id,
+            actor_user_id,
             event_public_id,
             kind,
             quantity,
@@ -211,7 +212,7 @@ class UsageBillingService:
             source_type,
             source_id,
             price_version_id
-        ) VALUES (%s, %s, 'image', %s, %s, 'images', %s, 'credit', %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, 'image', %s, %s, 'images', %s, 'credit', %s, %s, %s, %s)
         ON CONFLICT (tenant_id, source_type, source_id) DO NOTHING
         RETURNING event_public_id,
                   kind,
@@ -442,6 +443,7 @@ class UsageBillingService:
     ) -> dict[str, Any]:
         """Append one image event and return the row read back from PostgreSQL."""
         tenant_id = self._tenant_id(context)
+        actor_user_id = self._user_id(context)
         if not isinstance(public_usage_id, str) or not _PUBLIC_ID.fullmatch(public_usage_id):
             raise UsageBillingInvalidRequest("publicUsageId is invalid", field="publicUsageId")
         _require_text(model, "model")
@@ -460,6 +462,7 @@ class UsageBillingService:
         price_uuid = _uuid_text(price_version_id, "priceVersionId") if price_version_id is not None else None
         params = (
             tenant_id,
+            actor_user_id,
             public_usage_id,
             parsed_quantity,
             model.strip(),

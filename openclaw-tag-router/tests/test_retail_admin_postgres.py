@@ -31,12 +31,17 @@ def service() -> RetailAdminService:
             "openclaw_account.sessions,openclaw_account.wallet_accounts,openclaw_account.tenants,openclaw_account.users CASCADE"
         )
         connection.execute(
-            "INSERT INTO openclaw_account.users(id,username,password_hash,role) VALUES "
-            "(%s,'u12b-admin',%s,'admin'),(%s,'u12b-target',%s,'user')",
+            "INSERT INTO openclaw_account.users(id,username,password_hash,role,display_name) VALUES "
+            "(%s,'u12b-admin',%s,'admin','U12B Admin'),(%s,'u12b-target',%s,'user','U12B Target')",
             (ADMIN, "x" * 60, TARGET, "x" * 60),
         )
         connection.execute(
             "INSERT INTO openclaw_account.tenants(id,primary_user_id) VALUES (%s,%s),(%s,%s)",
+            (ADMIN_TENANT, ADMIN, TARGET_TENANT, TARGET),
+        )
+        connection.execute(
+            "INSERT INTO openclaw_account.tenant_members(tenant_id,user_id,role,status) VALUES "
+            "(%s,%s,'owner','active'),(%s,%s,'owner','active')",
             (ADMIN_TENANT, ADMIN, TARGET_TENANT, TARGET),
         )
         connection.execute(

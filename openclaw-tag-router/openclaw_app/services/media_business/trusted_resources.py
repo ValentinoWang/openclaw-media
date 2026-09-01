@@ -15,12 +15,43 @@ from urllib.parse import urlsplit
 
 _RESOURCE_ID = re.compile(r"^[A-Za-z0-9_-]{8,160}$")
 _RESOURCE_TYPES = {"wiki": "wiki", "docx": "docx", "base": "bitable"}
+_LARK_DOCUMENT_PATH = re.compile(r"^/(wiki|docx)/([A-Za-z0-9_-]{8,160})$")
+_LARK_DOCUMENT_ROOT_HOSTS = ("feishu.cn", "larksuite.com", "larkoffice.com")
 _HOST_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
 _FEISHU_HOST_SUFFIX = ("feishu", "cn")
 
 
 class TrustedOrganizationResourceError(ValueError):
     pass
+
+
+def public_lark_document_url(value: Any) -> str | None:
+    """Project a stored Lark document URL only when its public shape is safe."""
+
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = urlsplit(value.strip())
+        host = str(parsed.hostname or "").lower()
+        port = parsed.port
+    except ValueError:
+        return None
+    if (
+        parsed.scheme != "https"
+        or parsed.username is not None
+        or parsed.password is not None
+        or port is not None
+        or parsed.query
+        or parsed.fragment
+    ):
+        return None
+    if not any(host == root or host.endswith(f".{root}") for root in _LARK_DOCUMENT_ROOT_HOSTS):
+        return None
+    path_match = _LARK_DOCUMENT_PATH.fullmatch(parsed.path)
+    if path_match is None:
+        return None
+    document_type, token = path_match.groups()
+    return f"https://{host}/{document_type}/{token}"
 
 
 def _tenant_feishu_host(parsed: Any) -> str:

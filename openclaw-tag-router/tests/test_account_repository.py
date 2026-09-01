@@ -81,7 +81,7 @@ class AccountAuthRepositoryTests(unittest.TestCase):
         self.assertIsNone(credential)
         self.assertIn("LIMIT 2", connection.query)
 
-    def test_organization_intent_requires_a_single_active_bound_organization_workspace(self) -> None:
+    def test_organization_intent_requires_a_single_active_bound_organization_tenant(self) -> None:
         connection = _Connection([CREDENTIAL_ROW])
 
         credential = AccountAuthRepository().credential_for_feishu_identity(
@@ -93,10 +93,13 @@ class AccountAuthRepositoryTests(unittest.TestCase):
         )
 
         self.assertIsNotNone(credential)
-        self.assertIn("openclaw_account.workspace_memberships AS membership", connection.query)
-        self.assertIn("workspace.workspace_mode = 'organization_lark'", connection.query)
-        self.assertIn("workspace.body_authority = 'lark'", connection.query)
+        self.assertIn("openclaw_account.tenant_members AS identity_members", connection.query)
+        self.assertIn("openclaw_account.tenants AS tenant", connection.query)
+        self.assertIn("tenant.workspace_mode = 'organization_lark'", connection.query)
+        self.assertIn("tenant.body_authority = 'lark'", connection.query)
         self.assertIn("binding.status = 'active'", connection.query)
+        self.assertNotIn("workspace_memberships", connection.query)
+        self.assertNotIn("openclaw_account.workspaces", connection.query)
         self.assertIn("LIMIT 2", connection.query)
 
 

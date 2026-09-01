@@ -947,12 +947,29 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         authority = self._external_request_authority()
         workspace_resolution = None
         if self.workspace_resolver is not None:
-            workspace_resolution = self.workspace_resolver.resolve(token)
+            workspace_resolution = self.workspace_resolver.resolve(
+                session,
+                authenticated_token=token,
+            )
+            if workspace_resolution.resolution_state != "RESOLVED":
+                if workspace_resolution.failure_code in {
+                    "internal_error",
+                    "account_database_unavailable",
+                }:
+                    raise AccountContractError(
+                        "account_database_unavailable",
+                        "工作区解析服务暂时不可用。",
+                    )
+                if workspace_resolution.resolution_state == "INVALID_SESSION":
+                    raise RequestAuthenticationError("workspace session is no longer valid")
+                raise RequestAuthorizationError("workspace is not eligible for this request")
         resolved_principal = (
             workspace_resolution.principal
             if workspace_resolution is not None
             else None
         )
+        if workspace_resolution is not None and resolved_principal is None:
+            raise RequestAuthenticationError("workspace resolution returned no principal")
         fallback_public_id = str(getattr(session, "user_public_id", session.user_id))
         fallback_mode = getattr(session, "workspace_mode", "personal_web")
         principal = (
@@ -1073,7 +1090,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             self._handle_media_capabilities()
             return
         if operation == "matchMediaCapability":
-            self._handle_capability_match(body or {})
+            self._handle_capability_match(context, body or {})
             return
         if operation == "createMediaUpload":
             self._execute_media_upload(context, body or {})
@@ -1732,13 +1749,6 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
     def _require_media_auth(self) -> str | None:
         resolved = self._require_media_session()
         return str(resolved[1].tenant_id) if resolved is not None else None
-
-    def _media_actor_public_id(self) -> str:
-        resolved = self._resolved_session()
-        if resolved is None:
-            raise MediaWebTaskError("authentication_required", "请先登录。")
-        session = resolved[1]
-        return session.user_public_id
 
     def _require_admin_session(self) -> tuple[str, AccountSession] | None:
         resolved = self._require_media_session()
@@ -3187,13 +3197,17 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         revoked = self.account_auth.admin_revoke_user_sessions(token, target_user_id, reason)
         self._send_json(HTTPStatus.OK, {"ok": True, "revokedSessions": revoked})
 
-    def _handle_capability_match(self, payload: Mapping[str, Any]) -> None:
-        tenant_id = self._require_media_mutation_auth()
-        if tenant_id is None:
+    def _handle_capability_match(
+        self,
+        context: If2RequestContext,
+        payload: Mapping[str, Any],
+    ) -> None:
+        tenant_id = str(context.principal.tenant_id)
+        if not self._consume_rate_limit("media_mutation", f"{tenant_id}:{self._client_key()}"):
             return
-        idempotency_key = self._require_idempotency_key()
-        if idempotency_key is None:
-            return
+        idempotency = context.idempotency
+        assert idempotency is not None
+        idempotency_key = idempotency.key
         expected_fields = {"query", "currentBot", "catalogVersion", "idempotencyKey"}
         if set(payload) != expected_fields or payload.get("idempotencyKey") != idempotency_key:
             self._send_api_error(HTTPStatus.CONFLICT, "idempotency_conflict", "幂等键与能力匹配请求不一致。")
@@ -3212,7 +3226,12 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             return
         model_scope_id = "capability-match-" + hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()[:32]
         try:
-            with self._upstream_gateway().bind(tenant_id, model_scope_id, model_scope_id):
+            with self._upstream_gateway().bind(
+                tenant_id,
+                context.principal.user_public_id,
+                model_scope_id,
+                model_scope_id,
+            ):
                 result = self.matcher.match(match_payload)
                 if result.get("pathStatus") == "matched":
                     if self.guidance_plan_service is None:
@@ -3359,14 +3378,9 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         self,
         task_id: str,
         *,
-        tenant_id: str | None = None,
-        user_public_id: str | None = None,
+        tenant_id: str,
+        user_public_id: str,
     ) -> None:
-        if tenant_id is None:
-            tenant_id = self._require_media_auth()
-            if tenant_id is None:
-                return
-        actor_public_id = user_public_id or self._media_actor_public_id()
         if self.media_web_tasks is None:
             self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "service_unavailable", "服务暂时不可用，请稍后重试。")
             return
@@ -3375,7 +3389,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         except ValueError as exc:
             raise MediaWebTaskError("invalid_request", "事件游标无效。") from exc
         self.media_web_tasks.get_task(
-            task_id, tenant_id=tenant_id, user_public_id=actor_public_id
+            task_id, tenant_id=tenant_id, user_public_id=user_public_id
         )
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
@@ -3389,7 +3403,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 events = self.media_web_tasks.get_events(
                     task_id,
                     tenant_id=tenant_id,
-                    user_public_id=actor_public_id,
+                    user_public_id=user_public_id,
                     after=cursor,
                 )
                 for event in events:
@@ -3401,7 +3415,7 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
                 task = self.media_web_tasks.get_task(
                     task_id,
                     tenant_id=tenant_id,
-                    user_public_id=actor_public_id,
+                    user_public_id=user_public_id,
                 )
                 if task["status"] in TERMINAL_STATES and cursor >= int(task["eventCursor"]):
                     self.close_connection = True

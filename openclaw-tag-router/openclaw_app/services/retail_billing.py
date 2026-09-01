@@ -21,6 +21,7 @@ class RetailBillingError(AccountError):
     def __init__(self, code: str, detail: str) -> None:
         status = {
             "insufficient_balance": 402,
+            "billing_actor_forbidden": 403,
             "idempotency_conflict": 409,
             "usage_reconciliation_pending": 409,
             "model_price_unavailable": 503,
@@ -94,6 +95,7 @@ class RetailBillingService:
         self,
         *,
         tenant_id: str,
+        actor_user_id: str,
         scope: str,
         idempotency_key: str,
         request_fingerprint: str,
@@ -103,6 +105,7 @@ class RetailBillingService:
         max_output_tokens: int,
     ) -> OperationReservation:
         tenant = self._tenant(tenant_id)
+        actor = self._tenant(actor_user_id)
         if not FINGERPRINT.fullmatch(request_fingerprint):
             raise RetailBillingError("billing_state_conflict", "模型请求指纹无效。")
         if not 1 <= len(scope) <= 128 or not 1 <= len(idempotency_key) <= 128:
@@ -121,9 +124,23 @@ class RetailBillingService:
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
                 (f"{tenant}:{scope}:{idempotency_key}",),
             )
+            active_actor = connection.execute(
+                """
+                SELECT 1
+                FROM openclaw_account.tenant_members
+                WHERE tenant_id = %s AND user_id = %s AND status = 'active'
+                FOR SHARE
+                """,
+                (tenant, actor),
+            ).fetchone()
+            if active_actor is None:
+                raise RetailBillingError(
+                    "billing_actor_forbidden",
+                    "模型请求发起人不属于当前租户。",
+                )
             existing = connection.execute(
                 """
-                SELECT id, request_fingerprint, status
+                SELECT id, request_fingerprint, status, actor_user_id
                 FROM openclaw_account.model_operations
                 WHERE tenant_id = %s AND scope = %s AND idempotency_key = %s
                 FOR UPDATE
@@ -131,6 +148,8 @@ class RetailBillingService:
                 (tenant, scope, idempotency_key),
             ).fetchone()
             if existing is not None:
+                if existing[3] != actor:
+                    raise RetailBillingError("idempotency_conflict", "幂等键已绑定其他模型请求。")
                 if str(existing[1]) != request_fingerprint:
                     raise RetailBillingError("idempotency_conflict", "幂等键已绑定其他模型请求。")
                 raise RetailBillingError(
@@ -216,11 +235,21 @@ class RetailBillingService:
             connection.execute(
                 """
                 INSERT INTO openclaw_account.model_operations(
-                    id, tenant_id, scope, idempotency_key, request_fingerprint,
+                    id, tenant_id, actor_user_id, scope, idempotency_key, request_fingerprint,
                     fund_hold_id, price_version_id, requested_model
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 """,
-                (operation_id, tenant, scope, idempotency_key, request_fingerprint, hold_id, price[0], model),
+                (
+                    operation_id,
+                    tenant,
+                    actor,
+                    scope,
+                    idempotency_key,
+                    request_fingerprint,
+                    hold_id,
+                    price[0],
+                    model,
+                ),
             )
             connection.execute(
                 """
