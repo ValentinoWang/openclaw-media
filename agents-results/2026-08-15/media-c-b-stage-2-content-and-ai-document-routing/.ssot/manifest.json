@@ -129,7 +129,7 @@
   "conflicts_dir": "conflicts",
   "validation_report": {
     "path": "validation-report.json",
-    "sha256": "40824dad140903455bb4a1c0d89eec522be3b24def7f083378187d03420c2129",
+    "sha256": "bf87216ef664bb124a83abde8c463033029d07f0f2b1a9efabd9e6686538e54e",
     "manifest_identity_sha256": "fbcda7c7e05310169d20f8e155cc4e228383e11d35e72e290cb1df68d8112776",
     "bundle_content_sha256": "f544669eae0a42f6ecd8ffbc0f2c3ff61f506241e6756006984a5d2d2e878d6b"
   }
