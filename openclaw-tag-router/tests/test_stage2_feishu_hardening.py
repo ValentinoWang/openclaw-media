@@ -67,6 +67,7 @@ class FakeFeishuService:
         self.append_calls: list[dict[str, object]] = []
         self.readback_calls = 0
         self.on_append = None
+        self.on_readback = None
         self.delay = 0.0
 
     def _content_to_docx_blocks(self, body: str) -> list[dict[str, str]]:
@@ -98,6 +99,8 @@ class FakeFeishuService:
 
     def read_document_text(self, url: str) -> dict[str, object]:
         self.readback_calls += 1
+        if callable(self.on_readback):
+            self.on_readback()
         result: dict[str, object] = {"ok": True, "text": self.readback_text}
         if self.readback_digest is not None:
             result["contentDigest"] = self.readback_digest
@@ -211,8 +214,8 @@ def test_readback_version_or_content_mismatch_fails_closed(mismatch: str) -> Non
     adapter = _adapter(service, records)
     if mismatch == "revision":
         service.revision = "rev-1"
+        service.on_readback = lambda: setattr(service, "revision", "rev-2")
         original_request = _request(binding, "revision-mismatch")
-        service.revision = "rev-2"
     else:
         original_request = _request(binding, "content-mismatch")
         service.readback_text = "different content"
