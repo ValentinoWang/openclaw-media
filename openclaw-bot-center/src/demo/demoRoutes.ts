@@ -75,3 +75,12 @@ export const demoRouteGroups: readonly DemoRouteGroup[] = [
 export const demoStaticRoutes: readonly string[] = demoRouteGroups.flatMap((group) =>
   group.routes.map((route) => route.path),
 )
+
+/** 认证页复刻：它们是独立的静态页面，不走 React 路由，也不做任何真实鉴权。 */
+export const demoAuthPages: ReadonlyArray<{ path: string; label: string; detail: string }> = [
+  { path: '/login/', label: '登录', detail: '账号密码与飞书入口的页面结构' },
+  { path: '/register/', label: '注册', detail: '注册表单与准入码位置' },
+  { path: '/verify/', label: '邮箱验证', detail: '验证与重新发送的状态页' },
+  { path: '/recover/', label: '找回密码', detail: '发起找回的表单' },
+  { path: '/reset/', label: '重置密码', detail: '设置新密码的表单' },
+]

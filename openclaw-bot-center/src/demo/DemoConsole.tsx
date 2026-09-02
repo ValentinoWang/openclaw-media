@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Compass, X } from 'lucide-react'
 import { demoPersonas, activePersonaId, selectPersona, type DemoPersonaId } from './demoPersonas'
-import { demoRouteGroups } from './demoRoutes'
+import { demoAuthPages, demoRouteGroups } from './demoRoutes'
 import './demoConsole.css'
 
 // Vite 保证 BASE_URL 恒以 / 结尾，因此可以直接与去掉前导 / 的路径拼接，
@@ -119,6 +119,19 @@ export default function DemoConsole() {
 
           <div className="demo-console-section">
             <p className="demo-console-section-title">页面索引</p>
+            <div className="demo-console-group">
+              <p className="demo-console-group-title">认证页面（只读复刻）</p>
+              <ul className="demo-console-route-list">
+                {demoAuthPages.map((page) => (
+                  <li className="demo-console-route-item" key={page.path}>
+                    <a className="demo-console-route-link" href={withBase(page.path)} title={page.detail}>
+                      {page.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
             {demoRouteGroups.map((group) => (
               <div className="demo-console-group" key={group.label}>
                 <p className="demo-console-group-title">{group.label}</p>

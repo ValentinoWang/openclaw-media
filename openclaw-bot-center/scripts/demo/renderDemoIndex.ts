@@ -3,7 +3,7 @@
  *  构建阶段被调用（例如 vite.demo.config.ts 的 closeBundle 钩子），产出的
  *  HTML 字符串本身则不依赖 JavaScript 就能完整可用。 */
 import type { DemoRouteGroup } from '../../src/demo/demoRoutes.ts'
-import { demoRouteGroups } from '../../src/demo/demoRoutes.ts'
+import { demoAuthPages, demoRouteGroups } from '../../src/demo/demoRoutes.ts'
 import type { DemoPersona, DemoPersonaId } from '../../src/demo/demoPersonas.ts'
 import { demoPersonas } from '../../src/demo/demoPersonas.ts'
 
@@ -77,6 +77,7 @@ export function renderDemoIndex(options: RenderDemoIndexOptions): string {
 
   const personaCards = demoPersonas.map((persona) => renderPersonaCard(persona, base)).join('')
   const routeGroups = demoRouteGroups.map((group) => renderRouteGroup(base, group)).join('')
+  const authCards = demoAuthPages.map((page) => renderRouteCard(base, page)).join('')
 
   return `<!doctype html>
 <html lang="zh-CN">
@@ -368,6 +369,15 @@ export function renderDemoIndex(options: RenderDemoIndexOptions): string {
       <h2 class="block__title">全部页面</h2>
       <p class="block__hint">按导航分组列出演示站的全部页面，点击直接跳转。</p>
       ${routeGroups}
+    </section>
+
+    <section class="block">
+      <h2 class="block__title">认证页面（只读复刻）</h2>
+      <p class="block__hint">登录、注册与找回流程的页面结构。表单可以填写，但提交一律被拦截，不会创建账号，也不会发送任何请求。</p>
+      <section class="route-group">
+        <ul class="route-group__list">${authCards}
+        </ul>
+      </section>
     </section>
 
     <footer class="page-footer">

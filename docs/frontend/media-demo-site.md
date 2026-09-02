@@ -107,6 +107,16 @@ openclaw-bot-center/scripts/demo/
 
 两个入口用的是同一份路由清单，不存在“索引里有、站里没有”的漂移。
 
+## 认证页面（只读复刻）
+
+登录、注册、邮箱验证、找回密码、重置密码这五个页面也复刻进了演示站，落在 `<base>login/`、`register/`、`verify/`、`recover/`、`reset/`：
+
+- 页面结构、文案与样式来自生产源文件（`media.login.html` 等），**没有**引入生产的 `media.login.js`；
+- 取而代之的是一段零网络请求的演示脚本（`scripts/demo/buildDemoAuthPages.ts` 注入）：拦截所有表单提交与站内认证链接，改为显示「演示站不做真实登录」的内联提示，并给出进入演示工作台的入口；
+- 页面顶部有固定的演示横幅，说明不会创建账号、不会发送验证码。
+
+落盘成目录形式（`login/index.html` 而不是 `login.html`）是刻意的：生产 nginx 有一条 `location ~* /[^/]*login[^/]*\.html$ { return 404; }` 的兜底规则，文件名带 `login` 的 `.html` 请求会被拒；目录形式的请求 URI 不以 `.html` 结尾，不会命中。
+
 ## 常用命令
 
 以下命令均定义在 `openclaw-bot-center/package.json`，需先 `cd openclaw-bot-center`。
@@ -132,6 +142,21 @@ cd openclaw-bot-center && npm run qa:media-demo-static
 ```
 
 `build:demo` 的完整流程是 `validate:demo-dataset && tsc -b tsconfig.demo.json && vite build --config vite.demo.config.ts && qa:media-demo-static`：先确认数据集没有过期（不是重新生成，而是校验当前已提交的文件是否等于按当前合同/种子重新生成的结果），再做类型检查、构建，最后跑构建产物的走查。
+
+## 怎么打开
+
+演示站是 SPA + 每路由静态 HTML 的组合，链接与资源都用**绝对路径**（默认 `/openclaw/media-demo/`），所以**不能直接双击 `index.html` 用 `file://` 打开**——必须经过一个 HTTP 服务：
+
+```bash
+# 最省事：构建产物本地预览（会打印 http://localhost:4173/openclaw/media-demo/）
+cd openclaw-bot-center && npm run preview:demo
+```
+
+要放到别的路径（比如内网静态站的根目录），用基址重新构建即可：
+
+```bash
+cd openclaw-bot-center && MEDIA_DEMO_BASE=/ npm run build:demo
+```
 
 ## 部署说明
 
