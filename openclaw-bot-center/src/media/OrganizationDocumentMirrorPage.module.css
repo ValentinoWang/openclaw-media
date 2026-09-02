@@ -1,81 +1,99 @@
 .page { display: grid; gap: 18px; }
 .panel, .binding, .ledger { padding: 24px; }
-.header, .ledgerHead { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px solid var(--mg-line, #dfe6df); }
+.header, .ledgerHead { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px solid var(--mg-border); }
 .header h2, .ledgerHead h2 { margin: 5px 0 0; }
 .ledgerHead p { max-width: 58ch; margin: 6px 0 0; color: var(--mg-muted, #68746d); font-size: 13px; line-height: 1.5; }
 .kicker { display: inline-flex; align-items: center; gap: 6px; color: var(--mg-muted, #68746d); font-size: 12px; font-weight: 700; }
-.meta { display: flex; flex-wrap: wrap; gap: 16px; padding: 14px 0; color: var(--mg-muted, #68746d); font-size: 12px; border-bottom: 1px solid var(--mg-line-soft, #eaefe9); }
+.meta { display: flex; flex-wrap: wrap; gap: 16px; padding: 14px 0; color: var(--mg-muted, #68746d); font-size: 12px; border-bottom: 1px solid color-mix(in srgb, var(--mg-border) 62%, transparent); }
 .meta b { color: var(--mg-ink, #19231f); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.mirrorBadge { display: inline-flex; align-items: center; gap: 6px; margin: 18px 0 6px; padding: 5px 10px; border-radius: 999px; background: #e1efff; color: #3177bd; font-size: 11px; font-weight: 700; }
-.previewBadge { display: inline-flex; align-items: center; gap: 6px; margin: 18px 0 6px; padding: 5px 10px; border-radius: 999px; background: #f1eaff; color: #6f4da8; font-size: 11px; font-weight: 700; }
-.aiDock { display: grid; gap: 18px; padding: 22px 24px; border-left: 3px solid #a98bd2; }
-.aiHeader { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-bottom: 16px; border-bottom: 1px solid var(--mg-line, #dfe6df); }
+/* 镜像徽标用蓝色语义令牌：背景是真正的 blue-soft；但 --mg-blue 压在 --mg-blue-soft 上浅色模式只有 3.96:1，
+   不够徽标文字要求的 4.5，改用同为蓝色系、对比度更高的 accent-desk-ink（5.6+:1），底色仍保留 blue-soft */
+.mirrorBadge { display: inline-flex; align-items: center; gap: 6px; margin: 18px 0 6px; padding: 5px 10px; border-radius: 999px; background: var(--mg-blue-soft); color: var(--mg-accent-desk-ink); font-size: 11px; font-weight: 700; }
+/* 预览徽标：令牌里没有独立的"紫色"状态语义色，campaign 业务 accent 的紫色调最接近且深浅色齐全 */
+.previewBadge { display: inline-flex; align-items: center; gap: 6px; margin: 18px 0 6px; padding: 5px 10px; border-radius: 999px; background: var(--mg-accent-campaign-soft); color: var(--mg-accent-campaign-ink); font-size: 11px; font-weight: 700; }
+.aiDock { display: grid; gap: 18px; padding: 22px 24px; border-left: 3px solid var(--mg-accent-campaign-base); }
+.aiHeader { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-bottom: 16px; border-bottom: 1px solid var(--mg-border); }
 .aiHeader h2 { margin: 5px 0 0; }
 .aiHeader p { max-width: 65ch; margin: 7px 0 0; color: var(--mg-muted, #68746d); font-size: 13px; line-height: 1.55; }
 .aiForm { display: grid; gap: 8px; }
 .aiForm label { color: var(--mg-ink, #19231f); font-size: 12px; font-weight: 700; }
-.aiForm textarea { width: 100%; min-height: 78px; resize: vertical; padding: 10px 12px; border: 1px solid var(--mg-line, #dfe6df); border-radius: 8px; background: #fff; color: var(--mg-ink, #19231f); font: inherit; font-size: 13px; line-height: 1.55; }
-.aiForm textarea:focus { outline: 2px solid #a98bd2; outline-offset: 1px; border-color: #8061b6; }
-.aiForm textarea:disabled { background: var(--mg-paper, #f5f7f3); color: var(--mg-muted, #68746d); }
+/* 输入框底色原来写死 #fff，暗色模式下会变成一块刺眼的白；surface 令牌跟随主题走 */
+.aiForm textarea { width: 100%; min-height: 78px; resize: vertical; padding: 10px 12px; border: 1px solid var(--mg-border); border-radius: 8px; background: var(--mg-surface); color: var(--mg-ink, #19231f); font: inherit; font-size: 13px; line-height: 1.55; }
+.aiForm textarea:focus { outline: 2px solid var(--mg-accent-campaign-base); outline-offset: 1px; border-color: var(--mg-accent-campaign-ink); }
+/* --mg-paper 令牌在整个代码库里从未被真正定义过，var() 会一直退回写死的浅灰底色，跟深色下的近白色块是同一类问题；
+   这里及下面几处统一换成真实存在、深浅两色都有定义的 --mg-bg-sunken */
+.aiForm textarea:disabled { background: var(--mg-bg-sunken, #f5f7f3); color: var(--mg-muted, #68746d); }
 .aiFormFooter, .aiResultFooter { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
 .aiFormFooter p, .aiResultFooter p { margin: 0; color: var(--mg-muted, #68746d); font-size: 12px; line-height: 1.5; }
 .aiFormFooter button, .aiResultFooter button { flex: 0 0 auto; }
-.aiProgress, .aiFailure { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 14px 16px; border: 1px solid var(--mg-line, #dfe6df); border-radius: 8px; }
-.aiProgress { background: #fff9e8; border-color: #ead08b; }
+.aiProgress, .aiFailure { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 14px 16px; border: 1px solid var(--mg-border); border-radius: 8px; }
+/* 进行中态用 warning 语义色；边框用 color-mix 把 warning 和中性 border 混合，和仓库里其它面板同款写法一致 */
+.aiProgress { background: var(--mg-warning-soft); border-color: color-mix(in srgb, var(--mg-warning) 30%, var(--mg-border)); }
 .aiProgress > div, .aiFailure { display: flex; min-width: 0; gap: 10px; align-items: flex-start; }
 .aiProgress > div > svg, .aiFailure > svg { flex: 0 0 auto; margin-top: 2px; }
-.aiProgress > div > svg { color: #8f591a; }
+/* --mg-warning 压在 --mg-warning-soft 上浅色模式只有 3.82:1；换成同色系里对比度达标的 accent-business-ink（5.2+:1) */
+.aiProgress > div > svg { color: var(--mg-accent-business-ink); }
 .aiProgress strong, .aiFailure strong { color: var(--mg-ink, #19231f); font-size: 14px; }
 .aiProgress p, .aiFailure p { margin: 3px 0 0; color: var(--mg-muted, #68746d); font-size: 12px; line-height: 1.5; }
 .aiProgress .mg-badge { flex: 0 0 auto; }
-.aiFailure { justify-content: flex-start; background: #fff0f0; border-color: #e6adad; }
-.aiFailure > svg { color: #a54b4b; }
+/* 失败态用 danger 语义色，配套 color-mix 边框 */
+.aiFailure { justify-content: flex-start; background: var(--mg-danger-soft); border-color: color-mix(in srgb, var(--mg-danger) 30%, var(--mg-border)); }
+.aiFailure > svg { color: var(--mg-danger); }
 .aiFailure small, .technicalReference { display: block; margin-top: 7px; color: var(--mg-muted, #68746d); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-.aiResult { display: grid; gap: 14px; padding-top: 18px; border-top: 1px solid var(--mg-line, #dfe6df); }
+.aiResult { display: grid; gap: 14px; padding-top: 18px; border-top: 1px solid var(--mg-border); }
 .aiResultHeader { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
 .aiResultHeader h3 { margin: 5px 0 0; color: var(--mg-ink, #19231f); font-size: 17px; }
 .aiResultHeader p { margin: 6px 0 0; color: var(--mg-muted, #68746d); font-size: 12px; line-height: 1.5; }
-.aiRevisionLabel { flex: 0 0 auto; padding: 4px 8px; border: 1px solid #c9b8e4; border-radius: 6px; color: #6f4da8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; font-weight: 700; }
+.aiRevisionLabel { flex: 0 0 auto; padding: 4px 8px; border: 1px solid var(--mg-accent-campaign-line); border-radius: 6px; color: var(--mg-accent-campaign-ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; font-weight: 700; }
 .aiResultMeta { display: flex; flex-wrap: wrap; gap: 14px 20px; color: var(--mg-muted, #68746d); font-size: 12px; }
 .aiResultMeta b { color: var(--mg-ink, #19231f); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.aiReceipt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--mg-line-soft, #eaefe9); border-radius: 8px; background: var(--mg-paper, #f5f7f3); }
-.aiReceiptPart { min-width: 0; padding: 13px 14px; border-right: 1px solid var(--mg-line-soft, #eaefe9); }
+.aiReceipt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid color-mix(in srgb, var(--mg-border) 62%, transparent); border-radius: 8px; background: var(--mg-bg-sunken, #f5f7f3); }
+.aiReceiptPart { min-width: 0; padding: 13px 14px; border-right: 1px solid color-mix(in srgb, var(--mg-border) 62%, transparent); }
 .aiReceiptPart:last-child { border-right: 0; }
-.aiReceiptPart[data-receipt-availability='missing'] { background: #fbfcfa; }
+/* 原来的近纯白写死色在暗色模式会变成亮块；换成和页面背景同源的 sunken 色阶 */
+.aiReceiptPart[data-receipt-availability='missing'] { background: var(--mg-bg-sunken); }
 .aiReceiptPartHead { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .aiReceiptPartHead strong { color: var(--mg-ink, #19231f); font-size: 12px; }
-.aiReceiptPartHead span { flex: 0 0 auto; color: #6f4da8; font-size: 11px; font-weight: 700; }
+.aiReceiptPartHead span { flex: 0 0 auto; color: var(--mg-accent-campaign-ink); font-size: 11px; font-weight: 700; }
 .aiReceiptPart p { margin: 8px 0 0; color: var(--mg-muted, #68746d); font-size: 11px; line-height: 1.5; }
 .aiReceiptPart ul { display: grid; gap: 5px; margin: 9px 0 0; padding: 0; list-style: none; }
 .aiReceiptPart li { overflow-wrap: anywhere; color: var(--mg-muted, #68746d); font-size: 11px; line-height: 1.45; }
-.aiReceiptPart li::before { display: inline-block; width: 6px; height: 6px; margin: 0 7px 1px 0; border-radius: 50%; background: #6f4da8; content: ''; }
+.aiReceiptPart li::before { display: inline-block; width: 6px; height: 6px; margin: 0 7px 1px 0; border-radius: 50%; background: var(--mg-accent-campaign-ink); content: ''; }
 .aiResultFooter { padding-top: 2px; }
 .spin { animation: ai-spin 1s linear infinite; }
 @keyframes ai-spin { to { transform: rotate(360deg); } }
-.syncBanner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 1px solid var(--mg-line, #dfe6df); border-radius: 8px; }
+.syncBanner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 1px solid var(--mg-border); border-radius: 8px; }
 .syncBanner > div { display: flex; min-width: 0; gap: 10px; }
 .syncBanner > div > svg { flex: 0 0 auto; margin-top: 2px; }
 .syncBanner button { flex: 0 0 auto; }
 .syncBanner strong { color: var(--mg-ink, #19231f); font-size: 14px; }
 .syncBanner p, .syncBanner small { display: block; margin: 3px 0 0; color: var(--mg-muted, #68746d); line-height: 1.5; }
 .syncBanner small { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-.syncSynced { background: #edf8ef; border-color: #a8d4b1; }
-.syncRunning, .syncStale { background: #fff9e8; border-color: #ead08b; }
-.syncUnknown, .syncConflict, .syncUnsupported { background: #fff0f0; border-color: #e6adad; }
-.syncPartial, .syncUnavailable { background: #f2f6ff; border-color: #bbcee9; }
-.pipeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 16px 0; padding: 14px; list-style: none; border: 1px solid var(--mg-line-soft, #eaefe9); border-radius: 8px; background: var(--mg-paper, #f5f7f3); }
+/* 已同步：成功态用绿色系 primary 令牌 */
+.syncSynced { background: var(--mg-primary-soft); border-color: color-mix(in srgb, var(--mg-primary) 30%, var(--mg-border)); }
+/* 进行中 / 过期：警告色系 */
+.syncRunning, .syncStale { background: var(--mg-warning-soft); border-color: color-mix(in srgb, var(--mg-warning) 30%, var(--mg-border)); }
+/* 未知 / 冲突 / 不支持：危险色系 */
+.syncUnknown, .syncConflict, .syncUnsupported { background: var(--mg-danger-soft); border-color: color-mix(in srgb, var(--mg-danger) 30%, var(--mg-border)); }
+/* 部分同步 / 不可用：语义上是"信息/不确定"而非警告或危险，延续原设计的蓝色意图 */
+.syncPartial, .syncUnavailable { background: var(--mg-blue-soft); border-color: color-mix(in srgb, var(--mg-blue) 30%, var(--mg-border)); }
+.pipeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 16px 0; padding: 14px; list-style: none; border: 1px solid color-mix(in srgb, var(--mg-border) 62%, transparent); border-radius: 8px; background: var(--mg-bg-sunken, #f5f7f3); }
 .pipeline li { position: relative; display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; min-width: 0; }
-.pipeline li:not(:last-child)::after { position: absolute; top: 9px; right: -4px; width: 8px; border-top: 1px solid var(--mg-line, #dfe6df); content: ''; }
-.pipeline li > span { display: grid; width: 20px; height: 20px; place-items: center; border: 1px solid var(--mg-line, #dfe6df); border-radius: 50%; color: var(--mg-muted, #68746d); font-size: 11px; font-weight: 700; }
+.pipeline li:not(:last-child)::after { position: absolute; top: 9px; right: -4px; width: 8px; border-top: 1px solid var(--mg-border); content: ''; }
+.pipeline li > span { display: grid; width: 20px; height: 20px; place-items: center; border: 1px solid var(--mg-border); border-radius: 50%; color: var(--mg-muted, #68746d); font-size: 11px; font-weight: 700; }
 .pipeline strong, .pipeline small { display: block; }
 .pipeline strong { color: var(--mg-ink, #19231f); font-size: 12px; }
 .pipeline small { margin-top: 3px; color: var(--mg-muted, #68746d); font-size: 11px; line-height: 1.45; }
-.pipeline li[data-sync-step-state='complete'] > span { border-color: #62a878; background: #62a878; color: #fff; }
-.pipeline li[data-sync-step-state='running'] > span { border-color: #3177bd; background: #e1efff; color: #3177bd; }
-.pipeline li[data-sync-step-state='attention'] > span { border-color: #c27e26; background: #fff2ce; color: #8f591a; }
-.pipeline li[data-sync-step-state='attention'] strong { color: #8f591a; }
-.batchList { display: grid; gap: 0; padding: 0; margin: 16px 0; list-style: none; border-top: 1px solid var(--mg-line-soft, #eaefe9); }
-.batchList li { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(260px, 1.4fr); gap: 16px; min-width: 0; padding: 14px 0; border-bottom: 1px solid var(--mg-line-soft, #eaefe9); }
+/* 完成态是实心填充：用 primary-strong 而不是 primary——按令牌文件注释，primary 在暗色模式变亮后压白字只有 3.54:1，
+   primary-strong 保证 ≥4.9；配套用 on-primary 而不是写死白色，避免暗色模式下字色糊掉 */
+.pipeline li[data-sync-step-state='complete'] > span { border-color: var(--mg-primary-strong); background: var(--mg-primary-strong); color: var(--mg-on-primary); }
+/* 圆点里是数字小字，同样要求 4.5:1：running/attention 底色维持 blue-soft/warning-soft 语义，
+   前景色换成同色系里对比度达标的 accent-desk-ink / accent-business-ink（理由同上两处） */
+.pipeline li[data-sync-step-state='running'] > span { border-color: var(--mg-accent-desk-ink); background: var(--mg-blue-soft); color: var(--mg-accent-desk-ink); }
+.pipeline li[data-sync-step-state='attention'] > span { border-color: var(--mg-accent-business-ink); background: var(--mg-warning-soft); color: var(--mg-accent-business-ink); }
+.pipeline li[data-sync-step-state='attention'] strong { color: var(--mg-accent-business-ink); }
+.batchList { display: grid; gap: 0; padding: 0; margin: 16px 0; list-style: none; border-top: 1px solid color-mix(in srgb, var(--mg-border) 62%, transparent); }
+.batchList li { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(260px, 1.4fr); gap: 16px; min-width: 0; padding: 14px 0; border-bottom: 1px solid color-mix(in srgb, var(--mg-border) 62%, transparent); }
 .batchList li > div { min-width: 0; }
 .batchList strong, .batchList span { display: block; }
 .batchList span { margin-top: 4px; color: var(--mg-muted, #68746d); font-size: 12px; }
@@ -84,11 +102,11 @@
 .batchList dl div, .receipt div { min-width: 0; }
 .batchList dt, .receipt dt { color: var(--mg-muted, #68746d); font-size: 11px; }
 .batchList dd, .receipt dd { margin: 3px 0 0; overflow-wrap: anywhere; font-size: 12px; font-weight: 700; }
-.receipt { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 16px 0 0; padding: 12px 14px; border: 1px solid var(--mg-line-soft, #eaefe9); border-radius: 8px; background: var(--mg-paper, #f5f7f3); }
+.receipt { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 16px 0 0; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--mg-border) 62%, transparent); border-radius: 8px; background: var(--mg-bg-sunken, #f5f7f3); }
 .blockRefs, .ledgerState { margin: 16px 0; color: var(--mg-muted, #68746d); line-height: 1.5; }
 .binding h2 { margin: 0 0 14px; font-size: 16px; }
 .binding dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 0; }
-.binding dl div { padding: 12px 14px; background: var(--mg-paper, #f5f7f3); border: 1px solid var(--mg-line-soft, #eaefe9); border-radius: 8px; }
+.binding dl div { padding: 12px 14px; background: var(--mg-bg-sunken, #f5f7f3); border: 1px solid color-mix(in srgb, var(--mg-border) 62%, transparent); border-radius: 8px; }
 .binding dt { color: var(--mg-muted, #68746d); font-size: 11px; }
 .binding dd { margin: 3px 0 0; overflow-wrap: anywhere; font-weight: 700; }
-@media (max-width: 680px) { .panel, .binding, .ledger, .aiDock { padding: 18px; } .header, .ledgerHead, .syncBanner, .aiHeader, .aiProgress, .aiResultHeader, .aiFormFooter, .aiResultFooter { flex-direction: column; align-items: stretch; } .header a, .syncBanner button, .aiFormFooter button, .aiResultFooter button { width: 100%; justify-content: center; } .pipeline, .batchList li, .batchList dl, .receipt, .aiReceipt { grid-template-columns: 1fr; } .pipeline li:not(:last-child)::after { display: none; } .aiReceiptPart { border-right: 0; border-bottom: 1px solid var(--mg-line-soft, #eaefe9); } .aiReceiptPart:last-child { border-bottom: 0; } .aiProgress > div, .aiFailure { width: 100%; } }
+@media (max-width: 680px) { .panel, .binding, .ledger, .aiDock { padding: 18px; } .header, .ledgerHead, .syncBanner, .aiHeader, .aiProgress, .aiResultHeader, .aiFormFooter, .aiResultFooter { flex-direction: column; align-items: stretch; } .header a, .syncBanner button, .aiFormFooter button, .aiResultFooter button { width: 100%; justify-content: center; } .pipeline, .batchList li, .batchList dl, .receipt, .aiReceipt { grid-template-columns: 1fr; } .pipeline li:not(:last-child)::after { display: none; } .aiReceiptPart { border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--mg-border) 62%, transparent); } .aiReceiptPart:last-child { border-bottom: 0; } .aiProgress > div, .aiFailure { width: 100%; } }

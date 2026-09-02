@@ -81,15 +81,21 @@
   --mg-surface-raised: #ffffff;
   --mg-ink:           #17241f;
   --mg-ink-soft:      #3f4f47;
-  --mg-muted:         #647169;   /* 4.70:1 on --mg-bg（原 #68756e 只有 4.43，不达 AA） */
+  --mg-muted:         #5d6a62;   /* 最差 4.85:1（danger-soft 底），旧值 #647169 在 accent-soft 上只有 4.41 */
   --mg-border:        #dde5de;
   --mg-border-strong: #cbd7ce;
 
   --mg-primary:       #1a9b68;
   --mg-primary-dark:  #10684a;
+  /* 实心主按钮的底色：--mg-primary 用作背景时白字只有 3.54:1，这一档保证 ≥4.9 */
+  --mg-primary-strong: #157f57;
   --mg-primary-soft:  #dff4e8;
   /* 压在 primary / primary-dark 上的字色：暗色模式下 primary 会变亮，白字会糊 */
   --mg-on-primary:    #ffffff;
+  /* 压在 --mg-danger / --accent-ink 上的字色：这两个底色在暗色模式会变亮，
+     写死白字会掉到 1.8:1，所以字色也必须是随主题翻转的 token。 */
+  --mg-on-danger:     #ffffff;
+  --mg-accent-on-ink: #ffffff;
   --mg-teal-soft:     #e2f3f1;
   --mg-blue:          #4179b8;
   --mg-blue-soft:     #e8f1fb;
@@ -172,7 +178,10 @@
     --mg-ink: #e8f2ec;  --mg-ink-soft: #c2d2c9;  --mg-muted: #93a69c;
     --mg-border: #2c3b34;  --mg-border-strong: #3c4f46;
     --mg-primary: #4ec48d;  --mg-primary-dark: #7ad9ab;  --mg-primary-soft: #1c3d30;
+    --mg-primary-strong: #4ec48d;
     --mg-on-primary: #08211a;
+    --mg-on-danger: #2b100c;
+    --mg-accent-on-ink: #0d1a15;
     --mg-teal-soft: #17383a;
     --mg-blue: #7db4ea;  --mg-blue-soft: #1b2f42;
     --mg-warning: #d9a24a;  --mg-warning-soft: #3a2c14;
@@ -204,7 +213,10 @@
   --mg-ink: #e8f2ec;  --mg-ink-soft: #c2d2c9;  --mg-muted: #93a69c;
   --mg-border: #2c3b34;  --mg-border-strong: #3c4f46;
   --mg-primary: #4ec48d;  --mg-primary-dark: #7ad9ab;  --mg-primary-soft: #1c3d30;
+  --mg-primary-strong: #4ec48d;
   --mg-on-primary: #08211a;
+  --mg-on-danger: #2b100c;
+  --mg-accent-on-ink: #0d1a15;
   --mg-teal-soft: #17383a;
   --mg-blue: #7db4ea;  --mg-blue-soft: #1b2f42;
   --mg-warning: #d9a24a;  --mg-warning-soft: #3a2c14;

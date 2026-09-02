@@ -274,7 +274,7 @@
 .studio-primary-button {
   border: 1px solid transparent;
   color: var(--mg-on-primary);
-  background: linear-gradient(160deg, var(--mg-primary) 0%, var(--mg-primary-dark) 84%);
+  background: linear-gradient(160deg, var(--mg-primary-strong) 0%, var(--mg-primary-dark) 84%);
   box-shadow: 0 12px 26px color-mix(in srgb, var(--mg-primary) 24%, transparent);
 }
 .studio-primary-button:hover {
