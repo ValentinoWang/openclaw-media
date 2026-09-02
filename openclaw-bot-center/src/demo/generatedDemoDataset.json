@@ -2563,7 +2563,7 @@
           "publicProjectId": "proj_autumn_camera",
           "publicRunId": "run_autumn_camera_01",
           "revision": 4,
-          "status": "creation_ready",
+          "status": "succeeded",
           "title": "秋日相机测评：X100VI 城市实拍",
           "trackName": "相机测评",
           "updatedAt": "2026-09-02T07:00:00+08:00"
@@ -2586,7 +2586,7 @@
             "publicProjectId": "proj_autumn_camera",
             "publicRunId": "run_autumn_camera_01",
             "revision": 4,
-            "status": "creation_ready",
+            "status": "succeeded",
             "title": "秋日相机测评：X100VI 城市实拍",
             "trackName": "相机测评",
             "updatedAt": "2026-09-02T07:00:00+08:00"
@@ -2607,7 +2607,7 @@
             "publicProjectId": "proj_citywalk_suzhou",
             "publicRunId": "run_citywalk_suzhou_02",
             "revision": 6,
-            "status": "publishing_ready",
+            "status": "awaiting_confirmation",
             "title": "城市漫步·苏州河支线脚本",
             "trackName": "城市漫步",
             "updatedAt": "2026-09-02T01:00:00+08:00"
@@ -4716,7 +4716,7 @@
             "publicProjectId": "proj_autumn_camera",
             "publicRunId": "run_autumn_camera_01",
             "revision": 4,
-            "status": "creation_ready",
+            "status": "succeeded",
             "title": "秋日相机测评：X100VI 城市实拍",
             "trackName": "相机测评",
             "updatedAt": "2026-09-02T07:00:00+08:00"
@@ -4733,7 +4733,7 @@
             "publicProjectId": "proj_citywalk_suzhou",
             "publicRunId": "run_citywalk_suzhou_02",
             "revision": 6,
-            "status": "publishing_ready",
+            "status": "awaiting_confirmation",
             "title": "城市漫步·苏州河支线脚本",
             "trackName": "城市漫步",
             "updatedAt": "2026-09-02T01:00:00+08:00"
@@ -4784,7 +4784,7 @@
             "publicProjectId": "proj_october_review",
             "publicRunId": "run_october_review_05",
             "revision": 2,
-            "status": "review_ready",
+            "status": "generating",
             "title": "10 月账号复盘",
             "trackName": "相机测评",
             "updatedAt": "2026-08-31T10:00:00+08:00"

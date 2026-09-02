@@ -4,6 +4,13 @@
  *  路由表直接复用生产合同 `generatedBusinessPagesContract` 的 operations，
  *  因此演示站不可能出现合同之外的接口。 */
 import { operations as businessOperations } from '../media/generatedBusinessPagesContract'
+import type {
+  ArchiveArtifact,
+  ArchiveRecord,
+  Device,
+  LocalAgentJob,
+  PipelineSummary,
+} from '../media/generatedProductContract'
 import generatedDataset from './generatedDemoDataset.json'
 import generatedCatalog from './generatedDemoCatalog.json'
 import { activePersona } from './demoPersonas'
@@ -46,6 +53,7 @@ const TASK_SCHEMA_VERSION = 'media_web_task_v3'
 
 /** 演示世界的“现在”与数据集保持一致，避免页面上出现未来时间。 */
 const demoNow = () => new Date().toISOString()
+const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60 * 1000).toISOString()
 
 const store: Record<string, DatasetEntry> = structuredClone(dataset.operations)
 
@@ -214,119 +222,193 @@ function seedTasks(): void {
   running.settlementStage = 'running'
   running.progress = 45
 
-  for (const task of [finished, waiting, running]) tasks.set(task.taskId, task)
+  // 商单履约页只看 commercial_delivery_draft 任务，没有它整页都是空态。
+  const deliveryDone = newTask(
+    'commercial_delivery_draft',
+    'default',
+    { brand: '三顿半（演示）', topic: '秋季限定礼盒 · 小红书图文交付' },
+    null,
+  )
+  deliveryDone.createdAt = new Date(Date.now() - 26 * 3600 * 1000).toISOString()
+  settleTask(deliveryDone, 'succeeded')
+
+  const deliveryWaiting = newTask(
+    'commercial_delivery_draft',
+    'default',
+    { brand: '光影相机（演示）', topic: '随身相机长测 · B站长视频交付' },
+    null,
+  )
+  deliveryWaiting.createdAt = new Date(Date.now() - 90 * 60 * 1000).toISOString()
+  deliveryWaiting.status = 'awaiting_confirmation'
+  deliveryWaiting.settlementStage = 'awaiting_confirmation'
+  deliveryWaiting.progress = 80
+  deliveryWaiting.confirmation = { state: 'required', required: true, note: '', decidedAt: '' }
+
+  for (const task of [finished, waiting, running, deliveryDone, deliveryWaiting]) tasks.set(task.taskId, task)
 }
 
 /* ------------------------------------------------------------------ *
  * 本机 Agent / 云端归档（W1 产品合同，路径不在业务分页合同里）
  * ------------------------------------------------------------------ */
 
-const w1Pipelines = {
-  schema_version: 'media.product.v1',
-  items: [
-    { pipeline_id: 'project_preparation', display_name: '项目准备', category: 'preparation', revision: 3 },
-    { pipeline_id: 'material_organization', display_name: '素材整理', category: 'material', revision: 5 },
-    { pipeline_id: 'material_matching', display_name: '素材匹配', category: 'material', revision: 4 },
-    { pipeline_id: 'edit_handoff', display_name: '剪辑交接', category: 'editing', revision: 6 },
-    { pipeline_id: 'editable_timeline', display_name: '可编辑时间线', category: 'editing', revision: 2 },
-    { pipeline_id: 'final_review', display_name: '成片复核', category: 'review', revision: 3 },
-  ],
-  next_cursor: null,
-  catalog_digest: `sha256:${digest('demo-pipeline-catalog')}`,
+const catalogDigest = `sha256:${digest('demo-pipeline-catalog')}`
+
+const demoPipelines: PipelineSummary[] = [
+  { pipeline_id: 'project_preparation', version: '3.1.0', display_name: '项目准备', catalog_digest: catalogDigest },
+  { pipeline_id: 'material_organization', version: '5.2.0', display_name: '素材整理', catalog_digest: catalogDigest },
+  { pipeline_id: 'material_matching', version: '4.0.1', display_name: '素材匹配', catalog_digest: catalogDigest },
+  { pipeline_id: 'edit_handoff', version: '6.3.0', display_name: '剪辑交接', catalog_digest: catalogDigest },
+  { pipeline_id: 'editable_timeline', version: '2.4.0', display_name: '可编辑时间线', catalog_digest: catalogDigest },
+  { pipeline_id: 'final_review', version: '3.0.2', display_name: '成片复核', catalog_digest: catalogDigest },
+]
+
+const demoDevices: Device[] = [
+  {
+    device_id: 'device_macbook_demo',
+    state: 'online',
+    device_label: '小满的 MacBook Pro',
+    device_platform: 'macos',
+    client_version: '2026.8.3',
+    capabilities: ['material_organization', 'edit_handoff', 'editable_timeline'],
+    revision: 12,
+    last_seen_at: minutesAgo(1),
+  },
+  {
+    device_id: 'device_studio_mini',
+    state: 'paired',
+    device_label: '工作室 Mac mini',
+    device_platform: 'macos',
+    client_version: '2026.7.1',
+    capabilities: ['final_review'],
+    revision: 9,
+    last_seen_at: minutesAgo(6 * 60),
+  },
+]
+
+function demoJob(overrides: Partial<LocalAgentJob> & Pick<LocalAgentJob, 'job_id' | 'state' | 'pipeline_id'>): LocalAgentJob {
+  return {
+    pipeline_version: demoPipelines.find((item) => item.pipeline_id === overrides.pipeline_id)?.version ?? '1.0.0',
+    catalog_digest: catalogDigest,
+    device_id: 'device_macbook_demo',
+    input_refs: ['media://demo/source/autumn-camera'],
+    output_selection: ['descriptor_only'],
+    confirmation_ref: null,
+    revision: 3,
+    lease_id: null,
+    lease_expires_at: null,
+    ack_ref: null,
+    acknowledged_at: null,
+    start_ref: null,
+    started_at: null,
+    result_status: null,
+    result_refs: [],
+    artifact_refs: [],
+    failure_code: null,
+    created_at: minutesAgo(300),
+    updated_at: minutesAgo(240),
+    leased_at: null,
+    completed_at: null,
+    ...overrides,
+  }
 }
 
-const w1Devices = {
-  schema_version: 'media.product.v1',
-  items: [
-    {
-      device_id: 'device_macbook_demo',
-      device_label: '小满的 MacBook Pro',
-      platform: 'macos',
-      status: 'online',
-      last_heartbeat_at: new Date(Date.now() - 45 * 1000).toISOString(),
-      client_version: '2026.8.3',
-      workspace_label: '本机创作工作区',
-      revision: 12,
-    },
-    {
-      device_id: 'device_studio_mini',
-      device_label: '工作室 Mac mini',
-      platform: 'macos',
-      status: 'offline',
-      last_heartbeat_at: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
-      client_version: '2026.7.1',
-      workspace_label: '剪辑机',
-      revision: 9,
-    },
-  ],
-  next_cursor: null,
+const demoJobs: LocalAgentJob[] = [
+  demoJob({
+    job_id: 'job_material_organization_01',
+    state: 'succeeded',
+    pipeline_id: 'material_organization',
+    result_status: 'succeeded',
+    result_refs: ['media://demo/result/material-index'],
+    artifact_refs: ['artifact_asset_digest_autumn'],
+    started_at: minutesAgo(290),
+    completed_at: minutesAgo(240),
+    updated_at: minutesAgo(240),
+  }),
+  demoJob({
+    job_id: 'job_edit_handoff_02',
+    state: 'running',
+    pipeline_id: 'edit_handoff',
+    lease_id: 'lease_demo_0002',
+    lease_expires_at: minutesAgo(-20),
+    ack_ref: 'ack_demo_0002',
+    acknowledged_at: minutesAgo(28),
+    start_ref: 'start_demo_0002',
+    started_at: minutesAgo(26),
+    leased_at: minutesAgo(30),
+    created_at: minutesAgo(32),
+    updated_at: minutesAgo(2),
+    revision: 5,
+  }),
+  demoJob({
+    job_id: 'job_final_review_03',
+    state: 'blocked',
+    pipeline_id: 'final_review',
+    device_id: 'device_studio_mini',
+    result_status: 'blocked',
+    failure_code: 'awaiting_human_confirmation',
+    created_at: minutesAgo(26 * 60),
+    updated_at: minutesAgo(25 * 60),
+    started_at: minutesAgo(25 * 60 + 30),
+    revision: 4,
+  }),
+]
+
+function demoArtifact(ref: string, mimeType: string, sizeBytes: number, descriptor: boolean): ArchiveArtifact {
+  return {
+    ref,
+    mode: descriptor ? 'descriptor_only' : 'content',
+    mime_type: mimeType,
+    sha256: digest(ref).slice(0, 64),
+    size_bytes: sizeBytes,
+    descriptor,
+    metadata: { 说明: descriptor ? '媒体本体留在本机设备，云端只保存描述符' : '轻量文本产物' },
+    content: descriptor ? null : { encoding: 'utf8', value: '演示环境的示例产物内容。' },
+  }
 }
 
-const w1Jobs = {
-  schema_version: 'media.product.v1',
-  items: [
-    {
-      job_id: 'job_material_organization_01',
-      device_id: 'device_macbook_demo',
-      pipeline_id: 'material_organization',
-      status: 'succeeded',
-      created_at: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
-      summary: '整理秋季空镜 46 个片段，生成素材摘要。',
-      revision: 4,
-    },
-    {
-      job_id: 'job_edit_handoff_02',
-      device_id: 'device_macbook_demo',
-      pipeline_id: 'edit_handoff',
-      status: 'running',
-      created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-      summary: '导出剪辑工程与素材清单到本机工作区。',
-      revision: 2,
-    },
-    {
-      job_id: 'job_final_review_03',
-      device_id: 'device_studio_mini',
-      pipeline_id: 'final_review',
-      status: 'blocked',
-      created_at: new Date(Date.now() - 26 * 3600 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 25 * 3600 * 1000).toISOString(),
-      summary: '等待人工确认成片版本，设备当前离线。',
-      revision: 3,
-    },
-  ],
-  next_cursor: null,
+function demoArchive(
+  archiveId: string,
+  runId: string,
+  pipelineId: string,
+  cloudBytes: number,
+  artifacts: ArchiveArtifact[],
+): ArchiveRecord {
+  return {
+    archive_id: archiveId,
+    state: 'active',
+    commit_id: `commit_${archiveId}`,
+    manifest_id: `manifest_${archiveId}`,
+    run_id: runId,
+    pipeline_id: pipelineId,
+    pipeline_version: demoPipelines.find((item) => item.pipeline_id === pipelineId)?.version ?? '1.0.0',
+    device_id: 'device_macbook_demo',
+    artifacts,
+    projections: [
+      {
+        projection_id: `projection_${archiveId}_db`,
+        kind: 'db',
+        ref: `db://demo/${archiveId}`,
+        artifact_refs: artifacts.map((item) => item.ref),
+        consistent: true,
+      },
+    ],
+    cloud_bytes: cloudBytes,
+    media_cloud_bytes: 0,
+    revision: 4,
+    created_at: minutesAgo(20 * 60),
+    updated_at: minutesAgo(18 * 60),
+  }
 }
 
-const w1Archives = {
-  schema_version: 'media.product.v1',
-  items: [
-    {
-      archive_id: 'archive_autumn_camera',
-      title: '秋日相机测评 · 成片与工程',
-      status: 'active',
-      mode: 'descriptor_only',
-      cloud_bytes: 0,
-      media_cloud_bytes: 0,
-      created_at: new Date(Date.now() - 20 * 3600 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 18 * 3600 * 1000).toISOString(),
-      revision: 3,
-    },
-    {
-      archive_id: 'archive_citywalk_suzhou',
-      title: '城市漫步苏州河 · 素材索引',
-      status: 'active',
-      mode: 'content',
-      cloud_bytes: 18422,
-      media_cloud_bytes: 0,
-      created_at: new Date(Date.now() - 3 * 86400 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 2 * 86400 * 1000).toISOString(),
-      revision: 5,
-    },
-  ],
-  next_cursor: null,
-}
+let demoArchives: ArchiveRecord[] = [
+  demoArchive('archive_autumn_camera', 'run_autumn_camera_01', 'edit_handoff', 18422, [
+    demoArtifact('media://demo/final/autumn-camera.mov', 'video/quicktime', 984_233_120, true),
+    demoArtifact('media://demo/report/autumn-camera-handoff.md', 'text/markdown', 4_128, false),
+  ]),
+  demoArchive('archive_citywalk_suzhou', 'run_citywalk_suzhou_02', 'material_organization', 6_240, [
+    demoArtifact('media://demo/index/citywalk-material.json', 'application/json', 6_240, false),
+  ]),
+]
 
 /* ------------------------------------------------------------------ *
  * 路由
@@ -733,65 +815,90 @@ function handleStateful(operationId: string, parameters: Record<string, string>,
 }
 
 function handleProductApi(method: string, path: string): Response | null {
-  if (path === '/pipelines' && method === 'GET') return json(w1Pipelines as unknown as JsonValue)
-  if (path === '/devices' && method === 'GET') return json(w1Devices as unknown as JsonValue)
-  if (path === '/pair-codes' && method === 'POST') {
-    return json({
-      schema_version: 'media.product.v1',
-      pair_code: 'DEMO-PAIR-4821',
-      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-    })
+  if (path === '/pipelines' && method === 'GET') {
+    return json({ pipelines: demoPipelines, next_cursor: null } as unknown as JsonValue)
   }
-  if (path === '/jobs' && method === 'GET') return json(w1Jobs as unknown as JsonValue)
+  if (path === '/devices' && method === 'GET') {
+    return json({ devices: demoDevices, next_cursor: null } as unknown as JsonValue)
+  }
+  if (path === '/pair-codes' && method === 'POST') {
+    return json({ pair_code: 'DEMO-PAIR-4821', expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() })
+  }
+  if (path === '/jobs' && method === 'GET') {
+    return json({ jobs: demoJobs, next_cursor: null } as unknown as JsonValue)
+  }
   if (path === '/jobs' && method === 'POST') {
-    return json({
-      schema_version: 'media.product.v1',
-      job: { ...w1Jobs.items[1], job_id: `job_demo_${Date.now().toString(36)}`, status: 'queued' },
-    })
+    const created = demoJob({ job_id: `job_demo_${Date.now().toString(36)}`, state: 'queued', pipeline_id: 'material_organization' })
+    demoJobs.unshift(created)
+    return json({ job: created } as unknown as JsonValue)
   }
   const jobDetail = /^\/jobs\/([^/]+)$/.exec(path)
   if (jobDetail && method === 'GET') {
-    const job = w1Jobs.items.find((item) => item.job_id === decodeURIComponent(jobDetail[1])) ?? w1Jobs.items[0]
-    return json({ schema_version: 'media.product.v1', job } as unknown as JsonValue)
+    const job = demoJobs.find((item) => item.job_id === decodeURIComponent(jobDetail[1]))
+    if (!job) return failure(404, 'not_found', '未找到该本机任务。')
+    return json({ job } as unknown as JsonValue)
   }
-  if (path === '/archives' && method === 'GET') return json(w1Archives as unknown as JsonValue)
+  if (path === '/archives' && method === 'GET') {
+    return json({ archives: demoArchives, next_cursor: null } as unknown as JsonValue)
+  }
   const archiveDetail = /^\/archives\/([^/]+)$/.exec(path)
   if (archiveDetail && method === 'GET') {
-    const archive = w1Archives.items.find((item) => item.archive_id === decodeURIComponent(archiveDetail[1])) ?? w1Archives.items[0]
-    return json({
-      schema_version: 'media.product.v1',
-      archive,
-      manifest: { manifest_id: 'manifest_demo_0001', entries: [], revision: archive.revision },
-    } as unknown as JsonValue)
+    const archive = demoArchives.find((item) => item.archive_id === decodeURIComponent(archiveDetail[1]))
+    if (!archive) return failure(404, 'not_found', '未找到该归档记录。')
+    return json({ archive } as unknown as JsonValue)
   }
   const deletePlan = /^\/archives\/([^/]+)\/delete-plan$/.exec(path)
   if (deletePlan && method === 'POST') {
+    const archiveId = decodeURIComponent(deletePlan[1])
+    const archive = demoArchives.find((item) => item.archive_id === archiveId)
+    if (!archive) return failure(404, 'not_found', '未找到该归档记录。')
     return json({
-      schema_version: 'media.product.v1',
-      archive_id: decodeURIComponent(deletePlan[1]),
-      plan_digest: `sha256:${digest(deletePlan[1])}`,
-      affected_entries: 6,
-      local_only_entries: 4,
+      delete_plan_id: `delete_plan_${archiveId}`,
+      archive_id: archiveId,
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-    })
+      artifact_refs: archive.artifacts.map((item) => item.ref),
+      projection_refs: archive.projections.map((item) => item.ref),
+      cloud_bytes: archive.cloud_bytes,
+      media_cloud_bytes: 0,
+      revision: archive.revision,
+    } as unknown as JsonValue)
   }
   if (archiveDetail && method === 'DELETE') {
     const archiveId = decodeURIComponent(archiveDetail[1])
-    w1Archives.items = w1Archives.items.filter((item) => item.archive_id !== archiveId)
-    return json({ schema_version: 'media.product.v1', archive_id: archiveId, status: 'deleting', revision: 1 })
+    const archive = demoArchives.find((item) => item.archive_id === archiveId)
+    if (!archive) return failure(404, 'not_found', '未找到该归档记录。')
+    demoArchives = demoArchives.filter((item) => item.archive_id !== archiveId)
+    return json({
+      archive: { ...archive, state: 'deleting', revision: archive.revision + 1, updated_at: demoNow() },
+      delete_receipt: {
+        receipt_ref: `receipt_delete_${archiveId}`,
+        archive_id: archiveId,
+        deleted_artifact_refs: archive.artifacts.map((item) => item.ref),
+        deleted_projection_refs: archive.projections.map((item) => item.ref),
+        verified: true,
+        hard_deleted: true,
+        deleted_at: demoNow(),
+      },
+    } as unknown as JsonValue)
   }
   const readback = /^\/archives\/([^/]+)\/readback$/.exec(path)
   if (readback && method === 'POST') {
+    const archiveId = decodeURIComponent(readback[1])
     return json({
-      schema_version: 'media.product.v1',
-      archive_id: decodeURIComponent(readback[1]),
-      status: 'archived',
-      checked_at: demoNow(),
-      revision: 4,
-    })
+      archive_id: archiveId,
+      readback_receipt: {
+        receipt_ref: `receipt_readback_${archiveId}`,
+        archive_id: archiveId,
+        verified: true,
+        db_present: true,
+        attachments_present: true,
+        projections_present: true,
+        checked_at: demoNow(),
+      },
+    } as unknown as JsonValue)
   }
   if (path === '/cli/releases/compatibility' && method === 'POST') {
-    return json({ schema_version: 'media.product.v1', compatible: true, minimum_version: '2026.6.0', latest_version: '2026.8.3' })
+    return json({ compatible: true, minimum_version: '2026.6.0', latest_version: '2026.8.3' })
   }
   if (path.startsWith('/organization/provision')) {
     if (method === 'GET') return json({ schemaVersion: 'media.stage1.provision.v1', run: null })
