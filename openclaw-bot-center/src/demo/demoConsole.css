@@ -7,7 +7,9 @@
 
 .demo-console-trigger {
   position: fixed;
-  right: 20px;
+  /* 贴在内容区左下角（侧栏之外）：页面自己的主操作几乎都在右下角与顶栏，
+     停在那里会挡住它们。--mg-shell-sidebar 是壳层侧栏宽度令牌。 */
+  left: calc(var(--mg-shell-sidebar, 304px) + 20px);
   bottom: 20px;
   z-index: 90;
   display: inline-flex;
@@ -36,7 +38,7 @@
 
 .demo-console-panel {
   position: fixed;
-  right: 20px;
+  left: calc(var(--mg-shell-sidebar, 304px) + 20px);
   bottom: 84px;
   z-index: 90;
   display: flex;
@@ -235,6 +237,19 @@
   color: var(--mg-muted, #647169);
   font-size: var(--mg-text-2xs, 0.75rem);
   white-space: nowrap;
+}
+
+/* 窄屏侧栏收起，控制台回到左下角贴边。 */
+@media (max-width: 980px) {
+  .demo-console-trigger {
+    left: 16px;
+    bottom: 16px;
+  }
+
+  .demo-console-panel {
+    left: 16px;
+    bottom: 76px;
+  }
 }
 
 @media (max-width: 640px) {
