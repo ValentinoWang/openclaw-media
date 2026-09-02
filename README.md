@@ -130,6 +130,18 @@ npm run dev
 
 Web 负责项目、任务、业务文档、状态、回执和证据投影；它不会假装能够浏览、播放、下载或编辑本地原始视频，也不得向普通用户暴露绝对路径、内部队列名和编辑后端实现细节。
 
+### 不鉴权静态演示站
+
+面向业务流程走查与对外演示的独立构建目标：真实的 `MediaStudioApp` 与全部生产页面组件，配一套浏览器内假后端——没有登录、没有后端、没有真实数据，数据集由业务合同与能力注册表生成并逐字段校验。
+
+```bash
+cd openclaw-bot-center
+npm run dev:demo      # 本地预览
+npm run build:demo    # 构建 dist-demo/
+```
+
+详见 [docs/frontend/media-demo-site.md](docs/frontend/media-demo-site.md)。
+
 ## 数据与源码边界
 
 容易混淆的同名目录：

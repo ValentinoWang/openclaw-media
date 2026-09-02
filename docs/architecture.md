@@ -55,6 +55,33 @@ openclaw-bot-center/dist/
   owns: static files produced by npm run build
   must match: public generated data
 
+openclaw-bot-center/index.demo.html
+openclaw-bot-center/src/demo/
+  role: no-auth static demo site entrypoint and browser-only fake backend
+  owns: demo personas, demo route index, an in-browser fetch/EventSource shim that replays
+    generated demo data (`demoBackend.ts`), and the floating demo navigation console
+  may contain: TypeScript source that renders the real `src/media/MediaStudioApp` and
+    reuses its page components as-is
+  must not contain: a second implementation of any business page, route policy, or
+    capability behavior — production page components are the only allowed UI source
+
+openclaw-bot-center/dist-demo/
+  role: built demo-site artifact
+  owns: static files produced by npm run build:demo (no-auth, sample data only)
+  must not be published as, or merged with, openclaw-bot-center/dist-media/ — the two are
+    different roles: dist-media/ is the deployed production Media frontend, dist-demo/ is a
+    no-auth walkthrough build and must never be served from a production-facing path
+
+openclaw-bot-center/src/demo/generatedDemoDataset.json
+openclaw-bot-center/src/demo/generatedDemoCatalog.json
+  role: generated frontend projection for the demo site
+  owns: demo dataset instantiated from the `media_web_business_pages.openapi.yaml` response
+    schemas plus the hand-written seed, and the demo capability catalog compiled from the real
+    tag-router CapabilityRegistry
+  must match: `npm run generate:demo-dataset` output for the current contract, seed, and
+    capability registry (checked by `npm run validate:demo-dataset`)
+  must not contain: hand edits — regenerate instead of editing these files directly
+
 /var/www/openclaw/bots/
   role: published frontend artifact
   owns: served static Bot Center files

@@ -1,0 +1,5381 @@
+{
+  "contractSha256": "3c31e78dec2dff4b19fbd227385de3e5d276cb0349c2dab25e87e383622b5147",
+  "generatedAt": "2026-09-02T10:00:00+08:00",
+  "generatedFrom": "contracts/media_web_business_pages.openapi.yaml",
+  "operations": {
+    "confirmDecision": {
+      "method": "POST",
+      "path": "/decisions/{publicDecisionId}/confirm",
+      "payload": {
+        "decision": {
+          "candidateTitle": "演示数据",
+          "candidateType": "deconstruction",
+          "decisionStatus": "candidate",
+          "evidenceCount": 22,
+          "humanConfirmedAt": null,
+          "platform": "抖音",
+          "publicDecisionId": "288fa5e9f471994bc7e63c0038baeab22700835279b610cf77aa4085e2e40847",
+          "trackName": "城市漫步",
+          "updatedAt": "2026-08-26T14:30:00+08:00"
+        },
+        "revision": 39,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "confirmReview": {
+      "method": "POST",
+      "path": "/reviews/{publicReviewId}/confirm",
+      "payload": {
+        "item": {
+          "allowedActions": [
+            "示例内容",
+            "演示数据",
+            "演示数据"
+          ],
+          "artifactType": "publishing_package",
+          "bodyAuthority": "internal",
+          "currentRevision": 27,
+          "displayName": null,
+          "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/9808",
+          "organizationDocumentUrlExpiresAt": "2026-09-01T07:04:00+08:00",
+          "publicArtifactId": "d3cbfd10b4cd3d401dfd29cc0d771491dc6460f977496d95563b17015ef70ccc",
+          "publicProjectId": "3f191954897af89109dd06c9e40d9abbae20139457a00d77a5e67bbecf53e229",
+          "syncStatus": "synced",
+          "updatedAt": "2026-08-11T11:06:00+08:00"
+        },
+        "revision": 16,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "createAdminAdmissionBatch": {
+      "method": "POST",
+      "path": "/admin/admission-batches",
+      "payload": {
+        "batch": {
+          "batchId": "acf010d94e774c8507d11105b191765377ab106e8c8a7f6964b671923aeaa3df",
+          "codeCount": 16,
+          "createdAt": "2026-08-22T03:51:00+08:00",
+          "expiresAt": null,
+          "name": "演示条目",
+          "status": "已完成",
+          "usedCount": 16
+        },
+        "revision": 29,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "createAdminBillingGrant": {
+      "method": "POST",
+      "path": "/admin/billing/grants",
+      "payload": {
+        "ok": true,
+        "revision": 12,
+        "schemaVersion": "media_web_business_pages_v2",
+        "updatedAt": "2026-08-30T08:30:00+08:00"
+      }
+    },
+    "createAdminProductMapping": {
+      "method": "POST",
+      "path": "/admin/billing/product-mappings",
+      "payload": {
+        "ok": true,
+        "revision": 38,
+        "schemaVersion": "media_web_business_pages_v2",
+        "updatedAt": "2026-08-20T03:26:00+08:00"
+      }
+    },
+    "createAdminRedemptionBatch": {
+      "method": "POST",
+      "path": "/admin/billing/redemption-batches",
+      "payload": {
+        "ok": true,
+        "revision": 9,
+        "schemaVersion": "media_web_business_pages_v2",
+        "updatedAt": "2026-08-18T21:06:00+08:00"
+      }
+    },
+    "createArtifactRevision": {
+      "method": "POST",
+      "path": "/artifacts/{publicArtifactId}/revisions",
+      "payload": {
+        "item": {
+          "allowedActions": [
+            "占位说明",
+            "演示数据",
+            "示例内容"
+          ],
+          "artifactType": "research_snapshot",
+          "bodyAuthority": "internal",
+          "currentRevision": 25,
+          "displayName": null,
+          "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/3799",
+          "organizationDocumentUrlExpiresAt": "2026-08-13T14:06:00+08:00",
+          "publicArtifactId": "758c999e89d1f301c3110c1a98ab4704eca5a132224cb06e20be588289086450",
+          "publicProjectId": "3216422d1131776e1946981025de3c1d95abe2a7559d0edb23199d41598a29a4",
+          "syncStatus": "not_applicable",
+          "updatedAt": "2026-08-07T02:14:00+08:00"
+        },
+        "revision": 19,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "createMetricImport": {
+      "method": "POST",
+      "path": "/metric-imports",
+      "payload": {
+        "ok": true,
+        "revision": 9,
+        "schemaVersion": "media_web_business_pages_v2",
+        "updatedAt": "2026-08-24T05:59:00+08:00"
+      }
+    },
+    "createProjectSummary": {
+      "method": "POST",
+      "path": "/content-projects/{publicProjectId}/summaries",
+      "payload": {
+        "item": {
+          "allowedActions": [
+            "示例内容",
+            "占位说明",
+            "占位说明"
+          ],
+          "artifactType": "asset_digest",
+          "bodyAuthority": "internal",
+          "currentRevision": 29,
+          "displayName": null,
+          "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/7311",
+          "organizationDocumentUrlExpiresAt": "2026-08-20T00:17:00+08:00",
+          "publicArtifactId": "25c2315d4b6d39f984046d9cf8b10129a14f3689c5a474653e93d0c3e9258308",
+          "publicProjectId": "45cc5934b2d7fb22844f194eb2046fdb718957fe9121215d9644f9b3c45fece6",
+          "syncStatus": "conflict",
+          "updatedAt": "2026-08-20T22:03:00+08:00"
+        },
+        "revision": 1,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "createPublishedPost": {
+      "method": "POST",
+      "path": "/published-posts",
+      "payload": {
+        "publishedPost": {
+          "evidenceQuality": "verified",
+          "platform": "小红书",
+          "publicPackageId": "03bfff970dd68ddb113b43faf2282022ed1164a57b7f8a4cabf53db22c93735d",
+          "publicPostId": "83abecb7440876533ffd480026e87ebe6daba3bb9415c53addc820017263fbd7",
+          "publishedAt": "2026-08-10T13:38:00+08:00",
+          "publishedUrl": "https://demo.mediaclaw.example/publishedUrl/3397",
+          "recordedBy": "admin"
+        },
+        "revision": 7,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "createReview": {
+      "method": "POST",
+      "path": "/reviews",
+      "payload": {
+        "item": {
+          "allowedActions": [
+            "演示数据",
+            "演示数据",
+            "占位说明"
+          ],
+          "artifactType": "decision_brief",
+          "bodyAuthority": "internal",
+          "currentRevision": 7,
+          "displayName": null,
+          "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/8644",
+          "organizationDocumentUrlExpiresAt": "2026-08-25T11:32:00+08:00",
+          "publicArtifactId": "dfcafc88b14af7cfabf2b83799b77997678c02540c3469679b3997713e56013f",
+          "publicProjectId": "810b6636e1a87779ef625fa5e399c1c8dc505674d6d24e3fedd587997051b30f",
+          "syncStatus": "conflict",
+          "updatedAt": "2026-09-01T09:50:00+08:00"
+        },
+        "revision": 13,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "disableAdminAdmissionBatch": {
+      "method": "POST",
+      "path": "/admin/admission-batches/{batchId}/disable",
+      "payload": {
+        "ok": false,
+        "revision": 18,
+        "schemaVersion": "media_web_business_pages_v2",
+        "updatedAt": "2026-08-12T12:51:00+08:00"
+      }
+    },
+    "getAccountMonitor": {
+      "method": "GET",
+      "parameter": "publicAccountId",
+      "path": "/owned-accounts/{publicAccountId}/monitor",
+      "payload": {
+        "accountName": "小满在城市",
+        "checkedAt": "2026-09-02T08:00:00+08:00",
+        "detail": "最近 3 条内容均已回读到互动数据。",
+        "enabled": true,
+        "platform": "小红书",
+        "publicAccountId": "account_xhs_xiaoman",
+        "recentError": null,
+        "recentPostCount": 3,
+        "recentPostLinkResults": [
+          {
+            "canonical_url": "https://demo.mediaclaw.example/posts/xhs-autumn-camera",
+            "content_id": "xhs_demo_post_001",
+            "kind": "post",
+            "platform": "小红书",
+            "url": "https://demo.mediaclaw.example/posts/xhs-autumn-camera"
+          }
+        ],
+        "recentPostUrls": [
+          "https://demo.mediaclaw.example/posts/xhs-autumn-camera",
+          "https://demo.mediaclaw.example/posts/xhs-citywalk-suzhou"
+        ],
+        "recentReportSummary": "24 小时曝光 18422，互动率 6.1%，高于账号均值。",
+        "recentStatus": "已回读",
+        "recentTotalInteractions": 41230,
+        "revision": 36,
+        "schemaVersion": "media_web_business_pages_v2",
+        "status": "available"
+      },
+      "payloads": {
+        "account_xhs_xiaoman": {
+          "accountName": "小满在城市",
+          "checkedAt": "2026-09-02T08:00:00+08:00",
+          "detail": "最近 3 条内容均已回读到互动数据。",
+          "enabled": true,
+          "platform": "小红书",
+          "publicAccountId": "account_xhs_xiaoman",
+          "recentError": null,
+          "recentPostCount": 3,
+          "recentPostLinkResults": [
+            {
+              "canonical_url": "https://demo.mediaclaw.example/posts/xhs-autumn-camera",
+              "content_id": "xhs_demo_post_001",
+              "kind": "post",
+              "platform": "小红书",
+              "url": "https://demo.mediaclaw.example/posts/xhs-autumn-camera"
+            }
+          ],
+          "recentPostUrls": [
+            "https://demo.mediaclaw.example/posts/xhs-autumn-camera",
+            "https://demo.mediaclaw.example/posts/xhs-citywalk-suzhou"
+          ],
+          "recentReportSummary": "24 小时曝光 18422，互动率 6.1%，高于账号均值。",
+          "recentStatus": "已回读",
+          "recentTotalInteractions": 41230,
+          "revision": 36,
+          "schemaVersion": "media_web_business_pages_v2",
+          "status": "available"
+        }
+      }
+    },
+    "getAccountTrackStrategy": {
+      "method": "GET",
+      "parameter": "publicAccountId",
+      "path": "/owned-accounts/{publicAccountId}/track-strategy",
+      "payload": {
+        "revision": 5,
+        "schemaVersion": "media_web_business_pages_v2",
+        "strategy": {
+          "evidenceRefs": [
+            {
+              "capturedAt": "2026-08-31T10:00:00+08:00",
+              "kind": "证据快照",
+              "label": "赛道占比统计",
+              "publicUrl": "https://demo.mediaclaw.example/evidence/2866",
+              "qualityStatus": "verified"
+            },
+            {
+              "capturedAt": "2026-08-29T10:00:00+08:00",
+              "kind": "证据快照",
+              "label": "对标账号更新节奏",
+              "publicUrl": "https://demo.mediaclaw.example/evidence/4072",
+              "qualityStatus": "partial"
+            }
+          ],
+          "humanStatus": "confirmed",
+          "publicAccountId": "account_xhs_xiaoman",
+          "publicStrategyId": "strategy_xhs_autumn",
+          "recommendations": [
+            "把相机测评的钩子模板迁移到城市漫步线做 A/B。",
+            "咖啡探店支线只承接商单，不再单独排期。",
+            "视频号账号维持同步，不投入新内容。"
+          ],
+          "revision": 5,
+          "targetPublicTrackIds": [
+            "track_city_walk",
+            "track_camera_review"
+          ],
+          "updatedAt": "2026-09-01T10:00:00+08:00"
+        }
+      },
+      "payloads": {
+        "account_xhs_xiaoman": {
+          "revision": 5,
+          "schemaVersion": "media_web_business_pages_v2",
+          "strategy": {
+            "evidenceRefs": [
+              {
+                "capturedAt": "2026-08-31T10:00:00+08:00",
+                "kind": "证据快照",
+                "label": "赛道占比统计",
+                "publicUrl": "https://demo.mediaclaw.example/evidence/2866",
+                "qualityStatus": "verified"
+              },
+              {
+                "capturedAt": "2026-08-29T10:00:00+08:00",
+                "kind": "证据快照",
+                "label": "对标账号更新节奏",
+                "publicUrl": "https://demo.mediaclaw.example/evidence/4072",
+                "qualityStatus": "partial"
+              }
+            ],
+            "humanStatus": "confirmed",
+            "publicAccountId": "account_xhs_xiaoman",
+            "publicStrategyId": "strategy_xhs_autumn",
+            "recommendations": [
+              "把相机测评的钩子模板迁移到城市漫步线做 A/B。",
+              "咖啡探店支线只承接商单，不再单独排期。",
+              "视频号账号维持同步，不投入新内容。"
+            ],
+            "revision": 5,
+            "targetPublicTrackIds": [
+              "track_city_walk",
+              "track_camera_review"
+            ],
+            "updatedAt": "2026-09-01T10:00:00+08:00"
+          }
+        }
+      }
+    },
+    "getAdminBillingSummary": {
+      "method": "GET",
+      "path": "/admin/billing/summary",
+      "payload": {
+        "revision": 16,
+        "schemaVersion": "media_web_business_pages_v2",
+        "summary": {
+          "fulfillments": [
+            {
+              "兑单号": "ff_20260828_0091",
+              "处理人": "系统自动",
+              "套餐": "工作室版",
+              "完成时间": "2026-08-28T10:00:00+08:00",
+              "币种": "CNY",
+              "支付渠道": "微信支付",
+              "状态": "已完成",
+              "租户": "光合内容工作室",
+              "金额": "399.00"
+            },
+            {
+              "兑单号": "ff_20260830_0104",
+              "创建时间": "2026-08-30T10:00:00+08:00",
+              "失败原因": "上游回调超时",
+              "套餐": "入门版",
+              "币种": "CNY",
+              "支付渠道": "微信支付",
+              "状态": "待人工处理",
+              "租户": "潮汐文化传媒",
+              "金额": "99.00"
+            },
+            {
+              "兑单号": "ff_20260815_0053",
+              "处理人": "运营-阿岚",
+              "套餐": "MCN 旗舰版",
+              "币种": "CNY",
+              "支付渠道": "支付宝",
+              "状态": "已退款",
+              "租户": "城野 MCN",
+              "退款原因": "客户重复下单",
+              "退款时间": "2026-08-18T10:00:00+08:00",
+              "金额": "1299.00"
+            }
+          ],
+          "grants": [
+            {
+              "原因": "补偿计费对账延迟导致的余额缺口",
+              "发放单号": "grant_20260830_01",
+              "发放时间": "2026-09-02T04:00:00+08:00",
+              "图片额度": 200,
+              "操作人": "运营-阿岚",
+              "文本额度": 500,
+              "租户": "潮汐文化传媒"
+            },
+            {
+              "原因": "内测反馈奖励",
+              "发放单号": "grant_20260812_02",
+              "发放时间": "2026-08-12T10:00:00+08:00",
+              "图片额度": 0,
+              "操作人": "运营-小圆",
+              "文本额度": 200,
+              "租户": "小满个人工作室"
+            }
+          ],
+          "ledgerRevision": 19,
+          "plans": [
+            {
+              "currency": "CNY",
+              "imageQuota": 100,
+              "name": "入门版",
+              "planCode": "starter",
+              "price": "99.00",
+              "status": "active",
+              "textQuota": 200
+            },
+            {
+              "currency": "CNY",
+              "imageQuota": 600,
+              "name": "工作室版",
+              "planCode": "studio",
+              "price": "399.00",
+              "status": "active",
+              "textQuota": 1000
+            },
+            {
+              "currency": "CNY",
+              "imageQuota": 3000,
+              "name": "MCN 旗舰版",
+              "planCode": "mcn",
+              "price": "1299.00",
+              "status": "active",
+              "textQuota": 5000
+            },
+            {
+              "currency": "CNY",
+              "imageQuota": 20,
+              "name": "早期内测版",
+              "planCode": "legacy_trial",
+              "price": "0.00",
+              "status": "retired",
+              "textQuota": 50
+            }
+          ],
+          "productMappings": [
+            {
+              "外部商品号": "wxpay_studio_399",
+              "映射套餐": "工作室版",
+              "更新人": "运营-阿岚",
+              "更新时间": "2026-08-28T10:00:00+08:00",
+              "渠道": "微信支付",
+              "状态": "已启用"
+            },
+            {
+              "外部商品号": "alipay_mcn_1299",
+              "映射套餐": "MCN 旗舰版",
+              "更新人": "运营-阿岚",
+              "更新时间": "2026-08-21T10:00:00+08:00",
+              "渠道": "支付宝",
+              "状态": "已启用"
+            },
+            {
+              "外部商品号": "ios_starter_99",
+              "映射套餐": "入门版",
+              "更新人": "运营-小圆",
+              "更新时间": "2026-09-01T14:00:00+08:00",
+              "渠道": "App Store 内购",
+              "状态": "待复核"
+            }
+          ],
+          "redemptionBatches": [
+            {
+              "batchId": "redeem_studio_q3",
+              "codeCount": 100,
+              "createdAt": "2026-08-08T10:00:00+08:00",
+              "planCode": "studio",
+              "redeemedCount": 67,
+              "status": "active"
+            },
+            {
+              "batchId": "redeem_mcn_partner",
+              "codeCount": 30,
+              "createdAt": "2026-07-24T10:00:00+08:00",
+              "planCode": "mcn",
+              "redeemedCount": 30,
+              "status": "completed"
+            },
+            {
+              "batchId": "redeem_starter_trial",
+              "codeCount": 200,
+              "createdAt": "2026-06-24T10:00:00+08:00",
+              "planCode": "starter",
+              "redeemedCount": 143,
+              "status": "closed"
+            }
+          ]
+        }
+      }
+    },
+    "getAdminDashboard": {
+      "method": "GET",
+      "path": "/admin/dashboard",
+      "payload": {
+        "revision": 24,
+        "schemaVersion": "media_web_business_pages_v2",
+        "summary": {
+          "auditSummary24h": {
+            "actionCount": 38,
+            "failedCount": 1,
+            "from": "2026-09-01T10:00:00+08:00",
+            "to": "2026-09-02T10:00:00+08:00"
+          },
+          "counts": {
+            "abnormalRuns": 4,
+            "pendingAdmission": 22,
+            "tenants": 5,
+            "users": 58
+          },
+          "generatedAt": "2026-09-02T10:00:00+08:00",
+          "governanceTodos": [
+            "潮汐文化传媒因账单逾期被暂停，等待财务确认到账后恢复服务",
+            "小红书 Cookie 校验失败，需要重新配置后再次校验",
+            "拾光工作室的准入申请（老带新内测批次）待审核通过",
+            "2026 秋季达人招募批次仍有 15 个名额未使用，可评估是否加大推广"
+          ],
+          "recentActions": [
+            {
+              "action": "upstream_credential.rotate",
+              "createdAt": "2026-09-02T09:00:00+08:00",
+              "publicActionId": "action_rotate_upstream_cred",
+              "reasonSummary": "小红书 Cookie 校验失败，尝试轮换凭据但仍处于异常状态",
+              "status": "failed",
+              "targetType": "platform"
+            },
+            {
+              "action": "registration_policy.update",
+              "createdAt": "2026-09-02T07:00:00+08:00",
+              "publicActionId": "action_close_open_reg",
+              "reasonSummary": "监测到批量刷量注册，临时切换为仅邀请制",
+              "status": "succeeded",
+              "targetType": "platform"
+            },
+            {
+              "action": "billing_grant.create",
+              "createdAt": "2026-09-02T04:00:00+08:00",
+              "publicActionId": "action_reissue_balance",
+              "reasonSummary": "补偿计费对账延迟导致潮汐文化传媒出现的余额缺口",
+              "status": "succeeded",
+              "targetType": "billing"
+            },
+            {
+              "action": "admission_batch.disable",
+              "createdAt": "2026-09-01T08:00:00+08:00",
+              "publicActionId": "action_disable_admission_batch",
+              "reasonSummary": "2025 冬季内测批次早已超期未清理，人工停用",
+              "status": "succeeded",
+              "targetType": "admission"
+            },
+            {
+              "action": "tenant.suspend",
+              "createdAt": "2026-08-15T10:00:00+08:00",
+              "publicActionId": "action_suspend_tenant",
+              "reasonSummary": "潮汐文化传媒账单逾期 15 天，暂停服务并通知财务对接人",
+              "status": "succeeded",
+              "targetType": "tenant"
+            }
+          ],
+          "revision": 24,
+          "serviceHealth": [
+            {
+              "checkedAt": "2026-09-02T09:55:00+08:00",
+              "service": "内容生成队列",
+              "status": "healthy"
+            },
+            {
+              "checkedAt": "2026-09-02T09:48:00+08:00",
+              "service": "上游账号池",
+              "status": "degraded"
+            },
+            {
+              "checkedAt": "2026-09-02T09:55:00+08:00",
+              "service": "计费账本服务",
+              "status": "healthy"
+            },
+            {
+              "checkedAt": "2026-09-02T06:00:00+08:00",
+              "service": "小红书 Cookie 同步",
+              "status": "unavailable"
+            }
+          ]
+        }
+      }
+    },
+    "getAdminPlatformCookies": {
+      "method": "GET",
+      "path": "/admin/platform-cookies",
+      "payload": {
+        "platforms": [
+          {
+            "configurationScript": "1. 管理员使用平台运营账号登录抖音创作者后台完成人工验证\n2. 由管理员在服务器终端直接粘贴登录态，不落盘、不经过网页\n3. 在服务器上执行 save_platform_cookie_secret.py，按隐藏输入粘贴登录态\n4. 执行 <bot_cli> cookies verify --platform douyin 校验凭据是否可用",
+            "configured": true,
+            "errorCode": null,
+            "platform": "douyin",
+            "safeCommand": "python3 <repo>/scripts/save_platform_cookie_secret.py --platform douyin --prompt",
+            "updatedAt": "2026-09-02T06:00:00+08:00",
+            "validationStatus": "valid"
+          },
+          {
+            "configurationScript": "1. 管理员使用平台运营账号登录小红书创作者中心完成人工验证\n2. 由管理员在服务器终端直接粘贴登录态，不落盘、不经过网页\n3. 在服务器上执行 save_platform_cookie_secret.py，按隐藏输入粘贴登录态\n4. 执行 <bot_cli> cookies verify --platform xiaohongshu 校验凭据是否可用（当前尚未配置，会返回 missing）",
+            "configured": false,
+            "errorCode": null,
+            "platform": "xiaohongshu",
+            "safeCommand": "python3 <repo>/scripts/save_platform_cookie_secret.py --platform xiaohongshu --prompt",
+            "updatedAt": null,
+            "validationStatus": "missing"
+          }
+        ],
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "getAdminRegistrationPolicy": {
+      "method": "GET",
+      "path": "/admin/registration-policy",
+      "payload": {
+        "policy": {
+          "mode": "invite_only",
+          "revision": 29,
+          "updatedAt": "2026-09-02T07:00:00+08:00"
+        },
+        "revision": 29,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "getAdminTenant": {
+      "method": "GET",
+      "parameter": "publicTenantId",
+      "path": "/admin/tenants/{publicTenantId}",
+      "payload": {
+        "revision": 30,
+        "schemaVersion": "media_web_business_pages_v2",
+        "tenant": {
+          "archiveCount": 58,
+          "assetCount": 340,
+          "lastActiveAt": "2026-09-02T08:00:00+08:00",
+          "publicTenantId": "tenant_guanghe_studio",
+          "runCount": 86,
+          "status": "active",
+          "usageCharge": "1280.50",
+          "userCount": 12
+        }
+      },
+      "payloads": {
+        "tenant_chaoxi_media": {
+          "revision": 37,
+          "schemaVersion": "media_web_business_pages_v2",
+          "tenant": {
+            "archiveCount": 6,
+            "assetCount": 40,
+            "lastActiveAt": "2026-08-15T10:00:00+08:00",
+            "publicTenantId": "tenant_chaoxi_media",
+            "runCount": 15,
+            "status": "suspended",
+            "usageCharge": "42.00",
+            "userCount": 8
+          }
+        },
+        "tenant_chengye_mcn": {
+          "revision": 3,
+          "schemaVersion": "media_web_business_pages_v2",
+          "tenant": {
+            "archiveCount": 145,
+            "assetCount": 960,
+            "lastActiveAt": "2026-09-02T09:00:00+08:00",
+            "publicTenantId": "tenant_chengye_mcn",
+            "runCount": 210,
+            "status": "active",
+            "usageCharge": "5460.00",
+            "userCount": 34
+          }
+        },
+        "tenant_guanghe_studio": {
+          "revision": 10,
+          "schemaVersion": "media_web_business_pages_v2",
+          "tenant": {
+            "archiveCount": 58,
+            "assetCount": 340,
+            "lastActiveAt": "2026-09-02T08:00:00+08:00",
+            "publicTenantId": "tenant_guanghe_studio",
+            "runCount": 86,
+            "status": "active",
+            "usageCharge": "1280.50",
+            "userCount": 12
+          }
+        },
+        "tenant_shiguang_studio": {
+          "revision": 6,
+          "schemaVersion": "media_web_business_pages_v2",
+          "tenant": {
+            "archiveCount": 0,
+            "assetCount": 0,
+            "lastActiveAt": "2026-09-02T08:00:00+08:00",
+            "publicTenantId": "tenant_shiguang_studio",
+            "runCount": 0,
+            "status": "pending_review",
+            "usageCharge": "0.00",
+            "userCount": 1
+          }
+        },
+        "tenant_xiaoman_studio": {
+          "revision": 11,
+          "schemaVersion": "media_web_business_pages_v2",
+          "tenant": {
+            "archiveCount": 9,
+            "assetCount": 64,
+            "lastActiveAt": "2026-09-02T05:00:00+08:00",
+            "publicTenantId": "tenant_xiaoman_studio",
+            "runCount": 28,
+            "status": "active",
+            "usageCharge": "186.20",
+            "userCount": 3
+          }
+        }
+      }
+    },
+    "getAdminUpstreams": {
+      "method": "GET",
+      "path": "/admin/upstreams",
+      "payload": {
+        "revision": 14,
+        "schemaVersion": "media_web_business_pages_v2",
+        "summary": {
+          "availableAccountCount": 18,
+          "credentialHealth": "degraded",
+          "lastSyncedAt": "2026-09-02T09:48:00+08:00",
+          "pendingReconciliationCount": 4,
+          "revision": 14,
+          "unhealthyAccountCount": 1
+        }
+      }
+    },
+    "getAffiliateProfile": {
+      "method": "GET",
+      "path": "/account/affiliate",
+      "payload": {
+        "profile": {
+          "affiliateCode": "MEDIACLAW-DEMO-8842",
+          "enabled": true,
+          "expiresAt": "2026-12-01T10:00:00+08:00",
+          "quota": 20,
+          "revision": 7,
+          "used": 6
+        },
+        "revision": 7,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "getAsset": {
+      "method": "GET",
+      "parameter": "publicAssetId",
+      "path": "/assets/{publicAssetId}",
+      "payload": {
+        "item": {
+          "creativePatterns": [
+            {
+              "复用次数": 3,
+              "模式": "三段式钩子",
+              "适配赛道": "城市漫步 / 相机测评"
+            }
+          ],
+          "deconstructions": [
+            {
+              "秒数": "0-3",
+              "结构": "痛点前置",
+              "说明": "用一句反问替代自我介绍"
+            },
+            {
+              "秒数": "3-9",
+              "结构": "冲突展示",
+              "说明": "画面直接给出对比结果"
+            },
+            {
+              "秒数": "9-18",
+              "结构": "承诺兑现",
+              "说明": "给出可复现的操作步骤"
+            }
+          ],
+          "evidenceRefs": [
+            {
+              "capturedAt": "2026-08-31T10:00:00+08:00",
+              "kind": "证据快照",
+              "label": "采集页面快照",
+              "publicUrl": "https://demo.mediaclaw.example/evidence/5408",
+              "qualityStatus": "verified"
+            },
+            {
+              "capturedAt": "2026-08-28T10:00:00+08:00",
+              "kind": "证据快照",
+              "label": "互动数据回读",
+              "publicUrl": "https://demo.mediaclaw.example/evidence/1153",
+              "qualityStatus": "partial"
+            }
+          ],
+          "previewDescriptor": {
+            "kind": "descriptor_only",
+            "说明": "原始媒体保存在本机设备，控制面只接收描述信息。"
+          },
+          "revision": 3,
+          "summary": {
+            "createdAt": "2026-08-27T10:00:00+08:00",
+            "materialStatus": "已下载",
+            "mediaType": "video",
+            "platform": "抖音",
+            "platformHashtags": [
+              "#冬季美食",
+              "#开场"
+            ],
+            "publicAssetId": "asset_hotpot_opening",
+            "qualityStatus": "verified",
+            "sourceLabel": "公开内容采集",
+            "thumbnail": {
+              "durationSeconds": 42,
+              "kind": "descriptor_only",
+              "label": "本机素材，未上传原片"
+            },
+            "title": "火锅开场：三段式钩子参考",
+            "trackNames": [
+              "生活方式"
+            ],
+            "usageCount": 3
+          },
+          "usageRefs": [
+            "run_autumn_camera_01",
+            "run_deconstruct_hotpot"
+          ]
+        },
+        "revision": 3,
+        "schemaVersion": "media_web_business_pages_v2"
+      },
+      "payloads": {
+        "asset_city_night_broll": {
+          "item": {
+            "creativePatterns": [
+              {
+                "复用次数": 3,
+                "模式": "三段式钩子",
+                "适配赛道": "城市漫步 / 相机测评"
+              }
+            ],
+            "deconstructions": [
+              {
+                "秒数": "0-3",
+                "结构": "痛点前置",
+                "说明": "用一句反问替代自我介绍"
+              },
+              {
+                "秒数": "3-9",
+                "结构": "冲突展示",
+                "说明": "画面直接给出对比结果"
+              },
+              {
+                "秒数": "9-18",
+                "结构": "承诺兑现",
+                "说明": "给出可复现的操作步骤"
+              }
+            ],
+            "evidenceRefs": [
+              {
+                "capturedAt": "2026-08-31T10:00:00+08:00",
+                "kind": "证据快照",
+                "label": "采集页面快照",
+                "publicUrl": "https://demo.mediaclaw.example/evidence/5408",
+                "qualityStatus": "verified"
+              },
+              {
+                "capturedAt": "2026-08-28T10:00:00+08:00",
+                "kind": "证据快照",
+                "label": "互动数据回读",
+                "publicUrl": "https://demo.mediaclaw.example/evidence/1153",
+                "qualityStatus": "partial"
+              }
+            ],
+            "previewDescriptor": {
+              "kind": "descriptor_only",
+              "说明": "原始媒体保存在本机设备，控制面只接收描述信息。"
+            },
+            "revision": 2,
+            "summary": {
+              "createdAt": "2026-08-27T10:00:00+08:00",
+              "materialStatus": "已下载",
+              "mediaType": "video",
+              "platform": "抖音",
+              "platformHashtags": [
+                "#冬季美食",
+                "#开场"
+              ],
+              "publicAssetId": "asset_city_night_broll",
+              "qualityStatus": "verified",
+              "sourceLabel": "公开内容采集",
+              "thumbnail": {
+                "durationSeconds": 42,
+                "kind": "descriptor_only",
+                "label": "本机素材，未上传原片"
+              },
+              "title": "火锅开场：三段式钩子参考",
+              "trackNames": [
+                "生活方式"
+              ],
+              "usageCount": 3
+            },
+            "usageRefs": [
+              "run_autumn_camera_01",
+              "run_deconstruct_hotpot"
+            ]
+          },
+          "revision": 2,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "asset_hotpot_opening": {
+          "item": {
+            "creativePatterns": [
+              {
+                "复用次数": 3,
+                "模式": "三段式钩子",
+                "适配赛道": "城市漫步 / 相机测评"
+              }
+            ],
+            "deconstructions": [
+              {
+                "秒数": "0-3",
+                "结构": "痛点前置",
+                "说明": "用一句反问替代自我介绍"
+              },
+              {
+                "秒数": "3-9",
+                "结构": "冲突展示",
+                "说明": "画面直接给出对比结果"
+              },
+              {
+                "秒数": "9-18",
+                "结构": "承诺兑现",
+                "说明": "给出可复现的操作步骤"
+              }
+            ],
+            "evidenceRefs": [
+              {
+                "capturedAt": "2026-08-31T10:00:00+08:00",
+                "kind": "证据快照",
+                "label": "采集页面快照",
+                "publicUrl": "https://demo.mediaclaw.example/evidence/5408",
+                "qualityStatus": "verified"
+              },
+              {
+                "capturedAt": "2026-08-28T10:00:00+08:00",
+                "kind": "证据快照",
+                "label": "互动数据回读",
+                "publicUrl": "https://demo.mediaclaw.example/evidence/1153",
+                "qualityStatus": "partial"
+              }
+            ],
+            "previewDescriptor": {
+              "kind": "descriptor_only",
+              "说明": "原始媒体保存在本机设备，控制面只接收描述信息。"
+            },
+            "revision": 3,
+            "summary": {
+              "createdAt": "2026-08-27T10:00:00+08:00",
+              "materialStatus": "已下载",
+              "mediaType": "video",
+              "platform": "抖音",
+              "platformHashtags": [
+                "#冬季美食",
+                "#开场"
+              ],
+              "publicAssetId": "asset_hotpot_opening",
+              "qualityStatus": "verified",
+              "sourceLabel": "公开内容采集",
+              "thumbnail": {
+                "durationSeconds": 42,
+                "kind": "descriptor_only",
+                "label": "本机素材，未上传原片"
+              },
+              "title": "火锅开场：三段式钩子参考",
+              "trackNames": [
+                "生活方式"
+              ],
+              "usageCount": 3
+            },
+            "usageRefs": [
+              "run_autumn_camera_01",
+              "run_deconstruct_hotpot"
+            ]
+          },
+          "revision": 3,
+          "schemaVersion": "media_web_business_pages_v2"
+        }
+      }
+    },
+    "getAuthEntryState": {
+      "method": "GET",
+      "path": "/openclaw/auth/entry-state",
+      "payload": {
+        "entry": {
+          "displayLabel": "演示数据",
+          "entryId": "示例内容",
+          "expiresAt": "2026-08-10T12:53:00+08:00",
+          "maskedIdentity": "占位说明"
+        },
+        "fallback": "password",
+        "mode": "personal",
+        "schemaVersion": "media.auth.entry.v1",
+        "state": "none"
+      }
+    },
+    "getBillingBalance": {
+      "method": "GET",
+      "path": "/billing/balance",
+      "payload": {
+        "balance": {
+          "asOf": "2026-09-02T09:30:00+08:00",
+          "available": "486.20",
+          "currency": "CNY",
+          "revision": 64
+        },
+        "revision": 64,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "getBillingUsageSummary": {
+      "method": "GET",
+      "path": "/billing/usage-summary",
+      "payload": {
+        "revision": 64,
+        "schemaVersion": "media_web_business_pages_v2",
+        "summary": {
+          "currency": "CNY",
+          "from": "2026-08-03T10:00:00+08:00",
+          "imageQuantity": 36,
+          "revision": 64,
+          "textQuantity": 1284.5,
+          "to": "2026-09-02T09:30:00+08:00",
+          "totalCharge": "213.80"
+        }
+      }
+    },
+    "getCreator": {
+      "method": "GET",
+      "path": "/creators/{publicCreatorId}",
+      "payload": {
+        "item": {
+          "accountName": "演示账号",
+          "avatarUrl": null,
+          "creatorRole": "对标账号",
+          "expertiseDomains": [
+            "示例内容",
+            "示例内容",
+            "演示数据"
+          ],
+          "identityTags": [
+            "演示数据",
+            "占位说明",
+            "演示数据"
+          ],
+          "platform": "小红书",
+          "profileUrl": null,
+          "publicCreatorId": "90fc703a7a6d8ffed55ce51bd93eabb18f262a43324eb80b2ef059744fa632a6",
+          "updatedAt": "2026-08-16T21:28:00+08:00"
+        },
+        "revision": 35,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "getDashboard": {
+      "method": "GET",
+      "path": "/dashboard",
+      "payload": {
+        "revision": 87,
+        "schemaVersion": "media_web_business_pages_v2",
+        "summary": {
+          "contentProjectStages": [
+            {
+              "count": 2,
+              "stage": "research"
+            },
+            {
+              "count": 3,
+              "stage": "assets"
+            },
+            {
+              "count": 2,
+              "stage": "decision"
+            },
+            {
+              "count": 4,
+              "stage": "creation"
+            },
+            {
+              "count": 2,
+              "stage": "publishing"
+            },
+            {
+              "count": 3,
+              "stage": "review"
+            }
+          ],
+          "counts": {
+            "assets": 46,
+            "contentProjects": 5,
+            "creators": 18,
+            "publishedPosts": 9,
+            "reviews": 6,
+            "runs": 12,
+            "tracks": 5
+          },
+          "coverage": {
+            "known": 38,
+            "unavailable": 2,
+            "unknown": 6
+          },
+          "generatedAt": "2026-09-02T09:48:00+08:00",
+          "pendingDecisions": 2,
+          "pendingPublishing": 1,
+          "pendingReviews": 2,
+          "revision": 87,
+          "taskSummary": {
+            "failed": 0,
+            "needsAttention": 2,
+            "queued": 1,
+            "running": 1
+          }
+        }
+      }
+    },
+    "getDecision": {
+      "method": "GET",
+      "parameter": "publicDecisionId",
+      "path": "/decisions/{publicDecisionId}",
+      "payload": {
+        "decision": {
+          "candidateTitle": "苏州河支线改为夜拍路线",
+          "candidateType": "activity",
+          "decisionStatus": "recommended",
+          "evidenceCount": 3,
+          "humanConfirmedAt": null,
+          "platform": "抖音",
+          "publicDecisionId": "decision_citywalk_route",
+          "trackName": "城市漫步",
+          "updatedAt": "2026-09-02T00:00:00+08:00"
+        },
+        "revision": 26,
+        "schemaVersion": "media_web_business_pages_v2"
+      },
+      "payloads": {
+        "decision_autumn_camera": {
+          "decision": {
+            "candidateTitle": "苏州河支线改为夜拍路线",
+            "candidateType": "activity",
+            "decisionStatus": "confirmed",
+            "evidenceCount": 3,
+            "humanConfirmedAt": null,
+            "platform": "抖音",
+            "publicDecisionId": "decision_autumn_camera",
+            "trackName": "城市漫步",
+            "updatedAt": "2026-09-02T00:00:00+08:00"
+          },
+          "revision": 30,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "decision_citywalk_route": {
+          "decision": {
+            "candidateTitle": "苏州河支线改为夜拍路线",
+            "candidateType": "activity",
+            "decisionStatus": "recommended",
+            "evidenceCount": 3,
+            "humanConfirmedAt": null,
+            "platform": "抖音",
+            "publicDecisionId": "decision_citywalk_route",
+            "trackName": "城市漫步",
+            "updatedAt": "2026-09-02T00:00:00+08:00"
+          },
+          "revision": 13,
+          "schemaVersion": "media_web_business_pages_v2"
+        }
+      }
+    },
+    "getDocumentBody": {
+      "method": "GET",
+      "parameter": "publicArtifactId",
+      "path": "/documents/{publicArtifactId}/body",
+      "payload": {
+        "data": {
+          "artifact": {
+            "artifactKind": "creation_document",
+            "bodyAuthority": "internal",
+            "currentRevision": 4,
+            "publicArtifactId": "artifact_creation_camera",
+            "publicProjectId": "proj_autumn_camera",
+            "updatedAt": "2026-09-02T04:00:00+08:00",
+            "workspaceMode": "personal_web"
+          },
+          "revision": {
+            "artifactKind": "creation_document",
+            "baseRevision": 3,
+            "body": {
+              "blocks": [
+                {
+                  "attrs": {},
+                  "content": [
+                    {
+                      "marks": [],
+                      "text": "秋日相机测评：X100VI 城市实拍脚本",
+                      "type": "text"
+                    }
+                  ],
+                  "id": "blk_camera_title",
+                  "type": "heading_1"
+                },
+                {
+                  "attrs": {},
+                  "content": [
+                    {
+                      "marks": [],
+                      "text": "面向想买第一台随身相机的城市通勤人群，用一条 3 分钟视频回答「值不值得背出门」。",
+                      "type": "text"
+                    }
+                  ],
+                  "id": "blk_camera_intro",
+                  "type": "paragraph"
+                },
+                {
+                  "attrs": {},
+                  "content": [
+                    {
+                      "marks": [],
+                      "text": "开场钩子（0-8 秒）",
+                      "type": "text"
+                    }
+                  ],
+                  "id": "blk_camera_hook",
+                  "type": "heading_2"
+                },
+                {
+                  "attrs": {},
+                  "id": "blk_camera_hook_list",
+                  "items": [
+                    {
+                      "children": [],
+                      "content": [
+                        {
+                          "marks": [],
+                          "text": "第一句台词：把相机塞进外套口袋，走进早高峰地铁。",
+                          "type": "text"
+                        }
+                      ],
+                      "id": "blk_camera_hook_list_item1"
+                    },
+                    {
+                      "children": [],
+                      "content": [
+                        {
+                          "marks": [],
+                          "text": "画面：手持特写 + 站台灯光扫过机身，禁止使用商单素材。",
+                          "type": "text"
+                        }
+                      ],
+                      "id": "blk_camera_hook_list_item2"
+                    },
+                    {
+                      "children": [],
+                      "content": [
+                        {
+                          "marks": [],
+                          "text": "字幕：一台不换镜头的相机，能拍完整个秋天吗？",
+                          "type": "text"
+                        }
+                      ],
+                      "id": "blk_camera_hook_list_item3"
+                    }
+                  ],
+                  "type": "bullet_list"
+                },
+                {
+                  "attrs": {},
+                  "content": [
+                    {
+                      "marks": [],
+                      "text": "主体结构（8-150 秒）",
+                      "type": "text"
+                    }
+                  ],
+                  "id": "blk_camera_body",
+                  "type": "heading_2"
+                },
+                {
+                  "attrs": {
+                    "headerRowCount": 1,
+                    "semanticPurpose": "storyboard"
+                  },
+                  "id": "blk_camera_table",
+                  "rows": [
+                    {
+                      "cells": [
+                        {
+                          "content": [
+                            {
+                              "marks": [
+                                "bold"
+                              ],
+                              "text": "段落",
+                              "type": "text"
+                            }
+                          ],
+                          "id": "blk_camera_table_r1c1"
+                        },
+                        {
+                          "content": [
+                            {
+                              "marks": [
+                                "bold"
+                              ],
+                              "text": "画面",
+                              "type": "text"
+                            }
+                          ],
+                          "id": "blk_camera_table_r1c2"
+                        },
+                        {
+                          "content": [
+                            {
+                              "marks": [
+                                "bold"
+                              ],
+                              "text": "证据",
+                              "type": "text"
+                            }
+                          ],
+                          "id": "blk_camera_table_r1c3"
+                        }
+                      ],
+                      "id": "blk_camera_table_r1"
+                    },
+                    {
+                      "cells": [
+                        {
+                          "content": [
+                            {
+                              "marks": [],
+                              "text": "通勤实拍",
+                              "type": "text"
+                            }
+                          ],
+                          "id": "blk_camera_table_r2c1"
+                        },
+                        {
+                          "content": [
+                            {
+                              "marks": [],
+                              "text": "地铁换乘通道逆光人流",
+                              "type": "text"
+                            }
+                          ],
+                          "id": "blk_camera_table_r2c2"
+                        },
+                        {
+                          "content": [
+                            {
+                              "marks": [],
+                              "text": "素材库：地铁光影",
+                              "type": "text"
+                            }
+                          ],
+                          "id": "blk_camera_table_r2c3"
+                        }
+                      ],
+                      "id": "blk_camera_table_r2"
+                    },
+                    {
+                      "cells": [
+                        {
+                          "content": [
+                            {
+                              "marks": [],
+                              "text": "夜景对比",
+                              "type": "text"
+                            }
+                          ],
+                          "id": "blk_camera_table_r3c1"
+                        },
+                        {
+                          "content": [
+                            {
+                              "marks": [],
+                              "text": "同机位手机 / 相机双画面",
+                              "type": "text"
+                            }
+                          ],
+                          "id": "blk_camera_table_r3c2"
+                        },
+                        {
+                          "content": [
+                            {
+                              "marks": [],
+                              "text": "素材库：城市夜景空镜",
+                              "type": "text"
+                            }
+                          ],
+                          "id": "blk_camera_table_r3c3"
+                        }
+                      ],
+                      "id": "blk_camera_table_r3"
+                    }
+                  ],
+                  "type": "table"
+                },
+                {
+                  "attrs": {
+                    "semanticTone": "warning"
+                  },
+                  "content": [
+                    {
+                      "marks": [],
+                      "text": "结尾不得出现未获授权的品牌口播；商单版本走 Campaigns 单独交付。",
+                      "type": "text"
+                    }
+                  ],
+                  "id": "blk_camera_callout",
+                  "type": "callout"
+                },
+                {
+                  "attrs": {
+                    "capturedAt": "2026-09-01T10:00:00+08:00",
+                    "displayFields": {
+                      "24 小时曝光": 18422,
+                      "互动率": "6.1%",
+                      "涨粉": 213
+                    },
+                    "publicObjectId": "post_xhs_autumn_camera",
+                    "semanticPurpose": "metric_snapshot",
+                    "sourceRevision": 4
+                  },
+                  "id": "blk_camera_snapshot",
+                  "type": "data_snapshot"
+                }
+              ],
+              "schemaVersion": "media.document.body.v1"
+            },
+            "bodyAuthority": "internal",
+            "bodyChecksum": "ad9877df6ddce8bb8c44be0c2c823e390a1cc8b0f9c201e3b93a6c50dadfa3e7",
+            "createdAt": "2026-09-01T10:00:00+08:00",
+            "executionReceipt": {
+              "applied": [
+                {
+                  "blockId": "fb63db37c131ea05d17dc0a96c57c94b1731f3a06713af18b4f0806c7283150d",
+                  "operation": "insert_table_row"
+                },
+                {
+                  "blockId": "9e43b4a76728db31f888f4ff97d6f5d2786ba3472da39b2d4fd8b3251ae07129",
+                  "operation": "insert_table_row"
+                },
+                {
+                  "blockId": "7e3d93cfb832dd8a09463ca44a7a4a218f54f322b13ec1cdab2131c514569d67",
+                  "operation": "replace_text"
+                }
+              ],
+              "appliedCount": 40,
+              "errorCode": "sha256:411f06968f3f94e458ce462e487d568267730fb953313b642f64734e55826ed7",
+              "manualActions": [
+                {
+                  "blockId": "0376c465b9c340e8bc7aef8d0816ff372a03b81eee2db1ded840d04e9074dbef",
+                  "reason": "sha256:f41f50d023e1971e5a7805df34417de2fe920c291a046b3ead48bc4d6d9bd365"
+                },
+                {
+                  "blockId": "daee1514679b6e768674bc364c4c8843213770613a4a7edbe033edc5670a585e",
+                  "reason": "sha256:bf269158b25661dd7c32aba5f3160a2aa5346826f9bcaf28470d2ea8e797a9a2"
+                },
+                {
+                  "blockId": "9bf9858f81c53a7efb84cb25fc79db4b732e59a2ad113af35c9a54d54350e9e2",
+                  "reason": "sha256:10e66a2018645c3f070f7da45e408e94b40ed46aa79c1b35ef6c2831303140c5"
+                }
+              ],
+              "protectedSkipped": [
+                "5d4a9237ab80881969a3230ebde9d1325f417786ee5c38b38f3898f3e0afde2f",
+                "db101e642c76181b3db545986b256b5ab054489b35f69f9b2932df3d02162d78",
+                "7b51bf1bdde608b49a563dd0c231e2c472bc2d72a4a9ef8f08b4f926ac85bfa7"
+              ],
+              "status": "ready"
+            },
+            "publicArtifactId": "artifact_creation_camera",
+            "remoteDocumentVersion": null,
+            "revision": 4,
+            "state": "ready",
+            "updatedAt": "2026-09-02T04:00:00+08:00"
+          }
+        },
+        "revision": 7,
+        "schemaVersion": "media_web_business_pages_v2"
+      },
+      "payloads": {
+        "artifact_creation_camera": {
+          "data": {
+            "artifact": {
+              "artifactKind": "creation_document",
+              "bodyAuthority": "internal",
+              "currentRevision": 4,
+              "publicArtifactId": "artifact_creation_camera",
+              "publicProjectId": "proj_autumn_camera",
+              "updatedAt": "2026-09-02T04:00:00+08:00",
+              "workspaceMode": "personal_web"
+            },
+            "revision": {
+              "artifactKind": "creation_document",
+              "baseRevision": 3,
+              "body": {
+                "blocks": [
+                  {
+                    "attrs": {},
+                    "content": [
+                      {
+                        "marks": [],
+                        "text": "秋日相机测评：X100VI 城市实拍脚本",
+                        "type": "text"
+                      }
+                    ],
+                    "id": "blk_camera_title",
+                    "type": "heading_1"
+                  },
+                  {
+                    "attrs": {},
+                    "content": [
+                      {
+                        "marks": [],
+                        "text": "面向想买第一台随身相机的城市通勤人群，用一条 3 分钟视频回答「值不值得背出门」。",
+                        "type": "text"
+                      }
+                    ],
+                    "id": "blk_camera_intro",
+                    "type": "paragraph"
+                  },
+                  {
+                    "attrs": {},
+                    "content": [
+                      {
+                        "marks": [],
+                        "text": "开场钩子（0-8 秒）",
+                        "type": "text"
+                      }
+                    ],
+                    "id": "blk_camera_hook",
+                    "type": "heading_2"
+                  },
+                  {
+                    "attrs": {},
+                    "id": "blk_camera_hook_list",
+                    "items": [
+                      {
+                        "children": [],
+                        "content": [
+                          {
+                            "marks": [],
+                            "text": "第一句台词：把相机塞进外套口袋，走进早高峰地铁。",
+                            "type": "text"
+                          }
+                        ],
+                        "id": "blk_camera_hook_list_item1"
+                      },
+                      {
+                        "children": [],
+                        "content": [
+                          {
+                            "marks": [],
+                            "text": "画面：手持特写 + 站台灯光扫过机身，禁止使用商单素材。",
+                            "type": "text"
+                          }
+                        ],
+                        "id": "blk_camera_hook_list_item2"
+                      },
+                      {
+                        "children": [],
+                        "content": [
+                          {
+                            "marks": [],
+                            "text": "字幕：一台不换镜头的相机，能拍完整个秋天吗？",
+                            "type": "text"
+                          }
+                        ],
+                        "id": "blk_camera_hook_list_item3"
+                      }
+                    ],
+                    "type": "bullet_list"
+                  },
+                  {
+                    "attrs": {},
+                    "content": [
+                      {
+                        "marks": [],
+                        "text": "主体结构（8-150 秒）",
+                        "type": "text"
+                      }
+                    ],
+                    "id": "blk_camera_body",
+                    "type": "heading_2"
+                  },
+                  {
+                    "attrs": {
+                      "headerRowCount": 1,
+                      "semanticPurpose": "storyboard"
+                    },
+                    "id": "blk_camera_table",
+                    "rows": [
+                      {
+                        "cells": [
+                          {
+                            "content": [
+                              {
+                                "marks": [
+                                  "bold"
+                                ],
+                                "text": "段落",
+                                "type": "text"
+                              }
+                            ],
+                            "id": "blk_camera_table_r1c1"
+                          },
+                          {
+                            "content": [
+                              {
+                                "marks": [
+                                  "bold"
+                                ],
+                                "text": "画面",
+                                "type": "text"
+                              }
+                            ],
+                            "id": "blk_camera_table_r1c2"
+                          },
+                          {
+                            "content": [
+                              {
+                                "marks": [
+                                  "bold"
+                                ],
+                                "text": "证据",
+                                "type": "text"
+                              }
+                            ],
+                            "id": "blk_camera_table_r1c3"
+                          }
+                        ],
+                        "id": "blk_camera_table_r1"
+                      },
+                      {
+                        "cells": [
+                          {
+                            "content": [
+                              {
+                                "marks": [],
+                                "text": "通勤实拍",
+                                "type": "text"
+                              }
+                            ],
+                            "id": "blk_camera_table_r2c1"
+                          },
+                          {
+                            "content": [
+                              {
+                                "marks": [],
+                                "text": "地铁换乘通道逆光人流",
+                                "type": "text"
+                              }
+                            ],
+                            "id": "blk_camera_table_r2c2"
+                          },
+                          {
+                            "content": [
+                              {
+                                "marks": [],
+                                "text": "素材库：地铁光影",
+                                "type": "text"
+                              }
+                            ],
+                            "id": "blk_camera_table_r2c3"
+                          }
+                        ],
+                        "id": "blk_camera_table_r2"
+                      },
+                      {
+                        "cells": [
+                          {
+                            "content": [
+                              {
+                                "marks": [],
+                                "text": "夜景对比",
+                                "type": "text"
+                              }
+                            ],
+                            "id": "blk_camera_table_r3c1"
+                          },
+                          {
+                            "content": [
+                              {
+                                "marks": [],
+                                "text": "同机位手机 / 相机双画面",
+                                "type": "text"
+                              }
+                            ],
+                            "id": "blk_camera_table_r3c2"
+                          },
+                          {
+                            "content": [
+                              {
+                                "marks": [],
+                                "text": "素材库：城市夜景空镜",
+                                "type": "text"
+                              }
+                            ],
+                            "id": "blk_camera_table_r3c3"
+                          }
+                        ],
+                        "id": "blk_camera_table_r3"
+                      }
+                    ],
+                    "type": "table"
+                  },
+                  {
+                    "attrs": {
+                      "semanticTone": "warning"
+                    },
+                    "content": [
+                      {
+                        "marks": [],
+                        "text": "结尾不得出现未获授权的品牌口播；商单版本走 Campaigns 单独交付。",
+                        "type": "text"
+                      }
+                    ],
+                    "id": "blk_camera_callout",
+                    "type": "callout"
+                  },
+                  {
+                    "attrs": {
+                      "capturedAt": "2026-09-01T10:00:00+08:00",
+                      "displayFields": {
+                        "24 小时曝光": 18422,
+                        "互动率": "6.1%",
+                        "涨粉": 213
+                      },
+                      "publicObjectId": "post_xhs_autumn_camera",
+                      "semanticPurpose": "metric_snapshot",
+                      "sourceRevision": 4
+                    },
+                    "id": "blk_camera_snapshot",
+                    "type": "data_snapshot"
+                  }
+                ],
+                "schemaVersion": "media.document.body.v1"
+              },
+              "bodyAuthority": "internal",
+              "bodyChecksum": "3245e8473d28466774378a8fb37f7bbd7dfcb3836f1820458a5b596c386cf17e",
+              "createdAt": "2026-09-01T10:00:00+08:00",
+              "executionReceipt": {
+                "applied": [
+                  {
+                    "blockId": "f143e36a3c5a3b87fe6bdbc0c5ff0eca67c02a1ca476df835ae48f35f873728d",
+                    "operation": "replace_text"
+                  },
+                  {
+                    "blockId": "8eadf552464b00012cfd5e42c4d97e7e41b0e676e640be5b3a459e40204a1378",
+                    "operation": "replace_text"
+                  },
+                  {
+                    "blockId": "97e97a5910a28b61868848248b70f9862c614c5bd3ae7b04613fffc51c829665",
+                    "operation": "replace_text"
+                  }
+                ],
+                "appliedCount": 11,
+                "errorCode": "sha256:9102f3dcf438b69f3fa5bb6f8048c131297df466f233469f6a766a7029ac0511",
+                "manualActions": [
+                  {
+                    "blockId": "f54cdd50e797c01e5998c82ccc3ebdaf4214a38ded6e9db5a6a46b2e733ba089",
+                    "reason": "sha256:d32053cdb67b14dba02cdea4a915ddd46bb78fbee512c0d0d6e0fb2c5cb3897a"
+                  },
+                  {
+                    "blockId": "effd5a8ce64d69e11d9df1051867baf7b61e763883e12e28cbb158e254f7ff2b",
+                    "reason": "sha256:cdef86342edfb68bf369749169f3c1dd18242de2fe43fc41efde869af572eb24"
+                  },
+                  {
+                    "blockId": "938ae2c515c5f280874f25a29d23a4a5cdf339ff406f257cb94cf71beaab0e17",
+                    "reason": "sha256:bc67e29141e325307079d3e9e39e65421268abf99b72a98acf02abbe4acbe2cd"
+                  }
+                ],
+                "protectedSkipped": [
+                  "dbd18795faeacc45cc10cdfcc48e82053fbd09dfeb62efed41a591a7b586066f",
+                  "3b75bbcf867eda4be8045140c7b28e9e4c01237ac6d8ac4f62423b09910f88b1",
+                  "996f81dd723e6bf3868b4f83182dacdfc07c3e30f58dc1786c87e5c4fba74a72"
+                ],
+                "status": "failed"
+              },
+              "publicArtifactId": "artifact_creation_camera",
+              "remoteDocumentVersion": null,
+              "revision": 4,
+              "state": "ready",
+              "updatedAt": "2026-09-02T04:00:00+08:00"
+            }
+          },
+          "revision": 25,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "artifact_publishing_citywalk": {
+          "data": {
+            "artifact": {
+              "artifactKind": "publishing_package",
+              "bodyAuthority": "internal",
+              "currentRevision": 2,
+              "publicArtifactId": "artifact_publishing_citywalk",
+              "publicProjectId": "proj_citywalk_suzhou",
+              "updatedAt": "2026-09-02T04:00:00+08:00",
+              "workspaceMode": "personal_web"
+            },
+            "revision": {
+              "artifactKind": "publishing_package",
+              "baseRevision": 1,
+              "body": {
+                "blocks": [
+                  {
+                    "attrs": {},
+                    "content": [
+                      {
+                        "marks": [],
+                        "text": "苏州河夜拍发布包",
+                        "type": "text"
+                      }
+                    ],
+                    "id": "blk_pub_title",
+                    "type": "heading_1"
+                  },
+                  {
+                    "attrs": {},
+                    "content": [
+                      {
+                        "marks": [],
+                        "text": "抖音版本 58 秒，封面为河岸灯带，发布前需确认路线安全提示。",
+                        "type": "text"
+                      }
+                    ],
+                    "id": "blk_pub_intro",
+                    "type": "paragraph"
+                  },
+                  {
+                    "attrs": {},
+                    "id": "blk_pub_check",
+                    "items": [
+                      {
+                        "children": [],
+                        "content": [
+                          {
+                            "marks": [],
+                            "text": "话题：#城市漫步 #夜拍",
+                            "type": "text"
+                          }
+                        ],
+                        "id": "blk_pub_check_item1"
+                      },
+                      {
+                        "children": [],
+                        "content": [
+                          {
+                            "marks": [],
+                            "text": "发布时间：周五 20:30",
+                            "type": "text"
+                          }
+                        ],
+                        "id": "blk_pub_check_item2"
+                      },
+                      {
+                        "children": [],
+                        "content": [
+                          {
+                            "marks": [],
+                            "text": "评论区置顶：完整路线图",
+                            "type": "text"
+                          }
+                        ],
+                        "id": "blk_pub_check_item3"
+                      }
+                    ],
+                    "type": "bullet_list"
+                  }
+                ],
+                "schemaVersion": "media.document.body.v1"
+              },
+              "bodyAuthority": "internal",
+              "bodyChecksum": "8581cd063e3db103e61dfc807c352f03264bb0053f1a617b5b16a0f8fd7fdab2",
+              "createdAt": "2026-09-01T10:00:00+08:00",
+              "executionReceipt": {
+                "applied": [
+                  {
+                    "blockId": "816ed6221dd59a8f811aa5e320a2637bd30c23dbf7e655e9ac584f5cdb8a53fc",
+                    "operation": "replace_text"
+                  },
+                  {
+                    "blockId": "cd64b36496911ecaa69b0f6eed03ec19e99e2026d1c0cf167f1562b41d4672c4",
+                    "operation": "insert_table_row"
+                  },
+                  {
+                    "blockId": "7351b514d89a091afe4885f8155460bfe30cd0dc2a559eda1cf7e0b5a07964be",
+                    "operation": "insert_table_row"
+                  }
+                ],
+                "appliedCount": 30,
+                "errorCode": "sha256:b2b4ff6a31723075b45f1297faa0ad99212e0dd901d1bde40218f7dc54a54653",
+                "manualActions": [
+                  {
+                    "blockId": "70abe160ee72cee1dc41bb21bbc23255d7eb4a9ae689435e3cdba095aa815301",
+                    "reason": "sha256:fecae6844588a7a5e05f88565cfc9688a727d4301c03661feae18bc16c647d9c"
+                  },
+                  {
+                    "blockId": "b21bfe7ba9c10d8a09f00c227d0c428bc7fbc1f40ce6fc3c3d63d6610c9a37d4",
+                    "reason": "sha256:b94af31a5de37e0cbd586f539beedbb40d89917d4ea81a1899c66b6a6e0ab340"
+                  },
+                  {
+                    "blockId": "02b4b45d907a88ce0e052fd1a2b097e16a2bdead78144e9d4858e43b08458098",
+                    "reason": "sha256:9f15b09657d0428e7f40825b36cea7c5f6fb92523f020208d29cb25a6ee0f05a"
+                  }
+                ],
+                "protectedSkipped": [
+                  "080bf7442d781f0d916550d906e8e9f6b3c87174e74df30bc332f9ac09eca73a",
+                  "e72cd1f64c1f7554f799ab4df47a6e8cd11e3ae269fa0fe5972ceadaaed6d351",
+                  "cc1b3b26968706a6e6c89b56c333ed30343733c559fd46495b502491922a6f4b"
+                ],
+                "status": "failed"
+              },
+              "publicArtifactId": "artifact_publishing_citywalk",
+              "remoteDocumentVersion": null,
+              "revision": 2,
+              "state": "ready",
+              "updatedAt": "2026-09-02T04:00:00+08:00"
+            }
+          },
+          "revision": 5,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "artifact_review_october": {
+          "data": {
+            "artifact": {
+              "artifactKind": "review_report",
+              "bodyAuthority": "internal",
+              "currentRevision": 3,
+              "publicArtifactId": "artifact_review_october",
+              "publicProjectId": "proj_october_review",
+              "updatedAt": "2026-09-02T04:00:00+08:00",
+              "workspaceMode": "personal_web"
+            },
+            "revision": {
+              "artifactKind": "review_report",
+              "baseRevision": 2,
+              "body": {
+                "blocks": [
+                  {
+                    "attrs": {},
+                    "content": [
+                      {
+                        "marks": [],
+                        "text": "10 月账号复盘：城市漫步与相机测评双线",
+                        "type": "text"
+                      }
+                    ],
+                    "id": "blk_review_title",
+                    "type": "heading_1"
+                  },
+                  {
+                    "attrs": {},
+                    "content": [
+                      {
+                        "marks": [],
+                        "text": "本月共发布 7 条内容，其中 3 条进入平台推荐池，商单转化 1 单。",
+                        "type": "text"
+                      }
+                    ],
+                    "id": "blk_review_intro",
+                    "type": "paragraph"
+                  },
+                  {
+                    "attrs": {},
+                    "id": "blk_review_points",
+                    "items": [
+                      {
+                        "children": [],
+                        "content": [
+                          {
+                            "marks": [],
+                            "text": "涨粉主要来自相机测评线，但互动率最高的是城市漫步线。",
+                            "type": "text"
+                          }
+                        ],
+                        "id": "blk_review_points_item1"
+                      },
+                      {
+                        "children": [],
+                        "content": [
+                          {
+                            "marks": [],
+                            "text": "封面文字超过 12 字的内容，完播率平均下降 9 个百分点。",
+                            "type": "text"
+                          }
+                        ],
+                        "id": "blk_review_points_item2"
+                      },
+                      {
+                        "children": [],
+                        "content": [
+                          {
+                            "marks": [],
+                            "text": "夜景素材复用率最高，建议下月补拍 2 组雨天空镜。",
+                            "type": "text"
+                          }
+                        ],
+                        "id": "blk_review_points_item3"
+                      }
+                    ],
+                    "type": "bullet_list"
+                  },
+                  {
+                    "attrs": {
+                      "semanticTone": "info"
+                    },
+                    "content": [
+                      {
+                        "marks": [],
+                        "text": "下月重点：把相机测评的钩子模板迁移到城市漫步线做 A/B。",
+                        "type": "text"
+                      }
+                    ],
+                    "id": "blk_review_callout",
+                    "type": "callout"
+                  }
+                ],
+                "schemaVersion": "media.document.body.v1"
+              },
+              "bodyAuthority": "internal",
+              "bodyChecksum": "f5625815826ff3d7fe78925d817b01cbdd07038f5467ab9613384d3e3250dd89",
+              "createdAt": "2026-09-01T10:00:00+08:00",
+              "executionReceipt": {
+                "applied": [
+                  {
+                    "blockId": "cf9c1a6668970d8ff2264e6794bb7c58a1f9316392071feb575c1dcadab5547a",
+                    "operation": "replace_text"
+                  },
+                  {
+                    "blockId": "4f4fddb1a922113f8d4a2f626395135a5c5b8fcef5d5797ebe744d321adaa3f6",
+                    "operation": "replace_text"
+                  },
+                  {
+                    "blockId": "e959d5ba28d8d79528c6266a6339ebf182ddc7d6d1f8944da8c2559aa792e33b",
+                    "operation": "insert_table_row"
+                  }
+                ],
+                "appliedCount": 20,
+                "errorCode": "sha256:dd950badccf3d2c800fba3ba7f7a2597c99fd988f74a614a4d001e45052d0674",
+                "manualActions": [
+                  {
+                    "blockId": "7f76e3cdfe9df728edf16dc1edf0f8b9548a40c7e1b88cb2f6c67d451fb1635f",
+                    "reason": "sha256:0e340fdd20e233beef131b1359a887fa907e69c2df666588c45ad2ae417aaa2a"
+                  },
+                  {
+                    "blockId": "1ca871ee0b16e401fc1c6ebd5fa96b038dee7d1629bd818497cd4e4124ffa521",
+                    "reason": "sha256:285d801249c45bb282afd1f78fe24dfa3bea4ff30ab9851afe8272a5672c098f"
+                  },
+                  {
+                    "blockId": "e1ba5441b8a88d1e67824a902def4a019d3e1e9fa0ec84a59e1ac9fda37f3b5e",
+                    "reason": "sha256:c77e12605870b8989b6a47f9ebedcf21421561613c9378798b00a2c0c1321ded"
+                  }
+                ],
+                "protectedSkipped": [
+                  "99c095997d6056576ddc02c452170fc6db9e7828941009510512051d5dee0364",
+                  "b3ae7f775099ed80437f9cbe401c4289caca285ad94208bddf6a1a3d0acfec5b",
+                  "00cca2b1834686885cfb3a008011cb7fc9c3ea4d7d3374305031dfe89b689df6"
+                ],
+                "status": "ready"
+              },
+              "publicArtifactId": "artifact_review_october",
+              "remoteDocumentVersion": null,
+              "revision": 3,
+              "state": "ready",
+              "updatedAt": "2026-09-02T04:00:00+08:00"
+            }
+          },
+          "revision": 8,
+          "schemaVersion": "media_web_business_pages_v2"
+        }
+      }
+    },
+    "getDocumentExport": {
+      "method": "GET",
+      "path": "/document-exports/{publicExportId}",
+      "payload": {
+        "data": {
+          "contentChecksum": null,
+          "createdAt": "2026-08-23T10:06:00+08:00",
+          "format": "pdf",
+          "publicArtifactId": "c73dd06fb90856b3cdc942670d8e883ac847f07a4946ec604a883fa94f90cf21",
+          "publicExportId": "3ad66bf6b661ee4a0fa38911c93816cff8d9d6d96d2ffa4d6918368a4eb911b0",
+          "rendererVersion": "docx-2026.08",
+          "revision": 28,
+          "sourceBodyChecksum": "cb8b8d65a59df423652b13a2e36f54f4981003e93fc4f632804a25a2f0c3f6f7",
+          "state": "queued",
+          "templateVersion": "v3",
+          "updatedAt": "2026-08-30T14:44:00+08:00"
+        },
+        "revision": 28,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "getDocumentExportDownload": {
+      "method": "GET",
+      "path": "/document-exports/{publicExportId}/download",
+      "payload": {
+        "data": {
+          "contentChecksum": "960f8b35fab615a82ea215da4d9109a92af658659d7f2437346a33813fa4ef94",
+          "downloadUrl": "https://demo.mediaclaw.example/downloadUrl/4968",
+          "expiresAt": "2026-08-21T14:49:00+08:00",
+          "format": "docx",
+          "publicExportId": "0d63f323eaad6558628aa0bf193f1ca75733d206c787c05934578f37650e61d6"
+        },
+        "revision": 24,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "getDocumentRevision": {
+      "method": "GET",
+      "path": "/documents/{publicArtifactId}/revisions/{revision}",
+      "payload": {
+        "data": {
+          "artifactKind": "research_snapshot",
+          "baseRevision": null,
+          "body": {
+            "blocks": [
+              {
+                "attrs": {},
+                "content": [
+                  {
+                    "marks": [
+                      "italic",
+                      "underline",
+                      "inline_code"
+                    ],
+                    "text": "演示数据",
+                    "type": "示例内容"
+                  },
+                  {
+                    "marks": [
+                      "strike",
+                      "inline_code",
+                      "strike"
+                    ],
+                    "text": "占位说明",
+                    "type": "示例内容"
+                  },
+                  {
+                    "marks": [
+                      "inline_code",
+                      "bold",
+                      "bold"
+                    ],
+                    "text": "占位说明",
+                    "type": "演示数据"
+                  }
+                ],
+                "id": "blk_bed349f68a935c8f",
+                "type": "heading_9"
+              },
+              {
+                "attrs": {},
+                "content": [
+                  {
+                    "marks": [
+                      "italic",
+                      "inline_code",
+                      "strike"
+                    ],
+                    "text": "演示数据",
+                    "type": "示例内容"
+                  },
+                  {
+                    "marks": [
+                      "strike",
+                      "inline_code",
+                      "italic"
+                    ],
+                    "text": "占位说明",
+                    "type": "占位说明"
+                  },
+                  {
+                    "marks": [
+                      "strike",
+                      "strike",
+                      "strike"
+                    ],
+                    "text": "占位说明",
+                    "type": "示例内容"
+                  }
+                ],
+                "id": "blk_1c8ec18bb69ff1cb",
+                "type": "quote"
+              },
+              {
+                "attrs": {},
+                "content": [
+                  {
+                    "marks": [
+                      "underline",
+                      "strike",
+                      "inline_code"
+                    ],
+                    "text": "占位说明",
+                    "type": "占位说明"
+                  },
+                  {
+                    "marks": [
+                      "inline_code",
+                      "italic",
+                      "strike"
+                    ],
+                    "text": "演示数据",
+                    "type": "占位说明"
+                  },
+                  {
+                    "marks": [
+                      "bold",
+                      "strike",
+                      "bold"
+                    ],
+                    "text": "示例内容",
+                    "type": "示例内容"
+                  }
+                ],
+                "id": "blk_92e2c4fb3b1cd183",
+                "type": "heading_5"
+              }
+            ],
+            "schemaVersion": "media_web_business_pages_v2"
+          },
+          "bodyAuthority": "lark",
+          "bodyChecksum": "8bc8ac88b27bbd4254e6cb3240afc6cb67699ae0147653e98713c553ff274b7c",
+          "createdAt": "2026-08-05T09:22:00+08:00",
+          "executionReceipt": {
+            "applied": [
+              {
+                "blockId": "469b59023f695bf8774d27a052ff50b8f15367a62b10bc0665880ecec5ad7029",
+                "operation": "replace_text"
+              },
+              {
+                "blockId": "fff6348b52090f7017de3426e69712ebe937a4fc303ac127cf764fc970857b8e",
+                "operation": "replace_text"
+              },
+              {
+                "blockId": "4e921a5360a730132a10e23d1fa74c28d67dd9c09da4ad30ddd5158333db3fd0",
+                "operation": "insert_table_row"
+              }
+            ],
+            "appliedCount": 22,
+            "errorCode": "sha256:fbfd50d1d882459d942c93061ce58d1a2f537b78e260a9776789bded51e807cd",
+            "manualActions": [
+              {
+                "blockId": "b6af1ca20d0feb120838193cd3ccf6928773659dd2138795c4963754bbeeecc3",
+                "reason": "sha256:e624b161828140dd228a19e1ba8144aa46ca37fdec45ab55e4f688aa68d86c12"
+              },
+              {
+                "blockId": "a3f0c13a0581475470db907a63c761d1ef09a2a002d98270277ed34986c8c68e",
+                "reason": "sha256:81940ab266a98e50393291cb987cc096830d23f16ec1b2bcc5d78454ce61f056"
+              },
+              {
+                "blockId": "a4ef6c48d3ca7737263dcc9bb3ef9a9ebcb7567557b07eaedf1841afbaf689e9",
+                "reason": "sha256:225bfad709d7349d474c06a1ccaac2b62b4076abc65e9bb4d7f5ae8e8983657e"
+              }
+            ],
+            "protectedSkipped": [
+              "fb97263b92303f8cbea3bd34a43b343792766292ac1a7be958982acba144e748",
+              "a80713eed991628501b012fba51b0a9f1040128ba9df9e7ddca7b8c5cd358bdf",
+              "ff6e4b335e1b6293c247f0da5f79b3ba78d0db3510630da2fad7f7c1d9b054a6"
+            ],
+            "status": "ready"
+          },
+          "publicArtifactId": "061fcdda8a49ee6dec638c20ab2e66e8d82ad5d4e5e6584e3478d7835d45f43a",
+          "remoteDocumentVersion": null,
+          "revision": 15,
+          "state": "ready",
+          "updatedAt": "2026-08-23T18:22:00+08:00"
+        },
+        "revision": 15,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "getOwnedAccount": {
+      "method": "GET",
+      "parameter": "publicAccountId",
+      "path": "/owned-accounts/{publicAccountId}",
+      "payload": {
+        "item": {
+          "accountName": "小满在城市",
+          "accountPositioning": "城市漫步 + 随身相机的通勤视角",
+          "avatarUrl": null,
+          "dataSource": "授权接口",
+          "lastSyncedAt": "2026-09-02T08:00:00+08:00",
+          "operationalStatus": "active",
+          "platform": "小红书",
+          "platformAccountId": "xhs_demo_88421",
+          "profileUrl": "https://demo.mediaclaw.example/accounts/xhs",
+          "publicAccountId": "account_xhs_xiaoman",
+          "publicTrackIds": [
+            "track_city_walk",
+            "track_camera_review"
+          ],
+          "responsiblePerson": "小满",
+          "teamName": "个人工作室",
+          "updatedAt": "2026-09-02T08:00:00+08:00"
+        },
+        "revision": 12,
+        "schemaVersion": "media_web_business_pages_v2"
+      },
+      "payloads": {
+        "account_douyin_xiaoman": {
+          "item": {
+            "accountName": "小满Vlog",
+            "accountPositioning": "城市漫步 + 随身相机的通勤视角",
+            "avatarUrl": null,
+            "dataSource": "授权接口",
+            "lastSyncedAt": "2026-09-02T08:00:00+08:00",
+            "operationalStatus": "active",
+            "platform": "抖音",
+            "platformAccountId": "xhs_demo_88421",
+            "profileUrl": "https://demo.mediaclaw.example/accounts/xhs",
+            "publicAccountId": "account_douyin_xiaoman",
+            "publicTrackIds": [
+              "track_city_walk",
+              "track_camera_review"
+            ],
+            "responsiblePerson": "小满",
+            "teamName": "个人工作室",
+            "updatedAt": "2026-09-02T08:00:00+08:00"
+          },
+          "revision": 20,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "account_xhs_xiaoman": {
+          "item": {
+            "accountName": "小满在城市",
+            "accountPositioning": "城市漫步 + 随身相机的通勤视角",
+            "avatarUrl": null,
+            "dataSource": "授权接口",
+            "lastSyncedAt": "2026-09-02T08:00:00+08:00",
+            "operationalStatus": "active",
+            "platform": "小红书",
+            "platformAccountId": "xhs_demo_88421",
+            "profileUrl": "https://demo.mediaclaw.example/accounts/xhs",
+            "publicAccountId": "account_xhs_xiaoman",
+            "publicTrackIds": [
+              "track_city_walk",
+              "track_camera_review"
+            ],
+            "responsiblePerson": "小满",
+            "teamName": "个人工作室",
+            "updatedAt": "2026-09-02T08:00:00+08:00"
+          },
+          "revision": 6,
+          "schemaVersion": "media_web_business_pages_v2"
+        }
+      }
+    },
+    "getPublishedPost": {
+      "method": "GET",
+      "path": "/published-posts/{publicPostId}",
+      "payload": {
+        "publishedPost": {
+          "evidenceQuality": "verified",
+          "platform": "小红书",
+          "publicPackageId": "package_xhs_autumn_camera",
+          "publicPostId": "post_xhs_autumn_camera",
+          "publishedAt": "2026-09-01T06:00:00+08:00",
+          "publishedUrl": "https://demo.mediaclaw.example/posts/xhs-autumn-camera",
+          "recordedBy": "user"
+        },
+        "revision": 11,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "getPublishingPackage": {
+      "method": "GET",
+      "parameter": "publicPackageId",
+      "path": "/publishing/packages/{publicPackageId}",
+      "payload": {
+        "package": {
+          "artifactDescriptor": {
+            "allowedActions": [
+              "占位说明",
+              "示例内容",
+              "演示数据"
+            ],
+            "artifactType": "asset_digest",
+            "bodyAuthority": "internal",
+            "currentRevision": 20,
+            "displayName": null,
+            "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/7010",
+            "organizationDocumentUrlExpiresAt": "2026-08-03T13:53:00+08:00",
+            "publicArtifactId": "8b8de7a62bf5d8b2ba2f0b4f6fdafcdaf05ace2ad295790d39b75595fcebcbc1",
+            "publicProjectId": "42336cfe94f7e1bb8b13862d88ed455942a093524d166d9460a00bf06b24136c",
+            "syncStatus": "synced",
+            "updatedAt": "2026-08-13T12:22:00+08:00"
+          },
+          "contentFields": {},
+          "humanChecks": [
+            {},
+            {},
+            {}
+          ],
+          "platform": "B站",
+          "publicPackageId": "e515e557e910c6b7253c5e2416aa2e4b49b092d52c594abc6b031b9cfddab98a",
+          "publicRunId": "b5becf11ceb49dc2682b262ab3b119ebb1276f299d6c38a18c990fb6c88a218c",
+          "revision": 21,
+          "ruleChecks": [
+            {},
+            {},
+            {}
+          ],
+          "status": "draft"
+        },
+        "revision": 21,
+        "schemaVersion": "media_web_business_pages_v2"
+      },
+      "payloads": {
+        "package_douyin_citywalk": {
+          "package": {
+            "artifactDescriptor": {
+              "allowedActions": [
+                "示例内容",
+                "占位说明",
+                "示例内容"
+              ],
+              "artifactType": "research_snapshot",
+              "bodyAuthority": "lark",
+              "currentRevision": 40,
+              "displayName": null,
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/7836",
+              "organizationDocumentUrlExpiresAt": "2026-08-29T00:29:00+08:00",
+              "publicArtifactId": "43c6d68e0182d87c1a0e5a2f09a99b62d131da3c22e401ae8066c61b26b9835a",
+              "publicProjectId": "f9a692b51815f287b8e11933b816b9caa380965b257431a33e6f6c5f4ca29035",
+              "syncStatus": "conflict",
+              "updatedAt": "2026-08-15T12:11:00+08:00"
+            },
+            "contentFields": {},
+            "humanChecks": [
+              {},
+              {},
+              {}
+            ],
+            "platform": "抖音",
+            "publicPackageId": "f753b729e9ba827a74f529a56f8f24064b3c14a4d435fea08a095b716f5686d8",
+            "publicRunId": "05d213323bbde9a365c56e6308ddac9a653f6ba85709e16863a4e091d7d5d19a",
+            "revision": 37,
+            "ruleChecks": [
+              {},
+              {},
+              {}
+            ],
+            "status": "draft"
+          },
+          "revision": 37,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "package_xhs_autumn_camera": {
+          "package": {
+            "artifactDescriptor": {
+              "allowedActions": [
+                "示例内容",
+                "演示数据",
+                "占位说明"
+              ],
+              "artifactType": "creation_document",
+              "bodyAuthority": "lark",
+              "currentRevision": 1,
+              "displayName": null,
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/1194",
+              "organizationDocumentUrlExpiresAt": "2026-08-08T09:39:00+08:00",
+              "publicArtifactId": "97371b35765440fb6fff35bee61dcee7dde6b6982081500d086b31e1d83cf052",
+              "publicProjectId": "682b1e39ab3d27a5979aa912bf98e6ffd1408845b46f9fcf27c6afc707480a86",
+              "syncStatus": "synced",
+              "updatedAt": "2026-08-31T07:44:00+08:00"
+            },
+            "contentFields": {},
+            "humanChecks": [
+              {},
+              {},
+              {}
+            ],
+            "platform": "B站",
+            "publicPackageId": "5d8be35609e536a9ec8728a7394a70a29f7360af2843cebfe18e9282e7864c45",
+            "publicRunId": "7f185220f11a7bdc62c49548817e4c2571238284eea891e54c6d71195e46c926",
+            "revision": 26,
+            "ruleChecks": [
+              {},
+              {},
+              {}
+            ],
+            "status": "draft"
+          },
+          "revision": 26,
+          "schemaVersion": "media_web_business_pages_v2"
+        }
+      }
+    },
+    "getResourceDocxLink": {
+      "method": "GET",
+      "path": "/resources/docx-link",
+      "payload": {
+        "document": {
+          "expiresAt": "2026-09-02T12:00:00+08:00",
+          "publicArtifactId": "artifact_creation_camera",
+          "url": "https://demo.mediaclaw.example/documents/creation-camera.docx"
+        },
+        "revision": 39,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "getReviewsSummary": {
+      "method": "GET",
+      "path": "/reviews/summary",
+      "payload": {
+        "revision": 5,
+        "schemaVersion": "media_web_business_pages_v2",
+        "summary": {
+          "confirmedCount": 3,
+          "evidenceCoverage": 0.78,
+          "generatedAt": "2026-09-02T06:00:00+08:00",
+          "pending24h": 1,
+          "pending7d": 2,
+          "reviewCount": 6
+        }
+      }
+    },
+    "getRun": {
+      "method": "GET",
+      "parameter": "publicRunId",
+      "path": "/runs/{publicRunId}",
+      "payload": {
+        "revision": 4,
+        "run": {
+          "availableSections": [
+            "sources",
+            "decisions",
+            "outputs"
+          ],
+          "contentType": "图文",
+          "createdAt": "2026-08-31T10:00:00+08:00",
+          "entrypoint": "Web 工作台",
+          "platform": "小红书",
+          "publicProjectId": "proj_autumn_camera",
+          "publicRunId": "run_autumn_camera_01",
+          "revision": 4,
+          "status": "creation_ready",
+          "title": "秋日相机测评：X100VI 城市实拍",
+          "trackName": "相机测评",
+          "updatedAt": "2026-09-02T07:00:00+08:00"
+        },
+        "schemaVersion": "media_web_business_pages_v2"
+      },
+      "payloads": {
+        "run_autumn_camera_01": {
+          "revision": 4,
+          "run": {
+            "availableSections": [
+              "sources",
+              "decisions",
+              "outputs"
+            ],
+            "contentType": "图文",
+            "createdAt": "2026-08-31T10:00:00+08:00",
+            "entrypoint": "Web 工作台",
+            "platform": "小红书",
+            "publicProjectId": "proj_autumn_camera",
+            "publicRunId": "run_autumn_camera_01",
+            "revision": 4,
+            "status": "creation_ready",
+            "title": "秋日相机测评：X100VI 城市实拍",
+            "trackName": "相机测评",
+            "updatedAt": "2026-09-02T07:00:00+08:00"
+          },
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "run_citywalk_suzhou_02": {
+          "revision": 6,
+          "run": {
+            "availableSections": [
+              "sources",
+              "outputs"
+            ],
+            "contentType": "短视频",
+            "createdAt": "2026-08-29T10:00:00+08:00",
+            "entrypoint": "飞书标签",
+            "platform": "抖音",
+            "publicProjectId": "proj_citywalk_suzhou",
+            "publicRunId": "run_citywalk_suzhou_02",
+            "revision": 6,
+            "status": "publishing_ready",
+            "title": "城市漫步·苏州河支线脚本",
+            "trackName": "城市漫步",
+            "updatedAt": "2026-09-02T01:00:00+08:00"
+          },
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "run_coffee_brief_03": {
+          "revision": 2,
+          "run": {
+            "availableSections": [
+              "sources",
+              "decisions"
+            ],
+            "contentType": "图文",
+            "createdAt": "2026-09-01T04:00:00+08:00",
+            "entrypoint": "Web 工作台",
+            "platform": "小红书",
+            "publicProjectId": "proj_brand_coffee",
+            "publicRunId": "run_coffee_brief_03",
+            "revision": 2,
+            "status": "awaiting_confirmation",
+            "title": "三顿半联名商单脚本初稿",
+            "trackName": "咖啡探店",
+            "updatedAt": "2026-09-01T08:00:00+08:00"
+          },
+          "schemaVersion": "media_web_business_pages_v2"
+        }
+      }
+    },
+    "getRunDecisions": {
+      "method": "GET",
+      "parameter": "publicRunId",
+      "path": "/runs/{publicRunId}/decisions",
+      "payload": {
+        "revision": 4,
+        "schemaVersion": "media_web_business_pages_v2",
+        "section": {
+          "decisionItems": [
+            {
+              "candidateTitle": "以「口袋里的秋天」作为主标题",
+              "candidateType": "material",
+              "decisionStatus": "confirmed",
+              "evidenceCount": 4,
+              "humanConfirmedAt": "2026-09-01T10:00:00+08:00",
+              "platform": "小红书",
+              "publicDecisionId": "decision_autumn_camera",
+              "trackName": "相机测评",
+              "updatedAt": "2026-09-01T10:00:00+08:00"
+            },
+            {
+              "candidateTitle": "复用火锅开场的三段式钩子",
+              "candidateType": "pattern",
+              "decisionStatus": "recommended",
+              "evidenceCount": 2,
+              "humanConfirmedAt": null,
+              "platform": "抖音",
+              "publicDecisionId": "decision_hotpot_pattern",
+              "trackName": "相机测评",
+              "updatedAt": "2026-09-01T14:00:00+08:00"
+            }
+          ],
+          "humanState": "已确认主标题，钩子结构待确认",
+          "publicRunId": "run_autumn_camera_01",
+          "revision": 4
+        }
+      },
+      "payloads": {
+        "run_autumn_camera_01": {
+          "revision": 4,
+          "schemaVersion": "media_web_business_pages_v2",
+          "section": {
+            "decisionItems": [
+              {
+                "candidateTitle": "以「口袋里的秋天」作为主标题",
+                "candidateType": "material",
+                "decisionStatus": "confirmed",
+                "evidenceCount": 4,
+                "humanConfirmedAt": "2026-09-01T10:00:00+08:00",
+                "platform": "小红书",
+                "publicDecisionId": "decision_autumn_camera",
+                "trackName": "相机测评",
+                "updatedAt": "2026-09-01T10:00:00+08:00"
+              },
+              {
+                "candidateTitle": "复用火锅开场的三段式钩子",
+                "candidateType": "pattern",
+                "decisionStatus": "recommended",
+                "evidenceCount": 2,
+                "humanConfirmedAt": null,
+                "platform": "抖音",
+                "publicDecisionId": "decision_hotpot_pattern",
+                "trackName": "相机测评",
+                "updatedAt": "2026-09-01T14:00:00+08:00"
+              }
+            ],
+            "humanState": "已确认主标题，钩子结构待确认",
+            "publicRunId": "run_autumn_camera_01",
+            "revision": 4
+          }
+        },
+        "run_coffee_brief_03": {
+          "revision": 2,
+          "schemaVersion": "media_web_business_pages_v2",
+          "section": {
+            "decisionItems": [
+              {
+                "candidateTitle": "以「口袋里的秋天」作为主标题",
+                "candidateType": "material",
+                "decisionStatus": "confirmed",
+                "evidenceCount": 4,
+                "humanConfirmedAt": "2026-09-01T10:00:00+08:00",
+                "platform": "小红书",
+                "publicDecisionId": "decision_autumn_camera",
+                "trackName": "相机测评",
+                "updatedAt": "2026-09-01T10:00:00+08:00"
+              },
+              {
+                "candidateTitle": "复用火锅开场的三段式钩子",
+                "candidateType": "pattern",
+                "decisionStatus": "recommended",
+                "evidenceCount": 2,
+                "humanConfirmedAt": null,
+                "platform": "抖音",
+                "publicDecisionId": "decision_hotpot_pattern",
+                "trackName": "相机测评",
+                "updatedAt": "2026-09-01T14:00:00+08:00"
+              }
+            ],
+            "humanState": "已确认主标题，钩子结构待确认",
+            "publicRunId": "run_coffee_brief_03",
+            "revision": 2
+          }
+        }
+      }
+    },
+    "getRunOutputs": {
+      "method": "GET",
+      "parameter": "publicRunId",
+      "path": "/runs/{publicRunId}/outputs",
+      "payload": {
+        "revision": 4,
+        "schemaVersion": "media_web_business_pages_v2",
+        "section": {
+          "artifactSummaries": [
+            {
+              "allowedActions": [
+                "read",
+                "edit",
+                "export"
+              ],
+              "artifactType": "creation_document",
+              "bodyAuthority": "internal",
+              "currentRevision": 4,
+              "displayName": "秋日相机测评脚本 v4",
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/6365",
+              "organizationDocumentUrlExpiresAt": "2026-08-06T01:29:00+08:00",
+              "publicArtifactId": "artifact_creation_camera",
+              "publicProjectId": "proj_autumn_camera",
+              "syncStatus": "not_applicable",
+              "updatedAt": "2026-09-02T04:00:00+08:00"
+            }
+          ],
+          "outputVariants": [
+            {
+              "时长": "3 分 08 秒",
+              "更新时间": "2026-09-02T07:00:00+08:00",
+              "版本": "v4 剪辑交接版",
+              "状态": "可编辑"
+            },
+            {
+              "时长": "3 分 24 秒",
+              "更新时间": "2026-09-01T10:00:00+08:00",
+              "版本": "v3 初稿",
+              "状态": "已归档"
+            }
+          ],
+          "publicRunId": "run_autumn_camera_01",
+          "revision": 4,
+          "verificationReports": [
+            {
+              "检查项": "素材授权",
+              "结果": "通过",
+              "说明": "全部素材来自本机拍摄"
+            },
+            {
+              "检查项": "平台规则",
+              "结果": "待复核",
+              "说明": "标题含品牌词，需要确认是否触发商业内容标记"
+            }
+          ]
+        }
+      },
+      "payloads": {
+        "run_autumn_camera_01": {
+          "revision": 4,
+          "schemaVersion": "media_web_business_pages_v2",
+          "section": {
+            "artifactSummaries": [
+              {
+                "allowedActions": [
+                  "read",
+                  "edit",
+                  "export"
+                ],
+                "artifactType": "creation_document",
+                "bodyAuthority": "internal",
+                "currentRevision": 4,
+                "displayName": "秋日相机测评脚本 v4",
+                "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/7562",
+                "organizationDocumentUrlExpiresAt": "2026-08-19T17:36:00+08:00",
+                "publicArtifactId": "artifact_creation_camera",
+                "publicProjectId": "proj_autumn_camera",
+                "syncStatus": "not_applicable",
+                "updatedAt": "2026-09-02T04:00:00+08:00"
+              }
+            ],
+            "outputVariants": [
+              {
+                "时长": "3 分 08 秒",
+                "更新时间": "2026-09-02T07:00:00+08:00",
+                "版本": "v4 剪辑交接版",
+                "状态": "可编辑"
+              },
+              {
+                "时长": "3 分 24 秒",
+                "更新时间": "2026-09-01T10:00:00+08:00",
+                "版本": "v3 初稿",
+                "状态": "已归档"
+              }
+            ],
+            "publicRunId": "run_autumn_camera_01",
+            "revision": 4,
+            "verificationReports": [
+              {
+                "检查项": "素材授权",
+                "结果": "通过",
+                "说明": "全部素材来自本机拍摄"
+              },
+              {
+                "检查项": "平台规则",
+                "结果": "待复核",
+                "说明": "标题含品牌词，需要确认是否触发商业内容标记"
+              }
+            ]
+          }
+        },
+        "run_citywalk_suzhou_02": {
+          "revision": 6,
+          "schemaVersion": "media_web_business_pages_v2",
+          "section": {
+            "artifactSummaries": [
+              {
+                "allowedActions": [
+                  "read",
+                  "edit",
+                  "export"
+                ],
+                "artifactType": "creation_document",
+                "bodyAuthority": "internal",
+                "currentRevision": 4,
+                "displayName": "秋日相机测评脚本 v4",
+                "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/4294",
+                "organizationDocumentUrlExpiresAt": "2026-08-23T10:55:00+08:00",
+                "publicArtifactId": "artifact_creation_camera",
+                "publicProjectId": "proj_autumn_camera",
+                "syncStatus": "not_applicable",
+                "updatedAt": "2026-09-02T04:00:00+08:00"
+              }
+            ],
+            "outputVariants": [
+              {
+                "时长": "3 分 08 秒",
+                "更新时间": "2026-09-02T07:00:00+08:00",
+                "版本": "v4 剪辑交接版",
+                "状态": "可编辑"
+              },
+              {
+                "时长": "3 分 24 秒",
+                "更新时间": "2026-09-01T10:00:00+08:00",
+                "版本": "v3 初稿",
+                "状态": "已归档"
+              }
+            ],
+            "publicRunId": "run_citywalk_suzhou_02",
+            "revision": 6,
+            "verificationReports": [
+              {
+                "检查项": "素材授权",
+                "结果": "通过",
+                "说明": "全部素材来自本机拍摄"
+              },
+              {
+                "检查项": "平台规则",
+                "结果": "待复核",
+                "说明": "标题含品牌词，需要确认是否触发商业内容标记"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "getRunSources": {
+      "method": "GET",
+      "parameter": "publicRunId",
+      "path": "/runs/{publicRunId}/sources",
+      "payload": {
+        "revision": 4,
+        "schemaVersion": "media_web_business_pages_v2",
+        "section": {
+          "evidenceRefs": [
+            {
+              "capturedAt": "2026-08-31T10:00:00+08:00",
+              "kind": "证据快照",
+              "label": "公开内容采集快照",
+              "publicUrl": "https://demo.mediaclaw.example/evidence/7003",
+              "qualityStatus": "verified"
+            },
+            {
+              "capturedAt": "2026-08-31T10:00:00+08:00",
+              "kind": "证据快照",
+              "label": "素材清单",
+              "publicUrl": "https://demo.mediaclaw.example/evidence/4807",
+              "qualityStatus": "partial"
+            }
+          ],
+          "items": [
+            {
+              "互动量": 12800,
+              "来源": "小红书",
+              "标题": "秋天第一台随身相机怎么选",
+              "质量": "verified",
+              "采集时间": "2026-08-30T10:00:00+08:00"
+            },
+            {
+              "互动量": 24100,
+              "来源": "抖音",
+              "标题": "地铁通勤 vlog 的三种开场",
+              "质量": "partial",
+              "采集时间": "2026-08-29T10:00:00+08:00"
+            },
+            {
+              "互动量": 0,
+              "来源": "本机素材",
+              "标题": "城市夜景空镜 12 条",
+              "质量": "verified",
+              "采集时间": "2026-08-31T10:00:00+08:00"
+            }
+          ],
+          "publicRunId": "run_autumn_camera_01",
+          "revision": 4,
+          "sourceKinds": [
+            "公开内容",
+            "本机素材"
+          ]
+        }
+      },
+      "payloads": {
+        "run_autumn_camera_01": {
+          "revision": 4,
+          "schemaVersion": "media_web_business_pages_v2",
+          "section": {
+            "evidenceRefs": [
+              {
+                "capturedAt": "2026-08-31T10:00:00+08:00",
+                "kind": "证据快照",
+                "label": "公开内容采集快照",
+                "publicUrl": "https://demo.mediaclaw.example/evidence/7003",
+                "qualityStatus": "verified"
+              },
+              {
+                "capturedAt": "2026-08-31T10:00:00+08:00",
+                "kind": "证据快照",
+                "label": "素材清单",
+                "publicUrl": "https://demo.mediaclaw.example/evidence/4807",
+                "qualityStatus": "partial"
+              }
+            ],
+            "items": [
+              {
+                "互动量": 12800,
+                "来源": "小红书",
+                "标题": "秋天第一台随身相机怎么选",
+                "质量": "verified",
+                "采集时间": "2026-08-30T10:00:00+08:00"
+              },
+              {
+                "互动量": 24100,
+                "来源": "抖音",
+                "标题": "地铁通勤 vlog 的三种开场",
+                "质量": "partial",
+                "采集时间": "2026-08-29T10:00:00+08:00"
+              },
+              {
+                "互动量": 0,
+                "来源": "本机素材",
+                "标题": "城市夜景空镜 12 条",
+                "质量": "verified",
+                "采集时间": "2026-08-31T10:00:00+08:00"
+              }
+            ],
+            "publicRunId": "run_autumn_camera_01",
+            "revision": 4,
+            "sourceKinds": [
+              "公开内容",
+              "本机素材"
+            ]
+          }
+        },
+        "run_citywalk_suzhou_02": {
+          "revision": 6,
+          "schemaVersion": "media_web_business_pages_v2",
+          "section": {
+            "evidenceRefs": [
+              {
+                "capturedAt": "2026-08-31T10:00:00+08:00",
+                "kind": "证据快照",
+                "label": "公开内容采集快照",
+                "publicUrl": "https://demo.mediaclaw.example/evidence/7003",
+                "qualityStatus": "verified"
+              },
+              {
+                "capturedAt": "2026-08-31T10:00:00+08:00",
+                "kind": "证据快照",
+                "label": "素材清单",
+                "publicUrl": "https://demo.mediaclaw.example/evidence/4807",
+                "qualityStatus": "partial"
+              }
+            ],
+            "items": [
+              {
+                "互动量": 12800,
+                "来源": "小红书",
+                "标题": "秋天第一台随身相机怎么选",
+                "质量": "verified",
+                "采集时间": "2026-08-30T10:00:00+08:00"
+              },
+              {
+                "互动量": 24100,
+                "来源": "抖音",
+                "标题": "地铁通勤 vlog 的三种开场",
+                "质量": "partial",
+                "采集时间": "2026-08-29T10:00:00+08:00"
+              },
+              {
+                "互动量": 0,
+                "来源": "本机素材",
+                "标题": "城市夜景空镜 12 条",
+                "质量": "verified",
+                "采集时间": "2026-08-31T10:00:00+08:00"
+              }
+            ],
+            "publicRunId": "run_citywalk_suzhou_02",
+            "revision": 6,
+            "sourceKinds": [
+              "公开内容",
+              "本机素材"
+            ]
+          }
+        }
+      }
+    },
+    "getTrack": {
+      "method": "GET",
+      "path": "/tracks/{publicTrackId}",
+      "payload": {
+        "item": {
+          "aliases": [
+            "示例内容",
+            "演示数据",
+            "占位说明"
+          ],
+          "artifactCount": 5,
+          "description": "演示用描述文案",
+          "name": "演示条目",
+          "parentPublicTrackId": null,
+          "platforms": [
+            "占位说明",
+            "示例内容",
+            "示例内容"
+          ],
+          "publicTrackId": "7921b0d858c2142742754f136394975edadccc18268ceb036702c5c6087d940c",
+          "status": "待确认",
+          "updatedAt": "2026-08-30T16:33:00+08:00"
+        },
+        "revision": 4,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listAccountMetrics": {
+      "method": "GET",
+      "path": "/metrics/accounts",
+      "payload": {
+        "items": [
+          {
+            "collectedAt": "2026-09-02T02:00:00+08:00",
+            "evidenceQuality": "verified",
+            "metricKey": "涨粉数",
+            "metricValue": 913,
+            "publicSnapshotId": "snapshot_account_xhs",
+            "publicSubjectId": "account_xhs_xiaoman",
+            "reviewWindow": "7d",
+            "subjectType": "account",
+            "unit": "人"
+          },
+          {
+            "collectedAt": "2026-09-01T14:00:00+08:00",
+            "evidenceQuality": "partial",
+            "metricKey": "涨粉数",
+            "metricValue": 1420,
+            "publicSnapshotId": "snapshot_account_douyin",
+            "publicSubjectId": "account_douyin_xiaoman",
+            "reviewWindow": "7d",
+            "subjectType": "account",
+            "unit": "人"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 9,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listAdminAdmissionBatches": {
+      "method": "GET",
+      "path": "/admin/admission-batches",
+      "payload": {
+        "items": [
+          {
+            "batchId": "batch_admit_autumn2026",
+            "codeCount": 50,
+            "createdAt": "2026-08-23T10:00:00+08:00",
+            "expiresAt": "2026-10-17T10:00:00+08:00",
+            "name": "2026 秋季达人招募批次",
+            "status": "active",
+            "usedCount": 35
+          },
+          {
+            "batchId": "batch_admit_mcn_seats",
+            "codeCount": 20,
+            "createdAt": "2026-08-03T10:00:00+08:00",
+            "expiresAt": "2026-12-01T10:00:00+08:00",
+            "name": "城野 MCN 团队席位批次",
+            "status": "active",
+            "usedCount": 20
+          },
+          {
+            "batchId": "batch_admit_winter2025",
+            "codeCount": 100,
+            "createdAt": "2025-11-26T10:00:00+08:00",
+            "expiresAt": null,
+            "name": "2025 冬季内测批次",
+            "status": "disabled",
+            "usedCount": 41
+          },
+          {
+            "batchId": "batch_admit_summer_trial",
+            "codeCount": 30,
+            "createdAt": "2026-06-24T10:00:00+08:00",
+            "expiresAt": "2026-08-13T10:00:00+08:00",
+            "name": "2026 夏季体验批次",
+            "status": "active",
+            "usedCount": 22
+          },
+          {
+            "batchId": "batch_admit_referral_pilot",
+            "codeCount": 10,
+            "createdAt": "2026-08-27T10:00:00+08:00",
+            "expiresAt": "2026-09-16T10:00:00+08:00",
+            "name": "老带新内测批次",
+            "status": "active",
+            "usedCount": 3
+          }
+        ],
+        "nextCursor": null,
+        "revision": 35,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listAdminAffiliateUsers": {
+      "method": "GET",
+      "path": "/admin/affiliate-users",
+      "payload": {
+        "items": [
+          {
+            "affiliateEnabled": true,
+            "displayName": "林知一（光合内容工作室）",
+            "invitationQuota": 20,
+            "publicUserId": "user_aff_guanghe_lin",
+            "status": "active",
+            "updatedAt": "2026-08-31T10:00:00+08:00",
+            "usedQuota": 14
+          },
+          {
+            "affiliateEnabled": true,
+            "displayName": "韩明（城野 MCN）",
+            "invitationQuota": 50,
+            "publicUserId": "user_aff_chengye_han",
+            "status": "active",
+            "updatedAt": "2026-08-25T10:00:00+08:00",
+            "usedQuota": 50
+          },
+          {
+            "affiliateEnabled": true,
+            "displayName": "小满（小满个人工作室）",
+            "invitationQuota": 10,
+            "publicUserId": "user_aff_xiaoman_studio",
+            "status": "active",
+            "updatedAt": "2026-08-18T10:00:00+08:00",
+            "usedQuota": 3
+          },
+          {
+            "affiliateEnabled": false,
+            "displayName": "周敏（潮汐文化传媒）",
+            "invitationQuota": 15,
+            "publicUserId": "user_aff_chaoxi_zhou",
+            "status": "disabled",
+            "updatedAt": "2026-08-15T10:00:00+08:00",
+            "usedQuota": 6
+          },
+          {
+            "affiliateEnabled": true,
+            "displayName": "何蔚（拾光工作室）",
+            "invitationQuota": 5,
+            "publicUserId": "user_aff_shiguang_he",
+            "status": "pending_review",
+            "updatedAt": "2026-09-01T14:00:00+08:00",
+            "usedQuota": 0
+          }
+        ],
+        "nextCursor": null,
+        "revision": 1,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listAdminTenantRuns": {
+      "method": "GET",
+      "parameter": "publicTenantId",
+      "path": "/admin/tenants/{publicTenantId}/runs",
+      "payload": {
+        "items": [
+          {
+            "availableSections": [
+              "sources",
+              "decisions",
+              "outputs"
+            ],
+            "contentType": "图文",
+            "createdAt": "2026-08-30T10:00:00+08:00",
+            "entrypoint": "Web 工作台",
+            "platform": "小红书",
+            "publicProjectId": "proj_ghe_camping",
+            "publicRunId": "run_ghe_camping_gear",
+            "revision": 25,
+            "status": "succeeded",
+            "title": "夏日露营装备测评脚本",
+            "trackName": "露营装备",
+            "updatedAt": "2026-08-31T10:00:00+08:00"
+          },
+          {
+            "availableSections": [
+              "sources",
+              "decisions"
+            ],
+            "contentType": "短视频",
+            "createdAt": "2026-09-02T00:00:00+08:00",
+            "entrypoint": "飞书标签",
+            "platform": "抖音",
+            "publicProjectId": "proj_ghe_night",
+            "publicRunId": "run_ghe_night_timelapse",
+            "revision": 32,
+            "status": "rendering",
+            "title": "城市夜景延时拍摄教学",
+            "trackName": "摄影教学",
+            "updatedAt": "2026-09-02T09:00:00+08:00"
+          },
+          {
+            "availableSections": [
+              "sources"
+            ],
+            "contentType": "图文",
+            "createdAt": "2026-09-01T10:00:00+08:00",
+            "entrypoint": "Web 工作台",
+            "platform": "小红书",
+            "publicProjectId": null,
+            "publicRunId": "run_ghe_autumn_outfit",
+            "revision": 19,
+            "status": "failed",
+            "title": "秋季穿搭素材拆解",
+            "trackName": "穿搭灵感",
+            "updatedAt": "2026-09-02T04:00:00+08:00"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 27,
+        "schemaVersion": "media_web_business_pages_v2"
+      },
+      "payloads": {
+        "tenant_chaoxi_media": {
+          "items": [
+            {
+              "availableSections": [
+                "sources",
+                "decisions",
+                "outputs"
+              ],
+              "contentType": "短视频",
+              "createdAt": "2026-08-13T10:00:00+08:00",
+              "entrypoint": "Web 工作台",
+              "platform": "抖音",
+              "publicProjectId": "proj_cx_holiday",
+              "publicRunId": "run_cx_holiday_teaser",
+              "revision": 17,
+              "status": "succeeded",
+              "title": "国庆预热选题脚本",
+              "trackName": "节日营销",
+              "updatedAt": "2026-08-14T10:00:00+08:00"
+            },
+            {
+              "availableSections": [
+                "sources"
+              ],
+              "contentType": "图文",
+              "createdAt": "2026-08-14T10:00:00+08:00",
+              "entrypoint": "Web 工作台",
+              "platform": "小红书",
+              "publicProjectId": null,
+              "publicRunId": "run_cx_brand_partner",
+              "revision": 29,
+              "status": "cancelled",
+              "title": "联名品牌植入脚本",
+              "trackName": "品牌合作",
+              "updatedAt": "2026-08-15T10:00:00+08:00"
+            }
+          ],
+          "nextCursor": null,
+          "revision": 1,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "tenant_chengye_mcn": {
+          "items": [
+            {
+              "availableSections": [
+                "sources",
+                "decisions",
+                "outputs"
+              ],
+              "contentType": null,
+              "createdAt": "2026-08-28T10:00:00+08:00",
+              "entrypoint": "Web 工作台",
+              "platform": null,
+              "publicProjectId": "proj_mcn_q3review",
+              "publicRunId": "run_mcn_q3_review",
+              "revision": 1,
+              "status": "succeeded",
+              "title": "签约达人 Q3 复盘报告",
+              "trackName": "达人运营",
+              "updatedAt": "2026-08-29T10:00:00+08:00"
+            },
+            {
+              "availableSections": [
+                "sources",
+                "decisions"
+              ],
+              "contentType": "图文",
+              "createdAt": "2026-09-01T20:00:00+08:00",
+              "entrypoint": "Web 工作台",
+              "platform": "小红书",
+              "publicProjectId": "proj_mcn_beauty",
+              "publicRunId": "run_mcn_beauty_topics",
+              "revision": 1,
+              "status": "awaiting_confirmation",
+              "title": "美妆赛道选题库更新",
+              "trackName": "美妆赛道",
+              "updatedAt": "2026-09-02T08:00:00+08:00"
+            },
+            {
+              "availableSections": [
+                "sources"
+              ],
+              "contentType": "短视频",
+              "createdAt": "2026-08-31T10:00:00+08:00",
+              "entrypoint": "飞书标签",
+              "platform": "抖音",
+              "publicProjectId": "proj_mcn_travel_deal",
+              "publicRunId": "run_mcn_travel_deal",
+              "revision": 7,
+              "status": "blocked",
+              "title": "旅拍达人商单交付脚本",
+              "trackName": "旅拍商单",
+              "updatedAt": "2026-09-02T07:00:00+08:00"
+            },
+            {
+              "availableSections": [
+                "sources",
+                "decisions",
+                "outputs"
+              ],
+              "contentType": "短视频",
+              "createdAt": "2026-08-26T10:00:00+08:00",
+              "entrypoint": "Web 工作台",
+              "platform": "抖音",
+              "publicProjectId": "proj_mcn_pet",
+              "publicRunId": "run_mcn_pet_breakdown",
+              "revision": 34,
+              "status": "succeeded",
+              "title": "宠物赛道爆款拆解",
+              "trackName": "宠物赛道",
+              "updatedAt": "2026-08-27T10:00:00+08:00"
+            }
+          ],
+          "nextCursor": null,
+          "revision": 29,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "tenant_guanghe_studio": {
+          "items": [
+            {
+              "availableSections": [
+                "sources",
+                "decisions",
+                "outputs"
+              ],
+              "contentType": "图文",
+              "createdAt": "2026-08-30T10:00:00+08:00",
+              "entrypoint": "Web 工作台",
+              "platform": "小红书",
+              "publicProjectId": "proj_ghe_camping",
+              "publicRunId": "run_ghe_camping_gear",
+              "revision": 35,
+              "status": "succeeded",
+              "title": "夏日露营装备测评脚本",
+              "trackName": "露营装备",
+              "updatedAt": "2026-08-31T10:00:00+08:00"
+            },
+            {
+              "availableSections": [
+                "sources",
+                "decisions"
+              ],
+              "contentType": "短视频",
+              "createdAt": "2026-09-02T00:00:00+08:00",
+              "entrypoint": "飞书标签",
+              "platform": "抖音",
+              "publicProjectId": "proj_ghe_night",
+              "publicRunId": "run_ghe_night_timelapse",
+              "revision": 18,
+              "status": "rendering",
+              "title": "城市夜景延时拍摄教学",
+              "trackName": "摄影教学",
+              "updatedAt": "2026-09-02T09:00:00+08:00"
+            },
+            {
+              "availableSections": [
+                "sources"
+              ],
+              "contentType": "图文",
+              "createdAt": "2026-09-01T10:00:00+08:00",
+              "entrypoint": "Web 工作台",
+              "platform": "小红书",
+              "publicProjectId": null,
+              "publicRunId": "run_ghe_autumn_outfit",
+              "revision": 37,
+              "status": "failed",
+              "title": "秋季穿搭素材拆解",
+              "trackName": "穿搭灵感",
+              "updatedAt": "2026-09-02T04:00:00+08:00"
+            }
+          ],
+          "nextCursor": null,
+          "revision": 35,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "tenant_shiguang_studio": {
+          "items": [],
+          "nextCursor": null,
+          "revision": 21,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "tenant_xiaoman_studio": {
+          "items": [
+            {
+              "availableSections": [
+                "sources",
+                "decisions",
+                "outputs"
+              ],
+              "contentType": "图文",
+              "createdAt": "2026-08-29T10:00:00+08:00",
+              "entrypoint": "Web 工作台",
+              "platform": "小红书",
+              "publicProjectId": "proj_xm_citywalk_oct",
+              "publicRunId": "run_xm_citywalk_oct",
+              "revision": 25,
+              "status": "succeeded",
+              "title": "国庆城市漫步选题脚本",
+              "trackName": "城市漫步",
+              "updatedAt": "2026-08-30T10:00:00+08:00"
+            },
+            {
+              "availableSections": [
+                "sources",
+                "decisions"
+              ],
+              "contentType": "短视频",
+              "createdAt": "2026-09-01T04:00:00+08:00",
+              "entrypoint": "Web 工作台",
+              "platform": "B站",
+              "publicProjectId": "proj_xm_lens_unbox",
+              "publicRunId": "run_xm_lens_unbox",
+              "revision": 1,
+              "status": "pending_manual",
+              "title": "器材测评：新镜头开箱脚本",
+              "trackName": "相机测评",
+              "updatedAt": "2026-09-02T06:00:00+08:00"
+            }
+          ],
+          "nextCursor": null,
+          "revision": 22,
+          "schemaVersion": "media_web_business_pages_v2"
+        }
+      }
+    },
+    "listAdminTenants": {
+      "method": "GET",
+      "path": "/admin/tenants",
+      "payload": {
+        "items": [
+          {
+            "archiveCount": 58,
+            "assetCount": 340,
+            "lastActiveAt": "2026-09-02T08:00:00+08:00",
+            "publicTenantId": "tenant_guanghe_studio",
+            "runCount": 86,
+            "status": "active",
+            "usageCharge": "1280.50",
+            "userCount": 12
+          },
+          {
+            "archiveCount": 145,
+            "assetCount": 960,
+            "lastActiveAt": "2026-09-02T09:00:00+08:00",
+            "publicTenantId": "tenant_chengye_mcn",
+            "runCount": 210,
+            "status": "active",
+            "usageCharge": "5460.00",
+            "userCount": 34
+          },
+          {
+            "archiveCount": 9,
+            "assetCount": 64,
+            "lastActiveAt": "2026-09-02T05:00:00+08:00",
+            "publicTenantId": "tenant_xiaoman_studio",
+            "runCount": 28,
+            "status": "active",
+            "usageCharge": "186.20",
+            "userCount": 3
+          },
+          {
+            "archiveCount": 6,
+            "assetCount": 40,
+            "lastActiveAt": "2026-08-15T10:00:00+08:00",
+            "publicTenantId": "tenant_chaoxi_media",
+            "runCount": 15,
+            "status": "suspended",
+            "usageCharge": "42.00",
+            "userCount": 8
+          },
+          {
+            "archiveCount": 0,
+            "assetCount": 0,
+            "lastActiveAt": null,
+            "publicTenantId": "tenant_shiguang_studio",
+            "runCount": 0,
+            "status": "pending_review",
+            "usageCharge": "0.00",
+            "userCount": 1
+          }
+        ],
+        "nextCursor": null,
+        "revision": 3,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listArtifactSyncBatches": {
+      "method": "GET",
+      "path": "/artifacts/{publicArtifactId}/sync-batches",
+      "payload": {
+        "items": [],
+        "nextCursor": null,
+        "revision": 3,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listAssets": {
+      "method": "GET",
+      "path": "/assets",
+      "payload": {
+        "items": [
+          {
+            "createdAt": "2026-08-27T10:00:00+08:00",
+            "materialStatus": "已下载",
+            "mediaType": "video",
+            "platform": "抖音",
+            "platformHashtags": [
+              "#冬季美食",
+              "#开场"
+            ],
+            "publicAssetId": "asset_hotpot_opening",
+            "qualityStatus": "verified",
+            "sourceLabel": "公开内容采集",
+            "thumbnail": {
+              "durationSeconds": 42,
+              "kind": "descriptor_only",
+              "label": "本机素材，未上传原片"
+            },
+            "title": "火锅开场：三段式钩子参考",
+            "trackNames": [
+              "生活方式"
+            ],
+            "usageCount": 3
+          },
+          {
+            "createdAt": "2026-08-31T10:00:00+08:00",
+            "materialStatus": "已下载",
+            "mediaType": "video",
+            "platform": "本机",
+            "platformHashtags": [],
+            "publicAssetId": "asset_city_night_broll",
+            "qualityStatus": "verified",
+            "sourceLabel": "本机导入",
+            "thumbnail": {
+              "kind": "descriptor_only",
+              "label": "12 段夜景素材，共 4 分 12 秒"
+            },
+            "title": "城市夜景空镜 12 条",
+            "trackNames": [
+              "城市漫步",
+              "相机测评"
+            ],
+            "usageCount": 5
+          },
+          {
+            "createdAt": "2026-08-31T06:00:00+08:00",
+            "materialStatus": "已下载",
+            "mediaType": "image",
+            "platform": "本机",
+            "platformHashtags": [],
+            "publicAssetId": "asset_camera_hands",
+            "qualityStatus": "verified",
+            "sourceLabel": "本机导入",
+            "thumbnail": {
+              "kind": "descriptor_only",
+              "label": "静态图 6 张"
+            },
+            "title": "相机手持特写",
+            "trackNames": [
+              "相机测评"
+            ],
+            "usageCount": 2
+          },
+          {
+            "createdAt": "2026-09-01T02:00:00+08:00",
+            "materialStatus": "待下载",
+            "mediaType": "video",
+            "platform": "本机",
+            "platformHashtags": [
+              "#咖啡"
+            ],
+            "publicAssetId": "asset_coffee_pour",
+            "qualityStatus": "partial",
+            "sourceLabel": "商单素材",
+            "thumbnail": {
+              "kind": "descriptor_only",
+              "label": "品牌方提供，待确认授权范围"
+            },
+            "title": "咖啡注水慢镜",
+            "trackNames": [
+              "咖啡探店"
+            ],
+            "usageCount": 0
+          },
+          {
+            "createdAt": "2026-08-29T10:00:00+08:00",
+            "materialStatus": "已下载",
+            "mediaType": "video",
+            "platform": "本机",
+            "platformHashtags": [],
+            "publicAssetId": "asset_river_walk",
+            "qualityStatus": "verified",
+            "sourceLabel": "本机导入",
+            "thumbnail": {
+              "kind": "descriptor_only",
+              "label": "跟拍 3 段，共 2 分 05 秒"
+            },
+            "title": "苏州河步道跟拍",
+            "trackNames": [
+              "城市漫步"
+            ],
+            "usageCount": 4
+          },
+          {
+            "createdAt": "2026-08-28T10:00:00+08:00",
+            "materialStatus": "已下载",
+            "mediaType": "video",
+            "platform": "本机",
+            "platformHashtags": [],
+            "publicAssetId": "asset_subway_light",
+            "qualityStatus": "verified",
+            "sourceLabel": "本机导入",
+            "thumbnail": {
+              "kind": "descriptor_only",
+              "label": "逆光人流 5 段"
+            },
+            "title": "地铁通道光影",
+            "trackNames": [
+              "城市漫步",
+              "相机测评"
+            ],
+            "usageCount": 6
+          }
+        ],
+        "nextCursor": null,
+        "revision": 63,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listBillingBalancePacks": {
+      "method": "GET",
+      "path": "/billing/balance-packs",
+      "payload": {
+        "items": [
+          {
+            "audience": "all",
+            "balancePackCode": "balance_starter",
+            "creditAmount": 100,
+            "currency": "CNY",
+            "name": "入门包 · 100 元",
+            "priceCny": "100.00",
+            "productKind": "balance_pack",
+            "purchaseAvailable": true,
+            "purchaseUrl": "https://demo.mediaclaw.example/purchase/starter"
+          },
+          {
+            "audience": "personal",
+            "balancePackCode": "balance_creator",
+            "creditAmount": 330,
+            "currency": "CNY",
+            "name": "创作者包 · 300 元",
+            "priceCny": "300.00",
+            "productKind": "balance_pack",
+            "purchaseAvailable": true,
+            "purchaseUrl": "https://demo.mediaclaw.example/purchase/creator"
+          },
+          {
+            "audience": "organization",
+            "balancePackCode": "balance_studio",
+            "creditAmount": 1180,
+            "currency": "CNY",
+            "name": "工作室包 · 1000 元",
+            "priceCny": "1000.00",
+            "productKind": "balance_pack",
+            "purchaseAvailable": false,
+            "purchaseUrl": null
+          }
+        ],
+        "nextCursor": null,
+        "revision": 8,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listBillingUsage": {
+      "method": "GET",
+      "path": "/billing/usage",
+      "payload": {
+        "items": [
+          {
+            "charge": "12.84",
+            "createdAt": "2026-09-02T07:00:00+08:00",
+            "kind": "text",
+            "model": "deepseek-chat",
+            "publicUsageId": "usage_creation_0912",
+            "quantity": 128.4,
+            "status": "succeeded",
+            "unit": "千 token"
+          },
+          {
+            "charge": "6.00",
+            "createdAt": "2026-09-02T05:00:00+08:00",
+            "kind": "image",
+            "model": "gpt-image-2",
+            "publicUsageId": "usage_cover_0912",
+            "quantity": 4,
+            "status": "succeeded",
+            "unit": "张"
+          },
+          {
+            "charge": "14.43",
+            "createdAt": "2026-09-01T10:00:00+08:00",
+            "kind": "text",
+            "model": "claude-sonnet",
+            "publicUsageId": "usage_review_0911",
+            "quantity": 96.2,
+            "status": "succeeded",
+            "unit": "千 token"
+          },
+          {
+            "charge": "-300.00",
+            "createdAt": "2026-08-31T10:00:00+08:00",
+            "kind": "credit",
+            "model": "余额充值",
+            "publicUsageId": "usage_redeem_0910",
+            "quantity": 1,
+            "status": "succeeded",
+            "unit": "次"
+          },
+          {
+            "charge": "-1.25",
+            "createdAt": "2026-08-30T10:00:00+08:00",
+            "kind": "compensation",
+            "model": "deepseek-chat",
+            "publicUsageId": "usage_compensate_0909",
+            "quantity": 12.5,
+            "status": "compensated",
+            "unit": "千 token"
+          },
+          {
+            "charge": "4.21",
+            "createdAt": "2026-08-29T10:00:00+08:00",
+            "kind": "text",
+            "model": "deepseek-chat",
+            "publicUsageId": "usage_pending_0908",
+            "quantity": 42.1,
+            "status": "pending_reconciliation",
+            "unit": "千 token"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 64,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listBusinessOpportunities": {
+      "method": "GET",
+      "path": "/business-opportunities",
+      "payload": {
+        "items": [
+          {
+            "authorizationScope": "站内二次剪辑授权，不含线下投放",
+            "brand": "三顿半（演示）",
+            "contentType": "图文",
+            "platform": "小红书",
+            "product": "秋季限定礼盒",
+            "publicOpportunityId": "opportunity_coffee_autumn",
+            "status": "履约中",
+            "validFrom": "2026-08-28T10:00:00+08:00",
+            "validUntil": "2026-09-22T10:00:00+08:00"
+          },
+          {
+            "authorizationScope": "全平台分发授权",
+            "brand": "光影相机（演示）",
+            "contentType": "长视频",
+            "platform": "B站",
+            "product": "随身相机 X100VI",
+            "publicOpportunityId": "opportunity_camera_brand",
+            "status": "报价确认中",
+            "validFrom": "2026-08-31T10:00:00+08:00",
+            "validUntil": "2026-10-17T10:00:00+08:00"
+          },
+          {
+            "authorizationScope": "仅限账号主页与话题页",
+            "brand": "云宿酒店（演示）",
+            "contentType": "短视频",
+            "platform": "抖音",
+            "product": "城市周末套餐",
+            "publicOpportunityId": "opportunity_travel_hotel",
+            "status": "待排期",
+            "validFrom": "2026-09-09T10:00:00+08:00",
+            "validUntil": "2026-11-01T10:00:00+08:00"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 12,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listContentMetrics": {
+      "method": "GET",
+      "path": "/metrics/content",
+      "payload": {
+        "items": [
+          {
+            "collectedAt": "2026-09-02T04:00:00+08:00",
+            "evidenceQuality": "verified",
+            "metricKey": "曝光量",
+            "metricValue": 18422,
+            "publicSnapshotId": "snapshot_xhs_24h",
+            "publicSubjectId": "post_xhs_autumn_camera",
+            "reviewWindow": "24h",
+            "subjectType": "content",
+            "unit": "次"
+          },
+          {
+            "collectedAt": "2026-09-02T04:00:00+08:00",
+            "evidenceQuality": "verified",
+            "metricKey": "互动量",
+            "metricValue": 1124,
+            "publicSnapshotId": "snapshot_xhs_24h_engage",
+            "publicSubjectId": "post_xhs_autumn_camera",
+            "reviewWindow": "24h",
+            "subjectType": "content",
+            "unit": "次"
+          },
+          {
+            "collectedAt": "2026-09-01T10:00:00+08:00",
+            "evidenceQuality": "verified",
+            "metricKey": "曝光量",
+            "metricValue": 214800,
+            "publicSnapshotId": "snapshot_douyin_7d",
+            "publicSubjectId": "post_douyin_citywalk",
+            "reviewWindow": "7d",
+            "subjectType": "content",
+            "unit": "次"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 11,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listContentProjects": {
+      "method": "GET",
+      "path": "/content-projects",
+      "payload": {
+        "items": [
+          {
+            "artifactCounts": {
+              "决策简报": 1,
+              "创作文档": 2,
+              "素材摘要": 1
+            },
+            "publicProjectId": "proj_autumn_camera",
+            "stage": "creation",
+            "status": "剪辑交接中",
+            "title": "秋日相机测评：X100VI 城市实拍",
+            "updatedAt": "2026-09-02T07:00:00+08:00",
+            "workspaceMode": "personal_web"
+          },
+          {
+            "artifactCounts": {
+              "创作文档": 1,
+              "发布包": 1
+            },
+            "publicProjectId": "proj_citywalk_suzhou",
+            "stage": "publishing",
+            "status": "等待发布确认",
+            "title": "城市漫步·苏州河支线",
+            "updatedAt": "2026-09-02T01:00:00+08:00",
+            "workspaceMode": "personal_web"
+          },
+          {
+            "artifactCounts": {
+              "决策简报": 1,
+              "商单简报": 1
+            },
+            "publicProjectId": "proj_brand_coffee",
+            "stage": "decision",
+            "status": "待人工确认选题",
+            "title": "三顿半秋季联名商单",
+            "updatedAt": "2026-09-01T08:00:00+08:00",
+            "workspaceMode": "personal_web"
+          },
+          {
+            "artifactCounts": {
+              "复盘报告": 1
+            },
+            "publicProjectId": "proj_october_review",
+            "stage": "review",
+            "status": "复盘待确认",
+            "title": "10 月复盘与账号学习",
+            "updatedAt": "2026-08-31T10:00:00+08:00",
+            "workspaceMode": "personal_web"
+          },
+          {
+            "artifactCounts": {
+              "素材摘要": 2
+            },
+            "publicProjectId": "proj_asset_bank",
+            "stage": "assets",
+            "status": "素材整理中",
+            "title": "素材银行：秋季空镜补拍",
+            "updatedAt": "2026-08-30T10:00:00+08:00",
+            "workspaceMode": "personal_web"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 87,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listCreators": {
+      "method": "GET",
+      "path": "/creators",
+      "payload": {
+        "items": [
+          {
+            "accountName": "陆米在街头",
+            "avatarUrl": null,
+            "creatorRole": "对标账号",
+            "expertiseDomains": [
+              "城市漫步"
+            ],
+            "identityTags": [
+              "城市摄影",
+              "步行路线"
+            ],
+            "platform": "小红书",
+            "profileUrl": "https://demo.mediaclaw.example/creators/lumi",
+            "publicCreatorId": "creator_lumi_street",
+            "updatedAt": "2026-09-01T10:00:00+08:00"
+          },
+          {
+            "accountName": "禾也测评",
+            "avatarUrl": null,
+            "creatorRole": "对标账号",
+            "expertiseDomains": [
+              "相机测评"
+            ],
+            "identityTags": [
+              "器材测评",
+              "长视频"
+            ],
+            "platform": "B站",
+            "profileUrl": "https://demo.mediaclaw.example/creators/heye",
+            "publicCreatorId": "creator_heye_camera",
+            "updatedAt": "2026-08-31T10:00:00+08:00"
+          },
+          {
+            "accountName": "摩卡不加糖",
+            "avatarUrl": null,
+            "creatorRole": "商单竞品",
+            "expertiseDomains": [
+              "咖啡探店"
+            ],
+            "identityTags": [
+              "咖啡",
+              "探店"
+            ],
+            "platform": "小红书",
+            "profileUrl": "https://demo.mediaclaw.example/creators/moka",
+            "publicCreatorId": "creator_moka_coffee",
+            "updatedAt": "2026-08-30T10:00:00+08:00"
+          },
+          {
+            "accountName": "轻舟旅行日记",
+            "avatarUrl": null,
+            "creatorRole": "破圈参考",
+            "expertiseDomains": [
+              "旅行 Vlog"
+            ],
+            "identityTags": [
+              "旅行",
+              "剧情化"
+            ],
+            "platform": "抖音",
+            "profileUrl": "https://demo.mediaclaw.example/creators/qingzhou",
+            "publicCreatorId": "creator_qingzhou_travel",
+            "updatedAt": "2026-08-28T10:00:00+08:00"
+          },
+          {
+            "accountName": "新野生活",
+            "avatarUrl": null,
+            "creatorRole": "同赛道创作者",
+            "expertiseDomains": [
+              "生活方式"
+            ],
+            "identityTags": [
+              "生活方式"
+            ],
+            "platform": "抖音",
+            "profileUrl": "https://demo.mediaclaw.example/creators/xinye",
+            "publicCreatorId": "creator_xinye_life",
+            "updatedAt": "2026-08-26T10:00:00+08:00"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 24,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listDecisionSignals": {
+      "method": "GET",
+      "path": "/decision-signals",
+      "payload": {
+        "items": [
+          {
+            "capturedAt": "2026-09-02T05:00:00+08:00",
+            "kind": "hotlist",
+            "platform": "小红书",
+            "publicSignalId": "signal_xhs_hotlist",
+            "qualityStatus": "verified",
+            "rank": 3,
+            "sourceUrl": "https://demo.mediaclaw.example/hotlist/xhs-autumn",
+            "title": "秋天的第一支 vlog"
+          },
+          {
+            "capturedAt": "2026-09-02T04:00:00+08:00",
+            "kind": "hotlist",
+            "platform": "抖音",
+            "publicSignalId": "signal_douyin_hotlist",
+            "qualityStatus": "verified",
+            "rank": 7,
+            "sourceUrl": "https://demo.mediaclaw.example/hotlist/douyin-night",
+            "title": "城市夜骑路线推荐"
+          },
+          {
+            "capturedAt": "2026-09-01T10:00:00+08:00",
+            "kind": "activity",
+            "platform": "小红书",
+            "publicSignalId": "signal_activity_coffee",
+            "qualityStatus": "partial",
+            "rank": 1,
+            "sourceUrl": "https://demo.mediaclaw.example/activity/coffee-season",
+            "title": "平台咖啡季征稿活动"
+          },
+          {
+            "capturedAt": "2026-08-31T10:00:00+08:00",
+            "kind": "research",
+            "platform": "B站",
+            "publicSignalId": "signal_research_camera",
+            "qualityStatus": "partial",
+            "rank": 2,
+            "sourceUrl": "https://demo.mediaclaw.example/research/camera-trend",
+            "title": "随身相机搜索热度环比上升 18%"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 19,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listDecisions": {
+      "method": "GET",
+      "path": "/decisions",
+      "payload": {
+        "items": [
+          {
+            "candidateTitle": "以「口袋里的秋天」作为主标题",
+            "candidateType": "material",
+            "decisionStatus": "confirmed",
+            "evidenceCount": 4,
+            "humanConfirmedAt": "2026-09-01T10:00:00+08:00",
+            "platform": "小红书",
+            "publicDecisionId": "decision_autumn_camera",
+            "trackName": "相机测评",
+            "updatedAt": "2026-09-01T10:00:00+08:00"
+          },
+          {
+            "candidateTitle": "苏州河支线改为夜拍路线",
+            "candidateType": "activity",
+            "decisionStatus": "recommended",
+            "evidenceCount": 3,
+            "humanConfirmedAt": null,
+            "platform": "抖音",
+            "publicDecisionId": "decision_citywalk_route",
+            "trackName": "城市漫步",
+            "updatedAt": "2026-09-02T00:00:00+08:00"
+          },
+          {
+            "candidateTitle": "商单内容改为「一日两杯」结构",
+            "candidateType": "business",
+            "decisionStatus": "candidate",
+            "evidenceCount": 2,
+            "humanConfirmedAt": null,
+            "platform": "小红书",
+            "publicDecisionId": "decision_coffee_brand",
+            "trackName": "咖啡探店",
+            "updatedAt": "2026-09-01T08:00:00+08:00"
+          },
+          {
+            "candidateTitle": "复用火锅开场的三段式钩子",
+            "candidateType": "pattern",
+            "decisionStatus": "recommended",
+            "evidenceCount": 2,
+            "humanConfirmedAt": null,
+            "platform": "抖音",
+            "publicDecisionId": "decision_hotpot_pattern",
+            "trackName": "相机测评",
+            "updatedAt": "2026-09-01T14:00:00+08:00"
+          },
+          {
+            "candidateTitle": "十一假期跨城旅行专题",
+            "candidateType": "activity",
+            "decisionStatus": "rejected",
+            "evidenceCount": 1,
+            "humanConfirmedAt": "2026-08-29T10:00:00+08:00",
+            "platform": "抖音",
+            "publicDecisionId": "decision_travel_reject",
+            "trackName": "旅行 Vlog",
+            "updatedAt": "2026-08-29T10:00:00+08:00"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 44,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listInvitees": {
+      "method": "GET",
+      "path": "/account/invitees",
+      "payload": {
+        "items": [
+          {
+            "displayName": "阿岚（外部剪辑）",
+            "joinedAt": "2026-08-21T10:00:00+08:00",
+            "publicUserId": "user_invitee_alan",
+            "status": "已加入"
+          },
+          {
+            "displayName": "周周（选题助理）",
+            "joinedAt": "2026-08-13T10:00:00+08:00",
+            "publicUserId": "user_invitee_zhou",
+            "status": "已加入"
+          },
+          {
+            "displayName": "林同学（实习）",
+            "joinedAt": "2026-08-31T10:00:00+08:00",
+            "publicUserId": "user_invitee_lin",
+            "status": "待激活"
+          },
+          {
+            "displayName": "默默（摄影）",
+            "joinedAt": "2026-07-19T10:00:00+08:00",
+            "publicUserId": "user_invitee_mo",
+            "status": "已加入"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 7,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listOwnedAccounts": {
+      "method": "GET",
+      "path": "/owned-accounts",
+      "payload": {
+        "items": [
+          {
+            "accountName": "小满在城市",
+            "accountPositioning": "城市漫步 + 随身相机的通勤视角",
+            "avatarUrl": null,
+            "dataSource": "授权接口",
+            "lastSyncedAt": "2026-09-02T08:00:00+08:00",
+            "operationalStatus": "active",
+            "platform": "小红书",
+            "platformAccountId": "xhs_demo_88421",
+            "profileUrl": "https://demo.mediaclaw.example/accounts/xhs",
+            "publicAccountId": "account_xhs_xiaoman",
+            "publicTrackIds": [
+              "track_city_walk",
+              "track_camera_review"
+            ],
+            "responsiblePerson": "小满",
+            "teamName": "个人工作室",
+            "updatedAt": "2026-09-02T08:00:00+08:00"
+          },
+          {
+            "accountName": "小满Vlog",
+            "accountPositioning": "短视频版城市漫步，主打节奏与音乐",
+            "avatarUrl": null,
+            "dataSource": "人工录入",
+            "lastSyncedAt": "2026-09-01T20:00:00+08:00",
+            "operationalStatus": "active",
+            "platform": "抖音",
+            "platformAccountId": "dy_demo_20913",
+            "profileUrl": "https://demo.mediaclaw.example/accounts/douyin",
+            "publicAccountId": "account_douyin_xiaoman",
+            "publicTrackIds": [
+              "track_city_walk",
+              "track_lifestyle"
+            ],
+            "responsiblePerson": "小满",
+            "teamName": "个人工作室",
+            "updatedAt": "2026-09-01T20:00:00+08:00"
+          },
+          {
+            "accountName": "小满的器材柜",
+            "accountPositioning": "长视频测评，季度更新",
+            "avatarUrl": null,
+            "dataSource": "人工录入",
+            "lastSyncedAt": "2026-08-24T10:00:00+08:00",
+            "operationalStatus": "paused",
+            "platform": "B站",
+            "platformAccountId": "bili_demo_5521",
+            "profileUrl": "https://demo.mediaclaw.example/accounts/bilibili",
+            "publicAccountId": "account_bilibili_xiaoman",
+            "publicTrackIds": [
+              "track_camera_review"
+            ],
+            "responsiblePerson": "阿岚",
+            "teamName": "外部剪辑",
+            "updatedAt": "2026-08-24T10:00:00+08:00"
+          },
+          {
+            "accountName": "小满在城市（视频号）",
+            "accountPositioning": "暂停运营，仅做内容同步",
+            "avatarUrl": null,
+            "dataSource": null,
+            "lastSyncedAt": null,
+            "operationalStatus": "disabled",
+            "platform": "视频号",
+            "platformAccountId": null,
+            "profileUrl": null,
+            "publicAccountId": "account_weixin_xiaoman",
+            "publicTrackIds": [],
+            "responsiblePerson": null,
+            "teamName": null,
+            "updatedAt": "2026-08-03T10:00:00+08:00"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 27,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listProjectArtifacts": {
+      "method": "GET",
+      "parameter": "publicProjectId",
+      "path": "/content-projects/{publicProjectId}/artifacts",
+      "payload": {
+        "items": [
+          {
+            "allowedActions": [
+              "read",
+              "edit",
+              "export"
+            ],
+            "artifactType": "creation_document",
+            "bodyAuthority": "internal",
+            "currentRevision": 4,
+            "displayName": "秋日相机测评脚本 v4",
+            "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/3069",
+            "organizationDocumentUrlExpiresAt": "2026-08-26T08:51:00+08:00",
+            "publicArtifactId": "artifact_creation_camera",
+            "publicProjectId": "proj_autumn_camera",
+            "syncStatus": "not_applicable",
+            "updatedAt": "2026-09-02T04:00:00+08:00"
+          },
+          {
+            "allowedActions": [
+              "read",
+              "export"
+            ],
+            "artifactType": "decision_brief",
+            "bodyAuthority": "internal",
+            "currentRevision": 2,
+            "displayName": "选题决策简报：为什么是 X100VI",
+            "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/2168",
+            "organizationDocumentUrlExpiresAt": "2026-08-08T01:01:00+08:00",
+            "publicArtifactId": "artifact_decision_camera",
+            "publicProjectId": "proj_autumn_camera",
+            "syncStatus": "not_applicable",
+            "updatedAt": "2026-09-01T10:00:00+08:00"
+          },
+          {
+            "allowedActions": [
+              "read"
+            ],
+            "artifactType": "asset_digest",
+            "bodyAuthority": "internal",
+            "currentRevision": 1,
+            "displayName": "秋季空镜素材摘要",
+            "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/1661",
+            "organizationDocumentUrlExpiresAt": "2026-08-07T13:04:00+08:00",
+            "publicArtifactId": "artifact_asset_digest_autumn",
+            "publicProjectId": "proj_autumn_camera",
+            "syncStatus": "not_applicable",
+            "updatedAt": "2026-08-31T10:00:00+08:00"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 41,
+        "schemaVersion": "media_web_business_pages_v2"
+      },
+      "payloads": {
+        "proj_autumn_camera": {
+          "items": [
+            {
+              "allowedActions": [
+                "read",
+                "edit",
+                "export"
+              ],
+              "artifactType": "creation_document",
+              "bodyAuthority": "internal",
+              "currentRevision": 4,
+              "displayName": "秋日相机测评脚本 v4",
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/2649",
+              "organizationDocumentUrlExpiresAt": "2026-09-02T03:05:00+08:00",
+              "publicArtifactId": "artifact_creation_camera",
+              "publicProjectId": "proj_autumn_camera",
+              "syncStatus": "not_applicable",
+              "updatedAt": "2026-09-02T04:00:00+08:00"
+            },
+            {
+              "allowedActions": [
+                "read",
+                "export"
+              ],
+              "artifactType": "decision_brief",
+              "bodyAuthority": "internal",
+              "currentRevision": 2,
+              "displayName": "选题决策简报：为什么是 X100VI",
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/3130",
+              "organizationDocumentUrlExpiresAt": "2026-08-23T12:22:00+08:00",
+              "publicArtifactId": "artifact_decision_camera",
+              "publicProjectId": "proj_autumn_camera",
+              "syncStatus": "not_applicable",
+              "updatedAt": "2026-09-01T10:00:00+08:00"
+            },
+            {
+              "allowedActions": [
+                "read"
+              ],
+              "artifactType": "asset_digest",
+              "bodyAuthority": "internal",
+              "currentRevision": 1,
+              "displayName": "秋季空镜素材摘要",
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/7186",
+              "organizationDocumentUrlExpiresAt": "2026-08-25T14:32:00+08:00",
+              "publicArtifactId": "artifact_asset_digest_autumn",
+              "publicProjectId": "proj_autumn_camera",
+              "syncStatus": "not_applicable",
+              "updatedAt": "2026-08-31T10:00:00+08:00"
+            }
+          ],
+          "nextCursor": null,
+          "revision": 41,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "proj_citywalk_suzhou": {
+          "items": [
+            {
+              "allowedActions": [
+                "read",
+                "edit",
+                "export"
+              ],
+              "artifactType": "publishing_package",
+              "bodyAuthority": "internal",
+              "currentRevision": 2,
+              "displayName": "苏州河夜拍发布包",
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/4045",
+              "organizationDocumentUrlExpiresAt": "2026-08-24T11:34:00+08:00",
+              "publicArtifactId": "artifact_publishing_citywalk",
+              "publicProjectId": "proj_citywalk_suzhou",
+              "syncStatus": "not_applicable",
+              "updatedAt": "2026-09-02T01:00:00+08:00"
+            }
+          ],
+          "nextCursor": null,
+          "revision": 41,
+          "schemaVersion": "media_web_business_pages_v2"
+        },
+        "proj_october_review": {
+          "items": [
+            {
+              "allowedActions": [
+                "read",
+                "edit",
+                "export"
+              ],
+              "artifactType": "review_report",
+              "bodyAuthority": "internal",
+              "currentRevision": 3,
+              "displayName": "10 月复盘报告",
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/1243",
+              "organizationDocumentUrlExpiresAt": "2026-08-16T19:45:00+08:00",
+              "publicArtifactId": "artifact_review_october",
+              "publicProjectId": "proj_october_review",
+              "syncStatus": "not_applicable",
+              "updatedAt": "2026-08-31T10:00:00+08:00"
+            }
+          ],
+          "nextCursor": null,
+          "revision": 41,
+          "schemaVersion": "media_web_business_pages_v2"
+        }
+      }
+    },
+    "listPublishingPackages": {
+      "method": "GET",
+      "path": "/publishing/packages",
+      "payload": {
+        "items": [
+          {
+            "artifactDescriptor": {
+              "allowedActions": [
+                "read",
+                "export"
+              ],
+              "artifactType": "creation_document",
+              "bodyAuthority": "internal",
+              "currentRevision": 4,
+              "displayName": "秋日相机测评脚本 v4",
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/2276",
+              "organizationDocumentUrlExpiresAt": "2026-08-11T11:21:00+08:00",
+              "publicArtifactId": "artifact_creation_camera",
+              "publicProjectId": "proj_autumn_camera",
+              "syncStatus": "not_applicable",
+              "updatedAt": "2026-09-02T04:00:00+08:00"
+            },
+            "contentFields": {
+              "封面": "地铁通道逆光人流",
+              "标题": "口袋里的秋天：X100VI 通勤实拍",
+              "正文": "背了 14 天的随身相机，最后留下的三个理由。",
+              "话题": "#随身相机 #城市漫步 #通勤"
+            },
+            "humanChecks": [
+              {
+                "状态": "已确认",
+                "确认人": "小满",
+                "确认项": "封面已定稿"
+              },
+              {
+                "状态": "待确认",
+                "确认人": "",
+                "确认项": "商业内容标记"
+              }
+            ],
+            "platform": "小红书",
+            "publicPackageId": "package_xhs_autumn_camera",
+            "publicRunId": "run_autumn_camera_01",
+            "revision": 3,
+            "ruleChecks": [
+              {
+                "检查项": "话题数量",
+                "结果": "通过",
+                "说明": "3 个，未超过平台上限"
+              },
+              {
+                "检查项": "商业内容标记",
+                "结果": "待确认",
+                "说明": "标题含品牌词，需人工判断"
+              }
+            ],
+            "status": "checking"
+          },
+          {
+            "artifactDescriptor": {
+              "allowedActions": [
+                "read",
+                "export"
+              ],
+              "artifactType": "publishing_package",
+              "bodyAuthority": "internal",
+              "currentRevision": 2,
+              "displayName": "苏州河夜拍发布包",
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/2084",
+              "organizationDocumentUrlExpiresAt": "2026-08-18T04:07:00+08:00",
+              "publicArtifactId": "artifact_publishing_citywalk",
+              "publicProjectId": "proj_citywalk_suzhou",
+              "syncStatus": "not_applicable",
+              "updatedAt": "2026-09-02T01:00:00+08:00"
+            },
+            "contentFields": {
+              "封面": "河岸灯带",
+              "标题": "苏州河夜拍路线，一小时走完",
+              "正文": "从武宁路桥走到外白渡桥的完整路线。",
+              "话题": "#城市漫步 #夜拍"
+            },
+            "humanChecks": [
+              {
+                "状态": "已确认",
+                "确认人": "小满",
+                "确认项": "路线安全提示"
+              }
+            ],
+            "platform": "抖音",
+            "publicPackageId": "package_douyin_citywalk",
+            "publicRunId": "run_citywalk_suzhou_02",
+            "revision": 2,
+            "ruleChecks": [
+              {
+                "检查项": "时长",
+                "结果": "通过",
+                "说明": "58 秒，符合推荐区间"
+              }
+            ],
+            "status": "ready"
+          },
+          {
+            "artifactDescriptor": {
+              "allowedActions": [
+                "read"
+              ],
+              "artifactType": "creation_document",
+              "bodyAuthority": "internal",
+              "currentRevision": 4,
+              "displayName": "秋日相机测评脚本 v4",
+              "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/4553",
+              "organizationDocumentUrlExpiresAt": "2026-08-04T06:09:00+08:00",
+              "publicArtifactId": "artifact_creation_camera",
+              "publicProjectId": "proj_autumn_camera",
+              "syncStatus": "not_applicable",
+              "updatedAt": "2026-09-02T04:00:00+08:00"
+            },
+            "contentFields": {
+              "封面": "机身特写",
+              "标题": "随身相机长测：14 天通勤实拍",
+              "正文": "长视频版本，包含完整参数对比。",
+              "话题": "#器材测评"
+            },
+            "humanChecks": [
+              {
+                "状态": "待确认",
+                "确认人": "",
+                "确认项": "长视频剪辑交接"
+              }
+            ],
+            "platform": "B站",
+            "publicPackageId": "package_bilibili_camera_long",
+            "publicRunId": "run_autumn_camera_01",
+            "revision": 1,
+            "ruleChecks": [
+              {
+                "检查项": "分区选择",
+                "结果": "通过",
+                "说明": "数码 - 摄影摄像"
+              }
+            ],
+            "status": "draft"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 22,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listReviews": {
+      "method": "GET",
+      "path": "/reviews",
+      "payload": {
+        "items": [
+          {
+            "documentUrl": "https://demo.mediaclaw.example/documents/review-autumn",
+            "evidenceQuality": "verified",
+            "humanDecision": null,
+            "modelSuggestion": "开头 3 秒的反问是主要留存来源，建议沉淀为模板。",
+            "platform": "小红书",
+            "postTitle": "口袋里的秋天：X100VI 通勤实拍",
+            "publicPostId": "post_xhs_autumn_camera",
+            "publicReviewId": "review_xhs_autumn_camera",
+            "revision": 2,
+            "snapshot24h": "曝光 18422 · 互动 1124 · 涨粉 213",
+            "snapshot7d": null,
+            "status": "awaiting_confirmation"
+          },
+          {
+            "documentUrl": null,
+            "evidenceQuality": "verified",
+            "humanDecision": "下条内容压缩中段",
+            "modelSuggestion": "完播率在 35 秒处明显下降，建议压缩中段路线讲解。",
+            "platform": "抖音",
+            "postTitle": "苏州河夜拍路线，一小时走完",
+            "publicPostId": "post_douyin_citywalk",
+            "publicReviewId": "review_douyin_citywalk",
+            "revision": 4,
+            "snapshot24h": "曝光 96210 · 互动 5340 · 涨粉 486",
+            "snapshot7d": "曝光 214800 · 互动 9120 · 涨粉 702",
+            "status": "confirmed"
+          },
+          {
+            "documentUrl": null,
+            "evidenceQuality": "unavailable",
+            "humanDecision": null,
+            "modelSuggestion": null,
+            "platform": "B站",
+            "postTitle": "随身相机长测（B站版）",
+            "publicPostId": "post_bilibili_camera",
+            "publicReviewId": "review_bilibili_camera",
+            "revision": 1,
+            "snapshot24h": null,
+            "snapshot7d": null,
+            "status": "pending"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 16,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listRuns": {
+      "method": "GET",
+      "path": "/runs",
+      "payload": {
+        "items": [
+          {
+            "availableSections": [
+              "sources",
+              "decisions",
+              "outputs"
+            ],
+            "contentType": "图文",
+            "createdAt": "2026-08-31T10:00:00+08:00",
+            "entrypoint": "Web 工作台",
+            "platform": "小红书",
+            "publicProjectId": "proj_autumn_camera",
+            "publicRunId": "run_autumn_camera_01",
+            "revision": 4,
+            "status": "creation_ready",
+            "title": "秋日相机测评：X100VI 城市实拍",
+            "trackName": "相机测评",
+            "updatedAt": "2026-09-02T07:00:00+08:00"
+          },
+          {
+            "availableSections": [
+              "sources",
+              "outputs"
+            ],
+            "contentType": "短视频",
+            "createdAt": "2026-08-29T10:00:00+08:00",
+            "entrypoint": "飞书标签",
+            "platform": "抖音",
+            "publicProjectId": "proj_citywalk_suzhou",
+            "publicRunId": "run_citywalk_suzhou_02",
+            "revision": 6,
+            "status": "publishing_ready",
+            "title": "城市漫步·苏州河支线脚本",
+            "trackName": "城市漫步",
+            "updatedAt": "2026-09-02T01:00:00+08:00"
+          },
+          {
+            "availableSections": [
+              "sources",
+              "decisions"
+            ],
+            "contentType": "图文",
+            "createdAt": "2026-09-01T04:00:00+08:00",
+            "entrypoint": "Web 工作台",
+            "platform": "小红书",
+            "publicProjectId": "proj_brand_coffee",
+            "publicRunId": "run_coffee_brief_03",
+            "revision": 2,
+            "status": "awaiting_confirmation",
+            "title": "三顿半联名商单脚本初稿",
+            "trackName": "咖啡探店",
+            "updatedAt": "2026-09-01T08:00:00+08:00"
+          },
+          {
+            "availableSections": [
+              "sources",
+              "decisions",
+              "outputs"
+            ],
+            "contentType": "短视频",
+            "createdAt": "2026-08-27T10:00:00+08:00",
+            "entrypoint": "飞书标签",
+            "platform": "抖音",
+            "publicProjectId": null,
+            "publicRunId": "run_deconstruct_hotpot",
+            "revision": 3,
+            "status": "succeeded",
+            "title": "爆款拆解：冬季火锅开场结构",
+            "trackName": "生活方式",
+            "updatedAt": "2026-08-28T10:00:00+08:00"
+          },
+          {
+            "availableSections": [
+              "outputs"
+            ],
+            "contentType": "图文",
+            "createdAt": "2026-08-30T10:00:00+08:00",
+            "entrypoint": "Web 工作台",
+            "platform": "小红书",
+            "publicProjectId": "proj_october_review",
+            "publicRunId": "run_october_review_05",
+            "revision": 2,
+            "status": "review_ready",
+            "title": "10 月账号复盘",
+            "trackName": "相机测评",
+            "updatedAt": "2026-08-31T10:00:00+08:00"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 52,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listTrackRelationships": {
+      "method": "GET",
+      "path": "/track-relationships",
+      "payload": {
+        "items": [
+          {
+            "fitReason": "路线选题与更新节奏最接近，封面语言可直接对照。",
+            "fitScore": 0.92,
+            "lastEvaluatedAt": "2026-09-01T10:00:00+08:00",
+            "publicCreatorId": "creator_lumi_street",
+            "publicRelationshipId": "relationship_citywalk_lumi",
+            "publicTrackId": "track_city_walk",
+            "revision": 3,
+            "role": "对标账号",
+            "status": "已确认"
+          },
+          {
+            "fitReason": "同为随身相机测评，但长视频占比更高，可参考结构不参考时长。",
+            "fitScore": 0.86,
+            "lastEvaluatedAt": "2026-08-31T10:00:00+08:00",
+            "publicCreatorId": "creator_heye_camera",
+            "publicRelationshipId": "relationship_camera_heye",
+            "publicTrackId": "track_camera_review",
+            "revision": 2,
+            "role": "对标账号",
+            "status": "已确认"
+          },
+          {
+            "fitReason": "同期承接同品牌，需要避开同款拍摄地。",
+            "fitScore": 0.71,
+            "lastEvaluatedAt": "2026-08-30T10:00:00+08:00",
+            "publicCreatorId": "creator_moka_coffee",
+            "publicRelationshipId": "relationship_coffee_moka",
+            "publicTrackId": "track_coffee_shop",
+            "revision": 1,
+            "role": "商单竞品",
+            "status": "待确认"
+          },
+          {
+            "fitReason": "剧情化程度高于本账号，仅参考选题不参考表达。",
+            "fitScore": 0.58,
+            "lastEvaluatedAt": "2026-08-27T10:00:00+08:00",
+            "publicCreatorId": "creator_qingzhou_travel",
+            "publicRelationshipId": "relationship_travel_qingzhou",
+            "publicTrackId": "track_travel_vlog",
+            "revision": 1,
+            "role": "破圈参考",
+            "status": "待确认"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 18,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "listTracks": {
+      "method": "GET",
+      "path": "/tracks",
+      "payload": {
+        "items": [
+          {
+            "aliases": [
+              "citywalk",
+              "城市徒步"
+            ],
+            "artifactCount": 14,
+            "description": "以步行路线串联城市细节，主打通勤人群的周末替代方案。",
+            "name": "城市漫步",
+            "parentPublicTrackId": null,
+            "platforms": [
+              "小红书",
+              "抖音"
+            ],
+            "publicTrackId": "track_city_walk",
+            "status": "主赛道",
+            "updatedAt": "2026-09-02T02:00:00+08:00"
+          },
+          {
+            "aliases": [
+              "camera",
+              "器材"
+            ],
+            "artifactCount": 21,
+            "description": "随身相机与镜头的真实使用体验，强调通勤与旅行场景。",
+            "name": "相机测评",
+            "parentPublicTrackId": null,
+            "platforms": [
+              "小红书",
+              "B站"
+            ],
+            "publicTrackId": "track_camera_review",
+            "status": "主赛道",
+            "updatedAt": "2026-09-02T07:00:00+08:00"
+          },
+          {
+            "aliases": [
+              "coffee"
+            ],
+            "artifactCount": 9,
+            "description": "商单密度最高的支线，主要承接品牌联名。",
+            "name": "咖啡探店",
+            "parentPublicTrackId": "track_city_walk",
+            "platforms": [
+              "小红书"
+            ],
+            "publicTrackId": "track_coffee_shop",
+            "status": "支线",
+            "updatedAt": "2026-09-01T10:00:00+08:00"
+          },
+          {
+            "aliases": [
+              "travel"
+            ],
+            "artifactCount": 6,
+            "description": "季度性内容，用于拉新与账号破圈。",
+            "name": "旅行 Vlog",
+            "parentPublicTrackId": null,
+            "platforms": [
+              "抖音",
+              "B站"
+            ],
+            "publicTrackId": "track_travel_vlog",
+            "status": "观察中",
+            "updatedAt": "2026-08-29T10:00:00+08:00"
+          },
+          {
+            "aliases": [
+              "lifestyle"
+            ],
+            "artifactCount": 4,
+            "description": "承接爆款拆解结论的实验赛道。",
+            "name": "生活方式",
+            "parentPublicTrackId": null,
+            "platforms": [
+              "抖音"
+            ],
+            "publicTrackId": "track_lifestyle",
+            "status": "实验",
+            "updatedAt": "2026-08-27T10:00:00+08:00"
+          }
+        ],
+        "nextCursor": null,
+        "revision": 31,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "pollAccountMonitor": {
+      "method": "POST",
+      "path": "/owned-accounts/{publicAccountId}/monitor/poll",
+      "payload": {
+        "accountName": "演示账号",
+        "checkedAt": null,
+        "detail": null,
+        "enabled": true,
+        "platform": "小红书",
+        "publicAccountId": "演示数据",
+        "recentError": null,
+        "recentPostCount": null,
+        "recentPostLinkResults": [
+          {
+            "canonical_url": null,
+            "content_id": null,
+            "kind": "unknown",
+            "platform": "视频号",
+            "url": "https://demo.mediaclaw.example/url/8063"
+          },
+          {
+            "canonical_url": null,
+            "content_id": null,
+            "kind": "short",
+            "platform": "视频号",
+            "url": "https://demo.mediaclaw.example/url/4805"
+          },
+          {
+            "canonical_url": null,
+            "content_id": null,
+            "kind": "post",
+            "platform": "B站",
+            "url": "https://demo.mediaclaw.example/url/1723"
+          }
+        ],
+        "recentPostUrls": [
+          "https://demo.mediaclaw.example/recentPostUrls/2866",
+          "https://demo.mediaclaw.example/recentPostUrls/9717",
+          "https://demo.mediaclaw.example/recentPostUrls/1858"
+        ],
+        "recentReportSummary": null,
+        "recentStatus": null,
+        "recentTotalInteractions": null,
+        "revision": 10,
+        "schemaVersion": "media_web_business_pages_v2",
+        "status": "unavailable"
+      }
+    },
+    "reconcileAdminBillingOperation": {
+      "method": "POST",
+      "path": "/admin/billing/reconciliation/{operationId}",
+      "payload": {
+        "ok": true,
+        "revision": 7,
+        "schemaVersion": "media_web_business_pages_v2",
+        "updatedAt": "2026-08-11T16:52:00+08:00"
+      }
+    },
+    "recoverAdminFulfillment": {
+      "method": "POST",
+      "path": "/admin/billing/fulfillments/{fulfillmentId}/recover",
+      "payload": {
+        "ok": true,
+        "revision": 18,
+        "schemaVersion": "media_web_business_pages_v2",
+        "updatedAt": "2026-08-17T20:57:00+08:00"
+      }
+    },
+    "redeemBillingCode": {
+      "method": "POST",
+      "path": "/billing/redeem",
+      "payload": {
+        "ok": true,
+        "revision": 17,
+        "schemaVersion": "media_web_business_pages_v2",
+        "updatedAt": "2026-08-19T07:43:00+08:00"
+      }
+    },
+    "refundAdminFulfillment": {
+      "method": "POST",
+      "path": "/admin/billing/fulfillments/{fulfillmentId}/refund",
+      "payload": {
+        "ok": true,
+        "revision": 30,
+        "schemaVersion": "media_web_business_pages_v2",
+        "updatedAt": "2026-08-11T22:01:00+08:00"
+      }
+    },
+    "revokeAdminUpstreamCredential": {
+      "method": "POST",
+      "path": "/admin/upstream-credential/revoke",
+      "payload": {
+        "revision": 19,
+        "schemaVersion": "media_web_business_pages_v2",
+        "summary": {
+          "availableAccountCount": 27,
+          "credentialHealth": "revoked",
+          "lastSyncedAt": null,
+          "pendingReconciliationCount": 31,
+          "revision": 19,
+          "unhealthyAccountCount": 36
+        }
+      }
+    },
+    "revokeAdminUserSessions": {
+      "method": "POST",
+      "path": "/admin/users/{userId}/sessions/revoke-all",
+      "payload": {
+        "ok": true,
+        "revision": 17,
+        "schemaVersion": "media_web_business_pages_v2",
+        "updatedAt": "2026-08-09T05:30:00+08:00"
+      }
+    },
+    "rotateAdminUpstreamCredential": {
+      "method": "POST",
+      "path": "/admin/upstream-credential/rotate",
+      "payload": {
+        "revision": 9,
+        "schemaVersion": "media_web_business_pages_v2",
+        "summary": {
+          "availableAccountCount": 8,
+          "credentialHealth": "unknown",
+          "lastSyncedAt": null,
+          "pendingReconciliationCount": 28,
+          "revision": 9,
+          "unhealthyAccountCount": 15
+        }
+      }
+    },
+    "saveDocumentDraft": {
+      "method": "PUT",
+      "path": "/documents/{publicArtifactId}/draft",
+      "payload": {
+        "data": {
+          "artifactKind": "project_summary",
+          "baseRevision": null,
+          "body": {
+            "blocks": [
+              {
+                "attrs": {},
+                "content": [
+                  {
+                    "marks": [
+                      "inline_code",
+                      "inline_code",
+                      "bold"
+                    ],
+                    "text": "占位说明",
+                    "type": "示例内容"
+                  },
+                  {
+                    "marks": [
+                      "underline",
+                      "italic",
+                      "bold"
+                    ],
+                    "text": "演示数据",
+                    "type": "示例内容"
+                  },
+                  {
+                    "marks": [
+                      "underline",
+                      "underline",
+                      "underline"
+                    ],
+                    "text": "示例内容",
+                    "type": "示例内容"
+                  }
+                ],
+                "id": "blk_524cd01b7b7b458e",
+                "type": "heading_9"
+              },
+              {
+                "attrs": {},
+                "content": [
+                  {
+                    "marks": [
+                      "strike",
+                      "inline_code",
+                      "bold"
+                    ],
+                    "text": "演示数据",
+                    "type": "占位说明"
+                  },
+                  {
+                    "marks": [
+                      "italic",
+                      "underline",
+                      "bold"
+                    ],
+                    "text": "占位说明",
+                    "type": "示例内容"
+                  },
+                  {
+                    "marks": [
+                      "underline",
+                      "inline_code",
+                      "inline_code"
+                    ],
+                    "text": "占位说明",
+                    "type": "占位说明"
+                  }
+                ],
+                "id": "blk_652e6e1527057181",
+                "type": "heading_5"
+              },
+              {
+                "attrs": {},
+                "content": [
+                  {
+                    "marks": [
+                      "inline_code",
+                      "strike",
+                      "inline_code"
+                    ],
+                    "text": "演示数据",
+                    "type": "演示数据"
+                  },
+                  {
+                    "marks": [
+                      "bold",
+                      "italic",
+                      "inline_code"
+                    ],
+                    "text": "演示数据",
+                    "type": "占位说明"
+                  },
+                  {
+                    "marks": [
+                      "italic",
+                      "strike",
+                      "inline_code"
+                    ],
+                    "text": "占位说明",
+                    "type": "示例内容"
+                  }
+                ],
+                "id": "blk_ce82a11258e92751",
+                "type": "heading_8"
+              }
+            ],
+            "schemaVersion": "media_web_business_pages_v2"
+          },
+          "bodyAuthority": "internal",
+          "bodyChecksum": "373192a9a9056a9462680e53b0274f06e9eff6616b9ad00565a2961c233cd1d5",
+          "createdAt": "2026-08-28T23:19:00+08:00",
+          "executionReceipt": {
+            "applied": [
+              {
+                "blockId": "43f5d0a71cc878ec2663762a765a06e307f6d4645af2f7f615b1aee9977af2e3",
+                "operation": "insert_table_row"
+              },
+              {
+                "blockId": "689ff4adf9bd2b2d13d3d5fd0412c78114b963e7c004d3856ccf8438d69d0c4b",
+                "operation": "insert_table_row"
+              },
+              {
+                "blockId": "28b20b9db959fe93adff75f6a9467d6a589b950316472548ce315b004807a9dc",
+                "operation": "replace_text"
+              }
+            ],
+            "appliedCount": 33,
+            "errorCode": "sha256:35c2b6d26344a8cc16743912a84c8cf6070db95c13c5b8b2a01036dfa84e1ed8",
+            "manualActions": [
+              {
+                "blockId": "6cc131ef7c911127c50f8443b3d6f671a62db63b4df5fb4bb0a9aae3708efa89",
+                "reason": "sha256:1821f1ad2be68ccccc08dc4b49cac6f6a035433818a6cde6cd45b5128322197f"
+              },
+              {
+                "blockId": "f360ade30a3f5a164047aa39e572c327cb9f80e9e474128d43ba747e7fb3a82c",
+                "reason": "sha256:712f1eab1a7ad396b5965fcd1cd264fd5a53ec40b5c458c337dc6944ed7de74d"
+              },
+              {
+                "blockId": "3e55760a83747bbd0871b6a3b5acb6606773e912ffd052ad6ccc10414b6f3b55",
+                "reason": "sha256:614366a20066b88a634add838a1dcea421b52f329f203f302d942b1797efb0a9"
+              }
+            ],
+            "protectedSkipped": [
+              "baf3c50891e6e3cdb697d0815028671488521102454ee6d31fa77ae7f601feb4",
+              "8ec1784097a5e4e48eb5f75d87b0f3cbd4c6b464c8472d058b9e4fbd29053156",
+              "2eb74bd6c32417737b30785dea2121b0380380b5b35b0aafc16544323072c2e2"
+            ],
+            "status": "failed"
+          },
+          "publicArtifactId": "465065366c9e1781e4a6e33ce6c1ee722aeb46a92ef446d28871581011c38750",
+          "remoteDocumentVersion": null,
+          "revision": 7,
+          "state": "conflict",
+          "updatedAt": "2026-08-23T20:18:00+08:00"
+        },
+        "revision": 7,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "updateAccountMonitor": {
+      "method": "PUT",
+      "path": "/owned-accounts/{publicAccountId}/monitor",
+      "payload": {
+        "accountName": "演示账号",
+        "checkedAt": null,
+        "detail": null,
+        "enabled": true,
+        "platform": "小红书",
+        "publicAccountId": "示例内容",
+        "recentError": null,
+        "recentPostCount": null,
+        "recentPostLinkResults": [
+          {
+            "canonical_url": null,
+            "content_id": null,
+            "kind": "unknown",
+            "platform": "视频号",
+            "url": "https://demo.mediaclaw.example/url/4132"
+          },
+          {
+            "canonical_url": null,
+            "content_id": null,
+            "kind": "short",
+            "platform": "抖音",
+            "url": "https://demo.mediaclaw.example/url/4503"
+          },
+          {
+            "canonical_url": null,
+            "content_id": null,
+            "kind": "profile",
+            "platform": "B站",
+            "url": "https://demo.mediaclaw.example/url/4221"
+          }
+        ],
+        "recentPostUrls": [
+          "https://demo.mediaclaw.example/recentPostUrls/8240",
+          "https://demo.mediaclaw.example/recentPostUrls/5972",
+          "https://demo.mediaclaw.example/recentPostUrls/2416"
+        ],
+        "recentReportSummary": null,
+        "recentStatus": null,
+        "recentTotalInteractions": null,
+        "revision": 33,
+        "schemaVersion": "media_web_business_pages_v2",
+        "status": "unavailable"
+      }
+    },
+    "updateAdminAffiliateUser": {
+      "method": "PUT",
+      "path": "/admin/affiliate-users/{userId}",
+      "payload": {
+        "revision": 40,
+        "schemaVersion": "media_web_business_pages_v2",
+        "user": {
+          "affiliateEnabled": true,
+          "displayName": "演示用户",
+          "invitationQuota": 28,
+          "publicUserId": "febdfa5c1b8bb050a928a84bc407f1cb6e7e9aef315453f0bcb6b1195db1e597",
+          "status": "待确认",
+          "updatedAt": "2026-08-09T12:49:00+08:00",
+          "usedQuota": 8
+        }
+      }
+    },
+    "updateAdminRegistrationPolicy": {
+      "method": "PUT",
+      "path": "/admin/registration-policy",
+      "payload": {
+        "policy": {
+          "mode": "invite_only",
+          "revision": 27,
+          "updatedAt": "2026-08-17T04:50:00+08:00"
+        },
+        "revision": 27,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "updatePublishingChecks": {
+      "method": "PUT",
+      "path": "/publishing/packages/{publicPackageId}/checks",
+      "payload": {
+        "package": {
+          "artifactDescriptor": {
+            "allowedActions": [
+              "占位说明",
+              "示例内容",
+              "占位说明"
+            ],
+            "artifactType": "decision_brief",
+            "bodyAuthority": "internal",
+            "currentRevision": 9,
+            "displayName": null,
+            "organizationDocumentUrl": "https://demo.mediaclaw.example/organizationDocumentUrl/4681",
+            "organizationDocumentUrlExpiresAt": "2026-08-06T22:04:00+08:00",
+            "publicArtifactId": "df54fe0347cf01431ddf3834bc622d2254c0891ea318edfd824e2f917e5b80b3",
+            "publicProjectId": "4fe7c3109bf92a988dd92be12d4e4d79bdbbec746445fe38a7610bb6d75d152f",
+            "syncStatus": "not_applicable",
+            "updatedAt": "2026-08-24T18:06:00+08:00"
+          },
+          "contentFields": {},
+          "humanChecks": [
+            {},
+            {},
+            {}
+          ],
+          "platform": "小红书",
+          "publicPackageId": "45926734ca72e25619fa49339201b8a27ce29cde5f149479f43bcb677d676111",
+          "publicRunId": "3a62d0bf83dcab93c3145f615fd4b391b2c68f36ea86eb63cd21c79b44391482",
+          "revision": 11,
+          "ruleChecks": [
+            {},
+            {},
+            {}
+          ],
+          "status": "draft"
+        },
+        "revision": 11,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
+    "updateTrackRelationshipStatus": {
+      "method": "PUT",
+      "path": "/track-relationships/{publicRelationshipId}",
+      "payload": {
+        "item": {
+          "fitReason": "示例内容",
+          "fitScore": 30.0,
+          "lastEvaluatedAt": null,
+          "publicCreatorId": "40c61252534fe58a99c9b610b42862af35a674ce1621aa2c8b073ef52ca545b2",
+          "publicRelationshipId": "3df8b6bc7eb4857ebe0d369a55ccd3dc609e7a3c930908dd5a263524a1a4d1c7",
+          "publicTrackId": "ce611d0bdbf326f8c31565beb100ff3108777e4f7be3f52c457986b8d7c29f08",
+          "revision": 19,
+          "role": "对标账号",
+          "status": "待确认"
+        },
+        "revision": 19,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    }
+  },
+  "schemaVersion": "media_web_business_pages_v2"
+}

@@ -1,0 +1,246 @@
+/* MediaClaw 演示站悬浮控制台样式。
+   只有演示构建会引入 DemoConsole.tsx，因此这里所有类名都以
+   demo-console 前缀隔离，避免和 media.css 里的生产类名冲突。
+   颜色一律走 mediaDesignTokens.css 里已存在的 --mg-* 令牌，并各自
+   带 var(token, 兜底值) 形式的兜底色：令牌缺失（比如令牌文件加载
+   失败）时也能保持可读，深浅色主题则完全交给令牌自身切换。 */
+
+.demo-console-trigger {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px 11px 14px;
+  border: none;
+  border-radius: var(--mg-r-full, 999px);
+  color: var(--mg-on-primary, #ffffff);
+  background: var(--mg-primary, #1a9b68);
+  box-shadow: var(--mg-e3, 0 10px 28px rgba(23, 36, 31, 0.18));
+  font-size: var(--mg-text-sm, 0.875rem);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.demo-console-trigger:hover {
+  background: var(--mg-primary-dark, #10684a);
+}
+
+.demo-console-trigger:focus-visible {
+  outline: var(--mg-focus-ring, 3px solid rgba(26, 155, 104, 0.55));
+  outline-offset: 2px;
+}
+
+.demo-console-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 84px;
+  z-index: 90;
+  display: flex;
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(72vh, 640px);
+  flex-direction: column;
+  overflow: auto;
+  border: 1px solid var(--mg-border, #dde5de);
+  border-radius: var(--mg-r-lg, 16px);
+  color: var(--mg-ink, #17241f);
+  background: var(--mg-surface, #ffffff);
+  box-shadow: var(--mg-e4, 0 24px 60px rgba(23, 36, 31, 0.24));
+}
+
+.demo-console-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--mg-border, #dde5de);
+  background: var(--mg-surface, #ffffff);
+}
+
+.demo-console-title {
+  margin: 0 0 4px;
+  color: var(--mg-ink, #17241f);
+  font-size: var(--mg-text-lg, 1.0625rem);
+  font-weight: 700;
+}
+
+.demo-console-subtitle {
+  margin: 0;
+  color: var(--mg-muted, #647169);
+  font-size: var(--mg-text-2xs, 0.75rem);
+  line-height: var(--mg-lh-snug, 1.45);
+}
+
+.demo-console-close {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--mg-border, #dde5de);
+  border-radius: var(--mg-r-sm, 8px);
+  color: var(--mg-muted, #647169);
+  background: var(--mg-bg, #f4f6f1);
+  cursor: pointer;
+}
+
+.demo-console-close:hover {
+  color: var(--mg-ink, #17241f);
+  border-color: var(--mg-border-strong, #cbd7ce);
+}
+
+.demo-console-close:focus-visible {
+  outline: var(--mg-focus-ring, 3px solid rgba(26, 155, 104, 0.55));
+  outline-offset: 1px;
+}
+
+.demo-console-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--mg-border, #dde5de);
+}
+
+.demo-console-section:last-child {
+  border-bottom: 0;
+}
+
+.demo-console-section-title {
+  margin: 0 0 10px;
+  color: var(--mg-ink-soft, #3f4f47);
+  font-size: var(--mg-text-xs, 0.8125rem);
+  font-weight: 600;
+}
+
+.demo-console-persona-list {
+  display: grid;
+  gap: 8px;
+}
+
+.demo-console-persona {
+  display: grid;
+  gap: 2px;
+  padding: 9px 12px;
+  border: 1px solid var(--mg-border, #dde5de);
+  border-radius: var(--mg-r-md, 12px);
+  color: inherit;
+  background: var(--mg-surface, #ffffff);
+  text-align: left;
+  cursor: pointer;
+}
+
+.demo-console-persona:hover {
+  border-color: var(--mg-border-strong, #cbd7ce);
+  background: var(--mg-bg, #f4f6f1);
+}
+
+.demo-console-persona:focus-visible {
+  outline: var(--mg-focus-ring, 3px solid rgba(26, 155, 104, 0.55));
+  outline-offset: 2px;
+}
+
+.demo-console-persona.is-active {
+  border-color: var(--mg-primary, #1a9b68);
+  background: var(--mg-primary-soft, #dff4e8);
+}
+
+.demo-console-persona-label {
+  display: block;
+  color: var(--mg-ink, #17241f);
+  font-size: var(--mg-text-sm, 0.875rem);
+  font-weight: 600;
+}
+
+.demo-console-persona.is-active .demo-console-persona-label {
+  color: var(--mg-primary-dark, #10684a);
+}
+
+.demo-console-persona-detail {
+  display: block;
+  color: var(--mg-muted, #647169);
+  font-size: var(--mg-text-2xs, 0.75rem);
+}
+
+.demo-console-group + .demo-console-group {
+  margin-top: 14px;
+}
+
+.demo-console-group-title {
+  margin: 0 0 6px;
+  color: var(--mg-muted, #647169);
+  font-size: var(--mg-text-2xs, 0.75rem);
+  font-weight: 600;
+}
+
+.demo-console-route-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.demo-console-route-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--mg-r-sm, 8px);
+}
+
+.demo-console-route-item:hover {
+  background: var(--mg-bg, #f4f6f1);
+}
+
+.demo-console-route-link {
+  overflow: hidden;
+  color: var(--mg-ink-soft, #3f4f47);
+  font-size: var(--mg-text-sm, 0.875rem);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-console-route-link:hover {
+  color: var(--mg-primary-dark, #10684a);
+  text-decoration: underline;
+}
+
+.demo-console-route-link:focus-visible {
+  outline: var(--mg-focus-ring, 3px solid rgba(26, 155, 104, 0.55));
+  outline-offset: 2px;
+}
+
+/* 非当前身份可见的条目：降低透明度 + 虚线边框，暗示「能点，但要先切身份」 */
+.demo-console-route-item.is-foreign {
+  border-style: dashed;
+  border-color: var(--mg-border-strong, #cbd7ce);
+  opacity: 0.58;
+}
+
+.demo-console-route-item.is-foreign .demo-console-route-link {
+  color: var(--mg-muted, #647169);
+}
+
+.demo-console-route-hint {
+  flex: 0 0 auto;
+  color: var(--mg-muted, #647169);
+  font-size: var(--mg-text-2xs, 0.75rem);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .demo-console-panel {
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+}
