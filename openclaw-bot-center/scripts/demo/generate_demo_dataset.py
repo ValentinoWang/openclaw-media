@@ -414,6 +414,9 @@ def build_dataset(document: dict[str, Any], digest: str) -> dict[str, Any]:
         "generatedFrom": "contracts/media_web_business_pages.openapi.yaml",
         "contractSha256": digest,
         "generatedAt": DEMO_NOW,
+        # 有状态接口不进数据集，但一致性门禁要能证明「合同里的每个操作都有人负责」，
+        # 所以把这份清单一起写出来。
+        "backendOwnedOperations": sorted(BACKEND_OWNED_OPERATIONS),
         "operations": payloads,
     }
 

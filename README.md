@@ -140,7 +140,7 @@ npm run dev:demo      # 本地预览
 npm run build:demo    # 构建 dist-demo/
 ```
 
-详见 [docs/frontend/media-demo-site.md](docs/frontend/media-demo-site.md)。
+演示站与生产前端共用同一批页面组件，一致性由 `npm run qa:media-demo-parity` 强制（它是 `build:media` 的第一步）：改了生产路由、会话授权或业务合同却没同步演示站，生产构建会失败。改动约定见仓库根目录 [CLAUDE.md](CLAUDE.md)，完整说明见 [docs/frontend/media-demo-site.md](docs/frontend/media-demo-site.md)。
 
 ## 数据与源码边界
 

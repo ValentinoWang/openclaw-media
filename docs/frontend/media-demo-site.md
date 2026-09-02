@@ -170,6 +170,18 @@ cd openclaw-bot-center && MEDIA_DEMO_BASE=/ npm run build:demo
 
 - **与生产分开部署**：建议把演示站单独放在 `/openclaw/media-demo/`，与生产 Media 前端的 `/openclaw/media/`（`dist-media/` 的部署目标）区分开。演示站没有鉴权、没有登录页，页面上也没有任何提示会打断误访问的用户，所以**不得挂在任何可能被误认为生产环境的入口上**（例如生产域名根路径、生产同路径下的子路径、或对外可索引且未标注“演示”的地址）。`index.demo.html` 已经带了 `<meta name="robots" content="noindex, nofollow">` 和演示专属标题/图标，但这只是搜索引擎层面的提示，不能替代部署位置上的隔离。
 
+## 一致性门禁
+
+演示站最大的风险是**改了生产代码却忘了同步原型**，久而久之两边越差越远。`npm run qa:media-demo-parity` 就是拦这件事的：
+
+- 它是 `build:media`（生产构建）的**第一步**，也在 `build:demo` 里跑；
+- 检查生产路由注册表、会话路由授权、业务合同接口、合同摘要、能力目录、认证页入口是否都在演示站里有对应物；
+- 失败时直接指出「该改哪个演示站文件、该跑什么命令」。
+
+也就是说：**改业务代码而不更新原型，生产构建会红**。仓库根目录的 `CLAUDE.md` 用一张对照表写明了「改了什么就要同步什么」，AI 助手和人都以那张表为准。
+
+唯一允许不一致的是演示数据本身：演示世界是虚构的，由 `scripts/demo/demo_seed.py` 维护。
+
 ## 维护约定
 
 - **改了业务合同或页面之后**：先跑 `npm run generate:demo-dataset` 重新生成数据集与能力目录，再跑 `npm run build:demo` 确认演示站仍然能装配出合法数据；提交前建议再跑一次 `npm run validate:demo-dataset` 确认生成结果是确定性的（同一份合同 + 种子应当生成完全相同的文件）。

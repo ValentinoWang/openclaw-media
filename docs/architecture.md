@@ -315,4 +315,20 @@ Any new `media_vault` path outside those roles needs a documented owner and a gu
 - media Bot AGENTS does not document removed selfmedia script paths or numbered workflow framing;
 - `media_vault/` and `data/media_vault/` are treated as code package and data root respectively.
 
+`openclaw-bot-center/scripts/qa/checkMediaDemoParity.ts` runs as the first step of
+`npm run build:media` and must enforce that the no-auth demo prototype still describes the
+production frontend:
+
+- every static and parameterized route the production route registry declares has a page (or a
+  concrete example) in `src/demo/demoRoutes.ts`, and the demo declares no page production lacks;
+- each demo persona's `routeGrants` matches `exactRouteGrants` in `mediaWebApi.ts` item for item;
+- every business operation in the accepted contract is either seeded in the demo dataset or
+  registered as backend-owned (and therefore implemented in `src/demo/demoBackend.ts`);
+- the demo dataset was regenerated for the current contract digest and capability registry;
+- every production auth page entry has a demo preview.
+
+Demo sample content is the only thing allowed to differ: the demo world is fictional and is
+owned by `openclaw-bot-center/scripts/demo/demo_seed.py`, which refuses to emit real identities,
+domains or credentials.
+
 `scripts/qa/openclaw_single_source_runtime_smoke.py` must call the static guard before runtime checks, then verify user services, journal timers, OpenClaw cron scheduler authority, gateway status, runtime config, and the media selfmedia thin entrypoint.

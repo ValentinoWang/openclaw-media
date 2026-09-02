@@ -1,4 +1,17 @@
 {
+  "backendOwnedOperations": [
+    "cancelMediaTask",
+    "confirmMediaTask",
+    "createMediaTask",
+    "createMediaUpload",
+    "getDocumentRevision",
+    "getMediaSession",
+    "getMediaTask",
+    "listMediaCapabilities",
+    "listMediaTaskEvents",
+    "listMediaTasks",
+    "matchMediaCapability"
+  ],
   "contractSha256": "3c31e78dec2dff4b19fbd227385de3e5d276cb0349c2dab25e87e383622b5147",
   "generatedAt": "2026-09-02T10:00:00+08:00",
   "generatedFrom": "contracts/media_web_business_pages.openapi.yaml",
