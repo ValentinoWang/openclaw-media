@@ -118,7 +118,8 @@
    ink 一档在六个色族上都 ≥ 4.9。 */
 .mg-btn-primary {
   border: 1px solid var(--accent-ink);
-  color: #fff;
+  /* --accent-ink 在暗色模式会翻成浅色，写死白字会掉到 1.8:1。 */
+  color: var(--mg-accent-on-ink);
   background: var(--accent-ink);
   box-shadow: 0 10px 22px color-mix(in srgb, var(--accent-base) 24%, transparent);
 }

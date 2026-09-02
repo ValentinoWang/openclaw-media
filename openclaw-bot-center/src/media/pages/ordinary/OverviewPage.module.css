@@ -2,7 +2,15 @@
   margin-bottom: 18px;
 }
 
-.metricCard {
+/* 渲染时这个 div 同时挂了 .mg-metric（全局 primitive 类，见 OverviewPage.tsx 的
+   className={styles.metricCard + ' mg-metric'}）。primitive 把整卡的三行区域定义为
+   'icon body' / 'spark spark'，这里则要三行文案各占一格（label/value/detail），
+   两套 grid-template-areas 都挂在单类选择器上、特异性相同，打包顺序决定谁生效——
+   一旦 primitive 生效，下面几个子元素声明的 label/value/detail 区域名在当前模板里
+   根本不存在，浏览器只能把它们自动放进同一格，于是三行文字叠在一起。这里用 :global()
+   把 primitive 类并入选择器提升特异性，让本模块的三行布局稳定生效，写法与下方
+   .metricIcon 的处理保持一致。 */
+.metricCard:global(.mg-metric) {
   display: grid;
   min-width: 0;
   grid-template-areas: "icon label" "icon value" "icon detail";
