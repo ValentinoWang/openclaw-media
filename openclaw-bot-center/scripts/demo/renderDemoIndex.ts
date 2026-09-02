@@ -328,7 +328,9 @@ export function renderDemoIndex(options: RenderDemoIndexOptions): string {
     background: var(--code-bg);
     border-radius: 6px;
     padding: 2px 6px;
-    width: fit-content;
+    /* 详情页示例的路径很长，必须允许在卡片内换行，否则会顶破卡片边界。 */
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
 
   footer.page-footer {

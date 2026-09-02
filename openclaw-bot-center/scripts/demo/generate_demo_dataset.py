@@ -432,6 +432,23 @@ def align_revisions(payload: Any) -> Any:
     return payload
 
 
+# 演示数据是要对外展示的静态文件，这里守住它不能夹带真实身份、真实域名或凭据。
+FORBIDDEN_CONTENT = {
+    "邮箱地址": re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"),
+    "手机号": re.compile(r"\b1[3-9]\d{9}\b"),
+    "服务器绝对路径": re.compile(r"/(?:home|Users|var|etc|root)/[\w./-]+"),
+    "演示域名之外的链接": re.compile(r"https?://(?!demo\.mediaclaw\.example)[\w.-]+"),
+    "疑似凭据": re.compile(r"(?i)(?:secret|token|password|api[_-]?key)\s*[:=]\s*\S+"),
+}
+
+
+def assert_publishable(rendered: str) -> None:
+    for label, pattern in FORBIDDEN_CONTENT.items():
+        found = sorted(set(pattern.findall(rendered)))
+        if found:
+            raise DatasetError(f"demo dataset contains {label}: {found[:5]}")
+
+
 def merge(base: Any, override: Any) -> Any:
     if base is None:
         return override
@@ -471,6 +488,7 @@ def main() -> int:
 
     document, digest = load_contract(arguments.contract)
     dataset = render(build_dataset(document, digest))
+    assert_publishable(dataset)
     catalog = render(build_catalog())
 
     if arguments.check:

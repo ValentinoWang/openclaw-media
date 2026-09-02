@@ -98,6 +98,15 @@ openclaw-bot-center/scripts/demo/
 
 以上分组与命名与 `src/demo/demoRoutes.ts` 的 `demoRouteGroups` 一致；同一份清单也用来在构建时给每个路由落一个真实 HTML 文件（见下文“部署说明”）。
 
+## 两个入口
+
+演示站有两个可以直接发给别人的入口：
+
+- `<base>/`：应用本身。进去就是当前身份的默认页面，右下角有“演示导航”悬浮面板，可以切身份、跳任意页面。
+- `<base>pages.html`：**纯静态的页面索引**。它由构建脚本 `scripts/demo/renderDemoIndex.ts` 从同一份 `demoRouteGroups` 生成，不依赖 JavaScript，也不加载任何外部资源；适合作为“HTML 跳转版”的对外首页——打开就能看到全部页面清单，点哪个跳哪个。
+
+两个入口用的是同一份路由清单，不存在“索引里有、站里没有”的漂移。
+
 ## 常用命令
 
 以下命令均定义在 `openclaw-bot-center/package.json`，需先 `cd openclaw-bot-center`。
