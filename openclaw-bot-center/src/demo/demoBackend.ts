@@ -567,6 +567,20 @@ function receipt(): JsonObject {
   return { schemaVersion: SCHEMA_VERSION, revision: Math.floor(Date.now() / 1000) % 100000, ok: true, updatedAt: demoNow() }
 }
 
+/** 管理员赠款只提交 opaque publicTenantId，这里把种子里已知的五个租户映射回可读账户名；
+ *  未知租户（管理员手输的其它 id）就直接展示 id 本身，不编造名字。 */
+const ADMIN_TENANT_DISPLAY_NAMES: Record<string, string> = {
+  tenant_guanghe_studio: '林知一（光合内容工作室）',
+  tenant_chengye_mcn: '韩明（城野 MCN）',
+  tenant_xiaoman_studio: '小满（小满个人工作室）',
+  tenant_chaoxi_media: '周敏（潮汐文化传媒）',
+  tenant_shiguang_studio: '何蔚（拾光工作室）',
+}
+
+function tenantDisplayName(publicTenantId: string): string {
+  return ADMIN_TENANT_DISPLAY_NAMES[publicTenantId] ?? publicTenantId
+}
+
 function applyMutation(operationId: string, parameters: Record<string, string>, body: JsonObject): JsonValue | undefined {
   switch (operationId) {
     case 'confirmDecision': {
@@ -640,21 +654,17 @@ function applyMutation(operationId: string, parameters: Record<string, string>, 
       return receipt()
     }
     case 'redeemBillingCode': {
-      const balance = store.getBillingBalance?.payload.balance
+      const entry = store.getBillingBalance
+      const balance = entry?.payload.balance
       if (balance && typeof balance === 'object' && !Array.isArray(balance)) {
         balance.available = (Number(balance.available ?? 0) + 100).toFixed(2)
         balance.asOf = demoNow()
+        balance.revision = Number(balance.revision ?? 1) + 1
+        if (entry) entry.payload.revision = Number(balance.revision)
       }
-      return {
-        ok: true,
-        fulfillment: {
-          fulfillmentId: `demo_fulfillment_${Date.now().toString(36)}`,
-          planCode: 'balance_starter',
-          creditedAmount: '100.00',
-          affiliateAmount: '0.00',
-          status: 'succeeded',
-        },
-      }
+      // 页面把响应按固定 MutationReceipt 类型读：只返回 { ok, fulfillment } 会让回执面板的
+      // 处理时间和状态徽标读到 undefined，所以要按 IF2 回执补全 schemaVersion/revision/updatedAt。
+      return receipt()
     }
     case 'updateAdminRegistrationPolicy': {
       const policy = store.getAdminRegistrationPolicy?.payload.policy
@@ -729,22 +739,27 @@ function applyMutation(operationId: string, parameters: Record<string, string>, 
     case 'createAdminProductMapping':
     case 'recoverAdminFulfillment':
     case 'refundAdminFulfillment': {
+      // productMappings / fulfillments / grants 是 StringValueMap（自由字段），但计费页仍按
+      // 固定英文字段名读取展示值，所以新写入的记录必须用这些字段名，否则新行会和旧种子数据
+      // 一样全部显示成「—」——那样“看到变化”就只剩行数增加，没有可读内容。
       const summary = store.getAdminBillingSummary?.payload.summary
       if (summary && typeof summary === 'object' && !Array.isArray(summary)) {
         if (operationId === 'createAdminBillingGrant' && Array.isArray(summary.grants)) {
+          const publicTenantId = String(body.publicTenantId ?? 'tenant_demo')
           summary.grants.unshift({
-            赠款单号: `grant_demo_${Date.now().toString(36)}`,
-            租户: String(body.publicTenantId ?? 'tenant_demo'),
-            金额: String(body.amount ?? '0.00'),
-            原因: String(body.reason ?? '演示环境补发'),
-            处理时间: demoNow(),
+            ledgerEntryId: `grant_demo_${Date.now().toString(36)}`,
+            publicTenantId,
+            username: tenantDisplayName(publicTenantId),
+            amount: String(body.amount ?? '0.00'),
+            reason: String(body.reason ?? '演示环境补发'),
+            createdAt: demoNow(),
           })
         }
         if (operationId === 'createAdminRedemptionBatch' && Array.isArray(summary.redemptionBatches)) {
           summary.redemptionBatches.unshift({
             batchId: `redemption_demo_${Date.now().toString(36)}`,
             planCode: String(body.planCode ?? 'balance_starter'),
-            status: '已签发',
+            status: 'active',
             codeCount: Number(body.count ?? 10),
             redeemedCount: 0,
             createdAt: demoNow(),
@@ -752,10 +767,12 @@ function applyMutation(operationId: string, parameters: Record<string, string>, 
         }
         if (operationId === 'createAdminProductMapping' && Array.isArray(summary.productMappings)) {
           summary.productMappings.unshift({
-            套餐编码: String(body.planCode ?? 'balance_starter'),
-            外部商品号: String(body.externalProductId ?? 'demo-product'),
-            购买链接: String(body.purchaseUrl ?? 'https://demo.mediaclaw.example/purchase/demo'),
-            更新时间: demoNow(),
+            mappingId: `mapping_demo_${Date.now().toString(36)}`,
+            planCode: String(body.planCode ?? 'balance_starter'),
+            externalProductId: String(body.externalProductId ?? 'demo-product'),
+            purchaseUrl: String(body.purchaseUrl ?? 'https://demo.mediaclaw.example/purchase/demo'),
+            status: 'active',
+            createdAt: demoNow(),
           })
         }
         if (
@@ -763,10 +780,29 @@ function applyMutation(operationId: string, parameters: Record<string, string>, 
           Array.isArray(summary.fulfillments)
         ) {
           const fulfillments = summary.fulfillments as JsonObject[]
-          const target = fulfillments.find((item) => String(item.履约单号 ?? item.fulfillmentId ?? '') === parameters.fulfillmentId)
-          if (target) target.状态 = operationId === 'refundAdminFulfillment' ? '已退款' : '已补发'
+          const target = fulfillments.find((item) => String(item.fulfillmentId ?? item.兑单号 ?? '') === parameters.fulfillmentId)
+          if (target) {
+            if (operationId === 'refundAdminFulfillment') {
+              target.status = 'refunded'
+            } else {
+              // 恢复履约要把之前卡住的到账金额也补上，光改状态徽标看不出钱到账了。
+              target.status = 'succeeded'
+              const plans = Array.isArray(summary.plans) ? (summary.plans as JsonObject[]) : []
+              const plan = plans.find((item) => item.planCode === target.planCode)
+              if (plan) target.creditedAmount = Number(plan.price ?? 0).toFixed(8)
+            }
+          }
         }
         summary.ledgerRevision = Number(summary.ledgerRevision ?? 1) + 1
+      }
+      return receipt()
+    }
+    case 'revokeAdminUserSessions': {
+      // 页面没有展示会话数量的字段，能落地的唯一真实信号就是目标用户记录的 updatedAt。
+      const target = parameters.userId
+      for (const item of listItems('listAdminAffiliateUsers')) {
+        if (item.publicUserId !== target) continue
+        item.updatedAt = demoNow()
       }
       return receipt()
     }

@@ -355,8 +355,12 @@ _DASHBOARD_SUMMARY: dict[str, Any] = {
 
 # --------------------------------------------------------------------------
 # Billing (getAdminBillingSummary). productMappings / fulfillments / grants
-# are StringValueMap (free-form) per the contract, so the keys are
-# business-readable Chinese labels rather than a fixed schema.
+# are StringValueMap (free-form) per the contract, so most keys are
+# business-readable Chinese labels rather than a fixed schema. Fulfillments
+# additionally carry the canonical English fields (fulfillmentId, status,
+# planCode, creditedAmount, publicTenantId) that AdminBillingPage.tsx keys
+# its 履约编号 column and recover/refund row actions off — without those a
+# fulfillment has no selectable id and the two action buttons stay disabled.
 # --------------------------------------------------------------------------
 
 _BILLING_SUMMARY: dict[str, Any] = {
@@ -452,6 +456,12 @@ _BILLING_SUMMARY: dict[str, Any] = {
     ],
     "fulfillments": [
         {
+            "fulfillmentId": "ff_20260828_0091",
+            "publicTenantId": "tenant_guanghe_studio",
+            "planCode": "studio",
+            "creditedAmount": "399.00000000",
+            "status": "completed",
+            "createdAt": ago(days=5),
             "兑单号": "ff_20260828_0091",
             "租户": "光合内容工作室",
             "套餐": "工作室版",
@@ -463,6 +473,13 @@ _BILLING_SUMMARY: dict[str, Any] = {
             "完成时间": ago(days=5),
         },
         {
+            # 卡在上游回调超时、尚未到账 —— 演示「恢复履约」的目标记录。
+            "fulfillmentId": "ff_20260830_0104",
+            "publicTenantId": "tenant_chaoxi_media",
+            "planCode": "starter",
+            "creditedAmount": "0.00000000",
+            "status": "pending",
+            "createdAt": ago(days=3),
             "兑单号": "ff_20260830_0104",
             "租户": "潮汐文化传媒",
             "套餐": "入门版",
@@ -474,6 +491,12 @@ _BILLING_SUMMARY: dict[str, Any] = {
             "创建时间": ago(days=3),
         },
         {
+            "fulfillmentId": "ff_20260815_0053",
+            "publicTenantId": "tenant_chengye_mcn",
+            "planCode": "mcn",
+            "creditedAmount": "1299.00000000",
+            "status": "refunded",
+            "createdAt": ago(days=15),
             "兑单号": "ff_20260815_0053",
             "租户": "城野 MCN",
             "套餐": "MCN 旗舰版",
