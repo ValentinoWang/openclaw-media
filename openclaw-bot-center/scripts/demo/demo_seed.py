@@ -1700,3 +1700,68 @@ PARAMETER_PAYLOADS: dict[str, dict[str, Any]] = {
     "getDecision": {DECISION_CITYWALK: {}, DECISION_CAMERA: {"decision": {"publicDecisionId": DECISION_CAMERA, "decisionStatus": "confirmed"}}},
     **ADMIN_PARAMETER_PAYLOADS,
 }
+
+
+# 详情类读取沿用列表里的同一条记录，避免同一个对象在列表页和详情页对不上。
+SEED["getTrack"] = {"item": SEED["listTracks"]["items"][0]}
+SEED["getCreator"] = {"item": SEED["listCreators"]["items"][0]}
+SEED["getPublishingPackage"] = {"package": SEED["listPublishingPackages"]["items"][0]}
+SEED["createProjectSummary"] = {
+    "item": {
+        "publicArtifactId": ARTIFACT_SUMMARY,
+        "publicProjectId": PROJECT_CAMERA,
+        "artifactType": "project_summary",
+        "displayName": "秋日相机测评 · 项目摘要",
+        "bodyAuthority": "internal",
+        "currentRevision": 1,
+        "syncStatus": "not_applicable",
+        "updatedAt": ago(minutes=2),
+        "allowedActions": ["read", "export"],
+    }
+}
+SEED["createArtifactRevision"] = {
+    "item": {
+        "publicArtifactId": ARTIFACT_CREATION,
+        "publicProjectId": PROJECT_CAMERA,
+        "artifactType": "creation_document",
+        "displayName": "秋日相机测评脚本 v5",
+        "bodyAuthority": "internal",
+        "currentRevision": 5,
+        "syncStatus": "not_applicable",
+        "updatedAt": ago(minutes=1),
+        "allowedActions": ["read", "edit", "export"],
+    }
+}
+
+PARAMETER_PAYLOADS["getTrack"] = {
+    item["publicTrackId"]: {"item": item} for item in SEED["listTracks"]["items"]
+}
+PARAMETER_PAYLOADS["getCreator"] = {
+    item["publicCreatorId"]: {"item": item} for item in SEED["listCreators"]["items"]
+}
+PARAMETER_PAYLOADS["getPublishingPackage"] = {
+    item["publicPackageId"]: {"package": item} for item in SEED["listPublishingPackages"]["items"]
+}
+PARAMETER_PAYLOADS["getOwnedAccount"] = {
+    item["publicAccountId"]: {"item": item} for item in SEED["listOwnedAccounts"]["items"]
+}
+PARAMETER_PAYLOADS["getDecision"] = {
+    item["publicDecisionId"]: {"decision": item} for item in SEED["listDecisions"]["items"]
+}
+
+# 复盘相关的写操作返回的是产物描述，页面会把它当成刚生成的复盘报告展示。
+_REVIEW_ARTIFACT = {
+    "item": {
+        "publicArtifactId": ARTIFACT_REVIEW,
+        "publicProjectId": PROJECT_REVIEW,
+        "artifactType": "review_report",
+        "displayName": "10 月复盘报告",
+        "bodyAuthority": "internal",
+        "currentRevision": 3,
+        "syncStatus": "not_applicable",
+        "updatedAt": ago(minutes=2),
+        "allowedActions": ["read", "edit", "export"],
+    }
+}
+SEED["createReview"] = _REVIEW_ARTIFACT
+SEED["confirmReview"] = _REVIEW_ARTIFACT
