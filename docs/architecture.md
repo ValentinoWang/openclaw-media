@@ -65,6 +65,14 @@ openclaw-bot-center/src/demo/
   must not contain: a second implementation of any business page, route policy, or
     capability behavior — production page components are the only allowed UI source
 
+openclaw-bot-center/scripts/demo/
+  role: demo build tooling
+  owns: the contract-driven dataset generator and its hand-written business seed, the static
+    page-index renderer, and the auth-page preview builder that strips media.login.js and
+    injects a zero-network demo script
+  must not contain: business logic the product depends on, or any real identity, domain or
+    credential in seed content
+
 openclaw-bot-center/dist-demo/
   role: built demo-site artifact
   owns: static files produced by npm run build:demo (no-auth, sample data only)
