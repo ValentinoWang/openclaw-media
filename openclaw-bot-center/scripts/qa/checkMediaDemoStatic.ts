@@ -9,7 +9,7 @@ import { createServer as createHttpServer } from 'node:http'
 import { dirname, extname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium, type Browser } from 'playwright'
-import { demoStaticRoutes } from '../../src/demo/demoRoutes'
+import { demoAuthPages, demoStaticRoutes } from '../../src/demo/demoRoutes'
 import { demoPersonas } from '../../src/demo/demoPersonas'
 import { resolveStudioRouteOutcome, resolveStudioRoutePolicy } from '../../src/media/mediaStudioRoutePolicy'
 
@@ -57,6 +57,10 @@ record(
   existsSync(join(distDemoRoot, 'fonts')) && statSync(join(distDemoRoot, 'fonts')).isDirectory(),
   '产物缺少本地字体目录 dist-demo/fonts/',
 )
+for (const page of demoAuthPages) {
+  const authIndexPath = join(distDemoRoot, page.path.replace(/^\//, '').replace(/\/$/, ''), 'index.html')
+  record(existsSync(authIndexPath), `认证页 ${page.path} 缺少静态文件 ${authIndexPath.replace(distDemoRoot + sep, '')}`)
+}
 for (const route of demoStaticRoutes) {
   const routeIndexPath = join(distDemoRoot, route.replace(/^\//, ''), 'index.html')
   record(existsSync(routeIndexPath), `路由 ${route} 缺少对应的静态文件 dist-demo${route}/index.html`)
@@ -264,6 +268,58 @@ try {
       )
     }
 
+    await context.close()
+  }
+
+  // 认证页不是 React 路由：它们是独立静态页面，这里单独确认结构、演示横幅
+  // 和「提交被拦截」这三件事都还在。
+  {
+    const context = await browser.newContext({ viewport })
+    const page = await context.newPage()
+    let telemetry = freshTelemetry()
+    page.on('console', (message) => {
+      if (message.type() !== 'error' || isNoise(message.text())) return
+      telemetry.consoleErrors.push(message.text())
+    })
+    page.on('pageerror', (error) => {
+      if (isNoise(error.message)) return
+      telemetry.pageErrors.push(error.message)
+    })
+    page.on('request', (request) => {
+      const requestUrl = new URL(request.url())
+      if (requestUrl.protocol === 'data:' || requestUrl.protocol === 'blob:') return
+      if (requestUrl.origin === origin) return
+      telemetry.offOriginRequests.push(`${request.method()} ${request.url()}`)
+    })
+
+    for (const authPage of demoAuthPages) {
+      totalVisits += 1
+      telemetry = freshTelemetry()
+      const label = `认证页 ${authPage.path}（${authPage.label}）`
+      try {
+        const response = await page.goto(`${origin}${demoBase}${authPage.path.replace(/^\//, '')}`, {
+          waitUntil: 'domcontentloaded',
+        })
+        record(response?.status() === 200, `${label}：页面未返回 200（实际 ${response?.status() ?? '无响应'}）`)
+        const bodyText = await page.locator('body').innerText()
+        record(bodyText.includes('静态演示'), `${label}：缺少演示横幅，可能没有注入演示脚本`)
+        record(
+          !bodyText.includes('undefined'),
+          `${label}：页面文本里出现 undefined，说明改写产物有问题`,
+        )
+        await page.screenshot({ path: join(outputRoot, `auth-${routeSlug(authPage.path)}.png`), fullPage: true })
+      } catch (error) {
+        failures.push(`${label}：走查过程中抛出异常 - ${error instanceof Error ? error.message : String(error)}`)
+      }
+      record(
+        telemetry.pageErrors.length === 0,
+        `${label}：出现未捕获的页面异常 -\n${telemetry.pageErrors.map((line) => `    ${line}`).join('\n')}`,
+      )
+      record(
+        telemetry.offOriginRequests.length === 0,
+        `${label}：页面发出了演示站以外的网络请求 -\n${telemetry.offOriginRequests.map((line) => `    ${line}`).join('\n')}`,
+      )
+    }
     await context.close()
   }
 } finally {
