@@ -244,3 +244,23 @@
     width: auto;
   }
 }
+
+.demo-console-index-link {
+  display: block;
+  padding: 8px 10px;
+  border: 1px solid var(--mg-border, #dde5de);
+  border-radius: var(--mg-r-sm, 8px);
+  color: var(--mg-primary-dark, #10684a);
+  font-size: var(--mg-text-sm, 0.875rem);
+  text-align: center;
+  text-decoration: none;
+}
+
+.demo-console-index-link:hover {
+  background: var(--mg-bg, #f4f6f1);
+}
+
+.demo-console-index-link:focus-visible {
+  outline: var(--mg-focus-ring, 3px solid rgba(26, 155, 104, 0.55));
+  outline-offset: 2px;
+}

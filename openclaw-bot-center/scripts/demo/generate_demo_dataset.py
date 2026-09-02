@@ -114,6 +114,8 @@ class Sampler:
             return self.sample_array(schema, pointer, override)
         if override is not None:
             return override
+        if "const" in schema:
+            return schema["const"]
         if kind == "boolean":
             return stable_index(pointer, 4) != 0
         if kind in {"integer", "number"}:
@@ -187,7 +189,14 @@ class Sampler:
             return [self.sample(items, f"{pointer}[{index}]", value) for index, value in enumerate(override)]
         # 没有种子的列表默认给 3 条，避免演示站出现整页空态。
         size = LIST_SIZES.get(pointer, max(schema.get("minItems", 0), 3))
-        return [self.sample(items, f"{pointer}[{index}]") for index in range(size)]
+        sampled = [self.sample(items, f"{pointer}[{index}]") for index in range(size)]
+        if schema.get("uniqueItems"):
+            unique: list[Any] = []
+            for value in sampled:
+                if value not in unique:
+                    unique.append(value)
+            return unique
+        return sampled
 
     def sample_number(self, schema: dict[str, Any], pointer: str, kind: str) -> Any:
         minimum = schema.get("minimum", 0)
@@ -197,6 +206,8 @@ class Sampler:
         return int(value) if kind == "integer" else round(float(value), 2)
 
     def sample_string(self, schema: dict[str, Any], pointer: str, nullable: bool) -> Any:
+        if "const" in schema:
+            return schema["const"]
         if "enum" in schema:
             choices = [item for item in schema["enum"] if item is not None]
             if not choices:
@@ -261,6 +272,14 @@ class Validator:
             return
         if "enum" in schema and value not in schema["enum"]:
             raise DatasetError(f"{pointer}: {value!r} is outside {schema['enum']}")
+        if "const" in schema and value != schema["const"]:
+            raise DatasetError(f"{pointer}: {value!r} is not the constant {schema['const']!r}")
+        if isinstance(value, list) and schema.get("uniqueItems"):
+            seen: list[Any] = []
+            for item in value:
+                if item in seen:
+                    raise DatasetError(f"{pointer}: duplicate item {item!r} in a uniqueItems array")
+                seen.append(item)
         concrete = [item for item in types if item != "null"]
         kind = concrete[0] if concrete else self.sampler.infer_kind(schema, value)
         if kind == "object":
@@ -322,12 +341,12 @@ def load_contract(path: Path) -> tuple[dict[str, Any], str]:
 
 
 def response_schema(operation: dict[str, Any]) -> dict[str, Any] | None:
+    """First JSON success response. Binary responses (document resources) have no dataset entry."""
     responses = operation.get("responses", {})
-    for status in ("200", "201", 200, 201):
-        entry = responses.get(status)
-        if not entry:
+    for status, entry in responses.items():
+        if not str(status).startswith("2"):
             continue
-        content = entry.get("content", {}).get("application/json")
+        content = (entry or {}).get("content", {}).get("application/json")
         if content and "schema" in content:
             return content["schema"]
     return None

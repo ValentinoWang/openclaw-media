@@ -138,7 +138,11 @@ function newTask(capabilityId: string, variantId: string, params: JsonObject, re
   }
 }
 
-function settleTask(task: DemoTask, status: 'succeeded' | 'cancelled' | 'pending_manual'): void {
+function settleTask(
+  task: DemoTask,
+  status: 'succeeded' | 'cancelled' | 'pending_manual',
+  resultReceipt: JsonValue = null,
+): void {
   task.status = status
   task.settlementStage = status === 'succeeded' ? 'settled' : status
   task.terminal = true
@@ -152,7 +156,7 @@ function settleTask(task: DemoTask, status: 'succeeded' | 'cancelled' | 'pending
           status: 'completed',
           reply: `${task.summary} 已在演示环境完成。真实环境会在这里返回产物链接与证据。`,
           links: [{ label: '查看演示产物', url: 'https://demo.mediaclaw.example/artifacts/demo' }],
-          receipt: null,
+          receipt: resultReceipt,
         }
       : {
           ok: false,
@@ -574,16 +578,18 @@ function applyMutation(operationId: string, parameters: Record<string, string>, 
         item.humanConfirmedAt = demoNow()
         item.updatedAt = demoNow()
       }
+      const updated = listItems('listDecisions').find((item) => item.publicDecisionId === target)
       const detail = store.getDecision
-      if (detail) {
+      if (detail && updated) {
         const keyed = detail.payloads?.[target] ?? detail.payload
-        const decisionPayload = keyed.decision
-        if (decisionPayload && typeof decisionPayload === 'object' && !Array.isArray(decisionPayload)) {
-          decisionPayload.decisionStatus = decision === 'rejected' ? 'rejected' : 'confirmed'
-          decisionPayload.humanConfirmedAt = demoNow()
-        }
+        keyed.decision = { ...updated }
       }
-      return receipt()
+      // 页面会读回 decision 字段做校验，只给通用回执会被判定为「字段未开放」。
+      return {
+        schemaVersion: SCHEMA_VERSION,
+        revision: Number(updated?.evidenceCount ?? 1) + 1,
+        decision: updated ?? null,
+      }
     }
     case 'confirmReview': {
       const target = parameters.publicReviewId
@@ -597,13 +603,21 @@ function applyMutation(operationId: string, parameters: Record<string, string>, 
     }
     case 'updatePublishingChecks': {
       const target = parameters.publicPackageId
-      for (const item of listItems('listPublishingPackages')) {
-        if (item.publicPackageId !== target) continue
-        if (Array.isArray(body.checks)) item.humanChecks = body.checks as JsonValue[]
-        item.status = 'ready'
-        item.revision = Number(item.revision ?? 1) + 1
+      const updated = listItems('listPublishingPackages').find((item) => item.publicPackageId === target)
+      if (!updated) return undefined
+      if (Array.isArray(body.checks)) updated.humanChecks = body.checks as JsonValue[]
+      const outstanding = Array.isArray(updated.humanChecks)
+        ? (updated.humanChecks as JsonObject[]).some((check) => String(check.状态 ?? check.status ?? '') !== '已确认')
+        : false
+      updated.status = outstanding ? 'checking' : 'ready'
+      updated.revision = Number(updated.revision ?? 1) + 1
+      const detail = store.getPublishingPackage
+      if (detail) {
+        const keyed = detail.payloads?.[target] ?? detail.payload
+        keyed.package = { ...updated }
       }
-      return receipt()
+      // 发布页保存后直接读 response.package，缺字段会让整页崩掉。
+      return { schemaVersion: SCHEMA_VERSION, revision: Number(updated.revision), package: updated }
     }
     case 'updateAccountMonitor': {
       const monitor = store.getAccountMonitor
@@ -662,6 +676,20 @@ function applyMutation(operationId: string, parameters: Record<string, string>, 
       }
       return undefined
     }
+    case 'createAdminAdmissionBatch': {
+      const created: JsonObject = {
+        batchId: `batch_demo_${Date.now().toString(36)}`,
+        name: String(body.name ?? '演示准入批次'),
+        status: '生效中',
+        codeCount: Number(body.codeCount ?? 10),
+        usedCount: 0,
+        expiresAt: new Date(Date.now() + 30 * 86400 * 1000).toISOString(),
+        createdAt: demoNow(),
+      }
+      // 页面创建后会在列表里读回同一个批次，静态回执对不上就会报「未读到服务端返回的批次」。
+      listItems('listAdminAdmissionBatches').unshift(created)
+      return { schemaVersion: SCHEMA_VERSION, revision: 1, batch: created }
+    }
     case 'disableAdminAdmissionBatch': {
       const target = parameters.batchId
       for (const item of listItems('listAdminAdmissionBatches')) {
@@ -670,6 +698,86 @@ function applyMutation(operationId: string, parameters: Record<string, string>, 
         return { schemaVersion: SCHEMA_VERSION, revision: 1, batch: item }
       }
       return undefined
+    }
+    case 'rotateAdminUpstreamCredential':
+    case 'revokeAdminUpstreamCredential':
+    case 'reconcileAdminBillingOperation': {
+      const entry = store.getAdminUpstreams
+      const summary = entry?.payload.summary
+      if (summary && typeof summary === 'object' && !Array.isArray(summary)) {
+        // 运维动作必须真的改变随后读回的汇总，否则「成功」提示是误导。
+        if (operationId === 'rotateAdminUpstreamCredential') {
+          summary.credentialHealth = 'healthy'
+          summary.unhealthyAccountCount = 0
+        }
+        if (operationId === 'revokeAdminUpstreamCredential') {
+          summary.credentialHealth = 'revoked'
+          summary.availableAccountCount = 0
+        }
+        if (operationId === 'reconcileAdminBillingOperation') summary.pendingReconciliationCount = 0
+        summary.lastSyncedAt = demoNow()
+        summary.revision = Number(summary.revision ?? 1) + 1
+        if (entry) entry.payload.revision = Number(summary.revision)
+      }
+      // 对账走通用回执，凭证轮换/撤销则要求返回完整汇总，页面会当场校验。
+      if (operationId === 'reconcileAdminBillingOperation') return receipt()
+      if (!summary || !entry) return undefined
+      return { schemaVersion: SCHEMA_VERSION, revision: Number(entry.payload.revision), summary }
+    }
+    case 'createAdminBillingGrant':
+    case 'createAdminRedemptionBatch':
+    case 'createAdminProductMapping':
+    case 'recoverAdminFulfillment':
+    case 'refundAdminFulfillment': {
+      const summary = store.getAdminBillingSummary?.payload.summary
+      if (summary && typeof summary === 'object' && !Array.isArray(summary)) {
+        if (operationId === 'createAdminBillingGrant' && Array.isArray(summary.grants)) {
+          summary.grants.unshift({
+            赠款单号: `grant_demo_${Date.now().toString(36)}`,
+            租户: String(body.publicTenantId ?? 'tenant_demo'),
+            金额: String(body.amount ?? '0.00'),
+            原因: String(body.reason ?? '演示环境补发'),
+            处理时间: demoNow(),
+          })
+        }
+        if (operationId === 'createAdminRedemptionBatch' && Array.isArray(summary.redemptionBatches)) {
+          summary.redemptionBatches.unshift({
+            batchId: `redemption_demo_${Date.now().toString(36)}`,
+            planCode: String(body.planCode ?? 'balance_starter'),
+            status: '已签发',
+            codeCount: Number(body.count ?? 10),
+            redeemedCount: 0,
+            createdAt: demoNow(),
+          })
+        }
+        if (operationId === 'createAdminProductMapping' && Array.isArray(summary.productMappings)) {
+          summary.productMappings.unshift({
+            套餐编码: String(body.planCode ?? 'balance_starter'),
+            外部商品号: String(body.externalProductId ?? 'demo-product'),
+            购买链接: String(body.purchaseUrl ?? 'https://demo.mediaclaw.example/purchase/demo'),
+            更新时间: demoNow(),
+          })
+        }
+        if (
+          (operationId === 'recoverAdminFulfillment' || operationId === 'refundAdminFulfillment') &&
+          Array.isArray(summary.fulfillments)
+        ) {
+          const fulfillments = summary.fulfillments as JsonObject[]
+          const target = fulfillments.find((item) => String(item.履约单号 ?? item.fulfillmentId ?? '') === parameters.fulfillmentId)
+          if (target) target.状态 = operationId === 'refundAdminFulfillment' ? '已退款' : '已补发'
+        }
+        summary.ledgerRevision = Number(summary.ledgerRevision ?? 1) + 1
+      }
+      return receipt()
+    }
+    case 'pollAccountMonitor': {
+      // 轮询必须回到保存后的监控状态，不能用一份写死的「不可用」把结果覆盖掉。
+      const monitor = store.getAccountMonitor
+      if (!monitor) return undefined
+      const payload = monitor.payloads?.[parameters.publicAccountId] ?? monitor.payload
+      payload.checkedAt = demoNow()
+      payload.recentStatus = '已回读'
+      return payload
     }
     case 'saveDocumentDraft': {
       const entry = store.getDocumentBody
@@ -709,6 +817,22 @@ function handleStateful(operationId: string, parameters: Record<string, string>,
       return json({ schemaVersion: SCHEMA_VERSION, revision: 1, session: activePersona().session as unknown as JsonValue })
     case 'listMediaCapabilities':
       return json(catalog as unknown as JsonValue)
+    case 'getDocumentRevision': {
+      // 保存后页面会立刻按版本号读回正文核对；返回静态样例会让核对永远失败。
+      const entry = store.getDocumentBody
+      if (!entry) return failure(404, 'resource_not_found', '未找到该文档。')
+      const payload = entry.payloads?.[parameters.publicArtifactId] ?? entry.payload
+      const data = payload.data
+      if (!data || typeof data !== 'object' || Array.isArray(data)) return failure(404, 'resource_not_found', '未找到该文档。')
+      const revision = data.revision
+      if (!revision || typeof revision !== 'object' || Array.isArray(revision)) {
+        return failure(404, 'resource_not_found', '未找到该版本。')
+      }
+      if (String(revision.revision) !== parameters.revision) {
+        return failure(404, 'resource_not_found', '未找到该版本。')
+      }
+      return json(adaptToPersona({ schemaVersion: SCHEMA_VERSION, revision: Number(revision.revision), data: revision }))
+    }
     case 'matchMediaCapability': {
       const query = String(body.query ?? '')
       const matched =
@@ -744,15 +868,25 @@ function handleStateful(operationId: string, parameters: Record<string, string>,
       const params = (body.params ?? {}) as JsonObject
       const supplied = body.confirmationReceipt ?? null
       const task = newTask(capabilityId, variantId, params, supplied)
-      if (capabilityId === 'universal_deletion' && variantId !== 'confirm') {
+      if (capabilityId === 'universal_deletion') {
+        // 删除分两步：预览任务把影响面放在 result.receipt 里，确认任务带着同一份
+        // 回执停在待确认状态，等页面点「确认删除」再结算。
         const targets = String(params.id ?? '')
           .split(/[、,，]/)
           .map((value) => value.trim())
           .filter(Boolean)
-        task.confirmationReceipt = deletionReceipt(task.taskId, targets.length ? targets : ['demo_target_0001'])
+        const targetIds = targets.length ? targets : ['demo_target_0001']
+        if (variantId !== 'confirm') {
+          task.confirmation = { state: 'not_required', required: false, note: '', decidedAt: '' }
+          settleTask(task, 'succeeded', deletionReceipt(task.taskId, targetIds))
+          tasks.set(task.taskId, task)
+          return json(task as unknown as JsonValue)
+        }
+        task.confirmationReceipt = supplied ?? deletionReceipt(task.taskId, targetIds)
         task.confirmation = { state: 'required', required: true, note: '', decidedAt: '' }
-        settleTask(task, 'succeeded')
-        task.confirmation = { state: 'required', required: true, note: '', decidedAt: '' }
+        task.status = 'awaiting_confirmation'
+        task.settlementStage = 'awaiting_confirmation'
+        task.progress = 80
         tasks.set(task.taskId, task)
         return json(task as unknown as JsonValue)
       }

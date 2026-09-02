@@ -91,6 +91,12 @@ export default function DemoConsole() {
           </div>
 
           <div className="demo-console-section">
+            <a className="demo-console-index-link" href={withBase('/pages.html')}>
+              打开静态页面索引（无需 JavaScript）
+            </a>
+          </div>
+
+          <div className="demo-console-section">
             <p className="demo-console-section-title">身份切换</p>
             <div className="demo-console-persona-list">
               {demoPersonas.map((persona) => {

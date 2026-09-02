@@ -119,6 +119,27 @@
         "schemaVersion": "media_web_business_pages_v2"
       }
     },
+    "createDocumentExport": {
+      "method": "POST",
+      "path": "/documents/{publicArtifactId}/exports",
+      "payload": {
+        "data": {
+          "contentChecksum": null,
+          "createdAt": "2026-09-02T09:59:00+08:00",
+          "format": "docx",
+          "publicArtifactId": "artifact_creation_camera",
+          "publicExportId": "export_creation_camera_docx",
+          "rendererVersion": "docx-2026.08",
+          "revision": 4,
+          "sourceBodyChecksum": "d27d0a3dc69a4bd28584dcc8d2ccccc5af0348e177937c9ecda4931932baa0b4",
+          "state": "queued",
+          "templateVersion": "v3",
+          "updatedAt": "2026-09-02T09:59:00+08:00"
+        },
+        "revision": 4,
+        "schemaVersion": "media_web_business_pages_v2"
+      }
+    },
     "createMetricImport": {
       "method": "POST",
       "path": "/metric-imports",
@@ -1011,13 +1032,13 @@
       "payload": {
         "entry": {
           "displayLabel": "演示数据",
-          "entryId": "示例内容",
+          "entryId": "current",
           "expiresAt": "2026-08-10T12:53:00+08:00",
           "maskedIdentity": "占位说明"
         },
         "fallback": "password",
         "mode": "personal",
-        "schemaVersion": "media.auth.entry.v1",
+        "schemaVersion": "media_auth_entry_state_v1",
         "state": "none"
       }
     },
@@ -2103,18 +2124,18 @@
       "payload": {
         "data": {
           "contentChecksum": null,
-          "createdAt": "2026-08-23T10:06:00+08:00",
-          "format": "pdf",
-          "publicArtifactId": "c73dd06fb90856b3cdc942670d8e883ac847f07a4946ec604a883fa94f90cf21",
-          "publicExportId": "3ad66bf6b661ee4a0fa38911c93816cff8d9d6d96d2ffa4d6918368a4eb911b0",
+          "createdAt": "2026-09-02T09:57:00+08:00",
+          "format": "docx",
+          "publicArtifactId": "artifact_creation_camera",
+          "publicExportId": "export_creation_camera_docx",
           "rendererVersion": "docx-2026.08",
-          "revision": 28,
+          "revision": 4,
           "sourceBodyChecksum": "cb8b8d65a59df423652b13a2e36f54f4981003e93fc4f632804a25a2f0c3f6f7",
-          "state": "queued",
+          "state": "ready",
           "templateVersion": "v3",
-          "updatedAt": "2026-08-30T14:44:00+08:00"
+          "updatedAt": "2026-09-02T09:59:00+08:00"
         },
-        "revision": 28,
+        "revision": 4,
         "schemaVersion": "media_web_business_pages_v2"
       }
     },
@@ -2124,177 +2145,12 @@
       "payload": {
         "data": {
           "contentChecksum": "960f8b35fab615a82ea215da4d9109a92af658659d7f2437346a33813fa4ef94",
-          "downloadUrl": "https://demo.mediaclaw.example/downloadUrl/4968",
-          "expiresAt": "2026-08-21T14:49:00+08:00",
+          "downloadUrl": "data:text/plain;charset=utf-8,MediaClaw%20%E6%BC%94%E7%A4%BA%E7%AB%99%EF%BC%9A%E8%BF%99%E9%87%8C%E4%B8%8D%E6%8F%90%E4%BE%9B%E7%9C%9F%E5%AE%9E%E7%9A%84%E6%96%87%E6%A1%A3%E5%AF%BC%E5%87%BA%E6%96%87%E4%BB%B6%E3%80%82%E7%9C%9F%E5%AE%9E%E7%8E%AF%E5%A2%83%E4%BC%9A%E8%BF%94%E5%9B%9E%E5%B8%A6%E6%A0%A1%E9%AA%8C%E5%80%BC%E7%9A%84%20docx%2Fpdf%E3%80%82",
+          "expiresAt": "2026-09-02T12:00:00+08:00",
           "format": "docx",
-          "publicExportId": "0d63f323eaad6558628aa0bf193f1ca75733d206c787c05934578f37650e61d6"
+          "publicExportId": "export_creation_camera_docx"
         },
         "revision": 24,
-        "schemaVersion": "media_web_business_pages_v2"
-      }
-    },
-    "getDocumentRevision": {
-      "method": "GET",
-      "path": "/documents/{publicArtifactId}/revisions/{revision}",
-      "payload": {
-        "data": {
-          "artifactKind": "research_snapshot",
-          "baseRevision": null,
-          "body": {
-            "blocks": [
-              {
-                "attrs": {},
-                "content": [
-                  {
-                    "marks": [
-                      "italic",
-                      "underline",
-                      "inline_code"
-                    ],
-                    "text": "演示数据",
-                    "type": "示例内容"
-                  },
-                  {
-                    "marks": [
-                      "strike",
-                      "inline_code",
-                      "strike"
-                    ],
-                    "text": "占位说明",
-                    "type": "示例内容"
-                  },
-                  {
-                    "marks": [
-                      "inline_code",
-                      "bold",
-                      "bold"
-                    ],
-                    "text": "占位说明",
-                    "type": "演示数据"
-                  }
-                ],
-                "id": "blk_bed349f68a935c8f",
-                "type": "heading_9"
-              },
-              {
-                "attrs": {},
-                "content": [
-                  {
-                    "marks": [
-                      "italic",
-                      "inline_code",
-                      "strike"
-                    ],
-                    "text": "演示数据",
-                    "type": "示例内容"
-                  },
-                  {
-                    "marks": [
-                      "strike",
-                      "inline_code",
-                      "italic"
-                    ],
-                    "text": "占位说明",
-                    "type": "占位说明"
-                  },
-                  {
-                    "marks": [
-                      "strike",
-                      "strike",
-                      "strike"
-                    ],
-                    "text": "占位说明",
-                    "type": "示例内容"
-                  }
-                ],
-                "id": "blk_1c8ec18bb69ff1cb",
-                "type": "quote"
-              },
-              {
-                "attrs": {},
-                "content": [
-                  {
-                    "marks": [
-                      "underline",
-                      "strike",
-                      "inline_code"
-                    ],
-                    "text": "占位说明",
-                    "type": "占位说明"
-                  },
-                  {
-                    "marks": [
-                      "inline_code",
-                      "italic",
-                      "strike"
-                    ],
-                    "text": "演示数据",
-                    "type": "占位说明"
-                  },
-                  {
-                    "marks": [
-                      "bold",
-                      "strike",
-                      "bold"
-                    ],
-                    "text": "示例内容",
-                    "type": "示例内容"
-                  }
-                ],
-                "id": "blk_92e2c4fb3b1cd183",
-                "type": "heading_5"
-              }
-            ],
-            "schemaVersion": "media_web_business_pages_v2"
-          },
-          "bodyAuthority": "lark",
-          "bodyChecksum": "8bc8ac88b27bbd4254e6cb3240afc6cb67699ae0147653e98713c553ff274b7c",
-          "createdAt": "2026-08-05T09:22:00+08:00",
-          "executionReceipt": {
-            "applied": [
-              {
-                "blockId": "469b59023f695bf8774d27a052ff50b8f15367a62b10bc0665880ecec5ad7029",
-                "operation": "replace_text"
-              },
-              {
-                "blockId": "fff6348b52090f7017de3426e69712ebe937a4fc303ac127cf764fc970857b8e",
-                "operation": "replace_text"
-              },
-              {
-                "blockId": "4e921a5360a730132a10e23d1fa74c28d67dd9c09da4ad30ddd5158333db3fd0",
-                "operation": "insert_table_row"
-              }
-            ],
-            "appliedCount": 22,
-            "errorCode": "sha256:fbfd50d1d882459d942c93061ce58d1a2f537b78e260a9776789bded51e807cd",
-            "manualActions": [
-              {
-                "blockId": "b6af1ca20d0feb120838193cd3ccf6928773659dd2138795c4963754bbeeecc3",
-                "reason": "sha256:e624b161828140dd228a19e1ba8144aa46ca37fdec45ab55e4f688aa68d86c12"
-              },
-              {
-                "blockId": "a3f0c13a0581475470db907a63c761d1ef09a2a002d98270277ed34986c8c68e",
-                "reason": "sha256:81940ab266a98e50393291cb987cc096830d23f16ec1b2bcc5d78454ce61f056"
-              },
-              {
-                "blockId": "a4ef6c48d3ca7737263dcc9bb3ef9a9ebcb7567557b07eaedf1841afbaf689e9",
-                "reason": "sha256:225bfad709d7349d474c06a1ccaac2b62b4076abc65e9bb4d7f5ae8e8983657e"
-              }
-            ],
-            "protectedSkipped": [
-              "fb97263b92303f8cbea3bd34a43b343792766292ac1a7be958982acba144e748",
-              "a80713eed991628501b012fba51b0a9f1040128ba9df9e7ddca7b8c5cd358bdf",
-              "ff6e4b335e1b6293c247f0da5f79b3ba78d0db3510630da2fad7f7c1d9b054a6"
-            ],
-            "status": "ready"
-          },
-          "publicArtifactId": "061fcdda8a49ee6dec638c20ab2e66e8d82ad5d4e5e6584e3478d7835d45f43a",
-          "remoteDocumentVersion": null,
-          "revision": 15,
-          "state": "ready",
-          "updatedAt": "2026-08-23T18:22:00+08:00"
-        },
-        "revision": 15,
         "schemaVersion": "media_web_business_pages_v2"
       }
     },
@@ -5086,11 +4942,10 @@
                   {
                     "marks": [
                       "inline_code",
-                      "inline_code",
                       "bold"
                     ],
                     "text": "占位说明",
-                    "type": "示例内容"
+                    "type": "text"
                   },
                   {
                     "marks": [
@@ -5099,16 +4954,14 @@
                       "bold"
                     ],
                     "text": "演示数据",
-                    "type": "示例内容"
+                    "type": "text"
                   },
                   {
                     "marks": [
-                      "underline",
-                      "underline",
                       "underline"
                     ],
                     "text": "示例内容",
-                    "type": "示例内容"
+                    "type": "text"
                   }
                 ],
                 "id": "blk_524cd01b7b7b458e",
@@ -5124,7 +4977,7 @@
                       "bold"
                     ],
                     "text": "演示数据",
-                    "type": "占位说明"
+                    "type": "text"
                   },
                   {
                     "marks": [
@@ -5133,16 +4986,15 @@
                       "bold"
                     ],
                     "text": "占位说明",
-                    "type": "示例内容"
+                    "type": "text"
                   },
                   {
                     "marks": [
                       "underline",
-                      "inline_code",
                       "inline_code"
                     ],
                     "text": "占位说明",
-                    "type": "占位说明"
+                    "type": "text"
                   }
                 ],
                 "id": "blk_652e6e1527057181",
@@ -5154,11 +5006,10 @@
                   {
                     "marks": [
                       "inline_code",
-                      "strike",
-                      "inline_code"
+                      "strike"
                     ],
                     "text": "演示数据",
-                    "type": "演示数据"
+                    "type": "text"
                   },
                   {
                     "marks": [
@@ -5167,7 +5018,7 @@
                       "inline_code"
                     ],
                     "text": "演示数据",
-                    "type": "占位说明"
+                    "type": "text"
                   },
                   {
                     "marks": [
@@ -5176,14 +5027,14 @@
                       "inline_code"
                     ],
                     "text": "占位说明",
-                    "type": "示例内容"
+                    "type": "text"
                   }
                 ],
                 "id": "blk_ce82a11258e92751",
                 "type": "heading_8"
               }
             ],
-            "schemaVersion": "media_web_business_pages_v2"
+            "schemaVersion": "media.document.body.v1"
           },
           "bodyAuthority": "internal",
           "bodyChecksum": "373192a9a9056a9462680e53b0274f06e9eff6616b9ad00565a2961c233cd1d5",

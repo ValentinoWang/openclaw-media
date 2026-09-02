@@ -47,6 +47,7 @@ ARTIFACT_REVIEW = "artifact_review_october"
 ARTIFACT_ASSET_DIGEST = "artifact_asset_digest_autumn"
 ARTIFACT_RESEARCH = "artifact_research_hotlist"
 ARTIFACT_SUMMARY = "artifact_project_summary_camera"
+EXPORT_CREATION_DOCX = "export_creation_camera_docx"
 
 ACCOUNT_XHS = "account_xhs_xiaoman"
 ACCOUNT_DOUYIN = "account_douyin_xiaoman"
@@ -103,6 +104,7 @@ BACKEND_OWNED_OPERATIONS = frozenset(
         "listMediaCapabilities",
         "matchMediaCapability",
         "listMediaTasks",
+        "getDocumentRevision",
         "getMediaTask",
         "createMediaTask",
         "confirmMediaTask",
@@ -329,7 +331,7 @@ def _document_body(artifact_id: str, project_id: str, kind: str, blocks: list[di
 
 SEED: dict[str, Any] = {
     "getAuthEntryState": {
-        "schemaVersion": "media.auth.entry.v1",
+        "schemaVersion": "media_auth_entry_state_v1",
         "mode": "personal",
         "state": "none",
         "entry": None,
@@ -1555,6 +1557,41 @@ SEED: dict[str, Any] = {
         ],
         "nextCursor": None,
         "revision": 7,
+    },
+    "createDocumentExport": {
+        "data": {
+            "publicExportId": EXPORT_CREATION_DOCX,
+            "publicArtifactId": ARTIFACT_CREATION,
+            "revision": 4,
+            "format": "docx",
+            "state": "queued",
+            "templateVersion": "v3",
+            "rendererVersion": "docx-2026.08",
+            "createdAt": ago(minutes=1),
+            "updatedAt": ago(minutes=1),
+        }
+    },
+    "getDocumentExport": {
+        "data": {
+            "publicExportId": EXPORT_CREATION_DOCX,
+            "publicArtifactId": ARTIFACT_CREATION,
+            "revision": 4,
+            "format": "docx",
+            "state": "ready",
+            "templateVersion": "v3",
+            "rendererVersion": "docx-2026.08",
+            "createdAt": ago(minutes=3),
+            "updatedAt": ago(minutes=1),
+        }
+    },
+    "getDocumentExportDownload": {
+        "data": {
+            "publicExportId": EXPORT_CREATION_DOCX,
+            "format": "docx",
+            # 演示站保持离线：下载链接是自带说明文字的 data URI，不指向任何外部服务。
+            "downloadUrl": "data:text/plain;charset=utf-8,MediaClaw%20%E6%BC%94%E7%A4%BA%E7%AB%99%EF%BC%9A%E8%BF%99%E9%87%8C%E4%B8%8D%E6%8F%90%E4%BE%9B%E7%9C%9F%E5%AE%9E%E7%9A%84%E6%96%87%E6%A1%A3%E5%AF%BC%E5%87%BA%E6%96%87%E4%BB%B6%E3%80%82%E7%9C%9F%E5%AE%9E%E7%8E%AF%E5%A2%83%E4%BC%9A%E8%BF%94%E5%9B%9E%E5%B8%A6%E6%A0%A1%E9%AA%8C%E5%80%BC%E7%9A%84%20docx%2Fpdf%E3%80%82",
+            "expiresAt": ahead(hours=2),
+        }
     },
     "getResourceDocxLink": {
         "document": {

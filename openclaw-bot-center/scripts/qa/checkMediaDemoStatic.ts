@@ -14,7 +14,8 @@ import { demoPersonas } from '../../src/demo/demoPersonas'
 import { resolveStudioRouteOutcome, resolveStudioRoutePolicy } from '../../src/media/mediaStudioRoutePolicy'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const demoBase = '/openclaw/media-demo/'
+// 与 vite.demo.config.ts 一致：基址可以用 MEDIA_DEMO_BASE 覆盖，走查必须跟着走。
+const demoBase = process.env.MEDIA_DEMO_BASE ?? '/openclaw/media-demo/'
 const distDemoRoot = resolve(projectRoot, 'dist-demo')
 const outputRoot = resolve(process.env.MEDIA_DEMO_QA_OUTPUT ?? '/tmp/openclaw-media-demo-qa')
 const viewport = { width: 1440, height: 1000 } as const
@@ -49,7 +50,7 @@ function record(condition: boolean, message: string): void {
 }
 
 // --- 产物完整性：构建骨架文件与每个声明路由的静态 HTML 是否都落地了 ---
-for (const requiredFile of ['index.html', '404.html', 'mediaDesignTokens.css', 'mediaFonts.css']) {
+for (const requiredFile of ['index.html', '404.html', 'pages.html', 'mediaDesignTokens.css', 'mediaFonts.css']) {
   record(existsSync(join(distDemoRoot, requiredFile)), `产物缺少必需文件 dist-demo/${requiredFile}`)
 }
 record(
