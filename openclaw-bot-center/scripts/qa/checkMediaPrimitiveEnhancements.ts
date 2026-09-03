@@ -305,6 +305,32 @@ export function findTypographyTokenViolations(sourceText: string): readonly stri
   return violations
 }
 
+/** 指标卡的两条布局契约。两条都是真实事故的根因：
+ *  1. 原语一旦用命名网格区域（grid-area: icon/body），页面只覆写
+ *     grid-template-columns 而没跟着声明同名区域时，图标和正文会一起掉进隐式
+ *     区域互相重叠——/campaigns、/business、运行详情侧栏都这么坏过；
+ *  2. 指标网格若按视口断点排列，放进详情侧栏这类窄容器仍是多列，
+ *     每张卡被挤到几十像素宽，正文被迫一行一个字。 */
+export function findMetricLayoutViolations(sourceText: string): readonly string[] {
+  const violations: string[] = []
+  parseCss(sourceText).walkRules((rule) => {
+    if (!/\.mg-metric(?![\w-])|\.mg-metric-(?:icon|body|spark)\b/.test(rule.selector)) return
+    rule.walkDecls((declaration) => {
+      const property = normalizedProperty(declaration)
+      if (property === 'grid-area' || property === 'grid-template-areas') {
+        violations.push(`${rule.selector} 不能用 ${property}：页面覆写列数时会让图标与正文重叠`)
+      }
+    })
+  })
+  const gridRule = /\.mg-metric-grid\s*\{([^}]*)\}/.exec(sourceText)?.[1]
+  if (gridRule === undefined) {
+    violations.push('找不到 .mg-metric-grid 规则，解析逻辑需要更新')
+  } else if (!/repeat\(\s*auto-(?:fit|fill)/.test(gridRule)) {
+    violations.push('.mg-metric-grid 必须用 repeat(auto-fit/auto-fill, minmax(...))：按容器自适应，窄容器里才不会把卡片压扁')
+  }
+  return violations
+}
+
 function assertMediaTypographyIsCanonical(): void {
   const files = [
     ...findCssFiles(resolve(projectRoot, 'src/media')),
@@ -321,6 +347,9 @@ function assertMediaTypographyIsCanonical(): void {
     ]
   })
   if (violations.length) throw new Error(`media typography contract failed: ${violations.join(', ')}`)
+
+  const metricViolations = findMetricLayoutViolations(readFileSync(resolve(projectRoot, 'src/media/mediaPrimitives.css'), 'utf8'))
+  if (metricViolations.length) throw new Error(`media metric layout contract failed: ${metricViolations.join(', ')}`)
 
   const inlineViolations = findTsxFiles(resolve(projectRoot, 'src/media')).flatMap((fileName) => {
     const relativeName = fileName.slice(projectRoot.length + 1)
@@ -564,6 +593,17 @@ function runSelfTest(): void {
   }
   if (findUnsupportedFontWeights('@font-face { font-weight: 100 900; } .title { font-weight: 700; }').length) {
     throw new Error('media primitive enhancement self-test failed: variable range or canonical font weight was rejected')
+
+  // 指标卡布局契约的自测：命名区域与固定列数都必须被抓到。
+  if (findMetricLayoutViolations('.mg-metric-grid { grid-template-columns: repeat(auto-fit, minmax(184px, 1fr)); }\n.mg-metric-icon { display: grid; }').length) {
+    throw new Error('media primitive enhancement self-test failed: 合规的指标布局被判为违规')
+  }
+  if (!findMetricLayoutViolations('.mg-metric-grid { grid-template-columns: repeat(auto-fit, minmax(184px, 1fr)); }\n.mg-metric-icon { grid-area: icon; }').some((line) => line.includes('grid-area'))) {
+    throw new Error('media primitive enhancement self-test failed: 命名网格区域没有被抓到')
+  }
+  if (!findMetricLayoutViolations('.mg-metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }').some((line) => line.includes('auto-fit'))) {
+    throw new Error('media primitive enhancement self-test failed: 固定列数的指标网格没有被抓到')
+  }
   }
   if (!findUnsupportedFontWeights(String.raw`.title { font\2d weight: 850; }`).length) {
     throw new Error('media primitive enhancement self-test failed: escaped font-weight was accepted')

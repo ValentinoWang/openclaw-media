@@ -46,8 +46,8 @@ export default function CampaignsPage() {
       <section className={`mg-hero ${styles.hero}`} data-page-prelude>
         <div>
           <span className="mg-eyebrow"><Sparkles size={15} />CAMPAIGN DELIVERY</span>
-          <h1>活动与商单，从 Brief 一路交付</h1>
-          <p className="mg-hero-lead">把品牌要求、活动信息、脚本、分镜、返修意见和最终发布包维护在同一个履约项目里。</p>
+          <h1>活动与商单履约</h1>
+          <p className="mg-hero-lead">记录商单的 Brief、脚本、分镜、返修和发布包。</p>
           <div className="mg-hero-actions">
             <button className="mg-btn mg-btn-primary" type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><Plus size={17} />新建商单项目</button>
             <Link className="mg-btn mg-btn-soft" to="/business"><BriefcaseBusiness size={17} />查看商务机会</Link>

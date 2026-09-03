@@ -11,6 +11,7 @@ import {
   NODE_LABEL_FONT_SIZE,
   NODE_TEXT_INSET,
   NODE_TEXT_RIGHT_INSET,
+  LABEL_BASELINES,
   NODE_W,
   VIEW_RECT,
   edgeGeometry,
@@ -93,17 +94,24 @@ for (const node of WORKBOARD_FLOW_NODES) {
 }
 
 // 3. 连线标签不压节点、不互相压，且在画布内。
-const labelRects: { edge: string; text: string; rect: Rect }[] = []
+const labelRects: { edge: string; text: string; rect: Rect; baseline: number }[] = []
 for (const edge of WORKBOARD_FLOW_EDGES) {
   if (!edge.label) continue
   const from = NODE_BOXES.get(edge.from)!
   const to = NODE_BOXES.get(edge.to)!
   const geometry = edgeGeometry(from, to, edge.from, edge.to, edge.kind)
   const rect = textRect(edge.label, geometry.label, geometry.anchor, EDGE_LABEL_FONT_SIZE)
-  labelRects.push({ edge: `${edge.from}->${edge.to}`, text: edge.label, rect })
+  labelRects.push({ edge: `${edge.from}->${edge.to}`, text: edge.label, rect, baseline: geometry.label[1] })
 }
 for (const label of labelRects) {
   if (!rectContains(VIEW_RECT, label.rect)) failures.push(`连线标签「${label.text}」(${label.edge}) 超出画布`)
+  // 统一基线：标签只能停在泳道带之间的空白走廊里，不许压在彩色泳道底色上。
+  if (!LABEL_BASELINES.includes(label.baseline)) {
+    failures.push(`连线标签「${label.text}」(${label.edge}) 的基线 ${label.baseline} 不在允许的标签走廊 ${LABEL_BASELINES.join(' / ')} 上`)
+  }
+  for (const band of LANE_BANDS) {
+    if (rectsOverlap(label.rect, band.rect)) failures.push(`连线标签「${label.text}」(${label.edge}) 压在 ${band.lane} 泳道带上，应该落在带子之间的空白里`)
+  }
   for (const [nodeId, rect] of nodeRects) {
     if (rectsOverlap(label.rect, rect)) failures.push(`连线标签「${label.text}」(${label.edge}) 压在节点 ${nodeId} 上`)
   }

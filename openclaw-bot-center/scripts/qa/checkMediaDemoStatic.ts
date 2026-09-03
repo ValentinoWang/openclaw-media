@@ -244,6 +244,35 @@ try {
         for (const marker of fallbackCopyMarkers) {
           record(!rawText.includes(marker), `${label}：主内容区出现兜底文案『${marker}』，该身份没有正常进入此路由`)
         }
+        // 指标卡的两种破相在类型检查里都看不见，只有真渲染出来才量得到：
+        //   图标压住正文（页面覆写列数、原语用命名区域时会发生）；
+        //   正文列被挤到几十像素宽（窄容器里仍排多列时会发生，文字被迫一行一个字）。
+        const metricDefects = await page.evaluate(() => {
+          const problems: string[] = []
+          for (const body of document.querySelectorAll('.mg-metric-body')) {
+            const card = body.parentElement
+            const icon = card?.querySelector(':scope > .mg-metric-icon')
+            const bodyRect = body.getBoundingClientRect()
+            if (bodyRect.width === 0 && bodyRect.height === 0) continue
+            const name = (body.querySelector('small')?.textContent ?? '').trim() || '未命名指标'
+            if (icon) {
+              const iconRect = icon.getBoundingClientRect()
+              const overlaps = iconRect.left < bodyRect.right && bodyRect.left < iconRect.right
+                && iconRect.top < bodyRect.bottom && bodyRect.top < iconRect.bottom
+              if (overlaps) problems.push(`指标「${name}」的图标压住了正文`)
+            }
+            // 「被挤成一行一个字」的特征是又窄又高：正文列窄，却被撑出好几行。
+            // 只看宽度会误报——flex 卡里的正文本来就收缩到内容宽度。
+            if (bodyRect.width < 90 && bodyRect.height > 110) {
+              problems.push(`指标「${name}」的正文列只有 ${Math.round(bodyRect.width)}px 宽却有 ${Math.round(bodyRect.height)}px 高，文字被挤成一行一个字`)
+            }
+          }
+          return problems
+        })
+        record(
+          metricDefects.length === 0,
+          `${label}：指标卡排版破相 -\n${metricDefects.map((line) => `    ${line}`).join('\n')}`,
+        )
       } catch (error) {
         failures.push(`${label}：走查过程中抛出异常 - ${error instanceof Error ? error.message : String(error)}`)
       }

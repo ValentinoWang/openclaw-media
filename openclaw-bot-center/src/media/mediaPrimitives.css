@@ -132,15 +132,16 @@
    图标 + 文案一行，sparkline 独占底部整行并出血到卡片边缘。
    不要把 sparkline 挤成第三列：4 栏布局下文案只剩约 106px，
    「已发布作品」会断成「已发布作 / 品」。 */
+/* 按容器宽度自适应，而不是按视口：这个网格也会出现在详情侧栏这类窄容器里，
+   固定四列会把每张卡挤到几十像素宽，文字被迫一行一个字。 */
 .mg-metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(184px, 1fr));
   gap: var(--mg-gap-2);
 }
 .mg-metric {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
-  grid-template-areas: 'icon body' 'spark spark';
   gap: var(--mg-gap-2);
   align-items: center;
   min-width: 0;
@@ -156,8 +157,10 @@
   background: var(--accent-soft);
 }
 .mg-metric:hover { border-color: var(--accent-line); box-shadow: var(--mg-e2); transform: translateY(-2px); }
+/* 图标与正文按源码顺序自动落位，不用命名区域：页面常常只覆写
+   grid-template-columns 而不会跟着声明 grid-template-areas，命名区域会让两者
+   一起掉进隐式区域并重叠。自动落位在任何两列网格里都成立。 */
 .mg-metric-icon {
-  grid-area: icon;
   display: grid;
   width: 44px;
   height: 44px;
@@ -166,7 +169,7 @@
   color: var(--accent-ink);
   background: var(--accent-soft);
 }
-.mg-metric-body { grid-area: body; min-width: 0; }
+.mg-metric-body { min-width: 0; }
 .mg-metric-body small {
   display: block;
   overflow: hidden;
@@ -194,7 +197,7 @@
   white-space: nowrap;
 }
 .mg-metric-spark {
-  grid-area: spark;
+  grid-column: 1 / -1;
   display: block;
   height: 38px;
   width: calc(100% + var(--mg-gap-3) * 2);
@@ -480,13 +483,9 @@
 .mg-platforms i[data-platform='wx']     { color: var(--mg-brand-wx-ink);     background: var(--mg-brand-wx-soft); }
 .mg-platforms i[data-platform='bili']   { color: var(--mg-brand-bili-ink);   background: var(--mg-brand-bili-soft); }
 
-@media (max-width: 1120px) {
-  .mg-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @media (max-width: 760px) {
   .mg-hero { grid-template-columns: 1fr; padding: 22px; border-radius: var(--mg-r-lg); }
   .mg-hero-actions { display: grid; grid-template-columns: 1fr; }
   .mg-btn { width: 100%; }
-  .mg-metric-grid { grid-template-columns: 1fr; }
   .mg-pipeline { flex-wrap: wrap; }
 }

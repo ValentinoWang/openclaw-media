@@ -150,8 +150,8 @@ export default function WorkboardPage() {
       <section className="mg-hero" data-page-prelude>
         <div>
           <span className="mg-eyebrow"><Sparkles size={15} />CREATOR PRODUCTION DESK</span>
-          <h1 className={styles.heroTitle}>今天把内容推进到<em>可交付</em></h1>
-          <p className="mg-hero-lead">从活动和商单 Brief 出发，持续维护可编辑脚本、分镜、拍摄单、返修版本与发布包。</p>
+          <h1 className={styles.heroTitle}>今日<em>工作台</em></h1>
+          <p className="mg-hero-lead">跟踪内容项目的脚本、分镜、拍摄单、返修和发布包进度。</p>
           <div className="mg-hero-actions">
             <button className="mg-btn mg-btn-primary" type="button" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Plus size={17} />新建内容项目</button>
             <button className="mg-btn mg-btn-soft" type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><BriefcaseBusiness size={17} />导入商单 Brief</button>
@@ -183,7 +183,7 @@ export default function WorkboardPage() {
         onOpenTasks={() => openWorkspace()}
       />
 
-      <section className={styles.loopGrid} aria-label="高价值业务闭环">
+      <section className={styles.loopGrid} aria-label="相关工作页面入口">
         <LoopCard
           tone="studio"
           icon={<PenTool size={20} />}
@@ -207,7 +207,7 @@ export default function WorkboardPage() {
           icon={<CircleDollarSign size={20} />}
           kicker="BUSINESS"
           title="报价、档期与商务机会"
-          description="统一管理达人账号事实、报价快照、权益边界和项目机会。"
+          description="统一管理账号资料、报价快照、权益边界和项目机会。"
           steps={['达人', '报价', '权益', '商机', '复购']}
           to="/business"
         />
@@ -215,8 +215,8 @@ export default function WorkboardPage() {
           tone="desk"
           icon={<TrendingUp size={20} />}
           kicker="DESK"
-          title="内容情报到下一条可拍"
-          description="热榜、拆解、选题和发布复盘共同进入下一轮内容生产。"
+          title="监控、拆解与复盘"
+          description="为选题和创作提供有据可查的研究结论。"
           steps={['监控', '拆解', '决策', '创作', '复盘']}
           to="/desk"
         />

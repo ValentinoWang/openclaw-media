@@ -65,8 +65,8 @@ export default function BusinessPage() {
       <section className={`mg-hero ${styles.hero}`} data-page-prelude>
         <div>
           <span className="mg-eyebrow"><Sparkles size={15} />CREATOR BUSINESS OS</span>
-          <h1>把报价、档期、权益和商机放在一张经营地图里</h1>
-          <p className="mg-hero-lead">账号级报价与项目级商务事实分开管理，后续脚本、交付与复购仍然关联同一个机会。</p>
+          <h1>报价、档期、权益与商机</h1>
+          <p className="mg-hero-lead">账号报价和品牌商务机会分开记录，两边互相关联。</p>
           <div className="mg-hero-actions">
             <button className="mg-btn mg-btn-primary" type="button" onClick={() => openWorkspace({ capabilityId: 'commercial_delivery_draft', variantId: 'default' })}><Plus size={17} />登记商务机会</button>
             <Link className="mg-btn mg-btn-soft" to="/tracks"><Users size={17} />查看达人与账号</Link>

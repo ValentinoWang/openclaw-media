@@ -64,8 +64,8 @@ export default function DeskPage() {
       <section className="mg-hero" data-page-prelude>
         <div>
           <span className="mg-eyebrow"><Sparkles size={15} />CONTENT INTELLIGENCE DESK</span>
-          <h1>从公开证据，到下一条真正能拍的内容</h1>
-          <p className="mg-hero-lead">监控、拆解、选题和复盘不是四个孤立工具，而是持续为 Studio 提供真实输入的一条研究生产线。</p>
+          <h1>内容情报工作台</h1>
+          <p className="mg-hero-lead">包含热榜监控、证据拆解、选题咨询和发布复盘。</p>
           <div className="mg-hero-actions">
             <button className="mg-btn mg-btn-primary" type="button" onClick={() => openWorkspace()}><Bot size={17} />开始一次研究任务</button>
             <Link className="mg-btn mg-btn-soft" to="/assets"><Images size={17} />查看素材证据</Link>

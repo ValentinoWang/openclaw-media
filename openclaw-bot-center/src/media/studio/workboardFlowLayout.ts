@@ -38,9 +38,34 @@ export const LANE_BANDS: readonly { lane: WorkboardFlowLane; rect: Rect }[] = WO
 
 export type EdgeGeometry = { d: string; label: [number, number]; anchor: 'start' | 'middle' | 'end' }
 
+/** 连线标签只允许落在这几条基线上：泳道带之间的空白，以及画布上下两条外圈留白。
+ *  逐条边各自算 y，标签就会高高低低、还常常压在泳道底色上；固定基线让它们对齐成
+ *  一条条横向的「标签走廊」，也保证每个标签都在白底而不是彩色带子上。 */
+export const LABEL_BASELINES: readonly number[] = [
+  LANE_Y.content - LANE_PAD - 3,
+  (LANE_Y.content + NODE_H + LANE_PAD + (LANE_Y.shared - LANE_PAD)) / 2 + 5,
+  (LANE_Y.shared + NODE_H + LANE_PAD + (LANE_Y.local - LANE_PAD)) / 2 + 5,
+  (LANE_Y.local + NODE_H + LANE_PAD + (LANE_Y.commercial - LANE_PAD)) / 2 + 5,
+  LANE_Y.commercial + NODE_H + LANE_PAD + 15,
+]
+
+/** 把标签基线吸附到最近的一条走廊。 */
+export function snapLabelBaseline(y: number): number {
+  let best = LABEL_BASELINES[0]!
+  for (const baseline of LABEL_BASELINES) {
+    if (Math.abs(baseline - y) < Math.abs(best - y)) best = baseline
+  }
+  return best
+}
+
 /** 每条边的路径、标签位置与对齐方式。合流边汇入创作节点左侧的不同高度，送审/返修是一对平行竖线，
  *  本机线与合流之间走同列竖线，回流走外圈；交付绕过本机线走正交路径。 */
 export function edgeGeometry(from: Box, to: Box, fromId: string, toId: string, kind: string): EdgeGeometry {
+  const geometry = rawEdgeGeometry(from, to, fromId, toId, kind)
+  return { ...geometry, label: [geometry.label[0], snapLabelBaseline(geometry.label[1])] }
+}
+
+function rawEdgeGeometry(from: Box, to: Box, fromId: string, toId: string, kind: string): EdgeGeometry {
   if (kind === 'loop') {
     if (to.y < from.y) {
       const top = 30
@@ -77,7 +102,9 @@ export function edgeGeometry(from: Box, to: Box, fromId: string, toId: string, k
     const targetY = fromId === 'decision' ? to.cy - 13 : fromId === 'brief' ? to.cy + 13 : to.cy
     if (from.lane === to.lane) return { d: `M${from.right},${from.cy} H${to.x}`, label: [(from.right + to.x) / 2, from.cy - 8], anchor: 'middle' }
     const startY = from.y > to.y ? from.y : from.bottom
-    return { d: `M${from.cx},${startY} C${from.cx},${targetY} ${from.cx + 36},${targetY} ${to.x},${targetY}`, label: [from.cx + 12, (startY + targetY) / 2 + 4], anchor: 'start' }
+    // 上方来的（选题）把标签靠到创作节点这一侧，避免和同一条走廊里的「素材汇入」撞上。
+    const label: [number, number] = from.y < to.y ? [to.x - 8, (startY + targetY) / 2 + 4] : [from.cx + 12, (startY + targetY) / 2 + 4]
+    return { d: `M${from.cx},${startY} C${from.cx},${targetY} ${from.cx + 36},${targetY} ${to.x},${targetY}`, label, anchor: from.y < to.y ? 'end' : 'start' }
   }
   const y = fromId === 'creation' && toId === 'publishing' ? from.cy - 13 : from.cy
   return { d: `M${from.right},${y} H${to.x}`, label: [(from.right + to.x) / 2, y - 8], anchor: 'middle' }
