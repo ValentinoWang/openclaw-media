@@ -491,7 +491,7 @@ async function verifyShellGeometry(page: Page, role: Role, path: string) {
     await page.getByLabel("结束日期", { exact: true }).waitFor();
     await page
       .locator(".media-topbar")
-      .getByRole("button", { name: "新建任务", exact: true })
+      .getByRole("button", { name: "能力中心", exact: true })
       .waitFor();
     requireContract(
       (await page
@@ -526,7 +526,7 @@ async function verifyShellGeometry(page: Page, role: Role, path: string) {
     requireContract(
       (await page
         .locator(".media-topbar")
-        .getByRole("button", { name: "新建任务", exact: true })
+        .getByRole("button", { name: "能力中心", exact: true })
         .count()) === 0,
       `${role} ${path} exposes the ordinary new-task command`,
     );

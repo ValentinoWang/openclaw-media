@@ -67,7 +67,7 @@ async function verifyViewport(
       });
     }
 
-    await page.locator(".topbar-command").click();
+    await page.locator(".studio-primary-button").click();
     const drawer = page.getByRole("complementary", { name: "Media 任务工作区" });
     const taskItem = drawer.locator(`[data-task-id="${taskId}"]`);
     await drawer.waitFor({ timeout: 20_000 });

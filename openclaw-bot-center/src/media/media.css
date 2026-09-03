@@ -1411,9 +1411,8 @@ p { text-wrap: pretty; }
 .topbar-date-range { display: flex; height: 48px; flex: 0 0 330px; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--mg-border-strong); border-radius: var(--mg-r-sm); color: var(--mg-muted); background: var(--mg-surface); }
 .topbar-date-range label { min-width: 0; flex: 1; }
 .topbar-date-range input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--mg-ink); background: transparent; font: inherit; font-size: var(--mg-text-sm); }
-.media-topbar .topbar-command { min-height: 48px; flex: 0 0 190px; justify-content: center; gap: 9px; margin-left: 0; border-color: var(--mg-primary-dark); color: var(--mg-on-primary); background: var(--mg-primary-dark); font-size: var(--mg-text-md); }
-.media-topbar .topbar-command:hover { color: var(--mg-on-primary); border-color: var(--mg-primary-dark); background: var(--mg-primary-dark); }
 .media-topbar .studio-primary-button { min-height: 48px; justify-content: center; gap: 9px; padding: 0 16px; font-size: var(--mg-text-md); }
+.media-topbar .studio-primary-button b { display: grid; min-width: 19px; height: 19px; place-items: center; border-radius: var(--mg-r-full); color: var(--mg-primary-dark); background: var(--mg-surface); font-size: var(--mg-text-2xs); }
 .topbar-help-wrap { position: relative; flex: 0 0 48px; }
 .topbar-help { display: grid; width: 48px; height: 48px; flex: 0 0 48px; place-items: center; padding: 0; border: 1px solid var(--mg-border-strong); border-radius: var(--mg-r-sm); color: var(--mg-primary-dark); background: var(--mg-surface); cursor: pointer; }
 .topbar-help:hover { border-color: var(--mg-primary); background: var(--mg-primary-soft); }
@@ -1476,8 +1475,6 @@ p { text-wrap: pretty; }
   .topbar-mobile-title { display: flex; }
   .ordinary-global-toolbar, .admin-global-toolbar { width: auto; flex: 1; justify-content: flex-end; }
   .topbar-search, .topbar-task-status, .topbar-date-range, .topbar-scope, .topbar-target { display: none; }
-  .media-topbar .topbar-command { min-height: 38px; flex: 0 0 42px; padding: 0; }
-  .media-topbar .topbar-command > span { display: none; }
   .media-topbar .studio-primary-button { min-height: 38px; flex: 0 0 42px; padding: 0; }
   .media-topbar .studio-primary-button > span { display: none; }
   .topbar-help-wrap { flex-basis: 38px; }

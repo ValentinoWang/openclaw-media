@@ -19,7 +19,6 @@ import {
   Menu,
   Moon,
   PenTool,
-  Plus,
   Search,
   Send,
   Server,
@@ -367,8 +366,7 @@ function ProductShell() {
                 aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到暗色主题'}
                 title={theme === 'dark' ? '切换到浅色主题' : '切换到暗色主题'}
                 onClick={toggleTheme}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button>
-              <button className="studio-command-button topbar-command" type="button" aria-label="新建任务" onClick={() => openWorkspace()}><Command size={17} /><span>任务中心</span>{activeTasks.length ? <b>{activeTasks.length}</b> : null}</button>
-              {!isAdminShell ? <button className="studio-primary-button" type="button" aria-label="新建内容项目" title="新建内容项目" onClick={() => openWorkspace({ capabilityId: 'selfmedia_creation', variantId: 'default' })}><Plus size={17} /><span>新建内容项目</span></button> : null}
+              {!isAdminShell ? <button className="studio-primary-button" type="button" aria-label="能力中心" title="能力中心" onClick={() => openWorkspace()}><Command size={17} /><span>能力中心</span>{activeTasks.length ? <b>{activeTasks.length}</b> : null}</button> : null}
             </div>
           ) : null}
         </header>

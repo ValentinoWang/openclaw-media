@@ -392,7 +392,7 @@ async function capture(
       `${label} must remain bound to the personal workspace path`,
     );
     const launchButton = page.getByRole("button", {
-      name: "新建任务",
+      name: "能力中心",
       exact: true,
     });
     await launchButton.waitFor({ state: "visible" });

@@ -147,7 +147,7 @@ async function capture(viewport: "desktop" | "mobile"): Promise<void> {
   } else {
     await page.getByText(project.title).first().waitFor();
     if (viewport === "desktop") {
-      await page.getByRole("button", { name: "新建任务" }).click();
+      await page.getByRole("button", { name: "能力中心" }).click();
       await page.getByRole("complementary", { name: "Media 任务工作区" }).waitFor();
       await page.getByRole("button", { name: "关闭任务工作区" }).first().click();
     }

@@ -376,11 +376,11 @@ async function assertResponsiveShell(
     assert.ok(desktopRect && desktopRect.x >= -1, `${label}: desktop sidebar is outside the viewport`);
   }
 
-  const createButton = page.getByRole("button", { name: "新建内容项目", exact: true });
-  if (await createButton.count()) {
-    await createButton.waitFor({ state: "visible", timeout: 10_000 });
-    const createButtonRect = await createButton.boundingBox();
-    assert.ok(createButtonRect && createButtonRect.height <= 48, `${label}: create-project command wrapped vertically`);
+  const capabilityButton = page.getByRole("button", { name: "能力中心", exact: true });
+  if (await capabilityButton.count()) {
+    await capabilityButton.waitFor({ state: "visible", timeout: 10_000 });
+    const capabilityButtonRect = await capabilityButton.boundingBox();
+    assert.ok(capabilityButtonRect && capabilityButtonRect.height <= 48, `${label}: capability launcher command wrapped vertically`);
   }
 }
 

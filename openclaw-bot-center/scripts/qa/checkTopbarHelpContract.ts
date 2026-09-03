@@ -11,15 +11,15 @@ function requireContract(condition: unknown, message: string): asserts condition
 }
 
 requireContract(
-  mediaStudioSource.includes('className="studio-topbar"') &&
+  mediaStudioSource.includes('className="media-topbar studio-topbar"') &&
     mediaStudioSource.includes('className="studio-topbar-actions"') &&
-    mediaStudioSource.includes('className="topbar-command"') &&
-    mediaStudioSource.includes('aria-label="新建任务"'),
-  "MediaStudioApp must preserve the current topbar task entry",
+    mediaStudioSource.includes('className="studio-primary-button"') &&
+    mediaStudioSource.includes('aria-label="能力中心"'),
+  "MediaStudioApp must preserve the topbar capability launcher entry",
 );
 requireContract(
-  /\.topbar-command\s*\{/.test(mediaStyles) || /\.studio-command-button\s*\{/.test(mediaStyles),
-  "current topbar command styles are missing",
+  /\.studio-primary-button\s*\{/.test(mediaStyles),
+  "current topbar capability launcher styles are missing",
 );
 
 console.log("qa:media-topbar-contract: PASS");
