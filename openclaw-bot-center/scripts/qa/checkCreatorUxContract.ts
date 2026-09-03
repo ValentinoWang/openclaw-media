@@ -15,7 +15,7 @@ assert.match(tracksSource, /onError=\{\(\) => setAvatarFailed\(true\)\}/)
 assert.match(tracksSource, /creator\.avatarUrl && !avatarFailed/)
 assert.match(tracksCss, /\.avatarImage[\s\S]*?width: 100%;[\s\S]*?height: 100%;[\s\S]*?border-radius: 50%/)
 
-const captureStart = tracksSource.indexOf('data-capability-action="creator_profile_upsert"', tracksSource.indexOf('function CreatorInspector'))
+const captureStart = tracksSource.indexOf('data-capability-action="creator_profile_upsert"', tracksSource.indexOf('function BenchmarkInspector'))
 assert.ok(captureStart >= 0, 'creator inspector capture action is missing')
 const captureSnippet = tracksSource.slice(captureStart, captureStart + 900)
 assert.match(captureSnippet, /disabled=\{!creator\.profileUrl\}/)

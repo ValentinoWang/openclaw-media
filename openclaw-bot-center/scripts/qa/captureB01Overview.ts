@@ -1,9 +1,19 @@
-import { mkdirSync } from "node:fs";
-import { resolve } from "node:path";
+import assert from "node:assert/strict";
+import { mkdirSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { chromium, type Page, type Route } from "playwright";
+import { createServer, type ViteDevServer } from "vite";
+import react from "@vitejs/plugin-react";
 
-const baseUrl = process.env.B01_QA_URL ?? "http://127.0.0.1:5187/openclaw/media";
-const outputDir = resolve(process.env.B01_QA_OUTPUT ?? "/home/ubuntu/media-business-api-evidence/5-5-2-5/B01/screenshots");
+const mediaBase = "/openclaw/media";
+const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+// An explicit B01_QA_URL points this at an already-running deployment (base URL
+// including the /openclaw/media prefix, e.g. for a manual/staging walkthrough);
+// otherwise this gate hosts the real app itself via a local, in-process Vite
+// dev server so it has no external dependency.
+const externalBaseUrl = process.env.B01_QA_URL?.replace(/\/$/, "") ?? null;
+const outputDir = resolve(process.env.B01_QA_OUTPUT ?? "/tmp/openclaw-media-b01-overview/screenshots");
 const label = process.env.B01_QA_LABEL ?? "candidate";
 const mode = process.env.B01_QA_MODE ?? "full";
 
@@ -25,6 +35,10 @@ const session = {
     maintainer: false,
     csrfToken: "b01-qa-csrf",
     expiresAt: "2026-08-08T00:00:00+00:00",
+    // Must match mediaWebApi.ts's exactRouteGrants.personal item-for-item
+    // (mediaWebSessionSchema rejects a session whose grants don't match
+    // exactly), or the real app falls back to "workspace unavailable".
+    routeGrants: ["/today", "/studio", "/campaigns", "/business", "/desk", "/overview", "/assets", "/tracks", "/decisions", "/publishing", "/reviews", "/media-agent", "/archives", "/usage-billing", "/invites", "/workspace"],
     schemaVersion: "media_web_business_pages_v2",
   },
 };
@@ -123,7 +137,48 @@ async function assertNoOverflow(page: Page, viewport: string): Promise<void> {
   }
 }
 
-async function capture(viewport: "desktop" | "mobile"): Promise<void> {
+async function startServer(): Promise<ViteDevServer> {
+  const server = await createServer({
+    root: frontendRoot,
+    configFile: false,
+    base: mediaBase + "/",
+    publicDir: false,
+    appType: "spa",
+    plugins: [
+      react(),
+      {
+        name: "b01-real-media-index",
+        configureServer(viteServer) {
+          viteServer.middlewares.use(async (request, response, next) => {
+            const path = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
+            if (path !== mediaBase && path !== mediaBase + "/" && path !== mediaBase + "/overview") {
+              next();
+              return;
+            }
+            try {
+              const html = readFileSync(join(frontendRoot, "index.media.html"), "utf8");
+              response.statusCode = 200;
+              response.setHeader("Content-Type", "text/html");
+              response.end(await viteServer.transformIndexHtml(request.url ?? path, html));
+            } catch (error) {
+              next(error as Error);
+            }
+          });
+        },
+      },
+    ],
+    // watch: null disables the filesystem watcher: this dev server exists only to
+    // serve one fixed bundle for this run's duration, and this repo routinely has
+    // other agents editing unrelated files concurrently (including generated
+    // dist-demo/ output) — without this, their saves trigger HMR page reloads
+    // that could race and destabilize the assertions below.
+    server: { host: "127.0.0.1", port: 0, strictPort: false, watch: null },
+  });
+  await server.listen();
+  return server;
+}
+
+async function capture(baseUrl: string, viewport: "desktop" | "mobile"): Promise<void> {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: viewport === "desktop" ? { width: 1440, height: 1000 } : { width: 390, height: 844 },
@@ -137,12 +192,16 @@ async function capture(viewport: "desktop" | "mobile"): Promise<void> {
   if (label === "baseline") {
     await page.waitForTimeout(250);
   } else if (mode === "error") {
-    await page.getByText("总览服务暂不可用。").waitFor();
+    // OverviewPage no longer surfaces the raw server error string; every failed
+    // B01 request instead renders a fixed, safe Chinese fallback message (see
+    // useB01Dashboard's "总览读取失败。" and the projection-degradation contract
+    // that forbids echoing backend error text back to ordinary users).
+    await page.getByText("总览读取失败。").first().waitFor();
     if ((await page.locator("[data-page-prelude] strong").first().innerText()) !== "—") {
       throw new Error("dashboard failure rendered as zero");
     }
   } else if (mode === "empty") {
-    await page.getByText("当前租户没有可汇总的内容事实", { exact: false }).waitFor();
+    await page.getByText("还没有可统计的内容", { exact: false }).waitFor();
     await page.getByText("还没有内容项目", { exact: false }).waitFor();
   } else {
     await page.getByText(project.title).first().waitFor();
@@ -161,6 +220,24 @@ async function capture(viewport: "desktop" | "mobile"): Promise<void> {
   await browser.close();
 }
 
-await capture("desktop");
-await capture("mobile");
-console.log(`B01 screenshot QA passed: ${label}/${mode}`);
+async function main() {
+  let server: ViteDevServer | null = null;
+  try {
+    let baseUrl: string;
+    if (externalBaseUrl) {
+      baseUrl = externalBaseUrl;
+    } else {
+      server = await startServer();
+      const address = server.httpServer?.address();
+      assert.ok(address && typeof address !== "string", "Vite QA server did not expose a TCP port");
+      baseUrl = `http://127.0.0.1:${address.port}${mediaBase}`;
+    }
+    await capture(baseUrl, "desktop");
+    await capture(baseUrl, "mobile");
+  } finally {
+    if (server) await server.close();
+  }
+  console.log(`B01 screenshot QA passed: ${label}/${mode}`);
+}
+
+await main();

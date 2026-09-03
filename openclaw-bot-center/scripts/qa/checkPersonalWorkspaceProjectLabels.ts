@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "../..");
 const page = readFileSync(resolve(root, "src/media/PersonalWorkspaceShellPage.tsx"), "utf8");
 const projectListMarker = '<div className="personal-project-list" role="list" aria-label="个人云端项目">';
-const artifactPanelMarker = '<section className="section-panel personal-artifact-panel"';
+const artifactPanelMarker = '<section className="section-panel personal-artifact-panel';
 const projectListStart = page.indexOf(projectListMarker);
 const artifactPanelStart = page.indexOf(artifactPanelMarker);
 

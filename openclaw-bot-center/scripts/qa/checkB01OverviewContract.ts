@@ -6,6 +6,14 @@ const source = readFileSync(
   resolve(root, "src/media/pages/ordinary/OverviewPage.tsx"),
   "utf8",
 );
+// The regenerate-preview and confirm actions moved out of Overview and into the
+// shared task review workspace Overview routes into; read that too so the
+// "route to review instead of approving inline" contract still checks the real
+// destination rather than requiring dead inline copy in OverviewPage.tsx itself.
+const taskReviewSource = readFileSync(
+  resolve(root, "src/media/MediaWebWorkspace.tsx"),
+  "utf8",
+);
 
 const failures: string[] = [];
 
@@ -30,8 +38,8 @@ for (const operation of [
 requireContract(
   !source.includes('"confirmMediaTask"') &&
     source.includes("查看影响并确认") &&
-    source.includes("重新生成删除预览") &&
-    source.includes("取消删除"),
+    source.includes("取消删除") &&
+    taskReviewSource.includes("重新生成删除预览"),
   "B01 must route confirmations to task review instead of approving inline",
 );
 

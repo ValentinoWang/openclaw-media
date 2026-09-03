@@ -21,11 +21,17 @@ const runId =
   new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 const evidenceRoot =
   process.env.B02_EVIDENCE_ROOT ??
-  "/home/ubuntu/media-business-api-evidence/5-5-2-5/B02";
+  "/tmp/openclaw-media-b02-tracks-full-shell";
 const runDir = join(evidenceRoot, "full-shell-" + runId);
 const baseUrl = "http://127.0.0.1:18052";
 const ownedAvatarUrl = "https://cdn.example.test/b02-owned-avatar.png";
-const ownedAvatarPng = readFileSync(resolve(frontendRoot, "src/assets/hero.png"));
+// A minimal 1x1 transparent PNG fixture, inlined so this gate has no dependency on
+// a repo image asset (the previous `src/assets/hero.png` fixture no longer exists).
+// Only `naturalWidth > 0` is asserted against this image below, so 1x1 is sufficient.
+const ownedAvatarPng = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "base64",
+);
 const externalTargetUrl = process.env.B02_TARGET_URL ?? null;
 const pageUrl = externalTargetUrl ?? baseUrl + mediaBase + "/tracks";
 const viewports = [
@@ -142,12 +148,21 @@ const sourceFiles: Record<string, string> = {
     frontendRoot,
     "src/media/pages/ordinary/TracksPage.module.css",
   ),
-  tracksService:
-    "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/services/media_business/tracks.py",
-  tracksTest:
-    "/home/ubuntu/selfmedia-tools/openclaw-tag-router/tests/test_media_business_tracks.py",
-  tracksMigration:
-    "/home/ubuntu/selfmedia-tools/openclaw-tag-router/openclaw_app/migrations/014_b02_tracks.sql",
+  // These live in the sibling openclaw-tag-router checkout (see docs/architecture.md),
+  // not under this frontend package; hashing them is best-effort evidence, not a gate,
+  // so a checkout that lacks that sibling repo must not fail this frontend-only check.
+  tracksService: resolve(
+    frontendRoot,
+    "../openclaw-tag-router/openclaw_app/services/media_business/tracks.py",
+  ),
+  tracksTest: resolve(
+    frontendRoot,
+    "../openclaw-tag-router/tests/test_media_business_tracks.py",
+  ),
+  tracksMigration: resolve(
+    frontendRoot,
+    "../openclaw-tag-router/openclaw_app/migrations/014_b02_tracks.sql",
+  ),
   generatedClient: resolve(
     frontendRoot,
     "src/media/generatedBusinessPagesContract.ts",
@@ -350,6 +365,10 @@ async function installFixtures(page: Page, scenario: ScenarioName) {
           maintainer: false,
           csrfToken: "b02-full-shell-fixture-csrf",
           expiresAt: "2026-08-08T00:00:00+00:00",
+          // Must match mediaWebApi.ts's exactRouteGrants.personal item-for-item
+          // (mediaWebSessionSchema rejects a session whose grants don't match
+          // exactly), or the real app falls back to "workspace unavailable".
+          routeGrants: ["/today", "/studio", "/campaigns", "/business", "/desk", "/overview", "/assets", "/tracks", "/decisions", "/publishing", "/reviews", "/media-agent", "/archives", "/usage-billing", "/invites", "/workspace"],
           schemaVersion: "media_web_business_pages_v2",
         },
       });
@@ -424,7 +443,12 @@ async function startServer(): Promise<ViteDevServer> {
         },
       },
     ],
-    server: { host: "127.0.0.1", port: 18052, strictPort: true },
+    // watch: null disables the filesystem watcher: this dev server exists only to
+    // serve one fixed bundle for this run's duration, and this repo routinely has
+    // other agents editing unrelated files concurrently (including generated
+    // dist-demo/ output) — without this, their saves trigger HMR page reloads
+    // that race and time out the assertions below.
+    server: { host: "127.0.0.1", port: 18052, strictPort: true, watch: null },
   });
   await server.listen();
   return server;
@@ -562,7 +586,10 @@ async function capture(
       "the real MediaStudioApp navigation",
     );
     await assertVisible(
-      page.getByRole("link", { name: "账号与赛道", exact: true }),
+      // The nav link's accessible name is now "{label}：{detail}" (its
+      // aria-label combines both, e.g. "账号与赛道：自有账号与监控") rather than
+      // the bare label this used to match exactly.
+      page.getByRole("link", { name: /^账号与赛道/ }),
       "the Tracks route in the real router",
     );
     const main = page.locator("main.fidelity-page");
@@ -799,10 +826,15 @@ async function capture(
 async function main() {
   mkdirSync(runDir, { recursive: true });
   const sourceHashes = Object.fromEntries(
-    Object.entries(sourceFiles).map(([label, path]) => [
-      label,
-      createHash("sha256").update(readFileSync(path)).digest("hex"),
-    ]),
+    Object.entries(sourceFiles).map(([label, path]) => {
+      try {
+        return [label, createHash("sha256").update(readFileSync(path)).digest("hex")];
+      } catch (error) {
+        // Best-effort evidence only (see the sourceFiles comment above): a checkout
+        // without the sibling backend repo must not fail this frontend gate.
+        return [label, "unavailable: " + (error instanceof Error ? error.message : String(error))];
+      }
+    }),
   );
   const results: Array<Record<string, unknown>> = [];
   const failures: Array<Record<string, unknown>> = [];

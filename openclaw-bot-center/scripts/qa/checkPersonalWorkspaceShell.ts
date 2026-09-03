@@ -22,7 +22,7 @@ requireText(app, "const isPersonal = routePolicy.shell === 'personal'", "MediaSt
 requireText(app, 'path: \'/workspace\', label: \'个人云端成果\'', "personal navigation must be declared explicitly");
 requireText(app, '<Route path="/workspace/preview/:artifactId" element={personalRoute(\'/workspace/preview/:artifactId\', <PersonalWorkspaceShellPage />, routePolicy)} />', "preview routing must be personal-session guarded");
 requireText(workspace, 'return <PersonalWorkspaceShellPage />', "shared workspace route must delegate personal sessions to the personal shell");
-requireText(personal, 'className="topbar-command personal-task-status-command"', "personal shell must retain a read-only task-status affordance for the shared shell regression fixture");
+assert.match(personal, /className="[^"]*\bpersonal-task-status-command\b[^"]*"/, "personal shell must retain a read-only task-status affordance for the shared shell regression fixture");
 requireText(personal, 'className="task-drawer personal-task-status-drawer"', "personal task status must use a read-only drawer surface");
 requireText(personal, "尚未提交网页任务", "personal task status must not imply submitted work");
 

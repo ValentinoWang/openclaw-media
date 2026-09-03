@@ -5,13 +5,25 @@
    带 var(token, 兜底值) 形式的兜底色：令牌缺失（比如令牌文件加载
    失败）时也能保持可读，深浅色主题则完全交给令牌自身切换。 */
 
-.demo-console-trigger {
+/* 触发按钮 + 面板的定位锚点。默认贴左下角（侧栏之外）；拖拽后
+   DemoConsole.tsx 会在这里写入内联 left/top（并把 right/bottom 设成
+   auto）盖掉下面的默认贴边规则。position:fixed 且水平/垂直各只设一侧
+   偏移时，这个盒子会天然收缩贴合内容（等同浮动元素），正好等于触发
+   按钮本身的大小——下面 .demo-console-panel 用 position:absolute 相对
+   这个盒子摆放，不需要另外量按钮尺寸。
+   data-side / data-align 由 DemoConsole.tsx 按「按钮当前落点距视口两侧
+   还剩多少空间」算好写入，面板往哪个方向展开完全交给下面几条选择器，
+   不需要逐帧测量面板自己的渲染尺寸。 */
+.demo-console-wrapper {
   position: fixed;
   /* 贴在内容区左下角（侧栏之外）：页面自己的主操作几乎都在右下角与顶栏，
      停在那里会挡住它们。--mg-shell-sidebar 是壳层侧栏宽度令牌。 */
   left: calc(var(--mg-shell-sidebar, 304px) + 20px);
   bottom: 20px;
   z-index: 90;
+}
+
+.demo-console-trigger {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -24,11 +36,20 @@
   font-size: var(--mg-text-sm, 0.875rem);
   font-weight: 600;
   line-height: 1;
-  cursor: pointer;
+  cursor: grab;
+  /* 关掉浏览器自己的触摸滚动/缩放手势识别，pointermove 才能拿来做拖拽，
+     不然移动端一按住就会被当成页面平移。 */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .demo-console-trigger:hover {
   background: var(--mg-primary-dark, #10684a);
+}
+
+.demo-console-trigger:active {
+  cursor: grabbing;
 }
 
 .demo-console-trigger:focus-visible {
@@ -36,11 +57,18 @@
   outline-offset: 2px;
 }
 
+/* 纯装饰性的拖拽手柄图标，提示这颗按钮能拖。 */
+.demo-console-trigger-grip {
+  flex: 0 0 auto;
+  opacity: 0.7;
+}
+
 .demo-console-panel {
-  position: fixed;
-  left: calc(var(--mg-shell-sidebar, 304px) + 20px);
-  bottom: 84px;
-  z-index: 90;
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  z-index: 1;
+  margin-bottom: var(--mg-gap-3, 18px);
   display: flex;
   width: min(360px, calc(100vw - 32px));
   max-height: min(72vh, 640px);
@@ -51,6 +79,21 @@
   color: var(--mg-ink, #17241f);
   background: var(--mg-surface, #ffffff);
   box-shadow: var(--mg-e4, 0 24px 60px rgba(23, 36, 31, 0.24));
+}
+
+/* 触发按钮贴到右半屏：面板改成右边缘对齐按钮右边缘、往左展开，
+   避免顶出视口右侧。 */
+.demo-console-wrapper[data-side="right"] .demo-console-panel {
+  left: auto;
+  right: 0;
+}
+
+/* 触发按钮贴到上半屏：面板改成从按钮下方往下展开，避免顶出视口顶部。 */
+.demo-console-wrapper[data-align="top"] .demo-console-panel {
+  bottom: auto;
+  top: 100%;
+  margin-bottom: 0;
+  margin-top: var(--mg-gap-3, 18px);
 }
 
 .demo-console-header {
@@ -239,24 +282,12 @@
   white-space: nowrap;
 }
 
-/* 窄屏侧栏收起，控制台回到左下角贴边。 */
+/* 窄屏侧栏收起，触发按钮和面板一起回到左下角贴边（拖拽过的话，内联样式
+   会盖过这里，位置仍然以拖拽结果为准）。 */
 @media (max-width: 980px) {
-  .demo-console-trigger {
+  .demo-console-wrapper {
     left: 16px;
     bottom: 16px;
-  }
-
-  .demo-console-panel {
-    left: 16px;
-    bottom: 76px;
-  }
-}
-
-@media (max-width: 640px) {
-  .demo-console-panel {
-    right: 16px;
-    left: 16px;
-    width: auto;
   }
 }
 

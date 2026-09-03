@@ -204,6 +204,21 @@
   margin-left: calc(var(--mg-gap-3) * -1);
 }
 
+/* ---- 标识符（ID / 编码 / 卡密）----
+   这类值是一整串、没有断词点。到处写 overflow-wrap: anywhere 只会让它们被拦腰
+   截断成「proj_autu / mn_camer / a」，既难读也对不上。这里统一成单行省略号，
+   完整值放 title；需要整串可见的地方请给容器留够宽度，而不是把词打碎。 */
+.mg-id {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
 /* ---- 面板（原 12 份 panelHeader -> 1 份）---- */
 .mg-panel {
   overflow: hidden;
@@ -485,7 +500,10 @@
 
 @media (max-width: 760px) {
   .mg-hero { grid-template-columns: 1fr; padding: 22px; border-radius: var(--mg-r-lg); }
+  /* 只让 hero 里的动作按钮铺满，不要波及所有 .mg-btn：页面里的图标按钮
+     （如 32px 的刷新按钮）与 .mg-btn 同 specificity，会被这条规则撑满整行，
+     把同排的标题挤成 0 宽、中文一字一行。 */
   .mg-hero-actions { display: grid; grid-template-columns: 1fr; }
-  .mg-btn { width: 100%; }
+  .mg-hero-actions .mg-btn { width: 100%; }
   .mg-pipeline { flex-wrap: wrap; }
 }

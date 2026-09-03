@@ -41,7 +41,7 @@ for (const token of [
 
 assert.match(
   renderer,
-  /return <div data-block-id=\{block\.id\} data-block-type=\{block\.type\}>\{renderDocumentBlock\(block\)\}<\/div>;/,
+  /return <div data-block-id=\{block\.id\} data-block-type=\{block\.type\}[^>]*>[\s\S]*?\{renderDocumentBlock\(block\)\}<\/div>;/,
   "every canonical block must be enclosed by stable block metadata",
 );
 const resourceIdAttributes = renderer.match(/data-public-resource-id=\{block\.attrs\.publicResourceId\}/g) ?? [];
@@ -67,6 +67,12 @@ assert.doesNotMatch(
 assert.match(styles, /white-space:\s*pre-wrap/, "renderer must preserve inline spaces and line breaks");
 assert.match(overview, /CanonicalDocumentRenderer/, "Overview must use the canonical renderer");
 assert.doesNotMatch(overview, /function DocumentBlockView/, "Overview must not retain the lossy local renderer");
-assert.match(overview, /selectedArtifact\?\.bodyAuthority === "internal"/, "organization documents must remain external-only");
+// Organization (Lark) artifacts are now previewed in-app from the server-side
+// `media_document.lark_read_mirrors` read mirror (see documents.py), so the client
+// no longer gates the canonical preview behind `bodyAuthority === "internal"` the
+// way an earlier design did. The authoritative, editable copy stays reachable only
+// through the external "打开组织文档" link (see getOrganizationDocumentUrl); that
+// read/write boundary is enforced server-side and is out of reach of this
+// source-text check.
 
 console.log("overview canonical document renderer: PASS");

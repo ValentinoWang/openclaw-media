@@ -53,7 +53,13 @@
   padding: 0 11px;
 }
 
-.iconButton {
+/* 用 button.iconButton（元素 + 类）而不是单类选择器：全局 .mg-btn 在
+   @media (max-width: 760px) 里把所有按钮撑到 width:100%（是为了让 hero 里的
+   主操作按钮在移动端占满一行），单类选择器的 .iconButton 和它优先级打平，
+   打包后谁在样式表里靠后谁赢——这个 32px 方形的刷新按钮曾经因此被撑成整行
+   宽度，把同一个 flex 行里 min-width:0 的标题区块挤压到 0 宽，导致「发布包」
+   这几个字按字断行。加一层元素选择器保证这里的固定尺寸稳赢，不依赖打包顺序。 */
+button.iconButton {
   width: 32px;
   height: 32px;
   min-height: 32px;

@@ -348,6 +348,12 @@ function assertMediaTypographyIsCanonical(): void {
   })
   if (violations.length) throw new Error(`media typography contract failed: ${violations.join(', ')}`)
 
+  const identifierRule = /\.mg-id\s*\{([^}]*)\}/.exec(readFileSync(resolve(projectRoot, 'src/media/mediaPrimitives.css'), 'utf8'))?.[1]
+  if (identifierRule === undefined) throw new Error('media metric layout contract failed: 缺少 .mg-id 标识符原语')
+  if (!/white-space:\s*nowrap/.test(identifierRule) || !/text-overflow:\s*ellipsis/.test(identifierRule)) {
+    throw new Error('media metric layout contract failed: .mg-id 必须单行省略，不能让整串标识符被拦腰截断')
+  }
+
   const metricViolations = findMetricLayoutViolations(readFileSync(resolve(projectRoot, 'src/media/mediaPrimitives.css'), 'utf8'))
   if (metricViolations.length) throw new Error(`media metric layout contract failed: ${metricViolations.join(', ')}`)
 
