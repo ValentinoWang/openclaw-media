@@ -1,13 +1,24 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { ArrowRight, Bot, LoaderCircle, RefreshCcw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
-import { WORKBOARD_FLOW_STAGES, workboardStageIndex, type WorkboardFlowStage } from './workboardPresentation'
+import {
+  WORKBOARD_FLOW_COLUMNS,
+  WORKBOARD_FLOW_EDGES,
+  WORKBOARD_FLOW_LANES,
+  WORKBOARD_FLOW_NODES,
+  WORKBOARD_FLOW_TOUR,
+  workboardFlowNode,
+  workboardStageIndex,
+  type WorkboardFlowFact,
+  type WorkboardFlowLane,
+  type WorkboardFlowNode,
+} from './workboardPresentation'
 import styles from './WorkboardFlowDiagram.module.css'
 
 /** 只取流程图用得到的合同字段（DashboardSummary），其余由 WorkboardPage 持有。 */
 export type WorkboardFlowSummary = {
-  counts: { contentProjects: number }
+  counts: { contentProjects: number; runs: number; assets: number; tracks: number; creators: number; publishedPosts: number; reviews: number }
   contentProjectStages: readonly { stage: string; count: number }[]
   pendingDecisions: number
   pendingPublishing: number
@@ -16,28 +27,104 @@ export type WorkboardFlowSummary = {
   generatedAt: string
 }
 
-export type WorkboardFlowProject = {
-  publicProjectId: string
-  title: string
-  stage: string
-  updatedAt: string
-}
+export type WorkboardFlowProject = { publicProjectId: string; title: string; stage: string; updatedAt: string }
+export type WorkboardFlowOpportunity = { publicOpportunityId: string; brand: string; product: string; status: string }
+export type WorkboardFlowTask = { taskId: string; capabilityId: string; status: string; terminal: boolean; summary: string; progress: number; updatedAt: string }
 
-const stageAccent: Readonly<Record<string, string>> = {
-  research: 'desk',
-  assets: 'archive',
-  decision: 'business',
-  creation: 'studio',
-  publishing: 'campaign',
-  review: 'agent',
+type FlowData = {
+  summary: WorkboardFlowSummary | null
+  projects: readonly WorkboardFlowProject[]
+  opportunities: readonly WorkboardFlowOpportunity[] | null
+  tasks: readonly WorkboardFlowTask[]
 }
 
 const AUTO_ADVANCE_MS = 4200
 
-export function WorkboardFlowDiagram({ summary, loading, projects, onOpenTasks }: {
+// ---- SVG 几何：六列 × 三条泳道，viewBox 固定，容器变窄时横向滚动而不是缩字 ----
+const NODE_W = 148
+const NODE_H = 64
+const COLUMN_X = [24, 218, 412, 606, 800, 994] as const
+const LANE_Y: Record<WorkboardFlowLane, number> = { content: 78, shared: 190, commercial: 302 }
+const VIEW_W = 1164
+const VIEW_H = 412
+
+type Box = { x: number; y: number; cx: number; cy: number; right: number; bottom: number; lane: WorkboardFlowLane }
+
+function nodeBox(node: WorkboardFlowNode): Box {
+  const x = COLUMN_X[node.column - 1]!
+  const y = LANE_Y[node.lane]
+  return { x, y, cx: x + NODE_W / 2, cy: y + NODE_H / 2, right: x + NODE_W, bottom: y + NODE_H, lane: node.lane }
+}
+
+const boxes = new Map(WORKBOARD_FLOW_NODES.map((node) => [node.id, nodeBox(node)]))
+
+/** 每条边的路径与标签位置。合流边汇入创作节点左侧的不同高度，送审/返修是一对平行竖线，回流走外圈。 */
+function edgeGeometry(from: Box, to: Box, fromId: string, toId: string, kind: string): { d: string; label: [number, number] } {
+  if (kind === 'loop') {
+    if (to.y < from.y) {
+      const top = 48
+      return { d: `M${from.cx},${from.y} V${top} H${to.cx} V${to.y}`, label: [(from.cx + to.cx) / 2, top + 14] }
+    }
+    const bottom = VIEW_H - 26
+    return { d: `M${from.cx},${from.bottom} V${bottom} H${to.cx} V${to.bottom}`, label: [(from.cx + to.cx) / 2, bottom - 6] }
+  }
+  if (fromId === 'creation' && toId === 'acceptance') {
+    const x = from.cx - 22
+    return { d: `M${x},${from.bottom} V${to.y}`, label: [x - 8, (from.bottom + to.y) / 2 + 4] }
+  }
+  if (fromId === 'acceptance' && toId === 'creation') {
+    const x = from.cx + 22
+    return { d: `M${x},${from.y} V${to.bottom}`, label: [x + 8, (from.y + to.bottom) / 2 + 4] }
+  }
+  if (toId === 'creation') {
+    const targetY = fromId === 'decision' ? to.cy - 14 : fromId === 'brief' ? to.cy + 14 : to.cy
+    if (from.lane === to.lane) return { d: `M${from.right},${from.cy} H${to.x}`, label: [(from.right + to.x) / 2, from.cy - 8] }
+    const startY = from.y > to.y ? from.y : from.bottom
+    return { d: `M${from.cx},${startY} C${from.cx},${targetY} ${from.cx + 40},${targetY} ${to.x},${targetY}`, label: [from.cx + 14, (startY + targetY) / 2 + 4] }
+  }
+  if (fromId === 'acceptance' && toId === 'publishing') {
+    const targetY = to.bottom - 12
+    return { d: `M${from.right},${from.cy} C${to.x - 4},${from.cy} ${to.x - 10},${targetY + 30} ${to.x},${targetY}`, label: [from.right + 12, from.cy - 8] }
+  }
+  const y = fromId === 'creation' && toId === 'publishing' ? from.cy - 14 : from.cy
+  return { d: `M${from.right},${y} H${to.x}`, label: [(from.right + to.x) / 2, y - 8] }
+}
+
+function factValue(fact: WorkboardFlowFact, data: FlowData): number | null {
+  switch (fact.source) {
+    case 'stage': return data.summary ? data.summary.contentProjectStages.find((row) => row.stage === fact.stage)?.count ?? 0 : null
+    case 'counts': return data.summary ? data.summary.counts[fact.key] : null
+    case 'pending': return data.summary ? data.summary[fact.key] : null
+    case 'opportunities': return data.opportunities ? data.opportunities.length : null
+    case 'tasks': return data.tasks.filter((task) => task.capabilityId === fact.capabilityId && (fact.attention ? isAttentionTask(task) : !task.terminal)).length
+  }
+}
+
+function isAttentionTask(task: WorkboardFlowTask): boolean {
+  return task.status === 'awaiting_confirmation' || task.status === 'pending_manual' || (task.terminal && task.status === 'failed')
+}
+
+function pendingValue(node: WorkboardFlowNode, data: FlowData): number {
+  return node.facts
+    .filter((fact) => fact.source === 'pending' || (fact.source === 'tasks' && fact.attention))
+    .reduce((total, fact) => total + (factValue(fact, data) ?? 0), 0)
+}
+
+function nodeCaption(node: WorkboardFlowNode, data: FlowData): string {
+  const parts = node.facts.slice(0, 2).flatMap((fact) => {
+    const value = factValue(fact, data)
+    return value === null ? [] : [`${value} ${fact.label}`]
+  })
+  if (parts.length) return parts.join(' · ')
+  return node.facts.length ? '读取中' : node.pathLabel
+}
+
+export function WorkboardFlowDiagram({ summary, loading, projects, opportunities, tasks, onOpenTasks }: {
   summary: WorkboardFlowSummary | null
   loading: boolean
   projects: readonly WorkboardFlowProject[]
+  opportunities: readonly WorkboardFlowOpportunity[] | null
+  tasks: readonly WorkboardFlowTask[]
   onOpenTasks: () => void
 }) {
   const [selected, setSelected] = useState<string | null>(null)
@@ -58,107 +145,134 @@ export function WorkboardFlowDiagram({ summary, loading, projects, onOpenTasks }
   const autoAdvance = selected === null && !paused && !reducedMotion
   useEffect(() => {
     if (!autoAdvance) return
-    const timer = window.setInterval(() => setCursor((value) => (value + 1) % WORKBOARD_FLOW_STAGES.length), AUTO_ADVANCE_MS)
+    const timer = window.setInterval(() => setCursor((value) => (value + 1) % WORKBOARD_FLOW_TOUR.length), AUTO_ADVANCE_MS)
     return () => window.clearInterval(timer)
   }, [autoAdvance])
 
-  const stageCounts = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const row of summary?.contentProjectStages ?? []) counts.set(row.stage, row.count)
-    return counts
-  }, [summary])
-  const totalProjects = summary?.counts.contentProjects ?? 0
-  const projectsByStage = useMemo(() => {
-    const groups = new Map<number, WorkboardFlowProject[]>()
-    for (const project of projects) {
-      const index = workboardStageIndex(project.stage)
-      if (index === null) continue
-      groups.set(index, [...(groups.get(index) ?? []), project])
-    }
-    return groups
-  }, [projects])
+  const data: FlowData = useMemo(() => ({ summary, projects, opportunities, tasks }), [summary, projects, opportunities, tasks])
+  const activeId = selected ?? WORKBOARD_FLOW_TOUR[cursor]!
+  const active = workboardFlowNode(activeId) ?? WORKBOARD_FLOW_NODES[0]!
+  const tourIndex = WORKBOARD_FLOW_TOUR.indexOf(activeId as (typeof WORKBOARD_FLOW_TOUR)[number])
+  const liveEdges = new Set(WORKBOARD_FLOW_EDGES.filter((edge) => edge.from === activeId || edge.to === activeId).map((edge) => `${edge.from}->${edge.to}`))
+  const commercialTasks = useMemo(() => tasks.filter((task) => task.capabilityId === 'commercial_delivery_draft'), [tasks])
 
-  const activeStage = selected ?? WORKBOARD_FLOW_STAGES[cursor]!.stage
-  const activeIndex = WORKBOARD_FLOW_STAGES.findIndex((stage) => stage.stage === activeStage)
-  const active = WORKBOARD_FLOW_STAGES[activeIndex]!
-  const activeCount = stageCounts.get(active.stage)
-  const activePending = pendingCount(active, summary)
-  const activeProjects = projectsByStage.get(activeIndex) ?? []
-
-  function select(stage: string) {
-    setSelected((current) => (current === stage ? null : stage))
-    const index = WORKBOARD_FLOW_STAGES.findIndex((item) => item.stage === stage)
+  function select(id: string) {
+    setSelected((current) => (current === id ? null : id))
+    const index = WORKBOARD_FLOW_TOUR.indexOf(id as (typeof WORKBOARD_FLOW_TOUR)[number])
     if (index !== -1) setCursor(index)
+  }
+  function onNodeKey(event: KeyboardEvent<SVGGElement>, id: string) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      select(id)
+    }
   }
 
   return (
     <section className={`mg-panel ${styles.panel}`} aria-label="自媒体全流程" data-flow-auto={autoAdvance ? 'on' : 'off'}>
       <header className="mg-panel-head">
-        <div><span>自媒体全流程</span><h2>从研究到复盘的内容闭环</h2></div>
+        <div><span>自媒体全流程</span><h2>内容线与商务线在创作合流，复盘把结果送回起点</h2></div>
         <div className={styles.headMeta}>
-          {loading ? <LoaderCircle className="spin" size={16} /> : <strong>{summary ? `${totalProjects} 个内容项目` : '汇总暂不可用'}</strong>}
-          <small>{summary ? `按项目当前阶段统计 · ${formatDate(summary.generatedAt)}` : '阶段说明与真实数据分开展示'}</small>
+          {loading ? <LoaderCircle className="spin" size={16} /> : <strong>{summary ? `${summary.counts.contentProjects} 个内容项目` : '汇总暂不可用'}</strong>}
+          <small>{summary ? `按真实项目、商机与任务统计 · ${formatDate(summary.generatedAt)}` : '流程说明与真实数据分开展示'}</small>
         </div>
       </header>
 
-      <div className={styles.distribution} role="img" aria-label={distributionLabel(stageCounts, totalProjects)}>
-        {WORKBOARD_FLOW_STAGES.map((stage) => {
-          const count = stageCounts.get(stage.stage) ?? 0
-          const share = totalProjects ? (count / totalProjects) * 100 : 0
-          return <span key={stage.stage} data-accent={stageAccent[stage.stage]} data-active={stage.stage === activeStage ? 'true' : undefined} style={{ flexBasis: `${share}%` }} title={`${stage.label} ${count}`} />
-        })}
+      <div className={styles.legend} aria-label="泳道说明">
+        {WORKBOARD_FLOW_LANES.map((lane) => <span key={lane.id} data-lane={lane.id}><i />{lane.label}<small>{lane.detail}</small></span>)}
       </div>
 
-      <ol
-        className={styles.track}
+      <div
+        className={styles.chart}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocus={() => setPaused(true)}
         onBlur={() => setPaused(false)}
       >
-        {WORKBOARD_FLOW_STAGES.map((stage, index) => {
-          const count = stageCounts.get(stage.stage)
-          const pending = pendingCount(stage, summary)
-          const isActive = stage.stage === activeStage
-          return (
-            <li key={stage.stage} data-accent={stageAccent[stage.stage]} data-active={isActive ? 'true' : undefined} data-reached={index <= activeIndex ? 'true' : undefined}>
-              <button type="button" className={styles.node} aria-pressed={selected === stage.stage} onClick={() => select(stage.stage)}>
-                <span className={styles.nodeIndex}>{index + 1}</span>
-                <strong>{stage.label}</strong>
-                <em>{summary ? `${count ?? 0} 个项目` : '—'}</em>
-                <small>{stage.artifactLabel}</small>
-                {pending ? <b className={styles.nodePending}>{stage.pendingLabel} {pending}</b> : null}
-              </button>
-            </li>
-          )
-        })}
-      </ol>
+        <svg className={styles.svg} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} role="group" aria-label="自媒体全流程图：内容线、商务线与合流">
+          <defs>
+            <marker id="wb-arrow-muted" className={styles.arrowMuted} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" /></marker>
+            {(['studio', 'campaign', 'business', 'desk', 'agent', 'archive'] as const).map((accent) => (
+              <marker key={accent} id={`wb-arrow-${accent}`} className={styles.arrowLive} data-accent={accent} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" /></marker>
+            ))}
+          </defs>
 
-      <div className={styles.detail} data-accent={stageAccent[active.stage]} aria-live="polite">
-        <div className={styles.detailCopy}>
-          <span className={styles.detailEyebrow}>第 {activeIndex + 1} / {WORKBOARD_FLOW_STAGES.length} 步 · {active.label}</span>
-          <p><strong>做什么</strong>{active.action}</p>
-          <p><strong>产出</strong>{active.outcome}</p>
-          <div className={styles.detailFacts}>
-            <span><small>当前项目</small><strong>{summary ? activeCount ?? 0 : '—'}</strong></span>
-            <span><small>{active.pendingLabel ?? '待处理'}</small><strong>{active.pending ? (summary ? activePending : '—') : '无'}</strong></span>
-            <span><small>产物类型</small><strong>{active.artifactLabel}</strong></span>
-          </div>
-        </div>
-        <div className={styles.detailSide}>
-          <span>处于此阶段的项目</span>
-          {activeProjects.length ? (
-            <ul>
-              {activeProjects.slice(0, 3).map((project) => <li key={project.publicProjectId}><strong>{project.title}</strong><small>更新于 {formatDate(project.updatedAt)}</small></li>)}
-              {activeProjects.length > 3 ? <li><small>还有 {activeProjects.length - 3} 个项目</small></li> : null}
-            </ul>
-          ) : <p>{summary && (activeCount ?? 0) > 0 ? '最近更新的项目里没有处于此阶段的，可到对应页面查看全部。' : '暂无项目处于此阶段。'}</p>}
-          <Link className="mg-btn mg-btn-soft" to={active.path}>前往{active.pathLabel}<ArrowRight size={15} /></Link>
-        </div>
+          {WORKBOARD_FLOW_LANES.map((lane) => (
+            <g key={lane.id} className={styles.laneBand} data-lane={lane.id}>
+              <rect x={8} y={LANE_Y[lane.id] - 12} width={VIEW_W - 16} height={NODE_H + 24} rx={14} />
+              <text x={lane.id === 'shared' ? 28 : VIEW_W - 28} y={LANE_Y[lane.id] + 8} textAnchor={lane.id === 'shared' ? 'start' : 'end'}>{lane.label}</text>
+            </g>
+          ))}
+
+          {WORKBOARD_FLOW_COLUMNS.map((column, index) => (
+            <text key={column} className={styles.columnHead} x={COLUMN_X[index]! + NODE_W / 2} y={24} textAnchor="middle">{index + 1} · {column}</text>
+          ))}
+
+          {WORKBOARD_FLOW_EDGES.map((edge) => {
+            const from = boxes.get(edge.from)!
+            const to = boxes.get(edge.to)!
+            const fromNode = workboardFlowNode(edge.from)!
+            const key = `${edge.from}->${edge.to}`
+            const live = liveEdges.has(key)
+            const geometry = edgeGeometry(from, to, edge.from, edge.to, edge.kind)
+            return (
+              <g key={key} className={styles.edge} data-kind={edge.kind} data-live={live ? 'true' : undefined} data-accent={fromNode.accent}>
+                <path d={geometry.d} markerEnd={`url(#wb-arrow-${live ? fromNode.accent : 'muted'})`} />
+                {edge.label ? <text x={geometry.label[0]} y={geometry.label[1]} textAnchor={edge.kind === 'loop' ? 'middle' : (edge.from === 'acceptance' && edge.to === 'creation') || edge.to === 'creation' && edge.from !== 'assets' ? 'start' : edge.from === 'creation' && edge.to === 'acceptance' ? 'end' : 'middle'}>{edge.label}</text> : null}
+              </g>
+            )
+          })}
+
+          {WORKBOARD_FLOW_NODES.map((node) => {
+            const box = boxes.get(node.id)!
+            const pending = pendingValue(node, data)
+            const isActive = node.id === activeId
+            return (
+              <g
+                key={node.id}
+                className={styles.node}
+                data-accent={node.accent}
+                data-active={isActive ? 'true' : undefined}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selected === node.id}
+                aria-label={`${node.label}：${nodeCaption(node, data)}`}
+                transform={`translate(${box.x} ${box.y})`}
+                onClick={() => select(node.id)}
+                onKeyDown={(event) => onNodeKey(event, node.id)}
+              >
+                <rect className={styles.nodeBox} width={NODE_W} height={NODE_H} rx={12} />
+                <text className={styles.nodeLabel} x={14} y={26}>{node.label}</text>
+                <text className={styles.nodeCaption} x={14} y={47}>{nodeCaption(node, data)}</text>
+                {pending ? (
+                  <g className={styles.nodePending} transform={`translate(${NODE_W - 12} 0)`}>
+                    <rect x={-30} y={-9} width={38} height={18} rx={9} />
+                    <text x={-11} y={4} textAnchor="middle">待 {pending}</text>
+                  </g>
+                ) : null}
+              </g>
+            )
+          })}
+        </svg>
       </div>
 
+      <div className={styles.laneList} aria-label="全流程节点（窄屏）">
+        {WORKBOARD_FLOW_LANES.map((lane) => (
+          <div key={lane.id} className={styles.laneGroup} data-lane={lane.id}>
+            <span>{lane.label}<small>{lane.detail}</small></span>
+            {WORKBOARD_FLOW_NODES.filter((node) => node.lane === lane.id).map((node) => (
+              <button key={node.id} type="button" className={styles.laneNode} data-accent={node.accent} data-active={node.id === activeId ? 'true' : undefined} aria-pressed={selected === node.id} onClick={() => select(node.id)}>
+                <strong>{node.label}</strong><small>{nodeCaption(node, data)}</small>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <FlowDetail node={active} step={tourIndex === -1 ? null : tourIndex + 1} data={data} commercialTasks={commercialTasks} />
+
       <footer className={styles.footer}>
-        <span className={styles.loop}><RefreshCcw size={15} />复盘报告回流到下一轮研究，形成闭环</span>
+        <span className={styles.loop}><RefreshCcw size={15} />复盘把经验送回研究与选题，把结案数据送回商机</span>
         <button type="button" className={styles.agentLane} onClick={onOpenTasks}>
           <Bot size={15} />
           <span>Agent 任务贯穿每一步</span>
@@ -172,12 +286,53 @@ export function WorkboardFlowDiagram({ summary, loading, projects, onOpenTasks }
   )
 }
 
-function pendingCount(stage: WorkboardFlowStage, summary: WorkboardFlowSummary | null): number {
-  if (!stage.pending || !summary) return 0
-  return summary[stage.pending]
-}
+function FlowDetail({ node, step, data, commercialTasks }: { node: WorkboardFlowNode; step: number | null; data: FlowData; commercialTasks: readonly WorkboardFlowTask[] }) {
+  const lane = WORKBOARD_FLOW_LANES.find((item) => item.id === node.lane)!
+  const stageIndex = node.stage ? workboardStageIndex(node.stage) : null
+  const stageProjects = stageIndex === null ? [] : data.projects.filter((project) => workboardStageIndex(project.stage) === stageIndex)
+  const sideTitle = node.id === 'opportunity' || node.id === 'profile' ? '当前商务机会' : node.id === 'brief' || node.id === 'acceptance' ? '商单交付任务' : '处于此阶段的项目'
+  const sideItems: { key: string; title: string; detail: string }[] = node.id === 'opportunity' || node.id === 'profile'
+    ? (data.opportunities ?? []).map((item) => ({ key: item.publicOpportunityId, title: `${item.brand} · ${item.product}`, detail: item.status }))
+    : node.id === 'brief' || node.id === 'acceptance'
+      ? commercialTasks.filter((task) => node.id === 'brief' ? !task.terminal : isAttentionTask(task)).map((task) => ({ key: task.taskId, title: task.summary || '商单交付任务', detail: `${task.progress}% · ${formatDate(task.updatedAt)}` }))
+      : stageProjects.map((project) => ({ key: project.publicProjectId, title: project.title, detail: `更新于 ${formatDate(project.updatedAt)}` }))
+  const emptyCopy = node.id === 'opportunity' || node.id === 'profile'
+    ? (data.opportunities === null ? '商务机会暂时无法读取。' : '还没有已授权的商务机会。')
+    : node.id === 'brief' || node.id === 'acceptance'
+      ? '当前没有对应的商单交付任务。'
+      : stageIndex === null
+        ? '这一步不按项目阶段统计。'
+        : '最近更新的项目里没有处于此阶段的。'
 
-function distributionLabel(counts: ReadonlyMap<string, number>, total: number): string {
-  const parts = WORKBOARD_FLOW_STAGES.map((stage) => `${stage.label} ${counts.get(stage.stage) ?? 0}`)
-  return `${total} 个项目按阶段分布：${parts.join('，')}`
+  return (
+    <div className={styles.detail} data-accent={node.accent} aria-live="polite">
+      <div className={styles.detailCopy}>
+        <span className={styles.detailEyebrow}>{lane.label}{step ? ` · 巡游第 ${step} / ${WORKBOARD_FLOW_TOUR.length} 站` : ''} · {node.label}</span>
+        <p><strong>做什么</strong>{node.action}</p>
+        <p><strong>产出</strong>{node.outcome}</p>
+        <div className={styles.detailFacts}>
+          {node.facts.map((fact, index) => {
+            const value = factValue(fact, data)
+            return <span key={index}><small>{fact.label}</small><strong>{value === null ? '—' : value}</strong></span>
+          })}
+          {node.artifactLabel ? <span><small>产物类型</small><strong>{node.artifactLabel}</strong></span> : null}
+          {node.stage ? <span><small>项目阶段</small><strong>第 {stageIndex! + 1} / 6 步</strong></span> : null}
+        </div>
+        <div className={styles.capabilities}>
+          <small>用到的能力</small>
+          {node.capabilities.map((capability) => <code key={capability.id} title={capability.id}>{capability.label}</code>)}
+        </div>
+      </div>
+      <div className={styles.detailSide}>
+        <span>{sideTitle}</span>
+        {sideItems.length ? (
+          <ul>
+            {sideItems.slice(0, 3).map((item) => <li key={item.key}><strong>{item.title}</strong><small>{item.detail}</small></li>)}
+            {sideItems.length > 3 ? <li><small>还有 {sideItems.length - 3} 项</small></li> : null}
+          </ul>
+        ) : <p>{emptyCopy}</p>}
+        <Link className="mg-btn mg-btn-soft" to={node.path}>前往{node.pathLabel}<ArrowRight size={15} /></Link>
+      </div>
+    </div>
+  )
 }

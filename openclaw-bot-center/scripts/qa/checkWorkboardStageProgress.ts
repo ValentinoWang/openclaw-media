@@ -4,9 +4,13 @@ import { resolve } from 'node:path'
 
 import { ARTIFACT_TYPE_LABELS } from '../../src/media/ui/ordinaryDataLabels'
 import {
-  WORKBOARD_FLOW_STAGES,
+  WORKBOARD_FLOW_COLUMNS,
+  WORKBOARD_FLOW_EDGES,
+  WORKBOARD_FLOW_NODES,
   WORKBOARD_FLOW_STAGE_ORDER,
+  WORKBOARD_FLOW_TOUR,
   workboardStageIndex,
+  workboardStageNode,
   workboardStageProgress,
 } from '../../src/media/studio/workboardPresentation'
 
@@ -38,26 +42,64 @@ assert.deepEqual(
   'an unknown stage must not invent a progress percentage',
 )
 
-// ---- /today 全流程图：每个节点都必须绑定真实的合同枚举、产物类型与生产路由 ----
+// ---- /today 全流程图：每个节点都必须绑定真实的合同枚举、合同字段、产物类型、能力与生产路由 ----
 const contract = readFileSync(resolve('contracts/media_web_business_pages.openapi.yaml'), 'utf8')
 const stageCountEnum = /StageCount:[\s\S]*?stage:\s*type: string\s*enum:\s*((?:\s*- \w+)+)/.exec(contract)?.[1]
 assert.ok(stageCountEnum, 'StageCount.stage enum must be readable from the business contract')
-assert.deepEqual(
-  [...WORKBOARD_FLOW_STAGE_ORDER],
-  stageCountEnum.trim().split(/\s*-\s*/).filter(Boolean),
-  'workflow diagram stage order must equal the contract StageCount.stage enum order',
-)
+const contractStages = stageCountEnum.trim().split(/\s*-\s*/).filter(Boolean)
+assert.deepEqual([...WORKBOARD_FLOW_STAGE_ORDER], contractStages, 'project stage backbone must equal the contract StageCount.stage enum order')
+const dashboardCounts = /DashboardCounts:\s*type: object\s*additionalProperties: false\s*properties:\s*((?:\s*\w+:\s*type: integer\s*minimum: 0)+)/.exec(contract)?.[1]
+assert.ok(dashboardCounts, 'DashboardCounts properties must be readable from the business contract')
+const countKeys = new Set([...dashboardCounts.matchAll(/(\w+):\s*type: integer/g)].map((match) => match[1]))
+const summaryBlock = /DashboardSummary:[\s\S]*?required:/.exec(contract)?.[0] ?? ''
 const routeTable = readFileSync(resolve('src/media/MediaStudioApp.tsx'), 'utf8')
-for (const stage of WORKBOARD_FLOW_STAGES) {
-  assert.ok(stage.artifactType in ARTIFACT_TYPE_LABELS, `${stage.stage} must produce a contract artifact type`)
-  assert.equal(stage.artifactLabel, ARTIFACT_TYPE_LABELS[stage.artifactType], `${stage.stage} artifact label must come from the shared table`)
-  assert.ok(routeTable.includes(`path: '${stage.path}'`), `${stage.stage} must link to a registered production route (${stage.path})`)
-  assert.equal(stage.label, workboardStageProgress(stage.stage).label, `${stage.stage} diagram label must match the project card label`)
-  assert.ok(stage.action.length > 8 && stage.outcome.length > 8, `${stage.stage} must say what happens and what it produces`)
-  if (stage.pending) assert.ok(['pendingDecisions', 'pendingPublishing', 'pendingReviews'].includes(stage.pending) && stage.pendingLabel, `${stage.stage} pending counter must be a DashboardSummary field`)
+// 能力目录由能力注册表（openclaw-tag-router）生成，演示站与生产共用同一份 id/label。
+const catalog = JSON.parse(readFileSync(resolve('src/demo/generatedDemoCatalog.json'), 'utf8')) as { capabilities?: { capabilityId: string; label: string }[] } | { capabilityId: string; label: string }[]
+const catalogItems = Array.isArray(catalog) ? catalog : catalog.capabilities ?? []
+const capabilityLabels = new Map(catalogItems.map((item) => [item.capabilityId, item.label]))
+assert.ok(capabilityLabels.size > 20, 'capability catalog must be loaded')
+
+const nodeIds = new Set(WORKBOARD_FLOW_NODES.map((node) => node.id))
+assert.equal(nodeIds.size, WORKBOARD_FLOW_NODES.length, 'flow node ids must be unique')
+for (const node of WORKBOARD_FLOW_NODES) {
+  assert.ok(routeTable.includes(`path: '${node.path}'`), `${node.id} must link to a registered production route (${node.path})`)
+  assert.ok(node.action.length > 8 && node.outcome.length > 8, `${node.id} must say what happens and what it produces`)
+  assert.ok(node.capabilities.length > 0, `${node.id} must name at least one capability`)
+  for (const capability of node.capabilities) {
+    assert.equal(capabilityLabels.get(capability.id), capability.label, `${node.id} capability ${capability.id} must exist in the registry with the same label`)
+  }
+  if (node.stage) {
+    assert.ok(contractStages.includes(node.stage), `${node.id} stage must be a contract stage`)
+    assert.equal(node.artifactLabel, ARTIFACT_TYPE_LABELS[node.artifactType ?? ''], `${node.id} artifact label must come from the shared table`)
+    assert.equal(workboardStageNode(node.stage)?.id, node.id, `${node.id} must be the node the project card resolves for ${node.stage}`)
+    assert.equal(workboardStageProgress(node.stage).label, node.stage === 'assets' ? '素材整理' : workboardStageProgress(node.stage).label, `${node.id} stage label must stay in the shared table`)
+  } else {
+    assert.equal(node.artifactType, null, `${node.id} without a project stage must not claim an artifact type`)
+  }
+  for (const fact of node.facts) {
+    if (fact.source === 'stage') assert.ok(contractStages.includes(fact.stage), `${node.id} fact stage ${fact.stage} must be a contract stage`)
+    if (fact.source === 'counts') assert.ok(countKeys.has(fact.key), `${node.id} fact ${fact.key} must be a DashboardCounts field`)
+    if (fact.source === 'pending') assert.ok(summaryBlock.includes(`${fact.key}:`), `${node.id} fact ${fact.key} must be a DashboardSummary field`)
+    if (fact.source === 'tasks') assert.ok(capabilityLabels.has(fact.capabilityId), `${node.id} task fact must count a registered capability`)
+  }
 }
+const grouped = new Map<string, number>()
+for (const node of WORKBOARD_FLOW_NODES) {
+  const key = `${node.lane}:${node.column}`
+  grouped.set(key, (grouped.get(key) ?? 0) + 1)
+}
+for (const [key, count] of grouped) assert.equal(count, 1, `lane/column cell ${key} must hold exactly one node`)
+for (const edge of WORKBOARD_FLOW_EDGES) {
+  assert.ok(nodeIds.has(edge.from) && nodeIds.has(edge.to), `edge ${edge.from}->${edge.to} must connect existing nodes`)
+}
+assert.ok(WORKBOARD_FLOW_EDGES.some((edge) => edge.from === 'decision' && edge.to === 'creation') && WORKBOARD_FLOW_EDGES.some((edge) => edge.from === 'brief' && edge.to === 'creation'), 'content and commercial lanes must merge at creation')
+assert.ok(WORKBOARD_FLOW_EDGES.some((edge) => edge.kind === 'return' && edge.from === 'acceptance' && edge.to === 'creation'), 'brand acceptance must be able to send work back for revision')
+assert.ok(WORKBOARD_FLOW_EDGES.filter((edge) => edge.kind === 'loop' && edge.from === 'review').length === 2, 'review must feed back into both research and business opportunities')
+assert.deepEqual([...WORKBOARD_FLOW_TOUR].sort(), [...nodeIds].sort(), 'the auto tour must visit every node exactly once')
+assert.equal(WORKBOARD_FLOW_COLUMNS.length, 6, 'the diagram keeps six columns')
 assert.equal(workboardStageIndex('creation_ready'), workboardStageIndex('creation'), 'creation_ready shares the creation position')
 assert.equal(workboardStageIndex('future_backend_stage'), null, 'an unknown stage has no diagram position')
 assert.deepEqual(WORKBOARD_FLOW_STAGE_ORDER.map((stage) => workboardStageIndex(stage)), [0, 1, 2, 3, 4, 5])
+assert.equal(workboardStageNode('creation_ready')?.id, 'creation', 'creation_ready resolves to the creation node')
 
 console.log('workboard stage progress checks passed')

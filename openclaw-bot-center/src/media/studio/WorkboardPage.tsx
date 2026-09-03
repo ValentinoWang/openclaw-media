@@ -26,7 +26,7 @@ import { formatDate } from '../ui/ordinaryPagePrimitives'
 import { Metric } from '../ui/Metric'
 import styles from './WorkboardPage.module.css'
 import { WorkboardFlowDiagram } from './WorkboardFlowDiagram'
-import { WORKBOARD_FLOW_STAGES, filterWorkboardAttentionTasks, workboardStageIndex, workboardStageProgress } from './workboardPresentation'
+import { WORKBOARD_FLOW_STAGE_ORDER, filterWorkboardAttentionTasks, workboardStageIndex, workboardStageNode, workboardStageProgress } from './workboardPresentation'
 
 type DashboardResponse = {
   revision: number
@@ -35,6 +35,8 @@ type DashboardResponse = {
       contentProjects: number
       runs: number
       assets: number
+      tracks: number
+      creators: number
       publishedPosts: number
       reviews: number
     }
@@ -66,6 +68,18 @@ type ProjectListResponse = {
   items: ContentProjectSummary[]
 }
 
+type BusinessOpportunitySummary = {
+  publicOpportunityId: string
+  brand: string
+  product: string
+  status: string
+}
+
+type OpportunityListResponse = {
+  revision: number
+  items: BusinessOpportunitySummary[]
+}
+
 type LoadState<T> =
   | { status: 'loading' }
   | { status: 'ready'; data: T }
@@ -75,16 +89,20 @@ export default function WorkboardPage() {
   const { openWorkspace, tasks } = useMediaWeb()
   const [dashboard, setDashboard] = useState<LoadState<DashboardResponse>>({ status: 'loading' })
   const [projects, setProjects] = useState<LoadState<ProjectListResponse>>({ status: 'loading' })
+  const [opportunities, setOpportunities] = useState<LoadState<OpportunityListResponse>>({ status: 'loading' })
   const [refreshToken, setRefreshToken] = useState(0)
 
   useEffect(() => {
     let active = true
     setDashboard({ status: 'loading' })
     setProjects({ status: 'loading' })
+    setOpportunities({ status: 'loading' })
     void Promise.allSettled([
       callBusinessOperation<DashboardResponse>('getDashboard'),
       callBusinessOperation<ProjectListResponse>('listContentProjects', { query: { pageSize: 8 } }),
-    ]).then(([dashboardResult, projectResult]) => {
+      // 商务线节点（商机）直接读 Business 页同一份记录，流程图上的数字与 /business 一致。
+      callBusinessOperation<OpportunityListResponse>('listBusinessOpportunities', { query: { pageSize: 50 } }),
+    ]).then(([dashboardResult, projectResult, opportunityResult]) => {
       if (!active) return
       setDashboard(dashboardResult.status === 'fulfilled'
         ? { status: 'ready', data: dashboardResult.value }
@@ -92,6 +110,9 @@ export default function WorkboardPage() {
       setProjects(projectResult.status === 'fulfilled'
         ? { status: 'ready', data: projectResult.value }
         : { status: 'error', message: readError(projectResult.reason, '内容项目暂时无法读取。') })
+      setOpportunities(opportunityResult.status === 'fulfilled'
+        ? { status: 'ready', data: opportunityResult.value }
+        : { status: 'error', message: readError(opportunityResult.reason, '商务机会暂时无法读取。') })
     })
     return () => { active = false }
   }, [refreshToken])
@@ -136,6 +157,8 @@ export default function WorkboardPage() {
         summary={summary}
         loading={dashboard.status === 'loading'}
         projects={projects.status === 'ready' ? projects.data.items : []}
+        opportunities={opportunities.status === 'ready' ? opportunities.data.items : null}
+        tasks={tasks}
         onOpenTasks={() => openWorkspace()}
       />
 
@@ -243,7 +266,8 @@ function ProjectCard({ project }: { project: ContentProjectSummary }) {
   const stage = workboardStageProgress(project.stage)
   const stageIndex = workboardStageIndex(project.stage)
   const artifactCount = Object.values(project.artifactCounts).reduce((total, count) => total + count, 0)
-  const stagePosition = stageIndex === null ? '阶段待确认' : `第 ${stageIndex + 1} / ${WORKBOARD_FLOW_STAGES.length} 步 · ${stage.label}`
+  const stageNode = workboardStageNode(project.stage)
+  const stagePosition = stageIndex === null ? '阶段待确认' : `第 ${stageIndex + 1} / ${WORKBOARD_FLOW_STAGE_ORDER.length} 步 · ${stage.label}`
   return (
     <article className={styles.projectCard}>
       <div className={styles.projectTopline}>
@@ -261,11 +285,11 @@ function ProjectCard({ project }: { project: ContentProjectSummary }) {
         title={stagePosition}
       >
         {stage.progress === null ? null : <span style={{ width: `${stage.progress}%` }} />}
-        {stageIndex === null ? null : WORKBOARD_FLOW_STAGES.map((flowStage, index) => (
-          <i key={flowStage.stage} data-reached={index <= stageIndex ? 'true' : undefined} data-current={index === stageIndex ? 'true' : undefined} style={{ left: `${workboardStageProgress(flowStage.stage).progress ?? 0}%` }} />
+        {stageIndex === null ? null : WORKBOARD_FLOW_STAGE_ORDER.map((flowStage, index) => (
+          <i key={flowStage} data-reached={index <= stageIndex ? 'true' : undefined} data-current={index === stageIndex ? 'true' : undefined} style={{ left: `${workboardStageProgress(flowStage).progress ?? 0}%` }} />
         ))}
       </div>
-      <footer><span>{artifactCount} 个当前产物</span><span>更新于 {formatDate(project.updatedAt)}</span><Link to={stageIndex === null ? '/studio' : WORKBOARD_FLOW_STAGES[stageIndex]!.path}>{stageIndex === null ? '打开 Studio' : `前往${WORKBOARD_FLOW_STAGES[stageIndex]!.pathLabel}`}<ArrowRight size={14} /></Link></footer>
+      <footer><span>{artifactCount} 个当前产物</span><span>更新于 {formatDate(project.updatedAt)}</span><Link to={stageNode?.path ?? '/studio'}>{stageNode ? `前往${stageNode.pathLabel}` : '打开 Studio'}<ArrowRight size={14} /></Link></footer>
     </article>
   )
 }

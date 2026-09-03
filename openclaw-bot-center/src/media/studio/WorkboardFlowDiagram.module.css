@@ -1,4 +1,5 @@
-/* 自媒体全流程图：节点、连线与详情都由 DashboardSummary / ContentProjectSummary 驱动。
+/* 自媒体全流程图：内容线 / 合流 / 商务线三条泳道的 SVG 图，节点、连线与详情都由
+   DashboardSummary、ContentProjectSummary、BusinessOpportunitySummary 与网页任务驱动。
    颜色全部走 [data-accent] 的 --accent-* 令牌，深色模式随令牌切换，无需单独声明。 */
 
 .panel {
@@ -15,130 +16,194 @@
 .headMeta strong { font-size: var(--mg-text-sm); }
 .headMeta small { color: var(--mg-muted); font-size: var(--mg-text-2xs); }
 
-/* 项目按阶段的占比条：宽度 = 该阶段项目数 / 项目总数 */
-.distribution {
+.legend {
   display: flex;
-  height: 6px;
-  margin: 0;
-  background: var(--mg-border);
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 12px 16px 0;
 }
 
-.distribution > span {
-  display: block;
-  flex: 0 0 auto;
-  min-width: 0;
-  background: var(--accent-base);
-  opacity: .55;
-  transition: flex-basis var(--mg-dur-3) var(--mg-ease), opacity var(--mg-dur-2) var(--mg-ease);
-}
-
-.distribution > span[data-active] { opacity: 1; }
-
-.track {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 0;
-  margin: 0;
-  padding: 18px 16px 6px;
-  list-style: none;
-}
-
-.track > li {
-  position: relative;
-  min-width: 0;
-  padding: 0 6px;
-}
-
-/* 节点之间的流向连线；到达当前节点前的线段流动，其余静止。 */
-.track > li:not(:last-child)::after {
-  position: absolute;
-  top: 25px;
-  right: calc(-50% + 24px);
-  left: calc(50% + 24px);
-  z-index: 1;
-  height: 3px;
-  border-radius: var(--mg-r-full);
-  background: var(--mg-border-strong);
-  content: '';
-}
-
-.track > li[data-reached]:not([data-active]):not(:last-child)::after {
-  background: repeating-linear-gradient(90deg, var(--accent-base) 0 6px, transparent 6px 10px);
-  background-size: 20px 3px;
-  animation: flow 1.1s linear infinite;
-}
-
-@keyframes flow {
-  from { background-position: 0 0; }
-  to { background-position: 20px 0; }
-}
-
-.node {
-  display: grid;
-  width: 100%;
-  justify-items: center;
-  gap: 3px;
-  padding: 10px 6px 12px;
-  border: 1px solid transparent;
-  border-radius: var(--mg-r-md);
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--mg-ink);
-  background: transparent;
-  text-align: center;
-  cursor: pointer;
-  transition: background-color var(--mg-dur-2) var(--mg-ease), border-color var(--mg-dur-2) var(--mg-ease), transform var(--mg-dur-2) var(--mg-ease);
-}
-
-.node:hover { background: color-mix(in srgb, var(--accent-soft) 60%, transparent); }
-
-.track > li[data-active] .node {
-  border-color: var(--accent-line);
-  background: var(--accent-soft);
-  transform: translateY(-2px);
-}
-
-.nodeIndex {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border: 2px solid var(--accent-line);
-  border-radius: var(--mg-r-full);
-  color: var(--accent-ink);
-  background: var(--mg-surface);
-  font-size: var(--mg-text-sm);
-  font-weight: 700;
-  transition: background-color var(--mg-dur-2) var(--mg-ease), color var(--mg-dur-2) var(--mg-ease), border-color var(--mg-dur-2) var(--mg-ease);
-}
-
-.track > li[data-reached] .nodeIndex {
-  border-color: var(--accent-base);
-  color: var(--mg-accent-on-ink);
-  background: var(--accent-base);
-}
-
-.track > li[data-active] .nodeIndex {
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-base) 22%, transparent);
-  animation: pulse 1.8s var(--mg-ease) infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-base) 22%, transparent); }
-  50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--accent-base) 8%, transparent); }
-}
-
-.node strong { margin-top: 4px; font-size: var(--mg-text-sm); line-height: 1.3; }
-.node em { color: var(--accent-ink); font-size: var(--mg-text-xs); font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; }
-.node small { overflow: hidden; max-width: 100%; color: var(--mg-muted); font-size: var(--mg-text-2xs); text-overflow: ellipsis; white-space: nowrap; }
-
-.nodePending {
-  margin-top: 4px;
-  padding: 2px 8px;
-  border-radius: var(--mg-r-full);
-  color: var(--mg-warning);
-  background: var(--mg-warning-soft);
   font-size: var(--mg-text-2xs);
   font-weight: 700;
 }
+
+.legend small { color: var(--mg-muted); font-weight: 500; }
+
+.legend i,
+.laneGroup > span::before {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--mg-r-full);
+  background: var(--lane-color);
+  content: '';
+}
+
+.legend > span,
+.laneBand,
+.laneGroup {
+  --lane-color: var(--mg-accent-desk-base);
+  --lane-soft: var(--mg-accent-desk-soft);
+}
+
+.legend > span[data-lane='shared'],
+.laneBand[data-lane='shared'],
+.laneGroup[data-lane='shared'] { --lane-color: var(--mg-accent-studio-base); --lane-soft: var(--mg-accent-studio-soft); }
+
+.legend > span[data-lane='commercial'],
+.laneBand[data-lane='commercial'],
+.laneGroup[data-lane='commercial'] { --lane-color: var(--mg-accent-business-base); --lane-soft: var(--mg-accent-business-soft); }
+
+/* 宽内容在自己的容器里横向滚动，页面本身不出现横向滚动条。 */
+.chart {
+  overflow-x: auto;
+  padding: 10px 0 2px;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  min-width: 960px;
+  height: auto;
+  font-family: inherit;
+}
+
+.laneBand rect {
+  fill: color-mix(in srgb, var(--lane-soft) 42%, transparent);
+  stroke: color-mix(in srgb, var(--lane-color) 18%, transparent);
+  stroke-width: 1;
+}
+
+.laneBand text {
+  fill: var(--lane-color);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.columnHead {
+  fill: var(--mg-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.edge path {
+  fill: none;
+  stroke: var(--mg-border-strong);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke var(--mg-dur-2) var(--mg-ease);
+}
+
+.edge[data-kind='return'] path,
+.edge[data-kind='loop'] path { stroke-dasharray: 6 5; }
+
+.edge text {
+  fill: var(--mg-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* 与当前节点相连的边流动起来；其余保持安静。 */
+.edge[data-live] path {
+  stroke: var(--accent-base);
+  stroke-dasharray: 6 5;
+  animation: flow .9s linear infinite;
+}
+
+.edge[data-live] text { fill: var(--accent-ink); font-weight: 700; }
+
+@keyframes flow {
+  to { stroke-dashoffset: -11; }
+}
+
+.arrowMuted path { fill: var(--mg-border-strong); }
+.arrowLive path { fill: var(--accent-base); }
+
+.node { cursor: pointer; outline: none; }
+
+.nodeBox {
+  fill: var(--mg-surface);
+  stroke: var(--accent-line);
+  stroke-width: 1.5;
+  transition: fill var(--mg-dur-2) var(--mg-ease), stroke var(--mg-dur-2) var(--mg-ease);
+}
+
+.node:hover .nodeBox,
+.node:focus-visible .nodeBox { fill: color-mix(in srgb, var(--accent-soft) 70%, var(--mg-surface)); }
+
+.node[data-active] .nodeBox {
+  fill: var(--accent-soft);
+  stroke: var(--accent-base);
+  stroke-width: 2.5;
+  animation: halo 1.8s var(--mg-ease) infinite;
+}
+
+.node:focus-visible .nodeBox { stroke: var(--accent-base); stroke-width: 2.5; }
+
+@keyframes halo {
+  0%, 100% { filter: drop-shadow(0 0 0 color-mix(in srgb, var(--accent-base) 30%, transparent)); }
+  50% { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent-base) 45%, transparent)); }
+}
+
+.nodeLabel {
+  fill: var(--mg-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nodeCaption {
+  fill: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.nodePending rect { fill: var(--mg-warning-soft); stroke: color-mix(in srgb, var(--mg-warning) 32%, transparent); }
+.nodePending text { fill: var(--mg-warning); font-size: 11px; font-weight: 700; }
+
+/* 窄屏：SVG 让位给按泳道分组的节点列表。 */
+.laneList { display: none; }
+
+.laneGroup {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--mg-border);
+}
+
+.laneGroup > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--lane-color);
+  font-size: var(--mg-text-2xs);
+  font-weight: 700;
+}
+
+.laneGroup > span small { color: var(--mg-muted); font-weight: 500; }
+
+.laneNode {
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  padding: 9px 12px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--mg-r-md);
+  color: var(--mg-ink);
+  background: var(--mg-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.laneNode[data-active] { border-color: var(--accent-base); background: var(--accent-soft); }
+.laneNode strong { font-size: var(--mg-text-sm); }
+.laneNode small { color: var(--accent-ink); font-size: var(--mg-text-2xs); font-weight: 600; }
 
 .detail {
   display: grid;
@@ -174,7 +239,7 @@
 
 .detailFacts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 8px;
   margin-top: 4px;
 }
@@ -191,6 +256,26 @@
 
 .detailFacts small { color: var(--mg-muted); font-size: var(--mg-text-2xs); }
 .detailFacts strong { overflow: hidden; font-size: var(--mg-text-md); text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.capabilities small { color: var(--mg-muted); font-size: var(--mg-text-2xs); }
+
+.capabilities code {
+  padding: 2px 8px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--mg-r-full);
+  color: var(--accent-ink);
+  background: var(--mg-surface);
+  font-family: inherit;
+  font-size: var(--mg-text-2xs);
+  font-weight: 600;
+}
 
 .detailSide {
   display: grid;
@@ -250,28 +335,13 @@
 .agentLane em { color: var(--mg-ink); font-style: normal; font-weight: 500; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 1180px) {
-  .track { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 14px; }
-  .track > li:nth-child(3n)::after { display: none; }
   .detail { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
-  .track { grid-template-columns: 1fr; padding: 12px 12px 4px; }
-  .track > li::after { display: none; }
-  .node {
-    grid-template-columns: 32px minmax(0, 1fr) auto;
-    grid-template-areas: 'index title count' 'index artifact pending';
-    justify-items: start;
-    align-items: center;
-    column-gap: 10px;
-    text-align: left;
-  }
-  .nodeIndex { grid-area: index; }
-  .node strong { grid-area: title; margin-top: 0; }
-  .node em { grid-area: count; }
-  .node small { grid-area: artifact; }
-  .nodePending { grid-area: pending; margin-top: 0; }
+  .legend,
+  .chart { display: none; }
+  .laneList { display: grid; }
   .detail { margin: 8px 12px 12px; padding: 12px; }
-  .detailFacts { grid-template-columns: 1fr; }
   .headMeta { display: none; }
 }
