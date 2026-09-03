@@ -302,11 +302,18 @@
   min-width: 0;
 }
 
+/* 曾经是 inline-flex + width: fit-content：这类「收缩到内容」的盒子在参与
+   .postCell 的隐式网格轨道尺寸计算时，min-width 默认是 auto——不含空格的英文
+   片段（如「X100VI」）算最小内容宽度时不会被 overflow-wrap: break-word 缩小，
+   于是这个链接会被撑到比列宽还宽，视觉上盖住右边「平台」列的徽标。改成显式
+   width: 100% + min-width: 0 后，链接的宽度直接等于单元格宽度，不再依赖内容
+   算出来的收缩宽度，标题该换行的地方就正常换行，不会越界。 */
 .documentLink {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.3rem;
-  width: fit-content;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   color: var(--reviews-teal);
   font-weight: 700;
@@ -323,7 +330,8 @@
 
 .rowLink {
   display: block;
-  width: fit-content;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   padding: 0;
   border: 0;
@@ -453,11 +461,19 @@
   background: var(--mg-bg);
 }
 
+/* 允许换行：标题够长、按钮够宽时两者会抢同一行，这里让按钮掉到下一行，
+   而不是和标题重叠。 */
 .layersHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.7rem;
+}
+
+.layersHeading {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .layersHeader h2 {
@@ -467,11 +483,23 @@
   line-height: 1.25;
 }
 
-.layersHeader p {
+/* 标题下面这一行本来是一句连续的话，报告编号（如 review_xhs_autumn_camera）
+   直接混在文字里、又继承 overflow-wrap: anywhere，窄一点就被拦腰截断。
+   改成一行独立的 flex，每个标识符各自是一个 .mg-id 单行省略，不再让
+   整句话的换行规则去处理不含空格的整串编号。 */
+.layersMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.4rem;
+  min-width: 0;
   margin: 0.2rem 0 0;
   color: var(--reviews-muted);
   font-size: var(--mg-text-xs);
-  overflow-wrap: anywhere;
+}
+
+.layersMeta > span {
+  min-width: 0;
 }
 
 .layerGrid {
@@ -657,8 +685,8 @@
 }
 
 .readonlyContext strong {
+  min-width: 0;
   color: var(--reviews-ink);
-  overflow-wrap: anywhere;
   font-size: var(--mg-text-sm);
 }
 

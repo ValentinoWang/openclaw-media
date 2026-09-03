@@ -22,17 +22,22 @@
 .opportunityCard footer { display: flex; align-items: center; gap: 10px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--mg-border); }
 .opportunityCard code { min-width: 0; overflow: hidden; color: var(--mg-muted); font-size: var(--mg-text-sm); text-overflow: ellipsis; white-space: nowrap; }
 .opportunityCard footer a { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 4px; margin-left: auto; color: var(--accent-ink); font-size: var(--mg-text-sm); font-weight: 700; text-decoration: none; }
-.modelStack { display: grid; justify-items: center; gap: 7px; padding: 16px; }
-.modelCard { display: grid; width: 100%; grid-template-columns: 38px minmax(0, 1fr); gap: 11px; padding: 14px; border-bottom: 1px solid var(--mg-border); background: transparent; }
-.modelCard > span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: var(--mg-r-md); color: var(--accent-base); background: var(--accent-soft); }
-.modelCard strong { font-size: var(--mg-text-sm); }
-.modelCard p { margin: 5px 0 0; color: var(--mg-muted); font-size: var(--mg-text-sm); line-height: 1.55; }
-.modelCard footer { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
-.modelCard small { padding: 3px 6px; border-radius: var(--mg-r-full); color: var(--accent-ink); background: var(--accent-soft); font-size: var(--mg-text-sm); font-weight: 700; }
-.modelArrow { color: var(--mg-muted); }
-.boundaryCard { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; margin: 0 16px 16px; padding: 15px; border: 1px solid var(--accent-line); border-radius: var(--mg-r-md); color: var(--accent-ink); background: var(--accent-soft); }
-.boundaryCard strong { font-size: var(--mg-text-sm); }
-.boundaryCard p { margin: 5px 0 0; color: var(--mg-muted); font-size: var(--mg-text-sm); line-height: 1.55; }
+/* 三个概念曾经各占一张大卡（大图标 + 标题 + 一句话 + 两个标签），中间还插着
+   只画一个箭头的整行分隔，外加一个独立的边界说明框——一屏放不下三句话的定义。
+   改成一行一个概念：小图标 + 名称 + 一句话 + 标签就地跟在后面，箭头行直接去掉，
+   边界说明折成一句话，信息不丢，只是不再占一整屏。 */
+.modelStack { display: flex; flex-direction: column; padding: 4px 16px; }
+.modelRow { display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; row-gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--mg-border); }
+.modelRow:last-child { border-bottom: 0; }
+.modelIcon { display: grid; width: 26px; height: 26px; flex: 0 0 auto; place-items: center; border-radius: var(--mg-r-md); color: var(--accent-base); background: var(--accent-soft); }
+.modelName { flex: 0 0 auto; color: var(--mg-ink); font-size: var(--mg-text-sm); white-space: nowrap; }
+.modelDetail { flex: 1 1 200px; min-width: 0; color: var(--mg-muted); font-size: var(--mg-text-sm); line-height: 1.5; }
+.modelTags { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 5px; }
+.modelTags small { padding: 3px 7px; border-radius: var(--mg-r-full); color: var(--accent-ink); background: var(--accent-soft); font-size: var(--mg-text-2xs); font-weight: 700; white-space: nowrap; }
+.boundaryNote { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; align-items: start; margin: 2px 16px 16px; padding: 10px 12px; border: 1px solid var(--accent-line); border-radius: var(--mg-r-md); background: var(--accent-soft); }
+.boundaryNote svg { margin-top: 2px; color: var(--accent-ink); }
+.boundaryNote p { margin: 0; color: var(--mg-muted); font-size: var(--mg-text-sm); line-height: 1.5; }
+.boundaryNote strong { color: var(--accent-ink); }
 @media (max-width: 1120px) { .metricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: 1fr; } }
 @media (max-width: 820px) { .opportunityGrid { grid-template-columns: 1fr; } }
 @media (max-width: 760px) { .metricGrid { grid-template-columns: 1fr; } .opportunityGrid { padding: 12px; } }

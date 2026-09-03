@@ -288,7 +288,7 @@
 }
 
 .admin-action-main strong {
-  overflow-wrap: anywhere;
+  max-width: 100%;
   color: var(--mg-ink);
   font-size: var(--mg-text-xs);
 }
@@ -339,15 +339,24 @@
     overflow: visible;
   }
 
-  .admin-overview-grid {
+  /* The shared [data-page-layout="persistent-rail"] pattern (media.css) forces
+     flex:1 1 auto / height:100% on this grid and its two columns for any
+     viewport above its own 760px breakpoint, so a plain .admin-overview-grid
+     selector here loses the specificity fight and the grid stays stretched to
+     the page's leftover height between 761-1120px — the two auto rows then
+     split that forced height ~evenly regardless of actual content, and
+     content taller than its row spills into the row below. Out-specificity it
+     the same way AdminBillingPage.module.css's .bodyGrid override does, by
+     anchoring on the page element + its data attributes. */
+  .admin-overview-page[data-page-ownership='governance']:has(> [data-page-prelude]) > .admin-overview-grid {
     min-height: auto;
     flex: none;
     grid-template-columns: 1fr;
     overflow: visible;
   }
 
-  .admin-primary-column,
-  .admin-side-column {
+  .admin-overview-page .admin-overview-grid > .admin-primary-column,
+  .admin-overview-page .admin-overview-grid > .admin-side-column {
     display: flex;
     height: auto;
     flex-direction: column;

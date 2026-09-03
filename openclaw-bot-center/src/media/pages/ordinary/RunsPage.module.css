@@ -435,22 +435,21 @@
   cursor: pointer;
 }
 
-.runButton strong,
-.runId {
+.runButton strong {
   display: block;
+  margin-top: 5px;
   overflow-wrap: anywhere;
   white-space: normal;
-}
-
-.runButton strong {
-  margin-top: 5px;
   color: var(--mg-ink);
   font-size: var(--mg-text-xs);
 }
 
+/* 标识符行：图标 + 单行省略的 .mg-id 文本。父容器不再声明 overflow-wrap/white-space——
+   标识符本身的省略靠嵌套的 .mg-id 直接声明覆盖继承值，不依赖这里的样式。 */
 .runId {
   display: flex;
-  align-items: flex-start;
+  min-width: 0;
+  align-items: center;
   gap: 5px;
   color: var(--mg-primary-dark);
   font-size: var(--mg-text-2xs);
@@ -569,10 +568,10 @@
   line-height: 1.35;
 }
 
+/* display/overflow/ellipsis 都交给和它一起加的 .mg-id（specificity 更低但没有同名
+   属性竞争，不存在层叠顺序风险）；这里只保留版式相关的属性。 */
 .inspectorHeading code {
-  display: block;
   margin-top: 5px;
-  overflow-wrap: anywhere;
   color: var(--mg-muted);
   font-family: inherit;
   font-size: var(--mg-text-2xs);
@@ -629,47 +628,45 @@
   padding: 13px;
 }
 
-.factGrid {
+/* 紧凑「一行一个事实」列表，取代此前的卡片网格：RunFacts 用真正的 <dl>，
+   CommercialDeliveryInspector 用 Metric variant="panel" 撑同一套行样式——
+   两种标签都落进这里，靠 dt/dd 和 span/strong 两组选择器分别接住。
+   值槽字号固定用正文级 --mg-text-xs，不会再出现展示级字号把「已登记入口」
+   这类短语拦腰折行的问题。 */
+.factList {
   display: grid;
-  gap: 8px;
+  gap: 2px;
 }
 
-.factCard {
-  display: flex;
+.factRow {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
   min-width: 0;
-  gap: 9px;
-  padding: 10px;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--mg-r-sm);
-  background: var(--mg-surface);
+  padding: 7px 0;
+  border-bottom: 1px solid var(--mg-border);
 }
 
-.factCard > span {
-  display: inline-flex;
-  flex: 0 0 auto;
-  margin-top: 1px;
-  color: var(--mg-primary-dark);
+.factRow:last-child {
+  border-bottom: 0;
 }
 
-.factCard > div {
+.factRow dt,
+.factRow > span {
   min-width: 0;
-}
-
-.factCard small {
-  display: block;
-  margin: 0 0 4px;
   color: var(--mg-muted);
-  font-size: var(--mg-text-2xs);
-  font-weight: 600;
+  font-size: var(--mg-text-xs);
 }
 
-.factCard strong {
-  display: block;
+.factRow dd,
+.factRow > strong {
+  min-width: 0;
   margin: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
   color: var(--mg-ink);
   font-size: var(--mg-text-xs);
-  line-height: 1.45;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .missingValue {
@@ -1153,9 +1150,7 @@
 }
 
 .inlineId {
-  display: block;
   margin-top: 4px;
-  overflow-wrap: anywhere;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
   font-weight: 500;

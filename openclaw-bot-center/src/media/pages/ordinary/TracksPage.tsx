@@ -790,22 +790,20 @@ function OwnedAccountsTab({
                     <span className={[styles.itemMeta, styles.itemMetaRow].join(" ")}>
                       <PlatformIdentity platform={account.platform} size="sm" />
                       <span className={styles.metaSeparator} aria-hidden="true">·</span>
-                      <span>{account.platformAccountId ? `平台账号 ${account.platformAccountId}` : "平台账号未记录"}</span>
+                      {account.platformAccountId ? (
+                        <span>平台账号 <span className="mg-id" title={account.platformAccountId}>{account.platformAccountId}</span></span>
+                      ) : (
+                        <span>平台账号未记录</span>
+                      )}
+                      <span className={styles.metaSeparator} aria-hidden="true">·</span>
+                      <span>负责人 {account.responsiblePerson ?? "未记录"}</span>
                     </span>
                   </span>
                 </span>
-                <span className={styles.itemDescription}>负责人：{account.responsiblePerson ?? "未记录"}</span>
-                <span className={styles.accountOperationalRow}>
-                  <span className={operationalStatusTextClass(account.operationalStatus)}>
-                    {hasOperationalStatus(account, "active")
-                      ? <BadgeCheck size={14} aria-hidden="true" />
-                      : <AlertCircle size={14} aria-hidden="true" />}
-                    {operationalStatusDisplayLabel(account.operationalStatus)}
-                  </span>
+                <span className={[styles.itemFoot, styles.itemMetaRow].join(" ")}>
                   <span>{accountTracks.join(" / ") || "运营赛道未记录"}</span>
-                </span>
-                <span className={styles.itemFoot}>
-                  {account.lastSyncedAt ? `数据更新于 ${formatRelativeTime(account.lastSyncedAt)}` : "暂无运营数据"}
+                  <span className={styles.metaSeparator} aria-hidden="true">·</span>
+                  <span>{account.lastSyncedAt ? `更新于 ${formatRelativeTime(account.lastSyncedAt)}` : "暂无运营数据"}</span>
                 </span>
               </button>
               );
@@ -1820,13 +1818,6 @@ function hasOperationalStatus(
   status: Exclude<OwnedAccountFilter, "all">,
 ): boolean {
   return normalizedStatus(account.operationalStatus ?? "") === status;
-}
-
-function operationalStatusTextClass(value: string | null): string {
-  const status = normalizedStatus(value ?? "");
-  if (status === "active") return styles.operationalStatusActive;
-  if (status === "paused") return styles.operationalStatusPaused;
-  return styles.operationalStatusInactive;
 }
 
 function isRelationshipQueueStatus(value: string): value is RelationshipQueueStatus {

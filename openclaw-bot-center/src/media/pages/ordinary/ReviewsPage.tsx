@@ -620,7 +620,7 @@ function ReviewsView({
                           onClick={() => onSelectReview(item.publicReviewId)}
                           aria-label={`查看${reviewPostTitle(item)}的复盘详情`}
                         >
-                          <span className={styles.postId}>{item.publicPostId}</span>
+                          <span className={`${styles.postId} mg-id`} title={item.publicPostId}>{item.publicPostId}</span>
                         </button>
                       </div>
                     </th>
@@ -715,9 +715,14 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
   return (
     <section className={styles.layers} aria-label="复盘分层">
       <div className={styles.layersHeader}>
-        <div>
+        <div className={styles.layersHeading}>
           <h2>{reviewPostTitle(review)}</h2>
-          <p><span className={styles.postId}>{review.publicPostId}</span> · 报告 {review.publicReviewId} · 数据版本 {formatCount(review.revision)}</p>
+          <p className={styles.layersMeta}>
+            <span className={`${styles.postId} mg-id`} title={review.publicPostId}>{review.publicPostId}</span>
+            <span>· 报告</span>
+            <span className="mg-id" title={review.publicReviewId}>{review.publicReviewId}</span>
+            <span>· 数据版本 {formatCount(review.revision)}</span>
+          </p>
         </div>
         {onConfirm ? <button className={primaryButtonClass} data-component="mg-btn" type="button" onClick={onConfirm} disabled={review.humanDecision !== null || review.status === "confirmed"}><CheckCircle2 size={15} aria-hidden="true" />{review.humanDecision === null ? "确认人工决策" : "已完成确认"}</button> : null}
       </div>
@@ -750,7 +755,7 @@ function MetricTable({ items }: { items: MetricSnapshot[] }) {
       <table className={styles.table}>
         <thead><tr><th scope="col">主体</th><th scope="col">窗口</th><th scope="col">指标</th><th scope="col">数值</th><th scope="col">单位</th><th scope="col">证据质量</th><th scope="col">采集时间</th><th scope="col">快照</th></tr></thead>
         <tbody>
-          {items.map((item) => <tr key={item.publicSnapshotId}><th scope="row">{valueOrUnknown(item.publicSubjectId)}</th><td>{windowLabel(item.reviewWindow)}</td><td>{metricKeyLabel(item.metricKey)}</td><td>{numberValue(item.metricValue)}</td><td>{unitLabel(item.unit)}</td><td><QualityBadge value={item.evidenceQuality} /></td><td>{dateValue(item.collectedAt)}</td><td className={styles.codeValue}>{valueOrUnknown(item.publicSnapshotId)}</td></tr>)}
+          {items.map((item) => <tr key={item.publicSnapshotId}><th scope="row"><span className="mg-id" title={valueOrUnknown(item.publicSubjectId)}>{valueOrUnknown(item.publicSubjectId)}</span></th><td>{windowLabel(item.reviewWindow)}</td><td>{metricKeyLabel(item.metricKey)}</td><td>{numberValue(item.metricValue)}</td><td>{unitLabel(item.unit)}</td><td><QualityBadge value={item.evidenceQuality} /></td><td>{dateValue(item.collectedAt)}</td><td className={styles.codeValue}><span className="mg-id" title={valueOrUnknown(item.publicSnapshotId)}>{valueOrUnknown(item.publicSnapshotId)}</span></td></tr>)}
         </tbody>
       </table>
     </div>
@@ -969,7 +974,7 @@ function ConfirmDialog({ review, actionState, onClose, onSubmit }: { review: Rev
   }
 
   return <DialogFrame title="确认人工决策" onClose={onClose} busy={actionState.status === "busy"}><form className={styles.form} onSubmit={handleSubmit}>
-    <div className={styles.readonlyContext}><span>报告</span><strong>{review.publicReviewId}</strong><small>当前数据版本 {formatCount(review.revision)}</small></div>
+    <div className={styles.readonlyContext}><span>报告</span><strong className="mg-id" title={review.publicReviewId}>{review.publicReviewId}</strong><small>当前数据版本 {formatCount(review.revision)}</small></div>
     <Field label="确认时的数据版本"><input className={styles.input} type="number" min="0" step="1" value={expectedRevision} onChange={(event) => setExpectedRevision(event.target.value)} required /></Field>
     <Field label="人工决策"><textarea className={styles.textarea} rows={3} value={humanDecision} onChange={(event) => setHumanDecision(event.target.value)} required /></Field>
     <Field label="决策原因"><textarea className={styles.textarea} rows={4} value={reason} onChange={(event) => setReason(event.target.value)} required /></Field>

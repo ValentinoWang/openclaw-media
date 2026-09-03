@@ -99,15 +99,13 @@ export default function BusinessPage() {
         <aside className="mg-panel">
           <header className="mg-panel-head"><div><span>经营模型</span><h2>账号事实与项目事实分层</h2></div></header>
           <div className={styles.modelStack}>
-            <ModelCard icon={<Users size={18} />} title="达人账号档案" detail="平台身份、人设、公开表达边界和账号指标。" tags={['Creator Profile', '账号证据']} />
-            <ArrowRight className={styles.modelArrow} size={18} />
-            <ModelCard icon={<BadgeDollarSign size={18} />} title="账号级报价" detail="图文、视频及当前报价快照，不绑定单一品牌。" tags={['报价快照', '有效时间']} />
-            <ArrowRight className={styles.modelArrow} size={18} />
-            <ModelCard icon={<BriefcaseBusiness size={18} />} title="项目级机会" detail="品牌、产品、档期、返点、保价与授权权益。" tags={['Business Opportunity', '履约入口']} />
+            <ModelCard icon={<Users size={15} />} title="达人账号档案" detail="平台身份、人设、公开表达边界和账号指标。" tags={['Creator Profile', '账号证据']} />
+            <ModelCard icon={<BadgeDollarSign size={15} />} title="账号级报价" detail="图文、视频及当前报价快照，不绑定单一品牌。" tags={['报价快照', '有效时间']} />
+            <ModelCard icon={<BriefcaseBusiness size={15} />} title="项目级机会" detail="品牌、产品、档期、返点、保价与授权权益。" tags={['Business Opportunity', '履约入口']} />
           </div>
-          <div className={styles.boundaryCard}>
-            <ShieldCheck size={19} />
-            <div><strong>事实边界</strong><p>缺少报价、档期或授权时保留为空并请求确认，不用默认值伪装成已确认事实。</p></div>
+          <div className={styles.boundaryNote}>
+            <ShieldCheck size={14} aria-hidden="true" />
+            <p><strong>边界：</strong>缺少报价、档期或授权信息时留空并请你确认，不用默认值冒充已确认内容。</p>
           </div>
         </aside>
       </div>
@@ -128,13 +126,20 @@ function OpportunityCard({ item }: { item: BusinessOpportunity }) {
         <div><dt>有效期</dt><dd>{validityLabel(item.validFrom, item.validUntil)}</dd></div>
         <div><dt>授权范围</dt><dd>{authorizationLabel(item.authorizationScope)}</dd></div>
       </dl>
-      <footer><code>{item.publicOpportunityId}</code><Link to="/campaigns">进入履约<ArrowRight size={14} /></Link></footer>
+      <footer><code className="mg-id" title={item.publicOpportunityId}>{item.publicOpportunityId}</code><Link to="/campaigns">进入履约<ArrowRight size={14} /></Link></footer>
     </article>
   )
 }
 
 function ModelCard({ icon, title, detail, tags }: { icon: ReactNode; title: string; detail: string; tags: string[] }) {
-  return <article className={styles.modelCard}><span>{icon}</span><div><strong>{title}</strong><p>{detail}</p><footer>{tags.map((tag) => <small key={tag}>{tag}</small>)}</footer></div></article>
+  return (
+    <article className={styles.modelRow}>
+      <span className={styles.modelIcon}>{icon}</span>
+      <strong className={styles.modelName}>{title}</strong>
+      <span className={styles.modelDetail}>{detail}</span>
+      <span className={styles.modelTags}>{tags.map((tag) => <small key={tag}>{tag}</small>)}</span>
+    </article>
+  )
 }
 
 function StatusBadge({ status }: { status: string }) {

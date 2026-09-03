@@ -852,7 +852,7 @@ function CursorPagination({ depth, hasNext, onPrevious, onNext }: { depth: numbe
 
 function StatusPill({ label, tone }: { label: string; tone: StatusTone }) {
   const sharedTone = tone === 'success' ? 'success' : tone === 'warning' ? 'warning' : tone === 'danger' ? 'danger' : 'neutral'
-  return <span className={['mg-badge', styles.statusPill].join(' ')} data-component="mg-badge" data-tone={sharedTone}><span aria-hidden="true" />{label}</span>
+  return <span className={['mg-badge', styles.statusPill].join(' ')} data-component="mg-badge" data-tone={sharedTone}><span aria-hidden="true" /><span className={styles.pillLabel}>{label}</span></span>
 }
 
 function ReadbackMessage() {

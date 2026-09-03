@@ -493,15 +493,13 @@
   color: var(--mg-primary-dark);
 }
 
-.overviewItem .itemDescription,
-.accountListItem .itemDescription {
+.overviewItem .itemDescription {
   max-height: none;
   overflow: visible;
 }
 
 .layoutSummary,
-.roleSummary,
-.accountOperationalRow {
+.roleSummary {
   display: flex;
   min-width: 0;
   align-items: center;
@@ -531,31 +529,6 @@
 .roleSummary span:last-child {
   padding-right: 0;
   border-right: 0;
-}
-
-.accountOperationalRow {
-  justify-content: space-between;
-  color: var(--mg-muted);
-}
-
-.accountOperationalRow > span {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 5px;
-  overflow-wrap: anywhere;
-}
-
-.operationalStatusActive {
-  color: oklch(0.4 0.1 150);
-}
-
-.operationalStatusPaused {
-  color: oklch(0.5 0.12 52);
-}
-
-.operationalStatusInactive {
-  color: var(--mg-muted);
 }
 
 .relationshipList {
@@ -1371,11 +1344,6 @@
   }
 
   .trackInspectorHeader {
-    flex-direction: column;
-  }
-
-  .accountOperationalRow {
-    align-items: flex-start;
     flex-direction: column;
   }
 }

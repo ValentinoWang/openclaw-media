@@ -394,6 +394,15 @@ button.iconButton {
   line-height: 1.35;
 }
 
+/* 标识符走 .mg-id（单行省略）；同为 (0,1,1) 的 .fact dd 会盖掉它，这里显式让路。 */
+.fact dd:global(.mg-id) {
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
+}
+
 .fact dd {
   min-width: 0;
   margin: 0;

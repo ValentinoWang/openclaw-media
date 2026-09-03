@@ -463,13 +463,15 @@
   gap: 8px;
 }
 
+/* .mg-id（单行省略号 + title 承载完整值）负责换行策略，这里只管外观——
+   不要再设 overflow-wrap/white-space，会和 .mg-id 打架，邀请码这类无断词点的
+   整串又会被拦腰折成两行。 */
 .linkValue code {
   display: flex;
   min-height: 42px;
   min-width: 0;
   flex: 1;
   align-items: center;
-  overflow-wrap: anywhere;
   padding: 9px 11px;
   border: 1px solid var(--mg-border-strong);
   border-radius: var(--mg-r-sm);
@@ -478,7 +480,14 @@
   font-family: inherit;
   font-size: var(--mg-text-xs);
   line-height: 1.45;
-  white-space: normal;
+}
+
+/* 邀请码本身放进内层 span：外层 <code> 为了跟旁边的复制按钮等高特意留了
+   min-height:42px 的内边距，如果单行省略也应用在外层，量出来的框高会比一行
+   文字高一大截，看着像是折成了两行。让 .mg-id 只包住文字本身，量的时候就是
+   真实的单行高度。 */
+.linkValue code > .mg-id {
+  flex: 1 1 auto;
 }
 
 .iconAction {

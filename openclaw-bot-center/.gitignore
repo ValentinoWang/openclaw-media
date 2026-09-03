@@ -4,5 +4,7 @@ node_modules
 dist/
 dist-media/
 dist-demo/
+# 单文件产物与并行验证时的临时产物目录。
+dist-demo-*/
 .vite/
 *.tsbuildinfo

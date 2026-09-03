@@ -1188,7 +1188,7 @@ function AssetCard({
       </div>
       <div className={styles.cardBody}>
         <button
-          className={styles.cardId}
+          className={`${styles.cardId} mg-id`}
           type="button"
           onClick={() => onFocus(asset)}
           title={asset.publicAssetId}

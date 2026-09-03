@@ -437,7 +437,7 @@ function InvitesPage() {
               <div className={styles.inspectorBody} role="region" aria-label="当前邀请码详情" tabIndex={0}>
                 <span className={styles.fieldLabel}>邀请码</span>
                 <div className={styles.linkValue}>
-                  <code>{summary.data.profile.affiliateCode}</code>
+                  <code><span className="mg-id" title={summary.data.profile.affiliateCode}>{summary.data.profile.affiliateCode}</span></code>
                   <button
                     className={'mg-btn mg-btn-ghost ' + styles.iconAction}
                     data-component="mg-btn"

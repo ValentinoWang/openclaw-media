@@ -395,7 +395,7 @@ function TenantDirectoryPanel({ state, selectedTenantId, search, page, onSelect,
             </thead>
             <tbody>
               {data.items.map((tenant) => <tr key={tenant.publicTenantId} className={tenant.publicTenantId === selectedTenantId ? styles.selectedRow : undefined}>
-                <th scope="row"><code className={styles.publicId}>{tenant.publicTenantId}</code></th>
+                <th scope="row"><code className={styles.publicId + ' mg-id'} title={tenant.publicTenantId}>{tenant.publicTenantId}</code></th>
                 <td><StatusBadge status={tenant.status} /></td>
                 <td>{formatInteger(tenant.userCount)}</td>
                 <td>{formatInteger(tenant.runCount)}</td>
@@ -476,7 +476,7 @@ function TenantRunsPanel({ state, selectedTenantId, page, onPrevious, onNext, on
           <table className={styles.runsTable}>
             <thead><tr><th scope="col">公开运行引用</th><th scope="col">标题</th><th scope="col">入口</th><th scope="col">状态</th><th scope="col">可用分区</th><th scope="col">项目引用</th><th scope="col">更新时间</th></tr></thead>
             <tbody>{data.items.map((run) => <tr key={run.publicRunId}>
-              <th scope="row"><code className={styles.publicId}>{run.publicRunId}</code></th>
+              <th scope="row"><code className={styles.publicId + ' mg-id'} title={run.publicRunId}>{run.publicRunId}</code></th>
               <td><span className={styles.cellText}>{run.title}</span></td>
               <td><span className={styles.cellText}>{run.entrypoint}</span></td>
               <td><StatusBadge status={run.status} /></td>

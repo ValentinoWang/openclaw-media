@@ -366,7 +366,7 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
                     key={action.publicActionId}
                   >
                     <div className={styles["admin-action-main"]}>
-                      <strong>{action.action}</strong>
+                      <strong className="mg-id" title={action.action}>{action.action}</strong>
                       <span>{action.reasonSummary}</span>
                     </div>
                     <div className={styles["admin-action-meta"]}>

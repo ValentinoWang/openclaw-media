@@ -113,6 +113,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "dev:demo": "vite --config vite.demo.config.ts --host 0.0.0.0",
     "build:demo": "npm run validate:demo-dataset && npm run qa:media-demo-parity && npm run qa:media-demo-parity-self-test && tsc -b tsconfig.demo.json && vite build --config vite.demo.config.ts && npm run qa:media-demo-static && npm run qa:media-layout-sanity",
+    "build:demo-artifact": "tsx scripts/demo/buildDemoArtifact.ts",
     "preview:demo": "vite preview --config vite.demo.config.ts --host 0.0.0.0",
     "qa:media-layout-sanity": "bash scripts/qa/withChromiumSlot.sh -- tsx scripts/qa/checkMediaLayoutSanity.ts",
     "qa:media-demo-static": "bash scripts/qa/withChromiumSlot.sh -- tsx scripts/qa/checkMediaDemoStatic.ts"

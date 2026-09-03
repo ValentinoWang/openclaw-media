@@ -396,7 +396,11 @@ function ArchivesPage() {
                     {archive.archive_id}
                   </button>
                 </td>
-                <td>{archive.run_id}</td>
+                <td>
+                  <span className="mg-id" title={archive.run_id}>
+                    {archive.run_id}
+                  </span>
+                </td>
                 <td>{archive.cloud_bytes}</td>
                 <td>
                   <span
@@ -567,7 +571,11 @@ function ArchiveDetail({ archive }: { archive: ArchiveRecord | null }) {
                   data-component="mg-metric"
                 >
                   <dt>来源运行</dt>
-                  <dd>{archive.run_id}</dd>
+                  <dd>
+                    <span className="mg-id" title={archive.run_id}>
+                      {archive.run_id}
+                    </span>
+                  </dd>
                 </div>
                 <div
                   className="mg-metric"
@@ -589,7 +597,9 @@ function ArchiveDetail({ archive }: { archive: ArchiveRecord | null }) {
                 {archive.artifacts.map((artifact) => (
                   <li key={artifact.ref}>
                     <span>
-                      <strong>{artifact.ref}</strong>
+                      <strong className="mg-id" title={artifact.ref}>
+                        {artifact.ref}
+                      </strong>
                       <small>
                         {archiveArtifactModeLabel(artifact.mode)} · {archiveArtifactMimeLabel(artifact.mime_type)} · {artifact.size_bytes} 字节
                       </small>

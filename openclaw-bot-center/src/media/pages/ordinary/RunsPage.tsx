@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   BriefcaseBusiness,
   CircleDot,
   ExternalLink,
-  FileCheck2,
   FileOutput,
   Layers3,
   ListFilter,
@@ -482,7 +481,7 @@ function RunRow({ run, selected, onSelect }: { run: RunSummary; selected: boolea
     <tr className={selected ? styles.selectedRow : undefined} aria-selected={selected} tabIndex={0} onClick={select}
       onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); } }}>
       <th scope="row"><button className={styles.runButton} type="button" onClick={(event) => { event.stopPropagation(); select(); }} aria-label={`查看运行 ${run.publicRunId}`}>
-        <span className={styles.runId}><CircleDot size={10} aria-hidden="true" />{run.publicRunId}</span><strong>{run.title}</strong>
+        <span className={styles.runId}><CircleDot size={10} aria-hidden="true" /><span className="mg-id" title={run.publicRunId}>{run.publicRunId}</span></span><strong>{run.title}</strong>
       </button></th>
       <td className={`${styles.longCell} ${styles.platformCell}`}><PlatformValue platform={run.platform} /></td>
       <td className={styles.longCell}>{displayMetadata(run.contentType)}</td>
@@ -490,7 +489,7 @@ function RunRow({ run, selected, onSelect }: { run: RunSummary; selected: boolea
       <td className={styles.longCell}>{run.entrypoint ? "已登记入口" : "未提供"}</td>
       <td><StatusPill status={run.status} /></td>
       <td className={styles.longCell}>{displaySections(run.availableSections)}</td>
-      <td className={styles.longCell}>{run.publicProjectId ?? "未关联项目"}</td>
+      <td className={styles.longCell}>{run.publicProjectId ? <span className="mg-id" title={run.publicProjectId}>{run.publicProjectId}</span> : "未关联项目"}</td>
       <td>{run.revision}</td>
       <td className={styles.dateCell}>{formatDate(run.updatedAt)}</td>
     </tr>
@@ -525,7 +524,7 @@ function BusinessOpportunityTable({
           <tbody>
             {response.items.map((opportunity) => (
               <tr key={opportunity.publicOpportunityId}>
-                <th scope="row" className={styles.longCell}><span className={styles.runId}>{opportunity.brand}</span><strong className={styles.inlineId}>{opportunity.publicOpportunityId}</strong></th>
+                <th scope="row" className={styles.longCell}><span className={styles.runId}>{opportunity.brand}</span><strong className={`${styles.inlineId} mg-id`} title={opportunity.publicOpportunityId}>{opportunity.publicOpportunityId}</strong></th>
                 <td className={styles.longCell}>{opportunity.product}</td>
                 <td className={styles.platformCell}><PlatformValue platform={opportunity.platform} /></td>
                 <td>{mediaTypeDisplayLabel(opportunity.contentType)}</td>
@@ -576,7 +575,7 @@ function CommercialDeliveryTable({
                 <tr key={task.taskId} className={selected ? styles.selectedRow : undefined} aria-selected={selected} tabIndex={0}
                   onClick={select} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); } }}>
                   <th scope="row"><button className={styles.runButton} type="button" onClick={(event) => { event.stopPropagation(); select(); }} aria-label={`查看商单交付 ${task.taskId}`}>
-                    <span className={styles.runId}><BriefcaseBusiness size={11} aria-hidden="true" />{task.taskId}</span><strong>{task.summary || "未命名商单交付"}</strong>
+                    <span className={styles.runId}><BriefcaseBusiness size={11} aria-hidden="true" /><span className="mg-id" title={task.taskId}>{task.taskId}</span></span><strong>{task.summary || "未命名商单交付"}</strong>
                   </button></th>
                   <td><StatusPill status={task.status} /></td>
                   <td>{task.progress}%</td>
@@ -598,14 +597,14 @@ function CommercialDeliveryInspector({ task }: { task: MediaWebTask }) {
   return (
     <aside className={`${styles.inspector} mg-panel`} aria-label="商单交付详情" data-component="mg-panel" data-page-terminal-surface="inspector">
       <header className={`${styles.inspectorHeader} mg-panel-head`} data-component="mg-panel-head">
-        <div className={styles.inspectorHeading}><span>商单交付详情</span><h2>{task.summary || "未命名商单交付"}</h2><code>{task.taskId}</code></div>
+        <div className={styles.inspectorHeading}><span>商单交付详情</span><h2>{task.summary || "未命名商单交付"}</h2><code className="mg-id" title={task.taskId}>{task.taskId}</code></div>
       </header>
       <div className={styles.inspectorBody} role="region" aria-label="商单交付详情内容" tabIndex={0}>
-        <div className={styles.inspectorFacts}><div className={`${styles.factGrid} mg-metric-grid`} data-component="mg-metric-grid">
-          <MetricFact icon={<FileCheck2 size={16} aria-hidden="true" />} label="状态" value={<StatusPill status={task.status} />} />
-          <MetricFact icon={<CircleDot size={16} aria-hidden="true" />} label="进度" value={`${task.progress}%`} />
-          <MetricFact icon={<BriefcaseBusiness size={16} aria-hidden="true" />} label="能力" value="商单交付" />
-          <MetricFact icon={<FileOutput size={16} aria-hidden="true" />} label="更新时间" value={formatDate(task.updatedAt)} />
+        <div className={styles.inspectorFacts}><div className={styles.factList}>
+          <Metric variant="panel" className={styles.factRow} label="状态" value={<StatusPill status={task.status} />} />
+          <Metric variant="panel" className={styles.factRow} label="进度" value={`${task.progress}%`} />
+          <Metric variant="panel" className={styles.factRow} label="能力" value="商单交付" />
+          <Metric variant="panel" className={styles.factRow} label="更新时间" value={formatDate(task.updatedAt)} />
         </div></div>
         <section className={`${styles.deliveryResult} mg-panel`} aria-labelledby="delivery-result-title" data-component="mg-panel">
           <header className="mg-panel-head" data-component="mg-panel-head"><h3 id="delivery-result-title">交付结果</h3><span>{task.result?.status ? runStatusLabel(task.result.status) : "尚未生成"}</span></header>
@@ -653,7 +652,7 @@ function RunInspector({ run }: { run: RunSummary }) {
   return (
     <aside className={`${styles.inspector} mg-panel`} aria-label="运行详情预览" data-component="mg-panel" data-page-terminal-surface="inspector">
       <header className={`${styles.inspectorHeader} mg-panel-head`} data-component="mg-panel-head">
-        <div className={styles.inspectorHeading}><span>运行详情</span><h2>{run.title}</h2><code>{run.publicRunId}</code></div>
+        <div className={styles.inspectorHeading}><span>运行详情</span><h2>{run.title}</h2><code className="mg-id" title={run.publicRunId}>{run.publicRunId}</code></div>
         <Link className={`mg-btn mg-btn-ghost ${styles.closeButton}`} data-component="mg-btn" to={`/runs/${encodeURIComponent(run.publicRunId)}`} aria-label="打开运行详情"><ExternalLink size={17} /></Link>
       </header>
       <div className={styles.inspectorBody} role="region" aria-label="运行详情内容" tabIndex={0}>
@@ -684,24 +683,12 @@ function RunFacts({ run }: { run: RunSummary }) {
     ["发布平台", <PlatformValue key="platform" platform={run.platform} />],
     ["内容形态", run.contentType ? mediaTypeDisplayLabel(run.contentType) : "未记录"],
     ["内容赛道", displayMetadata(run.trackName)],
-    ["项目", run.publicProjectId ?? "未关联项目"],
+    ["项目", run.publicProjectId ? <span className="mg-id" key="project" title={run.publicProjectId}>{run.publicProjectId}</span> : "未关联项目"],
     ["修订号", run.revision],
     ["创建时间", formatDate(run.createdAt)],
     ["更新时间", formatDate(run.updatedAt)],
   ] as const;
-  return <div className={styles.inspectorFacts}><div className={`${styles.factGrid} mg-metric-grid`} data-component="mg-metric-grid">{facts.map(([label, value]) => <MetricFact icon={<FileCheck2 size={16} aria-hidden="true" />} label={label} value={value} key={label} />)}</div></div>;
-}
-
-function MetricFact({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: ReactNode;
-}) {
-  return <Metric variant="card" className={styles.factCard} icon={icon} label={label} value={value} />;
+  return <div className={styles.inspectorFacts}><dl className={styles.factList}>{facts.map(([label, value]) => <div className={styles.factRow} key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></div>;
 }
 
 function displayMetadata(value: string | null | undefined): string {
@@ -738,13 +725,13 @@ function SourceContent({ section }: { section: RunSourceSection }) {
 
 function DecisionContent({ section }: { section: RunDecisionSection }) {
   if (section.decisionItems.length === 0) return <SectionEmpty message="该运行没有已持久化决定。" />;
-  return <div className={styles.sectionBody}><div className={styles.sectionMeta}><span>人工状态</span><strong>{humanStateLabel(section.humanState)}</strong></div><div className={styles.decisionList}>{section.decisionItems.map((decision) => <article className={styles.decisionCard} key={decision.publicDecisionId}><div><span className={styles.runId}>{decision.publicDecisionId}</span><h4>{decision.candidateTitle}</h4></div><StatusPill status={decision.decisionStatus} /><dl><div><dt>平台</dt><dd><PlatformValue platform={decision.platform} /></dd></div><div><dt>赛道</dt><dd>{decision.trackName}</dd></div><div><dt>证据数</dt><dd>{decision.evidenceCount}</dd></div><div><dt>人工确认</dt><dd>{decision.humanConfirmedAt ? formatDate(decision.humanConfirmedAt) : "尚未确认"}</dd></div></dl></article>)}</div></div>;
+  return <div className={styles.sectionBody}><div className={styles.sectionMeta}><span>人工状态</span><strong>{humanStateLabel(section.humanState)}</strong></div><div className={styles.decisionList}>{section.decisionItems.map((decision) => <article className={styles.decisionCard} key={decision.publicDecisionId}><div><span className={styles.runId}><span className="mg-id" title={decision.publicDecisionId}>{decision.publicDecisionId}</span></span><h4>{decision.candidateTitle}</h4></div><StatusPill status={decision.decisionStatus} /><dl><div><dt>平台</dt><dd><PlatformValue platform={decision.platform} /></dd></div><div><dt>赛道</dt><dd>{decision.trackName}</dd></div><div><dt>证据数</dt><dd>{decision.evidenceCount}</dd></div><div><dt>人工确认</dt><dd>{decision.humanConfirmedAt ? formatDate(decision.humanConfirmedAt) : "尚未确认"}</dd></div></dl></article>)}</div></div>;
 }
 
 function OutputContent({ section }: { section: RunOutputSection }) {
   const empty = section.outputVariants.length === 0 && section.artifactSummaries.length === 0 && section.verificationReports.length === 0;
   if (empty) return <SectionEmpty message="该运行没有已持久化输出。" />;
-  return <div className={styles.sectionBody}>{section.outputVariants.length ? <div className={styles.outputGroup}><h4>输出变体</h4>{section.outputVariants.map((item, index) => <TypedMap key={`variant-${index}`} title={`输出变体 ${index + 1}`} value={item} />)}</div> : null}{section.artifactSummaries.length ? <div className={styles.outputGroup}><h4>成果文档</h4>{section.artifactSummaries.map((artifact) => { const documentUrl = getOrganizationDocumentUrl(artifact); return <article className={styles.artifactCard} key={artifact.publicArtifactId}><div><span className={styles.runId}>{artifact.publicArtifactId}</span><strong>{artifactTypeDisplayLabel(artifact.artifactType)}</strong></div><span>修订 {artifact.currentRevision} · {bodyAuthorityDisplayLabel(artifact.bodyAuthority)} · {syncStatusDisplayLabel(artifact.syncStatus)}{documentUrl ? <a className={styles.documentLink} href={documentUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} aria-hidden="true" />打开组织文档</a> : null}</span></article>; })}</div> : null}{section.verificationReports.length ? <div className={styles.outputGroup}><h4>验收报告</h4>{section.verificationReports.map((item, index) => <TypedMap key={`report-${index}`} title={`验收报告 ${index + 1}`} value={item} />)}</div> : null}</div>;
+  return <div className={styles.sectionBody}>{section.outputVariants.length ? <div className={styles.outputGroup}><h4>输出变体</h4>{section.outputVariants.map((item, index) => <TypedMap key={`variant-${index}`} title={`输出变体 ${index + 1}`} value={item} />)}</div> : null}{section.artifactSummaries.length ? <div className={styles.outputGroup}><h4>成果文档</h4>{section.artifactSummaries.map((artifact) => { const documentUrl = getOrganizationDocumentUrl(artifact); return <article className={styles.artifactCard} key={artifact.publicArtifactId}><div><span className={styles.runId}><span className="mg-id" title={artifact.publicArtifactId}>{artifact.publicArtifactId}</span></span><strong>{artifactTypeDisplayLabel(artifact.artifactType)}</strong></div><span>修订 {artifact.currentRevision} · {bodyAuthorityDisplayLabel(artifact.bodyAuthority)} · {syncStatusDisplayLabel(artifact.syncStatus)}{documentUrl ? <a className={styles.documentLink} href={documentUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} aria-hidden="true" />打开组织文档</a> : null}</span></article>; })}</div> : null}{section.verificationReports.length ? <div className={styles.outputGroup}><h4>验收报告</h4>{section.verificationReports.map((item, index) => <TypedMap key={`report-${index}`} title={`验收报告 ${index + 1}`} value={item} />)}</div> : null}</div>;
 }
 
 function TypedMap({ title, value }: { title: string; value: StringValueMap }) {

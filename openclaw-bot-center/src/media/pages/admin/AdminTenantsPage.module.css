@@ -187,7 +187,6 @@
 .runsTable th:nth-child(6) { width: 13%; }
 .runsTable th:nth-child(7) { width: 16%; }
 
-.publicId,
 .monoValue,
 .cellText,
 .longValue,
@@ -196,7 +195,10 @@
   word-break: break-word;
 }
 
+/* publicTenantId / publicRunId are one unbroken token: ellipsis + title, never
+   mid-word breaking (see .mg-id in mediaPrimitives.css). */
 .publicId {
+  max-width: 100%;
   color: var(--mg-ink);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: var(--mg-text-xs);

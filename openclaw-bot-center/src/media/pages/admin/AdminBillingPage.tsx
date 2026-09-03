@@ -631,7 +631,7 @@ function MappingTable({ available, items }: { available: boolean; items: Billing
 function BatchTable({ available, items }: { available: boolean; items: RedemptionBatchSummary[] }) {
   if (!available) return <CollectionUnavailable title="卡密批次" />
   if (!items.length) return <EmptyState title="暂无卡密批次" />
-  return <TableViewport minWidth="760px"><table className={styles.table}><thead><tr><th>批次编号</th><th>套餐编码</th><th className={styles.numericCell}>数量</th><th className={styles.numericCell}>已兑换</th><th>状态</th><th>创建时间</th></tr></thead><tbody>{items.map((item) => <tr key={item.batchId}><th scope="row" className={styles.longCell}>{item.batchId}</th><td>{item.planCode}</td><td className={styles.numericCell}>{formatCount(item.codeCount)}</td><td className={styles.numericCell}>{formatCount(item.redeemedCount)}</td><td><StatusBadge {...recordStatus(item)} /></td><td>{formatTime(item.createdAt)}</td></tr>)}</tbody></table></TableViewport>
+  return <TableViewport minWidth="760px"><table className={styles.table}><thead><tr><th>批次编号</th><th>套餐编码</th><th className={styles.numericCell}>数量</th><th className={styles.numericCell}>已兑换</th><th>状态</th><th>创建时间</th></tr></thead><tbody>{items.map((item) => <tr key={item.batchId}><th scope="row" className={styles.longCell}><span className="mg-id" title={item.batchId}>{item.batchId}</span></th><td><span className="mg-id" title={item.planCode}>{item.planCode}</span></td><td className={styles.numericCell}>{formatCount(item.codeCount)}</td><td className={styles.numericCell}>{formatCount(item.redeemedCount)}</td><td><StatusBadge {...recordStatus(item)} /></td><td>{formatTime(item.createdAt)}</td></tr>)}</tbody></table></TableViewport>
 }
 
 function FulfillmentTable({ available, items, onPrepare }: { available: boolean; items: BillingRecord[]; onPrepare: (mode: 'recover' | 'refund', fulfillmentId: string) => void }) {
@@ -664,7 +664,7 @@ function GrantSummary({ available, items, onViewAll }: { available: boolean; ite
 }
 
 function MiniBatchTable({ items }: { items: RedemptionBatchSummary[] }) {
-  return <TableViewport minWidth="520px"><table className={styles.table + ' ' + styles.miniTable}><thead><tr><th>批次编号</th><th>套餐</th><th className={styles.numericCell}>数量</th><th>状态</th></tr></thead><tbody>{items.map((item) => <tr key={item.batchId}><th scope="row" className={styles.longCell}>{item.batchId}</th><td>{item.planCode}</td><td className={styles.numericCell}>{formatCount(item.codeCount)}</td><td><StatusBadge {...recordStatus(item)} /></td></tr>)}</tbody></table></TableViewport>
+  return <TableViewport minWidth="520px"><table className={styles.table + ' ' + styles.miniTable}><thead><tr><th>批次编号</th><th>套餐</th><th className={styles.numericCell}>数量</th><th>状态</th></tr></thead><tbody>{items.map((item) => <tr key={item.batchId}><th scope="row" className={styles.longCell}><span className="mg-id" title={item.batchId}>{item.batchId}</span></th><td><span className="mg-id" title={item.planCode}>{item.planCode}</span></td><td className={styles.numericCell}>{formatCount(item.codeCount)}</td><td><StatusBadge {...recordStatus(item)} /></td></tr>)}</tbody></table></TableViewport>
 }
 
 function MiniGrantTable({ items }: { items: BillingRecord[] }) {
@@ -695,7 +695,7 @@ function TableViewport({ children, minWidth }: { children: ReactNode; minWidth: 
 }
 
 function StatusBadge({ label, tone }: { label: string; tone: string }) {
-  return <span className={styles.statusBadge + ' mg-badge'} data-tone={tone}><span aria-hidden="true" />{label}</span>
+  return <span className={styles.statusBadge + ' mg-badge'} data-tone={tone}><span aria-hidden="true" /><span className={styles.badgeLabel}>{label}</span></span>
 }
 
 function LoadingState() {

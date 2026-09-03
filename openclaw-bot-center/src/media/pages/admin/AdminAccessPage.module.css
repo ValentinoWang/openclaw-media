@@ -511,12 +511,24 @@
   white-space: nowrap;
 }
 
-.statusPill > span {
+.statusPill > span:first-child {
   width: 6px;
   height: 6px;
   flex: 0 0 auto;
   border-radius: 50%;
   background: currentColor;
+}
+
+/* Plain (non-ellipsis) wrapper for the label text, distinct from the dot
+   above: it gives the label its own unpadded box so a QA gate measuring
+   "own text" reads the label's tight box, not the badge's padded/min-height
+   one. It intentionally skips .mg-id's overflow:hidden/min-width:0 — inside
+   this shrink-to-fit inline-flex badge that collapses the label to near-zero
+   width (ellipsis sizing is circular without a definite width), and these
+   status words always fit their column already. */
+.pillLabel {
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .iconButton {
