@@ -19,13 +19,14 @@ import {
 import { Link } from 'react-router-dom'
 import { useMediaWeb } from '../MediaWebWorkspace'
 import { callBusinessOperation } from '../generatedBusinessPagesContract'
+import { loadMediaDevices, loadMediaJobs, loadMediaPipelines } from '../mediaWebApi'
 import { projectStatusDisplayLabel } from '../ui/displayLabels'
 import { describeBusinessError } from '../ui/businessOperationError'
 import { SurfaceState } from '../ui/SurfaceState'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
 import { Metric } from '../ui/Metric'
 import styles from './WorkboardPage.module.css'
-import { WorkboardFlowDiagram } from './WorkboardFlowDiagram'
+import { WorkboardFlowDiagram, type WorkboardFlowLocalAgent } from './WorkboardFlowDiagram'
 import { WORKBOARD_FLOW_STAGE_ORDER, filterWorkboardAttentionTasks, workboardStageIndex, workboardStageNode, workboardStageProgress } from './workboardPresentation'
 
 type DashboardResponse = {
@@ -86,10 +87,11 @@ type LoadState<T> =
   | { status: 'error'; message: string }
 
 export default function WorkboardPage() {
-  const { openWorkspace, tasks } = useMediaWeb()
+  const { openWorkspace, tasks, session } = useMediaWeb()
   const [dashboard, setDashboard] = useState<LoadState<DashboardResponse>>({ status: 'loading' })
   const [projects, setProjects] = useState<LoadState<ProjectListResponse>>({ status: 'loading' })
   const [opportunities, setOpportunities] = useState<LoadState<OpportunityListResponse>>({ status: 'loading' })
+  const [localAgent, setLocalAgent] = useState<WorkboardFlowLocalAgent | null>(null)
   const [refreshToken, setRefreshToken] = useState(0)
 
   useEffect(() => {
@@ -116,6 +118,24 @@ export default function WorkboardPage() {
     })
     return () => { active = false }
   }, [refreshToken])
+
+  // 本机剪辑线：W1 的流程目录、配对设备与本地任务。没有配对 Mac 或读取失败时留空，
+  // 流程图上对应节点显示「—」，而不是编造本机状态。
+  useEffect(() => {
+    if (!session) return
+    let active = true
+    void Promise.all([
+      loadMediaPipelines(session),
+      loadMediaDevices(session),
+      loadMediaJobs(session, { limit: 100 }),
+    ]).then(([pipelines, devices, jobs]) => {
+      if (!active) return
+      setLocalAgent({ pipelines: pipelines.pipelines, devices: devices.devices, jobs: jobs.jobs })
+    }).catch(() => {
+      if (active) setLocalAgent(null)
+    })
+    return () => { active = false }
+  }, [session, refreshToken])
 
   const summary = dashboard.status === 'ready' ? dashboard.data.summary : null
   const pendingTotal = summary ? summary.pendingDecisions + summary.pendingPublishing + summary.pendingReviews + summary.taskSummary.needsAttention : 0
@@ -159,6 +179,7 @@ export default function WorkboardPage() {
         projects={projects.status === 'ready' ? projects.data.items : []}
         opportunities={opportunities.status === 'ready' ? opportunities.data.items : null}
         tasks={tasks}
+        localAgent={localAgent}
         onOpenTasks={() => openWorkspace()}
       />
 

@@ -69,7 +69,7 @@ export function filterWorkboardAttentionTasks<T extends WorkboardTask>(
 //   facts        = 节点上展示的数字来自哪个合同字段 / 哪批业务记录
 export type WorkboardFlowPendingField = 'pendingDecisions' | 'pendingPublishing' | 'pendingReviews'
 export type WorkboardFlowCountKey = 'contentProjects' | 'runs' | 'assets' | 'tracks' | 'creators' | 'publishedPosts' | 'reviews'
-export type WorkboardFlowLane = 'content' | 'shared' | 'commercial'
+export type WorkboardFlowLane = 'content' | 'shared' | 'local' | 'commercial'
 export type WorkboardFlowAccent = 'studio' | 'campaign' | 'business' | 'desk' | 'agent' | 'archive'
 
 export type WorkboardFlowFact =
@@ -78,6 +78,8 @@ export type WorkboardFlowFact =
   | { readonly source: 'pending'; readonly key: WorkboardFlowPendingField; readonly label: string }
   | { readonly source: 'opportunities'; readonly label: string }
   | { readonly source: 'tasks'; readonly capabilityId: string; readonly attention: boolean; readonly label: string }
+  | { readonly source: 'devices'; readonly label: string }
+  | { readonly source: 'localJobs'; readonly label: string }
 
 export type WorkboardFlowNode = {
   readonly id: string
@@ -91,6 +93,8 @@ export type WorkboardFlowNode = {
   readonly artifactType: string | null
   readonly artifactLabel: string | null
   readonly capabilities: readonly { readonly id: string; readonly label: string }[]
+  /** 本机流程 id（W1 流程目录）。只有本地剪辑线的节点有。 */
+  readonly pipelines?: readonly string[]
   readonly action: string
   readonly outcome: string
   readonly facts: readonly WorkboardFlowFact[]
@@ -112,6 +116,7 @@ export const WORKBOARD_FLOW_COLUMNS = ['定位', '研究 · 商机', '决策 · 
 export const WORKBOARD_FLOW_LANES: readonly { readonly id: WorkboardFlowLane; readonly label: string; readonly detail: string }[] = [
   { id: 'content', label: '内容线', detail: '账号成长：定位 → 研究 → 选题' },
   { id: 'shared', label: '合流', detail: '素材汇入创作，再到发布与复盘' },
+  { id: 'local', label: '本机剪辑线', detail: 'Mac 本地：取证 → 交接包 → 人工精剪' },
   { id: 'commercial', label: '商务线', detail: '变现履约：报价 → 商机 → Brief → 审核' },
 ]
 
@@ -208,7 +213,7 @@ const flowNodeDefinitions: readonly Omit<WorkboardFlowNode, 'artifactLabel'>[] =
     ],
   },
   {
-    id: 'review', lane: 'shared', column: 6, accent: 'agent',
+    id: 'review', lane: 'shared', column: 6, accent: 'desk',
     label: '复盘洞察', path: '/reviews', pathLabel: '复盘洞察',
     stage: 'review', artifactType: 'review_report',
     capabilities: [
@@ -222,6 +227,32 @@ const flowNodeDefinitions: readonly Omit<WorkboardFlowNode, 'artifactLabel'>[] =
       { source: 'stage', stage: 'review', label: '复盘中项目' },
       { source: 'pending', key: 'pendingReviews', label: '待复盘' },
       { source: 'counts', key: 'reviews', label: '复盘记录' },
+    ],
+  },
+  {
+    id: 'local_intake', lane: 'local', column: 2, accent: 'agent',
+    label: '本机素材取证', path: '/media-agent', pathLabel: 'Agent 任务',
+    stage: null, artifactType: null,
+    capabilities: [{ id: 'source_asset_intake', label: '素材' }, { id: 'recent_records_summary', label: '整理' }],
+    pipelines: ['media.project.prepare.v1', 'media.material.organize.v1'],
+    action: '配对的 Mac 在本机扫描素材、读技术元数据、抽关键帧与转写，按 metadata / preview / deep 分层取证。',
+    outcome: '只回传证据化摘要与素材描述符，原始媒体、工程文件和绝对路径都留在本机。',
+    facts: [
+      { source: 'localJobs', label: '本机任务' },
+      { source: 'devices', label: '在线设备' },
+    ],
+  },
+  {
+    id: 'local_edit', lane: 'local', column: 5, accent: 'agent',
+    label: '交接包与人工精剪', path: '/media-agent', pathLabel: 'Agent 任务',
+    stage: null, artifactType: null,
+    capabilities: [{ id: 'creation_checklist_lookup', label: '检查' }, { id: 'media_growth_review', label: '复核' }],
+    pipelines: ['media.material.match.v1', 'media.edit.handoff.v1', 'media.edit.timeline.v1', 'media.edit.revise.v1', 'media.output.review.v1'],
+    action: '按脚本与分镜在本机匹配素材，生成剪辑交接包或可编辑时间线，人工完成精剪后做成片复核。',
+    outcome: '成片与剪辑日志回传云端，进入发布交付；返修意见回到创作产生新版本。',
+    facts: [
+      { source: 'localJobs', label: '剪辑任务' },
+      { source: 'devices', label: '在线设备' },
     ],
   },
   {
@@ -283,6 +314,9 @@ export const WORKBOARD_FLOW_EDGES: readonly WorkboardFlowEdge[] = [
   { from: 'profile', to: 'opportunity', kind: 'forward' },
   { from: 'opportunity', to: 'brief', kind: 'forward' },
   { from: 'brief', to: 'creation', kind: 'forward', label: '商单初稿' },
+  { from: 'local_intake', to: 'assets', kind: 'forward', label: '素材摘要回传' },
+  { from: 'creation', to: 'local_edit', kind: 'forward', label: '交接包' },
+  { from: 'local_edit', to: 'publishing', kind: 'forward', label: '成片回传' },
   { from: 'creation', to: 'publishing', kind: 'forward', label: '自制内容' },
   { from: 'creation', to: 'acceptance', kind: 'forward', label: '送审' },
   { from: 'acceptance', to: 'creation', kind: 'return', label: '返修' },
@@ -293,7 +327,7 @@ export const WORKBOARD_FLOW_EDGES: readonly WorkboardFlowEdge[] = [
 ]
 
 /** 自动巡游顺序：先走内容线，再走商务线，最后在合流处汇合。 */
-export const WORKBOARD_FLOW_TOUR = ['accounts', 'research', 'assets', 'decision', 'profile', 'opportunity', 'brief', 'creation', 'acceptance', 'publishing', 'review'] as const
+export const WORKBOARD_FLOW_TOUR = ['accounts', 'research', 'assets', 'local_intake', 'decision', 'profile', 'opportunity', 'brief', 'creation', 'local_edit', 'acceptance', 'publishing', 'review'] as const
 
 export function workboardFlowNode(id: string): WorkboardFlowNode | undefined {
   return WORKBOARD_FLOW_NODES.find((node) => node.id === id)

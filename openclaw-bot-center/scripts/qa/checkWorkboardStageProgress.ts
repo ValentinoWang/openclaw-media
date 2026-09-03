@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { ARTIFACT_TYPE_LABELS } from '../../src/media/ui/ordinaryDataLabels'
+import { pipelineDisplayLabel } from '../../src/media/ui/displayLabels'
+import type { PipelineSummary } from '../../src/media/generatedProductContract'
 import {
   WORKBOARD_FLOW_COLUMNS,
   WORKBOARD_FLOW_EDGES,
@@ -83,6 +85,36 @@ for (const node of WORKBOARD_FLOW_NODES) {
     if (fact.source === 'tasks') assert.ok(capabilityLabels.has(fact.capabilityId), `${node.id} task fact must count a registered capability`)
   }
 }
+// 本机剪辑线（Mac）：节点声明的本机流程必须是生产流程目录里的 id，演示站的目录也必须用同一批 id。
+const pipelineSummary = (pipeline_id: string): PipelineSummary => ({ pipeline_id, version: '0.0.0', display_name: '', catalog_digest: '' })
+const localNodes = WORKBOARD_FLOW_NODES.filter((node) => node.lane === 'local')
+assert.ok(localNodes.length >= 2, 'the local editing lane must carry the Mac intake and the hand-off/final-cut steps')
+for (const node of localNodes) {
+  assert.ok(node.pipelines?.length, `${node.id} must name the local pipelines it runs`)
+  assert.equal(node.path, '/media-agent', `${node.id} must link to the local agent page`)
+  for (const pipeline of node.pipelines ?? []) {
+    assert.notEqual(pipelineDisplayLabel(pipelineSummary(pipeline)), '其他流程', `${node.id} pipeline ${pipeline} must exist in the production pipeline catalog`)
+  }
+}
+for (const node of WORKBOARD_FLOW_NODES) {
+  if (node.lane !== 'local') assert.equal(node.pipelines, undefined, `${node.id} is not a local step and must not claim local pipelines`)
+}
+const demoBackend = readFileSync(resolve('src/demo/demoBackend.ts'), 'utf8')
+const demoPipelineBlock = /const demoPipelines: PipelineSummary\[\] = \[([\s\S]*?)\n\]/.exec(demoBackend)?.[1] ?? ''
+const demoPipelineIds = [...demoPipelineBlock.matchAll(/pipeline_id: '([^']+)'/g)].map((match) => match[1]!)
+assert.ok(demoPipelineIds.length >= 6, 'the demo pipeline catalog must be readable')
+for (const pipeline of demoPipelineIds) {
+  assert.notEqual(pipelineDisplayLabel(pipelineSummary(pipeline)), '其他流程', `demo pipeline ${pipeline} must use a production pipeline id`)
+}
+for (const node of localNodes) {
+  for (const pipeline of node.pipelines ?? []) {
+    assert.ok(demoPipelineIds.includes(pipeline), `demo pipeline catalog must expose ${pipeline} so the prototype shows the same local lane`)
+  }
+}
+for (const [from, to] of [['local_intake', 'assets'], ['creation', 'local_edit'], ['local_edit', 'publishing']] as const) {
+  assert.ok(WORKBOARD_FLOW_EDGES.some((edge) => edge.from === from && edge.to === to), `the local editing lane must connect ${from} -> ${to}`)
+}
+
 const grouped = new Map<string, number>()
 for (const node of WORKBOARD_FLOW_NODES) {
   const key = `${node.lane}:${node.column}`

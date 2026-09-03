@@ -55,6 +55,10 @@
 .laneBand[data-lane='shared'],
 .laneGroup[data-lane='shared'] { --lane-color: var(--mg-accent-studio-base); --lane-soft: var(--mg-accent-studio-soft); }
 
+.legend > span[data-lane='local'],
+.laneBand[data-lane='local'],
+.laneGroup[data-lane='local'] { --lane-color: var(--mg-accent-agent-base); --lane-soft: var(--mg-accent-agent-soft); }
+
 .legend > span[data-lane='commercial'],
 .laneBand[data-lane='commercial'],
 .laneGroup[data-lane='commercial'] { --lane-color: var(--mg-accent-business-base); --lane-soft: var(--mg-accent-business-soft); }

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { ArrowRight, Bot, LoaderCircle, RefreshCcw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
+import { pipelineDisplayLabel } from '../ui/displayLabels'
+import type { Device, LocalAgentJob, PipelineSummary } from '../generatedProductContract'
 import {
   WORKBOARD_FLOW_COLUMNS,
   WORKBOARD_FLOW_EDGES,
@@ -30,12 +32,15 @@ export type WorkboardFlowSummary = {
 export type WorkboardFlowProject = { publicProjectId: string; title: string; stage: string; updatedAt: string }
 export type WorkboardFlowOpportunity = { publicOpportunityId: string; brand: string; product: string; status: string }
 export type WorkboardFlowTask = { taskId: string; capabilityId: string; status: string; terminal: boolean; summary: string; progress: number; updatedAt: string }
+/** 本机（Mac）协作状态：W1 流程目录、配对设备与本地任务。 */
+export type WorkboardFlowLocalAgent = { pipelines: readonly PipelineSummary[]; devices: readonly Device[]; jobs: readonly LocalAgentJob[] }
 
 type FlowData = {
   summary: WorkboardFlowSummary | null
   projects: readonly WorkboardFlowProject[]
   opportunities: readonly WorkboardFlowOpportunity[] | null
   tasks: readonly WorkboardFlowTask[]
+  localAgent: WorkboardFlowLocalAgent | null
 }
 
 const AUTO_ADVANCE_MS = 4200
@@ -44,10 +49,10 @@ const AUTO_ADVANCE_MS = 4200
 const NODE_W = 128
 const NODE_H = 46
 const COLUMN_X = [20, 206, 392, 578, 764, 950] as const
-const LANE_Y: Record<WorkboardFlowLane, number> = { content: 58, shared: 146, commercial: 234 }
+const LANE_Y: Record<WorkboardFlowLane, number> = { content: 56, shared: 140, local: 224, commercial: 308 }
 const LANE_PAD = 9
 const VIEW_W = 1104
-const VIEW_H = 330
+const VIEW_H = 404
 
 type Box = { x: number; y: number; cx: number; cy: number; right: number; bottom: number; lane: WorkboardFlowLane }
 
@@ -59,45 +64,62 @@ function nodeBox(node: WorkboardFlowNode): Box {
 
 const boxes = new Map(WORKBOARD_FLOW_NODES.map((node) => [node.id, nodeBox(node)]))
 
-/** 每条边的路径与标签位置。合流边汇入创作节点左侧的不同高度，送审/返修是一对平行竖线，回流走外圈。 */
-function edgeGeometry(from: Box, to: Box, fromId: string, toId: string, kind: string): { d: string; label: [number, number] } {
+/** 每条边的路径、标签位置与对齐方式。合流边汇入创作节点左侧的不同高度，送审/返修是一对平行竖线，
+ *  本机线与合流之间走同列竖线，回流走外圈；交付绕过本机线走正交路径，避免与交接包的标签重叠。 */
+type EdgeGeometry = { d: string; label: [number, number]; anchor: 'start' | 'middle' | 'end' }
+
+function edgeGeometry(from: Box, to: Box, fromId: string, toId: string, kind: string): EdgeGeometry {
   if (kind === 'loop') {
     if (to.y < from.y) {
       const top = 30
-      return { d: `M${from.cx},${from.y} V${top} H${to.cx} V${to.y}`, label: [(from.cx + to.cx) / 2, top + 14] }
+      return { d: `M${from.cx},${from.y} V${top} H${to.cx} V${to.y}`, label: [(from.cx + to.cx) / 2, top + 14], anchor: 'middle' }
     }
     const bottom = VIEW_H - 20
-    return { d: `M${from.cx},${from.bottom} V${bottom} H${to.cx} V${to.bottom}`, label: [(from.cx + to.cx) / 2, bottom - 6] }
+    return { d: `M${from.cx},${from.bottom} V${bottom} H${to.cx} V${to.bottom}`, label: [(from.cx + to.cx) / 2, bottom - 6], anchor: 'middle' }
   }
+  // 送审 / 返修：一对平行竖线，从合流穿过本机线在第 4 列的空位落到商务线。
   if (fromId === 'creation' && toId === 'acceptance') {
     const x = from.cx - 20
-    return { d: `M${x},${from.bottom} V${to.y}`, label: [x - 7, (from.bottom + to.y) / 2 + 4] }
+    return { d: `M${x},${from.bottom} V${to.y}`, label: [x - 7, from.bottom + 14], anchor: 'end' }
   }
   if (fromId === 'acceptance' && toId === 'creation') {
     const x = from.cx + 20
-    return { d: `M${x},${from.y} V${to.bottom}`, label: [x + 7, (from.y + to.bottom) / 2 + 4] }
+    return { d: `M${x},${from.y} V${to.bottom}`, label: [x + 7, to.bottom + 14], anchor: 'start' }
+  }
+  // 本机线与合流之间的同列竖线：素材摘要回传、成片回传。
+  if (fromId === 'local_intake' || fromId === 'local_edit') {
+    return { d: `M${from.cx},${from.y} V${to.bottom}`, label: [from.cx + 8, to.bottom + 14], anchor: 'start' }
+  }
+  if (toId === 'local_edit') {
+    return {
+      d: `M${from.right},${from.cy + 13} C${from.right + 34},${from.cy + 13} ${to.x - 34},${to.cy} ${to.x},${to.cy}`,
+      label: [from.right + 4, from.bottom + 15],
+      anchor: 'start',
+    }
+  }
+  // 交付：从品牌审核正交绕过本机线，进入发布交付的左侧（成片回传走它的底边）。
+  if (fromId === 'acceptance' && toId === 'publishing') {
+    return { d: `M${from.right},${from.cy} H${to.x - 12} V${to.cy + 13} H${to.x}`, label: [from.right + 6, from.cy - 7], anchor: 'start' }
   }
   if (toId === 'creation') {
     const targetY = fromId === 'decision' ? to.cy - 13 : fromId === 'brief' ? to.cy + 13 : to.cy
-    if (from.lane === to.lane) return { d: `M${from.right},${from.cy} H${to.x}`, label: [(from.right + to.x) / 2, from.cy - 8] }
+    if (from.lane === to.lane) return { d: `M${from.right},${from.cy} H${to.x}`, label: [(from.right + to.x) / 2, from.cy - 8], anchor: 'middle' }
     const startY = from.y > to.y ? from.y : from.bottom
-    return { d: `M${from.cx},${startY} C${from.cx},${targetY} ${from.cx + 36},${targetY} ${to.x},${targetY}`, label: [from.cx + 12, (startY + targetY) / 2 + 4] }
-  }
-  if (fromId === 'acceptance' && toId === 'publishing') {
-    const targetY = to.bottom - 11
-    return { d: `M${from.right},${from.cy} C${to.x - 4},${from.cy} ${to.x - 10},${targetY + 26} ${to.x},${targetY}`, label: [from.right + 8, from.cy + 15] }
+    return { d: `M${from.cx},${startY} C${from.cx},${targetY} ${from.cx + 36},${targetY} ${to.x},${targetY}`, label: [from.cx + 12, (startY + targetY) / 2 + 4], anchor: 'start' }
   }
   const y = fromId === 'creation' && toId === 'publishing' ? from.cy - 13 : from.cy
-  return { d: `M${from.right},${y} H${to.x}`, label: [(from.right + to.x) / 2, y - 8] }
+  return { d: `M${from.right},${y} H${to.x}`, label: [(from.right + to.x) / 2, y - 8], anchor: 'middle' }
 }
 
-function factValue(fact: WorkboardFlowFact, data: FlowData): number | null {
+function factValue(fact: WorkboardFlowFact, data: FlowData, node: WorkboardFlowNode): number | null {
   switch (fact.source) {
     case 'stage': return data.summary ? data.summary.contentProjectStages.find((row) => row.stage === fact.stage)?.count ?? 0 : null
     case 'counts': return data.summary ? data.summary.counts[fact.key] : null
     case 'pending': return data.summary ? data.summary[fact.key] : null
     case 'opportunities': return data.opportunities ? data.opportunities.length : null
     case 'tasks': return data.tasks.filter((task) => task.capabilityId === fact.capabilityId && (fact.attention ? isAttentionTask(task) : !task.terminal)).length
+    case 'devices': return data.localAgent ? data.localAgent.devices.filter((device) => device.state === 'online').length : null
+    case 'localJobs': return data.localAgent ? data.localAgent.jobs.filter((job) => node.pipelines?.includes(job.pipeline_id)).length : null
   }
 }
 
@@ -108,23 +130,24 @@ function isAttentionTask(task: WorkboardFlowTask): boolean {
 function pendingValue(node: WorkboardFlowNode, data: FlowData): number {
   return node.facts
     .filter((fact) => fact.source === 'pending' || (fact.source === 'tasks' && fact.attention))
-    .reduce((total, fact) => total + (factValue(fact, data) ?? 0), 0)
+    .reduce((total, fact) => total + (factValue(fact, data, node) ?? 0), 0)
 }
 
 // 图上每个节点只写一个首要数字，其余事实留给详情卡，避免小方块里塞两段文字。
 function nodeCaption(node: WorkboardFlowNode, data: FlowData): string {
   const primary = node.facts[0]
   if (!primary) return node.hint ?? node.pathLabel
-  const value = factValue(primary, data)
+  const value = factValue(primary, data, node)
   return value === null ? '读取中' : `${value} ${primary.label}`
 }
 
-export function WorkboardFlowDiagram({ summary, loading, projects, opportunities, tasks, onOpenTasks }: {
+export function WorkboardFlowDiagram({ summary, loading, projects, opportunities, tasks, localAgent, onOpenTasks }: {
   summary: WorkboardFlowSummary | null
   loading: boolean
   projects: readonly WorkboardFlowProject[]
   opportunities: readonly WorkboardFlowOpportunity[] | null
   tasks: readonly WorkboardFlowTask[]
+  localAgent: WorkboardFlowLocalAgent | null
   onOpenTasks: () => void
 }) {
   const [selected, setSelected] = useState<string | null>(null)
@@ -149,7 +172,7 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
     return () => window.clearInterval(timer)
   }, [autoAdvance])
 
-  const data: FlowData = useMemo(() => ({ summary, projects, opportunities, tasks }), [summary, projects, opportunities, tasks])
+  const data: FlowData = useMemo(() => ({ summary, projects, opportunities, tasks, localAgent }), [summary, projects, opportunities, tasks, localAgent])
   const activeId = selected ?? WORKBOARD_FLOW_TOUR[cursor]!
   const active = workboardFlowNode(activeId) ?? WORKBOARD_FLOW_NODES[0]!
   const tourIndex = WORKBOARD_FLOW_TOUR.indexOf(activeId as (typeof WORKBOARD_FLOW_TOUR)[number])
@@ -171,10 +194,10 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
   return (
     <section className={`mg-panel ${styles.panel}`} aria-label="自媒体全流程" data-flow-auto={autoAdvance ? 'on' : 'off'}>
       <header className="mg-panel-head">
-        <div><span>自媒体全流程</span><h2>内容线与商务线在创作合流，复盘把结果送回起点</h2></div>
+        <div><span>自媒体全流程</span><h2>内容线与商务线在创作合流，本机精剪后回到发布与复盘</h2></div>
         <div className={styles.headMeta}>
           {loading ? <LoaderCircle className="spin" size={16} /> : <strong>{summary ? `${summary.counts.contentProjects} 个内容项目` : '汇总暂不可用'}</strong>}
-          <small>{summary ? `按真实项目、商机与任务统计 · ${formatDate(summary.generatedAt)}` : '流程说明与真实数据分开展示'}</small>
+          <small>{summary ? `按真实项目、商机、本机任务统计 · ${formatDate(summary.generatedAt)}` : '流程说明与真实数据分开展示'}</small>
         </div>
       </header>
 
@@ -189,7 +212,7 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
         onFocus={() => setPaused(true)}
         onBlur={() => setPaused(false)}
       >
-        <svg className={styles.svg} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} role="group" aria-label="自媒体全流程图：内容线、商务线与合流">
+        <svg className={styles.svg} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} role="group" aria-label="自媒体全流程图：内容线、商务线、本机剪辑线与合流">
           <defs>
             <marker id="wb-arrow-muted" className={styles.arrowMuted} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" /></marker>
             {(['studio', 'campaign', 'business', 'desk', 'agent', 'archive'] as const).map((accent) => (
@@ -218,7 +241,7 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
             return (
               <g key={key} className={styles.edge} data-kind={edge.kind} data-live={live ? 'true' : undefined} data-accent={fromNode.accent}>
                 <path d={geometry.d} markerEnd={`url(#wb-arrow-${live ? fromNode.accent : 'muted'})`} />
-                {edge.label ? <text x={geometry.label[0]} y={geometry.label[1]} textAnchor={edge.kind === 'loop' ? 'middle' : (edge.from === 'acceptance' && edge.to === 'creation') || edge.to === 'creation' && edge.from !== 'assets' ? 'start' : edge.from === 'creation' && edge.to === 'acceptance' ? 'end' : 'middle'}>{edge.label}</text> : null}
+                {edge.label ? <text x={geometry.label[0]} y={geometry.label[1]} textAnchor={geometry.anchor}>{edge.label}</text> : null}
               </g>
             )
           })}
@@ -290,19 +313,27 @@ function FlowDetail({ node, step, data, commercialTasks }: { node: WorkboardFlow
   const lane = WORKBOARD_FLOW_LANES.find((item) => item.id === node.lane)!
   const stageIndex = node.stage ? workboardStageIndex(node.stage) : null
   const stageProjects = stageIndex === null ? [] : data.projects.filter((project) => workboardStageIndex(project.stage) === stageIndex)
-  const sideTitle = node.id === 'opportunity' || node.id === 'profile' ? '当前商务机会' : node.id === 'brief' || node.id === 'acceptance' ? '商单交付任务' : '处于此阶段的项目'
-  const sideItems: { key: string; title: string; detail: string }[] = node.id === 'opportunity' || node.id === 'profile'
-    ? (data.opportunities ?? []).map((item) => ({ key: item.publicOpportunityId, title: `${item.brand} · ${item.product}`, detail: item.status }))
-    : node.id === 'brief' || node.id === 'acceptance'
-      ? commercialTasks.filter((task) => node.id === 'brief' ? !task.terminal : isAttentionTask(task)).map((task) => ({ key: task.taskId, title: task.summary || '商单交付任务', detail: `${task.progress}% · ${formatDate(task.updatedAt)}` }))
-      : stageProjects.map((project) => ({ key: project.publicProjectId, title: project.title, detail: `更新于 ${formatDate(project.updatedAt)}` }))
-  const emptyCopy = node.id === 'opportunity' || node.id === 'profile'
-    ? (data.opportunities === null ? '商务机会暂时无法读取。' : '还没有已授权的商务机会。')
-    : node.id === 'brief' || node.id === 'acceptance'
-      ? '当前没有对应的商单交付任务。'
-      : stageIndex === null
-        ? '这一步不按项目阶段统计。'
-        : '最近更新的项目里没有处于此阶段的。'
+  const sideTitle = node.pipelines
+    ? '本机可用流程'
+    : node.id === 'opportunity' || node.id === 'profile' ? '当前商务机会' : node.id === 'brief' || node.id === 'acceptance' ? '商单交付任务' : '处于此阶段的项目'
+  const sideItems: { key: string; title: string; detail: string }[] = node.pipelines
+    ? (data.localAgent?.pipelines ?? [])
+      .filter((pipeline) => node.pipelines?.includes(pipeline.pipeline_id))
+      .map((pipeline) => ({ key: pipeline.pipeline_id, title: pipelineDisplayLabel(pipeline), detail: `版本 ${pipeline.version}` }))
+    : node.id === 'opportunity' || node.id === 'profile'
+      ? (data.opportunities ?? []).map((item) => ({ key: item.publicOpportunityId, title: `${item.brand} · ${item.product}`, detail: item.status }))
+      : node.id === 'brief' || node.id === 'acceptance'
+        ? commercialTasks.filter((task) => node.id === 'brief' ? !task.terminal : isAttentionTask(task)).map((task) => ({ key: task.taskId, title: task.summary || '商单交付任务', detail: `${task.progress}% · ${formatDate(task.updatedAt)}` }))
+        : stageProjects.map((project) => ({ key: project.publicProjectId, title: project.title, detail: `更新于 ${formatDate(project.updatedAt)}` }))
+  const emptyCopy = node.pipelines
+    ? (data.localAgent === null ? '本机协作状态暂时无法读取。' : '还没有配对的 Mac 客户端，先在 Agent 任务页生成配对码。')
+    : node.id === 'opportunity' || node.id === 'profile'
+      ? (data.opportunities === null ? '商务机会暂时无法读取。' : '还没有已授权的商务机会。')
+      : node.id === 'brief' || node.id === 'acceptance'
+        ? '当前没有对应的商单交付任务。'
+        : stageIndex === null
+          ? '这一步不按项目阶段统计。'
+          : '最近更新的项目里没有处于此阶段的。'
 
   return (
     <div className={styles.detail} data-accent={node.accent} aria-live="polite">
@@ -312,7 +343,7 @@ function FlowDetail({ node, step, data, commercialTasks }: { node: WorkboardFlow
         <p><strong>产出</strong>{node.outcome}</p>
         <div className={styles.detailFacts}>
           {node.facts.map((fact, index) => {
-            const value = factValue(fact, data)
+            const value = factValue(fact, data, node)
             return <span key={index}><small>{fact.label}</small><strong>{value === null ? '—' : value}</strong></span>
           })}
           {node.artifactLabel ? <span><small>产物类型</small><strong>{node.artifactLabel}</strong></span> : null}

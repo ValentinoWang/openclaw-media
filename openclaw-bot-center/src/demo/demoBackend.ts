@@ -257,13 +257,18 @@ function seedTasks(): void {
 
 const catalogDigest = `sha256:${digest('demo-pipeline-catalog')}`
 
+// 流程 id 必须与生产的流程目录一致（ui/displayLabels.ts 的 PIPELINE_LABELS），
+// 否则演示站的「流程目录」会整列落到「其他流程」。
 const demoPipelines: PipelineSummary[] = [
-  { pipeline_id: 'project_preparation', version: '3.1.0', display_name: '项目准备', catalog_digest: catalogDigest },
-  { pipeline_id: 'material_organization', version: '5.2.0', display_name: '素材整理', catalog_digest: catalogDigest },
-  { pipeline_id: 'material_matching', version: '4.0.1', display_name: '素材匹配', catalog_digest: catalogDigest },
-  { pipeline_id: 'edit_handoff', version: '6.3.0', display_name: '剪辑交接', catalog_digest: catalogDigest },
-  { pipeline_id: 'editable_timeline', version: '2.4.0', display_name: '可编辑时间线', catalog_digest: catalogDigest },
-  { pipeline_id: 'final_review', version: '3.0.2', display_name: '成片复核', catalog_digest: catalogDigest },
+  { pipeline_id: 'media.project.prepare.v1', version: '3.1.0', display_name: '项目准备', catalog_digest: catalogDigest },
+  { pipeline_id: 'media.material.organize.v1', version: '5.2.0', display_name: '素材整理', catalog_digest: catalogDigest },
+  { pipeline_id: 'media.material.match.v1', version: '4.0.1', display_name: '素材匹配', catalog_digest: catalogDigest },
+  { pipeline_id: 'media.edit.handoff.v1', version: '6.3.0', display_name: '内容编辑交接', catalog_digest: catalogDigest },
+  { pipeline_id: 'media.edit.timeline.v1', version: '2.4.0', display_name: '内容时间线编辑', catalog_digest: catalogDigest },
+  { pipeline_id: 'media.edit.revise.v1', version: '2.1.0', display_name: '内容修改确认', catalog_digest: catalogDigest },
+  { pipeline_id: 'media.output.review.v1', version: '3.0.2', display_name: '内容产物复核', catalog_digest: catalogDigest },
+  { pipeline_id: 'media.rhythm.review.v1', version: '1.4.0', display_name: '节奏复盘', catalog_digest: catalogDigest },
+  { pipeline_id: 'media.semantic.review.v1', version: '1.6.0', display_name: '语义复核', catalog_digest: catalogDigest },
 ]
 
 const demoDevices: Device[] = [
@@ -273,7 +278,7 @@ const demoDevices: Device[] = [
     device_label: '小满的 MacBook Pro',
     device_platform: 'macos',
     client_version: '2026.8.3',
-    capabilities: ['material_organization', 'edit_handoff', 'editable_timeline'],
+    capabilities: ['media.material.organize.v1', 'media.edit.handoff.v1', 'media.edit.timeline.v1'],
     revision: 12,
     last_seen_at: minutesAgo(1),
   },
@@ -320,7 +325,7 @@ const demoJobs: LocalAgentJob[] = [
   demoJob({
     job_id: 'job_material_organization_01',
     state: 'succeeded',
-    pipeline_id: 'material_organization',
+    pipeline_id: 'media.material.organize.v1',
     result_status: 'succeeded',
     result_refs: ['media://demo/result/material-index'],
     artifact_refs: ['artifact_asset_digest_autumn'],
@@ -331,7 +336,7 @@ const demoJobs: LocalAgentJob[] = [
   demoJob({
     job_id: 'job_edit_handoff_02',
     state: 'running',
-    pipeline_id: 'edit_handoff',
+    pipeline_id: 'media.edit.handoff.v1',
     lease_id: 'lease_demo_0002',
     lease_expires_at: minutesAgo(-20),
     ack_ref: 'ack_demo_0002',
@@ -346,7 +351,7 @@ const demoJobs: LocalAgentJob[] = [
   demoJob({
     job_id: 'job_final_review_03',
     state: 'blocked',
-    pipeline_id: 'final_review',
+    pipeline_id: 'media.output.review.v1',
     device_id: 'device_studio_mini',
     result_status: 'blocked',
     failure_code: 'awaiting_human_confirmation',
@@ -998,7 +1003,7 @@ function handleProductApi(method: string, path: string): Response | null {
     return json({ jobs: demoJobs, next_cursor: null } as unknown as JsonValue)
   }
   if (path === '/jobs' && method === 'POST') {
-    const created = demoJob({ job_id: `job_demo_${Date.now().toString(36)}`, state: 'queued', pipeline_id: 'material_organization' })
+    const created = demoJob({ job_id: `job_demo_${Date.now().toString(36)}`, state: 'queued', pipeline_id: 'media.material.organize.v1' })
     demoJobs.unshift(created)
     return json({ job: created } as unknown as JsonValue)
   }
