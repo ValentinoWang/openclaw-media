@@ -41,12 +41,13 @@ type FlowData = {
 const AUTO_ADVANCE_MS = 4200
 
 // ---- SVG 几何：六列 × 三条泳道，viewBox 固定，容器变窄时横向滚动而不是缩字 ----
-const NODE_W = 148
-const NODE_H = 64
-const COLUMN_X = [24, 218, 412, 606, 800, 994] as const
-const LANE_Y: Record<WorkboardFlowLane, number> = { content: 78, shared: 190, commercial: 302 }
-const VIEW_W = 1164
-const VIEW_H = 412
+const NODE_W = 128
+const NODE_H = 46
+const COLUMN_X = [20, 206, 392, 578, 764, 950] as const
+const LANE_Y: Record<WorkboardFlowLane, number> = { content: 58, shared: 146, commercial: 234 }
+const LANE_PAD = 9
+const VIEW_W = 1104
+const VIEW_H = 330
 
 type Box = { x: number; y: number; cx: number; cy: number; right: number; bottom: number; lane: WorkboardFlowLane }
 
@@ -62,31 +63,31 @@ const boxes = new Map(WORKBOARD_FLOW_NODES.map((node) => [node.id, nodeBox(node)
 function edgeGeometry(from: Box, to: Box, fromId: string, toId: string, kind: string): { d: string; label: [number, number] } {
   if (kind === 'loop') {
     if (to.y < from.y) {
-      const top = 48
+      const top = 30
       return { d: `M${from.cx},${from.y} V${top} H${to.cx} V${to.y}`, label: [(from.cx + to.cx) / 2, top + 14] }
     }
-    const bottom = VIEW_H - 26
+    const bottom = VIEW_H - 20
     return { d: `M${from.cx},${from.bottom} V${bottom} H${to.cx} V${to.bottom}`, label: [(from.cx + to.cx) / 2, bottom - 6] }
   }
   if (fromId === 'creation' && toId === 'acceptance') {
-    const x = from.cx - 22
-    return { d: `M${x},${from.bottom} V${to.y}`, label: [x - 8, (from.bottom + to.y) / 2 + 4] }
+    const x = from.cx - 20
+    return { d: `M${x},${from.bottom} V${to.y}`, label: [x - 7, (from.bottom + to.y) / 2 + 4] }
   }
   if (fromId === 'acceptance' && toId === 'creation') {
-    const x = from.cx + 22
-    return { d: `M${x},${from.y} V${to.bottom}`, label: [x + 8, (from.y + to.bottom) / 2 + 4] }
+    const x = from.cx + 20
+    return { d: `M${x},${from.y} V${to.bottom}`, label: [x + 7, (from.y + to.bottom) / 2 + 4] }
   }
   if (toId === 'creation') {
-    const targetY = fromId === 'decision' ? to.cy - 14 : fromId === 'brief' ? to.cy + 14 : to.cy
+    const targetY = fromId === 'decision' ? to.cy - 13 : fromId === 'brief' ? to.cy + 13 : to.cy
     if (from.lane === to.lane) return { d: `M${from.right},${from.cy} H${to.x}`, label: [(from.right + to.x) / 2, from.cy - 8] }
     const startY = from.y > to.y ? from.y : from.bottom
-    return { d: `M${from.cx},${startY} C${from.cx},${targetY} ${from.cx + 40},${targetY} ${to.x},${targetY}`, label: [from.cx + 14, (startY + targetY) / 2 + 4] }
+    return { d: `M${from.cx},${startY} C${from.cx},${targetY} ${from.cx + 36},${targetY} ${to.x},${targetY}`, label: [from.cx + 12, (startY + targetY) / 2 + 4] }
   }
   if (fromId === 'acceptance' && toId === 'publishing') {
-    const targetY = to.bottom - 12
-    return { d: `M${from.right},${from.cy} C${to.x - 4},${from.cy} ${to.x - 10},${targetY + 30} ${to.x},${targetY}`, label: [from.right + 12, from.cy - 8] }
+    const targetY = to.bottom - 11
+    return { d: `M${from.right},${from.cy} C${to.x - 4},${from.cy} ${to.x - 10},${targetY + 26} ${to.x},${targetY}`, label: [from.right + 8, from.cy + 15] }
   }
-  const y = fromId === 'creation' && toId === 'publishing' ? from.cy - 14 : from.cy
+  const y = fromId === 'creation' && toId === 'publishing' ? from.cy - 13 : from.cy
   return { d: `M${from.right},${y} H${to.x}`, label: [(from.right + to.x) / 2, y - 8] }
 }
 
@@ -110,13 +111,12 @@ function pendingValue(node: WorkboardFlowNode, data: FlowData): number {
     .reduce((total, fact) => total + (factValue(fact, data) ?? 0), 0)
 }
 
+// 图上每个节点只写一个首要数字，其余事实留给详情卡，避免小方块里塞两段文字。
 function nodeCaption(node: WorkboardFlowNode, data: FlowData): string {
-  const parts = node.facts.slice(0, 2).flatMap((fact) => {
-    const value = factValue(fact, data)
-    return value === null ? [] : [`${value} ${fact.label}`]
-  })
-  if (parts.length) return parts.join(' · ')
-  return node.facts.length ? '读取中' : node.pathLabel
+  const primary = node.facts[0]
+  if (!primary) return node.hint ?? node.pathLabel
+  const value = factValue(primary, data)
+  return value === null ? '读取中' : `${value} ${primary.label}`
 }
 
 export function WorkboardFlowDiagram({ summary, loading, projects, opportunities, tasks, onOpenTasks }: {
@@ -199,13 +199,13 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
 
           {WORKBOARD_FLOW_LANES.map((lane) => (
             <g key={lane.id} className={styles.laneBand} data-lane={lane.id}>
-              <rect x={8} y={LANE_Y[lane.id] - 12} width={VIEW_W - 16} height={NODE_H + 24} rx={14} />
-              <text x={lane.id === 'shared' ? 28 : VIEW_W - 28} y={LANE_Y[lane.id] + 8} textAnchor={lane.id === 'shared' ? 'start' : 'end'}>{lane.label}</text>
+              <rect x={8} y={LANE_Y[lane.id] - LANE_PAD} width={VIEW_W - 16} height={NODE_H + LANE_PAD * 2} rx={12} />
+              <text x={lane.id === 'shared' ? 24 : VIEW_W - 24} y={LANE_Y[lane.id] + 6} textAnchor={lane.id === 'shared' ? 'start' : 'end'}>{lane.label}</text>
             </g>
           ))}
 
           {WORKBOARD_FLOW_COLUMNS.map((column, index) => (
-            <text key={column} className={styles.columnHead} x={COLUMN_X[index]! + NODE_W / 2} y={24} textAnchor="middle">{index + 1} · {column}</text>
+            <text key={column} className={styles.columnHead} x={COLUMN_X[index]! + NODE_W / 2} y={14} textAnchor="middle">{index + 1} · {column}</text>
           ))}
 
           {WORKBOARD_FLOW_EDGES.map((edge) => {
@@ -241,13 +241,13 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
                 onClick={() => select(node.id)}
                 onKeyDown={(event) => onNodeKey(event, node.id)}
               >
-                <rect className={styles.nodeBox} width={NODE_W} height={NODE_H} rx={12} />
-                <text className={styles.nodeLabel} x={14} y={26}>{node.label}</text>
-                <text className={styles.nodeCaption} x={14} y={47}>{nodeCaption(node, data)}</text>
+                <rect className={styles.nodeBox} width={NODE_W} height={NODE_H} rx={10} />
+                <text className={styles.nodeLabel} x={11} y={21}>{node.label}</text>
+                <text className={styles.nodeCaption} x={11} y={37}>{nodeCaption(node, data)}</text>
                 {pending ? (
-                  <g className={styles.nodePending} transform={`translate(${NODE_W - 12} 0)`}>
-                    <rect x={-30} y={-9} width={38} height={18} rx={9} />
-                    <text x={-11} y={4} textAnchor="middle">待 {pending}</text>
+                  <g className={styles.nodePending} transform={`translate(${NODE_W - 10} 0)`}>
+                    <rect x={-34} y={-10} width={34} height={16} rx={8} />
+                    <text x={-17} y={2} textAnchor="middle">待 {pending}</text>
                   </g>
                 ) : null}
               </g>

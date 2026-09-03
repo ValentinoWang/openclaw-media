@@ -94,6 +94,8 @@ export type WorkboardFlowNode = {
   readonly action: string
   readonly outcome: string
   readonly facts: readonly WorkboardFlowFact[]
+  /** 没有可统计数字的节点在图上显示的短提示（不编造数字）。 */
+  readonly hint?: string
 }
 
 export type WorkboardFlowEdge = {
@@ -233,6 +235,7 @@ const flowNodeDefinitions: readonly Omit<WorkboardFlowNode, 'artifactLabel'>[] =
     action: '维护达人账号事实、图文与视频的报价快照、权益和授权边界。',
     outcome: '账号级报价与权益边界，不绑定单一品牌。',
     facts: [],
+    hint: '报价与权益',
   },
   {
     id: 'opportunity', lane: 'commercial', column: 2, accent: 'business',
