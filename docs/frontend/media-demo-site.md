@@ -102,10 +102,10 @@ openclaw-bot-center/scripts/demo/
 
 演示站有两个可以直接发给别人的入口：
 
-- `<base>/`：应用本身。进去就是当前身份的默认页面，右下角有“演示导航”悬浮面板，可以切身份、跳任意页面。
+- `<base>/`：**封面页**（`src/demo/DemoCover.tsx`）。说明这是什么、边界在哪、有哪些页面、三种身份分别能看到什么，再由这里进应用。根路径不直接跳默认页是刻意的：单看一个内页，没人分得清这是不鉴权的复刻站还是真的产品。进去之后右下角有“演示导航”悬浮面板（可拖动），可以切身份、跳任意页面。
 - `<base>pages.html`：**纯静态的页面索引**。它由构建脚本 `scripts/demo/renderDemoIndex.ts` 从同一份 `demoRouteGroups` 生成，不依赖 JavaScript，也不加载任何外部资源；适合作为“HTML 跳转版”的对外首页——打开就能看到全部页面清单，点哪个跳哪个。
 
-两个入口用的是同一份路由清单，不存在“索引里有、站里没有”的漂移。
+两个入口用的是同一份路由清单，不存在“索引里有、站里没有”的漂移。封面页与演示导航都走 `src/demo/demoNavigation.ts` 的 pushState 导航，而不是整页跳转——单文件分发时只有一个文档，任何子路径的整页跳转都取不到文件。
 
 ## 认证页面（只读复刻）
 
@@ -139,9 +139,23 @@ cd openclaw-bot-center && npm run preview:demo
 
 # 单独跑构建产物的走查 QA（build:demo 内部也会跑这一步）
 cd openclaw-bot-center && npm run qa:media-demo-static
+
+# 单独跑排版体检（同上，需要 dist-demo 已经构建过）
+cd openclaw-bot-center && npm run qa:media-layout-sanity
+
+# 打成单文件（发 Artifact 这类只托管一个文档的场合）
+cd openclaw-bot-center && MEDIA_DEMO_BASE=/ npm run build:demo && npm run build:demo-artifact
 ```
 
-`build:demo` 的完整流程是 `validate:demo-dataset && tsc -b tsconfig.demo.json && vite build --config vite.demo.config.ts && qa:media-demo-static`：先确认数据集没有过期（不是重新生成，而是校验当前已提交的文件是否等于按当前合同/种子重新生成的结果），再做类型检查、构建，最后跑构建产物的走查。
+`build:demo` 的完整流程是 `validate:demo-dataset && qa:media-demo-parity && qa:media-demo-parity-self-test && tsc -b tsconfig.demo.json && vite build --config vite.demo.config.ts && qa:media-demo-static && qa:media-layout-sanity`：先确认数据集没有过期（不是重新生成，而是校验当前已提交的文件是否等于按当前合同/种子重新生成的结果）和原型与生产没有漂移，再做类型检查、构建，最后跑构建产物的走查与排版体检。
+
+`qa:media-layout-sanity` 会在 1440 / 1180 / 900 / 430 四个宽度真渲染每个演示页面，抓四类类型检查和单测看不见的破相：文字块互相重叠、不含空格的整串（ID、时间戳）被拦腰折断、非标题的值槽用展示级字号折行、视口高度契约生效时整页仍能纵向滚动。演示站在这里的价值不止是“给人看”——它是**唯一**能把全部生产页面在多个宽度下真渲染一遍的地方，生产前端要登录才进得去。
+
+## 单文件分发
+
+`npm run build:demo-artifact`（`scripts/demo/buildDemoArtifact.ts`）把构建产物压成一个 HTML 文件，落在 `dist-demo-artifact/demo-site.html`：CSS 和 JS 内联，本地 woff2 的 `@font-face` 整段剥掉改挂 Google Fonts（同样两个字族），最后自检没有残留的本地引用、没有 `@font-face`、总大小不超过 16MB。
+
+前提是**基址必须是 `/`**（`MEDIA_DEMO_BASE=/`）：单文件只有根路径这一个文档，基址对不上会让封面页跳转到取不到的子路径。脚本会直接拒绝非 `/` 的产物，不会默默产出一个坏文件。
 
 ## 怎么打开
 

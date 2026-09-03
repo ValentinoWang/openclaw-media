@@ -160,10 +160,13 @@
   gap: 3px;
   min-width: 0;
 }
-.artifactList strong,
 .artifactList small {
   overflow-wrap: anywhere;
 }
+/* .artifactList strong holds artifact.ref (a media:// URI with no break points);
+   the layout comes from the shared .mg-id primitive on the element itself, not
+   from here — do not reintroduce overflow-wrap/word-break, it would fight the
+   single-line ellipsis .mg-id sets. */
 .artifactList strong {
   color: var(--mg-ink);
   font-size: var(--mg-text-xs);
@@ -627,13 +630,14 @@
   font-size: var(--mg-text-2xs);
 }
 
+/* 来源运行 nests a .mg-id span (single-line ellipsis + title, see mediaPrimitives.css);
+   the other two rows are short plain text/numbers that never need to wrap-anywhere. */
 .receiptFacts dd {
   display: flex;
   min-width: 0;
   align-items: flex-start;
   gap: 6px;
   margin: 0;
-  overflow-wrap: anywhere;
   color: var(--mg-ink);
   font-size: var(--mg-text-xs);
   line-height: 1.45;
@@ -678,7 +682,7 @@
 
 @media (max-width: 1120px) {
   .page {
-    height: auto;
+    --mg-rail-shell-height: auto;
     overflow: visible;
   }
 
@@ -708,8 +712,15 @@
     overflow-y: visible;
   }
 
+  /* archiveContent (metrics + artifact list) and localBoundary (the always-local
+     media rows) used to share a `minmax(0, 1fr) auto` grid: once archiveContent's
+     own overflow goes visible above, that row can be squeezed well below its
+     content's real height, and the overflowing artifact rows land right on top
+     of localBoundary's rows. A plain block stack sizes each section to its own
+     content instead, so nothing has to overlap the next one. */
   .inspectorBody {
-    grid-template-rows: auto;
+    display: block;
+    height: auto;
   }
 
   .archiveContent {
@@ -731,20 +742,27 @@
 
 @media (max-width: 900px) {
   .page {
+    --mg-rail-fill: auto;
     height: auto;
     overflow: visible;
   }
 
+  /* Below 900px, mainColumn (records) and rail (inspector + delete) stack
+     instead of sitting side by side. A grid with a single `1fr` row here would
+     have the two implicit rows fight over height — records or rail collapses
+     toward zero and whichever one has `overflow: visible` paints over the
+     other. A plain column stack sizes each child to its own content instead. */
   .workspace {
+    display: flex;
+    flex-direction: column;
     height: auto;
-    grid-template-columns: 1fr;
     overflow: visible;
   }
 
   .rail {
+    display: flex;
+    flex-direction: column;
     height: auto;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto;
     overflow: visible;
   }
 
@@ -752,11 +770,6 @@
   .dangerBody,
   .receiptBody {
     overflow-y: visible;
-  }
-
-  .dangerPanel,
-  .receiptPanel {
-    grid-column: span 2;
   }
 }
 
@@ -771,15 +784,6 @@
 
   .resetButton {
     width: 100%;
-  }
-
-  .rail {
-    grid-template-columns: 1fr;
-  }
-
-  .dangerPanel,
-  .receiptPanel {
-    grid-column: auto;
   }
 
   .impactPlan {

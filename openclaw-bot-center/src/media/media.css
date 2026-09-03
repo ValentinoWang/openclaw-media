@@ -68,6 +68,10 @@ p { text-wrap: pretty; }
 .sidebar-foot a:hover { color: white; }
 .media-workspace { min-height: 100vh; margin-left: 244px; }
 .media-topbar { position: sticky; top: 0; z-index: 20; display: flex; height: 58px; align-items: center; padding: 0 28px; border-bottom: 1px solid var(--mg-border); background: oklch(0.99 0.002 175 / 0.96); }
+/* 顶栏是 sticky 的：任何「滚到某个元素」的动作——键盘 Tab 聚焦、锚点跳转、点击前
+   的自动滚动——都会把目标正好停在顶栏底下，看得见却点不到（窄屏的 /tracks 标签页
+   就是这么点不动的）。给滚动容器留出顶栏这一条高度，浏览器会自己多滚一点。 */
+html { scroll-padding-top: calc(var(--mg-shell-topbar, 68px) + 8px); }
 .topbar-title { display: flex; align-items: center; gap: 8px; font-size: var(--mg-text-md); }
 .mode-switch { display: flex; gap: 2px; margin-left: auto; padding: 2px; border: 1px solid var(--mg-border); border-radius: var(--mg-r-sm); background: var(--mg-bg); }
 .mode-switch button { min-width: 50px; height: 32px; padding: 0 9px; border: 0; border-radius: var(--mg-r-xs); color: var(--mg-muted); background: transparent; font-size: var(--mg-text-sm); cursor: pointer; }
@@ -688,22 +692,38 @@ p { text-wrap: pretty; }
 .page-heading-actions :is(button, a) { box-sizing: border-box; display: inline-flex; height: 38px !important; min-height: 38px !important; align-items: center; justify-content: center; gap: 7px; padding: 0 14px !important; border-radius: var(--mg-r-sm) !important; font-size: var(--mg-text-sm) !important; font-weight: 600 !important; line-height: 1 !important; white-space: nowrap; }
 .primary-button:hover { background: oklch(0.35 0.105 166); }
 /* Page-level bands precede the paired work surface. The rail consumes only the remaining viewport space so its primary and inspector share one semantic box. */
-.fidelity-page:has(> [data-page-prelude]) { display: flex; height: calc(100dvh - var(--mg-shell-topbar, 86px) - 46px); min-height: 0; flex-direction: column; }
+/* 「双栏共用一个视口高度盒子、各自内部滚动」这套契约只在两栏真的并排时成立。
+   页面各自在更宽的断点（1120px、900px）就把两栏堆成一列，那时候必须整体松开，
+   否则两个 auto 行会把被强制的高度对半切开，内容高的一侧被压扁、溢出压住下一块。
+
+   松开的开关是下面四个自定义属性，不是靠拼选择器特异性：属性沿继承链向下传，
+   页面在自己的元素上写一次就生效，不用把 [data-page-layout] / :has() 再抄一遍，
+   也不用 !important。抄选择器正是 /archives、/assets、/overview、/admin/* 之前
+   各自长出一套 workaround 的原因，而且抄漏一个断点就再次破相。
+
+   页面在自己的堆叠断点里写：
+     @media (max-width: 1120px) {
+       .page { --mg-rail-shell-height: auto; --mg-rail-grow: 0 0 auto;
+               --mg-rail-fill: auto; --mg-rail-align: auto; }
+     }
+   壳仍是纵向 flex 容器，但高度改回随内容增长，等价于普通块级堆叠。 */
+.fidelity-page:has(> [data-page-prelude]) { display: flex; height: var(--mg-rail-shell-height, calc(100dvh - var(--mg-shell-topbar, 86px) - var(--mg-shell-content-inset, 46px))); min-height: 0; flex-direction: column; }
 [data-page-prelude] { min-width: 0; flex: 0 0 auto; }
-.fidelity-page:has(> [data-page-prelude]) > [data-page-layout="persistent-rail"] { height: auto !important; min-height: 0; flex: 1 1 auto; }
+.fidelity-page:has(> [data-page-prelude]) > [data-page-layout="persistent-rail"] { height: auto !important; min-height: 0; flex: var(--mg-rail-grow, 1 1 auto); }
 [data-page-layout="persistent-rail"] { min-width: 0; min-height: 0; align-items: stretch; padding-bottom: 0; }
-[data-page-layout="persistent-rail"] > [data-page-primary], [data-page-layout="persistent-rail"] > [data-page-inspector] { min-width: 0; min-height: 0; align-self: stretch; height: 100%; }
+[data-page-layout="persistent-rail"] > [data-page-primary], [data-page-layout="persistent-rail"] > [data-page-inspector] { min-width: 0; min-height: 0; align-self: var(--mg-rail-align, stretch); height: var(--mg-rail-fill, 100%); }
 [data-page-primary][data-primary-flow] { display: flex; flex-direction: column; }
-[data-page-primary][data-primary-flow] > [data-page-terminal-surface="primary"] { flex: 1 1 auto; min-height: 0; }
+[data-page-primary][data-primary-flow] > [data-page-terminal-surface="primary"] { flex: var(--mg-rail-grow, 1 1 auto); min-height: 0; }
 [data-page-layout="persistent-rail"] > [data-page-inspector] { overflow-x: hidden; }
 [data-page-primary]:has(> :only-child) { grid-template-rows: minmax(0, 1fr); }
-[data-page-primary] > :only-child { min-height: 0; align-self: stretch; height: 100%; }
+[data-page-primary] > :only-child { min-height: 0; align-self: var(--mg-rail-align, stretch); height: var(--mg-rail-fill, 100%); }
 [data-page-terminal-surface="inspector"] { display: flex; min-height: 0; flex-direction: column; }
 @media (max-width: 760px) {
-  .fidelity-page:has(> [data-page-prelude]) > [data-page-layout="persistent-rail"] { height: auto !important; flex: 0 0 auto; }
-  [data-page-layout="persistent-rail"] > [data-page-primary], [data-page-layout="persistent-rail"] > [data-page-inspector] { align-self: auto; height: auto; }
-  [data-page-primary] > :only-child { height: auto; }
-  [data-page-primary][data-primary-flow] > [data-page-terminal-surface="primary"] { flex: 0 0 auto; min-height: 0; }
+  /* 窄屏一律堆叠。开关同时设在壳、栏容器和主栏上：消费点分布在三层，
+     而没有 prelude band 的页面并不经过壳这一层，只设一处会漏掉它们。 */
+  .fidelity-page:has(> [data-page-prelude]),
+  [data-page-layout="persistent-rail"],
+  [data-page-primary] { --mg-rail-shell-height: auto; --mg-rail-grow: 0 0 auto; --mg-rail-fill: auto; --mg-rail-align: auto; }
 }
 .load-shell { display: grid; min-height: 100vh; grid-template-columns: 244px minmax(0, 1fr); background: var(--mg-bg); }
 .load-sidebar { padding: 20px 17px; background: var(--mg-sidebar); }
@@ -1445,7 +1465,9 @@ p { text-wrap: pretty; }
 .topbar-admin-account > button > span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 50%; color: var(--mg-on-primary); background: var(--mg-primary-dark); font-weight: 700; }
 .topbar-admin-account > button > svg { margin-left: auto; }
 .topbar-account-popover { top: calc(100% + 8px); right: 0; }
-.media-content { width: 100%; max-width: none; margin: 0; padding: 24px 32px 22px; }
+/* 视口高度契约要从 100dvh 里扣掉顶栏和这层内容壳的上下内边距；把内边距之和
+   就近声明成令牌，换了 padding 不同步就会露出一条多余的滚动条。 */
+.media-content { width: 100%; max-width: none; margin: 0; padding: 24px 32px 22px; --mg-shell-content-inset: 46px; }
 .media-content > main { width: 100%; max-width: none; margin-right: 0; margin-left: 0; }
 .role-page-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.75fr); gap: 18px; }
 .role-page-primary, .workflow-boundary, .usage-panel { padding: 18px; }

@@ -18,7 +18,9 @@ import { demoRouteGroups } from '../../src/demo/demoRoutes'
 import { demoPersonas } from '../../src/demo/demoPersonas'
 
 const projectRoot = resolve(import.meta.dirname, '..', '..')
-const distDemoRoot = resolve(projectRoot, 'dist-demo')
+/** 默认体检 dist-demo；并行开发时可以用 MEDIA_LAYOUT_QA_DIST 指到自己的产物目录，
+ *  免得两个人同时重建 dist-demo 互相踩。 */
+const distDemoRoot = resolve(projectRoot, process.env.MEDIA_LAYOUT_QA_DIST ?? 'dist-demo')
 /** 部署基址从产物里反推：build:demo 默认是 /openclaw/media-demo/，
  *  单文件分发时是 /。写死一个就会在另一种构建下加载不到 JS——页面一片空白，
  *  门禁却「全绿」，比没有门禁更糟。 */
@@ -48,7 +50,13 @@ function contentTypeFor(filePath: string): string {
 }
 
 function resolveStaticFile(relativePath: string): string | null {
-  const safeRelative = relativePath.replace(/^\/+/, '')
+  // 请求路径带着部署基址（默认 /openclaw/media-demo/），产物却是直接落在
+  // dist-demo 根下的，先把基址剥掉再找文件——否则每个页面都 404，浏览器拿到空
+  // 文档，门禁只会报「没渲染出主内容区」，看不出真正原因。
+  const withoutBase = relativePath.startsWith(demoBase)
+    ? relativePath.slice(demoBase.length)
+    : relativePath
+  const safeRelative = withoutBase.replace(/^\/+/, '')
   const exact = resolve(distDemoRoot, safeRelative)
   const within = (candidate: string) => candidate === distDemoRoot || candidate.startsWith(`${distDemoRoot}${sep}`)
   if (within(exact) && existsSync(exact) && statSync(exact).isFile()) return exact
@@ -135,6 +143,20 @@ const COLLECT_DEFECTS = `(() => {
       defects.push('大字号折行：' + describe(leaf.element, leaf.text) + ' 字号 ' + Math.round(leaf.fontSize) + 'px 折成了 ' + lines + ' 行，值槽不该用展示级字号')
     }
   }
+  // 第四类：视口高度契约生效时，整页不该还能纵向滚动。
+  // 契约把壳钉成 100dvh - 顶栏 - 内容壳内边距；一旦整页多出高度，就说明
+  // --mg-shell-content-inset 和外壳真实的上下内边距对不上——换了外壳内边距、
+  // 忘了同步令牌，页面底部就会多出一条只能滚十几像素的滚动条。
+  for (const rail of document.querySelectorAll('[data-page-layout="persistent-rail"]')) {
+    const shell = rail.closest('.fidelity-page')
+    if (!shell) continue
+    if (getComputedStyle(shell).getPropertyValue('--mg-rail-shell-height').trim() === 'auto') break
+    const overflow = document.documentElement.scrollHeight - document.documentElement.clientHeight
+    if (overflow > 1) {
+      defects.push('整页纵向溢出：视口高度契约生效时整页仍多出 ' + overflow + 'px，--mg-shell-content-inset 与外壳实际上下内边距对不上')
+    }
+    break
+  }
   return defects
 })()`
 
@@ -169,10 +191,16 @@ async function run(): Promise<void> {
         }, persona.id)
         const page: Page = await context.newPage()
         for (const route of group.routes) {
-          await page.goto(`${origin}${demoBase}${route.path.replace(/^\//, '')}`, { waitUntil: 'domcontentloaded' })
-          const booted = await page.locator('.media-content').first().waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false)
+          const url = `${origin}${demoBase}${route.path.replace(/^\//, '')}`
+          // 首屏偶发起不来（构建产物刚落盘、浏览器冷启动），重试一次再判定：
+          // 会抖的门禁比没有门禁更糟——它会教人忽略红灯。
+          let booted = false
+          for (let attempt = 0; attempt < 2 && !booted; attempt += 1) {
+            await page.goto(url, { waitUntil: 'domcontentloaded' })
+            booted = await page.locator('.media-content').first().waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false)
+          }
           if (!booted) {
-            failures.push(`${route.path} @${width}px（${persona.label}）：页面没有渲染出主内容区，体检无从谈起`)
+            failures.push(`${route.path} @${width}px（${persona.label}）：重试后仍未渲染出主内容区，体检无从谈起`)
             continue
           }
           await settle(page)
@@ -192,7 +220,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面渲染 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号多行折行`)
+  console.log(`qa:media-layout-sanity: PASS 页面渲染 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无整页溢出`)
 }
 
 await run()

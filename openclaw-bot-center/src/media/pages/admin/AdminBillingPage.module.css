@@ -740,8 +740,11 @@
 }
 
 @media (max-width: 1120px) {
-  .page[data-page-ownership='governance']:has(> [data-page-prelude]) {
-    height: auto;
+  .page {
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+    --mg-rail-align: auto;
     overflow: visible;
   }
 
@@ -754,17 +757,13 @@
     grid-template-columns: 1fr;
   }
 
-  .page[data-page-ownership='governance']:has(> [data-page-prelude]) > .bodyGrid {
-    height: auto !important;
+  .bodyGrid {
     min-height: auto;
-    flex: 0 0 auto;
     overflow: visible;
   }
 
-  .page .bodyGrid > .mainColumn,
-  .page .bodyGrid > .inspector {
-    align-self: auto;
-    height: auto;
+  .bodyGrid > .mainColumn,
+  .bodyGrid > .inspector {
     overflow: visible;
   }
 

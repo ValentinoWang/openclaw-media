@@ -431,10 +431,12 @@
   padding: 10px 11px 11px;
 }
 
+/* Layout (single-line ellipsis + title) comes from the shared .mg-id primitive
+   on the element itself — do not reintroduce overflow-wrap/word-break here,
+   it would fight .mg-id's white-space: nowrap and split the id across lines. */
 .cardId {
   min-width: 0;
   padding: 0;
-  overflow-wrap: anywhere;
   border: 0;
   color: var(--mg-ink);
   background: transparent;
@@ -1041,16 +1043,21 @@
 
 @media (max-width: 1120px) {
   .page {
-    display: block;
-    height: auto;
+    --mg-rail-shell-height: auto;
+    --mg-rail-fill: auto;
     overflow: visible;
   }
+  /* primaryColumn (asset grid) and inspectorColumn (detail rail) used to sit in
+     a two-row grid with a single `1fr` row; below 1120px they stack instead, and
+     a grid here would leave the two implicit rows fighting over height the same
+     way — one collapses toward zero and its visible overflow paints over the
+     other. A plain column stack sizes each side to its own content instead. */
   .assetsLayout {
+    display: flex;
+    flex-direction: column;
     height: auto;
     min-height: auto;
     flex: none;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
     overflow: visible;
   }
   .primaryColumn {

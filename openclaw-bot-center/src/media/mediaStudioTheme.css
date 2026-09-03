@@ -285,6 +285,9 @@
 .studio-content {
   width: min(100%, 1540px);
   padding: 28px 32px 34px;
+  /* 与上面的 padding 上下之和一致；视口高度契约靠它扣内边距，见 media.css 的
+     .fidelity-page:has(> [data-page-prelude])。对不上就会多出一条滚动条。 */
+  --mg-shell-content-inset: 62px;
 }
 
 .studio-shell .page-heading { margin-bottom: 20px; }

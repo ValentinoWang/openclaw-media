@@ -1499,6 +1499,14 @@
 }
 
 @media (max-width: 1120px) {
+  /* 提前松开共享的 persistent-rail 契约，两栏改回随内容自然升高、整页滚动。 */
+  .page {
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+    --mg-rail-align: auto;
+  }
+
   .overviewGrid {
     grid-template-columns: 1fr;
   }

@@ -323,13 +323,13 @@ requireContract(
 );
 
 requireContract(
-  /\.fidelity-page:has\(> \[data-page-prelude\]\) \{[\s\S]*?display: flex;[\s\S]*?height: calc\(100dvh - var\(--mg-shell-topbar, 86px\) - 46px\);[\s\S]*?flex-direction: column;[\s\S]*?\}/.test(
+  /\.fidelity-page:has\(> \[data-page-prelude\]\) \{[\s\S]*?display: flex;[\s\S]*?height: var\(--mg-rail-shell-height, calc\(100dvh - var\(--mg-shell-topbar, 86px\) - var\(--mg-shell-content-inset, 46px\)\)\);[\s\S]*?flex-direction: column;[\s\S]*?\}/.test(
     mediaStyles,
   ),
   "pages with a prelude must use the canonical viewport-bound column layout",
 );
 requireContract(
-  /\.fidelity-page:has\(> \[data-page-prelude\]\) > \[data-page-layout="persistent-rail"\] \{[\s\S]*?height: auto !important;[\s\S]*?flex: 1 1 auto;[\s\S]*?\}/.test(
+  /\.fidelity-page:has\(> \[data-page-prelude\]\) > \[data-page-layout="persistent-rail"\] \{[\s\S]*?height: auto !important;[\s\S]*?flex: var\(--mg-rail-grow, 1 1 auto\);[\s\S]*?\}/.test(
     mediaStyles,
   ),
   "desktop rail must consume the space remaining after the prelude",
@@ -338,7 +338,7 @@ requireContract(
   /\[data-page-primary\]:has\(> :only-child\) \{[\s\S]*?grid-template-rows: minmax\(0, 1fr\);[\s\S]*?\}/.test(
     mediaStyles,
   ) &&
-    /\[data-page-primary\] > :only-child \{[\s\S]*?height: 100%;[\s\S]*?\}/.test(
+    /\[data-page-primary\] > :only-child \{[\s\S]*?height: var\(--mg-rail-fill, 100%\);[\s\S]*?\}/.test(
       mediaStyles,
     ),
   "a single primary work surface must fill its paired rail without phantom grid tracks",
@@ -347,7 +347,7 @@ requireContract(
   /\[data-page-primary\]\[data-primary-flow\] \{[\s\S]*?display: flex;[\s\S]*?flex-direction: column;[\s\S]*?\}/.test(
     mediaStyles,
   ) &&
-    /\[data-page-primary\]\[data-primary-flow\] > \[data-page-terminal-surface="primary"\] \{[\s\S]*?flex: 1 1 auto;[\s\S]*?min-height: 0;[\s\S]*?\}/.test(
+    /\[data-page-primary\]\[data-primary-flow\] > \[data-page-terminal-surface="primary"\] \{[\s\S]*?flex: var\(--mg-rail-grow, 1 1 auto\);[\s\S]*?min-height: 0;[\s\S]*?\}/.test(
       mediaStyles,
     ),
   "a marked primary flow must let its terminal surface consume the remaining rail height",
@@ -453,16 +453,16 @@ requireContract(
   "desktop rail must stretch and use the canonical zero bottom inset",
 );
 requireContract(
-  /\[data-page-layout="persistent-rail"\] > \[data-page-primary\],[\s\S]*?\[data-page-layout="persistent-rail"\] > \[data-page-inspector\] \{[\s\S]*?align-self: stretch;[\s\S]*?height: 100%;[\s\S]*?\}/.test(
+  /\[data-page-layout="persistent-rail"\] > \[data-page-primary\],[\s\S]*?\[data-page-layout="persistent-rail"\] > \[data-page-inspector\] \{[\s\S]*?align-self: var\(--mg-rail-align, stretch\);[\s\S]*?height: var\(--mg-rail-fill, 100%\);[\s\S]*?\}/.test(
     mediaStyles,
   ),
-  "desktop rail primary and inspector must use one equal-height contract",
+  "desktop rail primary and inspector must use one equal-height contract, read through the release tokens",
 );
 requireContract(
-  /@media \(max-width: 760px\) \{[\s\S]*?\[data-page-layout="persistent-rail"\] > \[data-page-primary\],[\s\S]*?\[data-page-layout="persistent-rail"\] > \[data-page-inspector\] \{[\s\S]*?align-self: auto;[\s\S]*?height: auto;[\s\S]*?\}[\s\S]*?\}/.test(
+  /@media \(max-width: 760px\) \{[\s\S]*?--mg-rail-shell-height: auto;[\s\S]*?--mg-rail-grow: 0 0 auto;[\s\S]*?--mg-rail-fill: auto;[\s\S]*?--mg-rail-align: auto;[\s\S]*?\}/.test(
     mediaStyles,
   ),
-  "stacked mobile rails must explicitly release the desktop equal-height contract",
+  "stacked mobile rails must release the desktop contract by setting every rail token",
 );
 requireContract(
   /--mg-control-height-sm: 36px;[\s\S]*?--mg-control-height-md: 44px;[\s\S]*?--mg-panel-heading-height: 54px;/.test(
@@ -512,6 +512,76 @@ requireContract(
   "publishing desktop workspace must preserve the D10 60/40 primary-to-inspector ratio",
 );
 
+/* 共享 rail 契约的「松开」机制必须是自定义属性，不是选择器特异性。
+   页面各自在 1120px / 900px 就把两栏堆成一列，得整体松开这套契约；如果只能靠
+   拼特异性去松，每个页面都会长出一份「把 media.css 的属性选择器抄一遍」或者
+   一串 !important 的 workaround——/archives、/assets、/overview、/admin/* 就是
+   这么各长一套的，而且抄漏一个断点就再次破相。自定义属性沿继承链传递、不参与
+   特异性，页面写一次就够，所以这里把机制本身钉住。 */
+const railReleaseConsumers: Array<[RegExp, string]> = [
+  [
+    /\.fidelity-page:has\(> \[data-page-prelude\]\) \{[^}]*height: var\(--mg-rail-shell-height,/,
+    "the prelude shell height must read --mg-rail-shell-height",
+  ],
+  [
+    /\.fidelity-page:has\(> \[data-page-prelude\]\) > \[data-page-layout="persistent-rail"\] \{[^}]*flex: var\(--mg-rail-grow,/,
+    "the rail's own flex must read --mg-rail-grow",
+  ],
+  [
+    /\[data-page-primary\] > :only-child \{[^}]*align-self: var\(--mg-rail-align, stretch\); height: var\(--mg-rail-fill, 100%\);/,
+    "a primary column's only child must read the rail tokens",
+  ],
+  [
+    /\[data-page-primary\]\[data-primary-flow\] > \[data-page-terminal-surface="primary"\] \{[^}]*flex: var\(--mg-rail-grow,/,
+    "the primary-flow terminal surface must read --mg-rail-grow",
+  ],
+];
+for (const [pattern, message] of railReleaseConsumers) {
+  requireContract(pattern.test(mediaStyles), `media.css: ${message}`);
+}
+
+/* 视口高度契约扣掉的不能是写死的常量：内容壳的上下内边距会随外壳（studio /
+   admin）不同，写死就会在其中一种外壳上多出十几像素的滚动条。 */
+requireContract(
+  /height: var\(--mg-rail-shell-height, calc\(100dvh - var\(--mg-shell-topbar, 86px\) - var\(--mg-shell-content-inset, 46px\)\)\)/.test(
+    mediaStyles,
+  ) && /\.media-content \{[^}]*--mg-shell-content-inset:/.test(mediaStyles),
+  "media.css: the viewport-bound shell must subtract --mg-shell-content-inset, declared next to the content shell's own padding",
+);
+const studioStyles = fs.readFileSync(
+  path.join(mediaRoot, "mediaStudioTheme.css"),
+  "utf8",
+);
+requireContract(
+  /\.studio-content \{[\s\S]*?padding: 28px 32px 34px;[\s\S]*?--mg-shell-content-inset: 62px;[\s\S]*?\}/.test(
+    studioStyles,
+  ),
+  "mediaStudioTheme.css: .studio-content must report its own vertical padding through --mg-shell-content-inset",
+);
+
+const pageStyleFiles = [
+  ...sourceFiles(pagesRoot),
+  ...sourceFiles(path.join(mediaRoot, "studio")),
+].filter((file) => file.endsWith(".css"));
+
+for (const file of pageStyleFiles) {
+  const relative = path.relative(projectRoot, file);
+  // 注释里出现这些字样是允许的（就是用来解释机制的），只看真正的声明。
+  const source = fs
+    .readFileSync(file, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+  const copiedSelector = /\[data-page-layout|:has\(>\s*\[data-page-prelude\]/.exec(source);
+  requireContract(
+    copiedSelector === null,
+    `${relative}: page styles must not copy the shared persistent-rail selectors (\`${copiedSelector?.[0] ?? ""}\`) to out-specify them — set --mg-rail-shell-height / --mg-rail-grow / --mg-rail-fill / --mg-rail-align on the page element at your own stacking breakpoint instead`,
+  );
+  const forcedGeometry = /(height|flex|align-self)\s*:[^;{}]*!important/.exec(source);
+  requireContract(
+    forcedGeometry === null,
+    `${relative}: page styles must not force rail geometry with !important (\`${forcedGeometry?.[0]?.trim() ?? ""}\`) — the rail tokens release the shared contract without a specificity fight`,
+  );
+}
+
 const allStyles = [
   { file: path.join(mediaRoot, "media.css"), source: mediaStyles },
   ...files
@@ -536,5 +606,5 @@ for (const { file, source } of allStyles) {
 }
 
 console.log(
-  `qa:media-design-system-contract: PASS railPages=${canonicalRailPages.length} railStructure=prelude-before-paired-direct-children desktopHeight=remaining-space-equal terminalSurface=single-child-fill primaryFlow=terminal-fill mobileHeight=content tableBaseline=top controls=36/44 panelHeading=54 bottomInset=0`,
+  `qa:media-design-system-contract: PASS railPages=${canonicalRailPages.length} railStructure=prelude-before-paired-direct-children desktopHeight=remaining-space-equal railRelease=custom-properties terminalSurface=single-child-fill primaryFlow=terminal-fill mobileHeight=content tableBaseline=top controls=36/44 panelHeading=54 bottomInset=0`,
 );
