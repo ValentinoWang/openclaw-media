@@ -88,9 +88,24 @@ const document = [
   '',
 ].join('\n')
 
-// 自检：任何残留的外部引用在单文件里都是死链，宁可构建失败也不要发出去。
-const leftovers = [...document.matchAll(/(?:src|href)="(\/[^"]*)"/g)].map((match) => match[1]!)
-if (leftovers.length) fail(`产物里仍有取不到的本地引用：${[...new Set(leftovers)].slice(0, 5).join(', ')}`)
+/** 自检：会真的去发请求的引用在单文件里都是死链，宁可构建失败也不要发出去。
+ *  只看**文档外壳**里的资源引用（<script src>、<link href>、<img src>）——内联进来的
+ *  CSS/JS 里还有大量以 / 开头的字符串（演示站自己的路由、内嵌认证页里指向生产
+ *  登录页的锚点），那些由页面内的路由与拦截逻辑接住，不是要加载的资源。 */
+const shellHead = document.slice(0, document.indexOf('<style>'))
+const shellResources = [...shellHead.matchAll(/<(?:script|link|img)\b[^>]*\b(?:src|href)="(\/[^"]*)"/g)].map(
+  (match) => match[1]!,
+)
+if (shellResources.length) {
+  fail(`产物外壳里仍有取不到的本地资源引用：${[...new Set(shellResources)].slice(0, 5).join(', ')}`)
+}
+// 具体到构建产物的文件名与字体文件——「/assets/」本身还会出现在演示站的接口
+// 路径里（例如 /assets/{publicAssetId}），不能拿它当判据。
+const bundledFiles = [scriptSrc[1]!, styleHref[1]!].map((path) => path.slice(path.lastIndexOf('/') + 1))
+for (const name of bundledFiles) {
+  if (document.includes(name)) fail(`产物里仍引用着构建文件 ${name}，内联没做全`)
+}
+if (document.includes('.woff2')) fail('产物里仍引用着本地字体文件，@font-face 没有剥干净')
 if (document.includes('@font-face')) fail('@font-face 没有被完全剥离')
 const bytes = Buffer.byteLength(document, 'utf8')
 if (bytes > 16 * 1024 * 1024) fail(`单文件 ${(bytes / 1024 / 1024).toFixed(1)}MB，超过 16MB 上限`)
