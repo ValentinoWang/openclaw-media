@@ -143,19 +143,19 @@ const COLLECT_DEFECTS = `(() => {
       defects.push('大字号折行：' + describe(leaf.element, leaf.text) + ' 字号 ' + Math.round(leaf.fontSize) + 'px 折成了 ' + lines + ' 行，值槽不该用展示级字号')
     }
   }
-  // 第四类：视口高度契约生效时，整页不该还能纵向滚动。
-  // 契约把壳钉成 100dvh - 顶栏 - 内容壳内边距；一旦整页多出高度，就说明
-  // --mg-shell-content-inset 和外壳真实的上下内边距对不上——换了外壳内边距、
-  // 忘了同步令牌，页面底部就会多出一条只能滚十几像素的滚动条。
-  for (const rail of document.querySelectorAll('[data-page-layout="persistent-rail"]')) {
-    const shell = rail.closest('.fidelity-page')
-    if (!shell) continue
-    if (getComputedStyle(shell).getPropertyValue('--mg-rail-shell-height').trim() === 'auto') break
-    const overflow = document.documentElement.scrollHeight - document.documentElement.clientHeight
-    if (overflow > 1) {
-      defects.push('整页纵向溢出：视口高度契约生效时整页仍多出 ' + overflow + 'px，--mg-shell-content-inset 与外壳实际上下内边距对不上')
+  // 第四类：视口高度契约算得对不对。契约把主工作区钉成
+  // 100dvh - 顶栏 - 内容壳上下内边距；量的是**主工作区自己的底边**，加上内容壳
+  // 的下内边距应当正好落在视口底边。这样只对「常量和实际内边距对不上」敏感，
+  // 不会被「内容比一屏长、整页本来就要滚」这种正常情况误伤。
+  const railForShell = document.querySelector('[data-page-layout="persistent-rail"]')
+  const shell = railForShell ? railForShell.closest('.fidelity-page') : null
+  if (shell && getComputedStyle(shell).getPropertyValue('--mg-rail-shell-height').trim() !== 'auto') {
+    const contentShell = shell.closest('.media-content')
+    const padBottom = contentShell ? parseFloat(getComputedStyle(contentShell).paddingBottom) || 0 : 0
+    const slack = Math.round(shell.getBoundingClientRect().bottom + padBottom - window.innerHeight)
+    if (Math.abs(slack) > 1) {
+      defects.push('视口高度契约算错：主工作区底边加上内容壳的下内边距比视口' + (slack > 0 ? '低' : '高') + ' ' + Math.abs(slack) + 'px，--mg-shell-content-inset 与外壳实际上下内边距对不上')
     }
-    break
   }
   return defects
 })()`
@@ -220,7 +220,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面渲染 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无整页溢出`)
+  console.log(`qa:media-layout-sanity: PASS 页面渲染 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、视口高度契约无偏差`)
 }
 
 await run()

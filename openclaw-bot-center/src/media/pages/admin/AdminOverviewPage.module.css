@@ -334,17 +334,16 @@
 }
 
 @media (max-width: 1120px) {
-  .admin-overview-page.fidelity-page {
-    height: auto;
+  /* 两栏在共享契约自己的 760px 断点之前就堆成一列，这里整体把契约松开。 */
+  .admin-overview-page {
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+    --mg-rail-align: auto;
     overflow: visible;
   }
 
-  /* This page stacks its two columns before the shared contract's own
-     760px breakpoint, so the rail geometry tokens (media.css) are loosened
-     early here instead of waiting for that breakpoint. */
   .admin-overview-grid {
-    --mg-rail-grow: 0 0 auto;
-    --mg-rail-fill: auto;
     min-height: auto;
     grid-template-columns: 1fr;
     overflow: visible;

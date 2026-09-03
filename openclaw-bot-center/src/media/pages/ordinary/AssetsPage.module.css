@@ -1057,7 +1057,6 @@
     flex-direction: column;
     height: auto;
     min-height: auto;
-    flex: none;
     overflow: visible;
   }
   .primaryColumn {

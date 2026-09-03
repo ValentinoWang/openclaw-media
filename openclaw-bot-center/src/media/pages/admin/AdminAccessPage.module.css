@@ -1224,8 +1224,12 @@
 }
 
 @media (max-width: 1120px) {
+  /* 两栏在这里就堆成一列，整体松开共享的 persistent-rail 契约。 */
   .page {
-    height: auto;
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+    --mg-rail-align: auto;
     overflow: visible;
   }
 
@@ -1236,11 +1240,6 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
     overflow: visible;
-  }
-
-  .accessLayout > [data-page-primary],
-  .accessLayout > [data-page-inspector] {
-    --mg-rail-fill: auto;
   }
 
   .mainColumn,
