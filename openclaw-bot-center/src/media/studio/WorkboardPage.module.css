@@ -26,7 +26,10 @@
 
 .metricCard {
   display: grid;
+  /* Metric 的 card 变体给图标/正文声明了 grid-area: icon / body；
+     这里必须提供同名区域，否则两者都落到隐式网格线上互相重叠。 */
   grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-areas: 'icon body';
   gap: 13px;
   align-items: center;
   min-width: 0;
@@ -40,6 +43,7 @@
 .metricCard:hover { transform: translateY(-2px); box-shadow: var(--mg-e4); }
 
 .metricCard > span {
+  grid-area: icon;
   display: grid;
   width: 42px;
   height: 42px;
@@ -48,6 +52,8 @@
   color: var(--accent-ink);
   background: var(--accent-soft);
 }
+
+.metricCard > div { grid-area: body; min-width: 0; }
 
 .metricCard small,
 .metricCard strong,
@@ -196,9 +202,11 @@
 .projectTopline small { color: var(--mg-muted); font-size: var(--mg-text-sm); }
 .projectCard h3 { margin: 12px 0 11px; font-size: var(--mg-text-md); line-height: 1.45; }
 
+/* 阶段进度条：填充宽度与六个刻度都由后端 project.stage 决定。 */
 .projectProgress {
+  position: relative;
   height: 5px;
-  overflow: hidden;
+  margin: 0 4px;
   border-radius: var(--mg-r-full);
   background: var(--mg-border);
 }
@@ -208,7 +216,22 @@
   height: 100%;
   border-radius: inherit;
   background: var(--mg-primary);
+  transition: width var(--mg-dur-3) var(--mg-ease);
 }
+
+.projectProgress i {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--mg-surface);
+  border-radius: var(--mg-r-full);
+  background: var(--mg-border-strong);
+  transform: translate(-50%, -50%);
+}
+
+.projectProgress i[data-reached] { background: var(--mg-primary); }
+.projectProgress i[data-current] { width: 13px; height: 13px; box-shadow: 0 0 0 3px var(--mg-primary-soft); }
 
 .projectCard footer {
   display: flex;

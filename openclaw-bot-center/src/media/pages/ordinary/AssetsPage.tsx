@@ -607,7 +607,7 @@ function AssetWorkspace({
         <ProjectionSurface
           kind="loading"
           title="正在读取素材"
-          detail="只读取当前账户租户可见的素材摘要。"
+          detail="只读取当前账号可见的素材摘要。"
         />
       ) : state.status === "permission" ? (
         <ProjectionSurface

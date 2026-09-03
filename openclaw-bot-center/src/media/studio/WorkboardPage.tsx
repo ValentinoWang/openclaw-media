@@ -25,7 +25,8 @@ import { SurfaceState } from '../ui/SurfaceState'
 import { formatDate } from '../ui/ordinaryPagePrimitives'
 import { Metric } from '../ui/Metric'
 import styles from './WorkboardPage.module.css'
-import { filterWorkboardAttentionTasks, workboardStageProgress } from './workboardPresentation'
+import { WorkboardFlowDiagram } from './WorkboardFlowDiagram'
+import { WORKBOARD_FLOW_STAGES, filterWorkboardAttentionTasks, workboardStageIndex, workboardStageProgress } from './workboardPresentation'
 
 type DashboardResponse = {
   revision: number
@@ -37,6 +38,7 @@ type DashboardResponse = {
       publishedPosts: number
       reviews: number
     }
+    contentProjectStages: { stage: string; count: number }[]
     pendingDecisions: number
     pendingPublishing: number
     pendingReviews: number
@@ -129,6 +131,13 @@ export default function WorkboardPage() {
         <div data-accent="business"><Metric variant="card" className={styles.metricCard} tone="accent" icon={<Images size={18} />} label="素材证据" value={summary?.counts.assets} detail="原始素材与拆解" /></div>
         <div data-accent="desk"><Metric variant="card" className={styles.metricCard} tone="accent" icon={<PackageCheck size={18} />} label="已发布作品" value={summary?.counts.publishedPosts} detail="等待持续复盘" /></div>
       </section>
+
+      <WorkboardFlowDiagram
+        summary={summary}
+        loading={dashboard.status === 'loading'}
+        projects={projects.status === 'ready' ? projects.data.items : []}
+        onOpenTasks={() => openWorkspace()}
+      />
 
       <section className={styles.loopGrid} aria-label="高价值业务闭环">
         <LoopCard
@@ -230,17 +239,33 @@ function LoopCard({ tone, icon, kicker, title, description, steps, to }: { tone:
 }
 
 function ProjectCard({ project }: { project: ContentProjectSummary }) {
+  // 进度只来自后端的 project.stage：六个阶段各占固定位置，不按产物数量或时间推算。
   const stage = workboardStageProgress(project.stage)
+  const stageIndex = workboardStageIndex(project.stage)
   const artifactCount = Object.values(project.artifactCounts).reduce((total, count) => total + count, 0)
+  const stagePosition = stageIndex === null ? '阶段待确认' : `第 ${stageIndex + 1} / ${WORKBOARD_FLOW_STAGES.length} 步 · ${stage.label}`
   return (
     <article className={styles.projectCard}>
       <div className={styles.projectTopline}>
         <span className="mg-badge" data-tone="accent">{stage.label}</span>
-        <small>{projectStatusDisplayLabel(project.status)}{stage.progress === null ? ' · 进度待确认' : null}</small>
+        <small>{projectStatusDisplayLabel(project.status)}{stage.progress === null ? ' · 进度待确认' : ` · ${stagePosition}`}</small>
       </div>
       <h3>{project.title}</h3>
-      <div className={styles.projectProgress}>{stage.progress === null ? null : <span style={{ width: `${stage.progress}%` }} />}</div>
-      <footer><span>{artifactCount} 个当前产物</span><span>更新于 {formatDate(project.updatedAt)}</span><Link to="/studio">打开 Studio<ArrowRight size={14} /></Link></footer>
+      <div
+        className={styles.projectProgress}
+        role="progressbar"
+        aria-label={`项目阶段：${stagePosition}`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={stage.progress ?? undefined}
+        title={stagePosition}
+      >
+        {stage.progress === null ? null : <span style={{ width: `${stage.progress}%` }} />}
+        {stageIndex === null ? null : WORKBOARD_FLOW_STAGES.map((flowStage, index) => (
+          <i key={flowStage.stage} data-reached={index <= stageIndex ? 'true' : undefined} data-current={index === stageIndex ? 'true' : undefined} style={{ left: `${workboardStageProgress(flowStage.stage).progress ?? 0}%` }} />
+        ))}
+      </div>
+      <footer><span>{artifactCount} 个当前产物</span><span>更新于 {formatDate(project.updatedAt)}</span><Link to={stageIndex === null ? '/studio' : WORKBOARD_FLOW_STAGES[stageIndex]!.path}>{stageIndex === null ? '打开 Studio' : `前往${WORKBOARD_FLOW_STAGES[stageIndex]!.pathLabel}`}<ArrowRight size={14} /></Link></footer>
     </article>
   )
 }

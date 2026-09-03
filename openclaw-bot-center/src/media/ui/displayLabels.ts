@@ -67,7 +67,9 @@ export function projectStageDisplayLabel(value: string): string {
   return PROJECT_STAGE_LABELS[value] || "其他阶段";
 }
 export function projectStatusDisplayLabel(value: string): string {
-  return PROJECT_STATUS_LABELS[value] || "其他状态";
+  // 后端把项目 canonical_data.status 原样透传（默认 active），不是封闭枚举：
+  // 未登记的值直接展示原文，而不是把真实信息折叠成「其他状态」。
+  return PROJECT_STATUS_LABELS[value] || value.trim() || "其他状态";
 }
 export function workspaceModeDisplayLabel(value: string): string {
   return WORKSPACE_MODE_LABELS[value] || "工作区";

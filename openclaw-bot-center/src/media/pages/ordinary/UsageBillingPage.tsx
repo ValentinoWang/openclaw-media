@@ -286,7 +286,7 @@ function ReceiptDetails({ receipt, balanceStatus }: { receipt: MutationReceipt; 
 
 function BalancePanel({ state }: { state: LoadState<BillingBalanceResponse> }) {
   return <section className="mg-panel" data-component="mg-panel">
-    <PanelHeading title="当前余额" detail="当前租户可用余额" icon={<WalletCards size={17} />} />
+    <PanelHeading title="当前余额" detail="当前账户可用余额" icon={<WalletCards size={17} />} />
     {state.status !== 'ready' ? <ResourceStateView state={state} subject="账户余额" density="compact" render={() => null} /> : <div className={styles.balance}><strong>{formatCredit(state.data.balance.available)} {currencyDisplayLabel(state.data.balance.currency)}</strong><dl className={styles.facts}><div><dt>可用余额</dt><dd>{formatCredit(state.data.balance.available)} {currencyDisplayLabel(state.data.balance.currency)}</dd></div><div><dt>余额最后变动</dt><dd>{formatDateTime(state.data.balance.asOf)}</dd></div></dl><p className={styles.balanceNote}>该时间表示余额最近一次发生变动，不是页面刷新时间。</p></div>}
   </section>
 }
@@ -341,7 +341,7 @@ function StatusBadge({ value }: { value: string }) {
 }
 
 function AccessBoundary() {
-  return <SurfaceState kind="permission" title="无法加载账户计费页面" detail="当前页面只允许普通使用者查看所属租户的用量、余额、套餐和兑换回执。身份服务返回后才会读取任何账户数据。" action={null} />
+  return <SurfaceState kind="permission" title="无法加载账户计费页面" detail="当前页面只允许普通使用者查看所属账户的用量、余额、套餐和兑换回执。身份服务返回后才会读取任何账户数据。" action={null} />
 }
 
 function StateIcon({ kind }: { kind: ActionState['kind'] }) {

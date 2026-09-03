@@ -347,7 +347,7 @@ function OverviewPage() {
       state.status === "error",
   );
   const unavailableResources = [
-    { label: "租户概览", state: dashboardState },
+    { label: "账户概览", state: dashboardState },
     { label: "内容项目", state: projectState },
     { label: "项目产物", state: artifactState },
     { label: "能力目录", state: capabilityState },
@@ -368,7 +368,7 @@ function OverviewPage() {
           <div>
             <span className="mg-eyebrow" data-component="mg-eyebrow">个人运营</span>
             <h1>运营总览</h1>
-            <p className="mg-hero-lead">查看当前租户的内容项目、产物进度与待处理事项。</p>
+            <p className="mg-hero-lead">查看你账号下的内容项目、产物进度与待处理事项。</p>
           </div>
         </header>
         <MetricStrip dashboardState={dashboardState} />
@@ -600,11 +600,11 @@ function DashboardPanel({ state }: { state: B01LoadState<DashboardResponse> }) {
     <section className={"section-panel mg-panel " + styles.panel + " " + styles.dashboardPanel} data-component="mg-panel">
       <PanelHeading
         icon={Layers3}
-        title="租户概览"
+        title="账户概览"
         detail="显示你账号下所有内容项目的汇总。"
       />
       {state.status !== "ready" ? (
-        <BusinessPanelState state={state} loadingText="正在读取租户概览" />
+        <BusinessPanelState state={state} loadingText="正在读取账户概览" />
       ) : (
         <div className={styles.dashboardBody}>
           {isEmptyDashboard(state.data.summary) ? (
@@ -1099,7 +1099,7 @@ function BusinessPanelState<T>({
   compact?: boolean;
 }) {
   if (state.status === "loading") {
-    return <SurfaceState kind="loading" title={loadingText} detail="等待服务端返回当前租户数据。" density={compact ? "compact" : "normal"} />;
+    return <SurfaceState kind="loading" title={loadingText} detail="等待服务端返回你的账户数据。" density={compact ? "compact" : "normal"} />;
   }
   if (state.status === "ready") return null;
   if (state.status === "permission") {
@@ -1156,7 +1156,7 @@ function MetricStrip({
         icon={<FolderKanban size={18} aria-hidden="true" />}
         label="内容项目"
         value={summary ? displayNumber(summary.counts.contentProjects) : "—"}
-        detail={loadDetail(dashboardState, "当前租户")}
+        detail={loadDetail(dashboardState, "当前账号")}
       />
       <Metric
         variant="panel"
@@ -1174,7 +1174,7 @@ function MetricStrip({
         icon={<Target size={18} aria-hidden="true" />}
         label="待决策"
         value={summary ? displayNumber(summary.pendingDecisions) : "—"}
-        detail={loadDetail(dashboardState, "当前租户")}
+        detail={loadDetail(dashboardState, "当前账号")}
       />
       <Metric
         variant="panel"
@@ -1183,7 +1183,7 @@ function MetricStrip({
         icon={<Send size={18} aria-hidden="true" />}
         label="待发布"
         value={summary ? displayNumber(summary.pendingPublishing) : "—"}
-        detail={loadDetail(dashboardState, "当前租户")}
+        detail={loadDetail(dashboardState, "当前账号")}
       />
     </section>
   );
@@ -1287,7 +1287,7 @@ function AgentPanel({
                 : "—"}
             </strong>
             <small>
-              {taskState.status === "ready" ? "当前租户任务" : "等待任务响应"}
+              {taskState.status === "ready" ? "当前账号任务" : "等待任务响应"}
             </small>
           </div>
         </div>
@@ -1446,7 +1446,7 @@ function PendingPanel({
         icon={AlertCircle}
         title="需要处理"
         count={state.status === "ready" ? actionableTasks.length : undefined}
-        detail="只列出当前租户需要人工查看的网页任务。"
+        detail="只列出需要你人工查看的网页任务。"
       />
       {state.status !== "ready" ? (
         <BusinessPanelState state={state} loadingText="正在读取待处理任务" />
@@ -1553,7 +1553,9 @@ function PendingTask({
             <code>{presentation.target}</code>
           </div>
         ) : null}
-        <span className={styles.pendingPath}>{presentation.detail}</span>
+        {presentation.detail ? (
+          <span className={styles.pendingPath}>{presentation.detail}</span>
+        ) : null}
       </div>
       <time
         className={styles.pendingTime}
@@ -1562,7 +1564,7 @@ function PendingTask({
         {displayDate(task.updatedAt || task.createdAt)}
       </time>
       <div className={styles.pendingActions}>
-        <span>{presentation.actionHint}</span>
+        {presentation.actionHint ? <span>{presentation.actionHint}</span> : null}
         <div className={styles.pendingButtonGroup}>
           <button
             type="button"
@@ -1606,8 +1608,8 @@ type PendingTaskPresentation = {
   statusLabel: string;
   statusTone: "success" | "warning" | "info" | "neutral";
   impact: string;
-  detail: string;
-  actionHint: string;
+  detail?: string;
+  actionHint?: string;
   target?: string;
   targetLabel?: string;
   destructive: boolean;
@@ -1656,7 +1658,6 @@ function pendingTaskPresentation(
       statusTone: overviewTaskTone(task.status),
       impact: "候选档案已生成，等待人工核对后入库",
       detail: `候选回执有效至 ${displayDate(receipt.expiresAt)}。`,
-      actionHint: "请在任务工作区核对候选档案。",
       target: receipt.runId,
       targetLabel: "候选运行",
       destructive: false,
@@ -1674,7 +1675,6 @@ function pendingTaskPresentation(
       statusTone: overviewTaskTone(task.status),
       impact: "关系预览已生成，等待人工核对后写入",
       detail: `关系预览有效至 ${displayDate(receipt.expiresAt)}。`,
-      actionHint: "请在任务工作区核对关系预览。",
       target: [task.params.track_id, task.params.creator_profile_id]
         .filter(Boolean)
         .map(String)
@@ -1689,8 +1689,6 @@ function pendingTaskPresentation(
     statusLabel: runStatusLabel(task.status),
     statusTone: overviewTaskTone(task.status),
     impact: displayText(task.summary),
-    detail: "完整输入、来源和结果请在任务工作区核对。",
-    actionHint: "请在任务工作区查看完整上下文。",
     destructive: false,
   };
 }

@@ -124,7 +124,7 @@ function MediaAgentPage() {
   if (state === "loading") return <PageFrame><SurfaceState kind="loading" title="正在读取本端协作状态" detail="正在读取流程、设备与运行任务。" /></PageFrame>;
   if (state === "error") return <PageFrame><SurfaceState kind="error" title="本端协作数据暂不可用" detail={error || "请稍后重试。"} action={<button className="mg-btn mg-btn-ghost" data-component="mg-btn" type="button" onClick={() => session && void loadData(session)}><RefreshCw size={14} />重试</button>} /></PageFrame>;
   if (state === "empty") return <PageFrame>
-    <section className={`mg-panel ${styles.modeBar}`} data-component="mg-panel" aria-label="Media Agent 工作区"><div><span className={styles.modeMarker} aria-hidden="true" /><strong>本端协作控制面</strong><span className={styles.modeHint}>只展示远端租户状态，不读取本地路径或媒体字节。</span></div><span className={styles.catalogVersion}>{data.pipelines.length} 个流程 · {data.devices.length} 台设备</span></section>
+    <section className={`mg-panel ${styles.modeBar}`} data-component="mg-panel" aria-label="Media Agent 工作区"><div><span className={styles.modeMarker} aria-hidden="true" /><strong>本端协作控制面</strong><span className={styles.modeHint}>只展示远端账号状态，不读取本地路径或媒体字节。</span></div><span className={styles.catalogVersion}>{data.pipelines.length} 个流程 · {data.devices.length} 台设备</span></section>
     <SurfaceState kind="empty" title="暂无本端协作数据" detail="请先安装并启动 Mac 客户端，或完成设备配对。" />
     {notice ? <div className={styles.notice} role="status"><CheckCircle2 size={15} />{notice}</div> : null}
     {error ? <div className={styles.actionError} role="alert"><AlertCircle size={15} />{error}</div> : null}
@@ -133,7 +133,7 @@ function MediaAgentPage() {
   </PageFrame>;
 
   return <PageFrame>
-    <section className={`mg-panel ${styles.modeBar}`} data-component="mg-panel" aria-label="Media Agent 工作区"><div><span className={styles.modeMarker} aria-hidden="true" /><strong>本端协作控制面</strong><span className={styles.modeHint}>只展示远端租户状态，不读取本地路径或媒体字节。</span></div><span className={styles.catalogVersion}>{data.pipelines.length} 个流程 · {data.devices.length} 台设备</span></section>
+    <section className={`mg-panel ${styles.modeBar}`} data-component="mg-panel" aria-label="Media Agent 工作区"><div><span className={styles.modeMarker} aria-hidden="true" /><strong>本端协作控制面</strong><span className={styles.modeHint}>只展示远端账号状态，不读取本地路径或媒体字节。</span></div><span className={styles.catalogVersion}>{data.pipelines.length} 个流程 · {data.devices.length} 台设备</span></section>
     <nav className={styles.tabBar} data-component="mg-tabs" aria-label="Media Agent 功能标签" role="tablist" onKeyDown={(event) => handleTabKeyDown(event, tab, setTab)}>{TABS.map((item) => <TabButton key={item.id} tab={item.id} active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</TabButton>)}</nav>
     {notice ? <div className={styles.notice} role="status"><CheckCircle2 size={15} />{notice}</div> : null}
     {error ? <div className={styles.actionError} role="alert"><AlertCircle size={15} />{error}</div> : null}

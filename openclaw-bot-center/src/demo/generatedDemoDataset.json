@@ -4212,7 +4212,7 @@
             },
             "publicProjectId": "proj_autumn_camera",
             "stage": "creation",
-            "status": "剪辑交接中",
+            "status": "active",
             "title": "秋日相机测评：X100VI 城市实拍",
             "updatedAt": "2026-09-02T07:00:00+08:00",
             "workspaceMode": "personal_web"
@@ -4224,7 +4224,7 @@
             },
             "publicProjectId": "proj_citywalk_suzhou",
             "stage": "publishing",
-            "status": "等待发布确认",
+            "status": "active",
             "title": "城市漫步·苏州河支线",
             "updatedAt": "2026-09-02T01:00:00+08:00",
             "workspaceMode": "personal_web"
@@ -4236,7 +4236,7 @@
             },
             "publicProjectId": "proj_brand_coffee",
             "stage": "decision",
-            "status": "待人工确认选题",
+            "status": "active",
             "title": "三顿半秋季联名商单",
             "updatedAt": "2026-09-01T08:00:00+08:00",
             "workspaceMode": "personal_web"
@@ -4247,7 +4247,7 @@
             },
             "publicProjectId": "proj_october_review",
             "stage": "review",
-            "status": "复盘待确认",
+            "status": "active",
             "title": "10 月复盘与账号学习",
             "updatedAt": "2026-08-31T10:00:00+08:00",
             "workspaceMode": "personal_web"
@@ -4258,7 +4258,7 @@
             },
             "publicProjectId": "proj_asset_bank",
             "stage": "assets",
-            "status": "素材整理中",
+            "status": "paused",
             "title": "素材银行：秋季空镜补拍",
             "updatedAt": "2026-08-30T10:00:00+08:00",
             "workspaceMode": "personal_web"

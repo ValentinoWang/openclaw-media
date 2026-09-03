@@ -323,7 +323,7 @@ export default function DecisionsPage() {
           <div>
             <span className="mg-eyebrow" data-component="mg-eyebrow">内容运营</span>
             <h1>选题与决策</h1>
-            <p>候选选题、来源信号和人工确认都来自当前租户的业务记录。</p>
+            <p>候选选题、来源信号和人工确认都来自当前账户的业务记录。</p>
           </div>
           <div className="page-heading-actions mg-hero-actions">
             <button
@@ -507,7 +507,7 @@ function DecisionListPanel({
               </tbody>
             </table>
             {!state.data.items.length ? (
-              <EmptyState title="暂无候选选题" detail="当前租户还没有可展示的决策记录。" />
+              <EmptyState title="暂无候选选题" detail="当前账户还没有可展示的决策记录。" />
             ) : null}
           </div>
           <footer className={styles.tableFooter}>
@@ -606,7 +606,7 @@ function SignalPanel({
               </li>
             ))}
           </ul>
-          {!state.data.items.length ? <EmptyState title="暂无来源信号" detail="当前租户还没有热榜或活动信号快照。" /> : null}
+          {!state.data.items.length ? <EmptyState title="暂无来源信号" detail="当前账户还没有热榜或活动信号快照。" /> : null}
           <footer className={styles.tableFooter}>
             <span>来源快照不会替代决策判断。</span>
             <CursorPagination
@@ -733,7 +733,7 @@ function StatePanel<T>({
   onRetry: () => void;
 }) {
   if (state.status === "loading") {
-    return <SurfaceState kind="loading" title={`正在读取${subject}`} detail="等待服务端返回当前租户数据。" />;
+    return <SurfaceState kind="loading" title={`正在读取${subject}`} detail="等待服务端返回你的账户数据。" />;
   }
   if (state.status === "forbidden") {
     return <SurfaceState kind="forbidden" title="暂无查看权限" detail={state.message} />;

@@ -60,6 +60,16 @@ for (const file of presentationFiles) {
   )
 }
 
+const allOrdinaryTsxFiles = readdirSync(ordinaryDirectory)
+  .filter((name) => name.endsWith('.tsx'))
+  .sort()
+  .map((name) => resolve(ordinaryDirectory, name))
+
+for (const file of allOrdinaryTsxFiles) {
+  const source = readFileSync(file, 'utf8')
+  assert.doesNotMatch(source, /租户/, `${file} must not expose tenant wording to ordinary users`)
+}
+
 const overviewSource = readFileSync(resolve('src/media/pages/ordinary/OverviewPage.tsx'), 'utf8')
 for (const expectedCopy of [
   '你账号下所有内容项目的汇总',

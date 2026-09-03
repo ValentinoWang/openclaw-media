@@ -620,7 +620,7 @@ function TracksOverviewTab({
             onChange={setActiveFilter}
           />
         </div>
-        <ListState state={state} emptyTitle="暂无赛道" emptyDetail="当前租户还没有可读的赛道登记。" />
+        <ListState state={state} emptyTitle="暂无赛道" emptyDetail="当前账号还没有可读的赛道登记。" />
         {state.kind === "ready" && visibleTracks.length === 0 ? (
           <SurfaceState kind="empty" title="没有符合条件的赛道" detail="调整状态筛选或搜索条件后再试。" />
         ) : null}
@@ -1089,7 +1089,7 @@ function BenchmarkInspector({
         {!selectedCreatorId ? (
           <SurfaceState kind="empty" title="选择一个对标账号" detail="从左侧列表选择后查看内容画像、资料凭证和赛道关系。" />
         ) : state?.kind === "loading" ? (
-          <SurfaceState kind="loading" title="正在读取对标账号" detail="正在读取当前租户可见的公开档案。" />
+          <SurfaceState kind="loading" title="正在读取对标账号" detail="正在读取当前账号可见的公开档案。" />
         ) : state?.kind === "forbidden" ? (
           <SurfaceState kind="forbidden" title="无权查看该档案" detail={state.message} />
         ) : state?.kind === "error" ? (

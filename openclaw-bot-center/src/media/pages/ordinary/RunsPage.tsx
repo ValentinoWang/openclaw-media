@@ -514,7 +514,7 @@ function BusinessOpportunityTable({
     <section className={`${styles.tableRegion} mg-panel`} aria-labelledby="opportunities-table-title" data-component="mg-panel" data-page-terminal-surface="primary">
       <header className={`${styles.tableHeader} mg-panel-head`} data-component="mg-panel-head">
         <div><h2 id="opportunities-table-title">已授权商务机会</h2><span>{response.items.length} 条当前页记录</span></div>
-        <span>仅显示当前租户授权对象</span>
+        <span>仅显示当前账号已授权的对象</span>
       </header>
       <div className={styles.tableScroll} role="region" aria-label="商务机会表格" tabIndex={0}>
         <table className={styles.table}>
@@ -777,7 +777,7 @@ function RunsEmpty({ searched, onClear }: { searched: boolean; onClear: () => vo
 }
 
 function BusinessOpportunityEmpty() {
-  return <SurfaceState kind="empty" title="当前没有已授权商务机会" detail="列表为空表示当前租户没有可展示的授权商务对象。" />;
+  return <SurfaceState kind="empty" title="当前没有已授权商务机会" detail="列表为空表示当前账号没有可展示的授权商务对象。" />;
 }
 
 function CommercialDeliveryEmpty({ onCreate }: { onCreate: () => void }) {

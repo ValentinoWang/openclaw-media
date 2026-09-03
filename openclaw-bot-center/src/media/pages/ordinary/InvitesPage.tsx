@@ -156,7 +156,7 @@ function ResourceStateView({
         <SurfaceState
           kind="loading"
           title={'正在读取' + subject}
-          detail="等待服务端返回当前租户数据。"
+          detail="等待服务端返回你的账户数据。"
           density="compact"
         />
       </div>
