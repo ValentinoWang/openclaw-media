@@ -118,6 +118,18 @@ for (const selector of ['.edge text', '.laneBand text']) {
   if (!/stroke:\s*var\(--mg-surface\)/.test(block)) failures.push(`${selector} 的衬底必须用 --mg-surface，深色模式才跟着换`)
 }
 
+// 5. 任何断点都不许把图藏掉：窄屏要横向滚动，而不是 display:none 让流程图消失。
+for (const block of styles.match(/[^{}]+\{[^{}]*\}/g) ?? []) {
+  const [selector = '', declarations = ''] = block.split('{', 2)
+  if (!/display:\s*none/.test(declarations)) continue
+  if (/\.chart\b/.test(selector)) failures.push(`不能隐藏流程图容器 .chart（${selector.trim().replace(/\s+/g, ' ')}）——窄屏应横向滚动`)
+  if (/\.svg\b/.test(selector)) failures.push(`不能隐藏流程图本身 .svg（${selector.trim().replace(/\s+/g, ' ')}）——窄屏应横向滚动`)
+}
+const chartBlock = /\.chart\s*\{([^}]*)\}/.exec(styles)?.[1] ?? ''
+if (!/overflow-x:\s*auto/.test(chartBlock)) failures.push('.chart 必须 overflow-x: auto，窄屏才滚得动')
+const svgBlock = /\.svg\s*\{([^}]*)\}/.exec(styles)?.[1] ?? ''
+if (!/min-width:\s*\d/.test(svgBlock)) failures.push('.svg 必须有 min-width，窄屏才不会把图压扁')
+
 if (failures.length) {
   throw new Error(`workboard flow layout failed:\n- ${failures.join('\n- ')}`)
 }

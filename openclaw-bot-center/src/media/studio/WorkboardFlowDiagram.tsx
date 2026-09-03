@@ -224,6 +224,8 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
         </svg>
       </div>
 
+      <small className={styles.scrollHint}>横向滑动查看完整流程图</small>
+
       <div className={styles.laneList} aria-label="全流程节点（窄屏）">
         {WORKBOARD_FLOW_LANES.map((lane) => (
           <div key={lane.id} className={styles.laneGroup} data-lane={lane.id}>

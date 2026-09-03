@@ -181,8 +181,15 @@
 .nodePending rect { fill: var(--mg-warning-soft); stroke: color-mix(in srgb, var(--mg-warning) 32%, transparent); }
 .nodePending text { fill: var(--mg-warning); font-size: 10px; font-weight: 700; }
 
-/* 窄屏：SVG 让位给按泳道分组的节点列表。 */
+/* 窄屏补充：按泳道分组的可点节点列表，与上面的图并存而不是取代它。 */
 .laneList { display: none; }
+
+.scrollHint {
+  display: none;
+  padding: 0 16px 2px;
+  color: var(--mg-muted);
+  font-size: var(--mg-text-2xs);
+}
 
 .laneGroup {
   display: grid;
@@ -355,8 +362,9 @@
 }
 
 @media (max-width: 760px) {
-  .legend,
-  .chart { display: none; }
+  /* 窄屏不再把整张图藏掉——流程图消失比挤一点糟得多。图留在自己的容器里横向滚动，
+     底下再补一份可点的泳道清单，触屏选节点更省事。 */
+  .scrollHint { display: block; }
   .laneList { display: grid; }
   .detail { margin: 8px 12px 12px; padding: 12px; }
   .headMeta { display: none; }
