@@ -13,9 +13,20 @@ import {
   workboardFlowNode,
   workboardStageIndex,
   type WorkboardFlowFact,
-  type WorkboardFlowLane,
   type WorkboardFlowNode,
 } from './workboardPresentation'
+import {
+  COLUMN_X,
+  LANE_PAD,
+  LANE_Y,
+  NODE_BOXES,
+  NODE_H,
+  NODE_TEXT_INSET,
+  NODE_W,
+  VIEW_H,
+  VIEW_W,
+  edgeGeometry,
+} from './workboardFlowLayout'
 import styles from './WorkboardFlowDiagram.module.css'
 
 /** 只取流程图用得到的合同字段（DashboardSummary），其余由 WorkboardPage 持有。 */
@@ -44,72 +55,6 @@ type FlowData = {
 }
 
 const AUTO_ADVANCE_MS = 4200
-
-// ---- SVG 几何：六列 × 三条泳道，viewBox 固定，容器变窄时横向滚动而不是缩字 ----
-const NODE_W = 128
-const NODE_H = 46
-const COLUMN_X = [20, 206, 392, 578, 764, 950] as const
-const LANE_Y: Record<WorkboardFlowLane, number> = { content: 56, shared: 140, local: 224, commercial: 308 }
-const LANE_PAD = 9
-const VIEW_W = 1104
-const VIEW_H = 404
-
-type Box = { x: number; y: number; cx: number; cy: number; right: number; bottom: number; lane: WorkboardFlowLane }
-
-function nodeBox(node: WorkboardFlowNode): Box {
-  const x = COLUMN_X[node.column - 1]!
-  const y = LANE_Y[node.lane]
-  return { x, y, cx: x + NODE_W / 2, cy: y + NODE_H / 2, right: x + NODE_W, bottom: y + NODE_H, lane: node.lane }
-}
-
-const boxes = new Map(WORKBOARD_FLOW_NODES.map((node) => [node.id, nodeBox(node)]))
-
-/** 每条边的路径、标签位置与对齐方式。合流边汇入创作节点左侧的不同高度，送审/返修是一对平行竖线，
- *  本机线与合流之间走同列竖线，回流走外圈；交付绕过本机线走正交路径，避免与交接包的标签重叠。 */
-type EdgeGeometry = { d: string; label: [number, number]; anchor: 'start' | 'middle' | 'end' }
-
-function edgeGeometry(from: Box, to: Box, fromId: string, toId: string, kind: string): EdgeGeometry {
-  if (kind === 'loop') {
-    if (to.y < from.y) {
-      const top = 30
-      return { d: `M${from.cx},${from.y} V${top} H${to.cx} V${to.y}`, label: [(from.cx + to.cx) / 2, top + 14], anchor: 'middle' }
-    }
-    const bottom = VIEW_H - 20
-    return { d: `M${from.cx},${from.bottom} V${bottom} H${to.cx} V${to.bottom}`, label: [(from.cx + to.cx) / 2, bottom - 6], anchor: 'middle' }
-  }
-  // 送审 / 返修：一对平行竖线，从合流穿过本机线在第 4 列的空位落到商务线。
-  if (fromId === 'creation' && toId === 'acceptance') {
-    const x = from.cx - 20
-    return { d: `M${x},${from.bottom} V${to.y}`, label: [x - 7, from.bottom + 14], anchor: 'end' }
-  }
-  if (fromId === 'acceptance' && toId === 'creation') {
-    const x = from.cx + 20
-    return { d: `M${x},${from.y} V${to.bottom}`, label: [x + 7, to.bottom + 14], anchor: 'start' }
-  }
-  // 本机线与合流之间的同列竖线：素材摘要回传、成片回传。
-  if (fromId === 'local_intake' || fromId === 'local_edit') {
-    return { d: `M${from.cx},${from.y} V${to.bottom}`, label: [from.cx + 8, to.bottom + 14], anchor: 'start' }
-  }
-  if (toId === 'local_edit') {
-    return {
-      d: `M${from.right},${from.cy + 13} C${from.right + 34},${from.cy + 13} ${to.x - 34},${to.cy} ${to.x},${to.cy}`,
-      label: [from.right + 4, from.bottom + 15],
-      anchor: 'start',
-    }
-  }
-  // 交付：从品牌审核正交绕过本机线，进入发布交付的左侧（成片回传走它的底边）。
-  if (fromId === 'acceptance' && toId === 'publishing') {
-    return { d: `M${from.right},${from.cy} H${to.x - 12} V${to.cy + 13} H${to.x}`, label: [from.right + 6, from.cy - 7], anchor: 'start' }
-  }
-  if (toId === 'creation') {
-    const targetY = fromId === 'decision' ? to.cy - 13 : fromId === 'brief' ? to.cy + 13 : to.cy
-    if (from.lane === to.lane) return { d: `M${from.right},${from.cy} H${to.x}`, label: [(from.right + to.x) / 2, from.cy - 8], anchor: 'middle' }
-    const startY = from.y > to.y ? from.y : from.bottom
-    return { d: `M${from.cx},${startY} C${from.cx},${targetY} ${from.cx + 36},${targetY} ${to.x},${targetY}`, label: [from.cx + 12, (startY + targetY) / 2 + 4], anchor: 'start' }
-  }
-  const y = fromId === 'creation' && toId === 'publishing' ? from.cy - 13 : from.cy
-  return { d: `M${from.right},${y} H${to.x}`, label: [(from.right + to.x) / 2, y - 8], anchor: 'middle' }
-}
 
 function factValue(fact: WorkboardFlowFact, data: FlowData, node: WorkboardFlowNode): number | null {
   switch (fact.source) {
@@ -214,9 +159,9 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
       >
         <svg className={styles.svg} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} role="group" aria-label="自媒体全流程图：内容线、商务线、本机剪辑线与合流">
           <defs>
-            <marker id="wb-arrow-muted" className={styles.arrowMuted} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" /></marker>
+            <marker id="wb-arrow-muted" className={styles.arrowMuted} viewBox="0 0 8 8" refX="7.4" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0,1 L8,4 L0,7 z" /></marker>
             {(['studio', 'campaign', 'business', 'desk', 'agent', 'archive'] as const).map((accent) => (
-              <marker key={accent} id={`wb-arrow-${accent}`} className={styles.arrowLive} data-accent={accent} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" /></marker>
+              <marker key={accent} id={`wb-arrow-${accent}`} className={styles.arrowLive} data-accent={accent} viewBox="0 0 8 8" refX="7.4" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0,1 L8,4 L0,7 z" /></marker>
             ))}
           </defs>
 
@@ -232,8 +177,8 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
           ))}
 
           {WORKBOARD_FLOW_EDGES.map((edge) => {
-            const from = boxes.get(edge.from)!
-            const to = boxes.get(edge.to)!
+            const from = NODE_BOXES.get(edge.from)!
+            const to = NODE_BOXES.get(edge.to)!
             const fromNode = workboardFlowNode(edge.from)!
             const key = `${edge.from}->${edge.to}`
             const live = liveEdges.has(key)
@@ -247,7 +192,7 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
           })}
 
           {WORKBOARD_FLOW_NODES.map((node) => {
-            const box = boxes.get(node.id)!
+            const box = NODE_BOXES.get(node.id)!
             const pending = pendingValue(node, data)
             const isActive = node.id === activeId
             return (
@@ -265,8 +210,8 @@ export function WorkboardFlowDiagram({ summary, loading, projects, opportunities
                 onKeyDown={(event) => onNodeKey(event, node.id)}
               >
                 <rect className={styles.nodeBox} width={NODE_W} height={NODE_H} rx={10} />
-                <text className={styles.nodeLabel} x={11} y={21}>{node.label}</text>
-                <text className={styles.nodeCaption} x={11} y={37}>{nodeCaption(node, data)}</text>
+                <text className={styles.nodeLabel} x={NODE_TEXT_INSET} y={21}>{node.label}</text>
+                <text className={styles.nodeCaption} x={NODE_TEXT_INSET} y={37}>{nodeCaption(node, data)}</text>
                 {pending ? (
                   <g className={styles.nodePending} transform={`translate(${NODE_W - 10} 0)`}>
                     <rect x={-34} y={-10} width={34} height={16} rx={8} />

@@ -87,6 +87,10 @@
   fill: var(--lane-color);
   font-size: 11px;
   font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--mg-surface);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
 }
 
 .columnHead {
@@ -107,10 +111,16 @@
 .edge[data-kind='return'] path,
 .edge[data-kind='loop'] path { stroke-dasharray: 6 5; }
 
+/* 连线标签会压在泳道底色和其它连线上，用同底色描边做一圈衬底保证可读；
+   排版门禁另外验算标签不会盖住任何节点或彼此。 */
 .edge text {
   fill: var(--mg-muted);
   font-size: 10.5px;
   font-weight: 500;
+  paint-order: stroke;
+  stroke: var(--mg-surface);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
 }
 
 /* 与当前节点相连的边流动起来；其余保持安静。 */
@@ -241,9 +251,10 @@
   line-height: 2.2;
 }
 
+/* 事实格用 flex 而不是 1fr 网格：节点只有一条事实时，网格会把它拉成一整行的空盒子。 */
 .detailFacts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 4px;
 }
@@ -251,7 +262,8 @@
 .detailFacts > span {
   display: grid;
   gap: 2px;
-  min-width: 0;
+  min-width: 104px;
+  flex: 0 1 152px;
   padding: 8px 10px;
   border: 1px solid var(--mg-border);
   border-radius: var(--mg-r-md);

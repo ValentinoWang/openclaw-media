@@ -37,6 +37,7 @@
 ```bash
 cd openclaw-bot-center
 npm run qa:media-demo-parity     # 生产/原型一致性门禁（最快，先跑它）
+npm run qa:media-workboard-flow  # /today 全流程图：数据绑定 + 排版（节点/标签不许互相压住）
 npm run generate:demo-dataset    # 合同或能力注册表变更后重新生成演示数据
 npm run build:demo               # 构建演示站并走查全部页面
 npm run build:media              # 生产 Media 前端全套门禁
