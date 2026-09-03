@@ -2,15 +2,8 @@ import { useEffect, useState } from 'react'
 import { Compass, X } from 'lucide-react'
 import { demoPersonas, activePersonaId, selectPersona, type DemoPersonaId } from './demoPersonas'
 import { demoAuthPages, demoRouteGroups } from './demoRoutes'
+import { demoNavigate, demoNavigateHome, withBase } from './demoNavigation'
 import './demoConsole.css'
-
-// Vite 保证 BASE_URL 恒以 / 结尾，因此可以直接与去掉前导 / 的路径拼接，
-// 不必再补一次分隔符
-const baseUrl = import.meta.env.BASE_URL
-
-function withBase(path: string): string {
-  return baseUrl + path.replace(/^\//, '')
-}
 
 /** 详情路由的授权按其列表页判断，与生产 `resolveStudioRouteOutcome` 的映射一致。 */
 function grantPath(path: string): string {
@@ -56,7 +49,17 @@ export default function DemoConsole() {
   function handleSelectPersona(id: DemoPersonaId, defaultRoute: string) {
     selectPersona(id)
     setPersonaId(id)
-    window.location.assign(withBase(defaultRoute))
+    // 客户端导航 + 重挂应用：假后端每次请求都现读 activePersona()，不需要整页重载。
+    demoNavigate(defaultRoute)
+    setOpen(false)
+  }
+
+  function handleOpenRoute(event: React.MouseEvent<HTMLAnchorElement>, path: string) {
+    // 保留 href 让中键/新标签页仍然可用；普通左键走客户端导航。
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    demoNavigate(path)
+    setOpen(false)
   }
 
   if (overlayOpen) return null
@@ -119,6 +122,22 @@ export default function DemoConsole() {
 
           <div className="demo-console-section">
             <p className="demo-console-section-title">页面索引</p>
+            <ul className="demo-console-route-list">
+              <li className="demo-console-route-item">
+                <a
+                  className="demo-console-route-link"
+                  href={withBase('/')}
+                  onClick={(event) => {
+                    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+                    event.preventDefault()
+                    demoNavigateHome()
+                    setOpen(false)
+                  }}
+                >
+                  返回封面页
+                </a>
+              </li>
+            </ul>
             <div className="demo-console-group">
               <p className="demo-console-group-title">认证页面（只读复刻）</p>
               <ul className="demo-console-route-list">
@@ -143,7 +162,12 @@ export default function DemoConsole() {
                         key={route.path}
                         className={isForeign ? 'demo-console-route-item is-foreign' : 'demo-console-route-item'}
                       >
-                        <a className="demo-console-route-link" href={withBase(route.path)} title={route.detail}>
+                        <a
+                          className="demo-console-route-link"
+                          href={withBase(route.path)}
+                          title={route.detail}
+                          onClick={(event) => handleOpenRoute(event, route.path)}
+                        >
                           {route.label}
                         </a>
                         {isForeign ? <small className="demo-console-route-hint">需切换身份</small> : null}
