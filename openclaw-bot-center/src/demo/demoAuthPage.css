@@ -1,0 +1,41 @@
+.demo-auth-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  background: var(--mg-canvas, #f5f5f0);
+}
+
+.demo-auth-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--mg-border);
+  background: var(--mg-surface);
+}
+
+.demo-auth-bar button {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid var(--mg-border-strong);
+  border-radius: var(--mg-r-sm);
+  color: var(--mg-primary-dark);
+  background: var(--mg-surface);
+  font: inherit;
+  font-size: var(--mg-text-2xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.demo-auth-bar button:hover { border-color: var(--mg-primary); background: var(--mg-primary-soft); }
+.demo-auth-bar > span { color: var(--mg-ink); font-size: var(--mg-text-sm); font-weight: 700; }
+.demo-auth-bar small { margin-left: auto; color: var(--mg-muted); font-size: var(--mg-text-2xs); }
+
+.demo-auth-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}

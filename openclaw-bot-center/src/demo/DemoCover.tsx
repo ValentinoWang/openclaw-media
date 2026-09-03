@@ -101,10 +101,9 @@ export default function DemoCover() {
           <ul className="demo-cover-routes">
             {demoAuthPages.map((page) => (
               <li key={page.path}>
-                {/* 认证页是构建期生成的独立静态文件，不走 React 路由，只能整页打开。 */}
-                <a href={page.path.replace(/^\//, '')}>
+                <button type="button" onClick={() => demoNavigate(page.path)}>
                   <strong>{page.label}</strong><small>{page.detail}</small>
-                </a>
+                </button>
               </li>
             ))}
           </ul>

@@ -1529,6 +1529,7 @@ p { text-wrap: pretty; }
 .personal-artifact-item { display: grid; min-width: 0; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 11px; min-height: 76px; padding: 11px 5px; border-bottom: 1px solid var(--mg-border); }
 .personal-artifact-item:last-child { border-bottom: 0; }
 .personal-artifact-icon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: var(--mg-r-sm); color: var(--mg-primary-dark); background: var(--mg-primary-soft); }
+.personal-artifact-actions { display: flex; flex-wrap: wrap; gap: 7px; justify-content: flex-end; }
 .personal-preview-link { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; gap: 6px; padding: 0 9px; border: 1px solid var(--mg-border-strong); border-radius: var(--mg-r-sm); color: var(--mg-primary-dark); background: var(--mg-surface); font-size: var(--mg-text-xs); font-weight: 600; text-decoration: none; white-space: nowrap; }
 .personal-preview-link:hover { border-color: var(--mg-primary); background: var(--mg-primary-soft); }
 .personal-state { display: flex; min-height: 160px; align-items: center; justify-content: center; gap: 12px; padding: 24px 20px; color: var(--mg-muted); background: var(--mg-surface); font-size: var(--mg-text-sm); line-height: 1.55; }

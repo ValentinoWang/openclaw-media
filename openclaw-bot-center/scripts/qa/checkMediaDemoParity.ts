@@ -22,6 +22,8 @@ import {
 } from '../../src/media/mediaStudioRoutePolicy'
 import { demoAuthPages, demoRouteGroups, demoStaticRoutes } from '../../src/demo/demoRoutes'
 import { demoPersonas } from '../../src/demo/demoPersonas'
+import { demoAuthPageDocuments } from '../../src/demo/generatedDemoAuthPages'
+import { AUTH_PAGES, transformAuthPage } from '../demo/buildDemoAuthPages'
 import { operations } from '../../src/media/generatedBusinessPagesContract'
 import demoDataset from '../../src/demo/generatedDemoDataset.json'
 import demoCatalog from '../../src/demo/generatedDemoCatalog.json'
@@ -384,6 +386,31 @@ function deriveCapabilityEnumFromContract(contractText: string): readonly string
 // 断言 7：认证页覆盖
 // ---------------------------------------------------------------------------
 
+/** 认证页有两份产物：dist-demo 下的独立静态文件，和内嵌进 SPA 的自包含 HTML
+ *  （单文件分发时唯一够得着的那份）。两者必须来自同一个源文件、同一套改写逻辑，
+ *  否则「退出登录后的首页」会在其中一种部署方式下悄悄走样或整个消失。 */
+function checkEmbeddedAuthPages(demoAuthPagePaths: readonly string[]): string[] {
+  const failures: string[] = []
+  const embeddedSlugs = demoAuthPageDocuments.map((page) => page.slug)
+  for (const path of demoAuthPagePaths) {
+    const slug = path.replace(/^\/|\/$/g, '')
+    if (!embeddedSlugs.includes(slug as (typeof embeddedSlugs)[number])) {
+      failures.push(`认证页 ${path} 没有内嵌版本，单文件分发时打不开；请运行 npm run generate:demo-auth-pages`)
+    }
+  }
+  for (const page of AUTH_PAGES) {
+    const embedded = demoAuthPageDocuments.find((item) => item.slug === page.slug)
+    if (!embedded) continue
+    // 内嵌版把外链样式内联了，正文结构必须仍然与静态版一致：拿 <body> 比对。
+    const fresh = transformAuthPage(readFileSync(page.sourcePath, 'utf8'), '/', page.slug)
+    const bodyOf = (html: string) => /<body[^>]*>([\s\S]*)<\/body>/.exec(html)?.[1] ?? ''
+    if (bodyOf(fresh) !== bodyOf(embedded.html)) {
+      failures.push(`内嵌认证页 ${page.slug} 与 ${page.sourcePath.split('/').pop()} 已经不同步，请运行 npm run generate:demo-auth-pages`)
+    }
+  }
+  return failures
+}
+
 function checkAuthPageCoverage(authPageEntryKeys: readonly string[], demoAuthPagePaths: readonly string[]): string[] {
   const demoPathSet = new Set(demoAuthPagePaths)
   const failures: string[] = []
@@ -505,6 +532,7 @@ function main(): void {
   const viteConfigSource = readFileSync(resolve(projectRoot, 'vite.media.config.ts'), 'utf8')
   const authPageEntryKeys = deriveAuthPageEntryKeys(viteConfigSource)
   failures.push(...checkAuthPageCoverage(authPageEntryKeys, demoAuthPages.map((page) => page.path)))
+  failures.push(...checkEmbeddedAuthPages(demoAuthPages.map((page) => page.path)))
 
   if (failures.length > 0) {
     console.error(`media demo parity: FAIL 发现 ${failures.length} 处生产/演示站不一致：`)
@@ -516,7 +544,7 @@ function main(): void {
   console.log(
     'media demo parity: PASS ' +
       `staticRoutes=${new Set(productionStaticRoutes).size} paramRoutePatterns=${paramRoutes.length} ` +
-      `operations=${contractOperationIds.length} capabilities=${contractCapabilityIds.length} authPages=${authPageEntryKeys.length}`,
+      `operations=${contractOperationIds.length} capabilities=${contractCapabilityIds.length} authPages=${authPageEntryKeys.length} embeddedAuthPages=${demoAuthPageDocuments.length}`,
   )
 }
 

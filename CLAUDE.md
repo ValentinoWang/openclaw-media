@@ -23,6 +23,7 @@
 | 改页面读取/写回的字段（尤其是 mutation 之后的「读回校验」） | `src/demo/demoBackend.ts` 的 `applyMutation`：演示站的写操作必须返回页面真正会解析的形状 |
 | 改能力注册表（`openclaw-tag-router/`） | 重新生成能力目录：`npm run generate:demo-dataset` |
 | 新增认证页入口（`vite.media.config.ts`） | `src/demo/demoRoutes.ts` 的 `demoAuthPages` 与 `scripts/demo/buildDemoAuthPages.ts` |
+| 改认证页 HTML（`media.login.html` 等五个） | 重新生成内嵌版：`npm run generate:demo-auth-pages`（单文件分发时只有这份够得着） |
 
 这条约束由质量门禁 `npm run qa:media-demo-parity` 强制执行，它是 `build:media` 的第一步：**改了生产代码却没同步原型，生产构建会直接失败**，并指出该改哪个文件。
 

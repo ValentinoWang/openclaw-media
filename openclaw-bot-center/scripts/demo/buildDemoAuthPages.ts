@@ -31,7 +31,7 @@ const moduleDir = dirname(fileURLToPath(import.meta.url))
  *  不依赖调用方的 process.cwd()，避免被不同调用位置坑。 */
 const repoRoot = resolve(moduleDir, '..', '..')
 
-type AuthPageSlug = 'login' | 'register' | 'verify' | 'recover' | 'reset'
+export type AuthPageSlug = 'login' | 'register' | 'verify' | 'recover' | 'reset'
 
 type AuthPageSpec = {
   slug: AuthPageSlug
@@ -41,7 +41,7 @@ type AuthPageSpec = {
 
 /** 五个认证页的源文件位置，与 vite.media.config.ts 的 rollupOptions.input 保持一致
  *  （login/register 在仓库根目录，其余三个在 src/ 下）。 */
-const AUTH_PAGES: AuthPageSpec[] = [
+export const AUTH_PAGES: AuthPageSpec[] = [
   { slug: 'login', sourcePath: resolve(repoRoot, 'media.login.html') },
   { slug: 'register', sourcePath: resolve(repoRoot, 'media.register.html') },
   { slug: 'verify', sourcePath: resolve(repoRoot, 'src/media.verify.html') },
@@ -305,7 +305,7 @@ function buildDemoScriptTag(base: string): string {
 }
 
 /** 改写单个认证页：换掉样式表/脚本引用，插入演示横幅样式。 */
-function transformAuthPage(html: string, base: string, slug: AuthPageSlug): string {
+export function transformAuthPage(html: string, base: string, slug: AuthPageSlug): string {
   let output = html
 
   output = replaceExpected(

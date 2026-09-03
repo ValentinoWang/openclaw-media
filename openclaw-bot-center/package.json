@@ -8,6 +8,7 @@
     "generate:data": "python3 scripts/generateDashboardData.py",
     "generate:capability-match-contract": "python3 scripts/generateCapabilityMatchContract.py",
     "generate:media-business-contract": "python3 scripts/generateMediaBusinessPagesContract.py",
+    "generate:demo-auth-pages": "tsx scripts/demo/generateDemoAuthPages.ts",
     "generate:demo-dataset": "python3 scripts/demo/generate_demo_dataset.py",
     "validate:media-business-contract": "python3 scripts/generateMediaBusinessPagesContract.py --check",
     "validate:demo-dataset": "python3 scripts/demo/generate_demo_dataset.py --check",

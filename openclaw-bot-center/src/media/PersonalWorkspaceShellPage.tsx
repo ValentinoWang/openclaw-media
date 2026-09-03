@@ -8,6 +8,7 @@ import {
   FolderOpen,
   LogIn,
   MessageSquareText,
+  PenLine,
   RefreshCw,
   ShieldCheck,
   X,
@@ -303,9 +304,16 @@ export default function PersonalWorkspaceShellPage() {
                   <article className="personal-artifact-item" role="listitem" key={artifact.publicArtifactId}>
                     <div className="personal-artifact-icon" aria-hidden="true"><FileText size={17} /></div>
                     <div className="personal-artifact-copy"><strong>{artifact.displayName?.trim() || "未命名成果"}</strong><span>修订 {artifact.currentRevision} · {formatDate(artifact.updatedAt)}</span></div>
-                    <Link className="personal-preview-link mg-btn mg-btn-ghost" to={`/workspace/preview/${artifact.publicArtifactId}`}>
-                      <Eye size={15} aria-hidden="true" />查看云端预览
-                    </Link>
+                    {/* 正文编辑器一直都在（/workspace/edit/:artifactId），但此前界面上没有任何入口，
+                        只能手敲地址。受控快照类成果由编辑器自己降级成只读，这里不需要再判一次。 */}
+                    <div className="personal-artifact-actions">
+                      <Link className="personal-preview-link mg-btn mg-btn-ghost" to={`/workspace/preview/${artifact.publicArtifactId}`}>
+                        <Eye size={15} aria-hidden="true" />查看云端预览
+                      </Link>
+                      <Link className="personal-preview-link mg-btn mg-btn-ghost" to={`/workspace/edit/${artifact.publicArtifactId}`}>
+                        <PenLine size={15} aria-hidden="true" />编辑正文
+                      </Link>
+                    </div>
                   </article>
                 ))}
               </div>
