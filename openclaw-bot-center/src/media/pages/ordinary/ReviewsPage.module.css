@@ -368,15 +368,38 @@
   color: var(--reviews-ink);
 }
 
+/* 人工决策列并入了原本单独一列的「版本」（纯数字，信息量低），当作次要行
+   排在决策文字下方，而不是继续占一整条窄列。 */
+.versionTag {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--reviews-muted);
+  font-size: var(--mg-text-xs);
+}
+
 .codeValue {
   color: var(--reviews-blue);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: var(--mg-text-xs);
 }
 
-.windowList {
-  display: grid;
-  gap: 0.25rem;
+/* 「窗口/指标/单位」是短分类标签，本身不受益于折行；指标/单位的退化文案
+   （如「指标待确认」）有 5 个汉字，比常见取值长，在这几列的实际列宽下会在
+   字中间折成两行、撑高整行——同一行里本来单行的「数值」会因此被排版体检的
+   「盒高 / 行高」判据连累误判成折了行（数值列改走 .mg-id：内层 span 不带
+   单元格自己的内边距，量出来的就是文字本身，不会被同一行的邻居连累）。
+   单行 + 省略号也比在窄格子里断成两行更好看；完整文案仍在 title 里。 */
+.metricShortValue {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 曾经的「统计时间」「证据质量」表格列（.windowList 纵向堆叠两个 WindowMark）
+   并入作品列标题下方后，改用 .mg-meta 排成一行、放不下再整体换行，而不是
+   继续占两条独立的窄列——那正是 7 列表格里「作品」只剩约 105px 的根源之一。 */
+.postMeta {
+  margin-top: 0.15rem;
 }
 
 .windowKnown,
@@ -546,33 +569,10 @@
   font-size: var(--mg-text-xs);
 }
 
-.factList {
-  display: grid;
-  gap: 0.36rem;
-  margin: 0;
-}
-
-.factList div {
-  display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
-  gap: 0.4rem;
-  min-width: 0;
-}
-
-.factList dt {
-  color: var(--reviews-muted);
-  font-size: var(--mg-text-xs);
-  font-weight: 700;
-}
-
-.factList dd {
-  min-width: 0;
-  margin: 0;
-  color: var(--reviews-ink);
-  font-size: var(--mg-text-xs);
-  overflow-wrap: anywhere;
-}
-
+/* 「数据层」原本是页面私有的 .factList：5.5rem 固定标签列 + 剩余窄值列，
+   在 22rem 宽的检视栏里把「曝光 18422 · 互动 1124 · 涨粉 213」这类快照字符串
+   挤成两行。改用共享原语 .mg-facts / .mg-fact（标签在上、值在下，各自铺满
+   容器宽度），值槽从「标签列旁边的窄条」变成「整个容器宽度」。 */
 .layerValue {
   min-height: 3.2rem;
   margin: 0;
@@ -582,9 +582,11 @@
   overflow-wrap: anywhere;
 }
 
+/* 列数交给共享原语 .mg-metric-grid（auto-fit + minmax(184px)）：这里曾经写死
+   repeat(5, ...)，「增长摘要」标签页的宽容器里还看不出来，但同一个组件如果
+   出现在更窄的容器（如筛选后的次栏）就会把「24 小时待补」压成 3 行。.growthGrid
+   只留页面自己的间距/内边距。 */
 .growthGrid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.55rem;
   padding: 0.9rem;
 }
@@ -744,8 +746,7 @@
 }
 
 @media (max-width: 980px) {
-  .summaryBand,
-  .growthGrid {
+  .summaryBand {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -760,7 +761,6 @@
   }
 
   .summaryBand,
-  .growthGrid,
   .formGrid {
     grid-template-columns: 1fr;
   }

@@ -122,6 +122,26 @@ const COLLECT_DEFECTS = `(() => {
     const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.4
     textLeaves.push({ element, rect, text, fontSize, lineHeight, visible, clipped })
   }
+  // 行数按**字形行盒**数，不按 height / line-height 估。带内边距的 <td>、有
+  // min-height 的徽标，盒子比一行文字高一大截，估出来就是「折成了 2 行」——
+  // 两位并行开发的同事都被这个假阳性带偏过：一个把徽标包进省略号容器导致文字
+  // 整体消失，一个去加宽根本没折行的数字列。
+  const inkRange = document.createRange()
+  const lineCount = (element) => {
+    const tops = []
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!(node.textContent || '').trim()) continue
+      inkRange.selectNodeContents(node)
+      for (const rect of inkRange.getClientRects()) {
+        if (rect.width <= 0.5 || rect.height <= 0.5) continue
+        let known = false
+        for (const top of tops) { if (Math.abs(top - rect.top) < 2) { known = true; break } }
+        if (!known) tops.push(rect.top)
+      }
+    }
+    return tops.length
+  }
   const describe = (element, text) => {
     const cls = typeof element.className === 'string' && element.className.trim() ? '.' + element.className.trim().split(/\\s+/)[0] : ''
     return '<' + element.tagName.toLowerCase() + cls + '>「' + text.slice(0, 18) + '」'
@@ -139,7 +159,7 @@ const COLLECT_DEFECTS = `(() => {
     }
   }
   for (const leaf of textLeaves) {
-    const lines = Math.round(leaf.rect.height / leaf.lineHeight)
+    const lines = lineCount(leaf.element)
     if (!/\\s/.test(leaf.text) && !/[⺀-鿿]/.test(leaf.text) && leaf.text.length > 6 && lines >= 2) {
       defects.push('单词被截断：' + describe(leaf.element, leaf.text) + ' 折成了 ' + lines + ' 行')
     }
@@ -166,7 +186,7 @@ const COLLECT_DEFECTS = `(() => {
       if (leaf.element === grid || !grid.contains(leaf.element)) continue
       if (/^H[1-6]$/.test(leaf.element.tagName)) continue
       if (leaf.element.closest('button, [role="tab"]')) continue
-      const lines = Math.round(leaf.rect.height / leaf.lineHeight)
+      const lines = lineCount(leaf.element)
       if (lines >= 2 && leaf.rect.width < 200 && (!worst || lines > worst.lines)) worst = { leaf: leaf, lines: lines }
     }
     if (worst) {
@@ -180,7 +200,6 @@ const COLLECT_DEFECTS = `(() => {
   // 量的是**字本身**占多宽，不是承载它的盒子占多宽：一个块级元素里直接躺着一行短
   // 文字时，盒子铺满整行，字却只有一小截——按盒子算就永远看不出稀疏。用 Range 量
   // 文本节点的实际字形框，再把图标/头像这类非文字内容按元素宽度补上。
-  const inkRange = document.createRange()
   const inkWidth = (element) => {
     let ink = 0
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)

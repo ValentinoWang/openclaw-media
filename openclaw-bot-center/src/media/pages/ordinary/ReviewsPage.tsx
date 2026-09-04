@@ -594,7 +594,14 @@ function ReviewsView({
         <>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
-              <thead><tr><th scope="col">作品</th><th scope="col">平台</th><th scope="col">统计时间</th><th scope="col">证据质量</th><th scope="col">模型建议</th><th scope="col">人工决策</th><th scope="col">版本</th><th scope="col">操作</th></tr></thead>
+              {/* 曾经是 8 列（作品/平台/统计时间/证据质量/模型建议/人工决策/版本/操作）：
+                  table-layout:fixed 把 min-width 均分成 8 份，740px 容器里「作品」只剩
+                  约 105px，标题被折成 4 行。低信息量的列并入相邻列，主表降到 5 列：
+                  统计时间（24h/7d 是否已采集）和证据质量原本就是短徽标，挪到作品列标题
+                  下方排成一行（.mg-meta）；版本是纯数字，挪到人工决策列下方当次要信息。
+                  th 上的 width 是 table-layout:fixed 认的显式列宽，把腾出来的空间分给
+                  「作品/模型建议/人工决策」这三个真正需要宽度的列，而不是均分掉。 */}
+              <thead><tr><th scope="col" style={{ width: "34%" }}>作品</th><th scope="col" style={{ width: "15%" }}>平台</th><th scope="col" style={{ width: "21%" }}>模型建议</th><th scope="col" style={{ width: "22%" }}>人工决策</th><th scope="col" style={{ width: "8%" }}>操作</th></tr></thead>
               <tbody>
                 {state.data.items.map((item) => (
                   <tr key={item.publicReviewId} className={selectedReview?.publicReviewId === item.publicReviewId ? styles.selectedRow : ""}>
@@ -622,14 +629,16 @@ function ReviewsView({
                         >
                           <span className={`${styles.postId} mg-id`} title={item.publicPostId}>{item.publicPostId}</span>
                         </button>
+                        <div className={["mg-meta", styles.postMeta].join(" ")}>
+                          <WindowMark label="24h" value={item.snapshot24h} />
+                          <WindowMark label="7d" value={item.snapshot7d} />
+                          <QualityBadge value={item.evidenceQuality} />
+                        </div>
                       </div>
                     </th>
                     <td><PlatformIdentity platform={item.platform} size="sm" /></td>
-                    <td><span className={styles.windowList}><WindowMark label="24h" value={item.snapshot24h} /><WindowMark label="7d" value={item.snapshot7d} /></span></td>
-                    <td><QualityBadge value={item.evidenceQuality} /></td>
                     <td className={styles.longValue}>{valueOrUnknown(item.modelSuggestion, "未生成")}</td>
-                    <td className={styles.longValue}>{valueOrUnknown(item.humanDecision, "未确认")}</td>
-                    <td>{formatCount(item.revision)}</td>
+                    <td className={styles.longValue}><span>{valueOrUnknown(item.humanDecision, "未确认")}</span><span className={styles.versionTag}>版本 {formatCount(item.revision)}</span></td>
                     <td><button className={iconButtonClass} data-component="mg-btn" type="button" onClick={() => onSelectReview(item.publicReviewId)} disabled={item.humanDecision !== null || item.status === "confirmed"} title={item.humanDecision !== null || item.status === "confirmed" ? "已确认" : "选择后确认"} aria-label={item.humanDecision !== null || item.status === "confirmed" ? "已确认" : "选择后确认"}><ReviewStatusIcon status={item.status} confirmed={item.humanDecision !== null} /></button></td>
                   </tr>
                 ))}
@@ -681,7 +690,7 @@ function GrowthView({ summary, onRetry }: { summary: LoadState<ReviewSummaryResp
       <PanelHeader icon={<BarChart3 size={19} aria-hidden="true" />} title="增长摘要" detail="仅呈现已汇总的数据" />
       {summary.status !== "ready" ? <ResourceState state={summary} resource="增长摘要" onRetry={onRetry} /> : (
         <>
-          <div className={styles.growthGrid}>
+          <div className={["mg-metric-grid", styles.growthGrid].join(" ")} data-component="mg-metric-grid">
             <Metric variant="panel" className={styles.growthMetric} label="复盘报告" value={formatCount(summary.data.summary.reviewCount)} />
             <Metric variant="panel" className={styles.growthMetric} label="24 小时待补" value={formatCount(summary.data.summary.pending24h)} />
             <Metric variant="panel" className={styles.growthMetric} label="7 天待补" value={formatCount(summary.data.summary.pending7d)} />
@@ -728,10 +737,10 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
       </div>
       <div className={styles.layerGrid}>
         <LayerPanel icon={<Database size={17} aria-hidden="true" />} title="数据层" caption="由指标快照提供">
-          <dl className={styles.factList}>
-            <div><dt>24h 快照</dt><dd>{valueOrUnknown(review.snapshot24h)}</dd></div>
-            <div><dt>7d 快照</dt><dd>{valueOrUnknown(review.snapshot7d)}</dd></div>
-            <div><dt>证据质量</dt><dd><QualityBadge value={review.evidenceQuality} /></dd></div>
+          <dl className="mg-facts">
+            <div className="mg-fact"><dt>24h 快照</dt><dd><SnapshotValue value={review.snapshot24h} /></dd></div>
+            <div className="mg-fact"><dt>7d 快照</dt><dd><SnapshotValue value={review.snapshot7d} /></dd></div>
+            <div className="mg-fact"><dt>证据质量</dt><dd><QualityBadge value={review.evidenceQuality} /></dd></div>
           </dl>
         </LayerPanel>
         <LayerPanel icon={<BarChart3 size={17} aria-hidden="true" />} title="模型输出" caption="不替代人工决策">
@@ -753,9 +762,15 @@ function MetricTable({ items }: { items: MetricSnapshot[] }) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
-        <thead><tr><th scope="col">主体</th><th scope="col">窗口</th><th scope="col">指标</th><th scope="col">数值</th><th scope="col">单位</th><th scope="col">证据质量</th><th scope="col">采集时间</th><th scope="col">快照</th></tr></thead>
+        {/* 8 列在 min-width:58rem 里曾经均分（每列 116px）：「采集时间」要装完整的
+            日期+时间（如「2026/9/1 20:00:00」）装不下，在空格处折成两行，撑高整行——
+            同一行里本来单行的「数值」列因此被判成了 3 行的假阳性（度量的是 <td>
+            自己的盒高，行内 padding 加上被邻居撑高的行高，除以行高会多算出一整行）。
+            给「采集时间」和存 ID 的「快照」显式让出更多宽度，其余短字段（窗口/指标/
+            单位/证据质量）平分剩下的部分，而不是继续均分掉。 */}
+        <thead><tr><th scope="col" style={{ width: "9.5%" }}>主体</th><th scope="col" style={{ width: "12%" }}>窗口</th><th scope="col" style={{ width: "9.5%" }}>指标</th><th scope="col" style={{ width: "9.5%" }}>数值</th><th scope="col" style={{ width: "9.5%" }}>单位</th><th scope="col" style={{ width: "12%" }}>证据质量</th><th scope="col" style={{ width: "22%" }}>采集时间</th><th scope="col" style={{ width: "16%" }}>快照</th></tr></thead>
         <tbody>
-          {items.map((item) => <tr key={item.publicSnapshotId}><th scope="row"><span className="mg-id" title={valueOrUnknown(item.publicSubjectId)}>{valueOrUnknown(item.publicSubjectId)}</span></th><td>{windowLabel(item.reviewWindow)}</td><td>{metricKeyLabel(item.metricKey)}</td><td>{numberValue(item.metricValue)}</td><td>{unitLabel(item.unit)}</td><td><QualityBadge value={item.evidenceQuality} /></td><td>{dateValue(item.collectedAt)}</td><td className={styles.codeValue}><span className="mg-id" title={valueOrUnknown(item.publicSnapshotId)}>{valueOrUnknown(item.publicSnapshotId)}</span></td></tr>)}
+          {items.map((item) => <tr key={item.publicSnapshotId}><th scope="row"><span className="mg-id" title={valueOrUnknown(item.publicSubjectId)}>{valueOrUnknown(item.publicSubjectId)}</span></th><td className={styles.metricShortValue} title={windowLabel(item.reviewWindow)}>{windowLabel(item.reviewWindow)}</td><td className={styles.metricShortValue} title={metricKeyLabel(item.metricKey)}>{metricKeyLabel(item.metricKey)}</td><td><span className="mg-id">{numberValue(item.metricValue)}</span></td><td className={styles.metricShortValue} title={unitLabel(item.unit)}>{unitLabel(item.unit)}</td><td><QualityBadge value={item.evidenceQuality} /></td><td>{dateValue(item.collectedAt)}</td><td className={styles.codeValue}><span className="mg-id" title={valueOrUnknown(item.publicSnapshotId)}>{valueOrUnknown(item.publicSnapshotId)}</span></td></tr>)}
         </tbody>
       </table>
     </div>
@@ -779,6 +794,16 @@ function EmptyState({ title, detail, action }: { title: string; detail: string; 
 
 function CursorFooter({ cursor, onNext }: { cursor: string | null; onNext: () => void }) {
   return cursor ? <div className={styles.cursorFooter}><span>还有更多记录</span><button className={secondaryButtonClass} data-component="mg-btn" type="button" onClick={onNext}><RefreshCw size={15} aria-hidden="true" />继续读取</button></div> : null;
+}
+
+/** snapshot24h/snapshot7d 是后端拼好的单个字符串（如「曝光 18422 · 互动 1124 ·
+ *  涨粉 213」），按 · 拆成独立短事实用 .mg-meta 排成一行、放不下再整段换行——
+ *  而不是任由这一整句话在检视栏里逐字断行，把数字和单位拆散。 */
+function SnapshotValue({ value }: { value: string | null }) {
+  const text = valueOrUnknown(value);
+  const parts = text.split("·").map((part) => part.trim()).filter(Boolean);
+  if (parts.length < 2) return <>{text}</>;
+  return <span className="mg-meta">{parts.map((part, index) => <span key={index}>{index > 0 ? `· ${part}` : part}</span>)}</span>;
 }
 
 function WindowMark({ label, value }: { label: string; value: string | null }) {

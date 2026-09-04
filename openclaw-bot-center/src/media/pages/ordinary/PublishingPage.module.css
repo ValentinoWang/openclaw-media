@@ -370,20 +370,6 @@ button.iconButton {
   font-size: var(--mg-text-md);
 }
 
-.factGrid,
-.contentGrid {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px 15px;
-  margin: 0;
-}
-
-.fact {
-  min-width: 0;
-}
-
-.fact dt,
 .fieldLabel,
 .field > span,
 .reasonField > span {
@@ -394,24 +380,13 @@ button.iconButton {
   line-height: 1.35;
 }
 
-/* 标识符走 .mg-id（单行省略）；同为 (0,1,1) 的 .fact dd 会盖掉它，这里显式让路。 */
-.fact dd:global(.mg-id) {
-  overflow: hidden;
-  overflow-wrap: normal;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  word-break: normal;
-}
-
-.fact dd {
-  min-width: 0;
-  margin: 0;
-  overflow-wrap: anywhere;
-  color: var(--mg-ink);
-  font-size: var(--mg-text-xs);
-  line-height: 1.5;
-}
-
+/* .fact 不再定义列数或标签/值排版——那些交给共享原语 .mg-facts / .mg-fact
+   （mediaPrimitives.css），同一段「事实」才能在 355px 的检视栏里自动退回
+   单列、在更宽的主面板里自动排成两列，而不是像这里曾经写死的两列那样把
+   「口袋里的秋天：X100VI 通勤实拍」压成两行。.fact 只留作选择器把手：
+   .mg-fact 的值槽塞进内嵌平台徽标时（inline-flex + min-width:0）不会自动
+   服从父级宽度，没有这条，徽标会在 overflow-x:hidden 的 .detailScroll 里
+   被直接裁掉，而不是省略号收尾。 */
 .fact dd > [data-platform-identity] {
   max-width: 100%;
 }
@@ -420,6 +395,7 @@ button.iconButton {
   margin-top: 14px;
 }
 
+/* 内容字段沿用 .mg-facts 的响应式列数，这里只保留视觉上的卡片边框。 */
 .contentGrid {
   padding: 10px;
   border: 1px solid var(--mg-border);
@@ -725,11 +701,6 @@ button.iconButton {
 @media (max-width: 900px) {
   .workspace {
     grid-template-columns: minmax(0, 1.38fr) minmax(280px, 1fr);
-  }
-
-  .factGrid,
-  .contentGrid {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 
