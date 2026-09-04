@@ -157,6 +157,21 @@ const relationshipQueues: Array<{ status: RelationshipQueueStatus; label: string
 
 const benchmarkRoles = ["标杆账号", "同赛道观察", "合作候选"] as const;
 
+/** 把一串「事实」节点用居中圆点连成一行，配合 .mg-meta 使用：短事实各自独占一整行
+ * 曾经是 /tracks 卡片密度低的主因，这里统一成一行、放不下再折行。 */
+function metaRow(items: ReactNode[]): ReactNode[] {
+  return items.flatMap((item, index) =>
+    index === 0
+      ? [item]
+      : [
+          <span key={`meta-sep-${index}`} className={styles.metaSeparator} aria-hidden="true">
+            ·
+          </span>,
+          item,
+        ],
+  );
+}
+
 function TracksPage() {
   const { runtimeState, session, tasks, openWorkspace } = useMediaWeb();
   const [activeTab, setActiveTab] = useState<TabId>("owned");
@@ -662,29 +677,28 @@ function TracksOverviewTab({
                   </StatusBadge>
                 </span>
                 <span className={styles.itemDescription} data-long-content>{track.description || "赛道定位未记录"}</span>
-                <span className={styles.layoutSummary}>
-                  <strong>自有账号 {trackAccounts.length}</strong>
-                  <span>对标账号 {benchmarkCount}</span>
-                </span>
-                <span className={styles.roleSummary}>
-                  {roleCounts.map(({ role, count }) => (
-                    <span key={role}>{role.replace("账号", "")} {count}</span>
-                  ))}
-                </span>
-                <span className={[styles.itemMeta, styles.itemMetaRow].join(" ")}>
-                  {track.platforms.length ? (
-                    <span className={styles.platformList} aria-label="适用平台">
-                      {track.platforms.map((platform, index) => (
-                        <PlatformIdentity
-                          key={`${platform}-${index}`}
-                          platform={platform}
-                          size="sm"
-                        />
-                      ))}
-                    </span>
-                  ) : <span>重点平台未记录</span>}
-                  <span className={styles.metaSeparator} aria-hidden="true">·</span>
-                  <span>{track.artifactCount} 个研究成果</span>
+                <span className="mg-meta" data-component="mg-meta">
+                  {metaRow([
+                    <span key="owned-accounts">自有账号 <b>{trackAccounts.length}</b></span>,
+                    <span key="benchmark-accounts">对标账号 <b>{benchmarkCount}</b></span>,
+                    ...roleCounts.map(({ role, count }) => (
+                      <span key={`role-${role}`}>{role.replace("账号", "")} <b>{count}</b></span>
+                    )),
+                    track.platforms.length ? (
+                      <span key="platforms" className={styles.platformList} aria-label="适用平台">
+                        {track.platforms.map((platform, index) => (
+                          <PlatformIdentity
+                            key={`${platform}-${index}`}
+                            platform={platform}
+                            size="sm"
+                          />
+                        ))}
+                      </span>
+                    ) : (
+                      <span key="platforms">重点平台未记录</span>
+                    ),
+                    <span key="artifacts">{track.artifactCount} 个研究成果</span>,
+                  ])}
                 </span>
               </button>
               );
@@ -1008,6 +1022,19 @@ function BenchmarkAccountItem({
     (current, relationship) => Math.max(current, relationship.fitScore),
     Number.NEGATIVE_INFINITY,
   );
+  const shownRelationships = relationships.slice(0, 3);
+  // 内容定位（expertiseDomains）和上面刚展示过的赛道名如果是同一个值，不要再显示一遍。
+  const shownTrackNames = new Set(
+    shownRelationships.map((relationship) => trackById.get(relationship.publicTrackId)?.name ?? "赛道待同步"),
+  );
+  const remainingDomains = creator?.expertiseDomains.filter((domain) => !shownTrackNames.has(domain)) ?? [];
+  const domainItems: ReactNode[] = !creator
+    ? [<span key="domains">档案待同步</span>]
+    : creator.expertiseDomains.length === 0
+      ? [<span key="domains">内容定位未记录</span>]
+      : remainingDomains.length > 0
+        ? [<span key="domains">{remainingDomains.join(" / ")}</span>]
+        : [];
 
   return (
     <button
@@ -1016,32 +1043,34 @@ function BenchmarkAccountItem({
       onClick={onSelect}
       aria-label={`查看${accountName}对标账号详情`}
     >
-      <span className={styles.relationshipIdentity}>
-        <span className={styles.identityMark} aria-hidden="true">{identityInitial}</span>
-        <span className={styles.identityCopy}>
-          <strong>{accountName}</strong>
-          <span className={styles.profilePlatformRow}>
-            <PlatformIdentity platform={creator?.platform} size="sm" />
-            <span className={styles.metaSeparator} aria-hidden="true">·</span>
-            <span>粉丝数未记录</span>
+      <span className={styles.benchmarkHead}>
+        <span className={styles.relationshipIdentity}>
+          <span className={styles.identityMark} aria-hidden="true">{identityInitial}</span>
+          <span className={styles.identityCopy}>
+            <strong>{accountName}</strong>
+            <span className={styles.profilePlatformRow}>
+              <PlatformIdentity platform={creator?.platform} size="sm" />
+              <span className={styles.metaSeparator} aria-hidden="true">·</span>
+              <span>粉丝数未记录</span>
+            </span>
           </span>
         </span>
+        <span className={styles.benchmarkLinkCount}>
+          {relationships.length} 个关联赛道
+          <ArrowRight size={14} aria-hidden="true" />
+        </span>
       </span>
-      <span className={styles.benchmarkRelations}>
-        {relationships.slice(0, 3).map((relationship) => (
-          <span key={relationship.publicRelationshipId}>
-            <strong>{trackById.get(relationship.publicTrackId)?.name ?? "赛道待同步"}</strong>
-            <StatusBadge tone="accent">{relationshipRoleDisplayLabel(relationship.role)}</StatusBadge>
-          </span>
-        ))}
-      </span>
-      <span className={styles.scoreRow}>
-        <span>{Number.isFinite(bestScore) ? `最高${formatFitScore(bestScore)}` : "匹配度未记录"}</span>
-        <span>{creator ? creator.expertiseDomains.join(" / ") || "内容定位未记录" : "档案待同步"}</span>
-      </span>
-      <span className={styles.itemFoot}>
-        {relationships.length} 个关联赛道
-        <ArrowRight size={14} aria-hidden="true" />
+      <span className="mg-meta" data-component="mg-meta">
+        {metaRow([
+          ...shownRelationships.map((relationship) => (
+            <span key={relationship.publicRelationshipId}>
+              <b>{trackById.get(relationship.publicTrackId)?.name ?? "赛道待同步"}</b>
+              <StatusBadge tone="accent">{relationshipRoleDisplayLabel(relationship.role)}</StatusBadge>
+            </span>
+          )),
+          <span key="score">{Number.isFinite(bestScore) ? `最高${formatFitScore(bestScore)}` : "匹配度未记录"}</span>,
+          ...domainItems,
+        ])}
       </span>
     </button>
   );

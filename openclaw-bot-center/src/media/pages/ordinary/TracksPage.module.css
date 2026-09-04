@@ -397,6 +397,11 @@
   gap: 12px;
 }
 
+/* 赛道概览卡片：徽标紧跟在赛道名后面，不要用 space-between 把它甩到卡片最右边。 */
+.overviewItem .itemHeadline {
+  justify-content: flex-start;
+}
+
 .accountIdentity {
   display: flex;
   min-width: 0;
@@ -498,39 +503,6 @@
   overflow: visible;
 }
 
-.layoutSummary,
-.roleSummary {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 7px 14px;
-  font-size: var(--mg-text-xs);
-  line-height: 1.45;
-}
-
-.layoutSummary {
-  color: var(--mg-ink);
-}
-
-.layoutSummary strong {
-  color: var(--mg-primary-dark);
-}
-
-.roleSummary {
-  color: var(--mg-muted);
-}
-
-.roleSummary span {
-  padding-right: 12px;
-  border-right: 1px solid var(--mg-border);
-}
-
-.roleSummary span:last-child {
-  padding-right: 0;
-  border-right: 0;
-}
-
 .relationshipList {
   max-height: 520px;
 }
@@ -556,36 +528,26 @@
   cursor: pointer;
 }
 
-.benchmarkItem .relationshipIdentity {
-  margin-top: 0;
-  padding-bottom: 10px;
-}
-
-.benchmarkRelations {
-  display: grid;
-  gap: 6px;
-}
-
-.benchmarkRelations > span {
+/* 对标账号卡片第一行：身份信息占满可伸缩宽度，关联赛道数固定在右侧，不单独占一行。 */
+.benchmarkHead {
   display: flex;
   min-width: 0;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--mg-border);
 }
 
-.benchmarkRelations strong {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: var(--mg-text-xs);
-  line-height: 1.4;
-}
-
-.benchmarkItem .itemFoot {
-  display: flex;
+.benchmarkLinkCount {
+  display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 4px;
+  color: var(--mg-primary-dark);
+  font-size: var(--mg-text-2xs);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .statusWarning {
@@ -603,27 +565,17 @@
   background: oklch(0.97 0.03 166);
 }
 
-.scoreRow,
 .relationshipIdentity {
   display: flex;
   min-width: 0;
+  flex: 1 1 auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
 }
 
-.relationshipIdentity > .identityCopy,
-.scoreRow > span {
+.relationshipIdentity > .identityCopy {
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-.relationshipIdentity {
-  justify-content: flex-start;
-  gap: 10px;
-  margin-top: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--mg-border);
 }
 
 .identityMark {
@@ -650,12 +602,6 @@
 .identityCopy strong {
   font-size: var(--mg-text-sm);
   line-height: 1.35;
-}
-
-.scoreRow {
-  margin-top: 9px;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-2xs);
 }
 
 .inspectorBody {
