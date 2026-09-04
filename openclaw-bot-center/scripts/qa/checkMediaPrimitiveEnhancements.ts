@@ -322,11 +322,21 @@ export function findMetricLayoutViolations(sourceText: string): readonly string[
       }
     })
   })
-  const gridRule = /\.mg-metric-grid\s*\{([^}]*)\}/.exec(sourceText)?.[1]
-  if (gridRule === undefined) {
-    violations.push('找不到 .mg-metric-grid 规则，解析逻辑需要更新')
-  } else if (!/repeat\(\s*auto-(?:fit|fill)/.test(gridRule)) {
-    violations.push('.mg-metric-grid 必须用 repeat(auto-fit/auto-fill, minmax(...))：按容器自适应，窄容器里才不会把卡片压扁')
+  // 三个「列数由容器决定」的网格原语共用同一条判据：写死列数的那一刻，它在窄栏里
+  // 挤压、在宽面板里稀疏就成了必然，页面只能各自再补一套断点。
+  for (const name of ['.mg-metric-grid', '.mg-facts'] as const) {
+    const rule = new RegExp(`\\${name}\\s*\\{([^}]*)\\}`).exec(sourceText)?.[1]
+    if (rule === undefined) {
+      violations.push(`找不到 ${name} 规则，解析逻辑需要更新`)
+    } else if (!/repeat\(\s*auto-(?:fit|fill)/.test(rule)) {
+      violations.push(`${name} 必须用 repeat(auto-fit/auto-fill, minmax(...))：按容器自适应，窄容器里才不会把内容挤压、宽容器里才不会留大片空白`)
+    }
+  }
+  const metaRule = /\.mg-meta\s*\{([^}]*)\}/.exec(sourceText)?.[1]
+  if (metaRule === undefined) {
+    violations.push('找不到 .mg-meta 规则，解析逻辑需要更新')
+  } else if (!/flex-wrap:\s*wrap/.test(metaRule)) {
+    violations.push('.mg-meta 必须能折行（flex-wrap: wrap）：它的用处就是让一串短事实排成一行、放不下再折，写死不折行就会在窄栏里溢出')
   }
   return violations
 }
@@ -599,17 +609,29 @@ function runSelfTest(): void {
   }
   if (findUnsupportedFontWeights('@font-face { font-weight: 100 900; } .title { font-weight: 700; }').length) {
     throw new Error('media primitive enhancement self-test failed: variable range or canonical font weight was rejected')
-
-  // 指标卡布局契约的自测：命名区域与固定列数都必须被抓到。
-  if (findMetricLayoutViolations('.mg-metric-grid { grid-template-columns: repeat(auto-fit, minmax(184px, 1fr)); }\n.mg-metric-icon { display: grid; }').length) {
-    throw new Error('media primitive enhancement self-test failed: 合规的指标布局被判为违规')
   }
-  if (!findMetricLayoutViolations('.mg-metric-grid { grid-template-columns: repeat(auto-fit, minmax(184px, 1fr)); }\n.mg-metric-icon { grid-area: icon; }').some((line) => line.includes('grid-area'))) {
+
+  // 容器自适应契约的自测。这三条曾经被错误地嵌在上面那个 if 的花括号里，
+  // 等于从来没跑过——自测本身也要能被自测发现。
+  const compliantPrimitives = [
+    '.mg-metric-grid { grid-template-columns: repeat(auto-fit, minmax(184px, 1fr)); }',
+    '.mg-facts { grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); }',
+    '.mg-meta { display: flex; flex-wrap: wrap; }',
+  ].join('\n')
+  if (findMetricLayoutViolations(`${compliantPrimitives}\n.mg-metric-icon { display: grid; }`).length) {
+    throw new Error('media primitive enhancement self-test failed: 合规的容器自适应布局被判为违规')
+  }
+  if (!findMetricLayoutViolations(`${compliantPrimitives}\n.mg-metric-icon { grid-area: icon; }`).some((line) => line.includes('grid-area'))) {
     throw new Error('media primitive enhancement self-test failed: 命名网格区域没有被抓到')
   }
-  if (!findMetricLayoutViolations('.mg-metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }').some((line) => line.includes('auto-fit'))) {
+  if (!findMetricLayoutViolations(compliantPrimitives.replace('repeat(auto-fit, minmax(184px, 1fr))', 'repeat(4, minmax(0, 1fr))')).some((line) => line.includes('.mg-metric-grid'))) {
     throw new Error('media primitive enhancement self-test failed: 固定列数的指标网格没有被抓到')
   }
+  if (!findMetricLayoutViolations(compliantPrimitives.replace('repeat(auto-fit, minmax(232px, 1fr))', 'repeat(2, minmax(0, 1fr))')).some((line) => line.includes('.mg-facts'))) {
+    throw new Error('media primitive enhancement self-test failed: 固定列数的事实网格没有被抓到')
+  }
+  if (!findMetricLayoutViolations(compliantPrimitives.replace('flex-wrap: wrap;', '')).some((line) => line.includes('.mg-meta'))) {
+    throw new Error('media primitive enhancement self-test failed: 不折行的计数行没有被抓到')
   }
   if (!findUnsupportedFontWeights(String.raw`.title { font\2d weight: 850; }`).length) {
     throw new Error('media primitive enhancement self-test failed: escaped font-weight was accepted')

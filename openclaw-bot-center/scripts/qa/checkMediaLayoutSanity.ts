@@ -32,6 +32,12 @@ const demoBase = (() => {
 })()
 /** 逐个宽度都要体检：窄列的破相在宽视口下同样存在，反过来也一样。 */
 const WIDTHS = [1440, 1180, 900, 430] as const
+/** 迭代时可以只体检几条路由：MEDIA_LAYOUT_QA_ROUTES=/tracks,/publishing。
+ *  留空就是全站（CI 与 build:demo 走的都是全站）。 */
+const routeFilter = (process.env.MEDIA_LAYOUT_QA_ROUTES ?? '')
+  .split(',')
+  .map((entry) => entry.trim())
+  .filter(Boolean)
 
 if (!existsSync(distDemoRoot)) {
   throw new Error('dist-demo 不存在，请先运行 npm run build:demo')
@@ -143,6 +149,68 @@ const COLLECT_DEFECTS = `(() => {
       defects.push('大字号折行：' + describe(leaf.element, leaf.text) + ' 字号 ' + Math.round(leaf.fontSize) + 'px 折成了 ' + lines + ' 行，值槽不该用展示级字号')
     }
   }
+  // 第五类：多列挤压。容器把列数写死，窄容器里每列只剩百十来像素，值被挤成好几行。
+  // 判据故意收紧成「**每一列**都窄」：图标 + 正文这种 44px + 1fr 的网格里也有窄列，
+  // 但那是设计意图，不是挤压。
+  for (const grid of root.querySelectorAll('*')) {
+    const gridStyle = getComputedStyle(grid)
+    if (gridStyle.display !== 'grid' && gridStyle.display !== 'inline-grid') continue
+    const tracks = gridStyle.gridTemplateColumns.split(' ').map(Number).filter((n) => Number.isFinite(n))
+    if (tracks.length < 2 || Math.max(...tracks) >= 200) continue
+    let worst = null
+    for (const leaf of textLeaves) {
+      if (leaf.element === grid || !grid.contains(leaf.element)) continue
+      if (/^H[1-6]$/.test(leaf.element.tagName)) continue
+      const lines = Math.round(leaf.rect.height / leaf.lineHeight)
+      if (lines >= 2 && leaf.rect.width < 200 && (!worst || lines > worst.lines)) worst = { leaf: leaf, lines: lines }
+    }
+    if (worst) {
+      defects.push('多列挤压：' + describe(grid, (grid.textContent || '').trim()) + ' 排了 ' + tracks.length + ' 列、最宽一列也只有 ' + Math.round(Math.max(...tracks)) + 'px，' + describe(worst.leaf.element, worst.leaf.text) + ' 被挤成 ' + worst.lines + ' 行；列数应由容器决定（auto-fit + minmax），窄容器要能退回单列')
+    }
+  }
+
+  // 第六类：低信息密度。宽卡片里若干短内容各自独占一行，右边留下大片空白。
+  // 只看重复出现的列表项（同一父级下至少两个同类兄弟），避免误伤 hero、面板头这些
+  // 本来就该留白的地方。
+  // 量的是**字本身**占多宽，不是承载它的盒子占多宽：一个块级元素里直接躺着一行短
+  // 文字时，盒子铺满整行，字却只有一小截——按盒子算就永远看不出稀疏。用 Range 量
+  // 文本节点的实际字形框，再把图标/头像这类非文字内容按元素宽度补上。
+  const inkRange = document.createRange()
+  const inkWidth = (element) => {
+    let ink = 0
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!(node.textContent || '').trim()) continue
+      inkRange.selectNodeContents(node)
+      for (const rect of inkRange.getClientRects()) ink += rect.width
+    }
+    for (const media of element.querySelectorAll('img, svg, canvas')) ink += media.getBoundingClientRect().width
+    return ink
+  }
+  const firstClass = (element) =>
+    typeof element.className === 'string' && element.className.trim() ? element.className.trim().split(/\s+/)[0] : ''
+  for (const card of root.querySelectorAll('*')) {
+    const own = firstClass(card)
+    if (!own || !card.parentElement) continue
+    const siblings = [...card.parentElement.children].filter((sibling) => firstClass(sibling) === own)
+    if (siblings.length < 2) continue
+    const cardRect = card.getBoundingClientRect()
+    if (cardRect.width < 480) continue
+    const rows = [...card.children].filter((child) => child.nodeType === Node.ELEMENT_NODE)
+    if (rows.length < 3) continue
+    let sparse = 0
+    for (const row of rows) {
+      const rowRect = row.getBoundingClientRect()
+      if (rowRect.height > 40 || rowRect.width < cardRect.width * 0.8) continue
+      // 完全没有文字的行（进度条、分隔线、缩略图带）本来就该铺满整行，不算稀疏。
+      const ink = inkWidth(row)
+      if (ink > 0 && ink < rowRect.width * 0.45) sparse += 1
+    }
+    if (sparse >= 3) {
+      defects.push('低信息密度：' + describe(card, (card.textContent || '').trim()) + ' 宽 ' + Math.round(cardRect.width) + 'px，其中 ' + sparse + ' 行短内容各自独占一整行、文字占不到四成宽；短事实应排成一行（.mg-meta）而不是一条一行')
+    }
+  }
+
   // 第四类：视口高度契约算得对不对。契约把主工作区钉成
   // 100dvh - 顶栏 - 内容壳上下内边距；量的是**主工作区自己的底边**，加上内容壳
   // 的下内边距应当正好落在视口底边。这样只对「常量和实际内边距对不上」敏感，
@@ -172,6 +240,50 @@ async function settle(page: Page): Promise<void> {
   }
 }
 
+/** 逐个交互状态体检，而不是只看首屏。
+ *
+ *  破相往往藏在**默认看不到的那一屏**：/tracks 的「赛道概览」和「对标账号」是
+ *  另外两个标签页，/publishing 的详情要先选中一个发布包才会有内容。只量首屏的
+ *  门禁会把这些页面判成绿的——用户看到的却正是那几屏。
+ *
+ *  切换开销压得很低：标签页切换是纯客户端的，等一小会儿即可，不必再走一遍
+ *  settle() 的 DOM 收敛循环。 */
+async function sweep(page: Page): Promise<Array<[string, string[]]>> {
+  const results: Array<[string, string[]]> = [['', (await page.evaluate(COLLECT_DEFECTS)) as string[]]]
+
+  // 先把标签名抄下来再逐个点：切换标签会换掉整组标签（次级筛选标签只在某一个
+  // 主标签下存在），按下标去点第二轮就会指向一个已经不存在的元素。
+  const labels = [
+    ...new Set(
+      (await page.locator('[role="tab"]').allTextContents())
+        .map((text) => text.trim())
+        .filter(Boolean),
+    ),
+  ].slice(0, 8)
+  for (const label of labels) {
+    const tab = page.getByRole('tab', { name: label, exact: true }).first()
+    if ((await tab.count()) === 0) continue
+    const selected = await tab.getAttribute('aria-selected').catch(() => null)
+    if (selected === 'true') continue
+    const switched = await tab.click({ timeout: 3_000 }).then(() => true).catch(() => false)
+    if (!switched) continue
+    await page.waitForTimeout(500)
+    results.push([label.slice(0, 12), (await page.evaluate(COLLECT_DEFECTS)) as string[]])
+  }
+
+  // 主栏 + 检视栏的页面：不选中任何一条时检视栏只有空状态，真正的排版在选中之后。
+  const firstRow = page.locator('[data-page-primary] button, [data-page-primary] tr[tabindex]').first()
+  if ((await page.locator('[data-page-inspector]').count()) > 0 && (await firstRow.count()) > 0) {
+    const opened = await firstRow.click({ timeout: 3_000 }).then(() => true).catch(() => false)
+    if (opened) {
+      await page.waitForTimeout(700)
+      results.push(['选中首条', (await page.evaluate(COLLECT_DEFECTS)) as string[]])
+    }
+  }
+
+  return results
+}
+
 async function run(): Promise<void> {
   await new Promise<void>((done) => server.listen(0, '127.0.0.1', done))
   const address = server.address()
@@ -191,6 +303,7 @@ async function run(): Promise<void> {
         }, persona.id)
         const page: Page = await context.newPage()
         for (const route of group.routes) {
+          if (routeFilter.length && !routeFilter.includes(route.path)) continue
           const url = `${origin}${demoBase}${route.path.replace(/^\//, '')}`
           // 首屏偶发起不来（构建产物刚落盘、浏览器冷启动），重试一次再判定：
           // 会抖的门禁比没有门禁更糟——它会教人忽略红灯。
@@ -204,9 +317,11 @@ async function run(): Promise<void> {
             continue
           }
           await settle(page)
-          const defects = (await page.evaluate(COLLECT_DEFECTS)) as string[]
-          checked += 1
-          for (const defect of defects) failures.push(`${route.path} @${width}px（${persona.label}）：${defect}`)
+          for (const [state, defects] of await sweep(page)) {
+            checked += 1
+            const where = state ? `${route.path}〔${state}〕` : route.path
+            for (const defect of defects) failures.push(`${where} @${width}px（${persona.label}）：${defect}`)
+          }
         }
         await context.close()
       }
@@ -220,7 +335,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面渲染 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、视口高度契约无偏差`)
+  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、视口高度契约无偏差`)
 }
 
 await run()

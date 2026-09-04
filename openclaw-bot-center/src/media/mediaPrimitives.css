@@ -219,6 +219,66 @@
   word-break: normal;
 }
 
+/* ---- 事实网格（标签 + 值）----
+   列数由容器宽度决定，不由页面写死。同一段「事实」既会出现在 350px 的检视栏里，
+   也会出现在 700px 的主面板里：写死两列，窄的一边把「口袋里的秋天：X100VI 通勤
+   实拍」挤成两行、宽的一边又留下大片空白。minmax 的下限按「一条事实的值至少要
+   多宽才不难看」来定，窄容器自动退回单列。
+   需要更紧凑或更宽松的下限时，在容器上改 --mg-facts-min，不要另写一套网格。 */
+.mg-facts {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(var(--mg-facts-min, 232px), 1fr));
+  gap: var(--mg-gap-1) var(--mg-gap-2);
+  margin: 0;
+}
+.mg-fact { min-width: 0; margin: 0; }
+.mg-fact > :first-child {
+  display: block;
+  margin: 0 0 2px;
+  color: var(--mg-muted);
+  font-size: var(--mg-text-2xs);
+  font-weight: 600;
+}
+.mg-fact > :last-child {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  color: var(--mg-ink);
+  font-size: var(--mg-text-xs);
+  line-height: var(--mg-lh-snug);
+}
+
+/* ---- 计数行 ----
+   一串短事实（各种「N 个」）排成一行、放不下再折行，而不是一条独占一行。
+   宽卡片里「一条一行」是稀疏的主要来源：/tracks 的赛道卡曾经用五行去装五个数字，
+   每行只用掉三成宽度，一屏只剩三张卡。 */
+.mg-meta {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  align-items: baseline;
+  column-gap: var(--mg-gap-2);
+  row-gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--mg-muted);
+  font-size: var(--mg-text-2xs);
+}
+.mg-meta > * {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 4px;
+}
+.mg-meta b,
+.mg-meta strong {
+  color: var(--mg-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
 /* ---- 面板（原 12 份 panelHeader -> 1 份）---- */
 .mg-panel {
   overflow: hidden;
