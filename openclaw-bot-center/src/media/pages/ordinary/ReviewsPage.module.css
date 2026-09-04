@@ -110,6 +110,13 @@
   grid-template-columns: 1fr;
 }
 
+/* 四条事实的标签长短不一（「24h 快照」比「7d 快照」宽 8px），值的起点就参差。
+   给标签一个下限宽度把它们对齐成一列；标签比下限长时仍然自己撑开，窄容器里
+   值放不下会照常换到下一行——不是写死列宽。 */
+.layers :global(.mg-facts) {
+  --mg-fact-label: 4.9em;
+}
+
 .summaryBand {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -548,6 +555,30 @@
 
 .layersMeta > span {
   min-width: 0;
+}
+
+/* 「标签 + 编号」作为一个整体参与折行：编号放不下时整块换行，标签跟着走，
+   不会出现「标签留在上一行、值掉到下一行」的孤儿。 */
+.metaItem {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  align-items: baseline;
+  column-gap: 0.28rem;
+}
+
+.metaItem > small {
+  flex: 0 0 auto;
+  color: var(--reviews-muted);
+  font-size: var(--mg-text-2xs);
+  font-weight: 600;
+}
+
+.metaItem > .mg-id,
+.metaItem > span {
+  min-width: 0;
+  color: var(--reviews-ink);
+  font-weight: 600;
 }
 
 .layerGrid {

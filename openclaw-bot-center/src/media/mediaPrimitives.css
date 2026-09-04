@@ -259,6 +259,10 @@
 }
 .mg-fact > :first-child {
   flex: 0 0 auto;
+  /* 一组事实并排时，标签长短不一会让值的起点参差（/reviews 检视栏里
+     「7d 快照」比「24h 快照」窄 8px，值就往左突出 8px）。容器设一个下限宽度
+     即可把标签对齐成一列；比下限长的标签仍然自己撑开，不是写死列宽。 */
+  min-width: var(--mg-fact-label, 0);
   margin: 0;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);

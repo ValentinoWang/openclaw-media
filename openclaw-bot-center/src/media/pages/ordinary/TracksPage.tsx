@@ -158,18 +158,22 @@ const relationshipQueues: Array<{ status: RelationshipQueueStatus; label: string
 const benchmarkRoles = ["标杆账号", "同赛道观察", "合作候选"] as const;
 
 /** 把一串「事实」节点用居中圆点连成一行，配合 .mg-meta 使用：短事实各自独占一整行
- * 曾经是 /tracks 卡片密度低的主因，这里统一成一行、放不下再折行。 */
+ * 曾经是 /tracks 卡片密度低的主因，这里统一成一行、放不下再折行。
+ *
+ * 圆点必须和**它右边**那个事实包在同一个 flex 子项里。圆点是「下一项的引导」，
+ * 单独作为一个子项时，一折行它就留在上一行行尾（「小红书 ·」/「更新于 3 天前」），
+ * 读起来变成左边那个的后缀，右边那个成了没有分隔的孤儿。 */
 function metaRow(items: ReactNode[]): ReactNode[] {
-  return items.flatMap((item, index) =>
-    index === 0
-      ? [item]
-      : [
-          <span key={`meta-sep-${index}`} className={styles.metaSeparator} aria-hidden="true">
-            ·
-          </span>,
-          item,
-        ],
-  );
+  return items.map((item, index) => (
+    <span key={`meta-cell-${index}`} className={styles.metaCell}>
+      {index === 0 ? null : (
+        <span className={styles.metaSeparator} aria-hidden="true">
+          ·
+        </span>
+      )}
+      {item}
+    </span>
+  ));
 }
 
 function TracksPage() {
@@ -1047,8 +1051,10 @@ function BenchmarkAccountItem({
             <strong>{accountName}</strong>
             <span className={styles.profilePlatformRow}>
               <PlatformIdentity platform={creator?.platform} size="sm" />
-              <span className={styles.metaSeparator} aria-hidden="true">·</span>
-              <span>粉丝数未记录</span>
+              <span className={styles.metaCell}>
+                <span className={styles.metaSeparator} aria-hidden="true">·</span>
+                <span>粉丝数未记录</span>
+              </span>
             </span>
           </span>
         </span>
@@ -1136,9 +1142,11 @@ function BenchmarkInspector({
                 <strong>{creator.accountName}</strong>
                 <div className={styles.profilePlatformRow}>
                   <PlatformIdentity platform={creator.platform} size="sm" />
-                  <span className={styles.metaSeparator} aria-hidden="true">·</span>
-                  <span className={styles.profileRoleLabel}>
-                    {creatorRoleDisplayLabel(creator.creatorRole)}
+                  <span className={styles.metaCell}>
+                    <span className={styles.metaSeparator} aria-hidden="true">·</span>
+                    <span className={styles.profileRoleLabel}>
+                      {creatorRoleDisplayLabel(creator.creatorRole)}
+                    </span>
                   </span>
                 </div>
               </div>

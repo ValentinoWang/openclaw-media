@@ -271,6 +271,82 @@ const COLLECT_DEFECTS = `(() => {
     }
   }
 
+  // 第八类：分隔符被甩在行尾。一串短事实用居中圆点连成一行时，圆点是**下一项的
+  // 引导**；它一旦成为某一行最右边的一点墨，读出来就变成了左边那项的后缀，右边那项
+  // 也失去了分隔（/tracks 的「小红书 ·」/「更新于 3 天前」）。修法是把圆点和它右边
+  // 那项包进同一个 flex 子项，让它们一起折行。
+  //
+  // 判据量的是**字形**不是元素：找出分隔符那一个字的行盒，再看同一行里它右边还有没有
+  // 别的墨。这样「圆点和自己那项一起换行」（正确写法）不会被误判——那时圆点右边永远
+  // 还有自己那项的字。行的范围限定在承载行盒的那个祖先里，避免把并排另一栏的文字
+  // 算成「同一行」。
+  //
+  // 破折号（— –）不在判定范围内：区间「2026/8/28 — 2026/9/22」按排版惯例本来就在
+  // 破折号之后折行，行尾那一横是「还没完」的信号，不是被甩下的分隔符。已经实截图
+  // 核对过 /business 的「有效期」两行，读起来是对的。
+  const separatorRange = document.createRange()
+  const seenSeparators = new Set()
+  const inkOn = (container) => {
+    const rects = []
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!(node.textContent || '').trim()) continue
+      separatorRange.selectNodeContents(node)
+      for (const rect of separatorRange.getClientRects()) {
+        if (rect.width <= 0.5 || rect.height <= 0.5) continue
+        rects.push(rect)
+      }
+    }
+    return rects
+  }
+  const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  for (let node = textWalker.nextNode(); node; node = textWalker.nextNode()) {
+    const raw = node.textContent || ''
+    if (!/[·•|／]/.test(raw)) continue
+    const owner = node.parentElement
+    if (!owner) continue
+    const ownerStyle = getComputedStyle(owner)
+    if (ownerStyle.visibility === 'hidden' || ownerStyle.opacity === '0') continue
+    // 承载行盒的是**祖先**，不是分隔符自己那个元素：flex 子项会被块化，所以不能靠
+    // display 是不是 inline 来判断。往上找第一个「自己身上不止一处墨」的祖先——
+    // 那正是这一行的排布容器；再往上就会把并排另一栏的文字算进同一行。
+    let flow = owner
+    let flowInk = []
+    for (let hop = 0; hop < 6; hop += 1) {
+      if (!flow.parentElement) break
+      flow = flow.parentElement
+      flowInk = inkOn(flow)
+      if (flowInk.length >= 2) break
+    }
+    if (flowInk.length < 2) continue
+    for (let index = 0; index < raw.length; index += 1) {
+      if (!/[·•|／]/.test(raw[index])) continue
+      separatorRange.setStart(node, index)
+      separatorRange.setEnd(node, index + 1)
+      const glyph = separatorRange.getBoundingClientRect()
+      if (glyph.width <= 0.5 || glyph.height <= 0.5) continue
+      const middle = (glyph.top + glyph.bottom) / 2
+      let inkToTheRight = false
+      let lineCount = 0
+      for (const rect of flowInk) {
+        if (rect.top > middle || rect.bottom < middle) continue
+        lineCount += 1
+        if (rect.right > glyph.right + 0.5) { inkToTheRight = true; break }
+      }
+      // 整个容器只有一行时，行尾的分隔符是内容本身末尾多了一个符号，不是折行造成的。
+      if (inkToTheRight || lineCount === 0) continue
+      let wrapped = false
+      for (const rect of flowInk) { if (rect.top > glyph.bottom - 1) { wrapped = true; break } }
+      if (!wrapped) continue
+      const key = describe(owner, raw.trim())
+      if (seenSeparators.has(key)) break
+      seenSeparators.add(key)
+      defects.push('分隔符被甩在行尾：' + key + ' 里的「' + raw[index] + '」成了这一行最右边的一点墨，' +
+        '它引导的是右边那一项，折行后却留在了上一行末尾，读起来变成左边那项的后缀；把分隔符和它右边那一项包进同一个 flex 子项，让它们一起折行')
+      break
+    }
+  }
+
   // 第七类：面板底部空转。面板的高度来自视口高度契约（被拉满一列），内容却只填了
   // 上半截——剩下的一大片不是页面留白，是**一块画了边框、铺了底色的空盒子**，看上去
   // 像加载失败。/reviews 的「复盘检查器」就是这样：把三个小节头压紧之后，内容少了
@@ -605,7 +681,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、视口高度契约无偏差、无永久裁切、无多列挤压、无低信息密度、无面板底部空转、无徽标被拉变形，长列表压力下无内容被吞`)
+  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无多列挤压、无低信息密度、无面板底部空转、无徽标被拉变形，长列表压力下无内容被吞`)
 }
 
 await run()

@@ -463,6 +463,15 @@
   flex: 0 0 auto;
 }
 
+/* 「圆点 + 事实」一个整体参与折行。column-gap 继承父级，这样圆点两侧的间距
+   和原来（圆点自己是一个 flex 子项时）一致。 */
+.metaCell {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  column-gap: inherit;
+}
+
 .itemDescription {
   max-height: 82px;
   min-width: 0;

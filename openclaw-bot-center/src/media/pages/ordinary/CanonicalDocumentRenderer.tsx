@@ -204,7 +204,7 @@ function renderDocumentBlock(block: DocumentBlock): ReactNode {
       return <div className={`${styles.attachment} mg-panel`} data-component="mg-panel" data-accent="studio" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}><FileText size={17} aria-hidden="true" /><div><strong>{block.attrs.fileName}</strong><span>{resourceTypeLabel(block.attrs.contentType)}</span></div>{href ? <a href={href} target="_blank" rel="noreferrer" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}>打开附件</a> : null}</div>;
     }
     case "data_snapshot":
-      return <aside className={`${styles.snapshot} mg-panel`} data-component="mg-panel" data-accent="archive" data-protected="true"><span className="mg-badge" data-component="mg-badge" data-tone="info">受保护数据快照</span><dl>{Object.entries(block.attrs.displayFields).map(([key, value]) => <div key={key}><dt>{snapshotFieldLabel(key)}</dt><dd>{formatSnapshotValue(key, value)}</dd></div>)}</dl><small>{semanticPurposeLabel(block.attrs.semanticPurpose)} · 对象 {block.attrs.publicObjectId} · 来源修订 {block.attrs.sourceRevision} · {formatTimestamp(block.attrs.capturedAt)}</small></aside>;
+      return <aside className={`${styles.snapshot} mg-panel`} data-component="mg-panel" data-accent="archive" data-protected="true"><span className="mg-badge" data-component="mg-badge" data-tone="info">受保护数据快照</span><dl>{Object.entries(block.attrs.displayFields).map(([key, value]) => <div key={key}><dt>{snapshotFieldLabel(key)}</dt><dd>{formatSnapshotValue(key, value)}</dd></div>)}</dl><small>{semanticPurposeLabel(block.attrs.semanticPurpose)} ·&nbsp;对象 {block.attrs.publicObjectId} ·&nbsp;来源修订 {block.attrs.sourceRevision} ·&nbsp;{formatTimestamp(block.attrs.capturedAt)}</small></aside>;
   }
 }
 
@@ -272,6 +272,10 @@ function codeLanguageLabel(value: string | null): string {
     ?? (isSnakeCaseIdentifier(value) ? "代码语言待确认" : value);
 }
 
+/* 这一行的圆点后面跟的是不换行空格：圆点是「下一项的引导」，纯内联文本里没有
+   flex 子项可以把它和右边那项捆在一起，只能靠 U+00A0 禁掉圆点后面那个断点。
+   否则 430px 下它会留在上一行行尾，读成左边那项的后缀
+   （qa:media-layout-sanity 的「分隔符被甩在行尾」）。 */
 function snapshotFieldLabel(value: string): string {
   const label = SNAPSHOT_FIELD_LABELS[value] ?? DOCUMENT_WIRE_VALUE_LABELS[value];
   return label ?? "数据项";

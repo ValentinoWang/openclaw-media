@@ -293,7 +293,7 @@ function ProductShell() {
           <div className="studio-workspace-card">
             <span>当前工作区</span>
             <strong>Creator Studio</strong>
-            <small><i />真实项目 · 可编辑活稿</small>
+            <small><i />真实项目 <span>·&nbsp;可编辑活稿</span></small>
           </div>
         ) : null}
 

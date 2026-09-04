@@ -726,10 +726,20 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
       <div className={styles.layersHeader}>
         <div className={styles.layersHeading}>
           <h2>{reviewPostTitle(review)}</h2>
+          {/* 原来是「作品编号 · 报告 报告编号」一句连续的话，靠一个「· 报告」把两个
+              编号串起来。两个编号各 175px 左右，任何一档宽度下都放不进检视栏的一行，
+              于是「· 报告」永远留在上一行行尾、报告编号掉到下一行——读出来变成
+              「post_xhs_autumn_camera 是报告」，第二行成了一串没有标签的孤儿编号。
+              改成两个自带标签的整体：折行时标签跟着自己的值一起走。 */}
           <p className={styles.layersMeta}>
-            <span className={`${styles.postId} mg-id`} title={review.publicPostId}>{review.publicPostId}</span>
-            <span>· 报告</span>
-            <span className="mg-id" title={review.publicReviewId}>{review.publicReviewId}</span>
+            <span className={styles.metaItem}>
+              <small>作品</small>
+              <span className="mg-id" title={review.publicPostId}>{review.publicPostId}</span>
+            </span>
+            <span className={styles.metaItem}>
+              <small>报告</small>
+              <span className="mg-id" title={review.publicReviewId}>{review.publicReviewId}</span>
+            </span>
           </p>
         </div>
         {onConfirm ? <button className={primaryButtonClass} data-component="mg-btn" type="button" onClick={onConfirm} disabled={review.humanDecision !== null || review.status === "confirmed"}><CheckCircle2 size={15} aria-hidden="true" />{review.humanDecision === null ? "确认人工决策" : "已完成确认"}</button> : null}
@@ -747,11 +757,12 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
           <p className={styles.layerValue}>{valueOrUnknown(review.modelSuggestion, "未生成")}</p>
         </LayerPanel>
       </div>
-      {/* 三个小节原本各自一行的出处说明（由指标快照提供 / 不替代人工决策 / 由确认
-          操作写入）合并成一句话放在这里：一次性交代完，而不是逐条重复；常驻可见，
-          不依赖 hover 才能看到的 title 提示——"模型输出不替代人工决策"这类提醒,
-          放进只有指针悬停才出现的 tooltip 里,在触屏上等于说了等于没说。 */}
-      <p className={styles.layersFootnote}>数据层由指标快照提供，模型输出不替代人工决策，人工决策由确认操作写入。</p>
+      {/* 三个小节原本各自一行的出处说明合并到这里之后，只剩下这一句是真正的告诫：
+          另外两句（「数据层由指标快照提供」「人工决策由确认操作写入」）旁边就分别写着
+          「24h 快照 / 7d 快照」和「确认人工决策」按钮，是复述；而且「人工决策」已经
+          降级成数据层里的一条事实行，再说「小节由确认操作写入」指的结构已经不存在了。
+          常驻可见而不是放进 title：hover 才出现的提醒在触屏上等于没写。 */}
+      <p className={styles.layersFootnote}>模型输出是建议，不替代人工决策。</p>
     </section>
   );
 }
