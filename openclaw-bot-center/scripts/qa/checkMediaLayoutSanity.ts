@@ -176,6 +176,11 @@ const COLLECT_DEFECTS = `(() => {
     // 控件（按钮、标签页）自己有一套排布逻辑，图标 + 文字 + 计数挤在几十像素里是
     // 它们的常态，不是「事实网格被写死列数」这回事。只看内容容器。
     if (grid.closest('button, [role="tab"], [role="tablist"]')) continue
+    // 共享原语（.mg-metric-grid / .mg-facts / .mg-metric）本来就是按容器算列数的，
+    // 这条判定的建议正是「改用它们」——再去指着它们说「列数应由容器决定」没有意义。
+    // 它们真要出问题也是另一回事（minmax 的下限定得太小），那是一次设计判断，
+    // 不该由这条判定来替人做主。
+    if (grid.closest('.mg-metric-grid, .mg-facts, .mg-metric')) continue
     const gridStyle = getComputedStyle(grid)
     if (gridStyle.display !== 'grid' && gridStyle.display !== 'inline-grid') continue
     // 解析出来的是「179px 179px」这类字符串：Number('179px') 是 NaN，只能 parseFloat。
