@@ -169,6 +169,25 @@ const COLLECT_DEFECTS = `(() => {
       defects.push('大字号折行：' + describe(leaf.element, leaf.text) + ' 字号 ' + Math.round(leaf.fontSize) + 'px 折成了 ' + lines + ' 行，值槽不该用展示级字号')
     }
   }
+  // 第五类：被永久裁掉的内容。祖先把它裁掉了，而且没有任何一层能滚出来——
+  // 用户没有任何办法看到这段文字。这一类本次已经真实发生过两回：/overview 的
+  // Media Agent 面板有 377px 内容被固定高度的网格裁掉且滚动条根本不出现，
+  // /usage-billing 在 900px 下指标带被裁。滚出可视区（祖先能滚）不算，
+  // display:none / visibility:hidden 前面已经排除。
+  for (const leaf of textLeaves) {
+    if (leaf.clipped.right - leaf.clipped.left > 1 && leaf.clipped.bottom - leaf.clipped.top > 1) continue
+    let reachable = false
+    for (let parent = leaf.element.parentElement; parent && !reachable; parent = parent.parentElement) {
+      const parentStyle = getComputedStyle(parent)
+      const scrollsY = (parentStyle.overflowY === 'auto' || parentStyle.overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight + 1
+      const scrollsX = (parentStyle.overflowX === 'auto' || parentStyle.overflowX === 'scroll') && parent.scrollWidth > parent.clientWidth + 1
+      if (scrollsY || scrollsX) reachable = true
+    }
+    if (!reachable) {
+      defects.push('内容被永久裁掉：' + describe(leaf.element, leaf.text) + ' 被祖先裁掉了，而且没有任何一层能滚出来——用户没有办法看到它')
+    }
+  }
+
   // 第五类：多列挤压。容器把列数写死，窄容器里每列只剩百十来像素，值被挤成好几行。
   // 判据故意收紧成「**每一列**都窄」：图标 + 正文这种 44px + 1fr 的网格里也有窄列，
   // 但那是设计意图，不是挤压。
@@ -397,7 +416,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、视口高度契约无偏差`)
+  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、视口高度契约无偏差、无永久裁切`)
 }
 
 await run()
