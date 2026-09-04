@@ -189,15 +189,24 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 三块面板（平台边界 / 服务健康 / 审计事实）摞在一栏固定高度里。之前是网格的
+   三行 auto auto minmax(0, 1fr)：前两行按内容取「auto」是没有上限的——服务健康
+   列的服务条目一多，光前两行就能吃满整栏的固定高度，第三行的下限是显式的 0，
+   于是审计面板被压成 0 高，`.mg-panel` 的 overflow:hidden 把它的标题和详情
+   整块裁掉，而本栏自己也是 overflow:hidden、scrollHeight 和 clientHeight
+   相等，滚动条根本不出现——裁掉的内容彻底不可见。改成纵向 flex 之后，三块
+   面板都用 flex:0 0 auto（下方）按自身内容渲染、永不被压缩，撑爆本栏固定高度
+   时改由本栏自己的 overflow-y:auto 整体滚动，不再逐块裁字。 */
 .admin-side-column {
-  display: grid;
+  display: flex;
   min-width: 0;
   height: 100%;
   min-height: 0;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  align-content: stretch;
+  flex-direction: column;
   gap: 14px;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
   scrollbar-gutter: stable;
 }
 
@@ -232,11 +241,27 @@
   content: "";
 }
 
-.admin-operations-panel,
-.admin-audit-panel {
+.admin-operations-panel {
   display: flex;
   min-height: 0;
   flex: 1 1 auto;
+  flex-direction: column;
+}
+
+/* 侧栏三块面板一律不收缩（flex:0 0 auto）：内容按自身高度渲染，栏内容
+   撑爆固定高度时交给 .admin-side-column 自己的 overflow-y 整体滚动。
+   顺带补上 admin-services-panel 一直缺失的规则——它在 tsx 里引用的
+   className 之前没有对应选择器，styles["admin-services-panel"] 解析
+   为 undefined，这块面板实际上从未拿到这条类名。 */
+.admin-boundary-panel,
+.admin-services-panel,
+.admin-audit-panel {
+  flex: 0 0 auto;
+}
+
+.admin-audit-panel {
+  display: flex;
+  min-height: 0;
   flex-direction: column;
 }
 
