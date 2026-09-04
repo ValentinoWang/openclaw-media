@@ -389,7 +389,8 @@ function ArchivesPage() {
                 <td>
                   <button
                     type="button"
-                    className={styles.rowButton}
+                    className={`${styles.rowButton} mg-id`}
+                    title={archive.archive_id}
                     aria-current={archive.archive_id === selectedId ? "true" : undefined}
                     aria-label={`查看归档记录 ${archive.archive_id}`}
                     onClick={() => selectArchive(archive.archive_id)}

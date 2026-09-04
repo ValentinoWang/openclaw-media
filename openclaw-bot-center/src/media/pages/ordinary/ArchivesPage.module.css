@@ -5,6 +5,14 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  /* Releases [data-page-primary] > :only-child's `height: var(--mg-rail-fill,
+     100%)` (media.css), which otherwise pins .recordsPanel to the full column
+     height regardless of content. .mainColumn/.rail stay stretched to the
+     available height either way -- they're CSS grid items under
+     align-items: stretch, and align-self:stretch reads the *used* height
+     value, which "auto" still satisfies -- so this only changes what
+     :only-child hands down to .recordsPanel itself. See .recordsPanel below. */
+  --mg-rail-fill: auto;
 }
 
 .prelude {
@@ -132,7 +140,16 @@
 .selectedRow {
   background: color-mix(in srgb, var(--accent-base) 9%, var(--mg-surface));
 }
+/* Carries "mg-id" (see JSX) for the single-line-ellipsis + title treatment
+   archive_id needs as an unbroken identifier string. .mg-id's own
+   `display: block` isn't enough on a <button>: buttons keep sizing to their
+   label's content width (shrink-to-fit) instead of filling the cell the way
+   a plain block element would, so archive_id was overflowing the column
+   into "来源运行" next to it once the table's min-width shrank below 900px.
+   `width: 100%` pins it to the <td>'s content width so .mg-id's
+   overflow: hidden + ellipsis actually has something to clip. */
 .rowButton {
+  width: 100%;
   padding: 0;
   border: 0;
   color: var(--accent-ink);
@@ -200,9 +217,19 @@
   flex-direction: column;
 }
 
+/* Was `height: 100%; flex: 1 1 auto`: with only two archive rows the table
+   panel was still pinned to the full column height (584px at 1440px), 373px
+   of it a bare bordered box below the last row. `flex: 0 1 auto` with no
+   explicit height lets flex-basis fall out of content (.page's
+   --mg-rail-fill: auto above removes the shared 100% floor this panel
+   would otherwise inherit as :only-child of [data-page-primary]): short
+   content sizes to itself, and flex-shrink still lets .mainColumn's bounded
+   height (grid-stretched to the row) squeeze this panel back down when
+   content is tall -- .tableViewport's own min-height: 0 + overflow: auto
+   (below) is what turns that squeeze into an internal scrollbar instead of
+   page overflow. */
 .recordsPanel {
-  height: 100%;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
 }
 
 .inspectorPanel {
@@ -255,11 +282,29 @@
   min-height: 0;
   flex: 1 1 auto;
   overflow: auto;
+  /* Narrower than 1440px this still needs to scroll horizontally even at
+     the reduced .table min-width below; without this the scrollbar is an
+     overlay that only paints on hover/scroll, so the cut-off last column
+     reads as clipped/broken rather than "scroll for more" (same convention
+     as .media-nav's vertical scrollbar in media.css). */
+  scrollbar-width: thin;
 }
 
+/* min-width was 900px against a 5-column table (table thead th:nth-child(6)/
+   (7) below are dead rules for columns that don't exist) -- .recordsPanel's
+   own column in the persistent-rail grid is ~766px wide at 1440px and
+   narrower below that, so the last column ("更新时间") sat past the
+   .tableViewport scroll boundary with no visible affordance that more
+   content existed: only its first glyph rendered before the panel's own
+   right edge clipped the rest, and there's no scrollbar visible until you
+   actually touch the table to reveal it. 760px keeps every column readable
+   (matches the sibling records table's min-width in InvitesPage.module.css)
+   while fitting without any scroll at 1440px and cutting how far short
+   narrower widths (1180px and below still need [data-page-inspector]'s
+   330px floor to share the row, so they still scroll horizontally) fall. */
 .table {
   width: 100%;
-  min-width: 900px;
+  min-width: 760px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -339,8 +384,24 @@
   overflow-y: auto;
 }
 
+/* .inspectorBody's second row is a plain `auto` track (unlike .archiveContent's
+   `minmax(0, 1fr)`) so this section always gets its full natural height and
+   .archiveContent is squeezed first -- intentional: the local-media notice
+   below stays fully visible instead of scrolling away with the archive
+   detail above it (localMediaBoundaries is a fixed 3-entry constant, not
+   server data, so that natural height is always modest in practice). But an
+   `auto` track has no ceiling of its own, and .inspectorBody clips
+   (overflow: hidden) rather than grows -- content taller than the panel has
+   here, unlike .archiveContent, no scrollbar to reach it through. max-height
+   + overflow-y give it the same escape hatch .archiveContent already has,
+   without changing today's (unscrolled, fully visible) rendering: 100% is
+   .inspectorBody's own bounded height (a definite size here since
+   .inspectorBody is itself a flex item), well above what 3 rows ever need. */
 .localBoundary {
   min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .dangerBody {
