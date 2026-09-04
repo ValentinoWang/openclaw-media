@@ -389,17 +389,15 @@
   line-height: 1.35;
 }
 
+/* 标题 + 徽标一行：徽标紧跟标题，不用 space-between 把它甩到卡片最右边——
+   赛道卡、自有账号卡共用这份规则，不必各自覆写。 */
 .itemHeadline {
   display: flex;
   min-width: 0;
+  flex: 1 1 auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-/* 赛道概览卡片：徽标紧跟在赛道名后面，不要用 space-between 把它甩到卡片最右边。 */
-.overviewItem .itemHeadline {
   justify-content: flex-start;
+  gap: 12px;
 }
 
 .accountIdentity {
@@ -407,14 +405,6 @@
   min-width: 0;
   align-items: center;
   gap: 10px;
-}
-
-.accountIdentityCopy {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 5px;
 }
 
 .statusBadge {
@@ -456,16 +446,6 @@
   background: oklch(0.95 0.035 205);
 }
 
-.itemMeta,
-.itemFoot {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-2xs);
-  line-height: 1.45;
-}
-
-.itemMetaRow,
 .platformList,
 .profilePlatformRow {
   display: flex;
@@ -492,10 +472,6 @@
   font-size: var(--mg-text-xs);
   line-height: 1.55;
   white-space: pre-wrap;
-}
-
-.itemFoot {
-  color: var(--mg-primary-dark);
 }
 
 .overviewItem .itemDescription {

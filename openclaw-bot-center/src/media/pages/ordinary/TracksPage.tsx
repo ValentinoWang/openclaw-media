@@ -794,30 +794,27 @@ function OwnedAccountsTab({
               >
                 <span className={styles.accountIdentity}>
                   <AccountAvatar account={account} size="list" />
-                  <span className={styles.accountIdentityCopy}>
-                    <span className={styles.itemHeadline}>
-                      <span className={styles.itemTitle}>{account.accountName}</span>
-                      <StatusBadge tone={statusTone}>
-                        {operationalStatusDisplayLabel(account.operationalStatus)}
-                      </StatusBadge>
-                    </span>
-                    <span className={[styles.itemMeta, styles.itemMetaRow].join(" ")}>
-                      <PlatformIdentity platform={account.platform} size="sm" />
-                      <span className={styles.metaSeparator} aria-hidden="true">·</span>
-                      {account.platformAccountId ? (
-                        <span>平台账号 <span className="mg-id" title={account.platformAccountId}>{account.platformAccountId}</span></span>
-                      ) : (
-                        <span>平台账号未记录</span>
-                      )}
-                      <span className={styles.metaSeparator} aria-hidden="true">·</span>
-                      <span>负责人 {account.responsiblePerson ?? "未记录"}</span>
-                    </span>
+                  <span className={styles.itemHeadline}>
+                    <span className={styles.itemTitle}>{account.accountName}</span>
+                    <StatusBadge tone={statusTone}>
+                      {operationalStatusDisplayLabel(account.operationalStatus)}
+                    </StatusBadge>
                   </span>
                 </span>
-                <span className={[styles.itemFoot, styles.itemMetaRow].join(" ")}>
-                  <span>{accountTracks.join(" / ") || "运营赛道未记录"}</span>
-                  <span className={styles.metaSeparator} aria-hidden="true">·</span>
-                  <span>{account.lastSyncedAt ? `更新于 ${formatRelativeTime(account.lastSyncedAt)}` : "暂无运营数据"}</span>
+                <span className="mg-meta" data-component="mg-meta">
+                  {metaRow([
+                    <PlatformIdentity key="platform" platform={account.platform} size="sm" />,
+                    account.platformAccountId ? (
+                      <span key="platform-id">平台账号 <span className="mg-id" title={account.platformAccountId}>{account.platformAccountId}</span></span>
+                    ) : (
+                      <span key="platform-id">平台账号未记录</span>
+                    ),
+                    <span key="owner">负责人 {account.responsiblePerson ?? "未记录"}</span>,
+                    <span key="tracks">{accountTracks.join(" / ") || "运营赛道未记录"}</span>,
+                    <span key="synced">
+                      {account.lastSyncedAt ? `更新于 ${formatRelativeTime(account.lastSyncedAt)}` : "暂无运营数据"}
+                    </span>,
+                  ])}
                 </span>
               </button>
               );
