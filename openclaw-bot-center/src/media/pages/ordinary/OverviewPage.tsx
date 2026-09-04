@@ -413,19 +413,27 @@ function OverviewPage() {
           />
         </div>
         <div className={styles.sideColumn} data-page-inspector>
-          <AgentPanel
-            capabilityState={capabilityState}
-            taskState={taskState}
-            activeTasks={activeTasks}
-            recentTask={recentTask}
-          />
-          <WorkflowPanel />
+          {/* 「需要处理」是这一栏里唯一需要用户动手的面板，放在最前面，常见桌面宽度
+             （1440/1180）下首屏就能看到，不用先滚过 Media Agent 的状态详情才找到它。
+             「执行链路」是一排轻量的导航链接，与它归在一起：两者加起来还是比侧栏
+             首屏矮，1440/1180 下都能完整看到，不止标题。Media Agent 面板本身有
+             582px（详见下方 flex:0 0 auto 的注释），是这三块里最重的状态详情，
+             放到最后、需要滚动才能看到——这正是上一轮修复里就说明过的取舍
+             （见 CHANGELOG/commit 70bea11），这里只是把取舍换到信息优先级更低的
+             面板身上，而不是压在唯一的待办面板上。 */}
           <PendingPanel
             state={taskState}
             tasks={pendingTasks}
             onOpenWorkspace={openWorkspace}
             onCancelDeletion={cancelDeletionIntent}
             onTasksChanged={() => setRefreshToken((current) => current + 1)}
+          />
+          <WorkflowPanel />
+          <AgentPanel
+            capabilityState={capabilityState}
+            taskState={taskState}
+            activeTasks={activeTasks}
+            recentTask={recentTask}
           />
         </div>
       </div>
@@ -1244,6 +1252,7 @@ function AgentPanel({
     <section
       className={"section-panel mg-panel " + styles.panel + " " + styles.agentPanel}
       data-component="mg-panel"
+      data-page-terminal-surface="inspector"
     >
       <PanelHeading
         icon={Bot}
@@ -1440,7 +1449,6 @@ function PendingPanel({
     <section
       className={"section-panel mg-panel " + styles.panel + " " + styles.pendingPanel}
       data-component="mg-panel"
-      data-page-terminal-surface="inspector"
     >
       <PanelHeading
         icon={AlertCircle}
