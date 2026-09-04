@@ -31,7 +31,9 @@
 .quietButton, .textButton { width: auto; min-height: 30px; flex: 0 0 auto; padding: 0 9px; font-size: var(--mg-text-xs); }
 .textButton { white-space: nowrap; }
 
-.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px 14px 14px; }
+/* 列数由共享原语 .mg-metric-grid（auto-fit + minmax）决定，这里不再写死 4：
+   四张卡分别显示时保持原来的紧凑内边距。 */
+.metrics { padding: 12px 14px 14px; }
 .metric { min-width: 0; padding: 12px 11px; border: 1px solid var(--mg-border); border-radius: var(--mg-r-sm); }
 .metric > span, .metric > small { display: block; color: var(--mg-muted); font-size: var(--mg-text-xs); }
 .metric > strong { display: block; min-height: 28px; margin: 7px 0 4px; overflow-wrap: anywhere; color: var(--mg-ink); font-size: var(--mg-text-xl); line-height: 1.15; font-variant-numeric: tabular-nums; }
@@ -49,8 +51,18 @@
 .orangeDot { background: var(--mg-warning); }
 .purpleDot { background: oklch(0.52 0.13 300); }
 .trendRows { display: grid; max-height: 310px; gap: 7px; overflow: auto; padding: 2px 3px 4px 0; }
-.trendRow { display: grid; grid-template-columns: 52px repeat(4, minmax(105px, 1fr)); gap: 10px; align-items: center; min-width: 560px; }
+/* 日期列宽度固定，指标那一半单独成组（见下面 .trendMetrics）——不要把 5 者
+   塞进同一个 grid-template-columns：auto-fit 只按「重复同一种列」计算个数，
+   混进一个不同宽度的日期列会把换行算错，多出来的指标会滑进日期那一窄列。
+   之前靠 .trendRow 的 min-width: 560px 撑开、超出部分横向滚动；现在指标组
+   自己会在窄容器里换行，不再需要横向滚动这条退路，也不需要单独的窄屏断点。 */
+.trendRow { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; align-items: start; }
 .trendDate { color: var(--mg-muted); font-size: var(--mg-text-xs); font-variant-numeric: tabular-nums; }
+/* 列数由容器决定（auto-fit + minmax），不写死 4：每个指标是「31px 标签 +
+   条形 + 金额」，金额（如「33.27 credit」）需要约 90px 才不会被拦腰折成两行，
+   200px 地板留出足够余量。容器不够放 4 个时先退到 2 个一行，再退到 1 个一行，
+   而不是硬挤或滚动。 */
+.trendMetrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px 10px; min-width: 0; }
 .trendMetric { display: grid; grid-template-columns: 31px minmax(35px, 1fr) auto; gap: 5px; align-items: center; min-width: 0; }
 .trendMetric > span { color: var(--mg-muted); font-size: var(--mg-text-2xs); }
 .trendMetric > strong { min-width: 34px; color: var(--mg-ink); font-size: var(--mg-text-2xs); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
@@ -60,16 +72,6 @@
 .blueBar { background: var(--mg-blue); }
 .orangeBar { background: var(--mg-warning); }
 .purpleBar { background: oklch(0.52 0.13 300); }
-/* 窄屏（≤560px，也就是这条带子的最小宽度以下）不再横向滚动：一行里塞四个指标时
-   每个只剩约 117px，装不下「标签 + 条形 + 金额」，「-1.25 credit」被折成两行。
-   改成一行一个指标，宽度直接来自面板，值不再折。
-   注意不要反过来去调大 .trendRow 的 min-width——那个下限会沿着容器一路顶上去，
-   把同一面板里的指标卡挤窄，等于把折行从这里赶到别处（试过，会让上方那排
-   22px 的大字号值折行）。 */
-@media (max-width: 560px) {
-  .trendRow { grid-template-columns: minmax(0, 1fr); min-width: 0; row-gap: 6px; }
-  .trendMetric { grid-template-columns: 31px minmax(0, 1fr) auto; }
-}
 
 .trendNote { margin: 8px 0 0; color: var(--mg-muted); font-size: var(--mg-text-xs); }
 
@@ -151,15 +153,13 @@
 @media (max-width: 700px) {
   .tabs { padding: 0 6px; }
   .tab { min-width: 0; flex: 1 1 0; padding: 0 8px; font-size: var(--mg-text-sm); }
-  .metrics, .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .metric:last-child { grid-column: 1 / -1; }
+  .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .redemptionForm { grid-template-columns: 1fr; }
   .redemptionForm :global(.mg-btn) { justify-content: center; }
   :global(.mg-panel-head) { align-items: flex-start; }
 }
 @media (max-width: 430px) {
-  .rail, .metrics { grid-template-columns: 1fr; }
-  .metric:last-child { grid-column: auto; }
+  .rail { grid-template-columns: 1fr; }
   :global(.mg-panel-head) { flex-wrap: wrap; }
   .headingTitle { width: 100%; }
   :global(.mg-panel-head) > .quietButton, :global(.mg-panel-head) > .textButton { margin-left: 26px; }

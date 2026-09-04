@@ -215,7 +215,7 @@ function UsagePanel({ state, daily, onRefresh }: { state: LoadState<UsagePageDat
   return <div className={styles.stack} id="usage-panel" role="tabpanel" aria-labelledby="usage-tab">
     <section className="mg-panel" data-component="mg-panel">
       <PanelHeading title="当前用量汇总" detail={rangeDetail} action={<button className={'mg-btn mg-btn-ghost ' + styles.quietButton} data-component="mg-btn" type="button" onClick={onRefresh}><RefreshCw size={14} />刷新数据</button>} />
-      <div className={styles.metrics}>
+      <div className={`mg-metric-grid ${styles.metrics}`} data-component="mg-metric-grid">
         <Metric className={styles.metric} label="文本用量" value={formatQuantity(summary.summary.textQuantity)} detail="服务端守恒汇总" />
         <Metric className={styles.metric} label="图片用量" value={formatQuantity(summary.summary.imageQuantity)} detail="服务端守恒汇总" />
         <Metric className={styles.metric} label="计费金额" value={formatCredit(summary.summary.totalCharge) + ' ' + currencyDisplayLabel(summary.summary.currency)} detail="服务端守恒汇总" />
@@ -242,10 +242,12 @@ function DailyTrend({ points }: { points: DailyPoint[] }) {
     <div className={styles.trendLegend}><span><i className={styles.greenDot} />事件数</span><span><i className={styles.blueDot} />文本用量</span><span><i className={styles.orangeDot} />图片用量</span><span><i className={styles.purpleDot} />计费金额</span></div>
     <div className={styles.trendRows} role="region" aria-label="每日用量趋势" tabIndex={0}>{points.map((point) => <div className={styles.trendRow} key={point.date}>
       <strong className={styles.trendDate}>{point.date}</strong>
-      <TrendBar label="事件" value={point.events} max={maxEvents} tone="green" suffix=" 次" />
-      <TrendBar label="文本" value={point.textQuantity} max={maxText} tone="blue" suffix="" />
-      <TrendBar label="图片" value={point.imageQuantity} max={maxImage} tone="orange" suffix="" />
-      <TrendBar label="金额" value={point.chargeValue} max={maxCharge} tone="purple" suffix="" display={point.chargeUnknown ? '未知' : point.charge === null ? '—' : formatCredit(point.charge) + ' credit'} />
+      <div className={styles.trendMetrics}>
+        <TrendBar label="事件" value={point.events} max={maxEvents} tone="green" suffix=" 次" />
+        <TrendBar label="文本" value={point.textQuantity} max={maxText} tone="blue" suffix="" />
+        <TrendBar label="图片" value={point.imageQuantity} max={maxImage} tone="orange" suffix="" />
+        <TrendBar label="金额" value={point.chargeValue} max={maxCharge} tone="purple" suffix="" display={point.chargeUnknown ? '未知' : point.charge === null ? '—' : formatCredit(point.charge) + ' credit'} />
+      </div>
     </div>)}</div>
     <p className={styles.trendNote}>趋势按明细事件展示；总计以服务端守恒汇总为准。</p>
   </div>

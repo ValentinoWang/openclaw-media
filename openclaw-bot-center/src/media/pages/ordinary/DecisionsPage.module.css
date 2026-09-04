@@ -782,10 +782,10 @@
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
 }
+/* 列数交给共享原语 .mg-facts（auto-fit + minmax(232px)），这里不再写死两列：
+   检查器窄栏在 1440/1180px 都只有一两百像素，固定两列会把「候选选题」这类
+   标题值拦腰折成两行；auto-fit 在装不下两列时会自动退回单列。 */
 .factGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
   margin: 0 0 12px;
 }
 .factGrid > div {
@@ -795,17 +795,8 @@
   border-radius: var(--mg-r-sm);
   background: var(--mg-bg);
 }
-.factGrid dt {
-  margin-bottom: 4px;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-2xs);
-}
 .factGrid dd {
-  margin: 0;
   overflow-wrap: anywhere;
-  color: var(--mg-ink);
-  font-size: var(--mg-text-xs);
-  line-height: 1.45;
 }
 .modelRecommendation {
   margin: 0 0 10px;
@@ -900,9 +891,6 @@
   flex: 0 0 auto;
 }
 @media (max-width: 700px) {
-  .factGrid {
-    grid-template-columns: 1fr;
-  }
   .actionButtons {
     display: grid;
     grid-template-columns: 1fr;

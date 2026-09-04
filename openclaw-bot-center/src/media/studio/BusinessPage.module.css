@@ -14,11 +14,11 @@
 .opportunityCard header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .opportunityCard header > div > span { display: block; color: var(--accent-base); font-size: var(--mg-text-sm); font-weight: 700; }
 .opportunityCard h3 { margin: 6px 0 0; font-size: var(--mg-text-md); line-height: 1.4; }
-.opportunityCard dl { display: grid; gap: 0; margin: 14px 0 0; }
-.opportunityCard dl > div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--mg-border); }
-.opportunityCard dl > div:last-child { border-bottom: 0; }
-.opportunityCard dt { color: var(--mg-muted); font-size: var(--mg-text-sm); }
-.opportunityCard dd { min-width: 0; margin: 0; font-size: var(--mg-text-sm); font-weight: 600; overflow-wrap: anywhere; }
+/* 列数交给共享原语 .mg-facts（auto-fit + minmax(232px)），不再写死 92px + 1fr：
+   那个固定地板一遇到两栏并排时的窄卡片（.layout 右栏把这张卡挤到不到 200px）
+   就把「有效期」这类日期区间值拦腰折成好几行。 */
+.opportunityCard dl { margin: 14px 0 0; }
+.opportunityCard dd { font-weight: 600; overflow-wrap: anywhere; }
 .opportunityCard footer { display: flex; align-items: center; gap: 10px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--mg-border); }
 .opportunityCard code { min-width: 0; overflow: hidden; color: var(--mg-muted); font-size: var(--mg-text-sm); text-overflow: ellipsis; white-space: nowrap; }
 .opportunityCard footer a { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 4px; margin-left: auto; color: var(--accent-ink); font-size: var(--mg-text-sm); font-weight: 700; text-decoration: none; }

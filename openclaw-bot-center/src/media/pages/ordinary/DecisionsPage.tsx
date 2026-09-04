@@ -659,7 +659,7 @@ function DecisionInspector({
           <div className={styles.inspectorBody}>
             <section className={styles.inspectorSection}>
               <header><Lightbulb size={16} aria-hidden="true" /><h3>决策摘要</h3><span className={styles.sectionStatus}>服务端</span></header>
-              <dl className={styles.factGrid}>
+              <dl className={`mg-facts ${styles.factGrid}`}>
                 <Fact label="候选选题" value={detail.candidateTitle} />
                 <Fact label="来源类型" value={candidateTypeDisplayLabel(detail.candidateType)} />
                 <Fact label="平台" value={<PlatformIdentity platform={detail.platform} size="sm" />} />
@@ -670,7 +670,7 @@ function DecisionInspector({
             </section>
             <section className={styles.inspectorSection}>
               <header><Check size={16} aria-hidden="true" /><h3>人工确认</h3><span className={styles.sectionStatus}>{pending ? "待确认" : detail.decisionStatus === "rejected" ? "已拒绝" : "已确认"}</span></header>
-              <dl className={styles.factGrid}>
+              <dl className={`mg-facts ${styles.factGrid}`}>
                 <Fact label="当前决定" value={pending ? "待确认" : decisionLabel(detail.decisionStatus)} />
                 <Fact label="确认时间" value={formatDate(detail.humanConfirmedAt ?? undefined)} />
                 <Fact label="服务端修订" value={`${state.data.revision}`} />
@@ -720,7 +720,7 @@ function DecisionInspector({
 
 
 function Fact({ label, value }: { label: string; value: ReactNode }) {
-  return <div><dt>{label}</dt><dd>{value}</dd></div>;
+  return <div className="mg-fact"><dt>{label}</dt><dd>{value}</dd></div>;
 }
 
 function StatePanel<T>({

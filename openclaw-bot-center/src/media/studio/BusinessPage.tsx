@@ -120,11 +120,11 @@ function OpportunityCard({ item }: { item: BusinessOpportunity }) {
         <div><span>{item.brand || '未记录品牌'}</span><h3>{item.product || '未记录产品'}</h3></div>
         <StatusBadge status={item.status} />
       </header>
-      <dl>
-        <div><dt>平台</dt><dd>{item.platform ? <PlatformIdentity platform={item.platform} size="sm" /> : '未记录'}</dd></div>
-        <div><dt>内容形式</dt><dd>{contentTypeLabel(item.contentType)}</dd></div>
-        <div><dt>有效期</dt><dd>{validityLabel(item.validFrom, item.validUntil)}</dd></div>
-        <div><dt>授权范围</dt><dd>{authorizationLabel(item.authorizationScope)}</dd></div>
+      <dl className="mg-facts">
+        <div className="mg-fact"><dt>平台</dt><dd>{item.platform ? <PlatformIdentity platform={item.platform} size="sm" /> : '未记录'}</dd></div>
+        <div className="mg-fact"><dt>内容形式</dt><dd>{contentTypeLabel(item.contentType)}</dd></div>
+        <div className="mg-fact"><dt>有效期</dt><dd>{validityLabel(item.validFrom, item.validUntil)}</dd></div>
+        <div className="mg-fact"><dt>授权范围</dt><dd>{authorizationLabel(item.authorizationScope)}</dd></div>
       </dl>
       <footer><code className="mg-id" title={item.publicOpportunityId}>{item.publicOpportunityId}</code><Link to="/campaigns">进入履约<ArrowRight size={14} /></Link></footer>
     </article>
