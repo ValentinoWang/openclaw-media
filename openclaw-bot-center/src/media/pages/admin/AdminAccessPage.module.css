@@ -23,16 +23,30 @@
   margin-bottom: 16px;
 }
 
+/* 内容正常只有 2 个平台（douyin / xiaohongshu 是这个联合类型的全部取值），实测
+   自然高度 276~289px（1440~1180px 宽）——这条上限留了充足余量，正常内容碰不到它。
+   只有反常地长（未来平台变多，或压力测试把卡片复制成 8 倍）才会顶到 360px；顶到
+   之后不再无限长高把下面的标签页挤没，多出来的部分交给 .cookieBody 自己纵向滚
+   （见下面），面板头留在原地。display: flex + flex-direction: column 是让
+   .cookieHeader 定高、.cookieBody 吃剩余空间这两条规则成立的前提。
+   ≤1120px 时 .page 本身整体松开高度契约（改回 auto + overflow: visible，见下面
+   的断点），这条上限和内部滚动也要跟着松开，否则会在「整页本来就能滚」的场景
+   里凭空多出一层不必要的内部滚动条——见下面 @media (max-width: 1120px) 里的
+   .cookiePanel / .cookieBody 重置。 */
 .cookiePanel {
+  display: flex;
   width: 100%;
   min-width: 0;
   max-width: 100%;
   flex: 0 0 auto;
+  flex-direction: column;
+  max-height: 360px;
   margin-bottom: 14px;
 }
 
 .cookieHeader {
   min-width: 0;
+  flex: 0 0 auto;
   align-items: flex-start;
 }
 
@@ -55,6 +69,14 @@
   line-height: 1.45;
 }
 
+/* flex: 1 1 auto + min-height: 0 让这块吃 .cookiePanel 里除 .cookieHeader 外的
+   剩余空间，而不是像普通 grid 子项那样被内容撑到多高就是多高——min-height: 0
+   是必需的：规范规定只有 overflow 非 visible 的子项自动最小尺寸才是 0，否则默认
+   auto = 内容高度，那样 .cookiePanel 的 max-height 就挡不住内层，滚动条永远不
+   会出现（.tabContent 上方那条注释是同一个道理）。overflow: hidden auto 让纵向
+   在这里滚、横向仍裁在圆角里；align-items: start 防止 .cookieContract 被 grid
+   的默认 stretch 拉伸到跟 .cookieStatusGrid 一样高——不然卡片一多，右边那个虚线
+   框就会被撑成一个上半截有字、下半截全是空白的长条。 */
 .cookieBody {
   display: grid;
   width: 100%;
@@ -62,8 +84,12 @@
   max-width: 100%;
   box-sizing: border-box;
   grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.9fr);
+  align-items: start;
   gap: 14px;
   padding: 12px 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden auto;
 }
 
 /* 列数由容器决定（auto-fit + minmax）：这格子曾经在 900px 断点被反常地
@@ -1351,6 +1377,21 @@
     --mg-rail-grow: 0 0 auto;
     --mg-rail-fill: auto;
     --mg-rail-align: auto;
+    overflow: visible;
+  }
+
+  /* .page 在这个断点整体松开高度契约（overflow: visible，整页跟着 .media-content
+     一起滚），.cookiePanel 的 360px 上限和 .cookieBody 的内部滚动是专门给「.page
+     固定高度 + overflow: hidden」那个契约配的——这里没有固定高度可顶，不撤掉的话
+     反而会在两个平台正常展示时凭空钉出一个内部滚动条（实测 900px/430px 宽度下
+     的自然高度是 395px/691px，早就超过 360px）。整段退回原来的普通块级流。 */
+  .cookiePanel {
+    display: block;
+    max-height: none;
+  }
+
+  .cookieBody {
+    min-height: auto;
     overflow: visible;
   }
 
