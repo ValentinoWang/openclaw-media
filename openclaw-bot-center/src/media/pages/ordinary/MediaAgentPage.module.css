@@ -991,9 +991,22 @@
 }
 
 @media (max-width: 1120px) {
+  /* .page 命中共享的 .fidelity-page:has(> [data-page-prelude]) 契约（特异性
+     0,2,0），比这里的 .page 选择器（0,1,0）高，光写 height: auto 赢不过共享规则
+     里 height: var(--mg-rail-shell-height, calc(...)) 的默认值——.pageRail 仍然
+     通过 flex: 1 1 auto（--mg-rail-grow 的默认值）撑满这个「赢不了」的固定高度，
+     .mainColumn/.boundaryPanel 也仍然通过 height: 100%（--mg-rail-fill 的默认值）
+     被钉死。实测 900px 时 .mainColumn 因此被压到 490px，而「本地运行」任务卡和
+     「流程目录」表格实际需要 594px——「素材整理」「内容编辑交接」等任务、
+     流程目录的版本号和用途说明整段不可见，且没有任何一层在滚动。四个自定义
+     属性才是共享契约真正读的开关，写在这里让下面这行 height: auto 名副其实。 */
   .page {
     height: auto;
     overflow: visible;
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+    --mg-rail-align: auto;
   }
 
   .workspaceGrid {

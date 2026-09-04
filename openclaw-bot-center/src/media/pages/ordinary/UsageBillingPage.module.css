@@ -5,16 +5,36 @@
 .workspace { display: grid; min-height: 0; flex: 1; grid-template-columns: minmax(0, 1fr) minmax(480px, 0.52fr); gap: 18px; align-items: stretch; overflow: hidden; }
 .primaryColumn, .rail, .tabContent { min-width: 0; min-height: 0; }
 .primaryColumn, .stack { display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: var(--billing-gap); }
-.primaryColumn { height: 100%; overflow: hidden; }
-.rail { display: grid; height: 100%; min-height: 0; grid-template-rows: auto auto auto minmax(0, 1fr); gap: var(--billing-gap); overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; }
+/* 主栏自己不再裁内容——真正的可视高度收口在 .stack 卡片的 flex: 0 0 auto（见下）
+   和这里的 overflow-y: auto：三张卡加起来超过一屏时，滚动条出现在这一层。 */
+.primaryColumn { height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
+/* 侧栏原来是 grid-template-rows: auto auto auto minmax(0, 1fr)，但只有三个真实子项
+   （余额/额度包/兑换记录）。三个面板都带 overflow:hidden，auto 轨道的「自动最小
+   尺寸」因此解析成 0：网格没有按各自内容需要分配高度，而是把可用空间在三行之间
+   等比压扁（实测三行被压成完全相等的 163px），超出的内容随面板的 overflow:hidden
+   消失；外层 .rail 虽然 overflow-y: auto，但此时 scrollHeight 已经和 clientHeight
+   相等，滚动条根本不会出现——用户没有任何办法看到「创作者包」「工作室包」
+   「余额最后变动」。改成纵向 flex + 子项 flex: 0 0 auto：每个面板先按自己内容
+   撑到需要的高度，三个加起来超过 100% 时由这里的 overflow-y: auto 真正滚动。 */
+.rail { display: flex; height: 100%; min-height: 0; flex-direction: column; gap: var(--billing-gap); overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; }
+.rail > :global(.mg-panel) { flex: 0 0 auto; }
 .primaryColumn :global(.page-heading) { margin-bottom: 0; }
 
 .tabs { gap: 6px; overflow-x: auto; margin: 0; padding: 4px; border: 1px solid var(--mg-border); border-radius: var(--mg-r-full); background: var(--mg-bg); }
 .tab { min-width: 110px; margin-right: 0; border-bottom: 0; border-radius: var(--mg-r-full); font-size: var(--mg-text-xs); font-weight: 600; }
-.tabContent { display: flex; min-height: 0; flex: 1; margin-top: -14px; padding-top: 14px; overflow: hidden; }
+/* 不再自己裁内容：真正的滚动交给 .primaryColumn（见上）。这里如果继续
+   overflow: hidden，.stack 里被 flex: 0 0 auto 撑高的卡片会在到达 .primaryColumn
+   之前先被这一层拦腰砍掉。 */
+.tabContent { display: flex; min-height: 0; flex: 1; margin-top: -14px; padding-top: 14px; overflow: visible; }
 .tabContent > [role='tabpanel'] { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+/* stack 三张卡（汇总指标/每日趋势/事件表）都带 overflow:hidden，默认的
+   flex: 0 1 auto 会在空间不够时把它们等比压扁到自动最小尺寸 0——「用量事件」
+   指标、趋势柱状行、乃至整张事件表的标题都曾经这样被压没。三张卡一律按自身
+   内容定高（flex: 0 0 auto），装不下的部分交给 .primaryColumn 整体滚动；
+   事件表内部另有 .tableWrap 自己的横向滚动处理宽表格。 */
+.stack > :global(.mg-panel) { flex: 0 0 auto; }
 .tabContent > [role='tabpanel'][data-page-terminal-surface='primary'],
-.tabContent > [role='tabpanel'] > [data-page-terminal-surface='primary'] { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+.tabContent > [role='tabpanel'] > [data-page-terminal-surface='primary'] { display: flex; min-height: 0; flex: 0 0 auto; flex-direction: column; }
 .tabContent > [role='tabpanel'][data-page-terminal-surface='primary'] > :global(.mg-state),
 .tabContent > [role='tabpanel'][data-page-terminal-surface='primary'] > .receipt,
 .tabContent > [role='tabpanel'] > [data-page-terminal-surface='primary'] > :global(.mg-state),
@@ -145,21 +165,30 @@
 .watermark { margin: 14px 2px 0; color: var(--mg-muted); font-size: var(--mg-text-xs); text-align: right; }
 
 @media (max-width: 1120px) {
-  .page { height: auto; overflow: visible; }
+  /* 两栏堆叠之后，共享的 persistent-rail 契约必须整体松开（见 media.css 顶部的
+     说明）：--mg-rail-fill 不设成 auto 的话，[data-page-primary]/[data-page-inspector]
+     仍然读 height: var(--mg-rail-fill, 100%) 的默认值 100%——这条共享规则的特异性
+     比这里的 .primaryColumn/.rail 选择器更高，会赢过下面几行手写的 height: auto，
+     侧栏在 900px 时依旧被钉死在「视口剩余高度」，重新压扁「可用余额」等内容。 */
+  .page {
+    height: auto;
+    overflow: visible;
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+    --mg-rail-align: auto;
+  }
   .workspace { height: auto; min-height: auto; grid-template-columns: 1fr; align-items: start; overflow: visible; }
   .primaryColumn, .rail { height: auto; min-height: auto; overflow: visible; scrollbar-gutter: auto; }
-  .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 700px) {
   .tabs { padding: 0 6px; }
   .tab { min-width: 0; flex: 1 1 0; padding: 0 8px; font-size: var(--mg-text-sm); }
-  .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .redemptionForm { grid-template-columns: 1fr; }
   .redemptionForm :global(.mg-btn) { justify-content: center; }
   :global(.mg-panel-head) { align-items: flex-start; }
 }
 @media (max-width: 430px) {
-  .rail { grid-template-columns: 1fr; }
   :global(.mg-panel-head) { flex-wrap: wrap; }
   .headingTitle { width: 100%; }
   :global(.mg-panel-head) > .quietButton, :global(.mg-panel-head) > .textButton { margin-left: 26px; }

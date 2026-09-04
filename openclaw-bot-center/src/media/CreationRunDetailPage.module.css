@@ -1,4 +1,17 @@
-.page { width: 100%; max-width: 1440px; margin: 0 auto; }
+/* 这个页面用了 fidelity-page + 直接子级 [data-page-prelude]（返回链接 + 标题行），
+   会命中共享的 .fidelity-page:has(> [data-page-prelude]) 契约，把 <main> 钉成
+   100dvh - 顶栏 - 内容壳内边距的固定高度纵向 flex 容器（见 media.css）。但这个页面
+   从来没有实现与之配对的 [data-page-layout="persistent-rail"]（.contentGrid 是
+   普通 align-items:start 的两栏magazine 布局，两栏各自按内容定高，不是「各自独立
+   滚动、合起来填满一屏」的检视栏模式）。结果 .summaryBand（运行摘要，mg-panel、
+   overflow:hidden）作为壳的第二个 flex 子项，在 .contentGrid 挤占剩余空间时被
+   压到 2px 高——「运行状态」「创作入口」「发布平台」「内容形态」四组事实整段
+   不可见，且没有任何一层在滚动，用户完全看不到。全站只有这一个页面把 fidelity-page
+   的直接子级 prelude 和非 persistent-rail 的正文搭在一起，其余同类页面要么不用
+   fidelity-page（如 mg-page），要么正确声明了 persistent-rail。这四个自定义属性
+   是共享契约本身留的松开开关（见 media.css 顶部说明），把壳整体释放回随内容
+   增长的普通纵向堆叠，不需要、也不应该再让任何子级假装自己是可独立滚动的检视栏。 */
+.page { width: 100%; max-width: 1440px; margin: 0 auto; --mg-rail-shell-height: auto; --mg-rail-grow: 0 0 auto; --mg-rail-fill: auto; --mg-rail-align: auto; }
 .prelude { padding-bottom: 20px; }
 .backLink { display: inline-flex; min-height: var(--mg-control-height-sm); align-items: center; gap: 6px; margin-bottom: 14px; color: var(--mg-primary-dark); font-size: var(--mg-text-sm); font-weight: 700; text-decoration: none; }
 .headingRow { min-width: 0; }
