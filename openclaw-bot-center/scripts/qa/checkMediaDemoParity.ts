@@ -26,6 +26,7 @@ import { demoAuthPageDocuments } from '../../src/demo/generatedDemoAuthPages'
 import { AUTH_PAGES, transformAuthPage } from '../demo/buildDemoAuthPages'
 import { operations } from '../../src/media/generatedBusinessPagesContract'
 import demoDataset from '../../src/demo/generatedDemoDataset.json'
+import { relationshipRoleDisplayLabel } from '../../src/media/ui/ordinaryDataLabels'
 import demoCatalog from '../../src/demo/generatedDemoCatalog.json'
 
 const projectRoot = resolve(import.meta.dirname, '../..')
@@ -503,6 +504,54 @@ export function checkAuthNavigationSeam(
   return failures
 }
 
+/** 演示数据只能用生产标签表认识的枚举值，数值也要落在生产格式化函数的定义域里。
+ *
+ *  种子里写过 role: 「对标账号」「商单竞品」「破圈参考」——生产的
+ *  RELATIONSHIP_ROLE_LABELS 一个都不认识，于是四个对标账号全部显示「未设置赛道
+ *  角色」，赛道卡上「标杆 / 同赛道观察 / 合作候选」三个计数永远是 0。同一批数据里
+ *  fitScore 写成 0.92 这种比值，而 formatFitScore 的定义域是 0-100，「最高匹配度
+ *  92%」就渲染成了「1%」。
+ *
+ *  演示数据可以是虚构的，但不能是**渲染不出来**的：演示站要复刻真实产品的样子，
+ *  用产品认不出的值就复刻不出来。 */
+export function checkDemoDataRendersWithProductionLabels(dataset: unknown): string[] {
+  const failures: string[] = []
+  const seen = new Set<string>()
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item)
+      return
+    }
+    if (node === null || typeof node !== 'object') return
+    const record = node as Record<string, unknown>
+    if (typeof record.publicRelationshipId === 'string' && typeof record.role === 'string') {
+      const rendered = relationshipRoleDisplayLabel(record.role)
+      const key = `role:${record.role}`
+      if (rendered === '未设置赛道角色' && !seen.has(key)) {
+        seen.add(key)
+        failures.push(
+          `演示数据用了生产不认识的赛道角色「${record.role}」：页面会显示「未设置赛道角色」，赛道卡的角色计数也会全是 0。` +
+            '请改用 src/media/ui/ordinaryDataLabels.ts 里 RELATIONSHIP_ROLE_LABELS 已有的取值',
+        )
+      }
+    }
+    if (typeof record.fitScore === 'number') {
+      const value = record.fitScore
+      const key = `fitScore:${value}`
+      if ((!Number.isInteger(value) || value < 0 || value > 100) && !seen.has(key)) {
+        seen.add(key)
+        failures.push(
+          `演示数据的 fitScore=${value} 落在生产格式化函数的定义域之外：formatFitScore 按 0-100 的百分数取整，` +
+            `0.92 这种比值会被渲染成「匹配度 1%」`,
+        )
+      }
+    }
+    for (const value of Object.values(record)) visit(value)
+  }
+  visit(dataset)
+  return failures
+}
+
 function main(): void {
   const failures: string[] = []
 
@@ -562,7 +611,10 @@ function main(): void {
   failures.push(...checkAuthPageCoverage(authPageEntryKeys, demoAuthPages.map((page) => page.path)))
   failures.push(...checkEmbeddedAuthPages(demoAuthPages.map((page) => page.path)))
 
-  // 8) 认证页导航接缝
+  // 8) 演示数据必须渲染得出来
+  failures.push(...checkDemoDataRendersWithProductionLabels(demoDataset))
+
+  // 9) 认证页导航接缝
   const mediaSourceFiles = readdirSync(resolve(projectRoot, 'src/media'), { recursive: true, encoding: 'utf8' })
     .filter((entry) => /\.tsx?$/.test(entry) && entry !== 'mediaNavigation.ts')
     .map((entry) => ({ file: `src/media/${entry}`, source: readFileSync(resolve(projectRoot, 'src/media', entry), 'utf8') }))
@@ -584,7 +636,7 @@ function main(): void {
   console.log(
     'media demo parity: PASS ' +
       `staticRoutes=${new Set(productionStaticRoutes).size} paramRoutePatterns=${paramRoutes.length} ` +
-      `operations=${contractOperationIds.length} capabilities=${contractCapabilityIds.length} authPages=${authPageEntryKeys.length} embeddedAuthPages=${demoAuthPageDocuments.length} authNavigation=base-derived`,
+      `operations=${contractOperationIds.length} capabilities=${contractCapabilityIds.length} authPages=${authPageEntryKeys.length} embeddedAuthPages=${demoAuthPageDocuments.length} authNavigation=base-derived demoDataLabels=renderable`,
   )
 }
 
@@ -690,7 +742,29 @@ function runSelfTest(): void {
     '新增认证页入口未同步必须被拦下',
   )
 
-  // 8) 认证页导航接缝
+  // 8) 演示数据必须渲染得出来
+  expectEmpty(
+    checkDemoDataRendersWithProductionLabels({
+      items: [{ publicRelationshipId: 'relationship_x', role: '标杆账号', fitScore: 92 }],
+    }),
+    '生产认识的赛道角色与百分数匹配度',
+  )
+  expectFailure(
+    checkDemoDataRendersWithProductionLabels({
+      items: [{ publicRelationshipId: 'relationship_x', role: '对标账号', fitScore: 92 }],
+    }),
+    /生产不认识的赛道角色/,
+    '演示数据用了生产不认识的赛道角色',
+  )
+  expectFailure(
+    checkDemoDataRendersWithProductionLabels({
+      items: [{ publicRelationshipId: 'relationship_x', role: '标杆账号', fitScore: 0.92 }],
+    }),
+    /定义域之外/,
+    '匹配度写成了 0-1 的比值',
+  )
+
+  // 9) 认证页导航接缝
   const goodNavigation = 'export function installAuthNavigator() {}\nconst base = import.meta.env?.BASE_URL ?? "/"'
   const goodEntry = 'installAuthNavigator(demoNavigateTo)'
   expectEmpty(
@@ -713,7 +787,7 @@ function runSelfTest(): void {
     '认证页路径没有跟着部署基址',
   )
 
-  console.log('media demo parity self-test: PASS 路由覆盖/详情路由/会话授权/接口覆盖/合同摘要/能力目录/认证页/导航接缝共 8 类断言的红绿用例均符合预期')
+  console.log('media demo parity self-test: PASS 路由覆盖/详情路由/会话授权/接口覆盖/合同摘要/能力目录/认证页/演示数据可渲染/导航接缝共 9 类断言的红绿用例均符合预期')
 }
 
 if (process.argv.includes('--self-test')) {

@@ -5065,46 +5065,46 @@
         "items": [
           {
             "fitReason": "路线选题与更新节奏最接近，封面语言可直接对照。",
-            "fitScore": 0.92,
+            "fitScore": 92,
             "lastEvaluatedAt": "2026-09-01T10:00:00+08:00",
             "publicCreatorId": "creator_lumi_street",
             "publicRelationshipId": "relationship_citywalk_lumi",
             "publicTrackId": "track_city_walk",
             "revision": 3,
-            "role": "对标账号",
+            "role": "标杆账号",
             "status": "已确认"
           },
           {
             "fitReason": "同为随身相机测评，但长视频占比更高，可参考结构不参考时长。",
-            "fitScore": 0.86,
+            "fitScore": 86,
             "lastEvaluatedAt": "2026-08-31T10:00:00+08:00",
             "publicCreatorId": "creator_heye_camera",
             "publicRelationshipId": "relationship_camera_heye",
             "publicTrackId": "track_camera_review",
             "revision": 2,
-            "role": "对标账号",
+            "role": "同赛道观察",
             "status": "已确认"
           },
           {
             "fitReason": "同期承接同品牌，需要避开同款拍摄地。",
-            "fitScore": 0.71,
+            "fitScore": 71,
             "lastEvaluatedAt": "2026-08-30T10:00:00+08:00",
             "publicCreatorId": "creator_moka_coffee",
             "publicRelationshipId": "relationship_coffee_moka",
             "publicTrackId": "track_coffee_shop",
             "revision": 1,
-            "role": "商单竞品",
+            "role": "竞品账号",
             "status": "待确认"
           },
           {
             "fitReason": "剧情化程度高于本账号，仅参考选题不参考表达。",
-            "fitScore": 0.58,
+            "fitScore": 58,
             "lastEvaluatedAt": "2026-08-27T10:00:00+08:00",
             "publicCreatorId": "creator_qingzhou_travel",
             "publicRelationshipId": "relationship_travel_qingzhou",
             "publicTrackId": "track_travel_vlog",
             "revision": 1,
-            "role": "破圈参考",
+            "role": "合作候选",
             "status": "待确认"
           }
         ],
@@ -5627,7 +5627,7 @@
           "publicRelationshipId": "3df8b6bc7eb4857ebe0d369a55ccd3dc609e7a3c930908dd5a263524a1a4d1c7",
           "publicTrackId": "ce611d0bdbf326f8c31565beb100ff3108777e4f7be3f52c457986b8d7c29f08",
           "revision": 19,
-          "role": "对标账号",
+          "role": "标杆账号",
           "status": "待确认"
         },
         "revision": 19,
