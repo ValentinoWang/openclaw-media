@@ -36,6 +36,7 @@ import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNaviga
 import CreationRunDetailPage from './CreationRunDetailPage'
 import { MediaWebProvider, useMediaWeb } from './MediaWebWorkspace'
 import { loginUrl, logoutMediaSession, type MediaWebSession } from './mediaWebApi'
+import { goToAuthPage } from './mediaNavigation'
 import AdminAccessPage from './pages/admin/AdminAccessPage'
 import AdminBillingPage from './pages/admin/AdminBillingPage'
 import AdminOverviewPage from './pages/admin/AdminOverviewPage'
@@ -469,7 +470,7 @@ function StandaloneState({ icon, title, detail, action }: { icon: ReactNode; tit
 
 async function logout(session: Parameters<typeof logoutMediaSession>[0]) {
   await logoutMediaSession(session)
-  window.location.assign('/openclaw/media/login')
+  goToAuthPage('login')
 }
 
 function requireAuthenticatedSession(session: MediaWebSession | null): MediaWebSession {

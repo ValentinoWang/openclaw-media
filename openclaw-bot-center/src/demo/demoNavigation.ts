@@ -46,6 +46,16 @@ export function demoNavigate(path: string): void {
   notify()
 }
 
+/** 已经带上部署基址的绝对路径（认证页导航给过来的就是这种），直接推。 */
+export function demoNavigateTo(absolutePath: string): void {
+  const url = new URL(absolutePath, window.location.origin)
+  const target = `${url.pathname}${url.search}`
+  if (`${window.location.pathname}${window.location.search}` !== target) {
+    window.history.pushState({}, '', target)
+  }
+  notify()
+}
+
 /** 回到封面页。 */
 export function demoNavigateHome(): void {
   if (window.location.pathname !== baseUrl) window.history.pushState({}, '', baseUrl)

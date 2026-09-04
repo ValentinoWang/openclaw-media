@@ -1,3 +1,4 @@
+import { authPageUrl, currentLocationForReturn } from './mediaNavigation'
 import { capabilityCatalogSchema, type CapabilityCatalog, type CapabilityDefinition } from '../schemas/capabilityCatalogSchema'
 import { capabilityMatchResponseSchema, type CapabilityMatchResponse } from '../schemas/capabilityMatchSchema'
 import { mediaWebTaskCreateRequestSchema, mediaWebTaskErrorSchema, mediaWebTaskSchema, mediaWebUploadSchema, type MediaWebTask as GeneratedMediaWebTask, type MediaWebTaskCreateRequest, type MediaWebUpload } from '../schemas/mediaWebTaskSchema'
@@ -692,6 +693,5 @@ export function subscribeToMediaTask(taskId: string, onEvent: () => void): () =>
 }
 
 export function loginUrl(): string {
-  const next = `${window.location.pathname}${window.location.search}${window.location.hash}`
-  return `/openclaw/media/login?next=${encodeURIComponent(next)}`
+  return authPageUrl('login', currentLocationForReturn())
 }

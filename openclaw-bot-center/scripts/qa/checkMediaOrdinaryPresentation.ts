@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import ts from 'typescript'
 import { pipelineDisplayLabel } from '../../src/media/ui/displayLabels'
 import { generationSourceLabel, runStatusLabel } from '../../src/media/statusPresentation'
 import {
@@ -41,6 +42,26 @@ const presentationFiles = [
 const ordinaryLabelsSource = readFileSync(resolve('src/media/ui/ordinaryDataLabels.ts'), 'utf8')
 assert.doesNotMatch(ordinaryLabelsSource, /PLATFORM_LABELS|platformDisplayLabel/)
 
+/** 只取**用户真的会看到**的文字：字符串字面量、模板字面量与 JSX 文本。
+ *
+ *  这几条判据是关于「给普通用户看的文案里不许出现接口/合同术语」的，之前却直接对
+ *  整份源码做正则——注释里为了解释「这里把短事实排成一行」写下的「事实」二字就会
+ *  让门禁变红。误报会教人绕着门禁写注释，最后注释越写越糊。 */
+function userFacingText(file: string, source: string): string {
+  const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const chunks: string[] = []
+  const visit = (node: ts.Node): void => {
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) chunks.push(node.text)
+    else if (ts.isTemplateExpression(node)) {
+      chunks.push(node.head.text)
+      for (const span of node.templateSpans) chunks.push(span.literal.text)
+    } else if (ts.isJsxText(node)) chunks.push(node.text)
+    ts.forEachChild(node, visit)
+  }
+  visit(tree)
+  return chunks.join('\n')
+}
+
 for (const file of presentationFiles) {
   const source = readFileSync(file, 'utf8')
   assert.doesNotMatch(
@@ -48,13 +69,14 @@ for (const file of presentationFiles) {
     /(?:^|[^\w.$])(?:error|reason|cause)\.message\b/m,
     `${file} must not render a transport error message`,
   )
+  const copy = userFacingText(file, source)
   assert.doesNotMatch(
-    source,
+    copy,
     /(?:部分|该|以下)?业务投影(?:暂时)?(?:不可用|无法读取)/,
     `${file} must name the failed resource instead of showing a generic projection failure`,
   )
   assert.doesNotMatch(
-    source,
+    copy,
     /接口|事实|回读|投影/,
     `${file} must not expose API or contract terminology to ordinary users`,
   )

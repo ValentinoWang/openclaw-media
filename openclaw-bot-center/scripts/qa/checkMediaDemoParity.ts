@@ -10,7 +10,7 @@
  *  事实源（导入或解析源码）取数据喂给这些纯函数——这样 --self-test 才能用内
  *  存假数据独立证明每一类断言在被破坏时确实会失败，参见 runSelfTest()。 */
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import ts from 'typescript'
 import {
@@ -475,6 +475,34 @@ type DemoCatalogShape = {
   capabilities: ReadonlyArray<{ capabilityId: string }>
 }
 
+/** 认证页的路径必须跟着部署基址推导，跳转方式必须是可替换的。
+ *
+ *  写死 '/openclaw/media/login' 的那一版，演示站里点「退出登录」会整页跳到一个
+ *  不存在的路径——静态站是 404，打成单文件之后连一个可跳的文档都没有，用户只看到
+ *  not found，连登录页长什么样都看不到，更别提组织成员那条 Feishu 授权分支。 */
+export function checkAuthNavigationSeam(
+  navigationSource: string,
+  mediaSources: ReadonlyArray<{ file: string; source: string }>,
+  demoEntrySource: string,
+): string[] {
+  const failures: string[] = []
+  if (!/import\.meta\.env\?\.BASE_URL|import\.meta\.env\.BASE_URL/.test(navigationSource)) {
+    failures.push('src/media/mediaNavigation.ts 必须从 import.meta.env.BASE_URL 推导认证页路径，而不是写死部署路径')
+  }
+  if (!/export function installAuthNavigator/.test(navigationSource)) {
+    failures.push('src/media/mediaNavigation.ts 必须导出 installAuthNavigator：演示站要把整页跳转换成站内导航')
+  }
+  for (const { file, source } of mediaSources) {
+    if (/['"`]\/openclaw\/media\/(?:login|register|verify|recover|reset)/.test(source)) {
+      failures.push(`${file} 写死了生产认证页路径：改用 mediaNavigation 的 authPageUrl / goToAuthPage，路径要跟着部署基址走`)
+    }
+  }
+  if (!/installAuthNavigator\(/.test(demoEntrySource)) {
+    failures.push('src/demo/main.tsx 必须调用 installAuthNavigator：否则演示站里的「退出登录」仍会整页跳到不存在的路径')
+  }
+  return failures
+}
+
 function main(): void {
   const failures: string[] = []
 
@@ -534,6 +562,18 @@ function main(): void {
   failures.push(...checkAuthPageCoverage(authPageEntryKeys, demoAuthPages.map((page) => page.path)))
   failures.push(...checkEmbeddedAuthPages(demoAuthPages.map((page) => page.path)))
 
+  // 8) 认证页导航接缝
+  const mediaSourceFiles = readdirSync(resolve(projectRoot, 'src/media'), { recursive: true, encoding: 'utf8' })
+    .filter((entry) => /\.tsx?$/.test(entry) && entry !== 'mediaNavigation.ts')
+    .map((entry) => ({ file: `src/media/${entry}`, source: readFileSync(resolve(projectRoot, 'src/media', entry), 'utf8') }))
+  failures.push(
+    ...checkAuthNavigationSeam(
+      readFileSync(resolve(projectRoot, 'src/media/mediaNavigation.ts'), 'utf8'),
+      mediaSourceFiles,
+      readFileSync(resolve(projectRoot, 'src/demo/main.tsx'), 'utf8'),
+    ),
+  )
+
   if (failures.length > 0) {
     console.error(`media demo parity: FAIL 发现 ${failures.length} 处生产/演示站不一致：`)
     failures.forEach((failure, index) => console.error(`${index + 1}. ${failure}`))
@@ -544,7 +584,7 @@ function main(): void {
   console.log(
     'media demo parity: PASS ' +
       `staticRoutes=${new Set(productionStaticRoutes).size} paramRoutePatterns=${paramRoutes.length} ` +
-      `operations=${contractOperationIds.length} capabilities=${contractCapabilityIds.length} authPages=${authPageEntryKeys.length} embeddedAuthPages=${demoAuthPageDocuments.length}`,
+      `operations=${contractOperationIds.length} capabilities=${contractCapabilityIds.length} authPages=${authPageEntryKeys.length} embeddedAuthPages=${demoAuthPageDocuments.length} authNavigation=base-derived`,
   )
 }
 
@@ -650,7 +690,30 @@ function runSelfTest(): void {
     '新增认证页入口未同步必须被拦下',
   )
 
-  console.log('media demo parity self-test: PASS 路由覆盖/详情路由/会话授权/接口覆盖/合同摘要/能力目录/认证页共 7 类断言的红绿用例均符合预期')
+  // 8) 认证页导航接缝
+  const goodNavigation = 'export function installAuthNavigator() {}\nconst base = import.meta.env?.BASE_URL ?? "/"'
+  const goodEntry = 'installAuthNavigator(demoNavigateTo)'
+  expectEmpty(
+    checkAuthNavigationSeam(goodNavigation, [{ file: 'src/media/X.tsx', source: 'goToAuthPage("login")' }], goodEntry),
+    '合规的认证页导航接缝',
+  )
+  expectFailure(
+    checkAuthNavigationSeam(goodNavigation, [{ file: 'src/media/X.tsx', source: "location.assign('/openclaw/media/login')" }], goodEntry),
+    /写死了生产认证页路径/,
+    '写死认证页路径',
+  )
+  expectFailure(
+    checkAuthNavigationSeam(goodNavigation, [], 'installDemoBackend()'),
+    /必须调用 installAuthNavigator/,
+    '演示站没有接管认证页跳转',
+  )
+  expectFailure(
+    checkAuthNavigationSeam('export function installAuthNavigator() {}\nconst base = "/openclaw/media/"', [], goodEntry),
+    /必须从 import\.meta\.env\.BASE_URL 推导/,
+    '认证页路径没有跟着部署基址',
+  )
+
+  console.log('media demo parity self-test: PASS 路由覆盖/详情路由/会话授权/接口覆盖/合同摘要/能力目录/认证页/导航接缝共 8 类断言的红绿用例均符合预期')
 }
 
 if (process.argv.includes('--self-test')) {

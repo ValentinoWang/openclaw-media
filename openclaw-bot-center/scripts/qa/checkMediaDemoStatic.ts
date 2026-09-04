@@ -349,6 +349,48 @@ try {
         `${label}：页面发出了演示站以外的网络请求 -\n${telemetry.offOriginRequests.map((line) => `    ${line}`).join('\n')}`,
       )
     }
+
+    // 「退出登录」必须真的能走到登录页。生产是整页跳到 /openclaw/media/login，
+    // 演示站里那个路径不存在，单文件分发时更是只有一个文档——写死路径的那一版，
+    // 用户点完只看到 not found，连登录页长什么样都看不到。
+    for (const persona of demoPersonas) {
+      totalVisits += 1
+      telemetry = freshTelemetry()
+      const label = `退出登录（${persona.label}）`
+      try {
+        await page.evaluate(
+          ([key, id]) => { try { localStorage.setItem(key, id) } catch { /* 隐私模式 */ } },
+          [demoPersonaStorageKey, persona.id] as const,
+        )
+        await page.goto(`${origin}${demoBase}${persona.defaultRoute.replace(/^\//, '')}`, { waitUntil: 'domcontentloaded' })
+        await page.locator('.media-content').first().waitFor({ state: 'visible', timeout: 20_000 })
+        await page.getByRole('button', { name: '账户菜单' }).click({ timeout: 5_000 })
+        await page.getByRole('menuitem', { name: /退出登录/ }).click({ timeout: 5_000 })
+        await page.waitForTimeout(1_500)
+        const landedOn = new URL(page.url()).pathname
+        const isAuthPage = demoAuthPages.some(
+          (authPage) => landedOn.replace(/\/$/, '') === `${demoBase}${authPage.path.replace(/^\//, '')}`.replace(/\/$/, ''),
+        )
+        record(isAuthPage, `${label}：落到了 ${landedOn}，不是任何一个认证页；认证页路径必须跟着部署基址走`)
+        // 认证页是构建期复刻出来的独立文档，外壳用 iframe 承载：演示横幅在 iframe 里面，
+        // 只看外层 innerText 是看不到的。
+        const shellText = await page.locator('body').innerText()
+        record(shellText.includes('不鉴权复刻'), `${label}：外壳没有渲染认证页容器（当前正文「${shellText.slice(0, 40)}」）`)
+        const frameText = await page
+          .frameLocator('iframe')
+          .locator('body')
+          .innerText()
+          .catch(() => '')
+        record(
+          frameText.includes('静态演示'),
+          `${label}：登录页复刻没有渲染出来（iframe 正文「${frameText.slice(0, 40)}」）`,
+        )
+        await page.screenshot({ path: join(outputRoot, `logout-${persona.id}.png`), fullPage: true })
+      } catch (error) {
+        failures.push(`${label}：走查过程中抛出异常 - ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+
     await context.close()
   }
 } finally {

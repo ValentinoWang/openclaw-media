@@ -153,6 +153,9 @@ const COLLECT_DEFECTS = `(() => {
   // 判据故意收紧成「**每一列**都窄」：图标 + 正文这种 44px + 1fr 的网格里也有窄列，
   // 但那是设计意图，不是挤压。
   for (const grid of root.querySelectorAll('*')) {
+    // 控件（按钮、标签页）自己有一套排布逻辑，图标 + 文字 + 计数挤在几十像素里是
+    // 它们的常态，不是「事实网格被写死列数」这回事。只看内容容器。
+    if (grid.closest('button, [role="tab"], [role="tablist"]')) continue
     const gridStyle = getComputedStyle(grid)
     if (gridStyle.display !== 'grid' && gridStyle.display !== 'inline-grid') continue
     // 解析出来的是「179px 179px」这类字符串：Number('179px') 是 NaN，只能 parseFloat。
@@ -162,6 +165,7 @@ const COLLECT_DEFECTS = `(() => {
     for (const leaf of textLeaves) {
       if (leaf.element === grid || !grid.contains(leaf.element)) continue
       if (/^H[1-6]$/.test(leaf.element.tagName)) continue
+      if (leaf.element.closest('button, [role="tab"]')) continue
       const lines = Math.round(leaf.rect.height / leaf.lineHeight)
       if (lines >= 2 && leaf.rect.width < 200 && (!worst || lines > worst.lines)) worst = { leaf: leaf, lines: lines }
     }
