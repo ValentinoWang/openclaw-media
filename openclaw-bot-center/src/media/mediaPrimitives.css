@@ -224,24 +224,48 @@
    也会出现在 700px 的主面板里：写死两列，窄的一边把「口袋里的秋天：X100VI 通勤
    实拍」挤成两行、宽的一边又留下大片空白。minmax 的下限按「一条事实的值至少要
    多宽才不难看」来定，窄容器自动退回单列。
-   需要更紧凑或更宽松的下限时，在容器上改 --mg-facts-min，不要另写一套网格。 */
+   需要更紧凑或更宽松的下限时，在容器上改 --mg-facts-min，不要另写一套网格。
+   下限从 232px 提到 288px：232px 两列在 540px 左右的详情栏里仍会把一句话的值
+   挤成两行，「够放下两列」和「两列各自够宽」不是一回事。
+   下限外面包一层 min(100%, …)：像 /business 那样把卡片摆成固定列数网格
+   （grid-template-columns: repeat(2, …)）的页面，单张卡片可能窄到 200px 出头
+   ——比任何合理下限都窄。裸 minmax(288px, 1fr) 在这种容器里不会退让，auto-fit
+   仍然只給一列，但那一列被强行撑到 288px，比容器还宽，内容直接溢出到旁边
+   那张卡片上，糊住邻居的文字（量出来就是「事实网格自己的宽度」小于「它唯一
+   一条网格轨道的宽度」）。min(100%, 下限) 让轨道的下限永远不超过容器当下这
+   一刻实际有多宽：容器够宽时两者无区别，容器比下限还窄时该轨道就退到 100%，
+   变成贴合容器的单列，绝不会比容器本身更宽而溢出。这是全局兜底，不是给某
+   张卡片开的特例——下次别的页面把这个原语塞进另一个固定列数的网格，不用再
+   查一遍这条溢出。 */
 .mg-facts {
   display: grid;
   min-width: 0;
-  grid-template-columns: repeat(auto-fit, minmax(var(--mg-facts-min, 232px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--mg-facts-min, 288px)), 1fr));
   gap: var(--mg-gap-1) var(--mg-gap-2);
   margin: 0;
 }
-.mg-fact { min-width: 0; margin: 0; }
+/* 一条事实里，标签与值**能并排就并排、放不下再换行**。
+   固定「标签在上、值在下」的写法在 350px 的检视栏里会让「7d 快照 / 未记录」
+   这种三个字的值也吃掉两行，一屏没剩几条；固定「左标签右值」又会在值很长时
+   把值挤成窄柱。用 flex-wrap + 一个值的基准宽度，让浏览器按实际宽度自己决定。 */
+.mg-fact {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  align-items: flex-start;
+  column-gap: var(--mg-gap-1);
+  row-gap: 2px;
+  margin: 0;
+}
 .mg-fact > :first-child {
-  display: block;
-  margin: 0 0 2px;
+  flex: 0 0 auto;
+  margin: 0;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
   font-weight: 600;
 }
 .mg-fact > :last-child {
-  display: block;
+  flex: 1 1 var(--mg-fact-value, 13ch);
   min-width: 0;
   margin: 0;
   color: var(--mg-ink);

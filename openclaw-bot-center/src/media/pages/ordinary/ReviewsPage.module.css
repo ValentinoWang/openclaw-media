@@ -181,11 +181,22 @@
   min-height: 0;
 }
 
+/* .panel 是 mg-panel，overflow:hidden 让它在 .primaryColumn 的 grid 里「自动
+   最小尺寸」解析成 0：SummaryBand 和标签页没有 overflow:hidden，天然按内容
+   占满一行、不会被压缩，三行总需求超过 100% 可用高度时，没有下限保护的这一行
+   （填满剩余高度的 .panel）先被压扁——这正是它「填满剩余高度」这条契约的题中
+   之义，压扁本身不是 bug。bug 在于 overflow 只到 hidden 为止：实测「增长摘要」
+   压到 226px 但需要 307px，最后一组「证据覆盖」指标被整段裁掉且没有任何出路。
+   这里改成 overflow-y: auto（保留 overflow-x: hidden，宽表格由 .tableWrap 自己
+   横向滚动）：填满剩余高度的语义不变，只是分到的高度不够时，用户能在面板内部
+   滚动看到剩下的内容，而不是内容凭空消失。 */
 .tabContent > .panel {
   display: flex;
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .tabContent > .panel > :global(.mg-state),
