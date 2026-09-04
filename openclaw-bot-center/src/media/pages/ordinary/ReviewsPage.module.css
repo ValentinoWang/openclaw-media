@@ -542,13 +542,22 @@
    直接混在文字里、又继承 overflow-wrap: anywhere，窄一点就被拦腰截断。
    改成一行独立的 flex，每个标识符各自是一个 .mg-id 单行省略，不再让
    整句话的换行规则去处理不含空格的整串编号。 */
-.layersMeta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.3rem 0.4rem;
+/* 编号在整栏最下面的脚注区：不是标题的一部分，而是「拿去核对用的」参考信息。
+   两条各占一行（352px 的检视栏里两个编号本来就并不进一行），弱化成灰字。 */
+.layersFooter {
+  display: grid;
+  gap: 0.5rem;
   min-width: 0;
-  margin: 0.2rem 0 0;
+  margin-top: 0.2rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--reviews-line);
+}
+
+.layersMeta {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  margin: 0;
   color: var(--reviews-muted);
   font-size: var(--mg-text-xs);
 }
@@ -574,11 +583,15 @@
   font-weight: 600;
 }
 
+/* 编号和下面每一条事实的值同字号、同颜色，唯独字重不同（600 对 400），三行就
+   读成了三个并列的标题。跟事实行用同一套：400 字重 + 同样的行高；颜色再退一档，
+   因为这是参考信息不是要读的值。 */
 .metaItem > .mg-id,
 .metaItem > span {
   min-width: 0;
-  color: var(--reviews-ink);
-  font-weight: 600;
+  color: var(--reviews-muted);
+  font-weight: 400;
+  line-height: var(--mg-lh-snug);
 }
 
 .layerGrid {
@@ -624,8 +637,6 @@
    小节头因此收成图标 + 标题的单行。 */
 .layersFootnote {
   margin: 0;
-  padding-top: 0.4rem;
-  border-top: 1px solid var(--reviews-line);
   color: var(--reviews-muted);
   font-size: var(--mg-text-2xs);
   line-height: 1.4;

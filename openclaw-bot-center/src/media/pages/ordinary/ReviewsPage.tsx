@@ -726,21 +726,6 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
       <div className={styles.layersHeader}>
         <div className={styles.layersHeading}>
           <h2>{reviewPostTitle(review)}</h2>
-          {/* 原来是「作品编号 · 报告 报告编号」一句连续的话，靠一个「· 报告」把两个
-              编号串起来。两个编号各 175px 左右，任何一档宽度下都放不进检视栏的一行，
-              于是「· 报告」永远留在上一行行尾、报告编号掉到下一行——读出来变成
-              「post_xhs_autumn_camera 是报告」，第二行成了一串没有标签的孤儿编号。
-              改成两个自带标签的整体：折行时标签跟着自己的值一起走。 */}
-          <p className={styles.layersMeta}>
-            <span className={styles.metaItem}>
-              <small>作品</small>
-              <span className="mg-id" title={review.publicPostId}>{review.publicPostId}</span>
-            </span>
-            <span className={styles.metaItem}>
-              <small>报告</small>
-              <span className="mg-id" title={review.publicReviewId}>{review.publicReviewId}</span>
-            </span>
-          </p>
         </div>
         {onConfirm ? <button className={primaryButtonClass} data-component="mg-btn" type="button" onClick={onConfirm} disabled={review.humanDecision !== null || review.status === "confirmed"}><CheckCircle2 size={15} aria-hidden="true" />{review.humanDecision === null ? "确认人工决策" : "已完成确认"}</button> : null}
       </div>
@@ -757,12 +742,29 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
           <p className={styles.layerValue}>{valueOrUnknown(review.modelSuggestion, "未生成")}</p>
         </LayerPanel>
       </div>
-      {/* 三个小节原本各自一行的出处说明合并到这里之后，只剩下这一句是真正的告诫：
-          另外两句（「数据层由指标快照提供」「人工决策由确认操作写入」）旁边就分别写着
-          「24h 快照 / 7d 快照」和「确认人工决策」按钮，是复述；而且「人工决策」已经
-          降级成数据层里的一条事实行，再说「小节由确认操作写入」指的结构已经不存在了。
-          常驻可见而不是放进 title：hover 才出现的提醒在触屏上等于没写。 */}
-      <p className={styles.layersFootnote}>模型输出是建议，不替代人工决策。</p>
+      {/* 两个公开编号从标题下面挪到了整栏最下面。它们和标题同色同字号，紧贴标题时
+          三行读起来像三个并列的标题，和下面那一整块事实对不上——而编号本身是「拿去
+          核对用的」参考信息，不是进来第一眼要读的东西。放到脚注区、弱化成灰字之后，
+          标题正下方直接就是那个唯一的操作按钮。
+          「标签 + 编号」仍然各自包成一个整体（.metaItem），352px 的检视栏里两个编号
+          放不进一行，折行时标签要跟着自己的值一起走。
+
+          告诫那一句留在最后：另外两句出处说明（「数据层由指标快照提供」「人工决策由
+          确认操作写入」）旁边就分别写着「24h 快照 / 7d 快照」和「确认人工决策」按钮，
+          是复述。常驻可见而不是放进 title：hover 才出现的提醒在触屏上等于没写。 */}
+      <footer className={styles.layersFooter}>
+        <p className={styles.layersMeta}>
+          <span className={styles.metaItem}>
+            <small>作品</small>
+            <span className="mg-id" title={review.publicPostId}>{review.publicPostId}</span>
+          </span>
+          <span className={styles.metaItem}>
+            <small>报告</small>
+            <span className="mg-id" title={review.publicReviewId}>{review.publicReviewId}</span>
+          </span>
+        </p>
+        <p className={styles.layersFootnote}>模型输出是建议，不替代人工决策。</p>
+      </footer>
     </section>
   );
 }
