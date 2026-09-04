@@ -178,15 +178,30 @@
   scrollbar-gutter: stable;
 }
 
-.recordsPanel,
 .inspectorPanel,
 .rulesPanel {
   min-width: 0;
 }
 
+/* [data-page-terminal-surface="primary"] 上的共享契约（media.css）已经把
+   .recordsPanel 作为一个整体的高度钉在 mainColumn 的可用高度内（flex:0 1 auto +
+   min-height:0，见本文件顶部 .page 媒体查询的注释），但共享契约只管「作为一个
+   整体该多高」，不管内部三块（面板头 / 表格 / 分页）怎么分这份高度——之前它们
+   是 .recordsPanel（display 未设，即 block）里的普通块级子元素，各自撑开自然
+   高度，超出 470px 的部分被 .mg-panel 的 overflow:hidden 直接切掉，而链路上
+   没有任何一层在滚。这里接手内部分配：面板头和分页钉在各自的自然高度
+   （flex: 0 0 auto），表格区吃掉剩下的高度，超出时交给 .tableViewport 自己
+   内部滚（见 .tableArea / .tableViewport）。 */
+.recordsPanel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
 .panelHeader {
   display: flex;
   min-height: 66px;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
@@ -218,12 +233,20 @@
 }
 
 .tableArea {
+  display: flex;
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
 }
 
 .tableViewport {
   max-width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
   overflow-x: auto;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .table {
@@ -245,9 +268,17 @@
 }
 
 .table thead th {
+  /* .tableViewport 现在是真正的滚动容器（overflow-y: auto），行在里面滚的时候
+     表头应该留在原地，而不是跟着 tbody 一起滚出视口。position: sticky 的定位
+     基准是最近的滚动祖先，正好就是 .tableViewport；背景色必须显式写出来，
+     否则贴顶之后滚过来的行会从半透明的表头缝隙里透出来。 */
+  position: sticky;
+  top: 0;
+  z-index: 1;
   padding-top: 13px;
   padding-bottom: 11px;
   color: var(--mg-muted);
+  background: var(--mg-surface);
   font-size: var(--mg-text-xs);
   font-weight: 600;
   white-space: nowrap;
@@ -365,6 +396,7 @@
 .pagination {
   display: flex;
   min-height: 58px;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -598,6 +630,24 @@
 .emptyState > :global(.mg-state),
 .panelState > :global(.mg-state) {
   width: 100%;
+}
+
+/* .recordsPanel 改成 flex 列之后，装「加载中 / 无权限 / 读取失败 / 暂无成员」
+   的这两块也是该列的 flex item：显式吃满剩余高度并在自己内部滚，跟检视栏的
+   .inspectorPanel > .panelState 是同一个写法（见下方该规则），短内容不会贴着
+   面板头堆在顶部、下面留一截和表格区一样宽却没有描边的空白。 */
+.recordsPanel > .panelState,
+.recordsPanel > .emptyState {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.recordsPanel > .panelState > :global(.mg-state),
+.recordsPanel > .emptyState > :global(.mg-state) {
+  min-height: 100%;
 }
 
 @media (max-width: 1120px) {
