@@ -140,11 +140,15 @@
   overflow: hidden;
 }
 
+/* flex-wrap, not a grid with pixel-floor columns: at this panel's actual width
+   (a 1.75fr/1.55fr share of the two-column rail, not the full viewport) the old
+   fixed-minimum grid's min-content (~750px) routinely exceeded the panel
+   (~666px @1440), and with the shared .mg-panel's overflow:hidden that meant
+   "重置" silently rendered off the clipped edge with no scrollbar to reach it.
+   Wrapping lets whatever doesn't fit reflow to a second line instead. */
 .filterBar {
-  display: grid;
-  grid-template-columns:
-    minmax(210px, 1.4fr) repeat(3, minmax(96px, 0.62fr))
-    minmax(126px, 0.78fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 9px;
   padding: 12px;
   border-bottom: 1px solid var(--mg-border);
@@ -196,6 +200,7 @@
 .filterField {
   display: grid;
   min-width: 0;
+  flex: 1 1 110px;
   gap: 5px;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
@@ -233,6 +238,7 @@
 .searchField {
   display: flex;
   align-items: center;
+  flex: 1.8 1 200px;
   padding-top: 18px;
 }
 
@@ -243,6 +249,7 @@
 }
 
 .resetButton {
+  flex: 0 0 auto;
   min-height: 38px;
   align-self: end;
   padding: 0 10px;
@@ -332,6 +339,19 @@
   min-height: 0;
   flex: 1;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* .assetCard has overflow:hidden (it clips its own rounded corners) with no
+     explicit height, so it stretches to whatever the grid hands its row. The
+     default `auto` row-sizing function treats a hidden-overflow item's
+     automatic minimum/content contribution as 0 (the same rule that lets a
+     scroll container avoid forcing its ancestor to grow), so an `auto` row
+     here sized to the *available* height instead of the cards' actual
+     (16:9 media + body text) content height -- rows came out ~110px tall for
+     ~270px-tall cards, and the rest of every card was clipped with no scroll
+     reachable (assetGrid's own scrollHeight matched its clientHeight, since by
+     its own measure nothing overflowed). `min-content` uses the cards' real
+     block-axis size instead, which is unambiguous here (no wrapping choice
+     in the block direction), restoring the grid's own vertical scroll. */
+  grid-auto-rows: min-content;
   align-content: start;
   gap: 10px;
   overflow-y: auto;
@@ -1031,11 +1051,6 @@
   .assetGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .filterBar {
-    grid-template-columns:
-      minmax(200px, 1fr) repeat(2, minmax(100px, 0.7fr))
-      minmax(120px, 0.8fr) auto;
-  }
   .filterBar > .filterField:nth-child(4) {
     display: none;
   }
@@ -1090,7 +1105,11 @@
   .inspectorBody {
     overflow: visible;
   }
+  /* Below this width the panel is full-bleed (stacked layout, see .assetsLayout
+     above) so there is room for a real grid again; back to display:grid here
+     instead of the flex-wrap the wider two-column layout needs. */
   .filterBar {
+    display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .filterBar > .filterField:nth-child(4) {

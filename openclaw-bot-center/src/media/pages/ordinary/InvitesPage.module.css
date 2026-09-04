@@ -601,9 +601,26 @@
 }
 
 @media (max-width: 1120px) {
+  /* Releases the shared persistent-rail contract for the stacked layout below.
+     `.page` carries `fidelity-page`, whose `:has(> [data-page-prelude])` rule
+     (media.css) sets this element's own height/display at higher specificity
+     than a single local class can win on source order or `!important`-free
+     overrides alone -- so a direct `.page { height: auto }` here was silently
+     losing and `.page` stayed pinned to the viewport-height calc. Likewise
+     `.mainColumn`/`.rail` carry `data-page-primary`/`data-page-inspector`,
+     whose shared rule reads `height: var(--mg-rail-fill, 100%)` -- also higher
+     specificity than `.mainColumn { height: auto }` below. These four
+     properties are exactly the lever the shared rule was built to be driven
+     by (see media.css's comment above [data-page-layout="persistent-rail"]),
+     so setting them here -- instead of re-declaring height/display locally --
+     is what actually reaches `.mainColumn`/`.recordsPanel`: without it,
+     .recordsPanel (mg-panel, overflow:hidden) was clamped to ~73px against
+     ~408px of real content, with no scrollbar in the chain to reach the rest. */
   .page {
-    display: block;
-    height: auto;
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+    --mg-rail-align: auto;
     overflow: visible;
   }
 

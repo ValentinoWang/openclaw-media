@@ -584,29 +584,31 @@ function SignalPanel({
       </header>
       {state.status === "ready" ? (
         <>
-          <ul className={styles.traceList}>
-            {state.data.items.map((signal, index) => (
-              <li key={signal.publicSignalId}>
-                <span className={styles.traceNumber}>{index + 1}</span>
-                <div>
-                  <h3>{signal.title}</h3>
-                  <div className={styles.signalMeta}>
-                    <span className={styles.signalMetaItem}>{signalKindLabel(signal.kind)}</span>
-                    <span className={styles.signalMetaItem}>
-                      <PlatformIdentity platform={signal.platform} size="sm" />
-                    </span>
-                    {signal.rank > 0 ? <span className={styles.signalMetaItem}>排名 {signal.rank}</span> : null}
-                    <span className={styles.signalMetaItem}>{qualityDisplayLabel(signal.qualityStatus)}</span>
+          <div className={styles.traceScroll} role="region" aria-label="来源信号列表" tabIndex={0}>
+            <ul className={styles.traceList}>
+              {state.data.items.map((signal, index) => (
+                <li key={signal.publicSignalId}>
+                  <span className={styles.traceNumber}>{index + 1}</span>
+                  <div>
+                    <h3>{signal.title}</h3>
+                    <div className={styles.signalMeta}>
+                      <span className={styles.signalMetaItem}>{signalKindLabel(signal.kind)}</span>
+                      <span className={styles.signalMetaItem}>
+                        <PlatformIdentity platform={signal.platform} size="sm" />
+                      </span>
+                      {signal.rank > 0 ? <span className={styles.signalMetaItem}>排名 {signal.rank}</span> : null}
+                      <span className={styles.signalMetaItem}>{qualityDisplayLabel(signal.qualityStatus)}</span>
+                    </div>
+                    <a className={styles.signalLink} href={signal.sourceUrl} target="_blank" rel="noreferrer">
+                      查看来源 <ExternalLink size={13} aria-hidden="true" />
+                    </a>
+                    <small className={styles.signalCapturedAt}>采集于 {formatDate(signal.capturedAt)}</small>
                   </div>
-                  <a className={styles.signalLink} href={signal.sourceUrl} target="_blank" rel="noreferrer">
-                    查看来源 <ExternalLink size={13} aria-hidden="true" />
-                  </a>
-                  <small className={styles.signalCapturedAt}>采集于 {formatDate(signal.capturedAt)}</small>
-                </div>
-              </li>
-            ))}
-          </ul>
-          {!state.data.items.length ? <EmptyState title="暂无来源信号" detail="当前账户还没有热榜或活动信号快照。" /> : null}
+                </li>
+              ))}
+            </ul>
+            {!state.data.items.length ? <EmptyState title="暂无来源信号" detail="当前账户还没有热榜或活动信号快照。" /> : null}
+          </div>
           <footer className={styles.tableFooter}>
             <span>来源快照不会替代决策判断。</span>
             <CursorPagination
