@@ -266,36 +266,34 @@ export default function AdminAccessPage() {
     {!permitted ? <AccessGate runtimeState={runtimeState as RuntimeState} /> : <>
       <div>{tabNavigation}</div>
       <PlatformCookiePanel state={cookieState} />
-      <div hidden={activeTab !== 'invitations'}>
-        <div className={styles.accessLayout} data-page-layout="persistent-rail">
-          <div className={styles.mainColumn} data-page-primary data-primary-flow>
-            <InvitationTab
-              hidden={activeTab !== 'invitations'}
-              state={usersState}
-              admissionState={batchesState}
-              policyState={policyState}
-              search={search}
-              submittedSearch={submittedSearch}
-              selectedUserId={selectedUserId}
-              cursorDepth={userCursorStack.length}
-              onSearchChange={setSearch}
-              onSearchSubmit={submitSearch}
-              onSelectUser={setSelectedUserId}
-              onPreviousPage={previousUserPage}
-              onNextPage={nextUserPage}
-              onOpenAdmission={() => selectTab('admission')}
-              onOpenRegistration={() => selectTab('registration')}
-            />
-          </div>
-          <InvitationInspector
-            user={selectedUser}
-            expectedRevision={usersState.status === 'ready' ? usersState.data.revision : 0}
-            canMutate={canMutate}
-            readback={readbackUsers}
-            onClear={() => setSelectedUserId(null)}
-            onMutationComplete={onMutationComplete}
+      <div className={styles.accessLayout} data-page-layout="persistent-rail" hidden={activeTab !== 'invitations'}>
+        <div className={styles.mainColumn} data-page-primary data-primary-flow>
+          <InvitationTab
+            hidden={activeTab !== 'invitations'}
+            state={usersState}
+            admissionState={batchesState}
+            policyState={policyState}
+            search={search}
+            submittedSearch={submittedSearch}
+            selectedUserId={selectedUserId}
+            cursorDepth={userCursorStack.length}
+            onSearchChange={setSearch}
+            onSearchSubmit={submitSearch}
+            onSelectUser={setSelectedUserId}
+            onPreviousPage={previousUserPage}
+            onNextPage={nextUserPage}
+            onOpenAdmission={() => selectTab('admission')}
+            onOpenRegistration={() => selectTab('registration')}
           />
         </div>
+        <InvitationInspector
+          user={selectedUser}
+          expectedRevision={usersState.status === 'ready' ? usersState.data.revision : 0}
+          canMutate={canMutate}
+          readback={readbackUsers}
+          onClear={() => setSelectedUserId(null)}
+          onMutationComplete={onMutationComplete}
+        />
       </div>
       <AdmissionTab
         hidden={activeTab !== 'admission'}

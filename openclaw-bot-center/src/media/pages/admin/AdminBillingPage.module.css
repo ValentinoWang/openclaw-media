@@ -155,6 +155,7 @@
 
 .tablePanel,
 .inspector,
+.inspectorBody,
 .bottomPanel {
   min-width: 0;
 }
@@ -449,9 +450,14 @@
   height: 100%;
   min-height: 0;
   margin-top: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
+  /* .inspector also carries the shared .mg-panel class, which sets its own
+     overflow: hidden (rounded-corner clipping). A same-specificity overflow
+     override on this class only wins that cascade tie by source order, which
+     is not guaranteed as the bundle's CSS graph changes — it has already lost
+     that tie once (measured: computed overflow-y came back "hidden", not
+     "auto"). So this element stays a clipping shell like .tablePanel does,
+     and .inspectorBody below -- a plain child with no competing class --
+     is the one that actually scrolls. */
 }
 
 .inspectorHeader {
@@ -459,6 +465,23 @@
   min-height: 0;
   flex: 0 0 auto;
   padding: 16px 17px 14px;
+}
+
+/* The inspector's real scroll surface. Mirrors .tablePanel/.tableViewport:
+   the mg-panel-classed shell (.inspector) stays a clipping box for its rounded
+   corners, an inner wrapper with no competing class does the actual
+   overflow-y: auto -- so content taller than the persistent-rail's shared row
+   height (operation tabs + the active form + the confirmation/footer/submit
+   tail, or the mutation receipt) scrolls into view instead of being clipped
+   with no way back. */
+.inspectorBody {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .inspectorTitle {
@@ -776,6 +799,10 @@
 
   .inspector {
     margin-top: 0;
+  }
+
+  .inspectorBody {
+    overflow: visible;
   }
 }
 

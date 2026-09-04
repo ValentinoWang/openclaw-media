@@ -471,35 +471,37 @@ export default function AdminBillingPage() {
           <div className={styles.inspectorTitle}><Link2 size={18} /><div><h2 id="billing-inspector-title">{operationTitle(mode)}</h2><p>{operationDescription(mode)}</p></div></div>
           {action.state.message ? <span className={styles.actionMessage + (action.state.kind === 'error' ? ' ' + styles.actionError : action.state.kind === 'success' ? ' ' + styles.actionSuccess : '')} role="status">{action.state.message}</span> : null}
         </header>
-        <div className={styles.operationTabs + ' mg-tabs'} role="tablist" aria-label="计费写入操作">
-          {operationTabs.map((tab) => <button
-            type="button"
-            key={tab.key}
-            id={operationTabId(tab.key)}
-            role="tab"
-            aria-selected={mode === tab.key}
-            aria-controls={operationPanelId(tab.key)}
-            tabIndex={mode === tab.key ? 0 : -1}
-            className={styles.operationTab + ' mg-tab'}
-            onClick={() => changeMode(tab.key)}
-            onKeyDown={handleOperationTabKeyDown}
-          >{tab.label}</button>)}
-        </div>
-        {operationTabs.map((tab) => mode === tab.key ? <form key={tab.key} className={styles.form} id={operationPanelId(tab.key)} role="tabpanel" aria-labelledby={operationTabId(tab.key)} onSubmit={(event) => void submit(event)}>
-          <div className={styles.fields}>{renderOperationFields()}</div>
-          <label className={styles.confirmation}>
-            <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
-            <span><strong>确认边界</strong><small>{confirmationText(mode)}</small></span>
-          </label>
-          <div className={styles.formFooter}>
-            <span>提交后会保留幂等键，并重新读取管理员计费汇总。</span>
-            <button type="submit" className={styles.submitButton + ' mg-btn mg-btn-primary'} disabled={!submitReady}>
-              {action.busy ? <LoaderCircle className="spin" size={16} /> : mode === 'mapping' ? <Link2 size={16} /> : mode === 'grant' ? <Gift size={16} /> : mode === 'batch' ? <TicketCheck size={16} /> : mode === 'recover' ? <RotateCcw size={16} /> : <Undo2 size={16} />}
-              {operationButtonLabel(mode)}
-            </button>
+        <div className={styles.inspectorBody}>
+          <div className={styles.operationTabs + ' mg-tabs'} role="tablist" aria-label="计费写入操作">
+            {operationTabs.map((tab) => <button
+              type="button"
+              key={tab.key}
+              id={operationTabId(tab.key)}
+              role="tab"
+              aria-selected={mode === tab.key}
+              aria-controls={operationPanelId(tab.key)}
+              tabIndex={mode === tab.key ? 0 : -1}
+              className={styles.operationTab + ' mg-tab'}
+              onClick={() => changeMode(tab.key)}
+              onKeyDown={handleOperationTabKeyDown}
+            >{tab.label}</button>)}
           </div>
-        </form> : <div key={tab.key} id={operationPanelId(tab.key)} role="tabpanel" aria-labelledby={operationTabId(tab.key)} hidden />)}
-        {receipt ? <MutationReceipt receipt={receipt} /> : null}
+          {operationTabs.map((tab) => mode === tab.key ? <form key={tab.key} className={styles.form} id={operationPanelId(tab.key)} role="tabpanel" aria-labelledby={operationTabId(tab.key)} onSubmit={(event) => void submit(event)}>
+            <div className={styles.fields}>{renderOperationFields()}</div>
+            <label className={styles.confirmation}>
+              <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
+              <span><strong>确认边界</strong><small>{confirmationText(mode)}</small></span>
+            </label>
+            <div className={styles.formFooter}>
+              <span>提交后会保留幂等键，并重新读取管理员计费汇总。</span>
+              <button type="submit" className={styles.submitButton + ' mg-btn mg-btn-primary'} disabled={!submitReady}>
+                {action.busy ? <LoaderCircle className="spin" size={16} /> : mode === 'mapping' ? <Link2 size={16} /> : mode === 'grant' ? <Gift size={16} /> : mode === 'batch' ? <TicketCheck size={16} /> : mode === 'recover' ? <RotateCcw size={16} /> : <Undo2 size={16} />}
+                {operationButtonLabel(mode)}
+              </button>
+            </div>
+          </form> : <div key={tab.key} id={operationPanelId(tab.key)} role="tabpanel" aria-labelledby={operationTabId(tab.key)} hidden />)}
+          {receipt ? <MutationReceipt receipt={receipt} /> : null}
+        </div>
       </aside>
     </div>
   </main>

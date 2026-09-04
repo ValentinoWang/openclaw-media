@@ -183,6 +183,23 @@
   overflow: hidden;
 }
 
+/* This element now carries `hidden` directly (see the tsx: the redundant
+   unstyled wrapper div that used to hold it is gone -- it broke this from
+   being a direct child of <main>, which is what
+   `.fidelity-page:has(> [data-page-prelude]) > [data-page-layout=...]` in
+   media.css needs to actually clamp its height to the shared viewport-height
+   contract; without that direct-child match this grid, and everything under
+   it (.mainColumn, .tabContent), was pure auto/content-height, and the tab's
+   real content only ever got clipped by .page's own fixed height + overflow:
+   hidden at the very top -- with nothing scrollable in between. `display:
+   grid` above is unconditional, author-origin, and normal-importance, so
+   (like .tabContent) it would otherwise beat the user-agent's
+   `[hidden] { display: none }` on cascade origin alone and stay laid out
+   anyway; this is the same guard as `.tabContent[hidden]` above. */
+.accessLayout[hidden] {
+  display: none;
+}
+
 .mainColumn,
 .tabContent {
   min-width: 0;
@@ -199,11 +216,60 @@
   scrollbar-gutter: stable;
 }
 
+/* overflow-y: auto (not hidden) is load-bearing, not decorative: .tablePanel
+   below is `flex: 1 1 0`, an explicit zero flex-basis. Under CSS flexbox's
+   shrink algorithm, an item's share of a shrink deficit is weighted by
+   flex-basis * shrink-factor -- a literal 0 basis means it is weighted 0 and
+   absorbs none of the shrink itself, but it also *starts* the resolution
+   from that same 0, so whenever a same-row sibling with auto (content-sized)
+   basis -- .summaryGrid in the invitations tab, .actionPanel in the admission
+   tab -- has enough natural content to fill this section's height on its own,
+   .tablePanel is left with nothing and (via its own overflow: hidden below,
+   which resolves its *automatic* minimum size to 0) collapses toward 0
+   instead of the min-height floor set on it and .actionPanel further down.
+   Measured at 1180px width: .tablePanel's own assigned height came back 2px
+   (clientHeight 0) while its un-clipped content needed ~100-165px, with nothing
+   between it and .page's own overflow: hidden able to scroll. Those floors
+   stop the collapse; this rule is what makes whatever still doesn't fit
+   (the floors together can still exceed the shared height on the narrowest
+   panel widths) a genuine scroll instead of another hard, unreachable clip. */
 .tabContent {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* AdmissionTab and RegistrationTab render unconditionally (only their own
+   `hidden` prop toggles) and put that prop straight on this class. An
+   author-origin `display: flex` of equal or lower specificity than the
+   attribute selector still beats the user-agent stylesheet's
+   `[hidden] { display: none }` on origin alone, regardless of source order --
+   so without this rule the inactive tab keeps its `hidden` attribute (correct
+   in the DOM) but stays laid out as a flex item, competing for .page's fixed,
+   overflow:hidden height budget and getting flex-shrunk to a few px instead of
+   actually leaving the flow. Measured: with only the base rule above, the
+   inactive tabpanel's computed display stayed "flex" (not "none"). */
+.tabContent[hidden] {
+  display: none;
+}
+
+/* Same guard, scoped to beat `.page > .tabContent { display: block }` in the
+   <=1120px stacked layout below: that rule is also two classes (0,2,0), tied
+   with `.tabContent[hidden]` above and later in source, so at narrow widths
+   it was winning the `display` property back to "block" and undoing the
+   guard right where AdmissionTab/RegistrationTab are `.page`'s direct
+   children. Adding the extra attribute selector here (0,3,0) settles it
+   regardless of order. Measured: before this rule, at 900px width the
+   inactive tabpanel's computed display was "block", not "none", and its
+   content rendered stacked directly under the active tab's -- not clipped
+   (nothing here needs a scroll escape), but not actually switching tabs
+   either, which the tablist's `aria-selected` and this component's own
+   `hidden` prop both say it should. */
+.page > .tabContent[hidden] {
+  display: none;
 }
 
 .page > .tabContent {
@@ -229,9 +295,16 @@
   overflow: hidden;
 }
 
+/* min-height floor (not 0): see the comment on .tabContent above -- this
+   panel's `flex: 1 1 0` basis means a same-row sibling with real content
+   (.summaryGrid / .actionPanel) can otherwise starve it down to nothing.
+   230px covers its own mg-panel-head (54px, measured) plus the filter bar
+   the invitations table adds, pagination, and a couple of data rows; .page >
+   .tabContent's now-scrollable box (above) is what makes the rest of a tall
+   result set reachable instead of clipped. */
 .tablePanel {
   display: flex;
-  min-height: 0;
+  min-height: 230px;
   flex: 1 1 0;
   flex-direction: column;
   overflow: hidden;
@@ -1105,9 +1178,17 @@
   max-width: 75ch;
 }
 
+/* min-height floor: .actionPanel has an auto (content-sized) flex-basis,
+   so under a shrink deficit it normally absorbs it before a 0-basis sibling
+   even gets asked to shrink (see .tablePanel's comment) -- but once that
+   sibling has its own floor, any further deficit falls entirely on this
+   panel, and its own overflow: hidden (below) would otherwise let it be
+   crushed past the point its own header and action tabs stay usable. 260px
+   covers its mg-panel-head plus the segmented action tabs; .page > .tabContent
+   now scrolls, so the rest of the form is reachable rather than clipped. */
 .actionPanel {
   display: flex;
-  min-height: 0;
+  min-height: 260px;
   flex: 0 1 auto;
   flex-direction: column;
   margin-top: 14px;
