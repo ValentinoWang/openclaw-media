@@ -319,6 +319,48 @@ const COLLECT_DEFECTS = `(() => {
     defects.push('面板底部空转：' + describe(entry.panel, (entry.panel.textContent || '').trim()) + ' 高 ' + Math.round(entry.rect.height) + 'px，内容到底还剩 ' + Math.round(entry.tail) + 'px 的空盒子——高度是视口算出来的、与内容无关；该让它按内容定高（--mg-rail-align: start + --mg-rail-fill: auto，再用 max-height 保留内部滚动），而不是往里填东西')
   }
 
+  // 第八类：徽标被拉变形。徽标是内容尺寸的小药丸；一旦它成了 grid item，
+  // inline-flex 会被块化、flex: 0 0 auto 随之失效，父级 align-items / justify-items
+  // 的默认值 normal 就等于 stretch——/organization-workspace 的文档页里「只读镜像」
+  // 因此被 .mg-hero 的 330px 轨道撑成了 330×112 的大色块。量的是「盒子内容区比
+  // 里面那点字形大出多少」，不看具体是哪个属性把它拉开的。
+  for (const chip of root.querySelectorAll('.mg-badge, [data-component="mg-badge"]')) {
+    const chipRect = chip.getBoundingClientRect()
+    if (chipRect.width < 1 || chipRect.height < 1) continue
+    const chipStyle = getComputedStyle(chip)
+    if (chipStyle.visibility === 'hidden' || chipStyle.display === 'none') continue
+    let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity
+    const chipWalker = document.createTreeWalker(chip, NodeFilter.SHOW_TEXT)
+    for (let node = chipWalker.nextNode(); node; node = chipWalker.nextNode()) {
+      if (!(node.textContent || '').trim()) continue
+      inkRange.selectNodeContents(node)
+      for (const rect of inkRange.getClientRects()) {
+        if (rect.width <= 0.5 || rect.height <= 0.5) continue
+        left = Math.min(left, rect.left); right = Math.max(right, rect.right)
+        top = Math.min(top, rect.top); bottom = Math.max(bottom, rect.bottom)
+      }
+    }
+    for (const media of chip.querySelectorAll('img, svg, canvas')) {
+      const mediaRect = media.getBoundingClientRect()
+      if (mediaRect.width <= 0.5 || mediaRect.height <= 0.5) continue
+      left = Math.min(left, mediaRect.left); right = Math.max(right, mediaRect.right)
+      top = Math.min(top, mediaRect.top); bottom = Math.max(bottom, mediaRect.bottom)
+    }
+    if (!Number.isFinite(right)) continue
+    const inkW = right - left, inkH = bottom - top
+    const boxW = chipRect.width - parseFloat(chipStyle.paddingLeft) - parseFloat(chipStyle.paddingRight) -
+      parseFloat(chipStyle.borderLeftWidth) - parseFloat(chipStyle.borderRightWidth)
+    const boxH = chipRect.height - parseFloat(chipStyle.paddingTop) - parseFloat(chipStyle.paddingBottom) -
+      parseFloat(chipStyle.borderTopWidth) - parseFloat(chipStyle.borderBottomWidth)
+    const tallerThanInk = boxH > Math.max(inkH * 2, inkH + 24)
+    const widerThanInk = boxW > Math.max(inkW * 2, inkW + 80)
+    if (tallerThanInk || widerThanInk) {
+      defects.push('徽标被拉变形：' + describe(chip, (chip.textContent || '').trim()) + ' 被容器拉成 ' +
+        Math.round(chipRect.width) + '×' + Math.round(chipRect.height) + 'px，里面的字只有 ' +
+        Math.round(inkW) + '×' + Math.round(inkH) + 'px——徽标是内容尺寸的小药丸，成为 grid/flex 子项后 stretch 会把它撑开；用 fit-content 钉住尺寸，别让它去填格子')
+    }
+  }
+
   // 第四类：视口高度契约算得对不对。契约把主工作区钉成
   // 100dvh - 顶栏 - 内容壳上下内边距；量的是**主工作区自己的底边**，加上内容壳
   // 的下内边距应当正好落在视口底边。这样只对「常量和实际内边距对不上」敏感，
@@ -419,6 +461,79 @@ async function sweep(page: Page): Promise<Array<[string, string[]]>> {
   return results
 }
 
+
+/** 长列表压力：把页面里最大的一组「重复兄弟」复制到 8 倍，再查一遍有没有内容被
+ *  永久裁掉。演示数据每张表只有两三行，凡是「装不下就把行吞掉、而且滚不出来」的
+ *  页面在正常数据量下全是绿的——/invites 就是这样：4 条成员看着好好的，克隆到
+ *  32 条之后 1598px 的表格内容被 .recordsPanel 的 overflow: hidden 裁掉，
+ *  .tableViewport 虽然写了 overflow-y: auto 却因为自己就有内容那么高而永远不滚。
+ *  真实租户里成员多了就是「第 5 个人开始看不见」。
+ *
+ *  这一遍只在最宽的一档跑一次：它要的是「高度契约链路是否留了内部滚动」，
+ *  与断点无关，四档跑四遍只是四倍的时间。 */
+const STRESS_LONG_LIST = `(() => {
+  const root = document.querySelector('.media-content') || document.body
+  let best = null
+  for (const element of root.querySelectorAll('*')) {
+    const kids = [...element.children]
+    if (kids.length < 2) continue
+    const tag = kids[0].tagName, cls = kids[0].className
+    let uniform = true
+    for (const kid of kids) if (kid.tagName !== tag || kid.className !== cls) { uniform = false; break }
+    if (!uniform) continue
+    const rect = element.getBoundingClientRect()
+    if (rect.height < 60) continue
+    const score = kids.length * rect.height
+    if (!best || score > best.score) best = { element: element, score: score }
+  }
+  if (!best) return null
+  const kids = [...best.element.children]
+  for (let round = 0; round < 7; round += 1) for (const kid of kids) best.element.appendChild(kid.cloneNode(true))
+  return best.element.children.length
+})()`
+
+const COLLECT_CLIPPED = `(() => {
+  const defects = []
+  const root = document.querySelector('.media-content') || document.body
+  const seen = new Set()
+  for (const element of root.querySelectorAll('*')) {
+    let own = false
+    for (const node of element.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE && (node.textContent || '').trim().length > 0) { own = true; break }
+    }
+    if (!own) continue
+    const text = (element.textContent || '').trim()
+    if (!text) continue
+    const rect = element.getBoundingClientRect()
+    if (rect.width <= 1 || rect.height <= 1) continue
+    const style = getComputedStyle(element)
+    if (style.visibility === 'hidden' || style.opacity === '0') continue
+    let top = rect.top, bottom = rect.bottom, left = rect.left, right = rect.right
+    for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+      const parentStyle = getComputedStyle(parent)
+      const parentRect = parent.getBoundingClientRect()
+      if (parentStyle.overflowY !== 'visible') { top = Math.max(top, parentRect.top); bottom = Math.min(bottom, parentRect.bottom) }
+      if (parentStyle.overflowX !== 'visible') { left = Math.max(left, parentRect.left); right = Math.min(right, parentRect.right) }
+    }
+    if (bottom - top > 1 && right - left > 1) continue
+    let reachable = false
+    for (let parent = element.parentElement; parent && !reachable; parent = parent.parentElement) {
+      const parentStyle = getComputedStyle(parent)
+      if ((parentStyle.overflowY === 'auto' || parentStyle.overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight + 1) reachable = true
+      if ((parentStyle.overflowX === 'auto' || parentStyle.overflowX === 'scroll') && parent.scrollWidth > parent.clientWidth + 1) reachable = true
+    }
+    if (reachable) continue
+    // 同一类行会重复上百条，按「类名 + 标签」收敛，报一条就够定位。
+    const key = element.tagName + '.' + (typeof element.className === 'string' ? element.className : '')
+    if (seen.has(key)) continue
+    seen.add(key)
+    defects.push('长列表压力：把列表复制到 8 倍之后，<' + element.tagName.toLowerCase() +
+      (typeof element.className === 'string' && element.className.trim() ? '.' + element.className.trim().split(/\\s+/)[0] : '') +
+      '>「' + text.slice(0, 14) + '」被祖先裁掉了，而且没有任何一层能滚出来——演示数据只有两三行时看不出来，真实数据一多，用户就再也看不到后面的记录了')
+  }
+  return defects
+})()`
+
 async function run(): Promise<void> {
   await new Promise<void>((done) => server.listen(0, '127.0.0.1', done))
   const address = server.address()
@@ -457,6 +572,20 @@ async function run(): Promise<void> {
             const where = state ? `${route.path}〔${state}〕` : route.path
             for (const defect of defects) failures.push(`${where} @${width}px（${persona.label}）：${defect}`)
           }
+          if (width === WIDTHS[0]) {
+            // sweep() 之后 DOM 已经切到了别的标签页，先回到首屏再压，结论才可复现。
+            await page.goto(url, { waitUntil: 'domcontentloaded' })
+            if (await page.locator('.media-content').first().waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false)) {
+              await settle(page)
+              if ((await page.evaluate(STRESS_LONG_LIST)) !== null) {
+                await page.waitForTimeout(120)
+                checked += 1
+                for (const defect of (await page.evaluate(COLLECT_CLIPPED)) as string[]) {
+                  failures.push(`${route.path}〔长列表压力〕 @${width}px（${persona.label}）：${defect}`)
+                }
+              }
+            }
+          }
         }
         await context.close()
       }
@@ -470,7 +599,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、视口高度契约无偏差、无永久裁切`)
+  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、视口高度契约无偏差、无永久裁切、无多列挤压、无低信息密度、无面板底部空转、无徽标被拉变形，长列表压力下无内容被吞`)
 }
 
 await run()

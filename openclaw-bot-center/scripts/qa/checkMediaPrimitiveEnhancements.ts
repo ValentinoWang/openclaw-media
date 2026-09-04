@@ -341,6 +341,40 @@ export function findMetricLayoutViolations(sourceText: string): readonly string[
   return violations
 }
 
+/** 原语必须给页面留「不靠特异性」的开关。
+ *
+ *  页面样式和原语的类选择器特异性同为 (0,1,0)，而原语在打包后的样式表里更靠后，
+ *  同分靠源序决胜负——页面写 `.somePanel { overflow-y: auto }` 打不过
+ *  `.mg-panel { overflow: hidden }`，于是「以为开了内部滚动、其实算出来是 hidden」，
+ *  视口一矮内容就被永久裁掉、连滚都滚不出来。检视栏、/invites 的成员表、
+ *  /media-agent 的配对表单都栽过这个坑。开关必须是自定义属性（沿继承链传递、
+ *  不参与特异性），这条判定把机制本身钉住。
+ *
+ *  徽标同理：它是内容尺寸的小药丸，一旦成为 grid item 就会被块化、
+ *  `flex: 0 0 auto` 失效，父级 align-items/justify-items 的默认值 normal 等于
+ *  stretch。stretch 只在尺寸是 auto 时生效，所以两个方向都要钉成 fit-content。 */
+export function findPrimitiveEscapeHatchViolations(rawSource: string): readonly string[] {
+  const violations: string[] = []
+  // 先去注释再按 { } 切规则：注释里解释「页面写 .somePanel { overflow-y: auto }
+  // 打不过原语」时带着花括号，[^}]* 会在注释里的那个 } 上收工，把规则体截断——
+  // 这条判定第一次跑就被自己的注释绊倒过。
+  const sourceText = rawSource.replace(/\/\*[\s\S]*?\*\//g, ' ')
+  const panelRule = /\.mg-panel\s*\{([^}]*)\}/.exec(sourceText)?.[1]
+  if (panelRule === undefined) {
+    violations.push('找不到 .mg-panel 规则，解析逻辑需要更新')
+  } else if (!/overflow:\s*var\(--mg-panel-overflow\s*,/.test(panelRule)) {
+    violations.push('.mg-panel 的 overflow 必须读 var(--mg-panel-overflow, …)：页面写同名类覆写不了它（同特异性、原语更靠后），只能靠自定义属性开内部滚动')
+  }
+  const badgeRule = /\.mg-badge\s*\{([^}]*)\}/.exec(sourceText)?.[1]
+  if (badgeRule === undefined) {
+    violations.push('找不到 .mg-badge 规则，解析逻辑需要更新')
+  } else {
+    if (!/width:\s*fit-content/.test(badgeRule)) violations.push('.mg-badge 必须写 width: fit-content：成为 grid item 后 justify-items 的默认值等于 stretch，会把徽标横向拉成整条轨道')
+    if (!/height:\s*fit-content/.test(badgeRule)) violations.push('.mg-badge 必须写 height: fit-content：成为 grid/flex 子项后 align-items 的默认值等于 stretch，会把徽标纵向拉成整格高')
+  }
+  return violations
+}
+
 function assertMediaTypographyIsCanonical(): void {
   const files = [
     ...findCssFiles(resolve(projectRoot, 'src/media')),
@@ -366,6 +400,9 @@ function assertMediaTypographyIsCanonical(): void {
 
   const metricViolations = findMetricLayoutViolations(readFileSync(resolve(projectRoot, 'src/media/mediaPrimitives.css'), 'utf8'))
   if (metricViolations.length) throw new Error(`media metric layout contract failed: ${metricViolations.join(', ')}`)
+
+  const escapeHatchViolations = findPrimitiveEscapeHatchViolations(readFileSync(resolve(projectRoot, 'src/media/mediaPrimitives.css'), 'utf8'))
+  if (escapeHatchViolations.length) throw new Error(`media primitive escape hatch contract failed: ${escapeHatchViolations.join(', ')}`)
 
   const inlineViolations = findTsxFiles(resolve(projectRoot, 'src/media')).flatMap((fileName) => {
     const relativeName = fileName.slice(projectRoot.length + 1)
@@ -632,6 +669,23 @@ function runSelfTest(): void {
   }
   if (!findMetricLayoutViolations(compliantPrimitives.replace('flex-wrap: wrap;', '')).some((line) => line.includes('.mg-meta'))) {
     throw new Error('media primitive enhancement self-test failed: 不折行的计数行没有被抓到')
+  }
+  // 原语逃生开关的自测：合规的写法不许报，缺开关的写法必须报。
+  const compliantHatches = [
+    '.mg-panel { overflow: var(--mg-panel-overflow, hidden); min-width: 0; }',
+    '.mg-badge { display: inline-flex; width: fit-content; height: fit-content; min-height: 28px; }',
+  ].join('\n')
+  if (findPrimitiveEscapeHatchViolations(compliantHatches).length) {
+    throw new Error('media primitive enhancement self-test failed: 合规的原语逃生开关被判为违规')
+  }
+  if (!findPrimitiveEscapeHatchViolations(compliantHatches.replace('overflow: var(--mg-panel-overflow, hidden)', 'overflow: hidden')).some((line) => line.includes('.mg-panel'))) {
+    throw new Error('media primitive enhancement self-test failed: 写死的面板 overflow 没有被抓到')
+  }
+  if (!findPrimitiveEscapeHatchViolations(compliantHatches.replace('height: fit-content; ', '')).some((line) => line.includes('height: fit-content'))) {
+    throw new Error('media primitive enhancement self-test failed: 会被纵向拉伸的徽标没有被抓到')
+  }
+  if (!findPrimitiveEscapeHatchViolations(compliantHatches.replace('width: fit-content; ', '')).some((line) => line.includes('width: fit-content'))) {
+    throw new Error('media primitive enhancement self-test failed: 会被横向拉伸的徽标没有被抓到')
   }
   if (!findUnsupportedFontWeights(String.raw`.title { font\2d weight: 850; }`).length) {
     throw new Error('media primitive enhancement self-test failed: escaped font-weight was accepted')

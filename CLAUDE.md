@@ -52,9 +52,29 @@
 
 **不要**把 `[data-page-layout=…]`、`:has(> [data-page-prelude])` 抄进页面样式去比特异性，也不要用 `!important`——`qa:media-design-system-contract` 会直接拒绝，报错里写着该设哪几个属性。
 
+### 那份高度是**预算**，不是必须填满的下限
+
+等高契约给的是「这一列最多能有多高」。检视栏往往只有半屏（选中一条记录、几行事实），被 `stretch` 拉满之后剩下的不是页面留白，而是**一块画了边框、铺了底色的空盒子**，看着像没加载出来。所以检视栏与主栏终端面默认按内容定高，等高那份高度降级成 `max-height`：内容短就收，内容长仍然吃满一列并在自己内部滚。
+
+页面里再把面板拉满（`height: 100%`、`flex: 1 1 auto`、`align-items: stretch`、写死的 `min-height`）就会把这件事撤销——`qa:media-layout-sanity` 的「面板底部空转」会抓。要顶部对齐两块并排的卡片用 `align-items: start`，别用等高。
+
+### 想给面板开内部滚动，只能靠 `--mg-panel-overflow`
+
+页面样式和原语的类选择器特异性同为 (0,1,0)，而原语在打包后的样式表里更靠后，**同分靠源序决胜负**：页面写 `.somePanel { overflow-y: auto }` 打不过 `.mg-panel { overflow: … }`，于是「以为开了内部滚动、算出来仍是 hidden」，视口一矮内容就被永久裁掉、连滚都滚不出来。开关同样是自定义属性：
+
+```css
+.somePanel { --mg-panel-overflow: hidden auto; }   /* 横向仍裁在圆角里，纵向可滚 */
+```
+
+配合链路上每一层的 `min-height: 0`——规范规定只有 `overflow` 非 `visible` 的子项自动最小尺寸才是 0，其余默认是内容高度，这就是「内层写了 `overflow-y: auto` 却永远不出滚动条」的原因。`qa:media-primitive-enhancements` 会钉住这个开关本身存在。
+
+### 徽标不许被容器拉变形
+
+`.mg-badge` 是内容尺寸的小药丸。它一旦成为 grid item 就会被块化、`flex: 0 0 auto` 失效，父级 `align-items` / `justify-items` 的默认值 `normal` 等于 `stretch`——`/organization-workspace` 的「只读镜像」因此被 330px 的轨道撑成过 330×112 的大色块。原语用 `width/height: fit-content` 两个方向都钉死（`stretch` 只在尺寸是 `auto` 时生效），同样由 `qa:media-primitive-enhancements` 守着。
+
 ## 排版破相靠渲染门禁兜底
 
-`npm run qa:media-layout-sanity`（`build:demo` 的最后一步）会在 1440 / 1180 / 900 / 430 四个宽度真渲染演示站的每个页面，抓几类肉眼一看就知道坏了、但类型检查和单测永远看不见的问题：文字块互相重叠、不含空格的整串（ID、时间戳）被拦腰折断、非标题的值槽用展示级字号折行、视口高度契约算错、**多列挤压**、**低信息密度**。
+`npm run qa:media-layout-sanity`（`build:demo` 的最后一步）会在 1440 / 1180 / 900 / 430 四个宽度真渲染演示站的每个页面，抓几类肉眼一看就知道坏了、但类型检查和单测永远看不见的问题：文字块互相重叠、不含空格的整串（ID、时间戳）被拦腰折断、非标题的值槽用展示级字号折行、视口高度契约算错、内容被永久裁掉、**多列挤压**、**低信息密度**、**面板底部空转**、**徽标被拉变形**。
 
 它不只量首屏：会逐个点开页面里的标签页、再选中列表首条，分别体检——`/tracks` 的「赛道概览」「对标账号」和 `/publishing` 选中发布包之后的详情栏都只在那几屏才看得见。失败信息里的 `〔…〕` 就是当时所处的那一屏。
 
@@ -63,6 +83,8 @@
 ```bash
 MEDIA_LAYOUT_QA_ROUTES=/tracks,/publishing npm run qa:media-layout-sanity
 ```
+
+还有一遍**长列表压力**：在最宽的一档把页面里最大的一组重复兄弟复制到 8 倍，再查一遍有没有内容被永久裁掉。演示数据每张表只有两三行，凡是「装不下就把行吞掉、而且滚不出来」的页面在正常数据量下全是绿的——`/invites` 就是这样：4 条成员看着好好的，克隆到 32 条之后表格内容被面板的 `overflow: hidden` 裁掉 1598px，真实租户里就是「第 5 个人开始看不见」。
 
 标识符类字段统一用 `.mg-id`（单行 + 省略号，完整值放 `title`），不要在页面样式里给它们加 `overflow-wrap: anywhere`。
 

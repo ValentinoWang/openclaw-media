@@ -305,7 +305,14 @@
 
 /* ---- 面板（原 12 份 panelHeader -> 1 份）---- */
 .mg-panel {
-  overflow: hidden;
+  /* 面板默认把内容裁在圆角里，但**必须留一个不靠特异性的开关**：页面自己写
+     `.somePanel { overflow-y: auto }` 是打不过这一行的——两者特异性同为 (0,1,0)，
+     而原语在打包后的样式表里更靠后，同分靠源序决胜负。于是页面以为自己开了内部
+     滚动，算出来仍是 hidden，视口一矮内容就被永久裁掉、连滚都滚不出来（检视栏、
+     /invites 的成员表、/media-agent 的配对表单都栽在这上面）。
+     自定义属性沿继承链传递、不参与特异性：页面写 `--mg-panel-overflow: hidden auto`
+     即可让这块面板纵向可滚，横向仍然裁在圆角里。 */
+  overflow: var(--mg-panel-overflow, hidden);
   min-width: 0;
   border: 1px solid var(--mg-border);
   border-radius: var(--mg-r-lg);
@@ -336,6 +343,14 @@
 /* ---- 状态徽章（原 7 份 -> 1 份）---- */
 .mg-badge {
   display: inline-flex;
+  /* 徽标是内容尺寸的小药丸，任何时候都不该被容器拉变形。inline-flex 一旦成为
+     grid item 会被块化，flex: 0 0 auto 也随之失效，父级的 align-items / justify-items
+     默认值 normal 就等于 stretch——/organization-workspace 的文档页里，「只读镜像」
+     因此被 .mg-hero 的第二条 330px 轨道撑成了 330×112 的大色块。
+     stretch 只在跨轴尺寸是 auto 时才生效，所以这里用 fit-content 把两个方向都钉死：
+     既拦住拉伸，又不动父级给的对齐方式（baseline / center 都保持原样）。 */
+  width: fit-content;
+  height: fit-content;
   min-height: 28px;
   flex: 0 0 auto;
   align-items: center;
