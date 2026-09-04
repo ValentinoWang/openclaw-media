@@ -543,10 +543,20 @@
   min-width: 0;
   align-items: center;
   gap: 9px;
+  /* 标题和那句说明并排；352px 的检视栏里两者加起来放不下时，先让说明整句
+     换到下一行，而不是把「删除云端归档」六个字从中间劈成「删除云 / 端归档」。 */
+  flex-wrap: wrap;
 }
 
 .dangerHeader h2 {
+  flex: 0 0 auto;
   color: var(--mg-danger);
+  white-space: nowrap;
+}
+
+.dangerHeader > div > p {
+  min-width: 0;
+  flex: 1 1 12ch;
 }
 
 .dangerIcon {

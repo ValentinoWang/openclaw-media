@@ -206,6 +206,12 @@
   flex: 0 0 auto;
 }
 
+/* align-items 曾是 stretch：两栏面板会被拉到这一行的高度（由视口契约撑出来的
+   可用空间决定，跟内容无关），设备/表单这类短内容因此在框里留一大片空盒子。
+   改成 start 后每块面板按自己的内容定高，两栏仍顶部对齐；行本身依旧撑满可用
+   高度（flex: 1 1 auto 未变），.catalogPanel/.inspectorPanel/.taskPanel 各自的
+   max-height: 100% 把这份可用高度当作封顶——内容短就收，内容长就压到封顶后在
+   面板内部滚动（.taskList/.tableViewport 已经是 overflow:auto）。 */
 .workspaceGrid {
   display: grid;
   min-width: 0;
@@ -213,7 +219,7 @@
   flex: 1 1 auto;
   grid-template-columns: minmax(0, 1.48fr) minmax(350px, 0.82fr);
   gap: 14px;
-  align-items: stretch;
+  align-items: start;
   overflow: hidden;
 }
 
@@ -230,8 +236,16 @@
 }
 
 .catalogPanel {
+  /* 三个标签页共用这个类，但只有「本地运行」标签的用法（PanelHeader + .formStack：
+     两个 select、一个提交按钮）没有自己的可滚动内容区——「流程目录」的
+     .tableViewport 和「设备与客户端」的 .taskList 都自带 overflow(-y): auto，
+     矮视口下已经验证不受影响（外层 scrollHeight 本来就等于 clientHeight，这个
+     开关对它们是空操作）。矮视口下 .formStack 撑出的高度可能超过 max-height 封顶，
+     不开这个开关会把「创建本地任务」按钮裁在圆角外、连真实滚轮都碰不到。 */
+  --mg-panel-overflow: hidden auto;
   display: flex;
   min-height: 0;
+  max-height: 100%;
   flex-direction: column;
 }
 
@@ -579,8 +593,15 @@
 }
 
 .inspectorPanel {
+  /* 配对码表单没有像 .taskList/.tableViewport 那样单独的可滚动内容区——header 和
+     formStack 是仅有的两个子节点，谁都没有 overflow:auto。矮视口下两者的自然高度
+     加起来仍可能超过 max-height 封顶的可用空间；.mg-panel 默认把超出部分裁在圆角
+     里，通过这个不靠特异性的开关把纵向改成可滚，横向仍然裁圆角，超出时整块面板
+     （含 header）一起滚，配对码按钮不再点不到。 */
+  --mg-panel-overflow: hidden auto;
   display: flex;
-  max-height: none;
+  min-height: 0;
+  max-height: 100%;
   flex-direction: column;
 }
 
@@ -754,7 +775,7 @@
 .taskPanel {
   display: flex;
   min-height: 0;
-  max-height: none;
+  max-height: 100%;
   flex-direction: column;
 }
 

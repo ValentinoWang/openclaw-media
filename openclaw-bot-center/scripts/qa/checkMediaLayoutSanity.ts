@@ -168,6 +168,12 @@ const COLLECT_DEFECTS = `(() => {
     if (!isHeading && leaf.fontSize >= 20 && lines >= 2) {
       defects.push('大字号折行：' + describe(leaf.element, leaf.text) + ' 字号 ' + Math.round(leaf.fontSize) + 'px 折成了 ' + lines + ' 行，值槽不该用展示级字号')
     }
+    // 长标题折行是正常的排版；**八个字以内、中间没有空格**的短标题折行不是——那是
+    // 容器把它挤到放不下一个词的宽度了。/archives 的「删除云端归档」曾被隔壁那句
+    // 说明挤成「删除云 / 端归档」：六个字从中间劈开，读起来像两个词。
+    if (isHeading && !/\s/.test(leaf.text) && leaf.text.length <= 8 && lines >= 2) {
+      defects.push('短标题被折行：' + describe(leaf.element, leaf.text) + ' 只有 ' + leaf.text.length + ' 个字却折成了 ' + lines + ' 行——容器把它挤到放不下一个词；该让挤它的邻居先换行（flex-wrap）或给标题 white-space: nowrap，而不是把标题劈开')
+    }
   }
   // 第五类：被永久裁掉的内容。祖先把它裁掉了，而且没有任何一层能滚出来——
   // 用户没有任何办法看到这段文字。这一类本次已经真实发生过两回：/overview 的
@@ -599,7 +605,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、视口高度契约无偏差、无永久裁切、无多列挤压、无低信息密度、无面板底部空转、无徽标被拉变形，长列表压力下无内容被吞`)
+  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、视口高度契约无偏差、无永久裁切、无多列挤压、无低信息密度、无面板底部空转、无徽标被拉变形，长列表压力下无内容被吞`)
 }
 
 await run()
