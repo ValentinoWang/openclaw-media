@@ -261,11 +261,18 @@ const COLLECT_DEFECTS = `(() => {
 /** 等页面真正渲染完再量：这些页面的数据由浏览器内假后端异步给出，固定 sleep 会
  *  量到半成品——侧栏还没出来，门禁就「通过」了。这里等 DOM 规模连续两次不变。 */
 async function settle(page: Page): Promise<void> {
+  // 字体没加载完就量，量到的是回退字体的度量——同一份页面，单跑一条路由（字体还没
+  // 缓存）和全站跑（前面的路由已经把字体拉下来了）会得出不同的折行结论，门禁就成了
+  // 掷骰子。等 document.fonts.ready 之后再量。
+  await page.evaluate('document.fonts ? document.fonts.ready.then(() => true) : true').catch(() => undefined)
   let previous = -1
   for (let attempt = 0; attempt < 12; attempt += 1) {
     await page.waitForTimeout(350)
     const size = await page.evaluate('document.querySelectorAll("*").length') as number
-    if (size === previous) return
+    if (size === previous) {
+      await page.evaluate('document.fonts ? document.fonts.ready.then(() => true) : true').catch(() => undefined)
+      return
+    }
     previous = size
   }
 }

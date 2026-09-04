@@ -60,6 +60,17 @@
 .blueBar { background: var(--mg-blue); }
 .orangeBar { background: var(--mg-warning); }
 .purpleBar { background: oklch(0.52 0.13 300); }
+/* 窄屏（≤560px，也就是这条带子的最小宽度以下）不再横向滚动：一行里塞四个指标时
+   每个只剩约 117px，装不下「标签 + 条形 + 金额」，「-1.25 credit」被折成两行。
+   改成一行一个指标，宽度直接来自面板，值不再折。
+   注意不要反过来去调大 .trendRow 的 min-width——那个下限会沿着容器一路顶上去，
+   把同一面板里的指标卡挤窄，等于把折行从这里赶到别处（试过，会让上方那排
+   22px 的大字号值折行）。 */
+@media (max-width: 560px) {
+  .trendRow { grid-template-columns: minmax(0, 1fr); min-width: 0; row-gap: 6px; }
+  .trendMetric { grid-template-columns: 31px minmax(0, 1fr) auto; }
+}
+
 .trendNote { margin: 8px 0 0; color: var(--mg-muted); font-size: var(--mg-text-xs); }
 
 .tableWrap { max-width: 100%; overflow-x: auto; }
