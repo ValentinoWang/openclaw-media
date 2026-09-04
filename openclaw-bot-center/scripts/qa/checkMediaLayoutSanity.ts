@@ -228,7 +228,13 @@ const COLLECT_DEFECTS = `(() => {
       if (rowRect.height > 40 || rowRect.width < cardRect.width * 0.8) continue
       // 完全没有文字的行（进度条、分隔线、缩略图带）本来就该铺满整行，不算稀疏。
       const ink = inkWidth(row)
-      if (ink > 0 && ink < rowRect.width * 0.45) sparse += 1
+      if (ink <= 0 || ink >= rowRect.width * 0.45) continue
+      // 只有「事实行」才算：标签 + 值、或者带数字的计数。整行一句散文（眉标题、
+      // 小标题、一句说明）短是正常的排版，不是「一条事实占一行」的稀疏。
+      let leaves = 0
+      for (const leaf of textLeaves) if (row.contains(leaf.element)) leaves += 1
+      if (leaves < 2 && !/\d/.test((row.textContent || ''))) continue
+      sparse += 1
     }
     if (sparse >= 3) {
       defects.push('低信息密度：' + describe(card, (card.textContent || '').trim()) + ' 宽 ' + Math.round(cardRect.width) + 'px，其中 ' + sparse + ' 行短内容各自独占一整行、文字占不到四成宽；短事实应排成一行（.mg-meta）而不是一条一行')
