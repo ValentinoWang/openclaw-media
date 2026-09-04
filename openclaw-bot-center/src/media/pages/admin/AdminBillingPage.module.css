@@ -387,21 +387,24 @@
   flex: 0 0 auto;
 }
 
+/* 列数由容器决定（auto-fit + minmax），不写死 4：这块指标带常年挤在
+   bottomGrid 的半宽面板里，宽屏下反而比全宽面板窄。分隔线改用
+   gap + 容器背景色的“缝隙”技巧而不是逐格 border-right：auto-fit 换行后
+   到底有几列、哪一格是“行尾”都不是编译期能确定的，nth-child 那一套只
+   对固定列数成立。 */
 .compactMetrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1px;
+  background: var(--mg-border);
   border-bottom: 1px solid var(--mg-border);
 }
 
 .compactMetrics div {
   min-width: 0;
   padding: 13px 12px 11px;
-  border-right: 1px solid var(--mg-border);
+  background: var(--mg-surface);
   text-align: center;
-}
-
-.compactMetrics div:last-child {
-  border-right: 0;
 }
 
 .compactMetrics span,
@@ -803,17 +806,5 @@
   .receipt {
     margin-right: 13px;
     margin-left: 13px;
-  }
-
-  .compactMetrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .compactMetrics div:nth-child(2) {
-    border-right: 0;
-  }
-
-  .compactMetrics div:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--mg-border);
   }
 }

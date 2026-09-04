@@ -66,11 +66,17 @@
   padding: 12px 14px;
 }
 
+/* 列数由容器决定（auto-fit + minmax）：这格子曾经在 900px 断点被反常地
+   从 2 列改判成 4 列——本意是“cookieBody 在 900px 收成单列，腾出的宽度
+   该多摆几列”，但 accessLayout 同一断点之外也在挤主栏，4 列在两边挤压
+   叠加时反而更窄。地板按下面 <code> 命令行最长不含空格的片段
+   （"save_platform_cookie_secret.py"，约 180px）留出安全余量，两个平台
+   卡片能并排时就并排，放不下就整体退回单列。 */
 .cookieStatusGrid {
   display: grid;
   min-width: 0;
   max-width: 100%;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 8px;
 }
 
@@ -123,7 +129,12 @@
     Menlo,
     Consolas,
     monospace;
-  overflow-wrap: anywhere;
+  /* 命令行是一整串：anywhere 会不分青红皂白地按像素宽度拦腰截断（哪怕正
+     好落在一个标志位或文件名中间）。命令本身在空格和“/”处已经有天然断点，
+     交给默认换行规则即可干净地断行；配合上面网格的 240px 地板，不会再需要
+     硬拆。 */
+  overflow-wrap: normal;
+  word-break: normal;
   white-space: pre-wrap;
 }
 
@@ -935,14 +946,33 @@
   color: var(--mg-primary-dark);
 }
 
+/* 原先左列 minmax(0, 1.05fr) 没有地板、右列 minmax(280px, 0.95fr) 有硬地板
+   280px：两栏原本就接近对半（1.05fr : 0.95fr），窄容器里所有挤压都会压在
+   没有地板的左列上——1180px 实测这格总宽只有 395px，右列吃满 280px 地板后
+   左列（.summaryPanel，装着下面的 .metricGrid）只剩 101px，逼出 24px 的
+   三列指标格。改成 auto-fit 之后两栏地板相同、真的放不下两栏时整体退回
+   单列，不会再出现「一栏被吃到骨头、另一栏岿然不动」的中间态。 */
 .summaryGrid {
   display: grid;
   min-height: 0;
   flex: 0 0 clamp(164px, 22%, 198px);
-  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   align-items: stretch;
   gap: 14px;
   margin-top: 14px;
+}
+
+/* clamp(164px, 22%, 198px) 是按“两栏并排、共享一份高度、各自内部滚动”设计的
+   固定高度——只在两栏真的并排时成立。260px 地板下 auto-fit 会在 1121~1318px
+   （2 列门槛是 2*260px + 14px gap = 534px，实测正好在 1319px 由 1 列变 2 列）
+   先于 ≤1120px 的整体 rail 契约退回单列（两张摘要卡上下堆叠），这时同一份
+   高度会被两张卡对半分，摘要内容从中间被切断。1319px 起两列地板本身就满足，
+   交还给原来的 clamp；≤1120px 也不需要在这里补：那之外 summaryGrid 的祖先
+   高度契约已经整体松开，百分比高度本来就失效。 */
+@media (min-width: 1121px) and (max-width: 1318px) {
+  .summaryGrid {
+    flex: 0 0 auto;
+  }
 }
 
 .summaryPanel,
@@ -960,24 +990,34 @@
   padding: 12px 14px 8px;
 }
 
+/* 列数由容器决定（auto-fit + minmax）。分隔线改用 gap + 容器背景色的
+   “缝隙”技巧，不再用 border-right + :first-child/:last-child：auto-fit
+   换行后谁在“行尾”不是编译期能确定的，nth-child/last-child 那一套只在
+   固定 3 列时成立。 */
 .metricGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* 固定 3 列而不是 auto-fit：这 3 个指标 (Metric 组件的 panel 变体，非
+     mg-metric-grid 那套卡片) 是 summaryPanel 摘要卡的全部内容，卡片高度在
+     上面被钉死为 clamp(164px, 22%, 198px) ——一行放不下换成两行会被那份
+     固定高度腰斩，比窄列更糟。summaryGrid 已经在容器层面兜住了「两栏并排」
+     这一半的挤压，这里只需要给 3 列各自一个不再是 0 的地板，不需要也不能
+     让它跌到 2 列。 */
+  grid-template-columns: repeat(3, minmax(95px, 1fr));
+  gap: 1px;
+  background: var(--mg-border);
   border-bottom: 1px solid var(--mg-border);
 }
 
 .metric {
   min-width: 0;
   padding: 0 10px 11px;
-  border-right: 1px solid var(--mg-border);
+  background: var(--mg-surface);
 }
-
 .metric:first-child {
   padding-left: 0;
 }
 .metric:last-child {
   padding-right: 0;
-  border-right: 0;
 }
 .metric > span,
 .metric > small {
@@ -1328,9 +1368,10 @@
     grid-template-columns: 1fr;
   }
 
-  .cookieStatusGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+  /* 这里以前把 .cookieStatusGrid 反常地从 2 列改判成 4 列——cookieBody
+     在这个断点收成单列确实腾出了宽度，但 accessLayout 同一断点之外仍在
+     挤压主栏，4 列在双重挤压下比 2 列更窄。交给上面的 auto-fit 地板
+     （240px）按实际可用宽度决定列数，不再在这里覆写。 */
 }
 
 @media (max-width: 640px) {
@@ -1354,29 +1395,11 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .metricGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px 0;
-    padding-bottom: 10px;
-  }
-
-  .metric:nth-child(2) {
-    border-right: 0;
-  }
-
-  .metric:nth-child(3),
-  .metric:nth-child(4) {
-    padding-top: 10px;
-  }
-
-  .metric:nth-child(3) {
-    padding-left: 0;
-  }
-
-  .metric:nth-child(4) {
-    padding-right: 0;
-    border-right: 0;
-  }
+  /* .metricGrid 不再在这里覆写列数：固定 3 列 + 95px 地板在这个断点绰绰
+     有余（.summaryGrid 在 900px 断点收成单列后主栏宽度也宽松）；下面这组
+     .metric:nth-child(2)/(3)/(4) 曾经手工修的分隔线/内边距也一并撤掉——
+     .metric 只有 3 个，第 4 个从来不存在，且分隔线现在用 gap + 背景色
+     实现，不再有 border-right 需要按位置摘掉。 */
 
   .sectionLead {
     flex-direction: column;

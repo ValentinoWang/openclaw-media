@@ -267,9 +267,9 @@
 }
 
 .admin-action-row {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(170px, 0.55fr);
   gap: 14px;
   padding: 13px 15px;
   border-bottom: 1px solid var(--mg-border);
@@ -285,6 +285,19 @@
   min-width: 0;
   flex-direction: column;
   gap: 4px;
+}
+
+/* 非对称双栏，退回单列靠 flex-wrap 而不是固定断点：容器不够同时放下两栏
+   comfortable 宽度时，meta 整体换行、各自占满一行——不会出现两栏都被压到
+   200px 以下的中间状态。auto-fit 的等宽网格在这里不合适：main 装的是
+   变长说明文字，需要保住大头权重；如果按 auto-fit 拉成等宽，宽屏下 meta
+   （徽标+时间戳）会比内容还宽，右侧全是空白。 */
+.admin-action-main {
+  flex: 4 1 220px;
+}
+
+.admin-action-meta {
+  flex: 1 1 170px;
 }
 
 .admin-action-main strong {
@@ -392,7 +405,6 @@
   }
 
   .admin-action-row {
-    grid-template-columns: 1fr;
     gap: 8px;
   }
 
