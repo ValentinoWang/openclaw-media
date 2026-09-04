@@ -209,8 +209,22 @@
   color: var(--reviews-teal);
 }
 
+/* .tabContent 是行向 flex（.tabContent { display:flex; flex:1 1 auto; min-height:0 }
+   这条声明连同 .tabContent > .panel 那条都是排版体检钉住的视口契约，不能动），
+   只有 .panel 这一个子项，默认的 align-items: stretch 会把它在交叉轴（也就是
+   高度）上拉满整列——这正是「面板吃满主栏剩余高度」这条契约的题中之义。但拉满
+   是**上限**，不是必须填满的高度：账号指标只有 2 行时，316px 高的面板下面会
+   剩一块画了边框、铺了底色的空盒子，看着像没加载出来（跟 /archives「归档记录」
+   当年同一个模式，那边的修法是把主栏终端面从 flex: 1 1 auto 改成 0 1 auto——
+   这里是行向 flex，对应的旋钮不是 flex-grow 而是 align-self）。
+   改成 align-self: start 之后面板按内容起高，max-height: 100% 把契约保留成
+   上限：内容长仍然吃满这一列、在 overflow-y: auto 里自己滚（不影响 reviews/
+   growth 等本来就够高、已经吃满这个上限的标签页——它们的高度不变）。 */
 .panel {
   min-width: 0;
+  align-self: start;
+  height: auto;
+  max-height: 100%;
   overflow: hidden;
   border: 1px solid var(--reviews-line);
   border-radius: 0.5rem;

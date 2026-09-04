@@ -6,6 +6,17 @@
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
+  /* 发布包通常只有个位数条记录：主栏（[data-page-primary]）不该跟检视栏
+     一样被共享等高契约拉到视口算出来的整段高度——那样只会在内容下面留一块
+     画了边框、铺了底色的空盒子（qa:media-layout-sanity「面板底部空转」）。
+     检视栏已经用这两个 token 降级成按内容定高，这里让主栏读同一组 token：
+     内容短就收（height:auto），内容长仍由下面 .listPanel 的 max-height 卡在
+     可用高度内，交给 .packageList 自己的 overflow-y 在面板内部滚动，不整页滚、
+     不裁内容。写在 .page 上是因为 token 沿继承链传递、不参与选择器特异性——
+     不用去跟共享层的 [data-page-layout="persistent-rail"] > [data-page-primary]
+     比特异性。 */
+  --mg-rail-align: start;
+  --mg-rail-fill: auto;
 }
 
 .page :global(.page-heading) {
@@ -144,6 +155,15 @@ button.iconButton {
   min-width: 0;
   min-height: 0;
   flex-direction: column;
+}
+
+/* 检视栏的等高契约本来就降级成了 height:auto + max-height:100%（共享层
+   [data-page-inspector] 规则自带 max-height）；上面 .page 的两个 token 只把
+   同一套 align/height 降级带到主栏，共享层给主栏的那条规则里没有 max-height——
+   这里补上，否则「内容短就收」没有上限兜底，一旦某天记录变多，主栏会没有
+   封顶地把整个面板撑高，而不是在自己内部滚动。 */
+.listPanel {
+  max-height: 100%;
 }
 
 .page > :global(.mg-state),

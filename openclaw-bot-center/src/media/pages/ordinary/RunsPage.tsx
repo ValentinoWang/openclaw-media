@@ -376,44 +376,54 @@ export default function RunsPage() {
               subject={activeView === "runs" ? "创作运行" : activeView === "deliveries" ? "商单交付" : "商务机会"}
               onRetry={() => setReloadToken((value) => value + 1)}
             />
-          ) : null}
-          {state.status === "ready" && activeView === "runs" && isRunListResponse(state.data) ? (
-            <RunsTable
-              response={runResponse ?? state.data}
-              page={page}
-              canPrevious={cursorTrail.canPrevious}
-              selectedRunId={selectedRunId}
-              submittedQuery={submittedQuery}
-              onSelect={setSelectedRunId}
-              onClearSearch={clearSearch}
-              onPrevious={() => { setSelectedRunId(null); cursorTrail.previous(); }}
-              onNext={() => {
-                if (!runResponse?.nextCursor) return;
-                setSelectedRunId(null);
-                cursorTrail.next(runResponse.nextCursor);
-              }}
-            />
-          ) : null}
-          {state.status === "ready" && activeView === "opportunities" && isOpportunityListResponse(state.data) ? (
-            <BusinessOpportunityTable
-              response={state.data}
-              page={page}
-              canPrevious={cursorTrail.canPrevious}
-              onPrevious={() => cursorTrail.previous()}
-              onNext={() => {
-                if (!isOpportunityListResponse(state.data) || !state.data.nextCursor) return;
-                cursorTrail.next(state.data.nextCursor);
-              }}
-            />
-          ) : null}
-          {state.status === "ready" && activeView === "deliveries" && isDeliveryListResponse(state.data) ? (
-            <CommercialDeliveryTable
-              response={state.data}
-              selectedDeliveryId={selectedDeliveryId}
-              onSelect={setSelectedDeliveryId}
-              onCreate={() => openWorkspace({ capabilityId: "commercial_delivery_draft", variantId: "default" })}
-            />
-          ) : null}
+          ) : (
+            // 包一层：`.tableRegion` 不再是 [data-page-primary] 的直接 only-child，
+            // 因此不再被共享的 `[data-page-primary] > :only-child` 规则按视口高度撑满
+            // ——那条规则改按内容定高会连累 /archives、/decisions、/invites 一起破相
+            // （见 media.css 里的记录），所以这块必须留在页面自己这层：外层
+            // `.primarySurface` 仍吃满整列（给 .tableRegion 的 max-height 一个确定的
+            // 参照系），`.tableRegion` 自己按内容收缩、内容多时再压回可用高度并在
+            // `.tableScroll` 内部滚动。
+            <div className={styles.primarySurface}>
+              {activeView === "runs" && isRunListResponse(state.data) ? (
+                <RunsTable
+                  response={runResponse ?? state.data}
+                  page={page}
+                  canPrevious={cursorTrail.canPrevious}
+                  selectedRunId={selectedRunId}
+                  submittedQuery={submittedQuery}
+                  onSelect={setSelectedRunId}
+                  onClearSearch={clearSearch}
+                  onPrevious={() => { setSelectedRunId(null); cursorTrail.previous(); }}
+                  onNext={() => {
+                    if (!runResponse?.nextCursor) return;
+                    setSelectedRunId(null);
+                    cursorTrail.next(runResponse.nextCursor);
+                  }}
+                />
+              ) : null}
+              {activeView === "opportunities" && isOpportunityListResponse(state.data) ? (
+                <BusinessOpportunityTable
+                  response={state.data}
+                  page={page}
+                  canPrevious={cursorTrail.canPrevious}
+                  onPrevious={() => cursorTrail.previous()}
+                  onNext={() => {
+                    if (!isOpportunityListResponse(state.data) || !state.data.nextCursor) return;
+                    cursorTrail.next(state.data.nextCursor);
+                  }}
+                />
+              ) : null}
+              {activeView === "deliveries" && isDeliveryListResponse(state.data) ? (
+                <CommercialDeliveryTable
+                  response={state.data}
+                  selectedDeliveryId={selectedDeliveryId}
+                  onSelect={setSelectedDeliveryId}
+                  onCreate={() => openWorkspace({ capabilityId: "commercial_delivery_draft", variantId: "default" })}
+                />
+              ) : null}
+            </div>
+          )}
         </div>
         <div className={styles.inspectorColumn} data-page-inspector>
           {selectedRun ? <RunInspector key={selectedRun.publicRunId} run={selectedRun} /> : selectedDelivery ? <CommercialDeliveryInspector key={selectedDelivery.taskId} task={selectedDelivery} /> : <InspectorEmpty view={activeView} />}

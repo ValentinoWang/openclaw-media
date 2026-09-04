@@ -302,12 +302,28 @@
   background: var(--mg-surface);
 }
 
-.tableRegion {
+/* `.mainColumn` 的唯一子元素，扛住共享的 [data-page-primary] > :only-child 规则的
+   height: 100% ——这层是不画边框/底色的容器，撑满没有视觉后果，纯粹是为了给
+   `.tableRegion` 的 max-height 提供一个确定的参照系（见 RunsPage.tsx 里的注释）。 */
+.primarySurface {
   display: flex;
-  height: 100%;
+  width: 100%;
   min-width: 0;
   min-height: 0;
-  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 面板本身**不**再撑满：内容短就按内容收（2 行表格不再把面板拉成一块视口高的
+   空盒子），内容长时 flex-shrink 把它压回 .primarySurface 的可用高度，
+   .tableScroll 内部照旧滚动。max-height 是同一个上限的显式兜底。 */
+.tableRegion {
+  display: flex;
+  height: auto;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 1 auto;
   flex-direction: column;
 }
 

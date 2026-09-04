@@ -344,10 +344,22 @@
   align-items: stretch;
 }
 
+/* align-self: start 覆盖 .bottomGrid 的 align-items: stretch——两张摘要卡片
+   天生不等高（卡密批次多一条 compactMetrics 指标带），stretch 会把矮的那张
+   （管理员赠款）撑到跟高的那张一样高，露出一块画了边框、铺了底色的空盒子。
+   但只把 align-self 改成 start 不够：这一列的行轨道高度仍然来自 .mainColumn
+   的外层 flex-shrink（跟 .tablePanel 抢空间，视口矮时两张卡片本来就会被一起
+   压扁，靠 .tableViewport 的 flex + overflow:auto 在内部滚动，是既有行为）,
+   而 align-self: start 会让卡片按“无约束的最大内容”定高，直接从被压扁的行轨道
+   里探出头，变成整页多出一截、需要滚动才能看到底部的新问题。max-height: 100%
+   把它按回这一行实际分到的高度：内容比这行矮就照内容收（管理员赠款），比这行
+   高就照旧被行高卡住、内部滚（卡密批次），两种情形都不会再有咬出来的空盒子。 */
 .bottomPanel {
   display: flex;
   min-height: 0;
+  max-height: 100%;
   flex-direction: column;
+  align-self: start;
   overflow: hidden;
 }
 

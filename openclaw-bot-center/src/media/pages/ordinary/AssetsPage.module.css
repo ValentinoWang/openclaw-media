@@ -154,9 +154,15 @@
   border-bottom: 1px solid var(--mg-border);
 }
 
+/* 关联记录三个标签页（内容拆解/创作模式/使用记录）未选中素材时只有一句空状态文案，
+   如果还按 height: 100% 拉满会在文案下面留一块空盒子（qa:media-layout-sanity 的
+   「面板底部空转」）。改成 auto + max-height：内容短就按内容收，选中素材后内容变长
+   仍然吃满这一列的可用高度，并在 .tabPanelBody 内部滚动（max-height 只是上限，
+   不是必须填满的高度）。 */
 .tabPanel {
   display: flex;
-  height: 100%;
+  height: auto;
+  max-height: 100%;
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
@@ -1089,10 +1095,10 @@
   .assetGrid {
     overflow-y: visible;
   }
-  .tabPanel {
-    height: auto;
-    min-height: 680px;
-  }
+  /* .tabPanel 不在这里重复设 min-height：这一路径下 .primaryColumn/.workspace 已经
+     松成 auto（整页改回随内容滚动），第 157 行的基础规则本来就是 height: auto，
+     之前这里额外钉的 680px 地板正是「未选中素材只有一句空状态文案」在 900/430px
+     下空转 254px 的原因——面板该多高由内容定，不是拍一个数字上去。 */
   .inspector {
     position: static;
     height: auto;

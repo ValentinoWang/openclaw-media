@@ -294,6 +294,13 @@
 .studio-shell .page-heading h1 { margin-bottom: 7px; font-size: var(--mg-text-2xl); line-height: 1.2; letter-spacing: var(--mg-track-tight); }
 .studio-shell .page-heading p { max-width: 78ch; color: var(--mg-muted); font-size: var(--mg-text-md); line-height: 1.65; }
 .studio-shell .section-panel { border-radius: var(--mg-r-lg); box-shadow: var(--mg-e3); }
+/* 组织工作区两栏（.organization-shell-grid，定义在 media.css）用 align-items: stretch
+   互相等高；两块卡片里较短的那块被拉伸后，内容下方会空出一大块画了边框、铺了底色的
+   空盒子（组织成员身份下是"组织资源入口"更短；负责人身份多出接入操作按钮后可能反过来）。
+   两块卡片共用的 .organization-shell-card 只在这一页出现，在这里给它们都解开拉伸、
+   按各自内容定高——不管哪块更短，都不会被拉出空盒子。不碰共享的网格声明（align-items
+   还是 stretch，两栏内容一样长时外观不变），也不影响其余页面的 .section-panel。 */
+.studio-shell .section-panel.organization-shell-card { align-self: start; }
 .studio-shell .summary-band { border-radius: var(--mg-r-lg); box-shadow: var(--mg-e3); }
 .studio-shell .primary-button { border-radius: var(--mg-r-md); box-shadow: var(--mg-e3); }
 .studio-shell .status-badge { border-radius: var(--mg-r-full); }
