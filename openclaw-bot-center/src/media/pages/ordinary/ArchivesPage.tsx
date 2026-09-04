@@ -371,7 +371,7 @@ function ArchivesPage() {
             <tr>
               <th scope="col">归档记录</th>
               <th scope="col">来源运行</th>
-              <th scope="col">云端字节</th>
+              <th scope="col">云端存储</th>
               <th scope="col">状态</th>
               <th scope="col">更新时间</th>
             </tr>
