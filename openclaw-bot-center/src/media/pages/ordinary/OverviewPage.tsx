@@ -1497,6 +1497,7 @@ function PendingTask({
   const presentation = pendingTaskPresentation(task, nowMs);
   if (presentation.deletionState === "expired") return null;
   const requiresConfirmation = presentation.deletionState === "active";
+  const updatedAt = task.updatedAt || task.createdAt;
   function openTaskReview() {
     onOpenWorkspace();
     window.setTimeout(() => {
@@ -1519,6 +1520,8 @@ function PendingTask({
       setAction("idle");
     }
   }
+  const hasFooterActions =
+    !!presentation.actionHint || presentation.deletionState === "active" || !!actionError;
   return (
     <article
       className={
@@ -1540,32 +1543,24 @@ function PendingTask({
         )}
       </span>
       <div className={styles.pendingCopy}>
+        {/* 行 1：图标（左侧独立列）+ 任务类型 + 状态徽标 + 相对时间。面板只有约
+           430px 宽，完整时间戳放不下，改用相对时间，完整值留在 title 里悬停可见。 */}
         <div className={styles.pendingTitle}>
           <strong title={presentation.title}>{presentation.title}</strong>
           <span className={"mg-badge status-badge is-" + presentation.statusTone} data-component="mg-badge" data-tone={presentation.statusTone}>
             {presentation.statusLabel}
           </span>
+          <time
+            className={styles.pendingTime}
+            dateTime={updatedAt}
+            title={displayDate(updatedAt)}
+          >
+            {formatRelativeTime(updatedAt)}
+          </time>
         </div>
-        <p className={styles.pendingImpact}>{presentation.impact}</p>
-        {presentation.target ? (
-          <div className={styles.pendingTarget}>
-            <span>{presentation.targetLabel}</span>
-            <code>{presentation.target}</code>
-          </div>
-        ) : null}
-        {presentation.detail ? (
-          <span className={styles.pendingPath}>{presentation.detail}</span>
-        ) : null}
-      </div>
-      <time
-        className={styles.pendingTime}
-        dateTime={task.updatedAt || task.createdAt}
-      >
-        {displayDate(task.updatedAt || task.createdAt)}
-      </time>
-      <div className={styles.pendingActions}>
-        {presentation.actionHint ? <span>{presentation.actionHint}</span> : null}
-        <div className={styles.pendingButtonGroup}>
+        {/* 行 2：任务描述 + 主操作按钮同排，按钮不再单独占一整行。 */}
+        <div className={styles.pendingImpactRow}>
+          <p className={styles.pendingImpact} title={presentation.impact}>{presentation.impact}</p>
           <button
             type="button"
             className={
@@ -1579,23 +1574,37 @@ function PendingTask({
             {requiresConfirmation ? "查看影响并确认" : "打开任务工作区"}
             <ChevronRight size={14} />
           </button>
-          {presentation.deletionState === "active" ? (
-            <button
-              type="button"
-              className={"mg-btn mg-btn-ghost " + styles.cancelTaskButton}
-              data-component="mg-btn"
-              disabled={action !== "idle"}
-              onClick={() => void cancelDeletion()}
-            >
-              <X size={14} />
-              {action === "cancelling" ? "正在取消" : "取消删除"}
-            </button>
-          ) : null}
         </div>
-        {actionError ? (
-          <strong className={styles.pendingActionError} role="alert">
-            {actionError}
-          </strong>
+        {presentation.target ? (
+          <div className={styles.pendingTarget}>
+            <span>{presentation.targetLabel}</span>
+            <code>{presentation.target}</code>
+          </div>
+        ) : null}
+        {presentation.detail ? (
+          <span className={styles.pendingPath}>{presentation.detail}</span>
+        ) : null}
+        {hasFooterActions ? (
+          <div className={styles.pendingActions}>
+            {presentation.actionHint ? <span>{presentation.actionHint}</span> : null}
+            {presentation.deletionState === "active" ? (
+              <button
+                type="button"
+                className={"mg-btn mg-btn-ghost " + styles.cancelTaskButton}
+                data-component="mg-btn"
+                disabled={action !== "idle"}
+                onClick={() => void cancelDeletion()}
+              >
+                <X size={14} />
+                {action === "cancelling" ? "正在取消" : "取消删除"}
+              </button>
+            ) : null}
+            {actionError ? (
+              <strong className={styles.pendingActionError} role="alert">
+                {actionError}
+              </strong>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </article>
@@ -1701,6 +1710,24 @@ function formatRemainingTime(value: string, nowMs: number) {
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = remainingSeconds % 60;
   return `${minutes} 分 ${String(seconds).padStart(2, "0")} 秒`;
+}
+
+// 待处理任务条目只有约 430px 宽，完整时间戳（如 2026/9/4 04:18:35）会占掉一整行的
+// 大半宽度。这里换成相对时间，完整值仍通过 <time title> 保留、悬停可见。
+function formatRelativeTime(value?: string): string {
+  if (!value) return "时间待读取";
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return "时间待读取";
+  const elapsedMs = Date.now() - timestamp;
+  if (elapsedMs < 0) return displayDate(value);
+  const minutes = Math.floor(elapsedMs / 60_000);
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes} 分钟前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} 小时前`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} 天前`;
+  return displayDate(value);
 }
 
 function requiresConfirmationReceipt(task: MediaTaskSummary) {

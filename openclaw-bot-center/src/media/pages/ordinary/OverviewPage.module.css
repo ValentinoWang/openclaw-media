@@ -575,11 +575,16 @@
   border-top: 1px solid var(--mg-border);
 }
 
+/* identity 列必须留够 237px（28px 图标 + 9px 间距 + ≥200px 文案），否则标题/
+   详情会被挤成折行。原来把「查看网页内容」按钮当第三条列轨、和 identity/meta
+   抢横向空间，在检视栏还没让位、主栏被压到约 600px 甚至 420px 宽（1440/1180 两个
+   宽度都会遇到）时挤不出这么多——按钮改用 .artifactActions 的 grid-column: 1 / -1
+   放到独立一行，横向只剩 identity/meta 两条列轨要分，就总能满足 237px 下限。 */
 .artifactItem {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(150px, 1fr) minmax(175px, 0.6fr) auto;
-  gap: 24px;
+  grid-template-columns: minmax(237px, 1fr) minmax(110px, 0.5fr);
+  gap: 8px 20px;
   align-items: center;
   padding: 12px 16px;
   background: var(--mg-surface);
@@ -618,6 +623,7 @@
 
 .artifactActions {
   display: flex;
+  grid-column: 1 / -1;
   min-width: 0;
   flex-wrap: nowrap;
   align-items: center;
@@ -891,35 +897,32 @@
     flex-direction: column;
   }
 
+  /* .mg-panel/.panel 统一给了 overflow:hidden，这会把网格 auto 行的「自动最小
+     尺寸」按规范清零（尺寸计算只在 overflow:visible 时才按内容取值）。三块面板
+     叠起来的高度常常超过检视栏的可视高度，于是这里若仍是网格的 auto 行，浏览器
+     会把行压缩到刚好塞进固定高度，而不是让本栏出现滚动条——超出部分被每块面板
+     自己的 overflow:hidden 悄悄裁掉，且面板自身没有内部滚动，裁掉的内容彻底不
+     可见（Media Agent「可用能力/进行中网页任务」下面那行说明文字、以及后面两个
+     小节整段消失，根源都在这里）。改成 flex 列 + 三块面板都 flex:0 0 auto（做法
+     与 .primaryColumn 的三个面板一致）：flex-shrink:0 无条件禁止收缩，面板永远
+     按自身内容渲染，撑爆时交给本栏已有的 overflow-y:auto 整体滚动，不再逐块裁字。
+     pendingPanel 原来那套「自己再套一层 flex + 内部滚动」的写法只在这个前提被
+     打破时才有意义，现在一并撤掉。 */
   .sideColumn {
-    grid-template-rows: none;
+    display: flex;
+    flex-direction: column;
     height: 100%;
     min-height: 0;
-    align-content: start;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-right: 2px;
     scrollbar-gutter: stable;
   }
 
+  .agentPanel,
+  .workflowPanel,
   .pendingPanel {
-    display: flex;
-    height: auto;
-    min-height: 0;
-    flex-direction: column;
-  }
-
-  .pendingPanel > :global(.mg-state),
-  .pendingList {
-    min-width: 0;
-    min-height: 0;
-    flex: 1 1 auto;
-    overflow: auto;
-  }
-
-  .pendingList {
     flex: 0 0 auto;
-    overflow: visible;
   }
 }
 
@@ -1337,7 +1340,7 @@
 
 .pendingItem {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: 28px minmax(0, 1fr);
   gap: 9px;
   padding: 13px 14px;
   border-bottom: 1px solid var(--mg-border);
@@ -1374,6 +1377,8 @@
   display: flex;
   min-width: 0;
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 2px;
   gap: 6px;
 }
 
@@ -1386,15 +1391,28 @@
 }
 
 .pendingCopy p {
-  margin: 5px 0 3px;
+  margin: 0;
   color: var(--mg-muted);
   font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
+.pendingImpactRow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  margin: 5px 0 3px;
+}
+
 .pendingImpact {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
   color: var(--mg-ink) !important;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pendingTarget {
@@ -1422,22 +1440,27 @@
 
 .pendingPath {
   display: block;
+  margin-top: 3px;
   color: var(--mg-muted);
   font-size: var(--mg-text-2xs);
   line-height: 1.35;
 }
 
+/* 行 1 里的相对时间：靠 margin-left:auto 吃掉行内剩余空间，贴在徽标右侧，
+   效果等同原来「独立一列、右对齐」的网格写法，但不用再占一整条列轨。 */
 .pendingTime {
-  padding-top: 3px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding-left: 8px;
 }
 
 .pendingActions {
   display: flex;
-  grid-column: 2 / -1;
+  min-width: 0;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  min-width: 0;
+  margin-top: 6px;
 }
 
 .pendingActions > span {
@@ -1448,8 +1471,9 @@
   line-height: 1.4;
 }
 
-.pendingActions button {
+.pendingCopy button {
   display: inline-flex;
+  flex: 0 0 auto;
   min-height: 30px;
   align-items: center;
   gap: 5px;
@@ -1458,20 +1482,13 @@
   border-radius: var(--mg-r-sm);
   font-size: var(--mg-text-2xs);
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.pendingActions button:disabled {
+.pendingCopy button:disabled {
   cursor: wait;
   opacity: 0.55;
-}
-
-.pendingButtonGroup {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
 }
 
 .openTaskButton {
@@ -1592,18 +1609,7 @@
     padding: 14px 12px;
   }
 
-  .pendingItem {
-    grid-template-columns: 26px minmax(0, 1fr);
-  }
-
-  .pendingTime {
-    grid-column: 2;
-    justify-self: start;
-    padding-top: 0;
-  }
-
   .pendingActions {
-    grid-column: 2;
     align-items: stretch;
     flex-direction: column;
   }
@@ -1617,10 +1623,12 @@
     justify-content: center;
   }
 
-  .pendingButtonGroup {
-    width: 100%;
-    align-items: stretch;
-    flex-direction: column;
+  /* 4 条列轨（图标/文案/时间/箭头）在约 400px 的卡片宽度里挤不开，文案列会被
+     压到 200px 门槛以下、标题折行。退回单列，图标、文案、时间、箭头各占一行，
+     与 .artifactItem 在 ≤760px 时的退回方式一致。 */
+  .projectItem {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 4px;
   }
 
   .documentUnavailable {
@@ -1679,19 +1687,6 @@
 
   .workflowArrow {
     width: 11px;
-  }
-
-  .pendingItem {
-    grid-template-columns: 28px minmax(0, 1fr);
-  }
-
-  .pendingTime {
-    grid-column: 2;
-    padding-top: 0;
-  }
-
-  .pendingActions {
-    grid-column: 2;
   }
 
   .confirmReason {
