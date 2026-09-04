@@ -155,7 +155,8 @@ const COLLECT_DEFECTS = `(() => {
   for (const grid of root.querySelectorAll('*')) {
     const gridStyle = getComputedStyle(grid)
     if (gridStyle.display !== 'grid' && gridStyle.display !== 'inline-grid') continue
-    const tracks = gridStyle.gridTemplateColumns.split(' ').map(Number).filter((n) => Number.isFinite(n))
+    // 解析出来的是「179px 179px」这类字符串：Number('179px') 是 NaN，只能 parseFloat。
+    const tracks = gridStyle.gridTemplateColumns.split(' ').map((track) => parseFloat(track)).filter((n) => Number.isFinite(n))
     if (tracks.length < 2 || Math.max(...tracks) >= 200) continue
     let worst = null
     for (const leaf of textLeaves) {
@@ -267,17 +268,37 @@ async function sweep(page: Page): Promise<Array<[string, string[]]>> {
     if (selected === 'true') continue
     const switched = await tab.click({ timeout: 3_000 }).then(() => true).catch(() => false)
     if (!switched) continue
-    await page.waitForTimeout(500)
+    // 固定 sleep 会量到半成品：切换后往往还要向浏览器内假后端要一次数据。
+    await settle(page)
     results.push([label.slice(0, 12), (await page.evaluate(COLLECT_DEFECTS)) as string[]])
   }
 
   // 主栏 + 检视栏的页面：不选中任何一条时检视栏只有空状态，真正的排版在选中之后。
-  const firstRow = page.locator('[data-page-primary] button, [data-page-primary] tr[tabindex]').first()
-  if ((await page.locator('[data-page-inspector]').count()) > 0 && (await firstRow.count()) > 0) {
-    const opened = await firstRow.click({ timeout: 3_000 }).then(() => true).catch(() => false)
-    if (opened) {
-      await page.waitForTimeout(700)
-      results.push(['选中首条', (await page.evaluate(COLLECT_DEFECTS)) as string[]])
+  // 「第一个按钮」不行——主栏顶上往往是刷新之类的图标按钮，点它什么也不会选中，
+  // 门禁就以为自己看过详情栏了。挑第一个**带文字**、且不在标签栏/面板头里的控件。
+  const ROW_SELECTOR = '[data-page-primary] button, [data-page-primary] tr[tabindex]'
+  if ((await page.locator('[data-page-inspector]').count()) > 0) {
+    const rowIndex = (await page.evaluate((selector) => {
+      const candidates = [...document.querySelectorAll(selector)]
+      for (let index = 0; index < candidates.length; index += 1) {
+        const candidate = candidates[index]
+        if (candidate.closest('[role="tablist"]') || candidate.closest('.mg-panel-head')) continue
+        if ((candidate.textContent || '').trim().length < 2) continue
+        return index
+      }
+      return -1
+    }, ROW_SELECTOR)) as number
+    if (rowIndex >= 0) {
+      const opened = await page
+        .locator(ROW_SELECTOR)
+        .nth(rowIndex)
+        .click({ timeout: 3_000 })
+        .then(() => true)
+        .catch(() => false)
+      if (opened) {
+        await settle(page)
+        results.push(['选中首条', (await page.evaluate(COLLECT_DEFECTS)) as string[]])
+      }
     }
   }
 
