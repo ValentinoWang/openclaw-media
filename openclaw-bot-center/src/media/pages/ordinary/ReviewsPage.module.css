@@ -538,7 +538,7 @@
 
 .layerGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
   min-width: 0;
 }
@@ -573,11 +573,17 @@
   line-height: 1.2;
 }
 
-.layerHeader small {
-  display: block;
-  margin-top: 0.12rem;
+/* 三条小节副标题（由指标快照提供 / 不替代人工决策 / 由确认操作写入）原来是
+   每个小节头下面单独的一行 <small>，三节头加起来占约 120px 却只带出不到 40px
+   的内容——这里改成检视栏底部共享的一句话（见 ReviewLayers 里的 .layersFootnote），
+   小节头因此收成图标 + 标题的单行。 */
+.layersFootnote {
+  margin: 0;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--reviews-line);
   color: var(--reviews-muted);
-  font-size: var(--mg-text-xs);
+  font-size: var(--mg-text-2xs);
+  line-height: 1.4;
 }
 
 /* 「数据层」原本是页面私有的 .factList：5.5rem 固定标签列 + 剩余窄值列，

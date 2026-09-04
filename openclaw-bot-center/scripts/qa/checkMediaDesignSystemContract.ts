@@ -347,10 +347,10 @@ requireContract(
   /\[data-page-primary\]\[data-primary-flow\] \{[\s\S]*?display: flex;[\s\S]*?flex-direction: column;[\s\S]*?\}/.test(
     mediaStyles,
   ) &&
-    /\[data-page-primary\]\[data-primary-flow\] > \[data-page-terminal-surface="primary"\] \{[\s\S]*?flex: var\(--mg-rail-grow, 1 1 auto\);[\s\S]*?min-height: 0;[\s\S]*?\}/.test(
+    /\[data-page-primary\]\[data-primary-flow\] > \[data-page-terminal-surface="primary"\] \{[\s\S]*?flex: var\(--mg-rail-grow, 0 1 auto\);[\s\S]*?min-height: 0;[\s\S]*?\}/.test(
       mediaStyles,
     ),
-  "a marked primary flow must let its terminal surface consume the remaining rail height",
+  "a marked primary flow must let its terminal surface shrink into the remaining rail height without being stretched to fill it",
 );
 const tracksSource = fs.readFileSync(
   path.join(pagesRoot, "ordinary/TracksPage.tsx"),
@@ -458,6 +458,17 @@ requireContract(
   ),
   "desktop rail primary and inspector must use one equal-height contract, read through the release tokens",
 );
+/* 等高契约给的是**高度上限**，不是必须填满的高度。检视栏被 stretch 拉满之后，
+   内容只填了上半截时，剩下的是一块画了边框、铺了底色的空盒子，看着像没加载出来
+   （/reviews 的「复盘检查器」把小节头压紧、内容少了 56px，空白反而涨到 144px：
+   高度是 100dvh 减出来的，跟内容无关）。所以检视栏读同一组令牌、但默认按内容
+   定高，再用 max-height 把上限留住——内容长时仍然吃满一列、在自己内部滚。 */
+requireContract(
+  /\[data-page-layout="persistent-rail"\] > \[data-page-inspector\] \{[^}]*align-self: var\(--mg-rail-align, start\);[^}]*height: var\(--mg-rail-fill, auto\);[^}]*max-height: 100%;[^}]*overflow-y: auto;[^}]*\}/.test(
+    mediaStyles,
+  ),
+  "the inspector rail must size to its content, keep the equal-height budget as a max-height, and own its overflow-y (page-level .inspector rules lose the source-order tie to .mg-panel)",
+);
 requireContract(
   /@media \(max-width: 760px\) \{[\s\S]*?--mg-rail-shell-height: auto;[\s\S]*?--mg-rail-grow: 0 0 auto;[\s\S]*?--mg-rail-fill: auto;[\s\S]*?--mg-rail-align: auto;[\s\S]*?\}/.test(
     mediaStyles,
@@ -534,6 +545,10 @@ const railReleaseConsumers: Array<[RegExp, string]> = [
   [
     /\[data-page-primary\]\[data-primary-flow\] > \[data-page-terminal-surface="primary"\] \{[^}]*flex: var\(--mg-rail-grow,/,
     "the primary-flow terminal surface must read --mg-rail-grow",
+  ],
+  [
+    /\[data-page-layout="persistent-rail"\] > \[data-page-inspector\] \{[^}]*align-self: var\(--mg-rail-align, start\); height: var\(--mg-rail-fill, auto\);/,
+    "the content-sized inspector must read the rail tokens too, so stacked mobile releases it with the rest",
   ],
 ];
 for (const [pattern, message] of railReleaseConsumers) {

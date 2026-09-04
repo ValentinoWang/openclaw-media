@@ -713,8 +713,25 @@ html { scroll-padding-top: calc(var(--mg-shell-topbar, 68px) + 8px); }
 [data-page-layout="persistent-rail"] { min-width: 0; min-height: 0; align-items: stretch; padding-bottom: 0; }
 [data-page-layout="persistent-rail"] > [data-page-primary], [data-page-layout="persistent-rail"] > [data-page-inspector] { min-width: 0; min-height: 0; align-self: var(--mg-rail-align, stretch); height: var(--mg-rail-fill, 100%); }
 [data-page-primary][data-primary-flow] { display: flex; flex-direction: column; }
-[data-page-primary][data-primary-flow] > [data-page-terminal-surface="primary"] { flex: var(--mg-rail-grow, 1 1 auto); min-height: 0; }
-[data-page-layout="persistent-rail"] > [data-page-inspector] { overflow-x: hidden; }
+/* 主栏的终端面（列表 / 表格那一块）同理：**上限**是这一列的剩余高度，不是必须
+   填满的高度。0 1 auto 表示「不主动长高、但可以被压」——内容短就按内容收，内容
+   长时 flex-shrink 仍然把它压回可用高度，面板内部照旧滚动（跟 1 1 auto 的表现
+   完全一样）。之前是 1 1 auto：/archives 的「归档记录」只有两行表格，却被撑成
+   584px，底下 373px 是一块空白的卡片，看着像加载失败。 */
+[data-page-primary][data-primary-flow] > [data-page-terminal-surface="primary"] { flex: var(--mg-rail-grow, 0 1 auto); min-height: 0; }
+/* 检视栏的高度上限来自这份等高契约，实际高度仍由内容决定。等高 stretch 只在
+   两栏内容都够长时是对的：检视栏往往只有一屏的一半（选中一条记录、几行事实），
+   被拉满之后底下剩的不是页面留白，而是**一块画了边框、铺了底色的空盒子**，看着
+   像没加载出来。/reviews 的「复盘检查器」把三个小节头压紧、内容少了 56px 之后，
+   空白反而从 88px 涨到 144px——因为高度是 100dvh 减出来的，跟内容无关。
+   改成 start + auto 之后：内容短就按内容收，内容长仍然吃满一列并在自己内部滚
+   （overflow-x: hidden 会把 overflow-y 的 visible 计算成 auto，滚动条照旧）。
+   两条规则读的是同一组释放令牌，窄屏堆叠时一起松开。
+   overflow-y 也必须写在这一层：页面各自写的 .inspector { overflow: auto } 和
+   .mg-panel { overflow: hidden } 特异性相同，而原语在打包后的样式表里更靠后，
+   同分靠源序决出胜负——页面以为自己开了滚动，实际算出来是 hidden，视口一矮
+   检视栏的内容就被永久裁掉、连滚都滚不出来。 */
+[data-page-layout="persistent-rail"] > [data-page-inspector] { align-self: var(--mg-rail-align, start); height: var(--mg-rail-fill, auto); max-height: 100%; overflow-x: hidden; overflow-y: auto; }
 [data-page-primary]:has(> :only-child) { grid-template-rows: minmax(0, 1fr); }
 [data-page-primary] > :only-child { min-height: 0; align-self: var(--mg-rail-align, stretch); height: var(--mg-rail-fill, 100%); }
 [data-page-terminal-surface="inspector"] { display: flex; min-height: 0; flex-direction: column; }

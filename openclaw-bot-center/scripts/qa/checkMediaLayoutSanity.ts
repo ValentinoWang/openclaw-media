@@ -265,6 +265,60 @@ const COLLECT_DEFECTS = `(() => {
     }
   }
 
+  // 第七类：面板底部空转。面板的高度来自视口高度契约（被拉满一列），内容却只填了
+  // 上半截——剩下的一大片不是页面留白，是**一块画了边框、铺了底色的空盒子**，看上去
+  // 像加载失败。/reviews 的「复盘检查器」就是这样：把三个小节头压紧之后，内容少了
+  // 56px，空白反而从 88px 涨到 144px——因为高度是 100dvh 减出来的，跟内容无关。
+  // 修法不是往里塞东西，是让这类面板按内容定高（--mg-rail-align: start 配
+  // --mg-rail-fill: auto，再用 max-height 保留「内容超长时自己滚」）。
+  const idlePanels = []
+  for (const panel of root.querySelectorAll('[data-component="mg-panel"], [data-page-terminal-surface]')) {
+    const panelRect = panel.getBoundingClientRect()
+    if (panelRect.height < 260 || panelRect.width < 1) continue
+    // 里面还有滚不完的内容，说明高度是被内容用满的，底部的空只是没滚到。
+    if (panel.scrollHeight > panel.clientHeight + 1) continue
+    const panelStyle = getComputedStyle(panel)
+    // 只看真的画成了一块面（有边框或自己的底色）的盒子：纯布局容器的空白就是页面留白。
+    const painted = parseFloat(panelStyle.borderTopWidth) > 0 || parseFloat(panelStyle.borderBottomWidth) > 0 ||
+      (panelStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' && panelStyle.backgroundColor !== 'transparent')
+    if (!painted) continue
+    let inkTop = Infinity
+    let inkBottom = -Infinity
+    const walker = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!(node.textContent || '').trim()) continue
+      inkRange.selectNodeContents(node)
+      for (const rect of inkRange.getClientRects()) {
+        if (rect.width <= 0.5 || rect.height <= 0.5) continue
+        inkTop = Math.min(inkTop, rect.top)
+        inkBottom = Math.max(inkBottom, rect.bottom)
+      }
+    }
+    for (const media of panel.querySelectorAll('img, svg, canvas, hr, input, progress')) {
+      const mediaRect = media.getBoundingClientRect()
+      if (mediaRect.width <= 0.5 || mediaRect.height <= 0.5) continue
+      inkTop = Math.min(inkTop, mediaRect.top)
+      inkBottom = Math.max(inkBottom, mediaRect.bottom)
+    }
+    if (!Number.isFinite(inkBottom)) continue
+    const floor = panelRect.bottom - parseFloat(panelStyle.borderBottomWidth) - parseFloat(panelStyle.paddingBottom)
+    const ceiling = panelRect.top + parseFloat(panelStyle.borderTopWidth) + parseFloat(panelStyle.paddingTop)
+    const tail = floor - inkBottom
+    // 内容整体居中（空状态、占位提示）是设计意图：上下留白差不多就不算空转。
+    if (Math.abs(tail - (inkTop - ceiling)) < 24) continue
+    if (tail < 88 || tail < panelRect.height * 0.18) continue
+    idlePanels.push({ panel: panel, tail: tail, rect: panelRect })
+  }
+  for (const entry of idlePanels) {
+    // 外层面板与内层面板底边挨着时只报最里面那个，否则一处空白报三遍。
+    let inner = false
+    for (const other of idlePanels) {
+      if (other !== entry && entry.panel.contains(other.panel)) { inner = true; break }
+    }
+    if (inner) continue
+    defects.push('面板底部空转：' + describe(entry.panel, (entry.panel.textContent || '').trim()) + ' 高 ' + Math.round(entry.rect.height) + 'px，内容到底还剩 ' + Math.round(entry.tail) + 'px 的空盒子——高度是视口算出来的、与内容无关；该让它按内容定高（--mg-rail-align: start + --mg-rail-fill: auto，再用 max-height 保留内部滚动），而不是往里填东西')
+  }
+
   // 第四类：视口高度契约算得对不对。契约把主工作区钉成
   // 100dvh - 顶栏 - 内容壳上下内边距；量的是**主工作区自己的底边**，加上内容壳
   // 的下内边距应当正好落在视口底边。这样只对「常量和实际内边距对不上」敏感，

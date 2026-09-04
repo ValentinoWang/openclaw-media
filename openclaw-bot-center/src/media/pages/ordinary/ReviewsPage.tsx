@@ -730,32 +730,34 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
             <span className={`${styles.postId} mg-id`} title={review.publicPostId}>{review.publicPostId}</span>
             <span>· 报告</span>
             <span className="mg-id" title={review.publicReviewId}>{review.publicReviewId}</span>
-            <span>· 数据版本 {formatCount(review.revision)}</span>
           </p>
         </div>
         {onConfirm ? <button className={primaryButtonClass} data-component="mg-btn" type="button" onClick={onConfirm} disabled={review.humanDecision !== null || review.status === "confirmed"}><CheckCircle2 size={15} aria-hidden="true" />{review.humanDecision === null ? "确认人工决策" : "已完成确认"}</button> : null}
       </div>
       <div className={styles.layerGrid}>
-        <LayerPanel icon={<Database size={17} aria-hidden="true" />} title="数据层" caption="由指标快照提供">
+        <LayerPanel icon={<Database size={17} aria-hidden="true" />} title="数据层">
           <dl className="mg-facts">
             <div className="mg-fact"><dt>24h 快照</dt><dd><SnapshotValue value={review.snapshot24h} /></dd></div>
             <div className="mg-fact"><dt>7d 快照</dt><dd><SnapshotValue value={review.snapshot7d} /></dd></div>
             <div className="mg-fact"><dt>证据质量</dt><dd><QualityBadge value={review.evidenceQuality} /></dd></div>
+            <div className="mg-fact"><dt>人工决策</dt><dd>{valueOrUnknown(review.humanDecision, "未确认")}</dd></div>
           </dl>
         </LayerPanel>
-        <LayerPanel icon={<BarChart3 size={17} aria-hidden="true" />} title="模型输出" caption="不替代人工决策">
+        <LayerPanel icon={<BarChart3 size={17} aria-hidden="true" />} title="模型输出">
           <p className={styles.layerValue}>{valueOrUnknown(review.modelSuggestion, "未生成")}</p>
         </LayerPanel>
-        <LayerPanel icon={<CheckCircle2 size={17} aria-hidden="true" />} title="人工决策" caption="由确认操作写入">
-          <p className={styles.layerValue}>{valueOrUnknown(review.humanDecision, "未确认")}</p>
-        </LayerPanel>
       </div>
+      {/* 三个小节原本各自一行的出处说明（由指标快照提供 / 不替代人工决策 / 由确认
+          操作写入）合并成一句话放在这里：一次性交代完，而不是逐条重复；常驻可见，
+          不依赖 hover 才能看到的 title 提示——"模型输出不替代人工决策"这类提醒,
+          放进只有指针悬停才出现的 tooltip 里,在触屏上等于说了等于没说。 */}
+      <p className={styles.layersFootnote}>数据层由指标快照提供，模型输出不替代人工决策，人工决策由确认操作写入。</p>
     </section>
   );
 }
 
-function LayerPanel({ icon, title, caption, children }: { icon: ReactNode; title: string; caption: string; children: ReactNode }) {
-  return <section className={styles.layerPanel}><header className={styles.layerHeader}><span className={styles.layerIcon}>{icon}</span><div><h3>{title}</h3><small>{caption}</small></div></header>{children}</section>;
+function LayerPanel({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+  return <section className={styles.layerPanel}><header className={styles.layerHeader}><span className={styles.layerIcon}>{icon}</span><h3>{title}</h3></header>{children}</section>;
 }
 
 function MetricTable({ items }: { items: MetricSnapshot[] }) {
