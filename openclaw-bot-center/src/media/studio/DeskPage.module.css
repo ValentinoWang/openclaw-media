@@ -26,9 +26,13 @@
    拿到全宽；下限外包 min(100%, …) 是防止容器比下限还窄时轨道溢出压住邻居。
    退回单列之后每张卡片的顶部分隔线一律显示（不再用 nth-child(-n+2) 只免除
    「第一行」——auto-fit 下列数会变,「前两个 = 第一行」不再成立，两列时会漏免
-   第 2 张、单列时会误免第 2 张）：面板头下方多一条线是可以接受的取舍，换来
-   分隔线在任何列数下都不会点错对象。 */
-.principleGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; padding: 16px; }
+   第 2 张、单列时会误免第 2 张）。面板头下方因此不会再多一条线：.principleGrid
+   自己的 padding-top 归零、换成容器级的 margin-top: -1px，让第一行——不管
+   实际落进去的是哪几张卡——的 border-top 正好压在 .mg-panel-head 既有的
+   border-bottom 上(同一个 var(--mg-border)、同为 1px),两条线合并成一条；
+   这只取决于容器自身的盒模型，与「第一行是哪几张卡」无关，列数怎么变都
+   成立。行间分隔线仍由每张卡自己的 padding: 15px 0 撑开，不受影响。 */
+.principleGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; margin-top: -1px; padding: 0 16px 16px; }
 .principleGrid article { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 11px; padding: 15px 0; border-top: 1px solid var(--mg-border); }
 .principleGrid article > span { display: grid; width: 40px; height: 40px; place-items: center; border-radius: var(--mg-r-md); color: var(--accent-base); background: var(--accent-soft); }
 .principleGrid strong { font-size: var(--mg-text-sm); }
