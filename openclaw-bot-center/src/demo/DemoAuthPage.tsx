@@ -1,6 +1,8 @@
+import { useEffect, useRef } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { demoAuthPageDocuments, type DemoAuthPageSlug } from './generatedDemoAuthPages'
-import { demoNavigateHome } from './demoNavigation'
+import { demoNavigate, demoNavigateHome } from './demoNavigation'
+import { demoPersonas, selectPersona } from './demoPersonas'
 import './demoAuthPage.css'
 
 /** 在演示站里渲染「退出登录后的首页」等认证页。
@@ -10,6 +12,30 @@ import './demoAuthPage.css'
  *  （身份选择、返回、提交拦截）照常运行，不需要在 React 里重写一遍。 */
 export default function DemoAuthPage({ slug }: { slug: DemoAuthPageSlug }) {
   const page = demoAuthPageDocuments.find((item) => item.slug === slug)
+  const frameRef = useRef<HTMLIFrameElement | null>(null)
+
+  /* 登录页里的「以某个身份进入演示」按钮只能靠 postMessage 说话：iframe 带
+   * sandbox="allow-scripts"，是个不透明源——它写不了 localStorage，也做不了顶层
+   * 导航（试过 window.top.location.assign，被沙箱静默拦下，工作台被装进了 iframe）。
+   * 切身份和路由都由外壳这一侧执行。
+   *
+   * 校验只认 event.source 是不是我们自己那个 frame：沙箱源发出的消息 origin 是
+   * "null"，按 origin 判等没有意义。落地路由也不采信消息里的值，只用身份 id 去
+   * demoPersonas 里查它自己的 defaultRoute。 */
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (!frameRef.current || event.source !== frameRef.current.contentWindow) return
+      const data = event.data as { source?: unknown; action?: unknown; persona?: unknown } | null
+      if (!data || data.source !== 'mediaclaw-demo-auth' || data.action !== 'enter') return
+      const persona = demoPersonas.find((item) => item.id === data.persona)
+      if (!persona) return
+      selectPersona(persona.id)
+      demoNavigate(persona.defaultRoute)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
   if (!page) return null
   return (
     <div className="demo-auth-shell">
@@ -18,7 +44,7 @@ export default function DemoAuthPage({ slug }: { slug: DemoAuthPageSlug }) {
         <span>{page.title}</span>
         <small>不鉴权复刻 · 提交一律被拦截</small>
       </div>
-      <iframe className="demo-auth-frame" title={page.title} srcDoc={page.html} sandbox="allow-scripts" />
+      <iframe ref={frameRef} className="demo-auth-frame" title={page.title} srcDoc={page.html} sandbox="allow-scripts" />
     </div>
   )
 }

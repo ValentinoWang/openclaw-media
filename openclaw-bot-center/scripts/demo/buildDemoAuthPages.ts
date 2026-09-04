@@ -141,6 +141,43 @@ function buildDemoStyleBlock(): string {
         cursor: pointer;
         padding: 2px 6px;
       }
+      /* 「以某个身份进入演示」——登录页在演示站里唯一真正能走通的出口。
+         生产环境这里是账号密码提交 / Feishu 授权，两条路在静态站上都发不出请求，
+         没有这个按钮的话，选完身份就是一条死路（组织那一侧尤其明显：一个永远
+         不会填上的二维码占位框 + 一行红色的「等待开始 Feishu 授权」）。 */
+      .demo-auth-enter {
+        display: grid;
+        gap: 8px;
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px dashed var(--mg-border, #dde5de);
+      }
+      .demo-auth-enter-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: var(--mg-r-md, 10px);
+        background: var(--mg-primary-dark, #10684a);
+        color: var(--mg-on-primary, #ffffff);
+        font-family: inherit;
+        font-size: var(--mg-text-sm, 0.875rem);
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .demo-auth-enter-button:hover {
+        background: var(--mg-primary, #1a8a63);
+      }
+      .demo-auth-enter-hint {
+        margin: 0;
+        color: var(--mg-muted, #647169);
+        font-size: var(--mg-text-2xs, 0.75rem);
+        line-height: var(--mg-lh-snug, 1.45);
+        text-align: center;
+      }
     </style>`
 }
 
@@ -260,6 +297,54 @@ function buildDemoClientScriptBody(): string {
               mode === 'personal' ? 'personal-password-fallback' : 'organization-oauth-fallback',
             )
             if (fallback) fallback.hidden = false
+
+            // 组织那一侧的二维码永远不会被填上：占位文案（「选择组织成员后生成二维码」）
+            // 在已经选完身份之后还挂着，读起来像卡住了；状态行走的是 .auth-message，
+            // 颜色是 --auth-danger，一行红字更像出错。两处都按演示站的真实情况改写。
+            if (mode === 'organization') {
+              var qrPlaceholder = document.getElementById('qr-placeholder')
+              if (qrPlaceholder) qrPlaceholder.textContent = '演示站不发起真实授权，不会生成二维码'
+              var qrStatus = document.getElementById('qr-status')
+              if (qrStatus) {
+                qrStatus.textContent = '演示模式：跳过 Feishu 授权，直接进入协作工作区。'
+                qrStatus.style.color = 'var(--mg-muted, #647169)'
+              }
+            }
+
+            // 唯一真正走得通的出口：把身份写进演示站的 persona 存储，再跳到该身份的落地页。
+            if (fallback && !fallback.querySelector('.demo-auth-enter')) {
+              var entry = mode === 'personal'
+                ? { persona: 'personal', route: 'overview', label: '以个人创作者身份进入演示', hint: '演示站不校验账号密码，直接进入个人工作区。' }
+                : { persona: 'organization', route: 'organization-workspace', label: '以组织成员身份进入演示', hint: '演示站不会发起真实的 Feishu 授权，直接进入组织协作工作区。' }
+              var enterWrap = document.createElement('div')
+              enterWrap.className = 'demo-auth-enter'
+              var enterButton = document.createElement('button')
+              enterButton.type = 'button'
+              enterButton.className = 'demo-auth-enter-button'
+              enterButton.textContent = entry.label + ' →'
+              enterButton.addEventListener('click', function () {
+                // 两种承载方式，走两条路：
+                // 1) 直接访问 /login 这类静态文件时，本页就是顶层窗口，直接写身份 + 跳转。
+                // 2) 演示站外壳（SPA 退出登录后走的就是这条）把认证页放进
+                //    <iframe srcdoc sandbox="allow-scripts"> 里。沙箱只给了脚本权限：
+                //    这个 frame 是**不透明源**，localStorage 会抛异常，top 导航被禁，
+                //    连 window.top.location 都读不到。唯一还能用的通道是 postMessage，
+                //    由外壳那一侧切身份并路由。第一版我用的是 window.top.location.assign，
+                //    结果被沙箱静默拦下，工作台被装进了 iframe、外面还套着登录页的壳。
+                if (window.parent && window.parent !== window) {
+                  window.parent.postMessage({ source: 'mediaclaw-demo-auth', action: 'enter', persona: entry.persona }, '*')
+                  return
+                }
+                try { localStorage.setItem('mediaclaw-demo-persona', entry.persona) } catch (error) { /* 隐私模式 */ }
+                window.location.assign(demoBase + entry.route)
+              })
+              var enterHint = document.createElement('p')
+              enterHint.className = 'demo-auth-enter-hint'
+              enterHint.textContent = entry.hint
+              enterWrap.appendChild(enterButton)
+              enterWrap.appendChild(enterHint)
+              fallback.appendChild(enterWrap)
+            }
           }
 
           var selectMode = function (mode) {

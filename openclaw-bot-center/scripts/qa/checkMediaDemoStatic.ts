@@ -391,6 +391,68 @@ try {
       }
     }
 
+    // 登录页在演示站里必须真的能走进工作区。它是唯一没有真实后端可依赖的一屏：
+    // 生产靠账号密码提交和 Feishu 授权，静态站两条都发不出请求，选完身份就是死路
+    // ——组织那一侧尤其明显：一个永远不会填上的二维码占位框加一行红色的
+    // 「等待开始 Feishu 授权」。演示脚本给两种身份各补了一个入口按钮。
+    //
+    // 这一屏还有个只在真实承载方式下才暴露的坑：外壳用
+    // <iframe srcdoc sandbox="allow-scripts"> 装认证页，那是个不透明源——写不了
+    // localStorage，也做不了顶层导航。第一版按钮用的 window.top.location.assign
+    // 被沙箱静默拦下，工作台被装进了 iframe、外面还套着登录页的壳；直接访问
+    // /login 那个静态文件时反而是好的，所以只测「直接打开登录页」会漏掉。
+    // 这里走的是和用户一样的路：退出登录 → 在 iframe 里选身份 → 点进入。
+    for (const entry of [
+      { choiceId: 'personal-choice', personaId: 'personal' },
+      { choiceId: 'organization-choice', personaId: 'organization' },
+    ] as const) {
+      const persona = demoPersonas.find((item) => item.id === entry.personaId)
+      if (!persona) continue
+      totalVisits += 1
+      telemetry = freshTelemetry()
+      const label = `登录页入口（${persona.label}）`
+      try {
+        // 必须走用户那条路：直接访问 /login 拿到的是构建期落盘的**独立静态文件**，
+        // 顶层就是认证页本身，没有 iframe，也就测不到沙箱那一层；只有 SPA 退出登录
+        // 后 pushState 到 /login，外壳才会用 sandbox iframe 承载它。第一版直接
+        // goto /login，两条断言都过，真实流程照样是坏的。
+        // 从平台管理员出发，落地身份才有区分度（不是「本来就是这个身份」）。
+        await page.evaluate(
+          ([key, id]) => { try { localStorage.setItem(key, id) } catch { /* 隐私模式 */ } },
+          [demoPersonaStorageKey, 'admin'] as const,
+        )
+        await page.goto(`${origin}${demoBase}admin/overview`, { waitUntil: 'domcontentloaded' })
+        await page.locator('.media-content').first().waitFor({ state: 'visible', timeout: 20_000 })
+        await page.getByRole('button', { name: '账户菜单' }).click({ timeout: 5_000 })
+        await page.getByRole('menuitem', { name: /退出登录/ }).click({ timeout: 5_000 })
+        await page.locator('.demo-auth-frame').waitFor({ state: 'visible', timeout: 20_000 })
+        const frame = page.frameLocator('.demo-auth-frame')
+        await frame.locator(`#${entry.choiceId}`).click({ timeout: 10_000 })
+        await frame.locator('.demo-auth-enter-button').first().click({ timeout: 10_000 })
+        await page.waitForTimeout(1_200)
+        const landedOn = new URL(page.url()).pathname.replace(/\/$/, '')
+        const expected = `${demoBase}${persona.defaultRoute.replace(/^\//, '')}`.replace(/\/$/, '')
+        record(
+          landedOn === expected,
+          `${label}：最外层窗口落到了 ${landedOn}，应当是 ${expected}——认证页装在 sandbox iframe 里，` +
+            '顶层导航和 localStorage 都被禁，入口只能靠 postMessage 交给外壳执行',
+        )
+        record(
+          (await page.locator('.demo-auth-frame').count()) === 0,
+          `${label}：工作台被装进了认证页的 iframe 里，外面还套着一层登录页的壳`,
+        )
+        const storedPersona = await page.evaluate(
+          (key) => { try { return localStorage.getItem(key) } catch { return null } },
+          demoPersonaStorageKey,
+        )
+        record(storedPersona === persona.id, `${label}：身份没有切成 ${persona.id}（当前 ${storedPersona}）`)
+        await page.locator('.media-content').first().waitFor({ state: 'visible', timeout: 20_000 })
+        await page.screenshot({ path: join(outputRoot, `login-entry-${persona.id}.png`), fullPage: true })
+      } catch (error) {
+        failures.push(`${label}：走查过程中抛出异常 - ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+
     await context.close()
   }
 } finally {
