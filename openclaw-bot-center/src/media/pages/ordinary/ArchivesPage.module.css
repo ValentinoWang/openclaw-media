@@ -630,8 +630,9 @@
   font-size: var(--mg-text-2xs);
 }
 
-/* 来源运行 nests a .mg-id span (single-line ellipsis + title, see mediaPrimitives.css);
-   the other two rows are short plain text/numbers that never need to wrap-anywhere. */
+/* 来源运行 and 处理流程 both nest a .mg-id span (single-line ellipsis + title, see
+   mediaPrimitives.css) since both hold identifier-shaped values; 媒体云端存储 is the only
+   plain formatted-text row here and never needs to wrap-anywhere. */
 .receiptFacts dd {
   display: flex;
   min-width: 0;

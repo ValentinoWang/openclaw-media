@@ -172,6 +172,26 @@ export function formatFitScore(value: number): string {
   return `匹配度 ${Math.round(value)}%`;
 }
 
+const BYTE_SIZE_UNITS = ["字节", "KB", "MB", "GB", "TB"] as const;
+
+// Turns a raw byte count (e.g. archive/artifact size fields) into something a person can
+// actually read, e.g. 984233120 -> "939 MB". Whole units never show a decimal point; larger
+// units keep just enough precision to stay meaningful, and trailing ".0"/".00" are trimmed so
+// round numbers read as "18 KB" rather than "18.00 KB".
+export function formatByteSize(value: number): string {
+  if (!Number.isFinite(value) || value < 0) return "大小待确认";
+  if (value === 0) return `0 ${BYTE_SIZE_UNITS[0]}`;
+  let scaled = value;
+  let unitIndex = 0;
+  while (scaled >= 1024 && unitIndex < BYTE_SIZE_UNITS.length - 1) {
+    scaled /= 1024;
+    unitIndex += 1;
+  }
+  const precision = unitIndex === 0 ? 0 : scaled < 10 ? 2 : scaled < 100 ? 1 : 0;
+  const fixed = scaled.toFixed(precision);
+  return `${precision > 0 ? fixed.replace(/\.?0+$/, "") : fixed} ${BYTE_SIZE_UNITS[unitIndex]}`;
+}
+
 export function relationshipStatusDisplayLabel(value: string | null | undefined): string {
   return label(value, RELATIONSHIP_STATUS_LABELS, "关系状态待确认");
 }

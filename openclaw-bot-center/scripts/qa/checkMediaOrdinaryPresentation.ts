@@ -8,6 +8,7 @@ import {
   artifactTypeDisplayLabel,
   bodyAuthorityDisplayLabel,
   creatorRoleDisplayLabel,
+  formatByteSize,
   inviteStatusDisplayLabel,
   mediaTypeDisplayLabel,
   operationalStatusDisplayLabel,
@@ -62,6 +63,59 @@ function userFacingText(file: string, source: string): string {
   return chunks.join('\n')
 }
 
+/** ArchivesPage-local terminology that reads as machine-translated internal jargon
+ *  ("小产物"/"轻量产物"/"小附件" are literal renderings of "artifact", "描述符" of
+ *  "descriptor", "合同" of the OpenAPI/business contract) instead of the plain wording
+ *  this product already uses elsewhere for the same concepts (plain "产物", spelled-out
+ *  sentences instead of "descriptor"/"contract" nouns). Scoped to ArchivesPage only:
+ *  MediaAgentPage.tsx and RunsPage.tsx still carry some of these same words and are not
+ *  part of this pass, so widening this into the all-ordinary-pages loop above would fail
+ *  on files this gate isn't cleaning up. */
+const ARCHIVES_INTERNAL_JARGON_PATTERN = /小产物|轻量产物|小附件|描述符|合同/
+
+/** True for a bare identifier / property-access / string-keyed element-access whose own final
+ *  name looks like a byte count (e.g. `cloud_bytes`, `archive.media_cloud_bytes`,
+ *  `row["size_bytes"]`). Deliberately narrow -- this must NOT walk into the expression and
+ *  match any *nested* "bytes" text, or it would also flag a large wrapping expression such as
+ *  `archive ? (<>...{archive.media_cloud_bytes}...</>) : (...)` just because a bytes-named
+ *  identifier happens to sit somewhere inside its JSX; that ternary is fine; only the bare
+ *  inner expression is the violation, and it is reached on its own by the recursive walk in
+ *  findRawByteRenders below. */
+function isByteCountExpression(expr: ts.Expression): boolean {
+  const unwrapped = ts.isParenthesizedExpression(expr) ? expr.expression : expr
+  if (ts.isIdentifier(unwrapped)) return /bytes/i.test(unwrapped.text)
+  if (ts.isPropertyAccessExpression(unwrapped)) return /bytes/i.test(unwrapped.name.text)
+  if (ts.isElementAccessExpression(unwrapped) && ts.isStringLiteralLike(unwrapped.argumentExpression)) {
+    return /bytes/i.test(unwrapped.argumentExpression.text)
+  }
+  return false
+}
+
+/** Flags a byte-count-shaped JSX expression that is rendered bare -- not passed through a
+ *  formatting call such as formatByteSize(...) -- as a JSX *child* (a value in an attribute
+ *  like `data-size-bytes={x}` is not user-facing prose and is left alone). This is a
+ *  structural check on the expression itself, not a text scan, so it also catches the
+ *  `{archive.cloud_bytes}` / `{archive.media_cloud_bytes}` cases where the "字节" unit sits
+ *  in a sibling element's text rather than right next to the number. */
+function findRawByteRenders(file: string, source: string): string[] {
+  const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const hits: string[] = []
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isJsxExpression(node) &&
+      node.expression &&
+      !ts.isJsxAttribute(node.parent) &&
+      !ts.isCallExpression(node.expression) &&
+      isByteCountExpression(node.expression)
+    ) {
+      hits.push(node.expression.getText(tree).trim())
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(tree)
+  return hits
+}
+
 for (const file of presentationFiles) {
   const source = readFileSync(file, 'utf8')
   assert.doesNotMatch(
@@ -79,6 +133,19 @@ for (const file of presentationFiles) {
     copy,
     /接口|事实|回读|投影/,
     `${file} must not expose API or contract terminology to ordinary users`,
+  )
+  if (file === resolve(ordinaryDirectory, 'ArchivesPage.tsx')) {
+    assert.doesNotMatch(
+      copy,
+      ARCHIVES_INTERNAL_JARGON_PATTERN,
+      `${file} must not expose internal artifact/descriptor/contract jargon to ordinary users`,
+    )
+  }
+  const rawByteRenders = findRawByteRenders(file, source)
+  assert.equal(
+    rawByteRenders.length,
+    0,
+    `${file} must format byte counts for display (e.g. via formatByteSize) instead of rendering raw: ${rawByteRenders.join(', ')}`,
   )
 }
 
@@ -189,5 +256,51 @@ assert.equal(
   }),
   '其他流程',
 )
+
+// ArchivesPage renders archive/artifact byte counts (e.g. 984233120 -> "939 MB") through this
+// formatter instead of the raw integer; pin the exact reference case from that fix plus the
+// always-0 media_cloud_bytes contract field, which formatByteSize must still show as a unit
+// ("0 字节"), not a bare "0".
+assert.equal(formatByteSize(984_233_120), '939 MB')
+assert.equal(formatByteSize(18_422), '18 KB')
+assert.equal(formatByteSize(0), '0 字节')
+assert.equal(formatByteSize(-1), '大小待确认')
+
+function runSelfTest(): void {
+  const fixtureFile = resolve('src/media/pages/ordinary/__fixture__.tsx')
+
+  // findRawByteRenders: red on the exact pre-fix ArchivesPage shapes, green once the same
+  // value is wrapped in a formatting call, and unbothered by a non-prose attribute use.
+  const rawByteRed1 = findRawByteRenders(fixtureFile, 'const X = () => <td>{archive.cloud_bytes}</td>')
+  assert.deepEqual(rawByteRed1, ['archive.cloud_bytes'], 'self-test failed: bare {archive.cloud_bytes} child was not caught')
+
+  const rawByteRed2 = findRawByteRenders(
+    fixtureFile,
+    'const X = () => <small>{archiveArtifactModeLabel(artifact.mode)} · {artifact.size_bytes} 字节</small>',
+  )
+  assert.deepEqual(rawByteRed2, ['artifact.size_bytes'], 'self-test failed: bare {artifact.size_bytes} next to a literal 字节 was not caught')
+
+  const rawByteGreen1 = findRawByteRenders(fixtureFile, 'const X = () => <td>{formatByteSize(archive.cloud_bytes)}</td>')
+  assert.deepEqual(rawByteGreen1, [], 'self-test failed: {formatByteSize(archive.cloud_bytes)} was rejected even though it is already formatted')
+
+  const rawByteGreen2 = findRawByteRenders(fixtureFile, 'const X = () => <div data-size-bytes={artifact.size_bytes} />')
+  assert.deepEqual(rawByteGreen2, [], 'self-test failed: a non-prose attribute value was flagged as if it were rendered copy')
+
+  // ARCHIVES_INTERNAL_JARGON_PATTERN, run the same way the real check runs it: through
+  // userFacingText first, so this also proves a code comment mentioning the same words does
+  // not trip the gate (matches the existing 接口/事实/回读/投影 check's own guarantee).
+  const jargonRed = userFacingText(fixtureFile, 'const X = () => <h3>小产物与本地描述符</h3>')
+  assert.match(jargonRed, ARCHIVES_INTERNAL_JARGON_PATTERN, 'self-test failed: "小产物与本地描述符" was accepted')
+
+  const jargonGreen = userFacingText(fixtureFile, 'const X = () => <h3>归档产物</h3>')
+  assert.doesNotMatch(jargonGreen, ARCHIVES_INTERNAL_JARGON_PATTERN, 'self-test failed: plain "归档产物" copy was rejected')
+
+  const jargonCommentOnly = userFacingText(fixtureFile, '// 小产物与本地描述符，只是解释这段做了什么\nconst X = () => <h3>归档产物</h3>')
+  assert.doesNotMatch(jargonCommentOnly, ARCHIVES_INTERNAL_JARGON_PATTERN, 'self-test failed: a comment-only mention of the blacklisted words was scanned')
+
+  console.log('media ordinary presentation self-test passed: raw byte renders and ArchivesPage jargon are caught; formatted/plain copy and comments are accepted')
+}
+
+if (process.argv.includes('--self-test')) runSelfTest()
 
 console.log('media ordinary presentation contract passed')

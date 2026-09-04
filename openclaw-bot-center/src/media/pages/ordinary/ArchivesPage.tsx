@@ -38,6 +38,7 @@ import type {
   ArchiveRecord,
 } from "../../generatedProductContract";
 import { formatDateTime } from "../../ui/datetime";
+import { formatByteSize } from "../../ui/ordinaryDataLabels";
 import { SurfaceState } from "../../ui/SurfaceState";
 import styles from "./ArchivesPage.module.css";
 import { isCurrentW1Request } from "./w1RequestGuard";
@@ -401,7 +402,7 @@ function ArchivesPage() {
                     {archive.run_id}
                   </span>
                 </td>
-                <td>{archive.cloud_bytes}</td>
+                <td>{formatByteSize(archive.cloud_bytes)}</td>
                 <td>
                   <span
                     className="mg-badge"
@@ -467,7 +468,7 @@ function ArchivesPage() {
             <span className="mg-eyebrow" data-component="mg-eyebrow">内容归档</span>
             <h1>云端归档</h1>
             <p className="mg-hero-lead">
-              查看用户明确选择后提交的轻量产物、描述符和验证收据。
+              查看你主动提交的产物和验证收据；媒体文件本身不会出现在这里，只保存在本地。
             </p>
           </div>
         </header>
@@ -488,7 +489,7 @@ function ArchivesPage() {
               icon={Archive}
               id="archive-records-title"
               title="归档记录"
-              detail="仅展示服务端返回的小产物和本地媒体描述符。"
+              detail="只展示服务端保存的产物记录，不包含媒体本身。"
             />
             {records}
           </section>
@@ -552,7 +553,7 @@ function ArchiveDetail({ archive }: { archive: ArchiveRecord | null }) {
         icon={FileText}
         id="archive-detail-title"
         title="归档详情"
-        detail="小产物可审阅；媒体本身始终仅在本地。"
+        detail="产物内容可以查看；媒体文件本身始终只保存在本地。"
       />
       <div
         className={styles.inspectorBody}
@@ -582,17 +583,25 @@ function ArchiveDetail({ archive }: { archive: ArchiveRecord | null }) {
                   data-component="mg-metric"
                 >
                   <dt>处理流程</dt>
-                  <dd>{archive.pipeline_id ? "已登记处理流程" : "未提供"}</dd>
+                  <dd>
+                    {archive.pipeline_id ? (
+                      <span className="mg-id" title={archive.pipeline_id}>
+                        {archive.pipeline_id}
+                      </span>
+                    ) : (
+                      "未提供"
+                    )}
+                  </dd>
                 </div>
                 <div
                   className="mg-metric"
                   data-component="mg-metric"
                 >
-                  <dt>媒体云端字节</dt>
-                  <dd>{archive.media_cloud_bytes}</dd>
+                  <dt>媒体云端存储</dt>
+                  <dd>{formatByteSize(archive.media_cloud_bytes)}</dd>
                 </div>
               </dl>
-              <h3>小产物与本地描述符</h3>
+              <h3>归档产物</h3>
               <ul className={styles.artifactList}>
                 {archive.artifacts.map((artifact) => (
                   <li key={artifact.ref}>
@@ -601,7 +610,7 @@ function ArchiveDetail({ archive }: { archive: ArchiveRecord | null }) {
                         {artifact.ref}
                       </strong>
                       <small>
-                        {archiveArtifactModeLabel(artifact.mode)} · {archiveArtifactMimeLabel(artifact.mime_type)} · {artifact.size_bytes} 字节
+                        {archiveArtifactModeLabel(artifact.mode)} · {archiveArtifactMimeLabel(artifact.mime_type)} · {formatByteSize(artifact.size_bytes)}
                       </small>
                     </span>
                     <Hash size={15} aria-label="hash" />
@@ -642,7 +651,7 @@ function ArchiveDetail({ archive }: { archive: ArchiveRecord | null }) {
             ))}
           </ul>
           <p className={styles.descriptorNote}>
-            网页不播放、不下载、不接收媒体字节；仅显示合同允许的描述符和服务端校验字段。
+            网页不会播放、下载或接收媒体字节，只显示经过服务端校验、允许展示的信息。
           </p>
         </div>
       </div>
@@ -696,7 +705,7 @@ function DeletionPanel({
           <>
             <p className={styles.dangerIntro}>
               目标：{archive.archive_id}
-              ；系统将删除归档记录和小附件，并在完成后提示确认结果。
+              ；系统将删除归档记录和产物，并在完成后提示确认结果。
             </p>
             {plan ? (
               <div className={styles.impactPlan}>
@@ -777,7 +786,7 @@ function archiveStateTone(value: string): "good" | "warn" | "danger" | "info" {
 }
 
 function archiveArtifactModeLabel(value: string): string {
-  return ({ content: "可查看内容", descriptor_only: "仅本地描述符", forbidden: "不可展示" }[value] ?? "展示方式待确认");
+  return ({ content: "可查看内容", descriptor_only: "内容仅本地", forbidden: "不可展示" }[value] ?? "展示方式待确认");
 }
 
 function archiveArtifactMimeLabel(value: string): string {
