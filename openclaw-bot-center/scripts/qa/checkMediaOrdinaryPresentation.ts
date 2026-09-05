@@ -298,9 +298,215 @@ function runSelfTest(): void {
   const jargonCommentOnly = userFacingText(fixtureFile, '// 小产物与本地描述符，只是解释这段做了什么\nconst X = () => <h3>归档产物</h3>')
   assert.doesNotMatch(jargonCommentOnly, ARCHIVES_INTERNAL_JARGON_PATTERN, 'self-test failed: a comment-only mention of the blacklisted words was scanned')
 
+  // 标签函数兜底泄露的红/绿用例
+  assert.equal(
+    findRawEnumFallbacks("function planStatus(status){ if(status==='active') return '生效中'; return status }").length,
+    1, 'self-test failed: 原样兜底没有被抓到')
+  assert.equal(
+    findRawEnumFallbacks("function planStatus(status){ if(status==='active') return {label:'生效中'}; return {label: status} }").length,
+    1, 'self-test failed: 对象里的原样兜底没有被抓到')
+  assert.deepEqual(
+    findRawEnumFallbacks("function planStatus(status){ if(status==='active') return '生效中'; return '未知状态' }"),
+    [], 'self-test failed: 中文兜底被误判')
+  assert.deepEqual(
+    findRawEnumFallbacks('function slug(value){ return value }'),
+    [], 'self-test failed: 不是标签函数的透传被误判')
+
+  // 原始枚举渲染的红/绿用例
+  assert.equal(findRawEnumRenders('const X = ({ i }) => <dd>{i.status}</dd>').length, 1, 'self-test failed: 裸枚举没有被抓到')
+  assert.equal(findRawEnumRenders('const X = ({ i }) => <dd>{i.registrationPolicyMode}</dd>').length, 1, 'self-test failed: 裸的 policy mode 没有被抓到')
+  assert.deepEqual(findRawEnumRenders('const X = ({ i }) => <dd>{statusLabel(i.status)}</dd>'), [], 'self-test failed: 经过函数的枚举被误判')
+  assert.deepEqual(findRawEnumRenders('const X = ({ i }) => <dd>{LABELS[i.status]}</dd>'), [], 'self-test failed: 查表的枚举被误判')
+  assert.deepEqual(findRawEnumRenders("const X = ({ i }) => <dd>{i.status === 'ok' ? '正常' : '异常'}</dd>"), [], 'self-test failed: 三元翻译被误判')
+  assert.deepEqual(findRawEnumRenders('const X = ({ i }) => <dd data-tone={i.status}>正常</dd>'), [], 'self-test failed: 属性位置的原始值被误判')
+  assert.equal(findRawEnumRenders("const X = ({ i }) => <h2>{i.artifactKind || '个人成果'}</h2>").length,
+    1, 'self-test failed: || 兜底掩护下的裸枚举没有被抓到')
+  assert.deepEqual(findRawEnumRenders("const X = ({ i }) => <h2>{i.displayName || '未命名'}</h2>"),
+    [], 'self-test failed: 不是枚举的字段被误判')
+
+  // 查表不中渲染成空白的红/绿用例
+  assert.equal(findUnguardedLabelLookups('const X = ({ i }) => <dd>{ACTION_STATUS_LABELS[i.status]}</dd>').length,
+    1, 'self-test failed: 没有兜底的查表没有被抓到')
+  assert.deepEqual(findUnguardedLabelLookups("const X = ({ i }) => <dd>{ACTION_STATUS_LABELS[i.status] ?? '未知状态'}</dd>"),
+    [], 'self-test failed: 带 ?? 兜底的查表被误判')
+  assert.deepEqual(findUnguardedLabelLookups("const X = ({ i }) => <dd>{ACTION_STATUS_LABELS[i.status] || '未知状态'}</dd>"),
+    [], 'self-test failed: 带 || 兜底的查表被误判')
+  assert.deepEqual(findUnguardedLabelLookups('const X = ({ rows }) => <dd>{rows[0]}</dd>'),
+    [], 'self-test failed: 普通下标访问被误判')
+  assert.deepEqual(findUnguardedLabelLookups('const X = ({ state }) => { const s = state; return <dd>{syncStateLabels[s]}</dd> }'),
+    [], 'self-test failed: 下标是页面自己算出来的局部变量，被误判')
+
   console.log('media ordinary presentation self-test passed: raw byte renders and ArchivesPage jargon are caught; formatted/plain copy and comments are accepted')
 }
 
+/** 原始枚举被当成人读的值直接渲染出去。
+ *
+ *  用户在真实环境里看到过「注册策略复核：controlled」——`controlled` 是后端的枚举
+ *  字面量，不是给人读的。这一类**渲染门禁永远抓不到**：演示种子里放的是完整中文
+ *  句子，浏览器里根本看不到那个词。只能从源码查。
+ *
+ *  判据：JSX 的**可见文本位置**上直接放了一个名字以 status / state / mode / policy /
+ *  kind / type / tier / level / role / authority / source 结尾的属性访问，而且没有经过
+ *  任何一层转换。经过就放行——
+ *    {runStatusLabel(item.status)}      函数调用
+ *    {STATUS_LABELS[item.status]}       查表
+ *    {item.status === 'ok' ? '正常' : '异常'}   三元
+ *  这三种都是「有人负责把它翻成中文」的形态。裸 {item.status} 没有。
+ *
+ *  只看可见文本位置：`data-tone={item.status}`、`aria-*`、`key=` 这些属性照旧，
+ *  它们本来就该用原始值。 */
+const ENUM_SUFFIX_PATTERN = /(status|state|mode|policy|kind|type|tier|level|role|authority|source)$/i
+
+export function findRawEnumRenders(sourceText: string, fileName = 'fixture.tsx'): readonly string[] {
+  const source = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const violations: string[] = []
+  const visit = (node: ts.Node): void => {
+    // 只有作为 JSX 子节点出现时才是可见文本位置；作为属性值时 parent 是 JsxAttribute。
+    if (ts.isJsxExpression(node) && node.expression && node.parent && !ts.isJsxAttribute(node.parent)) {
+      // `{item.kind || '个人成果'}` 也算裸渲染：`||` / `??` 只兜住了空值，兜不住
+      // 「后端发来一个我们没登记的取值」——那时用户看到的仍然是那个英文串。
+      // /workspace/preview 的 <h2> 就这样把 creation_document 顶到了标题位置。
+      const inner =
+        ts.isBinaryExpression(node.expression) &&
+        (node.expression.operatorToken.kind === ts.SyntaxKind.BarBarToken ||
+          node.expression.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken)
+          ? node.expression.left
+          : node.expression
+      if (ts.isPropertyAccessExpression(inner) && ENUM_SUFFIX_PATTERN.test(inner.name.text)) {
+        const { line } = source.getLineAndCharacterOfPosition(inner.getStart(source))
+        violations.push(`${fileName}:${line + 1} 直接渲染了 ${inner.getText(source)}——原始枚举不是给人读的，套一层中文标签映射（函数、查表或三元都行），并且给未知取值一个兜底`)
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return violations
+}
+
+/** 查表不中，渲染成一片空白。
+ *
+ *  `{ACTION_STATUS_LABELS[action.status]}` 看着比裸渲染枚举讲究，其实更糟：后端多一个
+ *  没登记的取值，查表返回 `undefined`，React 什么也不渲染——用户看到的是一个**空格子**，
+ *  比看到一个英文单词更难判断「是没加载出来还是本来就没有」。演示种子只放已登记的键，
+ *  所以浏览器里永远看不到。
+ *
+ *  判据：JSX 的可见文本位置上，直接放了一个「标签表」下标访问且没有兜底，**而且下标是
+ *  一个属性访问**（`action.status`、`summary.credentialHealth`）——也就是取值来自后端。
+ *  下标是普通局部变量的（`syncStateLabels[currentSyncState]`）不算：那种取值是页面自己
+ *  在有限几个分支里算出来的，TypeScript 的穷尽性是真的。标签表按名字认：全大写下划线
+ *  （ACTION_STATUS_LABELS）或以 Labels 结尾。带 `??` / `||` 的整体是二元表达式，不会
+ *  命中；`rows[0]` 这种普通下标也不会。 */
+const LABEL_MAP_PATTERN = /^[A-Z][A-Z0-9_]*$|Labels$/
+
+export function findUnguardedLabelLookups(sourceText: string, fileName = 'fixture.tsx'): readonly string[] {
+  const source = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const violations: string[] = []
+  const visit = (node: ts.Node): void => {
+    if (ts.isJsxExpression(node) && node.expression && node.parent && !ts.isJsxAttribute(node.parent)) {
+      const inner = node.expression
+      if (
+        ts.isElementAccessExpression(inner) &&
+        ts.isIdentifier(inner.expression) &&
+        LABEL_MAP_PATTERN.test(inner.expression.text) &&
+        inner.argumentExpression !== undefined &&
+        ts.isPropertyAccessExpression(inner.argumentExpression)
+      ) {
+        const { line } = source.getLineAndCharacterOfPosition(inner.getStart(source))
+        violations.push(`${fileName}:${line + 1} ${inner.getText(source)} 查表不中会渲染成空白——给它一个中文兜底（?? 或 ||），别让用户对着一个空格子猜是不是没加载出来`)
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return violations
+}
+
+/** 标签函数拿原始值兜底。
+ *
+ *  真实环境里用户看到过「注册策略复核：controlled」。源码里并没有裸渲染
+ *  `{x.mode}`——泄露发生在**标签函数的兜底分支**：一串 if 把已知取值翻成中文，
+ *  最后 `return status` 把没覆盖到的原样吐出去。后端加一个新枚举值，用户就看到
+ *  一个英文单词。演示种子只放已知取值，所以渲染门禁永远看不到。
+ *
+ *  判据：一个函数**明显是标签映射**（函数体里出现过中文字符串字面量），却存在
+ *  `return <它自己的入参>` 这样的语句。兜底应该给一个中文的「未知」，而不是原始值。 */
+export function findRawEnumFallbacks(sourceText: string, fileName = 'fixture.tsx'): readonly string[] {
+  const source = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const violations: string[] = []
+  const inspect = (fn: ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression, name: string): void => {
+    const body = fn.body
+    if (!body || !ts.isBlock(body)) return
+    // 只认名字本身就是枚举的入参。`formatRelativeTime(value)` 透传格式化好的时间、
+    // `guardedRoute(pathname, element, policy)` 透传 ReactNode、`toReadError(message)`
+    // 透传服务端消息——这些原样返回都是对的，收紧之前它们全是假阳性。
+    const parameterNames = new Set(
+      fn.parameters
+        .map((parameter) => (ts.isIdentifier(parameter.name) ? parameter.name.text : ''))
+        .filter((name) => name.length > 0 && ENUM_SUFFIX_PATTERN.test(name)),
+    )
+    if (parameterNames.size === 0) return
+    let hasChineseLabel = false
+    let leak: ts.Node | null = null
+    const walk = (node: ts.Node): void => {
+      if (ts.isStringLiteral(node) && /[一-鿿]/.test(node.text)) hasChineseLabel = true
+      if (ts.isReturnStatement(node) && node.expression) {
+        const returned = node.expression
+        if (ts.isIdentifier(returned) && parameterNames.has(returned.text)) leak = returned
+        if (ts.isObjectLiteralExpression(returned)) {
+          for (const property of returned.properties) {
+            if (!ts.isPropertyAssignment(property)) continue
+            const key = property.name.getText(source)
+            if (key !== 'label' && key !== 'text') continue
+            const value = property.initializer
+            if (ts.isIdentifier(value) && parameterNames.has(value.text)) leak = value
+          }
+        }
+      }
+      ts.forEachChild(node, walk)
+    }
+    walk(body)
+    if (!hasChineseLabel || !leak) return
+    const { line } = source.getLineAndCharacterOfPosition((leak as ts.Node).getStart(source))
+    violations.push(`${fileName}:${line + 1} ${name} 把原始取值当兜底返回——后端多一个枚举值，用户就会看到一个英文单词（真实环境里出现过「注册策略复核：controlled」）。兜底要给中文的「未知」之类，别把原始值吐出去`)
+  }
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionDeclaration(node) && node.name) inspect(node, node.name.text)
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+      const initializer = node.initializer
+      if (ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer)) inspect(initializer, node.name.text)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return violations
+}
+
 if (process.argv.includes('--self-test')) runSelfTest()
+
+/** 扫全部 Media 页面（普通页 + 管理员页 + studio 页），不只是 ordinary 目录：
+ *  用户看到的那处泄露就在管理员页上。 */
+const enumScanDirectories = [
+  resolve('src/media/pages/ordinary'),
+  resolve('src/media/pages/admin'),
+  resolve('src/media/studio'),
+  resolve('src/media'),
+]
+const enumScanFiles = [
+  ...new Set(
+    enumScanDirectories.flatMap((directory) =>
+      existsSync(directory)
+        ? readdirSync(directory)
+            .filter((name) => name.endsWith('.tsx'))
+            .map((name) => resolve(directory, name))
+        : [],
+    ),
+  ),
+]
+const enumLeaks = enumScanFiles.flatMap((fileName) => {
+  const relativeName = fileName.replace(resolve('.') + '/', '')
+  const contents = readFileSync(fileName, 'utf8')
+  return [...findRawEnumRenders(contents, relativeName), ...findRawEnumFallbacks(contents, relativeName), ...findUnguardedLabelLookups(contents, relativeName)]
+})
+assert.deepEqual(enumLeaks, [], `原始枚举被当成人读的值渲染出去：\n- ${enumLeaks.join('\n- ')}`)
 
 console.log('media ordinary presentation contract passed')
