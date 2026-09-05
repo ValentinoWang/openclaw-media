@@ -119,7 +119,7 @@ function CampaignCard({ task, onOpen }: { task: MediaWebTask; onOpen: () => void
   return (
     <article className={styles.campaignCard}>
       <header>
-        <div className={styles.campaignIdentity}><span><CircleDot size={10} />商单交付</span><h3>{task.summary || '未命名商单项目'}</h3><code>{task.taskId}</code></div>
+        <div className={styles.campaignHeading}><span><CircleDot size={10} />商单交付</span><h3>{task.summary || '未命名商单项目'}</h3><code className="mg-id" title={task.taskId}>{task.taskId}</code></div>
         <span className="mg-badge" data-tone={tone}>{runStatusLabel(task.status)}</span>
       </header>
       <div className={styles.progressRow}><div><span style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>

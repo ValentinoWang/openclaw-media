@@ -238,7 +238,10 @@
   transition: background-color var(--mg-dur-3) var(--mg-ease), border-color var(--mg-dur-3) var(--mg-ease);
 }
 
-.detailCopy { display: grid; gap: 8px; min-width: 0; }
+/* grid-template-columns 显式给 minmax(0, 1fr)：不然隐式单列按 auto 走内容的
+   max-content 撑宽——无断点的长串（能力 code）会把这一列顶到远超 .detail 分给它
+   的宽度，同列的 eyebrow / 两个 <p> 跟着被拉爆，越过右边 .detailSide 那一栏。 */
+.detailCopy { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-width: 0; }
 
 .detailEyebrow { color: var(--accent-ink); font-size: var(--mg-text-2xs); font-weight: 700; }
 

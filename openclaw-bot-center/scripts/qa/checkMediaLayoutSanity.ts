@@ -652,6 +652,20 @@ const STRESS_LONG_IDENTIFIER = `(() => {
     if (text.length < 12) return false
     return /^[A-Za-z0-9_.:-]+$/.test(text)
   }
+  // 「这个元素是不是编号槽位」：.mg-id / <code> 是显式契约；类名要按词判断——
+  // 用 [class*="Id"] 会把 campaignIdentity、slideIn 这类里恰好含 "Id" 的类名一起
+  // 算进去，连它下面的中文标题和标签都被换成长串，报出根本不存在的破相。
+  // 只认 Id 后面不再接小写字母的那种（campaignId、taskId_h4sh、public-id）。
+  const CLASS_ID_WORD = /(?:^|[^A-Za-z])[Ii]d(?![a-z])|[a-z]Id(?![a-z])/
+  const isIdentifierSlot = (element) => {
+    for (let node = element; node; node = node.parentElement) {
+      if (node.classList && node.classList.contains('mg-id')) return true
+      if (node.tagName === 'CODE') return true
+      const className = typeof node.className === 'string' ? node.className : ''
+      if (className && CLASS_ID_WORD.test(className)) return true
+    }
+    return false
+  }
   let replaced = 0
   window.__mgIdStress = []
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
@@ -661,9 +675,11 @@ const STRESS_LONG_IDENTIFIER = `(() => {
     if (!text) continue
     const owner = node.parentElement
     if (!owner) continue
-    const tagged = owner.closest('.mg-id, code, [class*="publicId"], [class*="Id"]') !== null
-    if (!tagged && !looksLikeIdentifier(text)) continue
-    if (!tagged && !looksLikeIdentifier(text)) continue
+    // 中文文案永远不是后端编号：<code> 这个壳在本仓库既承接编号，也承接能力名这类
+    // 人写的短标签，只按标签名判定会把「选题研究」换成 220 字节 base64，报出真实
+    // 数据里不可能发生的破相。
+    if (/[\u2E80-\u9FFF\uF900-\uFAFF]/.test(text)) continue
+    if (!isIdentifierSlot(owner) && !looksLikeIdentifier(text)) continue
     targets.push(node)
   }
   for (const node of targets) {

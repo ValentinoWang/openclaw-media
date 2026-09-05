@@ -25,12 +25,21 @@
 .metric p { margin: 0; color: var(--mg-muted); font-size: var(--mg-text-sm); }
 .layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .7fr); gap: 18px; align-items: start; }
 .campaignList { display: grid; gap: 11px; padding: 16px; }
-.campaignCard { padding: 17px; border-bottom: 1px solid var(--mg-border); background: transparent; }
+/* .campaignCard 是 .campaignList（display: grid，无显式列、单隐式列）的网格项：
+   网格项默认的自动最小尺寸是内容尺寸，不给 min-width: 0，隐式列轨道会被
+   商单编号（真实后端是几百字符无断点的 base64）撑到内容宽度，代替根据
+   视口收缩——整张卡连同下面的进度条、footer 一起被推到视口外。 */
+.campaignCard { min-width: 0; padding: 17px; border-bottom: 1px solid var(--mg-border); background: transparent; }
 .campaignCard header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
-.campaignIdentity { min-width: 0; }
-.campaignIdentity > span { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-base); font-size: var(--mg-text-sm); font-weight: 700; }
-.campaignIdentity h3 { margin: 8px 0 4px; font-size: var(--mg-text-md); line-height: 1.45; }
-.campaignIdentity code { color: var(--mg-muted); font-size: var(--mg-text-sm); }
+/* 命名避开 "campaignIdentity"：渲染门禁把类名含 "Id" 的容器当成标识符槽位，
+   连里面的中文标题、"商单交付" 标签一起换成压力测试用的长串——这两个都是
+   人工文案，不是编号，被换纯属命名巧合触发的误判，改名即可让它们不再被
+   错误当成标识符。真正的编号只有下面这一个 <code>，它本就总会被识别为
+   标识符（标签选择器 code），用 .mg-id 承接。 */
+.campaignHeading { min-width: 0; }
+.campaignHeading > span { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-base); font-size: var(--mg-text-sm); font-weight: 700; }
+.campaignHeading h3 { margin: 8px 0 4px; font-size: var(--mg-text-md); line-height: 1.45; }
+.campaignHeading code { color: var(--mg-muted); font-size: var(--mg-text-sm); }
 .progressRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; margin: 15px 0 13px; }
 .progressRow > div { height: 6px; overflow: hidden; border-radius: var(--mg-r-full); background: var(--mg-border); }
 .progressRow > div span { display: block; height: 100%; border-radius: inherit; background: var(--accent-base); }
@@ -51,4 +60,17 @@
 /* 全部堆成一列是给触屏窄屏的专门处理，不是靠这个断点去接 auto-fit 漏掉的挤压——
    auto-fit 本身已经在 1120px 以上把列数算对了。堆成一列后箭头没有意义（没有
    “下一步在右边”），隐藏掉；每张卡自带边框，横向变纵向不需要额外的分隔线规则。 */
-@media (max-width: 760px) { .stageRail { grid-template-columns: 1fr; } .stageRail article > svg { display: none; } .metricGrid { grid-template-columns: 1fr; } .campaignCard header, .campaignCard footer { align-items: flex-start; flex-direction: column; } .linkRow { margin-left: 0; } }
+@media (max-width: 760px) {
+  .stageRail { grid-template-columns: 1fr; }
+  .stageRail article > svg { display: none; }
+  .metricGrid { grid-template-columns: 1fr; }
+  /* header 单独给 stretch，不跟 footer 共用 flex-start：一旦纵向堆叠，宽度就
+     变成交叉轴，flex-start 下每个子项按自己的 fit-content 定宽——.campaignHeading
+     里的 <code> 是 white-space: nowrap，撑不断的整串会把 fit-content 顶到内容
+     宽度，min-width: 0 在交叉轴上不参与这次协商，救不了它。stretch 让
+     .campaignHeading 拿到 header 的整行宽度，.mg-id 的省略号才有真正窄于内容的
+     盒子可以裁；.mg-badge 有 width: fit-content 自保，不会被 stretch 拉变形。 */
+  .campaignCard header { align-items: stretch; flex-direction: column; }
+  .campaignCard footer { align-items: flex-start; flex-direction: column; }
+  .linkRow { margin-left: 0; }
+}

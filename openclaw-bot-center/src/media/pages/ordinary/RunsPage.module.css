@@ -485,8 +485,16 @@
   min-width: 0;
 }
 
+/* 承载「平台身份」这一列：共享组件内部的 .label 已经声明了
+   overflow: hidden + text-overflow: ellipsis + min-width: 0（见
+   src/media/ui/PlatformBrandIcon.module.css），但那只在外层的
+   inline-flex 容器本身被限宽时才会生效——没有 max-width，容器就按内容撑到
+   多宽都行，平台名一旦变成无断点长串（真实后端的公开编号那种形状）就会
+   整段溢出这一列，糊到状态列或相邻单元格上。这里给外层加 max-width: 100%，
+   让它相对 <td> 的列宽收缩，共享组件的省略号才有机会真正生效。 */
 .platformIdentity {
   min-width: 0;
+  max-width: 100%;
 }
 
 .missingPlatform {
@@ -1193,7 +1201,23 @@
 }
 
 @media (max-width: 1120px) {
+  /* 释放共享的 persistent-rail 高度契约（见 media.css 对
+     [data-page-layout="persistent-rail"] 的注释）。`.page` 带着 fidelity-page，
+     它的 `:has(> [data-page-prelude])` 规则以 (0,2,0) 的特异性锁定了这个元素
+     自己的 height，光靠下面这条 `.page { height: auto }`（(0,1,0)）赢不了；
+     `.workspace`（data-page-layout="persistent-rail"）下面的 .mainColumn/
+     .inspectorColumn 带 data-page-primary/data-page-inspector，共享规则读的是
+     `flex: var(--mg-rail-grow, 1 1 auto)` / `height: var(--mg-rail-fill, 100%)`，
+     同样比这里直接写在这两个类上的属性特异性更高。不设这四个令牌时 `.page` 仍
+     钉在视口高度的 calc 上，`.workspace` 的 flex: 1 1 auto 把它压成 prelude
+     之后剩下的一条缝，`.tableScroll` 连两行表格都装不下——这正是
+     qa:media-layout-sanity「列表区只剩一条缝」在 900px 抓到的破相。四个自定义
+     属性沿继承链传给下面所有引用它们的共享规则，不用管特异性。 */
   .page {
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+    --mg-rail-align: auto;
     height: auto;
     overflow: visible;
   }
