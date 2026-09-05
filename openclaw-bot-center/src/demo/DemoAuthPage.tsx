@@ -15,7 +15,7 @@ export default function DemoAuthPage({ slug }: { slug: DemoAuthPageSlug }) {
   const frameRef = useRef<HTMLIFrameElement | null>(null)
 
   /* 登录页里的「以某个身份进入演示」按钮只能靠 postMessage 说话：iframe 带
-   * sandbox="allow-scripts"，是个不透明源——它写不了 localStorage，也做不了顶层
+   * sandbox="allow-scripts allow-forms"，是个不透明源——它写不了 localStorage，也做不了顶层
    * 导航（试过 window.top.location.assign，被沙箱静默拦下，工作台被装进了 iframe）。
    * 切身份和路由都由外壳这一侧执行。
    *
@@ -44,7 +44,13 @@ export default function DemoAuthPage({ slug }: { slug: DemoAuthPageSlug }) {
         <span>{page.title}</span>
         <small>不鉴权复刻 · 提交一律被拦截</small>
       </div>
-      <iframe ref={frameRef} className="demo-auth-frame" title={page.title} srcDoc={page.html} sandbox="allow-scripts" />
+      {/* sandbox 里必须带 allow-forms：只给 allow-scripts 时浏览器直接禁掉表单提交，
+          submit 事件根本不触发——页内那段「拦截提交、给一条演示提示」的脚本在外壳里
+          从来没跑过，登录表单填完点「登录」也毫无反应。allow-forms 只放开提交这一件事，
+          提交仍然被页内脚本 preventDefault，不发任何请求；没有 allow-same-origin、
+          没有 allow-top-navigation、没有 allow-popups，frame 依旧是不透明源，读不到
+          外面的存储，也做不了顶层跳转（进入工作区仍然只能靠 postMessage 交给外壳）。 */}
+      <iframe ref={frameRef} className="demo-auth-frame" title={page.title} srcDoc={page.html} sandbox="allow-scripts allow-forms" />
     </div>
   )
 }

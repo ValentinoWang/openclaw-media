@@ -178,6 +178,13 @@ function buildDemoStyleBlock(): string {
         line-height: var(--mg-lh-snug, 1.45);
         text-align: center;
       }
+      .demo-auth-enter-accounts code {
+        padding: 1px 5px;
+        border-radius: var(--mg-r-sm, 6px);
+        background: var(--mg-bg-sunken, #eceff0);
+        color: var(--mg-ink, #17241f);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
     </style>`
 }
 
@@ -240,11 +247,30 @@ function buildDemoClientScriptBody(): string {
           notice.focus()
         }
 
+        // 演示站里唯一「写死」的一组演示口令：管理员在生产里是普通账号上的一个角色，
+        // 没有单独的登录入口，所以这里也走个人端那张表单。它不是鉴权——这个页面没有
+        // 后端、没有账号库，只是把输入的字符串当路由开关用。
+        var DEMO_ADMIN = { identifier: 'p_admin', password: '1qaz2wsx', persona: 'admin', route: 'admin/overview' }
+
         // 拦截所有表单提交：演示站里填表单可以，但提交不发任何真实请求。
+        // 登录表单是例外——它是这一页的主路径，填了就该真的进得去，否则整页是死路。
         var forms = document.querySelectorAll('form')
         forms.forEach(function (form) {
           form.addEventListener('submit', function (event) {
             event.preventDefault()
+            if (form.id === 'login-form') {
+              var identifierField = document.getElementById('identifier')
+              var passwordField = document.getElementById('password')
+              var identifier = identifierField ? String(identifierField.value || '').trim() : ''
+              var password = passwordField ? String(passwordField.value || '') : ''
+              if (!identifier || !password) { showDemoNotice(); return }
+              if (identifier === DEMO_ADMIN.identifier && password === DEMO_ADMIN.password) {
+                enterDemo(DEMO_ADMIN.persona, DEMO_ADMIN.route)
+                return
+              }
+              enterDemo('personal', 'overview')
+              return
+            }
             showDemoNotice()
           })
         })
@@ -268,6 +294,24 @@ function buildDemoClientScriptBody(): string {
         // 哪个面板、要不要显示账号密码/Feishu 授权表单。演示脚本不发任何请求，这里按
         // 最常见的“未登录”态在本地直接展开对应面板，保证两种身份的表单都能被点开、
         // 填写——这仍然是纯 DOM 操作，不涉及任何网络请求。
+        // 演示站的「进入」只有一条实现，按钮和登录表单共用。
+        // 两种承载方式走两条路：
+        // 1) 直接访问 /login 这类静态文件时，本页就是顶层窗口，直接写身份 + 跳转。
+        // 2) 演示站外壳（SPA 退出登录后走的就是这条）把认证页放进
+        //    <iframe srcdoc sandbox="allow-scripts"> 里。沙箱只给了脚本权限：这个
+        //    frame 是**不透明源**，localStorage 会抛异常，顶层导航被禁，连
+        //    window.top.location 都读不到。唯一还能用的通道是 postMessage，由外壳
+        //    那一侧切身份并路由。第一版用的是 window.top.location.assign，被沙箱
+        //    静默拦下，工作台被装进了 iframe、外面还套着登录页的壳。
+        function enterDemo(persona, route) {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ source: 'mediaclaw-demo-auth', action: 'enter', persona: persona }, '*')
+            return
+          }
+          try { localStorage.setItem('mediaclaw-demo-persona', persona) } catch (error) { /* 隐私模式 */ }
+          window.location.assign(demoBase + route)
+        }
+
         if (document.body.getAttribute('data-auth-page') === 'login') {
           var personalChoice = document.getElementById('personal-choice')
           var organizationChoice = document.getElementById('organization-choice')
@@ -322,27 +366,25 @@ function buildDemoClientScriptBody(): string {
               enterButton.type = 'button'
               enterButton.className = 'demo-auth-enter-button'
               enterButton.textContent = entry.label + ' →'
-              enterButton.addEventListener('click', function () {
-                // 两种承载方式，走两条路：
-                // 1) 直接访问 /login 这类静态文件时，本页就是顶层窗口，直接写身份 + 跳转。
-                // 2) 演示站外壳（SPA 退出登录后走的就是这条）把认证页放进
-                //    <iframe srcdoc sandbox="allow-scripts"> 里。沙箱只给了脚本权限：
-                //    这个 frame 是**不透明源**，localStorage 会抛异常，top 导航被禁，
-                //    连 window.top.location 都读不到。唯一还能用的通道是 postMessage，
-                //    由外壳那一侧切身份并路由。第一版我用的是 window.top.location.assign，
-                //    结果被沙箱静默拦下，工作台被装进了 iframe、外面还套着登录页的壳。
-                if (window.parent && window.parent !== window) {
-                  window.parent.postMessage({ source: 'mediaclaw-demo-auth', action: 'enter', persona: entry.persona }, '*')
-                  return
-                }
-                try { localStorage.setItem('mediaclaw-demo-persona', entry.persona) } catch (error) { /* 隐私模式 */ }
-                window.location.assign(demoBase + entry.route)
-              })
+              enterButton.addEventListener('click', function () { enterDemo(entry.persona, entry.route) })
               var enterHint = document.createElement('p')
               enterHint.className = 'demo-auth-enter-hint'
               enterHint.textContent = entry.hint
               enterWrap.appendChild(enterButton)
               enterWrap.appendChild(enterHint)
+              if (mode === 'personal') {
+                // 管理员在生产里是普通账号上的一个角色，没有单独的登录入口，也就没有
+                // 单独的 HTML 页可复刻。所以演示站也走同一个个人端表单：填这个演示账号
+                // 落到平台管理员控制台，填别的落到个人工作区。写在页面上而不是让人猜。
+                var adminHint = document.createElement('p')
+                adminHint.className = 'demo-auth-enter-hint demo-auth-enter-accounts'
+                adminHint.appendChild(document.createTextNode('用上面的表单也能进：'))
+                var adminCode = document.createElement('code')
+                adminCode.textContent = DEMO_ADMIN.identifier + ' / ' + DEMO_ADMIN.password
+                adminHint.appendChild(adminCode)
+                adminHint.appendChild(document.createTextNode(' 进平台管理员控制台，其它任意账号密码进个人工作区。演示站不做真实校验，这里没有账号。'))
+                enterWrap.appendChild(adminHint)
+              }
               fallback.appendChild(enterWrap)
             }
           }

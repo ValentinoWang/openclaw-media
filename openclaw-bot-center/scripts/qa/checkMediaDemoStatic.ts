@@ -453,6 +453,56 @@ try {
       }
     }
 
+    // 管理员在生产里是普通账号上的一个角色，没有单独的登录入口、也没有单独的 HTML 页，
+    // 所以演示站也走个人端那张表单：填演示口令落到平台管理员控制台，填别的落到个人
+    // 工作区。这条路径两个坑都踩过：iframe 的 sandbox 少了 allow-forms 时浏览器直接
+    // 禁掉表单提交、submit 事件根本不触发（外壳里点「登录」毫无反应）；而顶层导航同样
+    // 被沙箱禁着，只能靠 postMessage 交给外壳。所以必须走外壳这条真实路径来验。
+    for (const attempt of [
+      { identifier: 'p_admin', password: '1qaz2wsx', personaId: 'admin', label: '演示口令' },
+      { identifier: 'someone', password: 'whatever', personaId: 'personal', label: '任意账号' },
+      { identifier: 'p_admin', password: 'wrong-password', personaId: 'personal', label: '口令不对' },
+    ] as const) {
+      const persona = demoPersonas.find((item) => item.id === attempt.personaId)
+      if (!persona) continue
+      totalVisits += 1
+      telemetry = freshTelemetry()
+      const label = `登录表单（${attempt.label}）`
+      try {
+        await page.goto(`${origin}${demoBase}organization-workspace`, { waitUntil: 'domcontentloaded' })
+        await page.evaluate(
+          ([key, id]) => { try { localStorage.setItem(key, id) } catch { /* 隐私模式 */ } },
+          [demoPersonaStorageKey, 'organization'] as const,
+        )
+        await page.goto(`${origin}${demoBase}organization-workspace`, { waitUntil: 'domcontentloaded' })
+        await page.locator('.media-content').first().waitFor({ state: 'visible', timeout: 20_000 })
+        await page.getByRole('button', { name: '账户菜单' }).click({ timeout: 5_000 })
+        await page.getByRole('menuitem', { name: /退出登录/ }).click({ timeout: 5_000 })
+        await page.locator('.demo-auth-frame').waitFor({ state: 'visible', timeout: 20_000 })
+        const frame = page.frameLocator('.demo-auth-frame')
+        await frame.locator('#personal-choice').click({ timeout: 10_000 })
+        await frame.locator('#identifier').fill(attempt.identifier, { timeout: 10_000 })
+        await frame.locator('#password').fill(attempt.password, { timeout: 10_000 })
+        await frame.locator('#submit').click({ timeout: 10_000 })
+        await page.waitForTimeout(1_500)
+        const landedOn = new URL(page.url()).pathname.replace(/\/$/, '')
+        const expected = `${demoBase}${persona.defaultRoute.replace(/^\//, '')}`.replace(/\/$/, '')
+        record(
+          landedOn === expected,
+          `${label}：落到了 ${landedOn}，应当是 ${expected}——沙箱少了 allow-forms 时 submit 事件根本不触发，点「登录」会毫无反应`,
+        )
+        const storedPersona = await page.evaluate(
+          (key) => { try { return localStorage.getItem(key) } catch { return null } },
+          demoPersonaStorageKey,
+        )
+        record(storedPersona === persona.id, `${label}：身份没有切成 ${persona.id}（当前 ${storedPersona}）`)
+        await page.locator('.media-content').first().waitFor({ state: 'visible', timeout: 20_000 })
+        await page.screenshot({ path: join(outputRoot, `login-form-${attempt.personaId}-${attempt.label}.png`), fullPage: true })
+      } catch (error) {
+        failures.push(`${label}：走查过程中抛出异常 - ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+
     await context.close()
   }
 } finally {
