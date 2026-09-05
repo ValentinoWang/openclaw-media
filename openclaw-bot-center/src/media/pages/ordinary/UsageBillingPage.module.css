@@ -2,7 +2,13 @@
 .page > [data-page-prelude] { flex: 0 0 auto; }
 .page[data-accent='business'] > [data-page-prelude] :global(.mg-hero) { padding-inline-start: 14px; border-inline-start: 3px solid var(--accent-base); }
 
-.workspace { display: grid; min-height: 0; flex: 1; grid-template-columns: minmax(0, 1fr) minmax(480px, 0.52fr); gap: 18px; align-items: stretch; overflow: hidden; }
+/* 侧栏的 480px 地板比它实际装的内容（余额数字、额度包列表、兑换记录，
+   都是 min-width: 0 + overflow-wrap: anywhere 的窄内容）需要的宽得多，却是
+   「模型用量」表在 1180px 主栏只剩 349px 预算、需要 818px、藏了 57%」的
+   直接推手——1180/1440 两档主栏宽度完全由这条地板决定（两档实测都精确卡在
+   480px）。收到 360px 仍然够放下侧栏三张卡，给主栏腾出的 120px 用来让合并
+   后的用量表（见 UsageTable 里的注释）不再横滚。 */
+.workspace { display: grid; min-height: 0; flex: 1; grid-template-columns: minmax(0, 1fr) minmax(360px, 0.4fr); gap: 18px; align-items: stretch; overflow: hidden; }
 .primaryColumn, .rail, .tabContent { min-width: 0; min-height: 0; }
 .primaryColumn, .stack { display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: var(--billing-gap); }
 /* 主栏自己不再裁内容——真正的可视高度收口在 .stack 卡片的 flex: 0 0 auto（见下）
@@ -95,13 +101,61 @@
 
 .trendNote { margin: 8px 0 0; color: var(--mg-muted); font-size: var(--mg-text-xs); }
 
-.tableWrap { max-width: 100%; overflow-x: auto; }
-.usageTable { width: 100%; min-width: 790px; border-collapse: collapse; font-size: var(--mg-text-xs); text-align: left; }
-.usageTable th, .usageTable td { padding: 10px 11px; border-bottom: 1px solid var(--mg-border); vertical-align: top; white-space: nowrap; }
-.usageTable thead th { color: var(--mg-muted); background: oklch(0.985 0.003 175); font-size: var(--mg-text-xs); font-weight: 600; }
+.tableWrap { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
+.usageTable { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: var(--mg-text-xs); text-align: left; }
+/* 曾经整表 white-space: nowrap，把每一格都钉成不许换行——「计费」「时间」
+   这类本来就带自然空格的值因此需要一整行的宽度，是 8 列表在 1180px 主栏
+   需要 818px 的主因之一。合并成 5 列后交给各自内容决定要不要换行：状态
+   徽标（.mg-badge）和公开事件编号（.mg-id）各自已经声明了自己的
+   white-space: nowrap，不依赖这里的整表设置。 */
+.usageTable th, .usageTable td { padding: 10px 11px; border-bottom: 1px solid var(--mg-border); vertical-align: top; overflow-wrap: anywhere; }
+.usageTable thead th { color: var(--mg-muted); background: oklch(0.985 0.003 175); font-size: var(--mg-text-xs); font-weight: 600; white-space: nowrap; }
 .usageTable tbody th { max-width: 190px; overflow-wrap: anywhere; font-weight: 600; white-space: normal; }
 .usageTable tbody tr:last-child > * { border-bottom: 0; }
 .usageTable tbody tr:hover { background: oklch(0.98 0.008 166); }
+
+/* 「类型」（类型+模型）「用量」（数量+单位）「计费」+「时间」合成「记录」，
+   8 列收成 5 列（见 UsageTable 函数上方注释）；地板定在 1180px 主栏收紧后的
+   预算（见上面 .workspace 的调整）以内，留出安全余量。状态徽标不换行，
+   给到比其它列更宽的份额，否则最长的回退文案「状态待确认」会把徽标撑出
+   这一列右边界。 */
+.usageTableMerged { min-width: 340px; }
+.usageTableMerged thead th:nth-child(1) { width: 28%; }
+.usageTableMerged thead th:nth-child(2) { width: 20%; }
+.usageTableMerged thead th:nth-child(3) { width: 24%; }
+.usageTableMerged thead th:nth-child(4) { width: 16%; }
+.usageTableMerged thead th:nth-child(5) { width: 12%; }
+
+/* 「记录」列的两个事实（金额 / 时间）各自可能需要在内部再折行，用 MetaItem
+   包成 inline-flex 子项——同 RunsPage 的 MetaItem/TracksPage 的 metaCell
+   手法，圆点和右边的事实没有真正的空格字符，不会被单独甩在行尾。这一格是
+   「记录」列的全部数据，字号跟表格其它列一致（不用 .mg-meta 默认给次要
+   说明用的 --mg-text-2xs），元素 + 类把特异性提到 (0,1,1) 去覆盖
+   .mg-meta 默认字号（原语在打包后的样式表里源序更靠后，同分特异性会赢，
+   见仓库 CLAUDE.md）。 */
+/* 曾经把这里覆盖成 overflow-wrap: normal，指望「发生于 2026/9/1 23:00:00」
+   优先在 / 或空格处换行、不要砍在数字中间——但 430px 这种极窄档位下，就算
+   在空格处换行，「23:00:00」单独一行仍然比这一列窄，normal 不允许再退
+   一步，字形直接溢出、被祖先裁掉且没有任何一层能滚出来（qa:media-layout-
+   sanity 的「内容被切掉一截」抓到过，430px 一次抓了 6 处）。表格整体的
+   overflow-wrap: anywhere 允许的「先尽量在正经断点换行，正经断点都用完了
+   还装不下才砍进数字内部」兜底更安全：装得下就在空格/斜杠换行，装不下也
+   不会把内容藏起来，只是偶尔在个位数秒数上多断一刀——两害相权，看得见
+   比好看优先。所以这里不再覆盖表格的 overflow-wrap: anywhere。 */
+span.recordMeta {
+  font-size: var(--mg-text-xs);
+}
+
+.metaCell {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  column-gap: inherit;
+}
+
+.metaSeparator {
+  flex: 0 0 auto;
+}
 
 .planList { display: grid; min-height: 0; flex: 1; gap: 10px; overflow-y: auto; padding: 12px 14px 14px; scrollbar-gutter: stable; }
 .planCard { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--mg-border); border-radius: var(--mg-r-sm); }

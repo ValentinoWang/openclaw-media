@@ -311,6 +311,71 @@
   word-break: break-word;
 }
 
+/* 主要事实（编号/名称）在上，次级事实（创建时间、关联的另一个编号）用
+   .mg-meta 排成一行放在下面——同 AdminTenantsPage 的 RunTitleCell。
+   overflow-wrap: anywhere 是给里面非 .mg-id 的纯文本（比如短套餐编码）兜底：
+   真实后端把它换成一段不含空格的长串时，这里能换行而不是撑破列——
+   .mg-id 自己会覆盖这条继承值，保留单行省略号。 */
+.cellStack {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  overflow-wrap: anywhere;
+}
+
+/* MetaRow 每一项里的中文标签禁止逐字折行——中文默认允许在任意两个字之间
+   折行，列一变窄就会把「创建于」拦腰断开，日期甚至会挤到断开的两个字中间。
+   用 word-break: keep-all 而不是 white-space: nowrap：后者会连「履约编号」
+   次级行里「套餐 · 创建于 完整时间」这种确实需要在空格处折成两三行的长
+   合并事实也一起钉死，逼着它溢出固定宽度的 .fulfillmentIdCell 被裁掉、
+   连滚动都够不到（实测踩过一次：40px 的字形跑到容器外面）。keep-all 只挡
+   中文字之间的断点，空格处的折行照常发生。(0,2,0) 盖过 .mg-meta > * 的
+   (0,1,0)，不用 !important。 */
+.cellStack :global(.mg-meta) > * {
+  word-break: keep-all;
+}
+
+/* PlanTable 次级行里的商品编号：跟 .longCell 同一个 220px 上限，但用在
+   .mg-id 单行省略号上而不是换行的 <span>。 */
+.metaId {
+  max-width: 220px;
+}
+
+/* 「兑换记录」是压缩幅度最大的一张表（原本 1020px、7 列）：履约编号自己的
+   列拿不到 .longCell 的 220px 预算，否则「套餐 · 创建于 …」那行次级事实会把
+   列撑到超出 1180px 主栏（实测：220px 上限下这张表还要 564px，比 498px 的
+   主栏宽 66px）。150px 是履约编号（约 16~17 位）+ 次级行折成两三行都够用的
+   宽度。 */
+.fulfillmentIdCell {
+  max-width: 140px;
+}
+
+/* 「目标租户」是这张表里第二个标识符列，跟履约编号分预算：120px 让
+   .mg-id 在演示数据（23 位）和真实后端形状（几百位无断点 base64）下都单行
+   省略——不给它 .longCell 的 220px，那是履约编号已经先占走的预算。 */
+.tenantCell {
+  max-width: 114px;
+}
+
+/* 数量 + 已兑换合并进的这一格是表格的主要数据，不是 .mg-meta 默认服务的
+   次要说明——它自带的 --mg-text-2xs 比表格其余数据列的字号还小一档，用
+   在这里等于把「压缩字号凑下限」的坏味道搬进主数据列。span.countsMeta
+   （元素 + 类，(0,1,1)）把特异性提到能盖过打包后源序更靠后的 .mg-meta，
+   不用 !important（同 AdminTenantsPage 的 span.usageMeta）。 */
+span.countsMeta {
+  font-size: var(--mg-text-sm);
+}
+
+/* 每一项（「总量 100」「· 已兑 36」）里的中文标签禁止逐字折行——CJK 默认
+   允许在任意两个字之间折行，不需要 overflow-wrap 配合；列一变窄就会把
+   「已兑」拦腰断开，数字甚至会挤到断开的两个字中间。用 word-break: keep-all
+   而不是 white-space: nowrap——这两项本身很短，keep-all 已经够用，不用
+   连累「整项放不下就换到下一行」这件事（.mg-meta 的 flex-wrap 该管的，
+   同 AdminAccessPage 的 span.quotaMeta）。 */
+span.countsMeta > * {
+  word-break: keep-all;
+}
+
 .statusBadge {
   max-width: 100%;
 }
@@ -561,22 +626,30 @@
 /* Nested "计费写入操作" tab set: shares .mg-tabs/.mg-tab's base rule but stays visually
    smaller/tighter than the page-level nav tabs above -- a deliberate compact variant, not
    copy-drift, so these two overrides on top of the shared class stay page-local.
-   Five tabs need ~480px but the 410-440px inspector rail only gives this ~330-420px
-   at 1440/1180px (and ~400px again once the rail goes full-width below 1120px) --
-   .mg-tab already sets min-width:max-content so .mg-tabs's inherited overflow-x:auto
-   lets it scroll, but that scroll was an invisible overlay affordance and the last
-   tab ("退款履约") just looked clipped mid-character. scrollbar-width: thin makes the
-   scroll visible instead of widening the rail or wrapping the tabs onto a second row. */
-.operationTabs {
+   五个标签本来靠 .mg-tab 默认的 margin-right: 22px 撑到需要 ~480px——那 22px
+   是给下划线风格的宽标签留呼吸感的，五个标签里四份 22px 页边距比五段文字
+   本身（约 250px）加起来还多。1180px 桌面下的 410-440px（>1180 时）/
+   300-350px（≤1180 时）检视栏放不下横滚版的 480px，而横滚在桌面宽度下正是
+   CLAUDE.md 说的「压缩不是兜底」。换成折行：拿掉 margin-right（交给容器的
+   gap 分隔），标签栏放不下五个就自己换到第二行，检视栏不用跟着变宽。
+   .operationTabs/.operationTab 都要用「元素 + 类」（(0,1,1)）而不是裸类
+   （(0,1,0)）——.mg-tabs 的 gap/margin、.mg-tab 的 margin-right 是同选择器打包
+   后源序更靠后的原语规则，裸类同分会输给它们（已实测：湖裸类版本的 gap: 16px /
+   margin: 0 从未真正生效，计算值仍是 mg-tabs 的 gap: 3px / margin: -4px 0 14px）。 */
+div.operationTabs {
   flex: 0 0 auto;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 7px 8px;
   margin: 0;
-  padding: 0 17px;
+  padding: 10px 17px 6px;
+  overflow: visible;
   scrollbar-width: thin;
 }
 
-.operationTab {
-  min-height: 39px;
+button.operationTab {
+  margin-right: 0;
+  min-height: 36px;
+  padding: 0 9px;
   font-size: var(--mg-text-xs);
 }
 

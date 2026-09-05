@@ -607,52 +607,135 @@ function SummaryMetrics({ summary, loading }: { summary: BillingSummary | null; 
   return <section className={styles.metricBand + ' mg-metric-grid'} aria-label="计费摘要指标">{metrics.map(({ label, detail, icon: Icon, value }) => <Metric variant="card" className={styles.metric + ' mg-metric'} key={label} label={label} value={value} detail={detail} icon={<Icon size={17} aria-hidden="true" />} />)}</section>
 }
 
+/** 一行短事实，圆点和它右边那个值包在同一个 span 里再一起折行
+ * （CLAUDE.md「圆点属于它右边那一项」）——同 AdminAccessPage 的 QuotaMeta、
+ * AdminTenantsPage 的 TenantUsageMeta/RunTitleCell。这里的调用方保证每一项
+ * 本身要么很短、要么是 .mg-id（单行省略号），不会把一段不含空格的长串
+ * 直接扔进普通文本节点里。 */
+function MetaRow({ items }: { items: ReactNode[] }) {
+  if (!items.length) return null
+  return <span className="mg-meta" data-component="mg-meta">
+    {items.map((node, index) => <span key={index}>{index > 0 ? '· ' : ''}{node}</span>)}
+  </span>
+}
+
+/** 原来 5 列里「关联商品」单独占一列，只为了显示一个和「套餐」同源的
+ * 外部商品编号。并进套餐名称下面的次级行（.mg-id 单行省略号 + title 放
+ * 完整值），服务端字段不丢，1440/1180px 都不再需要横滚。 */
 function PlanTable({ available, items, mappings, selectedPlanCode, onSelectPlan }: { available: boolean; items: BillingPlan[]; mappings: BillingRecord[]; selectedPlanCode: string; onSelectPlan: (planCode: string) => void }) {
   if (!available) return <CollectionUnavailable title="套餐" />
   if (!items.length) return <EmptyState title="暂无套餐" />
-  // 620px 是这 5 列真实内容的宽度（约 565px）加一点余量，不是随手取的整数：旧值
-  // 720px 比实际需要的更宽，1440px 视口下这一栏只有约 653px，白白逼出没有可见
-  // 提示的横向滚动，把「额度」列的末尾裁在面板边缘（1,000 / 600 之类被切成
-  // 1,000 / 60）。620px 在 1440px 能整栏放下，1180px 及以下仍会滚动，
-  // 但 .tableViewport 的 scrollbar-width: thin 让那次滚动看得见。
-  return <TableViewport minWidth="620px"><table className={styles.table}><thead><tr><th>套餐编码</th><th className={styles.numericCell}>零售金额</th><th>状态</th><th>关联商品</th><th>额度</th></tr></thead><tbody>{items.map((plan) => {
+  return <TableViewport minWidth="440px"><table className={styles.table}><thead><tr><th>套餐</th><th className={styles.numericCell}>零售金额</th><th>状态</th><th>额度</th></tr></thead><tbody>{items.map((plan) => {
     const mapping = mappings.find((item) => readString(item, 'planCode') === plan.planCode)
     const selected = selectedPlanCode === plan.planCode
+    const externalProductId = mapping ? (readString(mapping, 'externalProductId') || '已关联商品') : ''
     return <tr key={plan.planCode} className={selected ? styles.selectedRow : ''} aria-selected={selected} tabIndex={0} onClick={() => onSelectPlan(plan.planCode)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectPlan(plan.planCode) } }}>
-      <th scope="row"><button type="button" className={styles.rowSelect} onClick={() => onSelectPlan(plan.planCode)}>{plan.planCode}</button><span className={styles.secondaryText}>{plan.name || '—'}</span></th>
+      <th scope="row" className={styles.longCell}>
+        <span className={styles.cellStack}>
+          <span><button type="button" className={styles.rowSelect} onClick={() => onSelectPlan(plan.planCode)}>{plan.planCode}</button><span className={styles.secondaryText}>{plan.name || '—'}</span></span>
+          {externalProductId ? <MetaRow items={[<span className={'mg-id ' + styles.metaId} title={externalProductId}>{'商品 ' + externalProductId}</span>]} /> : null}
+        </span>
+      </th>
       <td className={styles.numericCell}>{formatMoney(plan.price)} {plan.currency}</td>
       <td><StatusBadge {...planStatus(plan, mapping !== undefined)} /></td>
-      <td>{mapping ? <span className={styles.longValue} title={readString(mapping, 'externalProductId')}>{readString(mapping, 'externalProductId') || '已关联商品'}</span> : '—'}</td>
       <td>{formatCount(plan.textQuota)} / {formatCount(plan.imageQuota)}</td>
     </tr>
   })}</tbody></table></TableViewport>
 }
 
+/** 「创建时间」并进套餐编码下面的次级行——服务端字段没丢，只是换了承载
+ * 方式，5 列变 4 列。 */
 function MappingTable({ available, items }: { available: boolean; items: BillingRecord[] }) {
   if (!available) return <CollectionUnavailable title="商品映射" />
   if (!items.length) return <EmptyState title="暂无商品映射" />
-  return <TableViewport minWidth="820px"><table className={styles.table}><thead><tr><th>套餐编码</th><th>外部商品编号</th><th>购买链接</th><th>状态</th><th>创建时间</th></tr></thead><tbody>{items.map((item, index) => <tr key={readString(item, 'mappingId') || index}><th scope="row">{readString(item, 'planCode') || '—'}</th><td className={styles.longCell}><span className={styles.longValue} title={readString(item, 'externalProductId')}>{readString(item, 'externalProductId') || '—'}</span></td><td className={styles.longCell}><PurchaseLink value={item.purchaseUrl} /></td><td><StatusBadge {...recordStatus(item)} /></td><td>{formatTime(item.createdAt)}</td></tr>)}</tbody></table></TableViewport>
-}
-
-function BatchTable({ available, items }: { available: boolean; items: RedemptionBatchSummary[] }) {
-  if (!available) return <CollectionUnavailable title="卡密批次" />
-  if (!items.length) return <EmptyState title="暂无卡密批次" />
-  return <TableViewport minWidth="760px"><table className={styles.table}><thead><tr><th>批次编号</th><th>套餐编码</th><th className={styles.numericCell}>数量</th><th className={styles.numericCell}>已兑换</th><th>状态</th><th>创建时间</th></tr></thead><tbody>{items.map((item) => <tr key={item.batchId}><th scope="row" className={styles.longCell}><span className="mg-id" title={item.batchId}>{item.batchId}</span></th><td><span className="mg-id" title={item.planCode}>{item.planCode}</span></td><td className={styles.numericCell}>{formatCount(item.codeCount)}</td><td className={styles.numericCell}>{formatCount(item.redeemedCount)}</td><td><StatusBadge {...recordStatus(item)} /></td><td>{formatTime(item.createdAt)}</td></tr>)}</tbody></table></TableViewport>
-}
-
-function FulfillmentTable({ available, items, onPrepare }: { available: boolean; items: BillingRecord[]; onPrepare: (mode: 'recover' | 'refund', fulfillmentId: string) => void }) {
-  if (!available) return <CollectionUnavailable title="兑换记录" />
-  if (!items.length) return <EmptyState title="暂无兑换记录" />
-  return <TableViewport minWidth="1020px"><table className={styles.table}><thead><tr><th>履约编号</th><th>目标租户</th><th>套餐</th><th className={styles.numericCell}>到账额度</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>{items.map((item, index) => {
-    const id = readString(item, 'fulfillmentId')
-    return <tr key={id || index}><th scope="row" className={styles.longCell}>{id || '—'}</th><td className={styles.longCell}>{readString(item, 'publicTenantId') || '—'}</td><td>{readString(item, 'planCode') || '—'}</td><td className={styles.numericCell}>{formatDecimal(item.creditedAmount, 8)}</td><td><StatusBadge {...recordStatus(item)} /></td><td>{formatTime(item.createdAt)}</td><td><div className={styles.rowActions}><button type="button" className={styles.iconButton + ' mg-btn mg-btn-ghost'} title="选择恢复履约" aria-label="选择恢复履约" onClick={() => onPrepare('recover', id)} disabled={!id}><RotateCcw size={14} /></button><button type="button" className={styles.iconButton + ' mg-btn mg-btn-ghost'} title="选择退款履约" aria-label="选择退款履约" onClick={() => onPrepare('refund', id)} disabled={!id}><Undo2 size={14} /></button></div></td></tr>
+  return <TableViewport minWidth="460px"><table className={styles.table}><thead><tr><th>套餐</th><th>外部商品编号</th><th>购买链接</th><th>状态</th></tr></thead><tbody>{items.map((item, index) => {
+    const planCode = readString(item, 'planCode')
+    return <tr key={readString(item, 'mappingId') || index}>
+      <th scope="row" className={styles.longCell}>
+        <span className={styles.cellStack}>
+          <strong>{planCode || '—'}</strong>
+          <MetaRow items={['创建于 ' + formatTime(item.createdAt)]} />
+        </span>
+      </th>
+      <td className={styles.longCell}><span className="mg-id" title={readString(item, 'externalProductId')}>{readString(item, 'externalProductId') || '—'}</span></td>
+      <td className={styles.longCell}><PurchaseLink value={item.purchaseUrl} /></td>
+      <td><StatusBadge {...recordStatus(item)} /></td>
+    </tr>
   })}</tbody></table></TableViewport>
 }
 
+/** 「创建时间」并进批次编号下面的次级行；「数量」「已兑换」合并进一格用
+ * .mg-meta 排成一行——同一类计数各占一列是这张表原本要 760px 的主因。
+ * 6 列变 4 列，服务端字段一个不少。 */
+function BatchTable({ available, items }: { available: boolean; items: RedemptionBatchSummary[] }) {
+  if (!available) return <CollectionUnavailable title="卡密批次" />
+  if (!items.length) return <EmptyState title="暂无卡密批次" />
+  return <TableViewport minWidth="440px"><table className={styles.table}><thead><tr><th>批次编号</th><th>套餐编码</th><th>数量情况</th><th>状态</th></tr></thead><tbody>{items.map((item) => <tr key={item.batchId}>
+    <th scope="row" className={styles.longCell}>
+      <span className={styles.cellStack}>
+        <span className="mg-id" title={item.batchId}>{item.batchId}</span>
+        <MetaRow items={['创建于 ' + formatTime(item.createdAt)]} />
+      </span>
+    </th>
+    <td><span className="mg-id" title={item.planCode}>{item.planCode}</span></td>
+    <td><BatchCountsMeta item={item} /></td>
+    <td><StatusBadge {...recordStatus(item)} /></td>
+  </tr>)}</tbody></table></TableViewport>
+}
+
+function BatchCountsMeta({ item }: { item: RedemptionBatchSummary }) {
+  return <span className={'mg-meta ' + styles.countsMeta} data-component="mg-meta">
+    <span>总量 <b>{formatCount(item.codeCount)}</b></span>
+    <span>{'· 已兑 ' + formatCount(item.redeemedCount)}</span>
+  </span>
+}
+
+/** 原来 7 列里「套餐」「创建时间」并进履约编号下面的次级行——两者都是
+ * 短事实，服务端字段没丢。7 列变 5 列是这张表从要 1020px 收到 1180px
+ * 主栏能装下的关键（它是这一页压缩幅度最大的一张表）。 */
+function FulfillmentTable({ available, items, onPrepare }: { available: boolean; items: BillingRecord[]; onPrepare: (mode: 'recover' | 'refund', fulfillmentId: string) => void }) {
+  if (!available) return <CollectionUnavailable title="兑换记录" />
+  if (!items.length) return <EmptyState title="暂无兑换记录" />
+  return <TableViewport minWidth="480px"><table className={styles.table}><thead><tr><th>履约编号</th><th>目标租户</th><th className={styles.numericCell}>到账额度</th><th>状态</th><th>操作</th></tr></thead><tbody>{items.map((item, index) => {
+    const id = readString(item, 'fulfillmentId')
+    const planCode = readString(item, 'planCode')
+    return <tr key={id || index}>
+      <th scope="row" className={styles.fulfillmentIdCell}>
+        <span className={styles.cellStack}>
+          <span className="mg-id" title={id}>{id || '—'}</span>
+          <MetaRow items={[planCode || '—', '创建于 ' + formatTime(item.createdAt)]} />
+        </span>
+      </th>
+      <td className={styles.tenantCell}><span className="mg-id" title={readString(item, 'publicTenantId')}>{readString(item, 'publicTenantId') || '—'}</span></td>
+      <td className={styles.numericCell}>{formatDecimal(item.creditedAmount, 8)}</td>
+      <td><StatusBadge {...recordStatus(item)} /></td>
+      <td><div className={styles.rowActions}><button type="button" className={styles.iconButton + ' mg-btn mg-btn-ghost'} title="选择恢复履约" aria-label="选择恢复履约" onClick={() => onPrepare('recover', id)} disabled={!id}><RotateCcw size={14} /></button><button type="button" className={styles.iconButton + ' mg-btn mg-btn-ghost'} title="选择退款履约" aria-label="选择退款履约" onClick={() => onPrepare('refund', id)} disabled={!id}><Undo2 size={14} /></button></div></td>
+    </tr>
+  })}</tbody></table></TableViewport>
+}
+
+/** 原来 6 列里「目标租户」「账户」都是「收款方是谁」的同类信息，合并成
+ * 一格上下两行（各自保持 .mg-id 单行省略号）；「创建时间」并进账本编号
+ * 下面的次级行。6 列变 4 列，服务端字段没丢。 */
 function GrantTable({ available, items }: { available: boolean; items: BillingRecord[] }) {
   if (!available) return <CollectionUnavailable title="管理员赠款" />
   if (!items.length) return <EmptyState title="暂无管理员赠款" />
-  return <TableViewport minWidth="900px"><table className={styles.table}><thead><tr><th>账本编号</th><th>目标租户</th><th>账户</th><th className={styles.numericCell}>赠款额度</th><th>审计原因</th><th>创建时间</th></tr></thead><tbody>{items.map((item, index) => <tr key={readString(item, 'ledgerEntryId') || index}><th scope="row" className={styles.longCell}>{readString(item, 'ledgerEntryId') || '—'}</th><td className={styles.longCell}>{readString(item, 'publicTenantId') || '—'}</td><td className={styles.longCell}>{readString(item, 'username') || '—'}</td><td className={styles.numericCell}>{formatDecimal(item.amount, 8)}</td><td className={styles.reasonCell}>{readString(item, 'reason') || '—'}</td><td>{formatTime(item.createdAt)}</td></tr>)}</tbody></table></TableViewport>
+  return <TableViewport minWidth="480px"><table className={styles.table}><thead><tr><th>账本编号</th><th>收款方</th><th className={styles.numericCell}>赠款额度</th><th>审计原因</th></tr></thead><tbody>{items.map((item, index) => <tr key={readString(item, 'ledgerEntryId') || index}>
+    <th scope="row" className={styles.longCell}>
+      <span className={styles.cellStack}>
+        <span className="mg-id" title={readString(item, 'ledgerEntryId')}>{readString(item, 'ledgerEntryId') || '—'}</span>
+        <MetaRow items={['创建于 ' + formatTime(item.createdAt)]} />
+      </span>
+    </th>
+    <td className={styles.longCell}>
+      <span className={styles.cellStack}>
+        <span className="mg-id" title={readString(item, 'publicTenantId')}>{readString(item, 'publicTenantId') || '—'}</span>
+        <span className="mg-id" title={readString(item, 'username')}>{readString(item, 'username') || '—'}</span>
+      </span>
+    </td>
+    <td className={styles.numericCell}>{formatDecimal(item.amount, 8)}</td>
+    <td className={styles.reasonCell}>{readString(item, 'reason') || '—'}</td>
+  </tr>)}</tbody></table></TableViewport>
 }
 
 function BatchSummary({ available, items, onViewAll }: { available: boolean; items: RedemptionBatchSummary[]; onViewAll: () => void }) {
@@ -665,8 +748,18 @@ function BatchSummary({ available, items, onViewAll }: { available: boolean; ite
   return <section className={styles.bottomPanel + ' mg-panel'} data-page-terminal-surface="primary"><PanelHeader icon={<TicketCheck size={17} />} title="卡密批次履约" actionLabel="查看全部批次" onAction={onViewAll} />{!available ? <CollectionUnavailable title="卡密批次" /> : !items.length ? <EmptyState title="暂无卡密批次" /> : <><div className={styles.compactMetrics}>{stats.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div><MiniBatchTable items={items.slice(0, 4)} /></>}</section>
 }
 
+/** 「套餐」并进批次编号下面的次级行——预览卡片本来就窄，4 列变 3 列。 */
 function MiniBatchTable({ items }: { items: RedemptionBatchSummary[] }) {
-  return <TableViewport minWidth="520px"><table className={styles.table + ' ' + styles.miniTable}><thead><tr><th>批次编号</th><th>套餐</th><th className={styles.numericCell}>数量</th><th>状态</th></tr></thead><tbody>{items.map((item) => <tr key={item.batchId}><th scope="row" className={styles.longCell}><span className="mg-id" title={item.batchId}>{item.batchId}</span></th><td><span className="mg-id" title={item.planCode}>{item.planCode}</span></td><td className={styles.numericCell}>{formatCount(item.codeCount)}</td><td><StatusBadge {...recordStatus(item)} /></td></tr>)}</tbody></table></TableViewport>
+  return <TableViewport minWidth="360px"><table className={styles.table + ' ' + styles.miniTable}><thead><tr><th>批次编号</th><th className={styles.numericCell}>数量</th><th>状态</th></tr></thead><tbody>{items.map((item) => <tr key={item.batchId}>
+    <th scope="row" className={styles.longCell}>
+      <span className={styles.cellStack}>
+        <span className="mg-id" title={item.batchId}>{item.batchId}</span>
+        <MetaRow items={[<span className="mg-id" title={item.planCode}>{item.planCode}</span>]} />
+      </span>
+    </th>
+    <td className={styles.numericCell}>{formatCount(item.codeCount)}</td>
+    <td><StatusBadge {...recordStatus(item)} /></td>
+  </tr>)}</tbody></table></TableViewport>
 }
 
 function PanelHeader({ icon, title, actionLabel, onAction }: { icon: ReactNode; title: string; actionLabel: string; onAction: () => void }) {

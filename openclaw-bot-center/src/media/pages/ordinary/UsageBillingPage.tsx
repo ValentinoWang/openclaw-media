@@ -259,8 +259,44 @@ function TrendBar({ label, value, max, tone, suffix, display }: { label: string;
   return <div className={styles.trendMetric}><span>{label}</span><div className={styles.bar}><i className={styles[tone + 'Bar']} style={{ width: width + '%' }} /></div><strong>{text}</strong></div>
 }
 
+/* 原来 8 列（类型/模型/数量/单位/计费/状态/时间/公开事件编号）在 1180px 主栏
+ * （原 349px，见下方 .workspace 调整）里需要 818px、藏了 57%。「类型」「模型」
+ * 本就是同一件事的两半，合成一格；「数量」「单位」永远一起读（"128.4 千
+ * token"），合成一格；「计费」「时间」都是这条流水的记账信息，合成「记录」——
+ * 数据一项都没丢，只是不再各占一整列。状态徽标（.mg-badge，不换行）和公开
+ * 事件编号（.mg-id，单行省略号）保持独立列，避免被挤爆——列头把「公开事件
+ * 编号」缩成「编号」（和其余四个两字列头统一），数据本身仍是完整的公开
+ * 事件编号，只是省下表头那行 `white-space: nowrap` 撑不开的宽度：`<th>`
+ * 不会自己折行，6 个字撑不进这一列本就该给标识符本身的窄预算时，撑出来
+ * 的宽度会算进 `<table>` 的 scrollWidth，即使视觉上被裁在圆角里也一样
+ * （拿掉 `<thead>` 单独测过，529px 少了正正 33px）。
+ *
+ * 「类型」是纯内联文本拼接（不是 .mg-meta 那种 flex 行），按 CLAUDE.md「圆点
+ * 属于它右边那一项」的纯文本写法：圆点后面用不换行空格 · ，禁掉那个
+ * 断点，不会把圆点甩在行尾。「记录」两个事实（金额 / 时间）各自可能需要在
+ * 内部再折行，用 .mg-meta 让它们分别当独立的 flex 子项。 */
+function MetaItem({ dot = true, children }: { dot?: boolean; children: ReactNode }) {
+  return (
+    <span className={styles.metaCell}>
+      {dot ? <span className={styles.metaSeparator} aria-hidden="true">·</span> : null}
+      {children}
+    </span>
+  )
+}
+
 function UsageTable({ rows }: { rows: UsageEvent[] }) {
-  return <div className={styles.tableWrap} role="region" aria-label="不可变用量事件表格" tabIndex={0}><table className={styles.usageTable}><thead><tr><th scope="col">类型</th><th scope="col">模型</th><th scope="col">数量</th><th scope="col">单位</th><th scope="col">计费</th><th scope="col">状态</th><th scope="col">时间</th><th scope="col">公开事件编号</th></tr></thead><tbody>{rows.map((row) => <tr key={row.publicUsageId}><th scope="row">{kindLabel(row.kind)}</th><td title={billingModelLabel(row.model)}>{billingModelLabel(row.model)}</td><td>{formatQuantity(row.quantity)}</td><td>{usageUnitLabel(row.unit)}</td><td>{formatCredit(row.charge)} 额度</td><td><StatusBadge value={row.status} /></td><td>{formatDateTime(row.createdAt)}</td><td className={styles.breakAll}>{row.publicUsageId}</td></tr>)}</tbody></table></div>
+  return <div className={styles.tableWrap} role="region" aria-label="不可变用量事件表格" tabIndex={0}><table className={`${styles.usageTable} ${styles.usageTableMerged}`}><thead><tr><th scope="col">类型</th><th scope="col">用量</th><th scope="col">状态</th><th scope="col">记录</th><th scope="col">编号</th></tr></thead><tbody>{rows.map((row) => <tr key={row.publicUsageId}>
+    <th scope="row">{kindLabel(row.kind) + "· " + billingModelLabel(row.model)}</th>
+    <td>{formatQuantity(row.quantity) + " " + usageUnitLabel(row.unit)}</td>
+    <td><StatusBadge value={row.status} /></td>
+    <td>
+      <span className={`mg-meta ${styles.recordMeta}`} data-component="mg-meta">
+        <MetaItem dot={false}>{formatCredit(row.charge) + " 额度"}</MetaItem>
+        <MetaItem>{"发生于 " + formatDateTime(row.createdAt)}</MetaItem>
+      </span>
+    </td>
+    <td><span className="mg-id" title={row.publicUsageId}>{row.publicUsageId}</span></td>
+  </tr>)}</tbody></table></div>
 }
 
 function RedemptionPanel({ code, inputRef, action, receipt, balanceStatus, onCodeChange, onSubmit }: { code: string; inputRef: RefObject<HTMLInputElement | null>; action: ActionState; receipt: MutationReceipt | null; balanceStatus: LoadState<unknown>['status']; onCodeChange: (value: string) => void; onSubmit: () => void }) {
@@ -302,7 +338,7 @@ function PurchasePanel({ state }: { state: LoadState<BalancePackListResponse> })
 
 function PurchaseListItem({ balancePack }: { balancePack: BalancePack }) {
   const purchaseUrl = chainStorePurchaseUrl(balancePack)
-  const content = <><span><strong>{balancePack.name}</strong><small>{formatCredit(balancePack.priceCny)} {currencyDisplayLabel(balancePack.currency)} · {formatQuantity(balancePack.creditAmount)} 额度</small></span>{purchaseUrl ? <ArrowUpRight size={16} /> : <span className={styles.purchaseUnavailable}>暂不可购买 · 未配置或未启用链动映射</span>}</>
+  const content = <><span><strong>{balancePack.name}</strong><small>{formatCredit(balancePack.priceCny)} {currencyDisplayLabel(balancePack.currency)} · {formatQuantity(balancePack.creditAmount)} 额度</small></span>{purchaseUrl ? <ArrowUpRight size={16} /> : <span className={styles.purchaseUnavailable}>暂不可购买 · 未配置或未启用链动映射</span>}</>
   return purchaseUrl ? <a className={styles.purchaseLink} href={purchaseUrl} target="_blank" rel="noopener noreferrer" aria-label={'购买 ' + balancePack.name} title={'购买 ' + balancePack.name}>{content}</a> : <div className={styles.purchaseLink + ' ' + styles.unavailablePurchase} aria-disabled="true" aria-label={balancePack.name + '暂不可购买'}>{content}</div>
 }
 

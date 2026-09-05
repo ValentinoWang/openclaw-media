@@ -416,25 +416,41 @@ function InvitationTab({
   </section>
 }
 
+/** 原来 7 列里「邀请权限」和「开关」各占一列，却是同一个布尔值
+ * （affiliateEnabled）画了两遍——一遍是文字徽标，一遍是开关图形，
+ * 数字上没有第二个字段。合并成一列不丢任何服务端字段：只是把同一份
+ * 数据的两份画法收成一份。「配额」「已用」合并进 QuotaMeta（.mg-meta），
+ * 列头改成能概括两者的「配额」——同 AdminTenantsPage 的 TenantUsageMeta。
+ * 7 列变 5 列是这张表在 1180px 主栏（408px）里不再需要横滚的关键。 */
 function UserTable({ items, selectedUserId, onSelect }: { items: AffiliateUser[]; selectedUserId: string | null; onSelect: (value: string) => void }) {
   if (!items.length) return <EmptyState title="暂无匹配的用户" detail="服务端没有返回符合当前搜索条件的记录。" />
   return <div className={styles.tableScroll} role="region" tabIndex={0} aria-label="用户邀请权限表"><table className={styles.userTable}>
-    <colgroup><col className={styles.userColumn} /><col className={styles.permissionColumn} /><col className={styles.switchColumn} /><col className={styles.numberColumn} /><col className={styles.numberColumn} /><col className={styles.statusColumn} /><col className={styles.actionColumn} /></colgroup>
-    <thead><tr><th scope="col">用户</th><th scope="col">邀请权限</th><th scope="col">开关</th><th scope="col">配额</th><th scope="col">已用</th><th scope="col">账户状态</th><th scope="col"><span className={styles.srOnly}>操作</span></th></tr></thead>
+    <colgroup><col className={styles.userColumn} /><col className={styles.permissionColumn} /><col className={styles.quotaColumn} /><col className={styles.statusColumn} /><col className={styles.actionColumn} /></colgroup>
+    <thead><tr><th scope="col">用户</th><th scope="col">邀请权限</th><th scope="col">配额</th><th scope="col">账户状态</th><th scope="col"><span className={styles.srOnly}>操作</span></th></tr></thead>
     <tbody>{items.map((user) => {
       const selected = user.publicUserId === selectedUserId
       const status = affiliateStatus(user.status)
       return <tr key={user.publicUserId} className={selected ? styles.selectedRow : undefined} aria-selected={selected}>
         <td><button className={styles.userSelect} type="button" aria-pressed={selected} onClick={() => onSelect(user.publicUserId)}><span className={[styles.checkbox, selected ? styles.checkboxSelected : ''].join(' ')} aria-hidden="true">{selected ? <Check size={13} /> : null}</span><span className={styles.userIdentity}><strong>{user.displayName}</strong><small title={user.publicUserId}>公开编号：{user.publicUserId}</small></span></button></td>
         <td><StatusPill label={user.affiliateEnabled ? '可邀请' : '禁止邀请'} tone={user.affiliateEnabled ? 'success' : 'muted'} /></td>
-        <td><span className={user.affiliateEnabled ? styles.switchOn : styles.switchOff}><span aria-hidden="true" />{user.affiliateEnabled ? '开启' : '关闭'}</span></td>
-        <td className={styles.numericCell}>{user.invitationQuota}</td>
-        <td className={styles.numericCell}>{user.usedQuota}</td>
+        <td><QuotaMeta user={user} /></td>
         <td><StatusPill label={status.label} tone={status.tone} /></td>
         <td><button className={['mg-btn', 'mg-btn-ghost', styles.iconButton].join(' ')} data-component="mg-btn" type="button" title="编辑邀请权限" aria-label={'编辑 ' + user.displayName + ' 的邀请权限'} onClick={() => onSelect(user.publicUserId)}><PencilLine size={15} /></button></td>
       </tr>
     })}</tbody>
   </table></div>
+}
+
+/** 圆点必须和它右边那个数字包在同一个 flex 子项里再一起折行
+ * （CLAUDE.md「圆点属于它右边那一项」）。 */
+function QuotaMeta({ user }: { user: AffiliateUser }) {
+  const items: Array<{ label: string; value: string }> = [
+    { label: '配额', value: formatQuota(user.invitationQuota) },
+    { label: '已用', value: formatQuota(user.usedQuota) },
+  ]
+  return <span className={'mg-meta ' + styles.quotaMeta} data-component="mg-meta">
+    {items.map((item, index) => <span key={item.label}>{index > 0 ? '· ' : ''}{item.label}{' '}<b>{item.value}</b></span>)}
+  </span>
 }
 
 function InvitationInspector({
@@ -627,11 +643,16 @@ function AdmissionTab({
   </section>
 }
 
+/** 原来 7 列里「创建时间」并进批次名称下面的次级行，「到期」并进状态下面的
+ * 次级行——服务端字段一个都没丢，只是换了承载方式（同 AdminTenantsPage 的
+ * RunTitleCell）。qa:media-admin-access-contract 钉住了「colgroup 以
+ * batchNameColumn 开头」「两个 numericCell 表头（配额/已用）」「一个
+ * actionCell 表头」这三件事，这里原样保留。 */
 function BatchTable({ items, selectedBatchId, onSelect }: { items: AdmissionBatch[]; selectedBatchId: string | null; onSelect: (value: string) => void }) {
   if (!items.length) return <EmptyState title="暂无准入码批次" detail="服务端还没有返回批次记录。" />
-  return <div className={styles.tableScroll} role="region" tabIndex={0} aria-label="准入码批次表"><table className={styles.batchTable}><colgroup><col className={styles.batchNameColumn} /><col className={styles.batchCreatedColumn} /><col className={styles.batchNumberColumn} /><col className={styles.batchNumberColumn} /><col className={styles.batchStatusColumn} /><col className={styles.batchDisabledColumn} /><col className={styles.actionColumn} /></colgroup><thead><tr><th scope="col">批次名称</th><th scope="col">创建时间</th><th className={styles.numericCell} scope="col">配额</th><th className={styles.numericCell} scope="col">已用</th><th scope="col">状态</th><th scope="col">到期</th><th className={styles.actionCell} scope="col"><span className={styles.srOnly}>操作</span></th></tr></thead><tbody>{items.map((batch) => {
+  return <div className={styles.tableScroll} role="region" tabIndex={0} aria-label="准入码批次表"><table className={styles.batchTable}><colgroup><col className={styles.batchNameColumn} /><col className={styles.batchNumberColumn} /><col className={styles.batchNumberColumn} /><col className={styles.batchStatusColumn} /><col className={styles.actionColumn} /></colgroup><thead><tr><th scope="col">批次名称</th><th className={styles.numericCell} scope="col">配额</th><th className={styles.numericCell} scope="col">已用</th><th scope="col">状态</th><th className={styles.actionCell} scope="col"><span className={styles.srOnly}>操作</span></th></tr></thead><tbody>{items.map((batch) => {
     const selected = batch.batchId === selectedBatchId
-    return <tr key={batch.batchId} className={selected ? styles.selectedRow : undefined} aria-selected={selected}><td><button className={styles.batchSelect} type="button" aria-pressed={selected} onClick={() => onSelect(batch.batchId)}><span className={[styles.checkbox, selected ? styles.checkboxSelected : ''].join(' ')} aria-hidden="true">{selected ? <Check size={13} /> : null}</span><span><strong title={batch.name}>{batch.name}</strong><small title={batch.batchId}>{batch.batchId}</small></span></button></td><td>{formatDate(batch.createdAt)}</td><td className={styles.numericCell}>{batch.codeCount}</td><td className={styles.numericCell}>{batch.usedCount}</td><td><StatusPill label={batchStatusLabel(batch.status)} tone={batch.status === 'active' ? 'success' : 'muted'} /></td><td>{formatDate(batch.expiresAt)}</td><td className={styles.actionCell}><button className={['mg-btn', 'mg-btn-ghost', styles.iconButton].join(' ')} data-component="mg-btn" type="button" title="选择批次操作" aria-label={'选择 ' + batch.name + ' 进行操作'} onClick={() => onSelect(batch.batchId)}><EllipsisVertical size={16} /></button></td></tr>
+    return <tr key={batch.batchId} className={selected ? styles.selectedRow : undefined} aria-selected={selected}><td><button className={styles.batchSelect} type="button" aria-pressed={selected} onClick={() => onSelect(batch.batchId)}><span className={[styles.checkbox, selected ? styles.checkboxSelected : ''].join(' ')} aria-hidden="true">{selected ? <Check size={13} /> : null}</span><span className={styles.batchIdentity}><strong title={batch.name}>{batch.name}</strong><span className="mg-meta" data-component="mg-meta"><span className={'mg-id ' + styles.batchIdValue} title={batch.batchId}>{batch.batchId}</span><span>{'· 创建于 ' + formatDate(batch.createdAt)}</span></span></span></button></td><td className={styles.numericCell}>{batch.codeCount}</td><td className={styles.numericCell}>{batch.usedCount}</td><td><span className={styles.batchStatusCell}><StatusPill label={batchStatusLabel(batch.status)} tone={batch.status === 'active' ? 'success' : 'muted'} /><small>{batchExpiryLabel(batch.expiresAt)}</small></span></td><td className={styles.actionCell}><button className={['mg-btn', 'mg-btn-ghost', styles.iconButton].join(' ')} data-component="mg-btn" type="button" title="选择批次操作" aria-label={'选择 ' + batch.name + ' 进行操作'} onClick={() => onSelect(batch.batchId)}><EllipsisVertical size={16} /></button></td></tr>
   })}</tbody></table></div>
 }
 
@@ -833,6 +854,10 @@ function batchStatusLabel(status: string): string {
   return '未知状态'
 }
 
+function batchExpiryLabel(expiresAt: string | null): string {
+  return expiresAt ? '到期 ' + formatDate(expiresAt) : '长期有效'
+}
+
 function policyLabel(mode: RegistrationPolicyMode): string {
   if (mode === 'open') return '开放注册'
   if (mode === 'closed') return '关闭注册'
@@ -841,6 +866,10 @@ function policyLabel(mode: RegistrationPolicyMode): string {
 
 function formatDate(value: string | null): string {
   return formatDateTimeMinutes(value, { empty: '未设置', invalid: '时间不可用' })
+}
+
+function formatQuota(value: number): string {
+  return new Intl.NumberFormat('zh-CN').format(value)
 }
 
 function parseIntegerInput(value: string): number | null {

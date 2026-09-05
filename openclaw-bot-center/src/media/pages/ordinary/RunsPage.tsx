@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -437,6 +437,20 @@ function DisabledFilter({ label }: { label: string }) {
   return <label className={styles.filterSelect}><span className="sr-only">{label}</span><select aria-label={label} defaultValue="" disabled><option value="">{label}：全部</option></select></label>;
 }
 
+/** 配合 .mg-meta 使用：圆点和它右边那一项包进同一个 inline-flex 子项（不是
+ * 拼接进同一段文本里的 "· " 前缀）——同 TracksPage 的 metaRow/metaCell 手法。
+ * 拼接文本的写法在列很窄、这一项自己都要折行时，圆点后面的常规空格会变成
+ * 一个可断点，圆点仍可能被单独甩在行首的残余那一行；用 CSS gap 代替字符
+ * 间距就没有这个断点。第一项传 dot={false}，其余项省略即为 true。 */
+function MetaItem({ dot = true, children }: { dot?: boolean; children: ReactNode }) {
+  return (
+    <span className={styles.metaCell}>
+      {dot ? <span className={styles.metaSeparator} aria-hidden="true">·</span> : null}
+      {children}
+    </span>
+  );
+}
+
 function RunsTable({
   response,
   page,
@@ -465,10 +479,10 @@ function RunsTable({
         <span>每页最多 {PAGE_SIZE} 条</span>
       </header>
       <div className={styles.tableScroll} role="region" aria-label="创作运行表格" tabIndex={0}>
-        <table className={styles.table}>
+        <table className={`${styles.table} ${styles.runsTable}`}>
           <thead><tr>
-            <th scope="col">运行</th><th scope="col">平台</th><th scope="col">内容类型</th><th scope="col">赛道</th><th scope="col">入口</th><th scope="col">状态</th>
-            <th scope="col">可用分区</th><th scope="col">项目</th><th scope="col">修订</th><th scope="col">更新时间</th>
+            <th scope="col">运行</th><th scope="col">平台</th><th scope="col">内容类型</th><th scope="col">赛道</th><th scope="col">状态</th>
+            <th scope="col">项目</th><th scope="col">记录</th>
           </tr></thead>
           <tbody>
             {response.items.map((run) => (
@@ -485,6 +499,14 @@ function RunsTable({
   );
 }
 
+/** 「入口」「可用分区」原本各占一列，信息量都不高（一个是短标签，一个是最多三项的
+ * 枚举列表），并入标题下方排成一行（.mg-meta）——同 AdminTenantsPage 的
+ * RunTitleCell、ReviewsPage 的 postMeta 用法一致。「修订」「更新时间」同理合进
+ * 「记录」一列。四列并两列后，10 列表在 1180px 主栏（508px）里需要的 1036px
+ * 收进不横滚的预算——数据一项都没丢，只是换了承载方式。
+ *
+ * 圆点必须和它右边那一项包进同一个 flex 子项里再一起折行（CLAUDE.md「圆点属于
+ * 它右边那一项」），下面两处 .mg-meta 都遵守：分隔符和后面的文本在同一个 <span>。 */
 function RunRow({ run, selected, onSelect }: { run: RunSummary; selected: boolean; onSelect: (runId: string) => void }) {
   const select = () => onSelect(run.publicRunId);
   return (
@@ -492,16 +514,22 @@ function RunRow({ run, selected, onSelect }: { run: RunSummary; selected: boolea
       onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); } }}>
       <th scope="row"><button className={styles.runButton} type="button" onClick={(event) => { event.stopPropagation(); select(); }} aria-label={`查看运行 ${run.publicRunId}`}>
         <span className={styles.runId}><CircleDot size={10} aria-hidden="true" /><span className="mg-id" title={run.publicRunId}>{run.publicRunId}</span></span><strong>{run.title}</strong>
+        <span className={`mg-meta ${styles.runMeta}`} data-component="mg-meta">
+          <MetaItem dot={false}>{run.entrypoint ? "已登记入口" : "未提供"}</MetaItem>
+          <MetaItem>{displaySections(run.availableSections)}</MetaItem>
+        </span>
       </button></th>
       <td className={`${styles.longCell} ${styles.platformCell}`}><PlatformValue platform={run.platform} /></td>
       <td className={styles.longCell}>{displayMetadata(run.contentType)}</td>
       <td className={styles.longCell}>{displayMetadata(run.trackName)}</td>
-      <td className={styles.longCell}>{run.entrypoint ? "已登记入口" : "未提供"}</td>
       <td><StatusPill status={run.status} /></td>
-      <td className={styles.longCell}>{displaySections(run.availableSections)}</td>
       <td className={styles.longCell}>{run.publicProjectId ? <span className="mg-id" title={run.publicProjectId}>{run.publicProjectId}</span> : "未关联项目"}</td>
-      <td>{run.revision}</td>
-      <td className={styles.dateCell}>{formatDate(run.updatedAt)}</td>
+      <td className={styles.longCell}>
+        <span className={`mg-meta ${styles.recordMeta}`} data-component="mg-meta">
+          <MetaItem dot={false}>修订 <b>{run.revision}</b></MetaItem>
+          <MetaItem>{"更新于 " + formatDate(run.updatedAt)}</MetaItem>
+        </span>
+      </td>
     </tr>
   );
 }
@@ -526,18 +554,25 @@ function BusinessOpportunityTable({
         <span>仅显示当前账号已授权的对象</span>
       </header>
       <div className={styles.tableScroll} role="region" aria-label="商务机会表格" tabIndex={0}>
-        <table className={styles.table}>
+        {/* 「平台」「内容类型」原本各占一列，并入一格用 .mg-meta 排成一行、放不下再
+            折行，列头换成能概括两者的「平台/类型」——7 列表在 1180px 主栏（508px）
+            里需要的 900px 收进不横滚的预算，数据一项都没丢。 */}
+        <table className={`${styles.table} ${styles.opportunitiesTable}`}>
           <thead><tr>
-            <th scope="col">品牌</th><th scope="col">产品</th><th scope="col">平台</th>
-            <th scope="col">内容类型</th><th scope="col">有效期</th><th scope="col">授权范围</th><th scope="col">状态</th>
+            <th scope="col">品牌</th><th scope="col">产品</th><th scope="col">平台/类型</th>
+            <th scope="col">有效期</th><th scope="col">授权范围</th><th scope="col">状态</th>
           </tr></thead>
           <tbody>
             {response.items.map((opportunity) => (
               <tr key={opportunity.publicOpportunityId}>
                 <th scope="row" className={styles.longCell}><span className={styles.runId}>{opportunity.brand}</span><strong className={`${styles.inlineId} mg-id`} title={opportunity.publicOpportunityId}>{opportunity.publicOpportunityId}</strong></th>
                 <td className={styles.longCell}>{opportunity.product}</td>
-                <td className={styles.platformCell}><PlatformValue platform={opportunity.platform} /></td>
-                <td>{mediaTypeDisplayLabel(opportunity.contentType)}</td>
+                <td className={`${styles.longCell} ${styles.platformCell}`}>
+                  <span className="mg-meta" data-component="mg-meta">
+                    <MetaItem dot={false}><PlatformValue platform={opportunity.platform} /></MetaItem>
+                    <MetaItem>{mediaTypeDisplayLabel(opportunity.contentType)}</MetaItem>
+                  </span>
+                </td>
                 <td className={styles.longCell}>{formatValidity(opportunity.validFrom, opportunity.validUntil)}</td>
                 <td className={styles.longCell}>{authorizationScopeDisplayLabel(opportunity.authorizationScope)}</td>
                 <td><StatusPill status={opportunity.status} /></td>
@@ -572,9 +607,11 @@ function CommercialDeliveryTable({
         <span>已登记商单交付能力</span>
       </header>
       <div className={styles.tableScroll} role="region" aria-label="商单交付表格" tabIndex={0}>
-        <table className={styles.table}>
+        {/* 「状态」「进度」原本各占一列，进度是状态的补充说明，并入一格用 .mg-meta
+            排成一行——列头仍叫「状态」，数据一项都没丢。 */}
+        <table className={`${styles.table} ${styles.deliveriesTable}`}>
           <thead><tr>
-            <th scope="col">交付任务</th><th scope="col">状态</th><th scope="col">进度</th>
+            <th scope="col">交付任务</th><th scope="col">状态</th>
             <th scope="col">交付结果</th><th scope="col">更新时间</th>
           </tr></thead>
           <tbody>
@@ -587,8 +624,12 @@ function CommercialDeliveryTable({
                   <th scope="row"><button className={styles.runButton} type="button" onClick={(event) => { event.stopPropagation(); select(); }} aria-label={`查看商单交付 ${task.taskId}`}>
                     <span className={styles.runId}><BriefcaseBusiness size={11} aria-hidden="true" /><span className="mg-id" title={task.taskId}>{task.taskId}</span></span><strong>{task.summary || "未命名商单交付"}</strong>
                   </button></th>
-                  <td><StatusPill status={task.status} /></td>
-                  <td>{task.progress}%</td>
+                  <td className={styles.longCell}>
+                    <span className="mg-meta" data-component="mg-meta">
+                      <MetaItem dot={false}><StatusPill status={task.status} /></MetaItem>
+                      <MetaItem>{task.progress + "%"}</MetaItem>
+                    </span>
+                  </td>
                   <td className={styles.longCell}><DeliveryLinks task={task} compact /></td>
                   <td className={styles.dateCell}>{formatDate(task.updatedAt)}</td>
                 </tr>

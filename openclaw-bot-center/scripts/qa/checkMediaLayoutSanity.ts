@@ -194,6 +194,55 @@ const COLLECT_DEFECTS = `(() => {
     }
   }
 
+  // 第五类之三：桌面宽度下把大半张表**藏进横滚**。
+  //
+  // 横滚是「装不下」的兜底，不是设计。1180px 下 /studio 的运行记录表需要 1036px、
+  // 只拿到 508px，一半的列在屏幕外；/usage-billing 的「模型用量」藏了 57%。用户的
+  // 原话是「很多信息根本就显示不下且被浪费」。窄屏（<1180）另说——那里堆成一列、
+  // 横滚是合理兜底；这条只在桌面两档上量。
+  if (window.innerWidth >= 1180) {
+    for (const element of root.querySelectorAll('*')) {
+      const style = getComputedStyle(element)
+      if (style.overflowX !== 'auto' && style.overflowX !== 'scroll') continue
+      const client = element.clientWidth
+      if (client < 320) continue
+      const hidden = element.scrollWidth - client
+      if (hidden < 120) continue
+      if (hidden / element.scrollWidth < 0.25) continue
+      const cls = typeof element.className === 'string' && element.className.trim()
+        ? '.' + element.className.trim().split(/\\s+/)[0] : ''
+      defects.push('大半张表藏在横滚里：<' + element.tagName.toLowerCase() + cls + '> 需要 ' +
+        element.scrollWidth + 'px，只拿到 ' + client + 'px，' + hidden + 'px（' +
+        Math.round(hidden / element.scrollWidth * 100) + '%）要横向拖才读得到——桌面宽度下这不是兜底而是压缩，' +
+        '把同类的短事实合进一格（.mg-meta / .mg-facts），别让列数写死在这里')
+    }
+  }
+
+  // 第五类之四：图标被挤成一条线。
+  //
+  // .mg-btn 的 padding: 0 16px 和页面自己的 .iconButton { padding: 0 } 特异性同为
+  // (0,1,0)，原语在打包后的样式表里更靠后，同分靠源序决胜负——36px 宽的图标按钮里，
+  // 17px 的 SVG 被两侧各 16px 的内边距挤成 **2px**，看着像「一个带边框的空方框里有个点」。
+  // 这个陷阱已经在三个页面上各犯过一次（/admin/tenants、/admin/access、/reviews），
+  // 所以从结果上钉死：控件本身够大、里面的图标却细成一条线，就算破相。
+  // 出路是把选择器加一个元素名升到 (0,1,1)（button.iconButton），不是 !important。
+  for (const icon of root.querySelectorAll('svg')) {
+    const iconRect = icon.getBoundingClientRect()
+    if (iconRect.width <= 0 || iconRect.height <= 0) continue
+    if (iconRect.width >= 8 && iconRect.height >= 8) continue
+    const control = icon.closest('button, a, [role="button"]')
+    if (!control) continue
+    const controlRect = control.getBoundingClientRect()
+    if (controlRect.width < 24 || controlRect.height < 24) continue
+    const cls = typeof control.className === 'string' && control.className.trim()
+      ? '.' + control.className.trim().split(/\\s+/).slice(-1)[0] : ''
+    defects.push('图标被挤成一条线：<' + control.tagName.toLowerCase() + cls + '> 本身有 ' +
+      Math.round(controlRect.width) + '×' + Math.round(controlRect.height) + 'px，里面的图标却只剩 ' +
+      Math.round(iconRect.width) + '×' + Math.round(iconRect.height) + 'px——看着像一个带边框的空方框。' +
+      '多半是页面的 padding 被 .mg-btn 的 padding: 0 16px 按源序盖掉了（同为 (0,1,0)，原语在后）：' +
+      '把选择器加一个元素名升到 (0,1,1)，别用 !important')
+  }
+
   // 第五类之二：**只被切掉一截**的内容。上面那条要求盒子整个落在裁切区外，
   // 「最后一行文字被切掉半个字高」这种永远漏——而它恰恰更常见：一列的内容比
   // 视口预算高出二十几像素，多出来的那点被祖先的 overflow: hidden 抹掉，本层
@@ -297,7 +346,7 @@ const COLLECT_DEFECTS = `(() => {
     return ink
   }
   const firstClass = (element) =>
-    typeof element.className === 'string' && element.className.trim() ? element.className.trim().split(/\s+/)[0] : ''
+    typeof element.className === 'string' && element.className.trim() ? element.className.trim().split(/\\s+/)[0] : ''
   for (const card of root.querySelectorAll('*')) {
     const own = firstClass(card)
     if (!own || !card.parentElement) continue
@@ -994,7 +1043,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无内容被切掉一截、无多列挤压、无低信息密度、无面板底部空转、无列表区只剩一条缝、无徽标被拉变形、无装饰性标签栏，长列表压力下无内容被吞、长标识符压力下无重叠无裁切`)
+  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无内容被切掉一截、无大半张表藏在横滚里、无多列挤压、无低信息密度、无面板底部空转、无列表区只剩一条缝、无徽标被拉变形、无图标被挤成一条线、无装饰性标签栏，长列表压力下无内容被吞、长标识符压力下无重叠无裁切`)
 }
 
 await run()

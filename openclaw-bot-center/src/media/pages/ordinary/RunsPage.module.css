@@ -365,7 +365,6 @@
 
 .table {
   width: 100%;
-  min-width: 900px;
   border-collapse: collapse;
   table-layout: fixed;
   text-align: left;
@@ -373,44 +372,99 @@
 
 .table th,
 .table td {
-  padding: 10px 12px;
+  padding: 10px 9px;
   border-bottom: 1px solid var(--mg-border);
   vertical-align: top;
   font-size: var(--mg-text-xs);
   line-height: 1.45;
 }
 
+/* 曾经 white-space: nowrap：430px 这种极窄档位下，合并后每列变窄，
+   「内容类型」「赛道」这两个紧邻的表头各自溢出自己的 <th> 却又紧挨着，
+   连成一串不留空隙的「内容类型赛道」，读不出是两个词。允许表头折行——
+   `<th>` 不是标题标签，也几乎全是中文，不会被 qa:media-layout-sanity 的
+   「短标题被折行」「单词被截断」误判（题头折两行本来就是正常排版）。 */
 .table thead th {
   color: var(--mg-muted);
   background: oklch(0.985 0.003 175);
   font-size: var(--mg-text-2xs);
   font-weight: 600;
-  white-space: nowrap;
 }
 
-.table thead th:nth-child(1) {
-  width: 22%;
+/* 三张表共用 .table 的排版令牌，但列数和每列的内容形状完全不同（10/7/5 列
+   合并成 7/6/4 列后），继续共用一套 :nth-child 百分比、共用一个 900px 地板
+   就是「1180px 主栏只有 508px，却给了一张需要 1036px 的表」的直接原因——
+   min-width 是三张表各自的下限，不是同一个数字抄三遍。三个数字都定在
+   1180px 两栏布局的主栏预算（508px）以内，留出安全余量；1440px 时主栏更宽
+   （718px），表格随 width: 100% 一起变宽，不受这个地板影响。 */
+.runsTable {
+  min-width: 404px;
 }
-.table thead th:nth-child(2) {
-  width: 14%;
+
+.runsTable thead th:nth-child(1) {
+  width: 18%;
 }
-.table thead th:nth-child(3) {
+.runsTable thead th:nth-child(2) {
+  width: 12%;
+}
+.runsTable thead th:nth-child(3) {
   width: 11%;
 }
-.table thead th:nth-child(4) {
+.runsTable thead th:nth-child(4) {
+  width: 11%;
+}
+.runsTable thead th:nth-child(5) {
+  width: 20%;
+}
+.runsTable thead th:nth-child(6) {
   width: 12%;
 }
-.table thead th:nth-child(5) {
-  width: 10%;
+.runsTable thead th:nth-child(7) {
+  width: 16%;
 }
-.table thead th:nth-child(6) {
-  width: 12%;
+
+.opportunitiesTable {
+  min-width: 404px;
 }
-.table thead th:nth-child(7) {
-  width: 10%;
+
+.opportunitiesTable thead th:nth-child(1) {
+  width: 18%;
 }
-.table thead th:nth-child(8) {
-  width: 13%;
+.opportunitiesTable thead th:nth-child(2) {
+  width: 14%;
+}
+.opportunitiesTable thead th:nth-child(3) {
+  width: 19%;
+}
+.opportunitiesTable thead th:nth-child(4) {
+  width: 17%;
+}
+.opportunitiesTable thead th:nth-child(5) {
+  width: 14%;
+}
+/* 状态徽标不折行（.statusPill 的 white-space: nowrap），最长的回退文案
+   「状态待确认」5 个字在 --mg-text-2xs 下需要约 66px——给到只有 10% 时会在
+   440px 的地板上只剩 44px，徽标溢出这一列右边界，直接撑大 .tableScroll 的
+   scrollWidth（1180px 主栏实测量出 24px）。18% 留出这份余量。 */
+.opportunitiesTable thead th:nth-child(6) {
+  width: 18%;
+}
+
+.deliveriesTable {
+  min-width: 400px;
+}
+
+.deliveriesTable thead th:nth-child(1) {
+  width: 34%;
+}
+.deliveriesTable thead th:nth-child(2) {
+  width: 20%;
+}
+.deliveriesTable thead th:nth-child(3) {
+  width: 28%;
+}
+.deliveriesTable thead th:nth-child(4) {
+  width: 18%;
 }
 
 .table tbody tr {
@@ -460,6 +514,44 @@
   font-size: var(--mg-text-xs);
 }
 
+/* 入口 + 可用分区并入标题下方的次要信息行，是 .mg-meta 默认给次要说明用的
+   字号（次于标题），保持和 AdminTenantsPage 的 RunTitleCell 同一档次。 */
+.runMeta {
+  margin-top: 4px;
+}
+
+/* 修订 + 更新时间合并进的这一格是「记录」列的全部数据，不是标题下面那种
+   次要说明——同 AdminTenantsPage 的 span.usageMeta，用元素 + 类把特异性提到
+   (0,1,1) 去覆盖 .mg-meta 默认的 --mg-text-2xs，而不是 !important（原语在
+   打包后的样式表里源序更靠后，同分特异性会赢，见仓库 CLAUDE.md）。 */
+/* 曾经把这里覆盖成 overflow-wrap: normal，指望「更新于 2026/9/1 23:00:00」
+   优先在 / 或空格处换行、不要砍在数字中间——但 430px 这种极窄档位下，就算
+   在空格处换行，「23:00:00」单独一行仍然比这一列窄，normal 不允许再退
+   一步，字形直接溢出、被祖先裁掉且没有任何一层能滚出来（qa:media-layout-
+   sanity 的「内容被切掉一截」抓到过）。anywhere 允许的「先尽量在正经断点
+   换行，正经断点都用完了还装不下才砍进数字内部」兜底更安全：装得下就在
+   空格/斜杠换行，装不下也不会把内容藏起来，只是偶尔在个位数秒数上多断
+   一刀——两害相权，看得见比好看优先。所以这里不再覆盖 .table 的
+   overflow-wrap: anywhere。 */
+span.recordMeta {
+  font-size: var(--mg-text-xs);
+}
+
+/* 「圆点 + 事实」一个整体参与折行，同 TracksPage 的 metaRow/metaCell 手法
+   （见 MetaItem）。column-gap 继承父级 .mg-meta 的间距，圆点和右边的文本
+   之间没有真正的空格字符，列很窄、这一项自己需要再折行时也不会把圆点
+   单独留在上一段行尾。 */
+.metaCell {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  column-gap: inherit;
+}
+
+.metaSeparator {
+  flex: 0 0 auto;
+}
+
 /* 标识符行：图标 + 单行省略的 .mg-id 文本。父容器不再声明 overflow-wrap/white-space——
    标识符本身的省略靠嵌套的 .mg-id 直接声明覆盖继承值，不依赖这里的样式。 */
 .runId {
@@ -501,8 +593,11 @@
   color: var(--mg-muted);
 }
 
+/* 曾经 white-space: nowrap，把「2026/8/30 09:41:12」钉成一整行、逼着列宽给到
+   ~140px。日期和时间之间天然有一个空格，交给它在那里折行（两行都是数字，
+   不会拆散任何一个词）比继续要求整行不断更省列宽——合并后的「商单交付」表
+   只剩 4 列，这一列的预算比原来紧得多。 */
 .dateCell {
-  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1191,8 +1286,39 @@
 }
 
 @media (max-width: 1180px) {
+  /* 1121–1180px 仍是两栏并排（下面只把检视栏从 0.48fr 收成固定 340px，
+     不堆叠），但合并列之后运行记录表每行多了一条 .mg-meta 次要信息
+     （入口 + 可用分区），行高从原来的 74px 涨到 155px——`.page` 仍钉在
+     视口高度的 calc 上算出来的可视高度只剩 175px，连两行都装不下
+     （qa:media-layout-sanity「列表区只剩一条缝」）。释放三个令牌让
+     `.page` 改回随内容增长，`.tableScroll` 仍在自己内部滚动到
+     `.tableRegion` 的 560px 上限。
+     不设 --mg-rail-align：这里仍是两栏并排（不同于下面 ≤1120px 才会发生的
+     堆叠），设了会把检视栏从 start 翻成 stretch——`.workspace` 自己的
+     align-items: stretch 会顶上来，拉出一块空盒子（「面板底部空转」，
+     /reviews 那边实测栽过一次）。只有真正堆成一列的 ≤1120px 断点才四个
+     令牌一起设。 */
+  .page {
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+    height: auto;
+    overflow: visible;
+  }
+
   .workspace {
+    height: auto;
     grid-template-columns: minmax(0, 1fr) 340px;
+    overflow: visible;
+  }
+
+  .mainColumn {
+    height: auto;
+    overflow: visible;
+  }
+
+  .tableRegion {
+    max-height: 560px;
   }
 
   .filterBar {
@@ -1294,9 +1420,9 @@
     gap: 4px;
   }
 
-  .table {
-    min-width: 900px;
-  }
+  /* 三张表各自的 min-width（.runsTable/.opportunitiesTable/.deliveriesTable，
+     见上）已经按合并后的列数收紧到 400–460px；这里原先又统一钉回 900px，
+     把移动端重新逼回横滚——那正是这一轮要修的问题，不是要保留的行为。 */
 
   .inspectorHeader {
     min-height: 82px;

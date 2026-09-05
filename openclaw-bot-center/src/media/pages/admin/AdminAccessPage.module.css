@@ -361,6 +361,11 @@
   contain: inline-size paint;
   overflow: auto;
   overscroll-behavior: contain;
+  /* 两张表现在都在 1180/1440px 的主栏floor 之内（见下面各自的 min-width
+     注释），这条横滚只在更窄的堆叠断点里还可能触发——scrollbar-width: thin
+     让那次滚动看得见，而不是默认的隐形覆层滚动条（同 AdminBillingPage /
+     AdminTenantsPage 的 .tableViewport）。 */
+  scrollbar-width: thin;
 }
 
 .userTable,
@@ -372,12 +377,22 @@
   font-size: var(--mg-text-xs);
 }
 
+/* 曾经 7 列、980px：「邀请权限」和「开关」画的是同一个布尔值，「配额」
+   「已用」各占一列都只是两三位数字。合并成 5 列（UserTable/QuotaMeta）之后
+   380px 就装得下这张表真实需要的内容——1180px 主栏实测 408px、1440px 实测
+   668px，两档都不用再横滚。 */
 .userTable {
-  min-width: 720px;
+  min-width: 380px;
 }
 
+/* 同样从 7 列（含「创建时间」「到期」各占一列）合并到 5 列：创建时间并进
+   批次名称下面的次级行，到期并进状态下面的次级行（BatchTable 里的
+   batchIdentity / batchStatusCell）。qa:media-admin-access-contract 钉住了
+   两个 numericCell 表头和 batchNameColumn 打头的 colgroup，这条 min-width
+   收紧不影响那三条断言。400px 在准入码标签页的主栏实测 428px（1180）/
+   688px（1440）都放得下。 */
 .batchTable {
-  min-width: 900px;
+  min-width: 400px;
 }
 
 .userTable th,
@@ -412,45 +427,36 @@
 }
 
 .userColumn {
-  width: 28%;
+  width: 25%;
 }
 .permissionColumn {
-  width: 13%;
+  width: 21%;
 }
-.switchColumn {
-  width: 12%;
-}
-.numberColumn {
-  width: 8%;
+.quotaColumn {
+  width: 21%;
 }
 .expiryColumn {
   width: 13%;
 }
 .statusColumn {
-  width: 13%;
+  width: 19%;
 }
 .actionColumn {
-  width: 5%;
+  width: 14%;
 }
 
 .batchNameColumn {
-  width: 28%;
+  width: 34%;
 }
 
-.batchCreatedColumn {
-  width: 16%;
-}
-
+/* 配额/已用各一份——1180/1440px 两档的最坏情况（4 位数「1,000」）实测都够，
+   400px floor 上 15% ≈ 60px。 */
 .batchNumberColumn {
-  width: 7%;
+  width: 15%;
 }
 
 .batchStatusColumn {
-  width: 11%;
-}
-
-.batchDisabledColumn {
-  width: 19%;
+  width: 22%;
 }
 
 .userSelect,
@@ -533,24 +539,52 @@
   text-align: center;
 }
 
-.switchOn,
-.switchOff {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
+/* 配额 + 已用合并进一格用的 .mg-meta——.mg-meta 默认给次要说明用的
+   --mg-text-2xs 比表格其余数据列的 --mg-text-xs 还小一档，用在这里的主数据
+   列上会把「压缩字号凑下限」的坏味道搬进来。span.quotaMeta（元素 + 类，
+   (0,1,1)）把特异性提到能盖过打包后源序更靠后的 .mg-meta，而不是
+   !important（同 AdminTenantsPage 的 span.usageMeta）。 */
+span.quotaMeta {
+  font-size: var(--mg-text-xs);
 }
 
-.switchOn > span,
-.switchOff > span {
-  width: 18px;
-  height: 10px;
-  border-radius: var(--mg-r-sm);
-  background: var(--mg-border-strong);
+/* 每一项（「配额 20」「· 已用 14」）里的中文标签禁止逐字折行——不禁的话，
+   表格祖先继承来的 overflow-wrap: anywhere 会在「配额」列变窄时把"已用"从
+   中文字之间拦腰断开（CJK 默认允许在任意两个字之间折行，不需要
+   overflow-wrap 配合），断行处甚至会把数字挤到断开的两个字中间，读起来
+   面目全非。用 word-break: keep-all 而不是 white-space: nowrap——后者连
+   「整项放不下就换到下一行」（.mg-meta 的 flex-wrap 该管的事）都会一并
+   禁掉，逼着内容溢出被裁反而更糟（这两项本身很短，keep-all 已经够用，
+   不需要连累别处更长的合并事实，比如 FulfillmentTable 的
+   「· 创建于 2026/8/28 02:00:00」——那类文本仍需要能在空格处正常折行）。 */
+span.quotaMeta > * {
+  word-break: keep-all;
 }
 
-.switchOn > span {
-  background: var(--mg-primary-dark);
+/* 批次名称 + 批次编号 + 创建时间的合并格：名称在上，编号（.mg-id 单行省略）
+   和创建时间排成一行放在下面（同 AdminTenantsPage 的 RunTitleCell）。 */
+.batchIdentity {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.batchIdValue {
+  max-width: 160px;
+}
+
+/* 状态 + 到期的合并格：状态徽标在上，到期文字放在下面一行。 */
+.batchStatusCell {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  justify-items: start;
+}
+
+.batchStatusCell > small {
+  color: var(--mg-muted);
+  font-size: var(--mg-text-2xs);
+  overflow-wrap: anywhere;
 }
 
 .statusPill {

@@ -152,6 +152,18 @@
   background: var(--mg-surface);
   box-shadow: var(--mg-e1);
 }
+/* 第一列的 44px 是**给图标留的**。Metric 的 panel 变体在不传图标时，第一个子项
+   就是标签本身，于是「候选选题」被塞进 44px 的轨道折成两行（「候选 / 选题」），
+   而右边 178px 的轨道里只放着一个数字 5——实测 /decisions 四张卡全中，「待人工确认」
+   折成三行。没有图标时把这一列改成按内容定宽即可。
+
+   用 :has() 而不是无条件改成 auto：无条件改会让**有**图标的那些卡的轨道从 44px
+   变成图标的实际盒宽（在 /invites 上量出来是 52px），值那一列少 8px，22px 的日期
+   「2026/12/1」当场折成两行——一处修好、另一处坏掉。判据取「第一个子项里有没有
+   <svg>」：标签 span 里永远不会有。 */
+.mg-metric:not(:has(> :first-child svg)) {
+  grid-template-columns: auto minmax(0, 1fr);
+}
 .mg-metric[data-accent] {
   border-color: var(--accent-line);
   background: var(--accent-soft);
