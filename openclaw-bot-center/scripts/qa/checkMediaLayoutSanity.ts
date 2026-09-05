@@ -487,8 +487,22 @@ async function settle(page: Page): Promise<void> {
  *
  *  切换开销压得很低：标签页切换是纯客户端的，等一小会儿即可，不必再走一遍
  *  settle() 的 DOM 收敛循环。 */
-async function sweep(page: Page): Promise<Array<[string, string[]]>> {
-  const results: Array<[string, string[]]> = [['', (await page.evaluate(COLLECT_DEFECTS)) as string[]]]
+async function sweep(page: Page, stressIdentifiers = false): Promise<Array<[string, string[]]>> {
+  /** 每一屏都压一遍长标识符：真实后端的编号是几百字符、无断点的 base64，而演示数据
+   *  是 post_xhs_autumn_camera 这种短又可断的串——最惨的那种「整行糊在一起」只在
+   *  标签页深处（比如计费的「兑换记录」）才出现，只压首屏会全漏。压完就地还原，
+   *  巡检接着走。 */
+  const collect = async (): Promise<string[]> => {
+    const defects = [...((await page.evaluate(COLLECT_DEFECTS)) as string[])]
+    if (stressIdentifiers && ((await page.evaluate(STRESS_LONG_IDENTIFIER)) as number) > 0) {
+      await page.waitForTimeout(120)
+      for (const defect of (await page.evaluate(COLLECT_STRESS_DEFECTS)) as string[]) defects.push(defect)
+      await page.evaluate(RESTORE_IDENTIFIERS)
+      await page.waitForTimeout(60)
+    }
+    return defects
+  }
+  const results: Array<[string, string[]]> = [['', await collect()]]
 
   // 先把标签名抄下来再逐个点：切换标签会换掉整组标签（次级筛选标签只在某一个
   // 主标签下存在），按下标去点第二轮就会指向一个已经不存在的元素。
@@ -508,7 +522,7 @@ async function sweep(page: Page): Promise<Array<[string, string[]]>> {
     if (!switched) continue
     // 固定 sleep 会量到半成品：切换后往往还要向浏览器内假后端要一次数据。
     await settle(page)
-    results.push([label.slice(0, 12), (await page.evaluate(COLLECT_DEFECTS)) as string[]])
+    results.push([label.slice(0, 12), await collect()])
   }
 
   // 主栏 + 检视栏的页面：不选中任何一条时检视栏只有空状态，真正的排版在选中之后。
@@ -535,7 +549,7 @@ async function sweep(page: Page): Promise<Array<[string, string[]]>> {
         .catch(() => false)
       if (opened) {
         await settle(page)
-        results.push(['选中首条', (await page.evaluate(COLLECT_DEFECTS)) as string[]])
+        results.push(['选中首条', await collect()])
       }
     }
   }
@@ -572,6 +586,63 @@ const STRESS_LONG_LIST = `(() => {
   const kids = [...best.element.children]
   for (let round = 0; round < 7; round += 1) for (const kid of kids) best.element.appendChild(kid.cloneNode(true))
   return best.element.children.length
+})()`
+
+/** 长标识符压力：把页面里所有标识符类文本换成**真实后端那种形状**，再查一遍重叠
+ *  和截断。
+ *
+ *  演示数据里的公开编号是 `post_xhs_autumn_camera` 这种——22 个字符、带下划线、
+ *  到处可断。真实后端发出来的是 `eyJpZCI6ImQ1NDg2NmVjLWNiZWQtNDM3Zi05MDU1…`
+ *  这种几百字符、**没有任何断点**的 base64。两者在版式上完全是两种东西：前者温顺
+ *  地折行，后者要么把整列撑爆、要么和邻列糊成一团。渲染门禁看到的永远是前者，所以
+ *  「兑换记录」那种整行叠在一起的重叠，它一次都没抓到过——不是判定写错了，是喂给
+ *  它的数据形状不对。
+ *
+ *  这一遍把每个 .mg-id / 看着像标识符的文本节点替换成 220 字符的无断点 base64，
+ *  再跑一遍重叠与永久裁切的判定。列宽写死、没有 min-width: 0、没给省略号的地方
+ *  会立刻现形。 */
+const STRESS_LONG_IDENTIFIER = `(() => {
+  const root = document.querySelector('.media-content') || document.body
+  // 真实后端那种形状：base64 字母表、无空格无连字符，浏览器无处可断。
+  const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let seed = 7
+  const opaque = (length) => {
+    let out = 'eyJpZCI6'
+    for (let index = 0; index < length; index += 1) {
+      seed = (seed * 1103515245 + 12345) % 2147483648
+      out += ALPHABET[seed % ALPHABET.length]
+    }
+    return out
+  }
+  // 判定「这段文字是不是一个标识符」：显式打了 .mg-id 的；或者一整段没有空格、
+  // 没有中日韩字符、长度过 12 且带下划线/连字符/纯十六进制的。用户可见的中文文案
+  // 不会命中。
+  const looksLikeIdentifier = (text) => {
+    if (/[⺀-鿿]/.test(text)) return false
+    if (/\s/.test(text)) return false
+    if (text.length < 12) return false
+    return /^[A-Za-z0-9_.:-]+$/.test(text)
+  }
+  let replaced = 0
+  window.__mgIdStress = []
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const targets = []
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const text = (node.textContent || '').trim()
+    if (!text) continue
+    const owner = node.parentElement
+    if (!owner) continue
+    const tagged = owner.closest('.mg-id, code, [class*="publicId"], [class*="Id"]') !== null
+    if (!tagged && !looksLikeIdentifier(text)) continue
+    if (!tagged && !looksLikeIdentifier(text)) continue
+    targets.push(node)
+  }
+  for (const node of targets) {
+    window.__mgIdStress.push({ node: node, original: node.textContent })
+    node.textContent = opaque(212)
+    replaced += 1
+  }
+  return replaced
 })()`
 
 const COLLECT_CLIPPED = `(() => {
@@ -616,6 +687,121 @@ const COLLECT_CLIPPED = `(() => {
   return defects
 })()`
 
+/** 长标识符压力之后要查的两件事：**重叠**和**永久裁切**。判据和首屏那两类一样，
+ *  只是此刻页面里跑的是真实后端形状的编号。 */
+/** 压完就地还原，让标签页巡检可以接着走，不必为每一屏重载一次页面。 */
+const RESTORE_IDENTIFIERS = `(() => {
+  const saved = window.__mgIdStress || []
+  for (const entry of saved) entry.node.textContent = entry.original
+  window.__mgIdStress = []
+  return saved.length
+})()`
+
+const COLLECT_STRESS_DEFECTS = `(() => {
+  const defects = []
+  const root = document.querySelector('.media-content') || document.body
+  const leaves = []
+  for (const element of root.querySelectorAll('*')) {
+    let own = false
+    for (const node of element.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE && (node.textContent || '').trim().length > 0) { own = true; break }
+    }
+    if (!own) continue
+    const text = (element.textContent || '').trim()
+    if (!text) continue
+    const rect = element.getBoundingClientRect()
+    if (rect.width <= 1 || rect.height <= 1) continue
+    const style = getComputedStyle(element)
+    if (style.visibility === 'hidden' || style.opacity === '0') continue
+    let clipped = { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }
+    for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+      const parentStyle = getComputedStyle(parent)
+      const parentRect = parent.getBoundingClientRect()
+      if (parentStyle.overflowX !== 'visible') { clipped.left = Math.max(clipped.left, parentRect.left); clipped.right = Math.min(clipped.right, parentRect.right) }
+      if (parentStyle.overflowY !== 'visible') { clipped.top = Math.max(clipped.top, parentRect.top); clipped.bottom = Math.min(clipped.bottom, parentRect.bottom) }
+    }
+    const visible = clipped.right - clipped.left > 1 && clipped.bottom - clipped.top > 1
+    leaves.push({ element: element, rect: rect, text: text, clipped: clipped, visible: visible })
+  }
+  const describeLeaf = (leaf) => {
+    const cls = typeof leaf.element.className === 'string' && leaf.element.className.trim()
+      ? '.' + leaf.element.className.trim().split(/\\s+/)[0] : ''
+    return '<' + leaf.element.tagName.toLowerCase() + cls + '>'
+  }
+  const seen = new Set()
+  for (let i = 0; i < leaves.length; i += 1) {
+    for (let j = i + 1; j < leaves.length; j += 1) {
+      const a = leaves[i], b = leaves[j]
+      if (!a.visible || !b.visible) continue
+      if (a.element.contains(b.element) || b.element.contains(a.element)) continue
+      const overlapX = Math.min(a.clipped.right, b.clipped.right) - Math.max(a.clipped.left, b.clipped.left)
+      const overlapY = Math.min(a.clipped.bottom, b.clipped.bottom) - Math.max(a.clipped.top, b.clipped.top)
+      if (overlapX > 4 && overlapY > 4) {
+        const key = 'overlap:' + describeLeaf(a) + describeLeaf(b)
+        if (seen.has(key)) continue
+        seen.add(key)
+        defects.push('长标识符压力：把编号换成真实后端那种无断点长串之后，' + describeLeaf(a) + ' 与 ' + describeLeaf(b) +
+          ' 叠在了一起（相交 ' + Math.round(overlapX) + '×' + Math.round(overlapY) + 'px）。演示数据里的编号短又可断，这类破相只在真实数据上出现；标识符列要给 min-width: 0 + .mg-id（单行省略号，完整值放 title）')
+      }
+    }
+  }
+  // 首屏那条「重叠」判定会先跟着祖先的 overflow 裁一遍，再判相交——因为横向滚动
+  // 表格里的单元格按未裁位置算会和隔壁面板"重叠"，全是假阳性。但在这一遍里，
+  // **被裁本身就是那个病**：真实后端的编号撑爆了列宽，内容被 overflow: hidden
+  // 切掉，用户看到的就是半截字符串和糊在一起的行。所以这里量的是「**部分**被裁」：
+  // 元素自己的墨迹超出了裁切祖先的边界，而且没有任何一层能滚出来。
+  //
+  // 用 .mg-id 那套省略号契约（nowrap + text-overflow: ellipsis + 完整值放 title）
+  // 的不算——那是**处理过**的截断，用户看得见省略号、也拿得到完整值。这条判定因此
+  // 是在奖励用原语，而不是在惩罚一切截断。
+  const handlesOverflow = (element) => {
+    for (let node = element; node && node !== document.body; node = node.parentElement) {
+      const style = getComputedStyle(node)
+      if (style.textOverflow === 'ellipsis' && style.whiteSpace === 'nowrap' && style.overflow !== 'visible') return true
+      if (node.classList && node.classList.contains('mg-id')) return true
+    }
+    return false
+  }
+  // 量的必须是**字形**不是元素盒子：不可断的长串溢出时，承载它的 <p>/<td> 盒子
+  // 仍然规规矩矩待在容器里（宽度被容器约束住了），跑出去的是里面的墨。按盒子量
+  // 一处都抓不到——这一课在这份门禁里已经栽过三次（行数、墨宽、这里）。
+  const inkRange = document.createRange()
+  for (const leaf of leaves) {
+    if (handlesOverflow(leaf.element)) continue
+    let worstCut = 0
+    const walker = document.createTreeWalker(leaf.element, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!(node.textContent || '').trim()) continue
+      if (node.parentElement !== leaf.element) continue
+      inkRange.selectNodeContents(node)
+      for (const rect of inkRange.getClientRects()) {
+        if (rect.width <= 0.5 || rect.height <= 0.5) continue
+        worstCut = Math.max(
+          worstCut,
+          leaf.clipped.left - rect.left,
+          rect.right - leaf.clipped.right,
+          leaf.clipped.top - rect.top,
+          rect.bottom - leaf.clipped.bottom,
+        )
+      }
+    }
+    if (worstCut <= 8) continue
+    let reachable = false
+    for (let parent = leaf.element.parentElement; parent && !reachable; parent = parent.parentElement) {
+      const parentStyle = getComputedStyle(parent)
+      if ((parentStyle.overflowY === 'auto' || parentStyle.overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight + 1) reachable = true
+      if ((parentStyle.overflowX === 'auto' || parentStyle.overflowX === 'scroll') && parent.scrollWidth > parent.clientWidth + 1) reachable = true
+    }
+    if (reachable) continue
+    const key = 'cut:' + describeLeaf(leaf)
+    if (seen.has(key)) continue
+    seen.add(key)
+    defects.push('长标识符压力：把编号换成真实后端那种无断点长串之后，' + describeLeaf(leaf) +
+      ' 的字形有 ' + Math.round(worstCut) + 'px 跑到容器外面被切掉了，而且没有任何一层能滚出来。演示数据里的编号短又可断，这类破相只在真实数据上出现；标识符用 .mg-id（单行 + 省略号，完整值放 title），承载它的列要给 min-width: 0')
+  }
+  return defects
+})()`
+
 async function run(): Promise<void> {
   await new Promise<void>((done) => server.listen(0, '127.0.0.1', done))
   const address = server.address()
@@ -649,7 +835,7 @@ async function run(): Promise<void> {
             continue
           }
           await settle(page)
-          for (const [state, defects] of await sweep(page)) {
+          for (const [state, defects] of await sweep(page, width === WIDTHS[0])) {
             checked += 1
             const where = state ? `${route.path}〔${state}〕` : route.path
             for (const defect of defects) failures.push(`${where} @${width}px（${persona.label}）：${defect}`)
@@ -681,7 +867,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无多列挤压、无低信息密度、无面板底部空转、无徽标被拉变形，长列表压力下无内容被吞`)
+  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无多列挤压、无低信息密度、无面板底部空转、无徽标被拉变形，长列表压力下无内容被吞、长标识符压力下无重叠无裁切`)
 }
 
 await run()
