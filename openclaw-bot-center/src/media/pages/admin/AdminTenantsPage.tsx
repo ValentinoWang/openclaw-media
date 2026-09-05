@@ -14,7 +14,6 @@ import {
   TimerReset,
 } from 'lucide-react'
 import {
-  BusinessOperationError,
   callBusinessOperation,
 } from '../../generatedBusinessPagesContract'
 import { isForbiddenError } from '../../businessErrorPresentation'
@@ -345,9 +344,10 @@ function toLoadState<T>(error: unknown, subject: string): LoadState<T> {
     return { status: 'permission', error: '当前会话没有读取' + subject + '的权限。' }
   }
   const message = describeBusinessError(error, {
-    fallback: error instanceof Error && error.message ? error.message : subject + '读取失败，请稍后再试。',
+    fallback: subject + '暂时无法读取，请稍后再试。',
     notFound: '目标租户不存在或不可见。',
-    byCode: { invalid_request: error instanceof BusinessOperationError ? error.message : '' },
+    unavailable: subject + '暂时无法读取，请稍后再试。',
+    byCode: { invalid_request: '请求暂时无法处理，请稍后再试。' },
   })
   return { status: 'error', error: message }
 }

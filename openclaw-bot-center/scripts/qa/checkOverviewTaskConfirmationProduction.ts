@@ -4,7 +4,7 @@ import path from "node:path";
 
 const baseUrl = (
   process.env.OVERVIEW_CONFIRMATION_PRODUCTION_URL ??
-  "http://127.0.0.1/openclaw/media"
+  "https://mediapilot.cloud/openclaw/media"
 ).replace(/\/$/, "");
 const cookieHeader = process.env.OVERVIEW_CONFIRMATION_PRODUCTION_COOKIE?.trim() ?? "";
 const targetId = process.env.OVERVIEW_CONFIRMATION_PRODUCTION_TARGET?.trim() ?? "";

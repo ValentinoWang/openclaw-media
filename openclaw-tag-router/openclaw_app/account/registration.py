@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import re
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -17,8 +16,10 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from .database import AccountDatabase
 from .errors import AccountAuthError, AccountContractError
 from .auth import AccountAuthService, AccountLogin
+from .password_policy import validate_password
 from .repository import AccountAuthRepository
 from .registration_repository import AccountRegistrationRepository, AffiliateProfileRow
+from .username import normalize_username
 
 
 @dataclass(frozen=True)
@@ -87,10 +88,7 @@ class AccountRegistrationService:
 
     @staticmethod
     def _normalize_username(username: str) -> str:
-        value = username.strip().lower()
-        if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{2,63}", value):
-            raise AccountAuthError("invalid_request", "用户名格式无效。", status=400)
-        return value
+        return normalize_username(username)
 
     @staticmethod
     def _normalize_email(email: str | None) -> str | None:
@@ -106,8 +104,7 @@ class AccountRegistrationService:
 
     @staticmethod
     def _validate_password(password: str) -> None:
-        if not isinstance(password, str) or not 12 <= len(password) <= 1024:
-            raise AccountAuthError("invalid_request", "密码长度必须为 12 至 1024 个字符。", status=400)
+        validate_password(password)
 
     @staticmethod
     def _normalize_code(code: str | None) -> str | None:

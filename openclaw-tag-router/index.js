@@ -292,7 +292,7 @@ export function containsCodexTrigger(value) {
   return /【\s*codex\s*】/i.test(String(value ?? ""));
 }
 
-const MEDIA_WEB_URL = String(process.env.OPENCLAW_MEDIA_WEB_URL || "http://106.52.146.37/openclaw/media").trim();
+const MEDIA_WEB_URL = String(process.env.OPENCLAW_MEDIA_WEB_URL || "https://mediapilot.cloud/openclaw/media").trim();
 
 export function isMediaFeishuAccount(value) {
   return String(value ?? "").trim().toLowerCase().replaceAll("_", "-").replace(/^feishu-/, "") === "media";

@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { chromium } from "playwright";
 
-const origin = (process.env.MEDIA_QA_ORIGIN ?? "http://106.52.146.37").replace(/\/$/, "");
+const origin = (process.env.MEDIA_QA_ORIGIN ?? "https://mediapilot.cloud").replace(/\/$/, "");
 const username = process.env.MEDIA_QA_USERNAME ?? "wsy_9523";
 const password = process.env.MEDIA_QA_PASSWORD;
 const storageState = process.env.MEDIA_QA_STORAGE_STATE;
@@ -82,6 +82,7 @@ type PageResult = {
   route: string;
   title: string;
   apiFailures: Array<{ status: number; url: string }>;
+  expectedApiDegradations: Array<{ status: number; url: string; reason: string }>;
   apiRequests: Array<{
     method: string;
     url: string;
@@ -117,6 +118,7 @@ try {
     for (const routeName of routes) {
       const page = await context.newPage();
       const apiFailures: Array<{ status: number; url: string }> = [];
+      const expectedApiDegradations: Array<{ status: number; url: string; reason: string }> = [];
       const apiRequests: PageResult["apiRequests"] = [];
       const apiStartedAt = new Map<string, number>();
       const consoleErrors: string[] = [];
@@ -136,7 +138,19 @@ try {
           durationMs: Date.now() - (apiStartedAt.get(response.url()) ?? Date.now()),
           failure: null,
         });
-        if (response.status() >= 400) apiFailures.push({ status: response.status(), url: response.url() });
+        if (response.status() >= 400) {
+          const monitorUnavailable = response.status() === 503
+            && /\/openclaw\/media\/api\/owned-accounts\/[^/]+\/monitor$/u.test(new URL(response.url()).pathname);
+          if (monitorUnavailable) {
+            expectedApiDegradations.push({
+              status: response.status(),
+              url: response.url(),
+              reason: "monitor_unavailable is the documented fail-closed response when the H00 adapter is unavailable",
+            });
+          } else {
+            apiFailures.push({ status: response.status(), url: response.url() });
+          }
+        }
       });
       page.on("requestfailed", (request) => {
         if (!request.url().includes("/openclaw/media/api/")) return;
@@ -311,11 +325,19 @@ try {
           detailScreenshot,
         });
       }
-      if (apiFailures.length || consoleErrors.length || pageErrors.length || forbiddenMatches.length) {
+      const actionableConsoleErrors = consoleErrors.filter(
+        (message) => !(
+          expectedApiDegradations.length > 0
+          && message.includes("Failed to load resource: the server responded with a status of 503")
+        ),
+      );
+      if (apiFailures.length || actionableConsoleErrors.length || pageErrors.length || forbiddenMatches.length) {
         throw new Error(
           `${viewport.name}/${routeName} runtime failure: ${JSON.stringify({
             apiFailures,
+            expectedApiDegradations,
             consoleErrors,
+            actionableConsoleErrors,
             pageErrors,
             forbiddenMatches,
           })}`,

@@ -23,6 +23,7 @@ def test_platform_cookie_status_is_redacted_and_reports_validation(tmp_path):
     assert response["platforms"][0]["validationStatus"] == "valid"
     assert response["platforms"][0]["configured"] is True
     assert response["platforms"][1]["validationStatus"] == "missing"
+    assert all(set(item) == {"platform", "configured", "updatedAt", "validationStatus", "errorCode"} for item in response["platforms"])
     assert "COOKIE-PLAINTEXT" not in repr(response)
     assert "value" not in repr(response).lower()
 

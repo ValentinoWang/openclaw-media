@@ -1,0 +1,1010 @@
+<title>个人正文编辑与修订</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --paper:#f5f7f3; --surface:#fff; --raised:#fff;
+    --ink:#19231f; --ink-soft:#3f4f47; --muted:#68746d; --faint:#8d9992;
+    --line:#dfe6df; --line-soft:#eaefe9;
+    --mint:#1a9b68; --mint-deep:#106044; --mint-soft:#d9f4e6;
+    --lavender:#ebe7ff; --lavender-ink:#5b4bb5;
+    --peach:#ffe7db; --peach-ink:#a75f2c;
+    --blue:#e1efff; --blue-ink:#3177bd;
+    --yellow:#fff0bd; --yellow-ink:#8a6b12;
+    --clay:#b4553f; --clay-soft:#fbe8e2;
+    --sel:#cfeddc;
+    --on-accent:#fff;
+    --shadow-s:0 2px 6px rgba(30,48,40,.06);
+    --shadow-m:0 12px 30px rgba(30,48,40,.10);
+    --shadow-l:0 24px 62px rgba(30,48,40,.16);
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#111a16; --surface:#18231e; --raised:#1e2b25;
+      --ink:#e9f3ec; --ink-soft:#c3d3ca; --muted:#93a69c; --faint:#78897f;
+      --line:#2b3a33; --line-soft:#22302a;
+      --mint:#4ec48d; --mint-deep:#8fdcb4; --mint-soft:#1b3d30;
+      --lavender:#2f2b4c; --lavender-ink:#b0a4f0;
+      --peach:#3f2b1f; --peach-ink:#e0a271;
+      --blue:#1c3145; --blue-ink:#8cc2f5;
+      --yellow:#3a3315; --yellow-ink:#dcc069;
+      --clay:#e08e79; --clay-soft:#3a221c;
+      --sel:#1f4c39;
+      --on-accent:#08211a;
+      --shadow-s:0 2px 6px rgba(0,0,0,.34);
+      --shadow-m:0 12px 30px rgba(0,0,0,.42);
+      --shadow-l:0 24px 62px rgba(0,0,0,.55);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#111a16; --surface:#18231e; --raised:#1e2b25;
+    --ink:#e9f3ec; --ink-soft:#c3d3ca; --muted:#93a69c; --faint:#78897f;
+    --line:#2b3a33; --line-soft:#22302a;
+    --mint:#4ec48d; --mint-deep:#8fdcb4; --mint-soft:#1b3d30;
+    --lavender:#2f2b4c; --lavender-ink:#b0a4f0;
+    --peach:#3f2b1f; --peach-ink:#e0a271;
+    --blue:#1c3145; --blue-ink:#8cc2f5;
+    --yellow:#3a3315; --yellow-ink:#dcc069;
+    --clay:#e08e79; --clay-soft:#3a221c;
+    --sel:#1f4c39;
+    --on-accent:#08211a;
+    --shadow-s:0 2px 6px rgba(0,0,0,.34);
+    --shadow-m:0 12px 30px rgba(0,0,0,.42);
+    --shadow-l:0 24px 62px rgba(0,0,0,.55);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  /* display 声明会压过 [hidden]，必须显式兜底 */
+  [hidden]{display:none!important;}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:'DM Sans','Noto Sans SC',ui-sans-serif,system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+    font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;height:100vh;overflow:hidden;
+  }
+  h1,h2,h3,h4,h5,h6,p{margin:0;letter-spacing:0;}
+  button{font:inherit;color:inherit;border:0;background:transparent;cursor:pointer;}
+  button:focus-visible,[contenteditable]:focus-visible,a:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-radius:4px;}
+  ::selection{background:var(--sel);}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+
+  /* ============ 原型控制条 ============ */
+  .proto{position:sticky;top:0;z-index:60;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:9px 18px;background:var(--ink);color:var(--paper);}
+  .proto-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.62;}
+  .proto-seg{display:flex;flex-wrap:wrap;gap:3px;}
+  .proto-seg button{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;color:color-mix(in srgb,var(--paper) 72%,transparent);}
+  .proto-seg button:hover{background:color-mix(in srgb,var(--paper) 12%,transparent);color:var(--paper);}
+  .proto-seg button[aria-pressed="true"]{background:var(--paper);color:var(--ink);font-weight:800;}
+  .proto-hint{margin-left:auto;font-size:11px;opacity:.6;}
+  .proto-link{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:color-mix(in srgb,var(--paper) 74%,transparent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--paper) 30%,transparent);}
+  .proto-link:hover{color:var(--paper);}
+
+  /* ============ 应用壳 ============ */
+  .shell{display:grid;grid-template-columns:56px minmax(0,1fr);flex:1;min-height:0;}
+  .rail{display:flex;flex-direction:column;align-items:center;gap:5px;padding:16px 0;border-right:1px solid var(--line);background:var(--surface);}
+  .rail-logo{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--mint);color:#fff;font-size:12px;font-weight:800;margin-bottom:10px;}
+  .rail button{width:34px;height:34px;display:grid;place-items:center;border-radius:9px;color:var(--faint);}
+  .rail button:hover{background:var(--paper);color:var(--ink);}
+  .rail button.on{background:var(--mint-soft);color:var(--mint-deep);}
+
+  .main{display:flex;flex-direction:column;min-width:0;min-height:0;}
+
+  /* ============ 文档头 ============ */
+  .dochead{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:14px 26px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--paper) 84%,transparent);backdrop-filter:blur(18px);position:relative;z-index:40;}
+  .crumb{display:flex;align-items:center;gap:7px;min-width:0;color:var(--muted);font-size:12px;}
+  .crumb b{color:var(--ink);font-weight:700;}
+  .crumb .sep{color:var(--faint);}
+  .kindpill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;background:var(--mint-soft);color:var(--mint-deep);font-size:10.5px;font-weight:800;white-space:nowrap;}
+  .kindpill.lark{background:var(--blue);color:var(--blue-ink);}
+  .head-right{display:flex;align-items:center;gap:9px;margin-left:auto;}
+
+  .saveState{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;border:1px solid transparent;}
+  .saveState .led{width:7px;height:7px;border-radius:999px;background:currentColor;flex:0 0 auto;}
+  .saveState[data-tone="clean"]{background:var(--mint-soft);color:var(--mint-deep);}
+  .saveState[data-tone="dirty"]{background:var(--yellow);color:var(--yellow-ink);}
+  .saveState[data-tone="busy"]{background:var(--blue);color:var(--blue-ink);}
+  .saveState[data-tone="bad"]{background:var(--clay-soft);color:var(--clay);}
+  .saveState[data-tone="ro"]{background:var(--blue);color:var(--blue-ink);}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .saveState[data-tone="busy"] .led{border-radius:2px;animation:spin .9s linear infinite;}
+  @media (prefers-reduced-motion:reduce){.saveState[data-tone="busy"] .led{animation:none;}}
+
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;transition:transform .16s ease,box-shadow .16s ease,background .16s ease;}
+  .btn:hover:not(:disabled){transform:translateY(-2px);}
+  .btn:disabled{opacity:.42;cursor:not-allowed;}
+  .btn-primary{background:var(--mint);color:#fff;box-shadow:0 10px 20px color-mix(in srgb,var(--mint) 24%,transparent);}
+  .btn-primary:hover:not(:disabled){box-shadow:0 14px 26px color-mix(in srgb,var(--mint) 34%,transparent);}
+  .btn-soft{background:var(--surface);border:1px solid var(--line);}
+  .btn-soft:hover{border-color:var(--mint);}
+  .btn-ghost{color:var(--muted);}
+  .btn-ghost:hover{color:var(--ink);}
+  .btn-danger{background:var(--clay);color:#fff;}
+  .kbd{padding:1px 5px;border:1px solid color-mix(in srgb,currentColor 30%,transparent);border-radius:4px;font-family:var(--mono);font-size:10px;opacity:.75;}
+
+  /* ============ 正文 + 右栏 ============ */
+  .body{display:grid;grid-template-columns:minmax(0,1fr) 336px;flex:1;min-height:0;}
+  .canvas{overflow-y:auto;min-height:0;padding:34px 0 0;}
+  .sheet{width:min(720px,calc(100% - 64px));margin:0 auto;}
+
+  /* 横幅 */
+  .banner{display:flex;gap:13px;padding:16px 18px;border-radius:13px;margin-bottom:24px;border:1px solid transparent;}
+  .banner-ico{width:28px;height:28px;flex:0 0 auto;display:grid;place-items:center;border-radius:8px;font-size:14px;font-weight:800;}
+  .banner h4{font-size:14px;font-weight:800;}
+  .banner p{margin-top:5px;font-size:12.5px;line-height:1.6;}
+  .banner .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .banner.conflict{background:var(--clay-soft);border-color:color-mix(in srgb,var(--clay) 30%,transparent);color:var(--clay);}
+  .banner.conflict .banner-ico{background:var(--clay);color:#fff;}
+  .banner.warn{background:var(--yellow);border-color:color-mix(in srgb,var(--yellow-ink) 28%,transparent);color:var(--yellow-ink);}
+  .banner.warn .banner-ico{background:var(--yellow-ink);color:var(--yellow);}
+  .banner.offline{background:var(--peach);border-color:color-mix(in srgb,var(--peach-ink) 28%,transparent);color:var(--peach-ink);}
+  .banner.offline .banner-ico{background:var(--peach-ink);color:var(--peach);}
+  .banner.ro{background:var(--blue);border-color:color-mix(in srgb,var(--blue-ink) 26%,transparent);color:var(--blue-ink);}
+  .banner.ro .banner-ico{background:var(--blue-ink);color:#fff;}
+  .banner .diffrow{display:flex;flex-wrap:wrap;gap:18px;margin-top:11px;padding-top:11px;border-top:1px solid color-mix(in srgb,currentColor 22%,transparent);font-size:12px;}
+  .banner .diffrow div{display:grid;gap:2px;}
+  .banner .diffrow span{opacity:.72;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+  .banner .diffrow b{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;}
+  /* 技术参考码：主句永远不含后端错误码 / wire 字段名，只在这一行、只出现一次 */
+  .banner-ref{margin-top:11px;padding-top:11px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent);opacity:.68;font-size:11px;font-family:var(--mono);}
+
+  /* 文档标题区 */
+  .doctitle{font-size:29px;font-weight:800;line-height:1.28;}
+  .docmeta{display:flex;flex-wrap:wrap;gap:14px;margin-top:11px;padding-bottom:20px;border-bottom:1px solid var(--line-soft);color:var(--faint);font-size:11.5px;}
+  .docmeta span{display:inline-flex;align-items:center;gap:5px;}
+  .docmeta b{color:var(--muted);font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;}
+
+  /* ---- 正文块 ---- */
+  .blocks{margin-top:22px;}
+  .blk{position:relative;margin:0 -14px;padding:3px 14px;border-radius:8px;}
+  .blk[data-editable="true"]:hover{background:color-mix(in srgb,var(--mint-soft) 34%,transparent);}
+  .blk-handle{position:absolute;left:-10px;top:6px;width:18px;height:18px;display:grid;place-items:center;border-radius:5px;color:var(--faint);opacity:0;transition:opacity .14s ease;font-size:12px;}
+  .blk:hover .blk-handle{opacity:1;}
+  .blk-handle:hover{background:var(--line-soft);color:var(--ink);}
+  .blk[data-flag="unsupported"]{background:var(--yellow);box-shadow:0 0 0 1px color-mix(in srgb,var(--yellow-ink) 40%,transparent) inset;}
+  .blk-flag{display:inline-flex;align-items:center;gap:5px;margin-bottom:5px;padding:2px 8px;border-radius:999px;background:var(--yellow-ink);color:var(--yellow);font-size:10px;font-weight:800;}
+
+  /* 正文排版：与界面文字明确拉开层级 */
+  .rt{font-size:16px;line-height:1.85;color:var(--ink);}
+  .blocks h2.rt{font-size:21px;font-weight:800;line-height:1.4;margin-top:26px;}
+  .blocks h3.rt{font-size:17.5px;font-weight:700;line-height:1.45;margin-top:20px;}
+  .blocks p.rt{margin-top:13px;}
+  .blocks p.rt:first-child{margin-top:0;}
+  .rt strong{font-weight:700;}
+  .rt em{font-style:italic;}
+  .rt s{opacity:.6;}
+  .rt .icode{padding:1px 6px;border:1px solid var(--line);border-radius:5px;background:var(--paper);font-family:var(--mono);font-size:.86em;}
+  .rt a{color:var(--mint-deep);text-decoration:underline;text-underline-offset:2px;}
+  ul.rt,ol.rt{margin-top:13px;padding-left:24px;}
+  ul.rt li,ol.rt li{margin-top:6px;}
+  .todo{display:flex;align-items:flex-start;gap:10px;margin-top:10px;font-size:16px;line-height:1.8;}
+  .todo input{margin-top:7px;width:15px;height:15px;accent-color:var(--mint);flex:0 0 auto;}
+  .todo.done span{color:var(--faint);text-decoration:line-through;}
+  .callout{display:grid;gap:5px;margin-top:18px;padding:15px 17px;border-radius:11px;border-left:3px solid;}
+  .callout[data-tone="warning"]{background:var(--yellow);border-color:var(--yellow-ink);color:var(--yellow-ink);}
+  .callout[data-tone="info"]{background:var(--blue);border-color:var(--blue-ink);color:var(--blue-ink);}
+  .callout strong{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;}
+  .callout .rt{font-size:14.5px;line-height:1.75;color:inherit;}
+  .tablewrap{margin-top:18px;overflow-x:auto;border:1px solid var(--line);border-radius:11px;}
+  table.doc{width:100%;border-collapse:collapse;font-size:14px;}
+  table.doc th,table.doc td{padding:10px 13px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line-soft);}
+  table.doc th{background:var(--paper);color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
+  table.doc tr:last-child td{border-bottom:0;}
+
+  /* 受保护块 */
+  .snapshot{position:relative;margin-top:20px;padding:17px 19px;border-radius:12px;background:var(--lavender);border:1px dashed color-mix(in srgb,var(--lavender-ink) 42%,transparent);}
+  .snapshot-head{display:flex;align-items:center;gap:8px;color:var(--lavender-ink);}
+  .snapshot-head strong{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;}
+  .lockpill{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--lavender-ink) 88%,transparent);color:var(--lavender);font-size:10px;font-weight:800;}
+  .snapshot dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:12px;margin:13px 0 0;}
+  .snapshot dt{color:var(--lavender-ink);font-size:10.5px;font-weight:700;opacity:.8;}
+  .snapshot dd{margin:2px 0 0;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);}
+  .snapshot small{display:block;margin-top:12px;color:var(--lavender-ink);font-size:10.5px;opacity:.85;font-family:var(--mono);}
+  .snapshot-why{margin-top:9px;font-size:12px;line-height:1.6;color:var(--lavender-ink);}
+
+  /* 选区工具条 */
+  .seltool{position:fixed;z-index:70;display:none;align-items:center;gap:2px;padding:4px;border-radius:10px;background:var(--ink);box-shadow:var(--shadow-l);}
+  .seltool.on{display:flex;}
+  .seltool button{width:30px;height:30px;display:grid;place-items:center;border-radius:7px;color:color-mix(in srgb,var(--paper) 76%,transparent);font-size:13px;}
+  .seltool button:hover{background:color-mix(in srgb,var(--paper) 15%,transparent);color:var(--paper);}
+  .seltool .div{width:1px;height:17px;margin:0 3px;background:color-mix(in srgb,var(--paper) 22%,transparent);}
+  .seltool .b{font-weight:800;}.seltool .i{font-style:italic;}
+  .seltool .u{text-decoration:underline;}.seltool .s{text-decoration:line-through;}
+
+  /* ============ 右栏：修订与证据 ============ */
+  .rail-right{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--line);background:var(--surface);overflow-y:auto;}
+  .tabs{display:flex;gap:3px;padding:11px 14px;border-bottom:1px solid var(--line-soft);position:sticky;top:0;background:var(--surface);z-index:5;}
+  .tabs button{flex:1;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:700;color:var(--muted);}
+  .tabs button:hover{color:var(--ink);}
+  .tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper);}
+  .pane{padding:16px 18px 30px;}
+  .pane[hidden]{display:none;}
+  .pane-lead{color:var(--muted);font-size:11.5px;line-height:1.6;}
+
+  /* 证据账本 */
+  .ledger{display:grid;gap:0;margin-top:15px;border:1px solid var(--line);border-radius:11px;overflow:hidden;}
+  .ledger div{display:grid;grid-template-columns:82px minmax(0,1fr);gap:10px;padding:10px 13px;border-top:1px solid var(--line-soft);align-items:baseline;}
+  .ledger div:first-child{border-top:0;}
+  .ledger dt{color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.03em;}
+  .ledger dd{margin:0;font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums;word-break:break-all;color:var(--ink-soft);}
+  .ledger dd.ok{color:var(--mint-deep);font-weight:600;}
+  .ledger dd.bad{color:var(--clay);font-weight:600;}
+
+  /* 修订链 */
+  .revs{margin-top:8px;}
+  .rev{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr);gap:11px;padding:11px 0;}
+  .rev::before{content:'';position:absolute;left:10px;top:26px;bottom:-11px;width:1px;background:var(--line);}
+  .rev:last-child::before{display:none;}
+  .rev-node{width:21px;height:21px;display:grid;place-items:center;border-radius:999px;background:var(--line-soft);color:var(--muted);font-size:9.5px;font-weight:800;font-variant-numeric:tabular-nums;z-index:1;}
+  .rev.cur .rev-node{background:var(--mint);color:#fff;box-shadow:0 0 0 4px var(--mint-soft);}
+  .rev.remote .rev-node{background:var(--clay);color:#fff;box-shadow:0 0 0 4px var(--clay-soft);}
+  .rev-b strong{font-size:12.5px;font-weight:700;}
+  .rev-b p{margin-top:2px;color:var(--muted);font-size:11px;line-height:1.55;}
+  .rev-b .cs{margin-top:5px;font-family:var(--mono);font-size:10.5px;color:var(--faint);}
+  .rev-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:9.5px;font-weight:800;vertical-align:1px;}
+  .rev-tag.ok{background:var(--mint-soft);color:var(--mint-deep);}
+  .rev-tag.ai{background:var(--lavender);color:var(--lavender-ink);}
+  .rev-tag.re{background:var(--clay-soft);color:var(--clay);}
+
+  .stack{display:grid;gap:9px;margin-top:15px;}
+  .mini{padding:13px 15px;border:1px solid var(--line);border-radius:11px;background:var(--paper);}
+  .mini strong{display:block;font-size:12.5px;font-weight:700;}
+  .mini p{margin-top:4px;color:var(--muted);font-size:11.5px;line-height:1.6;}
+  .mini .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px;}
+  .tick{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;}
+  .tick::before{content:'';width:6px;height:6px;border-radius:999px;background:currentColor;}
+  .tick.ok{color:var(--mint-deep);}
+  .tick.wait{color:var(--faint);}
+  .tick.bad{color:var(--clay);}
+
+  .foot{margin-top:20px;padding-top:14px;border-top:1px solid var(--line-soft);color:var(--faint);font-size:11px;line-height:1.65;}
+  .foot code{font-size:10.5px;}
+
+  /* ============ 写入中：逐步写清楚，而不是一句「正在保存」 ============ */
+  .wsteps{display:grid;margin-top:11px;border-top:1px solid color-mix(in srgb,currentColor 20%,transparent);}
+  .wstep{display:grid;grid-template-columns:19px minmax(0,1fr);gap:9px;align-items:baseline;padding:8px 0;border-bottom:1px solid color-mix(in srgb,currentColor 13%,transparent);}
+  .wstep:last-child{border-bottom:0;}
+  .wstep > i{width:19px;height:19px;display:grid;place-items:center;border-radius:999px;font-size:9.5px;font-weight:800;font-style:normal;font-variant-numeric:tabular-nums;}
+  .wstep[data-s="done"] > i{background:var(--mint);color:#fff;}
+  .wstep[data-s="run"] > i{background:var(--blue-ink);color:#fff;}
+  .wstep[data-s="wait"] > i{background:color-mix(in srgb,currentColor 16%,transparent);color:currentColor;opacity:.7;}
+  .wstep-b{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;}
+  .wstep-b b{font-size:12.5px;font-weight:700;}
+  .wstep-b span{font-size:11.5px;opacity:.82;}
+  .wstep-b em{font-style:normal;padding:1px 7px;border-radius:999px;font-size:9.5px;font-weight:800;}
+  .wstep[data-s="done"] em{background:var(--mint-soft);color:var(--mint-deep);}
+  .wstep[data-s="run"] em{background:var(--blue);color:var(--blue-ink);}
+  .wstep[data-s="wait"] .wstep-b{opacity:.6;}
+  .banner.writing{background:var(--blue);border-color:color-mix(in srgb,var(--blue-ink) 26%,transparent);color:var(--blue-ink);}
+  .banner.writing .banner-ico{background:var(--blue-ink);color:#fff;}
+  .safe-line{margin-top:11px;padding:9px 12px;border-radius:9px;background:color-mix(in srgb,var(--surface) 62%,transparent);font-size:12px;line-height:1.6;}
+
+  /* ============ 让 AI 改稿：常驻指令条 + 计划面板 ============ */
+  .aiwrap{position:sticky;bottom:0;z-index:30;margin:34px -16px 0;padding:14px 16px 16px;background:var(--paper);}
+  .aiwrap::before{content:'';position:absolute;left:0;right:0;top:-22px;height:22px;pointer-events:none;
+    background:linear-gradient(to bottom,transparent,var(--paper));}
+  .aibar{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:13px;background:var(--surface);box-shadow:var(--shadow-m);}
+  .aibar-ico{width:28px;height:28px;flex:0 0 auto;display:grid;place-items:center;border-radius:8px;background:var(--mint-soft);color:var(--mint-deep);font-size:13px;font-weight:800;}
+  .aibar input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:13.5px;padding:6px 2px;}
+  .aibar input::placeholder{color:var(--faint);}
+  .aibar input:focus{outline:none;}
+  .aihint{margin:8px 2px 0;color:var(--faint);font-size:10.5px;line-height:1.5;}
+
+  .plan{margin-bottom:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-l);overflow:hidden;}
+  .plan-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line-soft);background:var(--paper);}
+  .plan-head h4{font-size:13.5px;font-weight:800;}
+  .plan-head .ask{width:100%;margin-top:2px;color:var(--muted);font-size:11.5px;line-height:1.5;}
+  .plan-count{display:inline-flex;gap:5px;align-items:center;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:800;}
+  .plan-count.go{background:var(--mint-soft);color:var(--mint-deep);}
+  .plan-count.man{background:var(--peach);color:var(--peach-ink);}
+  .plan-count.no{background:var(--lavender);color:var(--lavender-ink);}
+  .plan-body{max-height:290px;overflow-y:auto;}
+  .plan-sec{padding:13px 16px;border-top:1px solid var(--line-soft);}
+  .plan-sec:first-child{border-top:0;}
+  .plan-sec > h5{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:.04em;}
+  .plan-sec.go > h5{color:var(--mint-deep);}
+  .plan-sec.man > h5{color:var(--peach-ink);}
+  .plan-sec.no > h5{color:var(--lavender-ink);}
+  .op{display:grid;gap:5px;margin-top:10px;padding:11px 13px;border-radius:10px;background:var(--paper);border:1px solid var(--line-soft);}
+  .op-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .op-where{font-size:12px;font-weight:700;}
+  .op-kind{padding:1px 8px;border-radius:999px;background:var(--mint-soft);color:var(--mint-deep);font-size:9.5px;font-weight:800;}
+  .op-off{margin-left:auto;color:var(--muted);font-size:11px;text-decoration:underline;text-underline-offset:2px;}
+  .op-off:hover{color:var(--ink);}
+  .op-diff{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;}
+  .op-old{padding:1px 7px;border-radius:5px;background:var(--clay-soft);color:var(--clay);text-decoration:line-through;}
+  .op-new{padding:1px 7px;border-radius:5px;background:var(--mint-soft);color:var(--mint-deep);font-weight:700;}
+  .op-why{color:var(--muted);font-size:11px;line-height:1.5;}
+  .op[data-off="1"]{opacity:.42;}
+  .op[data-off="1"] .op-off{color:var(--mint-deep);}
+  .plan-foot{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:12px 16px;border-top:1px solid var(--line-soft);background:var(--paper);}
+  .plan-foot .note{color:var(--faint);font-size:11px;}
+
+  @media (max-width:1080px){
+    /* 右栏改到正文下方后，锁高就没意义了，回到自然滚动 */
+    body{height:auto;overflow:visible;}
+    .body{grid-template-columns:minmax(0,1fr);}
+    .rail-right{border-left:0;border-top:1px solid var(--line);}
+    .sheet{width:calc(100% - 40px);}
+  }
+  @media (max-width:640px){
+    .shell{grid-template-columns:1fr;}
+    .aiwrap{position:static;}
+    .rail{flex-direction:row;justify-content:flex-start;padding:8px 12px;border-right:0;border-bottom:1px solid var(--line);gap:4px;overflow-x:auto;}
+    .rail-logo{margin-bottom:0;}
+    .dochead{top:0;position:static;}
+    .doctitle{font-size:24px;}
+    .rt{font-size:16px;}
+  }
+</style>
+
+<!-- ══════════ 原型控制条 ══════════ -->
+<div class="proto">
+  <span class="proto-tag">原型控制 · 非产品 UI</span>
+  <div class="proto-seg" role="group" aria-label="切换状态">
+    <button data-go="clean" aria-pressed="true">已保存</button>
+    <button data-go="dirty" aria-pressed="false">有改动</button>
+    <button data-go="conflict" aria-pressed="false">修订冲突 409</button>
+    <button data-go="unsupported" aria-pressed="false">不支持块 422</button>
+    <button data-go="saving" aria-pressed="false">保存中</button>
+    <button data-go="plan" aria-pressed="false">AI 改稿计划</button>
+    <button data-go="offline" aria-pressed="false">断网重试</button>
+    <button data-go="org" aria-pressed="false">组织只读镜像</button>
+  </div>
+  <span class="proto-hint">正文可直接编辑 · 选中文字出工具条 · <span class="kbd">⌘S</span> 保存</span>
+  <a class="proto-link" href="https://claude.ai/code/artifact/a874c505-3f5d-415f-a13b-3711696334f2">组织端：正文同步与回读 →</a>
+</div>
+
+<div class="shell">
+  <!-- 56px 图标轨：DS-18 已落地的窄轨形态 -->
+  <nav class="rail" aria-label="工作区导航">
+    <div class="rail-logo">MC</div>
+    <button title="概览">◎</button>
+    <button title="内容轨道">≡</button>
+    <button class="on" title="创作运行" aria-current="page">✎</button>
+    <button title="素材">▣</button>
+    <button title="复盘">↺</button>
+  </nav>
+
+  <div class="main">
+    <!-- ── 文档头 ── -->
+    <header class="dochead">
+      <div class="crumb">
+        <span>创作运行</span><span class="sep">/</span>
+        <span>秋冬护手霜测评</span><span class="sep">/</span>
+        <b>正文</b>
+      </div>
+      <span class="kindpill" id="kindPill">创作文档 · 个人工作区</span>
+      <div class="head-right">
+        <span class="saveState" id="saveState" data-tone="clean" role="status" aria-live="polite">
+          <i class="led"></i><span id="saveText">已保存 · v7</span>
+        </span>
+        <button class="btn btn-soft" id="btnHistory">修订历史</button>
+        <button class="btn btn-primary" id="btnSave">保存</button>
+        <button class="btn btn-primary" id="btnOpenLark" hidden>在飞书中打开</button>
+      </div>
+    </header>
+
+    <div class="body">
+      <!-- ── 正文画布 ── -->
+      <main class="canvas">
+        <div class="sheet">
+
+          <!-- 冲突横幅 -->
+          <div class="banner conflict" id="bnConflict" hidden>
+            <div class="banner-ico">!</div>
+            <div>
+              <h4>这篇正文在别处已经更新到 v9</h4>
+              <p>你的改动基于 v7，但这篇正文在别处已经被保存过一次。你的草稿<b>没有丢</b>，仍在编辑区里。选一种方式继续——两条路都不会覆盖对方。</p>
+              <div class="diffrow">
+                <div><span>你的基线</span><b>v7 · 4f2a…c081</b></div>
+                <div><span>服务端当前</span><b>v9 · 9be1…37da</b></div>
+                <div><span>差异</span><b>2 个修订 · 3 处段落</b></div>
+              </div>
+              <div class="acts">
+                <button class="btn btn-danger" id="btnDiff">逐段对比并合并</button>
+                <button class="btn btn-soft" id="btnFork">另存为新分支修订</button>
+                <button class="btn btn-ghost" id="btnReload">放弃我的改动，载入 v9</button>
+              </div>
+              <p class="banner-ref">技术参考码：document_revision_conflict</p>
+            </div>
+          </div>
+
+          <!-- 不支持块横幅 -->
+          <div class="banner warn" id="bnUnsupported" hidden>
+            <div class="banner-ico">⚠</div>
+            <div>
+              <h4>有 1 个块当前不能保存</h4>
+              <p>这个块用了目前还不支持的结构，暂时存不了。下方已经把它标出来了——<b>不是整篇保存失败</b>，其余内容可以照常保存。</p>
+              <div class="acts">
+                <button class="btn btn-soft" id="btnJump">跳到该块</button>
+                <button class="btn btn-primary" id="btnSaveRest">仅保存其余块</button>
+              </div>
+              <p class="banner-ref">技术参考码：unsupported_document_block</p>
+            </div>
+          </div>
+
+          <!-- 断网横幅 -->
+          <div class="banner offline" id="bnOffline" hidden>
+            <div class="banner-ico">⇄</div>
+            <div>
+              <h4>保存没有送达，正在重试</h4>
+              <p>网络中断。草稿保留在本地编辑区，<b>不写入任何浏览器存储</b>。恢复后用同一个幂等键重发，因此不会产生重复修订。</p>
+              <div class="diffrow">
+                <div><span>幂等键</span><b>idem_01JC7X…9F2</b></div>
+                <div><span>已重试</span><b>2 / 5</b></div>
+                <div><span>下次重试</span><b>8s 后</b></div>
+              </div>
+              <div class="acts">
+                <button class="btn btn-soft" id="btnRetry">立即重试</button>
+                <button class="btn btn-ghost">复制正文到剪贴板</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 保存中：逐步说清楚到哪一步了 -->
+          <div class="banner writing" id="bnSaving" hidden>
+            <div class="banner-ico">⟳</div>
+            <div>
+              <h4 id="savingTitle">正在保存 · 第 1 步，共 3 步</h4>
+              <p>三步全部成功才算保存成功。中途任何一步失败，都不会给你一个假的「已保存」。</p>
+              <div class="wsteps">
+                <div class="wstep" id="ws1" data-s="run"><i>1</i><div class="wstep-b"><b>写入正文</b><span id="ws1t">正在生成新修订 v9…</span><em id="ws1e">进行中</em></div></div>
+                <div class="wstep" id="ws2" data-s="wait"><i>2</i><div class="wstep-b"><b>登记收据</b><span id="ws2t">等待上一步落库</span><em id="ws2e">等待</em></div></div>
+                <div class="wstep" id="ws3" data-s="wait"><i>3</i><div class="wstep-b"><b>写后回读</b><span id="ws3t">读回正文，比对内容校验值</span><em id="ws3e">等待</em></div></div>
+              </div>
+              <div class="diffrow">
+                <div><span>已用时</span><b id="savingElapsed">0.0s</b></div>
+                <div><span>幂等键</span><b>idem_01JC7X…9F2</b></div>
+                <div><span>租约剩余</span><b id="savingLease">9分59秒</b></div>
+              </div>
+              <p class="safe-line">现在关页面或断网<b>都不会存出两份</b>——下次带同一个幂等键回来，先确认这批到底落没落，再决定补写还是收口。</p>
+            </div>
+          </div>
+
+          <!-- 组织只读横幅 -->
+          <div class="banner ro" id="bnOrg" hidden>
+            <div class="banner-ico">⧉</div>
+            <div>
+              <h4>组织正文的编辑权威在飞书</h4>
+              <p>这是当前组织绑定回读出来的<b>只读镜像</b>。网页端不提供编辑入口——这是产品边界，不是权限不足。改完回来刷新，镜像会跟随远端新版本。</p>
+              <div class="diffrow">
+                <div><span>远端版本</span><b>v14</b></div>
+                <div><span>回读于</span><b>09-02 11:26</b></div>
+                <div><span>绑定</span><b>光合内容工作室</b></div>
+              </div>
+              <div class="acts"><button class="btn btn-primary">在飞书中打开</button><button class="btn btn-soft">重新回读</button></div>
+            </div>
+          </div>
+
+          <h1 class="doctitle" contenteditable="true" spellcheck="false">秋冬护手霜测评 · 成分党视角</h1>
+          <div class="docmeta">
+            <span>正文权威 <b id="metaAuthority">网页端</b></span>
+            <span>更新于 <b>09-02 10:41</b></span>
+          </div>
+
+          <div class="blocks" id="blocks">
+
+            <div class="blk" data-editable="true" data-block-id="blk_a1" data-block-type="paragraph">
+              <button class="blk-handle" title="块操作">⋮⋮</button>
+              <p class="rt" contenteditable="true" spellcheck="false">上一支视频的评论区里，出现最多的一个问题是「甘油含量高是不是就等于好用」。这一期我们不聊品牌，只把手上这五支的成分表摊开，按<strong>封闭剂、保湿剂、修复成分</strong>三类拆一遍，再对着实测数据看它们到底差在哪。</p>
+            </div>
+
+            <div class="blk" data-editable="true" data-block-id="blk_a2" data-block-type="heading_2">
+              <button class="blk-handle" title="块操作">⋮⋮</button>
+              <h2 class="rt" contenteditable="true" spellcheck="false">一、先说结论</h2>
+            </div>
+
+            <div class="blk" data-editable="true" data-block-id="blk_a3" data-block-type="paragraph">
+              <button class="blk-handle" title="块操作">⋮⋮</button>
+              <p class="rt" contenteditable="true" spellcheck="false">干裂到起皮的手，要找的是<em>封闭剂占比高</em>的配方；只是日常偏干，含 <span class="icode">尿素 5%</span> 以下的产品体验会更舒服，不会有刺痛感。价格和效果在这个品类里的相关性，比想象中低得多。</p>
+            </div>
+
+            <div class="blk" data-editable="true" data-block-id="blk_a4" data-block-type="bullet_list">
+              <button class="blk-handle" title="块操作">⋮⋮</button>
+              <ul class="rt" contenteditable="true" spellcheck="false">
+                <li>三支主打「医用级」的产品，封闭剂含量反而低于两支平价开架款</li>
+                <li>香精是刺痛感的主要来源，和活性成分浓度关系不大</li>
+                <li>管装比罐装更省量，同样克重能多用约两周</li>
+              </ul>
+            </div>
+
+            <div class="blk" data-editable="true" data-block-id="blk_a5" data-block-type="callout">
+              <button class="blk-handle" title="块操作">⋮⋮</button>
+              <aside class="callout" data-tone="warning">
+                <strong>注意</strong>
+                <p class="rt" contenteditable="true" spellcheck="false">涉及功效表述的段落发布前需要过一遍合规检查，「修复屏障」这类词在部分平台属于限制用语。</p>
+              </aside>
+            </div>
+
+            <div class="blk" data-editable="true" data-block-id="blk_a6" data-block-type="heading_2">
+              <button class="blk-handle" title="块操作">⋮⋮</button>
+              <h2 class="rt" contenteditable="true" spellcheck="false">二、分镜脚本</h2>
+            </div>
+
+            <div class="blk" data-editable="true" data-block-id="blk_a7" data-block-type="table">
+              <button class="blk-handle" title="块操作">⋮⋮</button>
+              <div class="tablewrap">
+                <table class="doc">
+                  <thead><tr><th>镜次</th><th>画面</th><th>口播要点</th><th>时长</th></tr></thead>
+                  <tbody>
+                    <tr><td>01</td><td contenteditable="true">五支产品并排铺开，俯拍</td><td contenteditable="true">抛出评论区那个问题</td><td>0:00–0:06</td></tr>
+                    <tr><td>02</td><td contenteditable="true">成分表特写，逐条圈出</td><td contenteditable="true">三类成分怎么分</td><td>0:06–0:24</td></tr>
+                    <tr><td>03</td><td contenteditable="true">手背涂抹对比，微距</td><td contenteditable="true">吸收速度的真实差距</td><td>0:24–0:41</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 受保护块：data_snapshot -->
+            <div class="blk" data-editable="false" data-block-id="blk_a8" data-block-type="data_snapshot">
+              <div class="snapshot">
+                <div class="snapshot-head">
+                  <strong>受保护数据快照</strong>
+                  <span class="lockpill">🔒 不可编辑</span>
+                </div>
+                <dl>
+                  <div><dt>实测样本</dt><dd>5</dd></div>
+                  <div><dt>涂抹后失水率</dt><dd>18.4%</dd></div>
+                  <div><dt>测试时长</dt><dd>14 天</dd></div>
+                  <div><dt>环境湿度</dt><dd>32%</dd></div>
+                </dl>
+                <p class="snapshot-why">这些数字由素材拆解任务生成，改动会让它和来源对不上。要更新请回到<a href="#">对应的拆解运行</a>重跑——正文里只能引用，不能改写。</p>
+                <small>指标快照 · 对象 obj_5KP2K9WQ · 来源修订 3 · 采集于 08-29 15:02</small>
+              </div>
+            </div>
+
+            <div class="blk" data-editable="true" data-block-id="blk_a9" data-block-type="heading_2">
+              <button class="blk-handle" title="块操作">⋮⋮</button>
+              <h2 class="rt" contenteditable="true" spellcheck="false">三、发布前待办</h2>
+            </div>
+
+            <div class="blk" data-editable="true" data-block-id="blk_a10" data-block-type="todo_item">
+              <button class="blk-handle" title="块操作">⋮⋮</button>
+              <label class="todo done"><input type="checkbox" checked><span contenteditable="true" spellcheck="false">补齐五支产品的成分表截图</span></label>
+              <label class="todo"><input type="checkbox"><span contenteditable="true" spellcheck="false">功效表述过一遍平台限制用语</span></label>
+              <label class="todo"><input type="checkbox"><span contenteditable="true" spellcheck="false">封面文案做三版 A/B</span></label>
+            </div>
+
+          </div>
+
+          <!-- ── 让 AI 改稿 ── -->
+          <div class="aiwrap">
+            <div class="plan" id="plan" hidden>
+              <div class="plan-head">
+                <h4>改稿计划</h4>
+                <span class="plan-count go">2 项将执行</span>
+                <span class="plan-count man">1 项需你来</span>
+                <span class="plan-count no">2 项不会碰</span>
+                <p class="ask">你的要求：把「封闭剂」统一改成「锁水成分」；待办里补一条封面合规检查。</p>
+              </div>
+              <div class="plan-body">
+                <div class="plan-sec go">
+                  <h5>▸ 将要修改</h5>
+                  <div class="op" data-off="0">
+                    <div class="op-top"><span class="op-where">先说结论 · 正文段落</span><span class="op-kind">替换用词</span><button class="op-off">不改这条</button></div>
+                    <div class="op-diff"><span class="op-old">封闭剂</span>→<span class="op-new">锁水成分</span><span class="op-why">· 命中 2 处</span></div>
+                    <p class="op-why">精确匹配，不使用正则、不区分大小写匹配或语义匹配——只替换字面完全一致的词。</p>
+                  </div>
+                  <div class="op" data-off="0">
+                    <div class="op-top"><span class="op-where">发布前待办 · 列表末尾</span><span class="op-kind">追加一条</span><button class="op-off">不改这条</button></div>
+                    <p class="op-why">在待办末尾追加：封面文案过一遍平台合规检查。只在末尾追加，不改动已有条目。</p>
+                  </div>
+                </div>
+                <div class="plan-sec man">
+                  <h5>▸ AI 不做，需要你来</h5>
+                  <div class="op">
+                    <div class="op-top"><span class="op-where">受保护数据快照</span><span class="op-kind" style="background:var(--peach);color:var(--peach-ink)">已跳过</span></div>
+                    <p class="op-why">「封闭剂」在这个受保护块里也出现了一次。受保护块不接受改写，要同步口径请回到生成它的拆解任务重跑，正文里只能引用。</p>
+                  </div>
+                </div>
+                <div class="plan-sec no">
+                  <h5>▸ 不会碰的</h5>
+                  <div class="op">
+                    <p class="op-why"><b>受保护数据快照</b>——由拆解任务生成，改了就和来源对不上。<br><b>图片、附件、注意提示框与分镜表格结构</b>——默认不变量，AI 不删除也不移动。</p>
+                  </div>
+                </div>
+              </div>
+              <div class="plan-foot">
+                <button class="btn btn-primary" id="btnApply">确认并存为新修订</button>
+                <button class="btn btn-ghost" id="btnDrop">取消</button>
+                <span class="note">应用后同样要走写入 → 登记 → 回读三步。</span>
+              </div>
+            </div>
+
+            <div class="aibar">
+              <span class="aibar-ico">✦</span>
+              <input id="askInput" type="text" aria-label="告诉 AI 要改什么"
+                     value="把「封闭剂」统一改成「锁水成分」；待办里补一条封面合规检查">
+              <button class="btn btn-primary" id="btnPlan">生成改稿计划</button>
+            </div>
+            <p class="aihint">你提要求，AI 出计划，你逐条确认后才动正文——改完存为一条新修订，在右栏「修订」里标为 AI 改稿，和你手改的分得开。受保护块与表格结构不在改动范围内。</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- ── 右栏 ── -->
+      <aside class="rail-right" aria-label="修订与证据">
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-pane="evidence">证据</button>
+          <button role="tab" aria-selected="false" data-pane="revs">修订</button>
+          <button role="tab" aria-selected="false" data-pane="publish">发布</button>
+        </div>
+
+        <!-- 证据 -->
+        <div class="pane" id="pEvidence" role="tabpanel">
+          <p class="pane-lead">每一次保存都必须留下这三样：内容校验值、基线版本、写后回读。缺一样都不算保存成功。</p>
+          <dl class="ledger">
+            <div><dt>成果 ID</dt><dd>art_7Q2M8XKD</dd></div>
+            <div><dt>当前修订</dt><dd id="evRev">v7 · 草稿</dd></div>
+            <div><dt>基线修订</dt><dd id="evBase">v6</dd></div>
+            <div><dt>内容校验值</dt><dd id="evSum">4f2a1d90…c081</dd></div>
+            <div><dt>写后回读</dt><dd class="ok" id="evRead">已回读 · 校验值一致</dd></div>
+            <div><dt>正文权威</dt><dd id="evAuth">网页端（唯一编辑权威）</dd></div>
+            <div><dt>幂等键</dt><dd id="evIdem">idem_01JC7X…9F2</dd></div>
+          </dl>
+
+          <div class="stack">
+            <div class="mini">
+              <strong>作用域自检</strong>
+              <p id="scopeText">这篇正文只落在你的个人工作区，全部查询由服务端按个人会话过滤。</p>
+              <div class="row" id="scopeRow"><span class="tick ok">个人租户命中</span><span class="tick ok">零飞书写入</span></div>
+            </div>
+            <div class="mini" id="mSave">
+              <strong>本次保存</strong>
+              <p id="mSaveText">尚无未保存改动。</p>
+              <div class="row">
+                <span class="tick wait" id="tickWrite">写入</span>
+                <span class="tick wait" id="tickRecord">登记</span>
+                <span class="tick wait" id="tickRead">回读</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="foot">失败关闭：写入、登记、必要回读<b>三步全部成功</b>才标记为已保存。任一步失败进入可处置状态，不会显示成功。</p>
+        </div>
+
+        <!-- 修订 -->
+        <div class="pane" id="pRevs" role="tabpanel" hidden>
+          <p class="pane-lead">修订链只增不改。AI 生成与手动保存在链上一律可分辨。</p>
+          <div class="revs" id="revList">
+            <div class="rev cur"><div class="rev-node">7</div><div class="rev-b"><strong>v7<span class="rev-tag ok">当前</span></strong><p>手动保存 · 你 · 09-02 10:41</p><div class="cs">4f2a1d90…c081</div></div></div>
+            <div class="rev"><div class="rev-node">6</div><div class="rev-b"><strong>v6<span class="rev-tag ai">AI 生成</span></strong><p>创作任务写入 · 09-01 22:15</p><div class="cs">b73c0e41…5a2f</div></div></div>
+            <div class="rev"><div class="rev-node">5</div><div class="rev-b"><strong>v5</strong><p>手动保存 · 你 · 09-01 19:04</p><div class="cs">1e88ff20…9d44</div></div></div>
+            <div class="rev"><div class="rev-node">4</div><div class="rev-b"><strong>v4<span class="rev-tag ai">AI 生成</span></strong><p>研究简报回填 · 08-30 14:20</p><div class="cs">7a05c1bb…2e70</div></div></div>
+          </div>
+        </div>
+
+        <!-- 发布 -->
+        <div class="pane" id="pPublish" role="tabpanel" hidden>
+          <p class="pane-lead">发布包只能引用<b>已回读</b>的修订。没回读过的修订不出现在下拉里。</p>
+          <div class="stack">
+            <div class="mini">
+              <strong>选择源修订</strong>
+              <p>v7 · 已回读 · 校验值一致</p>
+              <div class="row"><span class="tick ok">可用于发布</span></div>
+            </div>
+            <div class="mini">
+              <strong>平台版本</strong>
+              <p>小红书图文 · 已生成 3 版封面文案<br>抖音口播 · 待生成</p>
+              <div class="row"><span class="tick ok">小红书</span><span class="tick wait">抖音</span></div>
+            </div>
+            <div class="mini">
+              <strong>导出</strong>
+              <p>docx · 已绑定到 v7 这一个具体版本，模板和排版规则更新后不会悄悄改变已导出的内容。</p>
+              <div class="row"><span class="tick ok">内容校验值已绑定</span></div>
+            </div>
+          </div>
+          <p class="foot">导出成果、来源修订与平台目标三者可追溯；事后可复核当时导的到底是哪一版，模板或渲染规则升级不会反向影响历史导出。</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- 选区工具条 -->
+<div class="seltool" id="seltool" role="toolbar" aria-label="文字格式">
+  <button data-mark="bold" class="b" title="加粗">B</button>
+  <button data-mark="italic" class="i" title="斜体">I</button>
+  <button data-mark="underline" class="u" title="下划线">U</button>
+  <button data-mark="strikeThrough" class="s" title="删除线">S</button>
+  <span class="div"></span>
+  <button data-mark="code" title="行内代码">&lt;/&gt;</button>
+  <button data-mark="link" title="链接">🔗</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var saveState = $('saveState'), saveText = $('saveText'), btnSave = $('btnSave');
+  var banners = { conflict: $('bnConflict'), unsupported: $('bnUnsupported'), offline: $('bnOffline'), org: $('bnOrg'), saving: $('bnSaving') };
+
+  // 写入中：逐步推进 + 实时计时，让「到哪一步了、还能不能中断」一眼可见
+  var savingTimer = null, savingStart = 0;
+  function setStep(n, s, text, badge){
+    var el = $('ws' + n); if (!el) return;
+    el.setAttribute('data-s', s);
+    $('ws' + n + 't').textContent = text;
+    $('ws' + n + 'e').textContent = badge;
+  }
+  function stopSaving(){ if (savingTimer){ clearInterval(savingTimer); savingTimer = null; } }
+  function startSaving(){
+    stopSaving();
+    savingStart = Date.now();
+    setStep(1,'run','正在生成新修订 v9…','进行中');
+    setStep(2,'wait','等待上一步落库','等待');
+    setStep(3,'wait','读回正文，比对内容校验值','等待');
+    $('savingTitle').textContent = '正在保存 · 第 1 步，共 3 步';
+    savingTimer = setInterval(function(){
+      var ms = Date.now() - savingStart;
+      $('savingElapsed').textContent = (ms / 1000).toFixed(1) + 's';
+      var left = Math.max(0, 600000 - ms);
+      $('savingLease').textContent = Math.floor(left/60000) + '分' + String(Math.floor(left%60000/1000)).padStart(2,'0') + '秒';
+      if (ms > 320 && ms < 660){
+        setStep(1,'done','新修订 v9 已落库','已完成');
+        setStep(2,'run','正在写幂等收据…','进行中');
+        $('savingTitle').textContent = '正在保存 · 第 2 步，共 3 步';
+        setSave('busy','正在保存 · 第 2 步，共 3 步', true);
+        ticks('ok','wait','wait');
+      } else if (ms >= 660){
+        setStep(2,'done','收据已登记','已完成');
+        setStep(3,'run','正在读回并比对校验值…','进行中');
+        $('savingTitle').textContent = '正在保存 · 第 3 步，共 3 步';
+        setSave('busy','正在保存 · 第 3 步，共 3 步', true);
+        ticks('ok','ok','wait');
+      }
+    }, 100);
+  }
+  var blocks = $('blocks');
+  var state = 'clean';
+
+  function setSave(tone, text, disabled){
+    saveState.setAttribute('data-tone', tone);
+    saveText.textContent = text;
+    btnSave.disabled = !!disabled;
+  }
+  function hideBanners(){ for (var k in banners) banners[k].hidden = true; }
+  function clearFlags(){
+    var f = blocks.querySelectorAll('[data-flag]');
+    for (var i=0;i<f.length;i++){ f[i].removeAttribute('data-flag'); var b=f[i].querySelector('.blk-flag'); if(b) b.remove(); }
+  }
+  function setEditable(on){
+    var eds = document.querySelectorAll('[contenteditable]');
+    for (var i=0;i<eds.length;i++) eds[i].setAttribute('contenteditable', on ? 'true' : 'false');
+    var boxes = document.querySelectorAll('.todo input');
+    for (var j=0;j<boxes.length;j++) boxes[j].disabled = !on;
+  }
+  function ticks(w, r, d){
+    var map = { w:['tickWrite',w], r:['tickRecord',r], d:['tickRead',d] };
+    for (var k in map){ var el = $(map[k][0]); if(el) el.className = 'tick ' + map[k][1]; }
+  }
+
+  function go(next){
+    state = next;
+    if (next !== 'saving') stopSaving();
+    hideBanners(); clearFlags(); setEditable(true);
+    $('plan').hidden = (next !== 'plan');
+    hitBlocks(next === 'plan');
+    $('kindPill').className = 'kindpill';
+    $('kindPill').textContent = '创作文档 · 个人工作区';
+    $('metaAuthority').textContent = '网页端';
+    $('evAuth').textContent = '网页端（唯一编辑权威）';
+    $('btnSave').hidden = false;
+    $('btnOpenLark').hidden = true;
+    $('scopeText').textContent = '这篇正文只落在你的个人工作区，全部查询由服务端按个人会话过滤。';
+    $('scopeRow').innerHTML = '<span class="tick ok">个人租户命中</span><span class="tick ok">零飞书写入</span>';
+
+    if (next === 'clean'){
+      setSave('clean','已保存 · v7', true);
+      $('mSaveText').textContent = '尚无未保存改动。'; ticks('wait','wait','wait');
+    } else if (next === 'dirty'){
+      setSave('dirty','有 3 处未保存改动', false);
+      $('mSaveText').textContent = '3 处改动待保存，基线 v7。'; ticks('wait','wait','wait');
+    } else if (next === 'saving'){
+      setSave('busy','正在保存 · 第 1 步，共 3 步', true);
+      banners.saving.hidden = false;
+      startSaving();
+      $('mSaveText').textContent = '写入进行中，三步都过了才算保存成功。'; ticks('wait','wait','wait');
+    } else if (next === 'plan'){
+      setSave('dirty','改稿计划待确认', true);
+      $('mSaveText').textContent = '计划已生成，确认后才动正文。'; ticks('wait','wait','wait');
+    } else if (next === 'saved'){
+      var ai = savedByAi;
+      setSave('clean','已保存 · v8', true);
+      $('evRev').textContent = 'v8 · 草稿'; $('evBase').textContent = 'v7';
+      $('evSum').textContent = 'c19be4a7…8f30';
+      $('mSaveText').textContent = ai ? '已生成 v8，2 项已应用、1 项按受保护规则跳过。' : '已生成 v8，回读校验值一致。';
+      ticks('ok','ok', ai ? 'warnv' : 'ok');
+      var row = document.createElement('div');
+      row.className = 'rev cur';
+      row.innerHTML = '<div class="rev-node">8</div><div class="rev-b"><strong>v8'
+        + (ai ? '<span class="rev-tag ai">AI 改稿</span>' : '')
+        + '<span class="rev-tag ok">当前</span></strong><p>'
+        + (ai ? 'AI 改稿 · 你确认 · 刚刚' : '手动保存 · 你 · 刚刚')
+        + '</p><div class="cs">c19be4a7…8f30</div></div>';
+      savedByAi = false;
+      var list = $('revList');
+      var prev = list.querySelector('.rev.cur');
+      if (prev){ prev.className = 'rev'; var t = prev.querySelector('.rev-tag'); if(t) t.remove(); }
+      list.insertBefore(row, list.firstChild);
+      setTimeout(function(){ if(state==='saved') go('clean'); }, 2600);
+    } else if (next === 'conflict'){
+      setSave('bad','保存被拒绝 · 修订冲突', false);
+      banners.conflict.hidden = false;
+      $('evRead').textContent = '未回读 · 保存未完成'; $('evRead').className = 'bad';
+      $('mSaveText').textContent = '写入被拒：基线 v7 已过期。'; ticks('bad','wait','wait');
+      var rl = $('revList');
+      if (!rl.querySelector('.rev.remote')){
+        var v9 = document.createElement('div');
+        v9.className = 'rev remote';
+        v9.innerHTML = '<div class="rev-node">9</div><div class="rev-b"><strong>v9<span class="rev-tag re">服务端</span></strong><p>另一处保存 · 09-02 10:44</p><div class="cs">9be1a2c5…37da</div></div>';
+        rl.insertBefore(v9, rl.firstChild);
+      }
+      banners.conflict.scrollIntoView({ block:'nearest' });
+    } else if (next === 'unsupported'){
+      setSave('bad','1 个块无法保存', false);
+      banners.unsupported.hidden = false;
+      var target = blocks.querySelector('[data-block-id="blk_a7"]');
+      if (target && !target.querySelector('.blk-flag')){
+        target.setAttribute('data-flag','unsupported');
+        var flag = document.createElement('span');
+        flag.className = 'blk-flag';
+        flag.textContent = '⚠ 表格结构暂不支持';
+        target.insertBefore(flag, target.firstChild);
+      }
+      $('mSaveText').textContent = '1 个块被拒，其余块可保存。'; ticks('bad','wait','wait');
+    } else if (next === 'offline'){
+      setSave('bad','未送达 · 正在重试', false);
+      banners.offline.hidden = false;
+      $('mSaveText').textContent = '请求未送达，草稿保留在编辑区。'; ticks('bad','wait','wait');
+    } else if (next === 'org'){
+      setSave('ro','只读镜像 · 远端 v14', true);
+      banners.org.hidden = false;
+      setEditable(false);
+      $('kindPill').className = 'kindpill lark';
+      $('kindPill').textContent = '创作文档 · 组织工作区';
+      $('metaAuthority').textContent = '飞书';
+      $('evAuth').textContent = '飞书（唯一编辑权威）';
+      // 只读镜像不该显示变灰的「保存」——那会被读成权限不足
+      $('btnSave').hidden = true;
+      $('btnOpenLark').hidden = false;
+      $('scopeText').textContent = '这篇正文属于当前组织绑定，网页端只做回读镜像，不提供编辑入口。';
+      $('scopeRow').innerHTML = '<span class="tick ok">组织绑定有效</span><span class="tick ok">零内部正文写入</span>';
+      $('mSaveText').textContent = '网页端不写入组织正文。'; ticks('wait','wait','wait');
+    }
+
+    var btns = document.querySelectorAll('.proto-seg button');
+    for (var i=0;i<btns.length;i++){
+      btns[i].setAttribute('aria-pressed', String(btns[i].getAttribute('data-go') === next));
+    }
+  }
+
+  var segBtns = document.querySelectorAll('.proto-seg button');
+  for (var i=0;i<segBtns.length;i++){
+    segBtns[i].addEventListener('click', function(){ go(this.getAttribute('data-go')); });
+  }
+
+  // 编辑即置脏
+  blocks.addEventListener('input', function(){
+    if (state === 'clean' || state === 'saved') go('dirty');
+  });
+
+  function doSave(){
+    if (state === 'org' || state === 'clean') return;
+    go('saving');
+    setTimeout(function(){ if (state === 'saving') go('saved'); }, 1050);
+  }
+
+  // ---- 让 AI 改稿 ----
+  var savedByAi = false;
+  // 命中块高亮：计划点到哪几块，正文上直接标出来，不让人自己找
+  function hitBlocks(on){
+    var ids = ['blk_a3','blk_a10'];
+    for (var i=0;i<ids.length;i++){
+      var el = blocks.querySelector('[data-block-id="'+ids[i]+'"]');
+      if (!el) continue;
+      if (on){
+        el.style.background = 'color-mix(in srgb, var(--mint-soft) 55%, transparent)';
+        el.style.boxShadow = '0 0 0 1px color-mix(in srgb, var(--mint) 34%, transparent)';
+      } else { el.style.background=''; el.style.boxShadow=''; }
+    }
+  }
+  $('btnPlan').addEventListener('click', function(){ go('plan'); $('plan').scrollIntoView({block:'nearest'}); });
+  $('btnDrop').addEventListener('click', function(){ go('clean'); });
+  $('btnApply').addEventListener('click', function(){
+    savedByAi = true;
+    $('plan').hidden = true;
+    go('saving');
+    setTimeout(function(){ if (state === 'saving') go('saved'); }, 1050);
+  });
+  document.querySelectorAll('.op-off').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var op = this.closest('.op');
+      var off = op.getAttribute('data-off') === '1';
+      op.setAttribute('data-off', off ? '0' : '1');
+      this.textContent = off ? '不改这条' : '恢复这条';
+    });
+  });
+  btnSave.addEventListener('click', doSave);
+  document.addEventListener('keydown', function(e){
+    if ((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S')){ e.preventDefault(); doSave(); }
+  });
+
+  $('btnReload').addEventListener('click', function(){
+    $('evRev').textContent = 'v9 · 草稿'; $('evBase').textContent = 'v8';
+    $('evSum').textContent = '9be1a2c5…37da';
+    $('evRead').textContent = '已回读 · 校验值一致'; $('evRead').className = 'ok';
+    go('clean'); setSave('clean','已保存 · v9', true);
+  });
+  $('btnRetry').addEventListener('click', doSave);
+  $('btnSaveRest').addEventListener('click', function(){ clearFlags(); doSave(); });
+  $('btnJump').addEventListener('click', function(){
+    var t = blocks.querySelector('[data-block-id="blk_a7"]');
+    if (t) t.scrollIntoView({ block:'center', behavior:'smooth' });
+  });
+  $('btnHistory').addEventListener('click', function(){ selectPane('revs'); });
+  $('btnDiff').addEventListener('click', function(){ selectPane('revs'); });
+  $('btnFork').addEventListener('click', function(){ selectPane('revs'); });
+
+  // 右栏页签
+  function selectPane(name){
+    var map = { evidence:'pEvidence', revs:'pRevs', publish:'pPublish' };
+    for (var k in map) $(map[k]).hidden = (k !== name);
+    var tabs = document.querySelectorAll('.tabs button');
+    for (var i=0;i<tabs.length;i++){
+      tabs[i].setAttribute('aria-selected', String(tabs[i].getAttribute('data-pane') === name));
+    }
+  }
+  var tabBtns = document.querySelectorAll('.tabs button');
+  for (var j=0;j<tabBtns.length;j++){
+    tabBtns[j].addEventListener('click', function(){ selectPane(this.getAttribute('data-pane')); });
+  }
+
+  // 选区工具条
+  var tool = $('seltool');
+  function placeTool(){
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0){ tool.classList.remove('on'); return; }
+    var node = sel.anchorNode;
+    var host = node && (node.nodeType === 1 ? node : node.parentElement);
+    if (!host || !host.closest('[contenteditable="true"]')){ tool.classList.remove('on'); return; }
+    var r = sel.getRangeAt(0).getBoundingClientRect();
+    if (!r || (!r.width && !r.height)){ tool.classList.remove('on'); return; }
+    tool.classList.add('on');
+    var w = tool.offsetWidth || 210;
+    var left = Math.min(Math.max(8, r.left + r.width/2 - w/2), window.innerWidth - w - 8);
+    var top = r.top - tool.offsetHeight - 9;
+    if (top < 8) top = r.bottom + 9;
+    tool.style.left = left + 'px';
+    tool.style.top = top + 'px';
+  }
+  document.addEventListener('selectionchange', placeTool);
+  window.addEventListener('scroll', function(){ if (tool.classList.contains('on')) placeTool(); }, true);
+
+  var toolBtns = tool.querySelectorAll('button');
+  for (var m=0;m<toolBtns.length;m++){
+    toolBtns[m].addEventListener('mousedown', function(e){ e.preventDefault(); });
+    toolBtns[m].addEventListener('click', function(){
+      var mark = this.getAttribute('data-mark');
+      var sel = window.getSelection();
+      if (!sel || sel.isCollapsed) return;
+      if (mark === 'code' || mark === 'link'){
+        var range = sel.getRangeAt(0);
+        var wrap = document.createElement(mark === 'code' ? 'span' : 'a');
+        if (mark === 'code') wrap.className = 'icode';
+        else { wrap.href = '#'; wrap.title = '示例链接'; }
+        try { range.surroundContents(wrap); } catch (err) { /* 跨块选区：忽略 */ }
+      } else {
+        try { document.execCommand(mark, false, null); } catch (err) { /* 不支持则忽略 */ }
+      }
+      if (state === 'clean' || state === 'saved') go('dirty');
+      tool.classList.remove('on');
+    });
+  }
+
+  go('clean');
+})();
+</script>

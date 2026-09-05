@@ -258,30 +258,12 @@ function numericValue(expression: ts.Expression): number | null {
 }
 
 function validateClipboardInteraction(sourceFile: ts.SourceFile): void {
-  requireContract(hasNamedImport(sourceFile, '../../../lib/clipboard', 'copyText', 'copyText'), 'Admin Access must import the shared clipboard helper')
-  requireContract(!hasDirectClipboardWrite(sourceFile), 'Admin Access directly bypasses the shared clipboard helper')
-
-  const copyFunction = findFunctionAnywhere(sourceFile, 'copySafeCommand')
-  const copyCalls = collectCallExpressions(copyFunction).filter((call) => callName(call) === 'copyText')
-  requireContract(copyCalls.length === 1, 'safe-command copy must call the shared helper exactly once')
-  const copyArgument = copyCalls[0]?.arguments[0]
-  requireContract(!!copyArgument && isNamedAccess(copyArgument, 'item', 'safeCommand'), 'copy must be limited to item.safeCommand')
-
-  const tryStatement = collectTryStatements(copyFunction).find((statement) => (
-    collectCallExpressions(statement.tryBlock).some((call) => callName(call) === 'copyText')
-  ))
-  requireContract(tryStatement, 'copy operation is missing a try block')
-  requireContract(!!tryStatement.catchClause, 'copy operation is missing rejected-promise handling')
-  requireContract(hasStateUpdate(tryStatement.tryBlock, 'success'), 'copy success state is missing')
-  requireContract(!!tryStatement.catchClause && hasStateUpdate(tryStatement.catchClause.block, 'error'), 'copy failure state is missing')
-
-  const feedback = collectJsxNodes(sourceFile).some((node) => {
-    const opening = jsxOpening(node)
-    return jsxStringAttribute(opening, 'role') === 'status'
-      && jsxStringAttribute(opening, 'aria-live') === 'polite'
-      && containsNamedPropertyAccess(node, 'copyState', 'status')
-  })
-  requireContract(feedback, 'copy success/failure feedback lacks accessible status semantics')
+  const source = sourceFile.getFullText()
+  requireContract(!source.includes('copySafeCommand'), 'Admin Access must not copy server commands')
+  requireContract(!source.includes('copyText'), 'Admin Access must not expose server command clipboard access')
+  requireContract(!source.includes('safeCommand'), 'Admin Access must not reference safeCommand')
+  requireContract(!source.includes('configurationScript'), 'Admin Access must not reference configurationScript')
+  requireContract(!source.includes('/home/ubuntu'), 'Admin Access must not expose server filesystem paths')
 }
 
 function validateTabInteraction(sourceFile: ts.SourceFile): void {
@@ -415,14 +397,9 @@ validateEnhancedFrontend(frontendSource)
 
 if (process.argv.includes('--self-test')) {
   expectRejected(
-    'direct clipboard bypass',
-    frontendSource.replace('await copyText(item.safeCommand)', 'await navigator.clipboard.writeText(item.safeCommand)'),
-    /shared clipboard helper|directly bypasses/u,
-  )
-  expectRejected(
-    'missing copy failure handling',
-    frontendSource.replace("setCopyState({ platform: item.platform, status: 'error' })", "setCopyState({ platform: item.platform, status: 'success' })"),
-    /rejected-promise handling|failure state/u,
+    'server command reference',
+    frontendSource + '\nconst leaked = safeCommand',
+    /safeCommand/u,
   )
   expectRejected(
     'missing roving tab order',

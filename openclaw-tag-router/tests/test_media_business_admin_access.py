@@ -13,6 +13,7 @@ from openclaw_app.services.media_business.admin_access import (
     AdminAccessInvalidRequest,
     AdminAccessRevisionConflict,
     AdminAccessService,
+    PostgresAdminAccessStorage,
 )
 
 
@@ -500,6 +501,25 @@ def test_affiliate_users_cursor_roundtrip_survives_full_length_payload():
     )
     assert [item["displayName"] for item in second_page["items"]] == ["bob"]
     assert second_page["nextCursor"] is None
+
+
+def test_postgres_affiliate_first_page_binds_null_uuid_cursor():
+    class QueryResult:
+        def fetchall(self):
+            return []
+
+    class QueryConnection:
+        def __init__(self):
+            self.params = None
+
+        def execute(self, query, params):
+            self.params = params
+            return QueryResult()
+
+    connection = QueryConnection()
+    PostgresAdminAccessStorage().affiliate_users(connection, search="", position=None, limit=30)
+    assert connection.params is not None
+    assert connection.params[5] is None
 
 
 def test_admission_batches_cursor_roundtrip_survives_full_length_payload():

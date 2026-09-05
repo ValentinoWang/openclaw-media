@@ -144,7 +144,7 @@ def _revision(*parts: Any) -> int:
         else:
             values.append(foundation.canonical_json(part))
     digest = hashlib.sha256("|".join(values).encode("utf-8")).digest()
-    return int.from_bytes(digest[:8], "big") & ((1 << 63) - 1)
+    return int.from_bytes(digest[:8], "big") & ((1 << 53) - 1)
 
 
 def _request_fingerprint(operation: str, payload: Any) -> str:
@@ -253,7 +253,10 @@ class PostgresAdminAccessStorage:
                     "account_user.", "created_at", "id",
                     and_indent=" " * 18, inner_indent=" " * 20, tail_indent=" " * 16, closing_indent=" " * 16,
                 )}""",
-            (search, pattern, *sql_pagination.keyset_params(ts, object_id), limit),
+            # The tiebreak column is UUID.  Bind NULL on the first page so
+            # PostgreSQL never attempts to cast the old empty-string sentinel
+            # to UUID before the leading NULL cursor branch short-circuits.
+            (search, pattern, *sql_pagination.keyset_params(ts, object_id, no_position_id=None), limit),
         ).fetchall()
         return list(rows)
 

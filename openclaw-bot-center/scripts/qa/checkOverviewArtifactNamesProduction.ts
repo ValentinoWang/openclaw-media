@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { chromium, request, type Browser } from "playwright";
 
-const origin = (process.env.MEDIA_QA_ORIGIN ?? "http://106.52.146.37").replace(/\/$/, "");
+const origin = (process.env.MEDIA_QA_ORIGIN ?? "https://mediapilot.cloud").replace(/\/$/, "");
 const storageState = process.env.MEDIA_QA_STORAGE_STATE;
 const outputRoot = resolve(
   process.env.MEDIA_QA_OUTPUT ?? "/home/ubuntu/qa-evidence/overview-artifact-names-production",
