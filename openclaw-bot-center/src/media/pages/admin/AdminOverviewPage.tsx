@@ -56,20 +56,20 @@ type AdminOverview = {
     from: string;
     to: string;
   };
+  // 合同里 action / targetType / status 都是自由字符串,不是枚举——真实后端可以
+  // 在任何时候发一个前端从没见过的取值。这里的字段类型是「解析并归一化之后」
+  // 的形状:targetType/status 收窄回闭合联合类型,但收窄发生在 normalizeAdminAction
+  // 里,不是靠拒绝整条记录——后端发一个没登记的取值,不该让 `.every(isAdminAction)`
+  // 失败、把整个平台总览拖垮成一片报错(那是拿可用性换严格性)，也不该被悄悄丢掉
+  // 这条审计记录(那比显示「未知」更糟)。isAdminAction 只校验形状(RawAdminAction，
+  // 见下方)，normalizeAdminAction 再把认不出的 targetType/status 落到已登记的
+  // "unknown" 取值上——记录本身照常显示，只有认不出的那个字段显示成「未知」。
   recentActions: Array<{
     publicActionId: string;
-    // 合同里 action / targetType / status 都是自由字符串,不是枚举——真实后端可以
-    // 在任何时候发一个前端从没见过的取值。曾经这里把 targetType/status 收窄成
-    // 闭合联合类型,并在 isAdminAction 里按固定 Set 校验成员资格:后端一旦发一个
-    // 不在 Set 里的取值,整条 recentActions 数组的 `.every(isAdminAction)` 就会
-    // 失败,导致整个平台总览直接报错、不渲染。这三个字段改回 string,校验只认
-    // 「非空字符串」这个形状,未知取值交给下面的 actionLabel/actionTargetTypeLabel/
-    // actionStatusLabel 逐条兜底成中文「未知」,而不是让一整页因为一条审计记录
-    // 陪葬。
     action: string;
-    targetType: string;
+    targetType: AdminActionTargetType;
     reasonSummary: string;
-    status: string;
+    status: AdminActionStatus;
     createdAt: string;
   }>;
   generatedAt: string;
@@ -153,21 +153,6 @@ const ACTION_NAME_LABELS: Record<string, string> = {
 
 function actionLabel(action: string): string {
   return ACTION_NAME_LABELS[action] ?? "其他管理操作";
-}
-
-/** targetType/status 查表命中时按已知取值翻译;命中不了(后端发了一个前端
- *  还没配置过的自由字符串)一律落到中文「未知」,不把原始取值渲染出来,也
- *  不留一个空白徽标。 */
-function actionTargetTypeLabel(targetType: string): string {
-  return ACTION_TARGET_TYPES.has(targetType as AdminActionTargetType)
-    ? ACTION_TARGET_TYPE_LABELS[targetType as AdminActionTargetType]
-    : "未知";
-}
-
-function actionStatusLabel(status: string): string {
-  return ACTION_STATUSES.has(status as AdminActionStatus)
-    ? ACTION_STATUS_LABELS[status as AdminActionStatus]
-    : "未知";
 }
 
 export default function AdminOverviewPage() {
@@ -364,7 +349,6 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
               <div
                 className={styles["admin-governance-list"]}
                 role="region"
-                tabIndex={0}
                 aria-label="治理待办列表"
               >
                 <ol className={styles["admin-governance-items"]}>
@@ -401,7 +385,6 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
               <div
                 className={styles["admin-actions-list"]}
                 role="region"
-                tabIndex={0}
                 aria-label="最近管理操作列表"
               >
                 {summary.recentActions.map((action) => (
@@ -417,12 +400,15 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
                       <span>{action.reasonSummary}</span>
                     </div>
                     <div className={styles["admin-action-meta"]}>
-                      <span>{actionTargetTypeLabel(action.targetType)}</span>
+                      {/* targetType/status 已经在 normalizeAdminAction 里归一化成
+                          闭合联合类型,查表理论上不会落空——`?? "未知"` 是防御性
+                          兜底(成本为零),不是因为这里真的可能拿到表外的取值。 */}
+                      <span>{ACTION_TARGET_TYPE_LABELS[action.targetType] ?? "未知"}</span>
                       <span
                         className={`mg-badge ${styles["admin-action-status"]}`}
                         data-tone={actionStatusTone(action.status)}
                       >
-                        {actionStatusLabel(action.status)}
+                        {ACTION_STATUS_LABELS[action.status] ?? "未知"}
                       </span>
                       <time dateTime={action.createdAt}>
                         {formatDateTime(action.createdAt)}
@@ -564,12 +550,12 @@ function getHealthMessage(
 
 type BadgeTone = "success" | "warning" | "danger";
 
-function actionStatusTone(status: string): BadgeTone | undefined {
+function actionStatusTone(status: AdminActionStatus): BadgeTone | undefined {
   if (status === "succeeded" || status === "recorded") return "success";
   if (status === "failed") return "danger";
   if (status === "degraded") return "warning";
-  // 未知取值落到 undefined:徽标不带 data-tone,渲染成中性灰的默认样式，
-  // 而不是空白或崩溃——已经是安全的兜底。
+  // "unknown"（以及其余未特别加色的取值）落到 undefined:徽标不带 data-tone，
+  // 渲染成中性灰的默认样式，而不是空白或崩溃——已经是安全的兜底。
   return undefined;
 }
 
@@ -643,7 +629,17 @@ function parseDashboardResponse(value: unknown): AdminDashboardResponse {
   ) {
     throw new Error("平台总览返回的审计事实不一致。");
   }
-  return value as AdminDashboardResponse;
+  // recentActions 逐条归一化：isAdminAction 只保证了形状（RawAdminAction），
+  // targetType/status 是否落在已知取值范围内还没检查——normalizeAdminAction
+  // 在这里把认不出的字段落到 "unknown"，同一条记录的其余字段原样保留，不整条
+  // 丢弃。
+  return {
+    ...(value as AdminDashboardResponse),
+    summary: {
+      ...(summary as unknown as AdminOverview),
+      recentActions: (summary.recentActions as RawAdminAction[]).map(normalizeAdminAction),
+    },
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -678,12 +674,26 @@ function isServiceHealth(value: unknown): value is AdminOverview["serviceHealth"
   );
 }
 
-function isAdminAction(value: unknown): value is AdminOverview["recentActions"][number] {
+/** isAdminAction 通过之后的形状：targetType/status 已确认是非空字符串，但
+ *  还没确认落在已知取值范围内——那一步是 normalizeAdminAction 的工作，不是
+ *  这里的。分成两个类型是为了让 isAdminAction 的类型谓词保持诚实：它真正
+ *  校验过的只有「形状」，没校验过「取值是否认识」。 */
+type RawAdminAction = {
+  publicActionId: string;
+  action: string;
+  targetType: string;
+  reasonSummary: string;
+  status: string;
+  createdAt: string;
+};
+
+function isAdminAction(value: unknown): value is RawAdminAction {
   // action/targetType/status 只按「非空字符串」校验形状,不再要求命中一个固定
-  // Set——那个 Set 是前端本地维护的,会先于后端的真实取值范围过时。校验只负责
-  // 拒绝结构不对的数据;取值是否认识、认不出时怎么显示,交给 actionLabel /
-  // actionTargetTypeLabel / actionStatusLabel 逐条兜底（见上方）,不让一条没
-  // 见过的审计记录把整个平台总览拖垮成一片报错。
+  // Set——那个 Set 是前端本地维护的,会先于后端的真实取值范围过时。这里只负责
+  // 拒绝结构不对的数据（缺字段、字段类型不对、公开编号或时间格式不合法）；
+  // 后端发一个前端没登记过的 targetType/status 不该让这条记录、更不该让整个
+  // 数组因为 .every 而被判定为「数据不完整」。取值是否认识、认不出时怎么办，
+  // 交给下面的 normalizeAdminAction 逐条处理，不在这一层拒绝。
   return (
     isRecord(value) &&
     hasExactKeys(value, ["publicActionId", "action", "targetType", "reasonSummary", "status", "createdAt"]) &&
@@ -695,6 +705,28 @@ function isAdminAction(value: unknown): value is AdminOverview["recentActions"][
     isNonEmptyString(value.status) &&
     isDateTimeString(value.createdAt)
   );
+}
+
+/** 把 isAdminAction 放行的「形状正确、取值未知」记录，归一化成渲染真正
+ *  消费的形状：targetType/status 命中已登记的 Set 就原样收窄进闭合联合
+ *  类型；命中不了——后端发了一个前端从没见过的自由字符串——就落到已经
+ *  登记过的 "unknown" 取值上（ACTION_TARGET_TYPE_LABELS/ACTION_STATUS_LABELS
+ *  都有 unknown: "未知"）。记录本身（action、reasonSummary、时间等）原样
+ *  保留、照常显示——一条审计记录不能因为某个字段读不懂就被整条丢弃，那比
+ *  显示「未知」更糟。 */
+function normalizeAdminAction(value: RawAdminAction): AdminOverview["recentActions"][number] {
+  return {
+    publicActionId: value.publicActionId,
+    action: value.action,
+    targetType: ACTION_TARGET_TYPES.has(value.targetType as AdminActionTargetType)
+      ? (value.targetType as AdminActionTargetType)
+      : "unknown",
+    reasonSummary: value.reasonSummary,
+    status: ACTION_STATUSES.has(value.status as AdminActionStatus)
+      ? (value.status as AdminActionStatus)
+      : "unknown",
+    createdAt: value.createdAt,
+  };
 }
 
 function formatDateTime(value: string): string {

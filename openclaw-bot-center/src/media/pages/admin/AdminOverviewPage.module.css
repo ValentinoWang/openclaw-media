@@ -1,12 +1,23 @@
+/* 五个管理员页里这一页曾是唯一还锁着视口高度的一页：/admin/access、
+   /admin/billing、/admin/upstreams 都已经把 `.page` 的 height: calc(100dvh…)
+   + overflow: hidden 去掉，无条件设下面四个释放令牌，让整页跟着
+   .media-content 一起滚动，每块面板按自己的内容定高——不像共享的
+   persistent-rail 契约那样只在窄断点松开。这里改成同样的无条件写法：
+   两栏内容合起来天然就会超过一屏（治理待办本来就可能有几十条、最近管理
+   操作是审计流水），不是「偶尔窄屏才装不下」，所以不分宽窄一律松开。
+   四个令牌沿继承链传给下面的 [data-page-layout]/[data-page-primary]/
+   [data-page-inspector]，在这里写一次即可，不用再在 @media 断点里重复写
+   一遍同样的重置。 */
 .admin-overview-page {
   display: flex;
-  min-width: 0;
   width: 100%;
-  height: calc(100dvh - var(--mg-shell-topbar, 86px) - 46px);
-  min-height: 0;
+  min-width: 0;
   flex-direction: column;
-  overflow: visible;
   color: var(--mg-ink);
+  --mg-rail-shell-height: auto;
+  --mg-rail-grow: 0 0 auto;
+  --mg-rail-fill: auto;
+  --mg-rail-align: start;
 }
 
 .admin-overview-page > :global(.mg-state) {
@@ -101,37 +112,31 @@
   line-height: 1.35;
 }
 
+/* 高度不再靠这一层分：.page 的四个令牌已经无条件把 [data-page-layout=
+   "persistent-rail"] 及其下 [data-page-primary]/[data-page-inspector] 的
+   height/align-self 都交给 auto/start（见共享契约 media.css）。这里只剩
+   「两栏够不够并排」这一件事——真正窄到并排都放不下时在下面 1120px 断点
+   收成一列，与高度契约无关。 */
 .admin-overview-grid {
   display: grid;
   min-width: 0;
-  min-height: 0;
-  flex: 1 1 auto;
   grid-template-columns: minmax(0, 1fr) minmax(410px, 440px);
   gap: 18px;
-  align-items: stretch;
-  overflow: hidden;
 }
 
-/* 曾经是 `grid-template-rows: auto minmax(0, 1fr)`：第一行（治理待办）按
-   max-content 无上限取「auto」，第二行（最近管理操作）才有 minmax(0, 1fr) 的
-   下限。CSS Grid 的行尺寸只看 grid-template-rows，子项自己写的 flex 属性在
-   grid 容器里根本不生效——所以治理待办条目一多（长列表压力复制到 8 倍），
-   第一行的 auto 就吃满整栏固定高度，第二行被挤成 0，`.mg-panel` 的
-   overflow:hidden 连同「最近管理操作」的标题一起裁没，栏自己也是
-   overflow:hidden，滚不出来。改成纵向 flex 后，两块面板真正吃到自己已经
-   写好的 flex 属性（治理待办默认 `flex: 0 1 auto` 可收缩，最近管理操作显式
-   `flex: 1 1 auto`）：内容一旦超过本栏预算，两块面板按各自内容比例收缩，
-   收缩到低于内容高度时各自的 overflow:auto 列表区（.admin-governance-list /
-   .admin-actions-list）内部滚动，不再有哪一块能把另一块的标题都吞掉。 */
+/* 曾经这里 height: 100% + overflow: hidden，把本栏锁进共享契约分配的固定
+   预算，两块面板（治理待办 / 最近管理操作）靠 flex-shrink 抢那份预算，抢
+   不到就被压没——上一轮为了在这份固定预算里保住两块面板的标题，给它们都
+   加了 min-height: var(--mg-panel-heading-height) 下限。松开高度锁之后
+   ancestor 链一路到 .page 都是 auto 高，本栏没有固定预算可分，两块面板从
+   一开始就按各自内容的完整高度渲染、互不挤压——那两条 min-height 下限和
+   这里的 overflow:hidden/scrollbar-gutter 都是「在固定预算里怎么分」的
+   管线，预算没了，管线也一起去掉，不是留着当摆设。 */
 .admin-primary-column {
   display: flex;
   min-width: 0;
-  height: 100%;
-  min-height: 0;
   flex-direction: column;
   gap: 18px;
-  overflow: hidden;
-  scrollbar-gutter: stable;
 }
 
 .admin-panel {
@@ -236,25 +241,17 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* 三块面板（平台边界 / 服务健康 / 审计事实）摞在一栏固定高度里。之前是网格的
-   三行 auto auto minmax(0, 1fr)：前两行按内容取「auto」是没有上限的——服务健康
-   列的服务条目一多，光前两行就能吃满整栏的固定高度，第三行的下限是显式的 0，
-   于是审计面板被压成 0 高，`.mg-panel` 的 overflow:hidden 把它的标题和详情
-   整块裁掉，而本栏自己也是 overflow:hidden、scrollHeight 和 clientHeight
-   相等，滚动条根本不出现——裁掉的内容彻底不可见。改成纵向 flex 之后，三块
-   面板都用 flex:0 0 auto（下方）按自身内容渲染、永不被压缩，撑爆本栏固定高度
-   时改由本栏自己的 overflow-y:auto 整体滚动，不再逐块裁字。 */
+/* 三块面板（平台边界 / 服务健康 / 审计事实）以前摞在一栏固定高度里，height:
+   100% + overflow-y: auto 是那份固定预算自己的整栏滚动。松开高度锁之后，
+   本栏的 height/align-self 已经由共享契约按 --mg-rail-fill/--mg-rail-align
+   （见 .admin-overview-page）交给 auto/start，本栏不再有固定预算，也就不再
+   需要自己开一层滚动——三块面板一律 flex: 0 0 auto（下方），按内容完整渲染，
+   整页跟着 .media-content 一起滚动。 */
 .admin-side-column {
   display: flex;
   min-width: 0;
-  height: 100%;
-  min-height: 0;
   flex-direction: column;
   gap: 14px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-right: 2px;
-  scrollbar-gutter: stable;
 }
 
 .admin-boundary-panel ul {
@@ -288,19 +285,19 @@
   content: "";
 }
 
-/* 同样的道理反过来也要挡住：这块是「最近管理操作」的终端填充面，正常情况下
-   会先被压缩、由 .admin-actions-list 内部滚动，但下限也不能低于自己的标题——
-   给它和治理待办面板一样的 min-height 下限，两块面板谁被压缩都不会连标题
-   一起没了。 */
+/* flex: 1 1 auto 曾经是「吃满本栏剩余预算、必要时还能被压缩」的写法，配合
+   min-height: var(--mg-panel-heading-height) 兜底标题不被压没。本栏现在
+   没有固定预算可分（.admin-primary-column 已经是 auto 高），没有谁会压缩
+   这块面板：改成 flex: 0 0 auto——按内容定高、不参与栏内的伸缩分配，标题
+   下限也就用不上了，删掉。 */
 .admin-operations-panel {
   display: flex;
-  min-height: var(--mg-panel-heading-height);
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-direction: column;
 }
 
-/* 侧栏三块面板一律不收缩（flex:0 0 auto）：内容按自身高度渲染，栏内容
-   撑爆固定高度时交给 .admin-side-column 自己的 overflow-y 整体滚动。
+/* 侧栏三块面板一律不收缩（flex:0 0 auto）：内容按自身高度渲染，栏本身
+   已经不是固定高度（见 .admin-side-column），不再需要谁来吸收溢出。
    顺带补上 admin-services-panel 一直缺失的规则——它在 tsx 里引用的
    className 之前没有对应选择器，styles["admin-services-panel"] 解析
    为 undefined，这块面板实际上从未拿到这条类名。 */
@@ -312,44 +309,34 @@
 
 .admin-audit-panel {
   display: flex;
-  min-height: 0;
   flex-direction: column;
 }
 
-/* 这块面板同时也是 .mg-panel：overflow 继承 mg-panel 的默认值 hidden，
-   而不是 visible。Flexbox 的「自动最小尺寸」规则里，只有 overflow:visible
-   的项才会退回内容尺寸——overflow 非 visible 的项，自动最小尺寸直接算 0，
-   跟有没有显式写 min-height:0 无关。也就是说，光靠"不写 min-height:0"
-   并不能让标题的高度当成这块面板的收缩下限；治理待办条目一多（长列表压力
-   复制到 8 倍）时，.admin-primary-column 按内容比例分担收缩亏空，这块面板
-   照样能被压到 0，标题「准入、注册策略与运行状态的当前聚合。」被裁没。
-   显式给一个等于标题高度的 min-height，让它成为真正的收缩下限：面板永远
-   至少留出标题的空间，超出面板预算的是列表内容，由下面 .admin-governance-list
-   自己的 overflow:auto 去内部滚动，不会连标题一起被拖下水。 */
 .admin-governance-panel {
   display: flex;
-  min-height: var(--mg-panel-heading-height);
   flex-direction: column;
 }
 
+/* 曾经这里 min-height: 0 + overflow: auto，是「本栏高度被锁死，条目一多就
+   在这一层内部滚」的预算管线：.admin-primary-column 松开高度锁之后，本栏
+   不再分配固定预算，没有谁需要被压缩，这一层交给 overflow visible 的默认值、
+   按内容完整渲染即可——治理待办再多也是让整页变长（整页本来就能滚），不是
+   在一块半屏高的小窗口里再滚一层。长列表压力（复制到 8 倍）验证过：不用
+   内部滚动，四条也好、三十二条也好，都能从头看到尾。 */
 .admin-governance-list {
-  min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
+  min-width: 0;
 }
 
+/* flex: 1 1 auto + min-height: 0 + overflow: auto 曾经是「吃满审计面板的
+   剩余预算、超出就自己滚」的组合——面板本身已经 flex: 0 0 auto 按内容定高，
+   0 基准的收缩项在没有预算可分的 auto 高祖先里会朝 0 塌，不是留在内容高度，
+   所以这里也一并去掉，改回按内容自然渲染。 */
 .admin-audit-readout {
-  min-height: 0;
-  flex: 1 1 auto;
-  overflow: auto;
+  min-width: 0;
 }
 
 .admin-actions-list {
-  min-height: 0;
-  flex: 1 1 auto;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  min-width: 0;
 }
 
 .admin-action-row {
@@ -426,45 +413,18 @@
   text-align: right;
 }
 
-.admin-governance-list:focus-visible,
-.admin-actions-list:focus-visible {
-  outline: 2px solid var(--accent-base);
-  outline-offset: -2px;
-}
+/* .admin-governance-list / .admin-actions-list 不再是内部滚动区（不再有
+   tabIndex，也不再靠键盘滚动），去掉了对应的 :focus-visible 描边——它们
+   现在只是普通的 role="region" 分组容器，不是可聚焦的滚动面板。 */
 
+/* .page 的四个释放令牌现在无条件生效（见文件顶部），这里不用再跟着断点
+   重复设一遍——两套同样的重置留在一起只会让人分不清到底哪一份在生效。
+   两栏并排在窄于 1120px 时放不下（右栏 minmax(410px, 440px) 加左栏内容，
+   两栏合起来超过这个宽度就会互相挤压），这条断点只保留「收成一列」这一件
+   跟高度契约无关的事。 */
 @media (max-width: 1120px) {
-  /* 两栏在共享契约自己的 760px 断点之前就堆成一列，这里整体把契约松开。 */
-  .admin-overview-page {
-    --mg-rail-shell-height: auto;
-    --mg-rail-grow: 0 0 auto;
-    --mg-rail-fill: auto;
-    --mg-rail-align: auto;
-    overflow: visible;
-  }
-
   .admin-overview-grid {
-    min-height: auto;
-    grid-template-columns: 1fr;
-    overflow: visible;
-  }
-
-  .admin-overview-grid > .admin-primary-column,
-  .admin-overview-grid > .admin-side-column {
-    display: flex;
-    flex-direction: column;
-    overflow: visible;
-    scrollbar-gutter: auto;
-  }
-
-  .admin-operations-panel,
-  .admin-audit-panel {
-    min-height: auto;
-    flex: 0 0 auto;
-  }
-
-  .admin-audit-readout {
-    flex: 0 0 auto;
-    overflow: visible;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
