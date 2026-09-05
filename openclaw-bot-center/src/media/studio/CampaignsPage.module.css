@@ -1,15 +1,17 @@
 .hero { background: var(--mg-surface); }
 .hero::after { display: none; }
 .heroCard { min-height: 205px; }
-/* 列数由容器决定（auto-fit + minmax），不写死 5：240px 地板是按最长的一句
-   说明（「品牌要求与活动资料」，9 个汉字，约 126px 字宽）加上图标、箭头和左右
-   内边距倒推的，容器不够放 5 个时才换行。5 张卡各自独立描边，不再是一条共用
-   外框内嵌分隔线的“一体带子”：那种画法要么用 border-right + :last-child
-   （只对固定列数成立），要么用 gap + 容器背景色的缝隙——后者试了，auto-fit
-   换行不整除时（5 张卡换成 2/3/4 一行都不整除）最后一行填不满的空列会露出
-   容器背景，变成一块无意义的灰色色块。改成每张卡自带 border + 圆角 + 阴影，
-   跟下面 .metricGrid 的卡片风格一致，行尾天然留白而不是露色块。 */
-.stageRail { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+/* 五个阶段是**固定的流程**（Brief → 初稿 → 审核 → 返修 → 交付），条数不由数据决定，
+   所以列数不能交给 auto-fit——「列数交给容器」那条规矩管的是条数随数据变的网格，
+   这里不是。原来写 minmax(240px, 1fr)：1440px 下容器 1124px 恰好解成 4 列，第 5 张卡
+   独自落在第二行，右边空出三个格子，箭头串起来的顺序也在那里断掉；而 1280 / 1180 /
+   1024 / 900 解出来都是 3 列（3+2）。写死 3 列让所有桌面宽度一致，760px 以下仍堆成一列。
+
+   5 张卡各自独立描边，不是一条共用外框内嵌分隔线的「一体带子」：那种画法要么靠
+   border-right + :last-child（只对固定列数成立），要么靠 gap 露出容器背景色当缝隙——
+   后者试过，最后一行填不满时空列会露出容器背景，变成一块无意义的灰色色块。每张卡
+   自带 border + 圆角 + 阴影，跟下面 .metricGrid 一致，行尾是天然留白而不是色块。 */
+.stageRail { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .stageRail article { display: grid; min-width: 0; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 15px; border: 1px solid var(--mg-border); border-radius: var(--mg-r-lg); background: var(--mg-surface); box-shadow: var(--mg-e3); }
 .stageRail article > span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: var(--mg-r-md); color: var(--accent-base); background: var(--accent-soft); }
 .stageRail strong, .stageRail small { display: block; }
@@ -57,9 +59,8 @@
 .callout strong { font-size: var(--mg-text-sm); }
 .callout p { margin: 5px 0 0; color: var(--mg-muted); font-size: var(--mg-text-sm); line-height: 1.55; }
 @media (max-width: 1120px) { .metricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: 1fr; } }
-/* 全部堆成一列是给触屏窄屏的专门处理，不是靠这个断点去接 auto-fit 漏掉的挤压——
-   auto-fit 本身已经在 1120px 以上把列数算对了。堆成一列后箭头没有意义（没有
-   “下一步在右边”），隐藏掉；每张卡自带边框，横向变纵向不需要额外的分隔线规则。 */
+/* 全部堆成一列是给触屏窄屏的专门处理。堆成一列后箭头没有意义（没有“下一步在右边”），
+   隐藏掉；每张卡自带边框，横向变纵向不需要额外的分隔线规则。 */
 @media (max-width: 760px) {
   .stageRail { grid-template-columns: 1fr; }
   .stageRail article > svg { display: none; }
