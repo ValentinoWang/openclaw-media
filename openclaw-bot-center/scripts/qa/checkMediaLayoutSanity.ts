@@ -347,6 +347,35 @@ const COLLECT_DEFECTS = `(() => {
     }
   }
 
+  // 第九类：列表区只剩一条缝。视口锁高的页面（height: calc(100dvh - …) + overflow:
+  // hidden）里塞四到六块面板时，每块只分到一两百像素——不够两行表格。用户看到的是
+  // 「第二行被腰斩」「状态列切掉一半」「表单底部没了」。
+  // 实测：/admin/billing 的「兑换记录」锁高时 2 行被腰斩，松开视口锁高之后 0 行；
+  // /admin/access 松开之后文档从 900px 长到 1831px——930px 的内容原本根本不在文档流里。
+  //
+  // 判据不是「有半行露在滚动容器底部」——那是滚动的常态。判据是**这个区域连两行都
+  // 装不下**：裁住这批行的那一层，可视高度小于两行行高。那它就不是一个能用的列表区，
+  // 是被挤剩下的一条缝。
+  for (const body of root.querySelectorAll('tbody')) {
+    const rows = [...body.children].filter((row) => row.tagName === 'TR')
+    if (rows.length < 3) continue
+    let rowHeight = 0
+    for (const row of rows) rowHeight = Math.max(rowHeight, row.getBoundingClientRect().height)
+    if (rowHeight < 8) continue
+    let clipper = null
+    for (let parent = body.parentElement; parent; parent = parent.parentElement) {
+      if (getComputedStyle(parent).overflowY === 'visible') continue
+      clipper = parent
+      break
+    }
+    if (!clipper) continue
+    const visible = clipper.clientHeight
+    if (visible <= 0 || visible >= rowHeight * 2) continue
+    defects.push('列表区只剩一条缝：' + describe(clipper, (clipper.textContent || '').trim()) + ' 里的表格有 ' + rows.length +
+      ' 行、行高 ' + Math.round(rowHeight) + 'px，可视高度却只有 ' + Math.round(visible) +
+      'px——连两行都露不全，第二行会被腰斩。多半是把四五块面板塞进了一个视口锁高的盒子；要么松开视口锁高让整页滚（--mg-rail-shell-height / --mg-rail-grow / --mg-rail-fill / --mg-rail-align 四个释放令牌），要么减少同屏面板数')
+  }
+
   // 第七类：面板底部空转。面板的高度来自视口高度契约（被拉满一列），内容却只填了
   // 上半截——剩下的一大片不是页面留白，是**一块画了边框、铺了底色的空盒子**，看上去
   // 像加载失败。/reviews 的「复盘检查器」就是这样：把三个小节头压紧之后，内容少了
@@ -867,7 +896,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无多列挤压、无低信息密度、无面板底部空转、无徽标被拉变形，长列表压力下无内容被吞、长标识符压力下无重叠无裁切`)
+  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无多列挤压、无低信息密度、无面板底部空转、无列表区只剩一条缝、无徽标被拉变形，长列表压力下无内容被吞、长标识符压力下无重叠无裁切`)
 }
 
 await run()
