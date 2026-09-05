@@ -148,7 +148,14 @@ async function assertAuthLayout(page: Page, viewport: Viewport, label: string, i
     for (const element of controls) {
       const rect = element.getBoundingClientRect()
       if (rect.left < -1 || rect.right > viewportWidth + 1) throw new Error(`interactive control overflows: ${element.id || element.tagName}`)
-      const center = document.elementFromPoint(Math.max(1, rect.left + rect.width / 2), Math.max(1, rect.top + rect.height / 2))
+      // 量**行盒**，不量外接盒：散文里的内联 <a> 折行之后，外接盒横跨两行，几何中心
+      // 恰好落在两行之间的行距里，elementFromPoint 命中的是外面那个 <p>——控件明明
+      // 好好地可以点，判定却说它被遮住了。注册页那句「管理员进入方式：…打开
+      // 管理员准入中心」就是这样一次假阳性。取第一个行盒的中心，块级控件只有一个
+      // 行盒，行为不变。
+      const boxes = element.getClientRects()
+      const box = boxes.length > 0 ? boxes[0] : rect
+      const center = document.elementFromPoint(Math.max(1, box.left + box.width / 2), Math.max(1, box.top + box.height / 2))
       if (center && !element.contains(center) && !(element.id && center.closest(`#${CSS.escape(element.id)}`))) {
         throw new Error(`interactive control is obscured: ${element.id || element.tagName}`)
       }
