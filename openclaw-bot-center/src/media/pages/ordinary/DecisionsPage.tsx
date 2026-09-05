@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import {
   Check,
   CircleDot,
-  Database,
   ExternalLink,
   Lightbulb,
   RefreshCw,
@@ -491,9 +490,9 @@ function DecisionListPanel({
         <>
           <div className={styles.tableScroll} role="region" aria-label="候选选题表格" tabIndex={0}>
             <table className={styles.table}>
-              <colgroup><col /><col /><col /><col /><col /><col /><col /></colgroup>
+              <colgroup><col /><col /><col /><col /></colgroup>
               <thead>
-                <tr><th scope="col">候选选题</th><th scope="col">平台</th><th scope="col">来源类型</th><th scope="col">赛道</th><th scope="col">状态</th><th scope="col">来源</th><th scope="col">更新时间</th></tr>
+                <tr><th scope="col">候选选题</th><th scope="col">平台</th><th scope="col">状态</th><th scope="col">更新时间</th></tr>
               </thead>
               <tbody>
                 {state.data.items.map((item) => (
@@ -545,14 +544,37 @@ function DecisionRow({
           <span className={styles.decisionId}><CircleDot size={10} aria-hidden="true" /><span title={item.publicDecisionId}>{item.publicDecisionId}</span></span>
           <strong>{item.candidateTitle}</strong>
         </button>
+        <DecisionMeta item={item} />
       </th>
       <td className={styles.platformCell}><PlatformIdentity platform={item.platform} size="sm" /></td>
-      <td>{candidateTypeDisplayLabel(item.candidateType)}</td>
-      <td>{item.trackName}</td>
       <td><StatusBadge status={item.decisionStatus} /></td>
-      <td><span className={styles.sourceCount}><Database size={13} aria-hidden="true" />{item.evidenceCount} 条</span></td>
       <td><span className={styles.dateCell}>{formatDate(item.updatedAt)}</span></td>
     </tr>
+  );
+}
+
+/* 来源类型、赛道、来源(证据数量)曾各占一整条窄列——7 列表格在 1180px 下需要 900px，
+   只拿到 458px，49% 藏在横滚里（qa:media-layout-sanity 的"大半张表藏在横滚里"）。
+   三个都是短事实，并入候选选题标题下方排成一行（.mg-meta，放不下再折行），
+   与 /reviews 的作品列并入统计时间+证据质量、AdminTenantsPage 的 TenantUsageMeta
+   并入运行/素材/归档/用量是同一手法。圆点写在下一项自己的 span 里
+   （index > 0 时才加 "· " 前缀），保证折行时圆点跟着它右边那一项走，不会
+   被甩在上一行行尾（CLAUDE.md「圆点属于它右边那一项」）。 */
+function DecisionMeta({ item }: { item: DecisionSummary }) {
+  const facts: Array<{ label: string; value: string }> = [
+    { label: "类型", value: candidateTypeDisplayLabel(item.candidateType) },
+    { label: "赛道", value: item.trackName },
+    { label: "证据", value: `${item.evidenceCount} 条` },
+  ];
+  return (
+    <div className={`mg-meta ${styles.decisionMeta}`} data-component="mg-meta">
+      {facts.map((fact, index) => (
+        <span key={fact.label}>
+          {index > 0 ? "· " : ""}
+          {fact.label} <b>{fact.value}</b>
+        </span>
+      ))}
+    </div>
   );
 }
 

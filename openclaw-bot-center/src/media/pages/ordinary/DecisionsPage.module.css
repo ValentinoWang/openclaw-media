@@ -151,35 +151,68 @@
 .tableScroll {
   min-height: 0;
   overflow: auto;
+  /* Below ~476px viewport width (.workspace has already stacked to one
+     column by then; see @media (max-width: 1120px) below) the table's own
+     content no longer fits its now-full-width container, so this still
+     needs to scroll horizontally -- e.g. 404px of container at a 430px
+     viewport, against a table that needs 450px. Same affordance as
+     ArchivesPage's .tableViewport: an always-visible thin scrollbar instead
+     of the overlay-only default, so the cut-off last column reads as
+     "scroll for more" instead of clipped. */
+  scrollbar-width: thin;
 }
+/* min-width was 900px against a 7-column table (来源类型/赛道/来源(证据数量)
+   each had their own column) -- at 1180px the persistent-rail's 390px inspector
+   floor leaves .tableScroll only 458px, 49% of 900px hidden behind horizontal
+   scroll ("大半张表藏在横滚里", qa:media-layout-sanity). The three folded into
+   DecisionMeta below (see the comment on that component) drop this to 4
+   columns; the remaining three fixed-width shares are sized to their real
+   measured minimum plus a small margin, not evenly split -- every spare
+   percentage point instead goes to 候选选题 (see why below):
+     - 平台: PlatformIdentity's widest real label ("小红书") measures 64px; 90px
+       (20%) keeps a margin.
+     - 状态: .mg-badge is `white-space: nowrap` and sized to fit-content, so a
+       column narrower than the badge's own width doesn't wrap it, it lets the
+       badge visually overflow into the next column. The widest realistic
+       decision label ("模型推荐"/"暂不采用") measures 70px; 99px (22%) keeps a
+       margin. (decisionLabel's "决策状态待确认" fallback is unreachable --
+       DecisionStatus is a closed union -- so it isn't sized for.)
+     - 更新时间: formatDate's longest token ("2026/12/31", no whitespace to break
+       on) measures ~65px; 90px (20%) keeps a margin -- see .dateCell below for
+       why it only ever wraps at the date/time space, never mid-token.
+   候选选题 (with 来源类型/赛道/来源 folded in via DecisionMeta) takes the
+   remaining 38% -- wider than the other three strictly need to be.
+   DecisionMeta's three facts only pack two-per-line once this column's
+   content box clears ~145px: below that, all three wrap one-per-line (3
+   lines instead of 2), which was tall enough (stacked under the 候选选题 id +
+   title lines) to trip qa:media-layout-sanity's "列表区只剩一条缝" --
+   .tableScroll's own height is capped well under two such rows at 1180px (a
+   pre-existing cap shared with /decisions's other tab, unrelated to this
+   table's column widths, so it isn't loosened here). 450px total (vs. 430 if
+   the four columns were sized to their bare minimums) spends 1180px's
+   remaining slack on exactly the one column that benefits from it, and still
+   keeps 1180px's 458px budget clear -- 1440px's 718px budget was already
+   clear before this change -- the table just stretches to fill both via
+   `width: 100%` since both exceed this min-width. */
 .table {
   width: 100%;
-  min-width: 900px;
+  min-width: 450px;
   table-layout: fixed;
   border-collapse: collapse;
   text-align: left;
   font-size: var(--mg-text-xs);
 }
 .table col:nth-child(1) {
-  width: 24%;
+  width: 38%;
 }
 .table col:nth-child(2) {
-  width: 13%;
+  width: 20%;
 }
 .table col:nth-child(3) {
-  width: 16%;
+  width: 22%;
 }
 .table col:nth-child(4) {
-  width: 12%;
-}
-.table col:nth-child(5) {
-  width: 11%;
-}
-.table col:nth-child(6) {
-  width: 10%;
-}
-.table col:nth-child(7) {
-  width: 14%;
+  width: 20%;
 }
 .table th,
 .table td {
@@ -254,6 +287,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 类型/赛道/证据 used to be three of their own table columns; DecisionMeta
+   (see the .tsx) folds them into this row under the candidate title instead,
+   using the shared .mg-meta primitive (short facts, one line, wraps as a
+   whole -- not one row per fact). Margin only; .mg-meta's own flex-wrap +
+   font-size carry the rest. */
+.decisionMeta {
+  margin-top: 4px;
+}
 .platformCell {
   min-width: 0;
 }
@@ -270,9 +311,18 @@
 .dateCell {
   color: var(--mg-muted);
 }
+/* formatDate's output ("2026/9/1 02:00:00") has exactly one break point: the
+   space between date and time. `.table th, .table td` above sets
+   overflow-wrap: anywhere for cells with genuinely unbroken content (long
+   titles); inherited onto this narrower date column it would instead let the
+   date or time half itself split mid-digit ("202" / "6/9/1") once the column
+   dropped below ~95px. overflow-wrap: normal here overrides that inherited
+   value so the only place this can wrap is the space already in the string --
+   the same "wraps at a natural boundary" allowance CLAUDE.md gives em-dash
+   date ranges, not a mid-token break. */
 .dateCell {
   display: block;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
 }
@@ -701,6 +751,41 @@
     scrollbar-gutter: stable;
   }
 }
+/* .workspace only stacks to one column at <=1120px (see @media (max-width:
+   1120px) below); 1121px-1180px keeps the two columns side by side, but
+   DecisionMeta's secondary line (see the comment on that component) grew
+   each row from one line to two-or-three, and the viewport-locked .page height
+   above still hands .tableScroll the same fixed slice it always had: at
+   1180px that slice measures 253px while 5 rows now need up to 696px (max
+   row height 139px) -- under two rows fit, tripping qa:media-layout-sanity's
+   "列表区只剩一条缝". 1440px doesn't need this: the same slice there was
+   already tall enough for the taller rows.
+   Releases the same shared tokens the <=1120px block below releases, minus
+   one: --mg-rail-shell-height/--mg-rail-grow/--mg-rail-fill let .page grow
+   with content instead of clipping it (the whole page scrolls; .mainColumn's
+   own overflow-y: auto becomes moot once there's nothing left to internally
+   scroll). --mg-rail-align is deliberately left unset here, unlike the
+   <=1120px block -- learned from ReviewsPage.module.css hitting this exact
+   thing first: the two columns are still side by side at this width
+   (.workspace's grid-template-columns doesn't change until 1120px), and
+   [data-page-inspector]'s own shared rule (media.css) already defaults
+   --mg-rail-align's fallback to `align-self: start; height: auto` --
+   independent of whether the variable is set at all. Setting
+   --mg-rail-align: auto here would flip that to `align-self: auto`, i.e.
+   `align-items: stretch` off [data-page-layout="persistent-rail"]'s own
+   `align-items: stretch`, stretching "决策检查器" to match .candidatePanel's
+   now-taller row instead of sizing to its own (shorter) content -- a
+   bordered empty box qa:media-layout-sanity's "面板底部空转" would catch. The
+   <=1120px block below is exempt from that risk because it also collapses
+   .workspace to a single column there, so each side occupies its own row and
+   stretch has nothing to stretch against. */
+@media (max-width: 1180px) {
+  .page {
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+  }
+}
 @media (max-width: 1120px) {
   /* Releases the shared persistent-rail contract (see media.css's comment on
      [data-page-layout="persistent-rail"]) for the stacked layout below.
@@ -794,13 +879,6 @@
   .flowStep {
     min-height: 66px;
   }
-}
-.sourceCount {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--mg-muted);
-  white-space: nowrap;
 }
 .signalMeta {
   display: flex;

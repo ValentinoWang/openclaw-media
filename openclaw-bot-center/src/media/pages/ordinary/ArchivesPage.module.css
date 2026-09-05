@@ -144,10 +144,9 @@
    archive_id needs as an unbroken identifier string. .mg-id's own
    `display: block` isn't enough on a <button>: buttons keep sizing to their
    label's content width (shrink-to-fit) instead of filling the cell the way
-   a plain block element would, so archive_id was overflowing the column
-   into "来源运行" next to it once the table's min-width shrank below 900px.
-   `width: 100%` pins it to the <td>'s content width so .mg-id's
-   overflow: hidden + ellipsis actually has something to clip. */
+   a plain block element would, so archive_id was overflowing past the
+   column's right edge. `width: 100%` pins it to the <td>'s content width so
+   .mg-id's overflow: hidden + ellipsis actually has something to clip. */
 .rowButton {
   width: 100%;
   padding: 0;
@@ -157,6 +156,28 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+/* run_id used to be its own column ("来源运行"); folded into a secondary line
+   under archive_id instead (same move as ReviewsPage's postId-under-postTitle)
+   to free up the width a 5th column cost -- see the .table min-width comment
+   below. Label and value are two flex children of the same row so a narrow
+   .rail/[data-page-inspector] fallback width still keeps "来源" attached to
+   its id instead of the label sitting alone on its own line. */
+.recordSource {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 4px;
+  color: var(--mg-muted);
+  font-size: var(--mg-text-xs);
+}
+.recordSourceLabel {
+  flex: 0 0 auto;
+}
+.recordSource > :last-child {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 .artifactList {
   display: grid;
@@ -290,21 +311,36 @@
   scrollbar-width: thin;
 }
 
-/* min-width was 900px against a 5-column table (table thead th:nth-child(6)/
-   (7) below are dead rules for columns that don't exist) -- .recordsPanel's
-   own column in the persistent-rail grid is ~766px wide at 1440px and
-   narrower below that, so the last column ("更新时间") sat past the
-   .tableViewport scroll boundary with no visible affordance that more
-   content existed: only its first glyph rendered before the panel's own
-   right edge clipped the rest, and there's no scrollbar visible until you
-   actually touch the table to reveal it. 760px keeps every column readable
-   (matches the sibling records table's min-width in InvitesPage.module.css)
-   while fitting without any scroll at 1440px and cutting how far short
-   narrower widths (1180px and below still need [data-page-inspector]'s
-   330px floor to share the row, so they still scroll horizontally) fall. */
+/* min-width was 760px against a 5-column table (来源运行 had its own column) --
+   at 1180px [data-page-inspector]'s 330px floor leaves .tableViewport only
+   ~514px, 246px (32%) short of 760px: "大半张表藏在横滚里" (qa:media-layout-sanity).
+   来源运行 (run_id) moved into a secondary line under 归档记录 (see .recordSource
+   below, same move as ReviewsPage's postId-under-postTitle) instead of its own
+   column, dropping the table to 4 columns. The four min-width shares below are
+   sized off real measured content, not evenly split:
+     - 云端存储: formatByteSize's longest realistic output ("999.99 TB") measures
+       ~61px at --mg-text-xs (see .table th/.table td font-size below -- this
+       table previously had no font-size on tbody cells at all and rendered
+       plain text at the browser's 16px default); 90px keeps a margin.
+     - 状态: .mg-badge is `white-space: nowrap` and sized to fit-content, so a
+       column narrower than the badge's own width doesn't wrap it, it lets the
+       badge visually overflow into the next column. "正在删除"/"删除失败" (the
+       two real non-"可用" states) measure 70px; 100px keeps a margin. (The
+       "状态待确认" fallback in archiveStateLabel is unreachable -- ArchiveRecord's
+       `state` field is a closed "active"|"deleting"|"delete_failed" union --
+       so it isn't sized for.)
+     - 更新时间: formatDateTime's longest token ("2026/12/31", no whitespace to
+       break on) measures ~65px; 95px keeps a margin. The date/time pair itself
+       (e.g. "2026/12/31 23:59:59") wraps at the space between them, which is
+       the same "wraps at a natural punctuation boundary" allowance CLAUDE.md
+       gives em-dash date ranges, not a mid-token break.
+   归档记录 (with the 来源运行 line folded in) takes what's left. 480px total
+   keeps 1180px's 514px budget clear with room to spare, and 1440px's 766px
+   budget was already clear before this change -- the table just stretches to
+   fill both via `width: 100%` since both exceed this min-width. */
 .table {
   width: 100%;
-  min-width: 760px;
+  min-width: 480px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -315,6 +351,7 @@
   border-bottom: 1px solid var(--mg-border);
   text-align: left;
   vertical-align: top;
+  font-size: var(--mg-text-xs);
 }
 
 .table thead th {
@@ -326,25 +363,16 @@
 }
 
 .table thead th:nth-child(1) {
-  width: 19%;
+  width: 40%;
 }
 .table thead th:nth-child(2) {
-  width: 14%;
+  width: 19%;
 }
 .table thead th:nth-child(3) {
-  width: 17%;
+  width: 21%;
 }
 .table thead th:nth-child(4) {
-  width: 16%;
-}
-.table thead th:nth-child(5) {
-  width: 14%;
-}
-.table thead th:nth-child(6) {
-  width: 10%;
-}
-.table thead th:nth-child(7) {
-  width: 10%;
+  width: 20%;
 }
 
 .emptyCell {
@@ -371,17 +399,24 @@
   padding: 6px 12px 7px;
 }
 
+/* 原来是 `minmax(0, 1fr) auto` 的两行网格：auto 那一行（本地边界须知）先按内容
+   吃满，1fr 那一行（选中记录的指标 + 产物清单）只拿剩下的。实测 1440px 下
+   inspectorBody 只有 386px，本地边界拿走 261px，真正的归档内容被压到 112px——
+   而它需要 283px。也就是说：**用户点开一条记录，看到的是一个 90~112px 的小窗口，
+   要在里面滚动才能读到自己刚选的那条**，旁边却是一段从不变化的静态说明占着大半。
+   静态说明的自然高度优先于用户刚选中的数据，这个优先级是反的。
+
+   改成整块检视栏一个滚动区（跟 1080px 以下那个断点已经在做的事一致）：两段各按
+   内容起高，读的时候只有一根滚动条，不再有「两个小窗口互相抢高度」。 */
 .inspectorBody {
-  display: grid;
+  display: block;
   flex: 1 1 auto;
-  grid-template-rows: minmax(0, 1fr) auto;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .archiveContent {
   min-width: 0;
   min-height: 0;
-  overflow-y: auto;
 }
 
 /* .inspectorBody's second row is a plain `auto` track (unlike .archiveContent's

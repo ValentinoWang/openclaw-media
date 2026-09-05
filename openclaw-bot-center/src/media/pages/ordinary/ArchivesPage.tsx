@@ -370,7 +370,6 @@ function ArchivesPage() {
           <thead>
             <tr>
               <th scope="col">归档记录</th>
-              <th scope="col">来源运行</th>
               <th scope="col">云端存储</th>
               <th scope="col">状态</th>
               <th scope="col">更新时间</th>
@@ -397,10 +396,11 @@ function ArchivesPage() {
                   >
                     {archive.archive_id}
                   </button>
-                </td>
-                <td>
-                  <span className="mg-id" title={archive.run_id}>
-                    {archive.run_id}
+                  <span className={styles.recordSource}>
+                    <span className={styles.recordSourceLabel}>来源</span>
+                    <span className="mg-id" title={archive.run_id}>
+                      {archive.run_id}
+                    </span>
                   </span>
                 </td>
                 <td>{formatByteSize(archive.cloud_bytes)}</td>
