@@ -25,6 +25,14 @@ import { useMediaWeb } from "./MediaWebWorkspace";
 import CanonicalDocumentRenderer from "./pages/ordinary/CanonicalDocumentRenderer";
 import { projectStageDisplayLabel, projectStatusDisplayLabel } from "./ui/displayLabels";
 import { formatDateOnly } from "./ui/datetime";
+// artifactKind 和「产物列表」里的 artifactType 是同一套后端枚举（decision_brief /
+// creation_document / publishing_package / review_report / project_summary，
+// ordinaryDataLabels.ts 的 ARTIFACT_TYPE_LABELS 就是这张表，只是字段名在不同接口
+// 形状里叫法不同）。复用这个已导出的翻译函数，不再新造一张重复的表——也不用去改
+// OrganizationDocumentMirrorPage.tsx 里那个模块内部、没有导出的 humanArtifactKind
+// （那个文件当前锁给另一个并行改动，且它的兜底文案「组织文档镜像」也不适合个人
+// 工作区）。
+import { artifactTypeDisplayLabel } from "./ui/ordinaryDataLabels";
 import { Metric } from "./ui/Metric";
 import { SurfaceState, type SurfaceStateKind } from "./ui/SurfaceState";
 
@@ -306,7 +314,16 @@ export default function PersonalWorkspaceShellPage() {
                     <div className="personal-artifact-copy"><strong>{artifact.displayName?.trim() || "未命名成果"}</strong><span>修订 {artifact.currentRevision} · {formatDate(artifact.updatedAt)}</span></div>
                     {/* 正文编辑器一直都在（/workspace/edit/:artifactId），但此前界面上没有任何入口，
                         只能手敲地址。受控快照类成果由编辑器自己降级成只读，这里不需要再判一次。 */}
-                    <div className="personal-artifact-actions">
+                    {/* .personal-artifact-item 在 700px 断点把 grid-template-columns 从三列
+                        （34px minmax(0,1fr) auto）收成两列（34px minmax(0,1fr)），这个 actions
+                        div 是第三个直接子元素、没有显式 grid-column，落到隐式新行的第一列
+                        （只有 34px 宽）：两个按钮的文案顶不住 white-space:nowrap，被挤到负坐标，
+                        又被 .personal-artifact-panel 的 overflow:hidden 在左边裁掉一截、滚不出来。
+                        `grid-column: -2` 用负值线号取「最后一条显式列的起点」——三列时是第 3
+                        条线（列 3，跟浏览器原来的自动放置结果一致，桌面宽度不受影响）、两列时
+                        是第 2 条线（列 2，跟上面「作品」标题同一列，自动换到新的一行），两种列数
+                        都落在正确的最后一列，不用按断点分别写值。 */}
+                    <div className="personal-artifact-actions" style={{ gridColumn: "-2" }}>
                       <Link className="personal-preview-link mg-btn mg-btn-ghost" to={`/workspace/preview/${artifact.publicArtifactId}`}>
                         <Eye size={15} aria-hidden="true" />查看云端预览
                       </Link>
@@ -365,11 +382,19 @@ function PersonalPreviewState({
     return (
       <section className="section-panel personal-preview-panel mg-panel" aria-label="云端成果预览">
         <header className="personal-preview-header">
-          <div><span className="eyebrow mg-eyebrow">云端只读预览</span><h2>{state.data.data.artifact.artifactKind || "个人成果"}</h2></div>
+          {/* 之前是 artifact.artifactKind || "个人成果"：|| 只兜住了空字符串，兜不住
+              「后端发来一个前端没登记的枚举值」——探针在 /workspace/preview/artifact_creation_camera
+              上抓到过 <h2> 里直接渲染出机器可读的 "creation_document"。已登记的枚举值走翻译表，
+              只有真正的空值才落到「个人成果」；未登记的非空值交给 artifactTypeDisplayLabel 自己的
+              通用兜底（「其他产物」），不会再把原始枚举吐给用户。 */}
+          <div><span className="eyebrow mg-eyebrow">云端只读预览</span><h2>{state.data.data.artifact.artifactKind ? artifactTypeDisplayLabel(state.data.data.artifact.artifactKind) : "个人成果"}</h2></div>
           <Link className="quiet-button personal-back-link mg-btn mg-btn-ghost" to="/workspace"><ArrowLeft size={15} aria-hidden="true" />返回成果列表</Link>
         </header>
         {blocks.length ? <CanonicalDocumentRenderer blocks={blocks} /> : <PersonalPageState status="empty" message="当前修订没有可展示的正文。" />}
-        <small className="personal-preview-id">成果标识：{artifactId}</small>
+        {/* 真实后端的标识符是几百字符、没有断点的串；.mg-id 是仓库里统一的单行省略号
+            + 完整值放 title 的契约，承载它的每一层（section-panel/personal-preview-panel/
+            mg-panel）已经有 min-width: 0，不用额外补。 */}
+        <small className="personal-preview-id mg-id" title={artifactId}>成果标识：{artifactId}</small>
       </section>
     );
   }

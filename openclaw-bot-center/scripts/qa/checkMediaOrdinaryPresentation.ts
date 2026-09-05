@@ -191,11 +191,27 @@ assert.match(
   /<th scope="row">[\s\S]*?publicDecisionId[\s\S]*?candidateTitle[\s\S]*?<\/th>[\s\S]*?<td className=\{styles\.platformCell\}>/,
   'DecisionsPage rows must present the public decision reference above the title and keep platform in its own column',
 )
-assert.equal(
-  (decisionsSource.match(/<th scope="col">/g) ?? []).length,
-  7,
-  'DecisionsPage must expose all seven list columns to assistive technology',
-)
+// 七件事实一件都不能丢，但它们**不必各占一列**：三件短事实并进标题下方那一行之后，
+// 表格从 7 列收到 4 列，1180px 下 49% 的横滚（qa:media-layout-sanity 的「大半张表
+// 藏在横滚里」）因此归零。所以判据从「数够七个 th」改成「七件事实每一件都还带着
+// 自己的名字」——留在表格里的仍有列头，离开列的必须以「标签 + 值」出现，不能只剩
+// 一个没有名字的值让读屏用户猜。
+const DECISION_COLUMN_FACTS = ['候选选题', '平台', '状态', '更新时间']
+const DECISION_FOLDED_FACTS = ['类型', '赛道', '证据']
+for (const name of DECISION_COLUMN_FACTS) {
+  assert.match(
+    decisionsSource,
+    new RegExp(`<th scope="col">${name}</th>`),
+    `DecisionsPage must keep the ${name} column header for assistive technology`,
+  )
+}
+for (const name of DECISION_FOLDED_FACTS) {
+  assert.match(
+    decisionsSource,
+    new RegExp(`label:\\s*["']${name}["']`),
+    `DecisionsPage folded the ${name} fact out of its own column, so it must carry its own label beside the value`,
+  )
+}
 // 列表呈现与 RunsPage 保持一致。字号自设计令牌迁移后走 mediaDesignTokens.css 的字阶：
 //   0.65rem / 0.69rem -> --mg-text-xs（13px）
 //   0.59rem           -> --mg-text-2xs（12px）

@@ -593,14 +593,16 @@ function ReviewsView({
         <>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
-              {/* 曾经是 8 列（作品/平台/统计时间/证据质量/模型建议/人工决策/版本/操作）：
-                  table-layout:fixed 把 min-width 均分成 8 份，740px 容器里「作品」只剩
-                  约 105px，标题被折成 4 行。低信息量的列并入相邻列，主表降到 5 列：
-                  统计时间（24h/7d 是否已采集）和证据质量原本就是短徽标，挪到作品列标题
-                  下方排成一行（.mg-meta）；版本是纯数字，挪到人工决策列下方当次要信息。
-                  th 上的 width 是 table-layout:fixed 认的显式列宽，把腾出来的空间分给
-                  「作品/模型建议/人工决策」这三个真正需要宽度的列，而不是均分掉。 */}
-              <thead><tr><th scope="col" style={{ width: "34%" }}>作品</th><th scope="col" style={{ width: "15%" }}>平台</th><th scope="col" style={{ width: "21%" }}>模型建议</th><th scope="col" style={{ width: "22%" }}>人工决策</th><th scope="col" style={{ width: "8%" }}>操作</th></tr></thead>
+              {/* 曾经是 8 列（作品/平台/统计时间/证据质量/模型建议/人工决策/版本/操作），
+                  后来降到 5 列（统计时间、证据质量并入作品列标题下方的 .mg-meta 行；版本
+                  并入人工决策列）。5 列时 .table 的共享 min-width（58rem=928px）在检视栏
+                  常驻的两栏布局里依然装不下：1180px 主栏只有约 500px，46%（429px）的表格
+                  要横向拖才能看到，728/900 更窄。「平台」列本身就是「小红书」一类的短徽标，
+                  跟 24h/7d/证据质量同属一类低信息量事实，这里再并进同一个 .mg-meta 行，
+                  主表降到 4 列——跟 AdminTenantsPage 的 RunTitleCell 是同一手法。
+                  th 上的 width 仍是 table-layout:fixed 认的显式列宽，见下方 .table 里
+                  min-width 的实测取值。 */}
+              <thead><tr><th scope="col" style={{ width: "38%" }}>作品</th><th scope="col" style={{ width: "24%" }}>模型建议</th><th scope="col" style={{ width: "25%" }}>人工决策</th><th scope="col" style={{ width: "13%" }}>操作</th></tr></thead>
               <tbody>
                 {state.data.items.map((item) => (
                   <tr key={item.publicReviewId} className={selectedReview?.publicReviewId === item.publicReviewId ? styles.selectedRow : ""}>
@@ -629,13 +631,13 @@ function ReviewsView({
                           <span className={`${styles.postId} mg-id`} title={item.publicPostId}>{item.publicPostId}</span>
                         </button>
                         <div className={["mg-meta", styles.postMeta].join(" ")}>
+                          <PlatformIdentity platform={item.platform} size="sm" />
                           <WindowMark label="24h" value={item.snapshot24h} />
                           <WindowMark label="7d" value={item.snapshot7d} />
                           <QualityBadge value={item.evidenceQuality} />
                         </div>
                       </div>
                     </th>
-                    <td><PlatformIdentity platform={item.platform} size="sm" /></td>
                     <td className={styles.longValue}>{valueOrUnknown(item.modelSuggestion, "未生成")}</td>
                     <td className={styles.longValue}><span>{valueOrUnknown(item.humanDecision, "未确认")}</span><span className={styles.versionTag}>版本 {formatCount(item.revision)}</span></td>
                     <td><button className={iconButtonClass} data-component="mg-btn" type="button" onClick={() => onSelectReview(item.publicReviewId)} disabled={item.humanDecision !== null || item.status === "confirmed"} title={item.humanDecision !== null || item.status === "confirmed" ? "已确认" : "选择后确认"} aria-label={item.humanDecision !== null || item.status === "confirmed" ? "已确认" : "选择后确认"}><ReviewStatusIcon status={item.status} confirmed={item.humanDecision !== null} /></button></td>
@@ -776,15 +778,30 @@ function MetricTable({ items }: { items: MetricSnapshot[] }) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
-        {/* 8 列在 min-width:58rem 里曾经均分（每列 116px）：「采集时间」要装完整的
-            日期+时间（如「2026/9/1 20:00:00」）装不下，在空格处折成两行，撑高整行——
-            同一行里本来单行的「数值」列因此被判成了 3 行的假阳性（度量的是 <td>
-            自己的盒高，行内 padding 加上被邻居撑高的行高，除以行高会多算出一整行）。
-            给「采集时间」和存 ID 的「快照」显式让出更多宽度，其余短字段（窗口/指标/
-            单位/证据质量）平分剩下的部分，而不是继续均分掉。 */}
-        <thead><tr><th scope="col" style={{ width: "9.5%" }}>主体</th><th scope="col" style={{ width: "12%" }}>窗口</th><th scope="col" style={{ width: "9.5%" }}>指标</th><th scope="col" style={{ width: "9.5%" }}>数值</th><th scope="col" style={{ width: "9.5%" }}>单位</th><th scope="col" style={{ width: "12%" }}>证据质量</th><th scope="col" style={{ width: "22%" }}>采集时间</th><th scope="col" style={{ width: "16%" }}>快照</th></tr></thead>
+        {/* 曾经是 8 列，在共享的 .table min-width（58rem=928px）里均分：检视栏常驻的
+            两栏布局给主栏留的宽度远不到这个数（1180px 下约 500px），一半以上的表格
+            要横向拖才能看到。「窗口」「证据质量」跟「主体」同属一行的次要事实，并入
+            主体列标题下方的 .mg-meta 行；「指标/数值/单位」本来就是同一件事的三个
+            片段（比如「播放量 12,345 次」），合并成一列。8 列降到 4 列，跟上面
+            ReviewsView 的表格、AdminTenantsPage 的 TenantUsageMeta 是同一手法。 */}
+        <thead><tr><th scope="col" style={{ width: "30%" }} title="主体 · 窗口 · 证据质量">主体</th><th scope="col" style={{ width: "28%" }} title="指标 · 数值 · 单位">指标</th><th scope="col" style={{ width: "22%" }}>采集时间</th><th scope="col" style={{ width: "20%" }}>快照</th></tr></thead>
         <tbody>
-          {items.map((item) => <tr key={item.publicSnapshotId}><th scope="row"><span className="mg-id" title={valueOrUnknown(item.publicSubjectId)}>{valueOrUnknown(item.publicSubjectId)}</span></th><td className={styles.metricShortValue} title={windowLabel(item.reviewWindow)}>{windowLabel(item.reviewWindow)}</td><td className={styles.metricShortValue} title={metricKeyLabel(item.metricKey)}>{metricKeyLabel(item.metricKey)}</td><td><span className="mg-id">{numberValue(item.metricValue)}</span></td><td className={styles.metricShortValue} title={unitLabel(item.unit)}>{unitLabel(item.unit)}</td><td><QualityBadge value={item.evidenceQuality} /></td><td>{dateValue(item.collectedAt)}</td><td className={styles.codeValue}><span className="mg-id" title={valueOrUnknown(item.publicSnapshotId)}>{valueOrUnknown(item.publicSnapshotId)}</span></td></tr>)}
+          {items.map((item) => (
+            <tr key={item.publicSnapshotId}>
+              <th scope="row">
+                <div className={styles.subjectCell}>
+                  <span className="mg-id" title={valueOrUnknown(item.publicSubjectId)}>{valueOrUnknown(item.publicSubjectId)}</span>
+                  <div className="mg-meta" data-component="mg-meta">
+                    <span className="mg-badge" data-component="mg-badge" data-tone="neutral" title={windowLabel(item.reviewWindow)}>{windowLabel(item.reviewWindow)}</span>
+                    <QualityBadge value={item.evidenceQuality} />
+                  </div>
+                </div>
+              </th>
+              <td className={styles.longValue}>{metricKeyLabel(item.metricKey)} <strong>{numberValue(item.metricValue)} {unitLabel(item.unit)}</strong></td>
+              <td>{dateValue(item.collectedAt)}</td>
+              <td className={styles.codeValue}><span className="mg-id" title={valueOrUnknown(item.publicSnapshotId)}>{valueOrUnknown(item.publicSnapshotId)}</span></td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

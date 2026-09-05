@@ -304,9 +304,17 @@
   overflow-x: auto;
 }
 
+/* 曾经是 58rem（928px）：两栏布局里检视栏常驻，1180px 只给主栏留约 500px，
+   46% 的表格要横向拖才看得到（900px 更窄）。降到 5 列后（见上面两张表的表头
+   注释）按各列实际能收缩到的最小宽度重新量出这个floor——见下方 900px 断点里
+   的实测取值，480px 是两张表（ReviewsView 的 4 列、MetricTable 的 4 列）都
+   验证过、1440/1180 两档不再需要横向滚动的下限。table-layout: fixed 下
+   <th>/<td> 的 min-width 不参与列宽计算（Chromium 下实测无效，AdminTenantsPage
+   的 .directoryTable 也踩过这一条），列的实际下限只能靠它在这个 min-width
+   里的百分比份额撑出来。 */
 .table {
   width: 100%;
-  min-width: 58rem;
+  min-width: 30rem;
   border-collapse: collapse;
   table-layout: fixed;
   font-size: var(--mg-text-sm);
@@ -347,6 +355,15 @@
 }
 
 .postCell {
+  display: grid;
+  gap: 0.18rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* MetricTable 的「主体」行头：id（.mg-id 单行省略号）+ 窗口/证据质量并成的
+   .mg-meta 行，跟上面 .postCell 是同一个模式（行头 = 主标识 + 次要事实行）。 */
+.subjectCell {
   display: grid;
   gap: 0.18rem;
   max-width: 100%;
@@ -432,18 +449,6 @@
   color: var(--reviews-blue);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: var(--mg-text-xs);
-}
-
-/* 「窗口/指标/单位」是短分类标签，本身不受益于折行；指标/单位的退化文案
-   （如「指标待确认」）有 5 个汉字，比常见取值长，在这几列的实际列宽下会在
-   字中间折成两行、撑高整行——同一行里本来单行的「数值」会因此被排版体检的
-   「盒高 / 行高」判据连累误判成折了行（数值列改走 .mg-id：内层 span 不带
-   单元格自己的内边距，量出来的就是文字本身，不会被同一行的邻居连累）。
-   单行 + 省略号也比在窄格子里断成两行更好看；完整文案仍在 title 里。 */
-.metricShortValue {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 /* 曾经的「统计时间」「证据质量」表格列（.windowList 纵向堆叠两个 WindowMark）
@@ -835,6 +840,35 @@
   color: var(--reviews-ink);
   font-size: var(--mg-text-lg);
   line-height: 1.25;
+}
+
+/* .workspace 只在 <=760px 才把两栏堆成一列（见下方 @media (max-width: 760px)）；
+   760px 到 1120px 之间两栏仍然并排，但 .primaryColumn 的可用宽度已经窄到让
+   summaryBand（5 个指标）从一行落成两行——多出来的高度没有地方要，viewport 锁高
+   的 .workspace 仍然按 100dvh 减出来的那份固定高度分给两栏，结果是「发布复盘」
+   表格连两行都装不下（1180px 实测：tableWrap 可视高度 174px，3 行表格却需要
+   325px；900px 同样 174px）。1440px 下 summaryBand 还是一行，可视高度 258px，
+   本来就够——所以这条只在窄到会落两行的宽度生效，不动 1440px。
+   松开的是 media.css 共享的释放令牌（--mg-rail-shell-height / --mg-rail-grow /
+   --mg-rail-fill），不是重新去拼 [data-page-layout=persistent-rail] 的特异性。
+   两栏仍然并排（grid-template-columns 不变，到 760px 才变 1fr），所以**不设**
+   --mg-rail-align：.inspector 那条共享规则的 fallback 本来就是
+   `align-self: start; height: auto; max-height: 100%`（跟 --mg-rail-align 是
+   否被设置无关，是它自己的默认值），按内容定高、不受这次松开影响；.primaryColumn
+   的 fallback 是 stretch，而它天生比 .inspector 高，行高按两者中较高的一个
+   自动撑开，.primaryColumn 撑到的正是它自己的内容高度，不会多出空白。踩过一次
+   坑：跟其它页面一样把 --mg-rail-align 也设成 auto 会把 .inspector 的 align-self
+   从 start 改成 auto（即 align-items: stretch），在两栏仍并排、行高被
+   .primaryColumn 撑高的情况下把「复盘检查器」拉成一块 775px 的空盒子，被
+   qa:media-layout-sanity 的「面板底部空转」在 1180/900px 抓到——那些参照页面在
+   同一断点会把两栏堆叠成 1fr（每栏独占一行，stretch 是 no-op），这一页不堆叠，
+   照抄会引入新问题。 */
+@media (max-width: 1180px) {
+  .page {
+    --mg-rail-shell-height: auto;
+    --mg-rail-grow: 0 0 auto;
+    --mg-rail-fill: auto;
+  }
 }
 
 @media (max-width: 980px) {
