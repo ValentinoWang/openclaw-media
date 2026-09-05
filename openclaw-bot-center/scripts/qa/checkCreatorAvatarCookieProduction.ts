@@ -95,18 +95,22 @@ async function assertAdminPanel(page: Page, requests: string[]): Promise<void> {
   await gotoPage(page, "/admin/access", "用户与准入");
   const panel = page.locator('[data-admin-cookie-panel]');
   await panel.waitFor({ timeout: timeoutMs });
-  await panel.getByRole("button", { name: /复制.*配置命令/ }).first().waitFor({ timeout: timeoutMs });
   const panelText = await panel.innerText();
+  // 服务端已经不再下发 configurationScript / safeCommand（服务器绝对路径和命令不
+  // 应该出现在浏览器里），面板也就没有「复制配置命令」按钮和脚本名了。判据跟着
+  // 反过来：要求它**不含**脚本名或服务器绝对路径。
   for (const expected of [
     "平台会话凭据",
     "抖音",
     "小红书",
-    "服务器端配置脚本",
-    "save_platform_cookie_secret.py",
-    "不会接收、显示或下发 Cookie 内容",
+    "不接收、显示或下发 Cookie 内容",
   ]) {
     requireContract(panelText.includes(expected), "admin cookie status UI is incomplete");
   }
+  requireContract(
+    !/save_platform_cookie_secret|\/home\/[a-z]+\//.test(panelText),
+    "admin cookie status UI leaks a server-side script path",
+  );
   requireContract(requests.includes("GET /openclaw/media/api/admin/platform-cookies"), "admin cookie status API was not requested");
   requireContract(
     !(await page.locator('input, textarea').evaluateAll((elements) =>
