@@ -503,11 +503,17 @@
   border-color: var(--reviews-line);
 }
 
-.iconButton {
+/* 必须写成 button.iconButton（(0,1,1)）而不是裸 .iconButton（(0,1,0)）：
+   这些按钮同时带 mg-btn，而 .mg-btn { padding: 0 16px; min-height: 44px } 与页面类
+   特异性相同、在打包后的样式表里更靠后，同分靠源序决胜负。裸写的话 36px 宽的按钮
+   两侧各被吃掉 16px，里面 17px 的图标被挤成 **2px**——实测过，看着就是「一个带边框
+   的空方框里有个点」。min-height 也要一并按回去，否则按钮被撑成 44px 高而不是 36px。 */
+button.iconButton {
   display: inline-grid;
   place-items: center;
   width: 2.25rem;
   height: 2.25rem;
+  min-height: 0;
   padding: 0;
   border: 1px solid var(--reviews-line);
   border-radius: 0.38rem;
