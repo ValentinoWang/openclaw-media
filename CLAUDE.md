@@ -127,6 +127,20 @@ MEDIA_LAYOUT_QA_ROUTES=/tracks,/publishing npm run qa:media-layout-sanity
 
 误伤的代价不是白跑一趟：`/today` 那次差点给一个**人写的短标签**套上 `.mg-id`，而 `.mg-id` 的契约是「完整值放 `title`」——那里的 `title` 放的是能力 ID，跟被省略的标签根本不是同一个值，鼠标悬停会显示一个对不上的串。**门禁误报时先改门禁，别改页面去迎合它。**
 
+## 后端取值不是给人读的——三种漏法，一条静态门禁
+
+用户在真实环境里看到过「注册策略复核：**controlled**」。这一类**渲染门禁永远抓不到**：演示种子放的是已登记的中文取值，浏览器里根本看不到那个词。只能从源码查，所以有了 `npm run qa:media-ordinary-presentation`。
+
+| 漏法 | 长什么样 | 用户看到什么 |
+|---|---|---|
+| 裸渲染 | `<dd>{item.status}</dd>` | `controlled` |
+| 标签函数拿原始值兜底 | 一串 `if` 翻译已知取值，最后 `return status` | 后端新增一个取值就漏一个英文词 |
+| 查表不中没有兜底 | `{ACTION_STATUS_LABELS[action.status]}` | **一个空格子**——比英文词更难判断是没加载出来还是本来就没有 |
+
+第三种最阴：写法看着比裸渲染讲究，后果反而更严重。合同里这些字段（`action` / `targetType` / `status`）大多是**自由字符串**，TypeScript 的 `Record<Union, string>` 只约束我们自己的代码，约束不了服务端。
+
+门禁只认「取值来自后端」的那种：下标是属性访问（`action.status`）才算，下标是页面自己算出来的局部变量不算——那种穷尽性是真的。带 `??` / `||` 的整体是二元表达式，天然放行。
+
 ## 量字形，不要量盒子
 
 这一课在渲染门禁里栽过三次，每次都是"判定看着对、一处都抓不到"：
@@ -180,6 +194,7 @@ cd openclaw-bot-center
 npm run qa:media-demo-parity     # 生产/原型一致性门禁（最快，先跑它）
 npm run qa:media-workboard-flow  # /today 全流程图：数据绑定 + 排版（节点/标签不许互相压住）
 npm run qa:media-layout-sanity   # 排版体检：四个宽度真渲染，抓重叠/截断/折行（需要先 build:demo）
+npm run qa:media-ordinary-presentation  # 静态扫源码：后端原始取值泄露给用户（渲染门禁看不见的那一类）
 npm run generate:demo-dataset    # 合同或能力注册表变更后重新生成演示数据
 npm run build:demo               # 构建演示站并走查全部页面
 npm run build:media              # 生产 Media 前端全套门禁

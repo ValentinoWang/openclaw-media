@@ -58,10 +58,18 @@ type AdminOverview = {
   };
   recentActions: Array<{
     publicActionId: string;
+    // 合同里 action / targetType / status 都是自由字符串,不是枚举——真实后端可以
+    // 在任何时候发一个前端从没见过的取值。曾经这里把 targetType/status 收窄成
+    // 闭合联合类型,并在 isAdminAction 里按固定 Set 校验成员资格:后端一旦发一个
+    // 不在 Set 里的取值,整条 recentActions 数组的 `.every(isAdminAction)` 就会
+    // 失败,导致整个平台总览直接报错、不渲染。这三个字段改回 string,校验只认
+    // 「非空字符串」这个形状,未知取值交给下面的 actionLabel/actionTargetTypeLabel/
+    // actionStatusLabel 逐条兜底成中文「未知」,而不是让一整页因为一条审计记录
+    // 陪葬。
     action: string;
-    targetType: AdminActionTargetType;
+    targetType: string;
     reasonSummary: string;
-    status: AdminActionStatus;
+    status: string;
     createdAt: string;
   }>;
   generatedAt: string;
@@ -131,7 +139,36 @@ const ACTION_STATUS_LABELS: Record<AdminActionStatus, string> = {
   unknown: "未知",
 };
 
-const ACTION_NAME_PATTERN = /^[a-z][a-z0-9_.-]{2,127}$/;
+/** `action` 是自由字符串(如 `tenant.suspend`),不是枚举——不可能穷举,只能给
+ *  已经在本产品里出现过的取值配一句中文说明。后端发一个没配过的取值时,
+ *  不能把原始机器名当正文吐给用户,统一显示成「其他管理操作」,原始值仍然
+ *  留在 title 里供排查(见下方 JSX)。 */
+const ACTION_NAME_LABELS: Record<string, string> = {
+  "upstream_credential.rotate": "轮换上游凭据",
+  "registration_policy.update": "更新注册策略",
+  "billing_grant.create": "发放计费余额",
+  "admission_batch.disable": "停用准入批次",
+  "tenant.suspend": "暂停租户",
+};
+
+function actionLabel(action: string): string {
+  return ACTION_NAME_LABELS[action] ?? "其他管理操作";
+}
+
+/** targetType/status 查表命中时按已知取值翻译;命中不了(后端发了一个前端
+ *  还没配置过的自由字符串)一律落到中文「未知」,不把原始取值渲染出来,也
+ *  不留一个空白徽标。 */
+function actionTargetTypeLabel(targetType: string): string {
+  return ACTION_TARGET_TYPES.has(targetType as AdminActionTargetType)
+    ? ACTION_TARGET_TYPE_LABELS[targetType as AdminActionTargetType]
+    : "未知";
+}
+
+function actionStatusLabel(status: string): string {
+  return ACTION_STATUSES.has(status as AdminActionStatus)
+    ? ACTION_STATUS_LABELS[status as AdminActionStatus]
+    : "未知";
+}
 
 export default function AdminOverviewPage() {
   const { runtimeState, session } = useMediaWeb();
@@ -330,9 +367,16 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
                 tabIndex={0}
                 aria-label="治理待办列表"
               >
-                {summary.governanceTodos.map((item, index) => (
-                  <div key={`${item}-${index}`}>{item}</div>
-                ))}
+                <ol className={styles["admin-governance-items"]}>
+                  {summary.governanceTodos.map((item, index) => (
+                    <li className={styles["admin-governance-item"]} key={`${item}-${index}`}>
+                      <span className="mg-badge" data-tone="accent" aria-hidden="true">
+                        {index + 1}
+                      </span>
+                      <p>{item}</p>
+                    </li>
+                  ))}
+                </ol>
               </div>
             ) : (
               <SurfaceState
@@ -366,16 +410,19 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
                     key={action.publicActionId}
                   >
                     <div className={styles["admin-action-main"]}>
-                      <strong className="mg-id" title={action.action}>{action.action}</strong>
+                      {/* 正文是翻译过的中文操作名;title 保留原始机器取值供排查——
+                          正文与 title 不再是同一个值的截断,所以这里不用 mg-id
+                          （它的契约是"完整值放 title、正文是同一个值的截断"）。 */}
+                      <strong title={action.action}>{actionLabel(action.action)}</strong>
                       <span>{action.reasonSummary}</span>
                     </div>
                     <div className={styles["admin-action-meta"]}>
-                      <span>{ACTION_TARGET_TYPE_LABELS[action.targetType]}</span>
+                      <span>{actionTargetTypeLabel(action.targetType)}</span>
                       <span
                         className={`mg-badge ${styles["admin-action-status"]}`}
                         data-tone={actionStatusTone(action.status)}
                       >
-                        {ACTION_STATUS_LABELS[action.status]}
+                        {actionStatusLabel(action.status)}
                       </span>
                       <time dateTime={action.createdAt}>
                         {formatDateTime(action.createdAt)}
@@ -428,7 +475,12 @@ function DashboardContent({ data }: { data: AdminDashboardResponse }) {
                       data-tone={healthStatusTone(service.status)}
                       title={`检查时间：${formatDateTime(service.checkedAt)}`}
                     >
-                      {HEALTH_LABELS[service.status]}
+                      {/* HEALTH_LABELS 是按 ServiceHealthStatus 四个枚举值穷尽的表,
+                          isServiceHealth 也已经按合同的 enum 校验过成员资格,这里理论
+                          上不会落空——但直接裸查表在可见文本位置会被当作「后端加一个
+                          没登记的取值就会渲染成空白格子」的隐患抓住,补一个中文兜底
+                          做二次防护，成本为零。 */}
+                      {HEALTH_LABELS[service.status] ?? "未知"}
                     </span>
                   </div>
                 ))}
@@ -512,10 +564,12 @@ function getHealthMessage(
 
 type BadgeTone = "success" | "warning" | "danger";
 
-function actionStatusTone(status: AdminActionStatus): BadgeTone | undefined {
+function actionStatusTone(status: string): BadgeTone | undefined {
   if (status === "succeeded" || status === "recorded") return "success";
   if (status === "failed") return "danger";
   if (status === "degraded") return "warning";
+  // 未知取值落到 undefined:徽标不带 data-tone,渲染成中性灰的默认样式，
+  // 而不是空白或崩溃——已经是安全的兜底。
   return undefined;
 }
 
@@ -625,19 +679,20 @@ function isServiceHealth(value: unknown): value is AdminOverview["serviceHealth"
 }
 
 function isAdminAction(value: unknown): value is AdminOverview["recentActions"][number] {
+  // action/targetType/status 只按「非空字符串」校验形状,不再要求命中一个固定
+  // Set——那个 Set 是前端本地维护的,会先于后端的真实取值范围过时。校验只负责
+  // 拒绝结构不对的数据;取值是否认识、认不出时怎么显示,交给 actionLabel /
+  // actionTargetTypeLabel / actionStatusLabel 逐条兜底（见上方）,不让一条没
+  // 见过的审计记录把整个平台总览拖垮成一片报错。
   return (
     isRecord(value) &&
     hasExactKeys(value, ["publicActionId", "action", "targetType", "reasonSummary", "status", "createdAt"]) &&
     isNonEmptyString(value.publicActionId) &&
     isPublicId(value.publicActionId) &&
-    isString(value.action) &&
     isNonEmptyString(value.action) &&
-    ACTION_NAME_PATTERN.test(value.action) &&
-    isString(value.targetType) &&
-    ACTION_TARGET_TYPES.has(value.targetType as AdminActionTargetType) &&
+    isNonEmptyString(value.targetType) &&
     isNonEmptyString(value.reasonSummary) &&
-    isString(value.status) &&
-    ACTION_STATUSES.has(value.status as AdminActionStatus) &&
+    isNonEmptyString(value.status) &&
     isDateTimeString(value.createdAt)
   );
 }

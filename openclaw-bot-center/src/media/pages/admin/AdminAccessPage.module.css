@@ -1,11 +1,19 @@
+/* 这一页把「平台会话凭据」「邀请权限表 + 编辑面板」「准入码批次」「注册策略」
+   四五块面板叠在一起，任何一块内容一多，视口就装不下——不像其它已经上线的
+   Media 页面那样在≥1121px 时内容天然只有一屏。所以这里不像其它页面那样只在
+   窄断点松开共享的 persistent-rail 契约，而是无条件松开：整页跟着
+   .media-content 一起滚动，每块面板按自己的内容定高，不设内部滚动预算。
+   四个令牌沿继承链传给下面的 [data-page-layout]/[data-page-primary]/
+   [data-page-inspector]，页面在这里写一次即可，不用再抄一遍 @media 断点。 */
 .page {
   display: flex;
   width: 100%;
   min-width: 0;
-  height: calc(100dvh - var(--mg-shell-topbar, 86px) - 46px);
-  min-height: 0;
   flex-direction: column;
-  overflow: hidden;
+  --mg-rail-shell-height: auto;
+  --mg-rail-grow: 0 0 auto;
+  --mg-rail-fill: auto;
+  --mg-rail-align: start;
 }
 
 .page > [data-page-prelude] {
@@ -73,10 +81,12 @@
    剩余空间，而不是像普通 grid 子项那样被内容撑到多高就是多高——min-height: 0
    是必需的：规范规定只有 overflow 非 visible 的子项自动最小尺寸才是 0，否则默认
    auto = 内容高度，那样 .cookiePanel 的 max-height 就挡不住内层，滚动条永远不
-   会出现（.tabContent 上方那条注释是同一个道理）。overflow: hidden auto 让纵向
-   在这里滚、横向仍裁在圆角里；align-items: start 防止 .cookieContract 被 grid
-   的默认 stretch 拉伸到跟 .cookieStatusGrid 一样高——不然卡片一多，右边那个虚线
-   框就会被撑成一个上半截有字、下半截全是空白的长条。 */
+   会出现。这是这一页仅有的固定高度预算（.cookiePanel 的 360px 上限），专门防
+   平台卡片变多时把下面内容挤出去，不随下面「整页松开锁高」的改动撤掉。
+   overflow: hidden auto 让纵向在这里滚、横向仍裁在圆角里；align-items: start
+   防止 .cookieContract 被 grid 的默认 stretch 拉伸到跟 .cookieStatusGrid 一样
+   高——不然卡片一多，右边那个虚线框就会被撑成一个上半截有字、下半截全是空白
+   的长条。 */
 .cookieBody {
   display: grid;
   width: 100%;
@@ -230,30 +240,16 @@
 
 .accessLayout {
   display: grid;
-  height: auto;
   min-width: 0;
-  min-height: 0;
-  flex: 1 1 0;
   grid-template-columns: minmax(0, 1fr) minmax(410px, 440px);
-  grid-template-rows: minmax(0, 1fr);
-  align-items: stretch;
+  align-items: start;
   gap: 14px;
-  overflow: hidden;
 }
 
-/* This element now carries `hidden` directly (see the tsx: the redundant
-   unstyled wrapper div that used to hold it is gone -- it broke this from
-   being a direct child of <main>, which is what
-   `.fidelity-page:has(> [data-page-prelude]) > [data-page-layout=...]` in
-   media.css needs to actually clamp its height to the shared viewport-height
-   contract; without that direct-child match this grid, and everything under
-   it (.mainColumn, .tabContent), was pure auto/content-height, and the tab's
-   real content only ever got clipped by .page's own fixed height + overflow:
-   hidden at the very top -- with nothing scrollable in between. `display:
-   grid` above is unconditional, author-origin, and normal-importance, so
-   (like .tabContent) it would otherwise beat the user-agent's
-   `[hidden] { display: none }` on cascade origin alone and stay laid out
-   anyway; this is the same guard as `.tabContent[hidden]` above. */
+/* `display: grid` above is unconditional, author-origin, and normal-importance,
+   so it would otherwise beat the user-agent stylesheet's `[hidden] { display:
+   none }` on cascade origin alone and stay laid out even while hidden; this is
+   the same guard as `.tabContent[hidden]` above. */
 .accessLayout[hidden] {
   display: none;
 }
@@ -266,38 +262,11 @@
 
 .mainColumn {
   display: grid;
-  height: 100%;
-  grid-template-rows: minmax(0, 1fr);
-  align-content: stretch;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  scrollbar-gutter: stable;
 }
 
-/* overflow-y: auto (not hidden) is load-bearing, not decorative: .tablePanel
-   below is `flex: 1 1 0`, an explicit zero flex-basis. Under CSS flexbox's
-   shrink algorithm, an item's share of a shrink deficit is weighted by
-   flex-basis * shrink-factor -- a literal 0 basis means it is weighted 0 and
-   absorbs none of the shrink itself, but it also *starts* the resolution
-   from that same 0, so whenever a same-row sibling with auto (content-sized)
-   basis -- .summaryGrid in the invitations tab, .actionPanel in the admission
-   tab -- has enough natural content to fill this section's height on its own,
-   .tablePanel is left with nothing and (via its own overflow: hidden below,
-   which resolves its *automatic* minimum size to 0) collapses toward 0
-   instead of the min-height floor set on it and .actionPanel further down.
-   Measured at 1180px width: .tablePanel's own assigned height came back 2px
-   (clientHeight 0) while its un-clipped content needed ~100-165px, with nothing
-   between it and .page's own overflow: hidden able to scroll. Those floors
-   stop the collapse; this rule is what makes whatever still doesn't fit
-   (the floors together can still exceed the shared height on the narrowest
-   panel widths) a genuine scroll instead of another hard, unreachable clip. */
 .tabContent {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 /* AdmissionTab and RegistrationTab render unconditionally (only their own
@@ -314,58 +283,36 @@
   display: none;
 }
 
-/* Same guard, scoped to beat `.page > .tabContent { display: block }` in the
-   <=1120px stacked layout below: that rule is also two classes (0,2,0), tied
-   with `.tabContent[hidden]` above and later in source, so at narrow widths
-   it was winning the `display` property back to "block" and undoing the
-   guard right where AdmissionTab/RegistrationTab are `.page`'s direct
-   children. Adding the extra attribute selector here (0,3,0) settles it
-   regardless of order. Measured: before this rule, at 900px width the
-   inactive tabpanel's computed display was "block", not "none", and its
-   content rendered stacked directly under the active tab's -- not clipped
-   (nothing here needs a scroll escape), but not actually switching tabs
-   either, which the tablist's `aria-selected` and this component's own
-   `hidden` prop both say it should. */
-.page > .tabContent[hidden] {
-  display: none;
-}
-
+/* .page 不再有固定高度，AdmissionTab/RegistrationTab 的 .tabContent 是它的直接
+   flex 子项——不能再写 flex: 1 1 0（配 min-height: 0）：那是「跟兄弟抢一份固定
+   预算」的写法，在 .page 已经是 auto 高度、没有多余空间可分的情况下，0 基准会
+   让这块整体塌成 0 附近而不是按内容定高（.tabContent 内部真正会伸缩的是
+   [role=tabpanel] 底下各自的表格/表单，不是这一层）。 */
 .page > .tabContent {
-  min-height: 0;
-  flex: 1 1 0;
-}
-
-.page > .tabContent > .sectionLead {
-  flex: 0 0 auto;
+  flex: none;
 }
 
 .tablePanel,
-.summaryPanel,
 .policyPanel,
 .actionPanel,
 .inspector {
   min-width: 0;
 }
 
-.summaryPanel,
 .policyPanel,
 .actionPanel {
   overflow: hidden;
 }
 
-/* min-height floor (not 0): see the comment on .tabContent above -- this
-   panel's `flex: 1 1 0` basis means a same-row sibling with real content
-   (.summaryGrid / .actionPanel) can otherwise starve it down to nothing.
-   230px covers its own mg-panel-head (54px, measured) plus the filter bar
-   the invitations table adds, pagination, and a couple of data rows; .page >
-   .tabContent's now-scrollable box (above) is what makes the rest of a tall
-   result set reachable instead of clipped. */
+/* min-height floor, not a forced height: with the shared height contract
+   released (see .page above), nothing shrinks this panel anymore, so 230px
+   only ever raises a near-empty result set up to a readable minimum -- a
+   real result set (mg-panel-head + filter bar + rows) already clears it on
+   its own and just renders at its natural, larger height. */
 .tablePanel {
   display: flex;
   min-height: 230px;
-  flex: 1 1 0;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .tablePanel > :global(.mg-state) {
@@ -436,20 +383,20 @@
   white-space: nowrap;
 }
 
+/* overflow: auto here is for the table's own horizontal scroll (.userTable /
+   .batchTable set a min-width wider than a narrow rail column) -- not a
+   vertical height budget. flex: 1 1 0 + min-height: 0 used to be that budget's
+   plumbing: a 0 flex-basis with no min-height floor, inside what is now an
+   auto-height .tablePanel, collapses toward 0 instead of the table's real
+   content height (measured: a 30-row page rendered at 62px tall, 367px of
+   rows unreachable). Dropping both lets this box take its natural height. */
 .tableScroll {
   width: 100%;
   min-width: 0;
-  flex: 1 1 0;
-  min-height: 0;
   max-width: 100%;
   contain: inline-size paint;
   overflow: auto;
   overscroll-behavior: contain;
-}
-
-.tabContent .tableScroll {
-  flex: 1 1 0;
-  max-height: none;
 }
 
 .userTable,
@@ -673,6 +620,22 @@
   padding: 0;
 }
 
+/* `button.iconButton` (element+class) instead of the bare class: this must
+   outrank `.mg-btn`'s `padding: 0 16px` and `min-height: 44px` at matching
+   (0,1,0) specificity, and the primitive lands after page modules in the
+   bundled stylesheet so a same-specificity rule here would silently lose on
+   source order -- 30px width with 16px of horizontal padding on each side
+   leaves a negative content box, squashing the row action icon down to a
+   sliver, and min-height: 44px overrides the 30px height into a taller,
+   icon-less blank rectangle (the empty box reported at the right end of
+   every row). */
+button.iconButton {
+  width: 30px;
+  height: 30px;
+  min-height: 0;
+  padding: 0;
+}
+
 .pagination {
   display: flex;
   min-height: 46px;
@@ -691,9 +654,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Same `.mg-btn` min-height: 44px conflict as button.iconButton above, but
+   `.pagination button` (element selector, (0,1,1)) already outranks `.mg-btn`
+   on specificity for every property here, min-height included -- it just
+   needs to actually declare one to win. */
 .pagination button {
   width: 30px;
   height: 30px;
+  min-height: 0;
   padding: 0;
 }
 
@@ -704,10 +672,8 @@
 
 .inspector {
   display: flex;
-  height: 100%;
   min-height: 0;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .inspectorEmpty {
@@ -740,13 +706,20 @@
   line-height: 1.45;
 }
 
+/* Was `flex: 1 1 0; min-height: 0; overflow-y: auto` -- a same-bug sibling of
+   .tableScroll above: .inspector is a flex column whose own height is auto
+   (the shared rail contract's default for the inspector column even before
+   this page's own lock), so a 0-basis child with no min-height floor
+   collapses toward 0 instead of its content, regardless of that content's
+   real size. Measured before this fix: the edit form rendered at ~102px tall
+   (just .inspectorHeader) with the rest of the fields present in the DOM but
+   never shown. Dropping the flex/overflow lets .inspectorBody take its
+   natural height; the outer .inspector still caps at the shared rail's
+   available height and scrolls internally if a column's content ever
+   actually exceeds it. */
 .inspectorBody {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  min-width: 0;
   padding: 13px;
-  scrollbar-gutter: stable;
 }
 
 .inspectorIdentity,
@@ -1077,114 +1050,10 @@
   color: var(--mg-primary-dark);
 }
 
-/* 原先左列 minmax(0, 1.05fr) 没有地板、右列 minmax(280px, 0.95fr) 有硬地板
-   280px：两栏原本就接近对半（1.05fr : 0.95fr），窄容器里所有挤压都会压在
-   没有地板的左列上——1180px 实测这格总宽只有 395px，右列吃满 280px 地板后
-   左列（.summaryPanel，装着下面的 .metricGrid）只剩 101px，逼出 24px 的
-   三列指标格。改成 auto-fit 之后两栏地板相同、真的放不下两栏时整体退回
-   单列，不会再出现「一栏被吃到骨头、另一栏岿然不动」的中间态。 */
-.summaryGrid {
-  display: grid;
-  min-height: 0;
-  flex: 0 0 clamp(164px, 22%, 198px);
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  align-items: stretch;
-  gap: 14px;
-  margin-top: 14px;
-}
-
-/* clamp(164px, 22%, 198px) 是按“两栏并排、共享一份高度、各自内部滚动”设计的
-   固定高度——只在两栏真的并排时成立。260px 地板下 auto-fit 会在 1121~1318px
-   （2 列门槛是 2*260px + 14px gap = 534px，实测正好在 1319px 由 1 列变 2 列）
-   先于 ≤1120px 的整体 rail 契约退回单列（两张摘要卡上下堆叠），这时同一份
-   高度会被两张卡对半分，摘要内容从中间被切断。1319px 起两列地板本身就满足，
-   交还给原来的 clamp；≤1120px 也不需要在这里补：那之外 summaryGrid 的祖先
-   高度契约已经整体松开，百分比高度本来就失效。 */
-@media (min-width: 1121px) and (max-width: 1318px) {
-  .summaryGrid {
-    flex: 0 0 auto;
-  }
-}
-
-.summaryPanel,
 .policyPanel {
   display: flex;
   min-height: 0;
   flex-direction: column;
-}
-
-.summaryBody {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-  overflow: auto;
-  padding: 12px 14px 8px;
-}
-
-/* 列数由容器决定（auto-fit + minmax）。分隔线改用 gap + 容器背景色的
-   “缝隙”技巧，不再用 border-right + :first-child/:last-child：auto-fit
-   换行后谁在“行尾”不是编译期能确定的，nth-child/last-child 那一套只在
-   固定 3 列时成立。 */
-.metricGrid {
-  display: grid;
-  /* 固定 3 列而不是 auto-fit：这 3 个指标 (Metric 组件的 panel 变体，非
-     mg-metric-grid 那套卡片) 是 summaryPanel 摘要卡的全部内容，卡片高度在
-     上面被钉死为 clamp(164px, 22%, 198px) ——一行放不下换成两行会被那份
-     固定高度腰斩，比窄列更糟。summaryGrid 已经在容器层面兜住了「两栏并排」
-     这一半的挤压，这里只需要给 3 列各自一个不再是 0 的地板，不需要也不能
-     让它跌到 2 列。 */
-  grid-template-columns: repeat(3, minmax(95px, 1fr));
-  gap: 1px;
-  background: var(--mg-border);
-  border-bottom: 1px solid var(--mg-border);
-}
-
-.metric {
-  min-width: 0;
-  padding: 0 10px 11px;
-  background: var(--mg-surface);
-}
-.metric:first-child {
-  padding-left: 0;
-}
-.metric:last-child {
-  padding-right: 0;
-}
-.metric > span,
-.metric > small {
-  display: block;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-2xs);
-}
-.metric > strong {
-  display: block;
-  margin: 4px 0 2px;
-  color: var(--mg-ink);
-  font-size: var(--mg-text-xl);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.metric > small {
-  line-height: 1.35;
-}
-
-.latestSummary,
-.summaryEmpty {
-  display: grid;
-  gap: 3px;
-  margin: 7px 0 0;
-  color: var(--mg-muted);
-  font-size: var(--mg-text-2xs);
-  line-height: 1.45;
-}
-
-.latestSummary strong {
-  color: var(--mg-ink);
-  overflow-wrap: anywhere;
-}
-
-.summaryEmpty {
-  margin-bottom: 1px;
 }
 
 .factList {
@@ -1236,20 +1105,25 @@
   max-width: 75ch;
 }
 
-/* min-height floor: .actionPanel has an auto (content-sized) flex-basis,
-   so under a shrink deficit it normally absorbs it before a 0-basis sibling
-   even gets asked to shrink (see .tablePanel's comment) -- but once that
-   sibling has its own floor, any further deficit falls entirely on this
-   panel, and its own overflow: hidden (below) would otherwise let it be
-   crushed past the point its own header and action tabs stay usable. 260px
-   covers its mg-panel-head plus the segmented action tabs; .page > .tabContent
-   now scrolls, so the rest of the form is reachable rather than clipped. */
+/* 260px 是下限,不是逼出来的高度——批次库存表和批次操作现在并排放在
+   .admissionLayout 里,间距交给那个容器的 gap,这里不用再自己留 margin-top。 */
 .actionPanel {
   display: flex;
   min-height: 260px;
-  flex: 0 1 auto;
   flex-direction: column;
-  margin-top: 14px;
+}
+
+/* 批次库存表(左)+ 批次操作表单(右)并排,和这一页其它标签页的双栏结构保持
+   一致——原先上下堆叠时,库存表和操作表单各自都只分到半屏,信息被压缩、
+   下面还有大片没用上的宽度。align-items: start(不用默认的 stretch):两栏
+   内容长短通常不一样(表格行数 vs 表单字段),stretch 会把矮的一边拉成
+   一块底部空转的空盒子。 */
+.admissionLayout {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  align-items: start;
+  gap: 14px;
 }
 
 .actionHeader {
@@ -1281,9 +1155,11 @@
   overflow: auto;
 }
 
+/* 单列:这个表单现在固定活在 .admissionLayout 右边的窄栏里(360~420px),
+   跟旁边 InvitationInspector 的字段一样一行一个,不再按视口宽度切两列——
+   两列在这个宽度下会把「签发数量」挤到 150px 地板,「批次名称」跟着变窄。 */
 .actionFields {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(150px, 0.6fr);
   gap: 10px;
 }
 
@@ -1357,11 +1233,18 @@
   white-space: pre-wrap;
 }
 
+/* flex: 1 1 0 removed: .tabContent (this element's flex-column parent for the
+   registration tab) is auto-height now, not a fixed shared budget -- a
+   0 flex-basis there collapses toward 0 instead of this row's real content
+   (same bug as .tableScroll/.inspectorBody above). align-items: start (not
+   the default stretch): the two policy panels rarely have matching content
+   length (a handful of read-only facts vs. a full edit form with a textarea),
+   and stretch would pad the shorter one into a bottom-heavy empty box. */
 .policyLayout {
   display: grid;
-  min-height: 0;
-  flex: 1 1 0;
+  min-width: 0;
   grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+  align-items: start;
   gap: 14px;
 }
 
@@ -1402,112 +1285,15 @@
   border: 0;
 }
 
+/* .page 不再有锁高预算,这几块两栏并排的容器只剩「窄了就堆成一列」这一件事
+   要在断点里做——不用再跟着松开高度契约(.page 本来就一直是 auto)。批次库存表
+   （.batchTable min-width: 900px，比邀请权限表还宽）挤压更早出现，因此
+   .admissionLayout 和 .accessLayout 用同一个 1120px 断点，比 .policyLayout /
+   .cookieBody 的 900px 断点先收成单列。 */
 @media (max-width: 1120px) {
-  /* 两栏在这里就堆成一列，整体松开共享的 persistent-rail 契约。 */
-  .page {
-    --mg-rail-shell-height: auto;
-    --mg-rail-grow: 0 0 auto;
-    --mg-rail-fill: auto;
-    --mg-rail-align: auto;
-    overflow: visible;
-  }
-
-  /* .page 在这个断点整体松开高度契约（overflow: visible，整页跟着 .media-content
-     一起滚），.cookiePanel 的 360px 上限和 .cookieBody 的内部滚动是专门给「.page
-     固定高度 + overflow: hidden」那个契约配的——这里没有固定高度可顶，不撤掉的话
-     反而会在两个平台正常展示时凭空钉出一个内部滚动条（实测 900px/430px 宽度下
-     的自然高度是 395px/691px，早就超过 360px）。整段退回原来的普通块级流。 */
-  .cookiePanel {
-    display: block;
-    max-height: none;
-  }
-
-  .cookieBody {
-    min-height: auto;
-    overflow: visible;
-  }
-
-  .accessLayout {
-    height: auto;
-    min-height: auto;
-    flex: none;
+  .accessLayout,
+  .admissionLayout {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: none;
-    overflow: visible;
-  }
-
-  .mainColumn,
-  .inspector {
-    height: auto;
-    overflow: visible;
-    scrollbar-gutter: auto;
-  }
-
-  .mainColumn {
-    grid-template-rows: none;
-  }
-
-  .tabContent {
-    display: block;
-    min-height: auto;
-    overflow: visible;
-  }
-
-  .page > .tabContent {
-    display: block;
-    min-height: auto;
-    flex: none;
-    overflow: visible;
-  }
-
-  .summaryGrid {
-    flex: none;
-  }
-
-  .summaryPanel {
-    min-height: 164px;
-  }
-
-  .policyLayout {
-    flex: none;
-  }
-
-  .actionPanel,
-  .policyPanel {
-    overflow: visible;
-  }
-
-  .tablePanel {
-    display: block;
-    overflow-x: clip;
-    overflow-y: visible;
-  }
-
-  .tabContent .tableScroll {
-    flex: none;
-    max-height: none;
-    overflow-x: auto;
-    overflow-y: visible;
-  }
-
-  .inspector {
-    min-height: 0;
-    position: static;
-  }
-
-  .inspectorEmpty {
-    min-height: auto;
-  }
-
-  .inspectorEmpty > :global(.mg-state) {
-    min-height: 220px;
-    flex: 0 0 auto;
-  }
-
-  .inspectorBody {
-    overflow: visible;
-    scrollbar-gutter: auto;
-    flex: none;
   }
 }
 
@@ -1516,10 +1302,6 @@
   .policyLayout,
   .cookieBody {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .summaryGrid {
-    grid-template-columns: 1fr;
   }
 
   /* 这里以前把 .cookieStatusGrid 反常地从 2 列改判成 4 列——cookieBody
@@ -1537,10 +1319,6 @@
     flex-basis: 100%;
   }
 
-  .actionFields {
-    grid-template-columns: 1fr;
-  }
-
   .cookieHeader {
     flex-direction: column;
   }
@@ -1548,12 +1326,6 @@
   .cookieStatusGrid {
     grid-template-columns: minmax(0, 1fr);
   }
-
-  /* .metricGrid 不再在这里覆写列数：固定 3 列 + 95px 地板在这个断点绰绰
-     有余（.summaryGrid 在 900px 断点收成单列后主栏宽度也宽松）；下面这组
-     .metric:nth-child(2)/(3)/(4) 曾经手工修的分隔线/内边距也一并撤掉——
-     .metric 只有 3 个，第 4 个从来不存在，且分隔线现在用 gap + 背景色
-     实现，不再有 border-right 需要按位置摘掉。 */
 
   .sectionLead {
     flex-direction: column;

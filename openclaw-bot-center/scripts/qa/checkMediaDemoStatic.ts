@@ -16,7 +16,9 @@ import { resolveStudioRouteOutcome, resolveStudioRoutePolicy } from '../../src/m
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 // 与 vite.demo.config.ts 一致：基址可以用 MEDIA_DEMO_BASE 覆盖，走查必须跟着走。
 const demoBase = process.env.MEDIA_DEMO_BASE ?? '/openclaw/media-demo/'
-const distDemoRoot = resolve(projectRoot, 'dist-demo')
+/** 默认走查 dist-demo；并行开发时可以用 MEDIA_DEMO_QA_DIST 指到自己的产物目录，
+ *  免得几个人互相覆盖（和 MEDIA_LAYOUT_QA_DIST 同一个用法）。 */
+const distDemoRoot = resolve(projectRoot, process.env.MEDIA_DEMO_QA_DIST ?? 'dist-demo')
 const outputRoot = resolve(process.env.MEDIA_DEMO_QA_OUTPUT ?? '/tmp/openclaw-media-demo-qa')
 const viewport = { width: 1440, height: 1000 } as const
 const minContentTextLength = 80

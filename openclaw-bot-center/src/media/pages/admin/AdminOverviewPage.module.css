@@ -112,13 +112,23 @@
   overflow: hidden;
 }
 
+/* 曾经是 `grid-template-rows: auto minmax(0, 1fr)`：第一行（治理待办）按
+   max-content 无上限取「auto」，第二行（最近管理操作）才有 minmax(0, 1fr) 的
+   下限。CSS Grid 的行尺寸只看 grid-template-rows，子项自己写的 flex 属性在
+   grid 容器里根本不生效——所以治理待办条目一多（长列表压力复制到 8 倍），
+   第一行的 auto 就吃满整栏固定高度，第二行被挤成 0，`.mg-panel` 的
+   overflow:hidden 连同「最近管理操作」的标题一起裁没，栏自己也是
+   overflow:hidden，滚不出来。改成纵向 flex 后，两块面板真正吃到自己已经
+   写好的 flex 属性（治理待办默认 `flex: 0 1 auto` 可收缩，最近管理操作显式
+   `flex: 1 1 auto`）：内容一旦超过本栏预算，两块面板按各自内容比例收缩，
+   收缩到低于内容高度时各自的 overflow:auto 列表区（.admin-governance-list /
+   .admin-actions-list）内部滚动，不再有哪一块能把另一块的标题都吞掉。 */
 .admin-primary-column {
-  display: grid;
+  display: flex;
   min-width: 0;
   height: 100%;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
-  align-content: stretch;
+  flex-direction: column;
   gap: 18px;
   overflow: hidden;
   scrollbar-gutter: stable;
@@ -151,7 +161,6 @@
   color: var(--accent-ink);
 }
 
-.admin-governance-list > div,
 .admin-service-readout > div,
 .admin-audit-readout > div {
   display: grid;
@@ -164,14 +173,52 @@
   line-height: 1.5;
 }
 
-.admin-governance-list > div:last-child,
 .admin-service-readout > div:last-child,
 .admin-audit-readout > div:last-child {
   border-bottom: 0;
 }
 
-.admin-governance-list > div {
-  grid-template-columns: minmax(0, 1fr);
+/* 治理待办：四句完整中文句子铺成的纯字符串数组,原来只用一条极淡的分隔线
+   隔开,读起来像一段被切开的段落,没有任何「这是一份待办清单」的信号。
+   合同里 governanceTodos 就是 string[]（不是结构化对象),没有序号、优先级
+   之类的字段可用——能改的只有呈现层：给每一条配一个序号徽标（复用
+   .mg-badge 原语的 accent 语气,和面板图标同色系,不写死颜色),序号与文本
+   放进同一个 flex 行,条目之间用分隔线隔开,行高放宽到 1.6 提高长句可读性,
+   并给文本设一个最大行宽,避免在宽屏主栏里整行拉到近 800px。 */
+.admin-governance-items {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-governance-item {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--mg-border);
+}
+
+.admin-governance-item:last-child {
+  border-bottom: 0;
+}
+
+.admin-governance-item > :global(.mg-badge) {
+  margin-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-governance-item p {
+  min-width: 0;
+  max-width: 64ch;
+  margin: 0;
+  color: var(--mg-ink);
+  font-size: var(--mg-text-xs);
+  line-height: 1.6;
 }
 
 .admin-service-readout > div > span:first-child {
@@ -241,9 +288,13 @@
   content: "";
 }
 
+/* 同样的道理反过来也要挡住：这块是「最近管理操作」的终端填充面，正常情况下
+   会先被压缩、由 .admin-actions-list 内部滚动，但下限也不能低于自己的标题——
+   给它和治理待办面板一样的 min-height 下限，两块面板谁被压缩都不会连标题
+   一起没了。 */
 .admin-operations-panel {
   display: flex;
-  min-height: 0;
+  min-height: var(--mg-panel-heading-height);
   flex: 1 1 auto;
   flex-direction: column;
 }
@@ -265,9 +316,19 @@
   flex-direction: column;
 }
 
+/* 这块面板同时也是 .mg-panel：overflow 继承 mg-panel 的默认值 hidden，
+   而不是 visible。Flexbox 的「自动最小尺寸」规则里，只有 overflow:visible
+   的项才会退回内容尺寸——overflow 非 visible 的项，自动最小尺寸直接算 0，
+   跟有没有显式写 min-height:0 无关。也就是说，光靠"不写 min-height:0"
+   并不能让标题的高度当成这块面板的收缩下限；治理待办条目一多（长列表压力
+   复制到 8 倍）时，.admin-primary-column 按内容比例分担收缩亏空，这块面板
+   照样能被压到 0，标题「准入、注册策略与运行状态的当前聚合。」被裁没。
+   显式给一个等于标题高度的 min-height，让它成为真正的收缩下限：面板永远
+   至少留出标题的空间，超出面板预算的是列表内容，由下面 .admin-governance-list
+   自己的 overflow:auto 去内部滚动，不会连标题一起被拖下水。 */
 .admin-governance-panel {
   display: flex;
-  min-height: 0;
+  min-height: var(--mg-panel-heading-height);
   flex-direction: column;
 }
 
@@ -423,10 +484,14 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .admin-governance-list > div,
   .admin-service-readout > div {
     grid-template-columns: 1fr;
     gap: 4px;
+  }
+
+  .admin-governance-item {
+    gap: 10px;
+    padding: 12px 14px;
   }
 
   .admin-action-row {

@@ -10,7 +10,9 @@ const styles = readFileSync(resolve('src/media/media.css'), 'utf8')
 assert.match(page, /workspaceMode !== 'organization_lark' \|\| session\.bodyAuthority !== 'lark'/, 'organization shell must require the server organization session')
 assert.match(page, /!session\.organizationName/, 'organization shell must fail closed when the server organization name is unavailable')
 assert.match(page, /memberRoleLabels[\s\S]*owner:[\s\S]*member:/, 'organization shell must define both server member roles')
-assert.match(page, /memberRoleLabels\[session\.memberRole\]/, 'organization shell must render the server member role')
+assert.match(page, /memberRoleLabel\(session\.memberRole\)/, 'organization shell must render the server member role')
+// 查表不中不能渲染成空白：角色是服务端发来的字符串，TypeScript 的联合类型约束不了它。
+assert.match(page, /memberRoleLabels\[role\] \?\? '[^']+'/, 'unknown server member role must fall back to readable copy, not an empty cell')
 assert.match(page, /session\.organizationName/, 'organization shell must render the server organization name')
 assert.match(page, /session\.organizationConnection/, 'organization shell must consume the public organization connection projection')
 for (const state of ['connected', 'pending', 'disabled', 'revoked', 'attention']) {

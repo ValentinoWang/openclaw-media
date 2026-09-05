@@ -23,7 +23,6 @@ import { mutationFingerprint, useAdminAction, type ActionState } from '../../ui/
 import { describeBusinessError } from '../../ui/businessOperationError'
 import { PlatformIdentity } from '../../ui/PlatformIdentity'
 import { platformDisplayLabel } from '../../ui/platformRegistry'
-import { Metric } from '../../ui/Metric'
 import { SearchBox } from '../../ui/SearchBox'
 import { SurfaceState } from '../../ui/SurfaceState'
 import { isPublicId } from '../../identifiers'
@@ -271,8 +270,6 @@ export default function AdminAccessPage() {
           <InvitationTab
             hidden={activeTab !== 'invitations'}
             state={usersState}
-            admissionState={batchesState}
-            policyState={policyState}
             search={search}
             submittedSearch={submittedSearch}
             selectedUserId={selectedUserId}
@@ -282,8 +279,6 @@ export default function AdminAccessPage() {
             onSelectUser={setSelectedUserId}
             onPreviousPage={previousUserPage}
             onNextPage={nextUserPage}
-            onOpenAdmission={() => selectTab('admission')}
-            onOpenRegistration={() => selectTab('registration')}
           />
         </div>
         <InvitationInspector
@@ -348,7 +343,7 @@ function PlatformCookiePanel({ state }: { state: ResourceState<PlatformCookiesRe
         <ShieldCheck size={17} aria-hidden="true" />
         <div>
           <h2 id="platform-cookie-heading">平台会话凭据</h2>
-          <p>仅管理员可见。页面只展示平台配置状态，不接收或显示凭据内容。</p>
+          <p>仅管理员可见。服务端用这里保存的 Cookie 抓取抖音/小红书内容；显示为「尚未配置」或「配置无效」时，依赖该平台的抓取任务会因鉴权失败而无法执行，需要用下方脚本重新导出并保存最新 Cookie。页面只展示平台配置状态，不接收或显示凭据内容。</p>
         </div>
       </div>
       <StatusPill
@@ -428,8 +423,6 @@ function useAdminResource<T>(
 type InvitationTabProps = {
   hidden: boolean
   state: ResourceState<AffiliateUsersPage>
-  admissionState: ResourceState<AdmissionBatchesPage>
-  policyState: ResourceState<RegistrationPolicy>
   search: string
   submittedSearch: string
   selectedUserId: string | null
@@ -439,15 +432,11 @@ type InvitationTabProps = {
   onSelectUser: (value: string) => void
   onPreviousPage: () => void
   onNextPage: () => void
-  onOpenAdmission: () => void
-  onOpenRegistration: () => void
 }
 
 function InvitationTab({
   hidden,
   state,
-  admissionState,
-  policyState,
   search,
   submittedSearch,
   selectedUserId,
@@ -457,8 +446,6 @@ function InvitationTab({
   onSelectUser,
   onPreviousPage,
   onNextPage,
-  onOpenAdmission,
-  onOpenRegistration,
 }: InvitationTabProps) {
   const items = state.status === 'ready' ? state.data.items : []
   return <section hidden={hidden} className={styles.tabContent} aria-label="邀请权限" id="invitations-tabpanel" role="tabpanel" aria-labelledby="invitations-tab">
@@ -474,10 +461,6 @@ function InvitationTab({
         <CursorPagination depth={cursorDepth} hasNext={state.data.nextCursor !== null} onPrevious={onPreviousPage} onNext={onNextPage} />
       </> : <PageState state={state} emptyTitle="暂无可管理用户" />}
     </section>
-    <div className={styles.summaryGrid}>
-      <AdmissionSummary state={admissionState} onOpen={onOpenAdmission} />
-      <RegistrationSummary state={policyState} onOpen={onOpenRegistration} />
-    </div>
   </section>
 }
 
@@ -654,23 +637,6 @@ function InvitationInspector({
   </aside>
 }
 
-function AdmissionSummary({ state, onOpen }: { state: ResourceState<AdmissionBatchesPage>; onOpen: () => void }) {
-  const items = state.status === 'ready' ? state.data.items : []
-  const activeCount = items.filter((item) => item.status === 'active').length
-  const usedCount = items.reduce((total, item) => total + item.usedCount, 0)
-  return <section className={['mg-panel', styles.summaryPanel].join(' ')} aria-labelledby="admission-summary-heading" data-component="mg-panel" data-page-terminal-surface="primary"><PanelHeader title="准入码批次（摘要）" id="admission-summary-heading" action={<button className={['mg-btn', 'mg-btn-ghost', styles.quietButton].join(' ')} data-component="mg-btn" type="button" onClick={onOpen}>查看全部<ChevronRight size={14} /></button>} />{state.status === 'ready' ? <div className={styles.summaryBody}><div className={styles.metricGrid}><Metric className={styles.metric} label="当前页批次" value={items.length} detail="服务端返回" /><Metric className={styles.metric} label="生效批次" value={activeCount} detail="按服务端状态" /><Metric className={styles.metric} label="已用准入码" value={usedCount} detail="当前页汇总" /></div><SummaryTableHint items={items} /></div> : <SummaryState state={state} />}</section>
-}
-
-function RegistrationSummary({ state, onOpen }: { state: ResourceState<RegistrationPolicy>; onOpen: () => void }) {
-  return <section className={['mg-panel', styles.summaryPanel].join(' ')} aria-labelledby="registration-summary-heading" data-component="mg-panel" data-page-terminal-surface="primary"><PanelHeader title="当前注册策略（摘要）" id="registration-summary-heading" action={<button className={['mg-btn', 'mg-btn-ghost', styles.quietButton].join(' ')} data-component="mg-btn" type="button" onClick={onOpen}>查看详情<ChevronRight size={14} /></button>} />{state.status === 'ready' ? <div className={styles.summaryBody}><dl className={styles.factList}><div><dt>注册模式</dt><dd>{policyLabel(state.data.policy.mode)}</dd></div><div><dt>服务端状态</dt><dd><StatusPill label="已读取" tone="success" /></dd></div><div><dt>更新时间</dt><dd>{formatDate(state.data.policy.updatedAt)}</dd></div></dl></div> : <SummaryState state={state} />}</section>
-}
-
-function SummaryTableHint({ items }: { items: AdmissionBatch[] }) {
-  if (!items.length) return <p className={styles.summaryEmpty}>暂无准入码批次。</p>
-  const latest = items[0]
-  return <div className={styles.latestSummary}><span>最近批次</span><strong title={latest.name}>{latest.name}</strong><small>{latest.usedCount}/{latest.codeCount} 已用 · {formatDate(latest.createdAt)} 创建</small></div>
-}
-
 function AdmissionTab({
   hidden,
   state,
@@ -702,8 +668,10 @@ function AdmissionTab({
   const selected = items.find((item) => item.batchId === selectedBatchId) ?? null
   return <section hidden={hidden} className={styles.tabContent} aria-label="准入码" id="admission-tabpanel" role="tabpanel" aria-labelledby="admission-tab">
     <div className={styles.sectionLead}><div><h2>准入码批次</h2><p>批次库存和状态来自服务端。</p></div><StatusPill label="管理员视图" tone="success" /></div>
-    <section className={['mg-panel', styles.tablePanel].join(' ')} aria-labelledby="admission-table-heading" data-component="mg-panel"><PanelHeader title="批次库存" count={state.status === 'ready' ? items.length : null} id="admission-table-heading" />{state.status === 'ready' ? <><BatchTable items={items} selectedBatchId={selectedBatchId} onSelect={onSelectBatch} /><CursorPagination depth={cursorDepth} hasNext={state.data.nextCursor !== null} onPrevious={onPreviousPage} onNext={onNextPage} /></> : <PageState state={state} emptyTitle="暂无准入码批次" />}</section>
-    <AdmissionActions selected={selected} expectedRevision={expectedRevision} canMutate={canMutate} readback={readback} readbackLatest={readbackLatest} onMutationComplete={onMutationComplete} />
+    <div className={styles.admissionLayout}>
+      <section className={['mg-panel', styles.tablePanel].join(' ')} aria-labelledby="admission-table-heading" data-component="mg-panel"><PanelHeader title="批次库存" count={state.status === 'ready' ? items.length : null} id="admission-table-heading" />{state.status === 'ready' ? <><BatchTable items={items} selectedBatchId={selectedBatchId} onSelect={onSelectBatch} /><CursorPagination depth={cursorDepth} hasNext={state.data.nextCursor !== null} onPrevious={onPreviousPage} onNext={onNextPage} /></> : <PageState state={state} emptyTitle="暂无准入码批次" />}</section>
+      <AdmissionActions selected={selected} expectedRevision={expectedRevision} canMutate={canMutate} readback={readback} readbackLatest={readbackLatest} onMutationComplete={onMutationComplete} />
+    </div>
   </section>
 }
 
@@ -885,12 +853,6 @@ function ActionMessage({ state }: { state: ActionState }) {
   return <div className={[styles.actionMessage, toneClass].join(' ')} role={state.kind === 'error' ? 'alert' : 'status'}>{state.kind === 'error' ? <CircleAlert size={15} /> : null}{state.message}</div>
 }
 
-function SummaryState({ state }: { state: ResourceState<unknown> }) {
-  if (state.status === 'loading') return <SurfaceState kind="loading" title="正在读取摘要" detail="当前摘要来自服务端读取。" density="compact" />
-  if (state.status === 'error') return <SurfaceState kind="error" title="摘要读取失败" detail={state.message} density="compact" />
-  return <SurfaceState kind={state.status === 'idle' ? 'loading' : 'empty'} title={state.status === 'idle' ? '等待摘要读取' : '暂无数据'} detail={state.status === 'idle' ? '当前摘要尚未加载。' : '服务端没有返回可展示的摘要。'} density="compact" />
-}
-
 function PageState({ state, emptyTitle }: { state: ResourceState<unknown>; emptyTitle: string }) {
   if (state.status === 'loading') return <SurfaceState kind="loading" title="正在读取" detail="页面只展示服务端返回的数据。" />
   if (state.status === 'error') return <SurfaceState kind="error" title="读取失败" detail={state.message} />
@@ -902,18 +864,21 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
   return <SurfaceState kind="empty" title={title} detail={detail} />
 }
 
+/** 合同里 status 是自由字符串，不是枚举——这里只能按服务端实际发过的取值翻译，
+ *  没登记的一律走「状态未知」，绝不把原始取值吐给用户看。 */
 function affiliateStatus(status: string): { label: string; tone: StatusTone } {
   if (status === 'active') return { label: '正常', tone: 'success' }
   if (status === 'disabled' || status === 'inactive') return { label: '已停用', tone: 'muted' }
   if (status === 'suspended' || status === 'locked') return { label: '受限', tone: 'warning' }
-  return { label: status, tone: 'muted' }
+  if (status === 'pending_review') return { label: '待审核', tone: 'warning' }
+  return { label: '状态未知', tone: 'muted' }
 }
 
 function batchStatusLabel(status: string): string {
   if (status === 'active') return '生效中'
   if (status === 'disabled') return '已停用'
   if (status === 'expired') return '已过期'
-  return status
+  return '未知状态'
 }
 
 function policyLabel(mode: RegistrationPolicyMode): string {

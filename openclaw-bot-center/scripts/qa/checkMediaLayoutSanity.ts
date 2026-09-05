@@ -194,6 +194,61 @@ const COLLECT_DEFECTS = `(() => {
     }
   }
 
+  // 第五类之二：**只被切掉一截**的内容。上面那条要求盒子整个落在裁切区外，
+  // 「最后一行文字被切掉半个字高」这种永远漏——而它恰恰更常见：一列的内容比
+  // 视口预算高出二十几像素，多出来的那点被祖先的 overflow: hidden 抹掉，本层
+  // 又没有 max-height + 自己的滚动，用户既看不到也滚不出来。/admin/upstreams
+  // 的「凭证健康」就是这样：主栏 526px、行轨 500px，差的 26px 里是「对账状态」
+  // 的最后一行。
+  //
+  // 判据同样量**字形**不量盒子：不可断的长串溢出时盒子仍规规矩矩待在容器里，
+  // 跑出去的是里面的墨。用了 .mg-id 那套省略号契约的放行——那是处理过的截断，
+  // 用户看得见省略号、也拿得到完整值。
+  const handlesOverflow = (element) => {
+    for (let node = element; node && node !== document.body; node = node.parentElement) {
+      const style = getComputedStyle(node)
+      if (style.textOverflow === 'ellipsis' && style.whiteSpace === 'nowrap' && style.overflow !== 'visible') return true
+      if (node.classList && node.classList.contains('mg-id')) return true
+    }
+    return false
+  }
+  const clipRange = document.createRange()
+  const cutSeen = new Set()
+  for (const leaf of textLeaves) {
+    if (leaf.clipped.right - leaf.clipped.left <= 1 || leaf.clipped.bottom - leaf.clipped.top <= 1) continue
+    if (handlesOverflow(leaf.element)) continue
+    // 两个方向要用两把尺子。
+    // **横向**必须量字形：不可断的长串溢出时，承载它的 <td>/<p> 盒子仍规规矩矩
+    // 待在容器里（宽度被容器约束住），跑出去的是里面的墨，按盒子量一处都抓不到。
+    // **纵向**必须量盒子：Range.getClientRects() 给的是**行盒**，含行距，本来就
+    // 比字形高出 (line-height − font-size) 那么多，按它量会把每一个标题、每一个
+    // 数字都判成"被切掉 5px"——量过一轮，188 条里 175 条是这么来的。
+    let worstCut = Math.max(leaf.clipped.top - leaf.rect.top, leaf.rect.bottom - leaf.clipped.bottom)
+    const walker = document.createTreeWalker(leaf.element, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!(node.textContent || '').trim()) continue
+      if (node.parentElement !== leaf.element) continue
+      clipRange.selectNodeContents(node)
+      for (const rect of clipRange.getClientRects()) {
+        if (rect.width <= 0.5 || rect.height <= 0.5) continue
+        worstCut = Math.max(worstCut, leaf.clipped.left - rect.left, rect.right - leaf.clipped.right)
+      }
+    }
+    if (worstCut <= 8) continue
+    let reachable = false
+    for (let parent = leaf.element.parentElement; parent && !reachable; parent = parent.parentElement) {
+      const parentStyle = getComputedStyle(parent)
+      if ((parentStyle.overflowY === 'auto' || parentStyle.overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight + 1) reachable = true
+      if ((parentStyle.overflowX === 'auto' || parentStyle.overflowX === 'scroll') && parent.scrollWidth > parent.clientWidth + 1) reachable = true
+    }
+    if (reachable) continue
+    const key = 'cut:' + describe(leaf.element, leaf.text)
+    if (cutSeen.has(key)) continue
+    cutSeen.add(key)
+    defects.push('内容被切掉一截：' + describe(leaf.element, leaf.text) + ' 的字形有 ' + Math.round(worstCut) +
+      'px 被祖先裁在外面，而且没有任何一层能滚出来——比"整块看不见"更难发现，用户只看到半个字')
+  }
+
   // 第五类：多列挤压。容器把列数写死，窄容器里每列只剩百十来像素，值被挤成好几行。
   // 判据故意收紧成「**每一列**都窄」：图标 + 正文这种 44px + 1fr 的网格里也有窄列，
   // 但那是设计意图，不是挤压。
@@ -533,6 +588,13 @@ async function sweep(page: Page, stressIdentifiers = false): Promise<Array<[stri
   }
   const results: Array<[string, string[]]> = [['', await collect()]]
 
+  /** 「这一屏都写着什么」的指纹。用来判定标签栏是不是装饰品：切了标签，正文一个字
+   *  都没变，说明四块内容本来就同时铺在下面，那排标签点了等于没点。 */
+  const contentSignature = async (): Promise<string> =>
+    (await page.evaluate(
+      '((document.querySelector("[data-page-primary]") || document.querySelector(".media-content") || document.body).innerText || "").replace(/\\s+/g, " ").trim()',
+    )) as string
+
   // 先把标签名抄下来再逐个点：切换标签会换掉整组标签（次级筛选标签只在某一个
   // 主标签下存在），按下标去点第二轮就会指向一个已经不存在的元素。
   const labels = [
@@ -542,6 +604,8 @@ async function sweep(page: Page, stressIdentifiers = false): Promise<Array<[stri
         .filter(Boolean),
     ),
   ].slice(0, 8)
+  const signatures: string[] = [await contentSignature()]
+  let switchedAny = false
   for (const label of labels) {
     const tab = page.getByRole('tab', { name: label, exact: true }).first()
     if ((await tab.count()) === 0) continue
@@ -549,9 +613,27 @@ async function sweep(page: Page, stressIdentifiers = false): Promise<Array<[stri
     if (selected === 'true') continue
     const switched = await tab.click({ timeout: 3_000 }).then(() => true).catch(() => false)
     if (!switched) continue
+    switchedAny = true
     // 固定 sleep 会量到半成品：切换后往往还要向浏览器内假后端要一次数据。
     await settle(page)
+    signatures.push(await contentSignature())
     results.push([label.slice(0, 12), await collect()])
+  }
+
+  /** 装饰性标签栏：点遍了每一个标签，正文的字一个都没变。
+   *
+   *  /admin/tenants 就是这样——「租户目录 / 租户详情 / 运行审计 / 审计检查器」是四个
+   *  写死 aria-selected 的 <a>，四块内容同时平铺在下面，点哪个都一样。用户的原话是
+   *  「这些信息被平铺在下面页面，如果是这样感觉根本没必要设计这些」。
+   *
+   *  判据取最保守的一档：**所有**标签状态的正文指纹完全相同才算。筛选类标签（在演示
+   *  数据下恰好筛不掉任何一行）会因为至少有一个标签改变了什么而放行，不会误判。 */
+  if (switchedAny && labels.length >= 2 && new Set(signatures).size === 1 && signatures[0].length > 0) {
+    results[0][1].push(
+      '标签栏是装饰品：「' + labels.join('/') + '」逐个点过一遍，正文一个字都没变——' +
+        '这几块内容同时平铺在下面，那排标签点了等于没点。要么让它真的切换（非当前面板 hidden），' +
+        '要么去掉标签栏、老老实实平铺',
+    )
   }
 
   // 主栏 + 检视栏的页面：不选中任何一条时检视栏只有空状态，真正的排版在选中之后。
@@ -912,7 +994,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无多列挤压、无低信息密度、无面板底部空转、无列表区只剩一条缝、无徽标被拉变形，长列表压力下无内容被吞、长标识符压力下无重叠无裁切`)
+  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无内容被切掉一截、无多列挤压、无低信息密度、无面板底部空转、无列表区只剩一条缝、无徽标被拉变形、无装饰性标签栏，长列表压力下无内容被吞、长标识符压力下无重叠无裁切`)
 }
 
 await run()

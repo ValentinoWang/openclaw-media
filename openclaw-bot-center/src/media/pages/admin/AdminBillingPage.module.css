@@ -1,11 +1,20 @@
+/* 五个数据标签 + 卡密批次履约 + 产品映射编辑表单，塞进原来的 100dvh 锁高盒子
+   放不下——「兑换记录」第二行被腰斩、卡密批次的表格只剩一条缝、产品映射编辑表单
+   底部被切。这四个自定义属性是共享契约留给页面的释放令牌（写在根元素上一次，
+   沿继承链传给两栏和它们的终端面），不是只在堆叠断点才需要：这一页在任何宽度都
+   放不下,所以在这里无条件释放，而不是只在下面 1120px 的媒体查询里放。释放后
+   整页恢复正常文档流滚动，两栏各自按内容定高，不再相互拉伸对齐(start)。 */
 .page {
   display: flex;
   width: 100%;
   min-width: 0;
-  height: calc(100dvh - var(--mg-shell-topbar, 86px) - 46px);
   min-height: 0;
+  --mg-rail-shell-height: auto;
+  --mg-rail-grow: 0 0 auto;
+  --mg-rail-fill: auto;
+  --mg-rail-align: start;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   padding-bottom: 0;
 }
 
@@ -121,36 +130,37 @@
   color: var(--mg-warning);
 }
 
+/* flex/overflow 不再写死——两者都是给「.page 锁高、.bodyGrid 靠 flex-grow 撑满
+   剩余空间」配的配件（flex-grow 会把 .bodyGrid 压到剩余空间以内，压扁后再靠
+   overflow: hidden 裁掉超出部分）。现在 .page 的 --mg-rail-grow 释放为
+   0 0 auto，.bodyGrid 的高度改回由内容决定，不会再被压扁，也就没有需要裁的
+   溢出——留着 overflow: hidden 只会在两栏里有一栏比另一栏自然高时把它的圆角
+   之外的内容切掉，删掉即可。 */
 .bodyGrid {
   display: grid;
   width: 100%;
   min-width: 0;
   min-height: 0;
-  flex: 1 1 0;
   grid-template-columns: minmax(0, 1fr) minmax(410px, 440px);
   grid-template-rows: minmax(0, 1fr);
   gap: 14px;
   align-items: stretch;
-  overflow: hidden;
 }
 
-.bodyGrid > .mainColumn,
-.bodyGrid > .inspector {
-  align-self: stretch;
-  height: 100%;
-}
-
+/* 之前这里有一条 `.bodyGrid > .mainColumn, .bodyGrid > .inspector { align-self:
+   stretch; height: 100%; }`——它跟共享契约里消费 --mg-rail-align / --mg-rail-fill
+   的那条规则（[data-page-layout="persistent-rail"] > [data-page-primary] 等）
+   特异性完全相等（都是两个选择器叠加），同分只能靠打包后的源序赌胜负。这正是
+   .page 释放的四个令牌要避免的事——写死的 stretch/100% 一旦赢了这场平局，会
+   把两栏重新拉成等高、盖过令牌，读不出来到底谁生效。已删除，两栏的 align-self /
+   height 完全交给 --mg-rail-align / --mg-rail-fill 决定。 */
 .mainColumn {
   display: grid;
   min-width: 0;
-  height: 100%;
   min-height: 0;
   grid-template-rows: minmax(0, 1fr) auto;
   align-content: start;
   gap: 16px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 .tablePanel,
@@ -341,25 +351,29 @@
   flex: 0 0 auto;
 }
 
+/* 这里原来还有一张「管理员赠款」摘要卡片，跟卡密批次履约并排两列。删掉了：
+   它只是把「管理员赠款」标签页的数据（账本编号/目标租户/账户/额度/审计原因/
+   创建时间六列）截成一份少两列、最多 5 条的预览，本身不产出任何聚合数字——
+   跟卡密批次履约不同，后者的 compactMetrics（批次数/卡密数量/已兑换/待兑换）
+   是别处看不到的合计。同一屏里「管理员赠款」已经出现在：顶部指标卡（计数）、
+   数据标签页和写入操作标签页（各一次，切换用）；这张摘要卡片是第五次出现，
+   信息量却是四者中最少的一份，纯粹的导航快捷方式。它原来承担的两件事现在
+   仍然找得到：完整列表点「管理员赠款」数据标签页看（列更全，不是少两列的
+   缩略版）；跳转入口就是那个标签本身，不需要额外一个「查看全部赠款」按钮。
+   删除之后这里只剩卡密批次履约一张卡片，网格改回单列铺满宽度。 */
 .bottomGrid {
   display: grid;
   min-width: 0;
   min-height: 0;
-  grid-template-columns: minmax(0, 1.03fr) minmax(0, 0.97fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   align-items: stretch;
 }
 
-/* align-self: start 覆盖 .bottomGrid 的 align-items: stretch——两张摘要卡片
-   天生不等高（卡密批次多一条 compactMetrics 指标带），stretch 会把矮的那张
-   （管理员赠款）撑到跟高的那张一样高，露出一块画了边框、铺了底色的空盒子。
-   但只把 align-self 改成 start 不够：这一列的行轨道高度仍然来自 .mainColumn
-   的外层 flex-shrink（跟 .tablePanel 抢空间，视口矮时两张卡片本来就会被一起
-   压扁，靠 .tableViewport 的 flex + overflow:auto 在内部滚动，是既有行为）,
-   而 align-self: start 会让卡片按“无约束的最大内容”定高，直接从被压扁的行轨道
-   里探出头，变成整页多出一截、需要滚动才能看到底部的新问题。max-height: 100%
-   把它按回这一行实际分到的高度：内容比这行矮就照内容收（管理员赠款），比这行
-   高就照旧被行高卡住、内部滚（卡密批次），两种情形都不会再有咬出来的空盒子。 */
+/* align-self: start + max-height: 100% 是同事保留的既有修复，这里不撤销：只剩
+   一张卡片之后二者是无害的空操作（行轨道高度就等于这张卡片自己的内容高度，
+   start 还是 stretch 结果一样），但如果以后这一列又长回两张卡片，不用再重新
+   踩一遍「矮的那张被拉出空盒子」的坑。 */
 .bottomPanel {
   display: flex;
   min-height: 0;
@@ -406,15 +420,15 @@
   flex: 0 0 auto;
 }
 
-/* 固定 4 个指标（批次数/卡密数量/已兑换/待兑换），不是按数据长度变化的列表，
-   所以列数按两种已知的容器宽度分别钉死，而不是用一条 auto-fit 曲线硬套两种
-   悬殊的宽度：这块指标带挤在 bottomGrid 的半宽面板里时（>1120px，与 body 两栏
-   持久轨道共存，实测约 240-330px）只够 2 列，auto-fit + minmax(100px,1fr) 在
-   这个宽度下量出来是 3 列，4 个指标排 3 列必然多出一格陪衬的空盒子（"待兑换"
-   独占第二行，右边一格背景色、无内容）。下面 @media (max-width: 1120px) 里把
-   auto-fit 版本还给它——两栏收起后这块指标带跟主栏一样宽（约 400-830px），
-   auto-fit 才如愿撑出 4 列一行，不留空格。分隔线用 gap + 容器背景色的“缝隙”
-   技巧而不是逐格 border-right，两种列数下都不用跟着改。 */
+/* 固定 4 个指标（批次数/卡密数量/已兑换/待兑换）2 列 2 行——保留自同事最近的
+   改动，这次改动没有碰这个值。它原来是给「.bottomGrid 半宽面板」量身钉死的
+   （auto-fit 在约 240-330px 的半宽面板里会量出 3 列，4 个指标排 3 列必然多出
+   一格空盒子）；现在「管理员赠款」摘要卡片已删除，.bottomGrid 变成单列满宽，
+   这块指标带不再挤在半宽面板里，跟主栏一样宽（约 400-830px）——2 列在满宽
+   面板里不算错，只是没必要再收窄成 2 列（4 列一行本可以铺满不留空），但既然
+   不在这次改动范围内就不去动它。下面 @media (max-width: 1120px) 里的 auto-fit
+   只覆盖那一个断点，不改这里的取值。分隔线用 gap + 容器背景色的“缝隙”技巧
+   而不是逐格 border-right，两种列数下都不用跟着改。 */
 .compactMetrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -469,7 +483,6 @@
 }
 
 .inspector {
-  height: 100%;
   min-height: 0;
   margin-top: 0;
   /* .inspector also carries the shared .mg-panel class, which sets its own
@@ -795,38 +808,27 @@
 }
 
 @media (max-width: 1120px) {
-  .page {
-    --mg-rail-shell-height: auto;
-    --mg-rail-grow: 0 0 auto;
-    --mg-rail-fill: auto;
-    --mg-rail-align: auto;
-    overflow: visible;
-  }
-
+  /* .page 的四个释放令牌现在写在文件顶部、无条件生效（这一页任何宽度都放不下，
+     不是只有堆叠时才放不下），这里不用再重复设一遍——两套同样的重置留在一起
+     只会让人分不清到底哪一份在生效。 */
   .headingArea {
     width: 100%;
   }
 
-  .bodyGrid,
-  .bottomGrid {
+  .bodyGrid {
     grid-template-columns: 1fr;
   }
 
-  /* .bottomGrid just went to a single column above -- .compactMetrics now sits
-     as wide as .mainColumn (~400-830px here) instead of half of it, so the
-     fixed 2-column grid set above would leave two oversized, sparse columns.
-     Back to auto-fit: at this width there's room for all 4 (or more) 100px
-     columns, so it settles on one full row with no empty cell either. */
+  /* .bottomGrid 现在无条件只有一列（管理员赠款那张摘要卡片已删除），
+     .compactMetrics 在任何宽度下都是跟 .mainColumn 一样宽（~400-830px）
+     的满宽面板，不再有「>1120px 挤在半宽面板里只够 2 列」的场景——但
+     >1120px 时 .compactMetrics 本身的固定 2 列是特意保留的既有值（不属于
+     这次改动范围），这条 auto-fit 只在这个断点内把它换回 4 列一行，不跨
+     断点影响 >1120px 的取值。 */
   .compactMetrics {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   }
 
-  .bodyGrid {
-    min-height: auto;
-    overflow: visible;
-  }
-
-  .bodyGrid > .mainColumn,
   .bodyGrid > .inspector {
     overflow: visible;
   }

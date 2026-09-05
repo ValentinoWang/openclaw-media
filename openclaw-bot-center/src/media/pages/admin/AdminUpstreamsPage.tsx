@@ -355,7 +355,7 @@ function ReadyView({
           <div className={styles.primaryBody}>
             <div className={styles.healthHero}>
               <span className={styles.healthGlyph + ' ' + healthClass(summary.credentialHealth)}><ShieldCheck size={23} aria-hidden="true" /></span>
-              <div className={styles.healthCopy}><strong>{healthLabels[summary.credentialHealth]}</strong><p>{healthDescription(summary.credentialHealth)}</p></div>
+              <div className={styles.healthCopy}><strong>{healthLabels[summary.credentialHealth] ?? '未知状态'}</strong><p>{healthDescription(summary.credentialHealth)}</p></div>
             </div>
             <div className={styles.statusList}>
               <StatusRow label="可用账户" value={count(summary.availableAccountCount)} />

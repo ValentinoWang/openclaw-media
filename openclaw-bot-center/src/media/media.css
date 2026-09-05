@@ -734,6 +734,14 @@ html { scroll-padding-top: calc(var(--mg-shell-topbar, 68px) + 8px); }
 [data-page-layout="persistent-rail"] > [data-page-inspector] { align-self: var(--mg-rail-align, start); height: var(--mg-rail-fill, auto); max-height: 100%; overflow-x: hidden; overflow-y: auto; }
 [data-page-primary]:has(> :only-child) { grid-template-rows: minmax(0, 1fr); }
 [data-page-primary] > :only-child { min-height: 0; align-self: var(--mg-rail-align, stretch); height: var(--mg-rail-fill, 100%); }
+/* 上一条读 --mg-rail-align 的前提是主栏按网格排（align-self 管的是**高度**）。
+   主栏一旦带 data-primary-flow，它就是 flex-direction: column——那里 align-self
+   管的是**宽度**，把等高释放令牌的 start 读进来，面板就从整列宽收成了内容宽：
+   /admin/upstreams 的「凭证健康」曾因此在 750px 的列里只占 313px，右边空出
+   437px，看着像半张卡片。这一层的高度释放由上面 [data-page-terminal-surface="primary"]
+   的 flex 负责，这里只需要把宽度钉回 stretch。三个属性选择器 (0,3,0) 压过
+   上一条的 (0,2,0)，不需要 !important。 */
+[data-page-primary][data-primary-flow] > :only-child { align-self: stretch; }
 [data-page-terminal-surface="inspector"] { display: flex; min-height: 0; flex-direction: column; }
 @media (max-width: 760px) {
   /* 窄屏一律堆叠。开关同时设在壳、栏容器和主栏上：消费点分布在三层，

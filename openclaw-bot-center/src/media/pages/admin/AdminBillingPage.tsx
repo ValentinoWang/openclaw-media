@@ -463,7 +463,6 @@ export default function AdminBillingPage() {
         </section> : <section key={tab.key} id={billingPanelId(tab.key)} role="tabpanel" aria-labelledby={billingTabId(tab.key)} hidden />)}
         <div className={styles.bottomGrid}>
           <BatchSummary available={batchCollection !== null} items={batches} onViewAll={() => setView('batches')} />
-          <GrantSummary available={grantCollection !== null} items={grants} onViewAll={() => setView('grants')} />
         </div>
       </div>
       <aside className={styles.inspector + ' mg-panel'} aria-labelledby="billing-inspector-title" data-page-inspector data-page-terminal-surface="inspector">
@@ -666,16 +665,8 @@ function BatchSummary({ available, items, onViewAll }: { available: boolean; ite
   return <section className={styles.bottomPanel + ' mg-panel'} data-page-terminal-surface="primary"><PanelHeader icon={<TicketCheck size={17} />} title="卡密批次履约" actionLabel="查看全部批次" onAction={onViewAll} />{!available ? <CollectionUnavailable title="卡密批次" /> : !items.length ? <EmptyState title="暂无卡密批次" /> : <><div className={styles.compactMetrics}>{stats.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div><MiniBatchTable items={items.slice(0, 4)} /></>}</section>
 }
 
-function GrantSummary({ available, items, onViewAll }: { available: boolean; items: BillingRecord[]; onViewAll: () => void }) {
-  return <section className={styles.bottomPanel + ' mg-panel'} data-page-terminal-surface="primary"><PanelHeader icon={<Gift size={17} />} title="管理员赠款" actionLabel="查看全部赠款" onAction={onViewAll} />{!available ? <CollectionUnavailable title="管理员赠款" /> : !items.length ? <EmptyState title="暂无管理员赠款" /> : <MiniGrantTable items={items.slice(0, 5)} />}</section>
-}
-
 function MiniBatchTable({ items }: { items: RedemptionBatchSummary[] }) {
   return <TableViewport minWidth="520px"><table className={styles.table + ' ' + styles.miniTable}><thead><tr><th>批次编号</th><th>套餐</th><th className={styles.numericCell}>数量</th><th>状态</th></tr></thead><tbody>{items.map((item) => <tr key={item.batchId}><th scope="row" className={styles.longCell}><span className="mg-id" title={item.batchId}>{item.batchId}</span></th><td><span className="mg-id" title={item.planCode}>{item.planCode}</span></td><td className={styles.numericCell}>{formatCount(item.codeCount)}</td><td><StatusBadge {...recordStatus(item)} /></td></tr>)}</tbody></table></TableViewport>
-}
-
-function MiniGrantTable({ items }: { items: BillingRecord[] }) {
-  return <TableViewport minWidth="560px"><table className={styles.table + ' ' + styles.miniTable}><thead><tr><th>审计原因</th><th>账户</th><th className={styles.numericCell}>额度</th><th>创建时间</th></tr></thead><tbody>{items.map((item, index) => <tr key={readString(item, 'ledgerEntryId') || index}><th scope="row" className={styles.reasonCell}>{readString(item, 'reason') || '—'}</th><td className={styles.longCell}>{readString(item, 'username') || '—'}</td><td className={styles.numericCell}>{formatDecimal(item.amount, 8)}</td><td>{formatTime(item.createdAt)}</td></tr>)}</tbody></table></TableViewport>
 }
 
 function PanelHeader({ icon, title, actionLabel, onAction }: { icon: ReactNode; title: string; actionLabel: string; onAction: () => void }) {

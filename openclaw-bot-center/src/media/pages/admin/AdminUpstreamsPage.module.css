@@ -180,6 +180,17 @@
   display: grid;
   min-width: 0;
   min-height: 0;
+  /* 预算是上限,不是下限——但也不是「不存在」。--mg-rail-fill:auto 让这一栏在内容
+     比预算矮时按内容收(见上面 .page 的说明),可当「凭证健康」这一屏恰好比预算高
+     几十像素(健康描述换行、待处理数增多)时,没有这个上限它就会无限长高,冲出
+     [data-page-layout="persistent-rail"] 那个固定高度、overflow:hidden 的行轨道,
+     多出来的部分被祖先**整体裁掉**且没有任何一层能滚出来——比"两栏不等高"更糟,
+     用户连内容都看不全(实测 1440px 下 26px、1180px 下 20px 的"对账状态"提示语
+     被腰斩,肉眼能看到断在文字中间、面板底边框也一并消失)。加回 max-height 把
+     这一栏重新钉在预算以内,配合下面 .primarySurface → .primaryBody 已有的
+     flex:1 1 auto + overflow:auto,内容超出时改为在面板内部滚动,而不是被裁掉;
+     内容不超预算时 max-height 不生效,该收多矮还是多矮。 */
+  max-height: 100%;
   overflow: hidden;
 }
 

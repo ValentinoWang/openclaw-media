@@ -343,6 +343,16 @@ requireContract(
     ),
   "a single primary work surface must fill its paired rail without phantom grid tracks",
 );
+// --mg-rail-align 是**高度**释放令牌。主栏一旦带 data-primary-flow 就是
+// flex-direction: column，那里 align-self 管的是宽度——同一个 start 读进去，面板会从
+// 整列宽收成内容宽（/admin/upstreams 曾在 750px 的列里只占 313px）。两条规则必须成对
+// 存在，否则每个页面又会各自长出一套 (0,2,2) 的 workaround 去压它。
+requireContract(
+  /\[data-page-primary\]\[data-primary-flow\] > :only-child \{[^}]*align-self: stretch;[^}]*\}/.test(
+    mediaStyles,
+  ),
+  "a flex-column primary must pin its only child's cross axis to stretch — --mg-rail-align releases height, and in a column flow align-self governs width instead",
+);
 requireContract(
   /\[data-page-primary\]\[data-primary-flow\] \{[\s\S]*?display: flex;[\s\S]*?flex-direction: column;[\s\S]*?\}/.test(
     mediaStyles,

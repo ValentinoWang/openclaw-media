@@ -76,6 +76,13 @@ const memberRoleLabels: Record<MediaWebSession['memberRole'], string> = {
   member: '组织成员',
 }
 
+/** 角色是后端发来的字符串：TypeScript 的联合类型只约束我们自己的代码，约束不了服务端。
+ *  多一个没登记的角色，查表返回 undefined，页面上就是一个**空格子**——比显示一个英文
+ *  单词更难判断是"没加载出来"还是"本来就没有"。 */
+function memberRoleLabel(role: MediaWebSession['memberRole']): string {
+  return memberRoleLabels[role] ?? '未知角色'
+}
+
 export default function OrganizationWorkspaceShellPage() {
   const { runtimeState, session } = useMediaWeb()
 
@@ -199,7 +206,7 @@ function OrganizationWorkspaceContent({
           icon={<span className="mg-metric-icon"><Users size={18} aria-hidden="true" /></span>}
           label="成员角色"
           value={session.memberRole === 'owner' ? '负责人' : '成员'}
-          detail={memberRoleLabels[session.memberRole]}
+          detail={memberRoleLabel(session.memberRole)}
         />
         <Metric
           variant="card"
@@ -229,7 +236,7 @@ function OrganizationWorkspaceContent({
           <dl className="organization-shell-facts">
             <div><dt>飞书组织</dt><dd title={session.organizationName}>{session.organizationName}</dd></div>
             <div><dt>工作区</dt><dd>组织工作区</dd></div>
-            <div><dt>成员角色</dt><dd>{memberRoleLabels[session.memberRole]}</dd></div>
+            <div><dt>成员角色</dt><dd>{memberRoleLabel(session.memberRole)}</dd></div>
             <div><dt>正文权威</dt><dd>飞书只读资源</dd></div>
             <div><dt>组织连接状态</dt><dd><span className={`organization-shell-inline-status mg-badge is-${connection.tone}`} data-component="mg-badge" data-tone={organizationConnectionTone(connection.state)}>{connection.label}</span></dd></div>
             <div><dt>安装状态</dt><dd>{connection.installation}</dd></div>
