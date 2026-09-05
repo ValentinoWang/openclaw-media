@@ -278,6 +278,18 @@ def test_permissions_are_rejected_before_business_reads() -> None:
     assert not connection.calls
 
 
+def test_admin_role_can_read_without_maintainer_flag() -> None:
+    connection = _Connection(directory_rows=[_tenant_row(TENANT_A, USER_A)])
+    service = _service(connection)
+
+    response = service.list_admin_tenants(
+        AdminTenantContext(actor_user_id=ACTOR, actor_session_id=SESSION, maintainer=False),
+        page_size=1,
+    )
+
+    assert response["items"]
+
+
 def test_invalid_cursor_and_page_size_are_explicit_errors() -> None:
     service = _service(_Connection())
 

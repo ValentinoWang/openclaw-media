@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleAlert,
-  Copy,
   EllipsisVertical,
   KeyRound,
   PencilLine,
@@ -17,17 +16,15 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
-import { BusinessOperationError, callBusinessOperation } from '../../generatedBusinessPagesContract'
+import { callBusinessOperation } from '../../generatedBusinessPagesContract'
 import { useMediaWeb } from '../../MediaWebWorkspace'
 import { mutationFingerprint, useAdminAction, type ActionState } from '../../ui/adminAction'
 import { describeBusinessError } from '../../ui/businessOperationError'
 import { PlatformIdentity } from '../../ui/PlatformIdentity'
-import { platformDisplayLabel } from '../../ui/platformRegistry'
 import { SearchBox } from '../../ui/SearchBox'
 import { SurfaceState } from '../../ui/SurfaceState'
 import { isPublicId } from '../../identifiers'
 import { formatDateTime, formatDateTimeMinutes } from '../../ui/datetime'
-import { copyText } from '../../../lib/clipboard'
 import styles from './AdminAccessPage.module.css'
 
 type AccessTab = 'invitations' | 'admission' | 'registration'
@@ -110,19 +107,12 @@ type PlatformCookieStatus = {
   updatedAt: string | null
   validationStatus: 'valid' | 'missing' | 'invalid' | 'error'
   errorCode: string | null
-  configurationScript: string
-  safeCommand: string
 }
 
 type PlatformCookiesResponse = {
   schemaVersion: 'media_web_business_pages_v2'
   platforms: PlatformCookieStatus[]
 }
-
-type CopyState = {
-  platform: PlatformCookieStatus['platform']
-  status: 'success' | 'error'
-} | null
 
 const EMPTY_AFFILIATE_USERS: AffiliateUser[] = []
 const EMPTY_ADMISSION_BATCHES: AdmissionBatch[] = []
@@ -309,33 +299,9 @@ export default function AdminAccessPage() {
   </main>
 }
 
-const DEFAULT_CONFIGURATION_SCRIPT_PATH = '/home/ubuntu/selfmedia-tools/integrations/platform_auth/cookies/save_platform_cookie_secret.py'
-
-// 步骤文案里嵌着真正的命令片段（脚本文件名、`<bot_cli> ... --platform xxx` 调用），
-// 匹配出这些 ASCII 技术片段单独包一层 <code>，散文部分保持普通字号——不改文案
-// 一个字，只是不再把整句话（包括中文叙述）都套进等宽字体里显示成一堵墙。
-const COMMAND_SPAN_PATTERN = /(<[a-z_]+>(?:\s+[a-z0-9_.<>/-]+)*|[a-z0-9_./-]*\.[a-z0-9]+)/gi
-
-function renderStepText(step: string, keyPrefix: string): ReactNode {
-  return step.split(COMMAND_SPAN_PATTERN).map((segment, index) => {
-    if (!segment) return null
-    return index % 2 === 1 ? <code key={`${keyPrefix}-${index}`}>{segment}</code> : segment
-  })
-}
-
 function PlatformCookiePanel({ state }: { state: ResourceState<PlatformCookiesResponse> }) {
-  const [copyState, setCopyState] = useState<CopyState>(null)
   const items = state.status === 'ready' ? state.data.platforms : []
   const allValid = items.length > 0 && items.every((item) => item.validationStatus === 'valid')
-
-  async function copySafeCommand(item: PlatformCookieStatus) {
-    try {
-      await copyText(item.safeCommand)
-      setCopyState({ platform: item.platform, status: 'success' })
-    } catch {
-      setCopyState({ platform: item.platform, status: 'error' })
-    }
-  }
 
   return <section className={['mg-panel', styles.cookiePanel].join(' ')} aria-labelledby="platform-cookie-heading" data-component="mg-panel" data-admin-cookie-panel>
     <header className={['mg-panel-head', styles.cookieHeader].join(' ')} data-component="mg-panel-head">
@@ -343,7 +309,7 @@ function PlatformCookiePanel({ state }: { state: ResourceState<PlatformCookiesRe
         <ShieldCheck size={17} aria-hidden="true" />
         <div>
           <h2 id="platform-cookie-heading">平台会话凭据</h2>
-          <p>仅管理员可见。服务端用这里保存的 Cookie 抓取抖音/小红书内容；显示为「尚未配置」或「配置无效」时，依赖该平台的抓取任务会因鉴权失败而无法执行，需要用下方脚本重新导出并保存最新 Cookie。页面只展示平台配置状态，不接收或显示凭据内容。</p>
+          <p>仅管理员可见。服务端用这里保存的 Cookie 抓取抖音/小红书内容；显示为「尚未配置」或「配置无效」时，依赖该平台的抓取任务会因鉴权失败而无法执行，需要由系统维护人员在服务器上重新配置。页面只展示平台配置状态，不接收或显示凭据内容。</p>
         </div>
       </div>
       <StatusPill
@@ -359,25 +325,11 @@ function PlatformCookiePanel({ state }: { state: ResourceState<PlatformCookiesRe
           <PlatformIdentity platform={item.platform} size="sm" />
           <span><i aria-hidden="true" />{platformCookieStatusLabel(item)}</span>
           <span>{item.updatedAt ? `更新于 ${formatDateTime(item.updatedAt)}` : '尚未配置'}</span>
-          <code title={item.safeCommand}>{item.safeCommand}</code>
-          <button type="button" className={['mg-btn', 'mg-btn-ghost', styles.secondaryButton].join(' ')} data-component="mg-btn" onClick={() => void copySafeCommand(item)} title="复制服务器配置命令" aria-label={`复制${platformDisplayLabel(item.platform)}配置命令`} aria-describedby={copyState?.platform === item.platform ? `${item.platform}-copy-feedback` : undefined}>
-            <Copy size={14} aria-hidden="true" />复制命令
-          </button>
-          {copyState?.platform === item.platform ? <p id={`${item.platform}-copy-feedback`} role="status" aria-live="polite">{copyState.status === 'success' ? `已复制${platformDisplayLabel(item.platform)}安全配置命令。` : `复制${platformDisplayLabel(item.platform)}安全配置命令失败，请手动复制上方命令。`}</p> : null}
         </div>)}
       </div>
       <div className={styles.cookieContract}>
-        <strong>服务器端配置脚本</strong>
-        {items[0]?.configurationScript ? (
-          <ol className={styles.cookieScriptSteps}>
-            {items[0].configurationScript.split('\n').map((rawStep, index) => (
-              <li key={index}>{renderStepText(rawStep.replace(/^\d+\.\s*/, ''), `step-${index}`)}</li>
-            ))}
-          </ol>
-        ) : (
-          <span>脚本：<code>{DEFAULT_CONFIGURATION_SCRIPT_PATH}</code></span>
-        )}
-        <span>凭据通过服务器隐藏输入写入私有文件；本页面不会接收、显示或下发 Cookie 内容。</span>
+        <strong>平台凭据由服务器安全管理</strong>
+        <span>本页面只展示配置状态，不接收、显示或下发 Cookie 内容。需要更新时请联系系统维护人员。</span>
       </div>
     </div>
   </section>
@@ -1025,23 +977,19 @@ function parsePlatformCookies(value: unknown): PlatformCookiesResponse {
   if (!Array.isArray(object.platforms) || object.platforms.length !== 2) throw new Error('平台会话状态数量无效。')
   const platforms = object.platforms.map((value): PlatformCookieStatus => {
     const item = asRecord(value, '平台会话状态记录格式无效。')
-    assertExactKeys(item, ['platform', 'configured', 'updatedAt', 'validationStatus', 'errorCode', 'configurationScript', 'safeCommand'], '平台会话状态记录字段不完整。')
+    assertExactKeys(item, ['platform', 'configured', 'updatedAt', 'validationStatus', 'errorCode'], '平台会话状态字段不完整。')
     const platform = stringField(item, 'platform')
     if (platform !== 'douyin' && platform !== 'xiaohongshu') throw new Error('平台会话状态包含未知平台。')
     const validationStatus = stringField(item, 'validationStatus')
     if (!['valid', 'missing', 'invalid', 'error'].includes(validationStatus)) throw new Error('平台会话校验状态无效。')
     const errorCode = item.errorCode
     if (errorCode !== null && typeof errorCode !== 'string') throw new Error('平台会话错误码格式无效。')
-    const safeCommand = nonEmptyStringField(item, 'safeCommand')
-    if (!safeCommand.includes('save_platform_cookie_secret.py') || /--input-file|cookie=/i.test(safeCommand)) throw new Error('平台会话配置命令不安全。')
     return {
       platform,
       configured: booleanField(item, 'configured'),
       updatedAt: nullableDateField(item, 'updatedAt'),
       validationStatus: validationStatus as PlatformCookieStatus['validationStatus'],
       errorCode,
-      configurationScript: nonEmptyStringField(item, 'configurationScript'),
-      safeCommand,
     }
   })
   if (new Set(platforms.map((item) => item.platform)).size !== platforms.length) throw new Error('平台会话状态包含重复平台。')
@@ -1072,38 +1020,38 @@ function asRecord(value: unknown, message: string): Record<string, unknown> {
 
 function stringField(object: Record<string, unknown>, key: string): string {
   const value = object[key]
-  if (typeof value !== 'string') throw new Error('服务返回的字段 ' + key + ' 格式无效。')
+  if (typeof value !== 'string') throw new Error('服务返回的数据格式无效，请稍后重试。')
   return value
 }
 
 function nonEmptyStringField(object: Record<string, unknown>, key: string): string {
   const value = stringField(object, key)
-  if (!value.trim()) throw new Error('服务返回的字段 ' + key + ' 为空。')
+  if (!value.trim()) throw new Error('服务返回的数据不完整，请稍后重试。')
   return value
 }
 
 function booleanField(object: Record<string, unknown>, key: string): boolean {
   const value = object[key]
-  if (typeof value !== 'boolean') throw new Error('服务返回的字段 ' + key + ' 格式无效。')
+  if (typeof value !== 'boolean') throw new Error('服务返回的数据格式无效，请稍后重试。')
   return value
 }
 
 function integerField(object: Record<string, unknown>, key: string): number {
   const value = object[key]
-  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) throw new Error('服务返回的字段 ' + key + ' 格式无效。')
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) throw new Error('服务返回的数据格式无效，请稍后重试。')
   return value
 }
 
 function dateField(object: Record<string, unknown>, key: string): string {
   const value = stringField(object, key)
-  if (Number.isNaN(new Date(value).getTime())) throw new Error('服务返回的字段 ' + key + ' 日期无效。')
+  if (Number.isNaN(new Date(value).getTime())) throw new Error('服务返回的日期格式无效，请稍后重试。')
   return value
 }
 
 function nullableDateField(object: Record<string, unknown>, key: string): string | null {
   const value = object[key]
   if (value === null) return null
-  if (typeof value !== 'string' || Number.isNaN(new Date(value).getTime())) throw new Error('服务返回的字段 ' + key + ' 日期无效。')
+  if (typeof value !== 'string' || Number.isNaN(new Date(value).getTime())) throw new Error('服务返回的日期格式无效，请稍后重试。')
   return value
 }
 
@@ -1115,20 +1063,11 @@ function cursorField(object: Record<string, unknown>, key: string): string | nul
 }
 
 function describeError(error: unknown): string {
-  // Both the generic fallback and the conflict branch transparently surface the server's own
-  // message (already guaranteed Chinese-safe by mediaProductHttpTransport's public error
-  // table) with their own fallback text, so those two are computed before dispatch rather
-  // than passed as fixed strings.
-  const fallback =
-    error instanceof BusinessOperationError
-      ? error.message || '服务端请求失败。'
-      : error instanceof Error
-        ? error.message
-        : '服务端请求失败。'
   return describeBusinessError(error, {
-    fallback,
+    fallback: '服务暂时不可用，请稍后重试。',
     unauthorized: '当前会话已失效，请重新登录。',
     forbidden: '当前会话无权执行此操作。',
-    conflict: error instanceof BusinessOperationError ? error.message || '服务端检测到修订或幂等冲突。' : '服务端检测到修订或幂等冲突。',
+    conflict: '数据已发生变化，请刷新后重试。',
+    unavailable: '服务暂时不可用，请稍后重试。',
   })
 }

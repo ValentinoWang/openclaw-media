@@ -187,7 +187,7 @@ def _revision(*parts: Any) -> int:
         else:
             encoded.append(foundation.canonical_json(part))
     digest = hashlib.sha256("|".join(encoded).encode("utf-8")).digest()
-    return int.from_bytes(digest[:8], "big") & ((1 << 63) - 1)
+    return int.from_bytes(digest[:8], "big") & ((1 << 53) - 1)
 
 
 def _decimal(value: Any, message: str) -> Decimal:
@@ -854,7 +854,7 @@ class AdminBillingService:
         if value is None:
             raise AdminBillingUnauthorized()
         role = getattr(value, "role", None)
-        if role != "admin" or getattr(value, "maintainer", True) is False:
+        if role != "admin":
             raise AdminBillingForbidden()
         actor_user_id = getattr(value, "actor_user_id", getattr(value, "user_id", None))
         actor_session_id = getattr(value, "actor_session_id", getattr(value, "session_id", None))
@@ -865,7 +865,12 @@ class AdminBillingService:
             session_id = _uuid(actor_session_id)
         except AdminBillingError as exc:
             raise AdminBillingUnauthorized() from exc
-        return AdminBillingContext(user_id, session_id, role="admin", maintainer=True)
+        return AdminBillingContext(
+            user_id,
+            session_id,
+            role="admin",
+            maintainer=bool(getattr(value, "maintainer", getattr(value, "is_maintainer", False))),
+        )
 
     def _authorize(self, connection: Any, context: AdminBillingContext) -> None:
         self._storage.require_admin(connection, context, _as_utc(self._now()) or datetime.now(_UTC))
@@ -952,4 +957,3 @@ class AdminBillingService:
         rollback = getattr(connection, "rollback", None)
         if callable(rollback):
             rollback()
-

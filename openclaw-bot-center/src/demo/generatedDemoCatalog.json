@@ -7138,6 +7138,174 @@
         "maxBytes": 52428800,
         "maxCount": 8,
         "types": [
+          "text"
+        ]
+      },
+      "bots": [
+        "任意 Bot"
+      ],
+      "capabilityId": "universal_deletion",
+      "confirmationPolicy": {
+        "message": "先预览影响范围，再由用户确认执行。",
+        "stage": "destructive_preview_apply"
+      },
+      "consumes": [],
+      "description": "预览并确认删除内容产物。",
+      "displayName": "内容产物删除",
+      "displayOrder": 34,
+      "effect": "destructive",
+      "enabled": true,
+      "example": "【删除】20260412-030515-qq-灵感-0056",
+      "fields": [
+        {
+          "defaultValue": null,
+          "enabledWhen": [],
+          "format": {
+            "max": null,
+            "min": null,
+            "name": "",
+            "pattern": "",
+            "urlSchemes": []
+          },
+          "helpText": "请输入目标ID",
+          "inputType": "text",
+          "key": "id",
+          "label": "目标ID",
+          "options": [],
+          "order": 0,
+          "persistenceOwner": "tag_capabilities.py:universal_deletion:none",
+          "placeholder": "请输入目标ID",
+          "provenance": "declared_field_definition",
+          "required": true,
+          "semanticOwner": "capability_input_contracts.py:universal_deletion",
+          "sourceLabel": "目标ID",
+          "valueType": "string",
+          "visibleWhen": []
+        },
+        {
+          "defaultValue": null,
+          "enabledWhen": [],
+          "format": {
+            "max": null,
+            "min": null,
+            "name": "",
+            "pattern": "",
+            "urlSchemes": []
+          },
+          "helpText": "请输入动作",
+          "inputType": "radio",
+          "key": "action",
+          "label": "动作",
+          "options": [
+            {
+              "aliases": [],
+              "label": "确认删除",
+              "source": "capability_input_contract_v3",
+              "value": "确认删除"
+            }
+          ],
+          "order": 1,
+          "persistenceOwner": "tag_capabilities.py:universal_deletion:none",
+          "placeholder": "请输入动作",
+          "provenance": "declared_field_definition",
+          "required": false,
+          "semanticOwner": "capability_input_contracts.py:universal_deletion",
+          "sourceLabel": "动作",
+          "valueType": "string",
+          "visibleWhen": [
+            {
+              "operator": "equals",
+              "source": "variant",
+              "value": "confirm"
+            }
+          ]
+        }
+      ],
+      "handler": "handle_删除",
+      "hierarchy": {
+        "actionId": "",
+        "actionName": "",
+        "actionOrder": 0,
+        "categoryId": "category_5b50d7c4b595",
+        "categoryName": "系统",
+        "categoryOrder": 9,
+        "objectId": "object_d8eb3db51b44",
+        "objectName": "数据管理",
+        "objectOrder": 0,
+        "pathIds": [
+          "category_5b50d7c4b595",
+          "object_d8eb3db51b44"
+        ],
+        "pathNames": [
+          "系统",
+          "数据管理"
+        ]
+      },
+      "inputContractSource": "openclaw capability input contract registry",
+      "internalCode": "universal_deletion",
+      "internalLabel": "删除",
+      "label": "删除",
+      "produces": [],
+      "provenance": "tag_capabilities.py:universal_deletion+capability_input_contracts.py:universal_deletion",
+      "requiresConfirmation": true,
+      "riskLevel": "destructive",
+      "searchKeywords": [
+        "删除",
+        "目标ID",
+        "动作",
+        "内容产物删除",
+        "系统",
+        "数据管理"
+      ],
+      "sourceSystem": "hybrid",
+      "ssotRefs": [],
+      "status": "external",
+      "supportedAttachments": [
+        "text"
+      ],
+      "validationRules": [],
+      "variants": [
+        {
+          "controlledInputFields": [],
+          "fieldValues": {},
+          "forbiddenFields": [
+            "action"
+          ],
+          "label": "仅预览删除范围",
+          "preActions": [],
+          "requiredAnyOf": [],
+          "requiredFields": [
+            "id"
+          ],
+          "variantId": "preview"
+        },
+        {
+          "controlledInputFields": [],
+          "fieldValues": {
+            "action": [
+              "确认删除"
+            ]
+          },
+          "forbiddenFields": [],
+          "label": "确认删除已预览目标",
+          "preActions": [],
+          "requiredAnyOf": [],
+          "requiredFields": [
+            "id",
+            "action"
+          ],
+          "variantId": "confirm"
+        }
+      ],
+      "visibility": "public",
+      "writesTo": []
+    },
+    {
+      "aliases": [],
+      "attachmentPolicy": {
+        "maxBytes": 52428800,
+        "maxCount": 8,
+        "types": [
           "url",
           "text"
         ]
@@ -10613,6 +10781,6 @@
       "writesTo": []
     }
   ],
-  "catalogVersion": "sha256:f783eb772640f67aae58259bb2f74e0fa3fdd6645ee291df024f747f074dca86",
+  "catalogVersion": "sha256:b773b407c3bfc4b5ff0b75a829fdee640155c4224619f87dec04f625b436fbb1",
   "schemaVersion": "capability_catalog_v3"
 }

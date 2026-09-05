@@ -511,7 +511,7 @@ class AdminUpstreamsService:
     @staticmethod
     def _revision(summary: Mapping[str, Any]) -> int:
         encoded = json.dumps(summary, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        return int.from_bytes(hashlib.sha256(encoded).digest()[:8], "big")
+        return int.from_bytes(hashlib.sha256(encoded).digest()[:8], "big") & ((1 << 53) - 1)
 
     def _context(self, value: AdminUpstreamsContext | Any) -> AdminUpstreamsContext:
         if value is None:
@@ -644,4 +644,3 @@ class AdminUpstreamsService:
     def _check_revision(expected: int, actual: int) -> None:
         if expected != actual:
             raise AdminUpstreamsRevisionConflict()
-

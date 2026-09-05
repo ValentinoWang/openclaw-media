@@ -14,7 +14,9 @@ import bcrypt
 from .csrf import CSRF_DOMAIN, derive_csrf_token
 from .database import AccountDatabase
 from .errors import AccountAuthError, AccountContractError
+from .password_policy import validate_password
 from .repository import AccountAuthRepository, AccountCredential, AccountSessionRow
+from .username import canonicalize_username
 
 
 @dataclass(frozen=True)
@@ -85,15 +87,15 @@ class AccountAuthService:
 
     @staticmethod
     def _normalize_identifier(identifier: str) -> str:
-        value = identifier.strip().lower()
+        stripped = identifier.strip()
+        value = stripped.lower() if "@" in stripped else canonicalize_username(stripped)
         if not 3 <= len(value) <= 254 or any(character.isspace() for character in value):
             raise AccountAuthError("invalid_credentials", "用户名或密码不正确。", status=401)
         return value
 
     @staticmethod
     def _validate_password(password: str) -> None:
-        if not 12 <= len(password) <= 1024:
-            raise AccountAuthError("invalid_request", "密码长度必须为 12 至 1024 个字符。", status=400)
+        validate_password(password)
 
     def _verify_password(self, password: str, credential: AccountCredential | None) -> bool:
         candidate = credential.password_hash.encode("ascii") if credential is not None else self._dummy_hash

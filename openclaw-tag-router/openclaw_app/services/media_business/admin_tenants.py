@@ -146,7 +146,7 @@ def _revision(*parts: Any) -> int:
         else:
             encoded.append(foundation.canonical_json(part))
     digest = hashlib.sha256("|".join(encoded).encode("utf-8")).digest()
-    return int.from_bytes(digest[:8], "big") & ((1 << 63) - 1)
+    return int.from_bytes(digest[:8], "big") & ((1 << 53) - 1)
 
 
 def _json_object(value: Any) -> dict[str, Any]:
@@ -466,7 +466,7 @@ class AdminTenantsService:
         if value is None:
             raise AdminTenantsUnauthorized()
         role = getattr(value, "role", None)
-        if role != "admin" or getattr(value, "maintainer", True) is False:
+        if role != "admin":
             raise AdminTenantsForbidden()
         actor_user_id = getattr(value, "actor_user_id", None)
         actor_session_id = getattr(value, "actor_session_id", None)
@@ -477,11 +477,16 @@ class AdminTenantsService:
             _uuid(actor_session_id)
         except AdminTenantsError as exc:
             raise AdminTenantsUnauthorized() from exc
-        return AdminTenantContext(actor_user_id=actor_user_id, actor_session_id=actor_session_id, role="admin", maintainer=True)
+        return AdminTenantContext(
+            actor_user_id=actor_user_id,
+            actor_session_id=actor_session_id,
+            role="admin",
+            maintainer=bool(getattr(value, "maintainer", getattr(value, "is_maintainer", False))),
+        )
 
     @staticmethod
     def _ensure_admin_read(context: AdminTenantContext) -> None:
-        if context.role != "admin" or context.maintainer is False:
+        if context.role != "admin":
             raise AdminTenantsForbidden()
 
     def _tenant_summary(self, row: Any) -> dict[str, Any]:

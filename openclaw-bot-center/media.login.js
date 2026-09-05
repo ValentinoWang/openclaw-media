@@ -521,6 +521,7 @@ function initRegister() {
         username: document.querySelector('#username').value.trim(),
         email: document.querySelector('#email').value.trim(),
         password: document.querySelector('#password').value,
+        admissionCode: document.querySelector('#admission-code').value.trim(),
       })
       const payload = await response.json().catch(() => null)
       if (!response.ok || payload?.ok !== true) {

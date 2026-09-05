@@ -103,6 +103,7 @@ class WorkspaceResolutionRow:
     owner_user_id: UUID | None = None
     user_id: UUID | None = None
     identity_link_receipt_ids: tuple[str, ...] = ()
+    organization_name: str | None = None
 
     @property
     def member_role(self) -> str:
@@ -182,6 +183,7 @@ class WorkspaceCandidate:
     resolution_eligibility: str = "ELIGIBLE"
     identity_link_receipt_id: str | None = None
     user_id: UUID | None = None
+    organization_name: str | None = None
 
     def __post_init__(self) -> None:
         if self.workspace_mode not in {"personal_web", "organization_lark"}:
@@ -298,6 +300,7 @@ class WorkspaceCandidate:
             "workspaceStatus": self.workspace_status,
             "resolutionEligibility": self.resolution_eligibility,
             "bindingId": None if self.binding_id is None else str(self.binding_id),
+            "organizationName": self.organization_name,
         }
         return base
 
@@ -493,7 +496,8 @@ class PostgresWorkspaceResolutionRepository:
                membership.role,
                membership.status,
                binding.id,
-               binding.status
+               binding.status,
+               tenant.organization_name
         FROM openclaw_account.tenants AS tenant
         JOIN openclaw_account.tenant_members AS membership
           ON membership.tenant_id = tenant.id
@@ -531,6 +535,7 @@ class PostgresWorkspaceResolutionRepository:
                 membership_state=str(row[10]),
                 binding_id=row[11],
                 binding_status=None if row[12] is None else str(row[12]),
+                organization_name=None if row[13] is None else str(row[13]),
             )
             for row in rows
         )
@@ -600,6 +605,11 @@ def _row_from_value(value: Any, user_id: UUID) -> WorkspaceResolutionRow:
             else _uuid(_value(value, ("user_id", "userId")), "user_id")
         ),
         identity_link_receipt_ids=tuple(str(item) for item in identity_ids),
+        organization_name=_value(
+            value,
+            ("organization_name", "organizationName"),
+            _value(workspace, ("organization_name", "organizationName")),
+        ),
     )
 
 
@@ -969,6 +979,7 @@ class WorkspaceResolver:
                         row.identity_link_receipt_ids[0] if row.identity_link_receipt_ids else None
                     ),
                     user_id=user_id,
+                    organization_name=row.organization_name,
                 )
             except WorkspaceResolutionError as exc:
                 reasons.append(exc.code)

@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 import hashlib
 import hmac
-import re
 import secrets
 import threading
 from collections import deque
@@ -18,6 +17,7 @@ import bcrypt
 from .csrf import PERSONAL_CSRF_DOMAIN, derive_csrf_token
 from .errors import AccountAuthError, AccountContractError
 from .password_policy import validate_password
+from .username import canonicalize_username, normalize_username
 
 
 AccountStatus = Literal["PENDING_EMAIL_VERIFICATION", "ACTIVE", "SUSPENDED"]
@@ -34,7 +34,6 @@ PUBLIC_VERIFICATION_MESSAGE = "如果账号符合条件，我们会向邮箱发�
 PUBLIC_RECOVERY_MESSAGE = "如果账号符合条件，我们会向邮箱发送找回邮件。"
 GENERIC_INVALID_CREDENTIALS = "用户名或密码不正确。"
 
-_USERNAME_PATTERN = re.compile(r"[a-z0-9][a-z0-9._-]{2,63}")
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -59,15 +58,6 @@ def _new_token() -> str:
     return secrets.token_urlsafe(TOKEN_BYTES)
 
 
-def _normalize_username(value: str) -> str:
-    if not isinstance(value, str):
-        raise AccountAuthError("invalid_request", "用户名格式无效。", status=400)
-    normalized = value.strip().casefold()
-    if _USERNAME_PATTERN.fullmatch(normalized) is None:
-        raise AccountAuthError("invalid_request", "用户名格式无效。", status=400)
-    return normalized
-
-
 def _normalize_email(value: str) -> str:
     if not isinstance(value, str):
         raise AccountAuthError("invalid_request", "邮箱格式无效。", status=400)
@@ -87,7 +77,8 @@ def _normalize_email(value: str) -> str:
 def _normalize_identifier(value: str) -> str:
     if not isinstance(value, str):
         raise AccountAuthError("invalid_credentials", GENERIC_INVALID_CREDENTIALS, status=401)
-    normalized = value.strip().casefold()
+    stripped = value.strip()
+    normalized = stripped.casefold() if "@" in stripped else canonicalize_username(stripped)
     if not 3 <= len(normalized) <= 254 or any(character.isspace() for character in normalized):
         raise AccountAuthError("invalid_credentials", GENERIC_INVALID_CREDENTIALS, status=401)
     return normalized
@@ -96,7 +87,8 @@ def _normalize_identifier(value: str) -> str:
 def _normalize_public_identifier(value: object) -> str | None:
     if not isinstance(value, str):
         return None
-    normalized = value.strip().casefold()
+    stripped = value.strip()
+    normalized = stripped.casefold() if "@" in stripped else canonicalize_username(stripped)
     if not 3 <= len(normalized) <= 254 or any(character.isspace() for character in normalized):
         return None
     return normalized
@@ -580,7 +572,7 @@ class PersonalAuthService:
         return self._repository
 
     def register(self, *, username: str, email: str, password: str) -> PersonalRegistrationResult:
-        normalized_username = _normalize_username(username)
+        normalized_username = normalize_username(username)
         normalized_email = _normalize_email(email)
         validate_password(password)
         now = _aware(self._now())

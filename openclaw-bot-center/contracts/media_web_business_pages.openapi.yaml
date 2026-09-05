@@ -6508,18 +6508,12 @@ components:
           type:
           - string
           - 'null'
-        configurationScript:
-          type: string
-        safeCommand:
-          type: string
       required:
       - platform
       - configured
       - updatedAt
       - validationStatus
       - errorCode
-      - configurationScript
-      - safeCommand
     MediaSession:
       type: object
       additionalProperties: false

@@ -8,6 +8,11 @@ import { createServer } from "vite";
 
 const mediaBase = "/openclaw/media";
 const apiRoot = `${mediaBase}/api`;
+// The deployment build runs this browser matrix in a cold, isolated Vite
+// workspace. Keep the assertion fail-closed, but allow the first transform to
+// finish under the managed Node/Chromium runtime.
+const workspaceDispatchTimeout = Number(process.env.STAGE1_WORKSPACE_DISPATCH_TIMEOUT_MS ?? "30000");
+assert.ok(Number.isFinite(workspaceDispatchTimeout) && workspaceDispatchTimeout >= 10_000, "STAGE1_WORKSPACE_DISPATCH_TIMEOUT_MS must be at least 10000");
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const outputRoot = resolve(
   process.env.STAGE1_WORKSPACE_RUNTIME_QA_OUTPUT ??
@@ -94,7 +99,7 @@ async function assertWorkspaceDispatch(
       ["工作台暂时不可用", "无权访问此页面"].includes(heading.textContent?.trim() ?? ""),
     );
     return Boolean(expectedRoot || terminalHeading);
-  }, expected, { timeout: 10_000 });
+  }, expected, { timeout: workspaceDispatchTimeout });
 
   const diagnostics = await page.evaluate(() => ({
     headings: [...document.querySelectorAll("h1")].map((heading) => heading.textContent?.trim()).filter(Boolean),
