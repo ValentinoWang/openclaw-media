@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import {
   AlertCircle,
   Building2,
@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Eye,
   FileArchive,
   FolderOpen,
   RefreshCw,
@@ -30,6 +31,15 @@ import styles from './AdminTenantsPage.module.css'
 
 const PAGE_SIZE = 20
 const AUDIT_REASON_MIN_LENGTH = 8
+
+// 三个分区互斥展示，靠 hidden 真正移出布局；审计检查器是常驻检视栏，不参与切换
+// （对照 AdminAccessPage 的 InvitationTab + InvitationInspector：检视栏从不进标签列表）。
+type TenantTab = 'directory' | 'detail' | 'runs'
+const TENANT_TABS: ReadonlyArray<{ key: TenantTab; label: string; panelId: string }> = [
+  { key: 'directory', label: '租户目录', panelId: 'tenant-directory' },
+  { key: 'detail', label: '租户详情', panelId: 'tenant-detail' },
+  { key: 'runs', label: '运行审计', panelId: 'tenant-runs' },
+]
 
 type AdminTenantSummary = {
   publicTenantId: string
@@ -93,6 +103,8 @@ export default function AdminTenantsPage() {
   const [directoryRefresh, setDirectoryRefresh] = useState(0)
   const [auditRefresh, setAuditRefresh] = useState(0)
   const [runCursorTrail, setRunCursorTrail] = useState<string[]>([])
+  const [activeTab, setActiveTab] = useState<TenantTab>('directory')
+  const tabRefs = useRef<Record<TenantTab, HTMLButtonElement | null>>({ directory: null, detail: null, runs: null })
 
   const directoryCursor = directoryCursorTrail.at(-1)
   const runCursor = runCursorTrail.at(-1)
@@ -129,6 +141,9 @@ export default function AdminTenantsPage() {
     setSubmittedReason(reason)
     setRunCursorTrail([])
     setAuditRefresh((value) => value + 1)
+    // 提交发生在常驻检视栏，读数落在「租户详情」分区里——不带着切一下，用户留在
+    // 「租户目录」标签上会看不到任何变化，等于把旧的假标签页 bug 换了个位置。
+    setActiveTab('detail')
   }
 
   function clearSelection() {
@@ -144,12 +159,30 @@ export default function AdminTenantsPage() {
     if (selectedTenantId && submittedReason) setAuditRefresh((value) => value + 1)
   }
 
+  function selectTab(next: TenantTab) {
+    setActiveTab(next)
+  }
+
+  function moveTab(event: KeyboardEvent<HTMLButtonElement>, current: TenantTab) {
+    const currentIndex = TENANT_TABS.findIndex((tab) => tab.key === current)
+    let nextIndex: number | null = null
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % TENANT_TABS.length
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + TENANT_TABS.length) % TENANT_TABS.length
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = TENANT_TABS.length - 1
+    if (nextIndex === null) return
+    event.preventDefault()
+    const next = TENANT_TABS[nextIndex].key
+    selectTab(next)
+    tabRefs.current[next]?.focus()
+  }
+
   return <main className={'fidelity-page ' + styles.page} data-accent="studio" data-page-ownership="governance">
     <header className="page-heading mg-hero" data-component="mg-hero" data-page-prelude>
       <div>
         <p className="mg-eyebrow" data-component="mg-eyebrow">平台治理控制台</p>
         <h1>租户资源</h1>
-        <p className="mg-hero-lead">从服务端目录选择目标，再读取脱敏资源和运行审计。</p>
+        <p className="mg-hero-lead">从服务端目录选择目标租户——每个租户是一个工作区（个人或组织），再读取脱敏资源和运行审计。</p>
       </div>
       {canRead ? <button
         className={'mg-btn mg-btn-ghost ' + styles.iconButton}
@@ -187,16 +220,27 @@ export default function AdminTenantsPage() {
         </div>
       </section>
 
-      <nav className="mg-tabs" aria-label="租户治理分区" role="tablist" data-component="mg-tabs">
-        <a className="mg-tab mg-tab-pill" href="#tenant-directory" role="tab" aria-selected="true" aria-controls="tenant-directory">租户目录</a>
-        <a className="mg-tab mg-tab-pill" href="#tenant-detail" role="tab" aria-selected="false" aria-controls="tenant-detail">租户详情</a>
-        <a className="mg-tab mg-tab-pill" href="#tenant-runs" role="tab" aria-selected="false" aria-controls="tenant-runs">运行审计</a>
-        <a className="mg-tab mg-tab-pill" href="#tenant-audit" role="tab" aria-selected="false" aria-controls="tenant-audit">审计检查器</a>
-      </nav>
+      <div className="mg-tabs" data-component="mg-tabs" role="tablist" aria-label="租户治理分区">
+        {TENANT_TABS.map(({ key, label, panelId }) => <button
+          key={key}
+          id={key + '-tab'}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === key}
+          aria-controls={panelId}
+          tabIndex={activeTab === key ? 0 : -1}
+          ref={(element) => { tabRefs.current[key] = element }}
+          className="mg-tab mg-tab-pill"
+          data-component="mg-tab"
+          onClick={() => selectTab(key)}
+          onKeyDown={(event) => moveTab(event, key)}
+        >{label}</button>)}
+      </div>
 
       <div className={styles.workspace} data-page-layout="persistent-rail">
         <div className={styles.mainColumn} data-page-primary data-primary-flow>
           <TenantDirectoryPanel
+            hidden={activeTab !== 'directory'}
             state={directoryState}
             selectedTenantId={selectedTenantId}
             search={submittedSearch}
@@ -209,8 +253,9 @@ export default function AdminTenantsPage() {
               }
             }}
           />
-          <TenantDetailPanel state={detailState} selectedTenantId={selectedTenantId} onRetry={refresh} />
+          <TenantDetailPanel hidden={activeTab !== 'detail'} state={detailState} selectedTenantId={selectedTenantId} onRetry={refresh} />
           <TenantRunsPanel
+            hidden={activeTab !== 'runs'}
             state={runsState}
             selectedTenantId={selectedTenantId}
             page={runCursorTrail.length + 1}
@@ -352,7 +397,8 @@ function toLoadState<T>(error: unknown, subject: string): LoadState<T> {
   return { status: 'error', error: message }
 }
 
-function TenantDirectoryPanel({ state, selectedTenantId, search, page, onSelect, onPrevious, onNext }: {
+function TenantDirectoryPanel({ hidden, state, selectedTenantId, search, page, onSelect, onPrevious, onNext }: {
+  hidden: boolean
   state: LoadState<AdminTenantListResponse>
   selectedTenantId: string | null
   search: string
@@ -361,7 +407,7 @@ function TenantDirectoryPanel({ state, selectedTenantId, search, page, onSelect,
   onPrevious: () => void
   onNext: () => void
 }) {
-  return <section className={'section-panel mg-panel ' + styles.directoryPanel} data-component="mg-panel" id="tenant-directory" aria-labelledby="tenant-directory-heading">
+  return <section hidden={hidden} className={'section-panel mg-panel ' + styles.directoryPanel} data-component="mg-panel" id="tenant-directory" role="tabpanel" aria-labelledby="directory-tab tenant-directory-heading">
     <header className={'mg-panel-head ' + styles.panelHeading} data-component="mg-panel-head">
       <div>
         <h2 id="tenant-directory-heading">租户目录</h2>
@@ -384,11 +430,8 @@ function TenantDirectoryPanel({ state, selectedTenantId, search, page, onSelect,
               <tr>
                 <th scope="col">公开租户引用</th>
                 <th scope="col">状态</th>
-                <th scope="col">用户</th>
-                <th scope="col">运行</th>
-                <th scope="col">素材</th>
-                <th scope="col">归档</th>
-                <th scope="col">用量</th>
+                <th scope="col" title="该租户（工作区）下的成员账号数">用户</th>
+                <th scope="col" title="运行 / 素材 / 归档 / 用量">资源用量</th>
                 <th scope="col">最近活动</th>
                 <th scope="col"><span className={styles.visuallyHidden}>操作</span></th>
               </tr>
@@ -398,12 +441,9 @@ function TenantDirectoryPanel({ state, selectedTenantId, search, page, onSelect,
                 <th scope="row"><code className={styles.publicId + ' mg-id'} title={tenant.publicTenantId}>{tenant.publicTenantId}</code></th>
                 <td><StatusBadge status={tenant.status} /></td>
                 <td>{formatInteger(tenant.userCount)}</td>
-                <td>{formatInteger(tenant.runCount)}</td>
-                <td>{formatInteger(tenant.assetCount)}</td>
-                <td>{formatInteger(tenant.archiveCount)}</td>
-                <td><span className={styles.monoValue}>{tenant.usageCharge}</span></td>
+                <td><TenantUsageMeta tenant={tenant} /></td>
                 <td><span className={styles.cellText}>{formatDate(tenant.lastActiveAt)}</span></td>
-                <td><button className={'mg-btn mg-btn-ghost ' + styles.rowAction} data-component="mg-btn" type="button" onClick={() => onSelect(tenant)} aria-label={'查看租户 ' + tenant.publicTenantId} title="选择此租户">查看<ChevronRight size={14} aria-hidden="true" /></button></td>
+                <td><button className={'mg-btn mg-btn-ghost ' + styles.rowAction} data-component="mg-btn" type="button" onClick={() => onSelect(tenant)} aria-label={'查看租户 ' + tenant.publicTenantId} title="查看此租户"><Eye size={15} aria-hidden="true" /></button></td>
               </tr>)}
             </tbody>
           </table>
@@ -414,8 +454,8 @@ function TenantDirectoryPanel({ state, selectedTenantId, search, page, onSelect,
   </section>
 }
 
-function TenantDetailPanel({ state, selectedTenantId, onRetry }: { state: LoadState<AdminTenantResponse>; selectedTenantId: string | null; onRetry: () => void }) {
-  return <section className={'section-panel mg-panel ' + styles.detailPanel} data-component="mg-panel" id="tenant-detail" aria-labelledby="tenant-detail-heading">
+function TenantDetailPanel({ hidden, state, selectedTenantId, onRetry }: { hidden: boolean; state: LoadState<AdminTenantResponse>; selectedTenantId: string | null; onRetry: () => void }) {
+  return <section hidden={hidden} className={'section-panel mg-panel ' + styles.detailPanel} data-component="mg-panel" id="tenant-detail" role="tabpanel" aria-labelledby="detail-tab tenant-detail-heading">
     <header className={'mg-panel-head ' + styles.panelHeading} data-component="mg-panel-head">
       <div>
         <h2 id="tenant-detail-heading">租户详情</h2>
@@ -439,7 +479,7 @@ function TenantDetailPanel({ state, selectedTenantId, onRetry }: { state: LoadSt
 function TenantDetailFacts({ tenant }: { tenant: AdminTenantSummary }) {
   return <div className={styles.detailBody}>
     <div className={'mg-metric-grid ' + styles.metricGrid} data-component="mg-metric-grid">
-      <Metric className={styles.metric} iconClassName={styles.metricIcon} label="用户" value={formatInteger(tenant.userCount)} icon={<Building2 size={16} />} />
+      <Metric className={styles.metric} iconClassName={styles.metricIcon} label="用户" detail="该租户（工作区）内的成员账号数" value={formatInteger(tenant.userCount)} icon={<Building2 size={16} />} />
       <Metric className={styles.metric} iconClassName={styles.metricIcon} label="运行" value={formatInteger(tenant.runCount)} icon={<ClipboardList size={16} />} />
       <Metric className={styles.metric} iconClassName={styles.metricIcon} label="素材" value={formatInteger(tenant.assetCount)} icon={<FolderOpen size={16} />} />
       <Metric className={styles.metric} iconClassName={styles.metricIcon} label="归档" value={formatInteger(tenant.archiveCount)} icon={<FileArchive size={16} />} />
@@ -453,8 +493,8 @@ function TenantDetailFacts({ tenant }: { tenant: AdminTenantSummary }) {
   </div>
 }
 
-function TenantRunsPanel({ state, selectedTenantId, page, onPrevious, onNext, onRetry }: { state: LoadState<AdminTenantRunListResponse>; selectedTenantId: string | null; page: number; onPrevious: () => void; onNext: () => void; onRetry: () => void }) {
-  return <section className={'section-panel mg-panel ' + styles.runsPanel} data-component="mg-panel" id="tenant-runs" aria-labelledby="tenant-runs-heading">
+function TenantRunsPanel({ hidden, state, selectedTenantId, page, onPrevious, onNext, onRetry }: { hidden: boolean; state: LoadState<AdminTenantRunListResponse>; selectedTenantId: string | null; page: number; onPrevious: () => void; onNext: () => void; onRetry: () => void }) {
+  return <section hidden={hidden} className={'section-panel mg-panel ' + styles.runsPanel} data-component="mg-panel" id="tenant-runs" role="tabpanel" aria-labelledby="runs-tab tenant-runs-heading">
     <header className={'mg-panel-head ' + styles.panelHeading} data-component="mg-panel-head">
       <div>
         <h2 id="tenant-runs-heading">租户运行审计</h2>
@@ -474,14 +514,14 @@ function TenantRunsPanel({ state, selectedTenantId, page, onPrevious, onNext, on
       render={(data) => <>
         <div className={styles.tableViewport} role="region" aria-label="租户运行审计表" tabIndex={0}>
           <table className={styles.runsTable}>
-            <thead><tr><th scope="col">公开运行引用</th><th scope="col">标题</th><th scope="col">入口</th><th scope="col">状态</th><th scope="col">可用分区</th><th scope="col">项目引用</th><th scope="col">更新时间</th></tr></thead>
+            <thead><tr><th scope="col">公开运行引用</th><th scope="col" title="标题 / 入口 / 可用分区">标题</th><th scope="col">状态</th><th scope="col">项目引用</th><th scope="col">更新时间</th></tr></thead>
             <tbody>{data.items.map((run) => <tr key={run.publicRunId}>
               <th scope="row"><code className={styles.publicId + ' mg-id'} title={run.publicRunId}>{run.publicRunId}</code></th>
-              <td><span className={styles.cellText}>{run.title}</span></td>
-              <td><span className={styles.cellText}>{run.entrypoint}</span></td>
+              <td><RunTitleCell run={run} /></td>
               <td><StatusBadge status={run.status} /></td>
-              <td><span className={styles.sectionList}>{run.availableSections.length ? run.availableSections.map(sectionLabel).join('、') : '无'}</span></td>
-              <td><span className={styles.cellText}>{run.publicProjectId || '暂无'}</span></td>
+              <td>{run.publicProjectId
+                ? <code className={styles.publicId + ' mg-id'} title={run.publicProjectId}>{run.publicProjectId}</code>
+                : <span className={styles.cellText}>暂无</span>}</td>
               <td><span className={styles.cellText}>{formatDate(run.updatedAt)}</span></td>
             </tr>)}</tbody>
           </table>
@@ -577,4 +617,38 @@ function formatDate(value: string | null) {
 
 function sectionLabel(value: string) {
   return value === 'sources' ? '来源' : value === 'decisions' ? '决定' : value === 'outputs' ? '输出' : value
+}
+
+/** 运行 / 素材 / 归档 / 用量原本各占一列——四列都是同一类计数，各自 12px 的单元格
+ * 内边距先吃掉一百多像素，是「租户目录」9 列表格在 1440/1180 两档主栏（760px/561px）
+ * 都装不下 980px、被迫横滚的主因之一。合并成一格用 .mg-meta 排成一行、放不下再
+ * 折行，列头换成能概括四者的「资源用量」，数据一项都没丢。
+ *
+ * 圆点必须和它右边那个数字包在同一个 flex 子项里再一起折行（CLAUDE.md「圆点属于
+ * 它右边那一项」）——单独把圆点放成一个子项，折行时圆点会留在上一行行尾。 */
+function TenantUsageMeta({ tenant }: { tenant: AdminTenantSummary }) {
+  const items: Array<{ label: string; value: string }> = [
+    { label: '运行', value: formatInteger(tenant.runCount) },
+    { label: '素材', value: formatInteger(tenant.assetCount) },
+    { label: '归档', value: formatInteger(tenant.archiveCount) },
+    { label: '用量', value: tenant.usageCharge },
+  ]
+  return <span className={'mg-meta ' + styles.usageMeta} data-component="mg-meta">
+    {items.map((item, index) => <span key={item.label}>{index > 0 ? '· ' : ''}{item.label}{' '}<b>{item.value}</b></span>)}
+  </span>
+}
+
+/** 「入口」「可用分区」原本各占一列，信息量都不高（一个是短标签，一个是最多三项的
+ * 枚举列表），并入标题下方排成一行（.mg-meta）——同样是「租户运行审计」7 列表格
+ * 撑到 980px 的主因：/reviews 的作品列已经用过这个手法（统计时间 + 证据质量并入
+ * 标题下方）。公开运行引用和项目引用都是标识符，各自独立成列并保持 .mg-id 契约。 */
+function RunTitleCell({ run }: { run: AdminTenantRun }) {
+  const sections = run.availableSections.length ? run.availableSections.map(sectionLabel).join('、') : '无分区'
+  return <div className={styles.runTitleCell}>
+    <span className={styles.cellText}>{run.title}</span>
+    <span className="mg-meta" data-component="mg-meta">
+      <span>{run.entrypoint}</span>
+      <span>{'· ' + sections}</span>
+    </span>
+  </div>
 }

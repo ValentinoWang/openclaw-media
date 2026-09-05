@@ -49,14 +49,18 @@
 }
 
 .quietAction,
-.rowAction,
 .inlineAction,
 .pagination button,
 .iconButton {
   padding: 0 10px;
 }
 
-.iconButton {
+/* `button.iconButton` (element+class) instead of the bare class: this must outrank
+   `.mg-btn`'s `padding: 0 16px` at matching (0,1,0) specificity, and the primitive
+   lands after page modules in the bundled stylesheet so a same-specificity rule
+   here would silently lose on source order -- collapsing this square icon-only
+   button's content box to ~2px and squashing the RefreshCw icon into a sliver. */
+button.iconButton {
   width: 36px;
   padding: 0;
 }
@@ -126,12 +130,41 @@
   overflow-x: auto;
   overscroll-behavior-inline: contain;
   contain: layout paint;
+  /* The main column is ~760px at 1440 and ~561px at 1180 -- both now comfortably
+     clear the table's min-width (see below), so neither table needs to scroll at
+     those two widths any more. Below ~480px (past the single-column breakpoint,
+     deep into narrow phones) the main column can still get tighter than that
+     floor, so the scroll affordance stays as a safety net; scrollbar-width: thin
+     keeps it visible instead of the default overlay scrollbar that never paints
+     outside hover/touch (same fix as ArchivesPage.module.css's .tableViewport) --
+     a static view would otherwise read as content clipped off and gone rather
+     than "scroll for more". */
+  scrollbar-width: thin;
 }
 
 .directoryTable,
 .runsTable {
   width: 100%;
-  min-width: 980px;
+  /* Used to be 980px across 9 (directory) / 7 (runs) columns -- four of the
+     directory columns were the same kind of count (运行/素材/归档/用量), each
+     paying its own 12px cell padding for no reason, and the runs table gave
+     "入口"/"可用分区" a whole column each for a short label and a 3-item list.
+     Merging those into single cells (TenantUsageMeta, RunTitleCell) drops the
+     column count to 6 / 5 without losing a single field, and this floor is
+     sized off what each remaining column actually needs at minimum (id
+     ellipsis, a status pill wide enough for the worst-case 5-character
+     degraded label, the merged .mg-meta rows wrapping to 2 lines, a
+     timestamp) -- comfortably under both 760px and 561px, so table width:100%
+     is what actually renders there instead of this floor forcing a scroll.
+
+     table-layout: fixed only ever reads `width` off the first-row cells for
+     column sizing -- `min-width` on a <th> is accepted by the cascade
+     (computed style shows it) but silently has zero effect on the actual
+     column track, verified by measuring the rendered box directly. So a
+     status column's real floor has to come from its **percentage share of
+     this table min-width**, not a per-column min-width -- see the status
+     column comment below for the arithmetic. */
+  min-width: 480px;
   border-collapse: collapse;
   table-layout: fixed;
   font-size: var(--mg-text-xs);
@@ -169,28 +202,37 @@
   background: oklch(0.97 0.025 166);
 }
 
-.directoryTable th:nth-child(1) { width: 19%; }
-.directoryTable th:nth-child(2) { width: 10%; }
+/* 公开租户引用 / 状态 / 用户 / 资源用量 / 最近活动 / 操作。
+   状态徽标有个真实存在的宽值——租户状态一旦不落在 active/suspended/disabled
+   任何一档（演示数据里的 tenant_shiguang_studio 就是 pending_review），退化文案
+   是 5 个汉字的「状态待确认」，量出来接近 95px。这一列按 21% 留宽度，是按
+   这张表贴着 480px floor 渲染时的**最坏情况**倒推的：21% × 480px ≈ 101px，
+   刚好盖住徽标的真实宽度；宽视口下 21% 只会换来更多余量，不吃亏。
+   给少了会怎样：18% 在 1180px（12% 更窄）都已经把表格撑宽过一次（状态列只有
+   12% ≈ 67px 时，表格被迫多长出 33px 才能塞下徽标），480px floor 上更是直接
+   溢出到右边「用户」列——徽标是 fit-content + white-space: nowrap，没地方
+   换行，表格又已经顶着 floor 没有更多余量可以再撑宽，只能糊出去
+   （430px 下实测：状态徽标与用户列的「1」重叠 11×28px）。 */
+.directoryTable th:nth-child(1) { width: 17%; }
+.directoryTable th:nth-child(2) { width: 21%; }
 .directoryTable th:nth-child(3) { width: 8%; }
-.directoryTable th:nth-child(4) { width: 8%; }
-.directoryTable th:nth-child(5) { width: 8%; }
-.directoryTable th:nth-child(6) { width: 8%; }
-.directoryTable th:nth-child(7) { width: 12%; }
-.directoryTable th:nth-child(8) { width: 16%; }
-.directoryTable th:nth-child(9) { width: 11%; }
+.directoryTable th:nth-child(4) { width: 30%; }
+.directoryTable th:nth-child(5) { width: 13%; }
+.directoryTable th:nth-child(6) { width: 11%; }
 
-.runsTable th:nth-child(1) { width: 18%; }
-.runsTable th:nth-child(2) { width: 17%; }
-.runsTable th:nth-child(3) { width: 15%; }
-.runsTable th:nth-child(4) { width: 11%; }
-.runsTable th:nth-child(5) { width: 15%; }
-.runsTable th:nth-child(6) { width: 13%; }
-.runsTable th:nth-child(7) { width: 16%; }
+/* 公开运行引用 / 标题（含入口、可用分区）/ 状态 / 项目引用 / 更新时间。
+   运行状态的退化文案同样能到 5 个汉字（unknown -> 状态待读取，任何不在
+   runStatusLabels 里的取值 -> 状态待确认；演示数据里 tenant_xiaoman_studio 的
+   pending_manual -> 待人工处理就是这一档），跟租户状态列同样的道理，同样按
+   480px floor 的最坏情况留 21%。 */
+.runsTable th:nth-child(1) { width: 16%; }
+.runsTable th:nth-child(2) { width: 29%; }
+.runsTable th:nth-child(3) { width: 21%; }
+.runsTable th:nth-child(4) { width: 18%; }
+.runsTable th:nth-child(5) { width: 16%; }
 
-.monoValue,
 .cellText,
-.longValue,
-.sectionList {
+.longValue {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -205,26 +247,44 @@
   font-weight: 600;
 }
 
-.cellText,
-.sectionList {
+.cellText {
   display: block;
   line-height: 1.45;
 }
 
-.monoValue {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+/* 四个计数合并进的这一格是表格的主要数据，不是标题下面那种次要说明——
+   .mg-meta 默认给次要信息用的 --mg-text-2xs 比表格其余数据列的 --mg-text-xs
+   还小一档，用在这里等于把「压缩字号凑下限」的坏味道搬进了主数据列。
+   .mg-meta 本身没留字号开关，同分选择器又会被打包后更靠后的原语源序压过
+   （见仓库 CLAUDE.md「页面样式打不过原语时，别拼特异性」），所以用
+   `span.usageMeta`（元素 + 类，(0,1,1)）把特异性提上去，而不是 !important。 */
+span.usageMeta {
   font-size: var(--mg-text-xs);
+}
+
+/* 标题 + 入口/可用分区 的合并列：标题在上，次要事实排成一行放在下面
+  （同 ReviewsPage 的 postCell/postMeta），不必再各占一整列。 */
+.runTitleCell {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
 }
 
 .statusBadge {
   white-space: nowrap;
 }
 
-.rowAction {
+/* Icon-only now (a Eye glyph, aria-label carries "查看租户 …") instead of a
+   "查看" + chevron text button -- freed up real width in a column that used to
+   need ~95px just for that one non-wrapping button, budget better spent on the
+   status column's worst-case "状态待确认" label. `button.rowAction` (element +
+   class, (0,1,1)) for the same reason as `button.iconButton` above: a bare
+   `.rowAction` at (0,1,0) loses its padding override to `.mg-btn`'s on source
+   order once bundled after page modules. */
+button.rowAction {
+  width: 32px;
   min-height: 30px;
-  padding: 0 8px;
-  font-size: var(--mg-text-xs);
-  white-space: nowrap;
+  padding: 0;
 }
 
 .pagination {
