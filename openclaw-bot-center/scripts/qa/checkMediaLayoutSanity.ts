@@ -31,7 +31,16 @@ const demoBase = (() => {
   return assetPath.slice(0, assetPath.indexOf('assets/'))
 })()
 /** 逐个宽度都要体检：窄列的破相在宽视口下同样存在，反过来也一样。 */
-const WIDTHS = [1440, 1180, 900, 430] as const
+/** 四档是常驻档位。迭代或排查时可以临时换一组：MEDIA_LAYOUT_QA_WIDTHS=1280,1024。
+ *  加这个开关是因为破相不一定落在这四档上：`/overview` 的按钮列曾经只在
+ *  1121–1350px 之间被挤爆（两栏还没堆叠、主栏又特别窄的那段区间），1440 和 1180
+ *  都量不到。 */
+const WIDTHS = ((process.env.MEDIA_LAYOUT_QA_WIDTHS ?? '')
+  .split(',')
+  .map((entry) => Number(entry.trim()))
+  .filter((width) => Number.isFinite(width) && width >= 320)
+  .sort((a, b) => b - a)) as readonly number[]
+const ACTIVE_WIDTHS = WIDTHS.length > 0 ? WIDTHS : [1440, 1180, 900, 430]
 /** 迭代时可以只体检几条路由：MEDIA_LAYOUT_QA_ROUTES=/tracks,/publishing。
  *  留空就是全站（CI 与 build:demo 走的都是全站）。 */
 const routeFilter = (process.env.MEDIA_LAYOUT_QA_ROUTES ?? '')
@@ -990,7 +999,7 @@ async function run(): Promise<void> {
   try {
     for (const group of demoRouteGroups) {
       const persona = demoPersonas.find((item) => item.id === group.persona) ?? demoPersonas[0]!
-      for (const width of WIDTHS) {
+      for (const width of ACTIVE_WIDTHS) {
         const context = await browser.newContext({ viewport: { width, height: 900 } })
         await context.addInitScript((id: string) => {
           try { localStorage.setItem('mediaclaw-demo-persona', id) } catch { /* 隐私模式 */ }
@@ -1011,12 +1020,12 @@ async function run(): Promise<void> {
             continue
           }
           await settle(page)
-          for (const [state, defects] of await sweep(page, width === WIDTHS[0])) {
+          for (const [state, defects] of await sweep(page, width === ACTIVE_WIDTHS[0])) {
             checked += 1
             const where = state ? `${route.path}〔${state}〕` : route.path
             for (const defect of defects) failures.push(`${where} @${width}px（${persona.label}）：${defect}`)
           }
-          if (width === WIDTHS[0]) {
+          if (width === ACTIVE_WIDTHS[0]) {
             // sweep() 之后 DOM 已经切到了别的标签页，先回到首屏再压，结论才可复现。
             await page.goto(url, { waitUntil: 'domcontentloaded' })
             if (await page.locator('.media-content').first().waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false)) {
@@ -1043,7 +1052,7 @@ async function run(): Promise<void> {
     const unique = [...new Set(failures)]
     throw new Error(`排版体检发现 ${unique.length} 处问题：\n- ${unique.join('\n- ')}`)
   }
-  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无内容被切掉一截、无大半张表藏在横滚里、无多列挤压、无低信息密度、无面板底部空转、无列表区只剩一条缝、无徽标被拉变形、无图标被挤成一条线、无装饰性标签栏，长列表压力下无内容被吞、长标识符压力下无重叠无裁切`)
+  console.log(`qa:media-layout-sanity: PASS 页面状态体检 ${checked} 次（${ACTIVE_WIDTHS.join(' / ')}px），无重叠、无单词截断、无大字号折行、无短标题被折行、无分隔符被甩在行尾、视口高度契约无偏差、无永久裁切、无内容被切掉一截、无大半张表藏在横滚里、无多列挤压、无低信息密度、无面板底部空转、无列表区只剩一条缝、无徽标被拉变形、无图标被挤成一条线、无装饰性标签栏，长列表压力下无内容被吞、长标识符压力下无重叠无裁切`)
 }
 
 await run()
