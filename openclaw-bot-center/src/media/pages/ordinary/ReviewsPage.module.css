@@ -117,6 +117,25 @@
   --mg-fact-label: 4.9em;
 }
 
+/* 四条事实原来只靠 .mg-facts 的行间距（8px）分开，散着的四行读起来没有
+   「这是一张表」的暗示。极淡的行间分隔线（65% 融混，不是实体描边）把它们
+   缝成一张小表；最后一条不加线，避免贴着小节的下边界重复一条线。容器已经
+   在窄栏里落成单列（见上面 .inspector .layerGrid），行与「行」在视觉上就是
+   DOM 里的相邻兄弟，:not(:last-child) 不会跨列误判。 */
+.layers :global(.mg-facts) > :global(.mg-fact) {
+  padding-block: 0.3rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--mg-border) 65%, transparent);
+}
+
+.layers :global(.mg-facts) > :global(.mg-fact):first-child {
+  padding-top: 0;
+}
+
+.layers :global(.mg-facts) > :global(.mg-fact):last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
 .summaryBand {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -531,10 +550,13 @@
   flex: 1 1 auto;
 }
 
+/* 标题 → 按钮 → 事实三级里，标题只需要比按钮显眼一档，不需要撑到面板标题
+   的字号——17px 在 352px 的检视栏里和下面两个小节标签、四条事实挤在一起，
+   分不出主次。收到 15px（--mg-text-md）之后三级的字号差才读得出来。 */
 .layersHeader h2 {
   margin: 0;
   color: var(--reviews-ink);
-  font-size: var(--mg-text-lg);
+  font-size: var(--mg-text-md);
   line-height: 1.25;
 }
 
@@ -606,28 +628,25 @@
   padding: 0.25rem 0;
 }
 
+/* 「数据层」「模型输出」原来各配一个 17px 图标装在带底色的圆角方块里
+   （.layerIcon，28.8px 见方），在 352px 的检视栏里图标本身的视觉分量已经
+   超过它引出的四条事实或一段文字——两个色块先抢了眼睛，内容反而靠后。
+   去掉图标，小节头收成一枚轻量标签（见下面 h3 的样式）+ 一条细线，
+   分量降到跟它引出的内容相称。 */
 .layerHeader {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.55rem;
-}
-
-.layerIcon {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 1.8rem;
-  height: 1.8rem;
-  border-radius: 0.3rem;
-  color: var(--reviews-blue);
-  background: var(--reviews-blue-soft);
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--reviews-line);
 }
 
 .layerHeader h3 {
   margin: 0;
-  color: var(--reviews-ink);
-  font-size: var(--mg-text-sm);
+  color: var(--reviews-muted);
+  font-size: var(--mg-text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--mg-track-tight);
   line-height: 1.2;
 }
 

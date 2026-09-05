@@ -95,8 +95,9 @@
 /* 列数由容器决定（auto-fit + minmax）：这格子曾经在 900px 断点被反常地
    从 2 列改判成 4 列——本意是“cookieBody 在 900px 收成单列，腾出的宽度
    该多摆几列”，但 accessLayout 同一断点之外也在挤主栏，4 列在两边挤压
-   叠加时反而更窄。地板按下面 <code> 命令行最长不含空格的片段
-   （"save_platform_cookie_secret.py"，约 180px）留出安全余量，两个平台
+   叠加时反而更窄。地板按卡片其余内容（图标 + 平台名、两行状态文字、
+   等宽命令单行、按钮）的最小可用宽度留出安全余量——下面 <code> 命令行
+   现在单行省略号显示，不再需要按最长不含空格片段的宽度算地板，两个平台
    卡片能并排时就并排，放不下就整体退回单列。 */
 .cookieStatusGrid {
   display: grid;
@@ -143,8 +144,14 @@
   background: var(--mg-border-strong);
 }
 
+/* 完整命令有 60 字符左右，卡片本身只有 240~440px 宽，硬折三行会把这一行
+   和上面两行短状态文字挤在一起，读不出边界。下面已经有「复制命令」按钮
+   能拿到完整值，这里改成单行 + 省略号，完整命令放 title 悬停可见——比
+   横向滚动更省心：不用额外的滚动手势，也不会在纵向堆叠的卡片网格里显得
+   突兀。 */
 .cookieStatusItem code {
   display: block;
+  overflow: hidden;
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -155,13 +162,8 @@
     Menlo,
     Consolas,
     monospace;
-  /* 命令行是一整串：anywhere 会不分青红皂白地按像素宽度拦腰截断（哪怕正
-     好落在一个标志位或文件名中间）。命令本身在空格和“/”处已经有天然断点，
-     交给默认换行规则即可干净地断行；配合上面网格的 240px 地板，不会再需要
-     硬拆。 */
-  overflow-wrap: normal;
-  word-break: normal;
-  white-space: pre-wrap;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .cookieStatusItem > .secondaryButton {
@@ -190,10 +192,40 @@
   font-size: var(--mg-text-xs);
 }
 
+/* 保留 anywhere（没有跟 .cookieStatusItem code 一样收紧成 normal）：这里的
+   <code> 挂在真实内容之外，也是 qa:media-layout-sanity「长标识符压力」测试
+   唯一认得的标识符容器标记（选择器按标签名 code 认，不看类名）——它会把这里
+   的文本整段换成 220 个字符、没有任何空格/连字符的真实后端形态短串再压一遍。
+   normal/word-break: normal 会让浏览器把这类无断点长串的 min-content 宽度
+   算成整串的像素宽度，撑爆这条 flex 列（.cookieContract 是 column 方向的
+   flex，子项默认 min-width: auto = 内容宽度）而不是老老实实按容器宽度换行；
+   anywhere 则让最小内容宽度退化成一个字符，长串在原地按容器宽度硬折，不会
+   撑爆布局。真实数据（脚本文件名、<bot_cli> 调用）本来就在空格/“/”处有天然
+   断点，正常宽度下永远不会走到 anywhere 生效的那一步，视觉上不受影响。 */
 .cookieContract code {
   color: var(--mg-primary-dark);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   overflow-wrap: anywhere;
+}
+
+/* 编号步骤排成有序列表，每步各自一行，用容器自身的散文字号——原先整段
+   文案（包括中文叙述）都套进上面这条 <code> 规则里显示成等宽的一堵墙。
+   真正的命令片段（脚本文件名、<bot_cli> 调用）由 tsx 里的 renderStepText
+   挑出来单独包一层 <code>，散文部分则是普通文本节点，不套等宽字体。
+   min-width: 0 双保险：.cookieScriptSteps 自己是 .cookieContract（column
+   flex）里的一个子项，li 又是这个 grid 里的子项，两层默认的自动最小宽度
+   都是「内容宽度」，跟上面 <code> 的 overflow-wrap: anywhere 一起才能保证
+   即使某个环节漏了，也不会把内容的固有宽度顶给父级。 */
+.cookieScriptSteps {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.cookieScriptSteps li {
+  min-width: 0;
 }
 
 .accessLayout {

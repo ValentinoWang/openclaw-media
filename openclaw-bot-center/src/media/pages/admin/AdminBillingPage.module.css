@@ -202,9 +202,15 @@
   font-size: var(--mg-text-xs);
 }
 
+/* scrollbar-width: thin makes the still-needed horizontal scroll visible at
+   narrower widths (1180px and below, where this shares the row with the
+   410-440px inspector rail) -- without it the overflow is an invisible
+   overlay scrollbar and a cut-off last column reads as clipped/broken
+   rather than "scroll for more" (same fix as ArchivesPage's .tableViewport). */
 .tableViewport {
   max-width: 100%;
   overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .table {
@@ -400,14 +406,18 @@
   flex: 0 0 auto;
 }
 
-/* 列数由容器决定（auto-fit + minmax），不写死 4：这块指标带常年挤在
-   bottomGrid 的半宽面板里，宽屏下反而比全宽面板窄。分隔线改用
-   gap + 容器背景色的“缝隙”技巧而不是逐格 border-right：auto-fit 换行后
-   到底有几列、哪一格是“行尾”都不是编译期能确定的，nth-child 那一套只
-   对固定列数成立。 */
+/* 固定 4 个指标（批次数/卡密数量/已兑换/待兑换），不是按数据长度变化的列表，
+   所以列数按两种已知的容器宽度分别钉死，而不是用一条 auto-fit 曲线硬套两种
+   悬殊的宽度：这块指标带挤在 bottomGrid 的半宽面板里时（>1120px，与 body 两栏
+   持久轨道共存，实测约 240-330px）只够 2 列，auto-fit + minmax(100px,1fr) 在
+   这个宽度下量出来是 3 列，4 个指标排 3 列必然多出一格陪衬的空盒子（"待兑换"
+   独占第二行，右边一格背景色、无内容）。下面 @media (max-width: 1120px) 里把
+   auto-fit 版本还给它——两栏收起后这块指标带跟主栏一样宽（约 400-830px），
+   auto-fit 才如愿撑出 4 列一行，不留空格。分隔线用 gap + 容器背景色的“缝隙”
+   技巧而不是逐格 border-right，两种列数下都不用跟着改。 */
 .compactMetrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
   background: var(--mg-border);
   border-bottom: 1px solid var(--mg-border);
@@ -537,12 +547,19 @@
 
 /* Nested "计费写入操作" tab set: shares .mg-tabs/.mg-tab's base rule but stays visually
    smaller/tighter than the page-level nav tabs above -- a deliberate compact variant, not
-   copy-drift, so these two overrides on top of the shared class stay page-local. */
+   copy-drift, so these two overrides on top of the shared class stay page-local.
+   Five tabs need ~480px but the 410-440px inspector rail only gives this ~330-420px
+   at 1440/1180px (and ~400px again once the rail goes full-width below 1120px) --
+   .mg-tab already sets min-width:max-content so .mg-tabs's inherited overflow-x:auto
+   lets it scroll, but that scroll was an invisible overlay affordance and the last
+   tab ("退款履约") just looked clipped mid-character. scrollbar-width: thin makes the
+   scroll visible instead of widening the rail or wrapping the tabs onto a second row. */
 .operationTabs {
   flex: 0 0 auto;
   gap: 16px;
   margin: 0;
   padding: 0 17px;
+  scrollbar-width: thin;
 }
 
 .operationTab {
@@ -793,6 +810,15 @@
   .bodyGrid,
   .bottomGrid {
     grid-template-columns: 1fr;
+  }
+
+  /* .bottomGrid just went to a single column above -- .compactMetrics now sits
+     as wide as .mainColumn (~400-830px here) instead of half of it, so the
+     fixed 2-column grid set above would leave two oversized, sparse columns.
+     Back to auto-fit: at this width there's room for all 4 (or more) 100px
+     columns, so it settles on one full row with no empty cell either. */
+  .compactMetrics {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   }
 
   .bodyGrid {

@@ -314,6 +314,20 @@ export default function AdminAccessPage() {
   </main>
 }
 
+const DEFAULT_CONFIGURATION_SCRIPT_PATH = '/home/ubuntu/selfmedia-tools/integrations/platform_auth/cookies/save_platform_cookie_secret.py'
+
+// 步骤文案里嵌着真正的命令片段（脚本文件名、`<bot_cli> ... --platform xxx` 调用），
+// 匹配出这些 ASCII 技术片段单独包一层 <code>，散文部分保持普通字号——不改文案
+// 一个字，只是不再把整句话（包括中文叙述）都套进等宽字体里显示成一堵墙。
+const COMMAND_SPAN_PATTERN = /(<[a-z_]+>(?:\s+[a-z0-9_.<>/-]+)*|[a-z0-9_./-]*\.[a-z0-9]+)/gi
+
+function renderStepText(step: string, keyPrefix: string): ReactNode {
+  return step.split(COMMAND_SPAN_PATTERN).map((segment, index) => {
+    if (!segment) return null
+    return index % 2 === 1 ? <code key={`${keyPrefix}-${index}`}>{segment}</code> : segment
+  })
+}
+
 function PlatformCookiePanel({ state }: { state: ResourceState<PlatformCookiesResponse> }) {
   const [copyState, setCopyState] = useState<CopyState>(null)
   const items = state.status === 'ready' ? state.data.platforms : []
@@ -350,7 +364,7 @@ function PlatformCookiePanel({ state }: { state: ResourceState<PlatformCookiesRe
           <PlatformIdentity platform={item.platform} size="sm" />
           <span><i aria-hidden="true" />{platformCookieStatusLabel(item)}</span>
           <span>{item.updatedAt ? `更新于 ${formatDateTime(item.updatedAt)}` : '尚未配置'}</span>
-          <code>{item.safeCommand}</code>
+          <code title={item.safeCommand}>{item.safeCommand}</code>
           <button type="button" className={['mg-btn', 'mg-btn-ghost', styles.secondaryButton].join(' ')} data-component="mg-btn" onClick={() => void copySafeCommand(item)} title="复制服务器配置命令" aria-label={`复制${platformDisplayLabel(item.platform)}配置命令`} aria-describedby={copyState?.platform === item.platform ? `${item.platform}-copy-feedback` : undefined}>
             <Copy size={14} aria-hidden="true" />复制命令
           </button>
@@ -359,7 +373,15 @@ function PlatformCookiePanel({ state }: { state: ResourceState<PlatformCookiesRe
       </div>
       <div className={styles.cookieContract}>
         <strong>服务器端配置脚本</strong>
-        <span>脚本：<code>{items[0]?.configurationScript ?? '/home/ubuntu/selfmedia-tools/integrations/platform_auth/cookies/save_platform_cookie_secret.py'}</code></span>
+        {items[0]?.configurationScript ? (
+          <ol className={styles.cookieScriptSteps}>
+            {items[0].configurationScript.split('\n').map((rawStep, index) => (
+              <li key={index}>{renderStepText(rawStep.replace(/^\d+\.\s*/, ''), `step-${index}`)}</li>
+            ))}
+          </ol>
+        ) : (
+          <span>脚本：<code>{DEFAULT_CONFIGURATION_SCRIPT_PATH}</code></span>
+        )}
         <span>凭据通过服务器隐藏输入写入私有文件；本页面不会接收、显示或下发 Cookie 内容。</span>
       </div>
     </div>

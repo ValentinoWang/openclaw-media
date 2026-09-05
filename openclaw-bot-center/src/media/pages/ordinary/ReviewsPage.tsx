@@ -1,7 +1,6 @@
 import {
   BarChart3,
   CheckCircle2,
-  Database,
   ExternalLink,
   FileCheck2,
   LoaderCircle,
@@ -730,7 +729,7 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
         {onConfirm ? <button className={primaryButtonClass} data-component="mg-btn" type="button" onClick={onConfirm} disabled={review.humanDecision !== null || review.status === "confirmed"}><CheckCircle2 size={15} aria-hidden="true" />{review.humanDecision === null ? "确认人工决策" : "已完成确认"}</button> : null}
       </div>
       <div className={styles.layerGrid}>
-        <LayerPanel icon={<Database size={17} aria-hidden="true" />} title="数据层">
+        <LayerPanel title="数据层">
           <dl className="mg-facts">
             <div className="mg-fact"><dt>24h 快照</dt><dd><SnapshotValue value={review.snapshot24h} /></dd></div>
             <div className="mg-fact"><dt>7d 快照</dt><dd><SnapshotValue value={review.snapshot7d} /></dd></div>
@@ -738,7 +737,7 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
             <div className="mg-fact"><dt>人工决策</dt><dd>{valueOrUnknown(review.humanDecision, "未确认")}</dd></div>
           </dl>
         </LayerPanel>
-        <LayerPanel icon={<BarChart3 size={17} aria-hidden="true" />} title="模型输出">
+        <LayerPanel title="模型输出">
           <p className={styles.layerValue}>{valueOrUnknown(review.modelSuggestion, "未生成")}</p>
         </LayerPanel>
       </div>
@@ -769,8 +768,8 @@ function ReviewLayers({ review, onConfirm }: { review: ReviewItem; onConfirm?: (
   );
 }
 
-function LayerPanel({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
-  return <section className={styles.layerPanel}><header className={styles.layerHeader}><span className={styles.layerIcon}>{icon}</span><h3>{title}</h3></header>{children}</section>;
+function LayerPanel({ title, children }: { title: string; children: ReactNode }) {
+  return <section className={styles.layerPanel}><header className={styles.layerHeader}><h3>{title}</h3></header>{children}</section>;
 }
 
 function MetricTable({ items }: { items: MetricSnapshot[] }) {

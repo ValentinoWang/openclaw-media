@@ -7,7 +7,6 @@ import {
   ReceiptText,
   RefreshCw,
   RotateCw,
-  Server,
   ShieldAlert,
   ShieldCheck,
   Users,
@@ -274,15 +273,15 @@ export default function AdminUpstreamsPage() {
   }
 
   return <main className={'fidelity-page ' + styles.page} data-accent="agent" data-page-ownership="governance">
-    <header className={styles.pageHeader}>
+    <header className={'mg-hero ' + styles.pageHeader} data-component="mg-hero">
       <div className={styles.titleBlock}>
-        <div className="mg-eyebrow"><Server size={15} aria-hidden="true" /> 管理 / 上游服务</div>
+        <span className="mg-eyebrow" data-component="mg-eyebrow">平台治理控制台</span>
         <h1>上游服务</h1>
-        <p>凭证健康、账户汇总与对账状态</p>
+        <p className="mg-hero-lead">凭证健康、账户汇总与对账状态。</p>
       </div>
       <div className={styles.headerActions}>
-        <span className="mg-badge"><ShieldCheck size={14} aria-hidden="true" />{canMutateCredential ? '维护者权限' : '管理员权限'}</span>
-        <button className={'mg-btn mg-btn-ghost ' + styles.refreshButton} type="button" onClick={() => { setAction({ kind: 'idle', message: '' }); void loadPage() }} disabled={!canRead || loadState.status === 'loading'} aria-label="刷新上游服务">
+        <span className="mg-badge" data-component="mg-badge"><ShieldCheck size={14} aria-hidden="true" />{canMutateCredential ? '维护者权限' : '管理员权限'}</span>
+        <button className={'mg-btn mg-btn-ghost ' + styles.refreshButton} type="button" onClick={() => { setAction({ kind: 'idle', message: '' }); void loadPage() }} disabled={!canRead || loadState.status === 'loading'} aria-label="刷新上游服务" title="刷新上游服务">
           <RefreshCw size={15} className={loadState.status === 'loading' ? "spin" : undefined} aria-hidden="true" />刷新
         </button>
       </div>

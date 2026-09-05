@@ -611,7 +611,12 @@ function SummaryMetrics({ summary, loading }: { summary: BillingSummary | null; 
 function PlanTable({ available, items, mappings, selectedPlanCode, onSelectPlan }: { available: boolean; items: BillingPlan[]; mappings: BillingRecord[]; selectedPlanCode: string; onSelectPlan: (planCode: string) => void }) {
   if (!available) return <CollectionUnavailable title="套餐" />
   if (!items.length) return <EmptyState title="暂无套餐" />
-  return <TableViewport minWidth="720px"><table className={styles.table}><thead><tr><th>套餐编码</th><th className={styles.numericCell}>零售金额</th><th>状态</th><th>关联商品</th><th>额度</th></tr></thead><tbody>{items.map((plan) => {
+  // 620px 是这 5 列真实内容的宽度（约 565px）加一点余量，不是随手取的整数：旧值
+  // 720px 比实际需要的更宽，1440px 视口下这一栏只有约 653px，白白逼出没有可见
+  // 提示的横向滚动，把「额度」列的末尾裁在面板边缘（1,000 / 600 之类被切成
+  // 1,000 / 60）。620px 在 1440px 能整栏放下，1180px 及以下仍会滚动，
+  // 但 .tableViewport 的 scrollbar-width: thin 让那次滚动看得见。
+  return <TableViewport minWidth="620px"><table className={styles.table}><thead><tr><th>套餐编码</th><th className={styles.numericCell}>零售金额</th><th>状态</th><th>关联商品</th><th>额度</th></tr></thead><tbody>{items.map((plan) => {
     const mapping = mappings.find((item) => readString(item, 'planCode') === plan.planCode)
     const selected = selectedPlanCode === plan.planCode
     return <tr key={plan.planCode} className={selected ? styles.selectedRow : ''} aria-selected={selected} tabIndex={0} onClick={() => onSelectPlan(plan.planCode)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectPlan(plan.planCode) } }}>

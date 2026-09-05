@@ -7,16 +7,23 @@
   flex-direction: column;
   overflow: hidden;
   padding-bottom: 0;
+  /* 「凭证健康」是固定的四行事实 + 一块提示,不是会随数据增长的列表,内容天然
+     比这一栏的视口预算矮。等高契约的 stretch/100% 默认值是为「主栏装长列表」
+     准备的,套在这里就会把面板拉到视口底,量出来的空白来自高度契约本身、与
+     内容无关(参见 AdminUpstreamsPage.tsx 里的测量)。这两个令牌把主栏和它
+     唯一的子面板都改回「按内容定高、顶部对齐」——检视栏本来就已经是这套默认
+     值,不受影响。 */
+  --mg-rail-align: start;
+  --mg-rail-fill: auto;
 }
 
 .pageHeader {
-  display: flex;
   min-width: 0;
   flex: 0 0 auto;
-  align-items: flex-start;
-  justify-content: space-between;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 18px;
-  padding-bottom: 16px;
+  margin-bottom: 16px;
 }
 
 .titleBlock,
@@ -25,15 +32,6 @@
   min-width: 0;
 }
 
-.titleBlock h1 {
-  margin: 5px 0 3px;
-  color: var(--mg-ink);
-  font-size: var(--mg-text-2xl);
-  line-height: 1.08;
-  letter-spacing: 0;
-}
-
-.titleBlock p,
 .healthCopy p,
 .pendingBlock p {
   margin: 0;
@@ -552,7 +550,6 @@
 
   .pageHeader {
     align-items: stretch;
-    flex-direction: column;
     gap: 12px;
   }
 
