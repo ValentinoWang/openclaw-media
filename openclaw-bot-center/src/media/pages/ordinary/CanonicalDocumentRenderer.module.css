@@ -170,30 +170,49 @@
 .callout :global(.mg-badge)[data-tone="danger"] { color: var(--mg-danger); background: var(--mg-danger-soft); }
 
 .tableWrap {
+  /* .tableWrap 也是 mg-panel：`overflow-x: auto` 在这里是死代码——两条规则特异性
+     同为 (0,1,0)，原语在打包后的样式表里更靠后，同分靠源序决胜负，`.mg-panel`
+     的 `overflow: hidden` 总是赢。真正的开关是不靠特异性的自定义属性：横向留一条
+     滚动兜底（列多到即使折行也放不下的表格），纵向仍然裁在圆角里。
+     常规文档表格（本来就没多少列、中文可以随时断行）不会触发这条横向滚动——
+     真正撑爆列宽的是下面 .documentTable 曾经写死的 min-width，见其注释。 */
+  --mg-panel-overflow: auto hidden;
   width: 100%;
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  overflow-x: auto;
   border: 1px solid var(--mg-border);
   border-radius: var(--mg-r-xs);
+  scrollbar-width: thin;
 }
 
 .documentTable {
+  /* 曾经写死 min-width: 460px，不管表格有几列、内容多短都先占这么宽——3 列的
+     分镜表（「段落/画面/证据」，单元格常常只有十来个中文字）被这条线强行撑到
+     460px，比很多窄容器（检视栏、900/430px 视口下的主栏）还宽。中文本来就能在
+     任意字符间断行（.documentBody 已经把 overflow-wrap: anywhere 传给了这里），
+     多出来的宽度只会被 .tableWrap 的 overflow 裁掉、连滚都滚不出来
+     （qa:media-layout-sanity 的「内容被切掉一截」）。去掉这条底线，交给表格的
+     auto 布局按真实内容（+ 下面每格 44px 的小底线防止极端列被挤成 0）分配列宽，
+     窄了就折行，永远不会比容器宽。 */
   width: 100%;
-  min-width: 460px;
+  min-width: 0;
   border-collapse: collapse;
   font-size: var(--mg-text-2xs);
 }
 
 .documentTable th,
 .documentTable td {
-  min-width: 100px;
+  /* 44px 只是防止某一列被挤成 0 宽（比如一个纯符号/单字列），不是给内容留出
+     不换行的空间——真要放不下，上面 .documentTable 的 overflow-wrap: anywhere
+     和这里显式重复的一份会接着把它折行。 */
+  min-width: 44px;
   padding: 7px 8px;
   border-right: 1px solid var(--mg-border);
   border-bottom: 1px solid var(--mg-border);
   text-align: left;
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 
 .documentTable th {
@@ -286,6 +305,20 @@
 .snapshot dt { color: var(--mg-muted); font-size: var(--mg-text-2xs); }
 .snapshot dd { margin: 2px 0 0; overflow-wrap: anywhere; font-size: var(--mg-text-2xs); }
 .snapshot small { color: var(--mg-muted); font-size: var(--mg-text-2xs); overflow-wrap: anywhere; }
+
+/* .snapshot small 这一行是模板字符串拼出来的纯内联文本（对象 <id> · 来源修订
+   <rev> · <时间戳>），承载对象编号的 .mg-id 却默认 display: block——放进一段
+   内联文本里会把这一行拦腰打成三截。跟 .mg-panel 的 overflow 是同一类打不过：
+   两条规则特异性都是 (0,1,0)，原语在打包后的样式表里更靠后，同分靠源序决胜负，
+   `.mg-id` 总赢。这里没有自定义属性开关，就按仓库约定把选择器多接一个元素名
+   升到 (0,1,1) 压过去，而不是甩 !important。16ch 只是给省略号一个触发点：真实
+   后端编号是几百字符无断点的 base64，不设上限它会把这一行撑爆到看不下去
+   （.mg-id 的 white-space: nowrap 不允许在别处折行，多出来的宽度只能溢出）。 */
+.snapshot small :global(.mg-id) {
+  display: inline-block;
+  max-width: 16ch;
+  vertical-align: bottom;
+}
 
 @media (max-width: 520px) {
   .attachment { grid-template-columns: auto minmax(0, 1fr); }

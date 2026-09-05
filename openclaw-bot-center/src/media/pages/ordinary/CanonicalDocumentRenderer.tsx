@@ -204,7 +204,7 @@ function renderDocumentBlock(block: DocumentBlock): ReactNode {
       return <div className={`${styles.attachment} mg-panel`} data-component="mg-panel" data-accent="studio" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}><FileText size={17} aria-hidden="true" /><div><strong>{block.attrs.fileName}</strong><span>{resourceTypeLabel(block.attrs.contentType)}</span></div>{href ? <a href={href} target="_blank" rel="noreferrer" data-public-resource-id={block.attrs.publicResourceId} data-content-checksum={block.attrs.contentChecksum}>打开附件</a> : null}</div>;
     }
     case "data_snapshot":
-      return <aside className={`${styles.snapshot} mg-panel`} data-component="mg-panel" data-accent="archive" data-protected="true"><span className="mg-badge" data-component="mg-badge" data-tone="info">受保护数据快照</span><dl>{Object.entries(block.attrs.displayFields).map(([key, value]) => <div key={key}><dt>{snapshotFieldLabel(key)}</dt><dd>{formatSnapshotValue(key, value)}</dd></div>)}</dl><small>{semanticPurposeLabel(block.attrs.semanticPurpose)} ·&nbsp;对象 {block.attrs.publicObjectId} ·&nbsp;来源修订 {block.attrs.sourceRevision} ·&nbsp;{formatTimestamp(block.attrs.capturedAt)}</small></aside>;
+      return <aside className={`${styles.snapshot} mg-panel`} data-component="mg-panel" data-accent="archive" data-protected="true"><span className="mg-badge" data-component="mg-badge" data-tone="info">受保护数据快照</span><dl>{Object.entries(block.attrs.displayFields).map(([key, value]) => <div key={key}><dt>{snapshotFieldLabel(key)}</dt><dd>{renderSnapshotDisplayValue(key, value)}</dd></div>)}</dl><small>{semanticPurposeLabel(block.attrs.semanticPurpose)} ·&nbsp;对象&nbsp;<span className="mg-id" title={block.attrs.publicObjectId}>{block.attrs.publicObjectId}</span> ·&nbsp;来源修订 {block.attrs.sourceRevision} ·&nbsp;{formatTimestamp(block.attrs.capturedAt)}</small></aside>;
   }
 }
 
@@ -286,6 +286,22 @@ function formatSnapshotValue(fieldName: string, value: DocumentValue): string {
   if (value === null) return "未提供";
   if (typeof value === "boolean") return value ? "是" : "否";
   return formatSnapshotScalar(fieldName, value);
+}
+
+/* 演示数据的编号是 post_xhs_autumn_camera 这种 snake_case，已经被上面的
+   isSnakeCaseIdentifier 拦成「待确认」；真实后端发的是几百字符、大小写混排、
+   没有下划线的 base64，不匹配那条 snake_case 正则，会原样穿过 formatSnapshotScalar
+   直接显示出来。那种串一旦落进 <dd>，没有省略号契约就会把这一格、连带整行网格
+   顶爆——判据跟排版门禁的「长标识符压力」一致：没有空格、没有中日韩字符、够长、
+   只由 base64/标识符常见字符组成。 */
+function looksLikeOpaqueIdentifierText(value: string): boolean {
+  return value.length > 12 && !/\s/.test(value) && !/[⺀-鿿]/u.test(value) && /^[A-Za-z0-9_.:-]+$/.test(value);
+}
+
+function renderSnapshotDisplayValue(fieldName: string, value: DocumentValue): ReactNode {
+  const formatted = formatSnapshotValue(fieldName, value);
+  if (typeof value !== "string" || !looksLikeOpaqueIdentifierText(formatted)) return formatted;
+  return <span className="mg-id" title={formatted}>{formatted}</span>;
 }
 
 function formatSnapshotScalar(fieldName: string, value: string | number | boolean): string {
