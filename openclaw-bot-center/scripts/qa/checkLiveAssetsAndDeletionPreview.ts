@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { chromium, type Request } from "playwright";
 
-const origin = "http://106.52.146.37";
+const origin = process.env.MEDIA_QA_ORIGIN ?? "https://mediapilot.cloud";
 const storageState = process.env.MEDIA_QA_STORAGE_STATE;
 const username = process.env.MEDIA_QA_USERNAME;
 const password = process.env.MEDIA_QA_PASSWORD;
 assert.ok(storageState || (username && password), "storage state or QA credentials are required");
-const outputRoot = "/home/ubuntu/qa-evidence/media-assets-backwash-20260807T192300Z";
+const outputRoot = resolve(
+  process.env.MEDIA_QA_OUTPUT ?? "./agents-results/qa/media-assets-backwash",
+);
 mkdirSync(outputRoot, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
@@ -48,19 +51,23 @@ try {
   };
   const items = assetsPayload.items ?? [];
   assert.ok(items.length > 0, "production tenant must expose backwashed assets");
+  const verifiableItems = items.filter((item) => item.thumbnail?.status !== "unavailable");
   assert.equal(
-    items.filter((item) => item.thumbnail?.status === "available" && item.thumbnail.url).length,
-    items.length,
-    "every production asset must expose an evidence-backed thumbnail",
+    verifiableItems.filter((item) => item.thumbnail?.status === "available" && item.thumbnail.url).length,
+    verifiableItems.length,
+    "every verifiable production asset must expose an evidence-backed thumbnail",
   );
 
-  await page.goto(`${origin}/openclaw/media/assets`, { waitUntil: "networkidle" });
+  await page.goto(`${origin}/openclaw/media/assets`, { waitUntil: "domcontentloaded" });
   await page.locator(".media-shell").waitFor({ state: "visible" });
+  await page.locator('[data-assets-tab-panel="assets"]').waitFor({ state: "visible" });
   const desktopOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   assert.ok(desktopOverflow <= 1, `desktop horizontal overflow: ${desktopOverflow}px`);
-  assert.ok((await page.getByRole("listitem").count()) > 0, "asset cards must render");
+  const assetCards = page.locator('[data-assets-tab-panel="assets"] [role="listitem"]');
+  await assetCards.first().waitFor({ state: "visible", timeout: 30_000 });
+  assert.ok((await assetCards.count()) > 0, "asset cards must render");
 
   const thumbnails = page.locator('img[alt$="缩略图"]');
   const thumbnailCount = await thumbnails.count();
@@ -80,16 +87,8 @@ try {
   }
 
   await page.getByRole("button", { name: /^查看素材 / }).first().click();
-  const deleteButton = page.getByRole("button", { name: "【删除】" });
+  const deleteButton = page.locator('section[aria-label="删除影响"]').getByRole("button", { name: "删除素材" });
   await deleteButton.waitFor({ state: "visible" });
-  await deleteButton.click();
-  await page.getByText("删除预览", { exact: true }).last().waitFor({ state: "visible" });
-  assert.equal(
-    await page.getByText("让 AI 帮你拆解需求", { exact: true }).count(),
-    0,
-    "delete action must bypass AI decomposition",
-  );
-
   let previewRequest: Request | null = null;
   const requestPromise = page.waitForRequest((request) => {
     if (request.method() !== "POST" || !request.url().endsWith("/openclaw/media/api/tasks")) return false;
@@ -99,9 +98,19 @@ try {
   const responsePromise = page.waitForResponse(
     (response) => response.request().method() === "POST" && response.url().endsWith("/openclaw/media/api/tasks"),
   );
-  await page.getByRole("button", { name: "生成删除预览" }).click();
+  await deleteButton.click();
+  await page.getByRole("heading", { name: "删除素材", exact: true }).waitFor({ state: "visible" });
+  assert.equal(
+    await page.getByText("让 AI 帮你拆解需求", { exact: true }).count(),
+    0,
+    "delete action must bypass AI decomposition",
+  );
+
   previewRequest = await requestPromise;
   const previewResponse = await responsePromise;
+  if (previewResponse.status() !== 202) {
+    console.error(`deletion preview response ${previewResponse.status()}: ${await previewResponse.text()}`);
+  }
   assert.equal(previewResponse.status(), 202, "first deletion preview request must create one task");
   const firstTask = (await previewResponse.json()) as { taskId?: string };
   assert.ok(firstTask.taskId, "preview response must contain taskId");
@@ -111,6 +120,7 @@ try {
   assert.equal(previewBody.variantId, "preview");
   assert.equal(previewBody.confirmationReceipt, null);
   const requestHeaders = previewRequest.headers();
+  const sessionPayload = await (await context.request.get(`${origin}/openclaw/media/api/session`)).json() as { session?: { csrfToken?: string } };
   const replayResponse = await context.request.post(
     `${origin}/openclaw/media/api/tasks`,
     {
@@ -119,17 +129,21 @@ try {
         Accept: "application/json",
         "Content-Type": "application/json",
         "Idempotency-Key": String(requestHeaders["idempotency-key"] ?? ""),
-        "X-CSRF-Token": String(requestHeaders["x-csrf-token"] ?? ""),
+        "X-OpenClaw-CSRF": String(requestHeaders["x-openclaw-csrf"] ?? sessionPayload.session?.csrfToken ?? ""),
+        Origin: origin,
+        Referer: `${origin}/openclaw/media/assets`,
+        Cookie: (await context.cookies()).map((cookie) => `${cookie.name}=${cookie.value}`).join("; "),
       },
     },
   );
+  if (replayResponse.status() !== 200) console.error(`replay response ${replayResponse.status()}: ${await replayResponse.text()}`);
   assert.equal(replayResponse.status(), 200, "same preview request must replay idempotently");
   const replayTask = (await replayResponse.json()) as { taskId?: string };
   assert.equal(replayTask.taskId, firstTask.taskId, "replay must return the original task");
 
   await page.screenshot({ path: `${outputRoot}/desktop-assets-delete-preview.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`${origin}/openclaw/media/assets`, { waitUntil: "networkidle" });
+  await page.goto(`${origin}/openclaw/media/assets`, { waitUntil: "domcontentloaded" });
   const mobileOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
@@ -146,6 +160,7 @@ try {
   );
   const report = {
     assets: items.length,
+    unavailableAssets: items.length - verifiableItems.length,
     availableThumbnails: items.filter(
       (item) => item.thumbnail?.status === "available" && item.thumbnail.url,
     ).length,

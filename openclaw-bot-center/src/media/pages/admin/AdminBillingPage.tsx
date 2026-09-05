@@ -579,8 +579,8 @@ function parseBillingSummary(payload: unknown): BillingSummaryResponse {
 
 function toBillingError(error: unknown): BillingRequestError {
   if (error instanceof BillingPageError) return error
-  if (error instanceof BusinessOperationError) return { status: error.status, code: error.code, message: error.message }
-  if (error instanceof Error) return { status: 0, code: 'request_failed', message: error.message }
+  if (error instanceof BusinessOperationError) return { status: error.status, code: error.code, message: '计费汇总暂时无法读取，请稍后重试。' }
+  if (error instanceof Error) return { status: 0, code: 'request_failed', message: '计费汇总暂时无法读取，请稍后重试。' }
   return { status: 0, code: 'request_failed', message: '计费汇总读取失败。' }
 }
 

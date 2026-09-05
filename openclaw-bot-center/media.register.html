@@ -24,12 +24,17 @@
           <span class="panel-label">C 个人创作者</span>
           <h2 id="register-heading">开始使用 MediaClaw</h2>
           <p>提交后请在 24 小时内完成邮箱验证。注册和验证都不会自动登录。</p>
+          <div class="auth-access-help" role="note" aria-label="注册准入说明">
+            <strong>注册需要邀请或准入码</strong>
+            <p>请先联系平台管理员获取邀请链接或一次性准入码；提交表单时按页面提示填写，准入码只使用一次并受批次有效期限制。</p>
+            <p>管理员进入方式：先在此页面登录管理员账号，再打开 <a class="text-link" href="/openclaw/media/admin/access">管理员准入中心</a>，可签发准入码批次、管理邀请权限和调整注册策略。</p>
+          </div>
         </div>
         <form id="register-form" class="auth-form" novalidate>
           <label class="field" for="username">
             <span>用户名</span>
-            <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" minlength="3" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,63}" required />
-            <small>3-64 个字符，以字母或数字开头。</small>
+            <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" minlength="3" maxlength="64" pattern="[\p{L}\p{N}][\p{L}\p{N}\p{M}._\-]{2,63}" required />
+            <small>3-64 个字符，支持中文、字母、数字和 . _ -，以文字或数字开头。</small>
           </label>
           <label class="field" for="email">
             <span>唯一邮箱</span>
@@ -39,6 +44,11 @@
             <span>密码</span>
             <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required />
             <small>至少 8 个字符，可使用字母、数字、符号或短语；过于常见的密码不可用。</small>
+          </label>
+          <label class="field" for="admission-code">
+            <span>邀请链接或准入码</span>
+            <input id="admission-code" name="admissionCode" type="text" autocomplete="one-time-code" maxlength="160" placeholder="粘贴管理员提供的邀请链接或准入码" required />
+            <small>没有邀请链接或准入码时，请联系管理员；管理员不会通过公开页面展示可用码。</small>
           </label>
           <div class="form-actions">
             <button class="auth-button primary" id="register-submit" type="submit">创建账号</button>

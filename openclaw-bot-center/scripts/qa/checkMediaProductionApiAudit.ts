@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { request } from "playwright";
 
-const origin = (process.env.MEDIA_QA_ORIGIN ?? "http://106.52.146.37").replace(/\/$/, "");
+const origin = (process.env.MEDIA_QA_ORIGIN ?? "https://mediapilot.cloud").replace(/\/$/, "");
 const storageState = process.env.MEDIA_QA_STORAGE_STATE;
 if (!storageState) {
   throw new Error("MEDIA_QA_STORAGE_STATE must point to an authenticated Playwright storage-state file");

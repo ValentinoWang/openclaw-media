@@ -178,6 +178,16 @@ def test_storage_permission_failure_is_not_bypassed() -> None:
         service.get_admin_billing_summary(CONTEXT)
 
 
+def test_admin_role_can_read_without_maintainer_flag() -> None:
+    service, state, _ = _service()
+
+    response = service.get_admin_billing_summary(
+        AdminBillingContext(ACTOR, SESSION, maintainer=False)
+    )
+
+    assert response["summary"] == state
+
+
 def test_b12_tenant_public_id_uses_tenant_id_and_grant_decodes_it() -> None:
     grant_calls: list[dict[str, Any]] = []
 

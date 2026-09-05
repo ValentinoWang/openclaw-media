@@ -6,6 +6,7 @@ import os
 import threading
 from pathlib import Path
 from collections.abc import Mapping
+from urllib.parse import urlsplit
 
 from common.env import parse_env_file
 
@@ -264,6 +265,11 @@ def main() -> int:
     args = parser.parse_args()
     if args.mode == "http" and not args.public_origin:
         raise RuntimeError("OPENCLAW_MEDIA_PUBLIC_ORIGIN or --public-origin is required")
+    if args.mode == "http":
+        public_origin = urlsplit(args.public_origin)
+        local_hosts = {"127.0.0.1", "localhost", "::1"}
+        if public_origin.hostname not in local_hosts and public_origin.scheme != "https":
+            raise RuntimeError("production public origin must use https")
 
     auth_environment = load_auth_environment(args.auth_env)
     auth_config = AuthConfig.from_environment(auth_environment)

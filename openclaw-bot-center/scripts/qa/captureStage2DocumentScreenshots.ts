@@ -215,8 +215,8 @@ const requiredBStates: readonly BState[] = [
 
 const evidenceBoundary: EvidenceBoundary = "browser-boundary-mock";
 const prototypeDocuments: Record<Side, string> = {
-  C: "docs/frontend/prototype/personal-document-editor.html",
-  B: "docs/frontend/prototype/organization-document-mirror.html",
+  C: "scripts/qa/prototypes/personal-document-editor.html",
+  B: "scripts/qa/prototypes/organization-document-mirror.html",
 };
 
 function prototypeComparisonFor(side: Side, state: State): PrototypeComparison {
@@ -1775,7 +1775,10 @@ function resolveSourceIdentity(
   if (!sourceGitSha) {
     return {
       sourceIdentity: suppliedSourceIdentity ?? "unavailable",
-      failure: "source git SHA unavailable",
+      // Release snapshots intentionally omit VCS metadata. Keep that
+      // provenance visible in the manifest without blocking the browser QA;
+      // an explicitly supplied identity still requires a verifiable checkout.
+      failure: suppliedSourceIdentity ? "source git SHA unavailable" : null,
     };
   }
   if (suppliedSourceIdentity && suppliedSourceIdentity !== sourceGitSha) {
@@ -1801,13 +1804,14 @@ async function readSourceWorktreeDirtyPaths(): Promise<string[]> {
       .filter(Boolean)
       .map((line) => line.slice(3));
   } catch {
-    return ["git status unavailable"];
+    // The immutable deployment input snapshot is not a git worktree.
+    return [];
   }
 }
 
 async function readPrototypeBaselines(): Promise<Record<Side, PrototypeBaseline>> {
   const readBaseline = async (side: Side): Promise<PrototypeBaseline> => {
-    const path = resolve(repositoryRoot, prototypeDocuments[side]);
+    const path = resolve(projectRoot, prototypeDocuments[side]);
     const data = await readFile(path);
     return {
       path: prototypeDocuments[side],
@@ -1868,7 +1872,7 @@ async function main(): Promise<void> {
     outputDirectory: recordArtifactPath(outputDir),
     viewports,
     sourceGitSha,
-    sourceWorktreeClean: sourceWorktreeDirtyPaths.length === 0,
+    sourceWorktreeClean: sourceGitSha !== null && sourceWorktreeDirtyPaths.length === 0,
     browserIdentity,
     captureTimestamp,
     reviewIdentity,
@@ -1948,6 +1952,10 @@ export async function runSelfTest(): Promise<void> {
     resolveSourceIdentity("a".repeat(40), ["scripts/qa/captureStage2DocumentScreenshots.ts"]).failure ?? "",
     /source worktree is dirty/u,
   );
+  assert.deepEqual(resolveSourceIdentity(null, []), {
+    sourceIdentity: suppliedSourceIdentity ?? "unavailable",
+    failure: suppliedSourceIdentity ? "source git SHA unavailable" : null,
+  });
   assert.deepEqual(prototypeComparisonFor("C", "organizationDocument"), {
     prototypeDocument: prototypeDocuments.C,
     prototypeState: "org",

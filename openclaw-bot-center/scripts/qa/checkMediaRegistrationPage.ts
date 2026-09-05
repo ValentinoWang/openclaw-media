@@ -13,9 +13,11 @@ const routeContract = JSON.parse(readFileSync('contracts/media-auth-route-contra
 const required = [
   '创建个人账号', 'id="username"', 'id="email"', 'id="password"',
   '注册和验证都不会自动登录', 'minlength="8"', 'id="register-resend"',
+  'pattern="[\\p{L}\\p{N}][\\p{L}\\p{N}\\p{M}._\\-]{2,63}"', '支持中文',
 ]
 for (const token of required) if (!page.includes(token)) throw new Error(`registration page missing ${token}`)
 if (page.includes('minlength="12"')) throw new Error('registration page still requires 12-character passwords')
+if (page.includes('[A-Za-z0-9][A-Za-z0-9._-]')) throw new Error('registration page still rejects Unicode usernames')
 for (const token of ['PERSONAL_ENDPOINTS.register', 'username: document.querySelector', 'email: document.querySelector', 'password: document.querySelector']) {
   if (!script.includes(token)) throw new Error(`registration behavior missing ${token}`)
 }
@@ -35,10 +37,13 @@ if (!routeContract.retiredRoutes.includes('/openclaw/media/auth/registration-pol
 }
 for (const retired of [
   'value="organization"', 'id="display-name"', 'id="organization-name"',
-  'id="admission-code"', '/openclaw/auth/registration-policy',
+  '/openclaw/auth/registration-policy',
   'tenantType', 'workspaceMode', 'bodyAuthority',
 ]) if (page.includes(retired) || (retired.startsWith('/') && script.includes(retired))) {
   throw new Error(`retired organization registration field remains: ${retired}`)
+}
+if (!page.includes('id="admission-code"') || !script.includes('admissionCode')) {
+  throw new Error('registration must collect and submit the administrator-provided admission code')
 }
 if (page.includes('api_key') || page.includes('secret') || page.includes('turnstile')) throw new Error('frontend contains a secret or provider credential field')
 console.log('media_registration_page=PASS')

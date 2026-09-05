@@ -7,7 +7,6 @@ import json
 import threading
 import unittest
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 from uuid import UUID
@@ -176,11 +175,6 @@ class MediaBusinessHttpTests(unittest.TestCase):
                             "updatedAt": "2026-08-09T00:00:00Z",
                             "validationStatus": "valid",
                             "errorCode": None,
-                            "configurationScript": str(
-                                Path(__file__).resolve().parents[2]
-                                / "integrations/platform_auth/cookies/save_platform_cookie_secret.py"
-                            ),
-                            "safeCommand": "python3 integrations/platform_auth/cookies/save_platform_cookie_secret.py --platform douyin --prompt --no-env",
                         }
                     ],
                 }

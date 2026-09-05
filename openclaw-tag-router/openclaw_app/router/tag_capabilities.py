@@ -348,7 +348,7 @@ TAG_CAPABILITIES: tuple[TagCapability, ...] = (
     TagCapability("去AI味", "style_polish", "handle_style_polish", "把书面腔和模板腔改成自然中文", "复用唯一 style_polish LLM editor；先按 30 秒口头转述重组表达，只交付成稿，不生成新事实或新账号人格", "【去AI味】\n平台：抖音\n原文：在当今时代，训练和复盘具有重要意义。", "Media bot"),
     TagCapability("小红书文案", "style_polish", "handle_style_polish", "面向小红书的自然标题、正文和封面文案", "复用唯一 style_polish LLM editor；用第一人称现场感、短段落和具体判断改写，平台依据来自 config/platform_mechanisms/xiaohongshu.json", "【小红书文案】\n内容类型：图文标题\n原文：普通人怎么建立自己的内容复盘系统", "Media bot"),
     TagCapability("抖音文案", "style_polish", "handle_style_polish", "面向抖音的自然标题、正文和开场口播", "复用唯一 style_polish LLM editor；保留口头节奏和具体动作，平台依据来自 config/platform_mechanisms/douyin.json", "【抖音文案】\n内容类型：视频开头\n原文：我今天想讲一个关于训练复盘的反直觉想法", "Media bot"),
-    TagCapability("删除", "universal_deletion", "handle_删除", "按明确 ID 预览或确认删除任意能力产生的运行产物", "逐项列出并删除 archive/inbox、json、markdown、转写中间产物、创作运行记录、文档或本地文件；公开 review_ 复盘引用先级联删除并读回全部 H01 指标快照，再删除并读回 04 发布复盘主记录；未确认只预览", "【删除】20260412-030515-qq-灵感-0056", visibility="maintainer"),
+    TagCapability("删除", "universal_deletion", "handle_删除", "按明确 ID 预览或确认删除任意能力产生的运行产物", "逐项列出并删除 archive/inbox、json、markdown、转写中间产物、创作运行记录、文档或本地文件；公开 review_ 复盘引用先级联删除并读回全部 H01 指标快照，再删除并读回 04 发布复盘主记录；未确认只预览", "【删除】20260412-030515-qq-灵感-0056", visibility="public"),
     TagCapability("自媒体知识", "selfmedia_knowledge", "handle_自媒体知识", "按自媒体知识链路处理图文/视频链接", "根据链接内容自动识别图文、公众号文章或视频；所有平台均保留原始 HTML、图片、OCR、转写和文案证据，但名称、全部文案、全部内容、摘要、分类、标签、问题和应用建议只接受带版本标记的 LLM 清洗结果；飞书写入还会核验 LLM 来源、原始证据位置和字段完整性。公众号动态页面以 picture_page_info_list 的全量原图清单为准，逐张 OCR 后先由 LLM 保真清洗全文，再生成结构化分析；任一图片缺失、损坏、尺寸不足、OCR 缺页、LLM 清洗字段缺失、写入凭据不一致或来源提取失败即停止入库并进入 pending_manual；历史记录不由普通消息隐式回洗", "【自媒体知识】https://mp.weixin.qq.com/s/xxxxx", "Knowledge bot"),
     TagCapability(
         "转写",

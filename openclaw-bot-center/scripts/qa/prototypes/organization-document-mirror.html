@@ -1,0 +1,921 @@
+<title>组织正文同步与回读</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --paper:#f5f7f3; --surface:#fff; --raised:#fff;
+    --ink:#19231f; --ink-soft:#3f4f47; --muted:#68746d; --faint:#8d9992;
+    --line:#dfe6df; --line-soft:#eaefe9;
+    --mint:#1a9b68; --mint-deep:#106044; --mint-soft:#d9f4e6;
+    --lavender:#ebe7ff; --lavender-ink:#5b4bb5;
+    --peach:#ffe7db; --peach-ink:#a75f2c;
+    --blue:#e1efff; --blue-ink:#3177bd;
+    --yellow:#fff0bd; --yellow-ink:#8a6b12;
+    --clay:#b4553f; --clay-soft:#fbe8e2;
+    --on-accent:#fff;
+    --shadow-s:0 2px 6px rgba(30,48,40,.06);
+    --shadow-m:0 12px 30px rgba(30,48,40,.10);
+    --shadow-l:0 24px 62px rgba(30,48,40,.16);
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#111a16; --surface:#18231e; --raised:#1e2b25;
+      --ink:#e9f3ec; --ink-soft:#c3d3ca; --muted:#93a69c; --faint:#78897f;
+      --line:#2b3a33; --line-soft:#22302a;
+      --mint:#4ec48d; --mint-deep:#8fdcb4; --mint-soft:#1b3d30;
+      --lavender:#2f2b4c; --lavender-ink:#b0a4f0;
+      --peach:#3f2b1f; --peach-ink:#e0a271;
+      --blue:#1c3145; --blue-ink:#8cc2f5;
+      --yellow:#3a3315; --yellow-ink:#dcc069;
+      --clay:#e08e79; --clay-soft:#3a221c;
+      --on-accent:#08211a;
+      --shadow-s:0 2px 6px rgba(0,0,0,.34);
+      --shadow-m:0 12px 30px rgba(0,0,0,.42);
+      --shadow-l:0 24px 62px rgba(0,0,0,.55);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#111a16; --surface:#18231e; --raised:#1e2b25;
+    --ink:#e9f3ec; --ink-soft:#c3d3ca; --muted:#93a69c; --faint:#78897f;
+    --line:#2b3a33; --line-soft:#22302a;
+    --mint:#4ec48d; --mint-deep:#8fdcb4; --mint-soft:#1b3d30;
+    --lavender:#2f2b4c; --lavender-ink:#b0a4f0;
+    --peach:#3f2b1f; --peach-ink:#e0a271;
+    --blue:#1c3145; --blue-ink:#8cc2f5;
+    --yellow:#3a3315; --yellow-ink:#dcc069;
+    --clay:#e08e79; --clay-soft:#3a221c;
+    --on-accent:#08211a;
+    --shadow-s:0 2px 6px rgba(0,0,0,.34);
+    --shadow-m:0 12px 30px rgba(0,0,0,.42);
+    --shadow-l:0 24px 62px rgba(0,0,0,.55);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:'DM Sans','Noto Sans SC',ui-sans-serif,system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+    font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;height:100vh;overflow:hidden;
+  }
+  h1,h2,h3,h4,h5,h6,p{margin:0;letter-spacing:0;}
+  button{font:inherit;color:inherit;border:0;background:transparent;cursor:pointer;}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px;border-radius:4px;}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+  a{color:var(--blue-ink);}
+
+  /* ============ 原型控制条 ============ */
+  .proto{position:sticky;top:0;z-index:60;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:9px 18px;background:var(--ink);color:var(--paper);}
+  .proto-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.62;}
+  .proto-seg{display:flex;flex-wrap:wrap;gap:3px;}
+  .proto-seg button{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;color:color-mix(in srgb,var(--paper) 72%,transparent);}
+  .proto-seg button:hover{background:color-mix(in srgb,var(--paper) 12%,transparent);color:var(--paper);}
+  .proto-seg button[aria-pressed="true"]{background:var(--paper);color:var(--ink);font-weight:800;}
+  .proto-link{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:11px;color:color-mix(in srgb,var(--paper) 74%,transparent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--paper) 30%,transparent);}
+  .proto-link:hover{color:var(--paper);}
+
+  /* ============ 应用壳 ============ */
+  .shell{display:grid;grid-template-columns:56px minmax(0,1fr);flex:1;min-height:0;}
+  .rail{display:flex;flex-direction:column;align-items:center;gap:5px;padding:16px 0;border-right:1px solid var(--line);background:var(--surface);}
+  .rail-logo{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--blue-ink);color:#fff;font-size:12px;font-weight:800;margin-bottom:10px;}
+  .rail button{width:34px;height:34px;display:grid;place-items:center;border-radius:9px;color:var(--faint);}
+  .rail button:hover{background:var(--paper);color:var(--ink);}
+  .rail button.on{background:var(--blue);color:var(--blue-ink);}
+  .rail-note{margin-top:auto;padding:0 6px;color:var(--faint);font-size:9px;text-align:center;line-height:1.4;}
+
+  .main{display:flex;flex-direction:column;min-width:0;min-height:0;}
+
+  /* ============ 文档头 ============ */
+  .dochead{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:14px 26px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--paper) 84%,transparent);backdrop-filter:blur(18px);position:relative;z-index:40;}
+  .crumb{display:flex;align-items:center;gap:7px;min-width:0;color:var(--muted);font-size:12px;}
+  .crumb b{color:var(--ink);font-weight:700;}
+  .crumb .sep{color:var(--faint);}
+  .kindpill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;background:var(--blue);color:var(--blue-ink);font-size:10.5px;font-weight:800;white-space:nowrap;}
+  .head-right{display:flex;align-items:center;gap:9px;margin-left:auto;}
+
+  .syncState{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;}
+  .syncState .led{width:7px;height:7px;border-radius:999px;background:currentColor;flex:0 0 auto;}
+  .syncState[data-tone="ok"]{background:var(--mint-soft);color:var(--mint-deep);}
+  .syncState[data-tone="busy"]{background:var(--blue);color:var(--blue-ink);}
+  .syncState[data-tone="unknown"]{background:var(--peach);color:var(--peach-ink);}
+  .syncState[data-tone="bad"]{background:var(--clay-soft);color:var(--clay);}
+  .syncState[data-tone="warn"]{background:var(--yellow);color:var(--yellow-ink);}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .syncState[data-tone="busy"] .led{border-radius:2px;animation:spin .9s linear infinite;}
+  @media (prefers-reduced-motion:reduce){.syncState[data-tone="busy"] .led{animation:none;}}
+
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;transition:transform .16s ease,box-shadow .16s ease,background .16s ease;}
+  .btn:hover:not(:disabled){transform:translateY(-2px);}
+  .btn:disabled{opacity:.42;cursor:not-allowed;}
+  .btn-primary{background:var(--blue-ink);color:#fff;box-shadow:0 10px 20px color-mix(in srgb,var(--blue-ink) 22%,transparent);}
+  .btn-soft{background:var(--surface);border:1px solid var(--line);}
+  .btn-soft:hover{border-color:var(--blue-ink);}
+  .btn-ghost{color:var(--muted);}
+  .btn-ghost:hover{color:var(--ink);}
+  .btn-danger{background:var(--clay);color:#fff;}
+  .btn-warn{background:var(--peach-ink);color:var(--peach);}
+
+  /* ============ 主体 ============ */
+  .body{display:grid;grid-template-columns:minmax(0,1fr) 348px;flex:1;min-height:0;}
+  .canvas{overflow-y:auto;min-height:0;padding:34px 0 0;}
+  .sheet{width:min(720px,calc(100% - 64px));margin:0 auto;}
+
+  /* 同步链路条：B 端独有——远端在环里，部分成功必须可见 */
+  .pipe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:24px;padding:16px 18px;border:1px solid var(--line);border-radius:13px;background:var(--surface);}
+  .pipe-step{position:relative;display:grid;gap:5px;padding-left:20px;}
+  .pipe-dot{position:absolute;left:0;top:2px;width:13px;height:13px;border-radius:999px;border:2px solid var(--line);background:var(--surface);}
+  .pipe-step[data-s="done"] .pipe-dot{border-color:var(--mint);background:var(--mint);}
+  .pipe-step[data-s="run"] .pipe-dot{border-color:var(--blue-ink);background:var(--blue);}
+  .pipe-step[data-s="unknown"] .pipe-dot{border-color:var(--peach-ink);background:var(--peach);}
+  .pipe-step[data-s="bad"] .pipe-dot{border-color:var(--clay);background:var(--clay);}
+  .pipe-step[data-s="wait"] .pipe-dot{border-color:var(--line);}
+  .pipe-step strong{font-size:12px;font-weight:700;}
+  .pipe-step span{color:var(--muted);font-size:10.5px;line-height:1.45;}
+  .pipe-step[data-s="done"] strong{color:var(--mint-deep);}
+  .pipe-step[data-s="run"] strong{color:var(--blue-ink);}
+  .pipe-step[data-s="unknown"] strong{color:var(--peach-ink);}
+  .pipe-step[data-s="bad"] strong{color:var(--clay);}
+  .pipe-step[data-s="wait"] strong{color:var(--faint);}
+
+  /* 横幅 */
+  .banner{display:flex;gap:13px;padding:16px 18px;border-radius:13px;margin-bottom:24px;border:1px solid transparent;}
+  .banner-ico{width:28px;height:28px;flex:0 0 auto;display:grid;place-items:center;border-radius:8px;font-size:14px;font-weight:800;}
+  .banner h4{font-size:14px;font-weight:800;}
+  .banner p{margin-top:5px;font-size:12.5px;line-height:1.6;}
+  .banner .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .banner .diffrow{display:flex;flex-wrap:wrap;gap:18px;margin-top:11px;padding-top:11px;border-top:1px solid color-mix(in srgb,currentColor 22%,transparent);font-size:12px;}
+  .banner .diffrow div{display:grid;gap:2px;}
+  .banner .diffrow span{opacity:.72;font-size:10.5px;font-weight:700;letter-spacing:.04em;}
+  .banner .diffrow b{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;}
+  .banner-ref{margin-top:11px;padding-top:11px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent);opacity:.68;font-size:11px;font-family:var(--mono);}
+  .banner.unknown{background:var(--peach);border-color:color-mix(in srgb,var(--peach-ink) 30%,transparent);color:var(--peach-ink);}
+  .banner.unknown .banner-ico{background:var(--peach-ink);color:var(--peach);}
+  .banner.conflict{background:var(--clay-soft);border-color:color-mix(in srgb,var(--clay) 30%,transparent);color:var(--clay);}
+  .banner.conflict .banner-ico{background:var(--clay);color:#fff;}
+  .banner.warn{background:var(--yellow);border-color:color-mix(in srgb,var(--yellow-ink) 28%,transparent);color:var(--yellow-ink);}
+  .banner.warn .banner-ico{background:var(--yellow-ink);color:var(--yellow);}
+  .banner.stale{background:var(--blue);border-color:color-mix(in srgb,var(--blue-ink) 26%,transparent);color:var(--blue-ink);}
+  .banner.stale .banner-ico{background:var(--blue-ink);color:#fff;}
+  .banner.run{background:var(--blue);border-color:color-mix(in srgb,var(--blue-ink) 26%,transparent);color:var(--blue-ink);}
+  .banner.run .banner-ico{background:var(--blue-ink);color:#fff;}
+
+  /* 文档标题 */
+  .doctitle{font-size:29px;font-weight:800;line-height:1.28;}
+  .docmeta{display:flex;flex-wrap:wrap;gap:14px;margin-top:11px;padding-bottom:20px;border-bottom:1px solid var(--line-soft);color:var(--faint);font-size:11.5px;}
+  .docmeta span{display:inline-flex;align-items:center;gap:5px;}
+  .docmeta b{color:var(--muted);font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;}
+
+  /* ---- 只读镜像正文 ---- */
+  .mirror{position:relative;margin-top:22px;padding-left:16px;border-left:2px solid var(--blue);}
+  .mirror-tag{position:sticky;top:70px;z-index:5;float:right;display:inline-flex;align-items:center;gap:6px;margin:0 0 8px 12px;padding:4px 11px;border-radius:999px;background:var(--blue);color:var(--blue-ink);font-size:10.5px;font-weight:800;}
+  .blk{position:relative;margin:0;padding:2px 0;cursor:default;}
+  .blk[data-flag="unsupported"]{margin:0 -12px;padding:8px 12px;border-radius:8px;background:var(--yellow);box-shadow:0 0 0 1px color-mix(in srgb,var(--yellow-ink) 40%,transparent) inset;}
+  .blk-flag{display:inline-flex;align-items:center;gap:5px;margin-bottom:5px;padding:2px 8px;border-radius:999px;background:var(--yellow-ink);color:var(--yellow);font-size:10px;font-weight:800;}
+
+  .rt{font-size:16px;line-height:1.85;color:var(--ink);}
+  .mirror h2.rt{font-size:21px;font-weight:800;line-height:1.4;margin-top:26px;}
+  .mirror p.rt{margin-top:13px;}
+  .mirror p.rt:first-of-type{margin-top:0;}
+  .rt strong{font-weight:700;}
+  .rt em{font-style:italic;}
+  ul.rt{margin-top:13px;padding-left:24px;}
+  ul.rt li{margin-top:6px;}
+  .callout{display:grid;gap:5px;margin-top:18px;padding:15px 17px;border-radius:11px;border-left:3px solid;}
+  .callout[data-tone="warning"]{background:var(--yellow);border-color:var(--yellow-ink);color:var(--yellow-ink);}
+  .callout strong{font-size:11px;font-weight:800;letter-spacing:.05em;}
+  .callout .rt{font-size:14.5px;line-height:1.75;color:inherit;}
+  .tablewrap{margin-top:18px;overflow-x:auto;border:1px solid var(--line);border-radius:11px;}
+  table.doc{width:100%;border-collapse:collapse;font-size:14px;}
+  table.doc th,table.doc td{padding:10px 13px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line-soft);}
+  table.doc th{background:var(--paper);color:var(--muted);font-size:11px;font-weight:800;white-space:nowrap;}
+  table.doc tr:last-child td{border-bottom:0;}
+
+  .snapshot{margin-top:20px;padding:17px 19px;border-radius:12px;background:var(--lavender);border:1px dashed color-mix(in srgb,var(--lavender-ink) 42%,transparent);}
+  .snapshot-head{display:flex;align-items:center;gap:8px;color:var(--lavender-ink);}
+  .snapshot-head strong{font-size:11px;font-weight:800;letter-spacing:.05em;}
+  .lockpill{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--lavender-ink) 88%,transparent);color:var(--lavender);font-size:10px;font-weight:800;}
+  .snapshot dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:12px;margin:13px 0 0;}
+  .snapshot dt{color:var(--lavender-ink);font-size:10.5px;font-weight:700;opacity:.8;}
+  .snapshot dd{margin:2px 0 0;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);}
+  .snapshot-why{margin-top:9px;font-size:12px;line-height:1.6;color:var(--lavender-ink);}
+  .snapshot small{display:block;margin-top:12px;color:var(--lavender-ink);font-size:10.5px;opacity:.85;font-family:var(--mono);}
+
+  /* ============ 右栏 ============ */
+  .rail-right{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--line);background:var(--surface);overflow-y:auto;}
+  .tabs{display:flex;gap:3px;padding:11px 14px;border-bottom:1px solid var(--line-soft);position:sticky;top:0;background:var(--surface);z-index:5;}
+  .tabs button{flex:1;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:700;color:var(--muted);}
+  .tabs button:hover{color:var(--ink);}
+  .tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper);}
+  .pane{padding:16px 18px 30px;}
+  .pane-lead{color:var(--muted);font-size:11.5px;line-height:1.6;}
+
+  .ledger{display:grid;margin-top:15px;border:1px solid var(--line);border-radius:11px;overflow:hidden;}
+  .ledger div{display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px;padding:10px 13px;border-top:1px solid var(--line-soft);align-items:baseline;}
+  .ledger div:first-child{border-top:0;}
+  .ledger dt{color:var(--muted);font-size:10.5px;font-weight:700;}
+  .ledger dd{margin:0;font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums;word-break:break-all;color:var(--ink-soft);}
+  .ledger dd.ok{color:var(--mint-deep);font-weight:600;}
+  .ledger dd.bad{color:var(--clay);font-weight:600;}
+  .ledger dd.warnv{color:var(--peach-ink);font-weight:600;}
+
+  .stack{display:grid;gap:9px;margin-top:15px;}
+  .mini{padding:13px 15px;border:1px solid var(--line);border-radius:11px;background:var(--paper);}
+  .mini strong{display:block;font-size:12.5px;font-weight:700;}
+  .mini p{margin-top:4px;color:var(--muted);font-size:11.5px;line-height:1.6;}
+  .mini .row{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:9px;}
+  .tick{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;}
+  .tick::before{content:'';width:6px;height:6px;border-radius:999px;background:currentColor;}
+  .tick.ok{color:var(--mint-deep);}
+  .tick.wait{color:var(--faint);}
+  .tick.bad{color:var(--clay);}
+  .tick.warnv{color:var(--peach-ink);}
+
+  /* 块映射表：B 端独有——网页块 ↔ 远端块 */
+  .maps{margin-top:15px;border:1px solid var(--line);border-radius:11px;overflow:hidden;}
+  .map{display:grid;gap:3px;padding:11px 13px;border-top:1px solid var(--line-soft);}
+  .map:first-child{border-top:0;}
+  .map-top{display:flex;align-items:center;gap:8px;}
+  .map-top b{font-family:var(--mono);font-size:11px;color:var(--ink-soft);}
+  .map-arrow{color:var(--faint);font-size:10px;}
+  .map-badge{margin-left:auto;padding:1px 7px;border-radius:999px;font-size:9.5px;font-weight:800;}
+  .map-badge.prot{background:var(--lavender);color:var(--lavender-ink);}
+  .map-badge.bad{background:var(--yellow);color:var(--yellow-ink);}
+  .map small{color:var(--faint);font-size:10px;font-family:var(--mono);}
+  .map em{font-style:normal;color:var(--yellow-ink);font-size:10.5px;font-weight:700;}
+
+  .foot{margin-top:20px;padding-top:14px;border-top:1px solid var(--line-soft);color:var(--faint);font-size:11px;line-height:1.65;}
+
+  /* ============ 写入中：逐步写清楚，而不是一句「正在写入」 ============ */
+  .wsteps{display:grid;margin-top:11px;border-top:1px solid color-mix(in srgb,currentColor 20%,transparent);}
+  .wstep{display:grid;grid-template-columns:19px minmax(0,1fr);gap:9px;align-items:baseline;padding:8px 0;border-bottom:1px solid color-mix(in srgb,currentColor 13%,transparent);}
+  .wstep:last-child{border-bottom:0;}
+  .wstep > i{width:19px;height:19px;display:grid;place-items:center;border-radius:999px;font-size:9.5px;font-weight:800;font-style:normal;font-variant-numeric:tabular-nums;}
+  .wstep[data-s="done"] > i{background:var(--mint);color:#fff;}
+  .wstep[data-s="run"] > i{background:var(--blue-ink);color:#fff;}
+  .wstep[data-s="wait"] > i{background:color-mix(in srgb,currentColor 16%,transparent);color:currentColor;opacity:.7;}
+  .wstep-b{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;}
+  .wstep-b b{font-size:12.5px;font-weight:700;}
+  .wstep-b span{font-size:11.5px;opacity:.82;}
+  .wstep-b em{font-style:normal;padding:1px 7px;border-radius:999px;font-size:9.5px;font-weight:800;}
+  .wstep[data-s="done"] em{background:var(--mint-soft);color:var(--mint-deep);}
+  .wstep[data-s="run"] em{background:var(--blue);color:var(--blue-ink);}
+  .wstep[data-s="wait"] .wstep-b{opacity:.6;}
+  .safe-line{margin-top:11px;padding:9px 12px;border-radius:9px;background:color-mix(in srgb,var(--surface) 62%,transparent);font-size:12px;line-height:1.6;}
+
+  /* ============ 让 AI 改稿：常驻指令条 + 计划面板 ============ */
+  /* 底座必须不透明：sticky 浮层压住正文会看不清，正文从它上沿干净地切走 */
+  .aiwrap{position:sticky;bottom:0;z-index:30;margin:34px -16px 0;padding:14px 16px 16px;background:var(--paper);}
+  .aiwrap::before{content:'';position:absolute;left:0;right:0;top:-22px;height:22px;pointer-events:none;
+    background:linear-gradient(to bottom,transparent,var(--paper));}
+  .aibar{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:13px;background:var(--surface);box-shadow:var(--shadow-m);}
+  .aibar-ico{width:28px;height:28px;flex:0 0 auto;display:grid;place-items:center;border-radius:8px;background:var(--blue);color:var(--blue-ink);font-size:13px;font-weight:800;}
+  .aibar input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:13.5px;padding:6px 2px;}
+  .aibar input::placeholder{color:var(--faint);}
+  .aibar input:focus{outline:none;}
+  .aihint{margin:8px 2px 0;color:var(--faint);font-size:10.5px;line-height:1.5;}
+
+  .plan{margin-bottom:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-l);overflow:hidden;}
+  .plan-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line-soft);background:var(--paper);}
+  .plan-head h4{font-size:13.5px;font-weight:800;}
+  .plan-head .ask{width:100%;margin-top:2px;color:var(--muted);font-size:11.5px;line-height:1.5;}
+  .plan-count{display:inline-flex;gap:5px;align-items:center;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:800;}
+  .plan-count.go{background:var(--mint-soft);color:var(--mint-deep);}
+  .plan-count.man{background:var(--peach);color:var(--peach-ink);}
+  .plan-count.no{background:var(--lavender);color:var(--lavender-ink);}
+  .plan-body{max-height:290px;overflow-y:auto;}
+  .plan-sec{padding:13px 16px;border-top:1px solid var(--line-soft);}
+  .plan-sec:first-child{border-top:0;}
+  .plan-sec > h5{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:.04em;}
+  .plan-sec.go > h5{color:var(--mint-deep);}
+  .plan-sec.man > h5{color:var(--peach-ink);}
+  .plan-sec.no > h5{color:var(--lavender-ink);}
+  .op{display:grid;gap:5px;margin-top:10px;padding:11px 13px;border-radius:10px;background:var(--paper);border:1px solid var(--line-soft);}
+  .op-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .op-where{font-size:12px;font-weight:700;}
+  .op-kind{padding:1px 8px;border-radius:999px;background:var(--blue);color:var(--blue-ink);font-size:9.5px;font-weight:800;}
+  .op-off{margin-left:auto;color:var(--muted);font-size:11px;text-decoration:underline;text-underline-offset:2px;}
+  .op-off:hover{color:var(--ink);}
+  .op-diff{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;}
+  .op-old{padding:1px 7px;border-radius:5px;background:var(--clay-soft);color:var(--clay);text-decoration:line-through;}
+  .op-new{padding:1px 7px;border-radius:5px;background:var(--mint-soft);color:var(--mint-deep);font-weight:700;}
+  .op-why{color:var(--muted);font-size:11px;line-height:1.5;}
+  .op[data-off="1"]{opacity:.42;}
+  .op[data-off="1"] .op-off{color:var(--mint-deep);}
+  .plan-foot{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:12px 16px;border-top:1px solid var(--line-soft);background:var(--paper);}
+  .plan-foot .note{color:var(--faint);font-size:11px;}
+
+  @media (max-width:640px){ .aiwrap{position:static;} }
+
+  @media (max-width:1080px){
+    /* 右栏改到正文下方后，锁高就没意义了，回到自然滚动 */
+    body{height:auto;overflow:visible;}
+    .body{grid-template-columns:minmax(0,1fr);}
+    .rail-right{border-left:0;border-top:1px solid var(--line);}
+    .sheet{width:calc(100% - 40px);}
+    .pipe{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
+  @media (max-width:640px){
+    .shell{grid-template-columns:1fr;}
+    .rail{flex-direction:row;justify-content:flex-start;padding:8px 12px;border-right:0;border-bottom:1px solid var(--line);gap:4px;overflow-x:auto;}
+    .rail-logo{margin-bottom:0;}
+    .rail-note{display:none;}
+    .dochead{top:0;position:static;}
+    .doctitle{font-size:24px;}
+    .pipe{grid-template-columns:1fr;}
+    .mirror-tag{float:none;display:inline-flex;margin-left:0;}
+  }
+</style>
+
+<!-- ══════════ 原型控制条 ══════════ -->
+<div class="proto">
+  <span class="proto-tag">原型控制 · 非产品界面</span>
+  <div class="proto-seg" role="group" aria-label="切换状态">
+    <button data-go="ok" aria-pressed="true">已同步</button>
+    <button data-go="run" aria-pressed="false">写入中</button>
+    <button data-go="unknown" aria-pressed="false">结果未知 · 待对账</button>
+    <button data-go="conflict" aria-pressed="false">远端版本冲突</button>
+    <button data-go="unsupported" aria-pressed="false">结构不支持</button>
+    <button data-go="stale" aria-pressed="false">飞书已改 · 待回读</button>
+    <button data-go="plan" aria-pressed="false">AI 改稿计划</button>
+    <button data-go="partial" aria-pressed="false">部分应用</button>
+  </div>
+  <a class="proto-link" href="https://claude.ai/code/artifact/fe47522a-1e14-4df6-bacd-93a5fde8368b">← 个人端：正文编辑与修订</a>
+</div>
+
+<div class="shell">
+  <nav class="rail" aria-label="组织工作区导航">
+    <div class="rail-logo">MC</div>
+    <button class="on" title="组织工作台" aria-current="page">◉</button>
+    <button title="交付文档">▤</button>
+    <p class="rail-note">组织<br>窄轨</p>
+  </nav>
+
+  <div class="main">
+    <header class="dochead">
+      <div class="crumb">
+        <span>光合内容工作室</span><span class="sep">/</span>
+        <span>秋冬护手霜 · 品牌合作</span><span class="sep">/</span>
+        <b>交付稿</b>
+      </div>
+      <span class="kindpill">创作文档 · 组织工作区</span>
+      <div class="head-right">
+        <span class="syncState" id="syncState" data-tone="ok" role="status" aria-live="polite">
+          <i class="led"></i><span id="syncText">已同步 · 远端 v14</span>
+        </span>
+        <button class="btn btn-soft" id="btnReread">重新回读</button>
+        <button class="btn btn-primary" id="btnOpen">在飞书中打开</button>
+      </div>
+    </header>
+
+    <div class="body">
+      <main class="canvas">
+        <div class="sheet">
+
+          <!-- 同步链路条 -->
+          <div class="pipe" id="pipe" aria-label="同步链路">
+            <div class="pipe-step" id="ps1" data-s="done"><i class="pipe-dot"></i><strong>生成正文</strong><span id="ps1t">创作任务已产出</span></div>
+            <div class="pipe-step" id="ps2" data-s="done"><i class="pipe-dot"></i><strong>写入飞书</strong><span id="ps2t">按当前绑定写入</span></div>
+            <div class="pipe-step" id="ps3" data-s="done"><i class="pipe-dot"></i><strong>登记绑定</strong><span id="ps3t">成果已绑远端文档</span></div>
+            <div class="pipe-step" id="ps4" data-s="done"><i class="pipe-dot"></i><strong>写后回读</strong><span id="ps4t">校验值一致</span></div>
+          </div>
+
+          <!-- 写入中 -->
+          <div class="banner run" id="bnRun" hidden>
+            <div class="banner-ico">⟳</div>
+            <div>
+              <h4 id="runTitle">正在写入飞书 · 第 2 步，共 4 步</h4>
+              <p>四步全绿才算成功。<b>飞书是外部系统，这一步的回执可能迟到甚至不回</b>——所以在拿到确定结果之前，这里既不会显示成功，也不会自动重发。</p>
+              <div class="wsteps">
+                <div class="wstep" id="rs1" data-s="done"><i>1</i><div class="wstep-b"><b>生成正文</b><span>创作任务已产出，2 处改动待写入</span><em>已完成</em></div></div>
+                <div class="wstep" id="rs2" data-s="run"><i>2</i><div class="wstep-b"><b>写入飞书</b><span id="rs2t">正在按当前组织绑定调用飞书写入…</span><em id="rs2e">进行中</em></div></div>
+                <div class="wstep" id="rs3" data-s="wait"><i>3</i><div class="wstep-b"><b>登记绑定</b><span id="rs3t">等待写入回执后，把成果绑到远端文档</span><em id="rs3e">等待</em></div></div>
+                <div class="wstep" id="rs4" data-s="wait"><i>4</i><div class="wstep-b"><b>写后回读</b><span id="rs4t">读回远端版本与正文，比对校验值</span><em id="rs4e">等待</em></div></div>
+              </div>
+              <div class="diffrow">
+                <div><span>已用时</span><b id="runElapsed">0.0s</b></div>
+                <div><span>同步批次</span><b>sync_8QP2X…M4K</b></div>
+                <div><span>基线远端版本</span><b>v14</b></div>
+                <div><span>目标修订</span><b>v15</b></div>
+              </div>
+              <p class="safe-line">现在关页面或断网<b>都不会写重</b>——这一批已经占住了幂等键，下次回来是拿同一个键去飞书对账，先确认落没落，再决定补写还是收口。</p>
+            </div>
+          </div>
+
+          <!-- 结果未知 · 待对账（B 端灵魂状态） -->
+          <div class="banner unknown" id="bnUnknown" hidden>
+            <div class="banner-ico">?</div>
+            <div>
+              <h4>上一次写入的结果不明，需要先对账</h4>
+              <p>请求已经发给飞书，但没有拿到确定的回执——<b>可能写进去了，也可能没有</b>。这种情况下重发一次会有写重的风险，所以系统不重写，而是拿同一个幂等键回飞书<b>核对这批到底落没落</b>，核对清楚再决定补写还是收口。</p>
+              <div class="diffrow">
+                <div><span>同步批次</span><b>sync_8QP2X…M4K</b></div>
+                <div><span>批次状态</span><b>进行中</b></div>
+                <div><span>幂等键</span><b>idem_01JD4M…7A1</b></div>
+              </div>
+              <div class="acts">
+                <button class="btn btn-warn" id="btnReconcile">去飞书对账</button>
+                <button class="btn btn-ghost" id="btnOpen2">先去飞书看一眼</button>
+              </div>
+              <p class="banner-ref">技术参考码：lark_save_outcome_unknown</p>
+            </div>
+          </div>
+
+          <!-- 远端版本冲突 -->
+          <div class="banner conflict" id="bnConflict" hidden>
+            <div class="banner-ico">!</div>
+            <div>
+              <h4>飞书那边的版本和我们要写的基线对不上</h4>
+              <p>准备写入时基线是远端 v14，但飞书文档现在已经是 v16 了——有人在这中间改过。<b>写入没有发起</b>，不会覆盖别人的改动。先把远端最新版回读进来，再决定这次生成的内容要不要重新落。</p>
+              <div class="diffrow">
+                <div><span>我们的基线</span><b>v14</b></div>
+                <div><span>飞书当前</span><b>v16</b></div>
+                <div><span>批次状态</span><b>已冲突</b></div>
+              </div>
+              <div class="acts">
+                <button class="btn btn-danger" id="btnPull">回读远端最新版</button>
+                <button class="btn btn-ghost" id="btnOpen3">在飞书中查看改动</button>
+              </div>
+              <p class="banner-ref">技术参考码：remote_document_conflict</p>
+            </div>
+          </div>
+
+          <!-- 结构不支持 -->
+          <div class="banner warn" id="bnUnsupported" hidden>
+            <div class="banner-ico">⚠</div>
+            <div>
+              <h4>有 1 个块的结构飞书接不了</h4>
+              <p>这张表格是合并单元格的，飞书文档的表格接不了这种形状，整批写入被挡在了发起之前。下方已经把它标出来了，右栏「同步」页签里能看到这个块的映射关系。</p>
+              <div class="acts">
+                <button class="btn btn-soft" id="btnJump">跳到该块</button>
+                <button class="btn btn-primary" id="btnFix">改成飞书支持的形状</button>
+              </div>
+              <p class="banner-ref">技术参考码：lark_table_shape_unsupported</p>
+            </div>
+          </div>
+
+          <!-- 飞书已改 · 待回读 -->
+          <div class="banner stale" id="bnStale" hidden>
+            <div class="banner-ico">↻</div>
+            <div>
+              <h4>飞书里改过了，这份镜像还是旧的</h4>
+              <p>远端已经走到 v15，这里显示的仍是 v14 的内容。<b>飞书是这篇正文的唯一编辑权威</b>，所以网页端不去合并、也不去猜，只是把最新的原样拉回来。</p>
+              <div class="diffrow">
+                <div><span>镜像版本</span><b>v14</b></div>
+                <div><span>飞书当前</span><b>v15</b></div>
+                <div><span>改动者</span><b>周珂 · 11:52</b></div>
+              </div>
+              <div class="acts">
+                <button class="btn btn-primary" id="btnPull2">拉取 v15</button>
+              </div>
+            </div>
+          </div>
+
+          <h1 class="doctitle">秋冬护手霜 · 品牌合作交付稿</h1>
+          <div class="docmeta">
+            <span>正文权威 <b>飞书</b></span>
+            <span>镜像版本 <b id="metaVer">v14</b></span>
+            <span>回读于 <b id="metaRead">09-02 11:26</b></span>
+          </div>
+
+          <div class="mirror" id="mirror">
+            <span class="mirror-tag">🔒 只读镜像 · 不可在网页端编辑</span>
+
+            <div class="blk" data-block-id="blk_o1">
+              <p class="rt">本篇为品牌方交付稿，正文以飞书文档为准。以下内容由创作任务生成后写入飞书，网页端仅做<strong>回读镜像</strong>，用于在工作台内查阅与追溯，不承担编辑职责。</p>
+            </div>
+
+            <div class="blk" data-block-id="blk_o2">
+              <h2 class="rt">一、投放要点</h2>
+            </div>
+
+            <div class="blk" data-block-id="blk_o3">
+              <p class="rt">主推卖点收敛为<em>封闭剂占比</em>与<em>无香精</em>两条，避开"修复屏障""医用级"等品牌方合规清单里的限制用语。口播时长控制在 45 秒内，前 6 秒必须出现产品实物。</p>
+            </div>
+
+            <div class="blk" data-block-id="blk_o4">
+              <ul class="rt">
+                <li>品牌调性：克制、成分导向，不做夸张对比</li>
+                <li>必现元素：产品正面 logo、规格标识、成分表特写</li>
+                <li>禁用：与竞品的直接点名比较</li>
+              </ul>
+            </div>
+
+            <div class="blk" data-block-id="blk_o5">
+              <aside class="callout" data-tone="warning">
+                <strong>品牌约束</strong>
+                <p class="rt">功效表述需与品牌方提供的备案文案一致，交付前由品牌方在飞书文档内直接批注确认。</p>
+              </aside>
+            </div>
+
+            <div class="blk" data-block-id="blk_o6">
+              <h2 class="rt">二、交付排期</h2>
+            </div>
+
+            <div class="blk" data-block-id="blk_o7">
+              <div class="tablewrap">
+                <table class="doc">
+                  <thead><tr><th>阶段</th><th>产出</th><th>负责人</th><th>截止</th></tr></thead>
+                  <tbody>
+                    <tr><td>初稿</td><td>脚本 + 分镜</td><td>周珂</td><td>09-05</td></tr>
+                    <tr><td>品牌确认</td><td>合规批注</td><td>品牌方</td><td>09-08</td></tr>
+                    <tr><td>成片</td><td>正片 + 封面三版</td><td>周珂</td><td>09-14</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="blk" data-block-id="blk_o8">
+              <div class="snapshot">
+                <div class="snapshot-head">
+                  <strong>受保护数据快照</strong>
+                  <span class="lockpill">🔒 飞书侧受保护</span>
+                </div>
+                <dl>
+                  <div><dt>合作金额</dt><dd>—</dd></div>
+                  <div><dt>排期天数</dt><dd>12</dd></div>
+                  <div><dt>交付条数</dt><dd>3</dd></div>
+                </dl>
+                <p class="snapshot-why">这个块在飞书侧被标记为受保护，回读时原样带回、写入时原样保留。商务金额字段按品牌合作的可见范围做了脱敏，不进入内容工作区。</p>
+                <small>指标快照 · 远端块 doxcnQ8…K2 · 保护原因 商务字段</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── 让 AI 改稿 ── -->
+          <div class="aiwrap">
+
+            <div class="plan" id="plan" hidden>
+              <div class="plan-head">
+                <h4>改稿计划</h4>
+                <span class="plan-count go">2 项将执行</span>
+                <span class="plan-count man">1 项需你来</span>
+                <span class="plan-count no">2 项不会碰</span>
+                <p class="ask">你的要求：把「封闭剂」统一改成「锁水成分」；排期表补一行品牌复审，9 月 10 日截止。</p>
+              </div>
+
+              <div class="plan-body">
+                <div class="plan-sec go">
+                  <h5>▸ 将要修改</h5>
+
+                  <div class="op" data-off="0">
+                    <div class="op-top">
+                      <span class="op-where">投放要点 · 正文段落</span>
+                      <span class="op-kind">替换用词</span>
+                      <button class="op-off">不改这条</button>
+                    </div>
+                    <div class="op-diff"><span class="op-old">封闭剂</span>→<span class="op-new">锁水成分</span><span class="op-why">· 命中 1 处</span></div>
+                    <p class="op-why">精确匹配，不使用正则、不区分大小写匹配或语义匹配——只替换字面完全一致的词。</p>
+                  </div>
+
+                  <div class="op" data-off="0">
+                    <div class="op-top">
+                      <span class="op-where">交付排期 · 表格末尾</span>
+                      <span class="op-kind">追加表格行</span>
+                      <button class="op-off">不改这条</button>
+                    </div>
+                    <p class="op-why">追加一行：品牌复审 / 合规二次确认 / 品牌方 / 09-10。只在表尾追加，不改动表格结构与已有行。</p>
+                  </div>
+                </div>
+
+                <div class="plan-sec man">
+                  <h5>▸ AI 不做，需要你来</h5>
+                  <div class="op">
+                    <div class="op-top"><span class="op-where">受保护数据快照</span><span class="op-kind" style="background:var(--peach);color:var(--peach-ink)">已跳过</span></div>
+                    <p class="op-why">「封闭剂」在这个受保护块里也出现了一次。受保护块不接受改写，要同步口径请回到生成它的拆解任务重跑，正文里只能引用。</p>
+                  </div>
+                </div>
+
+                <div class="plan-sec no">
+                  <h5>▸ 不会碰的</h5>
+                  <div class="op">
+                    <p class="op-why"><b>受保护数据快照</b>——商务字段，回读时必须原样带回。<br><b>图片、附件、品牌约束提示框与表格结构</b>——默认不变量，AI 不删除也不移动。</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="plan-foot">
+                <button class="btn btn-primary" id="btnApply">确认并写入飞书</button>
+                <button class="btn btn-ghost" id="btnDrop">取消</button>
+                <span class="note">应用后仍要走一次写后回读，回读没过不算成功。</span>
+              </div>
+            </div>
+
+            <div class="aibar">
+              <span class="aibar-ico">✦</span>
+              <input id="askInput" type="text" aria-label="告诉 AI 要改什么"
+                     value="把「封闭剂」统一改成「锁水成分」；排期表补一行品牌复审，9 月 10 日截止">
+              <button class="btn btn-primary" id="btnPlan">生成改稿计划</button>
+            </div>
+            <p class="aihint">网页端不直接改组织正文——你提要求，AI 出计划，你确认后由服务端按当前组织绑定写进飞书。受保护块与表格结构不在改动范围内。</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- ── 右栏 ── -->
+      <aside class="rail-right" aria-label="同步、绑定与证据">
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-pane="sync">同步</button>
+          <button role="tab" aria-selected="false" data-pane="bind">绑定</button>
+          <button role="tab" aria-selected="false" data-pane="evi">证据</button>
+        </div>
+
+        <!-- 同步 -->
+        <div class="pane" id="pSync" role="tabpanel">
+          <p class="pane-lead">每一次写入飞书都记成一个批次。批次没有收口之前，重试一律走对账，不重写。</p>
+          <dl class="ledger">
+            <div><dt>同步批次</dt><dd>sync_8QP2X…M4K</dd></div>
+            <div><dt>操作</dt><dd>保存正文</dd></div>
+            <div><dt>批次状态</dt><dd class="ok" id="sBatch">已成功</dd></div>
+            <div><dt>幂等键</dt><dd>idem_01JD4M…7A1</dd></div>
+            <div><dt>请求校验值</dt><dd>a71c33e0…9b62</dd></div>
+            <div><dt>基线远端版本</dt><dd id="sBase">v14</dd></div>
+            <div><dt>完成于</dt><dd id="sDone">09-02 11:26</dd></div>
+          </dl>
+
+          <p class="pane-lead" style="margin-top:18px">块映射：网页块与飞书远端块一一对应，回读靠它对齐。</p>
+          <div class="maps" id="maps">
+            <div class="map"><div class="map-top"><b>blk_o3</b><span class="map-arrow">→</span><b>doxcnA1…7F</b></div><small>校验值 3f01…8ac2</small></div>
+            <div class="map"><div class="map-top"><b>blk_o7</b><span class="map-arrow">→</span><b>doxcnB4…2C</b><span class="map-badge bad" id="mapBadge" hidden>形状不支持</span></div><small>校验值 9d47…10be</small><em id="mapWhy" hidden>合并单元格，飞书表格接不了</em></div>
+            <div class="map"><div class="map-top"><b>blk_o8</b><span class="map-arrow">→</span><b>doxcnQ8…K2</b><span class="map-badge prot">受保护</span></div><small>保护原因 商务字段</small></div>
+          </div>
+
+          <p class="foot">失败关闭：写入、登记、回读三步任一失败都不标记成功。结果未知时进入待对账，<b>永远不靠重发去赌</b>。</p>
+        </div>
+
+        <!-- 绑定 -->
+        <div class="pane" id="pBind" role="tabpanel" hidden>
+          <p class="pane-lead">写入用的是当前组织自己的应用凭据，不会退回到部署级凭据，也读不到别的组织。</p>
+          <dl class="ledger">
+            <div><dt>组织</dt><dd>光合内容工作室</dd></div>
+            <div><dt>绑定状态</dt><dd class="ok">有效</dd></div>
+            <div><dt>凭据世代</dt><dd>第 3 代</dd></div>
+            <div><dt>知识库</dt><dd>内容交付 / 品牌合作</dd></div>
+            <div><dt>父节点</dt><dd>wikcnP7…3D</dd></div>
+            <div><dt>我的角色</dt><dd>组织成员 · 可写</dd></div>
+          </dl>
+          <div class="stack">
+            <div class="mini">
+              <strong>隔离自检</strong>
+              <p>资料、凭据与写入目标都限定在当前组织内。</p>
+              <div class="row"><span class="tick ok">跨组织零读取</span><span class="tick ok">零部署级凭据</span></div>
+            </div>
+            <div class="mini">
+              <strong>与个人工作区的边界</strong>
+              <p>这篇正文不会在网页端生成可编辑的内部正文，个人工作区也读不到它。</p>
+              <div class="row"><span class="tick ok">零内部正文写入</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 证据 -->
+        <div class="pane" id="pEvi" role="tabpanel" hidden>
+          <p class="pane-lead">回读是唯一能证明"确实写进去了"的一步，没回读就不算完成。</p>
+          <dl class="ledger">
+            <div><dt>正文权威</dt><dd>飞书（唯一编辑权威）</dd></div>
+            <div><dt>远端文档</dt><dd>doxcnW3…8H</dd></div>
+            <div><dt>远端版本</dt><dd id="eVer">v14</dd></div>
+            <div><dt>镜像校验值</dt><dd id="eSum">c4b8f012…7d31</dd></div>
+            <div><dt>写后回读</dt><dd class="ok" id="eRead">已回读 · 校验值一致</dd></div>
+            <div><dt>块数</dt><dd>8 · 其中受保护 1</dd></div>
+            <div><dt>回读于</dt><dd id="eAt">09-02 11:26</dd></div>
+          </dl>
+          <div class="stack">
+            <div class="mini" id="mState">
+              <strong>本次同步</strong>
+              <p id="mStateText">四步全绿，镜像与远端一致。</p>
+              <div class="row">
+                <span class="tick ok" id="t1">写入</span>
+                <span class="tick ok" id="t2">登记</span>
+                <span class="tick ok" id="t3">回读</span>
+              </div>
+            </div>
+          </div>
+          <p class="foot">网页端只消费回读镜像，不编辑组织正文；飞书里改过之后，这里跟随远端新版本，而不是反向覆盖。</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var banners = { run:$('bnRun'), unknown:$('bnUnknown'), conflict:$('bnConflict'), unsupported:$('bnUnsupported'), stale:$('bnStale') };
+  var state = 'ok';
+
+  // 写入中：逐步推进 + 实时计时，让「到哪一步、还能不能中断」一眼可见
+  var runTimer = null, runStart = 0;
+  function rstep(n, st, text, badge){
+    var el = $('rs' + n); if (!el) return;
+    el.setAttribute('data-s', st);
+    if ($('rs' + n + 't')) $('rs' + n + 't').textContent = text;
+    if ($('rs' + n + 'e')) $('rs' + n + 'e').textContent = badge;
+  }
+  function stopRun(){ if (runTimer){ clearInterval(runTimer); runTimer = null; } }
+  function startRun(){
+    stopRun(); runStart = Date.now();
+    rstep(2,'run','正在按当前组织绑定调用飞书写入…','进行中');
+    rstep(3,'wait','等待写入回执后，把成果绑到远端文档','等待');
+    rstep(4,'wait','读回远端版本与正文，比对校验值','等待');
+    $('runTitle').textContent = '正在写入飞书 · 第 2 步，共 4 步';
+    runTimer = setInterval(function(){
+      var ms = Date.now() - runStart;
+      $('runElapsed').textContent = (ms / 1000).toFixed(1) + 's';
+      if (ms > 500 && ms < 1000){
+        rstep(2,'done','飞书已回执，远端到 v15','已完成');
+        rstep(3,'run','正在把成果绑到远端文档…','进行中');
+        $('runTitle').textContent = '正在写入飞书 · 第 3 步，共 4 步';
+        setSync('busy','写入中 · 第 3 步，共 4 步');
+      } else if (ms >= 1000){
+        rstep(3,'done','成果已绑远端文档','已完成');
+        rstep(4,'run','正在回读并比对校验值…','进行中');
+        $('runTitle').textContent = '正在写入飞书 · 第 4 步，共 4 步';
+        setSync('busy','写入中 · 第 4 步，共 4 步');
+      }
+    }, 100);
+  }
+
+  function setSync(tone, text){
+    $('syncState').setAttribute('data-tone', tone);
+    $('syncText').textContent = text;
+  }
+  function hideBanners(){ for (var k in banners) banners[k].hidden = true; }
+  function pipe(a,b,c,d, ta,tb,tc,td){
+    var s=[a,b,c,d], t=[ta,tb,tc,td];
+    for (var i=0;i<4;i++){
+      $('ps'+(i+1)).setAttribute('data-s', s[i]);
+      $('ps'+(i+1)+'t').textContent = t[i];
+    }
+  }
+  function ticks(a,b,c){
+    $('t1').className='tick '+a; $('t2').className='tick '+b; $('t3').className='tick '+c;
+  }
+  function clearFlag(){
+    var f = $('mirror').querySelector('[data-flag]');
+    if (f){ f.removeAttribute('data-flag'); var b=f.querySelector('.blk-flag'); if(b) b.remove(); }
+    $('mapBadge').hidden = true; $('mapWhy').hidden = true;
+  }
+
+  function go(next){
+    state = next;
+    if (next !== 'run') stopRun();
+    hideBanners(); clearFlag();
+    $('eRead').className='ok'; $('sBatch').className='ok';
+    $('plan').hidden = (next !== 'plan');
+    if (next === 'plan' || next === 'partial'){ hitBlocks(next === 'plan'); } else { hitBlocks(false); }
+
+    if (next === 'plan'){
+      setSync('busy','改稿计划待确认');
+      pipe('done','wait','wait','wait','AI 已定位到 2 处','等待你确认','未登记','未回读');
+      $('sBatch').textContent='未发起'; $('sBatch').className=''; $('sDone').textContent='—';
+      $('eRead').textContent='未回读 · 尚未写入'; $('eRead').className='';
+      $('mStateText').textContent='计划已生成，确认后才会写入飞书。'; ticks('wait','wait','wait');
+    } else if (next === 'partial'){
+      setSync('warn','部分应用 · 1 项待人工');
+      pipe('done','done','done','done','AI 已定位到 2 处','2 项已写入飞书','成果已绑远端文档','受保护块原样带回');
+      $('sBatch').textContent='已成功'; $('sDone').textContent='09-02 11:41';
+      $('eRead').textContent='已回读 · 受保护块完整'; $('eRead').className='ok';
+      $('metaVer').textContent='v15'; $('eVer').textContent='v15';
+      $('mStateText').textContent='2 项已应用，1 项按受保护规则跳过。'; ticks('ok','ok','warnv');
+    } else if (next === 'ok'){
+      setSync('ok','已同步 · 远端 v14');
+      pipe('done','done','done','done','创作任务已产出','按当前绑定写入','成果已绑远端文档','校验值一致');
+      $('sBatch').textContent='已成功'; $('sDone').textContent='09-02 11:26';
+      $('eRead').textContent='已回读 · 校验值一致';
+      $('mStateText').textContent='四步全绿，镜像与远端一致。'; ticks('ok','ok','ok');
+    } else if (next === 'run'){
+      setSync('busy','写入中 · 第 2 步，共 4 步');
+      banners.run.hidden = false;
+      startRun();
+      pipe('done','run','wait','wait','创作任务已产出','正在写入飞书','等待写入收口','等待回读');
+      $('sBatch').textContent='进行中'; $('sBatch').className=''; $('sDone').textContent='—';
+      $('eRead').textContent='未回读'; $('eRead').className='';
+      $('mStateText').textContent='写入进行中，尚未收口。'; ticks('wait','wait','wait');
+    } else if (next === 'unknown'){
+      setSync('unknown','结果未知 · 待对账');
+      banners.unknown.hidden = false;
+      pipe('done','unknown','wait','wait','创作任务已产出','结果未知','等待对账结论','等待回读');
+      $('sBatch').textContent='进行中 · 未收口'; $('sBatch').className='warnv'; $('sDone').textContent='—';
+      $('eRead').textContent='未回读 · 结果待确认'; $('eRead').className='warnv';
+      $('mStateText').textContent='写入回执缺失，重试走对账而不是重写。'; ticks('warnv','wait','wait');
+    } else if (next === 'conflict'){
+      setSync('bad','远端版本冲突');
+      banners.conflict.hidden = false;
+      pipe('done','bad','wait','wait','创作任务已产出','未发起 · 基线过期','未登记','未回读');
+      $('sBatch').textContent='已冲突'; $('sBatch').className='bad'; $('sDone').textContent='09-02 11:31';
+      $('eRead').textContent='未回读 · 写入未发起'; $('eRead').className='bad';
+      $('mStateText').textContent='基线远端版本已过期，写入未发起。'; ticks('bad','wait','wait');
+    } else if (next === 'unsupported'){
+      setSync('warn','1 个块结构不支持');
+      banners.unsupported.hidden = false;
+      pipe('done','bad','wait','wait','创作任务已产出','未发起 · 结构被挡','未登记','未回读');
+      $('sBatch').textContent='已失败'; $('sBatch').className='bad'; $('sDone').textContent='09-02 11:29';
+      $('eRead').textContent='未回读 · 写入未发起'; $('eRead').className='bad';
+      $('mStateText').textContent='1 个块结构不被飞书接受，整批未发起。'; ticks('bad','wait','wait');
+      var t = $('mirror').querySelector('[data-block-id="blk_o7"]');
+      if (t && !t.querySelector('.blk-flag')){
+        t.setAttribute('data-flag','unsupported');
+        var flag = document.createElement('span');
+        flag.className = 'blk-flag';
+        flag.textContent = '⚠ 表格结构飞书接不了';
+        t.insertBefore(flag, t.firstChild);
+      }
+      $('mapBadge').hidden = false; $('mapWhy').hidden = false;
+    } else if (next === 'stale'){
+      setSync('warn','飞书已改 · 待回读');
+      banners.stale.hidden = false;
+      pipe('done','done','done','bad','创作任务已产出','按当前绑定写入','成果已绑远端文档','镜像落后远端');
+      $('sBatch').textContent='已成功'; $('sDone').textContent='09-02 11:26';
+      $('eRead').textContent='镜像落后 · 待重新回读'; $('eRead').className='warnv';
+      $('mStateText').textContent='远端已到 v15，镜像仍是 v14。'; ticks('ok','ok','warnv');
+    }
+
+    var btns = document.querySelectorAll('.proto-seg button');
+    for (var i=0;i<btns.length;i++){
+      btns[i].setAttribute('aria-pressed', String(btns[i].getAttribute('data-go') === next));
+    }
+  }
+
+  var segBtns = document.querySelectorAll('.proto-seg button');
+  for (var i=0;i<segBtns.length;i++){
+    segBtns[i].addEventListener('click', function(){ go(this.getAttribute('data-go')); });
+  }
+
+  function pullLatest(v){
+    $('metaVer').textContent = v; $('eVer').textContent = v;
+    $('metaRead').textContent = '刚刚'; $('eAt').textContent = '刚刚';
+    $('eSum').textContent = 'e90a5b71…2f48';
+    go('ok'); setSync('ok','已同步 · 远端 ' + v);
+  }
+  $('btnPull').addEventListener('click', function(){ pullLatest('v16'); });
+  $('btnPull2').addEventListener('click', function(){ pullLatest('v15'); });
+  $('btnReread').addEventListener('click', function(){ if (state !== 'ok') pullLatest($('eVer').textContent); });
+  $('btnReconcile').addEventListener('click', function(){
+    setSync('busy','正在对账…');
+    banners.unknown.hidden = true;
+    pipe('done','run','wait','wait','创作任务已产出','正在与飞书核对','等待对账结论','等待回读');
+    setTimeout(function(){ if (state === 'unknown') go('ok'); }, 1200);
+  });
+  $('btnJump').addEventListener('click', function(){
+    var t = $('mirror').querySelector('[data-block-id="blk_o7"]');
+    if (t) t.scrollIntoView({ block:'center', behavior:'smooth' });
+  });
+  $('btnFix').addEventListener('click', function(){ selectPane('sync'); });
+
+  // ---- 让 AI 改稿 ----
+  // 命中块高亮：计划里点到哪些块，正文上直接标出来，不让人自己去找
+  function hitBlocks(on){
+    var ids = ['blk_o3','blk_o7'];
+    for (var i=0;i<ids.length;i++){
+      var el = $('mirror').querySelector('[data-block-id="'+ids[i]+'"]');
+      if (!el) continue;
+      if (on){
+        el.style.background = 'color-mix(in srgb, var(--mint-soft) 55%, transparent)';
+        el.style.boxShadow = '0 0 0 1px color-mix(in srgb, var(--mint) 34%, transparent)';
+        el.style.borderRadius = '8px';
+        el.style.margin = '0 -12px'; el.style.padding = '6px 12px';
+      } else {
+        el.style.background=''; el.style.boxShadow=''; el.style.borderRadius='';
+        el.style.margin=''; el.style.padding='';
+      }
+    }
+  }
+  $('btnPlan').addEventListener('click', function(){ go('plan'); $('plan').scrollIntoView({block:'nearest'}); });
+  $('btnDrop').addEventListener('click', function(){ go('ok'); });
+  $('btnApply').addEventListener('click', function(){
+    $('plan').hidden = true;
+    banners.run.hidden = false;
+    setSync('busy','写入中 · 第 2 步，共 4 步');
+    pipe('done','run','wait','wait','AI 已定位到 2 处','正在写入飞书','等待写入收口','等待回读');
+    startRun();
+    setTimeout(function(){ if (state === 'plan'){ stopRun(); go('partial'); } }, 1400);
+  });
+  document.querySelectorAll('.op-off').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var op = this.closest('.op');
+      var off = op.getAttribute('data-off') === '1';
+      op.setAttribute('data-off', off ? '0' : '1');
+      this.textContent = off ? '不改这条' : '恢复这条';
+    });
+  });
+
+  function selectPane(name){
+    var map = { sync:'pSync', bind:'pBind', evi:'pEvi' };
+    for (var k in map) $(map[k]).hidden = (k !== name);
+    var tabs = document.querySelectorAll('.tabs button');
+    for (var i=0;i<tabs.length;i++){
+      tabs[i].setAttribute('aria-selected', String(tabs[i].getAttribute('data-pane') === name));
+    }
+  }
+  var tabBtns = document.querySelectorAll('.tabs button');
+  for (var j=0;j<tabBtns.length;j++){
+    tabBtns[j].addEventListener('click', function(){ selectPane(this.getAttribute('data-pane')); });
+  }
+
+  go('ok');
+})();
+</script>

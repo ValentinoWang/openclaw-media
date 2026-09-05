@@ -14,7 +14,6 @@ SCHEMA_VERSION = "media_web_business_pages_v2"
 SELFMEDIA_ROOT = Path(
     os.getenv("OPENCLAW_SELFMEDIA_ROOT") or Path(__file__).resolve().parents[4]
 ).expanduser()
-COOKIE_SCRIPT = SELFMEDIA_ROOT / "integrations/platform_auth/cookies/save_platform_cookie_secret.py"
 PLATFORMS = ("douyin", "xiaohongshu")
 # NOTE (H8 dedup survey): these Chinese strings are cookie-store LOOKUP KEYS
 # passed straight into id_business.load_playwright_cookies() /
@@ -57,12 +56,6 @@ class AdminPlatformCookiesService:
         self._loader = loader or _load_cookies
         self._candidate_paths = candidate_paths or _candidate_paths
 
-    @staticmethod
-    def _safe_command(platform: str) -> str:
-        return (
-            f"python3 {COOKIE_SCRIPT} --platform {platform} --prompt --no-env"
-        )
-
     def _item(self, platform: str) -> dict[str, Any]:
         existing_mtimes: list[float] = []
         metadata_error = False
@@ -90,8 +83,6 @@ class AdminPlatformCookiesService:
             "updatedAt": updated_at,
             "validationStatus": "error",
             "errorCode": "cookie_metadata_unavailable" if metadata_error else None,
-            "configurationScript": str(COOKIE_SCRIPT),
-            "safeCommand": self._safe_command(platform),
         }
         if metadata_error:
             return base

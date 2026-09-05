@@ -751,10 +751,27 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             block_ids = getattr(exc, "block_ids", ())
             if status == HTTPStatus.UNPROCESSABLE_ENTITY and block_ids:
                 details = {"blockIds": list(block_ids)}
+            # Business services keep diagnostic exception text for logs and
+            # operator debugging. Only expose the stable public vocabulary at
+            # the HTTP boundary so paths, field names, and implementation
+            # details cannot reach browser users.
+            public_message = {
+                "authentication_required": "登录后可继续操作。",
+                "admin_required": "当前会话没有管理员权限。",
+                "forbidden": "当前会话没有执行此操作的权限。",
+                "invalid_request": "请求格式无效。",
+                "revision_conflict": "数据已发生变化，请刷新后重试。",
+                "idempotency_conflict": "请求已发生冲突，请刷新后重试。",
+                "upstream_unavailable": "上游服务暂不可用，请稍后重试。",
+                "account_database_unavailable": "服务暂时不可用，请稍后重试。",
+                "internal_error": "服务暂时不可用，请稍后重试。",
+            }.get(exc.code)
+            if public_message is None and status >= 500:
+                public_message = "服务暂时不可用，请稍后重试。"
             self._send_api_error(
                 HTTPStatus(status),
                 exc.code,
-                getattr(exc, "message", str(exc)),
+                public_message or getattr(exc, "message", str(exc)),
                 details=details,
             )
         except MediaWebTaskError as exc:
@@ -1418,10 +1435,9 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
             if (
                 path in {"/openclaw/auth/login", "/auth/login"}
                 and self.personal_auth is None
-                and self.media_feishu_login is None
             ):
-                # Password login is retired once the Feishu media login flow is
-                # the configured entrypoint; it must not become a fallback.
+                # Canonical account login remains available for QA and existing
+                # account sessions while Feishu is used for organization login.
                 self._handle_auth_login(self._read_json_body())
                 return
             if path == "/auth/feishu/start":
@@ -2414,10 +2430,14 @@ class OpenClawHttpHandler(BaseHTTPRequestHandler):
         if self.auth_config is None or self.account_auth is None:
             self._send_api_error(HTTPStatus.SERVICE_UNAVAILABLE, "account_database_unavailable", "登录服务暂时不可用。")
             return
-        if set(payload) - {"username", "email", "password"}:
+        if set(payload) - {"username", "email", "identifier", "password"}:
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "登录请求字段无效。")
             return
-        identifier = payload.get("username", payload.get("email"))
+        identifiers = [payload.get(name) for name in ("username", "email", "identifier") if name in payload]
+        if len(identifiers) != 1:
+            self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请输入用户名和密码。")
+            return
+        identifier = identifiers[0]
         password = payload.get("password")
         if not isinstance(identifier, str) or not isinstance(password, str):
             self._send_api_error(HTTPStatus.BAD_REQUEST, "invalid_request", "请输入用户名和密码。")

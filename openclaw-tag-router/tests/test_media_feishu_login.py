@@ -27,8 +27,14 @@ class MediaFeishuLoginServiceTests(unittest.TestCase):
         self.service = MediaFeishuLoginService(
             "cli_media_product_only",
             "media-secret",
-            "http://106.52.146.37/openclaw/media/oauth/callback",
+            "https://mediapilot.cloud/openclaw/media/oauth/callback",
             clock=lambda: self.now,
+        )
+
+    def test_media_callback_is_https_for_production_origin(self) -> None:
+        self.assertEqual(
+            self.service.redirect_uri,
+            "https://mediapilot.cloud" + MEDIA_CALLBACK_PATH,
         )
 
     @staticmethod
@@ -63,7 +69,7 @@ class MediaFeishuLoginServiceTests(unittest.TestCase):
         query = parse_qs(parsed.query)
         self.assertEqual(parsed.hostname, "open.feishu.cn")
         self.assertEqual(query["app_id"], ["cli_media_product_only"])
-        self.assertEqual(query["redirect_uri"], ["http://106.52.146.37" + MEDIA_CALLBACK_PATH])
+        self.assertEqual(query["redirect_uri"], ["https://mediapilot.cloud" + MEDIA_CALLBACK_PATH])
         self.assertEqual(query["scope"], [MEDIA_LOGIN_SCOPE])
         self.assertTrue(query["state"][0].startswith(MEDIA_STATE_PREFIX))
         self.assertEqual(query["code_challenge_method"], ["S256"])
@@ -130,7 +136,7 @@ class MediaFeishuLoginServiceTests(unittest.TestCase):
         self.assertEqual(token_payload["client_id"], ["cli_media_product_only"])
         self.assertEqual(
             token_payload["redirect_uri"],
-            ["http://106.52.146.37" + MEDIA_CALLBACK_PATH],
+            ["https://mediapilot.cloud" + MEDIA_CALLBACK_PATH],
         )
         self.assertTrue(token_payload["code_verifier"][0])
 

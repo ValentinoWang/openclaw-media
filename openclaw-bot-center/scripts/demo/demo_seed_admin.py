@@ -557,13 +557,6 @@ _PLATFORM_COOKIES: list[dict[str, Any]] = [
         "updatedAt": ago(hours=4),
         "validationStatus": "valid",
         "errorCode": None,
-        "configurationScript": (
-            "1. 管理员使用平台运营账号登录抖音创作者后台完成人工验证\n"
-            "2. 由管理员在服务器终端直接粘贴登录态，不落盘、不经过网页\n"
-            "3. 在服务器上执行 save_platform_cookie_secret.py，按隐藏输入粘贴登录态\n"
-            "4. 执行 <bot_cli> cookies verify --platform douyin 校验凭据是否可用"
-        ),
-        "safeCommand": "python3 <repo>/scripts/save_platform_cookie_secret.py --platform douyin --prompt",
     },
     {
         "platform": "xiaohongshu",
@@ -571,13 +564,6 @@ _PLATFORM_COOKIES: list[dict[str, Any]] = [
         "updatedAt": None,
         "validationStatus": "missing",
         "errorCode": None,
-        "configurationScript": (
-            "1. 管理员使用平台运营账号登录小红书创作者中心完成人工验证\n"
-            "2. 由管理员在服务器终端直接粘贴登录态，不落盘、不经过网页\n"
-            "3. 在服务器上执行 save_platform_cookie_secret.py，按隐藏输入粘贴登录态\n"
-            "4. 执行 <bot_cli> cookies verify --platform xiaohongshu 校验凭据是否可用（当前尚未配置，会返回 missing）"
-        ),
-        "safeCommand": "python3 <repo>/scripts/save_platform_cookie_secret.py --platform xiaohongshu --prompt",
     },
 ]
 
